@@ -13221,6 +13221,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_his_hand_removes_the_copy_it_names.py")], 300,
          needs_app=False,
          why="REG-2849 (#154 P3c) - his hand removes the copy it names through the trade door's copy-out; the other copies keep their entries, the undo puts it back"),
+    Gate("test_the_shared_stash_draws_each_copy_at_its_own_task_cell",
+         [sys.executable, os.path.join(HERE, "test_the_shared_stash_draws_each_copy_at_its_own_task_cell.py")], 300,
+         needs_app=False,
+         why="REG-2887 (#231 second eye on v3833) - the shared stash draws each copy at the task cell of its own copyIx through the mule card's one join, so a thrown or cell-less copy 0 is never painted at copy 1's cell and a listed mark sits on its own copy"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

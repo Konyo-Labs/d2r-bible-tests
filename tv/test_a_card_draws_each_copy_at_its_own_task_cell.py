@@ -116,7 +116,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2876 - the plan's copies are not drawn first (a copy with no cell here takes the first key)",
      "file": "bible.html",
-     "find": "      pl.forEach(function(q){ if (out.indexOf(q.ci) < 0 && out.length < m) out.push(q.ci); });\n",
+     "find": "    (pl || []).forEach(function(q){ if (out.indexOf(q.ci) < 0 && out.length < m) out.push(q.ci); });\n",
      "replace": "",
      "matches": 1, "needs": "node"},
     {"why": "REG-2876 - a WAR mule's over-cap copies are keyed by position",

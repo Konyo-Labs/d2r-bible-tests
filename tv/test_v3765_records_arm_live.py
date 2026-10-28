@@ -57,7 +57,7 @@ EXTRACT = [
     "_vrRecLoadRaw", "_vrRecGuardedSet", "_vrLocForCopy", "_vaultRecordsLoad",
     "_vaultRecordsPersist", "_vaultRecordsRefresh", "_vaultRecordsMigrate",
     "_vaultRecordsMigrateUndo", "_vaultRecordsMayArm", "_vaultRecordsArm",
-    "_shelfCopyCount", "_shelfDrawNames", "_muleLoad",
+    "_shelfCopyCount", "_shelfDrawNames", "_muleLoad", "_vaultPlanCis", "_vaultPlanCell",
     "_inMagicRare", "_dockNames", "_vaultWhereIs", "_vaultFindHome", "_vfNorm", "_vfKey", "_vfVaultKey", "_vaultFindMatches",
     "saveA", "persistOwned",
 ]
