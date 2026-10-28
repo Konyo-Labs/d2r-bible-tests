@@ -13177,6 +13177,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_d2jsp_card_keeps_its_post_log.py")], 300,
          needs_app=False,
          why='REG-2872 every d2jsp send writes one attempt row per item into the forked post log, and the card shows the confirmed post and every attempt'),
+    Gate("test_a_d2jsp_item_moves_draft_listed_traded",
+         [sys.executable, os.path.join(HERE, "test_a_d2jsp_item_moves_draft_listed_traded.py")], 300,
+         needs_app=False,
+         why='REG-2873 a d2jsp item moves draft, listed, traded; Mark traded is one trade-out event out of the vault count; FIND shows the listed mark'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
