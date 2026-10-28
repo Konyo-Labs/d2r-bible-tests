@@ -1831,6 +1831,7 @@ test_shadow_mode_draws_their_console.
 
 ### REG-2917 - LAWS WITH NO EXECUTABLE RED-PROOF GAIN ONE: 12 OF 54 (#128)
 ### REG-2917 - TWELVE VAULT, INTAKE AND MOVE LAWS COULD NOT BE SEEN TO REFUSE: NO EXECUTABLE RED_PROOF (#128)
+### REG-2917 - LAWS WITH NO EXECUTABLE RED-PROOF GAIN ONE: 12 OF 54 (#128)
 heart2's own census (heart2.report) read 1,238 gates, 1,184 declaring a proof, 54 with none - UNKNOWN, not clean. The
 twelve guarding vault, intake and move code that run without a browser now each carry an executable RED_PROOF that breaks
 the PROPERTY the law names (anchor matched exactly once; each seen RED for that property, not for an import, a crash or an
