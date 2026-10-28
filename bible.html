@@ -56987,15 +56987,27 @@ window.vaultAutoAssign = function(){
      ground:[names] }. Direct proof only:
        · a move seen in its TARGET cell closes at once (verified);
        · the first-witnessed cell SHOWN in this frame with the item still there resets the count;
-       · that container SHOWN without the item adds this session (distinct sessions) — a session whose frames never show
-         that container counts for nothing;
+       · that container SHOWN WHOLE without the item adds this session (distinct sessions) — a session whose frames never
+         show that container counts for nothing;
        · VAULT_GONE_SESSIONS such sessions close the row (a throw-out, or a move that vanished without reaching its target);
        · a throw-out whose item already left its cell and is now read as a dropped-item label on the ground closes at once.
-     Reads and writes only the saved move records. */
+     Reads and writes only the saved move records.
+     REG-2861 - ABSENCE IS PROOF ONLY FROM A FRAME THAT READ THE WHOLE CONTAINER. "Shown without the item" means the
+     item is gone only when `items` is everything in that container. Every read that reaches the board today is ONE item:
+     a stash look is a hover tooltip (the read cell is the hover point, #197), so a frame of a stash tab names the
+     hovered item and nothing else. Counted as absence, every hover of a NEIGHBOUR would add a session to every other
+     row in that tab, and five sessions of hovering would close them "gone 5/5" on the absence of a READ - against his
+     ruling that a not-seen item is asked about and never dropped on its own when in doubt. So only a frame that says
+     `complete: true` (a sweep that read the container whole) counts absence; any other frame still verifies, resets
+     and reopens on what it DID see, and its absence counts nothing (the answer says so). This is his approved design
+     (#230: absence only from a FULL LOOK, "a frame that shows a whole container"). No reader hands this door a complete
+     frame yet - the producers it waits for are the guided sweep (P4) and P2's full-look detection; until one lands no row
+     drains by absence. What the count then does is P5's ruling, not this door's. */
   function _vaultGoneObserve(frame){
     frame = frame || {};
     var sid = frame.session == null ? '' : String(frame.session);
     if (!sid) return { ok: false, why: 'a frame with no reel session proves nothing' };
+    var whole = frame.complete === true;   /* REG-2861 */
     var items = Array.isArray(frame.items) ? frame.items : [];
     var ground = Array.isArray(frame.ground) ? frame.ground.map(String) : [];
     function here(name, cell){
@@ -57035,7 +57047,7 @@ window.vaultAutoAssign = function(){
         }
       } else if (shows(t.from)) {
         if (here(name, t.from.cell)) { if (t.gone || t.left) { next = _vaultMoveTask(t); delete next.gone; delete next.left; } }
-        else {
+        else if (whole) {   /* REG-2861 - a missing READ is not a missing item */
           next = _vaultMoveTask(t); next.left = true;
           var g = (next.gone || []).slice(); if (g.indexOf(sid) < 0) g.push(sid); next.gone = g;
           if (g.length >= VAULT_GONE_SESSIONS) { next.status = 'closed'; next.closedBy = 'gone ' + g.length + '/' + VAULT_GONE_SESSIONS + ' sessions'; }
@@ -57050,7 +57062,9 @@ window.vaultAutoAssign = function(){
     });
     if (out.length) _vaultMoveCommit(out);
     try { if (out.length && !window._movePaintBusy) _vaultMovePaint(); } catch (eP) {}
-    return { ok: true, changed: out.map(function(o){ return { name: o.name, status: o.task.status, gone: (o.task.gone || []).length, closedBy: o.task.closedBy || null }; }) };
+    return { ok: true, changed: out.map(function(o){ return { name: o.name, status: o.task.status, gone: (o.task.gone || []).length, closedBy: o.task.closedBy || null }; }),
+             absence: whole ? 'counted - the frame read its container whole'
+                            : 'not counted - the frame does not say it read its container whole (complete:true), and a missing read is not a missing item' };
   }
   function _vaultGoneSay(t){
     var n = (t && t.gone) ? t.gone.length : 0;
