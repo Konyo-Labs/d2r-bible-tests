@@ -13229,6 +13229,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_d2jsp_post_carries_the_item_picture.py")], 300,
          needs_app=False,
          why="REG-2871 a d2jsp post carries the item's picture as BBCode [img] from the one resolver, laid out title/picture/mods/price; the gate opens art images only"),
+    Gate("test_a_recommendation_names_this_pcs_characters",
+         [sys.executable, os.path.join(HERE, "test_a_recommendation_names_this_pcs_characters.py")], 300,
+         needs_app=False,
+         why="REG-2920 #252: a recommendation names this PC's own character, his on his ledger, never his names on another board"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
