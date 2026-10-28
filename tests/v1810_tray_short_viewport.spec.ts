@@ -103,3 +103,92 @@ test('v1810 — above the threshold the tray is still THERE', async ({ page }) =
     expect(shown, `${sel} at 1440x900`).not.toBe('absent');
   }
 });
+
+// REG-2862 — THE TAB-SCOPED ORBS. The cases above load the default tab, where the Tools map, the Vault guide and
+// MOVE TASKS are never displayed, so they skipped those three by construction and the inbox only when its queue was
+// empty. These open the tab each orb belongs to. On a short screen every orb in the column must clear the strip; on
+// the vault tab MOVE TASKS must still open, through its toolbar door, because its orb is the one that yields.
+const TAB_ORBS = [
+  ...ORBS,
+  { sel: '.tools-legend-fab', name: 'S2 tools map' },
+  { sel: '.vault-guide-fab',  name: 'S2 vault guide' },
+  { sel: '.inbox-fab',        name: 'S3 inbox' },
+  { sel: '.vault-tasks-fab',  name: 'S4 MOVE TASKS' },
+];
+
+// The tall case is 1440x900 only. Between 481 and ~655px tall the inbox (+170) and MOVE TASKS (+222) orbs sit
+// higher than the S2 orb the 480px threshold was measured for, and where they land against the strip there has not
+// been measured - a geometry this file does not know is left out rather than asserted (REG-2862, NEEDS MEASURE).
+for (const tab of ['vault', 'tools']) {
+  for (const s of SIZES.filter((z) => z.short || z.w >= 1440)) {
+    test(`REG-2862 — no tray orb intersects the tab strip or search on the ${tab} tab at ${s.w}x${s.h}`, async ({ page }) => {
+      await page.setViewportSize({ width: s.w, height: s.h });
+      await page.goto(FILE);
+      await page.waitForSelector('.tabs .tab', { state: 'attached' });
+      await page.evaluate((t) => { (window as any).switchTab(t); }, tab);
+      await page.waitForFunction(() => {
+        const v = getComputedStyle(document.documentElement).getPropertyValue('--dock-h').trim();
+        return v !== '' && v !== '0px';
+      }, null, { timeout: 15000 });
+      await page.waitForTimeout(400);
+      const r = await page.evaluate(({ orbs, victims }) => {
+        const hits: string[] = []; const shown: string[] = [];
+        for (const o of orbs) {
+          const e = document.querySelector(o.sel) as HTMLElement | null;
+          if (!e) continue;
+          const cs = getComputedStyle(e);
+          if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+          const a = e.getBoundingClientRect();
+          if (a.width < 2) continue;
+          shown.push(o.name);
+          for (const v of victims) {
+            const t = document.querySelector(v.sel) as HTMLElement | null;
+            if (!t || getComputedStyle(t).display === 'none') continue;
+            const b = t.getBoundingClientRect();
+            if (b.width < 2 || b.height < 2) continue;
+            const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+            const oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+            if (ox > 0 && oy > 0) hits.push(`${o.name} x ${v.name} (${Math.round(ox)}x${Math.round(oy)}px)`);
+          }
+        }
+        return { hits, shown };
+      }, { orbs: TAB_ORBS, victims: VICTIMS });
+      expect(r.hits, `tray overlaps on the ${tab} tab at ${s.w}x${s.h}`).toEqual([]);
+      if (!s.short) {
+        // above the threshold the tab's own orbs are there - so a green here is not a column that drew nothing
+        const own = tab === 'vault' ? ['S2 vault guide', 'S4 MOVE TASKS'] : ['S2 tools map'];
+        for (const n of own) expect(r.shown, `${n} is not drawn on the ${tab} tab at ${s.w}x${s.h}`).toContain(n);
+      }
+    });
+  }
+}
+
+test('REG-2862 — on a short screen MOVE TASKS opens from the vault toolbar, where its orb has yielded', async ({ page }) => {
+  await page.setViewportSize({ width: 640, height: 400 });
+  await page.goto(FILE);
+  await page.waitForSelector('.tabs .tab', { state: 'attached' });
+  await page.evaluate(() => { (window as any).switchTab('vault'); });
+  await page.waitForTimeout(400);
+  const fab = await page.evaluate(() => getComputedStyle(document.getElementById('vault-tasks-fab')!).display);
+  expect(fab, 'the 📦 orb is still drawn at 640x400 - this case is not testing the short screen').toBe('none');
+  const chip = page.locator('#vault-chip-tasks');
+  await chip.scrollIntoViewIfNeeded({ timeout: 15000 });
+  await expect(chip).toBeVisible();
+  await chip.click({ timeout: 10000 });
+  const open = await page.evaluate(() => !(document.getElementById('vault-tasks') as HTMLElement).hidden);
+  expect(open, 'the toolbar door did not open MOVE TASKS').toBe(true);
+});
+
+test('REG-2862 — on an ordinary screen the toolbar door stays hidden and the 📦 orb is the door', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(FILE);
+  await page.waitForSelector('.tabs .tab', { state: 'attached' });
+  await page.evaluate(() => { (window as any).switchTab('vault'); });
+  await page.waitForTimeout(400);
+  const d = await page.evaluate(() => ({
+    chip: getComputedStyle(document.getElementById('vault-chip-tasks')!).display,
+    fab: getComputedStyle(document.getElementById('vault-tasks-fab')!).display,
+  }));
+  expect(d.chip).toBe('none');
+  expect(d.fab).not.toBe('none');
+});
