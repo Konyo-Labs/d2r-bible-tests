@@ -42040,7 +42040,7 @@ def _vault_evidence_for(name, _read=None):
             reel = (sess if sess.startswith("reel_") else "reel_" + sess) if sess else None
             row = {"reel": reel, "frame": w.get("frame") or None,
                    "lane": w.get("lane") or r.get("lane"), "conf": w.get("conf")}
-            for k in ("witness", "quality", "crop", "cropWhy", "cell", "saw", "hit", "ts", "sockets", "eth"):
+            for k in ("witness", "quality", "crop", "cropWhy", "cropFrom", "cell", "saw", "hit", "ts", "sockets", "eth"):   # REG-2915
                 if w.get(k) is not None:
                     row[k] = w.get(k)
             sightings.append(row)

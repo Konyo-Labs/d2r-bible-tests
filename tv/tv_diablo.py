@@ -7394,12 +7394,14 @@ def _oneshot_inner(ap, model, timeout=90, prompt=None, raw_json=False):
 # with nothing; the vault side recorded only a timestamp, which makes its seal permanent however much
 # the reader improves. That is the same "a stale verdict made permanent" defect v1830 fixed on the
 # other lane, still live on this one. BUMP THIS WHENEVER VAULT_READ_PROMPT CHANGES.
-VAULT_PROMPT_VER = "vp3554"   # v3554 — #146 3b: each item's point ("xy") is asked; bump whenever VAULT_READ_PROMPT changes
+VAULT_PROMPT_VER = "vp-reg2915"   # REG-2915 (#158.7) — each tooltip-read item's tooltip box ("tip") is asked; bump whenever VAULT_READ_PROMPT changes
 #: v3554 — HIS RULING (2026-10-01, "thats even better"): points are asked FROM NOW ON, no re-read of old footage. vp3554
 #: only ADDED each item's point; the name, kind, count, sockets, eth, quality and throw-out are asked exactly as vp3368
 #: asked them. So a vp3368 seal still stands (control_app._vault_still_sealed) and its rows still count as this prompt's
 #: (the sockets/eth/quality doctor row). A prompt that changes the QUESTION lists nothing here. [[stale-reading]]
-VAULT_PROMPT_ANSWERS_SAME_AS = ("vp3368",)
+#: REG-2915 (#158.7) - vp-reg2915 only ADDED the tooltip box ("tip"): every other key is asked exactly as vp3554 asked it, and
+#: vp3554 asked the same as vp3368. Its seals stand; the box (and its crop) comes from reads made from now on. [[stale-reading]]
+VAULT_PROMPT_ANSWERS_SAME_AS = ("vp3554", "vp3368")
 
 VAULT_READ_PROMPT = (
     # ── v2016 — THE VAULT READER WAS NEVER TOLD ABOUT THE HOVER TOOLTIP ──────────────────────
@@ -7457,6 +7459,7 @@ VAULT_READ_PROMPT = (
     'Each item = {{"name":"<exact text you can read>","kind":"rune|gem|material|item",'
     '"count":<int or null>,"sockets":<int or null>,"eth":<true|false|null>,'
     '"quality":"white|blue|gold|unique|set|null","xy":[<x>,<y>] or null,'
+    '"tip":[<left>,<top>,<right>,<bottom>] or null,'
     '"throwOut":false,"throwWhy":""}}\n'
     'sockets = how many socket holes you can SEE, or null if you cannot tell. 0 means you can see '
     'it has none. eth = true only if the tooltip or label says Ethereal, false only if you can see '
@@ -7469,6 +7472,11 @@ VAULT_READ_PROMPT = (
     'xy = the [x, y] pixel position IN THIS IMAGE of the ITEM ITSELF: the centre of its icon in the grid, or on the '
     'equipment doll - NEVER the tooltip box. null when you cannot point to it: a missing point costs nothing, a wrong '
     'one files the item in the wrong cell.\n'
+    # REG-2915 (#158.7) - THE TOOLTIP'S OWN BOX, so the picture that NAMED the item can be kept beside it. Frame differencing
+    # cannot find it on his reels (the world animates behind the panel: change boxes cover 53-91% of the frame), and this
+    # read is the one that already saw it. The box is evidence for him to look at, never a second witness.
+    'tip = the [left, top, right, bottom] pixel box IN THIS IMAGE of the hover tooltip you read this item\'s name from, '
+    'the whole tooltip and nothing else. null when the name did not come from a tooltip, or you cannot box it.\n'
     # v2017 — NEVER COMPLETE A PARTIAL NAME. READ_PROMPT has said this since the chronicle lane
     # existed ("Never invent from icons alone. Never complete partial names."). The vault prompt
     # covered the first half in its own words — "an icon you recognise but whose label you cannot

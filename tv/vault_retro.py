@@ -448,6 +448,19 @@ def _xy_of(v):
     return None
 
 
+def _box_of(v):
+    """REG-2915 (#158.7) - the reader's tooltip box for one item: [left, top, right, bottom] of non-negative numbers with
+    right > left and bottom > top, or None. A malformed box is None (no box), never a guessed one."""
+    try:
+        if isinstance(v, (list, tuple)) and len(v) == 4:
+            b = [float(x) for x in v]
+            if all(x == x and x >= 0 for x in b) and b[2] > b[0] and b[3] > b[1]:
+                return b
+    except (TypeError, ValueError):
+        pass
+    return None
+
+
 def place_on_grid(xy, xy_map, lane):
     """v3554 (#146 3b) — WHERE a vault look saw the item. -> {"point": [x, y] | None, "cell": str | None, "why": str | None}
 
@@ -543,6 +556,8 @@ def normalize_item(raw, surface, lane_default, page_conf):
         "quality": _quality_of(raw.get("quality")),
         # v3554 (#146 3b) — where the reader saw it, in ITS picture; place_on_grid turns it into a frame point and a cell
         "xy": _xy_of(raw.get("xy")),
+        # REG-2915 (#158.7) - the box of the tooltip this name was read from, in the reader's picture; the crop is cut from it
+        "tip": _box_of(raw.get("tip")),
         # ⚠⚠ v3368 — WHICH PROMPT PRODUCED THIS ROW. Without it a null socket count from the OLD
         # prompt (which never asked) is indistinguishable from a null the NEW one genuinely could
         # not read, and the heart row that watches this cannot name its own population.
@@ -835,6 +850,61 @@ CROP_MAX_BYTES = 60 * 1024        # a tooltip crop that big is a mis-derived rec
 CROP_BUDGET = 600                 # a hard ceiling on how many he accumulates; oldest are not touched
 
 
+def _crop_room(out_root):
+    """The crop store's budget, asked before a crop is written. -> why it is full | None"""
+    try:
+        os.makedirs(out_root, exist_ok=True)
+        n = len([f for f in os.listdir(out_root) if f.endswith(".jpg")])
+        if n >= CROP_BUDGET:
+            return ("the crop store already holds %d — at the %d ceiling, so this one was "
+                    "not written (say it, never silently skip)" % (n, CROP_BUDGET))
+    except Exception as e:
+        return "could not prepare the crop store: %s" % str(e)[:70]
+    return None
+
+
+def _crop_kept(dest):
+    """The byte cap, the backstop after a crop is written. -> why it was discarded | None"""
+    try:
+        if os.path.getsize(dest) > CROP_MAX_BYTES:
+            os.remove(dest)
+            return ("the crop came out larger than %d bytes, so the rectangle is wrong — "
+                    "discarded rather than filed beside an item" % CROP_MAX_BYTES)
+    except Exception:
+        pass
+    return None
+
+
+def _crop_from_box(reel_dir, frame, box, xy_map, out_root):
+    """REG-2915 (#158.7) - THE CROP CUT FROM THE BOX THE READ RETURNED. -> (relpath | None, why)
+
+    Frame differencing cannot find a tooltip on his reels - the D2R world animates behind the panel, so the change box
+    covers 53-91% of the frame and the byte cap rightly refuses it. The read that NAMED the item saw the tooltip; its box,
+    in the picture it saw, is placed on the frame through the read's own picture map (xy_map, the one its points use),
+    padded and kept within the frame by tooltip_crop.rect_from_read_box. A box that cannot be placed, or that covers
+    too much of the frame to be a tooltip, is refused with why - never a full-frame crop. The byte cap stays the
+    backstop. Like every crop, it is evidence for him to look at, never a witness."""
+    try:
+        import tooltip_crop as _tc
+    except Exception as e:
+        return None, "tooltip_crop did not import: %s" % str(e)[:70]
+    rect, why = _tc.rect_from_read_box(box, xy_map)
+    if not rect:
+        return None, why
+    full = _crop_room(out_root)
+    if full:
+        return None, full
+    dest = os.path.join(out_root, "%s__%s__tip_%d_%d.jpg" % (os.path.basename(reel_dir), os.path.splitext(frame)[0],
+                                                            rect[0], rect[1]))
+    ok, w = _tc.crop_to(os.path.join(reel_dir, frame), rect, dest, max_side=_tc.TIP_MAX_SIDE)
+    if not ok:
+        return None, w
+    big = _crop_kept(dest)
+    if big:
+        return None, big
+    return os.path.join(CROP_DIR, os.path.basename(dest)), None
+
+
 def _crop_for(reel_dir, frame, prev_frame, out_root):
     """Derive and store the tooltip rectangle for one frame. -> (relpath|None, why)
 
@@ -853,25 +923,16 @@ def _crop_for(reel_dir, frame, prev_frame, out_root):
     rect, why = _tc.changed_rect(a, b)
     if not rect:
         return None, why
-    try:
-        os.makedirs(out_root, exist_ok=True)
-        n = len([f for f in os.listdir(out_root) if f.endswith(".jpg")])
-        if n >= CROP_BUDGET:
-            return None, ("the crop store already holds %d — at the %d ceiling, so this one was "
-                          "not written (say it, never silently skip)" % (n, CROP_BUDGET))
-    except Exception as e:
-        return None, "could not prepare the crop store: %s" % str(e)[:70]
+    full = _crop_room(out_root)
+    if full:
+        return None, full
     dest = os.path.join(out_root, "%s__%s" % (os.path.basename(reel_dir), frame))
     ok, w = _tc.crop_to(b, rect, dest)
     if not ok:
         return None, w
-    try:
-        if os.path.getsize(dest) > CROP_MAX_BYTES:
-            os.remove(dest)
-            return None, ("the crop came out larger than %d bytes, so the rectangle is wrong — "
-                          "discarded rather than filed beside an item" % CROP_MAX_BYTES)
-    except Exception:
-        pass
+    big = _crop_kept(dest)
+    if big:
+        return None, big
     return os.path.join(CROP_DIR, os.path.basename(dest)), None
 
 
@@ -1001,6 +1062,8 @@ def _witness_rows(evidence):
         for _vf in ("sockets", "eth", "quality", "promptVer", "point", "cell", "cellWhy", "holder"):   # v3767 - who holds it, and where
             if e.get(_vf) is not None:
                 r[_vf] = e.get(_vf)
+        if e.get("cropFrom") is not None:   # REG-2915 - how the crop was cut (the read's tooltip box, or the frame difference)
+            r["cropFrom"] = e.get("cropFrom")
         if e.get("laneSaid") is not None:   # REG-1911 - what the reader called it, when it was filed by its point
             r["laneSaid"] = e.get("laneSaid")
         w = e.get("witness")
@@ -2097,7 +2160,9 @@ def sweep(hist_dirs, sig=None, reader=None, classify=None, limit=None, resolve=N
                     _prev_page = name
                     continue
                 path = os.path.join(reel_dir, name)
-                _crop_rel, _crop_why = _crop_for(reel_dir, name, _prev_page, _crop_root)
+                # REG-2915 (#158.7) - the frame-difference crop is today's crop for an item the read gave no tooltip box; it
+                # is asked once per frame, and only when such an item arrives
+                _diff_prev, _diff_crop = _prev_page, []
                 _prev_page = name
                 resp = reader(path, surface)
                 _read_frames.add(name)   # #130 — the reader was called (paid); never re-read on a resume
@@ -2128,6 +2193,19 @@ def sweep(hist_dirs, sig=None, reader=None, classify=None, limit=None, resolve=N
                         continue
                     _lane_said = item["lane"]
                     item["lane"], _pl = lane_by_point(item["lane"], item.get("xy"), resp.get("xy"))   # v3554 · REG-1911
+                    # REG-2915 (#158.7) - THE CROP IS CUT FROM THE TOOLTIP BOX THE READ RETURNED. A read with no box behaves as
+                    # before (the frame-difference crop, or why there is none) and says the box is UNKNOWN; never a
+                    # full-frame crop.
+                    if item.get("tip"):
+                        _crop_rel, _crop_why = _crop_from_box(reel_dir, name, item["tip"], resp.get("xy"), _crop_root)
+                        _crop_from = "tooltip box" if _crop_rel else None
+                    else:
+                        if not _diff_crop:
+                            _diff_crop.append(_crop_for(reel_dir, name, _diff_prev, _crop_root))
+                        _crop_rel, _crop_why = _diff_crop[0]
+                        _crop_from = "frame difference" if _crop_rel else None
+                        if not _crop_rel:
+                            _crop_why = "the read gave no tooltip box (UNKNOWN); " + str(_crop_why or "no reason")
                     sight = {"session": sid, "witness": _wkey, "frame": name, "lane": item["lane"],
                              "conf": item["conf"], "count": item["count"], "kind": item["kind"],
                              "ts": ts,
@@ -2142,6 +2220,7 @@ def sweep(hist_dirs, sig=None, reader=None, classify=None, limit=None, resolve=N
                              # "no tooltip on this frame" and "the crop store is full" are
                              # different answers and only one of them is about his footage.
                              "crop": _crop_rel, "cropWhy": None if _crop_rel else _crop_why,
+                             "cropFrom": _crop_from,   # REG-2915 - which way the picture was cut
                              # v3554 (#146 3b) — WHERE THIS LOOK SAW IT: the frame point and its cell, or why
                              # there is none. In the literal, so the field census reads them like every other key.
                              "point": _pl["point"], "cell": _pl["cell"], "cellWhy": _pl["why"],

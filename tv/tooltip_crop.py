@@ -88,15 +88,68 @@ def changed_rect(path_a, path_b, thresh=18):
     return rect, None
 
 
-def crop_to(path, rect, dest):
-    """Write the crop. -> (ok, why)"""
+def crop_to(path, rect, dest, max_side=None):
+    """Write the crop. -> (ok, why). max_side (REG-2915): scale the crop down to it first - a tooltip crop is for his eyes,
+    and a tall one at full resolution would cross the byte cap that exists to refuse a whole frame."""
     try:
         from PIL import Image
         im = Image.open(path)
-        im.crop(rect).save(dest)
+        c = im.crop(rect)
+        if max_side and max(c.size) > int(max_side):
+            c.thumbnail((int(max_side), int(max_side)))
+        c.save(dest)
         return True, None
     except Exception as e:
         return False, "could not write the crop: %s" % str(e)[:80]
+
+
+#: REG-2915 (#158.7) - a box from the vision read is a model's estimate: a margin of this fraction of the frame on each side
+#: keeps the tooltip's border. MEASURED on the 31 crops his Mac kept (2026-10-28, read-only): 242-864 px wide, 137-779 tall,
+#: 18-61 KB - a tooltip at its own size runs right up to the 60 KB cap. Scaled to a 640 px longest side they re-encode to at
+#: most 61,224 bytes (216 under the cap); to 512 px, at most 45,122 (0 of 31 over). So a read-box crop is cut at 512.
+TIP_PAD_FRAC = 0.02
+TIP_MAX_SIDE = 512
+
+
+def rect_from_read_box(box, xy_map):
+    """REG-2915 (#158.7) - the frame rectangle of the tooltip box a vision read returned. -> (rect, why)
+
+    `box` is [left, top, right, bottom] in the picture the reader SAW; `xy_map` (tv_diablo._vault_xy_map: space, origin,
+    extent, frame) says how that picture sits in the frame - the same map its item points use. No map is UNKNOWN: the box
+    cannot be placed, and no rectangle is assumed. The box is clipped to the picture, padded by TIP_PAD_FRAC of the frame
+    and kept inside it; a result covering more than MAX_FRAC of the frame is not a tooltip and is refused - never a
+    full-frame crop."""
+    try:
+        x0, y0, x1, y1 = [float(v) for v in box]
+    except Exception:
+        return None, "the read returned no usable tooltip box"
+    if not isinstance(xy_map, dict):
+        return None, ("the read did not record the picture its tooltip box was drawn in, so the box cannot be placed on "
+                      "the frame (UNKNOWN) - no rectangle is assumed")
+    try:
+        sw, sh = [float(v) for v in xy_map["space"]]
+        ox, oy = [float(v) for v in xy_map["origin"]]
+        ew, eh = [float(v) for v in xy_map["extent"]]
+        fw, fh = [float(v) for v in xy_map["frame"]]
+    except Exception:
+        return None, "the read's picture map is malformed, so its tooltip box cannot be placed on the frame (UNKNOWN)"
+    if min(sw, sh, ew, eh, fw, fh) <= 0:
+        return None, "the read's picture map has no size, so its tooltip box cannot be placed on the frame (UNKNOWN)"
+    x0, y0, x1, y1 = max(0.0, x0), max(0.0, y0), min(sw, x1), min(sh, y1)
+    if x1 <= x0 or y1 <= y0:
+        return None, "the read's tooltip box lies outside the picture it saw"
+    px, py = TIP_PAD_FRAC * fw, TIP_PAD_FRAC * fh
+    fx0 = max(0, int(ox + x0 * ew / sw - px))
+    fy0 = max(0, int(oy + y0 * eh / sh - py))
+    fx1 = min(int(fw), int(round(ox + x1 * ew / sw + px)))
+    fy1 = min(int(fh), int(round(oy + y1 * eh / sh + py)))
+    if fx1 <= fx0 or fy1 <= fy0:
+        return None, "the read's tooltip box lies outside the frame"
+    frac = float((fx1 - fx0) * (fy1 - fy0)) / (fw * fh)
+    if frac > MAX_FRAC:
+        return None, ("the read's tooltip box covers %d%% of the frame (the ceiling is %d%%) - that is not a tooltip, and "
+                      "a crop that size would be the frame itself" % (int(frac * 100), int(MAX_FRAC * 100)))
+    return (fx0, fy0, fx1, fy1), None
 
 
 def bounds_are_reachable():
