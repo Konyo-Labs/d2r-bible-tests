@@ -13165,6 +13165,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_listed_copy_wears_its_mark_where_it_draws.py")], 300,
          needs_app=False,
          why='REG-2878 a listed copy wears a small mark on its MOVE row, in FIND, on its window tile and its shelf-card cell, and still counts'),
+    Gate("test_a_d2jsp_post_says_wts_and_back_is_a_cancel",
+         [sys.executable, os.path.join(HERE, "test_a_d2jsp_post_says_wts_and_back_is_a_cancel.py")], 300,
+         needs_app=False,
+         why='REG-2874 a d2jsp post says WTS and Back or Escape on a draft is a cancel, never a post result'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

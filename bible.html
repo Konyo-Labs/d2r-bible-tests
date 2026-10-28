@@ -12507,7 +12507,7 @@ function d2jspDraft(name, base, mods, copies, fg) {
   var nm = String(name || '').trim();
   if (!nm) return { ok: false, reason: 'no item' };
   var b = String(base || '').trim();
-  var subject = 'Selling ' + nm + (b ? (' ' + b) : '');
+  var subject = 'WTS ' + nm + (b ? (' ' + b) : '');   /* REG-2874 (#83, his ask 5) - WTS is the d2jsp norm; the subject said Selling */
   var lines = [subject];
   String(mods || '').split('\n').forEach(function(row){
     var t = d2jspPostLine(row);
@@ -12546,7 +12546,7 @@ function d2jspShopDraft(items) {
   }
   var parts = sale.concat(gone);
   var n = sale.length;
-  var subject = 'Selling ' + n + (n === 1 ? ' item' : ' items');
+  var subject = 'WTS ' + n + (n === 1 ? ' item' : ' items');   /* REG-2874 */
   var body = parts.map(function(block){ return block.body; }).join('\n\n');
   return { ok: true, subject: subject, body: body, forum: d2jspBoard(), shop: true, blocks: parts.map(pack) };
 }
@@ -13923,9 +13923,7 @@ function d2jspBatchHtml(view) {
       ev.preventDefault();
       var midSend = posting;
       closeDraft();
-      say(midSend
-        ? 'The panel was closed. The board has not confirmed a topic.'
-        : 'The draft was closed. Nothing was posted.');
+      say(closedSay(midSend));
       return;
     }
     var soldBtn = t.closest && t.closest('[data-d2jsp-sold]');
@@ -14377,6 +14375,12 @@ function d2jspBatchHtml(view) {
       + link
       + '<div class="d2jsp-acts"><button type="button" class="vault-btn" data-d2jsp-draft-close>Back</button></div></div>';
   }
+  /* REG-2874 (#83, GrokBot 6476487696) - BACK OR ESCAPE ON A DRAFT IS A CANCEL. Both said "The draft was closed. Nothing was
+     posted.", which reads like a post result; GrokBot read it as one. One sentence for both doors. Closed while a send runs,
+     it says the board has not confirmed a topic, as it did. */
+  function closedSay(midSend){
+    return midSend ? 'The panel was closed. The board has not confirmed a topic.' : 'Cancelled. You closed the draft.';
+  }
   function closeDraft(){
     var host = document.getElementById('d2jsp-draft-host');
     if (host){ host.hidden = true; host.innerHTML = ''; }
@@ -14406,9 +14410,7 @@ function d2jspBatchHtml(view) {
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     var midSend = posting;
     closeDraft();
-    say(midSend
-      ? 'The panel was closed. The board has not confirmed a topic.'
-      : 'The draft was closed. Nothing was posted.');
+    say(closedSay(midSend));
   }, true);
   /* ⟦D2JSP PLANNER ESC END⟧ */
   function d2jspLamp(signIn){

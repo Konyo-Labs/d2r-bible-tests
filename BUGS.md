@@ -2838,6 +2838,16 @@ His tick is kept on the locker's entry (pagesMade). Saved cells stay where they 
 After the fix: 0 of 280 tasks have no cell, and a second batch moved no saved target. Law
 `tv/test_a_full_locker_spills_to_its_next_mule.py` (whole page in node, 8 red-proofs RED). Three red-proofs were re-aimed
 (REG-2787, REG-2802, and the Chrome law test_vault_l1_a_hand_add_routes_by_type [21], which CI proves).
+### REG-2874 - THE D2JSP SUBJECT SAID SELLING, AND BACK ON A DRAFT READ LIKE A POST RESULT (#83, his ask 5, GrokBot 6476487696)
+His ask, through GrokBot: "Wording: the subject reads 'Selling ...'. Earlier drafts used 'WTS ...', which is the d2jsp
+norm." GrokBot also saw: "Closing the dialog with Back changed the status to 'The draft was closed. Nothing was posted.',
+which reads like a post result." Measured in the room's own code in node: d2jspDraft gave "Selling Grief Phase Blade" and the
+list "Selling 2 items", and Back and Escape each kept a copy of "The draft was closed. Nothing was posted." Now one item's
+subject is "WTS <name> <base>" and the list's is "WTS <n> items". The console already accepted WTS as a priced subject
+(_priced). Back and Escape both say "Cancelled. You closed the draft." through one function (closedSay); closed mid-send it
+still says the board has not confirmed a topic. Law `tv/test_a_d2jsp_post_says_wts_and_back_is_a_cancel.py` (node, 4
+red-proofs RED). The Chrome law test_the_d2jsp_desk_reads_a_price_before_it_posts re-aimed its 11 page-draft subjects to WTS
+(CI proves it).
 
 ### REG-2787 - A SAVED MOVE TARGET IGNORED HIS HAND AND OUTLIVED ITS DELETED MULE (#154, his words 2026-10-28 ~19:05)
 His words: "also obivously needs to remember and always organize the items the same. meaning if i restart my console those
