@@ -13193,6 +13193,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_d2jsp_card_counts_traded_copies_from_the_vault.py")], 300,
          needs_app=False,
          why="REG-2883 (#83) - the D2JSP card counts traded copies from the vault's traded rows (1 of 3 traded · 2 listed), the name reads Traded only when no copy remains and keeps its card, the per-name mark is written only for a name the vault does not hold, an old mark on a held name is a question, and the traded rows survive a rebuild and leave with an undo"),
+    Gate("test_a_find_row_opens_every_mule_page_its_copies_sit_on",
+         [sys.executable, os.path.join(HERE, "test_a_find_row_opens_every_mule_page_its_copies_sit_on.py")], 300,
+         needs_app=False,
+         why="REG-2884 (#137) - a FIND row names a hand add's target by its mule page and gives one Mule N button per page its copies sit on, each opening that locker at that page with the copy drawn; a shared stash cell names its page and gets no mule button"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

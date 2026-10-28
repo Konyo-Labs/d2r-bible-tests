@@ -452,8 +452,8 @@ RED_PROOF = [
     {
         "why": "The row has to ask that nav. A null nav leaves the page in the cell and no button.",
         "file": "bible.html",
-        "find": "      var _fnav = (w && w.cell && mid) ? _findMuleNav(w.cell) : null;\n",
-        "replace": "      var _fnav = null;\n",
+        "find": "      var _fnavs = (w && mid) ? _findMuleNavs((w.cells && w.cells.length > 1) ? w.cells : [w.cell]) : [];   /* REG-2884 every page */\n",
+        "replace": "      var _fnavs = [];\n",
         "matches": 1,
     },
     {
