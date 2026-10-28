@@ -13185,6 +13185,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_mark_traded_goes_through_the_vault_trade_door.py")], 300,
          needs_app=False,
          why="REG-2881 (#83) - Mark traded is the vault's trade-out through window._vaultTradeEvent alone: the listed copy leaves through the removal journal with the toolbar Undo armed before it moved, a refusal says the count is unchanged, and no second trade-out call is left in the D2JSP room"),
+    Gate("test_a_confirmed_d2jsp_post_lists_its_copies_on_the_vault",
+         [sys.executable, os.path.join(HERE, "test_a_confirmed_d2jsp_post_lists_its_copies_on_the_vault.py")], 300,
+         needs_app=False,
+         why="REG-2880 (#83) - a confirmed d2jsp post (one item or the list) lists as many copies as it offers through window._vaultTradeEvent, once each, with its topic; a maybe, a refusal or a lost answer lists nothing; a SOLD block and a planner pick list nothing; a refused listing is said; the card's Listed comes from the vault's slot"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

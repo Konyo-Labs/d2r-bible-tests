@@ -13463,29 +13463,35 @@ function d2jspBatchHtml(view) {
     }).join('');
     return tradeChip(name) + head + '<details class="d2jsp-log"><summary>Attempts (' + rows.length + ')</summary><ol>' + items + '</ol></details>';
   }
-  /* REG-2873 (#83, his ask 4) - THE TRADE STATE: draft -> listed (live) -> traded, or not traded yet. Read off the post log
-     and the traded mark, never stored a second time: a confirmed post on any path is listed, an answer that may be up is a
-     maybe, and Mark traded is traded. The Vault reads it through window._d2jspTradeState for its small listed mark; a listed
-     copy still counts in its spot. -> {state: draft|maybe|listed|traded, board, topic} */
+  /* REG-2873 (#83, his ask 4) - THE TRADE STATE: draft -> listed (live) -> traded, or not traded yet.
+     REG-2880 - "listed" is the VAULT'S word now: a copy record's trade slot (REG-2877), written only by a confirmed post
+     through window._vaultTradeEvent. The post log keeps the attempts; it no longer decides listed. An answer that may be up
+     stays a question to him ("Maybe listed · check board N"), never a listing. A confirmed post with no listed copy says
+     which: the vault does not hold it (a planner pick), or the vault refused the listing (the status line carries the
+     door's why). Mark traded is traded. -> {state: draft|maybe|posted|listed|traded, board, topic, inVault} */
   function tradeState(name){
     var rows = logOf(name), conf = null, maybe = null;
     for (var i = rows.length - 1; i >= 0; i--) {
       if (!conf && rows[i].kind === 'confirmed') conf = rows[i];
       if (!maybe && rows[i].kind === 'maybe') maybe = rows[i];
     }
-    var on = conf || maybe;
-    var st = soldOf(name) ? 'traded' : (conf ? 'listed' : (maybe ? 'maybe' : 'draft'));
-    return { state: st, board: on ? on.board : d2jspBoard(), topic: (conf && logLink(conf.topic)) ? conf.topic : '' };
+    var slot = [];
+    try { slot = (typeof window._vaultTradeOf === 'function') ? window._vaultTradeOf(name).filter(function(x){ return x.state === 'listed'; }) : []; } catch (eSl) { slot = []; }
+    var st = soldOf(name) ? 'traded' : (slot.length ? 'listed' : (conf ? 'posted' : (maybe ? 'maybe' : 'draft')));
+    var inVault = st === 'posted' && (tradeNames() || []).indexOf(name) >= 0;   /* read the filings only when it is said (a long list paints every card) */
+    var post = slot.length ? (slot[0].post || '') : (conf ? (conf.topic || '') : '');
+    var on = slot.length ? { board: d2jspTopicBoard(post) || d2jspBoard() } : (conf || maybe);
+    return { state: st, board: on ? on.board : d2jspBoard(), topic: logLink(post) ? post : '', inVault: inVault };
   }
   function tradeChip(name){
     var t = tradeState(name);
     var say = t.state === 'traded' ? 'Traded'
       : t.state === 'listed' ? ('Listed on board ' + t.board + ' · not traded yet')
       : t.state === 'maybe' ? ('Maybe listed · check board ' + t.board)
+      : t.state === 'posted' ? ('Posted on board ' + t.board + (t.inVault ? ' · no copy is listed in the vault' : ' · not in the vault'))
       : 'Draft · not posted';
     return '<div class="d2jsp-state" data-d2jsp-state="' + esc(t.state) + '">' + esc(say) + '</div>';
   }
-  try { window._d2jspTradeState = function(n){ return tradeState(String(n || '')); }; } catch (eTs) {}
   /* REG-2881 - MARK TRADED IS THE VAULT'S TRADE-OUT, THROUGH THE ONE DOOR (window._vaultTradeEvent). REG-2873 took the copy
      out here with the vault's copy door or its removal door: one fewer copy dropped the LAST copy's record, not the traded
      one, and the copy door journals nothing. The door takes the listed copy (else the last), journals it with its own
@@ -13496,7 +13502,33 @@ function d2jspBatchHtml(view) {
     if (!r) return 'the vault count is unchanged: the vault door is not on this page';
     return r.ok ? r.why : ('the vault count is unchanged: ' + r.why);
   }
-  try { window._d2jspMarkTraded = markTraded; } catch (eLv) {}   /* the whole-page law's handle */
+  /* REG-2880 - A CONFIRMED POST LISTS ITS COPIES ON THE VAULT, THROUGH THE SAME DOOR. Only a confirmed answer (the board
+     showed the topic) lists; a maybe stays a question to him and lists nothing. As many copies as the post offers
+     (copiesOf) are listed and none twice: a re-post or an update tops up only. A traded item, or a name the vault does
+     not hold (a planner pick), lists nothing. A refusal from the door is said, never swallowed.
+     -> {listed: copies listed now, refused: ["name: the door's why"]} */
+  function listOnVault(names, topic){
+    var out = { listed: 0, refused: [] }, held = tradeNames() || [];
+    (names || []).forEach(function(nm){
+      if (!nm || soldOf(nm) || held.indexOf(nm) < 0) return;
+      if (typeof window._vaultTradeEvent !== 'function') { out.refused.push(nm + ': the vault door is not on this page'); return; }
+      var have = 0;
+      try { have = (typeof window._vaultTradeOf === 'function') ? window._vaultTradeOf(nm).filter(function(x){ return x.state === 'listed'; }).length : 0; } catch (eH) { have = 0; }
+      for (var want = copiesOf(nm); have < want; have++) {
+        var r = null;
+        try { r = window._vaultTradeEvent({ kind: 'listed', name: nm, post: topic || null }); } catch (eL) { r = { ok: false, why: String((eL && eL.message) || eL).slice(0, 80) }; }
+        if (!r || !r.ok) { out.refused.push(nm + ': ' + ((r && r.why) || 'the vault door did not answer')); break; }
+        out.listed++;
+      }
+    });
+    if (out.listed) paintLog(names);
+    return out;
+  }
+  function listedSay(lv){
+    return (lv.listed ? (' · ' + lv.listed + (lv.listed === 1 ? ' copy' : ' copies') + ' marked listed in the vault') : '')
+      + (lv.refused.length ? (' · ⚠ the vault did not mark it listed - ' + lv.refused.join('; ')) : '');
+  }
+  try { window._d2jspListOnVault = listOnVault; window._d2jspMarkTraded = markTraded; } catch (eLv) {}   /* the whole-page law's handles */
   function paintLog(names){
     var cards = document.querySelectorAll('#d2jsp-list .d2jsp-card');
     for (var i = 0; i < cards.length; i++) {
@@ -14128,7 +14160,7 @@ function d2jspBatchHtml(view) {
         var w = answerWords(got.code, got.j, draft.forum, false);
         logAdd([draft.name || post], d2jspLogEntry(w, got.j, draft.forum, false));   /* REG-2872 */
         if (w.kind === 'confirmed') {
-          say(w.say);
+          say(w.say + listedSay(listOnVault([draft.name || post], w.topic)));   /* REG-2880 confirmed only */
           showReceipt('confirmed', w.text, w.topic);
           return;
         }
@@ -14633,7 +14665,7 @@ function d2jspBatchHtml(view) {
       logAdd(listNames(draft), d2jspLogEntry(w, got.j, draft.forum, true));   /* REG-2872 */
       if (w.kind === 'confirmed') {
         if (draft.shop && w.topic) writeTopic(w.topic);
-        say(w.say);
+        say(w.say + listedSay(listOnVault(listNames(draft), w.topic)));   /* REG-2880 confirmed only; a SOLD block lists nothing */
         showReceipt('confirmed', w.text, w.topic);
         return;
       }

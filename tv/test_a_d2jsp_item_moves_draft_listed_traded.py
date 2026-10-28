@@ -18,10 +18,12 @@ block rides the list) after it left the vault. Un-marking says the count is not 
 small "listed" mark from the room's state (window._d2jspTradeState), and the copy still counts. The room runs in node with
 stub vault doors, and the Vault's FIND runs on the whole page in node. Never a browser, never d2jsp. RED_PROOF below.
 
-REG-2881 (the wiring, one door): Mark traded is window._vaultTradeEvent's trade-out; the room's own copy-door and
-removal-door calls are retired (law: test_a_mark_traded_goes_through_the_vault_trade_door.py). The Vault's FIND reads the
-copy's own trade slot (REG-2878's law), so the room's FIND mark is gone. This law keeps the item's states on its card,
-Mark traded as one trade-out event, the traded card, and For sale again, with a stub door that records every call.
+REG-2880 / REG-2881 (the wiring, one door): "listed" is now the vault's copy slot, written by a confirmed post through
+window._vaultTradeEvent, and Mark traded is that door's trade-out; the room's own copy-door and removal-door calls, the
+log-based listed state and window._d2jspTradeState are retired. Their laws are test_a_confirmed_d2jsp_post_lists_its_copies_
+on_the_vault.py and test_a_mark_traded_goes_through_the_vault_trade_door.py; the Vault's FIND mark is REG-2878's law. This
+law keeps the item's states on its card, Mark traded as one trade-out event, the traded card, and For sale again, with a
+stub door that records every call.
 """
 from __future__ import annotations
 
@@ -196,13 +198,13 @@ class AD2jspItemMovesDraftListedTraded(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-2873 - Mark traded does not show the item as traded",
      "file": "bible.html",
-     "find": "    var st = soldOf(name) ? 'traded' : (conf ? 'listed' : (maybe ? 'maybe' : 'draft'));\n",
-     "replace": "    var st = (conf ? 'listed' : (maybe ? 'maybe' : 'draft'));\n",
+     "find": "    var st = soldOf(name) ? 'traded' : (slot.length ? 'listed' : (conf ? 'posted' : (maybe ? 'maybe' : 'draft')));\n",
+     "replace": "    var st = (slot.length ? 'listed' : (conf ? 'posted' : (maybe ? 'maybe' : 'draft')));\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-2873 - an answer that may be up reads as a draft",
      "file": "bible.html",
-     "find": "(conf ? 'listed' : (maybe ? 'maybe' : 'draft'))",
-     "replace": "(conf ? 'listed' : 'draft')",
+     "find": "(conf ? 'posted' : (maybe ? 'maybe' : 'draft'))",
+     "replace": "(conf ? 'posted' : 'draft')",
      "matches": 1, "needs": "node"},
     {"why": "REG-2873 - the card shows no trade state",
      "file": "bible.html",
