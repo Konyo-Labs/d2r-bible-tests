@@ -291,10 +291,11 @@ process.stdout.write(JSON.stringify({
         self.assertNotIn("vaultPlannerFile", opener)
         self.assertNotIn("vaultHandAdd", opener)
         self.assertNotIn("d2r_charBuilds", opener)
-        card_at = script.index("function cardHtml(")
-        cards_at = script.index("function currentCards(", card_at)
+        card_at = script.index("  function cardHtml(")
+        # REG-2883 - the window is cardHtml itself (to the next room function), never a size: the per-copy mark and the
+        # doubt's For sale grew it to 2,648 chars, measured, and a 2,400 cap went red on reach
+        cards_at = script.index("\n  function ", card_at + 1)
         card = script[card_at:cards_at]
-        self.assertLess(cards_at - card_at, 2900)   # v3855 C6 drew the min-max ranges in the card (+~400)
         self.assertIn("data-d2jsp-options", card)
         self.assertIn("Opens a draft. Nothing is posted until Post this draft.", card)
         self.assertIn("This filing has no mods recorded.", card)
@@ -457,9 +458,8 @@ window._cbShown = function(){ return { name: 'Grief', base: 'Phase Blade' }; };
             self.skipTest("node is not on this machine")
         pane = _between(self.bible, 'id="tab-d2jsp"', 'id="tab-vault"')
         script = pane.split("<script>", 1)[1].split("</script>", 1)[0]
-        card_at = script.index("function cardHtml(")
-        cards_at = script.index("function currentCards(", card_at)
-        self.assertLess(cards_at - card_at, 2900)   # v3855 C6 drew the min-max ranges in the card (+~400)
+        card_at = script.index("  function cardHtml(")
+        cards_at = script.index("\n  function ", card_at + 1)   # REG-2883 the function, never a size
         self.assertIn("d2jspArt(n)", script[card_at:cards_at])
         draft_fn = self.bible.index("function openDraft(")
         draft_end = self.bible.index("function showReceipt(", draft_fn)

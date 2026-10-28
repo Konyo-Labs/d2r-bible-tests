@@ -24,6 +24,10 @@ log-based listed state and window._d2jspTradeState are retired. Their laws are t
 on_the_vault.py and test_a_mark_traded_goes_through_the_vault_trade_door.py; the Vault's FIND mark is REG-2878's law. This
 law keeps the item's states on its card, Mark traded as one trade-out event, the traded card, and For sale again, with a
 stub door that records every call.
+
+REG-2883 (per copy, one source): traded is the vault's count too (its traded rows), so one copy of three traded reads
+"1 of 3 traded", and a name with no copy left reads "Traded" and keeps its card from the vault. For sale again is now the
+per-name toggle of a planner pick only (test_a_d2jsp_card_counts_traded_copies_from_the_vault.py).
 """
 from __future__ import annotations
 
@@ -86,7 +90,7 @@ var localStorage = { getItem: function(k){ return Object.prototype.hasOwnPropert
 var location = { hostname: '127.0.0.1' };
 var ASSIGN = { 'Grief': 'm1', 'Shako': 'm2', 'Gull': 'm1' };
 var COPIES = { 'Grief': 3, 'Shako': 1, 'Gull': 1 };
-var DOORS = [], SLOTS = {};
+var DOORS = [], SLOTS = {}, TRADED = {};
 function copyCount(n){ return COPIES[n] || 1; }
 // the stub trade door (REG-2880/2881): records every call; a listing is a slot, a trade-out drops one copy (the last leaves)
 var window = { addEventListener: function(){}, LSR: { getItem: function(k){ return k === 'd2r_muleAssign' ? JSON.stringify(ASSIGN) : null; } },
@@ -97,11 +101,13 @@ var window = { addEventListener: function(){}, LSR: { getItem: function(k){ retu
       if (s.length >= copyCount(ev.name)) return { ok: false, why: 'every copy of ' + ev.name + ' is already listed' };
       s.push({ ci: s.length, state: 'listed', post: ev.post || null }); return { ok: true, why: 'copy ' + s.length + ' is listed' };
     }
-    var have = copyCount(ev.name); s.shift();
+    var have = copyCount(ev.name); s.shift(); (TRADED[ev.name] = TRADED[ev.name] || []).push({ at: 'x' });   // REG-2883 the traded row
     if (have > 1) { COPIES[ev.name] = have - 1; return { ok: true, why: 'copy 1 of ' + have + ' left the vault count (↶ Undo in the toolbar puts it back)' }; }
     delete ASSIGN[ev.name]; return { ok: true, why: ev.name + ' left the vault count (↶ Undo in the toolbar puts it back)' };
   },
-  _vaultTradeOf: function(n){ return (SLOTS[n] || []).slice(); } };
+  _vaultTradeOf: function(n){ return (SLOTS[n] || []).slice(); },
+  _vaultTradedOf: function(n){ return (TRADED[n] || []).slice(); },
+  _vaultTradedNames: function(){ return Object.keys(TRADED); } };
 var ANSWER = null;
 function fetch(url){
   if (String(url) === '/api/d2jsp_send') return Promise.resolve({ status: 200, json: function(){ return Promise.resolve(ANSWER); } });
@@ -144,7 +150,7 @@ function state(n){ var m = window._d2jspCardHtml(n).match(/data-d2jsp-state="([^
   out.keptCard = list._html.indexOf('data-d2jsp-item="Shako"') >= 0;
   DOORS.length = 0;
   click({ 'data-d2jsp-sold': 'Shako' }, ['[data-d2jsp-sold]']);
-  out.forSale = { doors: DOORS.slice(), state: state('Shako'), row: JSON.parse(RAW['d2r_d2jsp_log']).Shako.slice(-1)[0] };
+  out.forSale = { doors: DOORS.slice(), state: state('Shako'), status: statusEl.textContent };
   process.stdout.write(JSON.stringify(out));
 })().catch(function(e){ process.stderr.write(String(e && e.stack || e)); process.exit(1); });
 """
@@ -175,31 +181,31 @@ class AD2jspItemMovesDraftListedTraded(unittest.TestCase):
     def test_mark_traded_is_one_trade_out_event(self):
         m = self.o["tradeMany"]
         self.assertEqual(m["doors"], [["trade", "trade-out", "Grief"]], m["doors"])
-        self.assertEqual(m["state"], "traded")
+        self.assertEqual(m["state"], "part-traded", "REG-2883: one copy of three traded is not the whole name: %r" % m["state"])
         self.assertEqual(m["row"]["kind"], "traded", m["row"])
         self.assertIn("copy 1 of 3 left the vault count (↶ Undo in the toolbar puts it back)", m["row"]["text"])
-        self.assertIn("is marked traded; copy 1 of 3 left the vault count", m["status"])
-        self.assertIn('data-d2jsp-state="traded">Traded<', m["card"])
-        self.assertIn(">For sale</button>", m["card"])
+        self.assertIn("One copy of Grief is marked traded; copy 1 of 3 left the vault count", m["status"])
+        self.assertIn('data-d2jsp-state="part-traded">1 of 3 traded · 2 listed on board 268<', m["card"])
+        self.assertIn(">Mark one traded</button>", m["card"])
         one = self.o["tradeOne"]
         self.assertEqual(one["doors"], [["trade", "trade-out", "Shako"]], one["doors"])
         self.assertNotIn("Shako", one["assign"], "PREMISE: the stub door did not take it out")
         self.assertIn("Shako left the vault count", one["row"]["text"])
         self.assertTrue(self.o["keptCard"], "a traded item that left the vault lost its card (and its SOLD block)")
 
-    def test_for_sale_again_moves_no_count(self):
+    def test_a_name_with_no_copy_left_is_traded_and_its_button_changes_nothing(self):
+        """REG-2883: the way back from a trade-out is the toolbar Undo the door armed, never this button"""
         f = self.o["forSale"]
-        self.assertEqual(f["doors"], [], "un-marking touched the vault: %r" % f["doors"])
-        self.assertNotEqual(f["state"], "traded")
-        self.assertEqual(f["row"]["kind"], "for-sale")
-        self.assertIn("not changed back", f["row"]["text"])
+        self.assertEqual(f["doors"], [], "a click on a name with no copy left touched the vault: %r" % f["doors"])
+        self.assertEqual(f["state"], "traded")
+        self.assertIn("Every copy of Shako is already traded. Nothing changed.", f["status"])
 
 
 RED_PROOF = [
     {"why": "REG-2873 - Mark traded does not show the item as traded",
      "file": "bible.html",
-     "find": "    var st = soldOf(name) ? 'traded' : (slot.length ? 'listed' : (conf ? 'posted' : (maybe ? 'maybe' : 'draft')));\n",
-     "replace": "    var st = (slot.length ? 'listed' : (conf ? 'posted' : (maybe ? 'maybe' : 'draft')));\n",
+     "find": "    var st = v.all ? 'traded' : v.pick ? 'marked'",
+     "replace": "    var st = v.pick ? 'marked'",
      "matches": 1, "needs": "node"},
     {"why": "REG-2873 - an answer that may be up reads as a draft",
      "file": "bible.html",
@@ -213,13 +219,13 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2873 - Mark traded leaves the vault count alone (a traded copy waits as a where-is-it)",
      "file": "bible.html",
-     "find": "      var how = sm[sn] ? markTraded(sn) : ",
-     "replace": "      var how = sm[sn] ? 'x' : ",
+     "find": "        how = markTraded(sn);\n",
+     "replace": "        how = 'x';\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-2873 - a traded item that left the vault loses its card",
      "file": "bible.html",
-     "find": "    Object.keys(readMap('d2r_d2jsp_sold')).forEach(function(n){ if (n && soldOf(n) && extra.indexOf(n) < 0) extra.push(n); });",
-     "replace": "",
+     "find": "    try { (typeof window._vaultTradedNames === 'function' ? window._vaultTradedNames() : []).forEach(",
+     "replace": "    try { [].forEach(",
      "matches": 1, "needs": "node"},
 ]
 
