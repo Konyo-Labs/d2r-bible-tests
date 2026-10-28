@@ -13241,6 +13241,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_an_unset_mf_is_never_his_699.py")], 300,
          needs_app=False,
          why='REG-2922 #252: an MF nobody set is unknown and said so, never his 699, and no save turns it into a measured 0'),
+    Gate("test_his_logger_wishlist_and_filter_names_stay_his",
+         [sys.executable, os.path.join(HERE, "test_his_logger_wishlist_and_filter_names_stay_his.py")], 300,
+         needs_app=False,
+         why='REG-2923 #252: the upload logger, the wishlist title and the loot filter are named for him only on his ledger'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

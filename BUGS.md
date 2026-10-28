@@ -2190,6 +2190,18 @@ red-proof (owned_restore's JS no longer calls window._ownedAdd) first came back 
 constant of a function, and owned_restore's own DOCSTRING spells "window._ownedAdd(name, ...)", so the census could never
 see that door lose its receipt. Docstrings are now left out of what a door "sends"; the proof is RED. The owned-door law is
 keyable and re-sabotaged: bad 0 of 32.
+### REG-2923 - THE UPLOAD LOGGER, THE WISHLIST TITLE AND THE LOOT FILTER WERE NAMED FOR HIM ON EVERY PC (#252)
+The photo-upload logger defaulted to 'Konyo', so another PC's journal stored its uploads as his and the tally counted every
+untagged session as his; the wishlist export was titled "# Konyo Wishlist"; and on any claimed board the endgame loot filter was
+named 'KonyoEndgame<N>' - his ledger's own name - in the export and on the card's two labels. On his ledger
+(`_seedsBelongHere`) nothing changes. Anywhere else the logger is unset until someone says who (the chip reads "who? (not
+set)", the journal stores no name, the tally says "not set"), the export is "# Wishlist", and the filter is named after the
+board's own ledger (`_lfBrandName`: 'Cousin' on a guest as before, else the ledger name, else 'MyEndgame'); the card's static
+labels are repainted at boot without wiping a count the filter engine already appended. Law
+tv/test_his_logger_wishlist_and_filter_names_stay_his.py (his, another claimed ledger, a guest), 9 red-proofs, all RED. The
+real-DOM half of #252 (the boot walker over the markup, the preset chips, the filter card after refreshLootFilterCount, both
+ledgers) is tests/v252_his_names_stay_on_his_ledger.spec.ts - CI only, not run here.
+
 ### REG-2922 - AN MF NOBODY SET WAS HIS 699, AND THE FIRST SAVE OF ANYTHING WOULD HAVE MADE IT A MEASURED-LOOKING 0% (#252)
 `let mf = parseInt(LS.getItem('d2r_mf') || '699')` gave every PC that never moved the slider HIS magic find (Konyolock's
 loadout): the odds, the slider label, the cockpit tile and dock line, and every "@ 699% MF" sentence. The two starred presets
