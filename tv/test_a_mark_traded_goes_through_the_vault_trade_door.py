@@ -250,8 +250,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2881 - the toolbar Undo is taken after the copy left, so it cannot put it back",
      "file": "bible.html",
-     "find": "window._vaultUndoTake('the trade-out of ' + nm, '', _undoT)",
-     "replace": "window._vaultUndoTake('the trade-out of ' + nm, '')",
+     "find": "window._vaultUndoTake(_undoWhat, '', _undoT)",
+     "replace": "window._vaultUndoTake(_undoWhat, '')",
      "matches": 1, "needs": "node"},
 ]
 
