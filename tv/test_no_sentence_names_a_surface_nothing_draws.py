@@ -115,8 +115,8 @@ class NoSentenceNamesASurfaceNothingDraws(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-2834 - the planner's take-back sends him to 'Recently removed' again",
      "file": "bible.html",
-     "find": "' (↶ Undo in the toolbar puts it back)'",
-     "replace": "' (undo it from Recently removed)'",
+     "find": "(_undoVpOk ? ' (↶ Undo in the toolbar puts it back)' :",
+     "replace": "(_undoVpOk ? ' (undo it from Recently removed)' :",
      "matches": 1, "needs": "node"},
     {"why": "REG-2834 - the redo's bar sends him to 'the vault removal list' again",
      "file": "bible.html",

@@ -13181,6 +13181,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_d2jsp_item_moves_draft_listed_traded.py")], 300,
          needs_app=False,
          why='REG-2873 a d2jsp item moves draft, listed, traded; Mark traded is one trade-out event out of the vault count; FIND shows the listed mark'),
+    Gate("test_a_mark_traded_goes_through_the_vault_trade_door",
+         [sys.executable, os.path.join(HERE, "test_a_mark_traded_goes_through_the_vault_trade_door.py")], 300,
+         needs_app=False,
+         why="REG-2881 (#83) - Mark traded is the vault's trade-out through window._vaultTradeEvent alone: the listed copy leaves through the removal journal with the toolbar Undo armed before it moved, a refusal says the count is unchanged, and no second trade-out call is left in the D2JSP room"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

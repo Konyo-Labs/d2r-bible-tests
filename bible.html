@@ -13486,28 +13486,17 @@ function d2jspBatchHtml(view) {
     return '<div class="d2jsp-state" data-d2jsp-state="' + esc(t.state) + '">' + esc(say) + '</div>';
   }
   try { window._d2jspTradeState = function(n){ return tradeState(String(n || '')); }; } catch (eTs) {}
-  /* REG-2873 - Mark traded is one trade-out event: the copy leaves the vault count through the vault's own doors (one fewer
-     copy when he has several, else the removal door on its trade-out lane), with the toolbar Undo armed, so a traded item
-     never waits as a "where is it?" task. -> what happened, in words */
-  function tradeOut(n){
-    var snap = null, have = copiesOf(n), how = '';
-    try { snap = (typeof window._vaultUndoSnap === 'function') ? window._vaultUndoSnap() : null; } catch (eS) { snap = null; }
-    try {
-      if (have > 1 && typeof window.vaultCopyAdjust === 'function') {
-        window.vaultCopyAdjust(n, -1);
-        how = 'one of ' + have + ' copies left the vault count';
-      } else if (typeof window.vaultRemove === 'function') {
-        var r = window.vaultRemove([n], { lane: 'trade-out', quiet: true, exact: true, why: 'traded on d2jsp' });
-        how = (r && r.removed && r.removed.indexOf(n) >= 0) ? 'it left the vault count'
-          : ('the vault count is unchanged: ' + ((r && r.why) || (r && r.skipped && r.skipped.length ? 'it is not in the vault' : 'the removal door did not answer')));
-      } else {
-        how = 'the vault count is unchanged: the vault doors are not on this page';
-      }
-    } catch (eT) { how = 'the vault count is unchanged: ' + String((eT && eT.message) || eT).slice(0, 80); }
-    var undo = false;
-    try { undo = !!(snap && /left the vault/.test(how) && typeof window._vaultUndoTake === 'function' && window._vaultUndoTake('the trade-out of ' + n, '', snap)); } catch (eU) { undo = false; }
-    return how + (undo ? ' (Undo in the toolbar puts it back)' : '');
+  /* REG-2881 - MARK TRADED IS THE VAULT'S TRADE-OUT, THROUGH THE ONE DOOR (window._vaultTradeEvent). REG-2873 took the copy
+     out here with the vault's copy door or its removal door: one fewer copy dropped the LAST copy's record, not the traded
+     one, and the copy door journals nothing. The door takes the listed copy (else the last), journals it with its own
+     record, closes the rest up and arms the toolbar Undo. Nothing here touches the vault's stores. -> what happened, in words */
+  function markTraded(n){
+    var r = null;
+    try { r = (typeof window._vaultTradeEvent === 'function') ? window._vaultTradeEvent({ kind: 'trade-out', name: n }) : null; } catch (eT) { r = { ok: false, why: String((eT && eT.message) || eT).slice(0, 80) }; }
+    if (!r) return 'the vault count is unchanged: the vault door is not on this page';
+    return r.ok ? r.why : ('the vault count is unchanged: ' + r.why);
   }
+  try { window._d2jspMarkTraded = markTraded; } catch (eLv) {}   /* the whole-page law's handle */
   function paintLog(names){
     var cards = document.querySelectorAll('#d2jsp-list .d2jsp-card');
     for (var i = 0; i < cards.length; i++) {
@@ -14051,8 +14040,10 @@ function d2jspBatchHtml(view) {
       if (sm[sn]) delete sm[sn];
       else sm[sn] = 1;
       writeMap('d2r_d2jsp_sold', sm);
-      /* REG-2873 - marking traded is the trade-out event; un-marking says the count was not put back (the toolbar Undo does) */
-      var how = sm[sn] ? tradeOut(sn) : 'the vault count is not changed back here - Undo in the toolbar puts a trade-out back';
+      /* REG-2873 - marking traded is the trade-out event (REG-2881: through the vault's one door); un-marking changes no count,
+         and names the toolbar Undo only while it holds this trade-out (REG-2834's rule) */
+      var undoHolds = !!(window._vaultUndo && window._vaultUndo.what === 'the trade-out of ' + sn);
+      var how = sm[sn] ? markTraded(sn) : ('the vault count is not changed back here' + (undoHolds ? ' - ↶ Undo in the toolbar puts the trade-out back' : ''));
       logAdd([sn], { at: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC', board: d2jspBoard(),
                      kind: sm[sn] ? 'traded' : 'for-sale', text: (sm[sn] ? 'Marked traded: ' : 'For sale again: ') + how });
       paintPrices(sn);
@@ -51765,7 +51756,10 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       try { renderVault(); } catch (eR) {}
       return { ok: true, kind: kind, name: nm, copyIx: k, why: kind === 'listed' ? 'copy ' + (k + 1) + ' is listed' : 'copy ' + (k + 1) + ' is not listed' };
     }
-    /* trade-out */
+    /* trade-out - REG-2881: the board's own Undo (the toolbar chip) is taken before anything moves, as every removal door does */
+    var _undoT = null;
+    try { _undoT = (typeof window._vaultUndoSnap === 'function') ? window._vaultUndoSnap() : null; } catch (eUs) { _undoT = null; }
+    var _undoSay = function(){ try { return (_undoT && typeof window._vaultUndoTake === 'function' && window._vaultUndoTake('the trade-out of ' + nm, '', _undoT)) ? ' (↶ Undo in the toolbar puts it back)' : ''; } catch (eUt) { return ''; } };
     var why = 'traded on d2jsp' + (post ? ' (' + post + ')' : '');
     var row = {}; for (var y in pick) row[y] = pick[y];
     row.trade = { state: 'traded-out', at: at }; if (post) row.trade.post = post;
@@ -51774,7 +51768,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       var r1 = (typeof window.vaultRemove === 'function') ? window.vaultRemove([nm], { lane: 'trade-out', exact: true, quiet: true, why: why }) : null;
       /* measured: the removal door leaves the copy's record in the store, so the undo brings its own cell back with the name */
       var gone = !!(r1 && r1.removed && r1.removed.indexOf(nm) >= 0);
-      return { ok: gone, kind: kind, name: nm, copyIx: k, why: gone ? (nm + ' left the vault (undo: vaultRestoreLast)') : ('the vault kept it: ' + ((r1 && r1.why) || 'the removal door did not answer')) };
+      return { ok: gone, kind: kind, name: nm, copyIx: k, why: gone ? (nm + ' left the vault count' + _undoSay()) : ('the vault kept it: ' + ((r1 && r1.why) || 'the removal door did not answer')) };
     }
     var log = _vrRead();
     if (log === null) return { ok: false, kind: kind, name: nm, copyIx: k, why: 'the removal journal (' + _VR_LOG + ') would not read, so nothing was traded out' };
@@ -51791,7 +51785,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     _vrWrite(log);
     try { if (typeof persist === 'function') persist(); else persistOwned(); } catch (eP) {}
     try { renderVault(); refreshOpenCard(); } catch (eR2) {}
-    return { ok: true, kind: kind, name: nm, copyIx: k, why: 'copy ' + (k + 1) + ' of ' + have + ' left the vault count (undo: vaultRestoreLast)' };
+    return { ok: true, kind: kind, name: nm, copyIx: k, why: 'copy ' + (k + 1) + ' of ' + have + ' left the vault count' + _undoSay() };
   };
   // v342.3 — throw out a Magic & Rare keeper (rolled-name item; lives in magicFinds, not grail `owned`)
   /* REG-2404 — AND OUT OF `owned`, THROUGH THE REMOVAL DOOR. "Lives in magicFinds, not grail owned" stopped being true at

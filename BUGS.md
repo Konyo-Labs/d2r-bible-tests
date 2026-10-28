@@ -2783,6 +2783,22 @@ no known names kept every prose word, the opposite of its own rule; it now keeps
 journal: REC-03 still PASSES (newest long session, 51 worker reads, all warm). The eye's "older sessions' unanswered
 commitments are only reported" is the documented rule ("the newest decides; older ones are reported"), not a defect. Law:
 test_a_scenario_names_its_own_frames (3 cases, 5 red-proofs, 1 re-aimed).
+### REG-2881 - MARK TRADED TOOK THE WRONG COPY OUT, BY A SECOND PATH BESIDE THE VAULT'S TRADE DOOR (#83, his ruling "the reconciler takes trade-out / trade-in events"; the lead's wiring brief: one door)
+Measured in the D2JSP room's own code (node): REG-2873's Mark traded took the copy out of the vault itself, beside
+window._vaultTradeEvent (REG-2877). With several copies it called the copy door, vaultCopyAdjust(name, -1). That door drops
+the LAST copy's record, not the one he listed and traded, so the traded copy's MOVE task stayed and another copy's task
+went. The copy door journals nothing, so vaultRestoreLast could not put it back. The room also armed the toolbar Undo
+itself. Now Mark traded calls window._vaultTradeEvent({kind: 'trade-out', name}) and nothing else. The door takes the
+listed copy (else the last) and journals that copy's own record on the trade-out lane. The rest close up. The door arms
+the toolbar Undo with a snapshot taken before anything moved, on both its paths (one of several copies, and the last
+copy). The status line and the post log say the door's words, and a refusal says "the vault count is unchanged" and why.
+"For sale again" changes no count, and it names the toolbar Undo only while the Undo holds that trade-out (REG-2834's
+rule). Whole page in node: copy 2 of 3 listed and traded leaves with its own cell in the batch, the other two keep theirs,
+and the Undo puts all three back. Law: tv/test_a_mark_traded_goes_through_the_vault_trade_door.py, 7 red-proofs. A source
+guard finds exactly one trade-out call in the room and no copy-door, removal-door or Undo calls. REG-2873's law now drives
+a stub door. Its FIND part is gone, because FIND reads the copy's own slot (REG-2878's law). REG-2834's red-proof anchor
+was re-aimed, because the door's Undo sentence now matched it twice.
+
 ### REG-2882 - THREE LAW WINDOWS WENT RED ON REACH WHEN THE D2JSP AND TRADE WORK GREW THE CODE THEY READ (#83, the d2jsp wiring's own sweep)
 Measured on the d2jsp branch (node laws, one at a time): three source checks read a fixed span, and the span grew under
 them. In tv/test_the_d2jsp_desk_reads_a_price_before_it_posts.py, the receipt check read showReceipt up to closeDraft with
