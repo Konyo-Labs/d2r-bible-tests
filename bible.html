@@ -25482,6 +25482,12 @@ try {
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         + ' \u2014 nothing is counted from it, and nothing is written over it (see the notice at the top)</i>';
     var bits = [n(p.owned) + ' owned'];
+    /* REG-2886 (#137, his ruling 2026-10-28: "3 copies if it was witnessed in other areas and coordinates.. its logical yea i
+       do have three") - the line counted NAMES only, so three Stormshields read "1 owned" and a copy he added moved no number.
+       It says the copies too when the evidence holds more than one of a name: the records count (_vaultRecordsHeader), which
+       is the distinct cells he was seen in plus the copies his hand typed - never a re-read of one cell, never copies[] alone.
+       When nothing shows a second copy, the line stays "N owned": no guessed number. */
+    if (typeof p.copies === 'number' && p.copies > (+p.owned || 0)) bits.push(n(p.copies) + ' copies');
     if (p.shared) bits.push(n(p.shared) + ' in the shared stash <i>(never muled)</i>');
     /* ⚠ L-3 (review of 7cded0c1, reproduced) — WITH THE MULE MAP UNREADABLE, "FILED" AND "NOT FILED" ARE UNKNOWN TOO. The line
        said "0 filed to mules · 13 not filed" from the same store that would not read (his evid_r4 picture read exactly
@@ -47568,6 +47574,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     /* #208 - the split rides only from the records; absent stays absent, so the line keeps its old words */
     if (typeof header.looseDock === 'number') o.looseDock = header.looseDock;
     if (typeof header.looseThrow === 'number') o.looseThrow = header.looseThrow;
+    /* REG-2886 - the copies he holds, from the same records the card, the window and FIND count (one record per copy: the
+       distinct cells he was seen in, the copies his hand typed). Absent stays absent: no records, no copy figure. */
+    if (typeof header.copies === 'number') o.copies = header.copies;
     return o;
   }
   try { window._vaultPopFromHeader = _vaultPopFromHeader; } catch (e) {}
