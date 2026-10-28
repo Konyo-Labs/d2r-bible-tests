@@ -1110,6 +1110,9 @@ def _served(cache_dir, receipt, now_ms):
     sent = []
     ns = {"_roster_cache_payload": lambda: RP.read_cache(cache_dir, now_ms),
           "_roster_state_load": lambda: receipt,
+          # REG-2867 - the route also reads the profile's and the sessions' receipts; none here (they read UNKNOWN)
+          "_profile_json_load": lambda path: None, "_profile_state_path": lambda: "profile",
+          "_frames_state_path": lambda: "frames",
           "time": types.SimpleNamespace(time=lambda: now_ms / 1000.0),
           "self": types.SimpleNamespace(_json=lambda code, data: sent.append((code, data)))}
     exec(compile(door, APP, "exec"), ns)

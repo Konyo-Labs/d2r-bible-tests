@@ -13137,6 +13137,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_broad_door_guards_a_lock_only_through_its_own_code.py")], 300,
          needs_app=False,
          why='REG-2865 (#212) - a lock whose door lives in control_app is guarded by the laws that exercise its own code, not by every law that imports the console'),
+    Gate("test_the_roster_lane_says_its_profile_and_sessions_posts",
+         [sys.executable, os.path.join(HERE, "test_the_roster_lane_says_its_profile_and_sessions_posts.py")], 300,
+         needs_app=False,
+         why='REG-2867 - the roster lane says its profile and sessions posts beside its rows, so a refused one is visible'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

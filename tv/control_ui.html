@@ -29398,6 +29398,10 @@ function escC(s) {
       var me = data && data.meLine && typeof data.meLine.words === 'string' && data.meLine.words ? data.meLine
         : { cls: 'roster-me roster-unknown', words: 'this PC\'s last publish: UNKNOWN (the console did not say)' };
       var lead = '<div class="' + esc(me.cls || 'roster-me') + '">' + esc(me.words) + '</div>';
+      /* REG-2867 - the lane's other two posts (profile, sessions), each from its own receipt: a refused one is said here */
+      (Array.isArray(data && data.laneLines) ? data.laneLines : []).forEach(function (l) {
+        if (l && typeof l.words === 'string' && l.words) lead += '<div class="' + esc(l.cls || 'roster-me') + '">' + esc(l.words) + '</div>';
+      });
       if (!owners.length) body.innerHTML = lead + '<div class="roster-none">the roster answer had no owners</div>';
       else body.innerHTML = lead + owners.map(function (row) {
         var name = row && row.owner ? String(row.owner) : '';

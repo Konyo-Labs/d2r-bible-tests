@@ -829,6 +829,65 @@ def _me_line(me):
     return "roster-me roster-unknown", "this PC's last publish: UNKNOWN (%s)" % (why or "no receipt")
 
 
+#: REG-2867 - the two posts the roster lane makes after the rows (control_app._roster_publish_loop), each with its own receipt
+#: on this PC: the profile (.roster_profile_state.json, console_snapshot.apply_reply) and the sessions digest
+#: (.roster_frames_state.json, shadow_sessions.apply_reply)
+LANE_LABELS = (("profile", "profile upload"), ("frames", "sessions upload"))
+
+
+def _ms(v):
+    return v if isinstance(v, int) and not isinstance(v, bool) and v > 0 else None
+
+
+def lane_line(kind, state, now_ms):
+    """REG-2867 - one line about this PC's last profile or sessions post, from its own receipt, so a refused post is said
+    where the rows' own is (meLine); GrokBot found a refused frames post nowhere. -> {"cls", "words", "kind"} | None
+
+    A held lane (the beacon suppressed) says HELD. Otherwise the receipt's newest event decides: a post that did not go
+    through (refused, or the site unreached - the receipt keeps no difference between them), a post the site stored or
+    skipped, or a look that posted nothing; each with its own age and the receipt's own words. No receipt is UNKNOWN."""
+    label = dict(LANE_LABELS).get(kind)
+    if not label:
+        return None
+    head = "this PC's %s" % label
+    if not isinstance(state, dict) or not state:
+        return {"kind": kind, "cls": "roster-me roster-unknown", "words": head + ": UNKNOWN (this PC has no receipt for it yet)"}
+    why = _words(state.get("why")) or ""
+    if why.startswith("suppressed"):
+        return {"kind": kind, "cls": "roster-me roster-unknown", "words": "%s is HELD: %s" % (head, why)}
+
+    def ago(t):
+        return " (%s)" % (_ago(t, now_ms)[1] or "age unknown")
+    post = state.get("post") if isinstance(state.get("post"), dict) else None
+    if kind == "profile" and post is not None and _ms(post.get("at")):
+        # the profile keeps its last POST whole ({at, ok, why}); a later gate reason never overwrites it
+        said = _words(post.get("why")) or "no reason given"
+        if post.get("ok") is not True:
+            return {"kind": kind, "cls": "roster-me roster-refused",
+                    "words": "%s did NOT go through%s: %s" % (head, ago(post["at"]), said)}
+        return {"kind": kind, "cls": "roster-me", "words": "%s%s: %s" % (head, ago(post["at"]), said)}
+    events = [(t, name) for t, name in ((_ms(state.get("refuseAt")), "refused"),
+                                        (_ms(state.get("postedAt") if kind == "frames" else state.get("at")), "posted"),
+                                        (_ms(state.get("checkedAt")), "checked")) if t]
+    if not events:
+        return {"kind": kind, "cls": "roster-me roster-unknown",
+                "words": "%s: UNKNOWN (its receipt carries no time%s)" % (head, (": " + why) if why else "")}
+    t, name = max(events)
+    if name == "refused":
+        said = why[len("refused: "):] if why.startswith("refused: ") else (why or "no reason given")
+        return {"kind": kind, "cls": "roster-me roster-refused",
+                "words": "%s did NOT go through%s: %s" % (head, ago(t), said)}
+    if name == "posted":
+        return {"kind": kind, "cls": "roster-me", "words": "%s%s: %s" % (head, ago(t), why or "posted")}
+    return {"kind": kind, "cls": "roster-me", "words": "%s posted nothing%s: %s" % (head, ago(t), why or "no reason given")}
+
+
+def lane_lines(states, now_ms):
+    """REG-2867 - the profile and sessions lines, in the lane's order. states: {kind: receipt dict | None}. -> list"""
+    states = states if isinstance(states, dict) else {}
+    return [lane_line(kind, states.get(kind), now_ms) for kind, _label in LANE_LABELS]
+
+
 def signature_words(row):
     """One published row's signature, in words. -> (css class, words). None stays UNKNOWN."""
     v = verified_of(row)
@@ -1203,6 +1262,11 @@ def roster_html(payload):
     #95: when the caller hands over `me` (this PC's own last publish, publish_outcome), that line
     leads the markup, fetched or not, so a refused or unsigned publish is never left out of it."""
     lead = _me_html(payload.get("me")) if isinstance(payload, dict) else ""
+    # REG-2867 - and the profile and sessions posts' own lines beside it
+    for line in (payload.get("laneLines") or []) if isinstance(payload, dict) else []:
+        if isinstance(line, dict) and isinstance(line.get("words"), str):
+            lead += '<p class="%s">%s</p>' % (html.escape(str(line.get("cls") or "roster-me"), quote=True),
+                                              html.escape(line["words"], quote=True))
     return lead + _owners_html(payload)
 
 
