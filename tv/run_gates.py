@@ -13141,6 +13141,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_roster_lane_says_its_profile_and_sessions_posts.py")], 300,
          needs_app=False,
          why='REG-2867 - the roster lane says its profile and sessions posts beside its rows, so a refused one is visible'),
+    Gate("test_an_image_error_reaches_its_receipt_with_its_cause",
+         [sys.executable, os.path.join(HERE, "test_an_image_error_reaches_its_receipt_with_its_cause.py")], 300,
+         needs_app=False,
+         why="REG-2914 (#158) - an image error reaches its receipt with its cause through the agent's /intake_result, and the reader's report says it"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

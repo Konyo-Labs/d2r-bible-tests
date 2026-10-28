@@ -34326,6 +34326,13 @@ async function _tallyRead(b64, vocab, layout, kind, why){
   return (res || vote(reads)).merged;
 }
 window._tallyRead = _tallyRead;
+/* REG-2914 (#158) - "N image error(s)" on a tally reader's own report says the first one's cause when it has one (REG-2730's
+   errWhy) - the words its receipt keeps. Escaped: the cause can carry the intake's own text. -> html */
+function _imgErrSay(n, why){
+  var w = (typeof why === 'string' && why) ? ' \u2014 ' + why.replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }) : '';
+  return n + ' image error' + (n === 1 ? '' : 's') + w;
+}
+window._imgErrSay = _imgErrSay;
 
 /* v1940 — ONE MERGE RULE FOR EVERY STASH WRITER, BECAUSE THERE WERE TWO AND THEY DISAGREED.
    Konyo, on his own Tools tab: "alot of items got double registered/double counted", showing
@@ -34435,11 +34442,11 @@ window.gemIntake = async function(files){
       var flaggedG = (typeof window._flagPerfectGemsVerify === 'function') ? window._flagPerfectGemsVerify() : 0;
       report.innerHTML='🪄 <strong>tallied '+total+' gem'+(total===1?'':'s')+'</strong> across '+names.length+' type'+(names.length===1?'':'s')+' — added to your stash: '
         + names.sort().map(function(k){return '<span style="color:var(--gold-bright,#f0c060)">'+k+' ×'+added[k]+'</span>';}).join(' · ')
-        + (errors?' · <span style="color:var(--hell,#ff4040)">'+errors+' image error'+(errors===1?'':'s')+'</span>':'')
+        + (errors?' · <span style="color:var(--hell,#ff4040)">'+_imgErrSay(errors, errWhy)+'</span>':'')
         + (flaggedG?'<div style="color:#ffe08a;font-size:12px;margin-top:6px">👁 <b>Double-check the '+flaggedG+' glowing Perfect gem'+(flaggedG===1?'':'s')+'</b> (bottom row, ringed with <b>✓?</b>) — the rarest + most likely to be off by a digit. Tap −/+ to correct any.</div>':'')
         + '<div style="color:var(--text-dim);font-size:var(--fs-meta);margin-top:5px">Auto-cropped + enlarged, read 2–5× and reconciled by majority vote, identified by fixed grid position. Re-run adds again, so use “clear stash” first for a fresh total.</div>';
     } else {
-      report.innerHTML='No gems read'+(errors?' ('+errors+' image error'+(errors===1?'':'s')+')':'')+'. Try a clearer, closer screenshot — gems filling the frame, good lighting.';
+      report.innerHTML='No gems read'+(errors?' ('+_imgErrSay(errors, errWhy)+')':'')+'. Try a clearer, closer screenshot — gems filling the frame, good lighting.';
     }
     /* v1944 — `ok` MEANS THE READ WORKED, NOT THAT A NUMBER WENT UP. v1940 made these intakes merge-MAX, so `total` became the sum of RAISES; a re-read of an unchanged shelf raises nothing and would have reported ok:false. That is not a failed read, and it matters downstream: the kai-funnel gates funnel_by_fid on `ok` (control_app.py ~5486), so an honest no-change read would leave the frame unrouted and Stage-3 free to select it again, forever. A read that HELD every count is a successful read. */
     return { ok: (total > 0 || held.length > 0), total: total, added: added, held: held, errors: errors, errWhy: errWhy || undefined, kind: 'gems' };   // v908
@@ -35995,11 +36002,11 @@ window.runeIntake = async function(files){
       var flaggedN = (typeof window._flagHighRunesVerify === 'function') ? window._flagHighRunesVerify() : 0;
       report.innerHTML='🪄 <strong>tallied '+total+' rune'+(total===1?'':'s')+'</strong> across '+names.length+' type'+(names.length===1?'':'s')+' — added to your stash: '
         + names.sort(function(a,b){return RUNE_INDEX[a]-RUNE_INDEX[b];}).map(function(k){return '<span style="color:var(--gold-bright,#f0c060)">'+k+' ×'+added[k]+'</span>';}).join(' · ')
-        + (errors?' · <span style="color:var(--hell,#ff4040)">'+errors+' image error'+(errors===1?'':'s')+'</span>':'')
+        + (errors?' · <span style="color:var(--hell,#ff4040)">'+_imgErrSay(errors, errWhy)+'</span>':'')
         + (flaggedN?'<div style="color:#ffe08a;font-size:12px;margin-top:6px">👁 <b>Double-check the '+flaggedN+' glowing high rune'+(flaggedN===1?'':'s')+'</b> (Gul→Zod, ringed with <b>✓?</b>) — these are the rarest + most likely to be off by a digit. Tap −/+ to correct any.</div>':'')
         + '<div style="color:var(--text-dim);font-size:var(--fs-meta);margin-top:5px">Auto-cropped + enlarged, then read 2–5× and reconciled by majority vote (disputed stacks get extra recounts). Re-run adds again, so use “clear stash” first for a fresh total.</div>';
     } else {
-      report.innerHTML='No runes read'+(errors?' ('+errors+' image error'+(errors===1?'':'s')+')':'')+'. Try a clearer, closer screenshot of your rune stash — good lighting, runes filling the frame.';
+      report.innerHTML='No runes read'+(errors?' ('+_imgErrSay(errors, errWhy)+')':'')+'. Try a clearer, closer screenshot of your rune stash — good lighting, runes filling the frame.';
     }
     return { ok: (total > 0 || held.length > 0), total: total, added: added, held: held, errors: errors, errWhy: errWhy || undefined, kind: 'runes' };   // v908 — the connector carries real numbers
   }
@@ -37533,10 +37540,10 @@ window.materialIntake = async function(files){
       if (names.length) parts.push('<strong>'+total+' material'+(total===1?'':'s')+'</strong> ('+names.sort().map(function(k){return k+' ×'+added[k];}).join(' · ')+')');
       if (statuesAdded.length) parts.push('<strong>'+statuesAdded.length+' Colossal Statue'+(statuesAdded.length===1?'':'s')+'</strong> marked collected ('+statuesAdded.sort().join(' · ')+')');
       report.innerHTML='🪄 tallied '+parts.join(' · ')
-        + (errors?' · <span style="color:var(--hell,#ff4040)">'+errors+' image error'+(errors===1?'':'s')+'</span>':'')
+        + (errors?' · <span style="color:var(--hell,#ff4040)">'+_imgErrSay(errors, errWhy)+'</span>':'')
         + '<div style="color:var(--text-dim);font-size:var(--fs-meta);margin-top:5px">Best-effort read — eyeball the grid below and nudge any with −/+. Re-run adds again, so clear first for a fresh total.</div>';
     } else {
-      report.innerHTML='No materials read'+(errors?' ('+errors+' image error'+(errors===1?'':'s')+')':'')+'. Try a clearer, closer screenshot of your keys / organs / essences / statues.';
+      report.innerHTML='No materials read'+(errors?' ('+_imgErrSay(errors, errWhy)+')':'')+'. Try a clearer, closer screenshot of your keys / organs / essences / statues.';
     }
     return { ok: (total > 0 || held.length > 0 || statuesAdded.length > 0), total: total, added: added, held: held,
              statues: statuesAdded.length, errors: errors, errWhy: errWhy || undefined, kind: 'materials' };   // v908
