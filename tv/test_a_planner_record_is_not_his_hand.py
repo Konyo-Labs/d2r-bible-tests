@@ -51,7 +51,8 @@ function homes(n){ return (W._vaultRecords().records || []).filter(function(x){ 
   var rm = W.vaultRemove([n], { lane: 'law', quiet: true, exact: true, why: 'he took it out' });
   o.removed = !!(rm && rm.removed && rm.removed.indexOf(n) >= 0);
   o.recordKept = !!W._vpMadeOf(n);
-  var rg = W.tvVaultRegister(n, { by: 'tv-register', loc: 'chronicle', scene: 'chronicle', at: '2026-10-27T08:09:00.000Z',
+  /* REG-2845 - the read comes AFTER his removal (an older one never brings a removed item back) */
+  var rg = W.tvVaultRegister(n, { by: 'tv-register', loc: 'chronicle', scene: 'chronicle', at: new Date(Date.now() + 60000).toISOString(),
                                   sessions: [{ session: 'c1_' + n, frame: 'f1_' + n }, { session: 'c2_' + n, frame: 'f2_' + n }] });
   o.registered = !!(rg && rg.ok);
   o.looks = ((row(n) || {}).looks || []).map(function(l){ return l.loc; });

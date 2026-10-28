@@ -13205,6 +13205,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_vault_header_counts_copies_from_evidence.py")], 300,
          needs_app=False,
          why='REG-2886 (#137, his ruling 2026-10-28) - the vault population line says the copies the records count (distinct cells seen plus copies his hand typed): three Stormshields in three cells read 1 owned · 3 copies, one cell re-read three times reads 1 owned, and one copy of each name prints no copy figure'),
+    Gate("test_a_removed_item_stays_out_of_every_door",
+         [sys.executable, os.path.join(HERE, "test_a_removed_item_stays_out_of_every_door.py")], 300,
+         needs_app=False,
+         why="REG-2845/2846 (#154, his 'wont these keep coming back?') - after his X or a Wipe, an old or undated read stays out at every door; a newer dated read and his hand come back"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
