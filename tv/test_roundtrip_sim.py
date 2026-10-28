@@ -30,6 +30,8 @@ try:
 except Exception:
     pass
 import urllib.request
+import fixture_tmp as _fx_tmp  # noqa: E402  #173 - its scratch is its own, so listing it keeps the law keyable
+_fx_tmp.contain()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 17956
@@ -209,10 +211,10 @@ class TestRoundtrip(unittest.TestCase):
                         "session_end row missing after seal")
         reel = os.path.join(self.hist, "reel_" + live_sid)
         self.assertTrue(os.path.isdir(reel), "reel fold never happened")
-        reel_set = set(os.listdir(reel))
+        reel_set = set(_fx_tmp.list_own(reel))
         for fn in injected:
             self.assertIn(fn, reel_set, "injected frame %s missing from the sealed reel" % fn)
-        loose_left = [f for f in os.listdir(self.hist) if f.startswith("f_") and f.endswith(".jpg")]
+        loose_left = [f for f in _fx_tmp.list_own(self.hist) if f.startswith("f_") and f.endswith(".jpg")]
         self.assertEqual(loose_left, [], "loose frames survived the fold inside the session window")
 
         # 5/6 — sessions + payload truth

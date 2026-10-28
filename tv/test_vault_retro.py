@@ -785,7 +785,7 @@ class TestV2239TheCropReachesTheRow(unittest.TestCase):
         # was right, the fixture was not footage.
         _root, d, _t = self._hover()
         import os as _os
-        fs = sorted(f for f in _os.listdir(d) if f.endswith(".jpg"))
+        fs = sorted(f for f in _fx_tmp.list_own(d) if f.endswith(".jpg"))
         flat = cr.frame_flatness(_os.path.join(d, fs[1]))
         self.assertIsNotNone(flat, "flatness could not be measured on the fixture")
         self.assertLess(flat, cr.DEAD_FLATNESS,
@@ -816,7 +816,7 @@ class TestV2239TheCropReachesTheRow(unittest.TestCase):
         self._sweep(d)
         store = _os.path.join(root, "frames", "hist", v.CROP_DIR)
         self.assertTrue(_os.path.isdir(store), "no crop store was created")
-        files = [f for f in _os.listdir(store) if f.endswith(".jpg")]
+        files = [f for f in _fx_tmp.list_own(store) if f.endswith(".jpg")]
         self.assertTrue(files, "the store is empty — nothing was written")
         for f in files:
             sz = _os.path.getsize(_os.path.join(store, f))

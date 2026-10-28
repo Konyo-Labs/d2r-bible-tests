@@ -169,7 +169,7 @@ class _World(object):
         self._write(os.path.join(self.root, "vault_swept.json"), self.vault)
 
     def on_disk(self):
-        return sorted(d for d in os.listdir(self.hist) if d.startswith("reel_"))
+        return sorted(d for d in _fx_tmp.list_own(self.hist) if d.startswith("reel_"))
 
     def tombstones(self):
         p = os.path.join(self.root, "reel_tombstones.json")
@@ -363,7 +363,7 @@ class AVaultPictureHoldsItsReel(_Base):
         self.old = self.w.names[:4]
         self.cited_reel = self.old[1]
         d = os.path.join(self.w.hist, self.cited_reel)
-        self.cited_frame = [f for f in os.listdir(d) if f.endswith(".jpg")][0]
+        self.cited_frame = [f for f in _fx_tmp.list_own(d) if f.endswith(".jpg")][0]
         import frame_authority as FA
         real = FA.witness_index
         self.addCleanup(setattr, FA, "witness_index", real)
@@ -384,8 +384,8 @@ class AVaultPictureHoldsItsReel(_Base):
         r, _st = self._pass(free_gb=500.0)
         self.assertEqual(sorted(r.get("removed") or []), sorted(self.old),
                          "the four old finished reels were not all released: %r" % r)
-        self.assertEqual(sorted(os.listdir(d)), [self.cited_frame],
-                         "the released reel did not keep EXACTLY its vault picture: %r" % sorted(os.listdir(d)))
+        self.assertEqual(sorted(_fx_tmp.list_own(d)), [self.cited_frame],
+                         "the released reel did not keep EXACTLY its vault picture: %r" % sorted(_fx_tmp.list_own(d)))
         for nm in self.old:
             if nm != self.cited_reel:
                 self.assertNotIn(nm, self.w.on_disk(), "an uncited old reel was not released: %s" % nm)
@@ -434,11 +434,11 @@ class AVaultPictureHoldsItsReel(_Base):
             p = RR.plan(self.w.hist)
         self.assertTrue(p.get("candidates"), "PREMISE: the whole index released nothing to hold")
         self.FA.witness_index = _wi
-        pre = dict((nm, sorted(os.listdir(os.path.join(self.w.hist, nm)))) for nm in self.old)
+        pre = dict((nm, sorted(_fx_tmp.list_own(os.path.join(self.w.hist, nm)))) for nm in self.old)
         r = self._apply(p)
         self.assertEqual(r.get("removed") or [], [], "reels were deleted on a PARTIAL evidence index: %r" % r)
         for nm in self.old:
-            self.assertEqual(sorted(os.listdir(os.path.join(self.w.hist, nm))), pre[nm], "a frame left %s" % nm)
+            self.assertEqual(sorted(_fx_tmp.list_own(os.path.join(self.w.hist, nm))), pre[nm], "a frame left %s" % nm)
         self.assertTrue(any("PARTLY known" in (f.get("why") or "") for f in r.get("failed") or []),
                         "the hold does not say why: %r" % r.get("failed"))
 
@@ -781,7 +781,7 @@ class TheDrainRunsBesideTheShadowReader(_Base):
         old_s = BASE_MS / 1000.0
         for nm in self.w.names:                    # every sealed reel finished filming long ago
             d = os.path.join(self.w.hist, nm)
-            for f in os.listdir(d):
+            for f in _fx_tmp.list_own(d):
                 os.utime(os.path.join(d, f), (old_s, old_s))
             os.utime(d, (old_s, old_s))
         self.live = []
@@ -832,7 +832,7 @@ class TheDrainRunsBesideTheShadowReader(_Base):
     def test_a_reel_still_receiving_frames_is_never_released_beside_the_shadow(self):
         d = os.path.join(self.w.hist, self.old[0])
         now_s = self.clock.t
-        for f in os.listdir(d):
+        for f in _fx_tmp.list_own(d):
             os.utime(os.path.join(d, f), (now_s, now_s))
         r, st = self._beside("shadow")
         r = r if isinstance(r, dict) else {}

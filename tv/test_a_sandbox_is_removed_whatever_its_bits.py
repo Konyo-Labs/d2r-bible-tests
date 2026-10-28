@@ -30,6 +30,8 @@ if HERE not in sys.path:
 
 from console_safe import enable as _console_safe_enable  # noqa: E402
 _console_safe_enable()
+import fixture_tmp as _fx_tmp  # noqa: E402  #173 - its scratch is its own, so listing it keeps the law keyable
+_fx_tmp.contain()
 
 import heart2 as H  # noqa: E402
 
@@ -50,12 +52,22 @@ def _plant(root):
 
 
 def _force_clean(path):
-    for dp, dns, fns in os.walk(path):
-        for n in dns + fns:
+    # #173 - walked through fixture_tmp.list_own: the folder is this run's own scratch, so the law stays keyable
+    stack = [path]
+    while stack:
+        d = stack.pop()
+        try:
+            names = _fx_tmp.list_own(d)
+        except (OSError, ValueError):
+            continue
+        for n in names:
+            q = os.path.join(d, n)
             try:
-                os.chmod(os.path.join(dp, n), 0o700)
+                os.chmod(q, 0o700)
             except OSError:
                 pass
+            if os.path.isdir(q) and not os.path.islink(q):
+                stack.append(q)
     shutil.rmtree(path, ignore_errors=True)
 
 

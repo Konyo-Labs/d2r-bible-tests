@@ -38,6 +38,14 @@ if HERE not in sys.path:
 # Second time in one session; the gate caught both before they shipped.
 from console_safe import enable as _console_safe_enable  # noqa: E402
 _console_safe_enable()
+# #173 - the temp dir this law and every child it starts read is a WATCH dir inside its own scratch, so the census
+# below lists only what THIS run made (list_own), never a temp dir other runs share - and the law can be keyed.
+import fixture_tmp as _fx_tmp  # noqa: E402
+_fx_tmp.contain()
+_WATCH = tempfile.mkdtemp(prefix="watch-")
+tempfile.tempdir = _WATCH
+for _v in ("TMPDIR", "TEMP", "TMP"):
+    os.environ[_v] = _WATCH
 
 import second_eye_run as R                                            # noqa: E402
 
@@ -47,8 +55,8 @@ SRC = io.open(os.path.join(HERE, "second_eye_run.py"), encoding="utf-8", errors=
 def _scratch_dirs():
     t = tempfile.gettempdir()
     try:
-        return {n for n in os.listdir(t) if n.startswith("second_eye_")}
-    except Exception:
+        return {n for n in _fx_tmp.list_own(t) if n.startswith("second_eye_")}
+    except OSError:              # #173 - a ValueError (the watch dir is not this run's own) is raised, never an empty set
         return set()
 
 

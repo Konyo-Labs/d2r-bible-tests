@@ -22,6 +22,8 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import fixture_tmp as _fx_tmp  # noqa: E402  #173 - its scratch is its own, so listing it keeps the law keyable
+_fx_tmp.contain()
 
 import control_app as CA  # noqa: E402
 
@@ -68,7 +70,7 @@ class TheBackupPruneNeverOrphansALoss(unittest.TestCase):
         return name
 
     def _left(self):
-        return sorted(os.listdir(self.d))
+        return sorted(_fx_tmp.list_own(self.d))
 
     def test_the_rolling_window_is_kept(self):
         a = self._snap("ledger_a.json", 3600)
@@ -171,7 +173,7 @@ class TheBackupPruneNeverOrphansALoss(unittest.TestCase):
                     fh.write(json.dumps({"d2r_foundLog": "[]"}))
                 os.utime(p, (when, when))
             r = CA._ledger_backup_prune(d, now=now)
-            left = set(os.listdir(d))
+            left = set(_fx_tmp.list_own(d))
             verdicts[hour] = (r["pruned"], r["keepers"],
                               "ledger_a_first.json" in left, "ledger_b_first.json" in left)
 

@@ -229,14 +229,14 @@ class ARunGoesThroughTheHooksDoor(unittest.TestCase):
     def test_test_control_runs_as_shards(self):
         ok, line = SV.run("test_control", cwd=self.d)
         self.assertTrue(ok, line)
-        ran = sorted(os.listdir(self.mark))
+        ran = sorted(_fx_tmp.list_own(self.mark))
         self.assertEqual(ran, ["shard"], "--run test_control did not go through shard_suite: ran %r" % ran)
         self.assertEqual(io.open(os.path.join(self.mark, "shard"), encoding="utf-8").read(), "test_control")
 
     def test_test_agent_still_runs_its_own_file(self):
         ok, line = SV.run("test_agent", cwd=self.d)
         self.assertTrue(ok, line)
-        self.assertEqual(sorted(os.listdir(self.mark)), ["agent"])
+        self.assertEqual(sorted(_fx_tmp.list_own(self.mark)), ["agent"])
 
 
 class ARedRunSaysWhy(unittest.TestCase):

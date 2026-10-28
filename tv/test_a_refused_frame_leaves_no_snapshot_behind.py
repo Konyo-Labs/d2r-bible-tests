@@ -45,12 +45,21 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
+# #173 - every temp file this law's subject makes lands in a WATCH dir inside the run's own scratch, so the census
+# lists only what THIS run made (fixture_tmp), never a temp dir other runs share - and the law can be keyed.
+import fixture_tmp as _fx_tmp  # noqa: E402
+_fx_tmp.contain()
+_WATCH = tempfile.mkdtemp(prefix="watch-")
+tempfile.tempdir = _WATCH
+for _v in ("TMPDIR", "TEMP", "TMP"):
+    os.environ[_v] = _WATCH
+
 import control_app as CA  # noqa: E402
 
 
 def _snapshots():
     """Every MINI AUTO snapshot currently sitting in the system temp dir."""
-    return set(glob.glob(os.path.join(tempfile.gettempdir(), "minigrid.*")))
+    return set(_fx_tmp.match_own(os.path.join(tempfile.gettempdir(), "minigrid.*")))
 
 
 class TestRefusedFrameLeavesNoSnapshot(unittest.TestCase):

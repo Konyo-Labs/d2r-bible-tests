@@ -37,6 +37,8 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import fixture_tmp as _fx_tmp  # noqa: E402  #173 - its scratch is its own, so listing it keeps the law keyable
+_fx_tmp.contain()
 
 try:
     from console_safe import enable
@@ -80,7 +82,7 @@ class AFixturePackIsNotHisFootage(unittest.TestCase):
     def test_the_frames_span_the_whole_reel(self):
         """A head slice makes the reel controls untestable past the opening."""
         p = self._build(frames=8)
-        idx = json.load(io.open(os.path.join(p, "reels", os.listdir(os.path.join(p, "reels"))[0],
+        idx = json.load(io.open(os.path.join(p, "reels", _fx_tmp.list_own(os.path.join(p, "reels"))[0],
                                              "index.json"), encoding="utf-8"))
         kept = [f["ts"] for f in idx["frames"]]
         first_ts, last_ts = self.frames[0]["ts"], self.frames[-1]["ts"]

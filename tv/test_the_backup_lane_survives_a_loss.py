@@ -382,7 +382,7 @@ class TheLoopSeesTheDropAndThePruneKeepsTheBackup(_World):
                               now_ms=PINNED_NOW * 1000)
         r = CA._ledger_backup_prune(self.bdir, now=PINNED_NOW, drops_path=self.rec)
         self.assertIn(before, r["dropProtected"], r)
-        self.assertIn(before, os.listdir(self.bdir))
+        self.assertIn(before, _fx_tmp.list_own(self.bdir))
         self.assertIn("open ledger drop", r["why"])
         # the store comes back: the episode closes and the file ages out like any other
         back = _write(self.bdir, PINNED_NOW - 60, _board(134, 223))
@@ -390,7 +390,7 @@ class TheLoopSeesTheDropAndThePruneKeepsTheBackup(_World):
                               now_ms=PINNED_NOW * 1000)
         r2 = CA._ledger_backup_prune(self.bdir, now=PINNED_NOW, drops_path=self.rec)
         self.assertEqual([], r2["dropProtected"], "a CLOSED drop still protects: %r" % r2)
-        self.assertNotIn(before, os.listdir(self.bdir),
+        self.assertNotIn(before, _fx_tmp.list_own(self.bdir),
                          "the drop closed and its 100-day-old before-file was kept forever anyway")
 
     def test_while_the_record_is_UNREADABLE_the_prune_deletes_nothing(self):
@@ -399,7 +399,7 @@ class TheLoopSeesTheDropAndThePruneKeepsTheBackup(_World):
             fh.write("{not json")
         r = CA._ledger_backup_prune(self.bdir, now=PINNED_NOW, drops_path=self.rec)
         self.assertEqual(0, r["pruned"], "the prune deleted while it could not read which files a loss needs")
-        self.assertIn(before, os.listdir(self.bdir))
+        self.assertIn(before, _fx_tmp.list_own(self.bdir))
         self.assertIn("UNKNOWN", r["why"])
 
 
@@ -471,7 +471,7 @@ class TheEpisodeClosesOnlyWhenTheStoreIsBack(_World):
             fh.write("{damaged")
         w = self._judge(newest)
         self.assertTrue(w["ok"], w)
-        aside = [n for n in os.listdir(os.path.dirname(self.rec)) if ".unreadable-" in n]
+        aside = [n for n in _fx_tmp.list_own(os.path.dirname(self.rec)) if ".unreadable-" in n]
         self.assertEqual(1, len(aside), "the damaged record was written over instead of set aside")
         with io.open(os.path.join(os.path.dirname(self.rec), aside[0]), encoding="utf-8") as fh:
             self.assertEqual("{damaged", fh.read())

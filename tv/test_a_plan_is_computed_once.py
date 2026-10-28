@@ -354,8 +354,8 @@ class EveryInputMovesTheAnswer(_World):
 
         def tomb():
             d = os.path.join(h, r[7])
-            keep = sorted(os.listdir(d))[:2]
-            for f in os.listdir(d):
+            keep = sorted(_fx_tmp.list_own(d))[:2]
+            for f in _fx_tmp.list_own(d):
                 if f not in keep:
                     os.remove(os.path.join(d, f))
             _dump(os.path.join(self.root, "reel_tombstones.json"), {"reels": [{"reel": r[7], "kept": keep}]})

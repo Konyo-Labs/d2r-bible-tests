@@ -508,31 +508,8 @@ class AProvenVerdictIsReusedOnlyOnIdenticalBytes(_Case):
             consts = [x.value for x in ast.walk(ast.parse(fh.read()))
                       if isinstance(x, ast.Constant) and isinstance(x.value, str)]
         self.assertFalse(any(".heart2_cache" in c for c in consts), "run_gates.py names the cache file")
-        wf = os.path.join(ROOT, ".github", "workflows")
-        names = sorted(os.listdir(wf)) if os.path.isdir(wf) else []
-        self.assertTrue(names, "PREMISE: no CI workflow was found to read")
-        for n in names:
-            with io.open(os.path.join(wf, n), encoding="utf-8", errors="replace") as fh:
-                text = fh.read()
-            # v3862 (REG-3165) - proof-keys-windows.yml proves the published commit in Windows shards by the SAME
-            # mechanism (its own fresh per-shard cache, --proof-shard on every --push line), so the same rules hold it
-            if n in ("proof-keys-shards.yml", "proof-keys-windows.yml"):
-                # REG-2588 - the ONE exception: a proof shard proves at push time into its OWN fresh cache (REG-2585
-                # refuses one that already exists). Every --push line must be a shard's, and the cache may be named only
-                # where its fresh per-shard path is set - or, REG-2961, as the shard's READ-ONLY seed (HEART2_SHARD_SEED:
-                # heart2 serves a seed entry only under the key this checkout's bytes give it) and the seed the fan-in
-                # writes from the shards (--merge-shards). Never this machine's store, never a path the hook reads.
-                lines = text.splitlines()
-                self.assertTrue(all("--proof-shard" in l for l in lines if "--push" in l),
-                                "workflow %s runs a push-time prove that is not a proof shard" % n)
-                self.assertTrue(all(("HEART2_CACHE_PATH=" in l or "HEART2_SHARD_SEED=" in l or "--merge-shards" in l)
-                                    for l in lines if ".heart2_cache" in l),
-                                "workflow %s names the cache other than as a shard's own fresh path or its seed" % n)
-                self.assertTrue(all("heart2-seed/" in l for l in lines if "HEART2_SHARD_SEED=" in l or "--merge-shards" in l),
-                                "workflow %s seeds a shard from somewhere other than the restored seed dir" % n)
-                continue
-            self.assertNotIn(".heart2_cache", text, "workflow %s names the cache" % n)
-            self.assertNotIn("--push", text, "workflow %s runs a push-time prove - CI must run every proof" % n)
+        # #173 (REG-2939) - no CI WORKFLOW names the cache or runs a push-time prove: that half lists .github/workflows,
+        # so it lives in test_no_ci_workflow_reaches_the_push_cache.py and this law's 27 proofs can be saved.
         with io.open(os.path.join(ROOT, ".gitignore"), encoding="utf-8") as fh:
             ignored = [l.strip() for l in fh if l.strip() and not l.startswith("#")]
         self.assertIn("tv/.heart2_cache.json", ignored, "the cache is not gitignored - one Mac's proofs would travel")

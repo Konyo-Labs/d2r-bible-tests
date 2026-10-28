@@ -54,6 +54,8 @@ try:
     _enable()
 except Exception:
     pass
+import fixture_tmp as _fx_tmp  # noqa: E402  #173 - its scratch is its own, so listing it keeps the law keyable
+_fx_tmp.contain()
 
 import tv_diablo as T  # noqa: E402
 import read_pictures as RP  # noqa: E402
@@ -139,7 +141,7 @@ class TheLooseFilmReaperAsksFirst(_Shelf):
                                        "witnesses": [{"session": "s_1", "frame": n["cited"], "conf": 0.9}]}]})
         self.journal_rows([{"lane": "deep", "frameId": "reel_s_9/" + n["read"][:-4], "names": ["Shako"], "ts": OLD + 2}])
         got = T._reap_loose_film(self.hist, now_s=NOW_MS / 1000.0)
-        left = sorted(os.listdir(self.hist))
+        left = sorted(_fx_tmp.list_own(self.hist))
         self.assertIn(n["cited"], left, "a frame the vault ledger cites was reaped")
         self.assertIn(n["read"], left, "a frame a read was taken from was reaped")
         self.assertIn(n["young"], left, "the youth shield was broken")
@@ -152,7 +154,7 @@ class TheLooseFilmReaperAsksFirst(_Shelf):
         n = self._film()
         self.ledgers(accum="{")
         got = T._reap_loose_film(self.hist, now_s=NOW_MS / 1000.0)
-        self.assertEqual(sorted(n.values()), sorted(os.listdir(self.hist)))
+        self.assertEqual(sorted(n.values()), sorted(_fx_tmp.list_own(self.hist)))
         self.assertTrue(got["refused"])
         self.assertEqual(0, got["removed"])
 
@@ -196,7 +198,7 @@ class TheReelReaperKeepsTheEvidence(_Shelf):
 
     def _files(self, reel):
         d = os.path.join(self.hist, reel)
-        return sorted(os.listdir(d)) if os.path.isdir(d) else None
+        return sorted(_fx_tmp.list_own(d)) if os.path.isdir(d) else None
 
     def test_each_pass_takes_only_what_nothing_cites(self):
         self._reels()
@@ -316,7 +318,7 @@ class TheReadEvictionAsksFirst(_Shelf):
         n = self._loose()
         self._ledgers_ok(n)
         self._press()
-        left = set(os.listdir(self.hist))
+        left = set(_fx_tmp.list_own(self.hist))
         self.assertIn(n["cited"], left, "the eviction took a loose frame the vault ledger cites (the f_ belt exemption)")
         self.assertIn(n["read"], left, "the eviction took a frame a read was taken from")
         self.assertIn(n["chron"], left, "the eviction took a read frame chron_evidence cites")
@@ -332,7 +334,7 @@ class TheReadEvictionAsksFirst(_Shelf):
         n = self._loose()
         self.ledgers(accum="{")
         self._press()
-        left = set(os.listdir(self.hist))
+        left = set(_fx_tmp.list_own(self.hist))
         for k in ("cited", "read", "free", "chron", "freeRead"):
             self.assertIn(n[k], left, "the eviction shed %s while whether it was cited was UNKNOWN" % k)
         self.assertEqual([], [r for r in self.reaps() if r.get("by") == "recorder-read-eviction"])

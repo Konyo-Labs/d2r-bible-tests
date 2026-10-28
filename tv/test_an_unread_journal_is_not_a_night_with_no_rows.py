@@ -29,6 +29,8 @@ if HERE not in sys.path:
 
 from console_safe import enable as _console_safe_enable  # noqa: E402
 _console_safe_enable()
+import fixture_tmp as _fx_tmp  # noqa: E402  #173 - its scratch is its own, so listing it keeps the law keyable
+_fx_tmp.contain()
 
 import control_app as ca  # noqa: E402
 
@@ -47,7 +49,7 @@ class AnUnreadJournalIsNotANightWithNoRows(unittest.TestCase):
             os.chmod(self.tmp, 0o755)
         except OSError:
             pass
-        for name in os.listdir(self.tmp):
+        for name in _fx_tmp.list_own(self.tmp):
             path = os.path.join(self.tmp, name)
             try:
                 os.chmod(path, 0o755)

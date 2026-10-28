@@ -211,8 +211,8 @@ class AStubAgentNeverCallsAScreenReader(unittest.TestCase):
             self.assertTrue(live_ok, "the stub agent died (a refused grab raises): %s" % a.tail())
             self.assertTrue(read, "no read in 90 s — synthetic frames never settled into a read "
                             "(readCount=%r)\n%s" % (st.get("readCount"), a.tail()))
-            live = [f for f in os.listdir(a.frames) if f.startswith("live")]
-            self.assertTrue(live, "no live frame was written into the sandbox: %s" % os.listdir(a.frames))
+            live = [f for f in _fx_tmp.list_own(a.frames) if f.startswith("live")]
+            self.assertTrue(live, "no live frame was written into the sandbox: %s" % _fx_tmp.list_own(a.frames))
             with open(os.path.join(a.frames, live[0]), "rb") as fh:
                 self.assertEqual(fh.read(2), b"BM", "the live frame is not the synthetic BMP")
         finally:
@@ -250,7 +250,7 @@ class AStubAgentNeverCallsAScreenReader(unittest.TestCase):
         try:
             asked = a.wait_for(lambda: "capture_mac" in a.grabbed(), 45)
             flowed = a.wait_for(lambda: os.path.isfile(os.path.join(a.frames, "live.jpg"))
-                                or any(f.startswith("live") for f in os.listdir(a.frames)), 20)
+                                or any(f.startswith("live") for f in _fx_tmp.list_own(a.frames)), 20)
             a.stop(farewell_secs=10)
             self.assertTrue(asked, "with TV_STUB_REAL_CAPTURE=1 capture_mac was never asked:\n%s" % a.tail())
             self.assertTrue(flowed, "the synthetic fallback no longer runs after a failed grab")

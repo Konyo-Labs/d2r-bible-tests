@@ -88,8 +88,8 @@ class AnAbandonedSealIsFinished(_Reel):
         row = RR.inspect(self.reel)
         self.assertTrue(RR.repair(row))
         self.assertEqual(self.listed(), 4, "an older temp overwrote a fuller index")
-        kept = [n for n in os.listdir(self.reel) if n.startswith("index.json.tmp.abandoned-")]
-        self.assertEqual(len(kept), 1, "the abandoned temp was dropped instead of kept aside: %r" % os.listdir(self.reel))
+        kept = [n for n in _fx_tmp.list_own(self.reel) if n.startswith("index.json.tmp.abandoned-")]
+        self.assertEqual(len(kept), 1, "the abandoned temp was dropped instead of kept aside: %r" % _fx_tmp.list_own(self.reel))
 
     def test_an_abandoned_temp_with_no_index_still_leaves_the_reel_playable(self):
         self.write("index.json.tmp", _index(5), age_s=RR.STALE_TMP_S + 60)

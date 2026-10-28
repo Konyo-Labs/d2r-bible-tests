@@ -25,6 +25,8 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 from console_safe import enable as _console_safe_enable  # noqa: E402
 _console_safe_enable()
+import fixture_tmp as _fx_tmp  # noqa: E402  #173 - its scratch is its own, so listing it keeps the law keyable
+_fx_tmp.contain()
 
 import end_routes as ER      # noqa: E402
 import reel_retention as RR  # noqa: E402
@@ -80,7 +82,7 @@ class TheCheapEndRouteRowAsksTheStoreOnce(unittest.TestCase):
 
     def test_outside_a_pass_every_call_asks(self):
         src = ER.sources(self.hist)
-        reels = sorted(d for d in os.listdir(self.hist) if d.startswith("reel_"))
+        reels = sorted(d for d in _fx_tmp.list_own(self.hist) if d.startswith("reel_"))
         for r in reels[:2]:
             try:
                 ER.unextracted_door(r, src)

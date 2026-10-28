@@ -31,6 +31,8 @@ if HERE not in sys.path:
 
 from console_safe import enable as _console_safe_enable  # noqa: E402
 _console_safe_enable()
+import fixture_tmp as _fx_tmp  # noqa: E402  #173 - its scratch is its own, so listing it keeps the law keyable
+_fx_tmp.contain()
 
 import heart2 as H2  # noqa: E402
 import self_prove as SP  # noqa: E402
@@ -135,7 +137,7 @@ class ASliceNeverSpeaksForGatesItDidNotRun(_Fixture):
         with io.open(self.state, "rb") as fh:
             self.assertEqual(fh.read(), before, "a write that died half-way left the census truncated - heart2 then "
                                                 "refuses to write over it and every lock stays shut for good")
-        self.assertEqual([f for f in os.listdir(self.d) if f.endswith(".tmp")], [], "a temp file was left behind")
+        self.assertEqual([f for f in _fx_tmp.list_own(self.d) if f.endswith(".tmp")], [], "a temp file was left behind")
 
 
 class AGateNobodyMeasuredStaysOwed(_Fixture):

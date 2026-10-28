@@ -143,7 +143,7 @@ class AtomicWriteKeepsTheModeAndTheHookStaysArmed(unittest.TestCase):
                 BV.atomic_write(p, "after")
         finally:
             os.replace = real
-        strays = [f for f in os.listdir(d) if f != "x.txt"]
+        strays = [f for f in _fx_tmp.list_own(d) if f != "x.txt"]
         self.assertEqual(strays, [], "a failed write left %s behind" % strays)
         self.assertEqual(io.open(p).read(), "before",
                          "the original was damaged by a write that never completed")

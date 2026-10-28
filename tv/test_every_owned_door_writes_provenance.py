@@ -951,25 +951,8 @@ class TheOwnedStoreIsOnlyGrownThroughTheDoor(unittest.TestCase):
         blk = _code_only(_between(_src(), UNSEED_FROM, UNSEED_TO))
         self.assertIn("window._ownedAdd(nm,", blk.replace(" ", ""), "the un-seed Undo grows d2r_owned with no receipt")
 
-    def test_no_python_door_writes_owned_without_the_door(self):
-        """control_app sends the board JS; any function that sends a setItem('d2r_owned') must also send _ownedAdd."""
-        import ast
-        bad = []
-        for fn in sorted(os.listdir(HERE)):
-            if not fn.endswith(".py") or fn.startswith("test_") or fn.startswith("."):
-                continue
-            try:
-                with io.open(os.path.join(HERE, fn), encoding="utf-8") as fh:
-                    tree = ast.parse(fh.read())
-            except (SyntaxError, UnicodeDecodeError):
-                continue
-            for node in ast.walk(tree):
-                if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    continue
-                strs = "".join(n.value for n in ast.walk(node) if isinstance(n, ast.Constant) and isinstance(n.value, str))
-                if "setItem('d2r_owned'" in strs and "window._ownedAdd(" not in strs:
-                    bad.append("%s:%s" % (fn, node.name))
-        self.assertEqual([], bad, "a console door writes d2r_owned on the board with no receipt: %r" % bad)
+    # #173 (REG-2938) - the PYTHON doors' census (no tv/*.py sends setItem('d2r_owned') without window._ownedAdd) lists
+    # the folder, so it lives in test_no_python_door_writes_owned_without_the_door.py and this law's proofs can be saved.
 
     def test_no_vault_claim_is_decided_outside_the_route(self):
         """L1 — the bare predicate decides nothing on its own: every `_vaultMayClaim(` CALL in code sits inside

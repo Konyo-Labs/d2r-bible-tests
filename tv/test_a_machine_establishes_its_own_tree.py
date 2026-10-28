@@ -109,7 +109,7 @@ class AMachineEstablishesItsOwnTree(unittest.TestCase):
             ok3, why3 = MT._prove_write(d)
             self.assertTrue(ok3, "a writable directory failed the proof (%s) - the law would be "
                                  "red on every healthy machine" % why3)
-            self.assertEqual([], [f for f in os.listdir(d)],
+            self.assertEqual([], [f for f in _fx_tmp.list_own(d)],
                              "the probe file was left behind")
         finally:
             os.rmdir(d)

@@ -665,7 +665,7 @@ class TestV3525AReadDoesNotLoadHisOtherTools(unittest.TestCase):
         self.assertEqual(env.get("GROK_HOME"), self._grok_home, "the read lost his Grok login/config")
         self.assertNotEqual(env.get("HOME"), self._env.get("HOME"),
                             "the read ran in his real HOME, so Grok imports Claude/Cursor MCP servers, skills and hooks")
-        self.assertTrue(os.path.isdir(env.get("HOME")) and not os.listdir(env.get("HOME")),
+        self.assertTrue(os.path.isdir(env.get("HOME")) and not _fx_tmp.list_own(env.get("HOME")),
                         "the stand-in HOME is not an empty directory")
         if os.name == "nt":
             self.assertEqual(env.get("USERPROFILE"), env.get("HOME"))
@@ -684,7 +684,7 @@ class TestV3525AReadDoesNotLoadHisOtherTools(unittest.TestCase):
             os.makedirs(os.path.join(home, ".claude", "hooks"))
             again = g5._lean_home()
             self.assertEqual(again, home)
-            self.assertEqual(os.listdir(again), [], "a stray file in the stand-in home would be imported by the read")
+            self.assertEqual(_fx_tmp.list_own(again), [], "a stray file in the stand-in home would be imported by the read")
             # a symlink planted at the fixed name, pointing at SOMEONE ELSE's folder: the read must not use it as HOME,
             # and emptying the stand-in must never delete through it
             other = tempfile.mkdtemp(prefix="g5_other_")
@@ -695,7 +695,7 @@ class TestV3525AReadDoesNotLoadHisOtherTools(unittest.TestCase):
             os.symlink(other, home)
             third = g5._lean_home()
             self.assertFalse(os.path.islink(third), "the read's HOME is a symlink someone else chose")
-            self.assertEqual(os.listdir(third), [])
+            self.assertEqual(_fx_tmp.list_own(third), [])
             self.assertTrue(os.path.exists(os.path.join(other, "keep.json")),
                             "emptying the stand-in deleted files THROUGH a planted symlink")
 
@@ -706,7 +706,7 @@ class TestV3525AReadDoesNotLoadHisOtherTools(unittest.TestCase):
 
     def test_the_read_removes_only_its_own_session_directory(self):
         self._read()
-        sess = os.listdir(os.path.join(self._grok_home, "sessions"))
+        sess = _fx_tmp.list_own(os.path.join(self._grok_home, "sessions"))
         self.assertNotIn(self.seen["session"], sess, "the read left its Grok session directory behind")
         self.assertIn("his-own-session", sess, "the cleanup touched a session that was not the read's")
 

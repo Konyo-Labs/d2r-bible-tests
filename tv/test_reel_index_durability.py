@@ -34,6 +34,8 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import fixture_tmp as _fx_tmp  # noqa: E402  #173 - its scratch is its own, so listing it keeps the law keyable
+_fx_tmp.contain()
 
 import reel_index          # v1608 — the index WRITER (chronicle_retro stays provably read-only)
 
@@ -211,7 +213,7 @@ class _Seal(object):
             return json.load(fh)
 
     def strays(self):
-        return sorted(n for n in os.listdir(self.reel) if not (
+        return sorted(n for n in _fx_tmp.list_own(self.reel) if not (
             n.startswith("f_") and n.endswith(".jpg")) and n != "index.json")
 
 

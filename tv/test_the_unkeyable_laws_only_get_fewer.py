@@ -41,9 +41,11 @@ ALLOWLIST = os.path.join(HERE, "unkeyable_laws.json")
 #: the list's length when this ratchet was set (2026-10-21: 85 before REG-2362, then -2 test_control and test_agent,
 #: +2 the two laws that took their listings, +3 that heart2 counts beyond the census: lane_census, swallow_census and
 #: corroborate are registered gate scripts that list). It only ever comes DOWN: lower it when the list shrinks.
+#: #173 (REG-2941): 91 -> 63 - 28 laws now list only their own scratch (fixture_tmp.list_own / match_own) or name
+#: the frame they read, and 3 tree censuses moved out of the laws they made unkeyable into 3 small laws of their own.
 #: v3859 +1, on purpose: test_a_law_reads_the_product_not_a_copy_of_it sweeps every tv/test_*.py and tests/*.spec.ts
-#: for a copied product map - a census of the folder IS its input, the same reason corroborate is listed.
-CEILING = 92
+#: for a copied product map - a census of the folder IS its input, the same reason corroborate is listed. (63 + 1, v3863)
+CEILING = 64
 
 
 def _heavy_need(filename):

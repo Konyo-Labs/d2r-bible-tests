@@ -26,6 +26,8 @@ sys.path.insert(0, HERE)
 import console_safe  # noqa: F401,E402 — this file's own docstring carries 🔓, and a suite that
                      # crashes while REPORTING makes a clean tree exit non-zero
 console_safe.enable()
+import fixture_tmp as _fx_tmp  # noqa: E402  #173 - its scratch is its own, so listing it keeps the law keyable
+_fx_tmp.contain()
 
 import reel_retention as rr  # noqa: E402
 
@@ -92,7 +94,7 @@ class TestRetentionSelectsAndRefuses(unittest.TestCase):
         name = self._reel(1500000000009, 1)
         d = os.path.join(self.hist, name if isinstance(name, str) else "")
         if not os.path.isdir(d):
-            d = os.path.join(self.hist, sorted(os.listdir(self.hist))[0])
+            d = os.path.join(self.hist, sorted(_fx_tmp.list_own(self.hist))[0])
         r = rr.apply_plan({"hist": self.hist, "freeMb": 1.0,
                            "candidates": [{"reel": os.path.basename(d), "mb": 1.0}]}, yes=True)
         self.assertFalse(r.get("ok"), "a LOCKED frame.release reported success")

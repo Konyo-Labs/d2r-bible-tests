@@ -50,6 +50,15 @@ try:
 except Exception:
     pass
 
+# #173 - every temp file this law's subject makes lands in a WATCH dir inside the run's own scratch, so the census
+# lists only what THIS run made (fixture_tmp), never a temp dir other runs share - and the law can be keyed.
+import fixture_tmp as _fx_tmp  # noqa: E402
+_fx_tmp.contain()
+_WATCH = tempfile.mkdtemp(prefix="watch-")
+tempfile.tempdir = _WATCH
+for _v in ("TMPDIR", "TEMP", "TMP"):
+    os.environ[_v] = _WATCH
+
 import control_app as CA  # noqa: E402
 
 FN = "_mini_cells_from_live_frame"
@@ -190,10 +199,10 @@ class TheLiveFrameCannotBePulledMidRead(unittest.TestCase):
         """⛔ Every refusal passes through the cleanup. A snapshot per press fills his disk, and
         this repo has already paid for an ENOSPC."""
         self._write("eye.jpg")
-        before = set(f for f in os.listdir(tempfile.gettempdir()) if f.startswith("minigrid."))
+        before = set(f for f in _fx_tmp.list_own(tempfile.gettempdir()) if f.startswith("minigrid."))
         for _ in range(3):
             self._call()
-        after = set(f for f in os.listdir(tempfile.gettempdir()) if f.startswith("minigrid."))
+        after = set(f for f in _fx_tmp.list_own(tempfile.gettempdir()) if f.startswith("minigrid."))
         self.assertEqual(after - before, set(),
                          "snapshots survived the call: %s" % sorted(after - before))
 

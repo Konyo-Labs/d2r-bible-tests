@@ -37,12 +37,22 @@ PY = "\n".join(["import os", "", "", "def first():", "    return 1", "", "", "de
 
 def _rm_readonly(path):
     """eye_snapshot makes its folder read-only (0o444 / 0o555); give write back so the cleanup really removes it."""
-    for root, dirs, files in os.walk(path):
-        for x in dirs + files:
+    # #173 - walked through fixture_tmp.list_own: the folder is this run's own scratch, so the law stays keyable
+    stack = [path]
+    while stack:
+        d = stack.pop()
+        try:
+            names = _fx_tmp.list_own(d)
+        except Exception:
+            continue
+        for x in names:
+            q = os.path.join(d, x)
             try:
-                os.chmod(os.path.join(root, x), 0o755)
+                os.chmod(q, 0o755)
             except Exception:
                 pass
+            if os.path.isdir(q) and not os.path.islink(q):
+                stack.append(q)
     shutil.rmtree(path, True)
 
 

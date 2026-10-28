@@ -73,6 +73,9 @@ import slot_identity as S  # noqa: E402
 
 IN_BAND = os.path.join(REPO, "fixtures", "short-run", "reels", "reel_s_1786999742937_fxshortrun")     # 1280x832
 OUT_OF_BAND = os.path.join(REPO, "fixtures", "pack-stash-001", "reels", "reel_s_1784984019250_fxstash001")  # 1280x756
+# #173 - each reel's first frame by NAME, so heart2 keys its bytes: listing the folder for it made this law unkeyable
+IN_BAND_JPG = os.path.join(REPO, "fixtures/short-run/reels/reel_s_1786999742937_fxshortrun/f_1786999746023.jpg")
+OUT_OF_BAND_JPG = os.path.join(REPO, "fixtures/pack-stash-001/reels/reel_s_1784984019250_fxstash001/f_1784984130673.jpg")
 
 RED_PROOF = [
     {"why": "the chain rule: a reel with no login continues the previous game session ONLY across a rollover-sized gap; "
@@ -192,12 +195,11 @@ class _World(unittest.TestCase):
         E.store_path = self._orig_store_path
         shutil.rmtree(self.d, ignore_errors=True)
 
-    def frame(self, sid, frame_id, src_dir=IN_BAND):
-        src = sorted(f for f in os.listdir(src_dir) if f.endswith(".jpg"))[0]
+    def frame(self, sid, frame_id, src=IN_BAND_JPG):
         reel = os.path.join(self.hist, "reel_" + sid)
         os.makedirs(reel, exist_ok=True)
         dst = os.path.join(reel, frame_id + ".jpg")
-        shutil.copyfile(os.path.join(src_dir, src), dst)
+        shutil.copyfile(src, dst)
         return dst
 
     def write(self, rows):
@@ -259,10 +261,8 @@ class TestTheBoxIsTheMeasuredSlotInThatFramesPixels(unittest.TestCase):
         self.assertIs(E.DOLL_SLOTS, S.DOLL_SLOTS, "one tuple, owned by the geometry")
 
     def test_the_frame_size_is_read_from_the_jpeg_on_disk(self):
-        src = sorted(f for f in os.listdir(IN_BAND) if f.endswith(".jpg"))[0]
-        self.assertEqual(E.jpeg_size(os.path.join(IN_BAND, src)), (1280, 832))
-        src2 = sorted(f for f in os.listdir(OUT_OF_BAND) if f.endswith(".jpg"))[0]
-        self.assertEqual(E.jpeg_size(os.path.join(OUT_OF_BAND, src2)), (1280, 756))
+        self.assertEqual(E.jpeg_size(IN_BAND_JPG), (1280, 832))
+        self.assertEqual(E.jpeg_size(OUT_OF_BAND_JPG), (1280, 756))
         self.assertIsNone(E.jpeg_size(os.path.join(IN_BAND, "index.json")), "not a JPEG -> None, never a size")
         self.assertIsNone(E.jpeg_size(os.path.join(IN_BAND, "nope.jpg")))
 
@@ -320,7 +320,7 @@ class TestWornItemsAreFiledUnderWhoLoggedIn(_World):
 
     def test_a_frame_off_the_calibrated_aspect_keeps_the_slot_and_refuses_the_box(self):
         f1 = "f_%d" % (T0 + 60000)
-        self.frame(SID_A, f1, src_dir=OUT_OF_BAND)
+        self.frame(SID_A, f1, src=OUT_OF_BAND_JPG)
         rows = [_row(SID_A, T0, "char-select", character="Konyo"),
                 _worn(SID_A, T0 + 60000, f1, "Chains of Honor", slot="torso"), _seal(SID_A, T0 + 120000)]
         _r, d = self.ingest(rows)

@@ -15,6 +15,19 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import fixture_tmp as _fx_tmp  # noqa: E402  #173 - its scratch is its own, so listing it keeps the law keyable
+_fx_tmp.contain()
+
+
+def _own_files(top):
+    """Every file under `top`, a tree this run built in its own scratch (fixture_tmp.list_own) - #173."""
+    out, stack = [], [top]
+    while stack:
+        d = stack.pop()
+        for n in _fx_tmp.list_own(d):
+            q = os.path.join(d, n)
+            (stack if os.path.isdir(q) and not os.path.islink(q) else out).append(q)
+    return out
 
 
 RED_PROOF = [
@@ -86,8 +99,7 @@ class TestTheSuiteCannotGoBackToLiveFootage(unittest.TestCase):
             hist, why = vf.materialise(root)
             if not hist:
                 self.skipTest("could not build: %s" % why)
-            total = sum(os.path.getsize(os.path.join(dp, f))
-                        for dp, _, fs in os.walk(hist) for f in fs)
+            total = sum(os.path.getsize(f) for f in _own_files(hist))
             self.assertLess(total, 4 * 1024 * 1024,
                             "the synthetic tree is %.1f MB — it is meant to be disposable, and the "
                             "123 MB of real footage it replaces is what made deletion catastrophic"

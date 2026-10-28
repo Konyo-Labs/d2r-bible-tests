@@ -122,7 +122,7 @@ class VersionStampsAreWrittenAtomically(unittest.TestCase):
 
     def test_no_stray_temp_is_left_behind(self):
         BV.atomic_write(self.p, "NEW")
-        leftovers = [f for f in os.listdir(self.dir) if f.endswith(".tmp")]
+        leftovers = [f for f in _fx_tmp.list_own(self.dir) if f.endswith(".tmp")]
         self.assertEqual(leftovers, [],
                          "a .tmp survived the write: %r. These are not in .gitignore by wildcard, "
                          "so one left behind shows up as an untracked file in every later status."
