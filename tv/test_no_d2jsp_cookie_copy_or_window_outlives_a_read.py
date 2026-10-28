@@ -330,8 +330,8 @@ RED_PROOF = [
         "why": "REG-2492 - the room's login check no longer sweeps",
         "file": "tv/d2jsp_chrome.py",
         "find": "    try:\n        _sweep_stale_scratch()\n    except Exception:\n        pass\n"
-                "    _header, reason = live_cookie_header(now_utc)\n",
-        "replace": "    _header, reason = live_cookie_header(now_utc)\n",
+                "    said = []\n",
+        "replace": "    said = []\n",
         "matches": 1,
     },
     {

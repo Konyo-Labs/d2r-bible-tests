@@ -2166,8 +2166,8 @@ RED_PROOF = [
         "why": "REG-2490 - a click that stayed on post.php is reported not-posted again, the 'nothing was posted' "
                "that invites a duplicate",
         "file": "tv/d2jsp_chrome.py",
-        "find": '        return 200, {"ok": False, "reason": "maybe-sent", "board": int(board), "at": at}\n',
-        "replace": '        return 200, {"ok": False, "reason": "not-posted"}\n',
+        "find": '        return answer({"ok": False, "reason": "maybe-sent", "board": int(board), "at": at})\n',
+        "replace": '        return answer({"ok": False, "reason": "not-posted"})\n',
         "matches": 1,
     },
     {

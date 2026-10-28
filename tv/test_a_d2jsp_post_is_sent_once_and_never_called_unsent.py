@@ -989,8 +989,8 @@ RED_PROOF = [
         "why": "REG-2490 - a clicked submit with no receipt is mapped back to not-posted, the 'nothing was "
                "posted' that invites a duplicate",
         "file": "tv/d2jsp_chrome.py",
-        "find": '        return 200, {"ok": False, "reason": "maybe-sent", "board": int(board), "at": at}\n',
-        "replace": '        return 200, {"ok": False, "reason": "not-posted"}\n',
+        "find": '        return answer({"ok": False, "reason": "maybe-sent", "board": int(board), "at": at})\n',
+        "replace": '        return answer({"ok": False, "reason": "not-posted"})\n',
         "matches": 1,
     },
     {
@@ -1093,8 +1093,8 @@ RED_PROOF = [
     {
         "why": "REG-2490 (T1 review) - an edit that clicked and saw no receipt is carried out as no click",
         "file": "tv/d2jsp_chrome.py",
-        "find": '        if st["kind"] != "post":\n            return _flow_done(st)\n',
-        "replace": '        if st["kind"] != "post":\n            st["clicked"] = False\n            return _flow_done(st)\n',
+        "find": '        if st["kind"] != "post":\n            return _flow_done(st, why=',
+        "replace": '        if st["kind"] != "post":\n            st["clicked"] = False\n            return _flow_done(st, why=',
         "matches": 1,
     },
     {

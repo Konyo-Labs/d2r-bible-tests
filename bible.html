@@ -14021,8 +14021,8 @@ function d2jspBatchHtml(view) {
           return;
         }
         d2jspLamp();
-        say(w.text);
-        showReceipt(w.kind, w.text, w.link);
+        say(whySay(w));
+        showReceipt(w.kind, w.text, w.link, w.why);
       }).catch(function(){
         settle();
         var lost = answerWords(0, undefined, draft.forum, false);
@@ -14041,7 +14041,18 @@ function d2jspBatchHtml(view) {
      (D2JSP_SEND_REASONS, desk block) has its own words here; an answer this page does not know is a maybe, never a no.
      kind: confirmed | maybe | missed, which the receipt heads Confirmed / Maybe sent / Not sent.
      [[unknown-stays-unknown]] [[copy-drift]] */
+  /* REG-2870 (#83, his ask 1) - EVERY ANSWER SAYS WHAT THE CONSOLE SAW. GrokBot's real post from the Linux seat came back
+     "The console answered with no reason, which this page does not know" and nothing reached board 268: the words named
+     no HTTP status and nothing the console saw. The console now puts `why` on every answer that is not a receipt (which
+     cookie step failed, which step of the Chrome run stopped and on which page, an error it raised), and the receipt and
+     the status line carry it. An answer with no contract reason shows its HTTP status and its own words. */
   function sendWords(j, board, updating){
+    var w = sendWordsBare(j, board, updating);
+    var why = String((j && j.why) || '').replace(/\s+/g, ' ').trim().slice(0, 240);
+    if (why && w.kind !== 'confirmed' && String((j && j.reason) || '') !== 'chrome-start') w.why = why;
+    return w;
+  }
+  function sendWordsBare(j, board, updating){
     j = j || {};
     var reason = String(j.reason || '');
     var n = d2jspPostBoard(j.board, board);
@@ -14083,7 +14094,8 @@ function d2jspBatchHtml(view) {
       missed = 'The console takes a post only from its own page, so nothing was posted.';
     }
     if (missed) return { kind: 'missed', text: missed };
-    return { kind: 'maybe', text: 'The console answered ' + (reason ? ('"' + reason.slice(0, 40) + '"') : 'with no reason') + ', which this page does not know, so the post may be up. ' + check, link: link };
+    var own = String(j.msg || j.error || j.message || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+    return { kind: 'maybe', text: 'The console answered ' + (reason ? ('"' + reason.slice(0, 40) + '"') : 'without a post result') + (own ? (': ' + own) : '') + ', so the post may be up. ' + check, link: link };
   }
   /* #106 — THE ANSWER AS IT ARRIVED. code is the HTTP status (0 when none came back) and j the parsed body: null when
      the body was not JSON, undefined when the request never got an answer. Once the request left this page the
@@ -14095,7 +14107,15 @@ function d2jspBatchHtml(view) {
     var body = (j && typeof j === 'object') ? j : null;
     if (body && D2JSP_SEND_REASONS.indexOf(String(body.reason || '')) >= 0) return sendWords(body, board, updating);
     if (code === 404) return { kind: 'missed', text: 'This console has no post route (it answered 404), so nothing was posted.' };
-    if (body) return sendWords(body, board, updating);
+    if (body) {
+      /* REG-2870 - no contract reason: the answer as it came, its HTTP status and its own words, never "no reason" */
+      var bn = d2jspPostBoard(body.board, board), raw = '';
+      try { raw = JSON.stringify(body); } catch (eRaw) { raw = ''; }
+      var own = String(body.why || body.msg || body.error || body.message || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+      return { kind: 'maybe', text: 'The console answered' + (code ? (' HTTP ' + code) : '') + ' with no post result'
+          + (own ? (': "' + own + '"') : ' and no words') + ', so the post may be up. Check board ' + bn + ' before you post again.',
+        link: d2jspForumUrl(bn), why: (code ? ('HTTP ' + code + ' ') : '') + raw.slice(0, 200) };
+    }
     var n = d2jspPostBoard(null, board);
     var heard = (j === null)
       ? ('The answer from the console' + (code ? (' (HTTP ' + code + ')') : '') + ' could not be read')
@@ -14358,7 +14378,7 @@ function d2jspBatchHtml(view) {
     if (back){ try { back.focus(); } catch (eFocus) {} }
     d2jspMountShots(host, draft);
   }
-  function showReceipt(kind, detail, url){
+  function showReceipt(kind, detail, url, why){
     var host = draftHost();
     var safe = '';
     if (typeof url === 'string' && url.indexOf('https://forums.d2jsp.org/topic.php') === 0) safe = url;
@@ -14372,9 +14392,11 @@ function d2jspBatchHtml(view) {
     host.innerHTML = '<div class="d2jsp-draft-box" role="dialog" aria-modal="true" aria-label="' + esc(head) + '">'
       + '<p class="d2jsp-draft-k" data-d2jsp-receipt>' + esc(head) + '</p>'
       + '<p class="d2jsp-say">' + esc(detail) + '</p>'
+      + (why ? '<p class="d2jsp-say" data-d2jsp-why>What the console saw: ' + esc(why) + '</p>' : '')   /* REG-2870 */
       + link
       + '<div class="d2jsp-acts"><button type="button" class="vault-btn" data-d2jsp-draft-close>Back</button></div></div>';
   }
+  function whySay(w){ return w.text + (w.why ? (' What the console saw: ' + w.why) : ''); }   /* REG-2870 the status says it too */
   /* REG-2874 (#83, GrokBot 6476487696) - BACK OR ESCAPE ON A DRAFT IS A CANCEL. Both said "The draft was closed. Nothing was
      posted.", which reads like a post result; GrokBot read it as one. One sentence for both doors. Closed while a send runs,
      it says the board has not confirmed a topic, as it did. */
@@ -14500,8 +14522,8 @@ function d2jspBatchHtml(view) {
         return;
       }
       d2jspLamp();
-      say(w.text);
-      showReceipt(w.kind, w.text, w.link);
+      say(whySay(w));
+      showReceipt(w.kind, w.text, w.link, w.why);
     }).catch(function(){
       settle();
       var lost = answerWords(0, undefined, draft.forum, !!payload.topic);
