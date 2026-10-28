@@ -3,8 +3,8 @@
 
 #231 second eye on v43 (51774a21), re-measured at HEAD 2026-10-08: renderBossNav (and, swept, renderBossCards' tier heads) paint
 a tier multiplier from playerMult(id, 'hell', players) under a title "drop-quantity multiplier at /players N" with no difficulty.
-PLAYER_Q differs by difficulty (PRIME EVILS 0.18293 on hell vs 0.1875 on norm/nm: x1.18 vs x1.19 at /players 3), so a
-number computed for Hell must say Hell. The law reads the difficulty the computation ASKS for and requires the title to
+the /players factor differs by difficulty (REG-2953, silospen's own PLAYER_F: PRIME EVILS x1.188 on Hell vs x1.194 on
+Normal at /players 3), so a number computed for Hell must say Hell. The law reads the difficulty the computation ASKS for and requires the title to
 name that same difficulty - change one without the other and it goes red.
 """
 import os

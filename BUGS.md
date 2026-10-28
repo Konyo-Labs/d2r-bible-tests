@@ -2239,6 +2239,76 @@ through the same resolver once at boot (`_charSayStatic`). Sweep: beyond the aud
 boss card and the boss detail, the SPECIAL_DROPS note on the drops grid and the material card, and the sunder recipe tile's
 own "best for" - all gated. Law tv/test_a_recommendation_names_this_pcs_characters.py (worlds: his, another claimed ledger, a
 guest, another ledger with a saved Paladin; plus nothing painted at boot names him elsewhere), 20 red-proofs, all RED.
+### REG-2955 - A TERROR-ZONE COLUMN USES ITS DIFFICULTY'S /PLAYERS FACTOR, MEASURED UP TO 2.2% OFF (OPEN, named in REG-2953)
+playerMult keys a factor by difficulty only, so normTz, nmTz and hellTz take the non-TZ factor. Measured on Hell
+(desecrated, level 99, /players 7 against 1, every unique):
+- Cows x2.2849-2.2860 against x2.2861
+- Mephisto x1.2199-1.2206 against x1.2239
+- Andariel x1.7509-1.7534 against x1.7917, so 2.2% too generous on the TZ column
+Pulling every farm's TZ factor at the levels the stored TZ columns were read at (11 farms x 3 difficulties x 4
+/players steps, the d-suffixed boss ids) would close it.
+
+### REG-2954 - THE PIT'S STORED 1:N IS NOT SILOSPEN'S PIT LEVEL 1 FIGURE (OPEN, found in the REG-2953 pull)
+GAME_RULES.md says the Pit's odds are per kill of a Pit Level 1 dweller (cr_archer3, the Dark Archer). In the REG-2953
+pull (D2R_ROW_3_0, party 1, MF 300, /players 1, area Pit Level 1), the page's stored Pit figure is silospen's x 13/16
+on most rows: the median ratio is 1.23 on every difficulty. Some rows are far off (Pluckeye, Hell: stored 1:4,671,949,
+silospen 1:410,425). Of 735 Pit cells compared, 55 match. All other ten farms match the pull. This is a question
+about the base, not about /players: the REG-2953 law checks the Pit's factor against its own stored base and declares
+the Pit in BASE_NOT_THIS_PULL, which refuses the declaration once the bases agree. Not fixed: which monster and area
+the Pit's odds should be is a data ruling.
+
+### REG-2953 - /PLAYERS NOW USES SILOSPEN'S OWN FACTOR: IT STEPS AT /P3, /P5, /P7 AND MOVES COUNTESS AND DURIEL (#190, closes REG-2509)
+REG-2509 was open since v3791. effChance divided every 1:N by a model with one NoDrop q per boss:
+(1 - q^k)/(1 - q), k = 1 + floor(players / 2). His instruction on the task was to re-measure against silospen RotW 3.0
+before changing anything. The pull was read-only from silospen's calculator, the source of every stored 1:N:
+D2R_ROW_3_0, party 1, MF 300. It covered the 11 farms the page scales, on Normal, Nightmare and Hell, every unique at
+/players 1-8 and every set item at /players 1, 3, 5, 7. That is 468 queries plus 4 at MF 0 and MF 1000, one at a time,
+1.6 s apart, cached, with no refusals (494 requests in all, counting the page, the monster lists and the TZ checks).
+Every farm's stored /players 1 figure matched the pull, except the Pit (REG-2954). Rainbow Facet is left out because
+silospen lists it once per variant.
+- THE STEPS. silospen pairs /players 1=2, 3=4, 5=6, 7=8 on every farm and difficulty but one: Hell Duriel gains
+  1.4% at /p2. The model paired 2=3, 4=5, 6=7. So the page showed a gain at /p2 that the game does not give, and it
+  stepped one /players late after that. The model's pairing came in with 0e22e7d2 (2026-06-01), "correct P#
+  drop-quantity formula to canonical k=1+floor(N/2)". That commit replaced ceil(N/2), which pairs exactly as silospen
+  does today, and its message says "Verified vs silospen dropcalc" and "the in-game bug Konyo caught" (/p5 == /p6).
+  The live calculator refutes that verification on all 33 cells. If his in-game catch was something other than the
+  page's own /p5 == /p6, that is his to say. The Prime Evils stop gaining at /p5 (/p5 = /p7).
+- THE SIZE. One NoDrop cannot reach silospen's factors. Every treasure class under the top one has a NoDrop of its
+  own. Normal Andariel moves x1.78 at /p8, where the model capped at x1.39. Nagelring at MF 300 now reads
+  79, 79, 54, 54, 46, 46, 44, 44 across /p1-8, which is silospen's series; the model gave 79, 62, 62, 58, 58, 57, 57, 57.
+  Countess and Duriel were held at x1.00 as "guaranteed droppers" and tagged P#-PROOF. silospen moves them x1.39 and
+  x1.37 at /p8. Pindleskin is the one farm whose table does not move at any /players, so only he keeps the tag.
+  Cows and the Pit are x2.29, not x2.41.
+- THE SHAPE. Within one farm and difficulty, the per-item factor p(P)/p(1) varies only with how common the item is: a
+  common item saturates over several picks. So PLAYER_F holds one factor per farm, difficulty and /players: the
+  rare-item factor, 5 decimals, with index 0-7 for /players 1-8. Over the whole pull (60,679 item x /players cells),
+  the page prints silospen's 1:N within one count or 0.023% of N, whichever is larger. A median factor would need
+  0.07%. At MF 0 and MF 1000, /p7, every Normal Andariel unique is within one count.
+FIX:
+- `playerMult` reads PLAYER_F; PLAYER_Q is gone.
+- The P# explainer states the measured pairing and its two exceptions, and names silospen. Its Hell table prints
+  x@/p3 and x@/p8 for five rows; Pindleskin alone is P#-PROOF.
+- The slider tip and the PLAYERS=8 MYTH card name Pindleskin alone as unmoved, ~1.4x for Countess and Duriel, and up
+  to ~2.3x for Cows and the Pit.
+- The hero P#-PROOF tag's title cites silospen rather than "q=0".
+- The pull's raw probabilities for the items the law reads are in tv/data/silospen_players_rotw30.json (53 KB): per
+  cell and quality, the most common and the rarest item, the lowest and the highest p(7)/p(1), and named items, plus
+  the measured range of the whole table and the MF checks.
+- Re-aimed in the same change:
+  - test_a_good_mf_never_turns_odds_into_a_percent (reads PLAYER_F; Nagelring at MF 1000 /p8 is silospen's 1:35 from
+    the vendored pull)
+  - test_the_bible_text_agrees_with_its_own_cards (prose figure and the table read PLAYER_F; two red-proofs re-aimed)
+  - test_a_tier_multiplier_names_its_difficulty (docstring)
+  - specs v50, v160 and v1616_1 (Countess and Duriel move; Pindleskin is flat; silospen's pairing; 5 tier rows)
+GUARD: tv/test_players_moves_odds_by_silospens_own_factor.py, 5 cases. It drives the page's own engine in node and
+recomputes every expectation from the vendored raw probabilities. It checks:
+- the page steps exactly where silospen steps;
+- every vendored item prints silospen's odds within the measured reach;
+- only an unmoved farm is called P#-proof;
+- the explainer states the pairing;
+- the stored /players 1 figures are this pull's, with the Pit declared as REG-2954.
+It has 6 red-proofs (the retired pairing, Countess at x1.00, Andariel at the model's size, Hell Duriel's /p2,
+Countess and Duriel tagged P#-PROOF, the explainer's old pairing), all RED.
 
 ### REG-2879 - REG-2803'S CHROME LAW DROVE A GUEST WORLD, WHERE THE BOARD RIGHTLY MAKES NO MULE (ci/claude-v3834, 4 cases)
 CI (agent-suite, ci/claude-v3834) failed four cases of tv/test_vault_l1_war_stash_overflow.py, which REG-2803 re-aimed without
@@ -6009,7 +6079,7 @@ SOURCES: https://dropcalc.silospen.com (the queries above); the page's own MF ca
 GUARD: tv/test_a_good_mf_never_turns_odds_into_a_percent.py - the page's adjustChance reproduces silospen at MF 0 / 300 / 699 /
 1000 for three items, and every surface states one curve (4 red-proofs for this entry).
 
-### REG-2509 - THE /PLAYERS MODEL UNDER-SCALES AND STEPS ON THE WRONG COUNTS (OPEN, found in the M6 T2 fix round)
+### REG-2509 - THE /PLAYERS MODEL UNDER-SCALES AND STEPS ON THE WRONG COUNTS (CLOSED by REG-2953, 2026-10-28; found in the M6 T2 fix round)
 
 Measured while settling REG-2508, not fixed: effChance divides by playerMult, which models one top-level NoDrop per boss
 (PLAYER_Q) with k = 1 + floor(players / 2). silospen (same queries, /players 1-8) differs twice. The steps: silospen's

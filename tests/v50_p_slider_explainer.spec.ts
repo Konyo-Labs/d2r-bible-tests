@@ -4,12 +4,15 @@ import * as path from 'path';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v50 — lock the "What the P# slider actually does" methodology block AND the
-// underlying playerMult breakpoints. /players scales drop QUANTITY (not quality)
-// via (1 - q^k)/(1 - q), with the CANONICAL D2 drop factor k = 1 + floor(N/2)
-// (== 1 + (players>>1)). That pairs (2,3)(4,5)(6,7) with /p1 and /p8 distinct.
-// The earlier ceil(N/2) was an off-by-one (paired (1,2)(3,4)(5,6)(7,8)) that made
-// /p5 == /p6 — the bug Konyo caught in-game. This spec guards the fix from
-// regressing and keeps the explainer copy in sync with the engine.
+// underlying playerMult breakpoints. /players scales drop QUANTITY (not quality).
+// REG-2953 (2026-10-28): the size and the steps are silospen's own RotW 3.0 calculator
+// (party 1), measured for every boss, difficulty and /players (PLAYER_F) - not the
+// (1 - q^k)/(1 - q), k = 1 + floor(N/2) model this spec used to lock. silospen pairs
+// /p1=/p2, /p3=/p4, /p5=/p6, /p7=/p8 (the pairing before 0e22e7d2 moved it), the Prime
+// Evils stop gaining at /p5, Hell Duriel alone gains at /p2, and Pindleskin is the one
+// farm whose table does not move. The exact factors are pinned by the python law
+// tv/test_players_moves_odds_by_silospens_own_factor.py against the vendored pull; this
+// spec keeps the explainer copy and the engine in step on a real page.
 test.describe('v50 P# slider explainer + breakpoint math', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(URL);
@@ -19,52 +22,49 @@ test.describe('v50 P# slider explainer + breakpoint math', () => {
     await page.waitForTimeout(150);
   });
 
-  test('explainer documents the canonical k = 1 + floor(N/2), not ceil', async ({ page }) => {
+  test('explainer documents silospen\'s pairing, not the retired k = 1 + floor(N/2) model', async ({ page }) => {
     // v89: ref sections are now collapsible (.sec-h/.sec-body, collapsed by default) —
     // read textContent (sees hidden bodies) instead of innerText (visible-only).
     const t = (await page.locator('#tab-ref').textContent()) || '';
     expect(t).toContain('What the P# slider actually does');
-    expect(t).toContain('multiplier = (1 − qᵏ) / (1 − q)');
-    expect(t).toContain('k = 1 + floor(N / 2)');
-    expect(t).not.toContain('ceil(N / 2)'); // the old buggy formula must be gone
+    expect(t).not.toContain('k = 1 + floor(N / 2)'); // the retired one-NoDrop model
+    expect(t).toContain('silospen');
     expect(t).toMatch(/quantity/i);
     expect(t).toMatch(/never.*quality/i);
-    // correct breakpoints: solo baseline, steps at even levels, paired with the odd above
-    expect(t).toMatch(/\/p2, \/p4, \/p6, \/p8/);
-    expect(t).toMatch(/\/p2=\/p3, \/p4=\/p5, \/p6=\/p7/);
+    // silospen's breakpoints: /p1 and /p2 the same, steps at /p3, /p5, /p7
+    expect(t).toContain('/p1=/p2, /p3=/p4, /p5=/p6, /p7=/p8');
+    expect(t).toMatch(/\/p3, \/p5 and \/p7/);
     expect(t.toLowerCase()).not.toContain('undefined');
   });
 
-  test('all 4 tiers present; @ /p8 multipliers match k=5; only Guaranteed droppers is P#-proof', async ({ page }) => {
+  test('the tier table prints silospen\'s Hell factors; only Pindleskin is P#-proof', async ({ page }) => {
     const rows = await page.evaluate(() =>
       [...document.querySelectorAll('#tab-ref table.drops tbody tr')]
         .map((tr) => [...tr.querySelectorAll('td')].map((td) => td.textContent!.trim())));
-    expect(rows.length).toBe(4);
+    expect(rows.length).toBe(5);
     const byTier = Object.fromEntries(rows.map((r) => [r[0], r]));
     const swarm = Object.keys(byTier).find((k) => /High-density/.test(k))!;
     const hoarders = Object.keys(byTier).find((k) => /Heavy droppers/.test(k))!;
     const prime = Object.keys(byTier).find((k) => /Prime Evils/.test(k))!;
-    const vault = Object.keys(byTier).find((k) => /Guaranteed droppers/.test(k))!;
-    expect(swarm && hoarders && prime && vault).toBeTruthy();
-    // k=5 @ /p8 values
-    expect(byTier[swarm].at(-1)).toContain('×2.41');
-    expect(byTier[hoarders].at(-1)).toMatch(/×1\.39.1\.5[23]/); // 1.39–1.52 (tolerate 1.53 display rounding)
+    const proof = Object.keys(byTier).find((k) => /P#-proof/.test(k))!;
+    expect(swarm && hoarders && prime && proof).toBeTruthy();
+    // silospen RotW 3.0 @ /p8 (Hell)
+    expect(byTier[swarm].at(-1)).toContain('×2.29');
+    expect(byTier[hoarders].at(-1)).toContain('×1.45–1.79');
     expect(byTier[prime].at(-1)).toContain('×1.22');
-    // only the Guaranteed droppers tier is P#-proof
-    expect(byTier[vault].at(-1)).toContain('P#-PROOF');
-    expect(byTier[swarm].at(-1)).not.toContain('P#-PROOF');
-    expect(byTier[prime].at(-1)).not.toContain('P#-PROOF');
-    expect(byTier[vault]).toContain('0.0');
-    expect(byTier[swarm]).toContain('0.625');
+    // only Pindleskin's row is P#-proof
+    expect(byTier[proof][1]).toBe('Pindleskin');
+    const tagged = rows.filter((r) => r.at(-1)!.includes('P#-PROOF')).map((r) => r[1]);
+    expect(tagged).toEqual(['Pindleskin']);
   });
 
-  test('playerMult uses k=1+floor(N/2): @/p8 math + the (2,3)(4,5)(6,7) pairing', async ({ page }) => {
+  test('playerMult reads silospen\'s factors: @/p8 values + the (1,2)(3,4)(5,6)(7,8) pairing', async ({ page }) => {
     const m = await page.evaluate(() => {
       const pm = (window as any).playerMult;
       const r2 = (id: string, p: number) => Math.round(pm(id, 'hell', p) * 100) / 100;
       const raw = (id: string, p: number) => pm(id, 'hell', p);
       return {
-        // documented @/p8 multipliers (k=5)
+        // silospen RotW 3.0 @/p8 multipliers (Hell)
         cows: r2('cows', 8), pit: r2('pit', 8),
         meph: r2('mephisto', 8), diablo: r2('diablo', 8), baal: r2('baal', 8),
         countess: r2('countess', 8), duriel: r2('duriel', 8), pindle: r2('pindle', 8),
@@ -72,23 +72,24 @@ test.describe('v50 P# slider explainer + breakpoint math', () => {
         p: Array.from({ length: 8 }, (_, i) => raw('cows', i + 1)),
       };
     });
-    // @/p8 with k=5
-    expect(m.cows).toBe(2.41);
-    expect(m.pit).toBe(2.41);
+    // silospen @/p8
+    expect(m.cows).toBe(2.29);
+    expect(m.pit).toBe(2.29);
     expect(m.meph).toBe(1.22);
     expect(m.diablo).toBe(1.22);
     expect(m.baal).toBe(1.22);
-    // Open Vault guaranteed droppers stay ×1.00
-    expect(m.countess).toBe(1);
-    expect(m.duriel).toBe(1);
+    // Countess and Duriel move (they were held at ×1.00); Pindleskin does not
+    expect(m.countess).toBe(1.39);
+    expect(m.duriel).toBe(1.37);
     expect(m.pindle).toBe(1);
-    // canonical pairing: (2,3) (4,5) (6,7) equal; /p1 and /p8 distinct singletons.
+    // silospen's pairing: (1,2) (3,4) (5,6) (7,8) equal; steps at /p3, /p5, /p7.
     const [p1, p2, p3, p4, p5, p6, p7, p8] = m.p;
-    expect(p2).toBe(p3);
-    expect(p4).toBe(p5); // the fix: /p4 == /p5 (was /p5 == /p6 under ceil)
-    expect(p6).toBe(p7);
-    expect(p5).not.toBe(p6); // /p6 starts a new tier — the exact case from the screenshots
-    expect(p1).toBeLessThan(p2);
-    expect(p7).toBeLessThan(p8);
+    expect(p1).toBe(p2);
+    expect(p3).toBe(p4);
+    expect(p5).toBe(p6);
+    expect(p7).toBe(p8);
+    expect(p2).toBeLessThan(p3);
+    expect(p4).toBeLessThan(p5);
+    expect(p6).toBeLessThan(p7);
   });
 });

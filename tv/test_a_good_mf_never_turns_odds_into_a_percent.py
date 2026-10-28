@@ -26,10 +26,10 @@ The expected figures are now the SOURCE's: silospen's calculator, the one every 
 on 2026-10-22 (dropcalc.php?type=monsterProbabilities&version=D2R_ROW_3_0&itemQuality=UNIQUE&players=1&party=1 and
 type=atomicTcProbabilities for the keys) - see SILOSPEN below. The page's curve must reproduce them.
 
-What this law does NOT certify: the /players factor. effChance divides by the page's PLAYER_Q model, and silospen
-disagrees with that model (Nagelring, Normal Andariel, MF 1000: silospen 1:35 at /players 8, the model 1:44; the
-model steps at /p2, /p4, /p6, /p8 where silospen steps at /p3, /p5, /p7). That is REG-2509, OPEN. Here /players is
-checked only for its UNIT (a 1:N stays a 1:N and still ranks) and for being applied at all.
+What this law does NOT certify: the /players factor. That is test_players_moves_odds_by_silospens_own_factor (REG-2953,
+which closed REG-2509: effChance now divides by silospen's own measured factor, PLAYER_F). Here /players is checked for
+its UNIT (a 1:N stays a 1:N and still ranks), for being applied at all, and - one figure - that Nagelring at MF 1000
+/players 8 is silospen's 1:35, read from the vendored pull (tv/data/silospen_players_rotw30.json).
 
 Driven in node over code CUT from bible.html between its own boundaries: the drop engine (effMF .. fmtHours), the
 BOSSES table, SPECIAL_DROPS, and renderDetail itself with a stub panel, so the ranking is read from the HTML it
@@ -112,9 +112,16 @@ def _adjust(base, mf):
     return max(1, int(math.floor(base * (1 + eff(300) / 100.0) / (1 + eff(mf) / 100.0) + 0.5)))
 
 
-def _player_mult(q, players):
-    k = 1 + players // 2
-    return (1 - q ** k) / (1 - q) if q else 1.0
+def _player_mult(f, players):
+    """The page's own /players factor (PLAYER_F[boss][tier], index 0-7 = /players 1-8)."""
+    return f[players - 1]
+
+
+def _silospen_mf(item, mf, players):
+    """silospen's 1:N at this MF and /players, from the vendored pull (REG-2953)."""
+    with open(os.path.join(HERE, "data", "silospen_players_rotw30.json"), encoding="utf-8") as fh:
+        at = json.load(fh)["mf"]["at"]
+    return int(math.floor(1.0 / at[str(mf)][str(players)][item] + 0.5))
 
 
 SCENARIO = r"""
@@ -189,8 +196,8 @@ class AGoodMfNeverTurnsOddsIntoAPercent(unittest.TestCase):
         spark = _cut(cls.src, "function sparkline(chance, kph, hoursMax) {", "\n}\n", inclusive=True)
         prelude = "var window = {}; var document = { getElementById: function(){ return null; } };\nvar mf = 300, players = 1;\n"
         cls.o = _node(prelude + special + "\n" + engine + "\n" + spark + "\n" + detail + "\n" + SCENARIO)
-        q = re.search(r'const PLAYER_Q = (\{.*?\});\n', cls.src)
-        cls.player_q = json.loads(q.group(1))
+        f = re.search(r'const PLAYER_F = (\{.*?\});\n', cls.src)
+        cls.player_f = json.loads(f.group(1))
 
     def test_the_raw_data_holds_one_unit_per_kind_of_drop(self):
         events, odds_under_50 = [], []
@@ -259,18 +266,17 @@ class AGoodMfNeverTurnsOddsIntoAPercent(unittest.TestCase):
         self.assertEqual(o["nag699fmt"], "1:66")
         self.assertIsNotNone(o["nag699hours"])
         self.assertIsNotNone(o["nag699runs"])
-        # /players 8: the page's PLAYER_Q model (REG-2509 OPEN - silospen says 1:35); only the unit is certified here
-        q = self.player_q["andariel"]["norm"]
-        model = max(1, int(math.floor(_adjust(79, 1000) / _player_mult(q, 8) + 0.5)))
-        self.assertEqual(o["nag1000"], model, "effChance did not apply the MF curve and the /players model it states")
+        # /players 8 (= 7, the game pairs them): the page's own factor, and silospen's figure for it (REG-2953)
+        model = max(1, int(math.floor(_adjust(79, 1000) / _player_mult(self.player_f["andariel"]["norm"], 8) + 0.5)))
+        self.assertEqual(o["nag1000"], model, "effChance did not apply the MF curve and the /players factor it states")
+        self.assertEqual(model, _silospen_mf("Nagelring", 1000, 7), "Nagelring at MF 1000 /players 8 is not silospen's 1:35")
         self.assertLess(o["nag1000"], SILOSPEN[("Nagelring", "Normal Andariel", 79)][1000], "/players 8 did not move 1:N")
         self.assertEqual(o["nag1000fmt"], "1:%d" % model, "a 1:N at MF 1000 /players 8 printed as a percent")
         self.assertIsNotNone(o["nag1000hours"])
         self.assertEqual(o["nag1000runHours"], o["nag1000hours"])
 
     def test_a_small_odds_value_is_still_scaled_by_players(self):
-        q = self.player_q["mephisto"]["norm"]
-        want = max(1, int(math.floor(_adjust(32, 1000) / _player_mult(q, 8) + 0.5)))
+        want = max(1, int(math.floor(_adjust(32, 1000) / _player_mult(self.player_f["mephisto"]["norm"], 8) + 0.5)))
         self.assertLess(want, _adjust(32, 1000), "premise: /players 8 moves this value")
         self.assertEqual(self.o["isen1000"], want, "an MF-adjusted 1:N at or under 50 skipped the /players scaling")
         self.assertEqual(self.o["isenRawFmt"], "1:32")
@@ -315,8 +321,7 @@ class AGoodMfNeverTurnsOddsIntoAPercent(unittest.TestCase):
 
     def test_render_detail_ranks_and_prints_the_good_mf_source(self):
         d699, d1000 = self.o["detail699"], self.o["detail1000"]
-        q = self.player_q["andariel"]["norm"]
-        model = max(1, int(math.floor(_adjust(79, 1000) / _player_mult(q, 8) + 0.5)))
+        model = max(1, int(math.floor(_adjust(79, 1000) / _player_mult(self.player_f["andariel"]["norm"], 8) + 0.5)))
         for html, odds in ((d699, "1:66"), (d1000, "1:%d" % model)):
             # the ranked row is the best cell, and the deep dive is built for it - both only when it ranks
             self.assertIn('<td class="diff-col best-cell ">%s</td>' % odds, html,

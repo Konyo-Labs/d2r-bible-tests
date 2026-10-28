@@ -16,6 +16,10 @@ REG-2090 - the #231 code seat on May's 0e22e7d2 and 46f0f060, re-measured at the
     0.34545), so a reader who multiplied the printed q got x1.53. The q now prints to the precision that round-trips;
   * Blood Raven was "the Den-of-Evil quest archer" in three places (her quest is Sisters' Burial Grounds), and
     Andariel's quest line said "Den-of-Evil + Sisters quest" (hers is Sisters to the Slaughter).
+
+REG-2953 (re-aimed): PLAYER_Q's one-NoDrop model is gone - /players is silospen's own measured factor per farm, difficulty
+and /players (PLAYER_F). The prose figure and the /p8 table now read PLAYER_F; the table prints its x at /p3 and /p8
+(there is no single q to print any more), and every farm the page scales sits in exactly one row.
 """
 import io
 import json
@@ -45,11 +49,11 @@ def _codex(s):
     return json.loads(s[i + len("const ITEM_CODEX = "):s.find("};\n", i) + 1])
 
 
-def _player_q(s):
-    i = s.find("const PLAYER_Q = ")
+def _player_f(s):
+    i = s.find("const PLAYER_F = ")
     if i < 0:
-        raise AssertionError("PLAYER_Q is gone - re-point this law")
-    return json.loads(s[i + len("const PLAYER_Q = "):s.find(";\n", i)])
+        raise AssertionError("PLAYER_F is gone - re-point this law")
+    return json.loads(s[i + len("const PLAYER_F = "):s.find(";\n", i)])
 
 
 class TheBibleTextAgreesWithItsOwnCards(unittest.TestCase):
@@ -118,38 +122,34 @@ class TheBibleTextAgreesWithItsOwnCards(unittest.TestCase):
 
     def test_the_players_prose_says_the_multiplier_the_formula_gives(self):
         s = _src()
-        q = _player_q(s)["cows"]["hell"]
-        m = (1 - q ** 5) / (1 - q)                       # playerMult at /players 8: k = 1 + floor(8/2)
+        m = _player_f(s)["cows"]["hell"][7]              # playerMult(cows, hell, 8)
         said = re.findall(r"up to (?:<strong>)?~(\d+\.\d+)×(?:</strong>)? for Cows &(?:amp;)? The Pit", s)
         self.assertGreaterEqual(len(said), 2, "premise: the slider tip and the myth card both say it (%d found)" % len(said))
         for x in said:
             self.assertEqual(float(x), round(m, 1),
                              "a sentence says up to ~%s× for Cows & The Pit; playerMult at /p8 is %.3f" % (x, m))
 
-    def test_the_p8_table_rows_round_trip_from_their_printed_q(self):
+    def test_the_p8_table_rows_print_the_page_s_own_factors(self):
         s = _src()
-        pq = _player_q(s)
-        i = s.find("<thead><tr><th>tier</th><th>bosses</th><th>NoDrop q</th><th>×@ /p8</th></tr></thead>")
-        self.assertGreater(i, 0, "the /p8 multiplier table is gone - re-point this law")
+        pf = _player_f(s)
+        i = s.find("<thead><tr><th>tier</th><th>bosses</th><th>×@ /p3</th><th>×@ /p8</th></tr></thead>")
+        self.assertGreater(i, 0, "the /players multiplier table is gone - re-point this law")
         body = s[i:s.find("</tbody>", i)]
         rows = re.findall(r"<tr><td class=\"item-name\">[^<]*</td><td>([^<]+)</td><td>([^<]+)</td><td>(.*?)</td></tr>", body)
-        self.assertEqual(len(rows), 4, "premise: the four tier rows (%d found)" % len(rows))
-        f = lambda v: 1.0 if v == 0 else (1 - v ** 5) / (1 - v)
-        bad = []
-        for bosses, qs, xs in rows:
-            ids = [k for b in bosses.split("·") for k in pq if b.strip().lower().startswith(k)]
-            self.assertEqual(len(ids), len(bosses.split("·")), "premise: every boss in %r has a PLAYER_Q row" % bosses)
-            real = sorted(pq[k]["hell"] for k in ids)
-            printed_q = [float(v) for v in re.findall(r"\d+(?:\.\d+)?", qs)]
-            printed_x = [float(v) for v in re.findall(r"\d+\.\d+", xs[xs.find("×"):])]   # "×1.39–1.52" carries one ×
-            want_x = sorted({round(f(v), 2) for v in (real[0], real[-1])})
-            if [round(v, 2) for v in printed_x] != want_x:
-                bad.append("%s: prints ×%s, PLAYER_Q gives ×%s" % (bosses, printed_x, want_x))
-            # the eye's check: a reader who multiplies the PRINTED q must land on the printed ×
-            from_q = sorted({round(f(v), 2) for v in printed_q})
-            if from_q != want_x:
-                bad.append("%s: q %s printed, which gives ×%s, beside ×%s" % (bosses, qs, from_q, want_x))
-        self.assertEqual(bad, [], "a /p8 table row disagrees with its own q: %r" % bad)
+        self.assertGreaterEqual(len(rows), 4, "premise: the tier rows (%d found)" % len(rows))
+        bad, seen = [], []
+        for bosses, x3, x8 in rows:
+            ids = [k for b in bosses.split("·") for k in pf if b.strip().lower().startswith(k)]
+            self.assertEqual(len(ids), len(bosses.split("·")), "premise: every boss in %r has a PLAYER_F row" % bosses)
+            seen += ids
+            for col, xs in ((2, x3), (7, x8)):
+                printed = [float(v) for v in re.findall(r"\d+\.\d+", xs[xs.find("×"):])]   # "×1.45–1.79" carries one ×
+                real = sorted(pf[k]["hell"][col] for k in ids)
+                want = sorted({round(real[0], 2), round(real[-1], 2)})
+                if [round(v, 2) for v in printed] != want:
+                    bad.append("%s at /p%d: prints ×%s, PLAYER_F gives ×%s" % (bosses, col + 1, printed, want))
+        self.assertEqual(sorted(seen), sorted(pf), "a farm the page scales is in no row, or in two")
+        self.assertEqual(bad, [], "a /players table row disagrees with the page's own factor: %r" % bad)
 
     def test_no_card_gives_a_boss_another_quest(self):
         s = _src()
@@ -772,15 +772,15 @@ RED_PROOF = [
      "find": "+3 sorc skills · +30% FCR · MF +50% · the all-round sorc orb",
      "replace": "+3 sorc skills · +20% FCR · MF +50% · the all-round sorc orb",
      "matches": 2},
-    {"why": "REG-2090 - the slider tip says ~2.3x for Cows & The Pit again",
+    {"why": "REG-2090 (re-aimed REG-2953) - the slider tip says the retired model's ~2.4x for Cows & The Pit again",
      "file": "bible.html",
-     "find": "up to ~2.4× for Cows & The Pit",
-     "replace": "up to ~2.3× for Cows & The Pit",
+     "find": "up to ~2.3× for Cows & The Pit",
+     "replace": "up to ~2.4× for Cows & The Pit",
      "matches": 1},
-    {"why": "REG-2090 - the Heavy droppers row prints a q that does not give its own x",
+    {"why": "REG-2090 (re-aimed REG-2953) - the Heavy droppers row prints the retired model's x at /p8",
      "file": "bible.html",
-     "find": "<td>0.2794–0.3455</td>",
-     "replace": "<td>0.28–0.35</td>",
+     "find": "<td>×1.45–1.79</td>",
+     "replace": "<td>×1.39–1.52</td>",
      "matches": 1},
     {"why": "REG-2090 - Blood Raven is the Den of Evil quest archer again",
      "file": "bible.html",
