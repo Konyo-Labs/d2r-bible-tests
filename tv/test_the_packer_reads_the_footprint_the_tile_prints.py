@@ -365,8 +365,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "two copies of one name pack as one tile again",
      "file": "bible.html",
-     "find": "      for (var k = 0; k < cc; k++){\n        var key = _muleItemKey(n, k), c = pl[k];\n",
-     "replace": "      for (var k = 0; k < 1; k++){\n        var key = _muleItemKey(n, k), c = pl[k];\n",
+     "find": "      for (var k = 0; k < cc; k++){\n        var key = _muleItemKey(n, cis[k]), c = _vaultPlanCell(pl, cis[k]);\n",
+     "replace": "      for (var k = 0; k < 1; k++){\n        var key = _muleItemKey(n, cis[k]), c = _vaultPlanCell(pl, cis[k]);\n",
      "matches": 1},
 ]
 

@@ -55072,6 +55072,23 @@ window.vaultAutoAssign = function(){
      -> { pages: [5 lists of {n, key, x, y, w, h}], left: [what fits none of the 5 pages - the plan sends it to WAR1, WAR2 ...] } */
   var SHARED_PAGES = 5;
   try { window.SHARED_PAGES = SHARED_PAGES; } catch (eSp) {}   /* REG-2860 - the Vault guide says this figure */
+  /* REG-2876 / REG-2887 - THE ONE JOIN OF A DRAWN COPY TO ITS TASK CELL, for every locker that draws from _vaultPlanOn (a mule
+     card in _muleLoad, the shared stash in _sharedLayout). The plan is FILTERED (a throw, a task with no cell, a cell that
+     will not parse and another holder's task are dropped), so its k-th entry is not copy k: a copy is joined by the copyIx
+     stored on its task, never by position. -> the copyIx of the m copies to draw: the plan's own first, in copyIx order,
+     then the copyIx left */
+  function _vaultPlanCis(pl, m){
+    var out = [];
+    (pl || []).forEach(function(q){ if (out.indexOf(q.ci) < 0 && out.length < m) out.push(q.ci); });
+    for (var c = 0; out.length < m; c++) if (out.indexOf(c) < 0) out.push(c);
+    return out;
+  }
+  /* -> the plan entry whose copyIx is ci (its own task cell), or null */
+  function _vaultPlanCell(pl, ci){
+    for (var q = 0; q < (pl || []).length; q++) if (pl[q].ci === ci) return pl[q];
+    return null;
+  }
+  try { window._vaultPlanCis = _vaultPlanCis; window._vaultPlanCell = _vaultPlanCell; } catch (ePc) {}
   function _sharedLayout(names){
     var plan = null;
     try { plan = (typeof _vaultPlanOn === 'function') ? _vaultPlanOn('shared') : null; } catch (eP) { plan = null; }
@@ -55084,8 +55101,12 @@ window.vaultAutoAssign = function(){
     (names || []).forEach(function(n){
       var sz = vaultSize(n), w = sz[0] || 1, h = sz[1] || 1, pl = (plan && plan[n]) || [], cc = 1;
       try { cc = _shelfCopyCount(n, 'shared'); } catch (eC) { cc = 1; }
+      /* REG-2887 (#231 second eye on v3833) - the k-th drawn copy took the k-th entry of the FILTERED plan and the key of
+         copy k: with copy 0 a throw and copy 1's task on page 2, copy 0 was painted at copy 1's cell. Each copy now carries
+         its own copyIx (its key) and takes the task cell of that copyIx, through the mule card's own join. */
+      var cis = _vaultPlanCis(pl, cc);
       for (var k = 0; k < cc; k++){
-        var key = _muleItemKey(n, k), c = pl[k];
+        var key = _muleItemKey(n, cis[k]), c = _vaultPlanCell(pl, cis[k]);
         if (c && c.tab === 'sharedpage' && c.page >= 0 && c.page < SHARED_PAGES && free(c.page, c.x, c.y, w, h))
           pages[c.page].push({ n: n, key: key, x: c.x, y: c.y, w: w, h: h, planned: true });
         else auto.push({ n: n, key: key, w: w, h: h, area: w * h });
@@ -55575,12 +55596,7 @@ window.vaultAutoAssign = function(){
        (3,0), the card held the other copy there, and a drag of that tile re-targeted copy 0 (REG-2787). Now the copies this
        locker's plan names come first, in copyIx order, each keyed by its own copyIx; the rest take the copyIx left. A copy
        worn on the doll is one the plan does not need first (which copy is worn is not recorded). -> [copyIx, ...] of length m */
-    function _cisFor(n, m){
-      var pl = (_plan && _plan[n]) || [], out = [];
-      pl.forEach(function(q){ if (out.indexOf(q.ci) < 0 && out.length < m) out.push(q.ci); });
-      for (var c = 0; out.length < m; c++) if (out.indexOf(c) < 0) out.push(c);
-      return out;
-    }
+    function _cisFor(n, m){ return _vaultPlanCis((_plan && _plan[n]) || [], m); }   /* REG-2887 the one join */
     (names || []).forEach(function(n){
       var _woN = (_woOn && _woOn[n]) | 0;
       if (_woN && !(typeof window._vaultFiledOn === 'function' && window._vaultFiledOn(n) === muleId)) {
@@ -55668,7 +55684,7 @@ window.vaultAutoAssign = function(){
     if (_plan) {
       var _planAt = {}, _planLeft = [];
       /* REG-2876 - copy N takes copy N's own task cell, never the k-th one of a filtered list */
-      sized.forEach(function(it){ var pl = _plan[it.n]; if (!pl) return; for (var q = 0; q < pl.length; q++) if (pl[q].ci === it.ci) { _planAt[it.key] = pl[q]; return; } });
+      sized.forEach(function(it){ var q = _vaultPlanCell(_plan[it.n], it.ci); if (q) _planAt[it.key] = q; });   /* REG-2887 the one join */
       _auto.forEach(function(it){
         var pl = it.bad ? null : _planAt[it.key], A = pl ? MULE_AREAS[pl.tab] : null;
         var ok = !!(A && pl.x + it.w <= A[0] && pl.y + it.h <= A[1]);

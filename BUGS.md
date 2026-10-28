@@ -2888,6 +2888,22 @@ no known names kept every prose word, the opposite of its own rule; it now keeps
 journal: REC-03 still PASSES (newest long session, 51 worker reads, all warm). The eye's "older sessions' unanswered
 commitments are only reported" is the documented rule ("the newest decides; older ones are reported"), not a defect. Law:
 test_a_scenario_names_its_own_frames (3 cases, 5 red-proofs, 1 re-aimed).
+### REG-2887 - THE SHARED STASH PAINTED COPY 0 AT COPY 1'S CELL: THE K-TH COPY TOOK THE K-TH ENTRY OF A FILTERED PLAN (#231, the Grok second eye on v3833, 6481096851)
+REG-2801's _sharedLayout copied REG-2782's k-th-cell rule, the one REG-2876 removed from the mule card. The shared
+stash's plan (_vaultPlanOn('shared')) is filtered: a throw, a task with no cell, a cell that will not parse and another
+holder's task are dropped. It is then sorted by copyIx. The draw walked k = 0, 1, 2, took plan[k] and keyed the tile as
+copy k. Reproduced on the whole page in node: Death's Fathom x2, copy 0 a throw (or a task with no cell), copy 1's task
+on page 2, col 4, row 3. The layout drew key "Death's Fathom" (copy 0) at copy 1's cell. A listing of copy 1 put its mark
+on whichever tile copy 1's key landed on, and a drag of the tile at copy 1's cell would re-target copy 0. Now there is ONE
+join, _vaultPlanCis / _vaultPlanCell (REG-2876's rule, hoisted beside the shared layout so a law that cuts the packer
+carries it). The mule card and the shared stash both go through it: the copies the plan names come first in copyIx
+order, each keyed by its own copyIx, and each takes the cell of that copyIx. Sweep: _vaultPlanOn has exactly these two
+readers, and no other walk of k over a filtered task list remains. Law:
+tv/test_the_shared_stash_draws_each_copy_at_its_own_task_cell.py, 2 red-proofs. A third proposed sabotage, a positional
+cell under copyIx keys, was dropped as inert: with the plan's own copies first, plan[k] is the copyIx's own entry. Three
+red-proofs that pointed at the moved lines were re-aimed (REG-2876, REG-2782's mule card, the packer's footprint law),
+and two cut-out laws now cut the helper too.
+
 ### REG-2885 - THE ROUTING SENTENCE PRINTED THE BASE'S DEFENSE AS IF IT WERE THE ITEM'S (#137, GrokBot v3740: "Ravenlore defense 103-155 (message) vs 343-390 (card)"; the batch's ACT list: "defense ranges agree")
 Measured on the whole page in node: suggestMule('Ravenlore').why read "armor slot — Sky Spirit (BASE_DB defense
 103-155)". That range is the BASE's. The game's own table (the CB_DB block from his install) has Sky Spirit at 103-155.
