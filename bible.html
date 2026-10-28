@@ -3999,6 +3999,8 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
                 'funiSetFilter', 'fsetsSetFilter', 'forgeSetFilter', 'forgeCraftToggle', 'forgeLegendToggle', '_toolJump',
                 // GrokBot 22:07: TV·D's LIVE / LAST SESSION switch and a Tools card's fold header only move the view too
                 '_tvdHistTab', 'toggleCardCollapse',
+                // REG-2860 - the Vault guide opens, steps and lights where a control is; it stores nothing
+                'vaultGuideTog', 'vaultGuideGo',
                 // REG-2758 (GrokBot's v3821 pass: the shadow's move rows do not open) - a task row's from -> to picture
                 '_vaultTaskExpand',
                 // the evidence magnifier only reads (open, step, lightbox, close)
@@ -10168,6 +10170,50 @@ body:has(#tab-tools.active) .tools-legend-pop.open{display:block}
 .tools-legend-pop .tlp-start:hover{background:rgba(217,178,90,.18)}
 .tools-legend-pop .tlp-close{position:absolute;top:9px;right:12px;color:#8a7d64;cursor:pointer;font-size:16px;line-height:var(--lh-none)}
 .tools-legend-pop .tlp-close:hover{color:#fff}
+/* REG-2860 — THE VAULT GUIDE: the third tray legend (Forge legend · Tools map · Vault guide), the same orb in the same
+   slot S2 and the same panel chrome, shown only on the vault tab. A step lights the real control (.vgd-target) for as
+   long as that step is open, on top of the 1.2s pulse _toolJump gives every jump. */
+.vault-guide-fab{position:fixed;bottom:172px;right:24px;z-index:9000;width:52px;height:52px;border-radius:50%;border:2px solid #f0c060;background:radial-gradient(circle at 50% 35%,#2a2014,#120d08);cursor:pointer;display:none;align-items:center;justify-content:center;font-size:var(--fs-display);color:#f0c060;padding:0;box-shadow:0 2px 14px rgba(0,0,0,.55),0 0 14px rgba(240,192,96,.28);transition:transform .15s,border-color .15s;animation:tlpop .4s cubic-bezier(.2,.9,.3,1.4)}
+body:has(#tab-vault.active) .vault-guide-fab{display:flex}
+.vault-guide-fab:hover,.vault-guide-fab[aria-expanded=true]{transform:scale(1.08);border-color:#fff}
+.vault-guide-pop{position:fixed;bottom:172px;right:88px;z-index:9001;width:min(352px,calc(100vw - 80px));max-height:74vh;overflow:auto;background:rgba(16,13,9,.985);border:1px solid #f0c060;border-radius:12px;padding:14px 16px;display:none;font-size:var(--fs-body);line-height:var(--lh-normal);color:#cdbf9f;box-shadow:0 6px 26px rgba(0,0,0,.65)}
+body:has(#tab-vault.active) .vault-guide-pop.open{display:block}
+.vault-guide-pop button{font:inherit;color:inherit}
+.vault-guide-pop .vgd-x{position:absolute;top:7px;right:9px;background:none;border:0;color:#8a7d64;cursor:pointer;font-size:var(--fs-title);line-height:var(--lh-none);padding:2px 4px}
+.vault-guide-pop .vgd-x:hover{color:#fff}
+.vault-guide-pop .vgd-h{font-family:var(--serif-display,serif);font-weight:var(--fw-bold);font-size:var(--fs-title);color:#f0c060;margin:0 24px 2px 0}
+.vault-guide-pop .vgd-sub{color:#9a8c72;font-size:var(--fs-meta);margin:0 0 9px}
+.vault-guide-pop .vgd-k{font-size:var(--fs-micro);font-weight:var(--fw-bold);text-transform:uppercase;letter-spacing:.5px;color:#f0c060;margin:10px 0 5px}
+.vault-guide-pop .vgd-k small{text-transform:none;letter-spacing:0;font-weight:var(--fw-regular);color:#8a7d64;margin-left:6px}
+.vault-guide-pop .vgd-start{display:block;width:100%;margin:0 0 6px;padding:8px 10px;border:1px solid rgba(240,192,96,.55);border-radius:8px;background:rgba(240,192,96,.12);color:#f3dfae;font-weight:var(--fw-semibold);cursor:pointer;text-align:left}
+.vault-guide-pop .vgd-start:hover{background:rgba(240,192,96,.22)}
+.vault-guide-pop .vgd-steps{list-style:none;margin:0;padding:0}
+.vault-guide-pop .vgd-go{display:flex;align-items:flex-start;gap:9px;width:100%;padding:6px 7px;border:0;border-radius:8px;background:none;cursor:pointer;text-align:left}
+.vault-guide-pop .vgd-go:hover{background:rgba(240,192,96,.1)}
+.vault-guide-pop .vgd-n{flex:none;width:20px;height:20px;margin-top:1px;border-radius:50%;background:rgba(240,192,96,.18);color:#f0c060;font-size:var(--fs-micro);font-weight:var(--fw-bold);display:flex;align-items:center;justify-content:center}
+.vault-guide-pop .vgd-t b{display:block;color:#f0e2bf;font-weight:var(--fw-semibold)}
+.vault-guide-pop .vgd-t small{display:block;color:#9a8c72;font-size:var(--fs-meta)}
+.vault-guide-pop .vgd-soon{margin:6px 0 2px;padding:6px 8px;border-left:2px solid rgba(255,255,255,.12);color:#8a7d64;font-size:var(--fs-meta)}
+.vault-guide-pop .vgd-sec{border-top:1px solid rgba(255,255,255,.07);padding:5px 0}
+.vault-guide-pop .vgd-sec>summary{cursor:pointer;list-style:none;color:#e8dcc0;font-weight:var(--fw-semibold);padding:3px 0}
+.vault-guide-pop .vgd-sec>summary::-webkit-details-marker{display:none}
+.vault-guide-pop .vgd-sec>summary::after{content:'▾';float:right;color:#8a7d64}
+.vault-guide-pop .vgd-sec[open]>summary::after{content:'▴'}
+.vault-guide-pop .vgd-sec-b p{margin:5px 0}
+.vault-guide-pop .vgd-sec-b b{color:#e8dcc0;font-weight:var(--fw-semibold)}
+.vault-guide-pop .vgd-lk{margin:4px 0 6px;padding-left:16px}
+.vault-guide-pop .vgd-lk li{margin:2px 0}
+.vault-guide-pop .vgd-show{display:inline-block;margin:4px 6px 2px 0;padding:3px 9px;border:1px solid rgba(240,192,96,.4);border-radius:999px;background:none;color:#f0c060;font-size:var(--fs-meta);cursor:pointer}
+.vault-guide-pop .vgd-show:hover{background:rgba(240,192,96,.12)}
+.vault-guide-pop .vgd-walk-t{margin:2px 0 4px;color:#f3dfae;font-size:var(--fs-title);font-weight:var(--fw-semibold)}
+.vault-guide-pop .vgd-walk-say{margin:0 0 6px}
+.vault-guide-pop .vgd-miss{margin:4px 0;color:#ffcf8a;font-size:var(--fs-meta)}
+.vault-guide-pop .vgd-nav{display:flex;gap:6px;margin-top:10px}
+.vault-guide-pop .vgd-nav button{flex:1 1 0;padding:6px 8px;border:1px solid rgba(240,192,96,.35);border-radius:8px;background:rgba(255,255,255,.03);color:#e8dcc0;cursor:pointer}
+.vault-guide-pop .vgd-nav button:hover:not([disabled]){background:rgba(240,192,96,.14)}
+.vault-guide-pop .vgd-nav button[disabled]{opacity:.4;cursor:default}
+.vault-guide-pop .vgd-nav .vgd-next{border-color:rgba(240,192,96,.65);color:#f3dfae;font-weight:var(--fw-semibold)}
+body:has(#tab-vault.active) .vgd-target{outline:2px solid #f0c060!important;outline-offset:3px;scroll-margin-top:var(--scroll-pad-card,130px)}
 /* DO NOW — the login orientation feed */
 :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .forge-donow{margin:4px 0 24px;border:1px solid rgba(232,200,120,.34);border-radius:14px;background:linear-gradient(180deg,rgba(232,200,120,.07),rgba(255,255,255,.012));padding:16px 18px 12px}
 :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .forge-donow-h{display:flex;align-items:baseline;gap:11px;font-size:18px;font-weight:var(--fw-bold);color:var(--best,#66ff88);margin-bottom:12px}
@@ -14507,7 +14553,7 @@ function d2jspBatchHtml(view) {
         <div class="vault-tb-grp" id="vault-tb-tools"><!-- Vault v3 (Elad t642u/t659u/t661u, mock approved 2026-10-24) — one symmetric bar: tools left, status chips right -->
         <!-- Vault v2 (Elad 2026-10-23) — ONE sort button (was ⚖️ Auto-assign unsorted here and 🪄 Auto-Sort to Mules on the dock bar;
              both already called vaultAutoSortByHand). The loose count is painted by renderVault from the ONE dock list. -->
-        <button class="vault-btn vault-btn-primary vault-sort-btn" onclick="window.vaultAutoSortByHand()" title="Sort to mules: re-file what already has a witness (vaultAutoAssign), file the loose dock where the planner says (your adds, items with a picture, war gear into the Shared Stash), and move what sits in the wrong locker. Throwing an item away, what your MAIN wears and a sighting with no picture stay where they are. The status line names every item that moved.">🪄 Sort to mules<span class="vault-sort-n" id="vault-sort-n" hidden></span></button>
+        <button class="vault-btn vault-btn-primary vault-sort-btn" onclick="window.vaultAutoSortByHand()" id="vault-sort-btn" title="Sort to mules: re-file what already has a witness (vaultAutoAssign), file the loose dock where the planner says (your adds, items with a picture, war gear into the Shared Stash), and move what sits in the wrong locker. Throwing an item away, what your MAIN wears and a sighting with no picture stay where they are. The status line names every item that moved.">🪄 Sort to mules<span class="vault-sort-n" id="vault-sort-n" hidden></span></button>
         <button class="vault-btn" onclick="window.vaultAddMule()">➕ Add mule</button>
         </div>
         <span class="vault-tb-sp" aria-hidden="true"></span>
@@ -54480,6 +54526,7 @@ window.vaultAutoAssign = function(){
          drew); its over-cap copies are the WAR mules' (REG-2781).
      -> { pages: [5 lists of {n, key, x, y, w, h}], left: [what fits none of the 5 pages - the plan sends it to WAR1, WAR2 ...] } */
   var SHARED_PAGES = 5;
+  try { window.SHARED_PAGES = SHARED_PAGES; } catch (eSp) {}   /* REG-2860 - the Vault guide says this figure */
   function _sharedLayout(names){
     var plan = null;
     try { plan = (typeof _vaultPlanOn === 'function') ? _vaultPlanOn('shared') : null; } catch (eP) { plan = null; }
@@ -71782,6 +71829,280 @@ function renderJournal(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',build); else build();
 })();
 </script>
+<script id="vault-guide-js">
+/* REG-2860 (#230, his ask relayed by GrokBot) — THE VAULT GETS ITS GUIDE, ON THE LEGENDS' OWN CHASSIS.
+   Runewords (the Forge legend) and Tools (the map above) each have an orb in tray slot S2 that opens a panel on their
+   own tab, and the Tools map's rows reach a real card through _toolJump (switch room, scroll, pulse). The vault tab had
+   nothing in S2, so Dean had no way to learn the room without Konyo. This is the third orb in that slot, scoped to the
+   vault tab the same way (body:has(#tab-vault.active)), and every step goes through the same _toolJump. What it adds
+   is the order (what YOU do first, then folds that explain), a step cursor held in memory, and the reveal a vault
+   control needs before it can be scrolled to (its Advanced pane, a closed fold).
+   It STORES NOTHING - no seen flag, no step, no pref. The Forge and Tools legends store none either, and a guide that
+   never writes reads the same on his board, on Dean's and inside a shadow, where every write is refused anyway.
+   Every target is an id in the page's markup; test_the_vault_guide_walks_the_real_controls boots the whole page in
+   node and asks getElementById for each one. It teaches only what ships: the guided sweep, the move question and the
+   not-seen log are said as COMING, and the figures it quotes (cells per mule, shared pages, sessions to file) are read
+   off the page when it is drawn, never copied into this text. */
+(function(){
+  'use strict';
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  /* a figure the page owns, read when the guide is drawn; absent = the sentence is said without a number, never a guess */
+  function num(k){ var v = window[k]; return (typeof v === 'number' && isFinite(v) && v > 0) ? v : null; }
+  /* a locker by its stable id, under the name it has TODAY: a renamed locker keeps its job, so the guide says his name */
+  function locker(id, dflt){
+    try {
+      var r = (typeof window._vaultRosterNow === 'function') ? window._vaultRosterNow() : null;
+      for (var i = 0; r && i < r.length; i++) if (r[i] && r[i].id === id && r[i].name) return String(r[i].name);
+    } catch (e) {}
+    return dflt;
+  }
+  function sessions(){ var n = num('VAULT_WITNESS_MIN'); return n ? n + ' different sessions have' : 'more than one session has'; }
+  /* WHAT YOU NEED TO DO - his own actions, most important first. Each one lights a control by its id. */
+  var STEPS = [
+    { target: 'vault-auto-intake', where: '⚙ Advanced → 📸 Auto-intake', title: 'Turn AUTO INTAKE on',
+      say: function(){ return 'It starts OFF. While it is on, the reels of your console sessions read your stash tabs and fill '
+        + 'the vault. A new item is filed once ' + sessions() + ' seen it.'; } },
+    { target: 'vault-tasks-fab', where: '📦 on the right edge', title: 'Do your MOVE TASKS in the game',
+      say: 'Each row is one item: where it is → where it goes, with its cell as (column,row). Move it in the game, then tick '
+        + 'the row. With AUTO INTAKE on, the reels tick it too when they see the item in its new cell.' },
+    { target: 'vault-planner-q', where: '✚ Add an item', title: 'Add what the reels cannot see',
+      say: 'Search the planner, pick the base and the rolls, and the item files into its locker. "or add by name only" is the '
+        + 'quick way.' },
+    { target: 'vault-sort-btn', where: 'the toolbar', title: 'Sort the loose items',
+      say: '🪄 Sort to mules files what waits in the unsorted dock where the planner says, and moves what sits in the wrong '
+        + 'locker. It never throws an item away, and what your MAIN wears stays where it is.' },
+    { target: 'vault-profile-save', where: '💾 Profile', title: 'Save your profile',
+      say: 'One file holds your vault, stashes, characters and chronicle. Keep it somewhere safe; 📂 Load profile puts it back.' }
+  ];
+  /* not built yet - said plainly, never drawn as a control */
+  var COMING = [
+    'a guided sweep that walks your stash tabs one by one',
+    'when an item is not where it was seen: "Did <item> move to <mule>, cell (c,r)?" — it asks, and never deletes on its own when in doubt',
+    'a log of the items proven gone'
+  ];
+  /* the single spots the folds below point at */
+  var SHOWS = {
+    shelf:  { target: 'vault-shelf', where: 'Your mules', title: 'Your lockers',
+              say: 'Each plate is a locker. Click one to open its mule window.' },
+    count:  { target: 'vault-pop', where: 'the top of the vault', title: 'What the vault holds',
+              say: 'owned · in the shared stash · filed to mules · carried · not filed. UNKNOWN means a store would not read; it is never a guessed 0.' },
+    find:   { target: 'vault-find-input', where: '⌕ Find on a mule', title: 'FIND',
+              say: 'Type any item you own: it names the mule, the tab and the cell of every copy.' },
+    load:   { target: 'vault-profile-load', where: '💾 Profile', title: 'Load profile',
+              say: 'It lists every store a file would change and asks first. Cancel is the default.' },
+    danger: { target: 'vault-danger-tog', where: 'the bottom of the page, in Reset & restore', title: 'Clear & reset the vault',
+              say: 'Four actions, mildest first. Each row says what it erases and asks before it runs.' }
+  };
+  var LOCKERS = [
+    ['sets-major', 'SETS-TAL-IK', 'Tal Rasha, Immortal King and Griswold — a set is never split'],
+    ['sets-rest', 'SETS-REST', 'every other set, partial sets too'],
+    ['uni-weap', 'UNI-WEAPONS', 'unique weapons'],
+    ['uni-armor', 'UNI-ARMOR', 'unique body armor, helms, shields, belts, boots and gloves'],
+    ['uni-small', 'UNI-SMALL', 'unique rings, amulets, jewels and charms'],
+    ['runewords', 'RUNEWORDS', 'the runewords you made, except war gear'],
+    ['bases', 'SOCKETED', 'socketed bases waiting for a runeword or a craft (they look like junk; they are not)'],
+    ['magic-rare', 'MAGIC & RARE', 'magic and rare keepers: skillers, charms, jewels, rings, amulets, crafts'],
+    ['shared', 'SHARED STASH', 'war and swap gear and the top keepers every character can reach: Enigma, Grief, Infinity, Call to Arms, SoJ, Shako…'],
+    ['dupes', 'GRAIL-DUPES', 'second copies, kept as trade stock'],
+    ['wip', 'WIP', 'staging for your next build']
+  ];
+  function showBtn(k){
+    return '<button type="button" class="vgd-show" onclick="window.vaultGuideGo(\'' + k + '\')">Show me: ' + esc(SHOWS[k].title) + ' ›</button>';
+  }
+  var SECTIONS = [
+    { key: 'lockers', title: '🗄 Lockers — what goes where', body: function(){
+      return '<p>Every real item has <b>one record</b> and <b>one home</b>. The vault picks the locker and the cell; you move the '
+        + 'item there once, and it stays until you move it.</p><ul class="vgd-lk">'
+        + LOCKERS.map(function(l){ return '<li><b>' + esc(locker(l[0], l[1])) + '</b> — ' + esc(l[2]) + '</li>'; }).join('') + '</ul>'
+        + '<p><b>Charms:</b> a unique charm goes to ' + esc(locker('uni-small', 'UNI-SMALL')) + ', a magic or rare one to '
+        + esc(locker('magic-rare', 'MAGIC & RARE')) + '. The charms your character carries, and Annihilus, Torch and Gheed\'s, '
+        + 'stay in its inventory: no task moves them.</p>'
+        + '<p><b>🔒 Locked where they are:</b> what your MAIN wears is recorded and never filed onto a mule. When there are some, '
+        + 'the 🔒 chip in the toolbar counts them and the row at the bottom of the vault lists them.</p>' + showBtn('shelf'); } },
+    { key: 'mules', title: '🐴 Mules — a locker fills Mule 1, then the next opens', body: function(){
+      var cap = num('MULE_CAP'), pages = num('SHARED_PAGES');
+      return '<p>A locker is not one character. Each <b>mule</b> is one character: its stash and its inventory, '
+        + (cap ? cap + ' cells' : 'every cell of both') + '. When a locker\'s Mule 1 is full, Mule 2 opens by itself, then '
+        + 'Mule 3: there is no button for that.</p>'
+        + '<p>Click a locker under <b>Your mules</b> to open its window, then pick Mule 1, Mule 2… to see that character\'s '
+        + 'stash and inventory. MOVE TASKS and FIND write a cell as (column,row), counted from the top-left, starting at 1.</p>'
+        + '<p>The <b>' + esc(locker('shared', 'SHARED STASH')) + '</b> has ' + (pages ? pages + ' pages' : 'its own pages')
+        + '. When they are full, the extra war gear goes to the <b>WAR mules</b> (WAR1, WAR2… in order). When one is needed, '
+        + 'MOVE TASKS says so: make that character in the game.</p>'
+        + '<p>A renamed mule keeps its job: the vault knows each mule by its id, never by its name.</p>'; } },
+    { key: 'intake', title: '📥 How items get in', body: function(){
+      return '<p><b>AUTO INTAKE</b> (⚙ Advanced → 📸 Auto-intake) is the automatic way in: the reels of your console sessions '
+        + 'read your stash tabs. A new item is registered and filed once ' + sessions() + ' seen it. While it is OFF, nothing '
+        + 'comes in from a reel: you type the item.</p>'
+        + '<p><b>✚ Add an item</b> is the hand way: search the planner and pick the base and the rolls, or add by name only.</p>'
+        + '<p>An item that came in with no locker yet waits in the <b>unsorted dock</b>; 🪄 Sort to mules files it.</p>'
+        + '<p>Loot in a character\'s inventory is yours at once and shown under that character; it lands in a locker when a '
+        + 'reel next sees it in a stash or on a mule.</p>'; } },
+    { key: 'tasks', title: '📦 MOVE TASKS', body: function(){
+      return '<p>The 📦 button on the right edge opens MOVE TASKS; its number is how many moves and throw-outs are left.</p>'
+        + '<p>Each row reads <i>item · where it is → where it goes (column,row)</i>. Click a row to see both cells on a small '
+        + 'grid. <b>MANUAL</b> means you added it by hand and no reel has seen where it sits yet.</p>'
+        + '<p>Tick the box when you have moved it; <b>Undo</b> takes your tick back. With AUTO INTAKE on, the reels tick a row '
+        + 'themselves when they see the item in its target cell.</p>'
+        + '<p><b>Throw-outs</b> go → NOWHERE: press <b>Keep</b> to keep the item, or <b>Junk</b> to agree it goes.</p>'
+        + '<p><b>👁 N</b> is how many witnesses the vault has for the item; press it to see the pictures. Finished rows fold '
+        + 'into <b>Done</b>.</p>'; } },
+    { key: 'counts', title: '🔢 Counts, copies and FIND', body: function(){
+      return '<p>The line at the top of the vault counts what it holds: owned · in the shared stash · filed to mules · carried · '
+        + 'not filed. <b>UNKNOWN</b> means a store would not read; it is never a guessed 0.</p>'
+        + '<p><b>Items and copies:</b> an item is one name, a copy is one real piece. Two Shakos are one item and two copies. '
+        + 'A locker plate counts items and shows the copies beside them.</p>'
+        + '<p><b>⌕ FIND</b>: type any item you own; it names the mule, the tab and the cell of every copy.</p>'
+        + showBtn('count') + showBtn('find'); } },
+    { key: 'profile', title: '💾 Save, load and undo', body: function(){
+      return '<p><b>💾 Save profile</b> downloads one file: your vault (owned items, where each lives, locks, intake records), '
+        + 'your stashes, your builder characters and the chronicle (finds, set pieces, runewords).</p>'
+        + '<p><b>📂 Load profile</b> checks a file and lists every store it would change before anything is written. It '
+        + '<b>replaces</b> those stores with the file\'s; a store that already matches, and everything a profile does not hold, '
+        + 'is <b>kept</b>. Cancel is the default, and the page reloads after a load.</p>'
+        + '<p><b>↶ Undo</b> shows in the toolbar after a change that has no other way back: a reset, a wipe, a records clear, an add or a removal. '
+        + 'It puts the vault, stashes and characters back as they were just before that change, and never takes back a '
+        + 'chronicle find. It undoes only the newest change, and only until the page reloads: the profile file is the copy '
+        + 'that lasts.</p>' + showBtn('load'); } },
+    { key: 'shadow', title: '👁 Shadow — another PC\'s vault, read only', body: function(){
+      return '<p>On the console you can open another PC\'s Vault as a <b>shadow</b>: their last published profile, shown read '
+        + 'only.</p>'
+        + '<p>The bar above it names whose it is and when it was published, and ends in <b>read only</b>. <b>Leave</b> (or Esc) '
+        + 'closes it.</p>'
+        + '<p>Inside a shadow nothing you press is saved. Buttons that would change something are dimmed and do nothing; '
+        + 'tabs, folds, mule windows, MOVE TASKS and this guide still open.</p>'; } },
+    { key: 'safe', title: '🛡 Safe and destructive buttons', body: function(){
+      return '<p><b>Safe</b> — they show, add or file, and erase nothing: FIND, ✚ Add an item, 🪄 Sort to mules, ➕ Add mule, '
+        + 'MOVE TASKS, 💾 Save profile, opening a mule.</p>'
+        + '<p><b>Ask first</b> — 📂 Load profile and ↶ Undo list what they change and wait for you. Cancel is the default.</p>'
+        + '<p><b>Destructive</b> — <b>↺ Clear &amp; reset the vault</b>, at the bottom of the page under Reset &amp; restore: '
+        + 'Delete unsorted, Reset assignments, Reset vault and Wipe items, mildest first. Each row says what it erases, each '
+        + 'asks before it runs, Cancel is the default and Enter never confirms. ↶ Undo can put back the newest Reset '
+        + 'assignments, Reset vault or Wipe items.</p>' + showBtn('danger'); } }
+  ];
+  function say(it){ return typeof it.say === 'function' ? it.say() : it.say; }
+  /* the same in a shadow as on his own board: a shadow renders through the board's own templates, and the console's
+     shadow bar is what says whose it is and that it is read only (test_no_screen_of_the_board_branches_on_the_shadow) */
+  function head(){
+    return '<button type="button" class="vgd-x" title="close the guide" aria-label="close the guide" onclick="window.vaultGuideTog(false)">✕</button>'
+      + '<p class="vgd-h">🎒 The Vault — guide</p>';
+  }
+  function listHtml(){
+    var doBlock = '<section class="vgd-do" data-vgd="do"><p class="vgd-k">▶ What you need to do</p>'
+      + '<button type="button" class="vgd-start" onclick="window.vaultGuideGo(0)">Walk me through it, step by step ›</button>'
+      + '<ol class="vgd-steps">' + STEPS.map(function(s, i){
+          return '<li class="vgd-step"><button type="button" class="vgd-go" onclick="window.vaultGuideGo(' + i + ')">'
+            + '<span class="vgd-n">' + (i + 1) + '</span><span class="vgd-t"><b>' + esc(s.title) + '</b><small>' + esc(say(s))
+            + '</small></span></button></li>'; }).join('') + '</ol>'
+      + '<p class="vgd-soon"><b>Coming</b>, not on this board yet: ' + COMING.map(esc).join(' · ') + '.</p></section>';
+    var howBlock = '<div class="vgd-how" data-vgd="how"><p class="vgd-k">How it works <small>tap a heading to open it</small></p>'
+      + SECTIONS.map(function(s){
+          return '<details class="vgd-sec" data-sec="' + s.key + '"><summary>' + esc(s.title) + '</summary><div class="vgd-sec-b">'
+            + s.body() + '</div></details>'; }).join('') + '</div>';
+    return head() + '<p class="vgd-sub">What to do first, then how it works. A step lights the real control on the page.</p>'
+      + doBlock + howBlock;
+  }
+  function walkHtml(it, label, el, i){
+    var shown = !!(el && el.getClientRects && el.getClientRects().length);
+    var nav = (typeof i === 'number')
+      ? '<button type="button" onclick="window.vaultGuideGo(' + (i - 1) + ')"' + (i ? '' : ' disabled') + '>‹ Back</button>'
+        + '<button type="button" onclick="window.vaultGuideGo(-1)">☰ All steps</button>'
+        + (i < STEPS.length - 1 ? '<button type="button" class="vgd-next" onclick="window.vaultGuideGo(' + (i + 1) + ')">Next ›</button>'
+                                : '<button type="button" class="vgd-next" onclick="window.vaultGuideGo(-1)">Done ✓</button>')
+      : '<button type="button" onclick="window.vaultGuideGo(-1)">↩ Back to the guide</button>';
+    return head() + '<div class="vgd-walk" data-vgd="walk"><p class="vgd-k">' + esc(label) + ' · ' + esc(it.where) + '</p>'
+      + '<p class="vgd-walk-t">' + esc(it.title) + '</p><p class="vgd-walk-say">' + esc(say(it)) + '</p>'
+      + (el ? (shown ? '' : '<p class="vgd-miss">⚠ It is not showing on this screen right now.</p>')
+            : '<p class="vgd-miss">⚠ This control is not on this page.</p>')
+      + '<div class="vgd-nav">' + nav + '</div></div>';
+  }
+  /* open what hides a control (its Advanced pane, a closed fold) - view only, nothing is stored */
+  function reveal(el){
+    try {
+      var pane = el.closest ? el.closest('.vadv-pane[data-adv]') : null;
+      if (pane && pane.hidden) {
+        /* MOVE TASKS shuts when the Advanced drawer opens (never side by side); shut it quietly first, so that handler has
+           nothing to remember */
+        var tp = document.getElementById('vault-tasks');
+        if (tp && !tp.hidden && typeof window.vaultTasksTog === 'function') window.vaultTasksTog(false, true);
+        if (typeof window.vaultAdvTab === 'function') window.vaultAdvTab(pane.getAttribute('data-adv'));
+      }
+      for (var p = el.parentElement; p; p = p.parentElement) if (p.tagName === 'DETAILS' && !p.open) p.open = true;
+    } catch (e) {}
+  }
+  var lit = null;   /* the control wearing the highlight now */
+  function light(id){
+    if (lit) { try { lit.classList.remove('vgd-target'); } catch (e) {} lit = null; }
+    if (!id) return null;
+    var el = document.getElementById(id);
+    if (!el) return null;
+    reveal(el);
+    /* marked BEFORE the jump: .vgd-target carries the scroll margin that keeps it out from under the sticky chrome */
+    try { el.classList.add('vgd-target'); } catch (e) {}
+    lit = el;
+    if (typeof window._toolJump === 'function') window._toolJump(id);
+    else { try { el.scrollIntoView({ block: 'center' }); } catch (e2) {} }
+    setTimeout(dodge, 450); setTimeout(dodge, 1100);   /* once the smooth scroll has settled */
+    return el;
+  }
+  /* the walk card never sits on the control it points at: a card covering the control's top band (its label, its first
+     row) moves to the top of the screen; otherwise it stays in the tray. Measured from the two rects, after the scroll. */
+  function dodge(){
+    var p = document.getElementById('vault-guide-pop');
+    if (!p || !lit || !p.classList.contains('vgd-walking') || !lit.getBoundingClientRect) return;
+    p.classList.remove('vgd-up');
+    var a = lit.getBoundingClientRect(), b = p.getBoundingClientRect(), band = a.top + Math.min(a.height, 48);
+    if (a.width > 0 && b.width > 0 && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < band) p.classList.add('vgd-up');
+  }
+  window.vaultGuideTog = function(open){
+    var p = document.getElementById('vault-guide-pop'), f = document.getElementById('vault-guide-fab');
+    if (!p) return false;
+    var want = (typeof open === 'boolean') ? open : !p.classList.contains('open');
+    light(null);
+    p.classList.remove('vgd-up');
+    if (want) { p.innerHTML = listHtml(); p.classList.remove('vgd-walking'); }
+    p.classList.toggle('open', want);
+    if (f) f.setAttribute('aria-expanded', want ? 'true' : 'false');
+    return want;
+  };
+  /* a step by its number, a single spot by its key, anything else = back to the list -> the id it lit, or null */
+  window.vaultGuideGo = function(i){
+    var p = document.getElementById('vault-guide-pop'), f = document.getElementById('vault-guide-fab');
+    if (!p) return null;
+    var it = null, label = '';
+    if (typeof i === 'number' && i >= 0 && i < STEPS.length) { it = STEPS[i]; label = 'Step ' + (i + 1) + ' of ' + STEPS.length; }
+    else if (typeof i === 'string' && Object.prototype.hasOwnProperty.call(SHOWS, i)) { it = SHOWS[i]; label = 'Show me'; }
+    var el = light(it ? it.target : null);
+    p.innerHTML = it ? walkHtml(it, label, el, i) : listHtml();
+    p.classList.add('open');
+    p.classList.toggle('vgd-walking', !!it);
+    if (!it) p.classList.remove('vgd-up');
+    if (f) f.setAttribute('aria-expanded', 'true');
+    return el ? it.target : null;
+  };
+  /* what the law reads: the guide as data, a copy - nothing here changes the guide */
+  window._vaultGuide = {
+    steps: STEPS.map(function(s){ return { target: s.target, title: s.title }; }),
+    shows: Object.keys(SHOWS).map(function(k){ return { key: k, target: SHOWS[k].target, title: SHOWS[k].title }; }),
+    sections: SECTIONS.map(function(s){ return s.key; }),
+    lockers: LOCKERS.map(function(l){ return l[0]; })
+  };
+  function build(){
+    if (document.getElementById('vault-guide-fab') || !document.getElementById('tab-vault')) return;
+    var f = document.createElement('button');
+    f.type = 'button'; f.id = 'vault-guide-fab'; f.className = 'vault-guide-fab';
+    f.setAttribute('aria-controls', 'vault-guide-pop'); f.setAttribute('aria-expanded', 'false');
+    f.setAttribute('aria-label', 'Vault guide'); f.setAttribute('title', 'Vault guide — what to do first, then how it works');
+    f.setAttribute('onclick', 'window.vaultGuideTog()');
+    f.textContent = '📖';
+    var p = document.createElement('div');
+    p.id = 'vault-guide-pop'; p.className = 'vault-guide-pop';
+    p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Vault guide');
+    document.body.appendChild(f); document.body.appendChild(p);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build); else build();
+})();
+</script>
 <style>
 /* v635 — account pill + the unmistakable ladder cue */
 .profile-pill{position:absolute;top:14px;right:16px;z-index:60;display:flex;border:1px solid rgba(233,208,122,.4);border-radius:999px;overflow:hidden;background:rgba(0,0,0,.35);backdrop-filter:blur(3px)}
@@ -72769,6 +73090,8 @@ html{overflow-x:clip;overflow-y:auto}
    is the fab's only home for those other five properties; this note is the warning.
    [[d2r-css-last-rule-wins]] */
 .tools-legend-fab{bottom:calc(var(--dock-h,84px) + 118px)!important}
+/* REG-2860 — the Vault guide takes slot S2 on the vault tab, where the Forge legend and the Tools map sit on theirs */
+.vault-guide-fab{bottom:calc(var(--dock-h,84px) + 118px)!important;right:12px!important;width:44px!important;height:44px!important;font-size:var(--fs-display)!important;z-index:230!important}
 /* v1798 — THE INBOX JOINS THE TRAY INSTEAD OF SITTING BESIDE IT. It was added at a hardcoded
    bottom:312px / 52px, positioned by MEASURING pixels rather than by taking a slot — so it did not
    move with the others when --dock-h changed, and it was a fourth orb in a column v708 capped at
@@ -72792,6 +73115,10 @@ html{overflow-x:clip;overflow-y:auto}
   max-height:max(180px, min(72vh, calc(100vh - var(--dock-h,84px) - var(--claim-h,0px) - 140px)))!important}
 .tools-legend-pop{bottom:calc(var(--dock-h,84px) + 118px)!important;right:66px!important;
   max-height:max(180px, min(74vh, calc(100vh - var(--dock-h,84px) - var(--claim-h,0px) - 140px)))!important}
+.vault-guide-pop{bottom:calc(var(--dock-h,84px) + 118px)!important;right:66px!important;
+  max-height:max(180px, min(74vh, calc(100vh - var(--dock-h,84px) - var(--claim-h,0px) - 140px)))!important}
+/* REG-2860 — a walk card that would cover the control it lights moves under the header instead (dodge() in the guide) */
+.vault-guide-pop.vgd-up{top:calc(var(--chrome-top,70px) + var(--claim-h,0px) + 8px)!important;bottom:auto!important}
 /* v1800 — AND ON A SHORT VIEWPORT THE ANCHOR ITSELF IS THE PROBLEM, not the height. The tray sits
    at dock+118px, so on a 400px-tall window the popover's top lands at -116px no matter how small
    its budget: a bottom-anchored box cannot fit above an anchor that is already near the top. Below
@@ -72830,7 +73157,7 @@ html{overflow-x:clip;overflow-y:auto}
    glitch rather than a panel. Its two legend siblings were fine only by the accident of sitting
    above the block. Found by the post-ship review. [[d2r-css-last-rule-wins]] */
 @media (max-height:620px){
-  .tools-legend-pop,.forge-legend-pop,.inbox-pop{
+  .tools-legend-pop,.forge-legend-pop,.inbox-pop,.vault-guide-pop{
     top:calc(8px + var(--claim-h,0px))!important;bottom:auto!important;
     /* v1800 — max(), because on a 400px-tall viewport carrying BOTH the claim bar (147px, wrapped)
        and the dock (178px) the honest remainder is 51px, and a 51px scroll box is not a panel a
@@ -72859,7 +73186,7 @@ html{overflow-x:clip;overflow-y:auto}
    horizontally, so WHICH tab is buried under the orb changes with scroll position, and no single
    screenshot shows it twice the same way. [[sweep-dont-ask]] */
 @media (max-height:480px){
-  .help-btn,.nav-widget,.forge-legend-fab{display:none!important}
+  .help-btn,.nav-widget,.forge-legend-fab,.vault-guide-fab{display:none!important}
 }
 /* routines bar shares the corner — parked LEFT of the tray column so they never overlap.
    v754 (item 7): the right offset now lives in the single clean base rule (no !important war). */

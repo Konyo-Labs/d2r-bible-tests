@@ -2661,6 +2661,25 @@ base name - 223 of the 508 gear bases the hand door takes disagreed with their o
 Sword a 1x1 ring and rune, Spear 1x4, Colossus Girdle 2x4); the name is now looked up on CB_DB as REG-2248 looks up a
 codex base, 0 of 508 disagree. Law tv/test_an_item_is_sized_by_its_own_base.py, 8 red-proofs RED; the packer law's
 runeword red-proof re-aimed to the new cache line (7 RED).
+### REG-2860 - THE VAULT HAD NO GUIDE: DEAN COULD NOT LEARN THE ROOM WITHOUT KONYO (#230, GrokBot c6476237779 + c6476256141)
+Runewords (the Forge legend) and Tools (the map) each have a tray orb in slot S2 that opens a panel on their tab, and the
+Tools map's rows reach a real card through _toolJump. The vault tab had nothing in S2 (measured: no `body:has(#tab-vault.active)`
+rule in the page), and its only help was two notes inside Advanced > Help. Neither legend stores a "seen" flag or a step,
+and there is no step-by-step engine in the page; the chassis is the tray slot, the panel and _toolJump's switch-room /
+scroll / pulse. The Vault guide is the third orb on that chassis: "What you need to do" first (turn AUTO INTAKE on, do the
+MOVE TASKS, add what the reels cannot see, sort the loose items, save the profile - each step lights its real control,
+opening its Advanced pane or closed fold first, with Back / Next), then eight closed folds for the topics he listed
+(lockers and charms, mules and the WAR mules, how items get in, MOVE TASKS, counts / copies / FIND, save / load / undo,
+shadow, safe vs destructive), and the not-built items (the guided sweep, the "Did <item> move to <mule>, cell (c,r)?"
+question, the not-seen log) said as coming, never drawn. It stores nothing, and in a shadow it draws exactly what it
+draws on his board (the console's shadow bar says whose and read only); its two doors (vaultGuideTog / vaultGuideGo)
+joined the shadow's view-only list. Its figures (cells
+per mule, shared pages, sessions to file) are read off the page when drawn - SHARED_PAGES is now published beside MULE_CAP
+for that - and a locker is named by what it is called today. The sort button got an id so every target is an id. The
+walk card moves under the header when it would cover the control it lights. Law: test_the_vault_guide_walks_the_real_controls
+(whole page in node; 12 red-proofs RED) + the shadow veil case in test_shadow_mode_reads_their_console (1 red-proof RED).
+Chrome (CI proves it): tests/vault_guide_walks_the_real_controls.spec.ts (every lit control on screen and hit-testable at
+1440x900, 901x700, 375x700) and the 'vault guide' row of tests/v1800_tray_popovers_reachable.spec.ts.
 
 ### REG-2792 - REG-2833'S CHROME LAW ASSUMED A 17 PX SCROLLBAR, AND CI'S CHROME DRAWS 10 (CI on ci/claude-v3833)
 test_the_edit_pane_reserves_its_scrollbar_whether_it_scrolls_or_not went red on CI with "10 not greater than or equal to
