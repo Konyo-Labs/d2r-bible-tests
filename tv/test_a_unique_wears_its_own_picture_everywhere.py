@@ -43,7 +43,9 @@ BODY = r"""
 (function(){
 var W = window, ROSTER = %s, NAMES = %s;
 function rowSrc(n){ var m = /src="([^"]+)"/.exec(artOr(n, '', 'sm') || ''); return m ? m[1] : null; }
-function hoverSrc(n){ var r = _arttipResolve(n); return (r && r.artName) ? artUrl(r.artName) : null; }
+/* REG-2847 - the hover's OWN picture line (arttip: built base, then artUrl(name), then the resolver's artName) - the old model
+   read artUrl(artName) alone, which the hover draws only when the name itself has no picture */
+function hoverSrc(n){ var r = _arttipResolve(n) || {}; return (r.builtBase && artUrl(r.artName)) || artUrl(n) || (r.artName ? artUrl(r.artName) : null) || null; }
 OUT.one = {};
 NAMES.concat(['Crescent Moon (amulet)', "Sander's Riprap", 'Crescent Moon (sword)']).forEach(function(n){
   OUT.one[n] = { k: W._keeperArt(n), artUrl: artUrl(n), row: rowSrc(n), hover: hoverSrc(n), table: D2IO_ART[n] || null };
@@ -79,7 +81,7 @@ ROSTER.forEach(function(n){
 /* every unique the roster names, in or out of the table: the row's picture and the hover's */
 OUT.pair = {};
 ROSTER.forEach(function(n){ OUT.pair[n] = [rowSrc(n), hoverSrc(n)]; });
-OUT.renewed = ['Renewed Cold Rupture', 'Renewed Black Cleft'].map(function(n){ return (_arttipResolve(n) || {}).artName || null; });
+OUT.renewed = ['Renewed Cold Rupture', 'Renewed Black Cleft', 'Latent Cold Rupture'].map(function(n){ return [n, rowSrc(n), hoverSrc(n)]; });
 OUT.kinds = {};
 Object.keys(D2IO_ART).forEach(function(k){
   var t = (typeof ITEM_TIP !== 'undefined') ? ITEM_TIP[k] : null, c = (typeof ITEM_CODEX !== 'undefined') ? ITEM_CODEX[k] : null;
@@ -135,10 +137,12 @@ class AUniqueWearsItsOwnPictureEverywhere(unittest.TestCase):
         self._same_everywhere(EE, "art/mr_etherealedge.png", "own-icon")
         self._same_everywhere(BK, "art/mr_bulkathosweddingband.png", "own-icon")
         cm = self.o["one"][CM]
-        self.assertEqual((cm["k"]["url"], cm["artUrl"], cm["row"], cm["table"]), ("art/mr_crescentmoon.png",) * 4,
+        # REG-2847 - its own icon is the amulet label's file (the same picture, 100 px against 50): one item, one picture
+        self.assertEqual((cm["k"]["url"], cm["artUrl"], cm["row"], cm["table"]), ("art/mr_crescentmoonamulet.png",) * 4,
                          "the runeword table drew over Crescent Moon's own icon: %r" % cm)
         am = self.o["one"]["Crescent Moon (amulet)"]
         self.assertEqual(am["row"], am["hover"], "the unique's own label differs between row and hover: %r" % am)
+        self.assertEqual(am["row"], cm["row"], "the unique and its own label draw two pictures: %r / %r" % (cm, am))
         self.assertIn("mr_crescentmoon", am["row"] or "", am)
 
     def test_a_runeword_label_wears_its_base_not_the_amulets_icon(self):
@@ -195,8 +199,8 @@ class AUniqueWearsItsOwnPictureEverywhere(unittest.TestCase):
         split = {n: p for n, p in self.o["pair"].items() if p[0] != p[1] and n != CM}
         self.assertEqual(split, {}, "a unique's row and hover draw different pictures: %r" % split)
         self.assertGreater(sum(1 for p in self.o["pair"].values() if p[0]), 390, "PREMISE: the roster drew almost no pictures")
-        self.assertEqual(self.o["renewed"], ["Cold Rupture", "Black Cleft"],
-                         "a Renewed Sunder's hover lost its charm's carving to the generic charm logo: %r" % self.o["renewed"])
+        # REG-2847 (v3831 second eye) - measured on the hover's own picture line: a Sunder's row and hover draw one picture
+        self.assertEqual([r for r in self.o["renewed"] if r[1] != r[2] or not r[1]], [], "a Sunder's row and hover differ: %r" % self.o["renewed"])
 
     def test_the_row_hover_and_card_paths_all_ask_artUrl_and_artUrl_asks_the_resolver_first(self):
         s = _src()
@@ -240,16 +244,6 @@ RED_PROOF = [
      "file": "bible.html",
      "find": " && _cur !== _HDUS[_hk]) _KEEPER_ART.own[_hk] = _cur;",
      "replace": ") _KEEPER_ART.own[_hk] = _cur;",
-     "matches": 1, "needs": "node"},
-    {"why": "REG-2805 - the Sunder hover draws the plain charm's carving over the Latent charm's own picture",
-     "file": "bible.html",
-     "find": "  if (t) return { artName: (typeof artUrl === 'function' && /\\/mr_/.test(String(artUrl(nm) || ''))) ? nm : t.base, desc: _sunTipHtml(t), rich: true };\n",
-     "replace": "  if (t) return { artName: t.base, desc: _sunTipHtml(t), rich: true };\n",
-     "matches": 1, "needs": "node"},
-    {"why": "REG-2805 - any picture counts as the Sunder's own, so a Renewed charm's hover draws the generic charm logo",
-     "file": "bible.html",
-     "find": "/\\/mr_/.test(String(artUrl(nm) || ''))) ? nm : t.base, desc: _sunTipHtml(t)",
-     "replace": "artUrl(nm)) ? nm : t.base, desc: _sunTipHtml(t)",
      "matches": 1, "needs": "node"},
     {"why": "REG-2806 - a runeword label keeps the icon it was registered with (Crescent Moon (sword) draws the amulet)",
      "file": "bible.html",

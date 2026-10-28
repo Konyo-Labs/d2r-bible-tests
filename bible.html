@@ -22031,7 +22031,8 @@ const D2IO_ART = {
   "Gloom's Trap": "art/belt_graphic.png",
   "Goblin Toe": "art/goblintoe_graphic.png",
   "Goldskin": "art/goldskin_graphic.png",
-  "Goldstrike Arch": "art/goldstrikearch_graphic.png",
+  /* REG-2847 - "Goldstrike Arch" pointed at art/goldstrikearch_graphic.png, which is a picture of GOLD COINS (opened, 100x100),
+     not the bow: a surface reading this table before the passes below drew coins for it. The bow draws its base sprite. */
   "Goldwrap": "art/goldwrap_graphic.png",
   "Gore Rider": "art/plateboots_graphic.png",
   "Gorefoot": "art/gorefoot_graphic.png",
@@ -38959,6 +38960,22 @@ try {
       if (_bs.length === 1 && _bs[0].indexOf("art/hd_") === 0 && !artUrl(_bb)) D2IO_ART[_bb] = _bs[0];   /* REG-2852 base sprite */
     });
   }
+  /* REG-2847 (v3831 second eye, GrokBot #230) - ONE ITEM, ONE PICTURE, WHATEVER LABEL NAMES IT. A unique filed under its slot or
+     base ("Harlequin Crest (Shako)", "Gull (dagger)", "Crescent Moon (amulet)") carried its own icon file beside the bare
+     name's, so a wishlist chip and a card drew two pictures of one item. Measured on the repo's art: 5 such pairs, two
+     byte-identical and three where the label's file is the same picture at twice the size. The label's icon is now the
+     item's icon (its own game sprite still outranks it) and both names draw it. A runeword label is another item (REG-2806). */
+  if (typeof D2IO_ART !== "undefined")
+    Object.keys(D2IO_ART).forEach(function(_ll){
+      var _lm = /^(.+?)\s*\([^)]*\)\s*$/.exec(_ll); if (!_lm) return;
+      var _lb = _lm[1], _lt = (typeof ITEM_TIP !== "undefined") ? ITEM_TIP[_ll] : null, _lu = D2IO_ART[_ll];
+      if (!Object.prototype.hasOwnProperty.call(_KEEPER_ART.base, _lb) || (_lt && _lt.t === 'Runeword')) return;
+      if (!_lu || _lu.indexOf("art/mr_") !== 0) return;
+      if (!_KEEPER_ART.own[_lb]) _KEEPER_ART.icon[_lb] = _lu;                                   /* REG-2847 the label's icon is the item's */
+      var _lk = _keeperArt(_lb);
+      if (_lk){ D2IO_ART[_lb] = _lk.url; D2IO_ART[_ll] = _lk.url; }                              /* REG-2847 both names, one picture */
+    });
+  window._artTableReady = true;   /* REG-2847 - every pass above has run: a copy of D2IO_ART taken now is the table's answer */
 } catch(e){}
 // v408 — runeword tile art: every forged runeword (Enigma, Spirit, Insight…) gets a representative HD
 // sprite of its base type (from RUNEWORD_TIP base category) so the RUNEWORDS-locker chip shows real art

@@ -16984,7 +16984,9 @@ window._lockMark = function(isOpen, px, label){
       tries++;
       try {
         var fr = document.getElementById('tvd-eng'); var w = fr && fr.contentWindow;
-        if (w && w.D2IO_ART && Object.keys(w.D2IO_ART).length){
+        /* REG-2847 - only a FINISHED table: the board builds D2IO_ART in passes across its scripts, and a copy taken
+           between them drew mid-boot pictures for good (Lightsabre's lower-res icon, coins for Goldstrike Arch) */
+        if (w && w.D2IO_ART && Object.keys(w.D2IO_ART).length && w._artTableReady === true){
           _HDART = Object.assign({}, w.D2IO_ART); _HDARTbusy = false;
           try { thArtRepaint(); } catch (e) {}
           return;
@@ -16995,7 +16997,17 @@ window._lockMark = function(isOpen, px, label){
     })();
   }
   function thArt(name){
-    if (!name || !_HDART) return '';
+    if (!name) return '';
+    /* REG-2847 (v3831 second eye, GrokBot #230) - ONE RESOLVER. This read a copy of the board's table by exact name, so a
+       label the board resolves another way (apostrophes, a slot suffix, its keeper's picture) drew another picture here.
+       The board's own artUrl answers once its table is finished; the copy is only the fallback when the board is away. */
+    try {
+      var _fr = document.getElementById('tvd-eng'), _bw = _fr && _fr.contentWindow;
+      if (_bw && _bw._artTableReady === true && typeof _bw.artUrl === 'function'){
+        return _bw.artUrl(name) || _bw.artUrl(String(name).replace(/\s+(rune|charm|potion)$/i, '')) || '';
+      }
+    } catch (eB) {}
+    if (!_HDART) return '';
     if (_HDART[name]) return _HDART[name];
     var n2 = String(name).replace(/\s+(rune|charm|potion)$/i, '');   // "Sol Rune" → "Sol"
     if (n2 !== name && _HDART[n2]) return _HDART[n2];
