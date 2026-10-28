@@ -42,7 +42,8 @@ enable()
 ROOT = os.path.dirname(HERE)
 BIBLE = os.path.join(ROOT, "bible.html")
 NODE = shutil.which("node")
-KEYS = ("d2r_d2jsp_topic", "d2r_d2jsp_fg", "d2r_d2jsp_sold", "d2r_d2jsp_hide", "d2r_d2jsp_gear", "d2r_d2jsp_mods")
+KEYS = ("d2r_d2jsp_topic", "d2r_d2jsp_fg", "d2r_d2jsp_sold", "d2r_d2jsp_hide", "d2r_d2jsp_gear", "d2r_d2jsp_mods",
+        "d2r_d2jsp_log")   # REG-2872 the post log forks with the desk
 TOPIC = "https://forums.d2jsp.org/topic.php?t=1&f=268"
 
 
@@ -161,9 +162,10 @@ class TheD2jspDeskForksWithTheProfile(unittest.TestCase):
     def _seed(self):
         return {"d2r_d2jsp_topic": TOPIC, "d2r_d2jsp_fg": json.dumps({"Grief": "10"}),
                 "d2r_d2jsp_sold": json.dumps({}), "d2r_d2jsp_hide": json.dumps({}),
-                "d2r_d2jsp_gear": json.dumps({}), "d2r_d2jsp_mods": json.dumps({"Grief": "+1 test"})}
+                "d2r_d2jsp_gear": json.dumps({}), "d2r_d2jsp_mods": json.dumps({"Grief": "+1 test"}),
+                "d2r_d2jsp_log": json.dumps({})}
 
-    def test_the_six_keys_are_in_the_fork_set_and_parse(self):
+    def test_the_desk_keys_are_in_the_fork_set_and_parse(self):
         # the same quote-pairing read test_store_isolation uses on this Set - an apostrophe in a note breaks it
         blob = re.search(r"window\._LP_FORKED\s*=\s*new Set\(\[(.*?)\]\)", self.src, re.S).group(1)
         names = {a or b for a, b in re.findall(r"'([^']+)'|\"([^\"]+)\"", blob)}

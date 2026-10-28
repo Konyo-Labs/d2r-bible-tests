@@ -4835,6 +4835,7 @@ window._LP_FORKED = new Set([
   'd2r_d2jsp_topic', 'd2r_d2jsp_fg', 'd2r_d2jsp_sold', 'd2r_d2jsp_hide', 'd2r_d2jsp_gear', 'd2r_d2jsp_mods',
   /* v3856 - the desk's post tags came after #114 and stayed bare: a tag on main showed up on ladder's pool */
   'd2r_d2jsp_tags',
+  'd2r_d2jsp_log',   /* REG-2872 - the post log forks with the desk: a 268 attempt is not a 271 one */
   /* ══ v2706 — A SNAPSHOT OF PER-PROFILE DATA IS ITSELF PER-PROFILE ═══════════════════════
      d2r_unseedBackup captures d2r_foundLog, d2r_owned, d2r_setPieces, d2r_rwMade and
      d2r_rwVerify — and EVERY ONE of those five is in this set. The snapshot key was not, so it
@@ -12321,6 +12322,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     #tab-d2jsp .d2jsp-say{color:#e9d07a;font-size:var(--fs-body);line-height:1.45}
     #tab-d2jsp .d2jsp-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(8em,11em) auto;gap:8px;align-items:end}
     #tab-d2jsp .d2jsp-fields .vault-btn{margin-top:6px}
+    #tab-d2jsp .d2jsp-log{margin-top:4px;font-size:var(--fs-micro);color:var(--text-muted)}   /* REG-2872 */
+    #tab-d2jsp .d2jsp-log ol{margin:4px 0 0;padding-left:18px}
     #tab-d2jsp .d2jsp-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
     #tab-d2jsp .d2jsp-draft{white-space:pre-wrap;margin:8px 0;font-family:var(--mono);font-size:var(--fs-body);color:#f6e7c2;line-height:1.45}
     #tab-d2jsp #d2jsp-add, #tab-d2jsp #d2jsp-shop{margin:8px 8px 8px 0}
@@ -12408,7 +12411,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
 var D2JSP_BOARD = 268;
 var D2JSP_LADDER_BOARD = 271;
 /* #114 - the desk's own stores, each forked per profile in window._LP_FORKED */
-var D2JSP_FORKED_KEYS = ['d2r_d2jsp_topic', 'd2r_d2jsp_fg', 'd2r_d2jsp_sold', 'd2r_d2jsp_hide', 'd2r_d2jsp_gear', 'd2r_d2jsp_mods', 'd2r_d2jsp_tags'];
+var D2JSP_FORKED_KEYS = ['d2r_d2jsp_topic', 'd2r_d2jsp_fg', 'd2r_d2jsp_sold', 'd2r_d2jsp_hide', 'd2r_d2jsp_gear', 'd2r_d2jsp_mods', 'd2r_d2jsp_tags', 'd2r_d2jsp_log'];
 function d2jspBoard(){
   var profile = '';
   try { profile = (typeof window !== 'undefined' && window.D2R_PROFILE) ? String(window.D2R_PROFILE) : ''; } catch (eBoard) { profile = ''; }
@@ -12500,6 +12503,25 @@ function d2jspPostLine(row) {
   /* The character builder still shows a code the tables name and do not describe. A sale leaves that sentence out. */
   if (/^an effect the game's tables name .+ but do not describe$/.test(t)) return '';
   return t;
+}
+/* REG-2872 (#83, his ask 3, GrokBot 6476487696: "Today the card looks exactly the same before and after the attempt") -
+   ONE ATTEMPT, ONE ROW IN THE POST LOG. Each send, on either path, writes what it answered under each item it carried:
+   when it was tried (this page's clock, UTC), the board, the result (confirmed / maybe / missed), the words and what the
+   console saw, the console's own send time, and the topic link when there is one. The card shows the last confirmed post
+   and every attempt. The newest D2JSP_LOG_MAX are kept per item. */
+var D2JSP_LOG_MAX = 12;
+function d2jspLogEntry(w, j, board, list, now) {
+  w = w || {};
+  var d = (now instanceof Date) ? now : new Date();
+  var e = { at: isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+            board: d2jspPostBoard(j && j.board, board), kind: String(w.kind || 'maybe'), text: String(w.text || '').slice(0, 200) };
+  if (w.why) e.why = String(w.why).slice(0, 240);
+  var topic = String(w.topic || '');
+  if (topic.indexOf('https://forums.d2jsp.org/topic.php') === 0) e.topic = topic;
+  var sent = d2jspAtText(j && j.at);
+  if (sent) e.sent = sent;
+  if (list) e.list = true;
+  return e;
 }
 function d2jspDraft(name, base, mods, copies, fg) {
   var price = (typeof fg === 'number') ? fg : Number(fg);
@@ -13403,6 +13425,50 @@ function d2jspBatchHtml(view) {
     var v = readMap('d2r_d2jsp_hide')[name];
     return v === 1 || v === true;
   }
+  /* REG-2872 - the post log, per item */
+  function logOf(name){
+    var v = readMap('d2r_d2jsp_log')[name];
+    return Array.isArray(v) ? v.filter(function(r){ return r && typeof r === 'object'; }) : [];
+  }
+  function logAdd(names, entry){
+    var m = readMap('d2r_d2jsp_log');
+    (names || []).forEach(function(n){
+      if (!n) return;
+      var rows = Array.isArray(m[n]) ? m[n] : [];
+      rows.push(entry);
+      m[n] = rows.slice(-D2JSP_LOG_MAX);
+    });
+    writeMap('d2r_d2jsp_log', m);
+    paintLog(names);
+  }
+  function logWord(kind){ return kind === 'confirmed' ? 'Confirmed' : (kind === 'missed' ? 'Not sent' : 'Maybe sent'); }
+  function logLink(url){
+    var u = String(url || '');
+    return u.indexOf('https://forums.d2jsp.org/topic.php') === 0 ? ('<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(u) + '</a>') : '';
+  }
+  function logHtml(name){
+    var rows = logOf(name);
+    if (!rows.length) return '<div class="d2jsp-say" data-d2jsp-posted="none">Not posted yet.</div>';
+    var ok = null;
+    for (var i = rows.length - 1; i >= 0; i--) if (rows[i].kind === 'confirmed' && logLink(rows[i].topic)) { ok = rows[i]; break; }
+    var head = ok
+      ? '<div class="d2jsp-say" data-d2jsp-posted="1">Posted ' + esc(ok.sent || ok.at) + ' on board ' + esc(ok.board) + ' · ' + logLink(ok.topic) + '</div>'
+      : '<div class="d2jsp-say" data-d2jsp-posted="0">No post confirmed yet.</div>';
+    var items = rows.slice().reverse().map(function(r){
+      return '<li data-kind="' + esc(r.kind) + '">' + esc(r.at) + ' · board ' + esc(r.board) + (r.list ? ' · the list' : '') + ' · <b>' + esc(logWord(r.kind)) + '</b> · '
+        + esc(r.text) + (r.why ? (' What the console saw: ' + esc(r.why)) : '') + (logLink(r.topic) ? (' · ' + logLink(r.topic)) : '') + '</li>';
+    }).join('');
+    return head + '<details class="d2jsp-log"><summary>Attempts (' + rows.length + ')</summary><ol>' + items + '</ol></details>';
+  }
+  function paintLog(names){
+    var cards = document.querySelectorAll('#d2jsp-list .d2jsp-card');
+    for (var i = 0; i < cards.length; i++) {
+      var n = cards[i].getAttribute('data-d2jsp-item');
+      if (!n || (names || []).indexOf(n) < 0) continue;
+      var box = cards[i].querySelector('[data-d2jsp-log]');
+      if (box) box.innerHTML = logHtml(n);
+    }
+  }
   function topicUrl(){
     var s = store();
     if (!s) return '';
@@ -13583,6 +13649,7 @@ function d2jspBatchHtml(view) {
       + '<div class="d2jsp-say" data-d2jsp-price>' + esc(priceText(n)) + '</div>'
       + '<div data-d2jsp-evbox>' + evHtml(n) + '</div>'
       + tierHtml(n, mods)
+      + '<div data-d2jsp-log>' + logHtml(n) + '</div>'   /* REG-2872 the post log on the card */
       + '<div class="d2jsp-fields">'
       + '<div class="d2jsp-acts"><button type="button" class="vault-btn" data-d2jsp-options="' + esc(n) + '">Options</button>' + mark + remove + '</div>'
       + '<label class="d2jsp-say">Your fg<input data-d2jsp-fg="' + esc(n) + '" value="' + esc(typedOf(n)) + '" inputmode="decimal" autocomplete="off" aria-label="Forum gold for this item"></label>'
@@ -14015,6 +14082,7 @@ function d2jspBatchHtml(view) {
       }).then(function(got){
         settle();
         var w = answerWords(got.code, got.j, draft.forum, false);
+        logAdd([draft.name || post], d2jspLogEntry(w, got.j, draft.forum, false));   /* REG-2872 */
         if (w.kind === 'confirmed') {
           say(w.say);
           showReceipt('confirmed', w.text, w.topic);
@@ -14026,6 +14094,7 @@ function d2jspBatchHtml(view) {
       }).catch(function(){
         settle();
         var lost = answerWords(0, undefined, draft.forum, false);
+        logAdd([draft.name || post], d2jspLogEntry(lost, null, draft.forum, false));   /* REG-2872 */
         say(lost.text);
         showReceipt(lost.kind, lost.text, lost.link);
       });
@@ -14355,6 +14424,7 @@ function d2jspBatchHtml(view) {
     try { if (window._vHydrateShots) window._vHydrateShots(wrap); } catch (eHydrate) {}
   }
   window._d2jspMountShots = d2jspMountShots;
+  window._d2jspCardHtml = function(n){ return cardHtml(String(n || '')); };   /* REG-2872 read-only: one card as it paints */
   function openDraft(name, draft){
     var host = draftHost();
     host.hidden = false;
@@ -14486,6 +14556,7 @@ function d2jspBatchHtml(view) {
       lamp.title = 'This machine could not read the Chrome login.';
     });
   }
+  function listNames(draft){ return ((draft && draft.blocks) || []).map(function(b){ return b && b.name; }).filter(Boolean); }
   function postDraft(draft){
     var hostName = '';
     try { hostName = location.hostname; } catch (eH2) { hostName = ''; }
@@ -14515,6 +14586,7 @@ function d2jspBatchHtml(view) {
     }).then(function(got){
       settle();
       var w = answerWords(got.code, got.j, draft.forum, !!payload.topic);
+      logAdd(listNames(draft), d2jspLogEntry(w, got.j, draft.forum, true));   /* REG-2872 */
       if (w.kind === 'confirmed') {
         if (draft.shop && w.topic) writeTopic(w.topic);
         say(w.say);
@@ -14527,6 +14599,7 @@ function d2jspBatchHtml(view) {
     }).catch(function(){
       settle();
       var lost = answerWords(0, undefined, draft.forum, !!payload.topic);
+      logAdd(listNames(draft), d2jspLogEntry(lost, null, draft.forum, true));   /* REG-2872 */
       say(lost.text);
       showReceipt(lost.kind, lost.text, lost.link);
     });

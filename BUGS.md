@@ -2791,6 +2791,16 @@ wears "listed". FIND says "listed", or "N listed", beside the name. In the mule 
 names its copyIx, REG-2876) wears an "L" mark and its label says so. On the shelf card, the cell of that copy wears
 "listed". Only the listed copy is marked, and the copy still counts: the count and the card's cells are unchanged. The CSS
 uses tokens only. Law `tv/test_a_listed_copy_wears_its_mark_where_it_draws.py` (whole page in node, 6 red-proofs RED).
+### REG-2872 - A D2JSP CARD LOOKED THE SAME BEFORE AND AFTER A POST ATTEMPT (#83, his ask 3, GrokBot 6476487696)
+GrokBot: "Post log and history on the card: posted at, board, topic.php link, and each attempt with its result. Today the
+card looks exactly the same before and after the attempt." Measured in the room's own code in node: a send on either path
+wrote nothing but the list's saved topic, and the card painted the same HTML before and after. Now each send, on either path
+and including a lost answer, writes one row per item it carried into d2r_d2jsp_log. The row holds when it was tried (UTC),
+the board, the result (confirmed / maybe / missed), its words and what the console saw (REG-2870), the console's send time,
+the topic link, and whether it was the list. The store forks per profile like the other six desk stores (D2JSP_FORKED_KEYS
+and window._LP_FORKED), and the newest 12 rows are kept per item. The card shows "Not posted yet", "No post confirmed yet",
+or "Posted <when> on board N · <topic link>", above "Attempts (n)" with every row, newest first. The fork law covers the new
+key. Law `tv/test_a_d2jsp_card_keeps_its_post_log.py` (node, 8 red-proofs RED).
 
 ### REG-2877 - A COPY HAD NO PLACE TO SAY IT IS LISTED, AND ONE TRADED COPY COULD NOT LEAVE THE COUNT WITH AN UNDO (#83, his rulings)
 His rulings: "Design it now, wire it later", and a traded-out copy is proven gone, so it goes to the Vault log with an undo,
