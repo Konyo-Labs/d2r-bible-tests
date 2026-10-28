@@ -2783,6 +2783,20 @@ no known names kept every prose word, the opposite of its own rule; it now keeps
 journal: REC-03 still PASSES (newest long session, 51 worker reads, all warm). The eye's "older sessions' unanswered
 commitments are only reported" is the documented rule ("the newest decides; older ones are reported"), not a defect. Law:
 test_a_scenario_names_its_own_frames (3 cases, 5 red-proofs, 1 re-aimed).
+### REG-2876 - THE CARD GAVE COPY 1'S TASK CELL TO COPY 0 (v3830 second eye on REG-2782, reproduced first)
+The finding: _muleLoad numbered drawn copies by position in its filtered list and gave the k-th the k-th task cell
+_vaultPlanOn kept (this locker's non-throw tasks, sorted by copyIx). Reproduced on the whole page in node with Case A: two
+Gulls on UNI-WEAPONS, copy 0 a throw, and copy 1's task stash:c3r0. The plan held one cell, yet the tile at (3,0) was key
+"Gull (dagger)" (copy 0), and copy 1 ("#2") was packed at (0,0). The move list said copy 1 sits at (3,0) while the card had
+the other copy there, and a drag of that tile re-targeted copy 0 (REG-2787 reads the key). A WAR mule's over-cap copies,
+whose copyIx starts at 1, were numbered the same way. Case B, a copy worn on the doll, was measured NOT A DEFECT: three
+Gulls filed on UNI-WEAPONS (c0r0, c1r0, c2r0) with one worn drew "Gull (dagger)" at (0,0) and "#2" at (1,0), each at its own
+cell. Which copy is worn is recorded nowhere, so the undrawn copy (copy 2) is the worn one. Now each drawn copy is keyed by
+its own copyIx: the copies this locker's plan names come first, in copyIx order, the rest take the copyIx left, and a copy
+takes the plan cell whose copyIx is its own. Law `tv/test_a_card_draws_each_copy_at_its_own_task_cell.py` (whole page in
+node; Case A, the WAR mule and Case B; 4 red-proofs RED). REG-2782's law re-aimed its "first cell" red-proof to the
+copyIx lookup.
+
 ### REG-2875 - A FULL CATEGORY LOCKER GAVE ITS REST A MOVE TASK WITH NO CELL (his front-run, agent-111's measure)
 agent-111 measured 505 hand adds on the whole page in node: 81 of 405 copies got a MOVE task with NO cell (SOCKETED 37,
 SETS-REST 19, RUNEWORDS 18, UNI-WEAPONS 7). Measured again here on another mix (every catalogue item the router files on
