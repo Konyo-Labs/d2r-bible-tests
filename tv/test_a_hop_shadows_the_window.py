@@ -176,6 +176,39 @@ class AHopTestsTheCapabilityTheCallNeeds(unittest.TestCase):
                       "owned_restore WRITES, so hopping into a context on getItem alone selects a "
                       "frame the write will then fail in")
 
+RED_PROOF = [
+    {"why": "v3209 - the write door hops by assigning the global window, a silent no-op in sloppy mode",
+     "file": "tv/control_app.py",
+     "find": "\"if(_cw&&(typeof _cw.chronicleApply==='function'||typeof _cw._D2R_PFX==='string'))\"\n          \"_ctx=_cw;}catch(_hop){}}\"",
+     "replace": "\"if(_cw&&(typeof _cw.chronicleApply==='function'||typeof _cw._D2R_PFX==='string'))\"\n          \"window=_cw;}catch(_hop){}}\"",
+     "matches": 1},
+    {"why": "the write door picks the frame but never shadows window, so every line after the hop still asks the console shell",
+     "file": "tv/control_app.py",
+     "find": "\"return (function(window){try{\"\n          \"if(typeof window.chronicleApply==='function'){\"",
+     "replace": "\"return (function(_unused){try{\"\n          \"if(typeof window.chronicleApply==='function'){\"",
+     "matches": 1},
+    {"why": "pre-v3209 - chronicle_apply does not hop into the board frame at all and refuses every restore",
+     "file": "tv/control_app.py",
+     "find": "\"try{var _fr=document.getElementById('tvd-eng');var _cw=_fr&&_fr.contentWindow;\"\n          \"if(_cw&&(typeof _cw.chronicleApply==='function'||typeof _cw._D2R_PFX==='string'))\"\n          \"_ctx=_cw;}catch(_hop){}}\"",
+     "replace": "\"}\"",
+     "matches": 1},
+    {"why": "v3215 - board_tick selects its frame on either handler, so a set tick stays on a page that only has toggleOwned",
+     "file": "tv/control_app.py",
+     "find": "\"if(typeof window[_need]!=='function'){\"",
+     "replace": "\"if(typeof window.toggleSetPiece!=='function'&&typeof window.toggleOwned!=='function'){\"",
+     "matches": 1},
+    {"why": "v3215 - board_mask, a reader, demands setItem, so a read-only LSR is refused a read it could serve",
+     "file": "tv/control_app.py",
+     "find": "if(_cw&&_cw.LSR&&_cw.LSR.getItem)_ctx=_cw;",
+     "replace": "if(_cw&&_cw.LSR&&_cw.LSR.getItem&&_cw.LSR.setItem)_ctx=_cw;",
+     "matches": 1},
+    {"why": "owned_restore, a writer, hops on getItem alone and selects a frame the write then fails in",
+     "file": "tv/control_app.py",
+     "find": "if(_cw&&_cw.LSR&&_cw.LSR.getItem&&_cw.LSR.setItem)_ctx=_cw;}catch(_hop){}}",
+     "replace": "if(_cw&&_cw.LSR&&_cw.LSR.getItem)_ctx=_cw;}catch(_hop){}}",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

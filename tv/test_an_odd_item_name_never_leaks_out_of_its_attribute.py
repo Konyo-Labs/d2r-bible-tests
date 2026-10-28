@@ -79,6 +79,19 @@ class AnOddItemNameNeverLeaksOutOfItsAttribute(unittest.TestCase):
             self.assertTrue(c["code"].rstrip().endswith(")"),
                             "bug 4: the attribute ended inside the call, so its tail ')\"> prints as text: %r" % c["code"])
 
+RED_PROOF = [
+    {"why": "ALT bug 4 - jsArg escapes only the backslash and the apostrophe, so a double quote in a name closes the onclick early",
+     "file": "bible.html",
+     "find": "  function jsArg(t){ return String(t).replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\").replace(/\"/g,'\\\\x22').replace(/</g,'\\\\x3C').replace(/>/g,'\\\\x3E').replace(/&/g,'\\\\x26'); }   /* ALT inject run bug 4: a \" in a name closed the onclick attribute */\n",
+     "replace": "  function jsArg(t){ return String(t).replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\"); }   /* ALT inject run bug 4: a \" in a name closed the onclick attribute */\n",
+     "matches": 1, "needs": "node"},
+    {"why": "jsArg stops escaping the double quote alone, so an odd name's \" cuts the mule window's onclick short",
+     "file": "bible.html",
+     "find": "  function jsArg(t){ return String(t).replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\").replace(/\"/g,'\\\\x22').replace(/</g,'\\\\x3C').replace(/>/g,'\\\\x3E').replace(/&/g,'\\\\x26'); }   /* ALT inject run bug 4: a \" in a name closed the onclick attribute */\n",
+     "replace": "  function jsArg(t){ return String(t).replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\").replace(/</g,'\\\\x3C').replace(/>/g,'\\\\x3E').replace(/&/g,'\\\\x26'); }   /* ALT inject run bug 4: a \" in a name closed the onclick attribute */\n",
+     "matches": 1, "needs": "node"},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

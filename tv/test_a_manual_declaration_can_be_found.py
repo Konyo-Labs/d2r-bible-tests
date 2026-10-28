@@ -98,6 +98,34 @@ class AManualDeclarationCanBeFound(unittest.TestCase):
         print("   shut-board verdict: %s" % (type(row).__name__,))
         self.assertIsNotNone(row, "the verdict collapsed when no world was available")
 
+RED_PROOF = [
+    {"why": "the seal classifies its row with no world, so manual_for looks up world=None and a real declaration is never found",
+     "file": "tv/control_app.py",
+     "find": "            out[\"ledgerVerdict\"] = _LA.classify_row(out, world=world)\n",
+     "replace": "            out[\"ledgerVerdict\"] = _LA.classify_row(out)\n",
+     "matches": 1},
+    {"why": "grail_tally stops handing its world to the seal, so the reader half is unjoined one hop earlier",
+     "file": "tv/control_app.py",
+     "find": "    return _seal_tally_verdict(out, \"the board answered but carried no counts\", world=_world)\n",
+     "replace": "    return _seal_tally_verdict(out, \"the board answered but carried no counts\")\n",
+     "matches": 1},
+    {"why": "a profile with no install id resolves to a world, so one declaration matches every id-less board at once",
+     "file": "tv/ledger_authority.py",
+     "find": "    if not ident or not prof:\n        return \"\"\n",
+     "replace": "    if not prof:\n        return \"\"\n",
+     "matches": 1},
+    {"why": "the world key drops the profile, so a declaration for main also answers his ladder world",
+     "file": "tv/ledger_authority.py",
+     "find": "    return \"%s|%s\" % (ident, prof)\n",
+     "replace": "    return ident\n",
+     "matches": 1},
+    {"why": "with the board window shut there is no world, and the verdict collapses instead of classifying as before",
+     "file": "tv/ledger_authority.py",
+     "find": "    tbl = table if table is not None else seed_table()\n    t = tally if isinstance(tally, dict) else {}\n",
+     "replace": "    if world is None:\n        return None\n    tbl = table if table is not None else seed_table()\n    t = tally if isinstance(tally, dict) else {}\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

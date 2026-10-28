@@ -180,6 +180,34 @@ class TestTwoReadersOnOneFrameDoNotConflate(unittest.TestCase):
         self.assertEqual(ca._kai_tooltip_place(right, cache), "on him",
                          "the second reader was served the first reader's cached rect")
 
+RED_PROOF = [
+    {"why": "v3730 - a corrupt or locked JPEG returns (None, why), which the compile caches as a measured miss nobody measured",
+     "file": "tv/tooltip_find.py",
+     "find": "        raise LocateFailed(\"the frame could not be opened: %s\" % str(e)[:60]) from e\n",
+     "replace": "        return None, \"the frame could not be opened: %s\" % str(e)[:60]\n",
+     "matches": 1},
+    {"why": "a frame that is simply not there raises as a read failure instead of the graceful refusal it is",
+     "file": "tv/tooltip_find.py",
+     "find": "    if not frame_path or not os.path.isfile(frame_path):\n        return None, \"no frame at %r\" % (frame_path,)\n",
+     "replace": "    if not frame_path or not os.path.isfile(frame_path):\n        raise LocateFailed(\"no frame at %r\" % (frame_path,))\n",
+     "matches": 1},
+    {"why": "the source JPEG handle is left open until GC, so a re-sweep on Windows hits a sharing violation",
+     "file": "tv/tooltip_find.py",
+     "find": "        with Image.open(frame_path) as _src:\n            im = _src.convert(\"RGB\")\n",
+     "replace": "        im = Image.open(frame_path).convert(\"RGB\")\n",
+     "matches": 1},
+    {"why": "a frame read with too little text is raised as a read failure, so a measured miss is mislabelled unknown",
+     "file": "tv/tooltip_find.py",
+     "find": "    if total < min_lines:\n        return None, (\"only %d text line(s) in the whole frame",
+     "replace": "    if total < min_lines:\n        raise LocateFailed(\"only %d text line(s) in the whole frame\" % total)\n        return None, (\"only %d text line(s) in the whole frame",
+     "matches": 1},
+    {"why": "the per-frame locate cache keys on the path alone, so a second reader is served the first one's rect",
+     "file": "tv/control_app.py",
+     "find": "        ck = (path, reader)\n",
+     "replace": "        ck = path\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     try:

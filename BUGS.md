@@ -1831,6 +1831,42 @@ test_shadow_mode_draws_their_console.
 
 ### REG-2917 - LAWS WITH NO EXECUTABLE RED-PROOF GAIN ONE: 12 OF 54 (#128)
 ### REG-2917 - TWELVE VAULT, INTAKE AND MOVE LAWS COULD NOT BE SEEN TO REFUSE: NO EXECUTABLE RED_PROOF (#128)
+### REG-2918 - EVERY NON-BROWSER LAW STILL WITHOUT AN EXECUTABLE RED-PROOF GAINS ONE: 36 OF 42 (#128)
+REG-2917 left 42 gates with no RED_PROOF, 6 of them browser laws. The 36 that run without a browser now each carry
+executable red-proofs that break the PROPERTY the law names. Every anchor matched its file exactly once; every proof was
+seen RED for that property (its own assertion, not an import, a crash or an anchor), and sab read bad 0 for each law.
+Part 1 (16 laws): the dock's still-full reason, the sweep's reading clock, a missing companion, a window change reaching
+the fleet, the world ribbon's put-away, untracked reel footage, a count that cannot answer why, the silent proof chip, a
+counted live-store skip, a countless proof that can still tamper, a blind organ, a difference's two terms, a gate that may
+not pin his footage, a read reel not waiting on a read, the fleet's per-side lack, and a written answer's reader.
+Part 2 (20 laws, 130 proofs): test_a_hop_shadows_the_window (the v3209 `window=_cw` no-op; no shadow; no hop; the
+either-handler tick; a reader demanding setItem; a writer not), test_a_fixture_pack_is_not_his_footage (a head slice; a
+whole-reel copy; the source sessionId; the fixture flag; "pruned" wording; the checksum; the dedupe; front-of-shelf),
+test_the_guest_seat_is_grok_not_konyo (actor; per-run id; key scrub; merged identity; unreadable as {}; a blind leak
+detector; the unix user; his name; a write door in the allowlist), test_the_chronicle_counts_a_sunder_once (Renewed; a
+bare sunder; the object branch; the array branch; the sixth base; the roster's Latent form; vault and chronicle keys),
+test_a_manual_declaration_can_be_found, test_the_card_says_why_the_list_is_missing, test_reported_counts_is_not_no_report,
+test_a_missing_row_never_claims_it_does_not_know, test_a_decoded_empty_is_not_unknown,
+test_the_edit_tab_states_the_odds_of_the_mods_he_picked (14: each share of the magic mix, the inclusive floor, a blank
+range, an out-of-range roll, a chosen class, each unpinned draw's reason, the 1/1, the disclaimer),
+test_a_measured_find_date_stays_on_the_live_sighting, test_a_1440_tooltip_joins_the_panel, test_tooltip_read_failures,
+test_a_shadow_log_nobody_read_is_not_agreement, test_an_unread_test_is_not_a_clean_verdict,
+test_a_reach_difference_is_not_an_unsteady_eye, test_an_in_game_draft_wears_the_gear_the_reels_showed,
+test_the_head_stamp_matches_the_build, test_an_odd_item_name_never_leaks_out_of_its_attribute and
+test_an_off_grid_builder_item_is_flagged_not_drawn. Proofs whose red comes through node carry "needs": "node".
+Cases deliberately left WITHOUT a proof, with why: the fixture-pack loader's live-tree refusal - opening it makes the
+proof itself write a reel into the footage tree of whatever checkout runs it, and footage has no un-delete; the untracked-
+footage law's three git-index cases - the tracked set is not text a find/replace can sabotage (its .gitignore case has
+one); the missing-row law's planted-violation case and the head-stamp law's frozen-title case - each is the guard's own
+built-in red case, and a proof against the law's detector would sit twice in the law's own file. Not kept: a dropper proof
+that set the journal field to None crashed the case on `.get` and was re-aimed to `{}` (now red on the property); a
+head-stamp missing-title sabotage is answered first by the meta refusals for that fixture, and a jsArg sabotage of the
+`<`/`>` escapes alone cannot leak inside a double-quoted attribute, so neither was used.
+Census after (heart2.report): 1,238 gates, 1,232 declaring a proof, 6 unproven - exactly the six browser laws, which need
+CI to be seen red: test_intake_a_move_needs_a_look_and_owned_has_a_record, test_v3767_copy_witness_visual,
+test_vault_add_and_find_doors_work, test_vault_v3_layout_keeps_every_door, test_v3771_vault_console_face_visual,
+test_shadow_mode_draws_their_console.
+
 ### REG-2917 - LAWS WITH NO EXECUTABLE RED-PROOF GAIN ONE: 12 OF 54 (#128)
 heart2's own census (heart2.report) read 1,238 gates, 1,184 declaring a proof, 54 with none - UNKNOWN, not clean. The
 twelve guarding vault, intake and move code that run without a browser now each carry an executable RED_PROOF that breaks

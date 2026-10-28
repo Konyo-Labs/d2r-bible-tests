@@ -106,6 +106,34 @@ class AnInGameDraftWearsTheGearTheReelsShowed(unittest.TestCase):
         self.assertNotIn("String of Ears", out["say"])
         self.assertNotIn("What the reels saw", out["say"])
 
+RED_PROOF = [
+    {"why": "a reel name that matches two items is put on the doll anyway, so a guess is worn as gear",
+     "file": "bible.html",
+     "find": "            if (hits.length !== 1){ w.unresolved.push({ slot: dest, item: s.item, n: hits.length }); return; }\n",
+     "replace": "            if (!hits.length){ w.unresolved.push({ slot: dest, item: s.item, n: hits.length }); return; }\n",
+     "matches": 1, "needs": "node"},
+    {"why": "a witnessed name that matches no item stays off the doll and is never said",
+     "file": "bible.html",
+     "find": "      else bits.push(u.item + ' — not in the item tables');\n",
+     "replace": "      else return;\n",
+     "matches": 1, "needs": "node"},
+    {"why": "an item whose slot the reels did not tell is dropped from what the draft says",
+     "file": "bible.html",
+     "find": "            if (u && u.item) w.unresolved.push({ slot: null, item: u.item, n: null, why: u.why || 'slot not told' });\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "a console that never sent the gear ledger reads as 'no reel has shown' - UNKNOWN shown as none",
+     "file": "bible.html",
+     "find": "    if (L && Object.prototype.hasOwnProperty.call(L, 'gear')){\n",
+     "replace": "    if (L){\n",
+     "matches": 1, "needs": "node"},
+    {"why": "opening the in-game draft writes the builds store before he has changed anything",
+     "file": "bible.html",
+     "find": "        if (String(t.key || '').indexOf('seen:') === 0) _cbFillFromGear(st.draft, t.key);\n        st.bid = null;\n",
+     "replace": "        if (String(t.key || '').indexOf('seen:') === 0) _cbFillFromGear(st.draft, t.key);\n        st.bid = null;\n        try { window.LSR.setItem(CB_KEY, JSON.stringify(_cbAll())); } catch (e) {}\n",
+     "matches": 1, "needs": "node"},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

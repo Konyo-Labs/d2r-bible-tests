@@ -112,6 +112,39 @@ class TheCardSaysWhyTheListIsMissing(unittest.TestCase):
         self.assertNotIn("<img", html, "a fleet row is remote input and must be escaped")
         self.assertIn("&lt;img", html)
 
+RED_PROOF = [
+    {"why": "v3169's shape - the server publishes maskWhy and the card the user hovers renders nothing",
+     "file": "tv/control_ui.html",
+     "find": "            if (_any) {\n              _mwLine",
+     "replace": "            if (false) {\n              _mwLine",
+     "matches": 1, "needs": "node"},
+    {"why": "one machine state prints once per ledger, so Dean's row reads as two separate faults",
+     "file": "tv/control_ui.html",
+     "find": "                return escC(_byReason[r].join(', ')) + ': counted, not named \\u2014 ' + escC(r);\n",
+     "replace": "                return _byReason[r].map(function (k) { return escC(k) + ': counted, not named \\u2014 ' + escC(r); }).join('<br>');\n",
+     "matches": 1, "needs": "node"},
+    {"why": "only the first reason survives, so a second, different fault on the same machine is dropped",
+     "file": "tv/control_ui.html",
+     "find": "              _mwLine = '<div class=\"ftt-mw\">' + Object.keys(_byReason).map(function (r) {\n",
+     "replace": "              _mwLine = '<div class=\"ftt-mw\">' + Object.keys(_byReason).slice(0, 1).map(function (r) {\n",
+     "matches": 1, "needs": "node"},
+    {"why": "an empty or null reason is rendered as a reason - a zero with no denominator",
+     "file": "tv/control_ui.html",
+     "find": "              var r = _wy[k]; if (!r) return;          /* absent reason is not a reason */\n",
+     "replace": "              var r = _wy[k];\n",
+     "matches": 1, "needs": "node"},
+    {"why": "the reason, which is remote fleet input, is printed into the card unescaped",
+     "file": "tv/control_ui.html",
+     "find": "                return escC(_byReason[r].join(', ')) + ': counted, not named \\u2014 ' + escC(r);\n",
+     "replace": "                return escC(_byReason[r].join(', ')) + ': counted, not named \\u2014 ' + r;\n",
+     "matches": 1, "needs": "node"},
+    {"why": "a row that reported no reason gets a default one, so a machine with nothing to explain grows a line",
+     "file": "tv/control_ui.html",
+     "find": "          var _wy = m && m.maskWhy;\n",
+     "replace": "          var _wy = (m && m.maskWhy) || {sets: '(not reported)'};\n",
+     "matches": 1, "needs": "node"},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

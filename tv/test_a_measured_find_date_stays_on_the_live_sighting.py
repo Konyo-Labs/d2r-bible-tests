@@ -132,6 +132,44 @@ class MeasuredFindDateStaysOnTheLiveSighting(unittest.TestCase):
         self.assertNotIn("sort", sight)
         self.assertEqual(cr.in_game_stamp([sight]), {})
 
+RED_PROOF = [
+    {"why": "#118 - emit_deep_read builds the journal row without the date the parse kept, so a live read files the sweep's moment",
+     "file": "tv/tv_diablo.py",
+     "find": "        \"foundAt\": rd.get(\"foundAt\"),\n",
+     "replace": "        \"foundAt\": None,\n",
+     "matches": 1},
+    {"why": "#118 - live_pages copies the sort word and never the date, so the date dies between the journal and the page",
+     "file": "tv/chronicle_retro.py",
+     "find": "               \"foundAt\": (row.get(\"foundAt\") if isinstance(row.get(\"foundAt\"), dict)\n                           else row.get(\"found_at\") if isinstance(row.get(\"found_at\"), dict)\n                           else None),\n",
+     "replace": "               \"foundAt\": None,\n",
+     "matches": 1},
+    {"why": "a monster name the reader put in the date field is journaled as the First Found date",
+     "file": "tv/tv_diablo.py",
+     "find": "                if _chron_stamp_ok(v3):\n                    found_at[k3] = v3\n",
+     "replace": "                if True:\n                    found_at[k3] = v3\n",
+     "matches": 1},
+    {"why": "a date printed on a different name is worn by this one",
+     "file": "tv/chronicle_retro.py",
+     "find": "                _fa = (resp.get(\"foundAt\") or {}).get(nm)\n",
+     "replace": "                _fa = (resp.get(\"foundAt\") or {}).get(nm) or next(iter((resp.get(\"foundAt\") or {}).values()), None)\n",
+     "matches": 1},
+    {"why": "a read that never parsed the field journals an empty map - a measured 'no dates' instead of UNKNOWN",
+     "file": "tv/tv_diablo.py",
+     "find": "        \"foundAt\": rd.get(\"foundAt\"),\n",
+     "replace": "        \"foundAt\": rd.get(\"foundAt\") or {},\n",
+     "matches": 1},
+    {"why": "the journal row drops the dropper the parse kept",
+     "file": "tv/tv_diablo.py",
+     "find": "        \"droppedBy\": rd.get(\"droppedBy\"),\n",
+     "replace": "        \"droppedBy\": {},\n",
+     "matches": 1},
+    {"why": "v1907 - the live page is built without the sort word, so no sighting carries it",
+     "file": "tv/chronicle_retro.py",
+     "find": "               \"sort\": row.get(\"chronicleSort\") or row.get(\"chronicle_sort\") or \"\",\n",
+     "replace": "               \"sort\": \"\",\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

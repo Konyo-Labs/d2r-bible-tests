@@ -102,6 +102,29 @@ class ADecodedEmptyIsNotUnknown(unittest.TestCase):
         self.assertIsNone(out.get("mineMissingNames"),
                           "'you still need' cannot be computed from a mask that would not decode")
 
+RED_PROOF = [
+    {"why": "v3177 - an empty list is falsy, so a mask that decoded cleanly to none-owned reads as 'no mask published'",
+     "file": "tv/control_app.py",
+     "find": "        _mine_known = _mine_names is not None\n",
+     "replace": "        _mine_known = bool(_mine_names)\n",
+     "matches": 1},
+    {"why": "a mask that refused to decode is rendered as a confident empty list",
+     "file": "tv/control_app.py",
+     "find": "        out[\"mineNames\"] = sorted(_mine_names) if _mine_known else None\n",
+     "replace": "        out[\"mineNames\"] = sorted(_mine_names or [])\n",
+     "matches": 1},
+    {"why": "the reason this console's side is unknown is replaced by a generic one",
+     "file": "tv/control_app.py",
+     "find": "        out[\"mineWhy\"] = None if _mine_known else (_mine_why or \"this console published no mask\")\n",
+     "replace": "        out[\"mineWhy\"] = None if _mine_known else \"this console published no mask\"\n",
+     "matches": 1},
+    {"why": "'you still need' is computed from a mask that would not decode, as if he owned nothing",
+     "file": "tv/control_app.py",
+     "find": "        out[\"mineMissingNames\"] = (sorted(set(roster) - set(_mine_names))\n                                   if _mine_known else None)\n",
+     "replace": "        out[\"mineMissingNames\"] = sorted(set(roster) - set(_mine_names or []))\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

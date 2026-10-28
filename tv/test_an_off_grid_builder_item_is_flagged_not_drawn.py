@@ -96,6 +96,34 @@ class AnOffGridBuilderItemIsFlaggedNotDrawn(unittest.TestCase):
         self.assertEqual(len(st["sets"][0]["inv"]), 2)
         self.assertEqual(len(st["shared"]), 1)
 
+RED_PROOF = [
+    {"why": "bug 2 - every inventory tile is drawn again, so a 41st item sits outside the 10x4 grid",
+     "file": "bible.html",
+     "find": "      if (_cbOutside(e, CB_INV_W, CB_INV_H)){ off.push(e); return; }   /* bug 2: flagged under the grid, never drawn outside it */\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "bug 2 - the off-grid inventory item is skipped with no flag under the grid, so it is silently lost",
+     "file": "bible.html",
+     "find": "      + _cbOffGridHtml(off, CB_INV_W, CB_INV_H, 'inventory');\n",
+     "replace": "      ;\n",
+     "matches": 1, "needs": "node"},
+    {"why": "bug 3 - the Shared tab counts the item and no flag under its grid says why it is not drawn",
+     "file": "bible.html",
+     "find": "      + _cbOffGridHtml(off, cols, rowsN, String(spec[2]).toLowerCase() + ' grid')\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "bug 3 - the tab that counts the item never says one of its items is not drawn",
+     "file": "bible.html",
+     "find": "          + (offN ? ' ' + offN + ' not drawn: outside the grid.' : '') };\n",
+     "replace": "          + '' };\n",
+     "matches": 1, "needs": "node"},
+    {"why": "only the corner is tested, so an item whose footprint runs past the edge (x=9, w=2) is not flagged",
+     "file": "bible.html",
+     "find": "    return x < 0 || y < 0 || x + w > cols || y + h > rows;\n",
+     "replace": "    return x < 0 || y < 0 || x >= cols || y >= rows;\n",
+     "matches": 1, "needs": "node"},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

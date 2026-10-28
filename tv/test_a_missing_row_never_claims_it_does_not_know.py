@@ -118,6 +118,19 @@ class AMissingRowNeverClaimsItDoesNotKnow(unittest.TestCase):
         # ADMITS_UNKNOWN order — pin that it named A real phrase, not which one won the race.
         self.assertIn(found[0][2], ADMITS_UNKNOWN)
 
+RED_PROOF = [
+    {"why": "v3179 - the tooltip finder nobody has asked renders as a FAULT in WHAT NEEDS YOU while its own sentence says nothing is known",
+     "file": "tv/console_doctor.py",
+     "find": "        return UNKNOWN, (\"the finder has never been asked",
+     "replace": "        return MISSING, (\"the finder has never been asked",
+     "matches": 1},
+    {"why": "a router that would not answer is counted as a broken lane, inflating the number he acts on",
+     "file": "tv/console_doctor.py",
+     "find": "            return UNKNOWN, \"the router would not answer, so nothing is known about banking\"",
+     "replace": "            return MISSING, \"the router would not answer, so nothing is known about banking\"",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

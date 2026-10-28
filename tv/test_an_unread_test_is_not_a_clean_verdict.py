@@ -108,6 +108,24 @@ class AnUnreadTestIsNotACleanVerdict(unittest.TestCase):
                       "tell it from a platform-fact UNKNOWN")
         self.assertIn("PLATFORM FACT", code)
 
+RED_PROOF = [
+    {"why": "#196 - the unread guard can no longer be reached, so a suite whose unreadable tests passed exits 0",
+     "file": "tv/ci_sim.py",
+     "find": "    if plat or unread:\n        if unread and not plat:\n",
+     "replace": "    if plat:\n        if unread and not plat:\n",
+     "matches": 1},
+    {"why": "#196 - the unread-only verdict returns 0, a clean verdict about work the tool never examined",
+     "file": "tv/ci_sim.py",
+     "find": "            print(\"   Exit 3 is UNKNOWN, not failure.\")\n            return 3\n",
+     "replace": "            print(\"   Exit 3 is UNKNOWN, not failure.\")\n            return 0\n",
+     "matches": 1},
+    {"why": "the unreadable-source UNKNOWN is said in platform-fact words, so a reader cannot tell which action it needs",
+     "file": "tv/ci_sim.py",
+     "find": "                  \"COULD NOT BE READ\" % (r.testsRun, len(unread)))\n            print(\"   for platform facts at all, so this tool examined only the rest. A skip is \"\n                  \"not a pass.\")\n            for _u in list(unread)[:12]:\n                print(\"     \\u26aa %s\" % str(_u)[:70])\n            if len(unread) > 12:\n                print(\"     \\u26aa … and %d more\" % (len(unread) - 12))\n            print(\"   Exit 3 is UNKNOWN, not failure.\")\n            return 3\n        if unread:\n            print(\"\\u26aa %d test(s) COULD NOT BE READ, and are counted",
+     "replace": "                  \"turn on a PLATFORM FACT\" % (r.testsRun, len(unread)))\n            print(\"   for platform facts at all, so this tool examined only the rest. A skip is \"\n                  \"not a pass.\")\n            for _u in list(unread)[:12]:\n                print(\"     \\u26aa %s\" % str(_u)[:70])\n            if len(unread) > 12:\n                print(\"     \\u26aa … and %d more\" % (len(unread) - 12))\n            print(\"   Exit 3 is UNKNOWN, not failure.\")\n            return 3\n        if unread:\n            print(\"\\u26aa %d test(s) turn on a PLATFORM FACT, and are counted",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

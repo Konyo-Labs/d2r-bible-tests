@@ -132,6 +132,34 @@ class TestTheBumpRewritesTheHead(unittest.TestCase):
             B._rewrite_head_stamps("<html></html>", "v9", "2026-10-15", "plain")
         self.assertIn("nothing written", str(cm.exception))
 
+RED_PROOF = [
+    {"why": "v710 - the d2r-build meta keeps an old token while window.D2R_BUILD.id moves",
+     "file": "bible.html",
+     "find": "<meta name=\"d2r-build\" content=\"",
+     "replace": "<meta name=\"d2r-build\" content=\"v710.1-",
+     "matches": 1},
+    {"why": "the d2r-build-date meta disagrees with window.D2R_BUILD.date",
+     "file": "bible.html",
+     "find": "<meta name=\"d2r-build-date\" content=\"",
+     "replace": "<meta name=\"d2r-build-date\" content=\"2000-01-01 ",
+     "matches": 1},
+    {"why": "v710 - the bump rewrites the JS object and never the head, so the tab stays on the old token",
+     "file": "tv/bump_version.py",
+     "find": "    html = title_pat.sub(title_repl, html, count=1)\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "the build note is written into an attribute unescaped, so a quote in it breaks the meta",
+     "file": "tv/bump_version.py",
+     "find": "    note_attr = _attr_text(note)\n",
+     "replace": "    note_attr = note\n",
+     "matches": 1},
+    {"why": "the bump replaces the whole title with the version, so the words around the token are lost",
+     "file": "tv/bump_version.py",
+     "find": "        return \"<title>\" + body.replace(versions[0], ver, 1) + \"</title>\"\n",
+     "replace": "        return \"<title>\" + ver + \"</title>\"\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main()

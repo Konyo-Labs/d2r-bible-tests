@@ -123,6 +123,44 @@ class AReachDifferenceIsNotAnUnsteadyEye(unittest.TestCase):
                       "the doctor has no branch for INCOMPARABLE, so it falls through to UNKNOWN "
                       "— a measured fact reported as 'nobody could ask'")
 
+RED_PROOF = [
+    {"why": "#168 - two looks 9.9x apart in payload are called an unsteady eye; the cap is never blamed",
+     "file": "tv/second_eye_ledger.py",
+     "find": "    if _ratio is not None and _ratio >= _PAYLOAD_SPLIT and _real_split:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "v3461 - one small third look sets the state for the whole version and buries a same-payload disagreement",
+     "file": "tv/second_eye_ledger.py",
+     "find": "        _real_split = not _comparable_disagreement\n",
+     "replace": "        _real_split = True\n",
+     "matches": 1},
+    {"why": "every disagreement is excused as a payload split, so the unsteady-eye finding is gone",
+     "file": "tv/second_eye_ledger.py",
+     "find": "_PAYLOAD_SPLIT = 2.0\n",
+     "replace": "_PAYLOAD_SPLIT = 1.0\n",
+     "matches": 1},
+    {"why": "looks whose sizes nobody measured are still said to be 'at ONE payload'",
+     "file": "tv/second_eye_ledger.py",
+     "find": "    _one = (\"at ONE payload\" if _ratio is not None\n",
+     "replace": "    _one = (\"at ONE payload\" if True\n",
+     "matches": 1},
+    {"why": "the census does not count INCOMPARABLE, so the disagreement count silently improves",
+     "file": "tv/second_eye_ledger.py",
+     "find": "            \"incomparable\": len(incomparable),\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "INCOMPARABLE is missing from the named vocabulary, so a reader has never heard of it",
+     "file": "tv/second_eye_ledger.py",
+     "find": "AGREEMENT_STATES = (\"NONE\", \"SINGLE\", \"AGREE\", \"ECHO\", \"DISAGREE\",\n                    \"INCOMPARABLE\")\n",
+     "replace": "AGREEMENT_STATES = (\"NONE\", \"SINGLE\", \"AGREE\", \"ECHO\", \"DISAGREE\")\n",
+     "matches": 1},
+    {"why": "the doctor has no INCOMPARABLE branch, so a measured payload split falls through to UNKNOWN",
+     "file": "tv/console_doctor.py",
+     "find": "    if st == \"INCOMPARABLE\":\n        return MISSING, ((a.get(\"say\") or \"two looks over payloads too different to compare\")\n                         + \" · the half that is missing is MINE to take: one more look at \"\n                           \"COMPARABLE reach, recorded as its own ledger row\") + tail\n",
+     "replace": "",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
