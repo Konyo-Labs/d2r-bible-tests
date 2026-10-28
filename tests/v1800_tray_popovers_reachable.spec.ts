@@ -35,6 +35,10 @@ const FILE = 'file://' + path.resolve(__dirname, '..', 'bible.html');
    still leave it green. Its geometry is asserted nowhere else in the repo either. */
 const POPOVERS = [
   { name: 'tools legend', tab: 'tools', fab: '.tools-legend-fab', pop: '.tools-legend-pop' },
+  // REG-2860 — the Vault guide is the third legend in tray slot S2, on the vault tab; same anchor, same budget, same flip.
+  // Its orb is hidden at 480px tall and under (the v1810 rule: an S2 orb rides into the tab strip there), so there is no
+  // orb to press at 640x400 and that size is not a case for it - minH says so rather than a skip that reads as a pass.
+  { name: 'vault guide',  tab: 'vault', fab: '.vault-guide-fab',  pop: '.vault-guide-pop', minH: 481 },
   { name: 'inbox',        tab: 'tools', fab: '.inbox-fab',        pop: '.inbox-pop',
     // the inbox FAB only appears once the queue has something in it
     seed: true },
@@ -50,7 +54,7 @@ const SIZES = [
 
 for (const P of POPOVERS) {
 for (const claimBarUp of [false, true]) {
-  for (const { w, h } of SIZES) {
+  for (const { w, h } of SIZES.filter((s) => !(P as any).minH || s.h >= (P as any).minH)) {
     test(`v1800 ${P.name} popover is reachable at ${w}x${h} (claim bar ${claimBarUp ? 'up' : 'dismissed'})`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: h });
       /* The queue is seeded AFTER load, further down — see the v1807 note at the put-back. It

@@ -1932,7 +1932,10 @@ function run(parentSnap, search) {
                 legend: fire(mk("window.forgeLegendToggle()")), tool: fire(mk("window._toolJump('gem-stash-card')")),
                 hist: fire(mk("window._tvdHistTab('last')")),
                 fold: fire(mk("window.toggleCardCollapse('smart-insights-card'); window.renderSmartInsights&&window.renderSmartInsights();")),
-                gotBase: fire(mk("window.forgeGotBase(this,'Spirit','Monarch',4)")) };
+                gotBase: fire(mk("window.forgeGotBase(this,'Spirit','Monarch',4)")),
+                // REG-2860 - the Vault guide's orb, its steps and its show-me spots, in the shapes the guide writes them
+                guide: fire(mk("window.vaultGuideTog()")), guideGo: fire(mk("window.vaultGuideGo(2)")),
+                guideShow: fire(mk("window.vaultGuideGo('shelf')")) };
   const claimEl = { id: 'claim-btn', getAttribute() { return null; }, matches() { return false; },
     closest(sel) { return String(sel).indexOf('#claim') !== -1 ? this : null; } };
   res.claimStopped = fire(claimEl);
@@ -2053,7 +2056,8 @@ class TheShadowFrameBoot(unittest.TestCase):
         self.assertTrue(v["inSummary"], "a write button inside a fold passed the veil as if it were the fold")
         # GrokBot bugs 2+3 - "Best runs ->", "open recipe" and the Tools chips move the view in the shadow too
         lk = self.r["links"]
-        for k in ("runs", "sets", "recipe", "legend", "tool", "hist", "fold"):
+        # REG-2860 - and the Vault guide opens and steps in a shadow, as it does on his own board
+        for k in ("runs", "sets", "recipe", "legend", "tool", "hist", "fold", "guide", "guideGo", "guideShow"):
             self.assertFalse(lk[k], "the view link %r was stopped in the shadow: %r" % (k, lk))
         self.assertTrue(lk["gotBase"], "a forge write (got the base) passed the veil: %r" % lk)
         self.assertTrue(self.r["claimStopped"], "a click on the claim button was not stopped in the shadow frame")
@@ -2167,6 +2171,10 @@ console.log(JSON.stringify({ me: _fleetOpenEyesHtml(me, true), alt: _fleetOpenEy
 
 
 RED_PROOF = [
+    {"why": "REG-2860 - the Vault guide is stopped in a shadow (its two doors are not view controls)",
+     "file": "bible.html",
+     "find": "                'vaultGuideTog', 'vaultGuideGo',\n",
+     "replace": "", "matches": 1, "needs": "node"},
     {"why": "Shadow: the worker does not decode each string literal, so an escaped path or token (even under a dropped duplicate key) is stored",
      "file": "functions/api/roster.js",
      "find": "    if (PRIVATE.some((rx) => rx.test(t))) return true;\n  }\n",
