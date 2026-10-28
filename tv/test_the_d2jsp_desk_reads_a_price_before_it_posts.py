@@ -400,17 +400,17 @@ window._cbShown = function(){ return { name: 'Grief', base: 'Phase Blade' }; };
 """
         out = json.loads(_node(stubs + script, body))
         self.assertEqual(out["lines"], ["+340-400% Enhanced Damage", "+36-40 to Life", "Ethereal"])
-        self.assertEqual(out["draft"]["subject"], "Selling Grief Phase Blade")
+        self.assertEqual(out["draft"]["subject"], "WTS Grief Phase Blade")
         self.assertEqual(
             out["draft"]["body"].split("\n"),
-            ["Selling Grief Phase Blade", "+340-400% Enhanced Damage", "+36-40 to Life", "Ethereal", "30 fg"],
+            ["WTS Grief Phase Blade", "+340-400% Enhanced Damage", "+36-40 to Life", "Ethereal", "30 fg"],
         )
         self.assertEqual(out["thunder"], ["Adds 1-75 lightning damage"])
-        self.assertEqual(out["sale"]["subject"], "Selling Guardian's Thunder Colossal Jewel")
+        self.assertEqual(out["sale"]["subject"], "WTS Guardian's Thunder Colossal Jewel")
         self.assertEqual(
             out["sale"]["body"].split("\n"),
             [
-                "Selling Guardian's Thunder Colossal Jewel",
+                "WTS Guardian's Thunder Colossal Jewel",
                 "Adds 1-75 lightning damage",
                 "+10% to Lightning Skill Damage",
                 "1100 fg",
@@ -425,30 +425,30 @@ window._cbShown = function(){ return { name: 'Grief', base: 'Phase Blade' }; };
         self.assertTrue(out["quest"])
         self.assertEqual(out["shopOne"]["subject"], out["draft"]["subject"])
         self.assertEqual(out["shopOne"]["body"], out["draft"]["body"])
-        self.assertEqual(out["shopTwo"]["subject"], "Selling 2 items")
+        self.assertEqual(out["shopTwo"]["subject"], "WTS 2 items")
         self.assertEqual(
             out["shopTwo"]["body"].split("\n\n"),
             [
-                "Selling Grief Phase Blade\n+340-400% Enhanced Damage\nEthereal\n30 fg",
-                "Selling Guardian's Thunder Colossal Jewel\nAdds 1-75 lightning damage\n1100 fg",
+                "WTS Grief Phase Blade\n+340-400% Enhanced Damage\nEthereal\n30 fg",
+                "WTS Guardian's Thunder Colossal Jewel\nAdds 1-75 lightning damage\n1100 fg",
             ],
         )
         self.assertNotIn("but do not describe", out["shopTwo"]["body"])
         self.assertNotIn("&#39;", out["shopTwo"]["body"])
-        self.assertEqual(out["shopSold"]["subject"], "Selling 1 item")
+        self.assertEqual(out["shopSold"]["subject"], "WTS 1 item")
         self.assertEqual(
             out["shopSold"]["body"].split("\n\n"),
             [
-                "Selling Grief Phase Blade\n+340-400% Enhanced Damage\n30 fg",
+                "WTS Grief Phase Blade\n+340-400% Enhanced Damage\n30 fg",
                 "SOLD Guardian's Thunder Colossal Jewel\ncopies: 2\n1100 fg",
             ],
         )
         self.assertNotIn("Adds 1-75 lightning damage", out["shopSold"]["body"])
-        self.assertEqual(out["shopSkip"]["subject"], "Selling Grief Phase Blade")
+        self.assertEqual(out["shopSkip"]["subject"], "WTS Grief Phase Blade")
         self.assertNotIn("Shako", out["shopSkip"]["body"])
         self.assertFalse(out["shopBlank"]["ok"])
         self.assertEqual(out["shopBlank"]["reason"], "no price")
-        self.assertEqual(out["shopGone"]["subject"], "Selling 0 items")
+        self.assertEqual(out["shopGone"]["subject"], "WTS 0 items")
         self.assertEqual(out["shopGone"]["body"], "SOLD Grief Phase Blade\n30 fg")
         self.assertNotIn("SHOULD NOT APPEAR", out["shopGone"]["body"])
 
