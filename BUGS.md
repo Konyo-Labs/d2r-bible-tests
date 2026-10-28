@@ -2783,6 +2783,20 @@ no known names kept every prose word, the opposite of its own rule; it now keeps
 journal: REC-03 still PASSES (newest long session, 51 worker reads, all warm). The eye's "older sessions' unanswered
 commitments are only reported" is the documented rule ("the newest decides; older ones are reported"), not a defect. Law:
 test_a_scenario_names_its_own_frames (3 cases, 5 red-proofs, 1 re-aimed).
+### REG-2880 - A CONFIRMED D2JSP POST NEVER MARKED A COPY LISTED IN THE VAULT, AND THE TAB SAID LISTED FROM ITS OWN LOG (#83, his ruling "copy records carry a trade state (listed / traded-out) ... wire it later"; the lead's wiring brief)
+Measured in the D2JSP room's own code and on the whole page (node): the tab and the vault had two words for "listed".
+The room called an item listed when its post log held a confirmed answer (REG-2873) and published that through
+window._d2jspTradeState. The vault's copy records carry their own trade slot (REG-2877), and FIND, the MOVE row, the
+window tile and the shelf cell read it (REG-2878). Nothing wrote that slot, so a confirmed post left every copy with
+trade: null and the vault never showed the mark. Now a confirmed post, of one item or of the list, calls
+window._vaultTradeEvent({kind: 'listed', name, post: topic}) until as many copies are listed as the post offers. A re-post
+tops up only. An answer that may be up, a refusal or a lost answer lists nothing: a maybe stays a question to him. A SOLD
+block, and a planner pick the vault does not hold, list nothing. A refusal from the door is said on the status line. The
+card's chip reads Listed from the vault's slot. A confirmed post with no listed copy reads "Posted on board N" with
+"not in the vault" or "no copy is listed in the vault". The log-based listed state and window._d2jspTradeState are
+retired. Whole page in node: two filed Gull copies listed with the topic, once, the count unchanged, the card says
+Listed, and FIND says "2 listed". Law: tv/test_a_confirmed_d2jsp_post_lists_its_copies_on_the_vault.py, 10 red-proofs.
+
 ### REG-2881 - MARK TRADED TOOK THE WRONG COPY OUT, BY A SECOND PATH BESIDE THE VAULT'S TRADE DOOR (#83, his ruling "the reconciler takes trade-out / trade-in events"; the lead's wiring brief: one door)
 Measured in the D2JSP room's own code (node): REG-2873's Mark traded took the copy out of the vault itself, beside
 window._vaultTradeEvent (REG-2877). With several copies it called the copy door, vaultCopyAdjust(name, -1). That door drops
