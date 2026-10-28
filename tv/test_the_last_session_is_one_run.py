@@ -19,7 +19,13 @@ other reel loads - the old fallback to session 1 is gone.
 Driven: the real hdShelf -> hdLastSession, window._shelfLastSession -> thPickEntrySession(true), and thOpen ->
 thPickEntrySession() (the Theatre button's open, its /api/sessions wait stubbed), cut out of control_ui.html and run in
 node over the SAME /api/sessions rows; each case reads the session the digest names, the one the Shelf button loads and
-the one the Theatre loads. RED_PROOF below.
+the one the Theatre loads.
+
+REG-2868 (GrokBot #230 6477559571) - "the run being recorded" was read off the body alone, and a shadow-reader recording keeps
+the body off on purpose: the Mac's digest read "session 1 · 19m00s → 22m57s · ◌ OPEN" across two loads while the console
+was live. Every /api/sessions row now carries ended (control_app._session_ended: a session end, a sealed reel or a newer run
+= true; session 1 with an id and none of those = false; no id = null). A false is skipped whatever the body says; a null is
+shown and the digest says "ended UNKNOWN". RED_PROOF below.
 """
 import io
 import json
@@ -138,6 +144,18 @@ CASES = {
         _run(n=2, reads=20, frames=4, footageN=40, named=1, kaiMissed=3)]},
     # nothing he played at all
     "only_a_stub": {"rows": [{"n": 1, "stub": True, "sessionId": "s_1"}]},
+    # REG-2868 (GrokBot #230 6477559571) - a shadow-reader recording keeps the body OFF; the server says session 1 has not ended
+    "recording_body_off": {"rows": [
+        _run(n=1, ended=False, reads=9, frames=5, footageN=50, named=2),
+        _run(n=2, ended=True, reads=60, frames=20, footageN=900, named=4)]},
+    # the same run once it sealed: it IS the last session
+    "sealed_body_off": {"rows": [
+        _run(n=1, ended=True, reads=9, frames=5, footageN=50, named=2),
+        _run(n=2, ended=True, reads=60, frames=20, footageN=900, named=4)]},
+    # no session id: the server cannot tell - shown, never skipped silently, and said
+    "ended_unknown": {"rows": [
+        _run(n=1, ended=None, reads=9, frames=5, footageN=50, named=2),
+        _run(n=2, ended=True, reads=60, frames=20, footageN=900, named=4)]},
 }
 
 
@@ -214,10 +232,55 @@ class TheLastSessionIsOneRun(unittest.TestCase):
         self.assertEqual(self.played("only_a_stub"), [], "the Theatre played a stub (the old fallback to session 1)")
         self.assertEqual(g["stage"], "🎞 no session has film yet")
 
+    def test_a_run_still_being_recorded_is_not_the_last_session_whatever_the_body_says(self):
+        """REG-2868 - body OFF (a shadow-reader recording), the server says session 1 has not ended: all three doors skip it."""
+        self.same("recording_body_off", 2)
+
+    def test_a_sealed_session_1_is_the_last_session(self):
+        self.same("sealed_body_off", 1)
+        self.assertNotIn("ended UNKNOWN", self.got["sealed_body_off"]["row"])
+
+    def test_an_unknown_end_is_shown_and_said_never_skipped_silently(self):
+        self.same("ended_unknown", 1)
+        self.assertIn("ended UNKNOWN", self.got["ended_unknown"]["row"], "a run nobody can say has ended reads as over")
+
     def test_the_theatre_plays_the_last_session_not_the_newest_with_a_find(self):
         """REG-2811 - the substance tiers would play session 48 (film and a find) over session 28 (stills, no film)."""
         self.assertEqual(self.played("grokbots_28_vs_48"), [28])
         self.assertEqual(self.played("three_runs_since_the_seal"), [2])
+
+
+class TheServerSaysWhetherARunEnded(unittest.TestCase):
+    """REG-2868 - control_app._session_ended, the field every /api/sessions row carries (ended, endedWhy)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import fixture_tmp as _fx
+        _fx.contain()
+        import control_app as ca
+        cls.ca = ca
+
+    def setUp(self):
+        self.hist = tempfile.mkdtemp(prefix="last_session_hist_")
+        self.addCleanup(shutil.rmtree, self.hist, True)
+
+    def test_each_way_a_run_is_over_and_the_one_way_it_is_not(self):
+        e = self.ca._session_ended
+        rec = [{"sessionId": "s_100_1", "ts": 1}, {"sessionId": "s_100_1", "ts": 2}]
+        self.assertEqual(e(rec, 1, self.hist)[0], False, "session 1 with an id, no end and no reel was called over")
+        self.assertIn("still being recorded", e(rec, 1, self.hist)[1])
+        self.assertIs(e(rec + [{"sessionId": "s_100_1", "sessionEnd": True}], 1, self.hist)[0], True)
+        self.assertIs(e(rec, 2, self.hist)[0], True, "a run a newer one followed was called still being recorded")
+        os.makedirs(os.path.join(self.hist, "reel_s_100_1"))
+        self.assertEqual(e(rec, 1, self.hist), (True, "its reel is sealed"))
+        self.assertEqual(e([{"ts": 1}], 1, self.hist)[0], None, "a run with no id was guessed")
+
+    def test_both_row_paths_carry_it(self):
+        src = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
+        self.assertEqual(src.count('_hit["ended"], _hit["endedWhy"] = _session_ended(sess, i, HIST_DIR)'), 1,
+                         "a memoised row keeps the ended it was stored with, though its n moved")
+        self.assertEqual(src.count('_row["ended"], _row["endedWhy"] = _session_ended(sess, i, HIST_DIR)'), 1,
+                         "a freshly built row carries no ended")
 
 
 # ── REG-2812 (#86, the REG-2790/2811 sweep) - the session comparison's default "last two real runs" ─────────────────────
@@ -290,6 +353,31 @@ class TheComparisonComparesHisRuns(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-2868 - session 1 with an id and no end is called over, so the page cannot skip it",
+     "file": "tv/control_app.py",
+     "find": "    return False, \"no session end and no sealed reel yet - it is still being recorded\"\n",
+     "replace": "    return True, \"no session end and no sealed reel yet - it is still being recorded\"\n",
+     "matches": 1},
+    {"why": "REG-2868 - a memoised row keeps the ended it was stored with after a newer run moved its n",
+     "file": "tv/control_app.py",
+     "find": "                    _hit[\"ended\"], _hit[\"endedWhy\"] = _session_ended(sess, i, HIST_DIR)   # REG-2868 - n moved, so ask again\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "REG-2868 - a run still being recorded is named the last session while the body is off (a shadow recording)",
+     "file": "tv/control_ui.html",
+     "find": "      if (s.ended === false) continue;   /* REG-2868 - still being recorded, whatever the body says */\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-2868 - a run whose end is unknown is skipped silently (an older run named last for no visible reason)",
+     "file": "tv/control_ui.html",
+     "find": "      if (s.ended === false) continue;   /* REG-2868 - still being recorded, whatever the body says */\n",
+     "replace": "      if (s.ended !== true) continue;\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-2868 - the digest stops saying a run's end is unknown",
+     "file": "tv/control_ui.html",
+     "find": "      if (t.ended !== true && t.ended !== false) parts.push('ended UNKNOWN');",
+     "replace": "      if (false) parts.push('ended UNKNOWN');",
+     "matches": 1, "needs": "node"},
     {"why": "REG-2790 - the digest names the newest SEALED reel again (session 6 over three newer runs)",
      "file": "tv/control_ui.html",
      "find": "      var t = _lastSessionRow(HD_ALL);   /* REG-2790 - the run the Shelf's ▶ Last session opens too */\n",
