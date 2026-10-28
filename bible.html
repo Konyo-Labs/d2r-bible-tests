@@ -7592,7 +7592,7 @@ body.app-ctx .dock-mini-tab, body.app-ctx .lore-mini{display:none !important}
     <div class="boss-body">
       <div class="lf-lead">One ready-to-import filter, <strong>rebuilt live from your Chronicle</strong> every time you copy it. Shows uniques · sets · runes · gems · charms · <strong>super/rejuv potions</strong> + <strong>only the socket-correct bases worth grabbing for the runewords you still need</strong> (rare circlets only — white circlets can't hold runewords). Tap <strong>Copy</strong>, then in D2R open the <strong>Loot Filter</strong> window → New/Import → paste.</div>
       <div class="lf-block">
-        <div class="lf-b-head"><span class="lf-b-name">KonyoEndgame</span><span class="lf-b-tag lf-tag-elite" id="lf-endgame-count">bases</span></div>
+        <div class="lf-b-head"><span class="lf-b-name" id="lf-endgame-brand">KonyoEndgame</span><span class="lf-b-tag lf-tag-elite" id="lf-endgame-count">bases</span></div>
         <!-- v1592 — THE SEALED STATE, SAID OUT LOUD. Konyo: "base items are useless basically
              once the runeword chronicle is hit." He is right, and the filter already behaves that way
              since v1591 — but the badge just read "0 hunt · 0 sock", which is honest and looks exactly
@@ -7600,7 +7600,7 @@ body.app-ctx .dock-mini-tab, body.app-ctx .lore-mini{display:none !important}
              chronicle is an ACHIEVEMENT, not an empty state, and the card should say which it is. -->
         <div class="lf-sealed" id="lf-sealed-note" hidden></div>
         <div class="lf-b-desc">The exact <strong>right-tier bases to FIND</strong> for the runewords you haven't forged yet. <strong>🔩 Common bases show only when they drop eth/socketed</strong> — you farm the sockets instead of grinding Larzuk quests. Plain (unsocketed) whites light up only when they are <strong>💎 premium trade bases</strong> or <strong>🔨 Larzuk-exact</strong> (the base's max sockets equal a wanted word's count — ONE quest turns that white into the word's base). As you tick words off in the Chronicle, the filter shrinks to match. <strong>💎 Premium trade bases are EARLY-ONLY</strong> — Archon Plate/Staff, Bone Visage, Monarch, Flail, Phase&nbsp;/&nbsp;Colossus Blade, Berserker Axe, eth merc polearms, Matriarchal/Grand Matron bows, Sacred Targe/Rondache &amp; co. ride the filter as trade capital while you are <strong>under 50% forged</strong>. From 50% on they obey the same engine gates as every other base (hostability × socket feasibility × unmade words) — your own call in v667.2: <em>&ldquo;not every single item though&rdquo;</em>. This line used to promise they never shrink off; the behaviour changed and the sentence did not.</div>
-        <button class="lf-copy-btn" onclick="window.copyLootFilter('endgame')">📋 Copy live KonyoEndgame filter</button>
+        <button class="lf-copy-btn" onclick="window.copyLootFilter('endgame')">📋 Copy live <span id="lf-endgame-brand-btn">KonyoEndgame</span> filter</button>
         <button class="lf-copy-btn" onclick="window.copyLootFilter('cousin')" title="fresh-grail build: ignores the Chronicle — EVERY runeword base lights up socketed/eth (what a from-zero player hunts). Send this one to the cousin.">👤 Copy COUSIN filter (fresh chronicle — all socketed bases)</button>
         <span class="lf-status" id="lf-endgame-status"></span>
       </div>
@@ -7910,7 +7910,7 @@ body.app-ctx .dock-mini-tab, body.app-ctx .lore-mini{display:none !important}
     var _lfTotal = 0; try { _lfTotal = Object.keys((typeof RUNEWORD_TIP!=='undefined')?RUNEWORD_TIP:(window.RUNEWORD_TIP||{})).length; } catch(e){}
     var _lfWide = (opts && opts.fresh) || (_lfTotal > 0 && (_lfMadeN/_lfTotal) < 0.5);
     if (_lfWide) tpl.rules = tpl.rules.filter(function(r){ return !(r.ruleType==='hide' && r.filterEtherealSocketed===true); });
-    tpl.name = (opts && opts.fresh) ? 'CousinFull' : ((window._isCousinShell ? 'Cousin' : 'KonyoEndgame') + window._chronicleMadeCount());   // v662/v663 — ASCII names; on the WINDOWS shell the number is the COUSIN's own progress
+    tpl.name = (opts && opts.fresh) ? 'CousinFull' : (window._lfBrandName() + window._chronicleMadeCount());   // v662/v663 — ASCII names; on the WINDOWS shell the number is the COUSIN's own progress
     return { text: JSON.stringify(tpl), baseCount: eb.codes.length, name: tpl.name };
   };
   // v590 — the one Chronicle-progress counter every filter surface shares (same math as the Forge meter).
@@ -7984,7 +7984,7 @@ body.app-ctx .dock-mini-tab, body.app-ctx .lore-mini{display:none !important}
       }
       // v665.2 (identity swarm) — the card label must follow the shell: it displayed 'KonyoEndgame0'
       // on WINDOWS while the export was correctly named 'Cousin0'.
-      var _lfBrand = (window._isCousinShell ? 'Cousin' : 'KonyoEndgame');
+      var _lfBrand = window._lfBrandName();   /* #252 REG-2923 */
       if (nm) nm.textContent = _lfBrand + window._chronicleMadeCount();
       try { var _cb = document.querySelector('.lf-copy-btn[onclick*="copyLootFilter(\'endgame\')"]'); if (_cb) _cb.textContent = '\ud83d\udccb Copy live ' + _lfBrand + ' filter'; } catch(e){}
     } catch(e){}
@@ -19311,6 +19311,27 @@ function _charSayStatic(root){
   return n;
 }
 window._charSayStatic = _charSayStatic;
+/* #252 (REG-2923) - the loot filter's name. 'KonyoEndgame' is his ledger's name, so it is his brand on his ledger only; a
+   guest keeps 'Cousin', and any other board names the filter after its own ledger (or 'MyEndgame' when it has none). */
+window._lfBrandName = function(){
+  if (window._isCousinShell) return 'Cousin';
+  if (window._seedsBelongHere === true) return 'KonyoEndgame';
+  var n = String(window._D2R_LEDGER || '').replace(/[^A-Za-z0-9]/g, '');
+  return n || 'MyEndgame';
+};
+/* the card's two static labels say his brand in the markup; repaint only that word, so a count the filter engine already
+   appended (refreshLootFilterCount) is never wiped */
+function _lfBrandPaint(){
+  var b = window._lfBrandName();
+  ['lf-endgame-brand', 'lf-endgame-brand-btn'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.textContent = String(el.textContent || '').replace(/^KonyoEndgame/, b);
+  });
+  return b;
+}
+window._lfBrandPaint = _lfBrandPaint;
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ _lfBrandPaint(); });
+else _lfBrandPaint();
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ _charSayStatic(); });
 else _charSayStatic();
 
@@ -25863,9 +25884,11 @@ window._isSuperior = function(n){ try {
 } catch(e){ return false; } };
 // v397 — per-user intake logging: which person is scanning (Konyo vs cousin). Each intake session is tagged
 // with this name so the "Recently registered" history shows who logged it. Click the 👤 badge to switch.
-let intakeLogger = (LS.getItem('d2r_logger') || 'Konyo');
+/* #252 (REG-2923) - who logs the photo uploads defaults to Konyo only on HIS ledger (the v2692 gate); anywhere else it is
+   unset until someone says who, and the journal never records another PC's uploads as his */
+let intakeLogger = (LS.getItem('d2r_logger') || (window._seedsBelongHere === true ? 'Konyo' : ''));
 window.getIntakeLogger = function(){ return intakeLogger; };
-window.setIntakeLogger = function(name){ intakeLogger = (String(name == null ? '' : name).trim()) || 'Konyo'; try { LS.setItem('d2r_logger', intakeLogger); } catch(e){} try { if (typeof renderJournal === 'function') renderJournal(); try{ window.renderRoutingLedger && window.renderRoutingLedger(); }catch(e){} } catch(e){} };
+window.setIntakeLogger = function(name){ intakeLogger = (String(name == null ? '' : name).trim()) || (window._seedsBelongHere === true ? 'Konyo' : ''); try { LS.setItem('d2r_logger', intakeLogger); } catch(e){} try { if (typeof renderJournal === 'function') renderJournal(); try{ window.renderRoutingLedger && window.renderRoutingLedger(); }catch(e){} } catch(e){} };
 window.cycleIntakeLogger = async function(){
   var cur = intakeLogger;
   var nm = (typeof uiPrompt === 'function') ? await uiPrompt('Who is logging these uploads? (e.g. Konyo, or your cousin’s name)', cur) : prompt('Who is logging?', cur);
@@ -39399,7 +39422,7 @@ window.exportWishlistAsMarkdown = function() {
   const total50hrs = items.reduce((s, i) => s + (i.bestSrc?.hrs || 0), 0);
   const date = new Date().toISOString().split('T')[0];
   
-  let md = `# Konyo Wishlist · ${date}\n\n`;
+  let md = `# ${window._seedsBelongHere === true ? 'Konyo ' : ''}Wishlist · ${date}\n\n`;   /* #252 REG-2923 */
   md += `**MF**: ${window._mfUnset() ? 'not set' : mf + '%'} · **Items**: ${items.length} · **Sum to 50%**: ${total50hrs.toFixed(1)}h (${(total50hrs/24).toFixed(1)}d at this pace)\n\n`;
   md += `| # | Item | Tier | TC | qlvl | Best source | Chance | 50%-runs | ~Hours |\n`;
   md += `|---|---|---|---|---|---|---|---|---|\n`;
@@ -62550,7 +62573,7 @@ window.vaultAutoAssign = function(){
     if (j === null) return false;   /* REG-2520 — UNKNOWN: nothing is written over it; the caller says so */
     var sf = function(s){ return String(s||'').replace(/^Screenshot\s+\d{4}-\d{2}-\d{2}\s+at\s+/i,'').replace(/\.(png|jpe?g|webp)$/i,''); };
     var pf = (perFile||[]).map(function(f){ return { f:sf(f.file), ff:(f.file||''), nw:(f.nw||[]), mf:(f.mf||[]), own:(f.own||[]), unr:(f.unr||[]), e:!!f.err, th:(f.thumb||'') }; });
-    j.unshift({ ts: Date.now(), u: (typeof intakeLogger !== 'undefined' ? intakeLogger : 'Konyo'), items: items.slice(0, 30), pf: pf });   // v397 — tag the logger
+    j.unshift({ ts: Date.now(), u: ((typeof intakeLogger !== 'undefined' && intakeLogger) ? intakeLogger : null), items: items.slice(0, 30), pf: pf });   // v397 — tag the logger
     // v359 — thumbnails are heavy: bound storage by stripping them from OLD sessions.
     // v570 — but keep them on the newest SIX sessions, not just one: the auto-watch reads arrive as many
     // small sessions (8 shots, then the late 9th on the next tick…), and stripping all-but-newest left every
@@ -62841,13 +62864,13 @@ function renderJournal(){
     el.innerHTML = '<details class="vj-details">'
       + '<summary class="vj-head to-sum to-acc-blue"><span class="to-emblem">🕘</span>'
       +   '<span class="to-hd"><span class="to-hd-top"><span class="to-st">Recently Registered</span><span class="to-ct">' + totalItems + '</span>'
-      +     '<span class="vj-logger" onclick="event.preventDefault();event.stopPropagation();window.cycleIntakeLogger&&window.cycleIntakeLogger()" title="who is logging these uploads — click to switch (Konyo / your cousin). Each session is tagged with this name." style="cursor:pointer;font-size:var(--fs-micro);color:#9fc9e2;border:1px solid rgba(127,212,255,.4);border-radius:4px;padding:1px 6px">👤 ' + esc(typeof intakeLogger!=='undefined'?intakeLogger:'Konyo') + ' ⇄</span></span>'
+      +     '<span class="vj-logger" onclick="event.preventDefault();event.stopPropagation();window.cycleIntakeLogger&&window.cycleIntakeLogger()" title="who is logging these uploads — click to switch (Konyo / your cousin). Each session is tagged with this name." style="cursor:pointer;font-size:var(--fs-micro);color:#9fc9e2;border:1px solid rgba(127,212,255,.4);border-radius:4px;padding:1px 6px">👤 ' + esc((typeof intakeLogger!=='undefined' && intakeLogger) ? intakeLogger : 'who? (not set)') + ' ⇄</span></span>'
       +   '<span class="to-subt">AI-intake history — every session, and which screenshot produced which read</span></span>'
       +   '<span class="to-rule"></span><span class="vj-gt-lbl" style="opacity:.7;font-size:10.5px;letter-spacing:.05em;color:#7fa8c4;flex:0 0 auto">history &amp; per-shot</span><span class="to-chev">▾</span>'
       + '</summary>'
       + '<div class="vj-summary">'
       +   '<span class="vj-sum-chip vj-sum-sess">🕘 ' + totalItems + ' logged · ' + j.length + ' session' + (j.length===1?'':'s') + '</span>'
-      +   (function(){ try { var by={}; j.forEach(function(e){ var u=e.u||'Konyo'; by[u]=(by[u]||0)+1; }); var ks=Object.keys(by); return (ks.length>1)?('<span class="vj-sum-chip" style="color:#c9b88f">'+ks.map(function(u){ return '👤 '+esc(u)+' ·'+by[u]; }).join('  ')+'</span>'):''; } catch(e){ return ''; } })()
+      +   (function(){ try { var by={}; j.forEach(function(e){ var u=e.u||(window._seedsBelongHere===true?'Konyo':'not set'); by[u]=(by[u]||0)+1; }); var ks=Object.keys(by); return (ks.length>1)?('<span class="vj-sum-chip" style="color:#c9b88f">'+ks.map(function(u){ return '👤 '+esc(u)+' ·'+by[u]; }).join('  ')+'</span>'):''; } catch(e){ return ''; } })()
       + '</div>'
       + ((!j.some(function(e){ return e.pf && e.pf.length; })) ? '<div class="vj-pf-hint">📂 the per-screenshot breakdown (which shot → which items) saves under each session after your <strong>next intake</strong> — older sessions above were logged before this was added</div>' : '')
       + '<div class="vj-scroll">' + sessions + (j.length>8 ? '<div class="vj-more">… and ' + (j.length-8) + ' older session' + (j.length-8===1?'':'s') + '</div>' : '') + '</div>'
