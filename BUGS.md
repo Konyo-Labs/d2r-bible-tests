@@ -1896,6 +1896,16 @@ HTTP 503"), and the gems, runes and materials reports print the same cause (_img
 cause reads as before. Not swept, named: the set-piece, crafted-item and grail readers count image errors that never had a
 cause (they do not read through _tallyRead). Law: test_an_image_error_reaches_its_receipt_with_its_cause (7 cases: the
 agent's builder, its row through the real receipt stream, _imgErrSay in node; 6 red-proofs, each RED).
+### REG-2886 - THE VAULT'S POPULATION LINE COUNTED NAMES, SO THREE STORMSHIELDS READ "1 OWNED" (#137, his ruling 2026-10-28: "3 copies if it was witnessed in other areas and coordinates.. its logical yea i do have three im pretty sure")
+Measured on the whole page in node: the line under the vault toolbar counted names only. Three Stormshields read "1 owned ·
+1 filed to mules", and a copy he added moved no number (GrokBot v3740: "the 6 copy-N adds did not count"). It now reads
+"1 owned · 3 copies" when the evidence holds three. The number is the records count the card, the window and FIND
+already use: _vaultRecordsHeader, one record per copy, through _vaultPresenceSpan. That is the distinct cells he was seen
+in (v3767) plus the copies his hand typed (REG-2786). It is never a re-read of one cell and never copies[] alone. A name
+with a keeper target (Stormshield's is 2) counts a re-read under that target as a copy, by his v3767 rule, exactly as the
+card draws it. When nothing shows a second copy, the line stays "N owned", with no guessed number. Law:
+tv/test_the_vault_header_counts_copies_from_evidence.py, 3 red-proofs. The CI spec v3747_one_record_header_parity still
+reads its owned, filed and loose numbers by their own words; its comment quoting the old line is now out of date.
 
 ### REG-2886 - THE VAULT'S POPULATION LINE COUNTED NAMES, SO THREE STORMSHIELDS READ "1 OWNED" (#137, his ruling 2026-10-28: "3 copies if it was witnessed in other areas and coordinates.. its logical yea i do have three im pretty sure")
 Measured on the whole page in node: the line under the vault toolbar counted names only. Three Stormshields read "1 owned ·
