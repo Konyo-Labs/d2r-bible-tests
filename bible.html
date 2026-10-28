@@ -11433,6 +11433,8 @@ html:not([data-active-tab="vault"]) .vault-tasks-pop,html:not([data-active-tab="
 .vault-tasks-fab:hover,.vault-tasks-fab[aria-expanded=true]{transform:scale(1.08);border-color:#fff}
 .vault-tasks-fab .vtf-n{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:#f0c060;color:#1a1208;font-size:var(--fs-meta);font-weight:var(--fw-bold);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 7px rgba(0,0,0,.55)}
 .vault-tasks-fab .vtf-n[hidden]{display:none}
+/* REG-2862 — MOVE TASKS' door in the toolbar, for the short screen where the 📦 orb yields (the max-height:480px block) */
+.vault-chip.vault-chip-tasks{display:none;cursor:pointer}
 .vault-tasks-panel li.vtk-line .vtk-undo{flex:0 0 auto;background:none;border:1px solid rgba(240,192,96,.4);border-radius:6px;color:var(--gold-bright,#f0c060);cursor:pointer;font-size:var(--fs-micro);padding:0 5px;line-height:1.5}
 /* Vault v2 — the toolbar: sort (with its loose count) · add mule · copy · the intake strip · and ONE danger control at the far end */
 .vault-sort-btn .vault-sort-n{margin-left:7px;padding:0 6px;border-radius:999px;--fs-vsn:calc(var(--fs-micro)*.85);background:rgba(26,18,8,.35);font-size:var(--fs-vsn);letter-spacing:0}
@@ -14561,6 +14563,8 @@ function d2jspBatchHtml(view) {
           <button type="button" class="vault-chip" id="vault-chip-locks" hidden onclick="window.vaultLocksShow()" title="Open Locked where they are, collapsed at the bottom of the vault">🔒 <span id="vault-chip-locks-n">0</span> locked on MAIN</button>
           <!-- #145 — the last change that had no way back (a wipe, a reset, a records clear, a hand add) can be undone, once, from here -->
           <button type="button" class="vault-chip" id="vault-chip-undo" data-state="undo" hidden onclick="window.vaultUndoLast()">↶ Undo <span id="vault-chip-undo-what"></span></button>
+          <!-- REG-2862 — on a screen 480px tall or less the 📦 orb yields to the tab strip, and it is MOVE TASKS' only door, so the door is here there; elsewhere this stays hidden -->
+          <button type="button" class="vault-chip vault-chip-tasks" id="vault-chip-tasks" onclick="window.vaultTasksTog()" title="MOVE TASKS — what to move in the game">📦 MOVE TASKS</button>
         </div>
         <!-- v1976 — the manual 📸 vault door is GONE. The vault already has its OWN automation:
      _startAutoWatch polls the linked folder every 12s and feeds the same window.vaultIntake,
@@ -71863,6 +71867,7 @@ function renderJournal(){
       say: function(){ return 'It starts OFF. While it is on, the reels of your console sessions read your stash tabs and fill '
         + 'the vault. A new item is filed once ' + sessions() + ' seen it.'; } },
     { target: 'vault-tasks-fab', where: '📦 on the right edge', title: 'Do your MOVE TASKS in the game',
+      alt: 'vault-chip-tasks', altWhere: '📦 MOVE TASKS in the toolbar',   /* REG-2862 - the door on a short screen */
       say: 'Each row is one item: where it is → where it goes, with its cell as (column,row). Move it in the game, then tick '
         + 'the row. With AUTO INTAKE on, the reels tick it too when they see the item in its new cell.' },
     { target: 'vault-planner-q', where: '✚ Add an item', title: 'Add what the reels cannot see',
@@ -72003,14 +72008,15 @@ function renderJournal(){
       + doBlock + howBlock;
   }
   function walkHtml(it, label, el, i){
-    var shown = !!(el && el.getClientRects && el.getClientRects().length);
+    var shown = shows(el);
+    var where = (it.alt && el && el.id === it.alt) ? it.altWhere : it.where;
     var nav = (typeof i === 'number')
       ? '<button type="button" onclick="window.vaultGuideGo(' + (i - 1) + ')"' + (i ? '' : ' disabled') + '>‹ Back</button>'
         + '<button type="button" onclick="window.vaultGuideGo(-1)">☰ All steps</button>'
         + (i < STEPS.length - 1 ? '<button type="button" class="vgd-next" onclick="window.vaultGuideGo(' + (i + 1) + ')">Next ›</button>'
                                 : '<button type="button" class="vgd-next" onclick="window.vaultGuideGo(-1)">Done ✓</button>')
       : '<button type="button" onclick="window.vaultGuideGo(-1)">↩ Back to the guide</button>';
-    return head() + '<div class="vgd-walk" data-vgd="walk"><p class="vgd-k">' + esc(label) + ' · ' + esc(it.where) + '</p>'
+    return head() + '<div class="vgd-walk" data-vgd="walk"><p class="vgd-k">' + esc(label) + ' · ' + esc(where) + '</p>'
       + '<p class="vgd-walk-t">' + esc(it.title) + '</p><p class="vgd-walk-say">' + esc(say(it)) + '</p>'
       + (el ? (shown ? '' : '<p class="vgd-miss">⚠ It is not showing on this screen right now.</p>')
             : '<p class="vgd-miss">⚠ This control is not on this page.</p>')
@@ -72031,12 +72037,16 @@ function renderJournal(){
     } catch (e) {}
   }
   var lit = null;   /* the control wearing the highlight now */
-  function light(id){
+  function shows(el){ return !!(el && el.getClientRects && el.getClientRects().length); }
+  function light(id, alt){
     if (lit) { try { lit.classList.remove('vgd-target'); } catch (e) {} lit = null; }
     if (!id) return null;
     var el = document.getElementById(id);
     if (!el) return null;
     reveal(el);
+    /* REG-2862 - a control with a second door (MOVE TASKS on a short screen) lights the one that is showing */
+    var other = alt ? document.getElementById(alt) : null;
+    if (other && !shows(el) && shows(other)) { el = other; id = alt; }
     /* marked BEFORE the jump: .vgd-target carries the scroll margin that keeps it out from under the sticky chrome */
     try { el.classList.add('vgd-target'); } catch (e) {}
     lit = el;
@@ -72072,17 +72082,17 @@ function renderJournal(){
     var it = null, label = '';
     if (typeof i === 'number' && i >= 0 && i < STEPS.length) { it = STEPS[i]; label = 'Step ' + (i + 1) + ' of ' + STEPS.length; }
     else if (typeof i === 'string' && Object.prototype.hasOwnProperty.call(SHOWS, i)) { it = SHOWS[i]; label = 'Show me'; }
-    var el = light(it ? it.target : null);
+    var el = light(it ? it.target : null, it ? it.alt : null);
     p.innerHTML = it ? walkHtml(it, label, el, i) : listHtml();
     p.classList.add('open');
     p.classList.toggle('vgd-walking', !!it);
     if (!it) p.classList.remove('vgd-up');
     if (f) f.setAttribute('aria-expanded', 'true');
-    return el ? it.target : null;
+    return el ? el.id : null;
   };
   /* what the law reads: the guide as data, a copy - nothing here changes the guide */
   window._vaultGuide = {
-    steps: STEPS.map(function(s){ return { target: s.target, title: s.title }; }),
+    steps: STEPS.map(function(s){ return { target: s.target, title: s.title, alt: s.alt || null }; }),
     shows: Object.keys(SHOWS).map(function(k){ return { key: k, target: SHOWS[k].target, title: SHOWS[k].title }; }),
     sections: SECTIONS.map(function(s){ return s.key; }),
     lockers: LOCKERS.map(function(l){ return l[0]; })
@@ -73185,8 +73195,17 @@ html{overflow-x:clip;overflow-y:auto}
    Found by hit-testing element centres with elementFromPoint, not by eye — the strip scrolls
    horizontally, so WHICH tab is buried under the orb changes with scroll position, and no single
    screenshot shows it twice the same way. [[sweep-dont-ask]] */
+/* REG-2862 — AND EVERY ORB IN THE COLUMN, NOT THE THREE THIS RULE STARTED WITH. The tray column is seven orbs
+   (help · compass · the three S2 legends · inbox · MOVE TASKS), each bottom-anchored on --dock-h, and the rule named
+   four: the Tools map, the inbox and MOVE TASKS still rode up into the tab strip on a short screen, measured from
+   their own anchors (+118, +170, +222 above the dock). test_every_tray_orb_yields_on_a_short_screen finds the column
+   from the stylesheet (right:12px on a --dock-h bottom) and refuses any orb this list does not name.
+   Two of them are DOORS, not shortcuts, so hiding them needs another way in: the inbox has its sticky panel on
+   Sessions (the one tab where its orb is always hidden), and MOVE TASKS gets #vault-chip-tasks in the vault toolbar,
+   shown only here. */
 @media (max-height:480px){
-  .help-btn,.nav-widget,.forge-legend-fab,.vault-guide-fab{display:none!important}
+  .help-btn,.nav-widget,.forge-legend-fab,.tools-legend-fab,.vault-guide-fab,.inbox-fab,.vault-tasks-fab{display:none!important}
+  .vault-chip.vault-chip-tasks{display:inline-flex}
 }
 /* routines bar shares the corner — parked LEFT of the tray column so they never overlap.
    v754 (item 7): the right offset now lives in the single clean base rule (no !important war). */
