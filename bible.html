@@ -24344,6 +24344,20 @@ try {
     return { name: said, among: among, settled: null,
              why: '"' + said + '" names ' + among.length + ' known items (' + among.join(', ') + ') — ambiguity is not a match, so it waits for a read that says which' };
   };
+  /* REG-2848 - a row keeps LOOKS_CAP looks. The cap drops the oldest look of a place that has another look, so one cell read
+     again and again never evicts the only look of another cell (a copy the cells count, v3767). */
+  function _capLooks(list){
+    var out = (Array.isArray(list) ? list : []).slice();
+    var key = function(l){ return l ? (String(l.holder || '') + '|' + String(l.loc || l.location || '') + '|' + JSON.stringify(l.cell == null ? null : l.cell)) : ''; };
+    while (out.length > LOOKS_CAP){
+      var n = {};
+      out.forEach(function(l){ var k = key(l); n[k] = (n[k] || 0) + 1; });
+      var ix = -1;
+      for (var i = 0; i < out.length; i++){ if (n[key(out[i])] > 1){ ix = i; break; } }
+      out.splice(ix < 0 ? 0 : ix, 1);
+    }
+    return out;
+  }
   window._ownedProvWrite = function(name, rec){
     var nm = String(name == null ? '' : name).trim();
     if (!nm) return { ok: false, why: 'no name' };
@@ -24377,7 +24391,23 @@ try {
     if (fresh.carried === true && owned.has(nm)) fresh.carried = null;
     if (cur && typeof cur === 'object' && !Array.isArray(cur)){
       if (cur.kind !== 'owned'){
-        if (cur.ownedBy || rec.onFiling === 'keep') return { ok: true, mode: 'kept', row: cur };
+        /* REG-2848 (#154 P3c) - A READ OF A FILED ITEM JOINS ITS FILING'S LOOKS. A filing row took its looks once, from the
+           witness that filed it, and every later read of the item was 'kept' with its look dropped. Measured on the whole
+           page in node: a Stone of Jordan added by hand and filed on a read at stash c0r0, then read at c2r0 - the new cell
+           never reached its looks, the cells still counted 1 copy, and its MOVE row read "moved-elsewhere" for copy 0. The
+           look joins now (one per frame), so a second cell is counted as the second copy it is (v3767, his Q1). */
+        var lkF = fresh.looks[0], lsF = Array.isArray(cur.looks) ? cur.looks : [], chF = false;
+        if (lkF && lkF.frame && !lsF.some(function(l){ return l && l.frame === lkF.frame; })){
+          cur.looks = _capLooks(lsF.concat([lkF]));
+          cur.seen = ((typeof cur.seen === 'number') ? cur.seen : lsF.length) + 1;
+          var lkTF = _ms(lkF.at), lastTF = _ms(cur.lastAt);
+          if (lkTF != null && (lastTF == null || lkTF > lastTF)) cur.lastAt = _iso(lkTF);
+          chF = true;
+        }
+        if (cur.ownedBy || rec.onFiling === 'keep'){
+          if (chF){ all[nm] = cur; _write(all); }
+          return { ok: true, mode: chF ? 'merged' : 'kept', row: cur };
+        }
         cur.ownedBy = fresh; all[nm] = cur; _write(all);
         return { ok: true, mode: 'kept-filing', row: cur };
       }
@@ -24426,7 +24456,7 @@ try {
         /* M-2 — the last look is the LATEST measured look on the receipt: an older replayed one never moves "last seen"
            backwards (read BEFORE this look joins, so the look is weighed against what stood) */
         var lkT = _ms(lk.at), latestT = _ownedSinceMs(cur);
-        cur.looks = looks.concat([lk]).slice(-LOOKS_CAP);
+        cur.looks = _capLooks(looks.concat([lk]));   /* REG-2848 - the cap never drops the only look of a cell */
         cur.seen = ((typeof cur.seen === 'number') ? cur.seen : looks.length) + 1;
         var newestT = (lkT != null && (latestT == null || lkT > latestT)) ? lkT : latestT;
         if (newestT != null) cur.lastAt = _iso(newestT);
@@ -57048,6 +57078,20 @@ window.vaultAutoAssign = function(){
        1's MANUAL row stayed unseen - one copy lost its witness, the other its move. v3767: a second cell is a second copy. So
        the first copy whose MANUAL row has no FROM cell yet takes it; with none, copy 0 as before. Which of two hand copies a
        sighting is, when its mods would tell them apart, is the per-copy identity still owed (no copy carries its mods). */
+    /* REG-2848 (#154 P3c) - a sighting that carries the item's mods (a tooltip read) joins the unseen hand copy whose own entry
+       (REG-2844) it matches - an Ist Shako's sighting is the Ist Shako, whichever copy he typed first. No match, or two, is
+       left to the order below. */
+    var _sE = (sighting && sighting.entry && typeof window._vaultEntrySig === 'function') ? window._vaultEntrySig(sighting.entry) : '';
+    if (!hit && _sE && typeof window._vaultCopyEntry === 'function'){
+      var _mE = [];
+      recs.forEach(function(r){
+        var ensE = _vaultMoveEnsure(name, r.copyIx || 0, bag), tE = ensE.task;
+        if (!(tE && tE.manual && (!tE.from || tE.from.cell == null))) return;
+        var eE = window._vaultCopyEntry(name, r.copyIx || 0);
+        if (eE && window._vaultEntrySig(eE) === _sE) _mE.push(ensE);
+      });
+      if (_mE.length === 1) hit = _mE[0];
+    }
     if (!hit) recs.forEach(function(r){
       if (hit) return;
       var ensW = _vaultMoveEnsure(name, r.copyIx || 0, bag), tW = ensW.task;
@@ -58762,6 +58806,26 @@ window.vaultAutoAssign = function(){
     })();
   } catch (eLat) {}
 
+  /* REG-2848 - how many copies of a name his hand typed: the copies whose saved MOVE row is MANUAL (one per hand copy, L1).
+     Read once per stored string. 0 when the store will not read. */
+  var _vhcMemo = { raw: null, idx: {} };
+  function _vaultHandCopies(name){
+    var raw = null;
+    try { raw = (window.LSR && typeof window.LSR.getItem === 'function') ? window.LSR.getItem('d2r_vaultRecords') : null; } catch (e) { return 0; }
+    if (raw !== _vhcMemo.raw){
+      var idx = {};
+      try {
+        var o = raw ? JSON.parse(raw) : null;
+        ((o && o.records) || []).forEach(function(r){
+          if (r && r.name != null && r.move && r.move.manual === true) (idx[r.name] = idx[r.name] || {})[r.copyIx || 0] = 1;
+        });
+      } catch (e2) { idx = {}; }
+      _vhcMemo = { raw: raw, idx: idx };
+    }
+    var m = _vhcMemo.idx[String(name)];
+    return m ? Object.keys(m).length : 0;
+  }
+  try { window._vaultHandCopies = _vaultHandCopies; } catch (eHc) {}
   function _vaultPresenceSpan(name, have){
     /* A presence set piece is one item at one location. Re-reads climbed copies[] (Natalya x4,
        Tal Rasha Guardianship x4, Immortal King Soul Cage x3) without a second item. An explicit
@@ -58771,6 +58835,12 @@ window.vaultAutoAssign = function(){
     try { _sg = (typeof _vaultSightGroups === 'function') ? _vaultSightGroups(name) : null; } catch (eSg2) { _sg = null; }
     if (_sg && _sg.length) {
       var _nSg = _sg.length;
+      /* REG-2848 (#154 P3c) - THE COPIES HIS HAND TYPED ARE COPIES TOO. Once a look named a cell the count was the cells, so
+         two Griffon's Eyes added by hand, then one of them read at stash c5r0, counted 1: the second copy's record and its
+         MOVE row were dropped on the next rebuild. Measured on the whole page in node. Each hand copy keeps its MANUAL move
+         row, so the cells never count fewer than those (and never more than copies[] holds). */
+      var _hcN = (typeof _vaultHandCopies === 'function') ? _vaultHandCopies(name) : 0;
+      if (_hcN > _nSg) _nSg = Math.min(_hcN, Math.max(_nSg, (have > 0) ? (have | 0) : 1));
       /* REG-2786 (#111 "the mule card header stops counting at 3 copies") - A KEEPER TARGET IS WHAT HE WANTS, NOT WHAT HE
          HOLDS. Once a look named a cell, this returned the target itself whenever it beat the cells, and copies[] was never
          asked. Measured on the whole page in node: Mara's Kaleidoscope (the default target 3) seen in one cell drew 3 cells
