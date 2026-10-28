@@ -46,8 +46,37 @@ except Exception:
 # door that ends the role's previous tree first (Windows: a Job Object with KILL_ON_JOB_CLOSE; POSIX: its own
 # session + killpg) and refuses a SECONDARY worker while free RAM is under a floor. See tv/child_guard.py.
 import child_guard as _child_guard
+
 from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+
+def _intake_result_fields(body):
+    """REG-2914 (#158) - the intake record the board's /intake_result POST becomes on this agent's journal. -> dict
+
+    The board posts each tally read here FIRST (the bridge port), and only to the console's own route when this one is not
+    listening. The console's copy of the route kept the reason since v1945 (err, guardHeld) and REG-2730 (errWhy: WHICH image
+    error); this one built its record from seven fields and dropped the rest, so a receipt from the agent read "read failed
+    (1 image error)" and never said which. The reason fields ride as sent; the sentence is made where it is read
+    (control_app._intake_why, one rule), never a second copy here."""
+    body = body if isinstance(body, dict) else {}
+    out = {
+        "tab": str(body.get("tab") or "")[:24],
+        "kind": str(body.get("kind") or "")[:16],
+        "counts": body.get("counts") if isinstance(body.get("counts"), dict) else {},
+        "total": int(body.get("total") or 0),
+        "errors": int(body.get("errors") or 0),
+        "items": (body.get("items") or [])[:60],
+        "ok": bool(body.get("ok", True)),
+    }
+    if body.get("guardHeld"):
+        out["guardHeld"] = True
+    if body.get("err"):
+        out["err"] = str(body.get("err"))[:200]
+    if body.get("errWhy"):
+        out["errWhy"] = str(body.get("errWhy"))[:160]
+    return out
+
 
 # v1402 — Windows Hebrew/cp1255 consoles crash on emoji boot prints
 # (UnicodeEncodeError) and die before the agent bridge opens. Force UTF-8
@@ -984,15 +1013,7 @@ def bridge():
                         "completedTs": now_ms,
                         "n": 0, "scene": "intake", "lane": "intake", "mode": "intake",
                         "names": [], "area": "", "sessionId": SESSION_ID,
-                        "intake": {
-                            "tab": str(body.get("tab") or "")[:24],
-                            "kind": str(body.get("kind") or "")[:16],
-                            "counts": body.get("counts") if isinstance(body.get("counts"), dict) else {},
-                            "total": int(body.get("total") or 0),
-                            "errors": int(body.get("errors") or 0),
-                            "items": (body.get("items") or [])[:60],
-                            "ok": bool(body.get("ok", True)),
-                        },
+                        "intake": _intake_result_fields(body),
                         "frameId": _fid,
                         "capSrc": _cap_src,
                         "note": ("📸 intake · " + str(body.get("tab") or body.get("kind") or "shot"))[:80],

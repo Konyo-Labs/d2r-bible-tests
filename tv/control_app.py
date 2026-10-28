@@ -19442,6 +19442,10 @@ def _receipts_stream():
                 # v1945 — prefer the reason the record actually carries; the derivations below are
                 # the fallback for rows written before the handler started keeping it.
                 _why = str(ik.get("why") or "").strip()
+                # REG-2914 (#158) - a record that carries its reason fields but no sentence (the agent's /intake_result keeps
+                # them as sent) is said by the one rule, _intake_why: "read failed - 1 image error - the intake answered HTTP 503"
+                if not _why and (ik.get("err") or ik.get("errWhy") or ik.get("guardHeld")):
+                    _why = _intake_why(ik)
                 if tot:
                     _tail = " \u00d7%d" % tot
                 elif _why:
