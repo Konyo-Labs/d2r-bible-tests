@@ -13161,6 +13161,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_traded_copy_leaves_through_the_vault_log.py")], 300,
          needs_app=False,
          why='REG-2877 a copy record carries its trade slot; a traded-out copy leaves through the removal journal with an undo, its record riding in the batch'),
+    Gate("test_a_listed_copy_wears_its_mark_where_it_draws",
+         [sys.executable, os.path.join(HERE, "test_a_listed_copy_wears_its_mark_where_it_draws.py")], 300,
+         needs_app=False,
+         why='REG-2878 a listed copy wears a small mark on its MOVE row, in FIND, on its window tile and its shelf-card cell, and still counts'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
