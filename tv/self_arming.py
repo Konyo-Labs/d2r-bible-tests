@@ -1581,8 +1581,8 @@ def heart_block_kind(why):
 #: the lock, or directly imports (or opens) one of these modules or the lock machinery (self_arming). Measured on his
 #: census 2026-10-28: printer.stream 81, reel.route 70, frame.release 119 of 1,200 gates - so a law edited among the other
 #: ~1,100 no longer takes the river off every PC until a full re-prove (#193). A recorded BLIND still closes every lock
-#: (his 2026-09-12 ruling: BLIND is not STALE). A lock NOT listed here, and every route, keeps the global rule. Doors in
-#: control_app are guarded by ~480 laws: correct, just broad.
+#: (his 2026-09-12 ruling: BLIND is not STALE). A lock NOT listed here, and every route, keeps the global rule. A door in
+#: a module as broad as control_app counts through that lock's own marks (LOCK_MARKS below), not the module's import.
 LOCK_DOORS = {
     "printer.stream": ("printer",),
     "reel.route": ("reel_route_lane",),
@@ -1596,17 +1596,46 @@ LOCK_DOORS = {
 }
 #: the lock machinery every lock stands on: a law that exercises it guards them all
 LOCK_MACHINERY = ("self_arming",)
+#: REG-2865 (#212) - A DOOR MODULE TOO BROAD TO SAY WHICH LOCK A LAW EXERCISES. Measured on the batch-3841 tree (1,234
+#: gates): importing or opening control_app made 489 laws guard vault.sweep_start, 490 prune.reports and 488
+#: console.pixel_rescue - so after every ship hundreds of laws nowhere near the sweep were owed, they never re-prove while he
+#: plays, and the paid sweep stayed shut (the Mac's vault ledger went unwritten for hours, the ALT's for days). In a module
+#: listed here, a law guards a lock only through that lock's LOCK_MARKS; a lock with no marks keeps the import rule (broad in
+#: the safe direction), and so does every small door module.
+BROAD_DOORS = ("control_app",)
+#: per lock whose door lives in a broad module: the names its own code answers to - its door functions and their state, its
+#: routes and its stores, the modules it reads with, and the lock's name in any spelling. Matched as text, so a law that
+#: names one in prose guards it too: broad in the safe direction.
+LOCK_MARKS = {
+    # the paid sweep: chronicle_sweep_start asks the lock; the vault sweep, its autoreel picker, its jobs, its ledger
+    # (vault_accum.json) and its readers (vault_retro, chronicle_retro), and the wilson that earns it
+    "vault.sweep_start": ("vault.sweep_start", "vault_sweep", "VAULT_SWEEP", "chronicle_sweep", "_chron_sweep",
+                          "CHRON_SWEEP", "vault_autoreel", "_VAULT_AUTOREAD", "_VAULT_JOB", "_CHRON_JOB", "vault_accum",
+                          "VAULT_LEDGER_PATH", "vault_retro", "chronicle_retro", "sweep_wilson", "sweep_live"),
+    # the freed-space claim: disk_history_append asks the lock before a row says prunedMb
+    "prune.reports": ("prune.reports", "disk_history", "DISK_HISTORY", "prunedMb", "pruned_mb", "disk_report"),
+    # the pixels' reload: the console's rescue loop asks the lock on a BLANK pixel verdict
+    "console.pixel_rescue": ("console.pixel_rescue", "_console_rescue_loop", "pixelBlank", "pixelMayAct", "_PIXEL_ACT",
+                             "_PIXEL_VERDICT_MAX_AGE_S", "ui_rescue_due", "console-blank-by-pixels", "pixel_witness"),
+}
 _LOCK_MEMO = {"key": None, "owed": None, "blind": None, "why": None, "src": {}, "guard": {}}
 
 
 def _guards_lock(text, lock, stems):
-    """Does this gate's source guard `lock`? -> bool. Names the lock, or directly imports / opens one of its door
-    modules or the lock machinery. Static and cheap; broad in the safe direction."""
+    """Does this gate's source guard `lock`? -> bool. Names the lock or one of its marks, or directly imports / opens
+    one of its door modules or the lock machinery - a BROAD_DOORS module only when the lock declares no marks (REG-2865).
+    Static and cheap; broad in the safe direction."""
     if not text:
         return False
     if ('"%s"' % lock) in text or ("'%s'" % lock) in text:
         return True
+    marks = LOCK_MARKS.get(lock) or ()
+    for mark in marks:
+        if mark in text:
+            return True
     for stem in tuple(stems) + LOCK_MACHINERY:
+        if marks and stem in BROAD_DOORS:
+            continue
         if (stem + ".py") in text:
             return True
         if re.search(r"(?m)^\s*(?:from\s+%s\s+import\b|import\s+%s\b)" % (re.escape(stem), re.escape(stem)), text):

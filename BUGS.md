@@ -2176,6 +2176,18 @@ went as the pick rotated. The paint now leaves its own mark on the rows element 
 and the skip reads that mark - still the DOM's word on whether this paint landed (a rebuilt element carries none), never
 a re-serialization. Swept: no other `innerHTML ===` guard is left in control_ui.html. Law:
 test_the_task_force_repaints_only_when_it_changed (3 cases, 2 red-proofs); test_control's v2336 law re-aimed to the mark.
+### REG-2865 - EVERY LAW THAT IMPORTED THE CONSOLE KEPT THE PAID SWEEP SHUT (#212 root cause)
+REG-2750 (#156) made a lock go stale only through its own guard laws, counted as the laws that name it or import or open
+its door module. vault.sweep_start's door module is control_app, so on the batch-3841 tree (1,234 gates) 489 laws guarded
+the sweep - and 490 prune.reports, 488 console.pixel_rescue - while 105 name the sweep's own code. After every ship
+hundreds of laws nowhere near the sweep were owed, they never re-prove while he plays, and the sweep stayed shut: the
+Mac's vault ledger went unwritten for hours, the ALT's for days. A module listed in self_arming.BROAD_DOORS (control_app)
+now counts only through the lock's LOCK_MARKS: its door function (chronicle_sweep_start, disk_history_append,
+_console_rescue_loop) and its state, routes, stores, reader modules, and the lock's name in any spelling, matched as text.
+A lock with no marks keeps the import rule, and so does every small door module. After: 195 / 83 / 85 guards, all 105 sweep
+laws among them; an unrelated Fleet law that imports the console no longer owes the sweep. BLIND still closes every lock
+(his 2026-09-12 ruling). Law: test_a_broad_door_guards_a_lock_only_through_its_own_code (9 cases on the gate files and a
+fixture census; 5 red-proofs, each RED).
 
 ### REG-2795 - A CONSOLE START WHILE THE BEACON WAS HELD SPENT ITS BOOT EXEMPTION WITHOUT POSTING (the v3829 second eye, both lanes)
 _roster_frames_tick returned True whenever _frames_publish_once did not raise, and the suppressed path returned normally,
