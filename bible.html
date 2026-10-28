@@ -11417,7 +11417,7 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 .vmv-grid{margin:0 0 8px}
 .vault-tasks-panel li.vtk-expand-li{list-style:none;margin:2px 0 8px 24px;padding:6px;border-radius:8px;background:rgba(10,8,5,.45);border:1px solid rgba(240,192,96,.22)}
 .vtk-expand{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}.vtk-expand .vtx-h{font-size:var(--fs-micro);color:var(--text-dim);margin:0 0 3px}
-.vtk-expand .vtx-arrow{align-self:center;color:var(--text-dim)}.vtk-expand .vtx-from[data-from=demo] .vd-grid{opacity:.55}
+.vtk-expand .vtx-arrow{align-self:center;color:var(--text-dim)}.vtk-expand .vtx-remove{flex:0 0 auto;align-self:flex-end;margin-left:auto}.vtk-expand .vtx-from[data-from=demo] .vd-grid{opacity:.55}
 /* Vault v2 (Elad 2026-10-23) — MOVE TASKS is an OVERLAY opened from a FAB above the inbox FAB (S4 of the right-edge
    stack: help +14 · nav +66 · legend +118 · inbox +170 · tasks +222). The vault keeps its full width; the list floats over
    it and takes no layout room. Opening it closes ⚙ Advanced and the reverse. */
@@ -51955,13 +51955,23 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
        trade-in  - a copy comes back: one more copy through the owned door, with its own MOVE task like any hand add.
      No surface wires these yet (the D2JSP tab will); the card, the window, FIND and the MOVE row read the slot (REG-2878).
      ev = {kind, name, copyIx?, at?, post?} -> {ok, kind, name, copyIx?, why} */
+  /* REG-2849 (#154 P3c) - his ✕ on ONE copy (the MOVE row's copy, opened): that copy leaves, the others keep their own entries,
+     cells and moves. The trade door's copy-out does it; there is no second mechanism. -> the door's answer */
+  window.vaultRemoveCopy = function(name, copyIx, why){
+    return window._vaultTradeEvent({ kind: 'remove-copy', name: name, copyIx: copyIx, why: why || null });
+  };
   window._vaultTradeEvent = function(ev){
     ev = ev || {};
     var kind = String(ev.kind || ''), nm = String(ev.name == null ? '' : ev.name).trim();
     var at = (typeof ev.at === 'string' && ev.at) ? ev.at : new Date().toISOString();
     var post = (typeof ev.post === 'string' && ev.post) ? ev.post : null;
     if (!nm) return { ok: false, kind: kind, why: 'no item named' };
-    if (['listed', 'unlisted', 'trade-out', 'trade-in'].indexOf(kind) < 0) return { ok: false, kind: kind, name: nm, why: 'not a trade event: ' + kind };
+    if (['listed', 'unlisted', 'trade-out', 'trade-in', 'remove-copy'].indexOf(kind) < 0) return { ok: false, kind: kind, name: nm, why: 'not a trade event: ' + kind };
+    /* REG-2849 (#154 P3c) - HIS HAND TAKES OUT THE COPY HE NAMES, THROUGH THIS DOOR'S OWN COPY-OUT (the trade-out road): that
+       copy's record leaves in a removal-journal batch with its move and its own entry (REG-2844), the copies after it close
+       up, and the count drops one. The undo puts it back where it was. The last copy leaves through vaultRemove as his ✕. */
+    if (kind === 'remove-copy' && ev.copyIx == null) return { ok: false, kind: kind, name: nm, why: 'which copy of ' + nm + '? nothing was removed' };
+    var _lane = (kind === 'remove-copy') ? 'card-click' : 'trade-out';
     if (kind === 'trade-in') {
       var a = (typeof window.vaultHandAdd === 'function') ? window.vaultHandAdd(nm) : null;
       return { ok: !!(a && a.ok), kind: kind, name: (a && a.name) || nm, why: (a && a.ok) ? 'a copy came back' : ((a && a.why) || 'the owned door did not answer') };
@@ -51993,22 +52003,24 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     /* trade-out - REG-2881: the board's own Undo (the toolbar chip) is taken before anything moves, as every removal door does */
     var _undoT = null;
     try { _undoT = (typeof window._vaultUndoSnap === 'function') ? window._vaultUndoSnap() : null; } catch (eUs) { _undoT = null; }
-    var _undoSay = function(){ try { return (_undoT && typeof window._vaultUndoTake === 'function' && window._vaultUndoTake('the trade-out of ' + nm, '', _undoT)) ? ' (↶ Undo in the toolbar puts it back)' : ''; } catch (eUt) { return ''; } };
-    var why = 'traded on d2jsp' + (post ? ' (' + post + ')' : '');
+    var _undoWhat = (kind === 'remove-copy') ? ('the removal of copy ' + (k + 1) + ' of ' + nm) : ('the trade-out of ' + nm);   /* REG-2849 */
+    var _undoSay = function(){ try { return (_undoT && typeof window._vaultUndoTake === 'function' && window._vaultUndoTake(_undoWhat, '', _undoT)) ? ' (↶ Undo in the toolbar puts it back)' : ''; } catch (eUt) { return ''; } };
+    var why = (kind === 'remove-copy') ? String(ev.why || 'removed by your hand') : ('traded on d2jsp' + (post ? ' (' + post + ')' : ''));
     /* REG-2883 - the copy that left is RECORDED, durably: the records store's tradedOut list (one row per traded copy, the
        newest _VR_TRADED_MAX kept) is what the D2JSP card counts ("1 of 3 traded"). The removal journal is a ring of
        _VR_RING batches, so it cannot be the count. An undo of this trade-out takes its row back out (vaultRestoreLast). */
     var _tRow = { name: nm, copyIx: k, at: at }; if (post) _tRow.post = post;
-    var _tWith = function(st){ var t = (st && Array.isArray(st.tradedOut)) ? st.tradedOut.slice() : []; t.push(_tRow); return t.slice(-_VR_TRADED_MAX); };
+    var _tWith = function(st){ if (kind !== 'trade-out') return null;   /* REG-2849 - a hand removal is not a trade: no traded row */
+      var t = (st && Array.isArray(st.tradedOut)) ? st.tradedOut.slice() : []; t.push(_tRow); return t.slice(-_VR_TRADED_MAX); };
     var row = {}; for (var y in pick) row[y] = pick[y];
-    row.trade = { state: 'traded-out', at: at }; if (post) row.trade.post = post;
+    if (kind === 'trade-out') { row.trade = { state: 'traded-out', at: at }; if (post) row.trade.post = post; }
     var have = (typeof copyCount === 'function') ? (copyCount(nm) | 0) : 1;
     if (have <= 1 || mine.length <= 1) {
-      var r1 = (typeof window.vaultRemove === 'function') ? window.vaultRemove([nm], { lane: 'trade-out', exact: true, quiet: true, why: why }) : null;
+      var r1 = (typeof window.vaultRemove === 'function') ? window.vaultRemove([nm], { lane: _lane, exact: true, quiet: true, why: why }) : null;
       /* measured: the removal door leaves the copy's record in the store, so the undo brings its own cell back with the name */
       var gone = !!(r1 && r1.removed && r1.removed.indexOf(nm) >= 0);
-      var _tKept = false;
-      if (gone) { try { var _r2 = _vrRecLoadRaw(); _tKept = !!(_r2 && Array.isArray(_r2.records) && (function(){ var st = {}; for (var x in _r2) st[x] = _r2[x]; st.tradedOut = _tWith(_r2); return _vrRecGuardedSet(st); })()); } catch (eTk) { _tKept = false; } }
+      var _tKept = (kind !== 'trade-out');   /* REG-2849 - a hand removal keeps no traded row */
+      if (gone && kind === 'trade-out') { try { var _r2 = _vrRecLoadRaw(); _tKept = !!(_r2 && Array.isArray(_r2.records) && (function(){ var st = {}; for (var x in _r2) st[x] = _r2[x]; st.tradedOut = _tWith(_r2); return _vrRecGuardedSet(st); })()); } catch (eTk) { _tKept = false; } }
       return { ok: gone, kind: kind, name: nm, copyIx: k, why: gone ? (nm + ' left the vault count' + (_tKept ? '' : ' (the copy records refused the traded row, so the D2JSP card cannot count this trade)') + _undoSay()) : ('the vault kept it: ' + ((r1 && r1.why) || 'the removal door did not answer')) };
     }
     var log = _vrRead();
@@ -52022,7 +52034,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var ts = Date.now();
     log.push({ ts: ts, day: new Date(ts).toISOString().slice(0, 10), ledger: (window._D2R_LEDGER || null),
                profile: (window.D2R_PROFILE === 'ladder' ? 'ladder' : 'main'), names: [], filed: {}, prov: {},
-               why: why, lane: 'trade-out', keepFiling: true, copyOut: { name: nm, copyIx: k, row: row } });
+               why: why, lane: _lane, keepFiling: true, copyOut: { name: nm, copyIx: k, row: row } });
     _vrWrite(log);
     try { if (typeof persist === 'function') persist(); else persistOwned(); } catch (eP) {}
     try { renderVault(); refreshOpenCard(); } catch (eR2) {}
@@ -57436,7 +57448,11 @@ window.vaultAutoAssign = function(){
     var to = thr ? '<div class="vtx-to" data-to="nowhere"><b class="vmv-nowhere">NOWHERE</b> throw it out</div>'
       : m.to ? '<div class="vtx-to" data-to="' + esc(m.task.to.cell) + '"><div class="vtx-h">TO · ' + esc(m.toSay) + '</div>' + one(m.to, m.dims.to, 'To', 'task-to') + '</div>'
       : '<div class="vtx-to" data-to="none">no target cell yet</div>';
-    return '<div class="vtk-expand" data-name="' + esc(m.name) + '" data-copy="' + m.copyIx + '"' + ((!thr && m.task && _vaultFamilyOfPlace(m.task.to)) ? ' data-family="shared"' : '') + '>' + from + '<span class="vtx-arrow" aria-hidden="true">→</span>' + to + '</div>';   /* REG-2804 */
+    return '<div class="vtk-expand" data-name="' + esc(m.name) + '" data-copy="' + m.copyIx + '"' + ((!thr && m.task && _vaultFamilyOfPlace(m.task.to)) ? ' data-family="shared"' : '') + '>' + from + '<span class="vtx-arrow" aria-hidden="true">→</span>' + to
+      /* REG-2849 - his ✕ on this one copy: it leaves, the other copies keep their own entries, cells and moves */
+      + '<button type="button" class="vault-btn vtx-remove" title="remove this one copy from the vault (Undo in the toolbar puts it back)"'
+      + ' onclick="event.stopPropagation();window.vaultRemoveCopy(\'' + jsArg(m.name) + '\',' + (m.copyIx | 0) + ')">✕ Remove this copy</button>'
+      + '</div>';   /* REG-2804 */
   }
   function _vaultTaskExpand(name, copyIx, li){
     li = li || document.querySelector('#vault-move-list .vtk-line[data-name="' + String(name).replace(/"/g, '\\"') + '"][data-copy="' + (copyIx || 0) + '"]');

@@ -13217,6 +13217,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_sighting_joins_its_copy_by_cell_and_by_mods.py")], 300,
          needs_app=False,
          why="REG-2848 (#154 P3c) - a read joins its filed copy's looks, a new cell is the second copy, hand copies are never counted below the cells, mods choose the copy"),
+    Gate("test_his_hand_removes_the_copy_it_names",
+         [sys.executable, os.path.join(HERE, "test_his_hand_removes_the_copy_it_names.py")], 300,
+         needs_app=False,
+         why="REG-2849 (#154 P3c) - his hand removes the copy it names through the trade door's copy-out; the other copies keep their entries, the undo puts it back"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
