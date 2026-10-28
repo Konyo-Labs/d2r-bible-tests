@@ -9348,7 +9348,7 @@ GATES = [
          os.path.join(HERE, "test_a_tier_multiplier_names_its_difficulty.py")], 30,
          needs_app=False,
          why=("REG-2069 (#231 eye on v43) - the tier multipliers (boss nav + boss-card heads) are computed for Hell and "
-              "their titles named no difficulty; PLAYER_Q differs by difficulty, so the number must say which it is.")),
+              "their titles named no difficulty; the /players factor (PLAYER_F) differs by difficulty, so the number must say which it is.")),
     Gate("test_the_river_chip_says_a_shared_reason_once", [sys.executable,
          os.path.join(HERE, "test_the_river_chip_says_a_shared_reason_once.py")], 30,
          needs_app=False,
@@ -12091,7 +12091,7 @@ GATES = [
          why="REG-2503 (#63) - one number carried two units split at 50, so a good MF printed Nagelring's 1:49 as '49%' "
              "and dropped its 1:70 from the ranking. An event drop is a probability in (0,1], every other chance odds "
              ">= 1 (isEventP); keys sit on Hell only with their card's band, Annihilus is 100%. The drop engine, BOSSES and "
-             "renderDetail itself run in node; the expected odds are computed in Python from PLAYER_Q."),
+             "renderDetail itself run in node; the expected odds are computed in Python from PLAYER_F (REG-2953)."),
     Gate("test_no_codex_number_contradicts_its_own_table",
          [sys.executable, os.path.join(HERE, "test_no_codex_number_contradicts_its_own_table.py")], 60,
          needs_app=False,
@@ -13245,6 +13245,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_his_logger_wishlist_and_filter_names_stay_his.py")], 300,
          needs_app=False,
          why='REG-2923 #252: the upload logger, the wishlist title and the loot filter are named for him only on his ledger'),
+    Gate("test_players_moves_odds_by_silospens_own_factor",
+         [sys.executable, os.path.join(HERE, "test_players_moves_odds_by_silospens_own_factor.py")], 300,
+         needs_app=False,
+         why="REG-2953 (#190, closes REG-2509) - /PLAYERS MOVES EVERY 1:N BY SILOSPEN'S OWN FACTOR. The one-NoDrop model (k = 1 + floor(players/2), one q per boss) stepped at /p2,4,6,8 and capped Andariel at x1.39; silospen RotW 3.0 (party 1, MF 300, every unique and set of the 11 farms x 3 difficulties x /players 1-8) pairs 1=2, 3=4, 5=6, 7=8, moves Andariel x1.79 and Countess / Duriel x1.39 / x1.37, and leaves only Pindleskin unmoved. PLAYER_F holds one rare-item factor per farm, difficulty and /players; the page's engine runs in node and every expectation is recomputed from tv/data/silospen_players_rotw30.json."),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

@@ -11,11 +11,12 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 // v160 — regression lock for the player-count drop methodology. The global
 // "eff unique" dock gauge is a pure MF QUALITY readout and deliberately does NOT
 // move with P# (player count = drop QUANTITY, not quality). The P# effect is
-// instead folded into the per-boss ODDS via effChance() → playerMult() with a
-// boss-specific NoDrop q (k = 1 + floor(N/2)). This spec proves: (a) Prime-Evil
-// odds improve as P# rises (~1.2× at p8, smaller 1:N), (b) guaranteed-dropper
-// (q=0) odds stay perfectly flat, (c) the raw multipliers match the documented
-// tiers. ZERO data change — pure behaviour audit.
+// instead folded into the per-boss ODDS via effChance() → playerMult(), which reads
+// silospen's own measured factor per boss, difficulty and /players (PLAYER_F, REG-2953 -
+// it replaced a one-NoDrop q model). This spec proves: (a) Prime-Evil odds improve as P#
+// rises (~1.2× at p8, smaller 1:N), (b) Pindleskin - the one farm silospen does not move -
+// stays perfectly flat, (c) the raw multipliers match the documented tiers. Countess is NOT
+// flat: silospen moves her ×1.39 at /p8 (she was held at ×1.00 as a "guaranteed dropper").
 test.describe('v160 boss-page odds scale with player count (quantity, not quality)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(URL);
@@ -64,11 +65,11 @@ test.describe('v160 boss-page odds scale with player count (quantity, not qualit
     expect(sum(p8)).toBeLessThan(sum(p1));
   });
 
-  test('guaranteed dropper (Countess, q=0) odds are perfectly flat across P#', async ({ page }) => {
+  test('Pindleskin (silospen: his table does not move) odds are perfectly flat across P#', async ({ page }) => {
     await setPlayers(page, 1);
-    const p1 = await oddsFor(page, 'countess');
+    const p1 = await oddsFor(page, 'pindle');
     await setPlayers(page, 8);
-    const p8 = await oddsFor(page, 'countess');
+    const p8 = await oddsFor(page, 'pindle');
 
     expect(p1.length).toBeGreaterThan(3);
     expect(p8).toEqual(p1);                          // player count adds HP, not loot
@@ -81,14 +82,16 @@ test.describe('v160 boss-page odds scale with player count (quantity, not qualit
         meph: pm('mephisto', 'hell', 8),
         cows: pm('cows', 'hell', 8),
         countess: pm('countess', 'hell', 8),
+        pindle: pm('pindle', 'hell', 8),
         mephP1: pm('mephisto', 'hell', 1),
       };
     });
-    // Prime Evils ~1.2×, Cows/Pit ~2.3×+, guaranteed droppers exactly 1×, solo always 1×
+    // silospen RotW 3.0: Prime Evils ~1.22×, Cows/Pit ~2.29×, Countess ~1.39×, Pindleskin exactly 1×, solo always 1×
     expect(m.meph).toBeGreaterThan(1.18);
     expect(m.meph).toBeLessThan(1.28);
     expect(m.cows).toBeGreaterThan(2.2);
-    expect(m.countess).toBe(1);
+    expect(m.countess).toBeGreaterThan(1.3);
+    expect(m.pindle).toBe(1);
     expect(m.mephP1).toBe(1);
   });
 

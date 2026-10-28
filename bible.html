@@ -6098,7 +6098,7 @@ try {
       <span class="slider-value" id="mf-val">699%</span>
     </div>
     <div class="slider-group">
-      <span class="slider-label">P#<span class="player-explainer kbd-tip" data-tip="/players N — sets player count. Higher N shrinks each monster’s NoDrop, so it drops MORE items (quantity) — it never changes drop QUALITY (that’s MF’s job). Effect depends on the source: nothing for guaranteed droppers (Countess, Duriel, Pindleskin), ~1.2× for Mephisto/Diablo/Baal, up to ~2.4× for Cows & The Pit. /players 1 = fastest kills. Online, party size sets this automatically.">?</span></span>
+      <span class="slider-label">P#<span class="player-explainer kbd-tip" data-tip="/players N — sets player count. Higher N shrinks each monster’s NoDrop, so it drops MORE items (quantity) — it never changes drop QUALITY (that’s MF’s job). Effect depends on the source (silospen RotW 3.0, at /players 8): nothing for Pindleskin, ~1.2× for Mephisto/Diablo/Baal, ~1.4× for Countess and Duriel, ~1.5-1.8× for Travincal, Nihlathak and Andariel, up to ~2.3× for Cows & The Pit. It steps at /players 3, 5 and 7. /players 1 = fastest kills. Online, party size sets this automatically.">?</span></span>
       <input type="range" id="players" min="1" max="8" step="1" value="1">
       <span class="slider-value" id="players-val">1</span>
     </div>
@@ -9490,19 +9490,20 @@ body.app-ctx .dock-mini-tab, body.app-ctx .lore-mini{display:none !important}
   </div>
   <h2 class="sec-h collapsed" onclick="toggleSec(this)"><span class="sec-h-art">👥</span><span class="sec-h-block"><span class="sec-h-t">What the P# slider actually does</span><span class="sec-h-sub">More quantity via shrinking NoDrop — never better quality (that's MF's job)</span></span><span class="sec-chev">▾</span></h2>
   <div class="sec-body" hidden>
-  <div class="lead"><code>/players N</code> shrinks each monster's <strong>NoDrop</strong>, so it drops <strong>MORE items (quantity)</strong> — it <strong>never</strong> changes drop <strong>QUALITY</strong> (that's MF's job). How much depends on the monster's base NoDrop <code>q</code>:<br><code>multiplier = (1 − qᵏ) / (1 − q)</code>, &nbsp;<code>k = 1 + floor(N / 2)</code></div>
-  <div class="warning"><strong>Breakpoints, not a smooth ramp:</strong> /p1 (solo) is the ×1.00 baseline; drops step up at <strong>/p2, /p4, /p6, /p8</strong>, with /p2=/p3, /p4=/p5, /p6=/p7 as identical pairs. Higher player count = slower kills, so it's a quantity-vs-speed trade, never a quality gain.</div>
-  <div class="lead" style="margin-top:10px">It moves <strong>3 of the 4 boss tiers</strong> — only the guaranteed droppers (q=0) ignore it entirely. Multipliers shown at <strong>/players 8</strong> (Hell):</div>
+  <div class="lead"><code>/players N</code> shrinks the <strong>NoDrop</strong> of every treasure class a kill rolls, so it drops <strong>MORE items (quantity)</strong> — it <strong>never</strong> changes drop <strong>QUALITY</strong> (that's MF's job). How much is not one formula: each multiplier is <strong>silospen's RotW 3.0 calculator</strong> (party 1), measured for every boss, difficulty and /players, and every 1:N on this page is divided by it.</div>
+  <div class="warning"><strong>Breakpoints, not a smooth ramp:</strong> /p1 (solo) is the ×1.00 baseline and the game pairs <strong>/p1=/p2, /p3=/p4, /p5=/p6, /p7=/p8</strong>, so drops step up at <strong>/p3, /p5 and /p7</strong>. Two exceptions in the data: Hell Duriel gains 1% at /p2, and the Prime Evils stop gaining at /p5. Higher player count = slower kills, so it's a quantity-vs-speed trade, never a quality gain.</div>
+  <div class="lead" style="margin-top:10px">It moves every farm but one — <strong>Pindleskin's</strong> table does not move at any /players. Multipliers on <strong>Hell</strong>:</div>
   <div class="scroll-table"><table class="drops" style="margin-top:8px">
-    <thead><tr><th>tier</th><th>bosses</th><th>NoDrop q</th><th>×@ /p8</th></tr></thead>
+    <thead><tr><th>tier</th><th>bosses</th><th>×@ /p3</th><th>×@ /p8</th></tr></thead>
     <tbody>
-      <tr><td class="item-name">🐝 High-density packs</td><td>Pit · Cows</td><td>0.625</td><td><strong style="color:var(--best)">×2.41</strong></td></tr>
-      <tr><td class="item-name">💰 Heavy droppers</td><td>Andariel · Nihlathak · Travincal</td><td>0.2794–0.3455</td><td>×1.39–1.52</td></tr>
-      <tr><td class="item-name">👹 The Prime Evils</td><td>Mephisto · Diablo · Baal</td><td>0.183</td><td>×1.22</td></tr>
-      <tr><td class="item-name">🔓 Guaranteed droppers</td><td>Countess · Duriel · Pindleskin</td><td>0.0</td><td><strong>×1.00 · P#-PROOF</strong></td></tr>
+      <tr><td class="item-name">🐝 High-density packs</td><td>Pit · Cows</td><td>×1.63</td><td><strong style="color:var(--best)">×2.29</strong></td></tr>
+      <tr><td class="item-name">💰 Heavy droppers</td><td>Andariel · Nihlathak · Travincal</td><td>×1.33–1.48</td><td>×1.45–1.79</td></tr>
+      <tr><td class="item-name">🏰 Tower &amp; tomb</td><td>Countess · Duriel</td><td>×1.27–1.28</td><td>×1.37–1.39</td></tr>
+      <tr><td class="item-name">👹 The Prime Evils</td><td>Mephisto · Diablo · Baal</td><td>×1.19</td><td>×1.22</td></tr>
+      <tr><td class="item-name">🔓 P#-proof</td><td>Pindleskin</td><td>×1.00</td><td><strong>×1.00 · P#-PROOF</strong></td></tr>
     </tbody>
   </table></div>
-  <p style="font-size:var(--fs-body);color:var(--text-muted)">Guaranteed droppers — they always spill their full table, so extra players add only HP, never loot (these carry the <code>· P#-PROOF</code> tag on their cards).</p>
+  <p style="font-size:var(--fs-body);color:var(--text-muted)">Pindleskin's table does not move: extra players add only HP, never loot (his cards carry the <code>· P#-PROOF</code> tag).</p>
   </div>
   <h2 class="sec-h collapsed" onclick="toggleSec(this)"><span class="sec-h-art">🛡️</span><span class="sec-h-block"><span class="sec-h-t">Mercenary mechanics</span><span class="sec-h-sub">Hireling auras, hire-difficulty rules &amp; best merc gear (vanilla D2R)</span></span><span class="sec-chev">▾</span></h2>
   <div class="sec-body" hidden>
@@ -26746,14 +26747,29 @@ const adjustChance = (base, gMF) => {
   const userEff = effMF(gMF, 250);
   return Math.max(1, Math.round(base * (1+refEff/100) / (1+userEff/100)));
 };
-const PLAYER_Q = {"countess":{"norm":0.0,"nm":0.0,"hell":0.0},"andariel":{"norm":0.28358,"nm":0.28358,"hell":0.27941},"duriel":{"norm":0.0,"nm":0.0,"hell":0.0},"mephisto":{"norm":0.1875,"nm":0.1875,"hell":0.18293},"travincal":{"norm":0.34545,"nm":0.34545,"hell":0.34545},"diablo":{"norm":0.1875,"nm":0.1875,"hell":0.18293},"baal":{"norm":0.1875,"nm":0.1875,"hell":0.18293},"pindle":{"norm":0.0,"nm":0.0,"hell":0.0},"nihl":{"norm":0.31667,"nm":0.31667,"hell":0.31148},"cows":{"norm":0.625,"nm":0.625,"hell":0.625},"pit":{"norm":0.625,"nm":0.625,"hell":0.625}};
+/* REG-2953 (REG-2509) — /PLAYERS IS SILOSPEN'S OWN FACTOR, ONE PER BOSS, DIFFICULTY AND /PLAYERS, NOT A ONE-NODROP MODEL.
+   This was (1 - q^k) / (1 - q), k = 1 + floor(players / 2), one top-level NoDrop q per boss (PLAYER_Q). Re-measured on
+   silospen's calculator (D2R_ROW_3_0, party 1, MF 300 - the source of every stored 1:N), every unique and set item of the
+   11 farms below at /players 1-8 (tv/data/silospen_players_rotw30.json keeps what the law reads):
+   - the game pairs /players 1=2, 3=4, 5=6, 7=8. The model paired 2=3, 4=5, 6=7, so it showed a gain at /p2 that the game
+     does not give and stepped one /players late after that;
+   - the size is not one NoDrop's: every treasure class under the top one has a NoDrop of its own, so Andariel moves x1.79
+     at /p8 where the model capped at x1.39, and Countess and Duriel, held at x1.00, move x1.39 and x1.37. Pindleskin's
+     table does not move at any /players;
+   - what the data carries beyond the pairing: Hell Duriel gains 1.4% at /p2, and the Prime Evils stop gaining at /p5.
+   Each value is the rare-item factor p(P) / p(1). A common item saturates over several picks and moves a little less;
+   over the whole pull (60,679 item x /players cells) the 1:N this prints is silospen's within one count or 0.023%,
+   whichever is larger. A terror-zone column uses its difficulty's factor: measured on Hell, Cows x2.286 TZ against x2.286,
+   Mephisto x1.221 against x1.224, Andariel x1.753 against x1.792 - named here, not pulled for every farm.
+   Index 0-7 = /players 1-8. */
+const PLAYER_F = {"countess":{"norm":[1,1,1.28844,1.28844,1.36732,1.36732,1.39581,1.39581],"nm":[1,1,1.28846,1.28846,1.36735,1.36735,1.39583,1.39583],"hell":[1,1,1.28302,1.28302,1.36,1.36,1.38775,1.38775]},"andariel":{"norm":[1,1,1.46417,1.46417,1.70814,1.70814,1.78238,1.78238],"nm":[1,1,1.46427,1.46427,1.7083,1.7083,1.78257,1.78257],"hell":[1,1,1.48275,1.48275,1.65383,1.65383,1.79165,1.79165]},"duriel":{"norm":[1,1,1.28845,1.28845,1.36734,1.36734,1.39582,1.39582],"nm":[1,1,1.28846,1.28846,1.36735,1.36735,1.39583,1.39583],"hell":[1,1.01449,1.27272,1.27272,1.34615,1.34615,1.37254,1.37254]},"mephisto":{"norm":[1,1,1.19402,1.19402,1.23075,1.23075,1.23075,1.23075],"nm":[1,1,1.19402,1.19402,1.23076,1.23076,1.23076,1.23076],"hell":[1,1,1.1884,1.1884,1.22388,1.22388,1.22388,1.22388]},"travincal":{"norm":[1,1,1.375,1.375,1.48649,1.48649,1.52778,1.52778],"nm":[1,1,1.375,1.375,1.48649,1.48649,1.52778,1.52778],"hell":[1,1,1.37501,1.37501,1.48649,1.48649,1.52779,1.52779]},"diablo":{"norm":[1,1,1.19402,1.19402,1.23076,1.23076,1.23076,1.23076],"nm":[1,1,1.19402,1.19402,1.23076,1.23076,1.23076,1.23076],"hell":[1,1,1.1884,1.1884,1.22388,1.22388,1.22388,1.22388]},"baal":{"norm":[1,1,1.19403,1.19403,1.23076,1.23076,1.23076,1.23076],"nm":[1,1,1.19402,1.19402,1.23076,1.23076,1.23076,1.23076],"hell":[1,1,1.1884,1.1884,1.22388,1.22388,1.22388,1.22388]},"pindle":{"norm":[1,1,1,1,1,1,1,1],"nm":[1,1,1,1,1,1,1,1],"hell":[1,1,1,1,1,1,1,1]},"nihl":{"norm":[1,1,1.33333,1.33333,1.42857,1.42857,1.46341,1.46341],"nm":[1,1,1.33333,1.33333,1.42857,1.42857,1.46341,1.46341],"hell":[1,1,1.32609,1.32609,1.41861,1.41861,1.45238,1.45238]},"cows":{"norm":[1,1,1.63267,1.63267,2.02535,2.02535,2.28576,2.28576],"nm":[1,1,1.63268,1.63268,2.0254,2.0254,2.28574,2.28574],"hell":[1,1,1.63274,1.63274,2.02545,2.02545,2.28606,2.28606]},"pit":{"norm":[1,1,1.63266,1.63266,2.02532,2.02532,2.28572,2.28572],"nm":[1,1,1.6327,1.6327,2.02535,2.02535,2.28578,2.28578],"hell":[1,1,1.63281,1.63281,2.02552,2.02552,2.28594,2.28594]}};
     function playerMult(bossId, diffKey, players){
       if(!bossId || !diffKey) return 1;
       var tier = diffKey.indexOf('hell')===0 ? 'hell' : diffKey.indexOf('nm')===0 ? 'nm' : 'norm';
-      var q = (PLAYER_Q[bossId]||{})[tier];
-      if(!q) return 1;
-      var k = 1 + Math.floor((players||1)/2);
-      return (1 - Math.pow(q,k)) / (1 - q);
+      var f = (PLAYER_F[bossId]||{})[tier];
+      if(!f) return 1;
+      var n = Math.max(1, Math.min(8, Math.round(players||1)));
+      return f[n-1];
     }
     function effChance(base, bossId, diffKey){
       var a = adjustChance(base, mf);
@@ -30536,7 +30552,7 @@ function renderHeroV31() {
         return `<div class="hero-pick" onclick="window.openItemDetail('${p.item.replace(/'/g, "\\'")}')">
           <div class="hero-pick-rank">${p.starred?'⭐ ':''}#${i+1}${p.tier==='uber'?' UBER':''}${p.verified?' 🔒':''}</div>
           <div class="hero-pick-item"${_qStyle(p.item,'unique')}>${nameLogo(p.item)}${p.item}</div>
-          <div class="hero-pick-boss" style="font-size:var(--fs-meta)">${p.boss}${(typeof players !== "undefined" && players > 1 && playerMult(p.bossId, p.diffKey, 8) === 1) ? ' <span style="color:#8a7d62;font-size:9px;letter-spacing:.5px" title="guaranteed dropper (q=0) — player count adds HP, not loot; stays \u00d71.00">\u00b7 P#-PROOF</span>' : ''}</div>
+          <div class="hero-pick-boss" style="font-size:var(--fs-meta)">${p.boss}${(typeof players !== "undefined" && players > 1 && playerMult(p.bossId, p.diffKey, 8) === 1) ? ' <span style="color:#8a7d62;font-size:9px;letter-spacing:.5px" title="silospen RotW 3.0: /players does not move this table — more players add HP, not loot; stays \u00d71.00">\u00b7 P#-PROOF</span>' : ''}</div>
           <div class="hero-pick-chance">${fmt(p.chance)} · <span style="color:var(--terror)">${fmtHours(p.hours)}</span></div>
           <div class="hero-pick-source-badge">${p.kph}/hr ${tierBadge}</div>
         </div>`;
@@ -30611,7 +30627,7 @@ function renderHeroV31() {
     <div class="hero-pick" onclick="window.openItemDetail('${p.item.replace(/'/g, "\\'")}')">
       <div class="hero-pick-rank">${p.starred?'⭐ ':''}#${i+1} ${p.tier==='uber'?'UBER':'BEST'}${p.verified?' 🔒':''}</div>
       <div class="hero-pick-item"${_qStyle(p.item,'unique')}>${nameLogo(p.item)}${p.item}</div>
-      <div class="hero-pick-boss">${p.boss}${(typeof players !== "undefined" && players > 1 && playerMult(p.bossId, p.diffKey, 8) === 1) ? ' <span style="color:#8a7d62;font-size:9px;letter-spacing:.5px" title="guaranteed dropper (q=0) — player count adds HP, not loot; stays \u00d71.00">\u00b7 P#-PROOF</span>' : ''}</div>
+      <div class="hero-pick-boss">${p.boss}${(typeof players !== "undefined" && players > 1 && playerMult(p.bossId, p.diffKey, 8) === 1) ? ' <span style="color:#8a7d62;font-size:9px;letter-spacing:.5px" title="silospen RotW 3.0: /players does not move this table — more players add HP, not loot; stays \u00d71.00">\u00b7 P#-PROOF</span>' : ''}</div>
       <div class="hero-pick-chance">${fmt(p.chance)} · <span style="color:var(--terror)">${fmtHours(p.hours)}</span></div>
       <div class="hero-pick-source-badge">${p.kph}/hr</div>
     </div>
@@ -40045,7 +40061,7 @@ const BOSS_FIELD_MANUAL = {
 const TIPS_WISDOM = [
   {
     label: "PLAYERS=8 MYTH",
-    body: "Setting /players 8 does <strong>NOT</strong> change drop <em>quality</em> — your rare/set/unique odds per drop are MF’s job, untouched by player count. What it does: shrinks each monster’s NoDrop, so more items drop. Size depends on the source — <strong>nothing</strong> for guaranteed droppers (Countess, Duriel, Pindleskin), ~1.2× for the Prime Evils (Mephisto/Diablo/Baal), up to <strong>~2.4×</strong> for Cows & The Pit. The 1:X odds above already fold this in."
+    body: "Setting /players 8 does <strong>NOT</strong> change drop <em>quality</em> — your rare/set/unique odds per drop are MF’s job, untouched by player count. What it does: shrinks each monster’s NoDrop, so more items drop. Size depends on the source (silospen RotW 3.0, /players 8) — <strong>nothing</strong> for Pindleskin, ~1.2× for the Prime Evils (Mephisto/Diablo/Baal), ~1.4× for Countess and Duriel, ~1.5-1.8× for Travincal, Nihlathak and Andariel, up to <strong>~2.3×</strong> for Cows & The Pit. It steps at /players 3, 5 and 7. The 1:X odds above already fold this in."
   },
   {
     label: "MF DIMINISHING RETURNS",

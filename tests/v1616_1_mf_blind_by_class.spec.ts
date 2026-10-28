@@ -52,7 +52,7 @@ test('\u2605\u2605\u2605 the sliders move exactly what they should, by CLASS', a
     set(1000, 1); out.plague_mf1000 = c(5000, 'mephisto', 'hell', 'Plague Bearer');
     set(0, 1);   out.jbs_mf0 = c(5000, 'mephisto', 'hell', 'Jah/Ber/Sur rune');
     set(1000, 1); out.jbs_mf1000 = c(5000, 'mephisto', 'hell', 'Jah/Ber/Sur rune');
-    // /players: moves a normal dropper, must NOT move guaranteed droppers
+    // /players: moves every farm silospen moves (Countess and Duriel too), and never Pindleskin
     set(699, 1); out.meph_p1 = c(5000, 'mephisto', 'hell', 'Frostburn');
     set(699, 8); out.meph_p8 = c(5000, 'mephisto', 'hell', 'Frostburn');
     set(699, 1); out.countess_p1 = c(5000, 'countess', 'hell', 'Ist Rune');
@@ -77,8 +77,9 @@ test('\u2605\u2605\u2605 the sliders move exactly what they should, by CLASS', a
   expect(probe.magewrath_mf1000, 'Magewrath is a UNIQUE on a Rune Bow — MF must still apply').toBeLessThan(probe.magewrath_mf0);
   expect(probe.plague_mf1000, 'Plague Bearer is a UNIQUE on a Rune Sword — MF must still apply').toBeLessThan(probe.plague_mf0);
   expect(probe.meph_p8, '/players must improve Mephisto').toBeLessThan(probe.meph_p1);
-  expect(probe.countess_p8, 'Countess is a guaranteed dropper — /players does nothing').toBe(probe.countess_p1);
-  expect(probe.duriel_p8, 'Duriel likewise').toBe(probe.duriel_p1);
-  expect(probe.pindle_p8, 'Pindleskin likewise').toBe(probe.pindle_p1);
+  // REG-2953 — silospen RotW 3.0 moves Countess (×1.39) and Duriel (×1.37) at /p8; only Pindleskin's table stays put
+  expect(probe.countess_p8, 'Countess moves with /players (silospen ×1.39 at /p8)').toBeLessThan(probe.countess_p1);
+  expect(probe.duriel_p8, 'Duriel moves with /players (silospen ×1.37 at /p8)').toBeLessThan(probe.duriel_p1);
+  expect(probe.pindle_p8, 'Pindleskin is P#-proof — silospen does not move his table').toBe(probe.pindle_p1);
   expect(probe.rune_p8, 'a rune is MF-blind but still obeys /players').toBeLessThan(probe.rune_p1);
 });
