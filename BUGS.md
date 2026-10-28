@@ -2190,6 +2190,14 @@ red-proof (owned_restore's JS no longer calls window._ownedAdd) first came back 
 constant of a function, and owned_restore's own DOCSTRING spells "window._ownedAdd(name, ...)", so the census could never
 see that door lose its receipt. Docstrings are now left out of what a door "sends"; the proof is RED. The owned-door law is
 keyable and re-sabotaged: bad 0 of 32.
+### REG-2921 - HIS ADVICE BOXES AND HIS "YOURS" MARKS REACHED EVERY PC: "FOR KONYO (WARLOCK):" AND "★ YOURS" ON A BOARD THAT IS NOT HIS (#252)
+Nine guide boxes in the markup open "For Konyo:" or "For Konyo (Warlock):", the Caster craft's `konyo:` note ("Your craft,
+Konyo - ...") showed on the recipe row, the workshop and the craft card, and the same craft wore "★ YOURS" on the workshop tile
+and the Forge's craft accordion and sorted first among the Forge's craft types - on every PC. On his ledger (`_seedsBelongHere`)
+nothing changes. Anywhere else a box reads "If you play a Warlock:" or "Tip:" (`_charSay`, through the boot walker for the
+markup), and his note and his star are not drawn (forgeScan's `star` is his ledger's only). Law
+tv/test_his_advice_boxes_and_marks_stay_on_his_ledger.py (his, another claimed ledger, a guest), 8 red-proofs, all RED.
+
 ### REG-2920 - EVERY PC'S RECOMMENDATIONS NAMED HIS CHARACTERS: "BEST CHAR FROM YOUR ROSTER: KONYOLOCK" ON A BOARD THAT IS NOT HIS (#252, his per-PC rule)
 CHARS, BOSS_CHAR_REC, BOSS_ACTION_PLAN, BOSSES[].char and .why, the sunder tables (SUNDER_CHARMS, SUNDER_RECIPES,
 _HERALD_SUNDERS, the SPECIAL_DROPS sunder entries), TZ_ZONES, RUNE_SOURCES, the Pandemonium card and the TZ tab's markup were

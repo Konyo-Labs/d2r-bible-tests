@@ -13233,6 +13233,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_recommendation_names_this_pcs_characters.py")], 300,
          needs_app=False,
          why="REG-2920 #252: a recommendation names this PC's own character, his on his ledger, never his names on another board"),
+    Gate("test_his_advice_boxes_and_marks_stay_on_his_ledger",
+         [sys.executable, os.path.join(HERE, "test_his_advice_boxes_and_marks_stay_on_his_ledger.py")], 300,
+         needs_app=False,
+         why='REG-2921 #252: his For Konyo boxes, his craft note and his YOURS star stay on his ledger; another board is advised as whoever plays'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
