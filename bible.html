@@ -46324,6 +46324,30 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       return '<span class="vfr-listed" data-trade="listed" title="' + esc(l.map(function(x){ return 'copy ' + (x.ci + 1) + ' ' + window._vaultListedSay(x); }).join('; ')) + '">'
         + (l.length > 1 ? l.length + ' listed' : 'listed') + '</span>';
     }
+    /* REG-2884 (#137, GrokBot v3740: "Stormshield/Lightsabre FIND rows open Mule 1 not M2/M3", then "opens no mule at all") -
+       EVERY MULE PAGE A COPY SITS ON GETS ITS BUTTON. Measured on the whole page in node: a hand-added item (his path) got no
+       mule button, because FIND swapped its cell for the raw move target ("stash:c0r10 (1,11) target", a row 11 on a 10-row
+       stash: REG-2875 names Mule 2 by that row) and that kind carried no mule id; and an item with copies on Mule 2 and Mule
+       3 got none either. A cell of this locker opens with "Mule N"; a WAR mule's cell opens with its own name and is not
+       this locker's page. Declared inside the finder, so a law that cuts the finder out carries it.
+       -> [{page, index, label}] in page order, one per page */
+    function _findMuleNavs(cells){
+      var seen = {}, out = [];
+      (cells || []).forEach(function(c){
+        var m = /^Mule\s+(\d+)\b/.exec(String(c || ''));
+        var nv = m ? _findMuleNav(m[0]) : null;
+        if (nv && !seen[nv.page]) { seen[nv.page] = 1; out.push(nv); }
+      });
+      return out.sort(function(a, b){ return a.page - b.page; });
+    }
+    /* REG-2884 - a move target in FIND's own words: "Mule 2 · Personal stash · col 1 · row 1", "Page 2 · col 4 · row 3" */
+    function _findTargetSay(cell){
+      var ca = (typeof _vaultCellAt === 'function') ? _vaultCellAt(cell) : null;
+      if (!ca) return String(cell);
+      var at = 'col ' + (ca.x + 1) + ' · row ' + (ca.y + 1);
+      if (ca.loc === 'shared') return 'Page ' + (ca.page + 1) + ' · ' + at;
+      return 'Mule ' + (ca.page + 1) + ' · ' + (ca.loc === 'inventory' ? 'Inventory' : 'Personal stash') + ' · ' + at;
+    }
     var res = document.getElementById('vault-find-results');
     if (!res) return;
     q = String(q||'').trim().toLowerCase();
@@ -46371,10 +46395,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
           var _mt = window._vaultMoveEnsure(n, 0).task, _mc = _mt && _mt.to && _mt.to.cell;
           var _mm = _mc && String(_mc).match(/c(\d+)r(\d+)/);
           if (_mm) w = Object.assign({}, w, { kind: _ht ? 'target' : w.kind, muleName: (_ht && _mt.to.holder) ? ((((typeof _vaultMuleOfPlace === 'function') ? _vaultMuleOfPlace(_mt.to) : null) || {}).name || _mt.to.holder) : w.muleName,   /* REG-2804 its name today */
-                                             cell: String(_mc) + ' (' + ((+_mm[1]) + 1) + ',' + ((+_mm[2]) + 1) + ') target' + (_ht ? ' · MANUAL move' : '') }); /* L1 find cell */
+                                             mule: (_mt.to.id != null ? _mt.to.id : w.mule),   /* REG-2884 the target's own mule */
+                                             cell: _findTargetSay(_mc) + ' · target' + (_ht ? ' · MANUAL move' : '') }); /* L1 find cell; REG-2884 its page, never a raw row */
         }
       } catch (eFc) {}
-      var mid = (w && (w.kind === 'filed' || w.kind === 'worn' || w.kind === 'over' || w.kind === 'would')) ? w.mule : null;
+      var mid = (w && (w.kind === 'filed' || w.kind === 'worn' || w.kind === 'over' || w.kind === 'would' || w.kind === 'target')) ? w.mule : null;   /* REG-2884 a hand add's target too */
       var loc = !w ? '<span class="vfr-arrow">→</span><span style="color:var(--text-dim)">UNKNOWN — the finder could not ask where it is</span>'
         : (w.kind === 'would') ? '<span class="vfr-arrow">→</span><span class="vfr-would">unsorted · would go to <span class="vfr-mule"'+((typeof _vaultSharedFamily === 'function' && w.mule != null && _vaultSharedFamily(muleById(w.mule))) ? ' data-family="shared"' : '')+'>'+esc(w.muleName)+'</span>' + ((w.cells && w.cells.length > 1) ? ' · ' + w.cells.length + ' copies: ' + esc(w.cells.join(' / ')) : (w.cell ? ' · '+esc(w.cell) : '')) + ' — it files there on its own, nothing to press</span>'   /* REG-2756 */
         : (w.kind === 'main') ? '<span class="vfr-arrow">→</span><span class="vfr-main">stays with your MAIN — '+esc(w.why)+'</span>'
@@ -46392,9 +46417,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
          cell inline, and the floating HD card opens on the art hover and STAYS on the click (v169's keep-open
          list below now carries .vfr-row). #12's click-to-open is intentionally dropped here; its separate
          _vaultFindRefresh seam is unchanged. [[the-unjoined-end]] */
-      var _fnav = (w && w.cell && mid) ? _findMuleNav(w.cell) : null;
-      var _navHtml = (_fnav && mid)
-        ? '<span class="vd-mule-nav"><button type="button" class="vd-mule-arrow" onclick="event.stopPropagation();window._muleOpenAt(\''+jsArg(mid)+'\','+_fnav.index+')">'+esc(_fnav.label)+'</button></span>'
+      var _fnavs = (w && mid) ? _findMuleNavs((w.cells && w.cells.length > 1) ? w.cells : [w.cell]) : [];   /* REG-2884 every page */
+      var _navHtml = _fnavs.length
+        ? '<span class="vd-mule-nav">' + _fnavs.map(function(_fnav){ return '<button type="button" class="vd-mule-arrow" onclick="event.stopPropagation();window._muleOpenAt(\''+jsArg(mid)+'\','+_fnav.index+')">'+esc(_fnav.label)+'</button>'; }).join('') + '</span>'
         : '';
       return '<div class="vfr-row" title="'+esc(n)+'">'
         + art(n) + '<span class="vfr-name"'+(typeof _qStyle==='function'?_qStyle(n,'unique'):'')+'>'+esc(n)+'</span>'+_vfrTrade(n)+'<span class="vfr-loc">'+loc+'</span>'+_navHtml+_vaultSeenSpan(n)+'</div>';

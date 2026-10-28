@@ -2783,6 +2783,21 @@ no known names kept every prose word, the opposite of its own rule; it now keeps
 journal: REC-03 still PASSES (newest long session, 51 worker reads, all warm). The eye's "older sessions' unanswered
 commitments are only reported" is the documented rule ("the newest decides; older ones are reported"), not a defect. Law:
 test_a_scenario_names_its_own_frames (3 cases, 5 red-proofs, 1 re-aimed).
+### REG-2884 - A FIND ROW GAVE NO MULE BUTTON FOR A HAND ADD OR FOR COPIES ON TWO MULES (#137, GrokBot v3740: "Stormshield/Lightsabre FIND rows open Mule 1 not M2/M3", then "FIND-row click opens NO mule at all")
+Measured on the whole page in node: a UNI-ARMOR locker was filled past one mule by 45 hand adds (his path), plus
+Stormshield x3. No FIND row offered a mule button. A hand add's cell was swapped for its raw move target, "stash:c0r10
+(1,11) target · MANUAL move". That is row 11 on a 10-row stash: REG-2875 names Mule 2 by that row, and FIND never read it
+so. That kind of row carried no mule id either. Stormshield listed its copies on Mule 2 and Mule 3 and got no button.
+REG-2287's button (v3766) appeared only for a cell that already said "Mule N". Now a hand add's target reads in FIND's
+own words ("Mule 2 · Personal stash · col 1 · row 1 · target · MANUAL move") and the row carries the target's mule. Each
+mule page a copy sits on gets one button ("Mule 2", "Mule 3"). Each button opens that locker at that page ("Mule 2 of 3",
+"Mule 3 of 3") with the copy drawn. The row itself still opens nothing (#79). A shared stash cell names its page and
+gets no mule button, and a WAR mule's cell is not counted as this locker's page. The two helpers are declared inside the
+finder, so every law that cuts the finder out carries them. Law:
+tv/test_a_find_row_opens_every_mule_page_its_copies_sit_on.py, 4 red-proofs. REG-2287's red-proof was re-aimed at the
+new button line. LEFT: the 25 s wait GrokBot saw on a row click is not reproduced in node; rows open nothing by design
+(REG-2238), so the button is the way in, and that needs his live screen.
+
 ### REG-2883 - MARK TRADED ON ONE COPY OF THREE CALLED THE WHOLE NAME TRADED (#83, the lead's follow-up to REG-2881: one source, the vault)
 Measured in the D2JSP room's own code and on the whole page (node): Mark traded wrote the per-name mark d2r_d2jsp_sold AND
 took one copy out through the trade door. On an item with 3 copies, the card then said "Traded" and the Post button went
