@@ -51477,6 +51477,27 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
                why: 'that batch was cut on ' + last.ledger + ', this board is ' + here };
     }
     var back = [], kept = [];
+    /* REG-2877 - A TRADED-OUT COPY COMES BACK WHERE IT WAS: its own record (its move and its trade) re-opens its copyIx, the
+       copies after it step up again, and the count gains the copy. A name no longer in the vault is not re-made here. */
+    if (last.copyOut && last.copyOut.name && last.copyOut.row) {
+      var _co = last.copyOut, _coN = String(_co.name), _coK = _co.copyIx | 0;
+      if (!owned.has(_coN)) kept.push(_coN);
+      else {
+        var _coRaw = (typeof _vrRecLoadRaw === 'function') ? _vrRecLoadRaw() : undefined;
+        if (_coRaw && Array.isArray(_coRaw.records)) {
+          var _coRecs = _coRaw.records.map(function(r){
+            if (r && r.name === _coN && (r.copyIx || 0) >= _coK) { var c = {}; for (var x in r) c[x] = r[x]; c.copyIx = (r.copyIx || 0) + 1; return c; }
+            return r; });
+          var _coRow = {}; for (var y in _co.row) _coRow[y] = _co.row[y];
+          _coRow.copyIx = _coK; delete _coRow.trade;   /* it is back: not traded, not listed */
+          _coRecs.push(_coRow);
+          var _coStore = {}; for (var z in _coRaw) _coStore[z] = _coRaw[z]; _coStore.records = _coRecs;
+          if (typeof _vrRecGuardedSet === 'function') _vrRecGuardedSet(_coStore);
+        }
+        copies[_coN] = ((typeof copyCount === 'function') ? (copyCount(_coN) | 0) : 1) + 1;   /* persisted below with owned */
+        back.push(_coN);
+      }
+    }
     (last.names || []).forEach(function(nm){
       if (owned.has(nm)) { kept.push(nm); return; }   /* he re-checked it himself — his truth stands */
       /* 2026-09-28 — the RECEIPT the removal carried away comes back verbatim; a filing row comes back through the
@@ -51524,11 +51545,85 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     } catch (eMig) {}
     persistOwned(); saveA(); renderVault(); refreshOpenCard();
     window._repaintOwned();
-    status('↩ restored ' + back.length + ' of ' + (last.names || []).length
+    status('↩ restored ' + back.length + ' of ' + ((last.names || []).length + (last.copyOut ? 1 : 0))
            + (kept.length ? ' — ' + kept.length + ' you had already re-checked' : ''));
     return { restored: back.length, kept: kept.length, ts: last.ts, ledger: last.ledger };
   };
 
+  /* ══ REG-2877 (#83, his rulings: "Design it now, wire it later"; a traded-out copy is proven gone, so it goes to the Vault
+     log with an undo, never a question) - ONE DOOR FOR TRADE EVENTS ON A COPY. The copy record carries the trade slot
+     (_vrRecRow: null | {state: 'listed' | 'traded-out', at, post?}).
+       listed    - this copy is listed (a d2jsp post): its slot says so, and it still counts in its spot
+       unlisted  - the listing is gone: the slot clears
+       trade-out - he traded it away: the copy leaves through the removal journal. With several copies its own record (its
+                   move, its slot) rides in the batch, the copies after it close up and the count drops one; the last copy
+                   leaves through vaultRemove on the trade-out lane. vaultRestoreLast puts it back where it was.
+       trade-in  - a copy comes back: one more copy through the owned door, with its own MOVE task like any hand add.
+     No surface wires these yet (the D2JSP tab will); the card, the window, FIND and the MOVE row read the slot (REG-2878).
+     ev = {kind, name, copyIx?, at?, post?} -> {ok, kind, name, copyIx?, why} */
+  window._vaultTradeEvent = function(ev){
+    ev = ev || {};
+    var kind = String(ev.kind || ''), nm = String(ev.name == null ? '' : ev.name).trim();
+    var at = (typeof ev.at === 'string' && ev.at) ? ev.at : new Date().toISOString();
+    var post = (typeof ev.post === 'string' && ev.post) ? ev.post : null;
+    if (!nm) return { ok: false, kind: kind, why: 'no item named' };
+    if (['listed', 'unlisted', 'trade-out', 'trade-in'].indexOf(kind) < 0) return { ok: false, kind: kind, name: nm, why: 'not a trade event: ' + kind };
+    if (kind === 'trade-in') {
+      var a = (typeof window.vaultHandAdd === 'function') ? window.vaultHandAdd(nm) : null;
+      return { ok: !!(a && a.ok), kind: kind, name: (a && a.name) || nm, why: (a && a.ok) ? 'a copy came back' : ((a && a.why) || 'the owned door did not answer') };
+    }
+    if (!(owned && owned.has(nm))) return { ok: false, kind: kind, name: nm, why: nm + ' is not in the vault' };
+    var held = (typeof window._vaultHeldFor === 'function') ? window._vaultHeldFor(['d2r_vaultRecords', 'd2r_copies', _VR_LOG]) : null;
+    if (held) return { ok: false, kind: kind, name: nm, why: 'nothing changed - ' + held.why };
+    var raw = (typeof _vrRecLoadRaw === 'function') ? _vrRecLoadRaw() : undefined;
+    if (!raw || !Array.isArray(raw.records)) return { ok: false, kind: kind, name: nm, why: 'the copy records (d2r_vaultRecords) would not read, so nothing changed' };
+    var mine = raw.records.filter(function(r){ return r && r.name === nm; }).sort(function(x, y){ return (x.copyIx || 0) - (y.copyIx || 0); });
+    if (!mine.length) return { ok: false, kind: kind, name: nm, why: nm + ' has no copy record yet' };
+    var pick = null, listedOf = function(r){ return !!(r.trade && r.trade.state === 'listed'); };
+    if (ev.copyIx != null) pick = mine.filter(function(r){ return (r.copyIx || 0) === (ev.copyIx | 0); })[0] || null;
+    else if (kind === 'listed') pick = mine.filter(function(r){ return !r.trade; })[0] || null;
+    else pick = mine.filter(listedOf)[0] || (kind === 'trade-out' ? mine[mine.length - 1] : null);
+    if (!pick) return { ok: false, kind: kind, name: nm, why: kind === 'listed' ? ('every copy of ' + nm + ' is already listed') : ('no listed copy of ' + nm) };
+    var k = pick.copyIx || 0;
+    var write = function(recs){ var st = {}; for (var x in raw) st[x] = raw[x]; st.records = recs; return (typeof _vrRecGuardedSet === 'function') && _vrRecGuardedSet(st); };
+    if (kind === 'listed' || kind === 'unlisted') {
+      var recs = raw.records.map(function(r){
+        if (r !== pick) return r;
+        var c = {}; for (var x in r) c[x] = r[x];
+        if (kind === 'listed') { c.trade = { state: 'listed', at: at }; if (post) c.trade.post = post; } else delete c.trade;
+        return c; });
+      if (!write(recs)) return { ok: false, kind: kind, name: nm, copyIx: k, why: 'the copy records refused the write' };
+      try { renderVault(); } catch (eR) {}
+      return { ok: true, kind: kind, name: nm, copyIx: k, why: kind === 'listed' ? 'copy ' + (k + 1) + ' is listed' : 'copy ' + (k + 1) + ' is not listed' };
+    }
+    /* trade-out */
+    var why = 'traded on d2jsp' + (post ? ' (' + post + ')' : '');
+    var row = {}; for (var y in pick) row[y] = pick[y];
+    row.trade = { state: 'traded-out', at: at }; if (post) row.trade.post = post;
+    var have = (typeof copyCount === 'function') ? (copyCount(nm) | 0) : 1;
+    if (have <= 1 || mine.length <= 1) {
+      var r1 = (typeof window.vaultRemove === 'function') ? window.vaultRemove([nm], { lane: 'trade-out', exact: true, quiet: true, why: why }) : null;
+      /* measured: the removal door leaves the copy's record in the store, so the undo brings its own cell back with the name */
+      var gone = !!(r1 && r1.removed && r1.removed.indexOf(nm) >= 0);
+      return { ok: gone, kind: kind, name: nm, copyIx: k, why: gone ? (nm + ' left the vault (undo: vaultRestoreLast)') : ('the vault kept it: ' + ((r1 && r1.why) || 'the removal door did not answer')) };
+    }
+    var log = _vrRead();
+    if (log === null) return { ok: false, kind: kind, name: nm, copyIx: k, why: 'the removal journal (' + _VR_LOG + ') would not read, so nothing was traded out' };
+    var rest = raw.records.filter(function(r){ return r !== pick; }).map(function(r){
+      if (r && r.name === nm && (r.copyIx || 0) > k) { var c = {}; for (var x in r) c[x] = r[x]; c.copyIx = (r.copyIx || 0) - 1; return c; }
+      return r; });
+    if (!write(rest)) return { ok: false, kind: kind, name: nm, copyIx: k, why: 'the copy records refused the write - nothing was traded out' };
+    copies[nm] = have - 1;
+    if (copies[nm] <= 1) delete copies[nm];
+    var ts = Date.now();
+    log.push({ ts: ts, day: new Date(ts).toISOString().slice(0, 10), ledger: (window._D2R_LEDGER || null),
+               profile: (window.D2R_PROFILE === 'ladder' ? 'ladder' : 'main'), names: [], filed: {}, prov: {},
+               why: why, lane: 'trade-out', keepFiling: true, copyOut: { name: nm, copyIx: k, row: row } });
+    _vrWrite(log);
+    try { if (typeof persist === 'function') persist(); else persistOwned(); } catch (eP) {}
+    try { renderVault(); refreshOpenCard(); } catch (eR2) {}
+    return { ok: true, kind: kind, name: nm, copyIx: k, why: 'copy ' + (k + 1) + ' of ' + have + ' left the vault count (undo: vaultRestoreLast)' };
+  };
   // v342.3 — throw out a Magic & Rare keeper (rolled-name item; lives in magicFinds, not grail `owned`)
   /* REG-2404 — AND OUT OF `owned`, THROUGH THE REMOVAL DOOR. "Lives in magicFinds, not grail owned" stopped being true at
      #75: data.finds, aicMule, aicJudgeApply and the planner own the name beside its Magic & Rare record, so the count moves.
@@ -56442,7 +56537,7 @@ window.vaultAutoAssign = function(){
           recId: row.recId, name: row.name, copyIx: row.copyIx || 0, kind: row.kind,
           mule: row.mule, loc: row.loc, source: row.source, sight: row.sight,
           watching: row.watching === true, locked: row.locked === true, /* v3769 lock stays */
-          move: t, prov: row.prov, provUnknown: row.provUnknown === true,
+          move: t, trade: row.trade || null, prov: row.prov, provUnknown: row.provUnknown === true,   /* REG-2877 the trade slot stays */
           entry: row.entry, looseWhere: row.looseWhere   /* REG-2844 - a move written never drops the copy's entry (or its loose place) */
         }); /* v3769 row writer */
         if (JSON.stringify(built.move || null) !== prev) dirty = true;
@@ -58704,6 +58799,13 @@ window.vaultAutoAssign = function(){
     row.move = (spec.move && typeof spec.move === 'object' && !Array.isArray(spec.move)) ? spec.move : null; /* v3769 record move */
     /* REG-2844 (#154 P3a) - THIS copy's own entry (base, quality, sockets, runes, eth, mods and rolls); only when set */
     if (spec.entry && typeof spec.entry === 'object' && !Array.isArray(spec.entry)) row.entry = spec.entry;
+    /* REG-2877 (his "Design it now, wire it later") - THE TRADE SLOT: null | {state: 'listed' | 'traded-out', at, post?}.
+       Written only when set, so no other row changes shape. */
+    var _tr = spec.trade;
+    if (_tr && typeof _tr === 'object' && (_tr.state === 'listed' || _tr.state === 'traded-out')) {
+      row.trade = { state: _tr.state, at: (typeof _tr.at === 'string' && _tr.at) ? _tr.at.slice(0, 40) : null };
+      if (typeof _tr.post === 'string' && _tr.post) row.trade.post = _tr.post.slice(0, 200);
+    }
     /* #208 - a loose copy says where it sat (dock / throw / other); only loose rows carry it, so no other row changes shape */
     if (spec.kind === 'loose' && (spec.looseWhere === 'dock' || spec.looseWhere === 'throw' || spec.looseWhere === 'other'))
       row.looseWhere = spec.looseWhere;
@@ -58729,9 +58831,10 @@ window.vaultAutoAssign = function(){
     }
     var prov = witness.prov || {};
     var provUnknown = !!witness.provUnknown;
-    var priorMove = {};
+    var priorMove = {}, priorTrade = {};
     if (prior && Array.isArray(prior.records)) {
       prior.records.forEach(function(r){
+        if (r && r.name != null && r.trade && typeof r.trade === 'object') priorTrade[String(r.name) + '\u0000' + (r.copyIx || 0)] = r.trade;   /* REG-2877 */
         if (!r || r.name == null || !r.move || typeof r.move !== 'object') return;
         priorMove[String(r.name) + '\u0000' + (r.copyIx || 0)] = r.move;
       });
@@ -58761,6 +58864,7 @@ window.vaultAutoAssign = function(){
           looseWhere: r.looseWhere,                                /* #208 */
           move: priorMove[String(r.name) + '\u0000' + (r.copyIx || 0)] || null, /* v3769 move carry */
           entry: priorEntry[String(r.name) + '\u0000' + (r.copyIx || 0)] || null, /* REG-2844 entry carry */
+          trade: priorTrade[String(r.name) + '\u0000' + (r.copyIx || 0)] || null, /* REG-2877 trade carry */
           provUnknown: provUnknown, prov: prov[nm]
         })); /* v3767 record row */
       });

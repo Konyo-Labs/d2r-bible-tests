@@ -13157,6 +13157,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_card_draws_each_copy_at_its_own_task_cell.py")], 300,
          needs_app=False,
          why="REG-2876 the card keys each drawn copy by its own copyIx, so copy N sits at copy N's own task cell"),
+    Gate("test_a_traded_copy_leaves_through_the_vault_log",
+         [sys.executable, os.path.join(HERE, "test_a_traded_copy_leaves_through_the_vault_log.py")], 300,
+         needs_app=False,
+         why='REG-2877 a copy record carries its trade slot; a traded-out copy leaves through the removal journal with an undo, its record riding in the batch'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

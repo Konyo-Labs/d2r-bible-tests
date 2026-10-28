@@ -2783,6 +2783,22 @@ no known names kept every prose word, the opposite of its own rule; it now keeps
 journal: REC-03 still PASSES (newest long session, 51 worker reads, all warm). The eye's "older sessions' unanswered
 commitments are only reported" is the documented rule ("the newest decides; older ones are reported"), not a defect. Law:
 test_a_scenario_names_its_own_frames (3 cases, 5 red-proofs, 1 re-aimed).
+### REG-2877 - A COPY HAD NO PLACE TO SAY IT IS LISTED, AND ONE TRADED COPY COULD NOT LEAVE THE COUNT WITH AN UNDO (#83, his rulings)
+His rulings: "Design it now, wire it later", and a traded-out copy is proven gone, so it goes to the Vault log with an undo,
+never a question. Measured on the whole page in node: a copy record (d2r_vaultRecords) had no place to say it is listed or
+traded. Nothing could take ONE copy out of the count through the removal journal. The removal door takes a whole name, and
+the copy door (vaultCopyAdjust) drops the LAST copy's record and journals nothing. So trading copy 2 of 3 would have left
+copy 2's MOVE task standing and deleted copy 3's, with no undo. Now a record carries trade: null | {state: 'listed' |
+'traded-out', at, post?}. It is written only when set, and a records rebuild and a task commit both keep it.
+window._vaultTradeEvent takes four events. listed and unlisted set and clear the slot; a listed copy still counts. trade-out
+of one of several copies takes THAT copy's record out: its move and its slot ride in a removal-journal batch (lane
+trade-out, copyOut), the copies after it close up, and the count drops one, so no task is left asking where it is. The
+last copy leaves through vaultRemove on the trade-out lane, which leaves its record in the store (measured). vaultRestoreLast
+puts either one back with its own cell. trade-in is one more copy through the owned door, with its own MOVE task. No
+surface calls the door yet; the D2JSP tab wires it later. Law `tv/test_a_traded_copy_leaves_through_the_vault_log.py`
+(whole page in node, 7 red-proofs RED; an eighth, on carrying the last copy's row in its batch, could not go red because the
+store already keeps that row, so the code and the proof were dropped).
+
 ### REG-2876 - THE CARD GAVE COPY 1'S TASK CELL TO COPY 0 (v3830 second eye on REG-2782, reproduced first)
 The finding: _muleLoad numbered drawn copies by position in its filtered list and gave the k-th the k-th task cell
 _vaultPlanOn kept (this locker's non-throw tasks, sorted by copyIx). Reproduced on the whole page in node with Case A: two
