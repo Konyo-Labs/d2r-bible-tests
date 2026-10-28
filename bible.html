@@ -12323,6 +12323,9 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     #tab-d2jsp .d2jsp-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(8em,11em) auto;gap:8px;align-items:end}
     #tab-d2jsp .d2jsp-fields .vault-btn{margin-top:6px}
     #tab-d2jsp .d2jsp-log{margin-top:4px;font-size:var(--fs-micro);color:var(--text-muted)}   /* REG-2872 */
+    #tab-d2jsp .d2jsp-state{display:inline-block;margin:2px 0;padding:0 6px;border-radius:6px;font-size:var(--fs-micro);border:1px solid rgba(233,208,122,.4);color:#e9d07a}   /* REG-2873 */
+    #tab-d2jsp .d2jsp-state[data-d2jsp-state="listed"]{border-color:rgba(102,255,136,.55);color:var(--best,#66ff88)}
+    #tab-d2jsp .d2jsp-state[data-d2jsp-state="traded"]{border-color:rgba(160,160,160,.55);color:var(--text-muted)}
     #tab-d2jsp .d2jsp-log ol{margin:4px 0 0;padding-left:18px}
     #tab-d2jsp .d2jsp-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
     #tab-d2jsp .d2jsp-draft{white-space:pre-wrap;margin:8px 0;font-family:var(--mono);font-size:var(--fs-body);color:#f6e7c2;line-height:1.45}
@@ -13441,14 +13444,14 @@ function d2jspBatchHtml(view) {
     writeMap('d2r_d2jsp_log', m);
     paintLog(names);
   }
-  function logWord(kind){ return kind === 'confirmed' ? 'Confirmed' : (kind === 'missed' ? 'Not sent' : 'Maybe sent'); }
+  function logWord(kind){ return kind === 'confirmed' ? 'Confirmed' : (kind === 'missed' ? 'Not sent' : (kind === 'traded' ? 'Traded' : (kind === 'for-sale' ? 'For sale again' : 'Maybe sent'))); }
   function logLink(url){
     var u = String(url || '');
     return u.indexOf('https://forums.d2jsp.org/topic.php') === 0 ? ('<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(u) + '</a>') : '';
   }
   function logHtml(name){
     var rows = logOf(name);
-    if (!rows.length) return '<div class="d2jsp-say" data-d2jsp-posted="none">Not posted yet.</div>';
+    if (!rows.length) return tradeChip(name) + '<div class="d2jsp-say" data-d2jsp-posted="none">Not posted yet.</div>';
     var ok = null;
     for (var i = rows.length - 1; i >= 0; i--) if (rows[i].kind === 'confirmed' && logLink(rows[i].topic)) { ok = rows[i]; break; }
     var head = ok
@@ -13458,7 +13461,52 @@ function d2jspBatchHtml(view) {
       return '<li data-kind="' + esc(r.kind) + '">' + esc(r.at) + ' · board ' + esc(r.board) + (r.list ? ' · the list' : '') + ' · <b>' + esc(logWord(r.kind)) + '</b> · '
         + esc(r.text) + (r.why ? (' What the console saw: ' + esc(r.why)) : '') + (logLink(r.topic) ? (' · ' + logLink(r.topic)) : '') + '</li>';
     }).join('');
-    return head + '<details class="d2jsp-log"><summary>Attempts (' + rows.length + ')</summary><ol>' + items + '</ol></details>';
+    return tradeChip(name) + head + '<details class="d2jsp-log"><summary>Attempts (' + rows.length + ')</summary><ol>' + items + '</ol></details>';
+  }
+  /* REG-2873 (#83, his ask 4) - THE TRADE STATE: draft -> listed (live) -> traded, or not traded yet. Read off the post log
+     and the traded mark, never stored a second time: a confirmed post on any path is listed, an answer that may be up is a
+     maybe, and Mark traded is traded. The Vault reads it through window._d2jspTradeState for its small listed mark; a listed
+     copy still counts in its spot. -> {state: draft|maybe|listed|traded, board, topic} */
+  function tradeState(name){
+    var rows = logOf(name), conf = null, maybe = null;
+    for (var i = rows.length - 1; i >= 0; i--) {
+      if (!conf && rows[i].kind === 'confirmed') conf = rows[i];
+      if (!maybe && rows[i].kind === 'maybe') maybe = rows[i];
+    }
+    var on = conf || maybe;
+    var st = soldOf(name) ? 'traded' : (conf ? 'listed' : (maybe ? 'maybe' : 'draft'));
+    return { state: st, board: on ? on.board : d2jspBoard(), topic: (conf && logLink(conf.topic)) ? conf.topic : '' };
+  }
+  function tradeChip(name){
+    var t = tradeState(name);
+    var say = t.state === 'traded' ? 'Traded'
+      : t.state === 'listed' ? ('Listed on board ' + t.board + ' · not traded yet')
+      : t.state === 'maybe' ? ('Maybe listed · check board ' + t.board)
+      : 'Draft · not posted';
+    return '<div class="d2jsp-state" data-d2jsp-state="' + esc(t.state) + '">' + esc(say) + '</div>';
+  }
+  try { window._d2jspTradeState = function(n){ return tradeState(String(n || '')); }; } catch (eTs) {}
+  /* REG-2873 - Mark traded is one trade-out event: the copy leaves the vault count through the vault's own doors (one fewer
+     copy when he has several, else the removal door on its trade-out lane), with the toolbar Undo armed, so a traded item
+     never waits as a "where is it?" task. -> what happened, in words */
+  function tradeOut(n){
+    var snap = null, have = copiesOf(n), how = '';
+    try { snap = (typeof window._vaultUndoSnap === 'function') ? window._vaultUndoSnap() : null; } catch (eS) { snap = null; }
+    try {
+      if (have > 1 && typeof window.vaultCopyAdjust === 'function') {
+        window.vaultCopyAdjust(n, -1);
+        how = 'one of ' + have + ' copies left the vault count';
+      } else if (typeof window.vaultRemove === 'function') {
+        var r = window.vaultRemove([n], { lane: 'trade-out', quiet: true, exact: true, why: 'traded on d2jsp' });
+        how = (r && r.removed && r.removed.indexOf(n) >= 0) ? 'it left the vault count'
+          : ('the vault count is unchanged: ' + ((r && r.why) || (r && r.skipped && r.skipped.length ? 'it is not in the vault' : 'the removal door did not answer')));
+      } else {
+        how = 'the vault count is unchanged: the vault doors are not on this page';
+      }
+    } catch (eT) { how = 'the vault count is unchanged: ' + String((eT && eT.message) || eT).slice(0, 80); }
+    var undo = false;
+    try { undo = !!(snap && /left the vault/.test(how) && typeof window._vaultUndoTake === 'function' && window._vaultUndoTake('the trade-out of ' + n, '', snap)); } catch (eU) { undo = false; }
+    return how + (undo ? ' (Undo in the toolbar puts it back)' : '');
   }
   function paintLog(names){
     var cards = document.querySelectorAll('#d2jsp-list .d2jsp-card');
@@ -13572,6 +13620,7 @@ function d2jspBatchHtml(view) {
   function listedNames(){
     var trade = tradeNames();
     var extra = Object.keys(gearMap()).filter(function(n){ return n && !d2jspIsQuest(n); });
+    Object.keys(readMap('d2r_d2jsp_sold')).forEach(function(n){ if (n && soldOf(n) && extra.indexOf(n) < 0) extra.push(n); });   /* REG-2873 a traded item left the vault and keeps its card */
     if (trade == null && !extra.length) return null;
     var seen = {}, out = [];
     (trade || []).forEach(function(n){ if (!seen[n] && !hiddenOf(n)) { seen[n] = 1; out.push(n); } });
@@ -13635,7 +13684,7 @@ function d2jspBatchHtml(view) {
     var rng = (mods.trim() || (typeof window._typedModsOf === 'function' && window._typedModsOf(n))) ? [] : _d2jspRangeLines(n);
     var rngHtml = rng.length ? '<div class="d2jsp-ranges" data-d2jsp-ranges>' + rng.map(function(l){ return '<div class="att-aff att-range" data-mod-range="1">' + esc(l) + '</div>'; }).join('') + '</div>' : '';
     var hint = mods.trim() ? '' : '<div class="d2jsp-say">' + (recorded ? 'No mods yet. ' : 'This filing has no mods recorded. ') + 'Options opens the same mod list the character builder uses.</div>';
-    var mark = '<button type="button" class="vault-btn" data-d2jsp-sold="' + esc(n) + '">' + (sold ? 'For sale' : 'Mark sold') + '</button>';
+    var mark = '<button type="button" class="vault-btn" data-d2jsp-sold="' + esc(n) + '">' + (sold ? 'For sale' : 'Mark traded') + '</button>';   /* REG-2873 his word, traded */
     var tip = 'Opens a draft. Nothing is posted until Post this draft.';
     return '<div class="d2jsp-card" data-d2jsp-item="' + esc(n) + '"' + (sold ? ' data-sold="1"' : '') + '>'
       + '<div class="d2jsp-art">' + art + '</div>'
@@ -13697,7 +13746,7 @@ function d2jspBatchHtml(view) {
       var btn = card.querySelector('[data-d2jsp-post]');
       if (btn) btn.disabled = send == null || sold;
       var mark = card.querySelector('[data-d2jsp-sold]');
-      if (mark) mark.textContent = sold ? 'For sale' : 'Mark sold';
+      if (mark) mark.textContent = sold ? 'For sale' : 'Mark traded';
       if (sold) card.setAttribute('data-sold', '1');
       else card.removeAttribute('data-sold');
       var pre = card.querySelector('[data-d2jsp-draft]');
@@ -14002,9 +14051,13 @@ function d2jspBatchHtml(view) {
       if (sm[sn]) delete sm[sn];
       else sm[sn] = 1;
       writeMap('d2r_d2jsp_sold', sm);
+      /* REG-2873 - marking traded is the trade-out event; un-marking says the count was not put back (the toolbar Undo does) */
+      var how = sm[sn] ? tradeOut(sn) : 'the vault count is not changed back here - Undo in the toolbar puts a trade-out back';
+      logAdd([sn], { at: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC', board: d2jspBoard(),
+                     kind: sm[sn] ? 'traded' : 'for-sale', text: (sm[sn] ? 'Marked traded: ' : 'For sale again: ') + how });
       paintPrices(sn);
       say(sm[sn]
-        ? (sn + ' is marked sold. Post the list to publish that update.')
+        ? (sn + ' is marked traded; ' + how + '. Post the list to publish that update.')
         : (sn + ' is for sale again. Post the list to publish that update.'));
       return;
     }
@@ -14038,7 +14091,7 @@ function d2jspBatchHtml(view) {
     if (post) {
       ev.preventDefault();
       if (soldOf(post)) {
-        say(post + ' is marked sold. Post the list to publish that update.');
+        say(post + ' is marked traded. Post the list to publish that update.');
         return;
       }
       var fg = sendOf(post);

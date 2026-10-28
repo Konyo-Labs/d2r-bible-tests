@@ -2791,6 +2791,22 @@ wears "listed". FIND says "listed", or "N listed", beside the name. In the mule 
 names its copyIx, REG-2876) wears an "L" mark and its label says so. On the shelf card, the cell of that copy wears
 "listed". Only the listed copy is marked, and the copy still counts: the count and the card's cells are unchanged. The CSS
 uses tokens only. Law `tv/test_a_listed_copy_wears_its_mark_where_it_draws.py` (whole page in node, 6 red-proofs RED).
+### REG-2873 - A D2JSP ITEM HAD NO TRADE STATE, AND A TRADED COPY STAYED IN THE VAULT COUNT (#83, his ask 4, GrokBot 6476487696)
+GrokBot: "Monitoring and trade state: draft, then listed (live), then traded or not traded yet. This ties into the Vault: a
+listed item is still counted in its spot, and a traded one leaves the count without a 'where is it?' task." The lead:
+"Keep it light: the controls live in the D2JSP tab only." Measured in the room's own code in node: an item had no state.
+"Mark sold" only toggled the list's SOLD block, and nothing took a traded copy out of the vault count, so the vault would go
+on expecting it in its spot. Now the room reads a state off the post log (REG-2872) and the traded mark. A confirmed post is
+"Listed on board N · not traded yet". An answer that may be up is "Maybe listed". Anything else is "Draft · not posted", and
+Mark traded is "Traded". The card shows it as a chip. Mark traded (the button was Mark sold) is one trade-out event: with
+several copies, one leaves the count through the vault's own copy door (vaultCopyAdjust); a single copy leaves through the
+removal door on its trade-out lane. The toolbar Undo is armed, and a log row says what happened. A traded item keeps its
+card, so its SOLD block rides the list, after it has left the vault. Un-marking says the count is not put back there (the
+toolbar Undo does that). The Vault's FIND shows a small "listed" mark from window._d2jspTradeState, and the copy still
+counts in its spot. NOT DONE: the mark is in FIND only, not on the mule window's cells. Law
+`tv/test_a_d2jsp_item_moves_draft_listed_traded.py` (the room with stub vault doors and the whole page's FIND, in node; 8
+red-proofs RED).
+
 ### REG-2872 - A D2JSP CARD LOOKED THE SAME BEFORE AND AFTER A POST ATTEMPT (#83, his ask 3, GrokBot 6476487696)
 GrokBot: "Post log and history on the card: posted at, board, topic.php link, and each attempt with its result. Today the
 card looks exactly the same before and after the attempt." Measured in the room's own code in node: a send on either path
