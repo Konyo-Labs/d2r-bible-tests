@@ -234,6 +234,19 @@ class AllFourOrgansWatchIt(unittest.TestCase):
         self.assertIn("CHECKS", src,
                       "run() must enumerate CHECKS, or a registered organ never reaches the eagle")
 
+RED_PROOF = [
+    {"why": "v3171 - the sweep ranks reels in directory order again: the densest stash reel waits behind arbitrary footage",
+     "file": "tv/vault_retro.py",
+     "find": "    return sorted(out, key=lambda kv: -kv[1])\n",
+     "replace": "    return list(out)\n",
+     "matches": 1},
+    {"why": "v3171 - a reel whose gate raises is promoted over one that was measured",
+     "file": "tv/vault_retro.py",
+     "find": "            v = 0.0          # a gate that raises is not a reel that is empty\n",
+     "replace": "            v = 1.0          # a gate that raises is not a reel that is empty\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

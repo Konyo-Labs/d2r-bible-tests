@@ -315,6 +315,19 @@ class ARestoredItemIsFiledNotDumped(unittest.TestCase):
                       "the re-read no longer refuses an unreadable store — an unparseable "
                       "d2r_owned would blank the live Set, which is a wipe, not a refresh")
 
+RED_PROOF = [
+    {"why": "v3213 - a restore proposal is a dict keyed by name again: the board's forEach throws and writes nothing",
+     "file": "tv/ledger_restore.py",
+     "find": "            add[half].append({\"name\": name})\n",
+     "replace": "            add[half] = add[half] if isinstance(add[half], dict) else {}\n            add[half][name] = []\n",
+     "matches": 1},
+    {"why": "v3216 - a confirm reads bool() again: the string \"false\" says yes and a ledger write the body declined is performed",
+     "file": "tv/control_app.py",
+     "find": "    if v is True:\n        return True\n    if isinstance(v, str):\n        return v.strip().lower() in (\"true\", \"yes\", \"y\", \"1\", \"on\")\n",
+     "replace": "    if v is True:\n        return True\n    if isinstance(v, str):\n        return bool(v)\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

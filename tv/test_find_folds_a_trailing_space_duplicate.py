@@ -58,6 +58,14 @@ class FindFoldsATrailingSpaceDuplicate(unittest.TestCase):
     def test_a_different_name_still_has_its_row(self):
         self.assertEqual(sorted(_rows(self.out["all"])), ["GBL-TEST-Dup", "GBL-TEST-Other"])
 
+RED_PROOF = [
+    {"why": "ALT inject run (bug 6) - FIND keys the collapse on the bare canon again, so two names that differ only by a trailing space are two rows",
+     "file": "bible.html",
+     "find": "        var c = String(c0).replace(/\\s+/g, ' ').trim();   /* ALT inject run bug 6: 'X' and 'X ' are one row */\n",
+     "replace": "        var c = String(c0);   /* ALT inject run bug 6: 'X' and 'X ' are one row */\n",
+     "matches": 1, "needs": "node"},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

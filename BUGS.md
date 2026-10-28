@@ -1830,6 +1830,7 @@ test_vault_add_and_find_doors_work, test_vault_v3_layout_keeps_every_door, test_
 test_shadow_mode_draws_their_console.
 
 ### REG-2917 - LAWS WITH NO EXECUTABLE RED-PROOF GAIN ONE: 12 OF 54 (#128)
+### REG-2917 - TWELVE VAULT, INTAKE AND MOVE LAWS COULD NOT BE SEEN TO REFUSE: NO EXECUTABLE RED_PROOF (#128)
 heart2's own census (heart2.report) read 1,238 gates, 1,184 declaring a proof, 54 with none - UNKNOWN, not clean. The
 twelve guarding vault, intake and move code that run without a browser now each carry an executable RED_PROOF that breaks
 the PROPERTY the law names (anchor matched exactly once; each seen RED for that property, not for an import, a crash or an
@@ -1868,6 +1869,9 @@ test_shadow_mode_draws_their_console.
 Browser: test_intake_a_move_needs_a_look_and_owned_has_a_record, test_v3767_copy_witness_visual,
 test_vault_add_and_find_doors_work, test_vault_v3_layout_keeps_every_door, test_v3771_vault_console_face_visual,
 test_shadow_mode_draws_their_console.
+now reads both of the decider's lock refusals ("lock was touched"), where it saw only the in-process lane's. After: 42
+unproven, named in the report; the browser laws among them (intake move, copy witness, add/find doors, v3 layout, v3771
+face, shadow draw) need CI to be seen red.
 
 ### REG-2916 - THREE LANES PROMISED NEVER TO DELETE AND THEIR REACH DELETES, WITH NOTHING DECLARING IT (#128)
 auto_scope.undeclared_reach_abilities reported tvd-shadow-watch (reach 74), tvd-stash-watch (40) and tvd-version-drift (124)

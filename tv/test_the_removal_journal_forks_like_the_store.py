@@ -150,6 +150,19 @@ class TheRemovalJournalForksLikeTheStore(unittest.TestCase):
                       "vaultRestoreLast does not consult the ledger a batch was cut on, so a "
                       "batch could be restored into a world that never held those names")
 
+RED_PROOF = [
+    {"why": "the removal journal stops forking with d2r_owned: on ladder a restore would offer names only main ever held",
+     "file": "bible.html",
+     "find": "  'd2r_vaultRemoved',\n  /* round-5 review (MED)",
+     "replace": "  /* round-5 review (MED)",
+     "matches": 1},
+    {"why": "the removal door writes its journal under another key, so the fork law guards a key nobody writes",
+     "file": "bible.html",
+     "find": "  var _VR_LOG = 'd2r_vaultRemoved', _VR_RING = 20;",
+     "replace": "  var _VR_LOG = 'd2r_vaultRemovedX', _VR_RING = 20;",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

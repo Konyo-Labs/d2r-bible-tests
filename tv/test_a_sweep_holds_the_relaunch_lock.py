@@ -100,6 +100,11 @@ class ASweepHoldsTheRelaunchLock(unittest.TestCase):
         _bid = ca.board_identity_drift
         ca.board_identity_drift = lambda *a, **k: None
         self.addCleanup(setattr, ca, "board_identity_drift", _bid)
+        # #128 - and the tree's own state: a red-proof that edits control_app.py makes the tree "mid-edit", and that
+        # refusal (checked after the lock) would answer for the lock it removed. The lock is the subject here.
+        _mid = ca._tree_is_mid_edit
+        ca._tree_is_mid_edit = lambda *a, **k: (False, "")
+        self.addCleanup(setattr, ca, "_tree_is_mid_edit", _mid)
         lk = ca._sweep_lock_path()
         had = os.path.exists(lk)
         saved = None
@@ -116,7 +121,9 @@ class ASweepHoldsTheRelaunchLock(unittest.TestCase):
             old = time.time() - 4000                            # far past the 900s window
             os.utime(lk, (old, old))
             ok2, why2 = ca.drift_may_relaunch()
-            self.assertNotIn("the lock was touched", why2 or "",
+            # #128 - "lock was touched" covers both of the decider's lock refusals: the in-process lane's ("the lock was
+            # touched Ns ago") and the no-lane one ("the sweep lock was touched Ns ago"), which this case could not see
+            self.assertNotIn("lock was touched", why2 or "",
                              "a COLD lock still blocks — a crashed sweep would forbid relaunching "
                              "forever, which is a deadlock, not a guard")
         finally:
@@ -127,6 +134,19 @@ class ASweepHoldsTheRelaunchLock(unittest.TestCase):
                     os.unlink(lk)
             except OSError:
                 pass
+
+RED_PROOF = [
+    {"why": "v3180 - a fresh sweep lock no longer stops a relaunch, so a relaunch can kill a paid sweep mid-read",
+     "file": "tv/control_app.py",
+     "find": "        _lk = _sweep_lock_path()\n        _age = time.time() - os.path.getmtime(_lk)\n        if _age < 900:\n",
+     "replace": "        _lk = _sweep_lock_path()\n        _age = time.time() - os.path.getmtime(_lk)\n        if False:\n",
+     "matches": 1},
+    {"why": "v3180 - a cold lock still blocks: a crashed sweep would forbid relaunching forever",
+     "file": "tv/control_app.py",
+     "find": "        _lk = _sweep_lock_path()\n        _age = time.time() - os.path.getmtime(_lk)\n        if _age < 900:\n",
+     "replace": "        _lk = _sweep_lock_path()\n        _age = time.time() - os.path.getmtime(_lk)\n        if _age < 9000:\n",
+     "matches": 1},
+]
 
 
 if __name__ == "__main__":

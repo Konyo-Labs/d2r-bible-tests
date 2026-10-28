@@ -72,6 +72,19 @@ class TheVaultFindRanksMatches(unittest.TestCase):
     def test_a_blank_query_returns_nothing(self):
         self.assertEqual(_run(POOL, "   "), [])
 
+RED_PROOF = [
+    {"why": "REG-2194 - FIND ranks alphabetically again: Doombringer beside Doom, Metalgrid before Tal Rasha",
+     "file": "bible.html",
+     "find": "               .sort(function(a,b){ var sa=score(a), sb=score(b); return sa!==sb ? sa-sb : a.localeCompare(b); });\n",
+     "replace": "               .sort(function(a,b){ return a.localeCompare(b); });\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-2194 - a community abbreviation is no longer expanded, so soj finds nothing",
+     "file": "bible.html",
+     "find": "    var qa = _vfKey(_VF_ALIAS[qn] || qn);\n",
+     "replace": "    var qa = _vfKey(qn);\n",
+     "matches": 1, "needs": "node"},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

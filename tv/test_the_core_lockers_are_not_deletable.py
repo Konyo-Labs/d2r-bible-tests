@@ -66,6 +66,19 @@ class TheCoreLockersAreNotDeletable(unittest.TestCase):
         self.assertIn("if (!_vmAddedMule(m)) return;", s,
                       "vaultDeleteMule must refuse a core locker outright (REG-2195)")
 
+RED_PROOF = [
+    {"why": "REG-2195 - the delete door stops refusing a core locker",
+     "file": "bible.html",
+     "find": "    if (!_vmAddedMule(m)) return;   // REG-2195 - a core locker is never deletable\n",
+     "replace": "    if (false) return;   // REG-2195 - a core locker is never deletable\n",
+     "matches": 1},
+    {"why": "REG-2195 - every locker draws a delete button again, core lockers included",
+     "file": "bible.html",
+     "find": "(_vmAddedMule(m) ? '<button class=\"vm-tool\" onclick=\"event.stopPropagation();window.vaultDeleteMule(",
+     "replace": "(true ? '<button class=\"vm-tool\" onclick=\"event.stopPropagation();window.vaultDeleteMule(",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

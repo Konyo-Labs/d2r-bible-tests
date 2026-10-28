@@ -104,6 +104,14 @@ class AReloadReconcilesTheVaultRecords(unittest.TestCase):
         self.assertIsNone(two["dirty"], "an UNKNOWN mule map marked the records dirty")
         self.assertEqual(two["bytes"], raw.get("d2r_vaultRecords"), "an UNKNOWN mule map rewrote the records")
 
+RED_PROOF = [
+    {"why": "ALT inject run (bugs 1 + 5) - the page-load seam stops reconciling the records on `already`: a removed name keeps its row and a newly filed extra reads not filed",
+     "file": "bible.html",
+     "find": "      } else if (r.already && typeof _vaultRecordsRefresh === 'function') {\n",
+     "replace": "      } else if (false && r.already && typeof _vaultRecordsRefresh === 'function') {\n",
+     "matches": 1, "needs": "node"},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

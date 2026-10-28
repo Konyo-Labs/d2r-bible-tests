@@ -95,6 +95,19 @@ class TheVaultRecordsHistoryClears(unittest.TestCase):
             o = run(ans)
             self.assertIn("GBL-TEST-Ghost", o["after"], "%s still cleared the records: %r" % (ans, o))
 
+RED_PROOF = [
+    {"why": "ALT inject run (bug 1) - the clear-records door stops asking a second time, so one yes clears the history",
+     "file": "bible.html",
+     "find": "    if (!(await uiConfirm('Are you sure? This is the second confirmation - the vault records history is cleared now.', {cancelFirst:true}))) return;\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "ALT inject run (bug 1) - the clear-records door widens past the records: it clears the owned names too, and a held item is lost",
+     "file": "bible.html",
+     "find": "      vaultClearRecords: Object.freeze(['records'])",
+     "replace": "      vaultClearRecords: Object.freeze(['records', 'owned'])",
+     "matches": 1, "needs": "node"},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

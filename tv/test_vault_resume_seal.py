@@ -247,6 +247,19 @@ class VaultResumeSeal(unittest.TestCase):
         self.assertEqual(len(reader.calls), N_FRAMES // GROUP)
         self.assertEqual(sorted(r["name"] for r in prop.get("unsure") or []), item_names())
 
+RED_PROOF = [
+    {"why": "#130 - a resumed sweep re-pays every frame an earlier stopped pass banked (the skip is gone)",
+     "file": "tv/vault_retro.py",
+     "find": "                if name in _resume_frames:\n",
+     "replace": "                if False:\n",
+     "matches": 1},
+    {"why": "#130 - a resumed sweep drops the sightings the stopped pass banked (the seed is gone), so its proposal differs",
+     "file": "tv/vault_retro.py",
+     "find": "                evidence = _seed[\"evidence\"]\n",
+     "replace": "                pass\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

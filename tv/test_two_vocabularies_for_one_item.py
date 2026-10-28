@@ -187,6 +187,19 @@ class TwoVocabulariesForOneItem(unittest.TestCase):
                            "the roster did not load, so every fold above was refused for the "
                            "wrong reason and these tests proved nothing")
 
+RED_PROOF = [
+    {"why": "his ruling 2026-09-15 - the vault drops the qualifier: footage of a Latent charm witnesses a renewed one he may not own",
+     "file": "tv/item_identity.py",
+     "find": "    return (\"%s %s\" % (qual, core)).strip() if qual else core\n",
+     "replace": "    return core\n",
+     "matches": 1},
+    {"why": "the apostrophe byte splits one item: Atma's Scarab and Atma’s Scarab are two vault entities again",
+     "file": "tv/item_identity.py",
+     "find": "    s = s.replace(u\"’\", \"'\").replace(u\"ʼ\", \"'\").replace(u\"´\", \"'\")\n",
+     "replace": "    s = s.replace(u\"ʼ\", \"'\").replace(u\"´\", \"'\")\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

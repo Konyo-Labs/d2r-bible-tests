@@ -117,6 +117,19 @@ class ABankedProposalSaysItIsBanked(unittest.TestCase):
                              "second definition of his ownership bar" % banned)
         print("   no witness constants re-derived in the panel")
 
+RED_PROOF = [
+    {"why": "#226 1a - a proposal restored from an earlier session counts as fresh again: only the clock decides",
+     "file": "tv/control_ui.html",
+     "find": "      var _pStale = !!(st && st.resultFromDisk) || (_pAge !== null && _pAge > 30 * 60000);\n",
+     "replace": "      var _pStale = (_pAge !== null && _pAge > 30 * 60000);\n",
+     "matches": 1},
+    {"why": "#226 1a - the register button goes back to the bare count, so a banked proposal is offered like a fresh one",
+     "file": "tv/control_ui.html",
+     "find": "      ap.textContent = 'register ' + owned.length + ' ✓' + _pWhen;\n",
+     "replace": "      ap.textContent = 'register ' + owned.length + ' ✓';\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
