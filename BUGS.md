@@ -1763,6 +1763,16 @@ test_the_task_force_repaints_only_when_it_changed.py ran `subprocess.run([NODE, 
 refuses everywhere because Linux caps one argv string at 128 KB and the failure reads as an OS error with no word about the
 law. Its program is small today; the rule is about the shape. It now feeds node on stdin (`[NODE, "-"], input=js`), and
 both laws pass (3/3 and 2/2).
+### REG-2889 - A WAR1 RENAMED TO A CHARACTER AND DELETED CAME BACK AS A NEW WAR1: THE TAKE-BACK WAS KEYED BY NAME (the full-diff Grok second eye on the shipped v3834)
+Measured on the whole page in node, executing the real doors. The board made WAR1 for Shako x3, he renamed it BARBIE
+(vaultRenameMule) and deleted it (vaultDeleteMule, confirm yes). The shared stash then held warDeclined ['BARBIE']. The
+board decides the next mule by number (_vaultWarAutoMule mints 'WAR' + n and skips a declined 'WAR' + n), so n was 1
+again and the next paint minted a new WAR1. The role and the number ride the mule's id (REG-2804), and the take-back now
+rides them too: _vaultWarDecline keeps 'WAR' + warN, so the stored decline reads ['WAR1'], no WAR1 is made, and a reload
+makes none. A take-back he already made under a character's name on v3834 cannot be mapped to a number and stays as it is.
+Law: tv/test_a_war_mule_he_took_back_stays_back_by_its_number.py. It runs the async door to completion: it holds the
+harness's one OUT line and writes it when the door settles. 2 red-proofs.
+
 ### REG-2888 - REG-2803'S LAW WENT RED ON INT-7: IT COUNTED EVERY MAKE ROW AND THE SHELF'S EVERY BADGE, AND REG-2895'S CHARMS MULE ADDED ONE OF EACH (the v3834 second-eye follow-up, measured on claude/int-7)
 The full-diff Grok second eye on v3834 claimed that deleting a WAR mule records the take-back "in memory" and never writes
 it. MEASURED on the whole page in node, executing the real doors (vaultDeleteMule, his confirm answered yes): the claim

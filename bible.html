@@ -56701,14 +56701,19 @@ window.vaultAutoAssign = function(){
     try { renderVault(); } catch (eR) {}
     return { ok: true };
   };
-  /* his delete of a WAR mule: its name is kept on the shared stash's entry (saved with the roster the delete writes), so the
-     board does not make it again. Only a WAR mule; any other mule he deletes changes nothing here. -> bool (recorded) */
+  /* his delete of a WAR mule: its war number is kept on the shared stash's entry (saved with the roster the delete writes), so
+     the board does not make it again. Only a WAR mule; any other mule he deletes changes nothing here. -> bool (recorded)
+     REG-2889 (the full-diff second eye on v3834, reproduced in node) - KEYED BY THE WAR NUMBER, NEVER THE NAME. The board
+     decides the next mule by number (_vaultWarAutoMule mints 'WAR' + n and skips a declined 'WAR' + n); this kept m.name.
+     A WAR1 he renamed to a character (BARBIE) and then deleted left warDeclined ['BARBIE'], n was 1 again, and the board
+     minted a new WAR1 on the next paint. The role and the number ride the id (REG-2804); so does the take-back. */
   function _vaultWarDecline(m){
-    if (!m || !_vaultWarRole(m)) return false;
+    var wn = _vaultWarRole(m);
+    if (!m || !wn) return false;
     var sh = (typeof muleById === 'function') ? muleById('shared') : null;
     if (!sh) return false;
-    var dl = (sh.warDeclined || []).slice();
-    if (dl.indexOf(m.name) < 0) dl.push(m.name);
+    var dl = (sh.warDeclined || []).slice(), key = 'WAR' + wn;
+    if (dl.indexOf(key) < 0) dl.push(key);
     sh.warDeclined = dl;
     return true;
   }
