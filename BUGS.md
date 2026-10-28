@@ -2783,6 +2783,15 @@ no known names kept every prose word, the opposite of its own rule; it now keeps
 journal: REC-03 still PASSES (newest long session, 51 worker reads, all warm). The eye's "older sessions' unanswered
 commitments are only reported" is the documented rule ("the newest decides; older ones are reported"), not a defect. Law:
 test_a_scenario_names_its_own_frames (3 cases, 5 red-proofs, 1 re-aimed).
+### REG-2878 - NOTHING WHERE A COPY DRAWS COULD SAY IT IS LISTED ON D2JSP (#83, his design: "a listed copy still counts in its spot")
+Measured on the whole page in node: the card, the window, FIND and the MOVE row had no way to say a copy is listed. The
+listing lived only in the D2JSP tab's own stores, and no copy carried it. Now each of those surfaces reads the copy record's
+trade slot (REG-2877) through one reader, window._vaultTradeOf, which reads once per store text. The MOVE row of that copy
+wears "listed". FIND says "listed", or "N listed", beside the name. In the mule window, the tile of that copy (its key
+names its copyIx, REG-2876) wears an "L" mark and its label says so. On the shelf card, the cell of that copy wears
+"listed". Only the listed copy is marked, and the copy still counts: the count and the card's cells are unchanged. The CSS
+uses tokens only. Law `tv/test_a_listed_copy_wears_its_mark_where_it_draws.py` (whole page in node, 6 red-proofs RED).
+
 ### REG-2877 - A COPY HAD NO PLACE TO SAY IT IS LISTED, AND ONE TRADED COPY COULD NOT LEAVE THE COUNT WITH AN UNDO (#83, his rulings)
 His rulings: "Design it now, wire it later", and a traded-out copy is proven gone, so it goes to the Vault log with an undo,
 never a question. Measured on the whole page in node: a copy record (d2r_vaultRecords) had no place to say it is listed or

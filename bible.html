@@ -42980,6 +42980,11 @@ body{
 .vfr-row:hover{background:linear-gradient(90deg,rgba(240,192,96,.1),transparent 75%)}
 .vfr-name{font-weight:var(--fw-medium);font-size:14px;color:var(--gold-bright,#f0c060);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vfr-row:hover .vfr-name{text-shadow:0 0 9px rgba(240,192,96,.35)}
+/* REG-2878 - the small listed mark, wherever a copy draws */
+.vfr-listed,.vm-cell-listed{flex:0 0 auto;margin-left:6px;padding:0 5px;border-radius:5px;font-size:var(--fs-micro);border:1px solid rgba(102,255,136,.5);color:var(--best,#66ff88)}
+.vm-cell-listed{position:absolute;left:2px;bottom:2px;margin:0;line-height:1.3;background:rgba(0,0,0,.6)}
+.vd-item .vd-listed-mark{position:absolute;left:1px;bottom:1px;padding:0 3px;border-radius:4px;font-size:var(--fs-micro);line-height:1.2;color:var(--best,#66ff88);background:rgba(0,0,0,.65);border:1px solid rgba(102,255,136,.5);pointer-events:none}
+.vault-tasks-panel .vtk-line .vmv-listed{color:var(--best,#66ff88)}
 .vfr-loc{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--text);white-space:nowrap}
 .vfr-loc .vfr-mule{color:var(--best,#66ff88);font-weight:var(--fw-semibold)}
 /* #264 — the finder names the cell, or where an item would go, or why it stays; the long ones wrap rather than push the row past a phone's edge */
@@ -46081,6 +46086,15 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       var iso = new Date(ls.ms).toISOString();
       return '<span class="vfr-seen" data-seen="' + esc(iso) + '" title="last captured ' + esc(iso) + '">last seen ' + esc(iso.slice(0, 10)) + '</span>';
     }
+    /* REG-2878 - FIND says how many copies of a name are listed on d2jsp (from the copy records' trade slot); they still count.
+       Declared inside the finder, so a law that cuts the finder out carries it. */
+    function _vfrTrade(n){
+      var l = [];
+      try { l = (typeof window._vaultTradeOf === 'function') ? window._vaultTradeOf(n).filter(function(x){ return x.state === 'listed'; }) : []; } catch (eT) { l = []; }
+      if (!l.length) return '';
+      return '<span class="vfr-listed" data-trade="listed" title="' + esc(l.map(function(x){ return 'copy ' + (x.ci + 1) + ' ' + window._vaultListedSay(x); }).join('; ')) + '">'
+        + (l.length > 1 ? l.length + ' listed' : 'listed') + '</span>';
+    }
     var res = document.getElementById('vault-find-results');
     if (!res) return;
     q = String(q||'').trim().toLowerCase();
@@ -46154,7 +46168,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
         ? '<span class="vd-mule-nav"><button type="button" class="vd-mule-arrow" onclick="event.stopPropagation();window._muleOpenAt(\''+jsArg(mid)+'\','+_fnav.index+')">'+esc(_fnav.label)+'</button></span>'
         : '';
       return '<div class="vfr-row" title="'+esc(n)+'">'
-        + art(n) + '<span class="vfr-name"'+(typeof _qStyle==='function'?_qStyle(n,'unique'):'')+'>'+esc(n)+'</span><span class="vfr-loc">'+loc+'</span>'+_navHtml+_vaultSeenSpan(n)+'</div>';
+        + art(n) + '<span class="vfr-name"'+(typeof _qStyle==='function'?_qStyle(n,'unique'):'')+'>'+esc(n)+'</span>'+_vfrTrade(n)+'<span class="vfr-loc">'+loc+'</span>'+_navHtml+_vaultSeenSpan(n)+'</div>';
     }).join('');
     /* #79 — the row opens nothing now: it names where each item sits and floats the item card on hover */
     res.innerHTML = '<div class="vfr-head">'+matches.length+' match'+(matches.length===1?'':'es')+(matches.length>30?' · showing 30':'')+' — each row names where it sits · hover an item for its card</div>' + rows;
@@ -47824,6 +47838,10 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
            this cell fell back to where artOr has none was a guess on this one surface beside the mark on every other (REG-2904:
            "Raven Whorl", a ring or a jewel, drew a ring here). Where artOr has no picture, the card shows the mark too. */
         var _cellArt = art(n, '◆', 'lg');
+        /* REG-2878 - this drawn copy (its place in the run is its copyIx) is listed on d2jsp: the small mark, and it still counts */
+        var _lsc = null;
+        try { _lsc = (typeof window._vaultTradeOf === 'function') ? (window._vaultTradeOf(n).filter(function(x){ return x.ci === _ix && x.state === 'listed'; })[0] || null) : null; } catch (eLc) { _lsc = null; }
+        if (_lsc) _lockCls += ' vmc-listed';
         var _lockTag = !_hlk ? '' : '<span class="vm-cell-lock" role="img" aria-label="' + (_hlk.unknown ? 'lock unknown' : 'locked') + '" title="'
           + esc(_hlk.unknown ? _hlk.why : gridActSay('🔒 ' + _hlk.tier + ((_hlk.successes != null && _hlk.trials != null) ? ' ' + _hlk.successes + '/' + _hlk.trials : '')
               + ' — the evidence locked it in this locker', '. Hold Shift while you drop it on another locker, or Shift+click ✕, to release it.'))   /* REG-3117 */
@@ -47840,6 +47858,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
           + '<span class="vm-item-name vm-cell-name"' + (typeof _qStyle === 'function' ? _qStyle(n, 'unique') : '') + '>' + esc(n) + '</span>'
           + (typeof window._vaultEvidenceChip === 'function' ? window._vaultEvidenceChip(n, 'vm-cell-ev') : '')
           + _lockTag
+          + (_lsc ? '<span class="vm-cell-listed" data-trade="listed" title="' + esc(window._vaultListedSay(_lsc)) + '">listed</span>' : '')   /* REG-2878 */
           + '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultUnassign(\'' + jsArg(n) + '\', { unlock: !!event.shiftKey })" title="' + esc(_xTitle) + '">✕</button></div>';
       });
       // v342.5 — append the Magic & Rare keepers as their own coloured cells. The picture is art(),
@@ -54518,16 +54537,21 @@ window.vaultAutoAssign = function(){
       }
       var _mv = !!(opt && p.key != null);
       var _prov = ''; try { _prov = window._vaultProvSay ? window._vaultProvSay(p.n) : ''; } catch (e) { _prov = ''; }
+      /* REG-2878 - a listed copy wears the small mark: the copy its key names (REG-2876 keys each copy by its copyIx) */
+      var _lst = null;
+      try { if (p.key != null && typeof window._vaultTradeOf === 'function') { var _kci = (String(p.key) === String(p.n)) ? 0 : ((+(String(p.key).match(/ #(\d+)$/) || [0, 1])[1]) - 1);
+        _lst = window._vaultTradeOf(p.n).filter(function(x){ return x.ci === _kci && x.state === 'listed'; })[0] || null; } } catch (eLs) { _lst = null; }
       var _say = esc(p.n) + ' (' + p.w + '×' + p.h + ')'
         + (_mv ? (p.manual ? gridActSay(' — placed by hand at ' + esc(_spot(p)), '. Drag to move it; right-click (or the lock) returns it to auto-pack')
                  : p.bad ? gridActSay(' — ⚠ ' + esc(p.bad) + '. Packed automatically', ' until you place it again or unlock it')
                  : gridActSay(' — packed automatically at ' + esc(_spot(p)), '. Drag it to any cell where it fits and it locks there')) : '')   /* REG-3117 */
-        + (_prov ? ' · ' + esc(_prov) : '');
-      return '<div class="vd-item'+(_vr?' vd-r-'+_vr:'')+(_mv && p.manual ? ' vd-held' : '')+(_mv && p.bad ? ' vd-bad' : '')+'" style="left:'+(3+p.x*(cell+2))+'px;top:'+(3+p.y*(cell+2))+'px;width:'+(p.w*cell+(p.w-1)*2)+'px;height:'+(p.h*cell+(p.h-1)*2)+'px" title="'+_say+'"'
+        + (_prov ? ' · ' + esc(_prov) : '') + (_lst ? ' · ' + esc(window._vaultListedSay(_lst)) : '');
+      return '<div class="vd-item'+(_vr?' vd-r-'+_vr:'')+(_mv && p.manual ? ' vd-held' : '')+(_mv && p.bad ? ' vd-bad' : '')+(_lst ? ' vd-listed' : '')+'" style="left:'+(3+p.x*(cell+2))+'px;top:'+(3+p.y*(cell+2))+'px;width:'+(p.w*cell+(p.w-1)*2)+'px;height:'+(p.h*cell+(p.h-1)*2)+'px" title="'+_say+'"'
         + (_mv ? ' data-key="' + esc(p.key) + '" data-x="' + p.x + '" data-y="' + p.y + '" data-w="' + p.w + '" data-h="' + p.h + '" data-fk="it-' + opt.area + '-' + p.x + '-' + p.y + '"'
                + ' tabindex="0" role="button" aria-roledescription="' + (gridShadowRo() ? 'item' : 'movable item') + '" aria-label="' + _say
                + (gridShadowRo() ? '' : ('. Enter picks it up, arrow keys move it, Enter drops, Escape cancels' + (p.manual || p.bad ? ', U unlocks' : ''))) + '"' : '')   /* REG-3117 */
         + '>'+art(p.n,'◆', p.w>1&&p.h>1?'':'sm')
+        + (_lst ? '<span class="vd-listed-mark" data-trade="listed" aria-hidden="true">L</span>' : '')   /* REG-2878 */
         + (typeof window._vaultEvidenceBtn === 'function' ? window._vaultEvidenceBtn(p.n) : '')
         + (typeof window._vaultItemBadges === 'function' ? window._vaultItemBadges(p.n) : '')   /* v3855 - the locker's own badge pair */
         + (_mv && (p.manual || p.bad) ? '<button type="button" class="vd-unlock" tabindex="-1" data-unlock="' + esc(p.key) + '" title="' + gridActSay('', 'unlock — back to auto-pack (right-click the item does the same)') + '" aria-label="' + gridActSay('', 'unlock ' + esc(p.n) + ' — back to auto-pack') + '">' + (p.bad ? '⚠' : '🔒') + '</button>' : '')
@@ -55032,6 +55056,23 @@ window.vaultAutoAssign = function(){
     return { loc: m[1], page: Math.floor(y / rows), x: +m[2], y: y % rows };
   }
   try { window._vaultCellAt = _vaultCellAt; } catch (eCa) {}
+  /* REG-2878 - A COPY'S TRADE SLOT, READ ONCE PER STORE TEXT for every surface that draws a copy (the card, the window, FIND,
+     the MOVE row): -> [{ci, state, at, post}] of this name's copies that carry a slot */
+  var _vaultTradeMemo = null;
+  function _vaultTradeOf(name){
+    var raw = null;
+    try { raw = window.LSR.getItem(_VR_STORE_KEY); } catch (eT) { return []; }
+    if (!_vaultTradeMemo || _vaultTradeMemo.raw !== raw) {
+      var by = {};
+      try { (JSON.parse(raw || '{}').records || []).forEach(function(r){
+        if (r && r.name != null && r.trade && r.trade.state) (by[r.name] = by[r.name] || []).push({ ci: r.copyIx || 0, state: r.trade.state, at: r.trade.at || null, post: r.trade.post || null }); }); }
+      catch (eP) { by = {}; }
+      _vaultTradeMemo = { raw: raw, by: by };
+    }
+    return _vaultTradeMemo.by[String(name)] || [];
+  }
+  function _vaultListedSay(t){ return 'listed on d2jsp' + (t && t.at ? ' since ' + String(t.at).slice(0, 10) : '') + ' - it still counts here'; }
+  try { window._vaultTradeOf = _vaultTradeOf; window._vaultListedSay = _vaultListedSay; } catch (eTo) {}
   var _vaultPlanMemo = null;
   function _vaultPlanOn(muleId){
     if (muleId == null || typeof _vaultMoveBag !== 'function') return null;
@@ -57048,6 +57089,8 @@ window.vaultAutoAssign = function(){
         + (gs ? '<b class="vmv-gone">' + esc(gs) + '</b>' : '')
         + (hw ? '<b class="vmv-half" title="' + esc(hw) + ' - one more session there closes it">' + esc(hw) + '</b>' : '')   /* REG-2843 half-way */
         + (l1 ? '<b class="vmv-l1" title="' + esc(l1) + '">war stash first</b>' : '')   /* #148.1 REG-2761 - why his WAR-mule filing waits */
+        + ((typeof window._vaultTradeOf === 'function') ? window._vaultTradeOf(row.name).filter(function(x){ return x.ci === ci && x.state === 'listed'; }).map(function(x){
+            return '<b class="vmv-l1 vmv-listed" data-trade="listed" title="' + esc(window._vaultListedSay(x)) + '">listed</b>'; }).join('') : '')   /* REG-2878 this copy is listed */
         + ((!thr && t.retarget) ? '<b class="vmv-l1 vmv-retarget" data-retarget="1" title="' + esc(t.retarget.why) + '">new target: ' + esc(t.retarget.why) + '</b>' : '')   /* REG-2787 why the target changed */
         + (thr ? '' : '<button type="button" class="vault-btn vmv-wit" title="' + esc(wSay) + ' · the pictures it was read on" onclick="event.stopPropagation();window._vaultEvidenceOpen(\'' + nm + '\')">' + (row.witnesses == null ? '👁 0' : '👁 ' + row.witnesses) + '</button>')
         + ((thr && !fin && !t.junk) ? '<button type="button" class="vault-btn vmv-keep" title="keep it instead" onclick="event.stopPropagation();window._vaultThrowKeep(\'' + nm + '\',' + ci + ')">Keep</button>' : '')
