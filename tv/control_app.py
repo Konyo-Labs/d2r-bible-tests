@@ -23697,6 +23697,27 @@ def _theatre_row_fingerprint(sess, hist_dir):
 
 
 
+def _session_ended(sess, n, hist_dir):
+    """REG-2868 (GrokBot #230 6477559571) - HAS THIS RUN ENDED? -> (True | False | None, why)
+
+    The home's LAST SESSION named a run still being recorded: the page skipped session 1 only while its body was ON AIR, and
+    a shadow-reader recording keeps the body off on purpose (it is not a session he started). The rows carried no "ended",
+    and the server knows it: a run is over when it wrote its session end, or its reel was sealed (the agent folds the run's
+    stills into reel_<sid> at its seal), or a newer run began after it. Session 1 with an id and none of those is still
+    being recorded - the same test the live card's branch below makes. Session 1 with no id cannot be told: None, never
+    a guess either way."""
+    if any(r.get("sessionEnd") for r in sess):
+        return True, "it wrote its session end"
+    sid = next((r.get("sessionId") for r in sess if r.get("sessionId")), "")
+    if sid and os.path.isdir(os.path.join(hist_dir, "reel_" + str(sid))):
+        return True, "its reel is sealed"
+    if n > 1:
+        return True, "a newer run began after it"
+    if not sid:
+        return None, "it carries no session id, so whether it is still being recorded cannot be told"
+    return False, "no session end and no sealed reel yet - it is still being recorded"
+
+
 #: ⚠ v2723 — the size below which a served bible.html is not a board, it is a torn read.
 #: MEASURED on this tree: bible.html is ~6,300,000 bytes. 600,000 is ~10x below a healthy read, so
 #: it cannot fire on a good one; and it is far above any plausible partial that would still parse.
@@ -48084,6 +48105,7 @@ class Handler(BaseHTTPRequestHandler):
                     # row it was given.
                     _hit = dict(_cached)
                     _hit["n"] = i
+                    _hit["ended"], _hit["endedWhy"] = _session_ended(sess, i, HIST_DIR)   # REG-2868 - n moved, so ask again
                     out.append(_hit)
                     continue
                 frames = [r for r in sess if r.get("frameId")
@@ -48450,6 +48472,8 @@ class Handler(BaseHTTPRequestHandler):
                             # v840 — SIM honesty: how much of the night is still replayable
                             "frameWant": want, "frameMissing": miss,
                             "archiveOk": miss == 0 and len(frames) > 0}
+                # REG-2868 - whether this run is over, from the server that knows (a session end, a sealed reel, a newer run)
+                _row["ended"], _row["endedWhy"] = _session_ended(sess, i, HIST_DIR)
                 out.append(_theatre_row_cache_put(_ck, _row))
             # ⚠⚠ v3083 — THE BACKEND'S OWN FIXTURES ARE NOT HIS REELS. Konyo, 2026-09-13:
             # "9 test fixtured hid compeltely its only for backend and for the ai to use not for

@@ -25394,6 +25394,13 @@ window._lockMark = function(isOpen, px, label){
      The last session is the newest run that is over: not a stub (v885: under 3 rows and no film), not one of the suite's
      fixtures (v3083: never his reels), and ON AIR not the run being recorded (n 1: the theatre is PAST only, v1380.5).
      Sealed or not - the digest's badge says which (REG-2102). The digest and the Shelf's ▶ Last session both ask this.
+     REG-2868 (GrokBot #230 6477559571: "session 1 · 19m00s → 22m57s · ◌ OPEN" across two loads while the console was live) -
+     "the run being recorded" was read off the body alone, and a shadow-reader recording keeps the body off on purpose (it is
+     not a session he started). The server now says it on every row (ended: a session end, a sealed reel or a newer run =
+     true; session 1 with an id and none of those = false, still being recorded; no id = null): a row whose ended is false is
+     skipped, whatever the body says. A null is NOT skipped - skipping it would name an older run "last" for a reason nobody
+     could see - and the digest says "ended UNKNOWN" beside it. The body's ON AIR still skips session 1 (an older console's
+     rows carry no field).
      -> the session row, or null when there is none */
   function _lastSessionRow(list){
     var onAir = document.body.getAttribute('data-state') === 'on';
@@ -25401,6 +25408,7 @@ window._lockMark = function(isOpen, px, label){
     for (var i = 0; i < rows.length; i++){
       var s = rows[i];
       if (!s || s.stub || s.fixture) continue;
+      if (s.ended === false) continue;   /* REG-2868 - still being recorded, whatever the body says */
       if (onAir && s.n === 1) continue;
       return s;
     }
@@ -25426,6 +25434,7 @@ window._lockMark = function(isOpen, px, label){
       var _lsWhen = _lsWhenSay(t.t0);   /* REG-2757 */
       if (_lsWhen) parts.push(_lsWhen);
       parts.push(_runSpanSay(t.t0, t.t1) || 'UNKNOWN');
+      if (t.ended !== true && t.ended !== false) parts.push('ended UNKNOWN');   /* REG-2868 - shown, and said */
       parts.push((t.reads || 0) + ' reads');
       if (t.tallies > 0) parts.push('📸 ' + t.tallies + ' tall' + (t.tallies > 1 ? 'ies' : 'y'));
       if (t.kaiMissed != null) parts.push('🧠 ' + t.kaiMissed + ' missed');

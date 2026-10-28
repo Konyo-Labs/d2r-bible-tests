@@ -2176,6 +2176,19 @@ went as the pick rotated. The paint now leaves its own mark on the rows element 
 and the skip reads that mark - still the DOM's word on whether this paint landed (a rebuilt element carries none), never
 a re-serialization. Swept: no other `innerHTML ===` guard is left in control_ui.html. Law:
 test_the_task_force_repaints_only_when_it_changed (3 cases, 2 red-proofs); test_control's v2336 law re-aimed to the mark.
+### REG-2868 - THE HOME'S LAST SESSION NAMED THE RUN STILL BEING RECORDED (GrokBot #230 6477559571)
+The Mac's 📼 LAST SESSION read "session 1 · Oct 28 · 8:14 PM · 19m00s → 22m57s · ◌ OPEN" across two loads while the console
+said mode: live. _lastSessionRow (REG-2790/2811: the home digest, the Shelf's ▶ Last session and the Theatre button) skipped
+session 1 only while the body was ON AIR, and a shadow-reader recording keeps the body off on purpose - "a shadow reel is not
+a session he started". The rows carried no "ended", though the server knows. Every /api/sessions row now carries ended and
+endedWhy (control_app._session_ended): true when the run wrote its session end, its reel is sealed (the agent folds its
+stills into reel_<sid> at the seal) or a newer run began after it; false for session 1 with an id and none of those (the
+live card's own test); null when session 1 has no id. A memoised row is asked again, since its n moves. _lastSessionRow
+skips ended false whatever the body says; a null is NOT skipped - that would name an older run "last" for a reason nobody
+could see - and the digest says "ended UNKNOWN" beside it; the body's ON AIR still skips session 1. Swept: no other surface
+treats session 1 as live by the body (the theatre ribbon only labels a playback). Law: test_the_last_session_is_one_run
+(+5 cases: three page cases through all three doors, two on the server; +5 red-proofs).
+
 ### REG-2867 - A REFUSED SESSIONS POST WAS SAID NOWHERE (the roster lane named only its rows)
 The roster lane posts three things - the rows, the profile and the summarized sessions - and each keeps its own receipt on
 this PC (.tvd_roster.json, .roster_profile_state.json, .roster_frames_state.json, with why / postedAt / refuseAt). GET
