@@ -12,8 +12,9 @@ lane. The room armed the toolbar Undo itself.
 Now Mark traded calls window._vaultTradeEvent({kind: 'trade-out', name}) and nothing else. The door takes the listed copy
 (else the last), journals that copy's own record on the trade-out lane, closes the rest up, and arms the toolbar Undo with
 a snapshot taken before anything moved. The status line and the post log say the door's own words. A refusal says "the
-vault count is unchanged" and why. "For sale again" changes no count. It names the toolbar Undo only while the Undo holds
-that trade-out. No other trade-out call is left in the room.
+vault count is unchanged" and why. No other trade-out call is left in the room. (REG-2883: Mark traded on a name the
+vault holds is always one more copy through the door; the per-name "For sale again" is a planner pick's only, so the
+REG-2834 Undo sentence on it is retired with it. The way back from a trade-out is the toolbar Undo the door armed.)
 
 The room runs in node with a stub door that records every call. The whole page runs in node with the real door, records,
 journal and Undo (vault_page_node). Never a browser, never d2jsp. RED_PROOF below.
@@ -106,13 +107,10 @@ var out = {};
 CALLS.length = 0; sold('Grief');
 out.traded = { calls: CALLS.slice(), status: statusEl.textContent, row: last('Grief') };
 CALLS.length = 0; sold('Grief');
-out.forSaleHeld = { calls: CALLS.slice(), status: statusEl.textContent, row: last('Grief') };
-window._vaultUndo = { what: 'the add of Shako' };
+out.second = { calls: CALLS.slice(), row: last('Grief'), marks: JSON.parse(RAW['d2r_d2jsp_sold'] || '{}') };
 REFUSE['Shako'] = 'nothing changed - the copy records are held (law)';
 CALLS.length = 0; sold('Shako');
 out.refused = { calls: CALLS.slice(), status: statusEl.textContent, row: last('Shako') };
-CALLS.length = 0; sold('Shako');
-out.forSaleNotHeld = { calls: CALLS.slice(), row: last('Shako') };
 process.stdout.write(JSON.stringify(out));
 """
 
@@ -179,13 +177,11 @@ class AMarkTradedGoesThroughTheVaultTradeDoor(unittest.TestCase):
         self.assertIn("the vault count is unchanged: nothing changed - the copy records are held (law)", r["status"])
         self.assertIn("the vault count is unchanged", r["row"]["text"])
 
-    def test_for_sale_again_moves_no_count_and_names_the_undo_only_when_it_holds_the_trade_out(self):
-        h, n = self.o["forSaleHeld"], self.o["forSaleNotHeld"]
-        self.assertEqual((h["calls"], n["calls"]), ([], []), "un-marking touched the vault: %r %r" % (h["calls"], n["calls"]))
-        self.assertEqual(h["row"]["kind"], "for-sale")
-        self.assertIn("not changed back here - ↶ Undo in the toolbar puts the trade-out back", h["row"]["text"])
-        self.assertEqual(n["row"]["kind"], "for-sale")
-        self.assertNotIn("Undo", n["row"]["text"], "the sentence names an Undo that holds another change: %r" % n["row"])
+    def test_a_second_mark_traded_is_a_second_copy_through_the_same_door(self):
+        h = self.o["second"]
+        self.assertEqual(h["calls"], [["trade", "trade-out", "Grief"]], "the second click did not go through the door: %r" % h["calls"])
+        self.assertEqual(h["row"]["kind"], "traded", h["row"])
+        self.assertEqual(h["marks"], {}, "the room wrote a per-name mark beside the door: %r" % h["marks"])
 
     def test_no_second_trade_out_path_is_left_in_the_room(self):
         code = _room_code(self.src)
@@ -229,8 +225,8 @@ class AMarkTradedGoesThroughTheVaultTradeDoor(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-2881 - Mark traded leaves the vault count alone (a traded copy waits as a where-is-it)",
      "file": "bible.html",
-     "find": "      var how = sm[sn] ? markTraded(sn) : ",
-     "replace": "      var how = sm[sn] ? 'it left the vault count' : ",
+     "find": "        how = markTraded(sn);\n",
+     "replace": "        how = 'it left the vault count';\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-2881 - Mark traded takes a copy out by the copy door, a second path beside the trade door",
      "file": "bible.html",
@@ -242,11 +238,6 @@ RED_PROOF = [
      "find": "    return r.ok ? r.why : ('the vault count is unchanged: ' + r.why);",
      "replace": "    return r.why;",
      "matches": 1, "needs": "node"},
-    {"why": "REG-2881 - For sale again names the toolbar Undo when it holds another change",
-     "file": "bible.html",
-     "find": "(undoHolds ? ' - ↶ Undo in the toolbar puts the trade-out back' : '')",
-     "replace": "' - ↶ Undo in the toolbar puts the trade-out back'",
-     "matches": 1, "needs": "node"},
     {"why": "REG-2881 - trading one of several copies arms no toolbar Undo",
      "file": "bible.html",
      "find": "'copy ' + (k + 1) + ' of ' + have + ' left the vault count' + _undoSay() };",
@@ -254,8 +245,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2881 - trading the last copy arms no toolbar Undo",
      "file": "bible.html",
-     "find": "(nm + ' left the vault count' + _undoSay())",
-     "replace": "(nm + ' left the vault count')",
+     "find": "(_tKept ? '' : ' (the copy records refused the traded row, so the D2JSP card cannot count this trade)') + _undoSay())",
+     "replace": "(_tKept ? '' : ' (the copy records refused the traded row, so the D2JSP card cannot count this trade)'))",
      "matches": 1, "needs": "node"},
     {"why": "REG-2881 - the toolbar Undo is taken after the copy left, so it cannot put it back",
      "file": "bible.html",

@@ -2783,6 +2783,28 @@ no known names kept every prose word, the opposite of its own rule; it now keeps
 journal: REC-03 still PASSES (newest long session, 51 worker reads, all warm). The eye's "older sessions' unanswered
 commitments are only reported" is the documented rule ("the newest decides; older ones are reported"), not a defect. Law:
 test_a_scenario_names_its_own_frames (3 cases, 5 red-proofs, 1 re-aimed).
+### REG-2883 - MARK TRADED ON ONE COPY OF THREE CALLED THE WHOLE NAME TRADED (#83, the lead's follow-up to REG-2881: one source, the vault)
+Measured in the D2JSP room's own code and on the whole page (node): Mark traded wrote the per-name mark d2r_d2jsp_sold AND
+took one copy out through the trade door. On an item with 3 copies, the card then said "Traded" and the Post button went
+dead. The list posted a SOLD block while the vault still held 2 copies, 2 of them listed. The vault kept no lasting note
+of a traded copy: the removal journal is a ring of 20 batches. Now:
+- The vault keeps one row per traded copy in its records store (tradedOut, newest 1,000). The trade door writes it on
+  both paths, every rebuild carries it, and vaultRestoreLast takes it back out. It is read through
+  window._vaultTradedOf and window._vaultTradedNames.
+- The card reads only the vault: "1 of 3 traded · 2 listed on board N", "Mark one traded" while several remain, and
+  "Traded · all 3 copies" once none remain. A name with every copy traded keeps its card. The list offers the copies
+  left, and once all are gone it posts a SOLD block with "copies: 3".
+- The per-name mark is never written for a name the vault holds. It stays for a name the vault does not hold (a planner
+  pick), and the card says "Marked traded here · not in the vault".
+- An OLD per-name mark on a held name (the Mark sold of before) is a doubt. The card asks. For sale clears the mark,
+  and Mark traded takes one copy out and clears it too. Until he answers, the list posts it SOLD, his last word.
+- The way back from a trade-out is the toolbar Undo the door armed. Mark traded on a name with no copy left changes
+  nothing and says so.
+- The room parses the filings once per text, not once per card.
+Law: tv/test_a_d2jsp_card_counts_traded_copies_from_the_vault.py, 12 red-proofs. Updated: the laws of REG-2873, REG-2881
+and REG-2880, plus four anchors or fakes that followed the code. The cheap-cards law's node fake gained the two helpers,
+and the price-desk law's cardHtml window is now the function itself, no longer a 2,400-char cap (2,648 now).
+
 ### REG-2880 - A CONFIRMED D2JSP POST NEVER MARKED A COPY LISTED IN THE VAULT, AND THE TAB SAID LISTED FROM ITS OWN LOG (#83, his ruling "copy records carry a trade state (listed / traded-out) ... wire it later"; the lead's wiring brief)
 Measured in the D2JSP room's own code and on the whole page (node): the tab and the vault had two words for "listed".
 The room called an item listed when its post log held a confirmed answer (REG-2873) and published that through

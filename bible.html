@@ -13358,12 +13358,16 @@ function d2jspBatchHtml(view) {
       raw = window.LSR.getItem('d2r_muleAssign');
     } catch (e) { return null; }
     if (raw == null || raw === '') return [];
+    if (namesMemo && namesMemo.raw === raw) return namesMemo.out.slice();   /* REG-2883 one parse per filing text: every card asks */
     try {
       var a = JSON.parse(raw);
       if (!a || typeof a !== 'object' || Array.isArray(a)) return null;
-      return Object.keys(a).filter(function(n){ return a[n] != null && a[n] !== ''; }).sort();
+      var out = Object.keys(a).filter(function(n){ return a[n] != null && a[n] !== ''; }).sort();
+      namesMemo = { raw: raw, out: out };
+      return out.slice();
     } catch (e2) { return null; }
   }
+  var namesMemo = null;
   function esc(s){
     return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
       return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];
@@ -13463,30 +13467,52 @@ function d2jspBatchHtml(view) {
     }).join('');
     return tradeChip(name) + head + '<details class="d2jsp-log"><summary>Attempts (' + rows.length + ')</summary><ol>' + items + '</ol></details>';
   }
+  /* REG-2883 (#83) - ONE SOURCE FOR WHAT IS TRADED: THE VAULT. A copy he traded left through the vault's trade door and is
+     one of its traded rows (window._vaultTradedOf); a listed copy carries its slot (window._vaultTradeOf); the copies he
+     still holds are its count. REG-2873's per-name mark (d2r_d2jsp_sold) called the whole NAME traded when one copy of
+     three left. It now speaks only for a name the vault does not hold (a planner pick), and the card says so. A name the
+     vault holds that still carries an old mark (the Mark sold of before) is a doubt: the card asks, and the list keeps
+     posting it SOLD, his last word, until he answers. -> {held, live, listed, slots, traded, total, all, pick, legacy, sold} */
+  function tradeView(name){
+    var held = (tradeNames() || []).indexOf(name) >= 0, traded = 0, slots = [];
+    try { traded = (typeof window._vaultTradedOf === 'function') ? window._vaultTradedOf(name).length : 0; } catch (eTd) { traded = 0; }
+    if (held) { try { slots = (typeof window._vaultTradeOf === 'function') ? window._vaultTradeOf(name).filter(function(x){ return x.state === 'listed'; }) : []; } catch (eSl) { slots = []; } }
+    var live = held ? copiesOf(name) : 0, mark = soldOf(name);
+    var v = { held: held, live: live, listed: slots.length, slots: slots, traded: traded, total: live + traded,
+              all: !held && traded > 0, pick: mark && !held && !traded, legacy: mark && held };
+    v.sold = v.all || v.pick || v.legacy;
+    return v;
+  }
+  function markWord(v){ return v.pick ? 'For sale' : (v.live > 1 ? 'Mark one traded' : 'Mark traded'); }
   /* REG-2873 (#83, his ask 4) - THE TRADE STATE: draft -> listed (live) -> traded, or not traded yet.
      REG-2880 - "listed" is the VAULT'S word now: a copy record's trade slot (REG-2877), written only by a confirmed post
      through window._vaultTradeEvent. The post log keeps the attempts; it no longer decides listed. An answer that may be up
      stays a question to him ("Maybe listed · check board N"), never a listing. A confirmed post with no listed copy says
      which: the vault does not hold it (a planner pick), or the vault refused the listing (the status line carries the
-     door's why). Mark traded is traded. -> {state: draft|maybe|posted|listed|traded, board, topic, inVault} */
+     door's why). REG-2883 - traded is the vault's count too: every copy gone is "traded", some gone is "part-traded"; a
+     planner pick marked here is "marked"; an old mark on a held name is "ask".
+     -> {state: draft|maybe|posted|listed|part-traded|traded|marked|ask, board, topic, inVault, v} */
   function tradeState(name){
     var rows = logOf(name), conf = null, maybe = null;
     for (var i = rows.length - 1; i >= 0; i--) {
       if (!conf && rows[i].kind === 'confirmed') conf = rows[i];
       if (!maybe && rows[i].kind === 'maybe') maybe = rows[i];
     }
-    var slot = [];
-    try { slot = (typeof window._vaultTradeOf === 'function') ? window._vaultTradeOf(name).filter(function(x){ return x.state === 'listed'; }) : []; } catch (eSl) { slot = []; }
-    var st = soldOf(name) ? 'traded' : (slot.length ? 'listed' : (conf ? 'posted' : (maybe ? 'maybe' : 'draft')));
-    var inVault = st === 'posted' && (tradeNames() || []).indexOf(name) >= 0;   /* read the filings only when it is said (a long list paints every card) */
+    var v = tradeView(name), slot = v.slots;
+    var st = v.all ? 'traded' : v.pick ? 'marked' : v.legacy ? 'ask' : v.traded ? 'part-traded'
+      : (slot.length ? 'listed' : (conf ? 'posted' : (maybe ? 'maybe' : 'draft')));
     var post = slot.length ? (slot[0].post || '') : (conf ? (conf.topic || '') : '');
     var on = slot.length ? { board: d2jspTopicBoard(post) || d2jspBoard() } : (conf || maybe);
-    return { state: st, board: on ? on.board : d2jspBoard(), topic: logLink(post) ? post : '', inVault: inVault };
+    return { state: st, board: on ? on.board : d2jspBoard(), topic: logLink(post) ? post : '', inVault: v.held, v: v };
   }
   function tradeChip(name){
-    var t = tradeState(name);
-    var say = t.state === 'traded' ? 'Traded'
-      : t.state === 'listed' ? ('Listed on board ' + t.board + ' · not traded yet')
+    var t = tradeState(name), v = t.v, cp = function(n){ return n + (n === 1 ? ' copy' : ' copies'); };
+    var say = t.state === 'traded' ? (v.total > 1 ? ('Traded · all ' + v.total + ' copies') : 'Traded')
+      : t.state === 'marked' ? 'Marked traded here · not in the vault'
+      : t.state === 'ask' ? ('Marked sold here, but the vault still holds ' + cp(v.live) + ' · Mark traded takes one out of the vault,'
+          + ' For sale clears the old mark. Until then the list posts it as SOLD.')
+      : t.state === 'part-traded' ? (v.traded + ' of ' + v.total + ' traded · ' + (v.listed ? (v.listed + ' listed on board ' + t.board) : (v.live + ' left, not listed')))
+      : t.state === 'listed' ? ((v.listed === v.live ? 'Listed' : (v.listed + ' of ' + v.live + ' listed')) + ' on board ' + t.board + ' · not traded yet')
       : t.state === 'maybe' ? ('Maybe listed · check board ' + t.board)
       : t.state === 'posted' ? ('Posted on board ' + t.board + (t.inVault ? ' · no copy is listed in the vault' : ' · not in the vault'))
       : 'Draft · not posted';
@@ -13565,9 +13591,10 @@ function d2jspBatchHtml(view) {
     var items = [];
     for (var i = 0; i < rows.length; i++) {
       var n = rows[i];
+      var tv = tradeView(n);   /* REG-2883 */
       items.push({
-        name: n, base: baseOf(n), mods: modsOf(n), copies: copiesOf(n),
-        fg: sendOf(n), sold: soldOf(n)
+        name: n, base: baseOf(n), mods: modsOf(n), copies: tv.all ? tv.traded : copiesOf(n),
+        fg: sendOf(n), sold: tv.sold
       });
     }
     var draft = d2jspShopDraft(items);
@@ -13642,6 +13669,7 @@ function d2jspBatchHtml(view) {
     var trade = tradeNames();
     var extra = Object.keys(gearMap()).filter(function(n){ return n && !d2jspIsQuest(n); });
     Object.keys(readMap('d2r_d2jsp_sold')).forEach(function(n){ if (n && soldOf(n) && extra.indexOf(n) < 0) extra.push(n); });   /* REG-2873 a traded item left the vault and keeps its card */
+    try { (typeof window._vaultTradedNames === 'function' ? window._vaultTradedNames() : []).forEach(function(n){ if (n && !d2jspIsQuest(n) && extra.indexOf(n) < 0) extra.push(n); }); } catch (eTn) {}   /* REG-2883 every copy traded: the card stays, from the vault */
     if (trade == null && !extra.length) return null;
     var seen = {}, out = [];
     (trade || []).forEach(function(n){ if (!seen[n] && !hiddenOf(n)) { seen[n] = 1; out.push(n); } });
@@ -13696,8 +13724,8 @@ function d2jspBatchHtml(view) {
     var base = baseOf(n);
     var mods = modsOf(n);
     var send = sendOf(n);
-    var sold = soldOf(n);
-    var draft = d2jspItemBlock(n, base, mods, copiesOf(n), send, sold);
+    var tv = tradeView(n), sold = tv.sold;   /* REG-2883 */
+    var draft = d2jspItemBlock(n, base, mods, tv.all ? tv.traded : copiesOf(n), send, sold);
     var postText = draft.ok ? draft.body : mods;
     var remove = '<button type="button" class="vault-btn" data-d2jsp-remove="' + esc(n) + '">Remove from this list</button>';
     var recorded = !!(gearMap()[n] && gearMap()[n].entry) || typeof readMap('d2r_d2jsp_mods')[n] === 'string';
@@ -13705,7 +13733,8 @@ function d2jspBatchHtml(view) {
     var rng = (mods.trim() || (typeof window._typedModsOf === 'function' && window._typedModsOf(n))) ? [] : _d2jspRangeLines(n);
     var rngHtml = rng.length ? '<div class="d2jsp-ranges" data-d2jsp-ranges>' + rng.map(function(l){ return '<div class="att-aff att-range" data-mod-range="1">' + esc(l) + '</div>'; }).join('') + '</div>' : '';
     var hint = mods.trim() ? '' : '<div class="d2jsp-say">' + (recorded ? 'No mods yet. ' : 'This filing has no mods recorded. ') + 'Options opens the same mod list the character builder uses.</div>';
-    var mark = '<button type="button" class="vault-btn" data-d2jsp-sold="' + esc(n) + '">' + (sold ? 'For sale' : 'Mark traded') + '</button>';   /* REG-2873 his word, traded */
+    var mark = '<button type="button" class="vault-btn" data-d2jsp-sold="' + esc(n) + '"' + (tv.all ? ' hidden' : '') + '>' + esc(markWord(tv)) + '</button>'   /* REG-2873 his word, traded; REG-2883 per copy */
+      + '<button type="button" class="vault-btn" data-d2jsp-forsale="' + esc(n) + '"' + (tv.legacy ? '' : ' hidden') + '>For sale</button>';   /* REG-2883 the old mark's other answer */
     var tip = 'Opens a draft. Nothing is posted until Post this draft.';
     return '<div class="d2jsp-card" data-d2jsp-item="' + esc(n) + '"' + (sold ? ' data-sold="1"' : '') + '>'
       + '<div class="d2jsp-art">' + art + '</div>'
@@ -13763,15 +13792,17 @@ function d2jspBatchHtml(view) {
         if (evb.getAttribute('data-sig') !== evh) { evb.setAttribute('data-sig', evh); evb.innerHTML = evh; }
       }
       var send = sendOf(n);
-      var sold = soldOf(n);
+      var tv = tradeView(n), sold = tv.sold;   /* REG-2883 */
       var btn = card.querySelector('[data-d2jsp-post]');
       if (btn) btn.disabled = send == null || sold;
       var mark = card.querySelector('[data-d2jsp-sold]');
-      if (mark) mark.textContent = sold ? 'For sale' : 'Mark traded';
+      if (mark) { mark.textContent = markWord(tv); mark.hidden = tv.all; }
+      var fsale = card.querySelector('[data-d2jsp-forsale]');
+      if (fsale) fsale.hidden = !tv.legacy;
       if (sold) card.setAttribute('data-sold', '1');
       else card.removeAttribute('data-sold');
       var pre = card.querySelector('[data-d2jsp-draft]');
-      var draft = d2jspItemBlock(n, baseOf(n), modsOf(n), copiesOf(n), send, sold);
+      var draft = d2jspItemBlock(n, baseOf(n), modsOf(n), tv.all ? tv.traded : copiesOf(n), send, sold);
       if (pre) { pre.textContent = draft.ok ? draft.body : modsOf(n); pre.hidden = !pre.textContent; }
       var wait = card.querySelector('[data-d2jsp-wait]');
       if (wait) wait.hidden = !!draft.ok;
@@ -14068,20 +14099,45 @@ function d2jspBatchHtml(view) {
       ev.preventDefault();
       var sn = soldBtn.getAttribute('data-d2jsp-sold') || '';
       if (!sn) return;
-      var sm = readMap('d2r_d2jsp_sold');
-      if (sm[sn]) delete sm[sn];
-      else sm[sn] = 1;
-      writeMap('d2r_d2jsp_sold', sm);
-      /* REG-2873 - marking traded is the trade-out event (REG-2881: through the vault's one door); un-marking changes no count,
-         and names the toolbar Undo only while it holds this trade-out (REG-2834's rule) */
-      var undoHolds = !!(window._vaultUndo && window._vaultUndo.what === 'the trade-out of ' + sn);
-      var how = sm[sn] ? markTraded(sn) : ('the vault count is not changed back here' + (undoHolds ? ' - ↶ Undo in the toolbar puts the trade-out back' : ''));
+      /* REG-2873 - marking traded is the trade-out event (REG-2881: through the vault's one door). REG-2883 - for a name the
+         vault holds it is ONE copy, and the per-name mark is never written (an old one is cleared: the vault now counts
+         it); the per-name toggle stays only for a name the vault does not hold, and says so. The way back from a
+         trade-out is the toolbar Undo the door armed, never this button. */
+      var sv = tradeView(sn), sm = readMap('d2r_d2jsp_sold'), soldNow, how;
+      if (sv.held) {
+        how = markTraded(sn);
+        if (sm[sn]) { delete sm[sn]; writeMap('d2r_d2jsp_sold', sm); }
+        soldNow = true;
+      } else if (sv.traded) {
+        say('Every copy of ' + sn + ' is already traded. Nothing changed.');
+        return;
+      } else {
+        if (sm[sn]) delete sm[sn];
+        else sm[sn] = 1;
+        writeMap('d2r_d2jsp_sold', sm);
+        soldNow = !!sm[sn];
+        how = 'it is not in the vault, so no count changed';
+      }
       logAdd([sn], { at: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC', board: d2jspBoard(),
-                     kind: sm[sn] ? 'traded' : 'for-sale', text: (sm[sn] ? 'Marked traded: ' : 'For sale again: ') + how });
+                     kind: soldNow ? 'traded' : 'for-sale', text: (soldNow ? 'Marked traded: ' : 'For sale again: ') + how });
       paintPrices(sn);
-      say(sm[sn]
-        ? (sn + ' is marked traded; ' + how + '. Post the list to publish that update.')
-        : (sn + ' is for sale again. Post the list to publish that update.'));
+      say(soldNow
+        ? ((sv.held && sv.live > 1 ? 'One copy of ' : '') + sn + ' is marked traded; ' + how + '. Post the list to publish that update.')
+        : (sn + ' is for sale again; ' + how + '. Post the list to publish that update.'));
+      return;
+    }
+    var fsBtn = t.closest && t.closest('[data-d2jsp-forsale]');
+    if (fsBtn) {
+      /* REG-2883 - the doubt's other answer: the old per-name mark goes, and the vault's count stands */
+      ev.preventDefault();
+      var fn = fsBtn.getAttribute('data-d2jsp-forsale') || '', fm = readMap('d2r_d2jsp_sold');
+      if (!fn || !fm[fn]) return;
+      delete fm[fn];
+      writeMap('d2r_d2jsp_sold', fm);
+      var fv = tradeView(fn), fhow = 'the old sold mark is cleared, and the vault holds ' + fv.live + (fv.live === 1 ? ' copy' : ' copies');
+      logAdd([fn], { at: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC', board: d2jspBoard(), kind: 'for-sale', text: 'For sale again: ' + fhow });
+      paintPrices(fn);
+      say(fn + ' is for sale again; ' + fhow + '. Post the list to publish that update.');
       return;
     }
     var shopBtn = t.closest && t.closest('[data-d2jsp-shop]');
@@ -14113,7 +14169,7 @@ function d2jspBatchHtml(view) {
     var post = t.getAttribute && t.getAttribute('data-d2jsp-post');
     if (post) {
       ev.preventDefault();
-      if (soldOf(post)) {
+      if (tradeView(post).sold) {
         say(post + ' is marked traded. Post the list to publish that update.');
         return;
       }
@@ -51412,6 +51468,13 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
      Gated by test_the_removal_journal_forks_like_the_store.py, which v3196 actually built.
      [[ladder-doctrine]] [[the-unjoined-end]] */
   var _VR_LOG = 'd2r_vaultRemoved', _VR_RING = 20;
+  var _VR_TRADED_MAX = 1000;   /* REG-2883 the traded rows kept */
+  /* REG-2883 - an undo of a trade-out takes back the newest traded row of that name (the undo pops the newest batch) */
+  function _vrTradedDrop(list, nm){
+    var t = Array.isArray(list) ? list.slice() : [];
+    for (var i = t.length - 1; i >= 0; i--) if (t[i] && t[i].name === nm) { t.splice(i, 1); return t; }
+    return null;
+  }
   /* REG-2520 (review of REG-2404/2405, r7; review of REG-2410, rv3) — THE JOURNAL IS READ THROUGH THE ONE READER. It was
      `JSON.parse(raw || '[]')` with `catch -> []`: a journal cut short read as EMPTY, and the next removal - every un-tick
      and every Magic & Rare ✕ since REG-2404/2405 - wrote [its one batch] over every batch he had, his undo history and
@@ -51684,6 +51747,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
           _coRow.copyIx = _coK; delete _coRow.trade;   /* it is back: not traded, not listed */
           _coRecs.push(_coRow);
           var _coStore = {}; for (var z in _coRaw) _coStore[z] = _coRaw[z]; _coStore.records = _coRecs;
+          var _coT = _vrTradedDrop(_coRaw.tradedOut, _coN); if (_coT) _coStore.tradedOut = _coT;   /* REG-2883 */
           if (typeof _vrRecGuardedSet === 'function') _vrRecGuardedSet(_coStore);
         }
         copies[_coN] = ((typeof copyCount === 'function') ? (copyCount(_coN) | 0) : 1) + 1;   /* persisted below with owned */
@@ -51724,6 +51788,14 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
           _vrRecGuardedSet(_rbS);
         }
       } catch (eRb) {}
+    }
+    /* REG-2883 - the last copy came back from a trade-out: its traded row goes, so the card stops counting it */
+    if (last.lane === 'trade-out' && (last.names || []).length) {
+      try {
+        var _tr0 = _vrRecLoadRaw(), _trT = (_tr0 && Array.isArray(_tr0.records)) ? _tr0.tradedOut : null, _trHit = false;
+        back.forEach(function(nm){ var d = _vrTradedDrop(_trT, nm); if (d) { _trT = d; _trHit = true; } });
+        if (_trHit) { var _trS = {}; for (var q in _tr0) _trS[q] = _tr0[q]; _trS.tradedOut = _trT; _vrRecGuardedSet(_trS); }
+      } catch (eTr) {}
     }
     _vrWrite(log);
     /* #76 v3753 (defect #3) — undoing the SET-PIECE RECONCILE batch must un-arm ITS stamp, or the migration
@@ -51777,7 +51849,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     else pick = mine.filter(listedOf)[0] || (kind === 'trade-out' ? mine[mine.length - 1] : null);
     if (!pick) return { ok: false, kind: kind, name: nm, why: kind === 'listed' ? ('every copy of ' + nm + ' is already listed') : ('no listed copy of ' + nm) };
     var k = pick.copyIx || 0;
-    var write = function(recs){ var st = {}; for (var x in raw) st[x] = raw[x]; st.records = recs; return (typeof _vrRecGuardedSet === 'function') && _vrRecGuardedSet(st); };
+    var write = function(recs, tout){ var st = {}; for (var x in raw) st[x] = raw[x]; st.records = recs; if (tout) st.tradedOut = tout; return (typeof _vrRecGuardedSet === 'function') && _vrRecGuardedSet(st); };
     if (kind === 'listed' || kind === 'unlisted') {
       var recs = raw.records.map(function(r){
         if (r !== pick) return r;
@@ -51793,6 +51865,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     try { _undoT = (typeof window._vaultUndoSnap === 'function') ? window._vaultUndoSnap() : null; } catch (eUs) { _undoT = null; }
     var _undoSay = function(){ try { return (_undoT && typeof window._vaultUndoTake === 'function' && window._vaultUndoTake('the trade-out of ' + nm, '', _undoT)) ? ' (↶ Undo in the toolbar puts it back)' : ''; } catch (eUt) { return ''; } };
     var why = 'traded on d2jsp' + (post ? ' (' + post + ')' : '');
+    /* REG-2883 - the copy that left is RECORDED, durably: the records store's tradedOut list (one row per traded copy, the
+       newest _VR_TRADED_MAX kept) is what the D2JSP card counts ("1 of 3 traded"). The removal journal is a ring of
+       _VR_RING batches, so it cannot be the count. An undo of this trade-out takes its row back out (vaultRestoreLast). */
+    var _tRow = { name: nm, copyIx: k, at: at }; if (post) _tRow.post = post;
+    var _tWith = function(st){ var t = (st && Array.isArray(st.tradedOut)) ? st.tradedOut.slice() : []; t.push(_tRow); return t.slice(-_VR_TRADED_MAX); };
     var row = {}; for (var y in pick) row[y] = pick[y];
     row.trade = { state: 'traded-out', at: at }; if (post) row.trade.post = post;
     var have = (typeof copyCount === 'function') ? (copyCount(nm) | 0) : 1;
@@ -51800,14 +51877,16 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       var r1 = (typeof window.vaultRemove === 'function') ? window.vaultRemove([nm], { lane: 'trade-out', exact: true, quiet: true, why: why }) : null;
       /* measured: the removal door leaves the copy's record in the store, so the undo brings its own cell back with the name */
       var gone = !!(r1 && r1.removed && r1.removed.indexOf(nm) >= 0);
-      return { ok: gone, kind: kind, name: nm, copyIx: k, why: gone ? (nm + ' left the vault count' + _undoSay()) : ('the vault kept it: ' + ((r1 && r1.why) || 'the removal door did not answer')) };
+      var _tKept = false;
+      if (gone) { try { var _r2 = _vrRecLoadRaw(); _tKept = !!(_r2 && Array.isArray(_r2.records) && (function(){ var st = {}; for (var x in _r2) st[x] = _r2[x]; st.tradedOut = _tWith(_r2); return _vrRecGuardedSet(st); })()); } catch (eTk) { _tKept = false; } }
+      return { ok: gone, kind: kind, name: nm, copyIx: k, why: gone ? (nm + ' left the vault count' + (_tKept ? '' : ' (the copy records refused the traded row, so the D2JSP card cannot count this trade)') + _undoSay()) : ('the vault kept it: ' + ((r1 && r1.why) || 'the removal door did not answer')) };
     }
     var log = _vrRead();
     if (log === null) return { ok: false, kind: kind, name: nm, copyIx: k, why: 'the removal journal (' + _VR_LOG + ') would not read, so nothing was traded out' };
     var rest = raw.records.filter(function(r){ return r !== pick; }).map(function(r){
       if (r && r.name === nm && (r.copyIx || 0) > k) { var c = {}; for (var x in r) c[x] = r[x]; c.copyIx = (r.copyIx || 0) - 1; return c; }
       return r; });
-    if (!write(rest)) return { ok: false, kind: kind, name: nm, copyIx: k, why: 'the copy records refused the write - nothing was traded out' };
+    if (!write(rest, _tWith(raw))) return { ok: false, kind: kind, name: nm, copyIx: k, why: 'the copy records refused the write - nothing was traded out' };
     copies[nm] = have - 1;
     if (copies[nm] <= 1) delete copies[nm];
     var ts = Date.now();
@@ -55240,15 +55319,22 @@ window.vaultAutoAssign = function(){
     try { raw = window.LSR.getItem(_VR_STORE_KEY); } catch (eT) { return []; }
     if (!_vaultTradeMemo || _vaultTradeMemo.raw !== raw) {
       var by = {};
-      try { (JSON.parse(raw || '{}').records || []).forEach(function(r){
-        if (r && r.name != null && r.trade && r.trade.state) (by[r.name] = by[r.name] || []).push({ ci: r.copyIx || 0, state: r.trade.state, at: r.trade.at || null, post: r.trade.post || null }); }); }
-      catch (eP) { by = {}; }
-      _vaultTradeMemo = { raw: raw, by: by };
+      var gone = {};
+      try { var _st = JSON.parse(raw || '{}');
+        (_st.records || []).forEach(function(r){
+          if (r && r.name != null && r.trade && r.trade.state) (by[r.name] = by[r.name] || []).push({ ci: r.copyIx || 0, state: r.trade.state, at: r.trade.at || null, post: r.trade.post || null }); });
+        (Array.isArray(_st.tradedOut) ? _st.tradedOut : []).forEach(function(t){   /* REG-2883 the copies that left */
+          if (t && t.name != null) (gone[t.name] = gone[t.name] || []).push({ at: t.at || null, post: t.post || null }); }); }
+      catch (eP) { by = {}; gone = {}; }
+      _vaultTradeMemo = { raw: raw, by: by, gone: gone };
     }
     return _vaultTradeMemo.by[String(name)] || [];
   }
   function _vaultListedSay(t){ return 'listed on d2jsp' + (t && t.at ? ' since ' + String(t.at).slice(0, 10) : '') + ' - it still counts here'; }
-  try { window._vaultTradeOf = _vaultTradeOf; window._vaultListedSay = _vaultListedSay; } catch (eTo) {}
+  /* REG-2883 - the copies of a name traded out (newest kept), and every name with one -> [{at, post}] | [names] */
+  function _vaultTradedOf(name){ _vaultTradeOf(''); return (_vaultTradeMemo && _vaultTradeMemo.gone[String(name)]) || []; }
+  function _vaultTradedNames(){ _vaultTradeOf(''); return _vaultTradeMemo ? Object.keys(_vaultTradeMemo.gone) : []; }
+  try { window._vaultTradeOf = _vaultTradeOf; window._vaultListedSay = _vaultListedSay; window._vaultTradedOf = _vaultTradedOf; window._vaultTradedNames = _vaultTradedNames; } catch (eTo) {}
   var _vaultPlanMemo = null;
   function _vaultPlanOn(muleId){
     if (muleId == null || typeof _vaultMoveBag !== 'function') return null;
@@ -59369,6 +59455,8 @@ window.vaultAutoAssign = function(){
     var outRecs = built.rows;
     var seq = built.seq;
     var store = { v: 1, ts: Date.now(), seq: seq, carUnknown: false, dockUnknown: false, records: outRecs };
+    /* REG-2883 - the traded rows ride every rebuild: they are copies that LEFT, so no live derivation can re-make them */
+    if (prior && Array.isArray(prior.tradedOut) && prior.tradedOut.length) store.tradedOut = prior.tradedOut;
     /* A poll that re-derives the same records is not a new fact. The stamp alone must not rewrite the store. */
     if (prior && typeof prior === 'object') {
       var _sameRec = false;

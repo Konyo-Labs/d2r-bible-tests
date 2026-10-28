@@ -274,8 +274,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "#113 - the list draft prices each item from the board-243 reading again",
      "file": "bible.html",
-     "find": "        fg: sendOf(n), sold: soldOf(n)\n",
-     "replace": "        fg: d2jspPriceToSend((quoted[n] || {}).fg, typedOf(n)), sold: soldOf(n)\n",
+     "find": "        fg: sendOf(n), sold: tv.sold\n",
+     "replace": "        fg: d2jspPriceToSend((quoted[n] || {}).fg, typedOf(n)), sold: tv.sold\n",
      "matches": 1},
 ]
 

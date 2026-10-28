@@ -217,6 +217,8 @@ function d2jspPriceToSend(fg, typed){ return fg == null ? null : fg; }
 function sendOf(n){ return d2jspPriceToSend((quoted[n] || {}).fg, typedOf(n)); }   /* #113 - the card's post price (board-checked in the page) */
 function typedOf(){ return ''; }
 function soldOf(){ return false; }
+function tradeView(){ return { held: true, live: 1, listed: 0, slots: [], traded: 0, total: 1, all: false, pick: false, legacy: false, sold: false }; }   /* REG-2883 */
+function markWord(){ return 'Mark traded'; }
 function baseOf(){ return ''; }
 function modsOf(){ return ''; }
 function copiesOf(){ return 1; }
