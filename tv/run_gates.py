@@ -13145,6 +13145,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_an_image_error_reaches_its_receipt_with_its_cause.py")], 300,
          needs_app=False,
          why="REG-2914 (#158) - an image error reaches its receipt with its cause through the agent's /intake_result, and the reader's report says it"),
+    Gate("test_the_tooltip_crop_comes_from_the_read_that_named_it",
+         [sys.executable, os.path.join(HERE, "test_the_tooltip_crop_comes_from_the_read_that_named_it.py")], 300,
+         needs_app=False,
+         why='REG-2915 (#158.7) - the tooltip crop is cut from the box the vision read that named the item returned; a read without it says the box is UNKNOWN, never a full-frame crop'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

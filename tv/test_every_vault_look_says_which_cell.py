@@ -62,7 +62,8 @@ class TheReaderIsAskedWhere(unittest.TestCase):
         self.assertIn("NEVER the tooltip box", p, "a point on the tooltip would file the item where the tooltip floats")
 
     def test_a_vp3368_seal_still_stands(self):
-        self.assertEqual(tv.VAULT_PROMPT_ANSWERS_SAME_AS, ("vp3368",))
+        # REG-2915 - vp-reg2915 only added the tooltip box, so it lists vp3554 too; vp3368 still stands
+        self.assertIn("vp3368", tv.VAULT_PROMPT_ANSWERS_SAME_AS)
         self.assertTrue(ca._vault_still_sealed({"rows": 0, "promptVer": "vp3368"}),
                         "an old empty vault seal reopened - every old reel would be read and paid for again")
         self.assertTrue(ca._vault_still_sealed({"rows": 0, "promptVer": tv.VAULT_PROMPT_VER}))
