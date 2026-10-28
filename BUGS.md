@@ -2783,6 +2783,15 @@ no known names kept every prose word, the opposite of its own rule; it now keeps
 journal: REC-03 still PASSES (newest long session, 51 worker reads, all warm). The eye's "older sessions' unanswered
 commitments are only reported" is the documented rule ("the newest decides; older ones are reported"), not a defect. Law:
 test_a_scenario_names_its_own_frames (3 cases, 5 red-proofs, 1 re-aimed).
+### REG-2885 - THE ROUTING SENTENCE PRINTED THE BASE'S DEFENSE AS IF IT WERE THE ITEM'S (#137, GrokBot v3740: "Ravenlore defense 103-155 (message) vs 343-390 (card)"; the batch's ACT list: "defense ranges agree")
+Measured on the whole page in node: suggestMule('Ravenlore').why read "armor slot — Sky Spirit (BASE_DB defense
+103-155)". That range is the BASE's. The game's own table (the CB_DB block from his install) has Sky Spirit at 103-155.
+The item card prints the item's own defense. An item that spawns with Enhanced Defense sits at its base's max + 1, times
+its roll: 156 x 2.20-2.50 = 343-390. Both numbers were right, but "BASE_DB defense" read as the item's. Now every armour
+routing sentence says it: "Sky Spirit is armour (the base's own defense is 103-155; the item card shows the item's
+defense)". Law: tv/test_a_routing_sentence_says_whose_defense_it_prints.py (the range is checked against the page's own
+game table), 1 red-proof.
+
 ### REG-2884 - A FIND ROW GAVE NO MULE BUTTON FOR A HAND ADD OR FOR COPIES ON TWO MULES (#137, GrokBot v3740: "Stormshield/Lightsabre FIND rows open Mule 1 not M2/M3", then "FIND-row click opens NO mule at all")
 Measured on the whole page in node: a UNI-ARMOR locker was filled past one mule by 45 hand adds (his path), plus
 Stormshield x3. No FIND row offered a mule button. A hand add's cell was swapped for its raw move target, "stash:c0r10
