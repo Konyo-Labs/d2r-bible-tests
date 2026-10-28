@@ -2282,6 +2282,21 @@ file row with k > n - and no law named either. Test-only: a law that holds both 
 writes nothing; a forged 138/135 row reads UNKNOWN and may() stays LOCKED) and holds the shape over the tracked
 ledger (every lock and route: k <= n, attacksPassed <= attacks <= n). The fan-caption overlap half of #84 is NEEDS
 LIVE. Law: test_a_lock_never_publishes_more_refusals_than_attempts (python), 2 red-proofs, RED.
+### REG-2848 - A SIGHTING NEVER JOINED ITS COPY: A NEW CELL READ AS COPY 0 MOVING, AND HAND COPIES VANISHED (#154 P3c)
+His plan is to add his items by hand now and let AUTO's sightings join those same records later. Measured on the whole page
+in node:
+- A filed item's later reads added no look to its witness row (the filing took its looks once; _ownedProvWrite answered
+  'kept'). A Stone of Jordan added by hand, filed on a read at stash c0r0 and then read at c2r0 still counted 1 copy, and
+  its MOVE row read copy 0 "moved-elsewhere".
+- Two Griffon's Eyes added by hand, then one of them read at c5r0: once a cell was named the count was the cells (1), so
+  the second copy's record and its MOVE row were dropped.
+- A sighting at a new cell went to the first unseen hand copy, whichever it was.
+Now a read of a filed item joins its looks (one per frame), so a second cell is the second copy (v3767, his Q1) and copy 0
+stays where it was read. The looks cap (12) drops the oldest look of a place that has another look, never the only look of
+a cell. The copies his hand typed (each keeps its MANUAL move row) are never counted below the cells, nor above copies[].
+A sighting that carries mods joins the unseen hand copy whose own entry (REG-2844) it matches. Law:
+test_a_sighting_joins_its_copy_by_cell_and_by_mods (node, the whole page), 4 red-proofs, RED.
+
 ### REG-2847 - ONE UNIQUE DREW DIFFERENT PICTURES ON DIFFERENT SURFACES (v3831 second eye, GrokBot #230 6478351967)
 GrokBot measured on his board: Lightsabre drew mr_lightsabre.png on a list card where artUrl gives hd_lightsabre.png;
 Goldstrike Arch drew goldstrikearch_graphic.png on a card where artUrl gives the long war bow; and the wishlist chip

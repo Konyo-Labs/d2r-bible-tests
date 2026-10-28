@@ -13213,6 +13213,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_one_item_draws_one_picture_whatever_its_label.py")], 300,
          needs_app=False,
          why="REG-2847 (v3831 second eye, GrokBot) - one unique, one picture: its labels draw the same file, the console asks the board's resolver, no coins for Goldstrike Arch"),
+    Gate("test_a_sighting_joins_its_copy_by_cell_and_by_mods",
+         [sys.executable, os.path.join(HERE, "test_a_sighting_joins_its_copy_by_cell_and_by_mods.py")], 300,
+         needs_app=False,
+         why="REG-2848 (#154 P3c) - a read joins its filed copy's looks, a new cell is the second copy, hand copies are never counted below the cells, mods choose the copy"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
