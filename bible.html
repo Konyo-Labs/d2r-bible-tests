@@ -24449,6 +24449,11 @@ try {
       return { added: _any, prov: _lastP, split: _pcs.slice() };
     }
     var had = owned.has(nm);
+    /* REG-2845 - a name he does not hold is owned again only when no removal of his outranks this read */
+    if (!had && typeof window._vaultRemovedHold === 'function'){
+      var _rmH = window._vaultRemovedHold(nm, rec);
+      if (_rmH) return { added: false, held: _rmH, prov: null };
+    }
     /* ⚠ M-3 (review of 20c0df1e) — the receipt is written BEFORE the name is added, so the write sees `owned` as it stood:
        an item that was already his is never made carried loot by this read (the one line in _ownedProvWrite). The add
        still always happens — a refused provenance never costs him the item. */
@@ -24779,6 +24784,33 @@ try {
     last.why = (last.lane === 'carried-left' ? 'it left on a drop' + (last.frame ? ' (frame ' + last.frame + ')' : '') : 'you removed it')
              + ' at ' + _iso(last.at) + ', and this read (' + _iso(t) + ') is OLDER — a replayed older session never brings it back';
     return last;
+  };
+  /* REG-2845 (#154, his "wont these keep coming back?") - ONE REMOVAL RULE, ASKED AT THE ONE DOOR THAT OWNS A NAME.
+     _removedAfter guarded the read route and the folder scan only. tvVaultRegister never asked it, so after his X an OLD read
+     through the register (a reel, the console's sweep ledger, the AI checker, the inbox's auto-accept) owned the item again.
+     Measured on the whole page in node: Harlequin Crest X'd, then a read from 8 days before -> owned again; the sweep ledger's
+     read, which carries no time -> owned again. Now window._ownedAdd (every add) and the register (before its two-session hold)
+     ask this for a name he does not hold. His hand and his undo pass: they are his word, now. A read OLDER than his removal
+     does not bring it back. A read whose time cannot be told never outvotes his removal (UNKNOWN is never "newer"), and a
+     store that will not read holds it. A NEWER dated read brings it back, by design.
+     -> null (it may own the name) | {held: true, at, readAt, why} */
+  var _RM_PASS = { 'hand': 1, 'ledger-restore': 1, 'vault-restore': 1, 'magic-and-rare': 1, 'kept': 1, 'evidence': 1, 'vault-filing': 1 };
+  window._vaultRemovedHold = function(name, rec){
+    if (!rec || typeof rec !== 'object' || rec.restoreRow) return null;   /* an undo or a put-back is his word */
+    if (_RM_PASS[String(rec.source || '')]) return null;
+    var ts = _ms(rec.ts) || _ms(rec.at);
+    if (ts == null){ var sm = /^s_(\d{13})_/.exec(String(rec.sessionId || '').split('#')[0]); if (sm) ts = +sm[1]; }   /* a reel id dates its read */
+    var r = window._removedAfter(name, ts);
+    if (!r) return null;
+    if (r.unknown && ts == null){
+      var w = window._removedAfter(name, 1);   /* when he removed it: a read at the start of time is older than any removal */
+      if (w && !w.unknown && w.at != null)
+        return { held: true, at: _iso(w.at), readAt: null,
+                 why: (w.lane === 'carried-left' ? 'it left on a drop' : 'you removed it') + ' at ' + _iso(w.at)
+                      + ', and this read carries no time - a read that cannot be dated never outvotes your removal, so it is kept as history, not owned' };
+    }
+    if (r.unknown) return { held: true, at: null, readAt: ts != null ? _iso(ts) : null, why: r.unknown + ' - so it is held, never owned on a guess' };
+    return { held: true, at: _iso(r.at), readAt: ts != null ? _iso(ts) : null, why: r.why };
   };
   /* a row, decided: its sightings through the one function — and a holding read is weighed against his last word */
   window._readRoute = function(row){
@@ -49820,6 +49852,13 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     if (!home) return { ok: false, refused: 'no-home', why: _vNoHomeWhy(nm, null) };
     if (!_vHomeOk(home)) return { ok: false, refused: 'no-home', why: _vNoHomeWhy(nm, home) };
     var hand = (wc.kind === 'hand');
+    /* REG-2845 - the filing door asks the one removal rule too: a read never files a name his removal outranks */
+    if (!hand && !owned.has(nm) && typeof window._vaultRemovedHold === 'function'){
+      var _l0f = (witness && Array.isArray(witness.sessions) && witness.sessions[0] && typeof witness.sessions[0] === 'object') ? witness.sessions[0] : {};
+      var _hF = window._vaultRemovedHold(nm, { source: String((witness && witness.by) || 'reader'), ts: (witness && witness.at) || _l0f.at || null,
+                                               sessionId: _l0f.session || _l0f.id || _l0f.witness || null });
+      if (_hF) return { ok: false, refused: 'removed', why: _hF.why };
+    }
     /* #41 rank 17 (REG-1562) — HIS HAND ON A HARDENED ROW. A drag onto another locker and a re-drop on the same one both
        land here (assignItem -> this door), so this is where the lock meets his hand: refused until the drop carries the
        release (Shift held -> opts.unlock); a same-locker re-drop without it leaves the evidence row standing instead of
@@ -50755,6 +50794,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
          THE STUB STILL RUNS, just after — and before the __throwout branch returns, so BOTH exits
          keep the drawability guarantee v739 added. Moving it below that branch would resurrect the
          invisible-item bug instead. [[the-unjoined-end]] */
+      /* REG-2845 - his removal is asked first: a read it outranks is never held for a second session, owned or filed */
+      if (!owned.has(name) && typeof window._vaultRemovedHold === 'function'){
+        var _rmR = window._vaultRemovedHold(name, Object.assign({}, _rec, { at: _l0.at || null }));
+        if (_rmR) return { ok:false, refused:'removed', registered:false, label:name, removedAt:_rmR.at, readAt:_rmR.readAt, why:_rmR.why };
+      }
       /* #202 - a READ of a name he does not own registers only on its second session (the hold above) */
       /* REG-2702 (v3817 CI) - `witnesses` too: the filing door (_vaultIntakeLook, vaultFile) reads a look from it, so a read
          that carried its looks there registered on ONE read - the two-session rule never saw it */
@@ -51143,7 +51187,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
                  : (r.filed === false ? (r.refused === 'carried' ? 'carried' : r.refused === 'no-home' ? 'no-home'
                                          : ((r.refused === 'locked' || r.refused === 'main') ? 'lane-locked' : 'no-witness'))
                                       : (_known(nm) ? 'vault-registered' : 'vault-unknown')))
-              : ((r && (r.refused === 'one-session' || r.refused === 'no-look')) ? 'vault-pending' : 'route-failed'),   /* #202 */
+              : ((r && (r.refused === 'one-session' || r.refused === 'no-look')) ? 'vault-pending'
+                 : ((r && r.refused === 'removed') ? 'refused' : 'route-failed')),   /* #202; REG-2845 his removal keeps it out */
             /* v3000 \u2014 `store` WAS A FLAT LITERAL IN THE SAME OBJECT AS A COMPUTED `status`.
                Three lines up, `status` is derived from the outcome and can say 'route-failed';
                `store: 'owned'` was asserted on EVERY row regardless, so one row could read
@@ -54418,10 +54463,28 @@ window.vaultAutoAssign = function(){
      from the evidence, and both keep MAGIC & RARE (that locker reads d2r_magicFinds, not the mule map) and the extra
      copies (d2r_copies). This door clears all of those through the same scope and rebuilds nothing; runes / gems /
      materials, set pieces, runewords and the chronicle stay. Law: tv/test_a_wipe_items_empties_every_locker.py */
+  /* REG-2846 (#154, his "wont these keep coming back?") - A WIPE IS HIS REMOVAL. Wipe items cleared owned, the mules, the
+     witness rows and the scan ledger and wrote NO removal record, so _removedAfter had nothing to weigh a read against: measured
+     on the whole page in node, after a wipe an old read, a newer read and the sweep ledger's read each owned the item again,
+     and a cleared scan ledger let the folder re-read every old file. Every name the wipe took out is now noted removed at the
+     wipe's time (d2r_vaultRemovedAt, the per-name record the X writes through _vaultRemovalNote; the 20-batch undo ring is
+     left to single removals). An older read stays out, a newer dated read still comes back, and the toolbar's Undo loads the
+     snapshot taken before the wipe, which puts the record back as it was. -> {noted} | {noted: 0, why} */
+  window._vaultWipeRemovalNote = function(names, ts){
+    var gone = (Array.isArray(names) ? names : []).filter(function(n){
+      return n && !owned.has(n) && !(typeof magicFinds === 'object' && magicFinds && magicFinds[n]);
+    });
+    if (!gone.length) return { noted: 0, why: 'nothing left the vault' };
+    if (typeof window._vaultRemovalNote !== 'function') return { noted: 0, why: 'the removal record is not on this page - UNKNOWN, nothing noted' };
+    return window._vaultRemovalNote({ ts: ts || Date.now(), names: gone, lane: 'wipe', why: 'Wipe items' });
+  };
   window.vaultWipeItems = async function(){
     if (!(await uiConfirm(_vaultResetConfirm('vaultWipeItems'), {cancelFirst:true, title:'⚠ Danger — Wipe items'}))) return;
     var _undoOk = window._vaultUndoTry ? window._vaultUndoTry('Wipe items', 'The linked screenshot folder is not part of it - link it again after an undo.') : null;  /* #145 */
+    var _wiped = [];   /* REG-2846 - what this wipe takes out, read before it runs */
+    try { owned.forEach(function(n){ _wiped.push(n); }); Object.keys(magicFinds || {}).forEach(function(n){ if (_wiped.indexOf(n) < 0) _wiped.push(n); }); } catch (eWn) {}
     var R = await _vaultResetRun('vaultWipeItems');
+    try { R.removalNoted = window._vaultWipeRemovalNote(_wiped, Date.now()); } catch (eWr) { R.removalNoted = { noted: 0, why: String(eWr && eWr.message || eWr) }; }
     var rep = document.getElementById('vault-intake-report'); if (rep){ rep.hidden = true; rep.innerHTML=''; }
     try { renderJournal(); try{ window.renderRoutingLedger && window.renderRoutingLedger(); }catch(e){} } catch(e){}
     try { renderVault(); } catch(e){}

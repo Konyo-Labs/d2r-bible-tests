@@ -2282,6 +2282,29 @@ file row with k > n - and no law named either. Test-only: a law that holds both 
 writes nothing; a forged 138/135 row reads UNKNOWN and may() stays LOCKED) and holds the shape over the tracked
 ledger (every lock and route: k <= n, attacksPassed <= attacks <= n). The fan-caption overlap half of #84 is NEEDS
 LIVE. Law: test_a_lock_never_publishes_more_refusals_than_attempts (python), 2 red-proofs, RED.
+### REG-2846 - WIPE ITEMS RECORDED NO REMOVAL, SO EVERY READ BROUGHT EVERYTHING BACK (#154, his "wont these keep coming back?")
+He plans to wipe the items and add them again one by one. Wipe items cleared owned, the mules, the witness rows and the scan
+ledger, and wrote no removal record. Measured on the whole page in node: after a wipe, an old reel read, a newer read and
+the console's sweep ledger each owned the item again, and the cleared scan ledger let the folder re-read every old file. The
+wipe now notes every name it took out as removed at the wipe's time, in d2r_vaultRemovedAt (the per-name record his X writes
+through _vaultRemovalNote; the 20-batch undo ring is left to single removals). An older read stays out (REG-2845), and a
+newer dated read still comes back. The toolbar's Undo loads the snapshot taken before the wipe, so the items and the record
+come back as they were. Law: test_a_removed_item_stays_out_of_every_door (node, the whole page; the door's wiring is pinned by
+its source), 2 red-proofs for this REG, RED.
+
+### REG-2845 - AN OLD OR UNDATED READ BROUGHT BACK AN ITEM HE HAD REMOVED (#154, his "wont these keep coming back?")
+_removedAfter ("you removed it ... this read is OLDER") guarded the read route and the folder scan only. Measured on the whole
+page in node after his X on Harlequin Crest: a read from 8 days earlier through tvVaultRegister owned it again, and so did
+the console's sweep ledger (vaultAccumApply -> chronicleApply -> the register), whose witness carries no time. Now ONE rule,
+window._vaultRemovedHold, is asked by window._ownedAdd (the one door every add passes), by the register before its
+two-session hold, and by the filing door. Every read door is covered: the reel register, the sweep ledger, the AI checker,
+the inbox's auto-accept and the photo intake. His hand and his undo pass, because they are his word now. A read older than
+his removal stays out, and so does a read whose time cannot be told: UNKNOWN is never "newer". A store that will not read
+holds it, and a reel id s_<ms>_<n> dates its read. A newer dated read comes back, by design. The register's refusal reads
+"kept out" in the vault ledger with its reason. Law: test_a_removed_item_stays_out_of_every_door (node, the whole page: X
+and Wipe, then old, undated, old-sweep, photo-intake, newer, newer-sweep and hand reads, and the Undo), 5 red-proofs for
+this REG, RED. test_a_planner_record_is_not_his_hand (REG-2785) now dates its read after the removal it
+follows.
 
 ### REG-2844 - AN IST SHAKO AND A BER SHAKO WERE TWO COPIES NOTHING COULD TELL APART (#154 P3a, his front-run)
 What makes one copy what it is was kept by NAME. d2r_plannerMade holds one runeword record per name (REG-2185 kept a second
