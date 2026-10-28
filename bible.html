@@ -55010,13 +55010,27 @@ window.vaultAutoAssign = function(){
     if (muleId != null && muleId !== 'shared') {
       try { _woOn = (typeof window._vaultWarOverOn === 'function') ? window._vaultWarOverOn(muleId) : null; } catch (eWo) { _woOn = null; }
     }
+    var _plan = (muleId != null && typeof _vaultPlanOn === 'function') ? _vaultPlanOn(muleId) : null;
+    /* REG-2876 (v3830 second eye, reproduced in node) - A DRAWN COPY CARRIES ITS OWN copyIx. Keys were numbered by position
+       in the filtered list, and the k-th one took the k-th task cell: with copy 0 a throw and copy 1's task stash:c3r0, the
+       tile at (3,0) was key "Gull (dagger)" (copy 0) and copy 1 was packed at (0,0) - the move list said copy 1 sits at
+       (3,0), the card held the other copy there, and a drag of that tile re-targeted copy 0 (REG-2787). Now the copies this
+       locker's plan names come first, in copyIx order, each keyed by its own copyIx; the rest take the copyIx left. A copy
+       worn on the doll is one the plan does not need first (which copy is worn is not recorded). -> [copyIx, ...] of length m */
+    function _cisFor(n, m){
+      var pl = (_plan && _plan[n]) || [], out = [];
+      pl.forEach(function(q){ if (out.indexOf(q.ci) < 0 && out.length < m) out.push(q.ci); });
+      for (var c = 0; out.length < m; c++) if (out.indexOf(c) < 0) out.push(c);
+      return out;
+    }
     (names || []).forEach(function(n){
       var _woN = (_woOn && _woOn[n]) | 0;
       if (_woN && !(typeof window._vaultFiledOn === 'function' && window._vaultFiledOn(n) === muleId)) {
         var _ws = vaultSize(n), _wt = tipOf(n), _ww = Math.min(_woN, Math.max(0, (worn && worn[n]) | 0));
         _wornN += _ww;
+        var _wcis = _cisFor(n, _woN - _ww);   /* REG-2876 each over-cap copy by its own copyIx */
         for (var _wi = 0; _wi < _woN - _ww; _wi++)
-          sized.push({n:n, key:_muleItemKey(n, _wi), w:_ws[0], h:_ws[1], area:_ws[0]*_ws[1], set:(_wt&&_wt.setName)||'', ct:_woN});
+          sized.push({n:n, key:_muleItemKey(n, _wcis[_wi]), ci:_wcis[_wi], w:_ws[0], h:_ws[1], area:_ws[0]*_ws[1], set:(_wt&&_wt.setName)||'', ct:_woN});
         return;
       }
       if (_spanOf && !Object.prototype.hasOwnProperty.call(_spanOf, n)) return;
@@ -55027,8 +55041,9 @@ window.vaultAutoAssign = function(){
       var _w = Math.min(cc, Math.max(0, (worn && worn[n]) | 0));
       _wornN += _w;
       var _d = Math.min(cc - _w, (_db.hold[n] | 0)); _dbInLocker += _d; _w += _d;   // the copies on his inventory cells
+      var _cis = _cisFor(n, cc - _w);   /* REG-2876 each copy by its own copyIx */
       for (var _ci = 0; _ci < cc - _w; _ci++){
-        sized.push({n:n, key:_muleItemKey(n, _ci), w:s[0], h:s[1], area:s[0]*s[1], set:(t&&t.setName)||'', ct:cc});
+        sized.push({n:n, key:_muleItemKey(n, _cis[_ci]), ci:_cis[_ci], w:s[0], h:s[1], area:s[0]*s[1], set:(t&&t.setName)||'', ct:cc});
       }
     });
     /* v211: same-set pieces pack as NEIGHBORS — sort groups sets together first (first-fit places
@@ -55092,10 +55107,10 @@ window.vaultAutoAssign = function(){
        Lightsabre added by hand get tasks c0r0 / c1r0 / c3r0 on UNI-WEAPONS and the card drew them at (4,0) / (0,0) / (2,0).
        The k-th copy of a name takes the k-th task cell on this locker. His own hand spot still wins (laid above); a task
        cell that is taken or off the grid is packed as before; a copy with no task packs exactly as it did. */
-    var _plan = (muleId != null && typeof _vaultPlanOn === 'function') ? _vaultPlanOn(muleId) : null;
     if (_plan) {
-      var _planAt = {}, _planK = {}, _planLeft = [];
-      sized.forEach(function(it){ var k = (_planK[it.n] = (_planK[it.n] || 0) + 1) - 1; if (_plan[it.n] && _plan[it.n][k]) _planAt[it.key] = _plan[it.n][k]; });
+      var _planAt = {}, _planLeft = [];
+      /* REG-2876 - copy N takes copy N's own task cell, never the k-th one of a filtered list */
+      sized.forEach(function(it){ var pl = _plan[it.n]; if (!pl) return; for (var q = 0; q < pl.length; q++) if (pl[q].ci === it.ci) { _planAt[it.key] = pl[q]; return; } });
       _auto.forEach(function(it){
         var pl = it.bad ? null : _planAt[it.key], A = pl ? MULE_AREAS[pl.tab] : null;
         var ok = !!(A && pl.x + it.w <= A[0] && pl.y + it.h <= A[1]);

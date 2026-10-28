@@ -13153,6 +13153,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_full_locker_spills_to_its_next_mule.py")], 300,
          needs_app=False,
          why='REG-2875 a full category locker spills to its next mule: every copy gets a cell, the card draws it there, the row names the mule, and he is asked to make the next mule'),
+    Gate("test_a_card_draws_each_copy_at_its_own_task_cell",
+         [sys.executable, os.path.join(HERE, "test_a_card_draws_each_copy_at_its_own_task_cell.py")], 300,
+         needs_app=False,
+         why="REG-2876 the card keys each drawn copy by its own copyIx, so copy N sits at copy N's own task cell"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
