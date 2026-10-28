@@ -2783,6 +2783,23 @@ no known names kept every prose word, the opposite of its own rule; it now keeps
 journal: REC-03 still PASSES (newest long session, 51 worker reads, all warm). The eye's "older sessions' unanswered
 commitments are only reported" is the documented rule ("the newest decides; older ones are reported"), not a defect. Law:
 test_a_scenario_names_its_own_frames (3 cases, 5 red-proofs, 1 re-aimed).
+### REG-2875 - A FULL CATEGORY LOCKER GAVE ITS REST A MOVE TASK WITH NO CELL (his front-run, agent-111's measure)
+agent-111 measured 505 hand adds on the whole page in node: 81 of 405 copies got a MOVE task with NO cell (SOCKETED 37,
+SETS-REST 19, RUNEWORDS 18, UNI-WEAPONS 7). Measured again here on another mix (every catalogue item the router files on
+a category locker, plus 60 runewords): 106 of 232 tasks had no cell (UNI-ARMOR 51, UNI-WEAPONS 49, RUNEWORDS 6). The MOVE
+packer filled ONE character per locker (stash 10x10, then inventory 10x4) and dropped the rest. The mule window already
+spreads a locker across Mule 1..N ("+ next mule opens when this one is full"), and only the shared war stash spilled, to
+the WAR mules (REG-2803). Now the packer packs Mule 1, then Mule 2, and so on. A cell names its Mule by its row, the shared
+stash's own rule (REG-2801): stash:c3r14 is Mule 2, col 4, row 5, and inventory rows run 4 per mule. One reader
+(_vaultCellAt) serves the row, the expand, the target grid, the plan and the card. The card lays each task cell on its own
+Mule k, so the window and the targets agree copy by copy. The row reads "UNI-ARMOR · Mule 2 (9,3)", and a hand spot on any
+Mule is a task cell (REG-2787). A locker's Mule 2+ is a character he makes in the game (the window's tip calls them "mule
+characters"), and it is derived, not a roster entry. So MOVE TASKS asks him first: "Create mule UNI-ARMOR #2 in the game".
+His tick is kept on the locker's entry (pagesMade). Saved cells stay where they are, and only copies with none are placed.
+After the fix: 0 of 280 tasks have no cell, and a second batch moved no saved target. Law
+`tv/test_a_full_locker_spills_to_its_next_mule.py` (whole page in node, 8 red-proofs RED). Three red-proofs were re-aimed
+(REG-2787, REG-2802, and the Chrome law test_vault_l1_a_hand_add_routes_by_type [21], which CI proves).
+
 ### REG-2787 - A SAVED MOVE TARGET IGNORED HIS HAND AND OUTLIVED ITS DELETED MULE (#154, his words 2026-10-28 ~19:05)
 His words: "also obivously needs to remember and always organize the items the same. meaning if i restart my console those
 same items need to know where they were told to go and be so they dont mix up between restarts and stuff... needs some

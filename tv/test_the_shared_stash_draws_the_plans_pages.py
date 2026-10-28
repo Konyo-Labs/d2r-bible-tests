@@ -278,7 +278,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2802 - the expand reads a shared cell raw (row 13 of a 10-row page, the tile off the grid)",
      "file": "bible.html",
-     "find": "      return m[1] === 'shared' ? { loc: m[1], x: +m[2], y: +m[3] % 10, page: Math.floor(+m[3] / 10) } : { loc: m[1], x: +m[2], y: +m[3] }; }",
+     "find": "      return m[1] === 'shared' ? { loc: m[1], x: +m[2], y: +m[3] % 10, page: Math.floor(+m[3] / 10) } : { loc: m[1], x: ca.x, y: ca.y, mule: ca.page }; }",
      "replace": "      return { loc: m[1], x: +m[2], y: +m[3] }; }",
      "matches": 1, "needs": "node"},
     {"why": "REG-2802 - the expand's words drop the page",

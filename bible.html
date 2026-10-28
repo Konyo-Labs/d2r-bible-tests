@@ -54927,6 +54927,16 @@ window.vaultAutoAssign = function(){
      read off the saved move targets (each record's `move`). null = nothing saved here, or the store will not read - the
      packer then lays every copy itself, exactly as before. Memoised on the store's exact text, so the lockers of one paint
      parse it once and a write (another text) is read fresh; window._vaultMemoOff = true reads it every time. */
+  /* REG-2875 - ONE READING OF A TARGET CELL. A cell names its page by its row, the rule the shared stash already uses
+     (shared:c3r12 = page 2, row 3, REG-2801): a category locker's Mule k is rows 10(k-1).. of its stash and rows 4(k-1)..
+     of its inventory (stash:c3r14 = Mule 2, col 4, row 5). -> {loc, page (0 = Mule 1 / page 1), x, y} | null */
+  function _vaultCellAt(cell){
+    var m = cell != null && String(cell).match(/^(\w+):c(\d+)r(\d+)$/);
+    if (!m) return null;
+    var rows = m[1] === 'inventory' ? 4 : 10, y = +m[3];
+    return { loc: m[1], page: Math.floor(y / rows), x: +m[2], y: y % rows };
+  }
+  try { window._vaultCellAt = _vaultCellAt; } catch (eCa) {}
   var _vaultPlanMemo = null;
   function _vaultPlanOn(muleId){
     if (muleId == null || typeof _vaultMoveBag !== 'function') return null;
@@ -54949,7 +54959,7 @@ window.vaultAutoAssign = function(){
          plan's own rule in _vaultMovePackHome); a mule never lays one of these (MULE_AREAS has no 'sharedpage') */
       (by[p[0]] || (by[p[0]] = [])).push(c[1] === 'shared'
         ? { ci: +(p[1] || 0), tab: 'sharedpage', page: Math.floor(+c[3] / 10), x: +c[2], y: +c[3] % 10 }
-        : { ci: +(p[1] || 0), tab: c[1] === 'inventory' ? 'inv' : 'personal', x: +c[2], y: +c[3] });
+        : { ci: +(p[1] || 0), tab: c[1] === 'inventory' ? 'inv' : 'personal', page: _vaultCellAt(to.cell).page, x: +c[2], y: _vaultCellAt(to.cell).y });   /* REG-2875 Mule k */
     });
     if (by) Object.keys(by).forEach(function(n){ by[n].sort(function(a, b){ return a.ci - b.ci; }); });
     return by;
@@ -55089,12 +55099,13 @@ window.vaultAutoAssign = function(){
       _auto.forEach(function(it){
         var pl = it.bad ? null : _planAt[it.key], A = pl ? MULE_AREAS[pl.tab] : null;
         var ok = !!(A && pl.x + it.w <= A[0] && pl.y + it.h <= A[1]);
-        var here = ok ? ((_handAt[0] = _handAt[0] || {})[pl.tab] = _handAt[0][pl.tab] || []) : [];
+        var _plPg = (pl && pl.page > 0) ? pl.page : 0;   /* REG-2875 a task cell on Mule k is drawn on Mule k */
+        var here = ok ? ((_handAt[_plPg] = _handAt[_plPg] || {})[pl.tab] = _handAt[_plPg][pl.tab] || []) : [];
         for (var i = 0; ok && i < here.length; i++){
           var o = here[i];
           if (pl.x < o.x + o.w && o.x < pl.x + it.w && pl.y < o.y + o.h && o.y < pl.y + it.h) ok = false;
         }
-        if (ok) here.push({ n: it.n, key: it.key, x: pl.x, y: pl.y, w: it.w, h: it.h, planned: true });
+        if (ok) { here.push({ n: it.n, key: it.key, x: pl.x, y: pl.y, w: it.w, h: it.h, planned: true }); if (_plPg > _maxPage) _maxPage = _plPg; }
         else _planLeft.push(it);
       });
       _auto = _planLeft;
@@ -55872,6 +55883,44 @@ window.vaultAutoAssign = function(){
   function _vaultWarMakeRows(recs){
     return (roster || []).filter(function(m){ return _vaultMuleNotInGame(m, recs); });
   }
+  /* REG-2875 - A LOCKER'S NEXT MULE IS A CHARACTER HE MAKES. The window's Mule k of a locker is its own character in the
+     game (its tip: "this category spans N mule characters (each = 100-cell stash + 40-cell inventory)"); Mule 2+ is not a
+     roster entry, it is derived from the locker filling. So a task on a locker's Mule 2+ asks him first to make that
+     character, as REG-2803 asks for a WAR mule; his tick is kept on the locker's own entry (pagesMade). -> [{id, mule, name}] */
+  function _vaultPageMakeRows(){
+    var bag = null;
+    try { bag = _vaultMoveBag(); } catch (eB) { bag = null; }
+    if (!bag || bag.unread || !bag.map) return [];
+    var top = {};
+    Object.keys(bag.map).forEach(function(k){
+      var mv = bag.map[k], to = mv && mv.to;
+      if (!to || to.id == null || to.id === 'shared' || to.id === 'main' || mv.kind === 'throw') return;
+      var ca = _vaultCellAt(to.cell);
+      if (!ca || ca.loc === 'shared' || ca.page < 1) return;
+      if (!(top[to.id] >= ca.page)) top[to.id] = ca.page;
+    });
+    var rows = [];
+    Object.keys(top).forEach(function(id){
+      var m = (typeof muleById === 'function') ? muleById(id) : null;
+      if (!m || _vaultWarRole(m)) return;
+      var made = Array.isArray(m.pagesMade) ? m.pagesMade : [];
+      for (var p = 1; p <= top[id]; p++) if (made.indexOf(p + 1) < 0) rows.push({ id: m.id, mule: p + 1, name: m.name });
+    });
+    return rows;
+  }
+  try { window._vaultPageMakeRows = _vaultPageMakeRows; } catch (ePm) {}
+  /* his tick for a locker's Mule k: written like the WAR mule's, refused (and said) while the store is held */
+  window._vaultPageMadeInGame = function(id, mule){
+    var m = (typeof muleById === 'function') ? muleById(id) : null, k = mule | 0;
+    if (!m || k < 2) return { ok: false, why: 'not a locker mule to make' };
+    var held = (typeof window._vaultHeldFor === 'function') ? window._vaultHeldFor([RK]) : null;
+    if (held) { try { status('⚠ ' + m.name + ' #' + k + ' was not marked made - ' + held.why); } catch (eS) {} return { ok: false, why: held.why }; }
+    var was = Array.isArray(m.pagesMade) ? m.pagesMade.slice() : null;
+    m.pagesMade = (was || []).filter(function(x){ return x !== k; }).concat([k]);
+    if (_guardedSet(RK, JSON.stringify(roster)) === false) { if (was) m.pagesMade = was; else delete m.pagesMade; return { ok: false, why: 'the mule store refused the write' }; }
+    try { renderVault(); } catch (eR) {}
+    return { ok: true };
+  };
   /* his tick: he made it in the game. Written like the create, refused (and said) while the store is held */
   window._vaultWarMadeInGame = function(id){
     var m = (typeof muleById === 'function') ? muleById(id) : null;
@@ -56218,9 +56267,32 @@ window.vaultAutoAssign = function(){
                                                                          : 'copies over the war stash cap (rings/amulets all, other small gear 4, big gear 1) go to a WAR mule and you have no WAR1 mule')) : '';
       return out;
     }
-    var st = packGrid(items.map(function(it){ if (it.near && it.near.loc !== 'stash') { var c = {}; for (var kk in it) c[kk] = it[kk]; delete c.near; return c; } return it; }), 10, 10, occBy.stash);
-    lay(st.placed, 'stash');
-    lay(packGrid(st.left.map(function(it){ if (it.near && it.near.loc !== 'inventory') { var c = {}; for (var kk in it) c[kk] = it[kk]; delete c.near; return c; } return it; }), 10, 4, occBy.inventory).placed, 'inventory');
+    /* REG-2875 (agent-111, 505 hand adds: 81 of 405 copies had a MOVE task with NO cell - SOCKETED 37, SETS-REST 19,
+       RUNEWORDS 18, UNI-WEAPONS 7) - A FULL LOCKER SPILLS TO ITS NEXT MULE. This packed one character (stash 10x10, then
+       inventory 10x4) and dropped the rest, while the mule window spreads a locker across Mule 1..N ("+ next mule opens when
+       this one is full"). Each Mule k now packs in turn, its cells written on rows 10(k-1).. of the stash and 4(k-1).. of the
+       inventory (_vaultCellAt reads them), and the window lays each task cell on its own Mule k (_vaultPlanOn, _muleLoad), so
+       the window and the targets agree. Saved cells stay where they are (kept above); only copies with none are placed. */
+    var leftN = items, pgN = 0;
+    function onPage(it, loc, rows){
+      if (!it.near) return it;
+      var c = {}; for (var kk in it) c[kk] = it[kk];
+      if (it.near.loc === loc && it.near.y >= pgN * rows && it.near.y < (pgN + 1) * rows) c.near = { loc: loc, x: it.near.x, y: it.near.y - pgN * rows };
+      else delete c.near;
+      return c;
+    }
+    function occOn(loc, rows){
+      return (occBy[loc] || []).filter(function(r){ return r.y >= pgN * rows && r.y < (pgN + 1) * rows; })
+        .map(function(r){ return { x: r.x, y: r.y - pgN * rows, w: r.w, h: r.h }; });
+    }
+    while (leftN.length && pgN < 40) {
+      var st = packGrid(leftN.map(function(it){ return onPage(it, 'stash', 10); }), 10, 10, occOn('stash', 10));
+      (st.placed || []).forEach(function(q){ if (q.key != null) out[q.key] = { holder: home.holder, location: 'stash', cell: 'stash:c' + q.x + 'r' + (q.y + pgN * 10) }; });
+      var iv = packGrid((st.left || []).map(function(it){ return onPage(it, 'inventory', 4); }), 10, 4, occOn('inventory', 4));
+      (iv.placed || []).forEach(function(q){ if (q.key != null) out[q.key] = { holder: home.holder, location: 'inventory', cell: 'inventory:c' + q.x + 'r' + (q.y + pgN * 4) }; });
+      leftN = iv.left || [];
+      pgN++;
+    } /* REG-2875 next mule */
     return out;
   }
   function _vaultMovePlanCell(name, copyIx, bag){
@@ -56692,6 +56764,8 @@ window.vaultAutoAssign = function(){
     if (cell == null || cell === '') return 'not seen yet'; /* v3771 cell say */
     var m = String(cell).match(/c(\d+)r(\d+)/);
     if (!m) return String(cell);
+    var ca = _vaultCellAt(cell);   /* REG-2875 */
+    if (ca && ca.loc !== 'shared' && ca.page > 0) return String(cell) + ' · Mule ' + (ca.page + 1) + ' · col ' + (ca.x + 1) + ' · row ' + (ca.y + 1);
     return String(cell) + ' · col ' + ((+m[1]) + 1) + ' · row ' + ((+m[2]) + 1);
   }
   function _vaultMovePlaceSay(place){
@@ -56718,7 +56792,8 @@ window.vaultAutoAssign = function(){
         var m = cell && String(cell).match(/c(\d+)r(\d+)/);
         if (!m) return;
         var s = (typeof vaultSize === 'function') ? vaultSize(row.name) : [1, 1];
-        placed.push({ n: row.name, key: row.name + '#' + (row.copyIx || 0), x: +m[1], y: +m[2], w: s[0] || 1, h: s[1] || 1 });
+        var ca = _vaultCellAt(cell);   /* REG-2875 the cell on its own mule page */
+        placed.push({ n: row.name, key: row.name + '#' + (row.copyIx || 0), x: +m[1], y: (ca && ca.loc !== 'shared') ? ca.y : +m[2], w: s[0] || 1, h: s[1] || 1 });
       });
       var grid = (typeof gridHtml === 'function') ? gridHtml(placed, gw, gh, 36, { area: 'move', page: 0, label: 'Target' }) : ''; /* v3769 grid */
       var say = (g.holder || 'not seen yet') + ' · ' + (_vaultMoveStashSay(g.location) || 'not seen yet'); /* v3771 grid say */
@@ -56753,12 +56828,13 @@ window.vaultAutoAssign = function(){
     /* REG-2802 - a shared stash cell names its page by the row (shared:c0r12 = page 2, row 3). Read raw, the expand of a
        page-2 task said "(1,13)" and drew its tile on row 12 of a 10x10 grid - off the grid; the row and FIND said page 2. */
     function xy(cell){ var m = cell && String(cell).match(/^(\w+):c(\d+)r(\d+)$/); if (!m) return null;
-      return m[1] === 'shared' ? { loc: m[1], x: +m[2], y: +m[3] % 10, page: Math.floor(+m[3] / 10) } : { loc: m[1], x: +m[2], y: +m[3] }; }
+      var ca = _vaultCellAt(cell);   /* REG-2875 a locker's Mule k is read off the row too */
+      return m[1] === 'shared' ? { loc: m[1], x: +m[2], y: +m[3] % 10, page: Math.floor(+m[3] / 10) } : { loc: m[1], x: ca.x, y: ca.y, mule: ca.page }; }
     /* REG-2804 - the name of the mule today (the plan stored the name it had then - a renamed WAR1 read "WAR1 private stash"),
        and a WAR mule reads as the war stash's overflow, as its move row does */
     function where(place, c){ var pm = _vaultMuleOfPlace(place), nm = (pm && pm.name) ? String(pm.name) : String(place.holder || 'not seen yet');
       if (pm && _vaultWarRole(pm) && c.page == null) return nm + ' (SHARED STASH · overflow) (' + (c.x + 1) + ',' + (c.y + 1) + ')';
-      return nm + ' ' + (c.page != null ? 'page ' + (c.page + 1) : (_vaultMoveStashSay(place.location) || c.loc)) + ' (' + (c.x + 1) + ',' + (c.y + 1) + ')'; }
+      return nm + (c.mule > 0 ? ' · Mule ' + (c.mule + 1) : '') + ' ' + (c.page != null ? 'page ' + (c.page + 1) : (_vaultMoveStashSay(place.location) || c.loc)) + ' (' + (c.x + 1) + ',' + (c.y + 1) + ')'; }
     function dims(loc){ return [10, (loc === 'inventory' || loc === 'inv') ? 4 : 10]; }
     function sz(n){ var s0 = (typeof vaultSize === 'function') ? vaultSize(n) : [1, 1]; return [s0[0] || 1, s0[1] || 1]; }
     var to = xy(t.to && t.to.cell), from = xy(t.from && t.from.cell);
@@ -56815,6 +56891,8 @@ window.vaultAutoAssign = function(){
       if (m && /^shared:/.test(String(place.cell)))
         return h + ' page ' + (Math.floor((+m[2]) / 10) + 1) + ' (' + ((+m[1]) + 1) + ',' + ((+m[2]) % 10 + 1) + ')';
       if (_pm && _vaultWarRole(_pm)) h = h + ' (SHARED STASH · overflow)'; /* L1 a WAR mule reads as the war stash; REG-2804 by its role, never its name */
+      var _ca = _vaultCellAt(place.cell);
+      if (_ca && _ca.page > 0) return h + ' · Mule ' + (_ca.page + 1) + ' (' + (_ca.x + 1) + ',' + (_ca.y + 1) + ')';   /* REG-2875 the next mule of a full locker */
       return h + (m ? ' (' + ((+m[1]) + 1) + ',' + ((+m[2]) + 1) + ')' : '');
     }
     function _vtkDone(t){ return t && (t.status === 'moved-manual' || t.status === 'verified' || t.status === 'closed'); }
@@ -56878,12 +56956,19 @@ window.vaultAutoAssign = function(){
     var html = head;
     /* REG-2803 - "prompt me to create that same mule ingame so i get tasked to do it": first, before the moves that go to it */
     var makes = (typeof _vaultWarMakeRows === 'function') ? _vaultWarMakeRows(built.records) : [];
-    if (makes.length) html += '<p class="vtk-sec" data-sec="make">Make in the game · ' + makes.length + '</p><ol class="vtk-list" data-sec="make">'
+    var pageMakes = (typeof _vaultPageMakeRows === 'function') ? _vaultPageMakeRows() : [];   /* REG-2875 a locker's next mule */
+    if (makes.length || pageMakes.length) html += '<p class="vtk-sec" data-sec="make">Make in the game · ' + (makes.length + pageMakes.length) + '</p><ol class="vtk-list" data-sec="make">'
       + makes.map(function(m){
           var why = (m.auto && m.auto.why) ? m.auto.why : 'war stash overflow';
           return '<li class="vtk-line vtk-make" data-mule="' + esc(m.id) + '"><input type="checkbox" class="vtk-tick" aria-label="I made ' + esc(m.name) + ' in the game"'
             + ' onclick="event.stopPropagation()" onchange="window._vaultWarMadeInGame(\'' + jsArg(m.id) + '\')">'
-            + '<span class="vtk-say">Create mule <b>' + esc(m.name) + '</b> in the game (' + esc(why) + '); the moves to it are below</span>' + window._notInGameChip(m, built.records) + '</li>';
+            + '<span class="vtk-say">Create mule <b>' + esc(m.name) + '</b> in the game — the board made it (' + esc(why) + '); the moves to it are below</span>' + window._notInGameChip(m, built.records) + '</li>';
+        }).join('')
+      + pageMakes.map(function(r){
+          return '<li class="vtk-line vtk-make" data-mule="' + esc(r.id) + '" data-page="' + r.mule + '"><input type="checkbox" class="vtk-tick" aria-label="I made ' + esc(r.name + ' #' + r.mule) + ' in the game"'
+            + ' onclick="event.stopPropagation()" onchange="window._vaultPageMadeInGame(\'' + jsArg(r.id) + '\',' + r.mule + ')">'
+            + '<span class="vtk-say">Create mule <b>' + esc(r.name + ' #' + r.mule) + '</b> in the game — ' + esc(r.name) + ' is full up to Mule ' + (r.mule - 1)
+            + ', so its Mule ' + r.mule + ' is a new character; the moves to it are below</span></li>';
         }).join('') + '</ol>';
     if (moves.length) html += '<p class="vtk-sec" data-sec="moves">Moves · ' + moves.length + '</p>'
       + '<ol class="vtk-list" data-sec="moves">' + moves.map(line).join('') + '</ol>'; /* L1 (Elad v3778) one collapsed row per task, never a shared 'Location not seen yet' block */
@@ -61077,13 +61162,13 @@ window.vaultAutoAssign = function(){
     (ld.conflicts || []).forEach(function(c){ if (c.key === key) bad = c; });
     if (bad) return { ok: false, why: 'a ' + it.w + '×' + it.h + ' does not fit there — ' + bad.why };
     try { _mulePosWrite(next); } catch (e){ return { ok: false, why: 'the spot could not be saved (' + (e && e.message || e) + ')' }; }
-    /* REG-2787 - his hand placed it: the copy's move task targets this cell. A task cell names no Mule page, so a spot on
-       Mule 2+ (or a gems/runes/shared tab) is drawn there and the task keeps its saved cell. */
+    /* REG-2787 - his hand placed it: the copy's move task targets this cell, on whichever Mule he put it (REG-2875: a task
+       cell names its Mule by its row). A spot on a gems/runes/shared tab is drawn there and the task keeps its saved cell. */
     var _rtT = null;
-    if (pg === 0 && (spot.tab === 'personal' || spot.tab === 'inv') && typeof window._vaultMoveRetargetCell === 'function') {
+    if ((spot.tab === 'personal' || spot.tab === 'inv') && typeof window._vaultMoveRetargetCell === 'function') {
       var _rtCi = (String(key) === String(it.n)) ? 0 : ((+(String(key).match(/ #(\d+)$/) || [0, 1])[1]) - 1);
-      _rtT = window._vaultMoveRetargetCell(it.n, _rtCi, muleId, (spot.tab === 'inv' ? 'inventory' : 'stash') + ':c' + x + 'r' + y,
-        'you placed it at col ' + (x + 1) + ' · row ' + (y + 1) + ' by hand');
+      _rtT = window._vaultMoveRetargetCell(it.n, _rtCi, muleId, (spot.tab === 'inv' ? 'inventory' : 'stash') + ':c' + x + 'r' + (y + pg * (spot.tab === 'inv' ? 4 : 10)),
+        'you placed it at ' + (pg > 0 ? 'Mule ' + (pg + 1) + ' · ' : '') + 'col ' + (x + 1) + ' · row ' + (y + 1) + ' by hand');   /* REG-2875 Mule k is a task cell */
     }
     return { ok: true, n: it.n, w: it.w, h: it.h, spot: { tab: spot.tab, page: pg, x: x, y: y }, task: _rtT };
   };
