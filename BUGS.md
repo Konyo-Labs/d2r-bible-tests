@@ -2190,6 +2190,23 @@ red-proof (owned_restore's JS no longer calls window._ownedAdd) first came back 
 constant of a function, and owned_restore's own DOCSTRING spells "window._ownedAdd(name, ...)", so the census could never
 see that door lose its receipt. Docstrings are now left out of what a door "sends"; the proof is RED. The owned-door law is
 keyable and re-sabotaged: bad 0 of 32.
+### REG-2920 - EVERY PC'S RECOMMENDATIONS NAMED HIS CHARACTERS: "BEST CHAR FROM YOUR ROSTER: KONYOLOCK" ON A BOARD THAT IS NOT HIS (#252, his per-PC rule)
+CHARS, BOSS_CHAR_REC, BOSS_ACTION_PLAN, BOSSES[].char and .why, the sunder tables (SUNDER_CHARMS, SUNDER_RECIPES,
+_HERALD_SUNDERS, the SPECIAL_DROPS sunder entries), TZ_ZONES, RUNE_SOURCES, the Pandemonium card and the TZ tab's markup were
+typed for his roster, and every PC drew them as written. Counted by the new law on his ledger, where they stay: 338 of his
+names across the 320 item cards, 368 across the aid cards, 25 in the 13 boss details, 16 on the boss cards, 6 in the sunder
+recipes, 6 in the 29 material cards, 3 each in the sunder charms, the Herald table and the rune sources, 2 each in the zone
+detail and the TZ zone cards, 1 on the Pandemonium card, and 8 in the markup's 15 text nodes. Before this, another board drew
+every one of them (each red-proof restores one site and that surface names him again off his ledger).
+One gate decides, the one the chronicle seeds use (`_seedsBelongHere`, v2692). His ledger reads exactly as before, and his
+best-character card stays his typed roster even when he has saved a test build. Anywhere else `_charSay` resolves each name to
+this PC's own character of that class ("your Paladin Hammerfall": one its console learned from its reels, else a build saved
+here) or else to the class and role ("a physical melee build", "a Hammerdin"), never his names or levels; `_charCard` gives
+the card the same answer and says "best character for this boss" when it is not this PC's own. The markup's text nodes go
+through the same resolver once at boot (`_charSayStatic`). Sweep: beyond the audit's rows, the law found BOSSES[].why on the
+boss card and the boss detail, the SPECIAL_DROPS note on the drops grid and the material card, and the sunder recipe tile's
+own "best for" - all gated. Law tv/test_a_recommendation_names_this_pcs_characters.py (worlds: his, another claimed ledger, a
+guest, another ledger with a saved Paladin; plus nothing painted at boot names him elsewhere), 20 red-proofs, all RED.
 
 ### REG-2879 - REG-2803'S CHROME LAW DROVE A GUEST WORLD, WHERE THE BOARD RIGHTLY MAKES NO MULE (ci/claude-v3834, 4 cases)
 CI (agent-suite, ci/claude-v3834) failed four cases of tv/test_vault_l1_war_stash_overflow.py, which REG-2803 re-aimed without
