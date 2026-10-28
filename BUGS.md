@@ -3074,6 +3074,20 @@ His tick is kept on the locker's entry (pagesMade). Saved cells stay where they 
 After the fix: 0 of 280 tasks have no cell, and a second batch moved no saved target. Law
 `tv/test_a_full_locker_spills_to_its_next_mule.py` (whole page in node, 8 red-proofs RED). Three red-proofs were re-aimed
 (REG-2787, REG-2802, and the Chrome law test_vault_l1_a_hand_add_routes_by_type [21], which CI proves).
+### REG-2871 - A D2JSP POST WAS TEXT ONLY, AND THE SITE COULD NOT HAVE SERVED ITS PICTURE TO A READER (#83, his ask 2, GrokBot 6476487696)
+GrokBot: "the draft is text only, and Elad wants the item's picture embedded. The picture and the layout (one mod per line,
+title, price) must render correctly on d2jsp itself." Measured: d2jspDraft wrote the title, the mods and the price as text.
+The room showed a screenshot beside the draft and said "The board receives the text." The site gate answered 401 to every
+request without the password, so no picture on bull-4-u.com could load for a d2jsp reader. Now a post is BBCode in this
+order: the title, one [img] line with the item's own art from the one resolver (artUrl, which asks _keeperArt first,
+REG-2805) at https://bull-4-u.com/d2r/art/..., one mod per line, copies, and the price last, where the console's _priced
+reads it. A name with no art, or an art path outside art/, carries no picture. A sold block carries none. The gate
+(functions/_middleware.js) now lets anyone GET an image file directly under /d2r/art/; the art is already public in the
+repo, and every other path stays behind the password. This changes what the live site serves once main deploys. The stale
+_priced comment ("A sale says Selling") was corrected. NEEDS LIVE: whether d2jsp renders an [img] from this host. Law
+`tv/test_a_d2jsp_post_carries_the_item_picture.py` (the room, the whole page and the gate in node, plus the console's
+_priced; 5 red-proofs RED).
+
 ### REG-2870 - A D2JSP POST ANSWER NAMED NO REASON, AND A CLICK WAS READ AS NOTHING SENT WHEN CHROME WOULD NOT CLOSE (#83, his ask 1, GrokBot 6476487696)
 GrokBot's real post from the Linux seat, with his OK, came back "MAYBE SENT: The console answered with no reason, which this
 page does not know", and no topic reached board 268. His ask: "surface what the backend got back (HTTP status or d2jsp

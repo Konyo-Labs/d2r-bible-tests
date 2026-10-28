@@ -13225,6 +13225,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_shared_stash_draws_each_copy_at_its_own_task_cell.py")], 300,
          needs_app=False,
          why="REG-2887 (#231 second eye on v3833) - the shared stash draws each copy at the task cell of its own copyIx through the mule card's one join, so a thrown or cell-less copy 0 is never painted at copy 1's cell and a listed mark sits on its own copy"),
+    Gate("test_a_d2jsp_post_carries_the_item_picture",
+         [sys.executable, os.path.join(HERE, "test_a_d2jsp_post_carries_the_item_picture.py")], 300,
+         needs_app=False,
+         why="REG-2871 a d2jsp post carries the item's picture as BBCode [img] from the one resolver, laid out title/picture/mods/price; the gate opens art images only"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

@@ -38,6 +38,11 @@ export async function onRequest(context) {
   // (Windows irm|iex + Mac curl|bash). Scripts hold no secrets — public repo.
   if (url.pathname === '/d2r/install-tvd.ps1' || url.pathname === '/d2r/install-tvd.sh') return next();
 
+  // REG-2871 (#83) - the item art a d2jsp post embeds ([img]) must load for a reader who has no password. Only a GET of an
+  // image file directly under /d2r/art/ is open; the art is already public in the repo. Everything else stays gated.
+  if (request.method === 'GET' && /^\/d2r\/art\/[A-Za-z0-9_.\-]+\.(?:png|jpe?g|gif|webp)$/i.test(url.pathname)
+      && url.pathname.indexOf('..') < 0) return next();
+
   // decode the Basic Auth username — ignored for AUTH, but recorded so Konyo can
   // label who's who (tell a cousin to log in as e.g. "cuz" and visits show it).
   let user = '';
