@@ -13237,6 +13237,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_his_advice_boxes_and_marks_stay_on_his_ledger.py")], 300,
          needs_app=False,
          why='REG-2921 #252: his For Konyo boxes, his craft note and his YOURS star stay on his ledger; another board is advised as whoever plays'),
+    Gate("test_an_unset_mf_is_never_his_699",
+         [sys.executable, os.path.join(HERE, "test_an_unset_mf_is_never_his_699.py")], 300,
+         needs_app=False,
+         why='REG-2922 #252: an MF nobody set is unknown and said so, never his 699, and no save turns it into a measured 0'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

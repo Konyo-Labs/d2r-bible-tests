@@ -2190,6 +2190,18 @@ red-proof (owned_restore's JS no longer calls window._ownedAdd) first came back 
 constant of a function, and owned_restore's own DOCSTRING spells "window._ownedAdd(name, ...)", so the census could never
 see that door lose its receipt. Docstrings are now left out of what a door "sends"; the proof is RED. The owned-door law is
 keyable and re-sabotaged: bad 0 of 32.
+### REG-2922 - AN MF NOBODY SET WAS HIS 699, AND THE FIRST SAVE OF ANYTHING WOULD HAVE MADE IT A MEASURED-LOOKING 0% (#252)
+`let mf = parseInt(LS.getItem('d2r_mf') || '699')` gave every PC that never moved the slider HIS magic find (Konyolock's
+loadout): the odds, the slider label, the cockpit tile and dock line, and every "@ 699% MF" sentence. The two starred presets
+(553, 699) wore his star, the "mine" look and titles naming Konyolock everywhere. On his ledger (`_seedsBelongHere`) nothing
+changes. Anywhere else an unset MF computes the base odds (0) and every place that states it says so: the slider and the
+cockpit say "not set", the 12 "@ N% MF" sentences say "@ base odds (MF not set)", "your MF:" / "MF:" / the wishlist export say
+"not set". Sibling found on the sweep: persist() runs on every grail mark and wrote d2r_mf = the unset 0, so the next load would
+have read 0 as picked. It now writes MF only once someone chose one (`_mfChosen`, set by the slider's input, which every preset
+and the number box drive). Presets keep their values and lose the star, the look and his name off his ledger
+(`_mfPresetsUnmark`). An MF a board set is shown as set anywhere. Law tv/test_an_unset_mf_is_never_his_699.py (his, another
+claimed ledger, a guest, another ledger with MF 300 saved), 12 red-proofs, all RED.
+
 ### REG-2921 - HIS ADVICE BOXES AND HIS "YOURS" MARKS REACHED EVERY PC: "FOR KONYO (WARLOCK):" AND "★ YOURS" ON A BOARD THAT IS NOT HIS (#252)
 Nine guide boxes in the markup open "For Konyo:" or "For Konyo (Warlock):", the Caster craft's `konyo:` note ("Your craft,
 Konyo - ...") showed on the recipe row, the workshop and the craft card, and the same craft wore "★ YOURS" on the workshop tile

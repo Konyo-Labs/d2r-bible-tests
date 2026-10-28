@@ -6111,8 +6111,8 @@ try {
     <button class="mf-preset-chip" data-mf="100" aria-label="magic find 100 percent" onclick="setMFPreset(100)" type="button">100</button>
     <button class="mf-preset-chip" data-mf="250" aria-label="magic find 250 percent" onclick="setMFPreset(250)" type="button">250</button>
     <button class="mf-preset-chip" data-mf="400" aria-label="magic find 400 percent" onclick="setMFPreset(400)" type="button">400</button>
-    <button class="mf-preset-chip mf-preset-chip-mine" data-mf="553" onclick="setMFPreset(553)" type="button" title="Full MF swap with Shako (Konyolock)">553 ⭐</button>
-    <button class="mf-preset-chip mf-preset-chip-mine" data-mf="699" onclick="setMFPreset(699)" type="button" title="Konyolock primary MF loadout">699 ⭐</button>
+    <button class="mf-preset-chip mf-preset-chip-mine" id="mf-preset-mine-553" data-mf="553" onclick="setMFPreset(553)" type="button" title="Full MF swap with Shako (Konyolock)">553 ⭐</button>
+    <button class="mf-preset-chip mf-preset-chip-mine" id="mf-preset-mine-699" data-mf="699" onclick="setMFPreset(699)" type="button" title="Konyolock primary MF loadout">699 ⭐</button>
     <button class="mf-preset-chip" data-mf="800" aria-label="magic find 800 percent" onclick="setMFPreset(800)" type="button">800</button>
     <button class="mf-preset-chip" data-mf="1000" aria-label="magic find 1000 percent" onclick="setMFPreset(1000)" type="button">1000</button>
     <input type="number" class="mf-number-input" id="mfNumberInput" aria-label="exact magic find percent" min="0" max="1000" step="1" placeholder="exact"/>
@@ -23931,7 +23931,19 @@ window._ncAudit = function(){
 
 const $ = id => document.getElementById(id);
 const LS = window.LSR;   // v635 — profile-routed storage (main = bare keys, ladder = L· prefix)
-let mf = parseInt(LS.getItem('d2r_mf') || '699');
+/* #252 (REG-2922) - 699 is HIS MF (Konyolock's loadout). On his ledger it stays the default (the v2692 gate, the one the
+   chronicle seeds use); anywhere else an MF nobody set is UNKNOWN: the odds use 0% - the base odds - and every place that
+   shows "your MF" says it is not set, never 699. */
+let mf = parseInt(LS.getItem('d2r_mf') || (window._seedsBelongHere === true ? '699' : '0'));
+/* chosen = this board has an MF someone picked: one saved, or the slider moved (every preset and the number box drive the
+   slider's input). persist() writes d2r_mf only once chosen - it runs on every grail mark, so writing the unset 0 there
+   would turn "not set" into a measured-looking 0% the first time he ticks anything. */
+let _mfChosen = (function(){ try { return LS.getItem('d2r_mf') != null || window._seedsBelongHere === true; } catch (e) { return true; } })();
+window._mfUnset = function(){ return !_mfChosen; };
+/* the MF a sentence states. Chosen: its number, exactly as before. Unset: the odds are the base odds (MF 0) and the words
+   say so - "@ 0% MF" would read as a setting this board never made. */
+window._mfAtSay = function(){ return _mfChosen ? mf + '% MF' : 'base odds (MF not set)'; };
+window._mfPctSay = function(){ return _mfChosen ? mf + '%' : 'not set'; };
 let players = parseInt(LS.getItem('d2r_players') || '1');
 let currentFilter = "all";
 let searchQ = "";
@@ -27194,7 +27206,7 @@ const persistSoon = () => {
   _persistT = setTimeout(() => { _persistT = null; persist(); }, 250);
 };
 const persist = () => {
-  LS.setItem('d2r_mf', mf);
+  if (_mfChosen) LS.setItem('d2r_mf', mf);   /* #252 REG-2922 - an MF nobody picked stays unset */
   LS.setItem('d2r_players', players);
   LS.setItem('d2r_wishlist', JSON.stringify([...wishlist]));
   LS.setItem('d2r_owned', JSON.stringify([...owned]));
@@ -29467,7 +29479,7 @@ window.renderHighValueFinds = renderHighValueFinds;
 
 function updateEffMF() {
   $("mf").value = mf;
-  $("mf-val").textContent = mf + "%";
+  $("mf-val").textContent = window._mfUnset() ? 'not set' : mf + "%";   /* #252 REG-2922 */
   $("eff-mf").textContent = effMF(mf,250).toFixed(2) + "%";
 }
 function updatePlayers() {
@@ -29738,6 +29750,23 @@ window._bossNavFit = function(){
 
 /* === v30: MF presets + keyboard shortcuts + number input sync === */
 
+/* #252 (REG-2922) - the two starred presets are HIS loadouts ("Konyolock primary MF loadout"). On any ledger but his they stay
+   presets with their values, and lose the star, the "mine" look and his name. -> how many chips were unmarked */
+window._mfPresetsUnmark = function(){
+  if (window._seedsBelongHere === true) return 0;
+  var n = 0;
+  ['553', '699'].forEach(function(v){
+    var c = document.getElementById('mf-preset-mine-' + v);
+    if (!c) return;
+    c.classList.remove('mf-preset-chip-mine');
+    c.textContent = v;
+    c.setAttribute('title', v + '% MF preset');
+    n++;
+  });
+  return n;
+};
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ window._mfPresetsUnmark(); });
+else window._mfPresetsUnmark();
 window.setMFPreset = function(value) {
   const slider = document.getElementById('mf');
   if (!slider) return;
@@ -30001,7 +30030,7 @@ function renderWishlistHuntPath() {
       <div class="sec-body" hidden>
       <div class="wishlist-empty-msg">
         🎯 No items starred yet. Click the ☆ on any item card to add it to your wishlist.<br>
-        <span class="wishlist-empty-cta">Quick-add suggestions below: top grails by speed at ${mf}% MF</span>
+        <span class="wishlist-empty-cta">Quick-add suggestions below: top grails by speed at ${window._mfAtSay()}</span>
       </div>
       <div class="wishlist-quick-add">
         <span class="wishlist-quick-add-label">Quick-add wishlist:</span>
@@ -30049,7 +30078,7 @@ function renderWishlistHuntPath() {
   panel.innerHTML = `
     <div class="wishlist-header sec-h collapsed" onclick="toggleSec(this)">
       <h3 class="wishlist-title">⭐ Your Wishlist Hunt Path</h3>
-      <span class="wishlist-summary">${starred.length} starred · ${ownedFromWishlist} found · ${remaining.length} to chase · @ ${mf}% MF</span>
+      <span class="wishlist-summary">${starred.length} starred · ${ownedFromWishlist} found · ${remaining.length} to chase · @ ${window._mfAtSay()}</span>
       <span class="sec-chev">▾</span>
     </div>
     <div class="sec-body" hidden>
@@ -30089,7 +30118,7 @@ function renderWishlistHuntPath() {
           return `<div class="wishlist-item" onclick="openItemDetail('${h.name.replace(/'/g, "\\'")}')">
             <div class="wishlist-item-rank">⚠ no viable source</div>
             <div class="wishlist-item-name"${_qStyle(h.name,'unique')}>${h.name}</div>
-            <div class="wishlist-item-source">unreachable @ ${mf}% MF</div>
+            <div class="wishlist-item-source">unreachable @ ${window._mfAtSay()}</div>
             <span class="wishlist-item-star" onclick="event.stopPropagation();toggleStarred('${h.name.replace(/'/g, "\\'")}');renderWishlistHuntPath();renderHero()" title="unstar">★</span>
           </div>`;
         }
@@ -30207,7 +30236,7 @@ function renderItemDetailCard(itemName) {
         ${plan.goto ? `<div class="gic-action-key">GO TO</div><div class="gic-action-val">${plan.goto}</div>` : ''}
         ${plan.build ? `<div class="gic-action-key">BUILD TIP</div><div class="gic-action-val">${_charSay(plan.build)}</div>` : ''}
         ${plan.cadence ? `<div class="gic-action-key">CADENCE</div><div class="gic-action-val">${plan.cadence}</div>` : ''}
-        ${plan.mf ? `<div class="gic-action-key">MF TARGET</div><div class="gic-action-val">${plan.mf}</div>` : `<div class="gic-action-key">MF TARGET</div><div class="gic-action-val">Higher = better. You're at ${mf}%.</div>`}
+        ${plan.mf ? `<div class="gic-action-key">MF TARGET</div><div class="gic-action-val">${plan.mf}</div>` : `<div class="gic-action-key">MF TARGET</div><div class="gic-action-val">Higher = better. ${window._mfUnset() ? 'Your MF is not set.' : "You're at " + mf + '%.'}</div>`}
       </div>
     </section>`;
   }
@@ -30228,7 +30257,7 @@ function renderItemDetailCard(itemName) {
           <h2 class="gic-name">${item.n} ${tierBadge}${vaultLoc}${item.qlvl ? `<span class="gic-grail-badge" style="background:linear-gradient(135deg,#888,#555);color:#fff">qlvl ${item.qlvl}</span>`:''}${item.tc ? `<span class="gic-grail-badge" style="background:linear-gradient(135deg,#444,#222);color:#f0c060">TC${item.tc}</span>`:''}</h2>
           <div class="gic-subtitle">${itemInfo?.tagline || item.cat || ''}</div>
           <div class="gic-meta-row">
-            <span class="gic-meta-chip">${sources.length} viable sources @ ${mf}% MF</span>
+            <span class="gic-meta-chip">${sources.length} viable sources @ ${window._mfAtSay()}</span>
             <span class="gic-meta-chip" style="color:#00ffaa;border-color:rgba(0,255,170,.4)">best: ${fmt(best.chance)} at ${best.boss}</span>
             ${isOwned ? '<span class="gic-meta-chip" style="color:#00ffaa">✓ owned</span>' : ''}
           </div>
@@ -30246,7 +30275,7 @@ function renderItemDetailCard(itemName) {
       </section>` : ''}
 
       <section class="gic-section">
-        <div class="gic-section-title">⚡ Top 6 Sources @ ${mf}% MF (click to focus boss)</div>
+        <div class="gic-section-title">⚡ Top 6 Sources @ ${window._mfAtSay()} (click to focus boss)</div>
         <div class="gic-source-grid">
           ${top6.map((s,i) => `
             <div class="gic-source-cell ${i===0?'best':''}" onclick="window.openBossDetail('${s.bossId}')">
@@ -30261,7 +30290,7 @@ function renderItemDetailCard(itemName) {
 
       <section class="gic-section">
         <div class="gic-quick-take">
-          ⚡ <strong>Quick take @ ${mf}% MF:</strong> Fastest = <span class="gic-item-link">${best.boss}</span> at <strong>${fmt(best.chance)}</strong> · <strong>${best.r50.toLocaleString()} runs</strong> ≈ <strong style="color:var(--terror)">${fmtHours(best.hrs)}</strong> for 50% drop at ${best.kph}/hr
+          ⚡ <strong>Quick take @ ${window._mfAtSay()}:</strong> Fastest = <span class="gic-item-link">${best.boss}</span> at <strong>${fmt(best.chance)}</strong> · <strong>${best.r50.toLocaleString()} runs</strong> ≈ <strong style="color:var(--terror)">${fmtHours(best.hrs)}</strong> for 50% drop at ${best.kph}/hr
         </div>
       </section>
 
@@ -30305,7 +30334,7 @@ function renderItemDetailCard(itemName) {
       ${__piecesHtml}
 
       <div style="text-align:center;margin-top:14px;font-size:var(--fs-micro);color:var(--gold-dim);font-family:var(--mono)">
-        Press ESC to close · MF: ${mf}% · /players ${typeof players !== 'undefined' ? players : 1}
+        Press ESC to close · MF: ${window._mfPctSay()} · /players ${typeof players !== 'undefined' ? players : 1}
       </div>
     </div>
   `;
@@ -30472,7 +30501,7 @@ function renderHeroV31() {
 
     if (final.length === 0) {
       $('hero-picks').innerHTML = `<div style="padding:24px;text-align:center;color:var(--gold-dim);grid-column:1/-1">
-        No chronicle items reachable from <strong>${bossInfo.name}</strong> at ${mf}% MF.<br>
+        No chronicle items reachable from <strong>${bossInfo.name}</strong> at ${window._mfAtSay()}.<br>
         <span style="font-size:var(--fs-meta);opacity:.7">try higher MF or another boss</span>
       </div>`;
     } else {
@@ -30492,7 +30521,7 @@ function renderHeroV31() {
     }
 
     const nA = tierA.length, nB = tierB.length, nC = tierC.length;
-    $('hero-sub').innerHTML = `<strong style="color:#00ffaa">${nA}</strong> #1 here · <strong style="color:#f0c060">${nB}</strong> at rank #2 · <strong>${nC}</strong> at rank #3 · showing top <strong>${final.length}</strong> of ${entries.length} grails @ ${mf}% MF · /players ${typeof players !== 'undefined' ? players : 1} · <button onclick="clearActiveBoss()" style="background:none;border:1px solid var(--gold-dim);color:var(--gold-dim);padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:var(--fs-micro);cursor:pointer;margin-left:6px">✕ clear filter</button>`;
+    $('hero-sub').innerHTML = `<strong style="color:#00ffaa">${nA}</strong> #1 here · <strong style="color:#f0c060">${nB}</strong> at rank #2 · <strong>${nC}</strong> at rank #3 · showing top <strong>${final.length}</strong> of ${entries.length} grails @ ${window._mfAtSay()} · /players ${typeof players !== 'undefined' ? players : 1} · <button onclick="clearActiveBoss()" style="background:none;border:1px solid var(--gold-dim);color:var(--gold-dim);padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:var(--fs-micro);cursor:pointer;margin-left:6px">✕ clear filter</button>`;
 
     const titleEl = document.querySelector('.hero-title');
     if (titleEl) titleEl.innerHTML = `🎯 TOP GRAIL DROPS FROM ${(bossInfo.emoji||'')} ${bossInfo.name.toUpperCase()}`;
@@ -30574,7 +30603,7 @@ function renderHeroV31() {
     // v1692 — same fallback fix as renderGrailProgress: the real roster, not the boss-drop shortlist.
     var _r = (typeof window._gUniqueRoster === 'function') ? window._gUniqueRoster() : [];
     return _r.filter(n => _gFound(n)).length; })();
-  $('hero-sub').innerHTML = `Top ${final.length} fastest chronicle farms at <strong>${mf}% MF</strong> · <strong>/players ${typeof players !== 'undefined' ? players : 1}</strong> · time-to-50% · 🔒 = verified · ⭐ ${starredCount} wishlist · ✓ ${ownedCount} owned · <em>click any pick → opens Golden Item Card</em>`;
+  $('hero-sub').innerHTML = `Top ${final.length} fastest chronicle farms at <strong>${window._mfAtSay()}</strong> · <strong>/players ${typeof players !== 'undefined' ? players : 1}</strong> · time-to-50% · 🔒 = verified · ⭐ ${starredCount} wishlist · ✓ ${ownedCount} owned · <em>click any pick → opens Golden Item Card</em>`;
 
   // Reset title to global
   const titleEl = document.querySelector('.hero-title');
@@ -30767,7 +30796,7 @@ function renderBossDetailCard(bossId, focusDiff) {
 
     <section class="gbc-section">
       <div class="gbc-section-header-row">
-        <div class="gbc-section-label">💎 your top 15 chronicle picks from this boss · @${mf}% MF · sorted by hours-to-50%</div>
+        <div class="gbc-section-label">💎 your top 15 chronicle picks from this boss · @${window._mfAtSay()} · sorted by hours-to-50%</div>
         <button class="gbc-section-link" onclick="clearActiveBoss();setTimeout(()=>{document.querySelectorAll('#boss-cards .boss-card.bd-open').forEach(c=>{c.classList.remove('bd-open');c.classList.add('collapsed')});const el=document.getElementById('${boss.id}');if(el){el.classList.remove('collapsed');el.classList.add('bd-open');(window.__alignCard?window.__alignCard('#'+el.id):el.scrollIntoView({behavior:'smooth',block:'start'}));el.querySelector('.boss-header')?.classList.add('flash-gold');setTimeout(()=>el.querySelector('.boss-header')?.classList.remove('flash-gold'),1400)}},120)" title="See every drop across all 6 difficulties — sortable + filterable">View Full Drop Table →</button>
       </div>
       ${top15Html}
@@ -31264,7 +31293,7 @@ function renderBossCards() {
       const diffLabel = bestDiffKey.replace("Tz", " TZ").toUpperCase();
       // v26: null-guard — runsFor + hoursFor can return null when chance is unreachable/blocked
       if (r50 !== null && hrs !== null) {
-        quickTake = `<div class="quick-take">⚡ <strong>Quick take @ ${mf}% MF:</strong> Best chronicle = <span class="item-link"${_qStyle(bestRow.n,'unique')}>${bestRow.n}</span> at <strong>${fmt(bestChance)}</strong> (${diffLabel}) · <strong>${r50.toLocaleString()} runs</strong> ≈ <strong style="color:var(--terror)">${fmtHours(hrs)}</strong> for 50% drop at ${Math.round(boss.kph * kphMult)}/hr</div>`;
+        quickTake = `<div class="quick-take">⚡ <strong>Quick take @ ${window._mfAtSay()}:</strong> Best chronicle = <span class="item-link"${_qStyle(bestRow.n,'unique')}>${bestRow.n}</span> at <strong>${fmt(bestChance)}</strong> (${diffLabel}) · <strong>${r50.toLocaleString()} runs</strong> ≈ <strong style="color:var(--terror)">${fmtHours(hrs)}</strong> for 50% drop at ${Math.round(boss.kph * kphMult)}/hr</div>`;
       }
     }
 
@@ -31304,7 +31333,7 @@ function renderBossCards() {
           <button class="boss-filter-pill ${filter==='starred'?'active':''}" onclick="setBossFilter('${boss.id}','starred')">⭐ wishlist</button>
           <button class="boss-filter-pill ${filter==='hideowned'?'active':''}" onclick="setBossFilter('${boss.id}','hideowned')">hide ✓ owned</button>
         </div>
-        <h3 style="margin:14px 0 6px;font-size:var(--fs-body);color:var(--gold);text-transform:uppercase;letter-spacing:.6px">drop chances per kill (your MF: ${mf}%) — ${dropTable.length} shown</h3>
+        <h3 style="margin:14px 0 6px;font-size:var(--fs-body);color:var(--gold);text-transform:uppercase;letter-spacing:.6px">drop chances per kill (your MF: ${window._mfPctSay()}) — ${dropTable.length} shown</h3>
         <div class="scroll-table"><table class="drops">
           <thead><tr>
             <th>item</th>
@@ -32184,7 +32213,7 @@ function renderAidCard(name, opts){
   if (!focus) focus = valid[0];
 
   if (!focus) {
-    return `<div class="aid-card"><div class="aid-empty">No achievable sources for <strong>${name}</strong> at MF ${mf}% — try higher difficulty or terror zone.</div></div>`;
+    return `<div class="aid-card"><div class="aid-empty">No achievable sources for <strong>${name}</strong> at MF ${window._mfPctSay()} — try higher difficulty or terror zone.</div></div>`;
   }
 
   const h50 = hoursForA(focus.chance, focus.adj, focus.kph, 0.5);
@@ -32289,7 +32318,7 @@ function renderAidCard(name, opts){
           <div class="aid-stat">
             <div class="aid-stat-label">chance</div>
             <div class="aid-stat-val">${fmtDrop(focus.adj, name)}</div>
-            <div class="aid-stat-hint">@ ${mf}% MF</div>
+            <div class="aid-stat-hint">@ ${window._mfAtSay()}</div>
           </div>
           <div class="aid-stat">
             <div class="aid-stat-label">50% confident</div>
@@ -38539,7 +38568,7 @@ const _sliderFanout = () => {
     try { if (typeof window._writeSetFarm === 'function') window._writeSetFarm(); } catch(e){}
   }, 220);
 };
-$("mf").oninput = () => { mf = parseInt($("mf").value); persistSoon(); updateEffMF(); renderHero(); renderBossCards(); if (selectedItem) renderDetail(); if (activeItemDetail) renderItemDetailCard(activeItemDetail); if (typeof activeBossId !== "undefined" && activeBossId) renderBossDetailCard(activeBossId); renderGrailProgress(); renderWishlistHuntPath(); _sliderFanout(); };
+$("mf").oninput = () => { mf = parseInt($("mf").value); _mfChosen = true; persistSoon(); updateEffMF(); renderHero(); renderBossCards(); if (selectedItem) renderDetail(); if (activeItemDetail) renderItemDetailCard(activeItemDetail); if (typeof activeBossId !== "undefined" && activeBossId) renderBossDetailCard(activeBossId); renderGrailProgress(); renderWishlistHuntPath(); _sliderFanout(); };
 $("players").oninput = () => { players = parseInt($("players").value); persistSoon(); updatePlayers(); renderHero(); renderBossNav(); renderBossCards(); if (selectedItem) renderDetail(); if (activeItemDetail) renderItemDetailCard(activeItemDetail); if (typeof activeBossId !== "undefined" && activeBossId) renderBossDetailCard(activeBossId); renderGrailProgress(); renderWishlistHuntPath(); _sliderFanout(); };
 $("item-search").oninput = e => { searchQ = e.target.value; renderCalc(); };
 document.querySelectorAll(".filter-pill").forEach(p => {
@@ -39371,7 +39400,7 @@ window.exportWishlistAsMarkdown = function() {
   const date = new Date().toISOString().split('T')[0];
   
   let md = `# Konyo Wishlist · ${date}\n\n`;
-  md += `**MF**: ${mf}% · **Items**: ${items.length} · **Sum to 50%**: ${total50hrs.toFixed(1)}h (${(total50hrs/24).toFixed(1)}d at this pace)\n\n`;
+  md += `**MF**: ${window._mfUnset() ? 'not set' : mf + '%'} · **Items**: ${items.length} · **Sum to 50%**: ${total50hrs.toFixed(1)}h (${(total50hrs/24).toFixed(1)}d at this pace)\n\n`;
   md += `| # | Item | Tier | TC | qlvl | Best source | Chance | 50%-runs | ~Hours |\n`;
   md += `|---|---|---|---|---|---|---|---|---|\n`;
   items.forEach((it, idx) => {
@@ -80125,7 +80154,8 @@ window.renderSessionCockpit = function(){
       else if (_fsk && _fsk.totalPieces)
         kh.push('<div class="sc-kpi k-set"><b>'+_fsk.havePieces+'/'+_fsk.totalPieces+'</b><span>Sets</span></div>');
     } catch(e){}
-    try { kh.push('<div class="sc-kpi"><b>'+((typeof mf!=='undefined')?mf:(window.LSR.getItem('d2r_mf')||'0'))+'%</b><span>MF</span></div>'); } catch(e){}
+    try { var _mfU = !!(window._mfUnset && window._mfUnset());   /* #252 REG-2922 - an unset MF is never shown as a number */
+      kh.push('<div class="sc-kpi"><b>'+(_mfU ? '?' : ((typeof mf!=='undefined')?mf:(window.LSR.getItem('d2r_mf')||'0'))+'%')+'</b><span>MF'+(_mfU ? ' not set' : '')+'</span></div>'); } catch(e){}
     try { kh.push('<div class="sc-kpi"><b>/p'+((typeof players!=='undefined')?players:(window.LSR.getItem('d2r_players')||'1'))+'</b><span>Players</span></div>'); } catch(e){}
     var kEl = document.getElementById('sc-kpis'); if (kEl) kEl.innerHTML = kh.join('');
 
@@ -80545,7 +80575,7 @@ var sealed = typeof RUNEWORD_TIP!=='undefined' && Object.keys(JSON.parse(window.
         +(typeof RUNEWORD_TIP!=='undefined'?' / '+Object.keys(RUNEWORD_TIP).length:'')+'</div></div>');
       if (_scFuni) lines.push('<div class="sc-row"><span class="sc-tag">chronicle</span><div class="sc-row-txt"><b>'+_scFuni.found+'</b> / '+window.d2rChronTotal(_scFuni)+' uniques</div></div>');
       try {
-        var mfV = (typeof mf!=='undefined')?mf:(window.LSR.getItem('d2r_mf')||'?');
+        var mfV = (window._mfUnset && window._mfUnset()) ? 'not set' : ((typeof mf!=='undefined')?mf:(window.LSR.getItem('d2r_mf')||'?'));   /* #252 REG-2922 */
         var pV = (typeof players!=='undefined')?players:(window.LSR.getItem('d2r_players')||'?');
         lines.push('<div class="sc-row"><span class="sc-tag">roe</span><div class="sc-row-txt">MF <b>'+esc(String(mfV))+'</b> · /p<b>'+esc(String(pV))+'</b> · use dock to adjust</div></div>');
       } catch(e){}

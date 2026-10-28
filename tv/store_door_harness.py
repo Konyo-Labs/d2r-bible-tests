@@ -201,7 +201,7 @@ def boot(s):
     return ("const LS = window.LSR;\n" + store_read(s) + "\n" + store_notice(s) + "\n" + fn(s, "_mkShaped") + "\n"
             + mk.group(0) + "\n"
             + "\n".join(line for _n, _k, line in loaders(s)) + "\n"
-            + "var mf = 699, players = 1, pinnedBoss = null; function _writeGrailFarm(){}\n"
+            + "var mf = 699, players = 1, pinnedBoss = null, _mfChosen = true; function _writeGrailFarm(){}\n"
             + between(s, "const persist = () => {", "\n};") + "\n")
 
 
