@@ -550,7 +550,15 @@ class AHardenedFilingIsLockedUntilHeReleasesIt(unittest.TestCase):
         carries the lock, its badge sits before the ✕, both surfaces exist, and every render refreshes the chip."""
         s = _code_only(_src())
         self.assertIn("(cl.approx ? ' vmc-approx' : '') + _lockCls + '\" style=", s)
-        self.assertIn("+ _lockTag\n          + '<button class=\"vm-unassign vm-cell-x\"", s)
+        # REG-2882 - the badge sits before the ✕ IN THE SAME CELL. REG-2878 drew the listed mark between them (one line, a
+        # span), so adjacency went red on reach; a cell boundary or a second ✕ between them is still the defect.
+        lock = s.index("          + _lockTag\n")
+        x = s.index("'<button class=\"vm-unassign vm-cell-x\"", lock)
+        self.assertNotIn("</div>", s[lock:x], "the lock badge and the ✕ are no longer in one cell")
+        between = s[lock:x].splitlines()
+        self.assertEqual(between[-1].strip(), "+", "the ✕ is not its own term after the badge: %r" % s[lock:x])
+        self.assertTrue(all(ln.strip().startswith("+ (") for ln in between[1:-1]),
+                        "something other than a mark sits between the lock badge and the ✕: %r" % s[lock:x])
         self.assertIn('id="vault-lock-chip"', _src())
         self.assertIn('id="vault-lock-alert" role="alert"', _src())
         self.assertIn("if (window._vaultLockChip) window._vaultLockChip();", s)
@@ -734,6 +742,11 @@ RED_PROOF = [
         "replace": "(r.locked === true ? '' :",
         "matches": 1,
     },
+    {"why": "REG-2882 - the lock badge is drawn outside the cell its ✕ closes",
+     "file": "bible.html",
+     "find": "          + _lockTag\n          + (_lsc ?",
+     "replace": "          + _lockTag + '</div><div>'\n          + (_lsc ?",
+     "matches": 1, "needs": "node"},
 ]
 
 

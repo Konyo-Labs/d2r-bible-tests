@@ -950,7 +950,7 @@ def parse_compose(html):
 
 
 def _priced(subject, body):
-    # A sale says Selling. WTS remains a sale from a page that has not reloaded.
+    # A sale says WTS (REG-2874, the d2jsp norm). Selling remains a sale from a page that has not reloaded.
     head = str(subject or "")
     if not (head.startswith("Selling ") or head.startswith("WTS ")):
         return False

@@ -2783,6 +2783,19 @@ no known names kept every prose word, the opposite of its own rule; it now keeps
 journal: REC-03 still PASSES (newest long session, 51 worker reads, all warm). The eye's "older sessions' unanswered
 commitments are only reported" is the documented rule ("the newest decides; older ones are reported"), not a defect. Law:
 test_a_scenario_names_its_own_frames (3 cases, 5 red-proofs, 1 re-aimed).
+### REG-2882 - THREE LAW WINDOWS WENT RED ON REACH WHEN THE D2JSP AND TRADE WORK GREW THE CODE THEY READ (#83, the d2jsp wiring's own sweep)
+Measured on the d2jsp branch (node laws, one at a time): three source checks read a fixed span, and the span grew under
+them. In tv/test_the_d2jsp_desk_reads_a_price_before_it_posts.py, the receipt check read showReceipt up to closeDraft with
+a 1,400-char cap. REG-2874 and REG-2870 grew showReceipt and put whySay and closedSay before closeDraft, so the span was
+1,893. The hidden-list check read hiddenOf up to topicUrl with a 400-char cap. REG-2872's post log and REG-2873's trade
+state now sit between them, so the span was 7,591. In tv/test_a_hardened_filing_is_locked_until_he_releases_it.py, the
+check wanted the lock badge directly before the cell's ✕. REG-2878 drew the listed mark between them. The code was right
+each time, and the laws were red on reach. Each window is now the function it means (to the next room function), and the
+lock check allows a mark between the badge and the ✕ but no cell boundary. Three red-proofs pin them (the receipt says
+neither word, hiddenOf stops reading the hide map, the badge is drawn outside the ✕'s cell). Also fixed: a comment in
+tv/d2jsp_chrome.py still said a sale reads Selling, which the REG-2871 part of the pick no longer brings. It reads WTS
+(REG-2874).
+
 ### REG-2878 - NOTHING WHERE A COPY DRAWS COULD SAY IT IS LISTED ON D2JSP (#83, his design: "a listed copy still counts in its spot")
 Measured on the whole page in node: the card, the window, FIND and the MOVE row had no way to say a copy is listed. The
 listing lived only in the D2JSP tab's own stores, and no copy carried it. Now each of those surfaces reads the copy record's

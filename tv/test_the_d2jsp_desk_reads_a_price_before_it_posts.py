@@ -1174,9 +1174,11 @@ process.stdout.write(JSON.stringify({
         self.assertIn("_send_through_chrome(", send)
         self.assertLess(send.index("transport is None and chrome_post is not False"), send.index('fetch("GET", COMPOSE_URL'))
         self.assertLess(send.index("_challenge_page(raw_text)"), send.index("parse_compose(raw)"))
-        receipt = self.bible.index("function showReceipt(")
-        receipt_end = self.bible.index("function closeDraft(", receipt)
-        self.assertLess(receipt_end - receipt, 1400)
+        receipt = self.bible.index("  function showReceipt(")
+        # REG-2882 - the window is the function itself (to the next room function), never a size: REG-2874 and REG-2870
+        # grew showReceipt and put whySay before closeDraft (1,893 chars to closeDraft, measured), and a 1,400 cap went red
+        # on reach
+        receipt_end = self.bible.index("\n  function ", receipt + 1)
         panel = self.bible[receipt:receipt_end]
         self.assertIn("Confirmed", panel)
         self.assertIn("Not sent", panel)
@@ -1803,10 +1805,11 @@ process.stdout.write(JSON.stringify({
         self.assertNotIn("d2r_muleAssign", removed)
         self.assertNotIn("vaultPlannerFile", removed)
         self.assertNotIn("/api/d2jsp_send", removed)
-        hide_fn = script.index("function hiddenOf(")
-        topic_fn = script.index("function topicUrl(", hide_fn)
-        self.assertLess(topic_fn - hide_fn, 400)
-        self.assertIn("d2r_d2jsp_hide", script[hide_fn:topic_fn])
+        hide_fn = script.index("  function hiddenOf(")
+        # REG-2882 - hiddenOf's own body, to the next room function: REG-2872's post log and REG-2873's trade state now sit
+        # between hiddenOf and topicUrl (7,591 chars, measured), so a hiddenOf-to-topicUrl window went red on reach
+        hide_end = script.index("\n  function ", hide_fn + 1)
+        self.assertIn("d2r_d2jsp_hide", script[hide_fn:hide_end])
         listed = script.index("function listedNames()")
         price = script.index("function priceText(", listed)
         self.assertIn("hiddenOf(", script[listed:price])
@@ -2257,6 +2260,16 @@ RED_PROOF = [
         "replace": "        return None, \"chrome-unread\"",
         "matches": 1,
     },
+    {"why": "REG-2882 - the receipt says neither Confirmed nor Not sent (the window reads showReceipt itself)",
+     "file": "bible.html",
+     "find": "    var head = kind === 'confirmed' ? 'Confirmed' : (kind === 'maybe' ? 'Maybe sent' : 'Not sent');\n",
+     "replace": "    var head = kind === 'confirmed' ? 'Posted' : (kind === 'maybe' ? 'Maybe sent' : 'Unsent');\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-2882 - hiddenOf no longer reads the hide map (the window reads hiddenOf itself)",
+     "file": "bible.html",
+     "find": "  function hiddenOf(name){\n    var v = readMap('d2r_d2jsp_hide')[name];\n",
+     "replace": "  function hiddenOf(name){\n    var v = readMap('d2r_d2jsp_hidden')[name];\n",
+     "matches": 1, "needs": "node"},
 ]
 
 
