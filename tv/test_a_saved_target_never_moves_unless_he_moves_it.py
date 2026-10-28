@@ -307,7 +307,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2787 - his hand spot on a card does not become the copy's target",
      "file": "bible.html",
-     "find": "    if (pg === 0 && (spot.tab === 'personal' || spot.tab === 'inv') && typeof window._vaultMoveRetargetCell === 'function') {",
+     "find": "    if ((spot.tab === 'personal' || spot.tab === 'inv') && typeof window._vaultMoveRetargetCell === 'function') {",
      "replace": "    if (false) {",
      "matches": 1, "needs": "node"},
     {"why": "REG-2787 - a task keeps sending a copy to a deleted mule",

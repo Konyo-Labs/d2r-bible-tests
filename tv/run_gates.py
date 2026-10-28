@@ -13149,6 +13149,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_tooltip_crop_comes_from_the_read_that_named_it.py")], 300,
          needs_app=False,
          why='REG-2915 (#158.7) - the tooltip crop is cut from the box the vision read that named the item returned; a read without it says the box is UNKNOWN, never a full-frame crop'),
+    Gate("test_a_full_locker_spills_to_its_next_mule",
+         [sys.executable, os.path.join(HERE, "test_a_full_locker_spills_to_its_next_mule.py")], 300,
+         needs_app=False,
+         why='REG-2875 a full category locker spills to its next mule: every copy gets a cell, the card draws it there, the row names the mule, and he is asked to make the next mule'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
