@@ -14637,3 +14637,7 @@ if __name__ == "__main__":
          [sys.executable, os.path.join(HERE, "test_a_scratch_console_never_addresses_his.py")], 300,
          needs_app=False,
          why='REG-2998 a scratch console reaches its own console and agent, never his, counted at the socket'),
+    Gate("test_a_lane_clears_only_what_it_declares",
+         [sys.executable, os.path.join(HERE, "test_a_lane_clears_only_what_it_declares.py")], 300,
+         needs_app=False,
+         why='REG-2916 (#128) - a lane that forbids delete clears only what its clears clause names, checked against every delete call in its reach'),

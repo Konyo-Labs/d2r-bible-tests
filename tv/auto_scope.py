@@ -27,9 +27,13 @@ describes will eventually describe what it wishes were true.
 LANES = {
     "tvd-version-drift": {
         "does": "restarts this console onto a newer build already on disk",
-        "touches": "this console process only",
+        "touches": "this console process, and its own bookkeeping files (see clears)",
         "forbids": ["delete"],
-        "never": "your ledger, your reels, your vault — nothing on disk is written or removed",
+        # REG-2916 (#128) - the restart it drives clears the console's own bookkeeping, named function by function
+        "clears": ["stop_agent", "_stop_capture", "_clear_exit_on_purpose", "_capture_health"],
+        "never": "your ledger, your reels, your vault — the only files it removes are its own bookkeeping, "
+                 "named in CLEARS: the agent and capture pid files, the live eye frame and its own 'closed on "
+                 "purpose' marker",
         "when": "when the disk build is newer than the running one",
         "brakes": "refuses while a film is rolling, and refuses into a board that came back a "
                   "different world",
@@ -117,9 +121,12 @@ LANES = {
     },
     "tvd-stash-watch": {
         "does": "seals a reel once the stash has been off screen long enough",
-        "touches": "the seal record for that reel",
+        "touches": "the seal record for that reel, and the stopped agent's own pid files (see clears)",
         "forbids": ["delete"],
-        "never": "the footage itself — sealing marks a reel as read, it does not remove it",
+        # REG-2916 (#128) - sealing stops the agent, which clears its own pid files and live eye frame
+        "clears": ["stop_agent", "_stop_capture"],
+        "never": "the footage itself — sealing marks a reel as read, it does not remove it; the only files it "
+                 "removes are the stopped agent's pid files and its live eye frame",
         "when": "after a grace period with no stash on screen",
         "brakes": "only a reel the lane itself declared is sealed this way",
     },
@@ -129,12 +136,16 @@ LANES = {
                 "reel IT opened once that reel has run an hour, so an evening is processed in "
                 "hour-long pieces instead of one reel at the end",
         "touches": "starts the same capture agent /api/on starts; writes frames into a new reel; "
-                   "ends only its OWN shadow reels, through the same stop /api/off uses",
+                   "ends only its OWN shadow reels, through the same stop /api/off uses - which clears the "
+                   "stopped agent's pid files; and removes the temporary picture of the launcher it took (see clears)",
         "forbids": ["delete"],
+        # REG-2916 (#128) - the stop it shares with /api/off, its rollover's kill, and its own launcher picture
+        "clears": ["stop_agent", "_stop_capture", "_force_kill_all_agents", "_launcher_picture"],
         "never": "a SECOND reel — it refuses while an agent is alive or a mini is counting down; "
                  "and it refuses below the 8 GB floor, because a reel the reaper cannot keep alive "
                  "is worse than no reel. It NEVER ends a reel he started himself (ON AIR or MINI), "
-                 "whatever its age, nor one whose door or start it cannot read",
+                 "whatever its age, nor one whose door or start it cannot read. The only files it removes are the "
+                 "stopped agent's pid files, its live eye frame and the launcher picture it took itself",
         "when": "every 20 s, only while the shadow switch is ON; one extra look ~2 s after an "
                 "hourly rollover, so the next reel follows the sealed one within seconds",
         "brakes": "the SAME window finder ON AIR and MINI capture through (Quartz on the Mac, the "
@@ -222,6 +233,101 @@ LANES = {
 #: `_fn_source` could not prove it read the function it was asked for. Distinct from None (the
 #: function does not exist) because the honest answers differ: absent is a real finding, STALE is
 #: "the audit could not be performed", which is UNKNOWN and must never render as a pass.
+#: REG-2916 (#128) - WHAT A LANE THAT FORBIDS DELETE MAY STILL CLEAR, BY FUNCTION AND BY THE EXACT TARGET IT REMOVES.
+#: undeclared_reach_abilities reported tvd-shadow-watch, tvd-stash-watch and tvd-version-drift as reaching a delete with
+#: nothing permitting it. MEASURED in their depth-3 reach: every delete call is the console's own bookkeeping - the agent
+#: and capture pid files, the live eye frame, a temporary picture the lane made itself, the 'closed on purpose' marker -
+#: never a reel, a frame of his footage, a ledger or the vault. Each entry names the target
+#: EXPRESSION as written in that function's delete call; `clears_report` reads the calls out of the code (ast), so a new
+#: delete call, a new target, or a new deleting function anywhere in a lane's reach is undeclared until it is named here.
+#: The clause is checked against the code, never trusted as prose.
+CLEARS = {
+    "stop_agent": {"targets": ("PID_PATH", "_eye"),
+                   "what": "the agent's pid file (control_agent.pid) and its live eye frame (frames/eye.jpg), "
+                           "once the agent is stopped"},
+    "_stop_capture": {"targets": ("CAP_PID_PATH",), "what": "the capture agent's pid file, once it is stopped"},
+    "_force_kill_all_agents": {"targets": ("PID_PATH",), "what": "the agent's pid file, after every agent was killed"},
+    "_capture_health": {"targets": ("CAP_PID_PATH",), "what": "a capture pid file whose process is gone"},
+    "_launcher_picture": {"targets": ("path",),
+                          "what": "the temporary picture of the launcher it took itself (mkstemp tvd-relook-*.jpg)"},
+    "_clear_exit_on_purpose": {"targets": ("path or _exit_on_purpose_path()",),
+                               "what": "the console's own 'closed on purpose' marker, once it runs again"},
+}
+
+
+def delete_targets(src):
+    """The target of every delete call in one function's source, as written. -> list | None (unparseable)
+
+    os.remove(x) / os.unlink(x) / shutil.rmtree(x, ...) -> "x"; x.unlink() -> "x". Read from the syntax tree, so a
+    comment that mentions os.remove is not a delete and a call is never missed for its spelling."""
+    import ast
+    import textwrap
+    try:
+        tree = ast.parse(textwrap.dedent(src))
+    except Exception:
+        return None
+    out = []
+    for n in ast.walk(tree):
+        if not isinstance(n, ast.Call):
+            continue
+        f = ast.unparse(n.func)
+        if f in ("os.remove", "os.unlink", "shutil.rmtree"):
+            out.append(ast.unparse(n.args[0]) if n.args else "")
+        elif isinstance(n.func, ast.Attribute) and n.func.attr == "unlink" and not n.args:
+            out.append(ast.unparse(n.func.value))
+    return out
+
+
+def clears_report(mod, lane):
+    """REG-2916 (#128) - does this lane's `clears` declaration match what its reach actually deletes? -> dict
+
+    {"checked", "permitted", "gaps", "stale", "why"}. A gap is a function in the lane's reach (the same depth-3 walk
+    undeclared_reach_abilities reports on) whose delete calls are not ALL named for it - an undeclared function, a target
+    CLEARS does not list for it, or a function whose source could not be read (UNKNOWN is a gap, never a pass). `stale`
+    names a declared function the reach no longer touches. permitted = a declaration exists and it has no gap."""
+    spec = LANES.get(lane) or {}
+    declared = list(spec.get("clears") or [])
+    fname = LANE_FN.get(lane)
+    if not fname:
+        return {"checked": False, "permitted": False, "gaps": [], "stale": [], "why": "no function named for this lane"}
+    src, walked, why = reachable_source(mod, fname)
+    if src is None:
+        return {"checked": False, "permitted": False, "gaps": [], "stale": [], "why": why or "no source"}
+    gaps, deleting = [], set()
+    for fn in walked:
+        body = _fn_source(mod, fn)
+        if body is None or body is _STALE:
+            text = None
+            try:
+                text = getsource(getattr(mod, fn))
+            except Exception:
+                text = None
+            if text is None:
+                if callable(getattr(mod, fn, None)):
+                    gaps.append("%s: its source could not be read, so what it deletes is UNKNOWN" % fn)
+                continue
+            body = text
+        if not any(c in body for calls in FORBIDDEN_CALLS.values() for c in calls):
+            continue
+        targets = delete_targets(body)
+        if targets is None:
+            gaps.append("%s: its source would not parse, so what it deletes is UNKNOWN" % fn)
+            continue
+        if not targets:
+            continue                        # the words are in prose, not in a call
+        deleting.add(fn)
+        if fn not in declared:
+            gaps.append("%s deletes %s and the lane does not declare it" % (fn, ", ".join(targets)))
+            continue
+        allowed = set((CLEARS.get(fn) or {}).get("targets") or ())
+        for t in targets:
+            if t not in allowed:
+                gaps.append("%s deletes %s, which CLEARS does not name for it" % (fn, t))
+    stale = sorted(set(declared) - deleting)
+    return {"checked": True, "permitted": bool(declared) and not gaps, "gaps": gaps, "stale": stale,
+            "why": why or ""}
+
+
 _STALE = "\x00STALE"
 
 import inspect as _inspect_mod
@@ -545,6 +651,11 @@ def undeclared_reach_abilities(mod):
     ⚠ A lane may legitimately do a forbidden-sounding thing to its OWN artefacts. That is declared
     with a `rotates` clause naming the directory, the glob and the keep-count — checkable, unlike a
     blanket exemption — and such a lane is reported as PERMITTED rather than as a break.
+
+    REG-2916 (#128) - and a lane whose reach clears the console's own bookkeeping (pid files, a temporary picture it
+    made, its own marker) declares it with a `clears` clause: the functions, and in CLEARS the exact target each one
+    removes. clears_report reads every delete call in the reach out of the code and permits the row only when each one
+    is named - a new delete, a new target or a new deleting function anywhere in the reach makes it a break again.
     """
     out = []
     for lane in sorted(LANES):
@@ -561,8 +672,13 @@ def undeclared_reach_abilities(mod):
             out.append({"lane": lane, "ability": ability,
                         "functions": u.get("functions"),
                         "permitted": (ability == "delete"
-                                      and _rotates_is_wellformed(mod, spec.get("rotates"))),
-                        "why": (spec.get("rotates") or {}).get("why")})
+                                      and (_rotates_is_wellformed(mod, spec.get("rotates"))
+                                           # REG-2916 - or every delete in its reach is one its clears clause names
+                                           or (bool(spec.get("clears")) and clears_report(mod, lane)["permitted"]))),
+                        "why": ((spec.get("rotates") or {}).get("why")
+                                or ("clears only its own bookkeeping: " + "; ".join(
+                                    (CLEARS.get(f) or {}).get("what", f) for f in spec.get("clears") or [])
+                                    if spec.get("clears") else None))})
     return out
 
 

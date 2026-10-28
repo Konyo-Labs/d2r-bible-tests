@@ -378,16 +378,21 @@ class TestV2410RotatesIsACheckablePermissionNotAnExemption(unittest.TestCase):
                                "%s: %s is %r — a keep of zero is not rotation, it is deletion "
                                "under a friendlier word" % (lane, keep, val))
 
-    def test_only_a_lane_WITH_a_rotates_clause_is_reported_as_permitted(self):
-        """The intersection reporter must not hand out permission it was never given."""
+    def test_only_a_lane_WITH_a_clause_that_covers_it_is_reported_as_permitted(self):
+        """The intersection reporter must not hand out permission it was never given (REG-2916: `rotates`, or a `clears`
+        clause whose table names every delete in the lane's reach)."""
         import auto_scope as AS
         rows = AS.undeclared_reach_abilities(self._ca())
         self.assertTrue(rows, "no lane forbids an ability its reach can perform — either the tree "
                               "changed or the reporter stopped working; both need a look")
         for r in rows:
-            declared = bool((AS.LANES[r["lane"]].get("rotates")))
+            # REG-2916 - a `clears` clause permits too, and only when its table covers every delete in the reach
+            spec = AS.LANES[r["lane"]]
+            declared = bool(spec.get("rotates")) or (bool(spec.get("clears"))
+                                                    and AS.clears_report(self._ca(), r["lane"])["permitted"])
             self.assertEqual(r["permitted"], declared,
-                             "%s reported permitted=%s with rotates=%s" % (r["lane"], r["permitted"], declared))
+                             "%s reported permitted=%s with rotates=%s clears=%s"
+                             % (r["lane"], r["permitted"], bool(spec.get("rotates")), spec.get("clears")))
 
     def test_the_reporter_does_NOT_claim_the_unexplained_rows_are_safe(self):
         """⚠ THREE OF FOUR ROWS ARE PROBABLY REACH-NOISE (reach 23, 34 and 71 functions), and the
@@ -404,7 +409,7 @@ class TestV2410RotatesIsACheckablePermissionNotAnExemption(unittest.TestCase):
         # asked with every `rotates` clause removed: then nothing holds a permission, every row it
         # reports must say so, and those rows join the ones the claim below is asked of.
         saved = AS.LANES
-        AS.LANES = {lane: dict(spec, rotates=None) for lane, spec in saved.items()}
+        AS.LANES = {lane: dict(spec, rotates=None, clears=None) for lane, spec in saved.items()}   # REG-2916
         try:
             bare = AS.undeclared_reach_abilities(self._ca())
         finally:
