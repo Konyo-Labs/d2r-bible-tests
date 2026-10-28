@@ -13197,6 +13197,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_find_row_opens_every_mule_page_its_copies_sit_on.py")], 300,
          needs_app=False,
          why="REG-2884 (#137) - a FIND row names a hand add's target by its mule page and gives one Mule N button per page its copies sit on, each opening that locker at that page with the copy drawn; a shared stash cell names its page and gets no mule button"),
+    Gate("test_a_routing_sentence_says_whose_defense_it_prints",
+         [sys.executable, os.path.join(HERE, "test_a_routing_sentence_says_whose_defense_it_prints.py")], 300,
+         needs_app=False,
+         why="REG-2885 (#137) - the routing sentence of an armour item says the defense range it prints is the base's own (from the game table) and that the item card shows the item's defense, so the two ranges no longer read as a disagreement"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

@@ -46041,7 +46041,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
        defense range, so they cannot be caught here and fall through correctly. */
     try {
       var _bRec = (typeof _baseRec === 'function' && base) ? _baseRec(_artSlotClean(base)) : null;
-      if (_bRec && _bRec.defense) return {id:'uni-armor', why:'armor slot — '+base+' (BASE_DB defense '+_bRec.defense+')'};
+      /* REG-2885 (#137, GrokBot v3740: "Ravenlore defense 103-155 (message) vs 343-390 (card)"; the ACT list: "defense ranges
+         agree") - this range is the BASE's (Sky Spirit 103-155). The item card prints the item's own defense: an item that
+         spawns with Enhanced Defense sits at its base's max + 1, times the roll (156 x 2.20-2.50 = 343-390). Both were right;
+         "BASE_DB defense" read as the item's. The sentence now says whose range it is. */
+      if (_bRec && _bRec.defense) return {id:'uni-armor', why:'armor slot — '+base+' is armour (the base\'s own defense is '+_bRec.defense+'; the item card shows the item\'s defense)'};
       /* AND THE MIRROR, which the same sweep found: a WEAPON dragged into UNI-ARMOR because an
          armour word appears in its NAME. ARMOR_RE is tested against `base + ' ' + name`, so:
            Astreon's Iron Ward   Caduceus    → uni-armor, on the word "ward"
