@@ -135,7 +135,7 @@ function mountFind(){
   return box;
 }
 function askFind(q){ var box = mountFind(); window.vaultFind(q); return box.innerHTML; }
-var mf = 0, players = 1, wishlist = new Set(), owned = new Set(OWNED);
+var mf = 0, _mfChosen = true, players = 1, wishlist = new Set(), owned = new Set(OWNED);
 var etherealItems = new Set(), superiorBases = new Set(), unknownReads = new Set();
 var statues = new Set(), bossFilters = {}, bossSorts = {}, setPieces = new Set();
 var runeStash = {}, rwMade = {}, materialStash = {}, gemStash = {}, craftStash = {}, craftBaseStash = {};
