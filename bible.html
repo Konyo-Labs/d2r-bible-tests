@@ -19265,6 +19265,9 @@ window._yourCharOfClass = _yourCharOfClass;
 function _charSay(text, noCap){
   if (text == null || window._seedsBelongHere === true) return text;
   return String(text)
+    /* #252 (REG-2921) - his advice boxes: "For Konyo (Warlock)" reads as advice to whoever plays that class */
+    .replace(/For Konyo \(([A-Za-z]+)\)/g, 'If you play a $1')
+    .replace(/For Konyo\b/g, 'Tip')
     .replace(/\b(Konyolock|Konyodin|Konyoress|Konyossin)\b/gi, function(m, nm, off, all){
       var r = _HIS_CHAR_ROLE[nm.toLowerCase()];
       var own = r ? _yourCharOfClass(r.cls) : null;
@@ -28458,7 +28461,7 @@ function _extraCraftRecipeHtml(name, e){
     + '<div class="ecr-formula">' + formula + '</div>'
     + '<div class="ecr-yield">→ a <b style="color:' + craft.color + '">' + craft.key + '</b>-crafted <b>' + slot + '</b> · the 3 craft mods below are <b>guaranteed</b>, the rest roll random</div>'
     + '<div class="ecr-guar"><div class="ecr-guar-h">always rolls</div><ul>' + mods + '</ul></div>'
-    + '<div class="ecr-note">Magic base options: <b>' + sl.base + '</b>. Re-craft until you hit the godly affixes above.' + (craft.konyo ? ' <span class="ecr-konyo">' + craft.konyo + '</span>' : '') + '</div>'
+    + '<div class="ecr-note">Magic base options: <b>' + sl.base + '</b>. Re-craft until you hit the godly affixes above.' + (craft.konyo && window._seedsBelongHere === true ? ' <span class="ecr-konyo">' + craft.konyo + '</span>' : '') + '</div>'
     + '</section>';
 }
 window._extraCraftRecipeHtml = _extraCraftRecipeHtml;
@@ -36017,7 +36020,7 @@ function renderCraftWorkshop(){
     var own = CRAFT_SLOTS.reduce(function(a, s){ return a + _craftCount(c.key, s); }, 0);
     var esc = c.key.replace(/'/g, "\\'");
     return '<div class="cw-tile' + (c.key === _craftSel ? ' cw-sel' : '') + '" style="--cw-c:' + c.color + '" role="button" tabindex="0" data-arttip="' + c.gem + '" onclick="window.selectCraft(\'' + esc + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();window.selectCraft(\'' + esc + '\')}" title="show the ' + c.key + ' recipes">'
-      + (c.star ? '<span class="cw-tile-star">★ YOURS</span>' : '')
+      + (c.star && window._seedsBelongHere === true ? '<span class="cw-tile-star">★ YOURS</span>' : '')   /* #252 REG-2921 - his craft, on his ledger */
       + '<div class="cw-tile-head">' + artOr(c.gem, '<span style="font-size:var(--fs-display);color:' + c.color + '">💎</span>', 'lg') + '<div><div class="cw-tile-name">' + c.key + '</div><div class="cw-tile-gem">' + c.gem + '</div></div></div>'
       + '<div class="cw-tile-tell">' + c.tell + '</div>'
       + '<div class="cw-tile-foot"><span class="cw-tile-ready' + (readyN ? '' : ' cw-ready-0') + '">' + (readyN ? '✓ ' + readyN + '/9 cubeable' : '0/9 cubeable') + '</span><span class="cw-tile-own">' + own + ' owned</span></div></div>';
@@ -36035,7 +36038,7 @@ function renderCraftWorkshop(){
       + '<span class="cw-g-plus">+ 1–4 random</span></div>'
       + (CRAFT_REROLL[craft.key] ? '<div class="cw-reroll"><span class="cw-reroll-lab">🎲 reroll toward</span>' + CRAFT_REROLL[craft.key].map(function(m){ return '<span class="cw-reroll-mod">' + m + '</span>'; }).join('') + '<span class="cw-reroll-note">the random affixes come from the normal rare pool — recube the same recipe until they land (verify ranges in-game)</span></div>' : '')
       + basicLegend
-      + (craft.konyo ? '<div class="success" style="margin:0 0 10px">⭐ <strong>' + craft.konyo + '</strong></div>' : '');
+      + (craft.konyo && window._seedsBelongHere === true ? '<div class="success" style="margin:0 0 10px">⭐ <strong>' + craft.konyo + '</strong></div>' : '');
     var slots = CRAFT_SLOTS;
     if (_craftReadyOnly) slots = slots.filter(function(s){ return _craftSlotReady(craft, s).ready; });
     readyCount = CRAFT_SLOTS.filter(function(s){ return _craftSlotReady(craft, s).ready; }).length;
@@ -36255,7 +36258,7 @@ function craftDetailHtml(name){
     + '<div style="display:flex;flex-direction:column;gap:6px"><button class="gic-close-btn" onclick="window.closeDrop&&window.closeDrop()" title="press ESC">✕ close</button></div></header>'
     + '<section class="gic-section"><div class="gic-section-title">✨ 3 guaranteed mods (every ' + c.key + ' craft rolls these, + 1–4 random)</div><div class="cw-guaranteed" style="--cw-c:' + c.color + ';margin:0">' + c.mods.map(function(m){ return '<span class="cw-g-mod">' + m + '</span>'; }).join('') + '<span class="cw-g-plus">+ 1–4 random</span></div></section>'
     + reroll
-    + (c.konyo ? '<div class="success" style="margin:0 0 14px">⭐ <strong>' + c.konyo + '</strong></div>' : '')
+    + (c.konyo && window._seedsBelongHere === true ? '<div class="success" style="margin:0 0 14px">⭐ <strong>' + c.konyo + '</strong></div>' : '')
     + '<section class="gic-section"><div class="gic-section-title">🔨 Every slot — what it creates, recipe &amp; live cubeable status</div><div class="cw-recipes" style="max-height:none">' + rows + '</div></section>'
     + '<div class="zd-note">Cube a <strong>magic (blue) base</strong> + <strong>' + c.gem + '</strong> + <strong>any jewel</strong> + the <strong>slot rune</strong> → a crafted <strong>' + c.key + '</strong> rare. The perfect gem decides the craft; the rune only varies by slot. The gem, rune <strong>and a magic base</strong> are tracked (the base is NOT auto-assumed — mark it when you have one); only the jewel is assumed on hand. Full planner: the 🔨 Crafted Items Workshop in the Tools tab. Source: maxroll.gg — RotW may retune the random-affix pool, verify in-game.</div>'
     + '</div>';
@@ -65910,7 +65913,8 @@ function renderJournal(){
     out.craftOnestep = [];
     out.craftTypes = [];
     try { if (typeof CRAFTS!=='undefined' && CRAFTS) CRAFTS.forEach(function(c){
-      out.craftTypes.push({ craft:c.key, gem:c.gem, color:c.color, star:!!c.star, tell:c.tell });
+      /* #252 REG-2921 - `star` is HIS craft (★ YOURS, and it sorts first): his ledger only */
+      out.craftTypes.push({ craft:c.key, gem:c.gem, color:c.color, star:!!c.star && window._seedsBelongHere === true, tell:c.tell });
       var gemReady = ((typeof _craftGemReady==='function')?_craftGemReady(c.gem).ready:((typeof _gemCount==='function'?_gemCount(c.gem):0)>=1));
       // all 9 slots for create-them-all; best slots sort first in the UI
       var slots = Object.keys(c.slots||{});
@@ -65922,7 +65926,7 @@ function renderJournal(){
       slots.forEach(function(slot){
         var rec=c.slots&&c.slots[slot]; if(!rec) return;
         var hasRune = (typeof _runeCount==='function'?_runeCount(rec.rune):0)>=1;
-        var row = { craft:c.key, slot:slot, rune:rec.rune, gem:c.gem, base:rec.base, color:c.color, star:!!c.star, tell:c.tell, bis:c.bis, top:!!(c.best&&c.best.indexOf(slot)>=0) };
+        var row = { craft:c.key, slot:slot, rune:rec.rune, gem:c.gem, base:rec.base, color:c.color, star:!!c.star && window._seedsBelongHere === true, tell:c.tell, bis:c.bis, top:!!(c.best&&c.best.indexOf(slot)>=0) };
         if (gemReady && hasRune){
           out.crafts.push(row);
         } else if (gemReady || hasRune){
@@ -66446,7 +66450,7 @@ function renderJournal(){
     var h='<div class="f-craftacc'+(open?' open':'')+'" style="--cw-c:'+cc+'">';
     h+='<div class="f-craftacc-h" role="button" tabindex="0" aria-expanded="'+(open?'true':'false')+'" data-arttip="'+_fEsc(c.gem)+'" title="'+_fEsc(ck)+' craft — tap to '+(open?'collapse':'see every slot + recipe')+'" onclick="window.forgeCraftToggle(\''+_fJs(ck)+'\')">';
     h+='<span class="f-craftacc-chev">'+(open?'▾':'▸')+'</span>'+art;
-    h+='<div class="f-craftacc-t"><span class="f-craftacc-name">Create '+_fEsc(ck)+(c.star?' <span class="cw-tile-star">★ YOURS</span>':'')+'</span><span class="f-craftacc-sub">'+_fEsc(c.gem)+' · '+_fEsc(c.tell||'')+'</span></div>';
+    h+='<div class="f-craftacc-t"><span class="f-craftacc-name">Create '+_fEsc(ck)+(c.star && window._seedsBelongHere === true?' <span class="cw-tile-star">★ YOURS</span>':'')+'</span><span class="f-craftacc-sub">'+_fEsc(c.gem)+' · '+_fEsc(c.tell||'')+'</span></div>';
     h+='<span class="f-craftacc-badge'+(d.readyN?' has':'')+'">'+d.readyN+' / '+d.total+' make now</span>';
     /* ══ v2136 — THE BEST ONE TO MAKE, WHICH THIS DATA HAS CARRIED ALL ALONG ═══════════════════
        Konyo: "i priorly asked you to make the best of each to make me and tell me to craft blood
