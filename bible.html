@@ -12526,6 +12526,21 @@ function d2jspLogEntry(w, j, board, list, now) {
   if (list) e.list = true;
   return e;
 }
+/* REG-2871 (#83, his ask 2, GrokBot 6476487696: "the draft is text only, and Elad wants the item's picture embedded") -
+   THE ITEM'S PICTURE RIDES IN THE POST. d2jsp posts are BBCode, so the picture is one [img] line under the title, the
+   item's own art from the one resolver (artUrl, which asks _keeperArt first, REG-2805) at its public address. The site
+   serves /d2r/art/ to anyone (functions/_middleware.js, art only); a d2jsp reader has no password. A name with no art, or
+   an art path outside art/, carries no picture rather than a guessed one. Layout: title, picture, one mod per line,
+   copies, the price last (the console's _priced reads the last line). */
+var D2JSP_ART_ORIGIN = 'https://bull-4-u.com/d2r/';
+function d2jspPictureUrl(rel) {
+  var r = String(rel == null ? '' : rel);
+  if (r.indexOf('..') >= 0 || !/^art\/[A-Za-z0-9_.\-]+\.(?:png|jpe?g|gif|webp)$/i.test(r)) return '';
+  return D2JSP_ART_ORIGIN + r;
+}
+function d2jspPictureOf(name) {
+  try { return (typeof artUrl === 'function') ? d2jspPictureUrl(artUrl(name)) : ''; } catch (ePic) { return ''; }
+}
 function d2jspDraft(name, base, mods, copies, fg) {
   var price = (typeof fg === 'number') ? fg : Number(fg);
   if (!(price > 0)) return { ok: false, reason: 'no price' };
@@ -12534,6 +12549,8 @@ function d2jspDraft(name, base, mods, copies, fg) {
   var b = String(base || '').trim();
   var subject = 'WTS ' + nm + (b ? (' ' + b) : '');   /* REG-2874 (#83, his ask 5) - WTS is the d2jsp norm; the subject said Selling */
   var lines = [subject];
+  var pic = d2jspPictureOf(nm);
+  if (pic) lines.push('[img]' + pic + '[/img]');   /* REG-2871 */
   String(mods || '').split('\n').forEach(function(row){
     var t = d2jspPostLine(row);
     if (t) lines.push(t);
@@ -12541,7 +12558,7 @@ function d2jspDraft(name, base, mods, copies, fg) {
   var c = copies | 0;
   if (c > 1) lines.push('copies: ' + c);
   lines.push(price + ' fg');
-  return { ok: true, subject: subject, body: lines.join('\n'), forum: d2jspBoard(), name: nm };
+  return { ok: true, subject: subject, body: lines.join('\n'), forum: d2jspBoard(), name: nm, picture: pic };
 }
 function d2jspItemBlock(name, base, mods, copies, fg, sold) {
   var one = d2jspDraft(name, base, sold ? '' : mods, copies, fg);
@@ -14549,7 +14566,7 @@ function d2jspBatchHtml(view) {
     var say = document.createElement('p');
     say.className = 'd2jsp-say';
     say.setAttribute('data-d2jsp-shot-note', '1');
-    say.textContent = 'The picture sits on the right of each item. The board receives the text.';
+    say.textContent = 'The screenshot sits on the right of each item. The board receives the text and, where the item has art, its picture.';   /* REG-2871 */
     box.insertBefore(say, view);
     box.insertBefore(wrap, view);
     view.hidden = true;
