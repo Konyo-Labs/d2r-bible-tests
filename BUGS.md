@@ -2282,6 +2282,33 @@ file row with k > n - and no law named either. Test-only: a law that holds both 
 writes nothing; a forged 138/135 row reads UNKNOWN and may() stays LOCKED) and holds the shape over the tracked
 ledger (every lock and route: k <= n, attacksPassed <= attacks <= n). The fan-caption overlap half of #84 is NEEDS
 LIVE. Law: test_a_lock_never_publishes_more_refusals_than_attempts (python), 2 red-proofs, RED.
+### REG-2847 - ONE UNIQUE DREW DIFFERENT PICTURES ON DIFFERENT SURFACES (v3831 second eye, GrokBot #230 6478351967)
+GrokBot measured on his board: Lightsabre drew mr_lightsabre.png on a list card where artUrl gives hd_lightsabre.png;
+Goldstrike Arch drew goldstrikearch_graphic.png on a card where artUrl gives the long war bow; and the wishlist chip
+"Harlequin Crest (Shako)" drew mr_harlequincrestshako.png, while "Harlequin Crest" drew mr_harlequincrest.png.
+
+Measured here:
+- REG-2805 itself changed 308 pictures: 307 from a base sprite to the item's own icon, and 1 for REG-2806. None was a
+  downgrade, so the "keeper wins over a better older path" claim is NOT A DEFECT.
+- The two odd files are the board table's MID-BOOT values. Lightsabre is registered three times and Goldstrike Arch
+  twice, across the board's scripts, and the console copied that table (thArt) as soon as it had keys.
+- goldstrikearch_graphic.png is a picture of GOLD COINS (opened). The bow's base sprite is the honest picture.
+- Five uniques carried a second icon under a slot or base label. Two pairs are byte-identical; in the other three, the
+  label's file is the same picture at twice the size.
+
+Now:
+- the console asks the board's own artUrl once window._artTableReady says the table is finished, and copies only a
+  finished table;
+- the table no longer names the coins for Goldstrike Arch;
+- a unique's label icon is the unique's icon (its own game sprite still outranks it), so both names draw the larger file.
+  A runeword label is another item and keeps its base.
+
+The second claim, that a Renewed Sunder hovers as its charm base while its row draws artUrl(name), is NOT A DEFECT. The
+hover's own picture line draws artUrl(name) first, so all six Renewed draw the same picture in row and hover. The REG-2805
+law had measured the resolver's artName instead of that line. It now measures the drawn picture, and its two red-proofs
+on the inert artName line are gone. Law: test_one_item_draws_one_picture_whatever_its_label (node: the whole page and the
+console's thArt), 5 red-proofs, RED.
+
 ### REG-2846 - WIPE ITEMS RECORDED NO REMOVAL, SO EVERY READ BROUGHT EVERYTHING BACK (#154, his "wont these keep coming back?")
 He plans to wipe the items and add them again one by one. Wipe items cleared owned, the mules, the witness rows and the scan
 ledger, and wrote no removal record. Measured on the whole page in node: after a wipe, an old reel read, a newer read and

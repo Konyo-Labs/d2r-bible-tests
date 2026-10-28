@@ -13209,6 +13209,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_removed_item_stays_out_of_every_door.py")], 300,
          needs_app=False,
          why="REG-2845/2846 (#154, his 'wont these keep coming back?') - after his X or a Wipe, an old or undated read stays out at every door; a newer dated read and his hand come back"),
+    Gate("test_one_item_draws_one_picture_whatever_its_label",
+         [sys.executable, os.path.join(HERE, "test_one_item_draws_one_picture_whatever_its_label.py")], 300,
+         needs_app=False,
+         why="REG-2847 (v3831 second eye, GrokBot) - one unique, one picture: its labels draw the same file, the console asks the board's resolver, no coins for Goldstrike Arch"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
