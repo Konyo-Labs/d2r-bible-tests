@@ -13173,6 +13173,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_d2jsp_refusal_always_says_why.py")], 300,
          needs_app=False,
          why="REG-2870 every d2jsp post answer says what the console saw: the cookie step, the run's last page, an error, the HTTP status"),
+    Gate("test_a_d2jsp_card_keeps_its_post_log",
+         [sys.executable, os.path.join(HERE, "test_a_d2jsp_card_keeps_its_post_log.py")], 300,
+         needs_app=False,
+         why='REG-2872 every d2jsp send writes one attempt row per item into the forked post log, and the card shows the confirmed post and every attempt'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
