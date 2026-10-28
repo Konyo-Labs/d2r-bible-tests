@@ -70,7 +70,8 @@ function obs(f){ return window._vaultGoneObserve(f); }
 
 
 def frame(session, holder="MAIN", location="stash", items=(), ground=()):
-    return json.dumps({"session": session, "holder": holder, "location": location,
+    # REG-2861 - these frames are whole reads of their container: only such a frame may count an item gone
+    return json.dumps({"session": session, "holder": holder, "location": location, "complete": True,
                        "items": [{"name": n, "cell": c} for n, c in items], "ground": list(ground)})
 
 

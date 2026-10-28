@@ -41,7 +41,8 @@ SEED = ("localStorage.setItem('d2r_ownerClaim', '*');"
 
 
 def frame(session, items=(), ground=()):
-    return json.dumps({"session": session, "holder": "MAIN", "location": "stash",
+    # REG-2861 - a whole read of MAIN's stash: only a frame that read its container whole may count an item gone
+    return json.dumps({"session": session, "holder": "MAIN", "location": "stash", "complete": True,
                        "items": [{"name": n, "cell": c} for n, c in items], "ground": list(ground)})
 
 

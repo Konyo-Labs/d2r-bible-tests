@@ -62,7 +62,7 @@ READ = r"""
 function L(){ return document.getElementById('vault-move-list'); }
 function open_(nm){ return L().querySelector('.vtk-list:not([data-sec="done"]) .vtk-line[data-name^="' + nm.replace(/"/g, '\\"') + '"]'); }
 function done_(nm){ return L().querySelector('.vtk-donebox .vtk-line[data-name^="' + nm.replace(/"/g, '\\"') + '"]'); }
-function gone(sid){ return window._vaultGoneObserve({ session: sid, holder: 'MAIN', location: 'stash', items: [], ground: [] }); }
+function gone(sid){ return window._vaultGoneObserve({ session: sid, holder: 'MAIN', location: 'stash', complete: true, items: [], ground: [] }); }  /* REG-2861 a whole read */
 """
 
 

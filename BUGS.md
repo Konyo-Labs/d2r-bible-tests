@@ -2661,6 +2661,23 @@ base name - 223 of the 508 gear bases the hand door takes disagreed with their o
 Sword a 1x1 ring and rune, Spear 1x4, Colossus Girdle 2x4); the name is now looked up on CB_DB as REG-2248 looks up a
 codex base, 0 of 508 disagree. Law tv/test_an_item_is_sized_by_its_own_base.py, 8 red-proofs RED; the packer law's
 runeword red-proof re-aimed to the new cache line (7 RED).
+### REG-2861 - THE GONE-DRAIN WOULD HAVE CLOSED ROWS ON THE ABSENCE OF A READ (finding of REG-2860; REG-2300's open end)
+`_vaultGoneObserve` (REG-2300) closes a throw-out or move row after VAULT_GONE_SESSIONS sessions whose frames showed its
+first-witnessed container without the item. REG-2300 left it uncalled: "the frame reader must hand it {session, holder,
+location, items, ground} per frame". Measured before wiring it: no reader produces such a frame. Every read that reaches
+the board is one item (_liveReadRoute -> tvVaultRegister -> _vaultMoveApplySight), and a stash read is a hover tooltip
+(#197: the read cell is the hover point), so a frame of a stash tab names the hovered item, not the tab's contents.
+Joined at that seam, every hover of a neighbour would have counted a session in which each other row in the tab was
+"gone", and five sessions of hovering would have closed them "gone 5/5" - against his ruling that a not-seen item is
+asked about and never dropped on its own when in doubt. So the door now counts absence only from a frame that says
+`complete: true` (a sweep that read the container whole); any other frame still resets and reopens on what it saw, and
+the answer says why its absence counted nothing - his approved design (#230 c6473846977, Q2/Q3: absence only from a
+FULL LOOK, "a frame that shows a whole container"). NOT JOINED, on purpose: no caller is added, because nothing yet
+produces a whole read. The producers it waits for are the guided sweep (P4) and P2's full-look detection; what the count
+then does (his later ruling: proven-gone items go to a log with undo, unexplained vanishes ask) is P5's, and the door's
+output stays a count. The positive rules (seen at target, seen in its cell) already run through _vaultMoveWitness. The fixtures of REG-2300 / REG-2689 / the tasks panel now say their frames are whole reads.
+Law: test_a_hover_read_never_counts_an_item_gone (whole page in node; 4 red-proofs RED); the reopen law re-proved (2 RED).
+
 ### REG-2860 - THE VAULT HAD NO GUIDE: DEAN COULD NOT LEARN THE ROOM WITHOUT KONYO (#230, GrokBot c6476237779 + c6476256141)
 Runewords (the Forge legend) and Tools (the map) each have a tray orb in slot S2 that opens a panel on their tab, and the
 Tools map's rows reach a real card through _toolJump. The vault tab had nothing in S2 (measured: no `body:has(#tab-vault.active)`
