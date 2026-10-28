@@ -409,6 +409,19 @@ def cookie_header_from_rows(rows, password, now_utc=None, decrypt=None, rounds=1
     return None, "need-login"
 
 
+def _err(e):
+    """An error as one line a person can act on: its type and its words, cut short. Never the cookie (callers
+    scrub the header they hold)."""
+    text = str(e).replace("\n", " ").strip()
+    return (type(e).__name__ + (": " + text if text else ""))[:160]
+
+
+def _note(why, text):
+    """REG-2870 - a cookie reader says which step failed into `why` (a list the caller owns), never just a word."""
+    if why is not None and text:
+        why.append(text)
+
+
 def _cookie_db_path():
     if sys.platform != "darwin":
         return None
@@ -500,19 +513,24 @@ def _linux_chrome_passwords(run=None, tool=None):
     return found
 
 
-def _linux_cookie_header(now_utc=None, paths=None, passwords=None):
-    """A d2jsp cookie header from a Linux Chrome profile, or a reason."""
+def _linux_cookie_header(now_utc=None, paths=None, passwords=None, why=None):
+    """A d2jsp cookie header from a Linux Chrome profile, or a reason. `why` (a list) gets which step failed."""
     stores = _linux_cookie_dbs() if paths is None else list(paths)
     if not stores:
+        _note(why, "no Chrome or Chromium cookie file under ~/.config/google-chrome or ~/.config/chromium")
         return None, "chrome-unread"
     secrets = _linux_chrome_passwords() if passwords is None else list(passwords)
     saw_fail = False
     saw_rows = False
+    opened = 0
+    last = ""
     for path in stores:
         try:
             rows = _read_rows(path)
-        except (OSError, sqlite3.Error):
+        except (OSError, sqlite3.Error) as e:
+            last = _err(e)
             continue
+        opened += 1
         if rows:
             saw_rows = True
         for password in secrets:
@@ -524,9 +542,14 @@ def _linux_cookie_header(now_utc=None, paths=None, passwords=None):
             if reason == "chrome-unread":
                 saw_fail = True
     if saw_fail:
+        _note(why, "the cookie file opened and no keyring secret decrypted the d2jsp cookie (%d tried; secret-tool %s)"
+              % (len(secrets), "present" if shutil.which("secret-tool") else "not installed"))
         return None, "chrome-unread"
     if saw_rows:
+        _note(why, "Chrome holds no d2jsp cookie - it is signed out of d2jsp")
         return None, "need-login"
+    _note(why, ("%d cookie file(s) found and none would open (%s)" % (len(stores), last)) if not opened
+          else "the cookie files opened empty")
     return None, "chrome-unread"
 
 
@@ -751,39 +774,62 @@ def _windows_cookie_header(now_utc=None, paths=None, key=None, unprotect=None, s
     return None, "chrome-unread"
 
 
-def _mac_cookie_header(now_utc=None):
-    """The d2jsp cookie header from this Mac's Chrome, or a reason it could not be read."""
+def _mac_cookie_header(now_utc=None, why=None):
+    """The d2jsp cookie header from this Mac's Chrome, or a reason it could not be read. `why` gets which step failed."""
     path = _cookie_db_path()
     if not path:
+        _note(why, "no Chrome cookie file under ~/Library/Application Support/Google/Chrome/Default")
         return None, "chrome-unread"
     try:
         proc = subprocess.run(
             ["security", "find-generic-password", "-w", "-s", "Chrome Safe Storage", "-a", "Chrome"],
             capture_output=True, timeout=60,
         )
-    except Exception:
+    except Exception as e:
+        _note(why, "the keychain could not be asked (%s)" % _err(e))
         return None, "chrome-unread"
     if proc.returncode != 0:
+        _note(why, "the keychain refused the Chrome Safe Storage password (exit %s)" % proc.returncode)
         return None, "chrome-unread"
     password = proc.stdout.decode("utf-8", "replace").strip()
     if not password:
+        _note(why, "the keychain answered an empty Chrome Safe Storage password")
         return None, "chrome-unread"
     try:
         rows = _read_rows(path)
-    except Exception:
+    except Exception as e:
+        _note(why, "the cookie file would not open (%s)" % _err(e))
         return None, "chrome-unread"
-    return cookie_header_from_rows(rows, password, now_utc=now_utc)
+    header, reason = cookie_header_from_rows(rows, password, now_utc=now_utc)
+    if reason == "chrome-unread":
+        _note(why, "the keychain password did not decrypt the d2jsp cookie")
+    elif reason == "need-login":
+        _note(why, "Chrome holds no d2jsp cookie - it is signed out of d2jsp")
+    return header, reason
 
 
-def live_cookie_header(now_utc=None):
-    """The d2jsp cookie header from this machine's Chrome, or a reason it could not be read."""
+def live_cookie_header(now_utc=None, why=None):
+    """The d2jsp cookie header from this machine's Chrome, or a reason it could not be read. `why` (a list) gets
+    which step failed (REG-2870), so a refusal names it instead of a bare word."""
     if sys.platform == "darwin":
-        return _mac_cookie_header(now_utc)
+        return _mac_cookie_header(now_utc, why=why)
     if sys.platform.startswith("linux"):
-        return _linux_cookie_header(now_utc)
+        return _linux_cookie_header(now_utc, why=why)
     if sys.platform == "win32":
         return _windows_cookie_header(now_utc)
+    _note(why, "this console reads the Chrome login on macOS, Linux and Windows only (this is %s)" % sys.platform)
     return None, "chrome-unread"
+
+
+_LIVE_READER = live_cookie_header
+
+
+def _read_cookie(reader, now_utc=None, why=None):
+    """Ask a cookie reader. The live one is told where to put which step failed; a stand-in (a law's, or an older
+    seam) is asked as it always was. -> (header or None, reason)"""
+    if reader is _LIVE_READER:
+        return reader(now_utc, why=why)
+    return reader(now_utc) if now_utc is not None else reader()
 
 
 def d2jsp_login_status(now_utc=None):
@@ -798,7 +844,8 @@ def d2jsp_login_status(now_utc=None):
         _sweep_stale_scratch()
     except Exception:
         pass
-    _header, reason = live_cookie_header(now_utc)
+    said = []
+    _header, reason = _read_cookie(live_cookie_header, now_utc, why=said)
     if reason == "ok":
         return {
             "ok": True,
@@ -838,7 +885,7 @@ def d2jsp_login_status(now_utc=None):
         "ok": True,
         "state": "unknown",
         "kind": "unread",
-        "why": "This machine could not read the Chrome login.",
+        "why": "This machine could not read the Chrome login" + (": " + "; ".join(said) if said else "") + ".",
     }
 
 
@@ -1856,7 +1903,7 @@ def _flow_begin(kind, subject, board, start):
     }
 
 
-def _flow_done(st, topic="", stop=""):
+def _flow_done(st, topic="", stop="", why=""):
     st["phase"] = "done"
     clicked = bool(st["clicked"])
     st["result"] = {
@@ -1865,6 +1912,7 @@ def _flow_done(st, topic="", stop=""):
         "topic": topic,
         "back": bool(st["back"]) and not topic,
         "stop": "" if clicked else (stop or "not-posted"),
+        "why": "" if topic else str(why or ""),     # REG-2870 what the run saw, for every outcome but a receipt
     }
     return st, ("done",)
 
@@ -1904,7 +1952,7 @@ def _flow_step(st, snap, now, said=None):
         if word in ("clicked", _NO_ANSWER):
             st.update(phase="receipt", clicked=True, click_at=now)
         elif word == "title":
-            return _flow_done(st, stop="title")
+            return _flow_done(st, stop="title", why="the form refused the title: over 50 characters")
         else:
             st["word"] = word or "no-form"
     elif name in ("open-trade", "open-edit") and word == "opened" and st["phase"] == "open":
@@ -1912,11 +1960,14 @@ def _flow_step(st, snap, now, said=None):
 
     if st["phase"] in ("open", "form"):
         if href and _on_forum(href) and "login" in href.lower():
-            return _flow_done(st, stop="need-login")
+            return _flow_done(st, stop="need-login", why="d2jsp sent the run to its login page")
         if now - st["t0"] >= _FORM_S:
             if st["word"]:
-                return _flow_done(st, stop="form-unknown")
-            return _flow_done(st, stop="not-posted" if st["seen"] else "unread")
+                return _flow_done(st, stop="form-unknown", why="the form answered '%s' to the fill" % st["word"][:40])
+            if st["seen"]:
+                return _flow_done(st, stop="not-posted", why="the %s form did not open within %d s"
+                                  % ("New Trade" if st["kind"] == "post" else "Edit", int(_FORM_S)))
+            return _flow_done(st, stop="unread", why="the forum did not answer within %d s" % int(_FORM_S))
         compose = readable and ready and _compose_page(href, html)
         if st["phase"] == "open" and st["asked"] and compose:
             st["phase"] = "form"
@@ -1945,7 +1996,8 @@ def _flow_step(st, snap, now, said=None):
         if not st["back"] and now - st["click_at"] < _RECEIPT_S:
             return st, ("wait",)
         if st["kind"] != "post":
-            return _flow_done(st)
+            return _flow_done(st, why="d2jsp sent the edit form back after the click" if st["back"]
+                              else "the edit was submitted and no topic page came back within %d s" % int(_RECEIPT_S))
         st.update(phase="check", check_at=now)
         return st, ("goto", _board_url(st["board"]))
 
@@ -1959,9 +2011,15 @@ def _flow_step(st, snap, now, said=None):
                 return _flow_done(st, topic=new[0])
             if new:
                 st["back"] = False      # more than one new topic carries the subject: which is his is unknown
-            return _flow_done(st)
+                return _flow_done(st, why="%d new topics on the board carry this title, so which one is this post "
+                                  "is unknown" % len(new))
+            return _flow_done(st, why=("d2jsp sent the form back after the click, and the board holds no new topic "
+                                       "with this title") if st["back"] else
+                              ("the click went out; no topic page came back within %d s and the board list read "
+                               "again holds no new topic with this title" % int(_RECEIPT_S)))
         if now - st["check_at"] >= _CHECK_S:
-            return _flow_done(st)
+            return _flow_done(st, why="the click went out; no topic page came back and the board list did not "
+                              "load again within %d s" % int(_CHECK_S))
         return st, ("wait",)
 
     return _flow_done(st)
@@ -1993,8 +2051,8 @@ def _run_flow(page, st, scripts, clock, nap):
             snap = None
         try:
             st, act = _flow_step(st, snap, clock(), said)
-        except Exception:
-            st, act = _flow_done(dict(st), stop="unread")
+        except Exception as e:
+            st, act = _flow_done(dict(st), stop="unread", why="the run raised %s" % _err(e))
         said = None
         if act[0] == "done":
             return st["result"]
@@ -2041,6 +2099,28 @@ def _chrome_search(item, cookie, chrome=None, clock=None, nap=None):
         raise OSError("search")
 
 
+def _flow_in_chrome(make, cookie, prefix, run):
+    """Run one flow in a scratch Chrome. -> the run's result. A result in hand outlives the Chrome's own cleanup.
+
+    REG-2870: the flow ran inside `with chrome(...) as page`, so an error while that Chrome closed - after the run had
+    clicked submit - replaced the run's result, and _run_opener read the error as unread: "nothing was posted" about a
+    post that may be up. The result stands; the cleanup error rides on it as `teardown`. A Chrome that never started
+    raises as before (ChromeStart), so nothing was sent."""
+    cm = make(cookie, prefix)
+    page = cm.__enter__()
+    try:
+        got = run(page)
+    except BaseException:
+        if not cm.__exit__(*sys.exc_info()):
+            raise
+        return None
+    try:
+        cm.__exit__(None, None, None)
+    except Exception as e:
+        got = dict(got, teardown=_err(e)) if isinstance(got, dict) else got
+    return got
+
+
 def _chrome_edit(topic, subject, text, cookie, chrome=None, clock=None, nap=None):
     """Replace the saved topic through its own Edit link. -> the run's result (see _flow_step)
 
@@ -2050,9 +2130,9 @@ def _chrome_edit(topic, subject, text, cookie, chrome=None, clock=None, nap=None
     The cookie is not logged. His open Chrome is not the one this starts.
     """
     scripts = {"open-edit": _open_link_js("Edit"), "fill": _fill_js(subject, text)}
-    with (chrome or _scratch_chrome)(cookie, "d2jsp-post-") as page:
-        return _run_flow(page, _flow_begin("edit", subject, BOARD, topic), scripts,
-                         clock or time.monotonic, nap or time.sleep)
+    return _flow_in_chrome(chrome or _scratch_chrome, cookie, "d2jsp-post-",
+                           lambda page: _run_flow(page, _flow_begin("edit", subject, BOARD, topic), scripts,
+                                                  clock or time.monotonic, nap or time.sleep))
 
 
 def _chrome_post(subject, text, cookie, forum=None, chrome=None, clock=None, nap=None):
@@ -2068,9 +2148,9 @@ def _chrome_post(subject, text, cookie, forum=None, chrome=None, clock=None, nap
     """
     board = _post_board(forum) or BOARD
     scripts = {"open-trade": _open_link_js("New Trade"), "fill": _fill_js(subject, text)}
-    with (chrome or _scratch_chrome)(cookie, "d2jsp-post-") as page:
-        return _run_flow(page, _flow_begin("post", subject, board, _board_url(board)), scripts,
-                         clock or time.monotonic, nap or time.sleep)
+    return _flow_in_chrome(chrome or _scratch_chrome, cookie, "d2jsp-post-",
+                           lambda page: _run_flow(page, _flow_begin("post", subject, board, _board_url(board)), scripts,
+                                                  clock or time.monotonic, nap or time.sleep))
 
 
 def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_run=None, chrome_fetch=None, sec_fetch_site=None):
@@ -2207,9 +2287,11 @@ def _as_result(got):
             "topic": str(got.get("topic") or ""),
             "back": bool(got.get("back")),
             "stop": str(got.get("stop") or ""),
+            "why": str(got.get("why") or ""),
+            "teardown": str(got.get("teardown") or ""),
         }
     url = str(got or "").strip()
-    out = {"landed": url, "clicked": None, "topic": "", "back": False, "stop": ""}
+    out = {"landed": url, "clicked": None, "topic": "", "back": False, "stop": "", "why": "", "teardown": ""}
     if not url:
         out.update(clicked=False, stop="unread")
     elif url == "no-edit":
@@ -2233,15 +2315,26 @@ def _send_verdict(got, board, at, open_login):
     topic = _public_topic(res["topic"])
     if topic:
         return 200, {"ok": True, "reason": "submitted", "topic": topic}
+    # REG-2870 - every answer that is not a receipt carries what the run saw, and the page it ended on
+    said = [w for w in (res["why"],) if w]
+    if res["landed"] and _on_forum(res["landed"]):
+        said.append("last page " + res["landed"][:160])
+    if res["teardown"]:
+        said.append("then Chrome's cleanup raised " + res["teardown"])
+
+    def answer(out):
+        if said:
+            out["why"] = "; ".join(said)
+        return 200, out
     if res["clicked"] is not False:
         if res["back"]:
-            return 200, {"ok": False, "reason": "not-posted"}
-        return 200, {"ok": False, "reason": "maybe-sent", "board": int(board), "at": at}
+            return answer({"ok": False, "reason": "not-posted"})
+        return answer({"ok": False, "reason": "maybe-sent", "board": int(board), "at": at})
     if res["stop"] == "need-login":
-        return 200, {"ok": False, "reason": "need-login", "opened": _open_door(open_login)}
+        return answer({"ok": False, "reason": "need-login", "opened": _open_door(open_login)})
     if res["stop"] in ("title", "form-unknown", "unread"):
-        return 200, {"ok": False, "reason": res["stop"]}
-    return 200, {"ok": False, "reason": "not-posted"}
+        return answer({"ok": False, "reason": res["stop"]})
+    return answer({"ok": False, "reason": "not-posted"})
 
 
 def _run_opener(call):
@@ -2253,8 +2346,8 @@ def _run_opener(call):
         return call(), None
     except ChromeStart as stop:
         return None, {"ok": False, "reason": "chrome-start", "why": stop.why}
-    except Exception:
-        return None, {"ok": False, "reason": "unread"}
+    except Exception as e:
+        return None, {"ok": False, "reason": "unread", "why": "the Chrome run stopped before it opened the board (%s)" % _err(e)}
 
 
 def _send_edit(subject, text, cookie, topic, edit_post, open_login, forum=None, at=""):
@@ -2372,6 +2465,12 @@ def d2jsp_send(body, origin, host, port, cookie_get=None, transport=None, open_l
     try:
         return _send_locked(body, forum, subject, text, cookie_get, transport, open_login,
                             chrome_post, edit_post, now)
+    except Exception as e:
+        # REG-2870 - an error inside the send was an exception out of the route: the connection dropped and the page
+        # had no words. Once the send has started, whether it reached the board is unknown, so it is a maybe, with why.
+        return 200, {"ok": False, "reason": "maybe-sent", "board": int(_post_board(forum) or BOARD),
+                     "at": _stamp(time.time() if now is None else float(now)),
+                     "why": "the console raised %s during the send" % _err(e)}
     finally:
         _SEND_LOCK.release()
 
@@ -2402,14 +2501,19 @@ def _send_route(forum, subject, text, target, cookie_get, transport, open_login,
     """Read the cookie, then edit the saved topic (target), post through Chrome, or (a law's seam)
     post through urllib."""
     get_cookie = cookie_get or live_cookie_header
+    said = []
     try:
-        cookie, cookie_reason = get_cookie()
-    except Exception:
+        got = _read_cookie(get_cookie, why=said) if cookie_get is None else get_cookie()
+        cookie, cookie_reason = got[0], got[1]
+    except Exception as e:
         cookie, cookie_reason = None, "chrome-unread"
+        said.append("the Chrome login read raised %s" % _err(e))
     if not cookie:
-        if cookie_reason == "need-login":
-            return 200, {"ok": False, "reason": "need-login", "opened": _open_door(open_login)}
-        return 200, {"ok": False, "reason": "chrome-unread"}
+        out = ({"ok": False, "reason": "need-login", "opened": _open_door(open_login)} if cookie_reason == "need-login"
+               else {"ok": False, "reason": "chrome-unread"})
+        if said:
+            out["why"] = "; ".join(said)    # REG-2870 which step of the read failed
+        return 200, out
     if target:
         opener = edit_post
         if opener is None and chrome_post is False:

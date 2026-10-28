@@ -2838,6 +2838,24 @@ His tick is kept on the locker's entry (pagesMade). Saved cells stay where they 
 After the fix: 0 of 280 tasks have no cell, and a second batch moved no saved target. Law
 `tv/test_a_full_locker_spills_to_its_next_mule.py` (whole page in node, 8 red-proofs RED). Three red-proofs were re-aimed
 (REG-2787, REG-2802, and the Chrome law test_vault_l1_a_hand_add_routes_by_type [21], which CI proves).
+### REG-2870 - A D2JSP POST ANSWER NAMED NO REASON, AND A CLICK WAS READ AS NOTHING SENT WHEN CHROME WOULD NOT CLOSE (#83, his ask 1, GrokBot 6476487696)
+GrokBot's real post from the Linux seat, with his OK, came back "MAYBE SENT: The console answered with no reason, which this
+page does not know", and no topic reached board 268. His ask: "surface what the backend got back (HTTP status or d2jsp
+error) instead of MAYBE SENT with no reason." The code could not say why. Every refusal was a bare word: chrome-unread never
+named the step of the cookie read that failed, and not-posted and maybe-sent never said what the run saw or on which page it
+stopped. An error inside the send escaped the route as an exception, which dropped the connection. The page's words for an
+answer with no contract reason named no HTTP status and none of the answer's own words. Measured on a fake board (fakes
+only, never d2jsp): a Chrome that raised while closing, after the run had clicked submit, turned the result into "unread":
+"nothing was posted" about a click that went out. Now the run's result outlives its Chrome's cleanup (the error rides on it
+as teardown). Each cookie reader says which step failed (no cookie file, the keychain, the decryption, signed out), and the
+lamp's unread says it too. Every answer that is not a receipt carries `why`: what the run saw and its last forum page. An
+error inside the send is maybe-sent with why, and the console route answers not-posted with why when the d2jsp module
+itself fails. The receipt and the status line show "What the console saw: ...". An answer with no contract reason shows its
+HTTP status and its own words. NOT KNOWN: what exactly the Linux seat's console answered. No reason-less answer is left in
+this tree's code, so that seat ran other code or another path; GrokBot's repost will show the words. Law
+`tv/test_a_d2jsp_refusal_always_says_why.py` (the real flow over the send law's fake board, plus the room in node; 15
+red-proofs RED). Three REG-2490 red-proofs and one REG-2492 red-proof were re-aimed to the moved lines.
+
 ### REG-2874 - THE D2JSP SUBJECT SAID SELLING, AND BACK ON A DRAFT READ LIKE A POST RESULT (#83, his ask 5, GrokBot 6476487696)
 His ask, through GrokBot: "Wording: the subject reads 'Selling ...'. Earlier drafts used 'WTS ...', which is the d2jsp
 norm." GrokBot also saw: "Closing the dialog with Back changed the status to 'The draft was closed. Nothing was posted.',

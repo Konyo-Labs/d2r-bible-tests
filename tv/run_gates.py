@@ -13169,6 +13169,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_d2jsp_post_says_wts_and_back_is_a_cancel.py")], 300,
          needs_app=False,
          why='REG-2874 a d2jsp post says WTS and Back or Escape on a draft is a cancel, never a post result'),
+    Gate("test_a_d2jsp_refusal_always_says_why",
+         [sys.executable, os.path.join(HERE, "test_a_d2jsp_refusal_always_says_why.py")], 300,
+         needs_app=False,
+         why="REG-2870 every d2jsp post answer says what the console saw: the cookie step, the run's last page, an error, the HTTP status"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

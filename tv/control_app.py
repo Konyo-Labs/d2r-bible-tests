@@ -50528,10 +50528,18 @@ class Handler(BaseHTTPRequestHandler):
             # The D2JSP desk posts one priced draft through the Chrome login on
             # this machine. The answer is a status word. The draft and the cookie
             # stay out of the presence beacon and out of this response.
-            import d2jsp_chrome as _d2jsp
-            _code, _out = _d2jsp.d2jsp_send(
-                body, self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
-                sec_fetch_site=self.headers.get("Sec-Fetch-Site"))
+            # REG-2870 - an error here dropped the connection, and the page had nothing to say but "no reason". The send
+            # itself answers every error with a reason (d2jsp_send); what is left is the module failing to load or to be
+            # called, before any send ran, so nothing was posted - and the answer says why.
+            try:
+                import d2jsp_chrome as _d2jsp
+                _code, _out = _d2jsp.d2jsp_send(
+                    body, self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
+                    sec_fetch_site=self.headers.get("Sec-Fetch-Site"))
+            except Exception as _e:
+                _code, _out = 200, {"ok": False, "reason": "not-posted",
+                                    "why": ("the console's d2jsp module failed before any send: %s: %s"
+                                            % (type(_e).__name__, str(_e)))[:200]}
             self._json(_code, _out)
             return
         if path == "/api/roster_approve":
