@@ -228,6 +228,19 @@ class TestACountCannotAnswerWhy(unittest.TestCase):
                              "vault_population calls %r — it is a diagnostic and must not change "
                              "where a single item lives. Calls: %s" % (banned, sorted(calls)))
 
+RED_PROOF = [
+    {"why": "`filed` counts the SIZE OF THE MAP again: orphan rows and empty lockers count as filed, and filed + unfiled != owned",
+     "file": "tv/control_app.py",
+     "find": "    filed = len(owned_s) - len(unfiled)\n",
+     "replace": "    filed = len(assign)\n",
+     "matches": 1},
+    {"why": "an unreadable d2r_setPieces reads as 'none of your items are set pieces' instead of UNKNOWN",
+     "file": "tv/control_app.py",
+     "find": "    sets_names = _shape(sets_names, list)\n    if sets_names is None:\n",
+     "replace": "    sets_names = _shape(sets_names, list) or []\n    if sets_names is None:\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -106,6 +106,19 @@ class TestTheFleetNamesWhatEachSideLacks(unittest.TestCase):
                            "all three columns came back empty for two masks that differ — that is "
                            "a silent compare, not agreement")
 
+RED_PROOF = [
+    {"why": "the compare names what THEY have from his own mask: the item Dean holds and he does not never reaches 'they have / you do not'",
+     "file": "tv/fleet_mask.py",
+     "find": "            \"theyHaveIDont\": [n for n in roster if n in sb and n not in sa],\n",
+     "replace": "            \"theyHaveIDont\": [n for n in roster if n in sa and n not in sb],\n",
+     "matches": 1},
+    {"why": "a piece neither of them holds never reaches 'you both need'",
+     "file": "tv/fleet_mask.py",
+     "find": "            \"neitherHas\": [n for n in roster if n not in sa and n not in sb],\n",
+     "replace": "            \"neitherHas\": [n for n in roster if n not in sa and n in sb],\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

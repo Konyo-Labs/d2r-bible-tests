@@ -180,6 +180,19 @@ class TestTheDockSaysWhyItIsStillFull(unittest.TestCase):
                                  "shape sh-chip-st and sh-chip-stunk both shipped in")
         self.assertIn("color", src[i:src.find("}", i) + 1])
 
+RED_PROOF = [
+    {"why": "the dock's all-discard reason claims every item is a discard while some could be filed (a sorter leaving work undone is excused)",
+     "file": "bible.html",
+     "find": "            if (_keys.length === 1 && _keys[0] === '__throwout'){\n",
+     "replace": "            if (_keys.length && _h['__throwout']){\n",
+     "matches": 1, "needs": "node"},
+    {"why": "one item whose suggestion raises silences the dock's reason for every other item",
+     "file": "bible.html",
+     "find": "              try { sg = suggestMule(nm); } catch (e) { sg = null; }\n",
+     "replace": "              sg = suggestMule(nm);\n",
+     "matches": 1, "needs": "node"},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

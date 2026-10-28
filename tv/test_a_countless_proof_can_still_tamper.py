@@ -137,6 +137,19 @@ class TestACountlessProofCanStillTamper(unittest.TestCase):
                for pr in (H.red_proofs_in(f) or []) if not isinstance(pr, dict)]
         self.assertEqual(bad, [], "these left the reader un-normalised: %r" % bad[:4])
 
+RED_PROOF = [
+    {"why": "REG-1045 - the tamper passes an absent count straight to str.replace: every count-less proof raises at the tampering step",
+     "file": "tv/heart2.py",
+     "find": "    _tampered = (original.replace(find, repl) if want is None\n",
+     "replace": "    _tampered = (original.replace(find, repl, want) if want is None\n",
+     "matches": 1},
+    {"why": "REG-1045 - a declared count stops limiting the tamper, so a `matches: 1` proof tampers every occurrence",
+     "file": "tv/heart2.py",
+     "find": "                 else original.replace(find, repl, want))\n",
+     "replace": "                 else original.replace(find, repl))\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

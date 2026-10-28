@@ -168,6 +168,19 @@ console.log(eval(js));
                          "vault_autosort's JS does not parse:\n%s"
                          % r.stderr.decode("utf-8", "replace")[:600])
 
+RED_PROOF = [
+    {"why": "v3230 - an unreadable AFTER read reports 0, so newlyAssigned reads -173: mass un-assignment from a read that never happened",
+     "file": "tv/control_app.py",
+     "find": "          \"assignedAfter:(okAfter?after:null),readBefore:okBefore,readAfter:okAfter,\"\n          \"newlyAssigned:((okBefore&&okAfter)?(after-before):null)});\"\n",
+     "replace": "          \"assignedAfter:after,readBefore:okBefore,readAfter:okAfter,\"\n          \"newlyAssigned:(okBefore?(after-before):null)});\"\n",
+     "matches": 1},
+    {"why": "v3224 - an unreadable BEFORE read reports 0, so the difference is fiction on the other side",
+     "file": "tv/control_app.py",
+     "find": "          \"return JSON.stringify({ok:true,assignedBefore:(okBefore?before:null),\"\n",
+     "replace": "          \"return JSON.stringify({ok:true,assignedBefore:before,\"\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

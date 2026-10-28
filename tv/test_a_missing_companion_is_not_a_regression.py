@@ -118,6 +118,19 @@ console.log(JSON.stringify(out));
                          "the audit misclassifies these — a bucket that is too WIDE hides real "
                          "failures, one too NARROW keeps Routine G permanently red: %r" % bad)
 
+RED_PROOF = [
+    {"why": "the console bucket widens to every loopback port, so a probe the page should not be making is hidden",
+     "file": "end_to_end_audit.js",
+     "find": "  const CONSOLE_PORTS = /^https?:\\/\\/(127\\.0\\.0\\.1|localhost):(17771|17772)\\b/i;\n",
+     "replace": "  const CONSOLE_PORTS = /^https?:\\/\\/(127\\.0\\.0\\.1|localhost):\\d+/i;\n",
+     "matches": 1, "needs": "node"},
+    {"why": "the gated list counts the console probe again, so an absent desktop app fails every cloud audit",
+     "file": "end_to_end_audit.js",
+     "find": "  const uniqFailed   = allFailed.filter(u => !isExternal(_url(u)) && !isConsoleProbe(_url(u)));\n",
+     "replace": "  const uniqFailed   = allFailed.filter(u => !isExternal(_url(u)));\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -256,6 +256,19 @@ class TestABlindOrganSaysSo(unittest.TestCase):
                          "an explicit empty list was reported as 'could not ask' — that would "
                          "turn every honest zero into an UNKNOWN and make the flag meaningless")
 
+RED_PROOF = [
+    {"why": "an unreadable page reads as \"\": the heart map banks 'the console paints 0 surfaces' from a failed open",
+     "file": "tv/heart_map.py",
+     "find": "    except Exception:\n        return None\n\n\ndef surfaces(",
+     "replace": "    except Exception:\n        return \"\"\n\n\ndef surfaces(",
+     "matches": 1},
+    {"why": "a console that cannot be asked returns [] like a console with no sessions, so a blind witness reads as clean",
+     "file": "tv/shelf_corroborate.py",
+     "find": "        globals()[\"_LAST_ASK_WHY\"] = \"%s\" % type(e).__name__\n        return None\n",
+     "replace": "        globals()[\"_LAST_ASK_WHY\"] = \"%s\" % type(e).__name__\n        return []\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

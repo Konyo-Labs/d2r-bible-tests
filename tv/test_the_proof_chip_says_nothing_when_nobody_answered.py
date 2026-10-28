@@ -148,6 +148,19 @@ class TestTheProofChipSaysNothingWhenNobodyAnswered(unittest.TestCase):
                              "that clear this bar are consumables and charms, so filtering on it "
                              "would empty his vault of every keeper." % banned)
 
+RED_PROOF = [
+    {"why": "the proof chip renders when nobody answered, so the public site shows a proof count no console produced",
+     "file": "bible.html",
+     "find": "            if (!P) return '';\n",
+     "replace": "            if (!P) P = {};\n",
+     "matches": 1},
+    {"why": "the proof ask installs a refusal's shape as the answer (proven:null is taken as 'asked and found none')",
+     "file": "bible.html",
+     "find": "        if (!d || !d.ok || !Array.isArray(d.proven)) { window.__vaultProvenAsked = 0; return; }\n",
+     "replace": "        if (!d) { window.__vaultProvenAsked = 0; return; }\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

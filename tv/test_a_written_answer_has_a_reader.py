@@ -149,6 +149,19 @@ class TheJoinReachesThePageNotJustTheNextLine(unittest.TestCase):
                       "the CLI copy of the lane refusal still prints the flat sentence, so the "
                       "person debugging from a terminal cannot tell OFF from ABSENT")
 
+RED_PROOF = [
+    {"why": "an unknown storyline state is quietly filed as PENDING again, which is how a retired item comes back to life",
+     "file": "tv/board_sync.py",
+     "find": "    return (\"? · %s — a state the storyline does not know\" % str(state).upper(), -10)\n",
+     "replace": "    return _SEC[\"pending\"][:2]\n",
+     "matches": 1},
+    {"why": "the vault sweep's lane refusal stops saying whether the lane is OFF or ABSENT, sending him to reinstall a CLI he turned off",
+     "file": "tv/control_app.py",
+     "find": "            return {\"ok\": False, \"laneMissing\": True,\n                    \"why\": \"the primary (Claude) lane is unavailable — nothing to sweep with\",\n                    \"lanes\": lanes, \"laneDetail\": _chron_lane_detail()}\n",
+     "replace": "            return {\"ok\": False, \"laneMissing\": True,\n                    \"why\": \"the primary (Claude) lane is unavailable — nothing to sweep with\",\n                    \"lanes\": lanes}\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

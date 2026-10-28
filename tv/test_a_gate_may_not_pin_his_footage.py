@@ -118,6 +118,20 @@ class TestAGateMayNotPinHisFootage(unittest.TestCase):
                 "in REG-1027. Its evidence belongs in BUGS.md, which is not scanned."
                 % (name, sorted(ids - unpinned)))
 
+RED_PROOF = [
+    {"why": "REG-1027 - a reel id the suite names leaves the ratchet: footage is frozen under test-fixture by accident, with no reason given",
+     "file": "tv/test_reel_refs.json",
+     "find": "  \"reel_s_1000000000000_1\",\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "REG-1027 - the reel-seal gate that froze 43 MB names a real (non-2017) reel id again",
+     "file": "tv/test_a_read_reel_is_not_waiting_on_a_read.py",
+     "find": "                 _reel(\"reel_s_1500000000004_76614\", 8.1)]\n",
+     # the id is split in two literals so this file never names a real-looking reel itself
+     "replace": "                 _reel(\"reel_s_17" "90000000004_76614\", 8.1)]\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

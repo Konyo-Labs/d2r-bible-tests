@@ -167,6 +167,19 @@ class TestAReadReelIsNotWaitingOnARead(unittest.TestCase):
                 "%s is built from `waiting` without the already-read clause, so the screen goes "
                 "back to describing read reels as unread. Block:\n%s" % (name, blk))
 
+RED_PROOF = [
+    {"why": "a reel that was read and found nothing is reported as waiting on a read again (the seal is ignored)",
+     "file": "tv/control_app.py",
+     "find": "        if rec is not None and _still(rec):\n            (banked if (rec or {}).get(\"rows\") else barren).append(k)\n",
+     "replace": "        if rec is not None and _still(rec) and (rec or {}).get(\"rows\"):\n            banked.append(k)\n",
+     "matches": 1},
+    {"why": "a reel sealed under its bare sid is not matched, so a read reel reads as waiting",
+     "file": "tv/control_app.py",
+     "find": "        rec = seals.get(nm) or seals.get(nm.replace(\"reel_\", \"\", 1))\n",
+     "replace": "        rec = seals.get(nm)\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

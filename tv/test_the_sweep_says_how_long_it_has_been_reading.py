@@ -194,6 +194,19 @@ class TheSweepSaysHowLongItHasBeenReading(unittest.TestCase):
                            "the sweep meter must sit UNDER the fleet, which is where he asked "
                            "for it")
 
+RED_PROOF = [
+    {"why": "v3180 - the vault sweep's meter is denominated in frames again: a run count divided by a frame count",
+     "file": "tv/control_app.py",
+     "find": "                              total_key=\"runReelsTotal\", unit=\"reel\")\n",
+     "replace": "                              total_key=\"runReelsTotal\", unit=\"frame\")\n",
+     "matches": 1},
+    {"why": "v3180 - a running sweep's time meter carries no elapsed time",
+     "file": "tv/control_app.py",
+     "find": "    out[\"elapsedMs\"] = max(0, now - started) if started else None\n",
+     "replace": "    out[\"elapsedMs\"] = None\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

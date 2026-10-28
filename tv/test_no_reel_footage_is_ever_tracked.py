@@ -133,6 +133,14 @@ class HisFootageIsNeverTracked(unittest.TestCase):
                          "the reel-seed pack is no longer ignored, so the next `git add -A` puts "
                          "his footage back on the public remote")
 
+RED_PROOF = [
+    {"why": "v3259 - the reel-seed pack is no longer ignored, so the next `git add -A` puts his footage back on the public remote",
+     "file": "../.gitignore",
+     "find": "# The seed pack is a real artefact and is kept ON DISK; it is simply never tracked.\n*.tgz\n*.tar.gz\ntv/tvd-reel-seed*\n",
+     "replace": "# The seed pack is a real artefact and is kept ON DISK; it is simply never tracked.\n*.tar.gz\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

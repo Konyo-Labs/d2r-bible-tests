@@ -186,6 +186,19 @@ class ThePresenceReportDoesNotBuildStatus(unittest.TestCase):
         self.assertEqual(["hb"], full)
         self.assertEqual([], posted, "a change with no landed beacon posted a partial row")
 
+RED_PROOF = [
+    {"why": "a window change is held for the floor instead of sent at once: the fleet shows a closed game as front for minutes",
+     "file": "tv/control_app.py",
+     "find": "    if pending and (now - sent_at) >= min_s:\n        return True, False, prev\n    return False, pending, prev\n",
+     "replace": "    if pending and (now - sent_at) >= 240:\n        return True, False, prev\n    return False, pending, prev\n",
+     "matches": 1},
+    {"why": "an unreadable window counts as a change, so a failed read reports a window state nobody saw",
+     "file": "tv/control_app.py",
+     "find": "    if cur is None:\n        return False, pending, prev\n    if prev is None:\n        return False, False, cur\n",
+     "replace": "    if prev is None:\n        return False, False, cur\n",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     # REG-1875 sweep - the gate runs this file as a script, and without this line it ran no case at all

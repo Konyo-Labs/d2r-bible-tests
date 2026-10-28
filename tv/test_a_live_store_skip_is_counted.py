@@ -91,7 +91,12 @@ class TestALiveStoreSkipIsCounted(unittest.TestCase):
                 pass
         c = _Case()
         # a file that certainly exists — the helper must NOT skip
-        LS.require(c, "live_store.py")
+        # #128 - a SkipTest raised here would skip THIS case, not fail it, so a require() that stands every gate down
+        # read as one more skip. Caught and failed instead.
+        try:
+            LS.require(c, "live_store.py")
+        except unittest.SkipTest as e:
+            self.fail("require() stood a gate down on a store that exists here: %s" % e)
         with self.assertRaises(unittest.SkipTest):
             LS.require(c, "definitely_not_here_%d.json" % os.getpid())
 
@@ -143,6 +148,19 @@ class TestALiveStoreSkipIsCounted(unittest.TestCase):
         self.assertIn("missing_", msg, "the skip does not name the file: %r" % msg)
         self.assertIn("a skip is NOT a pass", msg, "the sentence lost its warning: %r" % msg)
         self.assertIn("banked rows", msg, "the caller's reason was dropped: %r" % msg)
+
+RED_PROOF = [
+    {"why": "v3255 - a ~ path that exists is reported missing (joined before expanduser), so a gate stands down on a machine that has the data",
+     "file": "tv/live_store.py",
+     "find": "        full = os.path.expanduser(p)\n        if not os.path.isabs(full):\n            full = os.path.join(HERE, full)\n",
+     "replace": "        full = p\n        if not os.path.isabs(full):\n            full = os.path.expanduser(os.path.join(HERE, full))\n",
+     "matches": 1},
+    {"why": "require() skips even where the store exists, so 'nobody could look' and 'it looked and was wrong' read the same",
+     "file": "tv/live_store.py",
+     "find": "    gone = missing(*paths)\n    if gone:\n",
+     "replace": "    gone = missing(*paths) or list(paths)\n    if gone:\n",
+     "matches": 1},
+]
 
 
 if __name__ == "__main__":

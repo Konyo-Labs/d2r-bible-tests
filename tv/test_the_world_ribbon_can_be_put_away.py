@@ -192,6 +192,19 @@ class TheWorldRibbonCanBePutAway(unittest.TestCase):
         self.assertIn("its own world", blk, "the world sentence was rewritten by a dismiss fix")
         self.assertIn("Mac untouched", blk, "the isolation reassurance was dropped")
 
+RED_PROOF = [
+    {"why": "v3272 - the world ribbon's put-away choice is forgotten on every reload",
+     "file": "bible.html",
+     "find": "    try { localStorage.setItem(_wkey, min ? '1' : '0'); } catch(e){}\n",
+     "replace": "    try { void 0; } catch(e){}\n",
+     "matches": 1},
+    {"why": "v3272 - the whole band takes clicks and can eat the console button below 684px",
+     "file": "bible.html",
+     "find": "box-shadow:0 2px 10px rgba(0,0,0,.45);pointer-events:none;white-space:nowrap;max-width:92vw",
+     "replace": "box-shadow:0 2px 10px rgba(0,0,0,.45);pointer-events:auto;white-space:nowrap;max-width:92vw",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     # ⚠ this file's own docstring carries 🐧 and ⚠. On a cp1255 console (his Windows PC) printing
