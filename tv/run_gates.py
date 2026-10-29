@@ -13305,6 +13305,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_on_a_phone_the_tray_is_one_bottom_bar.py")], 300,
          needs_app=False,
          why='REG-3090 on a phone the tray is one bottom bar that reserves its own height, and the desktop is unchanged'),
+    Gate("test_a_shared_stash_cell_has_one_spelling",
+         [sys.executable, os.path.join(HERE, "test_a_shared_stash_cell_has_one_spelling.py")], 300,
+         needs_app=False,
+         why="REG-3005 (#144(a)) - ONE SHARED-STASH CELL, ONE SPELLING: 'Page 1 · col 3 · row 1' from _sharedSpotSay on every surface (the window's list said 'PAGE 1 col 3 · row 1', the MOVE row and its expand 'page 1 (3,1)', the move list's cell words read a page-2 cell raw). The helper's words in node, every surface's own line calls it, the old spellings are gone."),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

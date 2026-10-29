@@ -91,7 +91,7 @@ class TheVaultFinderNamesTheMuleAndTheCell(unittest.TestCase):
                       "the finder and the mule window name different cells for the same item")
         g = re.search(r"^Page ([1-5]) · col (\d+) · row (\d+)$", self.after["Grief"].get("cell") or "")
         self.assertTrue(g, self.after["Grief"])
-        self.assertIn("Grief → PAGE %s col %s · row %s" % g.groups(), self.shList,
+        self.assertIn("Grief → Page %s · col %s · row %s" % g.groups(), self.shList,   # REG-3005 the one spelling
                       "the finder and the shared stash window name different cells for Grief")
 
     def test_magic_and_rare_and_his_main_and_a_discard_each_say_their_own_answer(self):
@@ -126,7 +126,7 @@ RED_PROOF = [
     # deleted the FILED branch's cell lines, which no case here reaches: each stayed green, BLIND on his census.
     {"why": "REG-2020 - the finder names no shared-tab cell",
      "file": "bible.html",
-     "find": "          layW.pages.forEach(function(pgW, pi){ pgW.forEach(function(p){ if (p.n === nm) _putW('Page ' + (pi + 1) + ' · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); }); });\n",
+     "find": "          layW.pages.forEach(function(pgW, pi){ pgW.forEach(function(p){ if (p.n === nm) _putW(_sharedSpotSay(pi, p.x, p.y)); }); });   /* REG-3005 */\n",
      "replace": "",
      "matches": 1},
     {"why": "REG-2020 - the finder names no mule-stash cell",
