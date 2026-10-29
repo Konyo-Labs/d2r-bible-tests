@@ -52422,7 +52422,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var have = (typeof copyCount === 'function') ? (copyCount(nm) | 0) : 1;
     if (have <= 1 || mine.length <= 1) {
       var r1 = (typeof window.vaultRemove === 'function') ? window.vaultRemove([nm], { lane: _lane, exact: true, quiet: true, why: why }) : null;
-      /* measured: the removal door leaves the copy's record in the store, so the undo brings its own cell back with the name */
+      /* REG-3073 - the removal door takes the copy's record into its batch, so the undo brings its own cell back with the name */
       var gone = !!(r1 && r1.removed && r1.removed.indexOf(nm) >= 0);
       var _tKept = (kind !== 'trade-out');   /* REG-2849 - a hand removal keeps no traded row */
       if (gone && kind === 'trade-out') { try { var _r2 = _vrRecLoadRaw(); _tKept = !!(_r2 && Array.isArray(_r2.records) && (function(){ var st = {}; for (var x in _r2) st[x] = _r2[x]; st.tradedOut = _tWith(_r2); return _vrRecGuardedSet(st); })()); } catch (eTk) { _tKept = false; } }
