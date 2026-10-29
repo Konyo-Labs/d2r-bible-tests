@@ -3944,7 +3944,7 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
       if (m !== 'GET') return null;
       var path = '';
       try { path = new URL(String(url), window.location.href).pathname; } catch (e) { return null; }
-      var hit = /^\/api\/(chars_learned|main_locks)$/.exec(path);
+      var hit = /^\/api\/(chars_learned|main_locks|saves)$/.exec(path);   /* #251 (REG-3079) their saves' reason */
       if (!hit) return null;
       // #203 - an answer their console did not send says so (UNKNOWN with its reason), not "shadow: read only"
       if (typeof seed['d2r_api_' + hit[1]] !== 'string') {
@@ -11839,6 +11839,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
         + '<ul class="chx-how"><li><b>+ New character</b> opens the planner: pick a class and level, then click a slot on the doll to equip any item in the game, and click an inventory cell to add charms.</li>'
         +   '<li><b>Set as MAIN</b> marks the character you play most; it is listed first here and in the planner. It does not lock gear - the Vault\'s lock follows the MAIN named in its lock panel.</li>'
         +   '<li><b>Delete</b> asks twice, and an Undo restores the build exactly as it was for 20 seconds.</li></ul>'
+        + _savesSayHtml()   /* #251 (REG-3079) - with nothing learned, the saves' reason is the one thing known */
         + '<button type="button" class="chx-btn chx-new" data-act="new" onclick="window._charsNew()">+ New character</button></div>';
       return true;
     }
@@ -12172,6 +12173,14 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
   window._lobbySizeHtml = _lobbySizeHtml;
   window._chxDumpOpen = function(key){ try { return window.LSR.getItem('d2r_chxDump.' + key) === '1'; } catch (e) { return false; } };
   window._chxDumpToggle = function(key, open){ try { window.LSR.setItem('d2r_chxDump.' + key, open ? '1' : '0'); } catch (e) {} return !!open; };
+  /* #251 (REG-3079) - the saves' reason under the in-game list: this PC's, or in a shadow the owner's */
+  function _savesSayHtml(){
+    var t = (typeof window._cbSavesSay === 'function') ? window._cbSavesSay() : null;
+    if (!t) return '';
+    var shadow = document.documentElement.classList.contains('tvd-shadow');
+    return '<div class="chx-sec-sub" data-sub="saves"><b>' + (shadow ? 'Their PC\u2019s saves' : 'This PC\u2019s saves') + ':</b> ' + esc(t) + '</div>';
+  }
+  window._savesSayHtml = _savesSayHtml;
   function _sections(all, order, mainId){
     var S = (typeof window._cbSections === 'function') ? window._cbSections(all, order) : null;
     if (!S) S = { state: 'unknown', why: 'the Character Builder is not on this page', ingame: [], mules: [], sim: order };
@@ -12204,7 +12213,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       +   '<div class="chx-sec-list">' + newTile + sim + '</div></section>'
       + '<section class="chx-sec" data-sec="ingame" aria-label="In-game characters">'
       +   '<div class="chx-sec-h"><span class="chx-sec-t" title="' + esc(ladder) + '">⚔️ In-game characters</span></div>'
-      +   '<div class="chx-sec-list">' + cards + _surfaceWitnessHtml() + _lobbySizeHtml() + '</div></section>';
+      +   '<div class="chx-sec-list">' + cards + _savesSayHtml() + _surfaceWitnessHtml() + _lobbySizeHtml() + '</div></section>';
   }
   window.renderCharsTab = function(){
     /* ask this console what its reels learned; the room repaints when it answers */
@@ -76367,9 +76376,10 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     if (!d || typeof d !== 'object' || !(d.chars === null || Array.isArray(d.chars))) return;
     if (d.ok === true || !(_cbSaves && _cbSaves.ok === true)) _cbSaves = d;
   }
+  /* REG-3079 - a shadow asks too: its frame answers /api/saves from the OWNER's upload, so the room says their reason.
+     Their names still never join this page's templates (_cbSaveRows); they ride in the roster's characters section. */
   function _cbSavesAsk(){
     try {
-      if (document.documentElement.classList.contains('tvd-shadow')) return Promise.resolve();
       if (!/^https?:$/.test(location.protocol) || typeof fetch !== 'function') return Promise.resolve();
       return fetch('/api/saves', { cache: 'no-store' })
         .then(function(r){ return r.ok ? r.json() : null; })
@@ -76382,6 +76392,17 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     return c.filter(function(r){ return r && typeof r.name === 'string' && r.name && typeof r.ids === 'number'; });
   }
   window._cbSavesTakeForLaw = _cbSavesTake;
+  /* #251 (REG-3079) - WHY THE SAVES NAME WHAT THEY NAME, said in the Characters room: "no .d2s on this PC; online
+     characters live on Battle.net" (d2s_read.NO_D2S_SAY), or the reason the list is UNKNOWN (no save folder, a platform
+     with no place to look, their console did not send it). A hidden reason reads as nothing. In a shadow it is the
+     owner's, answered from their upload. -> text | null (never answered, or nothing to say) */
+  window._cbSavesSay = function(){
+    var S = _cbSaves;
+    if (!S || typeof S !== 'object') return null;
+    if (typeof S.d2sWhy === 'string' && S.d2sWhy) return S.d2sWhy;
+    if (!Array.isArray(S.chars) && typeof S.why === 'string' && S.why) return S.why;
+    return null;
+  };
   window._cbSavesNow = function(){ return document.documentElement.classList.contains('tvd-shadow') ? null : _cbSaves; };
   /* #36 (REG-2908) - the vault's own ask: the same answer through the same take, and NOT the room asking - the room's
      "asking..." counts the room's and the builder's asks only, so an ask the vault made at boot never reads as the room's */

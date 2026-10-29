@@ -56,7 +56,9 @@ class ASlowCharacterReadStillReachesTheShadow(unittest.TestCase):
         self.tmp = tempfile.mkdtemp(prefix="tvd_profile_api_")
         self.addCleanup(shutil.rmtree, self.tmp, True)
         for name, val in (("_log_root", lambda: self.tmp), ("_beacon_suppressed_by", lambda: None),
-                          ("_profile_owner", lambda: OWNER), ("main_locks_view", lambda: {"ok": False})):
+                          ("_profile_owner", lambda: OWNER), ("main_locks_view", lambda: {"ok": False}),
+                          # REG-3079 - the upload's saves answer is a fixture: no law reads a real save folder
+                          ("_profile_saves", lambda: {"ok": True, "state": "no-folder", "chars": None, "why": "a fixture"})):
             p = mock.patch.object(self.CA, name, val)
             p.start()
             self.addCleanup(p.stop)

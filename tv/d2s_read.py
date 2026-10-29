@@ -560,7 +560,8 @@ def saves(platform=None, home=None, saved_games=None):
     except Exception as e:
         return {"ok": False, "state": "unknown", "chars": None, "d2s": None, "why": "looking for the save folder raised %s" % type(e).__name__}
     if why:
-        return {"ok": False, "state": "unsupported", "chars": None, "d2s": None, "why": why}
+        # REG-3079 - a completed look with its reason (this platform has no place D2R keeps saves): ok, chars UNKNOWN
+        return {"ok": True, "state": "unsupported", "chars": None, "d2s": None, "why": why}
     if not dirs and unread:
         return {"ok": False, "state": "unknown", "chars": None, "d2s": None, "folders": 0,
                 "why": "%d folder%s where D2R saves can live would not list - UNKNOWN, not 'none'"
