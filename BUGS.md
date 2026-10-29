@@ -1653,6 +1653,53 @@ STORED role, and REG-2968 seeds this law's war mules by role and number, so that
 changed nothing the law can see. The proof now breaks the property the law depends on: _vaultWarRole recognising a stored
 role (the seeded war1 then takes no overflow). The name regex's own behaviour stays pinned by REG-2804's law. Chrome law:
 proven by the push gate.
+### REG-2979 - THE SET TRACKER AND THE CRAFT WORKSHOP CALLED A REFUSED SHOT "NOTHING RECOGNISED" (#158, v3834 second eye)
+Reproduced in node on int-9 before the fix, every refusal shape (429 cap, 502 with an empty body, 200 + {error}, 200 HTML, a
+thrown fetch): the set tracker reported "No set pieces recognised (1 image error)" and the craft workshop "No crafted items
+read (1 image error)". A non-2xx was counted before the rule could speak; a 200 + {error} reached the rule (REG-2815) and its
+sentence was dropped. Both doors now count a shot the reader never read apart from a read that found nothing, keep the
+first one's reason (_craftRead fills a `why` like _tallyRead does, REG-2730), and say it: "nothing was read - 1 shot not read
+- the reader is at its cap (...) - HTTP 429" for a batch nobody read, "· 1 shot not read - <why>" beside what a part batch
+did read. A read that honestly found nothing still says "No set pieces recognised". Law:
+tv/test_a_refusal_is_never_a_read_at_any_door.py (both doors, six shapes, a part batch); red-proofs RED.
+
+
+### REG-2978 - A 429 OR A 502 WITH NO JSON BODY THREW BEFORE THE REFUSAL RULE SAW ITS STATUS, AND A CAP LOST ITS SENTENCE (#158, v3834 second eye)
+Reproduced in node on int-9: the Chronicle and grail screenshot readers and the Ask box called resp.json() before
+_intakeRefused, so a 502 with an empty body or a 200 carrying HTML threw - the Chronicle reader filed an 'unreadable' page,
+the grail reader said "no FOUND items could be read (1 image error)", the Ask box said "Unexpected end of JSON input - is the
+site deployed". The item checker's upload ("read failed (server 429)"), the tally reader ("the intake answered HTTP 429",
+"the intake said: upstream"), the vault grid counter (an error with no reason) and the vault intake ("AI service unreachable
+· HTTP 429") asked the status first and dropped the body, so a cap never said it was a cap. One reader of the answer now
+sits beside the rule: window._intakeAnswer(resp) takes the body as text, parses it when it is JSON, asks the rule of the
+status and whatever came back, and calls a body that is no reading (empty, not JSON, not an object) a refusal with its own
+sentence; window._intakeThrew(e) says a read that never happened. Every intake door reads through it, so the rule is asked in
+one place (a law counts it). The grail import carries a part batch's unread shots to its toast and its report; the vault
+grid counter returns its errWhy and the engine's vault-count receipt carries it (control_app). The tally reader's sentences
+are now the rule's ("the reader answered HTTP 503", "the reader refused (overloaded)"); REG-2730's law re-aimed. Not changed:
+the vault intake's v407 retry of a 200 + {error}, its locate and retry reads, and the daily pick (a refusal has no answer and
+writes nothing). Law: tv/test_a_refusal_is_never_a_read_at_any_door.py; the vault intake is pinned at its line (read, not
+run); red-proofs RED.
+
+
+### REG-2977 - THE CHRONICLE SCREENSHOT READER FILED A REFUSAL AS A PAGE (#158, v3834 second eye)
+Reproduced in node on int-9: a refused page went into the proposal's `pages` as {note:<why>, witness:'none', printed:{},
+read:{}} beside the pages that were read, and a read that never happened went in as {note:'unreadable'}, so anything counting
+pages counted a read. Refusals now live in the proposal's own `refused` list ({n, why}), never in `pages`, and the report
+paints them first ("page 2 - not read: the reader is at its cap (...)"); a batch in which no page was read says "Nothing was
+read" rather than "Nothing to register". The reader's own refusals (wrong-ledger, no-found-state) stay page notes, as before.
+Law: tv/test_a_refusal_is_never_a_read_at_any_door.py; REG-2815's site and proof re-aimed; red-proofs RED.
+
+
+### REG-2976 - THE ITEM CHECKER'S JUDGE ANSWERED A THROWN OR NON-JSON READ WITHOUT SAYING IT REFUSED (#158, v3834 second eye)
+The eye's claim was that the poster sending /kai_verdict was never changed. Measured by running the engine's one poster
+(control_app._fire_aic_judge_js) over the real judge in node: it posts the judge's answer whole, so the cap and the error body
+did reach /kai_verdict with refused:true (REG-2815). The hole was the judge's catch: a fetch that threw, a 200 whose body was
+not JSON, and a frame that could not be prepared came back {ok:false, why} - journaled as "judge a tooltip - UNREADABLE",
+which _judge_already_near takes for a judged hover, so that hover was never judged. Every answer that is not a read now says
+refused:true with its reason; "no magic/rare item readable in this frame" is still a judge. Law:
+tv/test_a_refusal_is_never_a_read_at_any_door.py runs the poster over every refusal shape and hands its body to
+control_app's _kai_refused_row and _judge_already_near; red-proofs RED.
 
 
 ### REG-2969 - THREE LAWS STILL CARRIED THE WORLD FROM BEFORE THE CHARMS LOCKER AND THE CAPTURE-TIME MAP (integration, v3837)

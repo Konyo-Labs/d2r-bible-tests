@@ -17579,11 +17579,13 @@ def _engine_driver():
                     # _drv_empty_refire_plan, just gone. Mirrors the Stage-3 KAI funnel's Grok
                     # P0-2 hardening (v948.17): post an honest ok:false receipt on rejection so a
                     # real failure can refire, same as any other empty/error shot.
+                    # REG-2978 (#158) - a refused count carries the reader's sentence (errWhy) onto the receipt, as the
+                    # tally posts do (REG-2730), never only "1 image error".
                     js = ("(function(){try{var F=document.getElementById('tvd-eng');if(!F||!F.contentWindow)return 0;var W=F.contentWindow;"
                           "if(typeof W.vaultGridCount!=='function')return 0;"
                           "fetch(%s+'?'+Date.now()).then(function(r){if(!r.ok)throw 0;return r.blob()}).then(function(b){"
                           "return W.vaultGridCount([new W.File([b],'drv-vault-grid.jpg',{type:'image/jpeg'})],{tab:%s,fromTv:true})}).then(function(res){"
-                          "try{fetch('/intake_result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ts:Date.now(),tab:%s,kind:'vault-count',ok:!!(res&&res.ok),counts:(res&&(res.counts||res.added))||{},total:(res&&res.total)||0,errors:(res&&res.errors)||0,frameId:%s})}).catch(function(){})}catch(e){}"
+                          "try{fetch('/intake_result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ts:Date.now(),tab:%s,kind:'vault-count',ok:!!(res&&res.ok),counts:(res&&(res.counts||res.added))||{},total:(res&&res.total)||0,errors:(res&&res.errors)||0,errWhy:(res&&res.errWhy)||undefined,frameId:%s})}).catch(function(){})}catch(e){}"
                           "}).catch(function(_e5){try{fetch('/intake_result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ts:Date.now(),tab:%s,kind:'vault-count',ok:false,counts:{},total:0,errors:1,frameId:%s,err:String(_e5&&_e5.message||_e5||'vault-count fetch/intake rejected')})}).catch(function(){})}catch(e6){}});"
                           "return 1}catch(e){return 0}})()"
                           ) % (json.dumps(_histp5), json.dumps(job["tab"]), json.dumps(job["tab"]), json.dumps(job["fid"]),

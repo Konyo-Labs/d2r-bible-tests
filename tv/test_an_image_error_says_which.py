@@ -10,6 +10,11 @@ it; and the journal's reason reads "read failed - 1 image error - the intake ans
 itself changes - not the prompt, the model, the crop or the vote (all locked).
 
 _tallyRead is driven in node, cut from bible.html, over a stubbed fetch. RED_PROOF below.
+
+REG-2978 (#158, the v3834 second eye): _tallyRead reads its answer through window._intakeAnswer (beside the refusal rule), so
+an HTTP error and an error field say the rule's sentence - "the reader answered HTTP 503", "the reader refused (overloaded)",
+and a cap its own "the reader is at its cap (...) - HTTP 429" - where they said "HTTP 429" alone. The rule and the reader are
+cut in beside _tallyRead.
 """
 import json
 import os
@@ -54,6 +59,18 @@ def _bible():
         return fh.read()
 
 
+def _cut_fn(s, sig):
+    if s.count(sig) != 1:
+        raise AssertionError("PREMISE: %r occurs %d times - this law cannot see it" % (sig[:50], s.count(sig)))
+    i = s.index(sig)
+    depth = 0
+    for j in range(s.index("{", i + len(sig) - 1), len(s)):
+        depth += {"{": 1, "}": -1}.get(s[j], 0)
+        if depth == 0:
+            return s[i:j + 1] + ";\n"
+    raise AssertionError("%r never closed - harness fault, not a pass" % sig[:50])
+
+
 def _read(mode):
     if NODE is None:
         raise AssertionError("node is not on this machine - this gate does not skip")
@@ -61,7 +78,8 @@ def _read(mode):
     if s.count(START) != 1 or s.count(END) != 1:
         raise AssertionError("PREMISE: _tallyRead is not where this law cuts it (%d, %d)" % (s.count(START), s.count(END)))
     i = s.index(START)
-    fn = s[i:s.index(END, i) + len(END)]
+    fn = (_cut_fn(s, "window._intakeRefused = function(status, data){")
+          + _cut_fn(s, "window._intakeAnswer = async function(resp){") + s[i:s.index(END, i) + len(END)])
     r = subprocess.run([NODE, "-"], input=PROGRAM % (json.dumps(mode), fn), capture_output=True, text=True, timeout=60)
     if r.returncode != 0:
         raise AssertionError("the cut _tallyRead did not run in node: %s" % r.stderr[-800:])
@@ -73,10 +91,10 @@ class ATallyReadNamesWhyItFailed(unittest.TestCase):
     def test_an_http_error_is_named(self):
         o = _read("http")
         self.assertIsNone(o["t"], "PREMISE: a failed read still returns null to the readers")
-        self.assertEqual(o["why"], "the intake answered HTTP 503")
+        self.assertEqual(o["why"], "the reader answered HTTP 503")
 
     def test_an_error_field_is_named(self):
-        self.assertEqual(_read("field")["why"], "the intake said: overloaded")
+        self.assertEqual(_read("field")["why"], "the reader refused (overloaded)")
 
     def test_a_request_that_threw_is_named(self):
         self.assertEqual(_read("throw")["why"], "the request failed: socket hang up")
@@ -115,8 +133,8 @@ class TheCauseReachesTheJournal(unittest.TestCase):
 RED_PROOF = [
     {"why": "#158 - an HTTP error from the intake is an image error with no cause again",
      "file": "bible.html",
-     "find": "      if(!resp.ok) return _fail('the intake answered HTTP ' + resp.status);\n",
-     "replace": "      if(!resp.ok) return null;\n",
+     "find": "      if(ans.refused) return _fail(ans.refused);",
+     "replace": "      if(ans.refused) return null;",
      "matches": 1, "needs": "node"},
     {"why": "#158 - a request that threw is an image error with no cause again",
      "file": "bible.html",

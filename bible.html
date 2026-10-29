@@ -4742,6 +4742,40 @@ window._intakeRefused = function(status, data){
   if (st && (st < 200 || st > 299)) return 'the reader answered HTTP ' + st;
   return null;
 };
+/* #158 (REG-2978, the v3834 second eye) - READ THE ANSWER BEFORE JUDGING IT, AND JUDGE EVERY SHAPE IT COMES IN. Three doors
+   parsed the body before asking the rule above (`await resp.json()` first), so a 429 or a 502 whose body was empty or not
+   JSON threw before the rule ever saw its status: the Chronicle reader filed an 'unreadable' page, the grail reader said "no
+   FOUND items could be read", the Ask box blamed the deploy. Others asked the status first and dropped the body, so a cap
+   said "server 429" and never its own sentence. Every door reads its answer here: the body as text, parsed when it is JSON,
+   and the rule asked of the status and whatever came back. A body that is no reading at all (empty, not JSON, not an object)
+   is a refusal with its own sentence. -> {status, data (the object, or null), refused (a sentence, or null)} */
+window._intakeAnswer = async function(resp){
+  var st = (resp && +resp.status) || 0, data = null, bad = '';
+  try {
+    if (resp && typeof resp.text === 'function') {
+      var raw = String(await resp.text());
+      if (!raw.trim()) bad = 'an empty answer';
+      else { try { data = JSON.parse(raw); } catch (eP) { bad = 'an answer that is not JSON'; } }
+    } else if (resp && typeof resp.json === 'function') {
+      try { data = await resp.json(); } catch (eJ) { bad = 'an answer that is not JSON'; }
+    } else bad = 'no answer';
+  } catch (eR) { bad = 'an answer that could not be read'; }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) { data = null; bad = bad || 'an answer that is not a reading'; }
+  var rf = window._intakeRefused(st, data);
+  if (!rf && resp && resp.ok === false) rf = 'the reader answered HTTP ' + (st || '(no status)');
+  if (!rf && !data) rf = 'the reader sent ' + bad + (st ? ' - HTTP ' + st : '');
+  return { status: st, data: data, refused: rf };
+};
+/* ...and a request that never came back (the fetch threw, or the shot could not be prepared) read nothing either. -> a sentence */
+window._intakeThrew = function(e){
+  var m = e && (e.message || e.type);
+  return 'the read did not happen (' + String(m || e || 'no reason given').slice(0, 140) + ')';
+};
+/* #158 (REG-2979) - how a door's report says the shots it could not read, escaped for the report. -> html */
+window._intakeNotReadSay = function(n, why){
+  var w = String(why || '').replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+  return n + ' shot' + (n === 1 ? '' : 's') + ' not read' + (w ? ' \u2014 ' + w : '');
+};
 /* ⚠⚠ v2692 — WHICH LEDGER IS THIS? Konyo: "this is outdated.. it should be registerd accordingly
    to ledger/profile and ledger name."
    THE DEFECT IT FIXES, reported by him from his cousin Dean's board: the Uniques tab read
@@ -32963,32 +32997,39 @@ window.setIntake = async function(files){
   // base-name vocab + base→full-piece map (setPieces keys are the full "Name (slot)" strings)
   var baseToPiece={}, vocab=[];
   try { __allSets().forEach(function(st){ (st.pieces||[]).forEach(function(p){ var i=p.indexOf(' ('); var b=(i>=0?p.slice(0,i):p); baseToPiece[b.toLowerCase()]=p; vocab.push(b); }); }); } catch(e){}
-  var marked=[], errors=0;
+  /* #158 (REG-2979, the v3834 second eye) - A SHOT THE READER NEVER READ IS NOT A SHOT WITH NO SET PIECE ON IT. A non-2xx
+     answer was counted before the refusal rule could speak, a 200 + {error} reached the rule and its sentence was dropped,
+     and either way the report said "No set pieces recognised (1 image error)". A shot that was not read is counted apart,
+     with the first one's reason, and a batch nobody read says so instead of "nothing recognised". */
+  var marked=[], notRead=0, notReadWhy='';
   for (var i=0;i<files.length;i++){
     try{
       var b64=await downscale(files[i]);
       var endpoint = window._d2rIntakeEndpoint();
       // items mode (reads NAMES from tooltips), not tally — a set piece is owned-or-not
       var resp=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({image:b64,media_type:'image/jpeg',names:vocab})});
-      if(!resp.ok){ errors++; continue; }
-      var data=await resp.json();
-      if (window._intakeRefused(resp.status, data)) { errors++; continue; }   /* REG-2815 - a refusal is not a page read clean */
+      var ans=await window._intakeAnswer(resp);   /* REG-2978 - the answer is read before it is judged */
+      if (ans.refused) { notRead++; notReadWhy = notReadWhy || ans.refused; continue; }   /* REG-2815 - a refusal is not a page read clean */
+      var data=ans.data;
       (data.items||[]).forEach(function(n){
         var piece = baseToPiece[String(n).toLowerCase().trim()];
         if(piece && !setPieces.has(piece)){ setPieces.add(piece); marked.push(piece); }
       });
-    }catch(e){ errors++; }
+    }catch(e){ notRead++; notReadWhy = notReadWhy || window._intakeThrew(e); }
   }
   persist(); renderSetTracker();
   window._aiIntakeStop('set-tracker');
   if (report){ report.hidden=false;
+    var _nrS = notRead ? window._intakeNotReadSay(notRead, notReadWhy) : '';
     if (marked.length){
       report.innerHTML='🪄 <strong>checked off '+marked.length+' set piece'+(marked.length===1?'':'s')+'</strong>: '
         + marked.sort().map(function(k){return '<span style="color:var(--best,#66ff88)">'+k+'</span>';}).join(' · ')
-        + (errors?' · <span style="color:var(--hell,#ff4040)">'+errors+' image error'+(errors===1?'':'s')+'</span>':'')
+        + (_nrS?' · <span style="color:var(--hell,#ff4040)">'+_nrS+'</span>':'')
         + '<div style="color:var(--text-dim);font-size:var(--fs-meta);margin-top:5px">Reads item NAMES from tooltips — for best results, screenshot with an item’s hover-tooltip open. Click any piece to toggle it manually.</div>';
+    } else if (notRead >= files.length){
+      report.innerHTML='⚠ <strong>nothing was read</strong> \u2014 '+_nrS+'. No set piece was checked off.';   /* REG-2979 */
     } else {
-      report.innerHTML='No set pieces recognised'+(errors?' ('+errors+' image error'+(errors===1?'':'s')+')':'')+'. Tip: this reads NAMES, so a shot with the item’s hover-tooltip open works best (artwork alone isn’t enough).';
+      report.innerHTML='No set pieces recognised'+(_nrS?' ('+_nrS+')':'')+'. Tip: this reads NAMES, so a shot with the item’s hover-tooltip open works best (artwork alone isn’t enough).';
     }
   }
 };
@@ -34764,9 +34805,9 @@ async function _tallyRead(b64, vocab, layout, kind, why){
   async function onePass(){
     try{
       var resp = await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({image:b64,media_type:'image/jpeg',names:vocab,kind:kind,layout:layout||undefined})});
-      if(!resp.ok) return _fail('the intake answered HTTP ' + resp.status);
-      var data = await resp.json();
-      if(data && data.error) return _fail('the intake said: ' + (typeof data.error === 'string' ? data.error : JSON.stringify(data.error)));   // v341.52 — upstream/worker error (200 + error field) → failed pass, not an empty read
+      var ans = await window._intakeAnswer(resp);   /* REG-2978 - a cap keeps its own sentence, never only "HTTP 429" */
+      if(ans.refused) return _fail(ans.refused);   // v341.52 — upstream/worker error (200 + error field) → failed pass, not an empty read
+      var data = ans.data;
       var t = data.tally || {}, clean = {};
       Object.keys(t).forEach(function(k){ var c=parseInt(t[k],10); if(isFinite(c)&&c>0) clean[k]=c; });
       return clean;
@@ -35406,8 +35447,8 @@ window.askBible = function(q){
   out.scrollTop=out.scrollHeight;
   var snap=(typeof buildAskSnapshot==='function')?window._previewWrap(buildAskSnapshot):{};
   fetch(askUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,snapshot:snap})})
-    .then(function(r){ return r.json().then(function(d){ return { st: r.status, d: d || {} }; }); })
-    .then(function(x){ var d=x.d, el=document.getElementById('ask-pending'); var rf=window._intakeRefused(x.st, d);   /* REG-2815 */
+    .then(function(r){ return window._intakeAnswer(r); })   /* REG-2978 - a 429 or a 502 with no JSON body is still its status, never "is the site deployed" */
+    .then(function(x){ var d=x.data||{}, el=document.getElementById('ask-pending'); var rf=x.refused;   /* REG-2815 */
       if(el){ el.className='ask-a ask-bubble' + (rf ? ' ask-err' : ''); el.innerHTML = rf ? _askEsc('⚠️ ' + rf) : _askMd(d.answer||'(no answer)'); el.removeAttribute('id'); } out.scrollTop=out.scrollHeight; })
     .catch(function(e){ var el=document.getElementById('ask-pending'); if(el){ el.className='ask-a ask-bubble ask-err'; el.textContent='⚠️ '+(e&&e.message||'request failed')+' — is the site deployed (the AI needs the /api/ask endpoint)?'; el.removeAttribute('id'); } });
 };
@@ -36350,45 +36391,50 @@ function _craftPrepImage(file){
     img.onerror = reject; img.src = url;
   });
 }
-async function _craftRead(b64, vocab){
+/* #158 (REG-2979) - a read the reader refused says why, into the caller's `why` ({}), as the tally reader's does (REG-2730) */
+async function _craftRead(b64, vocab, why){
   var endpoint = window._d2rIntakeEndpoint();
   try {
     var resp = await fetch(endpoint, { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ image: b64, media_type:'image/jpeg', names: vocab, kind:'craft' }) });
-    if (!resp.ok) return null;
-    var data = await resp.json();
-    if (window._intakeRefused(resp.status, data)) return null;   /* REG-2815 - a refusal is no tally, never an empty one */
-    return data.tally || {};
-  } catch(e){ return null; }
+    var ans = await window._intakeAnswer(resp);   /* REG-2978 - the answer is read before it is judged */
+    if (ans.refused) { if (why) why.text = ans.refused; return null; }   /* REG-2815 - a refusal is no tally, never an empty one */
+    return ans.data.tally || {};
+  } catch(e){ if (why) why.text = window._intakeThrew(e); return null; }
 }
 window.craftIntake = async function(files){
   var report = document.getElementById('craft-intake-report');
   if (!files || !files.length) return;
   window._aiIntakeStart('craft-workshop','reading your crafted items','the AI is classifying each by craft type + slot');
   var vocab = []; CRAFTS.forEach(function(c){ CRAFT_SLOTS.forEach(function(s){ vocab.push(c.key + ' ' + s); }); });
-  var added = {}, total = 0, errors = 0, held=[];   /* v1940 — reads that came in UNDER the stored count; never silently dropped */
+  var added = {}, total = 0, held=[];   /* v1940 — reads that came in UNDER the stored count; never silently dropped */
+  var notRead = 0, notReadWhy = '';   /* REG-2979 - a shot the reader never read is counted apart, with its reason - never "no crafted items" */
   for (var i = 0; i < files.length; i++){
     try {
       var b64 = await _craftPrepImage(files[i]);
-      var t = await _craftRead(b64, vocab);
-      if (t === null){ errors++; continue; }
+      var _whyC = {};
+      var t = await _craftRead(b64, vocab, _whyC);
+      if (t === null){ notRead++; notReadWhy = notReadWhy || _whyC.text || ''; continue; }
       Object.keys(t).forEach(function(k){
         var f = findCraft(k); if (!f || !f.slot) return;
         var key = f.craft.key + ' ' + f.slot; var c = parseInt(t[k], 10);
         var _r=_stashRaise(craftStash,key,c); if(_r.raised){ added[key]=(added[key]||0)+_r.delta; total+=_r.delta; } else if(_r.held){ held.push(key+' ('+_r.why+')'); }
       });
-    } catch(e){ errors++; }
+    } catch(e){ notRead++; notReadWhy = notReadWhy || window._intakeThrew(e); }
   }
   persist(); renderCraftWorkshop();
   window._aiIntakeStop('craft-workshop');
   if (report){ report.hidden=false;
     var names = Object.keys(added);
+    var _nrC = notRead ? window._intakeNotReadSay(notRead, notReadWhy) : '';
     if (names.length){
       report.innerHTML = '🪄 <strong>logged ' + total + ' crafted item' + (total === 1 ? '' : 's') + '</strong> across ' + names.length + ' craft+slot type' + (names.length === 1 ? '' : 's') + ': '
         + names.sort().map(function(k){ return '<span style="color:var(--gold-bright,#f0c060)">' + k + ' ×' + added[k] + '</span>'; }).join(' · ')
-        + (errors ? ' · <span style="color:var(--hell,#ff4040)">' + errors + ' image error' + (errors === 1 ? '' : 's') + '</span>' : '')
+        + (_nrC ? ' · <span style="color:var(--hell,#ff4040)">' + _nrC + '</span>' : '')
         + '<div style="color:var(--text-dim);font-size:var(--fs-meta);margin-top:5px">The AI logs an item only when its tooltip mods match a craft signature — open a tooltip (or hold Alt over loot) so the stats are readable. Re-running adds again; use “clear owned” for a fresh count.</div>';
+    } else if (notRead >= files.length){
+      report.innerHTML = '⚠ <strong>nothing was read</strong> \u2014 ' + _nrC + '. Nothing was logged.';   /* REG-2979 */
     } else {
-      report.innerHTML = 'No crafted items read' + (errors ? ' (' + errors + ' image error' + (errors === 1 ? '' : 's') + ')' : '') + '. Crafted items are identified by their mods — make sure an item TOOLTIP is open so the AI can read the stats (a bare stash of art alone can\'t be classified).';
+      report.innerHTML = 'No crafted items read' + (_nrC ? ' (' + _nrC + ')' : '') + '. Crafted items are identified by their mods — make sure an item TOOLTIP is open so the AI can read the stats (a bare stash of art alone can\'t be classified).';
     }
   }
 };
@@ -53303,13 +53349,12 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       var resp;
       try { resp=await fetch(endpoint,{ method:'POST', headers:{'content-type':'application/json'}, credentials:'same-origin', body:JSON.stringify({ image:b64, media_type:'image/jpeg', names:vocab, cropped:false }) }); }
       catch(netErr){ _aicMsg('🔬 couldn’t reach the AI (network). Check your connection and try again — or enter the item by hand below.'); if(fi) fi.value=''; return; }
-      if(!resp.ok){
-        var hint = resp.status===401 ? ' — you may be signed out of the site; reload the page, sign in, then retry.' : (resp.status>=500 ? ' — the AI server hiccuped; try again in a moment.' : '');
-        _aicMsg('🔬 read failed (server '+resp.status+')'+hint+' You can still enter the item by hand below.'); if(fi) fi.value=''; return;
-      }
-      var data; try { data=await resp.json(); } catch(e){ _aicMsg('🔬 the AI reply was unreadable — try again, or enter by hand.'); if(fi) fi.value=''; return; }
-      var _rfU=window._intakeRefused(resp.status, data);   /* REG-2815 - a refusal is said, never "no item read" */
-      if (_rfU){ _aicMsg('🔬 nothing was read — ' + esc(_rfU) + '. You can still enter the item by hand below.'); if(fi) fi.value=''; return; }
+      var _ansU=await window._intakeAnswer(resp);   /* REG-2978 - a cap says its own sentence, never only "server 429" */
+      var _rfU=_ansU.refused;   /* REG-2815 - a refusal is said, never "no item read" */
+      if (_rfU){
+        var hint = resp.status===401 ? ' — you may be signed out of the site; reload the page, sign in, then retry.' : (resp.status>=500 ? ' — the AI server hiccuped; try again in a moment.' : '.');
+        _aicMsg('🔬 nothing was read — ' + esc(_rfU) + hint + ' You can still enter the item by hand below.'); if(fi) fi.value=''; return; }
+      var data=_ansU.data;
       try { console.log('[aic] intake response:', data); } catch(e){}
       var r=_aicApplyIntake(data);
       if(r.ok){ renderAIItemChecker(); _aicMsg('🔬 read <b>'+esc(r.name)+'</b>'+(r.nameOnly?' — set its base + affixes below.':((r.extra?' (+'+r.extra+' other magic/rare in the shot — showing the most detailed)':'')+'. Check/edit the affixes, then judge it.'))); if(fi) fi.value=''; return; }
@@ -53377,19 +53422,25 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     return window._VAULT_LANES.indexOf(t) >= 0;
   };
 
+  /* #158 (REG-2976, the v3834 second eye) - EVERY ANSWER THAT IS NOT A READ SAYS refused. The engine's one poster
+     (control_app._fire_aic_judge_js) posts this function's answer to /kai_verdict whole, and /kai_verdict journals a refusal
+     only when it says refused:true. The cap and the error body said it (REG-2815); a fetch that threw, a 200 whose body was
+     not JSON, and a frame that could not be prepared fell to the catch below and came back {ok:false, why} - journaled as
+     "judge a tooltip - UNREADABLE", which _judge_already_near takes for a judged hover, so that hover was never judged. */
   window.aicJudge = async function(file){
     try {
-      var b64 = (typeof downscale === 'function')
-        ? await downscale(file)
-        : await new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){ res(String(r.result||'').split(',')[1]||''); }; r.onerror=rej; r.readAsDataURL(file); });
-      var endpoint=_aicIntakeEndpoint();
-      var vocab=[]; try { if(typeof __setPieceNames==='function') vocab=__setPieceNames(); } catch(e){}
-      var resp=await fetch(endpoint,{ method:'POST', headers:{'content-type':'application/json'}, credentials:'same-origin', body:JSON.stringify({ image:b64, media_type:'image/jpeg', names:vocab, cropped:false }) });
-      if(!resp.ok){ var rf0=null; try { rf0=window._intakeRefused(resp.status, await resp.json()); } catch(eJ){}
-        return { ok:false, refused:true, why: rf0 || ('the reader answered HTTP ' + resp.status) }; }   /* REG-2815 - a cap is a refusal, never UNREADABLE */
-      var data=await resp.json();
-      var rf1=window._intakeRefused(resp.status, data);
-      if (rf1) return { ok:false, refused:true, why:rf1 };
+      var ans;
+      try {
+        var b64 = (typeof downscale === 'function')
+          ? await downscale(file)
+          : await new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){ res(String(r.result||'').split(',')[1]||''); }; r.onerror=rej; r.readAsDataURL(file); });
+        var endpoint=_aicIntakeEndpoint();
+        var vocab=[]; try { if(typeof __setPieceNames==='function') vocab=__setPieceNames(); } catch(e){}
+        var resp=await fetch(endpoint,{ method:'POST', headers:{'content-type':'application/json'}, credentials:'same-origin', body:JSON.stringify({ image:b64, media_type:'image/jpeg', names:vocab, cropped:false }) });
+        ans=await window._intakeAnswer(resp);   /* REG-2978 */
+      } catch(eAsk){ return { ok:false, refused:true, why: window._intakeThrew(eAsk) }; }   /* REG-2976 - the reader was never asked, or never answered */
+      if (ans.refused) return { ok:false, refused:true, why: ans.refused };   /* REG-2815 - a cap is a refusal, never UNREADABLE */
+      var data=ans.data;
       var snap=null; try { snap=JSON.parse(JSON.stringify(_aicItem||{})); } catch(e){}
       var r=null, it=null;
       try { r=_aicApplyIntake(data); it=JSON.parse(JSON.stringify(_aicItem||{})); }
@@ -63135,8 +63186,9 @@ function renderJournal(){
           // single-item discipline (one hovered item = one registered thing; background grid = noise).
           body: JSON.stringify({ image: b64, media_type: 'image/jpeg', names: vocab, file: fname, cropped: !!_box }),
         }, 75000);
-        if (!resp.ok) { errors++; fRec.err = true; if (!_aiErr) _aiErr = 'AI service unreachable · HTTP ' + resp.status; doneCount++; report.innerHTML = _scanUI(doneCount, files.length, logged.length); return; }
-        var data = await resp.json();
+        var _ansV = await window._intakeAnswer(resp);   /* REG-2978 - a cap says its own sentence, never "unreachable"; a body that is no reading is an error, never an empty read */
+        if (!resp.ok || !_ansV.data) { errors++; fRec.err = true; if (!_aiErr) _aiErr = 'AI service · ' + _ansV.refused; doneCount++; report.innerHTML = _scanUI(doneCount, files.length, logged.length); return; }
+        var data = _ansV.data;
         // v407 — the backend returns HTTP 200 with an {error,...} field when the Anthropic call itself failed
         // (bad/expired key, no credits, 429 rate-limit on a big burst, model error). Previously the vault path
         // ignored this and showed a FALSE "empty — no tooltip text" for every shot. Now: RETRY transient
@@ -71939,7 +71991,10 @@ function renderJournal(){
     var vocab = ledger === 'sets' ? Object.keys(V.pieceMap) : Array.from(V.uniq);
 
     var found = {}, notFound = {}, unknown = {}, completeSets = {};
-    var pages = [];
+    /* #158 (REG-2977, the v3834 second eye) - A PAGE THE READER NEVER READ IS NOT A PAGE. A refusal was pushed into `pages`
+       beside the pages that were read, with empty printed/read, so anything counting pages counted a read. It is kept apart,
+       with its reason, and painted first - the reason an empty read is empty. */
+    var pages = [], refused = [];
     for (var i = 0; i < files.length; i++){
       _chronShotReport('📜 reading Chronicle ' + (ledger === 'sets' ? 'SETS' : 'UNIQUES') +
         ' page <b>' + (i + 1) + ' / ' + files.length + '</b>…');
@@ -71947,9 +72002,10 @@ function renderJournal(){
         var b64 = await _gDownscale(files[i]);
         var resp = await fetch(endpoint, { method:'POST', headers:{'content-type':'application/json'},
           body: JSON.stringify({ image:b64, media_type:'image/jpeg', kind:kind, names:vocab }) });
-        var d = await resp.json();
-        var _rfC = window._intakeRefused(resp.status, d);   /* REG-2815 - a refused page is not a page read with nothing on it */
-        if (_rfC) { pages.push({ n:i+1, note:_rfC, witness:'none', printed:{}, read:{} }); continue; }
+        var ans = await window._intakeAnswer(resp);   /* REG-2978 - a 429 or a 502 with no JSON body is still its status */
+        var _rfC = ans.refused;   /* REG-2815 - a refused page is not a page read with nothing on it */
+        if (_rfC) { refused.push({ n:i+1, why:_rfC }); continue; }   /* REG-2977 - nor a page at all */
+        var d = ans.data;
         pages.push({ n:i+1, note:(d&&d.note)||null, witness:(d&&d.witness)||'none',
                      printed:(d&&d.printed)||{}, read:(d&&d.read)||{} });
         if (d && d.note) continue;      // a refusal contributes NOTHING — honoured, not argued with
@@ -71961,7 +72017,7 @@ function renderJournal(){
           if (g.complete) completeSets[g.set] = true;
           (g.pieces || []).forEach(function(p){ found[p] = true; });
         });
-      } catch(e){ pages.push({ n:i+1, note:'unreadable' }); }
+      } catch(e){ refused.push({ n:i+1, why:window._intakeThrew(e) }); }   /* REG-2977 - never an 'unreadable' page */
     }
 
     // map the clean names the game prints back to the FULL piece names the board's stores use
@@ -71979,7 +72035,7 @@ function renderJournal(){
 
     _chronShot = { wouldAdd: { uniques:addU, sets:addS, completeSets:Object.keys(completeSets) },
                    lanes:['photo'], ledger:ledger, already:already,
-                   notFound:Object.keys(notFound), unknown:Object.keys(unknown), pages:pages };
+                   notFound:Object.keys(notFound), unknown:Object.keys(unknown), pages:pages, refused:refused };
     _chronShotPaint();
     return _chronShot;
   };
@@ -72001,6 +72057,9 @@ function renderJournal(){
     var n = p.wouldAdd.uniques.length + p.wouldAdd.sets.length + _expand;
     var H = [];
     // the refusals FIRST — they are the reason an empty read is empty
+    (p.refused || []).forEach(function(x){   /* REG-2977 - a page the reader never read, with its reason */
+      H.push('<div class="chron-shot-warn chron-shot-refused" style="color:#e0a860">⚠ page ' + x.n + ' — not read: ' + _cse(x.why) + '</div>');
+    });
     (p.pages || []).filter(function(x){ return x.note; }).forEach(function(x){
       var why = x.note === 'wrong-ledger'
         ? 'that page is the OTHER ledger — read it with the other button'
@@ -72016,6 +72075,11 @@ function renderJournal(){
       else if (x.witness === 'differ') H.push('<div class="chron-shot-wit differ" style="color:#e0a860">⚠ page ' + x.n + ' — the screen says ' + pr.found + ' found, we read ' + rd.found + '. They DIFFER — check before registering.</div>');
       else H.push('<div class="chron-shot-wit none forge-note" style="opacity:.75">· page ' + x.n + ' — a partial page, so its printed total is not a witness (normal when the Chronicle scrolls).</div>');
     });
+    if (!n && (p.refused || []).length && !(p.pages || []).length){   /* REG-2977 - no page was read: that is not "nothing to register" */
+      H.push('<div class="chron-shot-none"><b>Nothing was read.</b> No page reached the reader, so nothing is claimed - try again in a moment.</div>');
+      _chronShotReport(H.join(''));
+      return;
+    }
     if (!n){
       H.push('<div class="chron-shot-none"><b>Nothing to register.</b>' +
         (p.already ? ' ' + p.already + ' item' + (p.already > 1 ? 's were' : ' was') + ' already ticked.' : '') + '</div>');
@@ -72654,15 +72718,16 @@ function renderJournal(){
       try {
         var b64=await _gDownscale(files[i]);
         var resp=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({image:b64,media_type:'image/jpeg',kind:'grail',names:V.vocab})});
-        var d=await resp.json();
-        var _rfG=window._intakeRefused(resp.status, d);   /* REG-2815 - a refused shot is an error with its reason */
+        var ans=await window._intakeAnswer(resp);   /* REG-2978 - a 429 or a 502 with no JSON body is still its status */
+        var _rfG=ans.refused;   /* REG-2815 - a refused shot is an error with its reason */
         if (_rfG) { errs++; refusedWhy = refusedWhy || _rfG; continue; }
+        var d=ans.data;
         (d&&d.items||[]).forEach(function(n){ found.add(n); });
         (d&&d.unrecognized||[]).forEach(function(n){ unknown.add(n); });
-      } catch(e){ errs++; }
+      } catch(e){ errs++; refusedWhy = refusedWhy || window._intakeThrew(e); }   /* REG-2978 - a read that never happened says why */
     }
-    if(!found.size){ show(refusedWhy ? ('⚠ nothing was read — ' + esc(refusedWhy) + ' (' + errs + ' screenshot' + (errs > 1 ? 's' : '') + ')')   /* REG-2815 */
-      : ('😕 no FOUND items could be read'+(errs?' ('+errs+' image error'+(errs>1?'s':'')+')':'')+' — make sure the names + found-marks are legible and try again.')); return; }
+    if(!found.size){ show(errs >= files.length ? ('⚠ nothing was read — ' + esc(refusedWhy) + ' (' + errs + ' screenshot' + (errs > 1 ? 's' : '') + ')')   /* REG-2815 */
+      : ('😕 no FOUND items could be read'+(errs?' ('+window._intakeNotReadSay(errs, refusedWhy)+')':'')+' — make sure the names + found-marks are legible and try again.')); return; }
     // batch-apply straight to the shared stores, then reload so every view (Calculator, Vault, Set Tracker,
     // both grail forges, AI snapshot) rebuilds from the same state — the one-time import path.
     var owned=[]; try{ owned=JSON.parse(window.LSR.getItem('d2r_owned')||'[]'); }catch(e){}
@@ -72684,7 +72749,7 @@ function renderJournal(){
     try {
       window.LSR.setItem('d2r_foundLog', JSON.stringify(flI));
       window.LSR.setItem('d2r_setPieces', JSON.stringify(Array.from(pSet)));
-      window.LSR.setItem('d2r_grailImportReport', JSON.stringify({u:addU,p:addP,back:backU,unk:Array.from(unknown).slice(0,20),t:Date.now()}));
+      window.LSR.setItem('d2r_grailImportReport', JSON.stringify({u:addU,p:addP,back:backU,unk:Array.from(unknown).slice(0,20),ref:errs,why:refusedWhy,t:Date.now()}));   /* REG-2978 - a shot not read rides to the toast */
     } catch(e){}
     show('✅ imported — reloading to sync every view…');
     setTimeout(function(){ location.reload(); },600);
@@ -72699,10 +72764,11 @@ function renderJournal(){
       /* ⚠ v2740 — a count nobody sees is not a report. If the import put back names he
          had deliberately reset, the toast says so — that is the whole fix, because the
          re-add itself is legitimate and only its SILENCE was the defect. */
-      t.innerHTML='📸 <b>Chronicle imported!</b> +'+r.u+' uniques · +'+r.p+' set pieces'+((r.back>0)?' <span class="ft-sub">↺ '+r.back+' of them you had reset — the photo found them again</span>':'')+(r.unk&&r.unk.length?' <span class="ft-sub">'+r.unk.length+' unrecognized</span>':'')+' <span class="ft-sub">synced everywhere</span>';
+      t.innerHTML='📸 <b>Chronicle imported!</b> +'+r.u+' uniques · +'+r.p+' set pieces'+((r.back>0)?' <span class="ft-sub">↺ '+r.back+' of them you had reset — the photo found them again</span>':'')+(r.unk&&r.unk.length?' <span class="ft-sub">'+r.unk.length+' unrecognized</span>':'')+(r.ref>0?' <span class="ft-sub">⚠ '+window._intakeNotReadSay(r.ref, r.why)+'</span>':'')+' <span class="ft-sub">synced everywhere</span>';
       (function(el){var st=document.getElementById('forge-toasts');if(!st){st=document.createElement('div');st.id='forge-toasts';document.body.appendChild(st);}st.appendChild(el);})(t); setTimeout(function(){ t.classList.add('out'); setTimeout(function(){ t.remove(); },450); },5200);
       var rep=document.getElementById('grail-intake-report');
-      if(rep&&r.unk&&r.unk.length){ rep.style.display='block'; rep.innerHTML='📸 import note — unrecognized names (check spelling/mod items): '+r.unk.map(function(n){return '<b>'+esc(n)+'</b>';}).join(', '); }
+      var _nrG=(r.ref>0)?'⚠ '+window._intakeNotReadSay(r.ref, r.why):'';   /* REG-2978 - and the report under the button keeps saying it */
+      if(rep&&((r.unk&&r.unk.length)||_nrG)){ rep.style.display='block'; rep.innerHTML=_nrG+((_nrG&&r.unk&&r.unk.length)?'<br>':'')+((r.unk&&r.unk.length)?'📸 import note — unrecognized names (check spelling/mod items): '+r.unk.map(function(n){return '<b>'+esc(n)+'</b>';}).join(', '):''); }
     } catch(e){}
   }
   try { if(document.readyState!=='loading') setTimeout(_grailImportToastOnce,900); else document.addEventListener('DOMContentLoaded',function(){ setTimeout(_grailImportToastOnce,900); }); } catch(e){}
@@ -83679,7 +83745,7 @@ var body = JSON.stringify({ tab: tab, owner: owner, ttlMs: _ttl });
         img.onerror = reject; img.src = url;
       });
     }
-    var total = 0, errors = 0, last = 0;
+    var total = 0, errors = 0, last = 0, errWhy = '';   /* REG-2978 - a refused count says why, on its receipt (errWhy, REG-2730) */
     for (var i = 0; i < files.length; i++){
       try {
         var b64 = await downscale(files[i]);
@@ -83692,19 +83758,19 @@ var body = JSON.stringify({ tab: tab, owner: owner, ttlMs: _ttl });
             layout: tab
           })
         });
-        if (!resp.ok){ errors++; continue; }
-        var data = await resp.json();
-        if (data && data.error){ errors++; continue; }
+        var ans = await window._intakeAnswer(resp);
+        if (ans.refused){ errors++; errWhy = errWhy || ans.refused; continue; }
+        var data = ans.data;
         var n = parseInt(data.count, 10);
         if (!isFinite(n) && data.tally && data.tally.items != null)
           n = parseInt(data.tally.items, 10);
         if (!isFinite(n) || n < 0) n = 0;
         total += n; last = n;
-      } catch(e){ errors++; }
+      } catch(e){ errors++; errWhy = errWhy || window._intakeThrew(e); }
     }
     var counts = total > 0 ? { items: total } : {};
     return { ok: total > 0, total: total, counts: counts, added: counts,
-             errors: errors, kind: 'vault-count', tab: tab, last: last };
+             errors: errors, errWhy: errWhy || undefined, kind: 'vault-count', tab: tab, last: last };
   };
   window.tvVaultAutoIntake = async function(opts){
     opts = opts || {};

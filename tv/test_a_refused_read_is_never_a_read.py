@@ -16,6 +16,10 @@ judge reader takes for a judge.
 
 Driven: the rule and aicJudge cut out of bible.html and run in node; _kai_refused_row and _judge_already_near called on
 control_app itself; each door's use of the rule read at its one-line site. RED_PROOF below.
+
+REG-2976..2979 (the v3834 second eye): every door now asks the rule through window._intakeAnswer(resp), which reads the body
+before judging it, so the sites below are the doors' new lines; tv/test_a_refusal_is_never_a_read_at_any_door.py drives every
+door in every refusal shape.
 """
 import io
 import json
@@ -90,6 +94,8 @@ def _drive():
     if NODE is None:
         raise AssertionError("node is not on this machine - this law does not skip")
     code = (_cut(BIBLE, "window._intakeRefused = function(status, data){", ";") + "\n"
+            + _cut(BIBLE, "window._intakeAnswer = async function(resp){", ";") + "\n"
+            + _cut(BIBLE, "window._intakeThrew = function(e){", ";") + "\n"
             + _cut(BIBLE, "  window.aicJudge = async function(file){", ";"))
     d = tempfile.mkdtemp(prefix="refused_read_")
     try:
@@ -151,11 +157,11 @@ class AJournaledRefusalIsNoJudge(unittest.TestCase):
 class EveryDoorAsksTheRule(unittest.TestCase):
 
     SITES = [
-        "      if (window._intakeRefused(resp.status, data)) { errors++; continue; }   /* REG-2815 - a refusal is not a page read clean */\n",
-        "    .then(function(x){ var d=x.d, el=document.getElementById('ask-pending'); var rf=window._intakeRefused(x.st, d);   /* REG-2815 */\n",
-        "    if (window._intakeRefused(resp.status, data)) return null;   /* REG-2815 - a refusal is no tally, never an empty one */\n",
-        "      var _rfU=window._intakeRefused(resp.status, data);   /* REG-2815 - a refusal is said, never \"no item read\" */\n",
-        "        if (_rfC) { pages.push({ n:i+1, note:_rfC, witness:'none', printed:{}, read:{} }); continue; }\n",
+        "      if (ans.refused) { notRead++; notReadWhy = notReadWhy || ans.refused; continue; }   /* REG-2815 - a refusal is not a page read clean */\n",
+        "    .then(function(x){ var d=x.data||{}, el=document.getElementById('ask-pending'); var rf=x.refused;   /* REG-2815 */\n",
+        "    if (ans.refused) { if (why) why.text = ans.refused; return null; }   /* REG-2815 - a refusal is no tally, never an empty one */\n",
+        "      var _rfU=_ansU.refused;   /* REG-2815 - a refusal is said, never \"no item read\" */\n",
+        "        if (_rfC) { refused.push({ n:i+1, why:_rfC }); continue; }   /* REG-2977 - nor a page at all */\n",
         "        if (_rfG) { errs++; refusedWhy = refusedWhy || _rfG; continue; }\n",
     ]
 
@@ -177,13 +183,13 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2815 - the judge reads a 200 + {error} as 'no item readable' again",
      "file": "bible.html",
-     "find": "      if (rf1) return { ok:false, refused:true, why:rf1 };\n",
+     "find": "      if (ans.refused) return { ok:false, refused:true, why: ans.refused };   /* REG-2815 - a cap is a refusal, never UNREADABLE */\n",
      "replace": "",
      "matches": 1, "needs": "node"},
     {"why": "REG-2815 - the judge answers a cap without saying it refused",
      "file": "bible.html",
-     "find": "        return { ok:false, refused:true, why: rf0 || ('the reader answered HTTP ' + resp.status) }; }",
-     "replace": "        return { ok:false, why: rf0 || ('the reader answered HTTP ' + resp.status) }; }",
+     "find": "      if (ans.refused) return { ok:false, refused:true, why: ans.refused };   /* REG-2815 - a cap is a refusal, never UNREADABLE */\n",
+     "replace": "      if (ans.refused) return { ok:false, why: ans.refused };\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-2815 - a refusal is journaled as a judge receipt, which blocks the real judge of that hover",
      "file": "tv/control_app.py",
@@ -197,8 +203,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2815 - the Chronicle screenshot reader counts a refused page as read",
      "file": "bible.html",
-     "find": "        if (_rfC) { pages.push({ n:i+1, note:_rfC, witness:'none', printed:{}, read:{} }); continue; }\n",
-     "replace": "",
+     "find": "        if (_rfC) { refused.push({ n:i+1, why:_rfC }); continue; }   /* REG-2977 - nor a page at all */\n",
+     "replace": "        if (_rfC) { pages.push({ n:i+1, note:_rfC, witness:'none', printed:{}, read:{} }); continue; }\n",
      "matches": 1},
     {"why": "REG-2815 - the grail screenshot reader counts a refused shot as read",
      "file": "bible.html",

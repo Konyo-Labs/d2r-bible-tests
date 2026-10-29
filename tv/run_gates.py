@@ -13253,6 +13253,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_war_mule_he_took_back_stays_back_by_its_number.py")], 300,
          needs_app=False,
          why='REG-2889 (v3834 second eye) - executing his rename and delete doors: a WAR mule he takes back is kept by its war number, so a WAR1 renamed to a character and deleted is not minted again, and a deleted WAR1 stays gone after a reload'),
+    Gate("test_a_refusal_is_never_a_read_at_any_door",
+         [sys.executable, os.path.join(HERE, "test_a_refusal_is_never_a_read_at_any_door.py")], 300,
+         needs_app=False,
+         why='#158 REG-2976..2979 - every intake door, in every refusal shape (cap, 502 empty, 200 error, non-JSON, a thrown or unprepared read), never reads a refusal as a read, a page or nothing recognised, and says its sentence'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
