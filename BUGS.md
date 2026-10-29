@@ -1783,6 +1783,7 @@ HTTP 503"), and the gems, runes and materials reports print the same cause (_img
 cause reads as before. Not swept, named: the set-piece, crafted-item and grail readers count image errors that never had a
 cause (they do not read through _tallyRead). Law: test_an_image_error_reaches_its_receipt_with_its_cause (7 cases: the
 agent's builder, its row through the real receipt stream, _imgErrSay in node; 6 red-proofs, each RED).
+
 ### REG-2985 - THE CONSOLE STILL PARSED 118 MB OF ITS OWN SOURCE IN ITS OWN HEAP: THE GATE FILES TWICE AND THE CENSUS ONCE (#172 phase C)
 Measured 2026-10-29 on a scratch console of his Mac: his data, no .git, Python 3.9, 300 s, every ast.parse counted by
 caller. After phase B the console still called ast.parse 4,508 times over 118 MB of source in its own process:
