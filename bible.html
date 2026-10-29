@@ -52187,6 +52187,12 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
           var _coRow = {}; for (var y in _co.row) _coRow[y] = _co.row[y];
           _coRow.copyIx = _coK; delete _coRow.trade;   /* it is back: not traded, not listed */
           _coRecs.push(_coRow);
+          /* REG-2975 - a keeper's copy 0 is back: the name's record takes its own mods again */
+          if (_coK === 0 && _coRow.entry && Array.isArray(_coRow.entry.mods) && _coRow.entry.mods.length && typeof magicFinds === 'object' && magicFinds
+              && magicFinds[_coN] && typeof magicFinds[_coN] === 'object'){
+            magicFinds[_coN] = Object.assign({}, magicFinds[_coN], { mods: _coRow.entry.mods.slice(), base: _coRow.entry.base || magicFinds[_coN].base });
+            try { LS.setItem('d2r_magicFinds', JSON.stringify(magicFinds)); } catch (eMfR) {}
+          }
           var _coStore = {}; for (var z in _coRaw) _coStore[z] = _coRaw[z]; _coStore.records = _coRecs;
           var _coT = _vrTradedDrop(_coRaw.tradedOut, _coN); if (_coT) _coStore.tradedOut = _coT;   /* REG-2883 */
           if (typeof _vrRecGuardedSet === 'function') _vrRecGuardedSet(_coStore);
@@ -52325,6 +52331,10 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       var t = (st && Array.isArray(st.tradedOut)) ? st.tradedOut.slice() : []; t.push(_tRow); return t.slice(-_VR_TRADED_MAX); };
     var row = {}; for (var y in pick) row[y] = pick[y];
     if (kind === 'trade-out') { row.trade = { state: 'traded-out', at: at }; if (post) row.trade.post = post; }
+    /* REG-2975 (#202 P3b) - copy 0 of a Magic & Rare keeper reads its mods off the name's record (d2r_magicFinds, REG-2972);
+       the copy that leaves carries them on its own row, so the journal holds it whole and its undo puts it back whole */
+    var _mfK = (typeof magicFinds === 'object' && magicFinds && magicFinds[nm] && typeof magicFinds[nm] === 'object') ? magicFinds[nm] : null;
+    if (_mfK && k === 0 && !row.entry){ try { var _e0 = window._vaultCopyEntry(nm, 0); if (_e0) row.entry = _e0; } catch (eE0) {} }
     var have = (typeof copyCount === 'function') ? (copyCount(nm) | 0) : 1;
     if (have <= 1 || mine.length <= 1) {
       var r1 = (typeof window.vaultRemove === 'function') ? window.vaultRemove([nm], { lane: _lane, exact: true, quiet: true, why: why }) : null;
@@ -52342,6 +52352,14 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     if (!write(rest, _tWith(raw))) return { ok: false, kind: kind, name: nm, copyIx: k, why: 'the copy records refused the write - nothing was traded out' };
     copies[nm] = have - 1;
     if (copies[nm] <= 1) delete copies[nm];
+    /* REG-2975 - copy 0 of a keeper left: the name's record takes the copy that is copy 0 now, with its own mods. Measured on
+       the whole page in node: the +17 Small Charm of Vita removed, the +20 one stayed and its d2r_magicFinds record still
+       said +17 */
+    if (_mfK && k === 0){
+      var _n0 = rest.filter(function(r){ return r && r.name === nm && (r.copyIx || 0) === 0; })[0];
+      if (_n0 && _n0.entry && Array.isArray(_n0.entry.mods) && _n0.entry.mods.length)
+        magicFinds[nm] = Object.assign({}, _mfK, { mods: _n0.entry.mods.slice(), base: _n0.entry.base || _mfK.base, q: _n0.entry.q || _mfK.q });
+    }
     var ts = Date.now();
     log.push({ ts: ts, day: new Date(ts).toISOString().slice(0, 10), ledger: (window._D2R_LEDGER || null),
                profile: (window.D2R_PROFILE === 'ladder' ? 'ladder' : 'main'), names: [], filed: {}, prov: {},
@@ -59221,6 +59239,10 @@ window.vaultAutoAssign = function(){
          row, so the cells never count fewer than those (and never more than copies[] holds). */
       var _hcN = (typeof _vaultHandCopies === 'function') ? _vaultHandCopies(name) : 0;
       if (_hcN > _nSg) _nSg = Math.min(_hcN, Math.max(_nSg, (have > 0) ? (have | 0) : 1));
+      /* REG-2974 (#202 P3b) - A KEEPER'S COPIES ARE COUNTED BY THEIR MODS, NOT ONLY BY CELLS. Its count only rises where a read
+         or a pick plainly differs from every copy here (REG-2972, REG-2973), so each is a real item: two Small Charms of Vita,
+         +17 and +20, one of them seen at a cell, counted 1 and dropped the other's record (measured on the whole page in node) */
+      try { if (typeof magicFinds === 'object' && magicFinds && Object.prototype.hasOwnProperty.call(magicFinds, name) && (have | 0) > _nSg) _nSg = have | 0; } catch (eMfS) {}
       /* REG-2786 (#111 "the mule card header stops counting at 3 copies") - A KEEPER TARGET IS WHAT HE WANTS, NOT WHAT HE
          HOLDS. Once a look named a cell, this returned the target itself whenever it beat the cells, and copies[] was never
          asked. Measured on the whole page in node: Mara's Kaleidoscope (the default target 3) seen in one cell drew 3 cells
