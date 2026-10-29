@@ -138,7 +138,7 @@ class TestV3766GrokbotRetest(unittest.TestCase):
         names = [
             "_runewordCells", "_warKey", "mercGearRole", "_mercRoute",
             "_copyCellMark", "_copyFileSay", "_findMuleNav", "_mulePageOnOpen",
-            "art", "esc", "jsArg", "_sharedOverflowNote",
+            "art", "esc", "jsArg", "_sharedOverflowNote", "_vaultLetters", "_vaultWarName",   # REG-2980 the note names war mule 1 by letter
         ]
         body = "\n".join(_fn(cls.src, n) for n in names)
         prog = r"""
