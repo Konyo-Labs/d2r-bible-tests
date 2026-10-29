@@ -2327,8 +2327,6 @@ through the same resolver once at boot (`_charSayStatic`). Sweep: beyond the aud
 boss card and the boss detail, the SPECIAL_DROPS note on the drops grid and the material card, and the sunder recipe tile's
 own "best for" - all gated. Law tv/test_a_recommendation_names_this_pcs_characters.py (worlds: his, another claimed ledger, a
 guest, another ledger with a saved Paladin; plus nothing painted at boot names him elsewhere), 20 red-proofs, all RED.
-### REG-2955 - A TERROR-ZONE COLUMN USES ITS DIFFICULTY'S /PLAYERS FACTOR, MEASURED UP TO 2.2% OFF (OPEN, named in REG-2953)
-playerMult keys a factor by difficulty only, so normTz, nmTz and hellTz take the non-TZ factor. Measured on Hell
 ### REG-3003 - /PLAYERS IS ONE JOINED MODEL: NO SITE SCALES ODDS BY PLAYER COUNT OUTSIDE playerMult (#190 Q7, his ruling 2026-10-29)
 His ruling: he cannot measure /p5 against /p6 in game, so silospen and its logic are the truth. The June "/p5 == /p6"
 claim (0e22e7d2) and anything built on it go, and /players is one model everywhere the board computes or prints
