@@ -55,7 +55,9 @@ paint();
 OUT.n = arm.length;
 var where = {};
 arm.forEach(function(n){ var w = W._vaultWhereIs(n); where[n] = w ? String(w.cell || '') : ''; });
-var onTwo = arm.filter(function(n){ return /^Mule 2 · Personal stash/.test(where[n]); })[0] || null;
+/* REG-2996 - UNI-ARMOR's Mule 2 in the page's one spelling ("Mule 2 · ARMOR-A") */
+OUT.say2 = W._vaultLockerMuleSay((W._vaultRosterNow() || []).filter(function(m){ return m.id === 'uni-armor'; })[0] || null, 2);
+var onTwo = arm.filter(function(n){ return where[n].indexOf(OUT.say2 + ' · Personal stash') === 0; })[0] || null;
 var onOne = arm.filter(function(n){ return /^Mule 1 · /.test(where[n]); })[0] || null;
 OUT.onTwo = onTwo; OUT.onOne = onOne;
 OUT.storm = row('Stormshield');
@@ -83,7 +85,8 @@ class AFindRowOpensEveryMulePageItsCopiesSitOn(unittest.TestCase):
 
     def test_a_hand_add_names_its_target_by_its_mule_page_and_gets_its_button(self):
         t = self.o["two"]
-        self.assertRegex(t["cell"], r"^ · Mule 2 · Personal stash · col \d+ · row \d+ · target · MANUAL move$", t)
+        self.assertRegex(self.o["say2"], r"^Mule 2 · [A-Z]{2,12}-A$", "Mule 2 is not named by a name the game accepts (REG-2996)")
+        self.assertRegex(t["cell"], r"^ · " + re.escape(self.o["say2"]) + r" · Personal stash · col \d+ · row \d+ · target · MANUAL move$", t)
         self.assertNotRegex(t["cell"], r"stash:c\d+r\d+", "FIND still prints the raw target cell: %r" % t)
         self.assertEqual([(n[0], n[1], n[2]) for n in t["navs"]], [("uni-armor", 1, "Mule 2")], t)
         self.assertFalse(t["rowClick"], "the row itself opens something again (#79)")
@@ -111,7 +114,7 @@ class AFindRowOpensEveryMulePageItsCopiesSitOn(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-2884 - FIND prints a hand add's raw target cell (row 11 on a 10-row stash) again",
      "file": "bible.html",
-     "find": "cell: _findTargetSay(_mc) + ' · target' + (_ht ? ' · MANUAL move' : '') });",
+     "find": "cell: _findTargetSay(_mc, (typeof _vaultMuleOfPlace === 'function') ? _vaultMuleOfPlace(_mt.to) : null) + ' · target' + (_ht ? ' · MANUAL move' : '') });",
      "replace": "cell: String(_mc) + ' target' + (_ht ? ' · MANUAL move' : '') });",
      "matches": 1, "needs": "node"},
     {"why": "REG-2884 - a hand add's FIND row carries no mule, so it gets no button",
