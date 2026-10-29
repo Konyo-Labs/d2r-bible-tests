@@ -690,6 +690,18 @@ restores the record too, so its fixture bless never stands as the real one.
 Law test_a_bless_records_what_it_measured (the real _coverage_bless and main(), the browser and the renders stubbed,
 the floor in a temp file), 3 cases, 4 red-proofs RED, baseline green. Coverage neighbours green: test_render_coverage
 (re-proved, bad 0 of 5), test_the_ratchet_is_not_skipped_by_a_subset, test_a_coverage_drop_can_be_named.
+### REG-3095 - IN A SHADOW THE D2JSP FG BOX STILL TOOK TYPING, AND A PRICED CARD WOULD HAVE OFFERED POST (#83, GrokBot 06:36)
+GrokBot in the Mac's shadow: Mark sold, Remove from this list and Options changed nothing and sent nothing, and Post was
+disabled - "Small gap: the 'Your fg' box still takes typing in the shadow (typed 99, nothing was sent)". The shadow veil stops
+a typed key and every input event, but a path with no key press still reached a writable box, so it read as editable on a
+page that sends nothing. And Post was disabled there only because nothing was priced: the card disabled it for
+`send == null || sold`, so a priced card in a shadow offered a Post the veil then swallowed (driven in node: the same card's
+Post was live). In a shadow - the veil's handle window._tvdShadow, else the tvd-shadow class, the shadow law's guard form -
+the fg box is now readonly with aria-readonly and a title saying it is their console, and Post is disabled; outside a shadow
+both are exactly as before. The new guard is the board's fourth tvd-shadow check, so this branch's beacon law now pins each
+guard by its own line (REG-3049's form on the ship line) instead of a total of 3. Law:
+test_the_d2jsp_desk_is_read_only_in_a_shadow (the pane's own script in node: own, snapshot shadow, class-only shadow; 4
+red-proofs, each RED). NEEDS LIVE: GrokBot types into the fg box in a shadow and sees it refuse.
 
 ### REG-3042 - A SET PIECE OR A RUNEWORD IN THE MAGIC & RARE REGISTER WAS HOMED ON MAGIC & RARE (#163, GrokBot on Dean's shadow)
 Dean's saved records filed Aldur's Rhythm (a set piece) and Enigma (a runeword) on MAGIC & RARE. The file door has refused to treat

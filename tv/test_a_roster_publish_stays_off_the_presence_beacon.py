@@ -514,7 +514,8 @@ class RosterPublishStaysOffTheBeacon(unittest.TestCase):
         for site in ("    if (document.documentElement.classList.contains('tvd-shadow')) return _cbLearnedQuiet(then);\n",
                      "    if (document.documentElement.classList.contains('tvd-shadow')) return { ok: false, why: "
                      "'their reels stay on their console' };\n",
-                     "  try { return document.documentElement.classList.contains('tvd-shadow'); } catch (e) { return false; }\n"):
+                     "\n  try { return document.documentElement.classList.contains('tvd-shadow'); } catch (e) { return false; }\n",   # REG-3009
+                     "    try { return document.documentElement.classList.contains('tvd-shadow'); } catch (e) { return false; }\n"):   # REG-3095
             self.assertEqual(board.count(site), 1, "a shadow guard in the board went missing or doubled: %r" % site.strip())
         self.assertIn("shadowMap[k] = null", board)
         # A missing snapshot used to post pending:true into THIS browser's board, which is the claim trap.
