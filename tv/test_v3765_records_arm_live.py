@@ -48,7 +48,7 @@ NODE = os.environ.get("NODE") or shutil.which("node")
 EXTRACT = [
     "_sharedNames", "_sharedCopyCount", "_sharedCappedCopies", "_vaultSharedOverflowCells",
     "_vaultSharedOverflowNames", "_vaultDupesNames", "_vaultDupesCells", "_vaultSharedOverflowHtml",
-    "_vaultPresenceSpan", "_mkWant", "_mkDest", "_mkSetWant", "_assignStoreUnknown", "_vaultRecords", "_vaultRecordsSource",
+    "_vaultPresenceSpan", "_mkWant", "_mkDest", "_mkSetWant", "_assignStoreUnknown", "_vaultRecords", "_vaultRecordsSource", "_vrSourceChoice",
     "_vaultRecordsStampOk", "_vrRecDirty", "_vrRecMarkDirty", "_vrRecClearDirty",
     "_vrRecWitness", "_vrRecRow", "_vrRecRowsFrom", "_vrRecCanon",
     "_vrRecDerivedCanon", "_vrRecStoredCanon",
@@ -1160,7 +1160,7 @@ RED_PROOF = [
     {
         "why": "FIND and GRAIL-DUPES read the persisted store. Falling through to the live model drops the snapshot.",
         "file": "bible.html",
-        "find": "        if (loaded && loaded.ok && Array.isArray(loaded.records)) return loaded;",
+        "find": "        if (loaded && loaded.ok && Array.isArray(loaded.records)) return { store: loaded, why: '' };",
         "replace": "        return _vaultRecords();",
         "matches": 1,
     },
@@ -1209,7 +1209,7 @@ RED_PROOF = [
     {
         "why": "An older stamp must not hide an unreadable assignment. Serving the store keeps FIND on the stale mule.",
         "file": "bible.html",
-        "find": "      if (typeof _assignStoreUnknown === 'function' && _assignStoreUnknown()) return _vaultRecords();",
+        "find": "      if (typeof _assignStoreUnknown === 'function' && _assignStoreUnknown()) return { store: null, why: 'the mule map would not read' };",
         "replace": "      /* unreadable assignment still served from the stamp */",
         "matches": 1,
     },
@@ -1237,7 +1237,7 @@ RED_PROOF = [
     {
         "why": "A refused refresh has to follow the live model. Ignoring the flag leaves GRAIL-DUPES on the stale stamp.",
         "file": "bible.html",
-        "find": "      if (typeof _vrRecFollowLive !== 'undefined' && _vrRecFollowLive) return _vaultRecords();",
+        "find": "      if (typeof _vrRecFollowLive !== 'undefined' && _vrRecFollowLive) return { store: null, why: 'a records refresh on this page was refused, so the vault follows the live model' };",
         "replace": "      /* refused refresh still served the stamp */",
         "matches": 1,
     },
@@ -1307,14 +1307,14 @@ RED_PROOF = [
     {
         "why": "An unstamped store is not the source. Serving it after a reload makes a store that was never armed active.",
         "file": "bible.html",
-        "find": "      if (typeof _vaultRecordsStampOk === 'function' && !_vaultRecordsStampOk()) return _vaultRecords();",
+        "find": "      if (typeof _vaultRecordsStampOk === 'function' && !_vaultRecordsStampOk()) return { store: null, why: 'the saved records carry no current stamp' };",
         "replace": "      /* an unstamped store is still the source */",
         "matches": 1,
     },
     {
         "why": "A provUnknown snapshot is not the source, even under a planted stamp. A reload must follow the live model.",
         "file": "bible.html",
-        "find": "        if (loaded && loaded.ok && Array.isArray(loaded.records) && loaded.records.some(function(row){ return row && row.provUnknown === true; })) return _vaultRecords();",
+        "find": "        if (loaded && loaded.ok && Array.isArray(loaded.records) && loaded.records.some(function(row){ return row && row.provUnknown === true; }))\n          return { store: null, why: 'the witness store would not read' };",
         "replace": "        /* a provUnknown snapshot is still the source */",
         "matches": 1,
     },

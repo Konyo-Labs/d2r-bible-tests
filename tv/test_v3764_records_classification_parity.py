@@ -49,7 +49,7 @@ NODE = os.environ.get("NODE") or shutil.which("node")
 EXTRACT = [
     "_sharedNames", "_sharedCopyCount", "_sharedCappedCopies", "_vaultSharedOverflowCells",
     "_vaultSharedOverflowNames", "isSharedStash",
-    "_vaultRecords", "_vaultRecordsSource", "_vaultRecordsFind", "_vaultSameMuleCopies", "_vaultRecordsOverflow",
+    "_vaultRecords", "_vaultRecordsSource", "_vrSourceChoice", "_vaultRecordsFind", "_vaultSameMuleCopies", "_vaultRecordsOverflow",
     "_vaultRecordsHeader",
     "_vrRecWitness", "_vrRecRow", "_vrRecRowsFrom",
     "_vrRecLoadRaw", "_vrRecGuardedSet", "_vrLocForCopy", "_vaultRecordsLoad", "_vaultRecordsPersist",

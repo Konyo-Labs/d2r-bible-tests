@@ -117,7 +117,7 @@ class TheVaultFinderNamesTheMuleAndTheCell(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-2020 - his magic-find charm reads as loose in the finder again (kind would, not filed on its CHARMS home)",
      "file": "bible.html",
-     "find": "    try { return typeof magicFinds === 'object' && !!magicFinds && Object.prototype.hasOwnProperty.call(magicFinds, n); }\n",
+     "find": "    try { return typeof magicFinds === 'object' && !!magicFinds && Object.prototype.hasOwnProperty.call(magicFinds, n) && !(typeof _vaultCatalogueItem === 'function' && _vaultCatalogueItem(n)); }\n",
      "replace": "    try { return false; }\n",
      "matches": 1},
     # REG-2376 - RE-AIMED at the branch this law reaches. v3767 homes an auto-sorted item through the records seam

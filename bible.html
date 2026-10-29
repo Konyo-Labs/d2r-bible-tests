@@ -14914,6 +14914,7 @@ function d2jspBatchHtml(view) {
       <div id="vault-carried" class="vault-carried" hidden></div>
       <div id="vault-dock-bar" class="vault-dock-bar" hidden></div>
       <div id="vault-hand-left" class="vault-organize vault-hand-left" hidden></div>
+      <div id="vault-saved-left" class="vault-organize vault-saved-left" hidden></div><!-- #163 REG-3041 - saved filings this board does not draw -->
       <!-- REG-2400 — what a load KEPT although no catalogue knows the name (painted by window._vaultOwnedKeptPaint) -->
       <div id="vault-owned-kept" class="vault-organize vault-owned-kept" hidden></div>
       <div id="vault-organize" class="vault-organize" hidden></div>
@@ -29061,6 +29062,8 @@ window._charmHome = _charmHome;
 function _mfKeeperHome(name){
   try {
     if (typeof magicFinds === 'undefined' || !magicFinds || !Object.prototype.hasOwnProperty.call(magicFinds, name)) return undefined;
+    /* #163 REG-3042 - a catalogue item the register holds is not a keeper, so it has no keeper home (the router homes it) */
+    if (typeof window._vaultCatalogueItem === 'function' && window._vaultCatalogueItem(name)) return undefined;
   } catch (e) { return undefined; }
   var ch = _charmHome(name);
   return ch ? ch.id : 'magic-rare';
@@ -46582,7 +46585,16 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
   function ownedPool(){
     try{
       if (typeof owned==='undefined' || typeof ITEMS==='undefined') return [];
-      return Array.from(owned).filter(_vaultKeeps).sort();
+      var p = Array.from(owned).filter(_vaultKeeps);
+      /* #163 (REG-3042) - a catalogue item the Magic & Rare register holds is no keeper there (the one rule, _inMagicRare), so
+         it is what any owned catalogue item is: an item waiting for its home. The pool carries it, and every place that homes
+         a pool name gives it its own home (the router's, through the seam), never nowhere. v1251's self-heal writes it into
+         owned on the owner's own board; a shadow only draws it. */
+      try {
+        if (typeof magicFinds === 'object' && magicFinds && typeof _vaultCatalogueItem === 'function')
+          Object.keys(magicFinds).forEach(function(n){ if (n && !owned.has(n) && _vaultCatalogueItem(n) && _vaultKeeps(n)) p.push(n); });
+      } catch (eCat) {}
+      return p.sort();
     }catch(e){ return []; }
   }
   function art(n, glyph, size){ glyph = glyph || '◆'; try { if (typeof artOr === 'function') { var html = artOr(n, glyph, size || 'sm'); if (html) return html; } } catch (e) {} return '<span class="d2art-fallback">' + glyph + '</span>'; }
@@ -47672,6 +47684,14 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
   function _vaStoreLabel(k){ return k==='keep' ? '✓ Kept / Muled' : k==='magic' ? 'Magic & Rare' : k==='throw' ? 'Throw-out' : k; }
   function _vaIsGrailUni(n){ try{ return !!((typeof ITEM_REGISTRY!=='undefined'&&ITEM_REGISTRY[n]) || (window._UNI_EXTRA&&window._UNI_EXTRA[n]) || (window._GRAIL_SEED&&window._GRAIL_SEED[n])); }catch(e){ return false; } }
   function _vaIsRW(n){ try{ return !!(window.findRuneword && window.findRuneword(n)); }catch(e){ return false; } }
+  /* #163 (REG-3042) - A CATALOGUE ITEM IS NEVER A MAGIC & RARE KEEPER, ANYWHERE. The file door has refused to treat one as a
+     keeper since REG-2854: a grail unique, a set piece or a runeword is drawn from the catalogue on its own locker, never as a
+     rolled name on MAGIC & RARE. The records derivation (REG-2853's keeper home), the dock, the keeper home on every locker
+     and the MAGIC & RARE window's pack asked only "is it in magicFinds", so a set piece registered there (Aldur's Rhythm,
+     measured in node on Dean's shapes) was homed on MAGIC & RARE. These are the door's three tests, as ONE answer every
+     place asks. */
+  function _vaultCatalogueItem(n){ return _vaIsGrailUni(n) || !!(typeof findSetPiece === 'function' && findSetPiece(n)) || _vaIsRW(n); }
+  try { window._vaultCatalogueItem = _vaultCatalogueItem; } catch (eCat) {}
   /* #158.5 (REG-2813, GrokBot on his real frames) - ONE RULE FOR WHAT IS THROWN OUT: THE ROUTER'S. The auto door threw
      Blackbog's Sharp out (suggestMule: trade value TRASH, v2200), and the WRONGLY-THROWN check below called the same read
      "a chronicle unique - Rescue it", so Fix all rescued it and the router threw it again. MEASURED on the whole page in node:
@@ -48103,11 +48123,14 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       if (!window._tvdShadow && typeof magicFinds === 'object' && magicFinds && typeof window.findRuneword === 'function'){
         var _mfMig=false;
         Object.keys(magicFinds).forEach(function(_mfk){
-          if (window.findRuneword(_mfk)){
+          /* #163 REG-3042 - and a grail unique or a set piece the same way: a catalogue item is never a keeper (REG-2854) */
+          if (_vaultCatalogueItem(_mfk)){
+            var _mfBy = 'Magic & Rare ' + (window.findRuneword(_mfk) ? 'runeword' : 'catalogue item') + ' migration';   /* REG-3042 */
             try { var _mfr = magicFinds[_mfk] || {};
                   window._ownedAdd(_mfk, (_mfr.frameId || _mfr.sessionId)
-                    ? { source: 'aic-judge', by: 'Magic & Rare runeword migration', sessionId: _mfr.sessionId, frameId: _mfr.frameId, ts: _mfr.at, readTier: 'keep' }
-                    : { source: 'magic-and-rare', by: 'Magic & Rare runeword migration', where: 'moved out of Magic & Rare — who kept it there was not recorded' }); } catch(e){}
+                    ? { source: 'aic-judge', by: _mfBy, sessionId: _mfr.sessionId, frameId: _mfr.frameId, ts: _mfr.at, readTier: 'keep' }
+                    : { source: 'magic-and-rare', by: _mfBy, where: 'moved out of Magic & Rare — who kept it there was not recorded' }); } catch(e){}
+            if (!owned.has(_mfk)) return;   /* REG-3042 - the owned door refused it: the keeper row stays, nothing is lost */
             /* #246 — a Magic & Rare keeper row is not a stash witness; the runeword lands in `owned` (the dock)
                and is filed by his hand or by a witness, never by this migration. */
             delete magicFinds[_mfk]; _mfMig=true;
@@ -48127,6 +48150,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
        de-duped here, once per world, right after the hand list comes home and before the pool is read */
     try { if (typeof window._vaultDedupeOldSetRows === 'function') window._vaultDedupeOldSetRows(); } catch (eD) {}
     try { if (typeof window._vaultHandLeftPaint === 'function') window._vaultHandLeftPaint(); } catch (eL) {}
+    try { if (typeof window._vaultSavedLeftPaint === 'function') window._vaultSavedLeftPaint(); } catch (eSl) {}   /* #163 REG-3041 */
     try { if (typeof window._vaultOwnedKeptPaint === 'function') window._vaultOwnedKeptPaint(); } catch (eK) {}   /* REG-2400 — what this load kept */
     var poolAll=ownedPool();
     // account-shared-stash items (runes/essences/shards/statues) are recorded but NEVER muled —
@@ -48709,8 +48733,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       try { var _cn = (typeof window._vaultResolveName === 'function') ? String(window._vaultResolveName(name) || '') : '';
             if (_cn && _cn !== name && owned.has(_cn)) name = _cn; } catch (eCn) {}
     }
-    var _mrCat = (typeof _vaIsGrailUni === 'function' && _vaIsGrailUni(name)) || !!(typeof findSetPiece === 'function' && findSetPiece(name))
-      || !!(typeof window.findRuneword === 'function' && window.findRuneword(name));
+    var _mrCat = _vaultCatalogueItem(name);   /* #163 REG-3042 - the one catalogue test */
     if (muleId !== 'magic-rare' && !_mrCat && typeof window._vaultInMagicRare === 'function' && window._vaultInMagicRare(name)){
       var _mrWhy = name + ' was not filed \u2014 it is a Magic & Rare keeper, and MAGIC & RARE is its one home: the other lockers'
         + ' draw catalogue items, not a rolled name, so on ' + muleById(muleId).name + ' nothing would draw it, and a filing beside'
@@ -50886,7 +50909,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
      loose: his dock listed Harpoonist's Grand Charm as unsorted while MAGIC & RARE showed it, and the integrity check called
      it double-filed */
   function _inMagicRare(n){
-    try { return typeof magicFinds === 'object' && !!magicFinds && Object.prototype.hasOwnProperty.call(magicFinds, n); }
+    /* #163 REG-3042 - a catalogue item registered there is not a keeper: it is homed by the router, like any catalogue item */
+    try { return typeof magicFinds === 'object' && !!magicFinds && Object.prototype.hasOwnProperty.call(magicFinds, n) && !(typeof _vaultCatalogueItem === 'function' && _vaultCatalogueItem(n)); }
     catch (e) { return false; }
   }
   /* ══ #264 (REG-2021, the #231 eye on v3616) — THE DOCK IS ONE LIST, AND EVERY DOOR ASKS IT ══════════════════════════
@@ -56059,7 +56083,7 @@ window.vaultAutoAssign = function(){
        shadow packs exactly what the owner's own screen packs. */
     if (_spanOf && muleId === 'magic-rare' && typeof magicFinds === 'object' && magicFinds)
       Object.keys(magicFinds).forEach(function(n){
-        if (n && !Object.prototype.hasOwnProperty.call(_spanOf, n)) _spanOf[n] = 1;   /* REG-2850 keeper span */
+        if (n && !Object.prototype.hasOwnProperty.call(_spanOf, n) && !(typeof _vaultCatalogueItem === 'function' && _vaultCatalogueItem(n))) _spanOf[n] = 1;   /* REG-2850 keeper span; REG-3042 never a catalogue item */
       });
     /* v3855 (Elad: the CHARMS mule's zoom drew no Small Charm of Balance) - the same span for a keeper the charm rule homes on
        any other locker (_mfKeeperHome: the CHARMS mule): _muleNamesFor listed it, and the span packed only magic-rare's. */
@@ -59744,20 +59768,186 @@ window.vaultAutoAssign = function(){
        a real {records: array}, and no row is an unreadable witness. Absent, unstamped, dirty,
        refused or UNKNOWN falls back to the live derivation. A wrong shape stays unread. A reload
        follows the dirty marker, not a memory flag. */
-    try {
-      if (typeof _vrRecFollowLive !== 'undefined' && _vrRecFollowLive) return _vaultRecords();
-      if (typeof _vrRecDirty === 'function' && _vrRecDirty()) return _vaultRecords();
-      if (typeof _assignStoreUnknown === 'function' && _assignStoreUnknown()) return _vaultRecords();
-      if (typeof _vaultRecordsStampOk === 'function' && !_vaultRecordsStampOk()) return _vaultRecords();
-      if (typeof _vaultRecordsLoad === 'function') {
-        var loaded = _vaultRecordsLoad();
-        if (loaded && loaded.ok && Array.isArray(loaded.records) && loaded.records.some(function(row){ return row && row.provUnknown === true; })) return _vaultRecords();
-        if (loaded && loaded.ok && Array.isArray(loaded.records)) return loaded;
-      }
-    } catch (e) {}
+    /* #163 REG-3041 - the chain lives in _vrSourceChoice, which also tells the vault WHY the saved records are not drawn */
+    var _ch = _vrSourceChoice();
+    if (_ch.store) return _ch.store;
     return _vaultRecords();
   }
   window._vaultRecordsSource = _vaultRecordsSource;
+  /* ══ #163 (REG-3041, his ruling 2026-10-29: "when it cannot conclude, it asks via the evidence / confirming with the user") —
+     FILINGS THE SAVED RECORDS HOLD THAT THIS BOARD DOES NOT DRAW ══════════════════════════════════════════════════════════════
+     GrokBot on Dean's shadow: his saved records filed 5 items (SETS-REST, SETS-MAJOR, MAGIC & RARE x2, UNI-ARMOR) and the vault
+     drew 1. Measured in node on those shapes (never his data): with a current migrate stamp and no dirty marker all 5 draw;
+     without the stamp, or with d2r_vaultRecordsDirty, the vault follows the LIVE model (v3766: a write that did not read back is
+     not trusted), and the live model holds only what d2r_owned and d2r_muleAssign hold - there, 1. Which is true for those 4 -
+     removed, or lost - is a question the stores cannot settle, so v3766's rule stands and the board ASKS: each filing the saved
+     records hold that the live model does not draw is listed with why it is not drawn, "↺ file it again" (his hand, through
+     vaultHandAdd, on the mule the current rule gives it - his old target named beside it when they differ) and "✕ forget it"
+     (out of the saved records, after he says yes; undone on this page). Nothing here runs on its own; a shadow is read only. */
+  /* which model is the vault's source, and why -> {store: model | null, why: '' | reason}. ONE chain: _vaultRecordsSource and the
+     list below both read it, so they can never disagree about whether the saved records are drawn. */
+  function _vrSourceChoice(){
+    try {
+      if (typeof _vrRecFollowLive !== 'undefined' && _vrRecFollowLive) return { store: null, why: 'a records refresh on this page was refused, so the vault follows the live model' };
+      if (typeof _vrRecDirty === 'function' && _vrRecDirty()) return { store: null, why: 'the last records write did not read back' };
+      if (typeof _assignStoreUnknown === 'function' && _assignStoreUnknown()) return { store: null, why: 'the mule map would not read' };
+      if (typeof _vaultRecordsStampOk === 'function' && !_vaultRecordsStampOk()) return { store: null, why: 'the saved records carry no current stamp' };
+      if (typeof _vaultRecordsLoad === 'function') {
+        var loaded = _vaultRecordsLoad();
+        if (loaded && loaded.ok && Array.isArray(loaded.records) && loaded.records.some(function(row){ return row && row.provUnknown === true; }))
+          return { store: null, why: 'the witness store would not read' };
+        if (loaded && loaded.ok && Array.isArray(loaded.records)) return { store: loaded, why: '' };
+        return { store: null, why: loaded === undefined ? 'the saved records would not read' : 'there are no saved records' };
+      }
+    } catch (e) { return { store: null, why: 'deciding the source threw' }; }
+    return { store: null, why: 'the saved records are not on this page' };
+  }
+  /* -> {ok, source: 'saved' | 'live', why, rows: [{name, old, oldName, rule, ruleName, ruleWhy, offer, offerName, hand}]} */
+  /* a saved filing the drawn model does not hold -> true. A set piece saved under one spelling and drawn under another ("Aldur's
+     Rhythm" / "Aldur's Rhythm (mace)") is one item (_vaultSameItemNames). */
+  function _vrSavedUndrawn(name, drawn){
+    var names = Object.keys(drawn), twins = (typeof _vaultSameItemNames === 'function') ? _vaultSameItemNames(name, names) : [name];
+    return !twins.some(function(t){ return drawn[t]; }) && !drawn[name];
+  }
+  /* the saved filings a write must carry, not drop: while the saved records are not the source, a filing in them the live model
+     lacks is unexplained (removed, or lost), so it rides beside the records (savedNotDrawn) until he files it again or forgets it.
+     -> rows */
+  function _vrSavedCarry(prior, live, notSource){
+    if (!prior || typeof prior !== 'object') return [];
+    var drawn = {}, seen = {}, out = [];
+    ((live && live.records) || []).forEach(function(r){ if (r && r.name != null) drawn[r.name] = 1; });
+    var cand = (Array.isArray(prior.savedNotDrawn) ? prior.savedNotDrawn : []).concat(notSource && Array.isArray(prior.records) ? prior.records : []);
+    cand.forEach(function(r){
+      if (!r || r.name == null || seen[r.name]) return;
+      if (!(r.kind === 'filed' || r.kind === 'sharedStash')) return;
+      if (!_vrSavedUndrawn(String(r.name), drawn)) return;
+      seen[r.name] = 1;
+      prior.records && Array.isArray(prior.records) && prior.records.concat(prior.savedNotDrawn || []).forEach(function(x){ if (x && x.name === r.name) out.push(x); });
+    });
+    var dedup = [], k = {};
+    out.forEach(function(x){ var id = String(x.recId || x.name) + '\u0001' + String(x.kind); if (!k[id]){ k[id] = 1; dedup.push(x); } });
+    return dedup;
+  }
+  /* -> {ok, source: 'saved' | 'live', why, rows: [{name, old, oldName, rule, ruleName, ruleWhy, offer, offerName, hand}]} */
+  function _vaultSavedNotDrawn(){
+    var ch = _vrSourceChoice();
+    var raw = (typeof _vrRecLoadRaw === 'function') ? _vrRecLoadRaw() : null;
+    if (raw === undefined) return { ok: false, why: 'the saved records would not read' };
+    var model = ch.store || _vaultRecords();
+    if (!model || !model.ok) return { ok: false, why: 'the live model would not derive, so what it draws is UNKNOWN' };
+    var cand = (raw && Array.isArray(raw.savedNotDrawn)) ? raw.savedNotDrawn.slice() : [];
+    if (!ch.store && raw && Array.isArray(raw.records)) cand = cand.concat(raw.records);
+    var drawn = {}, seen = {}, rows = [];
+    (model.records || []).forEach(function(r){ if (r && r.name != null) drawn[r.name] = 1; });
+    cand.forEach(function(r){
+      if (!r || r.name == null || seen[r.name]) return;
+      var home = (r.kind === 'filed') ? r.mule : (r.kind === 'sharedStash' ? 'shared' : null);
+      if (!home || !_vrSavedUndrawn(String(r.name), drawn)) return;
+      seen[r.name] = 1;
+      var rule = null;
+      try { rule = (typeof suggestMule === 'function') ? suggestMule(r.name) : null; } catch (e) { rule = null; }
+      var ruleId = (rule && rule.id) || null, ruleM = (ruleId && ruleId !== '__throwout') ? muleById(ruleId) : null;
+      var oldM = muleById(home), offer = (ruleM && ruleId !== home) ? ruleId : home, offerM = muleById(offer);
+      rows.push({ name: String(r.name), old: home, oldName: oldM ? oldM.name : String(home), rule: ruleId,
+                  ruleName: ruleM ? ruleM.name : (ruleId === '__throwout' ? 'THROW OUT' : null), ruleWhy: (rule && rule.why) || null,
+                  offer: offer, offerName: offerM ? offerM.name : String(offer), hand: r.source === 'manual' });
+    });
+    return { ok: true, source: ch.store ? 'saved' : 'live', why: ch.store ? 'they are kept beside your saved records, which no longer draw them' : ch.why, rows: rows };
+  }
+  try { window._vaultSavedNotDrawn = _vaultSavedNotDrawn; window._vrSourceChoice = _vrSourceChoice; } catch (eSn) {}
+  /* ↺ FILE IT AGAIN - his hand: the hand door owns it, then the file door puts it on `mule` (the list's offer when none is given) */
+  window._vaultSavedFileAgain = function(name, mule){
+    if (window._tvdShadow) return { ok: false, why: "this is another PC's console, read only - it is filed on that PC" };
+    var L = _vaultSavedNotDrawn();
+    var row = (L.rows || []).filter(function(x){ return x.name === name; })[0];
+    if (!row) return { ok: false, why: name + ' is not on the list of saved filings any more - nothing was changed' };
+    var to = mule || row.offer;
+    if (!muleById(to)) return { ok: false, why: 'no locker on this board has the id "' + to + '" - nothing was changed' };
+    var at = new Date().toISOString(), where = 'the saved filings this board did not draw';
+    var add = window.vaultHandAdd(name, at, { by: 'his hand', where: where });
+    if (!add || add.ok === false) return { ok: false, why: (add && add.why) || (name + ' was not added') };
+    if (assign[name] === to) return { ok: true, filed: to, add: add };
+    var fl = window.vaultFile(name, { by: 'hand', at: at, where: where }, { mule: to, move: assign[name] != null });
+    return (fl && fl.ok) ? { ok: true, filed: to, add: add, file: fl } : { ok: false, owned: true, why: (fl && fl.why) || (name + ' is yours, and was not filed') };
+  };
+  /* ✕ FORGET IT - out of the saved records, after he says yes. The rows go back on "undo" for as long as this page is open. */
+  var _vaultSavedForgot = [];
+  window._vaultSavedForget = function(name){
+    if (window._tvdShadow) return { ok: false, why: "this is another PC's console, read only" };
+    var raw = (typeof _vrRecLoadRaw === 'function') ? _vrRecLoadRaw() : null;
+    if (!raw || !Array.isArray(raw.records)) return { ok: false, why: 'the saved records would not read - nothing was changed' };
+    if (!(_vaultSavedNotDrawn().rows || []).some(function(x){ return x.name === name; })) return { ok: false, why: name + ' is not on the list of saved filings - nothing was changed' };
+    var notSource = !_vrSourceChoice().store;
+    var inRec = notSource ? raw.records.filter(function(r){ return r && r.name === name; }) : [];
+    var inSide = (Array.isArray(raw.savedNotDrawn) ? raw.savedNotDrawn : []).filter(function(r){ return r && r.name === name; });
+    var gone = inRec.concat(inSide);
+    if (!gone.length) return { ok: false, why: name + ' is not in the saved records' };
+    var next = Object.assign({}, raw, { records: notSource ? raw.records.filter(function(r){ return !(r && r.name === name); }) : raw.records });
+    if (Array.isArray(raw.savedNotDrawn)) next.savedNotDrawn = raw.savedNotDrawn.filter(function(r){ return !(r && r.name === name); });
+    if (!_vrRecGuardedSet(next)) return { ok: false, why: 'the saved records refused the write - nothing was changed' };
+    _vaultSavedForgot.push({ name: name, rows: inRec, side: inSide });
+    return { ok: true, forgot: name, rows: gone.length };
+  };
+  window._vaultSavedUnforget = function(){
+    if (window._tvdShadow) return { ok: false, why: "this is another PC's console, read only" };
+    var last = _vaultSavedForgot.pop();
+    if (!last) return { ok: false, why: 'nothing was forgotten on this page' };
+    var raw = (typeof _vrRecLoadRaw === 'function') ? _vrRecLoadRaw() : null;
+    if (!raw || !Array.isArray(raw.records)) { _vaultSavedForgot.push(last); return { ok: false, why: 'the saved records would not read - nothing was put back' }; }
+    var next = Object.assign({}, raw, { records: raw.records.concat(last.rows || []) });
+    if ((last.side || []).length) next.savedNotDrawn = (Array.isArray(raw.savedNotDrawn) ? raw.savedNotDrawn : []).concat(last.side);
+    if (!_vrRecGuardedSet(next)) { _vaultSavedForgot.push(last); return { ok: false, why: 'the saved records refused the write - nothing was put back' }; }
+    return { ok: true, back: last.name };
+  };
+  /* the list, on the Vault - hidden when there is nothing to ask */
+  window._vaultSavedLeftPaint = function(){
+    var el = document.getElementById('vault-saved-left');
+    if (!el) return null;
+    var L = _vaultSavedNotDrawn(), ro = !!window._tvdShadow;
+    if (L.ok && !L.rows.length && !_vaultSavedForgot.length){ el.hidden = true; el.innerHTML = ''; return L; }
+    var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var js = function(s){ return esc(JSON.stringify(String(s))); };
+    var h = !L.ok ? '<p class="vault-propose" data-state="unknown" data-moved="false">Which saved filings this board draws is UNKNOWN - ' + esc(L.why) + '.</p>'
+      : '<p class="vault-org-h">' + L.rows.length + ' filing' + (L.rows.length === 1 ? '' : 's') + ' your saved records hold that this board does not draw - '
+        + esc(L.why) + ', so the vault follows what it owns and has filed now. Each stays as it is until you say.</p>'
+        + L.rows.map(function(r){
+            var moved = r.offer !== r.old;
+            return '<p class="vault-org-row" data-saved="' + esc(r.name) + '">' + esc(r.name) + ' <span class="vault-propose" data-state="kept" data-moved="false">'
+              + 'saved on ' + esc(r.oldName) + (moved ? ('; the rule now files it on ' + esc(r.offerName) + (r.ruleWhy ? ' (' + esc(r.ruleWhy) + ')' : '')) : '')
+              + (r.ruleName === 'THROW OUT' ? ('; the rule would throw it out' + (r.ruleWhy ? ' (' + esc(r.ruleWhy) + ')' : '')) : '') + '</span>'
+              + (ro ? '' : (' <button type="button" class="vault-btn" data-saved-act="file" onclick="window._vaultSavedAct(\'file\', ' + js(r.name) + ')">↺ file it again on ' + esc(r.offerName) + '</button>'
+                + ' <button type="button" class="vault-btn" data-saved-act="forget" onclick="window._vaultSavedAct(\'forget\', ' + js(r.name) + ')">✕ forget it</button>'))
+              + '</p>'; }).join('')
+        + (ro ? '<p class="vault-org-row" data-state="read-only">Read only: this is another PC’s console.</p>'
+              : (_vaultSavedForgot.length ? ('<p class="vault-org-row" data-state="undo"><button type="button" class="vault-btn" data-saved-act="undo" onclick="window._vaultSavedAct(\'undo\')">↩ undo forgetting '
+                 + esc(_vaultSavedForgot[_vaultSavedForgot.length - 1].name) + '</button></p>') : ''));
+    el.hidden = false;
+    el.innerHTML = h;
+    return L;
+  };
+  window._vaultSavedAct = function(kind, name){
+    var say = function(m){ try { status(m, 9000); } catch (e) {} };
+    var done = function(){ try { if (typeof window.renderVault === 'function') window.renderVault(); } catch (e) {} };
+    if (kind === 'file'){
+      var r = window._vaultSavedFileAgain(name);
+      say(r.ok ? ('↺ ' + name + ' is yours again, on ' + ((muleById(r.filed) || {}).name || r.filed)) : ('⚠ ' + r.why));
+      done(); return r;
+    }
+    if (kind === 'undo'){
+      var u = window._vaultSavedUnforget();
+      say(u.ok ? ('↩ ' + u.back + ' is back in your saved records') : ('⚠ ' + u.why));
+      done(); return u;
+    }
+    if (kind !== 'forget') return null;
+    var ask = (typeof window.uiConfirm === 'function') ? window.uiConfirm('Forget ' + name + '?\n\nIt leaves your saved records, which this board is not drawing. '
+      + 'Nothing you own or have filed changes. "Undo" in the list puts it back while this page is open.', { cancelFirst: true }) : Promise.resolve(false);
+    return ask.then(function(ok){
+      if (!ok) return { ok: false, why: 'not forgotten' };
+      var f = window._vaultSavedForget(name);
+      say(f.ok ? ('✕ ' + name + ' forgotten - "undo" in the list puts it back while this page is open') : ('⚠ ' + f.why));
+      done(); return f;
+    });
+  };
   function _vaultLockerItems(muleId){
     /* Distinct names the one-record model homes on this locker. null = the model will not read,
        and the caller keeps the list it already built. The shelf card and the locker Items box both
@@ -60502,6 +60692,10 @@ window.vaultAutoAssign = function(){
     var outRecs = built.rows;
     var seq = built.seq;
     var store = { v: 1, ts: Date.now(), seq: seq, carUnknown: false, dockUnknown: false, records: outRecs };
+    /* #163 REG-3041 - a write never drops a saved filing nobody can explain: while the saved records are not the source, a
+       filing in them this derivation lacks rides beside them until he files it again or forgets it (_vaultSavedNotDrawn) */
+    var _carry = (typeof _vrSavedCarry === 'function' && typeof _vrSourceChoice === 'function') ? _vrSavedCarry(prior, rec, !_vrSourceChoice().store) : [];
+    if (_carry.length) store.savedNotDrawn = _carry;
     /* REG-2883 - the traded rows ride every rebuild: they are copies that LEFT, so no live derivation can re-make them */
     if (prior && Array.isArray(prior.tradedOut) && prior.tradedOut.length) store.tradedOut = prior.tradedOut;
     /* A poll that re-derives the same records is not a new fact. The stamp alone must not rewrite the store. */
