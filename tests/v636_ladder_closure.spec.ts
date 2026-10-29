@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v636 — CLOSURE LOCKS for the swarm-confirmed v635 bugs. Every finding gets a pin.
@@ -17,7 +18,7 @@ async function cleanup(page: any) {
 
 test('SEEN pre-seed works: main ledger copies to L· on first ladder boot, once — and a wipe on ladder never touches main', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1500);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_intakeSeen', JSON.stringify({ 'shot1.png': 123, 'shot2.png': 456 }));
     localStorage.setItem('d2r_owned', JSON.stringify(['Flail (5os)']));
   });
@@ -28,7 +29,7 @@ test('SEEN pre-seed works: main ledger copies to L· on first ladder boot, once 
   }));
   // one-time: mutate the ladder ledger, reload — it must NOT be re-overwritten from main
   await page.evaluate(() => localStorage.setItem('L·d2r_intakeSeen', JSON.stringify({ 'ladder-only.png': 1 })));
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   const r2 = await page.evaluate(() => /ladder-only/.test(localStorage.getItem('L·d2r_intakeSeen') || ''));
   // profile-scoped wipe from the LADDER side leaves main byte-identical
   const r3 = await page.evaluate(({ mainSnap }: any) => {

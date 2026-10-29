@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v634 — TIER-1 LADDER PREVIEW: a pure VIEW toggle on the 🪜 strip. Expanded, each ladder word
@@ -24,7 +25,7 @@ test('v655 — at the owner seed (all 9 ladder words made) the strip and pill ar
 test('toggle expands the 8 plan cards (fresh chronicle) (recipe + base + 🪜 ribbon), collapses back — and game state is BYTE-IDENTICAL', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
   // v655 — the ladder set is COMPLETE at the owner seed; pin a FRESH chronicle so the strip exists to test
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
     // v1492 — turn OFF the v1475 "plan the ladder words in the Forge" setting. That feature is what
@@ -33,7 +34,7 @@ test('toggle expands the 8 plan cards (fresh chronicle) (recipe + base + 🪜 ri
     // product's own switch instead of depending on which side its default sits.
     try { (window as any)._forgeSetIncludeLadder(false); } catch (e) {}
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     const KEYS = ['d2r_owned','d2r_unknownReads','d2r_rwMade','d2r_ladderMode','d2r_rwBaseUsed','d2r_copies','d2r_runeStash'];
@@ -78,7 +79,7 @@ test('toggle expands the 8 plan cards (fresh chronicle) (recipe + base + 🪜 ri
 
 test('v634.2 — the TOP-of-forge 🪜 pill exists, names the remaining count, and toggles the same preview', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
     // v1492 — turn OFF the v1475 "plan the ladder words in the Forge" setting. That feature is what
@@ -87,7 +88,7 @@ test('v634.2 — the TOP-of-forge 🪜 pill exists, names the remaining count, a
     // product's own switch instead of depending on which side its default sits.
     try { (window as any)._forgeSetIncludeLadder(false); } catch (e) {}
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     w.switchTab('forge'); try { w.renderForge(); } catch (e) {}

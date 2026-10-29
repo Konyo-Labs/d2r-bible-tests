@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v628 — EXACT-FIT GATE BYPASS + the REVERSE-ENGINEERING sweep (Konyo: 'the remaining 30 runewords —
@@ -9,13 +10,13 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 test("Konyo's 4os Double Bow: KEEPER + forge task while Faith-class words are unmade (never throw-out)", async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
     localStorage.setItem('d2r_owned', JSON.stringify(['Double Bow (4os)']));
     localStorage.setItem('d2r_runeStash', JSON.stringify({ Ohm: 1, Jah: 1, Lem: 1, Eld: 1 }));   // Faith runes
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     const verdict = w.suggestMule('Double Bow (4os)');
@@ -33,7 +34,7 @@ test("Konyo's 4os Double Bow: KEEPER + forge task while Faith-class words are un
 
 test('the gate still stops PLANS on wrong homes: an unsocketed exceptional bow stays vendor for endgame-only words', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  const r = await page.evaluate(() => {
+  const r = await pinEvaluate(page, () => {
     const w: any = window;
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
@@ -44,7 +45,7 @@ test('the gate still stops PLANS on wrong homes: an unsocketed exceptional bow s
     localStorage.setItem('d2r_rwMade', JSON.stringify(made));
     return true;
   });
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   const r2 = await page.evaluate(() => {
     const w: any = window;
     const un = (w._baseUnmadeRunewords('Double Bow', 0) || []).map((x: any) => x.n);

@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { boardReady } from './_board_ready';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 // REG-2522 + REG-2523 (V1 round 3) — A ROSTER SAVED AS "[]" IS UNKNOWN, AND ANOTHER PAGE'S BAD WRITE NEVER COSTS THIS PAGE'S
 // GOOD COPY. (Fix round: a roster that only lacks a core locker it had deleted before REG-2195 reads, and gets it back -
@@ -28,13 +29,13 @@ async function boot(page: Page) {
 
 test('a roster saved as "[]" is quarantined, the vault is held, and the paint drops no filing', async ({ page }) => {
   await boot(page);
-  await page.evaluate((filed) => {
+  await pinEvaluate(page, (filed) => {
     const w = window as any;
     w.LSR.setItem('d2r_owned', JSON.stringify(Object.keys(filed)));
     w.LSR.setItem('d2r_muleAssign', JSON.stringify(filed));
     localStorage.setItem(w.LSR.key('d2r_muleRoster'), '[]');
   }, FILED);
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForLoadState('load');
   await boardReady(page, READY);
   const got = await page.evaluate(() => {
@@ -58,11 +59,11 @@ test('a roster saved as "[]" is quarantined, the vault is held, and the paint dr
 test("another page's bad write offers this page's good copy back, and keeping it writes it with the bad bytes aside", async ({ page, context }) => {
   await boot(page);
   const good = ['Grief', 'Enigma', 'Harlequin Crest (Shako)'];
-  await page.evaluate((names) => {
+  await pinEvaluate(page, (names) => {
     const w = window as any;
     w.LSR.setItem('d2r_owned', JSON.stringify(names));
   }, good);
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForLoadState('load');
   await boardReady(page, READY);
   const BAD = '["Grief","Eni';

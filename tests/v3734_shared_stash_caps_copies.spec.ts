@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 // v3767 (Elad 2026-10-18 13:18 IDT) — every physical copy sits on the shared stash; the old cap of 2 is retired.
 // L1 (Elad 2026-10-20 22:05) then capped the WAR STASH by footprint: rings/amulets every copy, other small gear 4, big gear
@@ -12,7 +13,7 @@ const NM = 'Grief';
 test.beforeEach(async ({ page }) => {
   await page.goto('file://' + process.cwd() + '/bible.html');
   // seed 7 owned copies through the real store, then reload so the module loads them into copies[]
-  await page.evaluate((nm) => {
+  await pinEvaluate(page, (nm) => {
     try {
       localStorage.setItem('d2r_ownerClaim', '*');
       localStorage.setItem('d2r_copies', JSON.stringify({ [nm]: 7 }));
@@ -21,7 +22,7 @@ test.beforeEach(async ({ page }) => {
       localStorage.setItem('d2r_owned', JSON.stringify(owned));
     } catch (e) {}
   }, NM);
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForFunction(() => typeof (window as any)._sharedLayout === 'function');
 });
 

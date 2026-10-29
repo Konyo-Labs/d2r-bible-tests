@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, gotoPinned } from './_pin';
 
 /* v1630 — THE REWARD SURFACE HAS TO LOOK LIKE A REWARD (queued item #27).
  *
@@ -60,7 +61,7 @@ async function seedChronicle(page: any, share: number): Promise<number> {
   const keys = await catalog(page);
   expect(keys.length, 'the runeword catalog must load — an empty catalog would make _cSealed false and this whole spec vacuous').toBeGreaterThan(50);
   const take = share >= 1 ? keys.length : Math.max(1, Math.floor(keys.length * share));
-  await page.evaluate((ks: string[]) => {
+  await pinEvaluate(page, (ks: string[]) => {
     // d2r_rwProfile='fresh' is the app's OWN documented lever (bible.html ~15484): without it the
     // owner's _RWC_SEED floor is re-applied on every load and re-marks all 99 words made — which is
     // exactly what a partial fixture must not have. Measured while writing this: seeding 40 words
@@ -72,7 +73,7 @@ async function seedChronicle(page: any, share: number): Promise<number> {
     ks.forEach(k => { made[k] = '2026-01-01'; });
     localStorage.setItem('d2r_rwMade', JSON.stringify(made));
   }, keys.slice(0, take));
-  await page.goto(URL);
+  await gotoPinned(page, URL);
   await page.waitForTimeout(2800);
   await page.evaluate(() => { try { (window as any).switchTab('forge'); } catch (e) {} });
   await page.waitForTimeout(700);

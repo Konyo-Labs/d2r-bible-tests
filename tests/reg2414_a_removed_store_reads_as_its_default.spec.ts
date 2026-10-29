@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { boardReady } from './_board_ready';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 // REG-2414..REG-2417 (review of REG-2410..REG-2413) — A STORE ANOTHER PAGE REMOVED READS AS ITS DEFAULT, AND A VAULT
 // STORE THAT WILL NOT READ HOLDS THE VAULT IN WORDS.
@@ -31,12 +32,12 @@ async function boot(page: Page) {
 /** seed `bytes` under the store's key in this world, then reload. Every inline script has run (or thrown) by 'load'. */
 async function seedAndReload(page: Page, key: string, bytes: string): Promise<string> {
   await boot(page);
-  const phys = await page.evaluate(([k, b]) => {
+  const phys = await pinEvaluate(page, ([k, b]) => {
     const p = (window as any).LSR.key(k);
     localStorage.setItem(p, b);
     return p;
   }, [key, bytes]);
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForLoadState('load');
   await boardReady(page, ['LSR', 'renderVault', 'vaultFile', '_TAB_SYNC', '_mpUnlock']);
   return phys;
@@ -44,12 +45,12 @@ async function seedAndReload(page: Page, key: string, bytes: string): Promise<st
 
 test('a roster another page removes reads as the default lockers here, and every filing stays', async ({ page, context }) => {
   await boot(page);
-  await page.evaluate((filed) => {
+  await pinEvaluate(page, (filed) => {
     const w = window as any;
     w.LSR.setItem('d2r_owned', JSON.stringify(Object.keys(filed)));
     w.LSR.setItem('d2r_muleAssign', JSON.stringify(filed));
   }, FILED);
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForLoadState('load');
   await boardReady(page, ['LSR', 'renderVault', 'vaultFile', '_TAB_SYNC', '_mpUnlock']);
   const before = await page.evaluate(() => {

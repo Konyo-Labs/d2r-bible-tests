@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v638 — SHARED CHRONICLE (supersedes v637's one-way merge; Konyo's real-life truth: "the only
@@ -22,15 +23,15 @@ test('ONE grail both ways: a MAIN forge counts on ladder, a LADDER forge counts 
   await page.goto(URL); await page.waitForTimeout(1500);
   // v673 — Wrath is the ONLY unseeded word left, so the LADDER side owns the live forge in this
   // test; main's direction is witnessed through the shared seeded ledger (Peace, forged tonight).
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_owned', JSON.stringify(['Flail (5os)']));   // main's physical vault
     const _sm = JSON.parse(localStorage.getItem('d2r_rwMade') || '{}'); delete _sm['Wrath'];
     localStorage.setItem('d2r_rwMade', JSON.stringify(_sm));               // v674 — the window needs the stored entry gone too
     localStorage.setItem('d2r_rwUnmade', JSON.stringify({ Wrath: 1 }));   // …and the un-mark honored by the floor
   });
   await page.evaluate(() => localStorage.setItem('d2r_activeProfile', 'ladder'));
-  await page.reload(); await page.waitForTimeout(1800);
-  const onLadder = await page.evaluate(() => {
+  await reloadPinned(page); await page.waitForTimeout(1800);
+  const onLadder = await pinEvaluate(page, () => {
     const w: any = window;
     const made = JSON.parse(w.LSR.getItem('d2r_rwMade') || '{}');
     // ladder forges WRATH on its own bow (v673 — Peace joined the seed; the ladder side
@@ -39,11 +40,11 @@ test('ONE grail both ways: a MAIN forge counts on ladder, a LADDER forge counts 
     return { seesMainForge: !!made['Peace'], n: Object.keys(made).length,   // v673 — the shared ledger carries main's latest forge (Peace) onto ladder
              vaultSeparate: JSON.parse(w.LSR.getItem('d2r_owned') || '[]') };
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   await page.evaluate(() => { const w: any = window; w.rwToggleMade('Wrath', 'Blade Bow (4os)'); });
   // descend: main must SEE Mania (shared grail) but never the ladder vault
   await page.evaluate(() => localStorage.setItem('d2r_activeProfile', 'main'));
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const onMain = await page.evaluate(() => ({
     seesLadderForge: !!JSON.parse(localStorage.getItem('d2r_rwMade') || '{}')['Wrath'],
     mainVault: JSON.parse(localStorage.getItem('d2r_owned') || '[]'),
@@ -59,10 +60,10 @@ test('ONE grail both ways: a MAIN forge counts on ladder, a LADDER forge counts 
 
 test('v637-era orphaned L· chronicle reconciles once into the shared ledger (union-only) and the L· copies vanish', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1500);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('L·d2r_rwMade', JSON.stringify({ Wrath: 'Jul 10, 2026 · 02:00' }));   // a ladder-side forge from the v637 window
   });
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   const r = await page.evaluate(() => ({
     merged: !!JSON.parse(localStorage.getItem('d2r_rwMade') || '{}')['Wrath'],
     orphanGone: localStorage.getItem('L·d2r_rwMade') === null,

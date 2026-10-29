@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v630 — EXCLUSIVITY RESERVATION (Konyo's Exile-vs-Phoenix): a class-locked word (auric shields,
@@ -11,7 +12,7 @@ const PINS = (extra: any = {}) => ({ ...extra });
 
 async function fresh(page: any, owned: string[], runes: 'full' | 'none') {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(({ owned, runes }: any) => {
+  await pinEvaluate(page, ({ owned, runes }: any) => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
     localStorage.setItem('d2r_owned', JSON.stringify(owned));
@@ -19,7 +20,7 @@ async function fresh(page: any, owned: string[], runes: 'full' | 'none') {
     if (runes === 'full') ['El','Eld','Tir','Nef','Eth','Ith','Tal','Ral','Ort','Thul','Amn','Sol','Shael','Dol','Hel','Io','Lum','Ko','Fal','Lem','Pul','Um','Mal','Ist','Gul','Vex','Ohm','Lo','Sur','Ber','Jah','Cham','Zod'].forEach((n) => (st[n] = 6));
     localStorage.setItem('d2r_runeStash', JSON.stringify(st));
   }, { owned, runes });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
 }
 async function cleanup(page: any) {
   await page.evaluate(() => ['d2r_rwProfile','d2r_rwMade','d2r_owned','d2r_runeStash','d2r_copies'].forEach((k) => localStorage.removeItem(k)));
@@ -86,8 +87,8 @@ test('no runes (his live shape): both words are one-steps, Exile HOLDS the copy,
 
 test('spare copies stay generous: TWO rondache copies → Exile takes one, the broad word may use the other', async ({ page }) => {
   await fresh(page, ['Sacred Rondache (4os)'], 'full');
-  await page.evaluate(() => { localStorage.setItem('d2r_copies', JSON.stringify({ 'Sacred Rondache (4os)': 2 })); });
-  await page.reload(); await page.waitForTimeout(1800);
+  await pinEvaluate(page, () => { localStorage.setItem('d2r_copies', JSON.stringify({ 'Sacred Rondache (4os)': 2 })); });
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     const sc = w.forgeScan();

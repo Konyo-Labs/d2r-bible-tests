@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v621 — THE LOCKDOWN JOURNEY (rinse-and-repeat round 1): one continuous rendered-UI session that
@@ -20,13 +21,13 @@ test('full journey: intake → insights → forge → create → consume → chr
   expect(boot.seeded).toBe(true);
 
   // 1) a new socketed base arrives (the Katar flow) + runes tallied
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
     localStorage.setItem('d2r_owned', JSON.stringify(['Katar (3os)', 'Monarch (Larzuk base)']));
     localStorage.setItem('d2r_runeStash', JSON.stringify({ Tal: 2, Ort: 1, Thul: 2, Amn: 1 }));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
 
   // 2) Smart Insights: counts match the Forge engine; Make-now row routes to the Forge
   const si = await page.evaluate(() => new Promise<any>((res) => {

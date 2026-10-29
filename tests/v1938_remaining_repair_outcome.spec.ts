@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 /* v1938 — THE 116/135 HE ASKED TO SEE FIXED, PINNED ON A REAL BOARD.
@@ -38,7 +39,7 @@ test.describe('v1938 — the remaining-repair lands on 116/135 and stays there',
       /* TICK EVERYTHING, then let the board boot. Starting from a full 135 is what makes the
          subtraction visible: a board that already lacked them could not tell a working repair from
          a repair that never ran. [[feedback_blind_fixture_green_gate]] */
-      await page.evaluate((all: string[]) => {
+      await pinEvaluate(page, (all: string[]) => {
         localStorage.setItem('d2r_setPieces', JSON.stringify(all));
         /* v3525 (REG-1548) — the reading may only remove what PROVABLY predates it: this ledger is stamped as held since before Aug 21. */
         localStorage.setItem('d2r_setPiecesSince', JSON.stringify(Object.fromEntries(all.map((n: string) => [n, Date.parse('2026-08-01T00:00:00Z')]))));
@@ -48,7 +49,7 @@ test.describe('v1938 — the remaining-repair lands on 116/135 and stays there',
         localStorage.setItem('d2r_grailUnfound', '{}');
       }, roster.names);
 
-      await page.reload();
+      await reloadPinned(page);
       await page.waitForTimeout(1600);
 
       const after = await page.evaluate(() => ({
@@ -85,7 +86,7 @@ test.describe('v1938 — the remaining-repair lands on 116/135 and stays there',
       await page.goto(URL);
       await page.waitForTimeout(1400);
 
-      const target = await page.evaluate(() => {
+      const target = await pinEvaluate(page, () => {
         const w: any = window;
         const names: string[] = [];
         (w.__allSets() || []).forEach((s: any) => (s.pieces || []).forEach((p: string) => names.push(p)));
@@ -100,7 +101,7 @@ test.describe('v1938 — the remaining-repair lands on 116/135 and stays there',
       });
       expect(target, 'the game named at least one missing piece to test with').toBeTruthy();
 
-      await page.reload();
+      await reloadPinned(page);
       await page.waitForTimeout(1600);
       const removedClaim = await page.evaluate((n: string) =>
         !!JSON.parse(localStorage.getItem('d2r_setRepairRemoved') || '{}')[n], target);
@@ -141,7 +142,7 @@ test.describe('v1938 — the remaining-repair lands on 116/135 and stays there',
     async ({ page }) => {
       await page.goto(URL);
       await page.waitForTimeout(1400);
-      await page.evaluate(() => {
+      await pinEvaluate(page, () => {
         const w: any = window;
         const names: string[] = [];
         (w.__allSets() || []).forEach((s: any) => (s.pieces || []).forEach((p: string) => names.push(p)));
@@ -153,7 +154,7 @@ test.describe('v1938 — the remaining-repair lands on 116/135 and stays there',
         localStorage.removeItem('d2r_setRepairRemoved');
         localStorage.setItem('d2r_grailUnfound', '{}');
       });
-      await page.reload();
+      await reloadPinned(page);
       await page.waitForTimeout(1600);
 
       const afterRepair = await page.evaluate(() =>
@@ -200,7 +201,7 @@ test.describe('v1938 — the remaining-repair lands on 116/135 and stays there',
     await page.goto(URL);
     await page.waitForTimeout(1400);
 
-    const target = await page.evaluate(() => {
+    const target = await pinEvaluate(page, () => {
       const w: any = window;
       const names: string[] = [];
       (w.__allSets() || []).forEach((s: any) => (s.pieces || []).forEach((p: string) => names.push(p)));
@@ -218,7 +219,7 @@ test.describe('v1938 — the remaining-repair lands on 116/135 and stays there',
       return pick;
     });
 
-    await page.reload();
+    await reloadPinned(page);
     await page.waitForTimeout(1600);
     const healed = await page.evaluate(() =>
       (JSON.parse(localStorage.getItem('d2r_setPieces') || '[]') as string[]).length);
@@ -249,7 +250,7 @@ test.describe('v1938 — the remaining-repair lands on 116/135 and stays there',
          only a date a whole day before readAt lets the boot repair act. */
       await page.goto(URL);
       await page.waitForTimeout(1400);
-      const r = await page.evaluate(() => {
+      const r = await pinEvaluate(page, () => {
         const w: any = window;
         const names: string[] = [];
         (w.__allSets() || []).forEach((s: any) => (s.pieces || []).forEach((p: string) => names.push(p)));
@@ -271,7 +272,7 @@ test.describe('v1938 — the remaining-repair lands on 116/135 and stays there',
         localStorage.removeItem('d2r_v1925RemainingRepairApplied');
         return { newer, unknown, older };
       });
-      await page.reload();
+      await reloadPinned(page);
       await page.waitForTimeout(1600);
       const after = await page.evaluate(() => JSON.parse(localStorage.getItem('d2r_setPieces') || '[]') as string[]);
       expect(r.unknown.length, 'the fixture found no listed piece outside the seed to leave undated').toBeGreaterThan(0);

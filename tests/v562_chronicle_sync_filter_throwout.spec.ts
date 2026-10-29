@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v562 — two fixes from Konyo's 2026-07-04 cow-run screenshots + request:
@@ -93,13 +94,13 @@ test('loot filter: no blue-magic leak — every real base code is hidden at magi
    both, and forcing one would have traded a vacuous pass for a false failure. */
 test('loot filter: the wanted-base rules judge a real base set, not an empty one', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1200);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     w.LSR.setItem('d2r_rwProfile', 'fresh');
     w.LSR.setItem('d2r_rwMade', '{}');
     w.LSR.setItem('d2r_rwUnmade', '{}');
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
 
   const r = await page.evaluate(() => {
     const w: any = window;

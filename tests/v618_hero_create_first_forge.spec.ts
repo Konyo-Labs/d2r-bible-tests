@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v618 — (a) the hero MAKE-NOW card carries the same one-click '✓ created' as the list cards
@@ -8,13 +9,13 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 test('hero ✓ created ticks the word through the full sync path', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
     localStorage.setItem('d2r_owned', JSON.stringify(['Katar (3os)']));
     localStorage.setItem('d2r_runeStash', JSON.stringify({ Tal: 1, Ort: 1, Thul: 1 }));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => new Promise<any>((res) => {
     const w: any = window;
     w.switchTab('forge'); try { w.renderForge(); } catch (e) {}
@@ -44,11 +45,11 @@ test('FIRST forge fires the extra-colorful onboarding epic exactly once', async 
   // what it actually is: the suite testing Konyo's own world.
   await page.addInitScript(() => localStorage.setItem('d2r_ownerClaim', '*'));
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => new Promise<any>((res) => {
     const w: any = window;
     w.switchTab('forge'); try { w.renderForge(); } catch (e) {}

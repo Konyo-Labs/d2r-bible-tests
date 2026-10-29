@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v1712 — ONE STEP · THE BASES THAT CAN HOST THIS WORD.
@@ -297,14 +298,14 @@ test('(h) a necro base reaches MAKE NOW, and only when the runes are actually he
      Forge name a base he owns — before that, Bloodlord Skull could not appear at all. */
   await page.goto(URL);
   await page.waitForTimeout(1200);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     w.LSR.setItem('d2r_rwProfile', 'fresh');
     w.LSR.setItem('d2r_rwMade', '{}');
     w.LSR.setItem('d2r_rwUnmade', '{}');
     w.LSR.setItem('d2r_runeStash', '{}');
   });
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForTimeout(1800);
 
   const setup = await page.evaluate(() => {
@@ -332,13 +333,13 @@ test('(h) a necro base reaches MAKE NOW, and only when the runes are actually he
 
   // now hold the runes — Rhyme must move to MAKE NOW, naming that base.
   // The stash is boot-read, so this reloads instead of scanning the stash it just replaced.
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     const s: any = {};
     (w.RUNEWORD_TIP['Rhyme'].rec || []).forEach((r: string) => { s[r] = 3; });
     w.LSR.setItem('d2r_runeStash', JSON.stringify(s));
   });
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForTimeout(1800);
   const after = await page.evaluate(() => {
     const w: any = window;
@@ -507,14 +508,14 @@ test('★ v1719 — the shopping list never tells him to buy a base he owns', as
 test('★ v1719 — no word says GET A BASE while a legal one is in his stash, and no "ready" base is unowned', async ({ page }) => {
   await page.goto(URL);
   await page.waitForTimeout(1200);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     w.LSR.setItem('d2r_rwProfile', 'fresh');   // an empty chronicle, or there is nothing to plan
     w.LSR.setItem('d2r_rwMade', '{}');
     w.LSR.setItem('d2r_rwUnmade', '{}');
     w.LSR.setItem('d2r_runeStash', '{}');
   });
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;

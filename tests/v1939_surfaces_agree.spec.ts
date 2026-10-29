@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 /* v1939 (test-only) — ONE QUANTITY, ONE NUMBER, ON EVERY SCREEN THAT PRINTS IT.
@@ -48,7 +49,7 @@ test('★★★ every surface printing a set-piece count shows the SAME one, on 
     await page.waitForTimeout(1400);
 
     // his board: everything ticked, then let the repair subtract what the game says he lacks
-    await page.evaluate(() => {
+    await pinEvaluate(page, () => {
       const w: any = window;
       const names: string[] = [];
       (w.__allSets() || []).forEach((s: any) => (s.pieces || []).forEach((p: string) => names.push(p)));
@@ -60,7 +61,7 @@ test('★★★ every surface printing a set-piece count shows the SAME one, on 
       localStorage.removeItem('d2r_setRepairRemoved');
       localStorage.setItem('d2r_grailUnfound', '{}');
     });
-    await page.reload();
+    await reloadPinned(page);
     await page.waitForTimeout(1800);
 
     const sweep = async () => {

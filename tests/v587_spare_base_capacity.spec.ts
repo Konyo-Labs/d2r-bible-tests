@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v587 — SPARE-BASE CAPACITY (Konyo's 1× Bone Visage): one physical base hosts ONE runeword. With a single
@@ -20,11 +21,11 @@ test('1 owned base + 2 unmade words → candidate stays a keeper; exactly one sc
   // Phase 1 — pin an EMPTY Chronicle (the boot seed pre-marks ~52 words made) and, with nothing made,
   // ask forgeScan which words it actually plans on the owned Voulge (survives the hand/endgame/ladder
   // gates), so the pinned pair below is never a gated word.
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
     localStorage.setItem('d2r_rwProfile', 'fresh');
   });
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   await page.evaluate(() => { (window as any).switchTab && (window as any).switchTab('tools'); (window as any).renderVault && (window as any).renderVault(); });
   // v1910 — POLL, DO NOT SLEEP. This assertion failed TWICE on one CI runner (retries:1 = two
   // attempts) on v1909 — a commit that changed no page logic at all — and passed on a fresh runner
@@ -55,13 +56,13 @@ test('1 owned base + 2 unmade words → candidate stays a keeper; exactly one sc
   }).toBeGreaterThanOrEqual(2);
   const pair = hosted.slice(0, 2);
   // Phase 2 — pin the Chronicle: everything made EXCEPT the two Voulge-hostable words, then reload.
-  await page.evaluate((keep: string[]) => {
+  await pinEvaluate(page, (keep: string[]) => {
     const w: any = window;
     const made: any = {}; Object.keys(w.RUNEWORD_TIP || {}).forEach((n) => { if (keep.indexOf(n) < 0) made[n] = 'x'; });
     localStorage.setItem('d2r_rwMade', JSON.stringify(made));
     localStorage.setItem('d2r_rwProfile', 'fresh');
   }, pair);
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   await page.evaluate(() => { (window as any).switchTab && (window as any).switchTab('tools'); (window as any).renderVault && (window as any).renderVault(); });
   const readLedger = async (keep: string[]) => page.evaluate(async (k: string[]) => {
     const w: any = window;

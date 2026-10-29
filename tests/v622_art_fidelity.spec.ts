@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v622 — ART FIDELITY (Konyo's Spired Helm wearing the barbarian Fanged Helm's face). Game-file
@@ -10,12 +11,12 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 test('Spired Helm (Larzuk base): chip + tip resolve the true in-game sprite, not fangedhelm', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1500);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     w._ensureSocketBaseEntry('Spired Helm (Larzuk base)', true);
     localStorage.setItem('d2r_owned', JSON.stringify(['Spired Helm (Larzuk base)']));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     w.switchTab('tools');

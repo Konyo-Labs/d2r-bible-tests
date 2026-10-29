@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v588 → v667.2 → v690.1 DOCTRINE HISTORY (this spec tracks the CURRENT one):
@@ -13,13 +14,13 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 test('a 100%-forged Chronicle HARDENS the filter: no bases at all, premium included (v690.1)', async ({ page }) => {
   await page.addInitScript(() => { localStorage.setItem('d2r_ladderMode', 'nonladder'); });
   await page.goto(URL); await page.waitForTimeout(1500);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     const made: any = {}; Object.keys(w.RUNEWORD_TIP || {}).forEach((n) => { made[n] = 'x'; });
     localStorage.setItem('d2r_rwMade', JSON.stringify(made));
     localStorage.setItem('d2r_rwProfile', 'fresh');
   });
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   const r = await page.evaluate(() => {
     const w: any = window;
     const eb = w._endgameFilterBases();
@@ -57,13 +58,13 @@ test('late stage: owned socket-correct premium leaves the CURATED list but its s
   // Spirit is the ONLY unmade word (98/99 = late stage): the owned 4os Monarch covers it, so the
   // v536.2 shrink correctly drops Monarch from the curated farm list (v667.2 ended the late floor) —
   // but the v662.1 engine-true socketed universe still shows socketed shield drops while Spirit lives.
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     const made: any = {}; Object.keys(w.RUNEWORD_TIP || {}).forEach((n) => { if (n !== 'Spirit') made[n] = 'x'; });
     localStorage.setItem('d2r_rwMade', JSON.stringify(made));
     localStorage.setItem('d2r_rwProfile', 'fresh');
   });
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   const r = await page.evaluate(() => {
     const w: any = window;
     w._ensureSocketBaseEntry('Monarch (4os)');

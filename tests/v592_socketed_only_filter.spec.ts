@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v592 — SOCKETED-ONLY for common bases (Konyo: "its a pain in the ass to do these larzuk quests..
@@ -22,7 +23,7 @@ test('plain whites: premium-only show; common wanted bases eth/socketed-only wit
      [[feedback-blind-fixture-green-gate]] */
   await page.waitForFunction(() => Object.keys((window as any).RUNEWORD_TIP || {}).length > 0,
                              null, { timeout: 30000 });
-  const seeded = await page.evaluate(() => {
+  const seeded = await pinEvaluate(page, () => {
     const w: any = window;
     const made: any = {}; Object.keys(w.RUNEWORD_TIP || {}).forEach((n) => { if (n !== 'Insight') made[n] = 'x'; });
     localStorage.setItem('d2r_rwMade', JSON.stringify(made));
@@ -32,7 +33,7 @@ test('plain whites: premium-only show; common wanted bases eth/socketed-only wit
   // an empty seed is the failure this test used to report as a filter bug — say so plainly
   expect(seeded, 'the runeword roster was empty when the fixture seeded — nothing was marked made')
     .toBeGreaterThan(50);
-  await page.reload();
+  await reloadPinned(page);
   /* v2113 — the FUNCTION existing is not the ROSTER existing. `_endgameFilterBases` is
      assigned to window early; what this test reads depends on RUNEWORD_TIP being parsed and on
      the seeded d2r_rwMade being visible. Waiting only for the callable reproduces the original

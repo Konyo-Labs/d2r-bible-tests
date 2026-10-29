@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v624 — CONSUME NARRATION (Konyo: 'how can it propose Phoenix in the 4os Phase Blade I just used
@@ -8,14 +9,14 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 test('a task on a label with a consumed twin says so on the card', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({ Kingslayer: 'Jul 9' }));
     localStorage.setItem('d2r_owned', JSON.stringify(['Phase Blade (4os)']));
     localStorage.setItem('d2r_rwBaseUsed', JSON.stringify({ Kingslayer: { l: 'Phase Blade (4os)', copy: true } }));
     localStorage.setItem('d2r_runeStash', JSON.stringify({ Vex: 2, Lo: 1, Jah: 1 }));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     w.switchTab('forge'); try { w.renderForge(); } catch (e) {}
@@ -32,7 +33,7 @@ test('a task on a label with a consumed twin says so on the card', async ({ page
 // sub-max words (the idle-time doctrine).
 test('chain Larzuk step narrates the consumed sibling; farm rows name the gamble path', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     // BotD consumed one Larzuk Phase Blade; Silence still pipelines on the remaining copy
     localStorage.setItem('d2r_rwMade', JSON.stringify({ 'Breath of the Dying': 'Jul 9' }));
@@ -43,7 +44,7 @@ test('chain Larzuk step narrates the consumed sibling; farm rows name the gamble
     ['El','Eld','Tir','Nef','Eth','Ith','Tal','Ral','Ort','Thul','Amn','Sol','Shael','Dol','Hel','Io','Lum','Ko','Fal','Lem','Pul','Um','Mal','Ist','Gul','Vex','Ohm','Lo','Sur','Ber','Jah','Cham','Zod'].forEach((n) => (st[n] = 4));
     localStorage.setItem('d2r_runeStash', JSON.stringify(st));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     w.switchTab('forge'); try { w.renderForge(); } catch (e) {}
@@ -62,14 +63,14 @@ test('chain Larzuk step narrates the consumed sibling; farm rows name the gamble
 // physical fact), never a re-scanned re-ranked pick; Larzuk steps name their words.
 test('the clicked card base is what gets consumed, even if the planner would re-rank', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
     // two hosts for one word class: consume must eat the HINTED one regardless of ranking
     localStorage.setItem('d2r_owned', JSON.stringify(['Katar (3os)', 'Suwayyah (3os)']));
     localStorage.setItem('d2r_runeStash', JSON.stringify({ Tal: 2, Ort: 2, Thul: 2 }));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     // simulate clicking the card that displayed the KATAR (whatever the planner now prefers)
@@ -86,7 +87,7 @@ test('the clicked card base is what gets consumed, even if the planner would re-
 
 test('Larzuk step 1 names the words it serves (no ghost chains)', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
     localStorage.setItem('d2r_owned', JSON.stringify(['Phase Blade (Larzuk base)']));
@@ -94,7 +95,7 @@ test('Larzuk step 1 names the words it serves (no ghost chains)', async ({ page 
     ['El','Eld','Tir','Nef','Eth','Ith','Tal','Ral','Ort','Thul','Amn','Sol','Shael','Dol','Hel','Io','Lum','Ko','Fal','Lem','Pul','Um','Mal','Ist','Gul','Vex','Ohm','Lo','Sur','Ber','Jah','Cham','Zod'].forEach((n) => (st[n] = 4));
     localStorage.setItem('d2r_runeStash', JSON.stringify(st));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     w.switchTab('forge'); try { w.renderForge(); } catch (e) {}

@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v629 — CHRONICLE ⇄ VAULT ⇄ FORGE host awareness (Konyo's Stiletto/Ritual: 'back-engineer it,
@@ -7,7 +8,7 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 test("Stiletto case: bare read → Chronicle flags 'possible host — set its sockets' AND the Forge task says 'you may already own a host'", async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
     localStorage.setItem('d2r_unknownReads', JSON.stringify(['Stiletto']));   // the AI's name-only read
@@ -16,7 +17,7 @@ test("Stiletto case: bare read → Chronicle flags 'possible host — set its so
     ['El','Eld','Tir','Nef','Eth','Ith','Tal','Ral','Ort','Thul','Amn','Sol','Shael','Dol','Hel','Io','Lum','Ko','Fal','Lem','Pul','Um','Mal','Ist','Gul','Vex','Ohm','Lo','Sur','Ber','Jah','Cham','Zod'].forEach((n) => (st[n] = 4));
     localStorage.setItem('d2r_runeStash', JSON.stringify(st));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     // find a word Stiletto can host (Ritual-class) that is unmade
@@ -46,12 +47,12 @@ test("Stiletto case: bare read → Chronicle flags 'possible host — set its so
 
 test('exact-fit owned host: the Chronicle row wears the green host-in-vault badge; made rows never badge', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({ Zephyr: 'x' }));
     localStorage.setItem('d2r_owned', JSON.stringify(['Katar (3os)']));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     try { w.renderRunewordChronicle(); w.rwcSetFilter && w.rwcSetFilter('all'); } catch (e) {}

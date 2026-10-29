@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v635 — TIER-2 LADDER PROFILE (Konyo: "a smooth polished toggle that ascends perfectly from
@@ -16,16 +17,16 @@ test('BLEED-PROOF: forge/tally/create in the LADDER profile — the main profile
   // arrange a recognizable MAIN state — then RELOAD before snapshotting, so the v659 grail
   // found-seed floor (which rewrites d2r_owned/d2r_foundLog on a main boot) is already baked
   // into the baseline; otherwise the round-trip's re-boot makes main look changed when it isn't.
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_owned', JSON.stringify(['Flail (5os)']));
     localStorage.setItem('d2r_runeStash', JSON.stringify({ El: 3 }));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const mainBefore = await page.evaluate(({ SNAP_JS }: any) => eval(SNAP_JS), { SNAP_JS });
   // ascend to ladder
   await page.evaluate(() => { localStorage.setItem('d2r_activeProfile', 'ladder'); });
   await page.reload(); await page.waitForTimeout(1800);
-  const ladder = await page.evaluate(() => {
+  const ladder = await pinEvaluate(page, () => {
     const w: any = window;
     // fresh account: nothing of main's is visible
     const cleanStart = {
@@ -46,7 +47,7 @@ test('BLEED-PROOF: forge/tally/create in the LADDER profile — the main profile
     w.LSR.setItem('d2r_runeStash', JSON.stringify(_st));
     return cleanStart;
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const ladderLife = await page.evaluate(() => {
     const w: any = window;
     const sc = w.forgeScan();

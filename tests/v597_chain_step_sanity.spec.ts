@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v597 — CHAIN-STEP SANITY (Konyo's stale "step 2/2 Forge Wisdom" mystery). Three fixes:
@@ -18,13 +19,13 @@ test('step-2 chain card names its base; ↺ back walks the chain back to step 1'
     localStorage.setItem('d2r_ladderMode', 'nonladder');
   });
   await page.goto(URL); await page.waitForTimeout(1500);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     const made: any = {}; Object.keys(w.RUNEWORD_TIP || {}).forEach((n) => { if (n !== 'Insight') made[n] = 'x'; });
     localStorage.setItem('d2r_rwMade', JSON.stringify(made));
     localStorage.setItem('d2r_rwProfile', 'fresh');
   });
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   const r = await page.evaluate(async () => {
     const w: any = window;
     w._ensureSocketBaseEntry('Colossus Voulge (Larzuk base)');

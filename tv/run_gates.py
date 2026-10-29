@@ -12921,6 +12921,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_his_placement_survives_the_reload_whoever_saves.py")], 300,
          needs_app=False,
          why="REG-3099 #148 - his __keep placement of a shared-stash item (Key of Hate) survives the reload whichever step saves the mule map first; the render prune reads the whole owned pool, never the dock's"),
+    Gate("test_a_spec_pin_rides_the_reloads_boot",
+         [sys.executable, os.path.join(HERE, "test_a_spec_pin_rides_the_reloads_boot.py")], 300,
+         needs_app=False,
+         why="#161 REG-3076/3077 - no spec pins a store the board writes back between two loads; every pin rides the next load's boot through tests/_pin.ts (reloadPinned/gotoPinned) and its premise names it"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

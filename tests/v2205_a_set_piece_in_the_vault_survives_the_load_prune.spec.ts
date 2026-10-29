@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, gotoPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v2205 (#48) — A SET PIECE IN d2r_owned WAS DELETED ON EVERY SINGLE LOAD.
@@ -90,7 +91,7 @@ test('a seeded unique survives when it is filed to a mule, which the vault alway
     // the other half of the same rule, and the half the old fixture accidentally inverted
     await page.goto(URL);
     await ready(page);
-    await page.evaluate((five: string[]) => {
+    await pinEvaluate(page, (five: string[]) => {
       const w = window as any;
       w.LSR.setItem('d2r_vaultBackfill_v2200', '{"x":1}');
       w.LSR.setItem('d2r_vaultBackfillUndo_v2203', '{"x":1}');
@@ -103,7 +104,7 @@ test('a seeded unique survives when it is filed to a mule, which the vault alway
       w.LSR.setItem('d2r_muleAssign', JSON.stringify(asg));
     }, HIS_FIVE);
 
-    await page.goto(URL);
+    await gotoPinned(page, URL);
     await ready(page);
     await page.waitForTimeout(1200);
     const own = await page.evaluate(() =>

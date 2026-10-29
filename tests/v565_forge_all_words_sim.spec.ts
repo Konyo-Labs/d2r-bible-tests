@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v565 — the two Forge simulation proofs that were still missing after the v564 audit:
@@ -13,7 +14,7 @@ test('A — every runeword, given its ideal base + runes, surfaces a Forge task 
   test.setTimeout(120_000);
   await page.goto(URL); await page.waitForTimeout(1500);
   // pass 1: compute per-word ideal base labels from the live meta engine, then seed localStorage
-  const plan = await page.evaluate(() => {
+  const plan = await pinEvaluate(page, () => {
     const w: any = window;
     const words = Object.keys(w.RUNEWORD_TIP || {});
     const labels: string[] = []; const skipped: string[] = []; const runes: Record<string, number> = {};
@@ -43,7 +44,7 @@ test('A — every runeword, given its ideal base + runes, surfaces a Forge task 
   });
   expect(plan.skipped).toEqual([]);                     // every word resolves to a seedable base
   // pass 2: reload so the boot path ingests the seeds, register the socketed entries, scan
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   const r = await page.evaluate(() => {
     const w: any = window;
     JSON.parse(localStorage.getItem('d2r_owned') || '[]').forEach((n: string) => w._ensureSocketBaseEntry(n));

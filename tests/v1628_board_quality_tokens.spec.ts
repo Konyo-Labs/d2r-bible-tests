@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 /* v1628 — ONE PALETTE, READ AT RUNTIME.  (owner: this spec file only; bible.html is owner A's)
  *
@@ -333,13 +334,13 @@ test.describe('v1628 · 5 — markup does not count, decoding does', () => {
        no art at all — the check printed NOT ESTABLISHED and asserted nothing, in either
        direction, on every run. Drive an EMPTY chronicle so the Forge actually has cards to draw,
        which is the only state where "does the art decode" is a question with an answer. */
-    await page.evaluate(() => {
+    await pinEvaluate(page, () => {
       const w: any = window;
       w.LSR.setItem('d2r_rwProfile', 'fresh');
       w.LSR.setItem('d2r_rwMade', '{}');
       w.LSR.setItem('d2r_rwUnmade', '{}');
     });
-    await page.reload();
+    await reloadPinned(page);
     await page.waitForTimeout(1800);
     await page.evaluate(() => {
       const w: any = window;

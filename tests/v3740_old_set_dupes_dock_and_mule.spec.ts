@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import * as path from 'path';
+import { pinEvaluate, gotoPinned } from './_pin';
 
 // REG-2229 (#11) — OLD SET-PIECE DOUBLE-ROWS: owned in BOTH the Unsorted dock AND the set mule.
 //
@@ -44,7 +45,7 @@ test('a filed set piece no longer shows as unsorted: the stray dock copy is de-d
 
   // seed the OLD (pre-v3716) double-row state and clear the migration stamp, then RELOAD so the stores
   // load from it and the migration runs on a cold boot — the localStorage + reload path, never live data.
-  await page.evaluate((s) => {
+  await pinEvaluate(page, (s) => {
     const w = window as any;
     try { localStorage.setItem('d2r_ownerClaim', '*'); } catch (e) {}
     // owned carries BOTH forms of each helm: the bare SHOWN name (loose) and the slot key (filed)
@@ -54,7 +55,7 @@ test('a filed set piece no longer shows as unsorted: the stray dock copy is de-d
     try { w.LSR.removeItem(s.stamp); } catch (e) {}
   }, { bareTal: BARE_TAL, slotTal: SLOT_TAL, bareIk: BARE_IK, slotIk: SLOT_IK, loneEye: LONE_EYE, stamp: STAMP });
 
-  await page.goto(URL);
+  await gotoPinned(page, URL);
   await ready(page);
   await page.waitForTimeout(1200);
   await page.evaluate(() => { try { (window as any).renderVault(); } catch (e) {} });

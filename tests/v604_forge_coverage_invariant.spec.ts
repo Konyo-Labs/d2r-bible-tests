@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v604 — FORGE COVERAGE INVARIANT (Konyo 2026-07-07: "I don't see the katara 3 sockets in my forge…
@@ -17,12 +18,12 @@ test('every unmade non-ladder word is tasked in forgeScan AND rendered in the Fo
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {   // v674 — the live Chronicle is COMPLETE (99/99): open a 2-word window so the invariant has subjects
+  await pinEvaluate(page, () => {   // v674 — the live Chronicle is COMPLETE (99/99): open a 2-word window so the invariant has subjects
     const m = JSON.parse(localStorage.getItem('d2r_rwMade') || '{}'); delete m['Wrath']; delete m['Peace'];
     localStorage.setItem('d2r_rwMade', JSON.stringify(m));
     localStorage.setItem('d2r_rwUnmade', JSON.stringify({ Wrath: 1, Peace: 1 }));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     w.switchTab && w.switchTab('forge');
@@ -51,8 +52,8 @@ test('every unmade non-ladder word is tasked in forgeScan AND rendered in the Fo
 test('Katar scenario: registering an owned exact-fit base moves its word onto that base, visibly', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
   // v615 — Pattern is in the 66-word owner seed now; a fresh profile is the only way to have it unmade
-  await page.evaluate(() => { localStorage.setItem('d2r_rwProfile', 'fresh'); localStorage.setItem('d2r_rwMade', JSON.stringify({})); });
-  await page.reload(); await page.waitForTimeout(1800);
+  await pinEvaluate(page, () => { localStorage.setItem('d2r_rwProfile', 'fresh'); localStorage.setItem('d2r_rwMade', JSON.stringify({})); });
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const before = await page.evaluate(() => {
     const w: any = window;
     const sc = w.forgeScan();
@@ -64,7 +65,7 @@ test('Katar scenario: registering an owned exact-fit base moves its word onto th
   expect(['onestep', 'farm']).toContain(before.kind);
   if (before.kind === 'onestep') expect(before.sub).toBe('base');
   expect(before.base).toBeNull();
-  const after = await page.evaluate(() => {
+  const after = await pinEvaluate(page, () => {
     const w: any = window;
     w._ensureSocketBaseEntry('Katar (3os)', true);
     (w.owned || null); // page-scope `owned` isn't on window — persist via localStorage like the intake does
@@ -74,7 +75,7 @@ test('Katar scenario: registering an owned exact-fit base moves its word onto th
     return true;
   });
   expect(after).toBe(true);
-  await page.reload(); await page.waitForTimeout(1800);   // owned set re-inits from localStorage
+  await reloadPinned(page); await page.waitForTimeout(1800);   // owned set re-inits from localStorage
   const r = await page.evaluate(() => {
     const w: any = window;
     w.switchTab && w.switchTab('forge');

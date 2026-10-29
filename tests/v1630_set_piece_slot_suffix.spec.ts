@@ -1,6 +1,7 @@
 import { test, expect, seedOwnerRoute } from './_net_stub';
 import * as fs from 'fs';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 // v1630 — THE SLOT IS STATED ONCE, AND THE RAW NAME STILL DRIVES EVERYTHING.
 //
@@ -83,7 +84,7 @@ async function pickSets(page: any) {
 /** seed all-but-one piece of each picked set: that is the state Konyo is looking at — a hero, a
  *  quick win, a "last found" bar and hundreds of tracker rows all printing piece names at once. */
 async function seedAndRender(page: any, picks: any[]) {
-  await page.evaluate((ps: any[]) => {
+  await pinEvaluate(page, (ps: any[]) => {
     const found: string[] = []; const fl: any = {};
     ps.forEach((p) => p.pieces.slice(0, p.pieces.length - 1).forEach((n: string) => {
       found.push(n); fl[n] = '2026-08-03';
@@ -91,7 +92,7 @@ async function seedAndRender(page: any, picks: any[]) {
     localStorage.setItem('d2r_setPieces', JSON.stringify(found));
     localStorage.setItem('d2r_foundLog', JSON.stringify(fl));
   }, picks);
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForTimeout(2800);
   for (const t of ['grail', 'fsets', 'forge', 'funi']) {
     await page.evaluate((tb: string) => { try { (window as any).switchTab(tb); } catch (e) {} }, t);

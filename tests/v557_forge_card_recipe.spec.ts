@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v557 — Fable-5 clarity pass on the Forge cards: the #1 action card (Make-now atomic) is now a layered layout —
@@ -50,10 +51,10 @@ test('the hero shows the rune recipe chips (not just "runes in hand" prose)', as
 });
 
 test('a pipeline chain final step also carries the recipe row', async ({ page }) => {
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_owned', JSON.stringify(['Colossus Voulge (Larzuk base)']));
   });
-  await page.reload(); await page.waitForTimeout(1400);
+  await reloadPinned(page); await page.waitForTimeout(1400);
   const r = await page.evaluate(() => {
     const w: any = window; w._ensureSocketBaseEntry('Colossus Voulge (Larzuk base)');
     w.switchTab('forge'); w.forgeSetFilter('now'); w.renderForge();

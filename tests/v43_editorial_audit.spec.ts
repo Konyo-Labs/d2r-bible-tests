@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import * as path from 'path';
 import { BOSS_CHIPS_TOTAL, CALC_ITEMS_TOTAL } from './_data_locks';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
@@ -110,11 +111,11 @@ test.describe('v43 editorial — regression check against v42 audit floor', () =
   });
 
   test('localStorage corruption recovery (safe JSON parse)', async ({ page }) => {
-    await page.evaluate(() => {
+    await pinEvaluate(page, () => {
       localStorage.setItem('d2r_wishlist', 'GARBAGE {{{');
       localStorage.setItem('d2r_owned', 'NOT_JSON');
     });
-    await page.reload();
+    await reloadPinned(page);
     await page.waitForTimeout(3000);
     const state = await page.evaluate(() => ({
       itemTiles: document.querySelectorAll('.item-tile').length,
@@ -127,12 +128,12 @@ test.describe('v43 editorial — regression check against v42 audit floor', () =
   });
 
   test('stale wishlist sanitization (Finding N)', async ({ page }) => {
-    await page.evaluate(() => {
+    await pinEvaluate(page, () => {
       localStorage.setItem('d2r_wishlist', JSON.stringify([
         'Harlequin Crest (Shako)', 'Phantom Item X', 'Old Item Y', '', null
       ]));
     });
-    await page.reload();
+    await reloadPinned(page);
     await page.waitForTimeout(3000);
     const after = await page.evaluate(() => ({
       wishlistSize: wishlist.size,
