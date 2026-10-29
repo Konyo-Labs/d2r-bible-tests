@@ -13301,6 +13301,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_war_mule_he_took_back_makes_the_board_offer_the_next_one.py")], 300,
          needs_app=False,
          why='REG-2997 a war mule he took back makes the board offer the next one, with its make task'),
+    Gate("test_an_unowned_item_takes_its_copy_records_with_it",
+         [sys.executable, os.path.join(HERE, "test_an_unowned_item_takes_its_copy_records_with_it.py")], 300,
+         needs_app=False,
+         why='REG-3073 an un-owned item takes its copy records with it, and its undo brings them back'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

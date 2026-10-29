@@ -2562,6 +2562,19 @@ file row with k > n - and no law named either. Test-only: a law that holds both 
 writes nothing; a forged 138/135 row reads UNKNOWN and may() stays LOCKED) and holds the shape over the tracked
 ledger (every lock and route: k <= n, attacksPassed <= attacks <= n). The fan-caption overlap half of #84 is NEEDS
 LIVE. Law: test_a_lock_never_publishes_more_refusals_than_attempts (python), 2 red-proofs, RED.
+### REG-3073 - AN UN-OWNED ITEM LEFT ITS COPY RECORDS BEHIND (#153.13, GrokBot's vault sweep)
+GrokBot: "vaultUnown leaves d2r_vaultRecords behind (3 Shako copies -> 3 orphan records)". Measured on the whole page in
+node: three Harlequin Crest copies (an Ist and a Ber from the planner, one by hand) un-owned -> the name left owned and all
+3 copy rows stayed in d2r_vaultRecords, each with its move (shared stash, a WAR mule) and its entry, until some later
+rebuild happened to drop them. Those stale rows were also the only reason the undo brought each copy back where it was.
+Now every removal of a name through vaultRemove (the un-own, a card X, the last copy's X or trade-out) takes the name's
+copy rows into its removal-journal batch (`batch.records`) and drops them from the store at once through the guarded
+write; a records store that will not read writes nothing (UNKNOWN). vaultRestoreLast puts the carried rows back with the
+names it restores, so the undo is whole: each copy's move, cell and entry. The trade door's note that "the removal door
+leaves the copy's record in the store" was corrected to say the batch carries it. Observed and not changed: an auto-made
+WAR1 for the overflow keeps its "Create mule WAR1" make line after the un-own. Law:
+test_an_unowned_item_takes_its_copy_records_with_it (node, the whole page), 2 red-proofs, RED.
+
 ### REG-3072 - THE CHARMS AND SHARED STASH WINDOWS PACKED NONE OF THE KEEPERS THEIR CARDS COUNTED (GrokBot #230 on v3838)
 GrokBot on v3838: the CHARMS card said 2 (Mac) and 1 (ALT) while its window said "Items 1 · Copies 0 · 0 on this mule" and
 drew nothing; the SHARED STASH card said 13 / 15 while its window laid out 5 / 9 - the small charms re-homed there (REG-2895)
