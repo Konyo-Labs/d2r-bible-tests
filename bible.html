@@ -12389,6 +12389,9 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     #tab-d2jsp .d2jsp-state[data-d2jsp-state="listed"]{border-color:rgba(102,255,136,.55);color:var(--best,#66ff88)}
     #tab-d2jsp .d2jsp-state[data-d2jsp-state="traded"]{border-color:rgba(160,160,160,.55);color:var(--text-muted)}
     #tab-d2jsp .d2jsp-log ol{margin:4px 0 0;padding-left:18px}
+    #tab-d2jsp .d2jsp-history{margin-top:10px;font-size:var(--fs-micro);color:var(--text-muted)}   /* REG-3094 */
+    #tab-d2jsp .d2jsp-history summary{cursor:pointer;color:#e9d07a;font-size:var(--fs-body)}
+    #tab-d2jsp .d2jsp-history ol{margin:4px 0 0;padding-left:18px;overflow-wrap:anywhere}
     #tab-d2jsp .d2jsp-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
     #tab-d2jsp .d2jsp-draft{white-space:pre-wrap;margin:8px 0;font-family:var(--mono);font-size:var(--fs-body);color:#f6e7c2;line-height:1.45}
     #tab-d2jsp #d2jsp-add, #tab-d2jsp #d2jsp-shop{margin:8px 8px 8px 0}
@@ -12468,6 +12471,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       <button type="button" class="vault-btn" id="d2jsp-shop" data-d2jsp-shop="1">Post the list</button>
       <p class="d2jsp-say" id="d2jsp-status"></p>
       <div id="d2jsp-list" class="d2jsp-scroll"></div>
+      <details id="d2jsp-history" class="d2jsp-history"><summary>History</summary></details>   <!-- REG-3094 -->
     </div>
   </div>
 </div>
@@ -13546,6 +13550,62 @@ function d2jspBatchHtml(view) {
     }).join('');
     return tradeChip(name) + head + '<details class="d2jsp-log"><summary>Attempts (' + rows.length + ')</summary><ol>' + items + '</ol></details>';
   }
+  /* REG-3094 (#83) - ONE HISTORY FOR THE TAB, READ FROM THE TWO STORES THAT ALREADY HOLD IT. Each card keeps its own attempts
+     (REG-2872) and the vault keeps every copy that left (REG-2883), so a post or a trade of an item hidden or taken off the
+     list had no surface left. This reads both and writes neither: every name's post log rows, listed or not, and the vault's
+     traded rows, the one source for a traded copy. A log 'traded' / 'for-sale' row speaks only for a name the vault does not
+     track (a planner pick); for a name it does, the vault's rows are the trade. Both clocks read to one epoch and show in one
+     spelling; a time that does not read says "time UNKNOWN" and sorts last. With no vault on the page the trades are
+     UNKNOWN, never none. (Boundary: a vault store whose JSON does not parse reads as no traded rows - _vaultTradeOf's rule.) */
+  function histTime(s){
+    var v = String(s == null ? '' : s).trim();
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/.test(v)) v = v.slice(0, 16).replace(' ', 'T') + ':00Z';   /* the post log's spelling */
+    var t = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v) ? Date.parse(v) : NaN;   /* the vault's ISO; never a guessed free-text date */
+    return isFinite(t) ? t : null;
+  }
+  function histWhen(t){ return t == null ? 'time UNKNOWN' : (new Date(t).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'); }
+  function historyRows(){
+    var out = [], log = readMap('d2r_d2jsp_log'), held = tradeNames(), gone = null, tracked = {};
+    if (held != null && typeof window._vaultTradedNames === 'function' && typeof window._vaultTradedOf === 'function') {
+      try { gone = window._vaultTradedNames() || []; } catch (eG) { gone = null; }
+    }
+    (held || []).concat(gone || []).forEach(function(n){ tracked[n] = 1; });
+    Object.keys(log).forEach(function(n){
+      (Array.isArray(log[n]) ? log[n] : []).forEach(function(r){
+        if (!r || typeof r !== 'object') return;
+        if ((r.kind === 'traded' || r.kind === 'for-sale') && (gone == null || tracked[n])) return;
+        out.push({ t: histTime(r.at), name: n, kind: String(r.kind || ''), src: 'log',
+                   body: (r.board != null ? ' · board ' + esc(r.board) : '') + (r.list ? ' · the list' : '') + ' · <b>' + esc(logWord(r.kind)) + '</b> · '
+                     + esc(r.text) + (r.why ? (' What the console saw: ' + esc(r.why)) : '') + (logLink(r.topic) ? (' · ' + logLink(r.topic)) : '') });
+      });
+    });
+    (gone || []).forEach(function(n){
+      var rows = [];
+      try { rows = window._vaultTradedOf(n) || []; } catch (eO) { rows = []; }
+      rows.forEach(function(g){
+        out.push({ t: histTime(g && g.at), name: n, kind: 'traded', src: 'vault',
+                   body: ' · <b>Traded</b> · one copy left the vault' + (g && g.post ? (' · ' + (logLink(g.post) || esc(g.post))) : '') });
+      });
+    });
+    out.sort(function(a, b){ return (a.t == null || b.t == null) ? ((a.t == null) - (b.t == null)) : (b.t - a.t); });
+    return { rows: out, vault: gone != null };
+  }
+  function historyHtml(){
+    var h = historyRows();
+    var note = h.vault ? '' : '<p class="d2jsp-say" data-d2jsp-history-trades="unknown">Trades: UNKNOWN. The vault would not read on this page, so no traded copy is shown.</p>';
+    if (!h.rows.length) return '<summary>History (0)</summary>' + note + '<p class="d2jsp-say" data-d2jsp-history="none">' + (h.vault ? 'No post or trade yet.' : 'No post yet.') + '</p>';
+    return '<summary>History (' + h.rows.length + ')</summary>' + note + '<ol>' + h.rows.map(function(r){
+      return '<li data-kind="' + esc(r.kind) + '" data-src="' + r.src + '">' + esc(histWhen(r.t)) + ' · ' + esc(r.name) + r.body + '</li>';
+    }).join('') + '</ol>';
+  }
+  var historyDrawn = null;
+  function paintHistory(){
+    var box = document.getElementById('d2jsp-history');
+    if (!box) return;
+    var html = historyHtml();
+    if (html !== historyDrawn) { box.innerHTML = html; historyDrawn = html; }   /* REG-2796 - a repaint only when it changed */
+  }
+  try { window._d2jspHistoryHtml = historyHtml; } catch (eHh) {}
   /* REG-2883 (#83) - ONE SOURCE FOR WHAT IS TRADED: THE VAULT. A copy he traded left through the vault's trade door and is
      one of its traded rows (window._vaultTradedOf); a listed copy carries its slot (window._vaultTradeOf); the copies he
      still holds are its count. REG-2873's per-name mark (d2r_d2jsp_sold) called the whole NAME traded when one copy of
@@ -13642,6 +13702,7 @@ function d2jspBatchHtml(view) {
       var box = cards[i].querySelector('[data-d2jsp-log]');
       if (box) box.innerHTML = logHtml(n);
     }
+    paintHistory();   /* REG-3094 */
   }
   function topicUrl(){
     var s = store();
@@ -13919,6 +13980,7 @@ function d2jspBatchHtml(view) {
   function paint(){
     var list = document.getElementById('d2jsp-list');
     if (!list) return;
+    paintHistory();   /* REG-3094 - on every paint, whichever way the list paints */
     var vault = names();
     var trade = tradeNames();
     var rows = listedNames();
