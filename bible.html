@@ -55671,8 +55671,9 @@ window.vaultAutoAssign = function(){
         if (_mv && _rcN > 1 && typeof window.vaultRemoveCopy === 'function'){
           var _rcK = (String(p.key) === String(p.n)) ? 0 : ((+(String(p.key).match(/ #(\d+)$/) || [0, 0])[1]) - 1);
           if (_rcK >= 0 && _rcK < _rcN)
-            _rmCopyBtn = '<button type="button" class="vd-rmcopy" tabindex="-1" data-rmcopy="' + _rcK + '" title="remove this copy (copy ' + (_rcK + 1) + ' of ' + _rcN
-              + ') - the other copies stay; ↶ Undo puts it back" aria-label="remove copy ' + (_rcK + 1) + ' of ' + esc(p.n) + '"'
+            _rmCopyBtn = '<button type="button" class="vd-rmcopy" tabindex="-1" data-rmcopy="' + _rcK + '" title="'
+              + gridActSay('', 'remove this copy (copy ' + (_rcK + 1) + ' of ' + _rcN + ') - the other copies stay; ↶ Undo puts it back')
+              + '" aria-label="' + gridActSay('', 'remove copy ' + (_rcK + 1) + ' of ' + esc(p.n)) + '"'   /* REG-3117 */
               + ' onclick="event.stopPropagation();window.vaultRemoveCopy(\'' + jsArg(p.n) + '\', ' + _rcK + ')">✕</button>';
         }
       } catch (eRc) { _rmCopyBtn = ''; }
@@ -55690,7 +55691,7 @@ window.vaultAutoAssign = function(){
         + (typeof window._vaultEvidenceBtn === 'function' ? window._vaultEvidenceBtn(p.n) : '')
         + (typeof window._vaultItemBadges === 'function' ? window._vaultItemBadges(p.n) : '')   /* v3855 - the locker's own badge pair */
         + _rmCopyBtn
-        + (_mv && (p.manual || p.bad) ? '<button type="button" class="vd-unlock" tabindex="-1" data-unlock="' + esc(p.key) + '" title="' + gridActSay('', 'unlock — back to auto-pack (right-click the item does the same)') + '" aria-label="' + gridActSay('', 'unlock ' + esc(p.n) + ' — back to auto-pack') + '">' + (p.bad ? '⚠' : '🔒') + '</button>' : '')
+        + (_mv && (p.manual || p.bad) ? '<button type="button" class="vd-unlock" tabindex="-1" data-unlock="' + esc(p.key) + '" title="' + gridActSay('', 'unlock — back to auto-pack (right-click the item does the same)') + '" aria-label="' + gridActSay('', 'unlock ' + esc(p.n) + ' — back to auto-pack') + '">' + (p.bad ? '⚠' : '🔒') + '</button>' : '')   /* REG-3117 */
         + '</div>';
     }).join('');
     return _note + '<div class="vd-grid" style="grid-template-columns:repeat('+gw+','+cell+'px);grid-auto-rows:'+cell+'px"'
