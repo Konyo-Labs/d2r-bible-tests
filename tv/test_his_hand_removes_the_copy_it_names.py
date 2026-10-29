@@ -8,7 +8,11 @@ removed THAT copy, with the copies after it closing up, and that is the mechanis
 window.vaultRemoveCopy(name, copyIx) goes through window._vaultTradeEvent as 'remove-copy'. The copy's record (its move and
 its own entry) leaves in a removal-journal batch on his ✕'s lane, with no trade slot and no traded row. The copies after
 it close up, the count drops one, and the toolbar Undo is named for that copy. vaultRestoreLast puts it back where it was.
-The last copy leaves through vaultRemove as his ✕. The opened MOVE row of each copy carries the button. RED_PROOF below.
+The last copy leaves through vaultRemove as his ✕. The opened MOVE row of each copy carries the button.
+
+And the ✕ on a copy's TILE names its copy: each mule-window tile is keyed by its own copyIx (REG-2876), so a tile whose item
+is held more than once carries a ✕ that takes out THAT copy through the same door. A tile held once carries none (its
+item's ✕ is the card's). RED_PROOF below.
 """
 import json
 import os
@@ -60,6 +64,30 @@ OUT.errors = H.errors.slice();
 """
 
 
+TILE = r"""
+(function(){
+var W = window, N = 'Nagelring', ONE = 'Manald Heal';
+W.vaultHandAdd(N, new Date().toISOString(), {}); H.flush(60, 3); W.vaultHandAdd(N, new Date().toISOString(), {}); H.flush(60, 3);
+W.vaultHandAdd(ONE, new Date().toISOString(), {}); H.flush(60, 3);
+try { W.renderVault(); } catch (e) {} H.flush(60, 3);
+function recs(){ return (W._vaultRecords().records || []).filter(function(r){ return r.name === N; }).map(function(r){ return [r.copyIx | 0, r.mule || null]; }); }
+function tiles(){ var det = String((document.getElementById('vault-detail') || {}).innerHTML || ''), o = [];
+  det.replace(/<div class="vd-item([^"]*)"([^>]*)>([\s\S]*?)<\/div>/g, function(_, cls, tag, inner){
+    var key = /data-key="([^"]*)"/.exec(tag), rc = /class="vd-rmcopy"[^>]*data-rmcopy="(\d+)"[^>]*onclick="([^"]*)"/.exec(inner);
+    o.push({ key: key ? key[1].replace(/&#39;/g, "'") : null, ix: rc ? +rc[1] : null, on: rc ? rc[2].replace(/&#39;/g, "'") : null }); return _; });
+  return o; }
+OUT.mule = (recs()[0] || [])[1];
+OUT.oneMule = ((W._vaultRecords().records || []).filter(function(r){ return r.name === ONE; })[0] || {}).mule || null;
+W.openMuleCard(OUT.mule); H.flush(60, 3);
+OUT.before = { copies: copyCount(N), recs: recs(), tiles: tiles() };
+var t1 = OUT.before.tiles.filter(function(t){ return t.ix === 1; })[0];
+if (t1) { (new Function('event', t1.on))({ stopPropagation: function(){}, preventDefault: function(){} }); H.flush(60, 3); }
+OUT.after = { copies: copyCount(N), recs: recs(), undo: (W._vaultUndo && W._vaultUndo.what) || null };
+OUT.errors = H.errors.slice();
+})();
+"""
+
+
 class HisHandRemovesTheCopyItNames(unittest.TestCase):
 
     @classmethod
@@ -67,6 +95,7 @@ class HisHandRemovesTheCopyItNames(unittest.TestCase):
         if not VPN.NODE:
             raise AssertionError("node is not on this machine - this law does not skip")
         cls.o = VPN.run(BODY, prelude=PRELUDE, timeout=300)
+        cls.t = VPN.run(TILE, prelude=PRELUDE, timeout=300)
 
     def test_the_page_booted_and_he_has_two_shakos_told_apart(self):
         self.assertEqual(self.o["__boot"]["errors"], [], self.o["__boot"])
@@ -97,8 +126,30 @@ class HisHandRemovesTheCopyItNames(unittest.TestCase):
     def test_a_removal_names_its_copy(self):
         self.assertFalse(self.o["noIx"]["ok"], self.o["noIx"])
 
+    def test_a_copy_tile_carries_the_x_that_names_it(self):
+        t = self.t
+        self.assertEqual((t["__boot"]["errors"], t["errors"]), ([], []), t["__boot"])
+        b = t["before"]
+        self.assertEqual(b["copies"], 2, "PREMISE: %r" % b)
+        mine = [x for x in b["tiles"] if x["key"] in ("Nagelring", "Nagelring #2")]
+        self.assertEqual(sorted((x["key"], x["ix"]) for x in mine), [("Nagelring", 0), ("Nagelring #2", 1)],
+                         "a copy's tile carries no ✕, or one naming another copy: %r" % b["tiles"])
+        self.assertIn("window.vaultRemoveCopy('Nagelring', 1)", [x["on"] for x in mine if x["ix"] == 1][0])
+        self.assertEqual(t["oneMule"], t["mule"], "PREMISE: the item held once is not in the same window: %r" % t["oneMule"])
+        self.assertEqual([x["ix"] for x in b["tiles"] if x["key"] == "Manald Heal"], [None], "a tile held once carries a copy ✕")
+
+    def test_the_tile_x_takes_out_that_copy(self):
+        a = self.t["after"]
+        self.assertEqual((a["copies"], [r[0] for r in a["recs"]]), (1, [0]), a)
+        self.assertEqual(a["undo"], "the removal of copy 2 of Nagelring", a)
+
 
 RED_PROOF = [
+    {"why": "REG-2849 - a copy's tile carries no ✕ of its own",
+     "file": "bible.html",
+     "find": "        if (_mv && _rcN > 1 && typeof window.vaultRemoveCopy === 'function'){\n",
+     "replace": "        if (false){\n",
+     "matches": 1, "needs": "node"},
     {"why": "REG-2849 - the trade door refuses his hand's removal of a copy",
      "file": "bible.html",
      "find": "    if (['listed', 'unlisted', 'trade-out', 'trade-in', 'remove-copy'].indexOf(kind) < 0)",
