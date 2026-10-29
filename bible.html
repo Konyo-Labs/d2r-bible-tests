@@ -22719,7 +22719,15 @@ function _artRarity(name){
     // v309: High-Value Finds reference items carry their own rarity — sync the
     // floating-tip frame + name colour to the in-game quality (unique gold, rare
     // yellow, magic blue, crafted orange, basic white) exactly like everywhere else.
-    if (!r && typeof EXTRA_ITEMS !== 'undefined' && EXTRA_ITEMS[name]){
+    /* REG-3054 (GrokBot #230, 2026-10-29 04:30) - A TV STUB'S 'basic' IS NOT A RARITY. TV DIABLO stamps {rarity: 'basic',
+       base: <its own name>, val: 'tv'} on a name nothing knew when it registered it (or before the grammar was asked), and this
+       read it before findRuneword: Heart of the Oak and Call to Arms (runewords), Raven Whorl and Doom Eye (rares) drew white.
+       Such a stub (REG-2903 already reads its base as no base) speaks last: a catalogue runeword, his evidence's rarity and the
+       rolled-name grammar outrank it, and its 'basic' is the word only when nothing else knows the name. */
+    var _blindBasic = false;
+    try { var _xs = (typeof EXTRA_ITEMS !== 'undefined' && EXTRA_ITEMS) ? EXTRA_ITEMS[name] : null;
+          _blindBasic = !!(_xs && _xs.val === 'tv' && String(_xs.base || '') === String(name) && String(_xs.rarity || '').toLowerCase() === 'basic'); } catch (eBb) {}
+    if (!r && !_blindBasic && typeof EXTRA_ITEMS !== 'undefined' && EXTRA_ITEMS[name]){
       var ex = String(EXTRA_ITEMS[name].rarity || '').toLowerCase();
       r = (ex === 'crafted') ? 'crafted' : (ex === 'basic') ? 'basic' : ex;
     }
@@ -22828,6 +22836,10 @@ function _artRarity(name){
         r = ({ blue: 'magic', gold: 'rare', unique: 'unique', set: 'set', white: 'basic' })[_pq] || '';
       } catch(e){}
     }
+    if (!r && _blindBasic){
+      try { var _rqB = (typeof _rolledQuality === 'function') ? _rolledQuality(name) : null; if (_rqB && (_rqB.q === 'magic' || _rqB.q === 'rare')) r = _rqB.q; } catch (eRqB) {}
+      if (!r) r = 'basic';   /* REG-3054 the stub's word, when nothing else knows the name */
+    }
     if (!r && typeof _baseCats === 'function'){
       try {
         var _bn = (typeof _artSlotClean === 'function') ? _artSlotClean(name) : String(name).replace(/\s*\([^)]*\)\s*$/, '');
@@ -22933,6 +22945,18 @@ function _itemCells(name){
       if (_rec0 && _rec0.base) _storedBase = String(_rec0.base);
     }
   } catch (e0) {}
+  /* REG-3055 (GrokBot #230, 2026-10-29 04:30) - A RUNEWORD WHOSE COPIES ARE RECORDED IN ONE SIZE IS THAT SIZE. A runeword's base
+     varies, so with no planner record it has no single size and draws an approx 1x2 (by design: Fury, Dream, Lawbringer). His
+     copies' own records (REG-2844 the planner, REG-3002 a read; REG-3001 says them on the keeper row) can settle it: when every
+     copy of the name is recorded in a base and those bases share one footprint, that base sizes it. Read once per stored
+     string (window._vaultCopyBaseCode); a copy with no recorded base, or two sizes, leaves it as it was. */
+  if (!_storedBase){
+    try {
+      if (typeof window !== 'undefined' && window && typeof window._vaultCopyBaseCode === 'function'
+          && typeof findRuneword === 'function' && findRuneword(name))
+        _storedBase = String(window._vaultCopyBaseCode(name) || '');
+    } catch (eCb) { _storedBase = ''; }
+  }
   /* REG-2855 (ACT-3, GrokBot's v3829 Vault pass) - HIS OWN RECORD OF THE ITEM NAMES ITS BASE, AND THAT BASE SIZES IT. Bone Eye
      is a magic Ring in his Magic & Rare register and Brimstone Clasp a rare Plated Belt; both drew as a guessed 1x2, because
      nothing here read the register and a TV stub's base is the stub writer's own name. The keeper's base sizes the item
@@ -23065,7 +23089,7 @@ function _itemCells(name){
       /* #275 (GrokBot tick 418, K14) - A RUNEWORD IS SIZED BY ITS BASES, NEVER BY ITS NAME.
          v3766 — _runewordCells measures the builder table. One size across the legal bases is that
          size. Preferred bases count only when they agree and share an item type. */
-      if (!base){
+      if (!base || (_stubOwn && typeof findRuneword === 'function' && findRuneword(name))){   /* REG-3055 a stub's own name is no base */
         var _rwSized = (typeof _runewordCells === 'function') ? _runewordCells(name) : null;
         if (_rwSized){ cells = _rwSized; _ITEM_CELLS_CACHE[_ck] = cells; return cells; }
       }
@@ -23272,6 +23296,9 @@ function _artRolledBase(name){
   var ex = (typeof EXTRA_ITEMS !== 'undefined' && EXTRA_ITEMS) ? EXTRA_ITEMS[nm] : null;
   var er = ex ? String(ex.rarity || '').toLowerCase() : '';
   if (er === 'unique' || er === 'set') return out;
+  /* REG-3054 - a catalogue runeword is not a rolled item: its TV stub's own-name base asks nothing (its copies' bases are
+     REG-3001's; the planner's base dresses its picture) */
+  if (ex && ex.val === 'tv' && String(ex.base || '') === nm && typeof findRuneword === 'function' && findRuneword(nm)) return out;
   if (ex && (er === 'magic' || er === 'rare' || er === 'crafted' || er === 'basic')){
     rolled = true;
     var eb = ex.base ? String(ex.base) : '';
@@ -28495,6 +28522,9 @@ try {
     if (!_n) return;
     var _e = _tvxRaw[_n];
     if (!_e || typeof _e !== 'object') return;
+    /* REG-3054 - a stub stored before the writers stamped val:'tv' is a TV stub all the same (its cat says so): every reader
+       that asks val === 'tv' (the router, the footprint, the hover) reads it as one. In memory only - the store is his. */
+    if (_e.val == null && /TV-vaulted/.test(String(_e.cat || ''))) _e.val = 'tv';
     if (!EXTRA_ITEMS[_n]) EXTRA_ITEMS[_n] = _e;
     _EXTRA_ITEM_SET.add(_norm(_n));
   });
@@ -60057,6 +60087,33 @@ window.vaultAutoAssign = function(){
      copy it is, another copy counted, and a copy past copy 0 recorded with its own mods (copy 0 is the name's record,
      d2r_magicFinds, which the caller writes). opts.sameFile: a re-read of the same file never counts another (REG-2401).
      -> {mode, copyIx} | null (UNKNOWN: the records would not read - the caller keeps what it did before) */
+  /* REG-3055 - the one footprint every recorded copy of a name shares -> a base code of that footprint, or '' (a copy with no
+     recorded base, two footprints, or a records store that would not read). Parsed once per stored string: the packer asks
+     _itemCells for every tile on every paint. */
+  var _vrBaseRO = { raw: null, map: null };
+  window._vaultCopyBaseCode = function(nm){
+    var raw = null;
+    try { raw = window.LSR.getItem(_VR_STORE_KEY); } catch (eR) { return ''; }
+    if (raw !== _vrBaseRO.raw || !_vrBaseRO.map){
+      var map = {}, db = null, foot = function(code){ try { var f = window._cbFoot ? window._cbFoot({ base: code }) : null; return (f && f[0] >= 1 && f[1] >= 1) ? (f[0] + 'x' + f[1]) : ''; } catch (eF) { return ''; } };
+      try { db = (typeof window._cbDb === 'function') ? window._cbDb() : null; } catch (eD) { db = null; }
+      try {
+        var st = raw ? JSON.parse(raw) : null;
+        ((st && Array.isArray(st.records)) ? st.records : []).forEach(function(r){
+          if (!r || !r.name) return;
+          var m = map[r.name] || (map[r.name] = { code: '', size: '', ok: true });
+          var b = (r.entry && r.entry.base) ? String(r.entry.base) : '';
+          if (b && db && db.b && !db.b[b]) Object.keys(db.b).some(function(c){ if (String(db.b[c][0]).toLowerCase() === b.toLowerCase()){ b = c; return true; } return false; });
+          var sz = b ? foot(b) : '';
+          if (!sz){ m.ok = false; return; }
+          if (!m.size){ m.size = sz; m.code = b; } else if (m.size !== sz) m.ok = false;
+        });
+      } catch (eP) { map = {}; }
+      _vrBaseRO.raw = raw; _vrBaseRO.map = map;
+    }
+    var hit = _vrBaseRO.map[String(nm == null ? '' : nm)];
+    return (hit && hit.ok && hit.code) ? hit.code : '';
+  };
   /* REG-3002 (his ruling 2026-10-29 02:30, Q3) - A RUNEWORD'S COPIES ARE TOLD APART BY THEIR BASE. A judged read of Grief only
      owned the name, so a Grief in a Berserker Axe beside one in a Phase Blade was the same copy. The read's base now names
      its copy: the copy recorded in that base is that copy; a copy whose base was never recorded takes it; a base no copy has
@@ -71731,7 +71788,10 @@ function renderJournal(){
                Plate — which answered unknown — survived. A guard that reads volatile state to
                decide a DURABLE action is asking the wrong question. _tvExtraRemember is idempotent,
                so remembering an already-known name costs one dictionary write. */
-            if (typeof window._tvExtraRemember === 'function') {
+            /* REG-3054 - a catalogue runeword or sunder charm is never stubbed: the prune keeps it by the catalogue
+               (d2rCatalogueKnows, v2208 - the rule the v739 register writer already follows), and a {rarity: 'basic'} stub
+               over its own name is what drew Heart of the Oak and Call to Arms white on his boards */
+            if (typeof window._tvExtraRemember === 'function' && !(typeof window.d2rCatalogueKnows === 'function' && window.d2rCatalogueKnows(n))) {
               var _rq2 = (typeof _rolledQuality === 'function') ? _rolledQuality(n) : null;   /* #269 (REG-2054) */
               window._tvExtraRemember(n, { rarity: _rq2 ? _rq2.q : 'basic', base: (_rq2 && _rq2.base) ? _rq2.base : n,
                                            cat:'\ud83d\udcfa TV-vaulted', val:'tv', src:'chronicle-apply' });

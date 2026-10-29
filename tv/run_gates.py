@@ -13277,6 +13277,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_runeword_keeper_keeps_a_base_per_copy.py")], 300,
          needs_app=False,
          why="REG-3000..3002 (his 2026-10-29 Q3 ruling): the Keepers box takes a runeword, its row says each copy's base, and a judged read's base names its copy"),
+    Gate("test_a_tv_stub_never_outranks_what_the_name_is",
+         [sys.executable, os.path.join(HERE, "test_a_tv_stub_never_outranks_what_the_name_is.py")], 300,
+         needs_app=False,
+         why="REG-3054..3055 (GrokBot #230): a TV stub's basic over its own name never outranks a catalogue runeword or the rolled-name grammar, and a runeword is sized by its bases or his copies' recorded bases"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
