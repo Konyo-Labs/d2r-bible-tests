@@ -932,6 +932,26 @@ guide had no way in). Law: test_a_yielding_orb_leaves_a_door - every orb the sho
 (a yield with no door fails by name), each door exists once, a button door runs its orb's opener and opens the feature on
 the whole page in node, each is shown only where its orb yields, none is a fixed overlay; 6 red-proofs, RED. Pixels at
 640x400: v1800 on CI.
+### REG-3104 - THE SWEEP COUNTED EACH CONTAINER'S TAKEN CELLS AND THREW THEM AWAY, SO NO FULL LOOK COULD BE MADE (#158 P4)
+The board can stamp a FULL LOOK (window._vaultFullLook, REG-2892): a frame that shows a whole container, every cell its
+item or empty. Nothing produced one. The reader names items from hover tooltips only. The pixel layer counted which cells
+of the panel a read looked at are taken (vault_corpus.stash_occupancy / inventory_occupancy, REG-1889), but the sweep used
+that count only to cross-check names and then dropped it.
+FIX: the sweep now keeps that count.
+- vault_retro.container_look runs on every read frame. It records the session, the frame, the frame's own capture time
+  (f_<ms>), the container (the panel that was COUNTED) and its taken cells.
+- vault_retro.newest_container_looks keeps the newest look of each (session, container).
+- The result is published as the proposal's `containers`, and apply_payload carries it to the board.
+What the container is:
+- the bag is the inventory, whatever screen it sat beside;
+- a stash tab's own grid is the personal stash or a shared page, by the read's tab;
+- a tab the read did not name is None (UNKNOWN);
+- a shared page's number is never read, so `page` is always None, and the board asks him which page it was (his call B).
+A panel whose occupancy would not read is `occupied: None` with its reason, never an empty panel.
+The board assembles the look (REG-3105).
+GUARD: tv/test_a_sweep_carries_each_containers_own_cells.py, 6 cases on fixture occupancies, plus the sweep's join pinned
+by its own lines. 5 red-proofs, RED. On claude/int (836921abc) it is red: 6 failed, "vault_retro has no attribute
+container_look".
 
 ### REG-3042 - A SET PIECE OR A RUNEWORD IN THE MAGIC & RARE REGISTER WAS HOMED ON MAGIC & RARE (#163, GrokBot on Dean's shadow)
 Dean's saved records filed Aldur's Rhythm (a set piece) and Enigma (a runeword) on MAGIC & RARE. The file door has refused to treat
