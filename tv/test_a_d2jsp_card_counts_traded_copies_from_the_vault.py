@@ -179,7 +179,7 @@ function paint(){ W.renderVault(); H.flush(60, 3); }
 function chip(n){ var m = W._d2jspCardHtml(n).match(/data-d2jsp-state="([^"]*)">([^<]*)</); return m ? [m[1], m[2]] : null; }
 function stored(){ var s = JSON.parse(W.LSR.getItem('d2r_vaultRecords') || '{}'); return (s.tradedOut || []).map(function(t){ return t.name; }); }
 W._vaultAutoIntakeSet(false);
-W.vaultHandAdd('Gull'); W.vaultHandAdd('Gull'); W.vaultHandAdd('Gull'); SHAKO = (W.vaultHandAdd('Shako') || {}).name;
+W.vaultHandAdd('Gull'); W.vaultHandAdd('Gull'); W.vaultHandAdd('Gull'); SHAKO = (W.vaultHandAdd('Harlequin Crest') || {}).name;   /* a bare 'Shako' is asked since REG-2858; the unique's typed name files (REG-2897) */
 W.vaultAssign(GULL, 'uni-weap'); W.vaultAssign(SHAKO, 'uni-armor'); paint();
 OUT.start = { chip: chip(GULL), traded: W._vaultTradedOf(GULL).length };
 OUT.say = W._d2jspMarkTraded(GULL); paint();
