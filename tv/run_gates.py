@@ -13381,6 +13381,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_eagles_pass_runs_in_a_child.py")], 300,
          needs_app=False,
          why="REG-2987 the eagle's doctor pass runs in a short-lived child; only process-bound rows run in the console"),
+    Gate("test_a_sweep_carries_each_containers_own_cells",
+         [sys.executable, os.path.join(HERE, "test_a_sweep_carries_each_containers_own_cells.py")], 300,
+         needs_app=False,
+         why="REG-3104 (#158 P4): the vault sweep carries each container's own taken cells (newest per session, the frame's own clock) to the board; an unread panel is UNKNOWN, a shared page's number is never read"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

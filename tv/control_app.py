@@ -39259,6 +39259,7 @@ def _vault_sweep_run(hist_dir, limit, force=False, reel_dir=None):
         _read_no_names = [0]
         # read cleanly, and the panel prints no names to read
         _glimpsed = []      # v1989 — cells we can SEE are occupied on a frame whose read named nothing
+        _containers = []    # REG-3104 — every read frame's look at the panel it counted, for the board's full look
         _reconciled = []    # v1994 — every read frame, names-vs-cells, whichever way it came out
         _over_read = []     # v1994 — the subset where the model named MORE than the panel can hold
         _pix_err = []       # v1998 — why the pixel lane went quiet, if it did. Once, not per frame.
@@ -39416,6 +39417,10 @@ def _vault_sweep_run(hist_dir, limit, force=False, reel_dir=None):
                         # REG-1889 — the cells of the panel this read LOOKED AT: a stash tab's own grid,
                         # or the bag (as before) when that grid is not on the frame. `counted` travels.
                         _oc2, _counted = _own_panel_cells(_vc2, p, surface) if _vc2 else (None, None)
+                        # REG-3104 (#158 P4) - the counted panel's own cells travel to the board, read or UNKNOWN
+                        _cl = _vault_retro().container_look(p, surface, _oc2, _counted)
+                        if _cl:
+                            _containers.append(_cl)
                         if _oc2 is not None:
                             _occN = int(_oc2.get("occupied") or 0)
                             _verdict = reconcile_verdict(_named, _occN)
@@ -39789,6 +39794,10 @@ def _vault_sweep_run(hist_dir, limit, force=False, reel_dir=None):
                 prop["glimpsed"] = _glimpsed
             except Exception:
                 pass
+        # REG-3104 (#158 P4) - the newest look of each (session, container): the board assembles a full look from it and
+        # the named reads of that session, or asks him with the evidence. A pure function that never raises.
+        if _containers:
+            prop["containers"] = _vault_retro().newest_container_looks(_containers)
         # ── v1994 — SAY WHAT THE TWO LAYERS AGREED AND DISAGREED ABOUT ─────────────────────────
         # A cross-check nobody reads is not a check. The counts go to the console AND onto the
         # proposal, so the board can render the disagreement rather than average it away.

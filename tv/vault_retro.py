@@ -2447,6 +2447,66 @@ def _verdict(totals, owned, unsure):
 
 # ── APPLY (law 5: shapes, never writes) ─────────────────────────────────────────
 
+# ══ REG-3104 (#158 P4, the intake design's guided sweep) — A CONTAINER'S OWN CELLS, FOR THE BOARD'S FULL LOOK ══════════
+# The board can stamp a FULL LOOK (window._vaultFullLook, REG-2892): a frame that shows a whole container, every cell its
+# item or empty - and nothing produced one. The reader names items from hover tooltips only; the pixel layer
+# (vault_corpus.stash_occupancy / inventory_occupancy) counts which cells of the panel a read looked at are taken, and the
+# sweep used that count only to cross-check names. These two functions keep it: one look per (session, container), the
+# NEWEST frame's, so the board can ask whether the named reads of that session explain every taken cell exactly once. The
+# board assembles (it owns the item sizes and the receiver); this side only reports what the pixels showed and when.
+#   * the container is the panel that was COUNTED: the bag is the inventory whatever screen it sat beside; a stash tab's
+#     own grid is the personal stash or a shared page by the read's tab - a tab the read did not name is None (UNKNOWN),
+#     and a shared page's NUMBER is never read here, so `page` is always None (the board asks him which page it was);
+#   * an occupancy that would not read is `occupied: None` with its reason - UNKNOWN, never an empty panel;
+#   * the capture time is the frame's own clock (f_<ms>), never when the sweep ran. [[unknown-stays-unknown]]
+_CONTAINER_GRIDS = {"stash": (10, 10), "shared": (10, 10), "inventory": (10, 4)}
+
+
+def container_look(frame_path, surface, occupancy, counted):
+    """One read frame's look at the panel whose cells were counted. -> dict | None (not a container panel)"""
+    s = str(surface or "").strip().lower()
+    tab = {"shared": "shared", "personal": "stash"}.get(s)          # a "stash" surface named no tab: UNKNOWN
+    if counted == "inventory":
+        loc = "inventory"
+    elif counted == "stash" or (occupancy is None and s in ("stash", "shared", "personal")):
+        loc = tab
+    else:
+        return None
+    fp = str(frame_path or "")
+    reel = os.path.basename(os.path.dirname(fp))
+    session = reel[len("reel_"):] if reel.startswith("reel_") else (reel or None)
+    frame = os.path.basename(fp) or None
+    m = re.match(r"^f_(\d{10,})", frame or "")
+    out = {"session": session, "frame": frame, "capturedAt": int(m.group(1)) if m else None,
+           "location": loc, "page": None, "surface": s or None, "counted": counted or None,
+           "grid": list(_CONTAINER_GRIDS.get(loc or "stash")), "occupied": None, "why": None}
+    if not isinstance(occupancy, dict) or not occupancy.get("ok"):
+        out["why"] = "the cells of this panel could not be read on this frame - UNKNOWN, never an empty panel"
+        return out
+    cols, rows = out["grid"]
+    grid = occupancy.get("grid")
+    if not isinstance(grid, list) or len(grid) != rows or any(not isinstance(r, list) or len(r) != cols for r in grid):
+        out["why"] = "the pixel layer's grid is not the %dx%d of this panel - UNKNOWN" % (cols, rows)
+        return out
+    out["occupied"] = [[c, r] for r in range(rows) for c in range(cols) if grid[r][c]]
+    return out
+
+
+def newest_container_looks(rows):
+    """The newest look of each (session, container) - the container's truth at its last capture in that session; an
+    undated look ranks below every dated one. Never raises: a row that is not a look is skipped. -> list"""
+    best = {}
+    for r in rows or []:
+        if not isinstance(r, dict) or not r.get("session"):
+            continue
+        k = (r.get("session"), r.get("location"), r.get("page"))
+        at = r.get("capturedAt") if isinstance(r.get("capturedAt"), int) else -1
+        cur = best.get(k)
+        if cur is None or at > (cur.get("capturedAt") if isinstance(cur.get("capturedAt"), int) else -1):
+            best[k] = r
+    return sorted(best.values(), key=lambda r: (str(r.get("session")), str(r.get("location")), str(r.get("frame"))))
+
+
 def apply_payload(proposal):
     """Shape a proposal for the ONE existing apply path. It does not write and cannot write.
 
@@ -2536,6 +2596,8 @@ def apply_payload(proposal):
         # v2006 — how much footage has given up its information, and how close the disk is to the
         # floor below which ON AIR refuses to record. A report, never an instruction to delete.
         "retention": p.get("retention") or None,
+        # REG-3104 (#158 P4) - each container's own cells, per session: what the board's full look is assembled from
+        "containers": p.get("containers") or [],
         "why": p.get("why") or "",
     }
 
