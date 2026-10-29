@@ -63,6 +63,8 @@ CLASS = {
     ": click (or Enter) to add an item from the database": A,
     ". Drag it; a green footprint of its size, inside this inventory, is the only drop that moves it": A,
     ". Click (or Enter) for its tooltip, to replace it or remove it; Delete removes it": A,
+    "remove this copy (copy ": A,
+    "remove copy ": A,
     ". Drag to move it; right-click (or the lock) returns it to auto-pack": A,
     " until you place it again or unlock it": A,
     ". Drag it to any cell where it fits and it locks there": A,
