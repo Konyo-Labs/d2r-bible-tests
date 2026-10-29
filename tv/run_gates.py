@@ -13361,6 +13361,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_sweep_apply_claims_possession_only_through_the_vault_door.py")], 300,
          needs_app=False,
          why="REG-3086 (#158): a sweep apply claims possession only through the vault's door - AUTO INTAKE off owns nothing, a refused read is never owned, his hand still owns"),
+    Gate("test_a_rolled_name_is_read_in_every_slot_and_any_casing",
+         [sys.executable, os.path.join(HERE, "test_a_rolled_name_is_read_in_every_slot_and_any_casing.py")], 300,
+         needs_app=False,
+         why="REG-3087 + REG-3088 (#158): a rolled name is read in every slot the game's rare tables name, and in any casing"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
