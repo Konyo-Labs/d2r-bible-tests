@@ -980,6 +980,23 @@ The board assembles the look (REG-3105).
 GUARD: tv/test_a_sweep_carries_each_containers_own_cells.py, 6 cases on fixture occupancies, plus the sweep's join pinned
 by its own lines. 5 red-proofs, RED. On claude/int (836921abc) it is red: 6 failed, "vault_retro has no attribute
 container_look".
+### REG-3091 - THE HEART FAN'S CAPTIONS DREW OVER EACH OTHER (#84, GrokBot #230: 35+ sightings v3636-v3677, YES on 10-16)
+GrokBot kept seeing vault.sweep_start, vault.forget and prune.reports drawn over each other on the heart fan. A caption's
+POSITION came from its index (angle, three radii, a parity drop) and its WIDTH from its content; only the after-the-fact
+solver (_hrtFanFit) compared them, and it moves a stack at most 74 units and keeps a collision it cannot clear. MEASURED
+by running the console's own _hrtSvg in node over the real lock rows (self_arming over a copy of the tracked ledger):
+census fresh - vault.apply's arithmetic sat 65 units over vault.sweep_start's; prover behind (held captions) -
+vault.sweep_start's name sat on prune.reports' arithmetic and prune.reports' sat 251 units over reel.route's; with every
+lock at its widest caption, 6 collisions and 5 captions off the view box. The console's font is monospace (--mono), so a
+caption's width is known before layout. _hrtSvg now collects each lock's caption stack and places it from that width
+(window._hrtFanPlace: 0.62 em a character, a full em outside ASCII - an overestimate by design): every stack keeps its
+node's x (pulled inside the view box at the wedge's edges), drops straight down just clear of every box already placed,
+highest first, with the vessel names as fixed obstacles (none is reached today), and a stack pushed off its node gets a
+faint dotted leader to it. Nothing is shortened or shrunk - every line is arithmetic (REG-690). After: 0 collisions and
+0 off the box in all three cases. test_heart_fan_labels_are_width_bounded's "can find the fan" count re-aimed to read the
+lines in their new form (`cls: 'hrt-fan ...'`). Law: test_the_fan_captions_never_overlap (runs the real renderer in node,
+measures what it drew with its own 0.61-em monospace box model), 5 red-proofs, RED. Pixels: the render gate's heart-fan
+targets, on CI.
 
 ### REG-3042 - A SET PIECE OR A RUNEWORD IN THE MAGIC & RARE REGISTER WAS HOMED ON MAGIC & RARE (#163, GrokBot on Dean's shadow)
 Dean's saved records filed Aldur's Rhythm (a set piece) and Enigma (a runeword) on MAGIC & RARE. The file door has refused to treat

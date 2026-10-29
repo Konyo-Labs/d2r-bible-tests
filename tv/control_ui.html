@@ -14641,6 +14641,72 @@ window._lockMark = function(isOpen, px, label){
      the quarter of the console that they are. DARK leads because it is what needs him. */
   var _HRT_ORDER = ['DARK', 'UNKNOWN', 'WATCHED', 'FLOWING'];
 
+  /* ⚠⚠ REG-3091 (#84, GrokBot #230: 35+ sightings v3636-v3677, YES again on 10-16) - THE FAN PLACES ITS CAPTIONS FROM
+     THEIR WIDTH BEFORE IT DRAWS THEM, SO NO TWO CAN LAND ON EACH OTHER. vault.sweep_start, vault.forget and prune.reports
+     kept drawing over each other because a caption's POSITION came from its index (angle, three radii, a parity drop)
+     and its WIDTH from its content, and only the after-the-fact solver (_hrtFanFit) ever compared them - it moves a stack
+     at most 74 units and keeps a collision it cannot clear. MEASURED by running this very _hrtSvg in node over the real
+     lock rows (the tracked proof ledger): with the census fresh, vault.apply's arithmetic sat 65 units over
+     vault.sweep_start's; with the prover behind (the held captions), vault.sweep_start's name sat on prune.reports'
+     arithmetic and prune.reports' sat 251 units over reel.route's.
+     The console's font is MONOSPACE (--mono: ui-monospace, SF Mono, Menlo, Consolas), so a caption's width is known
+     before layout: 0.62 em a character (every mono face in that stack advances 0.60) and a full em for anything outside
+     ASCII, in case a glyph falls back to another face - an overestimate by design, so the real text is never wider than
+     the box placed. Each caption stack keeps its node's x and drops straight down - never up into the heart - just
+     clear of every box already placed, highest first; the vessel names around the ring are placed first, as fixed
+     obstacles (measured: no caption reaches one today - the box keeps it so if the ring or the wedge moves). A stack
+     pushed off its node gets a faint dotted leader to it. NOTHING IS SHORTENED OR SHRUNK - every line
+     is arithmetic, and "a number nobody can read is worse than no number" (REG-690, v2650, v2662).
+     Law: tv/test_the_fan_captions_never_overlap.py. [[visual-regression-detector]] [[heartov2]] */
+  var _FAN_EM = 0.62, _FAN_WIDE = 1.0, _FAN_GAP = 2;
+  function _hrtFanTextW(s, fs){
+    var t = String(s == null ? '' : s), w = 0;
+    for (var i = 0; i < t.length; i++) w += (t.charCodeAt(i) < 128 ? _FAN_EM : _FAN_WIDE);
+    return w * fs;
+  }
+  /* one text's box in user units: x is its anchor point, y its baseline -> {x0, x1, y0, y1} */
+  function _hrtFanTextBox(s, fs, x, y, anchor){
+    var w = _hrtFanTextW(s, fs), x0 = (anchor === 'start') ? x : (anchor === 'end' ? x - w : x - w / 2);
+    return { x0: x0, x1: x0 + w, y0: y - 0.85 * fs, y1: y + 0.25 * fs };
+  }
+  /* a caption stack's box, moved by (dx, dy): the union of its lines */
+  function _hrtFanStackBox(st, dx, dy){
+    var b = null;
+    for (var i = 0; i < st.lines.length; i++) {
+      var l = st.lines[i], t = _hrtFanTextBox(l.text, l.fs, st.x + dx, st.y0 + dy + l.dy, 'middle');
+      b = b ? { x0: Math.min(b.x0, t.x0), x1: Math.max(b.x1, t.x1), y0: Math.min(b.y0, t.y0), y1: Math.max(b.y1, t.y1) } : t;
+    }
+    return b;
+  }
+  /* -> [{dx, dy, box}] per stack, in the stacks' own order: every box clear of every other and of every obstacle */
+  function _hrtFanPlace(stacks, obstacles, W, H){
+    var placed = (obstacles || []).slice(), at = new Array(stacks.length);
+    var order = stacks.map(function(s, i){ return i; }).sort(function(a, b){
+      return (stacks[a].y0 - stacks[b].y0) || (stacks[a].x - stacks[b].x) || (a - b); });
+    order.forEach(function(i){
+      var st = stacks[i], dx = 0, dy = 0, b = _hrtFanStackBox(st, 0, 0);
+      /* inside the view box sideways first - the widest arithmetic sits near the wedge's edges */
+      if (b.x1 > W - _FAN_GAP) dx = (W - _FAN_GAP) - b.x1;
+      if (b.x0 + dx < _FAN_GAP) dx = _FAN_GAP - b.x0;
+      for (var guard = 0; guard < 64; guard++) {
+        b = _hrtFanStackBox(st, dx, dy);
+        var low = null;
+        for (var p = 0; p < placed.length; p++) {
+          var q = placed[p];
+          if (b.x0 < q.x1 + _FAN_GAP && q.x0 < b.x1 + _FAN_GAP && b.y0 < q.y1 + _FAN_GAP && q.y0 < b.y1 + _FAN_GAP)
+            low = (low === null) ? q.y1 : Math.max(low, q.y1);
+        }
+        if (low === null) break;
+        dy += (low + _FAN_GAP) - b.y0;
+      }
+      at[i] = { dx: dx, dy: dy, box: b };
+      placed.push(b);
+    });
+    return at;
+  }
+  window._hrtFanPlace = _hrtFanPlace;
+  window._hrtFanTextW = _hrtFanTextW;
+
   function _hrtSvg(d){
     var W = 960, H = 780, cx = 480, cy = 286, rx = 330, ry = 208;
     var vs = (d.vessels || []).slice().sort(function(a, b){
@@ -14681,7 +14747,7 @@ window._lockMark = function(isOpen, px, label){
        routes of their own down there; without the reserved wedge a padlock sits between two veins
        and reads as gating both, which is what he saw and said so. */
     var SWEEP = 250, START = 145;
-    var veins = '', nodes = '', labels = '';
+    var veins = '', nodes = '', labels = '', _fanObst = [];   /* REG-3091 - the vessel names, as boxes the captions clear */
     for (var i = 0; i < n; i++) {
       var v = vs[i], st = v.state || 'UNKNOWN', col = _HRT_COL[st] || '#9aa6b2';
       var ang = (START + i * (SWEEP / (n - 1 || 1))) * Math.PI / 180;
@@ -14719,6 +14785,7 @@ window._lockMark = function(isOpen, px, label){
       labels += '<text x="' + (nx + (right ? 11 : -11)).toFixed(1) + '" y="' + (ny + 3.4).toFixed(1)
               + '" text-anchor="' + (right ? 'start' : 'end') + '" font-size="11" fill="' + col
               + '" opacity="' + (st === 'DARK' ? 0.98 : 0.72) + '">' + _hrtEsc(v.name) + '</text>';
+      _fanObst.push(_hrtFanTextBox(v.name, 11, nx + (right ? 11 : -11), ny + 3.4, right ? 'start' : 'end'));
     }
 
     /* ═══ THE GATED ROUTES ═══════════════════════════════════════════════════════════════════
@@ -14743,7 +14810,7 @@ window._lockMark = function(isOpen, px, label){
        entire class it is blind to. Measured after the report: exactly one label carried a path on
        1% of its box, so the eye overstated "unreadable" and was right that it was there.
        Splitting the strings removes the CLASS, not the instance. [[visual-regression-detector]] */
-    var gates = '', gmarks = '', glabels = '';
+    var gates = '', gmarks = '', glabels = '', _fanStacks = [];   /* REG-3091 - captions are placed after the loop */
     var GN = lk.length;
     for (var j = 0; j < GN; j++) {
       var L = lk[j], lst = String(L.state || 'UNKNOWN').toUpperCase();
@@ -15078,19 +15145,31 @@ window._lockMark = function(isOpen, px, label){
          is masked by it instead of running through it. [[visual-regression-detector]] */
       var _halo = 'paint-order:stroke;stroke:var(--surface-read,#14100c);stroke-width:3.5px;'
                 + 'stroke-linejoin:round;';
-      glabels += '<text class="hrt-fan hrt-fan-name" x="' + gx.toFixed(1) + '" y="' + (gy + _yst + 19).toFixed(1)
-             + '" text-anchor="middle" font-size="11.5" fill="' + lc
-             + '" style="' + _halo + '" font-weight="600">' + _hrtEsc(L.lock || L.surface) + '</text>'
-             + '<text class="hrt-fan hrt-fan-arith" x="' + gx.toFixed(1) + '" y="' + (gy + _yst + 32).toFixed(1)
-             + '" text-anchor="middle" font-size="9.5" fill="' + lc
-             + '" style="' + _halo + '" fill-opacity=".75">' + _hrtEsc(arith) + '</text>'
-             + ((arith2 && !_fanOver) ? '<text class="hrt-fan hrt-fan-arith" x="' + gx.toFixed(1) + '" y="' + (gy + _yst + 44).toFixed(1)
-                 + '" text-anchor="middle" font-size="9.5" fill="' + lc
-                 // ⚠ .62 WAS TOO FAINT FOR A DIGIT. The cold eye read "1.00 of 1.80" as
-                 // "1.00 of 1.00" — and 1.00 of 1.00 says the confluence bar is MET, which is the
-                 // opposite of what this row exists to say. A number nobody can read is worse than
-                 // no number, because it is read anyway. Same weight as the line above it.
-                 + '" style="' + _halo + '" fill-opacity=".75">' + _hrtEsc(arith2) + '</text>' : '');
+      /* REG-3091 - THE STACK IS COLLECTED HERE AND DRAWN AFTER THE LOOP, at the place _hrtFanPlace gives it: same lines,
+         same sizes, same halo; only the position is decided from the width, against every other caption */
+      _fanStacks.push({ x: gx, y0: gy + _yst, node: gy, col: lc, halo: _halo, lines: [
+        { cls: 'hrt-fan hrt-fan-name', dy: 19, fs: 11.5, text: (L.lock || L.surface), extra: ' font-weight="600"' },
+        { cls: 'hrt-fan hrt-fan-arith', dy: 32, fs: 9.5, text: arith, extra: ' fill-opacity=".75"' }
+      ].concat((arith2 && !_fanOver)
+        // ⚠ .62 WAS TOO FAINT FOR A DIGIT. The cold eye read "1.00 of 1.80" as
+        // "1.00 of 1.00" — and 1.00 of 1.00 says the confluence bar is MET, which is the
+        // opposite of what this row exists to say. A number nobody can read is worse than
+        // no number, because it is read anyway. Same weight as the line above it.
+        ? [{ cls: 'hrt-fan hrt-fan-arith', dy: 44, fs: 9.5, text: arith2, extra: ' fill-opacity=".75"' }] : []) });
+    }
+    var _fanAt = _hrtFanPlace(_fanStacks, _fanObst, W, H);
+    for (var q = 0; q < _fanStacks.length; q++) {
+      var S = _fanStacks[q], A = _fanAt[q], sx = S.x + A.dx;
+      if (A.dy >= 6 || Math.abs(A.dx) >= 6)
+        gates += '<path class="hrt-lead" d="M ' + S.x.toFixed(1) + ' ' + (S.node + 6).toFixed(1) + ' L ' + sx.toFixed(1)
+               + ' ' + (S.y0 + A.dy + S.lines[0].dy - 11).toFixed(1) + '" fill="none" stroke="' + S.col
+               + '" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>';
+      for (var li = 0; li < S.lines.length; li++) {
+        var Ln = S.lines[li];
+        glabels += '<text class="' + Ln.cls + '" x="' + sx.toFixed(1) + '" y="' + (S.y0 + A.dy + Ln.dy).toFixed(1)
+                 + '" text-anchor="middle" font-size="' + Ln.fs + '" fill="' + S.col
+                 + '" style="' + S.halo + '"' + Ln.extra + '>' + _hrtEsc(Ln.text) + '</text>';
+      }
     }
 
     /* ⚠ IT BEATS WHETHER OR NOT ANYTHING IS PROVEN, and that is deliberate. The beat says THE
