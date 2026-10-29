@@ -13273,6 +13273,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_keeper_copy_leaves_alone_and_comes_back_whole.py")], 300,
          needs_app=False,
          why='#202 P3b (REG-2974, REG-2975): a look at one keeper copy never drops another; his hand removes the named copy and its undo and the profile bring it back whole'),
+    Gate("test_a_runeword_keeper_keeps_a_base_per_copy",
+         [sys.executable, os.path.join(HERE, "test_a_runeword_keeper_keeps_a_base_per_copy.py")], 300,
+         needs_app=False,
+         why="REG-3000..3002 (his 2026-10-29 Q3 ruling): the Keepers box takes a runeword, its row says each copy's base, and a judged read's base names its copy"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
