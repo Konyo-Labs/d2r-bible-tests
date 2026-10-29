@@ -44218,9 +44218,9 @@ details[open] > summary .to-chev{transform:rotate(180deg)}
 .vmk-row{flex-wrap:wrap}
 .vmk-dest-sel{max-width:150px;min-width:0;background:rgba(0,0,0,.3);border:1px solid rgba(127,212,255,.35);border-radius:6px;color:#f4e8d0;font-size:var(--fs-micro);padding:2px 4px;cursor:pointer}
 .vmk-dest-sel:focus{outline:none;border-color:rgba(127,212,255,.7)}
-.vmk-dest-miss,.vmk-dest-hand{flex:1 0 100%;font-size:var(--fs-micro);padding-left:37px}
+.vmk-dest-miss,.vmk-dest-hand,.vmk-bases{flex:1 0 100%;font-size:var(--fs-micro);padding-left:37px}
 .vmk-dest-miss{color:#ff9a9a}
-.vmk-dest-hand{color:#8a9aa8}
+.vmk-dest-hand,.vmk-bases{color:#8a9aa8}
 .vmk-add{display:flex;gap:7px;align-items:center;margin-top:10px;padding-top:9px;border-top:1px dashed rgba(240,192,96,.22)}
 .vmk-add input{flex:1;min-width:0;background:rgba(0,0,0,.3);border:1px solid rgba(240,192,96,.3);border-radius:7px;color:#f4e8d0;font-size:12px;padding:5px 9px}
 .vmk-add input:focus{outline:none;border-color:rgba(240,192,96,.6)}
@@ -46881,6 +46881,40 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     return pref.length === 1 ? pref[0] : null;
   }
   try { window._resolveGrailName = _resolveGrailName; } catch (eRg) {}
+  /* REG-3000 (his ruling 2026-10-29 02:30, Q3) - A RUNEWORD MAY BE A MULTI-COPY KEEPER. The Keepers box asked only the grail
+     vocabulary (_resolveGrailName), so "Grief" was refused ("isn't a chronicle item") while the hand door could raise a
+     runeword's want. A typed runeword name (exact, as findRuneword reads it) is the keeper now, and it beats a grail name that
+     only BEGINS that way. A name that is exactly both a runeword and a grail item is asked, never guessed.
+     -> {name} | {ask: sentence} | null (not a runeword) */
+  function _vmkRuneword(raw){
+    var rw = null;
+    try { rw = (typeof findRuneword === 'function') ? findRuneword(String(raw || '').trim()) : null; } catch (eF) { rw = null; }
+    if (!rw) return null;
+    var q = String(raw || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(), both = null;
+    _grailVocab().forEach(function(v){ if (!both && String(v).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() === q) both = v; });
+    if (both && both !== rw) return { ask: '“' + raw + '” is both the runeword ' + rw + ' and the item ' + both + ' - nothing was added (type the item\'s full name for the item)' };
+    return { name: rw };
+  }
+  try { window._vmkRuneword = _vmkRuneword; } catch (eVr) {}
+  /* REG-3001 - A RUNEWORD KEEPER'S COPIES MAY SIT IN DIFFERENT BASES, AND ITS ROW SAYS WHICH: each copy's base off its own
+     record (REG-2844 - the planner writes it, REG-3002 a read), "bases: 1 Phase Blade · 2 Berserker Axe". A copy whose base
+     was never recorded says so, and records that would not read are UNKNOWN; nothing is guessed. */
+  function _vmkBases(n, have){
+    var rw = null;
+    try { rw = (typeof findRuneword === 'function') ? findRuneword(n) : null; } catch (eF) { rw = null; }
+    if (!rw || !(have > 0) || typeof window._vaultCopyEntry !== 'function') return '';
+    var db = null;
+    try { db = (typeof window._cbDb === 'function') ? window._cbDb() : null; } catch (eD) { db = null; }
+    var parts = [];
+    for (var k = 0; k < have; k++){
+      var e = window._vaultCopyEntry(n, k);
+      if (e === undefined) return '<span class="vmk-bases">the bases of its copies could not be read - UNKNOWN</span>';
+      var b = (e && e.base) ? String(e.base) : '';
+      if (b && db && db.b && db.b[b]) b = db.b[b][0];
+      parts.push((k + 1) + ' ' + (b ? esc(b) + (e.eth ? ' (eth)' : '') : 'base not recorded'));
+    }
+    return '<span class="vmk-bases" title="each copy keeps its own base">bases: ' + parts.join(' · ') + '</span>';
+  }
   /* #149.2 (REG-2902, GrokBot's GB-L Advanced-drawer pass, ACT 2) - EACH KEEPER ROW SAYS WHERE EVERY COPY GOES. The
      Keepers tab held HAVE and WANT and nothing about a home; a row now carries Destination [Auto | Shared stash | WAR mules
      | Mule <name>] beside its want, and the router and the war cap read it (REG-2901). Mules are listed by their stable id
@@ -46948,7 +46982,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
           ? '<span class="vmk-grp"><span class="vmk-grp-lbl">want</span><button class="vmk-step" aria-label="want one fewer '+_d2artEsc(n)+'" onclick="window.vaultTargetBump(\''+jsArg(n)+'\',-1)">−</button><span class="vmk-num">'+want+'</span><button class="vmk-step" aria-label="want one more '+_d2artEsc(n)+'" onclick="window.vaultTargetBump(\''+jsArg(n)+'\',1)">+</button></span>'
           : '<span class="vmk-grp vmk-notarget" title="an inflated count with no keep-target — walk HAVE down to your true number, or ✕ to reset to one"><span class="vmk-grp-lbl">want</span><span class="vmk-num">—</span></span>')
         +dst.sel
-        +'<button class="vmk-rm" onclick="window.vaultMultiKeepRemove(\''+jsArg(n)+'\')" title="'+(tgt?'remove the keep-target (the copies you have stay counted)':'reset this inflated count to one (asks first)')+'">✕</button>'+dst.tail+'</div>';
+        +'<button class="vmk-rm" onclick="window.vaultMultiKeepRemove(\''+jsArg(n)+'\')" title="'+(tgt?'remove the keep-target (the copies you have stay counted)':'reset this inflated count to one (asks first)')+'">✕</button>'+dst.tail+_vmkBases(n, have)+'</div>';
     }).join('');
     el.innerHTML='<details class="vmk-det"><summary class="vmk-sum to-sum"><span class="to-emblem">📦</span><span class="to-hd"><span class="to-hd-top"><span class="to-st">Multi-copy Keepers</span></span><span class="to-subt">staples you want several of — how many, and where every copy goes; a re-read under target is kept as a spare, not a discard</span></span><span class="to-rule"></span><span class="to-chev">▾</span></summary><div class="vmk-body">'
       +(rows||'<div style="padding:8px 4px;color:#8a9aa8;font-size:12px">No multi-copy items yet — add one below.</div>')
@@ -46976,7 +47010,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     try{ (typeof persist==='function')?persist():persistOwned(); }catch(e){} renderMultiKeep(); renderVaultRegistered();
     return { ok: true };
   };
-  window.vaultMultiKeepAdd=function(){ var inp=document.getElementById('vmk-add-input'); if(!inp) return; var raw=(inp.value||'').trim(); if(!raw) return; var n=_resolveGrailName(raw); if(!n){ try{ if(window._vfCanon && window._vfIsSetPiece){ var _crMk=window._vfCanon(raw); if(_crMk && window._vfIsSetPiece(_crMk)) n=_crMk; } }catch(eRm){} }   /* #76 v3753 — a SET PIECE ("Natalya's Totem") is not in the grail vocab, so _resolveGrailName rejects it; fall back to the set-piece canon so he can collect/recount a set piece by name */ if(!n){ status('“'+raw+'” isn’t a chronicle item — check the spelling'); return; } try{ if(window._vfCanon){ var _cnMk=window._vfCanon(n); if(_cnMk) n=_cnMk; } }catch(eMk){}   /* #76 v3753 — the recount box resolves a BARE chronicle name; fold to the SLOTTED ledger key the vault owns set pieces under, or the stepper touches a dead key */ if(_mkWant(n)>1){ status(n+' is already a multi-copy keeper'); } else { _mkSetWant(n,2); } inp.value=''; try{ (typeof persist==='function')?persist():persistOwned(); }catch(e){} renderMultiKeep(); renderVaultRegistered(); };
+  window.vaultMultiKeepAdd=function(){ var inp=document.getElementById('vmk-add-input'); if(!inp) return; var raw=(inp.value||'').trim(); if(!raw) return; var n=_resolveGrailName(raw); var _rwMk=(typeof _vmkRuneword==='function')?_vmkRuneword(raw):null; if(_rwMk && _rwMk.ask){ status(_rwMk.ask); return; } if(_rwMk) n=_rwMk.name;   /* REG-3000 a runeword is a keeper */ if(!n){ try{ if(window._vfCanon && window._vfIsSetPiece){ var _crMk=window._vfCanon(raw); if(_crMk && window._vfIsSetPiece(_crMk)) n=_crMk; } }catch(eRm){} }   /* #76 v3753 — a SET PIECE ("Natalya's Totem") is not in the grail vocab, so _resolveGrailName rejects it; fall back to the set-piece canon so he can collect/recount a set piece by name */ if(!n){ status('“'+raw+'” isn’t a chronicle item — check the spelling'); return; } try{ if(window._vfCanon){ var _cnMk=window._vfCanon(n); if(_cnMk) n=_cnMk; } }catch(eMk){}   /* #76 v3753 — the recount box resolves a BARE chronicle name; fold to the SLOTTED ledger key the vault owns set pieces under, or the stepper touches a dead key */ if(_mkWant(n)>1){ status(n+' is already a multi-copy keeper'); } else { _mkSetWant(n,2); } inp.value=''; try{ (typeof persist==='function')?persist():persistOwned(); }catch(e){} renderMultiKeep(); renderVaultRegistered(); };
   // scrollable "Registered" triage panel — every ✓owned item tagged muled / unsorted / not-muled
   // (account-shared stash), each with a ✕ throw-out, so the AI read is observable and the intake
   // count reconciles (Konyo: "scrollbar for registered · muled / not muled · throw out").
@@ -53873,6 +53907,12 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
                                            frameId: meta.frameId || null, ts: meta.fts || meta.firstSeenTs || null, loc: meta.loc || null,
                                            scene: meta.scene || null, conf: meta.conf, readTier: 'keep',
                                            carried: _kwRoute.route === 'carried', character: meta.character || null }); } catch(e0){}
+              /* REG-3002 - the read's base names its copy: the copy in that base, a copy whose base was never recorded, or -
+                 for a runeword he keeps several of and holds fewer than he wants - another copy in that base */
+              try {
+                var _rjR = (base && typeof window._vaultRunewordReadJoin === 'function') ? window._vaultRunewordReadJoin(nm, { base: base }) : null;
+                if (_rjR){ out.copy = _rjR.copyIx; if (_rjR.mode === 'new') out.newCopy = true; if (_rjR.why) out.copyWhy = _rjR.why; }
+              } catch (eRj) {}
             }
           } else if (typeof magicFinds === 'object' && magicFinds){
             /* ── v1934 — A KEEPER MUST BE ABLE TO NAME THE PHOTOGRAPH IT CAME FROM ─────────────
@@ -60017,6 +60057,38 @@ window.vaultAutoAssign = function(){
      copy it is, another copy counted, and a copy past copy 0 recorded with its own mods (copy 0 is the name's record,
      d2r_magicFinds, which the caller writes). opts.sameFile: a re-read of the same file never counts another (REG-2401).
      -> {mode, copyIx} | null (UNKNOWN: the records would not read - the caller keeps what it did before) */
+  /* REG-3002 (his ruling 2026-10-29 02:30, Q3) - A RUNEWORD'S COPIES ARE TOLD APART BY THEIR BASE. A judged read of Grief only
+     owned the name, so a Grief in a Berserker Axe beside one in a Phase Blade was the same copy. The read's base now names
+     its copy: the copy recorded in that base is that copy; a copy whose base was never recorded takes it; a base no copy has
+     is another copy only for a runeword he keeps several of (a multi-copy keeper) and holds fewer of than he wants - a
+     misread base never mints a copy of a runeword he keeps one of (the read is that runeword, said, and nothing is counted).
+     -> {mode: 'same' | 'fill' | 'new', copyIx} | {mode: 'other', copyIx: null, why} | null (no base, or the records would not read) */
+  window._vaultRunewordReadJoin = function(name, entry){
+    var nm = String(name == null ? '' : name).trim();
+    var db = null;
+    try { db = (typeof window._cbDb === 'function') ? window._cbDb() : null; } catch (eD) { db = null; }
+    var fold = function(x){ x = String(x || '').trim(); if (x && db && db.b && db.b[x]) x = db.b[x][0]; return x.toLowerCase(); };
+    var want = fold(entry && entry.base);
+    if (!nm || !want) return null;
+    var n = (typeof copyCount === 'function') ? (copyCount(nm) | 0) : 1; if (!(n >= 1)) n = 1;
+    var blank = null;
+    for (var k = 0; k < n; k++){
+      var e = window._vaultCopyEntry(nm, k);
+      if (e === undefined) return null;
+      var eb = fold(e && e.base);
+      if (!eb){ if (blank == null) blank = k; continue; }
+      if (eb === want) return { mode: 'same', copyIx: k };
+    }
+    var r = (blank != null) ? { mode: 'fill', copyIx: blank }
+          : ((typeof _mkWant === 'function' && _mkWant(nm) > n) ? { mode: 'new', copyIx: n } : null);
+    if (!r) return { mode: 'other', copyIx: null, why: nm + ' read in another base than its ' + n + ' cop' + (n === 1 ? 'y' : 'ies')
+                     + ' here - not counted: it is not a keeper he wants more of (a misread base never mints a copy)' };
+    if (r.mode === 'new') copies[nm] = n + 1;
+    var code = null;
+    if (db && db.b) Object.keys(db.b).some(function(c){ if (String(db.b[c][0]).toLowerCase() === want){ code = c; return true; } return false; });
+    try { _vaultCopyEntrySet(nm, r.copyIx, { q: 'r', base: code || String(entry.base) }, { fill: true }); } catch (eRs) {}
+    return r;
+  };
   window._vaultKeeperReadJoin = function(name, entry, opts){
     var nm = String(name == null ? '' : name).trim();
     var r = nm ? window._vaultKeeperCopyOf(nm, entry) : null;

@@ -2551,6 +2551,31 @@ file row with k > n - and no law named either. Test-only: a law that holds both 
 writes nothing; a forged 138/135 row reads UNKNOWN and may() stays LOCKED) and holds the shape over the tracked
 ledger (every lock and route: k <= n, attacksPassed <= attacks <= n). The fan-caption overlap half of #84 is NEEDS
 LIVE. Law: test_a_lock_never_publishes_more_refusals_than_attempts (python), 2 red-proofs, RED.
+### REG-3002 - A JUDGED GRIEF READ IN ANOTHER BASE WAS THE SAME COPY (his ruling 2026-10-29 02:30, Q3)
+A judged read of a runeword only owned the name, so a Grief read in a Berserker Axe beside one in a Phase Blade was the same
+copy. The read's base now names its copy (window._vaultRunewordReadJoin, from the AI checker's keep):
+- the copy recorded in that base is that copy;
+- a copy whose base was never recorded takes it, on its own record;
+- a base no copy has is another copy, carrying that base, only for a runeword he keeps several of (a multi-copy keeper) and
+  holds fewer of than he wants;
+- on a runeword he keeps one of, or holds all he wants of, the read is said ("read in another base ... not counted") and
+  nothing is counted - a misread base never mints a copy;
+- a read with no base names no copy.
+Law: test_a_runeword_keeper_keeps_a_base_per_copy (node, the whole page; with REG-3000 and REG-3001), 3 red-proofs.
+
+### REG-3001 - NOTHING SAID WHICH BASE EACH COPY OF A RUNEWORD SITS IN (his ruling 2026-10-29 02:30, Q3)
+Each copy already keeps its own base on its record (REG-2844 for the planner, REG-3002 for a read), and nothing showed it.
+A runeword keeper's row in Multi-copy Keepers now says it - "bases: 1 Phase Blade · 2 Berserker Axe" - a copy whose base
+was never recorded says so, and records that would not read are UNKNOWN. Law: test_a_runeword_keeper_keeps_a_base_per_copy,
+1 red-proof.
+
+### REG-3000 - THE KEEPERS BOX REFUSED A RUNEWORD (his ruling 2026-10-29 02:30, Q3)
+His ruling: a runeword may be a multi-copy keeper, and its copies may sit in different bases. The Keepers box asked only the
+grail vocabulary, so "Grief" was refused ("isn't a chronicle item") while the hand door could raise a runeword's want. A
+typed runeword name (exact, as findRuneword reads it) is the keeper now, and it beats a grail name that only begins that
+way ("Spirit" is the runeword, not an item whose name starts with it). A name that is exactly both a runeword and a grail
+item is asked, and nothing is added. Law: test_a_runeword_keeper_keeps_a_base_per_copy, 2 red-proofs.
+
 ### REG-2975 - HIS HAND TOOK OUT ONE KEEPER COPY AND THE NAME'S RECORD STILL READ THE COPY THAT LEFT (#202 P3b)
 Copy 0 of a Magic & Rare keeper reads its mods off the name's record (d2r_magicFinds). Measured on the whole page in node:
 two Small Charms of Vita (+17 and +20 to Life), the +17 one removed through vaultRemoveCopy (REG-2849) - the +20 copy stayed
