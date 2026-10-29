@@ -13345,6 +13345,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_roster_carries_this_pcs_save_names.py")], 300,
          needs_app=False,
          why="#251 REG-2929 - the roster publish's characters section carries this PC's save names exactly spelled, never an id; unanswered saves change nothing"),
+    Gate("test_the_characters_room_says_why_its_saves_name_what_they_name",
+         [sys.executable, os.path.join(HERE, "test_the_characters_room_says_why_its_saves_name_what_they_name.py")], 300,
+         needs_app=False,
+         why="#251 REG-3079 - the Characters room says why this PC's saves name what they name (no .d2s here, no save folder); a shadow says the owner's, from their upload"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

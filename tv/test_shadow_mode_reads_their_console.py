@@ -669,6 +669,7 @@ class TheConsoleDoors(unittest.TestCase):
         with mock.patch.object(self.CA, "_profile_owner", lambda: OWNER), \
                 mock.patch.object(self.CA, "_profile_chars_learned", lambda: None), \
                 mock.patch.object(self.CA, "main_locks_view", lambda: None), \
+                mock.patch.object(self.CA, "_profile_saves", lambda: None), \
                 mock.patch.object(self.CA, "_roster_post",
                                   lambda url, body, key: posted.append(body) or {"ok": True, "stored": ["profile"]}):
             self.CA._profile_publish_once(True)
@@ -684,6 +685,7 @@ class TheConsoleDoors(unittest.TestCase):
         with mock.patch.object(self.CA, "_profile_owner", lambda: OWNER), \
                 mock.patch.object(self.CA, "_profile_chars_learned", lambda: {"ok": True, "chars": []}), \
                 mock.patch.object(self.CA, "main_locks_view", lambda: {"ok": False, "locked": None}), \
+                mock.patch.object(self.CA, "_profile_saves", lambda: None), \
                 mock.patch.object(self.CA, "_roster_post",
                                   lambda url, body, key: posted.append((url, body, key)) or
                                   {"ok": True, "stored": ["profile"]}):
