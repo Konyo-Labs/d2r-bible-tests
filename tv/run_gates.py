@@ -13269,6 +13269,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_magic_copy_is_asked_or_filed_by_its_mods.py")], 300,
          needs_app=False,
          why="#202 P3b (REG-2973): a keeper picked again in the planner is asked or filed as another copy by its mod lines, and no copy's mods reach another"),
+    Gate("test_a_keeper_copy_leaves_alone_and_comes_back_whole",
+         [sys.executable, os.path.join(HERE, "test_a_keeper_copy_leaves_alone_and_comes_back_whole.py")], 300,
+         needs_app=False,
+         why='#202 P3b (REG-2974, REG-2975): a look at one keeper copy never drops another; his hand removes the named copy and its undo and the profile bring it back whole'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
