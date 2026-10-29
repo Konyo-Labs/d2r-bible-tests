@@ -13289,6 +13289,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_copy_seen_away_from_its_spot_is_asked.py")], 300,
          needs_app=False,
          why='REG-3066..3067 (his 2026-10-28 rules, #202): a copy seen away from its spot is asked about (Yes moves the spot by his hand, No sets the sighting aside); one session in two places is a question, UNKNOWN until answered'),
+    Gate("test_every_locker_window_packs_what_its_card_counts",
+         [sys.executable, os.path.join(HERE, "test_every_locker_window_packs_what_its_card_counts.py")], 300,
+         needs_app=False,
+         why="REG-3072 (GrokBot on v3838): every roster locker's window packs as many copies as its card draws and names every one - keepers of every home included"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

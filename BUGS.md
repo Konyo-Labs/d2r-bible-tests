@@ -2551,6 +2551,21 @@ file row with k > n - and no law named either. Test-only: a law that holds both 
 writes nothing; a forged 138/135 row reads UNKNOWN and may() stays LOCKED) and holds the shape over the tracked
 ledger (every lock and route: k <= n, attacksPassed <= attacks <= n). The fan-caption overlap half of #84 is NEEDS
 LIVE. Law: test_a_lock_never_publishes_more_refusals_than_attempts (python), 2 red-proofs, RED.
+### REG-3072 - THE CHARMS AND SHARED STASH WINDOWS PACKED NONE OF THE KEEPERS THEIR CARDS COUNTED (GrokBot #230 on v3838)
+GrokBot on v3838: the CHARMS card said 2 (Mac) and 1 (ALT) while its window said "Items 1 · Copies 0 · 0 on this mule" and
+drew nothing; the SHARED STASH card said 13 / 15 while its window laid out 5 / 9 - the small charms re-homed there (REG-2895)
+were counted and never packed. The same class as MAGIC & RARE's 23 vs 5 (REG-2850): a keeper had no record, and the window
+packs records. Measured on the whole page in node with those shapes (two kept grand charms and a magic-find small charm homed
+on CHARMS, two small charms on the shared stash): on the page before P3b, the CHARMS window said "Items 3 · Copies 0" with
+no tile and the shared stash window laid out 0 of its card's 2; with P3b (REG-2971, every keeper a record per copy homed by
+the keeper rule) both pack every keeper. Not a new code change - a law that holds the rule for EVERY locker: on a board with
+keepers of every home and hand-added items on their lockers, each roster locker's window packs as many copies as its card
+draws cells, and names every item its card draws (fails on the pre-P3b page, passes on P3b). The "Create mule CHARMS in the
+game" line was measured present in node - on a fresh board, on a board whose saved roster predates the CHARMS mule (it is
+added with its make record), and with no item yet; why GrokBot did not see it on his boards is NEEDS LIVE (the roster's
+charms entry: auto, inGame). Law: test_every_locker_window_packs_what_its_card_counts (node, the whole page), 3 red-proofs,
+RED.
+
 ### REG-3067 - ONE SESSION THAT SAW A COPY IN TWO PLACES WAS SETTLED BY A GUESS (his done rule 2026-10-28 18:56, #202)
 His done rule: "same-session conflict -> a question". A read at a copy's target and a read somewhere else from the SAME
 session cannot both be where it is now, and REG-2843 let the newer read win - a guess inside one session: measured on the
