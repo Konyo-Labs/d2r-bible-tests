@@ -4738,7 +4738,7 @@ window._intakeRefused = function(status, data){
   var st = +status || 0;
   if (data && typeof data === 'object' && data.error)
     return (data.error === 'subscription-cap' ? 'the reader is at its cap' : 'the reader refused')
-      + ' (' + String(data.message || data.error).slice(0, 140) + ')' + ((st && st !== 200) ? ' - HTTP ' + st : '');
+      + ' (' + String(data.message || data.detail || data.error).slice(0, 140) + ')' + ((st && st !== 200) ? ' - HTTP ' + st : '');   /* REG-3021 - the website's upstream error carries its reason in `detail` */
   if (st && (st < 200 || st > 299)) return 'the reader answered HTTP ' + st;
   return null;
 };
@@ -4764,7 +4764,19 @@ window._intakeAnswer = async function(resp){
   var rf = window._intakeRefused(st, data);
   if (!rf && resp && resp.ok === false) rf = 'the reader answered HTTP ' + (st || '(no status)');
   if (!rf && !data) rf = 'the reader sent ' + bad + (st ? ' - HTTP ' + st : '');
-  return { status: st, data: data, refused: rf };
+  return { status: st, data: data, refused: rf, cap: !!rf && window._intakeIsCap(st, data) };   /* REG-3021 */
+};
+/* #158 (REG-3021) - WHEN A REFUSAL IS A CAP. A reader at its subscription cap (REG-2383: HTTP 429 + {error:'subscription-cap'})
+   or an API key at its usage limit (v438: a 402, or "usage limit / credit balance / regain access / billing / quota" in the
+   detail - the vault intake's own test, moved here so every door asks the same one) refuses the next shot exactly as it
+   refused this one. So a cap ends the batch: the shots after it are not asked, and each is "not read" for the cap's reason.
+   Measured before this: a five-shot batch at the cap asked the reader five times and said five refusals (the tally reader
+   asked three times per shot). -> true when the refusal is a cap */
+window._intakeIsCap = function(status, data){
+  if (!data || typeof data !== 'object' || !data.error) return false;
+  if (data.error === 'subscription-cap') return true;
+  return +data.status === 402 || +status === 402
+    || /usage limit|credit balance|regain access|billing|insufficient|quota|reached your specified/i.test(String(data.detail || data.message || ''));
 };
 /* ...and a request that never came back (the fetch threw, or the shot could not be prepared) read nothing either. -> a sentence */
 window._intakeThrew = function(e){
@@ -4774,6 +4786,7 @@ window._intakeThrew = function(e){
 /* #158 (REG-2979) - how a door's report says the shots it could not read, escaped for the report. -> html */
 window._intakeNotReadSay = function(n, why){
   var w = String(why || '').replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+  if (n == null) return 'not read' + (w ? ' \u2014 ' + w : '');   /* REG-3024 - one read with no count (the daily pick) */
   return n + ' shot' + (n === 1 ? '' : 's') + ' not read' + (w ? ' \u2014 ' + w : '');
 };
 /* ⚠⚠ v2692 — WHICH LEDGER IS THIS? Konyo: "this is outdated.. it should be registerd accordingly
@@ -33001,14 +33014,16 @@ window.setIntake = async function(files){
      answer was counted before the refusal rule could speak, a 200 + {error} reached the rule and its sentence was dropped,
      and either way the report said "No set pieces recognised (1 image error)". A shot that was not read is counted apart,
      with the first one's reason, and a batch nobody read says so instead of "nothing recognised". */
-  var marked=[], notRead=0, notReadWhy='';
+  var marked=[], notRead=0, notReadWhy='', capWhy='';
   for (var i=0;i<files.length;i++){
+    if (capWhy) { notRead++; continue; }   /* REG-3021 - the reader is at its cap: the rest of the batch is not asked */
     try{
       var b64=await downscale(files[i]);
       var endpoint = window._d2rIntakeEndpoint();
       // items mode (reads NAMES from tooltips), not tally — a set piece is owned-or-not
       var resp=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({image:b64,media_type:'image/jpeg',names:vocab})});
       var ans=await window._intakeAnswer(resp);   /* REG-2978 - the answer is read before it is judged */
+      if (ans.cap) capWhy = notReadWhy = ans.refused;   /* REG-3021 - and the cap is why the rest is not read */
       if (ans.refused) { notRead++; notReadWhy = notReadWhy || ans.refused; continue; }   /* REG-2815 - a refusal is not a page read clean */
       var data=ans.data;
       (data.items||[]).forEach(function(n){
@@ -34802,10 +34817,15 @@ async function _tallyRead(b64, vocab, layout, kind, why){
      field, or the request itself threw. A caller that passes `why` ({}) gets the last failed pass's cause in why.text.
      Nothing about the read changes - not the prompt, the model, the crop or the vote. */
   function _fail(t){ try { if (why) why.text = String(t).slice(0, 160); } catch (_e) {} return null; }
+  /* REG-3021 - a cap ends the passes of this shot, and every reader hands one `why` to all the shots of its batch, so it
+     ends the batch too: a shot after the cap is "not read" for the cap's reason and is never sent. */
+  var _capT = (why && why.cap) ? String(why.text || 'the reader is at its cap') : '';
+  if (_capT) return _fail(_capT);
   async function onePass(){
     try{
       var resp = await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({image:b64,media_type:'image/jpeg',names:vocab,kind:kind,layout:layout||undefined})});
       var ans = await window._intakeAnswer(resp);   /* REG-2978 - a cap keeps its own sentence, never only "HTTP 429" */
+      if(ans.cap){ _capT = ans.refused; try { if (why) why.cap = true; } catch (_e2) {} }   /* REG-3021 */
       if(ans.refused) return _fail(ans.refused);   // v341.52 — upstream/worker error (200 + error field) → failed pass, not an empty read
       var data = ans.data;
       var t = data.tally || {}, clean = {};
@@ -34838,6 +34858,7 @@ async function _tallyRead(b64, vocab, layout, kind, why){
   var reads = [], MAXP = 3, res = null;
   for (var p=0; p<MAXP; p++){
     var r = await onePass(); if(r) reads.push(r);
+    if (_capT) break;   /* REG-3021 - the reader is at its cap: no more passes */
     if (reads.length >= 2){ res = vote(reads); if (res.decided) break; }
   }
   if(!reads.length) return null;   // every pass failed (network/server) → caller counts an error
@@ -35472,6 +35493,15 @@ window.scanTopPicks = function(opts){
 // top-tier items as VISUAL tiles (art + recipe + status), refreshed once a day on load (the
 // client-side "cron" — the tallies live on this device, so a server cron can't see them). A
 // once-a-day cached AI line names the single best pick.
+/* #158 (REG-3024) - THE DAILY PICK'S LINE. A pick the reader refused (its cap, an error body, a body that is no reading, a
+   fetch that never came back) writes no pick and was silent: the card went on calling an earlier day's sentence "Today's
+   pick" as if it had been asked. It now says the pick was not read, in the refusal rule's words, beside the last pick that
+   WAS read (marked as such). The note lives for this page only; the next load asks again. -> html */
+window._createNowAiBanner = function(ai, notRead){
+  if (notRead) return '<div class="cn-ai cn-ai-notread">💡 <b>Today’s pick:</b> ' + notRead
+    + (ai ? ' <span style="opacity:.72">· the last pick it read: ' + _askMd(ai) + '</span>' : '') + '</div>';
+  return ai ? ('<div class="cn-ai">💡 <b>Today’s pick:</b> '+_askMd(ai)+'</div>') : '';
+};
 window.renderCreateNow = function(){
   var host=document.getElementById('create-now'); if(!host) return;
   var tp=(typeof buildTopPicks==='function')?window._previewWrap(buildTopPicks):{makeNow:[],afterCubing:[],close:[]};
@@ -35542,7 +35572,7 @@ window.renderCreateNow = function(){
   if(!body) body='<div class="cn-empty">Nothing top-tier craftable yet — tally more runes &amp; gems with 📸 intake and this dashboard updates itself.</div>';
   var when=''; try{ when=window.LSR.getItem('d2r_createNowDate')||''; }catch(e){}
   var ai=''; try{ ai=window.LSR.getItem('d2r_createNowAi')||''; }catch(e){}
-  var aiBanner = ai ? ('<div class="cn-ai">💡 <b>Today’s pick:</b> '+_askMd(ai)+'</div>') : '';
+  var aiBanner = window._createNowAiBanner(ai, window._createNowAiNotRead);   /* REG-3024 */
   // 🧪 preview bar — sandbox simulator (real tallies untouched)
   var pv=window.previewStash, pvBar='';
   var pvToggle='<button class="cn-prev-toggle'+(pv?' on':'')+'" onclick="window.togglePreview()" title="Preview mode — simulate extra runes/gems against a SANDBOX; your real tallies stay untouched">🧪 Preview'+(pv?' ON':'')+'</button>';
@@ -35661,6 +35691,7 @@ window.dailyCreateAi = function(force){
   // remain"). Now we DESCEND the chronicle rotation — grail uniques / sets get a real farm move instead —
   // and only say "all sealed" when every chronicle is truly complete. No Sonnet call needed (truthful local pick).
   if(!(tp.makeNow.length||tp.afterCubing.length)){
+    window._createNowAiNotRead = '';   /* REG-3024 - a pick made here was not refused */
     try {
       var _rot = (typeof window._chronRotation==='function') ? window._chronRotation() : null;
       if (_rot && _rot.target && _rot.target.pick){ window.LSR.setItem('d2r_createNowAi', _rot.target.pick); }
@@ -35684,7 +35715,18 @@ window.dailyCreateAi = function(force){
   var askUrl=base.replace(/\/api\/intake$/,'/api/ask');
   var snap=(typeof buildAskSnapshot==='function')?window._previewWrap(buildAskSnapshot):{};
   fetch(askUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:'In ONE short sentence (no preamble), name the single highest-value thing to make right now from my Top Picks and why. PRIORITISE an unmade RUNEWORD from snapshot.forge.makeNow — finishing runewords advances my Chronicle (use snapshot.chronicle.made and snapshot.chronicle.total verbatim - never a round figure) and a runeword outweighs a craft. Recommend a CRAFT (e.g. a caster amulet) ONLY if I have no makeable unmade runeword left. Once my Chronicle is complete it is naturally all crafts/items.',snapshot:snap})})
-    .then(function(r){return r.json();}).then(function(d){ if(d&&d.answer){ try{ window.LSR.setItem('d2r_createNowAi', d.answer.slice(0,300)); }catch(e){} try{ window._syncCreateNowAiArt(); }catch(e){} window.renderCreateNow(); } }).catch(function(){});
+    .then(function(r){ return window._intakeAnswer(r); })   /* REG-3024 - the answer is read before it is judged (REG-2978) */
+    .then(function(x){ var d=x.data||{};
+      if(!x.refused && d.answer){ window._createNowAiNotRead=''; try{ window.LSR.setItem('d2r_createNowAi', d.answer.slice(0,300)); }catch(e){} try{ window._syncCreateNowAiArt(); }catch(e){} window.renderCreateNow(); return; }
+      _pickNotRead(x.refused || 'the reader answered with no pick'); })
+    .catch(function(e){ _pickNotRead(window._intakeThrew(e)); });
+  /* REG-3024 - a refused pick writes NO pick and says so; the day's stamp comes off, so the next load asks again rather than
+     carrying an earlier day's sentence as today's until midnight */
+  function _pickNotRead(why){
+    window._createNowAiNotRead = window._intakeNotReadSay(null, why);
+    try{ window.LSR.removeItem('d2r_createNowAiDate'); }catch(e){}
+    try{ if(typeof window.renderCreateNow==='function') window.renderCreateNow(); }catch(e){}
+  }
 };
 
 /* ══ v2378 — A DAILY PICK MAY NOT BOAST A COMPLETION WHILE ANYTHING IS INCOMPLETE ═══════════
@@ -36397,6 +36439,7 @@ async function _craftRead(b64, vocab, why){
   try {
     var resp = await fetch(endpoint, { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ image: b64, media_type:'image/jpeg', names: vocab, kind:'craft' }) });
     var ans = await window._intakeAnswer(resp);   /* REG-2978 - the answer is read before it is judged */
+    if (ans.cap && why) why.cap = true;   /* REG-3021 */
     if (ans.refused) { if (why) why.text = ans.refused; return null; }   /* REG-2815 - a refusal is no tally, never an empty one */
     return ans.data.tally || {};
   } catch(e){ if (why) why.text = window._intakeThrew(e); return null; }
@@ -36408,11 +36451,14 @@ window.craftIntake = async function(files){
   var vocab = []; CRAFTS.forEach(function(c){ CRAFT_SLOTS.forEach(function(s){ vocab.push(c.key + ' ' + s); }); });
   var added = {}, total = 0, held=[];   /* v1940 — reads that came in UNDER the stored count; never silently dropped */
   var notRead = 0, notReadWhy = '';   /* REG-2979 - a shot the reader never read is counted apart, with its reason - never "no crafted items" */
+  var capWhy = '';
   for (var i = 0; i < files.length; i++){
+    if (capWhy) { notRead++; continue; }   /* REG-3021 - the reader is at its cap: the rest of the batch is not asked */
     try {
       var b64 = await _craftPrepImage(files[i]);
       var _whyC = {};
       var t = await _craftRead(b64, vocab, _whyC);
+      if (_whyC.cap) capWhy = notReadWhy = _whyC.text;   /* REG-3021 - and the cap is why the rest is not read */
       if (t === null){ notRead++; notReadWhy = notReadWhy || _whyC.text || ''; continue; }
       Object.keys(t).forEach(function(k){
         var f = findCraft(k); if (!f || !f.slot) return;
@@ -63076,8 +63122,8 @@ function renderJournal(){
     // treating as empty, so a whole batch read "∅ no tooltip text" (looked like an accuracy bug; it was billing).
     // Now: detect it, set a clear banner, and ABORT the batch instead of hammering a capped API + faking empties.
     var _aiLimitHit = false;
-    function _aiIsLimit(d){ return !!(d && d.error && (+d.status === 402 || /usage limit|credit balance|regain access|billing|insufficient|quota|reached your specified/i.test(String(d.detail || d.message || '')))); }
-    function _aiLimitMsg(d){ var det = String((d && (d.detail || d.message)) || ''); var m = /regain access on ([0-9A-Za-z :\-]+?)(?:\.|"|$)/i.exec(det); return '⚠ AI usage limit reached — the Anthropic API key hit its monthly cap' + (m ? ' (regains access ' + m[1].trim() + ')' : '') + '. Raise the limit / add credit in the Anthropic console to read now. This is NOT your screenshots — they are fine.'; }
+    function _aiIsLimit(d){ return window._intakeIsCap(0, d); }   /* REG-3021 - the one cap rule, which now also knows the subscription cap */
+    function _aiLimitMsg(d){ if (d && d.error === 'subscription-cap') return '⚠ ' + window._intakeRefused(429, d) + ' — the rest of this batch was not asked. This is NOT your screenshots — they are fine.'; var det = String((d && (d.detail || d.message)) || ''); var m = /regain access on ([0-9A-Za-z :\-]+?)(?:\.|"|$)/i.exec(det); return '⚠ AI usage limit reached — the Anthropic API key hit its monthly cap' + (m ? ' (regains access ' + m[1].trim() + ')' : '') + '. Raise the limit / add credit in the Anthropic console to read now. This is NOT your screenshots — they are fine.'; }
     /* v1728 — RAISING THE FLAG AND EXPLAINING IT MUST BE ONE ACT.
        Seven places detect the AI usage limit. ONE of them (the first read, :33172) set both
        _aiLimitHit and _aiErr; the six retry/fallback paths set only the flag, so the feature went
@@ -63187,6 +63233,7 @@ function renderJournal(){
           body: JSON.stringify({ image: b64, media_type: 'image/jpeg', names: vocab, file: fname, cropped: !!_box }),
         }, 75000);
         var _ansV = await window._intakeAnswer(resp);   /* REG-2978 - a cap says its own sentence, never "unreachable"; a body that is no reading is an error, never an empty read */
+        if (_ansV.cap) _aiLimitSeen(_ansV.data);   /* REG-3021 - a cap stops the batch (v438): the shots after it are not asked */
         if (!resp.ok || !_ansV.data) { errors++; fRec.err = true; if (!_aiErr) _aiErr = 'AI service · ' + _ansV.refused; doneCount++; report.innerHTML = _scanUI(doneCount, files.length, logged.length); return; }
         var data = _ansV.data;
         // v407 — the backend returns HTTP 200 with an {error,...} field when the Anthropic call itself failed
@@ -71994,8 +72041,9 @@ function renderJournal(){
     /* #158 (REG-2977, the v3834 second eye) - A PAGE THE READER NEVER READ IS NOT A PAGE. A refusal was pushed into `pages`
        beside the pages that were read, with empty printed/read, so anything counting pages counted a read. It is kept apart,
        with its reason, and painted first - the reason an empty read is empty. */
-    var pages = [], refused = [];
+    var pages = [], refused = [], capWhy = '';
     for (var i = 0; i < files.length; i++){
+      if (capWhy) { refused.push({ n:i+1, why:capWhy }); continue; }   /* REG-3021 - the reader is at its cap: this page is not asked */
       _chronShotReport('📜 reading Chronicle ' + (ledger === 'sets' ? 'SETS' : 'UNIQUES') +
         ' page <b>' + (i + 1) + ' / ' + files.length + '</b>…');
       try {
@@ -72004,6 +72052,7 @@ function renderJournal(){
           body: JSON.stringify({ image:b64, media_type:'image/jpeg', kind:kind, names:vocab }) });
         var ans = await window._intakeAnswer(resp);   /* REG-2978 - a 429 or a 502 with no JSON body is still its status */
         var _rfC = ans.refused;   /* REG-2815 - a refused page is not a page read with nothing on it */
+        if (ans.cap) capWhy = _rfC;   /* REG-3021 */
         if (_rfC) { refused.push({ n:i+1, why:_rfC }); continue; }   /* REG-2977 - nor a page at all */
         var d = ans.data;
         pages.push({ n:i+1, note:(d&&d.note)||null, witness:(d&&d.witness)||'none',
@@ -72712,14 +72761,16 @@ function renderJournal(){
     var rep=document.getElementById('grail-intake-report');
     var show=function(html){ if(rep){ rep.style.display='block'; rep.innerHTML=html; } };
     var endpoint=window._d2rIntakeEndpoint();
-    var V=_grailVocab(); var found=new Set(); var unknown=new Set(); var errs=0, refusedWhy='';
+    var V=_grailVocab(); var found=new Set(); var unknown=new Set(); var errs=0, refusedWhy='', capWhy='';
     for(var i=0;i<files.length;i++){
+      if (capWhy) { errs++; continue; }   /* REG-3021 - the reader is at its cap: the rest of the batch is not asked */
       show('📸 reading chronicle screenshot <b>'+(i+1)+' / '+files.length+'</b>… ('+found.size+' found so far)');
       try {
         var b64=await _gDownscale(files[i]);
         var resp=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({image:b64,media_type:'image/jpeg',kind:'grail',names:V.vocab})});
         var ans=await window._intakeAnswer(resp);   /* REG-2978 - a 429 or a 502 with no JSON body is still its status */
         var _rfG=ans.refused;   /* REG-2815 - a refused shot is an error with its reason */
+        if (ans.cap) capWhy = refusedWhy = _rfG;   /* REG-3021 - and the cap is why the rest is not read */
         if (_rfG) { errs++; refusedWhy = refusedWhy || _rfG; continue; }
         var d=ans.data;
         (d&&d.items||[]).forEach(function(n){ found.add(n); });
@@ -83745,8 +83796,9 @@ var body = JSON.stringify({ tab: tab, owner: owner, ttlMs: _ttl });
         img.onerror = reject; img.src = url;
       });
     }
-    var total = 0, errors = 0, last = 0, errWhy = '';   /* REG-2978 - a refused count says why, on its receipt (errWhy, REG-2730) */
+    var total = 0, errors = 0, last = 0, errWhy = '', capWhy = '';   /* REG-2978 - a refused count says why, on its receipt (errWhy, REG-2730) */
     for (var i = 0; i < files.length; i++){
+      if (capWhy) { errors++; continue; }   /* REG-3021 - the reader is at its cap: the rest of the batch is not asked */
       try {
         var b64 = await downscale(files[i]);
         // dummy vocab satisfies older proxies; gridcount ignores names server-side
@@ -83759,6 +83811,7 @@ var body = JSON.stringify({ tab: tab, owner: owner, ttlMs: _ttl });
           })
         });
         var ans = await window._intakeAnswer(resp);
+        if (ans.cap) capWhy = errWhy = ans.refused;   /* REG-3021 */
         if (ans.refused){ errors++; errWhy = errWhy || ans.refused; continue; }
         var data = ans.data;
         var n = parseInt(data.count, 10);

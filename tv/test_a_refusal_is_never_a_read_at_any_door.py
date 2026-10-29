@@ -22,11 +22,25 @@ four holes in how the doors used it, each reproduced in node before anything was
 
 Now every door reads its answer through window._intakeAnswer(resp) (the body as text, parsed if JSON, the rule asked of the
 status and whatever came back; a body that is no reading is a refusal with its own sentence) and a request that never came
-back says window._intakeThrew(e). Driven: every door cut from bible.html and run in node over one stubbed fetch, in six
-refusal shapes (429 cap JSON, 502 empty, 200 + {error}, 200 HTML, a thrown fetch, a shot that could not be prepared), beside
+back says window._intakeThrew(e). Driven: every door cut from bible.html and run in node over one stubbed fetch, in seven
+refusal shapes (429 cap JSON, a 402 usage limit, 502 empty, 200 + {error}, 200 HTML, a thrown fetch, a shot that could not be
+prepared), beside
 a clean read and a read that honestly found nothing - so the law can tell the three apart; the engine's real judge poster run
 over the real judge, and its body handed to control_app's own refusal row. The vault intake's read is pinned at its line
 (read, not run - it is too entangled to cut). RED_PROOF below.
+
+REG-3021 (#158, his ruling): A CAP ENDS THE BATCH. window._intakeIsCap(status, body) is the one cap rule - the reader's
+subscription cap (429 + {error:'subscription-cap'}) or an API key at its usage limit (402, or the v438 usage-limit words, the
+vault intake's own test moved beside the refusal rule). Measured before it, on a five-shot batch where every answer was the
+cap: the set, craft, Chronicle, grail and grid doors each asked the reader 5 times and the tally reader 15 (three passes a
+shot). Now every batch door asks once: the shots after the cap are not sent, and each is "not read" for the cap's reason; the
+vault intake raises its own v438 stop (_aiLimitHit) on a subscription cap too. A refusal that is not a cap (a 502) does not
+end the batch.
+
+REG-3024 (#158): THE DAILY PICK. dailyCreateAi read its answer with r.json() and kept a pick only `if (d.answer)`, so a refusal
+in any shape wrote nothing and SAID nothing - the card went on calling an earlier day's sentence "Today's pick". It now reads
+its answer through the answer reader; a refusal writes no pick, takes the day's stamp off (the next load asks again) and the
+card says "not read - <the rule's sentence>" beside the last pick that was read.
 """
 import io
 import json
@@ -54,13 +68,16 @@ BIBLE = io.open(os.path.join(os.path.dirname(HERE), "bible.html"), encoding="utf
 APP = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
 
 SIGS = ["window._intakeRefused = function(status, data){", "window._intakeAnswer = async function(resp){",
-        "window._intakeThrew = function(e){", "window._intakeNotReadSay = function(n, why){",
+        "window._intakeIsCap = function(status, data){", "window._intakeThrew = function(e){",
+        "    function _aiIsLimit(d){", "    function _aiLimitMsg(d){",
+        "window._intakeNotReadSay = function(n, why){",
         "  window.aicJudge = async function(file){", "  window.aicUpload = async function(file){",
         "window.setIntake = async function(files){", "function _craftPrepImage(file){", "async function _craftRead(",
         "window.craftIntake = async function(files){", "  window.chronicleShotIntake = async function(files){",
         "  function _chronShotPaint(){", "  window.grailIntake=async function(files){", "  function _grailImportToastOnce(){",
         "function _askEsc(t){", "function _askMd(t){", "window.askBible = function(q){", "async function _tallyRead(",
-        "  window.vaultGridCount = async function(files, opts){"]
+        "  window.vaultGridCount = async function(files, opts){", "window.dailyCreateAi = function(force){",
+        "window._createNowAiBanner = function(ai, notRead){"]
 
 
 def _cut(src, sig):
@@ -90,7 +107,7 @@ function el(id){
     scrollTop: 0, scrollHeight: 0, insertAdjacentHTML(p, h){ this.innerHTML += h; }, removeAttribute(){},
     appendChild(c){ this.innerHTML += (c && c.innerHTML) || ''; } });
 }
-let QUEUE = [], IMGFAIL = false;
+let QUEUE = [], IMGFAIL = false, CALLS = 0, RENDERS = 0;
 const msgs = [], chron = [];
 function mkResp(a){
   const raw = a.raw !== undefined ? a.raw : JSON.stringify(a.body);
@@ -111,7 +128,7 @@ const env = {
       getContext: () => ({ drawImage(){}, imageSmoothingEnabled: true }), toDataURL: () => 'data:image/jpeg;base64,AAAA' }) },
   location: { reload(){}, protocol: 'http:' },
   setTimeout: (f, ms) => (ms && ms > 50 ? 0 : setTimeout(f, ms)),
-  fetch: async () => { const a = QUEUE.length > 1 ? QUEUE.shift() : QUEUE[0]; if (a.throw) throw new TypeError(a.throw); return mkResp(a); },
+  fetch: async () => { CALLS++; const a = QUEUE.length > 1 ? QUEUE.shift() : QUEUE[0]; if (a.throw) throw new TypeError(a.throw); return mkResp(a); },
   downscale: prep, _gDownscale: prep,
   _aicIntakeEndpoint: () => '/api/intake', __setPieceNames: () => [],
   _aicItem: {}, _aicSave(){}, _aicMsg: (m) => msgs.push(m), renderAIItemChecker(){},
@@ -125,12 +142,15 @@ const env = {
   buildAskSnapshot: () => ({}),
   _grailVocab: () => ({ vocab: ['Harlequin Crest'], uniq: new Set(['Harlequin Crest']), pieceMap: {} }),
   _chronShotReport: (h) => chron.push(h), _chronAlreadyUni: () => false, _chronAlreadySet: () => false, _chronShot: null,
+  navigator: { webdriver: false }, rwMade: {},
+  buildTopPicks: () => ({ makeNow: [{ name: 'Spirit' }], afterCubing: [], close: [] }),
 };
 window._d2rIntakeEndpoint = () => '/api/intake';
 window._previewWrap = (f) => f();
 window.__allSets = env.__allSets;
 window._aiIntakeStart = () => {}; window._aiIntakeStop = () => {};
-const F = new Function('env', 'with (env) {\n' + CFG.code + '\nreturn { window: window, tally: _tallyRead, toast: _grailImportToastOnce }; }')(env);
+window.renderCreateNow = () => { RENDERS++; }; window._syncCreateNowAiArt = () => {};
+const F = new Function('env', 'with (env) {\n' + CFG.code + '\nreturn { window: window, tally: _tallyRead, toast: _grailImportToastOnce, aiIsLimit: _aiIsLimit, aiLimitMsg: _aiLimitMsg }; }')(env);
 const W = F.window;
 const tick = () => new Promise((r) => setTimeout(r, 10));
 const files = (n) => Array.from({ length: n }, (_, i) => ({ name: 'shot' + i + '.png' }));
@@ -151,6 +171,12 @@ const DOORS = {
   ask: async () => { W.askBible('what next?'); for (let i = 0; i < 8; i++) await tick(); const b = el('ask-pending'); return { bubble: b.innerHTML || b.textContent, cls: b.className }; },
   tally: async () => { const why = {}; const t = await F.tally('AAAA', [], 'runes', 'tally', why); return { result: t, why: why.text || null }; },
   grid: async (n) => W.vaultGridCount(files(n), { tab: 'personal' }),
+  pick: async () => { LSR._m['d2r_createNowAi'] = 'Make Enigma - an earlier day'; window._createNowAiNotRead = ''; RENDERS = 0;
+    W.dailyCreateAi(true); for (let i = 0; i < 8; i++) await tick();
+    const ai = LSR._m['d2r_createNowAi'] || '';
+    return { pick: ai, dated: 'd2r_createNowAiDate' in LSR._m, notRead: window._createNowAiNotRead || '', renders: RENDERS,
+             banner: W._createNowAiBanner(ai, window._createNowAiNotRead) }; },
+  tallyN: async (n) => { const why = {}, rs = []; for (let i = 0; i < n; i++) rs.push(await F.tally('AAAA', [], 'runes', 'tally', why)); return { results: rs, why: why.text || null, cap: !!why.cap }; },
 };
 const out = { doors: {}, partial: {}, poster: {}, helper: {} };
 for (const s of Object.keys(CFG.shapes)) {
@@ -173,6 +199,22 @@ out.helper.noBody = await W._intakeAnswer({ ok: true, status: 200 });
 out.helper.arrayBody = await W._intakeAnswer(mkResp({ status: 200, body: [] }));
 out.helper.jsonOnly = await W._intakeAnswer({ ok: true, status: 200, json: async () => ({ items: ['x'] }) });
 out.helper.threw = W._intakeThrew(new TypeError('Failed to fetch'));
+out.caps = {};
+const capRun = async (key, d, shapes, n) => { reset(shapes); CALLS = 0; const r = await DOORS[d](n == null ? shapes.length : n); out.caps[key] = { calls: CALLS, r }; };
+for (const d of ['set', 'craft', 'chron', 'grail', 'grid']) {
+  await capRun(d + ':all', d, ['cap429'], 5);
+  await capRun(d + ':mid', d, ['read', 'cap429', 'read', 'read']);
+  await capRun(d + ':limit', d, ['limit402', 'read'], 2);
+  await capRun(d + ':notcap', d, ['empty502', 'read', 'read']);
+}
+await capRun('tally:all', 'tallyN', ['cap429'], 5);
+await capRun('tally:mid', 'tallyN', ['read', 'read', 'cap429', 'read'], 3);
+await capRun('tally:notcap', 'tallyN', ['empty502', 'empty502', 'empty502', 'read', 'read'], 2);
+out.isCap = {};
+for (const [k, a] of Object.entries(CFG.shapes)) out.isCap[k] = a.body ? W._intakeIsCap(a.status, a.body) : false;
+out.vault = { capIsLimit: F.aiIsLimit(CFG.shapes.cap429.body), limitIsLimit: F.aiIsLimit(CFG.shapes.limit402.body),
+              errIsLimit: F.aiIsLimit(CFG.shapes.err200.body), capMsg: F.aiLimitMsg(CFG.shapes.cap429.body),
+              limitMsg: F.aiLimitMsg(CFG.shapes.limit402.body) };
 process.stdout.write(JSON.stringify(out));
 """
 
@@ -188,12 +230,16 @@ SHAPES = {
     "cap429": {"status": 429, "body": CAP},
     "empty502": {"status": 502, "raw": ""},
     "err200": {"status": 200, "body": {"error": "upstream", "message": "the model is overloaded"}},
+    "limit402": {"status": 200, "body": {"error": "upstream", "status": 402, "tally": {}, "items": [], "unrecognized": [],
+                                         "detail": "You have reached your specified API usage limits. You will regain access "
+                                                   "on 2026-11-01 at 00:00 UTC."}},
     "html200": {"status": 200, "raw": "<html><body>Bad gateway</body></html>"},
     "throw": {"throw": "Failed to fetch"},
     "unprepared": {"status": 200, "body": READ, "imgfail": True},
 }
 # the words each refusal must carry to the door's report - its own sentence, not a stand-in
-SAYS = {"cap429": ["at its cap", "20/20 this hour", "HTTP 429"], "empty502": ["HTTP 502"], "err200": ["overloaded"],
+SAYS = {"cap429": ["at its cap", "20/20 this hour", "HTTP 429"], "limit402": ["usage limits"], "empty502": ["HTTP 502"],
+        "err200": ["overloaded"],
         "html200": ["not JSON"], "throw": ["Failed to fetch"], "unprepared": ["could not be decoded"]}
 REFUSALS = list(SAYS)
 PARTIAL = [["set", ["read", "cap429"]], ["craft", ["read", "cap429"]], ["chron", ["read", "cap429"]],
@@ -419,8 +465,111 @@ class TheAnswerReader(unittest.TestCase):
 
     def test_no_door_asks_the_rule_around_the_answer_reader(self):
         code = "\n".join(re.sub(r"/\*.*?\*/|//[^\n]*$", "", l) for l in BIBLE.split("\n"))
-        self.assertEqual(len(re.findall(r"window\._intakeRefused\(", code)), 1,
-                         "a door asks the refusal rule of a body it parsed itself - the answer reader is the one door")
+        self.assertEqual(code.count("window._intakeRefused(st, data)"), 1, "PREMISE: the answer reader asks the rule")
+        own = [a for a in re.findall(r"window\._intakeRefused\(([^,)]*)", code) if re.search(r"status|\.st\b", a)]
+        self.assertEqual(own, [], "a door asks the refusal rule of a response it parsed itself - the answer reader is the "
+                                  "one door")
+
+
+class TheDailyPickSaysARefusalAndWritesNoPick(unittest.TestCase):
+    """REG-3024 - a refused daily pick writes no pick, says "not read - <why>", and the day is asked again."""
+
+    def test_a_read_pick_is_kept(self):
+        o = _o()["doors"]["read"]["pick"]
+        self.assertEqual((o["pick"], o["notRead"], o["dated"]), ("Make Spirit.", "", True))
+        self.assertIn("Today’s pick:</b> Make Spirit.", o["banner"])
+
+    def test_a_refusal_writes_no_pick_and_says_so(self):
+        for s in [x for x in REFUSALS if x != "unprepared"]:
+            with self.subTest(shape=s):
+                o = _o()["doors"][s]["pick"]
+                self.assertEqual(o["pick"], "Make Enigma - an earlier day", "a refused pick wrote a pick: %r" % o)
+                self.assertTrue(o["notRead"].startswith("not read — "), o)
+                _says(self, o["notRead"], s)
+                self.assertIn("Today’s pick:</b> not read", o["banner"])
+                self.assertIn("the last pick it read: Make Enigma", o["banner"])
+                self.assertFalse(o["dated"], "a refused day kept its stamp, so it is never asked again today")
+                self.assertGreaterEqual(o["renders"], 1, "the card was not repainted to say it")
+
+    def test_the_card_draws_its_pick_line_through_the_one_banner(self):
+        self.assertEqual(BIBLE.count("  var aiBanner = window._createNowAiBanner(ai, window._createNowAiNotRead);   /* REG-3024 */"), 1,
+                         "renderCreateNow draws the pick line by hand again, so a refused pick is not said on the card")
+
+
+class ACapEndsTheBatch(unittest.TestCase):
+    """REG-3021 - a cap is asked once per batch; every shot after it is not read, for the cap's reason."""
+
+    CAP = "the reader is at its cap (20/20 this hour - intake paused) - HTTP 429"
+
+    def test_the_cap_rule_names_a_cap_and_only_a_cap(self):
+        c = _o()["isCap"]
+        self.assertEqual((c["cap429"], c["limit402"]), (True, True))
+        for k in ("read", "empty", "err200", "empty502", "html200"):
+            self.assertFalse(c[k], "%s was called a cap - a batch would stop for a refusal that may lift" % k)
+
+    def test_a_batch_all_at_the_cap_asks_once(self):
+        C = _o()["caps"]
+        for d in ("set", "craft", "chron", "grail", "grid", "tally"):
+            with self.subTest(door=d):
+                self.assertEqual(C[d + ":all"]["calls"], 1, "%s asked a capped reader %d times for 5 shots"
+                                 % (d, C[d + ":all"]["calls"]))
+        self.assertIn("5 shots not read \u2014 " + self.CAP, C["set:all"]["r"]["report"])
+        self.assertIn("5 shots not read \u2014 " + self.CAP, C["craft:all"]["r"]["report"])
+        self.assertEqual([(x["n"], x["why"]) for x in C["chron:all"]["r"]["proposal"]["refused"]],
+                         [(n, self.CAP) for n in range(1, 6)])
+        self.assertIn(self.CAP + " (5 screenshots)", C["grail:all"]["r"]["report"])
+        self.assertEqual((C["grid:all"]["r"]["errors"], C["grid:all"]["r"]["errWhy"]), (5, self.CAP))
+        self.assertEqual((C["tally:all"]["r"]["results"], C["tally:all"]["r"]["why"]), ([None] * 5, self.CAP))
+
+    def test_a_cap_mid_batch_keeps_what_was_read_and_says_the_rest(self):
+        C = _o()["caps"]
+        for d in ("set", "craft", "chron", "grail", "grid"):
+            with self.subTest(door=d):
+                self.assertEqual(C[d + ":mid"]["calls"], 2, "%s asked again after the cap" % d)
+        self.assertEqual(C["set:mid"]["r"]["marked"], ["Tal Rasha's Horadric Crest (helm)"])
+        self.assertIn("3 shots not read \u2014 " + self.CAP, C["set:mid"]["r"]["report"])
+        self.assertEqual(C["craft:mid"]["r"]["stash"], {"Caster Amulet": 1})
+        self.assertIn("3 shots not read \u2014 " + self.CAP, C["craft:mid"]["r"]["report"])
+        p = C["chron:mid"]["r"]["proposal"]
+        self.assertEqual((len(p["pages"]), [(x["n"], x["why"]) for x in p["refused"]]),
+                         (1, [(2, self.CAP), (3, self.CAP), (4, self.CAP)]))
+        self.assertIn("page 4 \u2014 not read: " + self.CAP, C["chron:mid"]["r"]["report"])
+        imp = C["grail:mid"]["r"]["imported"] or {}
+        self.assertEqual((imp.get("u"), imp.get("ref"), imp.get("why")), (1, 3, self.CAP))
+        g = C["grid:mid"]["r"]
+        self.assertEqual((g["total"], g["errors"], g["errWhy"]), (3, 3, self.CAP))
+        t = C["tally:mid"]
+        self.assertEqual((t["calls"], t["r"]["results"][1:], t["r"]["why"]), (3, [None, None], self.CAP))
+        self.assertEqual(t["r"]["results"][0], {"Caster Amulet": 1, "El": 2})
+
+    def test_a_usage_limit_is_a_cap_too(self):
+        C = _o()["caps"]
+        for d in ("set", "craft", "chron", "grail", "grid"):
+            with self.subTest(door=d):
+                self.assertEqual(C[d + ":limit"]["calls"], 1)
+        self.assertIn("2 shots not read", C["set:limit"]["r"]["report"])
+        self.assertIn("usage limits", C["set:limit"]["r"]["report"])
+
+    def test_a_refusal_that_is_not_a_cap_does_not_end_the_batch(self):
+        """PREMISE: the law can tell a cap from any refusal - a 502 is said and the batch goes on."""
+        C = _o()["caps"]
+        for d in ("set", "craft", "chron", "grail", "grid"):
+            with self.subTest(door=d):
+                self.assertEqual(C[d + ":notcap"]["calls"], 3)
+        self.assertEqual(C["set:notcap"]["r"]["marked"], ["Tal Rasha's Horadric Crest (helm)"])
+        self.assertIn("1 shot not read \u2014 the reader answered HTTP 502", C["set:notcap"]["r"]["report"])
+        t = C["tally:notcap"]
+        self.assertEqual((t["calls"], t["r"]["results"][1], t["r"]["cap"]), (5, {"Caster Amulet": 1, "El": 2}, False))
+
+    def test_the_vault_intake_stops_on_a_subscription_cap(self):
+        v = _o()["vault"]
+        self.assertEqual((v["capIsLimit"], v["limitIsLimit"], v["errIsLimit"]), (True, True, False))
+        self.assertIn(self.CAP, v["capMsg"])
+        self.assertIn("rest of this batch was not asked", v["capMsg"])
+        self.assertNotIn("Anthropic", v["capMsg"], "a subscription cap was explained as the API key's monthly cap")
+        self.assertIn("regains access 2026-11-01 at 00:00 UTC", v["limitMsg"])
+        self.assertEqual(BIBLE.count("        if (_ansV.cap) _aiLimitSeen(_ansV.data);"), 1,
+                         "the vault intake's first read does not raise its stop on a cap")
 
 
 class TheVaultDoorsSayTheReadersSentence(unittest.TestCase):
@@ -523,8 +672,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2978 - the Ask box parses before the status is judged again (a 502 with no body 'is the site deployed')",
      "file": "bible.html",
-     "find": "    .then(function(r){ return window._intakeAnswer(r); })",
-     "replace": "    .then(function(r){ return r.json().then(function(d){ return { data: d, refused: window._intakeRefused(r.status, d) }; }); })",
+     "find": "    .then(function(r){ return window._intakeAnswer(r); })   /* REG-2978 - a 429 or a 502",
+     "replace": "    .then(function(r){ return r.json().then(function(d){ return { data: d, refused: window._intakeRefused(r.status, d) }; }); })   /* REG-2978 - a 429 or a 502",
      "matches": 1, "needs": "node"},
     {"why": "REG-2978 - the item checker's upload says 'server 429' and not the cap again",
      "file": "bible.html",
@@ -551,6 +700,111 @@ RED_PROOF = [
      "find": "if (!_aiErr) _aiErr = 'AI service · ' + _ansV.refused;",
      "replace": "if (!_aiErr) _aiErr = 'AI service unreachable · HTTP ' + resp.status;",
      "matches": 1},
+    {"why": "REG-3021 - the answer reader never says a refusal is a cap",
+     "file": "bible.html",
+     "find": "  return { status: st, data: data, refused: rf, cap: !!rf && window._intakeIsCap(st, data) };   /* REG-3021 */\n",
+     "replace": "  return { status: st, data: data, refused: rf, cap: false };\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - the cap rule forgets the subscription cap",
+     "file": "bible.html",
+     "find": "  if (data.error === 'subscription-cap') return true;\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - the cap rule calls every refusal a cap",
+     "file": "bible.html",
+     "find": "  return +data.status === 402 || +status === 402\n",
+     "replace": "  return true || +data.status === 402 || +status === 402\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - the set tracker asks a capped reader for every shot again",
+     "file": "bible.html",
+     "find": "    if (capWhy) { notRead++; continue; }   /* REG-3021 - the reader is at its cap: the rest of the batch is not asked */\n    try{\n",
+     "replace": "    try{\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - the craft workshop asks a capped reader for every shot again",
+     "file": "bible.html",
+     "find": "      if (_whyC.cap) capWhy = notReadWhy = _whyC.text;   /* REG-3021 - and the cap is why the rest is not read */\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - the Chronicle reader asks a capped reader for every page again",
+     "file": "bible.html",
+     "find": "        if (ans.cap) capWhy = _rfC;   /* REG-3021 */\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - the grail reader asks a capped reader for every shot again",
+     "file": "bible.html",
+     "find": "        if (ans.cap) capWhy = refusedWhy = _rfG;   /* REG-3021 - and the cap is why the rest is not read */\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - the grid counter asks a capped reader for every shot again",
+     "file": "bible.html",
+     "find": "        if (ans.cap) capWhy = errWhy = ans.refused;   /* REG-3021 */\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - the tally reader keeps asking a capped reader for its other passes",
+     "file": "bible.html",
+     "find": "    if (_capT) break;   /* REG-3021 - the reader is at its cap: no more passes */\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - the tally reader asks a capped reader again for the next shot of the batch",
+     "file": "bible.html",
+     "find": "  var _capT = (why && why.cap) ? String(why.text || 'the reader is at its cap') : '';\n",
+     "replace": "  var _capT = '';\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - the vault intake no longer stops for a subscription cap",
+     "file": "bible.html",
+     "find": "    function _aiIsLimit(d){ return window._intakeIsCap(0, d); }",
+     "replace": "    function _aiIsLimit(d){ return !!(d && d.error && +d.status === 402); }",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - a subscription cap is explained as the API key's monthly cap again",
+     "file": "bible.html",
+     "find": "    function _aiLimitMsg(d){ if (d && d.error === 'subscription-cap') return",
+     "replace": "    function _aiLimitMsg(d){ if (false) return",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3021 - the vault intake's first read does not raise its stop on a cap",
+     "file": "bible.html",
+     "find": "        if (_ansV.cap) _aiLimitSeen(_ansV.data);   /* REG-3021 - a cap stops the batch (v438): the shots after it are not asked */\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "REG-3021 - a usage limit's reason (the website's `detail`) is dropped from the refusal again",
+     "file": "bible.html",
+     "find": "String(data.message || data.detail || data.error)",
+     "replace": "String(data.message || data.error)",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3024 - a refused daily pick is silent again",
+     "file": "bible.html",
+     "find": "      _pickNotRead(x.refused || 'the reader answered with no pick'); })",
+     "replace": "      })",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3024 - a daily pick whose fetch threw is silent again",
+     "file": "bible.html",
+     "find": "    .catch(function(e){ _pickNotRead(window._intakeThrew(e)); });",
+     "replace": "    .catch(function(){});",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3024 - the daily pick parses before the status is judged again",
+     "file": "bible.html",
+     "find": "    .then(function(r){ return window._intakeAnswer(r); })   /* REG-3024 - the answer is read before it is judged (REG-2978) */",
+     "replace": "    .then(function(r){ return r.json().then(function(d){ return { data: d, refused: null }; }); })",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3024 - a refused day keeps its stamp and is not asked again until tomorrow",
+     "file": "bible.html",
+     "find": "    try{ window.LSR.removeItem('d2r_createNowAiDate'); }catch(e){}\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3024 - the card's pick line never says a pick was not read",
+     "file": "bible.html",
+     "find": "  if (notRead) return '<div class=\"cn-ai cn-ai-notread\">",
+     "replace": "  if (false) return '<div class=\"cn-ai cn-ai-notread\">",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3024 - renderCreateNow draws the pick line by hand again",
+     "file": "bible.html",
+     "find": "  var aiBanner = window._createNowAiBanner(ai, window._createNowAiNotRead);   /* REG-3024 */",
+     "replace": "  var aiBanner = ai ? ('<div class=\"cn-ai\">💡 <b>Today’s pick:</b> '+_askMd(ai)+'</div>') : '';",
+     "matches": 1},
+    {"why": "REG-3024 - the not-read line has no form for a read with no count",
+     "file": "bible.html",
+     "find": "  if (n == null) return 'not read' + (w ? ' \\u2014 ' + w : '');   /* REG-3024 - one read with no count (the daily pick) */\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
 ]
 
 if __name__ == "__main__":
