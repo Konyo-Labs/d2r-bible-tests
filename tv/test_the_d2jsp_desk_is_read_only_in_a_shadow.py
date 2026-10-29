@@ -127,8 +127,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3095 - the guard misses a shadow known only by its class",
      "file": "bible.html",
-     "find": "    try { return document.documentElement.classList.contains('tvd-shadow'); } catch (e) { return false; }\n",
-     "replace": "    return false;\n",
+     "find": "  function inShadow(){\n    if (window._tvdShadow) return true;\n    try { return document.documentElement.classList.contains('tvd-shadow'); } catch (e) { return false; }\n",   # ship-chain: REG-3105's _flShadow carries the same line, so the guard is named by its function
+     "replace": "  function inShadow(){\n    if (window._tvdShadow) return true;\n    return false;\n",
      "matches": 1},
     {"why": "REG-3095 - the guard misses the veil's own handle",
      "file": "bible.html",
