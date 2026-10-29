@@ -13281,6 +13281,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_tv_stub_never_outranks_what_the_name_is.py")], 300,
          needs_app=False,
          why="REG-3054..3055 (GrokBot #230): a TV stub's basic over its own name never outranks a catalogue runeword or the rolled-name grammar, and a runeword is sized by its bases or his copies' recorded bases"),
+    Gate("test_the_move_list_says_how_many_copies_are_in_place",
+         [sys.executable, os.path.join(HERE, "test_the_move_list_says_how_many_copies_are_in_place.py")], 300,
+         needs_app=False,
+         why='REG-3065 (his intake design, #202): the MOVE TASKS list and the readout say in place N of M - verified or ticked copies of those with a home'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
