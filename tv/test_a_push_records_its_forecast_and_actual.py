@@ -14,7 +14,9 @@ DRIVEN:
   1. unmatched_names / prove / main: an unmatched name and a `NAME[k]` are said and exit 2, also beside a name that
      matched; a matched run still exits 0.
   2. forecast() over a fixture tree and a fixture verdict cache: a banked proof is a hit, a remembered one narrow, the
-     rest full, a law that lists a directory UNKEYABLE with its reason; a cache or a sandbox that raises is UNKNOWN, never
+     rest full, a law whose PROOF_NEEDS is his footage UNKEYABLE with its reason (REG-2944: a law that only lists a
+     directory is keyed by its traced run now, so it is forecast to run, never called unkeyable); a cache or a sandbox
+     that raises is UNKNOWN, never
      a raise; `--forecast` exits 0 whatever happens.
   3. the REAL push path (_prove_gate with _PUSH set, a stand-in law run): the record says hit / narrow / full for the
      three proofs, what was banked, and why each ran; a seeded wrongful eviction is a prove-once violation; the seams
@@ -149,7 +151,8 @@ class _MarkingCache(H._VerdictCache):
 
 
 class _Fixture(unittest.TestCase):
-    """A sandbox-shaped tree: one gate with three proofs (A, B, C) over subject.py, and one law that lists a directory."""
+    """A sandbox-shaped tree: one gate with three proofs (A, B, C) over subject.py, one law that lists a directory (keyed
+    by its traced run since REG-2944) and one whose PROOF_NEEDS is footage (unkeyable)."""
 
     def setUp(self):
         del LINES[:]
@@ -159,9 +162,11 @@ class _Fixture(unittest.TestCase):
         os.makedirs(self.tv)
         for fn, body in (("subject.py", 'A = "GOOD"\nB = "GOOD"\nC = "GOOD"\n'),
                          ("fake_gate.py", "import subject\nimport sys\nsys.exit(0)\n"),
-                         ("lister_gate.py", "import os\nNAMES = os.listdir('.')\n")):
+                         ("lister_gate.py", "import os\nNAMES = os.listdir('.')\n"),
+                         ("footage_gate.py", "PROOF_NEEDS = ['frames/hist']\n")):
             with io.open(os.path.join(self.tv, fn), "w", encoding="utf-8") as fh:
                 fh.write(body)
+        os.makedirs(os.path.join(self.tv, "frames", "hist"))     # REG-2944 - his footage: no byte key can name it
         self.proofs = [{"file": "subject.py", "find": '%s = "GOOD"' % k, "replace": '%s = "BAD"' % k,
                         "matches": 1, "why": k} for k in ("A", "B", "C")]
         self.cache = _MarkingCache(path=os.path.join(self.root, ".heart2_cache.json"), say=_say)
@@ -200,17 +205,21 @@ class TheForecastSaysWhatThePushWillDo(_Fixture):
 
     def test_hit_narrow_full_and_unkeyable_with_its_reason(self):
         self.bank(0)
-        fc = H.forecast([(GATE, "fake_gate.py", self.proofs), ("lister", "lister_gate.py", self.proofs[:1])],
+        fc = H.forecast([(GATE, "fake_gate.py", self.proofs), ("lister", "lister_gate.py", self.proofs[:1]),
+                         ("footage", "footage_gate.py", self.proofs[:1])],
                         say=_say, sandbox=self.tv, cache=self.cache)
         row = dict((r["gate"], r) for r in fc["laws"])
         self.assertEqual((row[GATE]["hit"], row[GATE]["narrow"], row[GATE]["full"]), (1, 1, 1),
                          "the forecast did not tell the banked, the remembered and the rest apart: %s" % row[GATE])
         self.assertEqual(row[GATE]["runs"], 2 + 1 + 2, "a narrowed proof is 2 runs; a full one 1 + clean + closing")
-        self.assertEqual(row["lister"]["unkeyable"], 1, "a law that lists a directory was not called UNKEYABLE")
-        self.assertIn("lists a directory", row["lister"]["why"])
-        self.assertEqual((fc["proofs"], fc["hit"], fc["narrow"], fc["full"], fc["unkeyable"]), (4, 1, 1, 2, 1))
+        self.assertEqual((row["lister"]["unkeyable"], row["lister"]["full"]), (0, 1),
+                         "REG-2944: a law that lists a directory is keyed by its traced run - forecast to run, never "
+                         "UNKEYABLE: %s" % row["lister"])
+        self.assertEqual(row["footage"]["unkeyable"], 1, "a law whose PROOF_NEEDS is footage was not called UNKEYABLE")
+        self.assertIn("footage", row["footage"]["why"])
+        self.assertEqual((fc["proofs"], fc["hit"], fc["narrow"], fc["full"], fc["unkeyable"]), (5, 1, 1, 3, 1))
         self.assertTrue(any(ln.lstrip().startswith("#42 FORECAST") for ln in LINES), LINES)
-        self.assertTrue(any("lister" in ln and "UNKEYABLE - " in ln and "lists a directory" in ln for ln in LINES), LINES)
+        self.assertTrue(any("footage" in ln and "UNKEYABLE - " in ln for ln in LINES), LINES)
 
     def test_a_law_it_cannot_judge_is_unknown_never_a_raise(self):
         bad = mock.Mock(wraps=self.cache)

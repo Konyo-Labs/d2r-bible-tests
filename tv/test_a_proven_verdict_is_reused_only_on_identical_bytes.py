@@ -345,22 +345,32 @@ class AProvenVerdictIsReusedOnlyOnIdenticalBytes(_Case):
             self.assertLessEqual(got[_GATE], int(time.time() * 1000), "a stamp landed in the future")
             self.assertNotIn("unjudged", got, "a gate this run never judged took a stamp from the map")
 
-    def test_a_law_that_lists_a_directory_itself_is_never_cached(self):
+    def test_a_law_that_lists_a_directory_itself_is_keyed_by_what_its_traced_run_listed(self):
         """★ (second eye) a law calling os.listdir / os.walk / glob.glob / Path.rglob / iterdir reads whatever is THERE
-        at run time - a law file added between two pushes over otherwise identical bytes could turn it red - so it is
-        unkeyable, said with the call and its line, runs every push and banks nothing. The LAW FILE ONLY: a closure
-        module listing a directory keeps the law cacheable (heart2, run_gates and control_app all list directories).
-        And the receiver decides, never the bare name: ast.walk is a walk over a syntax tree."""
+        at run time - a law file added between two pushes over otherwise identical bytes could turn it red. It used to
+        be unkeyable outright; REG-2944 keys it by what its TRACED run listed: banked under a v3 key holding the names
+        and bytes of every directory it listed, reused over an identical tree, and re-proved the moment a file joins a
+        directory it listed. The LAW FILE ONLY: a closure module listing a directory keeps the law's v1 key (the
+        closure-listing floor). And the receiver decides, never the bare name: ast.walk is a walk over a syntax tree.
+        git is asked of the FIXTURE here (tracked = its files): a listed entry git neither tracks nor keeps is runtime
+        data, never key material."""
+        from unittest import mock
         self.tree.files["tv/" + _FILE] = _LAW.replace(
             "here = os.path.dirname", "listed = os.listdir(os.path.dirname(os.path.abspath(__file__)))\n"
                                       "here = os.path.dirname", 1)
-        for what in ("first", "second"):
+        with mock.patch.object(H, "_tracked_files", lambda repo=None: frozenset(self.tree.files)), \
+                mock.patch.object(H, "_kept_files", lambda repo=None: frozenset()):
             results, per, stopped, runs, said = self.push()
-            self.assertRan(runs, said, "a law that lists a directory, %s push" % what)
+            self.assertRan(runs, said, "a law that lists a directory, cold")
             self.assertEqual(results, {_GATE: H.PROVEN}, "\n".join(said))
-            self.assertEqual(self.entries(), {}, "a law that lists a directory itself was banked")
-            self.assertTrue(any("not cacheable" in l and "lists a directory itself (os.listdir at line" in l
-                                for l in said), "the reason is not said with the call and its line: %s" % said)
+            ent = self.entries()
+            self.assertEqual(len(ent), 1, "a listing law with a complete trace was not banked: %s" % said)
+            self.assertEqual(list(ent.values())[0].get("listed"), ["tv"], "the entry does not say what it listed")
+            results, per, stopped, runs, said = self.push()
+            self.assertReused(runs, results, said, "a listing law over an identical tree and an identical listing")
+            self.tree.files["tv/new_law_p3.py"] = "X = 1\n"
+            results, per, stopped, runs, said = self.push()
+            self.assertRan(runs, said, "a listing law after a file joined the directory it lists")
         self.assertIsNone(H._lists_a_directory(ast.parse(
             "import ast\nfor n in ast.walk(t):\n    pass\nx = walk(1)\ny = os.path.exists('.')\n")),
             "ast.walk, a bare walk() or os.path.exists read as a directory listing")
@@ -885,10 +895,11 @@ RED_PROOF = [
         "matches": 1,
     },
     {
-        "why": "a law that lists a directory itself is cached under a key that cannot name what it reads",
+        "why": "REG-2944 - a law that lists a directory itself is cached under a key that cannot name what it listed: "
+               "a file joining that directory is served the old PROVEN",
         "file": "heart2.py",
-        "find": "        if p == law and lists and not allow_listing:\n",
-        "replace": "        if False:\n",
+        "find": "        lists = self.lists(sandbox, filename)\n        if not lists:\n",
+        "replace": "        lists = False\n        if not lists:\n",
         "matches": 1,
     },
     {

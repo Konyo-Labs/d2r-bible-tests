@@ -1923,6 +1923,69 @@ new deleting function in the reach, or a table entry no lane declares is a break
 declaration was made to match the code - and the `never` lines stop saying nothing is removed. After: all four rows
 permitted. Law: test_a_lane_clears_only_what_it_declares (14 cases, a class per lane; 4 red-proofs, each widening one
 lane's reach, each RED); test_auto_scope's permission case re-aimed to 'a clause that covers it' and renamed.
+### REG-2984 - THE CACHE LAW AND THE FORECAST LAW PINNED "A LISTING LAW IS NEVER CACHED"; THEY NOW PIN THE TRACED KEY (REG-2944)
+test_a_proven_verdict_is_reused_only_on_identical_bytes's case "a law that lists a directory itself is never cached" and
+test_a_push_records_its_forecast_and_actual's "a law that lists a directory is UNKEYABLE" were the old floor, written down
+- and REG-2944 retires that floor on purpose. Re-aimed, not deleted: the cache case now drives the REAL push and proves a
+listing law is banked with listed=["tv"], reused over an identical tree, and re-proved when a file joins tv/ (its red-proof
+re-aimed: a listing law keyed as if it did not list is served the old PROVEN); the forecast case calls a listing law FULL
+(it will run until its trace keys it) and keeps "UNKEYABLE with its reason" on a law whose PROOF_NEEDS is footage.
+
+### REG-2983 - THE PUSH RECORD SAYS HOW MANY LISTING LAWS ITS TRACE KEYED, AND WHY THE REST WERE NOT (REG-2944)
+A listing law is TRACED-keyable by the static walk and banked only when its run's trace is complete and stays in the tree,
+so whether it was actually banked is a fact of each push, never of a file. The RECORD carries tracedListing {banked,
+refused, why} and a line: "REG-2944 listing laws: N PROVEN(s) banked under what their traced run listed, M not banked -
+<reason> xK" (a browser law's Chrome child is untraced, so its refusals read there as a number).
+
+### REG-2982 - THE UNKEYABLE CENSUS SPLITS: 63 -> 3 UNKEYABLE, 61 TRACED (REG-2944)
+test_the_unkeyable_laws_only_get_fewer asks law_inputs the way the push's key_for now does (allow_listing="traced"), so a
+law that lists a directory itself is TRACED, not unkeyable - printed beside the list ("3 unkeyable · 61 TRACED-keyable"),
+never folded into it. tv/unkeyable_laws.json keeps only what no byte key can ever name: PROOF_NEEDS under .git or frames
+(test_tasks_ships_are_recorded, test_no_new_home_path_is_published, test_chronicle_template). CEILING 63 -> 3. Its red-
+proofs re-aimed: an extra law that needs his history; a census that refuses listing laws again (the split gone).
+
+### REG-2981 - A LISTED DIRECTORY'S GITIGNORED ENTRIES ARE NOT KEY MATERIAL, AND A RUN THAT READ ONE NEVER BANKS (REG-2944)
+#242's rule - runtime data is never a key input - carried into the listing key, as a decision with its reason. THE PROVING
+SANDBOX DOES CARRY GITIGNORED FILES: safe_copy copies everything outside its HEAVY dirs (measured on his tree, names only:
+151 gitignored files in tv/ - 87 .json, 19 .jsonl, 12 .png, logs, a pid, a lock, mkstemp temps; none a .py). So a
+gitignored newcomer in a listed directory does NOT re-key (keying runtime names would move every key between the pre-prove
+and the hook, #242's measured reuse loss), and to keep runtime CONTENT out of every banked verdict, a run whose trace READ or
+STAT'ed a gitignored entry of a directory it listed is never banked. What stays outside the key, named: a law whose verdict
+turns on the mere PRESENCE or COUNT of a gitignored file in a directory it lists. Untracked-but-unignored files (a law not
+yet added) are key material like tracked ones. THE FLOOR IS A NUMBER, NEVER A HOPE (his addition): each banked listing
+entry records ignoredSeen - how many gitignored names its listed directories held when it banked - and the census law
+reads every traced law's listing calls, takes the filter each applies (a glob's pattern, or the endswith / startswith
+constants of the loop it feeds) and tests it against a name for every .gitignore pattern: a listing with no filter, or one
+whose filter can match a gitignored name, must stand in its EXPOSED map with the reason it is safe (22 laws today: his
+footage or home that no sandbox carries, its own scratch, a listing it opens entry by entry, or - named as the floor - two
+censuses that count on purpose: fixtures/ by size, art/*.png). A new law that counts every entry fails there by name.
+
+### REG-2944 - A LAW THAT LISTS A DIRECTORY IS KEYED BY WHAT ITS TRACED RUN LISTED (REG-2296, FOR PROOFS)
+63 laws could never have a proof saved, most of them censuses whose denominator IS a tree folder: heart2's static walk
+refused any law FILE calling os.listdir / os.walk / glob ("what it reads is decided at run time"). gate_ledger already keys
+a gate's PASS by what its traced run listed (REG-2296); this is that move for a PROOF. THE TRACE: the REG-2640 sitecustomize
+also logs every os.listdir / os.scandir (and glob's own event) as `L <full real path>`, skipping the import system's own
+listings of sys.path (the same frame check gate_trace uses); _trace_read collects them and _trace_record unions them per
+law. THE KEY: a listing law's pre-run key is PENDING ("pending-listing:<digest>") - taken again after the run, never stored.
+At bank time it becomes v3: the v1/v2 material plus, for each directory any traced run of it listed, the sorted names of its
+tracked or kept entries with each file's bytes (an absent directory is material too). Lookup recomputes v3 from the tree as
+it is NOW for each recorded listed-set (the newest 8), so an added, removed or changed file in a listed directory is a miss
+and nothing else is. Never banked: an incomplete trace, a listing outside the tree (his home, /proc, the shared temp dir),
+a run that read a gitignored entry (REG-2981). The run's own fixture_tmp scratch (d2r-test-<pid>-) adds nothing. MIGRATION:
+none - a law that does not list keeps its v1/v2 key byte for byte (pinned), and listing laws had no entries.
+THE CLOSURE-LISTING FLOOR, A DECISION: a law that lists only through a module it imports (gate_files() and the like) keeps
+its v1/v2 key and is not keyed by its listings - keying those would re-key nearly every heart law on any tv/ change and
+cost the wall clock this exists to save.
+WHAT IT BUYS, honestly: a tv/*.py census re-keys whenever ANY tv/*.py changes, and most pushes change one. The win is the
+pushes that leave its listed directories alone and every identical-bytes rerun (the pre-prove then the hook, a retry),
+which today re-prove every listing law from nothing. The RECORD's REG-2983 line counts what was banked.
+Law: test_a_listing_law_is_keyed_by_what_it_listed - a pending key is never served; a complete trace banks and an
+identical tree serves; a planted new file, a removed file, a changed byte and an unignored newcomer each re-key; a file
+elsewhere does not; a gitignored newcomer does not and a run that read one never banks; no key matches across a listing
+change; a listing outside the tree never banks and own scratch does; an incomplete trace banks nothing; a law that lists
+nothing keeps its v1 key; and the REAL trace hook, in a child python, records a listdir and a glob and not an import.
+9 red-proofs, each RED for its own assertion.
+
 ### REG-2943 - A SIGTERM MID-PUSH EXITED WITHOUT WRITING WHAT THE PUSH HAD ALREADY BANKED (#150)
 heart2._on_fatal_signal removed the sandboxes and os._exit()ed; os._exit skips atexit, so whatever store() had banked since
 the last per-gate flush (and the cache's usedAt marks) never reached the disk. It now flushes the push's verdict cache

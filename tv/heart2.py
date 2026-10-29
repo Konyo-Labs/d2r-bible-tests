@@ -2284,6 +2284,43 @@ def _h2_install():
         r = _real(f)
         return not r.startswith(_stdlib + _o.sep) or "site-packages" in r or "dist-packages" in r
 
+    def by_importer():
+        # REG-2944 - the import system lists sys.path dirs to find modules; those listings are not the law's own
+        try:
+            f = _s._getframe(2)
+        except Exception:
+            return False
+        n = 0
+        while f is not None and n < 12:
+            c = f.f_code.co_filename
+            if c.startswith("<frozen importlib") or c.endswith(("importlib/_bootstrap_external.py", "pkgutil.py",
+                                                                "zipimport.py")):
+                return True
+            f = f.f_back
+            n += 1
+        return False
+
+    def listing(path):
+        # REG-2944 - a directory the run LISTED, by its full real path: the proof's key holds what it held
+        if getattr(busy, "on", False):
+            return
+        busy.on = True
+        try:
+            if isinstance(path, int):
+                emit("U", "a listing by file descriptor")
+                return
+            p = "." if path is None else _fspath(path)
+            if isinstance(p, bytes):
+                p = p.decode("utf-8", "surrogateescape")
+            p = str(p)
+            if not _isabs(p):
+                p = _join(_getcwd(), p)
+            emit("L", _real(p))
+        except Exception:
+            emit("U", "unreadable path in a listing")
+        finally:
+            busy.on = False
+
     def hook(ev, args):
         if ev == "import":
             if len(args) > 1 and args[1] is not None and native(args[1]):
@@ -2321,6 +2358,14 @@ def _h2_install():
                 emit("p", ev + " " + what)          # its Popen line already counted it
             else:                                  # a direct os.posix_spawn: a python child is counted, all else U
                 emit("P" if py else "U", ev + " " + what)
+        elif ev in ("os.listdir", "os.scandir"):
+            if not by_importer():
+                listing(args[0] if args else None)
+        elif ev in ("glob.glob", "glob.glob/2"):
+            pat = args[0] if args else None
+            if isinstance(pat, (str, bytes)):
+                pat = pat.decode("utf-8", "surrogateescape") if isinstance(pat, bytes) else pat
+                listing(_o.path.dirname(pat) or ".")
         elif ev in ("os.system", "os.spawn", "os.startfile", "ctypes.dlopen", "ctypes.dlsym", "os.forkpty"):
             emit("U", ev)
 
@@ -2478,8 +2523,9 @@ def _trace_wanted(filename, env=None):
         return False
 
 
-def _trace_read(log, root_ppid):
-    """REG-2640 - one traced run's log. -> (basenames read or stat'd, complete: bool)"""
+def _trace_read(log, root_ppid, listed=None):
+    """REG-2640 - one traced run's log. -> (basenames read or stat'd, complete: bool). REG-2944 - the full real path of
+    every directory the run listed is added to `listed` when a set is handed in."""
     seen, hellos, root, py, untraced = set(), set(), False, 0, False
     try:
         with io.open(log, encoding="utf-8", errors="replace") as fh:
@@ -2497,6 +2543,9 @@ def _trace_read(log, root_ppid):
                     py += 1
                 elif tag in ("p", "A"):
                     pass
+                elif tag == "L":                 # REG-2944 - a listing, by full path
+                    if listed is not None:
+                        listed.add(rest)
                 elif tag:
                     untraced = True
                     _TRACE_WHY.append(rest[:60])
@@ -2506,12 +2555,13 @@ def _trace_read(log, root_ppid):
     return seen, bool(root and not untraced and len(hellos) >= py)
 
 
-def _trace_record(filename, seen, ok):
+def _trace_record(filename, seen, ok, listed=None):
     with _TRACE_LOCK:
         t = _TRACES.setdefault(filename, {"names": set(), "ok": True, "runs": 0})
         t["names"] |= seen
         t["ok"] = bool(t["ok"] and ok)
         t["runs"] += 1
+        t.setdefault("listed", set()).update(listed or ())     # REG-2944 - every dir any traced run of it listed
 
 
 def _trace_unread(filename, rels, keep):
@@ -2524,6 +2574,71 @@ def _trace_unread(filename, rels, keep):
         names = set(t["names"])
     return sorted(r for r in rels if r not in keep
                   and r.rsplit("/", 1)[-1] not in names)
+
+
+# ══ REG-2944 (REG-2296 for the PROOF cache) — A LAW THAT LISTS A DIRECTORY IS KEYED BY WHAT ITS TRACED RUN LISTED ═════
+# A law file that calls os.listdir / os.walk / glob was UNKEYABLE: what it reads is decided at run time (tv/unkeyable_laws
+# - 63 laws, many of them censuses whose denominator IS a tree folder). gate_ledger keys such a gate's PASS by what its
+# traced run listed (REG-2296); this is the same move for a PROOF. The REG-2640 trace now also records every directory a
+# run LISTS (os.listdir / os.scandir, and glob's own event), by its full real path - never the import system's listings
+# of sys.path. A listing law's PROVEN is banked under a v3 key: its v1/v2 material plus, for each directory any traced
+# run of it listed, the sorted names that directory holds and the bytes of each file among them. So an added, removed or
+# changed file in a listed directory is a new key, and nothing else is.
+#   ⚠ ONLY LAWS THAT LIST IN THE LAW FILE. A law that lists only through its closure (gate_files() and the like) keeps its
+#     v1/v2 key byte for byte - THE CLOSURE-LISTING FLOOR, a decision: keying those would re-key nearly every heart law
+#     on any tv/ change and cost the wall clock this exists to save. Stated in BUGS REG-2944.
+#   ⚠ GITIGNORED ENTRIES of a listed directory are not key material (#242's rule: runtime data is never a key input) - and
+#     a run that READ or STAT'ed one of them is never banked, so content from runtime data never stands under a key.
+#   ⚠ A listing OUTSIDE the tree - his home, /proc, the shared temp dir - is never banked; a listing inside the run's own
+#     fixture_tmp scratch adds nothing (the code that made it is keyed). An incomplete trace banks nothing.
+# Laws: test_a_listing_law_is_keyed_by_what_it_listed.
+_OWN_SCRATCH_PREFIX = "d2r-test-"        # fixture_tmp.PREFIX: a contained test scratch parent
+_OWN_SCRATCH_RX = re.compile(r"^d2r-test-\d+-")   # its name, as fixture_tmp.contain() makes it: <prefix><pid>-<random>
+
+
+def _trace_listed(filename, repo, ignored_names=None):
+    """REG-2944 - the repo-relative directories this law's traced runs listed. -> (sorted rels, None) | (None, why)
+
+    None when any run was not fully traced or none ran, when a listing left the tree (anything but the repo and the run's
+    own contained scratch), or when a run read or stat'ed a gitignored entry of a directory it listed
+    (`ignored_names(rel_dir)` -> the gitignored names in it)."""
+    with _TRACE_LOCK:
+        t = _TRACES.get(filename)
+        if t is None or not t["ok"] or t["runs"] < 1:
+            return None, "no complete trace of it"
+        listed, names = set(t.get("listed") or ()), set(t["names"])
+    root = os.path.realpath(repo)
+    rels = set()
+    for d in sorted(listed):
+        if d == root or d.startswith(root + os.sep):
+            rels.add(os.path.relpath(d, root).replace(os.sep, "/"))
+            continue
+        if any(_OWN_SCRATCH_RX.match(part) for part in d.split(os.sep)):
+            continue                                  # its own contained scratch: made by code the key already holds
+        return None, "it listed a directory outside the tree (%s)" % os.path.basename(d)
+    if ignored_names is not None:
+        for rel in sorted(rels):
+            got = ignored_names(rel)
+            if got is None:
+                return None, "git could not say which entries of %s are runtime data" % rel
+            hit = sorted(set(got) & names)
+            if hit:
+                return None, "it read %s, a gitignored file in %s it listed" % (hit[0], rel)
+    return sorted(rels), None
+
+
+def _kept_files(repo=None):
+    """REG-2944 - the repo-relative paths git does NOT ignore and does not track (a new law not yet added). -> frozenset |
+    None (UNKNOWN). With _tracked_files, what a listed directory's key holds; everything else in it is runtime data."""
+    repo = REPO if repo is None else repo
+    try:
+        r = subprocess.run(["git", "-C", repo, "ls-files", "-z", "--others", "--exclude-standard"],
+                           capture_output=True, timeout=30, env=_git_free_env())
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if r.returncode != 0:
+        return None
+    return frozenset(x.decode("utf-8", "replace") for x in r.stdout.split(b"\0") if x)
 
 
 # ══ REG-2350 (#42 R5) — A RUN A SIGNAL ENDED IS UNKNOWN, NEVER A RED ═══════════════════════════════════════════════════
@@ -2784,11 +2899,11 @@ def _run_gate_once(sandbox_tv, filename, timeout=180, extra=(), script=None, wid
                 except OSError:
                     pass
             if _tlog is not None:             # REG-2640 - recorded on every exit; complete only if it ran out, unkilled
-                _tseen, _tok = set(), False
+                _tseen, _tok, _tls = set(), False, set()
                 try:
-                    _tseen, _tok = _trace_read(_tlog, os.getpid())
+                    _tseen, _tok = _trace_read(_tlog, os.getpid(), listed=_tls)
                 finally:
-                    _trace_record(filename, _tseen, bool(_tok and _tdone and _killed == []))
+                    _trace_record(filename, _tseen, bool(_tok and _tdone and _killed == []), listed=_tls)
                     try:
                         os.unlink(_tlog)
                     except OSError:
@@ -4383,6 +4498,8 @@ class _VerdictCache(object):
         self.memo = {}                   # (path, size, mtime_ns) -> sha256, this run only
         self.parsed = {}                 # (path, size, mtime_ns) -> (imports, named files), this run only
         self.tracked = _tracked_files()  # #242 (2026-10-08) - the named files a key may count: tracked ones only
+        self.kept = _kept_files()        # REG-2944 - untracked and not ignored: a listed dir's entries beside the tracked
+        self.traced = {"banked": 0, "refused": 0, "why": {}}   # REG-2944 - listing laws, this run, for the push record
         self.closures = {}               # (sandbox, filename) -> (inputs, why): one closure walk per law per lane
         self.hits = self.misses = self.stores = self.unkeyable = self.moved = 0
         self.carried, self.carried_by = 0, {}       # REG-3046 - hits whose PROVEN another PC earned (carried)
@@ -4408,7 +4525,78 @@ class _VerdictCache(object):
                    % len(prev) if prev is not None else "no readable .prev, so every proof runs"))
         self.entries = ent if ent is not None else (prev if prev is not None else {})
 
-    def key_for(self, sandbox, name, filename, pr, unread=None):
+    def lists(self, sandbox, filename):
+        """REG-2944 - does this law FILE list a directory itself (the static rule's question)? -> bool"""
+        ck = ("REG-2944 lists", sandbox, filename)
+        with self.lock:
+            if ck in self.closures:
+                return self.closures[ck]
+        src = _read_text(os.path.join(sandbox, filename))
+        try:
+            got = bool(src is not None and _lists_a_directory(ast.parse(src)))
+        except (SyntaxError, ValueError):
+            got = False
+        with self.lock:
+            self.closures[ck] = got
+        return got
+
+    def ignored_in(self, repo, rel_dir):
+        """REG-2944 - the gitignored entry names of a listed directory (neither tracked nor kept). -> set | None"""
+        if self.tracked is None or self.kept is None:
+            return None
+        d = os.path.join(repo, *[x for x in rel_dir.split("/") if x and x != "."])
+        try:
+            names = os.listdir(d)
+        except OSError:
+            return set()
+        pre = "" if rel_dir in ("", ".") else rel_dir.rstrip("/") + "/"
+        return set(n for n in names if not self._kept_entry(pre + n))
+
+    def _kept_entry(self, rel):
+        """REG-2944 - is this path, or anything under it, tracked or kept (never runtime data)? -> bool"""
+        if rel in self.tracked or rel in self.kept:
+            return True
+        with self.lock:
+            dirs = self.closures.get("REG-2944 dirs")
+            if dirs is None:
+                dirs = set()
+                for q in set(self.tracked or ()) | set(self.kept or ()):
+                    parts = q.split("/")
+                    for i in range(1, len(parts)):
+                        dirs.add("/".join(parts[:i]))
+                self.closures["REG-2944 dirs"] = dirs
+        return rel in dirs
+
+    def _listing_material(self, repo, listed):
+        """REG-2944 - for each listed dir: its tracked / kept entries, sorted, each with its kind and a file's bytes. ->
+        (bytes, None) | (None, why). An absent directory is material too ("absent"): one appearing is a new key."""
+        if self.tracked is None or self.kept is None:
+            return None, "git could not say which files are tracked, so a listing cannot be keyed"
+        h = hashlib.sha256(b"REG-2944 listing\0")
+        for rel in sorted(listed):
+            d = os.path.join(repo, *[x for x in rel.split("/") if x and x != "."])
+            h.update(rel.encode("utf-8", "replace") + b"\0")
+            if not os.path.isdir(d):
+                h.update(b"absent\0")
+                continue
+            pre = "" if rel in ("", ".") else rel.rstrip("/") + "/"
+            for n in sorted(os.listdir(d)):
+                q = pre + n
+                if not self._kept_entry(q):
+                    continue                          # runtime data (#242): never key material
+                full = os.path.join(d, n)
+                if os.path.islink(full):
+                    kind = "l:" + os.readlink(full)
+                elif os.path.isdir(full):
+                    kind = "d"
+                else:
+                    kind = _sha_quiet(full, self.memo)
+                    if kind is None:
+                        return None, "%s cannot be read" % q
+                h.update(n.encode("utf-8", "replace") + b"\0" + kind.encode("utf-8", "replace") + b"\0")
+        return h.hexdigest().encode("ascii"), None
+
+    def key_for(self, sandbox, name, filename, pr, unread=None, listed=None):
         """-> (key | None, [repo-relative inputs], why-unkeyable | None), from the SANDBOX's bytes now.
 
         REG-2640: `unread` None asks for the key a reader should look up - the byte-for-byte v1 key, or, when no PROVEN
@@ -4418,14 +4606,14 @@ class _VerdictCache(object):
             k1, rels, why = self._key(sandbox, name, filename, pr, ())
             if k1 is None or self.peek(k1) is not None:
                 return k1, rels, why
-            for un in self._variants(self.ident(name, filename, pr)):
+            for un, ls in self._variants(self.ident(name, filename, pr)):
                 if not set(un) <= set(rels):
                     continue
-                k2, rels2, why2 = self._key(sandbox, name, filename, pr, un)
+                k2, rels2, why2 = self._key(sandbox, name, filename, pr, un, ls)
                 if k2 is not None and self.peek(k2) is not None:
                     return k2, rels2, why2
             return k1, rels, why
-        return self._key(sandbox, name, filename, pr, tuple(unread))
+        return self._key(sandbox, name, filename, pr, tuple(unread), listed)
 
     def ident(self, name, filename, pr):
         """REG-2640 - which proof an entry is, across trees: its law file, its declaration, its gate's spec."""
@@ -4433,13 +4621,18 @@ class _VerdictCache(object):
                                          default=str).encode("utf-8", "replace")).hexdigest()[:32]
 
     def _variants(self, ident):
-        """REG-2640 - the unread-sets banked for one proof, newest first (at most 8). -> [tuple of rels]"""
+        """REG-2640 - the unread-sets banked for one proof, newest first (at most 8). -> [(unread rels, listed | None)]
+        REG-2944 - and the listed-sets: a listing law's entry carries the directories its traced runs listed."""
         with self.lock:
             if self._vidx is None or self._vgen != id(self.entries):
                 idx = {}
                 for e in list(self.entries.values()) + list(self.seed.values()):   # REG-2961 - a seeded v2 key too
-                    if isinstance(e, dict) and e.get("ident") and isinstance(e.get("unread"), list) and e["unread"]:
-                        idx.setdefault(e["ident"], []).append((_proven_at(e), tuple(str(x) for x in e["unread"])))
+                    if not (isinstance(e, dict) and e.get("ident")):
+                        continue
+                    un = e.get("unread") if isinstance(e.get("unread"), list) else []
+                    ls = tuple(str(x) for x in e["listed"]) if isinstance(e.get("listed"), list) else None   # REG-2944
+                    if un or ls is not None:
+                        idx.setdefault(e["ident"], []).append((_proven_at(e), (tuple(str(x) for x in un), ls)))
                 self._vidx, self._vgen = idx, id(self.entries)
             got = sorted(self._vidx.get(ident, ()), reverse=True)
         out = []
@@ -4448,12 +4641,13 @@ class _VerdictCache(object):
                 out.append(un)
         return out[:8]
 
-    def _key(self, sandbox, name, filename, pr, unread):
+    def _key(self, sandbox, name, filename, pr, unread, listed=None):
         repo = os.path.dirname(os.path.abspath(sandbox))
         with self.lock:
             ck = (sandbox, filename)
-            if ck not in self.closures:
-                self.closures[ck] = law_inputs(sandbox, filename, [], parsed=self.parsed, tracked=self.tracked)
+            if ck not in self.closures:          # REG-2944 - a listing law is walked too; its key waits for its trace
+                self.closures[ck] = law_inputs(sandbox, filename, [], parsed=self.parsed, tracked=self.tracked,
+                                               allow_listing="traced")
             base, why = self.closures[ck]
         if why:
             return None, [], why
@@ -4498,7 +4692,22 @@ class _VerdictCache(object):
         unread = frozenset(unread or ())
         if unread and not unread <= set(os.path.relpath(p, repo).replace(os.sep, "/") for p in inputs):
             return None, [], "REG-2640: an unread input is not among this proof's inputs"
-        h = hashlib.sha256(b"heart2 P3 key v2\0" if unread else b"heart2 P3 key v1\0")
+        lists = self.lists(sandbox, filename)
+        if not lists:
+            listed = None                             # a law that does not list keeps its v1 / v2 key byte for byte
+        lmat = None
+        if lists:
+            if listed is None:
+                # REG-2944 - BEFORE the run nothing says what it will list: a pending key no entry is ever stored under,
+                # taken again after the run (a static input that moved is still a tree that moved under the proof)
+                h = hashlib.sha256(b"heart2 P3 key pending-listing\0")
+            else:
+                lmat, lwhy = self._listing_material(repo, listed)
+                if lmat is None:
+                    return None, [], lwhy
+                h = hashlib.sha256(b"heart2 P3 key v3\0")
+        else:
+            h = hashlib.sha256(b"heart2 P3 key v2\0" if unread else b"heart2 P3 key v1\0")
         h.update(str(filename).encode("utf-8", "replace") + b"\0")
         h.update(_proof_key(pr).encode("utf-8", "replace") + b"\0")
         h.update(json.dumps(gate_spec(name), sort_keys=True, default=str).encode("utf-8", "replace") + b"\0")
@@ -4520,6 +4729,10 @@ class _VerdictCache(object):
             for rel, gone in away:   # per surface: a word moving from one file's stamp to another's is a move
                 h.update(b"REG-2602 literals\0" + rel.encode("utf-8", "replace") + b"\0"
                          + json.dumps(_literal_counts(lits, gone), ensure_ascii=True).encode("ascii") + b"\0")
+        if lmat is not None:                          # REG-2944 - what every listed directory held, names and bytes
+            h.update(b"REG-2944 listed\0" + lmat + b"\0")
+        if lists and listed is None:
+            return "pending-listing:" + h.hexdigest(), rels, None
         return h.hexdigest(), rels, None
 
     def _imported(self, paths):
@@ -5176,6 +5389,8 @@ def _final_key(cache, sandbox, name, filename, pr, key, entry):
     traced run of this law opened, or `key` (v1) when there are none or the v2 key cannot be taken. Updates `entry`.
     -> a callable returning the key (never raises: a narrower key is an optimisation, v1 is always sound)"""
     def take():
+        if (isinstance(key, str) and key.startswith("pending-listing:")) or cache.lists(sandbox, filename):
+            return _listing_key(cache, sandbox, name, filename, pr, entry)     # REG-2944 - v3 or nothing, never v1
         try:
             un = _trace_unread(filename, entry.get("inputs") or [], _keep_for(sandbox, filename, pr))
             if un:
@@ -5189,6 +5404,32 @@ def _final_key(cache, sandbox, name, filename, pr, key, entry):
         entry.pop("unread", None)
         return key
     return take
+
+
+def _listing_key(cache, sandbox, name, filename, pr, entry):
+    """REG-2944 - a listing law's v3 key, from what its traced runs listed, or None (never banked: said, and counted for
+    the push record). A pending key is NEVER stored: a listing law with no complete in-tree trace runs every push."""
+    repo = os.path.dirname(os.path.abspath(sandbox))
+    why = None
+    try:
+        ls, why = _trace_listed(filename, repo, lambda rel: cache.ignored_in(repo, rel))
+        if ls is not None:
+            un = _trace_unread(filename, entry.get("inputs") or [], _keep_for(sandbox, filename, pr))
+            k3, _r, why = cache.key_for(sandbox, name, filename, pr, unread=un, listed=ls)
+            if k3 is not None and not str(k3).startswith("pending-listing:"):
+                # REG-2981 - the #242 floor as a NUMBER: how many gitignored names its listed dirs held when it banked
+                seen = sum(len(cache.ignored_in(repo, rel) or ()) for rel in ls)
+                entry.update(ident=cache.ident(name, filename, pr), listed=list(ls), unread=list(un), ignoredSeen=seen)
+                with cache.lock:
+                    cache.traced["banked"] += 1
+                return k3
+    except Exception as _le:
+        why = "its listing key could not be taken (%s)" % type(_le).__name__
+    with cache.lock:
+        cache.traced["refused"] += 1
+        w = str(why or "no key")[:80]
+        cache.traced["why"][w] = cache.traced["why"].get(w, 0) + 1
+    return None
 
 
 def _prove_push_one(sandbox, name, filename, pr, idx, say, why):
@@ -5292,8 +5533,11 @@ def _cache_bank(cache, sandbox, name, filename, pr, idx, say, key, rels, v, by=N
                     _pend.append((idx, _final_key(cache, sandbox, name, filename, pr, key, _entry), _entry))
                 else:
                     key = _final_key(cache, sandbox, name, filename, pr, key, _entry)()
-                    cache.store(key, _entry)
-                    cache.count("stores")
+                    if key is None:                      # REG-2944 - a listing law whose trace cannot key it
+                        cache.count("moved")
+                    else:
+                        cache.store(key, _entry)
+                        cache.count("stores")
             except Exception as _se:
                 cache.count("moved")
                 say("     %-52s   ↳ #42 P3: could not be banked (%s) - PROVEN stands, nothing is banked"
@@ -5587,6 +5831,9 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
                 if _bankable(per[_i]):
                     if callable(_key):                   # REG-2640 - the v2 key is taken after the closing run
                         _key = _key()
+                    if _key is None:                     # REG-2944 - a listing law whose trace cannot key it
+                        run.cache.count("moved")
+                        continue
                     run.cache.store(_key, _entry)
                     run.cache.count("stores")
                     with run._lock:
@@ -5686,6 +5933,9 @@ def _push_record(run, have, cache, n_proofs, results):
         "posixOnlyCatch": posix_only,                  # REG-2357 - each files BLIND on a Windows census (round 4)
         "signalKilled": _SIGNAL_RUNS["n"] - run.sig0,
         "checkpoint": _checkpoint_record(run, per),
+        "tracedListing": (None if cache is None else           # REG-2944 - listing laws: banked under v3, or why not
+                          {"banked": cache.traced["banked"], "refused": cache.traced["refused"],
+                           "why": dict(sorted(cache.traced["why"].items(), key=lambda kv: -kv[1])[:8])}),
         "seams": _heart2_seams(),
         "cache": cache.summary(n_proofs) if cache is not None else "off",
         "stopped": list(run.first) if run.first else None,
@@ -6023,6 +6273,12 @@ def _prove_push(have, say, stopped=None, cache=None, blank=None):
             "banked (%.0f s)" % (_c.get("every", CHECKPOINT_EVERY), _c.get("forecast", 0), _c.get("runs", 0),
                                  _c.get("costS", 0), _c.get("banked", 0), _c.get("bankedS", 0), _c.get("red", 0),
                                  _c.get("revoked", 0), _c.get("savedHits", 0), _c.get("savedS", 0)))
+        _tl = _r.get("tracedListing")
+        if _tl is not None:
+            say("  #42 RECORD REG-2944 listing laws: %d PROVEN(s) banked under what their traced run listed, %d not "
+                "banked%s" % (_tl["banked"], _tl["refused"],
+                              (" - " + "; ".join("%s x%d" % kv for kv in list(_tl["why"].items())[:3])) if _tl["why"]
+                              else ""))
         for _v in (_r["proveOnceViolations"] or [])[:6]:
             say("     ⚠ PROVE-ONCE VIOLATION: %s[%d] was banked for these exact bytes before this run began and ran "
                 "again (%s)" % (_v["g"], _v["i"], _v["a"]))
@@ -6136,6 +6392,9 @@ def _census_bank(cache, name, per, say):
         if _bankable(per[_i]):
             if callable(_key):
                 _key = _key()
+            if _key is None:                         # REG-2944 - a listing law whose trace cannot key it
+                cache.count("moved")
+                continue
             cache.store(_key, _entry)
             cache.count("stores")
             n += 1
@@ -6231,6 +6490,9 @@ def _checkpoint_bank(name, per, say, run):
         if _bankable(per.get(_i) if isinstance(per, dict) else per[_i]):
             if callable(_key):                       # REG-2640 - the v2 key, taken now that a clean run brackets it
                 _key = _key()
+            if _key is None:                         # REG-2944 - a listing law whose trace cannot key it banks nothing
+                run.cache.count("moved")
+                continue
             _s = float(((run.proofs.get((name, _i)) or {}).get("s")) or 0)
             # ⚠ MARKED: a checkpoint's bank, until this gate closes green. A later red clean run of the same gate takes
             # it back (_checkpoint_revoke); a gate that closes clears the mark; one that never closes (a kill) leaves it,
