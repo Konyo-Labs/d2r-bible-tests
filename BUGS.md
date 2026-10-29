@@ -414,6 +414,31 @@ guide had no way in). Law: test_a_yielding_orb_leaves_a_door - every orb the sho
 (a yield with no door fails by name), each door exists once, a button door runs its orb's opener and opens the feature on
 the whole page in node, each is shown only where its orb yields, none is a fixed overlay; 6 red-proofs, RED. Pixels at
 640x400: v1800 on CI.
+### REG-3113 - NOTHING LED HIM TO THE CONTAINERS THE BOARD CANNOT SEE WHOLE: THE GUIDED SWEEP, CAPPED HONESTLY (#202, his 2026-10-27 ruling and his Q11)
+REG-3105 made a container's full look its truth and parked everything less as a question. Nothing led him to the
+containers. His ruling is that auto intake registers on two sessions, the same rule that files. His Q11 is that what the
+board cannot conclude, it leads him through, with the evidence.
+FIX: MOVE TASKS carries ONE guided step (window._vaultGuideSteps / _vaultGuideHtml), in the make rows' own form. The
+section is "See whole · N". There is a step for:
+- each open question;
+- each container with no full look yet: every mule he has made, by its name (a mule is a character), and each shared page.
+  A mule the board made and he has not is its make row's first.
+Steps are merged when they are the same container. A step reads "Open <holder> · <container> and hover every item", with
+the cells never named, the frame, and the question's own answers.
+Order: the steps with an open QUESTION first, then the oldest look (never seen whole is the oldest), then the most cells
+never named.
+THE CAP (his lead's ruling): dozens of rows would bury the moves.
+- Every question is drawn.
+- Then never-seen containers are drawn, up to 5 steps in all.
+- Then one counted line: "and N more containers never seen whole". The cut never hides a question.
+- The head says "seen whole N of M" over every container in scope, and says once what the scope leaves out: "Mule 2+
+  characters and your own characters' bags are not asked yet".
+A step CLOSES ITSELF. It is drawn from the full-look store on each paint, so the sweep whose containers[] completes the
+container removes it. No new store. A shadow draws the steps read only.
+GUARD: tv/test_the_guided_sweep_leads_him_container_by_container.py, 6 cases through vaultAccumApply, covering the cap, the
+"N more" count, questions-first and a cut that never hides a question. 8 red-proofs, RED. On claude/agent-158p4 it is red:
+"_vaultGuideSteps is not a function".
+
 ### REG-3105 - A CONTAINER'S LOOK BECOMES A FULL LOOK ONLY WHEN EVERY TAKEN CELL IS NAMED ONCE; ANYTHING LESS ASKS HIM (#158 P4)
 His design calls A and B (#230 c6473846977, approved for P4). The board assembles, because it owns the item sizes and the
 receiver. window._vaultFullLookFrom works like this:

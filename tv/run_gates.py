@@ -12925,6 +12925,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_spec_pin_rides_the_reloads_boot.py")], 300,
          needs_app=False,
          why="#161 REG-3076/3077 - no spec pins a store the board writes back between two loads; every pin rides the next load's boot through tests/_pin.ts (reloadPinned/gotoPinned) and its premise names it"),
+    Gate("test_the_guided_sweep_leads_him_container_by_container",
+         [sys.executable, os.path.join(HERE, "test_the_guided_sweep_leads_him_container_by_container.py")], 300,
+         needs_app=False,
+         why="REG-3113 (#202): MOVE TASKS leads him container by container - one step per open question and per container never seen whole, questions first, capped at 5 with a counted 'N more' line, closed only by a sweep that sees the container whole"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
