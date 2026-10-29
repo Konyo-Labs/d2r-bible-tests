@@ -49569,6 +49569,21 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     }
     return (_VH_TWINS[base] || []).slice();
   }
+  /* REG-3075 (GrokBot v3838) - THE QUESTION, ASKED AT EVERY HAND DOOR. The door asked it; the + Add an item box's Enter did
+     not - it took the top row, so "Shako" + Enter filed Harlequin Crest (Shako) without a word. One answer for both: a name
+     the vault does not keep, with no Eth / Superior word, whose base the board files a unique under, is a question.
+     -> null, or { twins: [the unique's drawn names], base: the base's catalogue spelling, res: the refusal } */
+  function _vhTwinAsk(raw, name){
+    var nm = String(name == null ? '' : name).trim();
+    if (!nm || _vaultKeeps(nm) || _vaultHandQuals(nm).pre.length) return null;
+    var base = _vaultHandBase(nm), tw = _vhBaseTwins(base);
+    if (!tw.length) return null;
+    return { twins: tw, base: base,
+             res: { ok: false, refused: 'ambiguous', among: tw.concat([base]), name: base,
+                    why: '"' + raw + '" is two things on this board: ' + tw.join(' or ') + ' (the unique, filed under its base) or a white '
+                         + base + ' base. Which one? Nothing was added \u2014 for the unique, pick ' + tw[0].replace(/ \([^()]+\)$/, '')
+                         + ' from the list' } };
+  }
   /* L1 — the bases HE typed through + Add an item and nothing else: owned, a catalogue base, not already in ownedPool, and
      its receipt is the hand door's. Empty when he typed none, so every other list reads exactly what it read before. */
   function _vaultHandBasePool(){
@@ -49633,15 +49648,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     if (!_vaultKeeps(r.name)) { var _hb = _vaultHandBase(r.name); if (_hb) r = { ok: true, name: _vaultHandBaseName(r.name, _hb) }; }
     /* REG-2858 - his rule: a doubt becomes a question, never a guess. A bare base the board also files a unique under is
        asked; the planner row's kind answers it ('unique' or 'base'). An Eth / Superior word settles it as the base. */
-    if (!_vaultKeeps(r.name) && !_vaultHandQuals(r.name).pre.length){
-      var _tw = _vhBaseTwins(_vaultHandBase(r.name)), _kd = String((opts && opts.kind) || '').toLowerCase();
-      if (_tw.length === 1 && _kd === 'unique') r = { ok: true, name: _tw[0] };
-      else if (_tw.length && _kd !== 'base')
-        return { ok: false, refused: 'ambiguous', among: _tw.concat([r.name]), name: r.name,
-                 why: '"' + raw + '" is two things on this board: ' + _tw.join(' or ') + ' (the unique, filed under its base) or a white '
-                      + r.name + ' base. Which one? Nothing was added \u2014 for the unique, pick ' + _tw[0].replace(/ \([^()]+\)$/, '')
-                      + ' from the list' };
-    }
+    var _tw = _vhTwinAsk(raw, r.name), _kd = String((opts && opts.kind) || '').toLowerCase();
+    if (_tw && _tw.twins.length === 1 && _kd === 'unique') r = { ok: true, name: _tw.twins[0] };
+    else if (_tw && _kd !== 'base') return _tw.res;
     try { var _rw = (typeof window.findRuneword === 'function') ? window.findRuneword(r.name) : null;
           if (_rw && String(_rw).toLowerCase() === String(r.name).toLowerCase()) r = { ok: true, name: String(_rw) }; } catch (eRw) {}
     /* REG-2898 (GrokBot's v3829 fresh-add simulation, ACT-7) - A SOCKETED BASE IS AN ITEM THE VAULT DRAWS. "Monarch (4os)" was
@@ -49852,9 +49861,21 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
        the row whose name IS what he typed (case-insensitive; a trailing "(alias)" aside) - a count he named is its tally's +1
        (REG-3004) - asks when the name is two items, and takes nothing until he picks a row when no name is exact. */
     var _q = String((document.getElementById('vault-hand-q') || {}).value || '').trim();
-    var _ex = _vhExact(_q);
     var say = document.getElementById('vault-hand-say');
     var _say = function(t, st){ if (say){ say.textContent = t; say.setAttribute('data-state', st); } };
+    /* REG-3075 - a bare base the board files a unique under is the door's question (REG-2858), asked here before any row is
+       taken, with its two answers: the unique's row, and the white base's row (a base row he picks is the base) */
+    var _tw = _q ? _vhTwinAsk(_q, _q) : null;
+    if (_tw){
+      var _rows = (window._vhCat && Array.isArray(window._vhCat.rows)) ? window._vhCat.rows : [];
+      var _uId = null, _bId = null;
+      (window._vhKeep || []).forEach(function(r){ if (!_uId && r && _tw.twins.indexOf(r.as) >= 0) _uId = r.id; });
+      _rows.forEach(function(r){ if (!_bId && r && r.q === 'b' && String(r.name).toLowerCase() === String(_tw.base).toLowerCase()) _bId = r.id; });
+      var _ch = function(id, label){ return id ? ' <button type="button" class="vault-btn vh-choice" onclick="window.vaultHandTake(\'' + jsArg(id) + '\')">' + esc(label) + '</button>' : ''; };
+      if (say){ say.innerHTML = esc(_tw.res.why) + _ch(_uId, _tw.twins[0]) + _ch(_bId, 'a white ' + _tw.base + ' base'); say.setAttribute('data-state', 'ask'); }
+      return { ok: false, refused: 'ambiguous', among: _tw.res.among, choices: [_uId, _bId], why: _tw.res.why };
+    }
+    var _ex = _vhExact(_q);
     if (_ex.length === 1) return _ex[0].tally ? window.vaultHandTally(_ex[0].name, 1) : window.vaultHandTake(_ex[0].id);
     if (_ex.length > 1){
       _say('"' + _q + '" is ' + _ex.length + ' items here: ' + _ex.map(function(x){ return x.name; }).join(' or ') + ' \u2014 pick one from the list; nothing was added', 'ask');
@@ -49964,8 +49985,10 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
        name there are no mods to tell copies apart, so it always asks: the same item as one already here (named by how it
        came and where it is - his hand joins it, no copy is added), or another copy. The answer arrives as the 2nd argument. */
     var _ans = arguments.length > 1 ? arguments[1] : undefined;
+    /* REG-3075 - a base row he picks is the base: the twin question (Shako: Harlequin Crest or a white Shako) is answered */
+    var _rk = row ? (_VH_KIND[row.q] || (row.q === 'b' ? 'base' : null)) : null;
     if (row && row.name && _ans !== 'copy' && typeof window._vaultJoinAsk === 'function' && typeof _vhPrepare === 'function'){
-      var _pre = _vhPrepare(row.name, null, { kind: _VH_KIND[row.q] || null });
+      var _pre = _vhPrepare(row.name, null, { kind: _rk });
       if (_pre && _pre.ok && typeof owned !== 'undefined' && owned && owned.has(_pre.name)){
         var _sayQ = document.getElementById('vault-hand-say');
         if (_ans != null){
@@ -49989,7 +50012,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     }
     var _undoText = (row && row.name && typeof window._vaultUndoSnap === 'function') ? window._vaultUndoSnap() : null;   /* #145 */
     var res = (!row || !row.name) ? { ok: false, refused: 'not-listed', why: 'that item is not in the planner list — nothing was added' }
-            : window.vaultHandAdd(row.name, new Date().toISOString(), { kind: _VH_KIND[row.q] || null });
+            : window.vaultHandAdd(row.name, new Date().toISOString(), { kind: _rk });
     /* #145 trap 12 - a mistaken hand add had no way back: one that changed something can be undone from the toolbar */
     var _undoHas = !!(res && res.ok && (res.mode === 'added' || res.mode === 'copy') && _undoText
                       && typeof window._vaultUndoTake === 'function' && window._vaultUndoTake('the add of ' + (res.name || row.name), '', _undoText));
