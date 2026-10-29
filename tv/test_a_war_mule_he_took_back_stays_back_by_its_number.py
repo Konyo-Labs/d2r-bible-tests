@@ -49,6 +49,7 @@ function paint(){ W.renderVault(); H.flush(60, 3); W.renderVault(); }
 W._vaultAutoIntakeSet(false);
 [SH, SH, SH].forEach(function(n){ W.vaultHandAdd(n); }); paint();
 OUT.made = wars();
+OUT.w1 = W._vaultWarName ? W._vaultWarName(1) : 'WAR1';   /* REG-2980 the board's name for war mule 1 */
 window.uiConfirm = function(){ return Promise.resolve(true); };   /* his confirm: yes */
 """ % json.dumps(SHAKO)
 DELETE = LIB + r"""
@@ -97,7 +98,7 @@ class AWarMuleHeTookBackStaysBackByItsNumber(unittest.TestCase):
         for o in (self.d, self.r):
             self.assertEqual(o["__boot"]["errors"], [], o["__boot"])
             self.assertNotIn("err", o, o.get("err"))
-            self.assertEqual([(w[1], w[2]) for w in o["made"]], [("WAR1", 1)], "PREMISE: %r" % o["made"])
+            self.assertEqual([(w[1], w[2]) for w in o["made"]], [(o["w1"], 1)], "PREMISE: %r" % o["made"])
 
     def test_a_deleted_war1_is_written_with_the_roster_and_stays_gone_after_a_reload(self):
         a = self.d["after"]

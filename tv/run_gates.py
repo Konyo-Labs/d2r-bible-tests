@@ -13293,6 +13293,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_every_locker_window_packs_what_its_card_counts.py")], 300,
          needs_app=False,
          why="REG-3072 (GrokBot on v3838): every roster locker's window packs as many copies as its card draws and names every one - keepers of every home included"),
+    Gate("test_the_board_names_a_war_mule_by_a_name_the_game_accepts",
+         [sys.executable, os.path.join(HERE, "test_the_board_names_a_war_mule_by_a_name_the_game_accepts.py")], 300,
+         needs_app=False,
+         why='REG-2980 a war mule is named WAR-A/WAR-B, a name D2R accepts, never WAR1'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

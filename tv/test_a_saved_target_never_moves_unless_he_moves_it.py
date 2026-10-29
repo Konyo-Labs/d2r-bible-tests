@@ -70,6 +70,7 @@ function rows(n){ return (list().match(/<li class="vmv-row[^>]*>[\s\S]*?<\/li>/g
   .map(function(r){ return { chip: ((r.match(/<b class="vmv-l1 vmv-retarget" data-retarget="1" title="([^"]*)"/) || [])[1]) || null,
                              to: ((r.match(/<span class="vtk-to">([^<]*)/) || [])[1]) || null }; }); }
 function warId(){ var w = JSON.parse(W.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return m.role === 'war'; })[0]; return w ? w.id : null; }
+function warName(){ var w = JSON.parse(W.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return m.role === 'war'; })[0]; return w ? w.name : null; }   /* REG-2980 its letter name */
 function carry(){ var o = {}; H.RAW.forEach(function(v, k){ o[k] = v; }); return o; }
 """
 
@@ -154,7 +155,7 @@ OUT.light = task('Lightsabre'); OUT.drawn = (W._vaultWhereIs('Lightsabre') || {}
 BODY_WAR = LIB + r"""
 W._vaultAutoIntakeSet(false);
 [%(shako)s, %(shako)s, %(shako)s].forEach(function(n){ add(n); }); paint();
-OUT.war = warId();
+OUT.war = warId(); OUT.warName = warName();
 OUT.before = [0, 1, 2].map(function(i){ return task(%(shako)s, i); });
 OUT.raw = carry();
 """ % {"shako": json.dumps(SHAKO)}
@@ -262,11 +263,11 @@ class ASavedTargetNeverMovesUnlessHeMovesIt(unittest.TestCase):
         self.assertEqual(d["after"][0], w["before"][0], "the keeper in the war stash moved: %r" % d["after"][0])
         for t in d["after"][1:]:
             self.assertNotEqual(t["id"], w["war"], "a task still sends a copy to the deleted WAR1: %r" % d["after"])
-            self.assertEqual(t["re"], "WAR1 was deleted", t)
+            self.assertEqual(t["re"], "%s was deleted" % w["warName"], t)   # REG-2980 the board's war mule 1, by its letter name
         chips = [x["chip"] for x in d["rows"]]
-        self.assertEqual(chips.count("WAR1 was deleted"), len(d["rows"]) - 1,
-                         "the rows of the copies WAR1 held do not say why: %r" % d["rows"])
-        self.assertFalse(any((x["to"] or "").startswith("WAR1") for x in d["rows"]), "a row still says -> WAR1: %r" % d["rows"])
+        self.assertEqual(chips.count("%s was deleted" % w["warName"]), len(d["rows"]) - 1,
+                         "the rows of the copies war mule 1 held do not say why: %r" % d["rows"])
+        self.assertFalse(any((x["to"] or "").startswith(w["warName"]) for x in d["rows"]), "a row still says -> %s: %r" % (w["warName"], d["rows"]))
 
     def test_a_mule_store_that_will_not_read_keeps_every_saved_target(self):
         w, h = self.war, self.held

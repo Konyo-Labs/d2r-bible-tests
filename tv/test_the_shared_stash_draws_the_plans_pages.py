@@ -77,10 +77,11 @@ OUT.plan = {}; for (var i = 0; i < copyCount(n); i++) { var t = (W._vaultMoveEns
   var k = !to || !to.cell ? 'none' : (to.id === 'shared' ? 'page ' + (Math.floor(+String(to.cell).match(/r(\d+)$/)[1] / 10) + 1) : (to.holder || to.id)); OUT.plan[k] = (OUT.plan[k] || 0) + 1; }
 var lay = W._sharedLayout(W._sharedDrawNames());
 OUT.pages = lay.pages.map(function(p){ return p.length; }); OUT.left = lay.left.length;
-var _w1 = JSON.parse(W.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return /^war1$/i.test(m.name); })[0] || null;
+var _w1 = JSON.parse(W.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return W._vaultWarRole(m) === 1; })[0] || null;   /* REG-2980 war mule 1 by number */
 OUT.war1 = _w1 ? { id: _w1.id, auto: (_w1.auto || {}).by || null } : null;
+OUT.w1name = _w1 ? _w1.name : null;
 var L = _w1 ? W._muleLoad(W._muleNamesFor(_w1.id), {}, _w1.id) : { phys: 0 }; OUT.warDraws = L.phys;
-var w = W._vaultWhereIs(n); OUT.findN = (w.cells || []).length; OUT.findWar = (w.cells || []).filter(function(c){ return c.indexOf('WAR1 · ') === 0; }).length;
+var w = W._vaultWhereIs(n); OUT.findN = (w.cells || []).length; OUT.findWar = (w.cells || []).filter(function(c){ return c.indexOf(OUT.w1name + ' · ') === 0; }).length;
 W.openMuleCard('shared'); var h = (document.getElementById('vault-detail') || {}).innerHTML || '';
 OUT.note = ((h.match(/<div class="vd-overflow"[^>]*>([\s\S]*?)<\/div>/) || [])[1] || '').replace(/<[^>]+>/g, '');
 OUT.roster = JSON.parse(W.LSR.getItem('d2r_muleRoster') || '[]').map(function(m){ return m.name; });
@@ -196,12 +197,12 @@ class TheSharedStashDrawsThePlansPages(unittest.TestCase):
         """REG-2803 (his ruling 2026-10-28): with no WAR mule the board makes WAR1; the 5 rings past the pages land on it, its
         window draws them, and the note names it."""
         n = self.n
-        self.assertEqual(n["plan"], {"page 1": 100, "page 2": 100, "page 3": 100, "page 4": 100, "page 5": 100, "WAR1": 5},
-                         "the 5 rings past the pages did not land on the board's WAR1: %r" % n["plan"])
-        self.assertEqual([r for r in n["roster"] if re.match(r"^war", str(r), re.I)], ["WAR1"], "not exactly one WAR mule: %r" % n["roster"])
+        self.assertEqual(n["plan"], {"page 1": 100, "page 2": 100, "page 3": 100, "page 4": 100, "page 5": 100, n["w1name"]: 5},
+                         "the 5 rings past the pages did not land on the board's war mule 1: %r" % n["plan"])
+        self.assertEqual([r for r in n["roster"] if re.match(r"^war", str(r), re.I)], [n["w1name"]], "not exactly one WAR mule: %r" % n["roster"])
         self.assertEqual((n["war1"] or {}).get("auto"), "board", "WAR1 was not made by the board: %r" % n["war1"])
         self.assertEqual(n["warDraws"], 5, n)
-        self.assertIn("(WAR1)", n["note"], "the overflow note does not name the board's WAR1: %r" % n["note"])
+        self.assertIn("(%s)" % n["w1name"], n["note"], "the overflow note does not name the board's war mule 1: %r" % n["note"])
 
 
     def test_the_move_row_and_its_expand_name_the_page_and_cell_find_names(self):
