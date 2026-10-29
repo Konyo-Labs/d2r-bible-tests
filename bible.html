@@ -48705,6 +48705,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
         + ((_known && _ld.conflicts && _ld.conflicts.length) ? '<div class="vm-note vm-bad-spots" title="' + esc(_ld.conflicts.map(function(c){ return c.n + ' — wanted ' + c.spot + ': ' + c.why; }).join(' · '))
             + '">⚠ ' + _ld.conflicts.length + ' item' + (_ld.conflicts.length === 1 ? '' : 's') + ' you placed by hand no longer fit' + (_ld.conflicts.length === 1 ? 's its' : ' their') + ' spot — open the locker to see which</div>' : '')
         + (m.note?'<div class="vm-note">'+esc(m.note)+'</div>':'')
+        /* #251 (REG-2928) - whether this mule exists in game, said and never a block */
+        + (function(){ var v = (typeof window._vaultMuleSaveSay === 'function') ? window._vaultMuleSaveSay(m) : null;
+            return v ? '<div class="vm-note vm-save" data-save="' + esc(v.kind) + '" title="a check from this PC\u2019s save folder - it never stops a filing">' + esc(v.say) + '</div>' : ''; })()
         + '<div class="vm-body">'
         + setRows
         + itemsHtml
@@ -54973,6 +54976,30 @@ window.vaultAutoAssign = function(){
   // carry added:true (vaultAddMule); older ones are known by their mint-id shape ('m'+base36 time), which no
   // core id has (the only m-starter, 'magic-rare', has a hyphen).
   function _vmAddedMule(m){ return !!(m && (m.added || /^m[0-9a-z]{6,}$/.test(String(m.id)))); }
+  /* #251 (REG-2928) - DOES THIS MULE EXIST IN GAME? A check that is SAID, never a block. Three answers, and none when it
+     cannot know:
+       * the name is no D2R name (2-15 characters, letters, at most one '-' or '_') - the game cannot make it as written;
+       * this PC's save folder names it (GET /api/saves, compared without case) - on this account;
+       * this PC's saves answered and do not name it - not in this PC's saves (it may live on another PC).
+     Saves that never answered, a PC with no save folder and a shadow say nothing about the account; SHARED STASH is no
+     character. WAR naming and the make-task text are untouched. -> {kind: 'invalid'|'seen'|'absent', say} | null */
+  var _VM_SAVE_SAY = {
+    invalid: 'a D2R name is letters only, so this exact name cannot be made in game',
+    seen: 'on this account (seen in this PC\u2019s saves)',
+    absent: 'not in this PC\u2019s saves'
+  };
+  window._vaultMuleSaveSay = function(m){
+    if (!m || m.id === 'shared') return null;
+    var nm = String(m.name == null ? '' : m.name);
+    if (!nm) return null;
+    var ok = /^[A-Za-z][A-Za-z_-]{1,14}$/.test(nm) && (nm.match(/[-_]/g) || []).length <= 1;
+    if (!ok) return { kind: 'invalid', say: _VM_SAVE_SAY.invalid };
+    var S = (typeof window._cbSavesNow === 'function') ? window._cbSavesNow() : null;
+    if (!S || S.ok !== true || !Array.isArray(S.chars)) return null;
+    var want = nm.toLowerCase(), hit = false;
+    S.chars.forEach(function(c){ if (c && typeof c.name === 'string' && c.name.toLowerCase() === want) hit = true; });
+    return hit ? { kind: 'seen', say: _VM_SAVE_SAY.seen } : { kind: 'absent', say: _VM_SAVE_SAY.absent };
+  };
   window.vaultDeleteMule = async function(id){
     if (id === 'shared') return;
     var m=muleById(id); if(!m) return;
