@@ -11890,6 +11890,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       + esc(words) + '" title="' + esc(words) + '">' + _CHX_SEAL[yes ? 'yes' : 'not'].replace(/chxSeal([YN])/g, '$&' + '-' + (++_chxSealSeq)) + '</span>';
   }
   function _proof(t){
+    /* #251 (REG-2927) - a character only this PC's save folder names: its name is all the folder holds */
+    if (t && t.save && !t.seen) return '<div class="chx-proof" data-tier="SAVE">Named by this PC\u2019s save folder · class, level and proof UNKNOWN until the reels see it</div>';
     var lv = t.pendingLevel ? ' · level ' + (t.pendingLevel | 0) + ' waits for one more look' : '';
     return '<div class="chx-proof" data-tier="' + esc(t.tier || 'UNKNOWN') + '">' + _chxSeal(t.tier, t.looks, t.trials, t.lastTs, true)
       + esc(lv) + '</div>';
@@ -12191,6 +12193,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       ? 'Which characters you have in game is UNKNOWN here — ' + esc(S.why) + '.'
       : (function(){ var w = window._chxNoneWhy(); return '<span title="A character joins once your reels see its character-select screen twice">No characters seen yet</span>'
           + ' <span class="chx-none-why" data-none-why="' + w.k + '" title="' + esc(w.long) + '">· ' + esc(w.short) + '</span>'; })()) + '</div>';
+    /* #251 (REG-2927) - names from the save folder with the reels UNKNOWN: the cards stand, and the room says what is not known */
+    if (ing.length && S.state === 'unknown') cards = '<div class="chx-sec-sub" data-sub="saves-only">Named by this PC\u2019s save folder. Class, level and proof are UNKNOWN here \u2014 ' + esc(S.why) + '.</div>' + cards;
     var sim = S.sim.map(function(id){ return _card(id, all[id], id === mainId); }).join('');
     /* v3855 item D (his ask): Your builds sit at the TOP, under the header, and + New character is their first card */
     var newTile = '<button type="button" class="chx-newtile" data-act="new" onclick="window._charsNew()">'
@@ -76326,6 +76330,32 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     if (!d || typeof d !== 'object') return;
     if (d.ok === true || !(_cbLearned && _cbLearned.ok === true)) _cbLearned = d;
   }
+  /* #251 (REG-2927) - THIS PC'S SAVE FOLDER NAMES ITS CHARACTERS (GET /api/saves, tv/d2s_read.saves): every character
+     played on this PC, by its exact spelling, and nothing else about it - no class, no level. A name the reels learned
+     too keeps the reels' class, level and tier and takes the save's spelling when the two fold alike; a name only the
+     saves know joins the in-game list with its class and level UNKNOWN. null = never answered. A shadow never asks:
+     their saves are on their PC. A row counts only with its id count (the saves' own shape), never another answer's. */
+  var _cbSaves = null;
+  function _cbSavesTake(d){
+    if (!d || typeof d !== 'object' || !(d.chars === null || Array.isArray(d.chars))) return;
+    if (d.ok === true || !(_cbSaves && _cbSaves.ok === true)) _cbSaves = d;
+  }
+  function _cbSavesAsk(){
+    try {
+      if (document.documentElement.classList.contains('tvd-shadow')) return Promise.resolve();
+      if (!/^https?:$/.test(location.protocol) || typeof fetch !== 'function') return Promise.resolve();
+      return fetch('/api/saves', { cache: 'no-store' })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(_cbSavesTake, function(){ /* no console behind this page: the save names stay UNKNOWN */ });
+    } catch (e) { return Promise.resolve(); }
+  }
+  function _cbSaveRows(){
+    if (document.documentElement.classList.contains('tvd-shadow')) return [];
+    var c = (_cbSaves && _cbSaves.ok === true && Array.isArray(_cbSaves.chars)) ? _cbSaves.chars : [];
+    return c.filter(function(r){ return r && typeof r.name === 'string' && r.name && typeof r.ids === 'number'; });
+  }
+  window._cbSavesTakeForLaw = _cbSavesTake;
+  window._cbSavesNow = function(){ return document.documentElement.classList.contains('tvd-shadow') ? null : _cbSaves; };
   /* #36 (REG-2908) - the vault's own ask: the same answer through the same take, and NOT the room asking - the room's
      "asking..." counts the room's and the builder's asks only, so an ask the vault made at boot never reads as the room's */
   function _cbLearnedQuiet(then){
@@ -76334,6 +76364,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       fetch('/api/chars_learned', { cache: 'no-store' })
         .then(function(r){ return r.ok ? r.json() : null; })
         .then(function(d){ _cbLearnedTake(d); if (then) then(); }, function(){ /* no console behind this page: holders stay UNKNOWN */ });
+      _cbSavesAsk().then(function(){ if (then) then(); });   /* #251 (REG-2927) - the save names repaint on their own answer */
     } catch (e) {}
   }
   function _cbLearnedFetch(then, opts){
@@ -76350,6 +76381,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       fetch('/api/chars_learned', { cache: 'no-store' })
         .then(function(r){ return r.ok ? r.json() : null; })
         .then(_settle, function(){ _settle(null); /* no console behind this page (the website): the typed list stands */ });
+      _cbSavesAsk().then(function(){ if (then) then(); });   /* #251 (REG-2927) - the save names repaint on their own answer */
     } catch (e) { _cbLearnedAsking = Math.max(0, _cbLearnedAsking - 1); }
   }
   window._cbLearnedAskingNow = function(){ return _cbLearnedAsking > 0; };
@@ -76445,6 +76477,15 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
                      alias: (Array.isArray(L.aliases) ? L.aliases : []).map(function(a){ return 'seen:' + _cbFold(a && a.name); }) });
         }
       });
+      /* #251 (REG-2927) - the save folder's names: on a fold match the save's spelling stands (the key keeps its fold, so a
+         build made from it still finds it); a name only the saves know joins, class and level UNKNOWN */
+      _cbSaveRows().forEach(function(S){
+        var hit = null; out.forEach(function(t){ if (!hit && _cbFold(t.name) === _cbFold(S.name)) hit = t; });
+        if (hit){ hit.name = S.name; hit.save = true; return; }
+        out.push({ key: 'seen:' + _cbFold(S.name), name: S.name, cls: null, level: null, words: '', strengths: [], weaknesses: [],
+                   seen: 0, pendingLevel: null, tier: null, looks: null, trials: null, title: null, lastTs: null, alias: [],
+                   save: true });
+      });
     } catch (e) {}
     return out;
   }
@@ -76483,6 +76524,8 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       if (g) g.ids.push(id); else sim.push(id);
     });
     return { state: state, why: why, asking: asking,
+             /* #251 (REG-2927) - how many in-game characters only this PC's save folder names (class and level UNKNOWN) */
+             savesOnly: groups.filter(function(g){ return g.t.save && !g.t.seen; }).length,
              ingame: groups.filter(function(g){ return !(g.t.key.indexOf('seen:') === 0 && g.t.level === 1); }),
              mules: groups.filter(function(g){ return g.t.key.indexOf('seen:') === 0 && g.t.level === 1; }),
              sim: sim };
@@ -77484,9 +77527,10 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
        were level 1 — Armor, Crafter, Runewords …). They are his characters, so they are listed, but in their own
        group after the ones he plays. */
     var S = _cbSections(all, order);
-    var _opt = function(t){ return '<option value="tpl:' + esc(t.key) + '">' + esc(t.name) + ' — ' + esc(t.cls || ('"' + t.words + '": class UNKNOWN')) + (t.level ? ' ' + t.level : '') + (t.pendingLevel ? ' (' + t.pendingLevel + '?)' : '') + ' · ' + esc(_cbTierSay(t)) + ' · not saved yet</option>'; };
+    var _opt = function(t){ return '<option value="tpl:' + esc(t.key) + '">' + esc(t.name) + ' — ' + esc(t.cls || ((t.save && !t.seen) ? 'class UNKNOWN (named by this PC\u2019s save folder)' : ('"' + t.words + '": class UNKNOWN'))) + (t.level ? ' ' + t.level : '') + (t.pendingLevel ? ' (' + t.pendingLevel + '?)' : '') + ' · ' + esc(_cbTierSay(t)) + ' · not saved yet</option>'; };
     var _grp = function(g){ return g.ids.length ? g.ids.map(_bopt).join('') : _opt(g.t); };
-    sel += '<optgroup label="⚔️ In game — ' + esc(S.state === 'ok' ? S.ingame.length + ' seen on this console\'s reels' : S.state === 'none' ? 'none seen on this console\'s reels yet' : 'UNKNOWN: ' + S.why) + '">';
+    sel += '<optgroup label="⚔️ In game — ' + esc((S.state === 'ok' ? S.ingame.length + ' seen on this console\'s reels' : S.state === 'none' ? 'none seen on this console\'s reels yet' : 'UNKNOWN: ' + S.why)
+      + (S.savesOnly ? ' · ' + S.savesOnly + ' named only by this PC\u2019s save folder' : '')) + '">';   /* #251 (REG-2927) */
     S.ingame.forEach(function(g){ sel += _grp(g); });
     if (!S.ingame.length) sel += '<option value="__none" disabled>' + (S.state === 'unknown' ? 'which characters you have in game is UNKNOWN here' : 'they join once the reels see your character-select screen twice') + '</option>';
     sel += '</optgroup>';

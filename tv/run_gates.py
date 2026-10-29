@@ -13333,6 +13333,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_console_answers_this_pcs_save_names.py")], 300,
          needs_app=False,
          why="#251 REG-2926 - GET /api/saves answers this PC's save names from d2s_read.saves(), kept while the save folders stand still and read again the moment one changes; a failure is UNKNOWN, never an empty roster"),
+    Gate("test_the_characters_room_names_this_pcs_saves",
+         [sys.executable, os.path.join(HERE, "test_the_characters_room_names_this_pcs_saves.py")], 300,
+         needs_app=False,
+         why="#251 REG-2927 - the Characters room and the builder take this PC's save names: the save's exact spelling, class and level from the reels or UNKNOWN, never in a shadow"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

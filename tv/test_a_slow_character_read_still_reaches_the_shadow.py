@@ -202,9 +202,12 @@ OUT.kept = W._cbSections({}, []).state;
 
 TWO_ASKS = r"""
 (function(){
-/* a synchronous stand-in for fetch(...).then(json).then(ok, err): each ask's callbacks are kept and settled by hand */
+/* a synchronous stand-in for fetch(...).then(json).then(ok, err): each ask's callbacks are kept and settled by hand.
+   #251 (REG-2927) - the builder's ask now also asks /api/saves; only the chars_learned asks are kept here, the saves ask
+   never settles (the room's "asking" counts the chars_learned asks only) */
 var W = window, pend = [];
-fetch = function(){ var c = {}; var t2 = { then: function(ok, err){ c.ok = ok; c.err = err; return t2; } };
+fetch = function(url){ if (String(url).indexOf('/api/chars_learned') < 0) { var idle = { then: function(){ return idle; } }; return idle; }
+  var c = {}; var t2 = { then: function(ok, err){ c.ok = ok; c.err = err; return t2; } };
   pend.push(c); return { then: function(f){ c.map = f; return t2; } }; };
 W._cbLearnedFetch(function(){}); W._cbLearnedFetch(function(){});
 OUT.two = W._cbLearnedAskingNow();
