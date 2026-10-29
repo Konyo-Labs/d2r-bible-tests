@@ -1653,6 +1653,37 @@ STORED role, and REG-2968 seeds this law's war mules by role and number, so that
 changed nothing the law can see. The proof now breaks the property the law depends on: _vaultWarRole recognising a stored
 role (the seeded war1 then takes no overflow). The name regex's own behaviour stays pinned by REG-2804's law. Chrome law:
 proven by the push gate.
+### REG-3024 - A REFUSED DAILY PICK WROTE NOTHING AND SAID NOTHING, SO AN EARLIER DAY'S PICK READ AS TODAY'S (#158)
+dailyCreateAi read its answer with r.json() and kept a pick only when the body carried an answer, so a refusal in any shape
+(the cap, an error body, a 502 with no body, a fetch that threw) wrote no pick - correctly - and said nothing: the card went
+on showing an earlier day's sentence under "Today's pick", and the day's stamp stayed, so it was not asked again until
+midnight. It now reads its answer through window._intakeAnswer; a refusal still writes no pick, takes the day's stamp off (the
+next load asks again) and the card says "Today's pick: not read - <the refusal rule's sentence> · the last pick it read: ..."
+(window._createNowAiBanner, the one line renderCreateNow draws; window._intakeNotReadSay(null, why) is the count-less form).
+The console's task-force card, which reads the stored pick on its own, is not changed. Law:
+tv/test_a_refusal_is_never_a_read_at_any_door.py (TheDailyPickSaysARefusalAndWritesNoPick, every refusal shape); red-proofs RED.
+
+
+### REG-3021 - ONE CAP RULE: A CAP ENDS THE BATCH AT EVERY DOOR, AND THE VAULT INTAKE STOPS FOR THE SUBSCRIPTION CAP (#158, his ruling)
+Measured in node on c70a8187b, a five-shot batch where every answer was the subscription cap: the set tracker, the craft
+workshop, the Chronicle and grail screenshot readers and the vault grid counter each asked the reader 5 times, and the tally
+reader 15 (three voting passes a shot). The vault intake has stopped a batch at an API usage limit since v438 (_aiLimitHit),
+but read at the code (it is not run in node) its test never knew the subscription cap (429 + {error:'subscription-cap'}),
+and its first read counted a 429 as an error before the test could see it. His ruling: one cap rule at every door - a cap
+means the rest of the batch is not read for the cap's reason, never re-asked. window._intakeIsCap(status, body) is that rule
+(the subscription cap, or a 402 / the v438 usage-limit words - the vault intake's own test, moved beside the refusal rule), and
+the answer reader names a cap (`cap`). Every batch door stops at the first cap: the shots after it are not sent, each is
+counted "not read" with the cap's sentence (the Chronicle reader lists each such page in `refused`), and what was read before
+it is kept. The tally reader stops its passes at a cap and carries it through the one `why` every tally reader hands to all
+the shots of its batch. The vault intake raises its own stop on a cap, and its banner says the cap's sentence ("... - the rest
+of this batch was not asked") instead of the Anthropic monthly-cap text. The refusal rule also reads the website's upstream
+reason from `detail` (it said only "the reader refused (upstream)"). A refusal that is not a cap (a 502) still does not end the
+batch. Not changed: the vault intake's locate and empty-read retry reads, which ignore a refused retry as before, and the item
+checker's judge (one frame a call, not a batch). Law: tv/test_a_refusal_is_never_a_read_at_any_door.py (ACapEndsTheBatch -
+all-capped, capped mid-batch, a usage limit, a 502 that must not stop the batch, counting the asks; the vault's _aiIsLimit and
+_aiLimitMsg run in node, its first read's stop pinned at the line); red-proofs RED.
+
+
 ### REG-2979 - THE SET TRACKER AND THE CRAFT WORKSHOP CALLED A REFUSED SHOT "NOTHING RECOGNISED" (#158, v3834 second eye)
 Reproduced in node on int-9 before the fix, every refusal shape (429 cap, 502 with an empty body, 200 + {error}, 200 HTML, a
 thrown fetch): the set tracker reported "No set pieces recognised (1 image error)" and the craft workshop "No crafted items

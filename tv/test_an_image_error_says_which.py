@@ -79,7 +79,8 @@ def _read(mode):
         raise AssertionError("PREMISE: _tallyRead is not where this law cuts it (%d, %d)" % (s.count(START), s.count(END)))
     i = s.index(START)
     fn = (_cut_fn(s, "window._intakeRefused = function(status, data){")
-          + _cut_fn(s, "window._intakeAnswer = async function(resp){") + s[i:s.index(END, i) + len(END)])
+          + _cut_fn(s, "window._intakeAnswer = async function(resp){")
+          + _cut_fn(s, "window._intakeIsCap = function(status, data){") + s[i:s.index(END, i) + len(END)])
     r = subprocess.run([NODE, "-"], input=PROGRAM % (json.dumps(mode), fn), capture_output=True, text=True, timeout=60)
     if r.returncode != 0:
         raise AssertionError("the cut _tallyRead did not run in node: %s" % r.stderr[-800:])

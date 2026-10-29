@@ -95,6 +95,7 @@ def _drive():
         raise AssertionError("node is not on this machine - this law does not skip")
     code = (_cut(BIBLE, "window._intakeRefused = function(status, data){", ";") + "\n"
             + _cut(BIBLE, "window._intakeAnswer = async function(resp){", ";") + "\n"
+            + _cut(BIBLE, "window._intakeIsCap = function(status, data){", ";") + "\n"
             + _cut(BIBLE, "window._intakeThrew = function(e){", ";") + "\n"
             + _cut(BIBLE, "  window.aicJudge = async function(file){", ";"))
     d = tempfile.mkdtemp(prefix="refused_read_")
