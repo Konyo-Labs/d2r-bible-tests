@@ -346,8 +346,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2804 - the board stops when a normal mule is called WAR1 instead of taking WAR2",
      "file": "bible.html",
-     "find": "      for (var _wn = 0; _wn < 20 && !_vmNameOk(name, null).ok; _wn++) { n++; name = _vaultWarName(n); }\n",
-     "replace": "",
+     "find": "        if (!_dl && _vmNameOk(name, null).ok) break;\n",
+     "replace": "        if (!_dl) break;\n",
      "matches": 1, "needs": "node"},
 ]
 
