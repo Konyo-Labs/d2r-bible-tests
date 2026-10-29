@@ -13337,6 +13337,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_characters_room_names_this_pcs_saves.py")], 300,
          needs_app=False,
          why="#251 REG-2927 - the Characters room and the builder take this PC's save names: the save's exact spelling, class and level from the reels or UNKNOWN, never in a shadow"),
+    Gate("test_a_mule_says_whether_it_exists_in_game",
+         [sys.executable, os.path.join(HERE, "test_a_mule_says_whether_it_exists_in_game.py")], 300,
+         needs_app=False,
+         why="#251 REG-2928 - a vault mule says whether it exists in game (no D2R name / on this account by this PC's saves / not in this PC's saves), said under its plate and never a block"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
