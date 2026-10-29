@@ -123,6 +123,19 @@ The two profile-publish laws stand a fixture in for _profile_saves, so no law re
 Law test_the_characters_room_says_why_its_saves_name_what_they_name (the room on the whole page in node, the upload in
 Python), 8 cases, 8 red-proofs RED, baseline green. 24 neighbours ran green (6 node-only laws refused by safe_laws for a
 test import, read and run by hand); the signed-publish, presence-beacon, shadow and mule-window Chrome laws go to CI.
+### REG-3106 - SHOULD MARKUP-SHAPED OCR READ AS "UNREADABLE TEXT (N CHARS)"? NO - AND THE CHIP'S FACE IS NOW LOCKED (#86 item 5)
+#86 item 5 asked again about the caught-text chip printing raw OCR like `CHAKm •<li•` (thHandoffNote; escaped, so never an
+injection): should markup-shaped garble read as "unreadable text (N chars)" with the raw text in a title? Decided from the
+code and the reads: no. REG-2791 measured these texts on his reels (1,029 on 38 sealed reels, 8,637 on the journal's kai
+rows) and the markup-shaped ones are a letter the OCR misread, often still readable - 'FAsT ArrA<K SpfE' is ATTACK SPEED,
+'kf>uiRfD STRENGT' is REQUIRED STRENGTH. A count would hide that evidence behind a hover a touch screen and a glance never
+make, which is the hiding REG-2791 ruled out ("a read is testimony and is never cleaned"); its quoting, escaping and "raw
+OCR" label are what answer "looks like leaked HTML". The gap found: REG-2791's law read each chip's whole span, title
+included, so moving the read into the title and showing a count passed it (proven: under that sabotage its 3 checks stayed
+green). Now the read must stand on the chip's face, outside every attribute, on the footage chip, the kai chip and the
+kai caption, and no count may stand in for it. No code changed. Law: test_unread_text_is_shown_as_the_ocr_read_it gains
+test_the_read_is_on_the_chips_face_never_only_in_a_title and 2 red-proofs (8 of 8 RED).
+
 ### REG-3096 - A SHADOW'S DRAGS AND ITS VAULT / D2JSP / TV·D / RUNES TABS WERE UNKNOWN; MEASURED: NOTHING WRITES (#194, code half)
 GrokBot proved on the guest at v3806 that 0 stores change across 40 controls x 11 tabs in a shadow, and left two parts
 UNKNOWN: drag (vault tiles, dock to mule, mule to mule) and the Vault, d2jsp, TV·D and Runes tabs, which had no store counter
