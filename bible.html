@@ -23410,6 +23410,7 @@ function _artRolledBase(name){
   var rq = null;
   try { rq = (typeof _rolledQuality === 'function') ? _rolledQuality(clean) : null; } catch (eRq) { rq = null; }
   if (rq && rq.q === 'magic' && rq.base) { out.base = String(rq.base); return out; }
+  if (rq && rq.q === 'rare' && rq.base) { out.base = String(rq.base); return out; }   /* REG-3089 the base its label states */
   /* REG-3088 - Armor, Shield and Weapon name a class of bases, never one: which one is asked */
   if (rq && rq.q === 'rare' && rq.slots && rq.slots.length === 1 && /^(Armor|Shield|Weapon)$/.test(rq.slots[0])) {
     out.ask = 'which ' + rq.slots[0].toLowerCase() + '? the name does not say; a tooltip look settles it'; return out; }
@@ -28878,11 +28879,40 @@ function _rolledQuality(name){
     var ks = Object.keys(RARE_NAME_POOLS).filter(function(k){ return RARE_NAME_POOLS[k].indexOf(w[1]) >= 0; });
     if (ks.length) return { q: 'rare', slots: ks, prefix: w[0], suffix: w[1] };
   }
+  /* REG-3089 (#158, measured on his own sweep) - A RARE'S NAME FOLLOWED BY ITS BASE KEEPS THE BASE IT STATES. A ground label is
+     two lines, the rare's name over its base, and the reader handed some over as one: "Chaos Whorl Ring", "Dread Grip Demonhide
+     Gloves", "Raven Casque Circlet" had no home. The first two words are the rare; the rest is kept as its base when the
+     builder's base table names it AND its type is a slot the suffix can name (a Circlet is a helm). A base the suffix cannot
+     wear is not settled here: nothing is claimed. */
+  if (w.length >= 3 && RARE_NAME_PREFIXES.indexOf(w[0]) >= 0){
+    var ks3 = Object.keys(RARE_NAME_POOLS).filter(function(k){ return RARE_NAME_POOLS[k].indexOf(w[1]) >= 0; });
+    var rest = w.slice(2).join(' ');
+    var fits = ks3.length ? _rolledBaseFits(rest, ks3) : null;
+    if (fits) return { q: 'rare', slots: ks3, prefix: w[0], suffix: w[1], base: fits };
+  }
   var m = _MAGIC_SMALL_RE.exec(nm);
   if (m && (m[1] || m[3])) return { q: 'magic', base: m[2] };
   return null;
 }
 window._rolledQuality = _rolledQuality;
+/* REG-3089 - the base a label states, when the builder's base table names it and its type is one of the slots (the game's
+   itypes: a Circlet is a helm, Demonhide Gloves are gloves). -> the base's own spelling | null (not a base, a slot the suffix
+   cannot name, or the table unread - never a guess) */
+var _ROLLED_SLOT_ITYPE = { Amulet: 'amul', Ring: 'ring', Jewel: 'jewl', Gloves: 'glov', Helm: 'helm', Boots: 'boot', Belt: 'belt',
+                           Armor: 'tors', Shield: 'shld', Weapon: 'weap' };
+function _rolledBaseFits(base, slots){
+  var d = null;
+  try { d = (typeof window._cbDb === 'function') ? window._cbDb() : null; } catch (e) { d = null; }
+  if (!d || !d.b) return null;
+  var lo = String(base == null ? '' : base).trim().toLowerCase(), code = null;
+  if (!lo) return null;
+  Object.keys(d.b).some(function(k){ if (String(d.b[k][0]).toLowerCase() === lo){ code = k; return true; } return false; });
+  if (!code) return null;
+  var t = d.b[code][1], anc = (d.anc && d.anc[t]) || {};
+  var ok = (slots || []).some(function(s){ var it = _ROLLED_SLOT_ITYPE[s]; return !!it && (t === it || !!anc[it]); });
+  return ok ? String(d.b[code][0]) : null;
+}
+window._rolledBaseFits = _rolledBaseFits;
 /* the router's ONE answer for a rolled name, so the stub path and the catalogue path say the same words */
 function _rolledRoute(rq){
   return rq.q === 'rare'
