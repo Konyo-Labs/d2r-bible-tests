@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v615 — CHRONICLE lockdown: the 66-word live seed survives a wipe; explicit un-marks survive a
@@ -59,13 +60,13 @@ test('fan-out: chronicleReset refreshes the Forge and vault (not just the Chroni
 
 test('alias resolve: a Chronicle-made word never shows as ready-now under its display alias', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1500);
-  const r = await page.evaluate(() => {
+  const r = await pinEvaluate(page, () => {
     const w: any = window;
     // Spirit + CTA are seed-made on the owner profile; give their runes so they'd otherwise be 'ready'
     localStorage.setItem('d2r_runeStash', JSON.stringify({ Tal: 2, Thul: 2, Ort: 2, Amn: 2, Ral: 2, Mal: 2, Ist: 1, Ohm: 1 }));
     return true;
   });
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   const r2 = await page.evaluate(() => {
     const w: any = window;
     const st = w.runeCraftStatus();

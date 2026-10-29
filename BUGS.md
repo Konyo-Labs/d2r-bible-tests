@@ -1255,6 +1255,48 @@ answering start's profile with the browser), so EXPLAINED now names _chrome_star
 calls _chrome_down before its retry (+1 red-proof: a retry without the take-down).
 
 
+### REG-3076 - 90 SPEC PINS ON A STORE THE BOARD WRITES BACK WERE WRITTEN BETWEEN TWO LOADS (#161, after REG-3059)
+REG-3059's shape on v527: a spec writes a store with page.evaluate, then reloads, over a first page that holds its
+own copy of that store in memory (persist() writes 21 stores back whole). v527 failed that way on v3818 and v3839; which
+writer put the store back is UNMEASURED - a node replay does not reproduce persist() as the writer (REG-3059 as corrected
+in v3840). REG-3059 fixed that one spec by hand. Swept: 90 more pins in 54 specs, read with a scan that skips comments:
+- 75 followed by page.reload() in 45 specs (rwMade 46, owned 35, runeStash 23, setPieces 8, unknownReads 5, copies 2,
+  wishlist 2; a pin often sets several). The first count was 66: a scanner that did not skip comments read "main's" as
+  a quote and lost 8. One, v637's 'L·d2r_rwMade', sits under a world prefix: agent-guide's list had it, this scan
+  did not, and now reads keys under LSR's prefixes;
+- 8 followed by page.goto(URL) in 7 specs, plus a goto between a pin and its reload in v631;
+- 3 seeding helpers whose key is an argument (reg2410 seeds d2r_owned, v1625 rwMade and setPieces, reg2414 two vault
+  stores);
+- 4 that pass a named constant: v2200's and v2203's SEED, an expression string writing owned and setPieces, then
+  page.goto. Found by CI, not by the first scan: v2200:53 was flaky on b26d0cbec (green on retry) and red on both
+  attempts on main 014d4fc3d.
+tests/_pin.ts: pinEvaluate(page, fn, arg) runs the spec's own function - or expression string, as page.evaluate takes -
+records the localStorage writes it made, and replays them in a ONE-SHOT init script (a sessionStorage mark) before the
+next document's own scripts; a function that returns a promise is refused, by name. reloadPinned(page) /
+gotoPinned(page, url) load again and check every pin's mark, naming the pin's file:line and keys if it never reached the
+boot. Known reach: the premise proves the pin reached the next boot, not that nothing in that boot rewrote it - a writer
+inside the reload's own boot would still win, and the spec's own assertion would then go red. LSR.setItem skips a write
+whose bytes already match, so such a key is not recorded. agent-guide's list of 52 (REG-3059, a lower bound by its own
+account) reconciled against this sweep at c0f4f1e24: 42 converted here, v637 the one in-class miss (now converted),
+and 9 out of this class - pins on d2r_chronicleInbox/InboxLog, ownerClaim, testGuest, foundLog and activeProfile, none
+of them a store persist() writes; they stay as they are, named here.
+Routine I on b26d0cbec (2,381 passed, 5 failed, 1 flaky) and 116e9b6a4 (2,380 passed, 5 failed, 2 flaky), with no pin
+ever missing its boot: every converted spec green except v1630_sealed_stamp, whose 5 tests failed identically on the
+base 3e0d8eac2 (REG-3056's landing; v3840's REG-3084 fixes it). v2200:53 stayed flaky with its SEED pinned - the same
+"a migration overwrote his manual placement of 'Key of Hate'" - so d2r_muleAssign is rewritten in or after that boot:
+a separate defect, the writer UNMEASURED, not this one. Every changed spec and the helper parse under node's type
+stripper.
+### REG-3077 - NOTHING HELD THE CLASS: A NEW SPEC COULD PIN BETWEEN TWO LOADS AGAIN (#161)
+Law tv/test_a_spec_pin_rides_the_reloads_boot.py (keyed): the stores persist() writes are read from bible.html, never a
+hand list; the 54 specs it names may hold no evaluate-then-reload/goto pin on one of them (under a world prefix too),
+on a computed key, or in a named constant the call passes, and every pinEvaluate reaches reloadPinned/gotoPinned
+before a plain load; the helper keeps its one-shot mark, its named premise, both checked doors and its async refusal.
+11 red-proofs RED. The same scan
+over EVERY tests/*.spec.ts, so an unnamed new spec is held too, is TestReg3077NoSpecInTheFolderPinsBetweenLoads in
+test_folder_scans.py - the file that lists folders and is unkeyable on purpose - so the unkeyable list stays at its
+ceiling (91). Its red-proof (v2208's seed switched to d2r_rwMade) was measured RED on the shared scan here; CI ran the
+law green on b26d0cbec (test_folder_scans OK, 13 cases), and its sabotage is owed to the push gate, as that file imports
+test_control.
 ### REG-3056 - ON A SEALED BOARD HIS CRAFTS CHIP SNAPPED BACK TO MAKE NOW (GrokBot #230 6486545342)
 GrokBot, a shadow of the Mac (every runeword made) -> Runewords -> Crafts: ALL 40 and COMPLETED snapped back to MAKE NOW 4.
 renderForge's v1411 crafts auto-land (and the chronicle's v2094 sealed landing) ran on EVERY render, so his chip was

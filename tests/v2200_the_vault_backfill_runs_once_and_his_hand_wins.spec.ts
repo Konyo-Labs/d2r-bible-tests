@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, gotoPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v2200 → RETIRED IN v2203, AND THIS SPEC NOW GUARDS THE RETIREMENT.
@@ -52,7 +53,7 @@ async function ready(page: any) {
 test('the found-ever ledger never becomes the physical vault', async ({ page }) => {
   await page.goto(URL);
   await ready(page);
-  const seed = await page.evaluate(SEED);
+  const seed = await pinEvaluate(page, SEED);
 
   // the fixture must actually EXERCISE the gap, or every assertion below is vacuous
   expect(seed.ledger, 'the seeded ledger is too small to reproduce his situation')
@@ -60,7 +61,7 @@ test('the found-ever ledger never becomes the physical vault', async ({ page }) 
   expect(seed.manual.length, 'no manual placements were seeded, so "his hand wins" is untested')
     .toBe(4);
 
-  await page.goto(URL);                        // the migration would run at boot, if it still ran
+  await gotoPinned(page, URL);                  // the migration would run at boot, if it still ran
   await ready(page);
   await page.waitForTimeout(2000);
 
@@ -88,8 +89,8 @@ test('the found-ever ledger never becomes the physical vault', async ({ page }) 
 test('the retirement is stamped, and says why', async ({ page }) => {
   await page.goto(URL);
   await ready(page);
-  await page.evaluate(SEED);
-  await page.goto(URL);
+  await pinEvaluate(page, SEED);
+  await gotoPinned(page, URL);
   await ready(page);
   await page.waitForTimeout(2000);
 
@@ -118,14 +119,14 @@ test('the retirement is stamped, and says why', async ({ page }) => {
 test('it does nothing on an empty ledger either', async ({ page }) => {
   await page.goto(URL);
   await ready(page);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w = window as any;
     w.LSR.setItem('d2r_foundLog', '{}');
     w.LSR.setItem('d2r_setPieces', '[]');
     w.LSR.setItem('d2r_owned', '[]');
     w.LSR.removeItem('d2r_vaultBackfill_v2200');
   });
-  await page.goto(URL);
+  await gotoPinned(page, URL);
   await ready(page);
   await page.waitForTimeout(1500);
 

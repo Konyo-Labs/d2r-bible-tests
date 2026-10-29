@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v425 — VAULT-MANAGER SIMULATION. Walks every item the bible knows (grail uniques/sets/bases + off-grail
@@ -120,7 +121,7 @@ test('LOAD/CAPACITY — 450 owned names persist, and the painted set of organize
   // mule-assigned, so mule-assign ONLY that subset to keep all 450 physical. The remaining (non-grail)
   // names stay unassigned. v3767 paints a router-homed name on the organizer and leaves the unsorted
   // dock to homeless names, so the capacity pass counts both surfaces. Persistence is unchanged.
-  await page.evaluate((ns) => {
+  await pinEvaluate(page, (ns) => {
     localStorage.setItem('d2r_owned', JSON.stringify(ns));
     const w: any = window;
     const seed = w._GRAIL_SEED || {}, uex = w._UNI_EXTRA || {};
@@ -129,7 +130,7 @@ test('LOAD/CAPACITY — 450 owned names persist, and the painted set of organize
     localStorage.setItem('d2r_muleAssign', JSON.stringify(ma));
     localStorage.setItem('__v425_seeded', JSON.stringify(ns));   // v2265 — so the reload can diff
   }, names);
-  await page.reload(); await page.waitForTimeout(2200);
+  await reloadPinned(page); await page.waitForTimeout(2200);
   const r = await page.evaluate(() => {
     const w: any = window;
     let rendered = -1, threw = '', dockChips = -1, orgRows = -1;

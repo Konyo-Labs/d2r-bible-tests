@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 /* v1625 — THE IN-GAME QUALITY PALETTE, ON THE BOARD.  (owner A = bible.html; this file proves it)
  *
@@ -84,7 +85,7 @@ async function board(page: any, tab?: string) {
    never-chosen profile like this one (bible.html:3526) — write BOTH or the seed lands in a world the
    app never reads, and every colour assertion downstream passes over an empty bar. */
 async function seedAndReload(page: any, entries: Record<string, any>, tab: string) {
-  await page.evaluate((e: any) => {
+  await pinEvaluate(page, (e: any) => {
     const pfx = (window as any)._D2R_PFX || '';
     for (const k of Object.keys(e)) {
       const v = JSON.stringify(e[k]);
@@ -92,7 +93,7 @@ async function seedAndReload(page: any, entries: Record<string, any>, tab: strin
       if (pfx) { try { localStorage.setItem(pfx + k, v); } catch (err) {} }
     }
   }, entries);
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForTimeout(2800);
   await page.evaluate(TOOLKIT);
   await page.evaluate((t: string) => { try { (window as any).switchTab(t); } catch (e) {} }, tab);

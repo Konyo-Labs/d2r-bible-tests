@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import * as path from 'path';
+import { pinEvaluate, gotoPinned } from './_pin';
 
 // REG-2243 (#11) — THE SET-DUPE MIGRATION MUST CONFIRM THE COPY-COUNT FOLD REACHED DISK BEFORE STAMPING.
 //
@@ -49,7 +50,7 @@ test('a failed copy-count fold during the set-dupe migration leaves it UNstamped
   // Seed the OLD (pre-v3716) double-row state WITH the migration already stamped, so the auto-run on the
   // next load is a no-op and the strays survive in memory for us to drive the migration by hand. The stray
   // Tal Rasha carries a copy count of 3 so we can watch whether the survivor ever receives the fold.
-  await page.evaluate((s) => {
+  await pinEvaluate(page, (s) => {
     const w = window as any;
     try { localStorage.setItem('d2r_ownerClaim', '*'); } catch (e) {}
     w.LSR.setItem('d2r_owned', JSON.stringify([s.bareTal, s.slotTal, s.bareIk, s.slotIk, s.loneEye]));
@@ -58,7 +59,7 @@ test('a failed copy-count fold during the set-dupe migration leaves it UNstamped
     w.LSR.setItem(s.stamp, String(Date.now()));   // pre-stamp => the load's auto-run skips, strays survive
   }, { bareTal: BARE_TAL, slotTal: SLOT_TAL, bareIk: BARE_IK, slotIk: SLOT_IK, loneEye: LONE_EYE, stamp: STAMP });
 
-  await page.goto(URL);
+  await gotoPinned(page, URL);
   await ready(page);
   await page.waitForTimeout(1200);
 

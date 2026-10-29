@@ -1,6 +1,7 @@
 import { test, expect } from './_net_stub';
 import { ensureCardExpanded } from './_cards';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 // v1739 — HD ART ON THE SHOPPING LIST, AND THE ANCHOR IS THE KEYWORD.
 //
@@ -40,14 +41,14 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 async function openShoppingList(page: any) {
   await page.goto(URL);
   await page.waitForTimeout(1200);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     w.LSR.setItem('d2r_rwProfile', 'fresh');
     w.LSR.setItem('d2r_rwMade', '{}');
     w.LSR.setItem('d2r_rwUnmade', '{}');
     w.LSR.setItem('d2r_runeStash', JSON.stringify({ El: 2, Eld: 2 }));
   });
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForTimeout(1800);
   // the card is on tab-tools and ships collapsed — off-tab or collapsed, every rect is 0x0.
   // v1751: opened through the shared helper, because the blind toggle this replaced CLOSED the

@@ -5,6 +5,7 @@
 // the item detail card. Persists d2r_muleRoster/d2r_muleAssign (rides backup).
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 const OWNED = ['Harlequin Crest (Shako)', 'The Stone of Jordan', 'Vampire Gaze',
@@ -280,8 +281,8 @@ test.describe('v203 the vault', () => {
     expect(r1.prov['The Stone of Jordan'] && r1.prov['The Stone of Jordan'].source, 'the filing left no witness row').toBe('stash');
     // persist owned BEFORE reloading — the vault prunes assignments of
     // un-owned items at load (eval('owned').add bypasses persistence)
-    await page.evaluate(() => localStorage.setItem('d2r_owned', JSON.stringify([...eval('owned')])));
-    await page.reload();
+    await pinEvaluate(page, () => localStorage.setItem('d2r_owned', JSON.stringify([...eval('owned')])));
+    await reloadPinned(page);
     await page.evaluate(() => { (window as any).uiConfirm = () => Promise.resolve(true); }).catch(() => {});
     await page.waitForTimeout(2200);
     const r2 = await page.evaluate(() => {

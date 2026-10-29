@@ -4,6 +4,7 @@
 // earlier one. The prune now keeps the socketed-base label suffix. Also: Flail base/art/max-socket fix.
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
@@ -46,12 +47,12 @@ test.describe('v465 socketed bases survive reload (accumulation)', () => {
     await page.waitForFunction(() => (window as any)._ensureSocketBaseEntry);
     await page.waitForTimeout(1200);
     // batch 2 — add more socketed bases as a later intake would, persist, then reload
-    await page.evaluate(() => {
+    await pinEvaluate(page, () => {
       const o = eval('owned');
       o.add('Grim Scythe (6os)'); o.add('Spetum (6os)');
       localStorage.setItem('d2r_owned', JSON.stringify([...o]));
     });
-    await page.reload();
+    await reloadPinned(page);
     await page.waitForFunction(() => (window as any)._ensureSocketBaseEntry);
     await page.waitForTimeout(1200);
     const r = await page.evaluate(() => {

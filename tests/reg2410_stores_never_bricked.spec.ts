@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { boardReady } from './_board_ready';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 // REG-2410..REG-2413 (#152 items 2-3, #153 item 11) — THE STORES ARE NEVER BRICKED, AND ANOTHER TAB'S WRITE IS MERGED.
 //
@@ -28,12 +29,12 @@ async function boot(page: Page) {
 /** seed `bytes` under the store's key in this world, then reload. Every inline script has run (or thrown) by 'load'. */
 async function seedAndReload(page: Page, key: string, bytes: string): Promise<string> {
   await boot(page);
-  const phys = await page.evaluate(([k, b]) => {
+  const phys = await pinEvaluate(page, ([k, b]) => {
     const p = (window as any).LSR.key(k);
     localStorage.setItem(p, b);
     return p;
   }, [key, bytes]);
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForLoadState('load');
   return phys;
 }

@@ -14673,3 +14673,7 @@ if __name__ == "__main__":
          [sys.executable, os.path.join(HERE, "test_ci_blesses_coverage_on_a_full_cold_run.py")], 300,
          needs_app=False,
          why="#2 REG-3081 - the render-bless workflow blesses the full set on a cold checkout, uploads the floor, diff, log and record even on a refusal, never commits, and its verdict is render_check's"),
+    Gate("test_a_spec_pin_rides_the_reloads_boot",
+         [sys.executable, os.path.join(HERE, "test_a_spec_pin_rides_the_reloads_boot.py")], 300,
+         needs_app=False,
+         why="#161 REG-3076/3077 - no spec pins a store the board writes back between two loads; every pin rides the next load's boot through tests/_pin.ts (reloadPinned/gotoPinned) and its premise names it"),

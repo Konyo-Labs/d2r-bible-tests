@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v563 — SPARE-BASE sync (the vault-side twin of the loot filter's v536.2 Forge sync): a scanned base whose
@@ -18,13 +19,13 @@ test('spare base → __throwout ("you already hold a base for it"); the covering
   await page.goto(URL); await page.waitForTimeout(1500);
   // v578.1 — pin the Chronicle BEFORE the scan-relevant load (forgeScan reads the BOOT-loaded chronicle,
   // and Insight joined the durable seed): every word made EXCEPT Insight, fresh profile, then reload.
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     const made: any = {}; Object.keys(w.RUNEWORD_TIP || {}).forEach((n) => { if (n !== 'Insight') made[n] = 'x'; });
     localStorage.setItem('d2r_rwMade', JSON.stringify(made));
     localStorage.setItem('d2r_rwProfile', 'fresh');
   });
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   await page.evaluate(() => { (window as any).switchTab && (window as any).switchTab('tools'); (window as any).renderVault && (window as any).renderVault(); });
   const r = await page.evaluate(async () => {
     const w: any = window;

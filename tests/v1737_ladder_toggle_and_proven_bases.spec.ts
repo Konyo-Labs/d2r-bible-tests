@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 
 // v1737 — TWO THINGS KONYO PAID FOR.
 //
@@ -65,14 +66,14 @@ const RUNES = ['El', 'Eld', 'Tir', 'Nef', 'Eth', 'Ith', 'Tal', 'Ral', 'Ort', 'Th
 async function emptyChronicle(page: any, stash: Record<string, number>) {
   await page.goto(URL);
   await page.waitForTimeout(1200);
-  await page.evaluate((st: any) => {
+  await pinEvaluate(page, (st: any) => {
     const w: any = window;
     w.LSR.setItem('d2r_rwProfile', 'fresh');
     w.LSR.setItem('d2r_rwMade', '{}');
     w.LSR.setItem('d2r_rwUnmade', '{}');
     w.LSR.setItem('d2r_runeStash', JSON.stringify(st));
   }, stash);
-  await page.reload();
+  await reloadPinned(page);
   await page.waitForTimeout(1800);
 }
 

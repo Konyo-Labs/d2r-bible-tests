@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v619 — GRAIL FORGES found-sync + completion seals (Konyo: 'same smart automated logic… cancels
@@ -10,7 +11,7 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 test('sealed grounds: a run whose whole verified pool is found earns the band and leaves Best runs', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  const r = await page.evaluate(() => {
+  const r = await pinEvaluate(page, () => {
     const w: any = window;
     // v1717 — ASK THE ENGINE, NOT A LIST THAT NO LONGER MATCHES IT.
     // This rebuilt the run grouping itself out of `ITEMS`, then owned that pool and expected
@@ -28,7 +29,7 @@ test('sealed grounds: a run whose whole verified pool is found earns the band an
     localStorage.setItem('d2r_owned', JSON.stringify(run.items.map((x: any) => x.n)));
     return { target, n: run.items.length };
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r2 = await page.evaluate((target: string) => {
     const w: any = window;
     const s = w.funiScan();
@@ -48,14 +49,14 @@ test('sealed grounds: a run whose whole verified pool is found earns the band an
 
 test('completed sets wear the seal band; checklist⇄fsets sync both ways', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  const r = await page.evaluate(() => {
+  const r = await pinEvaluate(page, () => {
     const w: any = window;
     const sets = (typeof w.__allSets === 'function') ? w.__allSets() : [];
     const small = sets.slice().sort((a: any, b: any) => a.pieces.length - b.pieces.length)[0];
     localStorage.setItem('d2r_setPieces', JSON.stringify(small.pieces));
     return { set: small.name, n: small.pieces.length };
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r2 = await page.evaluate((setName: string) => {
     const w: any = window;
     w.switchTab('fsets');

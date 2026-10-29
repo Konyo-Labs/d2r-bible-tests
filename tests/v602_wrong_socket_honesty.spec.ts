@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v602 — two fixes from Konyo's 2026-07-07 Throw-Out Review screenshots:
@@ -66,7 +67,7 @@ test('⚒ Forged stamp only when EVERY word the base can ever hold is created', 
   await page.goto(URL); await page.waitForTimeout(1500);
   // pick a NON-SEEDED other-count word on Monarch to leave unmade (the seed force re-marks seeded words
   // on load, so the hold-out must be one Konyo hasn't forged) — then mark everything else created.
-  const target = await page.evaluate(() => {
+  const target = await pinEvaluate(page, () => {
     const w: any = window;
     const rws = (w._baseRunewords('Monarch') || []) as Array<{ n: string; s: number }>;
     // v693.2 — the !seed[] guard is obsolete under the fresh pin (the floor never re-marks on a
@@ -79,7 +80,7 @@ test('⚒ Forged stamp only when EVERY word the base can ever hold is created', 
     return t ? { n: t.n, s: t.s } : null;
   });
   expect(target).not.toBeNull();   // Monarch hosts sub-4os words (Rhyme/Ancient's Pledge class)
-  await page.reload(); await page.waitForTimeout(1500);   // rwMade global re-inits from localStorage
+  await reloadPinned(page); await page.waitForTimeout(1500);   // rwMade global re-inits from localStorage
   const partial = await page.evaluate(() => {
     const w: any = window;
     return {
@@ -119,12 +120,12 @@ test('⚒ Forged stamp only when EVERY word the base can ever hold is created', 
   expect(partial.ks).not.toContain('rw-stamp-mini');     // …but never with the done-seal styling
   expect(partial.ks).not.toContain('base complete');
   // now close the hold-out too → the stamp returns, worded as the WHOLE base type being done
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     const made: any = {}; Object.keys(w.RUNEWORD_TIP || {}).forEach((n) => (made[n] = 'x'));
     localStorage.setItem('d2r_rwMade', JSON.stringify(made));
   });
-  await page.reload(); await page.waitForTimeout(1500);
+  await reloadPinned(page); await page.waitForTimeout(1500);
   const full = await page.evaluate(() => {
     const w: any = window;
     const out = { ks: String(w._baseRWLine('Monarch', 4) || ''), noKs: String(w._baseRWLine('Monarch', 0) || '') };
@@ -149,7 +150,7 @@ test('no FORGED seal while endgame-gated or cap-hidden words are unmade (Double 
   // merge on top and mark King's Grace/Lawbringer - the very words the amber note must name)
   await page.addInitScript(() => { localStorage.setItem('d2r_rwProfile', 'fresh'); });
   await page.goto(URL); await page.waitForTimeout(1800);
-  const target = await page.evaluate(() => {
+  const target = await pinEvaluate(page, () => {
     // Konyo's real June Chronicle slice: leveling words made, endgame words NOT
     const made: any = {};
     ['Zephyr', 'Edge', 'Melody', 'Harmony', 'Insight', 'Passion', 'Venom', 'Mania',
@@ -158,7 +159,7 @@ test('no FORGED seal while endgame-gated or cap-hidden words are unmade (Double 
     return true;
   });
   expect(target).toBe(true);
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     const db = String(w._baseRWLine('Double Bow', 2) || '');

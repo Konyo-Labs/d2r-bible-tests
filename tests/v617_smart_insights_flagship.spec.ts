@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v617 — SMART INSIGHTS flagship (Konyo: "doesn't route anywhere… flagship it"). Locks: every count
@@ -44,7 +45,7 @@ test('rows route: Make-now click lands on the Forge with the now filter', async 
    invariant was right; the gate was blind. [[gate-blind-to-unexercised-input]] */
 test('counts agree with forgeScan and name deferred/farm; ladder note shows when words are blocked', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1200);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     w.LSR.setItem('d2r_rwProfile', 'fresh');
     w.LSR.setItem('d2r_rwMade', '{}');
@@ -63,7 +64,7 @@ test('counts agree with forgeScan and name deferred/farm; ladder note shows when
     const st: any = {}; R.forEach((x) => (st[x] = WITHHELD.indexOf(x) >= 0 ? 0 : 20));
     w.LSR.setItem('d2r_runeStash', JSON.stringify(st));   // the stash is read AT BOOT — reload below
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   await page.evaluate(() => {
     const w: any = window;
     ['Monarch', 'Crystal Sword', 'Flail', 'Colossus Blade', 'Archon Plate', 'Dusk Shroud', 'Berserker Axe']

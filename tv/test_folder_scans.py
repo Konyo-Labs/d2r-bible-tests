@@ -16,6 +16,10 @@ constants and helpers are borrowed from that class at import - one definition, n
 imported for its fixtures (contained scratch, isolated state paths, the suite's own ports), exactly as the cases ran
 before. This file is unkeyable on purpose (tv/unkeyable_laws.json). It is cheap, and hooks/pre-push runs it in the tv
 suites stage right after test_control, so nothing that used to stop a push stops pushes any less.
+One case was never in test_control and lives here for the same reason: REG-3077's scan over EVERY tests/*.spec.ts,
+so a NEW spec that pins a store the board writes back between two loads is held too. Its scan, the helper's promise
+and the specs REG-3076 moved stay keyed in test_a_spec_pin_rides_the_reloads_boot.py - one scan, imported, never a
+copy.
 [[copy-drift]] [[regression-guard]] RED_PROOF below.
 """
 import glob
@@ -35,6 +39,7 @@ except Exception:
     pass
 import test_control as _TC   # noqa: E402  its fixtures, exactly as these cases ran inside it
 import stash_eye as se       # noqa: E402
+import test_a_spec_pin_rides_the_reloads_boot as _pin_law   # noqa: E402  REG-3077's scan, one definition
 setUpModule = _TC.setUpModule
 tearDownModule = _TC.tearDownModule
 
@@ -463,6 +468,21 @@ class TestV2175EveryPaidLaneRemembersWhatItAlreadyBOUGHT(unittest.TestCase):
                          % sorted(unregistered))
 
 
+class TestReg3077NoSpecInTheFolderPinsBetweenLoads(unittest.TestCase):
+    """REG-3077 - no spec on disk pins a store the board writes back between two loads. The keyed law holds the specs
+    it names; this holds the ones nobody has named yet."""
+
+    def test_no_spec_pins_a_written_back_store_between_two_loads(self):
+        paths = sorted(glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tests", "*.spec.ts")))
+        raw, unchecked, n_pin = _pin_law.verdict(paths, _pin_law.persisted_stores())
+        self.assertGreaterEqual(n_pin, _pin_law.MOVED, "PREMISE: the folder scan found %d pins of the %d REG-3076 moved"
+                                % (n_pin, _pin_law.MOVED))
+        self.assertEqual(raw, [], "a spec pins a store the board writes back between two loads - use pinEvaluate and "
+                         "reloadPinned/gotoPinned (tests/_pin.ts): %s" % "; ".join(raw[:8]))
+        self.assertEqual(unchecked, [], "a pin reaches a plain reload or goto, which never checks it arrived: %s"
+                         % "; ".join(unchecked[:8]))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
 
@@ -506,6 +526,13 @@ RED_PROOF = [
         "find": "from console_safe import enable as _console_safe_enable\n",
         "replace": "from console_safe import enable as _console_safe_enable\n\n\ndef _spends(p):\n"
                    "    return read_page(p)  # noqa: F821\n",
+        "matches": 1,
+    },
+    {
+        "why": "REG-3077 - a spec no law names pins rwMade between two loads",
+        "file": "../tests/v2208_the_registrar_must_not_shadow_a_real_catalogue_entry.spec.ts",
+        "find": "    await page.evaluate(() => localStorage.setItem('d2r_vaultBackfillUndo_v2205',\n",
+        "replace": "    await page.evaluate(() => localStorage.setItem('d2r_rwMade',\n",
         "matches": 1,
     },
 ]

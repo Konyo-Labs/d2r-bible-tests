@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v609 — Konyo: "no shot where it should be HD photos of that specific item". A card whose read has
@@ -9,7 +10,7 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 test('shot slot falls back to the item\'s own HD art in both review sections', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     // a registered socketed base with NO journal shot → Socketed Review card
     w._ensureSocketBaseEntry && w._ensureSocketBaseEntry('Bone Visage (3os)', true);
@@ -19,7 +20,7 @@ test('shot slot falls back to the item\'s own HD art in both review sections', a
     // a throw-out read with NO shot → Throw-Out Review card
     localStorage.setItem('d2r_unknownReads', JSON.stringify(['Grim Scythe (4os low base)']));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     w.switchTab && w.switchTab('tools');

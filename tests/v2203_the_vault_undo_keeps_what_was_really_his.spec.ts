@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, gotoPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v2203 — UNDOING v2200, WHICH FILLED HIS VAULT FROM THE WRONG LEDGER.
@@ -148,10 +149,10 @@ test('the undo REFUSES on a retirement stamp — the same board, stamped, keeps 
 test('the undo drops only what came from found-ever, and keeps everything else', async ({ page }) => {
   await page.goto(URL);
   await ready(page);
-  const before = await page.evaluate(SEED) as number;
+  const before = await pinEvaluate(page, SEED) as number;
   expect(before, 'the seeded vault is too small to reproduce his situation').toBeGreaterThan(400);
 
-  await page.goto(URL);
+  await gotoPinned(page, URL);
   await ready(page);
   await page.waitForFunction(() => !!(window as any)._vaultBackfillUndo_v2203, null,
                              { timeout: 60000 });
@@ -231,8 +232,8 @@ test('the undo drops only what came from found-ever, and keeps everything else',
 test('it runs once, and never on a machine where the backfill did not run', async ({ page }) => {
   await page.goto(URL);
   await ready(page);
-  await page.evaluate(SEED);
-  await page.goto(URL);                       // run 1
+  await pinEvaluate(page, SEED);
+  await gotoPinned(page, URL);                 // run 1
   await ready(page);
   await page.waitForFunction(() => !!(window as any)._vaultBackfillUndo_v2203, null,
                              { timeout: 60000 });
@@ -252,7 +253,7 @@ test('it runs once, and never on a machine where the backfill did not run', asyn
     .toBe(first);
 
   // a fresh machine — his cousin's — must never see it fire
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w = window as any;
     w.LSR.removeItem('d2r_vaultBackfill_v2200');
     w.LSR.removeItem('d2r_vaultBackfillUndo_v2203');
@@ -265,7 +266,7 @@ test('it runs once, and never on a machine where the backfill did not run', asyn
        bogus pair only "Shako" survived. */
     w.LSR.setItem('d2r_owned', JSON.stringify(['Harlequin Crest (Shako)', 'The Oculus']));
   });
-  await page.goto(URL);
+  await gotoPinned(page, URL);
   await ready(page);
   await page.waitForTimeout(1200);
   const fresh = await page.evaluate(() => ({
@@ -280,7 +281,7 @@ test('it runs once, and never on a machine where the backfill did not run', asyn
 test('the v2200 backfill is RETIRED, so a fresh machine is never filled wrongly', async ({ page }) => {
   await page.goto(URL);
   await ready(page);
-  const out = await page.evaluate(() => {
+  const out = await pinEvaluate(page, () => {
     const w = window as any;
     // a clean machine with a real ledger — exactly the state that made his vault wrong
     w.LSR.setItem('d2r_foundLog', JSON.stringify({ Shako: '01/01/2026', Occulus: '01/01/2026' }));
@@ -291,7 +292,7 @@ test('the v2200 backfill is RETIRED, so a fresh machine is never filled wrongly'
     return true;
   });
   expect(out).toBe(true);
-  await page.goto(URL);
+  await gotoPinned(page, URL);
   await ready(page);
   await page.waitForTimeout(1500);
   const after = await page.evaluate(() => ({

@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v606/v607 — finish & ascend choreography (Konyo: "cool animated effects for endgame finishes…
@@ -19,7 +20,7 @@ test('milestone forge → toast + epic overlay + ascend stagger; overlay self-re
   await page.addInitScript(() => localStorage.setItem('d2r_ownerClaim', '*'));
   await page.goto(URL); await page.waitForTimeout(1800);
   // seed the Chronicle to 59 made (next forge = 60 → a %10 milestone) — pick unmade words dynamically
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     localStorage.setItem('d2r_rwProfile', 'fresh');   // v663 — the 88-seed floor pushed the next %10 milestone to 100, unreachable in the 99 catalog
     const all = Object.keys(w.RUNEWORD_TIP || {});
@@ -31,7 +32,7 @@ test('milestone forge → toast + epic overlay + ascend stagger; overlay self-re
     if (own.indexOf('Katar (3os)') < 0) own.push('Katar (3os)');
     localStorage.setItem('d2r_owned', JSON.stringify(own));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     w.switchTab && w.switchTab('forge');

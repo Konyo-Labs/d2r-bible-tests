@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v615 — CONSUME-SYNC lockdown (the Katar/Pattern incident + the audit's three confirmed gaps):
@@ -8,14 +9,14 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 test('direct-vault fallback: a planner-invisible label still consumes on forge (the Katar class)', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  const r = await page.evaluate(() => {
+  const r = await pinEvaluate(page, () => {
     const w: any = window;
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
     return { seeded: true };
   });
   expect(r.seeded).toBe(true);
-  await page.reload(); await page.waitForTimeout(1800);
-  const out = await page.evaluate(() => {
+  await reloadPinned(page); await page.waitForTimeout(1800);
+  const out = await pinEvaluate(page, () => {
     const w: any = window;
     // fresh profile: the 66-word owner seed must NOT floor Pattern back (we need it unmade in-memory)
     localStorage.setItem('d2r_rwProfile', 'fresh');
@@ -28,7 +29,7 @@ test('direct-vault fallback: a planner-invisible label still consumes on forge (
     return true;
   });
   expect(out).toBe(true);
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r2 = await page.evaluate(() => {
     const w: any = window;
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
@@ -53,7 +54,7 @@ test('direct-vault fallback: a planner-invisible label still consumes on forge (
 
 test('baseOver task consumes: forging the capacity-losing word removes the shared base', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     const w: any = window;
     localStorage.setItem('d2r_rwProfile', 'fresh');
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));
@@ -61,7 +62,7 @@ test('baseOver task consumes: forging the capacity-losing word removes the share
     // both Oath and Voice of Reason want the one sword; give runes for both so both task
     localStorage.setItem('d2r_runeStash', JSON.stringify({ Shael: 2, Pul: 1, Mal: 2, Lum: 1, Lem: 1, Ko: 1, El: 2, Eld: 2, Tir: 2, Ith: 2, Amn: 2, Ral: 2, Sol: 2 }));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   const r = await page.evaluate(() => {
     const w: any = window;
     localStorage.setItem('d2r_rwMade', JSON.stringify({}));

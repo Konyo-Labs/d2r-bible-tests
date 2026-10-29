@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 test('v603.1 UX audit sim: Konyo screenshot state — rendered Throw-Out + Socketed Review, honest everywhere', async ({ page }) => {
@@ -8,7 +9,7 @@ test('v603.1 UX audit sim: Konyo screenshot state — rendered Throw-Out + Socke
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
   await page.goto(URL); await page.waitForTimeout(1500);
   // seed Konyo's screenshot state: throw-out reads + registered socketed bases (Chronicle = live seed 57)
-  await page.evaluate(() => {
+  await pinEvaluate(page, () => {
     localStorage.setItem('d2r_rwProfile', 'fresh'); localStorage.setItem('d2r_rwMade', JSON.stringify({}));   // v621.1 — 66-seed floors claw words; the sim premises them unmade
     localStorage.setItem('d2r_unknownReads', JSON.stringify([
       'Suwayyah (1os low base)', 'Grim Scythe (4os low base)', 'Small Crescent (3os low base)',
@@ -17,7 +18,7 @@ test('v603.1 UX audit sim: Konyo screenshot state — rendered Throw-Out + Socke
       'Bone Visage (3os)', 'Monarch (4os)', 'Suwayyah (3os)',
     ]));
   });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
   await page.evaluate(() => {
     const w: any = window;
     ['Bone Visage (3os)', 'Monarch (4os)', 'Suwayyah (3os)'].forEach((n) => w._ensureSocketBaseEntry && w._ensureSocketBaseEntry(n, true));

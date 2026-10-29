@@ -1,5 +1,6 @@
 import { test, expect } from './_net_stub';
 import * as path from 'path';
+import { pinEvaluate, reloadPinned } from './_pin';
 const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 // v632 — LADDER-LOCKED VISIBILITY + the FULL-REMAINDER demonstration on Konyo's REAL live state
@@ -12,7 +13,7 @@ const LIVE_RUNES = {"El":21,"Eld":33,"Tir":36,"Nef":41,"Eth":14,"Ith":13,"Tal":2
 
 async function liveState(page: any) {
   await page.goto(URL); await page.waitForTimeout(1800);
-  await page.evaluate(({ owned, runes }: any) => {
+  await pinEvaluate(page, ({ owned, runes }: any) => {
     localStorage.setItem('d2r_owned', JSON.stringify(owned));
     localStorage.setItem('d2r_runeStash', JSON.stringify(runes));
     localStorage.removeItem('d2r_ladderMode');   // his live state: unset → nonladder
@@ -24,7 +25,7 @@ async function liveState(page: any) {
     const made: any = {}; Object.keys(SEED).forEach((n) => { if (POST.indexOf(n) < 0) made[n] = SEED[n]; });
     localStorage.setItem('d2r_rwMade', JSON.stringify(made));
   }, { owned: LIVE_OWNED, runes: LIVE_RUNES });
-  await page.reload(); await page.waitForTimeout(1800);
+  await reloadPinned(page); await page.waitForTimeout(1800);
 }
 async function cleanup(page: any) {
   await page.evaluate(() => ['d2r_owned','d2r_runeStash','d2r_ladderMode','d2r_rwMade','d2r_rwBaseUsed','d2r_forgeStep','d2r_rwProfile'].forEach((k) => localStorage.removeItem(k)));
