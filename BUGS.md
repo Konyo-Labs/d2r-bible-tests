@@ -553,6 +553,14 @@ ask failed. The UNKNOWN path now runs _reopenClear() after painting UNKNOWN, as 
 reached on the cached open and on both fetch outcomes again. Reproduced on 6d69506ac (the same 2-of-3 failure) and green
 with the line restored (34 OK); the REG-3050 law's harness gained the filter state the restored call reads, its source
 check and red-proof [1] follow the line (5 of 5 RED). Anchors bad 0.
+### REG-3013 - THE HAND-ADD LAW LOOKED FOR THE RAW "stash:c0r0" IN FIND, WHICH REG-2884 NOW SAYS IN ITS OWN WORDS (CI on ci/claude-chain-1)
+test_vault_l1_a_hand_add_routes_by_type's FIND case asserted the move target's raw cell ("stash:c0r0") in FIND's text. Since
+REG-2884 (#137) FIND names a hand add's target as "Mule 1 · Personal stash · col 1 · row 1 · target", and the case went red on
+the first CI grade of the replayed chain (the chain's own steps never ran this Chrome law). The case now resolves the target
+through the page's own _vaultCellAt and requires FIND to name that col and row. Measured in node on the slice's page: target
+stash:c0r0 -> "col 1 · row 1", present in FIND's row. Chrome law: CI proves it.
+
+
 ### REG-2866 - THE SHADOW CALLED ITS COPY'S AGE THE OWNER'S "LAST UPLOAD" (GrokBot #230) - SUPERSEDED BEFORE SHIPPING BY REG-3034/3037
 SUPERSEDED before shipping by REG-3034/3037 (v3839/v3840): both answered GrokBot's "last upload N ago". REG-3034/3037 name each
 record's own store/upload age, measured on the site ("board uploaded N ago" beside the bar's " · snapshot <clock>", "sessions
