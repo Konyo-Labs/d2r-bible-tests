@@ -104,7 +104,8 @@ class ABaseInDoubtIsUnknownEverywhere(unittest.TestCase):
         self.assertNotIn("renderErr", self.o, self.o.get("renderErr"))
         self.assertNotIn("openErr", self.o, self.o.get("openErr"))
         self.assertEqual(self.o["errors"], [])
-        self.assertEqual(sorted(self.o["span"] or {}), sorted(STUBS), "PREMISE: the two stubs are not the locker's records: %r" % self.o["span"])
+        # REG-2971 (#202 P3b): every keeper is a record now, homed on MAGIC & RARE by the keeper rule
+        self.assertEqual(sorted(self.o["span"] or {}), sorted(STUBS + list(KEEPERS)), "PREMISE: the two stubs and the keepers are not the locker's records: %r" % self.o["span"])
 
     def test_one_answer_says_the_doubt(self):
         for n, ask in DOUBT.items():

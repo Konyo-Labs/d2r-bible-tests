@@ -127,7 +127,10 @@ class AMagicOrRareTileDrawsItsBase(unittest.TestCase):
         self.assertNotIn("renderErr", self.o, self.o.get("renderErr"))
         self.assertNotIn("openErr", self.o, self.o.get("openErr"))
         self.assertEqual(self.o["errors"], [])
-        self.assertEqual(sorted(self.o["span"] or {}), sorted(STUBS), "PREMISE: the stubs are not the locker's records: %r" % self.o["span"])
+        # REG-2971 (#202 P3b): every keeper is a record now, homed by the keeper rule - the charm on the shared stash, every
+        # other keeper here - so the locker's records are the routed stubs and those keepers
+        want = sorted(STUBS + [k for k in KEEPERS if "Charm" not in k])
+        self.assertEqual(sorted(self.o["span"] or {}), want, "PREMISE: the stubs and keepers are not the locker's records: %r" % self.o["span"])
 
     def test_every_base_named_here_has_a_picture_on_disk(self):
         for b, u in self.o["base"].items():
