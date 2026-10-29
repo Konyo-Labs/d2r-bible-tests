@@ -48367,8 +48367,10 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
          count above it is ITEMS (REG-2224, kept). The copies the card draws are counted here so the plate can say them
          beside the count when an item is held more than once - never folded into it. */
       var _ovCopyN = (typeof _ovCells !== 'undefined' && _ovCells) ? _ovCells.length : 0;
-      var _copyN = total + _ovCopyN;
-      var _multiCopy = drawn.length > (new Set(drawn)).size || _ovCopyN > _ovNames.length;
+      /* REG-2973 (#202 P3b) - a keeper held more than once draws a cell per copy too (its keeper cells below) */
+      var _mfCopyX = 0; magicItems.forEach(function(n){ var c = (typeof copyCount === 'function') ? (copyCount(n) | 0) : 1; if (c > 1) _mfCopyX += c - 1; });
+      var _copyN = total + _ovCopyN + _mfCopyX;
+      var _multiCopy = drawn.length > (new Set(drawn)).size || _ovCopyN > _ovNames.length || _mfCopyX > 0;
       /* ══ v2211 — THE GAUGE MEASURES CELLS AND STOPS PRETENDING ONE MULE IS ENOUGH ══════════
          It was `cap = 40` with `Math.min(100, …)`: item COUNT against the INVENTORY alone, then
          clamped. A locker holding 61 and one holding 200 painted the same bar, and the drill-down
@@ -48489,19 +48491,31 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       // which asks artOr for the recorded base. ✕ here = throw-out from magicFinds.
       if (magicItems.length){
         var _mqcol={magic:'var(--q-magic)',rare:'var(--q-rare)',crafted:'var(--q-orange)'};
-        itemRows = itemRows.concat(magicItems.map(function(n){
+        itemRows = itemRows.concat([].concat.apply([], magicItems.map(function(n){
           var q=_mfQual(n), col=_mqcol[q]||_mqcol.magic, base=_mfBase(n);
           // REG-2193 - a magic/rare item is sized by its BASE's footprint, not a flat 2x1: a rare Jewel is
           // 1x1 and a Grand Charm 1x3, the SAME source (_itemCells) the catalogue cells use, so the
           // Tetris-fit counts real cells. [[copy-drift]] - the ONE FOOTPRINT sweep (REG-2051) missed this path.
           var _mf = (typeof _itemCells === 'function') ? _itemCells(base || n) : {w:2,h:1};
           var artHtml = '<span class="vm-cell-art">' + ((typeof art === 'function') ? art(n, '◆', 'lg') : '<span class="vmc-gemfallback" style="color:'+col+'">◆</span>') + '</span>';
-          return '<div class="vm-cell vmc-magicfind'+(_mf.approx?' vmc-approx':'')+'" style="grid-column:span '+_mf.w+';grid-row:span '+_mf.h+';border-color:'+col+';cursor:pointer" data-magic-find="'+esc(n)+'" data-arttip="'+esc(n)+'" title="'+esc(n)+(base?' · '+esc(base):'')+' ('+q+')">'
-            + _vaultItemBadges(n) + artHtml
-            + '<span class="vm-item-name vm-cell-name" data-arttip="'+esc(n)+'" style="color:'+col+'">'+esc(n)+'</span>'
-            + (typeof window._vaultEvidenceChip === 'function' ? window._vaultEvidenceChip(n, 'vm-cell-ev') : '')
-            + '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultThrowFind(\''+jsArg(n)+'\')" title="'+gridActSay('', 'throw out — remove from Magic &amp; Rare')+'">✕</button></div>';   /* REG-3117 */
-        }));
+          /* REG-2973 (#202 P3b) - A CELL PER COPY. Two Small Charms of Vita are two cells, each titled with its own mods (the
+             copy's record, REG-2972); the ✕ of a cell held more than once takes out THAT copy (vaultRemoveCopy, REG-2849),
+             and the last copy's ✕ throws the keeper out of Magic & Rare as before */
+          var _mfN = (typeof copyCount === 'function') ? Math.max(1, copyCount(n) | 0) : 1, _mfCells = [];
+          for (var _mk = 0; _mk < _mfN; _mk++){
+            var _mfE = null; try { _mfE = (_mfN > 1 && typeof window._vaultCopyEntry === 'function') ? window._vaultCopyEntry(n, _mk) : null; } catch (eMfE) { _mfE = null; }
+            var _mfSay = (_mfN > 1) ? (' · copy ' + (_mk + 1) + ' of ' + _mfN + ((_mfE && Array.isArray(_mfE.mods) && _mfE.mods.length) ? ' · ' + _mfE.mods.join(' · ') : '')) : '';
+            var _mfX = (_mfN > 1)
+              ? '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultRemoveCopy(\''+jsArg(n)+'\', '+_mk+')" title="'+gridActSay('', 'remove this copy (copy '+(_mk + 1)+' of '+_mfN+') - the other copies stay')+'">✕</button></div>'
+              : '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultThrowFind(\''+jsArg(n)+'\')" title="'+gridActSay('', 'throw out — remove from Magic &amp; Rare')+'">✕</button></div>';   /* REG-3117 */
+            _mfCells.push('<div class="vm-cell vmc-magicfind'+(_mf.approx?' vmc-approx':'')+'" style="grid-column:span '+_mf.w+';grid-row:span '+_mf.h+';border-color:'+col+';cursor:pointer" data-magic-find="'+esc(n)+'"'+(_mfN > 1 ? ' data-magic-copy="'+_mk+'"' : '')+' data-arttip="'+esc(n)+'" title="'+esc(n)+(base?' · '+esc(base):'')+' ('+q+')'+esc(_mfSay)+'">'
+              + _vaultItemBadges(n) + artHtml
+              + '<span class="vm-item-name vm-cell-name" data-arttip="'+esc(n)+'" style="color:'+col+'">'+esc(n)+'</span>'
+              + (typeof window._vaultEvidenceChip === 'function' ? window._vaultEvidenceChip(n, 'vm-cell-ev') : '')
+              + _mfX);
+          }
+          return _mfCells;
+        })));
       }
       function _gridWrap(arr){ return '<div class="vm-grid">' + arr.join('') + '</div>'; }
       var itemsHtml;
@@ -48997,6 +49011,19 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var ch = window._vaultCopyChoices(name);
     if (ch === null) return { ask: true, choices: null, why: 'the copies of ' + name + ' already here could not be read - UNKNOWN, so nothing is guessed' };
     if (!ch.length) return { ask: false, decision: 'add', why: 'you hold none yet' };
+    /* REG-2973 (#202 P3b) - a Magic & Rare item is its mods: a pick's affix lines are compared with each copy's mods as the
+       keeper reads are (_vaultKeeperSameItem), so a +20 Small Charm of Vita is another copy beside the +17 one, and the same
+       lines are asked. The signature below saw affix ids on one side and read lines on the other, so they always differed */
+    var _jqQ = String((entry && entry.q) || '');
+    if (/^(m|magic|rare|c|crafted)$/.test(_jqQ) && typeof window._vaultKeeperSameItem === 'function'){
+      var _jqM = (entry && Array.isArray(entry.mods) && entry.mods.length) ? entry.mods : ((typeof window._vpMods === 'function') ? window._vpMods(entry) : []);
+      if (_jqM && _jqM.length){
+        var _jqE = { base: entry.base, mods: _jqM };
+        if (ch.every(function(c){ return c.entry && Array.isArray(c.entry.mods) && c.entry.mods.length && !window._vaultKeeperSameItem(c.entry, _jqE); }))
+          return { ask: false, decision: 'copy', why: 'its mod lines differ from the mods of every copy of this keeper here' };
+        return { ask: true, choices: ch, why: name + ' is already here - is this the same item, or another copy?' };
+      }
+    }
     var sig = _vaultEntryTyped(entry) ? _vaultEntrySig(entry) : '';
     if (sig && ch.every(function(c){ var cs = c.entry ? _vaultEntrySig(c.entry) : ''; return cs && cs !== sig; }))
       return { ask: false, decision: 'copy', why: 'its mods differ from the recorded mods of every copy here' };
@@ -49022,8 +49049,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var mark = { copyIx: k, at: at, by: String(opts.by || '+ Add an item'), entry: (opts.entry && typeof opts.entry === 'object') ? opts.entry : null };
     row.hands = (Array.isArray(row.hands) ? row.hands : []).concat([mark]);
     if (!_provWrite(all)) return { ok: false, refused: 'not-written', why: 'the witness row of ' + nm + ' could not be written - nothing changed' };
-    /* REG-2844 (P3a) - his typed mods complete THAT copy's record (only what it lacks); magic and rare wait for P3b */
-    if (mark.entry && !/^(m|magic|rare|c|crafted)$/.test(String(mark.entry.q || '')) && typeof window._vaultCopyEntrySet === 'function'){
+    /* REG-2844 (P3a) - his typed mods complete THAT copy's record (only what it lacks); REG-2973 - a Magic & Rare copy's too */
+    if (mark.entry && typeof window._vaultCopyEntrySet === 'function'){
       var _jE = mark.entry, _jW = function(){ try { window._vaultCopyEntrySet(nm, k, _jE, { fill: true }); } catch (eJ) {} };
       if (typeof setTimeout === 'function') setTimeout(_jW, 0); else _jW();
     }
@@ -52818,6 +52845,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     });
     return out;
   }
+  try { window._vpMods = _vpMods; } catch (eVm) {}   /* REG-2973 - a pick's affix lines, read as a keeper's mods */
   function _vpBase(entry, shown){
     try {
       var db = (typeof window._cbDb === 'function') ? window._cbDb() : null;
@@ -52867,12 +52895,14 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
   /* REG-2841 - HIS ANSWER "THE SAME ITEM" COMPLETES THE RECORDS THE VAULT KEEPS BY NAME: a Magic & Rare record gains the
      quality, base or mods it lacks, and a runeword he built is remembered when none was - never written over what a read or
      an earlier hand left. The copy itself carries the typed entry on its witness row (window.vaultHandJoin). */
-  window._vpCompleteSame = function(entry, nm){
+  /* REG-2973 (#202 P3b) - copyIx: the copy he named. The Magic & Rare record by name is copy 0's (REG-2972): "the same as copy 2"
+     completes copy 2's own record (vaultHandJoin) and never gives its mods to copy 0 */
+  window._vpCompleteSame = function(entry, nm, copyIx){
     if (!entry || !nm) return false;
     var it = null, shown = null, did = false;
     try { it = (typeof window._cbItem === 'function') ? window._cbItem(entry.id) : null; shown = (typeof window._cbShown === 'function') ? window._cbShown(entry, it) : null; } catch (e) { shown = null; }
     var q = shown && shown.q, magicQ = (q === 'm') ? 'magic' : (q === 'rare') ? 'rare' : (q === 'c') ? 'crafted' : '';
-    if (magicQ && typeof magicFinds !== 'undefined' && magicFinds && magicFinds[nm] && typeof magicFinds[nm] === 'object'){
+    if (magicQ && !((copyIx | 0) > 0) && typeof magicFinds !== 'undefined' && magicFinds && magicFinds[nm] && typeof magicFinds[nm] === 'object'){
       var rec = magicFinds[nm], mods = _vpMods(entry), base = _vpBase(entry, shown);
       if (!rec.q){ rec.q = magicQ; did = true; }
       if (!rec.base && base){ rec.base = base; did = true; }
@@ -53249,11 +53279,13 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
          the same name, so it was easy to hit. Only a record this same pick made a moment ago (keepFresh - he is
          re-rolling it) is replaced; an existing one keeps everything and only gains a field it lacks. A clear cannot
          reach it either: a pick over an existing record is never `fresh`, so _vpDrop leaves it alone. */
+      /* REG-2973 - a pick under a new token is another copy (counted below): its mods are that copy's, never copy 0's */
+      var _mfAnother = !!(beforeMagic && !keepFresh && token && _vpCopySeen[nm] !== token);
       var _mfHad = (beforeMagic && !keepFresh && magicFinds[nm] && typeof magicFinds[nm] === 'object') ? magicFinds[nm] : null;
       if (_mfHad){
         if (!_mfHad.q) _mfHad.q = magicQ;
         if (!_mfHad.base && baseName) _mfHad.base = baseName;
-        if ((!_mfHad.mods || !_mfHad.mods.length) && mods && mods.length) _mfHad.mods = mods;
+        if ((!_mfHad.mods || !_mfHad.mods.length) && mods && mods.length && !_mfAnother) _mfHad.mods = mods;
       } else {
         magicFinds[nm] = { q: magicQ, base: baseName, mods: mods };
       }
@@ -53304,6 +53336,18 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
           _vpMoveAt = { name: nm, copyIx: copies[nm] - 1 };   /* REG-2837 - this copy's own MOVE row, written once saved */
         }
       }
+      /* REG-2973 (#202 P3b) - A KEEPER PICKED AGAIN IS ANOTHER COPY. A Magic & Rare keeper is homed by the keeper rule, never in
+         the mule map, so the count above never reached it: measured on the whole page in node, Small Charm of Vita +17 and
+         then +20 from the planner -> one copy reading +17, the +20 charm gone. It counts one more, as a filed name does, and
+         that copy carries its own entry (below). His answer "the same item" never comes here (vaultHandJoin). */
+      else if (routed.mode === 'already' && _mfAnother && assign[nm] == null && typeof copies !== 'undefined' && copies){
+        var prevMf = (typeof copyCount === 'function') ? (copyCount(nm) | 0) : ((copies[nm] > 0) ? copies[nm] : 1);
+        if (!(prevMf > 0)) prevMf = 1;
+        copies[nm] = prevMf + 1;
+        _vpCopyBump = { name: nm, token: token, prev: prevMf, prevSeen: _vpCopySeen[nm], keepHad: false, keepWas: null, keepSet: null };
+        routed = { ok: true, filed: true, mode: 'copy', mule: routed.mule, why: _copyFileSay(nm, copies[nm], routed.mule) };
+        _vpMoveAt = { name: nm, copyIx: copies[nm] - 1 };
+      }
       _vpCopySeen[nm] = token;
     }
     var kept = routed && (routed.filed || routed.mode === 'already' || routed.mode === 'asked');   /* REG-2965 - an asked charm is kept */
@@ -53341,8 +53385,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       if (typeof setTimeout === 'function') setTimeout(_mvW, 0); else _mvW();
     }
     /* REG-2844 (P3a) - that copy's record carries this entry, written on the next turn as its MOVE row is (a record build asks
-       the router). A magic or rare pick waits for its keeper record (#154 P3b) */
-    if (!magicQ && kept && _vpMade.copyIx != null && typeof window._vaultCopyEntrySet === 'function'){
+       the router). REG-2973 (#202 P3b) - a magic or rare pick's copy too: its keeper is a record now (REG-2971), and the entry
+       carries its affix lines as mods (_vrEntryOf) */
+    if (kept && _vpMade.copyIx != null && typeof window._vaultCopyEntrySet === 'function'){
       var _enAt = { name: nm, copyIx: _vpMade.copyIx, entry: JSON.parse(JSON.stringify(entry)) };
       var _enW = function(){ try { window._vaultCopyEntrySet(_enAt.name, _enAt.copyIx, _enAt.entry); } catch (eEn) {} };
       if (typeof setTimeout === 'function') setTimeout(_enW, 0); else _enW();
@@ -59827,6 +59872,11 @@ window.vaultAutoAssign = function(){
     if (e.def != null && isFinite(+e.def)) out.def = +e.def;
     /* REG-2972 - a Magic & Rare copy's mods as the read (or the planner) wrote them */
     if (Array.isArray(e.mods) && e.mods.filter(Boolean).length) out.mods = e.mods.filter(Boolean).map(String);
+    /* REG-2973 - a planner pick of a magic, rare or crafted item names its mods by affix: their lines are its mods, so a pick
+       and a read of one item compare */
+    if (!out.mods && /^(m|magic|rare|c|crafted)$/.test(out.q || '') && out.affixes.length && typeof window._vpMods === 'function'){
+      try { var _pm = window._vpMods(out); if (_pm && _pm.length) out.mods = _pm; } catch (ePm) {}
+    }
     return (out.id || out.base || out.mods) ? out : null;
   }
   /* opts.fill: only fields the record lacks are written (his hand completes a record, never overwrites what was there) */
@@ -59844,6 +59894,19 @@ window.vaultAutoAssign = function(){
     }
     if (!row) return { ok: false, wrote: false, why: nm + ' has no record for copy ' + (k + 1) + ' - nothing written' };
     var next = e;
+    /* REG-2973 - copy 0 of a keeper holds its mods on the name's record (d2r_magicFinds) until its row has an entry: his hand
+       completes THAT, never writes over it */
+    if (!row.entry && opts.fill && k === 0 && typeof magicFinds === 'object' && magicFinds && magicFinds[nm] && typeof magicFinds[nm] === 'object'){
+      var _k0 = _vrEntryOf({ q: magicFinds[nm].q, base: magicFinds[nm].base, mods: magicFinds[nm].mods });
+      if (_k0){
+        Object.keys(e).forEach(function(f){ if (_vrEntryEmpty(_k0[f]) && !_vrEntryEmpty(e[f])) _k0[f] = e[f]; }); next = _k0;
+        /* and the name's record (copy 0) takes the mods his hand gave a keeper read with none */
+        if (Array.isArray(_k0.mods) && _k0.mods.length && !(Array.isArray(magicFinds[nm].mods) && magicFinds[nm].mods.length)){
+          magicFinds[nm].mods = _k0.mods.slice();
+          try { LS.setItem('d2r_magicFinds', JSON.stringify(magicFinds)); } catch (eMfJ) {}
+        }
+      }
+    }
     if (row.entry && opts.fill){
       next = JSON.parse(JSON.stringify(row.entry));
       Object.keys(e).forEach(function(f){ if (_vrEntryEmpty(next[f]) && !_vrEntryEmpty(e[f])) next[f] = e[f]; });
@@ -78895,7 +78958,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
           return rc;
         }
         var k = choice | 0, jr = (typeof window.vaultHandJoin === 'function') ? window.vaultHandJoin(q.name, k, { by: 'the Vault planner', entry: held }) : null;
-        try { if (jr && jr.ok && typeof window._vpCompleteSame === 'function') window._vpCompleteSame(held, q.name); } catch (eC) {}
+        try { if (jr && jr.ok && typeof window._vpCompleteSame === 'function') window._vpCompleteSame(held, q.name, k); } catch (eC) {}
         ctx.say = (jr && jr.why) || 'the same item could not be joined - nothing changed'; ctx.saved = !!(jr && jr.ok);
         if (jr && jr.ok) window._vaultPlannerDirty = true;
         return jr;
