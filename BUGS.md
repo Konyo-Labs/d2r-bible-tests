@@ -932,6 +932,34 @@ guide had no way in). Law: test_a_yielding_orb_leaves_a_door - every orb the sho
 (a yield with no door fails by name), each door exists once, a button door runs its orb's opener and opens the feature on
 the whole page in node, each is shown only where its orb yields, none is a fixed overlay; 6 red-proofs, RED. Pixels at
 640x400: v1800 on CI.
+### REG-3105 - A CONTAINER'S LOOK BECOMES A FULL LOOK ONLY WHEN EVERY TAKEN CELL IS NAMED ONCE; ANYTHING LESS ASKS HIM (#158 P4)
+His design calls A and B (#230 c6473846977, approved for P4). The board assembles, because it owns the item sizes and the
+receiver. window._vaultFullLookFrom works like this:
+- It lays the session's named reads (each with its own frame, over the floor when scored: the one rule, _vaultLookCounts)
+  on the container's taken cells (REG-3104), with _itemCells' sizes.
+- A read may sit anywhere inside its item's footprint.
+- Two reads of one name inside one footprint are one item; two cells are two copies (his Q1).
+It stamps _vaultFullLook only when exactly ONE layout explains every taken cell exactly once, with no read on an empty
+cell. Then the receiver's drain counts what is absent.
+Anything less is never a look. It is a QUESTION in MOVE TASKS (d2r_vaultFullLookAsks, forked per profile), stored with
+its evidence (the frame, the cells, the reads):
+- a shared page's number is never read (his call B): "which shared page was this?", and his answer stamps it. A task row
+  may hint; it never proves.
+- a stash tab the read did not name: "which tab was this?", answered by him.
+- a session that names no character: "whose stash was this?".
+- cells no read in that session named (with the cells).
+- a read on an empty cell, or two names on one cell (a conflict, with the reads).
+- an item with no fixed size on this board.
+- an unread panel. That container is not-complete, never empty.
+- two layouts.
+A full look of the same container clears its older questions. The frame gate holds it all: AUTO INTAKE off, a held vault,
+or a shadow assembles nothing and asks nothing. A shadow draws the owner's questions read only, and every door that
+answers or clears refuses there (REG-3095's guard form).
+Found while proving it: `null >= 0` is true in JS, so a shared look with no page passed the page test. The receiver still
+refused it. The null is now asked first.
+GUARD: tv/test_a_container_look_is_whole_or_a_question.py, 5 cases through vaultAccumApply with a payload of the console's
+shape (fixture names). 8 red-proofs, RED. On claude/int it is red: "_vaultFullLookAsks is not a function".
+
 ### REG-3104 - THE SWEEP COUNTED EACH CONTAINER'S TAKEN CELLS AND THREW THEM AWAY, SO NO FULL LOOK COULD BE MADE (#158 P4)
 The board can stamp a FULL LOOK (window._vaultFullLook, REG-2892): a frame that shows a whole container, every cell its
 item or empty. Nothing produced one. The reader names items from hover tooltips only. The pixel layer counted which cells
