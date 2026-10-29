@@ -13257,6 +13257,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_refusal_is_never_a_read_at_any_door.py")], 300,
          needs_app=False,
          why='#158 REG-2976..2979 - every intake door, in every refusal shape (cap, 502 empty, 200 error, non-JSON, a thrown or unprepared read), never reads a refusal as a read, a page or nothing recognised, and says its sentence'),
+    Gate("test_two_small_charms_of_vita_are_two_copies",
+         [sys.executable, os.path.join(HERE, "test_two_small_charms_of_vita_are_two_copies.py")], 300,
+         needs_app=False,
+         why='#202 P3b (REG-2972): a keeper read with other mods is another copy with its own, never written over the first (checker and photo intake, one door)'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

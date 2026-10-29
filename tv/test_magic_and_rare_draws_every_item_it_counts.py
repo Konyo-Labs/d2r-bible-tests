@@ -159,8 +159,10 @@ class MagicAndRareDrawsEveryItemItCounts(unittest.TestCase):
 
     def test_the_premise_is_his_report(self):
         o = self.o
-        self.assertEqual(sorted(o["recordsSpan"] or {}), sorted(RECORDS + [KEPT_STUB]),
-                         "PREMISE: the locker's records are not the two routed stubs and the kept stub: %r" % o["recordsSpan"])
+        # REG-2971 (#202 P3b): every keeper is a record now, homed on MAGIC & RARE by the keeper rule - so the locker's records
+        # are every keeper and the two routed stubs (before it, only the routed stubs and the kept stub had one)
+        self.assertEqual(sorted(o["recordsSpan"] or {}), ALL,
+                         "PREMISE: the locker's records are not every keeper and the two routed stubs: %r" % o["recordsSpan"])
         self.assertEqual(o["census"], len(ALL), "PREMISE: the census does not count every keeper and record: %r" % o["census"])
         self.assertEqual(o["cardCells"], len(ALL), "PREMISE: the card does not draw every keeper and record: %r" % o["cardCells"])
 

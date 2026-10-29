@@ -48314,6 +48314,12 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
          Rare), never also as a record cell */
       if (m.id === 'magic-rare' && typeof magicFinds === 'object' && magicFinds)
         items = items.filter(function(n){ return !Object.prototype.hasOwnProperty.call(magicFinds, n); });   /* REG-2853 one cell */
+      /* REG-2971 (#202 P3b) - a keeper the keeper rule homes on the SHARED STASH or the CHARMS mule (REG-2895) has its copy
+         records there now, so it came in twice: its keeper cell below and a record cell per copy. Measured on the whole page
+         in node: two Small Charms of Vita on the shared stash card drew 3 cells and said "1 item in 3 copies". It is drawn as
+         its keeper cells only, as on MAGIC & RARE */
+      else if (typeof magicFinds === 'object' && magicFinds && typeof _mfKeeperHome === 'function')
+        items = items.filter(function(n){ return !(Object.prototype.hasOwnProperty.call(magicFinds, n) && _mfKeeperHome(n) === m.id); });
       try { var _wOn = (window._vaultWarRole && window._vaultWarRole(m) && window._vaultWarOverOn) ? window._vaultWarOverOn(m.id) : null;
             if (_wOn) Object.keys(_wOn).forEach(function(n){ if (items.indexOf(n) < 0) items.push(n); }); } catch (eWo) {} /* L1 over-cap war copies show on their WAR mule */
       items.sort();
@@ -48942,9 +48948,14 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
   function _vaultEntrySig(e){
     if (!e || typeof e !== 'object') return '';
     var af = (Array.isArray(e.affixes) ? e.affixes : []).map(function(a){ return String(a && a.id) + ':' + JSON.stringify((a && a.rolls) || {}); }).sort();
-    return JSON.stringify({ b: e.base || null, q: e.q || null, eth: !!e.eth, s: e.sockets | 0,
-                            so: (Array.isArray(e.socketed) ? e.socketed : []).filter(Boolean).slice().sort(), a: af,
-                            r: e.rolls || {}, rn: Array.isArray(e.rn) ? e.rn.filter(Boolean) : [] });
+    /* REG-2972 (#202 P3b) - a Magic & Rare item is its mods: the lines a read or the planner wrote (mods text) decide, and the
+       planner's base code and quality letter are read as the names a read gives (cm1 -> Small Charm, m -> magic) */
+    var md = (Array.isArray(e.mods) ? e.mods : []).map(function(t){ return String(t || '').replace(/\s+/g, ' ').trim().toLowerCase(); }).filter(Boolean).sort();
+    var bn = e.base || null;
+    try { var _sdb = (typeof window._cbDb === 'function') ? window._cbDb() : null; if (bn && _sdb && _sdb.b && _sdb.b[bn]) bn = _sdb.b[bn][0]; } catch (eSb) {}
+    return JSON.stringify({ b: bn, q: ({ m: 'magic', c: 'crafted' })[e.q] || e.q || null, eth: !!e.eth, s: e.sockets | 0,
+                            so: (Array.isArray(e.socketed) ? e.socketed : []).filter(Boolean).slice().sort(), a: md.length ? [] : af,
+                            r: md.length ? {} : (e.rolls || {}), rn: Array.isArray(e.rn) ? e.rn.filter(Boolean) : [], m: md });
   }
   window._vaultEntrySig = _vaultEntrySig;
   /* did he type anything that sets one copy apart? A bare pick (no sockets, runes, mods, rolls, eth) tells two copies
@@ -48953,7 +48964,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     if (!e || typeof e !== 'object') return false;
     var nr = (e.rolls && typeof e.rolls === 'object') ? Object.keys(e.rolls).length : 0;
     return !!((e.sockets | 0) > 0 || nr || e.eth || (Array.isArray(e.socketed) && e.socketed.filter(Boolean).length)
-              || (Array.isArray(e.affixes) && e.affixes.length) || (Array.isArray(e.rn) && e.rn.filter(Boolean).length));
+              || (Array.isArray(e.affixes) && e.affixes.length) || (Array.isArray(e.rn) && e.rn.filter(Boolean).length)
+              || (Array.isArray(e.mods) && e.mods.filter(Boolean).length));   /* REG-2972 a keeper's mods */
   }
   /* -> [{copyIx, how: 'read' | 'hand', at, place, entry}] | null when the copies cannot be read (UNKNOWN) | [] when he owns none */
   window._vaultCopyChoices = function(name){
@@ -53816,6 +53828,15 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
                [[the-unjoined-end]] */
             /* REG-2895 - and the checker's own word goes with the keeper ("persist what you knew"): a large charm is
                homed by that verdict (keep -> the CHARMS mule), and a keeper that never carried it is a question */
+            /* REG-2972 (#202 P3b) - a keeper of this name already here: the read's mods decide which copy it is. Another copy
+               counts one more and carries its own mods on its record; the name's record (copy 0) is written only for copy 0 */
+            var _kcR = (magicFinds[nm] && typeof magicFinds[nm] === 'object' && typeof window._vaultKeeperReadJoin === 'function')
+              ? window._vaultKeeperReadJoin(nm, { q: q || 'magic', base: base, mods: mods }) : null;
+            if (_kcR){ out.copy = _kcR.copyIx; if (_kcR.mode === 'new') out.newCopy = true; }
+            /* a re-read that missed a line of copy 0 keeps the lines copy 0 was read with */
+            if (_kcR && _kcR.mode === 'same' && _kcR.copyIx === 0 && Array.isArray(magicFinds[nm].mods) && magicFinds[nm].mods.length > mods.length)
+              mods = magicFinds[nm].mods.slice();
+            if (!_kcR || _kcR.copyIx === 0)
             magicFinds[nm] = { q: q || 'magic', base: base, mods: mods,
                                frameId: meta.frameId || '',
                                sessionId: meta.sid || meta.sessionId || '',
@@ -59203,6 +59224,11 @@ window.vaultAutoAssign = function(){
       if (typeof _assignStoreUnknown === 'function' && _assignStoreUnknown()) out.assignUnknown = true;
       var poolAll = ownedPool();                                   // distinct kept names (the header's `owned`)
       try { if (typeof window._vaultHandBasePool === 'function') poolAll = poolAll.concat(window._vaultHandBasePool()); } catch (eHb) {} /* L1 hand bases record */
+      /* REG-2971 (#202 P3b) - EVERY MAGIC & RARE KEEPER IS A RECORD. A keeper (d2r_magicFinds) is a rolled name no catalogue
+         holds, so ownedPool left it out and no copy of it had a record: no entry, no copy count, no MOVE row, nothing the
+         per-copy doors (REG-2844, REG-2849) could hold. Measured on the whole page in node: a kept Small Charm of Vita, owned and
+         homed on the shared stash, had 0 records. The keepers join the pool; their home is the one REG-2853 gives them. */
+      try { if (typeof magicFinds === 'object' && magicFinds) Object.keys(magicFinds).forEach(function(n){ if (n && poolAll.indexOf(n) < 0) poolAll.push(n); }); } catch (eMfP) {}
       if (typeof _vaultSameItemNames === 'function') { /* v3767 one set piece */
         var _kept76 = [], _drop76 = {};
         poolAll.forEach(function(name){
@@ -59272,6 +59298,13 @@ window.vaultAutoAssign = function(){
            keeper the pool holds (a TV stub he also kept, owned) fell through to orphan: the seam answers nothing for a Magic &
            Rare name (it is not in the dock), so the header said "with no home (owned, on no mule and not in the unsorted dock)"
            of items the MAGIC & RARE card draws. A real mule filing above still wins; with none, its home is the locker. */
+        /* REG-2971 - a keeper's record takes the home the KEEPER RULE gives it (_mfKeeperHome, REG-2895), the one the shelf card
+           draws it on: a charm on the shared stash or the CHARMS mule, a keeper the rule cannot home yet a question (loose).
+           The line after homes every other keeper on MAGIC & RARE (REG-2853). */
+        else if (typeof window._mfKeeperHome === 'function' && window._mfKeeperHome(name) === 'shared') kind = 'sharedStash';
+        else if (typeof window._mfKeeperHome === 'function' && window._mfKeeperHome(name) === null) kind = 'loose';
+        else if (typeof window._mfKeeperHome === 'function' && window._mfKeeperHome(name) && window._mfKeeperHome(name) !== 'magic-rare'
+                 && typeof muleById === 'function' && muleById(window._mfKeeperHome(name))) { kind = 'filed'; mid = window._mfKeeperHome(name); }
         else if (typeof window._vaultInMagicRare === 'function' && window._vaultInMagicRare(name) && typeof muleById === 'function' && muleById('magic-rare')) { kind = 'filed'; mid = 'magic-rare'; }   /* REG-2853 keeper home */
         else if (typeof KEEP_IN_INVENTORY !== 'undefined' && typeof _keepName === 'function' && KEEP_IN_INVENTORY.test(_keepName(name)))
           kind = 'keepInv';                                        // Anni/Torch/Gheed's drawn with MAIN — a kept charm with no mule is NOT an orphan
@@ -59792,7 +59825,9 @@ window.vaultAutoAssign = function(){
     if (Array.isArray(e.rn) && e.rn.filter(Boolean).length) out.rn = e.rn.filter(Boolean);
     if (e.ilvl != null && isFinite(+e.ilvl)) out.ilvl = +e.ilvl;
     if (e.def != null && isFinite(+e.def)) out.def = +e.def;
-    return (out.id || out.base) ? out : null;
+    /* REG-2972 - a Magic & Rare copy's mods as the read (or the planner) wrote them */
+    if (Array.isArray(e.mods) && e.mods.filter(Boolean).length) out.mods = e.mods.filter(Boolean).map(String);
+    return (out.id || out.base || out.mods) ? out : null;
   }
   /* opts.fill: only fields the record lacks are written (his hand completes a record, never overwrites what was there) */
   function _vaultCopyEntrySet(name, copyIx, entry, opts){
@@ -59831,7 +59866,62 @@ window.vaultAutoAssign = function(){
       var m = window._vpMadeOf(nm);
       if (m) return _vrEntryOf({ id: m.id, base: m.base, q: m.q, eth: m.eth, sockets: m.sockets, affixes: m.affixes, rolls: m.rolls });
     }
+    /* REG-2972 - copy 0 of a Magic & Rare keeper reads its record by name (d2r_magicFinds) until it carries its own */
+    if (k === 0 && typeof magicFinds === 'object' && magicFinds && magicFinds[nm] && typeof magicFinds[nm] === 'object')
+      return _vrEntryOf({ q: magicFinds[nm].q, base: magicFinds[nm].base, mods: magicFinds[nm].mods });
     return null;
+  };
+  /* REG-2972 (#202 P3b) - WHICH COPY OF A KEEPER IS THIS READ? A keeper is kept by NAME (d2r_magicFinds), so a second Small
+     Charm of Vita read by the checker wrote over the first one's mods: measured on the whole page in node, +17 to Life, then
+     +20 to Life -> one copy reading +20, the +17 charm gone. The read's mods now decide: the same mods as a copy here is
+     that copy (a re-read); mods that plainly differ from every copy here is another copy; a read with no mods, or a copy
+     whose mods were never read, tells nothing apart, so it is that copy and fills what it lacks - never a guessed copy.
+     -> {mode: 'same' | 'new' | 'fill', copyIx} | null (UNKNOWN: the records would not read) */
+  /* two reads of one keeper name are the SAME item when their mods agree: every stat line both carry reads the same numbers,
+     and one read's lines are all in the other (a read that missed a line is still that item). A line both carry with other
+     numbers (+17 to Life / +20 to Life), a line each has that the other lacks, or another base, is another item. */
+  function _vaultKeeperSameItem(a, b){
+    var fold = function(x){ x = String(x || '').trim();
+      try { var d = (typeof window._cbDb === 'function') ? window._cbDb() : null; if (x && d && d.b && d.b[x]) x = d.b[x][0]; } catch (eF) {}
+      return x.toLowerCase(); };
+    if (fold(a && a.base) && fold(b && b.base) && fold(a.base) !== fold(b.base)) return false;
+    var lines = function(e){ var o = {};
+      ((e && Array.isArray(e.mods)) ? e.mods : []).forEach(function(t){
+        t = String(t || '').replace(/\s+/g, ' ').trim().toLowerCase(); if (t) o[t.replace(/\d+(\.\d+)?/g, '#')] = t; });
+      return o; };
+    var A = lines(a), B = lines(b), ka = Object.keys(A), kb = Object.keys(B);
+    if (!ka.length || !kb.length) return false;
+    if (ka.some(function(t){ return B[t] != null && B[t] !== A[t]; })) return false;
+    return ka.every(function(t){ return B[t] != null; }) || kb.every(function(t){ return A[t] != null; });
+  }
+  window._vaultKeeperSameItem = _vaultKeeperSameItem;
+  window._vaultKeeperCopyOf = function(name, entry){
+    var nm = String(name == null ? '' : name).trim();
+    var n = (typeof copyCount === 'function') ? (copyCount(nm) | 0) : 1; if (!(n >= 1)) n = 1;
+    var typed = !!(entry && Array.isArray(entry.mods) && entry.mods.filter(Boolean).length);
+    var blank = null;
+    for (var k = 0; k < n; k++){
+      var e = window._vaultCopyEntry(nm, k);
+      if (e === undefined) return null;
+      if (!e || !(Array.isArray(e.mods) && e.mods.length)){ if (blank == null) blank = k; continue; }
+      if (typed && _vaultKeeperSameItem(e, entry)) return { mode: 'same', copyIx: k };
+    }
+    if (!typed) return { mode: 'same', copyIx: 0 };
+    if (blank != null) return { mode: 'fill', copyIx: blank };
+    return { mode: 'new', copyIx: n };
+  };
+  /* ONE DOOR for a read of a keeper already here - the AI checker's keep and the photo intake both come through it: the
+     copy it is, another copy counted, and a copy past copy 0 recorded with its own mods (copy 0 is the name's record,
+     d2r_magicFinds, which the caller writes). opts.sameFile: a re-read of the same file never counts another (REG-2401).
+     -> {mode, copyIx} | null (UNKNOWN: the records would not read - the caller keeps what it did before) */
+  window._vaultKeeperReadJoin = function(name, entry, opts){
+    var nm = String(name == null ? '' : name).trim();
+    var r = nm ? window._vaultKeeperCopyOf(nm, entry) : null;
+    if (!r) return null;
+    if (r.mode === 'new' && opts && opts.sameFile) r = { mode: 'same', copyIx: 0 };
+    if (r.mode === 'new') copies[nm] = r.copyIx + 1;
+    if (r.copyIx > 0){ try { _vaultCopyEntrySet(nm, r.copyIx, entry, { fill: r.mode !== 'new' }); } catch (eKj) {} }
+    return r;
   };
   function _vrRecGuardedSet(obj){
     /* NEVER overwrite a store that could not be read/parsed — the mule store _guardedSet rule (bible.html:40311). */
@@ -63599,9 +63689,17 @@ function renderJournal(){
           if (!magicFinds[nm]){ magicFinds[nm] = { q: f.q || 'magic', base: f.base || '', mods: _mods,
                                                    shotFile: fname || '', at: Date.now() }; magicNew.push(nm); }
           else if (typeof magicFinds[nm] === 'object'){
+            /* REG-2972 (#202 P3b) - a keeper of this name already here: its mods decide which copy this read is. Mods that
+               differ from every copy here are another copy (two Small Charms of Vita, +17 and +20 to Life), counted and
+               recorded with their own mods; a re-read of the same file never counts another (REG-2401) */
+            var _icR = (typeof window._vaultKeeperReadJoin === 'function')
+              ? window._vaultKeeperReadJoin(nm, { q: f.q || 'magic', base: f.base || '', mods: _mods }, { sameFile: _intakeSameItem(fRec.prev, nm) }) : null;
+            if (_icR && _icR.mode === 'new'){ if (extraCopies.indexOf(nm) < 0) extraCopies.push(nm); (fRec.xc || (fRec.xc = [])).push(nm); }
+            if (!(_icR && _icR.copyIx > 0)){
             if (!magicFinds[nm].base && f.base) magicFinds[nm].base = f.base;
             // fill mods if we didn't have them yet (a later/cleaner read of the same item)
             if (_mods.length && !(magicFinds[nm].mods && magicFinds[nm].mods.length)) magicFinds[nm].mods = _mods;
+            }
           }
           try {
             if (typeof owned !== 'undefined' && owned && owned.has && !owned.has(nm) && typeof window._ownedAdd === 'function')

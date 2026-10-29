@@ -2551,6 +2551,29 @@ file row with k > n - and no law named either. Test-only: a law that holds both 
 writes nothing; a forged 138/135 row reads UNKNOWN and may() stays LOCKED) and holds the shape over the tracked
 ledger (every lock and route: k <= n, attacksPassed <= attacks <= n). The fan-caption overlap half of #84 is NEEDS
 LIVE. Law: test_a_lock_never_publishes_more_refusals_than_attempts (python), 2 red-proofs, RED.
+### REG-2972 - A SECOND READ OF A KEEPER WROTE OVER THE FIRST: TWO SMALL CHARMS OF VITA WERE ONE (#202 P3b)
+A keeper is kept by NAME (d2r_magicFinds), so the AI checker's keep wrote each read over the last. Measured on the whole
+page in node: +17 to Life, then +20 to Life -> one copy reading +20, the +17 charm gone. The photo intake filled the first
+record and dropped the second the same way. Both doors now go through one door, window._vaultKeeperReadJoin:
+- the same mods as a copy here is that copy, and a read that missed a line of it is still that copy (_vaultKeeperSameItem);
+- mods that differ from every copy here (a line both carry with other numbers, or a line each has that the other lacks,
+  or another base) are another copy: counted, and recorded with its own mods (copy 0 stays the name's record);
+- a read with no mods tells nothing apart, so it is never a guessed copy;
+- a re-read of the same photo never counts another copy (REG-2401).
+Law: test_two_small_charms_of_vita_are_two_copies (node, the whole page), 6 red-proofs, RED.
+
+### REG-2971 - A MAGIC & RARE KEEPER HAD NO RECORD, AND A CHARM ON THE SHARED STASH WAS DRAWN TWICE (#202 P3b)
+A keeper is a rolled name no catalogue holds, so ownedPool left it out and no copy of it had a record: no entry, no copy
+count, nothing the per-copy doors (REG-2844, REG-2849) could hold. Measured on the whole page in node: a kept Small Charm of
+Vita, owned and homed on the shared stash, had 0 records, and the shared stash window drew no tile of it. The keepers now
+join the records pool, and each record takes the home the keeper rule gives it (_mfKeeperHome, REG-2895): a charm on the
+SHARED STASH, any other keeper on MAGIC & RARE (REG-2853). Once it had records there, a charm on the shared stash came in
+twice - its keeper cell and a record cell per copy ("1 item in 3 copies" for two charms); it is drawn as its keeper cells
+only, as on MAGIC & RARE. Three laws whose premise was "the locker's records are only the routed stubs" now name the
+keepers too (test_magic_and_rare_draws_every_item_it_counts, test_a_magic_or_rare_tile_draws_its_base,
+test_a_base_in_doubt_is_unknown_everywhere). Law: test_a_magic_keeper_is_a_record_on_every_surface (node, the whole page),
+3 red-proofs, RED.
+
 ### REG-2849 - HIS HAND COULD NOT REMOVE THE COPY HE MEANT: THE STEPPER TOOK THE LAST ONE (#154 P3c)
 Each copy carries its own entry (REG-2844), but no door took out ONE named copy. The count stepper took the LAST copy off.
 Measured on the whole page in node: with an Ist Shako (copy 1) and a Ber Shako (copy 2), removing the Ist one took the Ber
