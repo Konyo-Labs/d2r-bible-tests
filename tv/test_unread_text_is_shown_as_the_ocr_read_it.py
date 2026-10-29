@@ -11,6 +11,14 @@ The chips printed them bare beside "KAI caught", so garble read as leaked HTML a
 A read is testimony and is never cleaned: each text is escaped and quoted verbatim by one helper (_ocrRawSay), and the
 three surfaces that print it (the footage chip, the kai chip, the kai caption) say it is raw OCR.
 
+REG-3106 (#86 item 5) asked again whether markup-shaped garble should read as "unreadable text (N chars)" with the raw
+text in a title. Decided from the code and the reads: no. The same measured garbles are a reader's evidence - 'FAsT ArrA<K
+SpfE' is ATTACK SPEED, 'kf>uiRfD STRENGT' is REQUIRED STRENGTH - and a count in the chip would hide them behind a hover
+that a touch screen and a glance never make, the very hiding REG-2791 ruled out ("a read is testimony and is never
+cleaned"). Its quoting, its escaping and its "raw OCR" label already answer GrokBot's "looks like leaked HTML". What was
+not locked: every check above read the whole span, title included, so moving the read into the title would have passed.
+Now the read must be on the chip's face, outside every attribute, and no surface may stand a count in for it.
+
 Driven: esc, _ocrRawSay, thHandoffNote and _thKaiCaption cut out of control_ui.html and run in node; each quoted text is
 unescaped and compared to what the OCR read, character for character. RED_PROOF below.
 """
@@ -119,8 +127,26 @@ class UnreadTextIsShownAsTheOcrReadIt(unittest.TestCase):
         self.chip(self.cap, READ[:4], 1)
         self.assertIn("unread text on this frame", self.cap)
 
+    def test_the_read_is_on_the_chips_face_never_only_in_a_title(self):
+        """REG-3106 - the quoted reads sit in the visible text (every attribute stripped), and no count stands in."""
+        for out, read in ((self.foot, READ[:3]), (self.kai, READ[1:4]), (self.cap, READ[:4])):
+            face = re.sub(r'\s[a-z-]+="[^"]*"', "", out)
+            self.assertEqual(_quoted(face), read, "the OCR's read is not on the chip's face: %r" % out)
+            self.assertIn("raw OCR", face, "the chip's face does not say its text is raw OCR: %r" % out)
+            self.assertNotRegex(face, r"(?i)unreadable|\(\d+ chars?\)", "a count stands in for the read: %r" % out)
+
 
 RED_PROOF = [
+    {"why": "REG-3106 - the footage chip shows a count and hides the read in its title",
+     "file": "tv/control_ui.html",
+     "find": "stray marks and all; it is not a name yet\">🔴 missed → 🧠 KAI caught unread text · raw OCR: '\n        + _ocrRawSay(b.kaiMissTexts, 3) + '</span>';\n",
+     "replace": "stray marks and all; it is not a name yet. raw OCR: ' + _ocrRawSay(b.kaiMissTexts, 3) + '\">🔴 missed → 🧠 KAI caught unreadable text (' + b.kaiMissTexts.join('').length + ' chars)</span>';\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3106 - the kai chip shows a count and hides the read in its title",
+     "file": "tv/control_ui.html",
+     "find": "stray marks and all\">🔴 missed → 🧠 KAI caught unread text · raw OCR: ' + _ocrRawSay(kk.texts, 3) + '</span>';   /* REG-2791 */\n",
+     "replace": "stray marks and all · raw OCR: ' + _ocrRawSay(kk.texts, 3) + '\">🔴 missed → 🧠 KAI caught unreadable text (' + kk.texts.join('').length + ' chars)</span>';   /* REG-2791 */\n",
+     "matches": 1, "needs": "node"},
     {"why": "REG-2791 - the footage chip prints the OCR bare beside 'KAI caught' again (GrokBot's CHAKm •<li•)",
      "file": "tv/control_ui.html",
      "find": "        + _ocrRawSay(b.kaiMissTexts, 3) + '</span>';\n",

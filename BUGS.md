@@ -683,6 +683,39 @@ UNMEASURED: no run of the job yet. It needs a push to ci/bless/<x> or a dispatch
 the code: the heart targets draw from tv/.heart2.json, which a cold checkout lacks (REG-2451: six heart readings "shrank"
 unseeded). Their counts will be held, not written. If they also fail to RENDER, the record will name them and the bless
 refuses, and that is the next decision.
+### REG-3106 - SHOULD MARKUP-SHAPED OCR READ AS "UNREADABLE TEXT (N CHARS)"? NO - AND THE CHIP'S FACE IS NOW LOCKED (#86 item 5)
+#86 item 5 asked again about the caught-text chip printing raw OCR like `CHAKm •<li•` (thHandoffNote; escaped, so never an
+injection): should markup-shaped garble read as "unreadable text (N chars)" with the raw text in a title? Decided from the
+code and the reads: no. REG-2791 measured these texts on his reels (1,029 on 38 sealed reels, 8,637 on the journal's kai
+rows) and the markup-shaped ones are a letter the OCR misread, often still readable - 'FAsT ArrA<K SpfE' is ATTACK SPEED,
+'kf>uiRfD STRENGT' is REQUIRED STRENGTH. A count would hide that evidence behind a hover a touch screen and a glance never
+make, which is the hiding REG-2791 ruled out ("a read is testimony and is never cleaned"); its quoting, escaping and "raw
+OCR" label are what answer "looks like leaked HTML". The gap found: REG-2791's law read each chip's whole span, title
+included, so moving the read into the title and showing a count passed it (proven: under that sabotage its 3 checks stayed
+green). Now the read must stand on the chip's face, outside every attribute, on the footage chip, the kai chip and the
+kai caption, and no count may stand in for it. No code changed. Law: test_unread_text_is_shown_as_the_ocr_read_it gains
+test_the_read_is_on_the_chips_face_never_only_in_a_title and 2 red-proofs (8 of 8 RED).
+
+### REG-3096 - A SHADOW'S DRAGS AND ITS VAULT / D2JSP / TV·D / RUNES TABS WERE UNKNOWN; MEASURED: NOTHING WRITES (#194, code half)
+GrokBot proved on the guest at v3806 that 0 stores change across 40 controls x 11 tabs in a shadow, and left two parts
+UNKNOWN: drag (vault tiles, dock to mule, mule to mule) and the Vault, d2jsp, TV·D and Runes tabs, which had no store counter
+to compare. The whole page now boots twice in node (vault_page_node): his board with a vault filed by the page's own doors
+(hand adds, vaultAssign to two lockers, one tile placed by hand), then a viewer's board in a snapshot shadow of exactly those
+stores (?tvd-shadow=1, the snapshot on the parent, the page's own shadow boot and veil). Driven in each: five drags by the
+page's own handlers (the right click that unlocks a placed tile, the keyboard carry, a tile pointer-dragged to an empty cell
+and onto a Mule tab, a dock chip dropped on a locker's plate) and every control the four tabs paint (475 in the shadow:
+press, click, keys, input/change, right click, drag start/over/drop/end), in a browser's event order through the page's own
+listeners. On his board every drag writes (d2r_mulePos, d2r_muleAssign) and 99 controls write - the baseline that the
+harness sees a write. In the shadow: no drag starts (each first event stopped) and none writes; no control writes or tries
+to (the storage door, LSR.setItem, is watched, since it drops a shadow's write at its first line); the viewer's real
+storage gets nothing; the 5 requests attempted (the D2JSP prices and sign-in, GETs) are refused by the veil and nothing
+reaches the network. No defect found, so no code changed. Named, not changed: a tab open attempts switchTab's d2r_activeTab
+straight into the frame's memory store, whose setItem the boot made a no-op (it lands nowhere), and the MOVE TASKS toggle
+(a VIEW handler) asks the door to keep vaultTasksOpen, view state the door drops. The harness rebinds vault_page_node's
+top-level store const inside this law (two asserted anchors) so the page's bare `localStorage` is the window's property, as
+in a browser - otherwise the shadow boot refuses to open ("would not isolate"). Law:
+test_a_shadow_writes_nothing_by_drag_or_on_four_tabs (11 tests, 6 red-proofs on the veil, each RED). NEEDS LIVE (#194):
+GrokBot repeats the drags and the four tabs on the ALT's shadow with a store counter, once the ALT is online.
 
 ### REG-3083 - A FLOOR BLESSED ON CI COULD OUTRUN THE PUSH GATE THAT ENFORCES IT (#2)
 CI's render-bless job (REG-3081) measures from a cold sandbox on a Linux Chromium. The floor it writes is enforced by the
