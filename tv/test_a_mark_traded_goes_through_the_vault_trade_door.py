@@ -123,7 +123,7 @@ function rows(n){ return (JSON.parse(W.LSR.getItem('d2r_vaultRecords') || '{}').
 function same(a, b){ try { var x = JSON.parse(a), y = JSON.parse(b); delete x.saved; delete y.saved; return JSON.stringify(x) === JSON.stringify(y); } catch (e) { return false; } }
 function lastBatch(){ var l = W.vaultRemovalLog() || []; var b = l[l.length - 1] || null; return b && { lane: b.lane, names: b.names, copyOut: b.copyOut ? { name: b.copyOut.name, copyIx: b.copyOut.copyIx, cell: b.copyOut.row && b.copyOut.row.move && b.copyOut.row.move.to ? b.copyOut.row.move.to.cell : null } : null }; }
 W._vaultAutoIntakeSet(false);
-W.vaultHandAdd('Gull'); W.vaultHandAdd('Gull'); W.vaultHandAdd('Gull'); SHAKO = (W.vaultHandAdd('Shako') || {}).name;
+W.vaultHandAdd('Gull'); W.vaultHandAdd('Gull'); W.vaultHandAdd('Gull'); SHAKO = (W.vaultHandAdd('Harlequin Crest') || {}).name;   /* a bare 'Shako' is asked since REG-2858; the unique's typed name files (REG-2897) */
 W.vaultAssign(GULL, 'uni-weap'); W.vaultAssign(SHAKO, 'uni-armor'); paint();
 OUT.start = { rows: rows(GULL), count: copyCount(GULL) };
 W._vaultTradeEvent({ kind: 'listed', name: GULL, copyIx: 1, post: 'https://forums.d2jsp.org/topic.php?t=9001&f=268' }); paint();

@@ -166,7 +166,7 @@ var W = window, GULL = 'Gull (dagger)', SHAKO = null;
 function paint(){ W.renderVault(); H.flush(60, 3); }
 function slots(n){ return (W._vaultTradeOf(n) || []).map(function(x){ return [x.ci, x.state, x.post || null]; }); }
 W._vaultAutoIntakeSet(false);
-W.vaultHandAdd('Gull'); W.vaultHandAdd('Gull'); SHAKO = (W.vaultHandAdd('Shako') || {}).name;
+W.vaultHandAdd('Gull'); W.vaultHandAdd('Gull'); SHAKO = (W.vaultHandAdd('Harlequin Crest') || {}).name;   /* a bare 'Shako' is asked since REG-2858; the unique's typed name files (REG-2897) */
 W.vaultAssign(GULL, 'uni-weap'); W.vaultAssign(SHAKO, 'uni-armor'); paint();   // the D2JSP tab trades what is filed on a mule
 var assign = JSON.parse(W.LSR.getItem('d2r_muleAssign') || '{}');
 OUT.premise = { shako: SHAKO, gull: copyCount(GULL), assigned: [GULL, SHAKO].filter(function(n){ return assign[n] != null; }), slots: slots(GULL) };
