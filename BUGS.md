@@ -695,6 +695,25 @@ and test_a_confirmed_d2jsp_post_lists_its_copies_on_the_vault each hand-added "S
 base. Nothing was owned, so the trade-out said "Shako is not in the vault". Each law now hand-adds "Harlequin Crest", which
 files as Harlequin Crest (Shako) (REG-2897; measured in node). REG-2858 is untouched, and the pane halves that fake the vault
 keep their 'Shako' keys. Red-proofs re-proven RED on green baselines: 12/12, 6/6, 10/10.
+### REG-2996 - A LOCKER'S NEXT MULE WAS ASKED FOR AS "UNI-ARMOR #2", A NAME THE GAME REFUSES (#144, his ruling 2026-10-29 Q1)
+A locker's Mule 2+ is a character he makes in the game (REG-2875), and MOVE TASKS asked him to "Create mule UNI-ARMOR #2 in
+the game": a '#', a digit and a second '-', where a D2R name is 2-15 letters with at most one '-' or '_' and no digit
+(REG-2980). His ruling: overflow names go "per locker, letters only (armor-A, weapon-A), one mule per category". One helper,
+_vaultLockerMuleName(m, k), names a locker's Mule k (k >= 2) by its word and a letter: UNI-ARMOR's Mule 2 is ARMOR-A, Mule 3
+ARMOR-B; UNI-WEAPONS' Mule 2 is WEAPON-A. A core locker's word rides its id (ARMOR, WEAPON, SMALL, SETSTALIK, SETSREST,
+RUNEWORDS, SOCKETED, MAGICRARE, CHARMS, GRAILDUPES, WIP), so renaming the locker never renames a character he made; a mule he
+added uses the letters of its own name (12 at most). Mule 1 is the locker's own character and gets no derived name.
+_vaultLockerMuleSay(m, k) is the one spelling, "Mule 2 · ARMOR-A", used by the make task (its words and its tick's label), the
+move row ("UNI-ARMOR · Mule 2 · ARMOR-A (9,3)"), the where-is cells (filed, hand-added and the planner's), FIND's target
+cell, his hand spot's chip and his tick's refusal. The mule window's header for Mule 2 reads "UNI-ARMOR · ARMOR-A" (was
+"UNI-ARMOR #2"). "Mule N" still opens each spelling, so REG-2884's page buttons read it as before.
+Law: test_a_lockers_next_mule_is_named_by_a_name_the_game_accepts (3 tests, 8 red-proofs RED; 41 safe sibling laws green). Re-aimed: REG-2875's law (the
+card-vs-target cells, the row and the make task read the page's helper; its rows must carry a legal name that maps back to k)
+and REG-2884's law (Mule 2 in the helper's spelling; its red-proof [0] follows the new _findTargetSay call); REG-2875's
+red-proofs [3] and [5] follow the lines this changed (re-proved RED). The v3769 law's slice carries the two helpers. Not pinned by a law: the planner's cells (_orgPlannedCells), the hand spot's chip and the tick's
+refusal - each uses the same helper. Not built: a read on a character named ARMOR-A closing its make task, as a read on WAR-A
+closes the war mule's (REG-2803); his tick still closes it.
+
 ### REG-2997 - A WAR MULE HE TOOK BACK STOPPED THE BOARD FROM OFFERING THE NEXT ONE (#144, his ruling 2026-10-29 Q2)
 His ruling: when he declines war-A, the board offers the next one (war-B) when there is overflow, with the same "make it in
 the game" task. MEASURED before (whole page in node, the real doors): the board made WAR-A for Shako x3, he deleted it, and

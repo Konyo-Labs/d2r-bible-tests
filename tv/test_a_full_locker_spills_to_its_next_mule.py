@@ -11,7 +11,7 @@ already spreads a locker across Mule 1..N ("+ next mule opens when this one is f
 Now the packer packs Mule 1, then Mule 2, ... A cell names its Mule by its row, the shared stash's own rule (REG-2801):
 stash:c3r14 is Mule 2, col 4, row 5, and inventory rows run 4 per mule. One reader (_vaultCellAt) serves the row, the
 expand, the plan and the card. The card lays each task cell on its own Mule k, so the window and the targets agree. The
-row reads "UNI-ARMOR · Mule 2 (9,3)". A locker's Mule 2+ is a character he makes in the game (the window's own tip calls
+row reads "UNI-ARMOR · Mule 2 · ARMOR-A (9,3)" (REG-2996: its character's name, letters only). A locker's Mule 2+ is a character he makes in the game (the window's own tip calls
 them "mule characters"), and it is derived, not a roster entry. So MOVE TASKS asks him first to create it, as REG-2803 does
 for WAR1, and his tick is kept on the locker's entry. Saved targets never move (REG-2787): only copies with no saved cell
 are placed. Whole page in node, never a browser. RED_PROOF below.
@@ -61,6 +61,10 @@ rs.forEach(function(r){ var t = r.move.to, ca = W._vaultCellAt(t.cell); if (!ca 
   if (W._vaultWarMules().some(function(w){ return w.id === t.id; })) return;   /* a WAR mule is the war stash's overflow, one page */
   (byId[t.id] = byId[t.id] || []).push({ n: r.name, ci: r.copyIx || 0, loc: ca.loc, page: ca.page, x: ca.x, y: ca.y }); });
 OUT.byId = byId;
+/* REG-2996 - each locker's own spelling of its Mule k ("Mule 2 · ARMOR-A"), read from the page's one helper */
+var _ros = W._vaultRosterNow() || [];
+OUT.say = {}; Object.keys(byId).forEach(function(id){ var m = _ros.filter(function(x){ return x.id === id; })[0] || null;
+  OUT.say[id] = []; for (var k = 1; k <= 40; k++) OUT.say[id].push(W._vaultLockerMuleSay(m, k)); });
 OUT.names = {};
 Object.keys(byId).forEach(function(id){ byId[id].forEach(function(t){ if (!OUT.names[t.n]) { var w = W._vaultWhereIs(t.n); OUT.names[t.n] = w ? (w.cells || []) : null; } }); });
 OUT.rows = (list().match(/<span class="vtk-to">[^<]*/g) || []).map(function(s){ return s.replace('<span class="vtk-to">', ''); });
@@ -80,9 +84,19 @@ OUT.rects = recs().map(function(r){ var t = r.move.to, ca = W._vaultCellAt(t.cel
 """ % {"bases": json.dumps(BASES)}
 
 
-def _expected(t, spans):
+def _expected(t, spans, say):
     where = "Personal stash" if t["loc"] == "stash" else "Inventory"
-    return ("Mule %d · " % (t["page"] + 1) if spans else "") + "%s · col %d · row %d" % (where, t["x"] + 1, t["y"] + 1)
+    return ("%s · " % say[t["page"]] if spans else "") + "%s · col %d · row %d" % (where, t["x"] + 1, t["y"] + 1)
+
+
+def _letters_n(t):
+    n = 0
+    for ch in t:
+        n = n * 26 + (ord(ch) - 64)
+    return n
+
+
+LEGAL = re.compile(r"^[A-Z]{2,12}-[A-Z]{1,2}$")     # REG-2996: a name the game accepts - letters, one '-', no digit
 
 
 @unittest.skipUnless(VPN.NODE, "node is absent on this machine - UNMEASURED here, never a pass")
@@ -105,7 +119,7 @@ class AFullLockerSpillsToItsNextMule(unittest.TestCase):
         for mid, ts in o["byId"].items():
             spans = any(t["page"] >= 1 for t in ts)
             for n in set(t["n"] for t in ts):
-                want = sorted(_expected(t, spans) for t in ts if t["n"] == n)
+                want = sorted(_expected(t, spans, o["say"][mid]) for t in ts if t["n"] == n)
                 have = list(o["names"].get(n) or [])
                 for w in want:
                     if w in have:
@@ -115,6 +129,7 @@ class AFullLockerSpillsToItsNextMule(unittest.TestCase):
         self.assertEqual(bad, [], "the card and the targets disagree on %d copies, e.g. %r" % (len(bad), bad[:3]))
 
     def test_the_row_names_the_mule(self):
+        """REG-2996 (his ruling 2026-10-29, Q1): the row names the Mule k AND the character he makes for it, ARMOR-A"""
         rows = [r for r in self.o["rows"] if " · Mule " in r]
         self.assertTrue(rows, "no row names a Mule 2+: %r" % self.o["rows"][:5])
         for r in rows:
@@ -125,7 +140,10 @@ class AFullLockerSpillsToItsNextMule(unittest.TestCase):
         self.assertTrue(o["make"], "MOVE TASKS does not ask him to make a locker's next mule")
         mid, page, text = o["make"][0]
         self.assertEqual(page, "2")
-        self.assertRegex(text, r"Create mule [A-Z][A-Z\-]+ #2 in the game")
+        nm = o["say"][mid][1].split(" · ")[1]      # REG-2996 the locker's Mule 2, by the page's one helper
+        self.assertRegex(nm, LEGAL, "the board asks for a name the game refuses: %r" % nm)
+        self.assertIn("Create mule %s in the game" % nm, text)
+        self.assertNotRegex(text, r"Create mule [^ ]*[#\d]", "the make task asks for a name with a '#' or a digit: %r" % text)
         self.assertEqual(o["tick"], {"ok": True}, o["tick"])
         self.assertEqual(o["made"], [2], "his tick was not kept on the locker: %r" % o["made"])
         self.assertEqual(o["afterTick"], len(o["make"]) - 1, "the made mule is still asked for")
@@ -175,7 +193,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2875 - he is not asked to make a locker's next mule",
      "file": "bible.html",
-     "find": "      for (var p = 1; p <= top[id]; p++) if (made.indexOf(p + 1) < 0) rows.push({ id: m.id, mule: p + 1, name: m.name });\n",
+     "find": "      for (var p = 1; p <= top[id]; p++) if (made.indexOf(p + 1) < 0) rows.push({ id: m.id, mule: p + 1, name: m.name, char: _vaultLockerMuleName(m, p + 1) });   /* REG-2996 */\n",
      "replace": "",
      "matches": 1, "needs": "node"},
     {"why": "REG-2875 - his tick on a made mule is not kept",

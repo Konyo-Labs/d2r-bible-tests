@@ -45567,7 +45567,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       return out.sort(function(a, b){ return a.page - b.page; });
     }
     /* REG-2884 - a move target in FIND's own words: "Mule 2 · Personal stash · col 1 · row 1", "Page 2 · col 4 · row 3" */
-    function _findTargetSay(cell){
+    function _findTargetSay(cell, mule){
       var ca = (typeof _vaultCellAt === 'function') ? _vaultCellAt(cell) : null;
       if (!ca) return String(cell);
       var at = 'col ' + (ca.x + 1) + ' · row ' + (ca.y + 1);
@@ -45622,7 +45622,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
           var _mm = _mc && String(_mc).match(/c(\d+)r(\d+)/);
           if (_mm) w = Object.assign({}, w, { kind: _ht ? 'target' : w.kind, muleName: (_ht && _mt.to.holder) ? ((((typeof _vaultMuleOfPlace === 'function') ? _vaultMuleOfPlace(_mt.to) : null) || {}).name || _mt.to.holder) : w.muleName,   /* REG-2804 its name today */
                                              mule: (_mt.to.id != null ? _mt.to.id : w.mule),   /* REG-2884 the target's own mule */
-                                             cell: _findTargetSay(_mc) + ' · target' + (_ht ? ' · MANUAL move' : '') }); /* L1 find cell; REG-2884 its page, never a raw row */
+                                             cell: _findTargetSay(_mc, (typeof _vaultMuleOfPlace === 'function') ? _vaultMuleOfPlace(_mt.to) : null) + ' · target' + (_ht ? ' · MANUAL move' : '') }); /* L1 find cell; REG-2884 its page, never a raw row */
         }
       } catch (eFc) {}
       var mid = (w && (w.kind === 'filed' || w.kind === 'worn' || w.kind === 'over' || w.kind === 'would' || w.kind === 'target')) ? w.mule : null;   /* REG-2884 a hand add's target too */
@@ -55622,6 +55622,24 @@ window.vaultAutoAssign = function(){
   }
   function _vaultWarName(n){ return 'WAR-' + _vaultLetters((n | 0) || 1); }
   try { window._vaultWarName = _vaultWarName; window._vaultLettersN = _vaultLettersN; } catch (eWn) {}
+  /* REG-2996 (his ruling 2026-10-29 ~02:30 IDT, Q1: overflow names go "per locker, letters only (armor-A, weapon-A), one mule
+     per category") - a locker's Mule k (k >= 2, REG-2875) is a character he makes in the game, and the board asked him to make
+     "UNI-ARMOR #2": a '#', a digit and a second '-', a name the game refuses. Its name is the locker's word and a letter:
+     UNI-ARMOR's Mule 2 is ARMOR-A, its Mule 3 ARMOR-B. A core locker's word rides its id, so renaming the locker never renames
+     a character he already made; a mule he added uses the letters of its own name. Mule 1 is the locker's own character, so
+     no name is derived for it. */
+  function _vaultLockerMuleName(m, k){
+    k = k | 0;
+    if (!m || k < 2) return null;
+    var WORD = { 'uni-armor': 'ARMOR', 'uni-weap': 'WEAPON', 'uni-small': 'SMALL', 'sets-major': 'SETSTALIK', 'sets-rest': 'SETSREST',
+                 'runewords': 'RUNEWORDS', 'bases': 'SOCKETED', 'magic-rare': 'MAGICRARE', 'charms': 'CHARMS', 'dupes': 'GRAILDUPES', 'wip': 'WIP' };
+    var w = WORD[m.id] || String(m.name || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 12);
+    if (w.length < 2) w = 'MULE';
+    return w + '-' + _vaultLetters(k - 1);
+  }
+  /* the one spelling of a locker's Mule k wherever the board names it: "Mule 2 · ARMOR-A", and "Mule 1" */
+  function _vaultLockerMuleSay(m, k){ var nm = _vaultLockerMuleName(m, k); return 'Mule ' + (k | 0) + (nm ? ' · ' + nm : ''); }
+  try { window._vaultLockerMuleName = _vaultLockerMuleName; window._vaultLockerMuleSay = _vaultLockerMuleSay; } catch (eLm) {}
   /* a place's mule: by its id, else by its holder's name TODAY (a sighting carries only the character's name) -> mule | null */
   function _vaultMuleOfPlace(place){
     if (!place) return null;
@@ -55755,7 +55773,7 @@ window.vaultAutoAssign = function(){
       var m = (typeof muleById === 'function') ? muleById(id) : null;
       if (!m || _vaultWarRole(m)) return;
       var made = Array.isArray(m.pagesMade) ? m.pagesMade : [];
-      for (var p = 1; p <= top[id]; p++) if (made.indexOf(p + 1) < 0) rows.push({ id: m.id, mule: p + 1, name: m.name });
+      for (var p = 1; p <= top[id]; p++) if (made.indexOf(p + 1) < 0) rows.push({ id: m.id, mule: p + 1, name: m.name, char: _vaultLockerMuleName(m, p + 1) });   /* REG-2996 */
     });
     return rows;
   }
@@ -55765,7 +55783,7 @@ window.vaultAutoAssign = function(){
     var m = (typeof muleById === 'function') ? muleById(id) : null, k = mule | 0;
     if (!m || k < 2) return { ok: false, why: 'not a locker mule to make' };
     var held = (typeof window._vaultHeldFor === 'function') ? window._vaultHeldFor([RK]) : null;
-    if (held) { try { status('⚠ ' + m.name + ' #' + k + ' was not marked made - ' + held.why); } catch (eS) {} return { ok: false, why: held.why }; }
+    if (held) { try { status('⚠ ' + (_vaultLockerMuleName(m, k) || m.name) + ' was not marked made - ' + held.why); } catch (eS) {} return { ok: false, why: held.why }; }
     var was = Array.isArray(m.pagesMade) ? m.pagesMade.slice() : null;
     m.pagesMade = (was || []).filter(function(x){ return x !== k; }).concat([k]);
     if (_guardedSet(RK, JSON.stringify(roster)) === false) { if (was) m.pagesMade = was; else delete m.pagesMade; return { ok: false, why: 'the mule store refused the write' }; }
@@ -56890,9 +56908,9 @@ window.vaultAutoAssign = function(){
             + '<span class="vtk-say">Create mule <b>' + esc(m.name) + '</b> in the game — the board made it (' + esc(why) + '); the moves to it are below</span></li>';
         }).join('')
       + pageMakes.map(function(r){
-          return '<li class="vtk-line vtk-make" data-mule="' + esc(r.id) + '" data-page="' + r.mule + '"><input type="checkbox" class="vtk-tick" aria-label="I made ' + esc(r.name + ' #' + r.mule) + ' in the game"'
+          return '<li class="vtk-line vtk-make" data-mule="' + esc(r.id) + '" data-page="' + r.mule + '"><input type="checkbox" class="vtk-tick" aria-label="I made ' + esc(r.char) + ' in the game"'
             + ' onclick="event.stopPropagation()" onchange="window._vaultPageMadeInGame(\'' + jsArg(r.id) + '\',' + r.mule + ')">'
-            + '<span class="vtk-say">Create mule <b>' + esc(r.name + ' #' + r.mule) + '</b> in the game — ' + esc(r.name) + ' is full up to Mule ' + (r.mule - 1)
+            + '<span class="vtk-say">Create mule <b>' + esc(r.char) + '</b> in the game — ' + esc(r.name) + ' is full up to Mule ' + (r.mule - 1)   /* REG-2996 a name the game accepts */
             + ', so its Mule ' + r.mule + ' is a new character; the moves to it are below</span></li>';
         }).join('') + '</ol>';
     if (_gone.length) html += _gone.map(function(m){   /* REG-3101 said, never silent; not a task, so not on the tasks badge */
@@ -61040,7 +61058,7 @@ window.vaultAutoAssign = function(){
         return '<div>'+esc(p.n)+' → <span class="vl-slot">'+esc(_muleSpotSay(t, p.x, p.y, _lp))+'</span>'+_lockTag(p)+'</div>'; })); }, []))
       .concat(inv.placed.map(function(p){ return '<div>'+esc(_mpInvSayName(p))+' → <span class="vl-slot">'+esc(_muleSpotSay('inv', p.x, p.y, _lp))+'</span>'+_lockTag(p)+'</div>'; })).join('');
     var TABS=['Personal','Shared','Gems','Materials','Runes'];
-    var _muleLabel = _muleTotalPages > 1 ? (' #' + (_mulePage + 1)) : '';
+    var _muleLabel = _muleTotalPages > 1 ? (_mulePage >= 1 ? ' · ' + _vaultLockerMuleName(m, _mulePage + 1) : ' #1') : '';   /* REG-2996 its Mule 2+ by name */
     var _muleTag = _muleTotalPages > 1 ? '<span class="vd-mule-nav" title="this category spans '+_muleTotalPages+' mule characters (each = 100-cell stash + 40-cell inventory = 140 cells). Click the arrows — or press ← → — to step through the mules.">'
       + '<button class="vd-mule-arrow" onclick="window._muleSetPage('+(_mulePage-1)+')" title="previous mule (←)">◄</button>'
       + '🧍 Mule '+(_mulePage+1)+' / '+_muleTotalPages

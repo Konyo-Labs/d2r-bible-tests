@@ -12937,6 +12937,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_war_mule_whose_overflow_is_gone_is_no_longer_a_task.py")], 300,
          needs_app=False,
          why='REG-3101 #153 - a war mule the board made loses its make-it-in-the-game task once nothing he owns lands on it, and MOVE TASKS says why; one he made in the game or renamed keeps it; the undo brings it back'),
+    Gate("test_a_lockers_next_mule_is_named_by_a_name_the_game_accepts",
+         [sys.executable, os.path.join(HERE, "test_a_lockers_next_mule_is_named_by_a_name_the_game_accepts.py")], 300,
+         needs_app=False,
+         why="REG-2996 a locker's Mule 2+ is named ARMOR-A, a name the game accepts, spelled one way everywhere"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
