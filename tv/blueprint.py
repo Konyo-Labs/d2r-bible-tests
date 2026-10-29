@@ -161,6 +161,40 @@ def ledgers():
     return out
 
 
+#: The board's durable stores (bible.html's localStorage keys) a reader looks for by NAME, each with the parts that live
+#: INSIDE it and that no grep for a key would find - a copy traded out is a row of d2r_vaultRecords.tradedOut, not a store
+#: of its own. REG-3094 (#83) found both of these named nowhere in this map or HEART.md. NOT every key: the ones named so
+#: far. DERIVED each render from the board's code: how often it names the key and each part; 0 means the name left the code
+#: and this entry is stale, and an unreadable board is UNKNOWN, never 0.
+BOARD_STORES = (
+    ("d2r_vaultRecords", "the vault's copy records - one row per copy (its cell, its trade slot); the D2JSP History and "
+                         "the traded count read it", (
+        ("records", "one row per copy: name, copyIx, cell; trade {state listed, at, post} while a copy is listed (REG-2878)"),
+        ("tradedOut", "one row per copy traded out {name, copyIx, at ISO, post}, the newest _VR_TRADED_MAX kept; the ONE "
+                      "source for a traded copy (REG-2883), read by _vaultTradedOf/_vaultTradedNames/_vaultTradedRead"),
+    )),
+    ("d2r_d2jsp_log", "the D2JSP desk's post log, per item name: rows {at 'YYYY-MM-DD HH:MM UTC', board, kind "
+                      "confirmed|maybe|missed|traded|for-sale, text, why, sent, topic, list}, the newest D2JSP_LOG_MAX kept "
+                      "(REG-2872); forked per profile; the card's Attempts and the tab's History (REG-3094) read it", ()),
+)
+
+
+def board_stores():
+    """-> [(key, why, n, [(part, why, n)])] - n is how often the board names the key (quoted) or the part (as a property,
+    `.tradedOut`), or None when the board is unread."""
+    try:
+        with io.open(os.path.join(REPO, "bible.html"), encoding="utf-8", errors="replace") as fh:
+            page = fh.read()
+    except Exception:
+        page = None
+    out = []
+    for key, why, parts in BOARD_STORES:
+        n = None if page is None else len(re.findall(r"['\"]%s['\"]" % re.escape(key), page))
+        out.append((key, why, n, [(p, pw, None if page is None else len(re.findall(r"\.%s\b" % re.escape(p), page)))
+                                  for p, pw in parts]))
+    return out
+
+
 def readers():
     """The two game readers and the surfaces they are declared to serve."""
     try:
@@ -649,6 +683,15 @@ def render():
         A("    %-24s %-6s %8s  %s"
           % (f, ("live" if exists else "empty"), (("%d B" % size) if exists else "-"), why))
     A(LIVE_END)
+    A("")
+    A("## BOARD STORES — the board's durable keys, and what lives inside them")
+    A("")
+    A("Named so far, not every key. Each count is how often the board's code names it; 0 means the entry is stale.")
+    A("")
+    for key, why, n, parts in board_stores():
+        A("    %-22s %s  %s" % (key, ("named x%d" % n) if n is not None else "UNKNOWN (bible.html unread)", why))
+        for part, pwhy, pn in parts:
+            A("      .%-20s %s  %s" % (part, ("named x%d" % pn) if pn is not None else "UNKNOWN", pwhy))
     A("")
     A("## WILSON — one statistic, every lane that scores itself")
     A("")
