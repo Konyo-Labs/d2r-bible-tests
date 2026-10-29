@@ -1465,7 +1465,7 @@ RED_PROOF = [
     },
     {"why": "REG-2185: a magic planner pick writes over the record he already has and wipes its receipt and verdict",
      "file": "bible.html",
-     "find": "      var _mfHad = (beforeMagic && !keepFresh && magicFinds[nm] && typeof magicFinds[nm] === 'object') ? magicFinds[nm] : null;\n      if (_mfHad){\n        if (!_mfHad.q) _mfHad.q = magicQ;\n        if (!_mfHad.base && baseName) _mfHad.base = baseName;\n        if ((!_mfHad.mods || !_mfHad.mods.length) && mods && mods.length) _mfHad.mods = mods;\n      } else {\n        magicFinds[nm] = { q: magicQ, base: baseName, mods: mods };\n      }\n",
+     "find": "      var _mfHad = (beforeMagic && !keepFresh && magicFinds[nm] && typeof magicFinds[nm] === 'object') ? magicFinds[nm] : null;\n      if (_mfHad){\n        if (!_mfHad.q) _mfHad.q = magicQ;\n        if (!_mfHad.base && baseName) _mfHad.base = baseName;\n        if ((!_mfHad.mods || !_mfHad.mods.length) && mods && mods.length && !_mfAnother) _mfHad.mods = mods;\n      } else {\n        magicFinds[nm] = { q: magicQ, base: baseName, mods: mods };\n      }\n",
      "replace": "      magicFinds[nm] = { q: magicQ, base: baseName, mods: mods };\n",
      "matches": 1},
     {"why": "REG-2185: a second runeword of the same name writes over the first one's base, sockets and affixes",

@@ -151,7 +151,7 @@ class EachCopyCarriesItsOwnEntry(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-2844 - the planner files a copy and records nothing that tells it apart",
      "file": "bible.html",
-     "find": "    if (!magicQ && kept && _vpMade.copyIx != null && typeof window._vaultCopyEntrySet === 'function'){\n",
+     "find": "    if (kept && _vpMade.copyIx != null && typeof window._vaultCopyEntrySet === 'function'){\n",
      "replace": "    if (false){\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-2844 - the record row drops the entry",

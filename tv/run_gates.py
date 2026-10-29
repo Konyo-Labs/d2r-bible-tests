@@ -13261,6 +13261,14 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_two_small_charms_of_vita_are_two_copies.py")], 300,
          needs_app=False,
          why='#202 P3b (REG-2972): a keeper read with other mods is another copy with its own, never written over the first (checker and photo intake, one door)'),
+    Gate("test_a_magic_keeper_is_a_record_on_every_surface",
+         [sys.executable, os.path.join(HERE, "test_a_magic_keeper_is_a_record_on_every_surface.py")], 300,
+         needs_app=False,
+         why='#202 P3b (REG-2971): every Magic & Rare keeper is a record per copy, homed by the keeper rule, and the card draws one cell per copy'),
+    Gate("test_a_magic_copy_is_asked_or_filed_by_its_mods",
+         [sys.executable, os.path.join(HERE, "test_a_magic_copy_is_asked_or_filed_by_its_mods.py")], 300,
+         needs_app=False,
+         why="#202 P3b (REG-2973): a keeper picked again in the planner is asked or filed as another copy by its mod lines, and no copy's mods reach another"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
