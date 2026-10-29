@@ -300,11 +300,16 @@ class AHandAddRoutesByType(unittest.TestCase):
         o = board().run(READ + "try { switchTab('vault'); } catch (e) {} await new Promise(function(r){ setTimeout(r, 500); });"
                         "var i = document.getElementById('vault-find-input'); i.value = 'arcan'; i.dispatchEvent(new Event('input', { bubbles: true })); await new Promise(function(r){ setTimeout(r, 900); });"
                         "var res = document.getElementById('vault-find-results'); OUT.hidden = res.hidden; OUT.text = res.textContent;"
-                        "OUT.to = moveOf(\"Arcanna's Sign (amulet)\").map(function(m){ return m.to.cell; });")
+                        "OUT.to = moveOf(\"Arcanna's Sign (amulet)\").map(function(m){ return m.to.cell; });"
+                        # REG-3013 - FIND says the target in its own words since REG-2884 ("Mule 1 · Personal stash · col 1 ·
+                        # row 1"), never the raw "stash:c0r0": the page's own cell resolver gives the col and row it must name
+                        "OUT.at = OUT.to.map(function(c){ var a = window._vaultCellAt ? window._vaultCellAt(c) : null;"
+                        "  return a ? ('col ' + (a.x + 1) + ' \u00b7 row ' + (a.y + 1)) : null; });")
         self.assertFalse(o["hidden"], "typing in FIND ON A MULE showed nothing")
         self.assertIn("Arcanna's Sign", o["text"])
         self.assertIn("SETS-REST", o["text"], o["text"])
-        self.assertTrue(o["to"] and o["to"][0] in o["text"], "FIND does not name the cell: %r / %r" % (o["text"], o["to"]))
+        self.assertTrue(o["to"] and o["at"] and o["at"][0], "PREMISE: the move target did not resolve to a cell: %r" % o)
+        self.assertIn(o["at"][0], o["text"], "FIND does not name the cell: %r / %r" % (o["text"], o["to"]))
         self.assertNotIn("cell UNKNOWN", o["text"])
 
     def test_a_hand_added_unruled_set_piece_gets_a_manual_row_not_throw_out(self):
