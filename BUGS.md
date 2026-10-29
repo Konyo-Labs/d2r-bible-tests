@@ -2551,6 +2551,24 @@ decided "a store of counts" by SHAPE (every value a number), and d2r_stashMeta i
 here and {} in the file compared unequal. A store of counts is now named (runes, gems, materials, copies, multi-keep) and
 every other store is counted by its entries; null, '', {} and [] are one fact, so a store empty on both sides is not a
 change. Law: test_a_profile_carries_what_its_vault_reads (3 cases, 2 red-proofs, 1 re-aimed; 7 of 7 RED).
+### REG-3090 - ON A PHONE THE TRAY COLUMN SAT OVER THE RIGHT EDGE OF THE CONTENT (#224, his Q12 2026-10-29: bottom bar on phones)
+Found on the vault-copies and vault-find-copies renders at 375 (v3822): the v704 tray column - help, compass, the
+tab-scoped S2 legend, the inbox, MOVE TASKS, 44px orbs at right:12px stacked up from the dock - sat over the right ~40px of
+the vault column; the locker plates ran under it and FIND's wrapped row lost the ends of words under the compass. The
+render gate read it covered 0/1 (it samples the middle of an element) and the gutter law reserves one card only. His
+ruling: a bottom bar on phones, low priority. At <=600px the column now turns on its side in a bar of its own under the
+dock (#tray-bar, --tray-bar-h 56px): each orb keeps its column slot, counted from the corner (help right:12px, then 52px
+a slot; the three tab-scoped legends still share one), anchored 6px inside the bar instead of climbing on --dock-h. The
+bar reserves its own height: the dock sits on it, and the dock's own measurement folds the bar into --dock-h
+(window._dockReserve; the band's static first-paint value and the collapsed padding carry it too), so the body's bottom
+padding, the TZ pill, the backup nudge and the inbox panel's cap all clear it with no second number; crossing the band
+re-measures (matchMedia). The popovers open from the bar, 8px from each side. Desktop is unchanged (--tray-bar-h is 0
+above 600px, the bar is not drawn, and the fold adds nothing for 0); on a short phone (<=480px tall) the orbs already
+yield (REG-2862) and the bar goes with them. Law: test_on_a_phone_the_tray_is_one_bottom_bar (the stylesheet + the
+fold driven in node), 6 red-proofs, RED. Pixels: render target `phone-bar` at 375x800 and 600x900 (the bar is the
+bottom edge, every orb on screen sits in it, and a locker plate's right end hit-tests as the plate) - CI's, never run
+on his Mac, so UNPROVEN until CI renders it.
+
 ### REG-3074 - NOTHING HELD THE RULE THAT A LOCK NEVER EARNS MORE REFUSALS THAN ATTEMPTS (#84, GrokBot #230 2026-10-12)
 GrokBot read the Heart fan twice on v3679/v3680 as "printer.stream earned 138/135" (earned above its total). Measured:
 v3680's own self_arming over v3680's own ledger scores printer.stream k=135 n=135 (657 rows, 0 row faults; its folded
