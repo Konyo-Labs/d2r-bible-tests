@@ -13555,8 +13555,9 @@ function d2jspBatchHtml(view) {
      list had no surface left. This reads both and writes neither: every name's post log rows, listed or not, and the vault's
      traded rows, the one source for a traded copy. A log 'traded' / 'for-sale' row speaks only for a name the vault does not
      track (a planner pick); for a name it does, the vault's rows are the trade. Both clocks read to one epoch and show in one
-     spelling; a time that does not read says "time UNKNOWN" and sorts last. With no vault on the page the trades are
-     UNKNOWN, never none. (Boundary: a vault store whose JSON does not parse reads as no traded rows - _vaultTradeOf's rule.) */
+     spelling; a time that does not read says "time UNKNOWN" and sorts last. A store that will not read - the post log, or the
+     vault's records (no vault on the page, or JSON that does not parse: window._vaultTradedRead) - makes its half UNKNOWN,
+     never none, and the count says so. */
   function histTime(s){
     var v = String(s == null ? '' : s).trim();
     if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/.test(v)) v = v.slice(0, 16).replace(' ', 'T') + ':00Z';   /* the post log's spelling */
@@ -13564,13 +13565,25 @@ function d2jspBatchHtml(view) {
     return isFinite(t) ? t : null;
   }
   function histWhen(t){ return t == null ? 'time UNKNOWN' : (new Date(t).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'); }
+  /* the post log as stored, or null when it will not read (readMap's {} would say "no post" for a store that is there) */
+  function historyLog(){
+    var s = store();
+    if (!s) return null;
+    try {
+      var raw = s.getItem('d2r_d2jsp_log');
+      if (raw == null || raw === '') return {};
+      var v = JSON.parse(raw);
+      return (v && typeof v === 'object' && !Array.isArray(v)) ? v : null;
+    } catch (e) { return null; }
+  }
   function historyRows(){
-    var out = [], log = readMap('d2r_d2jsp_log'), held = tradeNames(), gone = null, tracked = {};
-    if (held != null && typeof window._vaultTradedNames === 'function' && typeof window._vaultTradedOf === 'function') {
+    var out = [], log = historyLog(), held = tradeNames(), gone = null, tracked = {};
+    if (held != null && typeof window._vaultTradedNames === 'function' && typeof window._vaultTradedOf === 'function'
+        && typeof window._vaultTradedRead === 'function' && window._vaultTradedRead()) {
       try { gone = window._vaultTradedNames() || []; } catch (eG) { gone = null; }
     }
     (held || []).concat(gone || []).forEach(function(n){ tracked[n] = 1; });
-    Object.keys(log).forEach(function(n){
+    Object.keys(log || {}).forEach(function(n){
       (Array.isArray(log[n]) ? log[n] : []).forEach(function(r){
         if (!r || typeof r !== 'object') return;
         if ((r.kind === 'traded' || r.kind === 'for-sale') && (gone == null || tracked[n])) return;
@@ -13588,13 +13601,15 @@ function d2jspBatchHtml(view) {
       });
     });
     out.sort(function(a, b){ return (a.t == null || b.t == null) ? ((a.t == null) - (b.t == null)) : (b.t - a.t); });
-    return { rows: out, vault: gone != null };
+    return { rows: out, log: log != null, vault: gone != null };
   }
   function historyHtml(){
-    var h = historyRows();
-    var note = h.vault ? '' : '<p class="d2jsp-say" data-d2jsp-history-trades="unknown">Trades: UNKNOWN. The vault would not read on this page, so no traded copy is shown.</p>';
-    if (!h.rows.length) return '<summary>History (0)</summary>' + note + '<p class="d2jsp-say" data-d2jsp-history="none">' + (h.vault ? 'No post or trade yet.' : 'No post yet.') + '</p>';
-    return '<summary>History (' + h.rows.length + ')</summary>' + note + '<ol>' + h.rows.map(function(r){
+    var h = historyRows(), whole = h.log && h.vault;
+    var head = '<summary>History (' + h.rows.length + (whole ? '' : ', some UNKNOWN') + ')</summary>'
+      + (h.log ? '' : '<p class="d2jsp-say" data-d2jsp-history-posts="unknown">Posts: UNKNOWN. The post log would not read, so no post is shown.</p>')
+      + (h.vault ? '' : '<p class="d2jsp-say" data-d2jsp-history-trades="unknown">Trades: UNKNOWN. The vault would not read on this page, so no traded copy is shown.</p>');
+    if (!h.rows.length) return head + (whole ? '<p class="d2jsp-say" data-d2jsp-history="none">No post or trade yet.</p>' : '');
+    return head + '<ol>' + h.rows.map(function(r){
       return '<li data-kind="' + esc(r.kind) + '" data-src="' + r.src + '">' + esc(histWhen(r.t)) + ' · ' + esc(r.name) + r.body + '</li>';
     }).join('') + '</ol>';
   }
@@ -56147,13 +56162,14 @@ window.vaultAutoAssign = function(){
     if (!_vaultTradeMemo || _vaultTradeMemo.raw !== raw) {
       var by = {};
       var gone = {};
+      var bad = false;
       try { var _st = JSON.parse(raw || '{}');
         (_st.records || []).forEach(function(r){
           if (r && r.name != null && r.trade && r.trade.state) (by[r.name] = by[r.name] || []).push({ ci: r.copyIx || 0, state: r.trade.state, at: r.trade.at || null, post: r.trade.post || null }); });
         (Array.isArray(_st.tradedOut) ? _st.tradedOut : []).forEach(function(t){   /* REG-2883 the copies that left */
           if (t && t.name != null) (gone[t.name] = gone[t.name] || []).push({ at: t.at || null, post: t.post || null }); }); }
-      catch (eP) { by = {}; gone = {}; }
-      _vaultTradeMemo = { raw: raw, by: by, gone: gone };
+      catch (eP) { by = {}; gone = {}; bad = true; }
+      _vaultTradeMemo = { raw: raw, by: by, gone: gone, bad: bad };
     }
     return _vaultTradeMemo.by[String(name)] || [];
   }
@@ -56161,7 +56177,14 @@ window.vaultAutoAssign = function(){
   /* REG-2883 - the copies of a name traded out (newest kept), and every name with one -> [{at, post}] | [names] */
   function _vaultTradedOf(name){ _vaultTradeOf(''); return (_vaultTradeMemo && _vaultTradeMemo.gone[String(name)]) || []; }
   function _vaultTradedNames(){ _vaultTradeOf(''); return _vaultTradeMemo ? Object.keys(_vaultTradeMemo.gone) : []; }
-  try { window._vaultTradeOf = _vaultTradeOf; window._vaultListedSay = _vaultListedSay; window._vaultTradedOf = _vaultTradedOf; window._vaultTradedNames = _vaultTradedNames; } catch (eTo) {}
+  /* REG-3094 - did the traded rows read? false when the records store would not read or parse, where the two above say none */
+  function _vaultTradedRead(){
+    var raw = null;
+    try { raw = window.LSR.getItem(_VR_STORE_KEY); } catch (eR) { return false; }
+    _vaultTradeOf('');
+    return !!(_vaultTradeMemo && _vaultTradeMemo.raw === raw && !_vaultTradeMemo.bad);
+  }
+  try { window._vaultTradeOf = _vaultTradeOf; window._vaultListedSay = _vaultListedSay; window._vaultTradedOf = _vaultTradedOf; window._vaultTradedNames = _vaultTradedNames; window._vaultTradedRead = _vaultTradedRead; } catch (eTo) {}
   var _vaultPlanMemo = null;
   function _vaultPlanOn(muleId){
     if (muleId == null || typeof _vaultMoveBag !== 'function') return null;
