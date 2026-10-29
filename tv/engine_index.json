@@ -3130,5 +3130,25 @@
     "gotcha": "A console that cannot be asked prints nothing (never a false all-clear); a fault that clears and returns is new again, and a proposal arriving for a shown fault is news.",
     "purpose": "The overwatch line: each PC's unknown faults and failed repairs from the local /api/fleet, printed once per (PC, fault) for a UserPromptSubmit hook.",
     "territory": "heart-organs"
+  },
+  "console_port.py": {
+    "entryPoints": [
+      "port",
+      "url"
+    ],
+    "gotcha": "A value of TV_CONTROL_PORT that will not read names NO console (None), never his :17772; his console is the default only when nothing in the environment names one. DELIBERATE lists the files that name his ports on purpose - test_a_scratch_console_never_addresses_his fails on a his-port number anywhere else in tv/*.py.",
+    "purpose": "REG-2998 - the one helper through which a process addresses its OWN console (TV_CONTROL_PORT), so a scratch console a law spawns never reads or drives his live console or agent port by name.",
+    "territory": "console-ui"
+  },
+  "render_bless.py": {
+    "entryPoints": [
+      "report",
+      "plan",
+      "apply",
+      "main"
+    ],
+    "gotcha": "A floor rises only to min(CI's count, this machine's push-gate count), and only where the push gate's own last FULL clean run measured above it (tv/.render_verdict.json coverageStale); a partial verdict or an incomplete CI record is refused whole, a LIVE population (render_check.COVERAGE_VOLATILE) is never raised, and nothing is ever lowered. It needs no browser - it reads the record CI's render-bless job uploaded.",
+    "purpose": "REG-3081/3083 (#2) - reads the coverage bless CI's render-bless workflow made on a full cold run and applies the floors that may rise on this machine, without running a browser here.",
+    "territory": "render-pixels"
   }
 }
