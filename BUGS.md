@@ -123,6 +123,27 @@ The two profile-publish laws stand a fixture in for _profile_saves, so no law re
 Law test_the_characters_room_says_why_its_saves_name_what_they_name (the room on the whole page in node, the upload in
 Python), 8 cases, 8 red-proofs RED, baseline green. 24 neighbours ran green (6 node-only laws refused by safe_laws for a
 test import, read and run by hand); the signed-publish, presence-beacon, shadow and mule-window Chrome laws go to CI.
+### REG-3096 - A SHADOW'S DRAGS AND ITS VAULT / D2JSP / TV·D / RUNES TABS WERE UNKNOWN; MEASURED: NOTHING WRITES (#194, code half)
+GrokBot proved on the guest at v3806 that 0 stores change across 40 controls x 11 tabs in a shadow, and left two parts
+UNKNOWN: drag (vault tiles, dock to mule, mule to mule) and the Vault, d2jsp, TV·D and Runes tabs, which had no store counter
+to compare. The whole page now boots twice in node (vault_page_node): his board with a vault filed by the page's own doors
+(hand adds, vaultAssign to two lockers, one tile placed by hand), then a viewer's board in a snapshot shadow of exactly those
+stores (?tvd-shadow=1, the snapshot on the parent, the page's own shadow boot and veil). Driven in each: five drags by the
+page's own handlers (the right click that unlocks a placed tile, the keyboard carry, a tile pointer-dragged to an empty cell
+and onto a Mule tab, a dock chip dropped on a locker's plate) and every control the four tabs paint (475 in the shadow:
+press, click, keys, input/change, right click, drag start/over/drop/end), in a browser's event order through the page's own
+listeners. On his board every drag writes (d2r_mulePos, d2r_muleAssign) and 99 controls write - the baseline that the
+harness sees a write. In the shadow: no drag starts (each first event stopped) and none writes; no control writes or tries
+to (the storage door, LSR.setItem, is watched, since it drops a shadow's write at its first line); the viewer's real
+storage gets nothing; the 5 requests attempted (the D2JSP prices and sign-in, GETs) are refused by the veil and nothing
+reaches the network. No defect found, so no code changed. Named, not changed: a tab open attempts switchTab's d2r_activeTab
+straight into the frame's memory store, whose setItem the boot made a no-op (it lands nowhere), and the MOVE TASKS toggle
+(a VIEW handler) asks the door to keep vaultTasksOpen, view state the door drops. The harness rebinds vault_page_node's
+top-level store const inside this law (two asserted anchors) so the page's bare `localStorage` is the window's property, as
+in a browser - otherwise the shadow boot refuses to open ("would not isolate"). Law:
+test_a_shadow_writes_nothing_by_drag_or_on_four_tabs (11 tests, 6 red-proofs on the veil, each RED). NEEDS LIVE (#194):
+GrokBot repeats the drags and the four tabs on the ALT's shadow with a store counter, once the ALT is online.
+
 ### REG-3103 - IN A SHADOW FIND ON A MULE TOOK NO LETTER, AND AN EMPTY CELL STILL OFFERED THE ADD (#230, GrokBot v3838 07:08-07:25)
 GrokBot in the ALT's and the Mac's shadow: FIND on a mule ("Which mule holds it?") took the focus, and typing "Wraith Scarab"
 or "Nightwing" left it empty with no result. The shadow's key filter passed only the keys that move the view, Enter/Space on
