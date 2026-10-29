@@ -2551,6 +2551,32 @@ file row with k > n - and no law named either. Test-only: a law that holds both 
 writes nothing; a forged 138/135 row reads UNKNOWN and may() stays LOCKED) and holds the shape over the tracked
 ledger (every lock and route: k <= n, attacksPassed <= attacks <= n). The fan-caption overlap half of #84 is NEEDS
 LIVE. Law: test_a_lock_never_publishes_more_refusals_than_attempts (python), 2 red-proofs, RED.
+### REG-3067 - ONE SESSION THAT SAW A COPY IN TWO PLACES WAS SETTLED BY A GUESS (his done rule 2026-10-28 18:56, #202)
+His done rule: "same-session conflict -> a question". A read at a copy's target and a read somewhere else from the SAME
+session cannot both be where it is now, and REG-2843 let the newer read win - a guess inside one session: measured on the
+whole page in node, a half-way task (seen once at its target by S1) was reopened by S1's own read elsewhere, and a read at
+the target after S1's read away would have counted toward closing it. Now one session in two places keeps both sightings as
+a question on the row - "Seen at its target and at <place> in the same session - which is it?" - and until he answers the
+copy's place is UNKNOWN: neither in place (a verified row opens again, and "in place N of M" counts it apart, REG-3065) nor
+moved. He answers with window.vaultConflictAnswer: "At its target" counts that session's read there and sets the other
+aside on record; "At <place>" drops the read at the target, and the copy is seen away, so REG-3066 asks next. A read from
+another session also settles it. His own tick is his answer already, so it raises no question. A shadow is read only.
+Law: test_a_copy_seen_away_from_its_spot_is_asked (with REG-3066), 6 red-proofs.
+
+### REG-3066 - A COPY SEEN AWAY FROM ITS SPOT WAS NEVER ASKED ABOUT, AND WHERE IT WAS SEEN WAS DROPPED (his model 2026-10-28 19:08, #202)
+His model: the console locks each copy to its spot, and "a copy seen off its locked spot is a deviation (doubt -> task)
+unless a move task explains it". A read somewhere other than a copy's FROM or TO set its task 'moved-elsewhere' and dropped
+WHERE it was seen, so its row could not ask "did you move it there?" and nothing could take an answer. Now the task keeps
+that sighting (elsewhere) and every sighting he sets aside (setAside). Its row says "moved?", and the opened row asks "Seen
+at <place> on <date> - did you move it there?":
+- Yes: his hand moves the spot there, through REG-2787's one door for a hand-placed cell (_vaultMoveRetargetCell, "new
+  target: you moved it here"), and the task is his tick at that spot; Untick takes the tick back. A place that is not one of
+  his lockers is refused, and nothing moves.
+- No: the task stays open and that sighting is set aside on the task, recorded with his answer, never deleted.
+A read back at its FROM or at its target clears the question. A shadow is read only: the door refuses there and writes
+nothing. Law: test_a_copy_seen_away_from_its_spot_is_asked (node, the whole page), 6 red-proofs, RED. The question's
+buttons are not checked on pixels here (CI or GrokBot).
+
 ### REG-3065 - NOTHING SAID HOW MANY COPIES ARE IN PLACE (his intake design 2026-10-28 18:56, #202)
 His extension to the intake design: "the readout shows 'in place N of M'". The MOVE TASKS list said only MOVE TASKS, and the
 read-only readout (window._vaultCopyAudit) said nothing of it, so nothing told him how far along he is. Now, of the copies
