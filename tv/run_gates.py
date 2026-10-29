@@ -13397,6 +13397,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_his_placement_survives_the_reload_whoever_saves.py")], 300,
          needs_app=False,
          why="REG-3099 #148 - his __keep placement of a shared-stash item (Key of Hate) survives the reload whichever step saves the mule map first; the render prune reads the whole owned pool, never the dock's"),
+    Gate("test_a_war_mule_whose_overflow_is_gone_is_no_longer_a_task",
+         [sys.executable, os.path.join(HERE, "test_a_war_mule_whose_overflow_is_gone_is_no_longer_a_task.py")], 300,
+         needs_app=False,
+         why='REG-3101 #153 - a war mule the board made loses its make-it-in-the-game task once nothing he owns lands on it, and MOVE TASKS says why; one he made in the game or renamed keeps it; the undo brings it back'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
