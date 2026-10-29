@@ -13329,6 +13329,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_this_pc_names_its_characters_from_its_saves.py")], 300,
          needs_app=False,
          why="#251 REG-2925 - this PC's save folder names its characters by their exact spelling (Windows Saved Games, every CrossOver bottle on a Mac); no account id and no file time leaves, and no folder is UNKNOWN, never empty"),
+    Gate("test_the_console_answers_this_pcs_save_names",
+         [sys.executable, os.path.join(HERE, "test_the_console_answers_this_pcs_save_names.py")], 300,
+         needs_app=False,
+         why="#251 REG-2926 - GET /api/saves answers this PC's save names from d2s_read.saves(), kept while the save folders stand still and read again the moment one changes; a failure is UNKNOWN, never an empty roster"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
