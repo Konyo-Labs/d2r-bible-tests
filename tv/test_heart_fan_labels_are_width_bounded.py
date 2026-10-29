@@ -90,7 +90,9 @@ class HeartFanLabelsAreWidthBounded(unittest.TestCase):
         # ONE of the three stacked lines left two behind and the law stayed green while a third of
         # the fan had left the vocabulary. A presence check over a set is a check on the set's
         # loudest member. [[zero-needs-a-denominator]]
-        n_fan = self.raw.count('class="hrt-fan')
+        # REG-3091 - the three lines are now DECLARED as a stack's lines (`cls: 'hrt-fan ...'`) and drawn after the
+        # placement pass, so a line is counted in either form; renaming one still drops the count below three.
+        n_fan = self.raw.count('class="hrt-fan') + self.raw.count("cls: 'hrt-fan ")
         self.assertGreaterEqual(
             n_fan, 3,
             "only %d fan label line(s) carry the `hrt-fan` class; each lock draws THREE (name, "

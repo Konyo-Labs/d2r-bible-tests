@@ -13389,6 +13389,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_container_look_is_whole_or_a_question.py")], 300,
          needs_app=False,
          why="REG-3105 (#158 P4): a container's look is a full look only when one layout of the session's named reads explains every taken cell once; anything less is a question to him with the evidence (a shared page's number, cells never named, conflicts), read only in a shadow"),
+    Gate("test_the_fan_captions_never_overlap",
+         [sys.executable, os.path.join(HERE, "test_the_fan_captions_never_overlap.py")], 300,
+         needs_app=False,
+         why="REG-3091 the heart fan's captions never land on each other or on a vessel name: each stack is placed from its width before it is drawn"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
