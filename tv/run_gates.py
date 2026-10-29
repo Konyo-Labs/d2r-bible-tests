@@ -14669,3 +14669,7 @@ if __name__ == "__main__":
          [sys.executable, os.path.join(HERE, "test_a_ci_bless_never_outruns_the_push_gate.py")], 300,
          needs_app=False,
          why="#2 REG-3083 - a floor CI blessed rises here only to min(CI, this machine's push gate), only where the push gate measured above it too; incomplete records and unclean verdicts are refused whole"),
+    Gate("test_ci_blesses_coverage_on_a_full_cold_run",
+         [sys.executable, os.path.join(HERE, "test_ci_blesses_coverage_on_a_full_cold_run.py")], 300,
+         needs_app=False,
+         why="#2 REG-3081 - the render-bless workflow blesses the full set on a cold checkout, uploads the floor, diff, log and record even on a refusal, never commits, and its verdict is render_check's"),

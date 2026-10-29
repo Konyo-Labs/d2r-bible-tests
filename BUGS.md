@@ -731,6 +731,30 @@ REG-3087, 3088, 3089 and 3098). The rejuv and the two materials the door refuses
 GUARD: tv/test_a_sweep_apply_claims_possession_only_through_the_vault_door.py, 5 cases on a payload of the console's own
 shape (fixture names), his hand's two doors included. 3 red-proofs, RED. Re-aimed test_a_tv_stub_never_outranks_what_the_name_is:
 its chronicle rows carried no look and were owned by toggleOwned's ungated arm; they now carry two sessions' looks.
+### REG-3081 - THE STALE COVERAGE FLOORS COULD BE RE-BLESSED NOWHERE (#2, still broken in its own note)
+Task #2 names ~30 stale floors in tv/render_coverage.json: the push gate measures more nodes than the floor holds, so
+that many watched nodes could vanish inside a green run. `render_check.py --bless` raises them and needs a browser. His
+Mac does not run one for a suite, and no workflow ran it. NEW .github/workflows/render-bless.yml runs it on CI, under the
+bless's own refusal rules, unchanged:
+- the FULL set or nothing: no target is named, and a subset bless refuses;
+- every target clean: one red or UNKNOWN target refuses, and the record names it (REG-3082);
+- a floor only rises: a lower CI count is held and listed;
+- a cold tree: a fresh checkout every run, no restored sandbox (v3215).
+It starts by hand (workflow_dispatch, once on main) or from a push to ci/bless/**, never on main's pushes. Its token
+reads only and it never commits. TV_RENDER_SCALE is set to render_bound.CAP, since no push hook kills a slow run there and
+the job's own 40-minute ceiling stands.
+One artifact is uploaded even when the bless refuses: the floor, its diff, the log, the record (hidden files included)
+and the shots. The job summary is `render_bless.py report`, and the job's exit code is render_check's (PIPESTATUS, not
+tee's). The floors it hands back are applied with `render_bless.py apply` (REG-3083) on the machine whose push gate
+enforces them.
+Law test_ci_blesses_coverage_on_a_full_cold_run (the workflow text, comments dropped), 6 cases, 8 red-proofs RED,
+baseline green. The workflow is named in test_a_newer_ci_push_cancels_the_older_run's WORKFLOW_FILES, so its concurrency
+block is held with every other ci workflow's; that law, the slow-mirror law and the push-cache law are green.
+UNMEASURED: no run of the job yet. It needs a push to ci/bless/<x> or a dispatch from main. Expected blockers, read from
+the code: the heart targets draw from tv/.heart2.json, which a cold checkout lacks (REG-2451: six heart readings "shrank"
+unseeded). Their counts will be held, not written. If they also fail to RENDER, the record will name them and the bless
+refuses, and that is the next decision.
+
 ### REG-3083 - A FLOOR BLESSED ON CI COULD OUTRUN THE PUSH GATE THAT ENFORCES IT (#2)
 CI's render-bless job (REG-3081) measures from a cold sandbox on a Linux Chromium. The floor it writes is enforced by the
 push gate on his Mac. A CI count above what the Mac measures would refuse his next push ("measured X, was Y") over a node

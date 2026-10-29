@@ -120,6 +120,7 @@ def concurrency_for(name, ref, run_id, workflow=None):
 #: A NEW workflow file must be added here; the census below then decides whether a ci push can start it.
 WORKFLOW_FILES = (
     ".github/workflows/publish.yml",
+    ".github/workflows/render-bless.yml",
     ".github/workflows/routine-g-audit.yml",
     ".github/workflows/routine-h-item-sweep.yml",
     ".github/workflows/routine-i-playwright.yml",

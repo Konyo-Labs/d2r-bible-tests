@@ -1,0 +1,99 @@
+name: Render coverage bless
+
+# #2 (REG-3081) - THE COVERAGE FLOORS ARE RE-BLESSED WHERE A BROWSER MAY RUN: HERE, ON A FULL COLD RUN.
+#
+# tv/render_coverage.json is the render gate's ratchet: how many nodes each target photographed on a clean run, and it
+# may only rise. Task #2 names ~30 of its floors STALE: the push gate measures more nodes than the floor holds, so that
+# many watched nodes could vanish inside a green run. `render_check.py --bless` raises them, and it needs a browser, which his
+# Mac does not run for a suite. So the bless runs here, and its refusal rules are render_check's own, unchanged:
+#   * the FULL target set or nothing - this job names no target (a subset bless refuses);
+#   * every target clean - one red or UNKNOWN target refuses the whole bless, and the record names it (REG-3082);
+#   * a floor only rises - a lower CI count is HELD and listed, never written;
+#   * a COLD tree - a fresh checkout every run, so no seeded sandbox from an earlier render inflates a count (v3215).
+#
+# THIS JOB NEVER COMMITS. Its token reads the repo and nothing more. It uploads one artifact: the floor it wrote, the diff
+# against the tree it checked out, the log, and tv/.render_bless.json - the measurement under the floor. The floors stay
+# a measurement CI made. They are applied on the machine whose push gate enforces them, with
+# `python3 tv/render_bless.py apply <record>` (REG-3083), which raises a floor only as far as that gate measured too.
+#
+# HOW TO RUN IT: push the commit to a branch named ci/bless/<anything> (this file need not be on main yet), or, once it
+# is on main, Actions > Render coverage bless > Run workflow. The job's exit code is render_check's.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'ci/bless/**'
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+# gbl/ci-speed - A NEWER PUSH TO THE SAME ci/ BRANCH CANCELS THE OLDER RUN; MAIN IS NEVER CANCELLED.
+concurrency:
+  group: ${{ github.workflow }}-${{ startsWith(github.ref, 'refs/heads/ci/') && github.ref || github.run_id }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/heads/ci/') }}
+
+# read only: a bless is a measurement handed to a person, never a commit made on their behalf
+permissions:
+  contents: read
+
+jobs:
+  bless:
+    runs-on: ubuntu-latest
+    # a full pass is ~317 s at load 5 on his Mac (render_check._CLEAN_RUN_COST); TV_RENDER_SCALE below grants a slower
+    # runner 2.5x that before any read is clamped, and the job's own ceiling sits well above it
+    timeout-minutes: 40
+    env:
+      # render_bound.CAP - there is no push hook here to kill a slow run, only this job's ceiling
+      TV_RENDER_SCALE: "2.5"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # websocket-client is how render_check speaks CDP; Pillow and numpy are what its served console imports
+      - name: Install websocket-client + Pillow + numpy
+        run: python3 -m pip install --quiet websocket-client pillow numpy cryptography
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: pw-${{ runner.os }}-
+      - name: Install Chromium
+        timeout-minutes: 6
+        run: npx playwright install chromium
+      - name: OS deps for Chromium (best effort)
+        timeout-minutes: 3
+        continue-on-error: true
+        run: bash .github/scripts/chromium-os-deps.sh
+      # the FULL set, no target named: render_check refuses to bless anything less
+      - name: Bless on a full cold run
+        id: bless
+        run: |
+          set +e
+          python3 tv/render_check.py --bless 2>&1 | tee render-bless.log
+          rc=${PIPESTATUS[0]}
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          git diff -- tv/render_coverage.json > render_coverage.diff
+          python3 tv/render_bless.py report tv/.render_bless.json >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - name: Upload the floor, its diff, the log and the measurement
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: render-bless-${{ github.sha }}
+          path: |
+            tv/render_coverage.json
+            tv/.render_bless.json
+            render_coverage.diff
+            render-bless.log
+            tv/.render_shots/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+      # the verdict is render_check's: a refused bless is a red job, never a green one with a note
+      - name: The verdict is render_check's
+        run: |
+          rc="${{ steps.bless.outputs.rc }}"
+          exit "${rc:-2}"
