@@ -12933,6 +12933,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_guided_step_tick_waits_for_the_sweep.py")], 300,
          needs_app=False,
          why='REG-3114 (#202): his tick on a guided step records that he hovered it and waits for the next sweep - never closes the step, never cut by the cap, refused in a shadow'),
+    Gate("test_a_war_mule_whose_overflow_is_gone_is_no_longer_a_task",
+         [sys.executable, os.path.join(HERE, "test_a_war_mule_whose_overflow_is_gone_is_no_longer_a_task.py")], 300,
+         needs_app=False,
+         why='REG-3101 #153 - a war mule the board made loses its make-it-in-the-game task once nothing he owns lands on it, and MOVE TASKS says why; one he made in the game or renamed keeps it; the undo brings it back'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

@@ -543,6 +543,23 @@ faithful, and each re-proved with bad 0:
 - test_every_owned_door_writes_provenance.
 28 safe neighbours and 3 node-only laws safe_laws refuses for a test import (run by hand) are green.
 
+### REG-3101 - A WAR MULE THE BOARD MADE KEPT ITS "MAKE IT IN THE GAME" TASK AFTER ITS OVERFLOW WAS GONE (#153, agent-111's whole-page audit)
+MEASURED on claude/int (836921abc), the whole page in node through the real doors: Shako x3 made WAR-A with "Create mule WAR-A
+in the game - the board made it (1 war stash copy had no cell); the moves to it are below". He removed the Shako (vaultRemove),
+or took two copies out (vaultRemoveCopy); no copy went to WAR-A any more, yet the line stayed, still on the tasks badge.
+His rules: the board makes WAR<n> when the shared pages overflow and tasks him to make it in the game (2026-10-28); his
+hand always wins. Now each make row asks _vaultWarMuleNeeded: does a copy he owns land on the mule in the war stash's own
+plan (the plan the maker reads: saved targets and fresh ones alike), or is a name he owns filed on it? A board-made war mule
+under the board's own name with nothing landing on it loses its make line, and MOVE TASKS says why in its place ("WAR-A -
+no longer needed: its overflow is gone ... The board keeps the mule it made; delete it if you will not need it"), never
+silently and not on the tasks badge. A war mule he made in the game, one the reader saw there, or one he renamed keeps what
+it had; CHARMS is no overflow's and keeps its line; move records UNKNOWN keep the task. The line is read off the plan on
+every paint, so his un-own's undo (vaultRestoreLast) brings it back. The mule itself STAYS on the roster: no door retracts
+a board-made mule, so that is asked of him, not decided.
+Law tv/test_a_war_mule_whose_overflow_is_gone_is_no_longer_a_task.py (node, whole page): 8 cases; red on int's page (3 of
+8: the removal, the copy-out, the filing), green here; 6 red-proofs, 6 RED. The 10 node-runnable war and make-line laws
+pass, REG-2803's declined world among them (an overflow seeded with no move record yet - the case that made the plan, not
+the move rows, the question). The Chrome war laws are CI's.
 ### REG-3042 - A SET PIECE OR A RUNEWORD IN THE MAGIC & RARE REGISTER WAS HOMED ON MAGIC & RARE (#163, GrokBot on Dean's shadow)
 Dean's saved records filed Aldur's Rhythm (a set piece) and Enigma (a runeword) on MAGIC & RARE. The file door has refused to treat
 a catalogue item as a keeper since REG-2854 (a grail unique, a set piece or a runeword draws from the catalogue on its own locker),

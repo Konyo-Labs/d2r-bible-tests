@@ -11392,6 +11392,7 @@ html:not([data-active-tab="vault"]) .vault-tasks-pop,html:not([data-active-tab="
 .vmv-half{color:var(--acc-intel);font-size:var(--fs-meta);font-weight:var(--fw-medium)}
 .vmv-chip[data-status="junk"]{color:var(--q-orange);border-color:rgba(255,168,0,.5)}
 .vmv-empty{margin:0;padding:8px 2px;font-size:var(--fs-body);color:var(--text-muted)}
+.vtk-make-gone{margin:0;padding:4px 2px;font-size:var(--fs-meta);color:var(--text-muted)}   /* REG-3101 a make task that is gone, said */
 #vault-auto-intake{font-family:var(--serif-display,serif);letter-spacing:var(--ls-wide);text-transform:uppercase;border-radius:999px;background:var(--surface-2);box-shadow:inset 0 1px 0 rgba(240,192,96,.16)}
 #vault-auto-intake[data-state="on"]{border-color:rgba(102,255,136,.55);color:var(--best);background:rgba(102,255,136,.08);box-shadow:0 0 16px rgba(102,255,136,.18),inset 0 1px 0 rgba(255,255,255,.08)}
 #vault-auto-intake[data-state="off"]{border-color:rgba(240,192,96,.4);color:var(--gold-dim);background:var(--surface-2)}
@@ -55711,6 +55712,28 @@ window.vaultAutoAssign = function(){
   function _vaultWarMakeRows(recs){
     return (roster || []).filter(function(m){ return !!(m && m.auto && !m.inGame && !_vaultMuleSeenInGame(m, recs)); });
   }
+  /* REG-3101 (#153, agent-111's whole-page audit) - A WAR MULE THE BOARD MADE FOR AN OVERFLOW THAT IS GONE IS NO LONGER A
+     TASK. Measured on the whole page in node: Shako x3 made WAR-A with its "Create mule WAR-A in the game" line; he removed the
+     Shako (vaultRemove) and no move row went to WAR-A any more, yet the line stayed, still saying "the moves to it are below".
+     Asked of a make row only (so never of a mule he made in the game or one the reader saw there - _vaultWarMakeRows already
+     leaves those out). A war mule whose name is not the board's own (a name he gave it) is his hand: kept. -> true when
+     something he owns lands on it now - a copy the war stash's own plan puts there (the plan the maker reads: saved targets,
+     done or open, and fresh ones alike), or a name he filed on it - or when that cannot be told: the move records UNKNOWN
+     keep the task, never drop it. CHARMS and every non-war mule the board made keep their line. */
+  function _vaultWarMuleNeeded(m){
+    var wn = _vaultWarRole(m);
+    if (!wn || m.id == null) return true;
+    if (m.name !== _vaultWarName(wn) && m.name !== 'WAR' + wn) return true;   /* a name he gave it: his hand */
+    try { if (window.LSR && typeof window.LSR.quarantined === 'function' && window.LSR.quarantined('d2r_vaultRecords')) return true; } catch (eQ) { return true; }
+    try {
+      var bag = _vaultMoveBag(), sh = (typeof muleById === 'function') ? muleById('shared') : null;
+      if (!bag || bag.unread || !sh) return true;
+      var plan = _vaultMovePackHome({ id: 'shared', holder: sh.name || 'SHARED STASH', location: 'shared' }, bag) || {};
+      if (Object.keys(plan).some(function(k){ var p = plan[k]; return !!(p && p.id === m.id && owned.has(k.split('\u0000')[0])); })) return true;
+    } catch (eP) { return true; }
+    try { return Object.keys(assign || {}).some(function(n){ return assign[n] === m.id && owned.has(n); }); } catch (eA) { return true; }
+  }
+  try { window._vaultWarMuleNeeded = _vaultWarMuleNeeded; } catch (eWn2) {}
   /* REG-2875 - A LOCKER'S NEXT MULE IS A CHARACTER HE MAKES. The window's Mule k of a locker is its own character in the
      game (its tip: "this category spans N mule characters (each = 100-cell stash + 40-cell inventory)"); Mule 2+ is not a
      roster entry, it is derived from the locker filling. So a task on a locker's Mule 2+ asks him first to make that
@@ -56856,6 +56879,8 @@ window.vaultAutoAssign = function(){
     var html = head;
     /* REG-2803 - "prompt me to create that same mule ingame so i get tasked to do it": first, before the moves that go to it */
     var makes = (typeof _vaultWarMakeRows === 'function') ? _vaultWarMakeRows(built.records) : [];
+    var _gone = [];   /* REG-3101 a war mule whose overflow is gone: no longer a task, and the list says why */
+    makes = makes.filter(function(m){ if (_vaultWarMuleNeeded(m)) return true; _gone.push(m); return false; });
     var pageMakes = (typeof _vaultPageMakeRows === 'function') ? _vaultPageMakeRows() : [];   /* REG-2875 a locker's next mule */
     if (makes.length || pageMakes.length) html += '<p class="vtk-sec" data-sec="make">Make in the game · ' + (makes.length + pageMakes.length) + '</p><ol class="vtk-list" data-sec="make">'
       + makes.map(function(m){
@@ -56870,6 +56895,10 @@ window.vaultAutoAssign = function(){
             + '<span class="vtk-say">Create mule <b>' + esc(r.name + ' #' + r.mule) + '</b> in the game — ' + esc(r.name) + ' is full up to Mule ' + (r.mule - 1)
             + ', so its Mule ' + r.mule + ' is a new character; the moves to it are below</span></li>';
         }).join('') + '</ol>';
+    if (_gone.length) html += _gone.map(function(m){   /* REG-3101 said, never silent; not a task, so not on the tasks badge */
+        return '<p class="vtk-make-gone" data-mule="' + esc(m.id) + '"><b>' + esc(m.name) + '</b> — no longer needed: its overflow is gone, so'
+          + ' making it in the game is not a task now (nothing you own lands on it). The board keeps the mule it made; delete it if you will not need it.</p>';
+      }).join('');
     if (moves.length) html += '<p class="vtk-sec" data-sec="moves">Moves · ' + moves.length + '</p>'
       + '<ol class="vtk-list" data-sec="moves">' + moves.map(line).join('') + '</ol>'; /* L1 (Elad v3778) one collapsed row per task, never a shared 'Location not seen yet' block */
     if (throws.length) html += '<section class="vmv-throw" data-holder="THROW OUT"><p class="vtk-sec" data-sec="throws">Throw-outs · ' + throws.length + '</p><ol class="vtk-list" data-sec="throws">' + throws.map(line).join('') + '</ol></section>';
