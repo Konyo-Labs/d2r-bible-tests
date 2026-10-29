@@ -46757,7 +46757,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       var ca = (typeof _vaultCellAt === 'function') ? _vaultCellAt(cell) : null;
       if (!ca) return String(cell);
       var at = 'col ' + (ca.x + 1) + ' · row ' + (ca.y + 1);
-      if (ca.loc === 'shared') return 'Page ' + (ca.page + 1) + ' · ' + at;
+      if (ca.loc === 'shared') return _sharedSpotSay(ca.page, ca.x, ca.y);   /* REG-3005 the one spelling */
       return 'Mule ' + (ca.page + 1) + ' · ' + (ca.loc === 'inventory' ? 'Inventory' : 'Personal stash') + ' · ' + at;
     }
     var res = document.getElementById('vault-find-results');
@@ -50066,7 +50066,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
         if (mid === 'shared'){
           var layO = _sharedLayout(_sharedNames().concat(planned));   /* #144.10 shared half (REG-2801) - the one layout */
           layO.pages.forEach(function(pgO, pi){ pgO.forEach(function(q){
-            if (planned.indexOf(q.n) >= 0 && !cells[q.n]) cells[q.n] = 'Page ' + (pi + 1) + ' · col ' + (q.x + 1) + ' · row ' + (q.y + 1); }); });
+            if (planned.indexOf(q.n) >= 0 && !cells[q.n]) cells[q.n] = _sharedSpotSay(pi, q.x, q.y); }); });   /* REG-3005 */
           return;
         }
         var load = (window._muleLoad || _muleLoad)(_muleNamesFor(mid).concat(planned), _mpWornFor(mid, _mpEqAll()), mid);
@@ -55764,7 +55764,7 @@ window.vaultAutoAssign = function(){
     var slotName = function(p){ return 'col ' + (p.x + 1) + ' · row ' + (p.y + 1); };
     /* #154.19 (REG-2735) - the shared stash's page tabs were divs with an onclick: a real tab button now (the mule tabs' own shape), so the keyboard reaches them */
     var tabs = lay.pages.map(function(p, i){ return '<button type="button" class="vd-tab' + (i === _sharedPage ? ' vt-on' : '') + '" role="tab" aria-selected="' + (i === _sharedPage) + '" onclick="window._sharedSetPage(' + i + ')">Page ' + (i + 1) + (p.length ? ' <b>' + p.length + '</b>' : '') + '</button>'; }).join('');
-    var list = pg.map(function(p){ return '<div>' + esc(p.n) + ' → <span class="vl-slot">PAGE ' + (_sharedPage + 1) + ' ' + slotName(p) + '</span></div>'; }).join('');
+    var list = pg.map(function(p){ return '<div>' + esc(p.n) + ' → <span class="vl-slot">' + esc(_sharedSpotSay(_sharedPage, p.x, p.y)) + '</span></div>'; }).join('');   /* REG-3005 the one spelling */
     var pageN = pg.length;
     var totalAll = lay.pages.reduce(function(a, p){ return a + p.length; }, 0) + lay.left.length;
     box.hidden = false; box.scrollTop = 0;
@@ -55960,6 +55960,12 @@ window.vaultAutoAssign = function(){
     return { loc: m[1], page: Math.floor(y / rows), x: +m[2], y: y % rows };
   }
   try { window._vaultCellAt = _vaultCellAt; } catch (eCa) {}
+  /* #144(a) REG-3005 - ONE SPELLING FOR A SHARED STASH CELL. The window's list wrote "PAGE 1 col 3 · row 1", FIND and the plan
+     wrote "Page 1 · col 3 · row 1", the MOVE row and its expand wrote "page 1 (3,1)", and a page-2 move cell read raw
+     ("shared:c2r10 · col 3 · row 11"). One fact, four spellings. Every surface that names a shared stash page and cell asks
+     this one helper. page, x, y are 0-based (the plan's own numbers). -> 'Page 1 · col 3 · row 1' */
+  function _sharedSpotSay(page, x, y){ return 'Page ' + ((+page || 0) + 1) + ' \u00b7 col ' + ((+x || 0) + 1) + ' \u00b7 row ' + ((+y || 0) + 1); }
+  try { window._sharedSpotSay = _sharedSpotSay; } catch (eSs) {}
   /* REG-2878 - A COPY'S TRADE SLOT, READ ONCE PER STORE TEXT for every surface that draws a copy (the card, the window, FIND,
      the MOVE row): -> [{ci, state, at, post}] of this name's copies that carry a slot */
   var _vaultTradeMemo = null;
@@ -56339,7 +56345,7 @@ window.vaultAutoAssign = function(){
         if (mid === 'shared'){
           /* #144.10 shared half (REG-2801) - the shared stash's one layout, and the over-cap copies on the WAR mules */
           var layF = _sharedLayout(_sharedDrawNames());
-          layF.pages.forEach(function(pgF, pi){ pgF.forEach(function(p){ if (p.n === nm) _put('Page ' + (pi + 1) + ' · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); }); });
+          layF.pages.forEach(function(pgF, pi){ pgF.forEach(function(p){ if (p.n === nm) _put(_sharedSpotSay(pi, p.x, p.y)); }); });   /* REG-3005 */
           _vaultWarCellsOf(nm, _put);
           if (!out.cell && layF.left.some(function(p){ return p.n === nm; })){ out.kind = 'over'; out.cell = 'the 5 shared pages are full - it goes to a WAR mule'; }
         } else {
@@ -56371,7 +56377,7 @@ window.vaultAutoAssign = function(){
       try {
         if (pg.id === 'shared'){
           var layW = _sharedLayout(_sharedDrawNames());   /* #144.10 shared half (REG-2801) */
-          layW.pages.forEach(function(pgW, pi){ pgW.forEach(function(p){ if (p.n === nm) _putW('Page ' + (pi + 1) + ' · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); }); });
+          layW.pages.forEach(function(pgW, pi){ pgW.forEach(function(p){ if (p.n === nm) _putW(_sharedSpotSay(pi, p.x, p.y)); }); });   /* REG-3005 */
           _vaultWarCellsOf(nm, _putW);
         } else {
           var eqW = _mpEqAll(), wornW = _mpWornFor(pg.id, eqW);
@@ -57921,6 +57927,7 @@ window.vaultAutoAssign = function(){
     var m = String(cell).match(/c(\d+)r(\d+)/);
     if (!m) return String(cell);
     var ca = _vaultCellAt(cell);   /* REG-2875 */
+    if (ca && ca.loc === 'shared') return String(cell) + ' · ' + _sharedSpotSay(ca.page, ca.x, ca.y);   /* REG-3005 the page, from the one helper */
     if (ca && ca.loc !== 'shared' && ca.page > 0) return String(cell) + ' · Mule ' + (ca.page + 1) + ' · col ' + (ca.x + 1) + ' · row ' + (ca.y + 1);
     return String(cell) + ' · col ' + ((+m[1]) + 1) + ' · row ' + ((+m[2]) + 1);
   }
@@ -57990,7 +57997,8 @@ window.vaultAutoAssign = function(){
        and a WAR mule reads as the war stash's overflow, as its move row does */
     function where(place, c){ var pm = _vaultMuleOfPlace(place), nm = (pm && pm.name) ? String(pm.name) : String(place.holder || 'not seen yet');
       if (pm && _vaultWarRole(pm) && c.page == null) return nm + ' (SHARED STASH · overflow) (' + (c.x + 1) + ',' + (c.y + 1) + ')';
-      return nm + (c.mule > 0 ? ' · Mule ' + (c.mule + 1) : '') + ' ' + (c.page != null ? 'page ' + (c.page + 1) : (_vaultMoveStashSay(place.location) || c.loc)) + ' (' + (c.x + 1) + ',' + (c.y + 1) + ')'; }
+      if (c.page != null) return nm + ' · ' + _sharedSpotSay(c.page, c.x, c.y);   /* REG-3005 a shared page cell in the one spelling */
+      return nm + (c.mule > 0 ? ' · Mule ' + (c.mule + 1) : '') + ' ' + (_vaultMoveStashSay(place.location) || c.loc) + ' (' + (c.x + 1) + ',' + (c.y + 1) + ')'; }
     function dims(loc){ return [10, (loc === 'inventory' || loc === 'inv') ? 4 : 10]; }
     function sz(n){ var s0 = (typeof vaultSize === 'function') ? vaultSize(n) : [1, 1]; return [s0[0] || 1, s0[1] || 1]; }
     var to = xy(t.to && t.to.cell), from = xy(t.from && t.from.cell);
@@ -58090,7 +58098,7 @@ window.vaultAutoAssign = function(){
       /* L1 the war stash page reads as its page and in-page cell. REG-2802 - "page", the word of his ruling ("those 5 pages")
          and of the shared stash window and FIND (REG-2801); the row said "tab" while they said "Page" for the same cell */
       if (m && /^shared:/.test(String(place.cell)))
-        return h + ' page ' + (Math.floor((+m[2]) / 10) + 1) + ' (' + ((+m[1]) + 1) + ',' + ((+m[2]) % 10 + 1) + ')';
+        return h + ' · ' + _sharedSpotSay(Math.floor((+m[2]) / 10), +m[1], (+m[2]) % 10);   /* REG-3005 the one spelling */
       if (_pm && _vaultWarRole(_pm)) h = h + ' (SHARED STASH · overflow)'; /* L1 a WAR mule reads as the war stash; REG-2804 by its role, never its name */
       var _ca = _vaultCellAt(place.cell);
       if (_ca && _ca.page > 0) return h + ' · Mule ' + (_ca.page + 1) + ' (' + (_ca.x + 1) + ',' + (_ca.y + 1) + ')';   /* REG-2875 the next mule of a full locker */

@@ -74,7 +74,7 @@ class RulesDriveEveryMove(unittest.TestCase):
         for r in o["rows"] or []:
             by.setdefault(r["n"], []).append(r["t"])
         self.assertIn("Enigma", by, "war gear filed on RUNEWORDS got no move row: %r" % o["rows"])
-        self.assertRegex(by["Enigma"][0], r"RUNEWORDS → SHARED STASH page \d \(\d+,\d+\)")   # REG-2802: the row says "page"
+        self.assertRegex(by["Enigma"][0], r"RUNEWORDS → SHARED STASH · Page \d · col \d+ · row \d+")   # REG-2802 "page"; REG-3005 the one spelling
         self.assertIn("Demon Limb", by, "war gear filed on UNI-WEAPONS got no move row: %r" % o["rows"])
         self.assertRegex(by["Demon Limb"][0], r"UNI-WEAPONS → SHARED STASH")
         self.assertNotIn("Nokozan Relic", by, "a correctly filed item got a move row")

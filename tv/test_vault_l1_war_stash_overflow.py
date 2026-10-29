@@ -143,7 +143,7 @@ class WarStashOverflow(unittest.TestCase):
             self.assertTrue(all(c and c[0] == "SHARED STASH" for c in cs), "%s left the war stash: %r" % (nm, cs))
             self.assertEqual(len(o["rows"]), n, "%s: not %d rows: %r" % (nm, n, o["rows"]))
             for r in o["rows"]:
-                self.assertRegex(r, r"MANUAL → SHARED STASH page [1-5] \(\d+,\d+\)")   # REG-2802: the row says "page"
+                self.assertRegex(r, r"MANUAL → SHARED STASH · Page [1-5] · col \d+ · row \d+")   # REG-2802 "page"; REG-3005 the one spelling
 
     def test_all_five_pages_fill_then_war1_then_war2(self):
         # the 600-copy fill leaves its page busy for minutes; the next test opens a fresh board instead of timing out on it
@@ -408,7 +408,7 @@ RED_PROOF = [
      "file": "bible.html", "find": "    if (_wf.length) unrHtml += '<p class=\"vmv-warfull\"",
      "replace": "    if (false) unrHtml += '<p class=\"vmv-warfull\"", "matches": 1},
     {"why": "The tab and in-page row are not read off the shared cell.",
-     "file": "bible.html", "find": "        return h + ' page ' + (Math.floor((+m[2]) / 10) + 1) + ' (' + ((+m[1]) + 1) + ',' + ((+m[2]) % 10 + 1) + ')';",
+     "file": "bible.html", "find": "        return h + ' · ' + _sharedSpotSay(Math.floor((+m[2]) / 10), +m[1], (+m[2]) % 10);   /* REG-3005 the one spelling */",
      "replace": "        return h + ' (' + ((+m[1]) + 1) + ',' + ((+m[2]) + 1) + ')';", "matches": 1},
     {"why": "Every copy of a war item stays in the war stash again: 9 belts, 7 Enigmas (Elad 22:05 'that cant happen').",
      "file": "bible.html", "find": "      return _vaultWarOver(name, copyIx) ? { id: 'shared', holder: 'SHARED STASH', location: 'shared', over: true }",

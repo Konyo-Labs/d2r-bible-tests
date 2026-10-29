@@ -65,7 +65,7 @@ var card = at < 0 ? '' : shelf.slice(at, nx < 0 ? shelf.length : nx);
 OUT.card = {}; NAMES.concat([%(crown)s]).forEach(function(n){ OUT.card[n] = card.split('data-vault-item="' + n.replace(/'/g, '&#39;') + '"').length - 1; });
 OUT.org = W._orgPlannedCells([{ nm: 'Raven Frost', pg: { ok: true, kind: 'mule', id: 'shared' } }]).cells;
 W.renderVault(); H.flush(60, 3);
-OUT.rows = []; var rr = /→ (SHARED STASH [^"<]*?\(\d+,\d+\))/g, mr, ml = (document.getElementById('vault-move-list') || {}).innerHTML || '';
+OUT.rows = []; var rr = /→ (SHARED STASH [^"<]*?(?:\(\d+,\d+\)|Page \d+ · col \d+ · row \d+))/g, mr, ml = (document.getElementById('vault-move-list') || {}).innerHTML || '';   /* REG-3005 the one spelling (the old "(x,y)" kept so a revert is read, and refused) */
 while ((mr = rr.exec(ml))) if (OUT.rows.indexOf(mr[1]) < 0) OUT.rows.push(mr[1]);
 """
 
@@ -162,7 +162,7 @@ class TheSharedStashDrawsThePlansPages(unittest.TestCase):
         for n in (SHAKO, BELT):
             for c in self._shared_tasks(n):
                 pg, x, y = _cell(c)
-                self.assertIn([n, "PAGE %d col %d · row %d" % (pg + 1, x + 1, y + 1)], w["list"],
+                self.assertIn([n, "Page %d · col %d · row %d" % (pg + 1, x + 1, y + 1)], w["list"],   # REG-3005 the one spelling
                               "the window does not say %s sits where its task sends it (%s): %r" % (n, c, w["list"]))
 
     def test_find_names_the_page_cells_and_the_war_mules_copies(self):
@@ -212,7 +212,7 @@ class TheSharedStashDrawsThePlansPages(unittest.TestCase):
         for n in (SHAKO, BELT):
             for c in self._shared_tasks(n):
                 pg, x, y = _cell(c)
-                self.assertIn("SHARED STASH page %d (%d,%d)" % (pg + 1, x + 1, y + 1), w["rows"],
+                self.assertIn("SHARED STASH · Page %d · col %d · row %d" % (pg + 1, x + 1, y + 1), w["rows"],   # REG-3005
                               "the move row does not name %s's page and cell (%s): %r" % (n, c, w["rows"]))
                 self.assertIn("Page %d · col %d · row %d" % (pg + 1, x + 1, y + 1), w["find"][n]["cells"])
         self.assertFalse([r for r in w["rows"] if " tab " in r], "a move row still says tab: %r" % w["rows"])
@@ -220,7 +220,7 @@ class TheSharedStashDrawsThePlansPages(unittest.TestCase):
         pg, x, y = _cell(s["cell120"])
         self.assertEqual(pg, 1, "PREMISE: copy 121 of 505 rings is not on page 2: %r" % s["cell120"])
         self.assertEqual(s["find120"], "Page %d · col %d · row %d" % (pg + 1, x + 1, y + 1), s)
-        self.assertIn("SHARED STASH page %d (%d,%d)" % (pg + 1, x + 1, y + 1), s["expandHead"],
+        self.assertIn("SHARED STASH · Page %d · col %d · row %d" % (pg + 1, x + 1, y + 1), s["expandHead"],   # REG-3005
                       "the expand names another cell than the row and FIND: %r" % s["expandHead"])
         self.assertEqual(s["expandTile"], [x, y], "the expand draws the copy off its page's cell: %r" % s)
         self.assertTrue(s["expandTile"][1] < s["expandGrid"][1], "the expand's tile is off its %r grid: %r" % (s["expandGrid"], s["expandTile"]))
@@ -244,8 +244,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2801 - the window says another page than the one it draws",
      "file": "bible.html",
-     "find": "' → <span class=\"vl-slot\">PAGE ' + (_sharedPage + 1) + ' ' + slotName(p)",
-     "replace": "' → <span class=\"vl-slot\">PAGE ' + _sharedPage + ' ' + slotName(p)",
+     "find": "' → <span class=\"vl-slot\">' + esc(_sharedSpotSay(_sharedPage, p.x, p.y))",
+     "replace": "' → <span class=\"vl-slot\">' + esc(_sharedSpotSay(_sharedPage + 1, p.x, p.y))",
      "matches": 1, "needs": "node"},
     {"why": "REG-2801 - FIND's filed answer leaves the WAR mules' copies out",
      "file": "bible.html",
@@ -269,12 +269,12 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2801 - the organizer names a cell from another layout than the window's",
      "file": "bible.html",
-     "find": "            if (planned.indexOf(q.n) >= 0 && !cells[q.n]) cells[q.n] = 'Page ' + (pi + 1) + ' · col ' + (q.x + 1) + ' · row ' + (q.y + 1); }); });\n",
+     "find": "            if (planned.indexOf(q.n) >= 0 && !cells[q.n]) cells[q.n] = _sharedSpotSay(pi, q.x, q.y); }); });   /* REG-3005 */\n",
      "replace": "            if (planned.indexOf(q.n) >= 0 && !cells[q.n]) cells[q.n] = 'Weapons tab · col ' + (q.x + 1) + ' · row ' + (q.y + 1); }); });\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-2802 - the move row says tab while the window and FIND say page",
      "file": "bible.html",
-     "find": "        return h + ' page ' + (Math.floor((+m[2]) / 10) + 1) + ' (' + ((+m[1]) + 1) + ',' + ((+m[2]) % 10 + 1) + ')';",
+     "find": "        return h + ' · ' + _sharedSpotSay(Math.floor((+m[2]) / 10), +m[1], (+m[2]) % 10);   /* REG-3005 the one spelling */",
      "replace": "        return h + ' tab ' + (Math.floor((+m[2]) / 10) + 1) + ' (' + ((+m[1]) + 1) + ',' + ((+m[2]) % 10 + 1) + ')';",
      "matches": 1, "needs": "node"},
     {"why": "REG-2802 - the expand reads a shared cell raw (row 13 of a 10-row page, the tile off the grid)",
@@ -284,8 +284,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2802 - the expand's words drop the page",
      "file": "bible.html",
-     "find": "(c.page != null ? 'page ' + (c.page + 1) : (_vaultMoveStashSay(place.location) || c.loc))",
-     "replace": "(false ? 'page ' + (c.page + 1) : (_vaultMoveStashSay(place.location) || c.loc))",
+     "find": "      if (c.page != null) return nm + ' · ' + _sharedSpotSay(c.page, c.x, c.y);   /* REG-3005 a shared page cell in the one spelling */\n",
+     "replace": "",
      "matches": 1, "needs": "node"},
 ]
 
