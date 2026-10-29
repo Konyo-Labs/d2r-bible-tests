@@ -47182,9 +47182,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     unsorted = _dockShown.filter(_noRow); /* L1 no duplicate chips */
     dock.innerHTML = unsorted.map(function(n){
       var _vr = (typeof _artRarity==='function') ? _artRarity(n) : '';
-      return '<span class="vault-chip'+(_vr?' vc-r-'+_vr:'')+(selectedChip===n?' vc-selected':'')+'" draggable="true" data-vault-item="'+esc(n)+'" title="drag onto a locker — or click, then click a locker">'+art(n)+'<span class="vault-chip-name"'+(typeof _qStyle==='function'?_qStyle(n,'unique'):'')+'>'+esc(n)+'</span>'
+      return '<span class="vault-chip'+(_vr?' vc-r-'+_vr:'')+(selectedChip===n?' vc-selected':'')+'" draggable="true" data-vault-item="'+esc(n)+'" title="'+gridActSay('', 'drag onto a locker — or click, then click a locker')+'">'+art(n)+'<span class="vault-chip-name"'+(typeof _qStyle==='function'?_qStyle(n,'unique'):'')+'>'+esc(n)+'</span>'
         +(typeof window._vaultEvidenceChip==='function'?window._vaultEvidenceChip(n,'vc-ev'):'')
-        +'<button class="vc-unown" onclick="event.stopPropagation();window.vaultUnown(\''+jsArg(n)+'\')" title="not mine — remove from ✓ owned (AI misread? this erases it)">✕</button></span>';
+        +'<button class="vc-unown" onclick="event.stopPropagation();window.vaultUnown(\''+jsArg(n)+'\')" title="'+gridActSay('', 'not mine — remove from ✓ owned (AI misread? this erases it)')+'">✕</button></span>';
     }).join('');
     try { window._warOverCache = null; window._warCapCache = null; } catch (eWcc) {} /* L1 fresh war plan per paint */
     /* V1c (#152 item 4, REG-2426) - ONE RECORDS MODEL FOR THE WHOLE SHELF. Every locker card asked _vaultRecordsSource three
@@ -47357,8 +47357,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
         try { _lsc = (typeof window._vaultTradeOf === 'function') ? (window._vaultTradeOf(n).filter(function(x){ return x.ci === _ix && x.state === 'listed'; })[0] || null) : null; } catch (eLc) { _lsc = null; }
         if (_lsc) _lockCls += ' vmc-listed';
         var _lockTag = !_hlk ? '' : '<span class="vm-cell-lock" role="img" aria-label="' + (_hlk.unknown ? 'lock unknown' : 'locked') + '" title="'
-          + esc(_hlk.unknown ? _hlk.why : ('🔒 ' + _hlk.tier + ((_hlk.successes != null && _hlk.trials != null) ? ' ' + _hlk.successes + '/' + _hlk.trials : '')
-              + ' — the evidence locked it in this locker. Hold Shift while you drop it on another locker, or Shift+click ✕, to release it.'))
+          + esc(_hlk.unknown ? _hlk.why : gridActSay('🔒 ' + _hlk.tier + ((_hlk.successes != null && _hlk.trials != null) ? ' ' + _hlk.successes + '/' + _hlk.trials : '')
+              + ' — the evidence locked it in this locker', '. Hold Shift while you drop it on another locker, or Shift+click ✕, to release it.'))   /* REG-3117 */
           + '">' + (_hlk.unknown ? '🔒?' : '🔒') + '</span>';
       /* v2243 — THE approx FLAG WAS INERT, WHICH IS THE DEFECT I HAD JUST SPENT THE DAY FIXING
          ELSEWHERE. v2242 marked an unresolved footprint {w:1,h:2,approx:true} so a guess could not
@@ -47393,8 +47393,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
             var _mfE = null; try { _mfE = (_mfN > 1 && typeof window._vaultCopyEntry === 'function') ? window._vaultCopyEntry(n, _mk) : null; } catch (eMfE) { _mfE = null; }
             var _mfSay = (_mfN > 1) ? (' · copy ' + (_mk + 1) + ' of ' + _mfN + ((_mfE && Array.isArray(_mfE.mods) && _mfE.mods.length) ? ' · ' + _mfE.mods.join(' · ') : '')) : '';
             var _mfX = (_mfN > 1)
-              ? '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultRemoveCopy(\''+jsArg(n)+'\', '+_mk+')" title="remove this copy (copy '+(_mk + 1)+' of '+_mfN+') - the other copies stay">✕</button></div>'
-              : '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultThrowFind(\''+jsArg(n)+'\')" title="throw out — remove from Magic &amp; Rare">✕</button></div>';
+              ? '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultRemoveCopy(\''+jsArg(n)+'\', '+_mk+')" title="'+gridActSay('', 'remove this copy (copy '+(_mk + 1)+' of '+_mfN+') - the other copies stay')+'">✕</button></div>'
+              : '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultThrowFind(\''+jsArg(n)+'\')" title="'+gridActSay('', 'throw out — remove from Magic &amp; Rare')+'">✕</button></div>';   /* REG-3117 */
             _mfCells.push('<div class="vm-cell vmc-magicfind'+(_mf.approx?' vmc-approx':'')+'" style="grid-column:span '+_mf.w+';grid-row:span '+_mf.h+';border-color:'+col+';cursor:pointer" data-magic-find="'+esc(n)+'"'+(_mfN > 1 ? ' data-magic-copy="'+_mk+'"' : '')+' data-arttip="'+esc(n)+'" title="'+esc(n)+(base?' · '+esc(base):'')+' ('+q+')'+esc(_mfSay)+'">'
               + artHtml
               + '<span class="vm-item-name vm-cell-name" data-arttip="'+esc(n)+'" style="color:'+col+'">'+esc(n)+'</span>'
@@ -47417,7 +47417,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       return '<div class="vault-mule '+_muleAccent(m.id)+(m.id==='shared'?' vm-shared':'')+((window._vaultWarRole&&window._vaultWarRole(m))?' vm-war':'')+((total===0 && !_ovHtml)?' vm-empty':'')+'" data-vault-mule="'+esc(m.id)+'">'
         /* #154.19 (REG-2735, GrokBot's vault sweep) - the plate opened a locker on a click only; it takes the keyboard now:
            focusable, a button to a reader, and Enter or Space on the PLATE itself clicks it (the click handler does the rest). */
-        + '<div class="vm-plate" tabindex="0" role="button" onkeydown="if((event.key===\'Enter\'||event.key===\' \')&&event.target===this){event.preventDefault();this.click();}" title="'+(m.id==='shared'?'SHARED STASH — accessible by ALL characters · click to open the fullscreen 5-page view':'click: open the in-game ID card of this mule · with a chip selected: assign it here')+'">'
+        + '<div class="vm-plate" tabindex="0" role="button" onkeydown="if((event.key===\'Enter\'||event.key===\' \')&&event.target===this){event.preventDefault();this.click();}" title="'+(m.id==='shared'?'SHARED STASH — accessible by ALL characters · click to open the fullscreen 5-page view':gridActSay('click: open the in-game ID card of this mule', ' · with a chip selected: assign it here'))+'">'   /* REG-3117 */
         + '<span class="vm-icon">'+esc(m.icon||'📦')+'</span><span class="vm-name">'+esc(m.name)+'</span>'+((window._vaultWarRole&&window._vaultWarRole(m))?'<span class="vm-warbadge" title="part of your Shared Stash (war stash) - overflow pages" style="margin-left:4px;font-size:var(--fs-micro);padding:0 4px;border:1px solid rgba(240,192,96,.6);border-radius:3px;color:#f0c060">SHARED STASH · overflow</span>':'')
         + ((m.auto && !m.inGame && !(typeof _vaultMuleSeenInGame === 'function' && _vaultMuleSeenInGame(m, (window._moveModel || {}).records))) ? '<span class="vm-auto" title="the board made this mule for the war stash overflow - make a character of this name in the game (MOVE TASKS)" style="margin-left:4px;font-size:var(--fs-micro);padding:0 4px;border:1px dashed rgba(240,192,96,.6);border-radius:3px;color:#f0c060">made by the board · not in the game yet</span>' : '')/* REG-2803 *//* L1 WAR mule is the war stash */
         + '<span class="vm-count"'
@@ -50587,9 +50587,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
      alone yet - the ✕ says so on a cell whose item has more than one copy. -> the cell ✕'s hover */
   function _vaultCellXTitle(n, cc, hlk){
     if (hlk) return hlk.unknown ? '⚠ the witness store could not be read — whether this is locked is UNKNOWN, so ✕ is refused until it can be'
-                               : '🔒 ' + hlk.tier + ' — locked in this locker by the evidence; hold Shift and click ✕ to release it';
-    return 'send back to the unsorted dock' + ((typeof cc === 'number' && cc > 1)
-      ? ' - ALL ' + cc + ' copies of ' + n + ' go together (copies share one filing; one copy cannot be sent alone yet)' : '');
+                               : gridActSay('🔒 ' + hlk.tier + ' — locked in this locker by the evidence', '; hold Shift and click ✕ to release it');
+    return gridActSay('', 'send back to the unsorted dock' + ((typeof cc === 'number' && cc > 1)
+      ? ' - ALL ' + cc + ' copies of ' + n + ' go together (copies share one filing; one copy cannot be sent alone yet)' : ''));   /* REG-3117 */
   }
   window._vaultCellXTitle = _vaultCellXTitle;
   window.vaultUnassign = function(name, opts){
@@ -54047,10 +54047,23 @@ window.vaultAutoAssign = function(){
      database" inside a read-only shadow, where the click and the Enter are stopped. In a shadow (the veil's handle
      window._tvdShadow, else the shadow class) it says the console is theirs, in the D2JSP fg box's words (REG-3095). */
   function gridCellSay(label, cx, cy){
+    return gridActSay((label || 'Inventory') + ' · col ' + (cx + 1) + ' · row ' + (cy + 1) + ' — empty', ': click (or Enter) to add an item from the database');
+  }
+  /* REG-3117 (#230, GrokBot 6489429952) - EVERY VAULT CELL AND TILE THAT PROMISES AN ACTION SAYS READ ONLY IN A SHADOW. The
+     empty cell was fixed alone (REG-3103); a FILLED cell still said "Drag it to any cell where it fits and it locks there"
+     in a read-only shadow, where the veil stops the drag - the lock held, the words lied. Every title and aria-label on a
+     vault cell or tile (the mule window's tiles, cells, doll slots and Mule tabs, their ✕ and unlock, the locker cards'
+     cells, ✕ and lock, a plate, a dock chip) builds its action words here: desc is what the thing IS and stays, act is
+     what a click, key or drag would do. In a shadow (the veil's handle window._tvdShadow, else the shadow class) act
+     becomes "Read only: this is their console, shown in a shadow"; outside a shadow the words are desc + act, as they
+     always were. The law test_a_shadow_cell_never_promises_an_action lists every action phrase it found. */
+  function gridShadowRo(){
     var ro = !!window._tvdShadow;
     try { ro = ro || document.documentElement.classList.contains('tvd-shadow'); } catch (eRo) {}
-    return (label || 'Inventory') + ' · col ' + (cx + 1) + ' · row ' + (cy + 1)
-      + (ro ? ' — empty. Read only: this is their console, shown in a shadow' : ' — empty: click (or Enter) to add an item from the database');
+    return ro;
+  }
+  function gridActSay(desc, act){
+    return gridShadowRo() ? (desc ? desc + '. ' : '') + 'Read only: this is their console, shown in a shadow' : desc + act;
   }
   function gridHtml(placed, gw, gh, cell, opt){
     /* ⚠ v2240 — AN OVER-FULL GRID MUST SAY SO, NOT BE SQUINTED AT. Konyo, on a mule card: "those
@@ -54107,9 +54120,9 @@ window.vaultAutoAssign = function(){
          (the vb2-mule-tip-js lane), never an OS box on top. */
       if (p.db){
         var _nm = _mpInvSayName(p);   // prefix + base + suffix; the store keeps the base name
-        var _dsay = _nm + ' (' + p.w + '×' + p.h + ') — placed by hand from the item database at ' + _spot(p)
-          + '. Drag it; a green footprint of its size, inside this inventory, is the only drop that moves it'
-          + '. Click (or Enter) for its tooltip, to replace it or remove it; Delete removes it';
+        var _dsay = gridActSay(_nm + ' (' + p.w + '×' + p.h + ') — placed by hand from the item database at ' + _spot(p),
+          '. Drag it; a green footprint of its size, inside this inventory, is the only drop that moves it'
+          + '. Click (or Enter) for its tooltip, to replace it or remove it; Delete removes it');   /* REG-3117 */
         var _an = p.n, _anUnk = false;   // #248: a runeword draws its BASE - asked here, when the tile is drawn, never by the loader
         /* #41 rank 24 - null from the builder means its database would not parse: the picture is UNKNOWN, never p.n */
         try { if (p.id && typeof window._cbArtName === 'function'){ var _ar = window._cbArtName({ id: p.id, base: p.base, name: p.n }); if (_ar === null) _anUnk = true; else _an = _ar || p.n; } } catch (x) { _an = p.n; }
@@ -54134,25 +54147,26 @@ window.vaultAutoAssign = function(){
         if (_mv && _rcN > 1 && typeof window.vaultRemoveCopy === 'function'){
           var _rcK = (String(p.key) === String(p.n)) ? 0 : ((+(String(p.key).match(/ #(\d+)$/) || [0, 0])[1]) - 1);
           if (_rcK >= 0 && _rcK < _rcN)
-            _rmCopyBtn = '<button type="button" class="vd-rmcopy" tabindex="-1" data-rmcopy="' + _rcK + '" title="remove this copy (copy ' + (_rcK + 1) + ' of ' + _rcN
-              + ') - the other copies stay; ↶ Undo puts it back" aria-label="remove copy ' + (_rcK + 1) + ' of ' + esc(p.n) + '"'
+            _rmCopyBtn = '<button type="button" class="vd-rmcopy" tabindex="-1" data-rmcopy="' + _rcK + '" title="'
+              + gridActSay('', 'remove this copy (copy ' + (_rcK + 1) + ' of ' + _rcN + ') - the other copies stay; ↶ Undo puts it back')
+              + '" aria-label="' + gridActSay('', 'remove copy ' + (_rcK + 1) + ' of ' + esc(p.n)) + '"'   /* REG-3117 */
               + ' onclick="event.stopPropagation();window.vaultRemoveCopy(\'' + jsArg(p.n) + '\', ' + _rcK + ')">✕</button>';
         }
       } catch (eRc) { _rmCopyBtn = ''; }
       var _say = esc(p.n) + ' (' + p.w + '×' + p.h + ')'
-        + (_mv ? (p.manual ? ' — placed by hand at ' + esc(_spot(p)) + '. Drag to move it; right-click (or the lock) returns it to auto-pack'
-                 : p.bad ? ' — ⚠ ' + esc(p.bad) + '. Packed automatically until you place it again or unlock it'
-                 : ' — packed automatically at ' + esc(_spot(p)) + '. Drag it to any cell where it fits and it locks there') : '')
+        + (_mv ? (p.manual ? gridActSay(' — placed by hand at ' + esc(_spot(p)), '. Drag to move it; right-click (or the lock) returns it to auto-pack')
+                 : p.bad ? gridActSay(' — ⚠ ' + esc(p.bad) + '. Packed automatically', ' until you place it again or unlock it')
+                 : gridActSay(' — packed automatically at ' + esc(_spot(p)), '. Drag it to any cell where it fits and it locks there')) : '')   /* REG-3117 */
         + (_prov ? ' · ' + esc(_prov) : '') + (_lst ? ' · ' + esc(window._vaultListedSay(_lst)) : '');
       return '<div class="vd-item'+(_vr?' vd-r-'+_vr:'')+(_mv && p.manual ? ' vd-held' : '')+(_mv && p.bad ? ' vd-bad' : '')+(_lst ? ' vd-listed' : '')+'" style="left:'+(3+p.x*(cell+2))+'px;top:'+(3+p.y*(cell+2))+'px;width:'+(p.w*cell+(p.w-1)*2)+'px;height:'+(p.h*cell+(p.h-1)*2)+'px" title="'+_say+'"'
         + (_mv ? ' data-key="' + esc(p.key) + '" data-x="' + p.x + '" data-y="' + p.y + '" data-w="' + p.w + '" data-h="' + p.h + '" data-fk="it-' + opt.area + '-' + p.x + '-' + p.y + '"'
-               + ' tabindex="0" role="button" aria-roledescription="movable item" aria-label="' + _say + '. Enter picks it up, arrow keys move it, Enter drops, Escape cancels'
-               + (p.manual || p.bad ? ', U unlocks' : '') + '"' : '')
+               + ' tabindex="0" role="button" aria-roledescription="' + (gridShadowRo() ? 'item' : 'movable item') + '" aria-label="' + _say
+               + (gridShadowRo() ? '' : ('. Enter picks it up, arrow keys move it, Enter drops, Escape cancels' + (p.manual || p.bad ? ', U unlocks' : ''))) + '"' : '')   /* REG-3117 */
         + '>'+art(p.n,'◆', p.w>1&&p.h>1?'':'sm')
         + (_lst ? '<span class="vd-listed-mark" data-trade="listed" aria-hidden="true">L</span>' : '')   /* REG-2878 */
         + (typeof window._vaultEvidenceBtn === 'function' ? window._vaultEvidenceBtn(p.n) : '')
         + _rmCopyBtn
-        + (_mv && (p.manual || p.bad) ? '<button type="button" class="vd-unlock" tabindex="-1" data-unlock="' + esc(p.key) + '" title="unlock — back to auto-pack (right-click the item does the same)" aria-label="unlock ' + esc(p.n) + ' — back to auto-pack">' + (p.bad ? '⚠' : '🔒') + '</button>' : '')
+        + (_mv && (p.manual || p.bad) ? '<button type="button" class="vd-unlock" tabindex="-1" data-unlock="' + esc(p.key) + '" title="' + gridActSay('', 'unlock — back to auto-pack (right-click the item does the same)') + '" aria-label="' + gridActSay('', 'unlock ' + esc(p.n) + ' — back to auto-pack') + '">' + (p.bad ? '⚠' : '🔒') + '</button>' : '')   /* REG-3117 */
         + '</div>';
     }).join('');
     return _note + '<div class="vd-grid" style="grid-template-columns:repeat('+gw+','+cell+'px);grid-auto-rows:'+cell+'px"'
@@ -60877,7 +60891,7 @@ window.vaultAutoAssign = function(){
     // ── BUILD SET → the mule pages of this one locker ──
     var setTabs = '';
     // #174 v-B2 — each mule tab is also a DROP TARGET: an item dropped on "Mule k" moves to that mule and locks in its first free cell
-    for (var _i = 0; _i < _muleTotalPages; _i++) setTabs += '<button class="mp-settab'+(_i===_mulePage?' on':'')+'" onclick="window._muleSetPage('+_i+')" data-page="'+_i+'" title="Mule '+(_i+1)+' — drop an item here to move it to this mule">Mule '+(_i+1)+'</button>';
+    for (var _i = 0; _i < _muleTotalPages; _i++) setTabs += '<button class="mp-settab'+(_i===_mulePage?' on':'')+'" onclick="window._muleSetPage('+_i+')" data-page="'+_i+'" title="'+gridActSay('Mule '+(_i+1), ' — drop an item here to move it to this mule')+'">Mule '+(_i+1)+'</button>';   /* REG-3117 */
     setTabs += '<span class="mp-settab mp-settab-ghost" title="there is no manual “new mule”: when one mule is full (140 cells) the packer opens the next by itself">+ next mule opens when this one is full</span>';
     var buildSet = '<section class="mp-p mp-set">'+H('Mules in this locker', _muleTag)
       + '<div class="mp-settabs">'+setTabs+'</div></section>';
@@ -60893,14 +60907,14 @@ window.vaultAutoAssign = function(){
       var _dw = e ? _deadAt(s[0]) : null, gone = !!_dw;
       /* #246 W5 (integration) - the slot says where the ITEM came from AND what the Vault holds as its witness */
       var _pvs = (e && typeof window._vaultProvSay === 'function') ? window._vaultProvSay(e.name) : '';
-      var say = e ? (s[2] + ' — ' + e.name + ', ' + (MP_SRC_SAY[e.source] || e.source) + (e.id ? ' from the item database' : '') + (_pvs ? ' · in the vault: ' + _pvs : '') + (gone ? ' — NOT WORN, NOT COUNTED: ' + _dw : '')
-                     + '. Enter to change it, Delete to unequip')
-                  : (s[2] + ' — empty. Click (or Enter) to choose one: this locker’s items, or any item in the database');
+      var say = e ? gridActSay(s[2] + ' — ' + e.name + ', ' + (MP_SRC_SAY[e.source] || e.source) + (e.id ? ' from the item database' : '') + (_pvs ? ' · in the vault: ' + _pvs : '') + (gone ? ' — NOT WORN, NOT COUNTED: ' + _dw : ''),
+                               '. Enter to change it, Delete to unequip')
+                  : gridActSay(s[2] + ' — empty', '. Click (or Enter) to choose one: this locker’s items, or any item in the database');   /* REG-3117 */
       return { e: e, gone: gone, say: say, picked: !!(_mpPickAt && _mpPickAt.slot === s[0]),
                attrs: ' data-fk="slot-'+s[0]+'" onclick="window._mpPick(\''+s[0]+'\')" oncontextmenu="return window._mpCtx(event,\''+s[0]+'\')" onkeydown="window._mpSlotKey(event,\''+s[0]+'\')"',
                after: e ? '<button type="button" class="mp-unq" data-fk="unq-'+s[0]+'" style="left:'+D(s[3] + s[5] - 11)+';top:'+D(s[4])+'"'
-                    + ' onclick="window._mpUnequip(\''+s[0]+'\')" title="unequip '+esc(e.name)+' (right-click the slot does the same)"'
-                    + ' aria-label="unequip the '+s[2]+'">✕</button>' : '' };
+                    + ' onclick="window._mpUnequip(\''+s[0]+'\')" title="'+gridActSay('', 'unequip '+esc(e.name)+' (right-click the slot does the same)')+'"'
+                    + ' aria-label="'+gridActSay('', 'unequip the '+s[2])+'">✕</button>' : '' };   /* REG-3117 */
     });
     var swap = [[16,1],[47,2],[247,1],[278,2]].map(function(t){
       return '<button class="mp-swap'+(_mpSwap===t[1]?' on':'')+'" style="left:'+D(t[0])+';top:'+D(48)+'" onclick="window._mpSet(\'swap\','+t[1]+')"'

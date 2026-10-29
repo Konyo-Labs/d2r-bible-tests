@@ -62,8 +62,8 @@ class ACopyCellSaysEveryCopyGoes(unittest.TestCase):
 RED_PROOF = [
     {"why": "#111 - a multi-copy cell's X hides that every copy goes again",
      "file": "bible.html",
-     "find": "    return 'send back to the unsorted dock' + ((typeof cc === 'number' && cc > 1)\n",
-     "replace": "    return 'send back to the unsorted dock' + ((false)\n",
+     "find": "    return gridActSay('', 'send back to the unsorted dock' + ((typeof cc === 'number' && cc > 1)\n",
+     "replace": "    return gridActSay('', 'send back to the unsorted dock' + ((false)\n",
      "matches": 1, "needs": "node"},
 ]
 

@@ -123,6 +123,24 @@ The two profile-publish laws stand a fixture in for _profile_saves, so no law re
 Law test_the_characters_room_says_why_its_saves_name_what_they_name (the room on the whole page in node, the upload in
 Python), 8 cases, 8 red-proofs RED, baseline green. 24 neighbours ran green (6 node-only laws refused by safe_laws for a
 test import, read and run by hand); the signed-publish, presence-beacon, shadow and mule-window Chrome laws go to CI.
+### REG-3117 - IN A SHADOW A FILLED MULE CELL STILL SAID "DRAG IT TO ANY CELL WHERE IT FITS AND IT LOCKS THERE" (#230, GrokBot 6489429952)
+GrokBot, guest -> Fleet -> Konyo · Mac -> Vault -> UNIQUE ARMOR: a filled cell's aria-label promised a drag the read-only
+shadow stops. The lock held; the words lied. REG-3103's gridCellSay fixed only the EMPTY cell. Swept: every title,
+aria-label and aria-roledescription on a vault cell or tile - the mule window's tiles (placed by hand, packed, out of fit,
+from the item database), its empty cells, a copy's ✕, the unlock, the doll's slots and their ✕, the Mule tabs; the shelf's
+locker-card cells, their ✕ (_vaultCellXTitle) and lock, a Magic & Rare cell's ✕, a locker's plate; the dock's chip and its
+✕ - 24 action phrases. Each now builds its words through one helper beside gridCellSay, gridActSay(desc, act): desc says
+what the thing is and stays; in a shadow (window._tvdShadow, else the shadow class - gridShadowRo) act becomes "Read only:
+this is their console, shown in a shadow", and outside a shadow the words are desc + act, byte for byte as before. A tile's
+key list (Enter picks it up...) is dropped in a shadow and its roledescription reads "item", not "movable item". Measured
+on the whole page in node: his board paints 431 of these words with the action phrases; the same vault in a snapshot
+shadow paints 431, none promising an action and 234 saying read only. Left as found: the shelf's registered list rows (a ✕
+"throw out" on a row, not a cell) and the MOVE TASKS row buttons - rows, outside this sweep. Law:
+test_a_shadow_cell_never_promises_an_action (the sweep lists every action phrase in these surfaces and classifies it,
+each act must sit inside the helper; the helper in and out of a shadow; the whole page twice; 8 red-proofs, each RED).
+test_a_copy_cell_says_every_copy_goes re-anchored to the helper's line (RED again). NEEDS LIVE: GrokBot reads a filled
+cell's aria-label in the guest's shadow of the Mac (Vault -> UNIQUE ARMOR).
+
 ### REG-3106 - SHOULD MARKUP-SHAPED OCR READ AS "UNREADABLE TEXT (N CHARS)"? NO - AND THE CHIP'S FACE IS NOW LOCKED (#86 item 5)
 #86 item 5 asked again about the caught-text chip printing raw OCR like `CHAKm •<li•` (thHandoffNote; escaped, so never an
 injection): should markup-shaped garble read as "unreadable text (N chars)" with the raw text in a title? Decided from the
