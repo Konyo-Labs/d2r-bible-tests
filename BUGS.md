@@ -2151,6 +2151,279 @@ decided "a store of counts" by SHAPE (every value a number), and d2r_stashMeta i
 here and {} in the file compared unequal. A store of counts is now named (runes, gems, materials, copies, multi-keep) and
 every other store is counted by its entries; null, '', {} and [] are one fact, so a store empty on both sides is not a
 change. Law: test_a_profile_carries_what_its_vault_reads (3 cases, 2 red-proofs, 1 re-aimed; 7 of 7 RED).
+### REG-3074 - NOTHING HELD THE RULE THAT A LOCK NEVER EARNS MORE REFUSALS THAN ATTEMPTS (#84, GrokBot #230 2026-10-12)
+GrokBot read the Heart fan twice on v3679/v3680 as "printer.stream earned 138/135" (earned above its total). Measured:
+v3680's own self_arming over v3680's own ledger scores printer.stream k=135 n=135 (657 rows, 0 row faults; its folded
+rows are sabotage 126/126 and live 9/9, unchanged since 2026-09-22), and that build's caption printed L.k + '/' + L.n
+as served. GrokBot's next three ticks that day and its 10-16 answer read 135/135. So the 138 was a misread of the
+pixels, NOT A DEFECT in the count (the "earned" caption itself is gone since #180: the hover says "trial: k/n").
+What makes k above n impossible is two checks - bank() refuses k > n, and _row_fault fails the whole read CLOSED on a
+file row with k > n - and no law named either. Test-only: a law that holds both on an isolated ledger (a refused bank
+writes nothing; a forged 138/135 row reads UNKNOWN and may() stays LOCKED) and holds the shape over the tracked
+ledger (every lock and route: k <= n, attacksPassed <= attacks <= n). The fan-caption overlap half of #84 is NEEDS
+LIVE. Law: test_a_lock_never_publishes_more_refusals_than_attempts (python), 2 red-proofs, RED.
+
+### REG-3073 - AN UN-OWNED ITEM LEFT ITS COPY RECORDS BEHIND (#153.13, GrokBot's vault sweep)
+GrokBot: "vaultUnown leaves d2r_vaultRecords behind (3 Shako copies -> 3 orphan records)". Measured on the whole page in
+node: three Harlequin Crest copies (an Ist and a Ber from the planner, one by hand) un-owned -> the name left owned and all
+3 copy rows stayed in d2r_vaultRecords, each with its move (shared stash, a WAR mule) and its entry, until some later
+rebuild happened to drop them. Those stale rows were also the only reason the undo brought each copy back where it was.
+Now every removal of a name through vaultRemove (the un-own, a card X, the last copy's X or trade-out) takes the name's
+copy rows into its removal-journal batch (`batch.records`) and drops them from the store at once through the guarded
+write; a records store that will not read writes nothing (UNKNOWN). vaultRestoreLast puts the carried rows back with the
+names it restores, so the undo is whole: each copy's move, cell and entry. The trade door's note that "the removal door
+leaves the copy's record in the store" was corrected to say the batch carries it. Observed and not changed: an auto-made
+WAR1 for the overflow keeps its "Create mule WAR1" make line after the un-own. Law:
+test_an_unowned_item_takes_its_copy_records_with_it (node, the whole page), 2 red-proofs, RED.
+
+### REG-3072 - THE CHARMS AND SHARED STASH WINDOWS PACKED NONE OF THE KEEPERS THEIR CARDS COUNTED (GrokBot #230 on v3838)
+GrokBot on v3838: the CHARMS card said 2 (Mac) and 1 (ALT) while its window said "Items 1 · Copies 0 · 0 on this mule" and
+drew nothing; the SHARED STASH card said 13 / 15 while its window laid out 5 / 9 - the small charms re-homed there (REG-2895)
+were counted and never packed. The same class as MAGIC & RARE's 23 vs 5 (REG-2850): a keeper had no record, and the window
+packs records. Measured on the whole page in node with those shapes (two kept grand charms and a magic-find small charm homed
+on CHARMS, two small charms on the shared stash): on the page before P3b, the CHARMS window said "Items 3 · Copies 0" with
+no tile and the shared stash window laid out 0 of its card's 2; with P3b (REG-2971, every keeper a record per copy homed by
+the keeper rule) both pack every keeper. Not a new code change - a law that holds the rule for EVERY locker: on a board with
+keepers of every home and hand-added items on their lockers, each roster locker's window packs as many copies as its card
+draws cells, and names every item its card draws (fails on the pre-P3b page, passes on P3b). The "Create mule CHARMS in the
+game" line was measured present in node - on a fresh board, on a board whose saved roster predates the CHARMS mule (it is
+added with its make record), and with no item yet; why GrokBot did not see it on his boards is NEEDS LIVE (the roster's
+charms entry: auto, inGame). Law: test_every_locker_window_packs_what_its_card_counts (node, the whole page), 3 red-proofs,
+RED.
+
+### REG-3067 - ONE SESSION THAT SAW A COPY IN TWO PLACES WAS SETTLED BY A GUESS (his done rule 2026-10-28 18:56, #202)
+His done rule: "same-session conflict -> a question". A read at a copy's target and a read somewhere else from the SAME
+session cannot both be where it is now, and REG-2843 let the newer read win - a guess inside one session: measured on the
+whole page in node, a half-way task (seen once at its target by S1) was reopened by S1's own read elsewhere, and a read at
+the target after S1's read away would have counted toward closing it. Now one session in two places keeps both sightings as
+a question on the row - "Seen at its target and at <place> in the same session - which is it?" - and until he answers the
+copy's place is UNKNOWN: neither in place (a verified row opens again, and "in place N of M" counts it apart, REG-3065) nor
+moved. He answers with window.vaultConflictAnswer: "At its target" counts that session's read there and sets the other
+aside on record; "At <place>" drops the read at the target, and the copy is seen away, so REG-3066 asks next. A read from
+another session also settles it. His own tick is his answer already, so it raises no question. A shadow is read only.
+Law: test_a_copy_seen_away_from_its_spot_is_asked (with REG-3066), 6 red-proofs.
+
+### REG-3066 - A COPY SEEN AWAY FROM ITS SPOT WAS NEVER ASKED ABOUT, AND WHERE IT WAS SEEN WAS DROPPED (his model 2026-10-28 19:08, #202)
+His model: the console locks each copy to its spot, and "a copy seen off its locked spot is a deviation (doubt -> task)
+unless a move task explains it". A read somewhere other than a copy's FROM or TO set its task 'moved-elsewhere' and dropped
+WHERE it was seen, so its row could not ask "did you move it there?" and nothing could take an answer. Now the task keeps
+that sighting (elsewhere) and every sighting he sets aside (setAside). Its row says "moved?", and the opened row asks "Seen
+at <place> on <date> - did you move it there?":
+- Yes: his hand moves the spot there, through REG-2787's one door for a hand-placed cell (_vaultMoveRetargetCell, "new
+  target: you moved it here"), and the task is his tick at that spot; Untick takes the tick back. A place that is not one of
+  his lockers is refused, and nothing moves.
+- No: the task stays open and that sighting is set aside on the task, recorded with his answer, never deleted.
+A read back at its FROM or at its target clears the question. A shadow is read only: the door refuses there and writes
+nothing. Law: test_a_copy_seen_away_from_its_spot_is_asked (node, the whole page), 6 red-proofs, RED. The question's
+buttons are not checked on pixels here (CI or GrokBot).
+
+### REG-3065 - NOTHING SAID HOW MANY COPIES ARE IN PLACE (his intake design 2026-10-28 18:56, #202)
+His extension to the intake design: "the readout shows 'in place N of M'". The MOVE TASKS list said only MOVE TASKS, and the
+read-only readout (window._vaultCopyAudit) said nothing of it, so nothing told him how far along he is. Now, of the copies
+with a move to a home (a throw-out has no home, and a row the drain closed is gone), N are in place: proven at their target
+by reads from two sessions (verified, REG-2843) or ticked by his hand (moved-manual). The list's head says "in place N of M",
+its title says how many of each, and the readout carries the same numbers (window._vaultInPlace). With no move model yet it
+is UNKNOWN (null), never "0 of 0". Measured on the whole page in node: three hand adds read "in place 0 of 3", and his tick on
+one reads "in place 1 of 3". Law: test_the_move_list_says_how_many_copies_are_in_place (node, the whole page), 4 red-proofs,
+RED. The head's new chip is not checked on pixels here (CI or GrokBot).
+
+### REG-3055 - A RUNEWORD WITH A TV STUB WAS A GUESSED 1x2, AND HIS COPIES' OWN BASES NEVER SIZED IT (GrokBot #230, 2026-10-29)
+_itemCells read a TV stub's base (its own name) as a base, so a runeword with a stub never reached _runewordCells: Heart of
+the Oak drew an approx 1x2 where its bases are one size (2x3). A stub's own name is no base now. Call to Arms, Fury, Dream and
+Lawbringer have no single size across their legal bases, so they stay an approx 1x2 - by design, since a runeword with no
+recorded base has no single size. His copies' own records can settle it (REG-2844 the planner, REG-3002 a read; REG-3001
+shows them): when every copy of the name is recorded in a base and those bases share one footprint, that base sizes it.
+Measured on the whole page in node: Fury approx, then read in a Phase Blade 2x3, plus a Berserker Axe still 2x3, plus a
+Colossus Blade approx again. The bases are read once per stored string (window._vaultCopyBaseCode), because the packer asks
+_itemCells for every tile on every paint. Law: test_a_tv_stub_never_outranks_what_the_name_is (with REG-3054), 3 red-proofs.
+
+### REG-3054 - A TV STUB'S 'basic' OUTRANKED WHAT THE NAME IS: RUNEWORDS AND RARES DREW WHITE (GrokBot #230, 2026-10-29)
+TV DIABLO stamps {rarity: 'basic', base: <its own name>, cat: 'TV-vaulted'} on a name nothing knew when it registered it. His
+boards hold such stubs for runewords and rares: the Mac's Heart of the Oak; the ALT's Call to Arms, Raven Whorl and Doom Eye,
+stored without the val:'tv' mark today's writers stamp. Measured on the whole page in node with those stubs:
+- every one read rarity 'basic' (white), because _artRarity read the stub before findRuneword and never asked the grammar;
+- a runeword's picture asked "which base?" as if it were rolled;
+- Doom Eye's unmarked stub was read as a curated entry: it routed to UNI-WEAPONS, and FIND sent him there.
+The order of authority now: a catalogue runeword, his evidence's rarity and the rolled-name grammar outrank a stub's 'basic'
+over its own name (REG-2903 already reads that base as no base). The stub's word stands only when nothing else knows the
+name. A stub stored without val:'tv' is read as a TV stub (in memory; the store is untouched), so the router, the footprint
+and the hover read it like every other. The chronicle-apply writer no longer stubs a runeword the prune's catalogue keeps
+(d2rCatalogueKnows, the v739 writer's v2208 rule). A runeword that catalogue lacks (Heart of the Oak) keeps its stub, which
+is what keeps the name across a reload, and reads as a runeword all the same. Now: the five runewords read 'rw', Raven Whorl
+and Doom Eye 'rare' and 1x1, Doom Eye routes to MAGIC & RARE, and a stub of a name nothing knows stays 'basic'. Law:
+test_a_tv_stub_never_outranks_what_the_name_is (node, the whole page), 5 red-proofs, RED.
+
+### REG-3002 - A JUDGED GRIEF READ IN ANOTHER BASE WAS THE SAME COPY (his ruling 2026-10-29 02:30, Q3)
+A judged read of a runeword only owned the name, so a Grief read in a Berserker Axe beside one in a Phase Blade was the same
+copy. The read's base now names its copy (window._vaultRunewordReadJoin, from the AI checker's keep):
+- the copy recorded in that base is that copy;
+- a copy whose base was never recorded takes it, on its own record;
+- a base no copy has is another copy, carrying that base, only for a runeword he keeps several of (a multi-copy keeper) and
+  holds fewer of than he wants;
+- on a runeword he keeps one of, or holds all he wants of, the read is said ("read in another base ... not counted") and
+  nothing is counted - a misread base never mints a copy;
+- a read with no base names no copy.
+Law: test_a_runeword_keeper_keeps_a_base_per_copy (node, the whole page; with REG-3000 and REG-3001), 3 red-proofs.
+
+### REG-3001 - NOTHING SAID WHICH BASE EACH COPY OF A RUNEWORD SITS IN (his ruling 2026-10-29 02:30, Q3)
+Each copy already keeps its own base on its record (REG-2844 for the planner, REG-3002 for a read), and nothing showed it.
+A runeword keeper's row in Multi-copy Keepers now says it - "bases: 1 Phase Blade · 2 Berserker Axe" - a copy whose base
+was never recorded says so, and records that would not read are UNKNOWN. Law: test_a_runeword_keeper_keeps_a_base_per_copy,
+1 red-proof.
+
+### REG-3000 - THE KEEPERS BOX REFUSED A RUNEWORD (his ruling 2026-10-29 02:30, Q3)
+His ruling: a runeword may be a multi-copy keeper, and its copies may sit in different bases. The Keepers box asked only the
+grail vocabulary, so "Grief" was refused ("isn't a chronicle item") while the hand door could raise a runeword's want. A
+typed runeword name (exact, as findRuneword reads it) is the keeper now, and it beats a grail name that only begins that
+way ("Spirit" is the runeword, not an item whose name starts with it). A name that is exactly both a runeword and a grail
+item is asked, and nothing is added. Law: test_a_runeword_keeper_keeps_a_base_per_copy, 2 red-proofs.
+
+### REG-2975 - HIS HAND TOOK OUT ONE KEEPER COPY AND THE NAME'S RECORD STILL READ THE COPY THAT LEFT (#202 P3b)
+Copy 0 of a Magic & Rare keeper reads its mods off the name's record (d2r_magicFinds). Measured on the whole page in node:
+two Small Charms of Vita (+17 and +20 to Life), the +17 one removed through vaultRemoveCopy (REG-2849) - the +20 copy stayed
+and the name's record still said +17. Now the copy that leaves carries copy 0's mods on its own row, so the removal journal
+holds it whole; the name's record takes the copy that is copy 0 now; and vaultRestoreLast puts the +17 copy back as copy 0
+with the name's record reading it again. The profile carries both copies' mods. Law:
+test_a_keeper_copy_leaves_alone_and_comes_back_whole (node, the whole page; with REG-2974), 3 red-proofs, RED.
+
+### REG-2974 - ONE LOOK AT A KEEPER COPY DROPPED THE OTHER COPY'S RECORD (#202 P3b)
+Once a look named a cell, the copy count was the cells (v3767). Measured on the whole page in node: two kept Small Charms of
+Vita, one read at a stash cell -> the keeper counted 1 and the +20 copy's record was dropped on the next rebuild. A keeper's
+count only rises where a read or a pick plainly differs from every copy here (REG-2972, REG-2973), so each is a real item,
+and the cells never count it below that. Keepers have no MOVE task (Magic & Rare has its own locker, REG-2830), so a
+sighting's cell does not choose a keeper's copy; the read doors choose it by its mods. Law:
+test_a_keeper_copy_leaves_alone_and_comes_back_whole, 1 red-proof, RED.
+
+### REG-2973 - A KEEPER PICKED AGAIN IN THE PLANNER WAS DROPPED, AND THE CARD DREW EVERY KEEPER ONCE (#202 P3b)
+A Magic & Rare keeper is homed by the keeper rule, never in the mule map, so the planner's copy count never reached it.
+Measured on the whole page in node: Small Charm of Vita +17, then +20 from the planner -> one copy reading +17. The join
+question compared affix ids on the pick with read lines on each copy, so they always differed and the same +17 typed again
+was "another copy" too - dropped the same way. Now:
+- a pick's affix lines are its mods (_vpMods), on its record (_vrEntryOf) and in the question;
+- mods that differ from every copy here file another copy, counted, carrying its own entry (REG-2844, magic too);
+- the same lines are asked; "the same item" completes THAT copy (vaultHandJoin, magic too) and never writes over what a
+  read gave it; a copy 0 read with no mods takes his lines on its record and on the name's record;
+- "another copy", and "the same as copy 2" (_vpCompleteSame now takes the copy), never give their mods to copy 0.
+The shelf card draws a keeper cell per copy, titled with that copy's mods. A cell held more than once takes out THAT copy
+(vaultRemoveCopy); the last copy's ✕ throws the keeper out of Magic & Rare as before. The card says "1 item in 2 copies",
+as the locker window counts. Two red-proofs whose lines changed are re-aimed (REG-2185, REG-2844). Laws:
+test_a_magic_copy_is_asked_or_filed_by_its_mods (8 red-proofs) and test_a_magic_keeper_is_a_record_on_every_surface
+(2 red-proofs), RED.
+
+### REG-2972 - A SECOND READ OF A KEEPER WROTE OVER THE FIRST: TWO SMALL CHARMS OF VITA WERE ONE (#202 P3b)
+A keeper is kept by NAME (d2r_magicFinds), so the AI checker's keep wrote each read over the last. Measured on the whole
+page in node: +17 to Life, then +20 to Life -> one copy reading +20, the +17 charm gone. The photo intake filled the first
+record and dropped the second the same way. Both doors now go through one door, window._vaultKeeperReadJoin:
+- the same mods as a copy here is that copy, and a read that missed a line of it is still that copy (_vaultKeeperSameItem);
+- mods that differ from every copy here (a line both carry with other numbers, or a line each has that the other lacks,
+  or another base) are another copy: counted, and recorded with its own mods (copy 0 stays the name's record);
+- a read with no mods tells nothing apart, so it is never a guessed copy;
+- a re-read of the same photo never counts another copy (REG-2401).
+Law: test_two_small_charms_of_vita_are_two_copies (node, the whole page), 6 red-proofs, RED.
+
+### REG-2971 - A MAGIC & RARE KEEPER HAD NO RECORD, AND A CHARM ON THE SHARED STASH WAS DRAWN TWICE (#202 P3b)
+A keeper is a rolled name no catalogue holds, so ownedPool left it out and no copy of it had a record: no entry, no copy
+count, nothing the per-copy doors (REG-2844, REG-2849) could hold. Measured on the whole page in node: a kept Small Charm of
+Vita, owned and homed on the shared stash, had 0 records, and the shared stash window drew no tile of it. The keepers now
+join the records pool, and each record takes the home the keeper rule gives it (_mfKeeperHome, REG-2895): a charm on the
+SHARED STASH, any other keeper on MAGIC & RARE (REG-2853). Once it had records there, a charm on the shared stash came in
+twice - its keeper cell and a record cell per copy ("1 item in 3 copies" for two charms); it is drawn as its keeper cells
+only, as on MAGIC & RARE. Three laws whose premise was "the locker's records are only the routed stubs" now name the
+keepers too (test_magic_and_rare_draws_every_item_it_counts, test_a_magic_or_rare_tile_draws_its_base,
+test_a_base_in_doubt_is_unknown_everywhere). Law: test_a_magic_keeper_is_a_record_on_every_surface (node, the whole page),
+3 red-proofs, RED.
+
+### REG-2849 - HIS HAND COULD NOT REMOVE THE COPY HE MEANT: THE STEPPER TOOK THE LAST ONE (#154 P3c)
+Each copy carries its own entry (REG-2844), but no door took out ONE named copy. The count stepper took the LAST copy off.
+Measured on the whole page in node: with an Ist Shako (copy 1) and a Ber Shako (copy 2), removing the Ist one took the Ber
+record, and the Ist entry stayed under the copy that was left.
+
+The trade door (REG-2877) already removed THAT copy, and the copies after it closed up. That mechanism is reused here, so
+there is no second one. window.vaultRemoveCopy(name, copyIx) goes through window._vaultTradeEvent as 'remove-copy':
+- the copy's record (its move and its own entry) leaves in a removal-journal batch on his ✕'s lane (card-click), with no
+  trade slot and no traded row the D2JSP card would count;
+- the copies after it close up with their own entries, cells and moves, and the count drops one;
+- the toolbar Undo is named for that copy, and vaultRestoreLast puts it back where it was;
+- the last copy leaves through vaultRemove as his ✕, noted removed (REG-2845).
+
+The opened MOVE row of each copy carries "✕ Remove this copy". Two REG-2877/2881 red-proofs whose lines now read the lane
+and the undo words through variables are re-aimed, and the three trade laws prove RED. Law:
+test_his_hand_removes_the_copy_it_names (node, the whole page), 5 red-proofs, RED.
+
+The ✕ on a copy's TILE names its copy too. Each mule-window tile is keyed by its own copyIx (REG-2876: the name for copy 0,
+"name #2" for copy 1), and a tile whose item is held more than once now carries a small ✕ in the corner the lock leaves free
+(top-left). It calls vaultRemoveCopy(name, copyIx): measured on the whole page in node, two Nagelrings on UNI-SMALL - the
+"Nagelring #2" tile's ✕ took out copy 2 alone ("the removal of copy 2 of Nagelring" on the Undo chip), and a ring held once
+carries no copy ✕. The shelf card's record-cell ✕ is unchanged: it sends the item back to the dock, and copies share one
+filing (#111), so it still says every copy goes. The shared stash pages draw unkeyed tiles and carry no copy ✕. Law:
+test_his_hand_removes_the_copy_it_names, 1 more red-proof (6 of 6 RED).
+
+### REG-2848 - A SIGHTING NEVER JOINED ITS COPY: A NEW CELL READ AS COPY 0 MOVING, AND HAND COPIES VANISHED (#154 P3c)
+His plan is to add his items by hand now and let AUTO's sightings join those same records later. Measured on the whole page
+in node:
+- A filed item's later reads added no look to its witness row (the filing took its looks once; _ownedProvWrite answered
+  'kept'). A Stone of Jordan added by hand, filed on a read at stash c0r0 and then read at c2r0 still counted 1 copy, and
+  its MOVE row read copy 0 "moved-elsewhere".
+- Two Griffon's Eyes added by hand, then one of them read at c5r0: once a cell was named the count was the cells (1), so
+  the second copy's record and its MOVE row were dropped.
+- A sighting at a new cell went to the first unseen hand copy, whichever it was.
+Now a read of a filed item joins its looks (one per frame), so a second cell is the second copy (v3767, his Q1) and copy 0
+stays where it was read. The looks cap (12) drops the oldest look of a place that has another look, never the only look of
+a cell. The copies his hand typed (each keeps its MANUAL move row) are never counted below the cells, nor above copies[].
+A sighting that carries mods joins the unseen hand copy whose own entry (REG-2844) it matches. Law:
+test_a_sighting_joins_its_copy_by_cell_and_by_mods (node, the whole page), 4 red-proofs, RED.
+
+### REG-2847 - ONE UNIQUE DREW DIFFERENT PICTURES ON DIFFERENT SURFACES (v3831 second eye, GrokBot #230 6478351967)
+GrokBot measured on his board: Lightsabre drew mr_lightsabre.png on a list card where artUrl gives hd_lightsabre.png;
+Goldstrike Arch drew goldstrikearch_graphic.png on a card where artUrl gives the long war bow; and the wishlist chip
+"Harlequin Crest (Shako)" drew mr_harlequincrestshako.png, while "Harlequin Crest" drew mr_harlequincrest.png.
+
+Measured here:
+- REG-2805 itself changed 308 pictures: 307 from a base sprite to the item's own icon, and 1 for REG-2806. None was a
+  downgrade, so the "keeper wins over a better older path" claim is NOT A DEFECT.
+- The two odd files are the board table's MID-BOOT values. Lightsabre is registered three times and Goldstrike Arch
+  twice, across the board's scripts, and the console copied that table (thArt) as soon as it had keys.
+- goldstrikearch_graphic.png is a picture of GOLD COINS (opened). The bow's base sprite is the honest picture.
+- Five uniques carried a second icon under a slot or base label. Two pairs are byte-identical; in the other three, the
+  label's file is the same picture at twice the size.
+
+Now:
+- the console asks the board's own artUrl once window._artTableReady says the table is finished, and copies only a
+  finished table;
+- the table no longer names the coins for Goldstrike Arch;
+- a unique's label icon is the unique's icon (its own game sprite still outranks it), so both names draw the larger file.
+  A runeword label is another item and keeps its base.
+
+The second claim, that a Renewed Sunder hovers as its charm base while its row draws artUrl(name), is NOT A DEFECT. The
+hover's own picture line draws artUrl(name) first, so all six Renewed draw the same picture in row and hover. The REG-2805
+law had measured the resolver's artName instead of that line. It now measures the drawn picture, and its two red-proofs
+on the inert artName line are gone. Law: test_one_item_draws_one_picture_whatever_its_label (node: the whole page and the
+console's thArt), 5 red-proofs, RED.
+
+### REG-2846 - WIPE ITEMS RECORDED NO REMOVAL, SO EVERY READ BROUGHT EVERYTHING BACK (#154, his "wont these keep coming back?")
+He plans to wipe the items and add them again one by one. Wipe items cleared owned, the mules, the witness rows and the scan
+ledger, and wrote no removal record. Measured on the whole page in node: after a wipe, an old reel read, a newer read and
+the console's sweep ledger each owned the item again, and the cleared scan ledger let the folder re-read every old file. The
+wipe now notes every name it took out as removed at the wipe's time, in d2r_vaultRemovedAt (the per-name record his X writes
+through _vaultRemovalNote; the 20-batch undo ring is left to single removals). An older read stays out (REG-2845), and a
+newer dated read still comes back. The toolbar's Undo loads the snapshot taken before the wipe, so the items and the record
+come back as they were. Law: test_a_removed_item_stays_out_of_every_door (node, the whole page; the door's wiring is pinned by
+its source), 2 red-proofs for this REG, RED.
+
+### REG-2845 - AN OLD OR UNDATED READ BROUGHT BACK AN ITEM HE HAD REMOVED (#154, his "wont these keep coming back?")
+_removedAfter ("you removed it ... this read is OLDER") guarded the read route and the folder scan only. Measured on the whole
+page in node after his X on Harlequin Crest: a read from 8 days earlier through tvVaultRegister owned it again, and so did
+the console's sweep ledger (vaultAccumApply -> chronicleApply -> the register), whose witness carries no time. Now ONE rule,
+window._vaultRemovedHold, is asked by window._ownedAdd (the one door every add passes), by the register before its
+two-session hold, and by the filing door. Every read door is covered: the reel register, the sweep ledger, the AI checker,
+the inbox's auto-accept and the photo intake. His hand and his undo pass, because they are his word now. A read older than
+his removal stays out, and so does a read whose time cannot be told: UNKNOWN is never "newer". A store that will not read
+holds it, and a reel id s_<ms>_<n> dates its read. A newer dated read comes back, by design. The register's refusal reads
+"kept out" in the vault ledger with its reason. Law: test_a_removed_item_stays_out_of_every_door (node, the whole page: X
+and Wipe, then old, undated, old-sweep, photo-intake, newer, newer-sweep and hand reads, and the Undo), 5 red-proofs for
+this REG, RED. test_a_planner_record_is_not_his_hand (REG-2785) now dates its read after the removal it
+follows.
+
 ### REG-2844 - AN IST SHAKO AND A BER SHAKO WERE TWO COPIES NOTHING COULD TELL APART (#154 P3a, his front-run)
 What makes one copy what it is was kept by NAME. d2r_plannerMade holds one runeword record per name (REG-2185 kept a second
 Grief from writing over the first, so the second Grief's base was kept nowhere), and a unique's runes were kept nowhere at

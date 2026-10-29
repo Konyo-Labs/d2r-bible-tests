@@ -14657,3 +14657,7 @@ if __name__ == "__main__":
          [sys.executable, os.path.join(HERE, "test_a_listing_law_is_keyed_by_what_it_listed.py")], 300,
          needs_app=False,
          why='REG-2944 (REG-2296 for proofs) - a law that lists a directory itself is banked under a v3 key holding the names and bytes of every directory its traced run listed: a new, removed, changed or unignored file there re-keys, a file elsewhere does not, a gitignored newcomer does not (#242) and a run that read one never banks, a listing outside the tree or an incomplete trace never banks, and a law that lists nothing keeps its v1 key'),
+    Gate("test_a_lock_never_publishes_more_refusals_than_attempts",
+         [sys.executable, os.path.join(HERE, "test_a_lock_never_publishes_more_refusals_than_attempts.py")], 300,
+         needs_app=False,
+         why='REG-3074 a lock never publishes more refusals than attempts: bank and the ledger read both refuse k above n'),
