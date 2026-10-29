@@ -690,6 +690,21 @@ restores the record too, so its fixture bless never stands as the real one.
 Law test_a_bless_records_what_it_measured (the real _coverage_bless and main(), the browser and the renders stubbed,
 the floor in a temp file), 3 cases, 4 red-proofs RED, baseline green. Coverage neighbours green: test_render_coverage
 (re-proved, bad 0 of 5), test_the_ratchet_is_not_skipped_by_a_subset, test_a_coverage_drop_can_be_named.
+### REG-3094 - THE D2JSP TAB HAD NO HISTORY: A POST OR A TRADE OF AN ITEM OFF THE LIST HAD NO SURFACE LEFT (#83)
+Each card shows its own post attempts (REG-2872, the d2r_d2jsp_log store) and the vault records every copy that left
+(REG-2883, its traded rows), but there was no one place to read what the desk had done, and an item hidden or taken off the
+list lost the only surface its posts and trades had. The tab now has one History (a closed disclosure under the list),
+painted on every paint and after every log write, and only when its text changed. It writes no store and reads two: every
+name's post log rows, listed or not, and the vault's traded rows, the one source for a traded copy. A log 'traded' /
+'for-sale' row speaks only for a name the vault does not track (a planner pick), so the copy Mark sold sends through the
+vault's door is one row, not two. Both clocks (the log's "YYYY-MM-DD HH:MM UTC" and the vault's ISO time) read to one epoch
+and show in the log's spelling, newest first; a time that does not read says "time UNKNOWN" and sorts last, never a guessed
+date. With no vault on the page the trades say UNKNOWN and none is drawn. Boundary, not changed: a vault store whose JSON
+does not parse reads as no traded rows (_vaultTradeOf's own rule). Law: test_the_d2jsp_tab_keeps_one_history (the pane's own
+script in node over a fake page and vault: read directly, painted through the tab's show and its Mark sold click; 12
+red-proofs, each RED). NEEDS LIVE: GrokBot opens D2JSP -> History on his board and reads it against the cards' Attempts and
+the vault's traded copies.
+
 ### REG-3095 - IN A SHADOW THE D2JSP FG BOX STILL TOOK TYPING, AND A PRICED CARD WOULD HAVE OFFERED POST (#83, GrokBot 06:36)
 GrokBot in the Mac's shadow: Mark sold, Remove from this list and Options changed nothing and sent nothing, and Post was
 disabled - "Small gap: the 'Your fg' box still takes typing in the shadow (typed 99, nothing was sent)". The shadow veil stops
