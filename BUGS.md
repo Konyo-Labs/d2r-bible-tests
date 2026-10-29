@@ -2623,6 +2623,14 @@ The opened MOVE row of each copy carries "✕ Remove this copy". Two REG-2877/28
 and the undo words through variables are re-aimed, and the three trade laws prove RED. Law:
 test_his_hand_removes_the_copy_it_names (node, the whole page), 5 red-proofs, RED.
 
+The ✕ on a copy's TILE names its copy too. Each mule-window tile is keyed by its own copyIx (REG-2876: the name for copy 0,
+"name #2" for copy 1), and a tile whose item is held more than once now carries a small ✕ in the corner the lock leaves free
+(top-left). It calls vaultRemoveCopy(name, copyIx): measured on the whole page in node, two Nagelrings on UNI-SMALL - the
+"Nagelring #2" tile's ✕ took out copy 2 alone ("the removal of copy 2 of Nagelring" on the Undo chip), and a ring held once
+carries no copy ✕. The shelf card's record-cell ✕ is unchanged: it sends the item back to the dock, and copies share one
+filing (#111), so it still says every copy goes. The shared stash pages draw unkeyed tiles and carry no copy ✕. Law:
+test_his_hand_removes_the_copy_it_names, 1 more red-proof (6 of 6 RED).
+
 ### REG-2848 - A SIGHTING NEVER JOINED ITS COPY: A NEW CELL READ AS COPY 0 MOVING, AND HAND COPIES VANISHED (#154 P3c)
 His plan is to add his items by hand now and let AUTO's sightings join those same records later. Measured on the whole page
 in node:

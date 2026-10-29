@@ -44658,6 +44658,9 @@ html.vd-lock,html.vd-lock body{overflow:hidden}
    put the unlock under the pointer that meant to pick the ring up again */
 .mp .vd-unlock{position:absolute;top:0;right:0;width:calc(12*var(--u));height:calc(12*var(--u));max-width:40%;max-height:40%;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:0;margin:0;background:rgba(10,8,5,.86);border:1px solid var(--border-light);border-radius:0 2px 0 3px;color:var(--gold-bright);font-family:var(--sans);font-size:var(--fs-mp-micro);line-height:var(--lh-none);cursor:pointer;z-index:2}
 .mp .vd-unlock:hover{border-color:var(--gold-bright)}
+/* REG-2849 - the ✕ that takes out THIS copy, on a tile whose item is held more than once: the corner the lock leaves free */
+.mp .vd-rmcopy{position:absolute;top:0;left:0;width:calc(12*var(--u));height:calc(12*var(--u));max-height:40%;max-width:40%;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:0;margin:0;background:rgba(10,8,5,.86);border:1px solid var(--border-light);border-radius:2px 0 3px 0;color:var(--hell);font-family:var(--sans);font-size:var(--fs-mp-micro);line-height:var(--lh-none);cursor:pointer;z-index:2}
+.mp .vd-rmcopy:hover{border-color:var(--hell)}
 /* #174 v-B2 fix round - a finger's target. The lock is 10-12px (right-click and U do not exist on touch), so on a coarse
    pointer it carries a transparent pad to 32px without growing its glyph; on a 1x1 item the pad reaches only up and
    out, so the item's own body is still there to drag */
@@ -55317,6 +55320,20 @@ window.vaultAutoAssign = function(){
       var _lst = null;
       try { if (p.key != null && typeof window._vaultTradeOf === 'function') { var _kci = (String(p.key) === String(p.n)) ? 0 : ((+(String(p.key).match(/ #(\d+)$/) || [0, 1])[1]) - 1);
         _lst = window._vaultTradeOf(p.n).filter(function(x){ return x.ci === _kci && x.state === 'listed'; })[0] || null; } } catch (eLs) { _lst = null; }
+      /* REG-2849 (#154 P3c) - THE ✕ ON A COPY'S TILE NAMES ITS COPY. Each drawn copy is keyed by its own copyIx (REG-2876: the
+         name for copy 0, "name #2" for copy 1); an item held more than once carries a ✕ that takes out THAT copy through
+         vaultRemoveCopy - its record leaves in a journal batch with its own entry, the other copies stay, Undo puts it back */
+      var _rmCopyBtn = '';
+      try {
+        var _rcN = (typeof copyCount === 'function') ? (copyCount(p.n) | 0) : 1;
+        if (_mv && _rcN > 1 && typeof window.vaultRemoveCopy === 'function'){
+          var _rcK = (String(p.key) === String(p.n)) ? 0 : ((+(String(p.key).match(/ #(\d+)$/) || [0, 0])[1]) - 1);
+          if (_rcK >= 0 && _rcK < _rcN)
+            _rmCopyBtn = '<button type="button" class="vd-rmcopy" tabindex="-1" data-rmcopy="' + _rcK + '" title="remove this copy (copy ' + (_rcK + 1) + ' of ' + _rcN
+              + ') - the other copies stay; ↶ Undo puts it back" aria-label="remove copy ' + (_rcK + 1) + ' of ' + esc(p.n) + '"'
+              + ' onclick="event.stopPropagation();window.vaultRemoveCopy(\'' + jsArg(p.n) + '\', ' + _rcK + ')">✕</button>';
+        }
+      } catch (eRc) { _rmCopyBtn = ''; }
       var _say = esc(p.n) + ' (' + p.w + '×' + p.h + ')'
         + (_mv ? (p.manual ? gridActSay(' — placed by hand at ' + esc(_spot(p)), '. Drag to move it; right-click (or the lock) returns it to auto-pack')
                  : p.bad ? gridActSay(' — ⚠ ' + esc(p.bad) + '. Packed automatically', ' until you place it again or unlock it')
@@ -55330,6 +55347,7 @@ window.vaultAutoAssign = function(){
         + (_lst ? '<span class="vd-listed-mark" data-trade="listed" aria-hidden="true">L</span>' : '')   /* REG-2878 */
         + (typeof window._vaultEvidenceBtn === 'function' ? window._vaultEvidenceBtn(p.n) : '')
         + (typeof window._vaultItemBadges === 'function' ? window._vaultItemBadges(p.n) : '')   /* v3855 - the locker's own badge pair */
+        + _rmCopyBtn
         + (_mv && (p.manual || p.bad) ? '<button type="button" class="vd-unlock" tabindex="-1" data-unlock="' + esc(p.key) + '" title="' + gridActSay('', 'unlock — back to auto-pack (right-click the item does the same)') + '" aria-label="' + gridActSay('', 'unlock ' + esc(p.n) + ' — back to auto-pack') + '">' + (p.bad ? '⚠' : '🔒') + '</button>' : '')
         + '</div>';
     }).join('');
