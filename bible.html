@@ -13798,6 +13798,14 @@ function d2jspBatchHtml(view) {
     return out;
   }
   try { window._d2jspRangeLines = _d2jspRangeLines; } catch (e) {}
+  /* REG-3095 (#83, GrokBot 06:36) - IN A SHADOW THE FG BOX IS READ ONLY, AS POST IS DISABLED. Their console is shown, never
+     priced from here: the veil stops a typed key, yet the box still took "99" (a path with no key press reaches a writable
+     box), so it read as editable on a page that sends nothing. The shadow law's guard form: the veil's handle, else the
+     shadow class. */
+  function inShadow(){
+    if (window._tvdShadow) return true;
+    try { return document.documentElement.classList.contains('tvd-shadow'); } catch (e) { return false; }
+  }
   function cardHtml(n){
     var art = d2jspArt(n);
     var base = baseOf(n);
@@ -13830,8 +13838,10 @@ function d2jspBatchHtml(view) {
       + '<div data-d2jsp-log>' + logHtml(n) + '</div>'   /* REG-2872 the post log on the card */
       + '<div class="d2jsp-fields">'
       + '<div class="d2jsp-acts"><button type="button" class="vault-btn" data-d2jsp-options="' + esc(n) + '">Options</button>' + mark + remove + '</div>'
-      + '<label class="d2jsp-say">Your fg<input data-d2jsp-fg="' + esc(n) + '" value="' + esc(typedOf(n)) + '" inputmode="decimal" autocomplete="off" aria-label="Forum gold for this item"></label>'
-      + '<button type="button" class="vault-btn vault-btn-primary" title="' + esc(tip) + '" data-d2jsp-post="' + esc(n) + '"' + ((send == null || sold) ? ' disabled' : '') + '>Post</button>'
+      + '<label class="d2jsp-say">Your fg<input data-d2jsp-fg="' + esc(n) + '" value="' + esc(typedOf(n)) + '" inputmode="decimal" autocomplete="off"'
+        + (inShadow() ? ' readonly aria-readonly="true" title="Read only: this is their console, shown in a shadow"' : '')
+        + ' aria-label="Forum gold for this item"></label>'
+      + '<button type="button" class="vault-btn vault-btn-primary" title="' + esc(tip) + '" data-d2jsp-post="' + esc(n) + '"' + ((send == null || sold || inShadow()) ? ' disabled' : '') + '>Post</button>'
       + '</div></div></div>';
   }
   function currentCards(){
