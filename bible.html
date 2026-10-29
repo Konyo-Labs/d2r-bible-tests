@@ -23410,6 +23410,9 @@ function _artRolledBase(name){
   var rq = null;
   try { rq = (typeof _rolledQuality === 'function') ? _rolledQuality(clean) : null; } catch (eRq) { rq = null; }
   if (rq && rq.q === 'magic' && rq.base) { out.base = String(rq.base); return out; }
+  /* REG-3088 - Armor, Shield and Weapon name a class of bases, never one: which one is asked */
+  if (rq && rq.q === 'rare' && rq.slots && rq.slots.length === 1 && /^(Armor|Shield|Weapon)$/.test(rq.slots[0])) {
+    out.ask = 'which ' + rq.slots[0].toLowerCase() + '? the name does not say; a tooltip look settles it'; return out; }
   if (rq && rq.q === 'rare' && rq.slots && rq.slots.length === 1) { out.base = String(rq.slots[0]); return out; }   /* REG-2851 one grammar */
   if (rq && rq.q === 'rare' && rq.slots && rq.slots.length > 1)
     out.ask = rq.slots.join(' or ').toLowerCase() + '? the name does not say; a tooltip look settles it';   /* REG-2903 the doubt asked */
@@ -28813,8 +28816,20 @@ const RARE_NAME_POOLS = {
   /* v3849 (Elad 11:43-11:44, his ruling on the ALT's MAGIC locker): "Raven Whorl IS a ring" - a Whorl is a ring here, never
      the ring-or-jewel question that drew the blank box (raresuffix also lists orb + jewl; his ruling settles it). Gyre stays both. */
   Jewel:  ['Gyre','Talisman','Heart','Scarab','Eye'],   // #269 — 'Eye' is the word this block's own example names ("Viper Eye → a rare jewel") and the pool lacked
+  /* REG-3088 (#158, measured on his own sweep) - THE SLOTS THE TABLE ALWAYS HAD. Only the four rows above existed, so a rare
+     helm, boots, belt, armour, shield or weapon - Grim Hood, Raven Casque, Bone Visor, Raven Greaves, Glyph Badge, Cruel
+     Needle, Soul Bite - was "nothing on the board recognises this name" and sat in Unsorted. These rows are the game's
+     RareSuffix words for those itypes (RotW raresuffix.txt as the builder's CB_DB carries it), every word but the ones the
+     four rows above already answer (Clasp, Wing, Mark, Emblem, Fist, Claw, Gyre, Whorl, Heart keep REG-2402 / #269's
+     answer). A word two rows share is a doubt the name cannot settle, asked (REG-2903). A law holds every game word here. */
+  Helm:   ['Horn','Visage','Crest','Circlet','Veil','Hood','Mask','Brow','Casque','Visor','Cowl','Shell'],
+  Boots:  ['Shank','Spur','Tread','Stalker','Greaves','Blazer','Nails','Trample','Brogues','Track','Slippers'],
+  Belt:   ['Buckle','Harness','Lock','Fringe','Winding','Chain','Strap','Lash','Cord'],
+  Armor:  ['Hide','Pelt','Carapace','Coat','Wrap','Suit','Cloak','Shroud','Jack','Mantle','Shell','Flange'],
+  Shield: ['Guard','Badge','Rock','Aegis','Ward','Tower','Shield','Shell'],
+  Weapon: ['Bite','Scratch','Scalpel','Fang','Gutter','Thirst','Razor','Scythe','Edge','Saw','Splitter','Cleaver','Sever','Sunder','Rend','Mangler','Slayer','Reaver','Spawn','Gnash','Star','Blow','Smasher','Bane','Crusher','Breaker','Grinder','Crack','Mallet','Knell','Lance','Spike','Impaler','Skewer','Prod','Scourge','Wand','Wrack','Barb','Needle','Dart','Bolt','Quarrel','Fletch','Flight','Nock','Horn','Stinger','Quill','Goad','Branch','Spire','Song','Call','Cry','Spell','Chant','Weaver','Gnarl','Nails','Wood','Brand','Bludgeon','Cudgel','Loom','Harp','Bar','Hew','Crook','Mar','Stake','Picket','Pale','Flange'],
 };
-const RARE_NAME_PREFIXES = ['Beast','Eagle','Raven','Viper','Ghoul','Skull','Blood','Dread','Doom','Grim','Bone','Death','Shadow','Storm','Rune','Plague','Stone','Wraith','Spirit','Demon','Cruel','Empyrion','Bramble','Pain','Loath','Glyph','Imp','Fiend','Hailstone','Gale','Dire','Soul','Brimstone','Corpse','Carrion','Holocaust','Havoc','Bitter','Entropy','Chaos','Order','Rule','Warp','Rift','Corruption'];
+const RARE_NAME_PREFIXES = ['Armageddon','Empyrian','Beast','Eagle','Raven','Viper','Ghoul','Skull','Blood','Dread','Doom','Grim','Bone','Death','Shadow','Storm','Rune','Plague','Stone','Wraith','Spirit','Demon','Cruel','Empyrion','Bramble','Pain','Loath','Glyph','Imp','Fiend','Hailstone','Gale','Dire','Soul','Brimstone','Corpse','Carrion','Holocaust','Havoc','Bitter','Entropy','Chaos','Order','Rule','Warp','Rift','Corruption'];
 window.RARE_NAME_POOLS = RARE_NAME_POOLS; window.RARE_NAME_PREFIXES = RARE_NAME_PREFIXES;
 /* #269 (REG-2054) - ONE GRAMMAR FOR A ROLLED NAME, asked by the router AND both TV stub writers. GrokBot ticks 411-418:
    Dread Grasp / Storm Scarab tipped 'Base item', and Chaotic Grand Charm of Greed, Grand Charm of Inertia and Steel Grand
@@ -28823,7 +28838,8 @@ window.RARE_NAME_POOLS = RARE_NAME_POOLS; window.RARE_NAME_PREFIXES = RARE_NAME_
    -> {q:'rare', slots:[...]} for the exact two-word rare shape (a RarePrefix + a RareSuffix word); {q:'magic', base}
    for a charm / jewel / ring / amulet wearing a prefix and/or an 'of ...' suffix; null otherwise. Asked only for a name
    no catalogue knows - a real item never wears these clothes here. */
-var _MAGIC_SMALL_RE = /^(?:([A-Z][A-Za-z'\-]*)\s+)?(Grand Charm|Large Charm|Small Charm|Jewel|Ring|Amulet)(?:\s+(of\s+[A-Z][A-Za-z' \-]*))?$/;
+/* REG-3088 - and a suffix of the game's "of the X" shape (of the Whale, of the Fox): "Shadow Amulet of the Whale" was unread */
+var _MAGIC_SMALL_RE = /^(?:([A-Z][A-Za-z'\-]*)\s+)?(Grand Charm|Large Charm|Small Charm|Jewel|Ring|Amulet)(?:\s+(of\s+(?:the\s+)?[A-Z][A-Za-z' \-]*))?$/;
 /* REG-2525 (V1 round 3) — A REAL UNIQUE IS NEVER A ROLLED NAME. The Gloves row (REG-2402) put 'Claw' in the pools and
    'Raven' is a prefix, so the grail unique Raven Claw is also a rare's shape - as Rune Master (Rune + Master) always was.
    The catalogue is asked first, and that includes the uniques roster's own sources (ITEM_VALUE + _UNI_EXTRA, the names
@@ -28854,6 +28870,9 @@ function _rolledQuality(name){
   if (!nm) return null;
   try { if (typeof d2rItemLookup === 'function' && d2rItemLookup(nm)) return null; } catch(e){}
   try { if (_rareRealName(nm)) return null; } catch(e){}
+  /* REG-3088 - a BASE is never a rolled name: Bone Shield, Grim Wand, Death Mask and Spirit Mask wear a prefix and a suffix of
+     the game's rare tables, and Demon Heart wore one before */
+  try { if (typeof _baseRec === 'function' && _baseRec(nm)) return null; } catch(e){}
   var w = nm.split(/\s+/);
   if (w.length === 2 && RARE_NAME_PREFIXES.indexOf(w[0]) >= 0){
     var ks = Object.keys(RARE_NAME_POOLS).filter(function(k){ return RARE_NAME_POOLS[k].indexOf(w[1]) >= 0; });

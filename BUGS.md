@@ -719,6 +719,40 @@ both are exactly as before. The new guard is the board's fourth tvd-shadow check
 guard by its own line (REG-3049's form on the ship line) instead of a total of 3. Law:
 test_the_d2jsp_desk_is_read_only_in_a_shadow (the pane's own script in node: own, snapshot shadow, class-only shadow; 4
 red-proofs, each RED). NEEDS LIVE: GrokBot types into the fg box in a shadow and sees it refuse.
+### REG-3088 - THE RARE GRAMMAR KNEW FOUR SLOTS OF THE GAME'S TEN: GRIM HOOD, RAVEN GREAVES AND CRUEL NEEDLE SAT IN UNSORTED (#158)
+Same measurement as REG-3087. 13 more un-homed names were rares whose suffix names a slot RARE_NAME_POOLS never carried:
+- helms: Grim Hood, Raven Casque, Bone Visor, Pain Visor, Plague Horn;
+- boots: Raven Greaves;
+- shields: Glyph Badge;
+- weapons: Cruel Needle, Shadow Scalpel, Soul Bite, Storm Bar.
+The pools held amulet, ring, jewel and gloves only. The game's RareSuffix table, which the builder's CB_DB carries with
+each word's itypes, names helm, boots, belt, armour, shield and weapon too. Its RarePrefix table has Armageddon and
+Empyrian, which the page's list lacked.
+Two more gaps:
+- The magic grammar refused any "of the X" suffix (Shadow Amulet of the Whale).
+- Nothing kept a BASE out: Bone Shield, Grim Wand, Death Mask and Spirit Mask wear a rare's two words, and Demon Heart was
+  already read as a rare amulet.
+FIX:
+- RARE_NAME_POOLS gains the Helm, Boots, Belt, Armor, Shield and Weapon rows from the game's table. Every word is included
+  except the ones the four rows already answer: Clasp, Wing, Mark, Emblem, Fist, Claw, Gyre, Whorl and Heart keep
+  REG-2402 / #269's answer. The console's rare-combo harvest reads the same literal.
+- The prefixes gain Armageddon and Empyrian.
+- The magic grammar reads "of the X".
+- _rolledQuality refuses a name the base table knows.
+- A one-slot class (Armor, Shield, Weapon) asks "which armor?" and never names a base.
+After: 35 of the 51 found their home (with REG-3087), and no name moved from one home to another. Bone Visor, called a
+misread in REG-2080, is a game rare (Bone + Visor, a helm suffix).
+WHY A LITERAL, NOT A RUNTIME READ OF THE TABLE:
+- The console's rare-combo harvest (control_app, v943.1) reads this literal out of the page source, so a runtime-only read
+  would split the page from the console.
+- The rows are generated from CB_DB, and the law fails the moment a game RareSuffix or RarePrefix word is missing from them.
+GUARD:
+- tv/test_a_rolled_name_is_read_in_every_slot_and_any_casing.py: 5 cases, including every game RareSuffix and RarePrefix
+  word being in the pools. 5 red-proofs, RED.
+- Re-aimed tests/v332_rare_name_pools.spec.ts (browser, CI), whose slot list is now the ten rows.
+- Re-aimed test_a_rune_or_a_gem_is_named_never_unrecognised: its "name nothing knows" was Bone Visor, which is a game rare;
+  it is now a made-up name.
+
 ### REG-3087 - A ROLLED NAME READ IN CAPITALS HAD NO HOME: 25 OF THE 51 UN-HOMED NAMES ON HIS SWEEP (#158)
 Every one of the 307 names on his last vault sweep was routed through the page's own suggestMule, in node on claude/int.
 51 had no home ("nothing on the board recognises this name ... it stays in Unsorted"). 25 of those were reads in

@@ -54,9 +54,10 @@ OUT.handAdded = Array.from(owned).length - before;
 W._vaultAutoIntakeSet && W._vaultAutoIntakeSet(true);
 var g = W.tvVaultRegister('Perfect Amethyst', { by: 'hand', at: new Date().toISOString(), where: 'the law' });
 OUT.reg = g && { refused: g.refused, why: g.why };
-/* the register door's no-home answer carries the router's own Unsorted reason (REG-2857's sweep): a name nothing knows.
-   v3849: a bare base name (Bone Visor) is a readable basic item now and files on MAGIC & RARE, so the name is one no table holds */
-var v = W.tvVaultRegister('Qorvath Mirelight', { by: 'hand', at: new Date().toISOString(), where: 'the law' });
+/* the register door's no-home answer carries the router's own Unsorted reason (REG-2857's sweep): a name nothing knows */
+/* REG-3088 - 'Bone Visor' is a game rare (Bone + Visor, a helm suffix) now read by the grammar; a name nothing knows is a
+   made-up one */
+var v = W.tvVaultRegister('Quovadis Fnord', { by: 'hand', at: new Date().toISOString(), where: 'the law' });
 OUT.regUnsorted = v && { refused: v.refused, why: v.why };
 })();
 """

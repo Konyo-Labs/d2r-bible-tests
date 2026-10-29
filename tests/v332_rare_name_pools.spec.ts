@@ -28,7 +28,9 @@ test('RARE_NAME_POOLS holds the authoritative per-slot suffixes + shared prefixe
   expect(r.prefixHasViper).toBe(true);
   expect(r.glovesHasGrasp).toBe(true);  // "Wraith Grasp" = gloves (or a ring)
   expect(r.ringHasGrasp).toBe(true);
-  expect(r.slots).toEqual(['Amulet', 'Gloves', 'Ring', 'Jewel']);   // REG-2402 — the Gloves row (#162 item 4)
+  // REG-2402 — the Gloves row (#162 item 4); REG-3088 — the game's other RareSuffix itypes (helm, boots, belt, armour,
+  // shield, weapon), which left every rare of those slots with no home
+  expect(r.slots).toEqual(['Amulet', 'Gloves', 'Ring', 'Jewel', 'Helm', 'Boots', 'Belt', 'Armor', 'Shield', 'Weapon']);
 });
 
 test('the name-pool reference renders at the top of High-Value Finds', async ({ page }) => {
