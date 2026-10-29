@@ -5625,6 +5625,51 @@ def _profile_chars_learned():
     return chars_learned_answer(full=False)
 
 
+#: #251 (REG-2926) - THIS PC'S SAVE NAMES, for the Characters room and the vault's mule check: what tv/d2s_read.saves()
+#: reads from the save folder (names and how many ids carry each, never an id or a file time). The answer is kept while
+#: nothing in the save folders changes - each folder's mtime and every .d2s's size and mtime - because a .d2s is read
+#: whole; a folder that will not stat is never cached. GET /api/saves.
+_SAVES_CACHE = {"sig": None, "answer": None}
+_SAVES_LOCK = threading.Lock()
+
+
+def _saves_sig(dirs):
+    """-> a tuple that changes when a save folder gains, loses or rewrites a file; None when one will not stat or list."""
+    sig = []
+    try:
+        for d in dirs:
+            sig.append((d, os.stat(d).st_mtime_ns))
+            for n in sorted(os.listdir(d)):
+                if n.lower().endswith(".d2s"):
+                    st = os.stat(os.path.join(d, n))
+                    sig.append((n, st.st_size, st.st_mtime_ns))
+    except OSError:
+        return None
+    return tuple(sig)
+
+
+def saves_answer(platform=None, home=None, saved_games=None, _read=None):
+    """#251 (REG-2926) - GET /api/saves. -> dict, never raises (d2s_read.saves' shape, plus `cached` when it was kept).
+    platform/home/saved_games are for a fixture; the console passes none, so this PC's own folders are read."""
+    try:
+        import d2s_read as _dr
+        read = _read or _dr.saves
+        dirs, _looked, why, unread = _dr.save_dirs(platform, home, saved_games)
+        sig = None if (why or not dirs or unread) else _saves_sig(dirs)
+    except Exception as e:
+        return {"ok": False, "state": "unknown", "chars": None, "d2s": None,
+                "why": "looking for the save folder raised %s" % type(e).__name__}
+    key = (platform, home, saved_games, sig)
+    with _SAVES_LOCK:
+        if sig is not None and _SAVES_CACHE["sig"] == key and isinstance(_SAVES_CACHE["answer"], dict):
+            return dict(_SAVES_CACHE["answer"], cached=True)
+    ans = read(platform, home, saved_games)
+    if sig is not None and isinstance(ans, dict) and ans.get("ok") is True:
+        with _SAVES_LOCK:
+            _SAVES_CACHE["sig"], _SAVES_CACHE["answer"] = key, dict(ans)
+    return ans
+
+
 def _profile_api_path():
     return os.path.join(_log_root(), ".roster_profile_api.json")
 
@@ -49997,6 +50042,9 @@ class Handler(BaseHTTPRequestHandler):
         # ══ GROK EYES (G5) — REMOVABLE (delete this stanza) ══
         if path == "/api/chars_learned":
             self._json(200, chars_learned_answer())
+            return
+        if path == "/api/saves":
+            self._json(200, saves_answer())   # #251 (REG-2926) - this PC's save names, kept while the folders stand still
             return
         if path == "/api/g5_status":
             self._json(200, _g5_status())
