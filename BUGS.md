@@ -827,6 +827,82 @@ REG-3087, 3088, 3089 and 3098). The rejuv and the two materials the door refuses
 GUARD: tv/test_a_sweep_apply_claims_possession_only_through_the_vault_door.py, 5 cases on a payload of the console's own
 shape (fixture names), his hand's two doors included. 3 red-proofs, RED. Re-aimed test_a_tv_stub_never_outranks_what_the_name_is:
 its chronicle rows carried no look and were owned by toggleOwned's ungated arm; they now carry two sessions' looks.
+### REG-3081 - THE STALE COVERAGE FLOORS COULD BE RE-BLESSED NOWHERE (#2, still broken in its own note)
+Task #2 names ~30 stale floors in tv/render_coverage.json: the push gate measures more nodes than the floor holds, so
+that many watched nodes could vanish inside a green run. `render_check.py --bless` raises them and needs a browser. His
+Mac does not run one for a suite, and no workflow ran it. NEW .github/workflows/render-bless.yml runs it on CI, under the
+bless's own refusal rules, unchanged:
+- the FULL set or nothing: no target is named, and a subset bless refuses;
+- every target clean: one red or UNKNOWN target refuses, and the record names it (REG-3082);
+- a floor only rises: a lower CI count is held and listed;
+- a cold tree: a fresh checkout every run, no restored sandbox (v3215).
+It starts by hand (workflow_dispatch, once on main) or from a push to ci/bless/**, never on main's pushes. Its token
+reads only and it never commits. TV_RENDER_SCALE is set to render_bound.CAP, since no push hook kills a slow run there and
+the job's own 40-minute ceiling stands.
+One artifact is uploaded even when the bless refuses: the floor, its diff, the log, the record (hidden files included)
+and the shots. The job summary is `render_bless.py report`, and the job's exit code is render_check's (PIPESTATUS, not
+tee's). The floors it hands back are applied with `render_bless.py apply` (REG-3083) on the machine whose push gate
+enforces them.
+Law test_ci_blesses_coverage_on_a_full_cold_run (the workflow text, comments dropped), 6 cases, 8 red-proofs RED,
+baseline green. The workflow is named in test_a_newer_ci_push_cancels_the_older_run's WORKFLOW_FILES, so its concurrency
+block is held with every other ci workflow's; that law, the slow-mirror law and the push-cache law are green.
+UNMEASURED: no run of the job yet. It needs a push to ci/bless/<x> or a dispatch from main. Expected blockers, read from
+the code: the heart targets draw from tv/.heart2.json, which a cold checkout lacks (REG-2451: six heart readings "shrank"
+unseeded). Their counts will be held, not written. If they also fail to RENDER, the record will name them and the bless
+refuses, and that is the next decision.
+
+### REG-3083 - A FLOOR BLESSED ON CI COULD OUTRUN THE PUSH GATE THAT ENFORCES IT (#2)
+CI's render-bless job (REG-3081) measures from a cold sandbox on a Linux Chromium. The floor it writes is enforced by the
+push gate on his Mac. A CI count above what the Mac measures would refuse his next push ("measured X, was Y") over a node
+that was never gone, at ~25 minutes a push. Its diff is a measurement, and not yet a floor this tree can carry.
+NEW tv/render_bless.py, no browser:
+- `report <record>` is the CI job's summary: complete or why it refused, every raise, hold and add.
+- `apply <record> [--verdict PATH] [--write]` raises each floor to min(CI's count, the push gate's count), only where the
+  push gate measured above the floor too. The push gate's count comes from this machine's tv/.render_verdict.json; its
+  coverageStale rows are the widths its last full run measured above the floor.
+- Both numbers are measurements, so nothing is invented and nothing is lowered.
+- Refused whole: a CI record that is not complete, and a verdict that is not a full, clean, unaborted run with a known
+  floor and no coverage refusal.
+- A LIVE population (COVERAGE_VOLATILE) is never raised.
+- --write changes only the floors it raises; the node signatures are diagnostics and stay.
+Law test_a_ci_bless_never_outruns_the_push_gate (Python, fixtures only), 8 cases, 6 red-proofs RED (CI's count goes in
+whole, a width the gate never measured above its floor is raised, a live population is raised, an unclean verdict speaks
+for the gate, a raise lowers a floor, an incomplete record is applied), baseline green.
+
+### REG-3082 - A BLESS LEFT ONLY A MERGED FLOOR, AND A REFUSED ONE LEFT NOTHING (#2)
+`render_check.py --bless` writes tv/render_coverage.json, a merge in which a held count (lower than its floor), a raised
+one and a new width look alike afterwards. A refused bless wrote nothing, and its one line said "this run did not report
+every target" even when every target reported and one was red. On the machine that ran it the scrollback covers that. For
+a bless made on another venue (CI's render-bless job, REG-3081) it would leave a floor and no measurement under it, or a
+red job and no reason.
+The bless now writes .render_bless.json beside the floor (so a law's temporary floor keeps its record with it):
+- every count it measured;
+- what it raised, held and added;
+- or, refused, why: "it asked for N of M targets", "it stopped early at X", "N target(s) did not render cleanly (names)",
+  "N target(s) were UNKNOWN". main() hands that reason in, and the refusal prints it.
+The floor rules are untouched: it only rises, and a run that is not full and clean writes no floor. The record is
+gitignored, a local fact like .render_verdict.json. test_render_coverage's one case that blesses the real floor file now
+restores the record too, so its fixture bless never stands as the real one.
+Law test_a_bless_records_what_it_measured (the real _coverage_bless and main(), the browser and the renders stubbed,
+the floor in a temp file), 3 cases, 4 red-proofs RED, baseline green. Coverage neighbours green: test_render_coverage
+(re-proved, bad 0 of 5), test_the_ratchet_is_not_skipped_by_a_subset, test_a_coverage_drop_can_be_named.
+### REG-3092 - ON A SHORT SCREEN FOUR FEATURES HAD NO DOOR LEFT: THE TOOLS MAP, THE VAULT GUIDE, THE FORGE LEGEND, THE HELP (CI chain slice 1, his rule via the team lead)
+CI found two laws contradicting each other: REG-2862 hides all seven tray orbs at 480px tall and under (they ride into the
+tab strip there), and tests/v1800_tray_popovers_reachable asked the Tools map and inbox orbs to open their popovers at
+640x400 - 4 cases red. REG-2862 named a second door for two orbs (the inbox's sticky panel on Sessions, MOVE TASKS'
+toolbar chip) and none for the rest, so on a short screen the Tools map, the Vault guide, the Forge legend and the help
+could not be opened at all. His rule: an orb yields only if its feature has another door on that screen. They do not come
+back as floating orbs - at these heights even the lowest slot rode into the strip, so no fixed spot is clear (v1810,
+REG-2862) - each gets an IN-FLOW door where it lives, MOVE TASKS' pattern, shown only where its orb yields: help at the
+end of the tab strip (#tabs-help), the Tools map in the Tools index (#ti-chip-map), the Vault guide in the vault toolbar
+(#vault-chip-guide), the Forge legend in the Runewords chip row (#forge-legend-door, never the Crafts room). The compass
+needs none (its chips are the strip's tabs). v1800 re-aimed: on a screen 480px tall or less the Tools map and Vault guide
+cases open through their doors (asserting the orb really yielded), and the inbox case measures its door, the sticky panel
+on Sessions (shown, heading on screen, first answer hit); the Vault guide's 640x400 case is back (it was minH 481 while the
+guide had no way in). Law: test_a_yielding_orb_leaves_a_door - every orb the short-screen block hides has a named door
+(a yield with no door fails by name), each door exists once, a button door runs its orb's opener and opens the feature on
+the whole page in node, each is shown only where its orb yields, none is a fixed overlay; 6 red-proofs, RED. Pixels at
+640x400: v1800 on CI.
 
 ### REG-3042 - A SET PIECE OR A RUNEWORD IN THE MAGIC & RARE REGISTER WAS HOMED ON MAGIC & RARE (#163, GrokBot on Dean's shadow)
 Dean's saved records filed Aldur's Rhythm (a set piece) and Enigma (a runeword) on MAGIC & RARE. The file door has refused to treat

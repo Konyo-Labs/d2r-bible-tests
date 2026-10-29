@@ -13373,6 +13373,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_receipt_look_is_one_real_look.py")], 300,
          needs_app=False,
          why="REG-3098 (#158): the register's receipt look is one real look, never two looks' fields sewn together"),
+    Gate("test_a_yielding_orb_leaves_a_door",
+         [sys.executable, os.path.join(HERE, "test_a_yielding_orb_leaves_a_door.py")], 300,
+         needs_app=False,
+         why='REG-3092 an orb yields on a short screen only if its feature has another door there: every hidden orb names its door, and the door opens the feature'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
