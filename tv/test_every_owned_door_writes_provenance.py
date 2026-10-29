@@ -338,7 +338,7 @@ function sorter(P, A){
   return calls;
 }
 function w6(P, A, pool){
-  var assign = A;
+  var assign = A, poolAll = pool;   /* REG-3099 - the prune's "still owned" is the whole owned pool */
   function muleById(id){ return (id === 'uni-armor' || id === 'uni-small') ? { id: id } : null; }
   STORE['d2r_vaultProv'] = JSON.stringify(P);
 %(w6)s

@@ -116,7 +116,7 @@ class AWrongShapedMuleStoreNeverStopsTheVault(unittest.TestCase):
     def test_the_render_prune_drops_nothing_while_held(self):
         s = D.src()
         prune = D.between(s, "    var _pruneHeld = ", "    // v360 — shared-stash items", keep_b=False)
-        body = ("var assign = { A: 'uni-armor', B: 'gone-mule', C: 'uni-armor' }, pool = ['A'], _pvW6 = {};"
+        body = ("var assign = { A: 'uni-armor', B: 'gone-mule', C: 'uni-armor' }, pool = ['A'], poolAll = pool, _pvW6 = {};"
                 "function muleById(id){ return id === 'uni-armor' ? { id: id } : null; }"
                 "window._vaultBasisHeld = function(){ return HELD; };"
                 "var HELD = %s;\n" + prune + "\nOUT.left = Object.keys(assign).sort();")

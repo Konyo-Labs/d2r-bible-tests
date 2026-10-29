@@ -63,7 +63,7 @@ def _tab(s):
             + "var renderVault = function(){};\n(function(){\n" + D.vault_head(s) + "\n"
             + D.fn(s, "saveA") + "\n" + D.fn(s, "saveR") + "\n"
             + "function muleById(id){ return roster.find(function(m){ return m.id === id; }); }\n"
-            + "window.__prune = function(pool){ var _pvW6 = {};\n" + D.between(s, PRUNE_A, PRUNE_B, keep_b=False) + "\n};\n"
+            + "window.__prune = function(pool){ var poolAll = pool, _pvW6 = {};\n" + D.between(s, PRUNE_A, PRUNE_B, keep_b=False) + "\n};\n"
             + "window.__V = { saveA: saveA, saveR: saveR, roster: function(){ return roster; }, assign: function(){ return assign; },"
             + " ids: function(){ return roster.map(function(m){ return m.id; }); } };\n})();\n")
 

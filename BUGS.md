@@ -997,6 +997,33 @@ faint dotted leader to it. Nothing is shortened or shrunk - every line is arithm
 lines in their new form (`cls: 'hrt-fan ...'`). Law: test_the_fan_captions_never_overlap (runs the real renderer in node,
 measures what it drew with its own 0.61-em monospace box model), 5 red-proofs, RED. Pixels: the render gate's heart-fan
 targets, on CI.
+### REG-3099 - A DISPLAY FILTER UNDID HIS PLACEMENT OF 'KEY OF HATE' ON WHICHEVER LOAD SAVED FIRST (#148, v2200:52)
+tests/v2200:52 ("a migration overwrote his manual placement of 'Key of Hate'") was red on both attempts on main 014d4fc3d
+and flaky on other trees. CI's trace of the red attempt: on the reload, "[vault] seed cleanse: removed 1 ... spared 3",
+and d2r_muleAssign['Key of Hate'] was gone. Replayed on the whole page in node, step by step, it is not the cleanse:
+- the vault paint's prune keeps a filing while its name is "still owned", and tested that against `pool`;
+- `pool` is the DOCK's list, which drops the account-shared-stash names (runes, keys, essences ...);
+- 'Key of Hate' is one, so its '__keep' row was deleted from the map IN MEMORY at every paint, while d2r_muleAssign
+  still held it;
+- the next whole-map save wrote memory over the store. On that load it was the seed cleanse's own removal: it took the
+  unfiled 'The Stone of Jordan', correctly, through vaultRemove -> saveA. It could as well have been any filing.
+"Sometimes" was which page ran the deferred cleanse first: page 1 when it lived 1.5 s, else the reload, after its paint.
+His rule: his hand always wins; no reader, migration or prune undoes a manual placement.
+FIX: the prune reads the whole owned pool (`poolAll`); the dock's filter stays a display filter. Swept: no other site
+deletes a filing against `pool` (the other `pool` reads build lists or filter the carried strip).
+Law test_his_placement_survives_the_reload_whoever_saves drives it deterministically on the whole page in node: boot,
+seed, reload, paint, then the cleanse's save. It reds every time on the defect. The prune still drops an unwitnessed
+filing whose item left owned. 3 cases, 2 red-proofs RED, baseline green.
+Re-aimed, because their cut harnesses supplied `pool` alone. Each fixture's pool is wholly owned, so poolAll = pool is
+faithful, and each re-proved with bad 0:
+- test_a_filing_is_kept_by_its_witness_not_by_owned;
+- test_a_roster_this_board_wrote_is_read_and_keeps_his_mules;
+- test_a_roster_without_its_core_lockers_is_unknown;
+- test_a_store_another_tab_removed_reads_as_its_default;
+- test_a_witness_store_that_will_not_read_holds_the_vault;
+- test_a_wrong_shaped_mule_store_never_stops_the_vault;
+- test_every_owned_door_writes_provenance.
+28 safe neighbours and 3 node-only laws safe_laws refuses for a test import (run by hand) are green.
 
 ### REG-3042 - A SET PIECE OR A RUNEWORD IN THE MAGIC & RARE REGISTER WAS HOMED ON MAGIC & RARE (#163, GrokBot on Dean's shadow)
 Dean's saved records filed Aldur's Rhythm (a set piece) and Enigma (a runeword) on MAGIC & RARE. The file door has refused to treat

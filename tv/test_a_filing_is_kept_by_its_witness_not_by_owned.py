@@ -55,6 +55,7 @@ function _provAll(){ return JSON.parse(JSON.stringify(PROV)); }
 var ROSTER = { 'uni-armor': 1, 'uni-small': 1 };
 function muleById(id){ return ROSTER[id] ? { id: id } : null; }
 var pool = %(pool)s;
+var poolAll = pool;   /* REG-3099 - the prune's "still owned" is the whole owned pool; this fixture's pool is all owned */
 var assign = %(assign)s;
 %(prune)s
 process.stdout.write(JSON.stringify(assign));
