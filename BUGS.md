@@ -553,6 +553,15 @@ ask failed. The UNKNOWN path now runs _reopenClear() after painting UNKNOWN, as 
 reached on the cached open and on both fetch outcomes again. Reproduced on 6d69506ac (the same 2-of-3 failure) and green
 with the line restored (34 OK); the REG-3050 law's harness gained the filter state the restored call reads, its source
 check and red-proof [1] follow the line (5 of 5 RED). Anchors bad 0.
+### REG-2866 - THE SHADOW CALLED ITS COPY'S AGE THE OWNER'S "LAST UPLOAD" (GrokBot #230) - SUPERSEDED BEFORE SHIPPING BY REG-3034/3037
+SUPERSEDED before shipping by REG-3034/3037 (v3839/v3840): both answered GrokBot's "last upload N ago". REG-3034/3037 name each
+record's own store/upload age, measured on the site ("board uploaded N ago" beside the bar's " · snapshot <clock>", "sessions
+uploaded N ago", "roster row stored N ago"). REG-2866's premise - an unchanged upload is not stored again, so t dates the stored
+copy - is kept as REG-3037's roster-row wording. Its own fix (agent-212's "this copy is from <clock>" words through
+_shadowCopySay, and its 6 re-aimed red-proofs) was built on the integration chain (int-6) and dropped from the ship-chain
+replay by the lead's ruling of 2026-10-29: the two fixes print contradictory words for one field and cannot be merged. No code
+of REG-2866 ships.
+
 
 ### REG-3084 - REG-3056 ALSO STOOD THE SEALED CHRONICLE'S LANDING ASIDE, SO v1630'S SEALED-CARD SPECS WENT RED (v3839's CI)
 REG-3056 made his chip outrank BOTH auto-landings. GrokBot's report was only about the Crafts room (ALL snapping back to MAKE
