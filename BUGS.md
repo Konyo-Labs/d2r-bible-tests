@@ -405,6 +405,117 @@ GUARD: tv/test_the_guided_sweep_leads_him_container_by_container.py, 6 cases thr
 "N more" count, questions-first and a cut that never hides a question. 8 red-proofs, RED. On claude/agent-158p4 it is red:
 "_vaultGuideSteps is not a function".
 
+### REG-3014 - THE FIRST-SIGHTING DRAIN CASE SENT A FRAME THAT NEVER SAID IT READ THE STASH WHOLE (CI on ci/claude-chain-1)
+test_vault_l1_throw_out_rows_drain's first-sighting case (REG-2843's) drained its throw-out row with an inline frame that carries
+no `complete: true`. REG-2861 counts an item gone only from a frame that read its container whole, and its own change taught the
+law's frame() helper to say so, but not this inline frame. So on the chain the row read "→ NOWHERE" and never "gone 1/5"
+(CI on slice 1). The frame now says complete: true, as frame() does. Measured in node on the slice's page: without it,
+"not counted - the frame does not say it read its container whole"; with it, gone 1. Chrome law: CI proves it.
+
+
+### REG-3013 - THE HAND-ADD LAW LOOKED FOR THE RAW "stash:c0r0" IN FIND, WHICH REG-2884 NOW SAYS IN ITS OWN WORDS (CI on ci/claude-chain-1)
+test_vault_l1_a_hand_add_routes_by_type's FIND case asserted the move target's raw cell ("stash:c0r0") in FIND's text. Since
+REG-2884 (#137) FIND names a hand add's target as "Mule 1 · Personal stash · col 1 · row 1 · target", and the case went red on
+the first CI grade of the replayed chain (the chain's own steps never ran this Chrome law). The case now resolves the target
+through the page's own _vaultCellAt and requires FIND to name that col and row. Measured in node on the slice's page: target
+stash:c0r0 -> "col 1 · row 1", present in FIND's row. Chrome law: CI proves it.
+
+
+### REG-2866 - THE SHADOW CALLED ITS COPY'S AGE THE OWNER'S "LAST UPLOAD" (GrokBot #230) - SUPERSEDED BEFORE SHIPPING BY REG-3034/3037
+SUPERSEDED before shipping by REG-3034/3037 (v3839/v3840): both answered GrokBot's "last upload N ago". REG-3034/3037 name each
+record's own store/upload age, measured on the site ("board uploaded N ago" beside the bar's " · snapshot <clock>", "sessions
+uploaded N ago", "roster row stored N ago"). REG-2866's premise - an unchanged upload is not stored again, so t dates the stored
+copy - is kept as REG-3037's roster-row wording. Its own fix (agent-212's "this copy is from <clock>" words through
+_shadowCopySay, and its 6 re-aimed red-proofs) was built on the integration chain (int-6) and dropped from the ship-chain
+replay by the lead's ruling of 2026-10-29: the two fixes print contradictory words for one field and cannot be merged. No code
+of REG-2866 ships.
+
+
+### REG-3084 - REG-3056 ALSO STOOD THE SEALED CHRONICLE'S LANDING ASIDE, SO v1630'S SEALED-CARD SPECS WENT RED (v3839's CI)
+REG-3056 made his chip outrank BOTH auto-landings. GrokBot's report was only about the Crafts room (ALL snapping back to MAKE
+NOW). The Chronicle's v2094 landing - an ALL that holds no runeword work on a sealed chronicle lands on Completed, where the
+sealed card lives - is not a snap-back: tests/v1630_sealed_stamp.spec.ts clicks Completed (a toggle, so on a board already
+landed there it goes to ALL) and relies on the landing to come back. Routine I went red on 5 of its cases on both attempts of
+v3839's grade. The hand guard now covers the crafts room's auto-land only. Law case
+test_a_sealed_chronicle_still_lands_on_completed (whole page in node: a sealed chronicle's empty ALL lands on Completed even
+after his chip); red-proof RED; REG-3056's crafts cases and proofs unchanged.
+### REG-2987 - THE EAGLE'S DOCTOR PASS PEAKED THE CONSOLE'S OWN HEAP AT +500-800 MB EVERY TICK; IT RUNS IN A SHORT-LIVED CHILD NOW (#172, his priority 1)
+REG-2985's spike profile (a scratch console of his Mac, his data, Python 3.9): with the source parses gone, every RSS spike
+past 450 MB sat inside the eagle's in-process console_doctor.run - corroborate's readings, the eye audit, the run census, the
+evidence tiers, health_engine.report. GrokBot on the ALT (v3836): free memory 1.5 GB -> 689 MB -> 560 MB over an hour.
+On a console the pass now runs in a short-lived child (audit_child.doctor_rows, `python3 audit_child.py doctor ...`) and its
+memory leaves with it; the console asks only console_doctor.IN_PROCESS itself - the 15 rows that read the process they run in
+(the serving module's fleet/presence state, sys.modules, os.getpid, the boot records PILLOW_BOOT/NUMPY_BOOT, the test-venue
+memo) - and merges them in roster order. The rules: a stale answer is never served (each ask carries a nonce; its result file
+is read only for that nonce and removed); one pass at a time; a child that fails, times out or writes nothing leaves the pass
+UNKNOWN with no rows until the next tick - never derived in the console, never an older pass. The child runs below normal
+priority (nice 10 / BELOW_NORMAL_PRIORITY_CLASS) and writes its current check where eagle_state() publishes `measuring`
+(inChild). His eagle button (/api/eagle) asks through the same door. run() gained `only`/`skip`; an `only` part primes no
+per-tick cache. A law, the gate, CI and a CLI are not consoles and run the whole pass in their own process, as before.
+MEASURED (the same scratch console, sandbox-exec denying his console and agent ports, 1500 s, eagle every 60 s):
+  BEFORE (in-process pass), run 1 (RSS only): console ru_maxrss 919 MB, per-pass RSS peaks 522-856 MB over 14 passes,
+  RSS back to 34-56 MB after 11 of them (452/437/309 after three); console CPU 386 s, children 299 s (max 595 MB: the
+  audit children, git, lsof). Run 2 (RSS and footprint, the same setup): ru_maxrss 735 MB; footprint (resident +
+  compressed) peaks 805-1,010 MB over 14 passes, between passes 185-831 MB (747-760 after the periodic passes), no
+  monotonic growth; RSS between passes 34-43 MB, so on his Mac an RSS trough hides compressed memory, not freed memory.
+  AFTER (pass in a child): console ru_maxrss 652 MB, per-pass RSS peaks 316-636 MB over 11 passes; footprint (resident +
+  compressed) peaks 529-640 MB, between passes 163-586 MB with no upward trend; console CPU 177 s, children 639 s (max
+  872 MB: the doctor child). Every child pass answered (140 rows; 38-40 s every tick, 284 s / 204 s with the periodic
+  tier); no doctor child was left running after the console exited. The console imports 471 modules, not 528.
+  The cost: total CPU 816 s against 685 s (+19%; run 2 of before: 542 s), a cold pass in a fresh process every tick, run
+  below normal priority. Footprint peak 1,010 -> 640 MB (-37%). Still unnamed: what drives the console's ~600 MB peaks on
+  some passes after the move (a stack-sampled run is next).
+Law: test_the_eagles_pass_runs_in_a_child (8 tests, 11 red-proofs RED): an AST scan holds every process-bound check to
+IN_PROCESS; a part asks only its part and primes nothing; a real child (pointed at a closed port) answers the rows this process
+does; a stale, missing or unreadable answer and a timeout are UNKNOWN, never served; one pass at a time; the eagle asks the
+child on its own cadence, merges in roster order, goes UNKNOWN when the child does not answer, and runs whole off a console;
+the eagle button asks through the same door. Re-anchored: test_a_periodic_check_is_still_watched_unattended's red-proof (the
+off-console call sits one block deeper).
+
+### REG-2998 - A SCRATCH CONSOLE ADDRESSED HIS LIVE CONSOLE AND HIS AGENT BY THEIR PORTS (#172, agent-144's own disclosure)
+console_doctor.CONSOLE was the constant http://127.0.0.1:<his port>. While profiling REG-2985, a scratch console on :17991
+ran its eagle, and its doctor sent its reads to HIS live console: GETs, /api/board_ownership (which runs JavaScript in the
+window he is looking at), /api/window {do: frame}. Every console a law spawns on his Mac did the same. The sweep of the class:
+  - stage_witness asked his console for the room (STATUS_URL) and looked up the pid on his port to read his window's pixels;
+  - organ_matrix asked his console by its port; shelf_corroborate, paint_witness and coldread read TV_CONTROL_PORT with a
+    his-port fallback of their own; journal_retention read TV_PORT (the AGENT's variable) with his console's port;
+  - the engine loop asked the agent bridge at his agent's port by name instead of AGENT_PORT;
+  - control_app.AGENT_PORT defaulted to his agent's port even on a console that named another control port. The new law
+    measured it: two `lsof -tiTCP:<his agent>` probes from one every-tick pass, and that path can kill the pid listening there.
+Now one helper, tv/console_port.py, answers "which console is mine": TV_CONTROL_PORT (control_app.CONTROL_PORT reads the same
+variable, and a child inherits it). It answers his console only when nothing names one (a CLI he runs), and an unreadable
+value is NO console, never his. Every door above goes through it. A console's agent is TV_PORT, else the port below its own
+control port, so his console still gets his agent and a scratch console gets its own. The tools that read his live console
+ON PURPOSE (the launchers, the keepalive, the push hook's settle, the run gate's console probes, the live panel gate, the
+wilson banking CLIs, his intake prover) keep their words, and console_port.DELIBERATE names each with its reason.
+Not changed, on reading: corroborate's _PRIMARY_PORT judges WHO WROTE the eagle record (a file read, never an address), and its
+docstring forbids a scratch reading its own record ("re-create the very self-agreement v2411 removed").
+Law: test_a_scratch_console_never_addresses_his (4 tests, 9 red-proofs RED; 29 sibling laws green). It COUNTS what a scratch-shaped process on :17993
+addresses: one every-tick doctor pass, the stage witness, the organ read and the pid probes, with every socket connect and
+every spawned command recorded and refused before it leaves the process. It sees none to his ports and some to its own. A
+literal scan is the second half: a his-port number outside console_port.DELIBERATE, or a his-port URL outside
+DELIBERATE_URL, fails. Re-aimed: test_the_eagle_is_asked_where_it_lives's red-proof follows organ_matrix's new sentence.
+Follow-up: the law's scratch-shaped process runs a real doctor pass, whose last step (unknown_age.attach) writes the
+eagle ledger, and it did not redirect it: run from his checkout it would have written HIS tv/.unknown_age.json.
+test_no_test_writes_his_eagle_ledgers could not see it (the pass runs inside a -c string, not an AST call). The law
+now calls fixture_ledgers.redirect() at import, so the process and its child write a temp ledger; measured: the
+worktree's ledger kept its mtime and size across a full run.
+### REG-3079 - THE CHARACTERS ROOM HID WHY THIS PC'S SAVES NAME WHAT THEY NAME (#251, his call via the lead)
+d2s_read.saves (REG-2925) says why its list is what it is: "no .d2s on this PC; online characters live on Battle.net",
+or why the list is UNKNOWN (no save folder; a platform with no place to look). Nothing drew it, and a hidden reason
+reads as nothing. The room now draws it under the in-game list ("This PC's saves: ...") and in the empty state, where
+nothing else is known.
+A shadow draws the OWNER's reason ("Their PC's saves: ..."). Their console uploads its saves answer:
+- control_app._profile_saves joins the upload's console answers;
+- console_snapshot.API_FIELDS "saves" keeps ok/state/d2sWhy/why only (the names ride in the roster section, REG-2929);
+- the worker's API_NAMES and API_FIELDS take it;
+- the shadow frame answers /api/saves from it.
+A shadow still never takes their names as this page's templates. A platform with no place to look is now an answered
+look (ok, chars UNKNOWN), so a Linux console's upload does not log a miss every hour.
+The two profile-publish laws stand a fixture in for _profile_saves, so no law reads a real save folder.
+Law test_the_characters_room_says_why_its_saves_name_what_they_name (the room on the whole page in node, the upload in
+Python), 8 cases, 8 red-proofs RED, baseline green. 24 neighbours ran green (6 node-only laws refused by safe_laws for a
+test import, read and run by hand); the signed-publish, presence-beacon, shadow and mule-window Chrome laws go to CI.
 ### REG-3117 - IN A SHADOW A FILLED MULE CELL STILL SAID "DRAG IT TO ANY CELL WHERE IT FITS AND IT LOCKS THERE" (#230, GrokBot 6489429952)
 GrokBot, guest -> Fleet -> Konyo · Mac -> Vault -> UNIQUE ARMOR: a filled cell's aria-label promised a drag the read-only
 shadow stops. The lock held; the words lied. REG-3103's gridCellSay fixed only the EMPTY cell. Swept: every title,
