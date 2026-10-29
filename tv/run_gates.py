@@ -14665,3 +14665,7 @@ if __name__ == "__main__":
          [sys.executable, os.path.join(HERE, "test_a_bless_records_what_it_measured.py")], 300,
          needs_app=False,
          why='#2 REG-3082 - render_check --bless writes .render_bless.json beside the floor: every count it measured, what it raised, held and added, or why it refused, naming the targets'),
+    Gate("test_a_ci_bless_never_outruns_the_push_gate",
+         [sys.executable, os.path.join(HERE, "test_a_ci_bless_never_outruns_the_push_gate.py")], 300,
+         needs_app=False,
+         why="#2 REG-3083 - a floor CI blessed rises here only to min(CI, this machine's push gate), only where the push gate measured above it too; incomplete records and unclean verdicts are refused whole"),
