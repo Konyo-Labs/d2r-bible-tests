@@ -5076,6 +5076,8 @@ def _roster_reads(now_ms):
             ledger = None
             learned = None
         got = _rp.characters_read(present, ledger, learned, now_ms)
+        # #251 (REG-2929) - this PC's save names join the section, spelled as its save folder spells them, never an id
+        got = _rp.with_save_names(got, saves_answer(), now_ms)
         if got is not None:
             reads["characters"] = got
 
