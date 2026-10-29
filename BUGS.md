@@ -719,6 +719,19 @@ both are exactly as before. The new guard is the board's fourth tvd-shadow check
 guard by its own line (REG-3049's form on the ship line) instead of a total of 3. Law:
 test_the_d2jsp_desk_is_read_only_in_a_shadow (the pane's own script in node: own, snapshot shadow, class-only shadow; 4
 red-proofs, each RED). NEEDS LIVE: GrokBot types into the fg box in a shadow and sees it refuse.
+### REG-3098 - THE REGISTER'S RECEIPT SEWED TWO LOOKS TOGETHER, SO STORM SCARAB'S TWO SESSIONS COUNTED AS ONE (#158)
+Same measurement as REG-3086 (his sweep through the page in node on claude/int). Storm Scarab was grounded by the console
+on two sessions, at conf 0.8 and 0.9, each with its own frame. It was owned but refused filing: "only 1 qualifying look in
+your stash ... (2 did not)". Yet the console's gate and the board's own _vaultWitnessCheck, handed the same looks, both
+count 2.
+Its first look was a legacy one with no frame and conf 0.
+- tvVaultRegister built the owned receipt from sessions[0]: that session and conf 0, beside another look's frame.
+- _receiptStashWitness then put that chimera first, and de-duplicated away the real 0.8 look of the same session and frame.
+4 of his 92 grounded rows start with a frameless look.
+FIX: the receipt takes ONE real look, the first that carries a frame, with its own session, frame and conf together.
+Storm Scarab now files to MAGIC & RARE.
+GUARD: tv/test_a_receipt_look_is_one_real_look.py, 3 cases on a fixture of that shape. 1 red-proof, RED.
+
 ### REG-3089 - A RARE'S NAME FOLLOWED BY ITS BASE HAD NO HOME: "CHAOS WHORL RING", "RAVEN CASQUE CIRCLET" (#158)
 Same measurement as REG-3087: every name of his last sweep was routed through the page's router in node on claude/int.
 A ground label is two lines, the rare's name over its base, and the reader handed some over as one: "Chaos Whorl Ring",
