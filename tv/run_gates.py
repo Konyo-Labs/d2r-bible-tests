@@ -13305,6 +13305,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_an_unowned_item_takes_its_copy_records_with_it.py")], 300,
          needs_app=False,
          why='REG-3073 an un-owned item takes its copy records with it, and its undo brings them back'),
+    Gate("test_on_a_phone_the_tray_is_one_bottom_bar",
+         [sys.executable, os.path.join(HERE, "test_on_a_phone_the_tray_is_one_bottom_bar.py")], 300,
+         needs_app=False,
+         why='REG-3090 on a phone the tray is one bottom bar that reserves its own height, and the desktop is unchanged'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

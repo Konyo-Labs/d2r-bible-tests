@@ -3263,6 +3263,59 @@ TARGETS = {
             return lanes2.length === lanes.length;
         })()""",
     },
+    "phone-bar": {
+        "why": "#224 (REG-3090, his Q12 2026-10-29: bottom bar on phones) - at <=600px the tray orbs (help, compass, the "
+               "legend, the inbox, MOVE TASKS) ride ONE bar at the bottom of the screen, under the dock, and the RIGHT END "
+               "of a locker plate - where the old column sat over his vault at 375 - is hit-tested as the plate itself. "
+               "The middle-of-the-element sample this gate takes everywhere else reported that column covered 0/1",
+        # its own small world: lockers with plates, so a plate's right end is on screen to be hit-tested
+        "seed": """(function(){
+            localStorage.setItem('d2r_ownerClaim','*');
+            ['Windforce','Doombringer','The Grandfather','Lacerator','Bonehew','Stormlash'].forEach(function(n){
+                try{ var h = window.vaultHandAdd(n, undefined, { by: 'the render seed' }); window.vaultAssign((h && h.name) || n,'uni-weap'); }catch(e){} });
+            return 1; })()""",
+        "activate": """(function(){
+            var why = function(w){ window.__rcPhoneBar = w; return false; };
+            var t=[].slice.call(document.querySelectorAll('.tab,[data-tab]')).filter(function(x){
+              return /vault/i.test((x.getAttribute&&x.getAttribute('data-tab'))||x.textContent||'');})[0];
+            if (t && !document.documentElement.classList.contains('vault-open')) t.click();
+            try{ window.renderVault && window.renderVault(); }catch(e){}
+            /* the bar, from the RECT: full width, at the bottom edge, not 0x0 */
+            var bar = document.getElementById('tray-bar');
+            if (!bar) return why('the page has no #tray-bar');
+            var br = bar.getBoundingClientRect();
+            if (getComputedStyle(bar).display === 'none' || !(br.height >= 40))
+              return why('the bar is not drawn at ' + innerWidth + 'x' + innerHeight + ' (' + Math.round(br.width) + 'x' + Math.round(br.height) + ')');
+            if (br.width < innerWidth - 1 || Math.abs(br.bottom - innerHeight) > 1)
+              return why('the bar is not the bottom edge: ' + Math.round(br.left) + ',' + Math.round(br.top) + ' ' + Math.round(br.width) + 'x' + Math.round(br.height));
+            /* every orb on screen sits INSIDE the bar - none rides up the right edge */
+            var orbs = [].slice.call(document.querySelectorAll('.help-btn,.nav-fab,.forge-legend-fab,.tools-legend-fab,.vault-guide-fab,.inbox-fab,.vault-tasks-fab'))
+              .filter(function(o){ var cs = getComputedStyle(o), r = o.getBoundingClientRect(); return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 1; });
+            if (orbs.length < 2) return why('PREMISE: ' + orbs.length + ' orb(s) on screen - the help and the compass at least should be');
+            var out = orbs.filter(function(o){ var r = o.getBoundingClientRect();
+              return r.top < br.top - 1 || r.bottom > br.bottom + 1 || r.left < -1 || r.right > innerWidth + 1; });
+            if (out.length) return why('orb(s) outside the bar: ' + out.map(function(o){ var r = o.getBoundingClientRect();
+              return String(o.className).split(' ')[0] + '@' + Math.round(r.left) + ',' + Math.round(r.top); }).join(' '));
+            /* the RIGHT END of a locker plate, centred where the old column sat, hit-tests as the plate */
+            var m = [].slice.call(document.querySelectorAll('[data-vault-mule]')).filter(function(x){
+              var r = x.getBoundingClientRect(); return r.width > 40 && r.height > 12; })[0];
+            if (!m) return why('no locker plate is drawn');
+            m.scrollIntoView({block: 'center'});
+            var r = m.getBoundingClientRect(), bad = [];
+            [8, 24, 40].forEach(function(dx){ [0.25, 0.5, 0.75].forEach(function(fy){
+              var x = Math.round(r.right - dx), y = Math.round(r.top + r.height * fy);
+              var h = document.elementFromPoint(x, y);
+              if (!(h && (h === m || m.contains(h))))
+                bad.push(x + ',' + y + ' -> ' + (h ? ((h.id ? '#' + h.id : String(h.className || h.tagName)).split(' ')[0]) : 'nothing'));
+            }); });
+            if (bad.length) return why('the plate\\'s right end is covered: ' + bad.slice(0, 4).join(' | '));
+            window.__rcPhoneBar = 'ok';
+            return true; })()""",
+        "activateWhy": """(function(){ return String(window.__rcPhoneBar || 'activate never reached a verdict'); })()""",
+        "sel": "#tray-bar, .help-btn, .nav-fab",
+        # only where the bar exists: at 601px and up there is no bar, and a 0x0 surface is a refusal, never a pass
+        "widths": ((375, 800), (600, 900)),
+    },
 }
 
 
