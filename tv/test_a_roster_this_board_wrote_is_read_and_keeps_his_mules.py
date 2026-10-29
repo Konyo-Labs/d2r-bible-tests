@@ -60,7 +60,7 @@ def _pieces(s):
     return (D.stage(s) + D.boot(s) + D.tab_sync(s) + "\n" + "var renderVault = function(){};\n(function(){\n"
             + D.vault_head(s) + "\n" + D.fn(s, "saveA") + "\n" + D.fn(s, "saveR") + "\n"
             + "function muleById(id){ return roster.find(function(m){ return m.id === id; }); }\n"
-            + "window.__prune = function(pool){ var _pvW6 = {};\n" + D.between(s, PRUNE_A, PRUNE_B, keep_b=False) + "\n};\n"
+            + "window.__prune = function(pool){ var poolAll = pool, _pvW6 = {};\n" + D.between(s, PRUNE_A, PRUNE_B, keep_b=False) + "\n};\n"
             + "window.__V = { saveA: saveA, assign: function(){ return assign; },"
             + " roster: function(){ return JSON.parse(JSON.stringify(roster)); } };\n})();\n")
 

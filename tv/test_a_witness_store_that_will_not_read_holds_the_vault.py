@@ -70,7 +70,7 @@ def _pieces(s):
     expose = ("window.__V = { provAll: _provAll, provWrite: _provWrite, provDrop: _provDrop, provDemote: _provDemote,"
               " hardUnlock: _hardUnlock, receiptWitness: _receiptStashWitness, assign: function(){ return assign; },"
               " saveA: saveA, roster: function(){ return roster; } };\n"
-              "window.__prune = function(pool){\n" + D.between(s, "    var _pvLive = _provAll();\n", "    // v360 — shared-stash items",
+              "window.__prune = function(pool){ var poolAll = pool;\n" + D.between(s, "    var _pvLive = _provAll();\n", "    // v360 — shared-stash items",
                                                                keep_b=False) + "\n};\n"
               + "var _VR_LOG = 'd2r_vaultRemoved', _VR_RING = 20;\n"
               + D.between(s, "  function _vrRead(){", "  /* the heart and the console read the journal through here", keep_b=False)

@@ -13393,6 +13393,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_fan_captions_never_overlap.py")], 300,
          needs_app=False,
          why="REG-3091 the heart fan's captions never land on each other or on a vessel name: each stack is placed from its width before it is drawn"),
+    Gate("test_his_placement_survives_the_reload_whoever_saves",
+         [sys.executable, os.path.join(HERE, "test_his_placement_survives_the_reload_whoever_saves.py")], 300,
+         needs_app=False,
+         why="REG-3099 #148 - his __keep placement of a shared-stash item (Key of Hate) survives the reload whichever step saves the mule map first; the render prune reads the whole owned pool, never the dock's"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

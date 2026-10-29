@@ -48359,9 +48359,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       if (_pruneHeld) return;
       if (assign[n]!=='__keep' && !muleById(assign[n])) { if (window._rosterMapPending) return; delete assign[n]; return; }   /* REG-2570 r2 — the wait lifts below once roster and map agree */
       if (pool.indexOf(n) >= 0) return;
-      /* v3847 CI (v2200) - HIS HAND WINS: a '__keep' he set on a name still in his vault stays, even a shared-stash one the
-         mule pool leaves out; dropped here in memory, the next saveA (the seed cleanse's removal) wrote the loss to disk */
-      if (assign[n] === '__keep' && poolAll.indexOf(n) >= 0) return;
+      /* REG-3099 (#148) - STILL OWNED MEANS THE WHOLE OWNED POOL, NEVER THE DOCK'S. `pool` drops the account-shared-stash
+         names (runes, keys, essences ...) for the dock's display, and this test read it: his '__keep' placement of 'Key of
+         Hate' was deleted from the map in memory at every paint, and the next whole-map save (the seed cleanse's removal,
+         any filing) wrote it out of d2r_muleAssign - his hand undone by a display filter, on whichever load saved first. */
+      if (poolAll.indexOf(n) >= 0) return;
       if (Object.prototype.hasOwnProperty.call(_pvW6, n)) return;
       delete assign[n];
     });
