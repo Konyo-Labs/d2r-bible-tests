@@ -13325,6 +13325,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_roster_labels_are_one_list.py")], 300,
          needs_app=False,
          why='REG-2924 - the five roster owner labels are one list in roster_publish, the worker and the console page, and the page and Python name the same owner for every fleet row'),
+    Gate("test_this_pc_names_its_characters_from_its_saves",
+         [sys.executable, os.path.join(HERE, "test_this_pc_names_its_characters_from_its_saves.py")], 300,
+         needs_app=False,
+         why="#251 REG-2925 - this PC's save folder names its characters by their exact spelling (Windows Saved Games, every CrossOver bottle on a Mac); no account id and no file time leaves, and no folder is UNKNOWN, never empty"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

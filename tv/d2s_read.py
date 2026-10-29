@@ -44,6 +44,7 @@ name is None and `runewordWhy` names both candidates. [[unknown-stays-unknown]]
 import io
 import json
 import os
+import re
 import struct
 import sys
 
@@ -403,6 +404,185 @@ def read(path_or_bytes, tables=None):
     if problems:
         return stop("the items decode, but the file's own %s check fails" % " and ".join(problems))
     out["ok"] = True
+    return out
+
+
+
+
+# ── WHERE THIS PC KEEPS ITS SAVES (#251, REG-2925) ──────────────────────────────────────────────────────────────────
+# Read-only: listdir and stat, nothing opened but a .d2s, nothing ever written.
+#
+# MEASURED 2026-10-29 on his two PCs. Neither holds a .d2s: his characters are online and Battle.net keeps them. What
+# the folder does hold, on both, is one key-binding file per character played on that PC - <Name><id>.ctlo and/or
+# <Name><id>.keyo - so the folder names this PC's characters with their exact spelling, and nothing else about them
+# (no class, no level). The id is an account id and is never returned (the same character carries the same id on the
+# Mac and the ALT; a deleted and remade name gets a new one). A binding file's time is when its BINDINGS were
+# written, not when the character was played, so no time leaves this function.
+#   * Windows: the Saved Games known folder, \Diablo II Resurrected.
+#   * Mac: D2R runs in a CrossOver bottle. The bottles live where CrossOver.conf's "BottlePath" says (his:
+#     ~/CXPBottles); the default Library/Application Support/CrossOver/Bottles was EMPTY on his Mac. Every bottle's
+#     drive_c/users/<user>/Saved Games/Diablo II Resurrected is looked in.
+# A folder that exists and will not list is UNKNOWN (counted in `unread`), never an empty one.
+SAVE_DIR_NAME = "Diablo II Resurrected"
+#: a D2R name (2-15 letters, at most one '-' or '_'; no digit can be in it) followed by the account id
+BIND_FILE = re.compile(r"^([A-Za-z][A-Za-z_-]{1,14})(\d{3,12})\.(?:ctlo|keyo)$")
+NO_D2S_SAY = "no .d2s on this PC; online characters live on Battle.net"
+_SAVED_GAMES_GUID = "{4C5C32FF-BB9D-43B0-B5B4-2D72E54EAAA4}"   # FOLDERID_SavedGames
+
+
+def _known_saved_games():
+    """Windows' Saved Games folder as the shell knows it (it can be moved), or None."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class _GUID(ctypes.Structure):
+            _fields_ = [("a", wintypes.DWORD), ("b", wintypes.WORD), ("c", wintypes.WORD), ("d", ctypes.c_ubyte * 8)]
+
+        g = _GUID()
+        ctypes.oledll.ole32.CLSIDFromString(_SAVED_GAMES_GUID, ctypes.byref(g))
+        p = ctypes.c_wchar_p()
+        ctypes.windll.shell32.SHGetKnownFolderPath(ctypes.byref(g), 0, None, ctypes.byref(p))
+        out = p.value
+        ctypes.windll.ole32.CoTaskMemFree(p)
+        return out or None
+    except Exception:
+        return None
+
+
+def _bottle_roots(home):
+    """Every folder CrossOver keeps bottles in: CrossOver.conf's BottlePath lines first, then the default."""
+    base = os.path.join(home, "Library", "Application Support", "CrossOver")
+    roots = []
+    try:
+        with io.open(os.path.join(base, "CrossOver.conf"), encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                m = re.match(r'\s*"BottlePath"\s*=\s*"([^"]*)"', line)
+                if m and m.group(1).strip():
+                    roots.append(os.path.expanduser(m.group(1).strip()))
+    except FileNotFoundError:
+        pass        # no CrossOver.conf: the default bottle folder is the only place (a conf that will not open raises)
+    roots.append(os.path.join(base, "Bottles"))
+    out = []
+    for r in roots:
+        if r not in out:
+            out.append(r)
+    return out
+
+
+def _subdirs(p):
+    """-> the folder's subfolder names; [] when the folder does not exist (nothing there); None when it exists and will
+    not list - UNKNOWN, which the caller counts as a place it could not look, never as an empty one."""
+    try:
+        names = os.listdir(p)
+    except FileNotFoundError:
+        return []
+    except OSError:
+        return None
+    return sorted(n for n in names if os.path.isdir(os.path.join(p, n)))
+
+
+def save_dirs(platform=None, home=None, saved_games=None):
+    """-> (dirs, looked, why, unread). `dirs` holds every D2R save folder that exists on this PC; `looked` is where it
+    looked (said when nothing is found); `unread` the folders that exist and would not list, so a short list says it
+    is short. why is None unless this platform has no place to look."""
+    platform = platform or ("windows" if os.name == "nt" else ("mac" if sys.platform == "darwin" else sys.platform))
+    home = home or os.path.expanduser("~")
+    looked, dirs, unread = [], [], []
+    if platform == "windows":
+        roots = [saved_games] if saved_games else []
+        if not roots:
+            k = _known_saved_games()
+            if k:
+                roots.append(k)
+            roots.append(os.path.join(os.environ.get("USERPROFILE") or home, "Saved Games"))
+        for r in roots:
+            d = os.path.join(r, SAVE_DIR_NAME)
+            if d in looked:
+                continue
+            looked.append(d)
+            if os.path.isdir(d):
+                dirs.append(d)
+    elif platform == "mac":
+        for root in _bottle_roots(home):
+            looked.append(root)
+            bottles = _subdirs(root)
+            if bottles is None:
+                unread.append(root)
+                continue
+            for bottle in bottles:
+                users = os.path.join(root, bottle, "drive_c", "users")
+                people = _subdirs(users)
+                if people is None:
+                    unread.append(users)
+                    continue
+                for user in people:
+                    d = os.path.join(users, user, "Saved Games", SAVE_DIR_NAME)
+                    if os.path.isdir(d):
+                        dirs.append(d)
+    else:
+        return [], [], "D2R saves are looked for on Windows and in a CrossOver bottle on a Mac; this PC is %s" % platform, []
+    return dirs, looked, None, unread
+
+
+def save_roster(dirs):
+    """The characters this PC's save folders name -> {chars: [{name, ids}], d2s: [path], files, unread}. `ids` is HOW
+    MANY account ids carry that name here (2 = a name deleted and made again), never the ids themselves. `unread` counts
+    the save folders that would not list, so a short list says it is short."""
+    by, d2s, files, unread = {}, [], 0, 0
+    for d in dirs:
+        try:
+            names = os.listdir(d)
+        except OSError:
+            unread += 1
+            continue
+        for n in names:
+            files += 1
+            if n.lower().endswith(".d2s"):
+                d2s.append(os.path.join(d, n))
+                continue
+            m = BIND_FILE.match(n)
+            if m:
+                by.setdefault(m.group(1), set()).add(m.group(2))
+    chars = [{"name": k, "ids": len(v)} for k, v in sorted(by.items(), key=lambda kv: kv[0].lower())]
+    return {"chars": chars, "d2s": sorted(d2s), "files": files, "unread": unread}
+
+
+def saves(platform=None, home=None, saved_games=None):
+    """THIS PC's characters as its save folders name them. -> dict, never raises.
+
+      state "no-folder": no D2R save folder on this PC - chars None (UNKNOWN), never an empty list
+      state "folder":    chars is what the folder names (a measured list; [] only when it names nobody)
+      d2s None with the folder unknown; [] with d2sWhy = NO_D2S_SAY when the folder holds none; else each
+      .d2s read through read(), with its verify."""
+    try:
+        dirs, looked, why, unread = save_dirs(platform, home, saved_games)
+    except Exception as e:
+        return {"ok": False, "state": "unknown", "chars": None, "d2s": None, "why": "looking for the save folder raised %s" % type(e).__name__}
+    if why:
+        return {"ok": False, "state": "unsupported", "chars": None, "d2s": None, "why": why}
+    if not dirs and unread:
+        return {"ok": False, "state": "unknown", "chars": None, "d2s": None, "folders": 0,
+                "why": "%d folder%s where D2R saves can live would not list - UNKNOWN, not 'none'"
+                       % (len(unread), "" if len(unread) == 1 else "s")}
+    if not dirs:
+        return {"ok": True, "state": "no-folder", "chars": None, "d2s": None, "folders": 0,
+                "why": "no D2R save folder on this PC (looked in %d place%s)" % (len(looked), "" if len(looked) == 1 else "s")}
+    r = save_roster(dirs)
+    out = {"ok": True, "state": "folder", "folders": len(dirs), "chars": r["chars"], "d2s": [], "files": r["files"]}
+    short = len(unread) + r["unread"]
+    if short:
+        out["unread"] = short
+        out["why"] = ("%d folder%s would not list, so this list may be short"
+                      % (short, "" if short == 1 else "s"))
+    if not r["d2s"]:
+        out["d2sWhy"] = NO_D2S_SAY
+    for p in r["d2s"]:
+        got = read(p)
+        h = got.get("header") or {}
+        out["d2s"].append({"file": os.path.basename(p), "ok": bool(got.get("ok")), "why": got.get("why"),
+                           "name": h.get("name"), "className": h.get("className"), "level": h.get("level"),
+                           "checksumOk": bool((got.get("verify") or {}).get("checksumOk"))})
     return out
 
 
