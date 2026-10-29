@@ -154,12 +154,13 @@ class TestPeriodicIsStillWatched(unittest.TestCase):
 RED_PROOF = [{
     "why": "include_periodic=False returns the corroborator to never-runs-unattended. "
            "(v3298 re-anchored: the tick handoff split the call across two lines, which left "
-           "the old one-line anchor at 0 matches — an inert proof reporting success.)",
+           "the old one-line anchor at 0 matches — an inert proof reporting success. REG-2987 re-anchored: "
+           "off a console the call sits one block deeper.)",
     "file": "control_app.py",
-    "find": "        rows = _cd.run(include_slow=_include_slow, include_periodic=_include_periodic,\n"
-            "                       tick=_tick)",
-    "replace": "        rows = _cd.run(include_slow=_include_slow, include_periodic=False,\n"
-               "                       tick=_tick)",
+    "find": "            rows = _cd.run(include_slow=_include_slow, include_periodic=_include_periodic,\n"
+            "                           tick=_tick)",
+    "replace": "            rows = _cd.run(include_slow=_include_slow, include_periodic=False,\n"
+               "                           tick=_tick)",
     "matches": 1,
 }]
 

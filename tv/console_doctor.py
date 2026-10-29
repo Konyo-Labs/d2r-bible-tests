@@ -11330,6 +11330,24 @@ PERIODIC = ("engines corroborate", "sweep would find", "swallowed reads",
             "the d2jsp price database is on its tab")
 PERIODIC_EVERY = 6      # eagle ticks. The eagle sleeps ~10 min, so this is roughly hourly.
 
+#: ══ REG-2987 (#172) — THE ROWS ASKED IN THE CONSOLE'S OWN PROCESS ══════════════════════════════════════════════════
+#: A console sends the eagle's pass to a short-lived child (audit_child.py doctor), so the memory a pass builds leaves
+#: with the child. MEASURED 2026-10-29 on a scratch console of his Mac (REG-2985's spike profile): every RSS spike past
+#: 450 MB sat inside this pass - corroborate's readings (engines corroborate), the eye audit (ask_an_eye_row), the run
+#: census (what runs without you), the evidence tiers and health_engine.report. These rows read the PROCESS they run in,
+#: so a child would answer about itself: the serving module's fleet and presence state (_serving_console), this
+#: process's modules against the disk, this console's own children, its own paint, the boot installs the console
+#: records here (PILLOW_BOOT, NUMPY_BOOT), and a memo kept across ticks (test venue reads Task Scheduler hourly; a child
+#: would spawn schtasks every tick). The console asks them itself, after the child, and asks nothing else.
+#: test_the_eagles_pass_runs_in_a_child holds every check whose code reads its own process (_serving_console,
+#: os.getpid, sys.modules, a record the console sets, a module memo it writes) to this list.
+IN_PROCESS = ("a present machine has a fresh last-seen", "no machine went quiet mid-restart",
+              "a tally agrees with its own ledger verdict", "a presence reading names its door",
+              "a fleet row identifies its machine", "a fleet refusal names an action", "every roster publish is signed",
+              "fleet reachable", "picker census", "this process runs the code on disk", "console painted whole",
+              "nothing we started is a corpse", "this machine can decode a frame",
+              "this machine can cross-check an inventory", "test venue")
+
 
 def _slow_path():
     env = os.environ.get("TV_EAGLE_SLOW")
@@ -11601,11 +11619,16 @@ def ask_an_eye_row(fn, ships=None):
     return fn()
 
 
-def run(include_slow=True, include_periodic=None, tick=None):
+def run(include_slow=True, include_periodic=None, tick=None, only=None, skip=None):
     """-> rows. `include_periodic` defaults to `include_slow` so every existing caller keeps its
     exact behaviour; the eagle passes it explicitly on its own cadence. `tick` is the eagle's
     tick counter (v3298) — without it a skipped PERIODIC row says next-ask UNKNOWN, never a
-    guessed number."""
+    guessed number.
+
+    REG-2987 (#172) - a PART of the roster, for a pass split between a child and the console: `skip` names checks that
+    emit no row at all (the child skips IN_PROCESS), `only` names the only checks asked (the console asks IN_PROCESS).
+    A part never reaches a check another part asks, not even as a not-asked row. `only` primes no per-tick cache: no
+    IN_PROCESS row reads one, and the priming (his board read, the health report) is what the child is for."""
     if include_periodic is None:
         include_periodic = include_slow
     rows = []
@@ -11616,12 +11639,14 @@ def run(include_slow=True, include_periodic=None, tick=None):
     # v2815 — THROUGH tick_caches(), so the gate that measures this tick's cost can prime it the
     # same way instead of timing a different branch. One source; a divergence is now impossible
     # rather than merely unlikely.
-    with tick_caches():
+    with (tick_caches() if only is None else contextlib.nullcontext()):
         _last = _load_slow()
         _last = _last if isinstance(_last, dict) else {}
         _last_by = {r.get("check"): r for r in (_last.get("rows") or []) if isinstance(r, dict)}
         _ships = []         # #171 - this_pc_ships(), asked once per pass by the first eye row
         for name, fn in CHECKS:
+            if (only is not None and name not in only) or (skip and name in skip):
+                continue        # REG-2987 another part of this pass asks it
             if not include_slow and name in SLOW:
                 continue
             if not include_periodic and name in PERIODIC:

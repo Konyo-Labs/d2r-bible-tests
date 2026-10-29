@@ -12,6 +12,7 @@ ast.parse builds C-level arenas tracemalloc does not see, and the freed big bloc
     python3 audit_child.py lane_spans    # derives health_engine's lane spans and writes LANE_SPANS_CACHE
     python3 audit_child.py red_proofs    # every gate file's RED_PROOF list (heart2.red_proofs_in), per file stamp
     python3 audit_child.py swallow ROOT  # the swallow census's rows of every .py under ROOT, per file stamp
+    python3 audit_child.py doctor OUT NONCE TICK SLOW PERIODIC CONSOLE [ONLY]   # the eagle's pass (REG-2987)
 
 #172 PHASE C (REG-2985, measured 2026-10-29 on a scratch console of his Mac, Python 3.9, his data, no .git, 300 s): the
 console still called ast.parse 4,508 times over 118 MB of source in its own heap - the swallow census 1,488 files, and
@@ -22,6 +23,13 @@ process instead: 540 parses (33 MB), max RSS 376 MB. Both are kept per file and 
 (mtime_ns, size); a stale entry is never served, and a file the child could not read is not kept (it is asked again).
 
 The child writes the SAME cache the console reads, keyed on the same source stamps, then exits - and its memory with it.
+
+#172 REG-2987 (measured 2026-10-29, REG-2985's spike profile on a scratch console): with the parses gone, every RSS spike
+past 450 MB sat inside the eagle's in-process console_doctor.run - corroborate's readings, the eye audit, the run census,
+the evidence tiers, health_engine.report. The console now asks that pass of a child (doctor_rows) and asks only
+console_doctor.IN_PROCESS itself. It is NOT fail-open: the rows are a verdict, so a child that fails, times out or
+answers for another ask leaves the pass UNKNOWN until the eagle's next tick - never derived in the console, never an
+older pass's rows. One pass at a time; the result file carries the nonce of the ask that made it.
 
 ⚠ ONLY A CONSOLE SPAWNS (frame_ref.on_console_path(), set by control_app.main()). Every law, the gate, CI and a CLI run
 derive in their own process exactly as before: a law may monkeypatch a module, and a child cannot see a monkeypatch.
@@ -47,12 +55,18 @@ except Exception:
 CHILD_ENV = "TVD_AUDIT_CHILD"
 #: a cold route census measured 16.1 s on his Mac (v2692); the ALT is slower. Past this the console derives itself.
 TIMEOUT_S = 180
-AUDITS = ("routes", "lane_spans", "red_proofs", "swallow")
+AUDITS = ("routes", "lane_spans", "red_proofs", "swallow", "doctor")
 #: the per-file caches a child writes for the console to read (beside the route census's own, fixture-aware)
 RP_CACHE = ".red_proofs_cache.json"
 SW_CACHE = ".swallow_rows_cache.json"
 #: a cold miss asks the child at most once in this long; between, the caller derives what it still lacks itself
 ASK_EVERY_S = 600
+#: REG-2987 - the eagle's pass in a child: the ALT measured 229 s (every-tick checks) + 143 s (periodic) standalone
+DOCTOR_TIMEOUT_S = 900
+DOCTOR_OUT = ".eagle_child_%s.json"          # one per ask, named by its nonce; removed once read
+DOCTOR_PROGRESS = ".eagle_child_progress.json"
+#: the pass a child is running now: {nonce, since} - None while none is
+DOCTOR = {"nonce": None, "since": None}
 
 #: what each audit last did in THIS console: {name: {runs, hits, fails, lastTs, lastMs, lastOk, say}}
 STATE = {}
@@ -79,8 +93,10 @@ def hit(name):
     _row(name)["hits"] += 1
 
 
-def run(name, timeout=TIMEOUT_S, _spawn=None, args=()):
-    """Derive audit `name` in a short-lived child. -> (ok, why). Never raises; the caller reads the cache after."""
+def run(name, timeout=TIMEOUT_S, _spawn=None, args=(), fails_open=True, low=False):
+    """Derive audit `name` in a short-lived child. -> (ok, why). Never raises; the caller reads the cache after.
+    `fails_open` False (the doctor, REG-2987): a failure is said as UNKNOWN, never as derived in the console.
+    `low` (the doctor): the child runs below normal priority - it is a cold pass every eagle tick, and his game is not."""
     r = _row(name)
     if name not in AUDITS:
         return False, "no audit named %r" % (name,)
@@ -96,7 +112,8 @@ def run(name, timeout=TIMEOUT_S, _spawn=None, args=()):
     try:
         p = (_spawn or subprocess.run)([sys.executable, os.path.abspath(__file__), name] + [str(a) for a in args], cwd=HERE, env=env,
                                        capture_output=True, text=True, timeout=timeout,
-                                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                                       creationflags=(getattr(subprocess, "CREATE_NO_WINDOW", 0)
+                                                      | (getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0) if low else 0)))
         ok = p.returncode == 0
         # REG-2733 - the child's OWN sentence first: on the ALT (Python 3.12) stderr carried SyntaxWarnings from the files
         # it parsed, and the last of them stood in for "the routes were derived but their cache was not written"
@@ -113,7 +130,8 @@ def run(name, timeout=TIMEOUT_S, _spawn=None, args=()):
     r["lastOk"] = ok
     if not ok:
         r["fails"] += 1
-    r["say"] = why if ok else (why + " - this console derived it itself, in its own memory")
+    r["say"] = why if ok else (why + (" - this console derived it itself, in its own memory" if fails_open
+                                      else " - UNKNOWN until it is asked again, never derived in the console"))
     return ok, why
 
 
@@ -171,15 +189,87 @@ def _disk(cache):
 
 
 def _write_cache(cache, blob):
-    p = os.path.join(_cache_root(), cache)
+    return _write_json(os.path.join(_cache_root(), cache), blob)
+
+
+def _write_json(p, blob):
     try:
         tmp = p + ".tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
-            json.dump(blob, fh)
+            json.dump(blob, fh, default=str)
         os.replace(tmp, p)              # atomic: a half-written cache is never readable
         return True
     except Exception:
         return False
+
+
+def _doctor_fail(why):
+    """The child exited 0 and its rows still cannot be served: recorded as a failure, said as UNKNOWN."""
+    r = _row("doctor")
+    r["fails"] += 1
+    r["lastOk"] = False
+    r["say"] = why + " - UNKNOWN until it is asked again, never derived in the console"
+    return None, why
+
+
+def doctor_rows(include_slow, include_periodic, tick, console=None, only=None, timeout=DOCTOR_TIMEOUT_S, _spawn=None):
+    """REG-2987 (#172) - the eagle's doctor pass, asked of a short-lived child. -> (rows | None, why)
+
+    rows: every row the child asked (console_doctor.run with IN_PROCESS skipped), from THIS ask only. None is UNKNOWN: the
+    child failed, timed out, wrote nothing, or wrote rows for another ask - or another pass is in a child right now (one at
+    a time; this one is not asked). `console` is the doctor's console URL in the caller, handed down unchanged."""
+    lk = _lock("doctor")
+    if not lk.acquire(False):
+        since = DOCTOR.get("since")
+        return None, "another pass is already running in a child%s" % (
+            " (for %d s)" % int(time.time() - since) if since else "")
+    root = _cache_root()
+    import uuid
+    nonce = uuid.uuid4().hex
+    out = os.path.join(root, DOCTOR_OUT % nonce)
+    DOCTOR.update(nonce=nonce, since=time.time())
+    try:
+        ok, why = run("doctor", timeout=timeout, _spawn=_spawn, fails_open=False, low=True,
+                      args=(out, nonce, int(tick or 0), int(bool(include_slow)), int(bool(include_periodic)), console or "",
+                            ",".join(only or ())))
+        if not ok:
+            return None, why
+        try:
+            with open(out, encoding="utf-8") as fh:
+                blob = json.load(fh)
+        except Exception:
+            return _doctor_fail("the child exited 0 and wrote no rows")
+        if not isinstance(blob, dict) or blob.get("nonce") != nonce:
+            return _doctor_fail("the child's rows answer another ask")      # a stale answer is never served
+        rows = blob.get("rows")
+        if not isinstance(rows, list):
+            return _doctor_fail("the child's rows will not read")
+        return rows, why
+    finally:
+        DOCTOR.update(nonce=None, since=None)
+        for p in (out, out + ".tmp"):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+        lk.release()
+
+
+def doctor_progress():
+    """The check the child's pass sits in now. -> {check, since, tick, nonce} | None (no pass is in a child).
+    `check` None: the child has not reached its first check yet (it is starting)."""
+    nonce, since = DOCTOR.get("nonce"), DOCTOR.get("since")
+    if not nonce:
+        return None
+    got = None
+    try:
+        with open(os.path.join(_cache_root(), DOCTOR_PROGRESS), encoding="utf-8") as fh:
+            got = json.load(fh)
+    except Exception:
+        got = None
+    if not isinstance(got, dict) or got.get("nonce") != nonce:
+        return {"check": None, "since": since, "tick": None, "nonce": nonce}
+    return {"check": got.get("check"), "since": got.get("since") or since, "tick": got.get("tick"), "nonce": nonce}
 
 
 def _per_file(name, cache, pick, key, args=()):
@@ -276,6 +366,36 @@ def _child(name, argv=()):
             print("the red-proof lists were derived but their cache could not be written")
             return 3
         print(json.dumps({"ok": True, "audit": name, "files": len(files)}))
+        return 0
+    if name == "doctor":
+        out, nonce, tick, slow, periodic, console, only = (list(argv) + [""] * 7)[:7]
+        if hasattr(os, "nice"):
+            try:
+                os.nice(10)                          # below normal, as the Windows spawn flag sets it there
+            except OSError:
+                pass
+        import console_doctor as _cd
+        if console:
+            _cd.CONSOLE = console                    # the caller's own URL, unchanged
+        prog = os.path.join(_cache_root(), DOCTOR_PROGRESS)
+
+        class _Progress(dict):
+            """console_doctor.CURRENT, also written where the console reads it (eagle_state's `measuring`)"""
+            def update(self, *a, **k):
+                dict.update(self, *a, **k)
+                _write_json(prog, {"nonce": nonce, "check": self.get("check"), "since": self.get("since"),
+                                   "tick": self.get("tick")})
+        _cd.CURRENT = _Progress(_cd.CURRENT)
+        try:
+            tick = int(tick or 0) or None
+        except ValueError:
+            tick = None
+        rows = _cd.run(include_slow=slow == "1", include_periodic=periodic == "1", tick=tick,
+                       only=(set(only.split(",")) if only else None), skip=set(getattr(_cd, "IN_PROCESS", ())))
+        if not _write_json(out, {"v": 1, "nonce": nonce, "rows": rows}):
+            print("the pass ran but its rows could not be written")
+            return 3
+        print(json.dumps({"ok": True, "audit": name, "rows": len(rows)}))
         return 0
     if name == "swallow":
         import swallow_census as _sc

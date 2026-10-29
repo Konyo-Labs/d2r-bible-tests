@@ -28911,7 +28911,42 @@ def eagle_state():
                                 "tick": cur.get("tick")}
     except Exception:
         pass
+    # REG-2987 - a pass in a child says which check it sits in through the child's own record
+    try:
+        _ac = sys.modules.get("audit_child")
+        _cp = _ac.doctor_progress() if _ac is not None else None
+        if _cp is not None and "measuring" not in out:
+            out["measuring"] = {"check": _cp.get("check") or "a child is starting the pass (or its record did not read)",
+                                "forS": round(time.time() - (_cp.get("since") or time.time()), 1),
+                                "tick": _cp.get("tick"), "inChild": True}
+    except Exception:
+        pass
     return out
+
+
+def _doctor_pass_in_child(_cd, include_slow, include_periodic, tick):
+    """REG-2987 (#172) - ON A CONSOLE A DOCTOR PASS RUNS IN A SHORT-LIVED CHILD. -> (where, rows, why)
+
+    Measured on a scratch console of his Mac: every RSS spike past 450 MB sat inside console_doctor.run - corroborate's
+    readings, the eye audit, the run census, the evidence tiers, health_engine.report - and the ALT's free memory fell
+    1.5 GB -> 560 MB over an hour. On a console (audit_child.wanted) the child asks the pass and its memory leaves with it;
+    this process asks only console_doctor.IN_PROCESS (the rows that read this process), and the two are merged in roster
+    order. where "child": rows, or None = UNKNOWN (the child did not answer this ask - never an older pass's rows, never
+    derived here). where "here": not a console (a law, the gate, CI, a CLI) - the caller runs the whole pass itself.
+    Both the eagle's tick and /api/eagle (his eagle button) ask through here."""
+    try:
+        import audit_child as _ac_e
+        if not _ac_e.wanted():
+            return "here", None, "not a console"
+    except Exception:
+        return "here", None, "the audit child would not import"
+    crows, cwhy = _ac_e.doctor_rows(include_slow, include_periodic, tick, console=getattr(_cd, "CONSOLE", None))
+    if crows is None:
+        return "child", None, cwhy
+    local = _cd.run(include_slow=include_slow, include_periodic=include_periodic, tick=tick,
+                    only=set(getattr(_cd, "IN_PROCESS", ())))
+    at = dict((n, i) for i, (n, _f) in enumerate(_cd.CHECKS))
+    return "child", sorted(list(crows) + list(local), key=lambda r: at.get(r.get("check"), len(at))), cwhy
 
 
 def _eagle_once():
@@ -28940,8 +28975,18 @@ def _eagle_once():
         # would otherwise never reach a periodic tick at all, which is the same "never" wearing a
         # different number. [[feedback-threshold-above-the-ceiling]]
         _include_periodic = (_tick == 1) or (_tick % _every == 0)
-        rows = _cd.run(include_slow=_include_slow, include_periodic=_include_periodic,
-                       tick=_tick)
+        # REG-2987 (#172) - on a console the pass runs in a short-lived child (_doctor_pass_in_child); a child that does
+        # not answer leaves the pass UNKNOWN until the next tick. Off a console the whole pass runs here, as before.
+        _where, rows, _cwhy = _doctor_pass_in_child(_cd, _include_slow, _include_periodic, _tick)
+        if _where == "child" and rows is None:
+            with _PRUNE_LOCK:
+                _EAGLE.update({"checked": int(time.time() * 1000), "needsYou": None, "unknown": None, "rows": [],
+                               "say": "the eagle's pass runs in a child, and it did not answer (%s) - UNKNOWN until "
+                                      "the next tick" % str(_cwhy)[:110]})
+            return []
+        if _where != "child":
+            rows = _cd.run(include_slow=_include_slow, include_periodic=_include_periodic,
+                           tick=_tick)
     except Exception as e:
         with _PRUNE_LOCK:
             _EAGLE.update({"checked": int(time.time() * 1000), "needsYou": None, "unknown": None,
@@ -50140,7 +50185,15 @@ class Handler(BaseHTTPRequestHandler):
             # collapses "I could not check" into "it is fine".
             try:
                 import console_doctor as _cd
-                _ans = _answer_soon("eagle", None, lambda: {"ok": True, "rows": _cd.run()}, max_age_s=60)
+                # REG-2987 - his eagle button's full pass runs in the child too (one pass at a time), and _answer_soon
+                # keeps this handler from waiting on it: while it runs the button says pending, never an older pass's rows
+                def _eagle_full():
+                    _where, _rows, _cwhy = _doctor_pass_in_child(_cd, True, True, None)
+                    if _where == "child" and _rows is None:
+                        return {"ok": False, "why": "the full pass runs in a child, and it did not answer (%s) - UNKNOWN"
+                                                    % str(_cwhy)[:200]}
+                    return {"ok": True, "rows": _rows if _where == "child" else _cd.run()}
+                _ans = _answer_soon("eagle", None, _eagle_full, max_age_s=60)
                 if _ans.get("pending") or _ans.get("ok") is False:
                     self._json(200, {"ok": _ans.get("ok") is not False, "pending": bool(_ans.get("pending")),
                                      "checks": [], "note": _ans.get("note"), "why": _ans.get("why")})
