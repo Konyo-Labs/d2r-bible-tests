@@ -406,7 +406,11 @@ class AHandAddedItemStaysHis(unittest.TestCase):
         self.assertEqual(s.count('id="vault-hand-left"'), 1)
         self.assertLess(rv.index("window._vaultHandMigrate();"), rv.index("var poolAll=ownedPool();"),
                         "the migration runs after the pool was read")
-        self.assertIn("return Array.from(owned).filter(_vaultKeeps).sort();", _cut(code, KEEPS_B, "  function art(n, glyph, size){"))
+        # REG-3042 - the pool is still owned through _vaultKeeps; it also carries a register-held catalogue item, kept the same way
+        pool_fn = _cut(code, KEEPS_B, "  function art(n, glyph, size){")
+        self.assertIn("var p = Array.from(owned).filter(_vaultKeeps);", pool_fn)
+        self.assertIn("_vaultCatalogueItem(n) && _vaultKeeps(n)) p.push(n);", pool_fn)
+        self.assertIn("return p.sort();", pool_fn)
         hand = code_only(_cut(s, HAND_A, HAND_B))
         self.assertEqual(hand.count("try { add = window._ownedAdd(nm, { source: 'hand',"), 1, "the door does not use the owned door")
         for banned in ("vaultFile(", "assign[", "suggestMule("):
