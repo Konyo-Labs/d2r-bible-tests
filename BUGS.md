@@ -64,14 +64,18 @@ priority (nice 10 / BELOW_NORMAL_PRIORITY_CLASS) and writes its current check wh
 (inChild). His eagle button (/api/eagle) asks through the same door. run() gained `only`/`skip`; an `only` part primes no
 per-tick cache. A law, the gate, CI and a CLI are not consoles and run the whole pass in their own process, as before.
 MEASURED (the same scratch console, sandbox-exec denying his console and agent ports, 1500 s, eagle every 60 s):
-  BEFORE (in-process pass; RSS only - footprint re-measured in a follow-up): console ru_maxrss 919 MB, per-pass RSS
-  peaks 522-856 MB over 14 passes, RSS back to 34-56 MB after 11 of them (452/437/309 after three); console CPU 386 s,
-  children 299 s (max 595 MB: the audit children, git, lsof).
+  BEFORE (in-process pass), run 1 (RSS only): console ru_maxrss 919 MB, per-pass RSS peaks 522-856 MB over 14 passes,
+  RSS back to 34-56 MB after 11 of them (452/437/309 after three); console CPU 386 s, children 299 s (max 595 MB: the
+  audit children, git, lsof). Run 2 (RSS and footprint, the same setup): ru_maxrss 735 MB; footprint (resident +
+  compressed) peaks 805-1,010 MB over 14 passes, between passes 185-831 MB (747-760 after the periodic passes), no
+  monotonic growth; RSS between passes 34-43 MB, so on his Mac an RSS trough hides compressed memory, not freed memory.
   AFTER (pass in a child): console ru_maxrss 652 MB, per-pass RSS peaks 316-636 MB over 11 passes; footprint (resident +
   compressed) peaks 529-640 MB, between passes 163-586 MB with no upward trend; console CPU 177 s, children 639 s (max
   872 MB: the doctor child). Every child pass answered (140 rows; 38-40 s every tick, 284 s / 204 s with the periodic
   tier); no doctor child was left running after the console exited. The console imports 471 modules, not 528.
-  The cost: total CPU 816 s against 685 s (+19%), a cold pass in a fresh process every tick, run below normal priority.
+  The cost: total CPU 816 s against 685 s (+19%; run 2 of before: 542 s), a cold pass in a fresh process every tick, run
+  below normal priority. Footprint peak 1,010 -> 640 MB (-37%). Still unnamed: what drives the console's ~600 MB peaks on
+  some passes after the move (a stack-sampled run is next).
 Law: test_the_eagles_pass_runs_in_a_child (8 tests, 11 red-proofs RED): an AST scan holds every process-bound check to
 IN_PROCESS; a part asks only its part and primes nothing; a real child (pointed at a closed port) answers the rows this process
 does; a stale, missing or unreadable answer and a timeout are UNKNOWN, never served; one pass at a time; the eagle asks the
