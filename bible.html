@@ -56948,7 +56948,7 @@ window.vaultAutoAssign = function(){
      game (_vaultWarMakeRows) until he ticks it, or the reader sees an item on a character of that name.
      Only from the move paint - never from FIND, the copy readout or a row's expand, which plan the same overflow and write
      nothing; never in a shadow or a guest's world; never while the mule store is UNKNOWN (held); never a name he took back
-     (the shared stash's warDeclined, kept by vaultDeleteMule). -> {made: [names], why} */
+     (the shared stash's warDeclined, kept by vaultDeleteMule) - the next one is made instead (REG-2997). -> {made: [names], why} */
   function _vaultWarAutoMule(){
     var made = [];
     if (window._tvdShadow) return { made: made, why: 'a shadow is read only' };
@@ -56967,14 +56967,25 @@ window.vaultAutoAssign = function(){
       _vaultWarMules().forEach(function(w){ if (w.n >= n) n = w.n + 1; });
       var name = _vaultWarName(n);   /* REG-2980 a name he can make in the game */
       /* REG-2804 - a name is free text now: another mule may be called WAR-<x> without being one; the next free number */
-      for (var _wn = 0; _wn < 20 && !_vmNameOk(name, null).ok; _wn++) { n++; name = _vaultWarName(n); }
-      if ((sh.warDeclined || []).indexOf('WAR' + n) >= 0) { fresh(); return { made: made, why: 'you took back the ' + name + ' the board made' }; }   /* REG-2980 by number */
+      /* REG-2997 (his ruling 2026-10-29 ~02:30 IDT, Q2) - A WAR MULE HE TOOK BACK MAKES THE BOARD OFFER THE NEXT ONE. The take-back
+         ended the make: once WAR-A was declined the board never offered WAR-B, and the copies past the war stash kept no cell.
+         Now a declined number - and a name another mule holds (REG-2804) - is passed over, and the
+         next war mule is made with the same "make it in the game" task; its record says which ones he took back. */
+      var _took = [];
+      for (var _wn = 0; _wn < 52; _wn++) {
+        var _dl = (sh.warDeclined || []).indexOf('WAR' + n) >= 0;
+        if (!_dl && _vmNameOk(name, null).ok) break;
+        if (_dl) _took.push(name);
+        n++; name = _vaultWarName(n);
+      }
+      if ((sh.warDeclined || []).indexOf('WAR' + n) >= 0 || !_vmNameOk(name, null).ok) { fresh(); return { made: made, why: 'no free war mule name is left after the ones you took back' }; }
       var v = _vmNameOk(name, null);
       if (!v.ok) { fresh(); return { made: made, why: v.why }; }
       var at = new Date().toISOString();
       var m = { id: 'm' + Date.now().toString(36) + n, name: v.name, icon: '⚔️', note: 'war stash overflow - made by the board ' + at.slice(0, 10),
                 added: true, role: 'war', warN: n,
-                auto: { by: 'board', at: at, why: lost + ' war stash cop' + (lost === 1 ? 'y had' : 'ies had') + ' no cell' } };
+                auto: { by: 'board', at: at, why: lost + ' war stash cop' + (lost === 1 ? 'y had' : 'ies had') + ' no cell'
+                        + (_took.length ? '; you took back ' + _took.join(', ') + ', so this is the next one' : '') } };   /* REG-2997 */
       roster.push(m);
       if (_guardedSet(RK, JSON.stringify(roster)) === false) { roster.pop(); fresh(); return { made: made, why: 'the mule store refused the write' }; }
       made.push(m.name);

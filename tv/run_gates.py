@@ -13297,6 +13297,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_board_names_a_war_mule_by_a_name_the_game_accepts.py")], 300,
          needs_app=False,
          why='REG-2980 a war mule is named WAR-A/WAR-B, a name D2R accepts, never WAR1'),
+    Gate("test_a_war_mule_he_took_back_makes_the_board_offer_the_next_one",
+         [sys.executable, os.path.join(HERE, "test_a_war_mule_he_took_back_makes_the_board_offer_the_next_one.py")], 300,
+         needs_app=False,
+         why='REG-2997 a war mule he took back makes the board offer the next one, with its make task'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

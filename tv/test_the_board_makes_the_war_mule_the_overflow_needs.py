@@ -12,7 +12,7 @@ war role on its id, and a record of who made it, when and why - plans again so t
 mule WAR1 in the game" first in MOVE TASKS until he ticks it or the reader sees an item on a character of that name. Each
 guard is a case here: one WAR1 across repeated paints and a reload; nothing made without a real overflow; nothing in a
 shadow, a guest's world, or while the mule store is UNKNOWN; nothing from FIND, the copy readout or a row's expand; and a
-WAR mule he deleted is not made again.
+WAR mule he deleted is not made again (REG-2997: the next one is).
 
 Driven on the whole page in node (vault_page_node - never a browser on his Mac). RED_PROOF below.
 """
@@ -127,9 +127,9 @@ OUT.afterPaint = wars().map(function(m){ return m.name; });
 """
 
 BODY_DECLINED = READ + r"""
-W.renderVault(); H.flush(60, 3);
-OUT.wars = wars(); OUT.auto = W._vaultWarAuto || null;
-var ml = list(); var i = ml.indexOf('vmv-warfull'); OUT.line = i < 0 ? '' : ml.slice(i, i + 600).replace(/<[^>]+>/g, '');
+W.renderVault(); H.flush(60, 3); W.renderVault();
+OUT.wars = wars(); OUT.w2 = W._vaultWarName(2); OUT.make = makeRows();
+OUT.roles = OUT.wars.map(function(m){ return W._vaultWarRole(m); });
 """
 
 
@@ -228,10 +228,11 @@ class TheBoardMakesTheWarMuleTheOverflowNeeds(unittest.TestCase):
         self.assertEqual(r["afterPaint"], [r["w1"]], "the control: the paint did not make war mule 1 on the same overflow: %r" % r)
 
     def test_a_war_mule_he_took_back_is_not_made_again(self):
+        """REG-2997 (his ruling 2026-10-29, Q2): the number he took back is never made again - the board offers the next one"""
         d = self.declined
-        self.assertEqual(d["wars"], [], "the board made the WAR1 he deleted again: %r" % d["wars"])
-        self.assertIn("took back", (d["auto"] or {}).get("why") or "", d["auto"])
-        self.assertIn("the board did not make it: you took back the %s" % d["w1"], d["line"], "MOVE TASKS does not say why: %r" % d["line"])
+        self.assertNotIn(1, d["roles"], "the board made the war mule 1 he deleted again: %r" % d["wars"])
+        self.assertEqual([m["name"] for m in d["wars"]], [d["w2"]], "the board did not offer the next war mule: %r" % d["wars"])
+        self.assertTrue(any(("Create mule %s " % d["w2"]) in t for t in d["make"]), "he is not tasked to make it: %r" % d["make"])
         self.assertTrue(self.made["declineWar"], "deleting a WAR mule records nothing")
 
     def test_his_delete_door_records_the_take_back_before_it_removes_the_mule(self):
@@ -276,8 +277,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2803 - a WAR mule he deleted is made again",
      "file": "bible.html",
-     "find": "      if ((sh.warDeclined || []).indexOf('WAR' + n) >= 0) {",
-     "replace": "      if (false) {",
+     "find": "        var _dl = (sh.warDeclined || []).indexOf('WAR' + n) >= 0;",
+     "replace": "        var _dl = false;",
      "matches": 1, "needs": "node"},
     {"why": "REG-2803 - the board's mule is not one his delete can take back (no added flag, no mint id)",
      "file": "bible.html",

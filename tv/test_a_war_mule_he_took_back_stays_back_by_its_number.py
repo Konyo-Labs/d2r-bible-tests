@@ -9,7 +9,8 @@ new WAR1. The role and the number ride the mule's id (REG-2804); the take-back n
 
 The eye's second finding on the same door was that a take-back is "recorded in memory and not written". MEASURED, it is
 written: the shared stash's entry is an element of the roster the delete saves (saveR, one write), the stored roster held
-warDeclined ['WAR1'], and a reload made nothing. That case stays here as a guard on the executed door, not on the source
+warDeclined ['WAR1'], and a reload made no war mule 1. Since REG-2997 (his ruling 2026-10-29, Q2) the board offers war
+mule 2 in its place, and a reload makes no other. That case stays here as a guard on the executed door, not on the source
 order.
 
 The delete door is async (it awaits his confirm). vault_page_node prints OUT once, synchronously, after the body. This law
@@ -50,6 +51,7 @@ W._vaultAutoIntakeSet(false);
 [SH, SH, SH].forEach(function(n){ W.vaultHandAdd(n); }); paint();
 OUT.made = wars();
 OUT.w1 = W._vaultWarName ? W._vaultWarName(1) : 'WAR1';   /* REG-2980 the board's name for war mule 1 */
+OUT.w2 = W._vaultWarName ? W._vaultWarName(2) : 'WAR2';
 window.uiConfirm = function(){ return Promise.resolve(true); };   /* his confirm: yes */
 """ % json.dumps(SHAKO)
 DELETE = LIB + r"""
@@ -73,8 +75,7 @@ window.prompt = function(){ return 'Barbie'; };                 /* his rename: a
 RELOAD = r"""
 var W = window;
 W.renderVault(); H.flush(60, 3); W.renderVault();
-OUT.wars = JSON.parse(W.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return W._vaultWarRole(m) > 0; }).map(function(m){ return m.name; });
-OUT.auto = W._vaultWarAuto || null;
+OUT.wars = JSON.parse(W.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return W._vaultWarRole(m) > 0; }).map(function(m){ return [m.name, W._vaultWarRole(m)]; });
 """
 
 
@@ -101,18 +102,19 @@ class AWarMuleHeTookBackStaysBackByItsNumber(unittest.TestCase):
             self.assertEqual([(w[1], w[2]) for w in o["made"]], [(o["w1"], 1)], "PREMISE: %r" % o["made"])
 
     def test_a_deleted_war1_is_written_with_the_roster_and_stays_gone_after_a_reload(self):
+        """REG-2997 (his ruling 2026-10-29, Q2): war mule 1 stays gone, and the board offers war mule 2 in its place"""
         a = self.d["after"]
-        self.assertEqual((a["wars"], a["declined"]), ([], ["WAR1"]), a)
-        self.assertEqual(self.dr["wars"], [], "a reload made the WAR1 he deleted again: %r" % self.dr)
-        self.assertIn("took back", (self.dr["auto"] or {}).get("why") or "", self.dr["auto"])
+        self.assertEqual(a["declined"], ["WAR1"], a)
+        self.assertEqual([(w[1], w[2]) for w in a["wars"]], [(self.d["w2"], 2)], "not war mule 2 alone after he took 1 back: %r" % a)
+        self.assertEqual(self.dr["wars"], [[self.d["w2"], 2]], "a reload made the war mule 1 he deleted again, or another: %r" % self.dr)
 
     def test_a_war1_renamed_to_a_character_and_deleted_is_taken_back_by_its_number(self):
         r = self.r
         self.assertEqual([(w[1], w[2]) for w in r["renamed"]], [("BARBIE", 1)], "PREMISE: the rename did not land: %r" % r["renamed"])
         a = r["after"]
         self.assertEqual(a["declined"], ["WAR1"], "the take-back is keyed by the name he gave it: %r" % a)
-        self.assertEqual(a["wars"], [], "the board minted a new WAR1 after he took the renamed one back: %r" % a["wars"])
-        self.assertEqual(self.rr["wars"], [], "a reload minted a new WAR1: %r" % self.rr)
+        self.assertEqual([(w[1], w[2]) for w in a["wars"]], [(r["w2"], 2)], "the board minted a new war mule 1 after he took the renamed one back: %r" % a["wars"])
+        self.assertEqual(self.rr["wars"], [[r["w2"], 2]], "a reload minted a new war mule 1: %r" % self.rr)
 
 
 RED_PROOF = [

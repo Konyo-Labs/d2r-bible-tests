@@ -10,8 +10,10 @@ Elad, live v3774 (2026-10-20): "a 2nd Aldur's Deception I added vanished - no ro
   - none / all full: SUPERSEDED 2026-10-28 ~17:50 IDT (REG-2803) - his words: "yea the board should automatically create a
     mule and name it War1/War2 for each mule and prompt me to create that same mule ingame so i get tasked to do it". The
     board now makes WAR1 (then WAR2 ...) itself, the copies land on it, and MOVE TASKS asks him first to create it in the
-    game. Until then (2026-10-20) it read: the item keeps NO cell and MOVE TASKS says so; a mule is never created. The
-    MOVE TASKS line still says so when the board may not make one: a WAR mule he took back (deleted).
+    game. Until then (2026-10-20) it read: the item keeps NO cell and MOVE TASKS says so; a mule is never created. A WAR
+    mule he took back (deleted) is not made again; the board makes the next one (REG-2997, his ruling 2026-10-29).
+    The board names war mule n by letter, WAR-A, WAR-B ... (REG-2980: a D2R name holds no digit); the cases read that name
+    from the page (_vaultWarName), never pin it.
     The WAR mules a case starts with are seeded into the roster store, the way his saved roster holds them.
 Driven on the SHIPPED page through the real door (window.vaultHandAdd), AUTO INTAKE off. RED_PROOF below.
 NO CHROME AT ALL = a declared skip, never a pass. [[regression-guard]]
@@ -84,6 +86,17 @@ def add_many(names, step=20):
     """hand-add in batches: one page call per batch, so a 500-copy fill never outlives one CDP call"""
     for i in range(0, len(names), step):
         T.add_all(names[i:i + step])
+
+
+def war_name(n):
+    """REG-2980 - the name the board gives war mule n, read from the page (one rule, never a pinned string)"""
+    return T.board().run("OUT.n = window._vaultWarName(%d);" % n)["n"]
+
+
+def war_makes(o, name):
+    """the make rows for the war mule `name` - the CHARMS mule the board makes (REG-2895) has its own make row too, first
+    (roster order), so a case never reads the war mule's row as make row [0] (REG-2888's node finding, the same here)"""
+    return [t for t in (o.get("make") or []) if ("Create mule %s in the game" % name) in t]
 
 
 def cells(moves):
@@ -172,12 +185,12 @@ class WarStashOverflow(unittest.TestCase):
                           "OUT.wars = JSON.parse(window.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return /^war/i.test(m.name); })"
                           ".map(function(m){ return [m.name, (m.auto || {}).by || null]; });" + _MAKE)
         placed = [m for m in o["m"] if (m["to"] or {}).get("cell")]
+        w1 = war_name(1)
         self.assertEqual(len(placed), n, "a copy kept no cell: %d of %d" % (len(placed), n))
-        self.assertEqual(sum(1 for m in placed if (m["to"] or {}).get("holder") == "WAR1"), 1, "the 501st copy is not on WAR1")
-        self.assertEqual(o["wars"], [["WAR1", "board"]], "the board did not make exactly one WAR1: %r" % o["wars"])
+        self.assertEqual(sum(1 for m in placed if (m["to"] or {}).get("holder") == w1), 1, "the 501st copy is not on %s" % w1)
+        self.assertEqual(o["wars"], [[w1, "board"]], "the board did not make exactly one war mule 1: %r" % o["wars"])
         self.assertEqual(o["line"], "", "MOVE TASKS still says there is no WAR mule: %r" % o["line"])
-        self.assertEqual(len(o["make"]), 1, o["make"])
-        self.assertIn("Create mule WAR1 in the game", o["make"][0])
+        self.assertEqual(len(war_makes(o, w1)), 1, o["make"])
         self.assertTrue(o["makeFirst"], "the make task is not above the moves")
 
     def test_utility_proc_and_charge_gear_routes_to_the_war_stash(self):
@@ -229,7 +242,7 @@ class WarStashOverflow(unittest.TestCase):
         self.assertTrue(all(A[c] == B[c] for c in A), "a copy moved or swapped after another add: %r -> %r" % (A, B))
         self.assertEqual(sum(1 for v in B.values() if v[0] == "SHARED STASH" and v[1]), 1, B)
         # REG-2803: with no WAR mule of his, the board makes WAR1 and the extra copies land on it
-        self.assertTrue(all(v[0] == "WAR1" and v[1] for c, v in B.items() if c != 0), "an extra copy is not on the board's WAR1: %r" % B)
+        self.assertTrue(all(v[0] == war_name(1) and v[1] for c, v in B.items() if c != 0), "an extra copy is not on the board's war mule 1: %r" % B)
 
     def test_renaming_a_war_mule_keeps_its_tasks_colour_and_place(self):
         """Elad 2026-10-20: mule names get renamed to character names later - routing, tasks, colour and place bind to the id"""
@@ -262,7 +275,9 @@ class WarStashOverflow(unittest.TestCase):
         return T.board().run(READ + "OUT.m = mv(/^Arachnid Mesh$/); OUT.rows = rows(/^Arachnid Mesh$/); OUT.soj = mv(/^The Stone of Jordan$/);"
                              "OUT.line = ((document.querySelector('#vault-move-list .vmv-warfull') || {}).textContent || '');"
                              "OUT.roster = JSON.parse(window.LSR.getItem('d2r_muleRoster') || '[]').map(function(m){ return m.name; });"
-                             "var _w1 = JSON.parse(window.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return /^war1$/i.test(m.name); })[0] || {};"
+                             "var _w1 = JSON.parse(window.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return window._vaultWarRole(m) === 1; })[0] || {};"
+                             "var _w2 = JSON.parse(window.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return window._vaultWarRole(m) === 2; })[0] || {};"
+                             "OUT.war2 = { id: _w2.id || null, name: _w2.name || null, auto: (_w2.auto || {}).by || null };"
                              "OUT.war1 = { id: _w1.id || null, auto: (_w1.auto || {}).by || null };"
                              "var ss = document.querySelector('.vault-mule[data-vault-mule=\"shared\"]'), w = _w1.id ? document.querySelector('.vault-mule[data-vault-mule=\"' + _w1.id + '\"]') : null;"
                              "function n(c){ return c ? c.querySelectorAll('.vm-cell[data-vault-item=\"Arachnid Mesh\"]').length : null; }"
@@ -291,27 +306,31 @@ class WarStashOverflow(unittest.TestCase):
         o = self._cap_case([])
         by = [(m["c"], (m["to"] or {}).get("holder"), (m["to"] or {}).get("cell")) for m in o["m"]]
         self.assertEqual(sum(1 for _, h, c in by if h == "SHARED STASH" and c), 4, by)
-        self.assertEqual(sum(1 for _, h, c in by if h == "WAR1" and c), 5, "the 5 extra belts are not on the board's WAR1: %r" % by)
-        self.assertFalse(any(h not in ("WAR1", "SHARED STASH") for _, h, _c in by), "an extra went to a normal mule: %r" % by)
+        w1 = war_name(1)
+        self.assertEqual(sum(1 for _, h, c in by if h == w1 and c), 5, "the 5 extra belts are not on the board's war mule 1: %r" % by)
+        self.assertFalse(any(h not in (w1, "SHARED STASH") for _, h, _c in by), "an extra went to a normal mule: %r" % by)
         self.assertEqual(len(o["rows"]), 9, "every copy keeps its own row: %r" % o["rows"])
         self.assertEqual(o["war1"]["auto"], "board", "WAR1 was not made by the board: %r" % o["war1"])
-        self.assertEqual([x for x in o["roster"] if re.match(r"^war", str(x), re.I)], ["WAR1"], "not exactly one WAR mule: %r" % o["roster"])
-        self.assertEqual(o["line"], "", "MOVE TASKS still says to make WAR1 by hand: %r" % o["line"])
+        self.assertEqual([x for x in o["roster"] if re.match(r"^war", str(x), re.I)], [w1], "not exactly one WAR mule: %r" % o["roster"])
+        self.assertEqual(o["line"], "", "MOVE TASKS still says to make %s by hand: %r" % (w1, o["line"]))
         self.assertEqual(o["card"], 4)
         self.assertEqual(o["wcard"], 5, "the board's WAR1 card draws %r belts, not 5" % o["wcard"])
-        self.assertTrue(o["make"] and "Create mule WAR1 in the game" in o["make"][0] and o["makeFirst"], o["make"])
+        self.assertTrue(war_makes(o, w1) and o["makeFirst"], o["make"])
 
-    def test_a_war_mule_he_took_back_is_not_made_again_and_the_line_says_why(self):
-        """REG-2803: a WAR mule he deleted is kept on the shared stash's entry - the board does not make it again, the
-        extras keep no cell, and MOVE TASKS says so and why."""
+    def test_a_war_mule_he_took_back_is_not_made_again_and_the_next_one_is(self):
+        """REG-2803: a WAR mule he deleted is kept on the shared stash's entry - the board does not make it again.
+        REG-2997 (his ruling 2026-10-29, Q2): the board makes the next one instead, the extras land on it, and MOVE TASKS
+        asks him to make it in the game."""
         o = self._cap_case([], declined=["WAR1"])
         by = [(m["c"], (m["to"] or {}).get("holder"), (m["to"] or {}).get("cell")) for m in o["m"]]
-        self.assertFalse([x for x in o["roster"] if re.match(r"^war", str(x), re.I)], "the board made the WAR1 he took back: %r" % o["roster"])
+        w2 = war_name(2)
+        self.assertIsNone(o["war1"]["id"], "the board made the war mule 1 he took back: %r" % o["roster"])
+        self.assertEqual((o["war2"]["name"], o["war2"]["auto"]), (w2, "board"), "the board did not make war mule 2: %r" % o["war2"])
+        self.assertEqual([x for x in o["roster"] if re.match(r"^war", str(x), re.I)], [w2], "not exactly one WAR mule: %r" % o["roster"])
         self.assertEqual(sum(1 for _, h, c in by if h == "SHARED STASH" and c), 4, by)
-        self.assertIn("no WAR1 mule", o["line"])
-        self.assertIn("make a mule named WAR1", o["line"])
-        self.assertIn("Arachnid Mesh", o["line"])
-        self.assertIn("you took back the WAR1", o["line"], "the line does not say why the board did not make it: %r" % o["line"])
+        self.assertEqual(sum(1 for _, h, c in by if h == w2 and c), 5, "the 5 extra belts are not on war mule 2: %r" % by)
+        self.assertEqual(o["line"], "", "MOVE TASKS still says the extras keep no cell: %r" % o["line"])
+        self.assertTrue(war_makes(o, w2) and o["makeFirst"], o["make"])
 
     def test_the_cap_is_read_off_footprint_and_base_not_a_name_list(self):
         o = T.board().run("OUT.r = {}; ['The Stone of Jordan', 'Raven Frost', \"Mara's Kaleidoscope\", \"Highlord's Wrath\", 'Arachnid Mesh', \"Thundergod's Vigor\", 'Enigma', \"Andariel's Visage\", 'Demon Limb']"
