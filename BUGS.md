@@ -587,6 +587,35 @@ landed there it goes to ALL) and relies on the landing to come back. Routine I w
 v3839's grade. The hand guard now covers the crafts room's auto-land only. Law case
 test_a_sealed_chronicle_still_lands_on_completed (whole page in node: a sealed chronicle's empty ALL lands on Completed even
 after his chip); red-proof RED; REG-3056's crafts cases and proofs unchanged.
+### REG-2987 - THE EAGLE'S DOCTOR PASS PEAKED THE CONSOLE'S OWN HEAP AT +500-800 MB EVERY TICK; IT RUNS IN A SHORT-LIVED CHILD NOW (#172, his priority 1)
+REG-2985's spike profile (a scratch console of his Mac, his data, Python 3.9): with the source parses gone, every RSS spike
+past 450 MB sat inside the eagle's in-process console_doctor.run - corroborate's readings, the eye audit, the run census, the
+evidence tiers, health_engine.report. GrokBot on the ALT (v3836): free memory 1.5 GB -> 689 MB -> 560 MB over an hour.
+On a console the pass now runs in a short-lived child (audit_child.doctor_rows, `python3 audit_child.py doctor ...`) and its
+memory leaves with it; the console asks only console_doctor.IN_PROCESS itself - the 15 rows that read the process they run in
+(the serving module's fleet/presence state, sys.modules, os.getpid, the boot records PILLOW_BOOT/NUMPY_BOOT, the test-venue
+memo) - and merges them in roster order. The rules: a stale answer is never served (each ask carries a nonce; its result file
+is read only for that nonce and removed); one pass at a time; a child that fails, times out or writes nothing leaves the pass
+UNKNOWN with no rows until the next tick - never derived in the console, never an older pass. The child runs below normal
+priority (nice 10 / BELOW_NORMAL_PRIORITY_CLASS) and writes its current check where eagle_state() publishes `measuring`
+(inChild). His eagle button (/api/eagle) asks through the same door. run() gained `only`/`skip`; an `only` part primes no
+per-tick cache. A law, the gate, CI and a CLI are not consoles and run the whole pass in their own process, as before.
+MEASURED (the same scratch console, sandbox-exec denying his console and agent ports, 1500 s, eagle every 60 s):
+  BEFORE (in-process pass; RSS only - footprint re-measured in a follow-up): console ru_maxrss 919 MB, per-pass RSS
+  peaks 522-856 MB over 14 passes, RSS back to 34-56 MB after 11 of them (452/437/309 after three); console CPU 386 s,
+  children 299 s (max 595 MB: the audit children, git, lsof).
+  AFTER (pass in a child): console ru_maxrss 652 MB, per-pass RSS peaks 316-636 MB over 11 passes; footprint (resident +
+  compressed) peaks 529-640 MB, between passes 163-586 MB with no upward trend; console CPU 177 s, children 639 s (max
+  872 MB: the doctor child). Every child pass answered (140 rows; 38-40 s every tick, 284 s / 204 s with the periodic
+  tier); no doctor child was left running after the console exited. The console imports 471 modules, not 528.
+  The cost: total CPU 816 s against 685 s (+19%), a cold pass in a fresh process every tick, run below normal priority.
+Law: test_the_eagles_pass_runs_in_a_child (8 tests, 11 red-proofs RED): an AST scan holds every process-bound check to
+IN_PROCESS; a part asks only its part and primes nothing; a real child (pointed at a closed port) answers the rows this process
+does; a stale, missing or unreadable answer and a timeout are UNKNOWN, never served; one pass at a time; the eagle asks the
+child on its own cadence, merges in roster order, goes UNKNOWN when the child does not answer, and runs whole off a console;
+the eagle button asks through the same door. Re-anchored: test_a_periodic_check_is_still_watched_unattended's red-proof (the
+off-console call sits one block deeper).
+
 ### REG-2998 - A SCRATCH CONSOLE ADDRESSED HIS LIVE CONSOLE AND HIS AGENT BY THEIR PORTS (#172, agent-144's own disclosure)
 console_doctor.CONSOLE was the constant http://127.0.0.1:<his port>. While profiling REG-2985, a scratch console on :17991
 ran its eagle, and its doctor sent its reads to HIS live console: GETs, /api/board_ownership (which runs JavaScript in the

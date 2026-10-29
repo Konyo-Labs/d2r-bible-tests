@@ -13377,6 +13377,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_yielding_orb_leaves_a_door.py")], 300,
          needs_app=False,
          why='REG-3092 an orb yields on a short screen only if its feature has another door there: every hidden orb names its door, and the door opens the feature'),
+    Gate("test_the_eagles_pass_runs_in_a_child",
+         [sys.executable, os.path.join(HERE, "test_the_eagles_pass_runs_in_a_child.py")], 300,
+         needs_app=False,
+         why="REG-2987 the eagle's doctor pass runs in a short-lived child; only process-bound rows run in the console"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
