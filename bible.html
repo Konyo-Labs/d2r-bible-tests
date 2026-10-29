@@ -11465,7 +11465,7 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 .vmv-unseen{border-style:dashed;border-color:rgba(240,192,96,.5);background:linear-gradient(180deg,rgba(212,168,71,.08),rgba(10,8,5,.35))}
 .vmv-grid{margin:0 0 8px}
 .vault-tasks-panel li.vtk-expand-li{list-style:none;margin:2px 0 8px 24px;padding:6px;border-radius:8px;background:rgba(10,8,5,.45);border:1px solid rgba(240,192,96,.22)}
-.vtk-expand{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}.vtk-expand .vtx-h{font-size:var(--fs-micro);color:var(--text-dim);margin:0 0 3px}
+.vtk-expand{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}.vtk-expand .vtx-ask{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:var(--fs-micro);color:var(--q-orange)}   /* REG-3066 / REG-3067 */.vtk-expand .vtx-h{font-size:var(--fs-micro);color:var(--text-dim);margin:0 0 3px}
 .vtk-expand .vtx-arrow{align-self:center;color:var(--text-dim)}.vtk-expand .vtx-remove{flex:0 0 auto;align-self:flex-end;margin-left:auto}.vtk-expand .vtx-from[data-from=demo] .vd-grid{opacity:.55}
 /* Vault v2 (Elad 2026-10-23) — MOVE TASKS is an OVERLAY opened from a FAB above the inbox FAB (S4 of the right-edge
    stack: help +14 · nav +66 · legend +118 · inbox +170 · tasks +222). The vault keeps its full width; the list floats over
@@ -56751,7 +56751,31 @@ window.vaultAutoAssign = function(){
     /* REG-2787 - a target that changed (his hand, or the mule it named was deleted) carries why, and the row says it */
     if (spec.retarget && typeof spec.retarget === 'object' && typeof spec.retarget.why === 'string' && spec.retarget.why)
       out.retarget = { why: spec.retarget.why, at: (typeof spec.retarget.at === 'string') ? spec.retarget.at : null };
+    /* REG-3066 - where it was last seen away from its spot (the question its row asks), and every sighting he set aside;
+       REG-3067 - one session that saw it at its target and somewhere else (the question, both sightings kept). Written only
+       when set. */
+    var _ew = _vmSeenAt(spec.elsewhere);
+    if (_ew) out.elsewhere = _ew;
+    var _sa = [];
+    (Array.isArray(spec.setAside) ? spec.setAside : []).forEach(function(x){
+      var y = _vmSeenAt(x); if (!y) return;
+      y.said = (x.said === 'target') ? 'target' : 'no'; y.saidAt = _vmMs(x.saidAt); _sa.push(y);
+    });
+    if (_sa.length) out.setAside = _sa.slice(-8);
+    if (spec.conflict && typeof spec.conflict === 'object'){
+      var _cT = _vmSeenAt(spec.conflict.target), _cE = _vmSeenAt(spec.conflict.elsewhere);
+      if (_cT && _cE) out.conflict = { target: _cT, elsewhere: _cE };
+    }
     return out;
+    /* REG-3066 - one sighting as a task keeps it: {place, at, frame, s} | null (a place with no cell is no sighting) */
+    function _vmSeenAt(x){
+      if (!x || typeof x !== 'object') return null;
+      var p = (x.place && typeof x.place === 'object') ? x.place : x;
+      var pl = _vaultMovePlace(p.holder, p.location || p.loc || p.lane, p.cell, p.id);
+      if (pl.cell == null) return null;
+      return { place: pl, at: _vmMs(x.at), frame: (x.frame != null && x.frame !== '') ? String(x.frame) : null,
+               s: (x.s != null && x.s !== '') ? String(x.s).split('#')[0] : null };
+    }
   }
   function _vaultMoveQueue(name, from, to){
     return _vaultMoveTask({ name: name, from: from, to: to, status: 'to-move', evidence: [], manual: true, opened: Date.now() }); /* v3767 move queue */
@@ -56783,8 +56807,28 @@ window.vaultAutoAssign = function(){
     }
     var atTo = _vaultMoveSamePlace(place, t.to);
     var atFrom = _vaultMoveSamePlace(place, t.from);
+    /* REG-3067 (his done rule, 2026-10-28 18:56: "same-session conflict -> a question") - ONE SESSION, TWO PLACES. A read at
+       the target and a read somewhere else from the SAME session cannot both be the copy's place now, and "the newer read
+       wins" was a guess inside one session. It is a question on the row, with both sightings kept; it does not verify, reopen
+       or move anything until he answers (window.vaultConflictAnswer) or a read from another session settles it. */
+    var _rs = reads.map(function(r){ return r.s; }).filter(Boolean);
+    var _seenHere = { place: place, at: rt, frame: frame, s: _rs[0] || null };
+    if (t.conflict && _rs.length && _rs.indexOf(t.conflict.target.s) < 0) delete t.conflict;   /* another session settles it */
+    /* until he answers, where the copy is is UNKNOWN - neither in place (a verified row opens again) nor moved; his own tick
+       is his answer already, so it raises no question */
+    if (t.status !== 'moved-manual' && !atTo && _rs.length && (t.seen || []).some(function(x){ return _rs.indexOf(x.s) >= 0; })) {
+      var _st = (t.seen || []).filter(function(x){ return _rs.indexOf(x.s) >= 0; }).pop();
+      t.conflict = { target: { place: t.to, at: _st.at, frame: _st.frame, s: _st.s }, elsewhere: _seenHere };
+      if (t.status === 'verified') t.status = 'to-move';
+      return t;
+    }
+    if (t.status !== 'moved-manual' && atTo && _rs.length && t.elsewhere && t.elsewhere.s && _rs.indexOf(t.elsewhere.s) >= 0) {
+      t.conflict = { target: _seenHere, elsewhere: t.elsewhere };
+      return t;
+    }
     /* REG-2843 - an item first read already at its home has FROM = TO: a later read there is at its target, never "still" */
     if (atTo && (!atFrom || _vaultMoveSamePlace(t.from, t.to))) {
+      delete t.elsewhere;   /* REG-3066 seen at its target: the sighting away is no longer where it is */
       /* REG-2843 - his tick already closed it (a read confirms it); else VAULT_WITNESS_MIN sessions since it opened */
       if (t.status === 'moved-manual' || _vaultMoveSeenAtTo(t, reads)) {
         t.status = 'verified'; /* v3767 move verified */
@@ -56797,10 +56841,15 @@ window.vaultAutoAssign = function(){
     if (nt != null && rt != null && rt < nt) return t;
     delete t.seen;
     if (atFrom) {
+      delete t.elsewhere;   /* REG-3066 back where it was */
       t.status = 'to-move'; /* v3767 move still */
       return t;
     }
     t.status = 'moved-elsewhere'; /* v3767 move elsewhere */
+    /* REG-3066 (his model 2026-10-28 19:08: "a copy seen off its locked spot is a deviation ... unless a move task explains
+       it") - WHERE it was seen is kept, so its row can ask "did you move it there?". The row said moved-elsewhere and the
+       place was dropped: nothing could ask, and nothing could answer. */
+    t.elsewhere = _seenHere;
     return t;
   }
   try { window._vaultMoveTask = _vaultMoveTask; } catch (eMt) {}
@@ -57900,13 +57949,32 @@ window.vaultAutoAssign = function(){
     var to = xy(t.to && t.to.cell), from = xy(t.from && t.from.cell);
     var fromSay = from ? where(t.from, from) : 'MANUAL';
     var toSay = to ? where(t.to, to) : 'not placed yet';
+    /* REG-3066 / REG-3067 - the places its questions name, in the words FROM and TO use */
+    var sayOf = function(s){ if (!s || !s.place) return null; var c = xy(s.place.cell); return c ? where(s.place, c) : String(s.place.holder || s.place.cell); };
     return { name: name, copyIx: copyIx, task: t, manual: !from, from: from, to: to,
-             fromSay: fromSay, toSay: toSay, size: sz(name), dims: { from: from ? dims(from.loc) : null, to: to ? dims(to.loc) : null } };
+             fromSay: fromSay, toSay: toSay, size: sz(name), dims: { from: from ? dims(from.loc) : null, to: to ? dims(to.loc) : null },
+             elsewhereSay: (t && t.elsewhere) ? sayOf(t.elsewhere) : null,
+             conflictSay: (t && t.conflict) ? { target: sayOf(t.conflict.target), elsewhere: sayOf(t.conflict.elsewhere) } : null };
   }
   /* L1 (Elad 2026-10-20 22:35) — EVERY MOVE TASK IS ITS OWN COLLAPSED ROW. A click opens that row only, under it:
      FROM = MANUAL (typed by hand), else the source cell the screenshot saw, else a DEMO grid that says it is simulated;
      TO = a mini grid of that exact mule with ONLY this item at its exact cell. One grid per task, never merged with
      another task's ("TO SETS-REST" holding several tasks was wrong). Reads saved state only, writes nothing. */
+  /* REG-3066 / REG-3067 - the question an opened row asks: a copy seen away from its spot, or one session in two places */
+  function _vtxAsk(m){
+    var t = m && m.task, nm = jsArg(m.name), ci = m.copyIx | 0, d = function(ms){ try { return ms ? new Date(ms).toISOString().slice(0, 10) : ''; } catch (e) { return ''; } };
+    if (!t) return '';
+    if (t.conflict && m.conflictSay)
+      return '<div class="vtx-ask" data-ask="conflict"><span>Seen at its target and at ' + esc(m.conflictSay.elsewhere || 'another place')
+        + ' in the same session' + (d(t.conflict.elsewhere.at) ? ' (' + d(t.conflict.elsewhere.at) + ')' : '') + ' - which is it?</span>'
+        + '<button type="button" class="vault-btn" title="' + esc(m.conflictSay.target || 'its target') + '" onclick="event.stopPropagation();window.vaultConflictAnswer(\'' + nm + '\',' + ci + ',\'target\')">At its target</button>'
+        + '<button type="button" class="vault-btn" onclick="event.stopPropagation();window.vaultConflictAnswer(\'' + nm + '\',' + ci + ',\'elsewhere\')">At ' + esc(m.conflictSay.elsewhere || 'the other place') + '</button></div>';
+    if (t.status === 'moved-elsewhere' && t.elsewhere && m.elsewhereSay)
+      return '<div class="vtx-ask" data-ask="moved"><span>Seen at ' + esc(m.elsewhereSay) + (d(t.elsewhere.at) ? ' on ' + d(t.elsewhere.at) : '') + ' - did you move it there?</span>'
+        + '<button type="button" class="vault-btn" title="yes - that is its spot now (your hand moves it there)" onclick="event.stopPropagation();window.vaultMovedAnswer(\'' + nm + '\',' + ci + ',true)">Yes, it lives there</button>'
+        + '<button type="button" class="vault-btn" title="no - keep the task; this sighting is set aside and kept on record" onclick="event.stopPropagation();window.vaultMovedAnswer(\'' + nm + '\',' + ci + ',false)">No</button></div>';
+    return '';
+  }
   function _vaultTaskExpandHtml(name, copyIx){
     var m = _vaultMoveCompareModel(name, copyIx || 0), cell = 26, sz = m.size;
     function one(c, d, label, area){
@@ -57922,6 +57990,7 @@ window.vaultAutoAssign = function(){
       : m.to ? '<div class="vtx-to" data-to="' + esc(m.task.to.cell) + '"><div class="vtx-h">TO · ' + esc(m.toSay) + '</div>' + one(m.to, m.dims.to, 'To', 'task-to') + '</div>'
       : '<div class="vtx-to" data-to="none">no target cell yet</div>';
     return '<div class="vtk-expand" data-name="' + esc(m.name) + '" data-copy="' + m.copyIx + '"' + ((!thr && m.task && _vaultFamilyOfPlace(m.task.to)) ? ' data-family="shared"' : '') + '>' + from + '<span class="vtx-arrow" aria-hidden="true">→</span>' + to
+      + _vtxAsk(m)   /* REG-3066 / REG-3067 the question this row asks, and its answers */
       /* REG-2849 - his ✕ on this one copy: it leaves, the other copies keep their own entries, cells and moves */
       + '<button type="button" class="vault-btn vtx-remove" title="remove this one copy from the vault (Undo in the toolbar puts it back)"'
       + ' onclick="event.stopPropagation();window.vaultRemoveCopy(\'' + jsArg(m.name) + '\',' + (m.copyIx | 0) + ')">✕ Remove this copy</button>'
@@ -57949,17 +58018,18 @@ window.vaultAutoAssign = function(){
   window._vaultInPlace = function(built){
     built = built || window._moveModel || null;
     if (!built || !Array.isArray(built.tasks)) return null;
-    var m = 0, verified = 0, ticked = 0;
+    var m = 0, verified = 0, ticked = 0, asked = 0;
     built.tasks.forEach(function(r){
       var t = r && r.task;
       if (!t || t.kind === 'throw' || t.status === 'closed') return;
       m++;
+      if (t.conflict) { asked++; return; }   /* REG-3067 one session in two places: UNKNOWN until he answers */
       if (t.status === 'verified') verified++;
       else if (t.status === 'moved-manual') ticked++;
     });
-    return { n: verified + ticked, m: m, verified: verified, ticked: ticked,
+    return { n: verified + ticked, m: m, verified: verified, ticked: ticked, asked: asked,
              say: (verified + ticked) + ' of ' + m + ' copies are where they belong: ' + verified + ' seen there by two sessions, '
-                  + ticked + ' ticked by your hand' };
+                  + ticked + ' ticked by your hand' + (asked ? ' (' + asked + ' UNKNOWN until you answer which place one session saw)' : '') };
   };
   function _vaultMoveHtml(built){
     built = built || { tasks: [], groups: [], locks: [] };
@@ -58027,6 +58097,8 @@ window.vaultAutoAssign = function(){
         + ((typeof window._vaultTradeOf === 'function') ? window._vaultTradeOf(row.name).filter(function(x){ return x.ci === ci && x.state === 'listed'; }).map(function(x){
             return '<b class="vmv-l1 vmv-listed" data-trade="listed" title="' + esc(window._vaultListedSay(x)) + '">listed</b>'; }).join('') : '')   /* REG-2878 this copy is listed */
         + ((!thr && t.retarget) ? '<b class="vmv-l1 vmv-retarget" data-retarget="1" title="' + esc(t.retarget.why) + '">new target: ' + esc(t.retarget.why) + '</b>' : '')   /* REG-2787 why the target changed */
+        + ((!thr && t.conflict) ? '<b class="vmv-l1 vmv-ask" data-ask="conflict" title="seen at its target and at ' + esc(_vtkPlace(t.conflict.elsewhere.place, false)) + ' in the same session - UNKNOWN until you open the row and say which">which place?</b>'
+           : (!thr && t.status === 'moved-elsewhere' && t.elsewhere) ? '<b class="vmv-l1 vmv-ask" data-ask="moved" title="seen at ' + esc(_vtkPlace(t.elsewhere.place, false)) + ' - open the row: did you move it there?">moved?</b>' : '')   /* REG-3066 / REG-3067 */
         + (thr ? '' : '<button type="button" class="vault-btn vmv-wit" title="' + esc(wSay) + ' · the pictures it was read on" onclick="event.stopPropagation();window._vaultEvidenceOpen(\'' + nm + '\')">' + (row.witnesses == null ? '👁 0' : '👁 ' + row.witnesses) + '</button>')
         + ((thr && !fin && !t.junk) ? '<button type="button" class="vault-btn vmv-keep" title="keep it instead" onclick="event.stopPropagation();window._vaultThrowKeep(\'' + nm + '\',' + ci + ')">Keep</button>' : '')
         + ((thr && !fin && !t.junk) ? '<button type="button" class="vault-btn vmv-junk" title="yes, it is junk" onclick="event.stopPropagation();window._vaultThrowJunk(\'' + nm + '\',' + ci + ')">Junk</button>' : '')
@@ -58095,6 +58167,64 @@ window.vaultAutoAssign = function(){
   }
   try { window._vaultTaskTick = _vaultTaskTick; } catch (eTt) {}
   try { window._vaultTaskUntick = _vaultTaskUntick; } catch (eTu) {}
+  /* REG-3066 - HIS ANSWER TO "seen at <place> - did you move it there?". Yes: his hand moves the copy's spot there, through
+     REG-2787's one door for a hand-placed cell (_vaultMoveRetargetCell), and the task is his tick at that spot (Untick takes
+     the tick back). No: the task stays as it was, open, and that sighting is set aside on the task - recorded with his
+     answer, never deleted. A shadow is read only: nothing is written there. -> {ok, task} | {ok: false, why} */
+  function _vaultMoveAsked(name, copyIx){
+    var bag = _vaultMoveBag();
+    if (!bag || bag.unread || !bag.map) return { why: 'the move tasks would not read - nothing changed' };
+    var raw = bag.map[String(name) + '\u0000' + (copyIx | 0)];
+    return { t: raw ? _vaultMoveTask(raw) : null };
+  }
+  window.vaultMovedAnswer = function(name, copyIx, yes){
+    var nm = String(name == null ? '' : name).trim(), k = copyIx | 0;
+    if (window._tvdShadow) return { ok: false, refused: 'shadow', why: 'a shadow is read only - answer on your own board' };
+    var a = _vaultMoveAsked(nm, k), t = a.t;
+    if (a.why) return { ok: false, why: a.why };
+    if (!t || !t.elsewhere) return { ok: false, why: nm + ' has no sighting away from its spot to answer' };
+    var ew = t.elsewhere, done;
+    if (yes) {
+      var mm = _vaultMuleOfPlace(ew.place);
+      if (!mm || mm.id == null) return { ok: false, why: 'it was seen at ' + String(ew.place.holder || 'a place') + ', which is not one of your lockers - nothing moved (move it to a locker, or answer No)' };
+      var nt = _vaultMoveRetargetCell(nm, k, mm.id, ew.place.cell, 'you moved it here');   /* REG-2787 his hand moves the spot */
+      if (!nt) return { ok: false, why: nm + ' has no move task to re-target - nothing changed' };
+      done = _vaultMoveTask(Object.assign({}, nt, { from: ew.place, status: 'moved-manual', manual: true, setAside: t.setAside,
+                                                   undo: { status: 'to-move', manual: t.manual === true }, opened: t.opened }));
+    } else {
+      done = _vaultMoveTask(Object.assign({}, t, { status: 'to-move', elsewhere: null,
+                                                   setAside: (t.setAside || []).concat([Object.assign({}, ew, { said: 'no', saidAt: Date.now() })]) }));
+    }
+    var c = _vaultMoveCommit([{ name: nm, copyIx: k, task: done }]);
+    if (!c || c.ok === false) return { ok: false, why: 'the move tasks refused the write - nothing changed' };
+    try { _vaultMovePaint(); } catch (eP) {}
+    return { ok: true, task: done };
+  };
+  /* REG-3067 - HIS ANSWER TO "one session saw it at its target and at <place> - which is it?". 'target': that session's read
+     at the target counts (two sessions there close it, REG-2843), and the other read is set aside, recorded. 'elsewhere': the
+     read at the target does not count, and the copy is seen away from its spot - the question REG-3066 asks next. A shadow
+     is read only. -> {ok, task} | {ok: false, why} */
+  window.vaultConflictAnswer = function(name, copyIx, where){
+    var nm = String(name == null ? '' : name).trim(), k = copyIx | 0;
+    if (window._tvdShadow) return { ok: false, refused: 'shadow', why: 'a shadow is read only - answer on your own board' };
+    var a = _vaultMoveAsked(nm, k), t = a.t;
+    if (a.why) return { ok: false, why: a.why };
+    if (!t || !t.conflict) return { ok: false, why: nm + ' has no question about one session in two places' };
+    var cf = t.conflict, done;
+    if (where === 'target') {
+      done = _vaultMoveTask(Object.assign({}, t, { conflict: null, elsewhere: null,
+                                                   setAside: (t.setAside || []).concat([Object.assign({}, cf.elsewhere, { said: 'target', saidAt: Date.now() })]) }));
+      var ok2 = _vaultMoveSeenAtTo(done, [{ s: cf.target.s, at: cf.target.at, frame: cf.target.frame }]);
+      if (done.status !== 'moved-manual') done.status = ok2 ? 'verified' : 'to-move';
+    } else if (where === 'elsewhere') {
+      done = _vaultMoveTask(Object.assign({}, t, { conflict: null, seen: (t.seen || []).filter(function(x){ return x.s !== cf.target.s; }),
+                                                   status: 'moved-elsewhere', elsewhere: cf.elsewhere }));
+    } else return { ok: false, why: 'answer target or elsewhere' };
+    var c = _vaultMoveCommit([{ name: nm, copyIx: k, task: done }]);
+    if (!c || c.ok === false) return { ok: false, why: 'the move tasks refused the write - nothing changed' };
+    try { _vaultMovePaint(); } catch (eP) {}
+    return { ok: true, task: done };
+  };
   /* L1 (Elad 2026-10-20) — the rules route it to junk (a screenshot-seen item, or one he ruled junk): it is a THROW OUT row
      in MOVE TASKS, target NOWHERE, one plain reason. A hand add of an unruled set piece is NOT one (his ruling: kept and
      routed), because _vaultSeamHome files it. Keep turns the row into a normal move (_vaultKeptByHim). */
