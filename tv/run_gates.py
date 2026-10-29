@@ -13321,6 +13321,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_saved_filing_the_board_does_not_draw_is_asked_about.py")], 300,
          needs_app=False,
          why='REG-3041 #163: a saved filing the board does not draw is listed with why, file it again or forget it, never dropped by a write'),
+    Gate("test_the_roster_labels_are_one_list",
+         [sys.executable, os.path.join(HERE, "test_the_roster_labels_are_one_list.py")], 300,
+         needs_app=False,
+         why='REG-2924 - the five roster owner labels are one list in roster_publish, the worker and the console page, and the page and Python name the same owner for every fleet row'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

@@ -28398,7 +28398,9 @@ function escC(s) {
   window._fleetShadowEye = _fleetShadowEye;
   /* GBL 2026-10-24 - WHICH ROSTER PROFILE A FLEET ROW IS. The same rule the console publishes under
      (roster_publish.owner_of): a nickname that IS a roster label is that label; Konyo on a mac is Konyo · Mac;
-     anything else has no profile, and the eyes say so rather than guess another PC's key. [[unknown-stays-unknown]] */
+     anything else has no profile, and the eyes say so rather than guess another PC's key. [[unknown-stays-unknown]]
+     REG-2924 - this is the page's ONE copy of the five labels; the shadow reader asks this rule too. The worker
+     (functions/api/roster.js) and roster_publish.OWNERS hold the same list, and a law holds all three to it. */
   var _FLEET_ROSTER_OWNERS = ['Konyo \u00b7 Mac', 'Konyo \u00b7 ALT', 'Konyo \u00b7 GrokBot', 'Dean', 'Wife PC'];
   var _fleetRosterOwner = function (m) {
     var nick = String((m && m.nickname) || '').trim();
@@ -29472,15 +29474,10 @@ function escC(s) {
      machine, returns no world: the frame then fails closed instead of opening this browser's board.
      The hostname is compared in memory and is not copied into the stores. */
   window._shadowRosterStores = function (row, fleet, owner) {
-    var OWNERS = ['Konyo \u00b7 Mac', 'Konyo \u00b7 ALT', 'Konyo \u00b7 GrokBot', 'Dean', 'Wife PC'];
+    /* REG-2924 - the Fleet's one rule (_fleetRosterOwner). A second copy of the labels sat here as a fallback; it could
+       only ever answer when the rule said no, so it could only ever disagree with it. No rule, no profile. */
     function labelOf(m) {
-      if (typeof window._fleetRosterOwner === 'function') {
-        var got = window._fleetRosterOwner(m);
-        if (got) return got;
-      }
-      var nick = String((m && m.nickname) || '').trim();
-      if (OWNERS.indexOf(nick) >= 0) return nick;
-      return '';
+      return (typeof window._fleetRosterOwner === 'function') ? (window._fleetRosterOwner(m) || '') : '';
     }
     function storeOf(builds) {
       var all = {};

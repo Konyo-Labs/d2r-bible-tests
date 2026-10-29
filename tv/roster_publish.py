@@ -57,7 +57,11 @@ def owner_of(name, platform=None):
     platform. The short name Konyo on a mac is the label Konyo · Mac.
     Windows stays unlabeled, and so does a mac named Grok: those machines
     are not this one, and a guess would publish them under the wrong key.
+    A name is read trimmed, as the console page's _fleetRosterOwner reads a
+    fleet row, so the two readers of one row never name different owners.
     """
+    if isinstance(name, str):
+        name = name.strip()
     if name in OWNERS:
         return name
     if name == "Konyo" and platform == "mac":
