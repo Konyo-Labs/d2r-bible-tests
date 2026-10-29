@@ -2551,6 +2551,16 @@ file row with k > n - and no law named either. Test-only: a law that holds both 
 writes nothing; a forged 138/135 row reads UNKNOWN and may() stays LOCKED) and holds the shape over the tracked
 ledger (every lock and route: k <= n, attacksPassed <= attacks <= n). The fan-caption overlap half of #84 is NEEDS
 LIVE. Law: test_a_lock_never_publishes_more_refusals_than_attempts (python), 2 red-proofs, RED.
+### REG-3065 - NOTHING SAID HOW MANY COPIES ARE IN PLACE (his intake design 2026-10-28 18:56, #202)
+His extension to the intake design: "the readout shows 'in place N of M'". The MOVE TASKS list said only MOVE TASKS, and the
+read-only readout (window._vaultCopyAudit) said nothing of it, so nothing told him how far along he is. Now, of the copies
+with a move to a home (a throw-out has no home, and a row the drain closed is gone), N are in place: proven at their target
+by reads from two sessions (verified, REG-2843) or ticked by his hand (moved-manual). The list's head says "in place N of M",
+its title says how many of each, and the readout carries the same numbers (window._vaultInPlace). With no move model yet it
+is UNKNOWN (null), never "0 of 0". Measured on the whole page in node: three hand adds read "in place 0 of 3", and his tick on
+one reads "in place 1 of 3". Law: test_the_move_list_says_how_many_copies_are_in_place (node, the whole page), 4 red-proofs,
+RED. The head's new chip is not checked on pixels here (CI or GrokBot).
+
 ### REG-3055 - A RUNEWORD WITH A TV STUB WAS A GUESSED 1x2, AND HIS COPIES' OWN BASES NEVER SIZED IT (GrokBot #230, 2026-10-29)
 _itemCells read a TV stub's base (its own name) as a base, so a runeword with a stub never reached _runewordCells: Heart of
 the Oak drew an approx 1x2 where its bases are one size (2x3). A stub's own name is no base now. Call to Arms, Fury, Dream and

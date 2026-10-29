@@ -11450,6 +11450,7 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 .vault-move-k{font-family:var(--serif-display,serif);font-size:var(--fs-title);letter-spacing:var(--ls-wide);color:var(--gold-bright);text-shadow:0 0 18px rgba(240,192,96,.28)}
 .vault-move-sub{font-size:var(--fs-meta);color:var(--text-dim);letter-spacing:var(--ls-snug)}
 .vmv-locks{display:flex;flex-wrap:wrap;gap:6px}
+.vmv-inplace{font-size:var(--fs-micro);color:var(--text-muted);white-space:nowrap}   /* REG-3065 in place N of M */
 .vmv-lock{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;border:1px solid var(--border-light);background:var(--surface-3);font-size:var(--fs-micro);letter-spacing:var(--ls-normal);color:var(--text)}
 .vmv-lock[data-say="LOCKED"]{border-color:rgba(255,120,120,.55);color:#ffb4b4}
 .vmv-lock[data-say="WATCHING"]{border-color:rgba(240,192,96,.45);color:var(--gold-bright)}
@@ -56431,6 +56432,8 @@ window.vaultAutoAssign = function(){
        checks the names homed on a locker; beside them, every copy record by kind today (loose on the dock, kept, carried,
        orphan...) and the total, so a reader sees where the rest sit and never takes the migrate receipt for today's count */
     out.recordsTotal = null; out.recordsByKind = null;
+    /* REG-3065 - and how many copies are in place, as the MOVE TASKS head says it (null = no move model yet: UNKNOWN) */
+    try { out.inPlace = (typeof window._vaultInPlace === 'function') ? window._vaultInPlace() : null; } catch (eIp) { out.inPlace = null; }
     try {
       var _rs = (typeof _vaultRecordsSource === 'function') ? _vaultRecordsSource() : null;
       if (_rs && _rs.ok && Array.isArray(_rs.records)) {
@@ -57938,6 +57941,26 @@ window.vaultAutoAssign = function(){
      ("Arcanna's Sign · MANUAL → SETS-REST (3,1)"), Moves first, then Throw-outs, the done ones collapsed at the
      bottom. Each line has a tick box (his hand, or the reels: gone k/5 shows the drain) and a click expands that line's own
      FROM -> TO under it (_vaultTaskExpand). */
+  /* REG-3065 (his design 2026-10-28 18:56: "the readout shows 'in place N of M'") - HOW MANY COPIES ARE WHERE THEY BELONG.
+     Of the copies with a move to a home (a throw-out has none, and a row the drain closed is gone), N are in place: proven at
+     their target by reads from two sessions (verified, REG-2843) or ticked by his hand (moved-manual). The list said MOVE
+     TASKS and nothing of how far along he is. built: a collected model (default: the last one painted, window._moveModel).
+     -> {n, m, verified, ticked, say} | null (no model yet - UNKNOWN, never 0 of 0) */
+  window._vaultInPlace = function(built){
+    built = built || window._moveModel || null;
+    if (!built || !Array.isArray(built.tasks)) return null;
+    var m = 0, verified = 0, ticked = 0;
+    built.tasks.forEach(function(r){
+      var t = r && r.task;
+      if (!t || t.kind === 'throw' || t.status === 'closed') return;
+      m++;
+      if (t.status === 'verified') verified++;
+      else if (t.status === 'moved-manual') ticked++;
+    });
+    return { n: verified + ticked, m: m, verified: verified, ticked: ticked,
+             say: (verified + ticked) + ' of ' + m + ' copies are where they belong: ' + verified + ' seen there by two sessions, '
+                  + ticked + ' ticked by your hand' };
+  };
   function _vaultMoveHtml(built){
     built = built || { tasks: [], groups: [], locks: [] };
     function _vtkPlace(place, manual){
@@ -57960,7 +57983,9 @@ window.vaultAutoAssign = function(){
     var locks = (built.locks || []).filter(function(l){ return l.say !== 'LOCKED'; }).map(function(l){ /* L1 locked gear reads on its own quiet line */
       return '<span class="vmv-lock" data-say="' + esc(l.say) + '">' + esc(l.name) + ' · ' + esc(l.say) + '</span>';
     }).join('');
+    var _ip = (typeof window._vaultInPlace === 'function') ? window._vaultInPlace(built) : null;   /* REG-3065 */
     var head = '<div class="vault-move-h"><span class="vault-move-k">MOVE TASKS</span>'
+      + (_ip && _ip.m > 0 ? '<span class="vmv-inplace" title="' + esc(_ip.say) + '">in place ' + _ip.n + ' of ' + _ip.m + '</span>' : '')
       + '<span class="vmv-locks">' + locks + '</span></div>'; /* v3773 no manual move */
     var moves = [], throws = [], done = [];
     (built.groups || []).forEach(function(g){ g.rows.forEach(function(r){ (r.task && r.task.kind === 'throw' ? throws : moves).push(r); }); });
