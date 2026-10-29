@@ -23,6 +23,7 @@ what the server said to every view, the panel's payload and the doctor.
 import html
 import json
 import os
+import re
 
 OWNERS = (
     "Konyo · Mac",
@@ -219,6 +220,59 @@ def characters_read(present, ledger, learned_rows, now_ms):
         return None
     return {"read": True, "asOf": now_ms, "counts": len(chars), "rows": learned_rows,
             "allow": ("name", "cls", "level", "title")}
+
+
+def _fold_name(name):
+    """char_select._fold, the key a character name is matched on (the D2R font draws O as ⊕; readers vary in case)."""
+    s = str(name or "").replace("\u2295", "O").replace("\u00d8", "O").replace("\u25ce", "O")
+    return re.sub(r"[^a-z0-9]", "", s.lower())
+
+
+def with_save_names(section, saves, now_ms):
+    """#251 (REG-2929) - the characters section carries THIS PC's save names, spelled as its save folder spells them,
+    and never an account id. -> section | None
+
+    `saves` is control_app.saves_answer() (tv/d2s_read.saves). A learned row whose name folds to a save name takes the
+    save's spelling; a save name no row holds joins as a row with its name only (class and level UNKNOWN, so absent).
+    Saves that did not answer, or name nobody, leave the section as it was. A PC whose reels learned nothing gets a
+    section from its saves alone. A builds book's section carries builds, not characters, and is left as it is."""
+    if not (isinstance(saves, dict) and saves.get("ok") is True and isinstance(saves.get("chars"), list)):
+        return section
+    names = []
+    for r in saves["chars"]:
+        n = r.get("name") if isinstance(r, dict) else None
+        if isinstance(n, str) and n.strip() and n not in names:
+            names.append(n)
+    if not names:
+        return section
+    allow = ("name", "cls", "level", "title")
+    if section is None:
+        if isinstance(now_ms, bool) or not isinstance(now_ms, int) or now_ms <= 0:
+            return None
+        return {"read": True, "asOf": now_ms, "counts": len(names), "rows": [{"name": n} for n in names], "allow": allow}
+    if not isinstance(section, dict) or section.get("allow") == ("build",):
+        return section
+    rows = [dict(r) if isinstance(r, dict) else r for r in (section.get("rows") or [])]
+    by = {}
+    for r in rows:
+        if isinstance(r, dict) and r.get("name"):
+            by.setdefault(_fold_name(r["name"]), r)
+    added = 0
+    for n in names:
+        hit = by.get(_fold_name(n))
+        if hit is not None:
+            hit["name"] = n
+            continue
+        row = {"name": n}
+        rows.append(row)
+        by[_fold_name(n)] = row
+        added += 1
+    out = dict(section)
+    out["rows"] = rows
+    c = out.get("counts")
+    if isinstance(c, int) and not isinstance(c, bool):
+        out["counts"] = c + added
+    return out
 
 
 def vault_read(state, rows, as_of):
