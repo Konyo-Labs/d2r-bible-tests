@@ -85,9 +85,9 @@ class TheVaultFinderNamesTheMuleAndTheCell(unittest.TestCase):
 
     def test_the_finder_and_the_mule_window_agree_on_the_cell(self):
         o = self.after["Obedience"]
-        m = re.search(r"col (\d+) · row (\d+)$", o.get("cell") or "")
+        m = re.search(r"((?:Mule \d+ · )?Personal stash · col \d+ · row \d+)$", o.get("cell") or "")
         self.assertTrue(m, o)
-        self.assertIn("Obedience → STASH col %s · row %s" % m.groups(), self.rwList,
+        self.assertIn("Obedience → %s" % m.group(1), self.rwList,   # REG-3062 the one spelling, the window's and FIND's
                       "the finder and the mule window name different cells for the same item")
         g = re.search(r"^Page ([1-5]) · col (\d+) · row (\d+)$", self.after["Grief"].get("cell") or "")
         self.assertTrue(g, self.after["Grief"])
@@ -131,7 +131,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2020 - the finder names no mule-stash cell",
      "file": "bible.html",
-     "find": "            (mu.stash || []).forEach(function(p){ if (p.n === nm) _putW(tagW + 'Personal stash · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); });\n",
+     "find": "            (mu.stash || []).forEach(function(p){ if (p.n === nm) _putW(_muleSpotSay('personal', p.x, p.y, mpW)); });\n",
      "replace": "",
      "matches": 1},
     {"why": "REG-2020 - armour his MAIN wears is offered a mule in the finder",

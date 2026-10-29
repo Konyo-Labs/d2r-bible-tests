@@ -251,7 +251,7 @@ class ASavedTargetNeverMovesUnlessHeMovesIt(unittest.TestCase):
         self.assertNotEqual(r["before"]["light"]["cell"], "stash:c6r5", "PREMISE: Lightsabre was already planned there")
         self.assertEqual((r["light"]["id"], r["light"]["cell"]), ("uni-weap", "stash:c6r5"), "his spot did not become the target: %r" % r["light"])
         self.assertIn("Personal stash · col 7 · row 6", r["drawn"] or [], r["drawn"])
-        self.assertEqual([x["chip"] for x in r["lightRows"]], ["you placed it at col 7 · row 6 by hand"], r["lightRows"])
+        self.assertEqual([x["chip"] for x in r["lightRows"]], ["you placed it at Personal stash · col 7 · row 6 by hand"], r["lightRows"])   # REG-3062
         self.assertEqual((r["gull"], r["gf"]), (r["before"]["gull"], r["before"]["gf"]), "his spot moved other targets")
         self.assertEqual(self.spotReload["light"]["cell"], "stash:c6r5", "a reload lost his spot's target: %r" % self.spotReload["light"])
 

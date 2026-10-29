@@ -119,7 +119,7 @@ class TheTasksPanel(unittest.TestCase):
         self.assertTrue(all(l["num"] and l["num"] != "none" for l in o["lines"]), "lines are not numbered: %r" % o["lines"])
         sign = [l for l in o["lines"] if l["n"].startswith(SIGN)]
         self.assertTrue(sign, o)
-        self.assertRegex(sign[0]["say"], r"^Arcanna's Sign.* · MANUAL → SETS-REST \(\d+,\d+\)$", sign[0]["say"])
+        self.assertRegex(sign[0]["say"], r"^Arcanna's Sign.* · MANUAL → SETS-REST · (?:Mule \d+ · )?[A-Z][a-z]+(?: stash)? · col \d+ · row \d+$", sign[0]["say"])   # REG-3062
         self.assertIn("moves", o["secs"])
         self.assertIn("throws", o["secs"])
         self.assertLess(o["secs"].index("moves"), o["secs"].index("throws"), "Throw-outs come before Moves: %r" % o["secs"])

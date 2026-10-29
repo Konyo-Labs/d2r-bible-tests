@@ -46758,7 +46758,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       if (!ca) return String(cell);
       var at = 'col ' + (ca.x + 1) + ' · row ' + (ca.y + 1);
       if (ca.loc === 'shared') return _sharedSpotSay(ca.page, ca.x, ca.y);   /* REG-3005 the one spelling */
-      return 'Mule ' + (ca.page + 1) + ' · ' + (ca.loc === 'inventory' ? 'Inventory' : 'Personal stash') + ' · ' + at;
+      return _muleSpotSay(ca.loc, ca.x, ca.y, ca.page);   /* REG-3062 the one spelling */
     }
     var res = document.getElementById('vault-find-results');
     if (!res) return;
@@ -50071,11 +50071,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
         }
         var load = (window._muleLoad || _muleLoad)(_muleNamesFor(mid).concat(planned), _mpWornFor(mid, _mpEqAll()), mid);
         (load.mules || []).forEach(function(mu, pi){
-          var tag = ((load.mules || []).length > 1 ? 'Mule ' + (pi + 1) + ' · ' : '');
-          (mu.stash || []).forEach(function(q){ if (planned.indexOf(q.n) >= 0 && !cells[q.n]) cells[q.n] = tag + 'Personal stash · col ' + (q.x + 1) + ' · row ' + (q.y + 1); });
+          var mp = ((load.mules || []).length > 1) ? pi : null;   /* REG-3062 the one spelling */
+          (mu.stash || []).forEach(function(q){ if (planned.indexOf(q.n) >= 0 && !cells[q.n]) cells[q.n] = _muleSpotSay('personal', q.x, q.y, mp); });
           MULE_STASH_TABS.slice(1).forEach(function(t){ ((mu.tabs || {})[t] || []).forEach(function(q){
-            if (planned.indexOf(q.n) >= 0 && !cells[q.n]) cells[q.n] = tag + MULE_AREAS[t][2] + ' stash · col ' + (q.x + 1) + ' · row ' + (q.y + 1); }); });
-          (mu.inv || []).forEach(function(q){ if (planned.indexOf(q.n) >= 0 && !cells[q.n]) cells[q.n] = tag + 'Inventory · col ' + (q.x + 1) + ' · row ' + (q.y + 1); });
+            if (planned.indexOf(q.n) >= 0 && !cells[q.n]) cells[q.n] = _muleSpotSay(t, q.x, q.y, mp); }); });
+          (mu.inv || []).forEach(function(q){ if (planned.indexOf(q.n) >= 0 && !cells[q.n]) cells[q.n] = _muleSpotSay('inv', q.x, q.y, mp); });
         });
       });
     } catch (e) { why = 'the stash packer raised (' + String((e && e.message) || e).slice(0, 80) + ')'; }
@@ -55966,6 +55966,19 @@ window.vaultAutoAssign = function(){
      this one helper. page, x, y are 0-based (the plan's own numbers). -> 'Page 1 · col 3 · row 1' */
   function _sharedSpotSay(page, x, y){ return 'Page ' + ((+page || 0) + 1) + ' \u00b7 col ' + ((+x || 0) + 1) + ' \u00b7 row ' + ((+y || 0) + 1); }
   try { window._sharedSpotSay = _sharedSpotSay; } catch (eSs) {}
+  /* REG-3062 (#144(a)'s sibling) - ONE SPELLING FOR A MULE'S OWN CELL. The MOVE row and its expand wrote "MULE1 (3,1)" /
+     "MULE1 private stash (3,1)", FIND and the organizer "Mule 2 · Personal stash · col 3 · row 1", the mule window's list
+     "STASH col 3 · row 1", and a refused hand spot "Personal · Mule 1 · col 6 · row 6" (the area before the mule page).
+     Every surface that names a mule cell asks this one helper, in _sharedSpotSay's shape: the locker's mule page first
+     (when the caller names one), then the area, then col and row. area: a MULE_AREAS key, or a cell's own 'stash' /
+     'inventory'; x, y, page 0-based; page null = no mule page said. -> 'Mule 2 · Personal stash · col 3 · row 1' */
+  function _muleAreaSay(area, page){
+    var t = (area === 'stash') ? 'personal' : (area === 'inventory') ? 'inv' : area;
+    var A = MULE_AREAS[t];
+    return (page == null ? '' : 'Mule ' + ((+page || 0) + 1) + ' \u00b7 ') + (A ? A[2] + (t === 'inv' ? '' : ' stash') : String(area));
+  }
+  function _muleSpotSay(area, x, y, page){ return _muleAreaSay(area, page) + ' \u00b7 col ' + ((+x || 0) + 1) + ' \u00b7 row ' + ((+y || 0) + 1); }
+  try { window._muleSpotSay = _muleSpotSay; window._muleAreaSay = _muleAreaSay; } catch (eMs) {}
   /* REG-2878 - A COPY'S TRADE SLOT, READ ONCE PER STORE TEXT for every surface that draws a copy (the card, the window, FIND,
      the MOVE row): -> [{ci, state, at, post}] of this name's copies that carry a slot */
   var _vaultTradeMemo = null;
@@ -56141,7 +56154,7 @@ window.vaultAutoAssign = function(){
         if (!why){ here.push({ n: it.n, key: it.key, x: x, y: y, w: it.w, h: it.h, manual: true }); _handN++; if (pg > _maxPage) _maxPage = pg; }
       }
       if (why){
-        var _sp = (A ? A[2] : String(p.tab)) + ' · Mule ' + ((_int(pg) ? pg : 0) + 1) + ' · col ' + ((_int(x) ? x : 0) + 1) + ' · row ' + ((_int(y) ? y : 0) + 1);
+        var _sp = _muleSpotSay(p.tab, _int(x) ? x : 0, _int(y) ? y : 0, _int(pg) ? pg : 0);   /* REG-3062 the one spelling */
         _bad.push({ key: it.key, n: it.n, w: it.w, h: it.h, want: p, spot: _sp, why: why });
         _auto.push({ n: it.n, key: it.key, w: it.w, h: it.h, area: it.area, set: it.set, ct: it.ct,
                      bad: 'your spot (' + _sp + ') no longer fits: ' + why });
@@ -56319,9 +56332,9 @@ window.vaultAutoAssign = function(){
       if (!wo || !wo[nm]) return;
       var L = _muleLoad(_muleNamesFor(wm.id), _mpWornFor(wm.id, _mpEqAll()), wm.id);
       (L.mules || []).forEach(function(mu, pi){
-        var tag = wm.name + ' · ' + ((L.mules.length > 1) ? 'Mule ' + (pi + 1) + ' · ' : '');
-        (mu.stash || []).forEach(function(p){ if (p.n === nm) put(tag + 'Personal stash · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); });
-        (mu.inv || []).forEach(function(p){ if (p.n === nm) put(tag + 'Inventory · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); });
+        var mp = (L.mules.length > 1) ? pi : null;   /* REG-3062 the one spelling, after the mule's name */
+        (mu.stash || []).forEach(function(p){ if (p.n === nm) put(wm.name + ' · ' + _muleSpotSay('personal', p.x, p.y, mp)); });
+        (mu.inv || []).forEach(function(p){ if (p.n === nm) put(wm.name + ' · ' + _muleSpotSay('inv', p.x, p.y, mp)); });
       });
     });
   }
@@ -56353,11 +56366,11 @@ window.vaultAutoAssign = function(){
           if (worn[nm]){ out.kind = 'worn'; out.cell = 'worn by the doll'; return out; }
           var load = _muleLoad(_muleNamesFor(mid), worn, mid);
           (load.mules || []).forEach(function(mu, pi){
-            var tag = (load.mules.length > 1 ? 'Mule ' + (pi + 1) + ' · ' : '');
-            (mu.stash || []).forEach(function(p){ if (p.n === nm) _put(tag + 'Personal stash · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); });
+            var mp = (load.mules.length > 1) ? pi : null;   /* REG-3062 the one spelling */
+            (mu.stash || []).forEach(function(p){ if (p.n === nm) _put(_muleSpotSay('personal', p.x, p.y, mp)); });
             MULE_STASH_TABS.slice(1).forEach(function(t){ ((mu.tabs || {})[t] || []).forEach(function(p){
-              if (p.n === nm) _put(tag + MULE_AREAS[t][2] + ' stash · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); }); });
-            (mu.inv || []).forEach(function(p){ if (p.n === nm) _put(tag + 'Inventory · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); });
+              if (p.n === nm) _put(_muleSpotSay(t, p.x, p.y, mp)); }); });
+            (mu.inv || []).forEach(function(p){ if (p.n === nm) _put(_muleSpotSay('inv', p.x, p.y, mp)); });
           });
           if (!out.cell && (load.rem || []).some(function(p){ return p && p.n === nm; })){ out.kind = 'over'; out.cell = 'it does not fit - this locker is over its mules'; }
         }
@@ -56383,11 +56396,11 @@ window.vaultAutoAssign = function(){
           var eqW = _mpEqAll(), wornW = _mpWornFor(pg.id, eqW);
           var loadW = _muleLoad(_muleNamesFor(pg.id), wornW, pg.id);
           (loadW.mules || []).forEach(function(mu, pi){
-            var tagW = (loadW.mules.length > 1 ? 'Mule ' + (pi + 1) + ' · ' : '');
-            (mu.stash || []).forEach(function(p){ if (p.n === nm) _putW(tagW + 'Personal stash · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); });
+            var mpW = (loadW.mules.length > 1) ? pi : null;   /* REG-3062 the one spelling */
+            (mu.stash || []).forEach(function(p){ if (p.n === nm) _putW(_muleSpotSay('personal', p.x, p.y, mpW)); });
             MULE_STASH_TABS.slice(1).forEach(function(t){ ((mu.tabs || {})[t] || []).forEach(function(p){
-              if (p.n === nm) _putW(tagW + MULE_AREAS[t][2] + ' stash · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); }); });
-            (mu.inv || []).forEach(function(p){ if (p.n === nm) _putW(tagW + 'Inventory · col ' + (p.x + 1) + ' · row ' + (p.y + 1)); });
+              if (p.n === nm) _putW(_muleSpotSay(t, p.x, p.y, mpW)); }); });
+            (mu.inv || []).forEach(function(p){ if (p.n === nm) _putW(_muleSpotSay('inv', p.x, p.y, mpW)); });
           });
         }
       } catch (eW) { outW.cell = null; outW.cells = []; }
@@ -57928,7 +57941,7 @@ window.vaultAutoAssign = function(){
     if (!m) return String(cell);
     var ca = _vaultCellAt(cell);   /* REG-2875 */
     if (ca && ca.loc === 'shared') return String(cell) + ' · ' + _sharedSpotSay(ca.page, ca.x, ca.y);   /* REG-3005 the page, from the one helper */
-    if (ca && ca.loc !== 'shared' && ca.page > 0) return String(cell) + ' · Mule ' + (ca.page + 1) + ' · col ' + (ca.x + 1) + ' · row ' + (ca.y + 1);
+    if (ca) return String(cell) + ' · ' + _muleSpotSay(ca.loc, ca.x, ca.y, ca.page > 0 ? ca.page : null);   /* REG-3062 the one spelling */
     return String(cell) + ' · col ' + ((+m[1]) + 1) + ' · row ' + ((+m[2]) + 1);
   }
   function _vaultMovePlaceSay(place){
@@ -57996,9 +58009,9 @@ window.vaultAutoAssign = function(){
     /* REG-2804 - the name of the mule today (the plan stored the name it had then - a renamed WAR1 read "WAR1 private stash"),
        and a WAR mule reads as the war stash's overflow, as its move row does */
     function where(place, c){ var pm = _vaultMuleOfPlace(place), nm = (pm && pm.name) ? String(pm.name) : String(place.holder || 'not seen yet');
-      if (pm && _vaultWarRole(pm) && c.page == null) return nm + ' (SHARED STASH · overflow) (' + (c.x + 1) + ',' + (c.y + 1) + ')';
+      if (pm && _vaultWarRole(pm) && c.page == null) return nm + ' (SHARED STASH · overflow) · ' + _muleSpotSay(c.loc, c.x, c.y, c.mule > 0 ? c.mule : null);   /* REG-3062 */
       if (c.page != null) return nm + ' · ' + _sharedSpotSay(c.page, c.x, c.y);   /* REG-3005 a shared page cell in the one spelling */
-      return nm + (c.mule > 0 ? ' · Mule ' + (c.mule + 1) : '') + ' ' + (_vaultMoveStashSay(place.location) || c.loc) + ' (' + (c.x + 1) + ',' + (c.y + 1) + ')'; }
+      return nm + ' · ' + _muleSpotSay(c.loc, c.x, c.y, c.mule > 0 ? c.mule : null); }   /* REG-3062 the one spelling */
     function dims(loc){ return [10, (loc === 'inventory' || loc === 'inv') ? 4 : 10]; }
     function sz(n){ var s0 = (typeof vaultSize === 'function') ? vaultSize(n) : [1, 1]; return [s0[0] || 1, s0[1] || 1]; }
     var to = xy(t.to && t.to.cell), from = xy(t.from && t.from.cell);
@@ -58101,7 +58114,7 @@ window.vaultAutoAssign = function(){
         return h + ' · ' + _sharedSpotSay(Math.floor((+m[2]) / 10), +m[1], (+m[2]) % 10);   /* REG-3005 the one spelling */
       if (_pm && _vaultWarRole(_pm)) h = h + ' (SHARED STASH · overflow)'; /* L1 a WAR mule reads as the war stash; REG-2804 by its role, never its name */
       var _ca = _vaultCellAt(place.cell);
-      if (_ca && _ca.page > 0) return h + ' · Mule ' + (_ca.page + 1) + ' (' + (_ca.x + 1) + ',' + (_ca.y + 1) + ')';   /* REG-2875 the next mule of a full locker */
+      if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null);   /* REG-2875 the next mule of a full locker; REG-3062 the one spelling */
       return h + (m ? ' (' + ((+m[1]) + 1) + ',' + ((+m[2]) + 1) + ')' : '');
     }
     function _vtkDone(t){ return t && (t.status === 'moved-manual' || t.status === 'verified' || t.status === 'closed'); }
@@ -61122,7 +61135,7 @@ window.vaultAutoAssign = function(){
               : (!_mpWhole(pg) || pg < 0 || pg >= 80) ? 'its mule (' + pg + ') is not one a locker can have'
               : _mpInvFitWhy(out.at[pg] || [], e.x, e.y, e.w, e.h);
       if (why){
-        var _sp = 'Inventory · Mule ' + ((_mpWhole(pg) ? pg : 0) + 1) + ' · col ' + (((e && _mpWhole(e.x)) ? e.x : 0) + 1) + ' · row ' + (((e && _mpWhole(e.y)) ? e.y : 0) + 1);
+        var _sp = _muleSpotSay('inv', (e && _mpWhole(e.x)) ? e.x : 0, (e && _mpWhole(e.y)) ? e.y : 0, _mpWhole(pg) ? pg : 0);   /* REG-3062 the one spelling */
         out.bad.push({ key: 'db:' + k, n: String((e && e.name) || k), w: e && e.w, h: e && e.h, db: true,
                        want: { tab: 'inv', page: pg, x: e && e.x, y: e && e.y }, spot: _sp, why: why });
         return;
@@ -61644,7 +61657,7 @@ window.vaultAutoAssign = function(){
     /* #41 rank 21 - a refused door (the builder is open) lets the cell go and keeps the reason */
     if (!window._cbHostOpen({
       kind: 'inv', cell: [at.x, at.y], mule: m ? m.name : String(openMuleId),
-      where: 'Inventory · col ' + (at.x + 1) + ' · row ' + (at.y + 1) + (_muleTotalPages > 1 ? ' · Mule ' + (at.page + 1) : ''),
+      where: _muleSpotSay('inv', at.x, at.y, _muleTotalPages > 1 ? at.page : null),   /* REG-3062 the one spelling */
       cur: function(){ return (_mpInvAt && _mpInvAt.key) ? window._mpInvCbEntry(_mpInvAt.key) : null; },
       /* does a w x h fit with its top-left on this cell (the tile being edited left out)? - the Select list's rule */
       fits: function(w, h){ return !!_mpInvAt && !_mpInvFitWhy(_mpInvRects(openMuleId, _mpInvAt.page, _mpInvAt.key), _mpInvAt.x, _mpInvAt.y, w, h); },
@@ -62138,7 +62151,7 @@ window.vaultAutoAssign = function(){
     var _onMuleN = _thisMuleN + _wornHere;
     // #174 v-B2 — what makes a grid's items movable: which area of which mule it is, and how a spot is said
     var _gOpt = function(area){ return { area: area, page: _mulePage,
-      label: MULE_AREAS[area][2] + (area === 'inv' ? '' : ' stash') + (_muleTotalPages > 1 ? ' · Mule ' + (_mulePage + 1) : ''),
+      label: _muleAreaSay(area, _muleTotalPages > 1 ? _mulePage : null),   /* REG-3062 the mule page first, the one spelling */
       /* #174 v-B5 — the inventory's empty cells take a pick when the builder's picker is on the page; `at` is the cell the
          picker is open on, `sel` the database tile it edits */
       add: area === 'inv' ? { on: typeof window._cbHostOpen === 'function',
@@ -62151,10 +62164,12 @@ window.vaultAutoAssign = function(){
     var invCell = sc.invCell, cell = sc.cell;
     var slotName=function(p){ return 'col '+(p.x+1)+' · row '+(p.y+1); };
     var _lockTag = function(p){ return p.db ? ' <span class="vl-hand" title="placed by hand from the item database — it stays on that cell">🔒 from the database</span>' : p.manual ? ' <span class="vl-hand" title="placed by hand — locked there">🔒 by hand</span>' : p.bad ? ' <span class="vl-bad" title="' + esc(p.bad) + '">⚠ spot no longer fits</span>' : ''; };
-    var list = stash.placed.map(function(p){ return '<div>'+esc(p.n)+' → <span class="vl-slot">STASH '+slotName(p)+'</span>'+_lockTag(p)+'</div>'; })
+    /* REG-3062 - the window's list in the one spelling (the page it shows, when the locker has more than one) */
+    var _lp = _muleTotalPages > 1 ? _mulePage : null;
+    var list = stash.placed.map(function(p){ return '<div>'+esc(p.n)+' → <span class="vl-slot">'+esc(_muleSpotSay('personal', p.x, p.y, _lp))+'</span>'+_lockTag(p)+'</div>'; })
       .concat(MULE_STASH_TABS.slice(1).reduce(function(a, t){ return a.concat((_curTabs[t] || []).map(function(p){
-        return '<div>'+esc(p.n)+' → <span class="vl-slot">'+MULE_AREAS[t][2].toUpperCase()+' '+slotName(p)+'</span>'+_lockTag(p)+'</div>'; })); }, []))
-      .concat(inv.placed.map(function(p){ return '<div>'+esc(_mpInvSayName(p))+' → <span class="vl-slot">INVENTORY '+slotName(p)+'</span>'+_lockTag(p)+'</div>'; })).join('');
+        return '<div>'+esc(p.n)+' → <span class="vl-slot">'+esc(_muleSpotSay(t, p.x, p.y, _lp))+'</span>'+_lockTag(p)+'</div>'; })); }, []))
+      .concat(inv.placed.map(function(p){ return '<div>'+esc(_mpInvSayName(p))+' → <span class="vl-slot">'+esc(_muleSpotSay('inv', p.x, p.y, _lp))+'</span>'+_lockTag(p)+'</div>'; })).join('');
     var TABS=['Personal','Shared','Gems','Materials','Runes'];
     var _muleLabel = _muleTotalPages > 1 ? (' #' + (_mulePage + 1)) : '';
     var _muleTag = _muleTotalPages > 1 ? '<span class="vd-mule-nav" title="this category spans '+_muleTotalPages+' mule characters (each = 100-cell stash + 40-cell inventory = 140 cells). Click the arrows — or press ← → — to step through the mules.">'
@@ -62598,7 +62613,7 @@ window.vaultAutoAssign = function(){
     return _muleLoad(nm, _mpWornFor(muleId, _mpEqAll()), muleId, posAll);
   }
   function _mpFind(ld, key){ var it = null; (ld.sized || []).forEach(function(s){ if (s.key === key) it = s; }); return it; }
-  function _mpSpotSay(s){ return MULE_AREAS[s.tab][2] + (s.tab === 'inv' ? '' : ' stash') + ' · Mule ' + (s.page + 1) + ' · col ' + (s.x + 1) + ' · row ' + (s.y + 1); }
+  function _mpSpotSay(s){ return _muleSpotSay(s.tab, s.x, s.y, s.page); }   /* REG-3062 the one spelling */
   /* -> {ok, n, w, h, spot} or {ok:false, why}. PURE until it writes, and it writes only an accepted spot. */
   window._mpPlace = function(muleId, key, spot){
     if (!muleId || muleId === 'shared' || !muleById(muleId)) return { ok: false, why: 'that is not a mule of this vault' };
@@ -62628,7 +62643,7 @@ window.vaultAutoAssign = function(){
     if ((spot.tab === 'personal' || spot.tab === 'inv') && typeof window._vaultMoveRetargetCell === 'function') {
       var _rtCi = (String(key) === String(it.n)) ? 0 : ((+(String(key).match(/ #(\d+)$/) || [0, 1])[1]) - 1);
       _rtT = window._vaultMoveRetargetCell(it.n, _rtCi, muleId, (spot.tab === 'inv' ? 'inventory' : 'stash') + ':c' + x + 'r' + (y + pg * (spot.tab === 'inv' ? 4 : 10)),
-        'you placed it at ' + (pg > 0 ? 'Mule ' + (pg + 1) + ' · ' : '') + 'col ' + (x + 1) + ' · row ' + (y + 1) + ' by hand');   /* REG-2875 Mule k is a task cell */
+        'you placed it at ' + _muleSpotSay(spot.tab, x, y, pg > 0 ? pg : null) + ' by hand');   /* REG-2875 Mule k is a task cell; REG-3062 the one spelling */
     }
     return { ok: true, n: it.n, w: it.w, h: it.h, spot: { tab: spot.tab, page: pg, x: x, y: y }, task: _rtT };
   };

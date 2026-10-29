@@ -111,7 +111,7 @@ class RouterFilesEveryItem(unittest.TestCase):
             if e["rowTo"]:
                 self.assertEqual(e["to"], e["rowTo"], "TO grid is not this task's cell: %r" % e)
                 self.assertLessEqual(e["toItems"], 1, "TO grid of %s draws other items: %r" % (e["name"], e))
-                self.assertRegex(e["toText"], r"\(\d+,\d+\)", "TO has no exact cell: %r" % e)
+                self.assertRegex(e["toText"], r"col \d+ · row \d+", "TO has no exact cell: %r" % e)   # REG-3005 / REG-3062 the one spelling
 
     def test_distinct_attacks_clear_the_vault_apply_wilson_bar(self):
         from confidence import wilson_lower

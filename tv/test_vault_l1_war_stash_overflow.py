@@ -118,7 +118,7 @@ class WarStashOverflow(unittest.TestCase):
         self.assertEqual(len(set(c[0] for c in cs)), 1, "the copies split mules: %r" % cs)
         self.assertEqual(len(o["rows"]), 2, "not two MOVE TASKS rows: %r" % o["rows"])
         for r in o["rows"]:
-            self.assertRegex(r, r"MANUAL → SETS-[A-Z\-]+ \(\d+,\d+\)")
+            self.assertRegex(r, r"MANUAL → SETS-[A-Z\-]+ · (?:Mule \d+ · )?[A-Z][a-z]+(?: stash)? · col \d+ · row \d+")   # REG-3062
 
     def test_three_and_four_war_copies_each_get_a_cell_and_a_row(self):
         """Elad 2026-10-20: a BIG item keeps ONE copy in the war stash; every extra copy goes to the WAR mules (never its
