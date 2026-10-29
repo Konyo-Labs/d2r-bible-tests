@@ -65,7 +65,7 @@ class RulesDriveEveryMove(unittest.TestCase):
         self.assertTrue((o["a"]["to"] or {}).get("cell"), "the copy got no cell: %r" % o["a"])
         manual = [r for r in o["rows"] if "MANUAL" in r["t"]]
         self.assertEqual(len(manual), 1, "the hand copy has no MANUAL row of its own: %r" % o["rows"])
-        self.assertRegex(manual[0]["t"], r"MANUAL → UNI-WEAPONS \(\d+,\d+\)")
+        self.assertRegex(manual[0]["t"], r"MANUAL → UNI-WEAPONS · (?:Mule \d+ · )?[A-Z][a-z]+(?: stash)? · col \d+ · row \d+")   # REG-3062
 
     def test_a_misfiled_item_gets_a_move_row_from_its_mule_with_no_press(self):
         seed_misfiled()

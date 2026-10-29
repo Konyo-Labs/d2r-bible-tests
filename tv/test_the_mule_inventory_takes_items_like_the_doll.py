@@ -808,8 +808,8 @@ RED_PROOF = [
     {
         "why": "#174 v-B5 - a record that cannot be laid is drawn anyway (off the grid, or at a guessed size)",
         "file": "bible.html",
-        "find": "      if (why){\n        var _sp = 'Inventory · Mule '",
-        "replace": "      if (false){\n        var _sp = 'Inventory · Mule '",
+        "find": "      if (why){\n        var _sp = _muleSpotSay('inv',",
+        "replace": "      if (false){\n        var _sp = _muleSpotSay('inv',",
         "matches": 1,
     },
     {

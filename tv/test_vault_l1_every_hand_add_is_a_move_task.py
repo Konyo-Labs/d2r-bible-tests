@@ -32,7 +32,8 @@ BATCH = SETS + ["Immortal King's Stone Crusher", "Natalya's Mark", "Griswold's H
                 "Arachnid Mesh", "Enigma", "Stone of Jordan"]
 # REG-2789 - a shared stash row names its page, never the old "tab N" - since REG-3005 in the one spelling
 # ("SHARED STASH · Page 2 · col 1 · row 3"); a mule row still reads "MULE1 (x,y)"
-LINE = re.compile(r"MANUAL → ([A-Z][A-Z0-9\- ]+?)(?: \((\d+),(\d+)\)| · Page [1-5] · col (\d+) · row (\d+))")
+# REG-3062: a mule row in the one spelling too ("SETS-REST · Mule 2 · Personal stash · col 3 · row 1")
+LINE = re.compile(r"MANUAL → ([A-Z][A-Z0-9\- ]+?) · (?:Page [1-5] · col (\d+) · row (\d+)|(?:Mule \d+ · )?[A-Z][a-z]+(?: stash)? · col (\d+) · row (\d+))")
 
 ROWS = (T.READ + "var host = document.getElementById('vault-move-list');"
         "OUT.rows = host ? Array.prototype.map.call(host.querySelectorAll('.vtk-list:not([data-sec=\"done\"]) .vmv-row'), function(r){"
@@ -98,7 +99,7 @@ RED_PROOF = [
     {'why': 'The hand receipt is not read, so no hand add is known as his.', 'file': 'bible.html', 'find': "      if (p && p.source === 'hand' && /Add an item|Vault planner|the Vault/.test(String(p.where || '') + ' ' + String(p.by || ''))) return true;", 'replace': '      if (false) return true;', 'matches': 1},
     {'why': "A hand add's row loses its MANUAL badge.", 'file': 'bible.html', 'find': '+ (manual ? \'<b class="vmv-manual-badge">MANUAL</b>\' : esc(_vtkPlace(t.from, false)))', 'replace': "+ (manual ? '<b>HAND</b>' : esc(_vtkPlace(t.from, false)))", 'matches': 1},
     {'why': "A hand add's row says NOWHERE instead of its mule and cell.", 'file': 'bible.html', 'find': '\' → \' + (thr ? \'<b class="vmv-nowhere">NOWHERE</b>\' : \'<span class="vtk-to">\' + esc(_vtkPlace(t.to, false)) + \'</span>\')', 'replace': '\' → \' + ((thr || manual) ? \'<b class="vmv-nowhere">NOWHERE</b>\' : \'<span class="vtk-to">\' + esc(_vtkPlace(t.to, false)) + \'</span>\')', 'matches': 1},
-    {'why': "The row drops its target cell: 'MANUAL → SETS-REST' with no (x,y).", 'file': 'bible.html', 'find': "      return h + (m ? ' (' + ((+m[1]) + 1) + ',' + ((+m[2]) + 1) + ')' : '');", 'replace': '      return h;', 'matches': 1},
+    {'why': "The row drops its target cell: 'MANUAL → SETS-REST' with no cell.", 'file': 'bible.html', 'find': "      if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null);", 'replace': '      if (_ca) return h;', 'matches': 1},
     {'why': 'The row never knows it is a hand add, so it prints a FROM place instead of MANUAL.', 'file': 'bible.html', 'find': '      var manual = !!(t.manual && !(t.from && t.from.cell != null));', 'replace': '      var manual = false;', 'matches': 1},
     {'why': "A hand add's row is painted in the closed Done section, not the open list.", 'file': 'bible.html', 'find': "    function _vtkDone(t){ return t && (t.status === 'moved-manual' || t.status === 'verified' || t.status === 'closed'); }", 'replace': "    function _vtkDone(t){ return t && (t.manual || t.status === 'moved-manual' || t.status === 'verified' || t.status === 'closed'); }", 'matches': 1},
     {'why': 'A junk-routed item returns to throw-out before any hand check (every typed ruled-low set piece is a THROW OUT row again).', 'file': 'bible.html', 'find': "      if (sg.id === '__keep') return { loc: 'keep', mule: null };\n", 'replace': "      if (sg.id === '__throwout') return { loc: 'loose', mule: null };\n      if (sg.id === '__keep') return { loc: 'keep', mule: null };\n", 'matches': 1},

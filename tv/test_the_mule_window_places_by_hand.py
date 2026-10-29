@@ -336,7 +336,7 @@ class ARefusalAndAReport(unittest.TestCase):
         self.assertTrue(out["shako"]["bad"] and out["shako"]["unlock"], out["shako"])
         self.assertIn("no longer fits", out["shako"]["title"])
         self.assertIn("3 items you placed by hand no longer fit their spot", out["note"] or "")
-        self.assertIn("Harlequin Crest (Shako) (2×2, wanted Personal · Mule 1 · col 6 · row 6)", out["note"] or "")
+        self.assertIn("Harlequin Crest (Shako) (2×2, wanted Mule 1 · Personal stash · col 6 · row 6)", out["note"] or "")   # REG-3062 the one spelling
         self.assertEqual(out["calc"] and out["calc"][1], "3")
         self.assertEqual(out["store"], store["d2r_mulePos"], "his spots were rewritten — they must be kept until he acts")
 
