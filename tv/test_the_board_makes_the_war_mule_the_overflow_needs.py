@@ -47,7 +47,8 @@ function list(){ return (document.getElementById('vault-move-list') || {}).inner
 /* REG-2888 - the WAR mule's make rows only: since REG-2895 the board also makes the dedicated CHARMS mule and asks him to make
    it in the game, and this law is about the WAR mule's row (measured on int-7: 2 make rows, CHARMS and WAR1) */
 function makeRows(){ return (list().match(/<li class="vtk-line vtk-make"[\s\S]*?<\/li>/g) || []).map(function(x){ return x.replace(/<[^>]+>/g, ''); })
-  .filter(function(t){ return /Create mule WAR\d+ /.test(t); }); }
+  .filter(function(t){ return t.indexOf('Create mule ' + W._vaultWarName(1) + ' ') >= 0 || t.indexOf('Create mule ' + W._vaultWarName(2) + ' ') >= 0; }); }   /* REG-2980 the war mule's letter name */
+OUT.w1 = W._vaultWarName(1);
 function tasks(){ var o = []; for (var ci = 0; ci < copyCount(SH); ci++) { var t = (W._vaultMoveEnsure(SH, ci) || {}).task; o.push(t && t.to ? [t.to.holder || null, t.to.cell || null] : null); } return o; }
 """ % {"shako": json.dumps(SHAKO)}
 
@@ -87,7 +88,7 @@ W._vaultAutoIntakeSet(false);
 [SH, SH, SH].forEach(function(n){ W.vaultHandAdd(n); });
 W.renderVault(); H.flush(60, 3);
 OUT.before = makeRows();
-W._ownedProvWrite(SH, { source: 'intake-read', by: 'law', holder: 'WAR1', loc: 'stash', cell: 'stash:c0r0', sessionId: 's-war1', frameId: 'f-war1', ts: Date.now() });
+W._ownedProvWrite(SH, { source: 'intake-read', by: 'law', holder: W._vaultWarName(1), loc: 'stash', cell: 'stash:c0r0', sessionId: 's-war1', frameId: 'f-war1', ts: Date.now() });
 W.renderVault(); H.flush(60, 3);
 OUT.after = makeRows(); OUT.wars = wars();
 """
@@ -165,20 +166,20 @@ class TheBoardMakesTheWarMuleTheOverflowNeeds(unittest.TestCase):
         o = self.made
         self.assertEqual(o["__boot"]["errors"], [], o["__boot"])
         self.assertEqual(o["add"], [True, True, True], "PREMISE: a hand add did not land: %r" % o["add"])
-        self.assertEqual([m["name"] for m in o["wars"]], ["WAR1"], "the board did not make exactly one WAR1: %r" % o["wars"])
+        self.assertEqual([m["name"] for m in o["wars"]], [o["w1"]], "the board did not make exactly one war mule 1: %r" % o["wars"])
         w = o["wars"][0]
         self.assertEqual((w.get("role"), w.get("warN")), ("war", 1), "WAR1 does not carry the war role on its id: %r" % w)
         self.assertEqual((w.get("auto") or {}).get("by"), "board", "the make is not recorded: %r" % w)
         self.assertTrue((w.get("auto") or {}).get("at") and (w.get("auto") or {}).get("why"), w)
         self.assertTrue(o["deletable"], "the board's WAR1 is not a mule his delete can take back: %r" % w)
         self.assertEqual(o["tasks"][0][0], "SHARED STASH", o["tasks"])
-        self.assertEqual([t[0] for t in o["tasks"][1:]], ["WAR1", "WAR1"], "the extra copies did not land on WAR1: %r" % o["tasks"])
+        self.assertEqual([t[0] for t in o["tasks"][1:]], [o["w1"], o["w1"]], "the extra copies did not land on war mule 1: %r" % o["tasks"])
         self.assertTrue(all(t[1] for t in o["tasks"]), "a copy kept no cell: %r" % o["tasks"])
 
     def test_he_is_tasked_first_to_make_it_in_the_game_until_he_ticks_it(self):
         o = self.made
         self.assertEqual(len(o["make"]), 1, "no single 'make it in the game' task: %r" % o["make"])
-        self.assertIn("Create mule WAR1 in the game", o["make"][0])
+        self.assertIn("Create mule %s in the game" % o["w1"], o["make"][0])
         self.assertTrue(o["makeFirst"], "the make task is not above the moves that go to WAR1")
         self.assertTrue(o["badge"], "the WAR1 card does not say the board made it and the game has not seen it yet")
         self.assertEqual(o["tick"], {"ok": True}, o["tick"])
@@ -189,8 +190,8 @@ class TheBoardMakesTheWarMuleTheOverflowNeeds(unittest.TestCase):
     def test_one_war1_across_paints_and_a_reload(self):
         r = self.reload
         self.assertEqual(r["__boot"]["errors"], [], r["__boot"])
-        self.assertEqual([m["name"] for m in r["wars"]], ["WAR1"], "a reload made another WAR mule: %r" % r["wars"])
-        self.assertEqual([t[0] for t in r["tasks"][1:]], ["WAR1", "WAR1"], r["tasks"])
+        self.assertEqual([m["name"] for m in r["wars"]], [r["w1"]], "a reload made another WAR mule: %r" % r["wars"])
+        self.assertEqual([t[0] for t in r["tasks"][1:]], [r["w1"], r["w1"]], r["tasks"])
 
     def test_no_overflow_makes_no_mule(self):
         n = self.none
@@ -224,13 +225,13 @@ class TheBoardMakesTheWarMuleTheOverflowNeeds(unittest.TestCase):
         self.assertGreater(r["full"], 0, "PREMISE: the readouts were asked on a vault with no overflow: %r" % r)
         self.assertEqual((r["premise"], r["afterReadouts"]), (0, 0), "FIND, the copy readout or the expand made a WAR mule: %r" % r)
         self.assertEqual(r["inShadow"], 0, "a shadow made a WAR mule: %r" % r)
-        self.assertEqual(r["afterPaint"], ["WAR1"], "the control: the paint did not make WAR1 on the same overflow: %r" % r)
+        self.assertEqual(r["afterPaint"], [r["w1"]], "the control: the paint did not make war mule 1 on the same overflow: %r" % r)
 
     def test_a_war_mule_he_took_back_is_not_made_again(self):
         d = self.declined
         self.assertEqual(d["wars"], [], "the board made the WAR1 he deleted again: %r" % d["wars"])
         self.assertIn("took back", (d["auto"] or {}).get("why") or "", d["auto"])
-        self.assertIn("the board did not make it: you took back the WAR1", d["line"], "MOVE TASKS does not say why: %r" % d["line"])
+        self.assertIn("the board did not make it: you took back the %s" % d["w1"], d["line"], "MOVE TASKS does not say why: %r" % d["line"])
         self.assertTrue(self.made["declineWar"], "deleting a WAR mule records nothing")
 
     def test_his_delete_door_records_the_take_back_before_it_removes_the_mule(self):
@@ -275,7 +276,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2803 - a WAR mule he deleted is made again",
      "file": "bible.html",
-     "find": "      if ((sh.warDeclined || []).indexOf(name) >= 0) {",
+     "find": "      if ((sh.warDeclined || []).indexOf('WAR' + n) >= 0) {",
      "replace": "      if (false) {",
      "matches": 1, "needs": "node"},
     {"why": "REG-2803 - the board's mule is not one his delete can take back (no added flag, no mint id)",

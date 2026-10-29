@@ -45359,6 +45359,22 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     sh.name = 'SHARED STASH';
     try { _guardedSet(RK, JSON.stringify(roster)); } catch (eSn) {}
   })();
+  /* REG-2980 - ONCE PER MULE, a war mule the BOARD made (REG-2803: auto, role war) under the old WAR<n> name takes its letter
+     name, so the make task asks for a character he can create. The mule keeps the mark (auto.letterName), so a later rename
+     of his is never undone; a mule HE named (no auto) is never touched; a letter name another mule holds is never taken (the
+     old name stays). Nothing is written, and nothing changes in memory, when no mule needs it. */
+  (function(){
+    if (_muleUnread[RK]) return;
+    var changed = false;
+    roster.forEach(function(m){
+      if (!m || !m.auto || m.auto.letterName || m.role !== 'war' || !/^war\s*\d+$/i.test(String(m.name || '').trim())) return;
+      var nm = _vaultWarName(+m.warN || 1);
+      if (roster.some(function(x){ return x && x !== m && String(x.name || '').trim().toUpperCase() === nm; })) return;
+      m.auto.letterName = { from: m.name, at: new Date().toISOString() };
+      m.name = nm; changed = true;
+    });
+    if (changed) { try { _guardedSet(RK, JSON.stringify(roster)); } catch (eWn2) {} }
+  })();
   // v404 migration — inject the RUNEWORDS mule into rosters saved before it existed (Konyo: "just a
   // mule for runewords, regardless of armor or weapon"). Insert it just before SOCKETED ('bases').
   (function(){
@@ -45857,7 +45873,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     if (d === 'shared') return { id: 'shared', keeperDest: 'shared',
       why: 'your keeper setting \u2014 the shared stash: every copy you keep, on its 5 pages, then the WAR mules when they are full' };
     if (d === 'war') return { id: 'shared', keeperDest: 'war',
-      why: 'your keeper setting \u2014 the WAR mules: every copy goes to WAR1, then WAR2' };
+      why: 'your keeper setting \u2014 the WAR mules: every copy goes to ' + _vaultWarName(1) + ', then ' + _vaultWarName(2) };
     var mm = /^mule:(.+)$/.exec(d);
     if (!mm) return { id: null, unsorted: true, keeperDest: d, why: 'your keeper setting says \u201c' + d + '\u201d, which is not a destination \u2014 nothing is guessed: pick it again in Keepers' };
     var m = (typeof muleById === 'function') ? muleById(mm[1]) : null;
@@ -54911,6 +54927,7 @@ window.vaultAutoAssign = function(){
     /* REG-2804 - a mule he CREATES as WAR<n> is a war mule (MOVE TASKS asks him to make one so); its role is stored now,
        so a later rename keeps it - and a rename to WAR<n> never makes one */
     var _wx = /^war\s*([1-9]\d*)?$/i.exec(v.name);   /* REG-3027 */ if (_wx) { _nm.role = 'war'; _nm.warN = _wx[1] ? +_wx[1] : 1; }
+    var _wl = /^war[-_]([a-z]{1,2})$/i.exec(v.name); if (_wl) { _nm.role = 'war'; _nm.warN = _vaultLettersN(_wl[1]); }   /* REG-2980 WAR-A is war mule 1 */
     roster.push(_nm); saveR(); renderVault();   // REG-2195 - added mules are deletable; core lockers are not
   };
   window.vaultRenameMule = function(id){
@@ -55730,7 +55747,7 @@ window.vaultAutoAssign = function(){
       + ' will not fit on the 5 shared pages</strong> — each page is 10×10 = 100 cells and all 5 are full. '
       + (wars.length
           ? 'Past them the move tasks send items to the WAR mules in order (' + wars.map(function(w){ return esc(w.name); }).join(', ') + '): '
-          : 'Past them the move tasks send items to the WAR mules (WAR1, WAR2 … in order), and you have no mule named WAR1, so these keep no cell until one exists: ')
+          : 'Past them the move tasks send items to the WAR mules (' + _vaultWarName(1) + ', ' + _vaultWarName(2) + ' … in order), and you have no mule named ' + _vaultWarName(1) + ', so these keep no cell until one exists: ')
       + names + '</div>';
   }
   try { window._sharedOverflowNote = _sharedOverflowNote; } catch(e){}
@@ -56877,6 +56894,24 @@ window.vaultAutoAssign = function(){
     return 0;
   }
   window._vaultWarRole = _vaultWarRole;
+  /* REG-2980 (his ruling 2026-10-29 ~01:00 IDT, after a D2R character name was measured at 2-15 letters with at most one '-'
+     or '_' and NO digit: "so make it ... war-A war-B") - "WAR1" can never be made in the game. The board names a war mule
+     by LETTER: war number 1 is WAR-A, 2 WAR-B, ... 26 WAR-Z, 27 WAR-AA. The number stays on the id (warN, REG-2804) and
+     decides everything; the letters are only the name he makes in the game, and the make task names exactly that. */
+  function _vaultLetters(n){
+    var k = n | 0, s = '';
+    if (k < 1) return '';
+    while (k > 0) { k--; s = String.fromCharCode(65 + (k % 26)) + s; k = Math.floor(k / 26); }
+    return s;
+  }
+  function _vaultLettersN(t){
+    var u = String(t == null ? '' : t).trim().toUpperCase(), n = 0;
+    if (!/^[A-Z]+$/.test(u)) return 0;
+    for (var i = 0; i < u.length; i++) n = n * 26 + (u.charCodeAt(i) - 64);
+    return n;
+  }
+  function _vaultWarName(n){ return 'WAR-' + _vaultLetters((n | 0) || 1); }
+  try { window._vaultWarName = _vaultWarName; window._vaultLettersN = _vaultLettersN; } catch (eWn) {}
   /* a place's mule: by its id, else by its holder's name TODAY (a sighting carries only the character's name) -> mule | null */
   function _vaultMuleOfPlace(place){
     if (!place) return null;
@@ -56930,10 +56965,10 @@ window.vaultAutoAssign = function(){
       if (!lost) break;
       var n = 1;
       _vaultWarMules().forEach(function(w){ if (w.n >= n) n = w.n + 1; });
-      var name = 'WAR' + n;
-      /* REG-2804 - a name is free text now: another mule may be called WAR<n> without being one; the next free number */
-      for (var _wn = 0; _wn < 20 && !_vmNameOk(name, null).ok; _wn++) { n++; name = 'WAR' + n; }
-      if ((sh.warDeclined || []).indexOf(name) >= 0) { fresh(); return { made: made, why: 'you took back the ' + name + ' the board made' }; }
+      var name = _vaultWarName(n);   /* REG-2980 a name he can make in the game */
+      /* REG-2804 - a name is free text now: another mule may be called WAR-<x> without being one; the next free number */
+      for (var _wn = 0; _wn < 20 && !_vmNameOk(name, null).ok; _wn++) { n++; name = _vaultWarName(n); }
+      if ((sh.warDeclined || []).indexOf('WAR' + n) >= 0) { fresh(); return { made: made, why: 'you took back the ' + name + ' the board made' }; }   /* REG-2980 by number */
       var v = _vmNameOk(name, null);
       if (!v.ok) { fresh(); return { made: made, why: v.why }; }
       var at = new Date().toISOString();
@@ -57358,8 +57393,8 @@ window.vaultAutoAssign = function(){
       }); /* L1 war overflow */
       window._vaultWarFull = left.map(function(it){ return it.n; });
       window._vaultWarFullWhy = left.length ? (wars.length ? 'the war stash (5 pages) and ' + wars.map(function(w){ return w.name; }).join(', ') + ' are full'
-                                                            : (pagesFull ? 'the war stash (5 pages) is full and you have no WAR1 mule'
-                                                                         : 'copies over the war stash cap (rings/amulets all, other small gear 4, big gear 1) go to a WAR mule and you have no WAR1 mule')) : '';
+                                                            : (pagesFull ? 'the war stash (5 pages) is full and you have no ' + _vaultWarName(1) + ' mule'
+                                                                         : 'copies over the war stash cap (rings/amulets all, other small gear 4, big gear 1) go to a WAR mule and you have no ' + _vaultWarName(1) + ' mule')) : '';   /* REG-2980 */
       return out;
     }
     /* REG-2875 (agent-111, 505 hand adds: 81 of 405 copies had a MOVE task with NO cell - SOCKETED 37, SETS-REST 19,
@@ -58111,7 +58146,7 @@ window.vaultAutoAssign = function(){
       + unr.map(function(n){ return '<b>' + esc(n) + '</b>'; }).join(', ') + '</p>' : ''; /* L1 never "nothing" while hand adds wait */
     var _wf = (window._vaultWarFull || []).filter(function(n, i, a){ return a.indexOf(n) === i; });
     if (_wf.length) unrHtml += '<p class="vmv-warfull" data-n="' + _wf.length + '">No room: ' + esc(window._vaultWarFullWhy || 'the war stash is full')
-      + ' — make a mule named WAR1 (then WAR2…) for: ' + _wf.map(function(n){ return '<b>' + esc(n) + '</b>'; }).join(', ')
+      + ' — make a mule named ' + _vaultWarName(1) + ' (then ' + _vaultWarName(2) + '…) for: ' + _wf.map(function(n){ return '<b>' + esc(n) + '</b>'; }).join(', ')
       + ((window._vaultWarAuto && window._vaultWarAuto.why) ? ' (the board did not make it: ' + esc(window._vaultWarAuto.why) + ')' : '') + '</p>'; /* L1 war full said plainly; REG-2803 why the board did not */
     var html = head;
     /* REG-2803 - "prompt me to create that same mule ingame so i get tasked to do it": first, before the moves that go to it */
@@ -73475,7 +73510,7 @@ function renderJournal(){
         + '<p>Click a locker under <b>Your mules</b> to open its window, then pick Mule 1, Mule 2… to see that character\'s '
         + 'stash and inventory. MOVE TASKS and FIND write a cell as (column,row), counted from the top-left, starting at 1.</p>'
         + '<p>The <b>' + esc(locker('shared', 'SHARED STASH')) + '</b> has ' + (pages ? pages + ' pages' : 'its own pages')
-        + '. When they are full, the extra war gear goes to the <b>WAR mules</b> (WAR1, WAR2… in order). When one is needed, '
+        + '. When they are full, the extra war gear goes to the <b>WAR mules</b> (WAR-A, WAR-B… in order, a name the game accepts). When one is needed, '
         + 'MOVE TASKS says so: make that character in the game.</p>'
         + '<p>A renamed mule keeps its job: the vault knows each mule by its id, never by its name.</p>'; } },
     { key: 'intake', title: '📥 How items get in', body: function(){

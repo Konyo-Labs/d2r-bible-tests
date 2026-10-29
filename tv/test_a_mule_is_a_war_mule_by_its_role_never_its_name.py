@@ -51,7 +51,7 @@ function rename(id, to){ W.prompt = function(){ return to; }; W.vaultRenameMule(
 BODY_RENAME = READ + r"""
 W._vaultAutoIntakeSet(false);
 [SH, SH, SH].forEach(function(n){ W.vaultHandAdd(n); }); W.renderVault(); H.flush(60, 3);
-var war1 = R().filter(function(m){ return /^war1$/i.test(m.name); })[0] || {};
+var war1 = R().filter(function(m){ return m.role === 'war' && (+m.warN || 1) === 1; })[0] || {};   /* REG-2980 war mule 1 by its number, whatever its name */
 OUT.war1 = war1.id || null;
 rename(war1.id, 'DEANSORC');
 var d = byId(war1.id);
@@ -123,9 +123,10 @@ OUT.stored = byId('uni-armor');
 
 BODY_TAKEN = READ + r"""
 W._vaultAutoIntakeSet(false);
-rename('uni-armor', 'WAR1');
+rename('uni-armor', W._vaultWarName(1));   /* REG-2980 a normal mule holds the board's letter name for war mule 1 */
 [SH, SH, SH].forEach(function(n){ W.vaultHandAdd(n); }); W.renderVault(); H.flush(60, 3);
 OUT.wars = W._vaultWarMules().map(function(w){ return [w.id, w.name, w.n]; });
+OUT.w2 = W._vaultWarName(2);
 OUT.auto = W._vaultWarAuto || null;
 """
 
@@ -253,8 +254,8 @@ class AMuleIsAWarMuleByItsRoleNeverItsName(unittest.TestCase):
         t = self.t
         self.assertEqual(t["__boot"]["errors"], [], t["__boot"])
         names = [w[1] for w in t["wars"]]
-        self.assertNotIn("uni-armor", [w[0] for w in t["wars"]], "UNI-ARMOR named WAR1 became a war mule: %r" % t["wars"])
-        self.assertEqual(names, ["WAR2"], "with WAR1 a normal mule's name, the board did not make WAR2: %r / %r" % (t["wars"], t["auto"]))
+        self.assertNotIn("uni-armor", [w[0] for w in t["wars"]], "UNI-ARMOR named like war mule 1 became a war mule: %r" % t["wars"])
+        self.assertEqual(names, [t["w2"]], "with war mule 1's name on a normal mule, the board did not take the next: %r / %r" % (t["wars"], t["auto"]))
 
 
 RED_PROOF = [
@@ -345,7 +346,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2804 - the board stops when a normal mule is called WAR1 instead of taking WAR2",
      "file": "bible.html",
-     "find": "      for (var _wn = 0; _wn < 20 && !_vmNameOk(name, null).ok; _wn++) { n++; name = 'WAR' + n; }\n",
+     "find": "      for (var _wn = 0; _wn < 20 && !_vmNameOk(name, null).ok; _wn++) { n++; name = _vaultWarName(n); }\n",
      "replace": "",
      "matches": 1, "needs": "node"},
 ]
