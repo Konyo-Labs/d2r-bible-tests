@@ -13385,6 +13385,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_sweep_carries_each_containers_own_cells.py")], 300,
          needs_app=False,
          why="REG-3104 (#158 P4): the vault sweep carries each container's own taken cells (newest per session, the frame's own clock) to the board; an unread panel is UNKNOWN, a shared page's number is never read"),
+    Gate("test_a_container_look_is_whole_or_a_question",
+         [sys.executable, os.path.join(HERE, "test_a_container_look_is_whole_or_a_question.py")], 300,
+         needs_app=False,
+         why="REG-3105 (#158 P4): a container's look is a full look only when one layout of the session's named reads explains every taken cell once; anything less is a question to him with the evidence (a shared page's number, cells never named, conflicts), read only in a shadow"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
