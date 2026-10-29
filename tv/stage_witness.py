@@ -80,7 +80,9 @@ RAIL_FROM_COL = 5
 #: and not a number chosen to make it pass.
 MIN_BLANK_CELLS = 2
 
-STATUS_URL = "http://127.0.0.1:17772/api/status"
+#: REG-2998 - this process's own console (console_port), never :17772 by name; None = no console to ask
+import console_port as _cport   # noqa: E402
+STATUS_URL = _cport.url("/api/status")
 
 
 def dom_claim(url=None, timeout=20):
@@ -91,7 +93,7 @@ def dom_claim(url=None, timeout=20):
     """
     import urllib.request
     try:
-        d = json.load(urllib.request.urlopen(url or STATUS_URL, timeout=timeout))
+        d = json.load(urllib.request.urlopen(url or STATUS_URL or "", timeout=timeout))
     except Exception as e:
         return None, "the console did not answer /api/status (%s)" % str(e)[:70]
     ub = (d or {}).get("uiBeat")
@@ -195,7 +197,10 @@ def verdict(pid=None, url=None, quartz=None):
     return out
 
 
-def _console_pid(port=17772):
+def _console_pid(port=None):
+    port = port or _cport.port()        # REG-2998 - its own console's pid, never his console's by its port
+    if not port:
+        return None
     for line in os.popen("lsof -nP -iTCP:%d -sTCP:LISTEN 2>/dev/null" % port).read().splitlines()[1:]:
         p = line.split()
         if len(p) > 1:

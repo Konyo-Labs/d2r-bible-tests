@@ -302,7 +302,8 @@ def _shoot(tab, w, h, out_dir, tag, region=None, suffix=""):
         t.close()
 
 
-CONSOLE_URL = "http://127.0.0.1:%s/" % (os.environ.get("TV_CONTROL_PORT") or "17772")
+import console_port as _cport   # noqa: E402  REG-2998 - this process's console
+CONSOLE_URL = _cport.url("/") or ""
 
 
 def _shoot_console(tab, w, h, out_dir, tag, suffix=""):
@@ -335,7 +336,7 @@ def _shoot_console(tab, w, h, out_dir, tag, suffix=""):
                 break
             time.sleep(0.5)
         href = t.ev("(function(){return String(location.href)})()")
-        if not href or "17772" not in str(href):
+        if not href or not CONSOLE_URL or CONSOLE_URL.rstrip("/") not in str(href):
             return None, ("the console did not load at %s (got %r) — nothing is listening, so this "
                           "is UNKNOWN, not clean" % (CONSOLE_URL, href))
         # the task force is the surface that was missed; prove it is present before shooting

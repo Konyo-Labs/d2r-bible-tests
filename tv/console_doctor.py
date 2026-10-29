@@ -61,7 +61,10 @@ def _this_os():
 #: [[heart-first]] [[in-progress-must-carry-what-is-moving]]
 CURRENT = {"check": None, "since": None, "tick": None}
 ICON = {OK: "🟢", MISSING: "🟠", UNKNOWN: "⚪", UNMEASURED: "◻"}
-CONSOLE = "http://127.0.0.1:17772"
+# REG-2998 - the console THIS process belongs to (TV_CONTROL_PORT, inherited by a child), never :17772 by name: a scratch
+# console's doctor read his live console - /api/board_ownership runs JavaScript in his window. "" = no console to ask.
+import console_port as _cport   # noqa: E402
+CONSOLE = _cport.url() or ""
 
 
 def _get(path, timeout=4):
@@ -225,7 +228,7 @@ def _check_version_drift():
     st = _get("/api/status")
     tree = _tree_version()
     if st is None:
-        return UNKNOWN, "the console is not answering on :17772 — nothing to compare a tree against"
+        return UNKNOWN, "the console is not answering on %s — nothing to compare a tree against" % (CONSOLE or "no port")
     running = st.get("ver")
     if not running or not tree:
         return UNKNOWN, "could not read one of the two versions (running=%r tree=%r)" % (running, tree)

@@ -708,7 +708,11 @@ def _reader_health(now_ms=None, rows=None, g5=None, use_cache=True, auth=None):
 
 
 CONTROL_PORT = int(os.environ.get("TV_CONTROL_PORT", "17772"))
-AGENT_PORT = int(os.environ.get("TV_PORT", "17771"))
+# REG-2998 - a console's agent is its OWN: TV_PORT, else the port below its own control port (his console's 17772 -> his
+# agent's 17771, unchanged). A scratch console that named only TV_CONTROL_PORT took his agent's port, probed its listener
+# (lsof) and holds a restart path that kills the pid listening there. Measured by the law that counts what a scratch
+# console addresses: two `lsof -tiTCP:<his agent>` probes from one every-tick doctor pass.
+AGENT_PORT = int(os.environ.get("TV_PORT") or (CONTROL_PORT - 1))
 def _log_root():
     """v1869 — his console log, unless TV_HIST says this is a fixture's world.
 
@@ -17348,7 +17352,7 @@ def _engine_driver():
             if not alive:
                 continue
             try:
-                req = urllib.request.Request("http://127.0.0.1:17771/state")
+                req = urllib.request.Request("http://127.0.0.1:%d/state" % AGENT_PORT)   # REG-2998 its own agent, never :17771
                 with urllib.request.urlopen(req, timeout=3) as r:
                     st = json.loads(r.read().decode("utf-8", "replace"))
             except Exception:

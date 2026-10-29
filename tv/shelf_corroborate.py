@@ -249,8 +249,8 @@ def _live_sessions():
     """
     try:
         import urllib.request
-        port = os.environ.get("TV_CONTROL_PORT", "17772")
-        with urllib.request.urlopen("http://127.0.0.1:%s/api/sessions" % port, timeout=30) as fh:
+        import console_port as _cport   # REG-2998 - this process's console
+        with urllib.request.urlopen(_cport.url("/api/sessions") or "", timeout=30) as fh:
             return (json.load(fh) or {}).get("sessions") or []
     except Exception as e:
         globals()["_LAST_ASK_WHY"] = "%s" % type(e).__name__

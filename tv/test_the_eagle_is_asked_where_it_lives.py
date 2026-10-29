@@ -120,8 +120,8 @@ RED_PROOF = [
         "why": "makes an unreachable console answer an EMPTY SET instead of UNKNOWN, so a reader "
                "that could not reach the eagle reads as an eagle that watches nothing",
         "file": "organ_matrix.py",
-        "find": "        return None, (\"the running console did not answer on :17772",
-        "replace": "        return set(), (\"the running console did not answer on :17772",
+        "find": "        return None, (\"the running console did not answer on %s (%s), and a cold import of \"",
+        "replace": "        return set(), (\"the running console did not answer on %s (%s), and a cold import of \"",
         "matches": 1,
     },
 ]

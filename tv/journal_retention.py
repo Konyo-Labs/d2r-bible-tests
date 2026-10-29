@@ -350,8 +350,8 @@ def plan(sessions, hist_dir=None, keep_recent=KEEP_RECENT):
 def main(argv=None):
     import json
     import urllib.request
-    port = os.environ.get("TV_PORT", "17772")
-    with urllib.request.urlopen("http://127.0.0.1:%s/api/sessions" % port, timeout=120) as r:
+    import console_port as _cport       # REG-2998 - the console's port (TV_PORT is the AGENT's), never :17772 by name
+    with urllib.request.urlopen(_cport.url("/api/sessions") or "", timeout=120) as r:
         rows = json.loads(r.read().decode("utf-8", "replace")).get("sessions") or []
     p = plan(rows)
     print(p["say"])

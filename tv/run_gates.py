@@ -14628,3 +14628,12 @@ def _say_venue(venue):
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
+
+    Gate("test_a_console_reads_gate_proofs_and_census_rows_from_a_child",
+         [sys.executable, os.path.join(HERE, "test_a_console_reads_gate_proofs_and_census_rows_from_a_child.py")], 300,
+         needs_app=False,
+         why="REG-2985 (#172 phase C) - a console reads the gate files' RED_PROOF lists and the swallow census rows from a short-lived child per file stamp (0 parses in its own heap, from 3), never serves a stale entry, a law spawns nothing, a failed child fails open, and control_app.py is parsed once per stamp for the lane stamps"),
+    Gate("test_a_scratch_console_never_addresses_his",
+         [sys.executable, os.path.join(HERE, "test_a_scratch_console_never_addresses_his.py")], 300,
+         needs_app=False,
+         why='REG-2998 a scratch console reaches its own console and agent, never his, counted at the socket'),

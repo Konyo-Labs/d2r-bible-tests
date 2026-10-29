@@ -95,12 +95,14 @@ def _ask_live_eagle():
     """
     import json as _json
     import urllib.request as _rq
+    import console_port as _cport       # REG-2998 - this process's console, never :17772 by name
+    _u = _cport.url("/api/status")
     try:
-        with _rq.urlopen("http://127.0.0.1:17772/api/status", timeout=6) as _r:
+        with _rq.urlopen(_u or "", timeout=6) as _r:
             _d = _json.loads(_r.read().decode("utf-8", "replace"))
     except Exception as e:
-        return None, ("the running console did not answer on :17772 (%s), and a cold import of "
-                      "control_app holds only the unfilled _EAGLE literal" % str(e)[:44])
+        return None, ("the running console did not answer on %s (%s), and a cold import of "
+                      "control_app holds only the unfilled _EAGLE literal" % (_u or "no port", str(e)[:44]))
     _e = _d.get("eagle")
     if not isinstance(_e, dict):
         return None, "the console answered but published no eagle block"
