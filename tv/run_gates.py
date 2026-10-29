@@ -12929,6 +12929,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_guided_sweep_leads_him_container_by_container.py")], 300,
          needs_app=False,
          why="REG-3113 (#202): MOVE TASKS leads him container by container - one step per open question and per container never seen whole, questions first, capped at 5 with a counted 'N more' line, closed only by a sweep that sees the container whole"),
+    Gate("test_a_guided_step_tick_waits_for_the_sweep",
+         [sys.executable, os.path.join(HERE, "test_a_guided_step_tick_waits_for_the_sweep.py")], 300,
+         needs_app=False,
+         why='REG-3114 (#202): his tick on a guided step records that he hovered it and waits for the next sweep - never closes the step, never cut by the cap, refused in a shadow'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

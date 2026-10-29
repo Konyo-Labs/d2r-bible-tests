@@ -414,6 +414,17 @@ guide had no way in). Law: test_a_yielding_orb_leaves_a_door - every orb the sho
 (a yield with no door fails by name), each door exists once, a button door runs its orb's opener and opens the feature on
 the whole page in node, each is shown only where its orb yields, none is a fixed overlay; 6 red-proofs, RED. Pixels at
 640x400: v1800 on CI.
+### REG-3114 - HIS TICK ON A GUIDED STEP IS NEVER THE PROOF: IT WAITS FOR THE SWEEP THAT SEES THE CONTAINER WHOLE (#202)
+A guided step (REG-3113) must close only when a sweep's containers[] completes its container, never by a click alone.
+FIX: his tick (window._vaultGuideDone) records that he hovered it, as a 'guide-done' row on that container in the question
+store REG-3105 keeps, so no new store. The step stays, ticked, and says "you said done <time> - waiting for the next sweep
+to see it whole".
+- A ticked step is never cut by REG-3113's cap. Hidden, it would read as closed.
+- A full look of that container clears the tick with the step (REG-3105 clears that container's older rows).
+- A step whose container is not named yet (a shared page with no number) cannot be ticked. Its question is answered first.
+- A shadow's tick is drawn disabled and refuses, in REG-3095's guard form.
+GUARD: tv/test_a_guided_step_tick_waits_for_the_sweep.py, 4 cases. 4 red-proofs, RED.
+
 ### REG-3113 - NOTHING LED HIM TO THE CONTAINERS THE BOARD CANNOT SEE WHOLE: THE GUIDED SWEEP, CAPPED HONESTLY (#202, his 2026-10-27 ruling and his Q11)
 REG-3105 made a container's full look its truth and parked everything less as a question. Nothing led him to the
 containers. His ruling is that auto intake registers on two sessions, the same rule that files. His Q11 is that what the

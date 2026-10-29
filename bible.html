@@ -57555,13 +57555,15 @@ window.vaultAutoAssign = function(){
     var byKey = {}, steps = [];
     function step(c){
       var k = _guideKey(c);
-      if (!byKey[k]) { byKey[k] = { key: k, container: c, last: _guideLookOf(c.holder, c.location, c.page), ask: null, unnamed: 0 }; steps.push(byKey[k]); }
+      if (!byKey[k]) { byKey[k] = { key: k, container: c, last: _guideLookOf(c.holder, c.location, c.page), ask: null, done: null, unnamed: 0 }; steps.push(byKey[k]); }
       return byKey[k];
     }
     _guideContainers().forEach(function(c){ var s = step(c); if (s.last) s.drop = true; });   /* seen whole: no step unless a question is open */
     Object.keys(asks).forEach(function(id){
       var q = asks[id] || {}, c = q.container || {};
       var known = !!(c.location && c.holder && (c.location !== 'shared' || c.page != null));
+      /* REG-3114 - his tick is a row on that container, never a question: the step stays, waiting for the next sweep */
+      if (q.kind === 'guide-done'){ if (known) step(c).done = q; return; }
       if (!q.kind || !q.why) return;
       var s = known ? step(c) : (byKey[id] || (byKey[id] = { key: id, container: c, last: null, ask: null, unnamed: 0 }, steps.push(byKey[id]), byKey[id]));
       if (!s.ask || (q.capturedAt || 0) > (s.ask.capturedAt || 0)) s.ask = q;
@@ -57582,7 +57584,8 @@ window.vaultAutoAssign = function(){
     if (!steps.length) return '';
     var cs = _guideContainers(), all = cs.length, seen = cs.filter(function(c){ return !!_guideLookOf(c.holder, c.location, c.page); }).length;
     var ro = _flShadow(), pages = (typeof window.SHARED_PAGES === 'number') ? window.SHARED_PAGES : 5;
-    var asked = steps.filter(function(s){ return !!s.ask; }), never = steps.filter(function(s){ return !s.ask; });
+    /* REG-3114 - a step he ticked is never cut either: hidden, it would read as closed */
+    var asked = steps.filter(function(s){ return !!(s.ask || s.done); }), never = steps.filter(function(s){ return !(s.ask || s.done); });
     var shown = asked.concat(never.slice(0, Math.max(0, GUIDE_CAP - asked.length))), more = steps.length - shown.length;
     var h = '<p class="vtk-sec" data-sec="look">See whole · ' + steps.length
       + ' <span class="vgs-whole" title="containers with a full look, of the mules you have made and the shared pages">seen whole ' + seen + ' of ' + all + '</span>'
@@ -57609,9 +57612,37 @@ window.vaultAutoAssign = function(){
                                               + btn('A shared page', "window._vaultFullLookAnswer(this.getAttribute('data-ask'),'shared')");
     var ev = (q && q.frame) ? ' <button type="button" class="vault-btn vfl-b" data-ask="' + _flEsc(q.id) + '" onclick="window._vaultFullLookShow(this.getAttribute(\'data-ask\'))">frame ' + _flEsc(q.frame) + '</button>' : '';
     var clear = q ? btn('Clear', "window._vaultFullLookClear(this.getAttribute('data-ask'));try{window._vaultMovePaint&&window._vaultMovePaint()}catch(e){}") : '';
-    return '<li class="vtk-line vtk-look" data-container="' + _flEsc(s.key) + '"' + (q ? ' data-kind="' + _flEsc(q.kind) + '"' : ' data-kind="never"') + '>'
-      + '<span class="vtk-say">' + say + '</span>' + ev + answers + clear + '</li>';
+    /* REG-3114 - his tick, on a step that names its container; read only in a shadow */
+    var d = s.done;
+    if (d) say += ' · <i>you said done ' + _flEsc(String(d.at || '').slice(0, 16).replace('T', ' ')) + ' - waiting for the next sweep to see it whole</i>';
+    var tick = (c.location && c.holder && (c.location !== 'shared' || c.page != null))
+      ? '<input type="checkbox" class="vtk-tick" aria-label="I hovered every item in ' + _flEsc(where) + '"' + (d ? ' checked' : '') + (ro ? ' disabled' : '')
+        + ' data-key="' + _flEsc(s.key) + '" onclick="event.stopPropagation()" onchange="window._vaultGuideDone(this.getAttribute(\'data-key\'))">' : '';
+    return '<li class="vtk-line vtk-look" data-container="' + _flEsc(s.key) + '"' + (q ? ' data-kind="' + _flEsc(q.kind) + '"' : ' data-kind="never"') + (d ? ' data-waiting="1"' : '') + '>'
+      + tick + '<span class="vtk-say">' + say + '</span>' + ev + answers + clear + '</li>';
   }
+  /* ══ REG-3114 (#202) — HIS TICK IS NEVER THE PROOF. A guided step closes only when a sweep's containers[] completes its
+     container (REG-3113). His tick records that he hovered it - a 'guide-done' row on that container in the question store
+     REG-3105 keeps, so no new store - and the step stays, ticked, "waiting for the next sweep to see it whole". A full look of
+     that container clears it with the step (REG-3105 clears that container's older rows). A step whose container is not named
+     yet cannot be ticked: its question comes first. A shadow ticks nothing (REG-3095's guard form). */
+  window._vaultGuideDone = function(key){
+    if (_flShadow()) return { ok: false, why: 'a shadow ticks nothing - it is their console, shown read only' };
+    var steps = window._vaultGuideSteps();
+    if (steps === null) return { ok: false, why: 'the full-look stores would not read - UNKNOWN' };
+    var s = steps.filter(function(x){ return x.key === String(key); })[0];
+    var c = s && s.container;
+    if (!c || !c.location || !c.holder || (c.location === 'shared' && c.page == null))
+      return { ok: false, why: 'that step names no container yet - answer its question first' };
+    var asks = _flAsksAll();
+    if (asks === null) return { ok: false, why: 'the question store would not read - UNKNOWN' };
+    var id = 'guide|' + s.key;
+    asks[id] = { id: id, kind: 'guide-done', container: { holder: c.holder, location: c.location, page: c.page == null ? null : c.page },
+                 at: new Date().toISOString(), why: 'you said you hovered every item; the next sweep decides whether it is seen whole' };
+    var wrote = _flAsksWrite(asks);
+    try { if (typeof window._vaultMovePaint === 'function') window._vaultMovePaint(); } catch (eR) {}
+    return { ok: wrote, waiting: true, why: wrote ? asks[id].why : 'the question store refused the write' };
+  };
   /* ══ REG-2893 (his Q2) — A READ OLDER THAN ITS CONTAINER'S NEWEST FULL LOOK PLACES NOTHING ══════════════════════════════
      An Oct 6 screenshot must not file, add or move an item today when the same stash was seen whole on Oct 28. The read
      is asked which container it saw (the holder and location its look names) and when (its capture time); against that
