@@ -51415,7 +51415,12 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       /* 2026-09-28 — THE READ THAT BROUGHT THE NAME IS ITS RECEIPT: who handed it over, where it was seen, the
          session and frame of its one look. No witness at all = the TV register itself, and nothing else claimed. */
       var _w0 = (witness && typeof witness === 'object' && !Array.isArray(witness)) ? witness : {};
-      var _l0 = (Array.isArray(_w0.sessions) && _w0.sessions[0] && typeof _w0.sessions[0] === 'object') ? _w0.sessions[0] : {};
+      /* REG-3098 (#158, measured on his own sweep) - THE RECEIPT'S LOOK IS ONE REAL LOOK: the first that carries a frame, its own
+         session, frame and conf together. It was sessions[0] - on Storm Scarab a legacy look with no frame and conf 0 - beside
+         another look's frame, and _receiptStashWitness then put that chimera first and de-duplicated the real 0.8 look of the
+         same session and frame away: "only 1 qualifying look" where the console's gate and _vaultWitnessCheck both count 2. */
+      var _ls0 = (Array.isArray(_w0.sessions) ? _w0.sessions : []).filter(function(x){ return x && typeof x === 'object'; });
+      var _l0 = _ls0.filter(function(x){ return x.frame || x.frameId; })[0] || _ls0[0] || {};
       var _cell0 = (_l0.cell != null && _l0.cell !== '') ? _l0.cell : ((_w0.cell != null && _w0.cell !== '') ? _w0.cell : null);
       var _rec = { source: String(_w0.by || 'tv-register'), by: String(_w0.door || 'tvVaultRegister'),
                    loc: _w0.lane || _w0.loc || _w0.location || null, scene: _w0.scene || null, readTier: _w0.tier || null, ts: _w0.at || null,

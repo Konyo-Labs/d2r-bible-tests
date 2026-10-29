@@ -13369,6 +13369,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_rare_name_keeps_the_base_its_label_states.py")], 300,
          needs_app=False,
          why="REG-3089 (#158): a rare's name followed by its base keeps the base its label states, when the suffix can wear it"),
+    Gate("test_a_receipt_look_is_one_real_look",
+         [sys.executable, os.path.join(HERE, "test_a_receipt_look_is_one_real_look.py")], 300,
+         needs_app=False,
+         why="REG-3098 (#158): the register's receipt look is one real look, never two looks' fields sewn together"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
