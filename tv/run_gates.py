@@ -13248,7 +13248,7 @@ GATES = [
     Gate("test_players_moves_odds_by_silospens_own_factor",
          [sys.executable, os.path.join(HERE, "test_players_moves_odds_by_silospens_own_factor.py")], 300,
          needs_app=False,
-         why="REG-2953 (#190, closes REG-2509) - /PLAYERS MOVES EVERY 1:N BY SILOSPEN'S OWN FACTOR. The one-NoDrop model (k = 1 + floor(players/2), one q per boss) stepped at /p2,4,6,8 and capped Andariel at x1.39; silospen RotW 3.0 (party 1, MF 300, every unique and set of the 11 farms x 3 difficulties x /players 1-8) pairs 1=2, 3=4, 5=6, 7=8, moves Andariel x1.79 and Countess / Duriel x1.39 / x1.37, and leaves only Pindleskin unmoved. PLAYER_F holds one rare-item factor per farm, difficulty and /players; the page's engine runs in node and every expectation is recomputed from tv/data/silospen_players_rotw30.json."),
+         why="REG-2953 (#190, closes REG-2509) - /PLAYERS MOVES EVERY 1:N BY SILOSPEN'S OWN FACTOR. The one-NoDrop model (k = 1 + floor(players/2), one q per boss) stepped at /p2,4,6,8 and capped Andariel at x1.39; silospen RotW 3.0 (party 1, MF 300, every unique and set of the 11 farms x 3 difficulties x /players 1-8) pairs 1=2, 3=4, 5=6, 7=8, moves Andariel x1.79 and Countess / Duriel x1.39 / x1.37, and leaves only Pindleskin unmoved. PLAYER_F holds one rare-item factor per farm, difficulty and /players; the page's engine runs in node and every expectation is recomputed from tv/data/silospen_players_rotw30.json. REG-2955: every terror-zone column has its own factor; REG-2954: the Pit is Pit Level 1's Devilkin; REG-3003: one /players function."),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
