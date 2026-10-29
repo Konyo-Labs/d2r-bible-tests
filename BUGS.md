@@ -553,6 +553,14 @@ ask failed. The UNKNOWN path now runs _reopenClear() after painting UNKNOWN, as 
 reached on the cached open and on both fetch outcomes again. Reproduced on 6d69506ac (the same 2-of-3 failure) and green
 with the line restored (34 OK); the REG-3050 law's harness gained the filter state the restored call reads, its source
 check and red-proof [1] follow the line (5 of 5 RED). Anchors bad 0.
+### REG-3014 - THE FIRST-SIGHTING DRAIN CASE SENT A FRAME THAT NEVER SAID IT READ THE STASH WHOLE (CI on ci/claude-chain-1)
+test_vault_l1_throw_out_rows_drain's first-sighting case (REG-2843's) drained its throw-out row with an inline frame that carries
+no `complete: true`. REG-2861 counts an item gone only from a frame that read its container whole, and its own change taught the
+law's frame() helper to say so, but not this inline frame. So on the chain the row read "→ NOWHERE" and never "gone 1/5"
+(CI on slice 1). The frame now says complete: true, as frame() does. Measured in node on the slice's page: without it,
+"not counted - the frame does not say it read its container whole"; with it, gone 1. Chrome law: CI proves it.
+
+
 ### REG-3013 - THE HAND-ADD LAW LOOKED FOR THE RAW "stash:c0r0" IN FIND, WHICH REG-2884 NOW SAYS IN ITS OWN WORDS (CI on ci/claude-chain-1)
 test_vault_l1_a_hand_add_routes_by_type's FIND case asserted the move target's raw cell ("stash:c0r0") in FIND's text. Since
 REG-2884 (#137) FIND names a hand add's target as "Mule 1 · Personal stash · col 1 · row 1 · target", and the case went red on

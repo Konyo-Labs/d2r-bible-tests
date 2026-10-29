@@ -287,7 +287,8 @@ class AnUnseenThrowOutTakesItsFirstSighting(unittest.TestCase):
                         "  sessionId: 'z1', frameId: 'z-a', ts: Date.now() });"
                         "window._vaultMovePaint(); OUT.f1 = (row(%s) || {getAttribute: function(){ return 'missing'; }}).getAttribute('data-from');"
                         "OUT.rows = document.querySelectorAll('#vault-move-list .vmv-row[data-name=\"' + %s + '\"]').length;"
-                        "obs({ session: 'z2', holder: 'MAIN', location: 'stash', items: [], ground: [] }); window._vaultMovePaint();"
+                        # REG-3014 - a whole read of the stash (REG-2861: only such a frame counts an item gone), as frame() says
+                        "obs({ session: 'z2', holder: 'MAIN', location: 'stash', complete: true, items: [], ground: [] }); window._vaultMovePaint();"
                         "OUT.k = (row(%s) || {}).textContent || '';"
                         % (json.dumps(HEAD), json.dumps(HEAD), json.dumps(HEAD), json.dumps(HEAD), json.dumps(HEAD)))
         self.assertEqual(o["f0"], "", "premise: the row starts unseen: %r" % o)
