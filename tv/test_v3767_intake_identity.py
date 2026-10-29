@@ -60,7 +60,7 @@ EVIDENCE = [
 
 PLACE_FNS = [
     "_vaultCellKey", "_vaultSightGroups", "_vaultRecords",
-    "_vaultRecordsSource", "_vaultRecordsStampOk",
+    "_vaultRecordsSource", "_vrSourceChoice", "_vaultRecordsStampOk",
     "_vrRecWitness", "_vrRecRow", "_vrRecRowsFrom",
     "_vrRecLoadRaw", "_vrRecGuardedSet", "_vrLocForCopy",
     "_vaultRehomeCopies", "_vaultReconcileHomes",
@@ -324,7 +324,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "The source ignores the stored row and derives again, so a wiped live prov comes back empty.",
      "file": "bible.html",
-     "find": "        if (loaded && loaded.ok && Array.isArray(loaded.records)) return loaded;",
+     "find": "        if (loaded && loaded.ok && Array.isArray(loaded.records)) return { store: loaded, why: '' };",
      "replace": "        return _vaultRecords();",
      "matches": 1},
     {"why": "A repeat sighting of the same cell does not count as a witness, so two looks become an uncounted copy.",

@@ -47,7 +47,7 @@ NODE = os.environ.get("NODE") or shutil.which("node")
 # the shipped functions under test + the live overflow chain they are proven against
 EXTRACT = [
     "_sharedNames", "_sharedCopyCount", "_sharedCappedCopies", "_vaultSharedOverflowCells",
-    "_vaultSharedOverflowNames", "_vaultSameMuleCopies", "_vaultRecords", "_vaultRecordsSource", "_vaultRecordsFind", "_vaultRecordsOverflow",
+    "_vaultSharedOverflowNames", "_vaultSameMuleCopies", "_vaultRecords", "_vaultRecordsSource", "_vrSourceChoice", "_vaultRecordsFind", "_vaultRecordsOverflow",
     "_vaultRecordsHeader",
     # INC-3b: persist / load / migrate / undo / rename + the model-in parity views
     "_vrRecWitness", "_vrRecRow", "_vrRecRowsFrom",

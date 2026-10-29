@@ -59,7 +59,7 @@ def _fn(src, name):
 
 # the functions under test + the live overflow chain they are proven against (all short, pure-ish)
 EXTRACT = ["_sharedNames", "_sharedCopyCount", "_sharedCappedCopies", "_vaultSharedOverflowCells",
-           "_vaultSharedOverflowNames", "_vaultSameMuleCopies", "_vaultRecords", "_vaultRecordsSource",
+           "_vaultSharedOverflowNames", "_vaultSameMuleCopies", "_vaultRecords", "_vaultRecordsSource", "_vrSourceChoice",
            "_vrRecHome", "_vaultRecordsFind", "_vaultRecordsOverflow"]
 
 
