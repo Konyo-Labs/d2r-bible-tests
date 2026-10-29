@@ -2221,19 +2221,6 @@ receipt. The profile keeps its last POST whole, so a later gate reason never hid
 test_the_roster_lane_says_its_profile_and_sessions_posts (7 cases on each lane's real apply_reply, the route's own lines
 and the panel; 6 red-proofs).
 
-### REG-2866 - THE SHADOW CALLED ITS COPY'S AGE THE OWNER'S "LAST UPLOAD" (GrokBot #230)
-The shadow bar read "<owner> · online now · last upload 34 min ago · snapshot 18:55" while the owner's own last upload read
-19:06. The time it printed is the copy this PC reads: the record the site last STORED (an unchanged upload is not stored
-again) or, with the site unreadable, this PC's own last copy - so the owner may well have uploaded since. The profile view's
-words now say only whose console it is and whether it is up; the age rides as the copy's own (t, ago), and one helper
-(_shadowCopySay) prints it as "this copy is from Oct 28 18:55 (34 min ago)" - one 24-hour clock (#214), UNKNOWN with no
-time. Swept: the shadow bar (both the profile path and the merged roster path, which dropped the age words), the shadow's
-sessions header ("uploaded 12 min ago"), and the roster panel's html ("published 34 min ago" -> "published · this copy is
-from 34 min ago"). The Fleet row prints no age (its eyes only), so nothing changed there. Laws re-aimed with 6 new
-red-proofs, each RED: test_the_shadow_bar_sits_below_the_header (3), test_a_shadow_shelf_shows_the_owners_sessions (1),
-test_a_roster_publish_stays_off_the_presence_beacon (1), test_shadow_mode_reads_their_console (1, and its 'live with no
-age' proof re-aimed to the copy's ago); the Chrome law test_shadow_mode_draws_their_console re-aimed (CI proves it).
-
 ### REG-2865 - EVERY LAW THAT IMPORTED THE CONSOLE KEPT THE PAID SWEEP SHUT (#212 root cause)
 REG-2750 (#156) made a lock go stale only through its own guard laws, counted as the laws that name it or import or open
 its door module. vault.sweep_start's door module is control_app, so on the batch-3841 tree (1,234 gates) 489 laws guarded
