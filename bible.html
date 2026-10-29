@@ -28836,8 +28836,21 @@ function _rareRealName(nm){
   var c = (typeof ITEM_CODEX !== 'undefined') ? ITEM_CODEX : null;
   return !!(own(c) && c[nm] && /^(unique|set)$/i.test(String(c[nm].rarity || '')));
 }
+/* REG-3087 (#158, measured on his own sweep) - THE GRAMMAR FOLDS CASE WHERE THE CATALOGUES FOLD IT. The reader hands over a ground
+   label or a tooltip line in capitals ("FINE SMALL CHARM OF VITA", "WRAITH GRASP", "SHIMMERING SMALL CHARM OF FLAME"): 25 of the
+   51 names nothing could home on his sweep were rolled names the grammar knows in title case, while every catalogue folds case
+   ("CHAINS OF HONOR" routes). Any casing is read in the game's own - each word capitalised, "of" and "the" after the first word
+   lower - before a rule of the grammar asks it; the name he owns is never rewritten by this, only matched. */
+function _rolledSpelling(name){
+  var s = String(name == null ? '' : name).trim();
+  if (!s) return s;
+  return s.toLowerCase().split(/\s+/).map(function(w, i){
+    return (i > 0 && (w === 'of' || w === 'the')) ? w : w.charAt(0).toUpperCase() + w.slice(1);
+  }).join(' ');
+}
+window._rolledSpelling = _rolledSpelling;
 function _rolledQuality(name){
-  var nm = String(name == null ? '' : name).trim();
+  var nm = _rolledSpelling(name);   /* REG-3087 */
   if (!nm) return null;
   try { if (typeof d2rItemLookup === 'function' && d2rItemLookup(nm)) return null; } catch(e){}
   try { if (_rareRealName(nm)) return null; } catch(e){}
@@ -29075,7 +29088,7 @@ function _charmAffixes(){
 function _charmKind(name){
   var raw = String(name == null ? '' : name).trim();
   if (!raw) return null;
-  var fold = raw.replace(/[‘’ʼ`´]/g, "'");
+  var fold = _rolledSpelling(raw).replace(/[‘’ʼ`´]/g, "'");   /* REG-3087 any casing is matched in the game's */
   if (/^Annihilus$/i.test(fold) || /^Hellfire Torch$/i.test(fold)) return { kind: 'unique', mf: false, skiller: false, read: true };
   if (/^Gheed'?s Fortune$/i.test(fold)) return { kind: 'unique', mf: true, skiller: false, read: true };
   var ex = null, kp = null;

@@ -719,6 +719,20 @@ both are exactly as before. The new guard is the board's fourth tvd-shadow check
 guard by its own line (REG-3049's form on the ship line) instead of a total of 3. Law:
 test_the_d2jsp_desk_is_read_only_in_a_shadow (the pane's own script in node: own, snapshot shadow, class-only shadow; 4
 red-proofs, each RED). NEEDS LIVE: GrokBot types into the fg box in a shadow and sees it refuse.
+### REG-3087 - A ROLLED NAME READ IN CAPITALS HAD NO HOME: 25 OF THE 51 UN-HOMED NAMES ON HIS SWEEP (#158)
+Every one of the 307 names on his last vault sweep was routed through the page's own suggestMule, in node on claude/int.
+51 had no home ("nothing on the board recognises this name ... it stays in Unsorted"). 25 of those were reads in
+capitals:
+- FINE SMALL CHARM OF VITA, SHIMMERING SMALL CHARM OF FLAME, SMALL CHARM OF BALANCE;
+- WRAITH GRASP, GHOUL GRASP, DREAD GYRE, AMULET OF WEALTH, RUBY JEWEL OF FERVOR.
+The rare and charm grammar (_rolledQuality, _charmKind) matched title case only, while every catalogue folds case:
+"CHAINS OF HONOR" routes.
+FIX: the grammar folds case where the catalogues fold it. One rule, _rolledSpelling, puts any casing into the game's own
+before the grammar's matching: each word capitalised, and "of" and "the" after the first word in lower case. Both grammars
+ask it, and it only matches: the name he owns is never rewritten. A real unique in any casing (RAVEN CLAW) is still a
+unique, never a rare.
+GUARD: tv/test_a_rolled_name_is_read_in_every_slot_and_any_casing.py (shared with REG-3088). Red-proof RED.
+
 ### REG-3086 - A SWEEP APPLY OWNED WHAT THE VAULT DOOR REFUSED: 67 OF 92 READS OWNED, UNFILED, WITH AUTO INTAKE OFF (#158, GrokBot "0 of 39 auto-muled")
 Measured read-only on claude/int (836921abc) with his own last sweep:
 - The data is vault_last_result.json, v3834, with 92 grounded rows. It was copied to scratch, and nothing was written back.
