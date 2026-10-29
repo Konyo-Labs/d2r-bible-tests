@@ -2551,6 +2551,32 @@ file row with k > n - and no law named either. Test-only: a law that holds both 
 writes nothing; a forged 138/135 row reads UNKNOWN and may() stays LOCKED) and holds the shape over the tracked
 ledger (every lock and route: k <= n, attacksPassed <= attacks <= n). The fan-caption overlap half of #84 is NEEDS
 LIVE. Law: test_a_lock_never_publishes_more_refusals_than_attempts (python), 2 red-proofs, RED.
+### REG-3055 - A RUNEWORD WITH A TV STUB WAS A GUESSED 1x2, AND HIS COPIES' OWN BASES NEVER SIZED IT (GrokBot #230, 2026-10-29)
+_itemCells read a TV stub's base (its own name) as a base, so a runeword with a stub never reached _runewordCells: Heart of
+the Oak drew an approx 1x2 where its bases are one size (2x3). A stub's own name is no base now. Call to Arms, Fury, Dream and
+Lawbringer have no single size across their legal bases, so they stay an approx 1x2 - by design, since a runeword with no
+recorded base has no single size. His copies' own records can settle it (REG-2844 the planner, REG-3002 a read; REG-3001
+shows them): when every copy of the name is recorded in a base and those bases share one footprint, that base sizes it.
+Measured on the whole page in node: Fury approx, then read in a Phase Blade 2x3, plus a Berserker Axe still 2x3, plus a
+Colossus Blade approx again. The bases are read once per stored string (window._vaultCopyBaseCode), because the packer asks
+_itemCells for every tile on every paint. Law: test_a_tv_stub_never_outranks_what_the_name_is (with REG-3054), 3 red-proofs.
+
+### REG-3054 - A TV STUB'S 'basic' OUTRANKED WHAT THE NAME IS: RUNEWORDS AND RARES DREW WHITE (GrokBot #230, 2026-10-29)
+TV DIABLO stamps {rarity: 'basic', base: <its own name>, cat: 'TV-vaulted'} on a name nothing knew when it registered it. His
+boards hold such stubs for runewords and rares: the Mac's Heart of the Oak; the ALT's Call to Arms, Raven Whorl and Doom Eye,
+stored without the val:'tv' mark today's writers stamp. Measured on the whole page in node with those stubs:
+- every one read rarity 'basic' (white), because _artRarity read the stub before findRuneword and never asked the grammar;
+- a runeword's picture asked "which base?" as if it were rolled;
+- Doom Eye's unmarked stub was read as a curated entry: it routed to UNI-WEAPONS, and FIND sent him there.
+The order of authority now: a catalogue runeword, his evidence's rarity and the rolled-name grammar outrank a stub's 'basic'
+over its own name (REG-2903 already reads that base as no base). The stub's word stands only when nothing else knows the
+name. A stub stored without val:'tv' is read as a TV stub (in memory; the store is untouched), so the router, the footprint
+and the hover read it like every other. The chronicle-apply writer no longer stubs a runeword the prune's catalogue keeps
+(d2rCatalogueKnows, the v739 writer's v2208 rule). A runeword that catalogue lacks (Heart of the Oak) keeps its stub, which
+is what keeps the name across a reload, and reads as a runeword all the same. Now: the five runewords read 'rw', Raven Whorl
+and Doom Eye 'rare' and 1x1, Doom Eye routes to MAGIC & RARE, and a stub of a name nothing knows stays 'basic'. Law:
+test_a_tv_stub_never_outranks_what_the_name_is (node, the whole page), 5 red-proofs, RED.
+
 ### REG-3002 - A JUDGED GRIEF READ IN ANOTHER BASE WAS THE SAME COPY (his ruling 2026-10-29 02:30, Q3)
 A judged read of a runeword only owned the name, so a Grief read in a Berserker Axe beside one in a Phase Blade was the same
 copy. The read's base now names its copy (window._vaultRunewordReadJoin, from the AI checker's keep):
