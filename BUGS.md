@@ -699,10 +699,12 @@ name's post log rows, listed or not, and the vault's traded rows, the one source
 'for-sale' row speaks only for a name the vault does not track (a planner pick), so the copy Mark sold sends through the
 vault's door is one row, not two. Both clocks (the log's "YYYY-MM-DD HH:MM UTC" and the vault's ISO time) read to one epoch
 and show in the log's spelling, newest first; a time that does not read says "time UNKNOWN" and sorts last, never a guessed
-date. With no vault on the page the trades say UNKNOWN and none is drawn. Boundary, not changed: a vault store whose JSON
-does not parse reads as no traded rows (_vaultTradeOf's own rule). Law: test_the_d2jsp_tab_keeps_one_history (the pane's own
-script in node over a fake page and vault: read directly, painted through the tab's show and its Mark sold click; 12
-red-proofs, each RED). NEEDS LIVE: GrokBot opens D2JSP -> History on his board and reads it against the cards' Attempts and
+date. A store that will not read makes its half UNKNOWN, never none, and the count says "some UNKNOWN": the post log read
+strictly (readMap's {} would have said "no post"), and the vault's records through a new window._vaultTradedRead - false
+with no vault on the page, a refused storage read, or JSON that does not parse, where _vaultTradedNames/_vaultTradedOf say
+none. Law: test_the_d2jsp_tab_keeps_one_history (the pane's own script in node over a fake page and vault: read directly,
+painted through the tab's show and its Mark sold click; the vault's own reader cut out and run over a good, missing, corrupt
+and throwing records store; 19 red-proofs, each RED). NEEDS LIVE: GrokBot opens D2JSP -> History on his board and reads it against the cards' Attempts and
 the vault's traded copies.
 
 ### REG-3095 - IN A SHADOW THE D2JSP FG BOX STILL TOOK TYPING, AND A PRICED CARD WOULD HAVE OFFERED POST (#83, GrokBot 06:36)
