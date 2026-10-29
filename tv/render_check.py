@@ -6125,11 +6125,41 @@ def _coverage_check(results, say, scope=None, out=None):
     return bad
 
 
-def _coverage_bless(results, complete, say):
-    """Write the floor. Refuses unless the run covered every target. -> exit code"""
+def _bless_record_path():
+    """REG-3082 - the bless's own record sits beside the floor it writes, so a law's temporary floor keeps its record
+    with it and CI uploads the two together."""
+    return os.path.join(os.path.dirname(COVERAGE), ".render_bless.json")
+
+
+def _bless_record(rec, say):
+    """REG-3082 - write what this bless measured and what it did with it. A bookkeeping failure never fails the bless."""
+    try:
+        with io.open(_bless_record_path(), "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(rec, indent=2, sort_keys=True, ensure_ascii=False) + "\n")
+    except Exception as e:
+        say("   \u26a0 could not write %s (%s) - this bless's measurement is in the log only"
+            % (os.path.basename(_bless_record_path()), type(e).__name__))
+
+
+def _coverage_bless(results, complete, say, why=None):
+    """Write the floor. Refuses unless the run covered every target. -> exit code
+
+    ⚠ REG-3082 (#2) - AND IT RECORDS WHAT IT MEASURED. The floor file is a merge: a held reading (lower than the floor) and
+    a raised one look alike in it, and a refused bless left nothing at all, so a bless run on another venue (CI's
+    render-bless job) could hand back a floor and never the measurement under it. .render_bless.json, beside the floor,
+    carries every count this run took, what it raised, held and added, and - when it refused - why, by target. `why` is
+    main()'s reason the run is not clean; absent, the old sentence stands."""
+    rec = {"_why": "what the last --bless measured and what it did with each count. The floor is the merge; this is "
+                   "the measurement under it. A local fact, never a contract (tv/render_coverage.json is the contract).",
+           "ranAt": int(time.time() * 1000), "complete": bool(complete), "platform": sys.platform,
+           "renderScale": _RENDER_SCALE, "measured": _coverage_of(results)}
     if not complete:
+        rec["refused"] = why or "this run did not report every target"
         say("🔴 refusing to bless: this run did not report every target, and a partial run must "
              "never write a LOWER floor. That is how one busy afternoon becomes the new normal.")
+        if why:
+            say("   why this run is not clean: %s" % why)
+        _bless_record(rec, say)
         return 2
     # ⚠⚠ REG-568 — THE RATCHET DID NOT RATCHET. This file's own `_why` says *"It may only RISE"*
     # and the merge was a plain `dict.update()`, which OVERWRITES with whatever the run measured —
@@ -6153,7 +6183,7 @@ def _coverage_bless(results, complete, say):
     for _n, _w in sig_now.items():
         sig_merged[_n] = dict(sig_merged.get(_n) or {})
         sig_merged[_n].update(_w)
-    merged, held = {}, []
+    merged, held, raised, added = {}, [], [], []
     for name in set(list(now) + list(old)):
         merged[name] = dict(old.get(name) or {})
         for k, v in (now.get(name) or {}).items():
@@ -6161,7 +6191,13 @@ def _coverage_bless(results, complete, say):
             if isinstance(was, int) and isinstance(v, int) and v < was:
                 held.append((name, k, was, v))
                 continue                      # the floor may only RISE
+            if isinstance(was, int) and isinstance(v, int) and v > was:
+                raised.append((name, k, was, v))
+            elif not isinstance(was, int):
+                added.append((name, k, v))
             merged[name][k] = v
+    rec.update({"raised": sorted(list(x) for x in raised), "held": sorted(list(x) for x in held),
+                "added": sorted(list(x) for x in added)})
     with io.open(COVERAGE, "w", encoding="utf-8") as fh:
         fh.write(json.dumps({
             "_why": "COVERAGE RATCHET — how many nodes each target measured on a clean run. It may "
@@ -6190,6 +6226,7 @@ def _coverage_bless(results, complete, say):
     # unearned. The ratchet may only rise, which makes an inflated floor expensive to undo — it has
     # to be lowered BY HAND, with the reason in the commit, which is what this note is for.
     # [[regression-guard]] [[feedback-blind-fixture-green-gate]] [[stale-reading]]
+    _bless_record(rec, say)
     say("blessed %d target(s) into %s" % (len(merged), os.path.relpath(COVERAGE, REPO)))
     say("   \u26a0 a floor that only appears after repeated local runs is an artefact of the "
         "seeded sandbox, not a measurement — bless from a cold tree")
@@ -6429,7 +6466,18 @@ def main(argv):
     # stopped early, so it cannot bless coverage and cannot speak for the set.
     _full = (len(targets) == len(TARGETS)) and not _ABORTED_AT
     if "--bless" in argv:
-        return _coverage_bless(results, _full and not bad and not unknown, _say)
+        # REG-3082 - a refused bless says WHICH condition and WHICH targets, so a run on another venue can be acted on
+        _bw = []
+        if len(targets) != len(TARGETS):
+            _bw.append("it asked for %d of %d target(s)" % (len(targets), len(TARGETS)))
+        if _ABORTED_AT:
+            _bw.append("it stopped early at %s" % _ABORTED_AT)
+        if bad:
+            _bw.append("%d target(s) did not render cleanly (%s)"
+                       % (bad, ", ".join(sorted(n for n in targets if not (results.get(n) or {}).get("ok"))) or "none reported"))
+        if unknown:
+            _bw.append("%d target(s) were UNKNOWN" % unknown)
+        return _coverage_bless(results, _full and not bad and not unknown, _say, why="; ".join(_bw) or None)
     # ⚠⚠ COVERAGE REFUSALS GET THEIR OWN COUNTER — `bad += _coverage_check(...)` mixed them into
     # the RENDER-FAILURE count and three things broke at once. `clean = len(targets) - bad` went
     # NEGATIVE (measured: Chrome dies, 9 targets each counted once as a lost socket and again as

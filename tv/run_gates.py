@@ -14661,3 +14661,7 @@ if __name__ == "__main__":
          [sys.executable, os.path.join(HERE, "test_a_lock_never_publishes_more_refusals_than_attempts.py")], 300,
          needs_app=False,
          why='REG-3074 a lock never publishes more refusals than attempts: bank and the ledger read both refuse k above n'),
+    Gate("test_a_bless_records_what_it_measured",
+         [sys.executable, os.path.join(HERE, "test_a_bless_records_what_it_measured.py")], 300,
+         needs_app=False,
+         why='#2 REG-3082 - render_check --bless writes .render_bless.json beside the floor: every count it measured, what it raised, held and added, or why it refused, naming the targets'),

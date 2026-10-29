@@ -594,6 +594,160 @@ The two profile-publish laws stand a fixture in for _profile_saves, so no law re
 Law test_the_characters_room_says_why_its_saves_name_what_they_name (the room on the whole page in node, the upload in
 Python), 8 cases, 8 red-proofs RED, baseline green. 24 neighbours ran green (6 node-only laws refused by safe_laws for a
 test import, read and run by hand); the signed-publish, presence-beacon, shadow and mule-window Chrome laws go to CI.
+### REG-3094 - THE D2JSP TAB HAD NO HISTORY: A POST OR A TRADE OF AN ITEM OFF THE LIST HAD NO SURFACE LEFT (#83)
+Each card shows its own post attempts (REG-2872, the d2r_d2jsp_log store) and the vault records every copy that left
+(REG-2883, its traded rows), but there was no one place to read what the desk had done, and an item hidden or taken off the
+list lost the only surface its posts and trades had. The tab now has one History (a closed disclosure under the list),
+painted on every paint and after every log write, and only when its text changed. It writes no store and reads two: every
+name's post log rows, listed or not, and the vault's traded rows, the one source for a traded copy. A log 'traded' /
+'for-sale' row speaks only for a name the vault does not track (a planner pick), so the copy Mark sold sends through the
+vault's door is one row, not two. Both clocks (the log's "YYYY-MM-DD HH:MM UTC" and the vault's ISO time) read to one epoch
+and show in the log's spelling, newest first; a time that does not read says "time UNKNOWN" and sorts last, never a guessed
+date. A store that will not read makes its half UNKNOWN, never none, and the count says "some UNKNOWN": the post log read
+strictly (readMap's {} would have said "no post"), and the vault's records through a new window._vaultTradedRead - false
+with no vault on the page, a refused storage read, or JSON that does not parse, where _vaultTradedNames/_vaultTradedOf say
+none. Law: test_the_d2jsp_tab_keeps_one_history (the pane's own script in node over a fake page and vault: read directly,
+painted through the tab's show and its Mark sold click; the vault's own reader cut out and run over a good, missing, corrupt
+and throwing records store; 19 red-proofs, each RED). NEEDS LIVE: GrokBot opens D2JSP -> History on his board and reads it against the cards' Attempts and
+the vault's traded copies.
+
+### REG-3095 - IN A SHADOW THE D2JSP FG BOX STILL TOOK TYPING, AND A PRICED CARD WOULD HAVE OFFERED POST (#83, GrokBot 06:36)
+GrokBot in the Mac's shadow: Mark sold, Remove from this list and Options changed nothing and sent nothing, and Post was
+disabled - "Small gap: the 'Your fg' box still takes typing in the shadow (typed 99, nothing was sent)". The shadow veil stops
+a typed key and every input event, but a path with no key press still reached a writable box, so it read as editable on a
+page that sends nothing. And Post was disabled there only because nothing was priced: the card disabled it for
+`send == null || sold`, so a priced card in a shadow offered a Post the veil then swallowed (driven in node: the same card's
+Post was live). In a shadow - the veil's handle window._tvdShadow, else the tvd-shadow class, the shadow law's guard form -
+the fg box is now readonly with aria-readonly and a title saying it is their console, and Post is disabled; outside a shadow
+both are exactly as before. The new guard is the board's fourth tvd-shadow check, so this branch's beacon law now pins each
+guard by its own line (REG-3049's form on the ship line) instead of a total of 3. Law:
+test_the_d2jsp_desk_is_read_only_in_a_shadow (the pane's own script in node: own, snapshot shadow, class-only shadow; 4
+red-proofs, each RED). NEEDS LIVE: GrokBot types into the fg box in a shadow and sees it refuse.
+### REG-3098 - THE REGISTER'S RECEIPT SEWED TWO LOOKS TOGETHER, SO STORM SCARAB'S TWO SESSIONS COUNTED AS ONE (#158)
+Same measurement as REG-3086 (his sweep through the page in node on claude/int). Storm Scarab was grounded by the console
+on two sessions, at conf 0.8 and 0.9, each with its own frame. It was owned but refused filing: "only 1 qualifying look in
+your stash ... (2 did not)". Yet the console's gate and the board's own _vaultWitnessCheck, handed the same looks, both
+count 2.
+Its first look was a legacy one with no frame and conf 0.
+- tvVaultRegister built the owned receipt from sessions[0]: that session and conf 0, beside another look's frame.
+- _receiptStashWitness then put that chimera first, and de-duplicated away the real 0.8 look of the same session and frame.
+4 of his 92 grounded rows start with a frameless look.
+FIX: the receipt takes ONE real look, the first that carries a frame, with its own session, frame and conf together.
+Storm Scarab now files to MAGIC & RARE.
+GUARD: tv/test_a_receipt_look_is_one_real_look.py, 3 cases on a fixture of that shape. 1 red-proof, RED.
+
+### REG-3089 - A RARE'S NAME FOLLOWED BY ITS BASE HAD NO HOME: "CHAOS WHORL RING", "RAVEN CASQUE CIRCLET" (#158)
+Same measurement as REG-3087: every name of his last sweep was routed through the page's router in node on claude/int.
+A ground label is two lines, the rare's name over its base, and the reader handed some over as one: "Chaos Whorl Ring",
+"Dread Grip Demonhide Gloves" and "Raven Casque Circlet". The grammar read only the two-word shape, so these were "nothing
+on the board recognises this name".
+FIX: _rolledQuality reads the first two words as the rare. It keeps the rest as the rare's base (rq.base) when two things
+hold:
+- the builder's base table names it;
+- its type is a slot the suffix can name (_rolledBaseFits, by the game's itypes: a Circlet is a helm, Demonhide Gloves are
+  gloves).
+The router then files it as a rare in MAGIC & RARE, and its picture is its stated base (_artRolledBase). A base the suffix
+cannot wear (Raven Whorl Gloves), or a word that is no base, settles nothing and claims nothing. A two-word rare is
+unchanged.
+GUARD: tv/test_a_rare_name_keeps_the_base_its_label_states.py, 3 cases. 3 red-proofs, RED.
+
+### REG-3088 - THE RARE GRAMMAR KNEW FOUR SLOTS OF THE GAME'S TEN: GRIM HOOD, RAVEN GREAVES AND CRUEL NEEDLE SAT IN UNSORTED (#158)
+Same measurement as REG-3087. 13 more un-homed names were rares whose suffix names a slot RARE_NAME_POOLS never carried:
+- helms: Grim Hood, Raven Casque, Bone Visor, Pain Visor, Plague Horn;
+- boots: Raven Greaves;
+- shields: Glyph Badge;
+- weapons: Cruel Needle, Shadow Scalpel, Soul Bite, Storm Bar.
+The pools held amulet, ring, jewel and gloves only. The game's RareSuffix table, which the builder's CB_DB carries with
+each word's itypes, names helm, boots, belt, armour, shield and weapon too. Its RarePrefix table has Armageddon and
+Empyrian, which the page's list lacked.
+Two more gaps:
+- The magic grammar refused any "of the X" suffix (Shadow Amulet of the Whale).
+- Nothing kept a BASE out: Bone Shield, Grim Wand, Death Mask and Spirit Mask wear a rare's two words, and Demon Heart was
+  already read as a rare amulet.
+FIX:
+- RARE_NAME_POOLS gains the Helm, Boots, Belt, Armor, Shield and Weapon rows from the game's table. Every word is included
+  except the ones the four rows already answer: Clasp, Wing, Mark, Emblem, Fist, Claw, Gyre, Whorl and Heart keep
+  REG-2402 / #269's answer. The console's rare-combo harvest reads the same literal.
+- The prefixes gain Armageddon and Empyrian.
+- The magic grammar reads "of the X".
+- _rolledQuality refuses a name the base table knows.
+- A one-slot class (Armor, Shield, Weapon) asks "which armor?" and never names a base.
+After: 35 of the 51 found their home (with REG-3087), and no name moved from one home to another. Bone Visor, called a
+misread in REG-2080, is a game rare (Bone + Visor, a helm suffix).
+WHY A LITERAL, NOT A RUNTIME READ OF THE TABLE:
+- The console's rare-combo harvest (control_app, v943.1) reads this literal out of the page source, so a runtime-only read
+  would split the page from the console.
+- The rows are generated from CB_DB, and the law fails the moment a game RareSuffix or RarePrefix word is missing from them.
+GUARD:
+- tv/test_a_rolled_name_is_read_in_every_slot_and_any_casing.py: 5 cases, including every game RareSuffix and RarePrefix
+  word being in the pools. 5 red-proofs, RED.
+- Re-aimed tests/v332_rare_name_pools.spec.ts (browser, CI), whose slot list is now the ten rows.
+- Re-aimed test_a_rune_or_a_gem_is_named_never_unrecognised: its "name nothing knows" was Bone Visor, which is a game rare;
+  it is now a made-up name.
+
+### REG-3087 - A ROLLED NAME READ IN CAPITALS HAD NO HOME: 25 OF THE 51 UN-HOMED NAMES ON HIS SWEEP (#158)
+Every one of the 307 names on his last vault sweep was routed through the page's own suggestMule, in node on claude/int.
+51 had no home ("nothing on the board recognises this name ... it stays in Unsorted"). 25 of those were reads in
+capitals:
+- FINE SMALL CHARM OF VITA, SHIMMERING SMALL CHARM OF FLAME, SMALL CHARM OF BALANCE;
+- WRAITH GRASP, GHOUL GRASP, DREAD GYRE, AMULET OF WEALTH, RUBY JEWEL OF FERVOR.
+The rare and charm grammar (_rolledQuality, _charmKind) matched title case only, while every catalogue folds case:
+"CHAINS OF HONOR" routes.
+FIX: the grammar folds case where the catalogues fold it. One rule, _rolledSpelling, puts any casing into the game's own
+before the grammar's matching: each word capitalised, and "of" and "the" after the first word in lower case. Both grammars
+ask it, and it only matches: the name he owns is never rewritten. A real unique in any casing (RAVEN CLAW) is still a
+unique, never a rare.
+GUARD: tv/test_a_rolled_name_is_read_in_every_slot_and_any_casing.py (shared with REG-3088). Red-proof RED.
+
+### REG-3086 - A SWEEP APPLY OWNED WHAT THE VAULT DOOR REFUSED: 67 OF 92 READS OWNED, UNFILED, WITH AUTO INTAKE OFF (#158, GrokBot "0 of 39 auto-muled")
+Measured read-only on claude/int (836921abc) with his own last sweep:
+- The data is vault_last_result.json, v3834, with 92 grounded rows. It was copied to scratch, and nothing was written back.
+- The payload was built exactly as control_app.vault_apply builds it: vault_retro.gate re-gate (0 dropped), then
+  apply_payload, then owned/unsure/throwOut.
+- It ran through the page's window.vaultAccumApply in node, on a fresh store, with every tvVaultRegister call logged.
+
+What it found:
+- AUTO INTAKE off (the default): the register refused all 89 reads 'auto-intake-off', and 67 names were owned anyway,
+  none of them filed. That is GrokBot's Unsorted pile and his "0 auto-muled".
+- AUTO INTAKE on: 72 of 92 were filed. But a Full Rejuvenation Potion and two materials that the door refused
+  'not-an-item' were owned all the same, and every first register answered 'already'.
+
+The second writer: vaultAccumApply -> chronicleApply called toggleOwned(n) for every row, before the vault door was asked.
+For a name the grail does not hold, toggleOwned's physical arm writes d2r_owned. That arm has no AUTO INTAKE check, no
+two-session rule, no not-an-item refusal and no container check. v2388 already says a chronicle sighting is not a
+possession claim.
+FIX:
+- A READ's row in chronicleApply asks toggleOwned for the grail tick only (prov.grailOnly).
+- toggleOwned's physical arm refuses that caller. This follows its own v1782 rule: a caller is filtered where it knows what
+  it is holding.
+- tvVaultRegister alone owns or refuses a read.
+- chronicleApply's "make it a known name" stub (_tvExtraRemember) runs only for a name the vault now holds.
+HIS HAND IS NEVER STOPPED BY THIS:
+- His item-card tick (toggleOwned, no grailOnly) owns the same name the apply was refused.
+- A row that is his hand (source 'hand') keeps toggleOwned's whole answer through chronicleApply.
+- Grail ticks are unchanged.
+After, on his sweep: AUTO INTAKE off gives 0 owned (the reader stopped, never him). On, it gives 75 of 90 filed (with
+REG-3087, 3088, 3089 and 3098). The rejuv and the two materials the door refuses (REG-2899) are no longer owned.
+GUARD: tv/test_a_sweep_apply_claims_possession_only_through_the_vault_door.py, 5 cases on a payload of the console's own
+shape (fixture names), his hand's two doors included. 3 red-proofs, RED. Re-aimed test_a_tv_stub_never_outranks_what_the_name_is:
+its chronicle rows carried no look and were owned by toggleOwned's ungated arm; they now carry two sessions' looks.
+### REG-3082 - A BLESS LEFT ONLY A MERGED FLOOR, AND A REFUSED ONE LEFT NOTHING (#2)
+`render_check.py --bless` writes tv/render_coverage.json, a merge in which a held count (lower than its floor), a raised
+one and a new width look alike afterwards. A refused bless wrote nothing, and its one line said "this run did not report
+every target" even when every target reported and one was red. On the machine that ran it the scrollback covers that. For
+a bless made on another venue (CI's render-bless job, REG-3081) it would leave a floor and no measurement under it, or a
+red job and no reason.
+The bless now writes .render_bless.json beside the floor (so a law's temporary floor keeps its record with it):
+- every count it measured;
+- what it raised, held and added;
+- or, refused, why: "it asked for N of M targets", "it stopped early at X", "N target(s) did not render cleanly (names)",
+  "N target(s) were UNKNOWN". main() hands that reason in, and the refusal prints it.
+The floor rules are untouched: it only rises, and a run that is not full and clean writes no floor. The record is
+gitignored, a local fact like .render_verdict.json. test_render_coverage's one case that blesses the real floor file now
+restores the record too, so its fixture bless never stands as the real one.
+Law test_a_bless_records_what_it_measured (the real _coverage_bless and main(), the browser and the renders stubbed,
+the floor in a temp file), 3 cases, 4 red-proofs RED, baseline green. Coverage neighbours green: test_render_coverage
+(re-proved, bad 0 of 5), test_the_ratchet_is_not_skipped_by_a_subset, test_a_coverage_drop_can_be_named.
 
 ### REG-3042 - A SET PIECE OR A RUNEWORD IN THE MAGIC & RARE REGISTER WAS HOMED ON MAGIC & RARE (#163, GrokBot on Dean's shadow)
 Dean's saved records filed Aldur's Rhythm (a set piece) and Enigma (a runeword) on MAGIC & RARE. The file door has refused to treat

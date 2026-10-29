@@ -295,6 +295,8 @@ tv/.heart2_v2/
 # there would read state OK from a run that never happened on it. render_coverage.json
 # stays TRACKED on purpose — a FLOOR is a shared contract; a verdict is a local fact.
 tv/.render_verdict.json
+# REG-3082 - what the last --bless measured: a local fact like the verdict (CI uploads its own as an artifact)
+tv/.render_bless.json
 tv/.heart2_proposals.md
 
 # v2228 — faults the console reports about ITSELF. Runtime, per-machine, never committed.

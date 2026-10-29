@@ -300,6 +300,9 @@ class TheFloorMayOnlyRISE(unittest.TestCase):
         import render_check as RC
         said, real_floor, real_of = [], RC._coverage_floor, RC._coverage_of
         bak = io.open(RC.COVERAGE, encoding="utf-8").read()
+        # REG-3082 - a bless now also writes its record beside the floor: this fixture's must not stand as the real one
+        rec_path = RC._bless_record_path()
+        rec_bak = io.open(rec_path, encoding="utf-8").read() if os.path.exists(rec_path) else None
         try:
             RC._coverage_floor = lambda: old
             RC._coverage_of = lambda results: now
@@ -308,6 +311,11 @@ class TheFloorMayOnlyRISE(unittest.TestCase):
         finally:
             RC._coverage_floor, RC._coverage_of = real_floor, real_of
             io.open(RC.COVERAGE, "w", encoding="utf-8").write(bak)
+            if rec_bak is None:
+                if os.path.exists(rec_path):
+                    os.remove(rec_path)
+            else:
+                io.open(rec_path, "w", encoding="utf-8").write(rec_bak)
         return written, said
 
     def test_a_LOWER_measurement_does_not_lower_the_floor(self):
