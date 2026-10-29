@@ -2241,21 +2241,85 @@ own "best for" - all gated. Law tv/test_a_recommendation_names_this_pcs_characte
 guest, another ledger with a saved Paladin; plus nothing painted at boot names him elsewhere), 20 red-proofs, all RED.
 ### REG-2955 - A TERROR-ZONE COLUMN USES ITS DIFFICULTY'S /PLAYERS FACTOR, MEASURED UP TO 2.2% OFF (OPEN, named in REG-2953)
 playerMult keys a factor by difficulty only, so normTz, nmTz and hellTz take the non-TZ factor. Measured on Hell
+### REG-3003 - /PLAYERS IS ONE JOINED MODEL: NO SITE SCALES ODDS BY PLAYER COUNT OUTSIDE playerMult (#190 Q7, his ruling 2026-10-29)
+His ruling: he cannot measure /p5 against /p6 in game, so silospen and its logic are the truth. The June "/p5 == /p6"
+claim (0e22e7d2) and anything built on it go, and /players is one model everywhere the board computes or prints
+player-count odds.
+SWEPT 2026-10-29: bible.html, tv/control_ui.html, tv/*.py, every tracked .html / .js / .ts / .md.
+- Every site that computes /players odds already asks playerMult: effChance, _adjC (the MF-blind path), the
+  boss-nav and boss-card tier multipliers, and the hero P#-PROOF tag.
+- The console computes none of its own; it reads the page's adjusted d2r_grailFarm.
+- The keys' and essences' /players bands are silospen's printed figures, not a formula.
+- Stale claims removed:
+  - the slider-fanout comment's "never Countess/Duriel/Pindleskin" (now: never Pindleskin);
+  - the ACT BOSSES tagline's "guaranteed full drops on every kill" (now: more players means more drops from both).
+- The June claim survives only as history: 0e22e7d2's message, and the REG-2953 notes that name it as refuted.
+- Not touched: bible_routes.html, an undeployed old page that still says keys need /p3 and a "/p5 mule trick"
+  (deploy.sh ships bible.html only).
+GUARD: test_players_moves_odds_by_silospens_own_factor.test_one_function_scales_odds_by_players.
+- The factor table is read only inside playerMult.
+- effChance and _adjC call it.
+- PLAYER_Q and the retired floor/ceil/pow shapes are gone from the code.
+- Red-proofs: _adjC with its own formula, a tier multiplier reading the table itself. Both RED.
+
+### REG-2955 - A TERROR-ZONE COLUMN USED ITS DIFFICULTY'S /PLAYERS FACTOR, UP TO 2.2% OFF (CLOSED 2026-10-29, #190)
+playerMult keyed a factor by difficulty only, so normTz, nmTz and hellTz took the non-TZ factor. Measured on Hell
 (desecrated, level 99, /players 7 against 1, every unique):
 - Cows x2.2849-2.2860 against x2.2861
 - Mephisto x1.2199-1.2206 against x1.2239
-- Andariel x1.7509-1.7534 against x1.7917, so 2.2% too generous on the TZ column
-Pulling every farm's TZ factor at the levels the stored TZ columns were read at (11 farms x 3 difficulties x 4
-/players steps, the d-suffixed boss ids) would close it.
+- Andariel x1.7509-1.7534 against x1.7917, so the TZ column was 2.2% too generous
+FIX: a second read-only pull, under the same rules as REG-2953 (one request at a time, 1.6 s apart, cached, no
+refusals). It covered the 11 farms, desecrated, at the levels the stored TZ columns were read at (50 / 76 / 99).
+Every farm's stored TZ /players 1 figure matched it, except the Pit (REG-2954). There were 468 queries: /players 1-8
+for uniques, 1/3/5/7 for sets.
+- PLAYER_F now holds all six columns. playerMult reads the terror-zone twin when the column is one.
+- The data carries steps the plain columns do not:
+  - Andariel's Nightmare and Hell zones gain 0.8% at /p2.
+  - Hell Duriel's zone has no /p2 step; his plain column does.
+  - Andariel's Hell zone moves x1.753 at /p8.
+- Over plain + TZ (138,276 item x /players cells), the page prints silospen's 1:N within one count, or 0.0152% of N
+  plus what silospen's own 11-decimal rounding can move it. A 1:150,000,000 item carries 3 significant digits there.
+- The P# explainer names terror zones and the two TZ exceptions.
+GUARD: tv/test_players_moves_odds_by_silospens_own_factor.py reads all six columns from
+tv/data/silospen_players_rotw30.json. Red-proofs:
+- Andariel's Hell zone takes its difficulty's factor again
+- playerMult ignores the terror-zone twin
 
-### REG-2954 - THE PIT'S STORED 1:N IS NOT SILOSPEN'S PIT LEVEL 1 FIGURE (OPEN, found in the REG-2953 pull)
-GAME_RULES.md says the Pit's odds are per kill of a Pit Level 1 dweller (cr_archer3, the Dark Archer). In the REG-2953
-pull (D2R_ROW_3_0, party 1, MF 300, /players 1, area Pit Level 1), the page's stored Pit figure is silospen's x 13/16
-on most rows: the median ratio is 1.23 on every difficulty. Some rows are far off (Pluckeye, Hell: stored 1:4,671,949,
-silospen 1:410,425). Of 735 Pit cells compared, 55 match. All other ten farms match the pull. This is a question
-about the base, not about /players: the REG-2953 law checks the Pit's factor against its own stored base and declares
-the Pit in BASE_NOT_THIS_PULL, which refuses the declaration once the bases agree. Not fixed: which monster and area
-the Pit's odds should be is a data ruling.
+### REG-2954 - THE PIT'S STORED 1:N WAS ONE MONSTER WRITTEN DOWN AS ANOTHER, AND ITS NIGHTMARE COLUMN WAS PIT LEVEL 2 (CLOSED 2026-10-29, #190, his ruling: the Pit is Pit Level 1)
+Found in the REG-2953 pull. GAME_RULES.md and the Pit card both said the Pit's odds are per kill of a Pit Level 1
+Dark Archer (cr_archer3), "every Pit regular the same area-TC ladder". Against that monster the stored figures were
+13/16 on most rows (55 of 735 cells matched), with bows far off.
+WHAT IT IS, cross-referenced:
+- The game's tables (@blizzhackers/d2data 3.1.91636, the D2R CASC tables published 2026-02-12, the day after RotW
+  launched):
+  - levels.json: Pit Level 1 (Act 1 - Cave 5) has area level 7 / 39 / 85 and four monster types: skeleton3 (Bone
+    Warrior), fallen3 (Devilkin), corruptrogue3 (Dark Stalker), cr_archer3 (Dark Archer). Three spawn per game.
+  - monstats.json: the archer alone rolls the Miss table. The other three roll H2H.
+  - treasureclassex.json: at every difficulty H2H is gld 21 / Equip 16 / Junk 21 / Good 2 with NoDrop 100, and Miss is
+    gld 18 / Equip 13 / Junk 18 / Good 2 / Bow 6 / Ammo 3 with NoDrop 100. Equip 13 against 16 is the 13/16 exactly;
+    the archer's own Bow table is why bows were off.
+  - So "one dweller is exactly representative" was false: the archer is the odd one out.
+- silospen (D2R_ROW_3_0, MF 300, /players 1, area Pit Level 1):
+  - the Devilkin matches the stored Normal, Hell and all three TZ columns, every cell but one (below);
+  - the Bone Warrior is identical to the Devilkin;
+  - the Dark Stalker is identical except on Normal, where its base table is H2H C.
+  So the stored odds were a melee dweller's all along.
+- Two columns were not Pit Level 1:
+  - Nightmare had been pulled from Pit Level 2: 218 of 218 cells match Pit Level 2's Devilkin, 56 match Pit Level 1's.
+    Area level 40 against 39 moves 162 rows, and four items (Waterwalk, Langer Briser, Spineripper, Horazon's Hold) do
+    not drop from Pit Level 1 on Nightmare at all.
+  - The Hell TZ Tyrael's Might row was the archer's (1:24,402,796 = 16/13 of the Devilkin's 1:19,825,535).
+FIX:
+- The Nightmare column is Pit Level 1's Devilkin: 162 rewritten, 4 now empty (no Pit Level 1 source on Nightmare).
+  Hell TZ Tyrael's Might is 1:19,825,535.
+- The Pit card's odds note now says a melee dweller, and says what an archer kill rolls instead. GAME_RULES.md says
+  the same, with these sources.
+- The /players factors are pulled for the Devilkin (all six columns). The law's BASE_NOT_THIS_PULL is empty, and it
+  refuses any farm whose stored /players 1 figure drifts from the pull.
+SOURCES:
+- https://dropcalc.silospen.com (monsterProbabilities, fallen3 / skeleton3 / corruptrogue3 / cr_archer3, area Pit Level 1)
+- https://cdn.jsdelivr.net/npm/@blizzhackers/d2data@3.1.91636/json/levels.json, monstats.json and treasureclassex.json
+- https://diablo2.diablowiki.net/The_Pit (area levels 7 / 39 / 85; the same four monster types)
 
 ### REG-2953 - /PLAYERS NOW USES SILOSPEN'S OWN FACTOR: IT STEPS AT /P3, /P5, /P7 AND MOVES COUNTESS AND DURIEL (#190, closes REG-2509)
 REG-2509 was open since v3791. effChance divided every 1:N by a model with one NoDrop q per boss:
@@ -2306,7 +2370,7 @@ recomputes every expectation from the vendored raw probabilities. It checks:
 - every vendored item prints silospen's odds within the measured reach;
 - only an unmoved farm is called P#-proof;
 - the explainer states the pairing;
-- the stored /players 1 figures are this pull's, with the Pit declared as REG-2954.
+- the stored /players 1 figures are this pull's (the Pit was declared as REG-2954 until REG-2954 closed it).
 It has 6 red-proofs (the retired pairing, Countess at x1.00, Andariel at the model's size, Hell Duriel's /p2,
 Countess and Duriel tagged P#-PROOF, the explainer's old pairing), all RED.
 

@@ -141,8 +141,15 @@ Western=Act1 zones, Eastern=Act2, Southern=Act3, Deep=Act4, Northern=Act5.
   dweller map in commit 7768873); the hunt grids route to them. **Odds-honesty state: COMPLETE** —
   every boss/SU/zone/area = RoW truth or an explicit label (Colossal/materials/Heralds stay
   community-estimate labeled until primary sources exist).
-- **v699 additions:** Pit = per-kill of a Pit L1 dweller (cr_archer3, area-TC-representative
-  by post-1.13 rules; 1,033 cells) · council rune grid EXACT (Zod is TZ-ONLY: 1:97,811) ·
+- **v699 additions:** Pit = per-kill of a Pit Level 1 dweller (1,033 cells) · council rune grid EXACT (Zod is TZ-ONLY: 1:97,811) ·
+  ⚠ **REG-2954 (2026-10-29):** the dweller is a MELEE one — `fallen3` (Devilkin); `skeleton3` (Bone Warrior) is
+  identical and `corruptrogue3` (Dark Stalker) too except on Normal. It was written down as `cr_archer3` (Dark Archer),
+  which is the odd one out: levels.txt gives Pit Level 1 four monster types (skeleton3, fallen3, corruptrogue3,
+  cr_archer3), and monstats/TreasureClassEx put the archer on the `Miss` table (Equip 13 of 160) where the other three
+  roll `H2H` (Equip 16 of 160) - so an archer kill is 13/16 of the stored odds on non-bow items. The stored Nightmare
+  column had been pulled from Pit Level 2 (area level 40 vs 39); it is Pit Level 1 now. Sources: silospen
+  D2R_ROW_3_0 monsterProbabilities (fallen3, area Pit Level 1); @blizzhackers/d2data 3.1.91636 (D2R CASC tables,
+  2026-02-12) levels.json / monstats.json / treasureclassex.json ·
   14 super-uniques carry per-kill odds (su-odds-data).
 - **Fixed-rate mechanics (not silospen-modelable, community-verified):** Key of Hate 36%
   per Summoner kill · Annihilus per-DClone. Countess rune odds separately calibrated (1:850 Ist).
