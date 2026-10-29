@@ -295,6 +295,17 @@ def _file_rows(p, root):
     hit = _FILE_ROWS.get((p, root))
     if hit is not None and hit[0] == key:
         return hit[1], None
+    # #172 phase C - a console reads the rows a short-lived child derived for this file at this stamp (audit_child); a law,
+    # the gate, CI, a CLI and the child itself parse here as before
+    try:
+        import audit_child as _ac
+        got = _ac.swallow_rows_for(p, root, key)
+    except Exception:
+        got = None
+    if got is not None:
+        rows = tuple(dict(r) for r in got)
+        _FILE_ROWS[(p, root)] = (key, rows)
+        return rows, None
     try:
         src = io.open(p, encoding="utf-8").read()
         tree = ast.parse(src)

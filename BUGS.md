@@ -1783,6 +1783,34 @@ HTTP 503"), and the gems, runes and materials reports print the same cause (_img
 cause reads as before. Not swept, named: the set-piece, crafted-item and grail readers count image errors that never had a
 cause (they do not read through _tallyRead). Law: test_an_image_error_reaches_its_receipt_with_its_cause (7 cases: the
 agent's builder, its row through the real receipt stream, _imgErrSay in node; 6 red-proofs, each RED).
+### REG-2985 - THE CONSOLE STILL PARSED 118 MB OF ITS OWN SOURCE IN ITS OWN HEAP: THE GATE FILES TWICE AND THE CENSUS ONCE (#172 phase C)
+Measured 2026-10-29 on a scratch console of his Mac: his data, no .git, Python 3.9, 300 s, every ast.parse counted by
+caller. After phase B the console still called ast.parse 4,508 times over 118 MB of source in its own process:
+- swallow_census._file_rows: 1,488 files (the doctor's swallowed-reads row);
+- heart2.red_proofs_in: 2,473 parses of 1,237 gate files, read once by slice_owed (the self-arming owed list, no memo)
+  and again by health_engine's attack tally (its own memo);
+- lane_liveness.stamping_functions: the whole 50k-line control_app.py on every health pass.
+RSS rose in spikes to 550-1,028 MB, which macOS hands back within seconds. The ALT's console (Python 3.12, 7.9 GB, read
+over SSH with Get-Process) held 1,118 MB working set and 1,565 MB private, with 114 modules loaded, .NET/WinForms among
+them. Now:
+- audit_child derives every gate file's RED_PROOF list ("red_proofs") and every file's census rows under a root
+  ("swallow") in a short-lived child. It keeps each per file on that file's stamp (mtime_ns, size), beside the route
+  census's own cache. A console reads them through audit_child.red_proofs_for / swallow_rows_for, asks the child at
+  most once per 10 minutes on a miss, and derives itself only what is still missing. A stale entry is never served.
+- heart2.red_proofs_in keeps one memo per file stamp for every caller in a process.
+- lane_liveness parses control_app.py once per stamp.
+- A law, the gate, CI and a CLI spawn nothing and parse as before.
+After, same console, same data: 653 parses (37.6 MB). The rest is the worker-deadline doctor row (267 files),
+lane_census (267 files), code_identity (5), and 54 gate files whose RED_PROOF binding does not read (they are re-asked by
+rule). Peak RSS did NOT move with it: 1,091 MB in one run and 584 MB in another, against 550-1,028 MB before. A
+spike-stack profile names the eagle's in-process doctor run (corroborate, ask-an-eye, what-runs-without-him) at every
+spike over 450 MB. That is the next lever, and it is not this fix. Law:
+tv/test_a_console_reads_gate_proofs_and_census_rows_from_a_child.py, 5 red-proofs. It records before and after in the
+asking process (3 to 0 for the gate files, 3 to 0 for the census), checks that an edited file is never answered from
+the old parse, that a law spawns nothing, that a failed child fails open, and that the lane stamps parse once per stamp.
+LEFT: the ALT itself. alt_job.sh refused ("he is playing (Boosteroid)") and the ALT had 391 MB free, so this is
+measured on his Mac's console, not on the PC that holds the memory.
+
 ### REG-2886 - THE VAULT'S POPULATION LINE COUNTED NAMES, SO THREE STORMSHIELDS READ "1 OWNED" (#137, his ruling 2026-10-28: "3 copies if it was witnessed in other areas and coordinates.. its logical yea i do have three im pretty sure")
 Measured on the whole page in node: the line under the vault toolbar counted names only. Three Stormshields read "1 owned ·
 1 filed to mules", and a copy he added moved no number (GrokBot v3740: "the 6 copy-N adds did not count"). It now reads

@@ -780,21 +780,49 @@ def gate_files(say=print):
     return out
 
 
+#: #172 phase C - ONE PARSE PER GATE FILE PER STAMP, for every caller in a process. The console asked this for all 1,237
+#: gate files twice (slice_owed for the self-arming owed list, health_engine for the attack tally, each with its own memo or
+#: none) - 2,473 parses in its own heap. Kept per path on (mtime_ns, size); an unreadable file (None) is not kept.
+_RP_MEMO = {}
+
+
 def red_proofs_in(filename):
     """The RED_PROOF list a gate file declares, read WITHOUT importing it.
 
     Parsed rather than imported: importing 247 test modules to ask a question about their source
     would execute 247 modules' import-time side effects, and several of them read his live console.
     [[source-reading-guard]]
+    #172 phase C - kept per file stamp, and on a console answered from the list a short-lived child derived
+    (audit_child.red_proofs_for), so the console's own heap parses none of them; anything else parses here as before.
     """
-    import ast
     p = os.path.join(HERE, filename)
+    try:
+        st = os.stat(p)
+        key = (st.st_mtime_ns, int(st.st_size))
+    except OSError:
+        key = None
+    if key is not None:
+        hit = _RP_MEMO.get(p)
+        if hit is not None and hit[0] == key:
+            return hit[1]
+        try:
+            import audit_child as _ac
+            got = _ac.red_proofs_for(filename, key)
+        except Exception:
+            got = None
+        if got is not None:
+            _RP_MEMO[p] = (key, got)
+            return got
+    import ast
     try:
         with io.open(p, encoding="utf-8") as fh:
             tree = ast.parse(fh.read())
     except Exception:
         return None
-    return _red_proofs_of_tree(tree)
+    out = _red_proofs_of_tree(tree)
+    if key is not None and out is not None:
+        _RP_MEMO[p] = (key, out)
+    return out
 
 
 def _red_proofs_of_tree(tree):

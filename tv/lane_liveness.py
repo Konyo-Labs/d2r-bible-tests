@@ -268,6 +268,17 @@ def stamping_functions(src_path=None):
     import os as _os
     path = src_path or _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
                                      "control_app.py")
+    # #172 phase C - ONE PARSE PER STAMP. The health report asks this on every pass and parsed the whole of control_app.py
+    # (2.8 MB, ~930k ast objects) each time, in the console's own heap - 3 times in 300 s of a scratch console. Kept on the
+    # file's (mtime_ns, size); a failure is never kept, so it is asked again.
+    try:
+        _st = _os.stat(path)
+        _key = (path, _st.st_mtime_ns, int(_st.st_size))
+    except OSError:
+        _key = None
+    _hit = _STAMP_MEMO.get("v")
+    if _key is not None and _hit is not None and _hit[0] == _key:
+        return dict(_hit[1])
     try:
         tree = _ast.parse(_io.open(path, encoding="utf-8").read())
     except Exception as e:
@@ -290,7 +301,13 @@ def stamping_functions(src_path=None):
                 lanes.append(a0.value)
         if lanes:
             out[node.name] = lanes
+    if _key is not None:
+        _STAMP_MEMO["v"] = (_key, dict(out))
     return out
+
+
+#: stamping_functions()'s one answer per stamp of the file it parsed: {"v": ((path, mtime_ns, size), {fn: [lanes]})}
+_STAMP_MEMO = {}
 
 
 def rows(now=None):

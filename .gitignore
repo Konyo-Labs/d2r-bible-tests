@@ -373,6 +373,8 @@ tv/.fixture_reels_cache.json
 tv/.chronicle_routes_cache.json
 # #172 phase B - the lane spans a short-lived child derived from control_app.py, keyed on its stat. Runtime artifact.
 tv/.lane_spans_cache.json
+tv/.red_proofs_cache.json
+tv/.swallow_rows_cache.json
 
 # v2875 — the driver's own heartbeat: a runtime RECORD, like .heart2.json and reel_tombstones.
 tv/.shelf_driver.json
