@@ -719,6 +719,38 @@ both are exactly as before. The new guard is the board's fourth tvd-shadow check
 guard by its own line (REG-3049's form on the ship line) instead of a total of 3. Law:
 test_the_d2jsp_desk_is_read_only_in_a_shadow (the pane's own script in node: own, snapshot shadow, class-only shadow; 4
 red-proofs, each RED). NEEDS LIVE: GrokBot types into the fg box in a shadow and sees it refuse.
+### REG-3086 - A SWEEP APPLY OWNED WHAT THE VAULT DOOR REFUSED: 67 OF 92 READS OWNED, UNFILED, WITH AUTO INTAKE OFF (#158, GrokBot "0 of 39 auto-muled")
+Measured read-only on claude/int (836921abc) with his own last sweep:
+- The data is vault_last_result.json, v3834, with 92 grounded rows. It was copied to scratch, and nothing was written back.
+- The payload was built exactly as control_app.vault_apply builds it: vault_retro.gate re-gate (0 dropped), then
+  apply_payload, then owned/unsure/throwOut.
+- It ran through the page's window.vaultAccumApply in node, on a fresh store, with every tvVaultRegister call logged.
+
+What it found:
+- AUTO INTAKE off (the default): the register refused all 89 reads 'auto-intake-off', and 67 names were owned anyway,
+  none of them filed. That is GrokBot's Unsorted pile and his "0 auto-muled".
+- AUTO INTAKE on: 72 of 92 were filed. But a Full Rejuvenation Potion and two materials that the door refused
+  'not-an-item' were owned all the same, and every first register answered 'already'.
+
+The second writer: vaultAccumApply -> chronicleApply called toggleOwned(n) for every row, before the vault door was asked.
+For a name the grail does not hold, toggleOwned's physical arm writes d2r_owned. That arm has no AUTO INTAKE check, no
+two-session rule, no not-an-item refusal and no container check. v2388 already says a chronicle sighting is not a
+possession claim.
+FIX:
+- A READ's row in chronicleApply asks toggleOwned for the grail tick only (prov.grailOnly).
+- toggleOwned's physical arm refuses that caller. This follows its own v1782 rule: a caller is filtered where it knows what
+  it is holding.
+- tvVaultRegister alone owns or refuses a read.
+- chronicleApply's "make it a known name" stub (_tvExtraRemember) runs only for a name the vault now holds.
+HIS HAND IS NEVER STOPPED BY THIS:
+- His item-card tick (toggleOwned, no grailOnly) owns the same name the apply was refused.
+- A row that is his hand (source 'hand') keeps toggleOwned's whole answer through chronicleApply.
+- Grail ticks are unchanged.
+After, on his sweep: AUTO INTAKE off gives 0 owned (the reader stopped, never him). On, it gives 75 of 90 filed (with
+REG-3087, 3088, 3089 and 3098). The rejuv and the two materials the door refuses (REG-2899) are no longer owned.
+GUARD: tv/test_a_sweep_apply_claims_possession_only_through_the_vault_door.py, 5 cases on a payload of the console's own
+shape (fixture names), his hand's two doors included. 3 red-proofs, RED. Re-aimed test_a_tv_stub_never_outranks_what_the_name_is:
+its chronicle rows carried no look and were owned by toggleOwned's ungated arm; they now carry two sessions' looks.
 
 ### REG-3042 - A SET PIECE OR A RUNEWORD IN THE MAGIC & RARE REGISTER WAS HOMED ON MAGIC & RARE (#163, GrokBot on Dean's shadow)
 Dean's saved records filed Aldur's Rhythm (a set piece) and Enigma (a runeword) on MAGIC & RARE. The file door has refused to treat

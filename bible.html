@@ -31810,6 +31810,12 @@ function toggleOwned(name, prov) {
        ITEMS, EXTRA_ITEMS, runewords and set pieces, so a genuinely unknown name never renders in
        a locker. It sits in d2r_owned and does nothing. A caller that can produce junk should be
        filtered where it knows what it is holding, which is what v1782 did. */
+    /* REG-3086 (#158, measured on his own sweep) - A CALLER THAT TICKS THE GRAIL NEVER CLAIMS POSSESSION HERE. chronicleApply
+       called this for every row of a vault sweep, so a name the grail does not hold (a magic, rare or set-less read, a base,
+       a potion, a material) was written into owned before the vault's one door was asked: with AUTO INTAKE off his register
+       refused all 89 reads and 67 became owned anyway, unfiled. That caller passes grailOnly and is filtered here, where it
+       says what it is holding (the v1782 rule above); possession is tvVaultRegister's, which it asks next. */
+    if (prov && prov.grailOnly) return false;
     wasOwned = owned.has(name);
     /* 2026-09-28 — THE ADD SAYS WHO FILED IT. One argument = his click on a card (every onclick passes
        one); a programmatic caller names itself in `prov`. An un-tick takes the receipt with it. */
@@ -72053,7 +72059,9 @@ function renderJournal(){
              by: String(row.source || 'chronicle-apply') };
   };
   var _vaultReport = function(vr, nm){
-    /* ⚠ `mode === 'new'` IS UNOBSERVABLE HERE, AND THAT IS NOT A tvVaultRegister BUG. This apply
+    /* REG-3086 - no longer true for a name the grail does not hold: toggleOwned is asked for the grail tick only (grailOnly),
+       so that name's first register is 'new'. A grail name the vault holds is still 'already'.
+       ⚠ `mode === 'new'` IS UNOBSERVABLE HERE, AND THAT IS NOT A tvVaultRegister BUG. This apply
        calls toggleOwned(n) BEFORE it reaches either vault door, so by the time the door registers
        the name the vault already holds it and the honest answer is 'already'. Traced inside one
        real apply: two names, two register calls, both ok, both 'already' — and a FIRST-EVER call
@@ -72265,9 +72273,12 @@ function renderJournal(){
         if (typeof window.toggleOwned === 'function'){
           var _s0 = (row && typeof row === 'object' && ((row.seen && row.seen[0]) || (row.sightings && row.sightings[0])
                      || (row.witnesses && row.witnesses[0]))) || {};
+          /* REG-3086 - a READ's row ticks the grail only: a name the grail does not hold is the vault's, and the vault door below
+             decides. A row that is HIS hand keeps toggleOwned's whole answer - his hand always wins. */
+          var _byHand = !!(row && typeof row === 'object' && (row.source === 'hand' || row.by === 'hand'));
           window.toggleOwned(n, { source: String((row && row.source) || 'chronicle-apply'), by: 'chronicleApply',
                                   sessionId: _s0.reel || _s0.session || null, frameId: _s0.frame || null,
-                                  loc: (row && row.loc) || null, conf: _s0.conf });
+                                  loc: (row && row.loc) || null, conf: _s0.conf, grailOnly: !_byHand });
         }
         /* v1889 — REPORT WHERE IT ACTUALLY WENT, not where it was sent.
            toggleOwned routes by what the board KNOWS: a grail unique lands in the found ledger
@@ -72368,7 +72379,8 @@ function renderJournal(){
             /* REG-3054 - a catalogue runeword or sunder charm is never stubbed: the prune keeps it by the catalogue
                (d2rCatalogueKnows, v2208 - the rule the v739 register writer already follows), and a {rarity: 'basic'} stub
                over its own name is what drew Heart of the Oak and Call to Arms white on his boards */
-            if (typeof window._tvExtraRemember === 'function' && !(typeof window.d2rCatalogueKnows === 'function' && window.d2rCatalogueKnows(n))) {
+            /* REG-3086 - only a name the vault now holds (its door took it) is made a known name; a read it held or refused is not */
+            if (typeof window._tvExtraRemember === 'function' && _chronAlreadyUni(n) && !(typeof window.d2rCatalogueKnows === 'function' && window.d2rCatalogueKnows(n))) {
               var _rq2 = (typeof _rolledQuality === 'function') ? _rolledQuality(n) : null;   /* #269 (REG-2054) */
               window._tvExtraRemember(n, { rarity: _rq2 ? _rq2.q : 'basic', base: (_rq2 && _rq2.base) ? _rq2.base : n,
                                            cat:'\ud83d\udcfa TV-vaulted', val:'tv', src:'chronicle-apply' });

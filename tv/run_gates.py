@@ -13357,6 +13357,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_characters_room_says_why_its_saves_name_what_they_name.py")], 300,
          needs_app=False,
          why="#251 REG-3079 - the Characters room says why this PC's saves name what they name (no .d2s here, no save folder); a shadow says the owner's, from their upload"),
+    Gate("test_a_sweep_apply_claims_possession_only_through_the_vault_door",
+         [sys.executable, os.path.join(HERE, "test_a_sweep_apply_claims_possession_only_through_the_vault_door.py")], 300,
+         needs_app=False,
+         why="REG-3086 (#158): a sweep apply claims possession only through the vault's door - AUTO INTAKE off owns nothing, a refused read is never owned, his hand still owns"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

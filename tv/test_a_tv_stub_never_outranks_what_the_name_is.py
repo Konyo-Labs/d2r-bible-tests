@@ -76,7 +76,12 @@ WRITER = r"""
 (function(){
 var W = window;
 W._vaultAutoIntakeSet && W._vaultAutoIntakeSet(true);
-W.chronicleApply({ wouldAdd: { uniques: [{ name: 'Enigma', loc: 'stash' }, { name: 'Heart of the Oak', loc: 'stash' }, { name: 'Zorblax Spire', loc: 'stash' }], sets: [] } });
+/* REG-3086 - the apply reaches the vault only through its door, which owns a read on two sessions' looks: each row carries
+   them (a row with no look was owned by toggleOwned's physical arm before, with no gate at all) */
+var L2 = function(i){ return [{ session: 's_17900000000' + i + '1_00001', frame: 'f_17900000000' + i + '1.jpg', lane: 'stash', conf: 0.9 },
+                              { session: 's_17900000000' + i + '2_00002', frame: 'f_17900000000' + i + '2.jpg', lane: 'stash', conf: 0.9 }]; };
+W.chronicleApply({ wouldAdd: { uniques: [{ name: 'Enigma', loc: 'stash', witnesses: L2(1) }, { name: 'Heart of the Oak', loc: 'stash', witnesses: L2(2) },
+                                         { name: 'Zorblax Spire', loc: 'stash', witnesses: L2(3) }], sets: [] } });
 H.flush(60, 3);
 var st = JSON.parse(W.LSR.getItem('d2r_tvExtraItems') || '{}');
 OUT.knows = [!!W.d2rCatalogueKnows('Enigma'), !!W.d2rCatalogueKnows('Heart of the Oak')];
