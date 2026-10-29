@@ -719,6 +719,21 @@ both are exactly as before. The new guard is the board's fourth tvd-shadow check
 guard by its own line (REG-3049's form on the ship line) instead of a total of 3. Law:
 test_the_d2jsp_desk_is_read_only_in_a_shadow (the pane's own script in node: own, snapshot shadow, class-only shadow; 4
 red-proofs, each RED). NEEDS LIVE: GrokBot types into the fg box in a shadow and sees it refuse.
+### REG-3089 - A RARE'S NAME FOLLOWED BY ITS BASE HAD NO HOME: "CHAOS WHORL RING", "RAVEN CASQUE CIRCLET" (#158)
+Same measurement as REG-3087: every name of his last sweep was routed through the page's router in node on claude/int.
+A ground label is two lines, the rare's name over its base, and the reader handed some over as one: "Chaos Whorl Ring",
+"Dread Grip Demonhide Gloves" and "Raven Casque Circlet". The grammar read only the two-word shape, so these were "nothing
+on the board recognises this name".
+FIX: _rolledQuality reads the first two words as the rare. It keeps the rest as the rare's base (rq.base) when two things
+hold:
+- the builder's base table names it;
+- its type is a slot the suffix can name (_rolledBaseFits, by the game's itypes: a Circlet is a helm, Demonhide Gloves are
+  gloves).
+The router then files it as a rare in MAGIC & RARE, and its picture is its stated base (_artRolledBase). A base the suffix
+cannot wear (Raven Whorl Gloves), or a word that is no base, settles nothing and claims nothing. A two-word rare is
+unchanged.
+GUARD: tv/test_a_rare_name_keeps_the_base_its_label_states.py, 3 cases. 3 red-proofs, RED.
+
 ### REG-3088 - THE RARE GRAMMAR KNEW FOUR SLOTS OF THE GAME'S TEN: GRIM HOOD, RAVEN GREAVES AND CRUEL NEEDLE SAT IN UNSORTED (#158)
 Same measurement as REG-3087. 13 more un-homed names were rares whose suffix names a slot RARE_NAME_POOLS never carried:
 - helms: Grim Hood, Raven Casque, Bone Visor, Pain Visor, Plague Horn;

@@ -13365,6 +13365,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_rolled_name_is_read_in_every_slot_and_any_casing.py")], 300,
          needs_app=False,
          why="REG-3087 + REG-3088 (#158): a rolled name is read in every slot the game's rare tables name, and in any casing"),
+    Gate("test_a_rare_name_keeps_the_base_its_label_states",
+         [sys.executable, os.path.join(HERE, "test_a_rare_name_keeps_the_base_its_label_states.py")], 300,
+         needs_app=False,
+         why="REG-3089 (#158): a rare's name followed by its base keeps the base its label states, when the suffix can wear it"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
