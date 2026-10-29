@@ -146,7 +146,8 @@ class AWrongShapedMuleStoreNeverStopsTheVault(unittest.TestCase):
         s = D.src()
         pieces = ("var CALLS = []; function _vhResolve(raw){ CALLS.push(raw); return { ok: true, name: raw }; }"
                   "function _vaultKeeps(){ return true; } function _vhAlias(){ return null; }"
-                  "function _vaultHandBase(){ return null; }\n" + D.fn(s, "_vhPrepare") + "\n")
+                  "function _vaultHandBase(){ return null; }\n" + D.fn(s, "_vhTwinAsk") + "\n"   # REG-3075 the door's one question
+                  + D.fn(s, "_vhPrepare") + "\n")
         o = D.page(pieces, "window._vaultHeld = function(){ return { keys: ['d2r_owned'], why: '%s' }; };"
                    "OUT.r = _vhPrepare('Harlequin Crest', null, {}); OUT.calls = CALLS;" % HELD_OWNED)
         self.assertFalse(o["r"]["ok"])

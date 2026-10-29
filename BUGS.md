@@ -857,6 +857,37 @@ Follow-up: test_v3766_grokbot_retest slices _sharedOverflowNote out of the page,
 law raised ReferenceError (8 errors) until its slice carried _vaultLetters and _vaultWarName. The first sweep listed laws that
 NAME the war mules, not laws that SLICE a function this fix edited; the second sweep (every law quoting a touched function's
 name) found only this one.
+### REG-3075 - "SHAKO" + ENTER IN THE ADD BOX FILED HARLEQUIN CREST WITHOUT ASKING (GrokBot v3838, #230)
+GrokBot on v3838: typing "Shako" in + Add an item filed Harlequin Crest (Shako) as the unique without asking. REG-2858
+says a bare "Shako" is a question: Harlequin Crest, or a white Shako base.
+Reproduced on v3838's page in node:
+- The door still asks: vaultHandAdd('Shako') is refused 'ambiguous' and names both.
+- The box's catalogue rows for "Shako" are [Harlequin Crest (unique), Shako (white base, not drawn)].
+- Its Enter took the first drawn row: vaultHandTake(Harlequin Crest's row) added it.
+So the defect was Enter taking the top row by guess, REG-3068's class. It was not REG-2897's vault-name resolution: the
+door's answer is unchanged.
+On int-18, REG-3068's exact-name Enter stops the guess but does not ask: it says "no item is named exactly 'Shako' - pick
+one from the list", and nothing is added.
+FIX: one helper, _vhTwinAsk(raw, name), holds the REG-2858 question. It applies to a name the vault does not keep, with
+no Eth / Superior word, whose base the board files a unique under.
+- The door (_vhPrepare) asks it, as before.
+- The box's Enter now asks it before taking any row. The ask carries two answer buttons: the unique's row, and the white
+  base's row.
+- A base row picked in the box is the base (kind 'base'), so the white-base answer adds the white Shako.
+SWEPT: every hand door.
+- The trade-in door passes no kind, so it asks.
+- The planner passes its row's kind.
+- A row clicked in the box is his pick.
+- The tally doors count only.
+GUARD: tv/test_a_bare_shako_is_asked_not_guessed.py (REG-2858's law). New cases:
+- Enter on "Shako" and on "SHAKO" asks, takes nothing, and offers 2 answers.
+- The base answer adds the white Shako.
+- The next bare Shako is asked again.
+- The unique answer adds Harlequin Crest (Shako).
+2 red-proofs were re-anchored and 2 added; all 5 are RED.
+Re-aimed: tv/test_a_wrong_shaped_mule_store_never_stops_the_vault.py cuts _vhPrepare out of the page, so it now cuts
+the helper _vhTwinAsk with it.
+
 ### REG-3071 - A SOCKET RANGE PRINTED PAST ITS BASE: ALDUR'S RHYTHM "SOCKETED (2-5)" ON A JAGGED STAR THAT HOLDS 3 (GrokBot 04:03, #36)
 GrokBot on the builder's tooltip: Aldur's Rhythm said "Socketed (2-5)". That is its own data line (s68: sock 2-5), but a
 Jagged Star holds at most 3, and the game caps an item's sockets at its base's ceiling.
