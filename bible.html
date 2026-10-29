@@ -6201,6 +6201,8 @@ try {
     <button class="tab" data-tab="d2jsp">💰 D2JSP</button><!-- v3693 — his own trade room, beside the Vault, not a console header door. -->
     <button class="tab" data-tab="tvd">📺 TV·D</button><!-- v914 (Konyo: 'yes I want it on the website too') — the live view is a first-class site tab again; app-ctx keeps it in the console header instead -->
    </div>
+   <!-- REG-3092 — on a screen 480px tall or less the ? orb yields to the tab strip, and it is the help's only visible door, so the door is here there; elsewhere this stays hidden -->
+   <button type="button" class="tabs-help" id="tabs-help" onclick="document.getElementById('help-modal').classList.add('show')" title="Help &amp; guide" aria-label="help and guide">❓ help</button>
   </div>
   <div class="gsearch-wrap"><!-- v3773 - no title here: its hover tip sat on the first result row; the placeholder says the same -->
     <span class="gsearch-ic-lead">🔍</span>
@@ -7329,7 +7331,7 @@ body.app-ctx .dock-mini-tab, body.app-ctx .lore-mini{display:none !important}
     <span class="ti-g"><span class="ti-gl">⚗️ craft &amp; cube</span><button class="ti-chip ti-q-crafted" onclick="window._toolJump('craft-workshop-card')">⚗️ crafts</button><button class="ti-chip ti-q-crafted" onclick="window._toolJump('horadric-recipe-card')">🧪 recipes</button><button class="ti-chip" onclick="window._toolJump('sunder-recipe-card')">🌀 sunders</button></span>
     <span class="ti-g"><span class="ti-gl">🗺 planners</span><button class="ti-chip ti-q-unique" id="ti-char-builder" onclick="window.openCharBuilder &amp;&amp; window.openCharBuilder()">🧙 character builder</button><button class="ti-chip" onclick="window._toolJump('ai-item-checker-card')">🔬 AI checker</button><button class="ti-chip ti-q-runeword" onclick="window._toolJump('all-runewords-card')">📖 runewords</button><button class="ti-chip" onclick="window._toolJump('rw-bases-card')">🛡 bases</button><button class="ti-chip" onclick="window._toolJump('loot-filters-card')">🎯 loot filter</button><button class="ti-chip ti-q-set" onclick="window._toolJump('set-tracker-card')">🧩 sets</button></span>
     <span class="ti-g"><span class="ti-gl">💰 values</span><button class="ti-chip" onclick="window._toolJump('item-values-card')">💰 worth</button><button class="ti-chip" onclick="window._toolJump('item-rarity-card')">🏆 rarity</button><button class="ti-chip" onclick="window._toolJump('hvf-card')">⭐ HVF</button></span>
-    <span class="ti-g"><span class="ti-gl">❓</span><button class="ti-chip" onclick="document.getElementById('tools-legend-modal').classList.add('show')" title="Field guide — what every planner does + where to start">🧰 field guide</button></span>
+    <span class="ti-g"><span class="ti-gl">❓</span><button class="ti-chip" onclick="document.getElementById('tools-legend-modal').classList.add('show')" title="Field guide — what every planner does + where to start">🧰 field guide</button><!-- REG-3092 — the 🧭 orb yields on a screen 480px tall or less, and it is the Tools map's only door, so the door is here there; elsewhere this stays hidden --><button class="ti-chip ti-chip-map" id="ti-chip-map" onclick="window.toolsLegendToggle&amp;&amp;window.toolsLegendToggle()" title="Tools map — what's here + where to start">🧭 map</button></span>
   </div>
 
   
@@ -14960,6 +14962,8 @@ function d2jspBatchHtml(view) {
           <button type="button" class="vault-chip" id="vault-chip-undo" data-state="undo" hidden onclick="window.vaultUndoLast()">↶ Undo <span id="vault-chip-undo-what"></span></button>
           <!-- REG-2862 — on a screen 480px tall or less the 📦 orb yields to the tab strip, and it is MOVE TASKS' only door, so the door is here there; elsewhere this stays hidden -->
           <button type="button" class="vault-chip vault-chip-tasks" id="vault-chip-tasks" onclick="window.vaultTasksTog()" title="MOVE TASKS — what to move in the game">📦 MOVE TASKS</button>
+          <!-- REG-3092 — and the 📖 Vault guide's orb yields with it, and it is the guide's only door, so its door is here there too -->
+          <button type="button" class="vault-chip vault-chip-guide" id="vault-chip-guide" onclick="window.vaultGuideTog()" title="Vault guide — what to do first, then how it works">📖 guide</button>
         </div>
         <!-- v1976 — the manual 📸 vault door is GONE. The vault already has its OWN automation:
      _startAutoWatch polls the linked folder every 12s and feeds the same window.vaultIntake,
@@ -67873,6 +67877,9 @@ function renderJournal(){
       + (_isCrafts ? '' : tab('pipeline','🔧','Pipeline','ft-pipe',s.pipeline.length))
         + (_isCrafts ? tab('crafts','⚗️','Crafts','ft-craft',_craftTabN) : '')
       + tab('completed','✅','Completed','ft-done',(_isCrafts ? _cChronN : _doneN))          // v532 — end of the storyline
+      /* REG-3092 — the Forge legend's orb yields on a screen 480px tall or less and it is the legend's only door, so the door
+         rides this row there; elsewhere it stays hidden. Runewords only: the legend is drawn on #tab-forge alone. */
+      + (_isCrafts ? '' : '<button type="button" class="forge-legend-door" id="forge-legend-door" onclick="window.forgeLegendToggle&&window.forgeLegendToggle()" title="Forge legend — what the badges mean">📖 legend</button>')
       +'</div>');
 
     // v533 — ALWAYS-VISIBLE restore bar. Was buried inside the Make-now section, so skipping your last task
@@ -75247,9 +75254,29 @@ html{overflow-x:clip;overflow-y:auto}
    Two of them are DOORS, not shortcuts, so hiding them needs another way in: the inbox has its sticky panel on
    Sessions (the one tab where its orb is always hidden), and MOVE TASKS gets #vault-chip-tasks in the vault toolbar,
    shown only here. */
+/* REG-3092 (his rule via the team lead, CI chain slice 1: v1800's Tools map and inbox cases red at 640x400) - AN ORB YIELDS
+   ONLY IF ITS FEATURE HAS ANOTHER DOOR ON THAT SCREEN. REG-2862 hid all seven and named a second door for two; the Tools
+   map, the Vault guide, the Forge legend and the help had none, so on a short screen they could not be opened at all - a
+   control that cannot be pressed. They do not come back as floating orbs: at these heights even the lowest slot (help,
+   dock + 14) rode into the strip, so there is no clear spot for a fixed one (v1810, REG-2862). Each gets an IN-FLOW door
+   where its feature lives, MOVE TASKS' pattern - shown only here, hidden everywhere else so an ordinary screen keeps one
+   control per feature: help at the end of the tab strip, the Tools map in the Tools index, the Vault guide in the vault
+   toolbar, the Forge legend in the Runewords chip row. The compass needs none (its chips ARE the strip's tabs), the
+   inbox keeps its sticky panel on Sessions. Law: tv/test_a_yielding_orb_leaves_a_door.py names a door for every orb this
+   block hides and refuses one it does not. */
+.tabs .tabs-help{display:none;flex:0 0 auto;align-items:center;gap:5px;font:inherit;color:var(--text-muted);background:transparent;
+  border:1px solid var(--border);border-radius:9px;padding:4px 10px;margin-left:4px;cursor:pointer}
+.tools-index .ti-chip.ti-chip-map{display:none}
+.vault-chip.vault-chip-guide{display:none;cursor:pointer}
+#tab-forge .forge-legend-door{display:none;flex:0 0 auto;align-items:center;gap:6px;min-height:38px;padding:6px 14px;
+  border-radius:999px;border:1px solid rgba(255,125,60,.4);background:transparent;color:#d9a17e;font:inherit;cursor:pointer}
 @media (max-height:480px){
   .help-btn,.nav-widget,.forge-legend-fab,.tools-legend-fab,.vault-guide-fab,.inbox-fab,.vault-tasks-fab{display:none!important}
   .vault-chip.vault-chip-tasks{display:inline-flex}
+  .tabs .tabs-help{display:inline-flex}
+  .tools-index .ti-chip.ti-chip-map{display:inline-flex}
+  .vault-chip.vault-chip-guide{display:inline-flex}
+  #tab-forge .forge-legend-door{display:flex}
 }
 /* routines bar shares the corner — parked LEFT of the tray column so they never overlap.
    v754 (item 7): the right offset now lives in the single clean base rule (no !important war). */

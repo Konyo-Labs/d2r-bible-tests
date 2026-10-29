@@ -33,15 +33,21 @@ const FILE = 'file://' + path.resolve(__dirname, '..', 'bible.html');
    the post-ship review found .inbox-pop rendering 28px tall at 640x400 — the HEADLINE defect of
    v1801 — the entire suite stayed green, and moving the @media block back above .inbox-pop would
    still leave it green. Its geometry is asserted nowhere else in the repo either. */
+/* REG-3092 — AN ORB YIELDS ON A SHORT SCREEN ONLY IF ITS FEATURE HAS ANOTHER DOOR THERE. At 480px tall and under every tray
+   orb is hidden (REG-2862: it rides into the tab strip), so on those sizes a case opens the feature through its OTHER door:
+   `shortDoor` is the in-flow control shown only there (the Tools index's 🧭 map, the vault toolbar's 📖 guide), and
+   `shortPanel` is a door that is a panel rather than a popover - the inbox's sticky panel on Sessions, measured on the tab
+   it lives on. This spec was asking an orb the page had (rightly) hidden to open its popover; the four 640x400 Tools map /
+   inbox cases went red on chain slice 1 for exactly that. tv/test_a_yielding_orb_leaves_a_door.py holds the rule. */
 const POPOVERS = [
-  { name: 'tools legend', tab: 'tools', fab: '.tools-legend-fab', pop: '.tools-legend-pop' },
+  { name: 'tools legend', tab: 'tools', fab: '.tools-legend-fab', pop: '.tools-legend-pop', shortDoor: '#ti-chip-map' },
   // REG-2860 — the Vault guide is the third legend in tray slot S2, on the vault tab; same anchor, same budget, same flip.
-  // Its orb is hidden at 480px tall and under (the v1810 rule: an S2 orb rides into the tab strip there), so there is no
-  // orb to press at 640x400 and that size is not a case for it - minH says so rather than a skip that reads as a pass.
-  { name: 'vault guide',  tab: 'vault', fab: '.vault-guide-fab',  pop: '.vault-guide-pop', minH: 481 },
+  // REG-3092 — its orb is hidden at 480px tall and under, and since then the toolbar's 📖 guide is its door there, so
+  // 640x400 is a case again (it was minH: 481 while the guide had no way in at that size).
+  { name: 'vault guide',  tab: 'vault', fab: '.vault-guide-fab',  pop: '.vault-guide-pop', shortDoor: '#vault-chip-guide' },
   { name: 'inbox',        tab: 'tools', fab: '.inbox-fab',        pop: '.inbox-pop',
     // the inbox FAB only appears once the queue has something in it
-    seed: true },
+    seed: true, shortPanel: '#inbox-sticky', shortTab: 'session' },
 ];
 
 const SIZES = [
@@ -57,6 +63,11 @@ for (const claimBarUp of [false, true]) {
   for (const { w, h } of SIZES.filter((s) => !(P as any).minH || s.h >= (P as any).minH)) {
     test(`v1800 ${P.name} popover is reachable at ${w}x${h} (claim bar ${claimBarUp ? 'up' : 'dismissed'})`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: h });
+      /* REG-3092 — on a short screen the orb has yielded: open the feature through the door that is there */
+      const short = h <= 480;
+      const viaPanel: string | undefined = short ? (P as any).shortPanel : undefined;
+      const viaDoor: string | undefined = short && !viaPanel ? (P as any).shortDoor : undefined;
+      const onTab: string = viaPanel ? (P as any).shortTab : P.tab;
       /* The queue is seeded AFTER load, further down — see the v1807 note at the put-back. It
          cannot be seeded here: under the owner path this page empties an injected queue during
          load, on purpose. (v1806 said the opposite in this spot, having concluded the write was
@@ -105,7 +116,7 @@ for (const claimBarUp of [false, true]) {
          failing to do what a person would, not the page hiding a control.
          scrollIntoViewIfNeeded does exactly that, and the 15s bound means a future regression here
          costs seconds rather than two minutes per case. */
-      const tab = page.locator(`[data-tab="${P.tab}"]`);
+      const tab = page.locator(`[data-tab="${onTab}"]`);
       await tab.scrollIntoViewIfNeeded({ timeout: 15000 });
       await tab.click({ timeout: 15000 });
       await page.waitForTimeout(400);
@@ -149,6 +160,48 @@ for (const claimBarUp of [false, true]) {
           'that is a CHANGE IN THE PUT-BACK CONTRACT, not a layout defect').toBeGreaterThan(0);
         await page.waitForTimeout(300);
       }
+
+      /* REG-3092 — THE INBOX'S OTHER DOOR IS A PANEL. On a short screen its orb is hidden, and what he opens instead is the
+         sticky panel on Sessions, so the case measures THAT: shown, its heading on screen, and its first answer HIT, not
+         merely drawn (the same three things the popover cases ask, in the panel's own terms). */
+      if (viaPanel) {
+        const shown = await page
+          .waitForSelector(`${viaPanel}.has`, { state: 'visible', timeout: 20000 })
+          .then(() => true, () => false);
+        expect(shown, `${viaPanel} is not shown on the ${onTab} tab at ${w}x${h} with the queue seeded, so the inbox ` +
+          `has no door on this screen - its orb is hidden here (REG-2862)`).toBe(true);
+        await page.locator(viaPanel).scrollIntoViewIfNeeded({ timeout: 15000 });
+        await page.waitForTimeout(300);
+        const pm = await page.evaluate((SEL) => {
+          const p = document.querySelector(SEL) as HTMLElement;
+          const hd = p && (p.querySelector('.ibp-h') as HTMLElement);
+          const b = p && (p.querySelector('.ibp-b') as HTMLElement);
+          if (!p || !hd || !b) return null;
+          b.scrollIntoView({ block: 'nearest' });
+          const hr = hd.getBoundingClientRect(), br = b.getBoundingClientRect();
+          const hit = document.elementFromPoint(Math.round(br.left + br.width / 2), Math.round(br.top + br.height / 2));
+          return { headTop: Math.round(hr.top), headBottom: Math.round(hr.bottom), vh: window.innerHeight,
+                   answerHit: hit === b || b.contains(hit as Node),
+                   hitWas: hit ? ((hit as HTMLElement).id || (hit as HTMLElement).className || hit.tagName).toString() : 'none' };
+        }, viaPanel);
+        expect(pm, `${viaPanel} has no heading or no answer button to measure`).not.toBeNull();
+        expect(pm!.headTop, `the panel's heading is above the viewport (${pm!.headTop})`).toBeGreaterThanOrEqual(0);
+        expect(pm!.headBottom, `the panel's heading is below the ${pm!.vh}px viewport`).toBeLessThanOrEqual(pm!.vh);
+        expect(pm!.answerHit, `the panel's first answer is covered by ${pm!.hitWas} — drawn and unclickable`).toBe(true);
+        return;
+      }
+      if (viaDoor) {
+        const yielded = await page.evaluate((sel) => {
+          const f = document.querySelector(sel) as HTMLElement | null;
+          return !f || getComputedStyle(f).display === 'none';
+        }, P.fab);
+        expect(yielded, `${P.fab} is still drawn at ${w}x${h} - the short-screen yield (REG-2862) this door stands in for ` +
+          `did not happen, so this case is not testing what it claims`).toBe(true);
+        const door = page.locator(viaDoor);
+        await door.scrollIntoViewIfNeeded({ timeout: 15000 });
+        await door.click({ timeout: 10000 });
+        await page.waitForTimeout(400);
+      } else {
 
       /* v1806 — DIAGNOSE, DO NOT HANG. The first version went straight to page.click(P.fab). When
          the inbox FAB was not visible on CI, Playwright waited for it to become actionable until
@@ -201,6 +254,7 @@ for (const claimBarUp of [false, true]) {
 
       await page.click(P.fab, { timeout: 10000 });
       await page.waitForTimeout(400);
+      }
 
       const m = await page.evaluate((SEL) => {
         const p = document.querySelector(SEL) as HTMLElement;
