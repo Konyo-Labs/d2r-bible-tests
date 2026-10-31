@@ -541,20 +541,8 @@ $myStart = $null
 try { $myStart = (Get-Process -Id $PID -ErrorAction Stop).StartTime } catch { $myStart = $null }
 function Get-LeaseVerdict([string]$leaseFile, [int]$myPid, [int]$parentPid, [double]$ageS, [double]$graceS, $myStart = $null) {
   # -> $null to keep filming, or the reason to leave. UNKNOWN (an unreadable lease) is never a reason to leave.
-  if ($parentPid -gt 0) {
-    $par = Get-Process -Id $parentPid -ErrorAction SilentlyContinue
-    if (-not $par) { return "the console that started me (pid $parentPid) is gone" }
-    # REG-1509 - Windows reuses pids. A process holding my console's pid that STARTED AFTER ME is not the console
-    # that started me: that console is gone and a stranger has its number (the review of v3524). A start time that
-    # cannot be read decides nothing.
-    if ($myStart) {
-      $parStart = $null
-      try { $parStart = $par.StartTime } catch { $parStart = $null }
-      if ($parStart -and ($parStart -gt $myStart)) {
-        return "the console that started me is gone (pid $parentPid now belongs to a process started after me)"
-      }
-    }
-  }
+  # v3850 (Elad 18:03 2026-10-31) - the console that started me being gone is NO LONGER a reason to leave: the
+  # recorder outlives its console. One recorder is kept by control_capture.lease instead (Get-RecorderLeaseVerdict).
   if ($ageS -lt $graceS) { return $null }      # the console writes the lease just after it spawns us
   if (-not (Test-Path -LiteralPath $leaseFile)) { return 'the console withdrew my lease (it stopped the capture)' }
   $raw = $null
@@ -565,13 +553,55 @@ function Get-LeaseVerdict([string]$leaseFile, [int]$myPid, [int]$parentPid, [dou
   return $null
 }
 
+# v3850 - THE ONE-RECORDER LEASE (recorder_lease.py is the Python half; the constants are pinned equal by a law).
+$recLeasePath = Join-Path $here 'control_capture.lease'
+$RecLeaseRenewS = 30
+$RecLeaseStaleS = 90
+function Get-RecorderLeaseVerdict([string]$text, [int]$myPid, [int64]$nowMs) {
+  # -> 'hold' (mine) | 'refuse' (another live, fresh recorder holds it) | 'take' (free, stale, or its pid is dead)
+  if (-not $text) { return 'take' }
+  $m = [regex]::Match($text, 'pid=(\d+)\s+t=(\d+)')
+  if (-not $m.Success) { return 'take' }
+  $hp = [int]$m.Groups[1].Value
+  $ht = [int64]$m.Groups[2].Value
+  if ($myPid -gt 0 -and $hp -eq $myPid) { return 'hold' }
+  $age = $nowMs - $ht
+  if ($age -ge 0 -and $age -le ($RecLeaseStaleS * 1000)) {
+    if (Get-Process -Id $hp -ErrorAction SilentlyContinue) { return 'refuse' }
+  }
+  return 'take'
+}
+function Read-RecLease { try { return [System.IO.File]::ReadAllText($recLeasePath) } catch { return $null } }
+function Write-RecLease { try { [System.IO.File]::WriteAllText($recLeasePath, ("pid={0} t={1}" -f $PID, [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())) } catch {} }
+if ($env:TV_REC_LEASE_SELFTEST -ne '1') {
+  $v0 = Get-RecorderLeaseVerdict (Read-RecLease) $PID ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
+  if ($v0 -eq 'refuse') {
+    Write-Host '  capture leaving at start: a live recorder already holds control_capture.lease (one recorder only)'
+    exit 0
+  }
+  Write-RecLease
+}
+$recRenewAt = [DateTime]::UtcNow.AddSeconds($RecLeaseRenewS)
+
 while ($true) {
   $loopN++
+  if ([DateTime]::UtcNow -ge $recRenewAt) {
+    $recRenewAt = [DateTime]::UtcNow.AddSeconds($RecLeaseRenewS)
+    if ((Get-RecorderLeaseVerdict (Read-RecLease) $PID ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())) -eq 'refuse') {
+      Write-Host ("  capture pid $PID leaving: another live recorder holds the lease")
+      Write-Stage 'left:another recorder holds the lease'
+      exit 0
+    }
+    Write-RecLease
+  }
   if (($loopN % 5) -eq 1) {
     $why = Get-LeaseVerdict $leasePath $PID $consolePid (([DateTime]::UtcNow - $bornAt).TotalSeconds) 15 $myStart
     if ($why) {
       Write-Host ("  capture pid $PID leaving: " + $why)
       Write-Stage ("left:" + $why)
+      if ((Get-RecorderLeaseVerdict (Read-RecLease) $PID ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())) -eq 'hold') {
+        try { Remove-Item -LiteralPath $recLeasePath -Force -ErrorAction SilentlyContinue } catch {}
+      }
       exit 0
     }
   }

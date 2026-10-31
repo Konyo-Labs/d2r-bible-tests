@@ -687,7 +687,9 @@ class TheConsolesCaptureGoesThroughTheDoor(_World):
         a = ca._start_capture({"PATH": "x"}, self.log)
         self.assertIn(a, self.live)
         self.assertEqual(a, (cg.record_of("capture") or {}).get("pid"), "the console's capture was not recorded")
-        self.assertIn("no job: not Windows", self.log.getvalue(), "the spawn log does not say whether the job took")
+        # v3850 - the capture outlives its console under a lease, so it is never put in a job; the log says so
+        self.assertIn("no job: this role outlives its console (lease-held)", self.log.getvalue(),
+                      "the spawn log does not say whether the job took")
         # the lamp's path: lease cleared, _capture_proc dropped - and the process is STILL ALIVE
         os.remove(self.pidfile)
         ca._capture_proc = None

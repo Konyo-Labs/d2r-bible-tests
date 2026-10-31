@@ -160,6 +160,17 @@ def _log(path, line):
         pass
 
 
+def recorder_beat(here=HERE, run=None):
+    """v3850 - the console is not answering, so the recorder's heartbeat goes out from here (control_app
+    .recorder_beacon_once, a recorderOnly patch). Bounded to 60 s, never raises. -> a short clause for the log."""
+    try:
+        r = (run or subprocess.run)([sys.executable, "-c", "import control_app as c, json; print(json.dumps(c.recorder_beacon_once()))"],
+                                    cwd=here, capture_output=True, text=True, timeout=60)
+        return " · recorder beat: " + (r.stdout or "").strip()[-120:]
+    except Exception as e:
+        return " · recorder beat raised %s" % type(e).__name__
+
+
 def run_once(now_s=None, probe_fn=None, popen=None, here=HERE, state_path=None, log_path=None,
              on_purpose_path=None, pause_path=None):
     """One pass. -> {"action", "why", "state"}. Never raises."""
@@ -184,6 +195,8 @@ def run_once(now_s=None, probe_fn=None, popen=None, here=HERE, state_path=None, 
             why = "%s (%s)" % (why, how) if ok else "%s - FAILED: %s" % (why, how)
             if not ok:
                 action = "failed"
+        if action != "leave":
+            why += recorder_beat(here)
         if unread:
             why += " (its memory %s could not be read, so the cooldown is not known)" % os.path.basename(state_path)
         if action != "leave" or unread or mem.get("lastAction") not in (None, "leave"):

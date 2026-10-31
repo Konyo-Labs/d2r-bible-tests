@@ -571,6 +571,17 @@ export async function onRequestPost(context) {
         why: (typeof s.why === 'string' && s.why.trim()) ? cutAtWord(s.why.replace(/\s+/g, ' ').trim(), 160) : null,
       };
     })(body.shadow),
+    /* v3850 (Elad 17:53) - the recorder's lease: alive + its last renewal. fleet_presence reads it - a live recorder
+       keeps a PC online ("online · recording") while its console is down. Absent stays null. */
+    recorder: (function (r) {
+      if (!r || typeof r !== 'object') return null;
+      const ms = typeof r.t === 'string' ? Date.parse(r.t) : NaN;
+      return {
+        alive: r.alive === true,
+        pid: (Number.isInteger(r.pid) && r.pid > 0) ? r.pid : null,
+        t: (Number.isFinite(ms) && ms <= Date.now() + 60000) ? new Date(ms).toISOString() : null,
+      };
+    })(body.recorder),
     /* #108 — THAT PC's TWO READERS (CLAUDE primary, GROK shadow): can each read there? His question, 2026-09-30, after
        the ALT read nothing for a day signed out: "maybe this happened to dean too?". Shaped like shadow: a state is
        on / off, anything else is 'unknown'; needsLogin is true only when that PC said so; the reason capped. Absent
@@ -663,6 +674,16 @@ export async function onRequestPost(context) {
   // (system.asOf) stays the time those ages were taken. No stored row means there is nothing
   // to overlay, and the console then sends a full beacon. event is hb so a change does not
   // also write a consolelog row.
+  /* v3850 - a recorderOnly patch is sent by the keepalive while the console is DOWN. It overlays ONLY the recorder:
+     the console's own `t` is kept, so the row never reads as a fresh console heartbeat. */
+  if (body.recorderOnly === true) {
+    if (!prev || typeof prev !== 'object') {
+      return json({ ok: true, machine, stored: [], skipped: ['recorder patch with no row yet'] }, 200);
+    }
+    const mergedR = Object.assign({}, prev, { recorder: rec.recorder, event: 'hb' });
+    for (const k of Object.keys(rec)) delete rec[k];
+    Object.assign(rec, mergedR);
+  }
   const presenceOnly = body.presenceOnly === true;
   if (presenceOnly) {
     if (!prev || typeof prev !== 'object') {

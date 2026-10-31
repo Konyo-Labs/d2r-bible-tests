@@ -1412,6 +1412,9 @@ def _beat_dossier(maps, beat):
 IS_WIN = sys.platform.startswith("win")
 # Windows: CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW
 _WIN_CREATE = 0x00000200 | 0x08000000 if IS_WIN else 0
+#: v3850 - CREATE_BREAKAWAY_FROM_JOB: the recorder leaves the job a launcher (Task Scheduler) holds this console in,
+#: so it outlives the console. Only the capture spawn uses it.
+_WIN_BREAKAWAY = 0x01000000 if IS_WIN else 0
 
 # ⚠⚠ v3407 — GIT.EXE WINDOWS WERE ALT-TABBING HIM OFF THE GAME, EVERY COUPLE OF MINUTES.
 # MEASURED on the Windows box 2026-09-21: 2-3 console windows in a row stealing focus while
@@ -4648,6 +4651,8 @@ def _console_beacon(event="hb"):
             "eye": _eye_for_wire(),
             # #93 — the shadow reader for the fleet's eye: on / working even with the game closed
             "shadow": _shadow_for_wire(),
+            # v3850 - the recorder's lease (fleet_presence: a live recorder keeps this PC online with the console down)
+            "recorder": recorder_for_wire(),
             # #108 — this PC's two readers (CLAUDE primary, GROK shadow): can each one read here? so HIS fleet card can
             # say a signed-out PC without anyone standing at it. None = this console cannot measure them (UNKNOWN).
             "readers": _readers_for_wire(),
@@ -4663,11 +4668,7 @@ def _console_beacon(event="hb"):
             "lastBeacon": prior,
         }
         body = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            "https://bull-4-u.com/api/console", data=body,
-            headers={"Content-Type": "application/json", "User-Agent": "TVD-Console/1.0",
-                     "Authorization": "Basic " + _b64.b64encode(b"app:DeanDiablo").decode()},
-            method="POST")
+        req = _presence_request(body)
         with urllib.request.urlopen(req, timeout=8) as r:
             raw = r.read()
             code = getattr(r, "status", None) or r.getcode()
@@ -4681,6 +4682,12 @@ def _console_beacon(event="hb"):
         except Exception:
             fleet = None
         _FLEET_LAST_BODY["body"] = payload
+        try:   # v3850 - kept on disk so the recorder's own beacon (console down) can say which PC it is
+            with open(LAST_BEACON_BODY_PATH + ".tmp", "w", encoding="utf-8") as _bf:
+                json.dump({k: payload.get(k) for k in ("machine", "nickname", "platform", "ver", "mode")}, _bf)
+            os.replace(LAST_BEACON_BODY_PATH + ".tmp", LAST_BEACON_BODY_PATH)
+        except Exception:
+            pass
         with _BEACON_LOCK:
             _BEACON_LAST["ok"] = True
             _BEACON_LAST["code"] = code
@@ -5598,6 +5605,41 @@ def _fleet_change_due(prev, cur, now, sent_at, pending, min_s=_FLEET_CHANGE_MIN_
     return False, pending, prev
 
 
+LAST_BEACON_BODY_PATH = os.path.join(HERE, ".tvd_last_beacon_id.json")
+
+
+def _presence_request(body):
+    """The presence POST to the site (one place builds it: the console's patch and the recorder's beacon)."""
+    import base64 as _b64
+    return urllib.request.Request(
+        "https://bull-4-u.com/api/console", data=body,
+        headers={"Content-Type": "application/json", "User-Agent": "TVD-Console/1.0",
+                 "Authorization": "Basic " + _b64.b64encode(b"app:DeanDiablo").decode()},
+        method="POST")
+
+
+def recorder_beacon_once():
+    """v3850 (Elad 17:53/18:03) - THE RECORDER'S OWN HEARTBEAT, sent while the console is down (console_keepalive
+    calls it). A recorderOnly patch: the site overlays ONLY `recorder` and keeps the console's `t`, so the Fleet
+    reads "online · recording" and never "online now". No live lease -> nothing is sent. -> {"sent", "why"}"""
+    rec = recorder_for_wire()
+    if not (isinstance(rec, dict) and rec.get("alive") is True):
+        return {"sent": False, "why": "no live recorder lease"}
+    try:
+        with open(LAST_BEACON_BODY_PATH, encoding="utf-8") as f:
+            ident = json.load(f)
+    except Exception:
+        return {"sent": False, "why": "no last beacon identity on disk"}
+    if not (isinstance(ident, dict) and ident.get("machine")):
+        return {"sent": False, "why": "the last beacon identity names no machine"}
+    payload = dict(ident, event="hb", recorderOnly=True, recorder=rec)
+    try:
+        with urllib.request.urlopen(_presence_request(json.dumps(payload).encode("utf-8")), timeout=8) as r:
+            return {"sent": True, "why": "HTTP %s" % (getattr(r, "status", None) or r.getcode())}
+    except Exception as e:
+        return {"sent": False, "why": type(e).__name__}
+
+
 def _console_beacon_presence():
     """Report a window or shadow change without building /api/status.
 
@@ -6302,6 +6344,17 @@ def _start_capture_locked(env, log_fp):
     old = _read_pid(CAP_PID_PATH)
     if old and _pid_alive(old):
         return old
+    # v3850 (Elad 18:03) - ADOPT, NEVER A SECOND. A recorder that outlived the last console still holds
+    # control_capture.lease; this console takes it as its own capture instead of spawning beside it.
+    _adopt = _recorder_adoptable()
+    if _adopt:
+        _write_pid(CAP_PID_PATH, _adopt)
+        try:
+            log_fp.write("capture_win.ps1 pid %d ADOPTED: it outlived the last console and holds the lease\n" % _adopt)
+            log_fp.flush()
+        except Exception:
+            pass
+        return _adopt
     try:
         # v1412 — cwd=HERE (tv/) so relative logs are next to the script; pass absolute -File
         # for Hebrew/spaces USERPROFILE. CREATE_NO_WINDOW so Desktop launch stays quiet.
@@ -6335,7 +6388,8 @@ def _start_capture_locked(env, log_fp):
             stdout=log_fp,
             stderr=subprocess.STDOUT,
             stdin=subprocess.DEVNULL,
-            creationflags=_WIN_CREATE,
+            creationflags=_WIN_CREATE | _WIN_BREAKAWAY,
+            contain=False,                              # v3850 - the recorder outlives this console (lease-held)
         )
         _lower_capture_priority(_capture_proc.pid)     # v1441 — BelowNormal so D2R + console UI keep the cores
         _write_pid(CAP_PID_PATH, _capture_proc.pid)
@@ -6457,8 +6511,90 @@ def _gone_within(pid, alive, within_s, step_s=0.1):
     return False
 
 
+#: v3850 (Elad 18:03) - set by the exit safeguard: a console that is going away leaves its recorder filming.
+_EXIT_KEEPS_RECORDER = {"on": False}
+ONAIR_RESUME_PATH = os.path.join(os.path.dirname(CAP_PID_PATH), ".tvd_onair_resume.json")
+
+
+def _recorder_lease_path():
+    import recorder_lease as _rl
+    return _rl.lease_path(os.path.dirname(CAP_PID_PATH))
+
+
+def _recorder_adoptable():
+    """-> the pid of a live recorder holding the lease, or None. Windows only (the lease is capture_win.ps1's)."""
+    if not IS_WIN:
+        return None
+    try:
+        import recorder_lease as _rl
+        return _rl.adoptable(_recorder_lease_path(), _pid_alive)
+    except Exception:
+        return None
+
+
+def recorder_for_wire():
+    """The beacon's `recorder` field (fleet_presence reads it). -> dict | None (no recorder on this platform)."""
+    if not IS_WIN:
+        return None
+    try:
+        import recorder_lease as _rl
+        return _rl.read(_recorder_lease_path(), _pid_alive)
+    except Exception:
+        return None
+
+
+ONAIR_RESUME_MAX_S = 6 * 3600
+
+
+def onair_resume_decision(marker, adoptable_pid, now_ms):
+    """v3850 - does this console come up ON AIR? Pure. -> (resume: bool, why)
+
+    Only a hand ON AIR is resumed (a shadow reel is reopened by the shadow watcher by itself), only when the exit
+    marker is younger than ONAIR_RESUME_MAX_S, and only when the recorder it left is still alive under its lease -
+    a dead recorder means the session already ended, so the console stays OFF rather than film anew unasked."""
+    if not isinstance(marker, dict):
+        return False, "no ON AIR was on when the last console exited"
+    if marker.get("mode") != "live" or marker.get("origin") not in ("hand", "mini"):
+        return False, "the last console's session was %s/%s - the shadow watcher reopens its own" % (
+            marker.get("mode"), marker.get("origin"))
+    age = (int(now_ms) - int(marker.get("ts") or 0)) / 1000.0
+    if not (0 <= age <= ONAIR_RESUME_MAX_S):
+        return False, "the exit marker is %.0f s old" % age
+    if not adoptable_pid:
+        return False, "the recorder the last console left is gone, so its session ended"
+    return True, "ON AIR was on at exit and recorder pid %d still films - adopted" % int(adoptable_pid)
+
+
+def _onair_resume_once():
+    """Boot: adopt the ON AIR the last console left running. Reads and removes the marker. Never raises."""
+    try:
+        try:
+            with open(ONAIR_RESUME_PATH, encoding="utf-8") as f:
+                marker = json.load(f)
+        except Exception:
+            marker = None
+        if marker is None:
+            return
+        try:
+            os.remove(ONAIR_RESUME_PATH)
+        except Exception:
+            pass
+        ok, why = onair_resume_decision(marker, _recorder_adoptable(), int(time.time() * 1000))
+        print("   📺 ON AIR resume: " + why, flush=True)
+        if ok:
+            start_agent(origin=str(marker.get("origin") or "hand"))
+    except Exception as e:
+        print("   ON AIR resume raised %s" % type(e).__name__, flush=True)
+
+
 def _stop_capture():
     global _capture_proc
+    if _EXIT_KEEPS_RECORDER["on"]:
+        # v3850 - the console is exiting, not going OFF AIR: the recorder keeps its lease and keeps filming, and the
+        # next console adopts it (_start_capture_locked). OFF AIR (stop_agent from a live console) still ends it.
+        with _lock:
+            _capture_proc = None
+        return
     # REG-1509 — THE SPAWN BARRIER. A restart the lamp began before this stop may be inside the spawn lock right now,
     # between its Popen and its lease write. Without this the stop read the pid file before that write, killed
     # nothing, and the new capture wrote a valid lease AFTER the stop withdrew the old one. Taking the lock (and
@@ -8389,7 +8525,18 @@ def _console_exit_stop_onair(reason="quit"):
         _EXIT_STOP_DONE = True
     # Always kill window probes first — even if stop is already done elsewhere
     _mark_window_gone(reason)
-    print(f"📺 exit safeguard — stopping ON AIR ({reason})…", flush=True)
+    # v3850 (Elad 18:03) - an exit is not OFF AIR. The recorder outlives the console under its lease, and whether
+    # ON AIR was on is kept so the next console shows ON AIR again (_onair_resume_once) instead of OFF.
+    _EXIT_KEEPS_RECORDER["on"] = True
+    try:
+        if _agent_mode in ("live", "sim"):
+            with open(ONAIR_RESUME_PATH + ".tmp", "w", encoding="utf-8") as _rf:
+                json.dump({"mode": _agent_mode, "origin": _agent_origin,
+                           "ts": int(time.time() * 1000), "reason": str(reason)[:40]}, _rf)
+            os.replace(ONAIR_RESUME_PATH + ".tmp", ONAIR_RESUME_PATH)
+    except Exception:
+        pass
+    print(f"📺 exit safeguard — stopping the agent, the recorder keeps filming ({reason})…", flush=True)
     result = {"ok": True, "msg": "already off", "farewell": False}
     t0 = time.time()
     try:
@@ -10489,6 +10636,11 @@ def start_background_watchers(why):
         if not any(t.name == "tvd-orphan-exit" and t.is_alive()
                    for t in threading.enumerate()):
             threading.Thread(target=_orphan_exit_loop, name="tvd-orphan-exit", daemon=True).start()
+    except Exception:
+        pass
+    try:   # v3850 - adopt an ON AIR the last console left running (its recorder outlived it)
+        if IS_WIN and not any(t.name == "tvd-onair-resume" for t in threading.enumerate()):
+            threading.Thread(target=_onair_resume_once, name="tvd-onair-resume", daemon=True).start()
     except Exception:
         pass
     roster = [

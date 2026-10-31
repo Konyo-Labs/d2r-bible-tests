@@ -674,7 +674,7 @@ def _owed(alive=None):
         return RECEIPT["owed"]
 
 
-def spawn(role, argv, popen=None, kill=None, alive=None, birth=None, wait_s=None, **popen_kw):
+def spawn(role, argv, popen=None, kill=None, alive=None, birth=None, wait_s=None, contain=True, **popen_kw):
     """THE ONE SPAWN DOOR. Ends the role's previous instance (whole tree, verified ours, bounded wait), then starts
     argv with the platform's tree containment and records it. -> the Popen (raises what Popen raises).
 
@@ -686,7 +686,9 @@ def spawn(role, argv, popen=None, kill=None, alive=None, birth=None, wait_s=None
         prev = end(role, kill=kill, alive=alive, birth=birth, wait_s=wait_s)
         kw = _platform_kwargs(popen_kw)
         proc = (popen or subprocess.Popen)(argv, **kw)
-        job, job_say = _win_job_assign(proc)
+        # v3850 (Elad 18:03) - contain=False: a role that must OUTLIVE this console (the recorder, under its own
+        # one-recorder lease) is not put in a KILL_ON_JOB_CLOSE job. It is still recorded and still ended by end().
+        job, job_say = _win_job_assign(proc) if contain else (None, "no job: this role outlives its console (lease-held)")
         try:
             argv0 = os.path.basename(str(argv[0])) if argv else ""
         except Exception:

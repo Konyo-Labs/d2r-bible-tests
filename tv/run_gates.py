@@ -10209,6 +10209,15 @@ GATES = [
              "local OCR, a reel rolling + the watcher lane's own liveness verdict, decided on that PC's clock), the "
              "beacon, the worker (kept; a flip is news), the card's _fleetShadowEye (lit/live/idle/off/unknown - "
              "UNKNOWN never drawn lit or shut)."),
+    Gate("test_the_recorder_holds_one_lease",
+         [sys.executable, os.path.join(HERE, "test_the_recorder_holds_one_lease.py")], 180,
+         needs_app=False,
+         why="v3850 (Elad 18:03, 2026-10-31) - THE RECORDER OUTLIVES ITS CONSOLE UNDER ONE LEASE. capture_win.ps1 used "
+             "to leave with its console (REG-1502, five captures crashed dwm on the ALT 2026-09-29). Now "
+             "control_capture.lease (pid + time, renewed 30 s, stale after 90 s) keeps exactly one: a second recorder "
+             "is refused, a stale or dead lease is taken over, an exiting console neither kills it nor withdraws it, "
+             "the capture is spawned outside the kill-on-close job, and a restarted console adopts it and comes up ON "
+             "AIR only when a hand ON AIR was on and its recorder still films. RED_PROOF reverts each joint."),
     Gate("test_every_surface_asks_one_presence",
          [sys.executable, os.path.join(HERE, "test_every_surface_asks_one_presence.py")], 180,
          needs_app=False,
