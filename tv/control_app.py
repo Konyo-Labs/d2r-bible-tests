@@ -17480,6 +17480,30 @@ def _triage_for_wire():
                       if _WIRE_KEY_RX.match(str(k)) and isinstance(v, int)}}
 
 
+# Asked at most once per process, and only while the self-prove record is still empty. A later tick has its own census.
+_BOOT_CENSUS = {"asked": False, "state": None}
+
+
+def _boot_census_once():
+    """The disk census while this console has not ticked yet. -> 'stale'|'missing'|'unreadable'|None.
+
+    current, unknown, and a raise are not a census this beacon may state. None keeps the boot window 'starting'."""
+    if _BOOT_CENSUS["asked"]:
+        return _BOOT_CENSUS["state"]
+    _BOOT_CENSUS["asked"] = True
+    state = None
+    try:
+        import self_prove as _spmod
+        got = _spmod.census_state()
+        word = got.get("state") if isinstance(got, dict) else None
+        if word in ("stale", "missing", "unreadable"):
+            state = word
+    except Exception:
+        state = None
+    _BOOT_CENSUS["state"] = state
+    return state
+
+
 def _river_for_wire(now_ms=None):
     """THIS MACHINE'S RIVER, from memory only. -> {lanes: {station: n} | None, ageS, why, triage}
 
@@ -17532,14 +17556,19 @@ def _river_for_wire(now_ms=None):
         # REG-3051 - this reading, with its own time, is what /api/river serves: one reckoning, never a second
         _RIVER_STUCK_LAST.update(ts=now, stuck=out["stuck"], keep=out.get("stuckKeep"))
     _sp = dict(_SELF_PROVE)
-    # #193 (his "river says unknown now", 2026-10-27) - THE BOOT WINDOW HAS A NAME. The self-prove lane's first tick lands
-    # SELF_PROVE_FIRST_TICK rescue ticks (~5 min) after a start, and until then its record has no key and no census, so
-    # the beacon a self-update sends carried census null and the Fleet row said a bare "river UNKNOWN" for 5 minutes on
-    # every relaunch. It is still UNKNOWN (census stays null); the key says WHY: the check has not run yet.
+    # #193 (his "river says unknown now", 2026-10-27) - THE BOOT WINDOW HAS A NAME. Until the first tick the record has
+    # no key and no census. That is "starting", census null, only when this PC's census is not already known shut.
+    # A stale, missing, or unreadable census, read once, is sent as itself under key stale-at-boot — never "starting".
+    _census = _sp.get("census")
     _key = _sp.get("key")
-    if _key is None and _sp.get("census") is None and _sp.get("lastTs") is None:
-        _key = "starting"
-    out["heart"] = {"census": _sp.get("census"), "key": _key,
+    if _key is None and _census is None and _sp.get("lastTs") is None:
+        _shut = _boot_census_once()
+        if _shut in ("stale", "missing", "unreadable"):
+            _census = _shut
+            _key = "stale-at-boot"
+        if _key is None:
+            _key = "starting"
+    out["heart"] = {"census": _census, "key": _key,
                     "blind": (len(_sp.get("blind") or []) if _sp.get("blind") is not None else None)}
     return out
 

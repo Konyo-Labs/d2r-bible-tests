@@ -27765,9 +27765,10 @@ function escC(s) {
     if (census === 'missing' || census === 'stale' || census === 'unreadable') {
       /* GBL census-lowmem - a proof held back ONLY by free memory says so on the row, not the bare word a broken lock wears */
       var _memWait = hs && hs.key === 'low-memory';
+      var _recheck = hs && hs.key === 'stale-at-boot';
       bits.push('<span class="fleet-riverstuck" title="' + escC('the locks that move this PC\u2019s river are shut \u2014 its proof is '
         + census + (_memWait ? ' and waiting for free memory to prove' : '') + ', so nothing that spends a reel may act here')
-        + '">' + (_memWait ? 'locks shut \u00b7 census waiting for memory' : 'locks shut') + '</span>');
+        + '">' + (_memWait ? 'locks shut \u00b7 census waiting for memory' : (_recheck ? 'locks shut \u00b7 rechecking' : 'locks shut')) + '</span>');
     }
     /* #193 (his "river says unknown now", 2026-10-27) - A CONSOLE THAT JUST STARTED IS NOT A BROKEN ONE. Its first proof
        check runs about 5 minutes after a start, and its river is read about a minute after. Until then the beacon says

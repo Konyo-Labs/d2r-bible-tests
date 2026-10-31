@@ -165,7 +165,10 @@ class TheBootWindowHasAName(unittest.TestCase):
 
     def _heart(self, sp):
         import control_app as ca
+        # The disk census is stubbed to "not already shut". A known stale/missing/unreadable census is
+        # stale-at-boot in its own law; this floor stays starting + null when that census is not shut.
         with mock.patch.object(ca, "_SELF_PROVE", sp), \
+                mock.patch.object(ca, "_boot_census_once", lambda: None), \
                 mock.patch.object(ca, "_RIVER_LAST", {"good": None, "fail": None}):
             return ca._river_for_wire(now_ms=NOW)["heart"]
 
