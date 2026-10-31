@@ -238,7 +238,7 @@ process.stdout.write(JSON.stringify(out));
         self.assertIsNone(self.f["steelMule"])
         self.assertIsNone(self.f["shaft"])
         call = self.src.find("var _mercHit = _mercRoute(name, _ov);")
-        trash = self.src.find("if (_tv === 'trash')")
+        trash = self.src.find("if (_tv === 'trash' && !(opts && opts.ignoreTrash))")  # v3849 B9 widened the guard
         self.assertGreater(call, 0)
         self.assertGreater(trash, call)
 

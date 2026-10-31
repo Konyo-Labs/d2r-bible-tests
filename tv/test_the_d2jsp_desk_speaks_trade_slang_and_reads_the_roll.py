@@ -184,7 +184,8 @@ process.stdout.write(JSON.stringify(out));
         self.assertLess(g["legal"], 99)
         self.assertIn("likely misread", g["warn"])
         self.assertTrue(self.out["gcLine"].startswith("Check: +99 to Life is above every roll"))
-        self.assertEqual(self.out["none"], "")
+        # v3849 (test_d2jsp_gross_outlier_and_key_weight): a line that names no row is kept and said, never silent
+        self.assertEqual(self.out["none"], "Check: could not be read.")
 
     def test_the_post_template_is_unchanged(self):
         self.assertEqual(self.out["draft"]["body"], "Selling Annihilus Small Charm\n+20 to All Attributes\n250 fg")

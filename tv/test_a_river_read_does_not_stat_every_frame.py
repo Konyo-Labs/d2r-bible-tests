@@ -24,6 +24,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
+import fixture_tmp  # noqa: E402
+
+fixture_tmp.contain()   # REG-2362: the fixture shelf is this process's own scratch, listed through list_own
 _HIST = tempfile.mkdtemp(prefix="river_frames_")
 os.environ["TV_HIST"] = _HIST
 
@@ -68,7 +71,7 @@ def _reel(i):
 
 
 def _build(n_reels, n_files):
-    for name in os.listdir(_HIST):
+    for name in fixture_tmp.list_own(_HIST):
         p = os.path.join(_HIST, name)
         if os.path.isdir(p):
             shutil.rmtree(p)
@@ -99,8 +102,9 @@ def _touch_future(path):
 
 def _files(root):
     n = 0
-    for _dir, _dirs, names in os.walk(root):
-        n += len(names)
+    for name in fixture_tmp.list_own(root):
+        p = os.path.join(root, name)
+        n += _files(p) if os.path.isdir(p) and not os.path.islink(p) else 1
     return n
 
 

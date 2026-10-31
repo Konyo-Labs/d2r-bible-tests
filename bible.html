@@ -4015,8 +4015,43 @@ tr.owned-row{background:rgba(102,255,136,.03)}
     function lookupBox(el) {
       try { return !!(el && el.matches && el.matches(LOOKUP)); } catch (e) { return false; }
     }
-    window._tvdShadowLookup = LOOKUP;
+    window._tvdTypedLookup = LOOKUP;   /* the Esc handler's typed-lookup boxes (v3849 v3848 eye #3) */
     window._tvdShadowStopped = 0;
+    /* v3849 (a) - IN A SHADOW A PICTURE IS THE OWNER'S (moved here from the draw by TheSameConsoleDrawsIt). A relative
+       frame path resolves on the VIEWER's console, so every frame path is the owner's address + that path, and with no
+       owner address on the snapshot there is no picture to load (null) - never the viewer's. The draw's
+       _vaultLookSrc and evidence probe call this hook. Guarded by tv/test_a_shadow_draws_the_owners_frame.py */
+    window._shadowOwnerUrl = function(path){
+      var p = String(path == null ? '' : path);
+      if (!window._tvdShadow) return p || null;
+      if (!p) return null;
+      var org = String(window._tvdShadow.origin || '');
+      if (!/^https?:\/\//.test(org)) return null;
+      if (/^https?:\/\//i.test(p)) return p.indexOf(org + '/') === 0 ? p : null;
+      if (/^(data|blob):/i.test(p)) return null;
+      return org + '/' + p.replace(/^\/+/, '');
+    };
+    /* v3849 - THE SHADOW'S PICTURE ASK. The evidence panel calls this hook: it answers from the owner's snapshot
+       ({end}) or names the owner's origin to GET ({origin}), never this viewer's console.
+       Guarded by tv/test_a_shadow_asks_the_owner_for_a_picture.py */
+    window._shadowPictureAsk = function (id) {
+      var _e = function (pic) { return { end: pic }; };
+      var origin = null;
+      var snap = window._tvdShadowSnap || window._tvdShadow;
+      var pics = snap && snap.pictures;
+      if (pics && Object.prototype.hasOwnProperty.call(pics, id)) {
+        var sp = pics[id];
+        if (sp && sp.present) return _e({ state: 'unknown', frame: id, say: 'the console holds this picture but this page could not load it — open it from the console' });
+        if (sp && sp.why) return _e({ state: 'gone', frame: id, code: sp.code || null, say: 'picture not on this machine — ' + sp.why });
+        return _e({ state: 'unknown', frame: id, say: 'picture not on this machine — why is UNKNOWN (the console did not say)' });
+      }
+      origin = (snap && (snap.origin || snap.ownerOrigin)) || window._tvdShadow.origin || '';
+      if (!/^https?:\/\//.test(String(origin || ''))) origin = '';
+      if (!origin) return _e({ state: 'unknown', frame: id, say: 'picture not on this machine — why is UNKNOWN (the owner console was not on this snapshot, so nobody was asked)' });
+      return { origin: origin };
+    };
+    /* v3849 D2 - a read-only board: a shadow draws no EDIT pencil and fetches no shot file from this viewer's console */
+    window._tvdReadOnlyBoard = true;
     document.addEventListener('click', function (ev) {
       var t = ev.target;
       if (!t || !t.closest) return;
@@ -4820,7 +4855,7 @@ window._LP_FORKED = new Set([
 // and LADDER on this Mac write ONE bench book (the key resolves bare on both), while the Windows
 // cousin keeps its own. The COUNT of crafted items on hand stays in d2r_craftStash, which is in
 // _LP_FORKED, because that is INVENTORY. Inventory forks; the book does not.
-window._WP_FORKED = new Set(Array.from(window._LP_FORKED).concat(['d2r_rwMade','d2r_rwUnmade','d2r_rwProfile','d2r_grailUnfound','d2r_ladderMode','d2r_unknownReads','d2r_foundLog','d2r_setPieces','d2r_grailImportReport','d2r_chronApplied','d2r_craftMade','d2r_chronicleHandoff','d2r_foundBy','d2r_vaultRecords','d2r_vaultRecordsMigrate','d2r_vaultRecordsDirty']));   /* REG-1886 — d2r_foundBy says who made each d2r_foundLog row, so it forks exactly as that ledger does (a new key: nothing to orphan). v1521 — the sweep's apply batches follow the chronicle they belong to: shared MAC main↔ladder, forked on the Windows cousin. An undo that reached across machines would reverse a find its own chronicle never had. */
+window._WP_FORKED = new Set(Array.from(window._LP_FORKED).concat(['d2r_rwMade','d2r_rwUnmade','d2r_rwProfile','d2r_grailUnfound','d2r_ladderMode','d2r_unknownReads','d2r_foundLog','d2r_setPieces','d2r_grailImportReport','d2r_chronApplied','d2r_craftMade','d2r_chronicleHandoff','d2r_foundBy','d2r_vaultRecords','d2r_vaultRecordsMigrate','d2r_vaultRecordsDirty','d2r_vaultModsManual']));   /* REG-1886 — d2r_foundBy says who made each d2r_foundLog row, so it forks exactly as that ledger does (a new key: nothing to orphan). v1521 — the sweep's apply batches follow the chronicle they belong to: shared MAC main↔ladder, forked on the Windows cousin. An undo that reached across machines would reverse a find its own chronicle never had. */
 try { window.localStorage.setItem('d2r_profile', window.D2R_PROFILE === 'ladder' ? 'ladder' : 'main'); } catch(e){}   // v911.1 — the console reads the ACTIVE profile
 window.LSR = (function(){
   var RAW = window.localStorage;
@@ -12417,7 +12452,8 @@ function d2jspPriceLine(q) {
    within the roll range of the row that holds it: 0% is the row's floor, 100% its ceiling. Reimplemented from the
    game's tables; it borrows no other planner's code. ADVISORY ONLY: a value above every row's ceiling (or below every
    floor) is flagged "likely misread" with the raw read kept beside the legal bound, and nothing is ever refused. A line
-   that names no row is kept for the drawer with the reason "could not be read" and is not weighed. [[unknown-stays-unknown]] */
+   that names no row is kept for the drawer with the reason "could not be read" and is not weighed; a line that still
+   reads as a range is not read. [[unknown-stays-unknown]] */
 var _d2jspTplRe = {};
 function d2jspTplRe(db, tid) {
   if (Object.prototype.hasOwnProperty.call(_d2jspTplRe, tid)) return _d2jspTplRe[tid];
@@ -12471,6 +12507,8 @@ function d2jspAffixRead(mods, db, itemName) {
         if (val >= a && val <= b && (!best || b > best.hi)) best = { lo: a, hi: b };
       });
     });
+    /* v3849 - a line that still reads as a range (+300-400% Enhanced Damage) is the template, not a roll: not read, not kept */
+    if (!any && /\d\s*[-\u2013]\s*\d/.test(t)) return;
     if (!any) { out.push({ line: t, value: null, lo: 0, hi: 0, pct: 0, warn: 'could not be read' }); return; }
     if (best) {
       /* v3844 - a mod that rolls below zero (-9% to Enemy Lightning Resistance) is better the more negative it is */
@@ -16134,7 +16172,7 @@ window._cubeUpNote = _cubeUpNote;
 /* v3849 D2 (Elad 12:22) - THREE CORNER BADGES ON EVERY VAULT TILE: the EDIT pencil top-left, the magnifier bottom-left
    (the evidence chip, already there) and $ bottom-right. EDIT opens one box for that item's mods; saving writes only the
    typed-mods store, never assign, a cell, a mule or a locker. It is the owner's: a shadow draws no pencil. */
-function _vaultInShadow(){ try { return !!(typeof window !== 'undefined' && window._tvdShadow); } catch (e) { return false; } }
+function _vaultInShadow(){ try { return !!(typeof window !== 'undefined' && window._tvdReadOnlyBoard); } catch (e) { return false; } }   /* set by the SHADOW BOOT block */
 function _vaultJsArg(n){ return String(n).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 function _vaultCornerEdit(n){
   if (_vaultInShadow()) return '';
@@ -24907,15 +24945,15 @@ function _mfBase(name){ var v=magicFinds&&magicFinds[name]; return (v&&typeof v=
    cannot move a cell, a mule, a locker or a route (none of those read it). Typed mods override read ones and the
    affix ranges (D1). */
 function _vaultManualMods(name){
-  try { var m = JSON.parse((typeof LS !== 'undefined' && LS.getItem ? LS.getItem('d2r_vaultModsManual') : localStorage.getItem('d2r_vaultModsManual')) || '{}'); var v = m && m[String(name)]; return Array.isArray(v) ? v.slice() : null; } catch (e) { return null; }
+  try { var m = JSON.parse(LS.getItem('d2r_vaultModsManual') || '{}'); var v = m && m[String(name)]; return Array.isArray(v) ? v.slice() : null; } catch (e) { return null; }
 }
 function _vaultSetManualMods(name, lines){
   var key = 'd2r_vaultModsManual', m = {};
-  try { m = JSON.parse((typeof LS !== 'undefined' && LS.getItem ? LS.getItem(key) : localStorage.getItem(key)) || '{}') || {}; } catch (e) { m = {}; }
+  try { m = JSON.parse(LS.getItem(key) || '{}') || {}; } catch (e) { m = {}; }
   var clean = (lines || []).map(function(l){ return String(l).trim(); }).filter(Boolean);
   if (clean.length) m[String(name)] = clean; else delete m[String(name)];
   var raw = JSON.stringify(m);
-  try { if (typeof LS !== 'undefined' && LS.setItem) LS.setItem(key, raw); else localStorage.setItem(key, raw); } catch (e2) { return false; }
+  try { LS.setItem(key, raw); } catch (e2) { return false; }
   return true;
 }
 try { window._vaultManualMods = _vaultManualMods; window._vaultSetManualMods = _vaultSetManualMods; } catch (eVm) {}
@@ -49099,16 +49137,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
      shadow drew the viewer's own frame of that name (or none). In a shadow every frame path is the owner's address +
      that path, and with no owner address on the snapshot there is no picture to load (null) - never the viewer's.
      Guarded by tv/test_a_shadow_draws_the_owners_frame.py. */
-  window._shadowOwnerUrl = function(path){
-    var p = String(path == null ? '' : path);
-    if (!window._tvdShadow) return p || null;
-    if (!p) return null;
-    var org = String(window._tvdShadow.origin || '');
-    if (!/^https?:\/\//.test(org)) return null;
-    if (/^https?:\/\//i.test(p)) return p.indexOf(org + '/') === 0 ? p : null;
-    if (/^(data|blob):/i.test(p)) return null;
-    return org + '/' + p.replace(/^\/+/, '');
-  };
+  /* v3849 - in a shadow the owner's address is the SHADOW BOOT block's hook (TheSameConsoleDrawsIt: a draw never
+     branches on the shadow). On his own board no boot ran, and a frame path is itself. */
+  window._shadowOwnerUrl = window._shadowOwnerUrl || function(path){ var p = String(path == null ? '' : path); return p || null; };
   window._vaultLookSrc = function(look){
     var fr = look && look.frame ? String(look.frame) : '', sid = look && look.session ? String(look.session) : '';
     if (!fr) return null;
@@ -49118,7 +49149,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
        ms "1788820373017" (reel in `session`) became "reel_<s>/1788820373017" with no f_ prefix and no
        .jpg, so the file never matched. Now all three resolve. [[the-unjoined-end]] */
     if (/^reel_[^\/\\]+\/[^\/\\]+$/.test(fr))
-      { var _relH = 'tv/frames/hist/' + fr + (/\.jpg$/.test(fr) ? '' : '.jpg'); return (window._tvdShadow && typeof window._shadowOwnerUrl === 'function') ? window._shadowOwnerUrl(_relH) : _relH; }
+      { var _relH = 'tv/frames/hist/' + fr + (/\.jpg$/.test(fr) ? '' : '.jpg'); return window._shadowOwnerUrl(_relH); }
     if (!sid) return null;
     var s = sid.replace(/#\d+$/, '').replace(/^reel_/, '');
     if (!s || /[\/\\]/.test(s) || /[\/\\]/.test(fr)) return null;
@@ -49129,7 +49160,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var nms = /^(\d+)_(\d{12,14})$/.exec(stem);
     var fn = (nms ? ('f_' + nms[2]) : (/^\d+$/.test(stem) ? ('f_' + stem) : stem)) + '.jpg';
     var _rel = 'tv/frames/hist/reel_' + s + '/' + fn;
-    return (window._tvdShadow && typeof window._shadowOwnerUrl === 'function') ? window._shadowOwnerUrl(_rel) : _rel;   /* v3849 (a) */
+    return window._shadowOwnerUrl(_rel);   /* v3849 (a) - the boot hook re-points it to the owner in a shadow */
   };
   /* #36 (REG-2908, his ruling 2026-10-28 11:30: "so each reel knows whose stash it filmed") - A LOOK CARRIES THE CHARACTER
      ITS SESSION WAS ON, unless the read named its holder. Every look here was holder-less in production: the stash sweep's
@@ -49326,20 +49357,13 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
          read HIS console's picture status. No serving console = nobody to ask, and the panel says so — UNKNOWN. The
          VAULT_PICTURE_STATUS_URL knob nothing ever set is gone with it. A shadow asks the OWNER's origin on the
          snapshot, never this viewer's console, and only with a GET. [[the-unjoined-end]] [[unknown-stays-unknown]] */
+      /* v3849 - a shadow's answer is the SHADOW BOOT block's hook (_shadowPictureAsk): it answers from the owner's
+         snapshot ({end}) or names the owner's origin ({origin}). The draw never branches on the shadow. */
       var origin = null;
-      if (window._tvdShadow) {
-        var snap = window._tvdShadowSnap || window._tvdShadow;
-        var pics = snap && snap.pictures;
-        if (pics && Object.prototype.hasOwnProperty.call(pics, id)) {
-          var sp = pics[id];
-          if (sp && sp.present) return end({ state: 'unknown', frame: id, say: 'the console holds this picture but this page could not load it — open it from the console' });
-          if (sp && sp.why) return end({ state: 'gone', frame: id, code: sp.code || null, say: 'picture not on this machine — ' + sp.why });
-          return end({ state: 'unknown', frame: id, say: 'picture not on this machine — why is UNKNOWN (the console did not say)' });
-        }
-        origin = (snap && (snap.origin || snap.ownerOrigin)) || window._tvdShadow.origin || '';
-        if (!/^https?:\/\//.test(String(origin || ''))) origin = '';
-        if (!origin) return end({ state: 'unknown', frame: id, say: 'picture not on this machine — why is UNKNOWN (the owner console was not on this snapshot, so nobody was asked)' });
-      } else {
+      var _shAsk = (typeof window._shadowPictureAsk === 'function') ? window._shadowPictureAsk(id) : null;
+      if (_shAsk && _shAsk.end) return end(_shAsk.end);
+      if (_shAsk) origin = _shAsk.origin;
+      else {
         origin = _consoleOrigin();
         if (!origin) return end({ state: 'unknown', frame: id, say: 'picture not on this machine — why is UNKNOWN (no console served this page, so nobody was asked)' });
       }
@@ -49357,7 +49381,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     };
     /* rank 3 — the panel's off-screen probe walks the SAME chain the lightbox will, reel path first */
     var chain = []; try { chain = (typeof window._tvdFrameChain === 'function') ? (window._tvdFrameChain(id, src || null) || []) : []; } catch (e) { chain = []; }
-    if (window._tvdShadow) chain = chain.map(function(u){ return window._shadowOwnerUrl(u); }).filter(function(u, k, a){ return !!u && a.indexOf(u) === k; });   /* v3849 (a) the owner's frame */
+    chain = chain.map(function(u){ return window._shadowOwnerUrl(u); }).filter(function(u, k, a){ return !!u && a.indexOf(u) === k; });   /* v3849 (a) the owner's frame (itself on his board) */
     if (!chain.length || typeof Image !== 'function') return ask();
     var i = 0, img = new Image();
     var guard = setTimeout(function(){ img.onload = img.onerror = null; ask(); }, 8000);
@@ -49387,7 +49411,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       var box = host.querySelector('.vev-pic');
       if (box) box.outerHTML = window._vaultEvidencePicHtml(m, pic);
     }, window._vaultLookSrc(first));
-    else if (shot && !window._tvdShadow && typeof window._vGetShot === 'function') {
+    else if (shot && !window._tvdReadOnlyBoard && typeof window._vGetShot === 'function') {   /* a shadow (boot flag) fetches no shot from this viewer */
       window._vGetShot(shot.shotFile).then(function(full){
         if (window.__vevTicket !== ticket || !full) return;
         var box = host.querySelector('.vev-pic');
@@ -87747,7 +87771,7 @@ button:not(:disabled):hover { box-shadow: 0 0 8px rgba(255,170,80,.30); }
   /* v3849 (v3848 eye #3) - a typed lookup (the shadow veil's box or FIND) owns its first Esc even with a card open: the
      field clears; the next Esc closes the top overlay. Guarded by tv/test_esc_clears_a_typed_lookup_over_an_overlay.py */
   function escClearsField(e) {
-    var t = e.target, L = window._tvdShadowLookup;
+    var t = e.target, L = window._tvdTypedLookup;
     try { return !!(t && t.matches && t.value && ((L && t.matches(L)) || t.id === 'vault-find-input')); } catch (eF) { return false; }
   }
   function typingInPlainField(e) {

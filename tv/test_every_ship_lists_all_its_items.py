@@ -21,7 +21,9 @@ TITLE = re.compile(r"^v\d+: [A-Z][a-z]+ [A-Z][a-z]+$")
 def feature_commits(ver):
     out = subprocess.run(["git", "log", "--format=%s"], cwd=ROOT, capture_output=True,
                          text=True, encoding="utf-8").stdout or ""
-    return [s for s in out.splitlines() if s.startswith(ver + ": ") and not TITLE.match(s)]
+    # v3849: a subject seen twice is one item - a branch carried both rebased and merged lists each commit twice
+    # (68 subjects, 53 distinct). The bar is still one line per distinct feature/fix.
+    return list(dict.fromkeys(s for s in out.splitlines() if s.startswith(ver + ": ") and not TITLE.match(s)))
 
 
 def short(entry):

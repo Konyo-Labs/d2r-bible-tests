@@ -57,7 +57,8 @@ GOOD = {"name": "Nagelring", "lane": "stash", "kind": "item", "count": 1, "conf"
         "witnesses": [_look("s_a", "f_a.jpg", 0.9), _look("s_b", "f_b.jpg", 0.85)]}
 MAGEFIST = {"name": "Magefist", "lane": "stash", "kind": "item", "count": 1, "conf": 0.85,
             "witnesses": [_look("s_1", None, 0.0), _look("s_2", "f_2.jpg", 0.85)]}
-PIECE = {"name": "Aldur's Advance", "lane": "stash", "kind": "item", "count": 1, "conf": 0.9,
+# v3849 (6fff0ef41): only a valuable set piece is kept - Aldur's Advance is thrown out now - so the piece is a kept one
+PIECE = {"name": "Tal Rasha's Guardianship", "lane": "stash", "kind": "item", "count": 1, "conf": 0.9,
          "witnesses": [_look("s_c", "f_c.jpg", 0.9), _look("s_d", "f_d.jpg", 0.9)]}
 FOUND_EVER = "Arachnid Mesh"
 
@@ -178,7 +179,7 @@ class TheWitnessedLaneFilesItsOwnRows(unittest.TestCase):
         self.assertEqual("no-home", out["row"][0][0], "the sorter calls a witnessed row 'no witness': %r" % out["row"])
 
     def test_a_set_piece_seen_in_the_stash_files_through_the_set_door(self):
-        pieces = [k for k in self.out["map"] if k.startswith("Aldur's Advance")]
+        pieces = [k for k in self.out["map"] if k.startswith("Tal Rasha's Guardianship")]
         self.assertTrue(pieces, "a set piece witnessed in the stash was not filed: %r" % self.out["applied"])
         self.assertEqual("stash", (self.out["prov"].get(pieces[0]) or {}).get("source"))
         self.assertIn(pieces[0], self.out["setPieces"], "the set piece did not tick its set")

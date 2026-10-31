@@ -14,7 +14,7 @@ returned as saved, the packer takes its cell before it places anything new, and 
 move forward.
 
 Three changes that had to move a target did not:
-- An item the rules do not place (Carrion Wind) that he files by hand on UNI-ARMOR. Its task still sent it to SHARED STASH
+- An item the rules place elsewhere (Carrion Wind) that he files by hand on UNI-ARMOR. Its task still sent it to SHARED STASH
   (1,1), while its card and FIND drew it on UNI-ARMOR.
 - Lightsabre, which he placed by hand at col 7 · row 6 on its card. Its task still said stash:c0r0.
 - WAR1 after he took it back (deleted and declined). Two Shako rows still said "-> WAR1 (1,1)" / "(3,1)", a mule that no
@@ -217,7 +217,11 @@ class ASavedTargetNeverMovesUnlessHeMovesIt(unittest.TestCase):
     def test_his_refile_retargets_the_copy_and_the_row_says_why(self):
         r = self.refile
         self.assertEqual(r["__boot"]["errors"], [], r["__boot"])
-        self.assertEqual(r["before"]["cw"]["id"], "shared", "PREMISE: Carrion Wind was not first planned to the shared stash: %r" % r["before"])
+        # v3849 B9: a hand-added trash unique files by its kind (Carrion Wind -> UNI-SMALL), no longer SHARED STASH. The
+        # premise this law needs is only that the rules first planned it on a locker OTHER than the one he files it on.
+        self.assertTrue(r["before"]["cw"]["id"] and r["before"]["cw"]["cell"], "PREMISE: Carrion Wind was not planned: %r" % r["before"])
+        self.assertNotIn(r["before"]["cw"]["id"], ("uni-armor", "uni-weap"),
+                         "PREMISE: Carrion Wind was first planned where he files it: %r" % r["before"])
         c1 = r["cw1"]
         self.assertEqual(c1["id"], "uni-armor", "his re-file left the task on another locker: %r" % c1)
         self.assertTrue(c1["cell"], c1)

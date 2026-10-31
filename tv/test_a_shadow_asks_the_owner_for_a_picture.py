@@ -23,7 +23,7 @@ BIBLE = os.path.join(os.path.dirname(HERE), "bible.html")
 NODE = shutil.which("node")
 SRC = open(BIBLE, encoding="utf-8").read()
 URL_LINE = "      var url = origin + '/api/picture_status?ids=' + encodeURIComponent(id);\n"
-OWNER_LINE = "        origin = (snap && (snap.origin || snap.ownerOrigin)) || window._tvdShadow.origin || '';\n"
+OWNER_LINE = "      origin = (snap && (snap.origin || snap.ownerOrigin)) || window._tvdShadow.origin || '';\n"
 ALLOW = "      if (m === 'GET' && u.pathname === '/api/picture_status' && _shadowPictureOwner(u.origin)) return false;\n"
 SAVED = "no picture was saved for this item"
 
@@ -70,6 +70,8 @@ def _between(src, start, end):
 
 BLOCKED = _between(SRC, "    function foreign(url) {", "    var realFetch = window.fetch;")
 PICTURE = _fn_assign(SRC, "  window._vaultEvidencePicture = function(frameId, done, src){")
+# v3849: the shadow's answer is the SHADOW BOOT block's hook (TheSameConsoleDrawsIt) - installed only when a shadow booted
+ASK_HOOK = _fn_assign(SRC, "    window._shadowPictureAsk = function (id) {")
 
 HARNESS = r"""
 var fetches = [], asked = 0;
@@ -79,11 +81,12 @@ function fetch(url, opt){
 }
 function _consoleOrigin(){ asked++; return 'http://127.0.0.1:17999'; }
 var window = { location: { href: 'http://127.0.0.1/board', origin: 'http://127.0.0.1' } };
-""" + BLOCKED + "\n" + PICTURE + r"""
+""" + BLOCKED + "\n" + PICTURE + "\nfunction bootShadow(){\n" + ASK_HOOK + "\n}\n" + r"""
 function ask(id, setup){
   fetches = []; asked = 0;
-  window._tvdShadow = null; window._tvdShadowSnap = null;
+  window._tvdShadow = null; window._tvdShadowSnap = null; window._shadowPictureAsk = null;
   setup();
+  if (window._tvdShadow) bootShadow();
   return new Promise(function(resolve){
     window._vaultEvidencePicture(id, function(p){
       resolve({ pic: p, fetches: fetches.slice(), asked: asked });
@@ -170,8 +173,8 @@ class AShadowAsksTheOwnerForAPicture(unittest.TestCase):
 RED_PROOF = [
     {"why": "v3849 - a shadow asks the viewer's console for the picture again",
      "file": "bible.html",
-     "find": "        origin = (snap && (snap.origin || snap.ownerOrigin)) || window._tvdShadow.origin || '';\n",
-     "replace": "        origin = _consoleOrigin();\n",
+     "find": "      origin = (snap && (snap.origin || snap.ownerOrigin)) || window._tvdShadow.origin || '';\n",
+     "replace": "      origin = _consoleOrigin();\n",
      "matches": 1},
     {"why": "v3849 - the owner's picture_status GET is refused with every other /api/ call",
      "file": "bible.html",

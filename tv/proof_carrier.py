@@ -187,8 +187,9 @@ def note_gate_run(kind, head=None, ok=True, where=None, now_ms=None):
                 got = json.load(fh)
             if isinstance(got, dict):
                 rec = got
-    except (OSError, ValueError):
-        rec = {}
+    except (OSError, ValueError) as exc:
+        # a writer: an unreadable record answers nothing, so it is replaced whole - and that is said, never silent
+        sys.stderr.write("proof_carrier: the gate-run record was unreadable (%s) - written fresh\n" % (exc,))
     rec[kind] = {"head": head, "ok": True, "at": int(now_ms if now_ms is not None else time.time() * 1000)}
     kept = dict((k, rec[k]) for k in ("pre-push", "nightly") if isinstance(rec.get(k), dict))
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)

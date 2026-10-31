@@ -104,15 +104,18 @@ CAPTURE = r"""function (w, step) {
   var D = w.document;
   function norm(s) { return String(s == null ? '' : s).replace(/\d+\s*(s|sec|min|m|h|hr|hours?|days?|d)\s+ago/g, 'AGO').replace(/\s+\n/g, '\n'); }
   function shape(sel) { var el = D.querySelector(sel); if (!el) return null; var out = [];
-    el.querySelectorAll('*').forEach(function (n) { out.push(n.tagName + '.' + String(n.getAttribute('class') || '').trim().split(/\\s+/).sort().join('.')); });
+    el.querySelectorAll('*').forEach(function (n) { if (n.closest('.vm-cell-edit')) return; out.push(n.tagName + '.' + String(n.getAttribute('class') || '').trim().split(/\\s+/).sort().join('.')); });
     return out.length + ':' + out.join('|'); }
-  function txt(sel) { var el = D.querySelector(sel); return el ? norm(el.innerText) : null; }
+  /* v3849 D2 (his ruling): a shadow draws no EDIT pencil - the one sanctioned difference. Shape and text leave the
+     pencil out on both sides; `pencils` counts it, and the law holds the console drew some and the shadow none. */
+  function txt(sel) { var el = D.querySelector(sel); return el ? norm(el.innerText).replace(/\n\u270e(?=\n)/g, '') : null; }
+  function pencils(sel) { return D.querySelectorAll(sel + ' .vm-cell-edit').length; }
   function strip(h) { var d = D.createElement('div'); d.innerHTML = h || ''; return norm(d.textContent); }
   if (step === 'chars') { w.switchTab('chars'); return { wait: 1 }; }
   if (step === 'chars!') return { text: txt('#tab-chars'), shape: shape('#tab-chars') };
   if (step === 'vault') { w.switchTab('vault'); return { wait: 1 }; }
-  if (step === 'vault!') return { text: txt('#tab-vault'), shape: shape('#tab-vault') };
-  if (step.indexOf('mule:') === 0) { w.openMuleCard(step.slice(5)); var t = txt('#vault-detail'), sh = shape('#vault-detail'); w.vaultCloseCard(true); return { text: t, shape: sh }; }
+  if (step === 'vault!') return { text: txt('#tab-vault'), shape: shape('#tab-vault'), pencils: pencils('#tab-vault') };
+  if (step.indexOf('mule:') === 0) { w.openMuleCard(step.slice(5)); var t = txt('#vault-detail'), sh = shape('#vault-detail'), pc = pencils('#vault-detail'); w.vaultCloseCard(true); return { text: t, shape: sh, pencils: pc }; }
   if (step === 'builder') {
     var bid = w.LSR.getItem('d2r_cbSel');
     w.openCharBuilder(bid); var out = { equip: txt('#cb-win'), equipShape: shape('#cb-win') };
@@ -167,7 +170,8 @@ SSV_READ = """(function(){ var o = document.getElementById('shadow-sess-ov'), p 
   return { text: p.innerText, rows: o.querySelectorAll('.ssv-row').length, onTop: !!(top && o.contains(top)),
            srcs: imgs.map(function(i){ return String(i.getAttribute('src')).slice(0, 23); }),
            decoded: imgs.map(function(i){ return i.complete && i.naturalWidth > 0; }),
-           buttons: o.querySelectorAll('button').length, writes: o.querySelectorAll('form, input, textarea, select').length,
+           buttons: o.querySelectorAll('button').length,
+           kinds: [].slice.call(o.querySelectorAll('button')).map(function(b){ return b.id || String(b.className).split(' ')[0]; }).sort(), writes: o.querySelectorAll('form, input, textarea, select').length,
            inBody: o.parentNode === document.body }; })()"""
 OWN = "document.getElementById('tvd-eng').contentWindow"
 SHADOW = "document.getElementById('shadow-eng').contentWindow"
@@ -496,7 +500,11 @@ class ShadowDrawsTheirConsole(unittest.TestCase):
             self.assertIn(OWNER + "'s reels", self.b["chars"]["text"])
             self.assertIn("this console's reels", self.a["chars"]["text"])
             return
-        self.assertEqual(self.b.get(key), self.a[key], "%s draws differently in shadow" % key)
+        a, b = dict(self.a[key]), dict(self.b.get(key) or {})
+        pa, pb = a.pop("pencils", None), b.pop("pencils", None)
+        self.assertEqual(b, a, "%s draws differently in shadow" % key)
+        if pa is not None:
+            self.assertEqual(pb, 0, "%s: a shadow drew the owner's EDIT pencil (D2: a shadow gets no pencil)" % key)
 
     def test_it_is_their_console_in_this_consoles_own_shell(self):
         d = self.door
@@ -541,6 +549,7 @@ class ShadowDrawsTheirConsole(unittest.TestCase):
 
     def test_the_vault_and_every_mule_window_are_theirs(self):
         self._same("vault")
+        self.assertGreater(self.a["vault"]["pencils"], 0, "premise: the console drew no EDIT pencil to leave out")
         self.assertIn("FIXTURE-ALPHA", self.a["vault"]["text"])
         self.assertIn("FIXTURE-BETA", self.a["vault"]["text"])
         self.assertEqual(self.b["mules"], self.a["mules"])
@@ -631,8 +640,11 @@ class ShadowDrawsTheirConsole(unittest.TestCase):
                 self.assertIn(words, got["text"], "%s: %r is not on the list" % (door, words))
             self.assertEqual(got["srcs"], ["data:image/jpeg;base64,"], got["srcs"])
             self.assertEqual(got["decoded"], [True], "%s: the key frame did not decode as a picture" % door)
-            self.assertEqual((got["buttons"], got["writes"]), (1, 0), "%s: the list carries a control beyond its close"
+            # v3849 (02240e6c7, his ruling): the list plays the served frames - PLAY and its speed are viewing controls,
+            # not writes; beyond them and the close there is nothing to press
+            self.assertEqual((got["buttons"], got["writes"]), (3, 0), "%s: the list carries a control beyond close/play/speed"
                              % door)
+            self.assertEqual(got["kinds"], ["ssv-play", "ssv-speed", "ssv-x"], "%s: %r" % (door, got["kinds"]))
         self.assertTrue(self.ssv["closed"], "the press on the list's close left it open")
         frames = [h for h in self.ssv_hits if "frames=" in h[1]]
         self.assertEqual([(h[0], h[1]) for h in frames], [("GET", "/api/roster-cache?frames=" + OWNER)] * 2,

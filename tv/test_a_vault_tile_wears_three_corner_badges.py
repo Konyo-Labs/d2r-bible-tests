@@ -46,7 +46,7 @@ W.renderVault(); H.flush(60, 3);
 OUT.after = snap();
 OUT.manual = W._vaultManualMods('Arachnid Mesh');
 OUT.tip = String(_mfTipHtml('Small Charm of Balance'));
-W._tvdShadow = { owner: 'x' };
+W._tvdShadow = { owner: 'x' }; W._tvdReadOnlyBoard = true;   /* what the SHADOW BOOT block sets (v3849) */
 W.renderVault(); H.flush(60, 3);
 OUT.shCell = cellOf(shelf(), 'Arachnid Mesh');
 OUT.shSave = W._vaultModsSave('Arachnid Mesh', 'hacked');

@@ -138,7 +138,9 @@ def _river_payload():
     # fallback window.
     end = SRC.find('\n        if path == "', i + 1)
     blk = SRC[i:end if end > i else len(SRC)]
-    k = blk.find("self._json(200, {")
+    # v3849: the route answers `{"ok": False, "computing": True, ...}` first while the plan is built beside the
+    # request (a one-line 200). The SUCCESS payload is the multi-line one - its dict opens at the end of the line.
+    k = blk.find("self._json(200, {\n")
     if k < 0:
         return None
     j = blk.find("except Exception", k)

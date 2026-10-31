@@ -35,15 +35,18 @@ def _between(src, start, end):
 
 
 SEED = _between(SRC, "    var _pics = null;\n", "    window._tvdShadow = { owner:")
-URL = _between(SRC, "  window._shadowOwnerUrl = function(path){", "  /* #36 (REG-2908")
+# v3849: the owner's-address hook lives in the SHADOW BOOT block (TheSameConsoleDrawsIt); the draw keeps an identity default
+LOOK = _between(SRC, "  window._shadowOwnerUrl = window._shadowOwnerUrl || function(path){", "  /* #36 (REG-2908")
+URL = _between(SRC, "    window._shadowOwnerUrl = function(path){", "    /* v3849 - THE SHADOW'S PICTURE ASK")
 
 BODY = r"""
 var out = {};
 var window = {};
 function seedOf(seed){ %SEED%
   return { origin: _porg, pictures: (_pics && _pics.pictures && typeof _pics.pictures === 'object') ? _pics.pictures : null }; }
-%URL%
+%LOOK%
 out.plain = window._vaultLookSrc({ frame: 'f_1.jpg', session: 's_1' });
+%URL%
 var sh = seedOf({ d2r_api_pictures: JSON.stringify({ ok: true, pictures: { f_1: { present: true } }, origin: 'http://owner.example:17772' }) });
 out.seedOrigin = sh.origin; out.seedPics = sh.pictures;
 out.badSeed = seedOf({ d2r_api_pictures: JSON.stringify({ ok: true, pictures: {}, origin: 'javascript:alert(1)' }) }).origin;
@@ -60,8 +63,9 @@ console.log(JSON.stringify(out));
 def run_js(seed=SEED, url=URL):
     if not NODE:
         raise unittest.SkipTest("node missing")
-    body = BODY.replace("%SEED%", seed).replace("%URL%", url)
-    r = subprocess.run([NODE, "-e", body], capture_output=True, text=True, timeout=20)
+    body = BODY.replace("%SEED%", seed).replace("%LOOK%", LOOK).replace("%URL%", url)
+    r = subprocess.run([NODE, "-"], input=body, capture_output=True, text=True,
+                       encoding="utf-8", timeout=20)
     if r.returncode != 0:
         raise AssertionError(r.stderr[-800:])
     return json.loads(r.stdout.strip().splitlines()[-1])
@@ -100,7 +104,7 @@ class TestShadowDrawsTheOwnersFrame(unittest.TestCase):
         self.assertIsNone(o["noOrigin"])
 
     def test_the_evidence_probe_walks_only_owner_urls_in_a_shadow(self):
-        self.assertEqual(SRC.count("if (window._tvdShadow) chain = chain.map(function(u){ return window._shadowOwnerUrl(u); })"), 1)
+        self.assertEqual(SRC.count("    chain = chain.map(function(u){ return window._shadowOwnerUrl(u); })"), 1)
 
 
 RED_PROOF = [
@@ -108,16 +112,16 @@ RED_PROOF = [
      "find": "/^https?:\\/\\/[A-Za-z0-9][A-Za-z0-9.\\-]*(?::\\d{1,5})?$/.test(_pics.origin)) ? _pics.origin : ''",
      "replace": "_pics.origin) ? _pics.origin : ''"},
     {"matches": 1, "why": "shadow returns the relative path the viewer's console answers", "file": "bible.html",
-     "find": "    if (!window._tvdShadow) return p || null;\n", "replace": "    return p || null;\n"},
+     "find": "      if (!window._tvdShadow) return p || null;\n", "replace": "      return p || null;\n"},
     {"matches": 1, "why": "no owner address falls back to the viewer's path", "file": "bible.html",
-     "find": "    if (!/^https?:\\/\\//.test(org)) return null;\n", "replace": "    if (!/^https?:\\/\\//.test(org)) return p;\n"},
+     "find": "      if (!/^https?:\\/\\//.test(org)) return null;\n", "replace": "      if (!/^https?:\\/\\//.test(org)) return p;\n"},
     {"matches": 1, "why": "the reel path skips the owner's address", "file": "bible.html",
-     "find": "    return (window._tvdShadow && typeof window._shadowOwnerUrl === 'function') ? window._shadowOwnerUrl(_rel) : _rel;",
+     "find": "    return window._shadowOwnerUrl(_rel);",
      "replace": "    return _rel;"},
     {"matches": 1, "why": "a viewer-absolute URL is let through", "file": "bible.html",
      "find": "return p.indexOf(org + '/') === 0 ? p : null;", "replace": "return p;"},
     {"matches": 1, "why": "the probe chain is not re-pointed in a shadow", "file": "bible.html",
-     "find": "    if (window._tvdShadow) chain = chain.map(", "replace": "    if (false) chain = chain.map("},
+     "find": "    chain = chain.map(function(u){ return window._shadowOwnerUrl(u); })", "replace": "    chain = chain.map(function(u){ return u; })"},
     {"matches": 1, "why": "snapshot drops the origin", "file": "tv/console_snapshot.py",
      "find": "        out[\"origin\"] = org\n    return out", "replace": "        pass\n    return out"},
     {"matches": 1, "why": "look frames are not asked about", "file": "tv/control_app.py",

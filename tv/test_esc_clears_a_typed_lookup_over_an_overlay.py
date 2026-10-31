@@ -29,7 +29,7 @@ def _drive(target):
     fn, kd = _contract()
     js = """
 var closed = 0, handler = null;
-var window = { _tvdShadowLookup: '.lookup', addEventListener: function (t, h) { handler = h; } };
+var window = { _tvdTypedLookup: '.lookup', addEventListener: function (t, h) { handler = h; } };
 var document = { fullscreenElement: null, body: { classList: { contains: function () { return false; } } } };
 function typingInPlainField() { return false; }
 function topmost() { return { x: { click: function () { closed++; } } }; }
@@ -41,7 +41,7 @@ var ev = { key: 'Escape', target: tgt, preventDefault: function () {}, stopImmed
 handler(ev);
 console.log(JSON.stringify({ closed: closed }));
 """ % (fn, kd, json.dumps(target))
-    out = subprocess.run([NODE, "-e", js], capture_output=True, text=True, timeout=30)
+    out = subprocess.run([NODE, "-"], input=js, capture_output=True, text=True, encoding="utf-8", timeout=30)
     if out.returncode:
         raise AssertionError(out.stderr)
     return json.loads(out.stdout.strip().splitlines()[-1])["closed"]

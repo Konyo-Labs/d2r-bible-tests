@@ -152,11 +152,12 @@ class IntakeTwoLooks(unittest.TestCase):
         self.assertEqual(m2["status"], "to-move", o)
 
     def test_inventory_and_equipped_have_a_record_and_no_move(self):
-        o = run("reg('Horadric Cube', 'inventory', 'inventory:c0r0', [look('%s', 'f_1791233340172.jpg', 'inventory', 'inventory:c0r0'),"
+        # v3849 (dbc02a1c1): Horadric Cube is on the intake denylist (a panel word, never an item), so the inventory item is a charm
+        o = run("reg('Annihilus', 'inventory', 'inventory:c0r0', [look('%s', 'f_1791233340172.jpg', 'inventory', 'inventory:c0r0'),"
                 " look('%s', 'f_1791234901836.jpg', 'inventory', 'inventory:c0r0')]);"
                 "reg('Vampire Gaze', 'equipped', 'equipped:head', [look('%s', 'f_1791239848059.jpg', 'equipped', 'equipped:head'),"
                 " look('%s', 'f_1791239849135.jpg', 'equipped', 'equipped:head')], { holder: 'Konyo' });"
-                "OUT.cube = state('Horadric Cube'); OUT.gaze = state('Vampire Gaze');" % (S1, S2, S1, S2))
+                "OUT.cube = state('Annihilus'); OUT.gaze = state('Vampire Gaze');" % (S1, S2, S1, S2))
         for k in ("cube", "gaze"):
             self.assertTrue(o[k]["owned"], o)
             self.assertGreaterEqual(o[k]["records"], 1, o)

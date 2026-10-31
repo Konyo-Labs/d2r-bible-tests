@@ -466,7 +466,7 @@ export const DENY = [
   "d2r_inboxReader", "d2r_logger", "d2r_testGuest",
 ];
 export const DENY_PREFIX = ["d2r_quarantine", "d2r_d2jsp_", "d2r_api_"];
-export const API_NAMES = ["chars_learned", "main_locks", "world"];
+export const API_NAMES = ["chars_learned", "main_locks", "world", "pictures"];
 // the fields each console answer may carry (console_snapshot.API_FIELDS) and the world's closed values (world_of)
 export const API_FIELDS = {
   // REG-3080 - sessions/sessionsWhy (REG-2907) were added on the console side only, and apiOk refuses a field outside this
@@ -476,6 +476,9 @@ export const API_FIELDS = {
                   "sessions", "sessionsWhy"],
   main_locks: ["ok", "locked", "tracked", "floor", "minSightings", "canEverLock", "blockedWhy"],
   world: ["machine", "profile", "ledger", "os", "cousin"],
+  // v3849 - a shadow draws the owner's frame: the console's picture map (console_snapshot.pictures_of) rides the
+  // profile, and a name missing here refused the whole profile exactly as REG-3080 did.
+  pictures: ["ok", "pictures", "origin"],
 };
 const WORLD = { machine: ["mac", "windows"], profile: ["main", "ladder"],
                 os: ["MAC", "WINDOWS", "LINUX", "ANDROID", "THIS MACHINE"] };

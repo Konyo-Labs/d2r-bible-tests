@@ -489,3 +489,6 @@ tv/.roster_profile_api.json.tmp
 tv/roster_profile_cache
 # #151 (REG-2743) - the automatic Grok-chat prune's receipt: what went from HIS Grok folder, per PC
 tv/.grok_prune.jsonl
+# v3849: the d2jsp price DB this PC read and merged (per PC, rewritten by the console)
+tv/d2jsp_price_db.json
+tv/d2jsp_price_db.json.tmp

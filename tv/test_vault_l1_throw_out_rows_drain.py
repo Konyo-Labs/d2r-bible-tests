@@ -87,7 +87,9 @@ class ThrowOutRows(unittest.TestCase):
         self.assertTrue(o["has"], "no THROW OUT row for the screenshot-seen junk item")
         self.assertEqual(o["kind"], "throw")
         self.assertIn("NOWHERE", o["text"])
-        self.assertIn("set never ruled", o["text"])  # the plain reason rides on the line (hover + data-reason)
+        # the plain reason rides on the line (hover + data-reason). v3849 (6fff0ef41): an unvalued set piece is ruled
+        # "low set piece" now - no set is "never ruled" - so the plain reason is that one
+        self.assertIn("low set piece", o["text"])
         self.assertNotIn("by DEFAULT", o["list"], "the wordy throw-out advice is back in MOVE TASKS")
         self.assertTrue(o["keep"] and o["junk"], "Keep / Junk are not inline on the row")
         self.assertNotIn(HEAD, o["dock"] or [], "the junk item still sits in the Unsorted Dock")

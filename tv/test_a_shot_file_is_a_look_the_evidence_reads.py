@@ -25,7 +25,7 @@ SHOT_BRANCH = (
     "      if (mf.shotFile){\n"
     "        return [{ frame: null, shotFile: String(mf.shotFile), conf: null, cell: null, session: mf.sessionId || null,\n"
 )
-SHADOW_GUARD = "    else if (shot && !window._tvdShadow && typeof window._vGetShot === 'function') {"
+SHADOW_GUARD = "    else if (shot && !window._tvdReadOnlyBoard && typeof window._vGetShot === 'function') {"  # v3849: the SHADOW BOOT block's flag
 
 
 def _cut(src, start, end):
