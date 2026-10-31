@@ -44254,6 +44254,46 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     return String(n).trim() + ' is ' + what + ' \u2014 counted in ' + t.where + ', its own area of the shared stash; the vault gives it no mule cell';
   }
   try { window._stashTallySay = _stashTallySay; } catch (eTs) {}
+  /* REG-3004 (his Q5, 2026-10-29) - A COUNT TYPED BY HAND MOVES ITS TALLY, UP OR DOWN, THROUGH THE TOOLS TAB'S OWN DOOR. The Rune
+     Stash, Gem Stash and Materials cards on the Tools tab already move a tally one at a time through adjustRuneStash /
+     adjustGemStash / adjustMaterialStash. The hand door refused a rune, a gem or a material instead. Now it moves that tally
+     through the same door: _stashTallyOf (REG-2899's one rule) says which tally. His owned list is never touched.
+     -> {ok, mode:'tallied', kind, name, key, was, now, delta, why} or {ok:false, refused, why} */
+  function _stashTallyDoor(n){
+    var t = _stashTallyOf(n);
+    if (!t) return null;
+    var key, door, count;
+    if (t.kind === 'rune'){
+      var ru = null;
+      try { ru = (typeof findRune === 'function') ? findRune(n) : null; } catch (eFr) { ru = null; }
+      key = ru && ru.n; door = window.adjustRuneStash; count = (typeof _runeCount === 'function') ? _runeCount : null;
+    } else if (t.kind === 'gem'){
+      key = t.name; door = window.adjustGemStash; count = (typeof _gemCount === 'function') ? _gemCount : null;
+    } else {
+      key = t.name; door = window.adjustMaterialStash; count = (typeof _materialCount === 'function') ? _materialCount : null;
+    }
+    if (!key || typeof door !== 'function' || !count) return { t: t, why: t.where + ' tally is not on this page' };
+    return { t: t, key: key, door: door, count: count };
+  }
+  try { window._stashTallyDoor = _stashTallyDoor; } catch (eTd) {}
+  function _stashTallyMove(n, delta, how){
+    var g = _stashTallyDoor(n);
+    if (!g) return { ok: false, refused: 'not-a-count', name: String(n == null ? '' : n).trim(), why: String(n) + ' is not a rune, a gem, a material or a rejuvenation potion \u2014 no tally moved' };
+    var t = g.t, d = Math.round(+delta) || 0;
+    if (!g.door) return { ok: false, refused: 'no-door', name: t.name, why: g.why + ' \u2014 ' + t.name + ' did not move' };
+    if (!d) return { ok: false, refused: 'no-change', name: t.name, why: 'a move of 0 \u2014 ' + t.name + ' stays as it is' };
+    var key = g.key, door = g.door, count = g.count;
+    var was = count(key);
+    if (was + d < 0)
+      return { ok: false, refused: 'below-zero', name: t.name, was: was,
+               why: t.where.charAt(0).toUpperCase() + t.where.slice(1) + ' holds ' + was + ' ' + t.name + ', so it cannot go down ' + (-d) + ' \u2014 nothing changed' };
+    door(key, d);
+    var now = count(key);
+    return { ok: now === was + d, mode: 'tallied', kind: t.kind, name: t.name, key: key, was: was, now: now, delta: d,
+             why: t.name + ' \u2014 ' + t.where + ' ' + was + ' \u2192 ' + now + (how ? ' (' + how + ')' : '')
+                  + (now === was + d ? '' : ' \u2014 the tally did not take the move') + '; the vault gives it no mule cell' };
+  }
+  try { window._stashTallyMove = _stashTallyMove; } catch (eTm) {}
   // v409 / REG-2241 — the three iconic charms (Annihilus, Hellfire Torch, Gheed's Fortune; the 6 Sunder
   // charms are caught by isSharedStash). His ruling 2026-10-15: "torches and anni stay in shared. gheeds gets
   // muled." — so routing NO LONGER sends them to __keep (see suggestMule: Anni & Torch → the shared stash,
@@ -48215,6 +48255,10 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
      opts  kind (the planner row's 'unique' | 'set' | 'runeword'), by / where (who is speaking for his hand) */
   window.vaultHandAdd = function(name, at, opts){
     var pre = _vhPrepare(name, at, opts || {});
+    /* REG-3004 (his Q5) - a rune, a gem, a material or a rejuvenation potion is a count: his hand moves its tally (opts.delta,
+       +1 when not said; -1 takes one off) through the Tools tab's own door, and owns nothing */
+    if (!pre.ok && pre.stash && typeof window._stashTallyMove === 'function')
+      return window._stashTallyMove(pre.name, (opts && opts.delta != null) ? opts.delta : 1, String((opts && opts.by) || 'by hand'));
     if (!pre.ok) return pre;
     /* L1 (Elad, live v3774: a 2nd Aldur's Deception he typed vanished - no row, no cell, no error). A name he
        already owns, typed again by HAND, is another physical copy: ×N the way a 2nd photo-read copy is (the
@@ -48358,7 +48402,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     _vhSeen = {};
     host.innerHTML = '<div class="vault-hand-box"><div class="vault-hand-top"><p>Add an item you have, from the planner list. It is yours at once. A name the router already knows is homed on its mule; a name with no home waits in Unsorted, and you choose that mule.</p>'
       + '<button type="button" onclick="window.vaultHandClose()">Close</button></div>'
-      + '<input type="search" id="vault-hand-q" class="vault-hand-q" aria-label="search the planner list" placeholder="Type a name — Enter adds the top match" autocomplete="off" spellcheck="false" oninput="window.vaultHandSearch(this.value)" onkeydown="window._vaultHandKey(event)">'
+      + '<input type="search" id="vault-hand-q" class="vault-hand-q" aria-label="search the planner list" placeholder="Type a name — Enter adds the exact name" autocomplete="off" spellcheck="false" oninput="window.vaultHandSearch(this.value)" onkeydown="window._vaultHandKey(event)">'
       + '<p id="vault-hand-say" class="vault-hand-say" role="status"></p>'
       + '<div id="vault-hand-list"></div></div>';
     /* Vault v3 B2 (Elad t642u) — one add door at a time, and the box takes the keys the moment it opens */
@@ -48373,14 +48417,38 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     if (e.key === 'Escape'){ if (e.preventDefault) e.preventDefault(); if (e.stopPropagation) e.stopPropagation(); window.vaultHandClose(); return; } /* r2 Low: one Esc closes this box only, never an open mule card too */
     if (e.key !== 'Enter') return;
     if (e.preventDefault) e.preventDefault();
-    var first = document.querySelector('#vault-hand-list .vault-hand-opt');
-    if (!first){
-      var say = document.getElementById('vault-hand-say');
-      if (say){ say.textContent = 'nothing in the planner list matches — nothing was added'; say.setAttribute('data-state', 'refused'); }
-      return { ok: false, refused: 'no-match' };
+    /* REG-3068 (GrokBot 05:07) - ENTER TAKES THE EXACT NAME, NEVER THE TOP ROW BY GUESS. "Spirit" listed [Cerebus' Bite,
+       Ravenlore, Spirit, Spirit Forge] and Enter added Cerebus' Bite; "Oath" would have taken Bane's Oathmaker. Now Enter takes
+       the row whose name IS what he typed (case-insensitive; a trailing "(alias)" aside) - a count he named is its tally's +1
+       (REG-3004) - asks when the name is two items, and takes nothing until he picks a row when no name is exact. */
+    var _q = String((document.getElementById('vault-hand-q') || {}).value || '').trim();
+    var _ex = _vhExact(_q);
+    var say = document.getElementById('vault-hand-say');
+    var _say = function(t, st){ if (say){ say.textContent = t; say.setAttribute('data-state', st); } };
+    if (_ex.length === 1) return _ex[0].tally ? window.vaultHandTally(_ex[0].name, 1) : window.vaultHandTake(_ex[0].id);
+    if (_ex.length > 1){
+      _say('"' + _q + '" is ' + _ex.length + ' items here: ' + _ex.map(function(x){ return x.name; }).join(' or ') + ' \u2014 pick one from the list; nothing was added', 'ask');
+      return { ok: false, refused: 'ambiguous', among: _ex.map(function(x){ return x.name; }) };
     }
-    return window.vaultHandTake(first.getAttribute('data-id'));
+    var _any = !!(window._vhKeep || []).length || !!(window._vhTal || []).length;
+    _say(_any ? ('no item is named exactly "' + _q + '" \u2014 pick one from the list (Enter takes only an exact name); nothing was added')
+              : 'nothing in the planner list matches \u2014 nothing was added', 'refused');
+    return { ok: false, refused: _any ? 'no-exact' : 'no-match' };
   };
+  /* REG-3068 - the rows the last search drew whose name IS q: [{id, name} | {tally:true, name}] (one per item) */
+  function _vhExact(q){
+    var fold = function(s){ return String(s == null ? '' : s).replace(/[\u2018\u2019\u02bc`]/g, "'").toLowerCase().split(/\s+/).join(' ').trim(); };
+    var bare = function(s){ return fold(s).replace(/\s*\([^()]*\)$/, ''); };
+    var fq = fold(q), out = [], seen = {};
+    if (!fq) return out;
+    (window._vhKeep || []).forEach(function(r){
+      if (seen[r.as]) return;
+      if ([r.as, r.name].some(function(n){ return fold(n) === fq || bare(n) === fq; })){ seen[r.as] = 1; out.push({ id: r.id, name: r.as }); }
+    });
+    (window._vhTal || []).forEach(function(t){ if (t.exact && !seen['\u0000' + t.name]){ seen['\u0000' + t.name] = 1; out.push({ tally: true, name: t.name }); } });
+    return out;
+  }
+  try { window._vhExact = _vhExact; } catch (eVx) {}
   window.vaultHandSearch = function(q){
     var list = document.getElementById('vault-hand-list');
     if (!list) return { ok: false, why: 'the add door is not open' };
@@ -48394,8 +48462,20 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     }
     var cache = _vhSeen;
     var keep = [], seen = {}, out = 0, unsettled = 0;
+    /* REG-3004 (his Q5) - a count he types or the list names (a rune, a gem, a material, a rejuvenation potion) is its tally's
+       own row: -1 / +1 move it through the Tools tab's door (_stashTallyMove), never a vault item */
+    var tal = [], talSeen = {};
+    var _talOf = function(n, exact){
+      var g = (typeof window._stashTallyDoor === 'function') ? window._stashTallyDoor(n) : null;
+      if (!g || talSeen[g.t.name]) return !!g;
+      talSeen[g.t.name] = 1;
+      tal.push({ name: g.t.name, where: g.t.where, count: g.door ? g.count(g.key) : null, exact: !!exact });   /* REG-3068 the typed name itself */
+      return true;
+    };
+    if (String(q || '').trim()) _talOf(String(q).trim(), true);
     cat.rows.forEach(function(r){
       if (!r || !r.id || !r.name) return;
+      if (_talOf(String(r.name))) return;
       var ck = String(r.q || '') + '|' + r.name;
       if (!cache[ck]){
         var res = _vhResolve(String(r.name), _VH_KIND[r.q] || null);
@@ -48410,7 +48490,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       keep.push({ id: r.id, name: r.name, as: c.name });
     });
     var h = '';
-    if (!keep.length) h = '<p class="vault-hand-say" data-state="empty">No item the vault draws matches.</p>';
+    if (!keep.length && !tal.length) h = '<p class="vault-hand-say" data-state="empty">No item the vault draws matches.</p>';
     keep.slice(0, VAULT_HAND_SHOWN).forEach(function(r){
       var mine = owned.has(r.as);
       h += '<button type="button" class="vault-hand-opt" data-id="' + _vhEsc(r.id) + '"' + (mine ? ' data-owned="1"' : '')
@@ -48419,6 +48499,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     });
     if (keep.length > VAULT_HAND_SHOWN)
       h += '<p class="vault-hand-say" data-state="more">' + VAULT_HAND_SHOWN + ' of ' + keep.length + ' shown — type to narrow the list</p>';
+    tal.slice(0, VAULT_HAND_SHOWN).forEach(function(t){
+      var tb = function(d, label){ return '<button type="button" class="vault-btn vh-choice" onclick="window.vaultHandTally(this.parentNode.getAttribute(\'data-tally\'), ' + d + ')">' + label + '</button>'; };
+      h += '<p class="vault-hand-say" data-state="tally" data-tally="' + _vhEsc(t.name) + '">' + _vhEsc(t.name) + ' \u2014 a count, not a vault item: '
+        + _vhEsc(t.where) + (t.count == null ? ' (its tally is not on this page)' : ' holds ' + t.count) + ' ' + tb(-1, '\u22121') + ' ' + tb(1, '+1') + '</p>';
+    });
     if (out)
       h += '<p class="vault-hand-say" data-state="left-out">' + out + ' matching planner item' + (out === 1 ? ' is' : 's are')
         + ' not listed — the vault does not draw ' + (out === 1 ? 'it' : 'them') + ' (a white base, a crafted recipe, or a name it does not carry), so an add would show nowhere</p>';
@@ -48426,7 +48511,18 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       h += '<p class="vault-hand-say" data-state="unsettled">' + unsettled + ' matching planner item' + (unsettled === 1 ? ' is' : 's are')
         + ' not listed — which vault item ' + (unsettled === 1 ? 'it names' : 'each names') + ' could not be settled (a name several items share, or a check that could not be asked)</p>';
     list.innerHTML = h;
-    return { ok: true, n: keep.length, shown: Math.min(keep.length, VAULT_HAND_SHOWN), left: out, unsettled: unsettled };
+    window._vhTal = tal;
+    window._vhKeep = keep;   /* REG-3068 - what Enter may take, by exact name only */
+    return { ok: true, n: keep.length, shown: Math.min(keep.length, VAULT_HAND_SHOWN), left: out, unsettled: unsettled, tallies: tal };
+  };
+  /* REG-3004 - a tally row's -1 / +1: the hand door's own count move, said in the box, and the list redrawn with the new count */
+  window.vaultHandTally = function(name, delta){
+    var res = window.vaultHandAdd(name, null, { delta: delta, by: '+ Add an item' });
+    var say = document.getElementById('vault-hand-say');
+    if (say){ say.textContent = (res && res.why) || ''; say.setAttribute('data-state', (res && res.ok) ? res.mode : 'refused'); }
+    var qi = document.getElementById('vault-hand-q');
+    try { window.vaultHandSearch(qi ? qi.value : ''); } catch (eS) {}
+    return res;
   };
   window.vaultHandTake = function(id){
     var cat = window._vhCat;
@@ -48480,6 +48576,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var host = document.getElementById('vault-hand-win');
     if (host){ host.hidden = true; host.innerHTML = ''; }
     window._vhCat = null;
+    window._vhTal = null;
+    window._vhKeep = null;
     _vhSeen = {};
     return true;
   };
@@ -50549,6 +50647,23 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
                 proof: (opts.proof && typeof opts.proof === 'object') ? opts.proof : null };
       /* REG-2404 — a Magic & Rare record the same click took (vaultThrowFind) rides in the batch, so the undo is whole */
       if (opts.magic && typeof opts.magic === 'object' && !Array.isArray(opts.magic)) batch.magic = opts.magic;
+      /* REG-3073 (#153.13, GrokBot's vault sweep) - THE COPIES' RECORDS LEAVE WITH THE NAME, INTO THIS BATCH. An un-own (or any
+         removal of a name) left every copy record of it in d2r_vaultRecords: measured on the whole page in node, three hand-added
+         Shakos un-owned -> owned gone, 3 rows still stored (with their moves to the shared stash and a WAR mule) until some
+         later rebuild happened to drop them. They ride in the batch now - each copy's move, cell and entry - and leave the
+         store at once; vaultRestoreLast puts them back with the name, so the undo is as whole as the stale rows made it. A
+         records store that would not read writes nothing here (UNKNOWN). */
+      try {
+        var _rr = (typeof _vrRecLoadRaw === 'function') ? _vrRecLoadRaw() : undefined;
+        if (_rr && Array.isArray(_rr.records) && typeof _vrRecGuardedSet === 'function') {
+          var _rOut = _rr.records.filter(function(r){ return r && removed.indexOf(r.name) >= 0; });
+          if (_rOut.length) {
+            var _rSt = {}; for (var _rk in _rr) _rSt[_rk] = _rr[_rk];
+            _rSt.records = _rr.records.filter(function(r){ return !(r && removed.indexOf(r.name) >= 0); });
+            if (_vrRecGuardedSet(_rSt)) batch.records = JSON.parse(JSON.stringify(_rOut));
+          }
+        }
+      } catch (eRr) {}
       var log = _logRm; log.push(batch); _vrWrite(log);   /* REG-2520 — the journal this door read (and checked) above */
       /* round-5 review (MED) — the per-name record the ring never evicts (window._vaultRemovalNote, the owned door's rule) */
       try { if (typeof window._vaultRemovalNote === 'function') batch.noted = window._vaultRemovalNote(batch); } catch(e){}
@@ -50717,6 +50832,18 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       }
       back.push(nm);
     });
+    /* REG-3073 - the copies' records the removal carried come back with their names: each copy's move, cell and entry */
+    if (Array.isArray(last.records) && last.records.length && back.length) {
+      try {
+        var _rb = _vrRecLoadRaw();
+        if (_rb && Array.isArray(_rb.records)) {
+          var _rbS = {}; for (var _rq in _rb) _rbS[_rq] = _rb[_rq];
+          _rbS.records = _rb.records.filter(function(r){ return !(r && back.indexOf(r.name) >= 0); })
+            .concat(last.records.filter(function(r){ return r && back.indexOf(r.name) >= 0; }));
+          _vrRecGuardedSet(_rbS);
+        }
+      } catch (eRb) {}
+    }
     _vrWrite(log);
     /* #76 v3753 (defect #3) — undoing the SET-PIECE RECONCILE batch must un-arm ITS stamp, or the migration
        reads "done" while its removal was just reversed: next load sees the stamp, never re-folds, and the
@@ -66327,8 +66454,20 @@ function renderJournal(){
       if (ev.key !== 'Enter') return;
       ev.preventDefault();
       var box = input.closest('.tsrch');
-      var first = box && box.querySelector('.tsrch-go');
-      if (first) first.click();          // Enter tallies the top hit — the one-handed path
+      if (!box) return;
+      /* REG-3068 (GrokBot 05:07, swept from the vault's add box) - Enter tallied the TOP hit, so "Spirit" would tick
+         whichever name sorted first. Now it ticks the row whose name IS what he typed (case-insensitive), asks when two
+         rows carry that name, and ticks nothing until he picks a row when no name is exact. */
+      var fold = function(s){ return String(s == null ? '' : s).replace(/[\u2018\u2019\u02bc`]/g, "'").toLowerCase().split(/\s+/).join(' ').trim(); };
+      var fq = fold(input.value), ex = [];
+      [].forEach.call(box.querySelectorAll('.tsrch-row'), function(r){
+        var nm = r.querySelector('.tsrch-nm');
+        if (fq && nm && fold(nm.textContent) === fq) ex.push(r);
+      });
+      var nEl = box.querySelector('.tsrch-n');
+      if (ex.length === 1){ var go = ex[0].querySelector('.tsrch-go'); if (go) go.click(); return; }
+      if (nEl) nEl.textContent = ex.length > 1 ? ('two rows are named "' + String(input.value).trim() + '" \u2014 pick one; nothing was ticked')
+                                               : ('no row is named exactly "' + String(input.value).trim() + '" \u2014 pick one; Enter ticks only an exact name');
     } catch(e){}
   };
   window._tallySearchTick = function(btn, name){
@@ -81292,8 +81431,9 @@ window.tvStashAutoIntake = async function(tab, opts){
 
   function apply(kind,key,chip){
     try {
-      if(kind==='rune'){ runeStash[key]=(parseInt(runeStash[key],10)||0)+1; persist(); if(typeof renderRuneStash==='function') renderRuneStash(); }
-      else if(kind==='gem'){ gemStash[key]=(parseInt(gemStash[key],10)||0)+1; persist(); if(typeof renderGemStash==='function') renderGemStash(); }
+      /* REG-3004 - the read chip's +1 is the Tools tab's own door, the one the funnel and his hand use: never a second counter */
+      if(kind==='rune'){ if(typeof window.adjustRuneStash==='function') window.adjustRuneStash(key, 1); else return; }
+      else if(kind==='gem'){ if(typeof window.adjustGemStash==='function') window.adjustGemStash(key, 1); else return; }
       else if(kind==='uni'){ if(typeof _gFound==='function'&&_gFound(key)) return; if(typeof window.toggleOwned==='function') window.toggleOwned(key, { source: 'hand', by: 'TV DIABLO read chip', where: 'a TV DIABLO read he applied' }); }
       else if(kind==='set'){ var hv=false; try{ hv=(typeof window._setHave==='function')&&window._setHave().has(key); }catch(e){} if(hv) return; if(typeof window.toggleSetPiece==='function') window.toggleSetPiece(key); }   /* v1539 REG-087 — window._setHave: the bare name is declared in a DIFFERENT IIFE, so this guard was always false and applying a read TOGGLED OFF a piece he already owned */
       else return;

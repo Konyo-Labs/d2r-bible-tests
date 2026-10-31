@@ -34105,6 +34105,20 @@ def reel_census(hist_dir=None):
     return out
 
 
+def river_routed_reports(reels):
+    """The ROUTED reels in one lane, each with the route the router stamped. -> list
+
+    A ROUTED reel whose route is not a dict reports route None. Any other station is left out.
+    """
+    out = []
+    for x in reels or []:
+        if not isinstance(x, dict) or x.get("station") != "ROUTED":
+            continue
+        route = x.get("route") if isinstance(x.get("route"), dict) else None
+        out.append({"reel": x.get("reel"), "route": route})
+    return out
+
+
 def shelf_hidden_reels(hist_dir=None):
     """The reel ids NO console surface may show. -> (frozenset | None, why)
 
@@ -34125,10 +34139,12 @@ def shelf_hidden_reels(hist_dir=None):
     """
     try:
         import reel_retention as _RR
-        _p = _RR.plan(hist_dir=hist_dir)
+        _p = _RR.plan_for_reader(hist_dir=hist_dir)
     except Exception as _e:
         return None, ("reel_retention.plan() raised %s, so which reels are hidden is UNKNOWN — "
                       "this is not a report that none are" % type(_e).__name__)
+    if not isinstance(_p, dict):
+        return None, "no finished plan in this process yet, so which reels are hidden is UNKNOWN"
     if not _p.get("ok"):
         return None, (_p.get("why") or "reel_retention.plan() could not run, so which reels are "
                                        "hidden is UNKNOWN")
@@ -48185,7 +48201,19 @@ class Handler(BaseHTTPRequestHandler):
                     # `hiddenWhy` rather than quietly drawing a filtered-looking river it never
                     # filtered. [[unknown-stays-unknown]]
                     _hide, _hide_why = shelf_hidden_reels()
-                    _lr = _RL.lanes_shared(hide=_hide)   # v3848 - overlapping asks share one walk
+                    try:
+                        import reel_retention as _RRp
+                        _pread = _RRp.plan_for_reader()
+                    except Exception:
+                        _pread = None
+                    _moving = _pread.get("moving") if isinstance(_pread, dict) else None
+                    _as_of = _pread.get("asOf") if isinstance(_pread, dict) else None
+                    _lr = _RL.lanes_last(hide=_hide)
+                    if _lr is None:
+                        self._json(200, {"ok": False, "computing": True, "hiddenWhy": _hide_why,
+                                         "moving": _moving, "asOf": _as_of,
+                                         "why": "the river walk has not finished in this process yet"})
+                        return
                     if _lr.get("ok"):
                         # ⚠ COUNTS AND THE LANE'S OWN SENTENCE — never the reel RECORDS. The
                         # shelf already has the sessions; shipping 40 reel records again would
@@ -48228,6 +48256,7 @@ class Handler(BaseHTTPRequestHandler):
                                                "stations": l["stations"], "count": l["count"],
                                                "byStation": l["byStation"],
                                                "reelIds": _ids,
+                                               "routed": river_routed_reports(l.get("reels")),
                                                "closedCount": l.get("closedCount"),
                                                "closedShown": l.get("closedShown"),
                                                "closedWhy": l.get("closedWhy"),
@@ -48243,6 +48272,8 @@ class Handler(BaseHTTPRequestHandler):
                                   # all. A filter nothing can measure is a filter nothing can keep.
                                   "hidden": _lr.get("hidden"),
                                   "hiddenWhy": _hide_why,
+                                  "moving": _moving,
+                                  "asOf": _as_of,
                                   # ⚠ TWO DENOMINATORS, BOTH SHIPPED. `shelf` is reels on disk
                                   # (what `reconciles` is about); `closed` is reels that have left
                                   # it; `lifetime` is the union. Shipping only the first is how

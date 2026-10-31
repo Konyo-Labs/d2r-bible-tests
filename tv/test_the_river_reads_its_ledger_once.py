@@ -25,6 +25,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -112,6 +113,7 @@ class TheLedgerIsReadOnce(unittest.TestCase):
 
     def _route(self, ledger):
         import control_app as ca
+        import river_lanes as RL
         shelf = os.path.join(self.d, "hist")
         os.makedirs(shelf, exist_ok=True)
         real_rows, calls = RS.rows, []
@@ -119,12 +121,25 @@ class TheLedgerIsReadOnce(unittest.TestCase):
         def counted(path=None):
             calls.append(path)
             return real_rows(ledger)
+        # v3849 — the route reads the last finished walk and returns before the success payload
+        # when this process has none. Plant one under the empty-hide key, and keep lanes() from
+        # walking a real shelf if that key is missed. The population census is not this law.
+        finished = {"ok": True, "lanes": [], "reconciles": True}
+        RL._LAST[()] = {"at": time.time(), "out": dict(finished)}
         got = {}
         h = ca.Handler.__new__(ca.Handler)
         h.path = "/api/river"
         h._json = lambda code, obj: got.update(code=code, obj=obj)
-        with mock.patch.object(RS, "rows", counted), mock.patch.object(ca, "HIST_DIR", shelf):
-            h.do_GET()
+        try:
+            with mock.patch.object(RS, "rows", counted), \
+                    mock.patch.object(ca, "HIST_DIR", shelf), \
+                    mock.patch.object(ca, "shelf_hidden_reels", lambda *a, **k: ([], "")), \
+                    mock.patch.object(ca, "reel_census", lambda *a, **k: {"ok": True, "why": "fixture"}), \
+                    mock.patch.object(RL, "lanes", lambda *a, **k: dict(finished)):
+                h.do_GET()
+        finally:
+            RL._LAST.pop((), None)
+            RL._REFRESH_ON.discard(())
         return got, calls
 
     def test_the_reads_do_not_grow_with_the_reels(self):

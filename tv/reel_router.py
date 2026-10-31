@@ -628,7 +628,7 @@ def route(hist=None, path=None):
         # ⚠ AFTER the outlet overlay above, never before: a reel the overlay moved to ROUTED owes
         # what ROUTED owes, and asking on the pre-overlay station would print the old gate.
         _owes, _owes_why = _owes_of(station, _e)
-        rows.append({
+        row = {
             "reel": reel,
             "station": station,
             "why": swhy,
@@ -646,7 +646,14 @@ def route(hist=None, path=None):
             # it rather than taking this module's word for it
             "extractSay": _e.get("extractSay"),
             "surveyedAt": _e.get("surveyedAt"),
-        })
+        }
+        if station == "ROUTED":
+            # the act that closed it out, beside the station. An empty from is unknown, not a guess.
+            if isinstance(_r, dict):
+                row["route"] = {"from": _r.get("from") or None, "by": _r.get("by") or None, "why": swhy}
+            else:
+                row["route"] = None
+        rows.append(row)
     # FIFO: oldest capture first. ⚠ A reel with NO readable clock sorts LAST, never first — None
     # must not be coerced to 0, because 0 is 1970 and would put every unmeasured reel at the head
     # of the queue ahead of reels whose age is actually known.

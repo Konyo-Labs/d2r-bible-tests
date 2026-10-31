@@ -163,7 +163,7 @@ class TwoSurfacesOneShelf(unittest.TestCase):
             if not isinstance(node, ast.Call):
                 continue
             f = node.func
-            if not (isinstance(f, ast.Attribute) and f.attr in ("lanes", "lanes_shared")):   # v3848 - lanes_shared is lanes(hide) single-flighted
+            if not (isinstance(f, ast.Attribute) and f.attr in ("lanes", "lanes_shared", "lanes_last")):   # v3849 - the river reads lanes_last; lanes_shared stays the overlap door
                 continue
             if any(k.arg == "hide" for k in (node.keywords or [])):
                 joined.append(getattr(node, "lineno", 0))
@@ -464,18 +464,28 @@ class EveryReelOnDiskIsAccountedFor(unittest.TestCase):
         h.path = "/api/river"
         out = []
         h._json = lambda code, obj: out.append((code, obj))
-        with mock.patch.object(ca, "HIST_DIR", d), \
-                mock.patch.object(ca, "_RIVER_LAST", {"good": None, "fail": None}), \
-                mock.patch.object(RVS, "census", lambda *a, **k: {"ok": True, "counts": {}, "visits": {}, "reels": 0}), \
-                mock.patch.object(RVS, "stations", lambda: (("INTAKE", "ROUTED"), "")), \
-                mock.patch.object(RVS, "rows", lambda *a, **k: {"ok": True, "rows": [], "n": 0}), \
-                mock.patch.object(RL, "lanes", lambda *a, **k: {"ok": True, "lanes": []}), \
-                mock.patch.object(ca, "shelf_hidden_reels", lambda *a, **k: ([], "")), \
-                mock.patch.object(ca, "river_mouth", lambda *a, **k: {}), \
-                mock.patch.object(ca, "reel_census", lambda *a, **k: dict(said)), \
-                mock.patch.object(ca, "_river_labels", lambda: {}), \
-                mock.patch.object(ca, "_river_vocab_facts", lambda: {}):
-            h.do_GET()
+        # v3849 — the route reads lanes_last and does not wait. An empty hide is the () key.
+        # Plant the finished walk the stub used to return on the caller, so the census still
+        # rides the success payload and this ask does not start a walk.
+        import time
+        walked = {"ok": True, "lanes": []}
+        RL._LAST[()] = {"at": time.time(), "out": walked}
+        try:
+            with mock.patch.object(ca, "HIST_DIR", d), \
+                    mock.patch.object(ca, "_RIVER_LAST", {"good": None, "fail": None}), \
+                    mock.patch.object(RVS, "census", lambda *a, **k: {"ok": True, "counts": {}, "visits": {}, "reels": 0}), \
+                    mock.patch.object(RVS, "stations", lambda: (("INTAKE", "ROUTED"), "")), \
+                    mock.patch.object(RVS, "rows", lambda *a, **k: {"ok": True, "rows": [], "n": 0}), \
+                    mock.patch.object(RL, "lanes", lambda *a, **k: dict(walked)), \
+                    mock.patch.object(ca, "shelf_hidden_reels", lambda *a, **k: ([], "")), \
+                    mock.patch.object(ca, "river_mouth", lambda *a, **k: {}), \
+                    mock.patch.object(ca, "reel_census", lambda *a, **k: dict(said)), \
+                    mock.patch.object(ca, "_river_labels", lambda: {}), \
+                    mock.patch.object(ca, "_river_vocab_facts", lambda: {}):
+                h.do_GET()
+        finally:
+            RL._LAST.pop((), None)
+            RL._REFRESH_ON.discard(())
         self.assertEqual(len(out), 1, "premise: the river route answered once")
         code, body = out[0]
         self.assertTrue(body.get("ok"), "premise: the stubbed river computed: %r" % body.get("why"))
@@ -530,8 +540,8 @@ RED_PROOF = [
         "why": "unjoining the endpoint from the filter: the hidden set is still computed, and the "
                "strip goes back to drawing every fixture",
         "file": "control_app.py",
-        "find": "_lr = _RL.lanes_shared(hide=_hide)",
-        "replace": "_lr = _RL.lanes_shared()",
+        "find": "_lr = _RL.lanes_last(hide=_hide)",
+        "replace": "_lr = _RL.lanes_last()",
         "matches": 1,
     },
     {

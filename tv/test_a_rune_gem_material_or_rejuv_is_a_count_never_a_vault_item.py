@@ -11,7 +11,7 @@ kept no home), a rejuvenation potion and a key named nothing at the router, "Key
 item (a catalogue lists it), and the register door owned runes and gems it read. Now one rule (_stashTallyOf, from the
 board's own tables - RUNES, GEM_TYPES, MAT_TAB_LAYOUT) says which tally counts it, and every door reads it:
   * the router answers the shared stash (its own area), never a mule and never Unsorted; the proposal says which tally;
-  * the hand door refuses it, naming that tally, and owns nothing - even a catalogue-listed key;
+  * the hand door owns nothing - even a catalogue-listed key; it moves that tally instead (REG-3004, his Q5);
   * the register door refuses it (a rune, a gem, a rejuvenation potion; a material in its own words, REG-158.4);
   * SHARED_STASH_RE's gem and Materials-tab names equal the tables, and the console doctor reads the same line;
   * a Sunder charm (a unique the vault keeps) and Rune Sword (a base) are not counts.
@@ -50,7 +50,7 @@ OUT.kinds = {};
 });
 var before = Array.from(owned).length;
 OUT.hand = {};
-['Key of Terror', 'Full Rejuvenation Potion', "Mephisto's Brain"].forEach(function(n){ var a = W.vaultHandAdd(n, null, {}); OUT.hand[n] = a && { ok: a.ok, refused: a.refused, stash: a.stash, why: a.why }; });
+['Key of Terror', 'Full Rejuvenation Potion', "Mephisto's Brain"].forEach(function(n){ var a = W.vaultHandAdd(n, null, {}); OUT.hand[n] = a && { ok: a.ok, mode: a.mode, refused: a.refused, kind: a.kind, why: a.why }; });
 OUT.handAdded = Array.from(owned).length - before;
 W._vaultAutoIntakeSet && W._vaultAutoIntakeSet(true);
 OUT.reg = {};
@@ -90,9 +90,11 @@ class ARuneGemMaterialOrRejuvIsACount(unittest.TestCase):
             self.assertIsNone(self.o["kinds"][n]["kind"], "%s was read as a count: %r" % (n, self.o["kinds"][n]))
 
     def test_the_hand_door_owns_no_count(self):
+        # REG-3004 (his Q5): the hand door moves the count's own tally instead of refusing it - and still owns nothing
         for n, a in self.o["hand"].items():
-            self.assertFalse(a["ok"], "%s was added by hand: %r" % (n, a))
-            self.assertIn("counted in the Materials stash", a["why"], a)
+            self.assertTrue(a["ok"] and a["mode"] == "tallied", "%s did not move its tally: %r" % (n, a))
+            self.assertIn(a["kind"], ("material", "rejuv"), a)
+            self.assertIn("the Materials stash", a["why"], a)
         self.assertEqual(self.o["handAdded"], 0, "a count reached his owned list")
 
     def test_the_register_door_owns_no_count(self):
