@@ -11063,7 +11063,8 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_rerun_runs_only_the_last_reds.py")], 120,
          needs_app=False,
          why="v3848 SPEED - after a red run, rerun ONLY the reds plus the gates a fix touches: --rerun-failed reads "
-             "the last run's red names from this worktree's git dir, refuses when none are recorded."),
+             "the last run's red names from this worktree's git dir, refuses when none are recorded. "
+             "v3849 - a --only or --fast run merges that set (drops only names that ran green); a full run replaces it."),
     Gate("test_a_cold_only_run_maps_only_its_gates",
          [sys.executable, os.path.join(HERE, "test_a_cold_only_run_maps_only_its_gates.py")], 240,
          needs_app=False,
@@ -13763,6 +13764,58 @@ def _read_last_failed():
     return names, "the last run (at %s) had %d red gate(s)" % (str(d.get("head") or "?")[:9], len(names))
 
 
+def _prior_failed_names():
+    """-> (status, names|None). status is ok | missing | unreadable | nogit.
+
+    names keep the stored spelling, including a '(undeclared SKIP)' suffix. A partial run
+    that cannot read the file must not guess a new set over it."""
+    import json
+    p = _last_failed_path()
+    if not p:
+        return "nogit", None
+    if not os.path.exists(p):
+        return "missing", None
+    try:
+        with open(p, encoding="utf-8") as f:
+            d = json.load(f)
+        if not isinstance(d, dict):
+            return "unreadable", None
+        names = []
+        for n in d.get("failed") or []:
+            if isinstance(n, str) and n not in names:
+                names.append(n)
+    except Exception:
+        return "unreadable", None
+    return "ok", names
+
+
+def _merge_failed_names(prior, failed, passed):
+    """The recorded reds after a partial run (--only / --fast / --rerun-failed).
+
+    Drop a prior name only when this run PASSed it. Names that did not run stay.
+    Names that failed are added (this run's spelling replaces the prior one).
+    A PASS does not remove a name this same run also failed."""
+    passed = set(passed or [])
+    failed = [n for n in (failed or []) if n != "live-state-untouched"]
+    failed_bases = set(n.split(" (")[0] for n in failed)
+    out, seen = [], set()
+    for n in prior or []:
+        b = n.split(" (")[0]
+        if b in failed_bases or b in seen:
+            continue
+        if b in passed:  # PARTIAL-RED-SET drop only a name that ran green
+            continue
+        out.append(n)
+        seen.add(b)
+    for n in failed:
+        b = n.split(" (")[0]
+        if b in seen:
+            continue
+        out.append(n)
+        seen.add(b)
+    return out
+
+
 def main(argv):
     ap = argparse.ArgumentParser(description="run the gate set and return one verdict")
     ap.add_argument("--only", nargs="*", help="run only these gate names")
@@ -13911,7 +13964,23 @@ def main(argv):
         except Exception as e:
             _head = None   # unknown HEAD: recorded as null, never as a real-looking empty head
             print("· HEAD unreadable for the failed set (%s)" % type(e).__name__)
-        _write_last_failed([n for n in failed if n != "live-state-untouched"], _head)
+        _reds = [n for n in failed if n != "live-state-untouched"]
+        _passed = [g.name for g, s, _, _, _ in results if s == "PASS"]
+        if a.only:  # PARTIAL-RED-SET a selection merges; it does not replace the recorded reds
+            # --only, --fast (a subset) and --rerun-failed all set a.only. A green one of those
+            # must not store [] over reds it did not run: the next --rerun-failed would exit 0.
+            # A full run (no selection, or --fast that fell through to every gate) replaces.
+            _status, _prior = _prior_failed_names()
+            if _status == "ok":
+                _write_last_failed(_merge_failed_names(_prior, _reds, _passed), _head)
+            elif _status == "missing":
+                _merged = _merge_failed_names([], _reds, _passed)
+                if _merged:   # a green partial must not create the empty set that reads as "nothing to rerun"
+                    _write_last_failed(_merged, _head)
+            else:
+                print("· partial run left the recorded red set untouched (%s)" % _status)
+        else:
+            _write_last_failed(_reds, _head)
     print("\n── VERDICT ──")
     if _live_moved and (_console_live or _sweep_live):
         why = "the console is running on :17772" if _console_live else ("held by %s" % ", ".join(_sweep_live))
