@@ -11113,6 +11113,10 @@ GATES = [
          needs_app=False,
          why="v3849 - a no-roll price 10x off the close-fit median is one quiet 'n lines skipped'; a weak or "
              "unreadable key mod is never weight 1.00"),
+    Gate("test_a_price_refresh_pauses_while_checks_run",
+         [sys.executable, os.path.join(HERE, "test_a_price_refresh_pauses_while_checks_run.py")], 60,
+         needs_app=False,
+         why="v3849 - a fresh d2jsp price refresh says 'paused while checks run' and does not fetch while gates run"),
     Gate("test_a_rerun_runs_only_the_last_reds",
          [sys.executable, os.path.join(HERE, "test_a_rerun_runs_only_the_last_reds.py")], 120,
          needs_app=False,

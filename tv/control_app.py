@@ -47689,8 +47689,14 @@ class Handler(BaseHTTPRequestHandler):
             # login on this machine. The answer is the reading. The page and the
             # cookie stay out of it.
             import d2jsp_chrome as _d2jsp
+            import d2jsp_price_db as _PDB
             from urllib.parse import parse_qs, urlparse
             _item = (parse_qs(urlparse(self.path).query).get("item") or [""])[0]
+            if _PDB.checks_running() is not False:
+                self._json(200, {"item": _item, "fg": None, "n": 0, "reason": "paused",
+                                  "say": "paused while checks run", "posts": [], "low": None,
+                                  "high": None, "readAt": "", "board": 268})
+                return
             _code, _out = _d2jsp.d2jsp_quote(
                 _item, self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
                 sec_fetch_site=self.headers.get("Sec-Fetch-Site"))

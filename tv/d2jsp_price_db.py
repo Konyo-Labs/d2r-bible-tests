@@ -10,7 +10,8 @@ every PC (src), and prices an item from them:
     the effective post count, so 3 agreeing posts say less than 30.
   * PERFECT TIER - posts that say perf/perfect are priced on their own and never lift the normal price.
   * FRESH REFRESH - stale(...) says when an item must be asked again: never read, read longer ago than REFRESH_DAYS,
-    or its newest post is older than STALE_POST_DAYS.
+    or its newest post is older than STALE_POST_DAYS. fresh_refresh asks those. While a gate or heart2 run holds
+    the tree it says "paused while checks run" and does not fetch. Unknown is not free.
   * FLEET-READY - schema 1 is a plain JSON of items -> posts keyed by link with src and seenAt, and merge(a, b) is a
     commutative union (newest seenAt wins per post), so PCs can trade their DBs without losing or doubling a post.
 No number is invented: an item with no weighted post prices as None (UNKNOWN), never 0.
@@ -176,3 +177,70 @@ def save(path, db):
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(db, f, ensure_ascii=False, sort_keys=True)
     os.replace(tmp, path)
+
+
+PAUSE = "paused while checks run"
+
+
+def _held_for_key(key):
+    """Ask whether one gate-lock key is held, then put this process's environment back."""
+    import tree_busy
+    old = os.environ.get("D2R_GATE_LOCK_KEY")
+    os.environ["D2R_GATE_LOCK_KEY"] = key
+    try:
+        return tree_busy._gate_lock_held()
+    finally:
+        if old is None:
+            os.environ.pop("D2R_GATE_LOCK_KEY", None)
+        else:
+            os.environ["D2R_GATE_LOCK_KEY"] = old
+
+
+def checks_running(env=None):
+    """True while heart2 or a gate holds the tree, False when it is free, None when it cannot be told.
+
+    None is not free. A caller that passes its own env (not os.environ) and names D2R_GATE_LOCK_KEY is
+    asked about that lock only, so a law can prove the pause without consulting a live pre-push. The
+    console calls this with no env, so it sees the real lock and tree_busy.why().
+    """
+    env = os.environ if env is None else env
+    lanes = env.get("HEART2_LANES")
+    if lanes is not None and str(lanes) != "0":
+        return True
+    if env is not os.environ and env.get("D2R_GATE_LOCK_KEY"):
+        try:
+            held, _who = _held_for_key(env["D2R_GATE_LOCK_KEY"])
+        except Exception:
+            return None  # the gate lock could not be asked, so this is not free
+        if held is None:
+            return None
+        if held:
+            return True
+        return False  # this lock is free, so the refresh may fetch
+    try:
+        import tree_busy
+        sentence = tree_busy.why()
+    except Exception:
+        return None  # why() could not be asked, so this is not free
+    if sentence:
+        return True
+    return False
+
+
+def fresh_refresh(db, fetch, now=None, env=None):
+    """Re-ask only stale items. While checks run, or when that cannot be told, say so and fetch nothing."""
+    busy = checks_running(env)
+    if busy is None or busy:
+        return {"say": PAUSE, "fetched": []}
+    now = time.time() if now is None else now
+    got = []
+    for it in ((db or {}).get("items") or {}).values():
+        name = it.get("item") if isinstance(it, dict) else None
+        if not name:
+            continue
+        stale, _why = is_stale(db, name, now)
+        if not stale:
+            continue
+        fetch(name)
+        got.append(name)
+    return {"say": None, "fetched": got}
