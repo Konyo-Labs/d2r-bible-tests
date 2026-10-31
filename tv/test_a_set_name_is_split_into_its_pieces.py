@@ -33,7 +33,7 @@ r.art = %(naj)s.map(function(n){ return String(W.artUrl(n) || ''); });
 r.setArt = String(W.artUrl("Naj's Ancient Vestige") || '');
 r.size = %(naj)s.map(function(n){ return vaultSize(n); });
 r.sister = suggestMule("Tal Rasha's Adjudication");
-r.alone = suggestMule("Immortal King's Will");
+r.alone = suggestMule("Immortal King's Soul Cage");
 /* overflow: 138 one-cell fillers leave 2 cells on mule 1; a set of three one-cell pieces must move whole to mule 2 */
 var items = [];
 for (var i = 0; i < 138; i++) items.push({n: 'F' + i, key: 'F' + i + '#0', w: 1, h: 1, area: 1, set: '', ct: 1});

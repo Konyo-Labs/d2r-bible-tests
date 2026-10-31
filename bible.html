@@ -44822,7 +44822,6 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
        had ruled on. SIX sets remain unruled — Sazabi's Grand Tribute, Naj's Ancient Vestige,
        Hwanin's Majesty, Arcanna's Tricks, Bane's Garments, Heaven's Brethren — and _discardWhy
        still names them as defaults rather than judgements. */
-    var _KEEP_SET = /Tal Rasha|Immortal King|Griswold|Aldur|Trang.?Oul|Natalya|M.?avina|Horazon|Disciple|Orphan/i;
     /* v1970 — "HE RULED IT JUNK" AND "IT FELL THROUGH" MUST NOT READ THE SAME.
        Everything outside _KEEP_SET is discarded, so the default is DISCARD and the row says
        "low set piece" either way. But the comment above names EIGHTEEN sets he actually ruled on
@@ -44836,21 +44835,24 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
        This changes NO routing — which sets are worth muling is his call, not a defect to fix behind
        his back. It changes what the row SAYS, so a discard he chose and a discard nobody chose stop
        being the same sentence. [[unknown-stays-unknown]] */
-    var _RULED_JUNK = /Sigon|Sander|Hsarus|Cleglaw|Iratha|Angelic|Arctic|Cathan|Death.s|Vidala|Berserker|Milabrega|Isenhart|Civerb|Infernal|Bul.?Kathos|Cow King|Tancred/i;
-    var _discardWhy = function(setName){
-      return _RULED_JUNK.test(String(setName || ''))
-        ? 'low set piece — track for chronicle, discard: ' + setName
-        /* Reads inside the audit's own sentence, which already supplies the verb:
-           "...but the rules would discard it — by DEFAULT only — you have never ruled X keep or
-           junk" (site: the `should-review` finding). Saying "discard" again here made it twice
-           in six words with two em-dashes. The string is a CLAUSE, not a sentence. */
-        : 'by DEFAULT only — you have never ruled ' + setName + ' keep or junk';
+    /* v3849 (Elad 2026-10-31 16:39/16:40) - A SET IS KEPT BY ITS PIECE, NOT BY ITS NAME. "KEEP only valuable set items -
+       Tal Rasha's pieces, Guillaume's Face, Naj's staff... all other set pieces are throw-out." The valuable class is
+       read from the repo's own trade table, window.ITEM_VALUE (high or med), never guessed: Tal Rasha x5, Guillaume's
+       Face, Bul-Kathos' Wedding Band, Immortal King's Soul Cage, M'avina's True Sight, Griswold's Honor + Redemption,
+       Trang-Oul's Claws + Girth. Named on his rulings beside it: Naj's Puzzler (16:39), Laying of Hands (v1972) and the
+       Horazon's Splendor warlock set (v440), which the table does not price. Every other piece is a ruled throw-out.
+       Guarded by tv/test_only_a_valuable_set_piece_is_kept.py. */
+    var _KEEP_PIECE = /^(Naj's Puzzler|Laying of Hands)$/i;
+    var _keptPiece = function(piece, setName){
+      var p = String(piece || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+      var v = (window.ITEM_VALUE && Object.prototype.hasOwnProperty.call(window.ITEM_VALUE, p)) ? window.ITEM_VALUE[p] : null;
+      return v === 'high' || v === 'med' || _KEEP_PIECE.test(p) || /Tal Rasha|Horazon/i.test(String(setName || ''));
     };
     try{
       var spm = window.findSetPiece && window.findSetPiece(name);
       if (spm){
         var psn = (spm.set && spm.set.name) || name;
-        if (!_KEEP_SET.test(psn)) return {id:'__throwout', why:_discardWhy(psn)};
+        if (!_keptPiece(name, psn)) return {id:'__throwout', why:'low set piece — track for chronicle, discard: ' + psn};
         /* v3849 (Elad 15:56) - THE PIECES OF ONE SET LIVE ON ONE MULE: a sister piece already filed on a sets mule takes
            this one there too. Guarded by tv/test_a_set_name_is_split_into_its_pieces.py. */
         var _sis = _setSisterMule(spm.set, name);
@@ -44865,7 +44867,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var isSet = (tip && tip.rarity==='set') || (it && it.tier==='set') || /\bset\b|\(any/i.test(name);
     if (isSet){
       var sn = (tip && tip.setName) || name;
-      if (!_KEEP_SET.test(sn)) return {id:'__throwout', why:_discardWhy(sn)};
+      if (!_keptPiece(name, sn)) return {id:'__throwout', why:'low set piece — track for chronicle, discard: ' + sn};
       return MAJOR_SETS.test(sn) ? {id:'sets-major', why:'major set: '+sn} : {id:'sets-rest', why:'set: '+sn};
     }
     // v404 — a FORGED RUNEWORD (Enigma, Spirit, Call to Arms…) is real gear, not a misread. ALL runewords go
