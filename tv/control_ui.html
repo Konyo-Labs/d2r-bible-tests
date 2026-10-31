@@ -23258,7 +23258,7 @@ window._lockMark = function(isOpen, px, label){
   if (_bshelf) {
     _bshelf.addEventListener('pointerdown', function(e){
       if (e.button !== 0 || e.ctrlKey) return;
-      if (!(document.body.classList && document.body.classList.contains('shadow-on'))) return;
+      if (!(document.body.classList && (document.body.classList.contains('shadow-on') || document.body.classList.contains('shadow-snap') || document.body.classList.contains('shadow-hub')))) return;
       _bshelfPtrTs = e.timeStamp || 0;
       e.preventDefault();
       try { var se = document.getElementById('shadow-eng'); if (se && se.blur) se.blur(); } catch (_b) {}
@@ -27037,6 +27037,20 @@ body.shell-open .shell > :not(.topbar) {
    Same exemption the header already has, for the same reason. */
 body.shell-open #shadow-bar,
 body.shell-open #shadow-bar * {
+  pointer-events: auto !important;
+}
+/* Their frame is position:fixed over the rail (z-index 945) and the rail does not take
+   clicks, so the sticky Shelf never saw the press. While a shadow board is up, the
+   button is fixed above that frame and under the sessions list (975). */
+body.shell-open.shadow-on #btn-shelf,
+body.shell-open.shadow-snap #btn-shelf,
+body.shell-open.shadow-hub #btn-shelf {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 970;
+  width: auto;
+  margin: 0 !important;
   pointer-events: auto !important;
 }
 body.shell-open .topbar,
