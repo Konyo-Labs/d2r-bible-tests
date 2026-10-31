@@ -2972,5 +2972,29 @@
     "gotcha": "It never truncates a WAL while any process holds it: TRUNCATE holds the writer lock while waiting on WebKit's readers and a WebKit write that hits busy is a lost localStorage write, so the live 30-min look is PASSIVE only and the shrink happens at the next --open startup. Holders that lsof cannot read are UNKNOWN and skipped. A holder found at startup is a leftover from an earlier console (no WebView exists yet) and is reported, never killed.",
     "purpose": "Automatic pruning of the Mac native console's WebKit LocalStorage write-ahead log (localstorage.sqlite3-wal, which reached 26 GB): wal_checkpoint(TRUNCATE) + integrity_check at startup before the WebView, and a 30-minute size watch that publishes lsWal on /api/status.",
     "territory": "console"
+  },
+  "d2jsp_price_db.py": {
+    "entryPoints": [
+      "ingest",
+      "price",
+      "is_stale",
+      "merge",
+      "load",
+      "save",
+      "checks_running",
+      "fresh_refresh"
+    ],
+    "gotcha": "An outlier (w 0) stays on record but never moves the price. fresh_refresh pauses while a gate or heart2 run holds the tree, so a refresh during checks says paused rather than reading.",
+    "purpose": "The d2jsp price DB: every priced post the desk read, keyed once by its forum link, priced by an age-decayed weighted median with a Wilson confidence and a separate perfect tier.",
+    "territory": "d2jsp"
+  },
+  "launcher_icon.py": {
+    "entryPoints": [
+      "candidates",
+      "refresh"
+    ],
+    "gotcha": "Only the icon resource is replaced and the bundle touched; a bundle is never moved, renamed or deleted, and one that runs another tree is left alone.",
+    "purpose": "On each launch, gives every TV DIABLO.app on the Desktop or in Applications that runs this repo's start_tvd_mac.sh the repo's current appicon.icns.",
+    "territory": "routines-infra"
   }
 }
