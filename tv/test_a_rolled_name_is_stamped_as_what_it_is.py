@@ -32,7 +32,9 @@ PAGE = os.path.join(os.path.dirname(HERE), "bible.html")
 TABLES = ("const RARE_NAME_POOLS = {", "\nwindow.RARE_NAME_POOLS = RARE_NAME_POOLS;")
 HELPER = ("var _MAGIC_SMALL_RE = ", "\nwindow._rolledQuality = _rolledQuality;\n")
 TIP = ("function _extraTipHtml(nm){\n", "Not a grail item: the chronicle does not count it.</div>';\n}\n")
-STUB1 = "var _tvEntry = { rarity: _rq1 ? _rq1.q : 'basic', base: (_rq1 && _rq1.base) ? _rq1.base : name, cat:'📺 TV-vaulted', val:'tv',"
+# v3849 (grok/v3849-b): the stub asks _intakeStamp, which asks _rolledQuality first and the suffix tables second
+STUB1 = "var _tvEntry = { rarity: _stamp.rarity || 'basic', base: _stamp.base || name, cat:'📺 TV-vaulted', val:'tv',"
+STAMP = "  try { rq = (typeof _rolledQuality === 'function') ? _rolledQuality(name) : null; } catch (eRq) { rq = null; }\n"
 STUB2 = "window._tvExtraRemember(n, { rarity: _rq2 ? _rq2.q : 'basic', base: (_rq2 && _rq2.base) ? _rq2.base : n,"
 ROUTER = "      if (_rq && _rq.q === 'magic' && muleById('magic-rare'))\n"
 
@@ -106,6 +108,7 @@ class ARolledNameIsStampedAsWhatItIs(unittest.TestCase):
         s = _src()
         self.assertEqual(s.count(ROUTER), 1, "the router no longer files a magic small item to MAGIC & RARE")
         self.assertEqual(s.count(STUB1), 1, "tvVaultRegister's stub no longer stamps the rolled quality")
+        self.assertEqual(s.count(STAMP), 1, "the intake stamp no longer asks the rolled-name grammar first")
         self.assertEqual(s.count(STUB2), 1, "the chronicle-apply stub no longer stamps the rolled quality")
 
 
