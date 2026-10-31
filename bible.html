@@ -27483,7 +27483,9 @@ const RARE_NAME_POOLS = {
      rolled "Wraith Grasp" now reads "gloves / ring": its name alone cannot say which, and the old pool said ring only. */
   Gloves: ['Hand','Fist','Claw','Clutches','Grip','Grasp','Hold','Touch','Finger','Knuckle'],
   Ring:   ['Grip','Grasp','Hold','Touch','Finger','Knot','Circle','Loop','Turn','Spiral','Coil','Gyre','Band','Whorl','Master'],
-  Jewel:  ['Gyre','Whorl','Talisman','Heart','Scarab','Eye'],   // #269 — 'Eye' is the word this block's own example names ("Viper Eye → a rare jewel") and the pool lacked
+  /* v3849 (Elad 11:43-11:44, his ruling on the ALT's MAGIC locker): "Raven Whorl IS a ring" - a Whorl is a ring here, never
+     the ring-or-jewel question that drew the blank box (raresuffix also lists orb + jewl; his ruling settles it). Gyre stays both. */
+  Jewel:  ['Gyre','Talisman','Heart','Scarab','Eye'],   // #269 — 'Eye' is the word this block's own example names ("Viper Eye → a rare jewel") and the pool lacked
 };
 const RARE_NAME_PREFIXES = ['Beast','Eagle','Raven','Viper','Ghoul','Skull','Blood','Dread','Doom','Grim','Bone','Death','Shadow','Storm','Rune','Plague','Stone','Wraith','Spirit','Demon','Cruel','Empyrion','Bramble','Pain','Loath','Glyph','Imp','Fiend','Hailstone','Gale','Dire','Soul','Brimstone','Corpse','Carrion','Holocaust','Havoc','Bitter','Entropy','Chaos','Order','Rule','Warp','Rift','Corruption'];
 window.RARE_NAME_POOLS = RARE_NAME_POOLS; window.RARE_NAME_PREFIXES = RARE_NAME_PREFIXES;
