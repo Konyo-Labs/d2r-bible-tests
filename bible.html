@@ -20345,6 +20345,25 @@ function findSetPiece(name){
   return {set:sets[h[0]], piece:pc, base:__pieceBase(pc), slot:__pieceSlot(pc)};
 }
 window.findSetPiece = findSetPiece;
+/* v3849 B2/B3 (Elad's ruling) - A SET'S NAME IS NOT AN ITEM. "Naj's Ancient Vestige", "Sazabi's Grand Tribute", "Sigon's
+   Complete Steel" - any set's own name - read or typed as one vault item is its real pieces from the set tables, each with
+   its own art, footprint and routing; there is no full-set picture. -> the piece names, or null when the name is a piece or
+   no set's name. Guarded by tv/test_a_set_name_is_split_into_its_pieces.py. */
+function _setPiecesOf(name){
+  if (!name) return null;
+  if (findSetPiece(name)) return null;
+  var tag = /\s*\((?:set|sin|pala|paladin|sorc|sorceress|barb|barbarian|druid|nec|necro|necromancer|amazon|ama|assassin)\)\s*$/i;
+  var q = _norm(String(name).replace(tag, ''));
+  if (!q) return null;
+  var sets = __allSets();
+  for (var i = 0; i < sets.length; i++){
+    var sn = sets[i] && sets[i].name;
+    if (!sn || !Array.isArray(sets[i].pieces) || !sets[i].pieces.length) continue;
+    if (_norm(String(sn).replace(tag, '')) === q) return sets[i].pieces.map(__pieceBase);
+  }
+  return null;
+}
+window._setPiecesOf = _setPiecesOf;
 // v227: the vault + AI intake work with EXACT pieces, never aggregates
 window.__setPieceNames = function(){
   var out=[]; try{ __allSets().forEach(function(st){ (st.pieces||[]).forEach(function(p){ out.push(__pieceBase(p)); }); }); }catch(e){}
@@ -23630,6 +23649,12 @@ try {
   window._ownedAdd = function(name, rec){
     var nm = String(name == null ? '' : name);
     if (!nm) return { added: false, prov: { ok: false, why: 'no name' } };
+    var _pcs = (typeof window._setPiecesOf === 'function') ? window._setPiecesOf(nm) : null;   /* v3849 B2/B3 a set name is its pieces */
+    if (_pcs && _pcs.length){
+      var _any = false, _lastP = null;
+      _pcs.forEach(function(pn){ var r = window._ownedAdd(pn, rec); if (r && r.added) _any = true; _lastP = r ? r.prov : _lastP; });
+      return { added: _any, prov: _lastP, split: _pcs.slice() };
+    }
     var had = owned.has(nm);
     /* ⚠ M-3 (review of 20c0df1e) — the receipt is written BEFORE the name is added, so the write sees `owned` as it stood:
        an item that was already his is never made carried loot by this read (the one line in _ownedProvWrite). The add
@@ -28190,6 +28215,15 @@ window.renderHighValueFinds = renderHighValueFinds;
   };
   const _old = window._ownedLoadDoctor([..._ownedBefore], owned);
   owned = new Set(_old.keep);
+  /* v3849 B2/B3 - a set's own name already in his store is read as its pieces (in memory; the owner's next save writes it). After the load
+     doctor: a split is a rename the doctor would otherwise undo, and no piece is lost. */
+  try {
+    if (typeof window._setPiecesOf === 'function' && [...owned].some(function(n){ return !!window._setPiecesOf(n); })) {
+      var _spl = [];
+      [...owned].forEach(function(n){ var ps = window._setPiecesOf(n); (ps || [n]).forEach(function(x){ if (_spl.indexOf(x) < 0) _spl.push(x); }); });
+      owned = new Set(_spl);
+    }
+  } catch (eSpl) {}
   /* REG-2527 (review of REG-2400, minor) — "SET ASIDE" WAS A DELETE. persist() below writes d2r_owned without the entries
      that are not names, and nothing kept them anywhere, while the Vault said they "were set aside". Now they are copied
      aside first - content-addressed beside the store's own quarantine slots (<world>d2r_quarantine~d2r_owned~not-names~
@@ -44551,6 +44585,19 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     return { id: m.id, keeperDest: d, why: 'your keeper setting \u2014 ' + (m.name || m.id) + ', the mule you chose for every copy' };
   }
   try { window._keeperDestHome = _keeperDestHome; window._vaultFiledByHand = _vaultFiledByHand; } catch (eKdh) {}
+  function _setSisterMule(set, name){
+    try {
+      var me = _norm(String(name || '').replace(/\s*\([^)]*\)\s*$/, ''));
+      var ps = (set && Array.isArray(set.pieces)) ? set.pieces : [];
+      for (var i = 0; i < ps.length; i++){
+        var pb = __pieceBase(ps[i]);
+        if (_norm(pb) === me) continue;
+        var a = assign[pb];
+        if (a && muleById(a) && (MULE_ACCENT[a] === 'vm-a-set' || /^sets/.test(String(a)))) return a;
+      }
+    } catch (e) {}
+    return null;
+  }
   function suggestMule(name, opts){
     if (isSharedStash(name)) return null;
     /* The fold hops below recurse on the folded spelling and return before the
@@ -44795,6 +44842,10 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       if (spm){
         var psn = (spm.set && spm.set.name) || name;
         if (!_KEEP_SET.test(psn)) return {id:'__throwout', why:_discardWhy(psn)};
+        /* v3849 (Elad 15:56) - THE PIECES OF ONE SET LIVE ON ONE MULE: a sister piece already filed on a sets mule takes
+           this one there too. Guarded by tv/test_a_set_name_is_split_into_its_pieces.py. */
+        var _sis = _setSisterMule(spm.set, name);
+        if (_sis) return {id:_sis, why:'set piece: '+psn+' - kept with its set'};
         return MAJOR_SETS.test(psn) ? {id:'sets-major', why:'set piece: '+psn} : {id:'sets-rest', why:'set piece: '+psn};
       }
     }catch(e){}
@@ -53971,8 +54022,17 @@ window.vaultAutoAssign = function(){
     function _groups(items){
       var gs = [], cur = null;
       (items || []).forEach(function(it){
-        var name = it && it.n;
+        /* v3849 (Elad 15:56) - the pieces of one set are one group: they move to the next mule together */
+        var name = it && it.set ? '\u0000set:' + it.set : (it && it.n);
         if (!cur || cur.name !== name) { cur = { name: name, items: [] }; gs.push(cur); }
+        cur.items.push(it);
+      });
+      return gs;
+    }
+    function _byName(items){
+      var gs = [], cur = null;
+      (items || []).forEach(function(it){
+        if (!cur || cur.name !== it.n) { cur = { name: it.n, items: [] }; gs.push(cur); }
         cur.items.push(it);
       });
       return gs;
@@ -53985,7 +54045,13 @@ window.vaultAutoAssign = function(){
     do {
       var occ = (handAt && handAt[pg]) || {};
       var take = [], deferred = [];
+      var _gs = [];
       _groups(left).forEach(function(grp){
+        /* a set too big for one empty mule keeps each piece's copies together instead */
+        if (grp.items.length > 1 && String(grp.name).indexOf('\u0000set:') === 0 && !_spreadFits(grp.items, null)) _gs = _gs.concat(_byName(grp.items));
+        else _gs.push(grp);
+      });
+      _gs.forEach(function(grp){
         var trial = take.concat(grp.items);
         if (_spreadFits(trial, occ)) { take = trial; return; }
         if (_spreadFits(grp.items, null)) { deferred.push(grp); return; } /* v3767 whole group */
