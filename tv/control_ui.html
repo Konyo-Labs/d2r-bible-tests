@@ -22306,6 +22306,11 @@ window._lockMark = function(isOpen, px, label){
           + ((j && j.why) || 'no answer') + '</div>';
         return;
       }
+      /* v3849 (b) - the eagle is worked out beside the request; a first tap says so instead of counting nothing */
+      if (j.pending) {
+        out.innerHTML = '<div style="color:#e0b060">🦅 ' + String(j.note || 'still looking - tap again in a moment').replace(/[<>&]/g, '') + '</div>';
+        return;
+      }
       var checks = j.checks || [];
       /* ══ v2436 — READ THE SERVER'S PARTITION; DO NOT RE-DERIVE IT ════════════════════════════
          This counted `state === 'missing'` itself, which is the rule the server ABANDONED in

@@ -24583,6 +24583,58 @@ def _chron_autoread_loop():
 _CHRON_QUOTE = {"sig": None, "res": None}
 
 
+# v3849 (b) slow Mac endpoints - A SLOW ANSWER IS WORKED OUT BESIDE THE REQUEST, NEVER INSIDE IT.
+# MEASURED on his film: a cold /api/chronicle_scan takes ~316 s, /api/vault_scan ~82 s, and /api/eagle runs every
+# sub-doctor in the request. The memo only helped the SECOND tap; the first held an HTTP thread for minutes behind a
+# button with a client timeout. Now the route answers at once: the kept answer while its signature holds; else the last
+# answer marked stale while ONE background thread refreshes it; else "still working it out" with the seconds so far.
+# Read-only all the way: the thread runs the same zero-write function the route ran.
+# Guarded by tv/test_a_slow_answer_is_worked_out_beside_the_request.py.
+_SOON = {}
+_SOON_LOCK = threading.Lock()
+
+
+def _answer_soon(key, sig, compute, max_age_s=None, now=None):
+    """-> the answer for `key` right now, never waiting on `compute`. `sig` None = keep by age (max_age_s)."""
+    now = time.time() if now is None else now
+    with _SOON_LOCK:
+        st = _SOON.setdefault(key, {"res": None, "sig": None, "at": 0.0, "running": False, "started": 0.0, "err": None})
+        fresh = st["res"] is not None and (
+            (sig is not None and st["sig"] == sig) or
+            (sig is None and max_age_s is not None and now - st["at"] <= max_age_s))
+        if fresh:
+            out = dict(st["res"])
+            out["cached"] = True
+            return out
+        if st["err"] and not st["running"] and st["res"] is None:
+            err, st["err"] = st["err"], None          # said once; the next tap tries again
+            return {"ok": False, "why": err}
+        if not st["running"]:
+            st["running"], st["started"] = True, now
+
+            def _work():
+                res, err = None, None
+                try:
+                    res = compute()
+                except Exception as e:       # said on the next answer, never swallowed
+                    err = "%s: %s" % (type(e).__name__, str(e)[:160])
+                with _SOON_LOCK:
+                    st["running"] = False
+                    if isinstance(res, dict) and res.get("ok") is not False:
+                        st["res"], st["sig"], st["at"], st["err"] = res, sig, time.time(), None
+                    else:
+                        st["err"] = err or (res.get("why") if isinstance(res, dict) else None) or "no answer"
+            threading.Thread(target=_work, name="tvd-answer-soon-" + key, daemon=True).start()
+        took = max(0, int(now - st["started"]))
+        if st["res"] is not None:
+            out = dict(st["res"])
+            out["stale"] = True
+            out["refreshing"] = bool(st["running"])
+            return out
+        return {"ok": True, "pending": True, "totals": {}, "checks": [],
+                "note": "still working it out on this machine (%ds so far) - tap again in a minute" % took}
+
+
 def chronicle_scan_cost(hist_dir=None, limit=None, reel_id=None):
     """v1956 — MEMOISED, for the same reason and by the same key as the vault quote.
 
@@ -48487,12 +48539,12 @@ class Handler(BaseHTTPRequestHandler):
             # v1516 — THE FREE PASS. Groups every sealed reel's frames into still-runs and reports
             # what a real sweep WOULD cost. Zero model calls, zero writes — this is the number he
             # gets to check before agreeing to spend anything.
-            self._json(200, chronicle_scan_cost())
+            self._json(200, _answer_soon("chronicle_scan", _hist_signature(os.environ.get("TV_HIST") or HIST_DIR), chronicle_scan_cost))
             return
         if path == "/api/vault_scan":
             # v1578 — THE FREE PASS, vault edition. Prices a vault retro sweep on HIS film.
             # Zero model calls, zero writes.
-            self._json(200, vault_scan_cost())
+            self._json(200, _answer_soon("vault_scan", _hist_signature(os.environ.get("TV_HIST") or HIST_DIR), vault_scan_cost))
             return
         if path == "/api/tombstones":
             # v3016 — THE RIVER'S OWN HISTORY. Reads one file, writes nothing, deletes nothing —
@@ -48735,7 +48787,12 @@ class Handler(BaseHTTPRequestHandler):
             # collapses "I could not check" into "it is fine".
             try:
                 import console_doctor as _cd
-                _rows = _cd.run()
+                _ans = _answer_soon("eagle", None, lambda: {"ok": True, "rows": _cd.run()}, max_age_s=60)
+                if _ans.get("pending") or _ans.get("ok") is False:
+                    self._json(200, {"ok": _ans.get("ok") is not False, "pending": bool(_ans.get("pending")),
+                                     "checks": [], "note": _ans.get("note"), "why": _ans.get("why")})
+                    return
+                _rows = _ans.get("rows") or []
                 # ══ v2436 — PUBLISH THE PARTITION, BECAUSE THE PANEL WAS RE-DERIVING IT ═══════
                 # This returned raw rows and nothing else, so control_ui.html:13529 had no
                 # partition to read and counted `state === 'missing'` itself — WITHOUT MINE.
@@ -48757,7 +48814,7 @@ class Handler(BaseHTTPRequestHandler):
                 # claimed it was "the SAME rule as the _EAGLE partition"; it was, until it wasn't,
                 # and nobody edits a comment when they change the other copy. [[copy-drift]]
                 _p = eagle_partition(_rows)
-                self._json(200, {"ok": True, "checks": _rows,
+                self._json(200, {"ok": True, "checks": _rows, "stale": bool(_ans.get("stale")),
                                  "needsYou": len(_p["bad"]),
                                  "needsYouWhat": [r.get("check") for r in _p["bad"]],
                                  "mine": len(_p["mine"]),
