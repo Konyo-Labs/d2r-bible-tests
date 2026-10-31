@@ -17,6 +17,10 @@ export TV_OCR="${TV_OCR:-1}"
 # instead of the 1fps reel (Konyo 2026-07-20: "where are all the SCREENSHOTS?")
 export TV_FILM="${TV_FILM:-1}"
 
+# v3849 (Elad 11:31) - the Desktop/Applications TV DIABLO.app wears the shipped logo: install copied the icon once,
+# so a later logo never reached the launcher. Best effort, icon resource only, never blocks the launch.
+python3 "$HERE/launcher_icon.py" 2>/dev/null || true
+
 # v2145 — THE CONSOLE FOLLOWS THE SHIPPED BUILD. Konyo: "yes it can definitely relaunch to other
 # new builds. just make sure the other profile locking of the chronicles and everything is
 # connected to the profile and pc related to it.. so nothing ever gets deleted or regressed."
