@@ -11071,6 +11071,7 @@ GATES = [
     Gate("test_dream_faith_and_colossal_jewels_route_by_his_ruling", [sys.executable, os.path.join(HERE, "test_dream_faith_and_colossal_jewels_route_by_his_ruling.py")], 120, needs_app=False, why="v3849 item 6 - Dream/Faith to the runewords mule; the six Colossal Ancient jewels (Protector's Stone, Guardian's Thunder...) to the shared stash, never UNI-SMALL"),
     Gate("test_a_rare_on_an_elite_base_draws_its_kin", [sys.executable, os.path.join(HERE, "test_a_rare_on_an_elite_base_draws_its_kin.py")], 120, needs_app=False, why="v3849 B4 - a rare on Shako / Wyrmhide Boots / Bramble Mitts (and the plain base) draws its tier-chain kin, not the blank mark"),
     Gate("test_a_hand_added_trash_unique_files_by_its_kind", [sys.executable, os.path.join(HERE, "test_a_hand_added_trash_unique_files_by_its_kind.py")], 120, needs_app=False, why="v3849 B9 - a hand-added TRASH unique (Bane Ash, Bladebuckle) files on its kind mule, not the shared stash"),
+    Gate("test_an_unknown_roll_shows_its_affix_ranges", [sys.executable, os.path.join(HERE, "test_an_unknown_roll_shows_its_affix_ranges.py")], 120, needs_app=False, why="v3849 D1 - a magic item with unknown rolls shows each affix mod as its min-max range from CB_DB af; never Base item"),
     Gate("test_a_rerun_runs_only_the_last_reds",
          [sys.executable, os.path.join(HERE, "test_a_rerun_runs_only_the_last_reds.py")], 120,
          needs_app=False,
