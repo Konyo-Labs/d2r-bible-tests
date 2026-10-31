@@ -35,6 +35,10 @@ MAX_FRAMES = 3
 MAX_THUMB = 20 * 1024
 MAX_TOTAL = 600 * 1024
 MAX_NAMES = 8
+# A gap between two captured moments longer than this is time away, not time played. It sits under
+# replay.SESSION_GAP_MS (10 min, which starts another unstamped session) so a pause that stays inside
+# one reel still counts as away. Fewer than two moments is not a span: play and AFK stay unknown.
+AFK_GAP_MS = 90 * 1000
 
 
 THUMB_PX = 160
@@ -144,6 +148,41 @@ def _names(r):
     return [str(x) for x in (v or []) if isinstance(x, str) and x.strip()]
 
 
+def _play_afk(moments):
+    """-> (playMs, afkMs). Both are None when fewer than two captured moments exist (never a made-up 0).
+
+    Play is the sum of the gaps at or under AFK_GAP_MS. Away is the sum of the longer gaps. The wall
+    from the first moment to the last is not playtime: that span is where a reel of a few minutes of
+    reading was dated as many hours."""
+    ms = [t for t in (moments or []) if isinstance(t, int) and not isinstance(t, bool) and t > 0]
+    if len(ms) < 2:
+        return None, None
+    ms.sort()
+    play = afk = 0
+    for a, b in zip(ms, ms[1:]):
+        gap = b - a
+        if gap > AFK_GAP_MS:
+            afk += gap
+        else:
+            play += gap
+    return play, afk
+
+
+def _named_where(rows, key, value):
+    """Distinct names on rows whose `key` equals `value`. -> int
+
+    Zero means those rows were read and none of them named anything. A record that never carried the
+    count (an older digest) is the page's UNKNOWN, not this zero."""
+    found = []
+    for r in rows or []:
+        if not isinstance(r, dict) or r.get(key) != value:
+            continue
+        for n in _names(r):
+            if n not in found:
+                found.append(n)
+    return len(found)
+
+
 def _key_frames(reads):
     """Up to MAX_FRAMES frame ids: those whose read named something first (newest name first), else first/middle/last."""
     ids = [r.get("frameId") for r in reads if isinstance(r.get("frameId"), str) and r.get("frameId")]
@@ -179,9 +218,13 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
                 if n not in names:
                     names.append(n)
         sid = next((r.get("sessionId") for r in g if r.get("sessionId")), None)
+        play_ms, afk_ms = _play_afk(moments)
         s = {"sessionId": sid, "t0": min(moments) if moments else None, "t1": max(moments) if moments else None,
              "reads": len(reads), "names": names[:MAX_NAMES], "namesMore": max(0, len(names) - MAX_NAMES),
-             "frames": [], "why": None}
+             "frames": [], "why": None,
+             "playMs": play_ms, "afkMs": afk_ms,
+             "chroniclesFound": _named_where(g, "scene", "chronicle"),
+             "itemsFarmed": _named_where(g, "intent", "farmed")}
         whys = []
         for fid in _key_frames(reads):
             data, why = thumb_bytes(hist_dir, fid, make)
