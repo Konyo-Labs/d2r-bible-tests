@@ -11,7 +11,7 @@ with the sentence for any name the vault does not draw.
     records and the console doctor (which reads that one line) give both one answer; its rune list is held equal to RUNES;
   * a gem stayed Unsorted then (the gem ruling was open) and said it is a gem the Gem Stash counts; since his 2026-10-28
     words (REG-2899) a gem is a count on the shared stash's line like a rune, and the register door refuses it;
-  * the hand door's refusal names the stash that counts it, and nothing is added;
+  * the hand door names the stash that counts it and owns nothing (since REG-3004 it moves that stash's tally);
   * a base named Rune Sword / Rune Bow and the unique Rune Master are not runes.
 
 Driven on the whole page in node (vault_page_node), fixtures only; the console doctor's half in Python. RED_PROOF below.
@@ -49,7 +49,7 @@ OUT.gemProp = W.vaultPropose('Perfect Amethyst');
 OUT.gemShared = OUT.gems.filter(function(n){ return !W.isSharedStash(n); });
 var before = Array.from(owned).length;
 OUT.hand = {};
-['Ber', 'Jah', 'Perfect Amethyst'].forEach(function(n){ var a = W.vaultHandAdd(n, null, {}); OUT.hand[n] = a && { ok: a.ok, refused: a.refused, stash: a.stash, why: a.why }; });
+['Ber', 'Jah', 'Perfect Amethyst'].forEach(function(n){ var a = W.vaultHandAdd(n, null, {}); OUT.hand[n] = a && { ok: a.ok, mode: a.mode, kind: a.kind, refused: a.refused, why: a.why }; });
 OUT.handAdded = Array.from(owned).length - before;
 W._vaultAutoIntakeSet && W._vaultAutoIntakeSet(true);
 var g = W.tvVaultRegister('Perfect Amethyst', { by: 'hand', at: new Date().toISOString(), where: 'the law' });
@@ -107,12 +107,12 @@ class ARuneOrAGemIsNamedNeverUnrecognised(unittest.TestCase):
 
     def test_the_hand_door_names_the_stash_that_counts_it(self):
         h = self.o["hand"]
+        # REG-3004 (his Q5): the hand door moves the stash's own tally (and names it) instead of refusing - and owns nothing
         for n, kind, where in (("Ber", "rune", "Rune Stash"), ("Jah", "rune", "Rune Stash"), ("Perfect Amethyst", "gem", "Gem Stash")):
-            self.assertFalse(h[n]["ok"], h[n])
-            self.assertEqual(h[n]["stash"], kind, h[n])
+            self.assertTrue(h[n]["ok"] and h[n]["mode"] == "tallied", h[n])
+            self.assertEqual(h[n]["kind"], kind, h[n])
             self.assertIn(where, h[n]["why"], h[n])
-            self.assertIn("nothing was added", h[n]["why"], h[n])
-        self.assertEqual(self.o["handAdded"], 0, "a refused rune or gem reached his owned list")
+        self.assertEqual(self.o["handAdded"], 0, "a rune or gem reached his owned list")
 
     def test_the_console_doctor_reads_the_same_rune(self):
         import console_doctor as C

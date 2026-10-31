@@ -81,6 +81,11 @@ class VaultAddAndFindDoorsWork(unittest.TestCase):
                         + "var q = document.getElementById('vault-hand-q');"
                         "OUT.focus = document.activeElement === q; OUT.ph = q.getAttribute('placeholder') || '';"
                         "q.value = 'stone of'; window.vaultHandSearch(q.value);" + WAIT
+                        + "OUT.before = JSON.parse(window.LSR.getItem('d2r_owned') || '[]').length;"
+                        "key(q, 'Enter');" + WAIT
+                        + "OUT.partial = JSON.parse(window.LSR.getItem('d2r_owned') || '[]').length;"   # REG-3068 a partial name adds nothing
+                        "OUT.partialSay = (document.getElementById('vault-hand-say') || {}).textContent || '';"
+                        "q.value = 'the stone of jordan'; window.vaultHandSearch(q.value);" + WAIT
                         + "key(q, 'Enter');" + WAIT
                         + "OUT.owned = JSON.parse(window.LSR.getItem('d2r_owned') || '[]');"
                         "OUT.say = (document.getElementById('vault-hand-say') || {}).textContent || '';"
@@ -90,7 +95,9 @@ class VaultAddAndFindDoorsWork(unittest.TestCase):
                         "key(q, 'Escape');" + WAIT + "OUT.openAfterEsc = open('vault-hand-win');")
         self.assertTrue(o["focus"], "the add-by-name box opened without the caret in it: %r" % o)
         self.assertTrue(o["ph"], "the add-by-name box is an empty bar with no words: %r" % o)
-        self.assertIn(SOJ, o["owned"], "Enter in the add-by-name box added nothing: %r" % o)
+        self.assertIn(SOJ, o["owned"], "Enter on the exact name added nothing: %r" % o)
+        self.assertEqual(o["partial"], o["before"], "Enter on a partial name ('stone of') added a row by guess (REG-3068): %r" % o)
+        self.assertIn("exactly", o["partialSay"], o)
         self.assertIn(SOJ, o["say"])
         self.assertIn("nothing", o["miss"], "Enter on no match said nothing: %r" % o)
         self.assertEqual(o["ownedAfterMiss"], len(o["owned"]), "Enter on no match added something: %r" % o)

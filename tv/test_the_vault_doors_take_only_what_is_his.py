@@ -40,7 +40,7 @@ localStorage.setItem('d2r_muleAssign', JSON.stringify({}));
 BODY = r"""
 (function(){
 var W = window;
-function add(n){ var r = W.vaultHandAdd(n); return r ? { ok: !!r.ok, name: r.name || null, refused: r.refused || null } : null; }
+function add(n){ var r = W.vaultHandAdd(n); return r ? { ok: !!r.ok, name: r.name || null, refused: r.refused || null, mode: r.mode || null } : null; }
 OUT.ghost = ['Minor Healing Potion', 'Jewel', 'Grand Charm', "Khalim's Eye", 'Ber Rune', "Diablo's Horn"].map(add);
 OUT.bases = ['Monarch', 'Ethereal Monarch', 'eth thresher', 'Superior Archon Plate', 'superior eth thresher'].map(add);
 /* REG-2858 - a bare Shako is now a QUESTION (Harlequin Crest is filed under it), so the base case variants say which:
@@ -100,13 +100,20 @@ class TheVaultDoorsTakeOnlyWhatIsHis(unittest.TestCase):
     def test_a_ghost_item_is_not_a_base(self):
         o = page()
         for r in o["ghost"]:
+            # REG-3004 (his Q5): a count (Ber Rune; Diablo's Horn, a Materials-tab organ) moves its own tally by hand and is
+            # never owned; every other ghost is still refused
+            if r["mode"] == "tallied":
+                self.assertIn(r["name"], ("Ber Rune", "Diablo's Horn"), "a ghost that is no count moved a tally: %r" % r)
+                continue
             self.assertFalse(r["ok"], "a ghost item was added as owned (#144.1+8): %r" % r)
             self.assertEqual(r["refused"], "not-drawn", r)
+        self.assertEqual(sorted(r["name"] for r in o["ghost"] if r["mode"] == "tallied"), ["Ber Rune", "Diablo's Horn"],
+                         "PREMISE: the two counts among the ghosts no longer move their tallies: %r" % o["ghost"])
         self.assertEqual([r["name"] for r in o["bases"]],
                          ["Monarch", "Ethereal Monarch", "Eth Thresher", "Superior Archon Plate", "Superior Eth Thresher"],
                          "#154.18 - a Superior base was refused or misnamed: %r" % o["bases"])
         self.assertTrue(all(r["ok"] for r in o["bases"]), "PREMISE: a real base no longer adds: %r" % o["bases"])
-        for g in ("Minor Healing Potion", "Jewel", "Grand Charm", "Ber Rune"):
+        for g in ("Minor Healing Potion", "Jewel", "Grand Charm", "Ber Rune", "Diablo's Horn"):
             self.assertNotIn(g, o["owned"])
 
     def test_one_item_is_one_owned_name(self):
