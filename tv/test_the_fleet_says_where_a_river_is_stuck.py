@@ -671,6 +671,8 @@ class AStalePresenceIsNotOnline(unittest.TestCase):
             row["t"] = F._iso(NOW - int(ago_s * 1000))
         elif isinstance(t, str):
             row["t"] = t
+        import fleet_presence as _fp   # v3850 - the server stamps presence; the card only reads it
+        row["presence"] = _fp.presence_of(row, bool(online), NOW)
         return F._run("OUT.p = _fleetPresence(%s, %s, NOW);"
                       % (json.dumps(row), "true" if online else "false"))["p"]
 
@@ -682,21 +684,18 @@ class AStalePresenceIsNotOnline(unittest.TestCase):
         self.assertNotIn("UNKNOWN", p["why"])
 
     def test_a_beacon_older_than_two_refreshes_is_not_on_air(self):
-        """Two missed 15-minute rewrites plus one 240s beacon is 2040s. That age is still
-        inside the bar. One second past it is silent, and the words are not ON AIR and not offline."""
-        still = self._pres(2 * 900 + 240)
+        """v3850 (Elad 17:51) - one bar, fleet_presence.STALE_AFTER_S (one refresh + one beacon + 60 s = 20 min).
+        At the bar a row is still here; one second past it the card says offline with its last-seen age."""
+        import fleet_presence as _fp
+        still = self._pres(_fp.STALE_AFTER_S)
         self.assertEqual(still["state"], "here", still)
-        gone = self._pres(2 * 900 + 240 + 1)
+        gone = self._pres(_fp.STALE_AFTER_S + 1)
         self.assertEqual(gone["state"], "silent", gone)
         self.assertEqual(gone["dot"], "silent")
-        self.assertIn("no beacon for 34m", gone["word"])
-        self.assertIn("presence UNKNOWN", gone["word"])
+        self.assertIn("offline \u00b7 last seen 20 min ago", gone["word"])
         self.assertNotIn("ON AIR", gone["word"])
-        self.assertNotIn("offline", gone["word"].lower())
         died = self._pres(38 * 60)
-        self.assertEqual(died["state"], "silent")
-        self.assertIn("no beacon for 38m", died["word"])
-        self.assertIn("presence UNKNOWN", died["word"])
+        self.assertIn("last seen 38 min ago", died["word"])
         self.assertNotIn("ON AIR", died["word"])
 
     def test_a_beacon_time_the_card_cannot_read_is_unknown_not_here(self):
@@ -1237,10 +1236,10 @@ RED_PROOF = [
         "matches": 1,
     },
     {
-        "why": "REG-1772 - a beacon older than two refreshes draws as here again, green dot and ON AIR",
+        "why": "REG-1772/v3850 - a stale stamp draws as here again, green dot and ON AIR",
         "file": "tv/control_ui.html",
-        "find": "    if (ageS > _FLEET_SILENT_AFTER_S) {\n",
-        "replace": "    if (false) {\n",
+        "find": "    if (p.state === 'online') return { state: 'here',",
+        "replace": "    if (true) return { state: 'here',",
         "matches": 1,
     },
     {

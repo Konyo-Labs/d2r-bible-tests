@@ -27781,24 +27781,20 @@ function escC(s) {
      Not offline: the key is still stored, and a stalled post is not a machine that left. A
      time this card cannot read is the same unknown, never a fresh green.
      [[unknown-stays-unknown]] [[stale-reading]] */
-  var _FLEET_SILENT_AFTER_S = 2 * 900 + 240;
   var _fleetPresence = function (m, online, nowMs) {
+    /* v3850 (Elad 17:51) - ONE presence function: tv/fleet_presence.presence_of, stamped by /api/fleet as m.presence.
+       This card computes no presence of its own; a row without the stamp is UNKNOWN, never a fresh green. */
+    var p = (m && m.presence && typeof m.presence === 'object') ? m.presence : null;
+    if (!p) {
+      if (!online) return null;
+      return { state: 'unknown', dot: 'silent', ageS: null, word: 'presence UNKNOWN',
+               why: 'this row carries no presence stamp - presence UNKNOWN, not online' };
+    }
+    if (p.state === 'online') return { state: 'here', dot: '', ageS: p.ageS,
+      word: p.via === 'recorder' ? String(p.words) : '', why: p.via === 'recorder' ? 'the console is off; its recorder is capturing' : '' };
     if (!online) return null;
-    var now = (typeof nowMs === 'number') ? nowMs : Date.now();
-    var seen = Date.parse(String((m && m.t) || ''));
-    if (!isFinite(seen) || seen > now) {
-      return { state: 'unknown', dot: 'silent', ageS: null,
-               word: 'presence UNKNOWN',
-               why: 'this row has no beacon time the card can read — presence UNKNOWN, not online' };
-    }
-    var ageS = (now - seen) / 1000;
-    if (ageS > _FLEET_SILENT_AFTER_S) {
-      var ago = _fleetAgo(ageS);
-      return { state: 'silent', dot: 'silent', ageS: ageS,
-               word: 'no beacon for ' + ago.replace(/ ago$/, '') + ' \u2014 presence UNKNOWN',
-               why: 'no beacon for ' + ago + ' \u2014 presence UNKNOWN, not online' };
-    }
-    return { state: 'here', dot: '', ageS: ageS, word: '', why: '' };
+    return { state: p.state === 'unknown' ? 'unknown' : 'silent', dot: 'silent', ageS: p.ageS, word: String(p.words || 'offline'),
+             why: String(p.words || 'offline') + ' - past the ' + Math.round((p.staleAfterS || 0) / 60) + ' min refresh, so not online' };
   };
   window._fleetPresence = _fleetPresence;
   /* #86 gap 15 (REG-1773) — A RESTART NOBODY COULD ASK ABOUT IS NOT CLEAR TO GO.
@@ -27976,8 +27972,7 @@ function escC(s) {
       tip = (pres && pres.state !== 'here')
         ? 'shadow reader UNKNOWN - '
           + (pres.state === 'silent'
-             ? 'no beacon heard for ' + _fleetAgo(pres.ageS).replace(/ ago$/, '') + ', past the '
-               + Math.round(_FLEET_SILENT_AFTER_S / 60) + ' min bound'
+             ? String(pres.word || 'offline')   /* v3850 - the words come from fleet_presence.presence_of */
              : 'this row has no beacon time the card can read')
           + ', so presence is UNKNOWN and nobody can say whether it runs; the roster still holds this PC'
         /* #250 (REG-2048) - THE NAME LINE'S RULE, ON THE EYE TOO. A row whose last beacon the roster REFUSED is "presence

@@ -47945,6 +47945,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/fleet":
             # v1496 — who is online and when each machine was last here (60s cached, read-only)
             _fl = fleet_presence(force=("force=1" in (self.path or "")))
+            try:
+                import fleet_presence as _fpz   # v3850 - ONE presence function, stamped on every row
+                _fl = _fpz.stamp_fleet(_fl)
+            except Exception:
+                pass
             # v2249 — WHICH ROW IS HIM, and whether the build he is looking at has shipped.
             # `me` is the SAME string the beacon sends as `machine` (see _console_beacon), so the
             # UI identifies his row exactly instead of guessing by matching version strings — two

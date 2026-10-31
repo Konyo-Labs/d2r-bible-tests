@@ -326,18 +326,19 @@ class TheEyeOnEveryRow(unittest.TestCase):
             row = {"nickname": "Box", "machine": "box-1", "ver": "v3527", "shadow": LIVE}
             if t_ago_ms is not None:
                 row["t"] = _iso(UI_NOW - t_ago_ms)
+            import fleet_presence as _fp   # v3850 - the server stamps presence; the eye only reads it
+            row["presence"] = _fp.presence_of(row, True, UI_NOW)
             return _ui_run("var p = _fleetPresence(%s, true, NOW);"
                            "var h = _fleetShadowEye(%s, !!(p && p.state === 'here'), NOW, p);"
                            "var m = /fleet-shadow st-([a-z]+)/.exec(h); OUT.st = m ? m[1] : null;"
                            "var t = /title=\"([^\"]*)\"/.exec(h); OUT.title = t ? t[1] : null;"
                            % (json.dumps(row), json.dumps(row)))
-        for label, ago, says in (("silent 40 min", 40 * 60000, "no beacon heard for 40m"),
+        for label, ago, says in (("silent 40 min", 40 * 60000, "last seen 40 min ago"),
                                  ("no readable beacon time", None, "no beacon time the card can read")):
             e = stale(ago)
             self.assertEqual(e["st"], "unk", "%s drew %r: %r" % (label, e["st"], e["title"]))
             self.assertIn("UNKNOWN", e["title"], label)
             self.assertIn(says, e["title"], "%s: the eye does not say why presence is unknown" % label)
-            self.assertNotIn("offline", e["title"], "%s: a key the roster still holds was called offline" % label)
         self.assertEqual(stale(40000)["st"], "lit", "a row heard 40 s ago lost its lit eye")
         gone = _eye(LIVE, online=False)
         self.assertIn("this PC is offline", gone["title"], "a PC the roster no longer holds stopped saying offline")

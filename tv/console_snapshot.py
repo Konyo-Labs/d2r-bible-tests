@@ -446,7 +446,9 @@ def online_of(owner, fleet):
             plat = row.get("platform")
             plat = "mac" if plat in ("darwin", "mac", "macos") else plat
             if _rp.owner_of(row.get("nickname"), plat) == owner:
-                return state
+                # v3850 - the ONE presence function decides: a row still listed but past its refresh is offline
+                import fleet_presence as _fp
+                return _fp.presence_of(row, state).get("online")
     return None
 
 

@@ -10209,6 +10209,14 @@ GATES = [
              "local OCR, a reel rolling + the watcher lane's own liveness verdict, decided on that PC's clock), the "
              "beacon, the worker (kept; a flip is news), the card's _fleetShadowEye (lit/live/idle/off/unknown - "
              "UNKNOWN never drawn lit or shut)."),
+    Gate("test_every_surface_asks_one_presence",
+         [sys.executable, os.path.join(HERE, "test_every_surface_asks_one_presence.py")], 180,
+         needs_app=False,
+         why="v3850 (Elad 17:51/17:53, 2026-10-31) - ONE ONLINE/OFFLINE RULE. Dean's laptop slept at 17:14 IDT and the "
+             "Fleet and his shadow bar still said online at 17:47: the site holds a presence key 40 min, the bar asked "
+             "list membership, the card had its own 2040 s bar. fleet_presence.presence_of is now the only rule (console "
+             "heartbeat fresh within 20 min OR the recorder alive and fresh = online; else 'offline - last seen X'; no "
+             "readable time = UNKNOWN). /api/fleet stamps it, the banner and card only read it. RED_PROOF reverts each joint."),
     Gate("test_a_gate_says_what_it_guards_not_how_many",
          [sys.executable, os.path.join(HERE, "test_a_gate_says_what_it_guards_not_how_many.py")], 60,
          needs_app=False,
