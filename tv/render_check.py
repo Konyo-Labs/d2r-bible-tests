@@ -3978,6 +3978,14 @@ _PROBE = r"""(function(sel, OK_TRUNC){
          page's own design back at it. inert() is the same test the covered/reachable checks
          already use; this branch simply was not asking it. [[regression-guard]] */
       if (inert(c)) return;
+      /* v3849 - INK INSIDE A CLOSED <details> IS NOT RENDERED, AND inert() CANNOT SEE THAT. Measured
+         on the vault shelf: the new corner badges (.vm-cell-edit / .vm-cell-price, opacity .45) on
+         tiles inside a CLOSED .vm-more read 'cut by vault-mule' at every width. Chrome skips that
+         content (content-visibility:hidden on the details slot) yet still hands back rects for it,
+         below the mule and outside its scroll overflow (mule scrollHeight == clientHeight). Nobody
+         can see it, so it cannot be cut off; opening the details puts it back under this scan. */
+      if (c.checkVisibility && !c.checkVisibility({contentVisibilityAuto: false})) return;
+      if (c.closest && c.closest('details:not([open]) > :not(summary)')) return;
       var cr = c.getBoundingClientRect();
       /* ⚠ REG-2237 (#318 / #70) — A LEAF CRUSHED TO ~0px WIDE SHOWS NO INK AND NO ELLIPSIS, AND
          EVERY BRANCH ABOVE MISSES IT. REG-2115 (#315): the update bar's wait label laid out at 0px
