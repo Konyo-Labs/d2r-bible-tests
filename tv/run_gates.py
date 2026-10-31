@@ -10209,6 +10209,13 @@ GATES = [
              "local OCR, a reel rolling + the watcher lane's own liveness verdict, decided on that PC's clock), the "
              "beacon, the worker (kept; a flip is news), the card's _fleetShadowEye (lit/live/idle/off/unknown - "
              "UNKNOWN never drawn lit or shut)."),
+    Gate("test_a_hung_gate_is_cut_off_and_the_batch_moves_on",
+         [sys.executable, os.path.join(HERE, "test_a_hung_gate_is_cut_off_and_the_batch_moves_on.py")], 180,
+         needs_app=False,
+         why="v3850 (Elad 17:46, 2026-10-31) - ONE HUNG GATE CANNOT HANG A PROOF BATCH. Dean's slice sat on one gate "
+             "from 17:08:29 with its log silent. heart2 runs every gate under its registered timeout; this drives a "
+             "real sleeping child: cut off inside the bound, verdict UNKNOWN (never forged), its process gone, and "
+             "the next gate still runs. RED_PROOF drops the timeout."),
     Gate("test_the_recorder_holds_one_lease",
          [sys.executable, os.path.join(HERE, "test_the_recorder_holds_one_lease.py")], 180,
          needs_app=False,
