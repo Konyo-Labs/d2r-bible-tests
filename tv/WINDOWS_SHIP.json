@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3848",
+  "ver": "v3849",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3848: Rerun reds, nightly gates, Shelf x pin, one River walk, shadow lookups, one not-in-game chip.",
+  "note": "v3849: Banked gate passes, prover fallback, river labels, fast river read, shadow Shelf, D2JSP date text.",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
