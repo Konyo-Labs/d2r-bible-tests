@@ -1,5 +1,12 @@
 [
   {
+    "ver": "v3849",
+    "date": "2026-10-31",
+    "items": [
+      "Esc leaves a shadow only when nothing is open, and the bar has a LEAVE SHADOW chip plus a bigger Their sessions entry"
+    ]
+  },
+  {
     "ver": "v3848",
     "date": "2026-10-31",
     "items": [

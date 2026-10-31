@@ -4068,6 +4068,19 @@ tr.owned-row{background:rgba(102,255,136,.03)}
         try { ev.target.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
         return;
       }
+      // cinema / fullscreen owns Esc; a shadow must not leave out from under it
+      try {
+        if (document.fullscreenElement) return;
+        if (document.body && document.body.classList && document.body.classList.contains('cinema')) return;
+      } catch (eC) {}
+      // an open overlay closes first; Esc leaves the shadow only when that stack is empty
+      var top = null;
+      try { if (typeof window.__tvTopOverlay === 'function') top = window.__tvTopOverlay(); } catch (eT) { top = null; }
+      if (top && top.x) {
+        ev.preventDefault();
+        try { top.x.click(); } catch (eK) {}
+        return;
+      }
       ev.preventDefault();
       try { host.postMessage({ type: 'tvd-shadow-leave' }, window.location.origin); } catch (e) {}
     }, true);
@@ -87215,7 +87228,7 @@ button:not(:disabled):hover { box-shadow: 0 0 8px rgba(255,170,80,.30); }
   var X_SEL = '.th-x,.tly-x,.th-drawer-x,.sh-x,.fx-x,.thhd-x,.dsr-x,.ch-x,.vx-btn,.sfp-close,' +
     '.gic-close-btn,.gbc-close,.vrg-x,.aid-close-btn,.aid-header-close,.cb-x,.vd-close,.help-close,' +
     '.kbd-help-close,.glossary-close,.glb-close,.vtp-x,.vmm-close,.vll-x,.vev-x,.tlg-x,.tlp-close,' +
-    '.tvz-th-x,.aib-close,.aic-x,.bn-x,.help-x,.ovx-made';
+    '.tvz-th-x,.aib-close,.aic-x,.bn-x,.help-x,.ssv-x,.ovx-made';
   function shown(el) {
     if (!el || !el.isConnected) return false;
     var r = el.getBoundingClientRect();

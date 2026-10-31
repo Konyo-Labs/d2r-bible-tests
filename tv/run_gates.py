@@ -11066,6 +11066,10 @@ GATES = [
          needs_app=False,
          why="v3849 - a rare name takes its type from the raresuffix table at intake, a magic name routes by its base, "
              "an NPC or panel word is refused, and an unresolved ring/jewel draws no white-box fallback"),
+    Gate("test_esc_leaves_a_shadow_only_when_nothing_is_open",
+         [sys.executable, os.path.join(HERE, "test_esc_leaves_a_shadow_only_when_nothing_is_open.py")], 60,
+         needs_app=False,
+         why="v3849 - Esc leaves a shadow only when no overlay is open; LEAVE SHADOW uses the overlay-close chip"),
     Gate("test_a_rerun_runs_only_the_last_reds",
          [sys.executable, os.path.join(HERE, "test_a_rerun_runs_only_the_last_reds.py")], 120,
          needs_app=False,
