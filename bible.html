@@ -44093,13 +44093,12 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     'grief': 'flat damage war weapon',
     'infinity': 'conviction aura - breaks immunities',
     'last wish': 'might aura + crushing blow war weapon',
-    'faith': 'fanaticism aura bow',
     'call to arms': 'battle orders swap weapon',
+    /* v3849 (Elad 2026-10-31 12:14) - Dream and Faith go to the RUNEWORDS mule, not WAR / the shared stash: off this list */
     'heart of the oak': 'caster swap - skills + cast rate',
     'beast': 'fanaticism aura war weapon',
     'fortitude': 'enhanced damage + resists armour',
     'chains of honor': 'all resists + skills body armour',
-    'dream': 'holy shock aura - PvP helm or shield',
     'exile': 'defiance aura - PvP shield',
     'phoenix': 'redemption aura + absorb - uber shield',
     'dragon': 'holy fire aura armour',
@@ -44581,6 +44580,12 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
        drawers (sets are not on the list, and KEEP_IN_INVENTORY above wins) */
     var _war = warGearRole(name);
     if (_war && _ov !== 'mule') return {id:'shared', why:'war gear: ' + _war + ' - in the shared stash, where every character can reach it'};
+    /* v3849 (Elad 2026-10-31 12:16, the ALT's UNI-SMALL held Protector's Stone + Guardian's Thunder - his "protector /
+       colossal jewels") - the six COLOSSAL ANCIENT JEWELS are war stash gear, never UNI-SMALL */
+    try {
+      if (_ov !== 'mule' && typeof COLOSSAL_JEWELS !== 'undefined' && COLOSSAL_JEWELS.some(function(cj){ return cj.n === String(name).trim(); }))
+        return {id:'shared', why:'a Colossal Ancient jewel - war stash gear, in the shared stash where every character can reach it'};
+    } catch (eCj) {}
     /* REG-2242 — MERCENARY GEAR to the shared stash, on the same footing as war gear: ahead of the
        set / runeword / unique drawers below, behind the keeper + override checks above. A forced
        'mule' (_ov) still wins, so he can untick any merc item and send it to its slot mule. This does
