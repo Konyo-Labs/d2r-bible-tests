@@ -33507,7 +33507,7 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
   /* v3849 (v3848 eye #3) - a typed lookup (the shadow veil's box or FIND) owns its first Esc even with a card open: the
      field clears; the next Esc closes the top overlay. Guarded by tv/test_esc_clears_a_typed_lookup_over_an_overlay.py */
   function escClearsField(e) {
-    var t = e.target, L = window._tvdShadowLookup;
+    var t = e.target, L = window._tvdTypedLookup;
     try { return !!(t && t.matches && t.value && ((L && t.matches(L)) || t.id === 'vault-find-input')); } catch (eF) { return false; }
   }
   function typingInPlainField(e) {

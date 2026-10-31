@@ -57,7 +57,10 @@ def _fn_assign(src, start):
 
 
 FN = _fn_assign(SRC, "  window._vaultLookSrc = function(look){")
-HARNESS = "var window = {};\n" + FN + r"""
+# v3849 (a): the look src now hands its relative path to window._shadowOwnerUrl (a shadow re-points it to the owner).
+# The harness carries the bible's own off-shadow default, read from the source, so this law runs the shipped bytes.
+_OWNER = next(l for l in SRC.splitlines() if l.startswith("  window._shadowOwnerUrl = window._shadowOwnerUrl || function(path){"))
+HARNESS = "var window = {};\n" + _OWNER + "\n" + FN + r"""
 var s = function(frame, session){ return window._vaultLookSrc({ frame: frame, session: session }); };
 process.stdout.write(JSON.stringify({
   journal: s('3_1784984175075', 's_9'),
