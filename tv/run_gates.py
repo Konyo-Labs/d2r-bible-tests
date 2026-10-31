@@ -11059,6 +11059,11 @@ GATES = [
          needs_app=False,
          why="#230 REG-3117: every vault cell and tile word that promises an action goes through gridActSay and says read only in a shadow"),
     Gate("test_not_in_game_is_one_chip", [sys.executable, os.path.join(HERE, "test_not_in_game_is_one_chip.py")], 60, needs_app=False, why="v3848 - not in game yet is one chip from one rename-safe helper"),
+    Gate("test_a_rolled_name_resolves_at_intake",
+         [sys.executable, os.path.join(HERE, "test_a_rolled_name_resolves_at_intake.py")], 90,
+         needs_app=False,
+         why="v3849 - a rare name takes its type from the raresuffix table at intake, a magic name routes by its base, "
+             "an NPC or panel word is refused, and an unresolved ring/jewel draws no white-box fallback"),
     Gate("test_a_rerun_runs_only_the_last_reds",
          [sys.executable, os.path.join(HERE, "test_a_rerun_runs_only_the_last_reds.py")], 120,
          needs_app=False,
