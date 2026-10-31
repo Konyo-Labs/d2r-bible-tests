@@ -22166,7 +22166,7 @@ function artOr(name, fallbackHtml, size){
     var _rb = _artRolledBase(name);   /* REG-2903 one answer for a rolled item's base */
     _ask = _rb.ask;
     if (_rb.base && _rb.base !== String(name) && _rb.base !== _clean && _rb.base !== _cleanP){
-      var _bu = artUrl(_rb.base);
+      var _bu = _artBaseOrKin(_rb.base);
       if (_bu) u = _bu;
     }
   }
@@ -22179,6 +22179,7 @@ function artOr(name, fallbackHtml, size){
     var _builtUrl = artUrl(_builtBase);
     if (_builtUrl) u = _builtUrl;
   }
+  if (!u) u = _artBaseOrKin(_cleanP, true);   /* v3849 B4 - a plain elite base (Shako) with no file of its own */
   var _rc = _artRarity(name); var _rcls = _rc ? ' d2art-r-' + _rc : '';
   /* REG-2903 - a mark whose base is in doubt says the doubt as a question (his rule: a doubt becomes a question).
      v3849 - an unresolved ring/jewel keeps that question and does not paint the white-box fallback glyph (the ◆). */
@@ -22188,6 +22189,19 @@ function artOr(name, fallbackHtml, size){
   // the name from being duplicated into copied text / shown as broken-image alt on platforms
   // where the diablo2.io hotlink is blocked. Accessible name lives on the wrapper aria-label.
   return `<span class="d2art-wrap ${size||'lg'}${_rcls}" role="img" aria-label="${_d2artEsc(name)}"><img class="d2art-img" src="${u}" alt="" loading="lazy" decoding="async" onload="this.parentNode.classList.remove('d2art-failed')" onerror="this.parentNode.classList.add('d2art-failed')"><span class="d2art-fallback">${fallbackHtml||''}</span></span>`;
+}
+/* v3849 B4 (vault batch 2026-10-31: Storm Visor on a Shako, Beast Spur on Wyrmhide Boots, Plague Hold on Bramble Mitts
+   drew the blank mark) - an elite or exceptional base with no picture of its own is drawn as its own tier chain's
+   kin (the N->E->U triplet of BASE_TIER: Shako -> War Hat -> Cap), the same slot and shape. Only a base name has a chain,
+   so a unique or set name never lands here. kinOnly: answer only through the chain (the name itself was asked). */
+function _artBaseOrKin(base, kinOnly){
+  var b = String(base == null ? '' : base).trim(); if (!b) return '';
+  var own = kinOnly ? '' : artUrl(b); if (own) return own;
+  var ch = null; try { ch = (window._TIER_CHAIN || {})[b.toLowerCase()] || null; } catch (eCh) { ch = null; }
+  if (!ch) return '';
+  var order = [ch.elite, ch.exc, ch.normal];
+  for (var i = 0; i < order.length; i++){ if (order[i] && order[i] !== b){ var k = artUrl(order[i]); if (k) return k; } }
+  return '';
 }
 /* REG-2903 (the house rule on his MAGIC & RARE, 2026-10-28: an item whose base cannot be established from its own name or
    record shows UNKNOWN everywhere - one logic, never a guess on one surface and the mark on another) - ONE ANSWER FOR A
