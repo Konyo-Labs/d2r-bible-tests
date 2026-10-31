@@ -11102,6 +11102,12 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_border_keep_records_the_frame_it_was_read_from.py")], 60,
          needs_app=False,
          why="v3849 - a border keep records frameId and sessionId when the read knew them"),
+    Gate("test_d2jsp_30_item_batch_e2e",
+         [sys.executable, os.path.join(HERE, "test_d2jsp_30_item_batch_e2e.py")], 120,
+         needs_app=False,
+         why="v3849 - 30 fixture items, no network: each is a price headline or 'none close', and every post keeps its "
+             "forums.d2jsp.org link. The 30-post Shako / Annihilus / Guardian's Thunder batch (the outlier and the "
+             "key-mod fit) rides along."),
     Gate("test_a_rerun_runs_only_the_last_reds",
          [sys.executable, os.path.join(HERE, "test_a_rerun_runs_only_the_last_reds.py")], 120,
          needs_app=False,
