@@ -1,6 +1,6 @@
 """v3844 - THE D2JSP PRICE SEARCH, ITS EVIDENCE AND THE KEY MODS (Elad, 2026-10-30 00:40/00:41).
-1. A PRICE SEARCH bar on the desk prices anything a trader types ("anni 20/20/10", "40/15 shako", "jmod") from 2026
-   posts on board 268 only, and nothing is posted.
+1. A PRICE SEARCH bar on the desk prices anything a trader types ("anni 20/20/10", "40/15 shako", "jmod") from d2jsp
+   posts dated 2026 or later on board 268 only, and nothing is posted.
 2. Every quote carries an EVIDENCE DRAWER: each post the price came from - its link, day, fg, the roll as read and its
    weight - so a price can be rechecked by hand. The post's own words stay on the forum; the link opens them.
 3. The roll tier is MOD-WEIGHTED per item family: key mods dominate and filler counts nothing. A Guardian's Thunder
@@ -180,7 +180,7 @@ process.stdout.write(JSON.stringify(out));
         p = self.page
         form = p[p.index('id="d2jsp-price-form"'):p.index('id="d2jsp-find"')]
         self.assertIn('id="d2jsp-price-q"', form)
-        self.assertIn("2026 posts on board 268 only. Nothing is posted.", form)
+        self.assertIn("Reads d2jsp posts dated 2026 or later, board 268 only. Nothing is posted.", form)
         self.assertIn("+ '<div data-d2jsp-evbox>' + evHtml(n) + '</div>'", p)
         self.assertIn("if (gen !== searchGen) return;", p, "an older search answer can paint over a newer one")
         search = p[p.index("function priceSearch(){"):p.index("window._d2jspPriceSearch = priceSearch;")]
