@@ -4093,7 +4093,15 @@ tr.owned-row{background:rgba(102,255,136,.03)}
       ev.preventDefault();
       try { host.postMessage({ type: 'tvd-shadow-leave' }, window.location.origin); } catch (e) {}
     }, true);
+    /* v3849 (a) - the owner's picture map and the address their console answers on ride in the snapshot
+       (d2r_api_pictures, closed shapes by tv/console_snapshot.pictures_of). Read only: a GET of a picture, never a write. */
+    var _pics = null;
+    try { _pics = JSON.parse(seed.d2r_api_pictures || 'null'); } catch (eP) { _pics = null; }
+    if (!_pics || typeof _pics !== 'object' || _pics.ok !== true) _pics = null;
+    var _porg = (_pics && typeof _pics.origin === 'string' && /^https?:\/\/[A-Za-z0-9][A-Za-z0-9.\-]*(?::\d{1,5})?$/.test(_pics.origin)) ? _pics.origin : '';
     window._tvdShadow = { owner: String((snap && snap.owner) || ''), t: snap && snap.t, mem: mem };
+    window._tvdShadow.origin = _porg;
+    window._tvdShadow.pictures = (_pics && _pics.pictures && typeof _pics.pictures === 'object') ? _pics.pictures : null;
     // The snapshot is already in memory. From here a shadow stores nothing, so a later
     // floor cannot rewrite the entered profile. The label names whose reels these are.
     mem.setItem = function () {};
@@ -48985,6 +48993,20 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
      any "/" in an id and the archive leg joins hist/<id>.jpg — so every click opened "frame missing" (the v3182 defect,
      back). The rebuild stores a look's id as its VISIT ("s_…#0"), so the bucket suffix is stripped; a look with no session
      has no reel to name and gets no src (the old chain still runs). -> 'tv/frames/hist/reel_<sid>/<frame>' | null */
+  /* v3849 (a) - IN A SHADOW A PICTURE IS THE OWNER'S. A relative frame path resolves on the VIEWER's console, so a
+     shadow drew the viewer's own frame of that name (or none). In a shadow every frame path is the owner's address +
+     that path, and with no owner address on the snapshot there is no picture to load (null) - never the viewer's.
+     Guarded by tv/test_a_shadow_draws_the_owners_frame.py. */
+  window._shadowOwnerUrl = function(path){
+    var p = String(path == null ? '' : path);
+    if (!window._tvdShadow) return p || null;
+    if (!p) return null;
+    var org = String(window._tvdShadow.origin || '');
+    if (!/^https?:\/\//.test(org)) return null;
+    if (/^https?:\/\//i.test(p)) return p.indexOf(org + '/') === 0 ? p : null;
+    if (/^(data|blob):/i.test(p)) return null;
+    return org + '/' + p.replace(/^\/+/, '');
+  };
   window._vaultLookSrc = function(look){
     var fr = look && look.frame ? String(look.frame) : '', sid = look && look.session ? String(look.session) : '';
     if (!fr) return null;
@@ -48994,7 +49016,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
        ms "1788820373017" (reel in `session`) became "reel_<s>/1788820373017" with no f_ prefix and no
        .jpg, so the file never matched. Now all three resolve. [[the-unjoined-end]] */
     if (/^reel_[^\/\\]+\/[^\/\\]+$/.test(fr))
-      return 'tv/frames/hist/' + fr + (/\.jpg$/.test(fr) ? '' : '.jpg');
+      { var _relH = 'tv/frames/hist/' + fr + (/\.jpg$/.test(fr) ? '' : '.jpg'); return (window._tvdShadow && typeof window._shadowOwnerUrl === 'function') ? window._shadowOwnerUrl(_relH) : _relH; }
     if (!sid) return null;
     var s = sid.replace(/#\d+$/, '').replace(/^reel_/, '');
     if (!s || /[\/\\]/.test(s) || /[\/\\]/.test(fr)) return null;
@@ -49004,7 +49026,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var stem = fr.replace(/\.jpg$/i, '').replace(/#\d+$/, '');
     var nms = /^(\d+)_(\d{12,14})$/.exec(stem);
     var fn = (nms ? ('f_' + nms[2]) : (/^\d+$/.test(stem) ? ('f_' + stem) : stem)) + '.jpg';
-    return 'tv/frames/hist/reel_' + s + '/' + fn;
+    var _rel = 'tv/frames/hist/reel_' + s + '/' + fn;
+    return (window._tvdShadow && typeof window._shadowOwnerUrl === 'function') ? window._shadowOwnerUrl(_rel) : _rel;   /* v3849 (a) */
   };
   /* #36 (REG-2908, his ruling 2026-10-28 11:30: "so each reel knows whose stash it filmed") - A LOOK CARRIES THE CHARACTER
      ITS SESSION WAS ON, unless the read named its holder. Every look here was holder-less in production: the stash sweep's
@@ -49232,6 +49255,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     };
     /* rank 3 — the panel's off-screen probe walks the SAME chain the lightbox will, reel path first */
     var chain = []; try { chain = (typeof window._tvdFrameChain === 'function') ? (window._tvdFrameChain(id, src || null) || []) : []; } catch (e) { chain = []; }
+    if (window._tvdShadow) chain = chain.map(function(u){ return window._shadowOwnerUrl(u); }).filter(function(u, k, a){ return !!u && a.indexOf(u) === k; });   /* v3849 (a) the owner's frame */
     if (!chain.length || typeof Image !== 'function') return ask();
     var i = 0, img = new Image();
     var guard = setTimeout(function(){ img.onload = img.onerror = null; ask(); }, 8000);

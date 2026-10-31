@@ -72,6 +72,7 @@ CLASS = {
     "#vault-planner-q": (R, "add an item from the planner: its picks file items"),
     "#vault-hand-q": (R, "the planner list: Enter adds the exact name"),
     "#vmk-add-input": (R, "add an item to collect spares of (GrokBot: confirmed locked)"),
+    "#vme-text": (R, "edit an item's mods in place from the tile pencil - a write; a shadow has no pencil (v3849 D2)"),
     "#cb-pick-q": (R, "the builder's item picker: its Enter and its rows put an item on a build"),
     "#cb-base-q": (R, "the builder's base search: its rows set an item's base"),
     "#cb-add-q": (R, "the builder's add search: its rows add an item"),

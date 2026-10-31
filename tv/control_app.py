@@ -5253,6 +5253,47 @@ def _profile_api_path():
     return os.path.join(_log_root(), ".roster_profile_api.json")
 
 
+def _profile_picture_ids(stores):
+    """v3849 (a) - the frame ids the owner's vault cites (a keeper's frameId, each witness look's frame), first 40."""
+    ids = []
+    def _add(v):
+        v = str(v or "").strip()
+        if v and v not in ids and len(ids) < 40:
+            ids.append(v)
+    try:
+        mf = json.loads((stores or {}).get("d2r_magicFinds") or "{}")
+        for _n, rec in sorted((mf or {}).items()):
+            if isinstance(rec, dict):
+                _add(rec.get("frameId"))
+    except Exception:
+        pass
+    try:
+        pv = json.loads((stores or {}).get("d2r_vaultProv") or "{}")
+        for _n, row in sorted((pv or {}).items()):
+            if isinstance(row, dict):
+                _add(row.get("frameId"))
+                for lk in (row.get("looks") or [])[:12]:
+                    if isinstance(lk, dict):
+                        _add(lk.get("frame"))
+    except Exception:
+        pass
+    return ids
+
+
+def _profile_pictures():
+    """v3849 (a) - the picture map a shadow reads, and the address the owner set for viewers (TVD_SHADOW_ORIGIN).
+    No address set = none sent; the shadow then says so instead of asking anyone."""
+    import read_pictures as _rpic
+    import frame_authority as _fap
+    book = _profile_json_load(_profile_book_path()) or {}
+    stores = book.get("stores") if isinstance(book.get("stores"), dict) else {}
+    out = _rpic.status_for(_profile_picture_ids(stores), _fap._hist_dir(None))
+    org = str(os.environ.get("TVD_SHADOW_ORIGIN") or "").strip().rstrip("/")
+    if org:
+        out["origin"] = org
+    return out
+
+
 def _profile_api_answers(now_ms=None, reads=None):
     """#203 - the console answers that ride in the upload. -> (answers, misses)
 
@@ -5262,7 +5303,7 @@ def _profile_api_answers(now_ms=None, reads=None):
     now = int(time.time() * 1000) if now_ms is None else int(now_ms)
     kept = _profile_json_load(_profile_api_path()) or {}
     answers, misses, changed = {}, {}, False
-    for name, read in (reads or (("chars_learned", _profile_chars_learned), ("main_locks", main_locks_view))):
+    for name, read in (reads or (("chars_learned", _profile_chars_learned), ("main_locks", main_locks_view), ("pictures", _profile_pictures))):
         why = None
         try:
             got = read()

@@ -60,6 +60,9 @@ API_FIELDS = {
                       "sessions", "sessionsWhy"),
     "main_locks": ("ok", "locked", "tracked", "floor", "minSightings", "canEverLock", "blockedWhy"),
     "world": ("machine", "profile", "ledger", "os", "cousin"),
+    # v3849 (a) - the owner's picture map for the frames the vault cites, and the address its console answers on, so a
+    # shadow's magnifier draws the OWNER's frame (never a picture of the viewer's own). Names and words only.
+    "pictures": ("ok", "pictures", "origin"),
 }
 # The world the owner's board drew in: which machine and profile its stores belong to, the ledger it keeps and the
 # OS it reported. The shadow frame takes these instead of the viewer's own, so a Mac viewing a Windows owner draws
@@ -182,6 +185,35 @@ def world_of(raw):
 API_OPTIONAL = {"chars_learned": ("surfaceWitnesses", "gear", "lobbyBySize", "sessions")}   # REG-2907: sessions go last
 
 
+#: v3849 (a) - an address a viewer can open: http(s), a host, an optional port, nothing after it
+_ORIGIN = re.compile(r"^https?://[A-Za-z0-9][A-Za-z0-9.\-]{0,252}(?::[0-9]{1,5})?$")
+PICTURES_MAX = 40
+
+
+def pictures_of(raw):
+    """The console's picture answer -> {ok, pictures, origin?} with closed shapes, or None.
+
+    pictures: frame id -> {present: True|False|None, code: short word, why: words or None}; at most PICTURES_MAX.
+    origin: kept only when it is an address shape (_ORIGIN); anything else is left out, never guessed."""
+    if not isinstance(raw, dict) or raw.get("ok") is not True or not isinstance(raw.get("pictures"), dict):
+        return None
+    pics = {}
+    for fid in sorted(raw["pictures"])[:PICTURES_MAX]:
+        v = raw["pictures"][fid]
+        if not isinstance(fid, str) or not (0 < len(fid) <= 120) or not isinstance(v, dict):
+            continue
+        pr = v.get("present")
+        code, why = v.get("code"), v.get("why")
+        pics[fid] = {"present": pr if pr in (True, False) else None,
+                     "code": code[:40] if isinstance(code, str) else None,
+                     "why": why[:200] if isinstance(why, str) else None}
+    out = {"ok": True, "pictures": pics}
+    org = raw.get("origin")
+    if isinstance(org, str) and _ORIGIN.match(org):
+        out["origin"] = org
+    return out
+
+
 def api_store(name, payload, left_out=None):
     """-> (store name, JSON string) for one console answer, or None when it is not one the shadow serves.
 
@@ -189,6 +221,8 @@ def api_store(name, payload, left_out=None):
     fields = API_FIELDS.get(name)
     if name == "world":
         payload = world_of(payload)
+    if name == "pictures":
+        payload = pictures_of(payload)
     if not fields or not isinstance(payload, dict):
         return None
     kept = {f: payload[f] for f in fields if f in payload}

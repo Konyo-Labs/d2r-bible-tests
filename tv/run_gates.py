@@ -11074,6 +11074,7 @@ GATES = [
     Gate("test_an_unknown_roll_shows_its_affix_ranges", [sys.executable, os.path.join(HERE, "test_an_unknown_roll_shows_its_affix_ranges.py")], 120, needs_app=False, why="v3849 D1 - a magic item with unknown rolls shows each affix mod as its min-max range from CB_DB af; never Base item"),
     Gate("test_a_vault_tile_wears_three_corner_badges", [sys.executable, os.path.join(HERE, "test_a_vault_tile_wears_three_corner_badges.py")], 120, needs_app=False, why="v3849 D2 - a vault tile wears pencil (mods edit, never re-files), magnifier and $ price; a shadow gets no pencil"),
     Gate("test_a_set_name_is_split_into_its_pieces", [sys.executable, os.path.join(HERE, "test_a_set_name_is_split_into_its_pieces.py")], 120, needs_app=False, why="v3849 B2/B3 - a full-set name is split into its pieces; the pieces of one set share a mule and overflow together"),
+    Gate("test_a_shadow_draws_the_owners_frame", [sys.executable, os.path.join(HERE, "test_a_shadow_draws_the_owners_frame.py")], 120, needs_app=False, why="v3849 (a) - the snapshot carries the owner picture map and address; a shadow frame is the owner URL or none, never the viewer path"),
     Gate("test_esc_leaves_a_shadow_only_when_nothing_is_open",
          [sys.executable, os.path.join(HERE, "test_esc_leaves_a_shadow_only_when_nothing_is_open.py")], 60,
          needs_app=False,
