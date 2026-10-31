@@ -174,6 +174,28 @@ def _ocr_ask(wp, path, timeout=8.0):
     return {}
 
 
+_D2JSP_DB_LOCK = threading.Lock()   # v3849 - one writer of the price DB at a time
+
+
+def _d2jsp_db_fold(reading):
+    """v3849 - fold a d2jsp reading into this console's price DB and answer the DB's price for the item.
+    A DB that will not read is UNKNOWN: the reading is not folded and the answer says why (never an empty DB)."""
+    import d2jsp_price_db as _PDB
+    path = os.path.join(_fixture_root_for_state(), "d2jsp_price_db.json")
+    with _D2JSP_DB_LOCK:
+        db = _PDB.load(path)
+        if db is None:
+            return {"unknown": "the price DB at this console would not read"}
+        try:
+            if _PDB.ingest(db, reading, socket.gethostname()):
+                _PDB.save(path, db)
+            elif reading.get("reason") == "read":
+                _PDB.save(path, db)   # readAt moved: a fresh read restarts the refresh clock
+        except OSError as e:
+            return {"unknown": "the price DB could not be written (%s)" % type(e).__name__}
+        return _PDB.price(db, reading.get("item"))
+
+
 def _fixture_root_for_state():
     """HERE, unless TV_HIST says this is a fixture's world — the v1867/v1869 rule, one call.
 
@@ -47676,6 +47698,7 @@ class Handler(BaseHTTPRequestHandler):
                 _opened = _d2jsp.open_quote_login_once()
                 if _opened:
                     _out["opened"] = True
+            _out["db"] = _d2jsp_db_fold(_out)   # v3849 - every read post is kept, aged and weighed (the price DB)
             self._json(_code, _out)
             return
         if path in ("/", "/index.html", "/ui"):

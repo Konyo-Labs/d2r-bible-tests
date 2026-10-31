@@ -11060,6 +11060,7 @@ GATES = [
          why="#230 REG-3117: every vault cell and tile word that promises an action goes through gridActSay and says read only in a shadow"),
     Gate("test_not_in_game_is_one_chip", [sys.executable, os.path.join(HERE, "test_not_in_game_is_one_chip.py")], 60, needs_app=False, why="v3848 - not in game yet is one chip from one rename-safe helper"),
     Gate("test_the_desktop_launcher_wears_the_shipped_logo", [sys.executable, os.path.join(HERE, "test_the_desktop_launcher_wears_the_shipped_logo.py")], 60, needs_app=False, why="v3849 - the desktop launcher wears the shipped logo on every launch"),
+    Gate("test_the_d2jsp_price_db_ages_weighs_and_merges", [sys.executable, os.path.join(HERE, "test_the_d2jsp_price_db_ages_weighs_and_merges.py")], 60, needs_app=False, why="v3849 - the d2jsp price DB: age decay, Wilson, perfect tier, refresh, fleet merge"),
     Gate("test_a_rerun_runs_only_the_last_reds",
          [sys.executable, os.path.join(HERE, "test_a_rerun_runs_only_the_last_reds.py")], 120,
          needs_app=False,

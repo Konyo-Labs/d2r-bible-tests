@@ -362,6 +362,7 @@ function d2jspPosts(text, itemName, nowMs, aside) {
       var row = { fg: x.fg, day: new Date(when).toISOString().slice(0, 10), link: link,
         roll: note.tuples, mods: note.words.slice(0, 12), w: 1 };
       if (x.cols) row.cols = x.cols;
+      if (note.perfect) row.perfect = true;   /* v3849 - the post says perf/perfect: the price DB keeps a perfect tier */
       rows.push(row);
     });
   });
