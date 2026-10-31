@@ -28,16 +28,16 @@ OUT.r = r;
 PRELUDE = "localStorage.setItem('d2r_ownerClaim','*');"
 
 RED_PROOF = [
-    {"file": "bible.html", "why": "the trade table is not read: valuable pieces go out",
+    {"matches": 1, "file": "bible.html", "why": "the trade table is not read: valuable pieces go out",
      "find": "      return v === 'high' || v === 'med' || _KEEP_PIECE.test(p)",
      "replace": "      return _KEEP_PIECE.test(p)"},
-    {"file": "bible.html", "why": "low pieces are kept too",
+    {"matches": 1, "file": "bible.html", "why": "low pieces are kept too",
      "find": "      return v === 'high' || v === 'med' || _KEEP_PIECE.test(p)",
      "replace": "      return !!v || _KEEP_PIECE.test(p)"},
-    {"file": "bible.html", "why": "Naj's Puzzler ruling dropped",
+    {"matches": 1, "file": "bible.html", "why": "Naj's Puzzler ruling dropped",
      "find": "    var _KEEP_PIECE = /^(Naj's Puzzler|Laying of Hands)$/i;",
      "replace": "    var _KEEP_PIECE = /^(Laying of Hands)$/i;"},
-    {"file": "bible.html", "why": "the piece branch keeps by set name again",
+    {"matches": 1, "file": "bible.html", "why": "the piece branch keeps by set name again",
      "find": "        if (!_keptPiece(name, psn)) return",
      "replace": "        if (!/Tal Rasha|Immortal King|Griswold|Aldur|Trang.?Oul|Natalya|M.?avina|Horazon|Disciple|Orphan|Naj/i.test(psn)) return"},
 ]

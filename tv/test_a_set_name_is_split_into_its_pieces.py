@@ -50,19 +50,19 @@ PRELUDE = ("localStorage.setItem('d2r_ownerClaim','*');"
            ) % json.dumps(json.dumps(["Naj's Ancient Vestige", "Shako", "Tal Rasha's Guardianship"]))
 
 RED_PROOF = [
-    {"file": "bible.html", "why": "v3849 B2/B3 - a set name is one item again",
+    {"matches": 1, "file": "bible.html", "why": "v3849 B2/B3 - a set name is one item again",
      "find": "    if (_norm(String(sn).replace(tag, '')) === q) return sets[i].pieces.map(__pieceBase);\n",
      "replace": "    if (false) return sets[i].pieces.map(__pieceBase);\n"},
-    {"file": "bible.html", "why": "v3849 B2/B3 - the door owns the set name",
+    {"matches": 1, "file": "bible.html", "why": "v3849 B2/B3 - the door owns the set name",
      "find": "    if (_pcs && _pcs.length){\n      var _any = false, _lastP = null;\n",
      "replace": "    if (false){\n      var _any = false, _lastP = null;\n"},
-    {"file": "bible.html", "why": "v3849 B2/B3 - a stored set name stays at load",
+    {"matches": 1, "file": "bible.html", "why": "v3849 B2/B3 - a stored set name stays at load",
      "find": "      owned = new Set(_spl);\n",
      "replace": "      void _spl;\n"},
-    {"file": "bible.html", "why": "v3849 B2/B3 - a sister piece's mule is ignored",
+    {"matches": 1, "file": "bible.html", "why": "v3849 B2/B3 - a sister piece's mule is ignored",
      "find": "        if (_sis) return {id:_sis, why:'set piece: '+psn+' - kept with its set'};\n",
      "replace": "        void _sis;\n"},
-    {"file": "bible.html", "why": "v3849 B2/B3 - overflow splits a set across mules",
+    {"matches": 1, "file": "bible.html", "why": "v3849 B2/B3 - overflow splits a set across mules",
      "find": "        var name = it && it.set ? '\\u0000set:' + it.set : (it && it.n);\n",
      "replace": "        var name = it && it.n;\n"},
 ]

@@ -1468,8 +1468,8 @@ RED_PROOF = [
     {
         "why": "#41 rank 18 sibling (REG-1552) - a board nobody served asks his console anyway (the origin guard dropped)",
         "file": "bible.html",
-        "find": "      var origin = _consoleOrigin();\n      if (!origin) return end({ state: 'unknown', frame: id,",
-        "replace": "      var origin = _consoleOrigin() || 'http://127.0.0.1:17772';\n      if (false) return end({ state: 'unknown', frame: id,",
+        "find": "        origin = _consoleOrigin();\n        if (!origin) return end({ state: 'unknown', frame: id,",
+        "replace": "        origin = _consoleOrigin() || 'http://127.0.0.1:17772';\n        if (false) return end({ state: 'unknown', frame: id,",
         "matches": 1,
     },
     {

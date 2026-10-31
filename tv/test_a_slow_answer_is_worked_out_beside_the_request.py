@@ -96,23 +96,23 @@ class TestASlowAnswerIsWorkedOutBesideTheRequest(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "the route waits on the work again", "file": "tv/control_app.py",
+    {"matches": 1, "why": "the route waits on the work again", "file": "tv/control_app.py",
      "find": "            threading.Thread(target=_work, name=\"tvd-answer-soon-\" + key, daemon=True).start()",
      "replace": "            _work()"},
-    {"why": "a second ask starts a second thread", "file": "tv/control_app.py",
+    {"matches": 1, "why": "a second ask starts a second thread", "file": "tv/control_app.py",
      "find": "        if not st[\"running\"]:\n            st[\"running\"], st[\"started\"] = True, now",
      "replace": "        if True:\n            st[\"running\"], st[\"started\"] = True, now"},
-    {"why": "a moved signature still reads as fresh", "file": "tv/control_app.py",
+    {"matches": 1, "why": "a moved signature still reads as fresh", "file": "tv/control_app.py",
      "find": "            (sig is not None and st[\"sig\"] == sig) or",
      "replace": "            (sig is not None) or"},
-    {"why": "a failure is swallowed into pending", "file": "tv/control_app.py",
+    {"matches": 1, "why": "a failure is swallowed into pending", "file": "tv/control_app.py",
      "find": "        if st[\"err\"] and not st[\"running\"] and st[\"res\"] is None:", "replace": "        if False:"},
-    {"why": "age never expires", "file": "tv/control_app.py",
+    {"matches": 1, "why": "age never expires", "file": "tv/control_app.py",
      "find": "now - st[\"at\"] <= max_age_s))", "replace": "True))"},
-    {"why": "the chronicle route blocks again", "file": "tv/control_app.py",
+    {"matches": 1, "why": "the chronicle route blocks again", "file": "tv/control_app.py",
      "find": "self._json(200, _answer_soon(\"chronicle_scan\", _hist_signature(os.environ.get(\"TV_HIST\") or HIST_DIR), chronicle_scan_cost))",
      "replace": "self._json(200, chronicle_scan_cost())"},
-    {"why": "the eagle panel counts a pending answer as zero checks", "file": "tv/control_ui.html",
+    {"matches": 1, "why": "the eagle panel counts a pending answer as zero checks", "file": "tv/control_ui.html",
      "find": "      if (j.pending) {", "replace": "      if (false) {"},
 ]
 

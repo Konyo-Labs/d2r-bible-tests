@@ -340,8 +340,8 @@ RED_PROOF = [
     {
         "why": "REG-2278 - every frame token is prefixed f_ again, so a stored filename no longer resolves",
         "file": "bible.html",
-        "find": "    var fn = (/^\\d+$/.test(stem) ? ('f_' + stem) : stem) + '.jpg';\n",
-        "replace": "    var fn = ('f_' + stem) + '.jpg';\n",
+        "find": "(/^\\d+$/.test(stem) ? ('f_' + stem) : stem)) + '.jpg';\n",
+        "replace": "('f_' + stem)) + '.jpg';\n",
         "matches": 1,
     },
     {

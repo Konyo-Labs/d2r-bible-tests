@@ -68,11 +68,11 @@ class AFullRunReusesAnUnmovedPass(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "a full run never consults the ledger again", "file": "run_gates.py",
+    {"matches": 1, "why": "a full run never consults the ledger again", "file": "run_gates.py",
      "find": '(ledger == "changed" or (ledger == "full" and full_banks()))', "replace": '(ledger == "changed")'},
-    {"why": "TV_FULL_FRESH is ignored", "file": "run_gates.py",
+    {"matches": 1, "why": "TV_FULL_FRESH is ignored", "file": "run_gates.py",
      "find": '    return os.environ.get("TV_FULL_FRESH") != "1"', "replace": "    return True"},
-    {"why": "a moved input is not seen", "file": "gate_ledger.py",
+    {"matches": 1, "why": "a moved input is not seen", "file": "gate_ledger.py",
      "find": "        if cwhy or changed is None:\n", "replace": "        changed = set()\n        if cwhy or changed is None:\n"},
 ]
 
