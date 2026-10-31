@@ -721,6 +721,8 @@ def _public_posts(raw):
         mods = [str(x)[:30] for x in (r.get("mods") or [])[:12] if isinstance(x, str)]
         if mods:
             row["mods"] = mods
+        if r.get("perfect") is True:   # v3849 - only a real True is the perfect tier
+            row["perfect"] = True
         _o = r.get("out")
         if isinstance(_o, str) and _o.strip():   # v3845 second eye: only a real reason string is a label (True/1/{} are not)
             row["out"] = _o.strip()[:80]
