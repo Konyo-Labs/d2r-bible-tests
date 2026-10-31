@@ -165,7 +165,10 @@ class TheBootWindowHasAName(unittest.TestCase):
 
     def _heart(self, sp):
         import control_app as ca
+        # The disk census is stubbed to "not already shut". A known stale/missing/unreadable census is
+        # stale-at-boot in its own law; this floor stays starting + null when that census is not shut.
         with mock.patch.object(ca, "_SELF_PROVE", sp), \
+                mock.patch.object(ca, "_boot_census_once", lambda: None), \
                 mock.patch.object(ca, "_RIVER_LAST", {"good": None, "fail": None}):
             return ca._river_for_wire(now_ms=NOW)["heart"]
 
@@ -227,7 +230,11 @@ class TheRowSaysStartingNotUnknown(unittest.TestCase):
                                                               "why": "vault lane: owes 1"}],
                           "heart": {"census": None, "key": "starting", "blind": None}})
         self.assertIn("river stuck", out["chip"], "a stuck station was hidden by the boot window: %r" % out["chip"])
-        self.assertIn("river \u00b7 starting", out["chip"])
+        self.assertIn("proof check pending", out["chip"])
+        self.assertNotIn("river \u00b7 starting", out["chip"], "the boot window drew a second river chip: %r" % out["chip"])
+        self.assertEqual(out["html"].count("fleet-riverstuck"), 1)
+        self.assertEqual(out["html"].count("fleet-riverunk"), 0)
+        self.assertIn("PRINTER", out["html"], "the one chip dropped the stuck tip")
 
     def test_a_null_census_without_the_key_is_still_unknown(self):
         out = self._card({"stuck": None, "heart": {"census": None, "key": None, "blind": None}})

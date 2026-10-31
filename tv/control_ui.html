@@ -27735,6 +27735,8 @@ function escC(s) {
     var hs = (rv && typeof rv === 'object') ? rv.heart : undefined;
     var census = (hs && typeof hs === 'object') ? hs.census : undefined;
     var bits = [];
+    /* v3849 — one river chip. A stuck list during the boot window used to draw "river stuck" and "river · starting". */
+    var _pending = (census === null && hs && hs.key === 'starting' && _fleetBooting(m, nowMs));
     if (Array.isArray(sk) && sk.length) {
       /* REG-2072 (GrokBot tick 423 K07) - THE ROW'S CHIP SAYS A SHARED REASON ONCE TOO. REG-2059 grouped the fleet CARD's
          tip through _fleetStuckWhy; this chip kept its own row-by-row copy, so 'vault lane: owes 7 ...' printed for PRINTER 2
@@ -27760,14 +27762,16 @@ function escC(s) {
           return e.station + (older ? ' older' : '') + ' ' + say;
         });
       if (_waits.length) tip += ' · oldest reel waiting: ' + _waits.join(', ');
-      bits.push('<span class="fleet-riverstuck" title="river stuck on this PC - ' + escC(tip) + '">river stuck</span>');
+      var _stuckLabel = _pending ? 'river stuck \u00b7 proof check pending' : 'river stuck';
+      bits.push('<span class="fleet-riverstuck" title="river stuck on this PC - ' + escC(tip) + '">' + _stuckLabel + '</span>');
     }
     if (census === 'missing' || census === 'stale' || census === 'unreadable') {
       /* GBL census-lowmem - a proof held back ONLY by free memory says so on the row, not the bare word a broken lock wears */
       var _memWait = hs && hs.key === 'low-memory';
+      var _recheck = hs && hs.key === 'stale-at-boot';
       bits.push('<span class="fleet-riverstuck" title="' + escC('the locks that move this PC\u2019s river are shut \u2014 its proof is '
         + census + (_memWait ? ' and waiting for free memory to prove' : '') + ', so nothing that spends a reel may act here')
-        + '">' + (_memWait ? 'locks shut \u00b7 census waiting for memory' : 'locks shut') + '</span>');
+        + '">' + (_memWait ? 'locks shut \u00b7 census waiting for memory' : (_recheck ? 'locks shut \u00b7 rechecking' : 'locks shut')) + '</span>');
     }
     /* #193 (his "river says unknown now", 2026-10-27) - A CONSOLE THAT JUST STARTED IS NOT A BROKEN ONE. Its first proof
        check runs about 5 minutes after a start, and its river is read about a minute after. Until then the beacon says
@@ -27776,7 +27780,7 @@ function escC(s) {
     var _bootGone = false;
     if (census === null && hs && hs.key === 'starting' && !_fleetBooting(m, nowMs)) _bootGone = true;
     else if (census === null && hs && hs.key === 'starting') {
-      bits.push('<span class="fleet-riverunk" title="' + escC('this console started moments ago - its own proof check runs '
+      if (!(Array.isArray(sk) && sk.length)) bits.push('<span class="fleet-riverunk" title="' + escC('this console started moments ago - its own proof check runs '
         + 'about 5 minutes after a start and its river is read about a minute after, so whether its river drains is '
         + 'UNKNOWN until then (not a fault)') + '">river · starting</span>');
       return bits.join('');
@@ -32913,6 +32917,15 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
     return ((+rowTop || 0) - (+cardH || 0) - 8 < (+ceiling || 0)) ? 'below' : 'above';
   }
   window._fttPlace = _fttPlace;
+  /* v3849 — a wide card grows left out of the fleet rail and covers the console column. Its left edge stays on the rail. */
+  function _fttRailClamp(cardLeft, cardRight, railLeft){
+    var left = +cardLeft || 0, right = +cardRight || 0, rail = +railLeft || 0;
+    if (!(right >= left)) right = left;
+    var edge = left < rail ? rail : left;
+    if (edge > right) edge = right;
+    return edge;
+  }
+  window._fttRailClamp = _fttRailClamp;
   /* REG-2082 (GrokBot tick 425 K06) - THE CEILING IS WHATEVER CLIPS THE CARD, NOT ONLY THE TAB BAR. The top row's card opened
      above it and 'GROKBOT this console' was cut at the top edge: the fleet sits inside the rail, a scroll container, and
      a card above its top visible row is clipped by the RAIL's edge (and by anything stuck at the rail's top), which the
@@ -32949,6 +32962,16 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
         if (!card) return;
         var ceil = _fttCeiling(row);   /* REG-2082 - the tab bar, the rail's edge or what sticks there, whichever is lowest */
         card.classList.toggle('ftt-below', _fttPlace(row.getBoundingClientRect().top, card.offsetHeight, ceil) === 'below');
+        card.style.maxWidth = '';
+        card.style.minWidth = '';
+        var box = card.getBoundingClientRect();
+        var rail = row.closest('aside.rail');
+        var railLeft = rail ? rail.getBoundingClientRect().left : row.getBoundingClientRect().left;
+        var edge = _fttRailClamp(box.left, box.right, railLeft);
+        if (edge > box.left) {
+          card.style.minWidth = '0px';
+          card.style.maxWidth = (box.right - edge) + 'px';
+        }
       } catch (_e) {}
     }, true);
   } catch (_l) {}
