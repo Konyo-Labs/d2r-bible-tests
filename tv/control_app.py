@@ -21890,14 +21890,16 @@ def _self_prove_tick():
 #: (the route also answers the same head inside 3 hours without a KV write)
 PROOF_CARRIER_TAKE_EVERY_S = 1800
 PROOF_CARRIER_PUBLISH_EVERY_S = 3 * 3600
-#: the platforms whose PCs carry proofs to each other - his ruling names the Windows ALT and Dean; the Mac has no peer
+#: the platforms whose PCs TAKE proofs. The Mac (darwin) is not here: it publishes and never takes.
 PROOF_CARRIER_PLATFORMS = ("win32",)
 #: REG-3047 (#186) - which PC takes which PC's proofs. His ruling (2026-10-28) names ONE direction: Dean takes the Windows
 #: ALT's. REG-2737 carried both ways and from every other roster label; a PC not named here takes from nobody, and a PC
 #: nobody takes from posts nothing. His own PC's gates do not stand on a friend's machine without his word.
 #: v3844 - his ruling 2026-10-30 (t966u) adds the other direction: the ALT (7.9 GB) can never hold a whole proof, so it
-#: takes Dean's. Both are win32 and an import re-keys every entry on the taker's own bytes, so only identical bytes carry.
-PROOF_CARRIER_ACCEPTS = {"Dean": ("Konyo · ALT",), "Konyo · ALT": ("Dean",)}
+#: takes Dean's. An import re-keys every entry on the taker's own LF-normalised bytes, so only the same text carries.
+#: v3849 Elad 17:19 - Dean stays first. Konyo (the Mac) is the backup, and only when Dean is missing at this HEAD or
+#: stale past PROOF_CARRIER_FRESH_S. The Mac's roster label is Konyo · Mac; the route is asked under that label.
+PROOF_CARRIER_ACCEPTS = {"Dean": ("Konyo · ALT",), "Konyo · ALT": ("Dean", "Konyo")}
 #: v3844 - the PCs that never start a proof of their own and only take the fleet prover's (PROOF_CARRIER_ACCEPTS)
 PROOF_FLEET_TAKES_ONLY = ("Konyo · ALT",)
 
@@ -21914,7 +21916,11 @@ def _proof_carrier_peers(owner):
 
 
 def _proof_carrier_source(owner):
-    """REG-3047 - does any PC take `owner`'s proofs? -> bool (no: there is nobody to post them for)"""
+    """REG-3047 - does any PC take `owner`'s proofs? -> bool (no: there is nobody to post them for)
+
+    The Mac's roster label is Konyo · Mac. The ALT's list names that same PC Konyo."""
+    if owner == "Konyo · Mac":
+        owner = "Konyo"
     return bool(owner) and any(owner in v for v in PROOF_CARRIER_ACCEPTS.values())
 
 
@@ -21948,17 +21954,25 @@ def _proof_carrier_doctor(last, reuse):
 _PROOF_CARRIER = {"running": False, "take": {}, "publish": {}, "last": None, "lastTs": None, "worked": 0}
 
 
-def _proof_carrier_due(sp, state, head, now_s, platform, can_take=True, can_publish=True):
+def _proof_carrier_due(sp, state, head, now_s, platform, can_take=True, can_publish=True, gate_ran=None):
     """#186 step 3 (his ruling 2026-10-28: "identical bytes saved from the windows alt pc that has already been proved.
     he doesnt need to reprove it all") - after a self-prove tick, what the proof carrier may do now. Pure.
     -> (None | "take" | "publish", why)
+
+    darwin (the Mac) never takes. It publishes only when `gate_ran` is a gate run it already did: "pre-push" or
+    "nightly". A proof job of its own is not one of those.
 
     Only on a platform with peers, at a known HEAD, one run at a time, and only where the prover itself could start:
     he is measured NOT playing (an UNKNOWN play state is not permission) and free memory is at least the prover's small
     start floor - an import parses the verdict cache, and the ALT has crashed its desktop under memory before. Take
     first while laws are owed (what a peer proved is a law this PC need not run), then post this PC's own. REG-3047: only
     from a PC this one is named to take from (`can_take`), and only posted when some PC takes this one's (`can_publish`)."""
-    if platform not in PROOF_CARRIER_PLATFORMS:
+    if platform == "darwin":
+        can_take = False
+        if gate_ran not in ("pre-push", "nightly"):
+            return None, ("the Mac publishes only after a gate run it already did (pre-push or nightly), "
+                          "and it never takes")
+    elif platform not in PROOF_CARRIER_PLATFORMS:
         return None, "no peer shares this platform (%s)" % platform
     if not can_take and not can_publish:
         return None, ("this PC takes no PC's proofs and no PC takes its own - his ruling names one direction, Dean "
@@ -21996,7 +22010,7 @@ def _proof_carrier_run(action, head, owner, peers):
     try:
         import proof_carrier as _pc
         if action == "take":
-            out = _pc.take(peers, head)
+            out = _pc.take(peers, head, now_ms=int(time.time() * 1000))
         else:
             out = _pc.publish(owner, os.path.join(_log_root(), ".roster_key.json"))
         ok = bool(out and (out.get("imported") if action == "take" else out.get("ok")))
@@ -22020,21 +22034,28 @@ def _proof_carrier_kick(sp, now_s=None):
     except Exception:
         head = None
     owner = None
-    if sys.platform in PROOF_CARRIER_PLATFORMS:
+    if sys.platform in PROOF_CARRIER_PLATFORMS or sys.platform == "darwin":
         try:
             import roster_publish as _rpo
             owner = _rpo.owner_of(_roster_claimed_name(), platform)
         except Exception:
             owner = None
     peers = _proof_carrier_peers(owner)                  # REG-3047 - only the PCs his ruling names
+    _gate_ran = None
+    if sys.platform == "darwin":
+        try:
+            _gate_ran = _pc.gate_run_kind(head)
+        except Exception:
+            _gate_ran = None
     action, why = _proof_carrier_due(sp, _PROOF_CARRIER, head, now_s, sys.platform,
-                                     can_take=bool(peers), can_publish=_proof_carrier_source(owner))
-    status = {"on": sys.platform in PROOF_CARRIER_PLATFORMS, "worked": _PROOF_CARRIER.get("worked"),
+                                     can_take=bool(peers), can_publish=_proof_carrier_source(owner),
+                                     gate_ran=_gate_ran)
+    status = {"on": sys.platform in PROOF_CARRIER_PLATFORMS or sys.platform == "darwin", "worked": _PROOF_CARRIER.get("worked"),
               "lastTs": _PROOF_CARRIER.get("lastTs"), "last": _PROOF_CARRIER.get("last"), "say": why,
               "takesFrom": list(peers),
               "doctor": _proof_carrier_doctor(_PROOF_CARRIER.get("last"),
                                               (sp or {}).get("reuse") if isinstance(sp, dict) else None)}
-    if sys.platform in PROOF_CARRIER_PLATFORMS and not owner:
+    if (sys.platform in PROOF_CARRIER_PLATFORMS or sys.platform == "darwin") and not owner:
         return dict(status, say="this PC has no roster label, so it has no key to carry proofs under")
     if action is None:
         return status

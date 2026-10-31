@@ -4006,12 +4006,25 @@ def _prove_narrow(sandbox, label, tgt, tgt_rel, find, repl, want, filename, time
     return None
 
 
+def lf_normalised_bytes(data):
+    """The bytes a proof key digests, on both the machine that proved and the machine that takes.
+
+    The ALT checks text out with core.autocrlf=true (CRLF). The Mac leaves autocrlf unset (LF).
+    Those are one commit. A NUL means the file is not text git converts, so its bytes stay as stored:
+    normalising a binary would forge a key. A lone CR is a different byte and still differs."""
+    if not isinstance(data, (bytes, bytearray)) or b"\0" in data or b"\r\n" not in data:
+        return data
+    return data.replace(b"\r\n", b"\n")
+
+
 def _sha_file(path, memo=None):
-    """sha256 of a file's bytes -> hex | None (unreadable).
+    """sha256 of a file's LF-normalised bytes -> hex | None (unreadable).
 
     The bytes are always read. A same-size rewrite can keep the same mtime_ns on a filesystem
     whose timestamps do not move, and a memo keyed only on (path, size, mtime_ns) then serves the
-    hash from before the rewrite. `memo` still records the digest for this run after the read."""
+    hash from before the rewrite. `memo` still records the digest for this run after the read.
+    Text is LF-normalised first (lf_normalised_bytes), so a Windows checkout and a Mac checkout of
+    the same commit key alike. A binary is hashed as stored."""
     try:
         st = os.stat(path)
     except OSError:
@@ -4020,10 +4033,11 @@ def _sha_file(path, memo=None):
     h = hashlib.sha256()
     try:
         with open(path, "rb") as fh:
-            for chunk in iter(lambda: fh.read(1 << 20), b""):
-                h.update(chunk)
+            data = fh.read()
     except OSError:
         return None
+    data = lf_normalised_bytes(data)
+    h.update(data)
     d = h.hexdigest()
     if memo is not None:
         memo[k] = d
@@ -4482,6 +4496,7 @@ class _VerdictCache(object):
                 data = fh.read()
         except OSError:
             return None, None
+        data = lf_normalised_bytes(data)
         raw = hashlib.sha256(data).hexdigest()   # the bytes are always read; only the masking is memoised, on them
         with self.lock:
             if ("REG-2602", rel, raw) in self.memo:
