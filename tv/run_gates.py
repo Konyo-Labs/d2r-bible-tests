@@ -11079,6 +11079,7 @@ GATES = [
     Gate("test_only_a_valuable_set_piece_is_kept", [sys.executable, os.path.join(HERE, "test_only_a_valuable_set_piece_is_kept.py")], 120, needs_app=False, why="v3849 set ruling - only Tal Rasha/high-med priced set pieces (+Naj, Laying, Horazon) are kept; the rest are thrown out"),
     Gate("test_a_full_run_reuses_an_unmoved_pass", [sys.executable, os.path.join(HERE, "test_a_full_run_reuses_an_unmoved_pass.py")], 120, needs_app=False, why="v3849 GATE-BANK - --full reuses a banked PASS whose traced inputs are unchanged; a moved input, TV_FULL_FRESH=1 or CI reruns"),
     Gate("test_esc_clears_a_typed_lookup_over_an_overlay", [sys.executable, os.path.join(HERE, "test_esc_clears_a_typed_lookup_over_an_overlay.py")], 60, needs_app=False, why="v3849 (v3848 eye #3) - a typed veil/FIND lookup owns its first Esc over an open overlay; the next Esc closes the card"),
+    Gate("test_a_river_read_does_not_stat_every_frame", [sys.executable, os.path.join(HERE, "test_a_river_read_does_not_stat_every_frame.py")], 60, needs_app=False, why="v3849 H1 - /api/river does not stat every frame while a reel is moving; one plan stats each frame once"),
     Gate("test_esc_leaves_a_shadow_only_when_nothing_is_open",
          [sys.executable, os.path.join(HERE, "test_esc_leaves_a_shadow_only_when_nothing_is_open.py")], 60,
          needs_app=False,
