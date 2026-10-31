@@ -32917,6 +32917,15 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
     return ((+rowTop || 0) - (+cardH || 0) - 8 < (+ceiling || 0)) ? 'below' : 'above';
   }
   window._fttPlace = _fttPlace;
+  /* v3849 — a wide card grows left out of the fleet rail and covers the console column. Its left edge stays on the rail. */
+  function _fttRailClamp(cardLeft, cardRight, railLeft){
+    var left = +cardLeft || 0, right = +cardRight || 0, rail = +railLeft || 0;
+    if (!(right >= left)) right = left;
+    var edge = left < rail ? rail : left;
+    if (edge > right) edge = right;
+    return edge;
+  }
+  window._fttRailClamp = _fttRailClamp;
   /* REG-2082 (GrokBot tick 425 K06) - THE CEILING IS WHATEVER CLIPS THE CARD, NOT ONLY THE TAB BAR. The top row's card opened
      above it and 'GROKBOT this console' was cut at the top edge: the fleet sits inside the rail, a scroll container, and
      a card above its top visible row is clipped by the RAIL's edge (and by anything stuck at the rail's top), which the
@@ -32953,6 +32962,16 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
         if (!card) return;
         var ceil = _fttCeiling(row);   /* REG-2082 - the tab bar, the rail's edge or what sticks there, whichever is lowest */
         card.classList.toggle('ftt-below', _fttPlace(row.getBoundingClientRect().top, card.offsetHeight, ceil) === 'below');
+        card.style.maxWidth = '';
+        card.style.minWidth = '';
+        var box = card.getBoundingClientRect();
+        var rail = row.closest('aside.rail');
+        var railLeft = rail ? rail.getBoundingClientRect().left : row.getBoundingClientRect().left;
+        var edge = _fttRailClamp(box.left, box.right, railLeft);
+        if (edge > box.left) {
+          card.style.minWidth = '0px';
+          card.style.maxWidth = (box.right - edge) + 'px';
+        }
       } catch (_e) {}
     }, true);
   } catch (_l) {}
