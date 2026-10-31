@@ -27735,6 +27735,8 @@ function escC(s) {
     var hs = (rv && typeof rv === 'object') ? rv.heart : undefined;
     var census = (hs && typeof hs === 'object') ? hs.census : undefined;
     var bits = [];
+    /* v3849 — one river chip. A stuck list during the boot window used to draw "river stuck" and "river · starting". */
+    var _pending = (census === null && hs && hs.key === 'starting' && _fleetBooting(m, nowMs));
     if (Array.isArray(sk) && sk.length) {
       /* REG-2072 (GrokBot tick 423 K07) - THE ROW'S CHIP SAYS A SHARED REASON ONCE TOO. REG-2059 grouped the fleet CARD's
          tip through _fleetStuckWhy; this chip kept its own row-by-row copy, so 'vault lane: owes 7 ...' printed for PRINTER 2
@@ -27760,7 +27762,8 @@ function escC(s) {
           return e.station + (older ? ' older' : '') + ' ' + say;
         });
       if (_waits.length) tip += ' · oldest reel waiting: ' + _waits.join(', ');
-      bits.push('<span class="fleet-riverstuck" title="river stuck on this PC - ' + escC(tip) + '">river stuck</span>');
+      var _stuckLabel = _pending ? 'river stuck \u00b7 proof check pending' : 'river stuck';
+      bits.push('<span class="fleet-riverstuck" title="river stuck on this PC - ' + escC(tip) + '">' + _stuckLabel + '</span>');
     }
     if (census === 'missing' || census === 'stale' || census === 'unreadable') {
       /* GBL census-lowmem - a proof held back ONLY by free memory says so on the row, not the bare word a broken lock wears */
@@ -27777,7 +27780,7 @@ function escC(s) {
     var _bootGone = false;
     if (census === null && hs && hs.key === 'starting' && !_fleetBooting(m, nowMs)) _bootGone = true;
     else if (census === null && hs && hs.key === 'starting') {
-      bits.push('<span class="fleet-riverunk" title="' + escC('this console started moments ago - its own proof check runs '
+      if (!(Array.isArray(sk) && sk.length)) bits.push('<span class="fleet-riverunk" title="' + escC('this console started moments ago - its own proof check runs '
         + 'about 5 minutes after a start and its river is read about a minute after, so whether its river drains is '
         + 'UNKNOWN until then (not a fault)') + '">river · starting</span>');
       return bits.join('');
