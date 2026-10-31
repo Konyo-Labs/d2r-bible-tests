@@ -12384,6 +12384,7 @@ function d2jspWhen(iso) {
 }
 function d2jspPriceLine(q) {
   q = q || {};
+  var nskip = Number(q.skipped), skip = nskip > 0 ? (' ' + nskip + (nskip === 1 ? ' line skipped.' : ' lines skipped.')) : '';
   if (q.reason === 'read' && Number(q.fg) > 0) {
     var when = d2jspWhen(q.readAt) ? (', read ' + d2jspWhen(q.readAt)) : '';
     /* #113 - the line names the board the reading came from (243 is D2:R Switch Ladder Trading) */
@@ -12392,10 +12393,10 @@ function d2jspPriceLine(q) {
     var low = Number(q.low);
     var high = Number(q.high);
     if (q.n > 1 && low > 0 && high > 0 && low !== high) {
-      return head + ' range ' + low + '\u2013' + high + ' fg, middle ' + q.fg + ', from ' + q.n + ' prices' + when + '.';
+      return head + ' range ' + low + '\u2013' + high + ' fg, middle ' + q.fg + ', from ' + q.n + ' prices' + when + '.' + skip;
     }
     var n = q.n > 0 ? q.n : 1;
-    return head + ' price ' + q.fg + ' fg, from ' + n + ' ' + (n === 1 ? 'price' : 'prices') + when + '.';
+    return head + ' price ' + q.fg + ' fg, from ' + n + ' ' + (n === 1 ? 'price' : 'prices') + when + '.' + skip;
   }
   if (q.reason === 'need-login') return 'Public price unknown. The forum search needs the Chrome login on this machine.';
   if (q.reason === 'unanswered') return 'Public price unknown. No price reader answered this page.';
@@ -12407,7 +12408,7 @@ function d2jspPriceLine(q) {
    within the roll range of the row that holds it: 0% is the row's floor, 100% its ceiling. Reimplemented from the
    game's tables; it borrows no other planner's code. ADVISORY ONLY: a value above every row's ceiling (or below every
    floor) is flagged "likely misread" with the raw read kept beside the legal bound, and nothing is ever refused. A line
-   that names no row, or still reads as a range, is not read. [[unknown-stays-unknown]] */
+   that names no row is kept for the drawer with the reason "could not be read" and is not weighed. [[unknown-stays-unknown]] */
 var _d2jspTplRe = {};
 function d2jspTplRe(db, tid) {
   if (Object.prototype.hasOwnProperty.call(_d2jspTplRe, tid)) return _d2jspTplRe[tid];
@@ -12461,7 +12462,7 @@ function d2jspAffixRead(mods, db, itemName) {
         if (val >= a && val <= b && (!best || b > best.hi)) best = { lo: a, hi: b };
       });
     });
-    if (!any) return;
+    if (!any) { out.push({ line: t, value: null, lo: 0, hi: 0, pct: 0, warn: 'could not be read' }); return; }
     if (best) {
       /* v3844 - a mod that rolls below zero (-9% to Enemy Lightning Resistance) is better the more negative it is */
       var neg = best.hi <= 0 && best.lo < 0;
@@ -12538,7 +12539,7 @@ function d2jspModWeights(reads, itemName, posts, base) {
   }
   var learned = d2jspLearnedWeights(reads, posts);
   if (learned) return { from: 'posts', family: null, w: learned };
-  return { from: 'even', family: null, w: (reads || []).map(function () { return 1; }) };
+  return { from: 'even', family: null, why: 'no key-mod family to weigh', w: (reads || []).map(function () { return 0.25; }) };
 }
 function d2jspWeightedTier(reads, itemName, posts, base) {
   var ranged = (reads || []).filter(function (r) { return r.hi > r.lo && !r.warn; });
@@ -12570,7 +12571,7 @@ function d2jspTierLine(reads, itemName, posts, base) {
     } else {
       head += ', ' + Math.round(wt.pct) + '% up the rolls (' + wt.n + ' ' + (wt.n === 1 ? 'mod' : 'mods') + ' read)';
     }
-    head += (wt.from === 'posts' ? ', weights learned from the posts' : '') + '.';
+    head += (wt.from === 'posts' ? ', weights learned from the posts' : (wt.from === 'even' ? ', no key-mod family to weigh' : '')) + '.';
     return warns.length ? (head + ' ' + warns.join(' ')) : head;
   }
   var avg = Math.round(ranged.reduce(function(s, r){ return s + r.pct; }, 0) / ranged.length);
@@ -12702,10 +12703,11 @@ function d2jspColsPrice(q, reads, itemName) {
     if (top > 0) fit.keys.forEach(function (i, n) { spec[i].w = Math.max(0.2, Math.max(0, fit.beta[n + 1]) / top); });
   }
   rows.forEach(function (r) {
-    if (!r.read) { r.w = r.w > 0 ? 0.05 : 0; return; }
+    if (!r.read) { r.w = 0; if (!r.out) r.out = 'key mods could not be read'; return; }
     r.out = '';
     r.sim = d2jspColsClose(spec, mine, r.read);
     r.w = 0.02 + 0.98 * Math.pow(r.sim, 4);
+    if (!spec.some(function (m) { return m.key; }) && r.w > 0.25) r.w = 0.25;
     if (fit) {
       var e = fit.at(r.read.map(function (c) { return c.pct; }));
       if (r.fg > e * 3 || r.fg * 3 < e) { r.w = 0; r.out = 'its roll does not explain its price (fit ' + Math.round(e) + ' fg)'; }

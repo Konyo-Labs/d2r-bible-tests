@@ -755,7 +755,7 @@ def _public_fields(parsed, item, read_at):
             n = int(parsed.get("n"))
         except (TypeError, ValueError):
             return _quote_unknown(item, read_at, "unread")
-    return {
+    out = {
         "item": str(item or ""),
         "fg": fg,
         "low": low,
@@ -768,6 +768,13 @@ def _public_fields(parsed, item, read_at):
         "posts": _public_posts(parsed.get("posts")) if reason == "read" else [],
         "aside": _public_aside(parsed.get("aside")) if reason in ("read", "no prices") else [],
     }
+    try:
+        skipped = int(parsed.get("skipped"))
+    except (TypeError, ValueError):
+        skipped = 0
+    if skipped > 0:
+        out["skipped"] = skipped
+    return out
 
 
 def _public_aside(rows):
