@@ -33369,12 +33369,18 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
     return best;
   }
   window.__tvTopOverlay = topmost;
+  /* v3849 (v3848 eye #3) - a typed lookup (the shadow veil's box or FIND) owns its first Esc even with a card open: the
+     field clears; the next Esc closes the top overlay. Guarded by tv/test_esc_clears_a_typed_lookup_over_an_overlay.py */
+  function escClearsField(e) {
+    var t = e.target, L = window._tvdShadowLookup;
+    try { return !!(t && t.matches && t.value && ((L && t.matches(L)) || t.id === 'vault-find-input')); } catch (eF) { return false; }
+  }
   function typingInPlainField(e) {
     var t = e.target;
     return t && t.closest && t.closest('.cm-editor,[data-esc-own]');
   }
   window.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape' || e.__ovxPass || e.defaultPrevented || e.isComposing || typingInPlainField(e)) return;
+    if (e.key !== 'Escape' || e.__ovxPass || e.defaultPrevented || e.isComposing || typingInPlainField(e) || escClearsField(e)) return;
     /* cinema / fullscreen sits above every overlay: its own Esc leaves it, and the theatre under it stays (v877, v3847 CI) */
     if (document.fullscreenElement || document.body.classList.contains('cinema')) return;
     var top = topmost();
