@@ -6088,7 +6088,10 @@
   body.shadow-hub:not(.shell-open) .topbar { margin-bottom: var(--shadow-bar-h, 0px); }
   /* #218 phase 3b (REG-2810) - the owner's sessions, summarized, over their board: above their frame (945) and this bar (960).
      A child of <body>, never of the rail, so the shell's pointer-events rule cannot swallow its close. */
-  #shadow-bar #shadow-leave { margin-left: 0; }
+  #shadow-bar #shadow-sessions { font: var(--fw-bold) var(--fs-sm)/1.2 var(--mono); padding: 8px 16px; min-height: 44px; }
+  #shadow-bar #shadow-leave { margin-left: 0; min-height: 44px; padding: 8px 16px;
+    font: var(--fw-bold) var(--fs-sm)/1.2 var(--mono); letter-spacing: .06em;
+    background: rgba(20,16,10,.92); color: #d8c7a0; border: 1px solid rgba(255,190,110,.55); border-radius: 6px; cursor: pointer; }
   #shadow-sess-ov { position: fixed; inset: 0; z-index: 975; display: flex; align-items: flex-start; justify-content: center;
     padding: 64px 16px 16px; box-sizing: border-box; background: rgba(0,0,0,.62); }
   #shadow-sess-ov[hidden] { display: none !important; }
@@ -8964,7 +8967,7 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
               <div class="fleet-head">ROSTER <span class="roster-note">read only</span></div>
               <div id="roster-body"><div class="roster-none">this PC has not fetched a roster yet</div></div>
             </div>
-            <div id="shadow-bar" hidden><span id="shadow-who">read only</span><button type="button" id="shadow-sessions" title="their sessions, summarized: dates, reads, names and a few small key frames - read only">📚 Their sessions</button><button type="button" id="shadow-leave" onclick="window._shadowLeave()">Leave</button></div>
+            <div id="shadow-bar" hidden><span id="shadow-who">read only</span><button type="button" id="shadow-sessions" title="their sessions, summarized: dates, reads, names and a few small key frames - read only">📚 Their sessions</button><button type="button" id="shadow-leave" onclick="window._shadowLeave()">✕ LEAVE SHADOW (Esc)</button></div>
             <div id="fleet-list"><div class="fleet-none">checking who is online…</div></div>
             <!-- v2213 — the cross-reference box. Hidden until a player is clicked; it answers
                  "what should I chase" where the hover tooltip answers "how far along is he". -->
@@ -23050,8 +23053,22 @@ window._lockMark = function(isOpen, px, label){
   window._shadowSessionsOpen = _shadowSessionsOpen;
   window._shadowSessionsClose = _shadowSessionsClose;
   document.addEventListener('keydown', function(e){
+    if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
+    var t = e.target;
+    if (t && t.closest && t.closest('input,textarea,[contenteditable="true"],.cm-editor,[data-esc-own]')) return;
+    try {
+      if (document.fullscreenElement || (document.body && document.body.classList.contains('cinema'))) return;
+    } catch (eC) {}
     var ov = document.getElementById('shadow-sess-ov');
-    if (e.key === 'Escape' && ov && !ov.hidden) { e.preventDefault(); _shadowSessionsClose(); }
+    if (ov && !ov.hidden) { e.preventDefault(); _shadowSessionsClose(); return; }
+    var top = null;
+    try { if (typeof window.__tvTopOverlay === 'function') top = window.__tvTopOverlay(); } catch (eT) { top = null; }
+    if (top && top.x) { e.preventDefault(); try { top.x.click(); } catch (eK) {} return; }
+    var up = document.body && document.body.classList &&
+      (document.body.classList.contains('shadow-on') || document.body.classList.contains('shadow-snap'));
+    if (!up || typeof window._shadowLeave !== 'function') return;
+    e.preventDefault();
+    window._shadowLeave();
   });
   var _bshelf = $('btn-shelf');
   if (_bshelf) _bshelf.onclick = async function(){
@@ -29216,6 +29233,14 @@ function escC(s) {
     if (!f || ev.source !== f.contentWindow) return;
     if (!ev.data || ev.data.type !== 'tvd-shadow-leave') return;
     if (ev.origin !== window.location.origin) return;
+    var sess = document.getElementById('shadow-sess-ov');
+    if (sess && !sess.hidden) {
+      if (typeof window._shadowSessionsClose === 'function') window._shadowSessionsClose();
+      return;
+    }
+    var top = null;
+    try { if (typeof window.__tvTopOverlay === 'function') top = window.__tvTopOverlay(); } catch (eT) { top = null; }
+    if (top && top.x) { try { top.x.click(); } catch (eK) {} return; }
     window._shadowLeave();
   });
 
@@ -33298,7 +33323,7 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
   var X_SEL = '.th-x,.tly-x,.th-drawer-x,.sh-x,.fx-x,.thhd-x,.dsr-x,.ch-x,.vx-btn,.sfp-close,' +
     '.gic-close-btn,.gbc-close,.vrg-x,.aid-close-btn,.aid-header-close,.cb-x,.vd-close,.help-close,' +
     '.kbd-help-close,.glossary-close,.glb-close,.vtp-x,.vmm-close,.vll-x,.vev-x,.tlg-x,.tlp-close,' +
-    '.tvz-th-x,.aib-close,.aic-x,.bn-x,.help-x,.ovx-made';
+    '.tvz-th-x,.aib-close,.aic-x,.bn-x,.help-x,.ssv-x,.ovx-made';
   function shown(el) {
     if (!el || !el.isConnected) return false;
     var r = el.getBoundingClientRect();
