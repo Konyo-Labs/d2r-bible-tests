@@ -18170,7 +18170,8 @@ class TestV2018ThePlannerIsAskedAboutTheItemNotAboutMyStub(unittest.TestCase):
         body = self._register_body()
         i_ask = body.find("sg = suggestMule(name)")
         # REG-2054 (#269) - the stub stamps the rolled quality now (`rarity: _rq1 ? _rq1.q : 'basic'`); still a stub, same place
-        i_stub = body.find("var _tvEntry = { rarity: _rq1 ? _rq1.q : 'basic'")   # the full stub expression (#231 eye on v3623: a bare `rarity:` could bind another object)
+        # v3849 - the stub now stamps through _intakeStamp (set pieces); still a stub, same place
+        i_stub = body.find("var _tvEntry = { rarity: _stamp.rarity || 'basic'")   # the full stub expression (#231 eye on v3623: a bare `rarity:` could bind another object)
         i_branch = body.find("if (sg && sg.id === '__throwout')")
         self.assertNotEqual(i_ask, -1, "suggestMule call not found in tvVaultRegister")
         self.assertNotEqual(i_stub, -1, "the v739 universe stub not found in tvVaultRegister")
@@ -45518,7 +45519,8 @@ class TestOneCountHasOnePlace(unittest.TestCase):
         self.assertEqual(len(hits), 1,
                          "expected exactly one /api/eagle fetch, found %d — the anchor is wrong "
                          "or the panel was duplicated" % len(hits))
-        blk = ui[hits[0]:hits[0] + 3000]
+        # v3849 - the pending answer (worked out beside the request) pushed the fallback past 3000 chars
+        blk = ui[hits[0]:hits[0] + 4500]
         return re.sub(r"/\*.*?\*/", "", blk, flags=re.S)
 
     def test_the_panel_reads_the_partition_instead_of_recounting(self):
