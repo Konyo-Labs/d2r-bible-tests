@@ -753,6 +753,7 @@ def _resolve_hist(hist_dir):
 # 153.6 s cold after a ship, 4.6 s warm, 4 index builds and 268 folder listings per round.
 _NO_MEMO = object()
 _PLAN_MEMO = {}                 # key -> (fingerprint, snapshot)
+_PLAN_LAST = {}                 # wave key -> {"snap": dict, "asOf": float}: the last plan a reader may take
 _PLAN_FLIGHTS = {}              # key -> {"fp", "done", "result"}: the computation other callers may join
 _PLAN_MEMO_MAX = 16
 _JOIN_WAIT_S = 300.0            # a joiner never waits longer than this on another thread's computation
@@ -897,6 +898,21 @@ def _plan_count(field):
         PLAN_STATS[field] += 1
 
 
+def _remember_plan(key, snap):
+    """Keep the last finished plan for a reader. A plan that is not ok is not kept.
+
+    The lock is taken here. The caller must not already hold _PLAN_LOCK: it is not reentrant.
+    The deleter's memo is a different store and is not written here."""
+    if key is None or not isinstance(snap, dict) or snap.get("ok") is not True:
+        return
+    import copy
+    kept = copy.deepcopy(snap)
+    kept.pop("moving", None)
+    kept.pop("asOf", None)
+    with _PLAN_LOCK:
+        _PLAN_LAST[key] = {"snap": kept, "asOf": time.time()}
+
+
 def _plan_shared(hist_dir, free_mb, keep_recent):
     """plan()'s answer without running it, when that is PROVABLY the answer it would compute. -> dict | _NO_MEMO
 
@@ -976,6 +992,10 @@ def _plan_shared(hist_dir, free_mb, keep_recent):
                     else:
                         _PLAN_MEMO.pop(key, None)
                     fl["done"].set()
+                try:
+                    _remember_plan(_plan_call_key(hist_dir, free_mb, keep_recent), res)
+                except _Unkeyable:
+                    pass
             return res
         if not fl["done"].wait(_JOIN_WAIT_S):
             # the computation this caller joined has not finished in _JOIN_WAIT_S (a hung disk, a stuck store):
@@ -1077,6 +1097,7 @@ def _plan_wave(hist_dir, free_mb, keep_recent):
             if st["running"] is None and st["next"] is None and _PLAN_WAVES.get(key) is st:
                 del _PLAN_WAVES[key]
             w["done"].set()
+        _remember_plan(key, res)
     return res
 
 
@@ -1084,8 +1105,43 @@ def _forget_plans():
     """Drop every kept plan and zero the counters (a law's clean slate). -> None"""
     with _PLAN_LOCK:
         _PLAN_MEMO.clear()
+        _PLAN_LAST.clear()
         for k in PLAN_STATS:
             PLAN_STATS[k] = 0
+
+
+def plan_for_reader(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT):
+    """The last plan this process finished for this question. Never starts a wave. -> dict | None
+
+    None: no finished plan yet, so which reels are hidden is UNKNOWN, not an empty shelf.
+    Otherwise a copy of that plan plus moving (True when an input is moving now, False when the
+    inputs are still, None when that could not be told) and asOf (when the plan finished).
+    A reader that called plan() while he films would wait out the next wave. This returns at once.
+    """
+    import copy
+    try:
+        key = _plan_call_key(hist_dir, free_mb, keep_recent)
+    except _Unkeyable:
+        return None
+    with _PLAN_LOCK:
+        held = _PLAN_LAST.get(key)
+    if not isinstance(held, dict):
+        return None
+    snap = held.get("snap")
+    if not isinstance(snap, dict) or snap.get("ok") is not True:
+        return None
+    moving = None
+    try:
+        plan_fingerprint(hist_dir, free_mb, keep_recent)
+        moving = False
+    except _Moving:
+        moving = True
+    except Exception:
+        moving = None
+    out = copy.deepcopy(snap)
+    out["moving"] = moving
+    out["asOf"] = held.get("asOf")
+    return out
 
 
 #: REG-2728 - what the console itself writes INTO a reel folder from the frames already there: the index rebuilt from
@@ -1510,7 +1566,7 @@ def plan(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT, *, _fresh=False):
         _na.add("ledger-unreadable")
     never = [r for r in RULES if not hits[r] and r not in _na]
     na = sorted(r for r in _na if not hits[r])
-    return {"ok": True, "hist": hist, "candidates": candidates, "kept": kept,
+    _reader_out = {"ok": True, "hist": hist, "candidates": candidates, "kept": kept,
             # ⚠⚠ v3225 — `freeMb` DOES NOT MEAN FREE DISK. It is `freed`: the megabytes
             # THIS PLAN WOULD RELEASE. With no candidates it is 0.0, which is correct
             # arithmetic under a word naming a different quantity — and control_app
@@ -1553,6 +1609,11 @@ def plan(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT, *, _fresh=False):
                      "no reel has been swept by BOTH lanes; vault_swept.json does not exist, so the "
                      "vault manager has never sealed anything." if not vault else
                      "every reel is recent, unread, or still owed to a lane."))}
+    try:
+        _remember_plan(_plan_call_key(hist_dir, free_mb, keep_recent), _reader_out)
+    except _Unkeyable:
+        pass
+    return _reader_out
 
 
 def _on_path():

@@ -296,16 +296,24 @@ class TheRiver(_World):
         out = []
         h._json = lambda code, obj: out.append((code, obj))
         cen = census or (lambda *a, **k: {"ok": True, "counts": {}, "visits": {}, "reels": 10})
-        with mock.patch.object(RVS, "census", cen), \
-                mock.patch.object(RVS, "stations", lambda: (("INTAKE", "TRIAGE"), "")), \
-                mock.patch.object(RVS, "rows", lambda *a, **k: {"rows": [], "n": 0}), \
-                mock.patch.object(RL, "lanes", lambda *a, **k: _lanes_payload()), \
-                mock.patch.object(ca, "shelf_hidden_reels", lambda *a, **k: ([], "")), \
-                mock.patch.object(ca, "river_mouth", lambda *a, **k: {}), \
-                mock.patch.object(ca, "reel_census", lambda *a, **k: {}), \
-                mock.patch.object(ca, "_river_labels", lambda: {}), \
-                mock.patch.object(ca, "_river_vocab_facts", lambda: {}):
-            h.do_GET()
+        # v3849 — /api/river reads the last finished walk and does not wait. An empty hide is
+        # the () key. Plant the walk this stub used to return on the caller.
+        walked = _lanes_payload()
+        RL._LAST[()] = {"at": time.time(), "out": walked}
+        try:
+            with mock.patch.object(RVS, "census", cen), \
+                    mock.patch.object(RVS, "stations", lambda: (("INTAKE", "TRIAGE"), "")), \
+                    mock.patch.object(RVS, "rows", lambda *a, **k: {"rows": [], "n": 0}), \
+                    mock.patch.object(RL, "lanes", lambda *a, **k: _lanes_payload()), \
+                    mock.patch.object(ca, "shelf_hidden_reels", lambda *a, **k: ([], "")), \
+                    mock.patch.object(ca, "river_mouth", lambda *a, **k: {}), \
+                    mock.patch.object(ca, "reel_census", lambda *a, **k: {}), \
+                    mock.patch.object(ca, "_river_labels", lambda: {}), \
+                    mock.patch.object(ca, "_river_vocab_facts", lambda: {}):
+                h.do_GET()
+        finally:
+            RL._LAST.pop((), None)
+            RL._REFRESH_ON.discard(())
         self.assertEqual(len(out), 1, "premise: the river route answered once")
         return out[0][1]
 

@@ -70,8 +70,10 @@ class OverlappingRiverAsksShareOneWalk(unittest.TestCase):
 
     def test_the_route_asks_the_shared_door(self):
         src = open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
-        self.assertIn("_RL.lanes_shared(hide=_hide)", src)
+        lanes = open(os.path.join(HERE, "river_lanes.py"), encoding="utf-8").read()
+        self.assertIn("_RL.lanes_last(hide=_hide)", src)
         self.assertNotIn("_RL.lanes(hide=_hide)", src)
+        self.assertIn("def lanes_shared(", lanes)
 
 
 RED_PROOF = [
@@ -87,7 +89,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3848 - the route goes back to its own walk",
      "file": "control_app.py",
-     "find": "_lr = _RL.lanes_shared(hide=_hide)",
+     "find": "_lr = _RL.lanes_last(hide=_hide)",
      "replace": "_lr = _RL.lanes(hide=_hide)",
      "matches": 1},
 ]

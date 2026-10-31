@@ -112,7 +112,9 @@ def story(hist_dir=None):
     except Exception:
         RT = None
 
-    plan = RR.plan(hist_dir=hist_dir)
+    plan = RR.plan_for_reader(hist_dir=hist_dir)
+    if not isinstance(plan, dict) or not plan.get("ok"):
+        plan = RR.plan(hist_dir=hist_dir)
     if not plan.get("ok"):
         # A plan that could not run is not an empty shelf. Say so, and let the caller print it.
         return {"ok": False, "why": plan.get("why") or "reel_retention.plan() could not run",

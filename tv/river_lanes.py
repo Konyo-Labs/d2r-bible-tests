@@ -347,6 +347,64 @@ _SHARED_LOCK = _th.Lock()
 _SHARED = {}          # key -> {"ev": Event, "out": dict|None, "err": BaseException|None}
 
 
+def _release_shared(key):
+    """Drop a shared walk's slot. lanes_shared keeps its own pop, so this line stays unique there."""
+    with _SHARED_LOCK:
+        _SHARED.pop(key, None)
+
+
+_LAST = {}                # key -> {"at": float, "out": dict}
+_REFRESH_S = 5.0
+_REFRESH_ON = set()
+
+
+def _lanes_refresh(key, hide):
+    """One background walk. An exception writes nothing. The caller never waits on this."""
+    import time
+    out = None
+    failed = False
+    try:
+        out = lanes(hide=hide)
+    except Exception:
+        failed = True
+    finally:
+        _release_shared(key)
+        with _SHARED_LOCK:
+            _REFRESH_ON.discard(key)
+    if failed or not isinstance(out, dict):
+        return
+    with _SHARED_LOCK:
+        _LAST[key] = {"at": time.time(), "out": out}
+
+
+def lanes_last(hide=None):
+    """The last finished river walk for this hide set. Never waits. -> dict | None
+
+    None: this process has not finished a walk yet (UNKNOWN, not an empty river). A dict is a
+    copy of that walk plus ageMs. When the kept walk is missing or older than _REFRESH_S, one
+    daemon starts; a second ask does not start another while that one is running.
+    """
+    import time
+    key = tuple(sorted(str(x) for x in (hide or ())))
+    hide_snap = None if hide is None else set(hide)
+    now = time.time()
+    start = False
+    with _SHARED_LOCK:
+        cur = _LAST.get(key)
+        due = cur is None or (now - cur["at"]) >= _REFRESH_S
+        if due and key not in _REFRESH_ON:
+            _REFRESH_ON.add(key)
+            start = True
+        if cur is None:
+            payload = None
+        else:
+            payload = dict(cur["out"])
+            payload["ageMs"] = int((now - cur["at"]) * 1000)
+    if start:
+        _th.Thread(target=_lanes_refresh, args=(key, hide_snap), daemon=True).start()
+    return payload
+
+
 def lanes_shared(hide=None):
     key = tuple(sorted(str(x) for x in (hide or ())))
     with _SHARED_LOCK:
