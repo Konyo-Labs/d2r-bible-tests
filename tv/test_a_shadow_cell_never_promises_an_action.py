@@ -215,10 +215,18 @@ class TheHelperSaysReadOnlyOnlyInAShadow(unittest.TestCase):
             raise AssertionError("node is not on this machine - this law does not skip")
         i = PAGE.index("  function gridCellSay(label, cx, cy){")
         fn = RO_FN + PAGE[i:PAGE.index("  function gridHtml(placed, gw, gh, cell, opt){", i)]
-        r = subprocess.run([NODE, "-"], input=HELPER + fn + "\n" + HELPER_SCENARIO, capture_output=True, text=True, timeout=60)
+        cls.helper_src = HELPER + fn + "\n" + HELPER_SCENARIO
+        seen = {}
+
+        def _node(argv, **kw):
+            seen["encoding"] = kw.get("encoding")
+            return subprocess.run(argv, **kw)
+
+        r = _node([NODE, "-"], input=cls.helper_src, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         if r.returncode != 0:
             raise AssertionError("the helper did not run in node: %s" % r.stderr[-900:])
         cls.o = json.loads(r.stdout)
+        cls.node_encoding = seen.get("encoding")
 
     def test_outside_a_shadow_the_words_are_unchanged(self):
         self.assertEqual(self.o["own"], ["Mule 1 — drop", "unlock X",
@@ -227,6 +235,14 @@ class TheHelperSaysReadOnlyOnlyInAShadow(unittest.TestCase):
     def test_in_a_shadow_the_action_reads_read_only(self):
         self.assertEqual(self.o["snap"], ["Mule 1. " + RO, RO, True])
         self.assertEqual(self.o["cls"], ["Mule 1. " + RO, True], "a shadow known only by its class still promised the action")
+
+    def test_the_helper_slice_is_handed_to_node_as_utf8(self):
+        # The slice includes the ✕ in the gridActSay comment. text=True with no encoding
+        # encodes stdin in the console's encoding, and cp1255 raises before any assert.
+        self.assertEqual(self.node_encoding, "utf-8")
+        self.assertIn("\u2715", self.helper_src)
+        with self.assertRaises(UnicodeEncodeError):
+            self.helper_src.encode("cp1255")
 
 
 # ---- the whole page, twice: his board, then a snapshot shadow of it ----
@@ -390,6 +406,11 @@ RED_PROOF = [
      "file": "bible.html",
      "find": "'. Drag it to any cell where it fits and it locks there'",
      "replace": "'. Drag it to any cell where it fits and it locks there - or drop it on a Mule tab'",
+     "matches": 1},
+    {"why": "v3849 - the helper slice goes to node in the console encoding and cp1255 dies on the mark in the comment",
+     "file": "test_a_shadow_cell_never_promises_an_action.py",
+     "find": "r = _node([NODE, \"-\"], input=cls.helper_src, capture_output=True, text=True, encoding=\"utf-8\", errors=\"replace\", timeout=60)\n",
+     "replace": "r = _node([NODE, \"-\"], input=cls.helper_src, capture_output=True, text=True, timeout=60)\n",
      "matches": 1},
 ]
 
