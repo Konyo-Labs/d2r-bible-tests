@@ -99,7 +99,7 @@ class ANameNothingKnowsGetsNoGuessedMule(unittest.TestCase):
         s, body = _router()
         self.assertEqual(body.count(STUB_BASE), 1, "the router reads a TV stub's own name as its base again")
         self.assertLess(body.index(STUB_BASE), body.index(UNKNOWN), "the placeholder rule comes after the Unsorted answer")
-        i = s.find("var _tvEntry = { rarity: _rq1 ? _rq1.q : 'basic', base: (_rq1 && _rq1.base) ? _rq1.base : name,")
+        i = s.find("var _tvEntry = { rarity: _stamp.rarity || 'basic', base: _stamp.base || name,")
         self.assertGreater(i, 0, "premise: the vault still mints a stub whose base is its own name - re-point this law")
 
 
