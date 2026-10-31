@@ -3539,6 +3539,27 @@ _TALLY_CACHE = {"t": 0.0, "val": None}
 _TALLY_TTL_S = 180.0
 
 
+def _state_seed_provenance(tally):
+    """Say how this tally reported onOwnerSeed. A copy: the cache stays unstamped.
+
+    measured — a real boolean. absent — the key was present and null (or not a boolean).
+    unreported — the key was omitted; onOwnerSeed is then stated as None. Never SYNCED, SEEDED, or MANUAL.
+    """
+    if not isinstance(tally, dict):
+        return tally
+    out = dict(tally)
+    flag = out.get("onOwnerSeed")
+    if "onOwnerSeed" not in out:
+        out["onOwnerSeed"] = None
+        out["onOwnerSeedProvenance"] = "unreported"
+    elif flag is True or flag is False:
+        out["onOwnerSeedProvenance"] = "measured"
+    else:
+        out["onOwnerSeed"] = None
+        out["onOwnerSeedProvenance"] = "absent"
+    return out
+
+
 def _tally_cached():
     """grail_tally(), at most every 3 minutes.
 
@@ -3546,17 +3567,20 @@ def _tally_cached():
     is not free, and doing it per heartbeat would make a roster feature cost him frames while he
     plays. A three-minute figure is fine for "what does my cousin have"; it is not fine to present
     it as live, so the payload carries `at` and the roster renders the age. [[stale-reading]]
+
+    Every copy that leaves also states onOwnerSeed provenance. The cached tally is not rewritten,
+    so a null flag is not later reread as a measurement. [[unknown-stays-unknown]]
     """
     now = time.time()
     if _TALLY_CACHE["val"] is not None and (now - _TALLY_CACHE["t"]) < _TALLY_TTL_S:
-        return dict(_TALLY_CACHE["val"])
+        return _state_seed_provenance(dict(_TALLY_CACHE["val"]))
     try:
         v = grail_tally()
     except Exception as e:
         v = {"ok": False, "why": "tally failed: %s" % str(e)[:70], "at": int(now * 1000)}
     _TALLY_CACHE["t"] = now
     _TALLY_CACHE["val"] = v
-    return dict(v)
+    return _state_seed_provenance(dict(v))
 
 
 _MASK_CACHE = {"sets": {"t": 0.0, "val": None}, "uniques": {"t": 0.0, "val": None}}

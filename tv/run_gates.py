@@ -11083,6 +11083,7 @@ GATES = [
     Gate("test_starting_never_hides_a_known_stale_census", [sys.executable, os.path.join(HERE, "test_starting_never_hides_a_known_stale_census.py")], 90, needs_app=False, why="v3849 - an empty self-prove record sends a known stale, missing, or unreadable census as stale-at-boot, never starting"),
     Gate("test_one_river_chip_per_row", [sys.executable, os.path.join(HERE, "test_one_river_chip_per_row.py")], 90, needs_app=False, why="v3849 - a stuck river still inside the boot window draws one chip, river stuck · proof check pending, and keeps the stuck tip"),
     Gate("test_fleet_card_never_covers_console_column", [sys.executable, os.path.join(HERE, "test_fleet_card_never_covers_console_column.py")], 60, needs_app=False, why="v3849 - a fleet hover card's left edge stays on the fleet rail, so it does not cover the console column"),
+    Gate("test_every_beacon_states_seed_provenance", [sys.executable, os.path.join(HERE, "test_every_beacon_states_seed_provenance.py")], 90, needs_app=False, why="v3849 - every beacon tally states whether onOwnerSeed was measured, absent, or unreported, and a null stays UNKNOWN"),
     Gate("test_esc_leaves_a_shadow_only_when_nothing_is_open",
          [sys.executable, os.path.join(HERE, "test_esc_leaves_a_shadow_only_when_nothing_is_open.py")], 60,
          needs_app=False,

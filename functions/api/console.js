@@ -263,9 +263,11 @@ export async function onRequestPost(context) {
       // makes. Shaped, not trusted: anything that is not a real boolean becomes null, and null is
       // UNKNOWN — the card renders nothing for it. Only an explicit `true` shows the warning, so a
       // garbled beacon cannot make a console look clean either way. [[unknown-stays-unknown]]
+      const seedProvenance = (t.onOwnerSeedProvenance === 'measured' || t.onOwnerSeedProvenance === 'absent' || t.onOwnerSeedProvenance === 'unreported') ? t.onOwnerSeedProvenance : null;
       const out = { ok: t.ok === true,
                     sets: pair(t.sets), uniques: pair(t.uniques), runewords: pair(t.runewords),
                     onOwnerSeed: (typeof t.onOwnerSeed === 'boolean') ? t.onOwnerSeed : null,
+                    onOwnerSeedProvenance: seedProvenance,
                     // ⚠ v2746 — FORWARD THE AUTHORITY VERDICT TOO. v2739 shipped `onOwnerSeed` on
                     // the board and on the card and the SHAPER BETWEEN THEM DROPPED IT, so the
                     // field existed at both ends and never arrived. Adding a second field without
@@ -295,7 +297,7 @@ export async function onRequestPost(context) {
                     at: Number.isFinite(at) ? at : null };
       if (!out.ok) {
         const why = (typeof t.why === 'string') ? t.why.replace(/\s+/g, ' ').trim() : '';
-        return why ? { ok: false, why: cutAtWord(why, 160), at: out.at } : null;
+        return why ? { ok: false, why: cutAtWord(why, 160), at: out.at, onOwnerSeedProvenance: seedProvenance } : null;
       }
       return (out.sets || out.uniques || out.runewords) ? out : null;
     })(body.tally),
