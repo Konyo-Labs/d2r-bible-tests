@@ -16099,6 +16099,45 @@ function _cubeUpNote(name){
   }catch(e){ return ''; }
 }
 window._cubeUpNote = _cubeUpNote;
+/* v3849 D2 (Elad 12:22) - THREE CORNER BADGES ON EVERY VAULT TILE: the EDIT pencil top-left, the magnifier bottom-left
+   (the evidence chip, already there) and $ bottom-right. EDIT opens one box for that item's mods; saving writes only the
+   typed-mods store, never assign, a cell, a mule or a locker. It is the owner's: a shadow draws no pencil. */
+function _vaultInShadow(){ try { return !!(typeof window !== 'undefined' && window._tvdShadow); } catch (e) { return false; } }
+function _vaultJsArg(n){ return String(n).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+function _vaultCornerEdit(n){
+  if (_vaultInShadow()) return '';
+  return '<button type="button" class="vm-cell-edit" title="edit this item\'s mods (it stays where it is)" aria-label="edit mods: ' + _d2artEsc(n) + '"'
+    + ' onclick="event.stopPropagation();window._vaultModsEdit(\'' + _vaultJsArg(n) + '\')">✎</button>';
+}
+function _vaultCornerPrice(n){
+  return '<button type="button" class="vm-cell-price" title="d2jsp price for this item" aria-label="price: ' + _d2artEsc(n) + '"'
+    + ' onclick="event.stopPropagation();window._vaultPriceOpen(\'' + _vaultJsArg(n) + '\')">$</button>';
+}
+window._vaultModsEdit = function(name){
+  if (_vaultInShadow()) return false;
+  var nm = String(name), host = document.getElementById('vault-mods-edit');
+  if (!host){ host = document.createElement('div'); host.id = 'vault-mods-edit'; host.className = 'vault-mods-edit'; host.setAttribute('role', 'dialog'); document.body.appendChild(host); }
+  var cur = _mfMods(nm), rng = cur.length ? [] : _affixRangeLines(nm);
+  host.innerHTML = '<div class="vme-box"><div class="vme-title">✎ Mods · ' + _d2artEsc(nm) + '</div>'
+    + '<div class="vme-say">One mod per line. Saving changes only the mods: the item keeps its cell, mule and locker.</div>'
+    + '<textarea id="vme-text" rows="8" placeholder="' + _d2artEsc(rng.join('\n')) + '">' + _d2artEsc(cur.join('\n')) + '</textarea>'
+    + '<div class="vme-row"><button type="button" class="vault-btn" id="vme-save">Save</button><button type="button" class="vault-btn" id="vme-cancel">Cancel</button></div></div>';
+  host.hidden = false;
+  host.dataset.item = nm;
+  document.getElementById('vme-cancel').onclick = function(){ host.hidden = true; };
+  document.getElementById('vme-save').onclick = function(){ window._vaultModsSave(nm, document.getElementById('vme-text').value); host.hidden = true; };
+  return true;
+};
+window._vaultModsSave = function(name, text){
+  if (_vaultInShadow()) return false;
+  return _vaultSetManualMods(name, String(text == null ? '' : text).split(/\r?\n/));
+};
+window._vaultPriceOpen = function(name){
+  try { if (typeof switchTab === 'function') switchTab('d2jsp'); } catch (e) {}
+  var el = document.getElementById('d2jsp-price-q');
+  if (el){ el.value = String(name); if (typeof window._d2jspPriceSearch === 'function') window._d2jspPriceSearch(); }
+  return !!el;
+};
 // v342.18 — minimal detail card for a Magic & Rare keeper (rolled-name item; no fixed grail card).
 function _magicFindCardHtml(name){
   var q = (typeof _mfQual === 'function') ? _mfQual(name) : 'magic';
@@ -24807,7 +24846,23 @@ window.cycleIntakeLogger = async function(){
 try { Object.keys(magicFinds).forEach(function(k){ if (typeof magicFinds[k] === 'string') magicFinds[k] = { q: magicFinds[k], base: '' }; }); } catch(e){}
 function _mfQual(name){ var v=magicFinds&&magicFinds[name]; return (v&&typeof v==='object')?(v.q||'magic'):(v||'magic'); }
 function _mfBase(name){ var v=magicFinds&&magicFinds[name]; return (v&&typeof v==='object')?(v.base||''):''; }
-function _mfMods(name){ var v=magicFinds&&magicFinds[name]; return (v&&typeof v==='object'&&Array.isArray(v.mods))?v.mods:[]; }
+/* v3849 D2 - mods he types into a Vault tile's EDIT box. One store for every item; it holds mod lines only, so a save
+   cannot move a cell, a mule, a locker or a route (none of those read it). Typed mods override read ones and the
+   affix ranges (D1). */
+function _vaultManualMods(name){
+  try { var m = JSON.parse((typeof LS !== 'undefined' && LS.getItem ? LS.getItem('d2r_vaultModsManual') : localStorage.getItem('d2r_vaultModsManual')) || '{}'); var v = m && m[String(name)]; return Array.isArray(v) ? v.slice() : null; } catch (e) { return null; }
+}
+function _vaultSetManualMods(name, lines){
+  var key = 'd2r_vaultModsManual', m = {};
+  try { m = JSON.parse((typeof LS !== 'undefined' && LS.getItem ? LS.getItem(key) : localStorage.getItem(key)) || '{}') || {}; } catch (e) { m = {}; }
+  var clean = (lines || []).map(function(l){ return String(l).trim(); }).filter(Boolean);
+  if (clean.length) m[String(name)] = clean; else delete m[String(name)];
+  var raw = JSON.stringify(m);
+  try { if (typeof LS !== 'undefined' && LS.setItem) LS.setItem(key, raw); else localStorage.setItem(key, raw); } catch (e2) { return false; }
+  return true;
+}
+try { window._vaultManualMods = _vaultManualMods; window._vaultSetManualMods = _vaultSetManualMods; } catch (eVm) {}
+function _mfMods(name){ var _man = _vaultManualMods(name); if (_man && _man.length) return _man; var v=magicFinds&&magicFinds[name]; return (v&&typeof v==='object'&&Array.isArray(v.mods))?v.mods:[]; }
 // v1287 (E1 — VAULT STATS) — the AI-Item-Checker VERDICT attached to a muled keeper (verdict tier + score +
 // when it was checked). Returns null for bare intakes that were never run through the checker, so the card can
 // honestly distinguish a checker-VERIFIED mule ("🔬 checked · KEEP") from a plain name-only keeper.
@@ -35874,7 +35929,9 @@ function _extraTipHtml(nm){
   if (_eRng.length && rar === 'basic') rar = 'magic';
   var rarLabel = (typeof _Q_LABEL !== 'undefined' && _Q_LABEL[rar]) ? _Q_LABEL[rar] : (rar.charAt(0).toUpperCase() + rar.slice(1));
   var roll = rar === 'magic' ? '1–2 random affixes' : rar === 'crafted' ? '3 fixed mods + 1–4 random' : rar === 'basic' ? 'base item — value = type + sockets + ethereal' : '3–6 random affixes';
-  var statLines = (e.stats && e.stats.length) ? e.stats.map(function(l){ return '<div class="att-aff">' + l + '</div>'; }).join('')
+  var _eMan = (typeof _vaultManualMods === 'function') ? _vaultManualMods(nm) : null;
+  if (_eMan && _eMan.length) _eRng = [];
+  var statLines = (_eMan && _eMan.length) ? _eMan.map(function(l){ return '<div class="att-aff att-var" data-mod-manual="1">' + _d2artEsc(l) + '</div>'; }).join('') : (e.stats && e.stats.length) ? e.stats.map(function(l){ return '<div class="att-aff">' + l + '</div>'; }).join('')
     : _eRng.map(function(l){ return '<div class="att-aff att-range" data-mod-range="1">' + _d2artEsc(l) + '</div>'; }).join('');   /* v3849 D1 ranges until exact mods */
   var beatsLine = e.beats ? '<div class="att-beats">★ ELITE — beats ' + e.beats + '</div>' : '';
   // v324: socketed bases surface socket COUNT + 1H/2H right on the floating tooltip.
@@ -43020,6 +43077,18 @@ details[open] > summary .to-chev{transform:rotate(180deg)}
 @keyframes vlaIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){.vm-cell.vmc-lock-shake,.vault-lock-alert.vla-on,.vault-lock-pop{animation:none}}
 /* 2026-09-28 — the evidence door on every vault surface, and the panel it opens (below the frame lightbox) */
+/* v3849 D2 - corner badges: semi-transparent, full on hover */
+.vm-cell-edit,.vm-cell-price{position:absolute;font-size:var(--fs-micro);line-height:var(--lh-none);padding:1px 3px;background:rgba(0,0,0,.55);border:none;color:var(--gold-bright,#f0c060);cursor:pointer;opacity:.45;z-index:4}
+.vm-cell-edit{left:0;top:0;border-radius:4px 0 5px 0}
+.vm-cell-price{right:0;bottom:0;border-radius:5px 0 4px 0;font-weight:var(--fw-bold)}
+.vm-cell:hover .vm-cell-edit,.vm-cell:hover .vm-cell-price,.vm-cell-edit:focus-visible,.vm-cell-price:focus-visible{opacity:1}
+.vm-cell-edit ~ .vm-cell-os{left:16px}
+.vm-cell-price ~ .vm-cell-lock{right:14px}
+.vault-mods-edit{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+.vault-mods-edit[hidden]{display:none}
+.vault-mods-edit .vme-box{background:#16110b;border:1px solid #6b5432;border-radius:8px;padding:12px;min-width:320px;max-width:90vw}
+.vault-mods-edit textarea{width:100%;box-sizing:border-box;font:inherit;background:#0d0a06;color:#eee;border:1px solid #4a3a22}
+.vault-mods-edit .vme-row{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
 .vm-cell-ev{position:absolute;left:0;bottom:0;font-size:var(--fs-micro);line-height:var(--lh-none);padding:1px 2px;background:rgba(0,0,0,.55);border:none;border-radius:0 4px 0 5px;color:var(--gold-bright,#f0c060);cursor:pointer;opacity:.55;transition:opacity .12s;z-index:5}
 .vm-cell:hover .vm-cell-ev,.vm-cell-ev:focus-visible{opacity:1}
 .vault-chip .vc-ev{border:none;background:none;color:var(--gold-bright,#f0c060);cursor:pointer;font-size:var(--fs-meta);padding:0 2px;margin-left:auto;line-height:var(--lh-none);opacity:.75}
@@ -47012,10 +47081,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
         return '<div class="vm-cell' + (rr ? ' vmc-' + rr : '') + (cl.approx ? ' vmc-approx' : '') + _lockCls + '" style="grid-column:span ' + cl.w + ';grid-row:span ' + cl.h + '"'
           + ' data-vault-item="' + esc(n) + '" data-arttip="' + esc(n) + '" title="' + esc(n) + (_mark.title ? ' · ' + _mark.title : '')
           + (cl.approx ? ' — size not established: no footprint rule matches this base, so it is drawn at the default 1x2. Set names (\'Tal Rasha set (any piece)\') are not items and have no single size.' : ' — ' + cl.w + '×' + cl.h + ' = ' + (cl.w*cl.h) + ' cell' + (cl.w*cl.h===1?'':'s')) + '">'
+          + _vaultCornerEdit(n)   /* v3849 D2 */
           + '<span class="vm-cell-art">' + _cellArt + '</span>' + osTag + _cntTag   /* REG-2904 one answer */
           + '<span class="vm-item-name vm-cell-name"' + (typeof _qStyle === 'function' ? _qStyle(n, 'unique') : '') + '>' + esc(n) + '</span>'
           + (typeof window._vaultEvidenceChip === 'function' ? window._vaultEvidenceChip(n, 'vm-cell-ev') : '')
-          + _lockTag
+          + _vaultCornerPrice(n) + _lockTag
           + '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultUnassign(\'' + jsArg(n) + '\', { unlock: !!event.shiftKey })" title="' + esc(_xTitle) + '">✕</button></div>';
       });
       // v342.5 — append the Magic & Rare keepers as their own coloured cells. The picture is art(),
@@ -47030,9 +47100,10 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
           var _mf = (typeof _itemCells === 'function') ? _itemCells(base || n) : {w:2,h:1};
           var artHtml = '<span class="vm-cell-art">' + ((typeof art === 'function') ? art(n, '◆', 'lg') : '<span class="vmc-gemfallback" style="color:'+col+'">◆</span>') + '</span>';
           return '<div class="vm-cell vmc-magicfind'+(_mf.approx?' vmc-approx':'')+'" style="grid-column:span '+_mf.w+';grid-row:span '+_mf.h+';border-color:'+col+';cursor:pointer" data-magic-find="'+esc(n)+'" data-arttip="'+esc(n)+'" title="'+esc(n)+(base?' · '+esc(base):'')+' ('+q+')">'
-            + artHtml
+            + _vaultCornerEdit(n) + artHtml
             + '<span class="vm-item-name vm-cell-name" data-arttip="'+esc(n)+'" style="color:'+col+'">'+esc(n)+'</span>'
             + (typeof window._vaultEvidenceChip === 'function' ? window._vaultEvidenceChip(n, 'vm-cell-ev') : '')
+            + _vaultCornerPrice(n)
             + '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultThrowFind(\''+jsArg(n)+'\')" title="'+gridActSay('', 'throw out — remove from Magic &amp; Rare')+'">✕</button></div>';   /* REG-3117 */
         }));
       }
