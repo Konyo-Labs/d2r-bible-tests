@@ -23,6 +23,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.parse
 import urllib.request
 
@@ -34,6 +35,10 @@ AUTH = "Basic " + base64.b64encode(b"app:DeanDiablo").decode()
 PLATFORM = sys.platform
 EXPORT_TIMEOUT_S = 600
 IMPORT_TIMEOUT_S = 600
+#: Elad 17:19 — Dean is the ALT's prover. An export older than this is not fresh, and the ALT asks the next
+#: peer (the Mac). A night fits inside it, so a nightly proof can still stand the next day. Missing and UNKNOWN are
+#: not fresh. The ALT's checkout is CRLF and the Mac's is LF; the key is LF-normalised bytes (heart2.lf_normalised_bytes).
+PROOF_CARRIER_FRESH_S = 26 * 3600
 
 
 def _tail(text, n=300):
@@ -131,16 +136,110 @@ def head_of(run_git=None):
         return None
 
 
-def take(peers, head, platform=PLATFORM, get=http_get, run=run_heart2):
-    """Bank each same-platform peer's export carried at THIS head. -> receipt {imported: [...], skipped: [...]}
+def _route_owner(peer):
+    """The label the proofs route stores. The ALT's list says Konyo; that PC's roster label is Konyo · Mac."""
+    if peer == "Konyo":
+        return "Konyo · Mac"
+    return peer
 
+
+def _proof_age_refusal(at, now_ms, fresh_s=None):
+    """Is this export too old to stand in for a proof? -> None when it is fresh, else why.
+
+    `at` and `now_ms` are milliseconds. UNKNOWN is not fresh, and a clock ahead of this PC is not fresh.
+    A fresh export is at most PROOF_CARRIER_FRESH_S old."""
+    fresh_s = PROOF_CARRIER_FRESH_S if fresh_s is None else fresh_s
+    if isinstance(at, bool) or not isinstance(at, (int, float)):
+        return "the export's age is UNKNOWN, so it is not fresh"
+    if isinstance(now_ms, bool) or not isinstance(now_ms, (int, float)):
+        return "the export's age is UNKNOWN, so it is not fresh"
+    age_ms = now_ms - at
+    if age_ms < 0:
+        return "the export's clock is ahead of this PC, so its age is UNKNOWN"
+    if age_ms > fresh_s * 1000:
+        return "stale: the export is past %d h" % (fresh_s // 3600)
+    return None
+
+
+def _gate_run_path():
+    """Where this machine notes that a pre-push or a nightly already proved a HEAD. Shared by worktrees."""
+    import prove_record as pr
+    return os.path.join(os.path.dirname(pr.path()), "proof_carrier_gate_run.json")
+
+
+def note_gate_run(kind, head=None, ok=True, where=None, now_ms=None):
+    """Remember that a gate run finished at `head`. -> path written | None.
+
+    Only "pre-push" and "nightly" count. A proof job cannot note itself. A run that did not finish notes nothing.
+    Writes no hostname and no address."""
+    if kind not in ("pre-push", "nightly") or ok is not True:
+        return None
+    if head is None:
+        head = head_of()
+    head = str(head or "")
+    if len(head) != 40:
+        return None
+    path = where or _gate_run_path()
+    rec = {}
+    try:
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as fh:
+                got = json.load(fh)
+            if isinstance(got, dict):
+                rec = got
+    except (OSError, ValueError):
+        rec = {}
+    rec[kind] = {"head": head, "ok": True, "at": int(now_ms if now_ms is not None else time.time() * 1000)}
+    kept = dict((k, rec[k]) for k in ("pre-push", "nightly") if isinstance(rec.get(k), dict))
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(kept, fh, sort_keys=True)
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, path)
+    return path
+
+
+def gate_run_kind(head, where=None):
+    """Which gate run already proved `head` here. -> "pre-push" | "nightly" | None.
+
+    The newer of the two wins. A failed note, another HEAD, or a proof job is not a run."""
+    if not head:
+        return None
+    path = where or _gate_run_path()
+    try:
+        with open(path, encoding="utf-8") as fh:
+            rec = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(rec, dict):
+        return None
+    best = None
+    for kind in ("pre-push", "nightly"):
+        row = rec.get(kind)
+        if not isinstance(row, dict) or row.get("ok") is not True or row.get("head") != head:
+            continue
+        at = row.get("at")
+        at = at if isinstance(at, (int, float)) and not isinstance(at, bool) else 0
+        if best is None or at >= best[0]:
+            best = (at, kind)
+    return None if best is None else best[1]
+
+
+def take(peers, head, platform=PLATFORM, get=http_get, run=run_heart2, now_ms=None):
+    """Bank the first peer whose export is at THIS head and, when `now_ms` is set, still fresh.
+
+    Peers are asked in order. The first one at this HEAD and fresh is imported and the rest are not.
+    Without `now_ms` every matching peer is imported, which is what the older callers do.
+    Konyo is the Mac: its export is darwin and this PC may be win32. Any other platform still does not cross.
     head None is UNKNOWN: nothing is fetched (an import into an unknown HEAD would be refused anyway)."""
     out = {"head": head, "imported": [], "skipped": []}
     if not head:
         out["why"] = "this checkout's HEAD is UNKNOWN - nothing was asked"
         return out
     for owner in peers or []:
-        q = URL + "?owner=" + urllib.parse.quote(owner)
+        q = URL + "?owner=" + urllib.parse.quote(_route_owner(owner))
         meta = get(q)
         if not meta.get("ok"):
             out["skipped"].append({"owner": owner, "why": meta.get("why") or "the route said no"})
@@ -149,12 +248,18 @@ def take(peers, head, platform=PLATFORM, get=http_get, run=run_heart2):
             out["skipped"].append({"owner": owner, "why": "no export carried"})
             continue
         if meta.get("platform") != platform:
-            out["skipped"].append({"owner": owner, "why": "carried on %s, this PC is %s" % (meta.get("platform"), platform)})
-            continue
+            if owner != "Konyo":
+                out["skipped"].append({"owner": owner, "why": "carried on %s, this PC is %s" % (meta.get("platform"), platform)})
+                continue
         if meta.get("head") != head:
             out["skipped"].append({"owner": owner, "why": "carried at %s, this PC is at %s"
                                    % (str(meta.get("head"))[:12], head[:12])})
             continue
+        if now_ms is not None:
+            _age = _proof_age_refusal(meta.get("at"), now_ms)
+            if _age:
+                out["skipped"].append({"owner": owner, "why": _age})
+                continue
         full = get(q + "&body=1")
         ex = full.get("export") if full.get("ok") else None
         if not isinstance(ex, dict):
@@ -177,4 +282,6 @@ def take(peers, head, platform=PLATFORM, get=http_get, run=run_heart2):
         row = {"owner": owner, "count": meta.get("count"), "at": meta.get("at"), "rc": rc, "said": said,
                "banked": int(_b.group(1)) if _b else None}      # None: heart2 did not say (UNKNOWN, never 0)
         (out["imported"] if rc == 0 else out["skipped"]).append(row if rc == 0 else dict(row, why="the import refused it"))
+        if now_ms is not None and rc == 0:
+            return out
     return out

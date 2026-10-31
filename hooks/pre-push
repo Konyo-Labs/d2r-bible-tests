@@ -1186,6 +1186,7 @@ print("%d lane(s)%s" % (n, (" - " + said[-1].strip()) if said else ""))' "$(echo
     echo "pre-push: [$(_pp_el)] proving $(echo $_gates | wc -w | tr -d ' ') changed law(s) in ${_lanes_say:-UNKNOWN lane(s) - heart2 could not say}"
     if python3 "$REPO/tv/heart2.py" --prove $_gates --push > "$_prove_log" 2>&1; then
       echo "pre-push: [$(_pp_el)] ✅ every changed law demonstrated it can still go red."
+      ( cd "$REPO/tv" && python3 -c 'import proof_carrier as pc; pc.note_gate_run("pre-push")' ) || true
       rm -f "$_prove_log"
     else
       echo "pre-push: [$(_pp_el)] ❌ a changed law has a red-proof that PROVES NOTHING — push blocked."

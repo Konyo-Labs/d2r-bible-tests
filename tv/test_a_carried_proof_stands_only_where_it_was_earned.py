@@ -320,12 +320,12 @@ class TheCarrierTakesFromThePCHisRulingNames(unittest.TestCase):
         # v3844 - his ruling 2026-10-30 adds the ALT taking Dean's (the ALT can never hold a whole proof)
         p = self.CA._proof_carrier_peers
         self.assertEqual(p("Dean"), ("Konyo · ALT",))
-        self.assertEqual(p("Konyo · ALT"), ("Dean",))
+        self.assertEqual(p("Konyo · ALT"), ("Dean", "Konyo"))
         for who in ("Wife PC", "Konyo · GrokBot", "Konyo · Mac", "Konyo", None):
             self.assertEqual(p(who), (), "%r takes proofs his ruling never named" % who)
         self.assertTrue(self.CA._proof_carrier_source("Konyo · ALT"))
         self.assertTrue(self.CA._proof_carrier_source("Dean"), "nobody takes the fleet prover's proofs")
-        self.assertFalse(self.CA._proof_carrier_source("Konyo · Mac"), "the Mac's proofs stand on a Windows PC")
+        self.assertTrue(self.CA._proof_carrier_source("Konyo · Mac"), "the Mac is the ALT's backup prover")
 
     def test_the_alt_never_proves_for_itself_and_still_takes_deans(self):
         """v3844 - the weak PC only takes: its self-prove lane never starts a proof, while the status the carrier's
@@ -492,7 +492,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3844 (his ruling 2026-10-30) - the carrier goes one way again: the ALT never takes Dean's proofs",
      "file": "control_app.py",
-     "find": "PROOF_CARRIER_ACCEPTS = {\"Dean\": (\"Konyo · ALT\",), \"Konyo · ALT\": (\"Dean\",)}\n",
+     "find": "PROOF_CARRIER_ACCEPTS = {\"Dean\": (\"Konyo · ALT\",), \"Konyo · ALT\": (\"Dean\", \"Konyo\")}\n",
      "replace": "PROOF_CARRIER_ACCEPTS = {\"Dean\": (\"Konyo · ALT\",)}\n",
      "matches": 1},
     {"why": "REG-3047 - a PC named to take from nobody takes anyway",

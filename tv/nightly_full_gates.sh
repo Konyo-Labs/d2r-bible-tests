@@ -42,5 +42,8 @@ T0=$SECONDS
 _awake=""; command -v caffeinate >/dev/null 2>&1 && _awake="caffeinate -i"   # macOS only; elsewhere it runs as is
 ( cd "$TREE" && $_awake python3 tv/run_gates.py --full ) > "$LOG" 2>&1
 RC=$?
+if [ "$RC" -eq 0 ]; then
+  ( cd "$TREE/tv" && python3 -c 'import proof_carrier as pc; pc.note_gate_run("nightly")' ) || true
+fi
 echo "$(date '+%F %T') $SHA rc=$RC $(( (SECONDS-T0)/60 ))m $(grep -aE '^(✅|❌) [0-9]+ gate' "$LOG" | tail -1) log=$LOG" >> "$LOG_DIR/verdicts.log"
 exit $RC
