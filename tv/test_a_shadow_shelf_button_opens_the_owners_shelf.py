@@ -18,7 +18,13 @@ import shutil
 import subprocess
 import unittest
 
+import sys
+
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+from console_safe import enable as _console_safe_enable  # noqa: E402
+_console_safe_enable()
 NODE = shutil.which("node")
 UI = io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8").read()
 
