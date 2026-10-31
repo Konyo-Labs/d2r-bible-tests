@@ -34192,14 +34192,14 @@ def reel_census(hist_dir=None):
 def river_routed_reports(reels):
     """The ROUTED reels in one lane, each with the route the router stamped. -> list
 
-    A ROUTED reel whose route is not a dict reports route None. Any other station is left out.
+    A ROUTED reel whose closedOut is not a dict reports closedOut None. Any other station is left out.
     """
     out = []
     for x in reels or []:
         if not isinstance(x, dict) or x.get("station") != "ROUTED":
             continue
-        route = x.get("route") if isinstance(x.get("route"), dict) else None
-        out.append({"reel": x.get("reel"), "route": route})
+        closed = x.get("closedOut") if isinstance(x.get("closedOut"), dict) else None
+        out.append({"reel": x.get("reel"), "closedOut": closed})
     return out
 
 

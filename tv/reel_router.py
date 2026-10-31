@@ -648,11 +648,12 @@ def route(hist=None, path=None):
             "surveyedAt": _e.get("surveyedAt"),
         }
         if station == "ROUTED":
-            # the act that closed it out, beside the station. An empty from is unknown, not a guess.
+            # the act that closed it out, beside the station. Named closedOut, never "route": that word is a retention
+            # field, and assert_independent_of_retention refuses it in route(). An empty from is unknown, not a guess.
             if isinstance(_r, dict):
-                row["route"] = {"from": _r.get("from") or None, "by": _r.get("by") or None, "why": swhy}
+                row["closedOut"] = {"from": _r.get("from") or None, "by": _r.get("by") or None, "why": swhy}
             else:
-                row["route"] = None
+                row["closedOut"] = None
         rows.append(row)
     # FIFO: oldest capture first. ⚠ A reel with NO readable clock sorts LAST, never first — None
     # must not be coerced to 0, because 0 is 1970 and would put every unmeasured reel at the head

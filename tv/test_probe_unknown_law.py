@@ -865,6 +865,11 @@ class NothingInMustGiveUnknownOut(unittest.TestCase):
         """
         import builtins
         real_listdir, real_open, real_io = os.listdir, builtins.open, io.open
+        # v3849 - a reader may take the last plan this process finished (reel_retention.plan_for_reader), and an
+        # earlier case in this file leaves one. This case is "nothing could be read AND nothing is held", so it
+        # starts from no held plan; a held plan is memory, not a read, and is not this case's subject.
+        import reel_retention as _RR
+        _RR._forget_plans()
 
         def _boom(*a, **k):
             raise PermissionError("denied")

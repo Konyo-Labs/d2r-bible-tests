@@ -23014,11 +23014,14 @@ window._lockMark = function(isOpen, px, label){
           if (b && _SSV_B64.test(b)) reels.push('data:image/jpeg;base64,' + b);
         });
       });
+      /* a page arms its player; a renderer with no window (a law under node) only draws */
+      var W = (typeof window !== 'undefined') ? window : null;
+      if (!W) return;
       try {
-        if (window._ssvPlay && window._ssvPlay.timer) { clearTimeout(window._ssvPlay.timer); window._ssvPlay.on = false; window._ssvPlay.timer = 0; }
+        if (W._ssvPlay && W._ssvPlay.timer) { clearTimeout(W._ssvPlay.timer); W._ssvPlay.on = false; W._ssvPlay.timer = 0; }
       } catch (eA) {}
-      window._ssvReels = reels;
-      window._ssvReelN = Array.isArray(rows) ? rows.length : 0;
+      W._ssvReels = reels;
+      W._ssvReelN = Array.isArray(rows) ? rows.length : 0;
     }
     arm(d.ok === true ? (Array.isArray(d.sessions) ? d.sessions : null) : []);
     if (d.ok !== true)

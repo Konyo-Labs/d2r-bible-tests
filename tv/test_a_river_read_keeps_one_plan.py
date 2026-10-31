@@ -158,22 +158,22 @@ class ARiverReadKeepsOnePlan(unittest.TestCase):
             rep = router.route(hist=self._dir)
             rows = {r["reel"]: r for r in rep["reels"]}
             self.assertEqual(rows["reel_routed"]["station"], "ROUTED")
-            self.assertEqual(rows["reel_routed"]["route"],
+            self.assertEqual(rows["reel_routed"]["closedOut"],
                              {"from": "CAPTURE", "by": "kai", "why": rows["reel_routed"]["why"]})
-            self.assertNotIn("route", rows["reel_open"])
+            self.assertNotIn("closedOut", rows["reel_open"])
             router._routed_by_a_lane = lambda path=None: ({"reel_routed": dict(blank)}, "")
             again = {r["reel"]: r for r in router.route(hist=self._dir)["reels"]}
-            self.assertIsNone(again["reel_routed"]["route"]["from"])
+            self.assertIsNone(again["reel_routed"]["closedOut"]["from"])
         finally:
             router._evidence, router._routed_by_a_lane, router._captured_ms = orig
         joined = ca.river_routed_reports([
-            {"reel": "reel_routed", "station": "ROUTED", "route": {"from": "CAPTURE", "by": "kai", "why": "x"}},
+            {"reel": "reel_routed", "station": "ROUTED", "closedOut": {"from": "CAPTURE", "by": "kai", "why": "x"}},
             {"reel": "reel_open", "station": "INTAKE"},
-            {"reel": "reel_bad", "station": "ROUTED", "route": "nope"},
+            {"reel": "reel_bad", "station": "ROUTED", "closedOut": "nope"},
         ])
         self.assertEqual([j["reel"] for j in joined], ["reel_routed", "reel_bad"])
-        self.assertEqual(joined[0]["route"]["by"], "kai")
-        self.assertIsNone(joined[1]["route"])
+        self.assertEqual(joined[0]["closedOut"]["by"], "kai")
+        self.assertIsNone(joined[1]["closedOut"])
         src = open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
         self.assertIn('"routed": river_routed_reports(l.get("reels"))', src)
         self.assertIn("_p = _RR.plan_for_reader(hist_dir=hist_dir)", src)
@@ -192,8 +192,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "a ROUTED reel no longer reports the route that closed it out",
      "file": "reel_router.py",
-     "find": '                row["route"] = {"from": _r.get("from") or None, "by": _r.get("by") or None, "why": swhy}\n',
-     "replace": '                row["route"] = None\n',
+     "find": '                row["closedOut"] = {"from": _r.get("from") or None, "by": _r.get("by") or None, "why": swhy}\n',
+     "replace": '                row["closedOut"] = None\n',
      "matches": 1},
     {"why": "the lane payload drops the routed reels, so the route never reaches the river",
      "file": "control_app.py",
