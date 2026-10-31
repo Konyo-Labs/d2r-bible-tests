@@ -22180,8 +22180,10 @@ function artOr(name, fallbackHtml, size){
     if (_builtUrl) u = _builtUrl;
   }
   var _rc = _artRarity(name); var _rcls = _rc ? ' d2art-r-' + _rc : '';
-  /* REG-2903 - a mark whose base is in doubt says the doubt as a question (his rule: a doubt becomes a question) */
-  if (!u) return `<span class="d2art-wrap ${size||'lg'}${_rcls} d2art-failed" role="img" aria-label="${_d2artEsc(name)}"${_ask ? ` title="${_d2artEsc(_ask)}" data-art-ask="1"` : ''}><span class="d2art-fallback">${fallbackHtml||''}</span></span>`;
+  /* REG-2903 - a mark whose base is in doubt says the doubt as a question (his rule: a doubt becomes a question).
+     v3849 - an unresolved ring/jewel keeps that question and does not paint the white-box fallback glyph (the ◆). */
+  var _askBox = (_ask && /\bring\b/i.test(String(_ask)) && /\bjewel\b/i.test(String(_ask))) ? '' : (fallbackHtml || '');
+  if (!u) return `<span class="d2art-wrap ${size||'lg'}${_rcls} d2art-failed" role="img" aria-label="${_d2artEsc(name)}"${_ask ? ` title="${_d2artEsc(_ask)}" data-art-ask="1"` : ''}><span class="d2art-fallback">${_askBox}</span></span>`;
   // alt="" → the art is decorative (the item name is always rendered adjacent); this stops
   // the name from being duplicated into copied text / shown as broken-image alt on platforms
   // where the diablo2.io hotlink is blocked. Accessible name lives on the wrapper aria-label.
@@ -22220,6 +22222,15 @@ function _artRolledBase(name){
   if (rq && rq.q === 'rare' && rq.slots && rq.slots.length > 1)
     out.ask = rq.slots.join(' or ').toLowerCase() + '? the name does not say; a tooltip look settles it';   /* REG-2903 the doubt asked */
   else if (rolled) out.ask = 'which base? the name does not say; a tooltip look settles it';
+  /* v3849 - the jewelry hand-pool already decided a Whorl (its question stays). A name it does not decide
+     is read off the suffix tables: one display type is the base, a ring/jewel split stays a question. */
+  if (!out.base && !out.ask && typeof _intakeResolve === 'function'){
+    var _irB = null;
+    try { _irB = _intakeResolve(clean); } catch (eIrB) { _irB = null; }
+    if (_irB && _irB.base) out.base = String(_irB.base);
+    else if (_irB && _irB.types && _irB.types.length > 1 && _irB.types.indexOf('Ring') >= 0 && _irB.types.indexOf('Jewel') >= 0)
+      out.ask = _irB.types.join(' or ').toLowerCase() + '? the name does not say; a tooltip look settles it';
+  }
   return out;
 }
 window.artOr = artOr;
@@ -27519,6 +27530,123 @@ function _rolledRoute(rq){
     : {id:'magic-rare', why:'a magic ' + String(rq.base || 'item').toLowerCase() + ' (a rolled prefix / suffix) \u2014 rolled-name keepers live in MAGIC & RARE'};
 }
 window._rolledRoute = _rolledRoute;
+/* v3849 - TYPE AT INTAKE, FROM THE GAME'S RARE-NAME TABLES (CB_DB rn, generated from rareprefix / raresuffix),
+   not from the jewelry hand-pool above. That pool stays the floor for the names it already decides (a Whorl is
+   still "ring or jewel", an Eye is still the Jewel that pool pinned). This answers a name the pool does not:
+   one display type (ty[code][0]; a category whose ty row is null, such as misc or weap, is not a base), or no
+   base when the suffix names several. A magic name is prefix + a known base + an "of ..." suffix, and the base
+   is what it routes by. An NPC or a panel word is refused here too, through the one denylist. */
+function _inFold(s){
+  return String(s == null ? '' : s).replace(/[\u2018\u2019\u02bc`]/g, "'").replace(/\s+/g, ' ').trim();
+}
+function _rnRow(rows, word){
+  var w = _inFold(word).toLowerCase(), i;
+  for (i = 0; i < (rows || []).length; i++) if (_inFold(rows[i][0]).toLowerCase() === w) return rows[i];
+  return null;
+}
+function _typeAnc(d, code){
+  var row = d && d.ty && d.ty[code];
+  return (row && row[4] && row[4].length) ? row[4] : [code];
+}
+function _typeAllowed(d, itypes, etypes, code){
+  var anc = {}, list = _typeAnc(d, code), i;
+  for (i = 0; i < list.length; i++) anc[list[i]] = 1;
+  if ((etypes || []).some(function(t){ return anc[t]; })) return false;
+  return (itypes || []).some(function(t){ return anc[t]; });
+}
+function _suffixTypes(d, suf, pre){
+  var out = [], seen = {};
+  (suf[1] || []).forEach(function(code){
+    var row = d.ty && d.ty[code];
+    if (!row || !row[0]) return;
+    if (pre && !_typeAllowed(d, pre[1], pre[2], code)) return;
+    if (seen[row[0]]) return;
+    seen[row[0]] = 1;
+    out.push(row[0]);
+  });
+  return out;
+}
+function _affixAllows(d, kind, word, typeCode){
+  if (!word) return false;
+  var want = _inFold(word).toLowerCase(), anc = {}, list = _typeAnc(d, typeCode), i, a, ity, ety;
+  for (i = 0; i < list.length; i++) anc[list[i]] = 1;
+  for (i = 0; i < (d.af || []).length; i++){
+    a = d.af[i];
+    if (!a || a[1] !== kind || _inFold(a[2]).toLowerCase() !== want) continue;
+    ity = a[9] || []; ety = a[10] || [];
+    if (ety.some(function(t){ return anc[t]; })) continue;
+    if (ity.some(function(t){ return anc[t]; })) return true;
+  }
+  return false;
+}
+function _findBase(d, folded){
+  var low = folded.toLowerCase(), best = null, codes = Object.keys(d.b || {}), i, b, n, nl, idx, at, before, after;
+  for (i = 0; i < codes.length; i++){
+    b = d.b[codes[i]];
+    if (!b || !b[0]) continue;
+    n = String(b[0]); nl = n.toLowerCase(); idx = 0;
+    while (true){
+      at = low.indexOf(nl, idx);
+      if (at < 0) break;
+      before = at === 0 || low.charAt(at - 1) === ' ';
+      after = at + nl.length === low.length || low.charAt(at + nl.length) === ' ';
+      if (before && after){
+        if (!best || n.length > best.name.length) best = { name: n, type: b[1], at: at, end: at + nl.length };
+        break;
+      }
+      idx = at + 1;
+    }
+  }
+  return best;
+}
+function _intakeResolve(name){
+  var nm = _inFold(name), empty = { ok: true, q: null, base: null, types: [], itypes: [], refused: null, why: null, known: false };
+  if (!nm) return empty;
+  var refused = (typeof window !== 'undefined' && typeof window._vaultNotAnItem === 'function') ? window._vaultNotAnItem(nm) : null;
+  if (refused) return { ok: false, refused: 'not-an-item', why: refused, q: null, base: null, types: [], itypes: [], known: false };
+  try { if (typeof d2rItemLookup === 'function' && d2rItemLookup(nm)) return { ok: true, q: null, base: null, types: [], itypes: [], refused: null, why: null, known: true }; } catch (eLk) {}
+  try { if (typeof _rareRealName === 'function' && _rareRealName(nm)) return { ok: true, q: null, base: null, types: [], itypes: [], refused: null, why: null, known: true }; } catch (eRn) {}
+  var d = (typeof window !== 'undefined' && typeof window._cbDb === 'function') ? window._cbDb() : null;
+  if (!d || !d.rn || !d.ty || !d.b) return empty;
+  var parts = nm.split(' ');
+  if (parts.length === 2){
+    var pre = _rnRow(d.rn[0], parts[0]), suf = _rnRow(d.rn[1], parts[1]);
+    if (pre && suf){
+      var types = _suffixTypes(d, suf, pre);
+      return { ok: true, q: 'rare', prefix: pre[0], suffix: suf[0], itypes: (suf[1] || []).slice(), types: types,
+               base: types.length === 1 ? types[0] : null, refused: null, why: null, known: false };
+    }
+  }
+  var hit = _findBase(d, nm);
+  if (!hit) return empty;
+  var magPre = nm.slice(0, hit.at).trim(), magSuf = nm.slice(hit.end).trim();
+  if (!magPre && !magSuf) return empty;
+  if (magPre && !_affixAllows(d, 'p', magPre, hit.type)) return empty;
+  if (magSuf && !_affixAllows(d, 's', magSuf, hit.type)) return empty;
+  var ty = d.ty[hit.type], shown = (ty && ty[0]) ? [ty[0]] : [];
+  return { ok: true, q: 'magic', base: hit.name, types: shown, itypes: hit.type ? [hit.type] : [], prefix: magPre, suffix: magSuf, refused: null, why: null, known: false };
+}
+function _intakeStamp(name){
+  var rq = null, ir = null;
+  try { rq = (typeof _rolledQuality === 'function') ? _rolledQuality(name) : null; } catch (eRq) { rq = null; }
+  if (!rq){ try { ir = _intakeResolve(name); } catch (eIr) { ir = null; } }
+  return { rarity: (rq && rq.q) || (ir && ir.q) || 'basic', base: (rq && rq.base) || (ir && ir.base) || null };
+}
+function _intakeRoute(name){
+  var ir = null;
+  try { ir = _intakeResolve(name); } catch (eIr) { return null; }
+  if (!ir || ir.refused || ir.known || !ir.q) return null;
+  if (ir.q === 'magic' && ir.base) return _rolledRoute({ q: 'magic', base: ir.base });
+  if (ir.q === 'rare'){
+    var said = (ir.types && ir.types.length) ? ir.types.join(' / ').toLowerCase() : ('itype ' + (ir.itypes || []).join('/'));
+    return { id: 'magic-rare', base: ir.base || null, types: ir.types || [], itypes: ir.itypes || [],
+             why: 'a rare\u2019s rolled name (' + ir.prefix + ' + ' + ir.suffix + ': ' + said + ') \u2014 rolled-name keepers live in MAGIC & RARE' };
+  }
+  return null;
+}
+window._intakeResolve = _intakeResolve;
+window._intakeStamp = _intakeStamp;
+window._intakeRoute = _intakeRoute;
 /* REG-2895 (ACT-4, his ruling 2026-10-28 ~20:00-20:10) - WHERE A CHARM LIVES: ONE RULE, READ BY EVERY DOOR. His words, in
    order: charms live "in shared stash/war stash"; "no gheeds no... MF no... those go to charms mmule dedicated"; "skillers also
    to the dedicated charm mule"; "grand charms attack rating and resistance charms and faster hit recovery should be in war
@@ -44835,6 +44963,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       /* #269 (tick 416 K05) - a MAGIC charm / jewel / ring / amulet is a rolled-name keeper too, never a unique drawer */
       if (_rq && _rq.q === 'magic' && muleById('magic-rare'))
         return _rolledRoute(_rq);
+      /* v3849 - a rolled name the jewelry pool does not know (Grim Harness, a magic Spired Helm) still files to MAGIC & RARE */
+      if (!_rq && typeof window._intakeRoute === 'function' && muleById('magic-rare')){
+        var _inRoute = window._intakeRoute(name);
+        if (_inRoute) return _inRoute;
+      }
     } catch(eRn){}
     /* #294 (REG-2080, GrokBot ticks 420 + 424, his ruling 2026-10-07) - A NAME NOTHING KNOWS IS NEVER GIVEN A MULE BY A WORD
        IN IT. 'Bone Visor' (a misread: Bone Helm -> Grim Helm -> Bone VISAGE) reached the keyword guess with no base from any
@@ -49290,7 +49423,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
              _tvExtraRemember writes both the object and the store. */
           /* #269 (REG-2054) - a rolled name is stamped as what it is, never 'Base item' */
           var _rq1 = (typeof _rolledQuality === 'function') ? _rolledQuality(name) : null;
-          var _tvEntry = { rarity: _rq1 ? _rq1.q : 'basic', base: (_rq1 && _rq1.base) ? _rq1.base : name, cat:'📺 TV-vaulted', val:'tv',
+          var _stamp = (typeof window._intakeStamp === 'function') ? window._intakeStamp(name) : { rarity: _rq1 ? _rq1.q : 'basic', base: (_rq1 && _rq1.base) ? _rq1.base : null };
+          var _tvEntry = { rarity: _stamp.rarity || 'basic', base: _stamp.base || name, cat:'📺 TV-vaulted', val:'tv',
             desc:'registered live by TV DIABLO — physically in your stash' };
           if (typeof window._tvExtraRemember === 'function') window._tvExtraRemember(name, _tvEntry);
           else EXTRA_ITEMS[name] = _tvEntry;
