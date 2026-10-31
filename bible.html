@@ -3907,13 +3907,20 @@ tr.owned-row{background:rgba(102,255,136,.03)}
         return u.origin !== window.location.origin || /^\/(frame|hist|state|ping)(\/|$)/.test(u.pathname);
       } catch (e) { return true; }
     }
+    function _shadowPictureOwner(origin) {
+      var snap = window._tvdShadowSnap || window._tvdShadow || null;
+      if (!snap) return false;
+      var own = snap.origin || snap.ownerOrigin || (window._tvdShadow && window._tvdShadow.origin) || '';
+      return /^https?:\/\//.test(String(own)) && String(own) === String(origin || '');
+    }
     function blocked(url, method) {
       var m = String(method || 'GET').toUpperCase();
       if (m !== 'GET' && m !== 'HEAD') return true;
+      var u = null;
+      try { u = new URL(String(url), window.location.href); } catch (e) { return true; }
+      if (m === 'GET' && u.pathname === '/api/picture_status' && _shadowPictureOwner(u.origin)) return false;
       if (foreign(url)) return true;
-      var path = '';
-      try { path = new URL(String(url), window.location.href).pathname; } catch (e) { return true; }
-      return path.indexOf('/api/') !== -1 || path.indexOf('/api') === 0;
+      return u.pathname.indexOf('/api/') !== -1 || u.pathname.indexOf('/api') === 0;
     }
     var realFetch = window.fetch;
     window._tvdShadowRefused = 0;
@@ -3980,7 +3987,9 @@ tr.owned-row{background:rgba(102,255,136,.03)}
                 // GrokBot 22:07: TV·D's LIVE / LAST SESSION switch and a Tools card's fold header only move the view too
                 '_tvdHistTab', 'toggleCardCollapse',
                 // REG-2758 (GrokBot's v3821 pass: the shadow's move rows do not open) - a task row's from -> to picture
-                '_vaultTaskExpand'];
+                '_vaultTaskExpand',
+                // the evidence magnifier only reads (open, step, lightbox, close)
+                '_vaultEvidenceOpen', '_vaultEvidenceClose', '_vaultOpenEvidence', '_vaultEvidenceLightbox', '_vaultEvidenceStep'];
     window._tvdShadowView = VIEW;
     // the controls a click or a key can reach: one list, read by the click veil and the key filter alike
     var CTL = 'button, a, input, textarea, select, label, [onclick], [contenteditable], .vault-chip, [draggable="true"]';
@@ -48752,8 +48761,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     }
     /* 2026-09-28 — EVERY ROW SPEAKS, not only a tiered one: who filed it and its tally of looks. */
     var n = Array.isArray(r.looks) ? r.looks.length : 0;
+    if (!n && typeof window._vaultEvidenceLooks === 'function') {
+      try { n = (window._vaultEvidenceLooks(String(name == null ? '' : name).trim()) || []).length; } catch (eL) { n = 0; }
+    }
     var who = (typeof window._ownedProvSourceSay === 'function') ? window._ownedProvSourceSay(r.source) : String(r.source || 'UNKNOWN');
-    var tally = n ? (n + ' look' + (n === 1 ? '' : 's')) : 'no picture recorded';
+    var tally = n ? (n + ' look' + (n === 1 ? '' : 's')) : 'no picture was saved for this item';
     if (r.kind === 'owned') return who + ' · ' + tally;
     /* #41 rank 10 — A WITNESSED FILING SAYS ITS GATE AND THAT ITS TIER IS UNKNOWN. The normal door's row carries looks and
        the gate that admitted it, never a tier (only the reset rebuild writes one); a line that said only "2 looks" read as
@@ -48785,8 +48797,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     /* REG-2220 prefixed f_ onto every token that did not already start with it, so a stored
        filename cited.jpg was opened as f_cited.jpg. A BARE millisecond is reel footage and
        lives as f_<ms>.jpg. A token that is already a filename is that file. */
-    var stem = fr.replace(/\.jpg$/i, '');
-    var fn = (/^\d+$/.test(stem) ? ('f_' + stem) : stem) + '.jpg';
+    var stem = fr.replace(/\.jpg$/i, '').replace(/#\d+$/, '');
+    var nms = /^(\d+)_(\d{12,14})$/.exec(stem);
+    var fn = (nms ? ('f_' + nms[2]) : (/^\d+$/.test(stem) ? ('f_' + stem) : stem)) + '.jpg';
     return 'tv/frames/hist/reel_' + s + '/' + fn;
   };
   /* #36 (REG-2908, his ruling 2026-10-28 11:30: "so each reel knows whose stash it filmed") - A LOOK CARRIES THE CHARACTER
@@ -48811,24 +48824,43 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var nm = String(name == null ? '' : name).trim();
     var _pvLk = _provAll();
     var r = _pvLk ? _pvLk[nm] : null;   /* REG-2415 — UNKNOWN: no look is read from it (the line says why) */
-    /* a Magic & Rare keeper carries its own receipt (v1934: frameId · sessionId · at) */
-    if (!r && typeof magicFinds === 'object' && magicFinds && magicFinds[nm] && magicFinds[nm].frameId){
-      var mf = magicFinds[nm], mfAt = (typeof mf.at === 'number') ? new Date(mf.at).toISOString() : (mf.at || null);
-      var mfH = _lookHolder({ frame: mf.frameId }, mf.sessionId || null);   /* REG-2908 */
-      return [{ frame: String(mf.frameId), conf: null, cell: null, session: mf.sessionId || null, at: mfAt,
-                holder: mfH.holder, holderVia: mfH.via, released: false, crop: null }];
+    /* a Magic & Rare keeper carries its own receipt (v1934: frameId · sessionId · at, and the intake shotFile) */
+    var mf = (typeof magicFinds === 'object' && magicFinds && magicFinds[nm] && typeof magicFinds[nm] === 'object') ? magicFinds[nm] : null;
+    function mfLooks(){
+      if (!mf) return [];
+      var at = (typeof mf.at === 'number') ? new Date(mf.at).toISOString() : (mf.at || null);
+      if (mf.frameId){
+        var mfH = _lookHolder({ frame: mf.frameId }, mf.sessionId || null);   /* REG-2908 */
+        return [{ frame: String(mf.frameId), conf: null, cell: null, session: mf.sessionId || null, at: at,
+                  holder: mfH.holder, holderVia: mfH.via, released: false, crop: null,
+                  shotFile: mf.shotFile ? String(mf.shotFile) : null }];
+      }
+      if (mf.shotFile){
+        return [{ frame: null, shotFile: String(mf.shotFile), conf: null, cell: null, session: mf.sessionId || null,
+                  at: at, holder: null, holderVia: null, released: false, crop: null }];
+      }
+      return [];
     }
-    r = r || {};
+    if (!r) return mfLooks();
     var looks = Array.isArray(r.looks) ? r.looks : [];
     if (!looks.length && (r.frameId || r.frame)) looks = [{ id: r.sessionId || r.reel || null, frame: r.frameId || r.frame, conf: r.conf }];
-    return looks.map(function(k){
+    var out = looks.map(function(k){
       k = k || {};
       var hv = _lookHolder(k, k.id || k.session || null);
       return { frame: k.frame || null, conf: (typeof k.conf === 'number' ? k.conf : null),
                cell: k.cell || null, loc: k.loc || null, holder: hv.holder, holderVia: hv.via, /* v3767 look place · REG-2908 */
                session: k.id || k.session || null, at: k.at || r.at || null,
-               released: k.released === true, crop: k.crop || null };
+               released: k.released === true, crop: k.crop || null, shotFile: k.shotFile ? String(k.shotFile) : null };
     });
+    mfLooks().forEach(function(e){
+      if (e.frame && out.some(function(k){ return k && String(k.frame || '') === String(e.frame); })){
+        if (e.shotFile) out.forEach(function(k){ if (k && String(k.frame || '') === String(e.frame) && !k.shotFile) k.shotFile = e.shotFile; });
+        return;
+      }
+      if (!e.frame && e.shotFile && out.some(function(k){ return k && k.shotFile === e.shotFile; })) return;
+      out.push(e);
+    });
+    return out;
   };
   /* ── 2026-09-28 — THE EVIDENCE PANEL: one door from every vault surface (dock chip, mule tile, locker
      cell, Magic & Rare cell). It says who filed the item, when, from which session and frame, its tally
@@ -48853,9 +48885,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var mf = (!r && nm && typeof magicFinds === 'object' && magicFinds && magicFinds[nm]) ? magicFinds[nm] : null;
     var looks = window._vaultEvidenceLooks(nm);
     var say = (typeof window._ownedProvSourceSay === 'function') ? window._ownedProvSourceSay : function(s){ return String(s || 'UNKNOWN'); };
+    var shot = looks.filter(function(k){ return k && k.shotFile; })[0] || null;
     var m = { name: nm, has: !!(r || mf), kind: r ? (r.kind === 'owned' ? 'owned' : 'filing') : (mf ? 'magic' : 'none'),
               looks: looks, line: window._vaultEvidenceLine(nm), who: null, when: null, at: null, seen: null,
-              session: null, frame: null, tally: looks.length, tallySay: null, tierSay: null, holder: null, note: null };
+              session: null, frame: null, shotFile: shot ? String(shot.shotFile) : null,
+              tally: looks.length, tallySay: null, tierSay: null, holder: null, note: null };
     if (_pvEO === null) m.unknown = true;   /* REG-2415 — the panel says UNKNOWN, never "No provenance" */
     var first = looks.filter(function(k){ return k && k.frame; })[0] || null;
     if (r){
@@ -48895,9 +48929,14 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       m.when = _evWhen(mf.at); m.at = (typeof mf.at === 'number') ? new Date(mf.at).toISOString() : (mf.at || null);
       m.session = mf.sessionId || null; m.frame = mf.frameId || null;
       m.seen = (mf.q ? mf.q + ' ' : '') + (mf.base || '');
+      if (mf.shotFile) m.shotFile = String(mf.shotFile);
     }
+    var mfAny = (nm && typeof magicFinds === 'object' && magicFinds && magicFinds[nm] && typeof magicFinds[nm] === 'object') ? magicFinds[nm] : null;
+    if (mfAny && mfAny.shotFile && !m.shotFile) m.shotFile = String(mfAny.shotFile);
+    if (mfAny && mfAny.frameId && !m.frame) m.frame = String(mfAny.frameId);
+    if (mfAny && mfAny.sessionId && !m.session) m.session = String(mfAny.sessionId);
     var n = looks.length;
-    m.tallySay = n ? (n + ' look' + (n === 1 ? '' : 's') + (r && typeof r.seen === 'number' && r.seen > n ? ' (' + r.seen + ' seen)' : '')) : (m.has ? 'no picture recorded' : null);
+    m.tallySay = n ? (n + ' look' + (n === 1 ? '' : 's') + (r && typeof r.seen === 'number' && r.seen > n ? ' (' + r.seen + ' seen)' : '')) : (m.has ? 'no picture was saved for this item' : null);
     return m;
   };
   window._vaultEvidencePicHtml = function(m, pic){
@@ -48908,7 +48947,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
         + '<span class="vev-cap">' + _evEsc(pic.frame || '') + ' · click to open full size</span></div>';
     }
     return '<div class="vev-pic" data-state="' + _evEsc(pic.state || 'none') + '"><span class="vev-say">'
-      + _evEsc(pic.say || (m && m.has ? 'no picture was recorded with this read' : '')) + '</span></div>';
+      + _evEsc(pic.say || (m && m.has ? 'no picture was saved for this item' : '')) + '</span></div>';
   };
   window._vaultEvidenceHtml = function(m, pic){
     var rows = [];
@@ -48923,7 +48962,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
            + '</b>. It came in before every door wrote one, or through a door that did not. UNKNOWN, not guessed.</p>';
     } else {
       row('Filed by', m.who); row('When', m.when); row('Seen', m.seen); row('Session', m.session);
-      row('Frame', m.frame); row('Tally', m.tallySay); row('Tier', m.tierSay); row('Holder', m.holder); row('Note', m.note);
+      row('Frame', m.frame); row('Screenshot', m.shotFile); row('Tally', m.tallySay); row('Tier', m.tierSay); row('Holder', m.holder); row('Note', m.note);
     }
     return '<div class="vev-card" role="dialog" aria-label="evidence for ' + _evEsc(m.name) + '">'
       + '<div class="vev-head"><span class="vev-ic" aria-hidden="true">🔎</span><span class="vev-name">' + _evEsc(m.name) + '</span>'
@@ -48950,15 +48989,31 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
   window._vaultEvidencePicture = function(frameId, done, src){
     var id = String(frameId == null ? '' : frameId).trim(), fin = false;
     var end = function(p){ if (!fin){ fin = true; try { done(p); } catch (e) {} } };
-    if (!id) return end({ state: 'none', say: 'no picture was recorded with this read' });
+    if (!id) return end({ state: 'none', say: 'no picture was saved for this item' });
     var ask = function(){
       if (typeof fetch !== 'function') return end({ state: 'unknown', say: 'picture not on this machine — why is UNKNOWN (nothing here can ask the console)' });
       /* #41 rank 18 sibling (REG-1552, 2026-09-30) — asked of the console that SERVED this board (_consoleOrigin, the one
          rule the reset's plan and the proof chip follow), never :17772 by name: a board on a scratch or second console
          read HIS console's picture status. No serving console = nobody to ask, and the panel says so — UNKNOWN. The
-         VAULT_PICTURE_STATUS_URL knob nothing ever set is gone with it. [[the-unjoined-end]] [[unknown-stays-unknown]] */
-      var origin = _consoleOrigin();
-      if (!origin) return end({ state: 'unknown', frame: id, say: 'picture not on this machine — why is UNKNOWN (no console served this page, so nobody was asked)' });
+         VAULT_PICTURE_STATUS_URL knob nothing ever set is gone with it. A shadow asks the OWNER's origin on the
+         snapshot, never this viewer's console, and only with a GET. [[the-unjoined-end]] [[unknown-stays-unknown]] */
+      var origin = null;
+      if (window._tvdShadow) {
+        var snap = window._tvdShadowSnap || window._tvdShadow;
+        var pics = snap && snap.pictures;
+        if (pics && Object.prototype.hasOwnProperty.call(pics, id)) {
+          var sp = pics[id];
+          if (sp && sp.present) return end({ state: 'unknown', frame: id, say: 'the console holds this picture but this page could not load it — open it from the console' });
+          if (sp && sp.why) return end({ state: 'gone', frame: id, code: sp.code || null, say: 'picture not on this machine — ' + sp.why });
+          return end({ state: 'unknown', frame: id, say: 'picture not on this machine — why is UNKNOWN (the console did not say)' });
+        }
+        origin = (snap && (snap.origin || snap.ownerOrigin)) || window._tvdShadow.origin || '';
+        if (!/^https?:\/\//.test(String(origin || ''))) origin = '';
+        if (!origin) return end({ state: 'unknown', frame: id, say: 'picture not on this machine — why is UNKNOWN (the owner console was not on this snapshot, so nobody was asked)' });
+      } else {
+        origin = _consoleOrigin();
+        if (!origin) return end({ state: 'unknown', frame: id, say: 'picture not on this machine — why is UNKNOWN (no console served this page, so nobody was asked)' });
+      }
       var ctl = null; try { ctl = new AbortController(); } catch (e) { ctl = null; }
       var kill = setTimeout(function(){ try { ctl && ctl.abort(); } catch (e) {} }, 3000);
       var opt = {}; if (ctl) opt.signal = ctl.signal;
@@ -48989,8 +49044,10 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       host.addEventListener('click', function(e){ if (e.target === host) window._vaultEvidenceClose(); });
     }
     var first = m.looks.filter(function(k){ return k && k.frame; })[0] || null;
+    var shot = m.looks.filter(function(k){ return k && k.shotFile; })[0] || null;
     var pic0 = first ? { state: 'checking', say: 'looking for the picture on this machine…' }
-                     : { state: 'none', say: 'no picture was recorded with this read' };
+                     : (shot ? { state: 'shot', say: String(shot.shotFile), shotFile: String(shot.shotFile) }
+                             : { state: 'none', say: 'no picture was saved for this item' });
     host.innerHTML = window._vaultEvidenceHtml(m, pic0);
     host.hidden = false;
     window._vaultEvidencePage = { name: m.name, looks: m.looks, i: first ? m.looks.indexOf(first) : 0, line: m.line };
@@ -49000,6 +49057,13 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       var box = host.querySelector('.vev-pic');
       if (box) box.outerHTML = window._vaultEvidencePicHtml(m, pic);
     }, window._vaultLookSrc(first));
+    else if (shot && !window._tvdShadow && typeof window._vGetShot === 'function') {
+      window._vGetShot(shot.shotFile).then(function(full){
+        if (window.__vevTicket !== ticket || !full) return;
+        var box = host.querySelector('.vev-pic');
+        if (box) box.outerHTML = window._vaultEvidencePicHtml(m, { state: 'present', src: full, frame: shot.shotFile, say: '' });
+      }).catch(function(){});
+    }
     return m;
   };
   window._vaultEvidenceClose = function(){
@@ -51972,7 +52036,16 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       if (tier === 'border'){
         try {
           if (typeof magicFinds === 'object' && magicFinds){
-            magicFinds[nm] = { q: q || 'magic', base: base, mods: mods, border: true };
+            var prev = (magicFinds[nm] && typeof magicFinds[nm] === 'object') ? magicFinds[nm] : {};
+            var row = { q: q || prev.q || 'magic', base: (base != null ? base : (prev.base || '')), mods: mods, border: true };
+            if (prev.shotFile) row.shotFile = prev.shotFile;
+            if (meta && meta.frameId) row.frameId = meta.frameId;
+            else if (prev.frameId) row.frameId = prev.frameId;
+            if (meta && (meta.sid || meta.sessionId)) row.sessionId = meta.sid || meta.sessionId;
+            else if (prev.sessionId) row.sessionId = prev.sessionId;
+            if (meta && (meta.fts || meta.firstSeenTs)) row.at = meta.fts || meta.firstSeenTs;
+            else if (prev.at) row.at = prev.at;
+            magicFinds[nm] = row;
           }
           try { if (typeof LS !== 'undefined' && LS.setItem) LS.setItem('d2r_magicFinds', JSON.stringify(magicFinds)); } catch(e3){}
           try { if (typeof persistOwned === 'function') persistOwned(); } catch(e4){}
