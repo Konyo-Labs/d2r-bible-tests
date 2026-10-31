@@ -34,13 +34,13 @@ import vault_page_node as VPN  # noqa: E402
 RJ = "ring or jewel? the name does not say; a tooltip look settles it"
 WB = "which base? the name does not say; a tooltip look settles it"
 # the items in doubt, each with the question its mark carries
-DOUBT = {"Raven Whorl": RJ,             # a TV-read rare the grammar routes to MAGIC & RARE: a record on the locker
-         "Chaos Whorl": RJ,             # a keeper kept with no base
+DOUBT = {"Raven Gyre": RJ,             # a TV-read rare the grammar routes to MAGIC & RARE: a record on the locker
+         "Chaos Gyre": RJ,             # a keeper kept with no base
          "Havoc Eye Ring": WB}          # a keeper no rule reads
 CONTROL = {"Doom Eye": "Jewel"}         # a TV-read rare whose suffix names one slot: its base everywhere
 READ = ("Bone Gyre", RJ)                # a throw-out read in doubt (the review's hover)
-KEEPERS = {"Chaos Whorl": {"q": "rare", "base": ""}, "Havoc Eye Ring": {"q": "rare", "base": ""}}
-STUBS = ["Raven Whorl", "Doom Eye"]
+KEEPERS = {"Chaos Gyre": {"q": "rare", "base": ""}, "Havoc Eye Ring": {"q": "rare", "base": ""}}
+STUBS = ["Raven Gyre", "Doom Eye"]
 STUB = lambda n: {"rarity": "basic", "base": n, "cat": "TV-vaulted", "val": "tv", "desc": "fixture"}  # noqa: E731
 PRELUDE = "localStorage.setItem('d2r_ownerClaim', '*');\n" + "".join(
     "localStorage.setItem(%s, %s);\n" % (json.dumps(k), json.dumps(json.dumps(v)))
@@ -117,7 +117,7 @@ class ABaseInDoubtIsUnknownEverywhere(unittest.TestCase):
         for n, ask in DOUBT.items():
             s = self.o["s"][n]
             tiles = {k: s[k] for k in ("card", "win", "find")}
-            if n != "Raven Whorl":
+            if n != "Raven Gyre":
                 tiles["reg"] = s["reg"]                 # a record, not a keeper: the registered list's other columns draw no picture
             wrong = {k: v for k, v in tiles.items() if v != "MARK:" + ask}
             if wrong:

@@ -125,12 +125,14 @@ var out = {
   got: got,
   art: {
     whorl: artOr('Raven Whorl', '\u25c6', 'lg'),
+    gyre: artOr('Raven Gyre', '\u25c6', 'lg'),
     harness: artOr('Grim Harness', '\u25c6', 'lg'),
     helm: artOr("Artisan's Spired Helm of the Mammoth", '\u25c6', 'lg'),
     song: artOr('Bramble Song', '\u25c6', 'lg')
   },
   route: {
     whorl: routeTail('Raven Whorl'),
+    gyre: routeTail('Raven Gyre'),
     harness: routeTail('Grim Harness'),
     helm: routeTail("Artisan's Spired Helm of the Mammoth"),
     eye: routeTail('Viper Eye'),
@@ -220,8 +222,10 @@ class RolledNameResolvesAtIntake(unittest.TestCase):
         self.assertEqual(self.o["stamp"]["harness"]["rarity"], "rare")
         self.assertIn("art/test-Belt.png", self.o["art"]["harness"])
         self.assertNotIn("d2art-wrap lg d2art-failed", self.o["art"]["harness"])
-        self.assertIn("ring / jewel", r["whorl"]["why"])
-        self.assertNotIn("orb", r["whorl"]["why"])
+        # v3849 Elad 11:43-11:44: "Raven Whorl IS a ring" - his ruling; Gyre keeps the ring / jewel question
+        self.assertIn("Raven + Whorl: ring)", r["whorl"]["why"])
+        self.assertIn("ring / jewel", r["gyre"]["why"])
+        self.assertNotIn("orb", r["gyre"]["why"])
         self.assertEqual(self.o["stamp"]["whorl"]["base"], "Raven Whorl")
         self.assertEqual(self.o["stamp"]["whorl"]["rarity"], "rare")
         self.assertIn("jewel", r["eye"]["why"])
@@ -233,7 +237,7 @@ class RolledNameResolvesAtIntake(unittest.TestCase):
         self.assertNotIn("ring", r["nails"]["why"])
 
     def test_an_unresolved_ring_or_jewel_draws_no_white_box(self):
-        html = self.o["art"]["whorl"]
+        html = self.o["art"]["gyre"]
         self.assertIn("d2art-failed", html)
         self.assertIn("ring or jewel", html)
         self.assertNotIn("orb", html)
@@ -252,6 +256,11 @@ class RolledNameResolvesAtIntake(unittest.TestCase):
         self.assertTrue(g["Raven Claw"]["known"])
         self.assertIsNone(g["Raven Claw"]["q"])
 
+    def test_raven_whorl_is_a_ring_by_his_ruling(self):
+        html = self.o["art"]["whorl"]
+        self.assertIn('src="art/test-Ring.png"', html, "Raven Whorl draws no ring art (the white box Elad saw)")
+        self.assertNotIn("ring or jewel", html)
+
     def test_a_weapon_category_draws_no_invented_base(self):
         html = self.o["art"]["song"]
         self.assertNotIn("src=", html)
@@ -259,6 +268,11 @@ class RolledNameResolvesAtIntake(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3849 - a Whorl is a ring-or-jewel question again (Raven Whorl the white box)",
+     "file": "bible.html",
+     "find": "  Jewel:  ['Gyre','Talisman','Heart','Scarab','Eye'],",
+     "replace": "  Jewel:  ['Gyre','Whorl','Talisman','Heart','Scarab','Eye'],",
+     "matches": 1},
     {"why": "v3849 - an unresolved ring/jewel paints the white-box fallback glyph again",
      "file": "bible.html",
      "find": "var _askBox = (_ask && /\\bring\\b/i.test(String(_ask)) && /\\bjewel\\b/i.test(String(_ask))) ? '' : (fallbackHtml || '');\n",

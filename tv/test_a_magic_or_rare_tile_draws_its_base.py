@@ -40,7 +40,7 @@ KEEPERS = {
     "Grim Spiral (rare)": {"q": "rare", "base": ""},          # the throw-out review's keep
     "Bitter Noose": "rare",                                  # a legacy record
     "Rune Eye": {"q": "rare", "base": ""},
-    "Chaos Whorl": {"q": "rare", "base": ""},                 # Whorl: a ring or a jewel - UNKNOWN
+    "Chaos Gyre": {"q": "rare", "base": ""},                  # Gyre: a ring or a jewel - UNKNOWN (v3849: a Whorl is a ring by his ruling)
     "Stone Knot": {"q": "rare", "base": "Ring", "mods": []},
     "Fine Small Charm of Vita": {"q": "magic", "base": "Small Charm", "mods": [], "border": True},   # a charm: its sprite only
     "Ruby Amulet of Balance": {"q": "magic", "base": "Amulet", "mods": [], "border": True},
@@ -53,7 +53,7 @@ OWNED = ["Stone Knot", "Bone Clasp"] + STUBS
 # for the one-sprite-per-size law below.
 BASE = {"Grim Spiral (rare)": "Ring", "Bitter Noose": "Amulet", "Rune Eye": "Jewel", "Doom Eye": "Jewel", "Grim Knot": "Ring",
         "Stone Knot": "Ring", "Ruby Amulet of Balance": "Amulet", "Bone Clasp": "Plated Belt"}
-UNKNOWN = "Chaos Whorl"
+UNKNOWN = "Chaos Gyre"
 # one sprite per charm size, whichever store the charm comes from: (name, its size's base)
 CHARMS = [("Fine Small Charm of Vita", "Small Charm"), ("Small Charm of Balance", "Small Charm"),
           ("Serpent's Large Charm of Vita", "Large Charm"), ("Lion Branded Grand Charm", "Grand Charm"),
@@ -152,7 +152,7 @@ class AMagicOrRareTileDrawsItsBase(unittest.TestCase):
     def test_a_name_that_says_two_slots_stays_unknown(self):
         s = self.o["s"][UNKNOWN]
         self.assertEqual((s["win"], s["find"]), ("MARK", "MARK"),
-                         "a Whorl (a ring or a jewel) was given a base picture - a guess drawn as a fact: %r" % s)
+                         "a Gyre (a ring or a jewel) was given a base picture - a guess drawn as a fact: %r" % s)
 
     def test_one_sprite_per_charm_size(self):
         got = {n: self.o["charm"][n] for n, _ in CHARMS}
