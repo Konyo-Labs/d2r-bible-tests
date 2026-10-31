@@ -6543,6 +6543,48 @@ def recorder_for_wire():
         return None
 
 
+#: v3850 (Elad 18:16) - the pid of a reel-cutter this console ADOPTED from the last one (it has no Popen handle).
+_agent_adopted_pid = None
+
+
+def _agent_lease_path():
+    import recorder_lease as _rl
+    return _rl.agent_lease_path(os.path.dirname(PID_PATH))
+
+
+def _agent_adoptable():
+    """-> the pid of a live tv_diablo agent holding the sibling lease, or None. Never raises."""
+    try:
+        import recorder_lease as _rl
+        return _rl.adoptable(_agent_lease_path(), _pid_alive)
+    except Exception:
+        return None
+
+
+def agent_exit_plan(mode, adoptable_pid):
+    """v3850 - what an exiting console does with its reel-cutter. Pure. -> "leave" | "stop"
+    A live agent that holds its lease is left cutting reels (the next console adopts it); anything else - nothing on
+    air, or an agent with no live lease (an old build, a hung one) - is stopped as before, so no unleased agent is
+    ever orphaned."""
+    return "leave" if (mode in ("live", "sim") and adoptable_pid) else "stop"
+
+
+def _adopt_agent(pid, marker=None):
+    """Take over a surviving reel-cutter without spawning or killing anything. -> reply dict"""
+    global _agent_proc, _agent_mode, _agent_origin, _agent_since_ms, _agent_adopted_pid
+    marker = marker if isinstance(marker, dict) else {}
+    with _lock:
+        _agent_proc = None
+        _agent_adopted_pid = int(pid)
+        _agent_mode = "sim" if marker.get("mode") == "sim" else "live"
+        _agent_origin = str(marker.get("origin") or "hand")
+        _agent_since_ms = int(marker.get("since") or marker.get("ts") or time.time() * 1000)
+        _write_pid(PID_PATH, int(pid))
+        _pid_cache_seed(int(pid))
+    return {"ok": True, "msg": "adopted the reel-cutter the last console left (pid %d)" % int(pid),
+            "mode": _agent_mode, "pid": int(pid), "adopted": True}
+
+
 ONAIR_RESUME_MAX_S = 6 * 3600
 
 
@@ -6579,6 +6621,10 @@ def _onair_resume_once():
             os.remove(ONAIR_RESUME_PATH)
         except Exception:
             pass
+        _ap = _agent_adoptable()
+        if _ap and isinstance(marker, dict) and marker.get("mode") in ("live", "sim"):
+            print("   📺 ON AIR resume: " + _adopt_agent(_ap, marker)["msg"], flush=True)
+            return
         ok, why = onair_resume_decision(marker, _recorder_adoptable(), int(time.time() * 1000))
         print("   📺 ON AIR resume: " + why, flush=True)
         if ok:
@@ -6795,6 +6841,9 @@ def _sweep_orphan_captures(rows_fn=None, kill=None, alive=None, now_ms=None, set
     _own = _read_pid(CAP_PID_PATH)
     if _own:
         mine.add(int(_own))
+    _held = _recorder_adoptable() if rows_fn is None else None
+    if _held:
+        mine.add(int(_held))   # v3850 - the lease holder outlives its console on purpose; the sweep is for the unleased
     end, kept = orphan_captures(rows, mine, alive)
     killed, failed = [], []
     for pid in end:
@@ -6844,15 +6893,21 @@ def start_agent(sim=False, test=False, mini=None, focus=None, origin="hand"):
     """mini/focus — the ⏱ MINI CAPTURE bound (seconds, already clamped) and the ONE focus name.
     They are appended to the SPAWN ARGV on BOTH platforms so the cousin's Windows box gets the
     identical agent invocation; nothing about the mini branches on platform."""
-    global _agent_proc, _agent_mode, _log_fp, _agent_origin, _agent_since_ms
+    global _agent_proc, _agent_mode, _log_fp, _agent_origin, _agent_since_ms, _agent_adopted_pid
     # v847 — never "already live" on a stranger/orphan: hard-stop anything on the bridge first
     if _stop_inflight:
         return {"ok": False, "msg": "farewell still finishing — try again in a moment",
                 "mode": "stopping", "error": "still stopping"}
+    # v3850 (Elad 18:16) - a live reel-cutter under the lease is never killed as a stranger and never doubled: a console
+    # with no agent of its own adopts it (duplicate refused, the same rule tv_diablo applies on its own start).
+    _leased = _agent_adoptable()
+    if _leased and _agent_mode == "off" and not sim and not test:
+        return _adopt_agent(_leased, {"mode": "live", "origin": origin})
     if _agent_alive() or _port_listener_pid() is not None:
         # If we own a healthy child and user re-clicked ON, treat as already on
         with _lock:
-            owned = _agent_proc is not None and _agent_proc.poll() is None
+            owned = ((_agent_proc is not None and _agent_proc.poll() is None)
+                     or (_agent_adopted_pid is not None and _leased == _agent_adopted_pid))
         if owned and _bridge_ping() is not None and not sim:
             # ⚠⚠ v3312 (#66) — SAY WHOSE REEL IS ROLLING, NOT JUST THAT ONE IS.
             # Konyo: "if shadow is on it shouldnt let me do ON AIR maybe so they dont clash?"
@@ -6883,7 +6938,7 @@ def start_agent(sim=False, test=False, mini=None, focus=None, origin="hand"):
                     "mode": _agent_mode or "live",
                     # the field whose absence made the old reply unexplainable
                     "door": _rolling, "askedFor": _asked, "doorMatches": _same,
-                    "pid": _agent_proc.pid if _agent_proc else None}
+                    "pid": _agent_proc.pid if _agent_proc else _agent_adopted_pid}
         # Orphan / stale / wrong mode → kill cleanly (no second farewell if already stopping)
         stop_agent(farewell=False)
         time.sleep(0.35)
@@ -6920,6 +6975,9 @@ def start_agent(sim=False, test=False, mini=None, focus=None, origin="hand"):
         _log_fp.flush()
 
         env = _env_clean(sim=sim, door=_door_of_origin(origin))
+        if not test:
+            import recorder_lease as _rl
+            env[_rl.AGENT_LEASE_ENV] = _agent_lease_path()   # v3850 - one reel-cutter, under its sibling lease
         if test:
             # v786 - button-matrix / harness runs must NEVER become theatre reels
             env["TV_NO_JOURNAL"] = "1"
@@ -7020,7 +7078,8 @@ def start_agent(sim=False, test=False, mini=None, focus=None, origin="hand"):
             stdin=subprocess.DEVNULL,
         )
         if IS_WIN:
-            popen_kw["creationflags"] = _WIN_CREATE
+            # v3850 - out of the console's job, so the reel-cutter outlives the console (its lease keeps it single)
+            popen_kw["creationflags"] = _WIN_CREATE | _WIN_BREAKAWAY
         else:
             # v779 — do NOT setsid on Mac. A start_new_session child of a launchd-orphaned
             # control (ppid 1) loses the Screen Recording TCC chain; screencapture then
@@ -7029,6 +7088,7 @@ def start_agent(sim=False, test=False, mini=None, focus=None, origin="hand"):
 
         try:
             _agent_proc = subprocess.Popen(**popen_kw)
+            _agent_adopted_pid = None
             _pid_cache_seed(_agent_proc.pid)
         except Exception as e:
             _agent_mode = "off"
@@ -8531,7 +8591,7 @@ def _console_exit_stop_onair(reason="quit"):
     try:
         if _agent_mode in ("live", "sim"):
             with open(ONAIR_RESUME_PATH + ".tmp", "w", encoding="utf-8") as _rf:
-                json.dump({"mode": _agent_mode, "origin": _agent_origin,
+                json.dump({"mode": _agent_mode, "origin": _agent_origin, "since": _agent_since_ms,
                            "ts": int(time.time() * 1000), "reason": str(reason)[:40]}, _rf)
             os.replace(ONAIR_RESUME_PATH + ".tmp", ONAIR_RESUME_PATH)
     except Exception:
@@ -8541,8 +8601,13 @@ def _console_exit_stop_onair(reason="quit"):
     t0 = time.time()
     try:
         # If nothing is on air, stop_agent is cheap and returns already-off.
+        _ap = _agent_adoptable()
         if not _agent_alive() and _port_listener_pid() is None and _agent_mode == "off":
             print("   already off — nothing to stop", flush=True)
+        elif agent_exit_plan(_agent_mode, _ap) == "leave":
+            # v3850 (Elad 18:16) - the reel-cutter keeps cutting under its lease; the next console adopts it.
+            print("   agent pid %d keeps cutting reels under its lease — the next console adopts it" % _ap, flush=True)
+            result = {"ok": True, "msg": "agent left running under its lease", "leftPid": _ap}
         else:
             try:
                 r = stop_agent(farewell=False)
@@ -9092,6 +9157,7 @@ def stop_agent(farewell=True):
                 except Exception:
                     pass
             _agent_proc = None
+            globals()["_agent_adopted_pid"] = None
             _pid_cache_seed(None)
             _agent_mode = "off"
         try:
@@ -10639,7 +10705,7 @@ def start_background_watchers(why):
     except Exception:
         pass
     try:   # v3850 - adopt an ON AIR the last console left running (its recorder outlived it)
-        if IS_WIN and not any(t.name == "tvd-onair-resume" for t in threading.enumerate()):
+        if not any(t.name == "tvd-onair-resume" for t in threading.enumerate()):
             threading.Thread(target=_onair_resume_once, name="tvd-onair-resume", daemon=True).start()
     except Exception:
         pass
@@ -51249,7 +51315,9 @@ def main():
 
     # v935.8 — reclaim orphans left by a prior crash/close (the "always on" feeling)
     try:
-        if _port_listener_pid() is not None or _agent_alive():
+        if _agent_adoptable():
+            print("📺 a reel-cutter from the last console still holds its lease — adopting, not reclaiming", flush=True)
+        elif _port_listener_pid() is not None or _agent_alive():
             print("📺 reclaiming orphan ON AIR from a previous session…", flush=True)
             _force_kill_all_agents("boot-orphan-reclaim")
     except Exception as _oe:

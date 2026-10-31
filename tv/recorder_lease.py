@@ -83,3 +83,102 @@ def adoptable(path, alive, now_ms=None):
 
 def lease_path(here):
     return os.path.join(here, LEASE_NAME)
+
+
+# ── v3850 (Elad 18:16) - THE REEL-CUTTER HOLDS A SIBLING LEASE ─────────────────────────────────────────────────────
+# tv_diablo.py --watch (the agent that cuts the reels) outlives the console under the same rule as the recorder:
+# control_agent.lease, same format, same RENEW_S / STALE_S, same verdict. The console passes the path in
+# TVD_AGENT_LEASE; an agent that finds a live, fresh sibling holding it leaves at once, so two consoles (or a console
+# restart racing a survivor) can never run two reel-cutters.
+AGENT_LEASE_NAME = "control_agent.lease"
+AGENT_LEASE_ENV = "TVD_AGENT_LEASE"
+
+
+def agent_lease_path(here):
+    return os.path.join(here, AGENT_LEASE_NAME)
+
+
+def claim(path, my_pid, alive, now_ms=None):
+    """Take or renew the lease at `path` for my_pid. -> "hold" | "take" (written) | "refuse" (nothing written)."""
+    now = int(time.time() * 1000) if now_ms is None else int(now_ms)
+    try:
+        with open(path, encoding="utf-8-sig") as f:
+            text = f.read()
+    except Exception:
+        text = ""
+    v = verdict(text, my_pid, now, alive)
+    if v == "refuse":
+        return v
+    tmp = "%s.%d.tmp" % (path, int(my_pid))
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(fmt(my_pid, now))
+    os.replace(tmp, path)
+    return v
+
+
+def release(path, my_pid):
+    """Remove the lease only if it is still mine. Never raises."""
+    try:
+        with open(path, encoding="utf-8-sig") as f:
+            lease = parse(f.read())
+        if lease and lease["pid"] == int(my_pid):
+            os.remove(path)
+    except Exception:
+        pass
+
+
+def pid_alive(pid):
+    """Portable liveness for the agent side (it has no console helpers). -> bool"""
+    try:
+        pid = int(pid)
+    except Exception:
+        return False
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        import ctypes
+        k = ctypes.windll.kernel32
+        h = k.OpenProcess(0x1000, False, pid)   # PROCESS_QUERY_LIMITED_INFORMATION
+        if not h:
+            return False
+        try:
+            code = ctypes.c_ulong()
+            ok = k.GetExitCodeProcess(h, ctypes.byref(code))
+            return bool(ok) and code.value == 259     # STILL_ACTIVE
+        finally:
+            k.CloseHandle(h)
+    try:
+        os.kill(pid, 0)
+        return True
+    except PermissionError:
+        return True
+    except Exception:
+        return False
+
+
+def agent_hold(path, my_pid=None, alive=None, sleep=time.sleep, on_lost=None, rounds=None):
+    """The agent's side: claim once (refuse -> return "refuse" so the caller exits), then renew every RENEW_S on a
+    daemon thread. If a renew is refused (we were hung past STALE_S and a sibling took over) on_lost() runs, because
+    the one-lease rule says the newer holder cuts the reels now. -> the first verdict."""
+    import threading
+    my_pid = int(my_pid or os.getpid())
+    alive = alive or pid_alive
+    first = claim(path, my_pid, alive)
+    if first == "refuse":
+        return first
+
+    def _renew():
+        n = 0
+        while rounds is None or n < rounds:
+            n += 1
+            sleep(RENEW_S)
+            try:
+                if claim(path, my_pid, alive) == "refuse":
+                    if on_lost:
+                        on_lost()
+                    return
+            except Exception:
+                pass
+    t = threading.Thread(target=_renew, name="tvd-agent-lease", daemon=True)
+    t.start()
+    return first

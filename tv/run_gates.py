@@ -10233,6 +10233,16 @@ GATES = [
              "list membership, the card had its own 2040 s bar. fleet_presence.presence_of is now the only rule (console "
              "heartbeat fresh within 20 min OR the recorder alive and fresh = online; else 'offline - last seen X'; no "
              "readable time = UNKNOWN). /api/fleet stamps it, the banner and card only read it. RED_PROOF reverts each joint."),
+    Gate("test_the_reel_cutter_holds_one_lease",
+         [sys.executable, os.path.join(HERE, "test_the_reel_cutter_holds_one_lease.py")], 120,
+         needs_app=False,
+         why="v3850 (Elad 18:16, 2026-10-31) - THE REEL-CUTTER OUTLIVES ITS CONSOLE UNDER A SIBLING LEASE. tv_diablo.py "
+             "--watch died with the console, so frames kept coming but no reels were cut. Now control_agent.lease "
+             "(same format and clock as control_capture.lease) keeps exactly one: a second agent is refused before it "
+             "does anything, a stale or dead lease is taken over, a lost renew hands over, an exiting console leaves a "
+             "leased agent running (out of the kill-on-close job) and stops an unleased one, and a restarted console "
+             "adopts it - the boot reclaim and start_agent spare it. The Sept 29 capture sweep still ends unleased "
+             "orphans. RED_PROOF reverts each joint."),
     Gate("test_a_gate_says_what_it_guards_not_how_many",
          [sys.executable, os.path.join(HERE, "test_a_gate_says_what_it_guards_not_how_many.py")], 60,
          needs_app=False,

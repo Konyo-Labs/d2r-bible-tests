@@ -8400,8 +8400,26 @@ def _ocr_lane_tag():
     return "OFF (no worker: %s is missing here)" % _ocr_worker_wanted()
 
 
+def _hold_agent_lease():
+    """v3850 (Elad 18:16) - ONE REEL-CUTTER. The console hands the sibling lease path in TVD_AGENT_LEASE; a second
+    agent that finds a live, fresh holder leaves here, before it binds the bridge or reads a frame. No path = an agent
+    started by hand or by a law: no lease, the old behaviour."""
+    import recorder_lease as _rl
+    path = os.environ.get(_rl.AGENT_LEASE_ENV) or ""
+    if not path:
+        return None
+    v = _rl.agent_hold(path, on_lost=lambda: os._exit(3))
+    if v == "refuse":
+        print("  ✋ agent lease held by another live reel-cutter - this one leaves (one agent, never two)", flush=True)
+        sys.exit(3)
+    import atexit
+    atexit.register(_rl.release, path, os.getpid())
+    return v
+
+
 def main():
     global _LIFECYCLE, _VISION_BUSY, SESSION_ID
+    _hold_agent_lease()
     _establish_footage()
     # v840 — clean stuck capture temps (live night left many live.bmp.tmp.* ghosts)
     try:
