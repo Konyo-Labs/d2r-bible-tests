@@ -123,6 +123,7 @@ class TheLoopAsksTheGuardOnlyWhileAProofRuns(unittest.TestCase):
         calls = []
         with mock.patch.object(ca, "_self_prove_tick", lambda: calls.append("tick")), \
                 mock.patch.object(ca, "_self_prove_guard", lambda: calls.append("guard")), \
+                mock.patch.object(ca, "_console_beacon_async", lambda event: None), \
                 mock.patch.dict(ca._SELF_PROVE, {"running": True, "key": "running"}, clear=True):
             ca._self_prove_dispatch(ca.SELF_PROVE_FIRST_TICK)
             ca._self_prove_dispatch(ca.SELF_PROVE_FIRST_TICK + 1)

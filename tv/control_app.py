@@ -22009,6 +22009,8 @@ def _self_prove_dispatch(n):
     step = _self_prove_step(n, _SELF_PROVE)
     if step == "tick":
         _self_prove_tick()          # #50 — has THIS PC proved its own instruments?
+        if n == SELF_PROVE_FIRST_TICK:
+            _console_beacon_async("proof")  # v3849 — one beacon, so the fleet row drops "river · starting"
     elif step == "guard":
         _self_prove_guard()         # REG-1624 — a running proof yields within 10 s of his game starting
     return step

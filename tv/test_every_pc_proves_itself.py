@@ -653,7 +653,8 @@ class TheConsoleAsks(unittest.TestCase):
         # runs); driven here rather than read, so a dispatch that stopped ticking cannot pass on its words
         self.assertIn("_self_prove_dispatch(", loop, "nothing asks - no PC ever proves itself")
         ticked = []
-        with mock.patch.object(ca, "_self_prove_tick", lambda: ticked.append(1)):
+        with mock.patch.object(ca, "_self_prove_tick", lambda: ticked.append(1)), \
+                mock.patch.object(ca, "_console_beacon_async", lambda event: None):
             ca._self_prove_dispatch(ca.SELF_PROVE_FIRST_TICK)
         self.assertEqual(ticked, [1], "the loop's dispatch never ticks the lane")
         self.assertIn('"selfProve": dict(_SELF_PROVE)', inspect.getsource(ca), "the lane is invisible")
