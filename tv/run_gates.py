@@ -11088,6 +11088,8 @@ GATES = [
     Gate("test_a_cross_os_proof_carries_only_on_identical_normalised_bytes", [sys.executable, os.path.join(HERE, "test_a_cross_os_proof_carries_only_on_identical_normalised_bytes.py")], 180, needs_app=False, why="v3849 Elad 17:19 - a proof key digests LF-normalised text on both sides; a byte check that refuses an entry never marks it carried"),
     Gate("test_the_mac_publishes_only_from_a_gate_run_it_already_did", [sys.executable, os.path.join(HERE, "test_the_mac_publishes_only_from_a_gate_run_it_already_did.py")], 120, needs_app=False, why="v3849 Elad 17:19 - the Mac publishes after a pre-push or a nightly it already ran, never takes, and starts no proof job of its own"),
     Gate("test_a_river_read_does_not_stat_every_frame", [sys.executable, os.path.join(HERE, "test_a_river_read_does_not_stat_every_frame.py")], 60, needs_app=False, why="v3849 H1 - /api/river does not stat every frame while a reel is moving; one plan stats each frame once"),
+    Gate("test_a_shadow_shelf_button_opens_the_owners_shelf", [sys.executable, os.path.join(HERE, "test_a_shadow_shelf_button_opens_the_owners_shelf.py")], 60, needs_app=False, why="v3849 - the Shelf button in a shadow opens the owner's shelf, read only"),
+    Gate("test_a_shadow_shelf_says_playtime_and_plays_served_frames", [sys.executable, os.path.join(HERE, "test_a_shadow_shelf_says_playtime_and_plays_served_frames.py")], 60, needs_app=False, why="v3849 item 10 - a shadow shelf says playtime, AFK, chronicles found and items farmed, and PLAY only steps frames the owner already served"),
     Gate("test_esc_leaves_a_shadow_only_when_nothing_is_open",
          [sys.executable, os.path.join(HERE, "test_esc_leaves_a_shadow_only_when_nothing_is_open.py")], 60,
          needs_app=False,
