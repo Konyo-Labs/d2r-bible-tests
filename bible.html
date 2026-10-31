@@ -16148,6 +16148,7 @@ function _magicFindCardHtml(name){
     + '<div class="gic-subtitle">'+(base?_d2artEsc(base)+' · ':'')+q+' keeper · 🔮 Magic &amp; Rare'+(skiller?' · 🎯 Skiller':'')+(_chk?' · 🔬 checked':'')+'</div></div></header>'
     + chkHtml
     + modsHtml
+    + ((!mods.length && typeof _affixRangeLines === 'function') ? (function(){ var _rg = _affixRangeLines(name); return _rg.length ? '<section class="gic-section"><div class="gic-sec-title">📏 Rolls (min-max until the exact mods are entered)</div>' + _rg.map(function(l){ return '<div class="att-aff att-range" data-mod-range="1">' + _d2artEsc(l) + '</div>'; }).join('') + '</section>' : ''; })() : '')   /* v3849 D1 */
     + '<section class="gic-section"><div style="font-size:13.5px;line-height:1.6">'+blurb
     + ' Tracked as a rolled-name keeper'+(mods.length?' — stats above were read from your screenshot.':' — there\'s no fixed drop card, so this is the summary.')+'</div>'+_sg+_cubeUpNote(name)+'</section>'
     + _pool
@@ -16179,10 +16180,14 @@ function _mfTipHtml(name){
   // v356 — the actual stat lines read off the screenshot tooltip (the real affixes, not a guess).
   var mods = (typeof _mfMods === 'function') ? _mfMods(name) : [];
   var modLine = mods.length ? mods.map(function(m){ return '<div class="att-aff att-var">' + _d2artEsc(m) + '</div>'; }).join('') : '';
+  /* v3849 D1 - no exact mods yet: the affix names' min-max ranges */
+  var _rng = modLine ? [] : ((typeof _affixRangeLines === 'function') ? _affixRangeLines(name) : []);
+  var rngLine = _rng.map(function(l){ return '<div class="att-aff att-range" data-mod-range="1">' + _d2artEsc(l) + '</div>'; }).join('');
   return '<div class="att-type">' + qLabel + (base ? ' &middot; ' + _d2artEsc(base) : '') + '</div>'
     + '<div class="att-meta">🔮 Magic &amp; Rare keeper</div>'
     + vLine
     + modLine
+    + rngLine
     + (modLine ? '' : '<div class="att-aff">' + blurb + '</div>')
     + '<div class="att-tag">rolls: ' + roll + '</div>'
     + ((typeof _socketGuideLine === 'function') ? _socketGuideLine(base, q) : '')
@@ -27594,6 +27599,48 @@ function _affixAllows(d, kind, word, typeCode){
   }
   return false;
 }
+/* v3849 D1 (Elad 12:16-12:24) - WHILE THE ROLL IS UNKNOWN, EACH ROLLING MOD SHOWS ITS MIN-MAX RANGE. A magic name is
+   prefix + base + "of suffix"; each affix word is read against the game's affix table (CB_DB af) for that base's type,
+   and every tier of the word that the type allows widens the band (Sharp on a Grand Charm: 1-3 .. 8-10 max damage ->
+   one line per stat, lowest min to highest max). The same style as a unique's Defense range (634-732): one att-aff line
+   per mod. Exact mods typed or read for the item replace these lines (the caller asks _mfMods first).
+   -> [] when the name is not a magic rolled name the tables can read. */
+function _affixRangeLines(name){
+  var d = null;
+  try { d = (typeof window !== 'undefined' && typeof window._cbDb === 'function') ? window._cbDb() : null; } catch (eD) { d = null; }
+  if (!d || !d.af || !d.T) return [];
+  var folded = _inFold(String(name == null ? '' : name)).trim();
+  var bs = _findBase(d, folded);
+  if (!bs) return [];
+  var pre = folded.slice(0, bs.at).trim(), suf = folded.slice(bs.end).trim();
+  if (!pre && !suf) return [];
+  var anc = {}, list = _typeAnc(d, bs.type), i;
+  for (i = 0; i < list.length; i++) anc[list[i]] = 1;
+  var out = [];
+  [['p', pre], ['s', suf]].forEach(function(pair){
+    if (!pair[1]) return;
+    var want = pair[1].toLowerCase(), band = {}, order = [];
+    d.af.forEach(function(a){
+      if (!a || a[1] !== pair[0] || _inFold(a[2]).toLowerCase() !== want) return;
+      if ((a[10] || []).some(function(t){ return anc[t]; })) return;
+      if (!(a[9] || []).some(function(t){ return anc[t]; })) return;
+      (a[11] || []).forEach(function(m){
+        var tpl = m[0], key = tpl + '|' + m[3], r = (m[1] && m[1][0]) || null;
+        if (!r) return;
+        if (!band[key]) { band[key] = { tpl: tpl, lo: r[0], hi: r[1] }; order.push(key); }
+        else { band[key].lo = Math.min(band[key].lo, r[0]); band[key].hi = Math.max(band[key].hi, r[1]); }
+      });
+    });
+    order.forEach(function(k){
+      var bd = band[k], txt = String(d.T[bd.tpl] || '');
+      if (!txt) return;
+      var v = bd.lo === bd.hi ? String(bd.lo) : (bd.lo + '-' + bd.hi);
+      out.push(txt.replace(/\{\+0\}/, '+' + v).replace(/\{0\}/, v).replace(/\{-?\+?\d\}/g, v));
+    });
+  });
+  return out;
+}
+try { window._affixRangeLines = _affixRangeLines; } catch (eArl) {}
 function _findBase(d, folded){
   var low = folded.toLowerCase(), best = null, codes = Object.keys(d.b || {}), i, b, n, nl, idx, at, before, after;
   for (i = 0; i < codes.length; i++){
@@ -35821,9 +35868,13 @@ function _extraTipHtml(nm){
     var _rqT = _rolledQuality(nm);
     if (_rqT){ rar = _rqT.q; if (_rqT.base && e.base === nm) _eBase = _rqT.base; }
   }
+  /* v3849 D1 - a name the affix tables read as prefix/suffix + base (Lion Branded Grand Charm) is magic, never 'Base item' */
+  var _eRng = (typeof _affixRangeLines === 'function' && (rar === 'basic' || rar === 'magic')) ? _affixRangeLines(nm) : [];
+  if (_eRng.length && rar === 'basic') rar = 'magic';
   var rarLabel = (typeof _Q_LABEL !== 'undefined' && _Q_LABEL[rar]) ? _Q_LABEL[rar] : (rar.charAt(0).toUpperCase() + rar.slice(1));
   var roll = rar === 'magic' ? '1–2 random affixes' : rar === 'crafted' ? '3 fixed mods + 1–4 random' : rar === 'basic' ? 'base item — value = type + sockets + ethereal' : '3–6 random affixes';
-  var statLines = (e.stats && e.stats.length) ? e.stats.map(function(l){ return '<div class="att-aff">' + l + '</div>'; }).join('') : '';
+  var statLines = (e.stats && e.stats.length) ? e.stats.map(function(l){ return '<div class="att-aff">' + l + '</div>'; }).join('')
+    : _eRng.map(function(l){ return '<div class="att-aff att-range" data-mod-range="1">' + _d2artEsc(l) + '</div>'; }).join('');   /* v3849 D1 ranges until exact mods */
   var beatsLine = e.beats ? '<div class="att-beats">★ ELITE — beats ' + e.beats + '</div>' : '';
   // v324: socketed bases surface socket COUNT + 1H/2H right on the floating tooltip.
   var sockLine = (e.sockets || e.hand)
