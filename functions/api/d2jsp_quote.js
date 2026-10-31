@@ -396,6 +396,24 @@ function d2jspTrim(rows) {
   return rows;
 }
 
+/* v3849 - A NO-ROLL PRICE 10x OFF THE CLOSE FIT. The 3x rule above still marks a far price out loud.
+   This one is quiet and extra: only posts that wrote a roll (columns or a slash) set the middle, and
+   only when at least three of them did. A post with no roll that is more than 10x off that middle, or
+   under a tenth of it, is set aside (w 0) and counted. It does not grow a new "far from the middle"
+   label. The price line says "n lines skipped" once. */
+function d2jspGrossSkip(rows) {
+  var close = (rows || []).filter(function (r) { return r && (r.cols || d2jspSlashOf(r)); });
+  if (close.length < 3) return 0;
+  var mid = d2jspMedian(close.map(function (r) { return r.fg; }));
+  if (!(mid > 0)) return 0;
+  var n = 0;
+  rows.forEach(function (r) {
+    if (r.cols || d2jspSlashOf(r)) return;
+    if (r.fg > mid * 10 || r.fg * 10 < mid) { r.w = 0; n++; }
+  });
+  return n;
+}
+
 /* the post's first slash roll (2+ numbers), or null */
 function d2jspSlashOf(r) {
   var t = (r.roll || []).filter(function (x) { return x && x.length >= 2; })[0];
@@ -471,20 +489,24 @@ function d2jspRead(html, item, readAt) {
   }
   var aside = [];
   var posts = d2jspPosts(text, item, d2jspNowMs(readAt), aside);
+  var skipped = d2jspGrossSkip(posts);
   var nums = posts.filter(function (r) { return r.w > 0; }).map(function (r) { return r.fg; });
   var fg = d2jspMedian(nums);
   if (fg == null) {
     base.reason = 'no prices';
     base.posts = posts.slice(0, 40);        /* v3847 - the drawer shows what was read even with no price */
     base.aside = aside.slice(0, 40);
+    if (skipped > 0) base.skipped = skipped;
     return base;
   }
   var span = d2jspSpan(nums);
-  return {
+  var read = {
     item: String(item || ''), fg: fg, low: span.low, high: span.high,
     n: nums.length, readAt: readAt, reason: 'read', board: D2JSP_QUOTE_BOARD,
     posts: posts.slice(0, 40), aside: aside.slice(0, 40)
   };
+  if (skipped > 0) read.skipped = skipped;
+  return read;
 }
 /* ⟦D2JSP QUOTE END⟧ */
 

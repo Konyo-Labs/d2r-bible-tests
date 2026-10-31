@@ -11123,6 +11123,21 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_river_read_keeps_one_plan.py")], 120,
          needs_app=False,
          why="v3849 - a river read keeps the last finished plan and does not start a wave; a ROUTED reel reports its route"),
+    Gate("test_d2jsp_30_item_batch_e2e",
+         [sys.executable, os.path.join(HERE, "test_d2jsp_30_item_batch_e2e.py")], 120,
+         needs_app=False,
+         why="v3849 - 30 fixture items, no network: each is a price headline or 'none close', and every post keeps its "
+             "forums.d2jsp.org link. The 30-post Shako / Annihilus / Guardian's Thunder batch (the outlier and the "
+             "key-mod fit) rides along."),
+    Gate("test_d2jsp_gross_outlier_and_key_weight",
+         [sys.executable, os.path.join(HERE, "test_d2jsp_gross_outlier_and_key_weight.py")], 120,
+         needs_app=False,
+         why="v3849 - a no-roll price 10x off the close-fit median is one quiet 'n lines skipped'; a weak or "
+             "unreadable key mod is never weight 1.00"),
+    Gate("test_a_price_refresh_pauses_while_checks_run",
+         [sys.executable, os.path.join(HERE, "test_a_price_refresh_pauses_while_checks_run.py")], 60,
+         needs_app=False,
+         why="v3849 - a fresh d2jsp price refresh says 'paused while checks run' and does not fetch while gates run"),
     Gate("test_a_rerun_runs_only_the_last_reds",
          [sys.executable, os.path.join(HERE, "test_a_rerun_runs_only_the_last_reds.py")], 120,
          needs_app=False,
