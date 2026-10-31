@@ -34112,7 +34112,15 @@ def reel_census(hist_dir=None):
            "releasable": 0, "other": {}, "sums": None, "why": ""}
     try:
         import reel_retention as _rr
-        _p = _rr.plan(hist_dir=hist_dir) if hist_dir else _rr.plan()
+        # A shelf that is being written already has a plan. plan() while it moves stats every
+        # frame in the reel that is landing, on this request. Dean's /api/river paid that with
+        # 170 reels and a fat reel; the ALT's 655 reels were the smaller frame count. The last
+        # plan stands until the shelf is still, which is when a new one can be keyed.
+        _held = _rr.plan_for_reader(hist_dir=hist_dir) if hist_dir else _rr.plan_for_reader()
+        if isinstance(_held, dict) and _held.get("moving") is True:
+            _p = _held
+        else:
+            _p = _rr.plan(hist_dir=hist_dir) if hist_dir else _rr.plan()
     except Exception as e:
         out["why"] = ("reel_retention.plan() raised %s, so the population is UNKNOWN — this is "
                       "not a report that the disk is empty" % type(e).__name__)

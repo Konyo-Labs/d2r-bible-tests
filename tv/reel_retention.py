@@ -831,7 +831,8 @@ def plan_fingerprint(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT):
       · every file in plan_input_files(): (mtime, ctime, size, inode, device), or absent;
       · the footage tree: hist's own folder key (which names are in it - reels and loose frames alike, the index
         resolves both), then EVERY folder the frame index and _dir_mb walk beneath it, each by its folder key,
-        found from its kept listing (frame_ref.listing), and each reel's index.json (_vault_lane_owes).
+        found from frame_ref.folders (names and kinds, never a per-file stat), and each reel's index.json
+        (_vault_lane_owes).
     Any input changed less than frame_ref.RACY_S ago raises _Moving: a second change inside one clock tick can
     leave a stamp unchanged, so a moving input is never trusted. A reel folder that is a symlink, a store that
     cannot be stat'd, or a tree that cannot be listed raises _Unkeyable: no memo for that path.
@@ -864,7 +865,7 @@ def plan_fingerprint(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT):
     # decides whether that citation resolves to its reel (the reel HOLDS PROOF) or to the loose copy (it does not),
     # and adding or removing one moves nothing else this fingerprint reads.
     parts.append((hist, _fr.folder_key(st)))
-    top = _fr.listing(hist)
+    top = _fr.folders(hist)
     if top is None:
         raise _Unkeyable("the footage tree cannot be listed")
     todo = []
@@ -886,7 +887,7 @@ def plan_fingerprint(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT):
         if not _fr.still(st, now):
             raise _Moving(d)
         parts.append((d, _fr.folder_key(st)))
-        sub = _fr.listing(d)
+        sub = _fr.folders(d)
         if sub is None:
             raise _Unkeyable("a folder cannot be listed")
         todo.extend(os.path.join(d, n) for n, k, _s in sub if k == "d")
@@ -1338,282 +1339,287 @@ def plan(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT, *, _fresh=False):
     except Exception:
         _fixtures = set()          # cannot ask -> hold nothing extra, but never hold LESS safely:
                                    # the other rules still apply and eligibility is unchanged
-    # v2815 (#45) — ONE index walk per plan, not one per reel: the frame index is ~7,600 files.
+    import frame_ref as _fr_pass
+    _fr_pass.begin_pass()
     try:
-        _proof_hold, _proof_why = proof_reels(hist)
-    except Exception as _e:
-        _proof_hold, _proof_why = None, "the proof scan itself failed (%s)" % type(_e).__name__
-    candidates, kept, freed = [], [], 0.0
+        # v2815 (#45) — ONE index walk per plan, not one per reel: the frame index is ~7,600 files.
+        try:
+            _proof_hold, _proof_why = proof_reels(hist)
+        except Exception as _e:
+            _proof_hold, _proof_why = None, "the proof scan itself failed (%s)" % type(_e).__name__
+        candidates, kept, freed = [], [], 0.0
 
-    # ── v2068 — A RULE THAT NEVER RUNS MUST SAY SO ─────────────────────────────────────────────
-    # Every reason below is a REASON NOT TO DELETE, and they are checked in order, so an earlier
-    # one hides every later one. MEASURED on his 35 reels: 12 never-swept, 11 sealed-with-0-pages,
-    # 5 recent, 1 vault-owes, 6 eligible — and the v2056 rule ("this reel produced rows and none of
-    # them are banked, so the frames ARE the record") fired ZERO times. On his data a working v2056
-    # and a deleted one are indistinguishable, which is the mirror of a blind fixture: real data,
-    # right gate, still green.
-    #
-    # So the plan now counts its own branches and names the ones that never ran. NEVER FIRED is
-    # reported as UNMEASURED, never as "fine" and never as "broken" — this run simply contains no
-    # reel that reaches it, and that is a fact about the footage, not about the rule.
-    # [[gate-blind-to-unexercised-input]] [[unknown-stays-unknown]]
-    # v2383 — the tuple now lives at MODULE scope (see RULES above). It stayed local for as
-    # long as nothing outside plan() needed to know what this module can conclude; reel_story
-    # draws a stage per verdict, so "every rule has a stage" is now a contract another file must
-    # be able to check. A test that had to re-list these by hand would be a copy that drifts.
-    # [[copy-drift]]
-    # ⚠ v2316 — "not-extracted" WAS DECLARED HERE AND IS GONE. v2312 tried to make retention hold a
-    # reel whose seal names nothing it took; that fix was WITHDRAWN (every existing seal predates
-    # the contract, so the prune would never have fired again). The code went and the DECLARATION
-    # stayed — an orphan tag no code path can ever reach, which coverage then reported as an
-    # unmeasured rule for ever. A withdrawn change must take its declarations with it, or the
-    # roster slowly fills with rules that describe work nobody does.
-    # [[the-unjoined-end]] [[label-outlived-referent]]
-    hits = dict((r, 0) for r in RULES)
-
-    # v2383 — THE TAG TRAVELS WITH THE REEL, not only into the counter. `hits` says how many reels
-    # were held for each reason; nothing said WHICH reason held THIS reel except the prose, so a
-    # caller wanting to draw the lifecycle would have had to regex an English sentence. A reader
-    # that pattern-matches prose is a guard on the sentence, not on the rule. [[source-reading-guard]]
-    _last = [None]
-
-    def _rule(tag, why):
-        hits[tag] += 1
-        _last[0] = tag
-        return why
-
-    for reel in reels:
-        path = os.path.join(hist, reel)
-        size = _dir_mb(path)
-        # ⚠⚠ REG-562 — TWO DIFFERENT QUESTIONS, AND v2560 QUIETLY MERGED THEM. `_entry` was fixed
-        # to return a present-but-EMPTY record faithfully (membership, not truthiness) because the
-        # REPORT was lying about which reels had a ledger row. But the branches below ask
-        # `ce is None` / `ve is None` to mean *this lane has not finished with the reel*, and after
-        # that fix an empty `{}` stopped answering None — so a reel whose ledger row exists and
-        # says NOTHING would skip the HOLD branches and fall toward releasable.
+        # ── v2068 — A RULE THAT NEVER RUNS MUST SAY SO ─────────────────────────────────────────────
+        # Every reason below is a REASON NOT TO DELETE, and they are checked in order, so an earlier
+        # one hides every later one. MEASURED on his 35 reels: 12 never-swept, 11 sealed-with-0-pages,
+        # 5 recent, 1 vault-owes, 6 eligible — and the v2056 rule ("this reel produced rows and none of
+        # them are banked, so the frames ARE the record") fired ZERO times. On his data a working v2056
+        # and a deleted one are indistinguishable, which is the mirror of a blind fixture: real data,
+        # right gate, still green.
         #
-        # Measured on his tree: chronicle_swept 401 entries, vault_swept 30, **0 falsy in either**,
-        # so nothing moved today. That is luck, not design, and it is the DELETER. The report's
-        # question is "is there a row?"; the deleter's question is "does the row SAY anything?" —
-        # `_told` asks the second one, so an empty row holds exactly as an absent one does.
-        def _told(e):
-            return e if e else None
+        # So the plan now counts its own branches and names the ones that never ran. NEVER FIRED is
+        # reported as UNMEASURED, never as "fine" and never as "broken" — this run simply contains no
+        # reel that reaches it, and that is a fact about the footage, not about the rule.
+        # [[gate-blind-to-unexercised-input]] [[unknown-stays-unknown]]
+        # v2383 — the tuple now lives at MODULE scope (see RULES above). It stayed local for as
+        # long as nothing outside plan() needed to know what this module can conclude; reel_story
+        # draws a stage per verdict, so "every rule has a stage" is now a contract another file must
+        # be able to check. A test that had to re-list these by hand would be a copy that drifts.
+        # [[copy-drift]]
+        # ⚠ v2316 — "not-extracted" WAS DECLARED HERE AND IS GONE. v2312 tried to make retention hold a
+        # reel whose seal names nothing it took; that fix was WITHDRAWN (every existing seal predates
+        # the contract, so the prune would never have fired again). The code went and the DECLARATION
+        # stayed — an orphan tag no code path can ever reach, which coverage then reported as an
+        # unmeasured rule for ever. A withdrawn change must take its declarations with it, or the
+        # roster slowly fills with rules that describe work nobody does.
+        # [[the-unjoined-end]] [[label-outlived-referent]]
+        hits = dict((r, 0) for r in RULES)
 
-        ce, ve = _told(_entry(chron, reel)), _told(_entry(vault, reel))
-        # ⚠⚠ v2576 REG-573 — A NON-INTEGER PAGE COUNT REACHED THE TOMBSTONE. `int()` accepts
-        # True (bool is a subclass of int) and raises on "many" or [1,2,3]. Measured: `pages:
-        # true` made all five reels ELIGIBLE and stamped the permanent record of an irreversible
-        # act with *"read (1 pages) and sealed by BOTH lanes"* — a boolean rendered as a page
-        # count. And `pages: "many"` let a ValueError escape plan() entirely, which
-        # _retention_loop swallows in `except Exception: pass`, so the pass dies silently with
-        # the console's last sentence frozen on screen.
-        #
-        # A page count that is not a whole number is not a small count, it is an UNREADABLE
-        # ledger — which is a state this module already has, and which HOLDS. [[unknown-stays-unknown]]
-        _pv = (ce or {}).get("pages")
-        if _pv is None or _pv == "":
-            pages = 0
-        elif isinstance(_pv, bool) or not isinstance(_pv, int):
-            unreadable.append("%s: pages=%r is not a whole number" % (reel, _pv))
-            pages = 0
-        else:
-            pages = _pv
+        # v2383 — THE TAG TRAVELS WITH THE REEL, not only into the counter. `hits` says how many reels
+        # were held for each reason; nothing said WHICH reason held THIS reel except the prose, so a
+        # caller wanting to draw the lifecycle would have had to regex an English sentence. A reader
+        # that pattern-matches prose is a guard on the sentence, not on the rule. [[source-reading-guard]]
+        _last = [None]
 
-        if not _have_index:
-            why = _rule("no-witness-index",
-                        "HELD — no durable witness store exists yet, so nothing here can prove "
-                        "this reel's frames are not the only record of what it saw. The FRAME "
-                        "deleter holds every frame in this reel for exactly that reason; a reel "
-                        "deleter that released it would destroy what the frame deleter is "
-                        "protecting.")
-        elif unreadable:
-            # v2079 — FIRST, and it holds EVERYTHING. Not a per-reel judgement: a ledger that will
-            # not parse means this module's picture of what has been banked is unknown for every
-            # reel at once, so there is no reel it can honestly release. Deliberately ahead of
-            # test-fixture so the REPORT names the real reason rather than a coincidental one.
-            why = _rule("ledger-unreadable",
-                        "HELD — %s will not parse, so nothing here knows which witnesses are "
-                        "banked. 'I could not read the ledger' is not 'there are no witnesses', "
-                        "and footage has no un-delete. Fix or remove the file and re-run."
-                        % ", ".join(sorted(set(unreadable))))
-        elif reel in _fixtures:
-            # ── v2069 — A REEL A TEST OPENS IS A FIXTURE, WHATEVER THE LEDGERS SAY ─────────────
-            # Learned the expensive way, on a prune that had already run: six reels went as
-            # "sealed by both lanes, has given up its information" and THREE were named by
-            # tv/test_control.py. The suite did not go red — those cases skipTest when the footage
-            # is absent — so a real check silently became a permanent skip.
+        def _rule(tag, why):
+            hits[tag] += 1
+            _last[0] = tag
+            return why
+
+        for reel in reels:
+            path = os.path.join(hist, reel)
+            size = _dir_mb(path)
+            # ⚠⚠ REG-562 — TWO DIFFERENT QUESTIONS, AND v2560 QUIETLY MERGED THEM. `_entry` was fixed
+            # to return a present-but-EMPTY record faithfully (membership, not truthiness) because the
+            # REPORT was lying about which reels had a ledger row. But the branches below ask
+            # `ce is None` / `ve is None` to mean *this lane has not finished with the reel*, and after
+            # that fix an empty `{}` stopped answering None — so a reel whose ledger row exists and
+            # says NOTHING would skip the HOLD branches and fall toward releasable.
             #
-            # It had happened twice before and been absorbed: two cases already read "fixture reel
-            # ... was pruned — PERMANENTLY skipped in both venues". Of the 17 reels the suite names,
-            # EIGHT are already gone. Nobody was wrong at any step; the deleter asks the ledgers,
-            # and the ledgers have no idea a test exists.
-            # [[feedback-blind-fixture-green-gate]] [[gate-blind-to-unexercised-input]]
-            why = _rule("test-fixture",
-                        "the TEST SUITE opens this reel by name — deleting it does not turn a test "
-                        "red, it turns one into a permanent skip, which is worse")
-        elif reel in recent:
-            why = _rule("recent",
-                        "one of the %d most recent — kept so a re-sweep always has real footage"
-                        % keep_recent)
-        elif ce is None and not _proven_empty(reel):
-            why = _rule("never-chronicle-swept",
-                        "never chronicle-swept — it has not been read even once")
-        elif pages < MIN_PAGES and not _proven_empty(reel) and not _no_chronicle_to_find(reel):
-            why = _rule("zero-pages",
-                        "sealed with 0 pages — that is 'this reader found nothing', not 'done'; "
-                        "the engine reopens these when the prompt improves")
-        elif _panels_never_banked(reel, ve):
-            # ⚠⚠⚠ v2875 — THE SAFETY HALF OF _no_chronicle_to_find, AND IT IS NOT OPTIONAL.
-            # Lifting the chronicle hold exposed eleven reels the chain then called
-            # "sealed by BOTH lanes — it has given up its information". MEASURED, they had not:
-            #     reel_s_1787508759592_46621   73 panels in  80 frames   148 MB
-            #     reel_s_1787512325134_62795   64 panels in  67 frames   124 MB
-            #     reel_s_1788105158696_89699   49 panels in  49 frames    88 MB
-            # A vault SEAL existed for each, with ZERO rows behind it — the same "a seal that
-            # records nothing" defect as the chronicle side, and the vault lane has never run
-            # (reads: 0). `rows-not-banked` below could not catch them: it fires only when rows
-            # EXIST and are not durable, never when the count is zero and the panels are real.
+            # Measured on his tree: chronicle_swept 401 entries, vault_swept 30, **0 falsy in either**,
+            # so nothing moved today. That is luck, not design, and it is the DELETER. The report's
+            # question is "is there a row?"; the deleter's question is "does the row SAY anything?" —
+            # `_told` asks the second one, so an empty row holds exactly as an absent one does.
+            def _told(e):
+                return e if e else None
+
+            ce, ve = _told(_entry(chron, reel)), _told(_entry(vault, reel))
+            # ⚠⚠ v2576 REG-573 — A NON-INTEGER PAGE COUNT REACHED THE TOMBSTONE. `int()` accepts
+            # True (bool is a subclass of int) and raises on "many" or [1,2,3]. Measured: `pages:
+            # true` made all five reels ELIGIBLE and stamped the permanent record of an irreversible
+            # act with *"read (1 pages) and sealed by BOTH lanes"* — a boolean rendered as a page
+            # count. And `pages: "many"` let a ValueError escape plan() entirely, which
+            # _retention_loop swallows in `except Exception: pass`, so the pass dies silently with
+            # the console's last sentence frozen on screen.
             #
-            # Konyo's rule is the order, not just the outcome: *"all of the reels get extracted
-            # with information thats needed"* BEFORE the tombstone. Panels on film with nothing in
-            # the ledger is unextracted information, whatever any seal says.
-            # [[unknown-stays-unknown]] [[feedback-contradiction-is-the-finding]]
-            why = _rule("panels-never-banked",
-                        "a FULL survey found panel frames here and the vault ledger holds NO row "
-                        "from this reel — its stash rows have never been extracted, so deleting it "
-                        "destroys the only copy. A seal is not an extraction.")
-        elif (ve or {}).get("rows") and _reel_ts_key(reel) not in _dur_set:
-            # v2056 — READ IS NOT BANKED. This reel produced rows and none of them reached a store
-            # that outlives the frames, so deleting it destroys the only record of those witnesses.
-            why = _rule("rows-not-banked",
-                        "the sweep read %s row(s) here and NONE of them are in the ledger yet — the "
-                        "witnesses live only in these frames, so this reel is the record. Apply the "
-                        "vault proposal (or let a sweep write vault_seen.json) and it becomes "
-                        "eligible." % (ve or {}).get("rows"))
-        elif ve is None and _vault_lane_owes(path) and not _proven_empty(reel):
-            why = _rule("vault-owes",
-                        "the VAULT lane has never swept it — it still owes the vault manager its "
-                        "stash rows" + ("" if vault else
-                                        (" (vault_swept.json will not parse)" if unreadable
-                                         else " (vault_swept.json does not exist yet)")))
-        elif _proof_hold is None:
-            # ⚠⚠ CANNOT TELL, SO CANNOT DELETE. proof_reels() returns None when the evidence store,
-            # frame_ref, or the index could not be read. Deleting on an unknown is the one
-            # direction that cannot be undone. [[unknown-stays-unknown]]
-            why = _rule("holds-proof",
-                        "HELD — this console cannot tell which frames are cited as proof (%s), and "
-                        "a reel deleted on an unknown cannot be brought back." % (_proof_why or "?"))
-        elif reel in _proof_hold:
-            # ⚠⚠ v2815 (#45) — THE RECEIPT RULE, FINALLY JOINED. frame_ref has stated it since
-            # v2364 and AST-confirmed nothing in production ever called it. MEASURED on his tree:
-            # 739 of 10,318 cited frames already resolve to nothing on disk.
-            #
-            # ⚠ AND ITS POSITION IN THIS CHAIN IS DELIBERATE, LEARNED THE HARD WAY. v2814 put it
-            # FIRST and four gates went red — the chain's own comment says "an earlier one hides
-            # every later one", and holds-proof at the top hid test-fixture, the unreadable-ledger
-            # branch and the prune-cycle cases, making three of them unreachable. It belongs HERE:
-            # the last hold before a reel can become eligible. Every more SPECIFIC reason is still
-            # reported first (a fixture is a fixture, recent is recent), and this only catches the
-            # reels that would otherwise have been deleted. [[regression-guard]]
-            why = _rule("holds-proof",
-                        "HELD — a frame in this reel is the receipt for a NAMED claim in the "
-                        "chronicle. Deleting it would leave the claim standing with its proof "
-                        "destroyed, which is the one loss this repo cannot undo.")
-        else:
-            if free_mb is not None and freed >= free_mb:
-                why = _rule("target-met",
-                            "eligible, but the target was already met — this stops as soon as it can")
-                kept.append({"reel": reel, "mb": round(size, 1), "why": why, "pages": pages,
-                             "tag": _last[0]})
+            # A page count that is not a whole number is not a small count, it is an UNREADABLE
+            # ledger — which is a state this module already has, and which HOLDS. [[unknown-stays-unknown]]
+            _pv = (ce or {}).get("pages")
+            if _pv is None or _pv == "":
+                pages = 0
+            elif isinstance(_pv, bool) or not isinstance(_pv, int):
+                unreadable.append("%s: pages=%r is not a whole number" % (reel, _pv))
+                pages = 0
+            else:
+                pages = _pv
+
+            if not _have_index:
+                why = _rule("no-witness-index",
+                            "HELD — no durable witness store exists yet, so nothing here can prove "
+                            "this reel's frames are not the only record of what it saw. The FRAME "
+                            "deleter holds every frame in this reel for exactly that reason; a reel "
+                            "deleter that released it would destroy what the frame deleter is "
+                            "protecting.")
+            elif unreadable:
+                # v2079 — FIRST, and it holds EVERYTHING. Not a per-reel judgement: a ledger that will
+                # not parse means this module's picture of what has been banked is unknown for every
+                # reel at once, so there is no reel it can honestly release. Deliberately ahead of
+                # test-fixture so the REPORT names the real reason rather than a coincidental one.
+                why = _rule("ledger-unreadable",
+                            "HELD — %s will not parse, so nothing here knows which witnesses are "
+                            "banked. 'I could not read the ledger' is not 'there are no witnesses', "
+                            "and footage has no un-delete. Fix or remove the file and re-run."
+                            % ", ".join(sorted(set(unreadable))))
+            elif reel in _fixtures:
+                # ── v2069 — A REEL A TEST OPENS IS A FIXTURE, WHATEVER THE LEDGERS SAY ─────────────
+                # Learned the expensive way, on a prune that had already run: six reels went as
+                # "sealed by both lanes, has given up its information" and THREE were named by
+                # tv/test_control.py. The suite did not go red — those cases skipTest when the footage
+                # is absent — so a real check silently became a permanent skip.
+                #
+                # It had happened twice before and been absorbed: two cases already read "fixture reel
+                # ... was pruned — PERMANENTLY skipped in both venues". Of the 17 reels the suite names,
+                # EIGHT are already gone. Nobody was wrong at any step; the deleter asks the ledgers,
+                # and the ledgers have no idea a test exists.
+                # [[feedback-blind-fixture-green-gate]] [[gate-blind-to-unexercised-input]]
+                why = _rule("test-fixture",
+                            "the TEST SUITE opens this reel by name — deleting it does not turn a test "
+                            "red, it turns one into a permanent skip, which is worse")
+            elif reel in recent:
+                why = _rule("recent",
+                            "one of the %d most recent — kept so a re-sweep always has real footage"
+                            % keep_recent)
+            elif ce is None and not _proven_empty(reel):
+                why = _rule("never-chronicle-swept",
+                            "never chronicle-swept — it has not been read even once")
+            elif pages < MIN_PAGES and not _proven_empty(reel) and not _no_chronicle_to_find(reel):
+                why = _rule("zero-pages",
+                            "sealed with 0 pages — that is 'this reader found nothing', not 'done'; "
+                            "the engine reopens these when the prompt improves")
+            elif _panels_never_banked(reel, ve):
+                # ⚠⚠⚠ v2875 — THE SAFETY HALF OF _no_chronicle_to_find, AND IT IS NOT OPTIONAL.
+                # Lifting the chronicle hold exposed eleven reels the chain then called
+                # "sealed by BOTH lanes — it has given up its information". MEASURED, they had not:
+                #     reel_s_1787508759592_46621   73 panels in  80 frames   148 MB
+                #     reel_s_1787512325134_62795   64 panels in  67 frames   124 MB
+                #     reel_s_1788105158696_89699   49 panels in  49 frames    88 MB
+                # A vault SEAL existed for each, with ZERO rows behind it — the same "a seal that
+                # records nothing" defect as the chronicle side, and the vault lane has never run
+                # (reads: 0). `rows-not-banked` below could not catch them: it fires only when rows
+                # EXIST and are not durable, never when the count is zero and the panels are real.
+                #
+                # Konyo's rule is the order, not just the outcome: *"all of the reels get extracted
+                # with information thats needed"* BEFORE the tombstone. Panels on film with nothing in
+                # the ledger is unextracted information, whatever any seal says.
+                # [[unknown-stays-unknown]] [[feedback-contradiction-is-the-finding]]
+                why = _rule("panels-never-banked",
+                            "a FULL survey found panel frames here and the vault ledger holds NO row "
+                            "from this reel — its stash rows have never been extracted, so deleting it "
+                            "destroys the only copy. A seal is not an extraction.")
+            elif (ve or {}).get("rows") and _reel_ts_key(reel) not in _dur_set:
+                # v2056 — READ IS NOT BANKED. This reel produced rows and none of them reached a store
+                # that outlives the frames, so deleting it destroys the only record of those witnesses.
+                why = _rule("rows-not-banked",
+                            "the sweep read %s row(s) here and NONE of them are in the ledger yet — the "
+                            "witnesses live only in these frames, so this reel is the record. Apply the "
+                            "vault proposal (or let a sweep write vault_seen.json) and it becomes "
+                            "eligible." % (ve or {}).get("rows"))
+            elif ve is None and _vault_lane_owes(path) and not _proven_empty(reel):
+                why = _rule("vault-owes",
+                            "the VAULT lane has never swept it — it still owes the vault manager its "
+                            "stash rows" + ("" if vault else
+                                            (" (vault_swept.json will not parse)" if unreadable
+                                             else " (vault_swept.json does not exist yet)")))
+            elif _proof_hold is None:
+                # ⚠⚠ CANNOT TELL, SO CANNOT DELETE. proof_reels() returns None when the evidence store,
+                # frame_ref, or the index could not be read. Deleting on an unknown is the one
+                # direction that cannot be undone. [[unknown-stays-unknown]]
+                why = _rule("holds-proof",
+                            "HELD — this console cannot tell which frames are cited as proof (%s), and "
+                            "a reel deleted on an unknown cannot be brought back." % (_proof_why or "?"))
+            elif reel in _proof_hold:
+                # ⚠⚠ v2815 (#45) — THE RECEIPT RULE, FINALLY JOINED. frame_ref has stated it since
+                # v2364 and AST-confirmed nothing in production ever called it. MEASURED on his tree:
+                # 739 of 10,318 cited frames already resolve to nothing on disk.
+                #
+                # ⚠ AND ITS POSITION IN THIS CHAIN IS DELIBERATE, LEARNED THE HARD WAY. v2814 put it
+                # FIRST and four gates went red — the chain's own comment says "an earlier one hides
+                # every later one", and holds-proof at the top hid test-fixture, the unreadable-ledger
+                # branch and the prune-cycle cases, making three of them unreachable. It belongs HERE:
+                # the last hold before a reel can become eligible. Every more SPECIFIC reason is still
+                # reported first (a fixture is a fixture, recent is recent), and this only catches the
+                # reels that would otherwise have been deleted. [[regression-guard]]
+                why = _rule("holds-proof",
+                            "HELD — a frame in this reel is the receipt for a NAMED claim in the "
+                            "chronicle. Deleting it would leave the claim standing with its proof "
+                            "destroyed, which is the one loss this repo cannot undo.")
+            else:
+                if free_mb is not None and freed >= free_mb:
+                    why = _rule("target-met",
+                                "eligible, but the target was already met — this stops as soon as it can")
+                    kept.append({"reel": reel, "mb": round(size, 1), "why": why, "pages": pages,
+                                 "tag": _last[0]})
+                    continue
+                # ⚠⚠ v2314 — I TIGHTENED THIS IN v2312 AND IT WAS AN OVER-CORRECTION. WITHDRAWN.
+                #
+                # After deleting 388.6 MB of his footage unattended on 2026-08-30 I made eligibility
+                # require the seal to satisfy frame_authority's extraction contract. Three deliberate
+                # cases went red, and they were right: EVERY seal on his tree predates that contract,
+                # so the change would have stopped the prune firing on any existing reel — the exact
+                # opposite of "automatically prune its not a question.. needs to be defaulted in".
+                #
+                # And re-examined honestly, the RULE was not the defect. reel_s_1786922954749_12579 had
+                # 286 pages read by the chronicle lane and a vault seal confirming no stash screen
+                # existed to take anything from. Both lanes were genuinely finished with it.
+                # frame_authority is stricter because it answers a DIFFERENT question — may this FRAME
+                # go, protecting the witness frames behind his vault rows — not may this REEL go. Two
+                # authorities at two granularities is correct; collapsing them was my error.
+                #
+                # What actually went wrong that day was mine and not the code's: I swept a reel to
+                # clear a backlog, which made it eligible, while telling him nothing could delete
+                # because I had checked _PRUNE_SAFE_TO_RUN and not retention_may_act().
+                # [[feedback-suspect-the-instrument]]
+                freed += size
+                candidates.append({"reel": reel, "mb": round(size, 1), "pages": pages,
+                                   "why": _rule("eligible",
+                                                "read (%d pages) and sealed by BOTH lanes — it has "
+                                                "given up its information" % pages),
+                                   "tag": "eligible"})
                 continue
-            # ⚠⚠ v2314 — I TIGHTENED THIS IN v2312 AND IT WAS AN OVER-CORRECTION. WITHDRAWN.
-            #
-            # After deleting 388.6 MB of his footage unattended on 2026-08-30 I made eligibility
-            # require the seal to satisfy frame_authority's extraction contract. Three deliberate
-            # cases went red, and they were right: EVERY seal on his tree predates that contract,
-            # so the change would have stopped the prune firing on any existing reel — the exact
-            # opposite of "automatically prune its not a question.. needs to be defaulted in".
-            #
-            # And re-examined honestly, the RULE was not the defect. reel_s_1786922954749_12579 had
-            # 286 pages read by the chronicle lane and a vault seal confirming no stash screen
-            # existed to take anything from. Both lanes were genuinely finished with it.
-            # frame_authority is stricter because it answers a DIFFERENT question — may this FRAME
-            # go, protecting the witness frames behind his vault rows — not may this REEL go. Two
-            # authorities at two granularities is correct; collapsing them was my error.
-            #
-            # What actually went wrong that day was mine and not the code's: I swept a reel to
-            # clear a backlog, which made it eligible, while telling him nothing could delete
-            # because I had checked _PRUNE_SAFE_TO_RUN and not retention_may_act().
-            # [[feedback-suspect-the-instrument]]
-            freed += size
-            candidates.append({"reel": reel, "mb": round(size, 1), "pages": pages,
-                               "why": _rule("eligible",
-                                            "read (%d pages) and sealed by BOTH lanes — it has "
-                                            "given up its information" % pages),
-                               "tag": "eligible"})
-            continue
-        kept.append({"reel": reel, "mb": round(size, 1), "why": why, "pages": pages,
-                             "tag": _last[0]})
+            kept.append({"reel": reel, "mb": round(size, 1), "why": why, "pages": pages,
+                                 "tag": _last[0]})
 
-    # NOT REACHED and NOT APPLICABLE are two different answers, and only one of them is a gap.
-    # `target-met` can only fire when a free_mb target was asked for; with no target it is
-    # unreachable BY CONSTRUCTION, not unexercised by the footage. Reporting them together would
-    # make a structurally-inert branch look like a rule that quietly stopped working.
-    # `ledger-unreadable` is structurally inert on a healthy tree, exactly like `target-met` with no
-    # target — reporting it as NEVER REACHED would train him to ignore the list that names real gaps.
-    _na = set() if free_mb is not None else {"target-met"}
-    if not unreadable:
-        _na.add("ledger-unreadable")
-    never = [r for r in RULES if not hits[r] and r not in _na]
-    na = sorted(r for r in _na if not hits[r])
-    _reader_out = {"ok": True, "hist": hist, "candidates": candidates, "kept": kept,
-            # ⚠⚠ v3225 — `freeMb` DOES NOT MEAN FREE DISK. It is `freed`: the megabytes
-            # THIS PLAN WOULD RELEASE. With no candidates it is 0.0, which is correct
-            # arithmetic under a word naming a different quantity — and control_app
-            # publishes it into a dict that ALSO carries `freeGb` (actual free disk).
-            # MEASURED 2026-09-16: `{"freeMb": 0.0, "freeGb": 9.0}` in one payload, one
-            # letter apart, meaning opposite things. Read as the Mb twin of freeGb it
-            # says the disk is FULL. `eligibleMb` is the true name and the one to use;
-            # `freeMb` stays only so older readers keep working.
-            # [[label-outlived-referent]] [[d2r-g5-budget-unit-collision]]
-            "eligibleMb": round(freed, 1),
-            "freeMb": round(freed, 1), "onDisk": len(reels), "remnants": _remnant_list,
-            "vaultLedger": bool(vault),
-            # Published so a caller cannot repeat the mistake this fix corrects: an empty
-            # `candidates` because everything is held reads identically to an empty one because
-            # nothing was eligible, unless the reason is on the payload.
-            "unreadable": sorted(set(unreadable)),
-            "coverage": dict(hits), "neverFired": never, "notApplicable": na,
-            "coverageSay": (("every rule this run could reach was exercised by the footage"
-                             if not never else
-                             "%d rule(s) were NEVER REACHED on these %d reel(s) — %s. That is "
-                             "UNMEASURED, not fine and not broken: nothing in this footage gets far "
-                             "enough down the chain to test them."
-                             % (len(never), len(reels), ", ".join(never)))
-                            + ("" if not na else
-                               " (%s cannot fire without a free_mb target and is not counted as a "
-                               "gap.)" % ", ".join(na))),
-            # v2080 — AND `say` MUST NOT CONTRADICT `unreadable`. It branched on bool(vault),
-            # which is falsy for BOTH an absent store and a corrupt one, so a ledger that would not
-            # parse was reported to him as "vault_swept.json does not exist, so the vault manager
-            # has never sealed anything." The `unreadable` field said the opposite two keys away —
-            # and the sweep consumer (control_app.py) copies ONLY `say` onto his console, so the
-            # true field never reaches a screen. The most alarming state was described as the most
-            # innocent one. [[unknown-stays-unknown]] [[label-outlived-referent]]
-            "say": ("%d reel(s) may go, freeing %d MB" % (len(candidates), round(freed))
-                    if candidates else
-                    "NOTHING is safe to delete yet — and that is an answer, not a failure. " +
-                    ("%s will NOT PARSE, so every reel is held: nothing here knows which "
-                     "witnesses are banked, and that is not the same as knowing there are none."
-                     % ", ".join(sorted(set(unreadable))) if unreadable else
-                     "no reel has been swept by BOTH lanes; vault_swept.json does not exist, so the "
-                     "vault manager has never sealed anything." if not vault else
-                     "every reel is recent, unread, or still owed to a lane."))}
-    try:
-        _remember_plan(_plan_call_key(hist_dir, free_mb, keep_recent), _reader_out)
-    except _Unkeyable:
-        pass
-    return _reader_out
+        # NOT REACHED and NOT APPLICABLE are two different answers, and only one of them is a gap.
+        # `target-met` can only fire when a free_mb target was asked for; with no target it is
+        # unreachable BY CONSTRUCTION, not unexercised by the footage. Reporting them together would
+        # make a structurally-inert branch look like a rule that quietly stopped working.
+        # `ledger-unreadable` is structurally inert on a healthy tree, exactly like `target-met` with no
+        # target — reporting it as NEVER REACHED would train him to ignore the list that names real gaps.
+        _na = set() if free_mb is not None else {"target-met"}
+        if not unreadable:
+            _na.add("ledger-unreadable")
+        never = [r for r in RULES if not hits[r] and r not in _na]
+        na = sorted(r for r in _na if not hits[r])
+        _reader_out = {"ok": True, "hist": hist, "candidates": candidates, "kept": kept,
+                # ⚠⚠ v3225 — `freeMb` DOES NOT MEAN FREE DISK. It is `freed`: the megabytes
+                # THIS PLAN WOULD RELEASE. With no candidates it is 0.0, which is correct
+                # arithmetic under a word naming a different quantity — and control_app
+                # publishes it into a dict that ALSO carries `freeGb` (actual free disk).
+                # MEASURED 2026-09-16: `{"freeMb": 0.0, "freeGb": 9.0}` in one payload, one
+                # letter apart, meaning opposite things. Read as the Mb twin of freeGb it
+                # says the disk is FULL. `eligibleMb` is the true name and the one to use;
+                # `freeMb` stays only so older readers keep working.
+                # [[label-outlived-referent]] [[d2r-g5-budget-unit-collision]]
+                "eligibleMb": round(freed, 1),
+                "freeMb": round(freed, 1), "onDisk": len(reels), "remnants": _remnant_list,
+                "vaultLedger": bool(vault),
+                # Published so a caller cannot repeat the mistake this fix corrects: an empty
+                # `candidates` because everything is held reads identically to an empty one because
+                # nothing was eligible, unless the reason is on the payload.
+                "unreadable": sorted(set(unreadable)),
+                "coverage": dict(hits), "neverFired": never, "notApplicable": na,
+                "coverageSay": (("every rule this run could reach was exercised by the footage"
+                                 if not never else
+                                 "%d rule(s) were NEVER REACHED on these %d reel(s) — %s. That is "
+                                 "UNMEASURED, not fine and not broken: nothing in this footage gets far "
+                                 "enough down the chain to test them."
+                                 % (len(never), len(reels), ", ".join(never)))
+                                + ("" if not na else
+                                   " (%s cannot fire without a free_mb target and is not counted as a "
+                                   "gap.)" % ", ".join(na))),
+                # v2080 — AND `say` MUST NOT CONTRADICT `unreadable`. It branched on bool(vault),
+                # which is falsy for BOTH an absent store and a corrupt one, so a ledger that would not
+                # parse was reported to him as "vault_swept.json does not exist, so the vault manager
+                # has never sealed anything." The `unreadable` field said the opposite two keys away —
+                # and the sweep consumer (control_app.py) copies ONLY `say` onto his console, so the
+                # true field never reaches a screen. The most alarming state was described as the most
+                # innocent one. [[unknown-stays-unknown]] [[label-outlived-referent]]
+                "say": ("%d reel(s) may go, freeing %d MB" % (len(candidates), round(freed))
+                        if candidates else
+                        "NOTHING is safe to delete yet — and that is an answer, not a failure. " +
+                        ("%s will NOT PARSE, so every reel is held: nothing here knows which "
+                         "witnesses are banked, and that is not the same as knowing there are none."
+                         % ", ".join(sorted(set(unreadable))) if unreadable else
+                         "no reel has been swept by BOTH lanes; vault_swept.json does not exist, so the "
+                         "vault manager has never sealed anything." if not vault else
+                         "every reel is recent, unread, or still owed to a lane."))}
+        try:
+            _remember_plan(_plan_call_key(hist_dir, free_mb, keep_recent), _reader_out)
+        except _Unkeyable:
+            pass
+        return _reader_out
+    finally:
+        _fr_pass.end_pass()
 
 
 def _on_path():

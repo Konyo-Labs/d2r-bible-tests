@@ -61,6 +61,9 @@ _LISTINGS_MAX = 4096            # a bound, not a policy: past it the memory is s
 _LIST_LOCK = threading.Lock()
 #: what the per-folder memory did in this process - read by the law and by the measurement
 LIST_STATS = {"listed": 0, "served": 0, "kept": 0, "moving": 0, "builds": 0}
+#: One plan() shares the listings it just read, including a folder too new to keep. The console
+#: memory above refuses a moving folder, so Index and _dir_mb each stat'd every frame in it.
+_PASS = threading.local()
 
 
 def folder_key(st):
@@ -132,6 +135,55 @@ def _scan(folder):
     return tuple(out)
 
 
+def folders(folder):
+    """(name, kind, None) for one folder, or None when it cannot be listed. Never stats a file.
+
+    kind is the same as _scan: 'd' a real folder, 'l' a symlink or junction, 'f' a file. The size
+    slot is always None — a fingerprint only needs to know which folders exist, and a directory's
+    own stamp already moves when a file inside it is added or removed. Statting every frame here
+    made a river read scale with frames on a shelf whose reel count was the small one."""
+    try:
+        with os.scandir(folder) as it:
+            entries = list(it)
+    except OSError:
+        return None
+    out = []
+    for e in entries:
+        try:
+            is_dir = e.is_dir()
+        except OSError:
+            is_dir = False
+        if not is_dir:
+            out.append((e.name, "f", None))
+            continue
+        try:
+            if not (e.is_symlink() or _is_junction(e)):
+                out.append((e.name, "d", None))
+            else:
+                out.append((e.name, "l", None))
+        except OSError:
+            out.append((e.name, "?", None))
+    return tuple(out)
+
+
+def begin_pass():
+    """A plan() is about to read the shelf. Listings it takes are reused until end_pass. -> None"""
+    depth = getattr(_PASS, "depth", 0) + 1
+    _PASS.depth = depth
+    if depth == 1:
+        _PASS.memo = {}
+
+
+def end_pass():
+    """The plan() finished. Drop the listings it shared. -> None"""
+    depth = getattr(_PASS, "depth", 0) - 1
+    if depth <= 0:
+        _PASS.depth = 0
+        _PASS.memo = None
+    else:
+        _PASS.depth = depth
+
+
 def listing(folder):
     """A folder's entries -> tuple of (name, kind, size) | None. The one listing Index and _dir_mb share.
 
@@ -143,7 +195,20 @@ def listing(folder):
     folder and whether each is a file or a folder. It does NOT cover a file rewritten IN PLACE in a folder that
     has been still for RACY_S - nothing in this tree writes a reel folder that way (frames are created whole,
     index.json and kai_report.json go through .tmp + os.replace), and such a file's SIZE would be the only
-    thing out of date. A folder that cannot be stat'd is listed fresh and never kept."""
+    thing out of date. A folder that cannot be stat'd is listed fresh and never kept.
+
+    During begin_pass()/end_pass() the same folder is read once even when it is moving, so one plan does not
+    stat every frame twice (the index, then each reel's size)."""
+    memo = getattr(_PASS, "memo", None)
+    if isinstance(memo, dict) and folder in memo:
+        return memo[folder]
+    got = _listing_once(folder)
+    if isinstance(memo, dict):
+        memo[folder] = got
+    return got
+
+
+def _listing_once(folder):
     if not _CONSOLE["on"]:
         return _scan(folder)
     try:
