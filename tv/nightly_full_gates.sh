@@ -23,8 +23,12 @@ for _busy in "tv/run_gates.py" "tv/heart2.py" "hooks/pre-push"; do
   fi
 done
 # v3848: keep 15 GB free - a full run writes shots and logs
-_free_gb=$(df -g "$HOME" | awk 'NR==2{print $4}')
-if [ "${_free_gb:-0}" -lt 15 ]; then
+# v3849: POSIX `df -Pk` (BSD `df -g` fails on GNU and read as 0 GB); an unread figure is said, never a number
+_free_gb=$(df -Pk "$HOME" 2>/dev/null | awk 'NR==2 && $4 ~ /^[0-9]+$/ {print int($4/1048576)}')
+if [ -z "$_free_gb" ]; then
+  echo "$(date '+%F %T') SKIPPED - free space on $HOME could not be read" >> "$LOG_DIR/verdicts.log"; exit 75
+fi
+if [ "$_free_gb" -lt 15 ]; then
   echo "$(date '+%F %T') SKIPPED - only ${_free_gb} GB free (needs 15)" >> "$LOG_DIR/verdicts.log"; exit 75
 fi
 git -C "$REPO" fetch -q origin main || { echo "$(date '+%F %T') NO RUN - fetch failed" >> "$LOG_DIR/verdicts.log"; exit 1; }
@@ -35,7 +39,8 @@ SHA="$(git -C "$TREE" rev-parse --short HEAD)"
 [ "$(git -C "$TREE" rev-parse HEAD)" = "$(git -C "$REPO" rev-parse origin/main)" ] \
   || { echo "$(date '+%F %T') NO RUN - the nightly tree is not origin/main" >> "$LOG_DIR/verdicts.log"; exit 1; }
 T0=$SECONDS
-( cd "$TREE" && caffeinate -i python3 tv/run_gates.py --full ) > "$LOG" 2>&1
+_awake=""; command -v caffeinate >/dev/null 2>&1 && _awake="caffeinate -i"   # macOS only; elsewhere it runs as is
+( cd "$TREE" && $_awake python3 tv/run_gates.py --full ) > "$LOG" 2>&1
 RC=$?
 echo "$(date '+%F %T') $SHA rc=$RC $(( (SECONDS-T0)/60 ))m $(grep -aE '^(✅|❌) [0-9]+ gate' "$LOG" | tail -1) log=$LOG" >> "$LOG_DIR/verdicts.log"
 exit $RC
