@@ -269,10 +269,17 @@ class TheVeilLetsALookupAnswerAndKeepsTheWritesDead(unittest.TestCase):
                         "    window._tvdShadow = { owner: String((snap && snap.owner) || ''), t: snap && snap.t, mem: mem };")
         look = sorted(k for k, (c, _) in CLASS.items() if c == L)
         head = "var LOOK = %s, REFUSE = %s;\n" % (json.dumps(look), json.dumps(REFUSED_BOXES))
-        r = subprocess.run([NODE, "-"], input=FAKES + head + veil + "\n" + SCENARIO, capture_output=True, text=True, timeout=60)
+        seen = {}
+
+        def _node(argv, **kw):
+            seen["encoding"] = kw.get("encoding")
+            return subprocess.run(argv, **kw)
+
+        r = _node([NODE, "-"], input=FAKES + head + veil + "\n" + SCENARIO, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         if r.returncode != 0:
             raise AssertionError("the shadow veil did not run in node: %s" % r.stderr[-900:])
         cls.o = json.loads(r.stdout)
+        cls.node_encoding = seen.get("encoding")
 
     def test_premise_every_lookup_and_every_refused_text_box_was_driven(self):
         self.assertEqual(len(self.o["lookup"]), 18)
@@ -297,6 +304,9 @@ class TheVeilLetsALookupAnswerAndKeepsTheWritesDead(unittest.TestCase):
         live = dict((s, [k for k, v in r.items() if v]) for s, r in self.o["refused"].items() if any(r.values()))
         self.assertEqual(live, {}, "a write box took a key, an input or a paste in a shadow")
         self.assertFalse(any(self.o["plain"].values()), "a key on no box reached the board: %r" % self.o["plain"])
+
+    def test_the_veil_goes_to_node_as_utf8(self):
+        self.assertEqual(self.node_encoding, "utf-8")
 
     def test_esc_clears_a_typed_lookup_then_leaves(self):
         e1 = self.o["esc1"]
@@ -329,10 +339,18 @@ class AnEmptyCellSaysItIsReadOnlyInAShadow(unittest.TestCase):
         if not NODE:
             raise AssertionError("node is not on this machine - this law does not skip")
         fn = RO_FN + _between(PAGE, "  function gridCellSay(label, cx, cy){", "  function gridHtml(placed, gw, gh, cell, opt){")
-        r = subprocess.run([NODE, "-"], input=CELL + fn + "\n" + CELL_SCENARIO, capture_output=True, text=True, timeout=60)
+        cls.cell_src = CELL + fn + "\n" + CELL_SCENARIO
+        seen = {}
+
+        def _node(argv, **kw):
+            seen["encoding"] = kw.get("encoding")
+            return subprocess.run(argv, **kw)
+
+        r = _node([NODE, "-"], input=cls.cell_src, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         if r.returncode != 0:
             raise AssertionError("the cell title did not run in node: %s" % r.stderr[-900:])
         cls.o = json.loads(r.stdout)
+        cls.node_encoding = seen.get("encoding")
 
     def test_the_grid_asks_this_helper(self):
         self.assertIn("var _csay = gridCellSay(opt.label, cx, cy);", PAGE)
@@ -344,6 +362,13 @@ class AnEmptyCellSaysItIsReadOnlyInAShadow(unittest.TestCase):
         for k, where in (("snap", "Inventory · col 3 · row 1"), ("cls", "Inventory · col 1 · row 4")):
             self.assertEqual(self.o[k], where + " — empty. Read only: this is their console, shown in a shadow",
                              "the %s shadow's empty cell still offered the add" % k)
+
+    def test_the_cell_slice_is_handed_to_node_as_utf8(self):
+        # Same slice as the shadow-cell law: the ✕ in the gridActSay comment is not cp1255.
+        self.assertEqual(self.node_encoding, "utf-8")
+        self.assertIn("\u2715", self.cell_src)
+        with self.assertRaises(UnicodeEncodeError):
+            self.cell_src.encode("cp1255")
 
 
 RED_PROOF = [
@@ -411,6 +436,16 @@ RED_PROOF = [
      "file": "bible.html",
      "find": "        var _csay = gridCellSay(opt.label, cx, cy);   /* REG-3103 */\n",
      "replace": "        var _csay = (opt.label || 'Inventory') + ' · col ' + (cx + 1) + ' · row ' + (cy + 1) + ' — empty: click (or Enter) to add an item from the database';\n",
+     "matches": 1},
+    {"why": "v3849 - the veil goes to node in the console encoding",
+     "file": "test_a_lookup_answers_in_a_shadow.py",
+     "find": "r = _node([NODE, \"-\"], input=FAKES + head + veil + \"\\n\" + SCENARIO, capture_output=True, text=True, encoding=\"utf-8\", errors=\"replace\", timeout=60)\n",
+     "replace": "r = _node([NODE, \"-\"], input=FAKES + head + veil + \"\\n\" + SCENARIO, capture_output=True, text=True, timeout=60)\n",
+     "matches": 1},
+    {"why": "v3849 - the cell slice goes to node in the console encoding and cp1255 dies on the mark in the comment",
+     "file": "test_a_lookup_answers_in_a_shadow.py",
+     "find": "r = _node([NODE, \"-\"], input=cls.cell_src, capture_output=True, text=True, encoding=\"utf-8\", errors=\"replace\", timeout=60)\n",
+     "replace": "r = _node([NODE, \"-\"], input=cls.cell_src, capture_output=True, text=True, timeout=60)\n",
      "matches": 1},
 ]
 
