@@ -4,7 +4,7 @@
 The ledger stores the commit a PASS was proved at. The next run diffs that commit once and
 intersects the result with the gate's inputs. It does not hash those files again. A miss runs.
 A FAIL is never stored. A corrupt ledger is unreadable, never empty. An unreachable sha runs.
---full does not consult it. CI does not either. A carried line says `proven at <sha> (<age>)`
+--full (v3849) consults it unless TV_FULL_FRESH=1. CI does not. A carried line says `proven at <sha> (<age>)`
 and is not a fresh pass and not new evidence.
 
 The changed-law red-proof (v3292) is a different stage and does not read this file.
@@ -1191,6 +1191,10 @@ class TheRunnerSeparatesFreshFromCarried(unittest.TestCase):
 
     def test_full_runs_and_changed_carries_and_a_fail_is_not_carried(self):
         import run_gates as rg
+        # v3849 GATE-BANK: a plain --full now reuses an unmoved PASS; TV_FULL_FRESH=1 is the run-everything --full
+        _fresh = os.environ.get("TV_FULL_FRESH")
+        os.environ["TV_FULL_FRESH"] = "1"
+        self.addCleanup(lambda: os.environ.pop("TV_FULL_FRESH", None) if _fresh is None else os.environ.__setitem__("TV_FULL_FRESH", _fresh))
         mark_src = ("import os, sys\n"
                     "p = os.environ['GL_MARK']\n"
                     "fh = open(p, 'a', encoding='utf-8')\n"
@@ -1432,10 +1436,10 @@ RED_PROOF = [
         "matches": 1,
     },
     {
-        "why": "--full consults the ledger and skips a gate",
+        "why": "--full with TV_FULL_FRESH=1 consults the ledger and skips a gate",
         "file": "run_gates.py",
-        "find": "        if ledger == \"changed\" and led is not None and _capped is None:  # LEDGER-CHANGED-ONLY\n",
-        "replace": "        if ledger != \"zzz\" and led is not None and _capped is None:  # LEDGER-CHANGED-ONLY\n",
+        "find": "(ledger == \"full\" and full_banks())",
+        "replace": "(ledger == \"full\")",
         "matches": 1,
     },
     {

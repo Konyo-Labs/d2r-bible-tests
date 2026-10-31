@@ -11077,6 +11077,8 @@ GATES = [
     Gate("test_a_shadow_draws_the_owners_frame", [sys.executable, os.path.join(HERE, "test_a_shadow_draws_the_owners_frame.py")], 120, needs_app=False, why="v3849 (a) - the snapshot carries the owner picture map and address; a shadow frame is the owner URL or none, never the viewer path"),
     Gate("test_a_slow_answer_is_worked_out_beside_the_request", [sys.executable, os.path.join(HERE, "test_a_slow_answer_is_worked_out_beside_the_request.py")], 90, needs_app=False, why="v3849 (b) - chronicle/vault scan and eagle answer at once: kept, stale+refreshing, or pending; one thread; errors said"),
     Gate("test_only_a_valuable_set_piece_is_kept", [sys.executable, os.path.join(HERE, "test_only_a_valuable_set_piece_is_kept.py")], 120, needs_app=False, why="v3849 set ruling - only Tal Rasha/high-med priced set pieces (+Naj, Laying, Horazon) are kept; the rest are thrown out"),
+    Gate("test_a_full_run_reuses_an_unmoved_pass", [sys.executable, os.path.join(HERE, "test_a_full_run_reuses_an_unmoved_pass.py")], 120, needs_app=False, why="v3849 GATE-BANK - --full reuses a banked PASS whose traced inputs are unchanged; a moved input, TV_FULL_FRESH=1 or CI reruns"),
+    Gate("test_esc_clears_a_typed_lookup_over_an_overlay", [sys.executable, os.path.join(HERE, "test_esc_clears_a_typed_lookup_over_an_overlay.py")], 60, needs_app=False, why="v3849 (v3848 eye #3) - a typed veil/FIND lookup owns its first Esc over an open overlay; the next Esc closes the card"),
     Gate("test_esc_leaves_a_shadow_only_when_nothing_is_open",
          [sys.executable, os.path.join(HERE, "test_esc_leaves_a_shadow_only_when_nothing_is_open.py")], 60,
          needs_app=False,
@@ -12920,6 +12922,17 @@ def _fold_deferred_bank(path):
     return True
 
 
+# v3849 GATE-BANK (Elad 16:59) - A FULL RUN REUSES A PASS WHOSE INPUTS DID NOT MOVE. --full (and --fast falling to
+# full, and each --parallel light shard, which is `--full --only`) asks the same lookup --changed asks: the gate's own
+# definition, its tool versions, and git's diff of every traced input since the commit it passed at. Anything moved
+# reruns; a FAIL is never carried green; CI and GATE_LEDGER=0 never carry. bible.html is keyed as a whole file
+# (stamp-only lines masked as before): no byte-sound per-section key exists in this repo to reuse, so none is invented.
+# Guarded by tv/test_a_full_run_reuses_an_unmoved_pass.py.
+def full_banks():
+    """-> bool: a --full run may carry a banked PASS (TV_FULL_FRESH=1 says no)."""
+    return os.environ.get("TV_FULL_FRESH") != "1"
+
+
 def run(only=None, live_watch=True, live_writer=None, ledger=None):
     del _skip_reasons[:]
     led = None
@@ -12931,7 +12944,9 @@ def run(only=None, live_watch=True, live_writer=None, ledger=None):
                 print("ledger: no flag runs every gate and records each traced PASS on a committed tree (an untraced "
                       "gate is never stored), so a later --changed run or a bump-only commit can carry it.", flush=True)
             elif ledger == "full":
-                print("ledger: --full runs every gate. A PASS is recorded; a FAIL is kept as red, never carried as a pass.",
+                print(("ledger: --full reuses a banked PASS whose traced inputs are unchanged (TV_FULL_FRESH=1 runs every "
+                       "gate). A PASS is recorded; a FAIL is kept as red, never carried as a pass.") if full_banks() else
+                      "ledger: TV_FULL_FRESH=1 - --full runs every gate. A PASS is recorded; a FAIL is kept as red.",
                       flush=True)
             elif _GL.ci_blocks():
                 print("ledger: CI runs the full set. Nothing is carried and nothing is recorded.",
@@ -13064,7 +13079,7 @@ def run(only=None, live_watch=True, live_writer=None, ledger=None):
                     print("ledger: the input map was not built (%s). Every gate runs."
                           % type(_lexc).__name__, flush=True)
             _capped = _red_last.pop(g.name, None) if g.name in _red_last and _red_last[g.name] else None
-            if ledger == "changed" and led is not None and _capped is None:  # LEDGER-CHANGED-ONLY
+            if (ledger == "changed" or (ledger == "full" and full_banks())) and led is not None and _capped is None:  # LEDGER-CHANGED-ONLY FULL-BANKS
                 try:
                     _hit, _miss = led.lookup(g)
                 except Exception as _lexc:

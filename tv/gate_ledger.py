@@ -52,8 +52,8 @@ or a listing of a directory that holds no tracked file. A row stored before this
 `traced` mark and runs once.
 
 Fail closed. A missing or unreachable proven sha, a diff that fails, a gate whose inputs cannot
-be named, a corrupt ledger, and a FAIL are all a run. Only a PASS is stored. `--full` does not
-consult the ledger. GitHub CI does not either. The changed-law red-proof (v3292) is a different
+be named, a corrupt ledger, and a FAIL are all a run. Only a PASS is stored. `--full` consults it too (v3849 GATE-BANK;
+TV_FULL_FRESH=1 does not). GitHub CI does not. The changed-law red-proof (v3292) is a different
 stage and does not read this file.
 
 The files are per checkout, gitignored, and never a verdict of record. CARRY is not a fresh pass
