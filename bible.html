@@ -44731,7 +44731,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
        reason attached; the item stays owned, stays in his ledger, and v739's invariant holds. And
        tvVaultRegister only writes assign[name] when it is empty, so anything he has placed by hand
        is untouched. */
-    if (_tv === 'trash') {
+    if (_tv === 'trash' && !(opts && opts.ignoreTrash)) {   /* v3849 B9 - the seam asks past it for a hand-added unique */
       return {id:'__throwout',
               why:'trade value TRASH — the maxroll tier data rates this worthless; it stays yours '
                 + 'and stays in your ledger, this is only advice about where it should live'};
@@ -49174,6 +49174,15 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       if ((sg.id === '__throwout' || sg.unsorted || sg.id == null) && typeof window._vaultHandTyped === 'function' && window._vaultHandTyped(name)) {
         var _isSetH = /set piece|\(set\)|\bset\b|never ruled/i.test(String(sg.why || '')) || !!(window.findSetPiece && window.findSetPiece(name));
         if (_isSetH && typeof muleById === 'function') { if (muleById('sets-rest')) return { loc: 'filed', mule: 'sets-rest' }; if (muleById('sets-major')) return { loc: 'filed', mule: 'sets-major' }; }
+        /* v3849 B9 (vault batch 2026-10-31: 133 ordinary uniques - Bane Ash, Bladebuckle - filled SHARED STASH) - a hand-added
+           item the trade data calls TRASH is still filed by its kind: the router is asked past the trash line, and the
+           mule it names (uni-weap, uni-armor, uni-small...) holds it. Only a name with no such mule is war stash. */
+        if (sg.id === '__throwout' && /trade value TRASH/.test(String(sg.why || ''))) {
+          var _byKind = null;
+          try { _byKind = suggestMule(name, { ignoreTrash: true }); } catch (eBk) { _byKind = null; }
+          if (_byKind && _byKind.id && _byKind.id.charAt(0) !== '_' && _byKind.id !== 'shared' && typeof muleById === 'function' && muleById(_byKind.id))
+            return { loc: 'filed', mule: _byKind.id }; /* v3849 B9 a trash hand add filed by its kind */
+        }
         return { loc: 'shared', mule: null }; /* L1 hand add never unsorted */
       }
       if (sg.id === '__throwout' && typeof window._vaultKeptByHim === 'function' && window._vaultKeptByHim(name)) {
