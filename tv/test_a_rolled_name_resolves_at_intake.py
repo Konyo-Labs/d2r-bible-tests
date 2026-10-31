@@ -112,6 +112,8 @@ got["Artisan's Spired Helm of the Mammoth"] = one("Artisan's Spired Helm of the 
 got['Artisan helm'] = one("Artisan's Spired Helm");
 got['helm of'] = one('Spired Helm of the Mammoth');
 got['plain helm'] = one('Spired Helm');
+got['Viper Eye Jewel'] = one('Viper Eye Jewel');
+got['Viper Eye Spired Helm'] = one('Viper Eye Spired Helm');
 got['not a base'] = one("Artisan's Not A Base of the Mammoth");
 got['Deckard Cain'] = one('Deckard Cain');
 got['Tyrael'] = one('Tyrael');
@@ -256,6 +258,11 @@ class RolledNameResolvesAtIntake(unittest.TestCase):
         self.assertTrue(g["Raven Claw"]["known"])
         self.assertIsNone(g["Raven Claw"]["q"])
 
+    def test_a_rare_read_with_its_base_line_is_that_base(self):
+        g = self.o["got"]
+        self.assertEqual((g["Viper Eye Jewel"]["q"], g["Viper Eye Jewel"]["base"]), ("rare", "Jewel"), g["Viper Eye Jewel"])
+        self.assertIsNone(g["Viper Eye Spired Helm"]["q"], "an Eye suffix does not roll on a helm, so the name is not a rare helm")
+
     def test_raven_whorl_is_a_ring_by_his_ruling(self):
         html = self.o["art"]["whorl"]
         self.assertIn('src="art/test-Ring.png"', html, "Raven Whorl draws no ring art (the white box Elad saw)")
@@ -268,6 +275,11 @@ class RolledNameResolvesAtIntake(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3849 - a rare read with its base line glued on (Viper Eye Jewel) stays in the Unsorted dock",
+     "file": "bible.html",
+     "find": "  if (!magSuf && _rp.length === 2){",
+     "replace": "  if (false){",
+     "matches": 1},
     {"why": "v3849 - a Whorl is a ring-or-jewel question again (Raven Whorl the white box)",
      "file": "bible.html",
      "find": "  Jewel:  ['Gyre','Talisman','Heart','Scarab','Eye'],",

@@ -27622,6 +27622,15 @@ function _intakeResolve(name){
   if (!hit) return empty;
   var magPre = nm.slice(0, hit.at).trim(), magSuf = nm.slice(hit.end).trim();
   if (!magPre && !magSuf) return empty;
+  /* v3849 - a rare read with its base line glued on ("Viper Eye Jewel", the ALT's Unsorted dock): a two-word rare name the
+     tables know, then a base whose type that suffix allows -> a rare of that base */
+  var _rp = magPre.split(' ');
+  if (!magSuf && _rp.length === 2){
+    var _rpP = _rnRow(d.rn[0], _rp[0]), _rpS = _rnRow(d.rn[1], _rp[1]);
+    if (_rpP && _rpS && _typeAllowed(d, _rpS[1], [], hit.type))
+      return { ok: true, q: 'rare', prefix: _rpP[0], suffix: _rpS[0], itypes: hit.type ? [hit.type] : [], types: (d.ty[hit.type] && d.ty[hit.type][0]) ? [d.ty[hit.type][0]] : [],
+               base: hit.name, refused: null, why: null, known: false };
+  }
   if (magPre && !_affixAllows(d, 'p', magPre, hit.type)) return empty;
   if (magSuf && !_affixAllows(d, 's', magSuf, hit.type)) return empty;
   var ty = d.ty[hit.type], shown = (ty && ty[0]) ? [ty[0]] : [];
@@ -49283,7 +49292,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     'ormus': 'a town NPC', 'alkor': 'a town NPC', 'halbu': 'a town NPC', 'jamella': 'a town NPC', 'larzuk': 'a town NPC',
     'malah': 'a town NPC', 'qual-kehk': 'a town NPC', 'anya': 'a town NPC',
     'stash': 'a panel title', 'shared stash': 'a panel title', 'personal': 'a panel title', 'shared': 'a panel title',
-    'inventory': 'a panel title', 'equipment': 'a panel title', 'gold': 'a panel word' };
+    'inventory': 'a panel title', 'equipment': 'a panel title', 'gold': 'a panel word',
+    /* v3849 B1 (the 348-item batch test) - the photo door read these off frames and filed them as owned */
+    'close': 'a panel button', 'horadric cube': 'the quest cube (a container, never a stash item)' };
   /* #158.4 (GrokBot, his real frames) - "Key of Destruction" was registered into the vault and routed to a WEAPON mule. Uber
      keys, organs, essences and the Token are MATERIALS: the Materials stash counts them (SPECIAL_DROPS, the same groups the
      uber/Token planner reads) and the vault never files them. Sunder charms are left out on purpose - they are real uniques
@@ -60800,6 +60811,10 @@ function renderJournal(){
              a KNOWN set piece (the canon map IS the set-piece scope); a unique / rune / base returns itself.
              Paired with the presence-only copy-bump guard below so the surviving key cannot climb on re-reads. */
           try { if (window._vfCanon) { var _cn76 = window._vfCanon(n); if (_cn76 && _cn76 !== n) n = _cn76; } } catch (e76) {}
+          /* v3849 B1 - THE PHOTO DOOR ASKS THE ONE DENYLIST TOO. Akara, Charsi, Deckard Cain, Gold, Stash, Tyrael, Close and the
+             Horadric Cube came in here as owned items (the typed door refused them; this one never asked). Refused, never owned. */
+          try { var _niB1 = (typeof window._vaultNotAnItem === 'function') ? window._vaultNotAnItem(n) : null;
+                if (_niB1) { try { console.warn('[vault-intake] ' + fname + ': ' + _niB1); } catch(eW){} return; } } catch (eB1) {}
           if (typeof _ensureSocketBaseEntry === 'function') _ensureSocketBaseEntry(n);   // v379 — per-base socketed identity (art + exact max sockets)
           // v394 — LOW set pieces (Sigon's/Sander's/etc.): mark the SET's grail aggregate ✓ for the codex/
           // tracker, then THROW OUT the physical piece — don't keep or mule it. Konyo: reverse low-set muling.

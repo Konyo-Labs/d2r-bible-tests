@@ -11067,6 +11067,7 @@ GATES = [
          why="v3849 - a rare name takes its type from the raresuffix table at intake, a magic name routes by its base, "
              "an NPC or panel word is refused, and an unresolved ring/jewel draws no white-box fallback"),
     Gate("test_a_fast_full_runs_in_parallel", [sys.executable, os.path.join(HERE, "test_a_fast_full_runs_in_parallel.py")], 60, needs_app=False, why="v3849 - a push whose --fast falls through to every gate runs it --parallel auto (v3848 ran 1,331 gates serially past the 5400 s bound)"),
+    Gate("test_the_photo_door_refuses_npc_and_panel_words", [sys.executable, os.path.join(HERE, "test_the_photo_door_refuses_npc_and_panel_words.py")], 60, needs_app=False, why="v3849 B1 - photo intake asks the one NPC/panel denylist before it owns a name (Akara, Deckard Cain, Stash, Tyrael, Close, Horadric Cube)"),
     Gate("test_a_rerun_runs_only_the_last_reds",
          [sys.executable, os.path.join(HERE, "test_a_rerun_runs_only_the_last_reds.py")], 120,
          needs_app=False,
