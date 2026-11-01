@@ -84,6 +84,21 @@ def why_serial(repo=REPO, floor=FLOOR_GB, mem=None):
     return None
 
 
+def shard_ports(n):
+    """n distinct free ports, all held open at once while chosen, so no two shards share a scratch Chrome. -> list[int]"""
+    import socket
+    held = []
+    try:
+        for _ in range(n):
+            s = socket.socket()
+            s.bind(("127.0.0.1", 0))
+            held.append(s)
+        return [s.getsockname()[1] for s in held]
+    finally:
+        for s in held:
+            s.close()
+
+
 def run_light(slices, env_extra=None):
     """Run each slice as `run_gates.py --full --only ...` in its own detached worktree at HEAD, all at once.
 
@@ -92,6 +107,7 @@ def run_light(slices, env_extra=None):
     base = tempfile.mkdtemp(prefix="tvd-gates-par-")
     trees, procs, out = [], [], []
     t0 = time.time()
+    ports = shard_ports(len(slices))
     try:
         for i, names in enumerate(slices):
             if not names:
@@ -107,6 +123,10 @@ def run_light(slices, env_extra=None):
             # No D2R_GATE_LOCK_KEY: each shard's lock keys on its own worktree path, and a key in the
             # env leaks into tree_busy for every tree the shard's tests touch (the bump law went red).
             env.pop("D2R_GATE_LOCK_KEY", None)
+            # v3849 - EACH SHARD ITS OWN SCRATCH-CHROME PORT. All three inherited render_check's 9224, so a shard's
+            # browser law found ANOTHER shard's Chrome answering there, drove it, and died when that shard's
+            # tearDown killed it (an ERROR in 1.8 s, green alone; shards 1/3, 2/3, 3/3 took turns going red).
+            env["TV_RENDER_PORT"] = str(ports[i])
             env.update(env_extra or {})
             fh = open(log, "w")
             p = subprocess.Popen([sys.executable, os.path.join(wt, "tv", "run_gates.py"), "--full", "--only"] + names,

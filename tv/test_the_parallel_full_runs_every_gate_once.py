@@ -82,6 +82,24 @@ class TheParallelFullRunsEveryGateOnce(unittest.TestCase):
         self.assertIn("if not heavy:", body)
         self.assertLess(body.index("if not heavy:"), body.index("GP.run_light("))
 
+    def test_each_shard_gets_its_own_scratch_chrome_port(self):
+        # v3849: every shard inherited 9224, so one shard's browser law drove (and lost) another shard's Chrome.
+        ports = GP.shard_ports(GP.SLICES)
+        self.assertEqual(len(set(ports)), GP.SLICES, "two shards would share a scratch Chrome: %r" % ports)
+        self.assertFalse({9222, 9223, 9224} & set(ports), ports)
+        src = io.open(GP.__file__, encoding="utf-8").read()
+        body = src[src.index("def run_light("):]
+        self.assertIn('env["TV_RENDER_PORT"] = str(ports[i])', body)
+
+
+RED_PROOF = [
+    {"why": "v3849 - every light shard shares render_check's 9224 again, so one shard drives another's Chrome",
+     "file": "tv/gates_parallel.py",
+     "find": '            env["TV_RENDER_PORT"] = str(ports[i])\n',
+     "replace": "",
+     "matches": 1},
+]
+
 
 if __name__ == "__main__":
     unittest.main()
