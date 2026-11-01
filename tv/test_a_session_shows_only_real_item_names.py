@@ -26,8 +26,13 @@ RED_PROOF = [
      "matches": 1},
     {"why": "UI and NPC words pass as items again",
      "file": "farmed_names.py",
-     "find": "        _NEVER = set(_norm(w) for w in NEVER_ITEMS)\n",
+     "find": "        _NEVER = set(_norm(w) for w in tuple(SESSION_UI_WORDS) + tuple(vault_denylist()))\n",
      "replace": "        _NEVER = set()\n",
+     "matches": 1},
+    {"why": "the session rule stops reading the vault's one denylist (NPCs and panel words pass)",
+     "file": "farmed_names.py",
+     "find": "        return re.findall(r\"'([^']+)'\\s*:\", body)\n",
+     "replace": "        return []\n",
      "matches": 1},
     {"why": "OCR near-misses are no longer snapped to the real name",
      "file": "farmed_names.py",
@@ -66,6 +71,20 @@ class SnapOrDrop(unittest.TestCase):
 
     def test_a_short_garble_is_never_guessed(self):
         self.assertIsNone(F.snap("Bxr"))
+
+
+class OneDenylist(unittest.TestCase):
+    def test_every_word_the_vault_refuses_a_session_refuses(self):
+        words = F.vault_denylist()
+        self.assertGreaterEqual(len(words), 30, "bible.html _NOT_ITEMS was not read")
+        for w in words:
+            self.assertIsNone(F.snap(w), "the vault refuses %r and a session shows it" % w)
+        for real in ("Tyrael's Might", "Gheed's Fortune"):
+            self.assertEqual(F.snap(real)[0], real)
+
+    def test_no_second_npc_list_here(self):
+        for npc in ("tyrael", "deckard cain", "akara", "stash"):
+            self.assertNotIn(npc, F.SESSION_UI_WORDS, "a copy of the vault's denylist: %r" % npc)
 
 
 class EveryCardAsksIt(unittest.TestCase):

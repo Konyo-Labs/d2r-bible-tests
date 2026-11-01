@@ -29,15 +29,29 @@ SNAP_RATIO = 0.84
 #: a read shorter than this (letters only) is never fuzzy-snapped: too little to tell "Ber" from "Sur"
 MIN_FUZZY_LEN = 5
 
-#: words the game's UI and NPCs print - never an item, whatever they resemble (SB-1: Deckard Cain, Tyrael, Stash)
-NEVER_ITEMS = (
-    "diablo", "diablo ii", "diablo ii resurrected", "resurrected", "lobby", "stash", "shared stash", "channel",
-    "you have joined channel", "game", "create game", "join game", "search", "hell", "nightmare", "normal",
-    "deckard cain", "cain", "tyrael", "akara", "charsi", "gheed", "kashya", "warriv", "fara", "drognan", "lysander",
-    "greiz", "elzix", "atma", "meshif", "jerhyn", "ormus", "alkor", "asheara", "hratli", "natalya", "halbu",
-    "jamella", "larzuk", "malah", "anya", "qual-kehk", "nihlathak", "inventory", "character", "skill tree",
-    "quests", "waypoint", "town portal", "party", "level", "experience", "gold", "lvl", "level up",
+#: the vault's ONE denylist (bible.html `_NOT_ITEMS`: town NPCs, panel titles, Gold, Close, the Cube - v3849 B1, SB-1)
+#: is read from the page, never copied. These are only the words a SESSION's reads add on top: the lobby, chat and title.
+SESSION_UI_WORDS = (
+    "diablo", "diablo ii", "diablo ii resurrected", "resurrected", "lobby", "channel", "you have joined channel",
+    "game", "create game", "join game", "search", "hell", "nightmare", "normal", "character", "skill tree", "quests",
+    "waypoint", "party", "level", "experience", "lvl", "level up",
 )
+_NOT_ITEMS_RE = re.compile(r"var _NOT_ITEMS = \{(.*?)\};", re.S)
+
+
+def vault_denylist(page=None):
+    """-> the keys of bible.html's `_NOT_ITEMS`, lowercase. [] when the page cannot be read (the session words still hold)."""
+    try:
+        if page is None:
+            with io.open(os.path.join(os.path.dirname(HERE), "bible.html"), encoding="utf-8") as f:
+                page = f.read()
+        m = _NOT_ITEMS_RE.search(page)
+        body = re.sub(r"/\*.*?\*/", "", m.group(1), flags=re.S) if m else ""
+        return re.findall(r"'([^']+)'\s*:", body)
+    except Exception:
+        return []
+
+
 _NEVER = None
 
 #: consumables and pickup noise: snapped, then not registered as farmed
@@ -110,7 +124,7 @@ def table(path=None):
 def _never():
     global _NEVER
     if _NEVER is None:
-        _NEVER = set(_norm(w) for w in NEVER_ITEMS)
+        _NEVER = set(_norm(w) for w in tuple(SESSION_UI_WORDS) + tuple(vault_denylist()))
     return _NEVER
 
 
