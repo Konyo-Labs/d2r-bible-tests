@@ -84,6 +84,8 @@ tv/.board_identity.json.tmp
 # failures, the IP-dependent verdict), exactly like .tvd_identity.json beside it. Committing
 # it would push one machine's beacon history onto every other machine that pulls.
 tv/.tvd_beacon.json
+# v3850 — the recorder beacon remembers the last body it sent. Per machine, same class as the beacon record above.
+tv/.tvd_last_beacon_id.json
 # v3663 — the roster publish receipt. Same class as the beacon record above:
 # per machine, rewritten by the console, and the body can carry section names.
 # The .tmp is the atomic-write partner (path + ".tmp" in _roster_state_save).
