@@ -47,8 +47,11 @@ console.log(JSON.stringify({ closed: closed }));
     return json.loads(out.stdout.strip().splitlines()[-1])["closed"]
 
 
-@unittest.skipIf(NODE is None, "node is not installed")
 class EscClearsATypedLookupOverAnOverlay(unittest.TestCase):
+    def setUp(self):
+        if NODE is None:
+            raise AssertionError("node is not on this machine - this law does not skip")
+
     def test_the_contract_source_is_found(self):
         fn, kd = _contract()
         self.assertTrue(fn and kd, "the overlay contract's Esc handler or escClearsField moved")

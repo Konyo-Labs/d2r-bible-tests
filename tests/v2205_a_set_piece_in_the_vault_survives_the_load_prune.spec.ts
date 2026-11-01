@@ -60,8 +60,13 @@ test('a set piece he owns is still there after a reload', async ({ page }) => {
   await ready(page);
   await page.waitForTimeout(1200);
 
-  const own = await page.evaluate(() =>
-    JSON.parse((window as any).LSR.getItem('d2r_owned') || '[]') as string[]);
+  const report = await page.evaluate(() => {
+    const w = window as any;
+    const own = JSON.parse(w.LSR.getItem('d2r_owned') || '[]') as string[];
+    const setName = "Cow King's Leathers (set)";
+    const pieces = (typeof w._setPiecesOf === 'function' ? w._setPiecesOf(setName) : null) as string[] | null;
+    return { own, pieces };
+  });
 
   // ⚠ ONLY THE SET PIECES. Emptying d2r_muleAssign is NOT a neutral quiesce for a plain unique.
   //
@@ -78,10 +83,15 @@ test('a set piece he owns is still there after a reload', async ({ page }) => {
   //
   // The set-piece law is different and is what #48 is about: a set piece must survive on the
   // strength of findSetPiece ALONE, with no assignment to lean on. That is what this asserts.
-  for (const n of SET_PIECES) {
-    expect(own, `"${n}" was deleted on load. It is a SET PIECE, and d2r_muleAssign is emptied here `
-      + `on purpose, so findSetPiece is the only thing that can keep it — which is exactly the `
-      + `guarantee #48 exists to hold.`).toContain(n);
+  // v3849 — a SET's own name is not an item. "Cow King's Leathers (set)" is that name, so a load
+  // reads it as its pieces. The pieces stay. The name becoming pieces is not a deletion.
+  expect(report.own, '"Laying of Hands (bramble mitts)" was deleted on load. It is a SET PIECE, and '
+    + 'd2r_muleAssign is emptied here on purpose, so findSetPiece is the only thing that can keep it '
+    + '— which is exactly the guarantee #48 exists to hold.').toContain('Laying of Hands (bramble mitts)');
+  expect(report.pieces && report.pieces.length, "Cow King's Leathers (set) did not resolve to its pieces").toBeTruthy();
+  for (const n of report.pieces || []) {
+    expect(report.own, `"${n}" was deleted on load. It is a piece of a set he owns, and a load that `
+      + 'splits the set name must keep every piece.').toContain(n);
   }
 });
 
@@ -106,12 +116,27 @@ test('a seeded unique survives when it is filed to a mule, which the vault alway
     await page.goto(URL);
     await ready(page);
     await page.waitForTimeout(1200);
-    const own = await page.evaluate(() =>
-      JSON.parse((window as any).LSR.getItem('d2r_owned') || '[]') as string[]);
+    const filed = await page.evaluate((five: string[]) => {
+      const w = window as any;
+      const own = JSON.parse(w.LSR.getItem('d2r_owned') || '[]') as string[];
+      const split: Record<string, string[] | null> = {};
+      five.forEach((n) => {
+        split[n] = (typeof w._setPiecesOf === 'function' ? w._setPiecesOf(n) : null) as string[] | null;
+      });
+      return { own, split };
+    }, HIS_FIVE);
 
     for (const n of HIS_FIVE) {
-      expect(own, `"${n}" was deleted on load even though it is filed to a mule. A name he has `
-        + `placed by hand is a name he owns, and no cleanse may take it.`).toContain(n);
+      const pieces = filed.split[n];
+      if (pieces && pieces.length) {
+        for (const p of pieces) {
+          expect(filed.own, `"${p}" (from "${n}") was deleted on load even though the set was filed. `
+            + 'A set name becomes its pieces, and no cleanse may take those pieces.').toContain(p);
+        }
+      } else {
+        expect(filed.own, `"${n}" was deleted on load even though it is filed to a mule. A name he has `
+          + 'placed by hand is a name he owns, and no cleanse may take it.').toContain(n);
+      }
     }
   });
 

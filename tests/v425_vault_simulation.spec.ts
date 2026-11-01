@@ -154,7 +154,14 @@ test('LOAD/CAPACITY — 450 owned names persist, and the painted set of organize
     const sp: string[] = JSON.parse(localStorage.getItem('d2r_setPieces') || '[]');
     const seeded: string[] = JSON.parse(localStorage.getItem('__v425_seeded') || '[]');
     const anywhere = new Set([...ownedNow, ...Object.keys(fl), ...sp]);
-    const vanished = seeded.filter((n) => !anywhere.has(n));
+    /* v3849 — a set's own name is its pieces. The name leaving these three stores is a split
+       when every piece is still in one of them, not a deletion. */
+    const piecesOf = (n) => (typeof w._setPiecesOf === 'function' ? w._setPiecesOf(n) : null);
+    const vanished = seeded.filter((n) => {
+      if (anywhere.has(n)) return false;
+      const ps = piecesOf(n);
+      return !(ps && ps.length && ps.every((p) => anywhere.has(p)));
+    });
     return { ownedSaved, rendered, dockChips, orgRows, threw, vanished, seededN: seeded.length };
   });
   console.log(`load test — owned persisted:${r.ownedSaved} painted:${r.rendered} dock:${r.dockChips} organizer:${r.orgRows} threw:"${r.threw}"`);

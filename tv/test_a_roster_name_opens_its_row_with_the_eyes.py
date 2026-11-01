@@ -86,8 +86,40 @@ CLIP = r"""(function(){ var x = document.getElementById('fleet-xref'), adv = x &
   return JSON.stringify({ bad: bad, n: n, walk: walk }); })()"""
 
 
+# The public history. A heart2 sandbox's origin is the checkout it was cloned from, and on the prove
+# shards that checkout is 200 commits deep, so BASE (622 back by v3849) is not in it. Fetching "origin"
+# then asks a shallow parent and fails in a fraction of a second, and the law reads ALREADY RED.
+_PUBLIC_HISTORY = "https://github.com/KonyoDigital/d2r-bible-tests.git"
+
+
 def _show_base():
     return subprocess.check_output(["git", "-C", ROOT, "show", BASE + ":tv/control_ui.html"], stderr=subprocess.STDOUT)
+
+
+def _history_urls():
+    """Where BASE may be fetched. origin first (a full checkout), then that remote's own origin when
+    origin is a local path (the sandbox), then the public repo."""
+    urls = ["origin"]
+    seen = set(urls)
+    try:
+        r = subprocess.run(["git", "-C", ROOT, "remote", "get-url", "origin"],
+                           capture_output=True, text=True, timeout=30)
+        url = (r.stdout or "").strip() if r.returncode == 0 else ""
+    except (OSError, subprocess.SubprocessError):
+        url = ""
+    if url and not url.startswith(("http://", "https://", "git@")):
+        try:
+            parent = subprocess.run(["git", "-C", url, "remote", "get-url", "origin"],
+                                    capture_output=True, text=True, timeout=30)
+            got = (parent.stdout or "").strip() if parent.returncode == 0 else ""
+        except (OSError, subprocess.SubprocessError):
+            got = ""
+        if got and got not in seen:
+            urls.append(got)
+            seen.add(got)
+    if _PUBLIC_HISTORY not in seen:
+        urls.append(_PUBLIC_HISTORY)
+    return urls
 
 
 def _base_ui():
@@ -98,13 +130,19 @@ def _base_ui():
     try:
         src = _show_base()
     except Exception as first:
-        try:
-            subprocess.run(["git", "-C", ROOT, "fetch", "--no-tags", "--depth=1", "origin", BASE],
-                           capture_output=True, timeout=180, check=True)
-            src = _show_base()
-        except Exception as e:
+        errors = []
+        src = None
+        for url in _history_urls():
+            try:
+                subprocess.run(["git", "-C", ROOT, "fetch", "--no-tags", "--depth=1", url, BASE],
+                               capture_output=True, timeout=180, check=True)
+                src = _show_base()
+                break
+            except Exception as e:
+                errors.append("%s: %s" % (url, e))
+        if src is None:
             raise AssertionError("BASE %s is not in this clone's history and could not be fetched, so 'unchanged' cannot "
-                                 "be proved - UNKNOWN, not passing (%s / %s)" % (BASE, first, e))
+                                 "be proved - UNKNOWN, not passing (%s / %s)" % (BASE, first, " | ".join(errors)))
     fd, p = tempfile.mkstemp(suffix=".html", dir=HERE, prefix=".law_base_ui_")
     with os.fdopen(fd, "wb") as fh:
         fh.write(src)
@@ -120,6 +158,10 @@ def _fixture():
         F.time.time = real
     fx["online"][0]["platform"] = "mac"                 # Konyo on a mac publishes as Konyo · Mac
     fx["online"][1]["nickname"] = "Konyo \u00b7 ALT"
+    # v3850 paints presence from the fleet stamp. A fresh online row the card at BASE called "here"
+    # still is, once the stamp says online. A row with no stamp is UNKNOWN, and that is a different law.
+    for row in fx["online"]:
+        row["presence"] = {"state": "online", "via": "beacon", "ageS": 40, "words": "", "staleAfterS": 2040}
     fx["offline"].append({"nickname": "Laptop", "machine": "box-d", "ver": "v3401", "mode": "idle",
                           "t": F._iso(NOW_MS - 6 * 86400 * 1000), "system": {"tree": "ok", "reels": 1}})
     return fx
