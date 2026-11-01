@@ -1059,7 +1059,9 @@ fi
 # (tv/fast_core.txt) + every gate whose law names a changed file. bible.html / control_ui.html / control_app.py /
 # the gate machinery -> EVERY gate (--full). CI runs every gate sharded after the push and the nightly runs every gate
 # on main (tv/nightly_full_gates.sh). Law: test_the_fast_gate_runs_the_core_and_what_changed.
-if ! gate_run "fast gate set" "python3 tv/run_gates.py --fast" 5400 -- \
+# A full set that cannot split runs one at a time. 5400 was the split budget and it killed a
+# passing grade. 10800 still kills a hang. The split plan is unchanged.
+if ! gate_run "fast gate set" "python3 tv/run_gates.py --fast" 10800 -- \
      env TV_FAST_BASE="${TV_PUSH_BASE:-origin/main}" python3 "$REPO/tv/run_gates.py" --fast; then
   echo "          ↑ a gate in the fast set is red - fix it; the push does not go."
   exit 1
