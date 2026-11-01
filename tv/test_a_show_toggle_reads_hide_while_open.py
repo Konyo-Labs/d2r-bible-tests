@@ -30,11 +30,25 @@ class AShowToggleReadsHideWhileOpen(unittest.TestCase):
                   "var s = h.querySelector('summary'), q = s.getBoundingClientRect(); OUT.x = q.left + 20; OUT.y = q.top + q.height / 2;"
                   "OUT.t0 = s.textContent;" % json.dumps(SIM))
         self.assertIn("show the 12 posts", r["t0"])
+        # The slide is 220ms and ease-out, so offsetHeight can already equal the finished
+        # pixel while the animation is still running. A later CDP read then sees 310 and 310
+        # and cannot tell a finished slide from no slide. Hold the animation at its first
+        # frame, inside animate(), before this process gets back to read it. A click that
+        # never calls animate() leaves no paused height animation, which is the no-slide case.
+        b.run("Element.prototype.animate = (function(orig){ return function(){"
+              " var a = orig.apply(this, arguments);"
+              " try { a.pause(); } catch (e) {}"
+              " this._shHeld = a; return a; }; })(Element.prototype.animate);")
         seen = []
         for _ in range(2):
             for ty in ("mousePressed", "mouseReleased"):
                 t.send("Input.dispatchMouseEvent", type=ty, x=r["x"], y=r["y"], button="left", clickCount=1)
-            mid = t.ev("(function(){var d=document.querySelector('#sh-probe details');return JSON.stringify([d.open,d.querySelector('summary').textContent,d.offsetHeight]);})()")
+            mid = t.ev("(function(){var d=document.querySelector('#sh-probe details');"
+                       "var a=d._shAnim; var frames=[];"
+                       "try { frames = a && a.effect ? a.effect.getKeyframes().map(function(f){ return f.height || ''; }) : []; } catch (e) {}"
+                       "return JSON.stringify([d.open,d.querySelector('summary').textContent,d.offsetHeight,"
+                       "a ? a.playState : '', a ? a.currentTime : -1, frames]);})()")
+            t.ev("(function(){var d=document.querySelector('#sh-probe details'); if (d && d._shAnim) d._shAnim.play(); return true;})()")
             time.sleep(0.6)
             end = t.ev("(function(){var d=document.querySelector('#sh-probe details');return JSON.stringify([d.open,d.querySelector('summary').textContent,d.offsetHeight]);})()")
             seen.append((json.loads(mid), json.loads(end)))
@@ -44,7 +58,10 @@ class AShowToggleReadsHideWhileOpen(unittest.TestCase):
         self.assertFalse(e2[0], "the second click did not close it: %r" % seen)
         self.assertIn("show the 12 posts", e2[1], "closed, the toggle does not say show again: %r" % seen)
         self.assertTrue(m2[0], "the drawer snapped shut with no slide: %r" % seen)
-        self.assertLess(m1[2], e1[2], "the drawer jumped open with no slide: %r" % seen)
+        self.assertEqual(m1[3], "paused", "the drawer jumped open with no slide: %r" % seen)
+        self.assertTrue(m1[4] == 0 or m1[4] is None, "the open slide was not held at its first frame: %r" % seen)
+        self.assertEqual(len(m1[5]), 2, "the open slide has no height pair: %r" % seen)
+        self.assertNotEqual(m1[5][0], m1[5][1], "the open slide does not move: %r" % seen)
 
 
 RED_PROOF = [
