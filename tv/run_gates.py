@@ -14015,6 +14015,11 @@ def main(argv):
             print("⛔ REFUSED — --rerun-failed: %s; NO gate ran" % _rfwhy)
             return 2
         _known = set(g.name for g in GATES)
+        _gone = [n for n in _rf if n not in _known]
+        if _rf and not [n for n in _rf if n in _known]:   # v3850 - every recorded red was renamed or removed
+            print("⛔ REFUSED — --rerun-failed: the last run's red(s) %s are not gates today (renamed or removed), so "
+                  "a rerun would check nothing; run them by their new names with --only; NO gate ran" % ", ".join(_gone))
+            return 2
         _rf = [n for n in _rf if n in _known] + [n for n in (a.only or []) if n not in _rf]
         if not _rf:
             print("── RERUN-FAILED: %s and none is a gate today - nothing to rerun ──" % _rfwhy)

@@ -94,6 +94,15 @@ class ARerunRunsOnlyTheLastReds(unittest.TestCase):
         for flag in ("--full", "--fast"):
             self.assertEqual(R.main(["run_gates.py", "--rerun-failed", flag]), 2, flag)
 
+    def test_reds_that_are_no_longer_gates_refuse_not_pass(self):
+        # v3850 (Grok CLI eye on v3848, finding 4) - a red renamed away read as "nothing to rerun", exit 0
+        R._write_last_failed(["test_a_gate_that_was_renamed_away"], "abc")
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = R.main(["run_gates.py", "--rerun-failed"])
+        self.assertEqual(rc, 2, buf.getvalue())
+        self.assertIn("test_a_gate_that_was_renamed_away", buf.getvalue())
+
     def test_the_cli_refuses_with_nothing_recorded(self):
         env = dict(os.environ, GIT_DIR=tempfile.mkdtemp(prefix="tvd-nogit-"))
         p = subprocess.run([sys.executable, os.path.join(HERE, "run_gates.py"), "--rerun-failed"],
@@ -191,6 +200,11 @@ class ARerunRunsOnlyTheLastReds(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3850 - every recorded red renamed away reads as nothing to rerun, exit 0",
+     "file": "run_gates.py",
+     "find": "        if _rf and not [n for n in _rf if n in _known]:",
+     "replace": "        if False:",
+     "matches": 1},
     {"why": "v3848 - a '(undeclared SKIP)' red is read as an unknown gate name",
      "file": "run_gates.py",
      "find": "        n = n.split(\" (\")[0]\n",

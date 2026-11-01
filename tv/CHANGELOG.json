@@ -12,7 +12,8 @@
       "a proof export is no longer refused when the console's own status record is the only edit",
       "an NPC or panel word already in an owned list never draws in the Unsorted dock (SB-1)",
       "the ALT dock's rolled items have a mule, and a class-only rare draws its class mark with a question (SB-2/3)",
-      "the ship-history law fails when no version is in reach, instead of passing having checked nothing"
+      "the ship-history law fails when no version is in reach, instead of passing having checked nothing",
+      "--rerun-failed refuses when every recorded red was renamed away, instead of exiting 0"
     ]
   },
   {
