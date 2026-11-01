@@ -22298,6 +22298,7 @@ function artOr(name, fallbackHtml, size){
   if (!u){
     var _rb = _artRolledBase(name);   /* REG-2903 one answer for a rolled item's base */
     _ask = _rb.ask;
+    if (_rb.glyph) fallbackHtml = _rb.glyph;   /* v3850 SB-3 the class glyph, with the question as its title */
     if (_rb.base && _rb.base !== String(name) && _rb.base !== _clean && _rb.base !== _cleanP){
       var _bu = _artBaseOrKin(_rb.base);
       if (_bu) u = _bu;
@@ -22345,6 +22346,7 @@ function _artBaseOrKin(base, kinOnly){
    (the whole page in node): "Raven Whorl" drew the mark in the window and FIND, ring1_graphic on the card and in the hover.
    A unique or a set piece never takes a base's picture. -> { base: '' | the base, ask: null | the question } */
 function _artRolledBase(name){
+  var _ART_CLASS_GLYPH = { weap: ['\u2694\ufe0f', 'weapon'], armo: ['\ud83d\udee1\ufe0f', 'armor'] };
   var nm = String(name == null ? '' : name), out = { base: '', ask: null }, rolled = false;
   var clean = (typeof _artSlotClean === 'function') ? _artSlotClean(nm) : nm;
   var keeper = (typeof magicFinds !== 'undefined' && magicFinds) ? magicFinds[nm] : null;
@@ -22377,6 +22379,12 @@ function _artRolledBase(name){
     if (_irB && _irB.base) out.base = String(_irB.base);
     else if (_irB && _irB.types && _irB.types.length > 1 && _irB.types.indexOf('Ring') >= 0 && _irB.types.indexOf('Jewel') >= 0)
       out.ask = _irB.types.join(' or ').toLowerCase() + '? the name does not say; a tooltip look settles it';
+    /* v3850 SB-3 (Bramble Song in the ALT dock drew the bare '?') - a rare whose suffix names only an item CLASS (itype weap/armo)
+       has no base to draw: its mark carries the class glyph and the question, never a guessed base picture */
+    else if (_irB && !_irB.base && _irB.itypes && _irB.itypes.length === 1 && Object.prototype.hasOwnProperty.call(_ART_CLASS_GLYPH, _irB.itypes[0])){
+      out.glyph = _ART_CLASS_GLYPH[_irB.itypes[0]][0];
+      out.ask = 'a rare ' + _ART_CLASS_GLYPH[_irB.itypes[0]][1] + ' - which one? the name does not say; a tooltip look settles it';
+    }
   }
   return out;
 }
@@ -45335,6 +45343,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     try{
       if (typeof ITEMS==='undefined' || typeof n !== 'string' || !n) return false;
       if (isAggregate(n)) return false;
+      if (typeof window._vaultNpcWord === 'function' && window._vaultNpcWord(n)) return false;   /* v3850 SB-1 */
       // Annihilus, Hellfire Torch and Gheed's Fortune are drawn wherever the router files them (REG-2241 / REG-2859: Anni and
       // Torch in the shared stash, Gheed's on the CHARMS mule since 2026-10-28). This keeps them in the pool; it does not decide their home.
       if (typeof KEEP_IN_INVENTORY !== 'undefined' && KEEP_IN_INVENTORY.test(_keepName(n))) return true;
@@ -49633,6 +49642,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
          the page can finish loading. */
       var pool = ownedPool();
       return pool.filter(function(n){
+        if (typeof window._vaultNpcWord === 'function' && window._vaultNpcWord(n)) return false;   /* v3850 SB-1 */
         var _seamD = (typeof _vaultSeamHome === 'function') ? _vaultSeamHome(n) : null; /* v3767 dock seam */
         if (_seamD && _seamD.loc === 'loose') {
           if (isSharedStash(n) || _inMagicRare(n) || carSet[n]) return false;
@@ -49744,6 +49754,13 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     return out;
   }
   window.vaultMaterialNames = _vaultMaterialNames;
+  /* v3850 SB-1 (GB-L pass-1204/1709: Deckard Cain, Tyrael and Stash sat in the ALT shadow's Unsorted dock) - a name ALREADY
+     in an owned list (an older snapshot, before the v3849 photo door asked the denylist) is never kept by the vault's pool:
+     an exact town-NPC or panel word only, so Tyrael's Might and Gheed's Fortune stay items. `owned` is not edited. */
+  window._vaultNpcWord = function(name){
+    var f = String(name == null ? '' : name).replace(/[\u2018\u2019\u02bc`]/g, "'").toLowerCase().split(/\s+/).join(' ').trim();
+    return Object.prototype.hasOwnProperty.call(_NOT_ITEMS, f);
+  };
   window._vaultNotAnItem = function(name){
     var f = String(name == null ? '' : name).replace(/[\u2018\u2019\u02bc`]/g, "'").toLowerCase().split(/\s+/).join(' ').trim();
     var what = Object.prototype.hasOwnProperty.call(_NOT_ITEMS, f) ? _NOT_ITEMS[f] : null;

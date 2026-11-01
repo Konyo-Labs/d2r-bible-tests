@@ -9,7 +9,9 @@
       "one hung gate is cut off at its timeout and the batch moves on",
       "a session shows real item names: OCR words snap to known D2 names or are dropped, never UI or NPC words",
       "a session card groups what was farmed with counts; potions, scrolls, keys and gold are not registered",
-      "a proof export is no longer refused when the console's own status record is the only edit"
+      "a proof export is no longer refused when the console's own status record is the only edit",
+      "an NPC or panel word already in an owned list never draws in the Unsorted dock (SB-1)",
+      "the ALT dock's rolled items have a mule, and a class-only rare draws its class mark with a question (SB-2/3)"
     ]
   },
   {

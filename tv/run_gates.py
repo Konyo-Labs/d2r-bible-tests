@@ -10263,6 +10263,18 @@ GATES = [
              "own tv/.status_worst.json. heart2._tracked_dirty asks self_prove.tracked_edits (the rule the pull, the "
              "fleet row and the ship audit already ask); all four heart2 dirty checks go through it. A real edit or "
              "a conflict on the record stays dirty; the gate-run caches stay untracked."),
+    Gate("test_an_owned_npc_word_never_reaches_the_dock",
+         [sys.executable, os.path.join(HERE, "test_an_owned_npc_word_never_reaches_the_dock.py")], 60,
+         needs_app=False,
+         why="v3850 SB-1 (GB-L pass-1204/1709) - Deckard Cain, Tyrael and Stash, already in the ALT's owned list, drew "
+             "as Unsorted-dock chips. window._vaultNpcWord asks the one denylist (_NOT_ITEMS, exact names); the pool "
+             "and the dock both ask it; owned is not edited; Tyrael's Might stays an item."),
+    Gate("test_the_alt_docks_rolled_items_have_a_home_and_a_mark",
+         [sys.executable, os.path.join(HERE, "test_the_alt_docks_rolled_items_have_a_home_and_a_mark.py")], 300,
+         needs_app=False,
+         why="v3850 SB-2/SB-3 (GB-L pass-1204/1709) - the ALT dock's rolled items (Artisan's Spired Helm of the "
+             "Mammoth, Viper Eye Jewel, Grim Harness, Bramble Song) each route to MAGIC & RARE, and a rare whose suffix "
+             "names only a class (Bramble Song: weapon) draws the class glyph with its question, not the bare mark."),
     Gate("test_a_gate_says_what_it_guards_not_how_many",
          [sys.executable, os.path.join(HERE, "test_a_gate_says_what_it_guards_not_how_many.py")], 60,
          needs_app=False,
