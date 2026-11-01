@@ -3,18 +3,7 @@
     "ver": "v3850",
     "date": "2026-11-01",
     "items": [
-      "one ONLINE/offline rule for every Fleet surface; a live recorder keeps a PC online (online · recording)",
-      "the recorder outlives its console under one lease and a restarted console adopts it",
-      "the reel-cutter outlives its console under a sibling lease; closing the console keeps recordings",
-      "one hung gate is cut off at its timeout and the batch moves on",
-      "a session shows real item names: OCR words snap to known D2 names or are dropped, never UI or NPC words",
-      "a session card groups what was farmed with counts; potions, scrolls, keys and gold are not registered",
-      "a proof export is no longer refused when the console's own status record is the only edit",
-      "an NPC or panel word already in an owned list never draws in the Unsorted dock (SB-1)",
-      "the ALT dock's rolled items have a mule, and a class-only rare draws its class mark with a question (SB-2/3)",
-      "the ship-history law fails when no version is in reach, instead of passing having checked nothing",
-      "--rerun-failed refuses when every recorded red was renamed away, instead of exiting 0",
-      "a key, organ or essence run lists its uber keys, organs and essences as farmed (Keys & organs)"
+      "a session shows real item names and what was farmed"
     ]
   },
   {

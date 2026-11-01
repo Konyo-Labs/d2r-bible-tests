@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3849",
+  "ver": "v3850",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3849: Banked gate passes, prover fallback, river labels, fast river read, shadow Shelf, D2JSP date text.",
+  "note": "v3850: a session shows real item names and what was farmed",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
