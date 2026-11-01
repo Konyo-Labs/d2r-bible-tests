@@ -11756,6 +11756,12 @@ GATES = [
              "/filed to|already filed/, and a refusal reads '... never filed to a mule': a pick the door refused (locked "
              "to his MAIN) lit 'Saved into the vault' over nothing on disk. The headline is the pick's result now (filed, "
              "a copy, already filed). The planner is opened, written and painted through its own doors in node."),
+    Gate("test_the_chronicle_names_every_row",
+         [sys.executable, os.path.join(HERE, "test_the_chronicle_names_every_row.py")], 120,
+         needs_app=False,
+         why="The Uniques tally names every hunt card the chronicle file contains. The file count is 403, the eight "
+             "Rainbow Facets stay inside it, six quest items stay inside the 403 and off the cards, and the hunt list "
+             "is 397. A row the file does not contain is not painted as a dark chronicle line."),
     Gate("test_want_never_writes_have",
          [sys.executable, os.path.join(HERE, "test_want_never_writes_have.py")], 300,
          needs_app=False,
