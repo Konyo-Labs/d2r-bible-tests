@@ -67687,8 +67687,9 @@ function renderJournal(){
     })();
     // v560 — UNIFIED sub-tabs across BOTH grail forges (Konyo: same names, same logic, set or unique):
     // ▦ All missing · 🎯 Best runs · ⚡ Quick wins (low-level uniques / 1-piece sets) · ✅ Found
+    var _huntMiss = s.chronTotal ? (s.chronTotal-s.found-_CHRON_QUESTS.length) : s.missing.length;
     H.push('<div class="forge-tabs">'
-      +_tile('all','▦','All missing','ft-all',(s.chronTotal?(s.chronTotal-s.found-_CHRON_QUESTS.length):s.missing.length),F,'window.funiSetFilter','items')   // hunt cards plus real dark rows. The six quest items stay inside the 403 and off this count.
+      +_tile('all','▦','All missing','ft-all',_huntMiss,F,'window.funiSetFilter','items')   // hunt cards plus real dark rows. The six quest items stay inside the 403 and off this count.
       +_tile('runs','🎯','Best runs','ft-pipe',s.runs.length,F,'window.funiSetFilter','runs')
       +_tile('low','⚡','Quick wins','ft-step',s.low.length,F,'window.funiSetFilter','items')
       +_tile('found','✅','Found','ft-done',s.found,F,'window.funiSetFilter','items')
