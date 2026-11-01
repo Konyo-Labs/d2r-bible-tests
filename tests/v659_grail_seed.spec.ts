@@ -95,8 +95,8 @@ test('boot floors 229 found of the 364 F-Uniques universe, with exact in-game Fi
      named outright: Latent Black Cleft, Cold Rupture, Crack of the Heavens, Rotting Fissure,
      Bone Break, Flame Rift. This line said 398 since v1720 and had been red since the ruling —
      a spec encoding the world as it was before he ruled. LAST DECLARATION WINS. */
-  expect(r.total).toBe(392);            // v1720: 387 + the eleven, MINUS the 6 Latent (v2680)
-  expect(r.found).toBe(310);            // the floor's 309 names -> 298 roster items, + the 12 one-shot names a first load applies
+  expect(r.total).toBe(397);            // hunt cards: 392 after the sunder fold, minus Polaris Spear and The Scourge, one Rainbow Facet replaced by 8. The six quest rows stay inside chronTotal 403 and off this list.
+  expect(r.found).toBe(309);            // the seeded bare "Rainbow Facet" is not one of the eight rows, so it stops counting as a found row (310 -> 309). seedN stays 309.
   expect(r.flN).toBe(430);              // the seed floor's unique + set-piece stamps plus the one-shots, measured
   expect(r.wormskull).toBe('Jun 22, 2026 · 02:00');
   expect(r.hoz).toBe(true);

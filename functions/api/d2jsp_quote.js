@@ -327,7 +327,12 @@ function d2jspPosts(text, itemName, nowMs, aside) {
     .replace(/<\/?(?:b|i|u|em|strong|span|font|mark|small|big)(?:\s[^>]*)?>/gi, '')
     .replace(/<[^>]+>/g, ' ');
   plain = d2jspDecodeEntities(plain);   /* v3847 - &#39; / &rsquo; / &amp; arrive raw: Guardian&#39;s matched nothing */
-  var rows = [], when = null, link = '', explicit = false;
+  var rows = [], when = null, link = '', explicit = false, used = false, pending = '', pendingNamed = false;
+  function rememberUndated() {
+    if (pendingNamed && aside) aside.push({ link: pending, day: '', why: 'no post date read' });
+    pending = '';
+    pendingNamed = false;
+  }
   plain.split('\n').forEach(function (raw) {
     var m, re = new RegExp(D2JSP_LINK_MARK.source, 'g');
     var here = '';
@@ -338,19 +343,31 @@ function d2jspPosts(text, itemName, nowMs, aside) {
     /* v3845 - a post's own written date beats a relative "Today" / "Yesterday" (the search page's last-activity
        stamp): Simsalara's Oct 7 post read as the reading's day. A relative stamp dates a post only when that post has
        no written date of its own. */
+    /* a search card puts the topic link and the date on different lines. The date keeps the link that
+       opened this post until a row is priced. A later date, with no new link, does not keep it. A link that
+       arrives after the date and before any row belongs to that same post. */
     var rel = d != null && !/\b20\d\d\b/.test(line) && /\b(?:today|yesterday)\b/i.test(line);
-    if (d != null && !rel) { when = d; explicit = true; link = here; }          /* a written date starts a post */
-    else if (here && here !== link) { link = here; when = rel ? d : null; explicit = false; }   /* so does a new post link */
-    else if (rel && !explicit) when = d;
+    if (d != null && !rel) {
+      var kept = pending;
+      if (here && pending && here !== pending) { rememberUndated(); kept = ''; }
+      when = d; explicit = true; used = false;
+      link = here || kept || '';
+      pending = ''; pendingNamed = false;
+    } else if (here && here !== link) {
+      if (when != null && !used) { link = here; pending = ''; pendingNamed = false; }
+      else { rememberUndated(); link = here; pending = here; when = rel ? d : null; explicit = false; used = false; }
+    } else if (rel && !explicit) when = d;
     else if (here) link = here;
     /* v3843 - a price counts only under a recently dated post; v3844 - and only a 2026 one */
     /* v3847 (Elad 15:27) - a line that names the item and is NOT priced is kept with the reason, for the drawer: a
        reading of 0 priced posts still shows what was read and why each was set aside. Never weighed (w 0). */
     var named = d2jspNamed(line, forms) && !d2jspOtherReading(line, d2jspResolveItem(itemName).item || itemName);
     if (!d2jspRecent(when, nowMs) || when < D2JSP_QUOTE_SINCE_MS) {
+      if (when == null && pending && named) { pendingNamed = true; return; }
       if (named && aside) aside.push({ link: link,
         day: when ? new Date(when).toISOString().slice(0, 10) : '',
         why: when == null ? 'no post date read' : 'older than the price window' });
+      if (named) used = true;
       return;
     }
     if (!named) return;
@@ -358,14 +375,17 @@ function d2jspPosts(text, itemName, nowMs, aside) {
     var lr = d2jspLineRows(line, forms);
     if (!lr.length && aside) aside.push({ link: link,
       day: new Date(when).toISOString().slice(0, 10), why: 'no fg price on the line' });
+    if (!lr.length) used = true;
     lr.forEach(function (x) {
       var row = { fg: x.fg, day: new Date(when).toISOString().slice(0, 10), link: link,
         roll: note.tuples, mods: note.words.slice(0, 12), w: 1 };
       if (x.cols) row.cols = x.cols;
       if (note.perfect) row.perfect = true;   /* v3849 - the post says perf/perfect: the price DB keeps a perfect tier */
       rows.push(row);
+      used = true;
     });
   });
+  rememberUndated();
   return d2jspTrim(rows);
 }
 

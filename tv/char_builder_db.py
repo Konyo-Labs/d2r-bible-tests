@@ -225,6 +225,37 @@ def _rows(blob):
     return IT._rows(blob) or []
 
 
+def _index_codes(rows):
+    """code -> row, plus a case-folded index. Two different codes that fold together are a clash:
+    a lookup that is not an exact code then stays unknown, rather than picking one."""
+    exact, fold, clash = {}, {}, set()
+    for r in rows or []:
+        code = r.get("code")
+        if not code:
+            continue
+        exact[code] = r
+        k = code.casefold()
+        prev = fold.get(k)
+        if prev is None:
+            fold[k] = r
+        elif prev.get("code") != code:
+            clash.add(k)
+    return exact, fold, clash
+
+
+def _lookup_code(exact, fold, clash, code):
+    """The row for `code`. An exact code wins. Otherwise the one row whose code differs only by case.
+    A clash, or no row, is None."""
+    if code is None or code == "":
+        return None
+    if code in exact:
+        return exact[code]
+    k = str(code).casefold()
+    if k in clash:
+        return None
+    return fold.get(k)
+
+
 def _strings(*blobs):
     import item_tables as IT
     out = {}
@@ -323,9 +354,12 @@ class DB(object):
         # #174 v-B3 fix round: the game's other string tables, asked LAST, only for a key no item table names (the six
         # rare words "no string names it" claimed were named all along - by monsters.json and ui.json)
         self.OS = _strings(blobs.get("monsters"), blobs.get("ui"))
-        self.P = dict((r["code"], r) for r in _rows(blobs["properties"]) if r.get("code"))
+        # A unique that spells a real property in another case (RotW's Colossal jewels: "Gethit-skill",
+        # properties.txt "gethit-skill") is that property. Two codes that differ only by case are a clash
+        # and stay unknown. [[unknown-stays-unknown]]
+        self.P, self._Pfold, self._Pclash = _index_codes(_rows(blobs["properties"]))
         # #166 (REG-1868) — a group code -> its propertygroups.txt row; self.PG fills as lines() meets each one
-        self.G = dict((r["code"], r) for r in _rows(blobs.get("propertygroups")) if r.get("code"))
+        self.G, self._Gfold, self._Gclash = _index_codes(_rows(blobs.get("propertygroups")))
         self.PG = {}
         self.I = dict((r["Stat"], r) for r in _rows(blobs["itemstatcost"]) if r.get("Stat"))
         self.types = dict((r["Code"], r) for r in _rows(blobs["itemtypes"]) if r.get("Code"))
@@ -359,6 +393,12 @@ class DB(object):
         # #174 v-B4: the template table's per-template sort keys, filled by lines(): {template id: [descpriority,
         # descfunc, stat id, group]} - and any template two different keys claimed (the page could not order it)
         self.TK, self.TK_BAD = {}, set()
+
+    def _prop(self, code):
+        return _lookup_code(self.P, self._Pfold, self._Pclash, code)
+
+    def _group(self, code):
+        return _lookup_code(self.G, self._Gfold, self._Gclash, code)
 
     # ---- item types -------------------------------------------------------------------------------------------
     def walk(self, code, col, seen=()):
@@ -459,7 +499,7 @@ class DB(object):
         # resistances as "All Resistances +N". Only FIXED values can be equal; a rolled range never groups.
         single = {}
         for (key, code, par, lo, hi) in props:
-            p = self.P.get(code) or {}
+            p = self._prop(code) or {}
             if _int(p.get("func1")) == 1 and not p.get("stat2") and p.get("stat1"):
                 single.setdefault(p["stat1"], (code, _int(lo), _int(hi)))
         groups = {}
@@ -491,8 +531,13 @@ class DB(object):
             cur[0] = code
             if code.startswith("*"):
                 continue                                  # a row the game itself comments out
-            p = self.P.get(code)
-            if not p and code in self.G:
+            p = self._prop(code)
+            grow = None if p else self._group(code)
+            # the line's code is the table's own spelling, so a later reader finds gethit-skill, not Gethit-skill
+            if (p or grow) and (p or grow).get("code") and (p or grow).get("code") != code:
+                code = (p or grow)["code"]
+                cur[0] = code
+            if not p and grow:
                 # #166 (REG-1868) — A PROPERTY GROUP: one line that stands for the group, flag 4, carrying its roll
                 # column; its options (their own lines, in the game's own words, roll key "@") are in the block's `pg`
                 prio = self.group(code)
@@ -730,7 +775,7 @@ class DB(object):
                                   % (pc, pmin, pmax)), [], 2, pc]]
             else:
                 sub = self.lines([("@", pc, pmin, lo, hi)])
-            st = (self.P.get(pc) or {}).get("stat1") or ""
+            st = (self._prop(pc) or {}).get("stat1") or ""
             prio = max(prio, _int((self.I.get(st) or {}).get("descpriority"), 0))
             opts.append([_int(r.get("Chance%d" % i)), sub])
         self.PG[code][2] = prio

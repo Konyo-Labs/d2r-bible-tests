@@ -60,10 +60,12 @@ test('the chronicle lists ONE row per sunder, and the roster still holds every f
     + 'openable and the vault stops holding it')
     .toBeGreaterThanOrEqual(12);
 
-  /* And the chronicle universe is SMALLER than the roster by exactly the upgraded rows it drops. */
+  /* The hunt cards are 397. The file count stays 403 because six quest rows sit in it
+     and are not cards. The roster is a different surface and still keeps the Latent
+     spellings, so chronicleTotal is no longer rosterSize - 6. */
   expect(r.chronicleTotal,
-    'the chronicle universe still carries the upgraded sunder rows')
-    .toBe(r.rosterSize - 6);
+    'the hunt cards are 397; the six quest rows stay off this list')
+    .toBe(397);
 });
 
 test('an upgraded sunder in his ledger still counts as found', async ({ page }) => {

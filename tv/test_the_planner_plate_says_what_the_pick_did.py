@@ -78,6 +78,57 @@ function close(){ W.vaultPlannerClose(); H.flush(60, 3); }
 var S_ = __SCENARIO__;
 if (S_ === 'locked'){
   open(); plate('locked monarch', entryOf('Monarch', 4, false)); close();
+} else if (S_ === 'gold'){
+  /* Extra Gold on a Colossal Ancient jewel is 25-50. 20 is outside it, so Done stays open and that 20 is not the
+     copy's roll. A number inside the range, and the sibling rolls beside it, are what gets filed. */
+  function item(n){ return W._cbDb().it.filter(function(x){ return x[1] === n && x[2] === 'u'; })[0]; }
+  function lineBox(it, needle){
+    var T = W._cbDb().T;
+    var ln = (it[6] || []).filter(function(l){
+      return String(T[l[0]] || '').indexOf(needle) >= 0 && l[1] && l[1][0] && typeof l[1][0][0] === 'number';
+    })[0];
+    if (!ln) return null;
+    var r = ln[1][0];
+    return { key: r[2], lo: Math.min(r[0], r[1]), hi: Math.max(r[0], r[1]), code: ln[3] };
+  }
+  function typeRoll(spec, v){
+    W._cbRollInput({ target: { value: String(v),
+      classList: { contains: function(c){ return c === 'cb-roll'; }, add: function(){}, remove: function(){}, toggle: function(){} },
+      getAttribute: function(a){ return { 'data-key': spec.key, 'data-lo': String(spec.lo), 'data-hi': String(spec.hi) }[a]; } } });
+  }
+  var jewels = ["Guardian's Thunder", "Defender's Bile", "Defender's Fire", "Guardian's Light", "Protector's Frost", "Protector's Stone"];
+  var ranges = {};
+  jewels.forEach(function(n){
+    var it = item(n);
+    ranges[n] = it ? lineBox(it, 'Extra Gold') : null;
+  });
+  var GT = item("Guardian's Thunder");
+  var gold = lineBox(GT, 'Extra Gold'), skill = lineBox(GT, 'Lightning Skill Damage'),
+      pierce = lineBox(GT, 'Enemy Lightning'), xp = lineBox(GT, 'Experience'), mf = lineBox(GT, 'Magic Items');
+  open();
+  W._cbChoose(GT[0]);
+  H.flush(60, 3);
+  typeRoll(skill, 10); typeRoll(pierce, 9); typeRoll(xp, 3); typeRoll(mf, 20);
+  typeRoll(mf, 10);
+  var mfLow = !!(W._cbState().rollHold && Object.keys(W._cbState().rollHold).length);
+  typeRoll(mf, 36);
+  var mfHigh = !!(W._cbState().rollHold && Object.keys(W._cbState().rollHold).length);
+  typeRoll(mf, 20);
+  typeRoll(gold, 20);
+  var closedBad = W.vaultPlannerClose();
+  H.flush(60, 3);
+  var entBad = W._vaultCopyEntry("Guardian's Thunder", 0);
+  /* the next legal roll deletes this key on the same object. The reading is the hold at Done. */
+  var heldBad = {};
+  Object.keys(W._cbState().rollHold || {}).forEach(function(k){ heldBad[k] = W._cbState().rollHold[k]; });
+  OUT.goldBad = { closed: closedBad !== false, rolls: entBad && entBad.rolls, hold: heldBad,
+                   mfLow: mfLow, mfHigh: mfHigh };
+  typeRoll(gold, 40);
+  var closedOk = W.vaultPlannerClose();
+  H.flush(60, 3);
+  OUT.goldOk = { closed: closedOk !== false, rolls: (W._vaultCopyEntry("Guardian's Thunder", 0) || {}).rolls };
+  OUT.spec = { gold: gold, skill: skill, pierce: pierce, xp: xp, mf: mf, ranges: ranges };
+  OUT.res = [];
 } else {
   open(); plate('opened', null, true);
   plate('monarch', entryOf('Monarch', 4, false));
@@ -162,6 +213,57 @@ class ThePlannerPlateSaysWhatThePickDid(unittest.TestCase):
                          "the plate and the disk disagree about the 2os Tome: %r" % r)
         self.assertEqual(r["headline"], SAVED if r["tome"] else WAIT, r)
         self.assertEqual(r["tome"], "bases", "the 2os Tome was not filed to SOCKETED: %r" % r)
+
+    def test_5_extra_gold_outside_25_50_is_not_filed_and_done_stays_open(self):
+        """Guardian's Thunder: 20% extra gold is outside 25-50, so Done does not close over it.
+        40 is kept, and the sibling rolls on that jewel are kept with it. The same gold band is on every Colossal jewel."""
+        o = run("gold")
+        self.assertEqual(o["__boot"]["errors"], [], o["__boot"])
+        spec, bad, ok = o["spec"], o["goldBad"], o["goldOk"]
+        self.assertEqual((spec["gold"]["lo"], spec["gold"]["hi"]), (25, 50), spec["gold"])
+        self.assertEqual((spec["skill"]["lo"], spec["skill"]["hi"]), (5, 10), spec["skill"])
+        self.assertEqual((spec["pierce"]["lo"], spec["pierce"]["hi"]), (5, 10), spec["pierce"])
+        self.assertEqual((spec["xp"]["lo"], spec["xp"]["hi"]), (3, 5), spec["xp"])
+        self.assertEqual((spec["mf"]["lo"], spec["mf"]["hi"]), (15, 35), spec["mf"])
+        for name, band in spec["ranges"].items():
+            self.assertEqual((band["lo"], band["hi"]), (25, 50), "%s extra gold moved: %r" % (name, band))
+        self.assertTrue(bad["mfLow"] and bad["mfHigh"], "magic find 10 and 36 were accepted: %r" % bad)
+        self.assertFalse(bad["closed"], "Done closed over extra gold 20: %r" % bad)
+        self.assertTrue(bad["hold"], "the refused 20 was not held: %r" % bad)
+        filed = bad["rolls"] or {}
+        self.assertNotIn(20, filed.values(), "20 was written onto the copy: %r" % bad)
+        self.assertNotIn(spec["skill"]["key"], filed, "the draft was filed while extra gold 20 was still refused: %r" % bad)
+        self.assertTrue(ok["closed"], "Done did not file a legal extra gold roll: %r" % ok)
+        rolls = ok["rolls"] or {}
+        self.assertEqual(rolls.get(spec["gold"]["key"]), 40, rolls)
+        self.assertEqual(rolls.get(spec["skill"]["key"]), 10, rolls)
+        self.assertEqual(rolls.get(spec["pierce"]["key"]), 9, rolls)
+        self.assertEqual(rolls.get(spec["xp"]["key"]), 3, rolls)
+        self.assertEqual(rolls.get(spec["mf"]["key"]), 20, rolls)
+
+
+class APropertySpelledInAnotherCaseIsThatProperty(unittest.TestCase):
+    """RotW writes Gethit-skill. properties.txt writes gethit-skill. That is one property.
+    Two different codes that only differ by case stay unknown. A code no table has stays unknown."""
+
+    def test_one_case_fold_is_the_row_and_a_clash_stays_unknown(self):
+        from char_builder_db import _index_codes, _lookup_code
+        rows = [
+            {"code": "gethit-skill", "stat1": "item_gethit_skill"},
+            {"code": "gold%", "stat1": "item_goldbonus"},
+            {"code": "Aaa", "stat1": "a"},
+            {"code": "aaa", "stat1": "b"},
+        ]
+        exact, fold, clash = _index_codes(rows)
+        self.assertEqual(_lookup_code(exact, fold, clash, "Gethit-skill")["code"], "gethit-skill")
+        self.assertEqual(_lookup_code(exact, fold, clash, "gethit-skill")["stat1"], "item_gethit_skill")
+        self.assertEqual(_lookup_code(exact, fold, clash, "GOLD%")["code"], "gold%")
+        self.assertIsNone(_lookup_code(exact, fold, clash, "Gelid-Affix5"))
+        self.assertIsNone(_lookup_code(exact, fold, clash, "AAA"))
+        self.assertEqual(_lookup_code(exact, fold, clash, "Aaa")["stat1"], "a")
+        self.assertEqual(_lookup_code(exact, fold, clash, "aaa")["stat1"], "b")
+        self.assertIsNone(_lookup_code(exact, fold, clash, ""))
+        self.assertIsNone(_lookup_code(exact, fold, clash, None))
 
 
 RED_PROOF = [

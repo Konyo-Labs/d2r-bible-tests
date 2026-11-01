@@ -30550,6 +30550,9 @@ function toggleOwned(name, prov) {
       if (typeof window._gUniqueRoster !== 'function') return false;
       const roster = new Set(window._gUniqueRoster());
       if (roster.has(name)) return true;
+      /* The tally names eight facets, six quest rows and six colossal jewels the roster does not
+         carry. A tick that misses this check falls through to the physical vault. */
+      if (typeof window._chronicleTickName === 'function' && window._chronicleTickName(name)) return true;
       const r = (typeof window.d2rResolveItem === 'function') ? window.d2rResolveItem(name) : null;
       return !!(r && r.canonical && roster.has(r.canonical));
     } catch (e) { return false; }
@@ -65919,7 +65922,7 @@ function renderJournal(){
        the LONGEST list of item names on the page, printed all 120 of them in one flat cream.
        _allGrid is shared by uniques and sets, which is exactly why neither got a colour: a shared
        renderer with no rarity argument can only ever pick one. */
-    entries.forEach(function(e){ H.push('<span class="gf-piece gf-miss" data-arttip="'+esc(e.tip||e.n)+'">'+_tickBtn(e.key||e.n, fn)+chipLogo(e.n)+'<span class="gp-nm">'+esc(e.n)+'</span>'+(e.badge?'<span class="gq">'+esc(e.badge)+'</span>':'')+(e.q?'<span class="gp-q" title="qlvl — the item level a monster must reach before this can drop at all">q'+esc(e.q)+'</span>':'')+(e.eta?'<span class="gp-eta" title="expected time to find THIS item at your current magic find, on its own best run">'+esc(e.eta)+'</span>':'')+'</span>'); });
+    entries.forEach(function(e){ H.push('<span class="gf-piece gf-miss" data-arttip="'+esc(e.tip||e.n)+'">'+_tickBtn(e.key||e.n, fn)+chipLogo(e.n)+'<span class="gp-nm">'+esc(e.n)+'</span>'+(e.base?'<span class="gq" title="unidentified chronicle line">'+esc(e.base)+'</span>':'')+(e.badge?'<span class="gq">'+esc(e.badge)+'</span>':'')+(e.q?'<span class="gp-q" title="qlvl — the item level a monster must reach before this can drop at all">q'+esc(e.q)+'</span>':'')+(e.eta?'<span class="gp-eta" title="expected time to find THIS item at your current magic find, on its own best run">'+esc(e.eta)+'</span>':'')+'</span>'); });
     H.push('</div></div></details>');
     return H.join('');
   }
@@ -66001,7 +66004,7 @@ function renderJournal(){
                              'Flame Rift','Rotting Fissure','Black Cleft'];
   var _CHRON_SUNDER_ALIASES = {};
   _CHRON_SUNDER_BASES.forEach(function(b){
-    _CHRON_SUNDER_ALIASES[b] = ['Latent ' + b, 'Renewed ' + b];
+    _CHRON_SUNDER_ALIASES[b] = ['Latent ' + b, 'Renewed ' + b, 'PreCrafted ' + b];
   });
   /* Is this name an UPGRADED spelling of a sunder — the form the chronicle must not list twice? */
   function _isUpgradedSunder(n){
@@ -66013,6 +66016,516 @@ function renderJournal(){
     return false;
   }
   window._isUpgradedSunder = _isUpgradedSunder;
+
+  /* Measured 2026-11-01 from the live uniqueitems.txt extract (439 data rows).
+     A chronicle row is spawnable==1 and disableChronicle!=1. That is 403 rows,
+     396 distinct printed names. Rainbow Facet is the only repeated name (8 rows).
+     Six of those rows are quest items (ids 123-128). His ruling the same day:
+     they are not cards. The 403 stays the file count. Polaris Spear and The
+     Scourge are not in that file. The six colossal jewels (code cjw, ids 420-425)
+     have spawnable blank, so they are outside the 403.
+     The printed name is the string table. The index column is often a different keyword. */
+  var _CHRON_FACETS = [
+    "Rainbow Facet (Lightning, on Death) — level 47 Chain Lightning",
+    "Rainbow Facet (Cold, on Death) — level 37 Blizzard",
+    "Rainbow Facet (Fire, on Death) — level 31 Meteor",
+    "Rainbow Facet (Poison, on Death) — level 51 Poison Nova",
+    "Rainbow Facet (Lightning, on Level-up) — level 41 Nova",
+    "Rainbow Facet (Cold, on Level-up) — level 43 Frost Nova",
+    "Rainbow Facet (Fire, on Level-up) — level 29 Blaze",
+    "Rainbow Facet (Poison, on Level-up) — level 23 Venom"
+  ];
+  var _CHRON_FACET_SET = {};
+  var _CHRON_QLVL = {};
+  _CHRON_FACETS.forEach(function(f){ _CHRON_FACET_SET[f] = 1; _CHRON_QLVL[f] = 85; });
+  var _CHRON_QUESTS = ["Amulet of the Viper","Staff of Kings","Horadric Staff","Hell Forge Hammer","Khalim's Flail","Khalim's Will"];
+  var _CHRON_NOT_IN_FILE = {"Polaris Spear":1,"The Scourge":1};
+  /* The unidentified chronicle line is the base, items[code].name, measured 2026-11-01.
+     One entry per hunt card (397). The six quest names are not keys.
+     Earthshaker stays; its base is Battle Hammer.
+     A chip hides the base when it is the same words as the unique. */
+  var _CHRON_BASE = {
+    "Alma Negra": "Sacred Rondache",
+    "Andariel's Visage": "Demonhead",
+    "Annihilus": "Small Charm",
+    "Arachnid Mesh": "Spiderweb Sash",
+    "Arioc's Needle": "Hyperion Spear",
+    "Arkaine's Valor": "Balrog Skin",
+    "Arm of King Leoric": "Tomb Wand",
+    "Arreat's Face": "Slayer Guard",
+    "Ars Al'Diabolos": "Blasphemous Grimoire",
+    "Ars Dul'Mephistos": "Occult Tome",
+    "Ars Tor'Baalos": "Blasphemous Compendium",
+    "Astreon's Iron Ward": "Caduceus",
+    "Athena's Wrath": "Battle Scythe",
+    "Atma's Wail": "Embossed Plate",
+    "Atma’s Scarab": "Amulet",
+    "Axe of Fechmar": "Large Axe",
+    "Azurewrath": "Phase Blade",
+    "Baezil's Vortex": "Knout",
+    "Bane Ash": "Short Staff",
+    "Baranar's Star": "Devil Star",
+    "Bartuc's Cut-Throat": "Greater Talons",
+    "Biggin's Bonnet": "Cap",
+    "Bing Sz Wang": "Dacian Falx",
+    "Black Cleft": "Grand Charm",
+    "Black Hades": "Chaos Armor",
+    "Blackbog's Sharp": "Cinquedeas",
+    "Blackhand Key": "Grave Wand",
+    "Blackhorn's Face": "Death Mask",
+    "Blackleach Blade": "Bill",
+    "Blackoak Shield": "Luna",
+    "Blacktongue": "Bastard Sword",
+    "Blade of Ali Baba": "Tulwar",
+    "Bladebone": "Double Axe",
+    "Bladebuckle": "Plated Belt",
+    "Blastbark": "Long War Bow",
+    "Blinkbat's Form": "Leather Armor",
+    "Blood Crescent": "Scimitar",
+    "Blood Raven's Charge": "Matriarchal Bow",
+    "Bloodfist": "Heavy Gloves",
+    "Bloodletter": "Gladius",
+    "Bloodmoon": "Elegant Blade",
+    "Bloodpact Shard": "Mithril Point",
+    "Bloodrise": "Morning Star",
+    "Bloodthief": "Brandistock",
+    "Bloodtree Stump": "War Club",
+    "Bone Break": "Grand Charm",
+    "Boneflame": "Succubus Skull",
+    "Boneflesh": "Plate Mail",
+    "Bonehew": "Ogre Axe",
+    "Boneshade": "Lich Wand",
+    "Boneslayer Blade": "Gothic Axe",
+    "Bonesnap": "Maul",
+    "Brainhew": "Great Axe",
+    "Bul-Kathos' Wedding Band": "Ring",
+    "Buriza-Do Kyanon": "Ballista",
+    "Butcher's Pupil": "Cleaver",
+    "Bverrit Keep": "Tower Shield",
+    "Carin Shard": "Petrified Wand",
+    "Carrion Wind": "Ring",
+    "Cerebus' Bite": "Blood Spirit",
+    "Chance Guards": "Chain Gloves",
+    "Chromatic Ire": "Cedar Staff",
+    "Cliffkiller": "Large Siege Bow",
+    "Cloudcrack": "Gothic Sword",
+    "Coif of Glory": "Helm",
+    "Cold Rupture": "Grand Charm",
+    "Coldkill": "Hatchet",
+    "Coldsteel Eye": "Cutlass",
+    "Corpsemourn": "Ornate Plate",
+    "Crack of the Heavens": "Grand Charm",
+    "Crainte Vomir": "Espandon",
+    "Cranebeak": "War Spike",
+    "Crescent Moon": "Amulet",
+    "Crow Caw": "Tigulated Mail",
+    "Crown of Ages": "Corona",
+    "Crown of Thieves": "Grand Crown",
+    "Crushflange": "Mace",
+    "Culwen's Point": "War Sword",
+    "Dark Clan Crusher": "Cudgel",
+    "Darkforce Spawn": "Bloodlord Skull",
+    "Darkglow": "Ring Mail",
+    "Darksight Helm": "Basinet",
+    "Death Cleaver": "Berserker Axe",
+    "Death's Fathom": "Dimensional Shard",
+    "Death's Web": "Unearthed Wand",
+    "Deathbit": "Battle Dart",
+    "Deathspade": "Axe",
+    "Demon Limb": "Tyrant Club",
+    "Demon Machine": "Chu-Ko-Nu",
+    "Demon's Arch": "Balrog Spear",
+    "Demonhorn's Edge": "Destroyer Helm",
+    "Dimoak's Hew": "Bardiche",
+    "Djinn Slayer": "Ataghan",
+    "Doombringer": "Champion Sword",
+    "Doomslinger": "Repeating Crossbow",
+    "Dracul's Grasp": "Vampirebone Gloves",
+    "Dragonscale": "Zakarum Shield",
+    "Dreadfang": "Legend Sword",
+    "Duriel's Shell": "Cuirass",
+    "Duskdeep": "Full Helm",
+    "Dwarf Star": "Ring",
+    "Eaglehorn": "Crusader Bow",
+    "Earth Shifter": "Thunder Maul",
+    "Earthshaker": "Battle Hammer",
+    "Endlesshail": "Double Bow",
+    "Entropy Locket": "Amulet",
+    "Eschuta's Temper": "Eldritch Orb",
+    "Ethereal Edge": "Silver-edged Axe",
+    "Executioner's Justice": "Glorious Axe",
+    "Felloak": "Club",
+    "Firelizard's Talons": "Feral Claws",
+    "Flame Rift": "Grand Charm",
+    "Flamebellow": "Balrog Blade",
+    "Fleshrender": "Barbed Club",
+    "Fleshripper": "Fanged Knife",
+    "Frostburn": "Gauntlets",
+    "Frostwind": "Cryptic Sword",
+    "Gargoyle's Bite": "Winged Harpoon",
+    "Gerke's Sanctuary": "Pavise",
+    "Gheed's Fortune": "Grand Charm",
+    "Gheed's Wager": "Troll Belt",
+    "Ghostflame": "Legend Spike",
+    "Ghoulhide": "Heavy Bracers",
+    "Giant Skull": "Bone Visage",
+    "Gimmershred": "Flying Axe",
+    "Ginther's Rift": "Dimensional Blade",
+    "Gleamscythe": "Falchion",
+    "Gloom's Trap": "Mesh Belt",
+    "Goblin Toe": "Light Plated Boots",
+    "Goldskin": "Full Plate Mail",
+    "Goldstrike Arch": "Gothic Bow",
+    "Goldwrap": "Heavy Belt",
+    "Gore Rider": "War Boots",
+    "Gorefoot": "Heavy Boots",
+    "Goreshovel": "Broad Axe",
+    "Gravenspine": "Bone Wand",
+    "Gravepalm": "Sharkskin Gloves",
+    "Greyform": "Quilted Armor",
+    "Griffon's Eye": "Diadem",
+    "Grim's Burning Dead": "Grim Scythe",
+    "Griswold's Edge": "Broad Sword",
+    "Guardian Angel": "Templar Coat",
+    "Guardian Naga": "Naga",
+    "Gull": "Dagger",
+    "Gut Siphon": "Demon Crossbow",
+    "Halaberd's Reign": "Conqueror Crown",
+    "Hand of Blessed Light": "Divine Scepter",
+    "Harlequin Crest": "Shako",
+    "Hawkmail": "Scale Mail",
+    "Head Hunter's Glory": "Troll Nest",
+    "Headstriker": "Battle Sword",
+    "Heart Carver": "Rondel",
+    "Heaven's Light": "Mighty Scepter",
+    "Heavenly Garb": "Light Plate",
+    "Hellcast": "Heavy Crossbow",
+    "Hellclap": "Short War Bow",
+    "Hellfire Torch": "Large Charm",
+    "Hellmouth": "War Gauntlets",
+    "Hellplague": "Long Sword",
+    "Hellrack": "Colossus Crossbow",
+    "Hellslayer": "Decapitator",
+    "Hellwarden's Will": "Death Mask",
+    "Herald of Zakarum": "Gilded Shield",
+    "Hexfire": "Shamshir",
+    "Highlord's Wrath": "Amulet",
+    "Homunculus": "Hierophant Trophy",
+    "Hone Sundan": "Yari",
+    "Horizon's Tornado": "Scourge",
+    "Hotspur": "Boots",
+    "Howltusk": "Great Helm",
+    "Humongous": "Giant Axe",
+    "Husoldal Evo": "Bec-de-Corbin",
+    "Iceblink": "Splint Mail",
+    "Ichorsting": "Crossbow",
+    "Infernostride": "Demonhide Boots",
+    "Iron Pelt": "Trellised Armor",
+    "Ironstone": "War Hammer",
+    "Islestrike": "Twin Axe",
+    "Jade Talon": "Wrist Sword",
+    "Jalal's Mane": "Totemic Mask",
+    "Kelpie Snare": "Fuscina",
+    "Kinemil's Awl": "Giant Sword",
+    "Kira's Guardian": "Tiara",
+    "Knell Striker": "Scepter",
+    "Kuko Shakaku": "Cedar Bow",
+    "Lacerator": "Winged Axe",
+    "Lance Guard": "Barbed Shield",
+    "Lance of Yaggai": "Spetum",
+    "Langer Briser": "Arbalest",
+    "Lava Gout": "Battle Gauntlets",
+    "Leadcrow": "Light Crossbow",
+    "Lenymo": "Sash",
+    "Leviathan": "Kraken Shell",
+    "Lidless Wall": "Grim Shield",
+    "Lightsabre": "Phase Blade",
+    "Lycander's Aim": "Ceremonial Bow",
+    "Lycander's Flank": "Ceremonial Pike",
+    "Maelstrom": "Yew Wand",
+    "Magefist": "Light Gauntlets",
+    "Magewrath": "Rune Bow",
+    "Manald Heal": "Ring",
+    "Mang Song's Lesson": "Archon Staff",
+    "Mara's Kaleidoscope": "Amulet",
+    "Marrowwalk": "Boneweave Boots",
+    "Measured Wrath": "Burnt Text",
+    "Medusa's Gaze": "Aegis",
+    "Messerschmidt's Reaver": "Champion Axe",
+    "Metalgrid": "Amulet",
+    "Moonfall": "Jagged Star",
+    "Moser's Blessed Circle": "Round Shield",
+    "Nagelring": "Ring",
+    "Nature's Peace": "Ring",
+    "Nightsmoke": "Belt",
+    "Nightwing's Veil": "Spired Helm",
+    "Nokozan Relic": "Amulet",
+    "Nord's Tenderizer": "Truncheon",
+    "Nosferatu's Coil": "Vampirefang Belt",
+    "Ondal's Wisdom": "Elder Staff",
+    "Opalvein": "Ring",
+    "Ormus' Robes": "Dusk Shroud",
+    "Peasant Crown": "War Hat",
+    "Pelta Lunata": "Buckler",
+    "Pierre Tombale Couant": "Partizan",
+    "Plague Bearer": "Rune Sword",
+    "Pluckeye": "Short Bow",
+    "Pompeii's Wrath": "Crowbill",
+    "Pus Spitter": "Siege Crossbow",
+    "Que-Hegan's Wisdom": "Mage Plate",
+    "Radament's Sphere": "Ancient Shield",
+    "Rainbow Facet (Lightning, on Death) — level 47 Chain Lightning": "Jewel",
+    "Rainbow Facet (Cold, on Death) — level 37 Blizzard": "Jewel",
+    "Rainbow Facet (Fire, on Death) — level 31 Meteor": "Jewel",
+    "Rainbow Facet (Poison, on Death) — level 51 Poison Nova": "Jewel",
+    "Rainbow Facet (Lightning, on Level-up) — level 41 Nova": "Jewel",
+    "Rainbow Facet (Cold, on Level-up) — level 43 Frost Nova": "Jewel",
+    "Rainbow Facet (Fire, on Level-up) — level 29 Blaze": "Jewel",
+    "Rainbow Facet (Poison, on Level-up) — level 23 Venom": "Jewel",
+    "Rakescar": "War Axe",
+    "Rattlecage": "Gothic Plate",
+    "Raven Claw": "Long Bow",
+    "Raven Frost": "Ring",
+    "Ravenlore": "Sky Spirit",
+    "Razor's Edge": "Tomahawk",
+    "Razorswitch": "Jo Staff",
+    "Razortail": "Sharkskin Belt",
+    "Razortine": "Trident",
+    "Ribcracker": "Quarterstaff",
+    "Riphook": "Razor Bow",
+    "Ripsaw": "Flamberge",
+    "Rixot's Keen": "Short Sword",
+    "Rockfleece": "Field Plate",
+    "Rockstopper": "Sallet",
+    "Rogue's Bow": "Composite Bow",
+    "Rotting Fissure": "Grand Charm",
+    "Rune Master": "Ettin Axe",
+    "Rusthandle": "Grand Scepter",
+    "Sandstorm Trek": "Scarabshell Boots",
+    "Saracen’s Chance": "Amulet",
+    "Schaefer's Hammer": "Legendary Mallet",
+    "Seraph’s Hymn": "Amulet",
+    "Serpent Lord": "Long Staff",
+    "Shadow Dancer": "Myrmidon Greaves",
+    "Shadow Killer": "Battle Cestus",
+    "Shadowfang": "Two-Handed Sword",
+    "Shaftstop": "Mesh Armor",
+    "Silks of the Victor": "Ancient Armor",
+    "Silkweave": "Mesh Boots",
+    "Skewer of Krintiz": "Sabre",
+    "Skin of the Flayed One": "Demonhide Armor",
+    "Skin of the Vipermagi": "Serpentskin Armor",
+    "Skull Collector": "Rune Staff",
+    "Skull Splitter": "Military Pick",
+    "Skullder's Ire": "Russet Armor",
+    "Skystrike": "Edge Bow",
+    "Sling": "Ring",
+    "Snakecord": "Light Belt",
+    "Snowclash": "Battle Belt",
+    "Soul Drainer": "Vambraces",
+    "Soul Harvest": "Scythe",
+    "Soulfeast Tine": "War Fork",
+    "Soulflay": "Claymore",
+    "Sparking Mail": "Chain Mail",
+    "Spectral Shard": "Blade",
+    "Spellsteel": "Bearded Axe",
+    "Spike Thorn": "Blade Barrier",
+    "Spineripper": "Poignard",
+    "Spire of Honor": "Lance",
+    "Spire of Lazarus": "Gnarled Staff",
+    "Spirit Forge": "Linked Mail",
+    "Spirit Keeper": "Earth Spirit",
+    "Spirit Ward": "Ward",
+    "Stealskull": "Casque",
+    "Steel Carapace": "Shadow Plate",
+    "Steel Pillar": "War Pike",
+    "Steel Shade": "Armet",
+    "Steelclash": "Kite Shield",
+    "Steeldriver": "Great Maul",
+    "Steelgoad": "Voulge",
+    "Steelrend": "Ogre Gauntlets",
+    "Stone Crusher": "Legendary Mallet",
+    "Stoneraven": "Matriarchal Spear",
+    "Stormchaser": "Scutum",
+    "Stormeye": "War Scepter",
+    "Stormguild": "Large Shield",
+    "Stormlash": "Scourge",
+    "Stormrider": "Tabar",
+    "Stormshield": "Monarch",
+    "Stormspike": "Stiletto",
+    "Stormspire": "Giant Thresher",
+    "Stormstrike": "Short Battle Bow",
+    "Stoutnail": "Spiked Club",
+    "String of Ears": "Demonhide Sash",
+    "Suicide Branch": "Burnt Wand",
+    "Sureshrill Frost": "Flanged Mace",
+    "Swordback Hold": "Spiked Shield",
+    "Swordguard": "Executioner Sword",
+    "Tarnhelm": "Skull Cap",
+    "Tearhaunch": "Greaves",
+    "Templar's Might": "Sacred Armor",
+    "The Atlantean": "Ancient Sword",
+    "The Battlebranch": "Poleaxe",
+    "The Cat’s Eye": "Amulet",
+    "The Centurion": "Hard Leather Armor",
+    "The Chieftain": "Battle Axe",
+    "The Cranium Basher": "Thunder Maul",
+    "The Diggler": "Dirk",
+    "The Dragon Chang": "Spear",
+    "The Eye of Etlich": "Amulet",
+    "The Face of Horror": "Mask",
+    "The Fetid Sprinkler": "Holy Water Sprinkler",
+    "The Gavel of Pain": "Martel de Fer",
+    "The General's Tan Do Li Ga": "Flail",
+    "The Gladiator's Bane": "Wire Fleece",
+    "The Gnasher": "Hand Axe",
+    "The Grandfather": "Colossus Blade",
+    "The Grim Reaper": "War Scythe",
+    "The Hand of Broc": "Leather Gloves",
+    "The Impaler": "War Spear",
+    "The Iron Jang Bong": "War Staff",
+    "The Jade Tan Do": "Kris",
+    "The Mahim-Oak Curio": "Amulet",
+    "The Meat Scraper": "Lochaber Axe",
+    "The Minotaur": "Ancient Axe",
+    "The Oculus": "Swirling Crystal",
+    "The Patriarch": "Great Sword",
+    "The Reaper's Toll": "Thresher",
+    "The Redeemer": "Mighty Scepter",
+    "The Rising Sun": "Amulet",
+    "The Salamander": "Battle Staff",
+    "The Scalper": "Francisca",
+    "The Spirit Shroud": "Ghost Armor",
+    "The Stone of Jordan": "Ring",
+    "The Tannr Gorerod": "Pike",
+    "The Vile Husk": "Tusk Sword",
+    "The Ward": "Gothic Shield",
+    "Thundergod's Vigor": "War Belt",
+    "Thunderstroke": "Matriarchal Javelin",
+    "Tiamat's Rebuke": "Dragon Shield",
+    "Titan's Revenge": "Ceremonial Javelin",
+    "Todesfaelle Flamme": "Zweihander",
+    "Tomb Reaver": "Cryptic Axe",
+    "Toothrow": "Sharktooth Armor",
+    "Torch of Iro": "Wand",
+    "Treads of Cthon": "Chain Boots",
+    "Twitchthroe": "Studded Leather",
+    "Tyrael's Might": "Sacred Armor",
+    "Umbral Disk": "Small Shield",
+    "Ume's Lament": "Grim Wand",
+    "Undead Crown": "Crown",
+    "Valkyrie Wing": "Winged Helm",
+    "Vampire Gaze": "Grim Helm",
+    "Veil of Steel": "Spired Helm",
+    "Venom Grip": "Demonhide Gloves",
+    "Venom Ward": "Breast Plate",
+    "Verdungo's Hearty Cord": "Mithril Coil",
+    "Viperfork": "Mancatcher",
+    "Visceratuant": "Defender",
+    "Wall of the Eyeless": "Bone Shield",
+    "War Traveler": "Battle Boots",
+    "Warlord's Trust": "Military Axe",
+    "Warpspear": "Gothic Staff",
+    "Warshrike": "Winged Knife",
+    "Waterwalk": "Sharkskin Boots",
+    "Widowmaker": "Ward Bow",
+    "Windforce": "Hydra Bow",
+    "Windhammer": "Ogre Maul",
+    "Wisp Projector": "Ring",
+    "Witchwild String": "Short Siege Bow",
+    "Witherstring": "Hunter's Bow",
+    "Wizardspike": "Bone Knife",
+    "Wizendraw": "Long Battle Bow",
+    "Woestave": "Halberd",
+    "Wolfhowl": "Fury Visor",
+    "Wormskull": "Bone Helm",
+    "Wraith Flight": "Ghost Glaive",
+    "Wraithstep": "Mirrored Boots",
+    "Zakarum's Hand": "Rune Scepter"
+  };
+  var _CHRON_INDEX_ALIAS = {
+    "Skull Splitter": ["Mindrend"],
+    "Axe of Fechmar": ["Fechmars Axe"],
+    "The Chieftain": ["The Chieftan"],
+    "Humongous": ["The Humongous"],
+    "Torch of Iro": ["Iros Torch"],
+    "Maelstrom": ["Maelstromwrath"],
+    "Bonesnap": ["Bonesob"],
+    "Skewer of Krintiz": ["Krintizs Skewer"],
+    "Spectral Shard": ["Irices Shard"],
+    "Spire of Lazarus": ["Lazarus Spire"],
+    "Raven Claw": ["Rimeraven"],
+    "Rogue's Bow": ["Piercerib"],
+    "Stormstrike": ["Pullspite"],
+    "Doomslinger": ["Doomspittle"],
+    "Biggin's Bonnet": ["War Bonnet"],
+    "Venom Ward": ["Venomsward"],
+    "Silks of the Victor": ["Victors Silk"],
+    "Lenymo": ["Lenyms Cord"],
+    "Khalim's Flail": ["KhalimFlail"],
+    "Khalim's Will": ["SuperKhalimFlail"],
+    "Pompeii's Wrath": ["Pompe's Wrath"],
+    "The Minotaur": ["The Minataur"],
+    "The Atlantean": ["The Atlantian"],
+    "Witchwild String": ["Whichwild String"],
+    "Goldstrike Arch": ["Godstrike Arch"],
+    "Pus Spitter": ["Pus Spiter"],
+    "Peasant Crown": ["Peasent Crown"],
+    "Valkyrie Wing": ["Valkiry Wing"],
+    "Skin of the Flayed One": ["Skin of the Flayerd One"],
+    "Que-Hegan's Wisdom": ["Que-Hegan's Wisdon"],
+    "Gerke's Sanctuary": ["Kerke's Sanctuary"],
+    "Radament's Sphere": ["Radimant's Sphere"],
+    "Thundergod's Vigor": ["Thudergod's Vigor"],
+    "Bartuc's Cut-Throat": ["Cutthroat1"],
+    "Razor's Edge": ["Razoredge"],
+    "Death's Web": ["Deaths's Web"],
+    "Cerebus' Bite": ["Cerebus"],
+    "Soul Drainer": ["Souldrain"],
+    "Wisp Projector": ["Wisp"],
+    "Darkforce Spawn": ["Darkforge Spawn"],
+    "Steel Carapace": ["Steel Carapice"],
+    "Death's Fathom": ["Fathom"],
+    "Verdungo's Hearty Cord": ["Verdugo's Hearty Cord"],
+    "Astreon's Iron Ward": ["Ironward"],
+    "The Redeemer": ["The Reedeemer"],
+    "Ars Al'Diabolos": ["Ars Al'Diablolos"],
+    "Hellwarden's Will": ["Unique Warlock Helm"]
+  };
+  function _chronicleIndexHit(own, n){
+    var al = _CHRON_INDEX_ALIAS[n];
+    if (!al) return false;
+    for (var i = 0; i < al.length; i++) if (own.has(al[i])) return true;
+    return false;
+  }
+  function _chronicleStopResolver(n){ return _CHRON_FACET_SET[n] === 1; }
+  function _chronicleNameList(names){
+    var arr;
+    if (Object.prototype.toString.call(names) === '[object Array]') arr = names.slice();
+    else { arr = []; try { Object.keys(names||{}).forEach(function(k){ arr.push(names[k]); }); } catch(e){} }
+    var out = [], seen = {};
+    arr.forEach(function(n){
+      if (_CHRON_NOT_IN_FILE[n]) return;
+      if (_CHRON_QUESTS.indexOf(n) >= 0) return;
+      if (n === 'Rainbow Facet') { _CHRON_FACETS.forEach(function(f){ if (!seen[f]) { seen[f]=1; out.push(f); } }); return; }
+      if (!seen[n]) { seen[n]=1; out.push(n); }
+    });
+    _CHRON_FACETS.forEach(function(f){ if (!seen[f]) { seen[f]=1; out.push(f); } });
+    return out;
+  }
+  window._chronicleNameList = _chronicleNameList;
+  function _colossalTallyRows(){
+    return ["Defender's Bile","Guardian's Thunder","Protector's Frost","Defender's Fire","Protector's Stone","Guardian's Light"]
+      .map(function(n){ return { n:n, qlvl:110, tier:'common', sources:[] }; });
+  }
+  window._colossalTallyRows = _colossalTallyRows;
+  function _chronicleTickName(n){
+    if (_CHRON_FACET_SET[n] === 1) return true;
+    var rows = _colossalTallyRows();
+    for (var j = 0; j < rows.length; j++) if (rows[j].n === n) return true;
+    return false;
+  }
+  window._chronicleTickName = _chronicleTickName;
 
   function _uniItems(){
     // v1692 — the universe used to be ITEMS filtered to three tiers (the boss-drop-table shortlist,
@@ -66043,6 +66556,7 @@ function renderJournal(){
         return _o;
       } catch(e){ return _n; }
     })(names);
+    names = _chronicleNameList(names);
     /* v1716 — THE ROSTER AND THE DROP TABLES SPELL THE SAME ITEM DIFFERENTLY, AND AN EXACT
        KEY CANNOT SEE IT. reg[n] was an exact lookup, so "Harlequin Crest" missed the drop row
        named "Harlequin Crest (Shako)" and the app told him the most farmed unique in the game
@@ -66096,6 +66610,9 @@ function renderJournal(){
     // v1692 — _UNI_EXTRA is already folded into _gUniqueRoster() and DE-DUPED there (59 of its 66
     // names also live in ITEM_VALUE, e.g. "Blacktongue", "Goreshovel"); concatenating it again here
     // counted those names twice, 57 of them things he has actually found. One list, one pass.
+    base.forEach(function(x){
+      if (x && x.qlvl == null && _CHRON_QLVL[x.n] != null) x.qlvl = _CHRON_QLVL[x.n];
+    });
     return base; }
   function _ownedNames(){ try { var s=new Set(JSON.parse(window.LSR.getItem('d2r_owned')||'[]')); Object.keys(JSON.parse(window.LSR.getItem('d2r_foundLog')||'{}')).forEach(function(n){ s.add(n); }); return s; } catch(e){ return new Set(); } }   // v677 — found = ledger ∪ legacy owned
   /* v1692 — a name can be genuinely found in d2r_foundLog under a different apostrophe/quote glyph
@@ -66122,6 +66639,12 @@ function renderJournal(){
     try {
       var _al = _CHRON_SUNDER_ALIASES[n];
       if (_al) { for (var _i = 0; _i < _al.length; _i++) if (own.has(_al[_i])) return true; }
+    } catch(e){}
+    try {
+      if (_chronicleIndexHit(own, n)) return true;
+      /* A bare ledger key "Rainbow Facet" is one old tick, not these eight jewels.
+         Do not let the resolver paint every facet found from that one key. */
+      if (_chronicleStopResolver(n)) return false;
     } catch(e){}
     if (typeof window.d2rResolveItem !== 'function') return false;
     try {
@@ -66227,9 +66750,13 @@ function renderJournal(){
       var name = String(n||'').trim(); if (!name) return false;
       if (_mfbVocab()[name.toLowerCase()]) return true;
       // ITEM_CODEX is a module const, not a window property — reach it whichever way is in scope
-      var CX = (typeof ITEM_CODEX !== 'undefined') ? ITEM_CODEX : (window.ITEM_CODEX || null);
-      var e = CX && CX[name];
-      var b = (e && e.base) ? String(e.base).trim().toLowerCase() : '';
+      var b = '';
+      if (typeof _CHRON_BASE !== 'undefined' && _CHRON_BASE[name]) b = String(_CHRON_BASE[name]).trim().toLowerCase();
+      if (!b) {
+        var CX = (typeof ITEM_CODEX !== 'undefined') ? ITEM_CODEX : (window.ITEM_CODEX || null);
+        var e = CX && CX[name];
+        b = (e && e.base) ? String(e.base).trim().toLowerCase() : '';
+      }
       if (b && _MFB_BASE[b]) return true;                       // EXACT class, never a substring
       // multi-rune grail rows ("Jah/Ber/Sur rune") and plain gold carry the class in the name and
       // have no codex base to ask
@@ -66446,9 +66973,17 @@ function renderJournal(){
         var _codex = (typeof ITEM_CODEX !== 'undefined') ? ITEM_CODEX : null;
         (_uniItems() || []).forEach(function(x){
           var base = '';
-          try { base = (_codex && _codex[x.n] && _codex[x.n].base) || ''; } catch(e){}
+          try {
+            if (typeof _CHRON_BASE !== 'undefined' && _CHRON_BASE[x.n]) base = _CHRON_BASE[x.n];
+            else base = (_codex && _codex[x.n] && _codex[x.n].base) || '';
+          } catch(e){}
+          if (base && String(base).toLowerCase() === String(x.n || '').toLowerCase()) base = '';
           var q = (x.qlvl > 0) ? ('q' + x.qlvl) : '';
-          out.push({ n: x.n, sub: (base && q) ? (base + ' \u00b7 ' + q) : (base || q),
+          out.push({ n: x.n, base: base, sub: (base && q) ? (base + ' \u00b7 ' + q) : (base || q),
+                     have: _ownedHas(own, x.n) });
+        });
+        (_colossalTallyRows() || []).forEach(function(x){
+          out.push({ n: x.n, sub: 'Colossal jewel · outside the 403 · q' + x.qlvl,
                      have: _ownedHas(own, x.n) });
         });
       } else {
@@ -66475,8 +67010,11 @@ function renderJournal(){
       var starts = [], has = [];
       pool.forEach(function(it){
         var l = String(it.n || '').toLowerCase();
-        if (!l) return;
-        if (l.indexOf(q) === 0) starts.push(it); else if (l.indexOf(q) >= 0) has.push(it);
+        var b = String((it.base != null && it.base !== '') ? it.base : (it.sub || '')).toLowerCase();
+        if (!l && !b) return;
+        if (l.indexOf(q) === 0) starts.push(it);
+        else if (b && b.indexOf(q) === 0) starts.push(it);
+        else if ((l && l.indexOf(q) >= 0) || (b && b.indexOf(q) >= 0)) has.push(it);
       });
       var hits = starts.concat(has).slice(0, 10);
       if (nEl) nEl.textContent = (starts.length + has.length) + ' match' + ((starts.length + has.length) === 1 ? '' : 'es');
@@ -67110,7 +67648,21 @@ function renderJournal(){
     // v663 — the IN-GAME line: the mod chronicle counts 403 entries, the game's % is found/403.
     // Keeping both numbers visible kills the '63% here, 59% in game' confusion at the source.
     // v682.1 — the headline meter above IS the in-game number now; this line explains the named-card grid
-    if (!_pubUni && s.chronTotal) H.push('<div class="f-atomsub" style="margin:-4px 0 8px;opacity:.85" title="the in-game Chronicle counts '+s.chronTotal+' unique entries (game-file truth: uniqueitems.txt) — the '+s.total+' cards here are the named subset; the remaining rows are still dark silhouettes in-game (bare base types), unknowable until they drop">🗂 named cards: <b>'+s.found+' / '+s.total+'</b> ticked · <b>'+Math.max(0,(s.chronTotal-s.total))+'</b> chronicle rows still dark (names reveal on find)</div>');
+    if (!_pubUni && s.chronTotal) {
+      var _namedDark = (s.chronTotal - s.total);
+      var _questN = _CHRON_QUESTS.length;
+      var _huntDark = _namedDark - _questN;
+      var _questNote = (_questN > 0 && _namedDark >= _questN)
+        ? (' · '+_questN+' quest items sit inside the '+s.chronTotal+' and are not cards')
+        : '';
+      var _namedTail = (_huntDark > 0)
+        ? (' · <b>'+_huntDark+'</b> chronicle rows still dark (names reveal on find)'+_questNote)
+        : (' · every chronicle row is named'+_questNote);
+      var _namedTitle = (_huntDark > 0)
+        ? ('the in-game Chronicle counts '+s.chronTotal+' unique entries (game-file truth: uniqueitems.txt) — the '+s.total+' cards here are the named subset; the remaining rows are still dark silhouettes in-game')
+        : ('the in-game Chronicle counts '+s.chronTotal+' unique entries (game-file truth: uniqueitems.txt) — every hunt row is named'+(_questNote ? ('. '+_questN+' quest items are in that file count and are not cards') : ''));
+      H.push('<div class="f-atomsub" style="margin:-4px 0 8px;opacity:.85" title="'+_namedTitle+'">🗂 named cards: <b>'+s.found+' / '+s.total+'</b> ticked'+_namedTail+'</div>');
+    }
     H.push(_undoBar('uni'));   // v644 — mis-ticks are one ↩ away, forge-style
     /* v2739 — THE RESET, under the UNIQUES tab exactly where he asked for it. Deliberately quiet:
        it sits at the end of the header row in dim chrome, not as a primary action, because a
@@ -67136,7 +67688,7 @@ function renderJournal(){
     // v560 — UNIFIED sub-tabs across BOTH grail forges (Konyo: same names, same logic, set or unique):
     // ▦ All missing · 🎯 Best runs · ⚡ Quick wins (low-level uniques / 1-piece sets) · ✅ Found
     H.push('<div class="forge-tabs">'
-      +_tile('all','▦','All missing','ft-all',(s.chronTotal?s.chronTotal-s.found:s.missing.length),F,'window.funiSetFilter','items')   // v682.2 — SAME universe as the headline (403): named missing + still-dark rows
+      +_tile('all','▦','All missing','ft-all',(s.chronTotal?(s.chronTotal-s.found-_CHRON_QUESTS.length):s.missing.length),F,'window.funiSetFilter','items')   // hunt cards plus real dark rows. The six quest items stay inside the 403 and off this count.
       +_tile('runs','🎯','Best runs','ft-pipe',s.runs.length,F,'window.funiSetFilter','runs')
       +_tile('low','⚡','Quick wins','ft-step',s.low.length,F,'window.funiSetFilter','items')
       +_tile('found','✅','Found','ft-done',s.found,F,'window.funiSetFilter','items')
@@ -67149,11 +67701,15 @@ function renderJournal(){
     if(F==='all'){
       var _ownA=_ownedNames();
       var _missAll=_uniItems().filter(function(x){ return !_ownedHas(_ownA,x.n); }).sort(function(a,b){ return (a.qlvl||99)-(b.qlvl||99) || a.n.localeCompare(b.n); })
-        .map(function(x){ return { n:x.n, key:x.n, badge:(x.qlvl>0?'q'+x.qlvl:''),
-                                   eta:_etaLabel(_etaHours(x.n, null)) }; });
+        .map(function(x){
+          var base = (typeof _CHRON_BASE !== 'undefined' && _CHRON_BASE[x.n]) || '';
+          if (base && String(base).toLowerCase() === String(x.n).toLowerCase()) base = '';
+          return { n:x.n, key:x.n, base:base, badge:(x.qlvl>0?'q'+x.qlvl:''),
+                   eta:_etaLabel(_etaHours(x.n, null)) };
+        });
       /* ⚠⚠ v2769 — NO `q:` HERE, AND v2765 WAS WRONG TO ADD ONE. Found by the post-ship review
          and REPRODUCED on the live board: 220 of 220 missing-unique rows read "Gull q4 q4".
-         This wall's `badge` is ALREADY the qlvl — `badge:(x.qlvl>0?'q'+x.qlvl:'')` two lines up —
+         This wall's `badge` is ALREADY the qlvl — `badge:(x.qlvl>0?'q'+x.qlvl:'')` on the return above —
          so the chip duplicated a number that was never missing.
          ⚠ AND THAT CORRECTS WHAT v2765 CLAIMED TO FIX. His report was "some items here in uniques
          are missing the q level" and "sets is missing the q level". The uniques that show nothing
@@ -67163,9 +67719,9 @@ function renderJournal(){
          level would be additive rather than doubled — it draws nothing today and lights up the
          day per-piece levels are sourced. [[feedback-verify-not-proxy]] */
       H.push(_allGrid('Every missing unique — tick as you find', 'the complete pool, qlvl-sorted · ✓ tallies the Calculator + meters instantly', _missAll, 'grailFoundUni'));
-      // v682.2 — the still-dark remainder: these chronicle rows exist in-game as bare base-type
-      // silhouettes; a dark row's unique NAME is hidden until it drops, so it can't be carded yet.
-      // They count in the All-missing number so every meter tells the same 403-story.
+      // The file count stays 403. Six of the gap are quest items, not unnamed silhouettes,
+      // so this banner prints only the remainder after those six. A real dark row is still
+      // a name the game hides until it drops, and that remainder still counts in All missing.
       /* v1779 — THE ROSTER CAN NOW OUTGROW THE PINNED GAME TOTAL, and nothing checked it.
          chronTotal is the literal 403; s.total is the LIVE roster, which grew 387 -> 398 in one
          edit last version. At 404 the subtraction goes negative and the screen prints
@@ -67182,7 +67738,18 @@ function renderJournal(){
           +'game files before trusting the %.</div>');
         _darkN=0;
       }
-      if(_darkN>0) H.push('<div class="rw-stamp-mini rw-band" style="margin:8px 0"><span class="rw-band-t">🌑 + '+_darkN+' still-dark chronicle rows</span><span class="rw-band-s">the game hides their names until they drop — they reveal (and card here) on find · counted in All missing</span></div>');
+      var _showDark = _darkN - _CHRON_QUESTS.length;
+      if (_showDark < 0) _showDark = 0;
+      if(_showDark>0) H.push('<div class="rw-stamp-mini rw-band" style="margin:8px 0"><span class="rw-band-t">🌑 + '+_showDark+' still-dark chronicle rows</span><span class="rw-band-s">the game hides their names until they drop — they reveal (and card here) on find · counted in All missing</span></div>');
+      var _colRows = (typeof _colossalTallyRows === 'function') ? _colossalTallyRows() : [];
+      var _colMiss = _colRows.filter(function(x){ return !_ownedHas(_ownA, x.n); }).map(function(x){
+        return { n:x.n, key:x.n, badge:(x.qlvl>0?'q'+x.qlvl:'') };
+      });
+      if (_colMiss.length) {
+        H.push(_allGrid('Colossal jewels — tick as you find', 'the game file leaves spawnable blank, so the in-game Chronicle does not count these six', _colMiss, 'grailFoundUni'));
+      } else if (_colRows.length === 6) {
+        H.push('<div class="f-atomsub" style="margin:8px 0">all 6 colossal jewels ticked</div>');
+      }
     }
     // HERO: the single best run
     var top=s.runs[0];
@@ -75270,7 +75837,16 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     var split = (!r.ok && ax == null) ? _cbCraftSplit(_cbCurEntry(), key, t.value) : null;
     if (split && split.ok){ r = { ok: true, v: split.v }; t.value = String(split.v); }
     else if (split) r = { ok: false, why: split.why };
-    if (!r.ok){ t.classList.add('cb-bad'); if (ax != null){ st.modSay = r.why + ' — not saved'; st.modBad = true; } if (say){ say.textContent = r.why + ' — not saved'; say.className = 'cb-roll-say cb-bad'; } return; }
+    if (!r.ok){
+      t.classList.add('cb-bad');
+      var refused = r.why + ' — not saved';
+      if (ax != null){ st.modSay = refused; st.modBad = true; }
+      if (say){ say.textContent = refused; say.className = 'cb-roll-say cb-bad'; }
+      /* a refused number stays in the box and is not on the item. Done must not file over it. */
+      if (st.host && st.host.planner){ st.rollHold = st.rollHold || {}; st.rollHold[(ax == null ? '' : ax + '|') + key] = refused; }
+      return;
+    }
+    if (st.host && st.host.planner && st.rollHold) delete st.rollHold[(ax == null ? '' : ax + '|') + key];
     t.classList.remove('cb-bad');
     var sockKey = false;
     if (ax != null){
@@ -75464,6 +76040,46 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     return r;
   };
   window.vaultPlannerClose = function(){
+    /* A number typed into a roll box and not yet blurred is read now, on every mod, so Done keeps a legal roll.
+       A number outside that mod's range keeps the planner open: the item is not closed over a roll that was not saved.
+       An empty box, and a box that already shows the number on the item, are left alone: Done is not a second edit. */
+    try {
+      var _root = document.getElementById('vault-planner-host');
+      var _found = (_root && _root.querySelectorAll) ? _root.querySelectorAll('input.cb-roll, select.cb-roll') : [];
+      var _ent = (st.host && typeof st.host.cur === 'function') ? st.host.cur() : null;
+      for (var _bi = 0; _found && _bi < _found.length; _bi++){
+        var _box = _found[_bi];
+        if (!_box || !_box.classList || !_box.classList.contains('cb-roll')) continue;
+        var _raw = String(_box.value == null ? '' : _box.value).trim();
+        var _key = _box.getAttribute('data-key');
+        var _axAttr = _box.getAttribute('data-ax');
+        var _ax = (_axAttr == null || _axAttr === '') ? null : +_axAttr;
+        var _holdKey = (_ax == null ? '' : _ax + '|') + _key;
+        if (_raw === '') continue;
+        var _bag = null;
+        if (_ent){
+          if (_ax != null){ var _x = (_ent.affixes || [])[_ax]; _bag = _x && _x.rolls; }
+          else _bag = _ent.rolls;
+        }
+        var _same = _bag && Object.prototype.hasOwnProperty.call(_bag, _key) && /^-?\d+$/.test(_raw) && (+_raw) === _bag[_key];
+        if (_same) continue;
+        window._cbRollInput({ target: _box });
+      }
+    } catch (eBox) {}
+    var _heldR = st.rollHold || {}, _rk = Object.keys(_heldR);
+    if (_rk.length && window._vaultPlannerOn){
+      var whyR = _heldR[_rk[0]] + ' Clear the box to keep the range, or type a number inside it, then Done.';
+      try { var sayR = document.getElementById('cb-roll-say'); if (sayR){ sayR.textContent = whyR; sayR.className = 'cb-roll-say cb-bad'; } } catch (eSay) {}
+      try { _vpStatus(whyR); } catch (eSt) {}
+      try {
+        var pk = document.querySelector('#vault-planner-host .vp-plate-k');
+        var ps = document.querySelector('#vault-planner-host .vp-plate-say');
+        if (pk) pk.textContent = 'Roll not kept';
+        if (ps) ps.textContent = whyR;
+      } catch (ePlate) {}
+      return false;
+    }
+    st.rollHold = {};
     /* REG-2832 - Done, Esc and the close end the edit: a held draft is filed now, once, while the planner is still on
        (so its draw waits for the close, as every planner filing does) */
     var _cx = _vpOpenCtx; _vpOpenCtx = null;
@@ -75537,6 +76153,14 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       fits: function(){ return true; },
       cur: function(){ return held; },
       write: function(entry, wopts){
+        /* a refused roll is still in a box. Another item must not be chosen over it, and this one must not be
+           filed as if that number had been kept. */
+        if (entry && window._vaultPlannerOn && st.rollHold && Object.keys(st.rollHold).length){
+          var _whyH = st.rollHold[Object.keys(st.rollHold)[0]] + ' Clear the box to keep the range, or type a number inside it, before choosing another item.';
+          ctx.say = _whyH; ctx.saved = false;
+          return { ok: false, held: true, why: _whyH };
+        }
+        if (entry) st.rollHold = {};
         if (pending && entry) ctx.flush();           /* REG-2832 - the next pick ends the edit: its draft is filed first */
         var _unans = (entry && ctx.question) ? String(ctx.question.name || '') : '';   /* REG-2841 - a pick over an unanswered question files nothing for it, and says so */
         pending = false; ctx.pending = false;        /* REG-2832 - a clear drops the draft, then takes back what was filed */
@@ -75616,6 +76240,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       return { ok: false, refused: 'refused', why: whyR };
     }
     _vpOpenCtx = ctx;   /* REG-2832 - the close files the edit in progress */
+    st.rollHold = {};
     window._vaultPlannerOn = true;
     try { var _vhw = document.getElementById('vault-hand-win'); if (_vhw && !_vhw.hidden && window.vaultHandClose) window.vaultHandClose(); } catch (eH) {} /* Vault v3 B2 — one add door at a time */
     if (q && typeof window._cbPickSearch === 'function') window._cbPickSearch(q);

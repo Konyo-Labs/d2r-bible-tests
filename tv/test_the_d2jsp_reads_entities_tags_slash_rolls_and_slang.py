@@ -61,6 +61,43 @@ class PageText(unittest.TestCase):
         self.assertTrue(all("d2jsp.org" in (a.get("link") or "d2jsp.org") for a in aside))
 
 
+# A d2jsp search card puts the topic link, the date and the price on different lines. The drawer was
+# keeping the price and the day, and saying "no link" on every row but the one title that carried its own.
+SEARCH_CARDS = (
+    '<div class="res"><div><a href="topic.php?t=101&amp;f=268">WTS</a></div>'
+    '<div>Oct 31, 2026</div><div>shako 10 fg</div></div>'
+    '<div class="res"><div><a href="topic.php?t=102&amp;f=268">ISO</a></div>'
+    '<div>Nov 1, 2026</div><div>harlequin crest 60 fg</div></div>'
+    '<div class="res"><div>Oct 30, 2026</div>'
+    '<div><a href="topic.php?t=103&amp;f=268">shako 15 fg</a></div></div>'
+    '<div class="res"><div>Oct 13, 2026 <a href="topic.php?t=104&amp;f=268">#1</a></div><div>shako</div></div>'
+    '<div class="res"><div><a href="topic.php?t=105&amp;f=268">shako</a></div><div>Oct 22, 2026</div>'
+    '<div>shako</div></div>'
+    '<div>Oct 12, 2026 <a href="topic.php?t=201&amp;f=268">#1</a></div><div>shako 40 fg</div>'
+    '<div>Oct 13, 2026</div><div>shako 80 fg</div>'
+)
+
+
+@unittest.skipUnless(HAS_NODE, "no node on this machine (declared skip)")
+class SearchCardsKeepEachPostsLink(unittest.TestCase):
+    def test_every_card_keeps_its_own_post_link(self):
+        q = D.parse_public_quote(SEARCH_CARDS, "shako", "2026-11-01T18:00:00Z")
+        self.assertEqual(q.get("reason"), "read", q)
+        got = [(p.get("fg"), p.get("day"), p.get("link")) for p in q.get("posts") or []]
+        self.assertEqual(got, [
+            (10, "2026-10-31", "https://forums.d2jsp.org/topic.php?t=101&f=268"),
+            (60, "2026-11-01", "https://forums.d2jsp.org/topic.php?t=102&f=268"),
+            (15, "2026-10-30", "https://forums.d2jsp.org/topic.php?t=103&f=268"),
+            (40, "2026-10-12", "https://forums.d2jsp.org/topic.php?t=201&f=268"),
+            (80, "2026-10-13", ""),
+        ], got)
+        aside = [(a.get("day"), a.get("why"), a.get("link")) for a in q.get("aside") or []]
+        self.assertIn(("2026-10-13", "no fg price on the line", "https://forums.d2jsp.org/topic.php?t=104&f=268"), aside)
+        self.assertIn(("2026-10-22", "no fg price on the line", "https://forums.d2jsp.org/topic.php?t=105&f=268"), aside)
+        self.assertFalse(any(a.get("why") == "no post date read" and a.get("link", "").endswith("t=105&f=268") for a in (q.get("aside") or [])),
+                         "the title link was shown as its own undated row: %r" % aside)
+
+
 @unittest.skipUnless(HAS_NODE, "no node on this machine (declared skip)")
 class SlashRolls(unittest.TestCase):
     def test_a_slash_roll_price_is_fit_not_trimmed(self):

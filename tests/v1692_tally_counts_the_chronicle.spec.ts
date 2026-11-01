@@ -426,8 +426,15 @@ test('(6) SURFACES AGREE — the "chronicle rows still dark" figure on screen is
   await seed(page, SUPPRESS);
   const txt = await openUniquesTab(page);
   const dark = txt.match(/(-?\d+)\s*<?\/?b?>?\s*chronicle rows still dark/) || txt.match(/(-?\d+) chronicle rows still dark/);
-  expect(dark, 'the "chronicle rows still dark" line is gone from the screen — if that was deliberate, delete this test with the reason').not.toBeNull();
-  const n = Number((dark as RegExpMatchArray)[1]);
   const screen = namedCards(txt);
-  expect(n, 'HIS SCREEN SAYS ' + n + ' CHRONICLE ROWS STILL DARK — a negative count; the headline divides by 403 while the grid counts ' + screen.total).toBeGreaterThanOrEqual(0);
+  /* When funiScan().total reaches chronTotal the dark sentence is a lie, so the screen says
+     every chronicle row is named instead. A missing dark line is correct only in that case.
+     A negative still fails. */
+  if (dark) {
+    const n = Number(dark[1]);
+    expect(n, 'HIS SCREEN SAYS ' + n + ' CHRONICLE ROWS STILL DARK — a negative count; the headline divides by 403 while the grid counts ' + screen.total).toBeGreaterThanOrEqual(0);
+  } else {
+    expect(txt, 'the dark line is gone and the screen does not say every chronicle row is named').toContain('every chronicle row is named');
+    expect(screen.total, 'named cards total').toBeGreaterThan(0);
+  }
 });
