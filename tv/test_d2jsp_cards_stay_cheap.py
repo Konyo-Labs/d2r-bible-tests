@@ -380,7 +380,8 @@ window.__d1 = async function(rooms, n){
         if (host && host.contains(x.target)) return;
         var t = x.target.nodeType === 1 ? x.target : x.target.parentElement;
         var c = t && t.closest && t.closest('.d2jsp-card');
-        set.add(c ? c.getAttribute('data-d2jsp-item') : '(list)');
+        /* A status line or the list itself is not a card. The budget is cards. */
+        if (c) set.add(c.getAttribute('data-d2jsp-item'));
       });
       return set.size;
     }

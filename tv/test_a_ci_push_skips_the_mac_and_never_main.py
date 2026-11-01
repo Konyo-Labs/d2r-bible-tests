@@ -69,8 +69,15 @@ class TheRealHookStopsOnlyForCi(unittest.TestCase):
         try:
             with io.open(fd, "w", encoding="utf-8") as fh:
                 fh.write(prefix)
+            env = os.environ.copy()
+            # The lane law does not start the agent suite, and it does not scan the Chrome
+            # ports the rest of the gate is using. Inheriting those made this check sit
+            # until its own budget killed it.
+            env["SUITE_VERDICT_REUSE"] = "0"
+            env["TV_RENDER_PORT_FROM"] = "39124"
             r = subprocess.run(["bash", p, "origin", "https://example.invalid/repo.git"], input=refs, cwd=REPO,
-                               capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
+                               capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=40,
+                               env=env)
         finally:
             os.unlink(p)
         return r.returncode, r.stdout + r.stderr

@@ -313,11 +313,18 @@ def measure(page=None, widths=WIDTHS):
             for pid, opener in PANELS:
                 try:
                     tab.send("Runtime.evaluate", expression=opener, returnByValue=True)
-                    time.sleep(1.6)
-                    pr = tab.send("Runtime.evaluate", returnByValue=True,
-                                  expression=_PANEL_JS.replace("__MIN__", str(MIN_OVERLAP_PX))
-                                                      .replace("__ID__", pid))
-                    pv = (pr.get("result") or {}).get("value")
+                    pv = None
+                    # A packed machine paints the panel after the first look. Ask again
+                    # before recording "not measured". A panel that never answers stays unmeasured.
+                    for _attempt in range(5):
+                        time.sleep(1.6 if _attempt == 0 else 0.8)
+                        pr = tab.send("Runtime.evaluate", returnByValue=True,
+                                      expression=_PANEL_JS.replace("__MIN__", str(MIN_OVERLAP_PX))
+                                                          .replace("__ID__", pid))
+                        pv = (pr.get("result") or {}).get("value")
+                        _count = pv.get("count") if isinstance(pv, dict) else None
+                        if isinstance(_count, int) and not isinstance(_count, bool):
+                            break
                     if isinstance(pv, dict):
                         out["%dx%d %s" % (w, h, pid)] = pv
                     else:
