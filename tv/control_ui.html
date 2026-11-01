@@ -22984,7 +22984,7 @@ window._lockMark = function(isOpen, px, label){
     var farm = (typeof s.itemsFarmed === 'number' && isFinite(s.itemsFarmed) && s.itemsFarmed >= 0)
       ? (s.itemsFarmed + ' item' + (s.itemsFarmed === 1 ? '' : 's') + ' farmed') : 'items farmed UNKNOWN';
     /* v3850 - the farmed summary: snapped names grouped with counts (shadow_sessions.digest -> farmed_names.group) */
-    var _FARM_LABEL = {uniques: 'Uniques', sets: 'Sets', runewords: 'Runewords', runes: 'Runes', charms: 'Charms',
+    var _FARM_LABEL = {uniques: 'Uniques', sets: 'Sets', runewords: 'Runewords', ubers: 'Keys & organs', runes: 'Runes', charms: 'Charms',
       jewels: 'Jewels', jewelry: 'Rings & amulets', gems: 'Gems', bases: 'Bases'};
     var farmed = '';
     if (nm !== null && s.farmed && typeof s.farmed === 'object') {

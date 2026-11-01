@@ -9,7 +9,8 @@ This is the one rule a read word passes before a session may show it:
     generated from the install) - exactly, then case/space-insensitively, then by a close fuzzy match;
   · a word that matches nothing is dropped, never shown;
   · UI words (Lobby, Stash, channel text, the game title, difficulty) and NPC names are never items;
-  · consumables (potions, scrolls, tomes, keys, gold, arrows, bolts) are NOT farmed items (Elad 03:05: "should not
+  · consumables (potions, scrolls, tomes, a plain key, gold, arrows, bolts) are NOT farmed items; uber keys,
+    organs and essences are (their own group, v3850) (Elad 03:05: "should not
     be registered potions").
 group() turns the snapped names into uniques / sets / runes / runewords / bases / charms / jewels (+ gems, jewelry)
 with counts. Pure; never raises on bad input.
@@ -23,7 +24,12 @@ import re
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 #: the order a session card lists its groups
-GROUPS = ("uniques", "sets", "runewords", "runes", "charms", "jewels", "jewelry", "gems", "bases")
+GROUPS = ("uniques", "sets", "runewords", "ubers", "runes", "charms", "jewels", "jewelry", "gems", "bases")
+#: v3850 - what a key, organ or essence run farms: never a consumable, though the install files it as misc
+UBERS = frozenset(("key of terror", "key of hate", "key of destruction", "mephisto's brain", "diablo's horn",
+                   "baal's eye", "burning essence of terror", "charged essence of hatred",
+                   "festering essence of destruction", "twisted essence of suffering", "token of absolution",
+                   "standard of heroes"))
 #: a fuzzy snap must be at least this close (difflib ratio on letters only)
 SNAP_RATIO = 0.84
 #: a read shorter than this (letters only) is never fuzzy-snapped: too little to tell "Ber" from "Sur"
@@ -55,8 +61,8 @@ def vault_denylist(page=None):
 _NEVER = None
 
 #: consumables and pickup noise: snapped, then not registered as farmed
-_CONSUMABLE = re.compile(r"(potion|scroll|tome|^key$|^gold$|arrows|bolts|elixir|antidote|^ear$|essence of|"
-                         r"^key of |^book of skill$)", re.I)
+_CONSUMABLE = re.compile(r"(potion|scroll|tome|^key$|^gold$|arrows|bolts|elixir|antidote|^ear$|"
+                         r"^book of skill$)", re.I)
 
 _TABLE = None
 
@@ -71,6 +77,8 @@ def _letters_norm(s):
 
 def _kind_of_misc(name):
     n = name.lower()
+    if n in UBERS:
+        return "ubers"
     if n.endswith(" rune"):
         return "runes"
     if n.endswith(" charm"):

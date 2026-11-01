@@ -20,6 +20,16 @@ import farmed_names as F  # noqa: E402
 import shadow_sessions as SS  # noqa: E402
 
 RED_PROOF = [
+    {"why": "v3850 - an uber key or organ is filed as nothing farmed",
+     "file": "farmed_names.py",
+     "find": "    if n in UBERS:\n        return \"ubers\"\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "v3850 - the card has no label for keys and organs, so their group never draws",
+     "file": "control_ui.html",
+     "find": " ubers: 'Keys & organs',",
+     "replace": "",
+     "matches": 1},
     {"why": "potions are registered as farmed items again",
      "file": "farmed_names.py",
      "find": "    return bool(group) and not _CONSUMABLE.search(name or \"\")\n",
@@ -60,6 +70,15 @@ class TheGroups(unittest.TestCase):
 
 
 class TheCardDrawsIt(unittest.TestCase):
+    def test_a_key_organ_or_essence_run_shows_what_it_farmed(self):
+        # v3850 - a Countess/Summoner/Nihlathak key run, or an uber organ run, farmed nothing by the old consumable rule
+        g = F.group([["Key of Terror"], ["Twisted Essence of Suffering", "Super Healing Potion"], ["Mephisto's Brain"]])
+        self.assertEqual(sorted(n for n, _ in g.get("ubers", [])),
+                         ["Key of Terror", "Mephisto's Brain", "Twisted Essence of Suffering"], g)
+        self.assertNotIn("Super Healing Potion", str(g))
+        with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as f:
+            self.assertIn("ubers: 'Keys & organs'", f.read())
+
     def test_the_digest_publishes_it(self):
         rows = [{"t": 1792000000000 + i * 1000, "frameId": "f%d" % i, "names": n}
                 for i, n in enumerate([["Shako", "Super Mana Potion"], ["Shako"], ["Ber Rune"]])]
