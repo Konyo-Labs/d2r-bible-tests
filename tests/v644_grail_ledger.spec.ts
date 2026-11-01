@@ -27,12 +27,17 @@ test('F·Uniques: every missing unique is tickable in ALL MISSING; ticking dates
   await page.waitForTimeout(700);
   const r1 = await page.evaluate(() => {
     const w: any = window; const box = document.getElementById('tab-funi')!;
-    const missing = w.funiScan().missing ? w.funiScan().missing.length : (302 - w.funiScan().found);
-    const gridTicks = box.querySelectorAll('.gf-allgrid [data-gf-tick]').length;
+    const wallTicks = (title: string) => {
+      const wall = [...box.querySelectorAll('.gf-wall')].find((el) => (el.querySelector('.gf-wall-t') as HTMLElement | null)?.textContent === title);
+      return wall ? wall.querySelectorAll('.gf-allgrid [data-gf-tick]').length : 0;
+    };
+    const gridTicks = wallTicks('Every missing unique — tick as you find');
+    const colTicks = wallTicks('Colossal jewels — tick as you find');
     const chipTicks = box.querySelectorAll('.gf-chip .gf-tick').length;
-    return { missingCount: w.funiScan().total - w.funiScan().found, gridTicks, chipTicks };
+    return { missingCount: w.funiScan().total - w.funiScan().found, gridTicks, chipTicks, colTicks };
   });
   expect(r1.gridTicks).toBe(r1.missingCount);       // EVERY missing unique has a one-click tick
+  expect(r1.colTicks).toBe(6);                      // the six colossal jewels are their own wall, outside the hunt list
   expect(r1.chipTicks).toBeGreaterThan(10);         // run-card chips carry the tick too
   const r2 = await page.evaluate(async () => {
     const w: any = window; const box = document.getElementById('tab-funi')!;
