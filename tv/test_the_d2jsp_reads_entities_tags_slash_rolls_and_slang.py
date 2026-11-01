@@ -134,6 +134,66 @@ class Slang(unittest.TestCase):
         self.assertTrue(js('d2jspOtherReading("doom cv eth 4os 900fg", "Doombringer")'))
         self.assertFalse(js('d2jspOtherReading("doom 300fg", "Doombringer")'))
 
+    def test_one_edit_of_a_known_name_is_that_item_and_a_tie_stays_typed(self):
+        """Elad 2026-11-01 19:35: PRICE SEARCH 'gaurdian's thunder' read 0 posts. The forum was asked
+        for the swapped spelling, so Guardian's Thunder was not on the page."""
+        near = {
+            "gaurdian's thunder": "Guardian's Thunder",
+            "gaurdians thunder": "Guardian's Thunder",
+            "gaurdian angel": "Guardian Angel",
+            "harlequen crest": "Harlequin Crest",
+            "shakoo": "Harlequin Crest",
+            "jomd": "Jeweler's Monarch of Deflecting",
+            "arachind mesh": "Arachnid Mesh",
+            "stormsheild": "Stormshield",
+            "annihlius": "Annihilus",
+            "torchh": "Hellfire Torch",
+            "griffons eye": "Griffon's Eye",
+            "deaths web": "Death's Web",
+            "war traveller": "War Traveler",
+            "kiras gaurdian": "Kira's Guardian",
+        }
+        exact = ["Guardian's Thunder", "Harlequin Crest", "Annihilus", "Stone of Jordan", "War Traveler",
+                 "Arachnid Mesh", "Griffon's Eye", "The Oculus", "shako", "anni", "jmod", "gt", "soj"]
+        stay = ["anny", "gaurdain's thunder", "guardian", "zzzzqqqq", "not an item"]
+        got_near = js("[%s].map(function(t){return d2jspResolveItem(t).item;})" % ",".join(json.dumps(k) for k in near))
+        self.assertEqual(list(near.values()), got_near, got_near)
+        got_exact = js("[%s].map(function(t){return d2jspResolveItem(t).item;})" % ",".join(json.dumps(k) for k in exact))
+        self.assertEqual(["Guardian's Thunder", "Harlequin Crest", "Annihilus", "Stone of Jordan", "War Traveler",
+                          "Arachnid Mesh", "Griffon's Eye", "The Oculus", "Harlequin Crest", "Annihilus",
+                          "Jeweler's Monarch of Deflecting", "Guardian's Thunder", "Stone of Jordan"], got_exact)
+        got_stay = js("[%s].map(function(t){return d2jspResolveItem(t).item;})" % ",".join(json.dumps(k) for k in stay))
+        self.assertEqual(stay, got_stay, got_stay)
+        self.assertEqual("guardians thunder", js('d2jspSearchWords("gaurdian\'s thunder").query'))
+
+    def test_a_close_name_still_prices_the_post_and_keeps_its_link(self):
+        cards = [
+            ("gaurdian's thunder", "guardian's thunder 35 fg", 901, 35),
+            ("shako", "shako 10 fg", 902, 10),
+            ("harlequen crest", "harlequin crest 25 fg", 903, 25),
+            ("jomd", "jmod 80 fg", 904, 80),
+            ("arachind mesh", "arachnid mesh 40 fg", 905, 40),
+            ("stormsheild", "stormshield 15 fg", 906, 15),
+            ("annihlius", "anni 100 fg", 907, 100),
+            ("torchh", "torch 50 fg", 908, 50),
+            ("deaths web", "deaths web 70 fg", 909, 70),
+            ("war traveller", "war travs 30 fg", 910, 30),
+        ]
+        for typed, line, topic, fg in cards:
+            html = ('<div><a href="topic.php?t=%d&amp;f=268">WTS</a></div><div>Nov 1, 2026</div><div>%s</div>'
+                    % (topic, line))
+            q = D.parse_public_quote(html, typed, "2026-11-01T18:00:00Z")
+            posts = q.get("posts") or []
+            self.assertEqual(q.get("reason"), "read", "%s: %r" % (typed, q))
+            self.assertTrue(posts, typed)
+            self.assertEqual(posts[0].get("fg"), fg, typed)
+            self.assertEqual(posts[0].get("link"), "https://forums.d2jsp.org/topic.php?t=%d&f=268" % topic, typed)
+        junk = D.parse_public_quote(
+            '<div><a href="topic.php?t=999&amp;f=268">WTS</a></div><div>Nov 1, 2026</div><div>shako 10 fg</div>',
+            "zzzzqqqq", "2026-11-01T18:00:00Z")
+        self.assertEqual(junk.get("reason"), "no prices", junk)
+        self.assertEqual(junk.get("posts") or [], [])
+
 
 RED_PROOF = [
     {"why": "entities are not decoded, so &#39; hides the name again",
@@ -143,6 +203,10 @@ RED_PROOF = [
      "file": "functions/api/d2jsp_quote.js",
      "find": "    if (D2JSP_SLANG[k].some(function (w) { return w === f; })) return",
      "replace": "    if (false) return", "matches": 1},
+    {"why": "a one-letter miss is searched as typed again, so gaurdian's thunder reads 0 posts",
+     "file": "functions/api/d2jsp_quote.js",
+     "find": "  if (near) return { item: near, via: 'near', ambiguous: false };",
+     "replace": "  if (false) return { item: near, via: 'near', ambiguous: false };", "matches": 1},
 ]
 
 if __name__ == "__main__":

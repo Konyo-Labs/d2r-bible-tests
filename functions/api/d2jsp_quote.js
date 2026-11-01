@@ -115,7 +115,61 @@ function d2jspResolveItem(text, context) {
     if (kf === d2jspSimpleName(text)) return { item: k.trim(), via: 'name', ambiguous: false };
     if (D2JSP_SLANG[k].some(function (w) { return w === f; })) return { item: k.trim(), via: 'alias', ambiguous: false };
   }
+  /* one edit of one known item: a swapped pair, a missing letter, an extra letter, or one wrong letter.
+     "gaurdian's thunder" is Guardian's Thunder. Two known items at the same distance stay as typed. */
+  var near = d2jspNearItem(f);
+  if (near) return { item: near, via: 'near', ambiguous: false };
   return { item: String(text).trim(), via: 'as typed', ambiguous: false };
+}
+
+/* distance above 1 is not a match. An adjacent swap counts as one edit. */
+function d2jspEdit(a, b) {
+  if (a === b) return 0;
+  var n = a.length, m = b.length;
+  if (Math.abs(n - m) > 1) return 2;
+  var prev2 = [], prev = [], cur = [];
+  for (var j = 0; j <= m; j++) prev[j] = j;
+  for (var i = 1; i <= n; i++) {
+    cur = [];
+    cur[0] = i;
+    var low = i;
+    for (var k = 1; k <= m; k++) {
+      var cost = a.charAt(i - 1) === b.charAt(k - 1) ? 0 : 1;
+      var v = prev[k] + 1;
+      if (cur[k - 1] + 1 < v) v = cur[k - 1] + 1;
+      if (prev[k - 1] + cost < v) v = prev[k - 1] + cost;
+      if (i > 1 && k > 1 && a.charAt(i - 1) === b.charAt(k - 2) && a.charAt(i - 2) === b.charAt(k - 1)) {
+        var swap = prev2[k - 2] + 1;
+        if (swap < v) v = swap;
+      }
+      cur[k] = v;
+      if (v < low) low = v;
+    }
+    if (low > 1) return 2;
+    prev2 = prev;
+    prev = cur;
+  }
+  return prev[m] > 1 ? 2 : prev[m];
+}
+
+function d2jspNearItem(f) {
+  if (!f || f.length < 4) return null;
+  var best = '', bestD = 2, ties = 0;
+  function consider(item, form) {
+    if (!form || form === f) return;
+    var d = d2jspEdit(f, form);
+    if (d > 1) return;
+    if (d < bestD) { best = item; bestD = d; ties = 1; }
+    else if (item !== best) ties += 1;
+  }
+  for (var k in D2JSP_SLANG) {
+    if (!Object.prototype.hasOwnProperty.call(D2JSP_SLANG, k)) continue;
+    var name = k.trim();
+    consider(name, d2jspFoldPrice(k).replace(/[^a-z0-9 \-]/g, ' ').replace(/\s+/g, ' ').trim());
+    consider(name, d2jspSimpleName(k));
+    (D2JSP_SLANG[k] || []).forEach(function (w) { consider(name, d2jspFoldPrice(w)); });
+  }
+  return ties === 1 ? best : null;
 }
 
 /* true when a line that names an ambiguous form of itemName points, by a context word on it, at a different item
