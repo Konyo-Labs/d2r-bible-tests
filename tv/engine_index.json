@@ -2996,5 +2996,40 @@
     "gotcha": "Only the icon resource is replaced and the bundle touched; a bundle is never moved, renamed or deleted, and one that runs another tree is left alone.",
     "purpose": "On each launch, gives every TV DIABLO.app on the Desktop or in Applications that runs this repo's start_tvd_mac.sh the repo's current appicon.icns.",
     "territory": "routines-infra"
+  },
+  "farmed_names.py": {
+    "entryPoints": [
+      "snap",
+      "clean",
+      "group",
+      "table",
+      "vault_denylist"
+    ],
+    "gotcha": "A word that matches nothing is dropped, never shown; UI and NPC words come from bible.html _NOT_ITEMS plus SESSION_UI_WORDS; potions and other consumables are never farmed, uber keys and organs are.",
+    "purpose": "Snaps OCR words from a session to known D2 item names (item_tables.json) and groups what a run farmed, with counts.",
+    "territory": "shadow"
+  },
+  "fleet_presence.py": {
+    "entryPoints": [
+      "presence_of",
+      "stamp_fleet",
+      "ago_words"
+    ],
+    "gotcha": "Being in the site's online list is not enough: the presence key outlives a sleeping PC by its TTL.",
+    "purpose": "The one ONLINE/offline rule every Fleet surface asks: a fresh beacon or a live recorder is online, anything else says how long ago it was seen.",
+    "territory": "console"
+  },
+  "recorder_lease.py": {
+    "entryPoints": [
+      "claim",
+      "release",
+      "read",
+      "adoptable",
+      "agent_hold",
+      "pid_alive"
+    ],
+    "gotcha": "A lease whose pid is dead is free; two recorders at once once killed dwm.exe, so a claim never runs beside a live holder.",
+    "purpose": "One lease file lets the recorder and the reel-cutter outlive their console, and lets a restarted console adopt them instead of starting a second.",
+    "territory": "capture-vision"
   }
 }
