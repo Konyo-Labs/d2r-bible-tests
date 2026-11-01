@@ -530,8 +530,9 @@ if ($mode -eq 'off' -or $mode -eq 'none') {
 # each PrintWindow-ing his Boosteroid window every 400 ms. dwm.exe died of memory exhaustion (0xc00001ad) eight
 # times in an hour and took Boosteroid with it. The console's stop is a taskkill whose result nobody read, so a kill
 # that did not land left a capture nobody remembered. So the script no longer trusts anyone to stop it: the console's
-# pid file is its LEASE. It leaves when the lease is withdrawn (stop), handed to another pid (a newer capture), or
-# when the console that started it is gone (a crash leaves a lease nobody will withdraw).
+# pid file is its LEASE. It leaves when the lease is withdrawn (stop) or handed to another pid (a newer capture).
+# v3850 (Elad 18:03 2026-10-31) — the console that started it exiting is not a reason to leave. One recorder
+# is kept by control_capture.lease (Get-RecorderLeaseVerdict). A crash no longer stops the film.
 $leasePath = Join-Path $here 'control_capture.pid'
 $consolePid = 0
 try { if ($env:TV_CONSOLE_PID) { $consolePid = [int]$env:TV_CONSOLE_PID } } catch { $consolePid = 0 }

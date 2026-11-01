@@ -14,8 +14,10 @@ live tv/ pid file):
   · the stop: a kill that did not land is counted and said, never assumed;
   · the boot sweep: ends a capture only when it is not ours AND its console is gone; an unreadable process table
     ends nothing and says UNKNOWN;
-  · the capture itself (capture_win.ps1 Get-LeaseVerdict): leaves when its console is gone, its lease withdrawn or
-    handed on - run in real PowerShell wherever one exists (Windows, CI), skipped by name on a Mac without one.
+  · the capture itself (capture_win.ps1 Get-LeaseVerdict): leaves when its lease is withdrawn or handed
+    on. v3850 (Elad 18:03 2026-10-31) — a dead console, or a reused console pid, is not a reason to leave
+    while the lease still names this capture. Run in real PowerShell wherever one exists (Windows, CI),
+    skipped by name on a Mac without one.
 
 REG-1509 — the review of v3524 found six more, each now a driven case here:
   · THE STOP AND THE LAMP RACED. End Session stopped the capture while the mode still read 'live'; a status poll in
@@ -464,15 +466,18 @@ class TheCaptureLeavesByItself(unittest.TestCase):
     seven; the two REG-1509 start-time cases are proven on CI's pwsh and Windows, never on this Mac)."""
 
     CASES = (
-        ("dead console", "999991", 30, None, "is gone", None),
+        # v3850 — parent 999991 is dead, and the lease file still names this capture (4242). It stays.
+        # A missing file is the withdrawn case below, not this one.
+        ("dead console, my lease", "999991", 30, "4242", "", None),
         ("inside the grace", "$PID", 3, None, "", None),
         ("lease withdrawn", "$PID", 30, None, "withdrew", None),
         ("a newer capture holds it", "$PID", 30, "5151", "newer capture", None),
         ("my lease", "$PID", 30, "4242", "", None),
         ("unreadable lease", "$PID", 30, "garbage", "", None),
         ("no console pid given", "0", 30, "4242", "", None),
-        # REG-1509 — the console pid is alive but its holder started AFTER this capture: a reused pid, the console is gone
-        ("a reused console pid", "$PID", 30, "4242", "started after me", "((Get-Date).AddDays(-1))"),
+        # v3850 — the console pid is alive but its process started after this capture. The lease still
+        # names 4242, so the capture stays. The yesterday start is what used to read as "started after me".
+        ("a reused console pid", "$PID", 30, "4242", "", "((Get-Date).AddDays(-1))"),
         ("my console, older than me", "$PID", 30, "4242", "", "((Get-Process -Id $PID).StartTime.AddSeconds(1))"),
     )
 
