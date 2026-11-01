@@ -43,7 +43,15 @@ class EveryShipListsAllItsItems(unittest.TestCase):
             if len(e["items"]) < n:
                 bad.append("%s: %d lines for %d feature/fix commits" % (e["ver"], len(e["items"]), n))
         self.assertEqual(bad, [], "a version's history is missing items: %s" % bad)
+        # v3850 (Grok CLI second eye on v3848, finding 2) - a clone with no listed version in reach checked nothing
+        self.assertGreater(seen, 0, "no version since v%d has a commit in reach (a shallow clone?) - this checked "
+                                    "nothing, and nothing checked is never a pass" % FROM)
         print("checked %d version(s) with commits in reach" % seen)
+
+    def test_a_clone_with_no_version_in_reach_is_not_a_pass(self):
+        with mock.patch(__name__ + ".feature_commits", lambda ver: []):
+            with self.assertRaises(AssertionError):
+                self.test_each_history_entry_covers_its_commits()
 
     def test_the_rule_catches_a_thin_entry(self):
         fake = {"ver": "v3847", "items": ["one line"]}
@@ -72,6 +80,11 @@ class EveryShipListsAllItsItems(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3850 - a clone with no version in reach passes having checked nothing",
+     "file": "test_every_ship_lists_all_its_items.py",
+     "find": "seen, 0, \"no version since",
+     "replace": "seen + 1, 0, \"no version since",
+     "matches": 1},
     {"why": "v3848 - v3846's history drops an item it shipped",
      "file": "CHANGELOG.json",
      "find": ",\n      \"the plain-run law takes its own lock and cleans up after itself\"",
