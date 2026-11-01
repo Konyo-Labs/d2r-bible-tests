@@ -37194,7 +37194,14 @@ class TestV2257TheBeaconFieldsSURVIVETheWorker(unittest.TestCase):
         app = self._app()
         i = app.index("def _console_beacon(")
         # the payload literal: keys of the dict handed to json.dumps and POSTed
-        body = app[i:app.index("req = urllib.request.Request(", i)]
+        # v3850 - the beacon now posts through _presence_request(body), so the old end marker
+        # (`req = urllib.request.Request(`) was gone and the slice ran on into the _roster_*
+        # helpers, reading their `"owned":` as a beacon key. End at the payload's own
+        # json.dumps, and refuse a slice that leaves _console_beacon.
+        fn_end = app.index("\ndef ", i + 1)
+        end = app.index("json.dumps(payload)", i)
+        self.assertLess(end, fn_end, "the beacon no longer json.dumps(payload) - this guard has lost its end marker")
+        body = app[i:end]
         # ⚠ TOP-LEVEL KEYS ONLY, AND MIND THE SHORTHAND. My first cut matched every quoted
         # key at any depth, so `err` (nested inside lastBeacon) read as a dropped field;
         # and it required `machine:` in the worker, which stores it as the JS shorthand
