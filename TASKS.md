@@ -1823,7 +1823,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3850** | `(this commit)` | v3850 — a session shows real item names and what was farmed |
+| **v3851** | `(this commit)` | v3851 — Eight facet rows stay in the 403 with six quest items. A forum date keeps its link. A refused roll stays in the box. |
+| **v3850** | `df68af03` | v3850 — a session shows real item names and what was farmed |
 | **v3849** | `228a0acc` | v3849 — Banked gate passes, prover fallback, river labels, fast river read, shadow Shelf, D2JSP date text. |
 | **v3848** | `c394ef86` | v3848 — Rerun reds, nightly gates, Shelf x pin, one River walk, shadow lookups, one not-in-game chip. |
 | **v3847** | `ae84dc11` | v3847 — one x at one spot on every overlay, the tick writes only a change, Esc on an empty stack is a no-op |

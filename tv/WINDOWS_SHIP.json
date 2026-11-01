@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3850",
+  "ver": "v3851",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3850: a session shows real item names and what was farmed",
+  "note": "v3851: Eight facet rows stay in the 403 with six quest items. A forum date keeps its link. A refused roll stays in the box.",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
