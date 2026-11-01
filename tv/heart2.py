@@ -989,6 +989,26 @@ _NEED_COPY_MAX_FILE = 50 * 1024 * 1024
 _NEED_COPY_MAX_TREE = 200 * 1024 * 1024
 
 
+def _tracked_dirty():
+    """v3850 (REG-2630 on Dean's console, 2026-10-31) - THE ONE QUESTION 'IS THIS CHECKOUT ITS HEAD?' -> (ok, porcelain).
+
+    The export refused on Dean's PC with ` M tv/.status_worst.json` as the only edit: a record the console rewrites
+    itself, already forgiven by self_prove.tracked_edits for every other reader of a dirty tree (REG-1837/1898). Every
+    heart2 dirty check (shard manifest, export, import, check) asks this door. A rule that cannot be asked keeps the
+    raw rows (dirty, the safe direction)."""
+    ok, out = _git("status", "--porcelain", "--untracked-files=no")
+    if not ok:
+        return ok, out
+    try:
+        import self_prove as _sp
+        lines, _why = _sp.tracked_edits(out)
+    except Exception:
+        lines = None
+    if lines is None:
+        return ok, out
+    return ok, "\n".join(lines)
+
+
 def _git_free_env(**extra):
     """REG-2396 - THE ENVIRONMENT OF EVERY PROCESS HEART2 STARTS: this process's, with EVERY GIT_* variable removed, plus
     `extra`. -> dict. One definition, run_gates.git_free_env (law_env applies it to every law run there and here).
@@ -5794,7 +5814,7 @@ def _shard_finish(cache, names, stopped, say):
         return False
     import proof_shard as _PS
     ok_h, head = _git("rev-parse", "HEAD")
-    ok_d, dirty = _git("status", "--porcelain", "--untracked-files=no")
+    ok_d, dirty = _tracked_dirty()
     # REG-2591 - a shard keeps going, so it never STOPS: every failure it found is OWED (stopped stays None)
     m = _PS.manifest(spec[0], spec[1], head.strip() if ok_h else "", (bool(dirty.strip()) if ok_d else True),
                      _SHARD.get("plan") or "", _SHARD.get("own") or {}, names, None,
@@ -7338,7 +7358,7 @@ def import_shards(paths, say=print, target=None):
         bodies.append((os.path.basename(os.path.dirname(os.path.abspath(p))) + "/" + os.path.basename(p), body, why))
     ok, why, shards = _PS.check_shards(bodies, head)
     if ok:
-        ok_d, dirty = _git("status", "--porcelain", "--untracked-files=no")
+        ok_d, dirty = _tracked_dirty()
         if not ok_d or dirty.strip():
             ok, why = False, "this checkout's tracked files differ from its HEAD (or git could not say), so its keys are not HEAD's"
     if ok:
@@ -7438,7 +7458,7 @@ def export_proved(out_dir, say=print, source=None):
     source = source or CACHE
     ok_h, head = _git("rev-parse", "HEAD")
     head = head.strip() if ok_h else ""
-    ok_d, dirty = _git("status", "--porcelain", "--untracked-files=no")
+    ok_d, dirty = _tracked_dirty()
     out = os.path.join(os.path.abspath(out_dir or "."), os.path.basename(CACHE))
     why = None
     if not head:
@@ -7517,7 +7537,7 @@ def import_proved(paths, say=print, target=None, carried=None, platform=None):
                 ok, why = False, "%s was carried by %s and %s" % (_lb, carried.get("by") or "another PC", _rw)
                 break
     if ok:
-        ok_d, dirty = _git("status", "--porcelain", "--untracked-files=no")
+        ok_d, dirty = _tracked_dirty()
         if not ok_d or dirty.strip():       # REG-2630 - the importing checkout must BE its HEAD, or its keys are not
             ok, why = False, "this checkout's tracked files differ from its HEAD (or git could not say), so its keys are not HEAD's"
     _gone, _no, _src = [], [], {}

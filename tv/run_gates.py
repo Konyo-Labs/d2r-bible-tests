@@ -10256,6 +10256,13 @@ GATES = [
          why="v3850 (Elad 02:55/03:05 IDT, 2026-11-01) - AN ORGANIZED FARMED SUMMARY, NO POTIONS. A session card now "
              "groups what was farmed (uniques, sets, runewords, runes, charms, jewels, rings and amulets, gems, bases) "
              "with pickup counts; potions, scrolls, tomes, keys, gold, arrows and bolts are never registered."),
+    Gate("test_a_console_record_never_refuses_an_export",
+         [sys.executable, os.path.join(HERE, "test_a_console_record_never_refuses_an_export.py")], 120,
+         needs_app=False,
+         why="v3850 (Dean's console, 2026-10-31) - REG-2630 EXPORT REFUSED on a tree whose only edit was the console's "
+             "own tv/.status_worst.json. heart2._tracked_dirty asks self_prove.tracked_edits (the rule the pull, the "
+             "fleet row and the ship audit already ask); all four heart2 dirty checks go through it. A real edit or "
+             "a conflict on the record stays dirty; the gate-run caches stay untracked."),
     Gate("test_a_gate_says_what_it_guards_not_how_many",
          [sys.executable, os.path.join(HERE, "test_a_gate_says_what_it_guards_not_how_many.py")], 60,
          needs_app=False,
