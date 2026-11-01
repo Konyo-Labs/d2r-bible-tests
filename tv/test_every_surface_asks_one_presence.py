@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+from console_safe import enable; enable()  # noqa: E402
 import fleet_presence as FP  # noqa: E402
 
 NOW = 1793462400000

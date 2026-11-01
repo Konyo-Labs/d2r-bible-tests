@@ -27,6 +27,9 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable; enable()  # noqa: E402  (v3850: it prints non-ASCII)
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 17772
 EXITED_ON_PURPOSE = os.path.join(HERE, ".tvd_exited_on_purpose")
