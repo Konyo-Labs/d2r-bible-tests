@@ -33,11 +33,19 @@ OK = "print('ok')\n"
 
 
 def _alive(pid):
+    if os.name == "nt":                  # REG-1725 - os.kill(pid, 0) is a Ctrl-C there; ask the safe door
+        try:
+            import self_prove as _sp
+            return _sp.pid_alive(pid)
+        except Exception:
+            return True
     try:
         os.kill(pid, 0)
         return True
-    except Exception:
+    except ProcessLookupError:
         return False
+    except Exception:
+        return True
 
 
 class AHungGateIsCutOff(unittest.TestCase):

@@ -26,7 +26,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "UI and NPC words pass as items again",
      "file": "farmed_names.py",
-     "find": "        _NEVER = set(_norm(w) for w in tuple(SESSION_UI_WORDS) + tuple(vault_denylist()))\n",
+     "find": "        _NEVER = set(_norm(w) for w in tuple(SESSION_UI_WORDS) + tuple(extra))\n",
      "replace": "        _NEVER = set()\n",
      "matches": 1},
     {"why": "the session rule stops reading the vault's one denylist (NPCs and panel words pass)",

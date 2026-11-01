@@ -14,6 +14,7 @@ Joints pinned here, each with a red-proof:
 """
 import io
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -68,6 +69,9 @@ class Lease(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
         self.p = RL.agent_lease_path(self.d)
+
+    def tearDown(self):
+        shutil.rmtree(self.d, ignore_errors=True)
 
     def _put(self, pid, t):
         with open(self.p, "w") as f:

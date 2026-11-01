@@ -5605,7 +5605,7 @@ def _fleet_change_due(prev, cur, now, sent_at, pending, min_s=_FLEET_CHANGE_MIN_
     return False, pending, prev
 
 
-LAST_BEACON_BODY_PATH = os.path.join(HERE, ".tvd_last_beacon_id.json")
+LAST_BEACON_BODY_PATH = os.path.join(_fixture_root_for_state(), ".tvd_last_beacon_id.json")
 
 
 def _presence_request(body):

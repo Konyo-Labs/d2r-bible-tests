@@ -35,6 +35,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -303,8 +304,12 @@ class WhatTheViewerIsTold(unittest.TestCase):
         self.assertIsNone(CS.online_of(OWNER, {"ok": False}))
         self.assertIsNone(CS.online_of(OWNER, None))
         nick = next(n for n in ("Dean", "dean", "Dean PC") if RP.owner_of(n, "windows") == OWNER)
-        self.assertTrue(CS.online_of(OWNER, {"ok": True, "online": [{"nickname": nick, "platform": "windows"}]}))
-        self.assertFalse(CS.online_of(OWNER, {"ok": True, "offline": [{"nickname": nick, "platform": "windows"}]}))
+        bare = {"nickname": nick, "platform": "windows"}
+        self.assertIsNone(CS.online_of(OWNER, {"ok": True, "online": [bare]}))
+        fresh = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(time.time() - 40))
+        row = {"nickname": nick, "platform": "windows", "t": fresh}
+        self.assertTrue(CS.online_of(OWNER, {"ok": True, "online": [row]}))
+        self.assertFalse(CS.online_of(OWNER, {"ok": True, "offline": [dict(row)]}))
 
 
 # The worker, run as it ships, on a fake KV. Each step posts exact bytes with its own headers.

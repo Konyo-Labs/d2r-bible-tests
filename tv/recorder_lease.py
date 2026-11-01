@@ -104,8 +104,10 @@ def claim(path, my_pid, alive, now_ms=None):
     try:
         with open(path, encoding="utf-8-sig") as f:
             text = f.read()
-    except Exception:
+    except FileNotFoundError:
         text = ""
+    except Exception:
+        return "refuse"
     v = verdict(text, my_pid, now, alive)
     if v == "refuse":
         return v

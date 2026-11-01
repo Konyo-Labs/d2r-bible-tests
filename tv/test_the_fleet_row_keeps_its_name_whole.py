@@ -79,13 +79,17 @@ _BROKEN = {"ok": False, "broken": True, "slot": "tors", "label": "Body Armor", "
 
 def _fleet():
     t = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(time.time() - 40))
+    presence = {"state": "online", "via": "beacon", "ageS": 40, "words": "", "staleAfterS": 2040}
+    online = [
+        {"machine": "box-mac", "nickname": "Konyo", "ver": "v3531", "t": t, "system": _STUCK, "readers": _ON},
+        {"machine": "box-alt", "nickname": "Konyo ALT TEST", "ver": "v3531", "t": t, "system": _STUCK,
+         "readers": _OUT, "picker": _BROKEN},
+        {"machine": "box-lap", "nickname": "Laptop", "ver": "v3531", "t": t, "readers": _OUT, "picker": _BROKEN},
+        {"machine": "box-gb", "nickname": "GrokBot", "ver": "v3531", "t": t, "system": _STUCK, "readers": _ON}]
+    for row in online:
+        row["presence"] = dict(presence)
     return {"ok": True, "me": "box-mac", "publishedVer": "v3531", "fromCache": False, "staleAgeS": 0.0, "webOnly": [],
-            "online": [
-                {"machine": "box-mac", "nickname": "Konyo", "ver": "v3531", "t": t, "system": _STUCK, "readers": _ON},
-                {"machine": "box-alt", "nickname": "Konyo ALT TEST", "ver": "v3531", "t": t, "system": _STUCK,
-                 "readers": _OUT, "picker": _BROKEN},
-                {"machine": "box-lap", "nickname": "Laptop", "ver": "v3531", "t": t, "readers": _OUT, "picker": _BROKEN},
-                {"machine": "box-gb", "nickname": "GrokBot", "ver": "v3531", "t": t, "system": _STUCK, "readers": _ON}],
+            "online": online,
             "offline": [{"machine": "box-wife", "nickname": "Wife PC", "ver": "v2101"}]}
 
 

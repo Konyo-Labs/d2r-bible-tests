@@ -46,7 +46,7 @@ _NOT_ITEMS_RE = re.compile(r"var _NOT_ITEMS = \{(.*?)\};", re.S)
 
 
 def vault_denylist(page=None):
-    """-> the keys of bible.html's `_NOT_ITEMS`, lowercase. [] when the page cannot be read (the session words still hold)."""
+    """-> the keys of bible.html's `_NOT_ITEMS`, lowercase. None when the page cannot be read."""
     try:
         if page is None:
             with io.open(os.path.join(os.path.dirname(HERE), "bible.html"), encoding="utf-8") as f:
@@ -55,7 +55,7 @@ def vault_denylist(page=None):
         body = re.sub(r"/\*.*?\*/", "", m.group(1), flags=re.S) if m else ""
         return re.findall(r"'([^']+)'\s*:", body)
     except Exception:
-        return []
+        return None
 
 
 _NEVER = None
@@ -101,7 +101,7 @@ def table(path=None):
     try:
         with io.open(path or os.path.join(HERE, "item_tables.json"), encoding="utf-8") as f:
             d = json.load(f)
-    except Exception:
+    except FileNotFoundError:
         d = {}
 
     def put(name, grp, strong=False):
@@ -132,7 +132,9 @@ def table(path=None):
 def _never():
     global _NEVER
     if _NEVER is None:
-        _NEVER = set(_norm(w) for w in tuple(SESSION_UI_WORDS) + tuple(vault_denylist()))
+        denied = vault_denylist()
+        extra = denied if isinstance(denied, list) else ()
+        _NEVER = set(_norm(w) for w in tuple(SESSION_UI_WORDS) + tuple(extra))
     return _NEVER
 
 
