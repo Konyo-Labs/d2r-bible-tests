@@ -10243,6 +10243,19 @@ GATES = [
              "leased agent running (out of the kill-on-close job) and stops an unleased one, and a restarted console "
              "adopts it - the boot reclaim and start_agent spare it. The Sept 29 capture sweep still ends unleased "
              "orphans. RED_PROOF reverts each joint."),
+    Gate("test_a_session_shows_only_real_item_names",
+         [sys.executable, os.path.join(HERE, "test_a_session_shows_only_real_item_names.py")], 120,
+         needs_app=False,
+         why="v3850 (Elad 02:40 IDT, 2026-11-01) - REAL ITEM NAMES OR NOTHING. Dean's session cards printed raw OCR as "
+             "the names a run saw ('Resu rrected', 'SKULL TauCH', 'You have joined channel: Lobby', STASH). "
+             "farmed_names.snap snaps a read word to a known D2 name from item_tables.json or drops it; UI words and "
+             "NPC names (Deckard Cain, Tyrael, Stash) are never items. The digest and the viewer both ask it."),
+    Gate("test_a_session_groups_what_was_farmed",
+         [sys.executable, os.path.join(HERE, "test_a_session_groups_what_was_farmed.py")], 120,
+         needs_app=False,
+         why="v3850 (Elad 02:55/03:05 IDT, 2026-11-01) - AN ORGANIZED FARMED SUMMARY, NO POTIONS. A session card now "
+             "groups what was farmed (uniques, sets, runewords, runes, charms, jewels, rings and amulets, gems, bases) "
+             "with pickup counts; potions, scrolls, tomes, keys, gold, arrows and bolts are never registered."),
     Gate("test_a_gate_says_what_it_guards_not_how_many",
          [sys.executable, os.path.join(HERE, "test_a_gate_says_what_it_guards_not_how_many.py")], 60,
          needs_app=False,

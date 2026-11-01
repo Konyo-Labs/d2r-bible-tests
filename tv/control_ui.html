@@ -22983,6 +22983,17 @@ window._lockMark = function(isOpen, px, label){
       ? (s.chroniclesFound + ' chronicle' + (s.chroniclesFound === 1 ? '' : 's') + ' found') : 'chronicles found UNKNOWN';
     var farm = (typeof s.itemsFarmed === 'number' && isFinite(s.itemsFarmed) && s.itemsFarmed >= 0)
       ? (s.itemsFarmed + ' item' + (s.itemsFarmed === 1 ? '' : 's') + ' farmed') : 'items farmed UNKNOWN';
+    /* v3850 - the farmed summary: snapped names grouped with counts (shadow_sessions.digest -> farmed_names.group) */
+    var _FARM_LABEL = {uniques: 'Uniques', sets: 'Sets', runewords: 'Runewords', runes: 'Runes', charms: 'Charms',
+      jewels: 'Jewels', jewelry: 'Rings & amulets', gems: 'Gems', bases: 'Bases'};
+    var farmed = '';
+    if (nm !== null && s.farmed && typeof s.farmed === 'object') {
+      var fg = Object.keys(_FARM_LABEL).filter(function(g){ return Array.isArray(s.farmed[g]) && s.farmed[g].length; });
+      farmed = fg.length ? fg.map(function(g){
+        return '<span class="ssv-fg"><b>' + _FARM_LABEL[g] + '</b> ' + s.farmed[g].map(function(r){
+          return esc(String(r && r[0] || '')) + ((r && r[1] > 1) ? ' \u00d7' + r[1] : ''); }).join(', ') + '</span>';
+      }).join(' · ') : (nm.length ? 'no farmed item was read on this run (pickup noise only)' : names);
+    }
     var facts = 'playtime ' + (play || 'UNKNOWN') + ' · AFK time ' + (away || 'UNKNOWN') + ' · ' + chron + ' · ' + farm;
     var imgs = [], bad = 0;
     (Array.isArray(s.frames) ? s.frames : []).slice(0, 3).forEach(function(f){
@@ -22994,7 +23005,7 @@ window._lockMark = function(isOpen, px, label){
     if (!imgs.length) note = '<div class="ssv-why">no pictures - ' + esc(String(s.why || (bad ? 'its pictures would not draw' : 'why UNKNOWN, the record names none'))) + '</div>';
     else if (bad) note = '<div class="ssv-why">' + bad + ' of its pictures would not draw</div>';
     return '<div class="ssv-row"><div class="ssv-t">' + esc(when + ' · ' + span + ' · ' + reads) + '</div>'
-      + '<div class="ssv-names">' + names + '</div>'
+      + (farmed ? '<div class="ssv-names ssv-farmed">' + farmed + '</div>' : '<div class="ssv-names">' + names + '</div>')
       + '<div class="ssv-facts">' + esc(facts) + '</div>'
       + (imgs.length ? '<div class="ssv-thumbs">' + imgs.join('') + '</div>' : '') + note + '</div>';
   }

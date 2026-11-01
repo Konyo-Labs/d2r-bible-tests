@@ -203,6 +203,7 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
     change-only rule could never hold (its law caught a second post of an unchanged digest). The site record keeps its
     own time; `now_ms` stays in the signature for the callers that date their checks."""
     import replay as _rp
+    import farmed_names as _FN
     out = {"v": 1, "sessions": [], "bytes": 0, "dropped": 0, "left": []}
     try:
         groups = _rp.split_sessions(list(rows or []))
@@ -212,11 +213,9 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
     for g in groups[:MAX_SESSIONS]:
         reads = [r for r in g if is_read(r)]
         moments = _rp.session_moments(g) or []
-        names = []
-        for r in reads:
-            for n in _names(r):
-                if n not in names:
-                    names.append(n)
+        # v3850 - a read word is snapped to a known D2 name or dropped; UI words, NPCs and consumables never show
+        names = _FN.clean([n for r in reads for n in _names(r)])
+        farmed = _FN.group([_names(r) for r in reads])
         sid = next((r.get("sessionId") for r in g if r.get("sessionId")), None)
         play_ms, afk_ms = _play_afk(moments)
         s = {"sessionId": sid, "t0": min(moments) if moments else None, "t1": max(moments) if moments else None,
@@ -224,7 +223,8 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
              "frames": [], "why": None,
              "playMs": play_ms, "afkMs": afk_ms,
              "chroniclesFound": _named_where(g, "scene", "chronicle"),
-             "itemsFarmed": _named_where(g, "intent", "farmed")}
+             "itemsFarmed": _named_where(g, "intent", "farmed"),
+             "farmed": farmed}
         whys = []
         for fid in _key_frames(reads):
             data, why = thumb_bytes(hist_dir, fid, make)
@@ -359,6 +359,25 @@ def read_cache(directory, owner):
     return rec if record_ok(rec, owner) else None
 
 
+def viewed_sessions(sessions):
+    """v3850 - an owner whose console predates the farmed summary published raw read words. The viewer snaps them
+    by the same rule (farmed_names) before drawing: junk, UI words and consumables never reach the card. Each name
+    counts once (the old record kept no per-read order). A session that already carries `farmed` is shown as given."""
+    import farmed_names as _FN
+    if not isinstance(sessions, list):
+        return sessions
+    out = []
+    for s in sessions:
+        if isinstance(s, dict) and "farmed" not in s and isinstance(s.get("names"), list):
+            s = dict(s)
+            raw = [n for n in s["names"] if isinstance(n, str)]
+            s["names"] = _FN.clean(raw)
+            s["namesMore"] = None
+            s["farmed"] = _FN.group([raw])
+        out.append(s)
+    return out
+
+
 def view(owner, rec, now_ms, source="worker", fetch_why=None):
     """-> {ok, owner, published, sessions, t, ageS, source, why}. A copy says it is one and how old; no record says why."""
     if not isinstance(rec, dict):
@@ -366,7 +385,7 @@ def view(owner, rec, now_ms, source="worker", fetch_why=None):
                 "source": None, "why": fetch_why or "no record of %s's sessions could be read" % owner}
     t = rec.get("t")
     import console_snapshot as _cs
-    return {"ok": True, "owner": owner, "published": True, "sessions": rec["digest"]["sessions"], "t": t,
+    return {"ok": True, "owner": owner, "published": True, "sessions": viewed_sessions(rec["digest"]["sessions"]), "t": t,
             "ageS": max(0, (int(now_ms) - t) // 1000) if isinstance(t, int) else None, "source": source,
             # REG-2810 - the record's age in words, by the profile view's one rule; the shadow's list prints it as given
             "ago": _cs._ago_words(int(now_ms) - t) if isinstance(t, int) else None,
