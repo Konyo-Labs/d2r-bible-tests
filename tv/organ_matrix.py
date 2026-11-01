@@ -451,9 +451,15 @@ def comparability(cov, surf):
 LAST_COMPARABILITY = {}
 
 
-def matrix():
-    """-> (rows, organ_why). One row per surface, one cell per organ."""
-    cov = organ_coverage()
+def matrix(cov=None):
+    """-> (rows, organ_why). One row per surface, one cell per organ.
+
+    v3849 - `cov` lets a caller judge the matrix against the SAME organ answer it was built from.
+    The eagle is asked live over :17772; asking it twice (once here, once by the checker) under
+    gate load could get an answer the first time and a timeout the second, and the checker then
+    reported a COVERED cell as "could not be asked" - two measurements compared as one."""
+    if cov is None:
+        cov = organ_coverage()
     why = {o: cov[o][1] for o in ORGANS if cov.get(o) and cov[o][1]}
     _surf_all = surfaces()
     comp = comparability(cov, _surf_all)

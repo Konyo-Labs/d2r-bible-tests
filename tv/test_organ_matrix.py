@@ -35,7 +35,8 @@ class ItNeverInventsCoverage(unittest.TestCase):
     def test_every_COVERED_cell_is_backed_by_the_organ_naming_it(self):
         """The one claim that must never be free. Re-derive each COVERED cell from the organ."""
         cov = OM.organ_coverage()
-        rows, _why = OM.matrix()
+        # v3849 - one snapshot: the matrix is judged against the organ answer it was built from.
+        rows, _why = OM.matrix(cov)
         # REG-1893 - surfaces() swallows a failed import, so a matrix with no rows is a quiet
         # possibility, and every per-cell claim below would then pass over cells it never saw.
         self.assertTrue(rows, "OM.matrix() returned no rows, so there is no cell to check")
@@ -55,7 +56,8 @@ class ItNeverInventsCoverage(unittest.TestCase):
 
     def test_an_unaskable_organ_is_UNKNOWN_everywhere_and_never_ABSENT(self):
         cov = OM.organ_coverage()
-        rows, _why = OM.matrix()
+        # v3849 - one snapshot: the matrix is judged against the organ answer it was built from.
+        rows, _why = OM.matrix(cov)
         # REG-1893 - as above: no rows means no cell was read as UNKNOWN or otherwise.
         self.assertTrue(rows, "OM.matrix() returned no rows, so there is no cell to check")
         for organ, (names, _w) in cov.items():
