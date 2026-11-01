@@ -63012,7 +63012,14 @@ function renderJournal(){
       var _back = [];
       try { _back = JSON.parse(window.LSR.getItem('d2r_owned') || '[]') || []; } catch(e){}
       var _bs = {}; _back.forEach(function(n){ _bs[n] = 1; });
-      var _lost = added.filter(function(n){ return !_bs[n]; });
+      var _lost = added.filter(function(n){
+        if (_bs[n]) return false;
+        /* v3849 — a set name is not an item. The owned door stores its pieces, so the title
+           being absent is the split, and the restore survived when every piece is there. */
+        var ps = (typeof window._setPiecesOf === 'function') ? window._setPiecesOf(n) : null;
+        if (ps && ps.length && ps.every(function(p){ return !!_bs[p]; })) return false;
+        return true;
+      });
       if (_lost.length) {
         try { console.warn('[vault] v2207: ' + _lost.length + ' item(s) did not persist — NOT '
                            + 'stamping, it will retry: ' + _lost.slice(0,4).join(', ')); } catch(e){}
