@@ -100,12 +100,18 @@ def wilson_low(ok, n, z=Z):
     return max(0.0, (c - m) / d)
 
 
+def _age_weight(p, now):
+    """The same age and weight _tier uses. One formula, so a proof cannot drift from the price."""
+    t = _day_ts(p["day"])
+    age = max(0.0, (now - t) / 86400.0)
+    w = max(0.0, min(1.0, p.get("w", 1))) * 0.5 ** (age / HALF_LIFE_DAYS)
+    return age, w
+
+
 def _tier(posts, now):
     pairs = []
     for p in posts:
-        t = _day_ts(p["day"])
-        age = max(0.0, (now - t) / 86400.0)
-        w = max(0.0, min(1.0, p.get("w", 1))) * 0.5 ** (age / HALF_LIFE_DAYS)
+        _age, w = _age_weight(p, now)
         if w > 0:
             pairs.append((p["fg"], w))
     if not pairs:
@@ -126,6 +132,92 @@ def price(db, item, now=None):
     stale, why = is_stale(db, item, now)
     return {"item": str(item), "normal": _tier([p for p in posts if not p.get("perfect")], now),
             "perfect": _tier([p for p in posts if p.get("perfect")], now), "stale": stale, "why": why}
+
+
+def _band(fg, w, mid):
+    """aside: it does not weigh. in: within AGREE of the median _tier used. out: it weighs and disagrees."""
+    if w <= 0 or mid is None:
+        return "aside"
+    if abs(fg - mid) <= AGREE * mid:
+        return "in"
+    return "out"
+
+
+def _median_of(posts, now):
+    pairs = []
+    for p in posts:
+        _age, w = _age_weight(p, now)
+        if w > 0:
+            pairs.append((p["fg"], w))
+    return _wmedian(pairs) if pairs else None
+
+
+def explain(db, item, now=None):
+    """The posts price() weighed, with the age weight and the band. The fg and the Wilson stay on price().
+
+    A missing post list is not an empty price. This does not invent a fg. An item with no row has no posts.
+    """
+    now = time.time() if now is None else now
+    it = (db.get("items") or {}).get(key_of(item)) if isinstance(db, dict) else None
+    posts = list((it or {}).get("posts", {}).values()) if isinstance(it, dict) else []
+    normal = [p for p in posts if not p.get("perfect")]
+    perfect = [p for p in posts if p.get("perfect")]
+    mid_n = _median_of(normal, now)
+    mid_p = _median_of(perfect, now)
+    rows = []
+    for p in posts:
+        try:
+            fg = float(p.get("fg"))
+        except (TypeError, ValueError):
+            continue
+        age, w = _age_weight(p, now)
+        perfect_row = bool(p.get("perfect"))
+        seen = p.get("seenAt")
+        try:
+            seen_n = float(seen) if seen is not None else None
+        except (TypeError, ValueError):
+            seen_n = None
+        rows.append({
+            "fg": fg,
+            "day": str(p.get("day") or "")[:10],
+            "link": p.get("link") or "",
+            "w": p.get("w", 1),
+            "perfect": perfect_row,
+            "src": str(p.get("src") or ""),
+            "seenAt": seen_n,
+            "out": str(p.get("out") or "")[:80],
+            "ageDays": round(age, 2),
+            "decayed": round(w, 4),
+            "tier": "perfect" if perfect_row else "normal",
+            "band": _band(fg, w, mid_p if perfect_row else mid_n),
+        })
+    rows.sort(key=lambda r: (r["day"], str(r["link"]), r["fg"]), reverse=True)
+    return {
+        "posts": rows,
+        "halfLifeDays": HALF_LIFE_DAYS,
+        "agree": AGREE,
+        "refreshDays": REFRESH_DAYS,
+        "stalePostDays": STALE_POST_DAYS,
+        "z": Z,
+    }
+
+
+def view(db, now=None):
+    """Every item in one DB, each with price() and explain(). An unreadable shape is unknown, never a zero price."""
+    if not isinstance(db, dict) or db.get("schema") != SCHEMA:
+        return {"reason": "unknown", "say": "the price DB would not read", "items": []}
+    now = time.time() if now is None else now
+    items = []
+    for _k, it in sorted((db.get("items") or {}).items(), key=lambda kv: kv[0]):
+        if not isinstance(it, dict):
+            continue
+        name = it.get("item")
+        if not name:
+            continue
+        row = price(db, name, now)
+        row["proof"] = explain(db, name, now)
+        items.append(row)
+    return {"reason": "read", "items": items}
 
 
 def is_stale(db, item, now=None):

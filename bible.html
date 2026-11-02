@@ -12062,6 +12062,11 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     #tab-d2jsp .d2jsp-price-search .d2jsp-k{font-family:var(--serif-display,Cinzel,serif);letter-spacing:.14em;text-transform:uppercase;color:#f0c060}
     #tab-d2jsp .d2jsp-price-search input{font-family:var(--mono);background:#120e08;color:#f6e7c2;border:1px solid rgba(233,208,122,.4);border-radius:6px;padding:6px 8px}
     #tab-d2jsp #d2jsp-price-out{grid-column:1 / -1}
+#tab-d2jsp .d2jsp-advanced-b{grid-column:1 / -1;justify-self:start}
+#tab-d2jsp .d2jsp-backend{grid-column:1 / -1;border:1px solid rgba(240,192,96,.35);border-radius:8px;padding:10px;margin-top:8px;background:rgba(8,7,5,.65);overflow-x:auto}
+#tab-d2jsp .d2jsp-backend[hidden]{display:none !important}
+#tab-d2jsp .d2jsp-backend table{width:100%;border-collapse:collapse;font-size:var(--fs-micro,12px)}
+#tab-d2jsp .d2jsp-backend th,#tab-d2jsp .d2jsp-backend td{text-align:left;padding:3px 6px;border-bottom:1px solid rgba(240,192,96,.15);vertical-align:top}
     #tab-d2jsp .d2jsp-ev{margin:4px 0;color:#e9d07a}
     #tab-d2jsp .d2jsp-ev summary{cursor:pointer;color:#f0c060}
     #tab-d2jsp .d2jsp-ev table{border-collapse:collapse;margin-top:6px;font-family:var(--mono);width:100%}
@@ -12117,6 +12122,11 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
         <label class="d2jsp-k" for="d2jsp-price-q">Price search</label>
         <input id="d2jsp-price-q" type="search" placeholder="anni 20/20/10, 40/15 shako, jmod" aria-label="Price search: an item and its roll, as traders write it" autocomplete="off" spellcheck="false">
         <button type="submit" class="vault-btn vault-btn-primary" id="d2jsp-price-go">Price it</button>
+        <button type="button" class="vault-btn d2jsp-advanced-b" id="d2jsp-price-advanced" aria-controls="d2jsp-price-backend" aria-expanded="false">Advanced</button>
+        <div id="d2jsp-price-backend" class="d2jsp-backend" hidden>
+          <p class="d2jsp-say" data-d2jsp-backend>Price an item, then open Advanced. The database price, the Wilson score, and the posts that price was weighed from are shown here. Nothing is posted.</p>
+          <p><button type="button" class="vault-btn" id="d2jsp-price-db-show">Show the database</button></p>
+        </div>
         <div class="d2jsp-say" id="d2jsp-price-out" aria-live="polite">Reads d2jsp posts dated 2026 or later, board 268 only. Nothing is posted.</div>
       </form>
       <input id="d2jsp-find" type="search" placeholder="Find a filed item" aria-label="Find a filed item" autocomplete="off" spellcheck="false">
@@ -12856,6 +12866,106 @@ function d2jspSearchLine(q, sim, parsed) {
   }
   return line;
 }
+function d2jspFgText(n) {
+  var x = Number(n);
+  if (!(x > 0) || !isFinite(x)) return '';
+  return (Math.abs(x - Math.round(x)) < 1e-9) ? String(Math.round(x)) : String(Math.round(x * 10) / 10);
+}
+function d2jspSeenText(at) {
+  var n = Number(at);
+  if (!(n > 0) || !isFinite(n)) return 'seen time not on record';
+  return d2jspWhen(new Date(n > 1e12 ? n : n * 1000).toISOString()) || 'seen time not on record';
+}
+function d2jspPriceSyncLine(painted, dbFg) {
+  var p = Number(painted), d = Number(dbFg);
+  var pOk = painted != null && painted !== '' && isFinite(p) && p > 0;
+  var dOk = dbFg != null && dbFg !== '' && isFinite(d) && d > 0;
+  if (!pOk && !dOk) return 'Neither the painted price nor the database price is a number.';
+  if (!pOk) return 'The painted price is not a number. Database price ' + d2jspFgText(d) + ' fg.';
+  if (!dOk) return 'Database price is unknown, so it cannot match the painted ' + d2jspFgText(p) + ' fg.';
+  if (Math.abs(p - d) < 0.05) return 'Painted price and database price are the same, ' + d2jspFgText(d) + ' fg.';
+  return 'Painted price ' + d2jspFgText(p) + ' fg. Database price ' + d2jspFgText(d) + ' fg. They are not the same number. The painted price is this reading. The database price is the age-weighted median of every post kept for this item.';
+}
+function d2jspTierSay(label, tier) {
+  if (!tier || tier.fg == null || !(Number(tier.fg) > 0)) {
+    return label + ' price unknown. No weighted post.';
+  }
+  var n = Number(tier.n) || 0;
+  return label + ' price ' + d2jspFgText(tier.fg) + ' fg, from ' + n + ' weighted ' + (n === 1 ? 'post' : 'posts')
+    + ', effective ' + tier.nEff + ', Wilson lower bound ' + tier.conf + '.';
+}
+function d2jspDatabaseButton() {
+  return '<p><button type="button" class="vault-btn" id="d2jsp-price-db-show">Show the database</button></p>';
+}
+function d2jspBackendHtml(db, painted, opts) {
+  opts = opts || {};
+  if (!db || typeof db !== 'object' || db.unknown) {
+    var why = (db && db.unknown) ? ('Price database unknown. ' + db.unknown) : (opts.say || 'The price database did not come back with this reading.');
+    return '<p class="d2jsp-say" data-d2jsp-backend>' + d2jspEscText(why) + '</p>';
+  }
+  var proof = db.proof || {};
+  var parts = [];
+  parts.push('<p data-d2jsp-tier="normal">' + d2jspEscText(d2jspTierSay('Normal', db.normal)) + '</p>');
+  parts.push('<p data-d2jsp-tier="perfect">' + d2jspEscText(d2jspTierSay('Perfect', db.perfect)) + '</p>');
+  var fresh = db.stale === true ? 'Stale' : (db.stale === false ? 'Fresh' : 'Stale flag not on this answer');
+  parts.push('<p data-d2jsp-fresh>' + d2jspEscText(fresh + '. ' + (db.why ? String(db.why) : 'no reason on this answer')) + '</p>');
+  if (proof.halfLifeDays != null && proof.agree != null) {
+    var hasScore = (db.normal && Number(db.normal.fg) > 0) || (db.perfect && Number(db.perfect.fg) > 0);
+    parts.push('<p data-d2jsp-law>Age half-life ' + d2jspEscText(proof.halfLifeDays) + ' days. A post agrees when it is within '
+      + d2jspEscText(Math.round(Number(proof.agree) * 100)) + '% of the price.'
+      + (hasScore ? ' Wilson lower bound is the database score of the posts marked agrees.' : '') + '</p>');
+  } else {
+    parts.push('<p data-d2jsp-law>The age half-life and the agree band were not on this answer.</p>');
+  }
+  if (opts.sync) {
+    parts.push('<p data-d2jsp-sync>' + d2jspEscText(d2jspPriceSyncLine(painted, db.normal && db.normal.fg)) + '</p>');
+  }
+  var posts = proof.posts;
+  if (!Array.isArray(posts)) {
+    parts.push('<p data-d2jsp-posts>The posts behind this price were not on the answer.</p>');
+  } else if (!posts.length) {
+    parts.push('<p data-d2jsp-posts>No post is kept for this item.</p>');
+  } else {
+    var body = posts.map(function (p) {
+      var open = (p.link && String(p.link).indexOf('https://forums.d2jsp.org/') === 0)
+        ? ('<a href="' + d2jspEscText(p.link) + '" target="_blank" rel="noopener noreferrer">open post</a>')
+        : 'no link';
+      var band = p.band === 'in' ? 'agrees' : (p.band === 'out' ? 'outside the band' : 'set aside');
+      var weight = (p.out ? ('set aside, ' + p.out) : (p.w != null ? String(p.w) : 'weight not on record'));
+      return '<tr data-d2jsp-post><td>' + d2jspEscText(p.day) + '</td><td>' + d2jspEscText(d2jspFgText(p.fg) || 'no fg')
+        + ' fg</td><td>' + d2jspEscText(p.tier || '') + '</td><td>' + d2jspEscText(p.ageDays != null ? p.ageDays : 'age unknown')
+        + '</td><td>' + d2jspEscText(weight) + '</td><td>' + d2jspEscText(p.decayed != null ? p.decayed : '')
+        + '</td><td>' + d2jspEscText(band) + '</td><td>' + d2jspEscText(p.src ? p.src : 'source not on record')
+        + '</td><td>' + d2jspEscText(d2jspSeenText(p.seenAt)) + '</td><td>' + open + '</td></tr>';
+    }).join('');
+    parts.push('<table data-d2jsp-proof><thead><tr><th>date</th><th>price</th><th>tier</th><th>age days</th><th>weight</th><th>decayed</th><th>band</th><th>source</th><th>seen</th><th>post</th></tr></thead><tbody>'
+      + body + '</tbody></table>');
+  }
+  return parts.join('');
+}
+function d2jspBatchHtml(view) {
+  var btn = d2jspDatabaseButton();
+  if (!view || typeof view !== 'object') {
+    return '<p class="d2jsp-say" data-d2jsp-backend>The price database did not answer.</p>' + btn;
+  }
+  if (view.reason === 'paused') {
+    return '<p class="d2jsp-say" data-d2jsp-backend>' + d2jspEscText(view.say || 'paused while checks run') + '</p>' + btn;
+  }
+  if (view.reason === 'unknown') {
+    return '<p class="d2jsp-say" data-d2jsp-backend>Price database unknown. ' + d2jspEscText(view.say || 'it would not read') + '</p>' + btn;
+  }
+  var items = view.items || [];
+  if (!items.length) {
+    return '<p class="d2jsp-say" data-d2jsp-backend>The price database has no item yet.</p>' + btn;
+  }
+  var body = items.map(function (it) {
+    var name = it && it.item ? String(it.item) : '';
+    return '<section data-d2jsp-batch-item="' + d2jspEscText(name) + '"><h3>' + d2jspEscText(name) + '</h3>' + d2jspBackendHtml(it) + '</section>';
+  }).join('');
+  return '<p class="d2jsp-say" data-d2jsp-batch>Every item kept in the price database on this console. ' + items.length
+    + (items.length === 1 ? ' item.' : ' items.') + '</p>' + body + btn;
+}
+
 /* ⟦D2JSP DESK END⟧ */
 (function(){
   var quoted = {};
@@ -13742,6 +13852,8 @@ function d2jspSearchLine(q, sim, parsed) {
       if (gen !== searchGen) return;     /* only the newest search paints */
       var sim = d2jspSimilarPrice(j, parsed.roll, parsed.item);
       out.innerHTML = '<div>' + esc(d2jspSearchLine(j, sim, parsed)) + '</div>' + (j && (j.reason === 'read' || j.reason === 'no prices') ? d2jspEvidenceHtml(j.reason === 'read' ? sim : null, j) : '');
+      var backend = document.getElementById('d2jsp-price-backend');
+      if (backend) backend.innerHTML = d2jspBackendHtml(j && j.db, j && j.fg, {sync:true, say:j && j.say}) + d2jspDatabaseButton();
     }
     function step(){
       if (i >= paths.length) { show({ fg: null, n: 0, readAt: null, reason: 'unanswered' }); return; }
@@ -13756,6 +13868,41 @@ function d2jspSearchLine(q, sim, parsed) {
   document.addEventListener('submit', function(ev){
     if (ev.target && ev.target.id === 'd2jsp-price-form') { ev.preventDefault(); priceSearch(); }
   });
+  document.addEventListener('click', function(ev){
+    var t = ev.target;
+    if (!t || !t.id) return;
+    if (t.id === 'd2jsp-price-db-show') {
+      if (ev.preventDefault) ev.preventDefault();
+      d2jspLoadDatabase();
+      return;
+    }
+    if (t.id !== 'd2jsp-price-advanced') return;
+    var panel = document.getElementById('d2jsp-price-backend');
+    if (!panel) return;
+    panel.hidden = !panel.hidden;
+    t.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+  });
+  function d2jspLoadDatabase(){
+    var panel = document.getElementById('d2jsp-price-backend');
+    var door = document.getElementById('d2jsp-price-advanced');
+    if (!panel) return;
+    panel.hidden = false;
+    if (door) door.setAttribute('aria-expanded', 'true');
+    panel.textContent = 'Reading the price database on this console. Nothing is posted.';
+    var paths = ['/api/d2jsp_price_db', '/d2r/api/d2jsp_price_db'], i = 0;
+    function step(){
+      if (i >= paths.length) {
+        panel.innerHTML = d2jspBatchHtml({reason: 'unknown', say: 'The price database did not answer.'});
+        return;
+      }
+      fetch(paths[i++]).then(function(r){ return r.json(); }).then(function(v){
+        if (!v || (v.ok === false && v.reason === 'local')) { step(); return; }
+        if (v.reason !== 'read' && v.reason !== 'paused' && v.reason !== 'unknown') { step(); return; }
+        panel.innerHTML = d2jspBatchHtml(v);
+      }).catch(function(){ step(); });
+    }
+    step();
+  }
   function d2jspShotRead(name) {
     var raw = '';
     try {

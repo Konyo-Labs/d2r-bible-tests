@@ -193,7 +193,10 @@ def _d2jsp_db_fold(reading):
                 _PDB.save(path, db)   # readAt moved: a fresh read restarts the refresh clock
         except OSError as e:
             return {"unknown": "the price DB could not be written (%s)" % type(e).__name__}
-        return _PDB.price(db, reading.get("item"))
+        now = time.time()
+        priced = _PDB.price(db, reading.get("item"), now)
+        priced["proof"] = _PDB.explain(db, reading.get("item"), now)
+        return priced
 
 
 def _fixture_root_for_state():
@@ -48200,6 +48203,25 @@ class Handler(BaseHTTPRequestHandler):
                     _out["opened"] = True
             _out["db"] = _d2jsp_db_fold(_out)   # v3849 - every read post is kept, aged and weighed (the price DB)
             self._json(_code, _out)
+            return
+        if path == "/api/d2jsp_price_db":
+            import d2jsp_chrome as _d2jsp
+            import d2jsp_price_db as _PDB
+            if not _d2jsp.console_may_post(
+                    self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
+                    self.headers.get("Sec-Fetch-Site")):
+                self._json(403, {"ok": False, "reason": "local"})
+                return
+            if _PDB.checks_running() is not False:
+                self._json(200, {"reason": "paused", "say": _PDB.PAUSE, "items": []})
+                return
+            _db_path = os.path.join(_fixture_root_for_state(), "d2jsp_price_db.json")
+            _db = _PDB.load(_db_path)
+            if _db is None:
+                self._json(200, {"reason": "unknown",
+                                 "say": "the price DB at this console would not read", "items": []})
+                return
+            self._json(200, _PDB.view(_db))
             return
         if path in ("/", "/index.html", "/ui"):
             body = _read_ui()

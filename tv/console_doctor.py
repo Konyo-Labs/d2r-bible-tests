@@ -10822,6 +10822,45 @@ _LANE_STALE_HOURS = 6.0
 #: `gh` has no deadline of its own; without this a GitHub stall becomes a doctor stall.
 _LANE_GH_TIMEOUT = 20
 
+
+def _check_the_d2jsp_price_backend_matches_its_database():
+    """The Advanced door on the D2JSP tab shows the price database the quote already computes."""
+    try:
+        with open(os.path.join(ROOT, "bible.html"), encoding="utf-8", errors="replace") as fh:
+            page = fh.read()
+    except OSError:
+        return UNKNOWN, "bible.html could not be read, so the price database door is unknown"
+    if 'id="d2jsp-price-advanced"' not in page or 'id="d2jsp-price-backend"' not in page:
+        return MISSING, "the D2JSP tab has no Advanced door onto the price database"
+    call = "d2jspBackendHtml(j && j.db, j && j.fg, {sync:true, say:j && j.say})"
+    if call not in page or "function d2jspBackendHtml" not in page:
+        return MISSING, "a search does not fill the price database panel"
+    try:
+        with open(os.path.join(HERE, "control_app.py"), encoding="utf-8", errors="replace") as fh:
+            app = fh.read()
+    except OSError:
+        return UNKNOWN, "control_app.py could not be read, so the price fold is unknown"
+    if '_out["db"] = _d2jsp_db_fold(_out)' not in app:
+        return MISSING, "the quote no longer folds the price database"
+    import d2jsp_price_db as pdb
+    db = pdb.empty()
+    now = 1793397600.0
+    day = "2026-10-31"
+    for fg, w, n in ((100, 1, 1), (100, 1, 2), (9000, 0, 3)):
+        pdb.ingest(db, {"item": "Shako", "reason": "read", "posts": [{
+            "fg": fg, "day": day, "w": w,
+            "link": "https://forums.d2jsp.org/topic.php?t=%d" % n,
+        }]}, "mac", now)
+    priced = pdb.price(db, "Shako", now)
+    proof = pdb.explain(db, "Shako", now)
+    aside = [p for p in proof.get("posts") or [] if p.get("band") == "aside"]
+    normal = priced.get("normal") or {}
+    if normal.get("fg") != 100 or not (normal.get("conf") or 0) > 0:
+        return MISSING, "two agreeing posts did not price at 100 fg"
+    if len(aside) != 1 or aside[0].get("decayed") != 0:
+        return MISSING, "a set-aside post moved the price or left the record"
+    return OK, "the D2JSP tab shows the database price and the posts it was weighed from"
+
 CHECKS = [
     # v2961 (#67) — the drift lane compares version LABELS; this compares the BYTES, which is the
     # only way an unstamped save can be seen. See the docstring for why it asks the console rather
@@ -11093,6 +11132,7 @@ CHECKS = [
     ("this machine keeps itself current", _check_this_machine_is_keeping_itself_current),
     # #64 — the WHY behind the row above: the pull lane's own record of whether its pulls land.
     ("this checkout can update", _check_this_checkout_can_update),
+    ("the d2jsp price database is on its tab", _check_the_d2jsp_price_backend_matches_its_database),
 ]
 
 
@@ -11262,7 +11302,8 @@ PERIODIC = ("engines corroborate", "sweep would find", "swallowed reads",
             # push gate. PERIODIC, not SLOW: a backup loop that fails silently is the "backed up
             # nothing for 18 days" scar, so it MUST keep running unattended — just hourly, off the
             # ten-minute cheap timer. The 15s _get timeout stays; it just no longer races the budget.
-            "backup loop")
+            "backup loop",
+            "the d2jsp price database is on its tab")
 PERIODIC_EVERY = 6      # eagle ticks. The eagle sleeps ~10 min, so this is roughly hourly.
 
 
@@ -11966,6 +12007,7 @@ WATCHES = {
     # v3402 — DECLARED, NOT OMITTED. It grades the served script, so it owns no element of its
     # own and the empty tuple is the honest answer.
     "his window has a keyboard door": (),
+    "the d2jsp price database is on its tab": (),
 }
 
 

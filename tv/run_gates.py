@@ -11127,6 +11127,7 @@ GATES = [
     Gate("test_not_in_game_is_one_chip", [sys.executable, os.path.join(HERE, "test_not_in_game_is_one_chip.py")], 60, needs_app=False, why="v3848 - not in game yet is one chip from one rename-safe helper"),
     Gate("test_the_desktop_launcher_wears_the_shipped_logo", [sys.executable, os.path.join(HERE, "test_the_desktop_launcher_wears_the_shipped_logo.py")], 60, needs_app=False, why="v3849 - the desktop launcher wears the shipped logo on every launch"),
     Gate("test_the_d2jsp_price_db_ages_weighs_and_merges", [sys.executable, os.path.join(HERE, "test_the_d2jsp_price_db_ages_weighs_and_merges.py")], 60, needs_app=False, why="v3849 - the d2jsp price DB: age decay, Wilson, perfect tier, refresh, fleet merge"),
+    Gate("test_the_d2jsp_price_backend_shows_its_wilson", [sys.executable, os.path.join(HERE, "test_the_d2jsp_price_backend_shows_its_wilson.py")], 60, needs_app=False, why="the D2JSP tab Advanced button shows the price database, its Wilson score, and the posts that score was weighed from"),
     Gate("test_a_rolled_name_resolves_at_intake",
          [sys.executable, os.path.join(HERE, "test_a_rolled_name_resolves_at_intake.py")], 90,
          needs_app=False,
