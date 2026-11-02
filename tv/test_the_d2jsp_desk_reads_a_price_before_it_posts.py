@@ -1561,7 +1561,6 @@ process.stdout.write(JSON.stringify({
     def test_a_windows_chrome_cookie_opens_with_the_raw_key(self):
         """Windows Chrome seals a v10 cookie with the raw key. v20 stays closed."""
         import base64
-        import hashlib
         import sqlite3
         import tempfile
         from unittest import mock
@@ -1607,17 +1606,13 @@ process.stdout.write(JSON.stringify({
         now = 1_700_000_000
         chrome_now = desk._chrome_now(now)
         host = ".d2jsp.org"
-        prefix = hashlib.sha256(host.encode("utf-8")).digest()
-        try:
-            from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-        except Exception:
-            bound = None
-        else:
-            sealed = AESGCM(key).encrypt(nonce, prefix + b"desk-session", None)
-            bound = b"v10" + nonce + sealed
-            self.assertEqual(desk.decrypt_windows_gcm(bound, key, host), "desk-session")
-            self.assertIsNone(desk.decrypt_windows_gcm(bound, key, "forums.d2jsp.org"))
-            self.assertIsNone(desk.decrypt_windows_gcm(bound, key))
+        bound = bytes.fromhex(
+            "7631300102030405060708090a0b0c"
+            "c382a34efbd2cb3a0add7aad257baf5882500cf46d9c7b9b40ac0f0c501a03"
+            "fde081e8b443c689ecc3c5d58b024b828b770d114e618134ea13f3da43")
+        self.assertEqual(desk.decrypt_windows_gcm(bound, key, host), "desk-session")
+        self.assertIsNone(desk.decrypt_windows_gcm(bound, key, "forums.d2jsp.org"))
+        self.assertIsNone(desk.decrypt_windows_gcm(bound, key))
         folder = tempfile.mkdtemp(prefix="d2jsp-win-")
         db = os.path.join(folder, "Cookies")
         try:
@@ -1630,7 +1625,7 @@ process.stdout.write(JSON.stringify({
             )
             con.execute(
                 "insert into cookies values (?,?,?,?)",
-                (host, "sid", bound or blob, chrome_now + 10 ** 12),
+                (host, "sid", bound, chrome_now + 10 ** 12),
             )
             old = b"\x01\x00\x00\x00" + b"old-blob"
             con.execute(
