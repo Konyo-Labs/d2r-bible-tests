@@ -80,23 +80,31 @@ class ATargetWaitStretches(unittest.TestCase):
 
 
 _F = "render_check.py"
-RED_PROOF = [
-    {"why": "_selector_ready keeps its fixed 20s", "file": _F,
-     "find": "    budget = _scaled_wait(budget)  # TARGET-WAIT-SCALED (REG-3129)\n    t0 = time.time()\n",
-     "replace": "    t0 = time.time()\n", "matches": 1},
-    {"why": "the activate wait is unscaled", "file": _F,
-     "find": "_t0 + _scaled_wait(spec.get(\"activate_budget\")", "replace": "_t0 + float(spec.get(\"activate_budget\")",
-     "matches": 1},
-    {"why": "the warmup wait is unscaled", "file": _F,
-     "find": "_cap = _scaled_wait(spec.get(\"warmup\") or 1.6)", "replace": "_cap = float(spec.get(\"warmup\") or 1.6)",
-     "matches": 1},
-    {"why": "a wait can shrink below its declared seconds", "file": _F,
-     "find": "    return float(secs) * max(1.0, _RENDER_SCALE)\n", "replace": "    return float(secs) * 0.5\n",
-     "matches": 1},
-    {"why": "the activation refusal does not name the stretch", "file": _F,
-     "find": "% (time.time() - _t0) + _why + _stretch_note())", "replace": "% (time.time() - _t0) + _why)",
-     "matches": 1},
-]
+RED_PROOF = [{'why': '_selector_ready keeps its fixed 20s',
+  'file': 'render_check.py',
+  'find': '    budget = _scaled_wait(budget)  # TARGET-WAIT-SCALED (REG-3129)\n    t0 = time.time()\n',
+  'replace': '    t0 = time.time()\n',
+  'matches': 1},
+ {'why': 'the activate wait is unscaled',
+  'file': 'render_check.py',
+  'find': '_t0 + _scaled_wait(spec.get("activate_budget")',
+  'replace': '_t0 + float(spec.get("activate_budget")',
+  'matches': 1},
+ {'why': 'the warmup wait is unscaled',
+  'file': 'render_check.py',
+  'find': '_cap = _scaled_wait(spec.get("warmup") or 1.6)',
+  'replace': '_cap = float(spec.get("warmup") or 1.6)',
+  'matches': 1},
+ {'why': 'a wait can shrink below its declared seconds',
+  'file': 'render_check.py',
+  'find': '    return float(secs) * max(1.0, _RENDER_SCALE)\n',
+  'replace': '    return float(secs) * 0.5\n',
+  'matches': 1},
+ {'why': 'the activation refusal does not name the stretch',
+  'file': 'render_check.py',
+  'find': '% (time.time() - _t0) + _why + _stretch_note())',
+  'replace': '% (time.time() - _t0) + _why)',
+  'matches': 1}]
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

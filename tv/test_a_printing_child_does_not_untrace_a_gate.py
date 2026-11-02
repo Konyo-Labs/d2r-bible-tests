@@ -73,16 +73,33 @@ class APrintingChildKeepsTheTrace(unittest.TestCase):
 
 _F = "gate_trace/sitecustomize.py"
 _L = "        if head in (\"echo\", \"printf\", \"defaults\") and not any(\n"
-RED_PROOF = [
-    {"why": "echo untraces the gate", "file": _F, "find": _L, "replace": _L.replace("\"echo\", ", ""), "matches": 1},
-    {"why": "printf untraces the gate", "file": _F, "find": _L, "replace": _L.replace("\"printf\", ", ""), "matches": 1},
-    {"why": "defaults untraces the gate", "file": _F, "find": _L, "replace": _L.replace(", \"defaults\"", ""), "matches": 1},
-    {"why": "defaults on a plist here is called inert", "file": _F,
-     "find": "                rel(a) is not None for a in args[1:] if \"/\" in a):\n            return  # prints its own argv",
-     "replace": "                False for a in args[1:] if \"/\" in a):\n            return  # prints its own argv", "matches": 1},
-    {"why": "cat is called inert", "file": _F, "find": _L, "replace": _L.replace("\"defaults\")", "\"defaults\", \"cat\")"),
-     "matches": 1},
-]
+RED_PROOF = [{'why': 'echo untraces the gate',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("echo", "printf", "defaults") and not any(\n',
+  'replace': '        if head in ("printf", "defaults") and not any(\n',
+  'matches': 1},
+ {'why': 'printf untraces the gate',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("echo", "printf", "defaults") and not any(\n',
+  'replace': '        if head in ("echo", "defaults") and not any(\n',
+  'matches': 1},
+ {'why': 'defaults untraces the gate',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("echo", "printf", "defaults") and not any(\n',
+  'replace': '        if head in ("echo", "printf") and not any(\n',
+  'matches': 1},
+ {'why': 'defaults on a plist here is called inert',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '                rel(a) is not None for a in args[1:] if "/" in a):\n'
+          '            return  # prints its own argv',
+  'replace': '                False for a in args[1:] if "/" in a):\n'
+             '            return  # prints its own argv',
+  'matches': 1},
+ {'why': 'cat is called inert',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("echo", "printf", "defaults") and not any(\n',
+  'replace': '        if head in ("echo", "printf", "defaults", "cat") and not any(\n',
+  'matches': 1}]
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

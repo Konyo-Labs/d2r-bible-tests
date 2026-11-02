@@ -56,14 +56,16 @@ class ABrowserLawTakesFreePorts(unittest.TestCase):
 
 
 _F = "test_shadow_mode_draws_their_console.py"
-RED_PROOF = [
-    {"why": "the shadow law pins 17975/17976 again", "file": _F,
-     "find": "HTTP_PORT, CDP_PORT = _free_ports(2)  # SHADOW-FREE-PORTS\n",
-     "replace": "HTTP_PORT = 17975\nCDP_PORT = 17976\n", "matches": 1},
-    {"why": "the reader never matches a pinned port", "file": "test_a_browser_law_takes_ports_the_os_hands_out.py",
-     "find": "        if \"remote-debugging-port\" in src and _FIXED.search(src):\n",
-     "replace": "        if False:\n", "matches": 1},
-]
+RED_PROOF = [{'why': 'the shadow law pins 17975/17976 again',
+  'file': 'test_shadow_mode_draws_their_console.py',
+  'find': 'HTTP_PORT, CDP_PORT = _free_ports(2)  # SHADOW-FREE-PORTS\n',
+  'replace': 'HTTP_PORT = 17975\nCDP_PORT = 17976\n',
+  'matches': 1},
+ {'why': 'the reader never matches a pinned port',
+  'file': 'test_a_browser_law_takes_ports_the_os_hands_out.py',
+  'find': '        if "remote-debugging-port" in src and _FIXED.search(src):\n',
+  'replace': '        if False:\n',
+  'matches': 1}]
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

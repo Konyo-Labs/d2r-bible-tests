@@ -97,16 +97,54 @@ def _drop(name):
             "replace": _LINE.replace("\"%s\", " % name, "").replace(", \"%s\")" % name, ")"), "matches": 1}
 
 
-RED_PROOF = [_drop(n) for n in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo")] + [
-    {"why": "a meter given a file here is called inert", "file": "gate_trace/sitecustomize.py",
-     "find": "                rel(a) is not None for a in args[1:] if \"/\" in a):\n            return  # a machine meter",
-     "replace": "                False for a in args[1:] if \"/\" in a):\n            return  # a machine meter",
-     "matches": 1},
-    {"why": "caffeinate is called inert", "file": "gate_trace/sitecustomize.py", "find": _LINE,
-     "replace": _LINE.replace("\"lsappinfo\")", "\"lsappinfo\", \"caffeinate\")"), "matches": 1},
-    {"why": "bash is called inert", "file": "gate_trace/sitecustomize.py", "find": _LINE,
-     "replace": _LINE.replace("\"lsappinfo\")", "\"lsappinfo\", \"bash\")"), "matches": 1},
-]
+RED_PROOF = [{'why': 'vm_stat untraces the gate',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(\n',
+  'replace': '        if head in ("sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(\n',
+  'matches': 1},
+ {'why': 'sysctl untraces the gate',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(\n',
+  'replace': '        if head in ("vm_stat", "true", "netstat", "ioreg", "lsappinfo") and not any(\n',
+  'matches': 1},
+ {'why': 'true untraces the gate',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(\n',
+  'replace': '        if head in ("vm_stat", "sysctl", "netstat", "ioreg", "lsappinfo") and not any(\n',
+  'matches': 1},
+ {'why': 'netstat untraces the gate',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(\n',
+  'replace': '        if head in ("vm_stat", "sysctl", "true", "ioreg", "lsappinfo") and not any(\n',
+  'matches': 1},
+ {'why': 'ioreg untraces the gate',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(\n',
+  'replace': '        if head in ("vm_stat", "sysctl", "true", "netstat", "lsappinfo") and not any(\n',
+  'matches': 1},
+ {'why': 'lsappinfo untraces the gate',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(\n',
+  'replace': '        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg") and not any(\n',
+  'matches': 1},
+ {'why': 'a meter given a file here is called inert',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '                rel(a) is not None for a in args[1:] if "/" in a):\n'
+          '            return  # a machine meter',
+  'replace': '                False for a in args[1:] if "/" in a):\n            return  # a machine meter',
+  'matches': 1},
+ {'why': 'caffeinate is called inert',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(\n',
+  'replace': '        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo", '
+             '"caffeinate") and not any(\n',
+  'matches': 1},
+ {'why': 'bash is called inert',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(\n',
+  'replace': '        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo", "bash") and '
+             'not any(\n',
+  'matches': 1}]
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

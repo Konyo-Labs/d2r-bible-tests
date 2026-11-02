@@ -92,16 +92,26 @@ class ANodeVersionAskKeepsTheTrace(unittest.TestCase):
 
 _F = "gate_trace/sitecustomize.py"
 _L = "        if is_node and len(args) == 2 and args[1] in (\"--version\", \"-v\"):\n"
-RED_PROOF = [
-    {"why": "node --version untraces the gate", "file": _F, "find": _L,
-     "replace": "        if False:\n", "matches": 1},
-    {"why": "node -v untraces the gate", "file": _F, "find": _L,
-     "replace": _L.replace(", \"-v\")", ",)"), "matches": 1},
-    {"why": "any node child with --version first is called inert", "file": _F, "find": _L,
-     "replace": "        if is_node and len(args) >= 2 and args[1] in (\"--version\", \"-v\"):\n", "matches": 1},
-    {"why": "every node child is called inert", "file": _F, "find": _L,
-     "replace": "        if is_node:\n", "matches": 1},
-]
+RED_PROOF = [{'why': 'node --version untraces the gate',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if is_node and len(args) == 2 and args[1] in ("--version", "-v"):\n',
+  'replace': '        if False:\n',
+  'matches': 1},
+ {'why': 'node -v untraces the gate',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if is_node and len(args) == 2 and args[1] in ("--version", "-v"):\n',
+  'replace': '        if is_node and len(args) == 2 and args[1] in ("--version",):\n',
+  'matches': 1},
+ {'why': 'any node child with --version first is called inert',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if is_node and len(args) == 2 and args[1] in ("--version", "-v"):\n',
+  'replace': '        if is_node and len(args) >= 2 and args[1] in ("--version", "-v"):\n',
+  'matches': 1},
+ {'why': 'every node child is called inert',
+  'file': 'gate_trace/sitecustomize.py',
+  'find': '        if is_node and len(args) == 2 and args[1] in ("--version", "-v"):\n',
+  'replace': '        if is_node:\n',
+  'matches': 1}]
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)
