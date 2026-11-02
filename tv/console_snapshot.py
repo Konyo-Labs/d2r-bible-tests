@@ -57,7 +57,9 @@ API_FIELDS = {
     # citing the frame") drew nothing because these two were trimmed. Frame NAMES only, as text - never a picture.
     "chars_learned": ("ok", "chars", "gear", "gearWhy", "minVisits", "tierBars", "cPanel", "surfaceWitnesses", "lobbyBySize",
                       # #36 (REG-2907) - the character each session is on: the shadow's vault draws whose stash a look filmed
-                      "sessions", "sessionsWhy"),
+                      "sessions", "sessionsWhy",
+                      # v3855 pt1198u - who found what, and each character's sessions (answers only, never a password)
+                      "identity"),
     "main_locks": ("ok", "locked", "tracked", "floor", "minSightings", "canEverLock", "blockedWhy"),
     "world": ("machine", "profile", "ledger", "os", "cousin"),
     # v3849 (a) - the owner's picture map for the frames the vault cites, and the address its console answers on, so a
@@ -182,7 +184,7 @@ def world_of(raw):
 #: the character evidence (surfaceWitnesses, lobbyBySize) to the upload, and on the ALT surfaceWitnesses alone is 83 KB:
 #: the kept answer came to 104,837 bytes, over MAX_STORE, and api_store dropped the WHOLE character list without a word.
 #: Over the cap these are left out one at a time until the answer fits; the characters themselves always go up.
-API_OPTIONAL = {"chars_learned": ("surfaceWitnesses", "gear", "lobbyBySize", "sessions")}   # REG-2907: sessions go last
+API_OPTIONAL = {"chars_learned": ("surfaceWitnesses", "gear", "lobbyBySize", "identity", "sessions")}   # REG-2907: sessions go last
 
 
 #: v3849 (a) - an address a viewer can open: http(s), a host, an optional port, nothing after it

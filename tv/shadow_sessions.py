@@ -314,6 +314,52 @@ def _key_frames(reads):
     return out
 
 
+def characters_rollup(rows):
+    """v3855 (Elad pt1198u) - the Characters tab / builder consumer: per character, over EVERY session of this console's
+    journal: sessions, the last level seen, total played (town + field) and AFK, and leveling (Baal) vs farming runs.
+    A session nobody names counts under no character (UNKNOWN), never the nearest name.
+    -> {name: {sessions, level, cls, playMs, afkMs, leveling, farming, lastT}}"""
+    import replay as _rp
+    try:
+        groups = _rp.split_sessions(list(rows or []))
+    except Exception:
+        return {}
+    ident = identity_ledger(rows)
+    timeline = game_timeline(rows)
+    out = {}
+    for g in groups:
+        moments = _rp.session_moments(g) or []
+        if not moments:
+            continue
+        t0, t1 = min(moments), max(moments)
+        sig = character_signals(g)
+        ch = attribute_character(sig) if sig else who_at(ident, t0)
+        name = (ch or {}).get("name")
+        if not name:
+            continue
+        sp = session_split(timeline, t0, t1)
+        games = []
+        for r in g:
+            n = game_name_of_row(r)
+            if n and n not in games:
+                games.append(n)
+        sc = scenario_of(games) or ""
+        o = out.setdefault(name, {"sessions": 0, "level": None, "cls": None, "playMs": 0, "afkMs": 0,
+                                  "leveling": 0, "farming": 0, "lastT": 0})
+        o["sessions"] += 1
+        o["playMs"] += (sp.get("townMs") or 0) + (sp.get("fieldMs") or 0)
+        o["afkMs"] += sp.get("awayMs") or 0
+        o["leveling"] += 1 if sc.startswith("Leveling") else 0
+        o["farming"] += 1 if sc.startswith("Farming") else 0
+        if t1 >= o["lastT"]:
+            o["lastT"] = t1
+            if ch.get("level"):
+                o["level"] = ch["level"]
+            if ch.get("cls"):
+                o["cls"] = ch["cls"]
+    return out
+
+
 def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
     """rows: the journal's rows. is_read: the Shelf's read rule. -> {v, sessions: [...], bytes, dropped, left}
 
@@ -384,6 +430,7 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
                         else "its reads carry no frame id, so it has no key frame")
         out["sessions"].append(s)
     out["identity"] = identity_summary(ident)   # the only identity other consoles see; never a password
+    out["characters"] = characters_rollup(rows)   # v3855 pt1198u - the Characters tab's per-character answer
     total = sum(len(f["jpg"]) for s in out["sessions"] for f in s["frames"])
     for s in reversed(out["sessions"]):                       # the oldest sessions give their pictures up first
         if total <= MAX_TOTAL:

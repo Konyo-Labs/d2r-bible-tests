@@ -209,6 +209,40 @@ def attribute_finds(rows, ledger=None):
     return out
 
 
+def game_at(ledger, ts, window_ms=6 * 3600 * 1000):
+    """The game being played at `ts`: the newest game name read at or before it, inside the window. -> str or None."""
+    best = None
+    for r in ledger or []:
+        if r.get("gameName") and isinstance(r.get("ts"), int) and ts - window_ms <= r["ts"] <= ts:
+            if best is None or r["ts"] >= best["ts"]:
+                best = r
+    return best["gameName"] if best else None
+
+
+def finds_index(rows, ledger=None, limit=400):
+    """v3855 (Elad pt1198u) - the Vault / grail / chronicle consumer: item name -> who found or stashed it, ANSWER ONLY.
+    {name: {character, cls, level, game, sessionId, ts, sources, conflict}} - the newest find of each name wins.
+    character None = UNKNOWN (nobody, or disagreeing signals). Attribution only: it never adds, drops or counts an item."""
+    led = identity_ledger(rows) if ledger is None else ledger
+    sid_at = {}
+    for r in rows or []:
+        if isinstance(r, dict) and _ts(r):
+            sid_at[_ts(r)] = r.get("sessionId")
+    out = {}
+    for f in attribute_finds(rows, led):
+        c = f["character"] or {}
+        rec = {"character": c.get("name"), "cls": c.get("cls"), "level": c.get("level"),
+               "game": game_at(led, f["ts"]), "sessionId": sid_at.get(f["ts"]), "ts": f["ts"],
+               "sources": list(c.get("sources") or []), "conflict": c.get("conflict")}
+        old = out.get(f["name"])
+        if old is None or rec["ts"] >= old["ts"]:
+            out[f["name"]] = rec
+    if len(out) > limit:
+        keep = sorted(out, key=lambda k: -out[k]["ts"])[:limit]
+        out = {k: out[k] for k in keep}
+    return out
+
+
 def summary(ledger):
     """The published identity summary (the only identity fields other consoles see): characters seen, game runs."""
     chars, runs = [], {}

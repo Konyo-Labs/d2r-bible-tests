@@ -5339,6 +5339,15 @@ def chars_learned_answer(full=True):
                     "lobbyBySize": _cs.lobby_by_size(_d),
                     "cPanel": _cs.CPANEL_SAY,
                     "gear": _gear, "gearWhy": _gwhy})
+        # v3855 (Elad pt1198u) - WHO FOUND WHAT, and each character's sessions, from this console's own reads
+        # (read_identity, built locally; the shadow carries only these answers). Never a password. None = UNKNOWN.
+        try:
+            import replay as _rpi, read_identity as _ri, shadow_sessions as _ssi
+            _rows = _rpi.load_journal()
+            out["identity"] = {"characters": _ssi.characters_rollup(_rows), "finds": _ri.finds_index(_rows)}
+        except Exception as _ie:
+            out["identity"] = None
+            out["identityWhy"] = "the identity ledger raised %s" % type(_ie).__name__
         if full:
             # the Grok eye on v3814: status() globs the frames and can raise; that is its own UNKNOWN, never the whole answer's
             try:
