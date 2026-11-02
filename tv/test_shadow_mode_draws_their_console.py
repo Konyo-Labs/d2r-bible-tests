@@ -45,12 +45,13 @@ try:
     _enable()
 except Exception:
     pass
-from test_v3769_vault_move_list_visual import _CDP, _chrome_path, _ev, _wait_fn  # noqa: E402
+from test_v3769_vault_move_list_visual import _CDP, _chrome_path, _ev, _free_ports, _wait_fn  # noqa: E402
 import console_snapshot as CS  # noqa: E402
 
 NO_BROWSER = "no Chrome/Chromium on this machine"
-HTTP_PORT = 17975
-CDP_PORT = 17976
+# v3855 (REG-3128) - ports the OS hands out, never fixed ones: a second tree or the hook running this law at the same
+# moment took 17975/17976 first and setUpClass died (v3853 push 8/9).
+HTTP_PORT, CDP_PORT = _free_ports(2)  # SHADOW-FREE-PORTS
 OWNER = "Dean"
 
 T0 = 1792800000000

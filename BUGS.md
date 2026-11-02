@@ -35,6 +35,13 @@ comes. gate_trace/sitecustomize.py now treats a node child whose only argument i
 test_the_bump_refuses_a_tree_that_does_not_parse (20.7 s), test_the_fleet_says_where_a_river_is_stuck (3.1 s) and
 test_unseed_is_reversible (1.6 s) trace whole (~91 s idle per push). Law test_a_node_version_ask_does_not_untrace_a_gate
 (6 tests, 4 red-proofs, 4 of 4 RED). UNKNOWN: the reader's sentence still says "python child" for a node child.
+### REG-3128 - THE SHADOW BROWSER LAW PINNED PORTS 17975/17976, SO TWO TREES RUNNING IT AT ONCE COLLIDED (gate collision root cause, v3855)
+v3853 push 8 went red in test_shadow_mode_draws_their_console setUpClass while another tree ran browser laws at the same
+time; the law is green alone. Its Chrome profile was already a fresh mkdtemp, but its page server and CDP port were fixed
+module constants, so a second run found them taken. It now takes _free_ports(2) (SHADOW-FREE-PORTS), the same helper
+test_v3769 and test_v3771 use. Law test_a_browser_law_takes_ports_the_os_hands_out refuses any browser law that pins a
+literal HTTP_PORT/CDP_PORT (3 tests, 2 red-proofs). OWED: the law and its red-proofs were not run (test runs paused on the
+Mac while the v3853 hook ran); BLUEPRINT.md/HEART.md not regenerated for this commit.
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel
