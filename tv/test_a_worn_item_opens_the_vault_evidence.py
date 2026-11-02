@@ -31,7 +31,7 @@ def _cut(src, start, end="\n  }\n"):
     return src[i:src.index(end, i) + len(end)]
 
 
-STUBS = ("var _SLOT_WORD = {'off-hand': 'Off-hand'}, _TIER_FACE = {WATCHED: 'WATCHED'};"
+STUBS = ("var _SLOT_WORD = {'off-hand': 'Off-hand'}, _TIER_FACE = {WATCHED: 'Not confirmed yet'};"
          " function _looks(n){ return n + (n === 1 ? ' look' : ' looks'); }"
          " function _chxJs(s){ return String(s).replace(/'/g, \"\\\\'\"); }\n")
 CHIP = ("window._vaultEvidenceChip = function(n, c){ return '<button class=\"' + c + '\" data-n=\"' + n + '\"'"
@@ -69,7 +69,7 @@ class EveryWornItemHasTheMagnifier(unittest.TestCase):
         self.assertIn("window._vaultEvidenceOpen('Splendor',window._chxWornOf(", chip)
         self.assertEqual([k["frame"] for k in worn["looks"]], ["f_2", "f_1"], "newest look first")
         self.assertEqual(worn["looks"][0]["session"], "s_9")
-        self.assertEqual(worn["tierSay"], "WATCHED · 2 looks")
+        self.assertEqual(worn["tierSay"], "Not confirmed yet · 2 looks")
         self.assertEqual(worn["lastTs"], 5)
 
     def test_the_gear_ledger_hands_its_frames(self):

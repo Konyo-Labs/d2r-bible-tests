@@ -120,7 +120,7 @@ class ACharacterWindowOpensFromItsCells(unittest.TestCase):
           OUT.boots = ELS['chx-win']._html;
         """)
         self.assertEqual(out["picked"], "equipped:helm")
-        self.assertIn("Helm · Harlequin Crest · ✓ PROVEN · 4 looks", out["say"])
+        self.assertIn("Helm · Harlequin Crest · Not confirmed yet · 4 looks", out["say"])
         self.assertIn("Boots · not seen yet", out["boots"])
 
     def test_no_vault_doll_is_unknown_never_a_grid_of_its_own(self):

@@ -11232,6 +11232,11 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 #tab-chars .chx-ev:hover,#chx-win .chx-ev:hover,#tab-chars .chx-ev:focus-visible,#chx-win .chx-ev:focus-visible{opacity:1}
 #chx-win .chx-ev-at{position:absolute;z-index:2;line-height:0}
 #chx-win .chx-ev::before,#tab-chars .chx-ev::before{content:"\1F50E"}
+#tab-chars .chx-seal{display:inline-flex;width:1.15em;height:1.15em;vertical-align:-.2em;flex:none;cursor:help}
+#tab-chars .chx-seal svg{width:100%;height:100%;display:block}
+#tab-chars .chx-seal[data-seal="yes"]{filter:drop-shadow(0 0 3px rgba(240,192,96,.65))}
+#tab-chars .chx-seal[data-seal="not"]{opacity:.85}
+#tab-chars .chx-seal-big{width:1.75em;height:1.75em;vertical-align:middle}
 #tab-chars .chx-slots li[data-tier="HARDENED"] .chx-item{color:var(--chx-gold)}
 #tab-chars .chx-slots li[data-tier="PROVEN"] .chx-item{color:var(--norm)}
 #tab-chars .chx-slots li[data-tier="WATCHED"] .chx-item{color:var(--acc-intel)}
@@ -11673,12 +11678,39 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     var b = L && L.tierBars;
     return (b && typeof b.proven === 'number' && typeof b.hardened === 'number') ? b : null;
   }
+  /* v3855 item E (his ask, 2026-11-02: "more designed, a proper emoji HD art") - THE CHARACTERS TAB'S CONFIRMATION SEAL.
+     One source, drawn only here: a gold rosette seal, outlined with an hourglass while it is not confirmed yet, filled and
+     glowing with a check once it is. It is NOT a lock: the Vault's 🔒 filing lock, the heart's padlock (.lkm), the tab
+     locks and the 🔒 verified anchor keep their meaning. The rule mirrors the heart and the Vault: the evidence earns its
+     mark at the HARDENED tier (the Vault's hardened bar, 20 looks); anything below is not confirmed yet. The words ride
+     the hover. */
+  var _CHX_SEAL = {
+    yes: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><defs><radialGradient id="chxSealY" cx="38%" cy="32%" r="75%">'
+      + '<stop offset="0" stop-color="#fff1c2"/><stop offset=".45" stop-color="#f0c060"/><stop offset="1" stop-color="#8a5a12"/></radialGradient></defs>'
+      + '<path d="M12 1L14.43 2.92L17.5 2.47L18.65 5.35L21.53 6.5L21.08 9.57L23 12L21.08 14.43L21.53 17.5L18.65 18.65L17.5 21.53L14.43 21.08L12 23L9.57 21.08L6.5 21.53L5.35 18.65L2.47 17.5L2.92 14.43L1 12L2.92 9.57L2.47 6.5L5.35 5.35L6.5 2.47L9.57 2.92Z" fill="url(#chxSealY)" stroke="#5a3a0c" stroke-width=".8" stroke-linejoin="round"/>'
+      + '<circle cx="12" cy="12" r="6.6" fill="none" stroke="#6b4510" stroke-width=".7" opacity=".7"/>'
+      + '<path d="M8.4 12.3l2.5 2.5 4.9-5.4" fill="none" stroke="#2a1a04" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    not: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><defs><linearGradient id="chxSealN" x1="0" y1="0" x2="0" y2="1">'
+      + '<stop offset="0" stop-color="#f0c060"/><stop offset="1" stop-color="#9a6a1e"/></linearGradient></defs>'
+      + '<path d="M12 1L14.43 2.92L17.5 2.47L18.65 5.35L21.53 6.5L21.08 9.57L23 12L21.08 14.43L21.53 17.5L18.65 18.65L17.5 21.53L14.43 21.08L12 23L9.57 21.08L6.5 21.53L5.35 18.65L2.47 17.5L2.92 14.43L1 12L2.92 9.57L2.47 6.5L5.35 5.35L6.5 2.47L9.57 2.92Z" fill="rgba(240,192,96,.08)" stroke="url(#chxSealN)" stroke-width="1.3" stroke-linejoin="round"/>'
+      + '<path d="M9.2 7.6h5.6M9.2 16.4h5.6M9.8 7.6c0 2.6 4.4 2.4 4.4 4.4s-4.4 1.8-4.4 4.4M14.2 7.6c0 2.6-4.4 2.4-4.4 4.4s4.4 1.8 4.4 4.4"'
+      + ' fill="none" stroke="url(#chxSealN)" stroke-width="1.2" stroke-linecap="round"/><path d="M10.9 15.4h2.2l-1.1-1.3z" fill="#f0c060" opacity=".8"/></svg>'
+  };
+  window._CHX_SEAL = _CHX_SEAL;
+  function _chxSeal(tier, looks, trials, lastTs, big){
+    var yes = tier === 'HARDENED', bars = _bars(), seen = _ago(lastTs);
+    var n = (typeof looks === 'number' && typeof trials === 'number') ? looks + ' of ' + trials + ' looks'
+          : (typeof looks === 'number' ? _looks(looks) : 'looks UNKNOWN');
+    var words = !tier || !_TIER_FACE[tier] ? 'Tier UNKNOWN · ' + n
+      : yes ? 'Confirmed · ' + n + (seen ? ' · last seen ' + seen : '')
+      : 'Not confirmed yet · ' + n + ' · locks at ' + (bars ? bars.hardened : 'the HARDENED bar');
+    return '<span class="chx-seal' + (big ? ' chx-seal-big' : '') + '" data-seal="' + (yes ? 'yes' : 'not') + '" role="img" aria-label="'
+      + esc(words) + '" title="' + esc(words) + '">' + _CHX_SEAL[yes ? 'yes' : 'not'] + '</span>';
+  }
   function _proof(t){
-    var say = (typeof window._cbTierSay === 'function') ? window._cbTierSay(t) : 'tier UNKNOWN';
     var lv = t.pendingLevel ? ' · level ' + (t.pendingLevel | 0) + ' waits for one more look' : '';
-    var seen = _ago(t.lastTs);
-    return '<div class="chx-proof" data-tier="' + esc(t.tier || 'UNKNOWN') + '">' + esc(say) + esc(lv)
-      + (seen ? '<span class="chx-proof-when"> · last seen ' + esc(seen) + '</span>' : '') + '</div>';
+    return '<div class="chx-proof" data-tier="' + esc(t.tier || 'UNKNOWN') + '">' + _chxSeal(t.tier, t.looks, t.trials, t.lastTs, true)
+      + esc(lv) + '</div>';
   }
   /* #234 step 2 — HIS ASK, 2026-10-01: "i want to see the items slowly appearing based on the character they were
      witnessed in... when i click a mule it shouldnt let me do PLAN BUILD". An in-game card shows what the game showed its
@@ -11687,7 +11719,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
      that could not read the ledger says UNKNOWN. Planning by hand stays in Simulation builds (+ New character). */
   var _SLOT_WORD = { helm: 'Helm', amulet: 'Amulet', weapon: 'Weapon', torso: 'Armor', 'off-hand': 'Off-hand',
                      gloves: 'Gloves', ring1: 'Ring 1', belt: 'Belt', ring2: 'Ring 2', boots: 'Boots' };
-  var _TIER_FACE = { HARDENED: '🔒 HARDENED', PROVEN: '✓ PROVEN', WATCHED: '👁 WATCHED' };
+  var _TIER_FACE = { HARDENED: 'Confirmed', PROVEN: 'Not confirmed yet', WATCHED: 'Not confirmed yet' };   /* v3855 item E: plain words; the seal is the mark */
   function _gearOf(t){
     var L = (typeof window._cbLearnedNow === 'function') ? window._cbLearnedNow() : null;
     if (!L || !Object.prototype.hasOwnProperty.call(L, 'gear')) return { state: 'unknown', why: 'this console has not said what its characters wear' };
@@ -11710,7 +11742,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       if (!s.item) return '<li data-slot="' + esc(s.slot) + '" data-state="unseen">' + word + '<span class="chx-item chx-unk">not seen yet</span></li>';
       seen++;
       return '<li data-slot="' + esc(s.slot) + '" data-tier="' + esc(s.tier || 'UNKNOWN') + '">' + word
-        + '<span class="chx-item">' + esc(s.item) + ' · ' + esc(_TIER_FACE[s.tier] || 'tier UNKNOWN') + ' · ' + _looks(s.sightings)
+        + '<span class="chx-item">' + _chxSeal(s.tier, s.sightings, s.trials, s.ts) + ' ' + esc(s.item)
         + _chxEv(s.item, t, s) + '</span></li>';
     }).join('');
     var un = (G.g.unplaced || []);
@@ -11930,8 +11962,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     var S = (typeof window._cbSections === 'function') ? window._cbSections(all, order) : null;
     if (!S) S = { state: 'unknown', why: 'the Character Builder is not on this page', ingame: [], mules: [], sim: order };
     var bars = _bars();
-    var ladder = bars ? '👁 WATCHED → ✓ PROVEN at ' + bars.proven + ' looks → 🔒 HARDENED at ' + bars.hardened
-                      : '👁 WATCHED → ✓ PROVEN → 🔒 HARDENED, on the Vault\'s own bars';
+    var ladder = bars ? 'Confirmed at ' + bars.hardened + ' looks, the Vault\'s own bar'
+                      : 'Confirmed at the Vault\'s own HARDENED bar';
     var ing = S.ingame.concat(S.mules), cards = '';
     var _one = function(g){ return g.ids.length ? g.ids.map(function(id){ return _card(id, all[id], id === mainId, g.t); }).join('') : _ghost(g.t); };
     S.ingame.forEach(function(g){ cards += _one(g); });

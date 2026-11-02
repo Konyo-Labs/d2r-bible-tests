@@ -103,17 +103,16 @@ class TheRoomHasTwoSections(unittest.TestCase):
                          "a learned character with no build must stand as its own card, the played ones before the mules")
         self.assertEqual(out["gSim"], [])
         self.assertIn('data-tier="HARDENED"', out["ham"])
-        self.assertIn("🔒 HARDENED · 22 of 22 looks", out["ham"], "the in-game card does not wear the vault's tier")
+        self.assertIn('data-seal="yes" role="img" aria-label="Confirmed · 22 of 22 looks', out["ham"], "the in-game card does not wear its confirmed seal (v3855 item E)")
         # the Grok eye on pixels: "level 90 ... the reels saw level 92 - the page does not say which is the character's level"
         self.assertIn("level 94 in game", out["ham"], "an in-game card must lead with the level the reels confirmed")
         self.assertIn("this build says 92", out["ham"], "the build's own, different level went unsaid")
         self.assertIn('data-sub="mules"', out["ingHtml"], "the level-1 characters are not said to be mules")
         self.assertLess(out["ingHtml"].index('data-sub="mules"'), out["ingHtml"].index('data-learned="seen:mulebox"'))
         self.assertIsNotNone(out["frost"], "Frostnova's card is gone")
-        self.assertIn("✓ PROVEN · 11 of 11 looks", out["frost"])
+        self.assertIn("Not confirmed yet · 11 of 11 looks", out["frost"])
         self.assertIn("72 waits for one more look", out["frost"], "a level only one look saw was shown as his level")
-        self.assertIn("PROVEN at 10 looks", out["head"])
-        self.assertIn("HARDENED at 20", out["head"], "the section does not say the vault's bars: %r" % out["head"])
+        self.assertIn("Confirmed at 20 looks", out["head"], "the section does not say the vault's bars: %r" % out["head"])
         self.assertIn("/api/chars_learned", out["fetched"], "the room never asked its console what the reels learned")
 
     def test_a_build_made_from_a_learned_character_is_its_card(self):
