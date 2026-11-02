@@ -158,6 +158,41 @@ class HisOwnRowIsNotARoundTrip(unittest.TestCase):
                          "the overlay never called board_tally_load, so it is reading a path of "
                          "its own and is blind to the isolation override")
 
+    def test_every_row_divides_uniques_by_the_chronicle_pin(self):
+        fl = _fleet(mine_sets=123, theirs_sets=130)
+        n = CA._fleet_apply_unique_pin(fl, 397)
+        self.assertEqual(2, n)
+        self.assertEqual({"have": 292, "total": 397}, fl["online"][0]["tally"]["uniques"])
+        self.assertEqual({"have": 0, "total": 397}, fl["offline"][0]["tally"]["uniques"])
+        self.assertEqual(135, fl["online"][0]["tally"]["sets"]["total"])
+        self.assertEqual(130, fl["offline"][0]["tally"]["sets"]["have"])
+
+    def test_a_missing_pin_leaves_the_published_total_alone(self):
+        fl = _fleet(123, 130)
+        self.assertEqual(0, CA._fleet_apply_unique_pin(fl, None))
+        self.assertEqual(403, fl["online"][0]["tally"]["uniques"]["total"])
+        self.assertEqual(0, CA._fleet_apply_unique_pin(fl, 0))
+        self.assertEqual(403, fl["offline"][0]["tally"]["uniques"]["total"])
+
+    def test_a_row_with_no_uniques_pair_is_left_alone(self):
+        fl = {"online": [{"machine": "x", "tally": {"sets": {"have": 1, "total": 135}}}],
+              "offline": []}
+        self.assertEqual(0, CA._fleet_apply_unique_pin(fl, 397))
+        self.assertNotIn("uniques", fl["online"][0]["tally"])
+
+    def test_the_route_applies_the_pin_and_does_not_fall_back_to_the_roster(self):
+        src = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
+        i = src.find('if path == "/api/fleet":')
+        j = src.find('if path.startswith("/api/fleet_compare")', i)
+        body = src[i:j]
+        self.assertLess(body.find("_fleet_overlay_local_tally("),
+                        body.find("_fleet_apply_unique_pin("))
+        self.assertIn('"uniques": _pinU,', body)
+        self.assertNotIn('unique_roster.json", "count"', body)
+        ui = io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8",
+                     errors="replace").read()
+        self.assertEqual(ui.count("var t = shared || own;"), 1)
+
     def test_the_route_actually_calls_it(self):
         """⚠ Built and not called is this repo's most repeated defect. [[the-unjoined-end]]"""
         src = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()

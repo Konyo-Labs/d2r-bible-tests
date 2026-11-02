@@ -2646,6 +2646,36 @@ def _fleet_overlay_local_tally(fl, me):
     return n
 
 
+def _fleet_apply_unique_pin(fl, pin):
+    """Every fleet row divides uniques by the chronicle pin. have stays that machine's.
+
+    A published total of 403 is the old file-row count. The chronicle number is the pin.
+    A peer's have is not replaced with this machine's. A missing pin, or a row with no
+    uniques pair, is left alone.
+    """
+    if not isinstance(pin, int) or pin <= 0 or not isinstance(fl, dict):
+        return 0
+    n = 0
+    for grp in ("online", "offline"):
+        rows = fl.get(grp)
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            t = row.get("tally")
+            if not isinstance(t, dict):
+                continue
+            u = t.get("uniques")
+            if not isinstance(u, dict) or not isinstance(u.get("have"), int):
+                continue
+            u = dict(u)
+            u["total"] = pin
+            t["uniques"] = u
+            n += 1
+    return n
+
+
 def board_tally_load():
     try:
         with open(_board_tally_path(), encoding="utf-8") as fh:
@@ -43978,6 +44008,16 @@ def _fleet_show_total(ledger):
     t = pair.get("total")
     if not isinstance(t, int) or t <= 0:
         return None, "the board tally's %r total is %r, which is not a count" % (str(ledger), t)
+    if str(ledger or "").strip().lower() in ("unique", "uniques"):
+        # The bank may still say 403, the old file-row count. The number on the
+        # fleet is the chronicle pin, the same number the Uniques tab divides by.
+        try:
+            import route_totals as _rt
+            pin = _rt.total("unique")
+        except Exception:
+            pin = None
+        if isinstance(pin, int) and pin > 0:
+            return pin, ""
     return t, ""
 
 
@@ -48303,20 +48343,9 @@ class Handler(BaseHTTPRequestHandler):
                         # Konyo: "the fleet for me and dean still say 398 and here they say 403 in
                         # the tab.. it needs unified logic obivously and number."
                         #
-                        # His Uniques tab prints BOTH, two lines apart: "292 / 403 found · 72%" and
-                        # "named cards: 292 / 398 ticked · 5 chronicle rows still dark (names
-                        # reveal on find)". Both are true — 403 is what the in-game Chronicle
-                        # counts, 398 is what this board can put a NAME on, and the difference is
-                        # exactly those five silhouettes. The fleet card was quoting the second
-                        # number while the page headlines the first, so one quantity wore two
-                        # denominators on two surfaces.
-                        #
-                        # `chronTotal` is a PINNED CONSTANT in bible.html, identical on every
-                        # machine that has the same page, which is what makes it the one honest
-                        # cross-machine denominator — `_gUniqueRoster().length` is not: it was
-                        # measured at 398 on a fresh load and 403 on his live board, because that
-                        # roster grows with his own finds. A denominator that differs per machine
-                        # cannot compare machines. [[label-outlived-referent]] [[copy-drift]]
+                        # The fleet divides uniques by the chronicle pin. A published 403 is the
+                        # old file-row count. The 398-name roster is a different question, and
+                        # it is not this card's denominator. [[label-outlived-referent]]
                         def _chron_total():
                             # The card divides by the chronicle number, the same number the
                             # Uniques tab headlines. The six quest items are not in it.
@@ -48327,9 +48356,10 @@ class Handler(BaseHTTPRequestHandler):
                                 return _rt.total("unique")
                             except Exception:
                                 return None
+                        _pinU = _chron_total()
                         _fl["rosters"] = {
                             "sets": _rn("set_roster.json", "pieceCount", "count"),
-                            "uniques": _chron_total() or _rn("unique_roster.json", "count"),
+                            "uniques": _pinU,
                             # ⚠ RUNEWORDS IS DELIBERATELY None, AND THAT IS THE HONEST ANSWER.
                             # `runeword_roster.json` stores BOTH forms of a name on purpose — its
                             # own header says so, because a chronicle page prints the bare name
@@ -48342,6 +48372,7 @@ class Handler(BaseHTTPRequestHandler):
                             # [[unknown-stays-unknown]]
                             "runewords": None,
                         }
+                        _fleet_apply_unique_pin(_fl, _pinU)
                         _fl["rostersWhy"] = (
                             "the hash-stamped rosters this console generates from bible.html "
                             "and re-checks under a gate — the only sizes here that cannot drift. "
