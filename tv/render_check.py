@@ -4112,7 +4112,17 @@ _PROBE = r"""(function(sel, OK_TRUNC){
         if (py <= sr.top || py >= sr.bottom || px <= sr.left || px >= sr.right) { scrolledOut=true; }
         break;
       }
-      if (!scrolledOut && top && !e.contains(top) && top!==e && !inert(top)) {
+      /* ⚠ THE SCROLLER IS NOT A COVER OF ITS OWN CHILD. Measured shelf-cards at 901x900,
+         after the other five widths, on this tree: covered 1/29, and the hit was
+         `#th-shelfov` (class ovx-card, which the overlay closer stamps on the shelf)
+         over `.shc-sess` "Jan 1 · 2:00 AM" at y=707. scrollIntoView had centered the
+         first hero, so the next card's title straddled the shelf's bottom edge. The
+         centre was still inside the scroller, so the scrolled-out test above stayed
+         false, and elementFromPoint returned the shelf itself. The same target at
+         901 alone, before the river had loaded, read covered 0/29. A foreign element
+         on top is not an ancestor of the node. The control check below is unchanged
+         and still has no ancestor exception. */
+      if (!scrolledOut && top && !e.contains(top) && top!==e && !inert(top) && !top.contains(e)) {
         var fixed=false;
         for (var q=top; q && q!==document.body; q=q.parentElement){
           var pos=getComputedStyle(q).position;
@@ -4125,10 +4135,10 @@ _PROBE = r"""(function(sel, OK_TRUNC){
                refusal read "tab-content active over " with nothing after "over" — a refusal that
                cannot say what it is about sends the reader nowhere. Fall through id -> class ->
                tag -> a snippet of its own text, so there is always something to look for. */
-            (top.className||top.tagName) + ' over ' +
+            (top.id ? '#'+top.id+' ' : '') + (top.className||top.tagName) + ' over ' +
             (e.getAttribute('data-vault-mule') || e.id ||
              (typeof e.className==='string' && e.className ? '.'+e.className.trim().split(/\s+/)[0] : '') ||
-             e.tagName + ' "' + String(e.textContent||'').replace(/\s+/g,' ').trim().slice(0,24) + '"'));
+             e.tagName) + ' "' + String(e.textContent||'').replace(/\s+/g,' ').trim().slice(0,40) + '" y' + Math.round(r.top));
         }
       }
       /* ⚠ v2316 — AND THE EXCLUSION ABOVE IS EXACTLY HOW A DEAD BUTTON SHIPS. The rule "a
