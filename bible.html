@@ -11219,6 +11219,11 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 #tab-chars .chx-slots li{display:contents}
 #tab-chars .chx-slot{color:var(--text-dim)}
 #tab-chars .chx-item{min-width:0;overflow-wrap:anywhere}
+/* v3855 - a worn item's magnifier: the Vault's own evidence chip (window._vaultEvidenceChip), cornered on a doll cell */
+#tab-chars .chx-ev,#chx-win .chx-ev{border:none;background:none;color:var(--gold-bright,#f0c060);cursor:pointer;font-size:var(--fs-meta);padding:0 2px;line-height:var(--lh-none);opacity:.8}
+#tab-chars .chx-ev:hover,#chx-win .chx-ev:hover,#tab-chars .chx-ev:focus-visible,#chx-win .chx-ev:focus-visible{opacity:1}
+#chx-win .chx-ev-at{position:absolute;z-index:2;line-height:0}
+#chx-win .chx-ev::before,#tab-chars .chx-ev::before{content:"\1F50E"}
 #tab-chars .chx-slots li[data-tier="HARDENED"] .chx-item{color:var(--chx-gold)}
 #tab-chars .chx-slots li[data-tier="PROVEN"] .chx-item{color:var(--norm)}
 #tab-chars .chx-slots li[data-tier="WATCHED"] .chx-item{color:var(--acc-intel)}
@@ -11697,7 +11702,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       if (!s.item) return '<li data-slot="' + esc(s.slot) + '" data-state="unseen">' + word + '<span class="chx-item chx-unk">not seen yet</span></li>';
       seen++;
       return '<li data-slot="' + esc(s.slot) + '" data-tier="' + esc(s.tier || 'UNKNOWN') + '">' + word
-        + '<span class="chx-item">' + esc(s.item) + ' · ' + esc(_TIER_FACE[s.tier] || 'tier UNKNOWN') + ' · ' + _looks(s.sightings) + '</span></li>';
+        + '<span class="chx-item">' + esc(s.item) + ' · ' + esc(_TIER_FACE[s.tier] || 'tier UNKNOWN') + ' · ' + _looks(s.sightings)
+        + _chxEv(s.item) + '</span></li>';
     }).join('');
     var un = (G.g.unplaced || []);
     var unTxt = un.length ? '<div class="chx-gear-h">Worn, slot not told yet: ' + un.map(function(u){
@@ -11735,17 +11741,28 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
   /* REG-1887 — ONE DOLL. The ten cells are drawn by the Vault's doll (window._mpDollHtml, MULE_DOLL_SLOTS - the one
      geometry), asked by the cell a look records (equipped:helm ...). This side says only what each cell holds and opens
      its sentence; it never draws a slot itself. No Vault doll on the page is UNKNOWN, never a grid of its own. */
+  /* v3855 (Elad 2026-11-02) - EVERY WORN ITEM HAS THE VAULT'S MAGNIFIER. Not a copy: the Vault's own chip renderer
+     (window._vaultEvidenceChip) and its evidence panel (window._vaultEvidenceOpen) - the looks behind the tier, the look
+     count, last seen and the pictures, each opening full size; 'no picture was saved' / UNKNOWN when there is none.
+     Hover still shows the item card; nothing else (no price, no pencil) is added here. '' when the Vault is not on the page. */
+  function _chxEv(item){
+    if (!item || typeof window._vaultEvidenceChip !== 'function') return '';
+    try { return window._vaultEvidenceChip(item, 'chx-ev'); } catch (e) { return ''; }
+  }
   function _chxDollHtml(G, nm){
     if (typeof window._mpDollHtml !== 'function') return null;
     var bySlot = {};
     (G.g.slots || []).forEach(function(s){ if (s && s.slot) bySlot[s.slot] = s; });
-    return window._mpDollHtml(function(worn){
+    return window._mpDollHtml(function(worn, row){
       var s = bySlot[worn], cell = 'equipped:' + worn, word = _SLOT_WORD[worn] || worn;
       var attrs = ' data-cell="' + esc(cell) + '"' + ((s && s.item) ? ' data-tier="' + esc(s.tier || 'UNKNOWN') + '"' : ' data-state="unseen"')
         + ' onclick="window._chxPick(\'' + _chxJs(cell) + '\')"';
       if (!s) return { say: word + ' · not a cell the ledger lists', attrs: attrs, picked: _chxCell === cell };
       if (!s.item) return { say: word + ' · not seen yet', attrs: attrs, picked: _chxCell === cell };
+      var ev = _chxEv(s.item);   /* v3855 - the Vault's magnifier in the cell's top-right corner */
       return { e: { name: s.item }, attrs: attrs, picked: _chxCell === cell,
+               after: ev ? '<span class="chx-ev-at" style="left:calc(' + ((+row[3] || 0) + (+row[5] || 0) - 14) + '*var(--du));top:calc('
+                 + (+row[4] || 0) + '*var(--du))">' + ev + '</span>' : '',
                say: word + ' · ' + s.item + ' · ' + (_TIER_FACE[s.tier] || 'tier UNKNOWN') + ' · ' + _looks(s.sightings) };
     }, { label: 'what the game showed ' + nm + ' wearing',
          /* the doll's 322-unit width fits the window at a phone's width too: a smaller unit, never a cut-off hand */

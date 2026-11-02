@@ -2,7 +2,8 @@
 """v3855 - THE READS' IDENTITY IS ROUTED TO WHERE IT IS NEEDED (Elad pt1198u, 2026-11-02).
 
 read_identity (who_at / attribute_finds) feeds three consumers, answer only, with how it is known in the hover:
-  1. NOT the Characters room (Elad 2026-11-02): its in-game cards stay exactly as v3854 - no identity stats, no finds;
+  1. NOT the Characters room (Elad 2026-11-02): its cards are each character's EQUIPPED items from in-game reads only
+     (synced as its worn, locked items) - no identity stats, no finds;
      the data stays on the session rows and in /api/chars_learned `identity`.
   2. the Vault's evidence panel only: "found by <character> · <game>" or UNKNOWN (read_identity.finds_index).
      Elad 2026-11-02: the Vault is ONE per-account vault - attribution is evidence, never routing, sorting, filing,
