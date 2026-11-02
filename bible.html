@@ -11207,6 +11207,11 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 #tab-chars .chx-sec-s{font-size:var(--fs-meta);color:var(--text-dim);min-width:0}
 #tab-chars .chx-sec-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
 #tab-chars .chx-sec-sub{grid-column:1/-1;font-size:var(--fs-meta);color:var(--text-dim);padding-top:4px}
+#tab-chars .chx-dump>summary,#tab-chars .chx-wit>summary{cursor:pointer}
+#tab-chars .chx-wit{margin-left:12px}
+#tab-chars .chx-wit-frames{margin:2px 0 4px 18px;padding:0}
+#tab-chars .chx-lobby{border-collapse:collapse;margin:4px 0}
+#tab-chars .chx-lobby td,#tab-chars .chx-lobby th{padding:1px 8px 1px 0;text-align:left;vertical-align:top}
 #tab-chars .chx-sec-empty{grid-column:1/-1;padding:12px 14px;border-radius:10px;border:1px dashed var(--border-light);background:var(--surface);color:var(--text-dim);font-size:var(--fs-body)}
 #tab-chars .chx-ghost{border-style:dashed;background:var(--surface)}
 #tab-chars .chx-proof{font-size:var(--fs-meta);padding:3px 8px;border-radius:7px;border:1px solid var(--border-light);color:var(--text-dim);align-self:flex-start;max-width:100%}
@@ -11832,49 +11837,81 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
   }
   /* #149 — a lobby plaque or a character panel names him before two character-select visits have taught the
      character. The row cites the frame. An absent list is not nobody: this paints only rows the console sent. */
+  /* v3855 (Elad pt1210u: "this data/informational area... organized and properly structured and hidden/collapsed with
+     an option to see it if clicked") - THE TWO DIAGNOSTIC DUMPS FOLD. Each is a <details>, closed by default, with one plain
+     summary line; open or closed is remembered per browser (window._chxDumpOpen / _chxDumpToggle, d2r_chxDump.<key>). */
+  function _dumpOpen(key){
+    try { return (typeof window._chxDumpOpen === 'function' && window._chxDumpOpen(key)) ? ' open' : ''; } catch (e) { return ''; }
+  }
+  function _dumpWrap(key, sub, summary, body){
+    return '<details class="chx-sec-sub chx-dump" data-sub="' + sub + '" data-dump="' + key + '"' + _dumpOpen(key)
+      + ' ontoggle="window._chxDumpToggle&&window._chxDumpToggle(\'' + key + '\',this.open)"><summary>' + summary + '</summary>'
+      + body + '</details>';
+  }
+  /* the names read on the lobby or the character panel: one row per character (name · class · level · where · frames);
+     its frames - each file, kind and confluence - only when the row is opened */
   function _surfaceWitnessHtml(){
     var L = (typeof window._cbLearnedNow === 'function') ? window._cbLearnedNow() : null;
     if (!L || !L.ok || !Array.isArray(L.surfaceWitnesses)) return '';
-    var bits = '';
+    var by = {}, order = [], frames = 0;
     L.surfaceWitnesses.forEach(function(w){
       if (!w || !w.name || !w.kind || !w.image) return;
+      var k = String(w.name).toLowerCase() + '|' + (w.cls || '') + '|' + ((typeof w.level === 'number') ? (w.level | 0) : '');
+      if (!by[k]){ by[k] = { w: w, kinds: [], rows: '' }; order.push(k); }
+      var g = by[k];
+      if (g.kinds.indexOf(w.kind) < 0) g.kinds.push(w.kind);
       var conf = (typeof w.confluence === 'number') ? (' · confluence ' + w.confluence) : '';
-      var who = esc(w.name) + (w.cls ? ' · ' + esc(w.cls) : '') + ((typeof w.level === 'number') ? ' · level ' + (w.level | 0) : '');
-      bits += '<li data-kind="' + esc(w.kind) + '" data-image="' + esc(w.image) + '">' + who
-        + ' · ' + esc(w.kind) + ' · ' + esc(w.image) + conf + '</li>';
+      g.rows += '<li data-kind="' + esc(w.kind) + '" data-image="' + esc(w.image) + '">' + esc(w.image) + ' · ' + esc(w.kind) + conf + '</li>';
+      g.n = (g.n || 0) + 1; frames++;
     });
-    if (!bits) return '';
-    return '<div class="chx-sec-sub" data-sub="surface-witnesses">Named on the lobby or the character panel, citing the frame:<ul class="chx-slots">' + bits + '</ul></div>';
+    if (!order.length) return '';
+    var rows = order.map(function(k){
+      var g = by[k], w = g.w;
+      var who = esc(w.name) + (w.cls ? ' · ' + esc(w.cls) : '') + ((typeof w.level === 'number') ? ' · level ' + (w.level | 0) : '');
+      return '<details class="chx-wit"><summary>' + who + ' · ' + esc(g.kinds.join(' / ')) + ' · ' + g.n + (g.n === 1 ? ' frame' : ' frames')
+        + '</summary><ul class="chx-wit-frames">' + g.rows + '</ul></details>';
+    }).join('');
+    return _dumpWrap('names', 'surface-witnesses', 'Character names read · ' + order.length + (order.length === 1 ? ' character' : ' characters')
+      + ' · ' + frames + (frames === 1 ? ' frame' : ' frames'), rows);
   }
-  window._surfaceWitnessHtml = _surfaceWitnessHtml;
-  /* #149 — checked against matched, per file size. A size that was not opened is not a zero.
-     The character panel has no pixel band until a frame of it is filmed. */
+  /* the lobby counts per frame size: a compact table, most-checked first; the sizes nobody has looked at are ONE line */
   function _lobbySizeHtml(){
     var L = (typeof window._cbLearnedNow === 'function') ? window._cbLearnedNow() : null;
     if (!L || !L.ok) return '';
     var rows = L.lobbyBySize;
-    var bits = '';
+    var bits = '', summary = 'Lobby size checks';
     if (rows === null || typeof rows === 'undefined') {
       bits = '<p data-lobby-sizes="unknown">Lobby checked against matched, per frame size, is UNKNOWN. This console has not counted yet.</p>';
+      summary += ' · UNKNOWN';
     } else if (!Array.isArray(rows) || !rows.length) {
       bits = '<p data-lobby-sizes="none">No frame has been checked for the lobby yet.</p>';
+      summary += ' · none yet';
     } else {
-      bits = '<ul data-lobby-sizes="counted">';
-      rows.forEach(function(r){
-        if (!r || !r.size || typeof r.checked !== 'number' || typeof r.matched !== 'number') return;
-        /* REG-1874 - a size that never matched says what it is, looked at, or that nobody looked */
-        bits += '<li data-size="' + esc(r.size) + '">Lobby at ' + esc(r.size)
-          + ': checked ' + (r.checked | 0) + ', matched ' + (r.matched | 0) + '.'
-          + ((typeof r.seen === 'string' && r.seen) ? ' <span data-seen>' + esc(r.seen) + '.</span>' : '') + '</li>';
-      });
-      bits += '</ul>';
+      var ok = rows.filter(function(r){ return r && r.size && typeof r.checked === 'number' && typeof r.matched === 'number'; })
+        .sort(function(a, b){ return (b.checked - a.checked) || (a.size < b.size ? -1 : 1); });
+      /* REG-1874 - a size that never matched says what it is, looked at, or that nobody looked */
+      var unseen = ok.filter(function(r){ return !(r.matched | 0) && typeof r.seen === 'string' && /^nobody has looked/.test(r.seen); });
+      var shown = ok.filter(function(r){ return unseen.indexOf(r) < 0; });
+      var matched = 0; ok.forEach(function(r){ if (r.matched > 0) matched++; });
+      summary += ' · ' + ok.length + (ok.length === 1 ? ' size' : ' sizes') + ' · ' + matched + ' matched';
+      bits = '<table class="chx-lobby" data-lobby-sizes="counted"><thead><tr><th>Size</th><th>Checked</th><th>Matched</th><th>Note</th></tr></thead><tbody>'
+        + shown.map(function(r){
+          return '<tr data-size="' + esc(r.size) + '"><td>' + esc(r.size) + '</td><td>checked ' + (r.checked | 0) + '</td><td>matched ' + (r.matched | 0) + '</td><td>'
+            + ((typeof r.seen === 'string' && r.seen) ? '<span data-seen>' + esc(r.seen) + '.</span>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table>'
+        + (unseen.length ? '<p class="chx-lobby-unseen" data-sizes-unseen="' + unseen.length + '"><span data-seen>' + unseen.length
+          + (unseen.length === 1 ? ' size' : ' sizes') + ' ' + esc(unseen[0].seen.replace(/^nobody has looked at this size/, 'nobody has looked at yet'))
+          + '.</span> ' + unseen.map(function(r){ return '<span data-size="' + esc(r.size) + '">' + esc(r.size) + ' (checked ' + (r.checked | 0) + ')</span>'; }).join(', ')
+          + '</p>' : '');
     }
     var panel = (typeof L.cPanel === 'string' && L.cPanel)
       ? '<p data-cpanel="reader-only">' + esc(L.cPanel) + '</p>'
       : '<p data-cpanel="reader-only">The character panel has no pixel band. It is kept only when a reader says that is the screen.</p>';
-    return '<div class="chx-sec-sub" data-sub="lobby-sizes">' + bits + panel + '</div>';
+    return _dumpWrap('lobby', 'lobby-sizes', summary, bits + panel);
   }
   window._lobbySizeHtml = _lobbySizeHtml;
+  window._chxDumpOpen = function(key){ try { return window.localStorage.getItem('d2r_chxDump.' + key) === '1'; } catch (e) { return false; } };
+  window._chxDumpToggle = function(key, open){ try { window.localStorage.setItem('d2r_chxDump.' + key, open ? '1' : '0'); } catch (e) {} return !!open; };
   function _sections(all, order, mainId){
     var S = (typeof window._cbSections === 'function') ? window._cbSections(all, order) : null;
     if (!S) S = { state: 'unknown', why: 'the Character Builder is not on this page', ingame: [], mules: [], sim: order };

@@ -442,6 +442,7 @@ class TheRoutePaintsTheRow(unittest.TestCase):
         size_call = page.index("_lobbySizeHtml()", ing)
         self.assertLess(size_call, sim, "the in-game section does not paint the lobby counts")
         fn = _js_fn(page, "function _surfaceWitnessHtml()")
+        fn = _js_fn(page, "function _dumpOpen(key)") + "\n" + _js_fn(page, "function _dumpWrap(key, sub, summary, body)") + "\n" + fn   # v3855 the dumps fold
         self.assertIn("surfaceWitnesses", fn)
         if not NODE:
             self.skipTest("node is required to run the page function")
@@ -465,6 +466,7 @@ class TheRoutePaintsTheRow(unittest.TestCase):
         if not NODE:
             self.skipTest("node is required to run the page function")
         fn = _js_fn(page, "function _lobbySizeHtml()")
+        fn = _js_fn(page, "function _dumpOpen(key)") + "\n" + _js_fn(page, "function _dumpWrap(key, sub, summary, body)") + "\n" + fn   # v3855 the dumps fold
         self.assertIn("data-cpanel", fn)
         unknown = _paint_size(fn, {"ok": True, "lobbyBySize": None, "cPanel": C.CPANEL_SAY})
         self.assertIn('data-lobby-sizes="unknown"', unknown)
