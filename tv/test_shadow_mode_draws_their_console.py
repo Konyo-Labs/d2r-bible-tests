@@ -501,11 +501,12 @@ class ShadowDrawsTheirConsole(unittest.TestCase):
         if key == "chars":
             def norm(blob):
                 out = dict(blob)
-                out["text"] = (out.get("text") or "").replace(OWNER + "'s reels", "this console's reels")
+                out["text"] = (out.get("text") or "").replace(OWNER + "'s reels", "this console's reels").replace("syncs " + OWNER + "'s items", "syncs your items")
                 return out
             self.assertEqual(norm(self.b[key]), norm(self.a[key]), "chars draws differently in shadow")
-            self.assertIn(OWNER + "'s reels", self.b["chars"]["text"])
-            self.assertIn("this console's reels", self.a["chars"]["text"])
+            # v3855 item C: the header is one plain line; a shadow names whose items it syncs
+            self.assertIn("syncs " + OWNER + "'s items", self.b["chars"]["text"])
+            self.assertIn("syncs your items", self.a["chars"]["text"])
             return
         a, b = dict(self.a[key]), dict(self.b.get(key) or {})
         pa, pb = a.pop("pencils", None), b.pop("pencils", None)

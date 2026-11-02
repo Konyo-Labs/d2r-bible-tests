@@ -4167,11 +4167,15 @@ tr.owned-row{background:rgba(102,255,136,.03)}
       if (!owner) return;
       var from = "this console's reels";
       var to = owner + "'s reels";
+      var from2 = "syncs your items", to2 = "syncs " + owner + "'s items";
       function rewrite(node) {
         if (!node) return;
         if (node.nodeType === 3) {
           if (node.nodeValue && node.nodeValue.indexOf(from) !== -1)
             node.nodeValue = node.nodeValue.split(from).join(to);
+          /* v3855: the Characters header says whose items a shadow syncs */
+          if (node.nodeValue && node.nodeValue.indexOf(from2) !== -1)
+            node.nodeValue = node.nodeValue.split(from2).join(to2);
           return;
         }
         var kids = node.childNodes;
