@@ -17899,7 +17899,34 @@ def _river_for_wire(now_ms=None):
             _key = "starting"
     out["heart"] = {"census": _census, "key": _key,
                     "blind": (len(_sp.get("blind") or []) if _sp.get("blind") is not None else None)}
+    # v3855 C6 (Elad: the ALT's stale census) - THE FLEET SAYS WHY A CENSUS IS NOT CURRENT, AND WHOSE PROOFS IT BORROWS
+    _hw, _hfrom = heart_stale_why(_census, _sp)
+    out["heart"]["why"] = _hw
+    out["heart"]["takesFrom"] = _hfrom
     return out
+
+
+def heart_stale_why(census, sp):
+    """v3855 C6 - why this PC's proof census is not current, in words, and the PCs it borrows fresh proofs from. Pure.
+    -> (None, []) for a current census | (sentence, [peer, ...]). The lane's own say and the proof carrier's say/doctor
+    are quoted, never re-derived; a missing piece is named UNKNOWN, never dropped silently. [[stale-reading]]"""
+    sp = sp if isinstance(sp, dict) else {}
+    car = sp.get("carrier") if isinstance(sp.get("carrier"), dict) else {}
+    takes = [str(x) for x in (car.get("takesFrom") or []) if x]
+    if census in (None, "current"):
+        return None, takes
+    parts = ["census %s" % census]
+    say = sp.get("say")
+    parts.append("lane: %s" % (str(say)[:160] if say else "no reason recorded (UNKNOWN)"))
+    owed = sp.get("owed")
+    if isinstance(owed, int) and not isinstance(owed, bool):
+        parts.append("%d law(s) owed" % owed)
+    if takes:
+        cs = car.get("doctor") or car.get("say")
+        parts.append("borrows fresh proofs from %s - %s" % (", ".join(takes), str(cs)[:160] if cs else "carrier said nothing yet (UNKNOWN)"))
+    else:
+        parts.append("borrows from no PC - it must prove itself")
+    return "; ".join(parts), takes
 
 
 #: #74 (REG-1461) — a station whose OLDEST reel has waited this long is STUCK, and the fleet card says so.
