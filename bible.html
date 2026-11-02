@@ -56501,6 +56501,428 @@ window.vaultAutoAssign = function(){
     return { ok: true, stamped: wrote, key: key, at: at, items: Object.keys(named).length, empty: empty, drain: drain,
              why: wrote ? '' : 'the stamp could not be written (a shadow writes nothing, or the store refused it)' };
   };
+  /* ══ REG-3105 (#158 P4, the guided sweep; his design call A: the BOARD assembles) — A FULL LOOK FROM A CONTAINER'S OWN CELLS
+     AND THE NAMED READS OF ITS SESSION, OR A QUESTION WITH THE EVIDENCE ══════════════════════════════════════════════════
+     The sweep now carries each container's own cells (REG-3104: the newest frame of each session's panel, its taken cells
+     from the pixels or UNKNOWN). Nothing stamped a full look from it. This assembles one: the reads of that session in that
+     container (each its own frame, over the floor when scored - the one rule, _vaultLookCounts) are laid on the taken cells
+     with the board's own sizes (_itemCells); a read may sit anywhere inside its item's footprint, and two reads of one name
+     inside one footprint are one item (his Q1: two cells are two copies). It is a FULL LOOK only when exactly ONE layout
+     explains every taken cell exactly once, with no read on an empty cell (the lead's rule) - then _vaultFullLook stamps it
+     and its drain counts what is absent. Anything less is never a look: it is a QUESTION to him, stored with its evidence
+     (the frame, the cells nobody named, the reads that do not fit), in MOVE TASKS:
+       * a shared page's number is never read (his call B) - "which shared page was this?", answered by his hand only;
+       * a stash tab the read did not name - "which tab was this?";
+       * whose stash it was when the session names no character, an unread panel, an item with no fixed size, a layout the
+         reads cannot make, two layouts, cells no read named - each said as what it is.
+     A frame the gate refuses (AUTO INTAKE off, a held vault, a shadow) assembles nothing and asks nothing; a shadow draws
+     the owner's questions read only and writes nothing (REG-3095's guard form). [[unknown-stays-unknown]] */
+  var VAULT_FL_ASKS_KEY = 'd2r_vaultFullLookAsks';
+  function _flShadow(){
+    if (window._tvdShadow) return true;
+    try { return document.documentElement.classList.contains('tvd-shadow'); } catch (e) { return false; }
+  }
+  function _flEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  /* -> {} | the map | null (UNKNOWN: the bytes would not read - never treated as empty, never written over) */
+  function _flAsksAll(){
+    var raw = null;
+    try { raw = window.LSR.getItem(VAULT_FL_ASKS_KEY); } catch (e) { return null; }
+    if (raw == null || raw === '') return {};
+    try { var m = JSON.parse(raw); return (m && typeof m === 'object' && !Array.isArray(m)) ? m : null; } catch (eP) { return null; }
+  }
+  function _flAsksWrite(all){
+    if (_flShadow()) return false;
+    try { return window.LSR.setItem(VAULT_FL_ASKS_KEY, JSON.stringify(all)) !== false; } catch (e) { return false; }
+  }
+  window._vaultFullLookAsks = _flAsksAll;
+  /* the named reads of the look's session inside its container -> [{name, c, r, frame, conf}] */
+  function _flReadsOf(look, rows){
+    var loc = look.location, out = [], seen = {};
+    var G = window.MULE_GRID || {}, dims = G[loc] || [10, 10];
+    var pre = (loc === 'inventory') ? { inventory: 1, inv: 1 } : { stash: 1, shared: 1, personal: 1 };
+    (rows || []).forEach(function(row){
+      var nm = row && row.name ? String(row.name).trim() : '';
+      if (!nm) return;
+      var ws = Array.isArray(row.witnesses) ? row.witnesses : (Array.isArray(row.seen) ? row.seen : []);
+      var scored = (typeof window._vaultLooksScored === 'function') ? window._vaultLooksScored(ws) : false;
+      ws.forEach(function(w){
+        if (!w || typeof w !== 'object') return;
+        var sid = String(w.session || w.reel || w.witness || '').replace(/#\d+$/, '');
+        if (!sid || sid !== String(look.session)) return;
+        if (typeof window._vaultLookCounts === 'function' && !window._vaultLookCounts(w, scored)) return;
+        var m = /^([a-z]+):c(\d+)r(\d+)$/i.exec(String(w.cell || ''));
+        if (!m || !pre[m[1].toLowerCase()] || +m[2] >= dims[0] || +m[3] >= dims[1]) return;
+        var k = nm + '|' + m[2] + '|' + m[3];
+        if (seen[k]) return;
+        seen[k] = 1;
+        out.push({ name: nm, c: +m[2], r: +m[3], frame: w.frame || null, conf: (typeof w.conf === 'number') ? w.conf : null });
+      });
+    });
+    return out;
+  }
+  window._vaultFullLookReads = _flReadsOf;
+  /* -> { complete: true, look: <the receiver's look> } | { complete: false, kind, why, cells?, reads?, names? } */
+  function _flAssemble(look, reads, holder){
+    function no(kind, why, extra){ return Object.assign({ complete: false, kind: kind, why: why }, extra || {}); }
+    if (!look || typeof look !== 'object') return no('no-look', 'there is no look to assemble');
+    var loc = look.location ? String(look.location).toLowerCase() : null;
+    if (!loc) return no('tab-unknown', 'which stash tab was this? the read did not name its tab, so the container cannot be named');
+    var G = window.MULE_GRID || null, dims = G ? G[loc] : null;
+    if (!dims) return no('not-a-grid', '"' + loc + '" is not a grid a full look can cover');
+    var W = dims[0], H = dims[1];
+    var page = (look.page == null || look.page === '') ? null : +look.page;
+    if (loc === 'shared' && (page == null || !(page >= 0))) return no('page-unknown',   /* null >= 0 is true in JS: null is asked first */ 'which shared page was this? its number is never read off the frame - a task row may hint, it never proves');
+    if (!holder) return no('holder-unknown', 'whose ' + loc + ' was this? the session names no character, so the container cannot be named');
+    if (!Array.isArray(look.occupied))
+      return no('occupancy-unknown', String(look.why || 'the cells of this panel could not be read') + ' - so no cell can be called empty');
+    if (look.capturedAt == null || !look.session || !look.frame) return no('undated', 'the look does not say its frame, session and capture time');
+    var O = {};
+    for (var i = 0; i < look.occupied.length; i++){
+      var oc = look.occupied[i];
+      if (!Array.isArray(oc) || !(oc[0] >= 0 && oc[0] < W && oc[1] >= 0 && oc[1] < H)) return no('occupancy-unknown', 'a taken cell is outside the ' + W + 'x' + H + ' grid - the pixel layer is not trusted for this frame');
+      O[oc[0] + ',' + oc[1]] = 1;
+    }
+    var rds = (reads || []).slice(), size = {}, unsized = [];
+    rds.forEach(function(rd){
+      if (size[rd.name] !== undefined) return;
+      var z = null;
+      try { z = (typeof _itemCells === 'function') ? _itemCells(rd.name) : null; } catch (eZ) { z = null; }
+      size[rd.name] = (z && !z.approx && z.w >= 1 && z.h >= 1) ? { w: z.w | 0, h: z.h | 0 } : null;
+      if (!size[rd.name]) unsized.push(rd.name);
+    });
+    if (unsized.length) return no('size-unknown', 'the size of ' + unsized.join(', ') + ' is not fixed on this board, so its cells cannot be laid out', { names: unsized });
+    var cand = rds.map(function(rd){
+      var z = size[rd.name], out = [];
+      for (var x0 = rd.c - z.w + 1; x0 <= rd.c; x0++) for (var y0 = rd.r - z.h + 1; y0 <= rd.r; y0++){
+        if (x0 < 0 || y0 < 0 || x0 + z.w > W || y0 + z.h > H) continue;
+        var cells = [], ok = true;
+        for (var dx = 0; dx < z.w && ok; dx++) for (var dy = 0; dy < z.h && ok; dy++){
+          var k = (x0 + dx) + ',' + (y0 + dy);
+          if (!O[k]) ok = false; else cells.push(k);
+        }
+        if (ok) out.push({ x: x0, y: y0, cells: cells });
+      }
+      return out;
+    });
+    var misfit = rds.filter(function(rd, i){ return !cand[i].length; });
+    if (misfit.length)
+      return no('conflict', misfit.map(function(rd){ return rd.name + ' at c' + rd.c + 'r' + rd.r; }).join(', ')
+                + ' cannot sit on the taken cells (a read on an empty cell, or a footprint the taken cells do not hold)', { reads: misfit });
+    var n = rds.length, explained = [], covered = {}, items = [], sols = [], tries = 0, LIMIT = 3;
+    function rec(){
+      if (sols.length >= LIMIT || ++tries > 20000) return;
+      var i = -1;
+      for (var j = 0; j < n; j++) if (!explained[j]) { i = j; break; }
+      if (i < 0){
+        sols.push({ items: items.map(function(it){ return { name: it.name, cells: it.cells.slice(), reads: it.reads.slice() }; }),
+                    left: Object.keys(O).filter(function(k){ return !covered[k]; }) });
+        return;
+      }
+      cand[i].forEach(function(pl){
+        if (sols.length >= LIMIT) return;
+        if (pl.cells.some(function(k){ return covered[k]; })) return;
+        var mark = [];
+        for (var q = i; q < n; q++)
+          if (!explained[q] && rds[q].name === rds[i].name && pl.cells.indexOf(rds[q].c + ',' + rds[q].r) >= 0){ explained[q] = true; mark.push(q); }
+        pl.cells.forEach(function(k){ covered[k] = 1; });
+        items.push({ name: rds[i].name, cells: pl.cells, reads: mark.map(function(q){ return rds[q]; }) });
+        rec();
+        items.pop();
+        pl.cells.forEach(function(k){ delete covered[k]; });
+        mark.forEach(function(q){ explained[q] = false; });
+      });
+    }
+    rec();
+    if (tries > 20000) return no('unsettled', 'the layout search stopped before it could settle - UNKNOWN, nothing is claimed');
+    if (!sols.length) return no('conflict', 'the reads cannot be laid on the taken cells without two items sharing a cell', { reads: rds });
+    var full = sols.filter(function(s){ return !s.left.length; });
+    if (full.length > 1) return no('ambiguous', 'two layouts of these reads both explain every taken cell, so where each item sits is not settled');
+    if (!full.length){
+      var left = sols[0].left.map(function(k){ var p = k.split(','); return 'c' + p[0] + 'r' + p[1]; }).sort();
+      return no('never-hovered', left.length + ' taken cell' + (left.length === 1 ? ' was' : 's were') + ' never named by a read in this session: '
+                + left.join(', ') + ' - hover ' + (left.length === 1 ? 'it' : 'them') + ' on ON AIR and the next sweep can see this ' + loc + ' whole', { cells: left });
+    }
+    var at = {};
+    full[0].items.forEach(function(it){
+      var w0 = it.reads[0] || {};
+      it.cells.forEach(function(k){ at[k] = { name: it.name, frame: w0.frame || null, conf: w0.conf }; });
+    });
+    var cells = [];
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++){
+      var e = at[x + ',' + y];
+      cells.push(e ? { cell: 'c' + x + 'r' + y, name: e.name, witness: { frame: e.frame, conf: e.conf } } : { cell: 'c' + x + 'r' + y, name: null });
+    }
+    return { complete: true, items: full[0].items.length,
+             look: { complete: true, container: { holder: holder, location: loc, page: (loc === 'shared') ? page : undefined },
+                     capturedAt: look.capturedAt, session: look.session, frame: look.frame, cells: cells } };
+  }
+  window._vaultFullLookFrom = _flAssemble;
+  function _flHolderOf(look){
+    var loc = look && look.location ? String(look.location).toLowerCase() : '';
+    if (loc === 'shared') return 'SHARED STASH';
+    try { return (typeof window._vaultLookHolder === 'function') ? (window._vaultLookHolder({ frame: look.frame }, look.session).holder || null) : null; }
+    catch (e) { return null; }
+  }
+  function _flAskId(look){ return [look.session, look.location || 'tab?', look.page == null ? '' : look.page, look.frame].join('|'); }
+  /* one look -> stamped, asked or held; `answer` is his hand's (a page or a tab), never a guess */
+  function _flOne(look, rows, answer){
+    var lk = Object.assign({}, look, answer || {});
+    var holder = _flHolderOf(lk), reads = _flReadsOf(lk, rows);
+    var a = _flAssemble(lk, reads, holder);
+    var asks = _flAsksAll();
+    if (a.complete){
+      var st = (typeof window._vaultFullLook === 'function') ? window._vaultFullLook(a.look) : { ok: false, why: 'the full-look receiver is not on this page' };
+      if (st && st.ok && asks){
+        var c = a.look.container, changed = false;
+        Object.keys(asks).forEach(function(id){
+          var q = asks[id] || {}, qc = q.container || {};
+          if (id === _flAskId(look) || (qc.location === c.location && qc.holder === c.holder && (qc.page == null ? null : +qc.page) === (c.page == null ? null : +c.page)
+              && !(q.capturedAt > a.look.capturedAt))){ delete asks[id]; changed = true; }
+        });
+        if (changed) _flAsksWrite(asks);
+      }
+      return { stamped: !!(st && st.stamped), complete: true, key: st && st.key, why: (st && st.why) || '' };
+    }
+    if (asks === null) return { asked: false, kind: a.kind, why: 'the question store (' + VAULT_FL_ASKS_KEY + ') would not read - UNKNOWN, nothing was written over it' };
+    var id = _flAskId(look);
+    asks[id] = { id: id, kind: a.kind, why: a.why, cells: a.cells || null, names: a.names || null,
+                 reads: reads.map(function(r){ return { name: r.name, c: r.c, r: r.r, frame: r.frame, conf: r.conf }; }),
+                 container: { holder: holder, location: lk.location || null, page: (lk.page == null ? null : lk.page) },
+                 session: look.session || null, frame: look.frame || null, capturedAt: look.capturedAt == null ? null : look.capturedAt,
+                 look: look, at: new Date().toISOString() };
+    var wrote = _flAsksWrite(asks);
+    return { asked: wrote, kind: a.kind, why: a.why };
+  }
+  window._vaultFullLooksApply = function(payload){
+    var p = (payload && typeof payload === 'object') ? payload : {};
+    var looks = Array.isArray(p.containers) ? p.containers : [];
+    var out = { looks: looks.length, stamped: 0, asked: 0, held: null, results: [] };
+    if (!looks.length) return out;
+    var gate = (typeof window._vaultIntakeGate === 'function') ? window._vaultIntakeGate()
+      : { refused: 'no-gate', why: 'the frame gate is not on this page - no look is assembled' };
+    if (gate) { out.held = gate.why || gate.refused; return out; }
+    var rows = [].concat(Array.isArray(p.items) ? p.items : [], Array.isArray(p.unsure) ? p.unsure : []);
+    looks.forEach(function(lk){
+      var r = _flOne(lk, rows, null);
+      if (r.stamped) out.stamped++;
+      if (r.asked) out.asked++;
+      out.results.push(Object.assign({ session: lk && lk.session, frame: lk && lk.frame, location: lk && lk.location }, r));
+    });
+    return out;
+  };
+  /* HIS ANSWER, his hand only: a shared page (0-based) or a tab ('stash' | 'shared') names the container, and the look is
+     assembled again from the reads it was asked with. -> what became of it */
+  window._vaultFullLookAnswer = function(id, ans){
+    if (_flShadow()) return { ok: false, why: 'a shadow answers nothing - it is their console, shown read only' };
+    var asks = _flAsksAll();
+    if (asks === null) return { ok: false, why: 'the question store would not read - UNKNOWN' };
+    var q = asks[String(id)];
+    if (!q || !q.look) return { ok: false, why: 'no such question' };
+    var add = {};
+    if (q.kind === 'page-unknown'){
+      var pg = +ans, pages = (typeof window.SHARED_PAGES === 'number') ? window.SHARED_PAGES : null;
+      if (!(pg >= 0 && (pg | 0) === pg && (pages == null || pg < pages))) return { ok: false, why: 'a shared page is 0 to ' + ((pages || 5) - 1) };
+      add.page = pg;
+    } else if (q.kind === 'tab-unknown'){
+      if (ans !== 'stash' && ans !== 'shared') return { ok: false, why: 'the tab is the personal stash or a shared page' };
+      add.location = ans;
+    } else return { ok: false, why: 'this question is answered by the next sweep, not by a choice here' };
+    var rows = (q.reads || []).map(function(r){ return { name: r.name, witnesses: [{ session: q.session, frame: r.frame, conf: r.conf,
+      cell: ((add.location || q.look.location) === 'inventory' ? 'inventory' : 'stash') + ':c' + r.c + 'r' + r.r }] }; });
+    delete asks[String(id)];
+    _flAsksWrite(asks);
+    var res = _flOne(Object.assign({}, q.look, add), rows, null);
+    try { if (typeof window._vaultMovePaint === 'function') window._vaultMovePaint(); } catch (eR) {}
+    return Object.assign({ ok: true }, res);
+  };
+  window._vaultFullLookClear = function(id){
+    if (_flShadow()) return { ok: false, why: 'a shadow clears nothing' };
+    var asks = _flAsksAll();
+    if (asks === null || !asks[String(id)]) return { ok: false, why: asks === null ? 'the question store would not read - UNKNOWN' : 'no such question' };
+    delete asks[String(id)];
+    return { ok: _flAsksWrite(asks) };
+  };
+  window._vaultFullLookShow = function(id){
+    var asks = _flAsksAll(), q = asks && asks[String(id)];
+    if (!q || !q.frame) return { ok: false, why: 'picture missing: UNKNOWN' };
+    var src = (typeof window._vaultLookSrc === 'function') ? window._vaultLookSrc({ frame: q.frame, session: q.session }) : null;
+    if (typeof window._tvdOpenFrame === 'function') window._tvdOpenFrame(q.frame, { title: 'full look · ' + (q.container && q.container.location || '?') + ' · ' + q.frame, src: src });
+    return { ok: true, frame: q.frame, src: src };
+  };
+  /* the questions, drawn in MOVE TASKS: the evidence, and in his own board the answers; read only in a shadow */
+  /* REG-3113 - the questions are drawn as guided steps in MOVE TASKS (window._vaultGuideHtml); this stays for a caller that
+     wants the questions alone */
+  window._vaultFullLookAsksHtml = function(){
+    var asks = _flAsksAll();
+    if (asks === null) return '<div class="vfl-asks" data-state="unknown">FULL LOOK QUESTIONS: UNKNOWN - the store (' + VAULT_FL_ASKS_KEY + ') would not read</div>';
+    var ids = Object.keys(asks);
+    if (!ids.length) return '';
+    var ro = _flShadow(), pages = (typeof window.SHARED_PAGES === 'number') ? window.SHARED_PAGES : 5;
+    ids.sort(function(a, b){ return ((asks[b] || {}).capturedAt || 0) - ((asks[a] || {}).capturedAt || 0); });
+    var h = '<div class="vfl-asks"' + (ro ? ' data-readonly="1"' : '') + '><div class="vault-move-h"><span class="vault-move-k">FULL LOOK QUESTIONS</span> '
+      + ids.length + '</div><ol class="vfl-list">';
+    ids.forEach(function(id){
+      var q = asks[id] || {}, c = q.container || {};
+      var where = (c.location === 'shared') ? ('SHARED STASH' + (c.page == null ? ' · page ?' : ' · page ' + (+c.page + 1)))
+                : ((c.holder || 'whose?') + ' · ' + (c.location || 'which tab?'));
+      var btn = function(lbl, js){ return ro ? '' : ' <button type="button" class="vault-btn vfl-b" data-ask="' + _flEsc(id) + '" onclick="' + js + '">' + _flEsc(lbl) + '</button>'; };
+      var answers = '';
+      if (q.kind === 'page-unknown') for (var pg = 0; pg < pages; pg++) answers += btn('Page ' + (pg + 1), "window._vaultFullLookAnswer(this.getAttribute('data-ask')," + pg + ")");
+      if (q.kind === 'tab-unknown') answers += btn('Personal stash', "window._vaultFullLookAnswer(this.getAttribute('data-ask'),'stash')")
+                                             + btn('A shared page', "window._vaultFullLookAnswer(this.getAttribute('data-ask'),'shared')");
+      h += '<li class="vfl-ask" data-ask="' + _flEsc(id) + '" data-kind="' + _flEsc(q.kind) + '"><b>' + _flEsc(where) + '</b> - ' + _flEsc(q.why)
+        + ' <button type="button" class="vault-btn vfl-b" data-ask="' + _flEsc(id) + '" onclick="window._vaultFullLookShow(this.getAttribute(\'data-ask\'))">frame '
+        + _flEsc(q.frame || '?') + '</button>' + answers
+        + btn('Clear', "window._vaultFullLookClear(this.getAttribute('data-ask'));try{window._vaultMovePaint&&window._vaultMovePaint()}catch(e){}") + '</li>';
+    });
+    return h + '</ol></div>';
+  };
+
+  /* ══ REG-3113 (#202, his 2026-10-27 ruling and his Q11) — THE GUIDED SWEEP: ONE STEP PER CONTAINER THE BOARD CANNOT YET SEE
+     WHOLE ══════════════════════════════════════════════════════════════════════════════════════════════════════════════
+     His ruling: auto intake registers on two sessions, the same rule that files - and his Q11: what the board cannot conclude
+     it leads him through, with the evidence. REG-3105 made a full look of a container its truth and parked everything less
+     as a question; nothing led him to the containers. Now MOVE TASKS carries ONE guided step per open question and per
+     container that has no full look yet (each mule he has made, by its name - a mule is a character - and each shared page),
+     merged when they are the same container: "Open <holder> · <container> and hover every item", with the cells no read
+     named, the frame and the question's own answers. Order: the steps with an open QUESTION first, then the oldest look (never
+     seen whole is the oldest), then the most cells never named. The list is CAPPED so it never buries the moves: every
+     question is drawn, then never-seen containers up to 5 steps in all, then one line that counts the rest - "and N more
+     containers never seen whole" - never a silent cut. The head says "seen whole N of M" over every container in scope, and
+     says once what the scope leaves out. A step CLOSES ITSELF: it is drawn from the full-look store each paint, so the sweep
+     whose containers[] completes that container removes it (REG-3105 also clears that container's older questions). No new
+     store. A shadow draws the steps read only. */
+  var GUIDE_CAP = 5;
+  var GUIDE_SCOPE_SAY = 'Mule 2+ characters and your own characters’ bags are not asked yet';
+  function _guideLookOf(holder, loc, page){
+    var all = _flAll();
+    if (all === null) return undefined;   /* UNKNOWN - the store would not read */
+    var h = String(holder == null ? '' : holder).trim().toLowerCase(), best = null;
+    Object.keys(all).forEach(function(k){
+      var r = all[k] || {};
+      if (String(r.location || '') !== loc || String(r.holder == null ? '' : r.holder).trim().toLowerCase() !== h) return;
+      if (loc === 'shared' && +r.page !== +page) return;
+      var at = _flMs(r.at);
+      if (at != null && (!best || at > best.at)) best = { at: at, frame: r.frame || null, session: r.session || null };
+    });
+    return best;
+  }
+  function _guideKey(c){   /* 'stash|uni-armor' · 'shared|shared stash|0' */
+    var k = [c.location || '?', String(c.holder == null ? '?' : c.holder).trim().toLowerCase()];
+    if (c.page != null) k.push(c.page);
+    return k.join('|');
+  }
+  /* the containers a guided sweep walks: each mule he has made (a mule the board made and he has not is its make row's first)
+     by its name, and each shared page */
+  function _guideContainers(){
+    var out = [], pending = {};
+    try {
+      var recs = (window._moveModel && window._moveModel.records) || null;
+      ((typeof _vaultWarMakeRows === 'function') ? _vaultWarMakeRows(recs) : []).forEach(function(m){ if (m && m.id) pending[m.id] = 1; });
+    } catch (eP) {}
+    ((typeof roster !== 'undefined' && Array.isArray(roster)) ? roster : []).forEach(function(m){
+      if (!m || !m.name || m.id === 'shared' || pending[m.id]) return;
+      out.push({ holder: String(m.name), location: 'stash', page: null });
+    });
+    var pages = (typeof window.SHARED_PAGES === 'number') ? window.SHARED_PAGES : 5;
+    for (var pg = 0; pg < pages; pg++) out.push({ holder: 'SHARED STASH', location: 'shared', page: pg });
+    return out;
+  }
+  /* -> [{key, container, last, ask, unnamed}] in his order | null (UNKNOWN: a store would not read) */
+  window._vaultGuideSteps = function(){
+    var asks = _flAsksAll();
+    if (asks === null || _flAll() === null) return null;
+    var byKey = {}, steps = [];
+    function step(c){
+      var k = _guideKey(c);
+      if (!byKey[k]) { byKey[k] = { key: k, container: c, last: _guideLookOf(c.holder, c.location, c.page), ask: null, done: null, unnamed: 0 }; steps.push(byKey[k]); }
+      return byKey[k];
+    }
+    _guideContainers().forEach(function(c){ var s = step(c); if (s.last) s.drop = true; });   /* seen whole: no step unless a question is open */
+    Object.keys(asks).forEach(function(id){
+      var q = asks[id] || {}, c = q.container || {};
+      var known = !!(c.location && c.holder && (c.location !== 'shared' || c.page != null));
+      /* REG-3114 - his tick is a row on that container, never a question: the step stays, waiting for the next sweep */
+      if (q.kind === 'guide-done'){ if (known) step(c).done = q; return; }
+      if (!q.kind || !q.why) return;
+      var s = known ? step(c) : (byKey[id] || (byKey[id] = { key: id, container: c, last: null, ask: null, unnamed: 0 }, steps.push(byKey[id]), byKey[id]));
+      if (!s.ask || (q.capturedAt || 0) > (s.ask.capturedAt || 0)) s.ask = q;
+      s.drop = false;
+    });
+    var out = steps.filter(function(s){ return !s.drop; });
+    out.forEach(function(s){ s.unnamed = (s.ask && Array.isArray(s.ask.cells)) ? s.ask.cells.length : 0; });
+    out.sort(function(a, b){
+      return ((a.ask ? 0 : 1) - (b.ask ? 0 : 1)) || ((a.last ? a.last.at : -1) - (b.last ? b.last.at : -1))
+          || (b.unnamed - a.unnamed) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
+    });
+    return out;
+  };
+  /* the steps, in MOVE TASKS' own row form (the make rows'): the sentence, the evidence, the answers; capped, never silently */
+  window._vaultGuideHtml = function(){
+    var steps = window._vaultGuideSteps();
+    if (steps === null) return '<p class="vtk-sec" data-sec="look">See whole · UNKNOWN - the full-look stores (d2r_vaultFullLooks, ' + VAULT_FL_ASKS_KEY + ') would not read</p>';
+    if (!steps.length) return '';
+    var cs = _guideContainers(), all = cs.length, seen = cs.filter(function(c){ return !!_guideLookOf(c.holder, c.location, c.page); }).length;
+    var ro = _flShadow(), pages = (typeof window.SHARED_PAGES === 'number') ? window.SHARED_PAGES : 5;
+    /* REG-3114 - a step he ticked is never cut either: hidden, it would read as closed */
+    var asked = steps.filter(function(s){ return !!(s.ask || s.done); }), never = steps.filter(function(s){ return !(s.ask || s.done); });
+    var shown = asked.concat(never.slice(0, Math.max(0, GUIDE_CAP - asked.length))), more = steps.length - shown.length;
+    var h = '<p class="vtk-sec" data-sec="look">See whole · ' + steps.length
+      + ' <span class="vgs-whole" title="containers with a full look, of the mules you have made and the shared pages">seen whole ' + seen + ' of ' + all + '</span>'
+      + ' <span class="vgs-scope">(' + _flEsc(GUIDE_SCOPE_SAY) + ')</span></p>'
+      + '<ol class="vtk-list" data-sec="look"' + (ro ? ' data-readonly="1"' : '') + '>';
+    shown.forEach(function(s){ h += _guideRowHtml(s, ro, pages); });
+    if (more > 0) h += '<li class="vtk-line vtk-more" data-more="' + more + '"><span class="vtk-say">and ' + more + ' more container'
+      + (more === 1 ? '' : 's') + ' never seen whole</span></li>';
+    return h + '</ol>';
+  };
+  function _guideRowHtml(s, ro, pages){
+    var c = s.container || {}, q = s.ask;
+    var where = (c.location === 'shared') ? ('SHARED STASH · page ' + (c.page == null ? '?' : (+c.page + 1)))
+              : ((c.holder || 'whose?') + ' · ' + (c.location === 'inventory' ? 'inventory' : c.location ? 'stash' : 'which tab?'));
+    var say = 'Open <b>' + _flEsc(where) + '</b> and hover every item';
+    if (q && Array.isArray(q.cells) && q.cells.length)
+      say += ' (' + q.cells.length + ' cell' + (q.cells.length === 1 ? '' : 's') + ' never named: ' + _flEsc(q.cells.slice(0, 8).join(', ')) + (q.cells.length > 8 ? ', …' : '') + ')';
+    else if (q) say += ' - ' + _flEsc(q.why);
+    else say += s.last ? '' : ' (never seen whole)';
+    var btn = function(lbl, js){ return ro ? '' : ' <button type="button" class="vault-btn vfl-b" data-ask="' + _flEsc(q && q.id) + '" onclick="' + js + '">' + _flEsc(lbl) + '</button>'; };
+    var answers = '';
+    if (q && q.kind === 'page-unknown') for (var pg = 0; pg < pages; pg++) answers += btn('Page ' + (pg + 1), "window._vaultFullLookAnswer(this.getAttribute('data-ask')," + pg + ")");
+    if (q && q.kind === 'tab-unknown') answers += btn('Personal stash', "window._vaultFullLookAnswer(this.getAttribute('data-ask'),'stash')")
+                                              + btn('A shared page', "window._vaultFullLookAnswer(this.getAttribute('data-ask'),'shared')");
+    var ev = (q && q.frame) ? ' <button type="button" class="vault-btn vfl-b" data-ask="' + _flEsc(q.id) + '" onclick="window._vaultFullLookShow(this.getAttribute(\'data-ask\'))">frame ' + _flEsc(q.frame) + '</button>' : '';
+    var clear = q ? btn('Clear', "window._vaultFullLookClear(this.getAttribute('data-ask'));try{window._vaultMovePaint&&window._vaultMovePaint()}catch(e){}") : '';
+    /* REG-3114 - his tick, on a step that names its container; read only in a shadow */
+    var d = s.done;
+    if (d) say += ' · <i>you said done ' + _flEsc(String(d.at || '').slice(0, 16).replace('T', ' ')) + ' - waiting for the next sweep to see it whole</i>';
+    var tick = (c.location && c.holder && (c.location !== 'shared' || c.page != null))
+      ? '<input type="checkbox" class="vtk-tick" aria-label="I hovered every item in ' + _flEsc(where) + '"' + (d ? ' checked' : '') + (ro ? ' disabled' : '')
+        + ' data-key="' + _flEsc(s.key) + '" onclick="event.stopPropagation()" onchange="window._vaultGuideDone(this.getAttribute(\'data-key\'))">' : '';
+    return '<li class="vtk-line vtk-look" data-container="' + _flEsc(s.key) + '"' + (q ? ' data-kind="' + _flEsc(q.kind) + '"' : ' data-kind="never"') + (d ? ' data-waiting="1"' : '') + '>'
+      + tick + '<span class="vtk-say">' + say + '</span>' + ev + answers + clear + '</li>';
+  }
+  /* ══ REG-3114 (#202) — HIS TICK IS NEVER THE PROOF. A guided step closes only when a sweep's containers[] completes its
+     container (REG-3113). His tick records that he hovered it - a 'guide-done' row on that container in the question store
+     REG-3105 keeps, so no new store - and the step stays, ticked, "waiting for the next sweep to see it whole". A full look of
+     that container clears it with the step (REG-3105 clears that container's older rows). A step whose container is not named
+     yet cannot be ticked: its question comes first. A shadow ticks nothing (REG-3095's guard form). */
+  window._vaultGuideDone = function(key){
+    if (_flShadow()) return { ok: false, why: 'a shadow ticks nothing - it is their console, shown read only' };
+    var steps = window._vaultGuideSteps();
+    if (steps === null) return { ok: false, why: 'the full-look stores would not read - UNKNOWN' };
+    var s = steps.filter(function(x){ return x.key === String(key); })[0];
+    var c = s && s.container;
+    if (!c || !c.location || !c.holder || (c.location === 'shared' && c.page == null))
+      return { ok: false, why: 'that step names no container yet - answer its question first' };
+    var asks = _flAsksAll();
+    if (asks === null) return { ok: false, why: 'the question store would not read - UNKNOWN' };
+    var id = 'guide|' + s.key;
+    asks[id] = { id: id, kind: 'guide-done', container: { holder: c.holder, location: c.location, page: c.page == null ? null : c.page },
+                 at: new Date().toISOString(), why: 'you said you hovered every item; the next sweep decides whether it is seen whole' };
+    var wrote = _flAsksWrite(asks);
+    try { if (typeof window._vaultMovePaint === 'function') window._vaultMovePaint(); } catch (eR) {}
+    return { ok: wrote, waiting: true, why: wrote ? asks[id].why : 'the question store refused the write' };
+  };
   /* ══ REG-2893 (his Q2) — A READ OLDER THAN ITS CONTAINER'S NEWEST FULL LOOK PLACES NOTHING ══════════════════════════════
      An Oct 6 screenshot must not file, add or move an item today when the same stash was seen whole on Oct 28. The read
      is asked which container it saw (the holder and location its look names) and when (its capture time); against that
@@ -56621,6 +57043,8 @@ window.vaultAutoAssign = function(){
       window._moveModel = built;
       var host = (typeof document !== 'undefined' && document.getElementById) ? document.getElementById('vault-move-list') : null;
       if (host) { host.hidden = false; host.innerHTML = ((typeof _vaultMoveHeldHtml === 'function') ? _vaultMoveHeldHtml() : '') + _vaultMoveHtml(built); }
+      /* REG-3113 - the guided sweep, after the tasks. A step is drawn from the full-look store, so the sweep that completes its container removes it. */
+      if (host && typeof window._vaultGuideHtml === 'function') host.innerHTML += window._vaultGuideHtml();
       /* Vault v2 — the MOVE TASKS FAB badge = the open lines (moves + throw-outs not yet done), read off the painted list */
       try {
         var _bn = document.getElementById('vault-tasks-n');
@@ -76922,7 +77346,7 @@ window._renderStashFresh = function(){
 
        So the question is asked once: does this payload carry ANYTHING worth acting on? A new signal
        is added to this list and nothing else has to remember it. */
-    var _EVIDENCE = ['glimpsed', 'overRead', 'reconciled', 'room', 'pixelLaneError', 'retention'];
+    var _EVIDENCE = ['glimpsed', 'overRead', 'reconciled', 'room', 'pixelLaneError', 'retention', 'containers'];   /* REG-3105 a container look is evidence */
     var _carries = _EVIDENCE.some(function(k){
       var v = p[k];
       if (v == null) return false;
@@ -77502,6 +77926,10 @@ window._renderStashFresh = function(){
           out.pixelLaneError = String(payload.pixelLaneError);
         }
       } catch(e){ out.skipped.push('could not ledger the pixel evidence: ' + (e && e.message || e)); }
+      /* REG-3105 - each container's own cells become a full look when the named reads of that session explain every taken cell; anything less is a question */
+      try { out.fullLooks = (typeof window._vaultFullLooksApply === 'function') ? window._vaultFullLooksApply(p)
+                                                                             : { held: 'the full-look assembler is not on this page' }; }
+      catch (eFl) { out.fullLooks = { held: 'the full-look assembler raised ' + String((eFl && eFl.message) || eFl).slice(0, 80) }; }
       /* v2142 (#169) — ASK FOR THE REPAINT. Every _rec above appends to d2r_chronicleInboxLog and
          then nothing told the inbox to redraw, so a payload could apply perfectly and leave the
          panel showing the previous state — measured: the log contained "22 square(s) never move"

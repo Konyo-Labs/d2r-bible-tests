@@ -30,6 +30,41 @@ see-console eyes, which stay at the line's end (REG-2768). Law: test_a_fleet_row
 vault_line's states, its own clock over the copy's, the route over a written and re-read cache, the Fleet overlay, the
 console's row and button in node; 9 red-proofs, each RED). NEEDS LIVE: GrokBot opens a Fleet row and the roster panel on
 the Mac and reads each vault line against that PC's shadow.
+### REG-3114 - HIS TICK ON A GUIDED STEP IS NEVER THE PROOF: IT WAITS FOR THE SWEEP THAT SEES THE CONTAINER WHOLE (#202)
+A guided step (REG-3113) must close only when a sweep's containers[] completes its container, never by a click alone.
+FIX: his tick (window._vaultGuideDone) records that he hovered it, as a 'guide-done' row on that container in the question
+store REG-3105 keeps, so no new store. The step stays, ticked, and says "you said done <time> - waiting for the next sweep
+to see it whole".
+- A ticked step is never cut by REG-3113's cap. Hidden, it would read as closed.
+- A full look of that container clears the tick with the step (REG-3105 clears that container's older rows).
+- A step whose container is not named yet (a shared page with no number) cannot be ticked. Its question is answered first.
+- A shadow's tick is drawn disabled and refuses, in REG-3095's guard form.
+GUARD: tv/test_a_guided_step_tick_waits_for_the_sweep.py, 4 cases. 4 red-proofs, RED.
+
+### REG-3113 - NOTHING LED HIM TO THE CONTAINERS THE BOARD CANNOT SEE WHOLE: THE GUIDED SWEEP, CAPPED HONESTLY (#202, his 2026-10-27 ruling and his Q11)
+REG-3105 made a container's full look its truth and parked everything less as a question. Nothing led him to the
+containers. His ruling is that auto intake registers on two sessions, the same rule that files. His Q11 is that what the
+board cannot conclude, it leads him through, with the evidence.
+FIX: MOVE TASKS carries ONE guided step (window._vaultGuideSteps / _vaultGuideHtml), in the make rows' own form. The
+section is "See whole · N". There is a step for:
+- each open question;
+- each container with no full look yet: every mule he has made, by its name (a mule is a character), and each shared page.
+  A mule the board made and he has not is its make row's first.
+Steps are merged when they are the same container. A step reads "Open <holder> · <container> and hover every item", with
+the cells never named, the frame, and the question's own answers.
+Order: the steps with an open QUESTION first, then the oldest look (never seen whole is the oldest), then the most cells
+never named.
+THE CAP (his lead's ruling): dozens of rows would bury the moves.
+- Every question is drawn.
+- Then never-seen containers are drawn, up to 5 steps in all.
+- Then one counted line: "and N more containers never seen whole". The cut never hides a question.
+- The head says "seen whole N of M" over every container in scope, and says once what the scope leaves out: "Mule 2+
+  characters and your own characters' bags are not asked yet".
+A step CLOSES ITSELF. It is drawn from the full-look store on each paint, so the sweep whose containers[] completes the
+container removes it. No new store. A shadow draws the steps read only.
+GUARD: tv/test_the_guided_sweep_leads_him_container_by_container.py, 6 cases through vaultAccumApply, covering the cap, the
+"N more" count, questions-first and a cut that never hides a question. 8 red-proofs, RED. On claude/agent-158p4 it is red:
+"_vaultGuideSteps is not a function".
 
 ### REG-3117 - IN A SHADOW A FILLED MULE CELL STILL SAID "DRAG IT TO ANY CELL WHERE IT FITS AND IT LOCKS THERE" (#230, GrokBot 6489429952)
 GrokBot, guest -> Fleet -> Konyo · Mac -> Vault -> UNIQUE ARMOR: a filled cell's aria-label promised a drag the read-only
