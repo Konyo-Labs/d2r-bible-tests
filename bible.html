@@ -13365,6 +13365,21 @@ function d2jspBatchHtml(view) {
     var tp = quoted[n] ? d2jspTierPrice(quoted[n], d2jspTierAvg(reads, n, posts, base)) : '';
     return '<div class="d2jsp-say" data-d2jsp-tier>' + esc(line + (tp ? (' ' + tp) : '')) + '</div>';
   }
+  /* the roll's min-max lines: a rolled name's affix ranges, else the catalogue card's lines that carry a range */
+  function _d2jspRangeLines(n){
+    var out = [];
+    try { if (typeof _affixRangeLines === 'function') out = (_affixRangeLines(n) || []).slice(); } catch (e) { out = []; }
+    if (out.length) return out;
+    var RANGE = /\d+\s*[-\u2013]\s*\d+/;
+    var strip = function(h){ return String(h || '').replace(/<[^>]*>/g, '').trim(); };
+    try {
+      var src = (typeof ITEM_TIP !== 'undefined' && ITEM_TIP[n] && ITEM_TIP[n].l) ? ITEM_TIP[n].l
+              : (typeof RUNEWORD_TIP !== 'undefined' && typeof findRuneword === 'function' && findRuneword(n) && RUNEWORD_TIP[findRuneword(n)]) ? RUNEWORD_TIP[findRuneword(n)].l : [];
+      (src || []).forEach(function(l){ var t = strip(l); if (RANGE.test(t)) out.push(t); });
+    } catch (e2) {}
+    return out;
+  }
+  try { window._d2jspRangeLines = _d2jspRangeLines; } catch (e) {}
   function cardHtml(n){
     var art = d2jspArt(n);
     var base = baseOf(n);
@@ -13375,6 +13390,9 @@ function d2jspBatchHtml(view) {
     var postText = draft.ok ? draft.body : mods;
     var remove = '<button type="button" class="vault-btn" data-d2jsp-remove="' + esc(n) + '">Remove from this list</button>';
     var recorded = !!(gearMap()[n] && gearMap()[n].entry) || typeof readMap('d2r_d2jsp_mods')[n] === 'string';
+    /* v3855 C6 (Elad) - THE CARD KEEPS THE ITEM'S MIN-MAX RANGES UNTIL HIS MODS ARE TYPED (Options or Edit mods) */
+    var rng = (mods.trim() || (typeof window._typedModsOf === 'function' && window._typedModsOf(n))) ? [] : _d2jspRangeLines(n);
+    var rngHtml = rng.length ? '<div class="d2jsp-ranges" data-d2jsp-ranges>' + rng.map(function(l){ return '<div class="att-aff att-range" data-mod-range="1">' + esc(l) + '</div>'; }).join('') + '</div>' : '';
     var hint = mods.trim() ? '' : '<div class="d2jsp-say">' + (recorded ? 'No mods yet. ' : 'This filing has no mods recorded. ') + 'Options opens the same mod list the character builder uses.</div>';
     var mark = '<button type="button" class="vault-btn" data-d2jsp-sold="' + esc(n) + '">' + (sold ? 'For sale' : 'Mark sold') + '</button>';
     var tip = 'Opens a draft. Nothing is posted until Post this draft.';
@@ -13384,6 +13402,7 @@ function d2jspBatchHtml(view) {
       + '<div class="boss-name" title="' + esc(tip) + '">' + esc(n) + '</div>'
       + '<div class="d2jsp-say" data-d2jsp-base>' + esc(base || 'Base not recorded') + '</div>'
       + hint
+      + rngHtml
       + '<pre class="d2jsp-draft" data-d2jsp-draft' + (postText ? '' : ' hidden') + '>' + esc(postText) + '</pre>'
       + '<div class="d2jsp-say" data-d2jsp-wait' + (draft.ok ? ' hidden' : '') + '>The post waits for a price.</div>'
       + '<div class="d2jsp-say" data-d2jsp-price>' + esc(priceText(n)) + '</div>'
