@@ -20,6 +20,11 @@ alone 25.2 s). sips opens only the images on its command line, so gate_trace/sit
 this checkout as a READ, and the one after -o/--out as a WRITE (TRACE-SIPS-NAMED), instead of untracing the gate. A named image
 that moves still re-runs the gate; a fixture in a temp folder reads nothing here; any other image tool still untraces. Law
 test_sips_is_keyed_by_the_images_it_is_named (6 tests, 6 red-proofs, 6 of 6 RED).
+### REG-3126 - ECHO, PRINTF AND A DEFAULTS DOMAIN READ UNTRACED A GATE (gate speed, v3855)
+test_a_stub_agent_never_films_his_screen (echo, 4.6 s) and test_d2jsp_desk (defaults, 4.2 s) ran on every v3853 push as "not
+stored". echo and printf print their argv; `defaults read <domain>` reads a preference domain outside this checkout.
+gate_trace/sitecustomize.py lets them through (TRACE-INERT-PRINT) unless an argument names a path inside the checkout. cat
+and every other child still untrace. Law test_a_printing_child_does_not_untrace_a_gate (6 tests, 5 red-proofs, 5 of 5 RED).
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel

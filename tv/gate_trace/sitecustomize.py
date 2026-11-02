@@ -209,6 +209,9 @@ def _boot():
         if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(
                 rel(a) is not None for a in args[1:] if "/" in a):
             return  # a machine meter (memory, kernel, sockets, IO registry, app list), never a file here  # TRACE-INERT-METER
+        if head in ("echo", "printf", "defaults") and not any(
+                rel(a) is not None for a in args[1:] if "/" in a):
+            return  # prints its own argv, or reads a preference domain outside this checkout  # TRACE-INERT-PRINT
         if head == "sips":
             base = fsdecode(cwd) if cwd is not None else getcwd()
             out_next = False
