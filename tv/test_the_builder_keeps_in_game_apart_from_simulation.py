@@ -62,7 +62,7 @@ var ROSTER = { ok: true, tierBars: { proven: 10, hardened: 20, wilson: 0.722 }, 
     title: null, lastTs: NOW - 7200000 },
   { name: 'Mulebox', cls: 'Sorceress', level: 1, pendingLevel: null, visits: 3, tier: 'WATCHED', looks: 3, trials: 3,
     title: null, lastTs: NOW - 86400000 } ] };
-function secHtml(k){ var m = new RegExp('<section class="chx-sec" data-sec="' + k + '"[^>]*>([\\s\\S]*?)</section>').exec(ELS['chars-list']._html); return m ? m[1] : null; }
+function secHtml(k){ var m = new RegExp('<section class="chx-sec[^"]*" data-sec="' + k + '"[^>]*>([\\s\\S]*?)</section>').exec(ELS['chars-list']._html); return m ? m[1] : null; }
 function secIds(k){ var h = secHtml(k) || '', out = [], re = /data-build="([^"]*)"/g, m; while ((m = re.exec(h))) out.push(decode(m[1])); return out; }
 function ghosts(k){ var h = secHtml(k) || '', out = [], re = /data-learned="([^"]*)"/g, m; while ((m = re.exec(h))) out.push(decode(m[1])); return out; }
 function groups(){
