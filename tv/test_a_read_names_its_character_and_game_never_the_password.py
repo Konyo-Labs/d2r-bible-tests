@@ -74,6 +74,26 @@ class TheExtractor(unittest.TestCase):
         self.assertEqual((m8["character"], m8["source"]), ("Blizzy", "game-series"))
 
 
+class TheReaderAnswerKeepsOnlyIdentity(unittest.TestCase):
+
+    def test_parse_identity_drops_the_password(self):
+        got = RI.parse_identity({"gameName": "Morph3 Password: %s" % SECRET, "password": SECRET, "gamePassword": SECRET,
+                                 "cls": "sorc", "level": 92, "avatarClass": "Sorceress"}, "char-select")
+        self.assertEqual(got, {"gameName": "Morph3", "cls": "Sorceress", "level": 92, "avatarClass": "Sorceress"})
+        self.assertNotIn(SECRET, json.dumps(got))
+
+    def test_class_off_the_login_and_panel_is_not_kept(self):
+        self.assertNotIn("cls", RI.parse_identity({"cls": "Barbarian", "level": 80}, "gameplay"))
+
+    def test_the_prompt_asks_for_the_fields_and_never_a_password(self):
+        src = open(os.path.join(HERE, "tv_diablo.py"), encoding="utf-8").read()
+        i = src.index("READ_PROMPT = (")
+        block = src[i:src.index("\n)\n", i)]
+        for k in ("gameName", "avatarClass", "cls / level"):
+            self.assertIn(k, block)
+        self.assertNotIn('\\"password\\"', block, "the reader is asked for a password key")
+
+
 class TheScenarioComesFromTheGameNames(unittest.TestCase):
 
     def test_baal_is_leveling(self):
@@ -147,6 +167,11 @@ class TheProofsNameOnePlace(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "a game name keeps the password written after it",
+     "file": "tv/read_identity.py",
+     "find": "        g = re.split(r\"(?i)\\s*(?:pass|pw\\b)\", g.strip())[0].strip()\n",
+     "replace": "        g = g.strip()\n",
+     "matches": 1},
     {"why": "BAAL-1 / BAAL-2 are not a leveling session",
      "file": "tv/read_identity.py",
      "find": "    if any(_BAAL.search(g) for g in games):\n",
