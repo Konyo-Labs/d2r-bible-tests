@@ -17,14 +17,14 @@ WHAT THE DEMOTED NUMBERS ACTUALLY ARE — neither is wrong and neither is delete
     are kept on purpose ("Spirit (sword)" and "Spirit") because a chronicle page prints the bare
     one. It was never a count of runewords. control_app.py already refuses to use it as a
     denominator, in as many words, and that refusal still stands.
-  · 398 is unique_roster.json's length — every unique this board can put a NAME on. The chronicle
-    has 403 entries; the difference is items the game will not name until they drop.
+  · 398 is unique_roster.json's length — every unique this board can put a NAME on. That roster
+    is a different question from the chronicle number, which is the pin.
 
 THE TRUE COUNT PER TAB, and where it comes from:
     runeword  99   var RUNEWORD_CHRONICLE_TOTAL  — his v2192 ruling, 2026-08-27
     set      135   the piece catalogue in bible.html — 34 sets, 135 distinct pieces
-    unique         the game-file pin (chronTotal, 403) minus the six quest items. The pin stays
-                   in funiScan. The tally the surfaces divide by does not include those six.
+    unique   397   the chronicle pin in funiScan. The six quest items are not cards.
+                   The pin and the tally are that same number. Nothing subtracts them again.
 
 ⚠ IT READS bible.html, NOT THE ARTIFACTS, so the artifacts stop being denominators and become
 checked copies. And every failure returns None, never a fallback constant: a number nobody could
@@ -61,8 +61,8 @@ _WHY = {
                  "catalogue that holds one key per runeword"),
     "set": ("the piece catalogue in bible.html — 34 sets holding 135 distinct pieces; the "
             "chronicle counts pieces, which is why this says pieces"),
-    "unique": ("the game-file chronicle pin minus the six quest items in _CHRON_QUESTS. "
-               "Those six stay in the file and are not part of the tally any surface divides by"),
+    "unique": ("the chronicle pin in funiScan. The six quest items stay off the card list. "
+               "The pin and the tally are the same number, so nothing subtracts them again"),
 }
 
 
@@ -133,7 +133,7 @@ def _runeword_total(s):
 
 
 def _file_pin(s):
-    """The game-file chronicle count. Not the tally. -> int | None
+    """The unique chronicle pin. This is the number surfaces divide by. -> int | None
 
     The named declaration wins, then the single chronTotal assignment. Two different literals
     are UNKNOWN, not a vote. A comment that merely mentions the number does not match: the
@@ -155,10 +155,10 @@ def _file_pin(s):
 
 
 def _quest_names(s):
-    """The quest uniques declared beside the chronicle. -> [str] | None
+    """The quest uniques kept off the card list. -> [str] | None
 
-    None when the array cannot be read. An empty array is also None: a tally that quietly
-    grew back to the file pin is the defect, not a measured zero.
+    None when the array cannot be read, including an empty array. The chronicle number
+    does not depend on this list. These names are a card filter, not a second denominator.
     """
     m = re.search(r"var\s+_CHRON_QUESTS\s*=\s*\[(.*?)\]\s*;", s, re.S)
     if not m:
@@ -172,7 +172,7 @@ def _quest_names(s):
 
 
 def file_pin(s=None):
-    """The game-file pin, for a caller that must keep it apart from the tally. -> int | None"""
+    """The unique chronicle pin. The tally is this same number. -> int | None"""
     if s is None:
         s = _src()
     if s is None:
@@ -196,18 +196,12 @@ def quest_count(s=None):
 
 
 def _unique_total(s):
-    """The tally every surface divides by: the file pin minus the quest items. -> int | None
+    """The unique chronicle number. The pin and the tally are the same number. -> int | None
 
-    Either half unreadable is UNKNOWN. Returning the pin alone would put the six quest items
-    back on the fleet, the heart, and the roster routes.
+    The six quest names stay on the card filter in bible.html. Subtracting them here would
+    print 391. An unreadable pin is UNKNOWN.
     """
-    pin = _file_pin(s)
-    names = _quest_names(s)
-    if pin is None or not names:
-        return None
-    if len(names) >= pin:
-        return None
-    return pin - len(names)
+    return _file_pin(s)
 
 
 def set_pieces(s):

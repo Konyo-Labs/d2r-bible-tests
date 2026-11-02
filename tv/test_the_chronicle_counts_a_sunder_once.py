@@ -34,8 +34,8 @@ third time. So this law pins BOTH halves, because either one alone is the bug:
     PRESENT in the roster — or the charm loses its card, its art and its farm route
 
 MEASURED at the time of writing: roster 398 names including 6 `Latent …`; funiScan().total 392.
-398 − 6 = 392, and the six BARE sunders survive. chronTotal stays 403, the game's own Chronicle
-count, which carries six sunder rows and zero Latent rows — so the game already agrees with him.
+398 − 6 = 392, and the six BARE sunders survive. The file count was 403 rows, with six
+sunder rows and zero Latent rows. The pin is the chronicle number, 397, and this law does not move it.
 
 ⚠ ON READING THE SOURCE. The predicate and the fold are extracted with BOTH ends anchored and
 executed in node, so this law tests the SHIPPED behaviour rather than the presence of words that

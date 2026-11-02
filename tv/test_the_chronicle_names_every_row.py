@@ -3,8 +3,9 @@
 
 Measured 2026-11-01 from uniqueitems.txt. A chronicle row is spawnable==1 and
 disableChronicle!=1. That file count is 403. Rainbow Facet is eight of them. Six
-quest uniques are in that file and are not part of the tally. The hunt list is 397. Polaris Spear and The Scourge are not in the file. The six
-colossal jewels have spawnable blank, so they stay outside the 403 and tick on
+quest uniques are in that file and are not cards. The hunt list and the pin are
+the same 397. Polaris Spear and The Scourge are not in the file. The six
+colossal jewels have spawnable blank, so they stay outside the file count and tick on
 their own drawer.
 
 The roster is a different surface. This law drives the tally function, then checks
@@ -274,26 +275,32 @@ class TheChronicleNamesEveryRow(unittest.TestCase):
 
     def test_the_quest_gap_is_not_painted_as_dark(self):
         self.assertEqual(self.src.count("var _darkN=(s.chronTotal||0)-s.total;"), 1)
-        self.assertEqual(self.src.count("var _showDark = _darkN - _CHRON_QUESTS.length;"), 1)
-        i = self.src.find("var _showDark = _darkN - _CHRON_QUESTS.length;")
+        self.assertEqual(self.src.count("var _showDark = _darkN;"), 1)
+        self.assertNotIn("_darkN - _CHRON_QUESTS.length", self.src)
+        self.assertNotIn("_CHRON_QUESTS.length", self.src)
+        i = self.src.find("var _showDark = _darkN;")
         j = self.src.find("var _colRows", i)
         self.assertGreater(j, i)
         band = "\n".join(line.split("//", 1)[0] for line in self.src[i:j].split("\n"))
         self.assertIn("if(_showDark>0)", band)
         self.assertIn("'+_showDark+'", band)
         self.assertNotIn("'+_darkN+'", band)
-        self.assertEqual(self.src.count("s.chronTotal-s.found-_CHRON_QUESTS.length"), 1)
-        k = self.src.find("var _questN = _CHRON_QUESTS.length;")
-        self.assertEqual(self.src.count("var _questN = _CHRON_QUESTS.length;"), 1)
+        self.assertEqual(self.src.count("s.chronTotal-s.found"), 1)
+        self.assertNotIn("s.chronTotal-s.found-_CHRON_QUESTS.length", self.src)
+        k = self.src.find("var _namedDark = (s.chronTotal - s.total);")
+        self.assertGreater(k, 0)
         m = self.src.find("H.push(_undoBar('uni'))", k)
         self.assertGreater(m, k)
         note = "\n".join(line.split("//", 1)[0] for line in self.src[k:m].split("\n"))
         self.assertNotIn("quest items sit inside the ", note)
         self.assertIn("every chronicle row is named", note)
         fn = self.src[self.src.find("window.d2rChronTotal = function"):self.src.find("window._publishedLane")]
-        self.assertIn("window._CHRON_QUESTS", fn)
-        self.assertIn("return t - q;", fn)
-        self.assertIn("chronTotal:403", self.src.replace(" ", ""))
+        self.assertNotIn("_CHRON_QUESTS", fn)
+        self.assertNotIn("return t - q", fn)
+        self.assertIn("return t;", fn)
+        flat = self.src.replace(" ", "")
+        self.assertIn("chronTotal:397", flat)
+        self.assertNotIn("chronTotal:403", flat)
 
     def test_the_list_is_actually_called_and_the_resolver_stops(self):
         self.assertEqual(self.src.count("names = _chronicleNameList(names);"), 1)

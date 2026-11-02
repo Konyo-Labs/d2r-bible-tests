@@ -4234,10 +4234,12 @@ tr.owned-row{background:rgba(102,255,136,.03)}
    THREE numerators and TWO denominators under ONE field name, with nothing on any surface
    saying which question had been answered.
 
-   The denominators are not three bugs. They are three different questions:
-       403  chronTotal — HIS PINNED RULING, the game's own Chronicle count
+   The denominators are not three bugs. They are three different questions, measured that morning:
+       403  the spawnable file-row count, six of them quest items
        392  funiScan().total — the carded roster after his v2680 one-tally-per-sunder ruling
        398  produced by neither, and NO array on the page is this size
+   2026-11-02 — he joined the pin to the chronicle number. It is 397 uniques.
+   This function returns that pin. It does not subtract the quest list a second time.
    `x.chronTotal || x.total` was written at ELEVEN sites. Nine ask "what fraction of the
    Chronicle does he have" and each re-derived it, so one missing `chronTotal` silently swapped
    the denominator and the percentage moved with nothing to show for it.
@@ -4257,12 +4259,7 @@ window.d2rChronTotal = function(s){
   try { if (!s && typeof window.funiScan === 'function') s = window.funiScan(); }
   catch(e){ s = s || null; }
   var t = s && s.chronTotal;
-  if (typeof t === 'number' && isFinite(t) && t > 0) {
-    /* The six quest uniques are in the game file. They are not part of this tally. */
-    var q = 0;
-    try { var qq = window._CHRON_QUESTS; if (qq && qq.length) q = qq.length; } catch (eQ) {}
-    return t - q;
-  }
+  if (typeof t === 'number' && isFinite(t) && t > 0) return t;
   try { window.__d2rChronFallbacks = (window.__d2rChronFallbacks || 0) + 1;
         window.__d2rChronFallbackAt = Date.now(); } catch(e){}
   var c = s && s.total;
@@ -64629,7 +64626,7 @@ function renderJournal(){
                 if (u){ if (u.charAt(0) !== '/' && u.indexOf('http') !== 0 && u.indexOf('data:') !== 0) u = '/' + u; a[t.rw] = u; }
             }); } catch(e){} return a; })(),   // v913-R5 (Grok) — the RW resolver + console-absolute paths
             /* v1556 — the meter promises 160 hunts and the app can guide 125 of them.
-               `total` is the GAME's denominator (chronTotal 403, the in-game Chronicle's own count).
+               `total` is the chronicle number (the pin, 397 uniques).
                `found` is his real 243. So the caption says "160 grails still out there" — true of
                Diablo, and 35 of those 160 have no card and no source in this app at all: they are
                the internal-typo aliases, the 8 Rainbow Facet rows, quest uniques and RotW customs
@@ -66491,10 +66488,10 @@ function renderJournal(){
   /* Measured 2026-11-01 from the live uniqueitems.txt extract (439 data rows).
      A chronicle row is spawnable==1 and disableChronicle!=1. That is 403 rows,
      396 distinct printed names. Rainbow Facet is the only repeated name (8 rows).
-     Six of those rows are quest items (ids 123-128). His ruling the same day:
-     they are not cards. The 403 stays the file count. Polaris Spear and The
+     Six of those rows are quest items (ids 123-128). They are not cards.
+     The pin and the chronicle number are the same 397. Polaris Spear and The
      Scourge are not in that file. The six colossal jewels (code cjw, ids 420-425)
-     have spawnable blank, so they are outside the 403.
+     have spawnable blank, so they are outside the file count.
      The printed name is the string table. The index column is often a different keyword. */
   var _CHRON_FACETS = [
     "Rainbow Facet (Lightning, on Death) — level 47 Chain Lightning",
@@ -67377,10 +67374,12 @@ function renderJournal(){
            415            −12 not spawnable       =  403   ← THE GAME'S CHRONICLE
            403 rows hold 396 DISTINCT names — Rainbow Facet occupies 8 rows, one per element
 
-       So chronTotal 403 matches the game exactly, the panel reading of 404 above was a misread,
-       and 415 is a real number answering a different question. The arithmetic, the provenance and
-       the reproduction recipe are in tv/chronicle_total.py, which can re-derive it from an
-       extracted file — the game data itself is NOT committed, this repo is public.
+       So the file count of 403 matches the game exactly, the panel reading of 404 above was a misread,
+       and 415 is a real number answering a different question. Six of the 403 rows are quest items.
+       They are not cards. The pin below is 397, and that pin is the chronicle number. There is no
+       second subtraction. The arithmetic, the provenance and the reproduction recipe are in
+       tv/chronicle_total.py, which can re-derive the file count from an extracted file — the game
+       data itself is NOT committed, this repo is public.
 
        ⚠ WHY THIS WAS UNANSWERABLE FOR MONTHS, and it is the part worth keeping: the extractor
        SOURCE survived in the repo and the 28 GB store survived on disk. The only thing that did
@@ -67389,7 +67388,7 @@ function renderJournal(){
        Stated rather than averaged, because a denominator quietly nudged to make a percentage look
        right is the exact defect this board keeps finding. It does NOT move the answer he asked
        about — 259 found is 64% either way. [[unknown-stays-unknown]] */
-    return { total:items.length, found:found, missing:missing, runs:runs, low:low, sealed:sealed, lowTotal:lowTotal, chronTotal:403 };
+    return { total:items.length, found:found, missing:missing, runs:runs, low:low, sealed:sealed, lowTotal:lowTotal, chronTotal:397 };
   };
 
   var _fuF='all';
@@ -68107,8 +68106,8 @@ function renderJournal(){
     // CELEBRATION, not a near-empty missing list. One-shot per load; every click stays manual.
     if(!window._fuLanded){ window._fuLanded=true; try { if(s.chronTotal && s.found/s.chronTotal>=.99 && _fuF==='all') _fuF='found'; } catch(e){} }
     var F=_fuF; var H=[];
-    // v682.1 — the HEADLINE meter is the IN-GAME truth (Konyo: 'Uniques is at 60% for chronicle..
-    // uniques isnt synced'): found / the mod's 403-entry chronicle, the same number the game shows.
+    // v682.1 — the HEADLINE meter is the chronicle number (Konyo: 'Uniques is at 60% for chronicle..
+    // uniques isnt synced'): found / the pin, 397 uniques, the same number every surface divides by.
     // v1692 — the named-card grid is the RESOLVER's roster now (385 uniques: ITEM_VALUE ∪ _UNI_EXTRA
     // minus 127 set-piece names), not the 368-row boss-drop shortlist. 385 named + 18 still-dark =
     // the same 403 the game counts, so this meter and the grid below finally share one denominator.
@@ -68117,17 +68116,15 @@ function renderJournal(){
     if (_pubUni && _pubUni.show) H.push(_meter(_pubUni.show.have, _pubUni.show.total, '', { label: '🏆 <b>'+_pubUni.show.have+'</b> / '+_pubUni.show.total+' found'+(_pubUni.sentence ? ' · '+_pubUni.sentence : '') }));
     else if (_pubUni) H.push('<div class="f-atomsub">'+_pubUni.sentence+'</div>');
     else H.push(_meter(s.found,window.d2rChronTotal(s),''));
-    // v663 — the IN-GAME line: the mod chronicle counts 403 entries, the game's % is found/403.
+    // v663 — the chronicle line: the pin is 397 uniques, and the % is found over that pin.
     // Keeping both numbers visible kills the '63% here, 59% in game' confusion at the source.
     // v682.1 — the headline meter above IS the in-game number now; this line explains the named-card grid
     if (!_pubUni && s.chronTotal) {
       var _namedDark = (s.chronTotal - s.total);
-      var _questN = _CHRON_QUESTS.length;
-      var _huntDark = _namedDark - _questN;
-      var _namedTail = (_huntDark > 0)
-        ? (' · <b>'+_huntDark+'</b> chronicle rows still dark (names reveal on find)')
+      var _namedTail = (_namedDark > 0)
+        ? (' · <b>'+_namedDark+'</b> chronicle rows still dark (names reveal on find)')
         : (' · every chronicle row is named');
-      var _namedTitle = (_huntDark > 0)
+      var _namedTitle = (_namedDark > 0)
         ? ('the tally counts the named cards. Quest items are not part of it.')
         : ('every hunt row is named. Quest items are not part of this tally.');
       H.push('<div class="f-atomsub" style="margin:-4px 0 8px;opacity:.85" title="'+_namedTitle+'">🗂 named cards: <b>'+s.found+' / '+s.total+'</b> ticked'+_namedTail+'</div>');
@@ -68156,9 +68153,9 @@ function renderJournal(){
     })();
     // v560 — UNIFIED sub-tabs across BOTH grail forges (Konyo: same names, same logic, set or unique):
     // ▦ All missing · 🎯 Best runs · ⚡ Quick wins (low-level uniques / 1-piece sets) · ✅ Found
-    var _huntMiss = s.chronTotal ? (s.chronTotal-s.found-_CHRON_QUESTS.length) : s.missing.length;
+    var _huntMiss = s.chronTotal ? (s.chronTotal-s.found) : s.missing.length;
     H.push('<div class="forge-tabs">'
-      +_tile('all','▦','All missing','ft-all',_huntMiss,F,'window.funiSetFilter','items')   // hunt cards plus real dark rows. The six quest items stay inside the 403 and off this count.
+      +_tile('all','▦','All missing','ft-all',_huntMiss,F,'window.funiSetFilter','items')   // hunt cards plus real dark rows. The six quest items are not in this number.
       +_tile('runs','🎯','Best runs','ft-pipe',s.runs.length,F,'window.funiSetFilter','runs')
       +_tile('low','⚡','Quick wins','ft-step',s.low.length,F,'window.funiSetFilter','items')
       +_tile('found','✅','Found','ft-done',s.found,F,'window.funiSetFilter','items')
@@ -68189,14 +68186,13 @@ function renderJournal(){
          level would be additive rather than doubled — it draws nothing today and lights up the
          day per-piece levels are sourced. [[feedback-verify-not-proxy]] */
       H.push(_allGrid('Every missing unique — tick as you find', 'the complete pool, qlvl-sorted · ✓ tallies the Calculator + meters instantly', _missAll, 'grailFoundUni'));
-      // The file count stays 403. Six of the gap are quest items, not unnamed silhouettes,
-      // so this banner prints only the remainder after those six. A real dark row is still
-      // a name the game hides until it drops, and that remainder still counts in All missing.
+      // The pin is the chronicle number. A dark row is a name the game hides until it drops.
+      // The six quest items are already outside the pin, so this banner does not subtract them.
       /* v1779 — THE ROSTER CAN NOW OUTGROW THE PINNED GAME TOTAL, and nothing checked it.
-         chronTotal is the literal 403; s.total is the LIVE roster, which grew 387 -> 398 in one
+         chronTotal is the chronicle pin; s.total is the LIVE roster, which grew 387 -> 398 in one
          edit last version. At 404 the subtraction goes negative and the screen prints
          "248 / 404 ticked · -1 chronicle rows still dark", the All-missing tile disagrees with its
-         own grid, and the headline still divides by 403 while the subset claims more. Five names of
+         own grid, and the headline still divides by the pin while the subset claims more. Five names of
          margin, found by an adversarial review of this file.
          A negative here is not a display bug to clamp away — it means the pinned denominator is
          stale and the DATA needs re-deriving, so it says that instead of hiding it. */
@@ -68208,7 +68204,7 @@ function renderJournal(){
           +'game files before trusting the %.</div>');
         _darkN=0;
       }
-      var _showDark = _darkN - _CHRON_QUESTS.length;
+      var _showDark = _darkN;
       if (_showDark < 0) _showDark = 0;
       if(_showDark>0) H.push('<div class="rw-stamp-mini rw-band" style="margin:8px 0"><span class="rw-band-t">🌑 + '+_showDark+' still-dark chronicle rows</span><span class="rw-band-s">the game hides their names until they drop — they reveal (and card here) on find · counted in All missing</span></div>');
       var _colRows = (typeof _colossalTallyRows === 'function') ? _colossalTallyRows() : [];
@@ -68309,7 +68305,7 @@ function renderJournal(){
         var m = String(_flTally[k]||'').match(/^([A-Za-z]{3})\s+\d+,\s*(\d{4})/);
         if (m && (m[1] + ' ' + m[2]) === _nowMon) _thisMon++;
       }); } catch(e){}
-      var _uniLeft = (s.chronTotal || 0) - s.found - _CHRON_QUESTS.length;
+      var _uniLeft = (s.chronTotal || 0) - s.found;
       H.push('<div class="forge-sec forge-sec-now"><div class="forge-sec-h">✅ Found <span class="forge-sec-ct" id="gf-found-ct">'+s.found+'</span><span class="forge-sec-sub">the chronicle ledger — dated, newest first, synced with the Calculator ✓ — tap to open, ✕ to un-mark</span></div>'
         +'<div class="gs-tally">'
         +'<span class="gs-t gs-t-seal"><b>'+s.found+'</b><i>found</i></span>'

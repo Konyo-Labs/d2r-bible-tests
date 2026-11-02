@@ -15,9 +15,12 @@ MEASURED on his live console, `GET /api/fleet`, twice, six minutes apart, same m
 THREE numerators and TWO denominators under ONE field name, and nothing on any surface said which
 question had been answered. The denominators are not three bugs — they are three questions:
 
-    403   chronTotal — HIS PINNED RULING, the game's own Chronicle count
+    403   the spawnable file-row count that morning, six of them quest items
     392   funiScan().total — the carded roster after his v2680 one-tally-per-sunder ruling
     398   produced by NEITHER, and no array on the page is that size
+
+2026-11-02 he joined the pin to the chronicle number. The pin is 397 uniques. The function
+returns that pin. A second subtraction of the six quest items would print 391.
 
 === WHAT THIS PINS ===
 `x.chronTotal || x.total` appeared at ELEVEN sites. Nine of them ask the same question and now call
@@ -60,7 +63,7 @@ RED_PROOF = [
     {
         "why": 'the law requires this text in bible.html, where it occurs exactly once and in no other file the gate names; deleting it must turn the gate red',
         "file": 'bible.html',
-        "find": 'chronTotal:403',
+        "find": 'chronTotal:397',
         "replace": '_HEART2_TAMPERED_',
         "matches": 1,
     },
@@ -154,11 +157,17 @@ class OneChronicleDenominator(unittest.TestCase):
                       "the fallback does not increment a counter, so whether it EVER fires on his "
                       "machine stays unmeasurable — which is how 398 got onto a screen with no author")
 
-    def test_the_pinned_total_is_still_403(self):
-        """His ruling. If it moves, it moves because he said so, not because a scan drifted."""
-        self.assertIn("chronTotal:403", self.code.replace(" ", ""),
-                      "funiScan no longer pins chronTotal at 403. That pin is the game file. "
-                      "The tally surfaces divide by is the pin minus the quest list.")
+    def test_the_pinned_total_is_the_chronicle_number(self):
+        """His ruling, 2026-11-02. The pin and the chronicle number are 397."""
+        self.assertIn("chronTotal:397", self.code.replace(" ", ""),
+                      "funiScan no longer pins chronTotal at 397.")
+        self.assertNotIn("chronTotal:403", self.code.replace(" ", ""),
+                         "the file-row count is back in the pin. The chronicle number is 397.")
+        body = self.code[self.code.index("window.d2rChronTotal = function"):][:800]
+        self.assertNotIn("_CHRON_QUESTS", body,
+                         "d2rChronTotal subtracts the quest list, so the screen prints 391")
+        self.assertNotIn("return t - q", body)
+        self.assertIn("return t;", body)
 
 
 if __name__ == "__main__":

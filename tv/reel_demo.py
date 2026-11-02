@@ -275,8 +275,7 @@ def _downstream():
     try:
         import route_totals as RT
         _pin = RT.file_pin() if hasattr(RT, "file_pin") else None
-        _quests = RT.quest_count() if hasattr(RT, "quest_count") else None
-        _unique = (_pin - _quests) if isinstance(_pin, int) and isinstance(_quests, int) else None
+        _unique = _pin if isinstance(_pin, int) else None
         for kind, want in (("runeword", 99), ("set", 135), ("unique", _unique)):
             got = RT.total(kind) if hasattr(RT, "total") else None
             out.append(_check("route_totals.%s" % kind, got, want,
@@ -456,7 +455,7 @@ def shelf_here():
 RED_PROOF = [
     {
         "why": "v2889 — the tamper changes one of the counts Konyo REGISTERED as his own rulings "
-               "(runewords 99, sets 135 pieces, uniques the file pin minus the quest items). "
+               "(runewords 99, sets 135 pieces, uniques the chronicle pin). "
                "_check compares got == want and main ends in `return 0 if r[\"ok\"] else 1`, so a "
                "single wrong number turns the gate red. That is the whole point of this gate: it "
                "walks his REAL reels through all six printer stations and holds the pipeline to "

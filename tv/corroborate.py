@@ -716,10 +716,10 @@ def _inv_the_fleet_divides_by_the_same_number_the_board_does():
     the reason it exists is that a fix was believed rather than corroborated.
 
     INDEPENDENCE, which is the whole point of living here: the left side is the BANKED denominator
-    the beacon published; the right side is the tally route_totals reads out of bible.html (the
-    file pin minus the quest items). Neither can inherit the other's answer. That distinction is
-    what [[feedback-verify-not-proxy]] means, and the audit added in v2390 exists because a
-    previous invariant quietly lost it.
+    the beacon published; the right side is the chronicle number route_totals reads out of
+    bible.html. The pin and that number are the same. Neither side can inherit the other's answer.
+    That distinction is what [[feedback-verify-not-proxy]] means, and the audit added in v2390
+    exists because a previous invariant quietly lost it.
 
     HONEST-ABSENT: a console that cannot be asked, or a board that cannot say, returns None on the
     left and the invariant reports UNMEASURED rather than a pass. A guest world, an unclaimed
@@ -757,8 +757,8 @@ def _inv_the_fleet_divides_by_the_same_number_the_board_does():
     def right():
         """The tally the tabs divide by, read from bible.html. Never from the console.
 
-        The file pin stays chronTotal. The tally is that pin minus the quest items. Reading
-        the pin here would part the moment the board posts the tally.
+        The pin and the tally are the chronicle number. A fleet that posts the file-row
+        count, or the vault roster, while the tabs use the pin, parts here.
         """
         try:
             import route_totals as _rt
@@ -769,8 +769,8 @@ def _inv_the_fleet_divides_by_the_same_number_the_board_does():
 
     return ("fleet-divides-by-the-board's-number",
             "the fleet's uniques denominator is the tally the board's own tabs divide by",
-            "let the fleet publish the file pin, or the vault roster, while the tabs subtract "
-            "the quest items and this parts",
+            "let the fleet publish the file-row count, or the vault roster, while the tabs "
+            "use the chronicle pin and this parts",
             "the banked board_tally denominator (disk)", left,
             "the unique tally in bible.html (source)", right, "==")
 

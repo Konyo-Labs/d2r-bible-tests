@@ -344,7 +344,7 @@ var RAW = { d2r_lsrRoute: JSON.stringify({ v: 2, id: 'abc', p: 'main', pfx: '' }
 window.LSR = { getItem: function(k){ return RAW[k] == null ? null : RAW[k]; }, setItem: function(k, v){ RAW[k] = String(v); } };
 window.funiScan = function(){ return { found: 3 }; };
 window.fsetsScan = function(){ return { havePieces: 2, totalPieces: 135 }; };
-window.d2rChronTotal = function(){ return 403; };
+window.d2rChronTotal = function(){ return 397; };
 var RUNEWORD_CHRONICLE_TOTAL = 99;
 var location = { protocol: %s };
 var SENT = [], CALLS = 0;

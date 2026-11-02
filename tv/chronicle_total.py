@@ -24,9 +24,10 @@ MEASURED, from `data:data/global/excel/uniqueitems.txt` pulled out of the live R
       396  DISTINCT names among those 403
            Rainbow Facet occupies 8 rows, one per element -> 7 duplicate rows
 
-So `chronTotal = 403` in bible.html is CORRECT and matches the game file exactly, and the in-game
-panel reading of **404** recorded in that same comment was a misread. 415 is not wrong either — it
-is 439 minus the 24 the game explicitly excludes from the Chronicle, which is a different question.
+The file count is 403 spawnable chronicle rows. Six of those rows are quest items, and they are
+not cards. The board pin is 397, and that pin is the chronicle number. The in-game panel reading
+of **404** recorded in the bible.html comment was a misread. 415 is not wrong either — it is 439
+minus the 24 the game explicitly excludes from the Chronicle, which is a different question.
 
 ⚠ AN OPEN MEASUREMENT, NOT A DEFECT: the game has 396 DISTINCT Chronicle names while
 `unique_roster.json` carries 398. Those count different things — the roster is built from the
@@ -51,8 +52,9 @@ import os
 import sys
 
 # What the extraction measured. A number here is EVIDENCE with a date on it, not a constant to
-# compute from. bible.html's chronTotal stays this pin. The tally the surfaces divide by is that
-# pin minus the six quest items, and route_totals plus window.d2rChronTotal are the readers.
+# compute from. MEASURED["chronicle"] is the file-row count, 403. Six of those rows are quest
+# items. The board pin is 397, and that pin is the chronicle number every surface divides by.
+# route_totals and window.d2rChronTotal read the pin. This file does not subtract again.
 MEASURED = {
     "when": "2026-09-03",
     "source": "data:data/global/excel/uniqueitems.txt, live RotW CASC store",
@@ -124,5 +126,5 @@ if __name__ == "__main__":
         print("MEASURED %s from %s" % (MEASURED["when"], MEASURED["source"]))
         for k in sorted(MEASURED):
             print("   %-24s %s" % (k, MEASURED[k]))
-        print("\n   chronTotal in bible.html is 403 and the game agrees. The tally subtracts the")
-        print("   six quest items. The 404 recorded in that file's comment was a misread.")
+        print("\n   The file counts 403 spawnable chronicle rows. Six are quest items.")
+        print("   The board pin is 397. That pin is the chronicle number.")

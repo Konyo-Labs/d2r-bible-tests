@@ -48318,8 +48318,8 @@ class Handler(BaseHTTPRequestHandler):
                         # roster grows with his own finds. A denominator that differs per machine
                         # cannot compare machines. [[label-outlived-referent]] [[copy-drift]]
                         def _chron_total():
-                            # The card divides by the tally, the same number the Uniques tab
-                            # headlines. That is the file pin minus the six quest items.
+                            # The card divides by the chronicle number, the same number the
+                            # Uniques tab headlines. The six quest items are not in it.
                             # route_totals is the reader the heart's three route sets already
                             # quote, so the fleet card cannot keep a second copy of the pin.
                             try:
