@@ -23062,6 +23062,16 @@ window._lockMark = function(isOpen, px, label){
       stashed = sg.length ? 'stashed: ' + sg.map(function(g){ return _FARM_LABEL[g] + ' ' + s.stashed[g].map(function(r){
         return String(r && r[0] || '') + ((r && r[1] > 1) ? ' \u00d7' + r[1] : ''); }).join(', '); }).join(' · ') : 'no item was read in the stash';
     } else stashed = 'stashed UNKNOWN';
+    /* v3855 - games and character from the reads (shadow_sessions.say_games / attribute_character); a conflict keeps
+       both signals and says UNKNOWN, never a guess. A game password is never in the record. */
+    var games = (typeof s.gamesSay === 'string' && s.gamesSay) ? 'games: ' + s.gamesSay
+      + ((typeof s.gameRunSessions === 'number' && s.gameRunSessions > 1) ? ' · one farming run across ' + s.gameRunSessions + ' sessions' : '')
+      : 'games UNKNOWN';
+    var ch = s.character, who;
+    if (!ch || typeof ch !== 'object') who = 'character UNKNOWN';
+    else if (Array.isArray(ch.conflict) && ch.conflict.length) who = 'character UNKNOWN - the reads disagree: ' + ch.conflict.join(' / ');
+    else who = 'character: ' + (ch.name || 'name UNKNOWN') + (ch.cls ? ' (' + ch.cls + (ch.level ? ' ' + ch.level : '') + ')' : '')
+      + (Array.isArray(ch.sources) && ch.sources.length ? ' · from ' + ch.sources.join(', ') : '');
     var nOwn = (Array.isArray(s.frames) ? s.frames : []).slice(0, 3).filter(function(f){ return f && typeof f.jpg === 'string' && _SSV_B64.test(f.jpg); }).length;
     var playOne = (typeof ix === 'number' && nOwn)
       ? '<button type="button" class="ssv-play-one ssv-play" data-ssv-ix="' + ix + '" onclick="window._shadowSessionsPlay&&window._shadowSessionsPlay(' + ix + ')">▶ PLAY this session</button>'
@@ -23080,6 +23090,7 @@ window._lockMark = function(isOpen, px, label){
       + (farmed ? '<div class="ssv-names ssv-farmed">' + farmed + '</div>' : '<div class="ssv-names">' + names + '</div>')
       + '<div class="ssv-facts">' + esc(facts) + '</div>'
       + '<div class="ssv-facts ssv-place">' + esc(place) + '</div>'
+      + '<div class="ssv-facts ssv-who">' + esc(who) + ' · ' + esc(games) + '</div>'
       + '<div class="ssv-facts ssv-chron">' + esc(chronNames) + '</div>'
       + '<div class="ssv-facts ssv-stashed">' + esc(stashed) + '</div>'
       + '<div class="ssv-playline">' + playOne + '</div>'

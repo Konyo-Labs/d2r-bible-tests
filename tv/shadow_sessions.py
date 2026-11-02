@@ -263,6 +263,11 @@ def session_split(segs, t0, t1):
             "afkInto": any(a < t1 < b or (b > t1 and a == t1) for a, b in st)}
 
 
+# v3855 - who played and in which games: the console-wide shared extractor (read_identity)
+from read_identity import (game_name_of_row, character_signals, attribute_character, game_runs,  # noqa: E402,F401
+                           say_games, CLASSES, identity_ledger, who_at, summary as identity_summary)
+
+
 def _chronicle_names(rows):
     """v3855 - the distinct names read on a chronicle panel, in read order."""
     out = []
@@ -323,6 +328,8 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
     except Exception as e:
         out["why"] = "the journal would not split into sessions (%s)" % type(e).__name__
         return out
+    runs = game_runs(rows)
+    ident = identity_ledger(rows)   # v3855 - built here, on this console, from its own reads
     timeline = game_timeline(rows)   # v3855 - AFK over the whole game, then each session takes its share
     for g in groups[:MAX_SESSIONS]:
         reads = [r for r in g if is_read(r)]
@@ -342,6 +349,23 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
              "chronicleNames": _chronicle_names(g)[:MAX_NAMES],
              "stashed": _stashed(reads)}
         s.update(session_split(timeline, s["t0"], s["t1"]))
+        games = []
+        for r in g:
+            n = game_name_of_row(r)
+            if n and n not in games:
+                games.append(n)
+        s["games"] = games
+        s["gamesSay"] = say_games(games) if games else None
+        s["gameRunSessions"] = max([len(runs[k]["sessions"]) for k in runs
+                                    if any(x in runs[k]["names"] for x in games)] or [0]) or None
+        _sig = character_signals(g)
+        if not _sig and s["t0"]:
+            # a session whose own reads named nobody takes who was playing when it began (the game-wide ledger)
+            s["character"] = who_at(ident, s["t0"])
+            if s["character"]:
+                s["character"]["sources"] = ["earlier read"] + [x for x in s["character"]["sources"] if x != "earlier read"]
+        else:
+            s["character"] = attribute_character(_sig)
         whys = []
         for fid in _key_frames(reads):
             data, why = thumb_bytes(hist_dir, fid, make)
@@ -358,6 +382,7 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
             s["why"] = ("no frame of this session was read, so it has no key frame" if not reads
                         else "its reads carry no frame id, so it has no key frame")
         out["sessions"].append(s)
+    out["identity"] = identity_summary(ident)   # the only identity other consoles see; never a password
     total = sum(len(f["jpg"]) for s in out["sessions"] for f in s["frames"])
     for s in reversed(out["sessions"]):                       # the oldest sessions give their pictures up first
         if total <= MAX_TOTAL:
