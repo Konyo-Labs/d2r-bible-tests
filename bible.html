@@ -16444,6 +16444,18 @@ function _vaultCornerEdit(n){
   return '<button type="button" class="vm-cell-edit" title="edit this item\'s mods (it stays where it is)" aria-label="edit mods: ' + _d2artEsc(n) + '"'
     + ' onclick="event.stopPropagation();window._vaultModsEdit(\'' + _vaultJsArg(n) + '\')">✎</button>';
 }
+/* v3855 - ONE BADGE PAIR FOR EVERY VAULT ITEM CELL: the locker tile and the zoomed mule / Shared Stash tile both draw
+   _vaultItemBadges, so $ and the pencil can never be on one and missing from the other. Smart: the pencil only on an item
+   that HAS mods to type (a rune, gem, key, essence or token has none), marked when his own mods are already typed. */
+function _vaultModsEditable(n){
+  return !/(^|\s)(rune|key|key of (terror|hate|destruction)|essence|token of absolution|chipped \w+|flawed \w+|flawless \w+|perfect \w+|amethyst|topaz|sapphire|emerald|ruby|diamond|skull)$/i.test(String(n || '').trim());
+}
+function _vaultItemBadges(n){
+  var ed = _vaultModsEditable(n) ? _vaultCornerEdit(n) : '';
+  if (ed){ var man = null; try { man = _vaultManualMods(n); } catch (eM) {} if (man && man.length) ed = ed.replace('class="vm-cell-edit"', 'class="vm-cell-edit vmb-edited"'); }
+  return ed + _vaultCornerPrice(n);
+}
+window._vaultItemBadges = _vaultItemBadges;
 function _vaultCornerPrice(n){
   return '<button type="button" class="vm-cell-price" title="d2jsp price for this item" aria-label="price: ' + _d2artEsc(n) + '"'
     + ' onclick="event.stopPropagation();window._vaultPriceOpen(\'' + _vaultJsArg(n) + '\')">$</button>';
@@ -16451,7 +16463,8 @@ function _vaultCornerPrice(n){
 window._vaultModsEdit = function(name){
   if (_vaultInShadow()) return false;
   var nm = String(name), host = document.getElementById('vault-mods-edit');
-  if (!host){ host = document.createElement('div'); host.id = 'vault-mods-edit'; host.className = 'vault-mods-edit'; host.setAttribute('role', 'dialog'); document.body.appendChild(host); }
+  if (!host){ host = document.createElement('div'); host.id = 'vault-mods-edit'; host.className = 'vault-mods-edit'; host.setAttribute('role', 'dialog'); host.setAttribute('aria-modal', 'true'); }
+  try { document.body.appendChild(host); } catch (eTop) {}   /* v3855 - last in the body: it paints over every open window */
   var cur = _mfMods(nm), rng = cur.length ? [] : _affixRangeLines(nm);
   host.innerHTML = '<div class="vme-box"><div class="vme-title">✎ Mods · ' + _d2artEsc(nm) + '</div>'
     + '<div class="vme-say">One mod per line. Saving changes only the mods: the item keeps its cell, mule and locker.</div>'
@@ -16461,6 +16474,8 @@ window._vaultModsEdit = function(name){
   host.dataset.item = nm;
   document.getElementById('vme-cancel').onclick = function(){ host.hidden = true; };
   document.getElementById('vme-save').onclick = function(){ window._vaultModsSave(nm, document.getElementById('vme-text').value); host.hidden = true; };
+  host.onkeydown = function(ev){ if (ev && ev.key === 'Escape'){ ev.stopPropagation(); host.hidden = true; } };
+  try { var _ta = document.getElementById('vme-text'); if (_ta && _ta.focus) _ta.focus(); } catch (eF) {}
   return true;
 };
 window._vaultModsSave = function(name, text){
@@ -36570,10 +36585,16 @@ window._jewelTipHtml = _jewelTipHtml;
         var _own = e.target.closest('[title],[data-tip-held]');
         if (_own && _own !== el && el.contains(_own)){ if (cur){ _artFree(); cur = null; tip.classList.remove('on'); } return; }
       } catch (_e2) {}
+      /* v3855 - THE WHOLE VAULT CELL IS THE HOVER. Inside a locker tile every pixel but its corner badges opens the item
+         card; a 2x4 tile is taller than the compact bar below, and that bar refused it. */
+      try {
+        var _vcell = e.target.closest('.vm-cell[data-arttip]');
+        if (_vcell && !e.target.closest('.vm-cell-edit,.vm-cell-price,.vm-cell-x,.vm-cell-ev,.vm-cell-lock')) el = _vcell;
+      } catch (_e3) {}
       // v654 — COMPACT ANCHORS ONLY (Konyo: "i dont want it opening when i hit the SECTION itself —
       // only over the specific item keyword; it feels random"): a whole card/row/section can never
       // open the floating card. Only chip/title/thumbnail-sized anchors qualify.
-      try { var _rr = el.getBoundingClientRect(); if (_rr.width > 430 || _rr.height > 120) return; } catch(e){}
+      try { var _rr = el.getBoundingClientRect(); if (!(el.classList && el.classList.contains('vm-cell')) && (_rr.width > 430 || _rr.height > 120)) return; } catch(e){}
       tip.classList.remove('tip-grey');   // v341.36 — clear grey state; setTipR re-adds for runeword bases
       // v341.28 — "shows in-game as" craft example chips float the craft's RESULT card: the
       // guaranteed mods + affix RANGES (floor→godly), same as every other item tooltip.
@@ -43460,13 +43481,17 @@ details[open] > summary .to-chev{transform:rotate(180deg)}
 @media (prefers-reduced-motion: reduce){.vm-cell.vmc-lock-shake,.vault-lock-alert.vla-on,.vault-lock-pop{animation:none}}
 /* 2026-09-28 — the evidence door on every vault surface, and the panel it opens (below the frame lightbox) */
 /* v3849 D2 - corner badges: semi-transparent, full on hover */
-.vm-cell-edit,.vm-cell-price{position:absolute;font-size:var(--fs-micro);line-height:var(--lh-none);padding:1px 3px;background:rgba(0,0,0,.55);border:none;color:var(--gold-bright,#f0c060);cursor:pointer;opacity:.45;z-index:4}
-.vm-cell-edit{left:0;top:0;border-radius:4px 0 5px 0}
-.vm-cell-price{right:0;bottom:0;border-radius:5px 0 4px 0;font-weight:var(--fw-bold)}
-.vm-cell:hover .vm-cell-edit,.vm-cell:hover .vm-cell-price,.vm-cell-edit:focus-visible,.vm-cell-price:focus-visible{opacity:1}
+.vm-cell-edit,.vm-cell-price{position:absolute;box-sizing:border-box;width:14px;height:14px;padding:0;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;background:rgba(0,0,0,.5);border:none;border-radius:3px;color:var(--gold-bright,#f0c060);cursor:pointer;opacity:.18;z-index:4;transition:opacity .1s}
+/* v3855 - badges snap into the cell's own corners, 2px in, the same 14px on every size 1x1..2x4; above the art (z 4), below every tooltip (9999) */
+.vm-cell-edit{left:2px;top:2px}
+.vm-cell-price{right:2px;bottom:2px;font-weight:var(--fw-bold)}
+.vm-cell-edit.vmb-edited{color:#7dff9a;box-shadow:inset 0 0 0 1px #7dff9a}
+.vm-cell:hover .vm-cell-edit,.vm-cell:hover .vm-cell-price,.vd-item:hover .vm-cell-edit,.vd-item:hover .vm-cell-price{opacity:.7}
+.vm-cell-edit:hover,.vm-cell-price:hover,.vm-cell-edit:focus-visible,.vm-cell-price:focus-visible{opacity:1}
 .vm-cell-edit ~ .vm-cell-os{left:16px}
 .vm-cell-price ~ .vm-cell-lock{right:14px}
-.vault-mods-edit{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+/* v3855 - the Edit mods box is the topmost layer: at 9000 it opened UNDER the mule window (.vd-fs 99997) and the evidence panel (99980), so the pencil looked dead */
+.vault-mods-edit{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
 .vault-mods-edit[hidden]{display:none}
 .vault-mods-edit .vme-box{background:#16110b;border:1px solid #6b5432;border-radius:8px;padding:12px;min-width:320px;max-width:90vw}
 .vault-mods-edit textarea{width:100%;box-sizing:border-box;font:inherit;background:#0d0a06;color:#eee;border:1px solid #4a3a22}
@@ -47545,11 +47570,11 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
         return '<div class="vm-cell' + (rr ? ' vmc-' + rr : '') + (cl.approx ? ' vmc-approx' : '') + _lockCls + '" style="grid-column:span ' + cl.w + ';grid-row:span ' + cl.h + '"'
           + ' data-vault-item="' + esc(n) + '" data-arttip="' + esc(n) + '" title="' + esc(n) + (_mark.title ? ' · ' + _mark.title : '')
           + (cl.approx ? ' — size not established: no footprint rule matches this base, so it is drawn at the default 1x2. Set names (\'Tal Rasha set (any piece)\') are not items and have no single size.' : ' — ' + cl.w + '×' + cl.h + ' = ' + (cl.w*cl.h) + ' cell' + (cl.w*cl.h===1?'':'s')) + '">'
-          + _vaultCornerEdit(n)   /* v3849 D2 */
+          + _vaultItemBadges(n)   /* v3849 D2, v3855 one pair */
           + '<span class="vm-cell-art">' + _cellArt + '</span>' + osTag + _cntTag   /* REG-2904 one answer */
           + '<span class="vm-item-name vm-cell-name"' + (typeof _qStyle === 'function' ? _qStyle(n, 'unique') : '') + '>' + esc(n) + '</span>'
           + (typeof window._vaultEvidenceChip === 'function' ? window._vaultEvidenceChip(n, 'vm-cell-ev') : '')
-          + _vaultCornerPrice(n) + _lockTag
+          + _lockTag
           + '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultUnassign(\'' + jsArg(n) + '\', { unlock: !!event.shiftKey })" title="' + esc(_xTitle) + '">✕</button></div>';
       });
       // v342.5 — append the Magic & Rare keepers as their own coloured cells. The picture is art(),
@@ -47564,10 +47589,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
           var _mf = (typeof _itemCells === 'function') ? _itemCells(base || n) : {w:2,h:1};
           var artHtml = '<span class="vm-cell-art">' + ((typeof art === 'function') ? art(n, '◆', 'lg') : '<span class="vmc-gemfallback" style="color:'+col+'">◆</span>') + '</span>';
           return '<div class="vm-cell vmc-magicfind'+(_mf.approx?' vmc-approx':'')+'" style="grid-column:span '+_mf.w+';grid-row:span '+_mf.h+';border-color:'+col+';cursor:pointer" data-magic-find="'+esc(n)+'" data-arttip="'+esc(n)+'" title="'+esc(n)+(base?' · '+esc(base):'')+' ('+q+')">'
-            + _vaultCornerEdit(n) + artHtml
+            + _vaultItemBadges(n) + artHtml
             + '<span class="vm-item-name vm-cell-name" data-arttip="'+esc(n)+'" style="color:'+col+'">'+esc(n)+'</span>'
             + (typeof window._vaultEvidenceChip === 'function' ? window._vaultEvidenceChip(n, 'vm-cell-ev') : '')
-            + _vaultCornerPrice(n)
             + '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultThrowFind(\''+jsArg(n)+'\')" title="'+gridActSay('', 'throw out — remove from Magic &amp; Rare')+'">✕</button></div>';   /* REG-3117 */
         }));
       }
@@ -54142,6 +54166,7 @@ window.vaultAutoAssign = function(){
                + (gridShadowRo() ? '' : ('. Enter picks it up, arrow keys move it, Enter drops, Escape cancels' + (p.manual || p.bad ? ', U unlocks' : ''))) + '"' : '')   /* REG-3117 */
         + '>'+art(p.n,'◆', p.w>1&&p.h>1?'':'sm')
         + (typeof window._vaultEvidenceBtn === 'function' ? window._vaultEvidenceBtn(p.n) : '')
+        + (typeof window._vaultItemBadges === 'function' ? window._vaultItemBadges(p.n) : '')   /* v3855 - the locker's own badge pair */
         + (_mv && (p.manual || p.bad) ? '<button type="button" class="vd-unlock" tabindex="-1" data-unlock="' + esc(p.key) + '" title="' + gridActSay('', 'unlock — back to auto-pack (right-click the item does the same)') + '" aria-label="' + gridActSay('', 'unlock ' + esc(p.n) + ' — back to auto-pack') + '">' + (p.bad ? '⚠' : '🔒') + '</button>' : '')
         + '</div>';
     }).join('');
@@ -60919,7 +60944,7 @@ window.vaultAutoAssign = function(){
   }
   document.addEventListener('pointerdown', function(e){
     if (_mpCarry) _mpCarryEnd();
-    if (e.button !== 0 || !openMuleId || !e.target || !e.target.closest || e.target.closest('.vd-unlock')) return;
+    if (e.button !== 0 || !openMuleId || !e.target || !e.target.closest || e.target.closest('.vd-unlock, .vm-cell-edit, .vm-cell-price')) return;   /* v3855 - a badge press is its click, never a drag */
     var it = e.target.closest('#vault-detail .vd-item[data-key], #vault-detail .vd-item[data-dbkey]'), g = it && it.closest('.vd-grid[data-area]');
     if (!g) return;
     var r = it.getBoundingClientRect(), p = _mpPitch(g), w = +it.getAttribute('data-w') || 1, h = +it.getAttribute('data-h') || 1;
@@ -74779,6 +74804,19 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     return h;
   }
   var _tipEl = null;
+  /* v3855 - THE BOX NEVER COVERS THE ITEM IT DESCRIBES. Above, else below, else beside (right, then left), each only
+     where it fits whole; when none fits, the side with the most room, clamped to the screen. Pure: -> {x, y, side}. */
+  function _d2TipPlace(r, tw, th, vw, vh, floorY){
+    var floor = Math.max(8, +floorY || 8), g = 8, cx = function(x){ return Math.max(8, Math.min(x, vw - tw - 8)); }, cy = function(y){ return Math.max(floor, Math.min(y, vh - th - 8)); };
+    if (r.top - th - g >= floor) return { x: cx(r.left + r.width / 2 - tw / 2), y: r.top - th - g, side: 'above' };
+    if (r.bottom + g + th <= vh - 8) return { x: cx(r.left + r.width / 2 - tw / 2), y: r.bottom + g, side: 'below' };
+    if (r.right + g + tw <= vw - 8) return { x: r.right + g, y: cy(r.top + r.height / 2 - th / 2), side: 'right' };
+    if (r.left - g - tw >= 8) return { x: r.left - g - tw, y: cy(r.top + r.height / 2 - th / 2), side: 'left' };
+    var room = { right: vw - r.right, left: r.left };
+    return room.right >= room.left ? { x: Math.min(r.right + g, vw - tw - 8), y: cy(r.top), side: 'right-clamped' }
+                                   : { x: Math.max(8, r.left - g - tw), y: cy(r.top), side: 'left-clamped' };
+  }
+  window._d2TipPlace = _d2TipPlace;
   /* opt.floor (#174 v-B2 integration): the y the box never rises above - the mule window passes the bottom of the
      header of the panel its item sits in, so the box never covers MULES IN THIS LOCKER. Above the item when it fits
      under the floor, else below it; the viewport still wins, so the box is never cut off-screen. */
@@ -74787,13 +74825,9 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       if (!_tipEl){ _tipEl = document.createElement('div'); _tipEl.className = 'd2tip'; _tipEl.id = 'cb-tip'; _tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(_tipEl); }
       _tipEl.innerHTML = d2Tip(entry); _tipEl.hidden = false;
       var r = anchor.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight, t = _tipEl.getBoundingClientRect();
-      var floor = Math.max(8, (opt && +opt.floor) || 8);
-      var x = r.left + r.width / 2 - t.width / 2, y = r.top - t.height - 8;
-      if (y < floor) y = r.bottom + 8;
-      if (y + t.height > vh - 8) y = Math.max(floor, vh - t.height - 8);
-      y = Math.max(8, Math.min(y, vh - t.height - 8));
-      _tipEl.style.left = clamp(x, 8, Math.max(8, vw - t.width - 8)) + 'px';
-      _tipEl.style.top = y + 'px';
+      var pl = _d2TipPlace(r, t.width, t.height, vw, vh, (opt && +opt.floor) || 8);
+      _tipEl.style.left = pl.x + 'px';
+      _tipEl.style.top = pl.y + 'px';
     } catch (e) {}
   };
   d2Tip.hide = function(){ if (_tipEl) _tipEl.hidden = true; };
@@ -77401,6 +77435,9 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     var _iit = (_ie && typeof window._cbItem === 'function') ? window._cbItem(_ie.id) : null;
     if (_ie && _iit && typeof window._cbTipEntry === 'function') entry = window._cbTipEntry(_ie, _iit, null, 'inv');
     else if (_dk) entry = unknown(n, 'this tile’s record is not in the item database this page carries - UNKNOWN');
+    /* v3855 - his typed mods (Edit mods) are the item's mods on the card, ahead of any range */
+    try { var _man = (typeof window._vaultManualMods === 'function') ? window._vaultManualMods(n) : null;
+      if (_man && _man.length) entry.lines = _man.map(function(l){ return { t: '✎ ' + l, cls: 'd2t-man' }; }).concat((entry.lines || []).filter(function(x){ return !(x && /d2t-r/.test(x.cls || '')); })); } catch (eMan) {}
     if (t){ heldTitle = t; el.setAttribute('data-d2tip-held', '1'); el.removeAttribute('title'); entry.lines = (entry.lines || []).concat([{ t: t, cls: 'd2t-note' }]); }
     window.d2Tip.show(entry, el, { floor: floorOf(el) });
   }
