@@ -3031,5 +3031,20 @@
     "gotcha": "A lease whose pid is dead is free; two recorders at once once killed dwm.exe, so a claim never runs beside a live holder.",
     "purpose": "One lease file lets the recorder and the reel-cutter outlive their console, and lets a restarted console adopt them instead of starting a second.",
     "territory": "capture-vision"
+  },
+  "read_identity.py": {
+    "entryPoints": [
+      "identity_ledger",
+      "who_at",
+      "game_at",
+      "attribute_finds",
+      "finds_index",
+      "character_signals",
+      "game_runs",
+      "say_games"
+    ],
+    "gotcha": "A conflict between signals is kept side by side and the attribution is UNKNOWN, never a guess; the game password is cut before the password word and never leaves this module.",
+    "purpose": "One extractor of a read's identity signals (game name and farming series, the login character, the character panel, the avatar class) that sessions, the River, the Vault evidence and the Fleet consume.",
+    "territory": "ledger-profile"
   }
 }
