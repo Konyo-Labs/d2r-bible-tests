@@ -14,12 +14,14 @@ maybe-sent, never "nothing was posted", and the same draft is not sent again
 for 30 minutes after it was posted or may have been, unless a later send
 changed that topic. Every answer's reason is one of SEND_REASONS.
 
-Windows has no reader here. A public page has no route. Those stay unposted.
-Linux reads the Chrome profile on that machine.
+Windows reads the Chrome profile on that machine through the current user key.
+A cookie Chrome locks to the browser itself stays unread. A public page has no
+route and stays unposted. Linux reads the Chrome profile on that machine.
 """
 from __future__ import annotations
 
 import atexit
+import base64
 import contextlib
 import datetime
 import hashlib
@@ -177,6 +179,169 @@ def decrypt_v10(blob, password, host=None, rounds=1003):
     except Exception:
         return None
     return text
+
+
+def _aes_sbox():
+    """The AES S-box, built once. The first byte is 0x63."""
+    box = getattr(_aes_sbox, "_box", None)
+    if box is not None:
+        return box
+
+    def mul(a, b):
+        p = 0
+        for _ in range(8):
+            if b & 1:
+                p ^= a
+            a = ((a << 1) ^ 0x1B) & 0xFF if a & 0x80 else (a << 1) & 0xFF
+            b >>= 1
+        return p
+
+    out = [0] * 256
+    for x in range(256):
+        inv = 0 if x == 0 else next(i for i in range(256) if mul(x, i) == 1)
+        y = inv
+        for shift in (1, 2, 3, 4):
+            y ^= ((inv << shift) | (inv >> (8 - shift))) & 0xFF
+        out[x] = y ^ 0x63
+    box = bytes(out)
+    _aes_sbox._box = box
+    return box
+
+
+def _aes_encryptor(key):
+    """AES block encrypt for a 16 or 32 byte key. -> one 16-byte block in, one out."""
+    nk = len(key) // 4
+    nr = {4: 10, 8: 14}[nk]
+    sbox = _aes_sbox()
+    rcon = (0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36)
+    words = [list(key[i:i + 4]) for i in range(0, len(key), 4)]
+    for i in range(nk, 4 * (nr + 1)):
+        temp = words[i - 1][:]
+        if i % nk == 0:
+            temp = temp[1:] + temp[:1]
+            temp = [sbox[b] for b in temp]
+            temp[0] ^= rcon[i // nk]
+        elif nk > 6 and i % nk == 4:
+            temp = [sbox[b] for b in temp]
+        words.append([a ^ b for a, b in zip(words[i - nk], temp)])
+
+    def encrypt(block):
+        st = [[block[r + 4 * c] for c in range(4)] for r in range(4)]
+
+        def add(rnd):
+            for c in range(4):
+                for r in range(4):
+                    st[r][c] ^= words[rnd * 4 + c][r]
+
+        def mix_col(col):
+            return (
+                _gcm_mul8(col[0], 2) ^ _gcm_mul8(col[1], 3) ^ col[2] ^ col[3],
+                col[0] ^ _gcm_mul8(col[1], 2) ^ _gcm_mul8(col[2], 3) ^ col[3],
+                col[0] ^ col[1] ^ _gcm_mul8(col[2], 2) ^ _gcm_mul8(col[3], 3),
+                _gcm_mul8(col[0], 3) ^ col[1] ^ col[2] ^ _gcm_mul8(col[3], 2),
+            )
+
+        add(0)
+        for rnd in range(1, nr):
+            for r in range(4):
+                for c in range(4):
+                    st[r][c] = sbox[st[r][c]]
+            st = [st[r][r:] + st[r][:r] for r in range(4)]
+            for c in range(4):
+                mixed = mix_col([st[r][c] for r in range(4)])
+                for r in range(4):
+                    st[r][c] = mixed[r]
+            add(rnd)
+        for r in range(4):
+            for c in range(4):
+                st[r][c] = sbox[st[r][c]]
+        st = [st[r][r:] + st[r][:r] for r in range(4)]
+        add(nr)
+        out = bytearray(16)
+        for r in range(4):
+            for c in range(4):
+                out[r + 4 * c] = st[r][c]
+        return bytes(out)
+
+    return encrypt
+
+
+def _gcm_mul8(a, b):
+    p = 0
+    for _ in range(8):
+        if b & 1:
+            p ^= a
+        a = ((a << 1) ^ 0x1B) & 0xFF if a & 0x80 else (a << 1) & 0xFF
+        b >>= 1
+    return p
+
+
+def _gcm_mul128(x, y):
+    z = 0
+    v = x
+    poly = 0xE1000000000000000000000000000000
+    for i in range(128):
+        if (y >> (127 - i)) & 1:
+            z ^= v
+        if v & 1:
+            v = (v >> 1) ^ poly
+        else:
+            v >>= 1
+    return z
+
+
+def _aes_gcm_open(key, nonce, ciphertext, tag):
+    """Open one AES-GCM blob. A bad tag is None. No extra library.
+
+    The nonce is 12 bytes and the tag is 16. Chrome on Windows seals a v10
+    cookie this way, with the raw key, not with a password.
+    """
+    if len(key) not in (16, 32) or len(nonce) != 12 or len(tag) != 16:
+        return None
+    if not isinstance(ciphertext, (bytes, bytearray)):
+        return None
+    encrypt = _aes_encryptor(bytes(key))
+    auth = int.from_bytes(encrypt(b"\x00" * 16), "big")
+    y = 0
+    data = bytes(ciphertext)
+    if len(data) % 16:
+        data = data + (b"\x00" * (16 - len(data) % 16))
+    for i in range(0, len(data), 16):
+        y = _gcm_mul128(y ^ int.from_bytes(data[i:i + 16], "big"), auth)
+    length = (0).to_bytes(8, "big") + (len(ciphertext) * 8).to_bytes(8, "big")
+    y = _gcm_mul128(y ^ int.from_bytes(length, "big"), auth)
+    expect = int.from_bytes(encrypt(nonce + b"\x00\x00\x00\x01"), "big") ^ y
+    if expect.to_bytes(16, "big") != bytes(tag):
+        return None
+    out = bytearray()
+    counter = 2
+    body = bytes(ciphertext)
+    for i in range(0, len(body), 16):
+        stream = encrypt(nonce + counter.to_bytes(4, "big"))
+        chunk = body[i:i + 16]
+        out += bytes(a ^ b for a, b in zip(chunk, stream))
+        counter += 1
+    return bytes(out)
+
+
+def decrypt_windows_gcm(blob, key, host=None):
+    """Open one Windows Chrome v10 or v11 cookie. Any other prefix is None.
+
+    The key is the raw AES key. A v20 blob stays closed: that seal belongs to
+    Chrome itself, and this desk does not pretend to be Chrome. The key and
+    the value are not logged.
+    """
+    if not isinstance(blob, (bytes, bytearray)) or not isinstance(key, (bytes, bytearray)):
+        return None
+    if bytes(blob[:3]) not in (b"v10", b"v11") or len(blob) < 31 or len(key) not in (16, 32):
+        return None
+    try:
+        raw = _aes_gcm_open(bytes(key), bytes(blob[3:15]), bytes(blob[15:-16]), bytes(blob[-16:]))
+        if raw is None:
+            return None
+        return _cookie_text(raw, host)
+    except Exception:
+        return None
 
 
 def cookie_header_from_rows(rows, password, now_utc=None, decrypt=None, rounds=1003):
@@ -343,6 +508,183 @@ def _linux_cookie_header(now_utc=None, paths=None, passwords=None):
     return None, "chrome-unread"
 
 
+def _dpapi_unprotect(blob):
+    """Open one current-user DPAPI blob. None off Windows, or when it fails.
+
+    The plaintext is a key or an old cookie value. It is not logged.
+    """
+    if sys.platform != "win32" or not isinstance(blob, (bytes, bytearray)) or not blob:
+        return None
+    try:
+        import ctypes
+        raw = bytes(blob)
+        held = ctypes.create_string_buffer(raw, len(raw))
+
+        class _Blob(ctypes.Structure):
+            _fields_ = [("cbData", ctypes.c_ulong), ("pbData", ctypes.POINTER(ctypes.c_char))]
+
+        incoming = _Blob(len(raw), ctypes.cast(held, ctypes.POINTER(ctypes.c_char)))
+        outgoing = _Blob()
+        crypt32 = ctypes.windll.crypt32
+        crypt32.CryptUnprotectData.restype = ctypes.c_int
+        ok = crypt32.CryptUnprotectData(
+            ctypes.byref(incoming), None, None, None, None, 0, ctypes.byref(outgoing),
+        )
+        if not ok:
+            return None
+        try:
+            return ctypes.string_at(outgoing.pbData, outgoing.cbData)
+        finally:
+            ctypes.windll.kernel32.LocalFree(outgoing.pbData)
+    except Exception:
+        return None
+
+
+def _windows_key_from_state(state_text, unprotect):
+    """The raw AES key inside Chrome Local State. The app-bound key is ignored."""
+    try:
+        data = json.loads(state_text)
+    except Exception:
+        return None
+    enc = (data.get("os_crypt") or {}).get("encrypted_key")
+    if not isinstance(enc, str) or not enc:
+        return None
+    try:
+        raw = base64.b64decode(enc)
+    except Exception:
+        return None
+    if raw.startswith(b"DPAPI"):
+        raw = raw[5:]
+    if not raw:
+        return None
+    try:
+        key = unprotect(raw)
+    except Exception:
+        return None
+    if not isinstance(key, (bytes, bytearray)) or len(key) not in (16, 32):
+        return None
+    return bytes(key)
+
+
+def _windows_cookie_dbs(root=None):
+    """Cookie databases under the Windows Chrome profile. Default first."""
+    if root is None:
+        if sys.platform != "win32":
+            return []
+        local = os.environ.get("LOCALAPPDATA")
+        if not local:
+            return []
+        root = os.path.join(local, "Google", "Chrome", "User Data")
+    if not os.path.isdir(root):
+        return []
+    try:
+        names = list(os.listdir(root))
+    except OSError:
+        return []
+    names.sort(key=lambda name: (name != "Default", name))
+    found = []
+    for name in names:
+        base = os.path.join(root, name)
+        if not os.path.isdir(base):
+            continue
+        for rel in (os.path.join("Network", "Cookies"), "Cookies"):
+            path = os.path.join(base, rel)
+            if os.path.isfile(path):
+                found.append(path)
+                break
+    return found
+
+
+def _windows_aes_key(unprotect):
+    local = os.environ.get("LOCALAPPDATA") or ""
+    path = os.path.join(local, "Google", "Chrome", "User Data", "Local State")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError:
+        return None
+    return _windows_key_from_state(text, unprotect)
+
+
+def _open_windows_value(blob, key, host, unprotect):
+    if isinstance(blob, (bytes, bytearray)) and bytes(blob[:3]) in (b"v10", b"v11"):
+        if not key:
+            return None
+        return decrypt_windows_gcm(blob, key, host)
+    if isinstance(blob, (bytes, bytearray)) and bytes(blob[:4]) == b"\x01\x00\x00\x00":
+        try:
+            raw = unprotect(bytes(blob))
+        except Exception:
+            return None
+        if not isinstance(raw, (bytes, bytearray)):
+            return None
+        return _cookie_text(bytes(raw), host)
+    return None
+
+
+def _windows_rows_to_header(rows, key, now_utc, unprotect):
+    now = _chrome_now(now_utc)
+    pairs = []
+    saw_host = False
+    failed = False
+    for host, name, blob, expires in rows:
+        if not _d2jsp_host(host):
+            continue
+        saw_host = True
+        try:
+            exp = int(expires or 0)
+        except (TypeError, ValueError):
+            exp = 0
+        if exp and exp <= now:
+            continue
+        value = _open_windows_value(blob, key, host, unprotect)
+        if not value:
+            failed = True
+            continue
+        nm = str(name or "")
+        if not nm or any(c in nm for c in ("=", ";", " ", "\r", "\n")):
+            continue
+        pairs.append(nm + "=" + value)
+    if pairs:
+        return "; ".join(pairs), "ok"
+    if saw_host and failed:
+        return None, "chrome-unread"
+    if saw_host:
+        return None, "need-login"
+    return None, "need-login"
+
+
+def _windows_cookie_header(now_utc=None, paths=None, key=None, unprotect=None, state_text=None):
+    """A d2jsp cookie header from a Windows Chrome profile, or a reason."""
+    stores = list(paths) if paths is not None else _windows_cookie_dbs()
+    if not stores:
+        return None, "chrome-unread"
+    opener = unprotect or _dpapi_unprotect
+    if key is None and state_text is not None:
+        key = _windows_key_from_state(state_text, opener)
+    elif key is None and paths is None:
+        key = _windows_aes_key(opener)
+    saw_fail = False
+    saw_rows = False
+    for path in stores:
+        try:
+            rows = _read_rows(path)
+        except (OSError, sqlite3.Error):
+            continue
+        header, reason = _windows_rows_to_header(rows, key, now_utc, opener)
+        if header:
+            return header, "ok"
+        if reason == "chrome-unread":
+            saw_fail = True
+        elif reason == "need-login":
+            saw_rows = True
+    if saw_fail:
+        return None, "chrome-unread"
+    if saw_rows:
+        return None, "need-login"
+    return None, "chrome-unread"
+
+
 def _mac_cookie_header(now_utc=None):
     """The d2jsp cookie header from this Mac's Chrome, or a reason it could not be read."""
     path = _cookie_db_path()
@@ -373,6 +715,8 @@ def live_cookie_header(now_utc=None):
         return _mac_cookie_header(now_utc)
     if sys.platform.startswith("linux"):
         return _linux_cookie_header(now_utc)
+    if sys.platform == "win32":
+        return _windows_cookie_header(now_utc)
     return None, "chrome-unread"
 
 
@@ -551,6 +895,19 @@ def _chrome_bin(platform=None, which=None):
             found = look(name)
             if found:
                 return found
+        return None
+    if plat == "win32":
+        if which is not None:
+            return which("chrome") or None
+        if plat != sys.platform:
+            return None
+        for env in ("PROGRAMFILES", "PROGRAMFILES(X86)", "LOCALAPPDATA"):
+            base = os.environ.get(env)
+            if not base:
+                continue
+            path = os.path.join(base, "Google", "Chrome", "Application", "chrome.exe")
+            if os.path.isfile(path):
+                return path
     return None
 
 
@@ -558,8 +915,8 @@ def chrome_user_agent(platform=None, version=None):
     """The installed Chrome's own signature. A clearance cookie is bound to it.
 
     When the version cannot be read, the header still names Chrome and a
-    challenge page stays unread. It is not reported as a post. Mac and Linux
-    name themselves, because a cookie from one does not travel as the other.
+    challenge page stays unread. It is not reported as a post. Mac, Linux and
+    Windows name themselves, because a cookie from one does not travel as another.
 
     REG-2575: a version read that does not answer in 5 s is a version that cannot be read. Only
     OSError was caught, so subprocess.TimeoutExpired rose through _headers: the send answered
@@ -599,8 +956,25 @@ def chrome_user_agent(platform=None, version=None):
                     got = (proc.stdout or "").strip().rsplit(" ", 1)[-1]
                     if re.fullmatch(r"\d+(?:\.\d+){2,3}", got):
                         version = got
+        elif plat == "win32" and plat == sys.platform:
+            binary = _chrome_bin(platform=plat)
+            if binary:
+                try:
+                    proc = subprocess.run(
+                        [binary, "--version"],
+                        capture_output=True, timeout=5, text=True,
+                        encoding="utf-8", errors="replace",
+                    )
+                except (OSError, subprocess.SubprocessError):
+                    proc = None
+                if proc is not None and proc.returncode == 0:
+                    got = (proc.stdout or "").strip().rsplit(" ", 1)[-1]
+                    if re.fullmatch(r"\d+(?:\.\d+){2,3}", got):
+                        version = got
     if str(plat).startswith("linux"):
         system = "X11; Linux x86_64"
+    elif plat == "win32":
+        system = "Windows NT 10.0; Win64; x64"
     else:
         system = "Macintosh; Intel Mac OS X 10_15_7"
     return (
@@ -624,6 +998,11 @@ def _open_chrome_login(platform=None, run=None, which=None):
         if not binary:
             return False
         argv = [binary, "--no-first-run", LOGIN_URL]
+    elif plat == "win32":
+        binary = _chrome_bin(platform=plat, which=which)
+        if not binary:
+            return False
+        argv = [binary, LOGIN_URL]
     else:
         return False
     try:

@@ -1537,9 +1537,17 @@ process.stdout.write(JSON.stringify({
         self.assertFalse(desk._open_chrome_login(platform="linux", run=run, which=lambda name: None))
         self.assertTrue(desk._open_chrome_login(platform="darwin", run=run))
         self.assertEqual(seen[-1][:3], ["open", "-a", "Google Chrome"])
-        before = len(seen)
-        self.assertFalse(desk._open_chrome_login(platform="win32", run=run))
-        self.assertEqual(len(seen), before)
+        win_chrome = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+        self.assertTrue(desk._open_chrome_login(
+            platform="win32", run=run,
+            which=lambda name: win_chrome if name == "chrome" else None,
+        ))
+        self.assertEqual(seen[-1][0], win_chrome)
+        self.assertIn(desk.LOGIN_URL, seen[-1])
+        self.assertNotIn("--user-data-dir", seen[-1])
+        self.assertNotIn("--remote-debugging-port", seen[-1])
+        self.assertTrue(all("9222" not in part for part in seen[-1]))
+        self.assertFalse(desk._open_chrome_login(platform="win32", run=run, which=lambda name: None))
         saved_open = desk._open_chrome_login
         try:
             desk._open_chrome_login = lambda: False
@@ -1549,6 +1557,125 @@ process.stdout.write(JSON.stringify({
         finally:
             desk._open_chrome_login = saved_open
         self.assertNotIn("d2jsp", _read(BEACON))
+
+    def test_a_windows_chrome_cookie_opens_with_the_raw_key(self):
+        """Windows Chrome seals a v10 cookie with the raw key. v20 stays closed."""
+        import base64
+        import hashlib
+        import sqlite3
+        import tempfile
+        from unittest import mock
+        import d2jsp_chrome as desk
+
+        key = bytes.fromhex(
+            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+        nonce = bytes.fromhex("0102030405060708090a0b0c")
+        blob = b"v10" + nonce + bytes.fromhex("618f29bec1e795f53fcb0c29") + bytes.fromhex(
+            "9bd2376ff1f62ef14a982c0c2bef8227")
+        self.assertEqual(desk.decrypt_windows_gcm(blob, key), "desk-session")
+        nist = b"v10" + bytes(12) + bytes.fromhex("0388dace60b6a392f328c2b971b2fe78ab6e47d42cec13bdf53a67b21257bddf")
+        self.assertEqual(desk.decrypt_windows_gcm(nist, bytes(16)), "\x00" * 16)
+        self.assertIsNone(desk.decrypt_windows_gcm(blob[:-1] + b"\x00", key))
+        self.assertIsNone(desk.decrypt_windows_gcm(b"v20" + blob[3:], key))
+        self.assertIsNone(desk._dpapi_unprotect(b"\x01\x00\x00\x00not-on-this-os"))
+        agent = desk.chrome_user_agent(platform="win32", version="120.0.0.0")
+        self.assertIn("Windows NT 10.0; Win64; x64", agent)
+        self.assertNotIn("Macintosh", agent)
+        self.assertEqual(
+            desk._chrome_bin(platform="win32", which=lambda name: "C:\\chrome.exe" if name == "chrome" else None),
+            "C:\\chrome.exe",
+        )
+        self.assertIsNone(desk._chrome_bin(platform="win32", which=lambda name: None))
+
+        wrapped = b"DPAPI" + b"wrapped-bytes"
+        state = '{"os_crypt": {"encrypted_key": "%s", "app_bound_encrypted_key": "APPB-LEAVE"}}' % (
+            base64.b64encode(wrapped).decode("ascii"))
+        seen_blobs = []
+
+        def unprotect(raw):
+            seen_blobs.append(bytes(raw))
+            if raw == b"wrapped-bytes":
+                return key
+            if bytes(raw).startswith(b"\x01\x00\x00\x00"):
+                return b"old-session"
+            return None
+
+        self.assertEqual(desk._windows_key_from_state(state, unprotect), key)
+        self.assertEqual(seen_blobs, [b"wrapped-bytes"])
+        self.assertNotIn(b"APPB-LEAVE", seen_blobs)
+
+        now = 1_700_000_000
+        chrome_now = desk._chrome_now(now)
+        host = ".d2jsp.org"
+        prefix = hashlib.sha256(host.encode("utf-8")).digest()
+        try:
+            from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        except Exception:
+            bound = None
+        else:
+            sealed = AESGCM(key).encrypt(nonce, prefix + b"desk-session", None)
+            bound = b"v10" + nonce + sealed
+            self.assertEqual(desk.decrypt_windows_gcm(bound, key, host), "desk-session")
+            self.assertIsNone(desk.decrypt_windows_gcm(bound, key, "forums.d2jsp.org"))
+            self.assertIsNone(desk.decrypt_windows_gcm(bound, key))
+        folder = tempfile.mkdtemp(prefix="d2jsp-win-")
+        db = os.path.join(folder, "Cookies")
+        try:
+            con = sqlite3.connect(db)
+            con.execute(
+                "create table cookies (host_key text, name text, encrypted_value blob, expires_utc integer)")
+            con.execute(
+                "insert into cookies values (?,?,?,?)",
+                ("example.com", "session", b"LEAKED", chrome_now + 10 ** 12),
+            )
+            con.execute(
+                "insert into cookies values (?,?,?,?)",
+                (host, "sid", bound or blob, chrome_now + 10 ** 12),
+            )
+            old = b"\x01\x00\x00\x00" + b"old-blob"
+            con.execute(
+                "insert into cookies values (?,?,?,?)",
+                (host, "legacy", old, chrome_now + 10 ** 12),
+            )
+            con.execute(
+                "insert into cookies values (?,?,?,?)",
+                (host, "locked", b"v20" + b"\x00" * 40, chrome_now + 10 ** 12),
+            )
+            con.commit()
+            con.close()
+            header, reason = desk._windows_cookie_header(
+                now_utc=now, paths=[db], key=key, unprotect=unprotect,
+            )
+            self.assertEqual(reason, "ok")
+            self.assertIn("sid=desk-session", header)
+            self.assertIn("legacy=old-session", header)
+            self.assertNotIn("LEAKED", header)
+            unread, why = desk._windows_rows_to_header(
+                [(host, "locked", b"v20" + b"\x00" * 40, chrome_now + 10 ** 12)],
+                key, now, unprotect,
+            )
+            self.assertIsNone(unread)
+            self.assertEqual(why, "chrome-unread")
+            self.assertTrue(all(not bytes(raw).startswith(b"v20") for raw in seen_blobs))
+        finally:
+            shutil.rmtree(folder, ignore_errors=True)
+
+        called = {}
+
+        def fake_header(now_utc=None):
+            called["yes"] = True
+            return "sid=desk-session", "ok"
+
+        saved = desk._windows_cookie_header
+        desk._windows_cookie_header = fake_header
+        try:
+            with mock.patch.object(desk.sys, "platform", "win32"):
+                header, reason = desk.live_cookie_header()
+            self.assertTrue(called.get("yes"))
+            self.assertEqual(header, "sid=desk-session")
+            self.assertEqual(reason, "ok")
+        finally:
+            desk._windows_cookie_header = saved
 
     def test_a_vault_filing_can_be_removed_from_the_trade_list(self):
         if NODE is None:
@@ -1938,6 +2065,13 @@ RED_PROOF = [
         "file": "tv/d2jsp_chrome.py",
         "find": "        proc = node_run(prog, str(html or \"\"))\n    except (OSError, subprocess.SubprocessError):\n",
         "replace": "        proc = node_run(prog, str(html or \"\"))\n    except OSError:\n",
+        "matches": 1,
+    },
+    {
+        "why": "a Windows Chrome cookie stays unread again, so a price ask on that PC never reaches the forum",
+        "file": "tv/d2jsp_chrome.py",
+        "find": "    if sys.platform == \"win32\":\n        return _windows_cookie_header(now_utc)\n",
+        "replace": "    pass\n",
         "matches": 1,
     },
 ]
