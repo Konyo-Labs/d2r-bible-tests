@@ -464,7 +464,7 @@ PROMPT_ANSWERS_SAME_AS = ("p1839",)
 _LAST_RAW = ""        # v832 (SIMULATION_SPEC) — the model's literal words for the read in flight
 READ_PROMPT = (
     "Image {path} = Diablo II Resurrected (RoW). Reply with STRICT JSON only, no markdown, no prose:\n"
-    "{{\"area\":\"\",\"tz\":[],\"scene\":\"gameplay\",\"stashTab\":\"\",\"chronicleTab\":\"\",\"names\":[],\"names_loc\":{{}},\"names_slot\":{{}},\"names_xy\":{{}},\"sockets\":{{}},\"discovered\":[],\"conf\":0.0}}\n"
+    "{{\"area\":\"\",\"tz\":[],\"scene\":\"gameplay\",\"stashTab\":\"\",\"chronicleTab\":\"\",\"gameName\":\"\",\"cls\":\"\",\"level\":0,\"avatarClass\":\"\",\"names\":[],\"names_loc\":{{}},\"names_slot\":{{}},\"names_xy\":{{}},\"sockets\":{{}},\"discovered\":[],\"conf\":0.0}}\n"
     "scene = one of: town | stash | inventory | loot | gameplay | transition | chronicle.\n"
     # v1509 — THE CHRONICLE SCENE. Konyo: "when chronicle/menu is clicked ingame it should
     # automatically know we are about to register and read and analyze the CHRONICLE lists."
@@ -518,6 +518,12 @@ READ_PROMPT = (
     "waypoint, or a new game — names are expected empty; if an 'ENTERING <zone>' banner is legible put "
     "that zone in area, else leave area \"\".\n"
     "area = zone name from top-right Game block / ENTERING banner / automap, else \"\".\n"
+    # v3855 - identity signals (read_identity.parse_identity); the game PASSWORD is never asked for or returned
+    "gameName = the game's NAME only when printed (create/join game screen, Esc overlay, chat 'joined game'), else \"\". "
+    "NEVER the password: leave any password out entirely.\n"
+    "cls / level = ONLY on the login character-select screen or the character panel: the selected character's "
+    "class (Amazon|Assassin|Barbarian|Druid|Necromancer|Paladin|Sorceress) and level, else \"\" and 0.\n"
+    "avatarClass = the class of the player's own in-game avatar when it is clear, else \"\".\n"
     "tz = purple terror-zone lines in that block, else [].\n"
     "stashTab = ONLY when scene=stash: which LEFT stash tab is active — "
     "personal | shared | gems | materials | runes | \"\" if unknown. "
@@ -6348,6 +6354,7 @@ def _parse_read(out):
             "discovered": discovered,
             "names_loc": names_loc,
             "character": character,        # #54 — the login screen's name; "" everywhere else
+            **_identity_fields(j, scene),  # v3855 - gameName / cls / level / avatarClass, never a password
             "names_slot": names_slot,      # #54 — name -> doll slot, the reader's word
             "names_xy": names_xy,          # #54 — name -> [x, y] frame point, the geometry's evidence
             "sockets": sockets,
@@ -6355,6 +6362,15 @@ def _parse_read(out):
             "foundAt": found_at,           # v1818 — name -> the row's own First Found stamp
             "droppedBy": dropped_by,       # v1818 — name -> the monster on its Dropped By line
             "_parse_audit": dict(_audit, ok=True)}   # v835 — what the model SAID vs what survived
+
+def _identity_fields(j, scene):
+    """v3855 - read_identity.parse_identity, or nothing when it cannot load (the row stays UNKNOWN)."""
+    try:
+        import read_identity as _RI
+        return _RI.parse_identity(j, scene)
+    except Exception:
+        return {}
+
 
 def _intent_for(scene):
     """v723 — loot lifecycle: floor labels = seen (not farmed); inv/stash = farmed for real."""
@@ -9764,6 +9780,9 @@ def emit_deep_read(rd, n, frame_id, interest=0.0, used_priority=False, ocr_rd=No
         rec["character"] = rd.get("character")
     elif rd.get("scene") == "char-select" and "character" in rd and rd.get("character") is None:
         rec["character"] = None   # REG-1558 — a login row whose name the parse could not read: UNKNOWN, on the row
+    for _k in ("gameName", "cls", "level", "avatarClass"):   # v3855 - identity signals, never a password
+        if rd.get(_k):
+            rec[_k] = rd.get(_k)
     _journal(rec)
     with _state_lock:
         st = _load()

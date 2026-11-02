@@ -244,3 +244,27 @@ def scenario_of(games):
         ns = sorted(set(ns))
         return "Farming (%s%d\u2013%d)" % (stem, ns[0], ns[-1]) if len(ns) > 1 else "Farming (%s%d)" % (stem, ns[0])
     return None
+
+
+def parse_identity(j, scene=""):
+    """v3855 - the reader's answer -> the identity fields a journal row may carry: gameName, cls, level, avatarClass.
+    Only these four keys are ever read from the answer; a password key is never touched, and a game name that
+    carries a password word is cut before it. Empty / unreadable -> absent (the row stays UNKNOWN)."""
+    out = {}
+    if not isinstance(j, dict):
+        return out
+    g = j.get("gameName")
+    if isinstance(g, str) and g.strip():
+        g = re.split(r"(?i)\s*(?:pass|pw\b)", g.strip())[0].strip()
+        if g and len(g) <= 15:
+            out["gameName"] = g
+    c = _cls(j.get("cls"))
+    if c and str(scene or "") in ("char-select",) + CHAR_PANEL_SCENES:
+        out["cls"] = c
+        lv = j.get("level")
+        if isinstance(lv, int) and not isinstance(lv, bool) and 1 <= lv <= 99:
+            out["level"] = lv
+    a = _cls(j.get("avatarClass"))
+    if a:
+        out["avatarClass"] = a
+    return out
