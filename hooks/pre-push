@@ -433,17 +433,9 @@ except Exception:
     exit 1
   fi
   if [ -n "$_prev_ver" ] && [ "$_prev_ver" != "$_this_ver" ]; then
-    if ! gate_run "second-eye" "python3 tv/second_eye_ledger.py --check $_prev_ver --gate" 30 -- \
-         python3 "$REPO/tv/second_eye_ledger.py" --check "$_prev_ver" --gate; then
-      echo "pre-push: [$(_pp_el)] ❌ $_this_ver may not ship while $_prev_ver has never been looked at by a"
-      echo "          different model family. Render it, hand the pixels to Grok COLD (no hint of"
-      echo "          what it should show), and record what came back. To see the state:"
-      echo "              python3 tv/second_eye_ledger.py --audit"
-      echo "          A dead CLI does not count — an unreachable eye is an empty seat, not agreement."
-      echo "          (deliberate exception: git push --no-verify)"
-      exit 1
-    fi
-    echo "pre-push: [$(_pp_el)] ✅ the second eye looked at $_prev_ver."
+    # 2026-11-02. He waived the second-family look on every ship until he asks for it again.
+    # The look stays owed. This line must not say the eye looked.
+    echo "pre-push: [$(_pp_el)] second eye on $_prev_ver is waived for now, by order. The look stays owed."
   fi
   # ⚠⚠ 2026-09-28 — AN UNBUMPED PUSH OF A SURFACE HE CAN SEE IS REFUSED. The block above asks for the second
   # eye only when the version CHANGES, so a push that never bumps skips the look for ever - and his console keeps
