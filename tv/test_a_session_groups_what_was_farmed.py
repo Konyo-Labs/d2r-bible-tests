@@ -88,7 +88,7 @@ class TheCardDrawsIt(unittest.TestCase):
     def test_the_card_draws_the_groups(self):
         with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as f:
             ui = f.read()
-        i = ui.index("  function _shadowSessionRow(s){")
+        i = ui.index("  function _shadowSessionRow(s, ix){")
         body = ui[i:ui.index("\n  }\n", i)]
         self.assertIn("ssv-farmed", body)
         for g in F.GROUPS:

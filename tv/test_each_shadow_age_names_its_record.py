@@ -41,7 +41,7 @@ NOW = 1793236380000                                   # the 03:13 look
 BOARD_T = NOW - (44 * 60 + 30) * 1000                 # the board snapshot, held by the 75 min gap
 SESS_T = NOW - (12 * 60 + 30) * 1000                  # the sessions digest posted at the 03:00 restart
 FNS = ["  function esc(s){", "  function _lsWhenSay(t0){", "  function _runSpanSay(t0, t1){",
-       "  function _shadowSessionRow(s){", "  function _shadowSessionsHead(owner){", "  function _shadowSessionsHtml(d){"]
+       "  function _shadowSessionRow(s, ix){", "  function _shadowSessionsHead(owner){", "  function _shadowSessionsHtml(d){"]
 LINES = ["  var _SSV_B64 = "]
 
 
