@@ -185,9 +185,23 @@ def _where(r):
     return None
 
 
-def _town_field(rows):
-    """v3855 - (townMs, fieldMs) from the session's own reads. Each short gap (<= AFK_GAP_MS) is the place of the read
-    that opens it; long gaps are AFK and belong to neither. Both None when no read was placed (UNKNOWN, never 0)."""
+#: v3855 - unchanged town reads for longer than this are AFK (idle in town), not town time (Elad 2026-11-02)
+TOWN_IDLE_MS = 3 * 60 * 1000
+
+
+def _town_sig(r):
+    """What a town read saw: area, scene, its names, and its frame hash when the read carries one."""
+    return (str(r.get("area") or "").strip().lower(), str(r.get("scene") or "").strip().lower(),
+            tuple(sorted(_names(r))), r.get("frameHash") or r.get("hash") or None)
+
+
+def game_timeline(rows):
+    """v3855 (Elad 2026-11-02: "it's AFK until it's not") - the whole game's reads, every session together, cut into
+    segments [(a, b, kind)] with kind 'afk', 'town', 'field' or None (the opening read was not placed).
+
+    AFK is one continuous state, never reset at a session boundary: a gap over AFK_GAP_MS is AFK, and a run of
+    consecutive town reads that saw the same thing (_town_sig) for longer than TOWN_IDLE_MS is AFK from its first read
+    to the first read that differs (area/scene, names, frame hash, or out of town). A brief town visit stays town."""
     import replay as _rp
     pts = []
     for r in rows or []:
@@ -197,21 +211,56 @@ def _town_field(rows):
             t = _rp._session_moment(r)
         except Exception:
             t = 0
-        if isinstance(t, int) and t > 0:
-            pts.append((t, _where(r)))
+        if isinstance(t, int) and not isinstance(t, bool) and t > 0:
+            pts.append((t, _where(r), _town_sig(r)))
     pts.sort(key=lambda x: x[0])
-    if not any(w for _, w in pts):
-        return None, None
-    town = field = 0
-    for (a, wa), (b, _) in zip(pts, pts[1:]):
-        gap = b - a
-        if gap > AFK_GAP_MS:
+    kinds = [("afk" if b[0] - a[0] > AFK_GAP_MS else a[1]) for a, b in zip(pts, pts[1:])]
+    i = 0
+    while i < len(pts):
+        if pts[i][1] != "town":
+            i += 1
             continue
-        if wa == "town":
-            town += gap
-        elif wa == "field":
-            field += gap
-    return town, field
+        k = i
+        while k + 1 < len(pts) and pts[k + 1][1] == "town" and pts[k + 1][2] == pts[i][2]:
+            k += 1
+        if pts[k][0] - pts[i][0] > TOWN_IDLE_MS:
+            for g in range(i, k):
+                kinds[g] = "afk"
+        i = k + 1
+    return [(a[0], b[0], kd) for (a, b, kd) in zip(pts, pts[1:], kinds)]
+
+
+def afk_stretches(segs):
+    """Consecutive afk segments merged into stretches [(a, b)]."""
+    out = []
+    for a, b, kd in segs or []:
+        if kd != "afk":
+            continue
+        if out and out[-1][1] == a:
+            out[-1] = (out[-1][0], b)
+        else:
+            out.append((a, b))
+    return out
+
+
+def session_split(segs, t0, t1):
+    """-> {townMs, fieldMs, awayMs, afkFrom, afkInto} for the session [t0, t1], each segment clipped to it by overlap.
+    All None when the session has no span or none of its time was placed (UNKNOWN, never 0). afkFrom / afkInto: an AFK
+    stretch that was already running at t0 / still running at t1 (it crosses into the neighbour session)."""
+    none = {"townMs": None, "fieldMs": None, "awayMs": None, "afkFrom": False, "afkInto": False}
+    if not isinstance(t0, int) or not isinstance(t1, int) or t1 <= t0:
+        return none
+    got = {"town": 0, "field": 0, "afk": 0}
+    for a, b, kd in segs or []:
+        ov = min(b, t1) - max(a, t0)
+        if ov > 0 and kd in got:
+            got[kd] += ov
+    if not any(got.values()):
+        return none
+    st = afk_stretches(segs)
+    return {"townMs": got["town"], "fieldMs": got["field"], "awayMs": got["afk"],
+            "afkFrom": any(a < t0 < b or (a < t0 and b == t0) for a, b in st),
+            "afkInto": any(a < t1 < b or (b > t1 and a == t1) for a, b in st)}
 
 
 def _chronicle_names(rows):
@@ -274,6 +323,7 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
     except Exception as e:
         out["why"] = "the journal would not split into sessions (%s)" % type(e).__name__
         return out
+    timeline = game_timeline(rows)   # v3855 - AFK over the whole game, then each session takes its share
     for g in groups[:MAX_SESSIONS]:
         reads = [r for r in g if is_read(r)]
         moments = _rp.session_moments(g) or []
@@ -291,7 +341,7 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
              "farmed": farmed,
              "chronicleNames": _chronicle_names(g)[:MAX_NAMES],
              "stashed": _stashed(reads)}
-        s["townMs"], s["fieldMs"] = _town_field(g)
+        s.update(session_split(timeline, s["t0"], s["t1"]))
         whys = []
         for fid in _key_frames(reads):
             data, why = thumb_bytes(hist_dir, fid, make)

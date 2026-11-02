@@ -23041,13 +23041,19 @@ window._lockMark = function(isOpen, px, label){
           return esc(String(r && r[0] || '')) + ((r && r[1] > 1) ? ' \u00d7' + r[1] : ''); }).join(', ') + '</span>';
       }).join(' · ') : (nm.length ? 'no farmed item was read on this run (pickup noise only)' : names);
     }
-    /* v3855 - in game vs town from this session's own reads (shadow_sessions._town_field); UNKNOWN when no read was placed */
+    /* v3855 - in game vs town vs AFK (shadow_sessions.session_split); UNKNOWN when no read was placed */
+    /* AFK = this session's share of the game's AFK stretches (shadow_sessions.game_timeline): AFK until it's not,
+       never reset at a session boundary; a stretch that crosses one says so */
     var tMs = s.townMs, fMs = s.fieldMs, place;
     if (sayDur(tMs) !== null && sayDur(fMs) !== null) {
-      var tot = tMs + fMs;
+      var aMs = sayDur(s.awayMs) !== null ? s.awayMs : null;
+      var tot = tMs + fMs + (aMs || 0);
       var pc = function(x){ return tot > 0 ? ' (' + Math.round(100 * x / tot) + '%)' : ''; };
-      place = 'in game ' + sayDur(tot) + ' · in town ' + sayDur(tMs) + pc(tMs) + ' · out of town ' + sayDur(fMs) + pc(fMs);
-    } else place = 'in game UNKNOWN · in town UNKNOWN · out of town UNKNOWN';
+      var cont = [s.afkFrom === true ? 'continues from previous session' : '', s.afkInto === true ? 'continues into next' : '']
+        .filter(function(x){ return x; }).join(', ');
+      place = 'in game ' + sayDur(tMs + fMs) + ' · out of town ' + sayDur(fMs) + pc(fMs) + ' · in town ' + sayDur(tMs) + pc(tMs)
+        + ' · AFK ' + (aMs === null ? 'UNKNOWN' : sayDur(aMs) + pc(aMs) + (cont ? ' (' + cont + ')' : ''));
+    } else place = 'in game UNKNOWN · out of town UNKNOWN · in town UNKNOWN · AFK UNKNOWN';
     var cn = Array.isArray(s.chronicleNames) ? s.chronicleNames.filter(function(x){ return typeof x === 'string' && x; }) : null;
     var chronNames = cn === null ? 'chronicle names UNKNOWN' : (cn.length ? 'chronicles: ' + cn.join(' · ') : 'no chronicle was read on this run');
     var stashed;
