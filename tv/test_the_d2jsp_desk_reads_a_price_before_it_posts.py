@@ -294,7 +294,7 @@ process.stdout.write(JSON.stringify({
         card_at = script.index("function cardHtml(")
         cards_at = script.index("function currentCards(", card_at)
         card = script[card_at:cards_at]
-        self.assertLess(cards_at - card_at, 2400)
+        self.assertLess(cards_at - card_at, 2900)   # v3855 C6 drew the min-max ranges in the card (+~400)
         self.assertIn("data-d2jsp-options", card)
         self.assertIn("Opens a draft. Nothing is posted until Post this draft.", card)
         self.assertIn("This filing has no mods recorded.", card)
@@ -459,7 +459,7 @@ window._cbShown = function(){ return { name: 'Grief', base: 'Phase Blade' }; };
         script = pane.split("<script>", 1)[1].split("</script>", 1)[0]
         card_at = script.index("function cardHtml(")
         cards_at = script.index("function currentCards(", card_at)
-        self.assertLess(cards_at - card_at, 2400)
+        self.assertLess(cards_at - card_at, 2900)   # v3855 C6 drew the min-max ranges in the card (+~400)
         self.assertIn("d2jspArt(n)", script[card_at:cards_at])
         draft_fn = self.bible.index("function openDraft(")
         draft_end = self.bible.index("function showReceipt(", draft_fn)
