@@ -3,8 +3,7 @@
 
 Measured 2026-11-01 from uniqueitems.txt. A chronicle row is spawnable==1 and
 disableChronicle!=1. That file count is 403. Rainbow Facet is eight of them. Six
-quest uniques sit inside that 403 and are not cards (his ruling the same day).
-The hunt list is 397. Polaris Spear and The Scourge are not in the file. The six
+quest uniques are in that file and are not part of the tally. The hunt list is 397. Polaris Spear and The Scourge are not in the file. The six
 colossal jewels have spawnable blank, so they stay outside the 403 and tick on
 their own drawer.
 
@@ -289,8 +288,11 @@ class TheChronicleNamesEveryRow(unittest.TestCase):
         m = self.src.find("H.push(_undoBar('uni'))", k)
         self.assertGreater(m, k)
         note = "\n".join(line.split("//", 1)[0] for line in self.src[k:m].split("\n"))
-        self.assertIn("quest items sit inside the ", note)
+        self.assertNotIn("quest items sit inside the ", note)
         self.assertIn("every chronicle row is named", note)
+        fn = self.src[self.src.find("window.d2rChronTotal = function"):self.src.find("window._publishedLane")]
+        self.assertIn("window._CHRON_QUESTS", fn)
+        self.assertIn("return t - q;", fn)
         self.assertIn("chronTotal:403", self.src.replace(" ", ""))
 
     def test_the_list_is_actually_called_and_the_resolver_stops(self):

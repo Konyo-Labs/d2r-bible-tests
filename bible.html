@@ -4240,7 +4240,12 @@ window.d2rChronTotal = function(s){
   try { if (!s && typeof window.funiScan === 'function') s = window.funiScan(); }
   catch(e){ s = s || null; }
   var t = s && s.chronTotal;
-  if (typeof t === 'number' && isFinite(t) && t > 0) return t;
+  if (typeof t === 'number' && isFinite(t) && t > 0) {
+    /* The six quest uniques are in the game file. They are not part of this tally. */
+    var q = 0;
+    try { var qq = window._CHRON_QUESTS; if (qq && qq.length) q = qq.length; } catch (eQ) {}
+    return t - q;
+  }
   try { window.__d2rChronFallbacks = (window.__d2rChronFallbacks || 0) + 1;
         window.__d2rChronFallbackAt = Date.now(); } catch(e){}
   var c = s && s.total;
@@ -66028,6 +66033,7 @@ function renderJournal(){
   var _CHRON_QLVL = {};
   _CHRON_FACETS.forEach(function(f){ _CHRON_FACET_SET[f] = 1; _CHRON_QLVL[f] = 85; });
   var _CHRON_QUESTS = ["Amulet of the Viper","Staff of Kings","Horadric Staff","Hell Forge Hammer","Khalim's Flail","Khalim's Will"];
+  window._CHRON_QUESTS = _CHRON_QUESTS;
   var _CHRON_NOT_IN_FILE = {"Polaris Spear":1,"The Scourge":1};
   /* The unidentified chronicle line is the base, items[code].name, measured 2026-11-01.
      One entry per hunt card (397). The six quest names are not keys.
@@ -67641,15 +67647,12 @@ function renderJournal(){
       var _namedDark = (s.chronTotal - s.total);
       var _questN = _CHRON_QUESTS.length;
       var _huntDark = _namedDark - _questN;
-      var _questNote = (_questN > 0 && _namedDark >= _questN)
-        ? (' · '+_questN+' quest items sit inside the '+s.chronTotal+' and are not cards')
-        : '';
       var _namedTail = (_huntDark > 0)
-        ? (' · <b>'+_huntDark+'</b> chronicle rows still dark (names reveal on find)'+_questNote)
-        : (' · every chronicle row is named'+_questNote);
+        ? (' · <b>'+_huntDark+'</b> chronicle rows still dark (names reveal on find)')
+        : (' · every chronicle row is named');
       var _namedTitle = (_huntDark > 0)
-        ? ('the in-game Chronicle counts '+s.chronTotal+' unique entries (game-file truth: uniqueitems.txt) — the '+s.total+' cards here are the named subset; the remaining rows are still dark silhouettes in-game')
-        : ('the in-game Chronicle counts '+s.chronTotal+' unique entries (game-file truth: uniqueitems.txt) — every hunt row is named'+(_questNote ? ('. '+_questN+' quest items are in that file count and are not cards') : ''));
+        ? ('the tally counts the named cards. Quest items are not part of it.')
+        : ('every hunt row is named. Quest items are not part of this tally.');
       H.push('<div class="f-atomsub" style="margin:-4px 0 8px;opacity:.85" title="'+_namedTitle+'">🗂 named cards: <b>'+s.found+' / '+s.total+'</b> ticked'+_namedTail+'</div>');
     }
     H.push(_undoBar('uni'));   // v644 — mis-ticks are one ↩ away, forge-style
@@ -67829,7 +67832,7 @@ function renderJournal(){
         var m = String(_flTally[k]||'').match(/^([A-Za-z]{3})\s+\d+,\s*(\d{4})/);
         if (m && (m[1] + ' ' + m[2]) === _nowMon) _thisMon++;
       }); } catch(e){}
-      var _uniLeft = (s.chronTotal || 0) - s.found;
+      var _uniLeft = (s.chronTotal || 0) - s.found - _CHRON_QUESTS.length;
       H.push('<div class="forge-sec forge-sec-now"><div class="forge-sec-h">✅ Found <span class="forge-sec-ct" id="gf-found-ct">'+s.found+'</span><span class="forge-sec-sub">the chronicle ledger — dated, newest first, synced with the Calculator ✓ — tap to open, ✕ to un-mark</span></div>'
         +'<div class="gs-tally">'
         +'<span class="gs-t gs-t-seal"><b>'+s.found+'</b><i>found</i></span>'
