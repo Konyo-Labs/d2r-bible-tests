@@ -14,6 +14,23 @@ the same pass held. Every kept row is read now; only the map is bounded, and a m
 (None) - the sentence says the drain's holds are UNKNOWN, never a partial map read as complete. Found by the Grok CLI's pre-ship
 look at v3841 (LOOKED, 2 findings; the other was what it was not shown). Law test_a_held_reel_is_named_by_its_hold +1 case
 (a hold after 450 recent rows; a map past its cap), 2 red-proofs; 11 of 11 RED.
+### REG-3122 - ANOTHER PC'S VAULT COULD BE SEEN ONLY BY OPENING ITS SHADOW; ITS PUBLISHED SIZE AND AGE WERE DRAWN NOWHERE (#250, #23 Fleet 3.0)
+Fleet 3.0's last phase, by his 2026-09-28 rule (the vault viewable across PCs, fetched, shown as THEIRS, a stale or failed
+fetch saying so with its age). Recon: every roster row already publishes its vault (sections.vault: counts, asOf - when
+that board last handed its copy records, REG-2817), and the console read it only to seed a shadow's book; no Fleet row and
+no roster person button said it. roster_publish.vault_line now writes one line from that section: "vault N items · as of
+<age>", "· STALE" past the roster's 2 h TTL, UNKNOWN when the row is corrupt or its count will not read, "vault never
+published" when the owner has no row or no vault section. The age is the section's own asOf - never this fetch's time and
+never the row's t (when the site stored the copy: a fresh copy of a 3-hour-old vault reads STALE). The roster route hands
+it on every owner row (panel_words); the fleet route lays it on every Fleet row whose owner the console's own rule names
+(_fleet_overlay_roster_vault, owner_of: the nickname, Konyo on a mac) - an owner this PC never fetched reads UNKNOWN, a PC
+with no profile gets no line, his own row says what the others see of him. The console prints those words and computes
+nothing (_rosterVaultHtml): on a published roster button before its signature line, and on an open Fleet row beside its
+see-console eyes, which stay at the line's end (REG-2768). Law: test_a_fleet_row_shows_whose_vault_how_old (14 tests:
+vault_line's states, its own clock over the copy's, the route over a written and re-read cache, the Fleet overlay, the
+console's row and button in node; 9 red-proofs, each RED). NEEDS LIVE: GrokBot opens a Fleet row and the roster panel on
+the Mac and reads each vault line against that PC's shadow.
+
 ### REG-3117 - IN A SHADOW A FILLED MULE CELL STILL SAID "DRAG IT TO ANY CELL WHERE IT FITS AND IT LOCKS THERE" (#230, GrokBot 6489429952)
 GrokBot, guest -> Fleet -> Konyo · Mac -> Vault -> UNIQUE ARMOR: a filled cell's aria-label promised a drag the read-only
 shadow stops. The lock held; the words lied. REG-3103's gridCellSay fixed only the EMPTY cell. Swept: every title,

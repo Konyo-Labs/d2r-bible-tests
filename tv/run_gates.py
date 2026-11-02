@@ -12858,6 +12858,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_no_tool_calls_an_installed_browser_absent.py")], 300,
          needs_app=False,
          why='#161 REG-3064 - a11y_check, coldread, crest_loudness and overlap_ratchet never call an installed Chrome that would not start absent; the two gates exit 3 (VENUE), a missing Chrome keeps its skip'),
+    Gate("test_a_fleet_row_shows_whose_vault_how_old",
+         [sys.executable, os.path.join(HERE, "test_a_fleet_row_shows_whose_vault_how_old.py")], 300,
+         needs_app=False,
+         why="#250 REG-3122: a Fleet row and a roster button say the owner's published vault - N items, as of its own asOf, STALE, UNKNOWN or never published"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

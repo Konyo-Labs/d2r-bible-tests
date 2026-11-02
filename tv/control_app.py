@@ -2546,6 +2546,49 @@ def _fleet_overlay_local_version(fl, me):
     return n
 
 
+def _fleet_overlay_roster_vault(fl, payload=None):
+    """#250 (REG-3122) - EACH FLEET ROW CARRIES ITS OWNER'S PUBLISHED VAULT, IN ONE LINE. -> rows given a line
+
+    Fleet 3.0's last phase (his 2026-09-28 rule: the vault viewable across PCs, fetched, shown as THEIRS, a stale or failed
+    fetch says so with its age). A viewer could see another PC's vault only by opening its shadow; the roster row already
+    publishes it (sections.vault: counts, asOf, REG-2817) and nothing drew it. The line is roster_publish.vault_line over
+    this PC's last roster fetch (_roster_cache_payload, ages recomputed now) - the roster button's own words. The owner is
+    the console's own rule (roster_publish.owner_of: the nickname, Konyo on a mac). A row with no owner gets no line;
+    an owner this PC has not fetched reads UNKNOWN, never "never published". Every row, his own included: his row says
+    what the others see of him.
+    """
+    if not isinstance(fl, dict):
+        return 0
+    try:
+        import roster_publish as _rp
+        data = payload if isinstance(payload, dict) else _roster_cache_payload()
+    except Exception:
+        return 0
+    fetched = isinstance(data, dict) and data.get("fetched") is True
+    by = {}
+    for r in ((data or {}).get("owners") or []) if fetched else []:
+        if isinstance(r, dict) and r.get("owner"):
+            by[r["owner"]] = r
+    n = 0
+    for grp in ("online", "offline"):
+        for row in (fl.get(grp) or []):
+            if not isinstance(row, dict):
+                continue
+            owner = _rp.owner_of(str(row.get("nickname") or "").strip(), row.get("platform"))
+            if not owner:
+                row.pop("vaultLine", None)
+                continue
+            if not fetched:
+                line = {"cls": "roster-unknown", "state": "unknown", "words": "vault UNKNOWN (this PC has not fetched a roster yet)"}
+            elif owner not in by:
+                line = {"cls": "roster-unknown", "state": "unknown", "words": "vault UNKNOWN (not in this PC's last roster fetch)"}
+            else:
+                line = _rp.vault_line(by[owner], data.get("now"))
+            row["vaultLine"] = line
+            n += 1
+    return n
+
+
 def _fleet_overlay_local_tally(fl, me):
     """HIS OWN ROW READS THE LOCAL TALLY INSTEAD OF THE ROUND TRIP. -> how many rows changed
 
@@ -48203,6 +48246,9 @@ class Handler(BaseHTTPRequestHandler):
                     _fleet_overlay_local_tally(_fl, _fl["me"])
                     # #246 (REG-2046) - and its own row shows the version it is RUNNING, not the one its last beacon published
                     _fleet_overlay_local_version(_fl, _fl["me"])
+                    # #250 (REG-3122) - and every row its owner's published vault, aged by that vault's own clock
+                    try: _fleet_overlay_roster_vault(_fl)
+                    except Exception: pass
                     # #41 rank 22 (REG-1564) — his own row's picker census from the local file, the same way
                     _fleet_overlay_local_picker(_fl, _fl["me"])
                     # v2814 — AFTER the local overlay, so his own row is reconciled too

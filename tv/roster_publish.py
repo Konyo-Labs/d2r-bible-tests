@@ -1221,6 +1221,35 @@ def row_age_words(row, now_ms):
     return ("roster row stored " + words) if words else "roster row stored, age UNKNOWN"
 
 
+def vault_line(row, now_ms):
+    """#250 (REG-3122) - ONE LINE FOR AN OWNER'S PUBLISHED VAULT, for a Fleet row and a roster person button, so a viewer
+    sees whose vault is how big and how old without opening a shadow. From the row's own vault section (REG-2817: the copy
+    records that board last handed, counts = rows, asOf = when it handed them): "vault N items · as of <age>", STALE past
+    the roster's 2 h TTL (_age_state), UNKNOWN when the row or its count will not read, and "vault never published" when
+    the row or its vault section is absent. The age is that section's own asOf - never this fetch's time, never the row's
+    `t` (when the site stored the copy). -> {"cls", "state", "words"}, None for a row that is no owner's"""
+    if not isinstance(row, dict) or row.get("owner") not in OWNERS:
+        return None
+    if row.get("published") is not True:
+        return {"cls": "roster-never", "state": "never", "words": "vault never published"}
+    if row.get("corrupt") is not False:
+        return {"cls": "roster-unknown", "state": "unknown", "words": "vault UNKNOWN (the roster row is corrupt)"}
+    sections = row.get("sections") if isinstance(row.get("sections"), dict) else {}
+    sec = sections.get("vault")
+    if not isinstance(sec, dict):
+        return {"cls": "roster-never", "state": "never", "words": "vault never published"}
+    n = sec.get("counts")
+    if isinstance(n, bool) or not isinstance(n, int) or n < 0:
+        return {"cls": "roster-unknown", "state": "unknown", "words": "vault UNKNOWN (its count would not read)"}
+    state, words = _ago(sec.get("asOf"), now_ms)
+    head = "vault %d item%s" % (n, "" if n == 1 else "s")
+    if state == "unknown":
+        return {"cls": "roster-unknown", "state": "unknown", "words": head + " \u00b7 age UNKNOWN"}
+    if state == "stale":
+        return {"cls": "roster-stale", "state": "stale", "words": head + " \u00b7 as of " + words + " \u00b7 STALE"}
+    return {"cls": "roster-sec", "state": "current", "words": head + " \u00b7 as of " + words}
+
+
 def panel_words(payload):
     """#95 (REG-2517) - the words the console's roster panel and shadow bar draw, made by the same functions roster_html
     uses (signature_words, _me_line), so the buttons, the bar and the page cannot say different things. -> payload
@@ -1237,6 +1266,8 @@ def panel_words(payload):
         if line:
             payload["meLine"] = {"cls": line[0], "words": line[1]}
     for row in payload.get("owners") or []:
+        if isinstance(row, dict) and row.get("owner") in OWNERS:
+            row["vaultLine"] = vault_line(row, payload.get("now"))   # #250 (REG-3122) - its vault, aged by its own asOf
         if not isinstance(row, dict) or row.get("published") is not True:
             continue
         if row.get("corrupt") is not False:

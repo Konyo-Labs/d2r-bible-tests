@@ -6125,6 +6125,12 @@
   /* #95 (REG-2517) - whose signature each row carries, under its name, and THIS PC's own last publish leading the
      panel. The words come from roster_publish.panel_words; these only colour them. */
   .roster-sig { display: block; font-size: var(--fs-2xs); line-height: var(--lh-snug); }
+  /* #250 (REG-3122) - an owner's published vault line, on its roster button and its open Fleet row */
+  .roster-vault { display: block; font-size: var(--fs-2xs); line-height: var(--lh-snug); color: var(--muted); }
+  .fleet-vault { flex: 1 1 auto; min-width: 0; margin-right: auto; align-self: center; overflow-wrap: anywhere;
+                 font-size: var(--fs-2xs); line-height: var(--lh-snug); color: var(--muted); }
+  .roster-vault.roster-stale, .fleet-vault.roster-stale { color: #e9b96e; }
+  .roster-vault.roster-unknown, .fleet-vault.roster-unknown { color: #e9b96e; font-style: italic; }
   .roster-me { margin: 2px 0 6px; font-size: var(--fs-2xs); line-height: var(--lh-snug); }
   .roster-verified { color: var(--st-good); }
   .roster-unverified { color: var(--st-needs); }
@@ -28064,9 +28070,21 @@ function escC(s) {
     return '';
   };
   window._fleetRosterOwner = _fleetRosterOwner;
+  /* #250 (REG-3122) - AN OWNER'S PUBLISHED VAULT, IN ONE LINE: "vault N items · as of <age>", STALE past the roster's TTL,
+     UNKNOWN, or "vault never published" - the words roster_publish.vault_line wrote (the route hands them: a roster row's
+     vaultLine, a Fleet row's vaultLine), aged by that vault's own asOf. Nothing here computes an age or a count, so the
+     Fleet row and the roster button cannot say different things. No line from the route draws nothing. */
+  var _rosterVaultHtml = function (line, cls) {
+    if (!line || typeof line !== 'object' || typeof line.words !== 'string' || !line.words) return '';
+    return '<span class="' + escC(cls) + ' ' + escC(String(line.cls || '')) + '" data-vault-state="' + escC(String(line.state || ''))
+      + '">' + escC(line.words) + '</span>';
+  };
+  window._rosterVaultHtml = _rosterVaultHtml;
   var _fleetOpenEyesHtml = function (m, isMe) {
+    var vault = _rosterVaultHtml(m && m.vaultLine, 'fleet-vault');   /* #250 (REG-3122) - its vault, beside the eyes */
     /* GrokBot's 21:09 pass (v3809): each console offered "see <its own profile>'s console" on its OWN row - a shadow of
        yourself shows the stores you are already looking at. This PC's row carries no shadow button. */
+    if (isMe && vault) return '<div class="fleet-open-eyes">' + vault + '</div>';   /* his row: what the others see of him */
     if (isMe) return '';
     var owner = _fleetRosterOwner(m);
     var eyes = '<svg class="fleet-hd-svg" viewBox="0 0 44 18" aria-hidden="true">'
@@ -28078,7 +28096,7 @@ function escC(s) {
         + ' aria-label="no roster profile - no console to see">'
         + eyes + '</button></div>';   /* REG-2768 - the eyes alone, the words in its title */
     }
-    return '<div class="fleet-open-eyes"><button type="button" class="fleet-hd-eyes" data-roster-owner="' + escC(owner) + '"'
+    return '<div class="fleet-open-eyes">' + vault + '<button type="button" class="fleet-hd-eyes" data-roster-owner="' + escC(owner) + '"'
       + ' title="' + escC('open ' + owner + '\u2019s console, read only') + '"'
       + ' aria-label="' + escC('see ' + owner + '\u2019s console') + '"'
       + ' onclick="event.stopPropagation();window._shadowOpen(this.getAttribute(\'data-roster-owner\'))">'
@@ -29064,6 +29082,7 @@ function escC(s) {
           : 'not published';
         var sig = _rosterSig(row);
         return '<button type="button" class="roster-person" data-owner="' + esc(name) + '">' + esc(name) + ' · ' + esc(age)
+          + (row && row.published === true && window._rosterVaultHtml ? window._rosterVaultHtml(row.vaultLine, 'roster-vault') : '')   /* #250 (REG-3122) */
           + (sig ? '<span class="roster-sig ' + esc(sig.cls) + '">' + esc(sig.words) + '</span>' : '') + '</button>';
       }).join('');
       box.scrollTop = 0;
