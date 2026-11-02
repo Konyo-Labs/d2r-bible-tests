@@ -37,6 +37,35 @@ import route_totals as RT  # noqa: E402
 KEYS = ("runeword", "set", "unique")
 
 
+def _fn_through_outdent(src, start):
+    """The function that begins at start, through the last line indented under its def.
+
+    Both ends are real: the def line, and the next line that is indented no deeper.
+    A fixed character count is a guess about how long the function stays.
+    """
+    line_start = src.rfind("\n", 0, start) + 1
+    def_indent = start - line_start
+    pos = src.find("\n", start)
+    if pos < 0:
+        return src[start:]
+    pos += 1
+    end = len(src)
+    while pos < len(src):
+        nxt = src.find("\n", pos)
+        if nxt < 0:
+            nxt = len(src)
+        line = src[pos:nxt]
+        if line.strip():
+            ind = len(line) - len(line.lstrip(" "))
+            if ind <= def_indent:
+                end = pos
+                break
+        pos = nxt + 1 if nxt < len(src) else len(src)
+        if nxt == len(src):
+            break
+    return src[start:end]
+
+
 RED_PROOF = [
     {
         "why": "HAND-WRITTEN, sandbox-verified. This law asserts a number AGREES across surfaces, "
@@ -138,14 +167,14 @@ class L1_OneProducer(unittest.TestCase):
         app = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
         i = app.find("def _chron_total(")
         self.assertGreater(i, 0, "the fleet card no longer has a shared unique denominator")
-        body = app[i:i + 700]
+        body = _fn_through_outdent(app, i)
         self.assertIn('total("unique")', body)
         self.assertNotIn("chronTotal", body)
         corr = io.open(os.path.join(HERE, "corroborate.py"), encoding="utf-8").read()
         mark = corr.find('fleet-divides-by-the-board')
         j = corr.rfind("def right():", 0, mark)
         self.assertGreater(j, 0, "the fleet invariant no longer has a right-hand reader")
-        right = corr[j:j + 700]
+        right = _fn_through_outdent(corr, j)
         self.assertIn('total("unique")', right)
         ui = io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8",
                      errors="replace").read()

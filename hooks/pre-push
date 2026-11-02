@@ -434,8 +434,13 @@ except Exception:
   fi
   if [ -n "$_prev_ver" ] && [ "$_prev_ver" != "$_this_ver" ]; then
     # 2026-11-02. He waived the second-family look on every ship until he asks for it again.
-    # The look stays owed. This line must not say the eye looked.
-    echo "pre-push: [$(_pp_el)] second eye on $_prev_ver is waived for now, by order. The look stays owed."
+    # The look stays owed. The stage stays in the hook, bound 30, and the command exits 0.
+    # It prints the waiver. It does not look, and it does not block.
+    if ! gate_run "second-eye" "echo second eye waived" 30 -- \
+         bash -c "echo \"pre-push: second eye on $_prev_ver is waived for now, by order. The look stays owed.\""; then
+      echo "pre-push: [$(_pp_el)] ❌ second-eye stage did not finish — push blocked."
+      exit 1
+    fi
   fi
   # ⚠⚠ 2026-09-28 — AN UNBUMPED PUSH OF A SURFACE HE CAN SEE IS REFUSED. The block above asks for the second
   # eye only when the version CHANGES, so a push that never bumps skips the look for ever - and his console keeps

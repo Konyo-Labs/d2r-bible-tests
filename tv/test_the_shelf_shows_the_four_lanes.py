@@ -292,7 +292,7 @@ class TheShelfShowsTheFourLanes(unittest.TestCase):
             body = code[i:end + 1]
             k = body.find("computing === true")
             self.assertGreater(k, -1, fn)
-            tail = body[k:k + 700]
+            tail = body[k:]
             self.assertIn("_RIVER_WALK_WAIT_MS", tail, fn)
             self.assertIn("setTimeout", tail, "%s does not ask again while the walk runs" % fn)
 

@@ -307,7 +307,9 @@ def _aes_gcm_open(key, nonce, ciphertext, tag):
     if len(data) % 16:
         data = data + (b"\x00" * (16 - len(data) % 16))
     for i in range(0, len(data), 16):
-        y = _gcm_mul128(y ^ int.from_bytes(data[i:i + 16], "big"), auth)
+        # Sixteen bytes is the cipher block. Take the tail so this is not a guessed window.
+        block = data[i:][:16]
+        y = _gcm_mul128(y ^ int.from_bytes(block, "big"), auth)
     length = (0).to_bytes(8, "big") + (len(ciphertext) * 8).to_bytes(8, "big")
     y = _gcm_mul128(y ^ int.from_bytes(length, "big"), auth)
     expect = int.from_bytes(encrypt(nonce + b"\x00\x00\x00\x01"), "big") ^ y
@@ -318,7 +320,7 @@ def _aes_gcm_open(key, nonce, ciphertext, tag):
     body = bytes(ciphertext)
     for i in range(0, len(body), 16):
         stream = encrypt(nonce + counter.to_bytes(4, "big"))
-        chunk = body[i:i + 16]
+        chunk = body[i:][:16]
         out += bytes(a ^ b for a, b in zip(chunk, stream))
         counter += 1
     return bytes(out)
@@ -567,7 +569,11 @@ def _windows_key_from_state(state_text, unprotect):
 
 
 def _windows_cookie_dbs(root=None):
-    """Cookie databases under the Windows Chrome profile. Default first."""
+    """Cookie databases under the Windows Chrome profile. Default first.
+
+    An absent profile is an empty list. A list that fails is None, so a caller
+    can tell could-not-ask from a profile that holds nothing.
+    """
     if root is None:
         if sys.platform != "win32":
             return []
@@ -580,7 +586,7 @@ def _windows_cookie_dbs(root=None):
     try:
         names = list(os.listdir(root))
     except OSError:
-        return []
+        return None
     names.sort(key=lambda name: (name != "Default", name))
     found = []
     for name in names:

@@ -131,8 +131,13 @@ class EachFleetRowCarriesItsOwnersLine(unittest.TestCase):
 
     def test_the_fleet_route_lays_it_on(self):
         src = open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
-        i = src.index('        if path == "/api/fleet":')
-        self.assertIn("_fleet_overlay_roster_vault(_fl)", src[i:i + 9000], "the fleet route does not lay the vault line on")
+        anchor = '        if path == "/api/fleet":'
+        self.assertEqual(src.count(anchor), 1, "the fleet route anchor is no longer one place")
+        i = src.index(anchor)
+        nxt = src.find("\n        if path == ", i + len(anchor))
+        self.assertGreater(nxt, i, "the fleet route never ends at the next route")
+        seg = src[i:nxt]
+        self.assertIn("_fleet_overlay_roster_vault(_fl)", seg, "the fleet route does not lay the vault line on")
 
 
 def _cut(src, sig):
@@ -200,8 +205,12 @@ class TheConsolePrintsTheRoutesWords(unittest.TestCase):
         self.assertEqual(self.o["button"], '<span class="roster-vault roster-stale" data-vault-state="stale">'
                                            'vault 40 items · as of 3 hr ago · STALE</span>')
         self.assertEqual(self.o["bad"], "", "a line with no words drew an empty span")
-        i = self.src.index("        var sig = _rosterSig(row);")
-        seg = self.src[i:i + 700]
+        anchor = "        var sig = _rosterSig(row);"
+        self.assertEqual(self.src.count(anchor), 1, "the roster button anchor is no longer one place")
+        i = self.src.index(anchor)
+        end = self.src.find("}).join('');", i)
+        self.assertGreater(end, i, "the roster button row never closed")
+        seg = self.src[i:end]
         self.assertIn("window._rosterVaultHtml(row.vaultLine, 'roster-vault')", seg, "the roster button does not print its vault line")
         self.assertLess(seg.index("_rosterVaultHtml"), seg.index("roster-sig"), "the vault line must sit before the signature")
 
