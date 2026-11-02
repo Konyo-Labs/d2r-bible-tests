@@ -56,14 +56,19 @@ def _lock_path(repo=None):
 
 
 def _gate_lock_held(repo=None):
-    """-> (held, who). `held` is None when the question could not be asked at all."""
+    """-> (held, who). `held` is None when the question could not be asked at all.
+
+    A lock file that is not there is a measurement: nobody holds it. That answer does not
+    need fcntl. fcntl is asked only once a file exists, because that is the moment a holder
+    might be inside it. A missing module with a present file stays UNKNOWN.
+    """
+    p = _lock_path(repo)
+    if not os.path.exists(p):
+        return False, ""
     try:
         import fcntl
     except Exception:
         return None, "fcntl is unavailable on this platform, so the gate lock cannot be asked"
-    p = _lock_path(repo)
-    if not os.path.exists(p):
-        return False, ""
     try:
         fh = open(p, "a+")
     except Exception as e:
@@ -206,15 +211,46 @@ def _is_hook_invocation(cmd):
     return True                          # unknown leader -> fail CLOSED
 
 
+def _windows_command_lines():
+    """Process id and command line on Windows. -> [str] | None
+
+    pgrep is not on that machine. PowerShell's process list is. A non-zero exit is
+    UNKNOWN, never an empty tree.
+    """
+    script = (
+        "Get-CimInstance Win32_Process | "
+        "ForEach-Object { '{0} {1}' -f $_.ProcessId, $_.CommandLine }"
+    )
+    r = subprocess.run(
+        ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
+    )
+    if r.returncode != 0:
+        return None
+    return (r.stdout or "").splitlines()
+
+
+def _command_lines():
+    """-> [str] | None. None means the list could not be asked."""
+    if sys.platform == "win32":
+        return _windows_command_lines()
+    r = subprocess.run(
+        ["pgrep", "-fl", "hooks/pre-push|git"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
+    )
+    return (r.stdout or "").splitlines()
+
+
 def _prepush_running(repo=None):
-    """-> (running, detail). None when pgrep could not be asked — never False on failure."""
+    """-> (running, detail). None when the process list could not be asked — never False on failure."""
     try:
-        r = subprocess.run(["pgrep", "-fl", "hooks/pre-push|git"],
-                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
+        lines = _command_lines()
     except Exception as e:
-        return None, "pgrep could not be asked (%s)" % type(e).__name__
+        return None, "the process list could not be asked (%s)" % type(e).__name__
+    if lines is None:
+        return None, "the process list could not be asked"
     hits = []
-    for line in (r.stdout or "").splitlines():
+    for line in lines:
         line = line.strip()
         if not line:
             continue

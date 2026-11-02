@@ -34,6 +34,7 @@ import io
 import os
 import sys
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -260,6 +261,40 @@ class AContinuationLineIsNotAProcess(unittest.TestCase):
         running, why = self._run("4242 bash hooks/pre-push origin https://example.invalid/repo.git\n")
         self.assertIs(True, running)
         self.assertIn("4242", why)
+
+    def test_windows_reads_its_own_process_list(self):
+        """Dean's machine has no pgrep. A quiet Windows process list is free, and a hook line is busy."""
+        quiet = ["100 C:\\Windows\\System32\\powershell.exe",
+                 "200 pythonw.exe tv\\control_app.py --open --background"]
+        with mock.patch("tree_busy.sys.platform", "win32"), \
+             mock.patch("tree_busy._windows_command_lines", return_value=quiet):
+            running, detail = TB._prepush_running()
+        self.assertIs(False, running, detail)
+        busy = quiet + ["300 bash hooks/pre-push origin https://example.invalid/repo.git"]
+        with mock.patch("tree_busy.sys.platform", "win32"), \
+             mock.patch("tree_busy._windows_command_lines", return_value=busy):
+            running, detail = TB._prepush_running()
+        self.assertIs(True, running)
+        self.assertIn("300", detail)
+
+    def test_a_missing_lock_file_is_free_without_fcntl(self):
+        """No lock file is a measurement. It does not wait on fcntl, which Windows does not have."""
+        with mock.patch("tree_busy.os.path.exists", return_value=False):
+            held, who = TB._gate_lock_held()
+        self.assertIs(False, held)
+        self.assertEqual(who, "")
+
+    def test_a_present_lock_without_fcntl_stays_unknown(self):
+        real = __import__
+        def boom(name, *a, **k):
+            if name == "fcntl":
+                raise ImportError("no fcntl")
+            return real(name, *a, **k)
+        with mock.patch("tree_busy.os.path.exists", return_value=True), \
+             mock.patch("builtins.__import__", boom):
+            held, who = TB._gate_lock_held()
+        self.assertIsNone(held)
+        self.assertIn("fcntl", who)
 
 
 RED_PROOF = [
