@@ -18,13 +18,13 @@ import vault_page_node as VPN  # noqa: E402
 ITEMS = ["Harlequin Crest", "Arachnid Mesh", "Tal Rasha's Guardianship", "Grief", "Enigma", "Hellfire Torch",
          "Annihilus", "Monarch", "Ber Rune",
          # v3855 C4 - a socketed item, and one item filed on EVERY mule of the roster (MULE_ITEM)
-         "Socketed Helm (2os)", "Guillaume's Face", "Windforce", "Stone of Jordan", "Spirit", "Gheed's Fortune",
+         "Socketed Helm (2os)", "Guillaume's Face", "Windforce", "Nagelring", "Spirit", "Gheed's Fortune",
          "Skin of the Vipermagi", "Herald of Zakarum"]
 KEEP = {"Small Charm of Balance": {"q": "magic", "base": "Small Charm"}, "Doom Spiral": {"q": "rare", "base": "Ring"},
         "Ruby Jewel of Fervor": {"q": "magic", "base": "Jewel"}, "Grand Charm of Vita": {"q": "magic", "base": "Grand Charm"}}
 #: v3855 C4 - every mule of DEFAULT_ROSTER, and the item filed on it (the Shared Stash and the keeper lockers by their rule)
 MULE_ITEM = {"sets-major": "Tal Rasha's Guardianship", "sets-rest": "Guillaume's Face", "uni-weap": "Windforce",
-             "uni-armor": "Arachnid Mesh", "uni-small": "Stone of Jordan", "runewords": "Spirit", "bases": "Monarch",
+             "uni-armor": "Arachnid Mesh", "uni-small": "Nagelring", "runewords": "Spirit", "bases": "Socketed Helm (2os)",   # the bases locker files SOCKETED items; a bare Monarch stays loose
              "magic-rare": "Doom Spiral", "charms": "Gheed's Fortune", "shared": "Annihilus", "dupes": "Skin of the Vipermagi",
              "wip": "Herald of Zakarum"}
 ASSIGN = dict((n, m) for m, n in MULE_ITEM.items() if m not in ("magic-rare", "shared"))
@@ -41,7 +41,7 @@ function homes(){ var o = {}; NAMES.forEach(function(n){ try { o[n] = JSON.strin
 function pieces(html, open){
   var out = {}, parts = String(html).split(open);
   for (var k = 1; k < parts.length; k++){
-    var p = parts[k], m = /data-(?:vault-item|magic-find|arttip)="([^"]+)"/.exec(p.slice(0, 900)) || /title="([^"(]+) \(/.exec(p.slice(0, 600));
+    var p = parts[k], m = /data-(?:vault-item|magic-find|arttip|key)="([^"]+)"/.exec(p.slice(0, 900)) || /title="([^"(]+) \(/.exec(p.slice(0, 600));
     if (m){ var end = p.indexOf('<div class="vd-item'); out[unq(m[1])] = end > 0 ? p.slice(0, end) : p.slice(0, 4000); }
   }
   return out;
