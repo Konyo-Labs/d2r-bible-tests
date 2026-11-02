@@ -23058,7 +23058,7 @@ window._lockMark = function(isOpen, px, label){
     } else stashed = 'stashed UNKNOWN';
     var nOwn = (Array.isArray(s.frames) ? s.frames : []).slice(0, 3).filter(function(f){ return f && typeof f.jpg === 'string' && _SSV_B64.test(f.jpg); }).length;
     var playOne = (typeof ix === 'number' && nOwn)
-      ? '<button type="button" class="ssv-play ssv-play-one" data-ssv-ix="' + ix + '" onclick="window._shadowSessionsPlay&&window._shadowSessionsPlay(' + ix + ')">▶ PLAY this session</button>'
+      ? '<button type="button" class="ssv-play-one ssv-play" data-ssv-ix="' + ix + '" onclick="window._shadowSessionsPlay&&window._shadowSessionsPlay(' + ix + ')">▶ PLAY this session</button>'
       : '<span class="ssv-why">no served frame to play for this session</span>';
     var facts = 'playtime ' + (play || 'UNKNOWN') + ' · AFK time ' + (away || 'UNKNOWN') + ' · ' + chron + ' · ' + farm;
     var imgs = [], bad = 0;

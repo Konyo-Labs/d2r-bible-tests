@@ -648,9 +648,10 @@ class ShadowDrawsTheirConsole(unittest.TestCase):
             self.assertEqual(got["decoded"], [True], "%s: the key frame did not decode as a picture" % door)
             # v3849 (02240e6c7, his ruling): the list plays the served frames - PLAY and its speed are viewing controls,
             # not writes; beyond them and the close there is nothing to press
-            self.assertEqual((got["buttons"], got["writes"]), (3, 0), "%s: the list carries a control beyond close/play/speed"
+            # v3855: each session with a served frame adds its own PLAY (ssv-play-one); the fixture has one such row
+            self.assertEqual((got["buttons"], got["writes"]), (4, 0), "%s: the list carries a control beyond close/play/speed"
                              % door)
-            self.assertEqual(got["kinds"], ["ssv-play", "ssv-speed", "ssv-x"], "%s: %r" % (door, got["kinds"]))
+            self.assertEqual(got["kinds"], ["ssv-play", "ssv-play-one", "ssv-speed", "ssv-x"], "%s: %r" % (door, got["kinds"]))
         self.assertTrue(self.ssv["closed"], "the press on the list's close left it open")
         frames = [h for h in self.ssv_hits if "frames=" in h[1]]
         self.assertEqual([(h[0], h[1]) for h in frames], [("GET", "/api/roster-cache?frames=" + OWNER)] * 2,
