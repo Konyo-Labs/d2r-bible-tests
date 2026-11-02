@@ -5,7 +5,8 @@
     "items": [
       "each shadow session has its own PLAY that plays only that session's frames in the theatre player",
       "a shadow session says in game, in town and out of town with percentages, the chronicles read and what was stashed, UNKNOWN when its reads never said",
-      "AFK is one stretch until the first real activity: idle in town for over 3 minutes counts as AFK, a short stash or shop visit stays town, and a stretch crossing two sessions is shared between them and says so"
+      "AFK is one stretch until the first real activity: idle in town for over 3 minutes counts as AFK, a short stash or shop visit stays town, and a stretch crossing two sessions is shared between them and says so",
+      "each console reads who played and in which game from its own reads: the login screen, the character panel or the avatar names the character, Morph1..Morph7 is one farming run, the game password is never kept, and disagreeing reads say UNKNOWN"
     ]
   },
   {
