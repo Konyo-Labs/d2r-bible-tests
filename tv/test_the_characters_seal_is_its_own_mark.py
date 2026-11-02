@@ -46,7 +46,8 @@ class TheSealIsOneSource(unittest.TestCase):
 
 class TheOldBadgesAreGone(unittest.TestCase):
     def test_no_tier_text_badge_in_the_room(self):
-        r = _room(_page())
+        # the Vault's judged row keeps its badges in _TIER_FACE (REG-3110); the room itself draws _CHX_WORD
+        r = "\n".join(l for l in _room(_page()).splitlines() if not l.lstrip().startswith("var _TIER_FACE = "))
         for w in ("'🔒 HARDENED'", "'✓ PROVEN'", "'👁 WATCHED'", "👁 WATCHED →", "window._cbTierSay(t)"):
             self.assertNotIn(w, r, "the Characters room still draws %r" % w)
 
@@ -88,12 +89,12 @@ RED_PROOF = [
     {"why": "the worn slot goes back to the tier words",
      "file": "bible.html",
      "find": "_chxSeal(s.tier, s.sightings, s.trials, s.ts) + ' ' + esc(s.item)\n",
-     "replace": "esc(s.item) + ' · ' + esc(_TIER_FACE[s.tier] || 'tier UNKNOWN')\n",
+     "replace": "esc(s.item) + ' · ' + esc(_CHX_WORD[s.tier] || 'tier UNKNOWN')\n",
      "matches": 1},
     {"why": "the seal map gets the lock emoji back",
      "file": "bible.html",
-     "find": "  var _TIER_FACE = { HARDENED: 'Confirmed', PROVEN: 'Not confirmed yet', WATCHED: 'Not confirmed yet' };",
-     "replace": "  var _TIER_FACE = { HARDENED: '🔒 HARDENED', PROVEN: '✓ PROVEN', WATCHED: '👁 WATCHED' };",
+     "find": "  var _CHX_WORD = { HARDENED: 'Confirmed', PROVEN: 'Not confirmed yet', WATCHED: 'Not confirmed yet' };",
+     "replace": "  var _CHX_WORD = { HARDENED: '🔒 HARDENED', PROVEN: '✓ PROVEN', WATCHED: '👁 WATCHED' };",
      "matches": 1},
 ]
 

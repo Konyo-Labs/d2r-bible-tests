@@ -11701,7 +11701,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     var yes = tier === 'HARDENED', bars = _bars(), seen = _ago(lastTs);
     var n = (typeof looks === 'number' && typeof trials === 'number') ? looks + ' of ' + trials + ' looks'
           : (typeof looks === 'number' ? _looks(looks) : 'looks UNKNOWN');
-    var words = !tier || !_TIER_FACE[tier] ? 'Tier UNKNOWN · ' + n
+    var words = !tier || !_CHX_WORD[tier] ? 'Tier UNKNOWN · ' + n
       : yes ? 'Confirmed · ' + n + (seen ? ' · last seen ' + seen : '')
       : 'Not confirmed yet · ' + n + ' · locks at ' + (bars ? bars.hardened : 'the HARDENED bar');
     return '<span class="chx-seal' + (big ? ' chx-seal-big' : '') + '" data-seal="' + (yes ? 'yes' : 'not') + '" role="img" aria-label="'
@@ -11719,7 +11719,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
      that could not read the ledger says UNKNOWN. Planning by hand stays in Simulation builds (+ New character). */
   var _SLOT_WORD = { helm: 'Helm', amulet: 'Amulet', weapon: 'Weapon', torso: 'Armor', 'off-hand': 'Off-hand',
                      gloves: 'Gloves', ring1: 'Ring 1', belt: 'Belt', ring2: 'Ring 2', boots: 'Boots' };
-  var _TIER_FACE = { HARDENED: 'Confirmed', PROVEN: 'Not confirmed yet', WATCHED: 'Not confirmed yet' };   /* v3855 item E: plain words; the seal is the mark */
+  var _TIER_FACE = { HARDENED: '🔒 HARDENED', PROVEN: '✓ PROVEN', WATCHED: '👁 WATCHED' };   /* the Vault's judged row keeps its badges */
+  var _CHX_WORD = { HARDENED: 'Confirmed', PROVEN: 'Not confirmed yet', WATCHED: 'Not confirmed yet' };   /* v3855 item E: the Characters tab's plain words; the seal is the mark */
   function _gearOf(t){
     var L = (typeof window._cbLearnedNow === 'function') ? window._cbLearnedNow() : null;
     if (!L || !Object.prototype.hasOwnProperty.call(L, 'gear')) return { state: 'unknown', why: 'this console has not said what its characters wear' };
@@ -11776,7 +11777,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     if (!row) return esc(cell) + ' is not a cell on this character.';
     var word = esc(_SLOT_WORD[row.slot] || row.slot);
     if (!row.item) return word + ' · not seen yet';
-    return word + ' · ' + esc(row.item) + ' · ' + esc(_TIER_FACE[row.tier] || 'tier UNKNOWN') + ' · ' + _looks(row.sightings);
+    return word + ' · ' + esc(row.item) + ' · ' + esc(_CHX_WORD[row.tier] || 'tier UNKNOWN') + ' · ' + _looks(row.sightings);
   }
   /* REG-1887 — ONE DOLL. The ten cells are drawn by the Vault's doll (window._mpDollHtml, MULE_DOLL_SLOTS - the one
      geometry), asked by the cell a look records (equipped:helm ...). This side says only what each cell holds and opens
@@ -11793,7 +11794,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     /* the same chip, opened with this worn item's own looks: the gear ledger's frames, its tier and last seen */
     var key = String(t.key || '') + '|' + String(s.slot || '');
     _chxWorn[key] = { who: 'seen worn by ' + (t.name || 'this character') + ' (' + (_SLOT_WORD[s.slot] || s.slot) + ')',
-                      tierSay: (_TIER_FACE[s.tier] || 'tier UNKNOWN') + ' · ' + _looks(s.sightings), lastTs: s.ts || null,
+                      tierSay: (_CHX_WORD[s.tier] || 'tier UNKNOWN') + ' · ' + _looks(s.sightings), lastTs: s.ts || null,
                       looks: (Array.isArray(s.frames) ? s.frames : []).slice().reverse().map(function(f){ return { frame: f, session: s.reel || null }; }) };
     return String(chip).replace(/window\._vaultEvidenceOpen\(('(?:[^'\\]|\\.)*')\)/, function(_m, nm){
       return 'window._vaultEvidenceOpen(' + nm + ',window._chxWornOf(\'' + _chxJs(key) + '\'))'; });
@@ -11814,7 +11815,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       return { e: { name: s.item }, attrs: attrs, picked: _chxCell === cell,
                after: ev ? '<span class="chx-ev-at" style="left:calc(' + ((+row[3] || 0) + (+row[5] || 0) - 14) + '*var(--du));top:calc('
                  + (+row[4] || 0) + '*var(--du))">' + ev + '</span>' : '',
-               say: word + ' · ' + s.item + ' · ' + (_TIER_FACE[s.tier] || 'tier UNKNOWN') + ' · ' + _looks(s.sightings) };
+               say: word + ' · ' + s.item + ' · ' + (_CHX_WORD[s.tier] || 'tier UNKNOWN') + ' · ' + _looks(s.sightings) };
     }, { label: 'what the game showed ' + nm + ' wearing',
          /* the doll's 322-unit width fits the window at a phone's width too: a smaller unit, never a cut-off hand */
          du: Math.max(0.6, Math.min(1, ((window.innerWidth || 1440) - 72) / 322)) });

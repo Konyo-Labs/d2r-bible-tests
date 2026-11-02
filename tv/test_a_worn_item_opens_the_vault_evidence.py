@@ -31,7 +31,7 @@ def _cut(src, start, end="\n  }\n"):
     return src[i:src.index(end, i) + len(end)]
 
 
-STUBS = ("var _SLOT_WORD = {'off-hand': 'Off-hand'}, _TIER_FACE = {WATCHED: 'Not confirmed yet'};"
+STUBS = ("var _SLOT_WORD = {'off-hand': 'Off-hand'}, _TIER_FACE = {WATCHED: '👁 WATCHED'}, _CHX_WORD = {WATCHED: 'Not confirmed yet'};"
          " function _looks(n){ return n + (n === 1 ? ' look' : ' looks'); }"
          " function _chxJs(s){ return String(s).replace(/'/g, \"\\\\'\"); }\n")
 CHIP = ("window._vaultEvidenceChip = function(n, c){ return '<button class=\"' + c + '\" data-n=\"' + n + '\"'"
