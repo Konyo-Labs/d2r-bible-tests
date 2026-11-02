@@ -553,7 +553,7 @@ RED_PROOF = [
     {
         "why": "REG-1874 - the page drops what a zero-match size is",
         "file": "bible.html",
-        "find": "((typeof r.seen === 'string' && r.seen) ? ' <span data-seen>' + esc(r.seen) + '.</span>' : '')",
+        "find": "((typeof r.seen === 'string' && r.seen) ? '<span data-seen>' + esc(r.seen) + '.</span>' : '')",
         "replace": "''",
         "matches": 1,
     },

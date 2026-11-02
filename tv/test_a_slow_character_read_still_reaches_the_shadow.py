@@ -242,8 +242,8 @@ class TheCharactersRoomSaysItIsAsking(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-2688 - an answer over the cap drops the whole character list again",
      "file": "tv/console_snapshot.py",
-     "find": "API_OPTIONAL = {\"chars_learned\": (\"surfaceWitnesses\", \"gear\", \"lobbyBySize\", \"sessions\")}",
-     "replace": "API_OPTIONAL = {}\n", "matches": 1},
+     "find": 'API_OPTIONAL = {"chars_learned": ("surfaceWitnesses", "gear", "lobbyBySize", "identity", "sessions")}',
+     "replace": 'API_OPTIONAL = {}\n', "matches": 1},
     {"why": "REG-2688 - what was left out to fit is not said in the upload state",
      "file": "tv/control_app.py",
      "find": "            state[\"apiTrimmed\"] = {k: (v if v is not None else",

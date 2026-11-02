@@ -813,8 +813,8 @@ RED_PROOF = [
     {
         "why": "#174 v-B2 integration - the in-game box ignores its floor and rises over the mule window's header",
         "file": "bible.html",
-        "find": "      if (y < floor) y = r.bottom + 8;\n",
-        "replace": "      if (y < 8) y = r.bottom + 8;\n",
+        "find": '    if (r.top - th - g >= floor) return',
+        "replace": '    if (r.top - th - g >= 8) return',
         "matches": 1,
     },
     {

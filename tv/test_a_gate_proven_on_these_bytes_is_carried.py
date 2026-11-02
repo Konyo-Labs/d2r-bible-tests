@@ -1037,7 +1037,7 @@ class TheProofRemembersWhatTheGateRead(unittest.TestCase):
 
     def test_no_trace_a_lost_child_and_an_old_row_all_run(self):
         root, led = self._tree({"t_mod.py": "import helper_gl\nprint('OK')\n", "helper_gl.py": "X = 1\n",
-                                "t_sh.py": "import subprocess\nsubprocess.run(['true'])\n"})
+                                "t_sh.py": "import subprocess\nsubprocess.run(['uname'])  # not a machine meter: REG-3124 made true inert\n"})
         gate = _gate(root, "t_mod.py")
         book = _open(led)
         self.assertFalse(book.record(gate, True), "a PASS with no trace of its reads was stored")
@@ -1697,8 +1697,8 @@ RED_PROOF = [
     {
         "why": "REG-2293 r5: lsof handed a file in the checkout is waved through as a process-table probe",
         "file": "gate_trace/sitecustomize.py",
-        "find": "                rel(a) is not None for a in args[1:] if \"/\" in a):\n",
-        "replace": "                False for a in args[1:] if \"/\" in a):\n",
+        "find": '        if head == "lsof" and not any(\n                rel(a) is not None for a in args[1:] if "/" in a):\n',
+        "replace": '        if head == "lsof" and not any(\n                False for a in args[1:] if "/" in a):\n',
         "matches": 1,
     },
     {
