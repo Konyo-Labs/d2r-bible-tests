@@ -17803,6 +17803,8 @@ def _triage_for_wire():
             "owedForS": s.get("owedForS"), "waitS": s.get("waitS"), "ticks": s.get("ticks"),
             # 2026-09-28 — an UNBROKEN run of 'playing' refusals: how long it has stood aside for his game
             "playingForS": s.get("playingForS"),
+            # v3855 - why D2R.exe did NOT refuse the last tick (a game left open), or None
+            "leftOpenWhy": _wire_text((_TRIAGE_STALE_PLAY or {}).get("why"), 200) or None,
             "skips": {str(k): int(v) for k, v in (s.get("skips") or {}).items()
                       if _WIRE_KEY_RX.match(str(k)) and isinstance(v, int)}}
 
@@ -34800,6 +34802,32 @@ def _triage_max_cpu():
     return float(_TRIAGE_MAX_CPU)
 
 
+#: v3855 - A D2R.EXE NOBODY HAS TOUCHED FOR HOURS IS A GAME LEFT OPEN, NOT A GAME BEING PLAYED. Dean's console read
+#: "he is playing - D2R.exe is running" for ~17 h without a break (playingForS 63921), so 151 reels waited and his river
+#: starved. Nobody plays D2R for this long with no key or mouse input, so past this bar of MEASURED input idleness the
+#: process alone no longer refuses triage. An idle time that cannot be read changes nothing (he stays "playing").
+TRIAGE_STALE_PLAY_IDLE_S = 3 * 3600
+
+
+def stale_play_overrides(playing, idle_s, bar_s=None):
+    """v3855 - may a 'D2R.exe is running' answer be read as a game left open? -> (bool, why). Pure.
+
+    True only when the probe said True AND this PC's keyboard/mouse idle time was READ and is at least the bar."""
+    bar = TRIAGE_STALE_PLAY_IDLE_S if bar_s is None else bar_s
+    if playing is not True:
+        return False, "the play probe did not say playing"
+    try:
+        idle = None if idle_s is None or isinstance(idle_s, bool) else float(idle_s)
+    except (TypeError, ValueError):
+        idle = None
+    if idle is None or idle != idle or idle < 0:
+        return False, "how long this PC has been idle could not be read, so he stays playing"
+    if idle < bar:
+        return False, "this PC was used %d min ago, so he is playing" % int(idle // 60)
+    return True, ("D2R.exe is open but nobody has touched this PC for %.1f h (bar %.0f h) - a game left open, "
+                  "not played, so triage walks the reels" % (idle / 3600.0, bar / 3600.0))
+
+
 def _d2r_running_here():
     """Is D2R.exe running ON THIS MACHINE? -> (True | False | None, how)
 
@@ -34828,6 +34856,9 @@ def _d2r_running_here():
 #: nothing next to the OCR it interrupts. Read at CALL time, so a law can shorten it.
 _TRIAGE_ABORT_EVERY_FRAMES = 100
 
+#: v3855 - the last tick's "game left open" sentence (None when D2R.exe was not overriding), for Fleet and the doctor.
+_TRIAGE_STALE_PLAY = {"why": None}
+
 
 def _triage_walk_should_stop():
     """Asked by survey() mid-walk: has he started playing? -> None (walk on) | {"key", "why"}
@@ -34840,6 +34871,8 @@ def _triage_walk_should_stop():
         playing, how = _d2r_running_here()
     except Exception as e:
         playing, how = None, "the process probe raised %s" % type(e).__name__
+    if playing is True and stale_play_overrides(playing, _os_input_idle_s())[0]:
+        playing = False                      # v3855 - still a game left open: the walk goes on
     if playing is True:
         return {"key": "playing",
                 "why": "he started playing mid-walk - D2R.exe is now running on this machine (%s); "
@@ -35292,6 +35325,12 @@ def _retro_triage_tick_once():
     # answer was False on every Windows PC and triage walked reels beside Dean's NATIVE game. A probe
     # that cannot run is not "he is not playing". See _d2r_running_here.
     _playing, _how = _d2r_running_here()
+    _stale_left, _stale_why = stale_play_overrides(_playing, _os_input_idle_s() if _playing is True else None)
+    if _stale_left:
+        _playing = False
+        _TRIAGE_STALE_PLAY["why"] = _stale_why
+    else:
+        _TRIAGE_STALE_PLAY["why"] = None
     if _playing is True:
         return {"ok": False, "key": "playing",
                 "why": "he is playing - D2R.exe is running on this machine (%s); the game owns it, "
