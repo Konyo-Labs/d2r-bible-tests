@@ -36241,7 +36241,25 @@ function _plannerBuiltTip(nm){
   if (!html) return null;
   return { artName: tip.base, desc: html, rich: true, builtBase: true };
 }
-function _arttipResolve(nm){
+/* v3855 C3 (Elad) - ONE CARD RULE FOR HIS TYPED MODS. The zoomed mule window's in-game box led with the mods he typed in Edit
+   mods; the locker's hover card (uniques, set pieces, rares) still printed the catalogue's lines and ranges. Both cards now
+   ask this: his typed mods lead, marked as his (data-mod-manual), and the range lines go once he has typed them. */
+function _typedModsOf(nm){
+  try { var m = (typeof _vaultManualMods === 'function') ? _vaultManualMods(nm) : null; return (m && m.length) ? m.slice() : null; } catch (e) { return null; }
+}
+window._typedModsOf = _typedModsOf;
+function _cardLeadsWithTypedMods(nm, res){
+  var man = _typedModsOf(nm);
+  if (!man || !res || typeof res.desc !== 'string' || res.desc.indexOf('data-mod-manual') >= 0) return res;
+  var block = '<div class="att-man-h">\u270E his mods</div>' + man.map(function(l){ return '<div class="att-aff att-var" data-mod-manual="1">' + String(l).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>'; }).join('');
+  var d = res.desc.replace(/<div class="att-aff att-range" data-mod-range="1">[\s\S]*?<\/div>/g, '');
+  var cut = d.indexOf('<div class="att-aff');
+  d = cut >= 0 ? d.slice(0, cut) + block + d.slice(cut) : d + block;
+  var out = {}; for (var k in res) out[k] = res[k]; out.desc = d; out.rich = true; return out;
+}
+window._cardLeadsWithTypedMods = _cardLeadsWithTypedMods;
+function _arttipResolve(nm){ return _cardLeadsWithTypedMods(nm, _arttipResolveCatalogue(nm)); }
+function _arttipResolveCatalogue(nm){
   var _builtTip = _plannerBuiltTip(nm);
   if (_builtTip) return _builtTip;
   var t = SUNDER_TIP[nm] || (_SUN_BASES[nm] ? SUNDER_TIP[_SUN_BASES[nm]] : null);
@@ -77469,7 +77487,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     if (_ie && _iit && typeof window._cbTipEntry === 'function') entry = window._cbTipEntry(_ie, _iit, null, 'inv');
     else if (_dk) entry = unknown(n, 'this tile’s record is not in the item database this page carries - UNKNOWN');
     /* v3855 - his typed mods (Edit mods) are the item's mods on the card, ahead of any range */
-    try { var _man = (typeof window._vaultManualMods === 'function') ? window._vaultManualMods(n) : null;
+    try { var _man = (typeof window._typedModsOf === 'function') ? window._typedModsOf(n) : null;
       if (_man && _man.length) entry.lines = _man.map(function(l){ return { t: '✎ ' + l, cls: 'd2t-man' }; }).concat((entry.lines || []).filter(function(x){ return !(x && /d2t-r/.test(x.cls || '')); })); } catch (eMan) {}
     if (t){ heldTitle = t; el.setAttribute('data-d2tip-held', '1'); el.removeAttribute('title'); entry.lines = (entry.lines || []).concat([{ t: t, cls: 'd2t-note' }]); }
     window.d2Tip.show(entry, el, { floor: floorOf(el) });
