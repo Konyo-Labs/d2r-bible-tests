@@ -8,7 +8,8 @@
       "AFK is one stretch until the first real activity: idle in town for over 3 minutes counts as AFK, a short stash or shop visit stays town, and a stretch crossing two sessions is shared between them and says so",
       "each console reads who played and in which game from its own reads: the login screen, the character panel or the avatar names the character, Morph1..Morph7 is one farming run, the game password is never kept, and disagreeing reads say UNKNOWN",
       "a shadow session row shows only the answer - who, class and level, and the scenario: a BAAL-numbered game is a Leveling session, Morph1-7 is a Farming run; how it was worked out is in the hover",
-      "the reader now asks for the game name, class, level and avatar class, never the password"
+      "the reader now asks for the game name, class, level and avatar class, never the password",
+      "each in-game character in the Characters room says its sessions, last level seen, time played and AFK, and its Baal leveling vs farming runs"
     ]
   },
   {

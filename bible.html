@@ -11665,7 +11665,13 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     var lv = t.pendingLevel ? ' · level ' + (t.pendingLevel | 0) + ' waits for one more look' : '';
     var seen = _ago(t.lastTs);
     return '<div class="chx-proof" data-tier="' + esc(t.tier || 'UNKNOWN') + '">' + esc(say) + esc(lv)
-      + (seen ? '<span class="chx-proof-when"> · last seen ' + esc(seen) + '</span>' : '') + '</div>';
+      + (seen ? '<span class="chx-proof-when"> · last seen ' + esc(seen) + '</span>' : '') + '</div>'
+      + _idLine(t);
+  }
+  /* v3855 pt1198u - the character's sessions from the reads' identity (answer only; how it is known in the hover) */
+  function _idLine(t){
+    var r = (typeof window._identityCharLine === 'function') ? window._identityCharLine(t && t.name) : null;
+    return r ? '<div class="chx-idt" title="' + esc(r.hover) + '">' + esc(r.say) + '</div>' : '';
   }
   /* #234 step 2 — HIS ASK, 2026-10-01: "i want to see the items slowly appearing based on the character they were
      witnessed in... when i click a mule it shouldnt let me do PLAN BUILD". An in-game card shows what the game showed its
@@ -73750,6 +73756,41 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     return { name: pick.character || null, why: pick.character ? null : String(pick.why || 'UNKNOWN') };
   }
   window._sessionCharacterAt = _sessionCharacterAt;
+  /* v3855 (Elad pt1198u, "routed to where its needed") - THE READS' IDENTITY, ANSWER ONLY. The console's answer carries
+     `identity` (read_identity, built on that console from its own reads): per character its sessions, last level, played
+     and AFK time, and Baal leveling vs farming runs; per item name who found or stashed it, in which game and session.
+     The line is the answer; sources and disagreements go in the hover (title). Unattributed says UNKNOWN. Never a password.
+     -> {say, hover} or null when no console answered (no line at all). */
+  function _idHours(ms){ ms = +ms || 0; var m = Math.round(ms / 60000); return m >= 60 ? (Math.floor(m / 60) + 'h' + (m % 60 ? ' ' + (m % 60) + 'm' : '')) : m + 'm'; }
+  function _idOf(){
+    var L = (typeof window._cbLearnedNow === 'function') ? window._cbLearnedNow() : _cbLearned;
+    return (L && L.identity && typeof L.identity === 'object') ? L.identity : null;
+  }
+  window._identityCharLine = function(name, idt){
+    idt = idt || _idOf();
+    if (!idt || !idt.characters) return null;
+    var c = null, k = _cbFold(name);
+    Object.keys(idt.characters).forEach(function(n){ if (!c && _cbFold(n) === k) c = idt.characters[n]; });
+    if (!c) return { say: 'sessions UNKNOWN', hover: 'no read named ' + String(name || 'this character') + ' on a session' };
+    var parts = [c.sessions + (c.sessions === 1 ? ' session' : ' sessions'),
+                 c.level ? 'last seen level ' + c.level : 'level UNKNOWN',
+                 _idHours(c.playMs) + ' played', _idHours(c.afkMs) + ' AFK'];
+    if (c.leveling || c.farming) parts.push(c.leveling + ' leveling (Baal) · ' + c.farming + ' farming');
+    return { say: parts.join(' · '), hover: 'from this console\'s reads: the session\'s own login / C panel, else who was playing when it began' };
+  };
+  window._identityFoundBy = function(item, idt){
+    idt = idt || _idOf();
+    if (!idt || !idt.finds) return null;
+    var f = idt.finds[String(item == null ? '' : item).trim()];
+    if (!f || !f.character) {
+      var hv = !f ? 'no read of a find or stash named it with a character' : (f.conflict ? 'the reads disagree: ' + [].concat(f.conflict).join(' vs ') : 'nobody was named when it was read');
+      return { say: 'found by UNKNOWN', hover: hv };
+    }
+    var who = f.character + (f.cls ? ' · ' + f.cls + (f.level ? ' ' + f.level : '') : '');
+    var where = f.game ? ' · ' + f.game : (f.sessionId ? ' · session ' + f.sessionId : '');
+    return { say: 'found by ' + who + where,
+             hover: 'sources: ' + ((f.sources || []).join(', ') || 'UNKNOWN') + (f.sessionId ? ' · session ' + f.sessionId : '') };
+  };
   window._sessionCharactersAnswered = function(){ return !!(_cbLearned && _cbLearned.ok === true); };
   /* 2026-09-30 — HIS RULE: "thats a personal tool for each individual console". The page's hand-typed CHARS are HIS
      characters and ship to every PC, so offered as templates they made GrokBot's empty builder open straight onto
