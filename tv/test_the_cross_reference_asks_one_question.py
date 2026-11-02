@@ -173,13 +173,19 @@ class TheCrossReferenceAsksOneQuestion(unittest.TestCase):
         #
         # ⚠ THE FIX IS NOT A skipTest. Skipping would make the venue where it matters most say
         # nothing at all. BOTH BRANCHES ARE THE CONTRACT and both are asserted: with a tally, the
-        # number is his pinned 403 and never the roster length; without one, the answer is None
+        # number is the total the board posted and never the roster length; without one, the answer is None
         # WITH A REASON — never a confident fallback. The second half is the half that actually
         # protects him, because a fallback to 398 is what the whole task existed to kill.
         _has_tally = os.path.exists(os.path.join(HERE, "board_tally.json"))
         n, why = CA._fleet_show_total("uniques")
         if _has_tally:
-            self.assertEqual(403, n, "the shown denominator is not his pinned chronTotal")
+            posted = None
+            try:
+                posted = ((CA.board_tally_load() or {}).get("uniques") or {}).get("total")
+            except Exception:
+                posted = None
+            self.assertEqual(posted, n,
+                             "the shown denominator is not the total the board posted")
             self.assertNotEqual(398, n,
                                 "the shown denominator fell back to the roster length — the exact "
                                 "defect this task removed")

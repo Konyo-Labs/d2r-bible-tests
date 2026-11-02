@@ -123,6 +123,39 @@ class L1_OneProducer(unittest.TestCase):
                 "now, so a different noun is the same defect wearing prose." % (k, by))
 
 
+    def test_the_unique_tally_is_the_file_pin_minus_the_quest_items(self):
+        names = RT.quest_names()
+        pin = RT.file_pin()
+        self.assertEqual(
+            ["Amulet of the Viper", "Staff of Kings", "Horadric Staff",
+             "Hell Forge Hammer", "Khalim's Flail", "Khalim's Will"],
+            names)
+        self.assertIsNotNone(pin)
+        self.assertGreater(pin, len(names))
+        self.assertEqual(RT.total("unique"), pin - len(names))
+        self.assertNotEqual(RT.total("unique"), pin,
+                            "the tally is the file pin again, so the six quest items are back in it")
+
+    def test_the_fleet_card_and_the_corroborator_quote_that_tally(self):
+        app = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
+        i = app.find("def _chron_total(")
+        self.assertGreater(i, 0, "the fleet card no longer has a shared unique denominator")
+        body = app[i:i + 700]
+        self.assertIn('total("unique")', body)
+        self.assertNotIn("chronTotal", body)
+        corr = io.open(os.path.join(HERE, "corroborate.py"), encoding="utf-8").read()
+        mark = corr.find('fleet-divides-by-the-board')
+        j = corr.rfind("def right():", 0, mark)
+        self.assertGreater(j, 0, "the fleet invariant no longer has a right-hand reader")
+        right = corr[j:j + 700]
+        self.assertIn('total("unique")', right)
+        ui = io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8",
+                     errors="replace").read()
+        self.assertNotIn("This card now divides by 403", ui)
+        self.assertNotIn("uniques 403", ui)
+        self.assertIn("six quest items", ui)
+
+
 class L2_TheProducerMovesAllThree(unittest.TestCase):
     """⚠ THE ONLY TEST HERE THAT CAN PROVE THE JOIN. Equality today could be a coincidence — three
     readers that happen to agree is exactly what SETS looked like before this change, and it was
@@ -200,6 +233,44 @@ class L2_TheProducerMovesAllThree(unittest.TestCase):
                         r.get("count"), after,
                         "%s did not follow the producer — it is still reading its own source, so "
                         "the three agreeing today is a coincidence, not a join" % name)
+
+    def _quest_decl(self):
+        import re
+        src = io.open(self.copy, encoding="utf-8").read()
+        m = re.search(r"var\s+_CHRON_QUESTS\s*=\s*\[[^\]]*\]\s*;", src)
+        self.assertIsNotNone(m, "the quest list is not a single declaration, so this test "
+                                "would prove nothing")
+        self.assertEqual(src.count(m.group(0)), 1)
+        return m.group(0)
+
+    def test_adding_a_quest_item_drops_every_unique_surface(self):
+        before = RT.total("unique")
+        self.assertIsNotNone(before)
+        old = self._quest_decl()
+        self.assertTrue(old.endswith("];"))
+        self._bump(old, old[:-2] + ',"Quest Probe"];')
+        after = RT.total("unique")
+        self.assertEqual(after, before - 1, "the tally did not drop when a quest item was added")
+        for mod, name in ((CR, "chronicle_routes"), (FR, "fleet_routes"), (RR, "roster_routes")):
+            rows = _rows(mod)
+            hits = [r for r in rows if RT.canonical(r.get("key")) == "unique"]
+            self.assertEqual(len(hits), 1, "%s has no unique row" % name)
+            self.assertEqual(hits[0].get("count"), after,
+                             "%s did not follow the quest-excluded tally" % name)
+
+    def test_a_missing_quest_list_is_unknown_not_the_file_pin(self):
+        pin = RT.file_pin()
+        self.assertIsNotNone(pin)
+        self._bump(self._quest_decl(), "var _CHRON_QUESTS = [];")
+        self.assertIsNone(RT.total("unique"),
+                          "with no quest list the tally fell back to the file pin")
+        self.assertEqual(RT.file_pin(), pin, "the file pin moved when the quest list was emptied")
+        for mod, name in ((CR, "chronicle_routes"), (FR, "fleet_routes"), (RR, "roster_routes")):
+            rows = _rows(mod)
+            hits = [r for r in rows if RT.canonical(r.get("key")) == "unique"]
+            self.assertEqual(len(hits), 1, "%s has no unique row" % name)
+            self.assertIsNone(hits[0].get("count"),
+                              "%s printed a unique total with no quest list" % name)
 
     def test_an_unreadable_producer_is_UNKNOWN_not_zero(self):
         """L8 — nobody-looked and measured-zero are different facts, all the way to the screen."""

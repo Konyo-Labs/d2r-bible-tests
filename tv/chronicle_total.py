@@ -51,7 +51,8 @@ import os
 import sys
 
 # What the extraction measured. A number here is EVIDENCE with a date on it, not a constant to
-# compute from — bible.html's chronTotal remains the single source the surfaces divide by.
+# compute from. bible.html's chronTotal stays this pin. The tally the surfaces divide by is that
+# pin minus the six quest items, and route_totals plus window.d2rChronTotal are the readers.
 MEASURED = {
     "when": "2026-09-03",
     "source": "data:data/global/excel/uniqueitems.txt, live RotW CASC store",
@@ -123,5 +124,5 @@ if __name__ == "__main__":
         print("MEASURED %s from %s" % (MEASURED["when"], MEASURED["source"]))
         for k in sorted(MEASURED):
             print("   %-24s %s" % (k, MEASURED[k]))
-        print("\n   chronTotal in bible.html is 403 and the game agrees. The 404 recorded in that")
-        print("   file's own comment was a misread of the in-game panel.")
+        print("\n   chronTotal in bible.html is 403 and the game agrees. The tally subtracts the")
+        print("   six quest items. The 404 recorded in that file's comment was a misread.")

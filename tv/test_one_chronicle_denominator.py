@@ -157,8 +157,8 @@ class OneChronicleDenominator(unittest.TestCase):
     def test_the_pinned_total_is_still_403(self):
         """His ruling. If it moves, it moves because he said so, not because a scan drifted."""
         self.assertIn("chronTotal:403", self.code.replace(" ", ""),
-                      "funiScan no longer pins chronTotal at 403 — that is HIS ruling and the "
-                      "denominator every surface now divides by")
+                      "funiScan no longer pins chronTotal at 403. That pin is the game file. "
+                      "The tally surfaces divide by is the pin minus the quest list.")
 
 
 if __name__ == "__main__":

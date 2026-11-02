@@ -715,18 +715,16 @@ def _inv_the_fleet_divides_by_the_same_number_the_board_does():
     A read-only agent traced it afterwards. THIS invariant is the thing that would have said so —
     the reason it exists is that a fix was believed rather than corroborated.
 
-    INDEPENDENCE, which is the whole point of living here: the left side is a LIVE read (the
-    console asking the running board for its counts); the right side is a SOURCE PARSE of the
-    pinned constant in bible.html. Neither can inherit the other's answer — one is a browser eval,
-    the other is a regex over a file on disk. That distinction is what [[feedback-verify-not-proxy]]
-    means, and the audit added in v2390 exists because a previous invariant quietly lost it.
+    INDEPENDENCE, which is the whole point of living here: the left side is the BANKED denominator
+    the beacon published; the right side is the tally route_totals reads out of bible.html (the
+    file pin minus the quest items). Neither can inherit the other's answer. That distinction is
+    what [[feedback-verify-not-proxy]] means, and the audit added in v2390 exists because a
+    previous invariant quietly lost it.
 
     HONEST-ABSENT: a console that cannot be asked, or a board that cannot say, returns None on the
     left and the invariant reports UNMEASURED rather than a pass. A guest world, an unclaimed
     board, a console that is down — none of those are evidence of agreement.
     """
-    import re as _re
-
     def left():
         """The denominator in the BANKED tally on disk — the row the beacon actually publishes.
 
@@ -757,22 +755,24 @@ def _inv_the_fleet_divides_by_the_same_number_the_board_does():
             return None
 
     def right():
-        """The PINNED chronicle total, read from bible.html's source. Never from the console."""
+        """The tally the tabs divide by, read from bible.html. Never from the console.
+
+        The file pin stays chronTotal. The tally is that pin minus the quest items. Reading
+        the pin here would part the moment the board posts the tally.
+        """
         try:
-            p = os.path.join(os.path.dirname(HERE), "bible.html")
-            src = io.open(p, encoding="utf-8").read()
-            hits = sorted({int(m) for m in _re.findall(r"chronTotal\s*:\s*(\d+)", src)})
-            # more than one pinned value is not a denominator, it is a disagreement
-            return hits[0] if len(hits) == 1 else None
+            import route_totals as _rt
+            n = _rt.total("unique")
+            return int(n) if isinstance(n, int) and n > 0 else None
         except Exception:
             return None
 
     return ("fleet-divides-by-the-board's-number",
-            "the fleet's uniques denominator is the board's own pinned chronicle total",
-            "let the fleet publish the vault roster (398) while the tabs divide by chronTotal "
-            "(403) and this parts — which is exactly what he was looking at",
+            "the fleet's uniques denominator is the tally the board's own tabs divide by",
+            "let the fleet publish the file pin, or the vault roster, while the tabs subtract "
+            "the quest items and this parts",
             "the banked board_tally denominator (disk)", left,
-            "chronTotal pinned in bible.html (source)", right, "==")
+            "the unique tally in bible.html (source)", right, "==")
 
 
 def _inv_the_deleter_releases_only_what_the_store_declares():

@@ -23,8 +23,8 @@ WHAT THE DEMOTED NUMBERS ACTUALLY ARE — neither is wrong and neither is delete
 THE TRUE COUNT PER TAB, and where it comes from:
     runeword  99   var RUNEWORD_CHRONICLE_TOTAL  — his v2192 ruling, 2026-08-27
     set      135   the piece catalogue in bible.html — 34 sets, 135 distinct pieces
-    unique   403   chronTotal / UNIQUE_CHRONICLE_TOTAL — his v1751 ruling, re-derived from the
-                   game files: 439 rows − 24 disableChronicle = 415, − 12 not-spawnable = 403
+    unique         the game-file pin (chronTotal, 403) minus the six quest items. The pin stays
+                   in funiScan. The tally the surfaces divide by does not include those six.
 
 ⚠ IT READS bible.html, NOT THE ARTIFACTS, so the artifacts stop being denominators and become
 checked copies. And every failure returns None, never a fallback constant: a number nobody could
@@ -61,8 +61,8 @@ _WHY = {
                  "catalogue that holds one key per runeword"),
     "set": ("the piece catalogue in bible.html — 34 sets holding 135 distinct pieces; the "
             "chronicle counts pieces, which is why this says pieces"),
-    "unique": ("his v1751 ruling, re-derived from the game files on 2026-09-03: 439 rows minus 24 "
-               "disableChronicle is 415, minus 12 that cannot spawn is 403"),
+    "unique": ("the game-file chronicle pin minus the six quest items in _CHRON_QUESTS. "
+               "Those six stay in the file and are not part of the tally any surface divides by"),
 }
 
 
@@ -132,10 +132,13 @@ def _runeword_total(s):
     return _int_after(s, r"var\s+RUNEWORD_CHRONICLE_TOTAL\s*=\s*(\d+)\s*;")
 
 
-def _unique_total(s):
-    # ⚠ TRIES THE NAMED DECLARATION FIRST, then the bare expression, so this module works both
-    # before and after the constant is hoisted out of funiScan's return — the two can land in
-    # either order without a window where the panel reads nothing.
+def _file_pin(s):
+    """The game-file chronicle count. Not the tally. -> int | None
+
+    The named declaration wins, then the single chronTotal assignment. Two different literals
+    are UNKNOWN, not a vote. A comment that merely mentions the number does not match: the
+    pattern demands `:` or `=`.
+    """
     n = _int_after(s, r"var\s+UNIQUE_CHRONICLE_TOTAL\s*=\s*(\d+)\s*;")
     if n is not None:
         return n
@@ -144,11 +147,67 @@ def _unique_total(s):
         return None
     uniq = set(hits)
     if len(uniq) != 1:
-        return None          # two literals disagreeing is UNKNOWN, not a vote
+        return None
     try:
-        return int(hits[0])
+        return int(next(iter(uniq)))
     except Exception:
         return None
+
+
+def _quest_names(s):
+    """The quest uniques declared beside the chronicle. -> [str] | None
+
+    None when the array cannot be read. An empty array is also None: a tally that quietly
+    grew back to the file pin is the defect, not a measured zero.
+    """
+    m = re.search(r"var\s+_CHRON_QUESTS\s*=\s*\[(.*?)\]\s*;", s, re.S)
+    if not m:
+        return None
+    names = []
+    for a, b in re.findall(r'"([^"]*)"|\'([^\']*)\'', m.group(1)):
+        v = (a or b).strip()
+        if v:
+            names.append(v)
+    return names or None
+
+
+def file_pin(s=None):
+    """The game-file pin, for a caller that must keep it apart from the tally. -> int | None"""
+    if s is None:
+        s = _src()
+    if s is None:
+        return None
+    return _file_pin(s)
+
+
+def quest_names(s=None):
+    """The quest items the tally excludes. -> [str] | None"""
+    if s is None:
+        s = _src()
+    if s is None:
+        return None
+    return _quest_names(s)
+
+
+def quest_count(s=None):
+    """How many quest items the tally excludes. -> int | None"""
+    names = quest_names(s)
+    return len(names) if names else None
+
+
+def _unique_total(s):
+    """The tally every surface divides by: the file pin minus the quest items. -> int | None
+
+    Either half unreadable is UNKNOWN. Returning the pin alone would put the six quest items
+    back on the fleet, the heart, and the roster routes.
+    """
+    pin = _file_pin(s)
+    names = _quest_names(s)
+    if pin is None or not names:
+        return None
+    if len(names) >= pin:
+        return None
+    return pin - len(names)
 
 
 def set_pieces(s):

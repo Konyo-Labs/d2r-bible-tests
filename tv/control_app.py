@@ -48272,15 +48272,15 @@ class Handler(BaseHTTPRequestHandler):
                         # roster grows with his own finds. A denominator that differs per machine
                         # cannot compare machines. [[label-outlived-referent]] [[copy-drift]]
                         def _chron_total():
+                            # The card divides by the tally, the same number the Uniques tab
+                            # headlines. That is the file pin minus the six quest items.
+                            # route_totals is the reader the heart's three route sets already
+                            # quote, so the fleet card cannot keep a second copy of the pin.
                             try:
-                                _b = io.open(os.path.join(os.path.dirname(_here), "bible.html"),
-                                             encoding="utf-8", errors="replace").read()
+                                import route_totals as _rt
+                                return _rt.total("unique")
                             except Exception:
                                 return None
-                            # the ASSIGNMENT, never the prose — "chronTotal 403 is the game's own"
-                            # appears in comments megabytes earlier and must not be what this reads.
-                            _m = re.search(r"chronTotal\s*[:=]\s*(\d+)", _b)
-                            return int(_m.group(1)) if _m else None
                         _fl["rosters"] = {
                             "sets": _rn("set_roster.json", "pieceCount", "count"),
                             "uniques": _chron_total() or _rn("unique_roster.json", "count"),
