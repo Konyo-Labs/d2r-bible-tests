@@ -115,7 +115,7 @@ straight into the frame's memory store, whose setItem the boot made a no-op (it 
 (a VIEW handler) asks the door to keep vaultTasksOpen, view state the door drops. The harness rebinds vault_page_node's
 top-level store const inside this law (two asserted anchors) so the page's bare `localStorage` is the window's property, as
 in a browser - otherwise the shadow boot refuses to open ("would not isolate"). Law:
-test_a_shadow_writes_nothing_by_drag_or_on_four_tabs (11 tests, 6 red-proofs on the veil, each RED). NEEDS LIVE (#194):
+test_a_shadow_writes_nothing_by_drag_or_on_four_tabs (11 tests, 7 red-proofs, each RED). The harness answers :scope as this element, because the page asks it; a :scope it cannot answer stays unsupported. NEEDS LIVE (#194):
 GrokBot repeats the drags and the four tabs on the ALT's shadow with a store counter, once the ALT is online.
 
 ### REG-3103 - IN A SHADOW FIND ON A MULE TOOK NO LETTER, AND AN EMPTY CELL STILL OFFERED THE ADD (#230, GrokBot v3838 07:08-07:25)

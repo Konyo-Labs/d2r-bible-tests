@@ -12870,6 +12870,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_guided_step_tick_waits_for_the_sweep.py")], 300,
          needs_app=False,
          why="REG-3114 (#202): his tick on a guided step records that he hovered it and waits for the next sweep - never closes the step, never cut by the cap, refused in a shadow"),
+    Gate("test_a_shadow_writes_nothing_by_drag_or_on_four_tabs",
+         [sys.executable, os.path.join(HERE, "test_a_shadow_writes_nothing_by_drag_or_on_four_tabs.py")], 300,
+         needs_app=False,
+         why="REG-3096 (#194 code half): a snapshot shadow writes nothing by drag or on the Vault, d2jsp, TV-D and Runes tabs"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
