@@ -209,6 +209,18 @@ def _boot():
         if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(
                 rel(a) is not None for a in args[1:] if "/" in a):
             return  # a machine meter (memory, kernel, sockets, IO registry, app list), never a file here  # TRACE-INERT-METER
+        if head == "sips":
+            base = fsdecode(cwd) if cwd is not None else getcwd()
+            out_next = False
+            for a in args[1:]:
+                if a.startswith("-"):
+                    out_next = a in ("-o", "--out")
+                    continue
+                r = rel(a if isabs(a) else join(base, a))
+                if r is not None:
+                    emit("W" if out_next else "R", r)  # sips opens only the images it is named  # TRACE-SIPS-NAMED
+                out_next = False
+            return
         if head == "lsof" and not any(
                 rel(a) is not None for a in args[1:] if "/" in a):
             return  # the process table, not a file in this checkout

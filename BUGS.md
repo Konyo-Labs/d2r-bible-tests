@@ -14,6 +14,12 @@ same class REG-2296 made inert for sleep/ps/pgrep. gate_trace/sitecustomize.py n
 unless an argument names a path inside the checkout. caffeinate stays untraced (it can run a command), as do bash, git,
 Chrome, sips and defaults. Saving: 10 gates, ~64 s idle by gate_costs.json, ~1.7x that under hook load. Law
 test_a_machine_meter_does_not_untrace_a_gate (9 tests, 9 red-proofs, 9 of 9 RED).
+### REG-3125 - SIPS WAS A CHILD NOBODY COULD FOLLOW, SO 5 GATES RAN ON EVERY PUSH (gate speed, v3855)
+The v3853 hook listed 5 gates "not stored - the gate started sips" (~43 s idle by gate_costs.json; test_simulator_says_what_it_could_not_load
+alone 25.2 s). sips opens only the images on its command line, so gate_trace/sitecustomize.py now records each such path inside
+this checkout as a READ, and the one after -o/--out as a WRITE (TRACE-SIPS-NAMED), instead of untracing the gate. A named image
+that moves still re-runs the gate; a fixture in a temp folder reads nothing here; any other image tool still untraces. Law
+test_sips_is_keyed_by_the_images_it_is_named (6 tests, 6 red-proofs, 6 of 6 RED).
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel
