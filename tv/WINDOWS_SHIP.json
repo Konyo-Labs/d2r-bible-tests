@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3851",
+  "ver": "v3852",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3851: Eight facet rows stay in the 403 with six quest items. A forum date keeps its link. A refused roll stays in the box.",
+  "note": "v3852: A river walk still running stays on reading and is asked again. A finished walk paints the lanes.",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
