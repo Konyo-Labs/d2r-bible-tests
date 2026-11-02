@@ -66988,6 +66988,15 @@ function renderJournal(){
       .map(function(n){ return { n:n, qlvl:110, tier:'common', sources:[] }; });
   }
   window._colossalTallyRows = _colossalTallyRows;
+  /* The six colossal jewels are not chronicle cards. The one still open belongs in the
+     remaining count he reads, beside the nine open cards. */
+  function _colossalStillOpen(own){
+    var rows = _colossalTallyRows();
+    var n = 0;
+    for (var i = 0; i < rows.length; i++) if (!_ownedHas(own, rows[i].n)) n++;
+    return n;
+  }
+  window._colossalStillOpen = _colossalStillOpen;
   function _chronicleTickName(n){
     if (_CHRON_FACET_SET[n] === 1) return true;
     var rows = _colossalTallyRows();
@@ -68153,9 +68162,9 @@ function renderJournal(){
     })();
     // v560 — UNIFIED sub-tabs across BOTH grail forges (Konyo: same names, same logic, set or unique):
     // ▦ All missing · 🎯 Best runs · ⚡ Quick wins (low-level uniques / 1-piece sets) · ✅ Found
-    var _huntMiss = s.chronTotal ? (s.chronTotal-s.found) : s.missing.length;
+    var _huntMiss = (s.chronTotal ? (s.chronTotal-s.found) : s.missing.length) + _colossalStillOpen(_ownedNames());
     H.push('<div class="forge-tabs">'
-      +_tile('all','▦','All missing','ft-all',_huntMiss,F,'window.funiSetFilter','items')   // hunt cards plus real dark rows. The six quest items are not in this number.
+      +_tile('all','▦','All missing','ft-all',_huntMiss,F,'window.funiSetFilter','items')   // hunt cards, plus the open colossal jewel. The six quest items are not in this number.
       +_tile('runs','🎯','Best runs','ft-pipe',s.runs.length,F,'window.funiSetFilter','runs')
       +_tile('low','⚡','Quick wins','ft-step',s.low.length,F,'window.funiSetFilter','items')
       +_tile('found','✅','Found','ft-done',s.found,F,'window.funiSetFilter','items')
@@ -68284,28 +68293,35 @@ function renderJournal(){
       var _flTally = _flog();
       var _nowMon = (function(){ try { return new Date().toLocaleString('en-US',{month:'short'}) + ' ' + new Date().getFullYear(); } catch(e){ return ''; } })();
       var _thisMon = 0;
-      /* v1782 — THIS FIGURE SITS BESIDE TWO UNIQUES-ONLY NUMBERS AND WAS COUNTING SET PIECES.
-         _flog() is the SHARED found ledger: 356 keys on his data, 248 uniques and 108 set pieces
-         (v644 put set pieces in the same store deliberately). Iterating all of it made "this month"
-         answer a different question from the "found" and "still missing" either side of it — tick
-         one set piece today and the uniques ledger claims a unique he did not find. It stays green
-         on his own data because his current month happens to be all uniques, which is the
-         gate-blind-to-unexercised-input shape. Found by an adversarial review of this file.
-         Filtered to the roster, through the same fold funiScan trusts. */
-      var _uniRoster = null;
-      try { _uniRoster = new Set((window._gUniqueRoster && window._gUniqueRoster()) || []); } catch(e){}
-      var _isUni = function(n){
-        if (!_uniRoster) return true;
-        if (_uniRoster.has(n)) return true;
-        try { var r = window.d2rResolveItem(n); return !!(r && r.canonical && _uniRoster.has(r.canonical)); }
-        catch(e){ return false; }
-      };
-      try { Object.keys(_flTally).forEach(function(k){
-        if (!_isUni(k)) return;
-        var m = String(_flTally[k]||'').match(/^([A-Za-z]{3})\s+\d+,\s*(\d{4})/);
-        if (m && (m[1] + ' ' + m[2]) === _nowMon) _thisMon++;
-      }); } catch(e){}
-      var _uniLeft = (s.chronTotal || 0) - s.found;
+      /* The month badge counts a hunt card once. A Latent spelling and a straight apostrophe
+         are the same card. A set piece in the shared log is not a unique. The eight Rainbow
+         Facet cards are not roster keys, so a roster walk dropped a tick he had just made. */
+      var _ownMon = _ownedNames();
+      function _foundWhen(n){
+        if (_flTally[n]) return _flTally[n];
+        try {
+          var al = _CHRON_SUNDER_ALIASES[n];
+          if (al) { for (var i = 0; i < al.length; i++) if (_flTally[al[i]]) return _flTally[al[i]]; }
+        } catch(e){}
+        var want = String(n).replace(/\u2019/g, "'").replace(/\u2018/g, "'");
+        try {
+          var keys = Object.keys(_flTally);
+          for (var k = 0; k < keys.length; k++) {
+            if (String(keys[k]).replace(/\u2019/g, "'").replace(/\u2018/g, "'") === want) return _flTally[keys[k]];
+          }
+        } catch(e2){}
+        return '';
+      }
+      function _inThisMon(d){
+        var m = String(d || '').match(/^([A-Za-z]{3})\s+\d+,\s*(\d{4})/);
+        return !!(m && (m[1] + ' ' + m[2]) === _nowMon);
+      }
+      try {
+        (_uniItems() || []).forEach(function(x){
+          if (_ownedHas(_ownMon, x.n) && _inThisMon(_foundWhen(x.n))) _thisMon++;
+        });
+      } catch(e){}
+      var _uniLeft = (s.chronTotal || 0) - s.found + _colossalStillOpen(_ownMon);
       H.push('<div class="forge-sec forge-sec-now"><div class="forge-sec-h">✅ Found <span class="forge-sec-ct" id="gf-found-ct">'+s.found+'</span><span class="forge-sec-sub">the chronicle ledger — dated, newest first, synced with the Calculator ✓ — tap to open, ✕ to un-mark</span></div>'
         +'<div class="gs-tally">'
         +'<span class="gs-t gs-t-seal"><b>'+s.found+'</b><i>found</i></span>'
@@ -68317,11 +68333,12 @@ function renderJournal(){
       var own=_ownedNames();
       var _flU=_flog(); var _ownF=_ownedNames();
       var _lastMon = '';
-      _flogSort(_uniItems().filter(function(x){return _ownF.has(x.n);}).map(function(x){return x.n;})).forEach(function(n){
+      _flogSort(_uniItems().filter(function(x){return _ownedHas(_ownF, x.n);}).map(function(x){return x.n;})).forEach(function(n){
         /* v1572 — a month heading each time the ledger crosses one. Cheap, and it turns a scroll
            into a place: "June" is somewhere he can aim for. Derived from the stored date string, so
-           an undated legacy find groups under "earlier" rather than inventing a month for it. */
-        var _d = _flU[n] || '', _m = (_d.match(/^([A-Za-z]{3})\s+\d+,\s*(\d{4})/) || []);
+           an undated legacy find groups under "earlier" rather than inventing a month for it.
+           The date may sit on the Latent spelling, or on the straight apostrophe. */
+        var _d = _foundWhen(n) || '', _m = (_d.match(/^([A-Za-z]{3})\s+\d+,\s*(\d{4})/) || []);
         var _mon = _m.length ? (_m[1] + ' ' + _m[2]) : 'earlier';
         if (_mon !== _lastMon) { _lastMon = _mon;
           H.push('<div class="gf-mon" data-mon="'+esc(_mon)+'">'+esc(_mon)+'</div>'); }
@@ -68334,7 +68351,7 @@ function renderJournal(){
            Now: the body opens the item card, like every other chip in the app. Un-marking is a
            deliberate ✕ on the chip, and it ARMS first — one tap says "remove?", a second removes,
            and it disarms itself after 4s so a stray tap cannot linger as a loaded trigger. */
-        H.push('<span class="gf-piece have" data-arttip="'+esc(n)+'" onclick="window.navigateToItem&&window.navigateToItem(\''+jsq(n)+'\')" title="open '+esc(n)+'’s card"><span class="gp-ck">✓</span>'+chipLogo(n)+'<span class="gf-nm">'+esc(n)+'</span>'+window._chipFoundDate(n, _flU[n])+'<button type="button" class="gp-rm" title="un-mark this find" onclick="event.stopPropagation();window._armUnmark(this,\''+jsq(n)+'\',\'uni\')">✕</button></span>');
+        H.push('<span class="gf-piece have" data-arttip="'+esc(n)+'" onclick="window.navigateToItem&&window.navigateToItem(\''+jsq(n)+'\')" title="open '+esc(n)+'’s card"><span class="gp-ck">✓</span>'+chipLogo(n)+'<span class="gf-nm">'+esc(n)+'</span>'+window._chipFoundDate(n, _foundWhen(n))+'<button type="button" class="gp-rm" title="un-mark this find" onclick="event.stopPropagation();window._armUnmark(this,\''+jsq(n)+'\',\'uni\')">✕</button></span>');
       });
       H.push('</div></div>');
       if(!s.found) H.push('<div class="forge-empty">Nothing marked found yet — tick uniques here or in the Calculator (they sync).</div>');
