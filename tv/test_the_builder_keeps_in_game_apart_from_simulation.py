@@ -390,8 +390,8 @@ RED_PROOF = [
     {
         "why": "#103 (Grok eye) - the level-1 characters stand among the played ones with nothing saying they are mules",
         "file": "bible.html",
-        "find": "    if (S.mules.length) cards += '<div class=\"chx-sec-sub\" data-sub=\"mules\">",
-        "replace": "    if (false) cards += '<div class=\"chx-sec-sub\" data-sub=\"mules\">",
+        "find": '    if (S.mules.length) cards += \'<div class="chx-sec-sub" data-sub="mules"',
+        "replace": '    if (false) cards += \'<div class="chx-sec-sub" data-sub="mules"',
         "matches": 1,
     },
     {
@@ -437,10 +437,10 @@ RED_PROOF = [
         "matches": 1,
     },
     {
-        "why": "#103 - a HARDENED character is said as PROVEN",
+        "why": "#103 (v3855 item E) - a HARDENED character wears the not-confirmed seal",
         "file": "bible.html",
-        "find": "    if (t.tier === 'HARDENED') return '🔒 HARDENED · ' + n;\n",
-        "replace": "    if (t.tier === 'HARDENED') return '✓ PROVEN · ' + n;\n",
+        "find": "    var yes = tier === 'HARDENED', bars = _bars(), seen = _ago(lastTs);\n",
+        "replace": "    var yes = tier === 'HARDENED_', bars = _bars(), seen = _ago(lastTs);\n",
         "matches": 1,
     },
     {
