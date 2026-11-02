@@ -57417,17 +57417,11 @@ window.vaultAutoAssign = function(){
       try {
         var tp = document.getElementById('vault-tasks');
         var fab0 = document.getElementById('vault-tasks-fab');
-        var _v2EscFn = function(e){
-          if (!e || e.key !== 'Escape' || !tp || tp.hidden) return;
-          /* Grok review r3 — a window opened ABOVE the overlay (a mule locker, a confirm) owns this Escape: let it bubble to its own closer */
-          try { var _vd = document.getElementById('vault-detail'); if ((_vd && !_vd.hidden) || document.querySelector('.ui-confirm-ov')) return; } catch (eW) {}
-          e.preventDefault(); try { e.stopPropagation(); } catch (eS) {}
-          window.vaultTasksTog(false);
-          try { var fb = document.getElementById('vault-tasks-fab'); if (fb) fb.focus({ preventScroll: true }); } catch (eF) {}
-        };
-        if (tp && !tp._v2Esc) { tp._v2Esc = 1; tp.addEventListener('keydown', _v2EscFn); }
-        /* Grok review r2 — a click on the FAB leaves focus ON the FAB (a sibling on <body>), so Escape there closes it too */
-        if (fab0 && !fab0._v2Esc) { fab0._v2Esc = 1; fab0.addEventListener('keydown', _v2EscFn); }
+        /* REG-2962 (v3854 fan-in, measured 2026-11-03) - Esc on MOVE TASKS is the v3847 OVERLAY-CONTRACT's: its window
+           capture listener clicks the topmost x (.vtp-x, which returns focus to the FAB) and stops the event, so the
+           overlay's and the FAB's own keydown listeners never ran - three red-proofs tampered them and stayed green.
+           Removed; the contract's Esc, its topmost pick and the x are the doors now. */
+        void tp; void fab0;
       } catch (eK) {}
       try { if (window.LSR.getItem('vaultTasksOpen') === '1') window.vaultTasksTog(true, true); } catch (e) {}
     };
