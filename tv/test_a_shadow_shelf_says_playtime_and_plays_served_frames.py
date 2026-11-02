@@ -37,10 +37,10 @@ UI = io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8").read()
 PY = io.open(os.path.join(HERE, "shadow_sessions.py"), encoding="utf-8").read()
 
 FNS = ["  function esc(s){", "  function _lsWhenSay(t0){", "  function _runSpanSay(t0, t1){",
-       "  function _shadowSessionRow(s){", "  function _shadowSessionsHead(owner){",
+       "  function _shadowSessionRow(s, ix){", "  function _shadowSessionsHead(owner){",
        "  function _shadowSessionsHtml(d){", "  function _shadowSessionsClose(){",
        "  function _shadowSessionsSpeed(){", "  function _shadowSessionsPlayStop(){",
-       "  function _shadowSessionsPlayTick(){", "  function _shadowSessionsPlay(){"]
+       "  function _shadowSessionsPlayTick(){", "  function _shadowSessionsPlay(ix){"]
 LINES = ["  var _SSV_B64 = ", "  var _SSV_SPEEDS = ", "  var _ssvGen = 0;"]
 
 T0 = 1792000000000
@@ -217,7 +217,7 @@ class ThePageSaysThemAndPlaysOnlyServedFrames(unittest.TestCase):
         self.assertEqual(g["bad"]["reels"], [])
         self.assertEqual(g["one"]["n"], 1)
         self.assertIn("▶ PLAY the last 1 reel", g["one"]["html"])
-        play_src = _cut(UI, "  function _shadowSessionsPlay(){")
+        play_src = _cut(UI, "  function _shadowSessionsPlay(ix){")
         for banned in ("fetch(", "/hist", "thOpen"):
             self.assertNotIn(banned, play_src, "play reaches %s" % banned)
 
@@ -234,8 +234,8 @@ class TheProofsNameOnePlace(unittest.TestCase):
 RED_PROOF = [
     {"why": "a frame the owner did not serve is played",
      "file": "tv/control_ui.html",
-     "find": "          if (b && _SSV_B64.test(b)) reels.push('data:image/jpeg;base64,' + b);\n",
-     "replace": "          if (b) reels.push(b);\n",
+     "find": "          if (b && _SSV_B64.test(b)) own.push('data:image/jpeg;base64,' + b);\n",
+     "replace": "          if (b) own.push(b);\n",
      "matches": 1, "needs": "node"},
     {"why": "an unnamed run says 'no name read' again",
      "file": "tv/control_ui.html",

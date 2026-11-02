@@ -168,6 +168,70 @@ def _play_afk(moments):
     return play, afk
 
 
+#: v3855 - the five act towns by the name a read gives its area (D2 facts, lower case)
+TOWN_AREAS = ("rogue encampment", "lut gholein", "kurast docks", "the pandemonium fortress", "pandemonium fortress", "harrogath")
+FIELD_SCENES = ("gameplay", "loot")
+
+
+def _where(r):
+    """-> 'town', 'field' or None. A read's scene 'town' or a town area is town; a gameplay/loot scene or any other
+    named area is out of town. A read that names neither is not placed (never guessed)."""
+    sc = str(r.get("scene") or "").strip().lower()
+    area = str(r.get("area") or "").strip().lower()
+    if sc == "town" or (area and area in TOWN_AREAS):
+        return "town"
+    if area or sc in FIELD_SCENES:
+        return "field"
+    return None
+
+
+def _town_field(rows):
+    """v3855 - (townMs, fieldMs) from the session's own reads. Each short gap (<= AFK_GAP_MS) is the place of the read
+    that opens it; long gaps are AFK and belong to neither. Both None when no read was placed (UNKNOWN, never 0)."""
+    import replay as _rp
+    pts = []
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        try:
+            t = _rp._session_moment(r)
+        except Exception:
+            t = 0
+        if isinstance(t, int) and t > 0:
+            pts.append((t, _where(r)))
+    pts.sort(key=lambda x: x[0])
+    if not any(w for _, w in pts):
+        return None, None
+    town = field = 0
+    for (a, wa), (b, _) in zip(pts, pts[1:]):
+        gap = b - a
+        if gap > AFK_GAP_MS:
+            continue
+        if wa == "town":
+            town += gap
+        elif wa == "field":
+            field += gap
+    return town, field
+
+
+def _chronicle_names(rows):
+    """v3855 - the distinct names read on a chronicle panel, in read order."""
+    out = []
+    for r in rows or []:
+        if isinstance(r, dict) and r.get("scene") == "chronicle":
+            for n in _names(r):
+                if n not in out:
+                    out.append(n)
+    return out
+
+
+def _stashed(reads):
+    """v3855 - names read with the stash open (scene stash or a stash tab), grouped like farmed."""
+    import farmed_names as _FN
+    return _FN.group([_names(r) for r in reads if isinstance(r, dict)
+                      and (r.get("scene") == "stash" or r.get("stashTab"))])
+
+
 def _named_where(rows, key, value):
     """Distinct names on rows whose `key` equals `value`. -> int
 
@@ -224,7 +288,10 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
              "playMs": play_ms, "afkMs": afk_ms,
              "chroniclesFound": _named_where(g, "scene", "chronicle"),
              "itemsFarmed": _named_where(g, "intent", "farmed"),
-             "farmed": farmed}
+             "farmed": farmed,
+             "chronicleNames": _chronicle_names(g)[:MAX_NAMES],
+             "stashed": _stashed(reads)}
+        s["townMs"], s["fieldMs"] = _town_field(g)
         whys = []
         for fid in _key_frames(reads):
             data, why = thumb_bytes(hist_dir, fid, make)

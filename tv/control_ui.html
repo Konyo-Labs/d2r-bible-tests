@@ -23012,7 +23012,7 @@ window._lockMark = function(isOpen, px, label){
      so no other scheme can reach src - or the record's own why when it has none. ok:false prints its why as UNKNOWN,
      never an empty list. Nothing here writes or posts: one GET. -> html */
   var _SSV_B64 = /^[A-Za-z0-9+\/]+={0,2}$/;
-  function _shadowSessionRow(s){
+  function _shadowSessionRow(s, ix){
     s = (s && typeof s === 'object') ? s : {};
     var when = _lsWhenSay(s.t0) || 'date UNKNOWN';
     var span = _runSpanSay(s.t0, s.t1) || 'span UNKNOWN';
@@ -23041,6 +23041,25 @@ window._lockMark = function(isOpen, px, label){
           return esc(String(r && r[0] || '')) + ((r && r[1] > 1) ? ' \u00d7' + r[1] : ''); }).join(', ') + '</span>';
       }).join(' · ') : (nm.length ? 'no farmed item was read on this run (pickup noise only)' : names);
     }
+    /* v3855 - in game vs town from this session's own reads (shadow_sessions._town_field); UNKNOWN when no read was placed */
+    var tMs = s.townMs, fMs = s.fieldMs, place;
+    if (sayDur(tMs) !== null && sayDur(fMs) !== null) {
+      var tot = tMs + fMs;
+      var pc = function(x){ return tot > 0 ? ' (' + Math.round(100 * x / tot) + '%)' : ''; };
+      place = 'in game ' + sayDur(tot) + ' · in town ' + sayDur(tMs) + pc(tMs) + ' · out of town ' + sayDur(fMs) + pc(fMs);
+    } else place = 'in game UNKNOWN · in town UNKNOWN · out of town UNKNOWN';
+    var cn = Array.isArray(s.chronicleNames) ? s.chronicleNames.filter(function(x){ return typeof x === 'string' && x; }) : null;
+    var chronNames = cn === null ? 'chronicle names UNKNOWN' : (cn.length ? 'chronicles: ' + cn.join(' · ') : 'no chronicle was read on this run');
+    var stashed;
+    if (s.stashed && typeof s.stashed === 'object') {
+      var sg = Object.keys(_FARM_LABEL).filter(function(g){ return Array.isArray(s.stashed[g]) && s.stashed[g].length; });
+      stashed = sg.length ? 'stashed: ' + sg.map(function(g){ return _FARM_LABEL[g] + ' ' + s.stashed[g].map(function(r){
+        return String(r && r[0] || '') + ((r && r[1] > 1) ? ' \u00d7' + r[1] : ''); }).join(', '); }).join(' · ') : 'no item was read in the stash';
+    } else stashed = 'stashed UNKNOWN';
+    var nOwn = (Array.isArray(s.frames) ? s.frames : []).slice(0, 3).filter(function(f){ return f && typeof f.jpg === 'string' && _SSV_B64.test(f.jpg); }).length;
+    var playOne = (typeof ix === 'number' && nOwn)
+      ? '<button type="button" class="ssv-play ssv-play-one" data-ssv-ix="' + ix + '" onclick="window._shadowSessionsPlay&&window._shadowSessionsPlay(' + ix + ')">▶ PLAY this session</button>'
+      : '<span class="ssv-why">no served frame to play for this session</span>';
     var facts = 'playtime ' + (play || 'UNKNOWN') + ' · AFK time ' + (away || 'UNKNOWN') + ' · ' + chron + ' · ' + farm;
     var imgs = [], bad = 0;
     (Array.isArray(s.frames) ? s.frames : []).slice(0, 3).forEach(function(f){
@@ -23054,6 +23073,10 @@ window._lockMark = function(isOpen, px, label){
     return '<div class="ssv-row"><div class="ssv-t">' + esc(when + ' · ' + span + ' · ' + reads) + '</div>'
       + (farmed ? '<div class="ssv-names ssv-farmed">' + farmed + '</div>' : '<div class="ssv-names">' + names + '</div>')
       + '<div class="ssv-facts">' + esc(facts) + '</div>'
+      + '<div class="ssv-facts ssv-place">' + esc(place) + '</div>'
+      + '<div class="ssv-facts ssv-chron">' + esc(chronNames) + '</div>'
+      + '<div class="ssv-facts ssv-stashed">' + esc(stashed) + '</div>'
+      + '<div class="ssv-playline">' + playOne + '</div>'
       + (imgs.length ? '<div class="ssv-thumbs">' + imgs.join('') + '</div>' : '') + note + '</div>';
   }
   function _shadowSessionsHead(owner){
@@ -23065,13 +23088,16 @@ window._lockMark = function(isOpen, px, label){
     /* The last N reels this record already holds (newest first). Play walks them oldest first, and only a
        key frame whose body is base64 — a frame the owner already served. Nothing here is fetched. */
     function arm(rows){
-      var reels = [];
-      (Array.isArray(rows) ? rows.slice().reverse() : []).forEach(function(s){
+      var reels = [], each = [];
+      (Array.isArray(rows) ? rows : []).forEach(function(s){
+        var own = [];
         (Array.isArray(s && s.frames) ? s.frames : []).slice(0, 3).forEach(function(f){
           var b = (f && typeof f.jpg === 'string') ? f.jpg : '';
-          if (b && _SSV_B64.test(b)) reels.push('data:image/jpeg;base64,' + b);
+          if (b && _SSV_B64.test(b)) own.push('data:image/jpeg;base64,' + b);
         });
+        each.push(own);
       });
+      each.slice().reverse().forEach(function(own){ reels = reels.concat(own); });
       /* a page arms its player; a renderer with no window (a law under node) only draws */
       var W = (typeof window !== 'undefined') ? window : null;
       if (!W) return;
@@ -23079,6 +23105,8 @@ window._lockMark = function(isOpen, px, label){
         if (W._ssvPlay && W._ssvPlay.timer) { clearTimeout(W._ssvPlay.timer); W._ssvPlay.on = false; W._ssvPlay.timer = 0; }
       } catch (eA) {}
       W._ssvReels = reels;
+      W._ssvAll = reels;
+      W._ssvEach = each;   /* v3855 - one reel per session, the row's own PLAY plays only it */
       W._ssvReelN = Array.isArray(rows) ? rows.length : 0;
     }
     arm(d.ok === true ? (Array.isArray(d.sessions) ? d.sessions : null) : []);
@@ -23099,7 +23127,7 @@ window._lockMark = function(isOpen, px, label){
       + n + (n === 1 ? ' reel' : ' reels') + '</button>'
       + '<button type="button" id="ssv-speed" class="ssv-speed" onclick="window._shadowSessionsSpeed&&window._shadowSessionsSpeed()">1×</button>'
       + '<div id="ssv-stage" class="ssv-stage"></div></div>';
-    return head + play + '<div class="ssv-list">' + list.map(_shadowSessionRow).join('') + '</div>';
+    return head + play + '<div class="ssv-list">' + list.map(function(s, i){ return _shadowSessionRow(s, i); }).join('') + '</div>';
   }
   var _ssvGen = 0;
   function _shadowSessionsClose(){
@@ -23146,10 +23174,14 @@ window._lockMark = function(isOpen, px, label){
     window._ssvWait = wait;
     p.timer = setTimeout(_shadowSessionsPlayTick, wait);
   }
-  function _shadowSessionsPlay(){
-    var frames = Array.isArray(window._ssvReels) ? window._ssvReels : [];
+  function _shadowSessionsPlay(ix){
     window._ssvPlay = window._ssvPlay || { on: false, speed: 1, at: 0, timer: 0 };
     if (window._ssvPlay.on) { _shadowSessionsPlayStop(); return false; }
+    /* v3855 - a row's PLAY (ix) plays only that session's served frames; no ix is the last-N reel */
+    if (typeof ix === 'number') window._ssvReels = (Array.isArray(window._ssvEach) && Array.isArray(window._ssvEach[ix])) ? window._ssvEach[ix] : [];
+    else if (Array.isArray(window._ssvAll)) window._ssvReels = window._ssvAll;
+    window._ssvPlayIx = (typeof ix === 'number') ? ix : null;
+    var frames = Array.isArray(window._ssvReels) ? window._ssvReels : [];
     if (!frames.length) {
       window._ssvShown = null;
       var st0 = document.getElementById('ssv-stage');
