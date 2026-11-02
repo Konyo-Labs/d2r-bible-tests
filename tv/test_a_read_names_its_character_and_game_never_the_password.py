@@ -74,6 +74,21 @@ class TheExtractor(unittest.TestCase):
         self.assertEqual((m8["character"], m8["source"]), ("Blizzy", "game-series"))
 
 
+class TheScenarioComesFromTheGameNames(unittest.TestCase):
+
+    def test_baal_is_leveling(self):
+        self.assertEqual(RI.scenario_of(["BAAL-1", "BAAL-2"]), "Leveling (Baal runs)")
+        self.assertEqual(RI.scenario_of(["baal2"]), "Leveling (Baal runs)")
+        self.assertEqual(RI.scenario_of(["Baal 3"]), "Leveling (Baal runs)")
+
+    def test_a_numbered_series_is_farming(self):
+        self.assertEqual(RI.scenario_of(["Morph%d" % i for i in range(1, 8)]), "Farming (Morph1\u20137)")
+
+    def test_no_game_name_is_unknown(self):
+        self.assertIsNone(RI.scenario_of([]))
+        self.assertIsNone(RI.scenario_of(["chill"]))
+
+
 class TheDigestPublishesItAndNeverThePassword(unittest.TestCase):
 
     @classmethod
@@ -95,6 +110,7 @@ class TheDigestPublishesItAndNeverThePassword(unittest.TestCase):
         s1 = self.by[S1]
         self.assertEqual(s1["gamesSay"], "Morph1-Morph7 (7 games)")
         self.assertEqual(s1["gameRunSessions"], 2)
+        self.assertEqual(s1["scenario"], "Farming (Morph1\u20137)")
         self.assertEqual((s1["character"]["name"], s1["character"]["cls"], s1["character"]["level"]), ("Blizzy", "Sorceress", 92))
         self.assertEqual(self.by[S2]["character"]["name"], "Blizzy", "a session with no login lost who played")
         self.assertEqual(self.o["identity"]["characters"], [{"name": "Blizzy", "cls": "Sorceress", "level": 92}])
@@ -112,8 +128,14 @@ class TheDigestPublishesItAndNeverThePassword(unittest.TestCase):
                            env=dict(os.environ, SSV_CFG=cfg, TZ="UTC"))
         self.assertEqual(r.returncode, 0, r.stderr[-600:])
         h = r.stdout
-        self.assertIn("character: Blizzy (Sorceress 92) · from select-screen · games: Morph1-Morph7 (7 games) · one farming run across 2 sessions", h)
-        self.assertIn("character UNKNOWN - the reads disagree: Blizzy / Hammy · games UNKNOWN", h)
+        import re
+        shown = re.sub(r' title="[^"]*"', '', h)
+        self.assertIn('>Blizzy · Sorceress 92 · Farming (Morph1\u20137)</div>', shown)
+        self.assertIn('<div class="ssv-facts ssv-who">UNKNOWN</div>', shown, "a conflict was drawn as anything but UNKNOWN")
+        for word in ("select-screen", "char-panel", "avatar", "disagree", "from ", "Hammy"):
+            self.assertNotIn(word, shown, "the row shows source text %r (it belongs in the hover)" % word)
+        self.assertIn('title="character from select-screen | games: Morph1-Morph7 (7 games), one run across 2 sessions"', h)
+        self.assertIn("reads disagree: Blizzy / Hammy", h)
 
 
 class TheProofsNameOnePlace(unittest.TestCase):
@@ -125,6 +147,26 @@ class TheProofsNameOnePlace(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "BAAL-1 / BAAL-2 are not a leveling session",
+     "file": "tv/read_identity.py",
+     "find": "    if any(_BAAL.search(g) for g in games):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "Morph1..7 is not a farming run",
+     "file": "tv/read_identity.py",
+     "find": "        if m and m.group(1).strip(\" -_\"):\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "a game name that is no series gets a made-up scenario",
+     "file": "tv/read_identity.py",
+     "find": "        return \"Farming (%s%d\\u2013%d)\" % (stem, ns[0], ns[-1]) if len(ns) > 1 else \"Farming (%s%d)\" % (stem, ns[0])\n    return None\n",
+     "replace": "        return \"Farming (%s%d\\u2013%d)\" % (stem, ns[0], ns[-1]) if len(ns) > 1 else \"Farming (%s%d)\" % (stem, ns[0])\n    return \"Farming\"\n",
+     "matches": 1},
+    {"why": "the row shows its sources again",
+     "file": "tv/control_ui.html",
+     "find": "    var who = whoBits.length ? whoBits.join(' · ') : 'UNKNOWN';\n",
+     "replace": "    var who = (whoBits.length ? whoBits.join(' · ') : 'UNKNOWN') + (ch && ch.sources ? ' · from ' + ch.sources.join(', ') : '');\n",
+     "matches": 1, "needs": "node"},
     {"why": "the game password is published",
      "file": "tv/read_identity.py",
      "find": "(?=\\s*(?:$|[.,;|]|\\bpass|\\bpw\\b))",
@@ -147,8 +189,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "a conflict is drawn as a name",
      "file": "tv/control_ui.html",
-     "find": "    else if (Array.isArray(ch.conflict) && ch.conflict.length) who = ",
-     "replace": "    else if (false) who = ",
+     "find": "    var resolved = ch && !(Array.isArray(ch.conflict) && ch.conflict.length) && (ch.name || ch.cls);\n",
+     "replace": "    var resolved = ch && (ch.name || ch.cls || ch.conflict);\n",
      "matches": 1, "needs": "node"},
 ]
 
