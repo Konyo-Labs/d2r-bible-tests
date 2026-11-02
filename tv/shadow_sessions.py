@@ -320,7 +320,6 @@ def characters_rollup(rows):
     A session nobody names counts under no character (UNKNOWN), never the nearest name.
     -> {name: {sessions, level, cls, playMs, afkMs, leveling, farming, lastT}}"""
     import replay as _rp
-    import farmed_names as _FN
     try:
         groups = _rp.split_sessions(list(rows or []))
     except Exception:
@@ -348,17 +347,6 @@ def characters_rollup(rows):
         o = out.setdefault(name, {"sessions": 0, "level": None, "cls": None, "playMs": 0, "afkMs": 0,
                                   "leveling": 0, "farming": 0, "lastT": 0})
         o["sessions"] += 1
-        # v3855 (Elad pt1203u) - THE ITEMS THIS CHARACTER FOUND, FARMED OR STASHED: the session's find reads grouped the
-        # way the session's farmed summary is (farmed_names.group: consumables, gold and keys never count), each with
-        # where it was found (game, else session). Attribution only: the Vault, the 397 tally and chronicles never read it.
-        _fr = [r for r in g if isinstance(r, dict) and (r.get("intent") == "farmed" or r.get("scene") in ("chronicle", "stash"))]
-        _where = (games[-1] if games else None) or next((r.get("sessionId") for r in g if r.get("sessionId")), None)
-        for _grp, _rows in _FN.group([[n for n in (r.get("names") or []) if isinstance(n, str)] for r in _fr]).items():
-            for _n, _c in _rows:
-                fd = o.setdefault("finds", {}).setdefault(_grp, {}).setdefault(_n, {"count": 0, "where": []})
-                fd["count"] += _c
-                if _where and _where not in fd["where"] and len(fd["where"]) < 6:
-                    fd["where"].append(_where)
         o["playMs"] += (sp.get("townMs") or 0) + (sp.get("fieldMs") or 0)
         o["afkMs"] += sp.get("awayMs") or 0
         o["leveling"] += 1 if sc.startswith("Leveling") else 0

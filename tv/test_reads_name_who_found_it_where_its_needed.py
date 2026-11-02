@@ -56,6 +56,10 @@ class TheCharactersRoomCarriesNoIdentity(unittest.TestCase):
             self.assertNotIn(w, room, "a Characters card carries identity (%s)" % w)
         self.assertNotIn("_identityChar", src)
 
+    def test_the_rollup_carries_no_finds(self):
+        c = SS.characters_rollup(ID._journal())
+        self.assertNotIn("finds", json.dumps(c), "per-character finds came back (Elad: not on the Characters tab)")
+
 
 def _found_js():
     src = open(BIBLE, encoding="utf-8").read()
@@ -131,6 +135,11 @@ RED_PROOF = [
      "file": "bible.html",
      "find": "      + _gearHtml(t)\n",
      "replace": "      + _gearHtml(t) + (window._identityFoundBy ? '<i>' + window._identityFoundBy(t.name).say + '</i>' : '')\n",
+     "matches": 1},
+    {"why": "per-character finds are rolled up again",
+     "file": "tv/shadow_sessions.py",
+     "find": "        o[\"sessions\"] += 1\n",
+     "replace": "        o[\"sessions\"] += 1\n        o.setdefault(\"finds\", {})\n",
      "matches": 1},
     {"why": "the Vault's evidence panel never says who found the item",
      "file": "bible.html",
