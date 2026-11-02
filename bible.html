@@ -49286,6 +49286,14 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; });
   }
+  window._vaultTierFaceClause = function (r) {
+    /* REG-3110 - the evidence panel Tier row wears the chip face. Trial counts are required. A word alone is not judged, and this clause stays empty so the row keeps the word. */
+    if (!r || typeof r.successes !== 'number' || typeof r.trials !== 'number') return '';
+    var tier = (typeof r.tier === 'string') ? r.tier : '';
+    if (!tier) return '';
+    var face = (typeof _TIER_FACE === 'object' && _TIER_FACE && typeof _TIER_FACE[tier] === 'string') ? _TIER_FACE[tier] : tier;
+    return face + ' ' + r.successes + '/' + r.trials;
+  };
   window._vaultEvidenceOf = function(name){
     var nm = String(name == null ? '' : name).trim();
     var _pvEO = _provAll();
@@ -49328,7 +49336,10 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
         m.note = (m.note ? m.note + ' · ' : '') + 'carried, then LANDED ' + (r.landed.loc === 'equipped' ? 'worn' : 'in your ' + (r.landed.loc || '?'))
                + (r.landed.at ? ' ' + (_evWhen(r.landed.at) || '') : '') + (r.landed.frame ? ' (frame ' + r.landed.frame + ')' : '');
       }
-      if (r.tier) m.tierSay = r.tier + ((typeof r.successes === 'number' && typeof r.trials === 'number') ? ' ' + r.successes + '/' + r.trials : '')
+      var _tierClause = window._vaultTierFaceClause(r);
+      if (_tierClause) m.tierSay = _tierClause
+                            + (typeof r.wilson === 'number' ? ' (Wilson ' + r.wilson.toFixed(2) + ')' : '');
+      else if (r.tier) m.tierSay = r.tier
                             + (typeof r.wilson === 'number' ? ' (Wilson ' + r.wilson.toFixed(2) + ')' : '');
       try { if (typeof assign === 'object' && assign && assign[nm] != null)
               m.holder = (typeof _vHomeName === 'function') ? _vHomeName(assign[nm]) : String(assign[nm]); } catch (e) {}

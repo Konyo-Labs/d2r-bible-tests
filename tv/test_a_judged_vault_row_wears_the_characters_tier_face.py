@@ -10,6 +10,8 @@ tier UNKNOWN.
 
 The evidence-line cut runs twice: once with the page's map in scope, once without it. Without the
 map the standing sentence stays "PROVEN 12/12", which is what the cut-only harness already pins.
+The evidence panel Tier row uses the same clause. A Wilson number already on the row stays beside
+it. A tier word with no trial counts stays the bare word.
 """
 import io
 import json
@@ -137,6 +139,76 @@ class AJudgedVaultRowWearsTheCharactersTierFace(unittest.TestCase):
         self.assertEqual(got["watched"], "WATCHED 1/1 · 1 session")
         self.assertEqual(got["receipt"], "kai-register · 1 look")
 
+    def test_the_evidence_panel_tier_row_wears_the_same_clause(self):
+        """The panel Tier row is the same judged record as the chip. It wears the clause. Wilson stays on the row."""
+        src = _page()
+        sig = "window._vaultTierFaceClause = function"
+        self.assertEqual(src.count(sig), 1)
+        fn = _brace(src, sig)
+        self.assertNotIn("WATCHED:", fn, "the panel clause grew a second tier map")
+        join = ("      var _tierClause = window._vaultTierFaceClause(r);\n"
+                "      if (_tierClause) m.tierSay = _tierClause\n"
+                "                            + (typeof r.wilson === 'number' ? ' (Wilson ' + r.wilson.toFixed(2) + ')' : '');\n"
+                "      else if (r.tier) m.tierSay = r.tier\n")
+        self.assertEqual(src.count(join), 1, "the panel stopped using the clause, or Wilson left the row")
+        self.assertEqual(src.count("row('Tier', m.tierSay)"), 1)
+        face = json.loads(subprocess.run(
+            [NODE, "-e", "process.stdout.write(JSON.stringify(%s))" % _face_literal(src)],
+            capture_output=True, text=True, timeout=15, check=True).stdout)
+        got = _drive_clause("var _TIER_FACE = %s;\n" % _face_literal(src), fn)
+        bare = _drive_clause("", fn)
+        self.assertEqual(got["proven"], face["PROVEN"] + " 12/12")
+        self.assertEqual(got["watched"], face["WATCHED"] + " 1/1")
+        self.assertEqual(got["hardened"], face["HARDENED"] + " 21/21")
+        self.assertEqual(got["stranger"], "GOLD 3/3")
+        self.assertEqual(got["bare"], "")
+        self.assertEqual(got["receipt"], "")
+        self.assertEqual(got["none"], "")
+        self.assertNotIn("session", got["proven"])
+        self.assertEqual(bare["proven"], "PROVEN 12/12")
+        self.assertEqual(bare["watched"], "WATCHED 1/1")
+        self.assertEqual(bare["bare"], "")
+
+
+def _brace(src, sig):
+    i = src.index(sig)
+    b = src.index("{", i)
+    depth = 0
+    for k in range(b, len(src)):
+        c = src[k]
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                end = k + 1
+                if src[end:end + 1] == ";":
+                    end += 1
+                return src[i:end]
+    raise AssertionError("the tier clause function does not close")
+
+
+def _drive_clause(prefix, fn):
+    if NODE is None:
+        raise AssertionError("node is absent — the panel clause was not driven")
+    body = r"""
+process.stdout.write(JSON.stringify({
+  proven: window._vaultTierFaceClause({tier:'PROVEN', successes:12, trials:12, wilson:0.9}),
+  watched: window._vaultTierFaceClause({tier:'WATCHED', successes:1, trials:1}),
+  hardened: window._vaultTierFaceClause({tier:'HARDENED', successes:21, trials:21, locked:true}),
+  stranger: window._vaultTierFaceClause({tier:'GOLD', successes:3, trials:3}),
+  bare: window._vaultTierFaceClause({tier:'WATCHED', source:'stash'}),
+  receipt: window._vaultTierFaceClause({kind:'owned', source:'kai-register'}),
+  none: window._vaultTierFaceClause(null)
+}));
+"""
+    prog = "var window = globalThis;\n" + prefix + fn + "\n" + body
+    r = subprocess.run([NODE, "-"], input=prog, capture_output=True, text=True, timeout=30)
+    if r.returncode != 0:
+        raise AssertionError("the panel clause would not run — UNKNOWN, not passing: %s"
+                             % (r.stderr or r.stdout)[-800:])
+    return json.loads(r.stdout)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
@@ -157,5 +229,15 @@ RED_PROOF = [
      "file": "bible.html",
      "find": "      + ' · tier UNKNOWN';\n",
      "replace": "      + ' · tier WATCHED';\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3110 - the evidence panel Tier row says the bare tier word again",
+     "file": "bible.html",
+     "find": "    var face = (typeof _TIER_FACE === 'object' && _TIER_FACE && typeof _TIER_FACE[tier] === 'string') ? _TIER_FACE[tier] : tier;\n    return face + ' ' + r.successes + '/' + r.trials;\n",
+     "replace": "    var face = tier;\n    return face + ' ' + r.successes + '/' + r.trials;\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3110 - the evidence panel ignores the tier clause",
+     "file": "bible.html",
+     "find": "      if (_tierClause) m.tierSay = _tierClause\n",
+     "replace": "      if (r.tier) m.tierSay = r.tier\n",
      "matches": 1, "needs": "node"},
 ]
