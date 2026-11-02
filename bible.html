@@ -54226,9 +54226,36 @@ window.vaultAutoAssign = function(){
       var extra = (by && by.shared) || [];
       for (var i = 0; i < extra.length; i++) if (names.indexOf(extra[i]) < 0) names.push(extra[i]);
     } catch (e2) {}
+    /* v3855 (Elad: Shako, Ber Rune "filed in the shared stash" but not drawn) - A NAME THE SEAM HOMES ON SHARED IS DRAWN.
+       The records come from ownedPool, which drops a bare legacy spelling ("Harlequin Crest") and the shared commodities
+       (runes), so the seam said shared and the window drew nothing. Every owned name the seam homes on shared joins the
+       list once, under its resolved name when that is already listed. */
+    try { _sharedSeamExtras(names).forEach(function(n){ names.push(n); }); } catch (e4) {}
     try { names.sort(); } catch (e3) {}
     return names;
   }
+  function _sharedSeamExtras(have){
+    var out = [];
+    var seen = {};
+    (have || []).forEach(function(n){ seen[n] = 1; try { seen[String(window._vaultResolveName(n) || n)] = 1; } catch (e) {} });
+    /* v3855 (Elad: a Small Charm of Balance not drawn) - a register keeper the charm rule homes on shared is drawn here,
+       as _muleNamesFor already lists a keeper on the mule it is homed on (REG-2895) */
+    try {
+      if (typeof magicFinds === 'object' && magicFinds && typeof _mfKeeperHome === 'function')
+        Object.keys(magicFinds).sort().forEach(function(n){ if (!seen[n] && _mfKeeperHome(n) === 'shared') { seen[n] = 1; out.push(n); } });
+    } catch (eK) {}
+    if (typeof owned === 'undefined' || typeof _vaultSeamHome !== 'function') return out;
+    Array.from(owned).sort().forEach(function(n){
+      if (typeof n !== 'string' || !n || seen[n]) return;
+      var rn = n; try { rn = String(window._vaultResolveName(n) || n); } catch (e) { rn = n; }
+      if (seen[rn]) return;
+      var h = null; try { h = _vaultSeamHome(n); } catch (e) { h = null; }
+      if (!h || h.loc !== 'shared') return;
+      seen[n] = 1; seen[rn] = 1; out.push(n);
+    });
+    return out;
+  }
+  try { window._sharedSeamExtras = _sharedSeamExtras; } catch (e) {}
   /* ══ #144.10 shared half (REG-2801) — ONE LAYOUT FOR THE SHARED STASH: THE PLAN'S 5 PAGES ═══════════════════════════
      MEASURED (node, the whole page; Shako x3 + Arachnid Mesh x6 hand-added, a WAR1 mule): the move tasks put Shako 1 at
      shared:c0r0 (page 1, col 1, row 1) and belts 1-4 on page 1 (c2r0, c2r1, c4r0, c2r2), the over-cap copies on WAR1;
@@ -54688,6 +54715,12 @@ window.vaultAutoAssign = function(){
     if (_spanOf && muleId === 'magic-rare' && typeof magicFinds === 'object' && magicFinds)
       Object.keys(magicFinds).forEach(function(n){
         if (n && !Object.prototype.hasOwnProperty.call(_spanOf, n)) _spanOf[n] = 1;   /* REG-2850 keeper span */
+      });
+    /* v3855 (Elad: the CHARMS mule's zoom drew no Small Charm of Balance) - the same span for a keeper the charm rule homes on
+       any other locker (_mfKeeperHome: the CHARMS mule): _muleNamesFor listed it, and the span packed only magic-rare's. */
+    else if (_spanOf && typeof magicFinds === 'object' && magicFinds && typeof _mfKeeperHome === 'function')
+      Object.keys(magicFinds).forEach(function(n){
+        if (n && _mfKeeperHome(n) === muleId && !Object.prototype.hasOwnProperty.call(_spanOf, n)) _spanOf[n] = 1;   /* v3855 charm span */
       });
     /* #144.11 (REG-2781, GrokBot's eyes-pass A2: "the open WAR1 card says 0 items total while 8 tasks target WAR1") - the
        copies over the war stash's cap that the plan sends to this WAR mule. Their records are homed on the shared stash, so
