@@ -700,8 +700,8 @@ class TheCharactersTabIsManualAndSeparate(unittest.TestCase):
         code = re.sub(r"/\*.{0,6000}?\*/", " ", js, flags=re.S)
         code = "\n".join(re.sub(r"(^|[^:'\"])//.*$", r"\1", l) for l in code.split("\n"))
         self.assertGreater(len(code), 2000, "the comment strip ate the code - measure the real thing")
-        self.assertEqual(sorted(set(re.findall(r"d2r_\w+", code))), ["d2r_cbMain", "d2r_charBuilds"],
-                         "the Characters block names a store that is not its own")
+        self.assertEqual(sorted(set(re.findall(r"d2r_\w+", code))), ["d2r_cbMain", "d2r_charBuilds", "d2r_chxDump"],
+                         "the Characters block names a store that is not its own (d2r_chxDump is only the fold open/closed pref, v3855)")
         for bad in ("d2r_mule", "d2r_owned", "d2r_foundLog", "d2r_vault", "vaultAssign", "vaultAutoAssign",
                     "openMuleCard", "_muleLoad", "tvVaultRegister", "renderVault", "muleById",
                     "alert(", "confirm(", "prompt("):
