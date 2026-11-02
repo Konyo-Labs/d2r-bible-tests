@@ -242,6 +242,24 @@ import render_bound as _RB  # noqa: E402 - a sibling module; it never raises, an
 _RENDER_SCALE = _RB.from_env()
 _CLEAN_RUN_COST = 317.0 * _RENDER_SCALE
 
+
+def _scaled_wait(secs):
+    """v3855 (REG-3129) - ONE TARGET'S WAIT, STRETCHED BY THE SAME FACTOR AS THE RUN. -> seconds
+
+    v3853 push 9 went red on advanced-fleet: its rows did not paint inside _selector_ready's fixed 20s at load 6.8,
+    while the hook had already stretched the WHOLE run by TV_RENDER_SCALE. The run's limits grew; the waits inside
+    one target did not, so the slack went to a clock nobody was waiting on. Every per-target paint / settle /
+    activate / warmup wait goes through here. _RENDER_SCALE is clamped to [1, 2.5], so a wait never shrinks.
+    """
+    return float(secs) * max(1.0, _RENDER_SCALE)
+
+
+def _stretch_note():
+    """What a target's failure says about the stretch. -> str ('' on a quiet machine)"""
+    if _RENDER_SCALE <= 1.0:
+        return ""
+    return " [waits stretched x%.2f for load (TV_RENDER_SCALE)]" % _RENDER_SCALE
+
 #: the wall clock, from the top of main(), by which a verdict MUST have been PRINTED. Derived: the
 #: hook kills at 353s (300 until 2026-09-27), so this leaves 20s for the verdict lines, .render_verdict.json and tearing
 #: down Chrome and any served console (_chrome_down alone waits up to 5s on its kill).
@@ -4302,6 +4320,7 @@ def _settled(tab, budget=25.0, shape=False):
     UNKNOWN rather than measuring — because a partial page reports zero clipping, zero overflow and
     zero covers, which is the exact false green this file exists to refuse.
     """
+    budget = _scaled_wait(budget)  # TARGET-WAIT-SCALED (REG-3129)
     # ⚠⚠ WHAT "STILL" MEANS DEPENDS ON WHAT IS BEING MEASURED, and one predicate for both was
     # wrong. `innerHTML.length` is right for a target whose content is being assembled, and it can
     # NEVER go still on a page carrying a live clock and re-timed "last seen" strings — measured
@@ -4340,7 +4359,7 @@ def _settled(tab, budget=25.0, shape=False):
         time.sleep(0.6)
     return ("the page never settled in %.0fs — readyState/size kept moving, so anything measured "
             "would be about a document still assembling, and a half-built page reports zero of "
-            "everything" % budget)
+            "everything" % budget) + _stretch_note()
 
 
 class _Verdict(list):
@@ -4550,6 +4569,7 @@ def _selector_ready(tab, sel, budget=20.0, spec=None, token=None, reprepare=None
     exactly that — never appeared, not "not yet" — so a genuinely absent panel is still caught.
     The bound is what separates the two facts; without one they are the same observation.
     """
+    budget = _scaled_wait(budget)  # TARGET-WAIT-SCALED (REG-3129)
     t0 = time.time()
     js = ("(function(){try{var n=document.querySelectorAll(%s);if(!n.length)return 0;"
           "for(var i=0;i<n.length;i++){var r=n[i].getBoundingClientRect();"
@@ -4601,13 +4621,13 @@ def _selector_ready(tab, sel, budget=20.0, spec=None, token=None, reprepare=None
                     time.sleep(0.4)
                 return ("%r never matched a painted element in %.0fs, and again after the page was "
                         "re-prepared following a navigation — so this is the surface, not the "
-                        "harness" % (sel, budget))
+                        "harness" % (sel, budget)) + _stretch_note()
             return ("%r could not be measured: the page navigated after preparation and the "
                     "harness could not re-prepare it. UNKNOWN, not absent." % (sel,))
     return ("%r never matched a painted element in %.0fs after the panel was activated — either "
             "the surface is genuinely absent, or this machine was too loaded to build it, and "
             "the difference is exactly what this bound exists to state rather than guess"
-            % (sel, budget))
+            % (sel, budget)) + _stretch_note()
 
 
 _SHARED_CONSOLE = None      # (origin, proc) — one console per RUN, not per target
@@ -5179,7 +5199,7 @@ def check(name, spec, shots=True):
             # for the first paint. The panel-is-filled question above is still answered where it
             # always was: `activate` polls its own conditions (the 9s state panel included) before
             # anything is measured. A target that truly needs the full sleep says `warmup_fixed`.
-            _cap = float(spec.get("warmup") or 1.6)
+            _cap = _scaled_wait(spec.get("warmup") or 1.6)  # TARGET-WAIT-SCALED
             if spec.get("warmup_fixed"):
                 time.sleep(_cap)
             else:
@@ -5256,7 +5276,7 @@ def check(name, spec, shots=True):
         # fails under load teaches him to re-run it until it agrees — which is how a gate stops
         # being evidence"). The number moves to where the evidence is, per target, and stays 12.0
         # for everything that has never needed more. [[regression-guard]] [[stale-reading]]
-        _deadline = _t0 + float(spec.get("activate_budget") or _ACTIVATE_BUDGET_DEFAULT)
+        _deadline = _t0 + _scaled_wait(spec.get("activate_budget") or _ACTIVATE_BUDGET_DEFAULT)  # TARGET-WAIT-SCALED
         while time.time() < _deadline:
             act = tab.ev(spec["activate"])
             if act:
@@ -5317,7 +5337,7 @@ def check(name, spec, shots=True):
                                    "genuinely broken, or this machine was too loaded to build it "
                                    "in that window (check the load before changing the surface, "
                                    "and the surface before changing this bound)"
-                                   % (time.time() - _t0) + _why)
+                                   % (time.time() - _t0) + _why + _stretch_note())
             return out
         # v2330 — was `time.sleep(1.4)`. See _selector_ready: a fixed sleep here is the same
         # defect _settled() was written to remove, and under load it measured empty panels.
@@ -5358,7 +5378,7 @@ def check(name, spec, shots=True):
                 # Dormant on the happy path — `_toTVD()` is same-document and these targets do not
                 # navigate between widths — and a disagreement a reader cannot see is the kind that
                 # surfaces as a flake nobody can reproduce. [[copy-drift]] [[the-unjoined-end]]
-                _d2 = time.time() + float(spec.get("activate_budget") or _ACTIVATE_BUDGET_DEFAULT)
+                _d2 = time.time() + _scaled_wait(spec.get("activate_budget") or _ACTIVATE_BUDGET_DEFAULT)  # TARGET-WAIT-SCALED
                 while time.time() < _d2:
                     if tab.ev(spec["activate"]):
                         return True

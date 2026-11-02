@@ -42,6 +42,13 @@ module constants, so a second run found them taken. It now takes _free_ports(2) 
 test_v3769 and test_v3771 use. Law test_a_browser_law_takes_ports_the_os_hands_out refuses any browser law that pins a
 literal HTTP_PORT/CDP_PORT (3 tests, 2 red-proofs). OWED: the law and its red-proofs were not run (test runs paused on the
 Mac while the v3853 hook ran); BLUEPRINT.md/HEART.md not regenerated for this commit.
+### REG-3129 - A RENDER TARGET'S PAINT/SETTLE/ACTIVATE/WARMUP WAITS DID NOT STRETCH WITH TV_RENDER_SCALE (advanced-fleet red at load 6.8, v3855)
+v3853 push 9: advanced-fleet's rows did not paint inside _selector_ready's fixed 20s at load 6.8. The hook stretched the
+run's limits (_CLEAN_RUN_COST, _RUN_REPORT_BY) by TV_RENDER_SCALE, but every wait inside one target stayed fixed.
+_scaled_wait() now stretches _settled, _selector_ready, both activate deadlines and the warmup cap by the same factor
+(clamped [1, 2.5], so nothing shrinks), and each wait-expired refusal appends _stretch_note(). Law
+test_a_target_wait_stretches_with_the_render_scale (4 tests, 5 red-proofs). OWED: law and red-proofs not run (Mac test
+pause while the v3853 hook ran); render target re-run under load owed.
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel
