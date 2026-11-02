@@ -2572,6 +2572,11 @@ COVERED_BY = {
 }
 # Engines with NO invariant, each with the reason — a blank here would read as covered.
 NO_JOINT_YET = {
+    # v3854 - the D2JSP Advanced door onto the price database. CI caught it in neither registry.
+    'the d2jsp price database is on its tab':
+        "the row reads bible.html and control_app.py for the Advanced door and the quote's fold, then grades "
+        "d2jsp_price_db on a seeded fixture - the source and the module it imports, one witness. A real second "
+        "source would be the rendered D2JSP tab showing the same Wilson score the quote returned, which is not built.",
     # #36 (REG-2909) - one reader names the character on every screen it reads.
     'which character each session is on':
         "the row reads char_select's ledger: character select, the lobby and the C panel are all read by the console's "
