@@ -33,7 +33,11 @@ MAGIC = ("Ruby Jewel of Fervor", "Cobalt Jewel of Fervor")
 # REG-2895 (his ruling 2026-10-28) - a charm is no rolled-name keeper of MAGIC & RARE any more: it has its own rule
 CHARMS = {"Chaotic Grand Charm of Greed": "charms", "Grand Charm of Inertia": "shared", "Steel Grand Charm of Balance": "shared",
           "Fine Grand Charm of Life": "shared", "Small Charm of Vita": "shared"}
-STUBBED = ("Grim Loop", "Skull Scarab", "Blood Spiral", "Shimmering Jewel of Fervor")
+# REG-2054 - the stub branch's LIVE subject (measured 2026-11-03 over every rare suffix and magic base, branch defeated):
+# a magic ring / amulet whose stub base is its grammar base falls to the curated slot route (UNI-SMALL, "jewelry/charm -
+# base: Ring") without it; the rares and "Shimmering Jewel of Fervor" are caught by the grammar further down either way
+STUBBED = ("Grim Loop", "Skull Scarab", "Blood Spiral", "Shimmering Jewel of Fervor", "Cobalt Ring of Fervor",
+           "Cobalt Amulet of Fervor")
 
 
 def board():
@@ -87,10 +91,12 @@ RED_PROOF = [
      "find": "      if (ex && ex.val === 'tv' && !((_itip0 && _itip0.b) || (tip && tip.base)) && typeof _rolledQuality === 'function'){\n",
      "replace": "      if (false){\n",
      "matches": 1},
+    # the router's own rare door, not the hand-pool grammar: since v3849 the CB_DB tables (_intakeRoute) type the same
+    # names when the pool is defeated, so a tamper of the pool alone stayed green (measured 2026-11-03)
     {"why": "REG-2024 - a rare's rolled name is filed into a slot drawer by one word again",
      "file": "bible.html",
-     "find": "  if (w.length === 2 && RARE_NAME_PREFIXES.indexOf(w[0]) >= 0){\n",
-     "replace": "        if (false){\n",
+     "find": "      if (_rq && _rq.q === 'rare' && muleById('magic-rare')) return _rolledRoute(_rq);\n",
+     "replace": "      if (false) return _rolledRoute(_rq);\n",
      "matches": 1},
     {"why": "REG-2054 - a magic jewel falls past the rolled-name grammar again",
      "file": "bible.html",
