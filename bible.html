@@ -13603,6 +13603,7 @@ function d2jspBatchHtml(view) {
   document.addEventListener('click', function(ev){
     var t = ev.target;
     if (!t || !t.closest || !t.closest('#tab-d2jsp')) return;
+    if (typeof window._d2jspPriceClick === 'function' && window._d2jspPriceClick(ev)) return;
     if (t.closest('#d2jsp-lamp')) { ev.preventDefault(); d2jspLamp(true); return; }
     if (t.closest('#d2jsp-add')) { ev.preventDefault(); window._d2jspPlannerOpen(''); return; }
     var opt = t.closest('[data-d2jsp-options]');
@@ -13868,20 +13869,22 @@ function d2jspBatchHtml(view) {
   document.addEventListener('submit', function(ev){
     if (ev.target && ev.target.id === 'd2jsp-price-form') { ev.preventDefault(); priceSearch(); }
   });
-  document.addEventListener('click', function(ev){
+  /* v3854: the Advanced and Show-database buttons ride the desk's ONE delegated click listener (it calls this) */
+  window._d2jspPriceClick = function(ev){
     var t = ev.target;
-    if (!t || !t.id) return;
+    if (!t || !t.id) return false;
     if (t.id === 'd2jsp-price-db-show') {
       if (ev.preventDefault) ev.preventDefault();
       d2jspLoadDatabase();
-      return;
+      return true;
     }
-    if (t.id !== 'd2jsp-price-advanced') return;
+    if (t.id !== 'd2jsp-price-advanced') return false;
     var panel = document.getElementById('d2jsp-price-backend');
-    if (!panel) return;
+    if (!panel) return true;
     panel.hidden = !panel.hidden;
     t.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
-  });
+    return true;
+  };
   function d2jspLoadDatabase(){
     var panel = document.getElementById('d2jsp-price-backend');
     var door = document.getElementById('d2jsp-price-advanced');
