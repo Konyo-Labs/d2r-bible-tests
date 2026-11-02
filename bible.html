@@ -37396,6 +37396,8 @@ function switchTab(name) {
   // data-active-tab, NOT data-tab — the v605 gauntlet predicate treats [data-tab] as a clickable
   // marker (nav buttons), and a data-tab on <html> made closest() call EVERYTHING grabbable.
   try { document.documentElement.setAttribute("data-active-tab", name); } catch(e){}
+  /* v3855 eye round 1: the evidence panel (opened from a Characters or Vault magnifier) does not ride along to another tab */
+  try { var _evp = document.getElementById('vault-ev-panel'); if (_evp && !_evp.hidden && _evp.getAttribute('data-tab-of') !== name) _evp.hidden = true; } catch(_evErr){}
   try { if (name === "tvd" && typeof window._tvdRefreshTab === "function") window._tvdRefreshTab(); } catch(_rgErr){ try { console.warn("switchTab room setup failed", name, _rgErr); } catch(_w){} }   /* REG-2321 */   // v710.4 — repaint the flagship board on entry
   // v707 — lore tabs render sections late; build their TOC rail on first entry (idempotent)
   if ((name === "ref" || name === "binds" || name === "rotw" || name === "ancients") && window._buildLoreTocs) window._buildLoreTocs();
@@ -49785,6 +49787,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
                              : { state: 'none', say: 'no picture was saved for this item' });
     host.innerHTML = window._vaultEvidenceHtml(m, pic0);
     try { var _fb = window._vaultFoundByHtml(m.name); if (_fb) (host.firstElementChild || host).insertAdjacentHTML('beforeend', _fb); } catch (eFb) {}
+    try { host.setAttribute('data-tab-of', document.documentElement.getAttribute('data-active-tab') || ''); } catch (e) {}
     host.hidden = false;
     window._vaultEvidencePage = { name: m.name, looks: m.looks, i: first ? m.looks.indexOf(first) : 0, line: m.line };
     var ticket = (window.__vevTicket = (window.__vevTicket || 0) + 1);
