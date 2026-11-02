@@ -2,8 +2,9 @@
 """v3855 - THE READS' IDENTITY IS ROUTED TO WHERE IT IS NEEDED (Elad pt1198u, 2026-11-02).
 
 read_identity (who_at / attribute_finds) feeds three consumers, answer only, with how it is known in the hover:
-  1. the Characters room / builder: per character its sessions, last level, played and AFK time, Baal leveling vs
-     farming runs (shadow_sessions.characters_rollup, on /api/chars_learned `identity` and the shadow digest);
+  1. the Characters room: per character ONLY its Finds - the items it found, farmed or stashed, grouped like the
+     session farmed summary, notable first, count on the card, where in the hover (shadow_sessions.characters_rollup
+     on /api/chars_learned `identity`). No sessions / level / played / AFK text there (Elad: session rows only);
   2. the Vault's evidence panel only: "found by <character> · <game>" or UNKNOWN (read_identity.finds_index).
      Elad 2026-11-02: the Vault is ONE per-account vault - attribution is evidence, never routing, sorting, filing,
      a mule choice or whether an item is stashed. Uniques / grail and chronicles are per account: no attribution.
@@ -29,7 +30,7 @@ BIBLE = os.path.join(HERE, "..", "bible.html")
 
 def _bible_identity_js():
     src = open(BIBLE, encoding="utf-8").read()
-    i = src.index("  function _idHours(ms)")
+    i = src.index("  function _idOf(){")
     j = src.index("  window._identityFoundBy = function", i)
     j = src.index("\n  };\n", j) + len("\n  };\n")
     return src[i:j]
@@ -45,27 +46,62 @@ def _run_js(call):
     return json.loads(r.stdout)
 
 
-class TheCharactersRoomSaysEachCharactersSessions(unittest.TestCase):
+def _card_js():
+    src = open(BIBLE, encoding="utf-8").read()
+    i = src.index("  function _idFinds(t){")
+    return src[i:src.index("\n  }\n", i) + 4]
 
-    def test_rollup_counts_sessions_level_and_runs(self):
-        c = SS.characters_rollup(ID._journal())
+
+class TheCharactersRoomShowsOnlyItsFinds(unittest.TestCase):
+
+    def _journal(self):
+        rows = ID._journal()
+        rows.append(ID._r(9 * 60000, scene="stash", names=["Shako", "Ber Rune", "Super Healing Potion", "Gold"]))
+        rows.append(ID._r(10 * 60000, scene="gameplay", intent="farmed", names=["El Rune"]))
+        return rows
+
+    def test_rollup_carries_the_characters_finds(self):
+        c = SS.characters_rollup(self._journal())
         self.assertEqual(list(c), ["Blizzy"], "a session nobody named was counted under a guessed name")
-        b = c["Blizzy"]
-        self.assertEqual((b["sessions"], b["level"], b["cls"], b["farming"], b["leveling"]), (2, 92, "Sorceress", 2, 0))
+        f = c["Blizzy"]["finds"]
+        blob = json.dumps(f)
+        self.assertIn("Shako", blob)
+        for junk in ("Potion", "Gold"):
+            self.assertNotIn(junk, blob, "a consumable counted as a find")
+        self.assertNotIn(ID.SECRET, blob)
 
-    def test_the_room_line_is_the_answer_and_unknown_when_unseen(self):
-        idt = {"characters": {"Blizzy": {"sessions": 3, "level": 92, "playMs": 2 * 3600000, "afkMs": 600000,
-                                         "leveling": 1, "farming": 2}}}
-        got = _run_js("[window._identityCharLine('blizzy', %s), window._identityCharLine('Hammy', %s),"
-                      " window._identityCharLine('Blizzy', null)]" % (json.dumps(idt), json.dumps(idt)))
-        self.assertEqual(got[0]["say"], "3 sessions · last seen level 92 · 2h played · 10m AFK · 1 leveling (Baal) · 2 farming")
-        self.assertEqual(got[1]["say"], "sessions UNKNOWN")
-        self.assertIsNone(got[2], "no console answered, yet the room drew a line")
+    def _card(self, idt):
+        return _run_js("(function(){ const _w = window._identityCharFinds;"
+                       " window._identityCharFinds = function(n){ return _w(n, %s); };"
+                       " function esc(t){ return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\"/g, '&quot;'); }\n"
+                       "%s\n return _idFinds({name: 'Blizzy'}); })()" % (json.dumps(idt), _card_js()))
 
-    def test_the_room_draws_it(self):
+    def test_the_card_says_finds_notable_first_and_where_in_the_hover(self):
+        idt = {"characters": {"Blizzy": {"sessions": 3, "level": 92, "playMs": 7200000, "afkMs": 600000, "leveling": 1,
+                                         "farming": 2, "finds": {
+            "runes": {"El Rune": {"count": 4, "where": ["Morph2"]}, "Ber Rune": {"count": 1, "where": ["Morph5"]}},
+            "uniques": {"Shako": {"count": 2, "where": ["Morph3", "Morph4"]}}}}}}
+        h = self._card(idt)
+        shown = re.sub(r' title="[^"]*"', '', h)
+        self.assertLess(shown.index("Shako"), shown.index("Ber Rune"))
+        self.assertLess(shown.index("Ber Rune"), shown.index("El Rune"), "a low rune sorted above a high rune")
+        self.assertIn("Shako \u00d72", shown)
+        self.assertIn('title="found in Morph3, Morph4"', h)
+        for word in ("session", "AFK", "played", "level", "Morph"):
+            self.assertNotIn(word, shown, "the card shows %r (it belongs on the session rows / in the hover)" % word)
+
+    def test_no_attributed_reads_is_unknown_and_no_console_draws_nothing(self):
+        self.assertIn(">Finds UNKNOWN<", self._card({"characters": {}}))
+        self.assertEqual(_run_js("window._identityCharFinds('Blizzy', null)"), None)
+
+    def test_long_lists_fold(self):
+        u = {"U%d" % i: {"count": 1, "where": []} for i in range(10)}
+        self.assertIn("<details", self._card({"characters": {"Blizzy": {"finds": {"uniques": u}}}}))
+
+    def test_the_room_draws_it_and_not_the_stats(self):
         src = open(BIBLE, encoding="utf-8").read()
-        self.assertIn("      + _idLine(t);\n", src)
-        self.assertIn('<div class="chx-idt" title="\' + esc(r.hover) + \'">\' + esc(r.say) + \'</div>', src)
+        self.assertIn("      + _idFinds(t);\n", src)
+        self.assertNotIn("_identityCharLine", src)
 
 
 def _found_js():
@@ -143,24 +179,29 @@ RED_PROOF = [
      "find": "        name = (ch or {}).get(\"name\")\n        if not name:\n            continue\n",
      "replace": "        name = (ch or {}).get(\"name\") or \"UNKNOWN\"\n",
      "matches": 1},
-    {"why": "a Morph run is not counted as farming",
+    {"why": "potions and gold count as a character's finds",
      "file": "tv/shadow_sessions.py",
-     "find": "        o[\"farming\"] += 1 if sc.startswith(\"Farming\") else 0\n",
-     "replace": "",
+     "find": "        for _grp, _rows in _FN.group(",
+     "replace": "        for _grp, _rows in (lambda x: {'uniques': [[n, 1] for w in x for n in w]})(",
      "matches": 1},
-    {"why": "an older session's level overwrites the newest",
-     "file": "tv/shadow_sessions.py",
-     "find": "        if t1 >= o[\"lastT\"]:\n",
-     "replace": "        if True:\n",
-     "matches": 1},
-    {"why": "a character no read named shows a line of zeros instead of UNKNOWN",
+    {"why": "a high rune is not shown with the notable finds",
      "file": "bible.html",
-     "find": "    if (!c) return { say: 'sessions UNKNOWN',",
-     "replace": "    if (!c) c = { sessions: 0, playMs: 0, afkMs: 0 }; if (!c) return { say: 'sessions UNKNOWN',",
+     "find": "        if (hi.length) top.push({ g: 'High runes', notable: true, items: hi });\n",
+     "replace": "        if (hi.length) rest.push({ g: 'High runes', notable: false, items: hi });\n",
      "matches": 1, "needs": "node"},
-    {"why": "the Characters room never draws the line",
+    {"why": "a character with no attributed reads shows nothing instead of UNKNOWN",
      "file": "bible.html",
-     "find": "      + _idLine(t);\n",
+     "find": "    if (r.state !== 'seen') return '<div class=\"chx-finds\" data-state=\"unknown\">Finds UNKNOWN</div>';\n",
+     "replace": "    if (r.state !== 'seen') return '';\n",
+     "matches": 1, "needs": "node"},
+    {"why": "the card shows where on its face instead of in the hover",
+     "file": "bible.html",
+     "find": "          + esc(x.n) + (x.c > 1 ?",
+     "replace": "          + esc(x.n + ' ' + x.where.join(' ')) + (x.c > 1 ?",
+     "matches": 1, "needs": "node"},
+    {"why": "the Characters room never draws the finds",
+     "file": "bible.html",
+     "find": "      + _idFinds(t);\n",
      "replace": ";\n",
      "matches": 1},
     {"why": "the Vault's evidence panel never says who found the item",
