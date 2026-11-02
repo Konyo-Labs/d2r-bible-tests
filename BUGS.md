@@ -39,7 +39,7 @@ to see it whole".
 - A full look of that container clears the tick with the step (REG-3105 clears that container's older rows).
 - A step whose container is not named yet (a shared page with no number) cannot be ticked. Its question is answered first.
 - A shadow's tick is drawn disabled and refuses, in REG-3095's guard form.
-GUARD: tv/test_a_guided_step_tick_waits_for_the_sweep.py, 4 cases. 4 red-proofs, RED.
+GUARD: tv/test_a_guided_step_tick_waits_for_the_sweep.py, 4 cases. 6 red-proofs, RED.
 
 ### REG-3113 - NOTHING LED HIM TO THE CONTAINERS THE BOARD CANNOT SEE WHOLE: THE GUIDED SWEEP, CAPPED HONESTLY (#202, his 2026-10-27 ruling and his Q11)
 REG-3105 made a container's full look its truth and parked everything less as a question. Nothing led him to the

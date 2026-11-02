@@ -57044,7 +57044,7 @@ window.vaultAutoAssign = function(){
       var host = (typeof document !== 'undefined' && document.getElementById) ? document.getElementById('vault-move-list') : null;
       if (host) { host.hidden = false; host.innerHTML = ((typeof _vaultMoveHeldHtml === 'function') ? _vaultMoveHeldHtml() : '') + _vaultMoveHtml(built); }
       /* REG-3113 - the guided sweep, after the tasks. A step is drawn from the full-look store, so the sweep that completes its container removes it. */
-      if (host && typeof window._vaultGuideHtml === 'function') host.innerHTML += window._vaultGuideHtml();
+      if (host && typeof window._vaultGuideHtml === 'function') host.innerHTML += window._vaultGuideHtml();   /* REG-3113 the guided sweep */
       /* Vault v2 — the MOVE TASKS FAB badge = the open lines (moves + throw-outs not yet done), read off the painted list */
       try {
         var _bn = document.getElementById('vault-tasks-n');
