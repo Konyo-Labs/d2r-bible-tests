@@ -18,6 +18,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import test_a_shadow_shelf_says_playtime_and_plays_served_frames as BASE  # noqa: E402
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable; enable()
 
 BIBLE = os.path.join(HERE, "..", "bible.html")
 

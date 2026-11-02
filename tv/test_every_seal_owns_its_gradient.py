@@ -1,5 +1,7 @@
 """v3855 — a page draws many seals; each one must carry its own gradient id, or the first hidden seal blanks the rest."""
 import os, re, subprocess, unittest
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable; enable()
 HERE = os.path.dirname(os.path.abspath(__file__))
 def _page(): return open(os.path.join(HERE, "..", "bible.html"), encoding="utf-8", errors="replace").read()
 def _drawer(s):

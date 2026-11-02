@@ -20,6 +20,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import test_the_lobby_names_the_character as LOBBY  # noqa: E402
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable; enable()
 
 BIBLE = os.path.join(HERE, "..", "bible.html")
 UNSEEN = "nobody has looked at this size, so whether the bands see the lobby here is UNKNOWN"

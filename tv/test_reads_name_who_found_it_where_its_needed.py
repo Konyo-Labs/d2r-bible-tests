@@ -24,6 +24,8 @@ import test_a_read_names_its_character_and_game_never_the_password as ID  # noqa
 import test_a_shadow_shelf_says_playtime_and_plays_served_frames as BASE  # noqa: E402
 import read_identity as RI  # noqa: E402
 import shadow_sessions as SS  # noqa: E402
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable; enable()
 
 BIBLE = os.path.join(HERE, "..", "bible.html")
 

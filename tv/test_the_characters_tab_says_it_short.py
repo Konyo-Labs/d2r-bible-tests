@@ -9,6 +9,8 @@ only when the build's level differs from the one the game showed. RED_PROOF belo
 """
 import os
 import unittest
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable; enable()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BIBLE = os.path.join(HERE, "..", "bible.html")

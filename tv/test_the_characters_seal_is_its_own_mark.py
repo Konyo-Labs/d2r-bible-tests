@@ -13,6 +13,8 @@ HARDENED text badges with a designed icon, visually unlike every lock the consol
 import os
 import re
 import unittest
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable; enable()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BIBLE = os.path.join(HERE, "..", "bible.html")

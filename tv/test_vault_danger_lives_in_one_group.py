@@ -6,6 +6,8 @@ Delete unsorted, Reset assignments, Reset vault and Wipe items are pressed only 
 Cancel focused. Static: read from bible.html. This law never presses one of them.
 """
 import os, re, unittest
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable; enable()
 HERE = os.path.dirname(os.path.abspath(__file__))
 BIBLE = os.path.join(os.path.dirname(HERE), "bible.html")
 ACTIONS = ["vaultClearUnsorted", "vaultReset", "vaultClearHistory", "vaultWipeItems"]
