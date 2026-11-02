@@ -96,7 +96,7 @@ class TheRoomHasTwoSections(unittest.TestCase):
           OUT.head = OUT.head ? decode(OUT.head[1]) : null;
           OUT.fetched = FETCHED.slice(); OUT.ingHtml = secHtml('ingame');
         """)
-        self.assertEqual(out["order"], ['data-sec="ingame"', 'data-sec="sim"'], "the room is not two sections, in game first")
+        self.assertEqual(out["order"], ['data-sec="sim"', 'data-sec="ingame"'], "the room is not two sections, Your builds first (v3855 item D)")
         self.assertEqual(out["ing"], ["bHAM"], "a build carrying a learned character's name is not under that character")
         self.assertEqual(out["sim"], ["bSORC", "bDRU"], "the simulation section is not every other build, newest first")
         self.assertEqual(out["gIng"], ["seen:frostnova", "seen:mulebox"],
@@ -168,7 +168,7 @@ class TheRoomHasTwoSections(unittest.TestCase):
           OUT.empty = /No characters yet/.test(h);
         """)
         self.assertFalse(out["empty"], "a board with no hand build hid the characters its console learned")
-        self.assertEqual(out["secs"], ['data-sec="ingame"', 'data-sec="sim"'])
+        self.assertEqual(out["secs"], ['data-sec="sim"', 'data-sec="ingame"'])
         self.assertEqual(out["ghosts"], ["seen:hammerdin", "seen:frostnova", "seen:mulebox"],
                          "every learned character stands as its own card when nothing was built by hand")
 

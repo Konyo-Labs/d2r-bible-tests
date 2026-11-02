@@ -436,7 +436,7 @@ class TheRoutePaintsTheRow(unittest.TestCase):
         self.assertEqual(page.count("function _surfaceWitnessHtml()"), 1)
         self.assertEqual(page.count("function _lobbySizeHtml()"), 1)
         ing = page.index('data-sec="ingame"')
-        sim = page.index('data-sec="sim"', ing)
+        sim = page.index("</div></section>';", ing)   # v3855 item D: the in-game section now ends the room
         call = page.index("_surfaceWitnessHtml()", ing)
         self.assertLess(call, sim, "the in-game section does not paint the witness rows")
         size_call = page.index("_lobbySizeHtml()", ing)

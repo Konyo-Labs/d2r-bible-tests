@@ -11153,7 +11153,8 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
       <div class="chx-title">Characters</div>
       <div class="chx-sub" id="chars-what">Automatically syncs your items to characters</div>
     </div>
-    <button type="button" class="chx-btn chx-new" id="chars-new" onclick="window._charsNew()">+ New character</button>
+    <!-- v3855 item D: + New character is the first card of Your builds; this holder only carries the store's read state -->
+    <button type="button" class="chx-btn chx-new" id="chars-new" onclick="window._charsNew()" hidden>+ New character</button>
   </div>
   <div class="chx-say" id="chars-say" role="status" hidden></div>
   <div class="chx-undo" id="chars-undo" role="status" aria-live="polite" hidden></div>
@@ -11174,6 +11175,9 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 #tab-chars .chx-btn:hover{border-color:rgba(240,192,96,.6);background:rgba(240,192,96,.10)}
 #tab-chars .chx-btn:focus-visible{outline:2px solid rgba(240,192,96,.75);outline-offset:2px}
 #tab-chars .chx-btn[disabled]{opacity:.45;cursor:default}
+#tab-chars .chx-newtile{font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:120px;border:2px dashed rgba(240,192,96,.6);border-radius:10px;background:rgba(240,192,96,.05);color:var(--chx-gold);cursor:pointer;font-size:var(--fs-body);font-weight:var(--fw-semibold)}
+#tab-chars .chx-newtile:hover{border-color:var(--chx-gold);background:rgba(240,192,96,.12)}
+#tab-chars .chx-newtile-plus{font-size:var(--fs-chx-title);line-height:var(--lh-tightest)}
 #tab-chars .chx-new{align-self:center;border-color:rgba(240,192,96,.55);color:var(--chx-gold);background:rgba(240,192,96,.08);font-size:var(--fs-body);padding:8px 16px}
 #tab-chars .chx-say{margin:0 0 10px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,85,85,.45);background:rgba(255,85,85,.08);color:var(--text);font-size:var(--fs-body)}
 #tab-chars .chx-undo{display:flex;flex-direction:column;gap:6px;margin:0 0 12px}
@@ -11941,13 +11945,15 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       ? 'Which characters you have in game is UNKNOWN here — ' + esc(S.why) + '.'
       : '<span title="A character joins once your reels see its character-select screen twice">No characters seen yet</span>') + '</div>';
     var sim = S.sim.map(function(id){ return _card(id, all[id], id === mainId); }).join('');
-    if (!S.sim.length) sim = '<div class="chx-sec-empty" data-state="empty">No simulation builds. + New character makes one to try things out.</div>';
-    return '<section class="chx-sec" data-sec="ingame" aria-label="In-game characters">'
+    /* v3855 item D (his ask): Your builds sit at the TOP, under the header, and + New character is their first card */
+    var newTile = '<button type="button" class="chx-newtile" data-act="new" onclick="window._charsNew()">'
+      + '<span class="chx-newtile-plus" aria-hidden="true">+</span><span class="chx-newtile-t">New character</span></button>';
+    return '<section class="chx-sec chx-builds" data-sec="sim" aria-label="Your builds">'
+      +   '<div class="chx-sec-h"><span class="chx-sec-t">🧪 Your builds</span><span class="chx-sec-s">Builds you make by hand to try things out</span></div>'
+      +   '<div class="chx-sec-list">' + newTile + sim + '</div></section>'
+      + '<section class="chx-sec" data-sec="ingame" aria-label="In-game characters">'
       +   '<div class="chx-sec-h"><span class="chx-sec-t" title="' + esc(ladder) + '">⚔️ In-game characters</span></div>'
-      +   '<div class="chx-sec-list">' + cards + _surfaceWitnessHtml() + _lobbySizeHtml() + '</div></section>'
-      + '<section class="chx-sec" data-sec="sim" aria-label="Simulation builds">'
-      +   '<div class="chx-sec-h"><span class="chx-sec-t">🧪 Simulation builds</span><span class="chx-sec-s">builds you make by hand to try things out · + New character adds one</span></div>'
-      +   '<div class="chx-sec-list">' + sim + '</div></section>';
+      +   '<div class="chx-sec-list">' + cards + _surfaceWitnessHtml() + _lobbySizeHtml() + '</div></section>';
   }
   window.renderCharsTab = function(){
     /* ask this console what its reels learned; the room repaints when it answers */
