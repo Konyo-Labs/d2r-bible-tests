@@ -764,9 +764,7 @@ def _public_fields(parsed, item, read_at):
         "readAt": parsed.get("readAt") or read_at,
         "reason": reason,
         "board": QUOTE_BOARD,
-        # v3847 (Elad 15:27) - a "no prices" reading has no priced posts; the lines it set aside ride in aside, with why
         "posts": _public_posts(parsed.get("posts")) if reason == "read" else [],
-        "aside": _public_aside(parsed.get("aside")) if reason in ("read", "no prices") else [],
     }
     try:
         skipped = int(parsed.get("skipped"))
@@ -774,22 +772,6 @@ def _public_fields(parsed, item, read_at):
         skipped = 0
     if skipped > 0:
         out["skipped"] = skipped
-    return out
-
-
-def _public_aside(rows):
-    """The lines that named the item and were not priced: link, day and why - strings only, capped. Like the posts,
-    the line's own words stay on the forum; the link opens them."""
-    out = []
-    for r in (rows if isinstance(rows, list) else [])[:40]:
-        if not isinstance(r, dict):
-            continue
-        why = r.get("why")
-        if why not in ("no post date read", "older than the price window", "no fg price on the line"):
-            continue
-        link = str(r.get("link") or "")
-        out.append({"why": why, "day": str(r.get("day") or "")[:10],
-                    "link": link if link.startswith("https://forums.d2jsp.org/") else ""})
     return out
 
 

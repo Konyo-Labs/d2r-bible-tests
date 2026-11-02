@@ -367,7 +367,7 @@ function d2jspDecodeEntities(t) {
   });
 }
 
-function d2jspPosts(text, itemName, nowMs, aside) {
+function d2jspPosts(text, itemName, nowMs) {
   if (nowMs == null) nowMs = Date.now();
   var forms = d2jspSearchWords(itemName).forms;
   if (!forms.length) return [];
@@ -381,11 +381,9 @@ function d2jspPosts(text, itemName, nowMs, aside) {
     .replace(/<\/?(?:b|i|u|em|strong|span|font|mark|small|big)(?:\s[^>]*)?>/gi, '')
     .replace(/<[^>]+>/g, ' ');
   plain = d2jspDecodeEntities(plain);   /* v3847 - &#39; / &rsquo; / &amp; arrive raw: Guardian&#39;s matched nothing */
-  var rows = [], when = null, link = '', explicit = false, used = false, pending = '', pendingNamed = false;
+  var rows = [], when = null, link = '', explicit = false, used = false, pending = '';
   function rememberUndated() {
-    if (pendingNamed && aside) aside.push({ link: pending, day: '', why: 'no post date read' });
     pending = '';
-    pendingNamed = false;
   }
   plain.split('\n').forEach(function (raw) {
     var m, re = new RegExp(D2JSP_LINK_MARK.source, 'g');
@@ -406,29 +404,25 @@ function d2jspPosts(text, itemName, nowMs, aside) {
       if (here && pending && here !== pending) { rememberUndated(); kept = ''; }
       when = d; explicit = true; used = false;
       link = here || kept || '';
-      pending = ''; pendingNamed = false;
+      pending = '';
     } else if (here && here !== link) {
-      if (when != null && !used) { link = here; pending = ''; pendingNamed = false; }
+      if (when != null && !used) { link = here; pending = ''; }
       else { rememberUndated(); link = here; pending = here; when = rel ? d : null; explicit = false; used = false; }
     } else if (rel && !explicit) when = d;
     else if (here) link = here;
     /* v3843 - a price counts only under a recently dated post; v3844 - and only a 2026 one */
-    /* v3847 (Elad 15:27) - a line that names the item and is NOT priced is kept with the reason, for the drawer: a
-       reading of 0 priced posts still shows what was read and why each was set aside. Never weighed (w 0). */
+    /* A line that names the item and has no fg is skipped. It is not a post and it keeps no link.
+       The same for a line with no date, or a date outside the window. used only closes this card
+       so the next topic does not inherit the link. */
     var named = d2jspNamed(line, forms) && !d2jspOtherReading(line, d2jspResolveItem(itemName).item || itemName);
     if (!d2jspRecent(when, nowMs) || when < D2JSP_QUOTE_SINCE_MS) {
-      if (when == null && pending && named) { pendingNamed = true; return; }
-      if (named && aside) aside.push({ link: link,
-        day: when ? new Date(when).toISOString().slice(0, 10) : '',
-        why: when == null ? 'no post date read' : 'older than the price window' });
+      if (when == null && pending && named) return;
       if (named) used = true;
       return;
     }
     if (!named) return;
     var note = d2jspNotation(line);
     var lr = d2jspLineRows(line, forms);
-    if (!lr.length && aside) aside.push({ link: link,
-      day: new Date(when).toISOString().slice(0, 10), why: 'no fg price on the line' });
     if (!lr.length) used = true;
     lr.forEach(function (x) {
       var row = { fg: x.fg, day: new Date(when).toISOString().slice(0, 10), link: link,
@@ -561,15 +555,13 @@ function d2jspRead(html, item, readAt) {
     base.reason = 'need-login';
     return base;
   }
-  var aside = [];
-  var posts = d2jspPosts(text, item, d2jspNowMs(readAt), aside);
+  var posts = d2jspPosts(text, item, d2jspNowMs(readAt));
   var skipped = d2jspGrossSkip(posts);
   var nums = posts.filter(function (r) { return r.w > 0; }).map(function (r) { return r.fg; });
   var fg = d2jspMedian(nums);
   if (fg == null) {
     base.reason = 'no prices';
-    base.posts = posts.slice(0, 40);        /* v3847 - the drawer shows what was read even with no price */
-    base.aside = aside.slice(0, 40);
+    base.posts = posts.slice(0, 40);
     if (skipped > 0) base.skipped = skipped;
     return base;
   }
@@ -577,7 +569,7 @@ function d2jspRead(html, item, readAt) {
   var read = {
     item: String(item || ''), fg: fg, low: span.low, high: span.high,
     n: nums.length, readAt: readAt, reason: 'read', board: D2JSP_QUOTE_BOARD,
-    posts: posts.slice(0, 40), aside: aside.slice(0, 40)
+    posts: posts.slice(0, 40)
   };
   if (skipped > 0) read.skipped = skipped;
   return read;

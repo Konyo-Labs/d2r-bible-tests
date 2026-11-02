@@ -132,6 +132,8 @@ var q = {reason: 'read', posts: [
 out.sim = d2jspSimilarPrice(q, [20, 20, 10], 'Annihilus');
 out.ev = d2jspEvidenceHtml(out.sim);
 out.evBad = d2jspEvidenceHtml(d2jspSimilarPrice({posts: [{fg: 5, w: 1, roll: [], day: '<img>', link: 'https://forums.d2jsp.org/"onmouseover="x'}]}, null, 'X'));
+out.evBare = d2jspEvidenceHtml(null, {reason: 'read', item: 'Enigma', posts: [{fg: 2000, w: 1, day: '2026-11-02', link: 'https://forums.d2jsp.org/topic.php?t=9', roll: []}], aside: [{why: 'no fg price on the line', day: '2026-11-01', link: 'https://forums.d2jsp.org/topic.php?t=8'}]});
+out.evNone = d2jspEvidenceHtml(null, {reason: 'no prices', item: 'Enigma', posts: [], aside: [{why: 'no fg price on the line', day: '2026-11-01', link: 'https://forums.d2jsp.org/topic.php?t=8'}]});
 out.search = [d2jspParseSearch('anni 20/20/10'), d2jspParseSearch('40/15 shako'), d2jspParseSearch('jmod'), d2jspParseSearch('torch sorc 18/18 eth 2os')];
 out.searchLine = d2jspSearchLine({reason: 'read', fg: 18, low: 12, high: 20, n: 3, board: 268}, out.sim, out.search[0]);
 process.stdout.write(JSON.stringify(out));
@@ -168,6 +170,12 @@ process.stdout.write(JSON.stringify(out));
         self.assertIn("set aside, far from the middle 18 fg", ev)
         self.assertNotIn("<img>", self.out["evBad"])
         self.assertNotIn('"onmouseover', self.out["evBad"])
+        bare = self.out["evBare"]
+        self.assertIn("<summary>show the 1 post</summary>", bare)
+        self.assertIn("<td>2000 fg</td>", bare)
+        self.assertNotIn("no price", bare)
+        self.assertNotIn("topic.php?t=8", bare)
+        self.assertEqual(self.out["evNone"], "", "an item with no price still drew posts")
 
     def test_the_search_reads_slang_and_rolls(self):
         a, b, c, d = self.out["search"]
@@ -186,6 +194,22 @@ process.stdout.write(JSON.stringify(out));
         search = p[p.index("function priceSearch(){"):p.index("window._d2jspPriceSearch = priceSearch;")]
         self.assertNotIn("/api/d2jsp_post", search, "the price search must never post")
         self.assertIn("d2jspTierLine(reads, n, posts, base)", p, "the card tier is not weighted")
+
+
+RED_PROOF = [
+    {"why": "a line with no fg is drawn as a post again",
+     "file": "bible.html",
+     "find": "  }).join('');\n  var shown = rows.length;\n",
+     "replace": "  }).join('') + ((q && q.aside) || []).map(function (a) {\n"
+                "    return '<tr><td>?</td><td>no price</td><td></td><td>' + a.why + '</td><td></td></tr>';\n"
+                "  }).join('');\n  var shown = rows.length + ((q && q.aside) || []).length;\n",
+     "matches": 1},
+    {"why": "an item with no price draws a post list again",
+     "file": "bible.html",
+     "find": "  /* A line with no fg is not a post, and an item with no price gets no post list. */\n  if (!rows.length) return '';\n",
+     "replace": "  /* A line with no fg is not a post, and an item with no price gets no post list. */\n  if (!rows.length) return '<details class=\"d2jsp-ev\"><summary>show the 0 posts</summary></details>';\n",
+     "matches": 1},
+]
 
 
 if __name__ == "__main__":

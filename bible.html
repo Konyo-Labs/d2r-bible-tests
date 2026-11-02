@@ -12790,15 +12790,8 @@ function d2jspEscText(s) {
    weight - with the link to open it on the forum, so a price can be checked by hand. Nothing here posts. */
 function d2jspEvidenceHtml(sim, q) {
   var rows = (sim && sim.posts) || (q && q.posts) || [];
-  /* v3847 (Elad 15:27) - a reading with 0 priced posts still opens its drawer: the lines it read that named the item,
-     each with why it was set aside (no date, too old, no fg on the line). Only a reading with nothing at all is empty. */
-  var aside = (q && q.aside) || [];
-  if (!rows.length && !aside.length) {
-    return (q && q.reason === 'no prices')
-      ? '<details class="d2jsp-ev" data-d2jsp-ev data-d2jsp-ev-empty><summary>show the 0 posts</summary><div class="d2jsp-say">'
-        + 'No post dated 2026 or later on the board named ' + d2jspEscText(q.item || 'this item') + ' with a date in the price window.</div></details>'
-      : '';
-  }
+  /* A line with no fg is not a post, and an item with no price gets no post list. */
+  if (!rows.length) return '';
   var body = rows.map(function (p) {
     var roll = (p.cols && p.cols.length) ? p.cols.map(function (v, i) {
         var c = p.read && p.read[i]; return (i < 2 && v > 0 ? '+' : '') + v + (c && !c.ok ? '?' : '');
@@ -12808,12 +12801,8 @@ function d2jspEvidenceHtml(sim, q) {
     var open = p.link ? ('<a href="' + d2jspEscText(p.link) + '" target="_blank" rel="noopener noreferrer">open post</a>') : 'no link';
     return '<tr><td>' + d2jspEscText(p.day) + '</td><td>' + d2jspEscText(p.fg) + ' fg</td><td>' + d2jspEscText(roll)
       + '</td><td>' + d2jspEscText(weight) + '</td><td>' + open + '</td></tr>';
-  }).join('') + aside.map(function (a) {
-    var open = a.link ? ('<a href="' + d2jspEscText(a.link) + '" target="_blank" rel="noopener noreferrer">open post</a>') : 'no link';
-    return '<tr data-d2jsp-aside><td>' + d2jspEscText(a.day || '?') + '</td><td>no price</td><td></td><td>'
-      + d2jspEscText('set aside, ' + a.why) + '</td><td>' + open + '</td></tr>';
   }).join('');
-  var shown = rows.length + aside.length;
+  var shown = rows.length;
   var head = (sim && sim.cols && sim.fg != null)
     ? ('<div class="d2jsp-say" data-d2jsp-rollprice>Posts with a roll like yours: about ' + d2jspEscText(sim.fg) + ' fg'
       + (sim.fit != null ? (', and the price-by-roll fit at your roll says ' + d2jspEscText(sim.fit) + ' fg') : '')
