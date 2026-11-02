@@ -36131,18 +36131,6 @@ function _plannerBuiltTip(nm){
   if (!html) return null;
   return { artName: tip.base, desc: html, rich: true, builtBase: true };
 }
-/* v3855 (Elad pt1198u) - THE HOVER CARD SAYS WHO FOUND IT. One additive line under the card: which character found
-   or stashed the item, in which game (window._identityFoundBy, from the console's identity). A Vault item always gets the
-   line - UNKNOWN when its reads named nobody; anywhere else (the grail ledger, the chronicles) only an item a read found.
-   Attribution only: nothing here adds, drops or counts an item. The sources ride in the line's hover. */
-function _identityTipLine(nm, el){
-  var f = (typeof window._identityFoundBy === 'function') ? window._identityFoundBy(nm) : null;
-  if (!f) return '';
-  var inVault = !!(el && el.closest && el.closest('[id^="vault"], [class*="vault-"]'));
-  if (!inVault && f.say === 'found by UNKNOWN') return '';
-  var e = function(x){ return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
-  return '<div class="att-meta idt-found" title="' + e(f.hover) + '">' + e(f.say) + '</div>';
-}
 function _arttipResolve(nm){
   var _builtTip = _plannerBuiltTip(nm);
   if (_builtTip) return _builtTip;
@@ -36612,7 +36600,7 @@ window._jewelTipHtml = _jewelTipHtml;
       cur = el; _artHold(el);
       img.src = url || ''; img.style.display = url ? '' : 'none';
       lab.textContent = (typeof _setPieceShown==='function') ? _setPieceShown(nm) : nm; lab.style.color = (typeof _tipTint==='function' ? _tipTint(nm) : '') || '';
-      desc.innerHTML = r.desc + _identityTipLine(nm, el);   /* v3855 pt1198u - who found it, one line */
+      desc.innerHTML = r.desc;
       tip.classList.toggle('tip-rich', !!r.rich);
       setTipR(nm);
       move(e); tip.classList.add('on');
@@ -49634,6 +49622,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
                      : (shot ? { state: 'shot', say: String(shot.shotFile), shotFile: String(shot.shotFile) }
                              : { state: 'none', say: 'no picture was saved for this item' });
     host.innerHTML = window._vaultEvidenceHtml(m, pic0);
+    try { var _fb = window._vaultFoundByHtml(m.name); if (_fb) (host.firstElementChild || host).insertAdjacentHTML('beforeend', _fb); } catch (eFb) {}
     host.hidden = false;
     window._vaultEvidencePage = { name: m.name, looks: m.looks, i: first ? m.looks.indexOf(first) : 0, line: m.line };
     var ticket = (window.__vevTicket = (window.__vevTicket || 0) + 1);
@@ -49650,6 +49639,15 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       }).catch(function(){});
     }
     return m;
+  };
+  /* v3855 (Elad pt1198u + his ruling 2026-11-02 20:30: "the Vault is ONE unified per-account vault") - WHO FOUND IT is
+     EVIDENCE ONLY: one details line in this panel, "found by <character> · <game>" or UNKNOWN, its sources in the hover.
+     It never routes, sorts, files, picks a mule or decides whether an item is stashed - nothing in the Vault's filing reads
+     it (the law scans for it). -> html or '' when no console has said who played. */
+  window._vaultFoundByHtml = function(name){
+    var f = (typeof window._identityFoundBy === 'function') ? window._identityFoundBy(name) : null;
+    if (!f) return '';
+    return '<div class="vev-found" title="' + _evEsc(f.hover) + '">' + _evEsc(f.say) + '</div>';
   };
   window._vaultEvidenceClose = function(){
     window.__vevTicket = (window.__vevTicket || 0) + 1;

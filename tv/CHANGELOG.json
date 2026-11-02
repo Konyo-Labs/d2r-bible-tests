@@ -10,7 +10,7 @@
       "a shadow session row shows only the answer - who, class and level, and the scenario: a BAAL-numbered game is a Leveling session, Morph1-7 is a Farming run; how it was worked out is in the hover",
       "the reader now asks for the game name, class, level and avatar class, never the password",
       "each in-game character in the Characters room says its sessions, last level seen, time played and AFK, and its Baal leveling vs farming runs",
-      "a Vault item's hover card says which character found or stashed it and in which game, UNKNOWN when its reads named nobody"
+      "a Vault item's evidence panel says which character found or stashed it and in which game, UNKNOWN when its reads named nobody - evidence only, it never decides a mule, a sort or what is stashed"
     ]
   },
   {

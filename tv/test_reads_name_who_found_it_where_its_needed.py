@@ -4,8 +4,9 @@
 read_identity (who_at / attribute_finds) feeds three consumers, answer only, with how it is known in the hover:
   1. the Characters room / builder: per character its sessions, last level, played and AFK time, Baal leveling vs
      farming runs (shadow_sessions.characters_rollup, on /api/chars_learned `identity` and the shadow digest);
-  2. the Vault hover card: which character found or stashed the item, in which game (read_identity.finds_index);
-  3. the uniques / grail ledger and chronicles: the same attribution, which never adds, drops or counts an item.
+  2. the Vault's evidence panel only: "found by <character> · <game>" or UNKNOWN (read_identity.finds_index).
+     Elad 2026-11-02: the Vault is ONE per-account vault - attribution is evidence, never routing, sorting, filing,
+     a mule choice or whether an item is stashed. Uniques / grail and chronicles are per account: no attribution.
 Unattributed says UNKNOWN. Never a password. RED_PROOF below.
 """
 import json
@@ -67,10 +68,10 @@ class TheCharactersRoomSaysEachCharactersSessions(unittest.TestCase):
         self.assertIn('<div class="chx-idt" title="\' + esc(r.hover) + \'">\' + esc(r.say) + \'</div>', src)
 
 
-def _tip_js():
+def _found_js():
     src = open(BIBLE, encoding="utf-8").read()
-    i = src.index("function _identityTipLine(nm, el){")
-    return src[i:src.index("\n}\n", i) + 3]
+    i = src.index("  window._vaultFoundByHtml = function(name){")
+    return src[i:src.index("\n  };\n", i) + 5]
 
 
 IDT = {"finds": {"Shako": {"character": "Blizzy", "cls": "Sorceress", "level": 92, "game": "Morph3",
@@ -79,13 +80,13 @@ IDT = {"finds": {"Shako": {"character": "Blizzy", "cls": "Sorceress", "level": 9
                                    "ts": 2, "sources": [], "conflict": ["Blizzy", "Hammy"]}}}
 
 
-def _tip(name, in_vault):
-    call = ("_identityTipLine(%s, {closest: function(){ return %s; }})" % (json.dumps(name), "true" if in_vault else "null"))
+def _panel(name):
     return _run_js("(function(){ const _l = window._identityFoundBy; window._identityFoundBy = function(n){ return _l(n, %s); };"
-                   " %s\n return %s; })()" % (json.dumps(IDT), _tip_js(), call))
+                   " function _evEsc(t){ return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\"/g, '&quot;'); }\n"
+                   "%s\n return window._vaultFoundByHtml(%s); })()" % (json.dumps(IDT), _found_js(), json.dumps(name)))
 
 
-class TheVaultCardSaysWhoFoundIt(unittest.TestCase):
+class TheVaultEvidenceSaysWhoFoundIt(unittest.TestCase):
 
     def test_finds_index_names_character_game_and_session(self):
         f = RI.finds_index(ID._journal())["Shako"]
@@ -93,19 +94,39 @@ class TheVaultCardSaysWhoFoundIt(unittest.TestCase):
                          ("Blizzy", "Sorceress", 92, "Morph7", ID.S1))
         self.assertNotIn(ID.SECRET, json.dumps(RI.finds_index(ID._journal())))
 
-    def test_the_card_line_is_the_answer(self):
-        h = _tip("Shako", True)
+    def test_the_panel_line_is_the_answer(self):
+        h = _panel("Shako")
         self.assertIn(">found by Blizzy · Sorceress 92 · Morph3</div>", h)
         self.assertIn('title="sources: select-screen · session s_1"', h)
 
-    def test_unattributed_in_the_vault_is_unknown(self):
-        self.assertIn(">found by UNKNOWN</div>", _tip("Arachnid Mesh", True))
-        self.assertIn("the reads disagree: Blizzy vs Hammy", _tip("Arachnid Mesh", True))
-        self.assertIn(">found by UNKNOWN</div>", _tip("Griffon's Eye", True))
+    def test_unattributed_is_unknown(self):
+        self.assertIn(">found by UNKNOWN</div>", _panel("Arachnid Mesh"))
+        self.assertIn("the reads disagree: Blizzy vs Hammy", _panel("Arachnid Mesh"))
+        self.assertIn(">found by UNKNOWN</div>", _panel("Griffon's Eye"))
 
-    def test_the_card_draws_it(self):
+    def test_the_panel_draws_it(self):
         src = open(BIBLE, encoding="utf-8").read()
-        self.assertIn("      desc.innerHTML = r.desc + _identityTipLine(nm, el);", src)
+        self.assertEqual(src.count("window._vaultFoundByHtml(m.name)"), 1)
+
+
+class AttributionNeverRoutesTheVault(unittest.TestCase):
+    """His ruling: an item's mule / home is identical with and without attribution data. Only two places in the page
+    may ask who found an item: the evidence panel's line. A new reader anywhere else (the sorter, the
+    dock, the records, the grail or chronicle tallies) fails here."""
+
+    def test_only_the_evidence_panel_reads_who_found_it(self):
+        src = open(BIBLE, encoding="utf-8").read()
+        self.assertEqual(src.count("_identityFoundBy("), 1, "something besides the evidence panel reads who found an item")
+        self.assertEqual(src.count("_vaultFoundByHtml("), 1)
+        for fn in ("window.vaultAutoAssign = function(){", "window.vaultAutoSortByHand = function(){", "function _vaultRecords(_inPhase){"):
+            i = src.index(fn)
+            body = src[i:i + 12000]
+            for w in ("_identity", "finds_index", "foundBy"):
+                self.assertNotIn(w, body, "%s reads the attribution (%s)" % (fn, w))
+
+    def test_no_grail_or_chronicle_attribution(self):
+        src = open(BIBLE, encoding="utf-8").read()
+        self.assertNotIn("_identityTipLine", src, "uniques / chronicles are per account; they carry no character")
 
 
 class TheProofsNameOnePlace(unittest.TestCase):
@@ -142,26 +163,26 @@ RED_PROOF = [
      "find": "      + _idLine(t);\n",
      "replace": ";\n",
      "matches": 1},
-    {"why": "the Vault card never says who found the item",
+    {"why": "the Vault's evidence panel never says who found the item",
      "file": "bible.html",
-     "find": "      desc.innerHTML = r.desc + _identityTipLine(nm, el);",
-     "replace": "      desc.innerHTML = r.desc;",
+     "find": "    try { var _fb = window._vaultFoundByHtml(m.name);",
+     "replace": "    try { var _fb = '';",
      "matches": 1},
     {"why": "a find takes the first game of the session instead of the one being played",
      "file": "tv/read_identity.py",
      "find": "            if best is None or r[\"ts\"] >= best[\"ts\"]:\n",
      "replace": "            if best is None:\n",
      "matches": 1},
-    {"why": "a Vault item nobody named draws no line instead of UNKNOWN",
-     "file": "bible.html",
-     "find": "  if (!inVault && f.say === 'found by UNKNOWN') return '';\n",
-     "replace": "  if (f.say === 'found by UNKNOWN') return '';\n",
-     "matches": 1, "needs": "node"},
     {"why": "disagreeing reads are attributed to one of them",
      "file": "bible.html",
      "find": "    if (!f || !f.character) {\n",
      "replace": "    if (f && !f.character && f.conflict) f = Object.assign({}, f, { character: f.conflict[0] });\n    if (!f || !f.character) {\n",
      "matches": 1, "needs": "node"},
+    {"why": "the mule sorter files by who found the item",
+     "file": "bible.html",
+     "find": "window.vaultAutoAssign = function(){\n",
+     "replace": "window.vaultAutoAssign = function(){ var _who = window._identityFoundBy && window._identityFoundBy('x');\n",
+     "matches": 1},
 ]
 
 if __name__ == "__main__":
