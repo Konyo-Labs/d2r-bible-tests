@@ -12874,6 +12874,14 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_shadow_writes_nothing_by_drag_or_on_four_tabs.py")], 300,
          needs_app=False,
          why="REG-3096 (#194 code half): a snapshot shadow writes nothing by drag or on the Vault, d2jsp, TV-D and Runes tabs"),
+    Gate("test_a_judged_vault_row_wears_the_characters_tier_face",
+         [sys.executable, os.path.join(HERE, "test_a_judged_vault_row_wears_the_characters_tier_face.py")], 300,
+         needs_app=False,
+         why="REG-3110 (#26): a judged vault row wears the Characters room tier face; a receipt and an unjudged row do not"),
+    Gate("test_the_shadow_vault_tab_dates_the_vault_by_its_own_clock",
+         [sys.executable, os.path.join(HERE, "test_the_shadow_vault_tab_dates_the_vault_by_its_own_clock.py")], 300,
+         needs_app=False,
+         why="REG-3123 (#23): the shadow Vault tab says the vault section age beside the board upload age, UNKNOWN when a clock was not handed"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

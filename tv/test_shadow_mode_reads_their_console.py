@@ -1099,7 +1099,9 @@ class TheSameConsoleDrawsIt(unittest.TestCase):
         self.assertEqual(outside, [], "bible.html draws something differently in shadow at line(s) %r - the shadow "
                                       "must render through the same templates as the console" % outside)
         self.assertGreaterEqual(len(allowed), 12, allowed)
-        self.assertLessEqual(len(allowed), 20, allowed)
+        # REG-3113 - _flShadow refuses the same way _unconfReadOnly does (return true). One new guard of that form.
+        self.assertEqual(sum(1 for a in allowed if a.startswith("if (window._tvdShadow) return true;")), 2)
+        self.assertLessEqual(len(allowed), 21, allowed)
 
     def test_the_shadow_frame_is_the_consoles_own_board_document(self):
         ui = _read(UI)

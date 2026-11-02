@@ -29433,6 +29433,19 @@ function escC(s) {
      draw exactly as on their console, and nothing it does reaches this PC's store or console. The bar says live or
      offline and the upload's age. An owner with no upload still opens this same frame: _shadowEnter fills it
      from the published roster row and the fleet platform, and never from this browser's board. */
+  window._shadowVaultClock = function (d) {
+    /* REG-3123 - copy two records onto the shadow. vaultLine is the route's words (sections.vault.asOf).
+       boardAgo is the snapshot's own ago (the board upload). This copies. It does not age either one. */
+    var line = null;
+    if (d && d.vaultLine && typeof d.vaultLine === 'object' && typeof d.vaultLine.words === 'string' && d.vaultLine.words)
+      line = { cls: typeof d.vaultLine.cls === 'string' ? d.vaultLine.cls : '',
+               state: typeof d.vaultLine.state === 'string' ? d.vaultLine.state : '',
+               words: d.vaultLine.words };
+    var ago = null;
+    if (d && typeof d.boardAgo === 'string' && d.boardAgo) ago = d.boardAgo;
+    else if (d && typeof d.ago === 'string' && d.ago) ago = d.ago;
+    return { vaultLine: line, boardAgo: ago };
+  };
   window._shadowSnapEnter = function (owner, d) {
     if (typeof window._shadowRemember === 'function') window._shadowRemember();
     var gen = ++_shadowGen;
@@ -29441,6 +29454,9 @@ function escC(s) {
     var old = document.getElementById('shadow-eng');
     if (old && old.parentNode) old.parentNode.removeChild(old);
     window._tvdShadowSnap = { owner: owner, t: d.t, stores: d.stores };
+    var _clk = window._shadowVaultClock(d);   /* REG-3123 - the vault's own words and the board upload's own age */
+    window._tvdShadowSnap.vaultLine = _clk.vaultLine;
+    window._tvdShadowSnap.boardAgo = _clk.boardAgo;
     var box = document.getElementById('roster-box');
     if (box) box.setAttribute('hidden', '');
     var bar = document.getElementById('shadow-bar');
@@ -29531,7 +29547,12 @@ function escC(s) {
       var built = null;
       try { built = window._shadowRosterStores(row, fleet, owner); } catch (e) { built = null; }
       var stores = window._shadowMergeStores(snap && snap.stores, built && built.stores);
-      open({ t: snap && snap.t, words: snap && snap.words, stores: stores });
+      var handed = { t: snap && snap.t, words: snap && snap.words, stores: stores,
+                     ago: snap && snap.ago, vaultLine: (row && row.vaultLine) || null };
+      var clock = window._shadowVaultClock(handed);
+      handed.boardAgo = clock.boardAgo;
+      handed.vaultLine = clock.vaultLine;   /* REG-3123 - the row's vault line, not this fetch */
+      open(handed);
     }).catch(function () { open(snap); });
   };
   window._shadowOpen = function (owner) {

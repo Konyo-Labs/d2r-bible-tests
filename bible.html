@@ -4135,6 +4135,23 @@ tr.owned-row{background:rgba(102,255,136,.03)}
     if (!_pics || typeof _pics !== 'object' || _pics.ok !== true) _pics = null;
     var _porg = (_pics && typeof _pics.origin === 'string' && /^https?:\/\/[A-Za-z0-9][A-Za-z0-9.\-]*(?::\d{1,5})?$/.test(_pics.origin)) ? _pics.origin : '';
     window._tvdShadow = { owner: String((snap && snap.owner) || ''), t: snap && snap.t, mem: mem };
+    /* REG-3123 - the vault section's own words and the board upload's own age, copied off the snapshot. This boot does not age either one. */
+    window._shadowVaultTake = function (snap) {
+      var line = null;
+      if (snap && snap.vaultLine && typeof snap.vaultLine === 'object' && typeof snap.vaultLine.words === 'string' && snap.vaultLine.words)
+        line = snap.vaultLine;
+      var ago = (snap && typeof snap.boardAgo === 'string' && snap.boardAgo) ? snap.boardAgo : null;
+      return { vaultLine: line, boardAgo: ago };
+    };
+    var _takenVault = window._shadowVaultTake(snap);   /* REG-3123 the vault clock enters with the snapshot */
+    window._vaultShadowClockState = { vaultLine: _takenVault.vaultLine, boardAgo: _takenVault.boardAgo };
+    function _paintVaultClocks() {
+      try { if (typeof window._vaultShadowClocksPaint === 'function') window._vaultShadowClocksPaint(); } catch (eClk) {}
+    }
+    try {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _paintVaultClocks);
+      else _paintVaultClocks();
+    } catch (eClkArm) {}
     window._tvdShadow.origin = _porg;
     window._tvdShadow.pictures = (_pics && _pics.pictures && typeof _pics.pictures === 'object') ? _pics.pictures : null;
     // The snapshot is already in memory. From here a shadow stores nothing, so a later
@@ -14048,6 +14065,7 @@ function d2jspSearchLine(q, sim, parsed) {
       <div class="boss-title-block">
         <p class="boss-name">The Vault — Mule Manager</p>
         <p class="boss-subtitle">Your second-account warehouse — every ✓ owned item gets a home, and the search will always know where it lives</p>
+        <p class="boss-subtitle" id="vault-shadow-clocks" hidden></p><!-- REG-3123 the shadow's Vault tab: board upload age beside the vault's own asOf -->
       </div>
       <span class="collapse-chevron">▾</span>
     </div>
@@ -46737,7 +46755,29 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     return o;
   }
   try { window._vaultPopFromHeader = _vaultPopFromHeader; } catch (e) {}
+  window._vaultShadowClocks = function () {
+    /* REG-3123 - two clocks, named, on the shadow's Vault tab. The shadow boot hands them on
+       _vaultShadowClockState. This paints those words. It does not ask whether this is a shadow,
+       and it does not age either clock. No state means his own board: nothing. A handed clock
+       that will not read is UNKNOWN, never the other clock and never now. */
+    var s = window._vaultShadowClockState;
+    if (!s) return '';
+    var ago = s.boardAgo;
+    var board = (typeof ago === 'string' && ago) ? ('board uploaded ' + ago) : 'board uploaded, age UNKNOWN';
+    var line = s.vaultLine;
+    var vault = (line && typeof line.words === 'string' && line.words) ? line.words : 'vault age UNKNOWN';
+    return board + ' · ' + vault;
+  };
+  window._vaultShadowClocksPaint = function () {
+    var el = window.document.getElementById('vault-shadow-clocks');
+    if (!el) return;
+    var words = window._vaultShadowClocks();
+    if (!words) { el.hidden = true; el.textContent = ''; return; }
+    el.hidden = false;
+    el.textContent = words;
+  };
   function renderVault(){
+    try { if (typeof window._vaultShadowClocksPaint === 'function') window._vaultShadowClocksPaint(); } catch (eClk) {}   /* REG-3123 */
     var dock=document.getElementById('vault-dock'), shelf=document.getElementById('vault-shelf');
     if (!dock || !shelf) return;
     window._spareDepth = (window._spareDepth || 0) + 1;
@@ -49113,7 +49153,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     if (!r) return '';
     if (r.tier && typeof r.successes === 'number' && typeof r.trials === 'number'){
       var sess = Array.isArray(r.sessions) ? r.sessions.length : 0;
-      return r.tier + ' ' + r.successes + '/' + r.trials
+      /* REG-3110 - a judged row wears the Characters room's one face. A tier the map does not name stays the word it is. A receipt is not judged and never reaches this line. */
+      var face = (typeof _TIER_FACE === 'object' && _TIER_FACE && typeof _TIER_FACE[r.tier] === 'string') ? _TIER_FACE[r.tier] : r.tier;
+      return face + ' ' + r.successes + '/' + r.trials
         + (sess ? (' · ' + sess + ' session' + (sess === 1 ? '' : 's')) : '')
         + (r.locked === true ? ' · 🔒 locked' : (r.unlockedAt ? ' · unlocked by hand' : ''));   /* #41 rank 17 — the lock is said where the tier is */
     }
