@@ -7,6 +7,13 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3124 - SIX MACHINE METERS MADE A GATE'S READS UNKNOWN, SO 10 GATES RAN ON EVERY PUSH (gate speed, v3855)
+The v3853 hook's fast gate set listed 138 gates "not stored - the gate started X, which the trace cannot follow". Six of
+those X only read the machine: vm_stat, sysctl, true, netstat, ioreg, lsappinfo. None opens a file in this checkout, the
+same class REG-2296 made inert for sleep/ps/pgrep. gate_trace/sitecustomize.py now lets them through (TRACE-INERT-METER)
+unless an argument names a path inside the checkout. caffeinate stays untraced (it can run a command), as do bash, git,
+Chrome, sips and defaults. Saving: 10 gates, ~64 s idle by gate_costs.json, ~1.7x that under hook load. Law
+test_a_machine_meter_does_not_untrace_a_gate (9 tests, 9 red-proofs, 9 of 9 RED).
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel

@@ -206,6 +206,9 @@ def _boot():
             return
         if head in ("ps", "pgrep", "sleep"):
             return  # the process table or a clock: a path in a pgrep pattern is matched, never opened  # TRACE-INERT-CHILD
+        if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(
+                rel(a) is not None for a in args[1:] if "/" in a):
+            return  # a machine meter (memory, kernel, sockets, IO registry, app list), never a file here  # TRACE-INERT-METER
         if head == "lsof" and not any(
                 rel(a) is not None for a in args[1:] if "/" in a):
             return  # the process table, not a file in this checkout
