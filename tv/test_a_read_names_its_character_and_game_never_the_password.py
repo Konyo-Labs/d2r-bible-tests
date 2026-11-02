@@ -151,7 +151,7 @@ class TheDigestPublishesItAndNeverThePassword(unittest.TestCase):
         import re
         shown = re.sub(r' title="[^"]*"', '', h)
         self.assertIn('>Blizzy · Sorceress 92 · Farming (Morph1\u20137)</div>', shown)
-        self.assertIn('<div class="ssv-facts ssv-who">UNKNOWN</div>', shown, "a conflict was drawn as anything but UNKNOWN")
+        self.assertIn('<div class="ssv-facts ssv-who">UNKNOWN · Farming (Morph8)</div>', shown, "a conflict was drawn as anything but UNKNOWN")
         for word in ("select-screen", "char-panel", "avatar", "disagree", "from ", "Hammy"):
             self.assertNotIn(word, shown, "the row shows source text %r (it belongs in the hover)" % word)
         self.assertIn('title="character from select-screen | games: Morph1-Morph7 (7 games), one run across 2 sessions"', h)

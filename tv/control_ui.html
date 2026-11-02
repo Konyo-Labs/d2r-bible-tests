@@ -23071,7 +23071,7 @@ window._lockMark = function(isOpen, px, label){
     if (resolved) {
       if (ch.name) whoBits.push(ch.name);
       if (ch.cls) whoBits.push(ch.cls + (ch.level ? ' ' + ch.level : ''));
-    }
+    } else whoBits.push('UNKNOWN');   /* an unresolved character still says UNKNOWN beside a known scenario */
     if (typeof s.scenario === 'string' && s.scenario) whoBits.push(s.scenario);
     var who = whoBits.length ? whoBits.join(' · ') : 'UNKNOWN';
     var whyBits = [];
