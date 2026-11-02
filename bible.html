@@ -11665,23 +11665,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     var lv = t.pendingLevel ? ' · level ' + (t.pendingLevel | 0) + ' waits for one more look' : '';
     var seen = _ago(t.lastTs);
     return '<div class="chx-proof" data-tier="' + esc(t.tier || 'UNKNOWN') + '">' + esc(say) + esc(lv)
-      + (seen ? '<span class="chx-proof-when"> · last seen ' + esc(seen) + '</span>' : '') + '</div>'
-      + _idFinds(t);
-  }
-  /* v3855 pt1203u - the character's FINDS (answer only; where each was found rides in the hover). Long lists fold. */
-  function _idFinds(t){
-    var r = (typeof window._identityCharFinds === 'function') ? window._identityCharFinds(t && t.name) : null;
-    if (!r) return '';
-    if (r.state !== 'seen') return '<div class="chx-finds" data-state="unknown">Finds UNKNOWN</div>';
-    var n = 0, rows = r.groups.map(function(G){
-      n += G.items.length;
-      return '<div class="chx-finds-g' + (G.notable ? ' chx-finds-top' : '') + '"><span class="chx-finds-h">' + esc(G.g) + '</span> '
-        + G.items.map(function(x){ return '<span class="chx-find" title="' + esc('found in ' + (x.where.join(', ') || 'UNKNOWN')) + '">'
-          + esc(x.n) + (x.c > 1 ? ' \u00d7' + x.c : '') + '</span>'; }).join(', ') + '</div>';
-    });
-    var body = rows.join('');
-    return n > 8 ? '<details class="chx-finds"><summary>Finds \u00b7 ' + n + ' items</summary>' + body + '</details>'
-                 : '<div class="chx-finds"><div class="chx-finds-h0">Finds</div>' + body + '</div>';
+      + (seen ? '<span class="chx-proof-when"> · last seen ' + esc(seen) + '</span>' : '') + '</div>';
   }
   /* #234 step 2 — HIS ASK, 2026-10-01: "i want to see the items slowly appearing based on the character they were
      witnessed in... when i click a mule it shouldnt let me do PLAN BUILD". An in-game card shows what the game showed its
@@ -73785,38 +73769,6 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     var L = (typeof window._cbLearnedNow === 'function') ? window._cbLearnedNow() : _cbLearned;
     return (L && L.identity && typeof L.identity === 'object') ? L.identity : null;
   }
-  /* v3855 (Elad pt1203u: "the items i mean like which character") - THE CHARACTER'S FINDS, answer only: each item it
-     found, farmed or stashed, grouped as the session's farmed summary (consumables, gold and keys never count), notable
-     first (uniques, sets, runewords, ubers, high runes), each with its count; where (game / session) rides in the hover.
-     No time, AFK or session counts here - those stay on the session rows (his ruling). -> {state, groups:[{g, notable,
-     items:[{n, c, where}]}]} or null when no console answered. state 'unknown' = no attributed reads. */
-  var _ID_GROUP_WORD = { uniques: 'Uniques', sets: 'Sets', runewords: 'Runewords', ubers: 'Uber parts', runes: 'Runes',
-                         charms: 'Charms', jewels: 'Jewels', jewelry: 'Jewelry', gems: 'Gems', bases: 'Bases' };
-  var _ID_ORDER = ['uniques', 'sets', 'runewords', 'ubers', 'runes', 'charms', 'jewels', 'jewelry', 'gems', 'bases'];
-  var _ID_HIGH_RUNE = /^(vex|ohm|lo|sur|ber|jah|cham|zod)( rune)?$/i;
-  window._identityCharFinds = function(name, idt){
-    idt = idt || _idOf();
-    if (!idt || !idt.characters) return null;
-    var c = null, k = _cbFold(name);
-    Object.keys(idt.characters).forEach(function(n){ if (!c && _cbFold(n) === k) c = idt.characters[n]; });
-    var F = c && c.finds;
-    if (!F || !Object.keys(F).length) return { state: 'unknown', groups: [] };
-    var top = [], rest = [];
-    _ID_ORDER.forEach(function(g){
-      if (!F[g]) return;
-      var items = Object.keys(F[g]).map(function(n){ return { n: n, c: F[g][n].count | 0, where: (F[g][n].where || []).slice() }; })
-        .sort(function(a, b){ return b.c - a.c || (a.n < b.n ? -1 : 1); });
-      if (g === 'runes'){
-        var hi = items.filter(function(x){ return _ID_HIGH_RUNE.test(x.n); }), lo = items.filter(function(x){ return !_ID_HIGH_RUNE.test(x.n); });
-        if (hi.length) top.push({ g: 'High runes', notable: true, items: hi });
-        if (lo.length) rest.push({ g: 'Runes', notable: false, items: lo });
-        return;
-      }
-      var notable = g === 'uniques' || g === 'sets' || g === 'runewords' || g === 'ubers';
-      (notable ? top : rest).push({ g: _ID_GROUP_WORD[g] || g, notable: notable, items: items });
-    });
-    return { state: 'seen', groups: top.concat(rest) };
-  };
   window._identityFoundBy = function(item, idt){
     idt = idt || _idOf();
     if (!idt || !idt.finds) return null;

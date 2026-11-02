@@ -9,7 +9,6 @@
       "each console reads who played and in which game from its own reads: the login screen, the character panel or the avatar names the character, Morph1..Morph7 is one farming run, the game password is never kept, and disagreeing reads say UNKNOWN",
       "a shadow session row shows only the answer - who, class and level, and the scenario: a BAAL-numbered game is a Leveling session, Morph1-7 is a Farming run; how it was worked out is in the hover",
       "the reader now asks for the game name, class, level and avatar class, never the password",
-      "each in-game character in the Characters room shows only the items it found, farmed or stashed - grouped, notable first, counts on the card and the game it was found in on hover, Finds UNKNOWN when no read named it; time and AFK stay on the session rows",
       "a Vault item's evidence panel says which character found or stashed it and in which game, UNKNOWN when its reads named nobody - evidence only, it never decides a mule, a sort or what is stashed"
     ]
   },
