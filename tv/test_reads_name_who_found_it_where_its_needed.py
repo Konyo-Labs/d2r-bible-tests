@@ -67,6 +67,47 @@ class TheCharactersRoomSaysEachCharactersSessions(unittest.TestCase):
         self.assertIn('<div class="chx-idt" title="\' + esc(r.hover) + \'">\' + esc(r.say) + \'</div>', src)
 
 
+def _tip_js():
+    src = open(BIBLE, encoding="utf-8").read()
+    i = src.index("function _identityTipLine(nm, el){")
+    return src[i:src.index("\n}\n", i) + 3]
+
+
+IDT = {"finds": {"Shako": {"character": "Blizzy", "cls": "Sorceress", "level": 92, "game": "Morph3",
+                           "sessionId": "s_1", "ts": 1, "sources": ["select-screen"], "conflict": None},
+                 "Arachnid Mesh": {"character": None, "cls": None, "level": None, "game": None, "sessionId": "s_2",
+                                   "ts": 2, "sources": [], "conflict": ["Blizzy", "Hammy"]}}}
+
+
+def _tip(name, in_vault):
+    call = ("_identityTipLine(%s, {closest: function(){ return %s; }})" % (json.dumps(name), "true" if in_vault else "null"))
+    return _run_js("(function(){ const _l = window._identityFoundBy; window._identityFoundBy = function(n){ return _l(n, %s); };"
+                   " %s\n return %s; })()" % (json.dumps(IDT), _tip_js(), call))
+
+
+class TheVaultCardSaysWhoFoundIt(unittest.TestCase):
+
+    def test_finds_index_names_character_game_and_session(self):
+        f = RI.finds_index(ID._journal())["Shako"]
+        self.assertEqual((f["character"], f["cls"], f["level"], f["game"], f["sessionId"]),
+                         ("Blizzy", "Sorceress", 92, "Morph7", ID.S1))
+        self.assertNotIn(ID.SECRET, json.dumps(RI.finds_index(ID._journal())))
+
+    def test_the_card_line_is_the_answer(self):
+        h = _tip("Shako", True)
+        self.assertIn(">found by Blizzy · Sorceress 92 · Morph3</div>", h)
+        self.assertIn('title="sources: select-screen · session s_1"', h)
+
+    def test_unattributed_in_the_vault_is_unknown(self):
+        self.assertIn(">found by UNKNOWN</div>", _tip("Arachnid Mesh", True))
+        self.assertIn("the reads disagree: Blizzy vs Hammy", _tip("Arachnid Mesh", True))
+        self.assertIn(">found by UNKNOWN</div>", _tip("Griffon's Eye", True))
+
+    def test_the_card_draws_it(self):
+        src = open(BIBLE, encoding="utf-8").read()
+        self.assertIn("      desc.innerHTML = r.desc + _identityTipLine(nm, el);", src)
+
+
 class TheProofsNameOnePlace(unittest.TestCase):
 
     def test_each_find_matches_once(self):
@@ -101,6 +142,26 @@ RED_PROOF = [
      "find": "      + _idLine(t);\n",
      "replace": ";\n",
      "matches": 1},
+    {"why": "the Vault card never says who found the item",
+     "file": "bible.html",
+     "find": "      desc.innerHTML = r.desc + _identityTipLine(nm, el);",
+     "replace": "      desc.innerHTML = r.desc;",
+     "matches": 1},
+    {"why": "a find takes the first game of the session instead of the one being played",
+     "file": "tv/read_identity.py",
+     "find": "            if best is None or r[\"ts\"] >= best[\"ts\"]:\n",
+     "replace": "            if best is None:\n",
+     "matches": 1},
+    {"why": "a Vault item nobody named draws no line instead of UNKNOWN",
+     "file": "bible.html",
+     "find": "  if (!inVault && f.say === 'found by UNKNOWN') return '';\n",
+     "replace": "  if (f.say === 'found by UNKNOWN') return '';\n",
+     "matches": 1, "needs": "node"},
+    {"why": "disagreeing reads are attributed to one of them",
+     "file": "bible.html",
+     "find": "    if (!f || !f.character) {\n",
+     "replace": "    if (f && !f.character && f.conflict) f = Object.assign({}, f, { character: f.conflict[0] });\n    if (!f || !f.character) {\n",
+     "matches": 1, "needs": "node"},
 ]
 
 if __name__ == "__main__":

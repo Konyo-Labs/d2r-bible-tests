@@ -36131,6 +36131,18 @@ function _plannerBuiltTip(nm){
   if (!html) return null;
   return { artName: tip.base, desc: html, rich: true, builtBase: true };
 }
+/* v3855 (Elad pt1198u) - THE HOVER CARD SAYS WHO FOUND IT. One additive line under the card: which character found
+   or stashed the item, in which game (window._identityFoundBy, from the console's identity). A Vault item always gets the
+   line - UNKNOWN when its reads named nobody; anywhere else (the grail ledger, the chronicles) only an item a read found.
+   Attribution only: nothing here adds, drops or counts an item. The sources ride in the line's hover. */
+function _identityTipLine(nm, el){
+  var f = (typeof window._identityFoundBy === 'function') ? window._identityFoundBy(nm) : null;
+  if (!f) return '';
+  var inVault = !!(el && el.closest && el.closest('[id^="vault"], [class*="vault-"]'));
+  if (!inVault && f.say === 'found by UNKNOWN') return '';
+  var e = function(x){ return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
+  return '<div class="att-meta idt-found" title="' + e(f.hover) + '">' + e(f.say) + '</div>';
+}
 function _arttipResolve(nm){
   var _builtTip = _plannerBuiltTip(nm);
   if (_builtTip) return _builtTip;
@@ -36600,7 +36612,7 @@ window._jewelTipHtml = _jewelTipHtml;
       cur = el; _artHold(el);
       img.src = url || ''; img.style.display = url ? '' : 'none';
       lab.textContent = (typeof _setPieceShown==='function') ? _setPieceShown(nm) : nm; lab.style.color = (typeof _tipTint==='function' ? _tipTint(nm) : '') || '';
-      desc.innerHTML = r.desc;
+      desc.innerHTML = r.desc + _identityTipLine(nm, el);   /* v3855 pt1198u - who found it, one line */
       tip.classList.toggle('tip-rich', !!r.rich);
       setTipR(nm);
       move(e); tip.classList.add('on');
