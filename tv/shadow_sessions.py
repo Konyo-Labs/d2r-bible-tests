@@ -265,7 +265,7 @@ def session_split(segs, t0, t1):
 
 # v3855 - who played and in which games: the console-wide shared extractor (read_identity)
 from read_identity import (game_name_of_row, character_signals, attribute_character, game_runs,  # noqa: E402,F401
-                           say_games, CLASSES, identity_ledger, who_at, summary as identity_summary)
+                           say_games, CLASSES, identity_ledger, who_at, summary as identity_summary, scenario_of)
 
 
 def _chronicle_names(rows):
@@ -356,6 +356,7 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
                 games.append(n)
         s["games"] = games
         s["gamesSay"] = say_games(games) if games else None
+        s["scenario"] = scenario_of(games)
         s["gameRunSessions"] = max([len(runs[k]["sessions"]) for k in runs
                                     if any(x in runs[k]["names"] for x in games)] or [0]) or None
         _sig = character_signals(g)

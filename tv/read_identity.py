@@ -221,3 +221,26 @@ def summary(ledger):
             runs.setdefault(r["seriesId"], []).append(r["gameName"])
     return {"characters": chars[:12],
             "gameRuns": [say_games(sorted(set(v), key=v.index)) for v in runs.values()][:12]}
+
+
+_BAAL = re.compile(r"baal\W*\d", re.I)
+
+
+def scenario_of(games):
+    """v3855 (Elad 2026-11-02) - what a session was, from its game names. 'baal' + a number (BAAL-1, baal2, Baal 3)
+    is a leveling session; any other numbered series (Morph1..N) is a farming run. -> str or None (UNKNOWN)."""
+    games = [g for g in games or [] if isinstance(g, str) and g]
+    if not games:
+        return None
+    if any(_BAAL.search(g) for g in games):
+        return "Leveling (Baal runs)"
+    by = {}
+    for g in games:
+        m = _SERIES.match(g)
+        if m and m.group(1).strip(" -_"):
+            by.setdefault(m.group(1), []).append(int(m.group(2)))
+    if by:
+        stem, ns = max(by.items(), key=lambda kv: len(kv[1]))
+        ns = sorted(set(ns))
+        return "Farming (%s%d\u2013%d)" % (stem, ns[0], ns[-1]) if len(ns) > 1 else "Farming (%s%d)" % (stem, ns[0])
+    return None
