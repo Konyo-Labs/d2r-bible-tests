@@ -12,6 +12,7 @@
       "every item a character is seen wearing has the Vault's magnifier, on its card and in its doll window, opening the same evidence: the looks behind its tier, last seen and the pictures",
       "the Characters tab's character-names-read and lobby-size checks are folded away under one summary line each: one row per character, a sorted size table, the sizes nobody looked at on one line, remembered per browser",
       "a worn item's magnifier opens its own proof from the gear ledger - its looks, tier, last seen and pictures - even when the Vault has no record of it",
+      "the Characters tab says it short - one header line (Automatically syncs your items to characters), short empty states (No gear seen yet, Wearing · 3 of 10 slots), the long explanations on hover",
       "a Vault item's evidence panel says which character found or stashed it and in which game, UNKNOWN when its reads named nobody - evidence only, it never decides a mule, a sort or what is stashed"
     ]
   },

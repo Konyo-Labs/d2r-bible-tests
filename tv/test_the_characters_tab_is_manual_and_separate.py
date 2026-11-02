@@ -345,9 +345,8 @@ class TheCharactersTabIsManualAndSeparate(unittest.TestCase):
         self.assertIsNotNone(what, "the line saying what this tab is and is not is gone")
         # #103 (his ruling 2026-09-30) - the room now also shows the characters his reels learned, in their own section;
         # the Vault's separation is unchanged: nothing a reader VAULTS lands here
-        for words in ("Your characters in game, learned from this console's reels", "the builds you make by hand",
-                      "mules and auto-sort are separate", "nothing the readers vault ever lands here"):
-            self.assertIn(words, what.group(1))
+        # v3855 item C (his ruling): one short line says what the room does
+        self.assertEqual(what.group(1), "Automatically syncs your items to characters")
         out = _run(r"""
           seed('bSORC');
           window.renderCharsTab(); OUT.before = ids();

@@ -92,7 +92,7 @@ class TheRoomHasTwoSections(unittest.TestCase):
           OUT.ing = secIds('ingame'); OUT.sim = secIds('sim'); OUT.gIng = ghosts('ingame'); OUT.gSim = ghosts('sim');
           OUT.ham = card('bHAM') ? card('bHAM').html : null;
           OUT.frost = (/<article class="chx-card chx-ghost" data-learned="seen:frostnova">([\s\S]*?)<\/article>/.exec(secHtml('ingame') || '') || [])[1] || null;
-          OUT.head = /chx-sec-s">([^<]*)</.exec(secHtml('ingame') || '');
+          OUT.head = /chx-sec-t" title="([^"]*)"/.exec(secHtml('ingame') || '');   /* v3855 item C: the bars ride the hover */
           OUT.head = OUT.head ? decode(OUT.head[1]) : null;
           OUT.fetched = FETCHED.slice(); OUT.ingHtml = secHtml('ingame');
         """)
@@ -195,10 +195,10 @@ class TheRoomHasTwoSections(unittest.TestCase):
         self.assertEqual(out["plans"], 0, "an in-game card still offers Plan a build - his ruling: this section is automated")
         self.assertIn('data-slot="helm" data-tier="PROVEN"', out["frost"], "the card does not show what the game showed it wearing")
         self.assertIn("Harlequin Crest", out["frost"])
-        self.assertIn("1 of 10 slots so far", out["frost"])
+        self.assertIn("Wearing · 1 of 10 slots", out["frost"])
         self.assertIn('data-slot="boots" data-state="unseen"', out["frost"], "a slot nothing showed is not said as not seen")
         self.assertIn("String of Ears", out["frost"], "a worn item whose slot is not told went unsaid")
-        self.assertIn("Nothing seen on Mulebox yet", out["mule"], "a character with no gear on file is not said as such")
+        self.assertIn("No gear seen yet", out["mule"], "a character with no gear on file is not said as such")
         self.assertIn("UNKNOWN", out["unknown"], "a console that did not say what its characters wear read as 'nothing'")
 
     def test_no_console_is_unknown_not_none_and_every_build_stays_in_simulation(self):

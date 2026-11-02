@@ -147,7 +147,7 @@ class ACharacterWindowOpensFromItsCells(unittest.TestCase):
         self.assertIn('data-state="unknown"', out["unknown"])
         self.assertNotIn("data-cell=", out["unknown"], "an unspoken ledger drew cells")
         self.assertIn('data-state="none"', out["none"])
-        self.assertIn("Nothing seen on Mulebox yet", out["none"])
+        self.assertIn("No gear seen yet", out["none"])
         self.assertNotIn("data-cell=", out["none"], "a character with no gear drew cells")
         self.assertTrue(out["hidden"])
 

@@ -11151,8 +11151,7 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
     <span class="tvf-emblem chx-emblem" aria-hidden="true">👤</span>
     <div class="chx-headtxt">
       <div class="chx-title">Characters</div>
-      <div class="chx-sub" id="chars-what">Your characters in game, learned from this console's reels — and the builds you make by hand. The Vault's mules and auto-sort are separate — nothing the readers vault ever lands here.</div>
-      <div class="chx-meta">Kept on this device, per account (Main and Ladder hold their own) · rides 💾 Backup &amp; Share</div>
+      <div class="chx-sub" id="chars-what">Automatically syncs your items to characters</div>
     </div>
     <button type="button" class="chx-btn chx-new" id="chars-new" onclick="window._charsNew()">+ New character</button>
   </div>
@@ -11697,10 +11696,10 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
   function _looks(n){ n = n | 0; return n + (n === 1 ? ' look' : ' looks'); }
   function _gearHtml(t){
     var G = _gearOf(t), nm = esc(t.name || 'this character');
-    if (G.state === 'unknown') return '<div class="chx-gear" data-state="unknown"><div class="chx-gear-h">What ' + nm
-      + ' wears is UNKNOWN here — ' + esc(G.why) + '.</div></div>';
-    if (G.state === 'none') return '<div class="chx-gear" data-state="none"><div class="chx-gear-h">Nothing seen on ' + nm
-      + ' yet — items appear here as your reels see them worn.</div></div>';
+    if (G.state === 'unknown') return '<div class="chx-gear" data-state="unknown"><div class="chx-gear-h" title="' + esc(G.why)
+      + '">Gear UNKNOWN</div></div>';
+    if (G.state === 'none') return '<div class="chx-gear" data-state="none"><div class="chx-gear-h" title="Items appear as your reels see '
+      + nm + ' wear them">No gear seen yet</div></div>';
     var seen = 0;
     var rows = (G.g.slots || []).map(function(s){
       var word = '<span class="chx-slot">' + esc(_SLOT_WORD[s.slot] || s.slot) + '</span>';
@@ -11711,10 +11710,10 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
         + _chxEv(s.item, t, s) + '</span></li>';
     }).join('');
     var un = (G.g.unplaced || []);
-    var unTxt = un.length ? '<div class="chx-gear-h">Worn, slot not told yet: ' + un.map(function(u){
+    var unTxt = un.length ? '<div class="chx-gear-h">Slot unknown: ' + un.map(function(u){
       return esc(u.item) + ' (' + _looks(u.sightings) + ')'; }).join(' · ') + '</div>' : '';
-    return '<div class="chx-gear" data-state="seen"><div class="chx-gear-h">Seen on ' + nm + ' in game · ' + seen + ' of '
-      + (G.g.slots || []).length + ' slots so far</div><ul class="chx-slots">' + rows + '</ul>' + unTxt + '</div>';
+    return '<div class="chx-gear" data-state="seen"><div class="chx-gear-h">Wearing · ' + seen + ' of '
+      + (G.g.slots || []).length + ' slots</div><ul class="chx-slots">' + rows + '</ul>' + unTxt + '</div>';
   }
   window._chxGearHtml = _gearHtml;
   /* #146 step 3c — clicking the character opens this window. The cells are the ones a look already
@@ -11732,8 +11731,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
   }
   function _chxSay(t, cell){
     var G = _gearOf(t);
-    if (G.state === 'unknown') return 'What ' + esc(t.name || 'this character') + ' wears is UNKNOWN here — ' + esc(G.why) + '.';
-    if (G.state === 'none') return 'Nothing seen on ' + esc(t.name || 'this character') + ' yet — items appear here as your reels see them worn.';
+    if (G.state === 'unknown') return 'Gear UNKNOWN — ' + esc(G.why) + '.';
+    if (G.state === 'none') return 'No gear seen yet';
     if (!cell) return 'Choose a cell.';
     var slot = cell.indexOf('equipped:') === 0 ? cell.slice('equipped:'.length) : '';
     var row = null;
@@ -11793,7 +11792,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     if (doll === null) return head + '<div class="chx-doll" data-state="unknown"><p class="chx-win-say">The Vault\'s doll is not on '
       + 'this page, so the cells cannot be drawn - UNKNOWN.</p></div>';
     var un = G.g.unplaced || [];
-    var unTxt = un.length ? '<p class="chx-win-grid">Worn, slot not told yet: ' + un.map(function(u){
+    var unTxt = un.length ? '<p class="chx-win-grid">Slot unknown: ' + un.map(function(u){
       return esc(u.item) + ' (' + _looks(u.sightings) + ')'; }).join(' · ') + '</p>' : '';
     return head + '<div class="chx-doll" data-state="seen">' + doll + '</div>'
       + '<p class="chx-win-say" data-picked="' + esc(_chxCell) + '">' + _chxSay(t, _chxCell) + '</p>'
@@ -11934,18 +11933,17 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     S.ingame.forEach(function(g){ cards += _one(g); });
     /* level-1 characters his reels saw are almost always mules (measured: 10 of his first 12) - said as such, in their
        own row, as the planner's list does (the Grok eye: "the page does not say what Mulebox is") */
-    if (S.mules.length) cards += '<div class="chx-sec-sub" data-sub="mules">Level 1 — mules? ' + S.mules.length
-      + ' seen on your reels. They are in-game characters too; the Vault\'s mule lockers are a separate thing.</div>'
+    if (S.mules.length) cards += '<div class="chx-sec-sub" data-sub="mules" title="In-game characters too; the Vault\'s mule lockers are separate">Level 1 · probably mules · ' + S.mules.length + '</div>'
       + S.mules.map(_one).join('');
     if (!ing.length) cards = '<div class="chx-sec-empty" data-state="' + esc(S.asking ? 'asking' : S.state) + '">' + (S.asking
       ? 'Asking this console which characters you have in game\u2026'   /* GrokBot bug 6 - not UNKNOWN while it asks */
       : S.state === 'unknown'
       ? 'Which characters you have in game is UNKNOWN here — ' + esc(S.why) + '.'
-      : 'None yet. A character joins here once this console\'s reels have seen your character-select screen twice, then proves itself look by look.') + '</div>';
+      : '<span title="A character joins once your reels see its character-select screen twice">No characters seen yet</span>') + '</div>';
     var sim = S.sim.map(function(id){ return _card(id, all[id], id === mainId); }).join('');
     if (!S.sim.length) sim = '<div class="chx-sec-empty" data-state="empty">No simulation builds. + New character makes one to try things out.</div>';
     return '<section class="chx-sec" data-sec="ingame" aria-label="In-game characters">'
-      +   '<div class="chx-sec-h"><span class="chx-sec-t">⚔️ In-game characters</span><span class="chx-sec-s">seen on this console\'s reels · each proves itself the way the Vault\'s filings do: ' + ladder + '</span></div>'
+      +   '<div class="chx-sec-h"><span class="chx-sec-t" title="' + esc(ladder) + '">⚔️ In-game characters</span></div>'
       +   '<div class="chx-sec-list">' + cards + _surfaceWitnessHtml() + _lobbySizeHtml() + '</div></section>'
       + '<section class="chx-sec" data-sec="sim" aria-label="Simulation builds">'
       +   '<div class="chx-sec-h"><span class="chx-sec-t">🧪 Simulation builds</span><span class="chx-sec-s">builds you make by hand to try things out · + New character adds one</span></div>'
