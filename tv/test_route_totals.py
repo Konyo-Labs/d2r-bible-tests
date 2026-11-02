@@ -45,8 +45,8 @@ RED_PROOF = [
                "nobody measured is indistinguishable from a real zero. MEASURED: 1 match, RED, "
                "breaking test_an_unreadable_producer_is_UNKNOWN_not_zero",
         "file": "route_totals.py",
-        "find": "    if s is None:\n        return None",
-        "replace": "    if s is None:\n        return 0",
+        "find": "    s = _src()\n    if s is None:\n        return None\n    if k == \"runeword\":",
+        "replace": "    s = _src()\n    if s is None:\n        return 0\n    if k == \"runeword\":",
         "matches": 1,
     },
     {

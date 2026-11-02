@@ -2049,8 +2049,28 @@ RED_PROOF = [
         "why": "REG-2575 - a Chrome version read that times out raises through the send again, so a "
                "challenge-page post answers unread before anything is fetched",
         "file": "tv/d2jsp_chrome.py",
-        "find": "except (OSError, subprocess.SubprocessError):\n                    proc = None\n",
-        "replace": "except OSError:\n                    proc = None\n",
+        "find": "        elif str(plat).startswith(\"linux\") and plat == sys.platform:\n"
+                "            binary = _chrome_bin(platform=plat)\n"
+                "            if binary:\n"
+                "                try:\n"
+                "                    proc = subprocess.run(\n"
+                "                        [binary, \"--version\"],\n"
+                "                        capture_output=True, timeout=5, text=True,\n"
+                "                        encoding=\"utf-8\", errors=\"replace\",\n"
+                "                    )\n"
+                "                except (OSError, subprocess.SubprocessError):\n"
+                "                    proc = None\n",
+        "replace": "        elif str(plat).startswith(\"linux\") and plat == sys.platform:\n"
+                   "            binary = _chrome_bin(platform=plat)\n"
+                   "            if binary:\n"
+                   "                try:\n"
+                   "                    proc = subprocess.run(\n"
+                   "                        [binary, \"--version\"],\n"
+                   "                        capture_output=True, timeout=5, text=True,\n"
+                   "                        encoding=\"utf-8\", errors=\"replace\",\n"
+                   "                    )\n"
+                   "                except OSError:\n"
+                   "                    proc = None\n",
         "matches": 1,
     },
     {
