@@ -236,6 +236,8 @@ def _boot():
         else:
             traced = True
         is_node = head in ("node", "nodejs")
+        if is_node and len(args) == 2 and args[1] in ("--version", "-v"):
+            return  # node prints its own version and exits before NODE_OPTIONS loads the hook: no B line, no file  # TRACE-NODE-VERSION
         if is_node and traced:
             try:
                 opts = (env if env is not None else os.environ).get("NODE_OPTIONS") or ""

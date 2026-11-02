@@ -25,6 +25,16 @@ test_a_stub_agent_never_films_his_screen (echo, 4.6 s) and test_d2jsp_desk (defa
 stored". echo and printf print their argv; `defaults read <domain>` reads a preference domain outside this checkout.
 gate_trace/sitecustomize.py lets them through (TRACE-INERT-PRINT) unless an argument names a path inside the checkout. cat
 and every other child still untrace. Law test_a_printing_child_does_not_untrace_a_gate (6 tests, 5 red-proofs, 5 of 5 RED).
+### REG-3127 - `node --version` MADE 4+ GATES UNTRACED: IT EXITS BEFORE THE NODE TRACE HOOK LOADS (gate speed root cause, v3855)
+The v3853 hook listed 11 gates "not stored - a python child of the gate ran without the trace". Traced on 2026-11-02 with
+argv logging: the costliest, test_a_proof_proved_elsewhere_counts_only_under_this_trees_key (65.9 s), ran no untraced python
+at all - its three "children" were `node --version`. The trace counts a node child as followed when NODE_OPTIONS carries
+node_trace.cjs and waits for that child's own B line; `node --version` exits before NODE_OPTIONS is read, so the B line never
+comes. gate_trace/sitecustomize.py now treats a node child whose only argument is --version or -v as inert
+(TRACE-NODE-VERSION); the version is already the ledger's tool key. Measured after: that gate,
+test_the_bump_refuses_a_tree_that_does_not_parse (20.7 s), test_the_fleet_says_where_a_river_is_stuck (3.1 s) and
+test_unseed_is_reversible (1.6 s) trace whole (~91 s idle per push). Law test_a_node_version_ask_does_not_untrace_a_gate
+(6 tests, 4 red-proofs, 4 of 4 RED). UNKNOWN: the reader's sentence still says "python child" for a node child.
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel
