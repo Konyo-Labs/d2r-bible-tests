@@ -3,6 +3,7 @@
     "ver": "v3856",
     "date": "2026-11-03",
     "items": [
+      "every confirmation seal on the Characters tab draws with its own colours, so folding one card never blanks the seals on the others",
       "each shadow session has its own PLAY that plays only that session's frames in the theatre player",
       "a shadow session says in game, in town and out of town with percentages, the chronicles read and what was stashed, UNKNOWN when its reads never said",
       "AFK is one stretch until the first real activity: idle in town for over 3 minutes counts as AFK, a short stash or shop visit stays town, and a stretch crossing two sessions is shared between them and says so",

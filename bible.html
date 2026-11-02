@@ -11701,6 +11701,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       + ' fill="none" stroke="url(#chxSealN)" stroke-width="1.2" stroke-linecap="round"/><path d="M10.9 15.4h2.2l-1.1-1.3z" fill="#f0c060" opacity=".8"/></svg>'
   };
   window._CHX_SEAL = _CHX_SEAL;
+  /* v3855 — each drawn seal gets its own gradient id: 31 seals shared one id, so hiding the first (a folded card) would blank the rest. */
+  var _chxSealSeq = 0;
   function _chxSeal(tier, looks, trials, lastTs, big){
     var yes = tier === 'HARDENED', bars = _bars(), seen = _ago(lastTs);
     var n = (typeof looks === 'number' && typeof trials === 'number') ? looks + ' of ' + trials + ' looks'
@@ -11709,7 +11711,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       : yes ? 'Confirmed · ' + n + (seen ? ' · last seen ' + seen : '')
       : 'Not confirmed yet · ' + n + ' · locks at ' + (bars ? bars.hardened : 'the HARDENED bar');
     return '<span class="chx-seal' + (big ? ' chx-seal-big' : '') + '" data-seal="' + (yes ? 'yes' : 'not') + '" role="img" aria-label="'
-      + esc(words) + '" title="' + esc(words) + '">' + _CHX_SEAL[yes ? 'yes' : 'not'] + '</span>';
+      + esc(words) + '" title="' + esc(words) + '">' + _CHX_SEAL[yes ? 'yes' : 'not'].replace(/chxSeal([YN])/g, '$&' + '-' + (++_chxSealSeq)) + '</span>';
   }
   function _proof(t){
     var lv = t.pendingLevel ? ' · level ' + (t.pendingLevel | 0) + ' waits for one more look' : '';
