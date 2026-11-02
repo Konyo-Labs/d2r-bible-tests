@@ -13449,6 +13449,12 @@ window._lockMark = function(isOpen, px, label){
   function _shLanesRender(d){
     var el = document.getElementById('sh-lanes');
     if (!el) return;
+    /* A walk that has not finished is still loading. Painting it as "could not be read"
+       stops the shelf on the first answer, which arrives before the walk does. */
+    if (d && d.computing === true && !d.lanes) {
+      el.innerHTML = '<div class="shr-wait">reading the river… the walk has not finished</div>';
+      return;
+    }
     var L = d && d.lanes;
     if (!L) {
       /* ⚠⚠ A FAILED ASK MUST NOT WEAR THE PLACEHOLDER'S WORDS. This branch is reached when the
@@ -13996,6 +14002,9 @@ window._lockMark = function(isOpen, px, label){
      ⚠ THE GUARD RETURNS THE RUNNING PROMISE rather than dropping the call, so every caller still
      gets an answer and none of them starts a second queue. [[the-unjoined-end]] */
   var _shLanesFlight = null;
+  /* Dean's walk measured 23-38s. The route answers computing at once and the strip asks again
+     until that clock, then says UNKNOWN. The 12s abort above stays a hung socket, not this walk. */
+  window._RIVER_WALK_WAIT_MS = 45000;
 
   async function _shLanesLoad(){
     if (_shLanesFlight) { return _shLanesFlight; }
@@ -14033,6 +14042,21 @@ window._lockMark = function(isOpen, px, label){
       /* when this answer arrived — the triage line ages the console's figures from here */
       try { if (_lanesJson && typeof _lanesJson === 'object') _lanesJson.__askedAt = Date.now(); } catch (eA) {}
       if (_lanesTO) { clearTimeout(_lanesTO); _lanesTO = null; }
+      /* computing is the walk, not a refusal. Ask again until it finishes or the wait clock ends.
+         A refusal saved as the last answer would replay over the next rebuild. */
+      if (_lanesJson && _lanesJson.computing === true && !_lanesJson.lanes) {
+        R(_lanesJson);
+        var _now = Date.now();
+        if (!window.__riverWalkSince) window.__riverWalkSince = _now;
+        if ((_now - window.__riverWalkSince) < (window._RIVER_WALK_WAIT_MS || 45000)) {
+          setTimeout(function(){ try { window._shLanesLoad(); } catch (eR) {} }, 1000);
+        } else {
+          window.__riverWalkSince = 0;
+          R({ lanes: { ok: false, why: String(_lanesJson.why || 'the river walk has not finished') } });
+        }
+        return;
+      }
+      window.__riverWalkSince = 0;
       /* #157 — remember the last ANSWER so a shelf REBUILD can paint it at once (see thShelf). Only an
          answer that carries lanes: a refusal is never replayed as if it were the river. */
       if (_lanesJson && _lanesJson.lanes) window.__shLanesLast = _lanesJson;
@@ -20057,7 +20081,22 @@ window._lockMark = function(isOpen, px, label){
       }, 12000);
     } catch (e) { _to = null; }
     fetch('/api/river', { cache: 'no-store', signal: _ac && _ac.signal }).then(function(r){ return r.json(); }).then(function(d){
-      if (_done) return; _done = true;
+      if (_done) return;
+      if (d && d.computing === true && !d.lanes) {
+        if (_to) { clearTimeout(_to); _to = null; }
+        var _nowR = Date.now();
+        if (!window.__riverWalkSince) window.__riverWalkSince = _nowR;
+        if ((_nowR - window.__riverWalkSince) < (window._RIVER_WALK_WAIT_MS || 45000)) {
+          _done = true;
+          setTimeout(function(){ _shRiverLoad(then); }, 1000);
+          return;
+        }
+        window.__riverWalkSince = 0;
+        _fail(String(d.why || 'the river walk has not finished, so what it holds is UNKNOWN'));
+        return;
+      }
+      _done = true;
+      window.__riverWalkSince = 0;
       if (_to) { clearTimeout(_to); _to = null; }
       if (!d || d.ok !== true){
         /* an unreadable river must not render as a river with nothing in it */

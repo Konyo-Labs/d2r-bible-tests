@@ -258,6 +258,44 @@ class TheShelfShowsTheFourLanes(unittest.TestCase):
         self.assertIn("could not be drawn", got)
         self.assertIn("the lane map is broken", got, "the refusal does not carry its reason")
 
+    def test_a_walk_still_in_progress_stays_reading(self):
+        """The route answers {computing:true} before the walk finishes. That is not a refusal.
+        Painting it as could-not-be-read stops the shelf on the first packet."""
+        got = _render({"ok": False, "computing": True,
+                       "why": "the river walk has not finished in this process yet"})
+        if got is None:
+            self.skipTest("node unavailable — a skip is NOT a pass")
+        self.assertNotIn("could not be read", got)
+        self.assertNotIn("shr-bad", got)
+        self.assertIn("reading the river", got)
+        self.assertIn("shr-wait", got)
+        self.assertNotIn("shr-lane", got)
+
+    def test_both_readers_ask_again_while_the_walk_runs(self):
+        """The product shelf asks once. render_check's poll is not that shelf. A computing
+        answer has to schedule the next ask in both readers, or the strip stays on the first packet."""
+        code = re.sub(r"/\*(?:.|\n)*?\*/", " ", UI)
+        code = re.sub(r"(?m)//.*$", " ", code)
+        for fn in ("async function _shLanesLoad()", "function _shRiverLoad(then){"):
+            i = code.find(fn)
+            self.assertGreater(i, -1, fn)
+            d, j = 0, code.index("{", i)
+            end = j
+            while end < len(code):
+                if code[end] == "{":
+                    d += 1
+                elif code[end] == "}":
+                    d -= 1
+                    if d == 0:
+                        break
+                end += 1
+            body = code[i:end + 1]
+            k = body.find("computing === true")
+            self.assertGreater(k, -1, fn)
+            tail = body[k:k + 700]
+            self.assertIn("_RIVER_WALK_WAIT_MS", tail, fn)
+            self.assertIn("setTimeout", tail, "%s does not ask again while the walk runs" % fn)
+
     def test_a_COULD_NOT_ASK_does_not_wear_the_placeholders_words(self):
         """★★ THE BUG THAT HID THE COLLISION FOR FOUR ROUNDS. This branch first rendered "reading
         the river…" — the exact text the container ships with — so a permanent failure and a page
@@ -329,6 +367,20 @@ RED_PROOF = [
         'file': 'river_lanes.py',
         'find': '    ok, findings = assert_partitions()',
         'replace': '    ok, findings = True, []',
+        'matches': 1,
+    },
+    {
+        'why': 'a walk still running is painted as a dead river, so the shelf stops on the first packet',
+        'file': 'control_ui.html',
+        'find': '    if (d && d.computing === true && !d.lanes) {\n      el.innerHTML = \'<div class="shr-wait">reading the river… the walk has not finished</div>\';\n',
+        'replace': '    if (false) {\n      el.innerHTML = \'<div class="shr-wait">reading the river… the walk has not finished</div>\';\n',
+        'matches': 1,
+    },
+    {
+        'why': 'the lane strip never asks again, so a computing answer stays on screen after the walk finishes',
+        'file': 'control_ui.html',
+        'find': '          setTimeout(function(){ try { window._shLanesLoad(); } catch (eR) {} }, 1000);\n',
+        'replace': '          void 0;\n',
         'matches': 1,
     },
 ]
