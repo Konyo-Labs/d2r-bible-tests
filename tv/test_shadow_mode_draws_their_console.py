@@ -108,7 +108,13 @@ CAPTURE = r"""function (w, step) {
     return out.length + ':' + out.join('|'); }
   /* v3849 D2 (his ruling): a shadow draws no EDIT pencil - the one sanctioned difference. Shape and text leave the
      pencil out on both sides; `pencils` counts it, and the law holds the console drew some and the shadow none. */
-  function txt(sel) { var el = D.querySelector(sel); return el ? norm(el.innerText).replace(/\n\u270e(?=\n)/g, '') : null; }
+  function txt(sel) { var el = D.querySelector(sel); if (!el) return null;
+    /* REG-3123 - the shadow vault clock is a second line on their tab. It is not their vault. */
+    var clock = el.querySelector('#vault-shadow-clocks'), held = clock ? clock.textContent : null;
+    if (clock) clock.textContent = '';
+    var t = norm(el.innerText).replace(/\n\u270e(?=\n)/g, '');
+    if (clock) clock.textContent = held;
+    return t; }
   function pencils(sel) { return D.querySelectorAll(sel + ' .vm-cell-edit').length; }
   function strip(h) { var d = D.createElement('div'); d.innerHTML = h || ''; return norm(d.textContent); }
   if (step === 'chars') { w.switchTab('chars'); return { wait: 1 }; }

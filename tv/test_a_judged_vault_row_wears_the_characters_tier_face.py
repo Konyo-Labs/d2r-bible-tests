@@ -92,6 +92,13 @@ def _face_literal(src):
     return src[i:j]
 
 
+def _node_json(expr):
+    """A program on argv is refused past 128 KB on CI. The expression goes in on stdin."""
+    prog = "process.stdout.write(JSON.stringify(%s))" % expr
+    r = subprocess.run([NODE, "-"], input=prog, capture_output=True, text=True, timeout=15, check=True)
+    return json.loads(r.stdout)
+
+
 def _drive(prefix):
     if NODE is None:
         raise AssertionError("node is absent — the evidence line was not driven")
@@ -117,9 +124,7 @@ class AJudgedVaultRowWearsTheCharactersTierFace(unittest.TestCase):
 
     def test_a_judged_row_wears_the_face_and_a_receipt_does_not(self):
         src = _page()
-        face = json.loads(subprocess.run(
-            [NODE, "-e", "process.stdout.write(JSON.stringify(%s))" % _face_literal(src)],
-            capture_output=True, text=True, timeout=15, check=True).stdout)
+        face = _node_json(_face_literal(src))
         got = _drive("var _TIER_FACE = %s;" % _face_literal(src))
         self.assertEqual(got["proven"], face["PROVEN"] + " 12/12 · 3 sessions")
         self.assertEqual(got["watched"], face["WATCHED"] + " 1/1 · 1 session")
@@ -152,9 +157,7 @@ class AJudgedVaultRowWearsTheCharactersTierFace(unittest.TestCase):
                 "      else if (r.tier) m.tierSay = r.tier\n")
         self.assertEqual(src.count(join), 1, "the panel stopped using the clause, or Wilson left the row")
         self.assertEqual(src.count("row('Tier', m.tierSay)"), 1)
-        face = json.loads(subprocess.run(
-            [NODE, "-e", "process.stdout.write(JSON.stringify(%s))" % _face_literal(src)],
-            capture_output=True, text=True, timeout=15, check=True).stdout)
+        face = _node_json(_face_literal(src))
         got = _drive_clause("var _TIER_FACE = %s;\n" % _face_literal(src), fn)
         bare = _drive_clause("", fn)
         self.assertEqual(got["proven"], face["PROVEN"] + " 12/12")

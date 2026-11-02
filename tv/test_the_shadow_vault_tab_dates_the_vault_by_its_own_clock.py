@@ -69,7 +69,7 @@ def _run(scenes):
         _cut(bible, FNS[3]),
     ])
     prog = r"""
-const C = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'));
+const C = JSON.parse(require('fs').readFileSync(process.argv[2], 'utf8'));
 const out = {};
 const window = globalThis;
 %s
@@ -89,7 +89,7 @@ process.stdout.write(JSON.stringify(out));
     try:
         with io.open(path, "w", encoding="utf-8") as fh:
             json.dump({"scenes": scenes}, fh)
-        r = subprocess.run([NODE, "-e", prog, path], capture_output=True, text=True, timeout=30)
+        r = subprocess.run([NODE, "-", path], input=prog, capture_output=True, text=True, timeout=30)
     finally:
         try:
             os.remove(path)

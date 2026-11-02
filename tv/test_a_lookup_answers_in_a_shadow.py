@@ -113,6 +113,7 @@ CLASS = {
     "#vault-profile-file": (R, FILE), "#vault-dir-input": (R, FILE), "#aic-file": (R, FILE),
     "#cb-eth": (R, TICK), 'input[aria-label="mark moved"]': (R, TICK), 'input[aria-label="untick: not moved yet"]': (R, TICK),
     'input[aria-label^="I made "]': (R, TICK), 'input[onchange*="vaultShareToggle"]': (R, TICK),
+    'input[aria-label^="I hovered every item in "]': (R, TICK),
 }
 
 

@@ -4834,6 +4834,10 @@ window._LP_FORKED = new Set([
      stashes, so it forks exactly as the records it guards (the v2224 rule) - bare, a ladder look would make the main
      reads stale. No apostrophe in this note: test_store_isolation pairs the quotes of this Set to read its names. */
   "d2r_vaultFullLooks",
+  /* REG-3105 - d2r_vaultFullLookAsks holds the questions and the hover ticks for those same
+     containers. It judges one profile, so it forks exactly as d2r_vaultFullLooks (the v2224 rule).
+     Bare, a ladder question would sit on the main board. No apostrophe in this note. */
+  "d2r_vaultFullLookAsks",
   /* ══ v2224 — A MIGRATION STAMP MUST FORK EXACTLY AS THE STORE IT MIGRATES ═══════════════════
      test_store_isolation caught these three, and it caught MY OWN work from this session. All
      three gate one-shot repairs of d2r_owned, and d2r_owned is in this very Set, so it is
@@ -11343,6 +11347,7 @@ html:not([data-active-tab="vault"]) .vault-tasks-pop,html:not([data-active-tab="
 .vault-tasks-panel .vtk-line + .vtk-line{border-top:1px solid rgba(212,168,71,.12)!important}
 .vault-tasks-panel section.vmv-unseen{border:1px dashed rgba(240,192,96,.4);border-radius:8px;padding:4px 6px;margin:4px 0}
 .vtk-line::before{content:counter(vtk) ".";flex:0 0 auto;min-width:1.6em;text-align:right;color:var(--text-dim)}
+.vault-tasks-panel li.vgs-line{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:3px 4px;margin:0;font-size:var(--fs-meta)}
 .vtk-line:hover{background:rgba(240,192,96,.08)}
 .vtk-tick{flex:0 0 auto;margin:0;cursor:pointer}
 .vtk-art{flex:0 0 22px;width:22px;height:22px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center}
@@ -56570,7 +56575,7 @@ window.vaultAutoAssign = function(){
   var VAULT_FL_ASKS_KEY = 'd2r_vaultFullLookAsks';
   function _flShadow(){
     if (window._tvdShadow) return true;
-    try { return document.documentElement.classList.contains('tvd-shadow'); } catch (e) { return false; }
+    return _unconfReadOnly();
   }
   function _flEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   /* -> {} | the map | null (UNKNOWN: the bytes would not read - never treated as empty, never written over) */
@@ -56922,7 +56927,7 @@ window.vaultAutoAssign = function(){
       + ' <span class="vgs-scope">(' + _flEsc(GUIDE_SCOPE_SAY) + ')</span></p>'
       + '<ol class="vtk-list" data-sec="look"' + (ro ? ' data-readonly="1"' : '') + '>';
     shown.forEach(function(s){ h += _guideRowHtml(s, ro, pages); });
-    if (more > 0) h += '<li class="vtk-line vtk-more" data-more="' + more + '"><span class="vtk-say">and ' + more + ' more container'
+    if (more > 0) h += '<li class="vgs-line vtk-more" data-more="' + more + '"><span class="vtk-say">and ' + more + ' more container'
       + (more === 1 ? '' : 's') + ' never seen whole</span></li>';
     return h + '</ol>';
   };
@@ -56948,7 +56953,7 @@ window.vaultAutoAssign = function(){
     var tick = (c.location && c.holder && (c.location !== 'shared' || c.page != null))
       ? '<input type="checkbox" class="vtk-tick" aria-label="I hovered every item in ' + _flEsc(where) + '"' + (d ? ' checked' : '') + (ro ? ' disabled' : '')
         + ' data-key="' + _flEsc(s.key) + '" onclick="event.stopPropagation()" onchange="window._vaultGuideDone(this.getAttribute(\'data-key\'))">' : '';
-    return '<li class="vtk-line vtk-look" data-container="' + _flEsc(s.key) + '"' + (q ? ' data-kind="' + _flEsc(q.kind) + '"' : ' data-kind="never"') + (d ? ' data-waiting="1"' : '') + '>'
+    return '<li class="vgs-line vtk-look" data-container="' + _flEsc(s.key) + '"' + (q ? ' data-kind="' + _flEsc(q.kind) + '"' : ' data-kind="never"') + (d ? ' data-waiting="1"' : '') + '>'
       + tick + '<span class="vtk-say">' + say + '</span>' + ev + answers + clear + '</li>';
   }
   /* ══ REG-3114 (#202) — HIS TICK IS NEVER THE PROOF. A guided step closes only when a sweep's containers[] completes its
@@ -57093,8 +57098,14 @@ window.vaultAutoAssign = function(){
       window._moveModel = built;
       var host = (typeof document !== 'undefined' && document.getElementById) ? document.getElementById('vault-move-list') : null;
       if (host) { host.hidden = false; host.innerHTML = ((typeof _vaultMoveHeldHtml === 'function') ? _vaultMoveHeldHtml() : '') + _vaultMoveHtml(built); }
-      /* REG-3113 - the guided sweep, after the tasks. A step is drawn from the full-look store, so the sweep that completes its container removes it. */
-      if (host && typeof window._vaultGuideHtml === 'function') host.innerHTML += window._vaultGuideHtml();   /* REG-3113 the guided sweep */
+      /* REG-3113 - the guided sweep, after the open tasks and before Done. A step is not a move line.
+         Done stays the last child of the panel. */
+      if (host && typeof window._vaultGuideHtml === 'function') {
+        var _gh = window._vaultGuideHtml();
+        var _done = host.querySelector('.vtk-donebox');
+        if (_done) _done.insertAdjacentHTML('beforebegin', _gh);
+        else host.insertAdjacentHTML('beforeend', _gh);
+      }
       /* Vault v2 — the MOVE TASKS FAB badge = the open lines (moves + throw-outs not yet done), read off the painted list */
       try {
         var _bn = document.getElementById('vault-tasks-n');

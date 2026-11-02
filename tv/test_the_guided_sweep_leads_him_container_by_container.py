@@ -68,7 +68,7 @@ __QS__.forEach(function(s, i){ m[s] = [{ from: null, character: __QM__[i] }]; })
 W._cbLearnedTakeForLaw({ ok: true, chars: [], sessions: m });
 function snap(){ var s = W._vaultGuideSteps() || [], h = W._vaultGuideHtml();
   return { keys: s.map(function(x){ return x.key; }), kinds: s.map(function(x){ return x.ask ? x.ask.kind : 'never'; }), html: h,
-           drawn: (h.match(/<li class="vtk-line vtk-look" data-container="[^"]*"/g) || []).map(function(t){ return t.split('data-container="')[1].slice(0, -1).replace(/&amp;/g, '&'); }),
+           drawn: (h.match(/<li class="vgs-line vtk-look" data-container="[^"]*"/g) || []).map(function(t){ return t.split('data-container="')[1].slice(0, -1).replace(/&amp;/g, '&'); }),
            more: (/data-more="(\d+)"/.exec(h) || [])[1] || null }; }
 OUT.before = snap();
 W.vaultAccumApply(A);
