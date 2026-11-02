@@ -1,5 +1,12 @@
 [
   {
+    "ver": "v3854",
+    "date": "2026-11-02",
+    "items": [
+      "The D2JSP tab Advanced button shows the price database, its Wilson score, and the posts that score was weighed from."
+    ]
+  },
+  {
     "ver": "v3853",
     "date": "2026-11-02",
     "items": [

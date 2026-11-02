@@ -1823,7 +1823,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3853** | `(this commit)` | v3853 — Windows reads its Chrome v10 login for a price. Quest items stay out of the unique tally. |
+| **v3854** | `(this commit)` | v3854 — The D2JSP tab Advanced button shows the price database, its Wilson score, and the posts that score was weighed from. |
+| **v3853** | `eb261477` | v3853 — Windows reads its Chrome v10 login for a price. Quest items stay out of the unique tally. |
 | **v3852** | `8ca575f2` | v3852 — A river walk still running stays on reading and is asked again. A finished walk paints the lanes. |
 | **v3851** | `e65b74ac` | v3851 — Eight facet rows stay in the 403 with six quest items. A forum date keeps its link. A refused roll stays in the box. |
 | **v3850** | `df68af03` | v3850 — a session shows real item names and what was farmed |
