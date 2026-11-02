@@ -22605,7 +22605,9 @@ window.uiConfirm = function(message, opts){
     document.addEventListener('keydown', onKey);
     document.body.appendChild(ov);
     if (cancelFirst) ov.querySelector('.ui-confirm').setAttribute('data-default','cancel');
-    requestAnimationFrame(function(){ ov.classList.add('on'); try{ ov.querySelector(cancelFirst ? '.ui-confirm-cancel' : '.ui-confirm-ok').focus(); }catch(e){} });
+    /* Cancel is focused in this turn. A later frame is too late when the machine is busy, so the menu Cancel stays focused and Enter is not the dialog. */
+    ov.classList.add('on');
+    try { ov.querySelector(cancelFirst ? '.ui-confirm-cancel' : '.ui-confirm-ok').focus(); } catch (eF) {}
   });
 };
 
