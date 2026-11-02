@@ -842,7 +842,7 @@ def _tier_of(n, bars):
 
 def gear_by_key(d, fold, bars):
     """#234 step 2 — HIS ASK: "i want to see the items slowly appearing based on the character they were witnessed in".
-    -> {folded name: {slots: [{slot, item, sightings, tier, ts, reel}], unplaced: [...], reels, lastTs}} | None
+    -> {folded name: {slots: [{slot, item, sightings, tier, ts, reel, frames}], unplaced: [...], reels, lastTs}} | None
 
     Keyed by the SAME fold the character-select learner keys its characters by (passed in, never a second copy), so a
     learned card finds its gear by its own key. Every doll slot is listed: a slot with nothing seen is `item: None`
@@ -861,7 +861,9 @@ def gear_by_key(d, fold, bars):
             n = int((cur or {}).get("sightings") or 0)
             rows.append({"slot": s, "item": (cur or {}).get("item"), "sightings": n,
                          "tier": _tier_of(n, bars) if cur else None, "ts": (cur or {}).get("ts"),
-                         "reel": (cur or {}).get("reel")})
+                         "reel": (cur or {}).get("reel"),
+                         # v3855 - the frames behind the tier, so the worn item's magnifier shows its own proof
+                         "frames": [str(f) for f in ((cur or {}).get("frames") or []) if f][-_FRAMES_KEPT:]})
         unplaced = []
         for item, u in sorted((rec.get("unplaced") or {}).items()):
             n = int((u or {}).get("sightings") or 0)

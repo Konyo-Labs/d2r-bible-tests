@@ -11708,7 +11708,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       seen++;
       return '<li data-slot="' + esc(s.slot) + '" data-tier="' + esc(s.tier || 'UNKNOWN') + '">' + word
         + '<span class="chx-item">' + esc(s.item) + ' · ' + esc(_TIER_FACE[s.tier] || 'tier UNKNOWN') + ' · ' + _looks(s.sightings)
-        + _chxEv(s.item) + '</span></li>';
+        + _chxEv(s.item, t, s) + '</span></li>';
     }).join('');
     var un = (G.g.unplaced || []);
     var unTxt = un.length ? '<div class="chx-gear-h">Worn, slot not told yet: ' + un.map(function(u){
@@ -11750,11 +11750,22 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
      (window._vaultEvidenceChip) and its evidence panel (window._vaultEvidenceOpen) - the looks behind the tier, the look
      count, last seen and the pictures, each opening full size; 'no picture was saved' / UNKNOWN when there is none.
      Hover still shows the item card; nothing else (no price, no pencil) is added here. '' when the Vault is not on the page. */
-  function _chxEv(item){
+  function _chxEv(item, t, s){
     if (!item || typeof window._vaultEvidenceChip !== 'function') return '';
-    try { return window._vaultEvidenceChip(item, 'chx-ev'); } catch (e) { return ''; }
+    var chip;
+    try { chip = window._vaultEvidenceChip(item, 'chx-ev'); } catch (e) { return ''; }
+    if (!t || !s) return chip;
+    /* the same chip, opened with this worn item's own looks: the gear ledger's frames, its tier and last seen */
+    var key = String(t.key || '') + '|' + String(s.slot || '');
+    _chxWorn[key] = { who: 'seen worn by ' + (t.name || 'this character') + ' (' + (_SLOT_WORD[s.slot] || s.slot) + ')',
+                      tierSay: (_TIER_FACE[s.tier] || 'tier UNKNOWN') + ' · ' + _looks(s.sightings), lastTs: s.ts || null,
+                      looks: (Array.isArray(s.frames) ? s.frames : []).slice().reverse().map(function(f){ return { frame: f, session: s.reel || null }; }) };
+    return String(chip).replace(/window\._vaultEvidenceOpen\(('(?:[^'\\]|\\.)*')\)/, function(_m, nm){
+      return 'window._vaultEvidenceOpen(' + nm + ',window._chxWornOf(\'' + _chxJs(key) + '\'))'; });
   }
-  function _chxDollHtml(G, nm){
+  var _chxWorn = {};
+  window._chxWornOf = function(key){ return _chxWorn[String(key)] || null; };
+  function _chxDollHtml(G, nm, _chxT){
     if (typeof window._mpDollHtml !== 'function') return null;
     var bySlot = {};
     (G.g.slots || []).forEach(function(s){ if (s && s.slot) bySlot[s.slot] = s; });
@@ -11764,7 +11775,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
         + ' onclick="window._chxPick(\'' + _chxJs(cell) + '\')"';
       if (!s) return { say: word + ' · not a cell the ledger lists', attrs: attrs, picked: _chxCell === cell };
       if (!s.item) return { say: word + ' · not seen yet', attrs: attrs, picked: _chxCell === cell };
-      var ev = _chxEv(s.item);   /* v3855 - the Vault's magnifier in the cell's top-right corner */
+      var ev = _chxEv(s.item, _chxT, s);   /* v3855 - the Vault's magnifier in the cell's top-right corner */
       return { e: { name: s.item }, attrs: attrs, picked: _chxCell === cell,
                after: ev ? '<span class="chx-ev-at" style="left:calc(' + ((+row[3] || 0) + (+row[5] || 0) - 14) + '*var(--du));top:calc('
                  + (+row[4] || 0) + '*var(--du))">' + ev + '</span>' : '',
@@ -11778,7 +11789,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     var head = '<div class="chx-win-h"><span class="chx-win-name">' + nm + '</span>'
       + '<button type="button" data-act="close" onclick="window._chxClose()">Close</button></div>';
     if (G.state !== 'seen') return head + '<div class="chx-doll" data-state="' + G.state + '"><p class="chx-win-say">' + _chxSay(t, '') + '</p></div>';
-    var doll = _chxDollHtml(G, t.name || 'this character');
+    var doll = _chxDollHtml(G, t.name || 'this character', t);
     if (doll === null) return head + '<div class="chx-doll" data-state="unknown"><p class="chx-win-say">The Vault\'s doll is not on '
       + 'this page, so the cells cannot be drawn - UNKNOWN.</p></div>';
     var un = G.g.unplaced || [];
@@ -49656,8 +49667,9 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     img.onerror = function(){ i++; if (i < chain.length){ img.src = chain[i]; return; } clearTimeout(guard); ask(); };
     img.src = chain[0];
   };
-  window._vaultEvidenceOpen = function(name){
+  window._vaultEvidenceOpen = function(name, worn){
     var m = window._vaultEvidenceOf(name);
+    if (worn) m = window._vaultEvidenceWithWorn(m, worn);   /* v3855 - a worn item's own looks (the gear ledger) */
     var host = document.getElementById('vault-ev-panel');
     if (!host){
       host = document.createElement('div'); host.id = 'vault-ev-panel'; host.className = 'vault-ev-panel';
@@ -49696,6 +49708,23 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var f = (typeof window._identityFoundBy === 'function') ? window._identityFoundBy(name) : null;
     if (!f) return '';
     return '<div class="vev-found" title="' + _evEsc(f.hover) + '">' + _evEsc(f.say) + '</div>';
+  };
+  /* v3855 (Elad 2026-11-02) - A WORN ITEM'S OWN PROOF. The Characters tab hands the gear ledger's look of that worn item
+     ({who, tierSay, sightings, lastTs, looks: [{frame, session}]}); its looks go first, the Vault's own record (if any)
+     stays as it is. Nothing is filed or written - the panel only reads more. -> m */
+  window._vaultEvidenceWithWorn = function(m, worn){
+    var wl = (worn && Array.isArray(worn.looks)) ? worn.looks.filter(function(k){ return k && k.frame; }) : [];
+    if (!wl.length && !(worn && worn.who)) return m;
+    m.looks = wl.concat(m.looks || []);
+    m.has = true; m.unknown = false;
+    if (!m.who) m.who = worn.who || null;
+    if (!m.tierSay && worn.tierSay) m.tierSay = worn.tierSay;
+    if (!m.when && worn.lastTs) m.when = _evWhen(worn.lastTs);
+    if (!m.session && wl[0]) m.session = wl[0].session || null;
+    var n = m.looks.length;
+    m.tally = n;
+    m.tallySay = n ? (n + ' look' + (n === 1 ? '' : 's')) : 'no picture kept';
+    return m;
   };
   window._vaultEvidenceClose = function(){
     window.__vevTicket = (window.__vevTicket || 0) + 1;
