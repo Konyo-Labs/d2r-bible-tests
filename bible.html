@@ -11963,8 +11963,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     return _dumpWrap('lobby', 'lobby-sizes', summary, bits + panel);
   }
   window._lobbySizeHtml = _lobbySizeHtml;
-  window._chxDumpOpen = function(key){ try { return window.localStorage.getItem('d2r_chxDump.' + key) === '1'; } catch (e) { return false; } };
-  window._chxDumpToggle = function(key, open){ try { window.localStorage.setItem('d2r_chxDump.' + key, open ? '1' : '0'); } catch (e) {} return !!open; };
+  window._chxDumpOpen = function(key){ try { return window.LSR.getItem('d2r_chxDump.' + key) === '1'; } catch (e) { return false; } };
+  window._chxDumpToggle = function(key, open){ try { window.LSR.setItem('d2r_chxDump.' + key, open ? '1' : '0'); } catch (e) {} return !!open; };
   function _sections(all, order, mainId){
     var S = (typeof window._cbSections === 'function') ? window._cbSections(all, order) : null;
     if (!S) S = { state: 'unknown', why: 'the Character Builder is not on this page', ingame: [], mules: [], sim: order };

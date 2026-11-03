@@ -95,7 +95,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "the open state is not remembered",
      "file": "bible.html",
-     "find": "  window._chxDumpToggle = function(key, open){ try { window.localStorage.setItem('d2r_chxDump.' + key, open ? '1' : '0'); } catch (e) {} return !!open; };\n",
+     "find": "  window._chxDumpToggle = function(key, open){ try { window.LSR.setItem('d2r_chxDump.' + key, open ? '1' : '0'); } catch (e) {} return !!open; };\n",
      "replace": "  window._chxDumpToggle = function(key, open){ return !!open; };\n",
      "matches": 1},
     {"why": "each frame is its own row again (no per-character grouping)",
