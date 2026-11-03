@@ -6079,6 +6079,8 @@
   .fleet-head { font: var(--fw-bold) var(--fs-2xs)/1 var(--mono); letter-spacing: var(--ls-label);
     text-transform: uppercase; color: var(--gold-dim); display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
   .fleet-refresh { margin-left: auto; padding: 2px 7px; }
+  /* v3857 #247 - util-btn's flex 1 1 84px squeezed 'Roster' under its own word at 1024 and stretched the refresh glyph wide */
+  .fleet-head .util-btn { flex: none; }
   /* The panel scrolls inside itself. A full vault list used to grow the rail
      under the sticky shelf, so a click on Roster looked like nothing. */
   .roster-box { margin-top: 8px; border: 1px solid var(--edge); border-radius: 8px; padding: 7px 9px;
