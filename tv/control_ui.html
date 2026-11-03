@@ -33519,7 +33519,7 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
     if (!list || !list.length) return '<div class="hist-card">No version history recorded.</div>';
     return list.map(function(e){
       return '<div class="hist-card" data-hist-ver="' + histEsc(e.ver) + '"><div class="hist-head"><span class="hist-ver">' + histEsc(e.ver) + (e.name ? ' \u00b7 ' + histEsc(e.name) : '') + '</span>'
-        + '<span class="hist-date">' + histEsc(e.date) + ' IDT</span></div><ul>'
+        + '<span class="hist-date">' + histEsc(e.date) + '</span></div><ul>'
         + (e.items || []).map(function(t){ return '<li>' + histEsc(t) + '</li>'; }).join('') + '</ul></div>';
     }).join('');
   }
