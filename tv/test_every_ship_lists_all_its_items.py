@@ -54,8 +54,12 @@ class EveryShipListsAllItsItems(unittest.TestCase):
                 self.test_each_history_entry_covers_its_commits()
 
     def test_the_rule_catches_a_thin_entry(self):
-        fake = {"ver": "v3847", "items": ["one line"]}
-        self.assertGreater(short(fake), 1)
+        # v3859: the rule is asked over a fixed log, not the clone's. CI clones 200 commits deep, and a 174-commit bundle
+        # pushed every v3847 subject out of reach, so the self-test read 0 subjects and said the rule was blind.
+        subjects = ["v3847: one", "v3847: two", "v3847: three", "v3847 CI not counted", "v3847: Ship Title"]
+        with mock.patch("subprocess.run", lambda *a, **k: subprocess.CompletedProcess(a, 0, "\n".join(subjects), "")):
+            self.assertEqual(short({"ver": "v3847", "items": ["one line"]}), 3)
+            self.assertEqual(short({"ver": "v3847", "items": ["a", "b", "c"]}), 0)
 
     def test_git_log_is_decoded_as_utf8(self):
         seen = {}
@@ -99,6 +103,11 @@ RED_PROOF = [
      "file": "test_every_ship_lists_all_its_items.py",
      "find": "from console_safe import enable; enable()  # a subject can carry \u2715; a cp1255 console must still be able to report\n",
      "replace": "\n",
+     "matches": 1},
+    {"why": "v3859 - a thin entry is never short: the rule counts nothing and every history passes",
+     "file": "test_every_ship_lists_all_its_items.py",
+     "find": "    return n if len(entry[\"items\"]) < n else 0\n",
+     "replace": "    return 0\n",
      "matches": 1},
 ]
 
