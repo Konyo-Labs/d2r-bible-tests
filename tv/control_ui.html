@@ -6081,6 +6081,9 @@
   .fleet-refresh { margin-left: auto; padding: 2px 7px; }
   /* v3857 #247 - util-btn's flex 1 1 84px squeezed 'Roster' under its own word at 1024 and stretched the refresh glyph wide */
   .fleet-head .util-btn { flex: none; }
+  /* v3857 #247 - the Shelf door broke as 'EVERY RECORDED / RUN' (three lines at 1024, an orphan RUN at 2560): its name on one line, what it holds on a smaller second */
+  #btn-shelf .glab-dash { display: none; }
+  #btn-shelf .glab-sub { display: block; font-size: var(--fs-2xs); letter-spacing: .02em; opacity: .78; margin-top: 3px; }
   /* v3857 #247 - at 1024-1279 the rail is ~210px and the label letter-spacing broke 'THE FLEET' and 'SWEEP · this PC' onto two lines */
   @media (max-width: 1279px) { .fleet-head { white-space: nowrap; letter-spacing: .04em; gap: 6px; } }
   .fleet-head:has(> .swm-state) { white-space: nowrap; flex-wrap: wrap; row-gap: 3px; }
@@ -9077,7 +9080,7 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
            label that `_lbl.split(' · ')[0]` then throws away. Filed, not fixed here. -->
       <button class="ghost" id="btn-shelf" type="button" style="margin-top:8px;width:100%">
         <img class="gjewel" src="/art/hd_zod_rune.png" alt="" onerror="this.style.display='none'">
-        <span class="glab">📚 The Shelf — every recorded run</span>
+        <span class="glab">📚 The Shelf<span class="glab-dash"> — </span><span class="glab-sub">every recorded run</span></span>
         <span class="lockchip" id="lock-prune" data-state="locked" title="the deleter removes footage, and there is no undo — no lock state has been read yet, so it is LOCKED. This is a stamp, not a gate: it does not block anything.">🔒</span>
       </button>
       <!-- v2438 — Theatre RELOCATED, not removed. It keeps its id, class, title and handler, so

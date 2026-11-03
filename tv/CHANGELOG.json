@@ -8,7 +8,8 @@
       "v3857 #247: Mini focus pills keep their picture inside the pill at a 1024 console column",
       "v3857 #247: the Fleet head's Roster and refresh buttons size to their words, no cut word at 1024",
       "v3857 #247: the heart window's ✕ sits on its corner again at 1024-1440 (was 65px low, clamped to the rail)",
-      "v3857 #247: THE FLEET and SWEEP · this PC hold one line in the 1024-1279 rail"
+      "v3857 #247: THE FLEET and SWEEP · this PC hold one line in the 1024-1279 rail",
+      "v3857 #247: the Shelf door reads THE SHELF, then 'every recorded run' below - no orphan RUN"
     ]
   },
   {
