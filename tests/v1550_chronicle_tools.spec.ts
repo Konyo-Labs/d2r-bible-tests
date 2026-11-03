@@ -187,6 +187,13 @@ test.describe('v1550 — the gate tuner and the sweep memory get a button', () =
      * entry whose owner stopped caring fails here rather than silently excusing a real orphan.
      * [[plumbing-with-no-tap]] [[label-outlived-referent]] [[unknown-stays-unknown]] */
     const OWNED: Record<string, { owner: string; why: string }> = {
+      /* v3859 (8411f67b, #230 alt-scale) - the joined per-machine sync verdict as its own GET, the door a seat or a
+       * curl asks by hand; every page reads the SAME sync_status() through /api/sessions and the digest instead.
+       * Its law pins the handler and that every surface reads that one verdict. */
+      '/api/sync': {
+        owner: 'tv/test_one_sync_status_joins_recorder_seal_and_shelf.py',
+        why: 'v3859 - the one joined sync status asked by hand; pages read it inside /api/sessions and the digest.',
+      },
       '/api/mini_auto': {
         owner: 'tv/test_the_screen_read_never_blocks_the_button.py',
         why: 'MINI(AUTOMATIC) was removed in v2857 (REG-823) and the handler left as a deliberate '
