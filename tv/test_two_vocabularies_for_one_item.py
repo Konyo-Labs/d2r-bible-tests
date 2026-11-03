@@ -158,6 +158,13 @@ class TwoVocabulariesForOneItem(unittest.TestCase):
             # ruling working, not drift; the law re-arms the day any of them is owned again. UNMEASURED, not a pass.
             self.skipTest("UNMEASURED, not a pass: none of the four measured names is owned in this fresh vault "
                           "(%d owned) - the probe re-arms when one is witnessed again" % len(owned))
+        if not os.path.exists(ca._CHRON_EVIDENCE_PATH):
+            # 2026-11-03: the owned list comes from his ledger BACKUP, the sightings from this tree's own
+            # chron_evidence.json. A venue that holds the backup but never banked a sighting (a gate box, a
+            # fresh gate worktree) pairs his owned names with nobody's evidence - that is UNMEASURED, not
+            # "the route cannot find it". The law re-arms wherever the evidence ledger exists. [[unknown-stays-unknown]]
+            self.skipTest("UNMEASURED, not a pass: no evidence ledger at %s on this venue - nothing for the route "
+                          "to find, so the two organs cannot be compared" % ca._CHRON_EVIDENCE_PATH)
         row = he.check_vault_receipts()
         print("   organ says: %s" % (row.get("line") or "")[:100])
         for nm in probes:
