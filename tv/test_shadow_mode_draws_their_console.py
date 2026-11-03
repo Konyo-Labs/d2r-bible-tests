@@ -119,7 +119,8 @@ CAPTURE = r"""function (w, step) {
   function pencils(sel) { return D.querySelectorAll(sel + ' .vm-cell-edit').length; }
   function strip(h) { var d = D.createElement('div'); d.innerHTML = h || ''; return norm(d.textContent); }
   if (step === 'chars') { w.switchTab('chars'); return { wait: 1 }; }
-  if (step === 'chars!') return { text: txt('#tab-chars'), shape: shape('#tab-chars') };
+  /* v3856 - the In-game bars ride the section title's hover since v3855, so whose reels they are is read there too */
+  if (step === 'chars!') return { text: txt('#tab-chars') + '\n' + Array.prototype.map.call(D.querySelectorAll('#tab-chars [title]'), function (n) { return n.getAttribute('title'); }).join('\n'), shape: shape('#tab-chars') };
   if (step === 'vault') { w.switchTab('vault'); return { wait: 1 }; }
   if (step === 'vault!') return { text: txt('#tab-vault'), shape: shape('#tab-vault'), pencils: pencils('#tab-vault') };
   if (step.indexOf('mule:') === 0) { w.openMuleCard(step.slice(5)); var t = txt('#vault-detail'), sh = shape('#vault-detail'), pc = pencils('#vault-detail'); w.vaultCloseCard(true); return { text: t, shape: sh, pencils: pc }; }

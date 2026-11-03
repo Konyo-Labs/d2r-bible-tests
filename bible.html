@@ -4183,6 +4183,11 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
             node.nodeValue = node.nodeValue.split(from2).join(to2);
           return;
         }
+        /* v3856 - v3855 moved the In-game bars into the section title's hover: a shadow's hover named "this console" */
+        if (node.nodeType === 1 && node.getAttribute) {
+          var _t = node.getAttribute('title');
+          if (_t && _t.indexOf(from) !== -1) node.setAttribute('title', _t.split(from).join(to));
+        }
         var kids = node.childNodes;
         if (!kids) return;
         for (var i = 0; i < kids.length; i++) rewrite(kids[i]);
@@ -4193,13 +4198,13 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
         var obs = new MutationObserver(function (recs) {
           for (var r = 0; r < recs.length; r++) {
             var rec = recs[r];
-            if (rec.type === 'characterData') rewrite(rec.target);
+            if (rec.type === 'characterData' || rec.type === 'attributes') rewrite(rec.target);
             var added = rec.addedNodes;
             if (!added) continue;
             for (var i = 0; i < added.length; i++) rewrite(added[i]);
           }
         });
-        obs.observe(document.documentElement, { subtree: true, childList: true, characterData: true });
+        obs.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['title'] });
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm);
       else arm();
@@ -11976,6 +11981,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     var bars = _bars();
     var ladder = bars ? 'Confirmed at ' + bars.hardened + ' looks, the Vault\'s own bar'
                       : 'Confirmed at the Vault\'s own HARDENED bar';
+    /* v3856 - the hover says whose reels learned these (a shadow's rewrite turns it into the owner's name) */
+    ladder = 'Characters this console\'s reels learned · ' + ladder;
     var ing = S.ingame.concat(S.mules), cards = '';
     var _one = function(g){ return g.ids.length ? g.ids.map(function(id){ return _card(id, all[id], id === mainId, g.t); }).join('') : _ghost(g.t); };
     S.ingame.forEach(function(g){ cards += _one(g); });
