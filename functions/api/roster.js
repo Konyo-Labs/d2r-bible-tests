@@ -473,7 +473,7 @@ export const API_FIELDS = {
   // list, so EVERY profile carrying the characters answer was refused whole ("d2r_api_chars_learned is not the console
   // answer it names") from the v3837 console on: shadows froze on their last profile. A law now holds each name's FIELDS equal.
   chars_learned: ["ok", "chars", "gear", "gearWhy", "minVisits", "tierBars", "cPanel", "surfaceWitnesses", "lobbyBySize",
-                  "sessions", "sessionsWhy"],
+                  "sessions", "sessionsWhy", "identity"],   // v3856 - read_identity rides chars_learned (finds_index, characters_rollup)
   main_locks: ["ok", "locked", "tracked", "floor", "minSightings", "canEverLock", "blockedWhy"],
   world: ["machine", "profile", "ledger", "os", "cousin"],
   // v3849 - a shadow draws the owner's frame: the console's picture map (console_snapshot.pictures_of) rides the
