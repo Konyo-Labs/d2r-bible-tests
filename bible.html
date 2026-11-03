@@ -22608,7 +22608,7 @@ function _itemCells(name){
       else if (/\bhellfire torch\b/.test(s)) cells = {w:1,h:2};       // large charm
       else if (/\bgrand charm\b|\bskiller\b|\(gc\)/.test(s)) cells = {w:1,h:3};
       else if (/\blarge charm\b|\(lc\)/.test(s)) cells = {w:1,h:2};
-      else if (/\bsmall charm\b|\(sc\)/.test(s)) cells = {w:1,h:1};
+      else if (/\b(small charm)\b/.test(s) || /\(sc\)/.test(s)) cells = {w:1,h:1};  /* v3859: the CASC 'Small Charm' base, in the census's form */
       else if (/\b(ring|amulet|jewel|gem|rune)\b/.test(s)) cells = {w:1,h:1};
       else if (/\b(two-?hand|polearm|poleaxe|halberd|war scythe|scythe|partizan|bardiche|voulge|cryptic axe|great ?(maul|sword|axe)|colossus|gothic (sword|axe)|thresher|berserker axe|giant thresher|ogre maul|maul\b|champion sword|colossus blade|tomb reaver|ettin axe)\b/.test(s)) cells = {w:2,h:4};
       else if (/\b(bow|crossbow|arbalest|ballista|hydra bow|gorgon crossbow)\b/.test(s)) cells = {w:2,h:4};
