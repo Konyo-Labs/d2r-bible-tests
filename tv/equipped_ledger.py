@@ -874,6 +874,95 @@ def gear_by_key(d, fold, bars):
     return out
 
 
+def _num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _merge_gear(recs, bars):
+    """One character's gear from the records its spellings were filed under (REG-3069). A slot one record saw keeps it;
+    the same item under two spellings is one item, its sightings added; two different items in one slot take the one
+    seen LAST (each row's own ts - the look that describes what he wears now), the other kept in `alsoSeen`, and with a
+    time missing on either side the slot is UNKNOWN (item None, `why` says so) rather than a guess."""
+    rows = []
+    for s in DOLL_ORDER:
+        cands = [r for r in ((rec.get("slots") or []) for rec in recs) for r in r if r.get("slot") == s and r.get("item")]
+        if not cands:
+            rows.append({"slot": s, "item": None, "sightings": 0, "tier": None, "ts": None, "reel": None})
+            continue
+        by = {}
+        for c in cands:
+            e = by.setdefault(c["item"], {"item": c["item"], "sightings": 0, "ts": None, "reel": None})
+            e["sightings"] += int(c.get("sightings") or 0)
+            if _num(c.get("ts")) and (e["ts"] is None or c["ts"] > e["ts"]):
+                e["ts"], e["reel"] = c["ts"], c.get("reel")
+        items = list(by.values())
+        if len(items) == 1:
+            e = items[0]
+            rows.append({"slot": s, "item": e["item"], "sightings": e["sightings"], "tier": _tier_of(e["sightings"], bars),
+                         "ts": e["ts"], "reel": e["reel"]})
+            continue
+        if any(e["ts"] is None for e in items):
+            rows.append({"slot": s, "item": None, "sightings": 0, "tier": None, "ts": None, "reel": None,
+                         "why": "two spellings of this character were seen wearing different items here and one look "
+                                "has no time, so which is worn now is UNKNOWN",
+                         "alsoSeen": [{"item": e["item"], "sightings": e["sightings"], "ts": e["ts"]} for e in items]})
+            continue
+        items.sort(key=lambda e: e["ts"], reverse=True)
+        e = items[0]
+        rows.append({"slot": s, "item": e["item"], "sightings": e["sightings"], "tier": _tier_of(e["sightings"], bars),
+                     "ts": e["ts"], "reel": e["reel"],
+                     "alsoSeen": [{"item": o["item"], "sightings": o["sightings"], "ts": o["ts"]} for o in items[1:]]})
+    un = {}
+    for rec in recs:
+        for u in rec.get("unplaced") or []:
+            e = un.setdefault(u.get("item"), {"item": u.get("item"), "sightings": 0, "why": u.get("why"), "ts": None})
+            e["sightings"] += int(u.get("sightings") or 0)
+            if _num(u.get("ts")) and (e["ts"] is None or u["ts"] > e["ts"]):
+                e["ts"] = u["ts"]
+    unplaced = [dict(e, tier=_tier_of(e["sightings"], bars)) for _k, e in sorted(un.items(), key=lambda kv: str(kv[0]))]
+    lasts = [rec.get("lastTs") for rec in recs if _num(rec.get("lastTs"))]
+    return {"name": recs[0].get("name"), "slots": rows, "unplaced": unplaced,
+            "reels": sum(int(rec.get("reels") or 0) for rec in recs), "lastTs": max(lasts) if lasts else None}
+
+
+def fold_aliases(gear, chars, bars):
+    """REG-3069 (GrokBot 04:03, #36) - GEAR SEEN UNDER AN ALIAS REACHES ITS CHARACTER. -> gear | None
+
+    The gear ledger files a reel's worn items under the name that session read (gear['konylock']), while the learner
+    merged that spelling into its character (char_select.learned: konylock is an alias of konyolock, 26 visits) - so
+    KonyoLock's card said Armor "not seen yet" beside an Enigma watched on konylock. The fold is the LEARNER'S own
+    (`chars` is char_select.learned's rows; each names its merged spellings in `aliases`), never a guess by name: every
+    alias key's gear joins its character's key and leaves the alias key (named in the character's `aliases`). An alias
+    two characters claim is folded into neither - it stays under its own key, `aliasWhy` saying so (UNKNOWN whose)."""
+    if gear is None or not chars:
+        return gear
+    owners = {}
+    for row in chars:
+        k = (row or {}).get("key")
+        for a in (row or {}).get("aliases") or []:
+            ak = (a or {}).get("key")
+            if k and ak and ak != k:
+                owners.setdefault(ak, set()).add(k)
+    out = dict(gear)
+    into = {}
+    for ak, ks in owners.items():
+        if ak not in gear:
+            continue
+        if len(ks) != 1:
+            out[ak] = dict(gear[ak], aliasWhy="a spelling %d characters claim (%s) - whose gear it is is UNKNOWN"
+                                              % (len(ks), ", ".join(sorted(ks))))
+            continue
+        into.setdefault(next(iter(ks)), []).append(ak)
+    for k, aks in into.items():
+        aks = sorted(aks)
+        recs = ([gear[k]] if k in gear else []) + [gear[a] for a in aks]
+        out[k] = _merge_gear(recs, bars)
+        out[k]["aliases"] = aks
+        for a in aks:
+            out.pop(a, None)
+    return out
+
+
 # ── the heart's vocabulary ─────────────────────────────────────────────────────────────────────────────
 def contract(journals=None, store=None, now_ms=None, hist_dir=None, cs=_UNSET):
     """This lane in the shared supervision vocabulary. -> dict

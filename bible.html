@@ -11752,6 +11752,11 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     return g ? { state: 'seen', g: g } : { state: 'none' };
   }
   function _looks(n){ n = n | 0; return n + (n === 1 ? ' look' : ' looks'); }
+  /* a slot the gear ledger could not settle (REG-3069): UNKNOWN, its reason, and the items each spelling saw */
+  function _gearWhy(s){
+    var seen = (s.alsoSeen || []).map(function(o){ return o.item + ' (' + _looks(o.sightings) + ')'; }).join(' · ');
+    return 'UNKNOWN — ' + s.why + (seen ? ': ' + seen : '');
+  }
   function _gearHtml(t){
     var G = _gearOf(t), nm = esc(t.name || 'this character');
     if (G.state === 'unknown') return '<div class="chx-gear" data-state="unknown"><div class="chx-gear-h" title="' + esc(G.why)
@@ -11761,6 +11766,9 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     var seen = 0;
     var rows = (G.g.slots || []).map(function(s){
       var word = '<span class="chx-slot">' + esc(_SLOT_WORD[s.slot] || s.slot) + '</span>';
+      /* REG-3069 - two spellings of him seen in different items here, one look with no time: which is worn is UNKNOWN */
+      if (!s.item && s.why) return '<li data-slot="' + esc(s.slot) + '" data-state="unknown">' + word + '<span class="chx-item chx-unk">'
+        + esc(_gearWhy(s)) + '</span></li>';
       if (!s.item) return '<li data-slot="' + esc(s.slot) + '" data-state="unseen">' + word + '<span class="chx-item chx-unk">not seen yet</span></li>';
       seen++;
       return '<li data-slot="' + esc(s.slot) + '" data-tier="' + esc(s.tier || 'UNKNOWN') + '">' + word
@@ -11797,6 +11805,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     (G.g.slots || []).forEach(function(s){ if (s.slot === slot) row = s; });
     if (!row) return esc(cell) + ' is not a cell on this character.';
     var word = esc(_SLOT_WORD[row.slot] || row.slot);
+    if (!row.item && row.why) return word + ' · ' + esc(_gearWhy(row));
     if (!row.item) return word + ' · not seen yet';
     return word + ' · ' + esc(row.item) + ' · ' + esc(_CHX_WORD[row.tier] || 'tier UNKNOWN') + ' · ' + _looks(row.sightings);
   }
@@ -11828,12 +11837,16 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     (G.g.slots || []).forEach(function(s){ if (s && s.slot) bySlot[s.slot] = s; });
     return window._mpDollHtml(function(worn, row){
       var s = bySlot[worn], cell = 'equipped:' + worn, word = _SLOT_WORD[worn] || worn;
-      var attrs = ' data-cell="' + esc(cell) + '"' + ((s && s.item) ? ' data-tier="' + esc(s.tier || 'UNKNOWN') + '"' : ' data-state="unseen"')
+      var attrs = ' data-cell="' + esc(cell) + '"' + ((s && s.item) ? ' data-tier="' + esc(s.tier || 'UNKNOWN') + '"'
+        : (s && s.why) ? ' data-state="unknown"' : ' data-state="unseen"')
         + ' onclick="window._chxPick(\'' + _chxJs(cell) + '\')"';
       if (!s) return { say: word + ' · not a cell the ledger lists', attrs: attrs, picked: _chxCell === cell };
-      if (!s.item) return { say: word + ' · not seen yet', attrs: attrs, picked: _chxCell === cell };
+      if (!s.item) return { say: word + ' · ' + (s.why ? _gearWhy(s) : 'not seen yet'), attrs: attrs, picked: _chxCell === cell };
       var ev = _chxEv(s.item, _chxT, s);   /* v3855 - the Vault's magnifier in the cell's top-right corner */
-      return { e: { name: s.item }, attrs: attrs, picked: _chxCell === cell,
+      /* REG-3070 - the picture is the slot's (a runeword's base of this slot's type, a rare's base by its slot); null = the
+         builder's database cannot be read, drawn UNKNOWN */
+      var _an = (typeof window._cbSlotArtName === 'function') ? window._cbSlotArtName(s.item, worn, s.base) : s.item;
+      return { e: { name: _an }, attrs: attrs, picked: _chxCell === cell,
                after: ev ? '<span class="chx-ev-at" style="left:calc(' + ((+row[3] || 0) + (+row[5] || 0) - 14) + '*var(--du));top:calc('
                  + (+row[4] || 0) + '*var(--du))">' + ev + '</span>' : '',
                say: word + ' · ' + s.item + ' · ' + (_CHX_WORD[s.tier] || 'tier UNKNOWN') + ' · ' + _looks(s.sightings) };
@@ -13320,6 +13333,8 @@ function d2jspBatchHtml(view) {
     ((it && it[6]) || []).forEach(function(l){
       if (!l || l[2] === 3) return;
       var t = '';
+      /* REG-3071 a socket range never passes the base (Aldur's Rhythm on a Jagged Star posts Socketed (2-3)) */
+      try { if (typeof window._cbSockCapLine === 'function') l = window._cbSockCapLine(l, entry.base || it[3], entry.ilvl); } catch (eCap) { /* uncapped */ }
       try { t = (typeof window._cbLineHtml === 'function') ? window._cbLineHtml(l, rolls, null, 'text') : ''; } catch (eLn) { t = ''; }
       t = d2jspPostLine(t);
       if (t) out.push(t);
@@ -73377,6 +73392,24 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     return Math.max(0, Math.min(b[4], band));
   }
   window._cbMaxSock = _cbMaxSock;
+  /* REG-3071 (GrokBot 04:03, #36) - A SOCKET RANGE NEVER PASSES ITS BASE. The tooltip printed Aldur's Rhythm "Socketed (2-5)"
+     from its own data line (s68: sock 2-5) while a Jagged Star takes at most 3, and the game caps sockets at the base's
+     ceiling. A display rule, swept over every surface that prints an item's lines through this one door (the tooltip, the
+     socket stepper's range, a fixed count, the Edit tab's lines and picked mods, a d2jsp post's lines): the range is capped
+     at _cbMaxSock(base, item level); the data is never edited. Any other line, or a base the database cannot read, passes
+     unchanged. -> the line itself, or a copy with its range capped */
+  function _cbSockCapLine(l, code, ilvl){
+    if (!l || l[3] !== 'sock' || l.unk != null) return l;
+    var r = l[1] && l[1][0];
+    if (!r || r[0] === 'L' || r[0] === 'C' || typeof r[0] !== 'number' || typeof r[1] !== 'number') return l;
+    var cap = _cbMaxSock(code, ilvl);
+    if (!(cap > 0)) return l;
+    var hi = Math.min(Math.max(r[0], r[1]), cap), lo = Math.min(Math.min(r[0], r[1]), hi);
+    if (lo === Math.min(r[0], r[1]) && hi === Math.max(r[0], r[1])) return l;
+    var c = l.slice(); c[1] = [[lo, hi].concat(r.slice(2))].concat(l[1].slice(1));
+    return c;
+  }
+  window._cbSockCapLine = _cbSockCapLine;
   function _cbIsWeapon(code){ var b = _cbBase(code); return !!(b && b[21] === 'w'); }
   /* every base an item may sit on. unique / set: its own. crafted: its recipe's base (and its tiers when the recipe
      upgrades) or every base of its recipe's type. runeword: every base whose type the runeword names (and none it
@@ -74210,7 +74243,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     var bases = _cbBasesOf(it), base = bases[0] || it[3];
     var e = { id: it[0], name: it[1], q: it[2], base: base, sockets: 0, eth: false, rolls: {}, socketed: [], ilvl: 99 };
     if (it[2] === 'r'){ e.sockets = it[7].runes.length; e.socketed = it[7].runes.slice(); }
-    (it[6] || []).forEach(function(l){ if (l[3] === 'sock' && l[1][0] && l[1][0][0] === l[1][0][1]) e.sockets = l[1][0][0]; });
+    (it[6] || []).forEach(function(l){ l = _cbSockCapLine(l, base, e.ilvl); if (l[3] === 'sock' && l[1][0] && l[1][0][0] === l[1][0][1]) e.sockets = l[1][0][0]; });   /* REG-3071 capped at the base */
     /* #95 (REG-1901) — HIS DEMO (the planner, 2026-09-30): the crafted variant FILLS ITS NAME - two rare words over its
        base, as the game names his Ghoul Scarab Amulet and the planner its Grim Noose Amulet - and each recipe line lands
        at the TOP of its range (10% FCR, 20 to Mana, Regenerate Mana 10%). A box he types into still overrides it. */
@@ -74446,7 +74479,9 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     var base = _cbMaxSock(e.base, e.ilvl);
     if (!it) return { lo: 0, hi: base, key: null, why: '' };
     if (it[2] === 'r') return { lo: e.sockets | 0, hi: e.sockets | 0, key: null, why: 'a runeword fills exactly its runes' };
-    var ln = _cbLineOf(it, 'sock'), r = ln && ln[1] && ln[1][0];
+    var ln = _cbLineOf(it, 'sock');
+    if (ln) ln = _cbSockCapLine(ln, e.base || it[3], e.ilvl);   /* REG-3071 a range never passes its base */
+    var r = ln && ln[1] && ln[1][0];
     if (r && r[0] !== 'L' && r[0] !== 'C'){
       var lo = Math.min(r[0], r[1]), hi = Math.max(r[0], r[1]);
       return { lo: lo, hi: hi, key: lo === hi ? null : r[2], why: 'its own Socketed line: ' + (lo === hi ? lo : lo + '-' + hi) };
@@ -74803,6 +74838,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     /* the lines - the item's own and (joined above) its sockets' - in the tooltip's range form ('tip') */
     (it[6] || []).forEach(function(l){
       if (l[2] === 3){ out.eth = true; return; }
+      l = _cbSockCapLine(l, e.base || it[3], e.ilvl);   /* REG-3071 the base's ceiling */
       out.lines.push({ html: l.unk != null ? l.unk : _cbLineHtml(l, rolls, clvl, 'tip'), cls: (l[2] === 2 || l[2] === 4) ? 'd2t-unk' : 'd2t-p', sock: l[3] === 'sock' || undefined });
     });
     out.lines = out.lines.concat(J.unk);
@@ -75007,6 +75043,97 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
   }
   window._cbArtName = _cbArtName;
   function _cbArtFor(e){ return _cbArt(_cbArtName(e)); }
+  /* REG-3070 (GrokBot 04:03, #36) - A WORN ITEM'S PICTURE IS ITS SLOT'S. The character window drew each worn item by its
+     own NAME (#248's defect again, on the one surface that only has a name): Fortitude in the Armor slot drew
+     hd_crystal_sword, Splendor hd_kite_shield, Peace and Treachery hd_plate_mail, Plague and Lawbringer hd_crystal_sword,
+     and a rare's or a plain word's name (Carrion Greaves, Wraith Grasp, Dragon Talon, "Shield", "Armor") drew nothing.
+     #248's rule, given the slot: a unique or set item draws its own graphic; a recorded base of THAT slot's type draws
+     that base; a plain base draws itself (when it is of that slot's type); a runeword draws a base of that slot's type
+     it can be made in - its own picture when that is one (Enigma's plate mail on the torso), the slot's own kind first (a
+     shield in the off-hand before a second weapon) - and anything else (a rare's name, a bare word, a runeword read in a
+     slot it cannot be made for) a base of that slot's type - never another slot's. A name the database lacks that has a
+     picture of its own keeps it.
+     worn: the reader's slot (helm, torso, weapon, off-hand, gloves, belt, boots, amulet, ring1, ring2).
+     -> the name artOr draws, or null when the database cannot be read (the caller draws UNKNOWN) */
+  var _CB_WORN_RAIL = { helm: 'head', amulet: 'neck', weapon: 'rarm', torso: 'tors', 'off-hand': 'larm', gloves: 'glov',
+                        ring1: 'rrin', belt: 'belt', ring2: 'lrin', boots: 'feet' };
+  var _cbBaseByName = null;
+  function _cbBaseCode(name){
+    var d = _cbDb(); if (!d || name == null) return null;
+    if (d.b[name]) return name;
+    if (!_cbBaseByName || _cbBaseByName.n !== Object.keys(d.b).length){
+      var m = Object.create(null);
+      Object.keys(d.b).forEach(function(k){ var l = String(d.b[k][0]).toLowerCase(); m[l] = (l in m) ? null : k; });
+      _cbBaseByName = { n: Object.keys(d.b).length, m: m };
+    }
+    return _cbBaseByName.m[String(name).trim().toLowerCase()] || null;
+  }
+  /* the slot's categories in its rail's own order (its parent first: Shields, Body Armor, Helmets ...), each as base types;
+     the off-hand's "Second Weapons" (@offhand) is any weapon */
+  function _cbWornCats(worn){
+    return _cbCats(_CB_WORN_RAIL[worn] || worn).map(function(c){
+      return (c[1] || []).map(function(x){ return x === '@offhand' ? 'weap' : x; }).filter(function(x){ return x && x.charAt(0) !== '@'; });
+    }).filter(function(t){ return t.length; });
+  }
+  function _cbWornTypes(worn){
+    var t = [];
+    _cbWornCats(worn).forEach(function(c){ c.forEach(function(x){ if (t.indexOf(x) < 0) t.push(x); }); });
+    return t;
+  }
+  function _cbBaseIs(code, types){
+    var d = _cbDb(), b = d && d.b[code]; if (!b) return false;
+    var anc = d.anc[b[1]] || {};
+    return types.some(function(t){ return t === b[1] || !!anc[t]; });
+  }
+  /* the slot's kinds in its rail's order: what it holds of its own (the off-hand's shields, quivers, heads, grimoires), then a
+     weapon it holds (claws, a second weapon) - one kind for a slot whose categories are all one kind */
+  function _cbWornTiers(worn){
+    var d = _cbDb(), cats = _cbWornCats(worn);
+    var isW = function(types){ return types.some(function(t){ return t === 'weap' || !!(d.anc[t] || {}).weap; }); };
+    var own = cats.filter(function(c){ return !isW(c); }), weap = cats.filter(isW);
+    return own.length ? [own, weap].filter(function(t){ return t.length; }) : [weap];
+  }
+  /* a base with a picture of the slot's first kind that the runeword (allowed) can be made in - the one drawn by its own
+     picture (want) first, then the first in the data's order - and only then the slot's next kind */
+  function _cbWornBase(worn, allowed, want){
+    var d = _cbDb(), keys = Object.keys(d.b), hit = null;
+    _cbWornTiers(worn).some(function(cats){
+      var first = null;
+      cats.some(function(types){
+        return keys.some(function(k){
+          if (!_cbBaseIs(k, types) || (allowed && !_cbBaseIs(k, allowed))) return false;
+          var u = null; try { u = (typeof artUrl === 'function') ? artUrl(d.b[k][0]) : null; } catch (eU) { u = null; }
+          if (!u) return false;
+          if (!first) first = d.b[k][0];
+          if (want && u === want){ hit = d.b[k][0]; return true; }
+          return !want;
+        });
+      });
+      hit = hit || first;
+      return !!hit;
+    });
+    return hit;
+  }
+  function _cbSlotArtName(name, worn, base){
+    var d = _cbDb(); if (!d) return null;
+    var n = String(name == null ? '' : name).trim(), it = d.byName ? d.byName[n.toLowerCase()] : null;
+    if (it && (it[2] === 'u' || it[2] === 's')) return it[1];
+    var types = _cbWornTypes(worn);
+    var fits = function(code){ return !!code && (!types.length || _cbBaseIs(code, types)); };
+    var rb = _cbBaseCode(base);
+    if (fits(rb)) return d.b[rb][0];
+    var own = _cbBaseCode(n);
+    if (fits(own)) return d.b[own][0];
+    if (!types.length) return n;
+    /* a name the database does not know (a unique it lacks) that has its own picture keeps it; a rare's name has none */
+    if (!it && !own){ var u0 = null; try { u0 = (typeof artUrl === 'function') ? artUrl(n) : null; } catch (eA) { u0 = null; } if (u0) return n; }
+    var allowed = (it && it[2] === 'r' && it[7] && Array.isArray(it[7].it)) ? it[7].it : null;
+    /* a runeword's own picture stays when it is a base of this slot it can be made in (Enigma's plate mail on the torso) -
+       never another slot's (Fortitude's crystal sword on the torso) */
+    var mine = null; if (allowed){ try { mine = (typeof artUrl === 'function') ? artUrl(it[1]) : null; } catch (eM) { mine = null; } }
+    return (mine && _cbWornBase(worn, allowed, mine)) || (allowed && _cbWornBase(worn, allowed)) || _cbWornBase(worn, null) || n;
+  }
+  window._cbSlotArtName = _cbSlotArtName;
   function _cbClsIx(name){ var d = _cbDb(); if (!d || !name) return -1; var i = d.clsByName[String(name).toLowerCase()]; return i == null ? -1 : i; }
   function _cbWin(){ return document.getElementById('cb-win'); }
 
@@ -75944,7 +76071,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     var lines = (it[6] || []).map(function(l){
       var cls = l[2] === 1 ? 'cb-l-set' : (l[2] === 2 ? 'cb-l-unk' : (l[2] === 4 ? 'cb-l-grp' : ''));
       if (l[2] === 3) return '';
-      return '<li class="' + cls + '">' + _cbLineHtml(l, e.rolls, clvl, 'edit', slot) + '</li>';
+      return '<li class="' + cls + '">' + _cbLineHtml(_cbSockCapLine(l, e.base, e.ilvl), e.rolls, clvl, 'edit', slot) + '</li>';   /* REG-3071 */
     }).join('');
     var sc = _cbSockClass(slot, e.base), socks = '';
     if (rw){
@@ -76058,7 +76185,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     var mods = (e.affixes || []).map(function(x, i){
       var a = _cbAf(x && x.id);
       if (!a) return '<div class="cb-mod cb-mod-unk"><button type="button" class="cb-mod-x" aria-label="remove" onclick="window._cbDelMod(' + i + ')">✕</button><span class="cb-mod-t">UNKNOWN — the affix "' + esc(x && x.id) + '" is not in the tables this page carries</span></div>';
-      var body = (a[11] || []).map(function(l){ return _cbLineHtml(l, x.rolls || {}, clvl, 'edit', slot).replace(/<(input|select) class="cb-roll/g, '<$1 data-ax="' + i + '" class="cb-roll'); }).join(', ');
+      var body = (a[11] || []).map(function(l){ return _cbLineHtml(_cbSockCapLine(l, e.base, e.ilvl), x.rolls || {}, clvl, 'edit', slot).replace(/<(input|select) class="cb-roll/g, '<$1 data-ax="' + i + '" class="cb-roll'); }).join(', ');
       var cn = a[8] >= 0 && d.cls[a[8]] ? d.cls[a[8]].n : '';
       return '<div class="cb-mod" data-ax="' + i + '"><button type="button" class="cb-mod-x" aria-label="remove ' + esc(a[2]) + '" onclick="window._cbDelMod(' + i + ')">✕</button>'
         + '<span class="cb-mod-t">' + (cn ? '<b class="cb-add-star" title="tied to one class: ' + esc(cn) + '">*</b>' : '') + body + '</span>'

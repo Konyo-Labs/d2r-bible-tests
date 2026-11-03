@@ -5339,6 +5339,13 @@ def chars_learned_answer(full=True):
                     "lobbyBySize": _cs.lobby_by_size(_d),
                     "cPanel": _cs.CPANEL_SAY,
                     "gear": _gear, "gearWhy": _gwhy})
+        # REG-3069 - gear filed under a spelling the learner merged into a character reaches that character (the
+        # learner's own aliases, never a guess by name; an alias two characters claim stays UNKNOWN)
+        try:
+            if out["gear"] is not None:
+                out["gear"] = _el.fold_aliases(out["gear"], out["chars"], _cs.tier_bars())
+        except Exception as _fe:
+            out["gear"], out["gearWhy"] = None, "folding the gear ledger's spellings raised %s" % type(_fe).__name__
         # v3855 (Elad pt1198u) - WHO FOUND WHAT, and each character's sessions, from this console's own reads
         # (read_identity, built locally; the shadow carries only these answers). Never a password. None = UNKNOWN.
         try:

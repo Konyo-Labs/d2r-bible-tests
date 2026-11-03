@@ -257,6 +257,432 @@ landed there it goes to ALL) and relies on the landing to come back. Routine I w
 v3839's grade. The hand guard now covers the crafts room's auto-land only. Law case
 test_a_sealed_chronicle_still_lands_on_completed (whole page in node: a sealed chronicle's empty ALL lands on Completed even
 after his chip); red-proof RED; REG-3056's crafts cases and proofs unchanged.
+### REG-2998 - A SCRATCH CONSOLE ADDRESSED HIS LIVE CONSOLE AND HIS AGENT BY THEIR PORTS (#172, agent-144's own disclosure)
+console_doctor.CONSOLE was the constant http://127.0.0.1:<his port>. While profiling REG-2985, a scratch console on :17991
+ran its eagle, and its doctor sent its reads to HIS live console: GETs, /api/board_ownership (which runs JavaScript in the
+window he is looking at), /api/window {do: frame}. Every console a law spawns on his Mac did the same. The sweep of the class:
+  - stage_witness asked his console for the room (STATUS_URL) and looked up the pid on his port to read his window's pixels;
+  - organ_matrix asked his console by its port; shelf_corroborate, paint_witness and coldread read TV_CONTROL_PORT with a
+    his-port fallback of their own; journal_retention read TV_PORT (the AGENT's variable) with his console's port;
+  - the engine loop asked the agent bridge at his agent's port by name instead of AGENT_PORT;
+  - control_app.AGENT_PORT defaulted to his agent's port even on a console that named another control port. The new law
+    measured it: two `lsof -tiTCP:<his agent>` probes from one every-tick pass, and that path can kill the pid listening there.
+Now one helper, tv/console_port.py, answers "which console is mine": TV_CONTROL_PORT (control_app.CONTROL_PORT reads the same
+variable, and a child inherits it). It answers his console only when nothing names one (a CLI he runs), and an unreadable
+value is NO console, never his. Every door above goes through it. A console's agent is TV_PORT, else the port below its own
+control port, so his console still gets his agent and a scratch console gets its own. The tools that read his live console
+ON PURPOSE (the launchers, the keepalive, the push hook's settle, the run gate's console probes, the live panel gate, the
+wilson banking CLIs, his intake prover) keep their words, and console_port.DELIBERATE names each with its reason.
+Not changed, on reading: corroborate's _PRIMARY_PORT judges WHO WROTE the eagle record (a file read, never an address), and its
+docstring forbids a scratch reading its own record ("re-create the very self-agreement v2411 removed").
+Law: test_a_scratch_console_never_addresses_his (4 tests, 9 red-proofs RED; 29 sibling laws green). It COUNTS what a scratch-shaped process on :17993
+addresses: one every-tick doctor pass, the stage witness, the organ read and the pid probes, with every socket connect and
+every spawned command recorded and refused before it leaves the process. It sees none to his ports and some to its own. A
+literal scan is the second half: a his-port number outside console_port.DELIBERATE, or a his-port URL outside
+DELIBERATE_URL, fails. Re-aimed: test_the_eagle_is_asked_where_it_lives's red-proof follows organ_matrix's new sentence.
+Follow-up: the law's scratch-shaped process runs a real doctor pass, whose last step (unknown_age.attach) writes the
+eagle ledger, and it did not redirect it: run from his checkout it would have written HIS tv/.unknown_age.json.
+test_no_test_writes_his_eagle_ledgers could not see it (the pass runs inside a -c string, not an AST call). The law
+now calls fixture_ledgers.redirect() at import, so the process and its child write a temp ledger; measured: the
+worktree's ledger kept its mtime and size across a full run.
+### REG-3079 - THE CHARACTERS ROOM HID WHY THIS PC'S SAVES NAME WHAT THEY NAME (#251, his call via the lead)
+d2s_read.saves (REG-2925) says why its list is what it is: "no .d2s on this PC; online characters live on Battle.net",
+or why the list is UNKNOWN (no save folder; a platform with no place to look). Nothing drew it, and a hidden reason
+reads as nothing. The room now draws it under the in-game list ("This PC's saves: ...") and in the empty state, where
+nothing else is known.
+A shadow draws the OWNER's reason ("Their PC's saves: ..."). Their console uploads its saves answer:
+- control_app._profile_saves joins the upload's console answers;
+- console_snapshot.API_FIELDS "saves" keeps ok/state/d2sWhy/why only (the names ride in the roster section, REG-2929);
+- the worker's API_NAMES and API_FIELDS take it;
+- the shadow frame answers /api/saves from it.
+A shadow still never takes their names as this page's templates. A platform with no place to look is now an answered
+look (ok, chars UNKNOWN), so a Linux console's upload does not log a miss every hour.
+The two profile-publish laws stand a fixture in for _profile_saves, so no law reads a real save folder.
+Law test_the_characters_room_says_why_its_saves_name_what_they_name (the room on the whole page in node, the upload in
+Python), 8 cases, 8 red-proofs RED, baseline green. 24 neighbours ran green (6 node-only laws refused by safe_laws for a
+test import, read and run by hand); the signed-publish, presence-beacon, shadow and mule-window Chrome laws go to CI.
+
+### REG-3042 - A SET PIECE OR A RUNEWORD IN THE MAGIC & RARE REGISTER WAS HOMED ON MAGIC & RARE (#163, GrokBot on Dean's shadow)
+Dean's saved records filed Aldur's Rhythm (a set piece) and Enigma (a runeword) on MAGIC & RARE. The file door has refused to treat
+a catalogue item as a keeper since REG-2854 (a grail unique, a set piece or a runeword draws from the catalogue on its own locker),
+but the live records derivation (REG-2853's keeper home), the dock, the keeper home every locker asks (_mfKeeperHome) and the
+MAGIC & RARE window's pack asked only "is it in magicFinds". Measured on the whole page in node: a set piece registered in
+magicFinds was homed on MAGIC & RARE. Now the door's three tests (the grail unique, set and runeword rosters by exact name, as
+REG-2854 uses them) are one answer, window._vaultCatalogueItem, and the ONE shared membership test (_inMagicRare, about eight
+callers) and the keeper home (_mfKeeperHome) ask it; a rolled name that merely contains a catalogue word ("Grief Mark",
+"Rhythm Visage") stays a keeper. Every caller was swept and asserted to give a catalogue item its own home: the owned pool
+carries a catalogue item the register holds, so the seam, the live records, a stored orphan row, FIND and the set locker's
+count all home it where the router does (Aldur's Rhythm -> SETS-REST), never MAGIC & RARE and never nowhere, a shadow included.
+v1251's self-heal moves every catalogue item - not only a runeword - out of the keeper track into owned, keeping its read's
+provenance ("Magic & Rare catalogue item migration"), and keeps the keeper row if the owned door refuses. The door still refuses
+to file a keeper elsewhere. What the current rule does with Dean's five: Aldur's Rhythm ->
+SETS-REST, Enigma -> SHARED STASH (war gear), Aldur's Deception -> SETS-REST, Alma Negra -> UNI-ARMOR, Bul-Kathos' Sacred Charge ->
+THROW OUT (his SETS-MAJOR stays his). Law tv/test_a_catalogue_item_is_never_a_magic_rare_keeper.py (node, the whole page), 7
+red-proofs, all RED; test_the_vault_finder_names_the_mule_and_the_cell [0] and test_magic_and_rare_draws_every_item_it_counts
+[3][4] re-aimed at the new lines (same sabotage, RED).
+
+### REG-3041 - DEAN'S SHADOW DREW 1 OF HIS 5 SAVED FILINGS, AND HIS NEXT FILING WOULD HAVE ERASED THE OTHER 4 (#163, GrokBot 2026-10-29)
+GrokBot: Dean's saved records (d2r_vaultRecords) file 5 items and his vault draws 1. Measured in node on those shapes (never his
+data): the saved records are the source only with a current migrate stamp and no dirty marker (v3766); otherwise the vault follows
+the live model, which holds only what d2r_owned and d2r_muleAssign hold - with the stamp all 5 draw, without it or with the dirty
+marker 1 does, which is GrokBot's picture. Which is true for the other 4 (removed, or lost) the stores cannot settle, so his
+2026-10-29 rule applies: when it cannot conclude, it asks. The source chain is now one function (_vrSourceChoice, read by
+_vaultRecordsSource, v3766 unchanged), and the Vault lists every filing the saved records hold that the drawn model lacks, with why
+it is not drawn, "file it again" (his hand: vaultHandAdd, then the file door, on the mule the current rule gives it - his old target
+named beside it, and a target the rule would throw out kept as his) and "forget it" (asked first, undone on this page). Found while
+building it: the file door's wrapper re-persists the saved records from the live model after EVERY filing, whatever the stamp, so
+the first item Dean filed would have erased the other four; a persist now carries those filings beside the records
+(savedNotDrawn) until he files them again or forgets them. Nothing runs on its own; a shadow is read only. Six law harnesses that
+cut _vaultRecordsSource now cut _vrSourceChoice with it. Law tv/test_a_saved_filing_the_board_does_not_draw_is_asked_about.py
+(node, the whole page, Dean's shapes on a fixture board), 9 red-proofs, all RED; test_v3765_records_arm_live [11][18][22][32][33]
+and test_v3767_intake_identity [9] re-aimed at the source chain's new lines (same sabotage, RED).
+### REG-2929 - ANOTHER PC'S SHADOW SAW ONLY THE CHARACTERS THIS PC'S REELS HAD LEARNED, IN THE OCR'S SPELLING (#251)
+The roster publish's characters section (control_app._roster_reads, the reels' path) carried what char_select had
+learned: names as the character-select OCR read them, and nothing for a character the reels had not seen twice. A shadow
+of this PC therefore missed characters its save folder names. roster_publish.with_save_names folds this PC's
+/api/saves answer (REG-2926) into that section:
+- a learned row whose name folds to a save name takes the save's spelling, and keeps its class and level;
+- a save name no row holds joins with its name only, and the section's count grows by it;
+- only names leave, never an account id or the id count;
+- saves that did not answer, or name nobody, leave the section exactly as it was;
+- a PC whose reels learned nothing publishes a section from its saves alone;
+- a builds book's section is builds, so it is left alone.
+The shadow's builder already takes a name-only row with its class UNKNOWN. Law test_the_roster_carries_this_pcs_save_names
+(Python, the answer handed in, so no law reads a real save folder), 6 cases, 5 red-proofs RED, baseline green. 10 roster
+neighbours ran green; the signed-publish and presence-beacon laws go to CI.
+NOT DONE: a PC whose console publishes a builds book (the book path) sends no save names; that section's rows are builds,
+and carrying names beside them needs a new field the worker and the snapshot do not take yet.
+
+### REG-2928 - A VAULT MULE NEVER SAID WHETHER IT EXISTS IN GAME (#251)
+The vault names its mules (UNI-ARMOR, CHARMS, a renamed WAR mule, a mule he added), and nothing checked that a character
+of that name exists, or even could. window._vaultMuleSaveSay answers under each mule's plate. It is a check that is
+said, never a block: only the card asks it.
+- "a D2R name is letters only, so this exact name cannot be made in game": the name is no D2R name (2-15 characters,
+  letters, at most one '-' or '_'), whatever the saves say.
+- "on this account (seen in this PC's saves)": the save folder (GET /api/saves) names it, compared without case.
+- "not in this PC's saves": the saves answered and do not name it. It may live on another PC.
+Saves that never answered, a PC with no save folder and a shadow say nothing about the account, and SHARED STASH is no
+character. WAR naming and the make-task text are untouched. Measured on a fresh board: the default SETS-TAL-IK locker
+reads "cannot be made in game" (two hyphens), and so does MAGIC & RARE. They are said, not renamed: renaming a core
+locker is not this task.
+Law test_a_mule_says_whether_it_exists_in_game (the whole page in node, the vault painted), 6 cases, 5 red-proofs RED
+(digits pass as a name, the saves compared with case, unread saves said as "not on the account", the card never draws
+it, SHARED STASH judged as a character), baseline green. 14 vault card neighbours ran green; 4 laws go to CI.
+
+### REG-2927 - THE CHARACTERS ROOM KNEW ONLY WHAT THE REELS HAD SEEN TWICE, NOT THE NAMES THIS PC'S SAVES HOLD (#251)
+The room and the builder offered only characters this console's reels had read on two character-select visits, in the
+OCR's spelling (KONYOLOCK). The save folder names every character played on this PC, exactly (REG-2925, GET /api/saves
+REG-2926). The board now asks /api/saves beside /api/chars_learned, wherever the room, the builder or the vault asks,
+and repaints on that answer.
+- _cbTemplates: a reel name that folds to a save name takes the save's spelling and keeps the reels' class, level and
+  tier. Its key keeps its fold, so a build made from it still finds it.
+- A name only the saves know joins the in-game list with class and level UNKNOWN. The room's card says "Named by this
+  PC's save folder"; it never wears a tier. The planner's list says "class UNKNOWN (named by this PC's save folder)" and
+  counts such names in its In game label.
+- When the reels are UNKNOWN, the save-named cards stand and the room says what is not known.
+- A row counts only with its id count (the saves' own shape), a failed answer never replaces a good one, and a shadow
+  never takes them: their saves are on their PC.
+Law test_the_characters_room_names_this_pcs_saves (the whole page in node), 6 cases, 7 red-proofs RED, baseline green.
+Re-aimed: test_a_slow_character_read_still_reaches_the_shadow's two-asks stand-in fetch kept every fetch as a chars_learned
+ask, so the saves ask took the second ask's place. It now keeps the chars_learned asks only; its proof [3] stays RED.
+16 Characters neighbours ran green (7 of them node-only laws that safe_laws refuses for a prose "Chrome" or a test
+import, read and run by hand); the 2 shadow Chrome laws go to CI.
+
+### REG-2926 - THE CONSOLE HAD NO DOOR FOR THIS PC'S SAVE NAMES (#251)
+REG-2925's reader had no route, so neither the Characters room nor the vault could ask what this PC's save folder names.
+GET /api/saves answers control_app.saves_answer(), which is d2s_read.saves() behind one door. The answer is kept while
+nothing in the save folders changes: each folder's mtime, and every .d2s's size and mtime, because a .d2s is read
+whole. A folder that will not stat or list is never kept, and a failed look is UNKNOWN (chars None), never an empty
+roster. Law test_the_console_answers_this_pcs_save_names (fixture folders passed in; the route passes none, so the
+console reads its own PC), 6 cases, 3 red-proofs RED (the kept copy never used, a changed folder answered from the
+kept copy, a failure read as no characters), baseline green.
+
+### REG-2925 - THIS PC'S SAVE FOLDER NAMES ITS CHARACTERS, AND NOTHING READ IT (#251)
+Measured 2026-10-29 on his two PCs: neither holds a .d2s, because his characters are online and Battle.net keeps them.
+The D2R save folder holds one key-binding file per character played on that PC, <Name><id>.ctlo and/or .keyo, so it
+names this PC's characters with their exact spelling and nothing else (no class, no level). The id is an account id:
+the same character carries the same id on the Mac and the ALT, and a deleted and remade name gets a new one. On a Mac,
+D2R runs in a CrossOver bottle, and the bottles live where CrossOver.conf's BottlePath says; the default bottle folder
+was empty on his Mac. tv/d2s_read.py now reads it, read-only (listdir only; nothing opened but a .d2s; nothing
+written).
+- save_dirs: the Saved Games known folder on Windows; every bottle's drive_c/users/<user>/Saved Games on a Mac.
+- save_roster: names only, and for each name how many ids carry it, never the ids themselves. No file time leaves,
+  because a binding file's time is when its bindings were written, not when the character was played.
+- saves: "no-folder" is chars None (UNKNOWN), never an empty list. A folder that exists and will not list is counted
+  ("may be short", or UNKNOWN when nothing else was found), never read as empty. With no .d2s the answer says
+  "no .d2s on this PC; online characters live on Battle.net".
+Law test_this_pc_names_its_characters_from_its_saves (fixtures in the run's own scratch), 7 cases, 5 red-proofs RED
+(ids leave, no folder reads empty, BottlePath ignored, a digit taken into the name, an unlistable folder skipped
+silently), baseline green.
+
+### REG-2924 - THE FIVE ROSTER LABELS WERE TYPED IN FOUR PLACES, AND THE SHADOW READER KEPT A COPY THAT COULD ONLY DISAGREE (#252)
+Found by the #252 per-PC audit. The owner labels (Konyo · Mac, Konyo · ALT, Konyo · GrokBot, Dean, Wife PC) decide whose
+profile a fleet row is, and they were typed four times: roster_publish.OWNERS (the console publishes under it, and
+console_snapshot imports it), the worker's `export const OWNERS` (functions/api/roster.js refuses any other key), the
+console page's _FLEET_ROSTER_OWNERS beside _fleetRosterOwner, and a second page copy inside _shadowRosterStores. That copy
+was a fallback that answered only when the rule had said "no profile", so it could only ever disagree with the rule. The
+shadow reader now asks the one rule, and the page holds one list. Python and the page cannot share a source without a
+new served-constant path, so a law holds the three lists to one value and the two rules to one answer for every fleet
+row a reader can be handed (5 labels and 6 off-roster nicknames x 4 platforms). Measured on the way: Python read a
+nickname untrimmed and the page trimmed it, so " Dean " was Dean's row to the eyes and nobody's to the snapshot's
+online check. owner_of now trims as the page does. Law test_the_roster_labels_are_one_list (Python + node, the page's
+own rule and shadow reader run as written), 5 red-proofs RED (the shadow copy, the untrimmed read, a page list drift, a
+worker list drift, a platform rule drift), baseline green. The 10 safe roster neighbours ran green; 5 Chrome or console
+laws were left to CI.
+
+### REG-3012 - THREE D2JSP LAWS HAND-ADDED A BARE "Shako", WHICH REG-2858 NOW ASKS ABOUT INSTEAD OF OWNING (integration int-10)
+Red on the chain from int-7: test_a_d2jsp_card_counts_traded_copies_from_the_vault, test_a_mark_traded_goes_through_the_vault_trade_door
+and test_a_confirmed_d2jsp_post_lists_its_copies_on_the_vault each hand-added "Shako" in their whole-page half. Since REG-2858
+(int-4), the hand door answers a bare Shako with a question: "Shako" is two things, Harlequin Crest (Shako) or a white Shako
+base. Nothing was owned, so the trade-out said "Shako is not in the vault". Each law now hand-adds "Harlequin Crest", which
+files as Harlequin Crest (Shako) (REG-2897; measured in node). REG-2858 is untouched, and the pane halves that fake the vault
+keep their 'Shako' keys. Red-proofs re-proven RED on green baselines: 12/12, 6/6, 10/10.
+### REG-2997 - A WAR MULE HE TOOK BACK STOPPED THE BOARD FROM OFFERING THE NEXT ONE (#144, his ruling 2026-10-29 Q2)
+His ruling: when he declines war-A, the board offers the next one (war-B) when there is overflow, with the same "make it in
+the game" task. MEASURED before (whole page in node, the real doors): the board made WAR-A for Shako x3, he deleted it, and
+the next paint made nothing - _vaultWarAutoMule returned "you took back the WAR-A the board made" - so the two copies past
+the war stash kept no cell for good. Now the maker passes over a number he took back (warDeclined, 'WAR'+n, REG-2889) and a
+name another mule holds (REG-2804) in one loop, and makes the next war mule: first in MOVE TASKS as a make task, the copies'
+moves sent to it, and its record saying which ones he took back ("...; you took back WAR-A, so this is the next one"). A
+second take-back offers the third. With nothing past the war stash, a take-back still makes nothing.
+Law: test_a_war_mule_he_took_back_makes_the_board_offer_the_next_one (4 tests, 4 red-proofs RED). Re-aimed to the rule: the
+REG-2803 law's declined case (war mule 2 is made, never 1), the REG-2889 law (war mule 2 alone, after the delete and a
+reload), the REG-2804 law's name-taken red-proof (the new loop), and the Chrome war stash law (CI proves it): its declined
+case expects war mule 2 with the 5 extra belts and its make row; its board-made cases read the name from _vaultWarName (REG-2980)
+and find war mule 1 by role. They also read the war mule's OWN make row - the CHARMS mule the board makes (REG-2895) has
+its make row first, which REG-2888 found in the node law and which made make row [0] the wrong row here too.
+That Chrome law's role lookup assumes REG-2968's seeding (role + warN), which is on the ship branches, not on claude/int.
+
+### REG-2980 - THE BOARD NAMED A WAR MULE "WAR1", A NAME THE GAME REFUSES (#144, his ruling 2026-10-29)
+agent-guide measured that a D2R character name is 2-15 letters with at most one '-' or '_' and no digit. The board made its war
+mule as "WAR1" (REG-2803) and asked him to create that in the game, which he never could. His ruling: "make it ... war-A war-B".
+War number n is now named by letter through one helper, _vaultWarName(n): 1 is WAR-A, 2 WAR-B, 26 WAR-Z, 27 WAR-AA
+(_vaultLetters / _vaultLettersN map both ways). The number still binds to the id (warN, REG-2804) and decides everything; the
+take-back (REG-2889) stays keyed 'WAR'+n. The maker, the keeper why, the shared-stash overflow note, the "you have no ... mule"
+lines, the no-room line and the help text all use the letter name. A mule he adds as WAR-B is war mule 2, as WAR2 was. A war
+mule the BOARD made under the old WAR<n> name takes its letter name once and keeps a mark (auto.letterName), so his later rename
+is never undone; a war mule he named keeps his name. Names are stored uppercase ("WAR-A"), as _vmNameOk stores every mule name.
+Law: test_the_board_names_a_war_mule_by_a_name_the_game_accepts (5 tests, 6 red-proofs RED). The REG-2803, REG-2804,
+REG-2889, saved-target, shared-stash-pages and v3769 laws now read the name from _vaultWarName instead of pinning "WAR1".
+Follow-up: test_v3766_grokbot_retest slices _sharedOverflowNote out of the page, and the note now calls _vaultWarName, so the
+law raised ReferenceError (8 errors) until its slice carried _vaultLetters and _vaultWarName. The first sweep listed laws that
+NAME the war mules, not laws that SLICE a function this fix edited; the second sweep (every law quoting a touched function's
+name) found only this one.
+### REG-3071 - A SOCKET RANGE PRINTED PAST ITS BASE: ALDUR'S RHYTHM "SOCKETED (2-5)" ON A JAGGED STAR THAT HOLDS 3 (GrokBot 04:03, #36)
+GrokBot on the builder's tooltip: Aldur's Rhythm said "Socketed (2-5)". That is its own data line (s68: sock 2-5), but a
+Jagged Star holds at most 3, and the game caps an item's sockets at its base's ceiling.
+FIX: one display rule, with no data edit. _cbSockCapLine(line, base, item level) caps a numeric socket range at
+_cbMaxSock(base, item level), and passes any other line, or a base the database cannot read, unchanged. Every surface
+that prints an item's lines asks it:
+- the tooltip (_cbTipEntry, which also covers a magic item's picked mods);
+- the socket stepper's range (_cbSockRange);
+- a fixed count (_cbEntryFor);
+- the Edit tab's lines and its picked mods;
+- a d2jsp post's lines.
+SWEPT over the whole database on the page in node:
+- 3 items printed past their base: Aldur's Rhythm 2-5 on a Jagged Star (now 2-3), Heaven's Light 1-3 on a Mighty
+  Scepter (now 1-2), and Blade of Ali Baba 3 on a Tulwar (now 2).
+- A magic Jeweler's (Socketed 4) on a Jagged Star printed 4. It now prints 3.
+- Every range already inside its base is untouched.
+NOT CHANGED: the Edit tab's add-mod list still names each affix by its table words ("Jeweler's: Socketed (4)"). Once
+picked, the mod is capped.
+GUARD: tv/test_a_socket_range_never_passes_its_base.py, 5 cases: Aldur's tooltip and stepper, the sweep, the magic mod,
+the door itself, and each surface's call. 4 red-proofs, all RED.
+
+### REG-3070 - THE CHARACTER WINDOW DREW A WORN ITEM BY ITS NAME, NOT ITS SLOT: FORTITUDE AS ARMOR DREW A CRYSTAL SWORD (GrokBot 04:03, #36)
+GrokBot on the character window: each worn item drew by its own NAME, #248's defect again on the one surface that has
+only a name. A runeword drew the base its picture is keyed to, whatever the slot: Fortitude in the Armor slot drew
+hd_crystal_sword, and Plague and Splendor drew another slot's base too. A rare's name or a plain word drew nothing at all:
+Carrion Greaves, Wraith Grasp, Dragon Talon, and the bare "Shield", "Armor" and "Boots" a read sometimes leaves.
+FIX: _cbSlotArtName(name, slot, base) in the builder's block, asked by _chxDollHtml. This is #248's rule, given the slot:
+- A unique or set item draws its own graphic.
+- A recorded base of THAT slot's type draws that base. A plain base names itself, when it is of that slot's type.
+- A runeword draws a base of that slot's type it can be made in. Its own picture stays when it is one (Enigma's plate
+  mail on the torso, Fortitude's crystal sword in the hand), and is dropped when it is another slot's (Fortitude's
+  crystal sword on the torso). The slot's own kind comes first: in the off-hand a shield beats a second weapon, so
+  Spirit draws a shield and Lawbringer, which cannot be one, a sword.
+- Anything else draws a base of that slot's type: a rare's name, a bare word, or a runeword read in a slot it cannot be
+  made for.
+- A name the database lacks that has its own picture keeps it.
+- null when the builder's database cannot be read. The doll draws that as UNKNOWN.
+The slot's kinds are the builder's own rail categories (the planner's Shields, Body Armor, Helmets ...). No table was
+added.
+NOT CHANGED: the gear ledger records no base today (its rows carry item, sightings, tier, ts and reel). The `base`
+argument is ready for a reader that records one.
+GUARD: tv/test_a_worn_item_draws_its_slots_picture.py. The page runs in node:
+- 19 cases (GrokBot's list, the off-hand's two kinds, a unique and a set piece). Each is checked against the database's
+  own type tree: the base is of the slot's kind, and a runeword's base is one its recipe names when the slot has one.
+- The window is opened on a gear map, and each worn cell's picture is read.
+4 red-proofs, all RED.
+NEAR-MISS, CAUGHT BEFORE COMMIT: the new helper was first named _cbSlotCats, which is also the name of the builder's own
+category reader in the same block. A function declaration is hoisted and the last one wins, so the builder's tree, its
+hand catalogue and its node rows called the new helper. Four laws fell over (test_the_character_builder_is_their_builder
+and three page laws: _cbBaseInCat, cat undefined), and the JS syntax gate stayed green. Renamed to _cbWorn*.
+GUARD: tv/test_no_page_function_is_declared_twice.py. Every inline script's functions at its top two levels are
+declared once. Today's only twin is downscale(file), one inside each AI intake handler, allowed with that reason.
+1 red-proof, RED.
+
+### REG-3069 - GEAR SEEN UNDER AN ALIAS NEVER REACHED ITS CHARACTER: KONYOLOCK'S ARMOR "NOT SEEN YET" BESIDE A WATCHED ENIGMA (GrokBot 04:03, #36)
+GrokBot on the ALT's /api/chars_learned: gear['konylock'] held Enigma on the torso (WATCHED), and konylock is
+KonyoLock's top alias, yet KonyoLock's card said Armor "not seen yet". gear['konydress'] and its character showed the
+same thing. The gear ledger files a reel's worn items under the name that session read. The learner merges misread
+spellings into one character and names them in each row's `aliases`. The two never met: the page reads
+gear[<character key>], and nothing folded the alias keys into it.
+FIX: equipped_ledger.fold_aliases. chars_learned_answer runs it on the gear map with the learner's own rows. It never
+guesses by name:
+- An alias's gear joins its character's key, the alias key leaves the map, and the character names the spellings it
+  took (`aliases`).
+- An alias two characters claim is folded into neither. It stays under its own key, and `aliasWhy` says whose is
+  UNKNOWN.
+- One item under two spellings is one item, with its looks added and its tier on the sum.
+- Two different items in one slot: the one seen LAST is worn now, and the other is kept in `alsoSeen`. If either side
+  has no time, the slot is UNKNOWN (item None, `why`).
+- Unplaced items are merged, and so are reels and the last time.
+- A fold that raises makes the gear UNKNOWN (gearWhy), never the unfolded map.
+The card, the window's sentence and the doll now say "UNKNOWN - <why>: <items each spelling saw>" for an undecided
+slot, never "not seen yet". All four ask one helper, _gearWhy.
+GUARD: tv/test_gear_seen_under_an_alias_reaches_its_character.py, 9 cases, including the ALT's konylock/konydress
+shape and the console's own answer. 6 red-proofs, all RED.
+
+### REG-3068 - ENTER IN THE ADD BOX TOOK THE TOP ROW BY GUESS: "Spirit" ADDED CEREBUS' BITE (GrokBot 05:07, #230)
+GrokBot on his board: Vault → "or add by name only" → type "Spirit". The list was [Cerebus' Bite, Ravenlore, Spirit,
+Spirit Forge, ...] and Enter added Cerebus' Bite, the top row. "Oath" lists [Bane's Oathmaker (sword), Oath], so Enter
+would have taken the sword. Reproduced on the whole page in node: same lists, same rows.
+FIX:
+- Enter takes the row whose name IS what he typed: case-insensitive, with a trailing "(alias)" set aside. _vhExact reads
+  the rows the last search drew.
+- A name that is two items is asked, and nothing is added.
+- With no exact name, Enter takes nothing and says so until he picks a row.
+- A count he names exactly is its tally's +1, so REG-3004 is kept: "Ber" is the Rune Stash's Ber Rune row.
+- The placeholder now says "Enter adds the exact name".
+SWEPT every typeahead's Enter in bible.html:
+- Fixed: the Tools tab's tally search ticked its top hit on Enter ("the one-handed path"), the same guess. It now ticks
+  only an exact name, and asks or says otherwise.
+- Already right: the Keepers box (REG-3000), and the builder's mod picker, which takes the marked option.
+- No Enter that picks a row: FIND's box answers Escape only, the planner opens on input, and the d2jsp find box filters.
+- Named, not changed: the global search and the command palette open their highlighted row on Enter. That is
+  navigation shown on screen, not an add.
+GUARD: tv/test_enter_takes_the_exact_name_never_the_top_row.py, 6 cases: Spirit, Oath, a partial name, a two-item name,
+an exact count, and the tally search's Enter. 5 red-proofs, all RED. Re-aimed:
+- test_vault_add_and_find_doors_work (browser, CI): it typed "stone of" and expected Enter to add the Stone of Jordan.
+  Now a partial name adds nothing and the exact name adds it.
+- test_a_hand_add_moves_a_count_through_the_tools_door: one red-proof re-anchored.
+
+### REG-3062 - ONE MULE CELL, ONE SPELLING: "[Mule 2 · ]Personal stash · col 3 · row 1" ON EVERY SURFACE (#144(a)'s sibling)
+After REG-3005 gave the shared stash one spelling, a mule's own cell was still spelled five ways:
+- the MOVE row: "UNI-ARMOR (3,1)" / "UNI-ARMOR · Mule 2 (9,3)"
+- its expand: "UNI-ARMOR private stash (3,1)"
+- FIND, its move-target words and the organizer: "Mule 2 · Personal stash · col 3 · row 1"
+- the mule window's list: "STASH col 3 · row 1" / "GEMS col ..." / "INVENTORY col ..."
+- a refused hand spot "Personal · Mule 1 · col 6 · row 6", the item database door "Inventory · col 3 · row 1 · Mule 2",
+  and the hand placement's task reason "you placed it at col 7 · row 6 by hand" (no area)
+FIX: _muleSpotSay(area, x, y, page) and _muleAreaSay(area, page) sit beside _sharedSpotSay, in its shape: the locker's
+mule page when the caller names one, then the area, then col and row. Every surface asks it:
+- the MOVE row and its expand (a WAR mule's too)
+- the move list's cell words
+- FIND (filed, would, a WAR mule's copies) and its move-target words
+- the organizer
+- the mule window's list and its grid label
+- the refused hand and database spots
+- the item database door's words
+- the hand placement's spot and its task reason
+Whether Mule 1 is named stays the caller's choice. FIND and the organizer name it when the locker spans pages; the
+MOVE row names Mule 2 on. The console prints no mule cell of its own (swept tv/control_ui.html and tv/*.py).
+GUARD: tv/test_a_mule_cell_has_one_spelling.py checks three things: the helper's words (in node), that every surface's
+own line calls it, and that the old spellings are gone. It has 4 red-proofs, all RED. Re-aimed at the one spelling:
+- run here: test_a_full_locker_spills_to_its_next_mule (8 red-proofs RED, its "row names the Mule" proof re-anchored),
+  test_a_saved_target_never_moves_unless_he_moves_it
+- browser laws, CI only: test_the_mule_window_places_by_hand, test_the_mule_inventory_takes_items_like_the_doll (red-proof
+  re-anchored), test_the_vault_finder_names_the_mule_and_the_cell, test_vault_l1_every_hand_add_is_a_move_task (its LINE
+  reader and its red-proof), test_vault_l1_router_files_every_item, test_vault_l1_rules_drive_every_move,
+  test_vault_l1_tasks_panel, test_vault_l1_war_stash_overflow
+
+### REG-3005 - ONE SHARED-STASH CELL, ONE SPELLING: "Page 1 · col 3 · row 1" ON EVERY SURFACE (#144(a))
+One fact was spelled four ways:
+- the shared stash window's per-item list: "→ PAGE 1 col 3 · row 1"
+- FIND, its move-target words and the plan's cell map: "Page 1 · col 3 · row 1"
+- the MOVE row and its expand: "SHARED STASH page 1 (3,1)"
+- the move list's cell words read a shared cell raw. A page-2 cell said "shared:c2r10 · col 3 · row 11": no page,
+  and a row a 10-row page does not have.
+FIX: one helper, _sharedSpotSay(page, x, y), sits beside _vaultCellAt and returns "Page 1 · col 3 · row 1". Every
+surface asks it: the window's list, FIND (both builders), FIND's move-target words, the plan's cell map, the move
+list's cell words, the MOVE row and its expand. Swept with a grep for every place that prints a shared-stash
+page / col / row in bible.html, tv/control_ui.html and tv/*.py; the console prints none of its own.
+Not touched (named): a mule's own cells are still "(3,1)" on the MOVE row and "col 3 · row 1" in FIND. That is the
+same class on a different fact, and it is outside this ask.
+GUARD: tv/test_a_shared_stash_cell_has_one_spelling.py checks three things: the helper's words (in node), that every
+surface's own line calls it, and that the old spellings are gone from the code. It has 4 red-proofs, all RED.
+test_the_shared_stash_draws_the_plans_pages drives the surfaces themselves: the window, FIND, the plan, the MOVE row
+and its expand, on a page-2 copy in node. It is re-aimed at the one spelling, with its 12 red-proofs re-anchored and
+all RED. Its MOVE-row reader accepts both spellings, so a revert is read and refused.
+Also re-aimed at the one spelling. These are Chrome laws: CI runs them, his Mac does not.
+- test_the_vault_finder_names_the_mule_and_the_cell
+- test_vault_l1_war_stash_overflow
+- test_vault_l1_every_hand_add_is_a_move_task
+- test_vault_l1_rules_drive_every_move
+
+### REG-3004 - A RUNE, GEM OR MATERIAL TYPED BY HAND NOW MOVES ITS TALLY UP OR DOWN THROUGH THE TOOLS TAB'S OWN DOOR (his Q5, #144)
+His ask: a rune, gem or material added by hand may move its tally up or down, and the tools section already has a
+tally up/down control for a misread.
+WHAT EXISTED:
+- The Tools tab's Rune Stash, Gem Stash and Materials cards move a count one at a time through adjustRuneStash,
+  adjustGemStash and adjustMaterialStash: click +1, right-click or the minus button -1. That is the control he meant.
+- The read funnel (tvToolsDelta) moves the counts through the same three functions.
+- The hand door refused a count instead ("counted in the Rune Stash ... nothing was added", REG-2857 / REG-2899).
+- The TV read chip's +1 wrote runeStash and gemStash itself: a second counter beside the door.
+FIX:
+- _stashTallyMove(name, delta) uses _stashTallyOf (REG-2899's one rule) to pick the tally, and moves it through that
+  tally's own adjust function. It reads the count before and after and says "Ber Rune - the Rune Stash 0 -> 1". It
+  refuses a -1 at zero and never touches the owned list.
+- vaultHandAdd sends a count there: +1 when not said; {delta:-1} takes one off.
+- + Add an item lists a typed count, or one the planner list names, as its tally's row with -1 / +1. Enter on that
+  row is its +1.
+- The read chip's +1 now asks the same door.
+- The REG-2857 and REG-2899 laws are re-aimed: the hand door still owns no count, and now it moves that count's tally.
+Left alone, because they are a different door: the ledger restore's merge-max apply and the photo intakes. Both SET a
+count to a measured figure; neither steps it.
+GUARD: tv/test_a_hand_add_moves_a_count_through_the_tools_door.py, 5 cases. It puts a spy on each door and checks:
+- up and down by hand;
+- never below zero;
+- the add box's row and Enter;
+- the read chip asks the door;
+- no store is stepped by one outside its door.
+5 red-proofs, all RED.
+
+### REG-2995 - REG-2915'S LAW LISTED ITS OWN SCRATCH WITH os.listdir, AND REG-2941'S CENSUS NAMED IT UNKEYABLE (integration, after int-9)
+On the integration chain, test_the_unkeyable_laws_only_get_fewer (REG-2941, int-9) named a new unkeyable law,
+test_the_tooltip_crop_comes_from_the_read_that_named_it (REG-2915, int-6). Neither branch saw the other. All five of its listings
+read the fixture reel and crop store it builds under its own mkdtemp, made after fixture_tmp.contain() at import. That is the
+REG-2362 case: list_own, the same names. The census passes on the chain (5); the law's seven red-proofs are RED against a
+green baseline.
+
+### REG-2985 - THE CONSOLE STILL PARSED 118 MB OF ITS OWN SOURCE IN ITS OWN HEAP: THE GATE FILES TWICE AND THE CENSUS ONCE (#172 phase C)
+Measured 2026-10-29 on a scratch console of his Mac: his data, no .git, Python 3.9, 300 s, every ast.parse counted by
+caller. After phase B the console still called ast.parse 4,508 times over 118 MB of source in its own process:
+- swallow_census._file_rows: 1,488 files (the doctor's swallowed-reads row);
+- heart2.red_proofs_in: 2,473 parses of 1,237 gate files, read once by slice_owed (the self-arming owed list, no memo)
+  and again by health_engine's attack tally (its own memo);
+- lane_liveness.stamping_functions: the whole 50k-line control_app.py on every health pass.
+RSS rose in spikes to 550-1,028 MB, which macOS hands back within seconds. The ALT's console (Python 3.12, 7.9 GB, read
+over SSH with Get-Process) held 1,118 MB working set and 1,565 MB private, with 114 modules loaded, .NET/WinForms among
+them. Now:
+- audit_child derives every gate file's RED_PROOF list ("red_proofs") and every file's census rows under a root
+  ("swallow") in a short-lived child. It keeps each per file on that file's stamp (mtime_ns, size), beside the route
+  census's own cache. A console reads them through audit_child.red_proofs_for / swallow_rows_for, asks the child at
+  most once per 10 minutes on a miss, and derives itself only what is still missing. A stale entry is never served.
+- heart2.red_proofs_in keeps one memo per file stamp for every caller in a process.
+- lane_liveness parses control_app.py once per stamp.
+- A law, the gate, CI and a CLI spawn nothing and parse as before.
+After, same console, same data: 653 parses (37.6 MB). The rest is the worker-deadline doctor row (267 files),
+lane_census (267 files), code_identity (5), and 54 gate files whose RED_PROOF binding does not read (they are re-asked by
+rule). Peak RSS did NOT move with it: 1,091 MB in one run and 584 MB in another, against 550-1,028 MB before. A
+spike-stack profile names the eagle's in-process doctor run (corroborate, ask-an-eye, what-runs-without-him) at every
+spike over 450 MB. That is the next lever, and it is not this fix. Law:
+tv/test_a_console_reads_gate_proofs_and_census_rows_from_a_child.py, 5 red-proofs. It records before and after in the
+asking process (3 to 0 for the gate files, 3 to 0 for the census), checks that an edited file is never answered from
+the old parse, that a law spawns nothing, that a failed child fails open, and that the lane stamps parse once per stamp.
+LEFT: the ALT itself. alt_job.sh refused ("he is playing (Boosteroid)") and the ALT had 391 MB free, so this is
+measured on his Mac's console, not on the PC that holds the memory.
 
 ### REG-3080 - EVERY PROFILE UPLOAD WAS REFUSED: THE CONSOLE SENT TWO CHARACTERS FIELDS THE WORKER DID NOT LIST (LIVE, v3837 on)
 REG-2907 (#36, shipped in v3837) added `sessions` and `sessionsWhy` to the characters answer on the console side
