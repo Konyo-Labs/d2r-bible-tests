@@ -5210,7 +5210,11 @@ def _sync_facts(now_ms=None):
         f["frameAt"] = None
     try:
         w = _shadow_watch_stored() or {}
-        f["rollingSince"] = w.get("rollingSince")
+        # v3859 B1 (#230): the rolling facts are CURRENT only while rollingAt == lookedAt (the watcher's own rule), and only a
+        # reel the watcher opened (door "shadow") rolls over on the hour - a stale stamp left by ON AIR, a hand End Session,
+        # a crash or a relaunch is no reel rolling, never a red "rolled N min without a seal".
+        _cur = w.get("rollingAt") is not None and w.get("rollingAt") == w.get("lookedAt") and w.get("rollingDoor") == "shadow"
+        f["rollingSince"] = w.get("rollingSince") if _cur else None
         f["rotateAfterS"] = w.get("rotateAfterS")
         f["sealAt"] = max([int(v) for v in (w.get("rotatedAt"), w.get("updateClosedAt")) if v] or [0]) or None
         f["sealFailAt"] = w.get("rotateFailedAt")
