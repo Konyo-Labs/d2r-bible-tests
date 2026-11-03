@@ -6081,6 +6081,9 @@
   .fleet-refresh { margin-left: auto; padding: 2px 7px; }
   /* v3857 #247 - util-btn's flex 1 1 84px squeezed 'Roster' under its own word at 1024 and stretched the refresh glyph wide */
   .fleet-head .util-btn { flex: none; }
+  /* v3857 #247 - at 1024-1279 the rail is ~210px and the label letter-spacing broke 'THE FLEET' and 'SWEEP · this PC' onto two lines */
+  @media (max-width: 1279px) { .fleet-head { white-space: nowrap; letter-spacing: .04em; gap: 6px; } }
+  .fleet-head:has(> .swm-state) { white-space: nowrap; flex-wrap: wrap; row-gap: 3px; }
   /* The panel scrolls inside itself. A full vault list used to grow the rail
      under the sticky shelf, so a click on Roster looked like nothing. */
   .roster-box { margin-top: 8px; border: 1px solid var(--edge); border-radius: 8px; padding: 7px 9px;
