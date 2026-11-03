@@ -1512,7 +1512,9 @@ RED_PROOF = [
         "find": ".cb-ed-f input[type=number]{min-width:calc(3.6ch + 36px)}\n",
         "replace": "",
         "matches": 1,
-        "widths": ["1280x800"],   # #42 measured 2026-09-29: the tampered law is red at 1280x800 alone
+        # REG-2962 measured 2026-11-03 (v3854 fan-in BLIND at 1280x800): with the rule gone the box is 48px at 1280 (the
+        # hint needs 31) and 28px at 375 (it needs 28.4) - the defect shows only on the phone width now
+        "widths": ["375x812"],
     },
     {
         "why": "#29(d) round 9 - the base Edit's Defense box is 44px again and its hint '50-60' reads '50-6' on a phone",
