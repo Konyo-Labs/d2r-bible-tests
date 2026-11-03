@@ -33,7 +33,8 @@ def _moment(r):
 
 
 def _lines(r):
-    v = r.get("raw_lines") or r.get("names") or []
+    # v3859 B2: the journal carries the OCR text as ocr_raw (tv_diablo), not raw_lines
+    v = r.get("raw_lines") or r.get("ocr_raw") or r.get("names") or []
     if isinstance(v, str):
         v = [v]
     return [str(x) for x in v if isinstance(x, str) and x.strip()]
@@ -53,17 +54,25 @@ CHRONICLE_LINE = "eligible for chronicle"
 
 def chronicle_eligible(r):
     """Did this read's tooltip carry the green "Eligible for Chronicle" line? A read that says the line's colour must
-    say green; a read with no colours is the OCR's plain text and the line alone answers."""
+    say green. v3859 B2 (#230): a read with no colours CANNOT say green - the line's colour is the whole rule - so it is
+    never a find; whether the session had any is UNKNOWN unless a colour reader spoke (route: colours_read)."""
     lines = _lines(r)
     cols = r.get("lineColors")
+    if not isinstance(cols, list):
+        return False
     for i, x in enumerate(lines):
         if CHRONICLE_LINE in x.lower():
-            if isinstance(cols, list):
-                c = str(cols[i] if i < len(cols) else "").strip().lower()
-                if c != "green":
-                    continue
-            return True
+            c = str(cols[i] if i < len(cols) else "").strip().lower()
+            if c == "green":
+                return True
     return False
+
+
+def colours_read(rows):
+    """v3859 B2 - did any placed read carry the line colours the chronicle rule needs? No reader in the tree writes
+    lineColors yet, so a production session answers False and its chronicle count is UNKNOWN, never a measured 0."""
+    return any(isinstance(r.get("lineColors"), list) and place(r) in ("floor", "inventory")
+               for r in rows or [] if isinstance(r, dict))
 
 
 def unidentified(r):
@@ -180,6 +189,6 @@ def route(rows, tab=None):
     farmed = [(it.name, it.group) for it in items if it.farmed]
     return {"farmed": _grouped(farmed), "itemsFarmed": len(farmed),
             "stashed": _grouped([(it.name, it.group) for it in items if it.farmed and it.at == "stash"]),
-            "chronicle": [it.name for it in items if it.farmed and it.chron],
+            "chronicle": [it.name for it in items if it.farmed and it.chron] if colours_read(rows) else None,
             "trashed": [it.name for it in items if it.farmed and it.at == "trash"],
             "seen": [it.name for it in items if not it.farmed and it.at == "floor"]}

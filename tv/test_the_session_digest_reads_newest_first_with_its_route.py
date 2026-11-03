@@ -26,7 +26,8 @@ def _journal():
                  "scene": "stash", "stashTab": "personal"})
     # v3859 - a chronicle find is the green line on the item's own tooltip (session_route)
     rows.append({"ts": 5 * H, "captureTs": 5 * H, "sessionId": "EARLY", "scene": "inventory",
-                 "names": ["Harlequin Crest", "Eligible for Chronicle"]})
+                 "names": ["Harlequin Crest", "Eligible for Chronicle"],
+                 "lineColors": ["gold", "green"]})
     # LATE: starts after EARLY, ends before it
     rows.append({"ts": 2 * H, "captureTs": 2 * H, "sessionId": "LATE", "names": ["Ber Rune"], "scene": "inventory"})
     rows.append({"ts": 2 * H + 60000, "captureTs": 2 * H + 60000, "sessionId": "LATE", "names": ["Ber Rune"],

@@ -77,7 +77,7 @@ def _rows():
     return [
         {"ts": T0, "captureTs": T0, "sessionId": MANY, "lane": "deep", "scene": "stash", "frameId": "1_%d" % T0},
         {"ts": T0 + 30000, "captureTs": T0 + 30000, "sessionId": MANY, "lane": "deep", "scene": "inventory",
-         "frameId": "2_%d" % (T0 + 30000), "names": ["Harlequin Crest", "Eligible for Chronicle"]},
+         "frameId": "2_%d" % (T0 + 30000), "names": ["Harlequin Crest", "Eligible for Chronicle"], "lineColors": ["gold", "green"]},
         {"ts": T0 + 230000, "captureTs": T0 + 230000, "sessionId": MANY, "lane": "deep", "scene": "inventory",
          "intent": "farmed", "frameId": "3_%d" % (T0 + 230000), "names": ["Ber Rune"]},
         {"ts": T0 + 10000000, "captureTs": T0 + 10000000, "sessionId": ONE, "lane": "deep", "scene": "stash",
@@ -156,7 +156,8 @@ class TheDigestMeasuresTheFourFacts(unittest.TestCase):
         one = by[ONE]
         self.assertIsNone(one["playMs"], "one captured moment was called a playtime of %r" % one["playMs"])
         self.assertIsNone(one["afkMs"], "one captured moment was called AFK of %r" % one["afkMs"])
-        self.assertEqual((one["chroniclesFound"], one["itemsFarmed"]), (0, 0))
+        # v3859 B2 - no read carried line colours, so whether it found a chronicle is UNKNOWN, never 0
+        self.assertEqual((one["chroniclesFound"], one["itemsFarmed"]), (None, 0))
 
 
 class ThePageSaysThemAndPlaysOnlyServedFrames(unittest.TestCase):
@@ -191,7 +192,7 @@ class ThePageSaysThemAndPlaysOnlyServedFrames(unittest.TestCase):
 
     def test_the_digest_numbers_are_the_words_on_the_row(self):
         self.assertIn("playtime 0m30s · AFK time 3m20s · 1 chronicle found · 2 items farmed", self.words)
-        self.assertIn("playtime UNKNOWN · AFK time UNKNOWN · 0 chronicles found · 0 items farmed", self.words)
+        self.assertIn("playtime UNKNOWN · AFK time UNKNOWN · chronicles found UNKNOWN · 0 items farmed", self.words)
         self.assertIn("no item was named on this run", self.words)
         self.assertNotIn("no name read", self.words)
         self.assertIn("names UNKNOWN", self.words)

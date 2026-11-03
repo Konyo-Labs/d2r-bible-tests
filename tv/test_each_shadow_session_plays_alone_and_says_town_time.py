@@ -36,7 +36,7 @@ def _rows():
         return d
     return [r(0, scene="town", area="Harrogath"), r(30000, scene="gameplay", area="Worldstone Keep Level 2"),
             r(90000, scene="loot", area="Worldstone Keep Level 2", names=["Shako"]),
-            r(400000, scene="inventory", names=["Harlequin Crest", "Eligible for Chronicle"]),
+            r(400000, scene="inventory", names=["Harlequin Crest", "Eligible for Chronicle"], lineColors=["gold", "green"]),
             r(405000, scene="inventory", names=["Ber Rune", "Super Healing Potion"]),
             r(410000, scene="stash", stashTab="personal", names=["Ber Rune", "Super Healing Potion"]),
             {"ts": T0 + 10000000, "captureTs": T0 + 10000000, "sessionId": S2, "lane": "deep", "frameId": "g"}]
