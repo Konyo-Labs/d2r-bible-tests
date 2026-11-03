@@ -80,10 +80,10 @@ RED_PROOF = [
      "find": "_m[l] = (l in _m) ? null : k;",
      "replace": "_m[l] = (l in _m) ? _m[l] : k;",
      "matches": 1, "needs": "node"},
-    {"why": "v3859 - the codex spells the base the game's way, the base-sprite pass looks BASE_DB up exactly, so the axe loses its picture",
+    {"why": "v3859 - BASE_DB keys the axe by another case than the codex's CASC spelling, so the axe loses its picture",
      "file": "bible.html",
-     "find": "        _bb = _bFold[_bb.toLowerCase()] || '';\n",
-     "replace": "",
+     "find": "\"Silver-edged Axe\":{\"tier\":\"elite\"",
+     "replace": "\"Silver-Edged Axe\":{\"tier\":\"elite\"",
      "matches": 1, "needs": "node"},
 ]
 

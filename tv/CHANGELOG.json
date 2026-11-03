@@ -24,7 +24,7 @@
       "v3859 fix B1 (#230): the sync badge no longer sticks red after an ON AIR session (law + red-proof)",
       "v3859 gate repair (not counted): gate_costs.json fills 94 new gates as labelled local estimates",
       "v3859 gate repair (not counted): the ghost-row and shadow-reader suites contain their scratch dirs (fixture_tmp.contain)",
-      "v3859 fix: a base the codex spells the game's way (Silver-edged Axe) keeps its sprite - case folds to BASE_DB",
+      "v3859 fix: Silver-edged Axe keeps its sprite - BASE_DB and ITEM_TIP spell it the game's way, as the codex does",
       "v3859 gate repair (not counted): the judged-vault-row law expects the Vault badges again (v3858 mis-aimed it)",
       "v3859 #230: one session route ledger (session_route.py) - a floor sighting later in the inventory is one farmed item",
       "v3859 #230: only this run's farmed items count as stashed; a dropped one is trashed, still farmed; trade/vendor never",
