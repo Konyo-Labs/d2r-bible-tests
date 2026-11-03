@@ -7,6 +7,7 @@
       "v3859 Dean: WinError 5 on scanner start - a refused job breakaway retries inside the job; plain reason, no bare WinError",
       "v3859 gate repair (not counted): the 1x1 footprint rule names Small Charm, the CASC base the codex now uses",
       "v3859 gate repair (not counted): REG-2917's stale bodiless heading, re-added by a cherry-pick, is removed again",
+      "v3859 gate repair (not counted): the per-card PLAY law makes its stdout encoding-safe for cp1255 consoles",
       "v3859 #230: one session route ledger (session_route.py) - a floor sighting later in the inventory is one farmed item",
       "v3859 #230: only this run's farmed items count as stashed; a dropped one is trashed, still farmed; trade/vendor never",
       "v3859 #230: chronicle finds come only from the green 'Eligible for Chronicle' tooltip line",

@@ -2,6 +2,10 @@
 (by id) straight into the film; a ghost (stub) card has none. The shadow rows keep their per-row PLAY (v3855)."""
 import os, re, unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
+import sys
+sys.path.insert(0, HERE)
+from console_safe import enable as _console_safe_enable  # noqa: E402
+_console_safe_enable()
 SRC = open(os.path.join(HERE, "control_ui.html"), encoding="utf-8").read()
 
 
