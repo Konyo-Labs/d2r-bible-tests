@@ -296,15 +296,24 @@ class ItReadsTheChangeNotTheName(unittest.TestCase):
             "warning whatever it actually missed — the defect, preserved for history")
 
 
+#: v3856 - a CHECKED-IN sample ledger, not the box's shared one. The shared ledger is whatever this machine's eyes
+#: happened to write: on 2026-10-22 six reached looks landed there with sha null (the ask door dropped sha=, fixed
+#: 2a03d258), so every absent row it held read UNKNOWN -> BLIND and this case went red with the classifier sound.
+#: The sample keeps the shapes that matter: two stamp rows and two substantive rows at the measured shas in the module
+#: docstring, one sha-null row with a stored 'unknown' kind and one legacy sha-null row with none (both MUST stay BLIND),
+#: and one fully-reached row with an empty absent list (outside the population). [[feedback-fixtures-never-touch-live-data]]
+SAMPLE_LEDGER = os.path.join(HERE, "fixtures", "second_eye_sample_ledger.jsonl")
+SAMPLE_BLIND = {"v3345", "v3343", "v3785", "v3776"}
+SAMPLE_EXCUSED = {"v3352"}
+
+
 class HisRealLedgerStopsWarningOnEverything(unittest.TestCase):
-    """BEHAVIOURAL, against his file, and honest when it is absent."""
+    """BEHAVIOURAL, against a sample ledger that is checked in, so the verdict is about the classifier, not this box."""
 
     def test_the_counter_discriminates(self):
-        if not os.path.exists(L.LEDGER_PATH):
-            self.skipTest("no ledger on this machine")
-        rows = [r for r in L._rows() if r.get("absent")]
-        if len(rows) < 5:
-            self.skipTest("only %d row(s) carry a non-empty absent list here" % len(rows))
+        rows = [r for r in L._rows(SAMPLE_LEDGER) if r.get("absent")]
+        self.assertEqual(len(rows), 6, "the sample ledger lost rows (%d with an absent list) - its denominator is gone"
+                         % len(rows))
         blind = [r for r in rows if L.blind_to(r)]
         self.assertLess(
             len(blind), len(rows),
@@ -317,6 +326,33 @@ class HisRealLedgerStopsWarningOnEverything(unittest.TestCase):
             "NO row is reported blind any more. v3349's finding was real — v3349's own look never "
             "saw its 218-line subject and was filed clean — so a counter that can no longer reach "
             "it has been turned off rather than sharpened. [[regression-guard]] §5")
+        self.assertEqual(
+            set(r["version"] for r in blind), SAMPLE_BLIND,
+            "the counter split the sample wrong. Substantive rows and BOTH sha-null rows must read BLIND (UNKNOWN is never "
+            "a stamp), and only the stamp rows may be excused.")
+        self.assertFalse(
+            set(r["version"] for r in rows if not L.blind_to(r)) - SAMPLE_EXCUSED,
+            "a row that is not a measured stamp was excused")
+
+    def test_the_sample_kinds_are_what_git_measures_where_the_commit_is_here(self):
+        """The stored kinds are not invented: where this clone holds the commit, the classifier agrees with them. On a
+        shallow clone (CI, fetch-depth 200) the commit is gone and that row is SKIPPED by name, never passed."""
+        import subprocess
+        checked = 0
+        for r in L._rows(SAMPLE_LEDGER):
+            sha = r.get("sha")
+            if not sha or not r.get("absentKind"):
+                continue
+            have = subprocess.run(["git", "-C", L._REPO, "cat-file", "-e", "%s^{commit}" % sha],
+                                  capture_output=True).returncode == 0
+            if not have:
+                continue
+            for f, k in r["absentKind"].items():
+                with self.subTest(sha=sha, path=f):
+                    self.assertEqual(L.absent_kind(sha, f), k)
+                    checked += 1
+        if not checked:
+            self.skipTest("none of the sample's commits are in this clone - the stored kinds were NOT re-measured here")
 
 
 class TheCorroboratorReadsONESnapshot(unittest.TestCase):
@@ -373,6 +409,14 @@ if __name__ == "__main__":
 
 
 RED_PROOF = [
+    {
+        "why": "v3856 - excusing UNKNOWN as if it were a stamp lets the sample's two sha-null rows (the 2026-10-22 shape) "
+               "read as clean looks",
+        "file": "tv/second_eye_ledger.py",
+        "find": "        if k != \"stamp\":\n            out.append(f)",
+        "replace": "        if k not in (\"stamp\", \"unknown\"):\n            out.append(f)",
+        "matches": 1,
+    },
     {
         "why": "counting every absent file as blind puts the warning back on 7 of 7 rows, where "
                "the measured figure is 2 — a warning that fires on everything is furniture",

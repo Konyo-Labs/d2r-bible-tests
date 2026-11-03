@@ -1,0 +1,7 @@
+{"version": "v3352", "sha": "c08875ad", "model": "grok-4-1-fast-reasoning", "family": "xai", "reached": true, "verdict": "clean", "absent": ["bible.html", "tv/control_app.py"], "absentKind": {"bible.html": "stamp", "tv/control_app.py": "stamp"}, "ts": 1790000000000}
+{"version": "v3352", "sha": "c08875ad", "model": "gpt-5", "family": "openai", "reached": true, "verdict": "clean", "absent": ["bible.html"], "absentKind": {"bible.html": "stamp"}, "ts": 1790000001000}
+{"version": "v3345", "sha": "e850b847", "model": "grok-4-1-fast-reasoning", "family": "xai", "reached": true, "verdict": "clean", "absent": ["bible.html"], "absentKind": {"bible.html": "substantive"}, "ts": 1790000002000}
+{"version": "v3343", "sha": "d2b3f3cf", "model": "grok-4-1-fast-reasoning", "family": "xai", "reached": true, "verdict": "findings", "absent": ["tv/control_app.py"], "absentKind": {"tv/control_app.py": "substantive"}, "ts": 1790000003000}
+{"version": "v3785", "sha": null, "model": "grok-cli", "family": "xai", "reached": true, "verdict": "cannot-tell", "absent": ["bible.html"], "absentKind": {"bible.html": "unknown"}, "ts": 1790000004000}
+{"version": "v3776", "sha": null, "model": "grok-cli", "family": "xai", "reached": true, "verdict": "findings", "absent": ["bible.html", "tv/control_ui.html"], "ts": 1790000005000}
+{"version": "v3353", "sha": "c08875ad", "model": "grok-4-1-fast-reasoning", "family": "xai", "reached": true, "verdict": "clean", "absent": [], "ts": 1790000006000}
