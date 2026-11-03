@@ -45,7 +45,9 @@ RED_PROOF = [
      "replace": "\"failed to start scanner: %s\" % e,", "matches": 1},
     {"why": "start_agent stops using the fallback", "file": "control_app.py",
      "find": "            _agent_proc, _spawn_note = _popen_breakaway(\n",
-     "replace": "            _agent_proc, _spawn_note = subprocess.Popen(**popen_kw), None; _x = (\n", "matches": 1},
+     # v3859: the call grew a say= keyword, so the swallowed tail is a call now, never a bare tuple (INVALID on CI)
+     "replace": "            _agent_proc, _spawn_note = subprocess.Popen(**popen_kw), None; _x = (lambda *a, **k: None)(\n",
+     "matches": 1},
 ]
 
 
