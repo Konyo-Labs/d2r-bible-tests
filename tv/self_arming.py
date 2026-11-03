@@ -1585,7 +1585,7 @@ LOCK_DOORS = {
 }
 #: the lock machinery every lock stands on: a law that exercises it guards them all
 LOCK_MACHINERY = ("self_arming",)
-_LOCK_MEMO = {"key": None, "owed": None, "blind": None, "why": None, "src": {}}
+_LOCK_MEMO = {"key": None, "owed": None, "blind": None, "why": None, "src": {}, "guard": {}}
 
 
 def _guards_lock(text, lock, stems):
@@ -1624,7 +1624,7 @@ def _owed_and_blind():
         files = dict(_h2.gate_files())
         owed = set(n for n, _k in (_h2.slice_owed(list(files.items()), st).get("owed") or []))
         blind = set(st.get("blind") or [])
-        _LOCK_MEMO.update(key=key, owed=owed, blind=blind, files=files, src={})
+        _LOCK_MEMO.update(key=key, owed=owed, blind=blind, files=files, src={}, guard={})
         return owed, blind, files
     except Exception as _e:
         return None, None, "the census could not be read for one lock (%s)" % type(_e).__name__
@@ -1674,8 +1674,14 @@ def _lock_heart(lock, gwhy=None):
         return text
 
     def _guard(name):
-        t = _src(name)
-        return True if t is None else _guards_lock(t, lock, stems)   # a gate that will not read is counted, never skipped
+        # v3856 gate - one answer per (gate, lock, doors) per census: report() asks every lock, and re-running the regex
+        # walk over every owed gate's source for each one took test_heart past its 60 s budget (48,204 walks per report)
+        gk = (name, lock, tuple(stems))
+        memo = _LOCK_MEMO.setdefault("guard", {})
+        if gk not in memo:
+            t = _src(name)
+            memo[gk] = True if t is None else _guards_lock(t, lock, stems)   # a gate that will not read is counted, never skipped
+        return memo[gk]
 
     g_owed = sorted(n for n in owed if _guard(n))
     if g_owed:
