@@ -13,6 +13,33 @@ BIBLE = os.path.join(os.path.dirname(HERE), "bible.html")
 ACTIONS = ["vaultClearUnsorted", "vaultReset", "vaultClearHistory", "vaultWipeItems"]
 
 
+def _fn_body(src, head):
+    """The JS function that opens with `head`, to its own matching close brace - both ends anchored, so the window
+    grows with the function and never stops short of it (test_a_source_window_must_reach_its_subject). The walk
+    skips braces inside quotes, template literals and comments."""
+    i = src.index(head)
+    k, depth, n = src.index("{", i), 0, len(src)
+    while k < n:
+        c = src[k]
+        if c in "'\"`":
+            k += 1
+            while k < n and src[k] != c:
+                k += 2 if src[k] == "\\" else 1
+        elif src.startswith("//", k):
+            k = src.find("\n", k)
+            k = n if k < 0 else k
+        elif src.startswith("/*", k):
+            k = src.find("*/", k) + 1
+            k = n if k <= 0 else k
+        elif c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                return src[i:k + 1]
+        k += 1
+    raise AssertionError("the function %r never closes - its body is UNKNOWN, not clean" % head)
+
 class DangerGroup(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -35,8 +62,7 @@ class DangerGroup(unittest.TestCase):
 
     def test_each_handler_still_asks_with_cancel_first(self):
         for a in ACTIONS:
-            i = self.src.index("window.%s = async function(){" % a)
-            body = self.src[i:i + 3000]
+            body = _fn_body(self.src, "window.%s = async function(){" % a)
             first = re.search(r"uiConfirm\([^;]*", body)
             self.assertTrue(first, a)
             self.assertIn("cancelFirst:true", first.group(0), a)

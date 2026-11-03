@@ -104,6 +104,33 @@ class TheVaultEvidenceSaysWhoFoundIt(unittest.TestCase):
         self.assertEqual(src.count("window._vaultFoundByHtml(m.name)"), 1)
 
 
+def _fn_body(src, head):
+    """The JS function that opens with `head`, to its own matching close brace - both ends anchored, so the window
+    grows with the function and never stops short of it (test_a_source_window_must_reach_its_subject). The walk
+    skips braces inside quotes, template literals and comments."""
+    i = src.index(head)
+    k, depth, n = src.index("{", i), 0, len(src)
+    while k < n:
+        c = src[k]
+        if c in "'\"`":
+            k += 1
+            while k < n and src[k] != c:
+                k += 2 if src[k] == "\\" else 1
+        elif src.startswith("//", k):
+            k = src.find("\n", k)
+            k = n if k < 0 else k
+        elif src.startswith("/*", k):
+            k = src.find("*/", k) + 1
+            k = n if k <= 0 else k
+        elif c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                return src[i:k + 1]
+        k += 1
+    raise AssertionError("the function %r never closes - its body is UNKNOWN, not clean" % head)
+
 class AttributionNeverRoutesTheVault(unittest.TestCase):
     """His ruling: an item's mule / home is identical with and without attribution data. Only two places in the page
     may ask who found an item: the evidence panel's line. A new reader anywhere else (the sorter, the
@@ -114,8 +141,7 @@ class AttributionNeverRoutesTheVault(unittest.TestCase):
         self.assertEqual(src.count("_identityFoundBy("), 1, "something besides the evidence panel reads who found an item")
         self.assertEqual(src.count("_vaultFoundByHtml("), 1)
         for fn in ("window.vaultAutoAssign = function(){", "window.vaultAutoSortByHand = function(){", "function _vaultRecords(_inPhase){"):
-            i = src.index(fn)
-            body = src[i:i + 12000]
+            body = _fn_body(src, fn)
             for w in ("_identity", "finds_index", "foundBy"):
                 self.assertNotIn(w, body, "%s reads the attribution (%s)" % (fn, w))
 
