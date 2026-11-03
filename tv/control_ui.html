@@ -7230,6 +7230,11 @@
   .tf-row.tf-chron { border-color: rgba(240,192,96,.28); box-shadow: inset 3px 0 0 var(--gold-antique); }
   .tf-row.tf-chron.tf-chron-done { border-color: rgba(240,192,96,.12); box-shadow: none; opacity: .72; }
   .tf-chron-note { color: #b7a884; font-weight: var(--fw-medium); }
+  /* v3856 - A CHRONICLE TITLE WRAPS ITS NOTE INSTEAD OF ELLIPSING IT. At 1024x768 the row read
+     'Chronicle Uniques — 397 le…': the count he hunts by was the part cut off. The note may drop
+     to a second line; it is never shaved. */
+  .tf-row.tf-chron .tf-t { white-space: normal; overflow: visible; text-overflow: clip; }
+  .tf-row.tf-chron .tf-chron-note { white-space: nowrap; }
   .tf-tag.hunt { border-color: rgba(240,192,96,.55); color: var(--gold); }
   /* v1368 (SESSIONS R5) — TODAY'S TARGET hero: the single clearest next hunt, front-and-center so the
      hunt SINGS (Konyo: the hunt is the point of this tab). A prominent gold callout — mint when it's a

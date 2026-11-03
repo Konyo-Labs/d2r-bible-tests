@@ -1310,14 +1310,14 @@ TARGETS = {
         # exactly where it is; a blanket bless would also have moved five coverage floors in the
         # same commit and buried this one-node change among them. [[regression-guard]]
         "known": {
-            "1440x1000": {"clipped": 1, "broken": None, "zero": 6},
-            "1120x900":  {"clipped": 1, "broken": None, "zero": 6},
-            "1120x628":  {"clipped": 1, "broken": None, "zero": 6},
+            "1440x1000": {"clipped": 0, "broken": None, "zero": 6},
+            "1120x900":  {"clipped": 0, "broken": None, "zero": 6},
+            "1120x628":  {"clipped": 0, "broken": None, "zero": 6},
             # v3405 — WIDTHS gained 1280x720 (his ALT machine's real desktop) without a
             # floor here, so the page target blocked the push for a missing KEY rather
             # than for pixels. Clipped 1 is the TZ-tracker overflow measured on that
             # box; the first live render may ratchet it. [[regression-guard]]
-            "1280x720":  {"clipped": 1, "broken": None, "zero": 6},
+            "1280x720":  {"clipped": 0, "broken": None, "zero": 6},
             # ⚠ v3215 — RATCHETED DOWN on a full clean run: 6 -> 4 and 55 -> 10, both the measured
             # values. The 375 floor was the loud one — 45 elements that USED to be cut off no
             # longer are, and until now 45 NEW ones could have appeared without this gate saying a
@@ -1341,8 +1341,8 @@ TARGETS = {
             # the new one. The gate prints a count and 5 of 11 names and stores no per-element
             # floor, so WHICH one is new cannot be recovered. That is a real limit of this
             # instrument, written down rather than guessed at. [[regression-guard]]
-            "901x900":   {"clipped": 5, "broken": None, "zero": 6},
-            "375x800":   {"clipped": 11, "broken": None, "zero": 6},
+            "901x900":   {"clipped": 0, "broken": None, "zero": 6},
+            "375x800":   {"clipped": 1, "broken": None, "zero": 6},
         },
         "settles": True,
         # ⚠ THE SHAPE PREDICATE, not the byte-length one. This page carries a live clock and
