@@ -11,7 +11,8 @@
       "D2JSP: the price-reading cost check now waits for the card list to settle first, so it no longer flakes under load (budget unchanged).",
       "Theatre: a chronicle row's count ('397 left to hunt') wraps to a second line instead of being cut off on narrower screens.",
       "Theatre: the KAI close line now also says what the session card says (how many frames are still unread and how many were recovered), so the two agree.",
-      "Board: the ?, navigation and inbox buttons on the right rail show one tooltip again instead of two stacked on top of each other."
+      "Board: the ?, navigation and inbox buttons on the right rail show one tooltip again instead of two stacked on top of each other.",
+      "Vault editor and every other dropdown opens dark: no more white text on a white list (#13; probe 6 of 9 dropdown kinds white-on-white -> 0)"
     ]
   },
   {

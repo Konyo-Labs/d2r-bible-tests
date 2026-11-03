@@ -1407,6 +1407,8 @@ tr.owned-row{background:rgba(102,255,136,.03)}
 .rs-btn:hover{background:var(--surface);border-color:var(--gold-bright)}
 .cubeup-panel{background:linear-gradient(180deg,rgba(240,192,96,.06),var(--surface-2));border:1px solid var(--border-light);border-left:3px solid var(--gold-bright);border-radius:10px;padding:14px 18px;margin:12px 0}
 .cubeup-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+/* #13: a native dropdown list opens on a light sheet unless told otherwise, so its pale text sat white on white */
+select{color-scheme:dark}select option,select optgroup{background:var(--surface);color:var(--text)}
 .cubeup-panel select{background:var(--surface-3);color:var(--text);border:1px solid var(--border-light);border-radius:6px;padding:6px 10px;font-size:var(--fs-body);font-family:inherit;cursor:pointer}
 .cubeup-result{font-size:14px;color:var(--text)}
 .cubeup-num{color:var(--gold-bright);font-weight:var(--fw-semibold);font-family:ui-monospace,monospace;font-size:17px}
