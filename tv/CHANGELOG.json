@@ -2,7 +2,9 @@
   {
     "ver": "v3858",
     "date": "2026-11-03",
-    "items": []
+    "items": [
+      "v3857 #247: below 1080px the glyph-only NAME pill hugs its glyph instead of stretching to the clock column"
+    ]
   },
   {
     "ver": "v3857",

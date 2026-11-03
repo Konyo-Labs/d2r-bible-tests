@@ -423,6 +423,8 @@
   }
   .sigil .sg-sub .sg-unnamed { color: var(--muted); font-weight: var(--fw-medium); font-style: italic; }
   @media (max-width: 1080px){ .sigil .sg-txt { display: none; } .sigil { padding: 5px 7px; } }
+  /* v3857 #247 - the glyph-only pill hugs its glyph; the brand grid's stretch had pulled it out to the clock column */
+  @media (max-width: 1080px){ .brand-id > .sigil { justify-self: start; } }
   .emblem {
     width: clamp(44px, 4vw, 64px);
     aspect-ratio: 1;
