@@ -17,6 +17,12 @@ _free = _socket.socket()
 _free.bind(("127.0.0.1", 0))
 os.environ["TV_CONTROL_PORT"] = str(_free.getsockname()[1])
 _free.close()
+# v3856 gate - THE SAME VENUE RULE FOR THE PROOF CENSUS. tv/.heart2.json is this PC's own (git ignores it); a full gate
+# writes it, and once it was STALE every health report here walked the per-lock path for each owed gate - 103 s against
+# the 60 s ceiling on the box, 15 s where no census exists (CI). These cases grade vessels, never this PC's proofs: they
+# read a census path that does not exist, unless the caller chose one.
+if not os.environ.get("TV_HEART_CENSUS"):
+    os.environ["TV_HEART_CENSUS"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".no-census-for-test_heart.json")
 import heart as H  # noqa: E402
 
 
