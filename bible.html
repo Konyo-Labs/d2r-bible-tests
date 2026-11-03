@@ -83671,6 +83671,26 @@ window.tvStashAutoIntake = async function(tab, opts){
     if (location.protocol !== 'file:') _chain.push('tv/frames/hist/' + String(id) + '.jpg');
     return _chain;
   };
+  /* v3857 item 18 (#230, Elad 10:39 on v3855) - A SHADOW'S WITNESS FRAME IS THE OWNER'S. In a shadow the chain above
+     addressed THIS viewer's bridge and console, so Dean's Brimstone Clasp witness opened 'frame missing (agent off + no
+     archive)' over a broken black picture. In a shadow every leg goes through _shadowOwnerUrl (the owner's address, or
+     dropped - never the viewer's), and a picture nobody can serve says why from the owner's own picture map. */
+  window._tvdShadowFrameChain = function(chain){
+    if (!window._tvdShadow || typeof window._shadowOwnerUrl !== 'function') return chain;
+    var out = [];
+    (chain || []).forEach(function(u){
+      var o = window._shadowOwnerUrl(/^https?:/i.test(String(u)) ? String(u) : String(u).replace(/^\/+/, ''));
+      if (o && out.indexOf(o) < 0) out.push(o);
+    });
+    return out;
+  };
+  window._tvdFrameMissingSay = function(id){
+    if (!window._tvdShadow) return 'frame missing (agent off + no archive)';
+    var a = null;
+    try { a = (typeof window._shadowPictureAsk === 'function') ? window._shadowPictureAsk(String(id || '')) : null; } catch (e) { a = null; }
+    if (a && a.end && a.end.say) return a.end.say;
+    return 'picture not on this machine — the owner console did not serve it (it may predate the shadow upload); why is UNKNOWN';
+  };
   window._tvdOpenFrame = function(id, meta){
     try {
       meta = meta || {};
@@ -83698,17 +83718,24 @@ window.tvStashAutoIntake = async function(tab, opts){
       // meta.src is tried FIRST when given: a caller that knows the exact path should not have
       // to guess through a chain built for a different addressing scheme. The old legs stay
       // after it, so every existing caller keeps its exact behaviour.
-      var _chain = window._tvdFrameChain(id, meta.src);
+      var _chain = window._tvdShadowFrameChain(window._tvdFrameChain(id, meta.src));
       var _step = 0;
       img.__fb = 0;
+      img.style.visibility = '';
       img.onload = function(){ lb.hidden = false; };
+      var _missing = function(){
+        lb.hidden = false;
+        /* v3857 item 18 - no broken black picture: the photo is hidden and the title says why, in words */
+        img.style.visibility = 'hidden';
+        img.removeAttribute('src');
+        if (tit) tit.textContent = '👁 ' + window._tvdFrameMissingSay(id) + ' · ' + (id || 'latest') + ' · ✕ / Esc closes the photo';
+      };
       img.onerror = function(){
         _step++;
         if (_step < _chain.length) { img.src = _chain[_step]; return; }
-        lb.hidden = false;
-        if (tit) tit.textContent = '👁 frame missing (agent off + no archive) · ' + (id || 'latest');
+        _missing();
       };
-      img.src = _chain[0];
+      if (!_chain.length) _missing(); else img.src = _chain[0];
       lb.hidden = false;
       var mark = document.getElementById('tvd-frame-lb-mark');
       if (mark) {
@@ -83724,7 +83751,7 @@ window.tvStashAutoIntake = async function(tab, opts){
       var lb = document.getElementById('tvd-frame-lb');
       var img = document.getElementById('tvd-frame-lb-img');
       if (lb) lb.hidden = true;
-      if (img) { img.removeAttribute('src'); }
+      if (img) { img.removeAttribute('src'); img.style.visibility = ''; }
       var mark = document.getElementById('tvd-frame-lb-mark');
       if (mark) { mark.hidden = true; mark.innerHTML = ''; }
     } catch(e){}

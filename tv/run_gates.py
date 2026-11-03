@@ -11189,6 +11189,7 @@ GATES = [
          why="REG-3070's near-miss: every page function is declared once in its script - a second declaration is hoisted and wins silently for every caller"),
     Gate('test_the_unique_tally_counts_the_colossal_jewels', [sys.executable, os.path.join(HERE, 'test_the_unique_tally_counts_the_colossal_jewels.py')], 120, needs_app=False, why='the unique tally is 403: 397 hunt cards + 6 colossal jewels, quest items off'),
     Gate('test_a_shadow_frame_viewer_closes_to_the_vault', [sys.executable, os.path.join(HERE, 'test_a_shadow_frame_viewer_closes_to_the_vault.py')], 120, needs_app=False, why="a shadow's witness frame x / Esc closes only the photo, the shadow stays"),
+    Gate('test_a_shadow_witness_frame_is_the_owners', [sys.executable, os.path.join(HERE, 'test_a_shadow_witness_frame_is_the_owners.py')], 120, needs_app=False, why="a shadow's witness frame is asked of the owner, and a missing one says why in words"),
     Gate('test_a_socket_range_fits_its_base', [sys.executable, os.path.join(HERE, 'test_a_socket_range_fits_its_base.py')], 60, needs_app=False, why="a set or unique socket range never passes its base's max sockets"),
     Gate('test_a_law_file_has_no_invalid_escape', [sys.executable, os.path.join(HERE, 'test_a_law_file_has_no_invalid_escape.py')], 60, needs_app=False, why="five law files compile with no invalid escape"),
     Gate('test_the_roster_card_keeps_its_gaps', [sys.executable, os.path.join(HERE, 'test_the_roster_card_keeps_its_gaps.py')], 60, needs_app=False, why="roster card keeps its 6px and 8px gaps"),
