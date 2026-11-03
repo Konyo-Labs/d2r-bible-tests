@@ -5177,7 +5177,12 @@ def _frames_publish_once(boot):
         _profile_json_save(_frames_state_path(), state)
         return False     # REG-2795 - held: a console start's exemption is kept for when the hold lifts
     now_ms = int(time.time() * 1000)
-    if not _ss.may_build(state, now_ms, bool(boot)):
+    try:
+        _w = _shadow_watch_stored() or {}
+        _sealed = max([int(v) for v in (_w.get("rotatedAt"), _w.get("updateClosedAt")) if v] or [0]) or None
+    except Exception:
+        _sealed = None
+    if not _ss.may_build(state, now_ms, bool(boot), sealed_at=_sealed):
         return True
     book = _profile_json_load(_profile_book_path()) or {}
     stores = book.get("stores") if isinstance(book.get("stores"), dict) else {}

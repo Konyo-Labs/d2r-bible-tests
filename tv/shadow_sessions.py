@@ -469,11 +469,23 @@ def _int(v):
     return v if isinstance(v, int) and not isinstance(v, bool) else None
 
 
-def may_build(state, now_ms, boot):
-    """Before a single thumbnail is made: could an upload go now? A boot always may. -> bool"""
+#: v3860 (#230) - a reel that SEALED after the last post may publish once this long after it, not 3 h later
+SEAL_GAP_MS = 10 * 60 * 1000
+
+
+def may_build(state, now_ms, boot, sealed_at=None):
+    """Before a single thumbnail is made: could an upload go now? A boot always may. -> bool
+
+    v3860 (#230, ALT 2026-11-03) - the Shelf read the ALT 2-3 h behind its play because only the 3 h gap opened the
+    lane. A reel sealed AFTER the last post (sealed_at) now opens it, rate-limited to SEAL_GAP_MS since that post."""
     state = state if isinstance(state, dict) else {}
     if boot:
         return True
+    _sealed, _posted = _int(sealed_at), _int(state.get("postedAt"))
+    if _sealed is not None and (_posted is None or _sealed > _posted):
+        _refused = _int(state.get("refuseAt"))
+        if (_posted is None or now_ms - _posted >= SEAL_GAP_MS) and (_refused is None or now_ms - _refused >= SEAL_GAP_MS):
+            return True
     for k, gap in (("refuseAt", MIN_GAP_MS), ("postedAt", MIN_GAP_MS), ("checkedAt", LOOK_AGAIN_MS)):
         t = _int(state.get(k))
         if t is not None and now_ms - t < gap:
