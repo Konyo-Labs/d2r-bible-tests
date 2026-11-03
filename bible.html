@@ -43425,6 +43425,14 @@ details[open] > summary .to-chev{transform:rotate(180deg)}
   .vrg-copies,.vrg-val{margin-left:3px}
   .vrg-x{margin-left:4px}
 }
+/* v3859 - THE FAB GUTTER (48fbc054, 701-1620px: .container pads 62px on the right) TOOK 62px FROM THIS ROW TOO. At
+   901 the routing column fell to 358px and "Harlequin Crest (Shako)" at nowrap pushed the row 8px past it (v2267 red).
+   Inside the gutter's range the name buys its width back the way the phone does - by wrapping, which deletes nothing
+   he reads - instead of the gutter being given back to the FAB column it exists for. */
+@media (min-width:701px) and (max-width:1620px){
+  .vrg-name{flex:1 1 auto;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;overflow-wrap:anywhere}
+  .vrg-row{align-items:flex-start}
+}
 /* ══ v2267 — THE ITEM NAME WAS THE ONLY THING IN THE ROW ALLOWED TO SHRINK ══════════
    Measured on the vault tab, natural state, no fixture: ALL 40 .vrg-name cells clipped,
    at 1440 AND 901 AND 375, with cuts of 73-97%%:
