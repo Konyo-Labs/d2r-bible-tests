@@ -386,6 +386,11 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None):
     runs = game_runs(rows)
     ident = identity_ledger(rows)   # v3855 - built here, on this console, from its own reads
     timeline = game_timeline(rows)   # v3855 - AFK over the whole game, then each session takes its share
+    # v3860 (#230, ALT 2026-11-03) - a journal slice with no read is a ghost row (a restart or a heartbeat between reads
+    # of the same reel). The ALT's 16 published slots held 7 such rows at 0 frames, pushing real hours off the Shelf.
+    _kept = [g for g in groups if any(is_read(r) for r in g)]
+    out["ghosts"] = len(groups) - len(_kept)
+    groups = _kept
     for g in groups[:MAX_SESSIONS]:
         reads = [r for r in g if is_read(r)]
         moments = _rp.session_moments(g) or []
