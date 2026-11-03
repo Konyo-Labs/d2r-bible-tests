@@ -5160,6 +5160,54 @@ def _roster_publish_loop():
             _frames_boot = False
 
 
+class _SessionsSWR(object):
+    """v3860 (#230, ALT 2026-11-03) - /api/sessions answered in 52 s on the ALT (567 reels), past the Shelf's 45 s bound,
+    so the Shelf kept its 08:00 list all day. The list is built once, then served at once; when the hist folder changed
+    or the build is older than MAX_AGE_S one background rebuild runs (never two) and the next ask gets it. The first ask
+    on a cold console still builds in line - there is nothing older to show. -> (rows, {at, ageS, stale, building})"""
+    MAX_AGE_S = 60.0
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._rows, self._at, self._fp, self._building = None, 0.0, None, False
+
+    @staticmethod
+    def _fingerprint():
+        try:
+            st = os.stat(HIST_DIR)
+            return (st.st_mtime_ns, len(os.listdir(HIST_DIR)))
+        except Exception:
+            return None
+
+    def _build(self, builder, fp):
+        try:
+            rows = builder()
+            with self._lock:
+                self._rows, self._at, self._fp = rows, time.time(), fp
+        finally:
+            with self._lock:
+                self._building = False
+
+    def get(self, builder):
+        fp = self._fingerprint()
+        with self._lock:
+            have = self._rows is not None
+            stale = have and (fp != self._fp or time.time() - self._at > self.MAX_AGE_S)
+            kick = stale and not self._building
+            if kick or not have:
+                self._building = True
+        if not have:
+            self._build(builder, fp)
+        elif kick:
+            threading.Thread(target=self._build, args=(builder, fp), daemon=True, name="sessions-swr").start()
+        with self._lock:
+            return self._rows, {"at": int(self._at * 1000), "ageS": int(max(0.0, time.time() - self._at)),
+                                "stale": bool(stale), "building": bool(self._building)}
+
+
+_SESSIONS_SWR = _SessionsSWR()
+
+
 def _frames_state_path():
     return os.path.join(_log_root(), ".roster_frames_state.json")
 
@@ -49214,7 +49262,9 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_hist(path[len("/tv/frames/hist/"):])
             return
         if path == "/api/sessions":
-            self._json(200, {"sessions": self._theatre_sessions()})
+            # v3860 (#230) - served from the last build; a stale one is rebuilt in the background (_SESSIONS_SWR)
+            _rows, _meta = _SESSIONS_SWR.get(self._theatre_sessions)
+            self._json(200, {"sessions": _rows, "built": _meta})
             return
         if path == "/api/ledger3/sessions":
             # 2026-09-29 (#58) — LEDGER 3.0's list door: every journalled reel, newest first, as
