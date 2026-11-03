@@ -2,8 +2,12 @@
 """#220 (board half): the ?, nav and inbox rail controls draw one tip - their data-tip pseudo tip - and no longer also carry a title the prose lane borrowed into #arttip. Found and proven with a real-pointer sweep over 73 Vault and rail tip hosts.
 
 RED_PROOF below: each one, applied, turns this law red."""
+import os
 import json, os, shutil, subprocess
 import unittest
+import sys as _cs_sys
+_cs_sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable; enable()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")

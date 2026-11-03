@@ -4,6 +4,9 @@
 RED_PROOF below: each one, applied, turns this law red."""
 import os
 import unittest
+import sys as _cs_sys
+_cs_sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable; enable()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")

@@ -2,8 +2,12 @@
 """#252/#277: the theatre's KAI close line carries the session card's own swept words (still unread, recovered of missed), from the same _missedSay, so a replay never contradicts the card it was opened from.
 
 RED_PROOF below: each one, applied, turns this law red."""
+import os
 import json, os, shutil, subprocess
 import unittest
+import sys as _cs_sys
+_cs_sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable; enable()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")

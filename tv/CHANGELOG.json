@@ -4,16 +4,16 @@
     "date": "2026-11-03",
     "items": [
       "a shadow console's Characters tab shows their in-game characters and worn gear, read from their own upload",
-      "a Fleet row says locks shut · N gates blind when its proof is current but some gates are blind, instead of looking healthy",
-      "a session's hover says the character picked at login, what the character panel said and the class the avatar looks like; the row still shows only the answer",
       "the Runewords subtitle and a saved build drop the 'rides Backup & Share' jargon - a saved build just says Saved",
       "the version history cards show their date without a stray IDT label",
-      "D2JSP: the price-reading cost check now waits for the card list to settle first, so it no longer flakes under load (budget unchanged).",
-      "Theatre: a chronicle row's count ('397 left to hunt') wraps to a second line instead of being cut off on narrower screens.",
-      "Theatre: the KAI close line now also says what the session card says (how many frames are still unread and how many were recovered), so the two agree.",
-      "Board: the ?, navigation and inbox buttons on the right rail show one tooltip again instead of two stacked on top of each other.",
-      "Vault editor and every other dropdown opens dark: no more white text on a white list (#13; probe 6 of 9 dropdown kinds white-on-white -> 0)",
-      "The Vault add-an-item window keeps its Done button through every choice - it vanished after choosing a base or quality (#13; drive: Done 0 on the quality step and entering Edit -> 1 at every step)"
+      "a Fleet row says locks shut · N gates blind when its proof is current but gates are blind",
+      "a session's hover says the login pick, the character panel and the avatar class; the row shows only the answer",
+      "the d2jsp price-cost check waits for the card list to settle, so it no longer flakes under load",
+      "a chronicle row's count ('397 left to hunt') wraps to a second line instead of being cut off",
+      "the KAI close line says what the session card says: frames still unread and frames recovered",
+      "the ?, navigation and inbox buttons on the right rail show one tooltip again, not two stacked",
+      "every dropdown opens dark: no more white text on a white list in the Vault editor (#13)",
+      "the Vault add-an-item window keeps its Done button after choosing a base or quality (#13)"
     ]
   },
   {

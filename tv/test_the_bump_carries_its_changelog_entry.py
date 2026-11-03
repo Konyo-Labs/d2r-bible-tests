@@ -108,7 +108,7 @@ class TheBumpCarriesItsChangelogEntry(unittest.TestCase):
         html = out.stdout
         top = self.log[0]
         self.assertTrue(html.startswith('<div class="hist-card" data-hist-ver="%s">' % top["ver"]))
-        self.assertIn(top["date"] + " IDT", html)
+        self.assertIn('<span class="hist-date">' + top["date"] + '</span>', html)   # v3856 item 6: a bare date, no zone label
         self.assertEqual(html.count("<li>"), sum(len(e["items"]) for e in self.log))
         self.assertIn("<li>shared gate ledger across worktrees</li>", html)
 
