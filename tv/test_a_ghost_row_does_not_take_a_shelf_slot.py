@@ -2,7 +2,9 @@
 it never takes one of the MAX_SESSIONS slots, so real hours stay on the shadow Shelf."""
 import os, sys, tempfile, unittest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import shadow_sessions as SS
+import fixture_tmp  # noqa: E402
+fixture_tmp.contain()
+import shadow_sessions as SS  # noqa: E402
 
 T0 = 1794000000000
 H = 3600000

@@ -26,6 +26,8 @@ sys.path.insert(0, HERE)
 
 from console_safe import enable as _console_safe_enable  # noqa: E402
 _console_safe_enable()
+import fixture_tmp  # noqa: E402
+fixture_tmp.contain()
 
 import control_app as ca  # noqa: E402
 import tv_diablo as tv    # noqa: E402
