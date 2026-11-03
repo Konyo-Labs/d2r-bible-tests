@@ -8840,12 +8840,12 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
           <div class="adv-sec-h">👁 WHAT WATCHES WHILE YOU PLAY</div>
           <div class="shadow-adv" id="shadow-adv">
             <button type="button" class="shadow-adv-sw" id="sadv-sha" aria-pressed="false"
-                    title="the reader that watches the live frame while you play">
+                    title="always on - the reader that watches the live frame while you play (no off switch)">
               <span class="shadow-adv-dot"></span><span class="shadow-adv-ic">👁</span>
               <span class="shadow-adv-t"><b>Shadow reader</b><small id="sadv-sha-say">checking…</small></span>
             </button>
             <button type="button" class="shadow-adv-sw" id="sadv-tip" aria-pressed="false"
-                    title="same switch as the shadow reader — it reads hover text while that reader is on">
+                    title="always on with the shadow reader - it reads hover text (no off switch)">
               <span class="shadow-adv-dot"></span><span class="shadow-adv-ic">🔎</span>
               <span class="shadow-adv-t"><b>Tooltip pass</b><small id="sadv-tip-say">checking…</small></span>
             </button>
@@ -22594,25 +22594,9 @@ window._lockMark = function(isOpen, px, label){
       .catch(function (e) { _shadowLastJ = null; _shadowAdvPaint(null, e); return null; });
   };
 
-  /* Both rows write the one shadow switch. The tooltip row used to call the board
-     and that call started a hand session. The text eye reads hover text whenever
-     this switch is on; the shadow watcher opens the reel when a game window is
-     pinned. Neither row starts a recording by itself. */
-  [['sadv-sha', 'shadow'], ['sadv-tip', 'tooltip']].forEach(function (p) {
-    var el = document.getElementById(p[0]);
-    if (!el) return;
-    el.addEventListener('click', function () {
-      if (el.disabled) return;
-      var want = el.getAttribute('aria-pressed') !== 'true';
-      var say = document.getElementById(p[0] + '-say');
-      if (say) say.textContent = want ? 'switching on…' : 'switching off…';
-      fetch(API + '/api/shadow', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                   body: JSON.stringify({ on: want }) })
-        .then(function () { return window._shadowAdvRefresh(); })
-        .catch(function () { if (say) say.textContent = 'UNKNOWN — the console did not answer'; });
-    });
-  });
-
+  /* v3859 - NO SWITCH. Elad 2026-11-03: "shadow reader shouldnt be able to be turned on or off
+     make it defaulted ON always". Both rows are status lamps now: no click handler, nothing POSTs
+     /api/shadow, and the server refuses a POST anyway. */
   /* v2210 — THE AUTO-RELAUNCH SWITCH. Four states kept apart, because collapsing them is how a
      status lamp starts lying: an env var overruling the switch is not the same as the switch being
      off, "never chosen" is not "off", and "the console did not answer" is not "off" either.

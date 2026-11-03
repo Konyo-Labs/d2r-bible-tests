@@ -293,7 +293,8 @@ def shadow_ai_on():
         _SHADOW_CACHE["mtime"] = m
         try:
             with open(SHADOW, encoding="utf-8") as fh:
-                _SHADOW_CACHE["on"] = bool((json.load(fh) or {}).get("on", True))
+                json.load(fh)
+                _SHADOW_CACHE["on"] = True   # v3859 - always on (Elad 2026-11-03); a stale OFF is ignored
         except Exception:
             # an unreadable switch is not an OFF switch — a truncated write mid-save must not
             # silently blind the eye until someone notices

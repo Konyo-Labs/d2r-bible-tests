@@ -31679,16 +31679,11 @@ def _shadow_state():
     green, the lane dark. So `on` is his choice, `available` is whether local OCR exists at all, and
     `recording` is whether a reel is rolling right now. [[grok-second-eye]] [[the-unjoined-end]]
     """
-    on, why = True, "the default since v932 — the file only exists once he has chosen"
-    try:
-        with open(_shadow_path(), encoding="utf-8") as fh:
-            j = json.load(fh) or {}
-        on = bool(j.get("on", True))
-        why = "you switched it %s" % ("on" if on else "off")
-    except OSError:
-        pass
-    except Exception as e:
-        why = "the switch file is unreadable (%s) — treating it as ON, never as OFF" % str(e)[:60]
+    # ⚠⚠ v3859 — ALWAYS ON, NO SWITCH. Elad 2026-11-03 17:26 IDT: "shadow reader shouldnt be able
+    # to be turned on or off make it defaulted ON always". A persisted {"on": false} from an older
+    # console is NOT honoured: it resolves to ON. Standby is unchanged - it still only opens a hidden
+    # reel when a game window is pinned and seals it when that window is gone.
+    on, why = True, SHADOW_ALWAYS_ON_WHY
     avail = None
     try:
         import tv_diablo as _tv
@@ -31701,16 +31696,21 @@ def _shadow_state():
     except Exception:
         rec = False
     return {"ok": True, "on": on, "why": why, "available": avail, "recording": rec,
-            "say": ("the shadow reader is OFF — nothing is being watched" if not on
-                    else "no local OCR on this machine, so the lane cannot run whatever the switch says"
+            "always": True,
+            "say": ("no local OCR on this machine, so the lane cannot run whatever the switch says"
                     if avail is False
                     else "watching — it reads on-screen text and fires a priority read when it sees "
                          "something worth reading" if rec
                     else "armed — it starts watching when a reel is rolling")}
 
 
+SHADOW_ALWAYS_ON_WHY = ("always on - Elad 2026-11-03: the shadow reader cannot be turned on or off")
+
+
 def _shadow_set(on):
-    """Write his choice. Atomic, because a half-written switch read mid-save must never blind the
+    """v3859 - ALWAYS ON: whatever `on` says, the file is written ON (a stale OFF is healed), never
+    OFF. Elad 2026-11-03: "shadow reader shouldnt be able to be turned on or off".
+    Write his choice. Atomic, because a half-written switch read mid-save must never blind the
     eye — tv_diablo treats an unreadable file as ON for the same reason."""
     p = _shadow_path()
     try:
@@ -31727,7 +31727,7 @@ def _shadow_set(on):
         # goes on the blob and cannot become a phantom row.
         # ⚠ AND IT MUST NOT COST THE SWITCH. tv_diablo treats an unreadable file as ON, so a
         # stamp that raised would blind the eye; it is swallowed and the write is unchanged.
-        _sw = {"on": bool(on), "ts": int(time.time() * 1000)}
+        _sw = {"on": True, "ts": int(time.time() * 1000)}
         try:
             import provenance as _PV
             _sw = _PV.stamp(_sw, by="control_app", extra={"store": "shadow_ai"})
@@ -50811,11 +50811,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/shadow":
             # v2000 — ONE WRITER. The agent only ever READS this file, so there is no lock and no
             # lost write; state.json is deliberately untouched because the agent owns that one.
-            want = body.get("on")
-            if want is None:
-                self._json(200, {"ok": False, "why": "say {\"on\": true} or {\"on\": false}"})
-                return
-            self._json(200, _shadow_set(bool(want)))
+            # ⚠ v3859 - THERE IS NO OFF. Elad 2026-11-03: "shadow reader shouldnt be able to be turned
+            # on or off make it defaulted ON always". Any body is refused and the state (on=True) is
+            # echoed, so a stale client cannot switch the eye off.
+            _off = _shadow_state()
+            _off.update({"ok": False, "changed": False, "why": SHADOW_ALWAYS_ON_WHY})
+            self._json(200, _off)
             return
         if path == "/api/on":
             # v1578 — REFUSE LOUDLY while a mini is counting down (the mirror of mini_start's

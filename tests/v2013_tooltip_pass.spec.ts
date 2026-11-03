@@ -68,7 +68,7 @@ test('off-console it stays hidden — never a button that cannot do anything', a
    watcher opens and seals its own hidden reels. The old test drove the retired pass (d2r_tooltipPass, a yield, a
    sealed flag) and went red on v3521's CI for a contract that no longer exists. What must hold now, and what this
    drives with the console's two routes stubbed (the scar the old test guarded is the same one):
-     · it flips the switch it READ: shadow on -> POST {on:false}, and says OFF;
+     · v3859: it flips NOTHING - the shadow reader is always on, so it POSTs nothing;
      · it NEVER POSTs /api/on or /api/off - it cannot start a hand session and cannot stop HIS reel;
      · a console that does not answer is UNKNOWN (null), never a flip. */
 test('the pass flips the ONE shadow switch - it never starts a hand session and never stops his reel', async ({ page }) => {
@@ -94,17 +94,13 @@ test('the pass flips the ONE shadow switch - it never starts a hand session and 
     }
   }, pre);
 
-  const off = await run({ ok: true, on: true });
-  expect(off.verdict, 'the switch did not answer with its new state').toBeTruthy();
-  expect(off.verdict.on, 'shadow was ON and the pass did not turn it off').toBe(false);
-  expect(off.calls.filter((c: any) => c[1] === 'POST').map((c: any) => [c[0], c[2]]),
-         'it POSTed something other than the one shadow switch').toEqual([['/api/shadow', { on: false }]]);
-  const on = await run({ ok: true, on: false });
-  expect(on.verdict.on, 'shadow was OFF and the pass did not turn it on').toBe(true);
-  for (const r of [off, on]) {
-    const hand = r.calls.filter((c: any) => /\/api\/(on|off)$/.test(c[0]));
-    expect(hand, 'the pass touched a HAND session (/api/on or /api/off) - ~9GB/hour, or his reel sealed').toEqual([]);
-  }
+  /* v3859 - ALWAYS ON. Elad 2026-11-03: "shadow reader shouldnt be able to be turned on or off".
+     The pass is read only now: it never POSTs anything, so it cannot flip the switch at all. */
+  const on = await run({ ok: true, on: true });
+  expect(on.verdict, 'the switch did not answer with its state').toBeTruthy();
+  expect(on.verdict.on, 'the pass reported the always-on reader as off').toBe(true);
+  expect(on.calls.filter((c: any) => c[1] === 'POST'), 'the pass POSTed - it must never flip the shadow reader').toEqual([]);
+  expect(on.calls.filter((c: any) => /\/api\/(on|off)$/.test(c[0])), 'the pass touched a HAND session (/api/on or /api/off)').toEqual([]);
   const blind = await run({ ok: false });
   expect(blind.verdict, 'a console that did not answer was read as a flip').toBeNull();
   expect(blind.calls.filter((c: any) => c[1] === 'POST'), 'it flipped a switch it could not read').toEqual([]);

@@ -24674,12 +24674,14 @@ class TestV2085TheSwitchesReachTheConsoleDrawer(unittest.TestCase):
                       "the tooltip row must paint the shadow payload, not a flag of its own")
         self.assertNotIn("p[1] === 'sha'", paint,
                          "branching the two rows onto different stores is the split he saw")
-        click = _between(self, ui, "[['sadv-sha', 'shadow'], ['sadv-tip', 'tooltip']]",
-                         "window._autoRelaunchRefresh", what="the two switch clicks")
-        self.assertNotIn("/api/on", click, "a tooltip click must not start a recording")
-        self.assertNotIn("/api/off", click, "a tooltip click must not seal a recording")
-        self.assertEqual(click.count("JSON.stringify({ on: want })"), 1,
-                         "both rows must post the one shadow switch, once, from the shared handler")
+        # v3859 - Elad 2026-11-03: "shadow reader shouldnt be able to be turned on or off make it
+        # defaulted ON always". Both rows are lamps now: no click handler, nothing POSTs.
+        self.assertNotIn("[['sadv-sha', 'shadow'], ['sadv-tip', 'tooltip']]", ui,
+                         "the two rows got their click handler back - the shadow reader has no switch")
+        self.assertNotIn("JSON.stringify({ on: want })", ui,
+                         "the drawer can POST an on/off to the shadow reader again")
+        self.assertNotIn("fetch(API + '/api/shadow', { method: 'POST'", ui,
+                         "the drawer POSTs /api/shadow again")
         state = _js_fn_from(self._bible(), "window.tooltipPassState = function(){")
         self.assertIn("follows: 'shadow'", state)
         self.assertIn("on: null", state,

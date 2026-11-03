@@ -23,7 +23,8 @@
       "v3859 #230: one joined sync status (machine_sync.py, /api/sync) shows recorder, seal and Shelf lag amber/red",
       "v3859: the published session digest drops 0-read ghost rows, so they no longer crowd real hours off the shadow Shelf",
       "v3859: every owner Shelf card in the theatre has its own PLAY button (ghost cards have none); shadow rows keep theirs",
-      "v3859: nine red-proof anchors and three shadow laws follow the code the v3857-v3859 items wrote"
+      "v3859: nine red-proof anchors and three shadow laws follow the code the v3857-v3859 items wrote",
+      "v3859 #230: the shadow reader is always on - no on/off switch; a saved OFF reads as ON (Elad 11-03)"
     ]
   },
   {

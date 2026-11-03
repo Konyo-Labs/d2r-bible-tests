@@ -334,7 +334,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 
 ## GATES
 
-    1467 registered in tv/run_gates.py — every one named below with what it guards,
+    1468 registered in tv/run_gates.py — every one named below with what it guards,
     so that "does a law already exist for this?" is answered by reading this file.
 
 - **blueprint-agrees** — v2403 — TWO MAPS OF ONE FACT, AND WHERE THEY DISAGREE IS THE FINDING.
@@ -1318,6 +1318,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_sessions_leaves_the_vault_on_the_first_press** — #142 — SESSIONS NEEDS TWO CLICKS TO LEAVE VAULT.
 - **test_set_piece_lookup_stays_cheap** — v3773 - opening the vault spent 148 ms self in findSetPiece, which re-normed all 135 set pieces per call.
 - **test_sets_base_index** — base -> set piece exists TWICE — the source JSON and the copy embedded in bible.html — and a copy nothing compares is a copy that drifts [[copy-drift]…
+- **test_shadow_always_on** — v3859 - Elad 2026-11-03 17:26 IDT: 'shadow reader shouldnt be able to be turned on or off make it defaulted ON always'.
 - **test_shadow_fed_like_live** — v3311 (#31) - TWO CORRECTIONS to the shadow gate, neither arming anything.
 - **test_shadow_mode_draws_their_console** — Shadow mode on the real page in headless Chrome: board A on a fixture console's stores vs a viewer with its own world opening the shadow of A's roster…
 - **test_shadow_mode_reads_their_console** — Shadow mode - another console one to one and read only.

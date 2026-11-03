@@ -82628,7 +82628,7 @@ window.toggleTooltipPass = function(){
   /* Same switch as the shadow row. Flipping this used to arm a lane, wake the reader
      and POST /api/on, which starts a hand session (~9GB/hour when nobody is playing).
      The shadow watcher already opens a hidden reel when a game window is pinned and
-     seals it when that window is gone. This only writes shadow_ai.json. */
+     seals it when that window is gone. v3859: read only, it writes nothing. */
   if (!window._shadowOnConsole || !window._shadowOnConsole()) return Promise.resolve(null);
   var say = _tpSay();
   if (say) say.textContent = 'switching with the shadow reader…';
@@ -82637,20 +82637,9 @@ window.toggleTooltipPass = function(){
       if (say) say.textContent = 'UNKNOWN — the console did not answer';
       return null;
     }
-    var want = !pre.on;
-    return fetch('/api/shadow', { method:'POST', headers:{'Content-Type':'application/json'},
-                                  body: JSON.stringify({ on: want }) })
-      .then(function(r2){ return r2.json(); })
-      .then(function(j){
-        if (!j || j.ok === false || typeof j.on !== 'boolean'){
-          if (say) say.textContent = 'UNKNOWN — the console did not answer';
-          return null;
-        }
-        if (say) say.textContent = j.on
-          ? 'ON · with the shadow reader — it reads tooltips while a reel rolls'
-          : 'OFF — it follows the shadow reader, which is off';
-        return j;
-      });
+    /* v3859 - ALWAYS ON (Elad 2026-11-03): read only, it never POSTs a flip. */
+    if (say) say.textContent = 'ON · always - the shadow reader has no off switch';
+    return pre;
   }).catch(function(){
     if (say) say.textContent = 'UNKNOWN — the console did not answer';
     return null;
