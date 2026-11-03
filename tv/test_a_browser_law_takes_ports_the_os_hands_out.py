@@ -9,7 +9,6 @@ fresh mkdtemp; only the ports were shared. It now takes _free_ports(2), as test_
 This law reads every tv/test_*.py that launches Chrome with --remote-debugging-port and refuses a module-level
 HTTP_PORT / CDP_PORT bound to a literal number.
 """
-import glob
 import io
 import os
 import re
@@ -27,10 +26,28 @@ except Exception:
 _FIXED = re.compile(r"^(?:HTTP_PORT|CDP_PORT)\s*=\s*\d+\s*(?:#.*)?$", re.M)
 
 
-def fixed_port_laws(folder=HERE):
+#: v3856 gate - the browser laws BY NAME. A law that lists tv/ itself can never be keyed (heart2 floor), and the
+#: unkeyable list is at its ceiling, so every law that drives Chrome on --remote-debugging-port is named here: its bytes
+#: are in this law's key. A new browser law joins this tuple in the commit that adds it.
+BROWSER_LAWS = (
+    "test_control.py",
+    "test_d2jsp_cards_stay_cheap.py",
+    "test_input_stays_responsive.py",
+    "test_shadow_mode_draws_their_console.py",
+    "test_the_d2jsp_desk_reads_a_price_before_it_posts.py",
+    "test_the_gate_never_adopts_a_browser_it_did_not_start.py",
+    "test_v3767_copy_witness_visual.py",
+    "test_v3769_vault_move_list_visual.py",
+    "test_v3771_vault_console_face_visual.py",
+)
+
+
+def fixed_port_laws(folder=HERE, names=BROWSER_LAWS):
     """[file name] of browser laws that pin a literal port at module level."""
     out = []
-    for path in sorted(glob.glob(os.path.join(folder, "test_*.py"))):
+    for path in [os.path.join(folder, n) for n in names]:
+        if not os.path.isfile(path):
+            continue
         with io.open(path, encoding="utf-8", errors="replace") as fh:
             src = fh.read()
         if "remote-debugging-port" in src and _FIXED.search(src):
@@ -42,6 +59,10 @@ class ABrowserLawTakesFreePorts(unittest.TestCase):
     def test_no_browser_law_pins_a_port(self):
         self.assertEqual(fixed_port_laws(), [], "a browser law pins a literal port; take _free_ports(2)")
 
+    def test_every_named_browser_law_is_there(self):
+        missing = [n for n in BROWSER_LAWS if not os.path.isfile(os.path.join(HERE, n))]
+        self.assertEqual(missing, [], "a named browser law is gone - this scan would read nothing for it")
+
     def test_the_shadow_law_takes_free_ports(self):
         with io.open(os.path.join(HERE, "test_shadow_mode_draws_their_console.py"), encoding="utf-8") as fh:
             self.assertIn("HTTP_PORT, CDP_PORT = _free_ports(2)  # SHADOW-FREE-PORTS", fh.read())
@@ -52,7 +73,7 @@ class ABrowserLawTakesFreePorts(unittest.TestCase):
         self.addCleanup(shutil.rmtree, d, True)
         with io.open(os.path.join(d, "test_x.py"), "w", encoding="utf-8") as fh:
             fh.write('CDP_PORT = 17976\nARGS = ["--remote-debugging-port=%d" % CDP_PORT]\n')
-        self.assertEqual(fixed_port_laws(d), ["test_x.py"])
+        self.assertEqual(fixed_port_laws(d, ("test_x.py",)), ["test_x.py"])
 
 
 _F = "test_shadow_mode_draws_their_console.py"
