@@ -58,8 +58,8 @@ class TheIdentifyPath(unittest.TestCase):
 RED_PROOF = [
     {"why": "every inventory read becomes a new farmed item (floor then inventory counts twice)",
      "file": "tv/session_route.py",
-     "find": "            it = _find(items, h, (\"floor\", \"inventory\"))\n",
-     "replace": "            it = None\n",
+     "find": "        for h in hits:\n            it = _find(items, h, (\"floor\", \"inventory\", \"other\"))\n",
+     "replace": "        for h in hits:\n            it = None\n",
      "matches": 1},
     {"why": "a floor sighting is farmed without being picked up",
      "file": "tv/session_route.py",

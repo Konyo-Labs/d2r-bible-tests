@@ -9,12 +9,17 @@ read that named something:
             floor sighting nobody picked up is only `seen`.
   IDENTIFY  an unidentified item read under its base ("Shako") that later reads identified ("Harlequin Crest" with its
             base "Shako" under it) is the SAME item: the farmed count never moves, and the item carries its new name.
+  STASH     only an item this run farmed counts as stashed; whatever else the stash shows was there before.
+  TRASH     a farmed item back on the floor after the inventory, never stashed, is trashed - and still farmed.
+  OTHER     a trade window, a vendor or the shared stash is someone else's route: what is read there never counts
+            toward the session, and an item that came from one is not farmed when it reaches the inventory.
 
 Pure, no I/O. -> route(rows) dict."""
 import farmed_names as _FN
 
 FLOOR_SCENES = ("ground", "loot", "gameplay")
 INV_SCENES = ("inventory",)
+OTHER_SCENES = ("trade", "vendor", "gamble")
 
 
 def _moment(r):
@@ -46,8 +51,13 @@ def unidentified(r):
 
 
 def place(r):
-    """-> 'floor', 'inventory' or None (a read that is none of these takes no part in the route)."""
+    """-> 'floor', 'inventory', 'stash', 'other' or None (a read that is none of these takes no part in the route)."""
     sc = str(r.get("scene") or "").strip().lower()
+    tabn = str(r.get("stashTab") or "").strip().lower()
+    if sc in OTHER_SCENES or tabn.startswith("shared"):
+        return "other"
+    if sc.startswith("stash") or tabn:
+        return "stash"
     if sc in INV_SCENES:
         return "inventory"
     if sc in FLOOR_SCENES:
@@ -87,8 +97,31 @@ def _walk(rows, tab):
                 if it is not None and it.unid and named:
                     it.name, it.group, it.unid = named[0][0], named[0][1], False
                     hits = [h for h in hits if h != b and h != named[0]]
+        if where == "stash":
+            for h in hits:
+                it = _find(items, h, ("inventory",))
+                if it is not None and it.farmed:
+                    it.at = "stash"
+            continue
+        if where == "other":
+            for h in hits:
+                it = _find(items, h, ("floor", "inventory", "other"))
+                if it is not None and not it.farmed:
+                    it.at = "other"
+                elif it is None:
+                    items.append(_Item(h[0], h[1], h[0] if h[1] == "bases" else None, unid, "other"))
+            continue
         for h in hits:
-            it = _find(items, h, ("floor", "inventory"))
+            it = _find(items, h, ("floor", "inventory", "other"))
+            if it is not None and it.at == "other":
+                if where == "inventory":
+                    it.at = "carried"          # came from a trade or the shared stash: carried, never farmed
+                continue
+            if it is None and _find(items, h, ("carried",)) is not None:
+                continue
+            if it is not None and it.farmed and it.at == "inventory" and where == "floor":
+                it.at = "trash"
+                continue
             if it is None:
                 it = _Item(h[0], h[1], h[0] if h[1] == "bases" else None, unid, where)
                 items.append(it)
@@ -113,9 +146,11 @@ def _grouped(names_groups):
 
 
 def route(rows, tab=None):
-    """-> {farmed: {group: [[name, n]]}, itemsFarmed, seen: [names]}"""
+    """-> {farmed: {group: [[name, n]]}, itemsFarmed, stashed, trashed, seen: [names]}"""
     tab = _FN.table() if tab is None else tab
     items = _walk(rows, tab)
     farmed = [(it.name, it.group) for it in items if it.farmed]
     return {"farmed": _grouped(farmed), "itemsFarmed": len(farmed),
-            "seen": [it.name for it in items if not it.farmed]}
+            "stashed": _grouped([(it.name, it.group) for it in items if it.farmed and it.at == "stash"]),
+            "trashed": [it.name for it in items if it.farmed and it.at == "trash"],
+            "seen": [it.name for it in items if not it.farmed and it.at == "floor"]}
