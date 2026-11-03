@@ -19,6 +19,7 @@ dropping the OLDEST sessions' pictures first, each drop counted. Phase 2 signs a
 roster record; phase 3 draws it in the shadow's Shelf and TV·D. Never raises; writes only the theatre's cache.
 """
 import base64
+import re
 import json
 import os
 import shutil
@@ -34,6 +35,9 @@ MAX_SESSIONS = 16
 MAX_FRAMES = 3
 MAX_THUMB = 20 * 1024
 MAX_TOTAL = 600 * 1024
+#: v3859 (b) item 18 - the vault's witnessed frames ride the upload too, at most this many (their bytes count in MAX_TOTAL)
+WITNESS_MAX = 8
+_FID_SHAPE = re.compile(r"^\d{1,6}_\d{13}$")
 MAX_NAMES = 8
 # A gap between two captured moments longer than this is time away, not time played. It sits under
 # replay.SESSION_GAP_MS (10 min, which starts another unstamped session) so a pause that stays inside
@@ -347,7 +351,25 @@ def session_facts(g, reads, timeline):
     return f
 
 
-def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
+def witness_frames(ids, hist_dir, make=_make_thumb):
+    """v3859 (b) - the vault's witnessed frame ids as 160 px thumbnails. -> (list of {id, jpg}, {id: why left out})"""
+    got, whys = [], {}
+    for fid in list(ids or []):
+        fid = str(fid or "")
+        if not _FID_SHAPE.match(fid):
+            continue                                   # not a read frame's id: nothing to send, nothing to explain
+        if len(got) >= WITNESS_MAX:
+            whys[fid] = "only %d witnessed frames ride one upload" % WITNESS_MAX
+            continue
+        data, why = thumb_bytes(hist_dir, fid, make)
+        if data is None:
+            whys[fid] = str(why)[:160]
+            continue
+        got.append({"id": fid, "jpg": base64.b64encode(data).decode("ascii")})
+    return got, whys
+
+
+def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None):
     """rows: the journal's rows. is_read: the Shelf's read rule. -> {v, sessions: [...], bytes, dropped, left}
 
     ⚠ REG-2772 - NO BUILD TIME IN IT. The first cut carried `at`, so its hash moved on every build and the publish lane's
@@ -411,18 +433,22 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
     out["identity"] = identity_summary(ident)   # the only identity other consoles see; never a password
     out["characters"] = characters_rollup(rows)   # v3855 pt1198u - the Characters tab's per-character answer
     total = sum(len(f["jpg"]) for s in out["sessions"] for f in s["frames"])
+    if witness_ids:
+        out["witness"], out["witnessWhy"] = witness_frames(witness_ids, hist_dir, make)
+    wbytes = sum(len(f["jpg"]) for f in out.get("witness") or [])
+    budget = MAX_TOTAL - wbytes                                # the vault's witnesses are kept; session frames make room
     for s in reversed(out["sessions"]):                       # the oldest sessions give their pictures up first
-        if total <= MAX_TOTAL:
+        if total <= budget:
             break
         for f in list(s["frames"]):
-            if total <= MAX_TOTAL:
+            if total <= budget:
                 break
             s["frames"].remove(f)
             total -= len(f["jpg"])
             out["dropped"] += 1
         if not s["frames"] and not s["why"]:
             s["why"] = "its pictures were left out to keep the record under %d KB (newer sessions keep theirs)" % (MAX_TOTAL // 1024)
-    out["bytes"] = total
+    out["bytes"] = total + wbytes
     return out
 
 
@@ -558,4 +584,18 @@ def view(owner, rec, now_ms, source="worker", fetch_why=None):
             "ageS": max(0, (int(now_ms) - t) // 1000) if isinstance(t, int) else None, "source": source,
             # REG-2810 - the record's age in words, by the profile view's one rule; the shadow's list prints it as given
             "ago": _cs._ago_words(int(now_ms) - t) if isinstance(t, int) else None,
-            "why": fetch_why if source == "cache" else None}
+            "why": fetch_why if source == "cache" else None,
+            # v3859 (b) - the owner's witnessed frames, as the record carries them (the worker checked their shape)
+            "witness": viewed_witness(rec["digest"].get("witness")),
+            "witnessWhy": rec["digest"].get("witnessWhy") if isinstance(rec["digest"].get("witnessWhy"), dict) else None}
+
+
+def viewed_witness(w):
+    """-> {frame id: base64 JPEG} for each entry in a witness list that is a read frame's small JPEG, else nothing"""
+    out = {}
+    for f in w if isinstance(w, list) else []:
+        if (isinstance(f, dict) and _FID_SHAPE.match(str(f.get("id") or "")) and isinstance(f.get("jpg"), str)
+                and f["jpg"].startswith("/9j/") and len(f["jpg"]) <= 27400
+                and re.match(r"^[A-Za-z0-9+/]+={0,2}$", f["jpg"])):
+            out[f["id"]] = f["jpg"]
+    return out

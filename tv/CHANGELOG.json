@@ -7,7 +7,8 @@
       "v3859 #230: the session route's stash, trash and other routes - only this run's farmed items count as stashed (against the original sighting), a dropped one is trashed and still farmed, trade/vendor/shared stash never count",
       "v3859 #230: a session's chronicle finds come only from the green 'Eligible for Chronicle' line on the item's own tooltip - not a chronicle panel read, not another colour, not an item left on the floor or traded",
       "v3859 #230: one session digest - shadow_sessions.session_facts feeds the shadow digest and the owner's theatre rows (route), and the owner dossier draws it with the shadow's own row; farmed/stashed/chronicle come from the session route (UNKNOWN when no read was placed)",
-      "v3859 #230: the run line's farming % is out-of-town TIME over all placed time with AFK included (the one digest's split), so stash and AFK time no longer read as 100% farming; it says its basis"
+      "v3859 #230: the run line's farming % is out-of-town TIME over all placed time with AFK included (the one digest's split), so stash and AFK time no longer read as 100% farming; it says its basis",
+      "v3859 (b) - item 18 finished: the frames the vault witnessed ride the shadow upload as small JPEGs (checked by the worker), and a shadow opens one from it before any address"
     ]
   },
   {

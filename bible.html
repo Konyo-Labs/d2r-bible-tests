@@ -83685,8 +83685,39 @@ window.tvStashAutoIntake = async function(tab, opts){
     });
     return out;
   };
+  /* v3859 (b) item 18 - THE WITNESSED PICTURE RIDES THE SHADOW UPLOAD. The owner's frames record (shadow_sessions.digest
+     witness, checked by roster.js framesWhy) carries each vault-witnessed frame as a small JPEG, read back through this
+     console's GET /api/roster-cache?frames=<owner>. A witness frame opens from it first; the owner's address is the fallback. */
+  window._tvdShadowWitness = null;
+  window._tvdShadowWitnessWhy = null;
+  window._tvdShadowWitnessTake = function(rec){
+    var w = {};
+    var src = (rec && rec.witness && typeof rec.witness === 'object' && !Array.isArray(rec.witness)) ? rec.witness : {};
+    Object.keys(src).forEach(function(k){
+      var j = src[k];
+      if (/^\d{1,6}_\d{13}$/.test(k) && typeof j === 'string' && j.indexOf('/9j/') === 0 && j.length <= 27400
+          && /^[A-Za-z0-9+\/]+={0,2}$/.test(j)) w[k] = j;
+    });
+    window._tvdShadowWitness = w;
+    window._tvdShadowWitnessWhy = (rec && rec.witnessWhy && typeof rec.witnessWhy === 'object') ? rec.witnessWhy : null;
+    return w;
+  };
+  window._tvdShadowWitnessUrl = function(id){
+    var w = window._tvdShadow && window._tvdShadowWitness;
+    var j = w && Object.prototype.hasOwnProperty.call(w, String(id || '')) ? w[String(id)] : null;
+    return j ? 'data:image/jpeg;base64,' + j : null;
+  };
+  (function(){
+    if (!window._tvdShadow || !window._tvdShadow.owner || location.protocol === 'file:' || !window.fetch) return;
+    fetch('/api/roster-cache?frames=' + encodeURIComponent(window._tvdShadow.owner), { cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if (d && d.ok) window._tvdShadowWitnessTake(d); })
+      .catch(function(){});
+  })();
   window._tvdFrameMissingSay = function(id){
     if (!window._tvdShadow) return 'frame missing (agent off + no archive)';
+    var ww = window._tvdShadowWitnessWhy;
+    if (ww && typeof ww[String(id || '')] === 'string') return 'the owner\u2019s upload left this picture out: ' + ww[String(id)];
     var a = null;
     try { a = (typeof window._shadowPictureAsk === 'function') ? window._shadowPictureAsk(String(id || '')) : null; } catch (e) { a = null; }
     if (a && a.end && a.end.say) return a.end.say;
@@ -83720,6 +83751,8 @@ window.tvStashAutoIntake = async function(tab, opts){
       // to guess through a chain built for a different addressing scheme. The old legs stay
       // after it, so every existing caller keeps its exact behaviour.
       var _chain = window._tvdShadowFrameChain(window._tvdFrameChain(id, meta.src));
+      var _wit = window._tvdShadowWitnessUrl(id);   /* v3859 (b) - the uploaded witness picture first */
+      if (_wit) _chain.unshift(_wit);
       var _step = 0;
       img.__fb = 0;
       img.style.visibility = '';

@@ -725,6 +725,7 @@ const FRAMES_DAY_CAP = 8;
 const FRAMES_MIN_GAP_MS = 3 * 60 * 60 * 1000;
 const FRAMES_MAX_SESSIONS = 16;
 const FRAMES_MAX_PER = 3;
+const FRAMES_MAX_WITNESS = 8;   // v3859 (b) - shadow_sessions.WITNESS_MAX
 const FRAMES_MAX_JPG_B64 = 27400;          // 20 KB of JPEG, base64
 const SID_RX = /^s_\d{13}_\d{1,6}$/;
 const FID_RX = /^\d{1,6}_\d{13}$/;
@@ -758,6 +759,25 @@ export function framesWhy(d) {
         return "a frame is not a small JPEG thumbnail";
       }
     }
+  }
+  // v3859 (b) item 18 - the vault's witnessed frames ride the digest: read frames' small JPEGs, at most FRAMES_MAX_WITNESS
+  if (d.witness !== undefined) {
+    if (!Array.isArray(d.witness) || d.witness.length > FRAMES_MAX_WITNESS) return "witness must be a list of at most " + FRAMES_MAX_WITNESS;
+    for (const f of d.witness) {
+      if (!f || typeof f !== "object" || !FID_RX.test(String(f.id || ""))) return "a witness id is not a read frame's";
+      if (typeof f.jpg !== "string" || f.jpg.length > FRAMES_MAX_JPG_B64 || f.jpg.indexOf("/9j/") !== 0
+          || !/^[A-Za-z0-9+/]+={0,2}$/.test(f.jpg)) {
+        return "a witness frame is not a small JPEG thumbnail";
+      }
+    }
+  }
+  if (d.witnessWhy !== undefined) {
+    const ww = d.witnessWhy;
+    if (!ww || typeof ww !== "object" || Array.isArray(ww) || Object.keys(ww).length > 40
+        || Object.entries(ww).some(([k, v]) => !FID_RX.test(k) || typeof v !== "string" || v.length > 160)) {
+      return "witnessWhy must map read frame ids to short reasons";
+    }
+    if (privateIn(JSON.stringify(ww))) return "the digest carries a path, an install id or a token";
   }
   const text = JSON.stringify(ss.map((s) => Object.assign({}, s, { frames: s.frames.map((f) => f.id) })));
   if (privateIn(text)) return "the digest carries a path, an install id or a token";

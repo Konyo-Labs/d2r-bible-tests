@@ -5179,7 +5179,10 @@ def _frames_publish_once(boot):
     now_ms = int(time.time() * 1000)
     if not _ss.may_build(state, now_ms, bool(boot)):
         return True
-    d = _ss.digest(_rpj.load_journal(), HIST_DIR, _is_a_live_read, now_ms)
+    book = _profile_json_load(_profile_book_path()) or {}
+    stores = book.get("stores") if isinstance(book.get("stores"), dict) else {}
+    # v3859 (b) item 18 - the frames the owner's vault witnessed ride this upload, so a shadow opens the picture itself
+    d = _ss.digest(_rpj.load_journal(), HIST_DIR, _is_a_live_read, now_ms, witness_ids=_profile_picture_ids(stores))
     body, reason = _ss.due(state, _profile_owner(), d, now_ms, bool(boot))
     if body is None:
         state["why"], state["checkedAt"] = str(reason)[:200], now_ms
