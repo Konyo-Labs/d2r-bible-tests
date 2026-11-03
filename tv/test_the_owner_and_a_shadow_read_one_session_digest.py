@@ -23,7 +23,8 @@ def _read(p):
 
 CHECKS = [
     ["tv/shadow_sessions.py", "        s.update(session_facts(g, reads, timeline))\n", 1],
-    ["tv/control_app.py", "\"route\": _SSF.session_facts(sess, [r2 for r2 in sess if _is_a_live_read(r2)], _game_tl),", 1],
+    ["tv/control_app.py", "_route = _SSF.session_facts(sess, [r2 for r2 in sess if _is_a_live_read(r2)], _game_tl)\n", 1],
+    ["tv/control_app.py", "                            \"route\": _route,\n", 1],
     ["tv/control_app.py", "                _game_tl = _SSF.game_timeline(_jrows)\n", 1],
     ["tv/control_ui.html", "+ window._shadowSessionRow(Object.assign({}, sm.route,", 1],
     ["tv/control_ui.html", "+ fpSec + routeSec + regretSec", 1],
@@ -64,7 +65,7 @@ class OneDigest(unittest.TestCase):
 RED_PROOF = [
     {"why": "the owner's theatre rows stop carrying the shared answer",
      "file": "tv/control_app.py",
-     "find": "                            \"route\": _SSF.session_facts(sess, [r2 for r2 in sess if _is_a_live_read(r2)], _game_tl),\n",
+     "find": "                            \"route\": _route,\n",
      "replace": "",
      "matches": 1},
     {"why": "the owner dossier stops drawing the shared row",

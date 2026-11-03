@@ -12391,7 +12391,9 @@ window._lockMark = function(isOpen, px, label){
     var fp = sm && sm.sceneFingerprint;
     if (!fp) return _sceneFingerprint(sm);   // no B8 on this reel → the older sceneReads% line (still honest)
     var P = [];
-    if (fp.farmingPct != null) P.push('<span class="dfp dfp-farm">⚔ ' + fp.farmingPct + '% farming</span><span class="dfp-note">(of reads)</span>');
+    /* v3859 - farmingBasis 'time': out-of-town time over all placed time, AFK included (the one digest's split) */
+    if (fp.farmingPct != null) P.push('<span class="dfp dfp-farm">⚔ ' + fp.farmingPct + '% farming</span><span class="dfp-note">'
+      + (fp.farmingBasis === 'time' ? '(of its time, AFK included)' : '(of reads)') + '</span>');
     if ((fp.townTrips | 0) > 0) P.push('<span class="dfp dfp-town">🏛 ' + fp.townTrips + ' town trip' + (fp.townTrips > 1 ? 's' : '') + '</span>');
     if ((fp.portals | 0) > 0) P.push('<span class="dfp dfp-portal">🌀 ' + fp.portals + ' portal' + (fp.portals > 1 ? 's' : '') + '</span>');
     if (fp.topArea) P.push('<span class="dfp dfp-area">📍 mostly ' + esc(fp.topArea) + '</span>');

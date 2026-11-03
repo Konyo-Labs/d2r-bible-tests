@@ -14614,7 +14614,7 @@ def _diablo_scene_label_inner(scene, area):
     return {"kind": "unclear", "area": None, "act": None, "label": "unclear"}
 
 
-def _session_scene_fingerprint(sess_rows):
+def _session_scene_fingerprint(sess_rows, split=None):
     """v1326 B8 — a truthful per-session SCENE FINGERPRINT from the deep reads' (scene, area),
     classified through _diablo_scene_label. Real counts ONLY; None when the session read no
     scene/area (honest-absent, like coverage/classFrames). Feeds the shelf/dossier line
@@ -14651,10 +14651,18 @@ def _session_scene_fingerprint(sess_rows):
             portals += 1
         prev = k
     denom = farming + town   # world-time reads (menus/unclear excluded from the %)
+    pct, basis = (round(100 * farming / denom) if denom else None), ("reads" if denom else None)
+    # v3859 (#230, Elad: "it says 100% farming") - a share of READS left out every stash, inventory and menu read and
+    # all AFK time, so a run of gameplay reads between stash visits said 100%. With the session's time split (the one
+    # digest, shadow_sessions.session_facts) the share is OUT-OF-TOWN TIME over all of its placed time, AFK included.
+    sp = split if isinstance(split, dict) else {}
+    _t, _f, _a = sp.get("townMs"), sp.get("fieldMs"), sp.get("awayMs")
+    if all(isinstance(x, int) and not isinstance(x, bool) and x >= 0 for x in (_t, _f, _a)) and (_t + _f + _a) > 0:
+        pct, basis = round(100 * _f / (_t + _f + _a)), "time"
     return {
         "farmingReads": farming, "townReads": town, "portals": portals,
         "townTrips": trips,
-        "farmingPct": (round(100 * farming / denom) if denom else None),
+        "farmingPct": pct, "farmingBasis": basis,
         "topArea": (max(farm_area, key=farm_area.get) if farm_area else None),
         "areas": seen_areas[:8],
         "sceneReads": len(kinds),
@@ -47675,10 +47683,11 @@ class Handler(BaseHTTPRequestHandler):
                         _registered = len(_finds)
                     elif isinstance(_registered, int):
                         _registered = max(int(_registered), len(_have_nms))
+                _route = _SSF.session_facts(sess, [r2 for r2 in sess if _is_a_live_read(r2)], _game_tl)
                 _row = {"watchdogViolations": _wd, "tallies": _tl, "kaiMissed": _km, "kaiClasses": _kc,
                             "sceneReads": _scene_reads or None, "tabReads": _tab_reads or None,
-                            "route": _SSF.session_facts(sess, [r2 for r2 in sess if _is_a_live_read(r2)], _game_tl),
-                            "sceneFingerprint": _session_scene_fingerprint(sess),   # v1326 B8 — farming%/townTrips/portals/topArea (Diablo-native, honest)
+                            "route": _route,
+                            "sceneFingerprint": _session_scene_fingerprint(sess, _route),   # v1326 B8 — farming%/townTrips/portals/topArea (Diablo-native, honest)
                             "judged": len(_keepers), "regrets": _regrets, "registered": _registered,
                             "finds": _finds, "topFind": _topFind,   # v1254 R1 — 📖 what KAI witnessed this session
                             # v3090 — WHAT THIS REEL PUT IN THE CHRONICLES. His ask: the card's
