@@ -89480,7 +89480,10 @@ button:not(:disabled):hover { box-shadow: 0 0 8px rgba(255,170,80,.30); }
      scrolled cards cannot move it; header buttons under that spot get room. */
   function ovxVisible(card) {
     var r = card.getBoundingClientRect(), t = Math.max(r.top, 0), rt = Math.min(r.right, innerWidth);
-    for (var p = card.parentElement; p && p !== document.body; p = p.parentElement) {
+    /* a fixed box escapes its ancestors' scrollers: the heart window sits in the rail (overflow auto, top 107), and
+       clamping to that rail pinned its x 65px below the corner at 1024-1440 (v3857 #247) */
+    for (var p = card.parentElement, e = card; p && p !== document.body; e = p, p = p.parentElement) {
+      if (getComputedStyle(e).position === 'fixed') break;
       var o = getComputedStyle(p).overflowY;
       if (o === 'auto' || o === 'scroll' || o === 'hidden') { var q = p.getBoundingClientRect(); t = Math.max(t, q.top); rt = Math.min(rt, q.right); }
     }
