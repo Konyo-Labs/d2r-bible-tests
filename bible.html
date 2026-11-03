@@ -75578,7 +75578,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     m.hidden = false;
     if (st.newb) m.innerHTML = _cbNewHtml();
     else if (st.stash) m.innerHTML = _cbStashHtml();
-    else m.innerHTML = _cbPickHtml();
+    else m.innerHTML = _cbPickHtml() + ((st.pick && st.pick.host === 'mule' && st.host && typeof window._cbHostFoot === 'function') ? window._cbHostFoot() : '');
     m.setAttribute('aria-label', st.newb ? 'new build' : (st.stash ? 'stash' : 'choose an item'));
     if (st.host && (st.host.planner || st.host.desk === 'd2jsp')){
       m.style.position = 'relative';
@@ -76884,11 +76884,19 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     var p = st.pick; if (!p || p.host !== 'mule' || !st.host) return '';
     st.host.locker = locker || { html: '', n: 0, total: 0 };
     if (p.tab === 'auto') p.tab = (st.host.locker.n > 0) ? 'locker' : 'select';
+    var foot = window._cbHostFoot();
+    return '<div class="cb-modal cb-host" id="cb-modal" role="dialog" aria-modal="true" aria-label="choose the ' + esc(p.kind === 'inv' ? 'item for ' + (st.host.where || 'this inventory cell') : (CB_SLOT_SAY[p.slot] || p.slot))
+      + ' for ' + esc(st.host.mule || 'this mule') + ' (Esc closes)">' + _cbPickHtml() + foot + '</div>';
+  };
+  /* #13 - the host's foot (the planner plate with its Done, or the d2jsp plate). ONE builder: _cbModal re-draws the
+     picker on every choice (base -> quality -> edit) and wrote only _cbPickHtml(), so the plate and its Done vanished
+     the moment a base was chosen and stayed gone until an edit re-drew the host. */
+  window._cbHostFoot = function(){
+    if (!st.host) return '';
     var foot = (st.host.planner) ? _vpPlateHtml(st.host.say, st.host.saved, st.host.pending ? st.host.editSay : '')
       : (st.host.desk === 'd2jsp' && typeof window._d2jspPlateHtml === 'function') ? window._d2jspPlateHtml(st.host.say)
       : '';
-    return '<div class="cb-modal cb-host" id="cb-modal" role="dialog" aria-modal="true" aria-label="choose the ' + esc(p.kind === 'inv' ? 'item for ' + (st.host.where || 'this inventory cell') : (CB_SLOT_SAY[p.slot] || p.slot))
-      + ' for ' + esc(st.host.mule || 'this mule') + ' (Esc closes)">' + _cbPickHtml() + foot + '</div>';
+    return foot;
   };
   window._cbHostPlaced = function(){
     if (!(st.pick && st.pick.host === 'mule' && st.host)) return;
