@@ -23075,7 +23075,14 @@ window._lockMark = function(isOpen, px, label){
     if (typeof s.scenario === 'string' && s.scenario) whoBits.push(s.scenario);
     var who = whoBits.length ? whoBits.join(' · ') : 'UNKNOWN';
     var whyBits = [];
-    if (ch && Array.isArray(ch.sources) && ch.sources.length) whyBits.push('character from ' + ch.sources.join(', '));
+    /* v3856 - the hover says what each read said, in plain words: the character picked at login, the character panel,
+       the class the avatar looks like. Older records without `seen` keep the source list. */
+    var _SEEN_SAY = { 'select-screen': 'picked at login', 'char-panel': 'character panel', 'avatar': 'avatar looks like' };
+    var _seen = (ch && Array.isArray(ch.seen)) ? ch.seen.filter(function(x){ return x && _SEEN_SAY[x.source]; }) : [];
+    if (_seen.length) whyBits.push(_seen.map(function(x){
+      return _SEEN_SAY[x.source] + ': ' + [x.name, x.cls ? x.cls + (x.level ? ' ' + x.level : '') : null].filter(Boolean).join(' ');
+    }).join(' · '));
+    else if (ch && Array.isArray(ch.sources) && ch.sources.length) whyBits.push('character from ' + ch.sources.join(', '));
     if (ch && Array.isArray(ch.conflict) && ch.conflict.length) whyBits.push('reads disagree: ' + ch.conflict.join(' / '));
     if (typeof s.gamesSay === 'string' && s.gamesSay) whyBits.push('games: ' + s.gamesSay
       + ((typeof s.gameRunSessions === 'number' && s.gameRunSessions > 1) ? ', one run across ' + s.gameRunSessions + ' sessions' : ''));

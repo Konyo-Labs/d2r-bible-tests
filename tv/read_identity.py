@@ -89,8 +89,15 @@ def attribute_character(sigs):
         if g["source"] not in srcs:
             srcs.append(g["source"])
     conflict = len(names) > 1 or len(classes) > 1
+    # v3856 - what each kind of read said, once per source (the session row's hover: login pick, panel, avatar class)
+    seen = []
+    for g in sigs:
+        one = {"source": g["source"], "name": g["name"], "cls": g["cls"], "level": g["level"]}
+        if one not in seen:
+            seen.append(one)
     return {"name": None if conflict else (names[0] if names else None), "cls": None if conflict else (classes[0] if classes else None),
-            "level": None if conflict else lv, "sources": srcs, "conflict": (names + classes) if conflict else None}
+            "level": None if conflict else lv, "sources": srcs, "conflict": (names + classes) if conflict else None,
+            "seen": seen[:6]}
 
 
 def game_runs(timeline_rows, char=None):
