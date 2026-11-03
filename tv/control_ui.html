@@ -2469,6 +2469,7 @@
   .th-btn.th-play { min-width: 44px; font-size: var(--fs-md); color: #1a1206; background: linear-gradient(180deg, var(--gold-hi), var(--gold-antique));
     border-color: var(--gold-hi); box-shadow: 0 0 14px rgba(240,192,96,.3); }
   .th-btn.th-play:hover { color: #120c04; box-shadow: 0 0 18px rgba(240,192,96,.5); }
+  .shc-play { font: var(--fw-medium) var(--fs-2xs)/1 var(--mono); padding: 3px 7px; border-radius: 4px; cursor: pointer; color: #1a1206; background: linear-gradient(180deg, var(--gold-hi), var(--gold-antique)); border: 0; }
   .th-btn.th-play:active { transform: translateY(1px) scale(.96); }
   #th-prev-b, #th-next-b { color: var(--gold-dim); }   /* step buttons calmer so the eye lands on ▶ */
   /* v943 — the MODE PILL wears its state: a fat left-border accent readable at a glance */
@@ -13065,6 +13066,13 @@ window._lockMark = function(isOpen, px, label){
     try { if (typeof thOpen === 'function' && !(typeof TH !== 'undefined' && TH.open)) await thOpen(); } catch (e) {}   // v1275 (D3) — dossier can launch from the home (theatre closed): open it first
     if (typeof thLoadSession === 'function') thLoadSession(Number(n) || 1, false, DOSSIER.sid);   // REG-1933 — this dossier's reel, by id
   };
+  window._shelfPlayCard = async function(n, sid){
+    var sov = document.getElementById('th-shelfov');
+    if (sov && !sov.hidden && typeof TH !== 'undefined') TH.reelFromShelf = true;   // REG-2074 - ✕ goes back to the shelf
+    if (sov) sov.hidden = true;
+    try { if (typeof thOpen === 'function' && !(typeof TH !== 'undefined' && TH.open)) await thOpen(); } catch (e) {}
+    if (typeof thLoadSession === 'function') thLoadSession(Number(n) || 1, false, sid || '');
+  };
   window._shelfLastSession = async function(){
     /* Last session lives IN the shelf. Same exit as the dossier (hide the shelf, then a reel),
        aimed at the Theatre button's pick rather than whichever dossier happens to be open. */
@@ -19156,7 +19164,7 @@ window._lockMark = function(isOpen, px, label){
         + '" data-search="' + esc(_sq.join(' ').toLowerCase()) + '">'
         + heroOpen
           + '<div class="shc-top"><div class="shc-sess">' + _shcTitle + (sm.stub ? '<span class="shc-ghost">ghost</span>' : '') + '</div>'
-          + '<div class="shc-tr">' + pinBtn + seal + '</div></div>' + headFind
+          + '<div class="shc-tr">' + (sm.stub ? '' : '<button type="button" class="shc-play" data-play-n="' + n + '" data-play-sid="' + esc(sm.sessionId || '') + '" title="play this session in the theatre">▶ PLAY</button>') + pinBtn + seal + '</div></div>' + headFind
         + '</div>'
         + '<div class="shc-body">'
           + (_shcWhen ? '<div class="shc-when">' + _shcWhen + '</div>' : '')
@@ -19615,6 +19623,9 @@ window._lockMark = function(isOpen, px, label){
       var chip = e.target.closest && e.target.closest('.sh-chip');
       if (chip){ _shToggleFilter(chip.dataset.f || ''); return; }   // v1283 (D9) — chips toggle composable filters (not seed the search)
       if (e.target.closest && (e.target.closest('.sh-search-wrap') || e.target.closest('.sh-filter-bar') || e.target.closest('.find-card'))) return;   // search UI + filter bar + find-cards handle themselves
+      /* v3860 (#231) - each owner card has its own ▶ PLAY: straight into the film, one click, like the shadow rows. */
+      var shp = e.target.closest && e.target.closest('.shc-play');
+      if (shp){ window._shelfPlayCard(Number(shp.dataset.playN) || 1, shp.dataset.playSid || ''); return; }
       var pin = e.target.closest && e.target.closest('.shc-pin');
       if (pin){ _sesPinToggle(pin.dataset.pinSid); thShelf(true); return; }   // D26 — ⭐ toggles pin (never opens the dossier)
       var hi = e.target.closest && e.target.closest('.shi-clk');
