@@ -3,48 +3,49 @@
     "ver": "v3859",
     "date": "2026-11-03",
     "items": [
-      "v3859 #230: one session route ledger (tv/session_route.py) - an item seen on the floor and then in the inventory is one farmed item; identify keeps the count and renames it",
-      "v3859 #230: the session route's stash, trash and other routes - only this run's farmed items count as stashed (against the original sighting), a dropped one is trashed and still farmed, trade/vendor/shared stash never count",
-      "v3859 #230: a session's chronicle finds come only from the green 'Eligible for Chronicle' line on the item's own tooltip - not a chronicle panel read, not another colour, not an item left on the floor or traded",
-      "v3859 #230: one session digest - shadow_sessions.session_facts feeds the shadow digest and the owner's theatre rows (route), and the owner dossier draws it with the shadow's own row; farmed/stashed/chronicle come from the session route (UNKNOWN when no read was placed)",
-      "v3859 #230: the run line's farming % is out-of-town TIME over all placed time with AFK included (the one digest's split), so stash and AFK time no longer read as 100% farming; it says its basis",
-      "v3859 (b) - item 18 finished: the frames the vault witnessed ride the shadow upload as small JPEGs (checked by the worker), and a shadow opens one from it before any address",
-      "v3859 - the blueprint names session_route.py and read_identity.py again (test_the_blueprint_names_the_engine was red on both)",
-      "v3859 (e) - --full is faster: the blueprint's engine index parses each file once per process instead of 8 times (test_the_blueprint_names_the_engine 147 s -> about 25 s, nothing skipped)",
-      "v3859: ITEM_CODEX names 8 unique bases by the CASC item name (Small Charm, Grand Charm, Ring, Amulet, Silver-edged Axe), so the chronicle's base chip and the codex agree at the source",
-      "v3859: a drop-table qlvl of 0 is 'unknown', not a level - Blinkbat's Form (and any row like it) now takes the game file's qlvl from cb-db, so every chip under 'Every missing unique' shows its q",
-      "v3859: Konyo ruled 'Polaris Spear' is not a unique - removed from the roster, codex, blurbs and drop tables - and 'The Scourge' is Stormlash's base, so it resolves to Stormlash and a ledger row under it counts Stormlash. Roster 398 -> 396, chronicle stays 397 + 6 = 403; calculator 320 -> 318, drop index 547 -> 545",
-      "v3860 #230: a Windows PID 0 orphan socket on the agent port is not a live agent - the ALT's hourly shadow reels seal again (no close since 10-29)",
-      "v3860 #230: a sealed hourly reel publishes the session digest (10 min rate limit) - the Shelf no longer reads a PC up to 3 h behind its play",
-      "v3860 #230: /api/sessions answers at once from its last build (rebuilt in the background when a reel lands) - the ALT's 52 s list no longer outruns the Shelf's 45 s wait and leaves it on 08:00",
-      "v3860 #230: one joined sync status (tv/machine_sync.py, /api/sync) - the recorder, the hourly seal, the published digest and the Shelf are judged together; a silent recorder while the game is up, a failed seal or a Shelf behind its reels shows amber/red on this PC's Shelf and every shadow's",
-      "v3860 - the published session digest drops 0-read ghost rows (restarts/heartbeats), so they no longer crowd real hours off the shadow Shelf.",
-      "v3860 - every owner Shelf card in the theatre has its own ▶ PLAY that plays that session in one click (ghost cards have none); shadow rows keep theirs."
+      "v3859 #230: one session route ledger (session_route.py) - a floor sighting later in the inventory is one farmed item",
+      "v3859 #230: only this run's farmed items count as stashed; a dropped one is trashed, still farmed; trade/vendor never",
+      "v3859 #230: chronicle finds come only from the green 'Eligible for Chronicle' tooltip line",
+      "v3859 #230: one session digest feeds the shadow, the theatre rows and the dossier; UNKNOWN when no read was placed",
+      "v3859 #230: farming % is out-of-town time over all placed time, AFK included, and says its basis",
+      "v3859 (b) item 18: vault-witnessed frames ride the shadow upload as small JPEGs; a shadow opens one from it first",
+      "v3859: the blueprint names session_route.py and read_identity.py again",
+      "v3859 (e): the engine index parses each file once per process (blueprint law 147 s -> about 25 s, nothing skipped)",
+      "v3859: ITEM_CODEX names 8 unique bases by the CASC item name, so the chronicle base chip and the codex agree",
+      "v3859: a drop-table qlvl of 0 is unknown; Blinkbat's Form and its kind take the game file's qlvl from cb-db",
+      "v3859: 'Polaris Spear' is not a unique (roster 398 -> 396); 'The Scourge' resolves to Stormlash; chronicle stays 403",
+      "v3859 #230: a Windows PID 0 orphan socket on the agent port is not a live agent - the ALT's hourly reels seal again",
+      "v3859 #230: a sealed hourly reel publishes the session digest (10 min limit), so the Shelf is no longer 3 h behind",
+      "v3859 #230: /api/sessions answers at once from its last build, rebuilt in the background when a reel lands",
+      "v3859 #230: one joined sync status (machine_sync.py, /api/sync) shows recorder, seal and Shelf lag amber/red",
+      "v3859: the published session digest drops 0-read ghost rows, so they no longer crowd real hours off the shadow Shelf",
+      "v3859: every owner Shelf card in the theatre has its own PLAY button (ghost cards have none); shadow rows keep theirs",
+      "v3859: nine red-proof anchors and three shadow laws follow the code the v3857-v3859 items wrote"
     ]
   },
   {
     "ver": "v3858",
     "date": "2026-11-03",
     "items": [
-      "v3857 #247: below 1080px the glyph-only NAME pill hugs its glyph instead of stretching to the clock column",
-      "v3857 #247: the board keeps a right gutter for its FAB column up to 1620px, so no FAB covers a card edge",
-      "v3857 #247: Mini focus pills keep their picture inside the pill at a 1024 console column",
-      "v3857 #247: the Fleet head's Roster and refresh buttons size to their words, no cut word at 1024",
-      "v3857 #247: the heart window's ✕ sits on its corner again at 1024-1440 (was 65px low, clamped to the rail)",
-      "v3857 #247: THE FLEET and SWEEP · this PC hold one line in the 1024-1279 rail",
-      "v3857 #247: the Shelf door reads THE SHELF, then 'every recorded run' below - no orphan RUN",
-      "v3857 #247: the chronicle Mini pills read 'chronicle / uniques', never 'chronicle / · uniques'",
-      "v3857: vault visual laws wait for a painted frame, retry one capture, survive a navigation (10/10 under load)",
-      "v3857 #247: the Roster card sits 6px under its button and 8px off the screen bottom (was flush)",
-      "v3857: five law files lose an invalid backslash escape a later Python would refuse to load",
-      "v3857 #146: the builder's Aldur's Rhythm reads Socketed (2-3), Heaven's Light (1-2) - never more than the base holds",
-      "v3857 #150 (REG-2942/2943): a push killed mid-gate keeps every PROVEN a green checkpoint already banked; a fatal signal writes them before exit",
-      "v3857 #36 (REG-3069/3070): gear seen under a learned alias reaches its character (a shared alias stays UNKNOWN); a worn item draws its slot's picture; socket ranges capped at the base on every surface",
-      "v3857 #230: the unique tally reads 403 - the 397 hunt cards plus the six colossal jewels; a ticked jewel counts as found, the quest items stay off",
-      "v3857 #230: in a shadow the witness frame's ✕ close · Esc closes the photo and returns to the Vault - no more LEAVE SHADOW to get out",
-      "v3857 #230: a shadow's Vault witness frame is fetched from the owner's console, and a frame nobody serves says why instead of a broken black picture",
-      "v3857 #230: a D2JSP lamp sits beside CLAUDE and GROK (green with a session, click opens the login, fast re-check); read price with no session says 'Sign in to d2jsp first'",
-      "v3857 #230: the Sessions list and the shared digest sort newest-first by when each session STARTED (capture time, REG-2736 kept); a farm + stash + chronicle scenario is proved through the digest"
+      "v3858 #247: below 1080px the glyph-only NAME pill hugs its glyph instead of stretching to the clock column",
+      "v3858 #247: the board keeps a right gutter for its FAB column up to 1620px, so no FAB covers a card edge",
+      "v3858 #247: Mini focus pills keep their picture inside the pill at a 1024 console column",
+      "v3858 #247: the Fleet head's Roster and refresh buttons size to their words, no cut word at 1024",
+      "v3858 #247: the heart window's ✕ sits on its corner again at 1024-1440 (was 65px low, clamped to the rail)",
+      "v3858 #247: THE FLEET and SWEEP · this PC hold one line in the 1024-1279 rail",
+      "v3858 #247: the Shelf door reads THE SHELF, then 'every recorded run' below - no orphan RUN",
+      "v3858 #247: the chronicle Mini pills read 'chronicle / uniques', never 'chronicle / · uniques'",
+      "v3858: vault visual laws wait for a painted frame, retry one capture, survive a navigation (10/10 under load)",
+      "v3858 #247: the Roster card sits 6px under its button and 8px off the screen bottom (was flush)",
+      "v3858: five law files lose an invalid backslash escape a later Python would refuse to load",
+      "v3858 #146: the builder's Aldur's Rhythm reads Socketed (2-3), Heaven's Light (1-2) - never more than the base holds",
+      "v3858 #150 (REG-2942/2943): a push killed mid-gate keeps every PROVEN green checkpoint already banked",
+      "v3858 #36 (REG-3069/3070): gear seen under a learned alias reaches its character; socket ranges capped at the base",
+      "v3858 #230: the unique tally reads 403 - 397 hunt cards plus six colossal jewels; quest items stay off",
+      "v3858 #230: in a shadow the witness frame's close or Esc returns to the Vault, no LEAVE SHADOW needed",
+      "v3858 #230: a shadow's witness frame comes from the owner's console; a missing one says why in words",
+      "v3858 #230: a D2JSP lamp sits beside CLAUDE and GROK; a price read with no session says 'Sign in to d2jsp first'",
+      "v3858 #230: Sessions and the shared digest sort newest-first by session start (REG-2736 kept)"
     ]
   },
   {
@@ -66,7 +67,7 @@
       "on a shadow, the Characters hover says whose reels learned them",
       "main and ladder keep their own d2jsp post tags",
       "Dean's windowed reels are read: the lobby is found inside the game window, and an empty list says why",
-      "v3856: Dean's frozen shadow - wire body fit to the 200000 cap; stale board re-posts; banner says online vs board age"
+      "v3857: Dean's frozen shadow - wire body fit to the 200000 cap; stale board re-posts; banner says online vs board age"
     ]
   },
   {
@@ -102,7 +103,7 @@
       "the heart law reads no proof census, as it reads no console, so this PC's proofs cannot time it out",
       "a second-eye look is now proven, end to end, to file the commit it read, so its row can be told stamp from substance",
       "the stamp-vs-blind law reads a checked-in sample ledger, so this machine's own looks can no longer turn it red",
-      "the worker-fields red-proof aims at the characters list as it now reads (with identity), so it still proves dropping sessions is caught"
+      "the worker-fields red-proof aims at the characters list as it now reads, so dropping sessions is still caught"
     ]
   },
   {
