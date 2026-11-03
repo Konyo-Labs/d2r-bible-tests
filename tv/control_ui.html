@@ -27998,6 +27998,14 @@ function escC(s) {
         + '"' + (hs && hs.why ? ' data-census-why="' + escC(hs.why) + '"' : '') + '>' + (_memWait ? 'locks shut \u00b7 census waiting for memory' : (_recheck ? 'locks shut \u00b7 rechecking' : 'locks shut'))
         + (hs && Array.isArray(hs.takesFrom) && hs.takesFrom.length ? ' \u00b7 borrows ' + escC(hs.takesFrom.join('/')) + '\u2019s proofs' : '') + '</span>');
     }
+    /* v3856 (#230 6506572227) - A CURRENT CENSUS WITH BLIND GATES STILL SHUTS EVERY LOCK. The row drew no chip while all
+       nine routes said permitted false, so Fleet read healthy. It says so, with how many gates are blind. */
+    var _blindN = (hs && typeof hs.blind === 'number' && hs.blind > 0) ? hs.blind : 0;
+    if (census === 'current' && _blindN) {
+      bits.push('<span class="fleet-riverstuck" title="' + escC('the locks that move this PC\u2019s river are shut \u2014 '
+        + _blindN + ' gate' + (_blindN === 1 ? ' is' : 's are') + ' blind, so nothing that spends a reel may act here')
+        + '">locks shut \u00b7 ' + _blindN + ' gate' + (_blindN === 1 ? '' : 's') + ' blind</span>');
+    }
     /* #193 (his "river says unknown now", 2026-10-27) - A CONSOLE THAT JUST STARTED IS NOT A BROKEN ONE. Its first proof
        check runs about 5 minutes after a start, and its river is read about a minute after. Until then the beacon says
        key 'starting' with census null: still UNKNOWN, but the row names the wait instead of a bare word that reads as a
