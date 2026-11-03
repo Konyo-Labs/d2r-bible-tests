@@ -4765,6 +4765,8 @@ window._LP_FORKED = new Set([
      This block sits first so a vault key appended at the end of the Set never meets it. NO apostrophe and no
      double quote inside this note, by the rule documented further down. [[d2r-ladder-doctrine]] */
   'd2r_d2jsp_topic', 'd2r_d2jsp_fg', 'd2r_d2jsp_sold', 'd2r_d2jsp_hide', 'd2r_d2jsp_gear', 'd2r_d2jsp_mods',
+  /* v3856 - the desk's post tags came after #114 and stayed bare: a tag on main showed up on ladder's pool */
+  'd2r_d2jsp_tags',
   /* ══ v2706 — A SNAPSHOT OF PER-PROFILE DATA IS ITSELF PER-PROFILE ═══════════════════════
      d2r_unseedBackup captures d2r_foundLog, d2r_owned, d2r_setPieces, d2r_rwMade and
      d2r_rwVerify — and EVERY ONE of those five is in this set. The snapshot key was not, so it
@@ -12262,7 +12264,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
 var D2JSP_BOARD = 268;
 var D2JSP_LADDER_BOARD = 271;
 /* #114 - the desk's own stores, each forked per profile in window._LP_FORKED */
-var D2JSP_FORKED_KEYS = ['d2r_d2jsp_topic', 'd2r_d2jsp_fg', 'd2r_d2jsp_sold', 'd2r_d2jsp_hide', 'd2r_d2jsp_gear', 'd2r_d2jsp_mods'];
+var D2JSP_FORKED_KEYS = ['d2r_d2jsp_topic', 'd2r_d2jsp_fg', 'd2r_d2jsp_sold', 'd2r_d2jsp_hide', 'd2r_d2jsp_gear', 'd2r_d2jsp_mods', 'd2r_d2jsp_tags'];
 function d2jspBoard(){
   var profile = '';
   try { profile = (typeof window !== 'undefined' && window.D2R_PROFILE) ? String(window.D2R_PROFILE) : ''; } catch (eBoard) { profile = ''; }

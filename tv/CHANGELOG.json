@@ -15,7 +15,8 @@
       "every dropdown opens dark: no more white text on a white list in the Vault editor (#13)",
       "the Vault add-an-item window keeps its Done button after choosing a base or quality (#13)",
       "a session whose reads disagree on who played says UNKNOWN, not just the farm",
-      "on a shadow, the Characters hover says whose reels learned them"
+      "on a shadow, the Characters hover says whose reels learned them",
+      "main and ladder keep their own d2jsp post tags"
     ]
   },
   {
