@@ -15,7 +15,7 @@ console.log(out);
 class EverySealOwnsItsGradient(unittest.TestCase):
     def _ids(self, drawer):
         words = "var _CHX_WORD = { HARDENED: 'Confirmed', PROVEN: 'Not confirmed yet', WATCHED: 'Not confirmed yet' };"
-        r = subprocess.run(["node", "-e", JS % (words + drawer)], capture_output=True, text=True, timeout=30)
+        r = subprocess.run(["node", "-"], input=JS % (words + drawer), capture_output=True, text=True, timeout=30)  # stdin: a page-sized program overflows one argv string on Linux
         self.assertEqual(r.returncode, 0, r.stderr)
         html = r.stdout
         ids = re.findall(r'id="([^"]+)"', html); refs = re.findall(r'url\(#([^)]+)\)', html)
