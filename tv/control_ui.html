@@ -29150,6 +29150,8 @@ function escC(s) {
         node.style.width = Math.max(160, rr.width - 8) + 'px';
         node.style.height = height + 'px';
         node.style.maxHeight = height + 'px';
+        /* v3857 - the rail rule's margin-top: 8px rode along onto the fixed card and pushed it 8px past its own bottom gap, flush on the screen edge */
+        node.style.margin = '0';
         node.style.zIndex = '40';
         node.style.overflowY = 'auto';
         node.style.background = '#0a0908';

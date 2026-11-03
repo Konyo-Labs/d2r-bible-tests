@@ -11,7 +11,8 @@
       "v3857 #247: THE FLEET and SWEEP · this PC hold one line in the 1024-1279 rail",
       "v3857 #247: the Shelf door reads THE SHELF, then 'every recorded run' below - no orphan RUN",
       "v3857 #247: the chronicle Mini pills read 'chronicle / uniques', never 'chronicle / · uniques'",
-      "v3857: vault visual laws wait for a painted frame, retry one capture, survive a navigation (10/10 under load)"
+      "v3857: vault visual laws wait for a painted frame, retry one capture, survive a navigation (10/10 under load)",
+      "v3857 #247: the Roster card sits 6px under its button and 8px off the screen bottom (was flush)"
     ]
   },
   {
