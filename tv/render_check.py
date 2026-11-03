@@ -942,7 +942,10 @@ TARGETS = {
             localStorage.setItem('d2r_ownerClaim','*');
             ['War Traveler','Enigma','Griffon\\'s Eye','Raven Frost','Arachnid Mesh',
              'The Stone of Jordan','Call to Arms'].forEach(function(n){
-                try{ window.tvVaultRegister(n); }catch(e){} });
+                // v3855 - BY HAND, WITH WHERE AND WHEN. Since v3767 a bare tvVaultRegister(n) is a frame read and the
+                // auto-intake gate refuses it, so this seed owned NOTHING, the panel stayed hidden and the target could
+                // never activate (red on main too). A hand declaration is the door his typing uses.
+                try{ window.tvVaultRegister(n, {by:'hand', where:'the vault manager', at:new Date().toISOString()}); }catch(e){} });
             return 1; })()""",
         "activate": """(function(){
             var el=[].slice.call(document.querySelectorAll('.tab,[data-tab]')).filter(function(x){
