@@ -53,6 +53,59 @@ def _real_chrome(path):
     return True
 
 
+
+def _cdp_shot(chrome, udd, url, png):
+    """Load url in a headless Chrome over CDP, wait for #screen to fill, save a PNG, return the DOM."""
+    import base64
+    import time
+    import urllib.parse
+    import urllib.request
+    import json
+    import test_v3769_vault_move_list_visual as V
+    port = V._free_ports(1)[0]
+    log = open(os.path.join(tempfile.gettempdir(), "v3767-chrome-%d.log" % port), "wb")
+    proc = subprocess.Popen([chrome, "--headless=new", "--disable-gpu", "--no-sandbox", "--no-first-run",
+                             "--disable-dev-shm-usage", "--disable-extensions", "--allow-file-access-from-files",
+                             "--remote-debugging-port=%d" % port, "--remote-allow-origins=*",
+                             "--user-data-dir=" + udd, "--window-size=1100,1400", "about:blank"],
+                            stdout=log, stderr=log)
+    cdp = None
+    try:
+        deadline = time.time() + 30
+        while True:
+            if proc.poll() is not None:
+                raise RuntimeError("chrome exited %s" % proc.returncode)
+            try:
+                with urllib.request.urlopen("http://127.0.0.1:%d/json/list" % port, timeout=2) as fh:
+                    tabs = [t for t in json.loads(fh.read().decode()) if t.get("type") == "page"]
+                if tabs:
+                    break
+            except Exception:
+                pass
+            if time.time() > deadline:
+                raise RuntimeError("chrome cdp did not answer")
+            time.sleep(0.25)
+        cdp = V._CDP(tabs[0]["webSocketDebuggerUrl"])
+        cdp.call("Page.enable")
+        cdp.call("Runtime.enable")
+        cdp.call("Page.navigate", {"url": url})
+        V._wait_fn(cdp, "document.readyState==='complete' && !!document.getElementById('screen')"
+                        " && document.getElementById('screen').textContent.length > 0", timeout=60)
+        shot = cdp.call("Page.captureScreenshot", {"format": "png"})
+        with open(png, "wb") as f:
+            f.write(base64.b64decode(shot["data"]))
+        return V._ev(cdp, "document.documentElement.outerHTML")
+    finally:
+        if cdp:
+            cdp.close()
+        if proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+        log.close()
+
 def _chrome_path():
     """The same resolution order as tv/render_check.py _find_chrome: TV_CHROME, Mac
     Chrome, Windows Chrome or Edge, the newest Playwright chromium, then a PATH name.
@@ -202,17 +255,15 @@ document.getElementById('screen').textContent = lines.join('\n');
             with open(path, "w", encoding="utf-8") as f:
                 f.write(html)
             udd = os.path.join(td, "profile")
-            cmd = [chrome, "--headless=old", "--disable-gpu", "--no-sandbox", "--no-first-run",
-                   "--disable-extensions", "--user-data-dir=" + udd, "--virtual-time-budget=3000",
-                   "--window-size=1100,1400", "--screenshot=" + png, "--dump-dom",
-                   "file://" + path]
-            raw = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            self.assertEqual(raw.returncode, 0, raw.stderr[-1500:])
+            # 2026-11-03: Chrome 156 on the gate box never returns from a one-shot --dump-dom/--screenshot run
+            # (a bare "hi" page hangs too, old or new headless) - this law ERRORED on a 30 s timeout on main and
+            # here, never reaching its asserts. The shot is taken over CDP, the way v3769's law already does.
+            out_html = _cdp_shot(chrome, udd, "file://" + path, png)
             self.assertTrue(os.path.isfile(png) and os.path.getsize(png) > 3000, png)
             with open(png, "rb") as f:
                 self.assertEqual(f.read(8), b"\x89PNG\r\n\x1a\n")
-            m = re.search(r'<pre id="screen">(.*?)</pre>', raw.stdout, re.S)
-            self.assertIsNotNone(m, raw.stdout[-1500:])
+            m = re.search(r'<pre id="screen">(.*?)</pre>', out_html, re.S)
+            self.assertIsNotNone(m, out_html[-1500:])
             screen = m.group(1)
             for bit in expect[n]:
                 self.assertIn(bit, screen, "step %d screen:\n%s" % (n, screen))
