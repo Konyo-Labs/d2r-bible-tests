@@ -5,6 +5,7 @@
   "lane_census.py": "the law lists a directory itself (glob.glob) - what it reads is decided at run time, so no byte key can name it",
   "reel_demo.py": "the law lists a directory itself (os.listdir) - what it reads is decided at run time, so no byte key can name it",
   "swallow_census.py": "the law lists a directory itself (os.walk) - what it reads is decided at run time, so no byte key can name it",
+  "test_a_law_reads_the_product_not_a_copy_of_it.py": "the law lists a directory itself (glob.glob) - it must read every law and spec there is, decided at run time, so no byte key can name it",
   "test_a_child_s_words_are_read_as_utf8_on_every_os.py": "the law lists a directory itself (os.listdir) - what it reads is decided at run time, so no byte key can name it",
   "test_a_dict_literal_sets_each_key_once.py": "the law lists a directory itself (glob.glob) - what it reads is decided at run time, so no byte key can name it",
   "test_a_fixture_pack_is_not_his_footage.py": "the law lists a directory itself (os.listdir) - what it reads is decided at run time, so no byte key can name it",
