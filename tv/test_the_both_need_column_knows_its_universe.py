@@ -138,8 +138,10 @@ class TheBothNeedColumnKnowsItsUniverse(unittest.TestCase):
         self.assertEqual(seen.get("sets"), 135,
                          "the sets roster now carries %r, not the 135 this guard was measured "
                          "against" % (seen.get("sets"),))
-        self.assertEqual(seen.get("uniques"), 398,
-                         "the uniques roster now carries %r, not the 398 this guard was measured "
+        # v3859 (Elad 2026-11-03): Polaris Spear is not an item and The Scourge is Stormlash, so the roster
+        # lost both names: 398 -> 396. Re-measured on that tree, not rounded.
+        self.assertEqual(seen.get("uniques"), 396,
+                         "the uniques roster now carries %r, not the 396 this guard was measured "
                          "against" % (seen.get("uniques"),))
 
 
