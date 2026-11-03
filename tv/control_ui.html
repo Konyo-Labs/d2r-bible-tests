@@ -4544,6 +4544,9 @@
   /* the full-shelf overlay empty/first-run state (via 📚 see all) */
   .sh-empty-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 8vh 20px; }
   .sh-empty-hero .she-emoji { font-size: 56px; opacity: .5; }
+  .sync-badge { font: var(--fw-bold) var(--fs-sm)/var(--lh-tight) var(--sans, sans-serif); padding: 4px 10px; margin: 4px 0; border-radius: 6px; }
+  .sync-ok { color: #7fd48a; } .sync-warn { color: #1b1300; background: #e8b84a; } .sync-red { color: #fff; background: #c0392b; }
+  .sync-unknown { color: #aaa; }
   .sh-empty-hero .she-lead { font: var(--fw-bold) var(--fs-lg)/var(--lh-tight) var(--serif); color: #e8cf96; letter-spacing: var(--ls-wide); }
   .sh-empty-hero .she-sub { font: var(--fw-normal) var(--fs-sm)/var(--lh-relaxed) var(--mono); color: #9a8e70; max-width: 520px; }
   .sh-empty-hero .she-sub b { color: var(--mint); }
@@ -18863,6 +18866,7 @@ window._lockMark = function(isOpen, px, label){
     // Every shelf open refetches; cards can never show a stale fold again.
     // v1380.2 — if TH.sessions is empty, WAIT for the fetch before painting "No runs" (was a false empty flash)
     var _paintShelf = function(){
+      setTimeout(function(){ try { window._shelfSyncPaint(); } catch (eSy) {} }, 0);   /* v3860 - the badge survives a repaint */
     /* ══ v2760 — BUILD WHAT IS SHOWN, NOT EVERYTHING AND THEN HIDE IT ═════════════════════
        MEASURED on a private console: opening the shelf took the page from 11,744 elements to
        84,414 in ONE build — 3,086 cards at ~23 elements each = 72,337, which is 86% of the whole
@@ -19693,6 +19697,8 @@ window._lockMark = function(isOpen, px, label){
     window._sessionsJson().then(function(j){   /* GrokBot v3817 - the theatre's wait and this share one request */
       var fresh = (j && j.sessions) || [];
       TH.sessionsAt = Date.now(); TH.sessionsFailWhy = null;   /* REG-3050 */
+      TH.sync = (j && j.sync) || null;   /* v3860 (#230) - the joined status, drawn on top of this Shelf */
+      try { window._shelfSyncPaint(); } catch (eSy) {}
       var sig = fresh.map(function(s){ return (s.sessionId||'') + ':' + (s.footageN||0) + ':' + (s.reads||0); }).join('|');
       if (fresh.length && sig !== window.__thShelfSig){
         window.__thShelfSig = sig; TH.sessions = fresh;
@@ -23165,6 +23171,25 @@ window._lockMark = function(isOpen, px, label){
   function _shadowSessionsHead(owner){
     return '<div class="ssv-head"><b>📚 ' + esc(owner || 'this owner') + '\u2019s sessions</b> <span class="ssv-ro">summarized · read only</span></div>';
   }
+  /* v3860 (#230) - ONE sync badge for every surface (this PC's Shelf, a shadow's Shelf): machine_sync.judge's verdict on
+     the recorder, the hourly seal, the published digest and the Shelf list, as given. ok reads green; warn amber; red red. */
+  function _syncBadgeHtml(sy){
+    if (!sy || typeof sy !== 'object' || !sy.level) return '<div class="sync-badge sync-unknown" id="sync-badge">sync UNKNOWN</div>';
+    var lv = String(sy.level);
+    var lanes = (sy.lanes && typeof sy.lanes === 'object') ? Object.keys(sy.lanes).filter(function(k){ return sy.lanes[k] !== 'ok'; })
+      .map(function(k){ return k + ' ' + sy.lanes[k]; }).join(' · ') : '';
+    var say = (typeof sy.say === 'string' && sy.say) ? sy.say : (lv === 'ok' ? 'in sync' : lanes);
+    return '<div class="sync-badge sync-' + esc(lv) + '" id="sync-badge" data-level="' + esc(lv) + '">'
+      + (lv === 'ok' ? '● ' : lv === 'red' ? '⛔ ' : '⚠ ') + 'recorder · seal · shelf: ' + esc(say) + '</div>';
+  }
+  window._syncBadgeHtml = _syncBadgeHtml;
+  window._shelfSyncPaint = function(){
+    var ov = document.getElementById('th-shelfov');
+    if (!ov || typeof TH === 'undefined') return;
+    var b = document.getElementById('sync-badge');
+    if (b && ov.contains(b)) b.outerHTML = _syncBadgeHtml(TH.sync);
+    else ov.insertAdjacentHTML('afterbegin', _syncBadgeHtml(TH.sync));
+  };
   function _shadowSessionsHtml(d){
     d = (d && typeof d === 'object') ? d : {};
     var head = _shadowSessionsHead(typeof d.owner === 'string' ? d.owner : '');
@@ -23202,7 +23227,7 @@ window._lockMark = function(isOpen, px, label){
       + (d.source === 'cache' ? ' · this PC\u2019s last copy' + (d.why ? ' - the site could not be read (' + esc(String(d.why)) + ')' : '') : '')
       + (list ? ' · ' + list.length + ' session' + (list.length === 1 ? '' : 's') : '')
       + ' · a few small key frames each; their full reels stay on their PC';
-    head += '<div class="ssv-sub">' + sub + '</div>';
+    head += '<div class="ssv-sub">' + sub + '</div>' + (typeof _syncBadgeHtml === 'function' ? _syncBadgeHtml(d.sync) : '');
     if (!list) return head + '<div class="ssv-unk">sessions UNKNOWN - the record carried no session list</div>';
     if (!list.length) return head + '<div class="ssv-none">their record holds no session</div>';
     var n = list.length;

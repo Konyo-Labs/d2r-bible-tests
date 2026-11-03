@@ -16,7 +16,8 @@
       "v3859: Konyo ruled 'Polaris Spear' is not a unique - removed from the roster, codex, blurbs and drop tables - and 'The Scourge' is Stormlash's base, so it resolves to Stormlash and a ledger row under it counts Stormlash. Roster 398 -> 396, chronicle stays 397 + 6 = 403; calculator 320 -> 318, drop index 547 -> 545",
       "v3860 #230: a Windows PID 0 orphan socket on the agent port is not a live agent - the ALT's hourly shadow reels seal again (no close since 10-29)",
       "v3860 #230: a sealed hourly reel publishes the session digest (10 min rate limit) - the Shelf no longer reads a PC up to 3 h behind its play",
-      "v3860 #230: /api/sessions answers at once from its last build (rebuilt in the background when a reel lands) - the ALT's 52 s list no longer outruns the Shelf's 45 s wait and leaves it on 08:00"
+      "v3860 #230: /api/sessions answers at once from its last build (rebuilt in the background when a reel lands) - the ALT's 52 s list no longer outruns the Shelf's 45 s wait and leaves it on 08:00",
+      "v3860 #230: one joined sync status (tv/machine_sync.py, /api/sync) - the recorder, the hourly seal, the published digest and the Shelf are judged together; a silent recorder while the game is up, a failed seal or a Shelf behind its reels shows amber/red on this PC's Shelf and every shadow's"
     ]
   },
   {

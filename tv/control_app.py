@@ -5160,6 +5160,54 @@ def _roster_publish_loop():
             _frames_boot = False
 
 
+def _sync_facts(now_ms=None):
+    """v3860 (#230) - the stamps machine_sync.judge compares, read from the records each lane already keeps. Never raises;
+    a stamp that cannot be read is None (UNKNOWN)."""
+    now_ms = int(now_ms or time.time() * 1000)
+    f = {}
+    try:
+        g = _SHADOW_GAME["v"]
+        f["gameUp"] = g[1] if g[0] is not None and now_ms - int(g[0]) <= _SHADOW_GAME_FRESH_S * 1000 else None
+    except Exception:
+        f["gameUp"] = None
+    try:
+        fr = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frames")
+        ts = [os.path.getmtime(os.path.join(fr, n)) for n in ("eye.jpg", "live.png", "live.bmp", "eye.last.jpg")
+              if os.path.isfile(os.path.join(fr, n))]
+        f["frameAt"] = int(max(ts) * 1000) if ts else None
+    except Exception:
+        f["frameAt"] = None
+    try:
+        w = _shadow_watch_stored() or {}
+        f["rollingSince"] = w.get("rollingSince")
+        f["rotateAfterS"] = w.get("rotateAfterS")
+        f["sealAt"] = max([int(v) for v in (w.get("rotatedAt"), w.get("updateClosedAt")) if v] or [0]) or None
+        f["sealFailAt"] = w.get("rotateFailedAt")
+    except Exception:
+        pass
+    try:
+        f["publishAt"] = (_profile_json_load(_frames_state_path()) or {}).get("postedAt")
+    except Exception:
+        f["publishAt"] = None
+    try:
+        rows, at = _SESSIONS_SWR.peek()
+        f["shelfAt"] = at
+        f["shelfNewestAt"] = max([int(r.get("t0")) for r in rows or [] if isinstance(r, dict) and r.get("t0")] or [0]) or None
+    except Exception:
+        f["shelfAt"] = None
+    return f
+
+
+def sync_status(now_ms=None):
+    """v3860 (#230) - the one joined status: the recorder, the hourly seal, the digest and the Shelf, judged together."""
+    import machine_sync as _ms
+    now_ms = int(now_ms or time.time() * 1000)
+    facts = _sync_facts(now_ms)
+    out = _ms.judge(facts, now_ms)
+    out["facts"] = facts
+    return out
+
+
 class _SessionsSWR(object):
     """v3860 (#230, ALT 2026-11-03) - /api/sessions answered in 52 s on the ALT (567 reels), past the Shelf's 45 s bound,
     so the Shelf kept its 08:00 list all day. The list is built once, then served at once; when the hist folder changed
@@ -5187,6 +5235,10 @@ class _SessionsSWR(object):
         finally:
             with self._lock:
                 self._building = False
+
+    def peek(self):
+        with self._lock:
+            return self._rows, (int(self._at * 1000) if self._rows is not None else None)
 
     def get(self, builder):
         fp = self._fingerprint()
@@ -5236,6 +5288,13 @@ def _frames_publish_once(boot):
     stores = book.get("stores") if isinstance(book.get("stores"), dict) else {}
     # v3859 (b) item 18 - the frames the owner's vault witnessed ride this upload, so a shadow opens the picture itself
     d = _ss.digest(_rpj.load_journal(), HIST_DIR, _is_a_live_read, now_ms, witness_ids=_profile_picture_ids(stores))
+    try:
+        if isinstance(d, dict) and d.get("sessions"):
+            _sy = sync_status(now_ms)
+            # level and lanes only: the say carries minutes, and a digest that changed every minute would post every time
+            d["sync"] = {"level": _sy.get("level"), "lanes": _sy.get("lanes")}
+    except Exception:
+        pass
     body, reason = _ss.due(state, _profile_owner(), d, now_ms, bool(boot))
     if body is None:
         state["why"], state["checkedAt"] = str(reason)[:200], now_ms
@@ -5692,7 +5751,13 @@ def _frames_view(owner):
     if unread and rec is None:                       # the profile view's rule: a copy only when the site went unread
         rec = _ss.read_cache(cdir, owner)
         source = "cache"
-    return _ss.view(owner, rec, now_ms, source=source, fetch_why=why)
+    _v = _ss.view(owner, rec, now_ms, source=source, fetch_why=why)
+    try:
+        # v3860 (#230) - the owner's published digest carries its sync verdict; the shadow's Shelf shows it as given
+        _v["sync"] = ((rec or {}).get("digest") or {}).get("sync")
+    except Exception:
+        _v["sync"] = None
+    return _v
 
 
 def _console_beacon_loop():
@@ -49261,10 +49326,14 @@ class Handler(BaseHTTPRequestHandler):
             # the board's theatre fallback path resolves same-origin too
             self._serve_hist(path[len("/tv/frames/hist/"):])
             return
+        if path == "/api/sync":
+            # v3860 (#230) - the one joined per-machine status every surface reads. GET only.
+            self._json(200, sync_status())
+            return
         if path == "/api/sessions":
             # v3860 (#230) - served from the last build; a stale one is rebuilt in the background (_SESSIONS_SWR)
             _rows, _meta = _SESSIONS_SWR.get(self._theatre_sessions)
-            self._json(200, {"sessions": _rows, "built": _meta})
+            self._json(200, {"sessions": _rows, "built": _meta, "sync": sync_status()})
             return
         if path == "/api/ledger3/sessions":
             # 2026-09-29 (#58) — LEDGER 3.0's list door: every journalled reel, newest first, as
