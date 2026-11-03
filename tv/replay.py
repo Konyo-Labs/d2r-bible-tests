@@ -184,10 +184,10 @@ def split_sessions(reads):
         sessions.append(cur)
 
     sessions.extend(by_sid.values())
-    # newest first, by the LATEST row each group holds — a reel that resumed after another
-    # started belongs where it ENDED, which is where he looks for it. REG-2736: by when its rows were CAPTURED
-    # (row_moment), so a re-read of an old reel days later does not move it to the top.
-    sessions.sort(key=lambda g: max(session_moments(g) or [0]))
+    # newest first, by when each session STARTED - v3857 item 20 (#230, Elad 2026-11-03): the row is labelled by its
+    # start, so a list ordered by the end put a long early run above a later one and read out of order. REG-2736 still
+    # holds: the moment is when its rows were CAPTURED (session_moments), so a re-read of an old reel never jumps up.
+    sessions.sort(key=lambda g: min(session_moments(g) or [0]))
     sessions.reverse()
     return sessions
 

@@ -50,7 +50,8 @@ NEW = OLD + _rows("s_4000_4", 4000000)      # one more session started after the
 # moves it to the top with no new session at all - the Mac's own list has a Sep-8 reel at n=2 for 850 kai rows.
 # REG-2736 - a post-hoc KAI note no longer moves a reel (a session is dated by what it CAPTURED), so the reorder this
 # case needs is a reel that genuinely resumed: a read captured later on the old reel.
-RETRO = OLD + [{"ts": 5000000, "captureTs": 5000000, "sessionId": "s_1000_1", "names": []}]
+RETRO = OLD + [{"ts": 5000000, "captureTs": 500000, "sessionId": "s_3000_3", "names": []}]
+# v3857 item 20 - the list now sorts by START, so the reorder a late row can cause is an EARLIER capture on the newest reel
 
 
 class _Fake(object):
@@ -97,12 +98,12 @@ class AReelOpensByItsId(unittest.TestCase):
         self.assertTrue(j.get("beats"), "the reel was found and carried no beats")
 
     def test_a_retro_row_on_an_old_reel_reorders_the_list_and_the_id_still_wins(self):
-        self.assertEqual(self.open(RETRO, 1).get("sessionId"), "s_1000_1",
+        self.assertEqual(self.open(RETRO, 1).get("sessionId"), "s_2000_2",
                          "the fixture no longer reorders on a retro row, so this case measures nothing")
         j = self.open(RETRO, 1, sid="s_3000_3")
         self.assertEqual(j.get("sessionId"), "s_3000_3",
                          "a kai row on an old reel moved the list and ?n=1 opened that reel instead")
-        self.assertEqual(j.get("n"), 2)
+        self.assertEqual(j.get("n"), 3)
 
     def test_a_reel_no_longer_in_the_journal_is_refused(self):
         j = self.open(NEW, 2, sid="s_9999_9")

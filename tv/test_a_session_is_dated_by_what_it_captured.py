@@ -307,7 +307,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2736 - sessions are ordered by their newest WRITTEN row again (a re-read reel jumps to the top)",
      "file": "tv/replay.py",
-     "find": "    sessions.sort(key=lambda g: max(session_moments(g) or [0]))\n",
+     "find": "    sessions.sort(key=lambda g: min(session_moments(g) or [0]))\n",
      "replace": "    sessions.sort(key=lambda g: max((r.get(\"ts\") or 0) for r in g))\n",
      "matches": 1},
     {"why": "REG-2736 - a row's moment ignores its capture time",

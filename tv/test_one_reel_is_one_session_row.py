@@ -97,18 +97,19 @@ class TestOneReelIsOneSessionRow(unittest.TestCase):
         print("unstamped rows across a %dms silence -> %d group(s)" % (gap, len(g)))
         self.assertEqual(2, len(g), "a long silence must still cut unstamped history")
 
-    def test_newest_first_by_the_latest_row_each_group_holds(self):
+    def test_newest_first_by_when_each_group_started(self):
+        # v3857 item 20 (#230, Elad 2026-11-03): the row is labelled by its start, so it sorts by its start
         import replay as rp
         rows = [
             {"ts": 10, "sessionId": "OLD"},
             {"ts": 20, "sessionId": "NEW"},
-            {"ts": 30, "sessionId": "OLD"},        # OLD ends LAST
+            {"ts": 30, "sessionId": "OLD"},        # OLD ends LAST, but started first
         ]
         g = rp.split_sessions(rows)
         first = next(r["sessionId"] for r in g[0] if r.get("sessionId"))
         print("group order: %s" % _ids(g))
-        self.assertEqual("OLD", first,
-                         "a reel that resumed belongs where it ENDED — that is where he looks")
+        self.assertEqual("NEW", first,
+                         "the session that STARTED last is on top - the list reads in the order its labels say")
 
     def test_the_real_journal_has_no_duplicates(self):
         """The live proof. Skipped honestly if his journal cannot be read here."""
