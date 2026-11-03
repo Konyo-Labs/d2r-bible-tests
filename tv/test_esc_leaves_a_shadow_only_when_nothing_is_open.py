@@ -47,7 +47,7 @@ PARENT_LEAVE = (
     "    e.preventDefault();\n"
     "    window._shadowLeave();\n"
 )
-SSV = ".help-x,.ssv-x,.ovx-made"
+SSV = ".help-x,.ssv-x,.tvd-frame-lb-x,.ovx-made"
 
 
 def _cut(src, start):
@@ -282,9 +282,9 @@ RED_PROOF = [
      "find": "    if (!up || typeof window._shadowLeave !== 'function') return;\n    e.preventDefault();\n    window._shadowLeave();\n",
      "replace": "", "matches": 1},
     {"why": "v3849 - Their sessions close is not an overlay the contract closes",
-     "file": "bible.html", "find": ".help-x,.ssv-x,.ovx-made", "replace": ".help-x,.ovx-made", "matches": 1},
+     "file": "bible.html", "find": ".help-x,.ssv-x,.tvd-frame-lb-x,.ovx-made", "replace": ".help-x,.tvd-frame-lb-x,.ovx-made", "matches": 1},
     {"why": "v3849 - the console's contract copy no longer closes Their sessions",
-     "file": "tv/control_ui.html", "find": ".help-x,.ssv-x,.ovx-made", "replace": ".help-x,.ovx-made", "matches": 1},
+     "file": "tv/control_ui.html", "find": ".help-x,.ssv-x,.tvd-frame-lb-x,.ovx-made", "replace": ".help-x,.tvd-frame-lb-x,.ovx-made", "matches": 1},
 ]
 
 if __name__ == "__main__":

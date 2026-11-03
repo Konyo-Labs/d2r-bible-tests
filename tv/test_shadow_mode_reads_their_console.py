@@ -222,7 +222,10 @@ class WhenItUploads(unittest.TestCase):
         self.assertIsNone(CS.due({}, "Somebody", s, T0, False)[0])
         self.assertIsNone(CS.due({}, OWNER, {}, T0, False)[0])
         st = {"hash": CS.digest(s), "at": T0}
-        self.assertEqual(CS.due(st, OWNER, s, T0 + 10 * CS.MIN_GAP_MS, False), (None, "unchanged"))
+        self.assertEqual(CS.due(st, OWNER, s, T0 + 4 * CS.MIN_GAP_MS, False), (None, "unchanged"))
+        # v3857 item 23 - past STALE_MS an unchanged board re-posts (the site may have lost the last one)
+        self.assertLess(4 * CS.MIN_GAP_MS, CS.STALE_MS)
+        self.assertEqual(CS.due(st, OWNER, s, T0 + CS.STALE_MS + 1, False)[1], "post")
         s2 = dict(s, d2r_owned=json.dumps(["Harlequin Crest", "Enigma"]))
         self.assertIsNone(CS.due(st, OWNER, s2, T0 + CS.MIN_GAP_MS - 1, False)[0])
         self.assertIsNotNone(CS.due(st, OWNER, s2, T0 + CS.MIN_GAP_MS, False)[0])
@@ -2361,7 +2364,7 @@ RED_PROOF = [
      "replace": "    return True\n", "matches": 1},
     {"why": "Shadow: an unchanged snapshot is uploaded every pass",
      "file": "tv/console_snapshot.py",
-     "find": "    if state.get(\"hash\") == d and not boot:\n",
+     "find": "    if state.get(\"hash\") == d and not boot and not stale:\n",
      "replace": "    if False:\n", "matches": 1},
     {"why": "Shadow: the console panel never falls back to the roster row",
      "file": "tv/control_ui.html",
@@ -2424,7 +2427,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "#210 - the upload leaves the unsent list behind",
      "file": "tv/console_snapshot.py",
-     "find": "        body[\"unsent\"] = unsent_of(unsent)\n",
+     "find": "        body[\"unsent\"] = unsent_of(list(unsent or []) + fit_out)\n",
      "replace": "        pass\n",
      "matches": 1},
     {"why": "#210 - the banner stops saying what is missing",

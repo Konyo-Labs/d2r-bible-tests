@@ -108,7 +108,7 @@ class TheShadowVaultTabDatesTheVaultByItsOwnClock(unittest.TestCase):
         self.assertEqual(ui.count("vaultLine: (row && row.vaultLine) || null"), 1)
         self.assertEqual(ui.count("handed.vaultLine = clock.vaultLine"), 1)
         self.assertEqual(bible.count("window._shadowVaultTake(snap)"), 1)
-        self.assertEqual(bible.count("window._vaultShadowClockState = { vaultLine: _takenVault.vaultLine, boardAgo: _takenVault.boardAgo }"), 1)
+        self.assertEqual(bible.count("window._vaultShadowClockState = { vaultLine: _takenVault.vaultLine, boardAgo: _takenVault.boardAgo, stall: _takenVault.stall }"), 1)
         self.assertEqual(bible.count("window._vaultShadowClocksPaint()"), 2)
         self.assertEqual(bible.count('id="vault-shadow-clocks" hidden'), 1)
         for sig in FNS:
@@ -169,8 +169,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-3123 - the fill never hands the row's vault line",
      "file": "tv/control_ui.html",
-     "find": "                     ago: snap && snap.ago, vaultLine: (row && row.vaultLine) || null };\n",
-     "replace": "                     ago: snap && snap.ago, vaultLine: null };\n",
+     "find": "                     ago: snap && snap.ago, vaultLine: (row && row.vaultLine) || null,\n",
+     "replace": "                     ago: snap && snap.ago, vaultLine: null,\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-3123 - his own board paints the shadow's clocks",
      "file": "bible.html",

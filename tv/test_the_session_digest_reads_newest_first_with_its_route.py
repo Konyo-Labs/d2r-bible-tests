@@ -74,7 +74,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "the digest's chronicle names stop coming from the route",
      "file": "tv/shadow_sessions.py",
-     "find": "         \"chronicleNames\": rt[\"chronicle\"][:MAX_NAMES],\n",
+     "find": "         \"chronicleNames\": rt[\"chronicle\"][:MAX_NAMES] if rt[\"chronicle\"] is not None else None,\n",
      "replace": "         \"chronicleNames\": [],\n",
      "matches": 1},
 ]

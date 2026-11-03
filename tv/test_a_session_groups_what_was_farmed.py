@@ -42,7 +42,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "the digest stops publishing the grouped summary",
      "file": "shadow_sessions.py",
-     "find": '             "farmed": farmed,\n',
+     "find": '         "farmed": rt["farmed"],\n',
      "replace": '',
      "matches": 1},
     {"why": "the card stops drawing the groups",
