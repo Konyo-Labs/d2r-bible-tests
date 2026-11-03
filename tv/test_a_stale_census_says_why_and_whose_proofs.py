@@ -13,7 +13,7 @@ from console_safe import enable; enable()
 import control_app as CA  # noqa: E402
 
 SP = {"say": "the gates changed since this PC last proved them", "owed": 31,
-      "carrier": {"takesFrom": ["Dean", "Konyo"], "say": "31 law(s) owed here - a peer may already have proved them"}}
+      "carrier": {"takesFrom": ["Dean", "Konyo"], "say": "a peer may already have proved them"}}  # v3859: never the owed words, or the carrier says them for the lane
 
 
 class StaleCensusSaysWhy(unittest.TestCase):
