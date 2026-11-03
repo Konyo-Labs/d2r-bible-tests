@@ -4,7 +4,8 @@
     "date": "2026-11-03",
     "items": [
       "a shadow console's Characters tab shows their in-game characters and worn gear, read from their own upload",
-      "a Fleet row says locks shut · N gates blind when its proof is current but some gates are blind, instead of looking healthy"
+      "a Fleet row says locks shut · N gates blind when its proof is current but some gates are blind, instead of looking healthy",
+      "a session's hover says the character picked at login, what the character panel said and the class the avatar looks like; the row still shows only the answer"
     ]
   },
   {
