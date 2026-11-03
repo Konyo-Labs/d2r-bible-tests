@@ -70,9 +70,14 @@ test.describe('v1542 — Hell before Nightmare before Normal', () => {
     const r = await page.evaluate(() => {
       const s: any = (window as any).funiScan();
       const diffs = (s.runs || []).map((x: any) => x.diff);
-      return { n: diffs.length, tiers: [...new Set(diffs)].sort() };
+      const names = (s.runs || []).map((x: any) => (x.items || []).map((i: any) => i.n)).flat();
+      return { n: diffs.length, tiers: [...new Set(diffs)].sort(), fake: names.filter((n: string) => /^(Polaris Spear|The Scourge)$/.test(n)) };
     });
-    expect(r.n, 'twenty-ish runs, not a handful of blobs').toBeGreaterThan(12);
+    // v3859 - measured: 13 runs before c0224c00, 12 after. The 13th was "Hell TZ The Pit" holding ONLY Polaris Spear and
+    // The Scourge - a run built of a fake unique and an alias (his rulings 2026-11-03: Polaris is not an item, Scourge is
+    // Stormlash). Twelve real runs across three tiers is the resolution this law keeps; a run of non-items is refused below.
+    expect(r.fake, 'a run was built from a name that is not a unique').toEqual([]);
+    expect(r.n, 'twenty-ish runs, not a handful of blobs').toBeGreaterThanOrEqual(12);
     expect(r.tiers.length, 'lower-tier runs still exist — they just sort below').toBeGreaterThan(1);
   });
 
