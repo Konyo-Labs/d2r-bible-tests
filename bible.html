@@ -3927,6 +3927,12 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
       try { u = new URL(String(url), window.location.href); } catch (e) { return true; }
       if (m === 'GET' && u.pathname === '/api/picture_status' && _shadowPictureOwner(u.origin)) return false;
       if (foreign(url)) return true;
+      /* v3859 B3 (#230): the shadow's witness frames are the OWNER's, read-only, served by roster-cache - this shim refused
+         _tvdFrameBoot's own GET, so a witness in Dean's shadow showed words only. Exactly that read passes: GET, this
+         origin, /api/roster-cache, and its only parameter frames= naming the owner this shadow shows. */
+      if (m === 'GET' && u.pathname === '/api/roster-cache' && window._tvdShadow && window._tvdShadow.owner
+          && Array.from(u.searchParams.keys()).join(',') === 'frames'
+          && u.searchParams.get('frames') === String(window._tvdShadow.owner)) return false;
       return u.pathname.indexOf('/api/') !== -1 || u.pathname.indexOf('/api') === 0;
     }
     var realFetch = window.fetch;

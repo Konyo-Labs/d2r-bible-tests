@@ -536,7 +536,11 @@ class InAShadowNoDragAndNoControlWrites(unittest.TestCase):
 
     def test_in_a_shadow_nothing_but_a_read_is_attempted_and_nothing_under_api_leaves(self):
         self.assertEqual([a for a in self.s["att"] if a[1] != "GET"], [], "a shadow attempted a request that is not a read")
-        self.assertEqual([n for n in self.s["net"] if n[2] != "GET" or "/api" in n[1]], [],
+        # v3859 B3 (#230): the one /api read a shadow makes is its OWNER's witness frames (roster-cache?frames=<owner>, a GET
+        # the shim lets through by name - test_a_shadow_fetches_its_owners_witness_frames_through_the_shim). Nothing else.
+        import re as _re
+        theirs = _re.compile(r"^/api/roster-cache\?frames=[^&]+$")
+        self.assertEqual([n for n in self.s["net"] if n[2] != "GET" or ("/api" in n[1] and not theirs.match(n[1]))], [],
                          "a shadow request reached the network: %r" % self.s["net"])
 
     def test_view_state_a_shadow_asks_to_keep_is_named_and_never_a_d2r_store(self):
