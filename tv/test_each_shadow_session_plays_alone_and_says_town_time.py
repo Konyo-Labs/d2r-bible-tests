@@ -36,7 +36,8 @@ def _rows():
         return d
     return [r(0, scene="town", area="Harrogath"), r(30000, scene="gameplay", area="Worldstone Keep Level 2"),
             r(90000, scene="loot", area="Worldstone Keep Level 2", names=["Shako"]),
-            r(400000, scene="chronicle", names=["Stone of Jordan"]),
+            r(400000, scene="inventory", names=["Harlequin Crest", "Eligible for Chronicle"]),
+            r(405000, scene="inventory", names=["Ber Rune", "Super Healing Potion"]),
             r(410000, scene="stash", stashTab="personal", names=["Ber Rune", "Super Healing Potion"]),
             {"ts": T0 + 10000000, "captureTs": T0 + 10000000, "sessionId": S2, "lane": "deep", "frameId": "g"}]
 
@@ -68,9 +69,10 @@ class TheDigestPlacesEachRead(unittest.TestCase):
         o = SS.digest(_rows(), d, ca._is_a_live_read, T0 + 20000000, make=None)
         by = {s["sessionId"]: s for s in o["sessions"]}
         s1 = by[S1]
-        # 0->30s in town, 30->90s out of town; 90->400s is AFK; 400->410s opens on an unplaced chronicle read (over AFK_GAP_MS)
+        # 0->30s in town, 30->90s out of town; 90->400s is AFK; 400->410s opens on unplaced inventory reads (over AFK_GAP_MS)
+        # v3859 - the chronicle find is the green line on the item's tooltip; the stash counts what this run picked up
         self.assertEqual((s1["townMs"], s1["fieldMs"], s1["awayMs"]), (30000, 60000, 310000), s1)
-        self.assertEqual(s1["chronicleNames"], ["Stone of Jordan"])
+        self.assertEqual(s1["chronicleNames"], ["Harlequin Crest"])
         flat = [n for g in s1["stashed"].values() for n, _ in g]
         self.assertIn("Ber Rune", flat)
         self.assertNotIn("Super Healing Potion", flat, "a potion was counted as stashed")
@@ -178,8 +180,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "AFK is reset at a session boundary (each session's own reads only)",
      "file": "tv/shadow_sessions.py",
-     "find": "        s.update(session_split(timeline, s[\"t0\"], s[\"t1\"]))\n",
-     "replace": "        s.update(session_split(game_timeline(g), s[\"t0\"], s[\"t1\"]))\n",
+     "find": "    f.update(session_split(timeline, min(moments) if moments else None, max(moments) if moments else None))\n",
+     "replace": "    f.update(session_split(game_timeline(g), min(moments) if moments else None, max(moments) if moments else None))\n",
      "matches": 1},
     {"why": "a stretch crossing a boundary is not said",
      "file": "tv/control_ui.html",

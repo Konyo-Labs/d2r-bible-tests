@@ -12795,6 +12795,14 @@ window._lockMark = function(isOpen, px, label){
     var fp = _diabloFingerprint(sm);   // B8 — the run in Diablo terms (farming%/town trips/portals/top area), honest fallback
     var fpSec = '<div class="dsr-sec"><div class="dsr-h">🗺 The run · in Diablo terms</div>'
       + (fp ? '<div class="dsr-fp">' + fp + '</div>' : '<div class="dsr-empty">— no scene reads on this reel —</div>') + '</div>';
+    /* v3859 (#230) - THE ONE DIGEST: the owner's session reads the same per-session answer a shadow reads
+       (shadow_sessions.session_facts -> sm.route) through the same row renderer, so farmed / stashed / trashed /
+       chronicle and the town-field-AFK split say the same words on both sides. */
+    var routeSec = (sm.route && typeof sm.route === 'object' && typeof window._shadowSessionRow === 'function')
+      ? '<div class="dsr-sec dsr-route"><div class="dsr-h">🧭 The session · as every console reads it</div>'
+        + window._shadowSessionRow(Object.assign({}, sm.route, {t0: sm.t0, t1: sm.t1, reads: sm.reads, frames: [],
+            why: 'this reel\'s own film is above'})) + '</div>'
+      : '<div class="dsr-sec dsr-route"><div class="dsr-h">🧭 The session · as every console reads it</div><div class="dsr-empty">— the shared digest is UNKNOWN for this reel —</div></div>';
     // v1406 — Verdict & story HIGHER in the page (was last before actions → swallowed under foot/chrome).
     // Highlighted .dsr-verdict block + extra bottom padding on the overlay so it stays scrollable.
     var storySec = '<div class="dsr-sec dsr-verdict" id="dsr-verdict"><div class="dsr-h">📼 Verdict &amp; story</div>' + _dossierStory(sm) + '</div>';
@@ -12862,7 +12870,7 @@ window._lockMark = function(isOpen, px, label){
       + '<div class="dsr-sealrow">' + seal + sealLat + '</div>'
       + (function(){ var _b = _dossierBeats(sm); return _b ? '<div class="dsr-sec"><div class="dsr-h">⚡ The beats</div>' + _b + '</div>' : ''; })()   // D19 — the run's story as an iconographic beat ribbon
       + _dossierGrailProgress(sm)   // D28 — this run's contribution to the Chronicle hunt (honest-absent when no grails)
-      + decisionSec + storySec + montSec + missSec + findsSec + fpSec + regretSec
+      + decisionSec + storySec + montSec + missSec + findsSec + fpSec + routeSec + regretSec
       + '<div class="dsr-actions">'
         + '<button type="button" class="dsr-pin' + (_sesPinned(sm.sessionId) ? ' on' : '') + '" onclick="window._dossierTogglePin()">' + (_sesPinned(sm.sessionId) ? '★ Pinned' : '☆ Pin this run') + '</button>'
         + '<button type="button" class="dsr-pin" id="dsr-copy" onclick="window._dossierCopyRecap()">📋 Copy recap</button>'
@@ -23047,6 +23055,7 @@ window._lockMark = function(isOpen, px, label){
      so no other scheme can reach src - or the record's own why when it has none. ok:false prints its why as UNKNOWN,
      never an empty list. Nothing here writes or posts: one GET. -> html */
   var _SSV_B64 = /^[A-Za-z0-9+\/]+={0,2}$/;
+  window._shadowSessionRow = function(s, ix){ return _shadowSessionRow(s, ix); };   // v3859 - the owner dossier draws the same row
   function _shadowSessionRow(s, ix){
     s = (s && typeof s === 'object') ? s : {};
     var when = _lsWhenSay(s.t0) || 'date UNKNOWN';
@@ -23145,6 +23154,9 @@ window._lockMark = function(isOpen, px, label){
       + '<div class="ssv-facts ssv-who"' + (whoTitle ? ' title="' + esc(whoTitle) + '"' : '') + '>' + esc(who) + '</div>'
       + '<div class="ssv-facts ssv-chron">' + esc(chronNames) + '</div>'
       + '<div class="ssv-facts ssv-stashed">' + esc(stashed) + '</div>'
+      /* v3859 - the route's trash: farmed, then dropped again and never stashed (older records carry none: no line) */
+      + (Array.isArray(s.trashed) && s.trashed.length ? '<div class="ssv-facts ssv-trashed">' + esc('trashed: '
+          + s.trashed.filter(function(x){ return typeof x === 'string' && x; }).join(' · ')) + '</div>' : '')
       + '<div class="ssv-playline">' + playOne + '</div>'
       + (imgs.length ? '<div class="ssv-thumbs">' + imgs.join('') + '</div>' : '') + note + '</div>';
   }

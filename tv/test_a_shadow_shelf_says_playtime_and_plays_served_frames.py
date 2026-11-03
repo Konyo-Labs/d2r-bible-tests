@@ -76,10 +76,10 @@ def _line(src, start):
 def _rows():
     return [
         {"ts": T0, "captureTs": T0, "sessionId": MANY, "lane": "deep", "scene": "stash", "frameId": "1_%d" % T0},
-        {"ts": T0 + 30000, "captureTs": T0 + 30000, "sessionId": MANY, "lane": "deep", "scene": "chronicle",
-         "frameId": "2_%d" % (T0 + 30000), "names": ["Stone of Jordan", "Shako"]},
-        {"ts": T0 + 230000, "captureTs": T0 + 230000, "sessionId": MANY, "lane": "deep", "scene": "stash",
-         "intent": "farmed", "frameId": "3_%d" % (T0 + 230000), "names": ["Harlequin Crest"]},
+        {"ts": T0 + 30000, "captureTs": T0 + 30000, "sessionId": MANY, "lane": "deep", "scene": "inventory",
+         "frameId": "2_%d" % (T0 + 30000), "names": ["Harlequin Crest", "Eligible for Chronicle"]},
+        {"ts": T0 + 230000, "captureTs": T0 + 230000, "sessionId": MANY, "lane": "deep", "scene": "inventory",
+         "intent": "farmed", "frameId": "3_%d" % (T0 + 230000), "names": ["Ber Rune"]},
         {"ts": T0 + 10000000, "captureTs": T0 + 10000000, "sessionId": ONE, "lane": "deep", "scene": "stash",
          "frameId": "4_%d" % (T0 + 10000000)},
     ]
@@ -150,8 +150,9 @@ class TheDigestMeasuresTheFourFacts(unittest.TestCase):
         by = {s["sessionId"]: s for s in o["sessions"]}
         many = by[MANY]
         self.assertEqual((many["playMs"], many["afkMs"]), (30000, 200000), many)
-        self.assertEqual(many["chroniclesFound"], 2, many)
-        self.assertEqual(many["itemsFarmed"], 1, many)
+        # v3859 - two items picked up, one tooltip with the green 'Eligible for Chronicle' line (session_route)
+        self.assertEqual(many["chroniclesFound"], 1, many)
+        self.assertEqual(many["itemsFarmed"], 2, many)
         one = by[ONE]
         self.assertIsNone(one["playMs"], "one captured moment was called a playtime of %r" % one["playMs"])
         self.assertIsNone(one["afkMs"], "one captured moment was called AFK of %r" % one["afkMs"])
@@ -189,7 +190,7 @@ class ThePageSaysThemAndPlaysOnlyServedFrames(unittest.TestCase):
         cls.words, cls.bare = cls.got["html"]
 
     def test_the_digest_numbers_are_the_words_on_the_row(self):
-        self.assertIn("playtime 0m30s · AFK time 3m20s · 2 chronicles found · 1 item farmed", self.words)
+        self.assertIn("playtime 0m30s · AFK time 3m20s · 1 chronicle found · 2 items farmed", self.words)
         self.assertIn("playtime UNKNOWN · AFK time UNKNOWN · 0 chronicles found · 0 items farmed", self.words)
         self.assertIn("no item was named on this run", self.words)
         self.assertNotIn("no name read", self.words)
@@ -247,10 +248,10 @@ RED_PROOF = [
      "find": "  var _SSV_SPEEDS = [1, 2, 4, 8];\n",
      "replace": "  var _SSV_SPEEDS = [1];\n",
      "matches": 1, "needs": "node"},
-    {"why": "a chronicle panel is counted as nothing",
+    {"why": "a chronicle find is counted as nothing",
      "file": "tv/shadow_sessions.py",
-     "find": "             \"chroniclesFound\": _named_where(g, \"scene\", \"chronicle\"),\n",
-     "replace": "             \"chroniclesFound\": 0,\n",
+     "find": "         \"chroniclesFound\": len(rt[\"chronicle\"]) if rt[\"chronicle\"] is not None else None,\n",
+     "replace": "         \"chroniclesFound\": 0,\n",
      "matches": 1},
     {"why": "one captured moment is reported as zero play and zero AFK",
      "file": "tv/shadow_sessions.py",

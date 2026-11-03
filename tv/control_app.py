@@ -47352,7 +47352,15 @@ class Handler(BaseHTTPRequestHandler):
             if HERE not in sys.path:
                 sys.path.insert(0, HERE)
             import replay as _rp
-            sessions = _rp.split_sessions(self._load_journal_cached())
+            _jrows = self._load_journal_cached()
+            sessions = _rp.split_sessions(_jrows)
+            # v3859 (#230) - the owner's Sessions tab reads the same per-session answer a shadow does
+            # (shadow_sessions.session_facts): one route ledger, one town/field/AFK split over the whole game
+            import shadow_sessions as _SSF
+            try:
+                _game_tl = _SSF.game_timeline(_jrows)
+            except Exception:
+                _game_tl = []
             out = []
             for i, sess in enumerate(sessions, 1):
                 # v2322 — a run that ended can never change; do not walk its files again.
@@ -47669,6 +47677,7 @@ class Handler(BaseHTTPRequestHandler):
                         _registered = max(int(_registered), len(_have_nms))
                 _row = {"watchdogViolations": _wd, "tallies": _tl, "kaiMissed": _km, "kaiClasses": _kc,
                             "sceneReads": _scene_reads or None, "tabReads": _tab_reads or None,
+                            "route": _SSF.session_facts(sess, [r2 for r2 in sess if _is_a_live_read(r2)], _game_tl),
                             "sceneFingerprint": _session_scene_fingerprint(sess),   # v1326 B8 — farming%/townTrips/portals/topArea (Diablo-native, honest)
                             "judged": len(_keepers), "regrets": _regrets, "registered": _registered,
                             "finds": _finds, "topFind": _topFind,   # v1254 R1 — 📖 what KAI witnessed this session

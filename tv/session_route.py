@@ -173,6 +173,9 @@ def _grouped(names_groups):
 def route(rows, tab=None):
     """-> {farmed: {group: [[name, n]]}, itemsFarmed, stashed, trashed, seen: [names]}"""
     tab = _FN.table() if tab is None else tab
+    if not any(place(r) for r in rows or [] if isinstance(r, dict)):
+        # no read was placed on the floor, the inventory or a stash (an older journal): the route is UNKNOWN, never 0
+        return {"farmed": None, "itemsFarmed": None, "stashed": None, "chronicle": None, "trashed": None, "seen": None}
     items = _walk(rows, tab)
     farmed = [(it.name, it.group) for it in items if it.farmed]
     return {"farmed": _grouped(farmed), "itemsFarmed": len(farmed),

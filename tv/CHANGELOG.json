@@ -5,7 +5,8 @@
     "items": [
       "v3859 #230: one session route ledger (tv/session_route.py) - an item seen on the floor and then in the inventory is one farmed item; identify keeps the count and renames it",
       "v3859 #230: the session route's stash, trash and other routes - only this run's farmed items count as stashed (against the original sighting), a dropped one is trashed and still farmed, trade/vendor/shared stash never count",
-      "v3859 #230: a session's chronicle finds come only from the green 'Eligible for Chronicle' line on the item's own tooltip - not a chronicle panel read, not another colour, not an item left on the floor or traded"
+      "v3859 #230: a session's chronicle finds come only from the green 'Eligible for Chronicle' line on the item's own tooltip - not a chronicle panel read, not another colour, not an item left on the floor or traded",
+      "v3859 #230: one session digest - shadow_sessions.session_facts feeds the shadow digest and the owner's theatre rows (route), and the owner dossier draws it with the shadow's own row; farmed/stashed/chronicle come from the session route (UNKNOWN when no read was placed)"
     ]
   },
   {

@@ -268,39 +268,6 @@ from read_identity import (game_name_of_row, character_signals, attribute_charac
                            say_games, CLASSES, identity_ledger, who_at, summary as identity_summary, scenario_of)
 
 
-def _chronicle_names(rows):
-    """v3855 - the distinct names read on a chronicle panel, in read order."""
-    out = []
-    for r in rows or []:
-        if isinstance(r, dict) and r.get("scene") == "chronicle":
-            for n in _names(r):
-                if n not in out:
-                    out.append(n)
-    return out
-
-
-def _stashed(reads):
-    """v3855 - names read with the stash open (scene stash or a stash tab), grouped like farmed."""
-    import farmed_names as _FN
-    return _FN.group([_names(r) for r in reads if isinstance(r, dict)
-                      and (r.get("scene") == "stash" or r.get("stashTab"))])
-
-
-def _named_where(rows, key, value):
-    """Distinct names on rows whose `key` equals `value`. -> int
-
-    Zero means those rows were read and none of them named anything. A record that never carried the
-    count (an older digest) is the page's UNKNOWN, not this zero."""
-    found = []
-    for r in rows or []:
-        if not isinstance(r, dict) or r.get(key) != value:
-            continue
-        for n in _names(r):
-            if n not in found:
-                found.append(n)
-    return len(found)
-
-
 def _key_frames(reads):
     """Up to MAX_FRAMES frame ids: those whose read named something first (newest name first), else first/middle/last."""
     ids = [r.get("frameId") for r in reads if isinstance(r.get("frameId"), str) and r.get("frameId")]
@@ -360,6 +327,26 @@ def characters_rollup(rows):
     return out
 
 
+def session_facts(g, reads, timeline):
+    """v3859 (#230) - THE ONE ANSWER FOR A SESSION, for the owner's Sessions tab and every shadow alike: playtime and
+    AFK, town / out of town / AFK split, and the route ledger (tv/session_route.py) - farmed, stashed, trashed and the
+    chronicle finds from the green 'Eligible for Chronicle' line. g: the session's rows; reads: its live reads."""
+    import replay as _rp
+    import session_route as _SR
+    moments = _rp.session_moments(g) or []
+    play_ms, afk_ms = _play_afk(moments)
+    rt = _SR.route(reads)
+    f = {"playMs": play_ms, "afkMs": afk_ms,
+         "chroniclesFound": len(rt["chronicle"]) if rt["chronicle"] is not None else None,
+         "itemsFarmed": rt["itemsFarmed"],
+         "farmed": rt["farmed"],
+         "chronicleNames": rt["chronicle"][:MAX_NAMES] if rt["chronicle"] is not None else None,
+         "stashed": rt["stashed"],
+         "trashed": rt["trashed"][:MAX_NAMES] if rt["trashed"] is not None else None}
+    f.update(session_split(timeline, min(moments) if moments else None, max(moments) if moments else None))
+    return f
+
+
 def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
     """rows: the journal's rows. is_read: the Shelf's read rule. -> {v, sessions: [...], bytes, dropped, left}
 
@@ -382,19 +369,11 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb):
         moments = _rp.session_moments(g) or []
         # v3850 - a read word is snapped to a known D2 name or dropped; UI words, NPCs and consumables never show
         names = _FN.clean([n for r in reads for n in _names(r)])
-        farmed = _FN.group([_names(r) for r in reads])
         sid = next((r.get("sessionId") for r in g if r.get("sessionId")), None)
-        play_ms, afk_ms = _play_afk(moments)
         s = {"sessionId": sid, "t0": min(moments) if moments else None, "t1": max(moments) if moments else None,
              "reads": len(reads), "names": names[:MAX_NAMES], "namesMore": max(0, len(names) - MAX_NAMES),
-             "frames": [], "why": None,
-             "playMs": play_ms, "afkMs": afk_ms,
-             "chroniclesFound": _named_where(g, "scene", "chronicle"),
-             "itemsFarmed": _named_where(g, "intent", "farmed"),
-             "farmed": farmed,
-             "chronicleNames": _chronicle_names(g)[:MAX_NAMES],
-             "stashed": _stashed(reads)}
-        s.update(session_split(timeline, s["t0"], s["t1"]))
+             "frames": [], "why": None}
+        s.update(session_facts(g, reads, timeline))
         games = []
         for r in g:
             n = game_name_of_row(r)

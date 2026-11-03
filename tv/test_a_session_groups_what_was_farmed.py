@@ -80,7 +80,8 @@ class TheCardDrawsIt(unittest.TestCase):
             self.assertIn("ubers: 'Keys & organs'", f.read())
 
     def test_the_digest_publishes_it(self):
-        rows = [{"t": 1792000000000 + i * 1000, "frameId": "f%d" % i, "names": n}
+        # v3859 - the farmed groups come from the session route, so the reads say where they were (the inventory)
+        rows = [{"t": 1792000000000 + i * 1000, "frameId": "f%d" % i, "names": n, "scene": "inventory"}
                 for i, n in enumerate([["Shako", "Super Mana Potion"], ["Shako"], ["Ber Rune"]])]
         d = SS.digest(rows, "/nonexistent", lambda r: True, 1792000100000, make=lambda a, b: False)
         self.assertEqual(d["sessions"][0]["farmed"], {"runes": [["Ber Rune", 1]], "bases": [["Shako", 1]]})

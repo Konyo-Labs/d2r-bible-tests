@@ -44,6 +44,13 @@ class TheFarmPath(unittest.TestCase):
         self.assertEqual(["Ber Rune"], r["seen"])
 
 
+    def test_a_session_with_no_placed_read_is_unknown_never_zero(self):
+        import session_route as sr
+        r = sr.route([{"ts": 1, "names": ["Shako"]}, {"ts": 2, "scene": "chronicle", "names": ["Shako"]}])
+        self.assertIsNone(r["itemsFarmed"], "an older journal with no scene was called 0 farmed")
+        self.assertIsNone(r["farmed"])
+
+
 class TheIdentifyPath(unittest.TestCase):
 
     def test_identify_never_changes_the_farmed_count(self):
@@ -56,6 +63,11 @@ class TheIdentifyPath(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "a session nobody placed is called zero farmed",
+     "file": "tv/session_route.py",
+     "find": "    if not any(place(r) for r in rows or [] if isinstance(r, dict)):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
     {"why": "every inventory read becomes a new farmed item (floor then inventory counts twice)",
      "file": "tv/session_route.py",
      "find": "        for h in hits:\n            it = _find(items, h, (\"floor\", \"inventory\", \"other\"))\n",

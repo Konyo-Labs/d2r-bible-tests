@@ -20,15 +20,17 @@ H = 3600 * 1000
 
 def _journal():
     rows = []
-    # EARLY: starts first, farms, and is still writing after LATE has begun (it ends last)
-    rows.append({"ts": 1 * H, "captureTs": 1 * H, "sessionId": "EARLY", "names": ["Shako"], "intent": "farmed"})
+    # EARLY: starts first, picks up a Shako and stashes it, and is still writing after LATE has begun (it ends last)
+    rows.append({"ts": 1 * H, "captureTs": 1 * H, "sessionId": "EARLY", "scene": "inventory", "names": ["Shako"]})
     rows.append({"ts": 1 * H + 60000, "captureTs": 1 * H + 60000, "sessionId": "EARLY", "names": ["Shako"],
-                 "scene": "stash"})
-    rows.append({"ts": 5 * H, "captureTs": 5 * H, "sessionId": "EARLY", "names": ["Harlequin Crest"],
-                 "scene": "chronicle"})
+                 "scene": "stash", "stashTab": "personal"})
+    # v3859 - a chronicle find is the green line on the item's own tooltip (session_route)
+    rows.append({"ts": 5 * H, "captureTs": 5 * H, "sessionId": "EARLY", "scene": "inventory",
+                 "names": ["Harlequin Crest", "Eligible for Chronicle"]})
     # LATE: starts after EARLY, ends before it
-    rows.append({"ts": 2 * H, "captureTs": 2 * H, "sessionId": "LATE", "names": ["Oculus"], "intent": "farmed"})
-    rows.append({"ts": 2 * H + 60000, "captureTs": 2 * H + 60000, "sessionId": "LATE", "names": ["Oculus"]})
+    rows.append({"ts": 2 * H, "captureTs": 2 * H, "sessionId": "LATE", "names": ["Ber Rune"], "scene": "inventory"})
+    rows.append({"ts": 2 * H + 60000, "captureTs": 2 * H + 60000, "sessionId": "LATE", "names": ["Ber Rune"],
+                 "scene": "inventory"})
     return rows
 
 
@@ -53,10 +55,10 @@ class TheDigestReadsNewestFirst(unittest.TestCase):
         early = ses[1]
         flat = lambda v: repr(v)
         self.assertIn("Shako", flat(early.get("farmed")), "the farm run's name is not in farmed")
-        self.assertIn("Shako", flat(early.get("stashed")), "the stash visit's name is not in stashed")
+        self.assertEqual({"bases": [["Shako", 1]]}, early.get("stashed"), "stashed is not what this run put away")
         self.assertEqual(["Harlequin Crest"], early.get("chronicleNames"), "the chronicle panel's name is missing")
         self.assertEqual(1, early.get("chroniclesFound"))
-        self.assertNotIn("Oculus", flat(early.get("stashed")), "a name never read on a stash was called stashed")
+        self.assertNotIn("Ber Rune", flat(early.get("stashed")), "another session's pickup was called stashed")
 
 
 RED_PROOF = [
@@ -65,15 +67,15 @@ RED_PROOF = [
      "find": "    sessions.sort(key=lambda g: min(session_moments(g) or [0]))\n",
      "replace": "    sessions.sort(key=lambda g: max(session_moments(g) or [0]))\n",
      "matches": 1},
-    {"why": "stashed counts every read, not only the ones with the stash open",
+    {"why": "stashed is every farmed item, not what this run put away",
      "file": "tv/shadow_sessions.py",
-     "find": "                      and (r.get(\"scene\") == \"stash\" or r.get(\"stashTab\"))])",
-     "replace": "                      ])",
+     "find": "         \"stashed\": rt[\"stashed\"],\n",
+     "replace": "         \"stashed\": rt[\"farmed\"],\n",
      "matches": 1},
-    {"why": "chronicle names stop being read off the chronicle panel",
+    {"why": "the digest's chronicle names stop coming from the route",
      "file": "tv/shadow_sessions.py",
-     "find": "        if isinstance(r, dict) and r.get(\"scene\") == \"chronicle\":\n",
-     "replace": "        if isinstance(r, dict) and r.get(\"scene\") == \"chronicle-off\":\n",
+     "find": "         \"chronicleNames\": rt[\"chronicle\"][:MAX_NAMES],\n",
+     "replace": "         \"chronicleNames\": [],\n",
      "matches": 1},
 ]
 
