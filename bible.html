@@ -3996,7 +3996,10 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
                 // REG-2758 (GrokBot's v3821 pass: the shadow's move rows do not open) - a task row's from -> to picture
                 '_vaultTaskExpand',
                 // the evidence magnifier only reads (open, step, lightbox, close)
-                '_vaultEvidenceOpen', '_vaultEvidenceClose', '_vaultOpenEvidence', '_vaultEvidenceLightbox', '_vaultEvidenceStep'];
+                '_vaultEvidenceOpen', '_vaultEvidenceClose', '_vaultOpenEvidence', '_vaultEvidenceLightbox', '_vaultEvidenceStep',
+                // v3857 item 17 (#230, Elad 10:39) - the frame viewer's x only closes the photo: it was stopped here, so the
+                // only way out of a witness frame was LEAVE SHADOW
+                '_tvdCloseFrame'];
     window._tvdShadowView = VIEW;
     // the controls a click or a key can reach: one list, read by the click veil and the key filter alike
     var CTL = 'button, a, input, textarea, select, label, [onclick], [contenteditable], .vault-chip, [draggable="true"]';
@@ -14730,7 +14733,7 @@ function d2jspBatchHtml(view) {
   <div class="tvd-frame-lb" id="tvd-frame-lb" hidden>
     <div class="tvd-frame-lb-bar">
       <span id="tvd-frame-lb-title">👁 AI frame</span>
-      <button type="button" onclick="window._tvdCloseFrame&&window._tvdCloseFrame()">✕ close · Esc</button>
+      <button type="button" class="tvd-frame-lb-x" onclick="window._tvdCloseFrame&&window._tvdCloseFrame()">✕ close · Esc</button>
     </div>
     <img id="tvd-frame-lb-img" alt="AI vision frame fullscreen">
     <div id="tvd-frame-lb-mark" class="tvd-frame-mark" hidden></div>
@@ -89455,7 +89458,7 @@ button:not(:disabled):hover { box-shadow: 0 0 8px rgba(255,170,80,.30); }
   var X_SEL = '.th-x,.tly-x,.th-drawer-x,.sh-x,.fx-x,.thhd-x,.dsr-x,.ch-x,.vx-btn,.sfp-close,' +
     '.gic-close-btn,.gbc-close,.vrg-x,.aid-close-btn,.aid-header-close,.cb-x,.vd-close,.help-close,' +
     '.kbd-help-close,.glossary-close,.glb-close,.vtp-x,.vmm-close,.vll-x,.vev-x,.tlg-x,.tlp-close,' +
-    '.tvz-th-x,.aib-close,.aic-x,.bn-x,.help-x,.ssv-x,.ovx-made';
+    '.tvz-th-x,.aib-close,.aic-x,.bn-x,.help-x,.ssv-x,.tvd-frame-lb-x,.ovx-made';
   function shown(el) {
     if (!el || !el.isConnected) return false;
     var r = el.getBoundingClientRect();
