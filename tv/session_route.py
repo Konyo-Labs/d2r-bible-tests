@@ -13,6 +13,8 @@ read that named something:
   TRASH     a farmed item back on the floor after the inventory, never stashed, is trashed - and still farmed.
   OTHER     a trade window, a vendor or the shared stash is someone else's route: what is read there never counts
             toward the session, and an item that came from one is not farmed when it reaches the inventory.
+  CHRONICLE an item is a chronicle find only when its own tooltip carried the green "Eligible for Chronicle" line. A
+            chronicle panel read, a name that merely is on a chronicle list, or that line in any other colour is not.
 
 Pure, no I/O. -> route(rows) dict."""
 import farmed_names as _FN
@@ -46,6 +48,24 @@ def _snapped(r, tab):
     return out
 
 
+CHRONICLE_LINE = "eligible for chronicle"
+
+
+def chronicle_eligible(r):
+    """Did this read's tooltip carry the green "Eligible for Chronicle" line? A read that says the line's colour must
+    say green; a read with no colours is the OCR's plain text and the line alone answers."""
+    lines = _lines(r)
+    cols = r.get("lineColors")
+    for i, x in enumerate(lines):
+        if CHRONICLE_LINE in x.lower():
+            if isinstance(cols, list):
+                c = str(cols[i] if i < len(cols) else "").strip().lower()
+                if c != "green":
+                    continue
+            return True
+    return False
+
+
 def unidentified(r):
     return any("unidentified" in x.lower() for x in _lines(r))
 
@@ -66,10 +86,11 @@ def place(r):
 
 
 class _Item(object):
-    __slots__ = ("name", "group", "base", "unid", "at", "farmed")
+    __slots__ = ("name", "group", "base", "unid", "at", "farmed", "chron")
 
     def __init__(self, name, group, base, unid, at):
         self.name, self.group, self.base, self.unid, self.at, self.farmed = name, group, base, unid, at, False
+        self.chron = False
 
 
 def _find(items, hit, states):
@@ -88,6 +109,7 @@ def _walk(rows, tab):
             continue
         hits = _snapped(r, tab)
         unid = unidentified(r)
+        elig = chronicle_eligible(r) and where in ("floor", "inventory")
         if where == "inventory" and not unid and len(hits) >= 2:
             # an identify: the item's name and its base on one tooltip. The base names the item it was.
             named = [h for h in hits if h[1] != "bases"]
@@ -96,6 +118,7 @@ def _walk(rows, tab):
                 it = _find(items, b, ("inventory",))
                 if it is not None and it.unid and named:
                     it.name, it.group, it.unid = named[0][0], named[0][1], False
+                    it.chron = it.chron or elig
                     hits = [h for h in hits if h != b and h != named[0]]
         if where == "stash":
             for h in hits:
@@ -128,6 +151,8 @@ def _walk(rows, tab):
             if where == "inventory" and it.at in ("floor", "inventory"):
                 it.at = "inventory"
                 it.farmed = True
+            if elig and h[1] != "bases":
+                it.chron = True
     return items
 
 
@@ -152,5 +177,6 @@ def route(rows, tab=None):
     farmed = [(it.name, it.group) for it in items if it.farmed]
     return {"farmed": _grouped(farmed), "itemsFarmed": len(farmed),
             "stashed": _grouped([(it.name, it.group) for it in items if it.farmed and it.at == "stash"]),
+            "chronicle": [it.name for it in items if it.farmed and it.chron],
             "trashed": [it.name for it in items if it.farmed and it.at == "trash"],
             "seen": [it.name for it in items if not it.farmed and it.at == "floor"]}
