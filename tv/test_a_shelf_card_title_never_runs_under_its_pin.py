@@ -64,7 +64,10 @@ class TheTitleAndTheClusterShareOneRow(unittest.TestCase):
     def test_the_card_builds_them_into_the_row_and_keeps_the_time_whole(self):
         self.assertEqual(UI.count("'<div class=\"shc-top\"><div class=\"shc-sess\">'"), 1,
                          "the card does not put its title in the row")
-        self.assertEqual(UI.count("+ '<div class=\"shc-tr\">' + pinBtn + seal + '</div></div>'"), 1,
+        # v3859 - the per-card PLAY (v3860 law) joined the cluster ahead of the pin; pin and seal still close the row.
+        self.assertEqual(UI.count("+ '<div class=\"shc-tr\">' + (sm.stub ? '' : '<button type=\"button\" class=\"shc-play\""), 1,
+                         "the card does not open its cluster in the row")
+        self.assertEqual(UI.count("\u25b6 PLAY</button>') + pinBtn + seal + '</div></div>'"), 1,
                          "the card does not put its pin and seal in the row")
         self.assertIn("' · <span class=\"shc-hm\">' + d0.toLocaleTimeString(", UI,
                       "the title's time is not one unit, so a narrow card splits \"7:40\" from \"AM\"")

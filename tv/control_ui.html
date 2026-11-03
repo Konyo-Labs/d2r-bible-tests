@@ -2342,11 +2342,10 @@
     letter-spacing: var(--ls-wide); color: #f2e4c0; text-shadow: 0 2px 7px rgba(0,0,0,.95); }
   .shc-ghost { font: var(--fw-medium) var(--fs-2xs)/1 var(--mono); letter-spacing: var(--ls-snug); text-transform: uppercase; color: #b0a184; margin-left: 5px; }
   /* D26 — top-right cluster holds the ⭐ pin + the verdict seal */
-  .shc-tr { position: relative; flex: none; z-index: 2; display: flex; align-items: center; gap: 6px; }
+  .shc-tr { position: relative; flex: none; z-index: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
   /* v3859 - THE PER-CARD ▶ PLAY MAY DROP UNDER THE PIN, NEVER SQUEEZE THE TITLE. With PLAY in the cluster the
      title lost ~50px and 'Jan 1 · 2:00 AM' was clipped at 375 and collapsed to zero at 1120x628. The cluster
-     stacks (right-aligned) so the title keeps the width of the widest control, not the sum. */
-  .shc-tr { flex-direction: column; align-items: flex-end; gap: 4px; }   /* REG-2755 - a flex item of .shc-top */
+     stacks (right-aligned) so the title keeps the width of the widest control, not the sum. */   /* REG-2755 - a flex item of .shc-top */
   .shc-pin { flex: none; font-size: var(--fs-sm); line-height: 1; color: #b9c9be; background: rgba(6,8,6,.55); backdrop-filter: blur(3px);
     border: 1px solid var(--edge); border-radius: 999px; width: 26px; height: 26px; cursor: pointer; padding: 0;
     display: inline-flex; align-items: center; justify-content: center; transition: color .15s, border-color .15s, transform .1s; }

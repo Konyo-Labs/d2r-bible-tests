@@ -10,6 +10,7 @@
       "v3859 gate repair (not counted): the per-card PLAY law makes its stdout encoding-safe for cp1255 consoles",
       "v3859: the per-card PLAY stacks in the Shelf card cluster - the session title is no longer clipped at 375 or collapsed at 1120x628",
       "v3859: the Today stat row (375) and the zone why-line (901) wrap to a second line instead of being shaved",
+      "v3859 gate repair (not counted): REG-2755 law re-aimed - PLAY opens the Shelf card cluster, pin and seal still close it; one .shc-tr rule",
       "v3859 #230: one session route ledger (session_route.py) - a floor sighting later in the inventory is one farmed item",
       "v3859 #230: only this run's farmed items count as stashed; a dropped one is trashed, still farmed; trade/vendor never",
       "v3859 #230: chronicle finds come only from the green 'Eligible for Chronicle' tooltip line",

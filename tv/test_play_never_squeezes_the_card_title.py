@@ -13,7 +13,7 @@ SRC = open(os.path.join(HERE, "control_ui.html"), encoding="utf-8").read()
 
 class TheLaw(unittest.TestCase):
     def test_the_cluster_stacks(self):
-        self.assertIn(".shc-tr { flex-direction: column; align-items: flex-end; gap: 4px; }", SRC)
+        self.assertIn("  .shc-tr { position: relative; flex: none; z-index: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }", SRC)
 
     def test_play_still_lives_in_the_cluster(self):
         self.assertIn('<div class="shc-tr">\' + (sm.stub ? \'\' : \'<button type="button" class="shc-play"', SRC)
