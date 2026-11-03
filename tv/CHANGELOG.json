@@ -16,6 +16,7 @@
       "v3859: a filmed session with no read keeps its Shelf slot and says why it has no picture; only nothing-filmed slices are ghosts",
       "v3859 gate repair (not counted): the read-names law expects a disputed player as UNKNOWN alone, the v3857 item 19 ruling",
       "v3859: the session digest no longer carries its own publish lane - an unchanged digest is not posted again every look",
+      "v3859 L2 (#230): the worn-item evidence law cuts the maps, helpers and the Vault's chip from the page instead of declaring its own copies (+ red-proof on the chip's open call)",
       "v3859 fix B3 (#230): a shadow's witness frames load - the read-only shim lets exactly GET /api/roster-cache?frames=<this shadow's owner> through, everything else stays refused (law runs the real shim + red-proofs: test_a_shadow_fetches_its_owners_witness_frames_through_the_shim)",
       "v3859 fix B2 (#230): a session no line-colour reader spoke for says 'chronicles found UNKNOWN', never 0 - the route reads the journal's ocr_raw, and plain OCR text can never say the line is green (law + red-proofs: test_a_chronicle_find_is_the_green_eligible_line)",
       "v3859 fix B1 (#230): the sync badge no longer sticks red after an ON AIR session - _sync_facts reads rollingSince only while rollingAt == lookedAt on a shadow reel (law + red-proof: test_a_stale_rolling_stamp_never_paints_the_sync_badge_red)",

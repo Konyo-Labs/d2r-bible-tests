@@ -36,11 +36,20 @@ def _cut(src, start, end="\n  }\n"):
     return src[i:src.index(end, i) + len(end)]
 
 
-STUBS = ("var _SLOT_WORD = {'off-hand': 'Off-hand'}, _TIER_FACE = {WATCHED: '👁 WATCHED'}, _CHX_WORD = {WATCHED: 'Not confirmed yet'};"
-         " function _looks(n){ return n + (n === 1 ? ' look' : ' looks'); }"
-         " function _chxJs(s){ return String(s).replace(/'/g, \"\\\\'\"); }\n")
-CHIP = ("window._vaultEvidenceChip = function(n, c){ return '<button class=\"' + c + '\" data-n=\"' + n + '\"'"
-        " + ' onclick=\"event.stopPropagation();window._vaultEvidenceOpen(\\'' + n + '\\')\"></button>'; };")
+def _line(src, start):
+    i = src.index(start)
+    return src[i:src.index("\n", i) + 1]
+
+
+def _page_parts():
+    """L2 (v3859, Claude slice 3): the maps, helpers and the Vault's chip are CUT FROM THE PAGE - a law that declared its own
+    copies tested the copy, never bible.html (the REG-3110 shape)."""
+    src = _src()
+    i = src.index("  var _SLOT_WORD = {")
+    maps = src[i:src.index("\n", src.index("  var _CHX_WORD = {", i)) + 1]
+    return ("var magicFinds; window._vaultEvidenceLine = function(n){ return 'seen'; };\n" + maps
+            + _line(src, "  function _looks(n){") + _line(src, "  function _chxJs(s){")
+            + _cut(src, "  function _evEsc(t){") + _cut(src, "  window._vaultEvidenceChip = function(name, cls){", "\n  };\n"))
 
 
 def _chx_fns():
@@ -51,7 +60,7 @@ def _chx_fns():
 
 
 def _ev(item, chip, t=None, s=None, tail=""):
-    js = ("const window = {}; " + (CHIP if chip else "") + STUBS + _chx_fns()
+    js = ("const window = {}; " + _page_parts() + ("" if chip else "delete window._vaultEvidenceChip;\n") + _chx_fns()
           + "\nconst out = _chxEv(%s, %s, %s);%s\nprocess.stdout.write(JSON.stringify(out));" % (json.dumps(item), json.dumps(t), json.dumps(s), tail))
     r = subprocess.run([BASE.NODE or "node", "-"], input=js, capture_output=True, text=True, timeout=60)
     if r.returncode != 0:
@@ -62,7 +71,9 @@ def _ev(item, chip, t=None, s=None, tail=""):
 class EveryWornItemHasTheMagnifier(unittest.TestCase):
 
     def test_it_is_the_vaults_own_chip(self):
-        self.assertIn('class=\\"chx-ev\\" data-n=\\"Splendor\\"', _ev("Splendor", True))
+        out = json.loads(_ev("Splendor", True))
+        self.assertIn('class="chx-ev"', out)
+        self.assertIn("window._vaultEvidenceOpen('Splendor'", out)
 
     def test_a_worn_item_opens_with_its_own_looks(self):
         t = {"key": "seen:konyorush", "name": "KonyoRush"}
@@ -126,6 +137,11 @@ class TheProofsNameOnePlace(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "L2 (v3859) - the Vault chip's open call changes shape; the worn item no longer reaches its own looks",
+     "file": "bible.html",
+     "find": "      + ' onclick=\"event.stopPropagation();window._vaultEvidenceOpen(\\'' + _evEsc(",
+     "replace": "      + ' onclick=\"event.stopPropagation();window._vaultEvidenceShow(\\'' + _evEsc(",
+     "matches": 1, "needs": "node"},
     {"why": "the card's worn items have no magnifier",
      "file": "bible.html",
      "find": "        + _chxEv(s.item, t, s) + '</span></li>';",
