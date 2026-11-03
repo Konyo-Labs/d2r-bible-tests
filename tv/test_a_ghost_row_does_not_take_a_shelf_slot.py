@@ -31,9 +31,16 @@ class TheLaw(unittest.TestCase):
         self.assertTrue(all((s.get("reads") or 0) > 0 for s in ss), "a 0-read ghost row was published")
         self.assertGreater(d.get("ghosts") or 0, 0)
 
+    def test_a_filmed_session_with_no_read_is_not_a_ghost(self):
+        # v3859 - skip-only frames were filmed; the v3847 law needs that row to say why it has no picture
+        rows = [{"ts": T0 + k, "captureTs": T0 + k, "lane": "skip", "kind": "skip"} for k in range(4)]
+        d = SS.digest(rows, tempfile.mkdtemp(), _is_read, T0 + H, make=lambda *a, **k: None)
+        self.assertEqual(len(d["sessions"]), 1, "a filmed skip-only session was dropped as a ghost")
+        self.assertEqual(d.get("ghosts"), 0)
+
 
 RED_PROOF = [
-    {"file": "tv/shadow_sessions.py", "find": "_kept = [g for g in groups if any(is_read(r) for r in g)]",
+    {"file": "tv/shadow_sessions.py", "find": "_kept = [g for g in groups if any(is_read(r) or r.get(\"captureTs\") or r.get(\"frameId\") for r in g)]",
      "replace": "_kept = list(groups)", "matches": 1, "why": "ghost rows are published again"},
 ]
 

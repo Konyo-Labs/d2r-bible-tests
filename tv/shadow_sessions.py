@@ -388,7 +388,9 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None):
     timeline = game_timeline(rows)   # v3855 - AFK over the whole game, then each session takes its share
     # v3860 (#230, ALT 2026-11-03) - a journal slice with no read is a ghost row (a restart or a heartbeat between reads
     # of the same reel). The ALT's 16 published slots held 7 such rows at 0 frames, pushing real hours off the Shelf.
-    _kept = [g for g in groups if any(is_read(r) for r in g)]
+    # v3859 - a GHOST is no read AND no captured frame. A skip-only session filmed real frames (v3847: it must say
+    # why it has no picture), so it keeps its slot; only a heartbeat/restart slice with nothing filmed is dropped.
+    _kept = [g for g in groups if any(is_read(r) or r.get("captureTs") or r.get("frameId") for r in g)]
     out["ghosts"] = len(groups) - len(_kept)
     groups = _kept
     for g in groups[:MAX_SESSIONS]:
