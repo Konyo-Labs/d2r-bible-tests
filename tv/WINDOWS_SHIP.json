@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3854",
+  "ver": "v3855",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3854: The D2JSP tab Advanced button shows the price database, its Wilson score, and the posts that score was weighed from.",
+  "note": "v3855: HEART five blind red-proofs now hit live doors (REG-2962)",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
