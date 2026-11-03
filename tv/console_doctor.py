@@ -10823,6 +10823,26 @@ _LANE_STALE_HOURS = 6.0
 _LANE_GH_TIMEOUT = 20
 
 
+def _check_a_windowed_frame_is_read_inside_its_game():
+    """v3856 - a windowed-mode frame (title bar + letterbox, Dean's 800x409 family) is measured inside its game area."""
+    import tempfile, shutil
+    try:
+        import char_select as CS
+    except Exception as e:
+        return UNKNOWN, "char_select would not load (%s), so windowed frames are unknown" % type(e).__name__
+    d = tempfile.mkdtemp(prefix="doc_win_")
+    try:
+        p = CS.windowed_fixture(os.path.join(d, "f_1.jpg"))
+        ok, why = CS.looks_like_lobby(CS.lobby_stats(p))
+    except Exception as e:
+        return UNKNOWN, "the windowed lobby frame could not be measured (%s)" % type(e).__name__
+    finally:
+        shutil.rmtree(d, True)
+    if not ok:
+        return MISSING, "a lobby filmed in a window (title bar and black bars) is not seen: " + why
+    return OK, "a lobby filmed in a window is read inside its game area"
+
+
 def _check_the_d2jsp_price_backend_matches_its_database():
     """The Advanced door on the D2JSP tab shows the price database the quote already computes."""
     try:
@@ -11133,6 +11153,7 @@ CHECKS = [
     # #64 — the WHY behind the row above: the pull lane's own record of whether its pulls land.
     ("this checkout can update", _check_this_checkout_can_update),
     ("the d2jsp price database is on its tab", _check_the_d2jsp_price_backend_matches_its_database),
+    ("a windowed frame is read inside its game", _check_a_windowed_frame_is_read_inside_its_game),
 ]
 
 
@@ -12008,6 +12029,7 @@ WATCHES = {
     # own and the empty tuple is the honest answer.
     "his window has a keyboard door": (),
     "the d2jsp price database is on its tab": (),
+    "a windowed frame is read inside its game": (),
 }
 
 

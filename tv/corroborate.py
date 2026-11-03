@@ -2572,6 +2572,11 @@ COVERED_BY = {
 }
 # Engines with NO invariant, each with the reason — a blank here would read as covered.
 NO_JOINT_YET = {
+    # v3856 - windowed lobby frames: one source today, said so rather than claimed covered.
+    'a windowed frame is read inside its game':
+        "the row measures a synthetic windowed frame through char_select's own game_box and lobby bands - the reader "
+        "grading itself. An independent second source would be his real windowed reels: per-size matched counts in "
+        "lobbyBySize rising above 0 for the 800-wide family once a console runs this; no joint reads that yet.",
     # v3854 - the D2JSP Advanced door onto the price database. CI caught it in neither registry.
     'the d2jsp price database is on its tab':
         "the row reads bible.html and control_app.py for the Advanced door and the quote's fold, then grades "

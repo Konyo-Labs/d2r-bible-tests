@@ -144,6 +144,66 @@ def hist_root():
 
 
 # ── the detector (free) ─────────────────────────────────────────────────────────────────────────────────────
+# v3856 - WINDOWED FRAMES. Dean plays D2R in a window: his reels are the game plus the window's title bar, border and
+# letterbox (799x434, 800x402, 800x409 ... checked 118,420 at 800x402, matched 150). The bands are fractions of the
+# GAME, so measured on the whole frame the title bar lifted the full value and the right pane slid, and no size of that
+# family reached two clean lobby reads. game_box() finds the game inside the frame: it trims edge rows and columns that
+# are window chrome (flat and very bright, or flat black letterbox), never more than GAME_TRIM_MAX of a side, and keeps
+# the whole frame when the trim would leave less than GAME_MIN_AREA. Both scanners measure inside that box.
+GAME_TRIM_MAX = 0.25
+GAME_MIN_AREA = 0.5
+_CHROME_STD = 14.0
+
+
+def _chrome(mean, std):
+    return std < _CHROME_STD and (mean > 150 or mean < 10)
+
+
+def game_box(im):
+    """(x0, y0, x1, y1) of the game inside an RGB frame: window chrome and letterbox trimmed from each edge."""
+    import numpy as np
+    w, h = im.size
+    a = np.asarray(im.convert("L"), dtype=np.float32)
+    if a.size == 0:
+        return 0, 0, w, h
+    rows_m, rows_s = a.mean(axis=1), a.std(axis=1)
+
+    def trim(ms, ss, n):
+        lim = int(n * GAME_TRIM_MAX)
+        lo = 0
+        while lo < lim and _chrome(ms[lo], ss[lo]):
+            lo += 1
+        hi = n
+        while n - hi < lim and hi - 1 > lo and _chrome(ms[hi - 1], ss[hi - 1]):
+            hi -= 1
+        return lo, hi
+    y0, y1 = trim(rows_m, rows_s, h)
+    band = a[y0:y1] if y1 > y0 else a      # the columns are read below the title bar, not through it
+    x0, x1 = trim(band.mean(axis=0), band.std(axis=0), w)
+    if (x1 - x0) * (y1 - y0) < GAME_MIN_AREA * w * h:
+        return 0, 0, w, h
+    return x0, y0, x1, y1
+
+
+def _in_game(im):
+    """The frame cut to its game area (game_box): a full-screen frame comes back whole."""
+    box = game_box(im)
+    return im if box == (0, 0) + im.size else im.crop(box)
+
+
+def windowed_fixture(path, frame=(800, 409), title=31, game=(672, 378), sat=0.05, val=0.19):
+    """v3856 - a windowed-mode lobby frame for the law and the doctor: a flat lobby plaque of `game` size inside a
+    `frame` with a bright window title bar of `title` px on top and black letterbox around it (Dean's 800x409 family)."""
+    from PIL import Image
+    w, h = frame
+    im = Image.new("RGB", (w, h), (0, 0, 0))
+    im.paste(Image.new("RGB", (w, title), (236, 236, 236)), (0, 0))
+    plaque = Image.new("HSV", game, (0, int(sat * 255), int(val * 255))).convert("RGB")
+    im.paste(plaque, ((w - game[0]) // 2, title + (h - title - game[1]) // 2))
+    im.save(path, quality=95)
+    return path
+
+
 def _sv(im, box):
     from PIL import ImageStat
     st = ImageStat.Stat(im.crop(tuple(int(v) for v in box)).resize((20, 40)).convert("HSV"))
@@ -158,7 +218,7 @@ def panel_stats(path):
         from PIL import Image
         with Image.open(path) as im:
             im.draft("RGB", (max(1, im.size[0] // 4), max(1, im.size[1] // 4)))
-            im = im.convert("RGB")
+            im = _in_game(im.convert("RGB"))
             w, h = im.size
             rs, rv = _sv(im, (max(0, w - PANEL_W_H * h), 0.07 * h, w, 0.93 * h))
             ls, lv = _sv(im, (0.02 * h, 0.40 * h, 0.30 * h, 0.95 * h))
@@ -189,7 +249,7 @@ def lobby_stats(path):
         from PIL import Image, ImageStat
         with Image.open(path) as im:
             im.draft("RGB", (max(1, im.size[0] // 4), max(1, im.size[1] // 4)))
-            im = im.convert("RGB").convert("HSV")
+            im = _in_game(im.convert("RGB")).convert("HSV")
             w, h = im.size
 
             def sv(box):

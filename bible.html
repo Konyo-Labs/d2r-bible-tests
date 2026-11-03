@@ -11940,6 +11940,18 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       + ' · ' + frames + (frames === 1 ? ' frame' : ' frames'), rows);
   }
   /* the lobby counts per frame size: a compact table, most-checked first; the sizes nobody has looked at are ONE line */
+  /* v3856 - the empty In-game section says WHY no character was read, from the lobby counts, never a bare "None yet" */
+  window._chxNoneWhy = function(){
+    var L = (typeof window._cbLearnedNow === 'function') ? window._cbLearnedNow() : null;
+    var rows = (L && Array.isArray(L.lobbyBySize)) ? L.lobbyBySize : null;
+    if (!rows || !rows.length) return { k: 'unchecked', short: 'no lobby frame checked yet', long: 'No lobby or character-select frame has been checked on this console yet' };
+    var checked = 0, matched = 0, top = null;
+    rows.forEach(function(r){ checked += r.checked || 0; matched += r.matched || 0; if (!top || (r.checked || 0) > top.checked) top = r; });
+    if (!matched) return { k: 'uncalibrated', short: 'recording size not calibrated yet',
+      long: checked + ' frames checked at ' + rows.length + ' size' + (rows.length === 1 ? '' : 's') + ' (most at ' + top.size + '); none matched the lobby' };
+    return { k: 'few', short: 'no character read on two visits yet',
+      long: 'The lobby matched ' + matched + ' of ' + checked + ' frames, but no character has been read on two separate visits yet' };
+  };
   function _lobbySizeHtml(){
     var L = (typeof window._cbLearnedNow === 'function') ? window._cbLearnedNow() : null;
     if (!L || !L.ok) return '';
@@ -11996,7 +12008,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       ? 'Asking this console which characters you have in game\u2026'   /* GrokBot bug 6 - not UNKNOWN while it asks */
       : S.state === 'unknown'
       ? 'Which characters you have in game is UNKNOWN here — ' + esc(S.why) + '.'
-      : '<span title="A character joins once your reels see its character-select screen twice">No characters seen yet</span>') + '</div>';
+      : (function(){ var w = window._chxNoneWhy(); return '<span title="A character joins once your reels see its character-select screen twice">No characters seen yet</span>'
+          + ' <span class="chx-none-why" data-none-why="' + w.k + '" title="' + esc(w.long) + '">· ' + esc(w.short) + '</span>'; })()) + '</div>';
     var sim = S.sim.map(function(id){ return _card(id, all[id], id === mainId); }).join('');
     /* v3855 item D (his ask): Your builds sit at the TOP, under the header, and + New character is their first card */
     var newTile = '<button type="button" class="chx-newtile" data-act="new" onclick="window._charsNew()">'
