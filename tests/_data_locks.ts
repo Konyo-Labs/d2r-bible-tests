@@ -15,7 +15,9 @@ export const BOSS_CHIPS_TOTAL = 13;
 // 69 _UNI_EXTRA uniques inside the one surface bible.html says in words they must never enter.
 // The routing now reads window.ITEM_REGISTRY (every droppable item) while ITEMS stays the curated
 // calculator DB — so this tripwire keeps doing its job and the number it guards did not move.
-export const CALC_ITEMS_TOTAL = 320;
+// v3859 — 320 → 318: Konyo ruled "Polaris Spear" is not a unique (removed) and "The Scourge" is
+// Stormlash's BASE (an alias of Stormlash, not a card). Both rows left ITEMS and the drop tables.
+export const CALC_ITEMS_TOTAL = 318;
 
 // Distinct item names across every boss dropTable — the MASTER drop index that
 // ITEM_REGISTRY is built from, and what the farm routing reads. This is a different
@@ -34,7 +36,8 @@ export const CALC_ITEMS_TOTAL = 320;
 // (ITEM_TIP: "t":"Runeword", Shael+Um+Tir affixes) listed as a farmable unique in ELEVEN boss
 // drop tables, with a codex entry calling it a unique amulet. A runeword cannot drop.
 // Same tripwire rule as its sibling: exact, and bumped deliberately.
-export const DROP_INDEX_TOTAL = 547;
+// v3859 — 547 → 545: the same two rows (the fake spear, and The Scourge folded into Stormlash).
+export const DROP_INDEX_TOTAL = 545;
 
 // Collapsible .sec-h sections on the binds tab — bump in LOCKSTEP when adding
 // a binds section (the v109 memory rule).

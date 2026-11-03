@@ -259,7 +259,8 @@ test.describe('v1716 — every hunt on the board resolves to a real run', () => 
                 `[v1716 dropped]  from ITEM_VALUE (${r.ivDroppedN}), first 12: ${r.ivDroppedSample.join(', ')}\n` +
                 `[v1716 latent]   ${r.latent.length}: ${r.latent.join(', ')}`);
     expect(r.fail, 'roster entries that cannot be opened or hunted: ' + r.fail.join(' | ')).toEqual([]);
-    expect(r.rosterN, 'the roster must have grown by exactly the eleven').toBe(398);
+    // v3859 — 398 → 396: his ruling removed the fake "Polaris Spear" and folded "The Scourge" into Stormlash.
+    expect(r.rosterN, 'the roster must have grown by exactly the eleven (less the two v3859 removals)').toBe(396);
     /* he ruled on the ROSTER. The curated calculator grid is a different surface and stays put.
        v1724 — this used to hard-code 322, so removing one garbled row (Bloodmoon's Light) made a
        guard about the ROSTER fail over the CALCULATOR's count. Read the single definition instead

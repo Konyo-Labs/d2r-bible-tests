@@ -1,7 +1,7 @@
 {
  "_comment": "GENERATED from bible.html window._gUniqueRoster(). Do not hand-edit — run: python3 tv/roster_sync.py --write",
- "sourceHash": "a364e7b4f6114747d79bbcf9c2736d5269d57b8f6648d847a47de1da3c47ef7f",
- "count": 398,
+ "sourceHash": "8ec35b8e2813b14845b048a2245551795a0c78b1fe571ebba30f3b9286c77971",
+ "count": 396,
  "names": [
   "Alma Negra",
   "Andariel's Visage",
@@ -234,7 +234,6 @@
   "Pierre Tombale Couant",
   "Plague Bearer",
   "Pluckeye",
-  "Polaris Spear",
   "Pompeii's Wrath",
   "Pus Spitter",
   "Que-Hegan's Wisdom",
@@ -353,7 +352,6 @@
   "The Rising Sun",
   "The Salamander",
   "The Scalper",
-  "The Scourge",
   "The Spirit Shroud",
   "The Stone of Jordan",
   "The Tannr Gorerod",

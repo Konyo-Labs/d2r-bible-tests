@@ -12,7 +12,8 @@
       "v3859 - the blueprint names session_route.py and read_identity.py again (test_the_blueprint_names_the_engine was red on both)",
       "v3859 (e) - --full is faster: the blueprint's engine index parses each file once per process instead of 8 times (test_the_blueprint_names_the_engine 147 s -> about 25 s, nothing skipped)",
       "v3859: ITEM_CODEX names 8 unique bases by the CASC item name (Small Charm, Grand Charm, Ring, Amulet, Silver-edged Axe), so the chronicle's base chip and the codex agree at the source",
-      "v3859: a drop-table qlvl of 0 is 'unknown', not a level - Blinkbat's Form (and any row like it) now takes the game file's qlvl from cb-db, so every chip under 'Every missing unique' shows its q"
+      "v3859: a drop-table qlvl of 0 is 'unknown', not a level - Blinkbat's Form (and any row like it) now takes the game file's qlvl from cb-db, so every chip under 'Every missing unique' shows its q",
+      "v3859: Konyo ruled 'Polaris Spear' is not a unique - removed from the roster, codex, blurbs and drop tables - and 'The Scourge' is Stormlash's base, so it resolves to Stormlash and a ledger row under it counts Stormlash. Roster 398 -> 396, chronicle stays 397 + 6 = 403; calculator 320 -> 318, drop index 547 -> 545"
     ]
   },
   {

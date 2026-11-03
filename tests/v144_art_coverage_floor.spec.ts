@@ -33,9 +33,7 @@ const KNOWN_UNMAPPED = [
   'Natalya\'s Odium (any)',
   // runeword / parenthetical-named entries (route via openDrop, no item thumb)
   'Crescent Moon (sword)',
-  // uniques not confidently present in the diablo2.io index (memory: skipped)
-  'Polaris Spear',
-  'The Scourge',
+  // v3859 — 'Polaris Spear' (not a unique) and 'The Scourge' (Stormlash's base) left the grid by his ruling.
 ];
 
 test.describe('v144 art coverage floor', () => {

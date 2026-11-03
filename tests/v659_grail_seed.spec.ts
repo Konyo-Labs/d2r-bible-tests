@@ -82,7 +82,9 @@ test('boot floors 229 found of the 364 F-Uniques universe, with exact in-game Fi
      The two numbers BELOW do not move, and that is the point: every one of the eleven is UNFOUND,
      so his ledger is untouched. If found or flN ever moves on a roster change, something wrote to
      his testimony. */
-  expect(r.extraN).toBe(80);   // v1720 +11 RotW · v1703 +Polaris Spear/The Scourge · v1695 +Fleshrender · v682 +4
+  /* v3859 — 80 → 78. Konyo: "Polaris Spear" is not a real unique (gone) and "The Scourge" is the base
+     Stormlash sits on (an alias of Stormlash). total stays 397: the chronicle had filtered both out already. */
+  expect(r.extraN).toBe(78);   // v1720 +11 RotW · v1703 +2 (removed v3859) · v1695 +Fleshrender · v682 +4
   /* ⚠⚠ v2705 — 392, NOT 398, AND THE CODE IS THE PART THAT IS RIGHT. His v2680 ruling,
      2026-09-05: "for the chronicle all sunders 6 of them need to be counted in the chronicle
      specifically as 1 tally for each.. and for the vault that a different story the entire item
@@ -95,7 +97,7 @@ test('boot floors 229 found of the 364 F-Uniques universe, with exact in-game Fi
      named outright: Latent Black Cleft, Cold Rupture, Crack of the Heavens, Rotting Fissure,
      Bone Break, Flame Rift. This line said 398 since v1720 and had been red since the ruling —
      a spec encoding the world as it was before he ruled. LAST DECLARATION WINS. */
-  expect(r.total).toBe(397);            // hunt cards: 392 after the sunder fold, minus Polaris Spear and The Scourge, one Rainbow Facet replaced by 8. The six quest rows stay inside chronTotal 403 and off this list.
+  expect(r.total).toBe(397);            // hunt cards: 392 after the sunder fold, minus the two v3859 removed (fake spear; The Scourge = Stormlash), one Rainbow Facet replaced by 8. The six quest rows stay inside chronTotal 403 and off this list.
   expect(r.found).toBe(309);            // the seeded bare "Rainbow Facet" is not one of the eight rows, so it stops counting as a found row (310 -> 309). seedN stays 309.
   expect(r.flN).toBe(430);              // the seed floor's unique + set-piece stamps plus the one-shots, measured
   expect(r.wormskull).toBe('Jun 22, 2026 · 02:00');

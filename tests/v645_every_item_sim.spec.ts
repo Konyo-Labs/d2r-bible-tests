@@ -44,7 +44,8 @@ test('ALL grail uniques: reachable + full found lifecycle (tick → dated/tallie
       /* v1703 — added when Konyo ruled the four "missing" uniques exist. Two already did, under
          their proper names: "The Mahim-Oak Curio" and "The Iron Jang Bong" are in ITEM_VALUE, in
          _UNI_EXTRA, and SEEDED FOUND in _GRAIL_SEED (May 18 / May 19). Only Polaris Spear and The
-         Scourge were genuinely absent and only those two joined the roster. */
+         Scourge were genuinely absent and only those two joined the roster. v3859: he later ruled the
+         spear is not a unique (removed) and The Scourge is Stormlash's base, so neither is in ITEMS now. */
       'Mahim-Oak Curio': 'The Mahim-Oak Curio',
       'Iron Jang Bong': 'The Iron Jang Bong',
     };

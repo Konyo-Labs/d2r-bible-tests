@@ -18,6 +18,7 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
  * has, and the denominator would inflate by two.
  *
  * So only Polaris Spear and The Scourge joined the roster; the bare spellings became name variants.
+ * (v3859: he later ruled those two are not cards — see below.)
  * This file pins BOTH halves, because the dangerous half is the one that looks like a fix.
  *
  * ⚠ FIXTURES NEVER TOUCH LIVE DATA — everything here seeds through page.addInitScript, and the
@@ -25,17 +26,24 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
  * deliberately not duplicated here.
  */
 
-const NEWLY_ADDED = ['Polaris Spear', 'The Scourge'];
+/* v3859 — HIS LATER RULING REPLACES THE "NEWLY ADDED" HALF. "Polaris Spear" is not a real unique (no
+ * row in the D2R CASC uniques table, tv/item_tables.json) and is gone from the roster, the codex and
+ * the drop tables. "The Scourge" is the BASE item Stormlash sits on (CASC unique 360, code 7fl,
+ * items["7fl"] = "Scourge"), so it is an ALIAS of Stormlash, not a card. The real assertions stay:
+ * the item resolves as a unique, he has somewhere to record it, and a find lands in the shared
+ * LEDGER. They are now asked of the real item under its real name. */
+const NOT_A_UNIQUE = ['Polaris Spear'];
+const ALIAS_OF: Record<string, string> = { 'The Scourge': 'Stormlash' };
 const ALREADY_HIS = ['The Mahim-Oak Curio', 'The Iron Jang Bong'];
 const BARE_VARIANTS: Record<string, string> = {
   'Mahim-Oak Curio': 'The Mahim-Oak Curio',
   'Iron Jang Bong': 'The Iron Jang Bong',
 };
 
-test('the two genuinely-absent uniques are on the roster, resolve as uniques, and are tickable', async ({ page }) => {
+test('the ruled names: the fake spear is gone, The Scourge resolves to Stormlash, Stormlash is tickable', async ({ page }) => {
   await page.goto(URL);
   await page.waitForTimeout(2200);
-  const r = await page.evaluate(async (names: string[]) => {
+  const r = await page.evaluate(async (p: { fake: string[]; alias: Record<string, string> }) => {
     const w: any = window;
     w.switchTab('funi');
     await new Promise((res) => setTimeout(res, 900));
@@ -43,48 +51,80 @@ test('the two genuinely-absent uniques are on the roster, resolve as uniques, an
     const ticks = new Set([...box.querySelectorAll('.gf-allgrid [data-gf-tick]')]
       .map((t: any) => t.getAttribute('data-gf-tick')));
     const roster = new Set(typeof w._gUniqueRoster === 'function' ? w._gUniqueRoster() : []);
-    return names.map((n) => ({
-      n,
-      inRoster: roster.has(n),
-      kind: (w.d2rResolveItem ? (w.d2rResolveItem(n) || {}).kind : null) || null,
-      // THE THING HE ACTUALLY NEEDS: somewhere to record the find
-      hasTick: ticks.has(n),
-    }));
-  }, NEWLY_ADDED);
+    const log = JSON.parse(localStorage.getItem('d2r_foundLog') || '{}');
+    return {
+      fake: p.fake.map((n) => ({ n, inRoster: roster.has(n), hasTick: ticks.has(n),
+        kind: (w.d2rResolveItem ? (w.d2rResolveItem(n) || {}).kind : null) || null })),
+      alias: Object.keys(p.alias).map((n) => {
+        const res = w.d2rResolveItem ? (w.d2rResolveItem(n) || {}) : {};
+        const real = p.alias[n];
+        return { n, real, aliasInRoster: roster.has(n), aliasHasTick: ticks.has(n),
+          kind: res.kind || null, canonical: res.canonical || null,
+          realInRoster: roster.has(real), realKind: ((w.d2rResolveItem(real) || {}).kind) || null,
+          // THE THING HE ACTUALLY NEEDS: somewhere to record the find (a tick while missing, the ledger once found)
+          realRecordable: ticks.has(real) || Object.prototype.hasOwnProperty.call(log, real),
+          realTickAndFound: ticks.has(real) && Object.prototype.hasOwnProperty.call(log, real) };
+      }),
+    };
+  }, { fake: NOT_A_UNIQUE, alias: ALIAS_OF });
 
-  for (const row of r) {
-    expect(row.inRoster, `${row.n} is not on _gUniqueRoster()`).toBe(true);
+  for (const row of r.fake) {
+    expect(row.inRoster, `${row.n} is not a unique (his v3859 ruling) yet sits on _gUniqueRoster()`).toBe(false);
+    expect(row.hasTick, `${row.n} still renders a tick`).toBe(false);
+    expect(row.kind, `${row.n} still resolves as an item`).toBe('unknown');
+  }
+  for (const row of r.alias) {
     expect(row.kind, `${row.n} does not resolve as a unique`).toBe('unique');
-    expect(row.hasTick, `${row.n} has no tick in the F·Uniques grid — he cannot record finding it`).toBe(true);
+    expect(row.canonical, `${row.n} must resolve to ${row.real}`).toBe(row.real);
+    expect(row.aliasInRoster, `${row.n} became its own roster row — a ghost of ${row.real}`).toBe(false);
+    expect(row.aliasHasTick, `${row.n} rendered its own tick — a ghost of ${row.real}`).toBe(false);
+    expect(row.realInRoster, `${row.real} is not on _gUniqueRoster()`).toBe(true);
+    expect(row.realKind, `${row.real} does not resolve as a unique`).toBe('unique');
+    expect(row.realRecordable, `${row.real} has no tick and no ledger row — he cannot record finding it`).toBe(true);
+    expect(row.realTickAndFound, `${row.real} is found yet still in the MISSING grid`).toBe(false);
   }
 });
 
-test('a find of a newly-added unique lands in the shared LEDGER, never the profile-scoped vault', async ({ page }) => {
-  /* v1696's defect, and these two are exactly its shape: toggleOwned() routed items that were in
-     the widened roster but not in (ITEMS ∪ _UNI_EXTRA) into d2r_owned — which forks per profile —
-     instead of d2r_foundLog, which MAIN and LADDER share. A tick that does not cross to LADDER is
-     a silent ladder-doctrine breach, so it is pinned here rather than assumed. */
+test('a find recorded under the alias counts the real unique, and a tick lands in the shared LEDGER', async ({ page }) => {
+  /* v1696's defect: toggleOwned() once routed roster items outside (ITEMS ∪ _UNI_EXTRA) into
+     d2r_owned — which forks per profile — instead of d2r_foundLog, which MAIN and LADDER share.
+     v3859: asked of Stormlash, the real item, plus the alias half: an old ledger row "The Scourge"
+     must count Stormlash found, not sit beside it as a second item. */
   await page.goto(URL);
   await page.waitForTimeout(2200);
-  const r = await page.evaluate(async (names: string[]) => {
+  const r = await page.evaluate(async (alias: Record<string, string>) => {
     const w: any = window;
     const out: any[] = [];
-    for (const n of names) {
+    for (const a of Object.keys(alias)) {
+      const n = alias[a];
+      const has = (k: string) => Object.prototype.hasOwnProperty.call(JSON.parse(localStorage.getItem('d2r_foundLog') || '{}'), k);
+      const wasFound = has(n);
+      if (wasFound) w.toggleOwned(n);                 // start from un-found, restore at the end
       w.toggleOwned(n);
-      const log = JSON.parse(localStorage.getItem('d2r_foundLog') || '{}');
       const vault = JSON.parse(localStorage.getItem('d2r_owned') || '[]');
-      const after = { n, inLedger: Object.prototype.hasOwnProperty.call(log, n), inVault: vault.indexOf(n) >= 0 };
-      w.toggleOwned(n);   // restore — this test must leave the board as it found it
-      const log2 = JSON.parse(localStorage.getItem('d2r_foundLog') || '{}');
-      out.push({ ...after, restored: !Object.prototype.hasOwnProperty.call(log2, n) });
+      const tick = { inLedger: has(n), inVault: vault.indexOf(n) >= 0 };
+      w.toggleOwned(n);                               // un-tick
+      const untick = !has(n);
+      // the alias half: a ledger row under the alias spelling
+      const before = JSON.parse(localStorage.getItem('d2r_foundLog') || '{}');
+      const missingBefore = (w.funiScan().missing || []).some((x: any) => x.n === n);
+      const seeded = Object.assign({}, before); seeded[a] = before[a] || 'v3859 probe';
+      localStorage.setItem('d2r_foundLog', JSON.stringify(seeded));
+      const missingAfter = (w.funiScan().missing || []).some((x: any) => x.n === n);
+      localStorage.setItem('d2r_foundLog', JSON.stringify(before));
+      if (wasFound) w.toggleOwned(n);
+      out.push({ n, a, ...tick, untick, missingBefore, missingAfter, restored: has(n) === wasFound });
     }
     return out;
-  }, NEWLY_ADDED);
+  }, ALIAS_OF);
 
   for (const row of r) {
     expect(row.inLedger, `${row.n} did not reach d2r_foundLog (the SHARED chronicle)`).toBe(true);
-    expect(row.inVault, `${row.n} landed in d2r_owned — the vault forks per profile, so this would not cross to LADDER`).toBe(false);
-    expect(row.restored, `${row.n} survived its own un-tick`).toBe(true);
+    expect(row.inVault, `${row.n} landed in d2r_owned — the vault forks per profile`).toBe(false);
+    expect(row.untick, `${row.n} survived its own un-tick`).toBe(true);
+    expect(row.missingBefore, `premise: ${row.n} un-found must be on the missing list`).toBe(true);
+    expect(row.missingAfter, `a ledger "${row.a}" did not count ${row.n} found`).toBe(false);
+    expect(row.restored, `${row.n} was not restored to how the board started`).toBe(true);
   }
 });
 

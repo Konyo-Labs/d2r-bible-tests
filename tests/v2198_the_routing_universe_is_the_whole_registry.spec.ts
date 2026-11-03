@@ -82,8 +82,8 @@ test('the LOCKED chronicle databases do not move', async ({ page }) => {
   expect(m.runewordTotal, 'RUNEWORD_CHRONICLE_TOTAL moved — his ruling is 99').toBe(99);
   expect(m.runewords, 'the RUNEWORDS table changed size').toBe(101);
   expect(m.curated, 'ITEMS changed size — the CALCULATOR was redecided, which v2198 must never do')
-    .toBe(320);
-  expect(m.registry, 'ITEM_REGISTRY changed size').toBe(547);
+    .toBe(318);   // v3859 320 -> 318: his ruling removed the fake "Polaris Spear" and folded "The Scourge" into Stormlash
+  expect(m.registry, 'ITEM_REGISTRY changed size').toBe(545);   // v3859 547 -> 545, the same two rows
   /* ⚠ THE DENOMINATORS ARE THE LOCKED DATABASES. THE NUMERATORS ARE HIS PROGRESS.
      This asserted the page reads exactly ['0/403'] — a snapshot of a board with an EMPTY ledger,
      taken on the day. CI reads 99/99, 248/403, 108/135, 108/135, 248 / 403, which is a board whose

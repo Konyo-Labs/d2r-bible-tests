@@ -14,7 +14,7 @@ test('_artRarity resolves uniques AND sets AND runes (the unified resolver)', as
     const f = (window as any)._artRarity;
     return {
       metalgrid: f('Metalgrid'), razor: f("Razor's Edge"), stormlash: f('Stormlash'),
-      soj: f('The Stone of Jordan'), rotw: f('Polaris Spear'),
+      soj: f('The Stone of Jordan'), rotw: f('Entropy Locket'),
       hwanin: f("Hwanin's Majesty (set)"), talAgg: f('Tal Rasha set (any piece)'),
       cowAgg: f("Cow King's Leathers (set)"),
     };
@@ -28,8 +28,8 @@ test('_artRarity resolves uniques AND sets AND runes (the unified resolver)', as
      ITEM_CODEX entry gave its base as "Reign of the Warlock" (the MOD'S NAME), its note described
      a sin claw, its numbers were cloned from Jade Talon, and it was absent from ITEM_VALUE, the
      roster, his ledger and silospen's pool. The resolver returning '' for it is now CORRECT.
-     Polaris Spear takes its place and exercises the same path — a real RotW unique carried by
-     _UNI_EXTRA with no ITEM_VALUE entry, which is exactly the case that used to fall through. */
+     Polaris Spear took its place until v3859, when Konyo ruled it is not a unique at all. Entropy
+     Locket now exercises the path: a real RotW unique carried by _UNI_EXTRA (a v1720 ruling item). */
   expect(r.rotw).toBe('unique');
   // sets still resolve green
   expect(r.hwanin).toBe('set');
