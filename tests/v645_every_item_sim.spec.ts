@@ -132,10 +132,17 @@ test('VISIBILITY: with every drawer open, ALL missing uniques appear in the run 
     const missing = w.funiScan().total - w.funiScan().found;
     const runChips = new Set([...box.querySelectorAll('.gf-chip[data-arttip]')].map((c: any) => c.getAttribute('data-arttip')));
     const wall = new Set([...box.querySelectorAll('.gf-allgrid [data-gf-tick]')].map((t: any) => t.getAttribute('data-gf-tick')));
-    return { missing, runChipN: runChips.size, wallN: wall.size, chipTicks: box.querySelectorAll('.gf-chip .gf-tick').length };
+    /* v3859 (a81638dd, his 403 ruling): the wall is the TALLY - the 397 hunt cards plus the six colossal jewels, which
+     * have no run card. Those six are the only wall rows a run card may lack; any other one is a hunt the runs dropped. */
+    const jewels = new Set((w._colossalTallyRows() || []).map((x: any) => x.n));
+    const huntless = [...wall].filter((n) => !runChips.has(n));
+    return { missing, runChipN: runChips.size, wallN: wall.size, chipTicks: box.querySelectorAll('.gf-chip .gf-tick').length,
+             jewelN: jewels.size, notJewel: huntless.filter((n) => !jewels.has(n)), huntlessN: huntless.length };
   });
   expect(r.runChipN).toBe(r.missing);   // every missing unique visible in its run card (v647.1 in-card drawers)
-  expect(r.wallN).toBe(r.missing);      // and in the Grail Wall
+  expect(r.jewelN).toBe(6);             // the ruling's six, read from the page, never re-typed here
+  expect(r.notJewel, 'a wall row with no run card that is not a colossal jewel').toEqual([]);
+  expect(r.wallN - r.huntlessN).toBe(r.missing);   // and in the Grail Wall, beside the open jewels
   expect(r.chipTicks).toBe(r.missing);  // every chip carries its ✓
 });
 
