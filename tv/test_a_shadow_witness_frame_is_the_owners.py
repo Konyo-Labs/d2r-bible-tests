@@ -129,7 +129,7 @@ if (window._tvdShadowWitnessTake) {
 }
 console.log(JSON.stringify(out));
 '''
-        return json.loads(subprocess.check_output([node, '-e', js], timeout=30).decode())
+        return json.loads(subprocess.check_output([node, '-'], input=js.encode('utf-8'), timeout=30).decode())
 
     def test_the_chain_and_the_words_run_in_a_shadow(self):
         r = self._run(True)

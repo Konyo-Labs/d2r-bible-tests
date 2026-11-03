@@ -83,7 +83,7 @@ _d2jspLampPaint({state:'on',why:'signed in'}); o.on=JSON.parse(JSON.stringify(A)
 _d2jspLampPaint(null); o.unk=JSON.parse(JSON.stringify(A));
 console.log(JSON.stringify(o));
 '''
-        r = json.loads(subprocess.check_output([node, '-e', js], timeout=30).decode())
+        r = json.loads(subprocess.check_output([node, '-'], input=js.encode('utf-8'), timeout=30).decode())
         self.assertEqual(r['off'].get('data-lamp'), 'off')
         self.assertEqual(r['off'].get('data-fault'), '1', 'no session must read red')
         self.assertIn('click to open the d2jsp login', r['offT'])
