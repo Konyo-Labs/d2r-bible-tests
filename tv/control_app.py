@@ -1419,6 +1419,35 @@ _WIN_CREATE = 0x00000200 | 0x08000000 if IS_WIN else 0
 #: so it outlives the console. Only the capture spawn uses it.
 _WIN_BREAKAWAY = 0x01000000 if IS_WIN else 0
 
+
+def _popen_scanner(popen_kw, say=None):
+    """v3859 (Dean, WinError 5) - start the scanner; if Windows refuses the job breakaway, start it inside the job.
+
+    v3850 added CREATE_BREAKAWAY_FROM_JOB. When the launcher's job does not allow breakaway, CreateProcess
+    fails with ERROR_ACCESS_DENIED (WinError 5) and the scanner never started. Returns (proc, plain_note)."""
+    try:
+        return subprocess.Popen(**popen_kw), None
+    except OSError as e:
+        flags = int(popen_kw.get("creationflags") or 0)
+        if getattr(e, "winerror", None) != 5 or not (flags & 0x01000000):
+            raise
+        kw = dict(popen_kw)
+        kw["creationflags"] = flags & ~0x01000000
+        note = ("access denied leaving the launcher's job (it forbids breakaway); "
+                "started the scanner inside it instead - it stops when this console closes")
+        if say:
+            say(note)
+        return subprocess.Popen(**kw), note
+
+
+def _scanner_start_error(e, exe):
+    """v3859 - the plain sentence for a scanner that did not start; never a bare WinError."""
+    _exe_name = str(exe or "python").replace("\\", "/").rsplit("/", 1)[-1]
+    if getattr(e, "winerror", None) == 5 or isinstance(e, PermissionError):
+        return ("access denied launching the scanner (%s) - Windows refused it; check antivirus "
+                "or folder permissions, then press start again" % _exe_name)
+    return "could not launch the scanner (%s): %s" % (_exe_name, e)
+
 # ⚠⚠ v3407 — GIT.EXE WINDOWS WERE ALT-TABBING HIM OFF THE GAME, EVERY COUPLE OF MINUTES.
 # MEASURED on the Windows box 2026-09-21: 2-3 console windows in a row stealing focus while
 # TV DIABLO sat idle, parent `pythonw control_app.py --open`. Git for Windows' PATH git
@@ -7307,14 +7336,16 @@ def start_agent(sim=False, test=False, mini=None, focus=None, origin="hand"):
             popen_kw["start_new_session"] = False
 
         try:
-            _agent_proc = subprocess.Popen(**popen_kw)
+            _agent_proc, _spawn_note = _popen_scanner(
+                popen_kw, say=lambda m: (_log_fp.write("!! " + m + "\n"), _log_fp.flush()))
             _agent_adopted_pid = None
             _pid_cache_seed(_agent_proc.pid)
         except Exception as e:
             _agent_mode = "off"
             _log_fp.write("!! Popen failed: %s\n" % e)
             _log_fp.flush()
-            return {"ok": False, "error": "failed to start scanner: %s" % e, "mode": "off"}
+            return {"ok": False, "error": "failed to start scanner: " + _scanner_start_error(e, py_exe),
+                    "mode": "off"}
         _write_pid(PID_PATH, _agent_proc.pid)
         _agent_mode = "sim" if sim else "live"
         _agent_origin = str(origin or "hand")
@@ -7387,7 +7418,7 @@ def start_agent(sim=False, test=False, mini=None, focus=None, origin="hand"):
         _mode = _agent_mode
     return {
         "ok": True,
-        "msg": "started",
+        "msg": "started" + (" - " + _spawn_note if _spawn_note else ""),
         "mode": _mode,
         # v2362 — WHO asked for this reel. Without it the console cannot tell his own
         # click from the shadow reader, and so presented a background lane as a full

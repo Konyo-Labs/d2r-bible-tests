@@ -10233,6 +10233,13 @@ GATES = [
              "list membership, the card had its own 2040 s bar. fleet_presence.presence_of is now the only rule (console "
              "heartbeat fresh within 20 min OR the recorder alive and fresh = online; else 'offline - last seen X'; no "
              "readable time = UNKNOWN). /api/fleet stamps it, the banner and card only read it. RED_PROOF reverts each joint."),
+    Gate("test_a_refused_breakaway_still_starts_the_scanner",
+         [sys.executable, os.path.join(HERE, "test_a_refused_breakaway_still_starts_the_scanner.py")], 60,
+         needs_app=False,
+         why="v3859 (Dean, Nov 2 18:43) - 'failed to start scanner: [WinError 5] Access is denied'. v3850 spawns the "
+             "reel-cutter with CREATE_BREAKAWAY_FROM_JOB; a launcher job that forbids breakaway makes CreateProcess "
+             "fail with access denied, so nothing started. _popen_scanner retries once inside the job and the start "
+             "reply says so; any other refusal is a plain sentence, never a bare WinError. RED_PROOF reverts each joint."),
     Gate("test_the_reel_cutter_holds_one_lease",
          [sys.executable, os.path.join(HERE, "test_the_reel_cutter_holds_one_lease.py")], 120,
          needs_app=False,
