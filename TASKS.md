@@ -1823,7 +1823,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3858** | `(this commit)` | v3858 — layout, sockets, pushes and worn pictures |
+| **v3859** | `(this commit)` | v3859 — session counting, ALT shelf and uniques |
+| **v3858** | `41ceb8e3` | v3858 — layout, sockets, pushes and worn pictures |
 | **v3857** | `7d10ee58` | v3857 — shadow Characters, theatre and d2jsp fixes |
 | **v3856** | `c4f9f630` | v3856 — Characters seals, shadow session PLAY and AFK, Vault evidence (heart rows landed with each item) |
 | **v3855** | `5224262d` | v3855 — HEART five blind red-proofs now hit live doors (REG-2962) |

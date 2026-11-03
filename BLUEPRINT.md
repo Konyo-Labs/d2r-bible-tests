@@ -334,7 +334,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 
 ## GATES
 
-    1434 registered in tv/run_gates.py — every one named below with what it guards,
+    1456 registered in tv/run_gates.py — every one named below with what it guards,
     so that "does a law already exist for this?" is answered by reading this file.
 
 - **blueprint-agrees** — v2403 — TWO MAPS OF ONE FACT, AND WHERE THEY DISAGREE IS THE FINDING.
@@ -467,6 +467,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_film_count_is_not_the_photo_count** — REG-2158 (#252) - the theatre said film 11 beside all 20 photos and never said which count was which.
 - **test_a_find_opens_its_own_reel** — REG-2061 (#293, GrokBot 420-421) - '+51 more' on Session 28 played Session 48's film under a SESSION 28 header: the find doors passed only the number,…
 - **test_a_finished_sweep_frees_the_relaunch** — REG-1745 - the sweep lock only ever went cold, never free: a chronicle sweep that banked its result at 23:28 still blocked the ALT's relaunch onto v35…
+- **test_a_fixed_windows_x_ignores_the_rail_scroller** — the heart window close sits on its corner at every width
 - **test_a_fixture_pack_is_not_his_footage** — his recorded runs, staged so Grok Bot can click them on the guest seat.
 - **test_a_fleet_card_knows_what_clips_it** — REG-2082 (GrokBot 425 K06) - the top fleet row's card opened above and was cut at the rail's edge: the ceiling knew only the tab bar, not the rail scr…
 - **test_a_fleet_card_opens_where_it_can_be_read** — REG-2058 (#280, GrokBot 418 K02) - the rail's top fleet card always opened above its row and ran its header under the tab bar.
@@ -537,6 +538,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_keeper_row_sets_where_its_copies_go** — REG-2902 (#149.2) - each Keepers row carries Destination [Auto|Shared|WAR|Mule], stored as {want, dest} and routed at once
 - **test_a_kept_or_dismissed_read_can_come_back** — #154.17 REG-2830/2831 - a kept read is owned with a receipt, and its X and a dismissed read can be undone from the toolbar
 - **test_a_killed_prover_leaves_no_sandbox** — MEASURED 2026-09-26: 11 heart2.* repo copies in the temp dir, one per interrupted --prove (the gate's bound, a perl alarm) - a finally never runs unde…
+- **test_a_killed_push_keeps_what_it_proved** — #150 (REG-2942/2943) - a push killed mid-gate keeps every PROVEN a green checkpoint clean run already bracketed
 - **test_a_killed_run_is_never_a_red** — REG-2350 (#42 R5) - heart2 read a law run's exit code as its verdict, so a run a SIGNAL ended (reap's by-pid kill, jetsam, a Ctrl-C
 - **test_a_landed_update_is_not_an_edit** — A file that differs from HEAD but matches the blob already fetched at origin/main is an update that landed, not a person mid-edit.
 - **test_a_lane_count_names_the_population_it_counted** — A LANE COUNT MUST NAME WHAT IT COUNTED. Measured on his console, same lane, same second: the shelf lane header printed 'INTAKE 8 REELS' from a count o…
@@ -548,6 +550,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_lane_with_no_period_can_still_go_red** — A COMPUTED SLEEP IS NOT A LICENCE TO BE UNFALSIFIABLE.
 - **test_a_last_seen_is_aged_at_its_own_snapshot** — REG-1302 - the 'a present machine has a fresh last-seen' doctor row aged ONE cached roster against the check's own clock, so it measured the cache: 'G…
 - **test_a_lattice_refusal_is_a_reason_not_a_crash** — THE GRID READER RAISED WHERE EVERY OTHER PATH RETURNS A REASON.
+- **test_a_law_file_has_no_invalid_escape** — five law files compile with no invalid escape
 - **test_a_law_is_told_how_many_lanes_run** — REG-1997 - the v3603 clean wave ran test_control in 1 of 4 lanes and its CPU budget went red on the prover's own load
 - **test_a_law_never_asks_his_live_console** — REG-1729 (#156) - 8 laws reached his live console through TV_CONTROL_PORT's default 17772 (measured with every connect refused: all still passed - the…
 - **test_a_law_that_cannot_measure_is_unknown_never_red** — #161 REG-3061 - a gate whose every failure is a venue fault (its browser would not start) is VENUE: named apart, the set exits 3, CI publishes red=unk…
@@ -589,6 +592,8 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_maybe_sent_post_is_never_shown_as_unsent** — REG-2500 (#106 page side) - both d2jsp send paths kept their own reason map and fell back to 'nothing was posted' for every reason they did not name,…
 - **test_a_measured_find_date_stays_on_the_live_sighting** — #118 — a First Found stamp the parser kept is journaled on that chronicle row and hung on that same name by the live page.
 - **test_a_mini_focus_is_declared_only_when_he_chose_it** — REG-2041 (#214 F10, finding 17) - every Mini reel was stamped focusChosen: mini_start turned 'nothing chosen' into 'stash' and the page always posted…
+- **test_a_mini_focus_pill_keeps_its_picture_inside** — a focus pill holds its own picture and word
+- **test_a_mini_pill_breaks_at_its_dot** — the mini pills break at the dot, not before it
 - **test_a_missing_play_length_is_not_the_run** — REG-2156 (#277) - the theatre printed the run length, or 0m00s, when the film clock was missing.
 - **test_a_missing_row_never_claims_it_does_not_know** — HIS ORDER reading the state panel, 2026-09-15: "everythin should be reading healthy if its not missing and those that are are being fixed ...
 - **test_a_missing_run_length_is_not_a_dash** — REG-2155 (#277) - the dossier printed ran as a dash when t0 or t1 was missing, the same mark as a zero-length run.
@@ -772,6 +777,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_shadow_carries_the_owners_sessions_summarized** — #218 REG-2765: the owner's sessions summarized for a shadow - thumbnails only, oldest pictures dropped first
 - **test_a_shadow_cell_never_promises_an_action** — #230 REG-3117: every vault cell and tile word that promises an action goes through gridActSay and says read only in a shadow
 - **test_a_shadow_draws_the_owners_frame** — v3849 (a) - the snapshot carries the owner picture map and address
+- **test_a_shadow_frame_viewer_closes_to_the_vault** — a shadow's witness frame x / Esc closes only the photo, the shadow stays
 - **test_a_shadow_frames_record_is_signed_and_small** — #218 REG-2771: the owner's sessions ride their own signed record, small JPEG thumbnails only
 - **test_a_shadow_hover_names_whose_reels** — shadow hover names owner
 - **test_a_shadow_log_nobody_read_is_not_agreement** — #188 - g5_grok_eyes wrote 6,082 Claude-vs-Grok rows and NOTHING ever read them: the four keys occur at exactly four lines tree-wide and all four are w…
@@ -782,6 +788,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_shadow_shelf_says_playtime_and_plays_served_frames** — v3849 item 10 - a shadow shelf says playtime, AFK, chronicles found and items farmed, and PLAY only steps frames the owner already served
 - **test_a_shadow_shelf_shows_the_owners_sessions** — #218 REG-2810: in a shadow THE SHELF and the bar open the owner's summarized sessions, read only
 - **test_a_shadow_shows_their_characters** — v3856 - a shadow console's Characters tab draws their worn-gear cards from their upload's chars_learned
+- **test_a_shadow_witness_frame_is_the_owners** — a shadow's witness frame is asked of the owner, and a missing one says why in words
 - **test_a_shadow_writes_nothing_by_drag_or_on_four_tabs** — REG-3096 (#194 code half): a snapshot shadow writes nothing by drag or on the Vault, d2jsp, TV-D and Runes tabs
 - **test_a_sharded_suite_runs_every_case_once** — #42 lever 4 - test_control runs as parallel shards at push time
 - **test_a_sharded_verdict_counts_the_union** — REG-1915 - suite_verdict counted cases only from 'Ran N tests', so a green sharded test_control read '? cases' and a red one reported one shard's tail…
@@ -808,6 +815,8 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_slow_census_is_still_remembered** — #237 - the heart memo aged from when the census STARTED, so a census slower than its 45s TTL was born expired: inside a push at load ~7 /api/heart too…
 - **test_a_slow_character_read_still_reaches_the_shadow** — REG-2667 (#203, GrokBot bug 1) - the ALT's characters never reached its shadow: the upload's answer is built in-process, asked only when due, falls ba…
 - **test_a_slow_console_still_opens_the_shelf** — REG-2698 - a 10-22 s /api/sessions under load opens the Shelf instead of closing the stage, and the stage says it is waiting
+- **test_a_socket_range_fits_its_base** — a set or unique socket range never passes its base's max sockets
+- **test_a_socket_range_never_passes_its_base** — REG-3071 (#36): every surface that prints an item's socket range caps it at its base's ceiling (Aldur's Rhythm 2-3 on a Jagged Star)
 - **test_a_socketed_tome_files_as_a_base** — REG-2535 (V1 round-3 review of REG-2532) - the furniture law matched the WORD 'tome', so the Warlock's Tome, Dark Tome and Occult Tome (2 sockets: Rhy…
 - **test_a_source_audit_runs_in_a_child** — #172 phase B - a console sends a cold route census and lane-span parse to a short-lived child
 - **test_a_source_window_must_reach_its_subject** — A FIXED-SIZE SOURCE WINDOW MEASURES MY GUESS, NOT THE FILE.
@@ -863,6 +872,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_version_bump_keeps_the_proofs_of_laws_that_never_read_the_version** — REG-2602 - a coherent version bump leaves a proof's key only for a law that never reads the version: the stamp lines of the stamp surfaces are masked,…
 - **test_a_version_card_date_wears_no_zone** — v3856 - the version history card's date shows no zone label on a bare date
 - **test_a_version_stamp_is_not_a_page_change** — REG-1753 (#160) - every bump rewrites ONE line of bible.html, and the pre-push hook keyed render (3-5 min) and the Playwright smoke (~2 min) on the fi…
+- **test_a_visual_capture_waits_for_a_painted_frame** — visual laws capture a painted settled frame
 - **test_a_waiting_build_stops_the_sweep_at_a_banked_page** — REG-2039 (#239) - a chronicle sweep held a waiting build for up to ~13 h ('5 of 293 frames - about 804 min left'): it now stops at its next banked pag…
 - **test_a_war_item_on_a_war_mule_says_why_it_waits** — #148.1 REG-2761: a war item filed on a WAR mule says why its task goes to the shared stash
 - **test_a_war_mule_draws_the_copies_planned_on_it** — #144.11 REG-2781: a WAR mule's window, census and tile draw the over-cap copies its tasks send it, and a name filed there is counted once
@@ -883,6 +893,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_worker_read_has_a_deadline** — v3381 - THE SECOND WEDGE IN ONE SESSION, SAME CLASS AS THE FIRST.
 - **test_a_worktree_render_reads_the_main_checkouts_world** — REG-2070 - render_check in a git worktree met an EMPTY world (its small state is gitignored and lives in the main checkout): river-strip / shelf-cards…
 - **test_a_worktree_sandbox_carries_its_own_history** — REG-2364 - from a linked worktree heart2's sandbox had no git history (the .git pointer is never copied)
+- **test_a_worn_item_draws_its_slots_picture** — REG-3070 (#36): the character window draws a worn item by its slot - a runeword's base of that slot's type, a rare's base by its slot, never another s…
 - **test_a_worn_item_opens_the_vault_evidence** — v3855 - the Characters tab is each character's equipped items from in-game reads
 - **test_a_written_answer_has_a_reader** — The last two of #100's six JOIN wires, both of which had exactly ONE reference in the tree - their own test.
 - **test_a_wrong_shaped_mule_store_never_stops_the_vault** — #152 item 2 (REG-2411) - d2r_muleRoster saved as {} parsed, roster.find threw, and the vault script stopped before renderVault and vaultHandAdd existe…
@@ -1121,6 +1132,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_g5_grok_eyes** — the vision-eye contract
 - **test_gate_banks** — the board said since v2444 that the sabotages BANK and the first lock opened itself
 - **test_gate_cache** — v1941 — the Vault Accumulator quote memoises a crop+OCR verdict per frame (7.4 minutes of his evening before it did).
+- **test_gear_seen_under_an_alias_reaches_its_character** — REG-3069 (#36): gear seen under a spelling the learner merged into a character reaches that character
 - **test_gheeds_fortune_is_muled_by_his_ruling** — REG-2859: his 2026-10-15 ruling itself mules Gheed's Fortune on UNI-SMALL (the charm mule) and says so - one answer, not a keyword fall-through
 - **test_grasp_is_a_gloves_suffix** — REG-2402 (#162 item 4) - 'Wraith Grasp' routed as 'Wraith + Grasp: ring'.
 - **test_guest_intake_door** — v3296 - Konyo authorised this while scoping the parallel-test console: 'yea do it obivously'.
@@ -1191,6 +1203,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_no_harness_leaves_its_scratch** — #171's class in PRODUCTION code: MEASURED 2026-09-26, per day, 1,890 diskrep_* (the disk proof, every doctor pass), 196 heartlane_*, 77 sweep*_, 48 em…
 - **test_no_law_hands_node_its_program_on_argv** — #242 - REG-1308's mule laws were green on his Mac and errored on every CI run: `node -e <program>` handed a 134 KB / 422 KB program as ONE argument an…
 - **test_no_new_home_path_is_published** — #27 - the repo is PUBLIC and 113 ~/ literals sat in 65 tracked files, two of them live code in the published bible.html (the routine loade…
+- **test_no_page_function_is_declared_twice** — REG-3070's near-miss: every page function is declared once in its script - a second declaration is hoisted and wins silently for every caller
 - **test_no_pinned_footage** — REG-1027 — a reel id in EXECUTABLE test code makes retention hold that footage forever as a fixture.
 - **test_no_resolver_falls_back_to_his_live_world** — v2783 FIXED ONE RESOLVER THAT FELL BACK TO HIS LIVE DIRECTORY AND FOUR MORE COPIES WERE STILL RUNNING.
 - **test_no_sentence_names_a_surface_nothing_draws** — #154 REG-2834 - no sentence sends him to an undo surface nothing draws
@@ -1399,6 +1412,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_the_d2jsp_desk_forks_with_the_profile** — REG-2502 (#114) - the six desk stores were shared by main (268) and ladder (271), so a ladder post overwrote the saved topic and the next main post st…
 - **test_the_d2jsp_desk_keeps_one_click_listener** — d2jsp desk one listener
 - **test_the_d2jsp_desk_speaks_trade_slang_and_reads_the_roll** — v3843 - the price search matched the full item name only, read board 243 and cut 1,500 fg to 500.
+- **test_the_d2jsp_lamp_sits_with_the_readers** — a D2JSP lamp beside CLAUDE and GROK; read price with no session says sign in to d2jsp first
 - **test_the_d2jsp_price_backend_shows_its_wilson** — the D2JSP tab Advanced button shows the price database, its Wilson score, and the posts that score was weighed from
 - **test_the_d2jsp_price_db_ages_weighs_and_merges** — v3849 - the d2jsp price DB: age decay, Wilson, perfect tier, refresh, fleet merge
 - **test_the_d2jsp_price_row_says_it_is_one_source** — d2jsp price row explained
@@ -1442,11 +1456,13 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_the_eye_sees_every_code_extension** — v3388 (#134) - THE EYE WAS BLIND TO EVERY .js FILE AND FOUND IT ITSELF.
 - **test_the_eye_sees_the_blocks_around_a_big_files_hunks** — #259 (REG-2016) - control_ui.html and control_app.py are over the eye's 2 MB snapshot limit, so console changes reached it as bare hunks (v3607 cannot…
 - **test_the_eye_workers_bound_their_writes** — REG-1300 - v3391 bounded control_app's pipe WRITE and left its two twins in tv_diablo (VisionWorker.ask, OcrWorker.read): a worker that stops draining…
+- **test_the_fab_column_has_its_own_gutter** — a floating button never sits over a card
 - **test_the_fan_keeps_its_own_verdict** — #53. _hrtFanFit returns the whole record of what it tried — reverted, solve.from -> solve.to, passes, moves, before/after/wouldHaveBeen — and its ONLY…
 - **test_the_fan_names_the_stacks_it_kept** — #53. v2848 made the revert INCREMENTAL — withdraw the most-displaced stack, re-measure, stop when the arrangement is no longer worse — and it landed w…
 - **test_the_fast_gate_runs_the_core_and_what_changed** — v3847 FAST GATE (Elad 2026-10-30 15:29) - a push runs the core set plus every gate whose law reads a changed file
 - **test_the_fleet_card_is_asked_again_when_he_looks** — #82 — HIS CARD READ SETS 131/135 WHILE HIS BOARD HELD 132.
 - **test_the_fleet_card_says_how_each_pc_films_and_drains** — 2026-09-28 — his 'make sure its all properly rendering everywhere': the beacon's capture / river / formerMachines reached /api/fleet and /api/river's…
+- **test_the_fleet_head_buttons_size_to_their_words** — a button is at least as wide as its word
 - **test_the_fleet_lane_reaches_the_heart** — THE FLEET FAILED ON HIS SCREEN AND THE HEART HAD NEVER HEARD THE WORD.
 - **test_the_fleet_names_what_each_side_lacks** — He reported the Dean drill as bugged - it showed neither what Dean lacks that he has, nor what they both need.
 - **test_the_fleet_rail_holds_still** — REG-2062 (#237/#285, GrokBot 418-420) - the rail reshuffled with nothing clicked: the site sends rows newest-beacon-first and the rail painted that or…
@@ -1463,6 +1479,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_the_gate_set_shards_cleanly** — #184 - the gate set ran 25m18s against its 25-minute CI ceiling and was CANCELLED, so a shipped version got no verdict.
 - **test_the_gates_load_on_windows** — REG-1445 - run_gates imported fcntl (Unix-only) at top level, so on every Windows PC it would not import, heart2 saw ZERO gates, no census could ever…
 - **test_the_gear_ledger_reads_the_one_span_source** — #36 REG-2911: the gear ledger names a session from char_select's one span source (char select, lobby, C panel)
+- **test_the_glyph_only_name_pill_hugs_its_glyph** — a glyph-only pill is as wide as its glyph
 - **test_the_grok_chip_paints_on_every_path** — THE GROK CHIP MUST PAINT WHEN CLAUDE IS UNMEASURED, AND A CEILING OF 0 MUST NOT LOOK UNMEASURED.
 - **test_the_guest_seat_is_grok_not_konyo** — the Grok guest seat on the box renders a MIRROR of his live console, and this repo is public.
 - **test_the_guided_sweep_leads_him_container_by_container** — REG-3113 (#202): MOVE TASKS leads him container by container - one step per open question and per container never seen whole, questions first, capped…
@@ -1550,6 +1567,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_the_push_hook_stays_executable** — REG-3040: hooks/pre-push and hooks/install stay 100755 in the git index - git skips a hook that is not executable and every local gate goes silent
 - **test_the_push_says_its_lanes_where_proving_starts** — #151 the push says how many lanes it proves in, and why, where proving starts
 - **test_the_push_waits_for_a_settling_console** — #42c (REG-1594, 2026-09-30) - v3526 push #1 was REFUSED on a green tree: the fast-forward put new code on disk, his console re-exec'd onto it, and the…
+- **test_the_rail_titles_hold_one_line** — rail titles read on one line at 1024
 - **test_the_rails_fold_is_a_chevron_not_a_dot** — #174 v-B4 review - the type tree's folds were the SMALL-triangle glyphs: 4x4 px of ink at 2000 and 3x4 at 375 by this law's own instrument on the pre-…
 - **test_the_ratchet_cannot_erase_the_census** — v2853 — `--ratchet` wrote {unproven, proved} straight over .heart2.json.
 - **test_the_ratchet_is_not_skipped_by_a_subset** — the coverage ratchet above was SKIPPED WHOLESALE on a subset run, so `render_check.py heart-stored` could lose a node and exit 0 with an informational…
@@ -1590,6 +1608,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_the_river_stuck_has_one_source** — REG-3051: /api/river serves the Fleet row's stuck reading with its own time
 - **test_the_river_walk_says_it_walked** — A SUCCESSFUL WALK THAT FOUND NOTHING SAID NOTHING, so a STILL RIVER and a DEAD LOOP looked identical.
 - **test_the_river_watchdog_clears_a_hung_sweep** — RIVER WATCHDOG - a vault sweep that HANGS in its measure phase never releases _VAULT_JOB['running'] (the finally in _vault_sweep_run does not clear it…
+- **test_the_roster_card_keeps_its_gaps** — roster card keeps its 6px and 8px gaps
 - **test_the_roster_keeps_the_newest_names** — REG-2676 (#200) - the roster kept the OLDEST 400 found names and read the whole board every 60 s
 - **test_the_roster_vault_is_the_boards_records** — intake P1 REG-2817: the roster upload's vault section is the board's records, dated by their hand-over
 - **test_the_router_and_integrity_agree_on_a_throw** — #158.5 REG-2813: VAULT INTEGRITY never rescues a read the router throws (Blackbog's Sharp loop)
@@ -1601,6 +1620,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_the_second_eye_row_reads_the_ledger_once** — #48 (REG-2453) - console_doctor's 'second eye asked twice' row re-parsed the 7.3 MB ledger 43 times a tick (census 3.96 s profiled, 6-11 s loaded).
 - **test_the_seed_check_leaves_a_receipt** — #159 - bake_seed.py printed 'no drift' to stdout and left nothing behind, so nothing on his console could say WHEN the seed was last checked against h…
 - **test_the_seed_holds_no_one_shot_name** — REG-1271 (#165) - the v3313 bake seeded Fleshrender, Gloom's Trap and The Diggler, the names rule 4 refuses (each arrives by its own one-shot), becaus…
+- **test_the_session_digest_reads_newest_first_with_its_route** — Sessions and the shared digest read newest-first by start
 - **test_the_session_gets_a_vote_on_where** — retro_gate.corroborate_location has answered what location the SESSION agrees on since it was written and nothing ever called it - one of the verdict-…
 - **test_the_sessions_list_is_asked_once** — GrokBot v3817 - the theatre's wait, the Shelf and the Sessions hub share one /api/sessions request in flight
 - **test_the_set_pieces_carry_a_real_qlvl** — 1,444 OF 1,598 SET-TIER DROP RECORDS CARRIED qlvl 0, AND A ZERO ON A MISSING ROW IS A NUMBER HE FARMS BY — it reads as "any monster level can drop thi…
@@ -1614,6 +1634,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_the_shelf_builds_what_it_shows** — THE SHELF BUILT 3,086 CARDS TO SHOW 529 AND THAT STOPPED THE WHOLE WINDOW PAINTING.
 - **test_the_shelf_button_says_what_it_will_do** — REG-2067 (#282, GrokBot 418 K04/K05) - the 📚 button read 'pick any recorded session' while a press closed the open shelf.
 - **test_the_shelf_census_names_the_part_he_sees** — REG-2084 (#236, GrokBot 380/400/401/425) - '8 RUNS · 12 on disk in all (3 hidden fixtures)' did not add up on screen: the census's recent reels were n…
+- **test_the_shelf_door_reads_name_then_contents** — the shelf door label is two clean lines
 - **test_the_shelf_door_says_the_shelf** — REG-2076 (#287, GrokBot 419/423) - opening the shelf painted the LAST reel's header ('SESSION 41 · PAST REPLAY') over a shelf that had not painted yet…
 - **test_the_shelf_is_warm_before_he_clicks** — REG-1459 - his report 'the SHELF when clicked its not opening': /api/sessions took 11.2 s cold after a relaunch (2.7 s warm) and the shelf demo gives…
 - **test_the_shelf_is_watched_by_all_four_organs** — THE SHELF MUST BE WATCHED BY ALL FOUR ORGANS.
@@ -1661,6 +1682,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_the_two_deleters_share_one_window** — SWEPT AFTER v2752 — TWO DELETERS, TWO INDEPENDENT `KEEP_RECENT = 5`, AND NOTHING LINKED THEM.
 - **test_the_two_keep_floors_agree** — v2875 — KEEP_RECENT is one promise written in two files: reel_retention guards the newest N REELS from deletion, frame_authority guards the FRAMES ins…
 - **test_the_unconfirmed_lane_asks_before_it_clears** — REG-3011 #163: the console inbox's Unconfirmed lane groups ticks by minute, confirms or clears each and each batch, asks before a batch clear, read on…
+- **test_the_unique_tally_counts_the_colossal_jewels** — the unique tally is 403: 397 hunt cards + 6 colossal jewels, quest items off
 - **test_the_unkeyable_laws_only_get_fewer** — REG-2363 - a law heart2 cannot key never has a proof saved, so it is proved from nothing on every push it is in (test_control: 27 proofs, ~4 min each,…
 - **test_the_v3554_eye_findings_are_closed** — REG-1713 - the v3554 looks by both Grok seats: a picture over the read spec has no known space, the item doctor measures the current reader, a re-read…
 - **test_the_v3557_eye_findings_are_closed** — REG-1730 - the v3557 cross-family look, 3 real of 5: a killed suite run's in-flight record trusted after its pid is reused, an absorbed list filed by…
