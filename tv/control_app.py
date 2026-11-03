@@ -7184,11 +7184,12 @@ def start_agent(sim=False, test=False, mini=None, focus=None, origin="hand"):
             _rolling = _door_of_origin(_agent_origin)
             _asked = _door_of_origin(origin)
             _same = (_rolling == _asked)
+            # ⚠⚠ v3859 - ONE SENTENCE FOR EVERY ROLLING REEL. Elad 2026-11-03 17:26 IDT: "when
+            # clicking ONAIR it should just say already airing". The v3312 "stop it first" sentence is
+            # gone: shadow is always on now, so there is nothing to stop. door/askedFor stay in the
+            # reply for the record; the words he reads are ALREADY_AIRING, whoever opened the reel.
             return {"ok": True,
-                    "msg": ("already on air" if _same else
-                            "a %s reel is already rolling and keeps the %s door — stop it first "
-                            "if you want this session recorded as %s"
-                            % (_rolling.upper(), _rolling, _asked.upper())),
+                    "msg": ALREADY_AIRING,
                     "mode": _agent_mode or "live",
                     # the field whose absence made the old reply unexplainable
                     "door": _rolling, "askedFor": _asked, "doorMatches": _same,
@@ -7199,7 +7200,7 @@ def start_agent(sim=False, test=False, mini=None, focus=None, origin="hand"):
 
     with _lock:
         if _agent_proc is not None and _agent_proc.poll() is None:
-            return {"ok": True, "msg": "already running", "mode": _agent_mode}
+            return {"ok": True, "msg": ALREADY_AIRING, "mode": _agent_mode}
         # re-check port after stop
         if _port_listener_pid() is not None:
             # last resort force-kill port holder
@@ -31704,6 +31705,7 @@ def _shadow_state():
                     else "armed — it starts watching when a reel is rolling")}
 
 
+ALREADY_AIRING = "already airing"   # v3859 - Elad 2026-11-03: ON AIR over any rolling reel says only this
 SHADOW_ALWAYS_ON_WHY = ("always on - Elad 2026-11-03: the shadow reader cannot be turned on or off")
 
 
@@ -50824,8 +50826,10 @@ class Handler(BaseHTTPRequestHandler):
             # makes every read afterwards unattributable to the session he thinks it came from.
             _mn = mini_state()
             if _mn.get("running"):
-                self._json(200, {"ok": False, "mode": "mini",
-                                 "why": "already recording — seal the current session first",
+                # v3859 - Elad 2026-11-03: ON AIR over a rolling reel "should just say already
+                # airing". Still nothing started and nothing stopped.
+                self._json(200, {"ok": False, "mode": "mini", "msg": ALREADY_AIRING,
+                                 "why": ALREADY_AIRING, "door": "mini", "askedFor": "onair",
                                  "secondsLeft": _mn.get("secondsLeft", 0)})
                 return
             # v891 (Grok C3) — DISK PREFLIGHT: below the floor the reaper can't keep a reel

@@ -32,6 +32,13 @@ about WHOSE, and the reply carried `mode` while omitting the door. There is NO r
 to start on top of anything, and this branch spawns nothing. The defect was the SENTENCE.
 ⚠ It must keep refusing nothing and killing nothing: the fold runs at seal (v2071), so pre-empting
 a rolling reel ORPHANS its frames.
+
+── v3859, ELAD'S RULING 2026-11-03 17:26 IDT ──────────────────────────────────────────────────────
+"when clicking ONAIR it should just say already airing". The v3312 sentence ("a SHADOW reel is
+already rolling ... stop it first") is retired: the shadow reader is always on now, so there is no
+"stop it first" to offer. Pressing ON AIR over ANY rolling reel (shadow, mini or hand) says exactly
+"already airing" - no second reel, nothing stopped, the rolling reel's door unchanged - and the
+reply still carries door/askedFor/doorMatches for the record. DRIVEN, not just grepped, below.
 """
 import io
 import os
@@ -139,6 +146,67 @@ class TestAReelSaysWhichDoorOpenedIt(unittest.TestCase):
             "the reply now STOPS a rolling reel. It must refuse nothing and kill nothing: the fold "
             "runs at seal, so pre-empting a rolling reel orphans its frames.")
 
+    # ── v3859, the reply is "already airing" whoever opened the reel ──────────────────────────
+    def _drive_on_air_over(self, rolling_origin, asked_origin="hand"):
+        import control_app as ca
+        stops, spawns = [], []
+
+        class _Alive(object):
+            pid = 4242
+            def poll(self):
+                return None
+        saved = {k: getattr(ca, k) for k in ("_stop_inflight", "_agent_adoptable", "_agent_alive",
+                 "_port_listener_pid", "_agent_proc", "_agent_adopted_pid", "_agent_origin",
+                 "_agent_mode", "_bridge_ping", "stop_agent", "_kill_pid")}
+        saved_popen = ca.subprocess.Popen
+        try:
+            ca._stop_inflight = False
+            ca._agent_adoptable = lambda *a, **k: None
+            ca._agent_alive = lambda *a, **k: True
+            ca._port_listener_pid = lambda *a, **k: 4242
+            ca._agent_proc = _Alive()
+            ca._agent_adopted_pid = None
+            ca._agent_origin = rolling_origin
+            ca._agent_mode = "live"
+            ca._bridge_ping = lambda *a, **k: {"ok": True}
+            ca.stop_agent = lambda *a, **k: stops.append((a, k))
+            ca._kill_pid = lambda *a, **k: stops.append(("kill", a))
+            ca.subprocess.Popen = lambda *a, **k: spawns.append(a) or (_ for _ in ()).throw(
+                AssertionError("a second reel was spawned"))
+            r = ca.start_agent(origin=asked_origin)
+            after_origin = ca._agent_origin
+        finally:
+            ca.subprocess.Popen = saved_popen
+            for k, v in saved.items():
+                setattr(ca, k, v)
+        return r, stops, spawns, after_origin
+
+    def test_on_air_over_any_rolling_reel_says_only_already_airing(self):
+        for rolling, door in (("shadow", "shadow"), ("mini", "mini"), ("hand", "onair")):
+            r, stops, spawns, after = self._drive_on_air_over(rolling)
+            self.assertEqual(r.get("msg"), "already airing",
+                             "ON AIR over a rolling %s reel did not just say 'already airing': %r"
+                             % (rolling, r))
+            self.assertNotIn("stop it first", str(r), "the retired v3312 sentence is back: %r" % r)
+            self.assertTrue(r.get("ok"), r)
+            self.assertEqual(stops, [], "ON AIR stopped a rolling %s reel: %r" % (rolling, stops))
+            self.assertEqual(spawns, [], "ON AIR spawned a second reel over %s" % rolling)
+            self.assertEqual(after, rolling, "the rolling reel's door was rewritten mid-reel")
+            self.assertEqual(r.get("door"), door, r)
+            self.assertEqual(r.get("askedFor"), "onair", r)
+            self.assertEqual(r.get("doorMatches"), door == "onair", r)
+
+    def test_on_air_over_a_mini_countdown_says_already_airing(self):
+        with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
+            src = fh.read()
+        i = src.index('        if path == "/api/on":')
+        blk = src[i:src.index("_pre_on = capture_preflight", i)]
+        self.assertIn('"msg": ALREADY_AIRING', blk,
+                      "ON AIR during a MINI countdown no longer says 'already airing'")
+        self.assertNotIn("seal the current session first", blk,
+                         "ON AIR during a MINI countdown still tells him to seal first")
+        self.assertIn('ALREADY_AIRING = "already airing"', src)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
@@ -178,6 +246,34 @@ RED_PROOF = [
         "file": "river.py",
         "find": "        j[\"doors\"], j[\"doorsSay\"] = None, (\"which door opened each reel is UNKNOWN — there is no \"\n                                           \"history directory to split\")\n",
         "replace": "",
+        "matches": 1
+    },
+    {
+        "why": "v3859 - the retired v3312 sentence comes back for a reel another door opened",
+        "file": "tv/control_app.py",
+        "find": '                    "msg": ALREADY_AIRING,\n',
+        "replace": '                    "msg": (ALREADY_AIRING if _same else "a %s reel is already rolling - stop it first" % _rolling),\n',
+        "matches": 1
+    },
+    {
+        "why": "v3859 - ON AIR pre-empts the rolling reel instead of only saying already airing",
+        "file": "tv/control_app.py",
+        "find": "            _same = (_rolling == _asked)\n",
+        "replace": "            _same = (_rolling == _asked)\n            stop_agent(farewell=False)\n",
+        "matches": 1
+    },
+    {
+        "why": "v3859 - the rolling reel's door is rewritten to whoever pressed ON AIR",
+        "file": "tv/control_app.py",
+        "find": "            _same = (_rolling == _asked)\n",
+        "replace": "            _same = (_rolling == _asked)\n            _agent_origin = origin\n",
+        "matches": 1
+    },
+    {
+        "why": "v3859 - ON AIR during a MINI countdown tells him to seal first again",
+        "file": "tv/control_app.py",
+        "find": '                self._json(200, {"ok": False, "mode": "mini", "msg": ALREADY_AIRING,',
+        "replace": '                self._json(200, {"ok": False, "mode": "mini", "msg": "seal the current session first",',
         "matches": 1
     },
 ]
