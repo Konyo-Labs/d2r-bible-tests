@@ -54,7 +54,8 @@ class OneSyncStatus(unittest.TestCase):
         src = open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
         self.assertIn('if path == "/api/sync":', src)
         self.assertIn('"sync": sync_status()}', src)
-        self.assertIn('d["sync"] = {"level": _sy.get("level"), "lanes": _sy.get("lanes")}', src)
+        self.assertIn('_sy = sync_status(now_ms)', src)   # v3859 - the digest carries that verdict minus its own publish lane
+        self.assertIn('d["sync"] = __import__("machine_sync").published_view(_sy)', src)
         self.assertIn('_v["sync"] = ((rec or {}).get("digest") or {}).get("sync")', src)
         ui = open(os.path.join(HERE, "control_ui.html"), encoding="utf-8").read()
         self.assertIn("_syncBadgeHtml(d.sync)", ui)

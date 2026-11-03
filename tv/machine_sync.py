@@ -85,3 +85,14 @@ def judge(facts, now_ms):
     level = max(lanes.values(), key=lambda v: _RANK[v]) if lanes else "unknown"
     say = "in sync" if level == "ok" else ("; ".join(why) if why else "some lanes could not be read")
     return {"level": level, "say": say, "lanes": lanes, "why": why, "at": now}
+
+
+def published_view(status):
+    """v3859 - what rides inside the published session digest: the lanes WITHOUT `publish`, and the level of those.
+    The publish lane reports on the very post it would ride in, so it flips unknown -> ok after the first upload; carried
+    in the digest it changed the hash on every look and an unchanged digest posted again (the 30-min look never said
+    "unchanged"). A shadow dates the publish itself from the record's own time. -> {level, lanes}"""
+    lanes = dict((status or {}).get("lanes") or {})
+    lanes.pop("publish", None)
+    level = max(lanes.values(), key=lambda v: _RANK.get(v, 1)) if lanes else "unknown"
+    return {"level": level, "lanes": lanes}

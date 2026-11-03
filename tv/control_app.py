@@ -5323,7 +5323,7 @@ def _frames_publish_once(boot):
         if isinstance(d, dict) and d.get("sessions"):
             _sy = sync_status(now_ms)
             # level and lanes only: the say carries minutes, and a digest that changed every minute would post every time
-            d["sync"] = {"level": _sy.get("level"), "lanes": _sy.get("lanes")}
+            d["sync"] = __import__("machine_sync").published_view(_sy)   # v3859 - never its own publish lane
     except Exception:
         pass
     body, reason = _ss.due(state, _profile_owner(), d, now_ms, bool(boot))
