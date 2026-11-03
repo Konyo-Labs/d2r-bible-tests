@@ -6133,9 +6133,15 @@ def _port_listener_pid(port=None):
                     if needle not in local:
                         continue
                 try:
-                    return int(parts[-1])
+                    _owner = int(parts[-1])
                 except ValueError:
                     continue
+                # v3860 (#230, ALT 2026-11-03) - Windows lists a killed agent's orphaned socket as LISTENING
+                # under PID 0 (System Idle). That is nobody's agent: read as one, every hourly seal measured
+                # "STILL ROLLING" after a clean stop and no shadow reel closed since 10-29.
+                if _owner <= 0:
+                    continue
+                return _owner
         except Exception:
             return None
         return None
