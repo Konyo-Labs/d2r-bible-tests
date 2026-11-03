@@ -8131,6 +8131,10 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
                   title="Claude (primary reader): not measured yet - click to open Claude's sign-in on this PC"><i></i>CLAUDE</button>
           <button type="button" class="rl" id="rl-grok" data-lamp="unknown" onclick="window._lampClick('grok', this)"
                   title="Grok (shadow layer): not measured yet - click to open Grok's sign-in on this PC"><i></i>GROK</button>
+          <!-- v3857 item 19 (#230, Elad 10:45) - the d2jsp sign-in, the same lamp: green with a session in this PC's Chrome,
+               a click opens d2jsp's login there, then a fast re-check. No credential is read, stored or printed here. -->
+          <button type="button" class="rl" id="rl-d2jsp" data-lamp="unknown" onclick="window._d2jspLampClick(this)"
+                  title="D2JSP (price reads): not measured yet - click to open the d2jsp login on this PC"><i></i>D2JSP</button>
         </div>
         <!-- REG-1617 - his "make a button there so i can click within the console": shown only while this PC's Claude
              is signed out; it opens the CLI's own sign-in on THIS PC and he finishes in the browser -->
@@ -32400,6 +32404,56 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
       });
   }
   window._lampClick = _lampClick;
+  /* v3857 item 19 (#230, Elad 10:45) - THE D2JSP LAMP. Dean's read price failed with no word: his console had no d2jsp
+     session. GET /api/d2jsp_login answers on / off / unknown from this PC's Chrome (the cookie is read and dropped
+     server-side, never sent here). A click POSTs the same route, which opens the login in Chrome; then the lamp re-asks
+     every 3 s for 2 minutes, and every 120 s after that. */
+  var _D2L = { last: null, fast: 0, t: null };
+  function _d2jspLampPaint(j) {
+    var el = document.getElementById('rl-d2jsp');
+    _D2L.last = j || null;
+    if (!el) return;
+    var st = (j && (j.state === 'on' || j.state === 'off')) ? j.state : 'unknown';
+    el.setAttribute('data-lamp', st);
+    if (st === 'off') el.setAttribute('data-fault', '1'); else el.removeAttribute('data-fault');
+    if (st === 'on') el.setAttribute('data-busy', '0');
+    el.title = 'D2JSP: ' + ((j && j.why) || 'this console could not read the d2jsp sign-in - UNKNOWN')
+             + (st === 'on' ? '' : ' - click to open the d2jsp login on this PC');
+  }
+  window._d2jspLampPaint = _d2jspLampPaint;
+  function _d2jspLampAsk() {
+    return fetch('/api/d2jsp_login').then(function (r) { return r.json(); })
+      .then(function (j) { _d2jspLampPaint(j); return j; }, function () { _d2jspLampPaint(null); return null; });
+  }
+  function _d2jspLampLoop() {
+    clearTimeout(_D2L.t);
+    _d2jspLampAsk().then(function (j) {
+      var on = !!(j && j.state === 'on');
+      var fast = !on && Date.now() < _D2L.fast;
+      if (on) _D2L.fast = 0;
+      _D2L.t = setTimeout(_d2jspLampLoop, fast ? 3000 : 120000);
+    });
+  }
+  window._d2jspLampClick = function (el) {
+    el = el || document.getElementById('rl-d2jsp');
+    var say = function (m) { try { (typeof toastC === 'function' ? toastC : window.toast)(m); } catch (e) {} };
+    var L = _D2L.last;
+    if (L && L.state === 'on') { say('D2JSP is signed in on this PC - ' + (L.why || 'connected')); return Promise.resolve(L); }
+    if (el && el.setAttribute) el.setAttribute('data-busy', '1');
+    return fetch('/api/d2jsp_login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        say('D2JSP: ' + ((j && j.why) || 'the console gave no answer'));
+        _D2L.fast = Date.now() + 120000;
+        _d2jspLampLoop();
+        return j;
+      }, function (e) {
+        if (el && el.setAttribute) el.setAttribute('data-busy', '0');
+        say('D2JSP: the console did not answer (' + e + ')');
+        return null;
+      });
+  };
+  try { setTimeout(_d2jspLampLoop, 1500); } catch (eD2) {}
 
   function _swmAgo(ms) {
     if (!ms) return null;

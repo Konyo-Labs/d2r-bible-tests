@@ -12630,7 +12630,8 @@ function d2jspPriceLine(q) {
     var n = q.n > 0 ? q.n : 1;
     return head + ' price ' + q.fg + ' fg, from ' + n + ' ' + (n === 1 ? 'price' : 'prices') + when + '.' + skip;
   }
-  if (q.reason === 'need-login') return 'Public price unknown. The forum search needs the Chrome login on this machine.';
+  /* v3857 item 19 (#230) - no d2jsp session is said as the step to take, not a silent unknown */
+  if (q.reason === 'need-login') return 'Sign in to d2jsp first - the price read uses the Chrome login on this machine; ' + (q.opened ? 'the d2jsp login is open in Chrome on this machine' : 'click the D2JSP lamp on the console') + ', then read the price again.';
   if (q.reason === 'unanswered') return 'Public price unknown. No price reader answered this page.';
   if (d2jspWhen(q.readAt)) return 'Public price unknown. The reading at ' + d2jspWhen(q.readAt) + ' returned no fg number.';
   return 'Public price unknown.';
