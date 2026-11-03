@@ -136,6 +136,20 @@ class TheShelfRowCarriesTheCapturedSpan(unittest.TestCase):
         self.assertEqual(old.get("reads"), 3, "REG-2744 - the watchdog's verdict was counted as a read: %r" % old.get("reads"))
         self.assertEqual((by[NEW].get("t0"), by[NEW].get("t1")), (T_NEW, T_NEW + 120000))
 
+    def test_two_shelves_never_share_a_memo_row(self):
+        """v3856 gate - the row memo was keyed by the reel folder's mtime but not the folder itself. Two shelves made in
+        one clock tick carried the same mtime_ns, so one shelf's span was served for the other (flaky, both orders)."""
+        import control_app as ca
+        sess = [{"sessionId": NEW, "ts": T_NEW}]
+        a, b = tempfile.mkdtemp(prefix="memo-a-"), tempfile.mkdtemp(prefix="memo-b-")
+        self.addCleanup(shutil.rmtree, a, True)
+        self.addCleanup(shutil.rmtree, b, True)
+        for h in (a, b):
+            os.makedirs(os.path.join(h, "reel_" + NEW))
+            os.utime(os.path.join(h, "reel_" + NEW), ns=(1, 1))   # the same tick, forced
+        self.assertNotEqual(ca._theatre_row_fingerprint(sess, a), ca._theatre_row_fingerprint(sess, b),
+                            "two shelves with the same session and mtime share one memo row")
+
     def test_a_run_with_film_spans_its_film(self):
         """REG-2748 (GrokBot's v3821 pass) - a card read "0m00s" beside "3127 frames · full video": one read, an hour of
         film. The footage stills are captures of the session (f_<capture ms>.jpg), so the span covers them."""

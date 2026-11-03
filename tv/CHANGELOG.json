@@ -19,7 +19,8 @@
       "the Characters tab marks confirmation with its own gold seal, glowing with a check once HARDENED, plain words on hover",
       "a Vault item evidence panel says which character found or stashed it and in which game, UNKNOWN when unnamed",
       "six push-gate laws declare their red-proofs as plain lists again, so the prover actually runs them",
-      "eight red-proofs follow the code they guard after v3853 and v3854 moved it"
+      "eight red-proofs follow the code they guard after v3853 and v3854 moved it",
+      "two Shelf folders made in the same clock tick never share one memoised session row"
     ]
   },
   {

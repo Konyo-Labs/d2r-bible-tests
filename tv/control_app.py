@@ -23062,7 +23062,9 @@ def _theatre_row_fingerprint(sess, hist_dir):
         last_ts = sess[-1].get("ts") if sess else None
     except Exception:
         last_ts = None
-    return (str(sid), len(sess), last_ts, reel_mt)
+    # REG (v3856 gate) - the folder is IN the key, not only its mtime: two shelves created in the same clock tick
+    # (coarse filesystem timestamps) carry the same mtime_ns, so one shelf's row was served for the other's session.
+    return (str(sid), len(sess), last_ts, reel_mt, os.path.abspath(str(hist_dir)))
 
 
 
