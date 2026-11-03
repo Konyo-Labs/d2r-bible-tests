@@ -72546,6 +72546,8 @@ html{overflow-x:clip;overflow-y:auto}
 #sc-taskforce > .boss-header,
 #sc-taskforce > .sc-card-h,
 #sc-taskforce .sc-tf-head{padding-right:64px}
+/* v3856 (board #224) - at phone widths the fixed dock, compass and ? sit over the Vault's right edge: reserve their gutter */
+@media (max-width:480px){#tab-vault{padding-right:56px;box-sizing:border-box}}
 /* the tag is `flex:0 0 auto` at the row's right end — with the reserve above it now stops before
    the gutter instead of under it. Nothing else in the row is right-anchored. */
 </style>
