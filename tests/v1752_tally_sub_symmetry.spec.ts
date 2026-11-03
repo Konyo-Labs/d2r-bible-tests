@@ -82,7 +82,13 @@ test.describe('v1752 — both tally bars name the thing, not just a number', () 
       let withBase = 0, wrong: string[] = [], invented: string[] = [];
       rows.forEach((it) => {
         const key = codex[it.n] ? it.n : byFold[fold(it.n)];
-        const base = key && codex[key] ? codex[key].base : null;
+        // v3859 - the tally's FIRST base source is the chronicle's measured base table (_CHRON_BASE, the game file's
+        // unidentified line, one per hunt card); the codex is the fallback. Both are sources; anything else is invented.
+        const chron = (w._CHRON_BASE && w._CHRON_BASE[it.n]) || null;
+        const base = chron || (key && codex[key] ? codex[key].base : null);
+        // the six colossal jewels are the 403 ruling's own rows (_colossalTallyRows); their sub names that source
+        if (!base && (w._colossalTallyRows ? w._colossalTallyRows() : []).some((x: any) => x.n === it.n)
+            && /^Colossal jewel \u00b7 counted in the 403/.test(it.sub)) return;
         const sub = String(it.sub || '');
         const hasBaseText = sub.replace(/\s*·?\s*q\d+\s*$/, '').trim();
         if (base) {
@@ -111,11 +117,9 @@ test.describe('v1752 — both tally bars name the thing, not just a number', () 
       const bare = rows.filter((it) => !/[A-Za-z]/.test(String(it.sub || '')));
       return { total: rows.length, bare: bare.length, sample: bare.slice(0, 4).map((x) => [x.n, x.sub]) };
     });
-    // they exist (ITEM_CODEX is curated, not complete) and they are NOT dropped from the list
+    // v3859 - the chronicle's base table now names a base for every hunt card (397), and each colossal jewel says what
+    // it is, so no row is base-less any more. The row is still never dropped: the pool holds the whole 403.
     expect(r.total, 'the pool is empty').toBeGreaterThan(300);
-    expect(r.bare, 'no base-less uniques at all — if the codex became complete, delete this test')
-      .toBeGreaterThan(0);
-    expect(r.bare, 'base-less rows outnumber the rest; the lookup probably broke')
-      .toBeLessThan(r.total / 2);
+    expect(r.bare, 'a unique row lost its base or its words: ' + JSON.stringify(r.sample)).toBe(0);
   });
 });
