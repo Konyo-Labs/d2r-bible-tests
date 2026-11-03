@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3855",
+  "ver": "v3856",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3855: HEART five blind red-proofs now hit live doors (REG-2962)",
+  "note": "v3856: Characters seals, shadow session PLAY and AFK, Vault evidence (heart rows landed with each item)",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
