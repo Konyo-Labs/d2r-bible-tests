@@ -73,6 +73,19 @@ class CompactRollColumns(unittest.TestCase):
         self.assertIn("data-d2jsp-rollprice", self.o["html"])
 
 
+class AWrittenDateBeatsALaterToday(unittest.TestCase):
+    """REG-2962 (v3854 fan-in BLIND, measured 2026-11-03): POST above carries "Last post: Today" on its date line, and a line
+    with a year is never relative - so the 'Today' door was never reached. The search card's last-activity stamp on its
+    OWN line, after the post's written date, is the case the v3845 rule is for."""
+    def test_a_today_line_under_a_dated_post_keeps_the_posts_date(self):
+        post = ('<div>Oct 7 2026 11:04pm <a href="topic.php?t=110445948&amp;f=268&amp;p=695336765">#1</a></div>'
+                "<div>Last post: Today</div>" + "".join("guardian's thunder %s<br>" % l for l in LINES[:3]))
+        q = D.parse_public_quote(post, ITEM, "2026-10-30T07:00:00Z")
+        days = [p["day"] for p in q["posts"]]
+        self.assertEqual(3, len(days), "PREMISE: the three Thunder lines did not price: %r" % q["posts"])
+        self.assertEqual(["2026-10-07"] * 3, days, "a later 'Today' line re-dated the post's own written date")
+
+
 class PublicPostsLabelOnlyAReason(unittest.TestCase):
     def test_a_truthy_non_reason_out_is_no_label(self):
         rows = D._public_posts([{"fg": 10, "out": True}, {"fg": 11, "out": 1}, {"fg": 12, "out": "  "},
