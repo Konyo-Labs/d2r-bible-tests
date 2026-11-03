@@ -5584,13 +5584,14 @@ def _profile_view(owner):
     if rec is None and unread:
         rec = _cs.read_cache(cdir, owner)
         source = "cache"
-    online = None
+    online = seen = None
     try:
         fl, _age = fleet_presence_last_good()
         online = _cs.online_of(owner, fl)
+        seen = _cs.seen_of(owner, fl)       # v3856 - the same Fleet row: when the console was last seen
     except Exception:
-        online = None
-    return _cs.view(owner, rec, now_ms, online=online, source=source, fetch_why=why)
+        online = seen = None
+    return _cs.view(owner, rec, now_ms, online=online, source=source, fetch_why=why, seen=seen)
 
 
 def _frames_cache_dir():

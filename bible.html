@@ -4146,10 +4146,11 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
       if (snap && snap.vaultLine && typeof snap.vaultLine === 'object' && typeof snap.vaultLine.words === 'string' && snap.vaultLine.words)
         line = snap.vaultLine;
       var ago = (snap && typeof snap.boardAgo === 'string' && snap.boardAgo) ? snap.boardAgo : null;
-      return { vaultLine: line, boardAgo: ago };
+      var stall = (snap && typeof snap.stall === 'string' && snap.stall) ? snap.stall : null;   /* v3856 Fleet saw it online after this board */
+      return { vaultLine: line, boardAgo: ago, stall: stall };
     };
     var _takenVault = window._shadowVaultTake(snap);   /* REG-3123 the vault clock enters with the snapshot */
-    window._vaultShadowClockState = { vaultLine: _takenVault.vaultLine, boardAgo: _takenVault.boardAgo };
+    window._vaultShadowClockState = { vaultLine: _takenVault.vaultLine, boardAgo: _takenVault.boardAgo, stall: _takenVault.stall };
     function _paintVaultClocks() {
       try { if (typeof window._vaultShadowClocksPaint === 'function') window._vaultShadowClocksPaint(); } catch (eClk) {}
     }
@@ -47119,7 +47120,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     var board = (typeof ago === 'string' && ago) ? ('board uploaded ' + ago) : 'board uploaded, age UNKNOWN';
     var line = s.vaultLine;
     var vault = (line && typeof line.words === 'string' && line.words) ? line.words : 'vault age UNKNOWN';
-    return board + ' · ' + vault;
+    var stall = (typeof s.stall === 'string' && s.stall) ? (' · ' + s.stall) : '';   /* v3856 online but board stale: said */
+    return board + stall + ' · ' + vault;
   };
   window._vaultShadowClocksPaint = function () {
     var el = window.document.getElementById('vault-shadow-clocks');

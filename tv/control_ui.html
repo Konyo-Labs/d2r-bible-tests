@@ -29638,7 +29638,8 @@ function escC(s) {
       try { built = window._shadowRosterStores(row, fleet, owner); } catch (e) { built = null; }
       var stores = window._shadowMergeStores(snap && snap.stores, built && built.stores);
       var handed = { t: snap && snap.t, words: snap && snap.words, stores: stores,
-                     ago: snap && snap.ago, vaultLine: (row && row.vaultLine) || null };
+                     ago: snap && snap.ago, vaultLine: (row && row.vaultLine) || null,
+                     stall: (snap && typeof snap.stall === 'string') ? snap.stall : null };  /* v3856 online but board stale */
       var clock = window._shadowVaultClock(handed);
       handed.boardAgo = clock.boardAgo;
       handed.vaultLine = clock.vaultLine;   /* REG-3123 - the row's vault line, not this fetch */

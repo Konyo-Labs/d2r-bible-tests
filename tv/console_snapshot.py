@@ -346,15 +346,50 @@ def due(state, owner, stores, now_ms, boot, unsent=None):
     refused = state.get("refuseAt")
     if isinstance(refused, int) and not isinstance(refused, bool) and now_ms - refused < MIN_GAP_MS:
         return None, state.get("why") or "the snapshot was refused"
-    if state.get("hash") == d and not boot:
+    _last_ok = state.get("at") if isinstance(state.get("at"), int) and not isinstance(state.get("at"), bool) else None
+    stale = _last_ok is not None and now_ms - _last_ok > STALE_MS
+    if state.get("hash") == d and not boot and not stale:
         return None, "unchanged"
     _open, _why = gate(state, now_ms, boot)
     if not _open:
         return None, _why
+    stores, fit_out = fit_body(stores)
+    if not stores:
+        return None, "the snapshot does not fit the site's %d byte cap even with the board stores left out" % PROFILE_MAX_BODY
+    d = digest(stores)
     body = {"kind": "profile", "owner": owner, "boot": bool(boot), "signedAt": now_ms, "hash": d, "stores": stores}
-    if isinstance(unsent, list):
-        body["unsent"] = unsent_of(unsent)
+    if isinstance(unsent, list) or fit_out:
+        body["unsent"] = unsent_of(list(unsent or []) + fit_out)
     return body, "post"
+
+
+#: v3856 - THE WORKER'S PROFILE CAP (functions/api/roster.js PROFILE_MAX_BODY), measured on the WIRE body. clean() caps the
+#: board's stores at MAX_TOTAL, then with_api() adds the console's answers (up to MAX_STORE each) and json.dumps escapes
+#: every quote inside each store string - so a heavy player's body passed 200,000 bytes and the worker refused it
+#: ("the body is larger than 200000 bytes") every 75 min, forever: his shadow froze on his last small upload.
+PROFILE_MAX_BODY = 200000
+_WIRE_MARGIN = 2000      # owner, hash, signedAt, unsent list
+
+
+def wire_len(stores):
+    """Bytes the stores take inside the posted body, as the console's post serializes it (json.dumps, ensure_ascii off)."""
+    return len(json.dumps({"stores": stores}, ensure_ascii=False).encode("utf-8"))
+
+
+def fit_body(stores):
+    """-> (stores that fit PROFILE_MAX_BODY on the wire, [names left out]). Board stores go largest first; the console's
+    own answers (API_PREFIX) are kept, they are what a shadow's Characters and Vault draw."""
+    out, left = dict(stores or {}), []
+    budget = PROFILE_MAX_BODY - _WIRE_MARGIN
+    order = sorted((k for k in out if not k.startswith(API_PREFIX)), key=lambda n: (-len(out[n]), n))
+    for k in order:
+        if wire_len(out) <= budget:
+            break
+        del out[k]
+        left.append(k)
+    if wire_len(out) > budget:
+        return {}, left
+    return out, left
 
 
 def apply_reply(state, stores, reply, now_ms):
@@ -454,6 +489,40 @@ def online_of(owner, fleet):
     return None
 
 
+#: v3856 - a board older than this while its console was seen online is a STALLED upload, said on the banner, and the
+#: console itself re-posts even an unchanged board past it (the site may have lost or refused the last one).
+STALE_MS = 6 * 60 * 60 * 1000
+
+
+def seen_of(owner, fleet):
+    """v3856 - the ONE presence source (the Fleet row fleet_presence grades): -> epoch ms this owner's console was last
+    seen, or None. The same row online_of reads."""
+    if not isinstance(fleet, dict) or fleet.get("ok") is False:
+        return None
+    import datetime as _dt
+    for rows in (fleet.get("online"), fleet.get("offline")):
+        for row in rows or []:
+            if not isinstance(row, dict):
+                continue
+            plat = row.get("platform")
+            plat = "mac" if plat in ("darwin", "mac", "macos") else plat
+            if _rp.owner_of(row.get("nickname"), plat) != owner:
+                continue
+            t = row.get("t")
+            try:
+                return int(_dt.datetime.fromisoformat(str(t).replace("Z", "+00:00")).timestamp() * 1000)
+            except (TypeError, ValueError):
+                return None
+    return None
+
+
+def stall_of(rec_t, seen_ms, now_ms):
+    """-> words when the console was seen online well after its board upload (an upload that stalled), else None."""
+    if not isinstance(rec_t, int) or not isinstance(seen_ms, int) or seen_ms - rec_t <= STALE_MS:
+        return None
+    return "online %s but board %s old: upload stalled" % (_ago_words(now_ms - seen_ms), _ago_words(now_ms - rec_t).replace(" ago", ""))
+
+
 def _ago_words(ms):
     m = max(0, ms) // 60000
     if m < 1:
@@ -465,7 +534,7 @@ def _ago_words(ms):
     return "%d days ago" % (m // (24 * 60))
 
 
-def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None):
+def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=None):
     """What /api/roster-cache?profile= serves. `live` is the owner's console being up right now; the stores are
     always the last upload, and `words` always says when that upload was made.
 
@@ -493,6 +562,9 @@ def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None):
         state, words = "unknown", "%s · online UNKNOWN · board uploaded %s" % (owner, ago)
     if source == "cache":
         words += " · the site could not be read, showing this PC's last copy"
+    stall = stall_of(t, seen, now_ms)      # v3856 - Fleet saw the console long after this board was uploaded
+    if stall:
+        words += " · " + stall
     # #210 (GrokBot) - a store the owner's PC could not send is MISSING here, and the banner says which. An upload from
     # before the list (no `unsent`) is UNKNOWN, never "everything was sent".
     unsent = unsent_of(rec.get("unsent")) if isinstance(rec.get("unsent"), list) else None
@@ -500,7 +572,8 @@ def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None):
         words += " · not sent (too big or private): " + ", ".join(unsent[:5]) + (
             " and %d more" % (len(unsent) - 5) if len(unsent) > 5 else "")
     out = {"ok": True, "owner": owner, "t": t, "hash": rec["hash"], "stores": rec["stores"],
-           "state": state, "words": words, "source": source, "ago": ago, "unsent": unsent}
+           "state": state, "words": words, "source": source, "ago": ago, "unsent": unsent, "stall": stall,
+           "seenAgo": _ago_words(now_ms - seen) if isinstance(seen, int) else None}
     iv = rec.get("intentVerified")
     out["intentVerified"] = iv if isinstance(iv, bool) else None
     kid = _rp.short_key_id(rec.get("keyId"))
