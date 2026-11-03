@@ -73945,7 +73945,9 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     } catch (e) {}
   }
   function _cbLearnedFetch(then, opts){
-    if (document.documentElement.classList.contains('tvd-shadow')) return;
+    /* v3856 - A SHADOW DRAWS THEIR CHARACTERS FROM THEIR UPLOAD. The shadow shim answers /api/chars_learned from the
+       owner's own snapshot (GET only, never this console), so the shadow's Characters tab shows their worn gear. */
+    if (document.documentElement.classList.contains('tvd-shadow')) return _cbLearnedQuiet(then);
     if (opts && opts.quiet) return _cbLearnedQuiet(then);   /* REG-2908 quiet ask */
     try {
       if (!/^https?:$/.test(location.protocol) || typeof fetch !== 'function') return;
@@ -74068,11 +74070,6 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
      as before. Nothing here writes. -> {state: 'ok'|'none'|'unknown', why, ingame: [{t, ids}], mules: [{t, ids}],
      sim: [ids]}; ids in each list keep the order they were handed in (the caller's MAIN-first order). */
   function _cbSections(all, ids){
-    if (document.documentElement.classList.contains('tvd-shadow')) {
-      all = (all && typeof all === 'object') ? all : {};
-      ids = Array.isArray(ids) ? ids : Object.keys(all);
-      return { state: 'unknown', why: 'their reels stay on their console, so in-game characters are not read here', ingame: [], mules: [], sim: ids };
-    }
     all = (all && typeof all === 'object') ? all : {};
     ids = Array.isArray(ids) ? ids : Object.keys(all);
     var tpls = _cbTemplates(), state, why = '', asking = !_cbLearned && _cbLearnedAsking > 0;

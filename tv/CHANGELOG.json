@@ -2,7 +2,9 @@
   {
     "ver": "v3857",
     "date": "2026-11-03",
-    "items": []
+    "items": [
+      "a shadow console's Characters tab shows their in-game characters and worn gear, read from their own upload"
+    ]
   },
   {
     "ver": "v3856",

@@ -500,11 +500,11 @@ class RosterPublishStaysOffTheBeacon(unittest.TestCase):
         self.assertIn("d2r_charBuilds: builds.length ? storeOf(builds) : '{}'", board)
         self.assertIn("switchTab('chars')", board)
         self.assertIn("window._LP_FORKED.has(k)", board)
-        self.assertIn("their reels stay on their console, so in-game characters are not read here", board)
+        # v3856 - the shadow's Characters tab draws their worn gear from their upload (the shim's chars_learned)
+        self.assertNotIn("their reels stay on their console, so in-game characters are not read here", board)
         # REG-3049 - each shadow guard by its own line, never a running total: the total went 2 -> 3 with the reels refusal
         # (9daa388fe), and REG-3009's read-only guard (v3839) made it 4, red as "4 != 3", a number that named nothing.
-        for site in ("    if (document.documentElement.classList.contains('tvd-shadow')) return;\n",
-                     "    if (document.documentElement.classList.contains('tvd-shadow')) {\n",
+        for site in ("    if (document.documentElement.classList.contains('tvd-shadow')) return _cbLearnedQuiet(then);\n",
                      "    if (document.documentElement.classList.contains('tvd-shadow')) return { ok: false, why: "
                      "'their reels stay on their console' };\n",
                      "  try { return document.documentElement.classList.contains('tvd-shadow'); } catch (e) { return false; }\n"):
