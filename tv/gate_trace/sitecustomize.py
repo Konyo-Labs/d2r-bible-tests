@@ -206,12 +206,26 @@ def _boot():
             return
         if head in ("ps", "pgrep", "sleep"):
             return  # the process table or a clock: a path in a pgrep pattern is matched, never opened  # TRACE-INERT-CHILD
+        # v3859 L1 (#230): an argument is a path in the CHILD's cwd, never the parent's; and a form that reads a file it is
+        # named (sysctl -f/-p, defaults import/export, defaults' own ~ expansion) is never inert - it falls through to "U".
+        _cbase = fsdecode(cwd) if cwd is not None else getcwd()
+
+        def _here(a):
+            a = str(a)
+            if a.startswith("~"):
+                return True
+            return rel(a if isabs(a) else join(_cbase, a)) is not None
+
         if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(
-                rel(a) is not None for a in args[1:] if "/" in a):
+                _here(a) for a in args[1:] if "/" in a) and not (
+                head == "sysctl" and any(a.startswith(("-f", "-p", "--load", "--system")) for a in args[1:])):
             return  # a machine meter (memory, kernel, sockets, IO registry, app list), never a file here  # TRACE-INERT-METER
-        if head in ("echo", "printf", "defaults") and not any(
-                rel(a) is not None for a in args[1:] if "/" in a):
-            return  # prints its own argv, or reads a preference domain outside this checkout  # TRACE-INERT-PRINT
+        if head in ("echo", "printf") and not any(
+                _here(a) for a in args[1:] if "/" in a):
+            return  # prints its own argv  # TRACE-INERT-PRINT
+        if head == "defaults" and not any(a in ("import", "export") for a in args[1:]) and not any(
+                _here(a) for a in args[1:] if "/" in a or a.startswith("~")):
+            return  # reads a preference domain outside this checkout  # TRACE-INERT-PRINT
         if head == "sips":
             base = fsdecode(cwd) if cwd is not None else getcwd()
             out_next = False
