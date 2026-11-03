@@ -1350,8 +1350,28 @@ def _remove_all_sandboxes():
         _drop_sandbox(root)
 
 
+def _flush_on_kill():
+    """#150 (REG-2943) - the push's verdict cache, flushed on the way out of a fatal signal. -> True when written.
+    Only entries already store()d are written - a PROVEN in _CLEAN.pending has no green bracket yet. The cache's lock is
+    tried, never waited on: the signal may have landed inside the code holding it, and a handler that blocks there
+    never exits."""
+    cache = getattr(_PUSH, "cache", None)
+    if cache is None:
+        return False
+    try:
+        if not cache.lock.acquire(False):
+            return False
+        cache.lock.release()
+        return bool(cache.flush())
+    except Exception:
+        return False
+
+
 def _on_fatal_signal(signum, frame):
-    """A signal that would kill the prover removes its sandboxes first, then exits the way the signal meant to."""
+    """A signal that would kill the prover removes its sandboxes first, then exits the way the signal meant to.
+    #150 (REG-2943) - and first writes what the push already BANKED (stored, not yet flushed): never a PROVEN still
+    waiting for a clean run, and never by waiting on a lock the interrupted code may hold."""
+    _flush_on_kill()
     _remove_all_sandboxes()
     os._exit(128 + int(signum))
 
@@ -3085,6 +3105,8 @@ class _PushRun(object):
         self.wave_s = None                      # REG-2353: the clean wave's seconds, when one ran
         self.keys0 = _servable_keys(cache)      # REG-2353: every key the cache would serve when the run began
         self.direct = None                      # REG-2599: gates whose own law file the push changes (None: UNKNOWN)
+        self.ckpt = {"runs": 0, "s": 0.0, "banked": 0, "bankedS": 0.0, "red": 0, "revoked": 0,
+                     "resumed": 0, "resumedS": 0.0}  # #150: checkpoint cost and what it bought, for the push record
 
     def fail(self, name, idx, verdict, reason):
         """Record a failure. Fail fast: the FIRST stops the run -> True for the call that stopped it. Keep going
@@ -4361,6 +4383,7 @@ class _VerdictCache(object):
         self.reused = {}                 # (gate, proof) -> provedAt ms of the entry a hit served, this run
         self.measured = {}               # gate -> the OLDEST provedAt among its reused proofs; the census stamp
         self.used = {}                   # R4 - key -> ms of this run's hits (usedAt), written at the next flush
+        self.dropped = {}                # #150 - key -> provedAt this run REVOKED: the flush removes it from disk too
         self._vidx, self._vgen = None, None   # REG-2640 - ident -> unread-sets, rebuilt when the entries are replaced
         self.seed = {}                   # REG-2961 - a CI shard's earlier proofs, read only: seed_from()
         self.file = _StoreFile(self.path, say)
@@ -4602,6 +4625,19 @@ class _VerdictCache(object):
             self.dirty = True
             self._vidx = None                 # REG-2640 - a new unread-set is servable at once
 
+    def unstore(self, key, proved_at):
+        """#150 (REG-2942) - revoke a PROVEN this run banked, because a LATER clean run of its gate went red. Only an
+        entry no newer than the one banked is taken back (another run's newer proof of the same bytes stands). -> bool"""
+        with self.lock:
+            e = self.entries.get(key)
+            gone = isinstance(e, dict) and _proven_at(e) <= proved_at
+            if gone:
+                self.entries.pop(key, None)
+            self.dropped[key] = proved_at
+            self.dirty = True
+            self._vidx = None
+            return gone
+
     def flush(self):
         """Write what this run banked and used, merged with what is on disk NOW and capped after that merge, through
         the stores' one locked writer. -> True when written. R2: the red memory's recorded uses ride the same per-gate
@@ -4615,13 +4651,16 @@ class _VerdictCache(object):
         with self.lock:
             if not (self.dirty or self.used):
                 return False
-            mine, used, out = dict(self.entries), dict(self.used), {}
+            mine, used, out, dropped = dict(self.entries), dict(self.used), {}, dict(self.dropped)
 
             def merge(disk):
                 # #242 - ONE FILE, SEVERAL PROVERS: what another run banked since this one loaded is kept - R4 reads it
                 # under the lock, so no write lands between this read and this write
                 ent = _merged_cache((disk or {}).get("entries"), mine, used)
                 out["evicted"] = _cache_evict(ent, CACHE_MAX)
+                for _dk, _dms in dropped.items():           # #150 - a revoked proof leaves the disk, never a newer one
+                    if isinstance(ent.get(_dk), dict) and _proven_at(ent[_dk]) <= _dms:
+                        ent.pop(_dk, None)
                 body = dict((k, v) for k, v in (disk or {}).items() if k not in ("_why", "format", "entries"))
                 body.update(_why="#42 P3 - PROVEN verdicts this machine may reuse at push time, keyed by a digest of "
                                  "every byte each depends on (tv/heart2.py law_inputs). Per machine, never committed. "
@@ -4633,6 +4672,7 @@ class _VerdictCache(object):
             ok, why = self.file.commit(merge)
             if ok:
                 self.entries, self.used = out["entries"], {}
+                self.dropped = {}
                 self.readable, self.dirty = True, False
                 return True
             # a cache that cannot be written costs the next push a re-prove, never this push its verdict - said
@@ -5200,6 +5240,10 @@ def _cache_serve(cache, sandbox, name, filename, pr, idx, say):
                 _mark(f="hit", a="hit")                          # REG-2353 - forecast and taken: served, not run
                 # the census keeps the age this proof was MEASURED at, never this run's clock [[stale-reading]]
                 cache.reused_at(name, idx, hit["provedAt"])
+                if hit.get("ckpt") and getattr(_PUSH, "ckpt", None) is not None:
+                    with _PUSH._lock:                    # #150 - banked at a checkpoint of a gate that never closed
+                        _PUSH.ckpt["resumed"] += 1
+                        _PUSH.ckpt["resumedS"] += float(hit.get("ckptS") or 0)
                 say("     %-52s %s (cached %s: %d byte-identical input(s), proved %s ago%s - not re-run)"
                     % (label, PROVEN, key[:8], len(hit.get("inputs") or rels), _age_say(hit.get("provedAt")),
                        (" at %s" % hit["at"]) if hit.get("at") else ""))
@@ -5485,10 +5529,15 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
     _CLEAN.runs = {}
     _CLEAN.pending = []                                  # (index, key, entry) a PROVEN waits in until the closing run
     _CLEAN.served = []                                   # REG-2587 - (index, tree) of each proof the cache served
+    _CLEAN.ckpt_keys = []                                # #150 - (key, entry) this gate's checkpoints banked
     try:
-        for i in (run.order.get(name) or list(range(len(proofs)))):
+        _order = run.order.get(name) or list(range(len(proofs)))
+        _ckpt = {"on": True}                             # #150 - False once a checkpoint was not green (the closing run decides)
+        for _n, i in enumerate(_order):
             if run.stop.is_set():
                 break
+            if _ckpt["on"] and run.cache is not None and len(getattr(_CLEAN, "pending", None) or []) >= CHECKPOINT_EVERY:
+                _ckpt["on"] = _checkpoint_bank(name, got, say, run)      # #150 (REG-2942) - before proof i, never after the last
             why = {}
             _MARK.m = {"t0": time.time()}                # REG-2353 - what this proof was forecast to do, and did
             try:
@@ -5520,6 +5569,11 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
             say("     %-52s   ↳ REG-1988: the closing clean run went RED, so the sandbox drifted across this gate's "
                 "proofs and the %s above may be that drift, not the law; the push stays refused. Reproduce: "
                 "python3 tv/heart2.py --prove %s" % ("%s[%d]" % (name, _f[1]), _before[_f[1]], name))
+        if run.cache is not None and getattr(_CLEAN, "ckpt_keys", None):
+            if any(_before[_j] == PROVEN and per[_j] != PROVEN for _j in range(len(per))):
+                _checkpoint_revoke(name, say, run)       # #150 - the closing run went RED after a green checkpoint
+            else:
+                _checkpoint_close(name, run)
         if run.cache is not None:
             for _i, _key, _entry in (getattr(_CLEAN, "pending", None) or []):
                 if _bankable(per[_i]):
@@ -5538,6 +5592,7 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
         _CLEAN.pending = None
         _CLEAN.runs = None
         _CLEAN.served = None
+        _CLEAN.ckpt_keys = None
         _CLEAN.green_here = False
     if run.cache is not None:
         run.cache.flush()          # P3: what this gate proved reaches the disk now, not only at the end of the run
@@ -5622,12 +5677,32 @@ def _push_record(run, have, cache, n_proofs, results):
         "proveOnceViolations": None if cache is None else violations,
         "posixOnlyCatch": posix_only,                  # REG-2357 - each files BLIND on a Windows census (round 4)
         "signalKilled": _SIGNAL_RUNS["n"] - run.sig0,
+        "checkpoint": _checkpoint_record(run, per),
         "seams": _heart2_seams(),
         "cache": cache.summary(n_proofs) if cache is not None else "off",
         "stopped": list(run.first) if run.first else None,
         "results": dict(results or {}),
         "perProof": per,
     }
+
+
+def _checkpoint_record(run, per):
+    """#150 - what the checkpoints cost and bought this push, forecast vs actual. -> dict
+    forecast: per gate, the proofs forecast to RUN (narrow / full), and the checkpoints that many would ask
+    ((n - 1) // CHECKPOINT_EVERY); actual: the clean runs asked and their seconds (the COST), the proofs banked early and
+    the seconds of their work (what a kill could no longer lose), the reds and the proofs they took back, and the hits a
+    killed run's checkpoint had banked (work actually SAVED). A K that costs more than it saves reads as cost > saved."""
+    runs_by_gate = {}
+    for r in per:
+        if r.get("f") in ("narrow", "full"):
+            runs_by_gate[r["g"]] = runs_by_gate.get(r["g"], 0) + 1
+    c = dict(getattr(run, "ckpt", None) or {})
+    return {"every": CHECKPOINT_EVERY,
+            "forecast": sum(max(0, (n - 1) // CHECKPOINT_EVERY) for n in runs_by_gate.values()),
+            "runs": int(c.get("runs") or 0), "costS": round(float(c.get("s") or 0), 1),
+            "banked": int(c.get("banked") or 0), "bankedS": round(float(c.get("bankedS") or 0), 1),
+            "red": int(c.get("red") or 0), "revoked": int(c.get("revoked") or 0),
+            "savedHits": int(c.get("resumed") or 0), "savedS": round(float(c.get("resumedS") or 0), 1)}
 
 
 def _decided_before_a_run(sandbox, name, filename, pr, idx):
@@ -5934,6 +6009,12 @@ def _prove_push(have, say, stopped=None, cache=None, blank=None):
                _r["actual"]["narrow"], _r["actual"]["full"], _r["actual"]["notRun"], _r["fellThrough"],
                "UNKNOWN (the cache was off)" if _r["proveOnceViolations"] is None else len(_r["proveOnceViolations"]),
                _r["signalKilled"], len(_r["posixOnlyCatch"])))
+        _c = _r.get("checkpoint") or {}
+        say("  #42 RECORD #150 checkpoints (every %d): forecast %d, ran %d costing %.0f s; banked %d proof(s) early (%.0f s "
+            "of work a kill could no longer lose), %d red took back %d; SAVED: %d hit(s) a killed run's checkpoint "
+            "banked (%.0f s)" % (_c.get("every", CHECKPOINT_EVERY), _c.get("forecast", 0), _c.get("runs", 0),
+                                 _c.get("costS", 0), _c.get("banked", 0), _c.get("bankedS", 0), _c.get("red", 0),
+                                 _c.get("revoked", 0), _c.get("savedHits", 0), _c.get("savedS", 0)))
         for _v in (_r["proveOnceViolations"] or [])[:6]:
             say("     ⚠ PROVE-ONCE VIOLATION: %s[%d] was banked for these exact bytes before this run began and ran "
                 "again (%s)" % (_v["g"], _v["i"], _v["a"]))
@@ -6098,6 +6179,101 @@ def _prove_gate(sandbox, name, filename, proofs, say):
             else INVALID if INVALID in verdicts
             else UNPROVABLE if UNPROVABLE in verdicts
             else PROVEN), verdicts
+
+
+# ══ #150 (REG-2942) - A KILLED PUSH KEEPS WHAT IT PROVED, AND ONLY WHAT A GREEN CLEAN RUN BRACKETS ══════════════════════
+# A push gate held every PROVEN in _CLEAN.pending until its CLOSING clean run (REG-1988), and _on_fatal_signal exited
+# without banking - so a kill (the hook's deadline, a Ctrl-C, a dead terminal) mid-gate lost every proof that gate had
+# already proved: for a law like test_control, 27 proofs at ~4 min, the whole gate. Banking each PROVEN the moment it
+# came back is NOT sound, and the key being "the bytes" does not make it so: the proofs share ONE clean run, and a proof
+# can go red because earlier runs drifted the sandbox (state outside the key) rather than because of its tamper - which
+# is exactly what the closing run exists to catch. So the bracket stays and moves earlier: once CHECKPOINT_EVERY PROVENs
+# wait and another proof is about to run, the gate's shared clean run(s) are asked again HERE. Green - every waiting
+# PROVEN sits between two green clean runs, as the closing run would have left it - is banked and FLUSHED to disk now.
+# Red, unknown or raising banks nothing and asks no further checkpoint; the closing run still judges the gate as before.
+# It costs at most one clean run per CHECKPOINT_EVERY proved proofs, and a kill now loses at most that many proofs'
+# work. [[stale-reading]] [[regression-guard]] Law: test_a_killed_push_keeps_what_it_proved.
+CHECKPOINT_EVERY = 4
+
+
+def _checkpoint_bank(name, per, say, run):
+    """#150 - ask the gate's shared clean run(s) again mid-gate; green banks and flushes every waiting PROVEN. -> bool:
+    True when green (or nothing needed asking), False when a clean run was red, unknown or raised (bank nothing)."""
+    pend = getattr(_CLEAN, "pending", None)
+    if not pend:
+        return True
+    for r in [r for r in (getattr(_CLEAN, "runs", None) or {}).values() if r.get("reused")]:
+        _t0 = time.time()
+        try:
+            ok, tail = r["again"]()
+        except Exception as _ce:
+            ok, tail = None, "it raised %s" % type(_ce).__name__
+        with run._lock:
+            run.ckpt["runs"] += 1
+            run.ckpt["s"] += time.time() - _t0
+        if not ok:
+            say("     %-52s   ↳ #150: a CHECKPOINT clean run is %s (%s) - its %d waiting PROVEN(s) are not banked here; "
+                "the closing run decides" % (name, "UNKNOWN" if ok is None else "RED", str(tail)[:60], len(pend)))
+            with run._lock:
+                run.ckpt["red"] += 1
+            _checkpoint_revoke(name, say, run)
+            return False
+    keep, n = [], 0
+    for _i, _key, _entry in pend:
+        if _bankable(per.get(_i) if isinstance(per, dict) else per[_i]):
+            if callable(_key):                       # REG-2640 - the v2 key, taken now that a clean run brackets it
+                _key = _key()
+            _s = float(((run.proofs.get((name, _i)) or {}).get("s")) or 0)
+            # ⚠ MARKED: a checkpoint's bank, until this gate closes green. A later red clean run of the same gate takes
+            # it back (_checkpoint_revoke); a gate that closes clears the mark; one that never closes (a kill) leaves it,
+            # so the next push can count what the checkpoint saved.
+            _entry = dict(_entry, ckpt=int(run.t0 * 1000), ckptS=round(_s, 1))
+            run.cache.store(_key, _entry)
+            run.cache.count("stores")
+            _ck = getattr(_CLEAN, "ckpt_keys", None)
+            if isinstance(_ck, list):
+                _ck.append((_key, _entry))
+            with run._lock:
+                run.proofs.setdefault((name, _i), {})["b"] = True
+                run.ckpt["banked"] += 1
+                run.ckpt["bankedS"] += _s
+            n += 1
+        else:
+            keep.append((_i, _key, _entry))
+    _CLEAN.pending = keep
+    run.cache.flush()
+    say("     %-52s   ↳ #150: checkpoint clean run green - %d PROVEN(s) banked and written now, not at the gate's end"
+        % (name, n))
+    return True
+
+
+def _checkpoint_revoke(name, say, run):
+    """#150 - a LATER clean run of this gate went red: every PROVEN an earlier checkpoint of it banked is taken back, and
+    the disk is written now, so no push - this one resumed or the next - reuses a proof whose gate drifted. -> how many"""
+    _ck = getattr(_CLEAN, "ckpt_keys", None) or []
+    n = 0
+    for _key, _entry in _ck:
+        if run.cache.unstore(_key, _proven_at(_entry)):
+            n += 1
+    if _ck:
+        del _ck[:]
+        run.cache.flush()
+        with run._lock:
+            run.ckpt["revoked"] += n
+        say("     %-52s   ↳ #150: a later clean run of this gate went RED - %d proof(s) an earlier checkpoint banked are "
+            "taken back" % (name, n))
+    return n
+
+
+def _checkpoint_close(name, run):
+    """#150 - the gate closed green: what its checkpoints banked would have been banked now anyway, so the checkpoint mark
+    is cleared (a resumed push counts as SAVED only what a gate that never closed had banked). -> how many"""
+    _ck = getattr(_CLEAN, "ckpt_keys", None) or []
+    for _key, _entry in _ck:
+        run.cache.store(_key, dict((k, v) for k, v in _entry.items() if k not in ("ckpt", "ckptS")))
+    n = len(_ck)
+    del _ck[:]
+    return n
 
 
 def _closing_clean(name, verdicts, say):

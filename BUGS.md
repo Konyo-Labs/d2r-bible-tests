@@ -1038,6 +1038,224 @@ publish.yml's deploy needed [smoke, suites, review]; no proof ran on main, so th
 ### REG-2961 - CI PROVED EVERY LAW FROM AN EMPTY CACHE ON EVERY RUN (#161 stage 2)
 
 Each proof-keys shard proved into an empty $RUNNER_TEMP cache (REG-2585), so CI re-proved every law each run (~41 min a shard) while the Mac reused byte-identical proofs. Each shard now restores the proofs the last main run banked (actions/cache, prefix heart2-proofs-) as a READ-ONLY seed (HEART2_SHARD_SEED, read only in a proof shard); the main run's fan-in merges the shards' PROVENs into the next seed (`tv/proof_shard.py --merge-shards`, servable only, the newer of two) and saves it from main only (main's cache scope is the one every branch may restore). Safety checked in code before relying on it: _VerdictCache._key is a sha256 over the law, the proof, the gate spec and every input's path and bytes, and peek() looks an entry up only under the key key_for() takes from the checkout's bytes now - so a seed of any commit serves a proof only over byte-identical inputs (pinned on a fixture sandbox whose subject changes). The shard's own file still starts empty and holds only what the run served or proved for its own plan, so the fan-in and the Mac's all-or-nothing import never see a stray proof. test_a_proven_verdict_is_reused_only_on_identical_bytes re-aimed to admit the seed's two lines. Law test_ci_reuses_a_proof_only_for_identical_bytes (8 cases), 7 red-proofs RED.
+### REG-2915 - THE TOOLTIP CROP COULD NEVER BE CUT ON HIS REELS: DIFFERENCING FINDS THE WHOLE SCREEN (#158.7)
+The crop that NAMED an item (#45, v2239) was found by differencing a hover frame against the one before it. On his reels the
+D2R world animates behind the panel, so the change box covers 53-91% of the frame and the 60 KB cap rightly refuses it - the
+lane cut nothing. The vision read that names the item already saw the tooltip: VAULT_READ_PROMPT now asks for its box ("tip":
+[left, top, right, bottom] in the picture the reader saw), normalize_item keeps a valid one, and the sweep cuts the crop from
+it (vault_retro._crop_from_box): the box is placed on the frame through the read's own picture map (the one its item points
+use), padded 2% of the frame each side, kept inside the frame, and scaled to a 512 px longest side - MEASURED on the 31 crops
+his Mac kept: at their own size they run to 61 KB, against the 60 KB cap; at 512 px, at most 45 KB. The byte cap stays the
+backstop. A read with no box behaves as before (the frame-difference crop, or why there is none) and says "the read gave no
+tooltip box (UNKNOWN)"; a box with no picture map is UNKNOWN, and one covering more of the frame than a tooltip can is
+refused - never a full-frame crop. Each look says how its crop was cut (cropFrom). The crop stays evidence to look at, never a
+witness. VAULT_PROMPT_VER is vp-reg2915 and lists vp3554 as asking the same question, so no sealed reel reopens: crops come
+from reads made from now on. Law: test_the_tooltip_crop_comes_from_the_read_that_named_it (8 cases on a fixture reel whose
+frames all differ, through vault_retro.sweep with a stubbed reader; 7 red-proofs, each RED).
+
+### REG-2914 - "1 IMAGE ERROR" STILL NEVER SAID WHICH: THE AGENT'S ROUTE DROPPED THE CAUSE (#158)
+REG-2730 named a failed tally pass's cause (errWhy) and the board posts it with every read - to the AGENT's /intake_result
+first (the bridge port) and to the console's own route only when the agent is not listening. The console's copy keeps the
+reason (v1945 err/guardHeld, REG-2730 errWhy); the agent's built its record from seven fields and dropped the rest, so a
+receipt it wrote read "read failed (1 image error)", and the reader's own report on the board printed "1 image error"
+with the cause sitting unused. The agent's record now keeps the reason fields as sent (tv_diablo._intake_result_fields), the
+receipt says the one rule's sentence from them (control_app._intake_why: "read failed - 1 image error - the intake answered
+HTTP 503"), and the gems, runes and materials reports print the same cause (_imgErrSay, escaped). A record or read with no
+cause reads as before. Not swept, named: the set-piece, crafted-item and grail readers count image errors that never had a
+cause (they do not read through _tallyRead). Law: test_an_image_error_reaches_its_receipt_with_its_cause (7 cases: the
+agent's builder, its row through the real receipt stream, _imgErrSay in node; 6 red-proofs, each RED).
+### REG-2886 - THE VAULT'S POPULATION LINE COUNTED NAMES, SO THREE STORMSHIELDS READ "1 OWNED" (#137, his ruling 2026-10-28: "3 copies if it was witnessed in other areas and coordinates.. its logical yea i do have three im pretty sure")
+Measured on the whole page in node: the line under the vault toolbar counted names only. Three Stormshields read "1 owned ·
+1 filed to mules", and a copy he added moved no number (GrokBot v3740: "the 6 copy-N adds did not count"). It now reads
+"1 owned · 3 copies" when the evidence holds three. The number is the records count the card, the window and FIND
+already use: _vaultRecordsHeader, one record per copy, through _vaultPresenceSpan. That is the distinct cells he was seen
+in (v3767) plus the copies his hand typed (REG-2786). It is never a re-read of one cell and never copies[] alone. A name
+with a keeper target (Stormshield's is 2) counts a re-read under that target as a copy, by his v3767 rule, exactly as the
+card draws it. When nothing shows a second copy, the line stays "N owned", with no guessed number. Law:
+tv/test_the_vault_header_counts_copies_from_evidence.py, 3 red-proofs. The CI spec v3747_one_record_header_parity still
+reads its owned, filed and loose numbers by their own words; its comment quoting the old line is now out of date.
+### REG-2917 - TWELVE VAULT, INTAKE AND MOVE LAWS COULD NOT BE SEEN TO REFUSE: NO EXECUTABLE RED_PROOF (#128)
+### REG-2918 - EVERY NON-BROWSER LAW STILL WITHOUT AN EXECUTABLE RED-PROOF GAINS ONE: 36 OF 42 (#128)
+REG-2917 left 42 gates with no RED_PROOF, 6 of them browser laws. The 36 that run without a browser now each carry
+executable red-proofs that break the PROPERTY the law names. Every anchor matched its file exactly once; every proof was
+seen RED for that property (its own assertion, not an import, a crash or an anchor), and sab read bad 0 for each law.
+Part 1 (16 laws): the dock's still-full reason, the sweep's reading clock, a missing companion, a window change reaching
+the fleet, the world ribbon's put-away, untracked reel footage, a count that cannot answer why, the silent proof chip, a
+counted live-store skip, a countless proof that can still tamper, a blind organ, a difference's two terms, a gate that may
+not pin his footage, a read reel not waiting on a read, the fleet's per-side lack, and a written answer's reader.
+Part 2 (20 laws, 130 proofs): test_a_hop_shadows_the_window (the v3209 `window=_cw` no-op; no shadow; no hop; the
+either-handler tick; a reader demanding setItem; a writer not), test_a_fixture_pack_is_not_his_footage (a head slice; a
+whole-reel copy; the source sessionId; the fixture flag; "pruned" wording; the checksum; the dedupe; front-of-shelf),
+test_the_guest_seat_is_grok_not_konyo (actor; per-run id; key scrub; merged identity; unreadable as {}; a blind leak
+detector; the unix user; his name; a write door in the allowlist), test_the_chronicle_counts_a_sunder_once (Renewed; a
+bare sunder; the object branch; the array branch; the sixth base; the roster's Latent form; vault and chronicle keys),
+test_a_manual_declaration_can_be_found, test_the_card_says_why_the_list_is_missing, test_reported_counts_is_not_no_report,
+test_a_missing_row_never_claims_it_does_not_know, test_a_decoded_empty_is_not_unknown,
+test_the_edit_tab_states_the_odds_of_the_mods_he_picked (14: each share of the magic mix, the inclusive floor, a blank
+range, an out-of-range roll, a chosen class, each unpinned draw's reason, the 1/1, the disclaimer),
+test_a_measured_find_date_stays_on_the_live_sighting, test_a_1440_tooltip_joins_the_panel, test_tooltip_read_failures,
+test_a_shadow_log_nobody_read_is_not_agreement, test_an_unread_test_is_not_a_clean_verdict,
+test_a_reach_difference_is_not_an_unsteady_eye, test_an_in_game_draft_wears_the_gear_the_reels_showed,
+test_the_head_stamp_matches_the_build, test_an_odd_item_name_never_leaks_out_of_its_attribute and
+test_an_off_grid_builder_item_is_flagged_not_drawn. Proofs whose red comes through node carry "needs": "node".
+Cases deliberately left WITHOUT a proof, with why: the fixture-pack loader's live-tree refusal - opening it makes the
+proof itself write a reel into the footage tree of whatever checkout runs it, and footage has no un-delete; the untracked-
+footage law's three git-index cases - the tracked set is not text a find/replace can sabotage (its .gitignore case has
+one); the missing-row law's planted-violation case and the head-stamp law's frozen-title case - each is the guard's own
+built-in red case, and a proof against the law's detector would sit twice in the law's own file. Not kept: a dropper proof
+that set the journal field to None crashed the case on `.get` and was re-aimed to `{}` (now red on the property); a
+head-stamp missing-title sabotage is answered first by the meta refusals for that fixture, and a jsArg sabotage of the
+`<`/`>` escapes alone cannot leak inside a double-quoted attribute, so neither was used.
+Census after (heart2.report): 1,238 gates, 1,232 declaring a proof, 6 unproven - exactly the six browser laws, which need
+CI to be seen red: test_intake_a_move_needs_a_look_and_owned_has_a_record, test_v3767_copy_witness_visual,
+test_vault_add_and_find_doors_work, test_vault_v3_layout_keeps_every_door, test_v3771_vault_console_face_visual,
+test_shadow_mode_draws_their_console.
+
+### REG-2917 - LAWS WITH NO EXECUTABLE RED-PROOF GAIN ONE: 12 OF 54 (#128)
+heart2's own census (heart2.report) read 1,238 gates, 1,184 declaring a proof, 54 with none - UNKNOWN, not clean. The
+twelve guarding vault, intake and move code that run without a browser now each carry an executable RED_PROOF that breaks
+the PROPERTY the law names (anchor matched exactly once; each seen RED for that property, not for an import, a crash or an
+anchor): test_vault_resume_seal (the resume skip; the seed of banked sightings), test_the_vault_find_ranks_matches (the
+rank; the alias), test_the_core_lockers_are_not_deletable (the delete door; the button), test_a_reload_reconciles_the_vault
+_records (the page-load refresh), test_find_folds_a_trailing_space_duplicate (the whitespace fold),
+test_the_vault_records_history_clears_from_the_reset_menu (the second confirm; the door's scope), test_a_restore_is_shaped
+_like_a_sweep (the list shape; the whitelisted confirm), test_the_removal_journal_forks_like_the_store (the fork class; the
+journal key), test_two_vocabularies_for_one_item (the qualifier; the apostrophe fold), test_a_banked_proposal_says_it_is
+_banked (the from-disk staleness; the label), test_a_sweep_holds_the_relaunch_lock (a fresh lock; the cold window) and
+test_the_sweep_reads_the_reels_that_have_something (the density order; a raising gate sorts last). Two sabotages that
+stayed green were dropped or re-aimed rather than kept: the reload law's UNKNOWN guard is held one layer down by the refresh
+itself (it refuses a held vault), and removing the records store's removeItem is undone by the run's own refresh. Two law
+instruments were fixed where a sabotage exposed them: the relaunch-lock law now seats _tree_is_mid_edit (a red-proof that
+edits control_app.py made the tree "mid-edit", and that refusal answered for the lock it removed), and its cold-lock case
+now reads both of the decider's lock refusals ("lock was touched"), where it saw only the in-process lane's.
+Census after (heart2.report): 1,238 gates, 1,196 declaring a proof, 42 still unproven. By name - the six marked
+(browser) need CI to be seen red:
+test_missing_companion, test_a_window_change_reaches_the_fleet, test_world_ribbon, test_no_footage_tracked,
+test_dock_says_why, test_population_why, test_proof_chip, test_live_store_skip, test_countless_proof,
+test_blind_organ, test_both_terms, test_no_pinned_footage, test_read_not_waiting,
+test_the_fleet_names_what_each_side_lacks, test_a_written_answer_has_a_reader, test_a_hop_shadows_the_window,
+test_a_fixture_pack_is_not_his_footage, test_the_guest_seat_is_grok_not_konyo,
+test_the_chronicle_counts_a_sunder_once, test_the_sweep_says_how_long_it_has_been_reading,
+test_a_manual_declaration_can_be_found, test_the_card_says_why_the_list_is_missing,
+test_reported_counts_is_not_no_report, test_a_missing_row_never_claims_it_does_not_know,
+test_a_decoded_empty_is_not_unknown, test_the_edit_tab_states_the_odds_of_the_mods_he_picked,
+test_a_measured_find_date_stays_on_the_live_sighting, test_a_1440_tooltip_joins_the_panel,
+test_tooltip_read_failures, test_a_shadow_log_nobody_read_is_not_agreement,
+test_an_unread_test_is_not_a_clean_verdict, test_a_reach_difference_is_not_an_unsteady_eye,
+test_an_in_game_draft_wears_the_gear_the_reels_showed, test_the_head_stamp_matches_the_build,
+test_intake_a_move_needs_a_look_and_owned_has_a_record, test_v3767_copy_witness_visual,
+test_an_odd_item_name_never_leaks_out_of_its_attribute, test_an_off_grid_builder_item_is_flagged_not_drawn,
+test_vault_add_and_find_doors_work, test_vault_v3_layout_keeps_every_door, test_v3771_vault_console_face_visual,
+test_shadow_mode_draws_their_console.
+Browser: test_intake_a_move_needs_a_look_and_owned_has_a_record, test_v3767_copy_witness_visual,
+test_vault_add_and_find_doors_work, test_vault_v3_layout_keeps_every_door, test_v3771_vault_console_face_visual,
+test_shadow_mode_draws_their_console.
+
+### REG-2916 - THREE LANES PROMISED NEVER TO DELETE AND THEIR REACH DELETES, WITH NOTHING DECLARING IT (#128)
+auto_scope.undeclared_reach_abilities reported tvd-shadow-watch (reach 74), tvd-stash-watch (40) and tvd-version-drift (124)
+as forbidding delete while their depth-3 reach can delete, with no clause permitting it - only tvd-ledger-backup had one
+(`rotates`). Read in the code, every delete call in those reaches is the console's own bookkeeping: stop_agent (PID_PATH, the
+live eye frame), _stop_capture and _capture_health (CAP_PID_PATH), _force_kill_all_agents (PID_PATH), _launcher_picture (the
+temporary picture it took itself) and _clear_exit_on_purpose (its own marker) - never a reel, his footage, a ledger or the
+vault. Each lane now declares those functions in a `clears` clause and auto_scope.CLEARS names the exact target each one
+removes. clears_report reads every delete call in the lane's reach from the syntax tree (a comment is not a call), and the
+reporter permits the row only when each is a declared function removing a declared target: a new delete, a new target, a
+new deleting function in the reach, or a table entry no lane declares is a break again. The checker was not loosened - the
+declaration was made to match the code - and the `never` lines stop saying nothing is removed. After: all four rows
+permitted. Law: test_a_lane_clears_only_what_it_declares (14 cases, a class per lane; 4 red-proofs, each widening one
+lane's reach, each RED); test_auto_scope's permission case re-aimed to 'a clause that covers it' and renamed.
+### REG-2943 - A SIGTERM MID-PUSH EXITED WITHOUT WRITING WHAT THE PUSH HAD ALREADY BANKED (#150)
+heart2._on_fatal_signal removed the sandboxes and os._exit()ed; os._exit skips atexit, so whatever store() had banked since
+the last per-gate flush (and the cache's usedAt marks) never reached the disk. It now flushes the push's verdict cache
+first (_flush_on_kill): only entries already STORED - never a PROVEN still in _CLEAN.pending, which no green clean run has
+bracketed - and only when the cache's lock is free, because the signal may have landed inside code that holds it and a
+handler that blocks there never exits. SIGKILL cannot be caught at all, which is why REG-2942 writes at each checkpoint.
+Law: test_a_killed_push_keeps_what_it_proved (a child that SIGTERMs itself leaves the banked entry on disk and not the
+waiting one); its proof declares "posix-signals", so a PC that cannot send itself a signal files it ELSEWHERE.
+
+### REG-2942 - A PUSH KILLED MID-GATE LOST EVERY PROOF THAT GATE HAD ALREADY PROVED (#150)
+_prove_gate_push held every PROVEN in _CLEAN.pending until the gate's CLOSING clean run (REG-1988) and flushed per gate,
+so a kill mid-gate - the hook's deadline, a Ctrl-C, a closed terminal - lost all of that gate's proofs (test_control: 27
+at ~4 min each), and the next push proved them again. Banking each PROVEN the moment it returns was asked for and is NOT
+sound: a gate's proofs share ONE clean run, and a proof can go red because earlier runs drifted the sandbox (state the key
+does not hold) rather than because of its tamper - the case the closing run exists to catch. So the bracket moves earlier
+instead of going away: once CHECKPOINT_EVERY (4) PROVENs wait and another proof is about to run, the gate's shared clean
+run(s) are asked again (_checkpoint_bank). Green - every waiting PROVEN now sits between two green clean runs - banks them
+through _bankable and the REG-2640 key and writes the cache to disk at once; red, unknown or raising banks nothing and
+asks no further checkpoint, and the closing run judges the gate exactly as before. COST: at most one extra clean run per 4
+freshly proved proofs in a gate (a gate re-proved from nothing pays up to 25% more runs; one with 4 or fewer fresh proofs
+pays nothing; a proof served from the cache never counts). GAIN: a kill loses at most 4 proofs' work. CHECKPOINT_EVERY is
+the one dial. THE REVIEW ADDED TWO RULES: a LATER red clean run of the same gate - a checkpoint or the closing run - takes
+back every proof an earlier checkpoint of it banked (_checkpoint_revoke; the cache's new unstore() drops it from disk too,
+never another run's newer proof of the same bytes), so no resume ever reuses one; and the push RECORD carries a #150 line -
+checkpoints forecast and run, their cost in seconds, proofs banked early and the seconds of work a kill could no longer
+lose, reds and what they took back, and SAVED: hits a killed run's checkpoint had banked (an entry keeps a `ckpt` mark
+until its gate closes green, so only a gate that never closed counts as saved). A K that costs more than it saves is then
+a number. Law: test_a_killed_push_keeps_what_it_proved - killed after a green checkpoint, the disk holds those 4; the
+resumed push serves all 4 and runs only the 6 still owed; a red checkpoint banks nothing; a red second checkpoint takes
+back what the first banked and the resume reuses none of it; a red closing run takes back both checkpoints' banks; an
+unkilled gate of 10 pays exactly two checkpoints (4 clean runs) and leaves no mark; the record counts cost and saving.
+10 red-proofs, each RED for its own assertion. The 21 laws that drive the push path and the other 41 runnable laws that
+import heart2 pass with the change.
+
+### REG-2941 - 28 LAWS LISTED ONLY THEIR OWN SCRATCH OR ONE FIXTURE FRAME, AND NONE OF THEIR PROOFS WAS EVER SAVED: 91 UNKEYABLE -> 63 (#173)
+heart2 banks a PROVEN only under a byte key, and a law file that calls os.listdir / glob.glob / os.walk is UNKEYABLE
+(what it reads is decided at run time), so every one of its proofs re-runs on every push it is in. tv/unkeyable_laws.json
+listed 91 such laws holding 470 proofs. In 28 of them the listing could never read anything a byte key misses: it listed
+a directory the law had just made in its own scratch, or took "the first .jpg" of one tracked fixture reel. Fixed by
+the REG-2362 rule: each such listing is fixture_tmp.list_own / match_own (refuses any path outside this process's own
+contained scratch, so it cannot be pointed at the tree, his footage or a shared temp dir), with contain() added where the
+law lacked it; two cleanup walks over read-only fixtures became the same own-scratch walk; three laws that counted what
+their subject left in the SHARED temp dir (second_eye_*, minigrid.*) now point tempfile and TMPDIR at a watch dir inside
+their own scratch, so they count only what this run made (and no longer race other runs); and
+test_equipped_items_are_pixel_exact_per_character names its two fixture frames, so heart2 keys their bytes.
+The 28: river_drains_every_pass, backup_lane_survives_a_loss, a_plan_is_computed_once, a_stub_agent_never_films_his_screen,
+a_suite_run_is_reused_only_on_identical_bytes, a_pc_proves_itself_a_slice_at_a_time, an_evidence_picture_is_never_reaped,
+the_backup_prune_never_orphans_a_loss, an_abandoned_seal_is_finished_not_waited_on, a_machine_establishes_its_own_tree,
+atomic_write_keeps_the_mode, version_stamps_are_written_atomically, an_unread_journal_is_not_a_night_with_no_rows,
+the_prune_never_frees_a_word, reel_index_durability, reel_retention, roundtrip_sim, the_cheap_end_route_row_asks_the_store_once,
+vault_retro, g5_grok_eyes, the_eye_sees_the_blocks_around_a_big_files_hunks, a_sandbox_is_removed_whatever_its_bits,
+a_fixture_pack_is_not_his_footage, equipped_items_are_pixel_exact_per_character, a_scratch_dir_is_not_made_by_reading_the_module,
+a_refused_frame_leaves_no_snapshot_behind, the_live_frame_cannot_be_pulled_mid_read, vault_lane (each tv/test_*.py).
+Each now reads KEYABLE under heart2.law_inputs (the census's own question), passes clean, and the laws that newly contain
+their scratch or pin a frame were re-sabotaged (sab bad 0); the watch-dir census in the_live_frame_cannot_be_pulled was
+seen to catch a planted snapshot leak (its own proof aims elsewhere). With REG-2938..2940, 280 of the 470 proofs can now
+be saved; from clean-run timings here (nice 19, one law per process) that is about 43 minutes of re-proving per push no
+longer paid - an estimate, not a push measurement. CEILING in test_the_unkeyable_laws_only_get_fewer: 91 -> 63.
+THE 63 THAT REMAIN, BY WHY: 35 censuses whose denominator IS a folder of the tree (every tv/*.py, every law, every spec,
+every workflow - including the three split out below); 12 that read his footage, history or data (frames/hist, .git,
+his ledger backups, /proc); 12 that carry a browser marker and are not run on this Mac (venue rule) -
+test_a_push_proof_runs_only_where_its_defect_shows (25 proofs) holds the same .github/workflows listing REG-2939 split
+out, and is the largest left; 4 kept on purpose (frame_index's os.walk is the verbatim reference its lister is checked
+against; a_test_run_leaves_no_scratch_dirs reads the shared temp base; the install-font law checks tv/ before and after;
+the shipped-packs law censuses fixtures/). The encoding law (every_cli_that_prints_non_ascii_is_encoding_safe) stays: the
+REG-2640 trace records files OPENED, never directories LISTED, so no key heart2 takes can name its tv/*.py population. The
+class fix for the 35 is heart2 keying a listing by what its traced run listed - REG-2296 already does exactly that for
+gate PASSes in gate_ledger, never for proofs; not built here.
+FOUND, NOT FIXED: test_vault_lane leaves a child process running under pytest (the conftest reaper names its pid); the
+unmodified law does the same, and the gate's own unittest run is clean.
+
+### REG-2940 - A GLOB OF EVERY LAW MADE THE UPDATE-BESIDE-THE-SHADOW LAW'S 19 PROOFS UNSAVEABLE (#173)
+NoLawOpensTheRealConsole (no law file CALLS open_control_window / start_background_watchers) globs tv/test_*.py, so
+test_an_update_lands_beside_a_shadow_reel could never be keyed - and the scan was most of its run: the law took 9.7 s
+with it and takes 1.7 s without. It moved verbatim, with the one red-proof that plants the call, to
+tv/test_no_law_opens_the_real_console.py (unkeyable on purpose, 1 proof). The update law is keyable (19 proofs) and was
+re-sabotaged: bad 0 of 19; the new law: bad 0 of 1.
+
+### REG-2939 - A LISTING OF .github/workflows MADE THE PROOF-CACHE LAW'S 27 PROOFS UNSAVEABLE (#173)
+test_a_proven_verdict_is_reused_only_on_identical_bytes read every workflow to pin that no CI job runs a push-time prove or
+names .heart2_cache (but a proof shard's own fresh cache). That half moved verbatim to
+tv/test_no_ci_workflow_reaches_the_push_cache.py with two new red-proofs on proof-keys-shards.yml (a --push line without
+--proof-shard; the cache named other than as HEART2_CACHE_PATH) - each RED for its own assertion. The cache law is keyable
+and re-sabotaged: bad 0 of 27.
+
+### REG-2938 - A CENSUS OF EVERY tv/*.py MADE THE OWNED-DOOR LAW'S 32 PROOFS UNSAVEABLE, AND THE CENSUS READ A DOCSTRING AS CODE (#173)
+test_every_owned_door_writes_provenance's case "no python door writes d2r_owned without the door" lists tv/, so none of the
+law's 32 proofs (~12 s a run) was ever saved. It moved to tv/test_no_python_door_writes_owned_without_the_door.py. Its new
+red-proof (owned_restore's JS no longer calls window._ownedAdd) first came back GREEN: the census joins every string
+constant of a function, and owned_restore's own DOCSTRING spells "window._ownedAdd(name, ...)", so the census could never
+see that door lose its receipt. Docstrings are now left out of what a door "sends"; the proof is RED. The owned-door law is
+keyable and re-sabotaged: bad 0 of 32.
 
 ### REG-2879 - REG-2803'S CHROME LAW DROVE A GUEST WORLD, WHERE THE BOARD RIGHTLY MAKES NO MULE (ci/claude-v3834, 4 cases)
 CI (agent-suite, ci/claude-v3834) failed four cases of tv/test_vault_l1_war_stash_overflow.py, which REG-2803 re-aimed without
