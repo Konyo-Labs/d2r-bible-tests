@@ -27995,7 +27995,7 @@ function escC(s) {
       bits.push('<span class="fleet-riverstuck" title="' + escC('the locks that move this PC\u2019s river are shut \u2014 its proof is '
         + census + (_memWait ? ' and waiting for free memory to prove' : '') + ', so nothing that spends a reel may act here'
         + (hs && hs.why ? ' \u2014 ' + hs.why : ''))   /* v3855 C6 - the stale reason, said */
-        + '" data-census-why="' + escC((hs && hs.why) || '') + '">' + (_memWait ? 'locks shut \u00b7 census waiting for memory' : (_recheck ? 'locks shut \u00b7 rechecking' : 'locks shut'))
+        + '"' + (hs && hs.why ? ' data-census-why="' + escC(hs.why) + '"' : '') + '>' + (_memWait ? 'locks shut \u00b7 census waiting for memory' : (_recheck ? 'locks shut \u00b7 rechecking' : 'locks shut'))
         + (hs && Array.isArray(hs.takesFrom) && hs.takesFrom.length ? ' \u00b7 borrows ' + escC(hs.takesFrom.join('/')) + '\u2019s proofs' : '') + '</span>');
     }
     /* #193 (his "river says unknown now", 2026-10-27) - A CONSOLE THAT JUST STARTED IS NOT A BROKEN ONE. Its first proof
