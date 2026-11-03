@@ -334,7 +334,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 
 ## GATES
 
-    1462 registered in tv/run_gates.py — every one named below with what it guards,
+    1472 registered in tv/run_gates.py — every one named below with what it guards,
     so that "does a law already exist for this?" is answered by reading this file.
 
 - **blueprint-agrees** — v2403 — TWO MAPS OF ONE FACT, AND WHERE THEY DISAGREE IS THE FINDING.
@@ -499,6 +499,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_gate_proven_on_these_bytes_is_carried** — v3772 (REG-2293) - a push carries a gate when the commit that gate was proved at is an ancestor of HEAD and none of its inputs are in the diff from th…
 - **test_a_gate_run_does_not_dirty_the_proof_queue** — v3775 (REG-2296) fix 2 - Wilson gates bank into tv/.self_arming.jsonl, which dirtied an input of 147 gates mid-run so none were stored.
 - **test_a_gate_says_what_it_guards_not_how_many** — #104 (REG-1610, 2026-09-30) - a typed count in a gate's why went stale the day its law grew a case: 284 of 738 whys typed one and 72 of the 230 counta…
+- **test_a_ghost_row_does_not_take_a_shelf_slot** — v3860: 0-read ghost rows never take a published Shelf slot
 - **test_a_gone_row_reopens_when_the_item_is_back** — REG-2689 (#153.8, GrokBot) - a row closed as gone 5/5 sessions never reopened when the item was seen back in its cell
 - **test_a_good_mf_never_turns_odds_into_a_percent** — REG-2503 (#63) - one number carried two units split at 50, so a good MF printed Nagelring's 1:49 as '49%' and dropped its 1:70 from the ranking.
 - **test_a_green_clean_run_here_banks_the_imported_proofs_here** — REG-2589 - after a GREEN clean run here (REG-2587's, the wave's, or a shared one), another tree's served PROVENs still PROVEN after the closing run ar…
@@ -630,6 +631,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_peer_refusal_names_an_action** — v3384 - THE FLEET REFUSAL NAMED NO ACTION.
 - **test_a_perfect_base_files_from_the_planner** — #185 (REG-2532) - REG-2250 shipped dead in his world: _cbPerfectBaseMule named the keeper, but with his Chronicle seeded (99 runewords forged) suggest…
 - **test_a_periodic_check_is_still_watched_unattended** — 'RUNS SOMEWHERE' AND 'RUNS UNWATCHED' ARE DIFFERENT PROPERTIES AND ONLY ONE WAS GUARDED.
+- **test_a_pid_zero_ghost_listener_is_not_an_agent** — a Windows PID 0 orphan LISTENING socket is never read as a live agent, so hourly shadow seals close
 - **test_a_plain_gate_run_banks_its_passes** — v3846 - on v3845 two no-flag runs passed 1312 gates and banked none, so the bump-only carry had nothing to inherit and the bump reran every gate.
 - **test_a_plan_is_computed_once** — REG-1410..1414 (#66) - his words: 'the windows needs proper care and attention..
 - **test_a_planner_edit_is_one_edit** — #154 REG-2832 - an edit in the vault planner is held as a draft and filed once, with nothing in the removal journal
@@ -760,6 +762,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_scratch_listing_reads_only_its_own_scratch** — REG-2362 - fixture_tmp.list_own / match_own list a directory only when it lies strictly inside the scratch parent contain() made for this process (sym…
 - **test_a_seal_is_not_an_extraction** — v2875 — `zero-pages` held 25 stash reels waiting for a chronicle page that was never filmed (2,437 panel frames, chronicle kind ZERO across all 454 su…
 - **test_a_seal_is_per_session** — v2743 — a sweep stamped ONE pass-wide row count onto every session it read, and it ALREADY FIRED: six seals written in the same second on 2026-08-24 e…
+- **test_a_sealed_reel_publishes_the_digest_soon** — a sealed shadow reel publishes the session digest within 10 min, not 3 h later
 - **test_a_second_planner_pick_keeps_the_first_picks_copy** — #183 (REG-2530) - GrokBot V0 on v3784: Grief already filed, a planner pick files copy 2, a pick of a DIFFERENT item in the same open, and d2r_copies h…
 - **test_a_self_updated_console_can_read_its_frames** — REG-1260 (#227) - MEASURED on the ALT: tree at 6dab59f1 held the launcher's Pillow step, consoles started 20:26 and 21:06, no Pillow - the launcher's…
 - **test_a_sentence_names_only_buttons_the_page_has** — REG-2045 (#274, GrokBot tick 415) - the Vault told him to 'press Auto-Sort' and no button has that name
@@ -1054,6 +1057,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_each_roster_age_names_its_record** — #218 REG-3037: the panel, the roster page and the no-board bar date the roster row by its own store
 - **test_each_shadow_age_names_its_record** — #218 REG-3034: a shadow's bar dates the board and its sessions list dates the sessions, each by name
 - **test_each_shadow_session_plays_alone_and_says_town_time** — v3855 - each shadow session has its own PLAY that plays only its frames, and says in game / in town / out of town, chronicles read and items stashed f…
+- **test_each_shelf_card_has_its_own_play** — v3860: each owner Shelf card has its own PLAY
 - **test_eagle_counts_drawn** — v3293 - Grok Bots native eyes on v3291: CHILIAD not measured 23, panel 23-vs-25 disagree.
 - **test_empty_world_unknown** — v3297 - FOUR readers, ONE defect shape, all measured 2026-09-18 against a guest board that is structurally JOURNAL-RICH AND LEDGER-EMPTY: every durabl…
 - **test_encoding_rule_one_def** — v3293 - a test of mine printed non-ASCII without console_safe.enable()
@@ -1078,6 +1082,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_every_lane_stamps_its_own_beat** — #80 — EVERY WATCHER LANE IS A `while True` LOOP WHOSE WORK SITS INSIDE `except Exception: pass`, so the beat it stamps is the ONLY thing that makes it…
 - **test_every_lock_declares_its_attacks** — TWELVE OF SIXTEEN LOCKS COULD NOT SAY HOW MANY DISTINCT ATTACKS BACKED THEM — including prune.arm, the one door with no undo, and vault.sweep_start, w…
 - **test_every_locked_main_row_reaches_the_board** — #246 L11/W4 - main_character.is_locked had no reader on the board.
+- **test_every_missing_chip_shows_a_q_level** — every missing-unique and colossal chip shows a q level
 - **test_every_mule_filing_carries_its_witness** — #246 L6/W5 - the mule map stored a bare string and had ~40 writers, none asking for a witness
 - **test_every_operator_door_keeps_its_contract** — REG-1259 - Routine I's v1550 audit was red on four doors no page calls by design (owned_restore, rw_restore, vault_autosort, vault_route_probe): walke…
 - **test_every_overlay_closes_the_same_way** — v3847 (Elad 14:24/14:28) - every overlay closes on Esc (topmost only), outside click and its x
@@ -1210,6 +1215,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_no_page_function_is_declared_twice** — REG-3070's near-miss: every page function is declared once in its script - a second declaration is hoisted and wins silently for every caller
 - **test_no_pinned_footage** — REG-1027 — a reel id in EXECUTABLE test code makes retention hold that footage forever as a fixture.
 - **test_no_resolver_falls_back_to_his_live_world** — v2783 FIXED ONE RESOLVER THAT FELL BACK TO HIS LIVE DIRECTORY AND FOUR MORE COPIES WERE STILL RUNNING.
+- **test_no_roster_name_is_outside_the_game_data** — no roster name outside the CASC game data unless whitelisted
 - **test_no_sentence_names_a_surface_nothing_draws** — #154 REG-2834 - no sentence sends him to an undo surface nothing draws
 - **test_no_technique_is_lost_when_mini_goes** — #44 — his 2026-09-08 order: harness every technique BEFORE ON AIR and MINI unify, because removing MINI first would drop read-paths and the loss would…
 - **test_no_test_writes_his_eagle_ledgers** — v3470 - seven doctor suites drove console_doctor / unknown_age with fake checks and never redirected TV_UNKNOWN_AGE / TV_EAGLE_SLOW, so every run appe…
@@ -1235,6 +1241,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_one_scroll_owns_the_bosses_return** — REG-2112 (#314) - navClean scrolled to 0 after clearing an item whose own route-back scroll fires 60 ms later and always won
 - **test_one_start_point** — A15 clause 1 — ONE START POINT: *every reel enters at the same place
 - **test_one_story_per_snapshot** — printer._sources() promises 'every owner's reading, taken ONCE' and was breaking it for the story: reel_story.story() ran TWICE per snapshot — via ree…
+- **test_one_sync_status_joins_recorder_seal_and_shelf** — one sync verdict joins recorder, seal, digest and Shelf
 - **test_one_terror_level** — '96 terrorized' was an UNNAMED literal printed immediately right of the zone's real per-zone alvl, so it read as derived from it.
 - **test_one_ui_law_places_every_panel** — REG-1712 - D2R scales its panels with HEIGHT and keeps them centred
 - **test_one_verdict_cache_serves_every_tree** — #242 / REG-1996 - worktree pre-proves banked where the push never reads, and named 17 laws where the hook proved 136
@@ -1397,6 +1404,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_the_clock_does_not_read_before_the_run_start** — REG-2162 (#252) - the T+ clock read a wall time before the run start while T+ had already moved.
 - **test_the_closer_reads_frames_on_every_os** — REG-1266 (#229) - the Kai closer hard-coded bin/ocr_mac and ended at boot on Windows, while tv_diablo._ocr_worker_cmd() has returned ocr_win.ps1 (same…
 - **test_the_code_running_is_the_code_on_disk** — v3432 (#179) - A PROCESS MUST NOT GRADE A FILE IT IS NOT RUNNING.
+- **test_the_codex_names_the_casc_base** — ITEM_CODEX unique bases are the CASC item names
 - **test_the_compare_columns_ask_one_question** — v3392 (#137) - THE CROSS-REFERENCE PANEL ASKS THE SAME THREE QUESTIONS FOR EVERY USER.
 - **test_the_console_fetches_node_at_boot** — REG-2465 (#167) - a Windows console never asked for Node, and a self-updated console never re-runs the installer, so a PC without node stayed without…
 - **test_the_console_header_has_nine_doors_on_one_row** — #41 rank 23 (REG-1537, 2026-09-29) — J10's ten doors and its no-silent-scroll rule as a python law the heart can count.
@@ -1445,6 +1453,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_the_edit_panel_shows_the_base_and_the_locker_binds_his_character** — #253 (GrokBot ACT 5854814442, v3517) - (a) the item Edit panel of a white Crowbill said only 'Normal · Crowbill · Required Level 25'
 - **test_the_edit_tab_states_the_odds_of_the_mods_he_picked** — SPEC_174 section 10 — under the picked mods, the odds of those mods and of the typed floors or higher.
 - **test_the_end_route_is_watched** — v2748 — `grep -c end_routes` was 0 in control_app.py, console_doctor.py, corroborate.py AND control_ui.html: the derived end-route predicate was built…
+- **test_the_engine_index_parses_a_file_once** — v3859 (e) GATE SPEED - blueprint.engine_index parses each tv/*.py once per process (kept by stat)
 - **test_the_engine_room_lives_on_tvd** — THE GAMEPLAY HOME IS FOR PLAYING — the seven engine lamps and the whole ⚙ ADVANCED drawer (engines · eyes · fleet) now live on TV·D beside the AI read…
 - **test_the_epoch_never_deletes_and_never_fakes_a_terminus** — THE EPOCH MAY NEVER DELETE AND MAY NEVER REPORT A TERMINUS IT DID NOT REACH.
 - **test_the_era_flips_at_chiliad** — v2888 — Konyo asked for the version bar to rename itself at the 3000 mark: "when we hit version 3000 i want it to be called Chiliad 001 ...
@@ -1628,6 +1637,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_the_session_digest_reads_newest_first_with_its_route** — Sessions and the shared digest read newest-first by start
 - **test_the_session_gets_a_vote_on_where** — retro_gate.corroborate_location has answered what location the SESSION agrees on since it was written and nothing ever called it - one of the verdict-…
 - **test_the_session_route_stashes_trashes_and_ignores_trades** — the session route stashes only this run's farmed items, trashes a dropped one, and never counts a trade or the shared stash
+- **test_the_sessions_list_answers_at_once** — /api/sessions answers from its last build at once and rebuilds a stale one once in the background
 - **test_the_sessions_list_is_asked_once** — GrokBot v3817 - the theatre's wait, the Shelf and the Sessions hub share one /api/sessions request in flight
 - **test_the_set_pieces_carry_a_real_qlvl** — 1,444 OF 1,598 SET-TIER DROP RECORDS CARRIED qlvl 0, AND A ZERO ON A MISSING ROW IS A NUMBER HE FARMS BY — it reads as "any monster level can drop thi…
 - **test_the_sets_count_asks_for_a_fresh_page** — #228 - his screenshot 2026-09-24 11:13: the chronicle-sweep panel drew 'the board and the game do not add up' RED, reading as if he had done something…
@@ -1813,7 +1823,10 @@ about what a module MEANS cannot be re-derived from its AST. The drift between t
 printed below rather than hidden, because a map that quietly drops a module is the exact
 failure this section was written about.
 
-    277 modules · 0 unindexed · 0 stale entries
+    277 modules · 1 unindexed · 0 stale entries
+
+    ⚠ UNINDEXED — on disk with no entry, so this map does NOT describe them:
+        machine_sync.py
 
 `no importer` means no OTHER MODULE IN tv/ IMPORTS IT — measured by parsing, never by
 grepping a name that may be sitting inside a comment. It is not `dead`: a CLI tool, a
