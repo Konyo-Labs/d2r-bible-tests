@@ -7,7 +7,8 @@
       "a Fleet row says locks shut · N gates blind when its proof is current but some gates are blind, instead of looking healthy",
       "a session's hover says the character picked at login, what the character panel said and the class the avatar looks like; the row still shows only the answer",
       "the Runewords subtitle and a saved build drop the 'rides Backup & Share' jargon - a saved build just says Saved",
-      "the version history cards show their date without a stray IDT label"
+      "the version history cards show their date without a stray IDT label",
+      "D2JSP: the price-reading cost check now waits for the card list to settle first, so it no longer flakes under load (budget unchanged)."
     ]
   },
   {

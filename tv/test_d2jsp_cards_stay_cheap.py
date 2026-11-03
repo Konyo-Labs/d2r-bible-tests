@@ -385,6 +385,13 @@ window.__d1 = async function(rooms, n){
       });
       return set.size;
     }
+    /* v3856 - WAIT FOR THE LIST TO GO QUIET BEFORE THE HELD READING IS RELEASED. Under full-gate load the
+       228-card list was still painting (late art, deferred rows) when the reading landed, and those
+       paints were counted as the reading's: 3 cards against a budget of 1, green when run alone. Five
+       quiet 100 ms windows in a row (up to 10 s) is the list at rest; the budget itself is unchanged. */
+    for (var qw = 0, calm = 0; qw < 100 && calm < 5; qw++) { await sleep(100); calm = take().length ? 0 : calm + 1; }
+    out.quietBeforeReading = calm >= 5;
+    take();
     var heldN = window.__quoteHeld.length;
     var one = window.__quoteHeld.shift();
     if (one) one();
@@ -532,6 +539,8 @@ def chrome_problems(got):
     if d2.get("inCard") is None or d2["inCard"] > CARD_FILTERS:
         bad.append("%s elements inside D2JSP cards compute a filter (budget %d)" % (d2.get("inCard"), CARD_FILTERS))
     reading = got.get("reading") or {}
+    if not got.get("quietBeforeReading"):
+        bad.append("the D2JSP list never went quiet before the held reading was released, so its count is not the reading's")
     if not reading.get("held") or reading.get("cards") is None or reading["cards"] > READING_CARDS:
         bad.append("one D2JSP reading touched %s cards (budget %d)" % (reading.get("cards"), READING_CARDS))
     opts = got.get("options") or []
