@@ -3932,6 +3932,9 @@
   .tzz-top { display: flex; align-items: center; gap: 9px; min-width: 0; }
   .tzz-top b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .tzz-txt em, .tzz-txt i { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* v3859 - THE WHY LINE WRAPS. At 901 it read 'the way into the Andariel ru…' - the reason he acts on was the
+     part shaved. It may take a second line; it is never cut. */
+  .tzz-txt em.tzz-why { white-space: normal; overflow: visible; text-overflow: clip; }
   /* ══ v2325 — BELOW 1000px THE ALVL WAS ELLIPSISED AWAY, AND ALVL IS A NUMBER HE ACTS ON ══════
      Found by the second eye on a 901px render and confirmed character by character: at 1440 the
      line reads "880 density · alvl 77"; at 901 it reads "880 density · al…" and the level is
@@ -7261,6 +7264,9 @@
      to a second line; it is never shaved. */
   .tf-row.tf-chron .tf-t { white-space: normal; overflow: visible; text-overflow: clip; }
   .tf-row.tf-chron .tf-chron-note { white-space: nowrap; }
+  /* v3859 - THE TODAY STAT ROW WRAPS TOO. At 375 it read '0 runs recorded today · 0 ta…': the synced
+     count was the part shaved. It may take a second line; it is never cut. */
+  .tf-row.tf-stat .tf-t { white-space: normal; overflow: visible; text-overflow: clip; }
   .tf-tag.hunt { border-color: rgba(240,192,96,.55); color: var(--gold); }
   /* v1368 (SESSIONS R5) — TODAY'S TARGET hero: the single clearest next hunt, front-and-center so the
      hunt SINGS (Konyo: the hunt is the point of this tab). A prominent gold callout — mint when it's a
