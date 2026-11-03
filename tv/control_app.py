@@ -1420,33 +1420,35 @@ _WIN_CREATE = 0x00000200 | 0x08000000 if IS_WIN else 0
 _WIN_BREAKAWAY = 0x01000000 if IS_WIN else 0
 
 
-def _popen_scanner(popen_kw, say=None):
-    """v3859 (Dean, WinError 5) - start the scanner; if Windows refuses the job breakaway, start it inside the job.
+def _popen_breakaway(popen_kw, what="the scanner", say=None):
+    """v3859 (Dean, WinError 5) - THE ONE breakaway spawn: start a child out of the console's job; if Windows refuses
+    the breakaway, start it inside the job instead and say so. Used by the scanner and the recorder.
 
     v3850 added CREATE_BREAKAWAY_FROM_JOB. When the launcher's job does not allow breakaway, CreateProcess
-    fails with ERROR_ACCESS_DENIED (WinError 5) and the scanner never started. Returns (proc, plain_note)."""
+    fails with ERROR_ACCESS_DENIED (WinError 5) and nothing started. Returns (proc, plain_note)."""
+    kw = dict(popen_kw)
+    argv = kw.pop("args")                       # positional, as every Popen seam (and the laws' fakes) takes it
     try:
-        return subprocess.Popen(**popen_kw), None
+        return subprocess.Popen(argv, **kw), None
     except OSError as e:
-        flags = int(popen_kw.get("creationflags") or 0)
+        flags = int(kw.get("creationflags") or 0)
         if getattr(e, "winerror", None) != 5 or not (flags & 0x01000000):
             raise
-        kw = dict(popen_kw)
         kw["creationflags"] = flags & ~0x01000000
         note = ("access denied leaving the launcher's job (it forbids breakaway); "
-                "started the scanner inside it instead - it stops when this console closes")
+                "started %s inside it instead - it stops when this console closes" % what)
         if say:
             say(note)
-        return subprocess.Popen(**kw), note
+        return subprocess.Popen(argv, **kw), note
 
 
-def _scanner_start_error(e, exe):
+def _scanner_start_error(e, exe, what="the scanner"):
     """v3859 - the plain sentence for a scanner that did not start; never a bare WinError."""
     _exe_name = str(exe or "python").replace("\\", "/").rsplit("/", 1)[-1]
     if getattr(e, "winerror", None) == 5 or isinstance(e, PermissionError):
-        return ("access denied launching the scanner (%s) - Windows refused it; check antivirus "
-                "or folder permissions, then press start again" % _exe_name)
-    return "could not launch the scanner (%s): %s" % (_exe_name, e)
+        return ("access denied launching %s (%s) - Windows refused it; check antivirus "
+                "or folder permissions, then press start again" % (what, _exe_name))
+    return "could not launch %s (%s): %s" % (what, _exe_name, e)
 
 # ⚠⚠ v3407 — GIT.EXE WINDOWS WERE ALT-TABBING HIM OFF THE GAME, EVERY COUPLE OF MINUTES.
 # MEASURED on the Windows box 2026-09-21: 2-3 console windows in a row stealing focus while
@@ -6630,6 +6632,9 @@ def _start_capture_locked(env, log_fp):
                 "-File",
                 CAPTURE_PS1,
             ],
+            popen=lambda argv, **kw: _popen_breakaway(
+                dict(kw, args=argv), "the recorder",
+                say=lambda m: (log_fp.write("!! " + m + "\n"), log_fp.flush()))[0],
             kill=lambda pid: _kill_pid(pid, force=True),
             alive=_pid_alive,
             cwd=HERE,
@@ -6647,7 +6652,7 @@ def _start_capture_locked(env, log_fp):
         log_fp.flush()
         return _capture_proc.pid
     except Exception as e:
-        log_fp.write(f"!! capture start failed: {e}\n")
+        log_fp.write("!! capture start failed: %s\n" % _scanner_start_error(e, "powershell.exe", "the recorder"))
         log_fp.flush()
         return None
 
@@ -7336,8 +7341,8 @@ def start_agent(sim=False, test=False, mini=None, focus=None, origin="hand"):
             popen_kw["start_new_session"] = False
 
         try:
-            _agent_proc, _spawn_note = _popen_scanner(
-                popen_kw, say=lambda m: (_log_fp.write("!! " + m + "\n"), _log_fp.flush()))
+            _agent_proc, _spawn_note = _popen_breakaway(
+                popen_kw, "the scanner", say=lambda m: (_log_fp.write("!! " + m + "\n"), _log_fp.flush()))
             _agent_adopted_pid = None
             _pid_cache_seed(_agent_proc.pid)
         except Exception as e:

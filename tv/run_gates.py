@@ -10238,8 +10238,8 @@ GATES = [
          needs_app=False,
          why="v3859 (Dean, Nov 2 18:43) - 'failed to start scanner: [WinError 5] Access is denied'. v3850 spawns the "
              "reel-cutter with CREATE_BREAKAWAY_FROM_JOB; a launcher job that forbids breakaway makes CreateProcess "
-             "fail with access denied, so nothing started. _popen_scanner retries once inside the job and the start "
-             "reply says so; any other refusal is a plain sentence, never a bare WinError. RED_PROOF reverts each joint."),
+             "fail with access denied, so nothing started. _popen_breakaway (scanner AND recorder) retries once inside "
+             "the job and says so; any other refusal is a plain sentence, never a bare WinError. RED_PROOF reverts each joint."),
     Gate("test_the_reel_cutter_holds_one_lease",
          [sys.executable, os.path.join(HERE, "test_the_reel_cutter_holds_one_lease.py")], 120,
          needs_app=False,
