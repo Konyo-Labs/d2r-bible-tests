@@ -1500,7 +1500,6 @@ with a keeper target (Stormshield's is 2) counts a re-read under that target as 
 card draws it. When nothing shows a second copy, the line stays "N owned", with no guessed number. Law:
 tv/test_the_vault_header_counts_copies_from_evidence.py, 3 red-proofs. The CI spec v3747_one_record_header_parity still
 reads its owned, filed and loose numbers by their own words; its comment quoting the old line is now out of date.
-### REG-2917 - TWELVE VAULT, INTAKE AND MOVE LAWS COULD NOT BE SEEN TO REFUSE: NO EXECUTABLE RED_PROOF (#128)
 ### REG-2918 - EVERY NON-BROWSER LAW STILL WITHOUT AN EXECUTABLE RED-PROOF GAINS ONE: 36 OF 42 (#128)
 REG-2917 left 42 gates with no RED_PROOF, 6 of them browser laws. The 36 that run without a browser now each carry
 executable red-proofs that break the PROPERTY the law names. Every anchor matched its file exactly once; every proof was
