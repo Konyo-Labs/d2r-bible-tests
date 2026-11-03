@@ -3032,6 +3032,16 @@
     "purpose": "One lease file lets the recorder and the reel-cutter outlive their console, and lets a restarted console adopt them instead of starting a second.",
     "territory": "capture-vision"
   },
+  "session_route.py": {
+    "entryPoints": [
+      "route",
+      "place",
+      "chronicle_eligible"
+    ],
+    "gotcha": "A floor-only sighting is seen, never farmed; an item read from a trade, vendor, gamble or shared-stash screen is carried, never farmed. Identify renames a farmed item without counting it again. A chronicle find needs the green 'eligible for chronicle' line.",
+    "purpose": "v3859 (#230) - the session route ledger: walks one session's reads and files every item as farmed, identified, stashed, trashed, carried or seen, the one route the owner Sessions tab and every shadow read.",
+    "territory": "shadow"
+  },
   "read_identity.py": {
     "entryPoints": [
       "identity_ledger",
