@@ -154,7 +154,7 @@ class TheDigestPublishesItAndNeverThePassword(unittest.TestCase):
         self.assertIn('<div class="ssv-facts ssv-who">UNKNOWN · Farming (Morph8)</div>', shown, "a conflict was drawn as anything but UNKNOWN")
         for word in ("select-screen", "char-panel", "avatar", "disagree", "from ", "Hammy"):
             self.assertNotIn(word, shown, "the row shows source text %r (it belongs in the hover)" % word)
-        self.assertIn('title="character from select-screen | games: Morph1-Morph7 (7 games), one run across 2 sessions"', h)
+        self.assertIn('title="picked at login: Blizzy Sorceress 92 | games: Morph1-Morph7 (7 games), one run across 2 sessions"', h)
         self.assertIn("reads disagree: Blizzy / Hammy", h)
 
 
@@ -189,8 +189,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "the row shows its sources again",
      "file": "tv/control_ui.html",
-     "find": "    var who = whoBits.length ? whoBits.join(' · ') : 'UNKNOWN';\n",
-     "replace": "    var who = (whoBits.length ? whoBits.join(' · ') : 'UNKNOWN') + (ch && ch.sources ? ' · from ' + ch.sources.join(', ') : '');\n",
+     "find": "    var who = (!_whoConflict && whoBits.length) ? whoBits.join(' · ') : 'UNKNOWN';\n",
+     "replace": "    var who = ((!_whoConflict && whoBits.length) ? whoBits.join(' · ') : 'UNKNOWN') + (ch && ch.sources ? ' · from ' + ch.sources.join(', ') : '');\n",
      "matches": 1, "needs": "node"},
     {"why": "the game password is published",
      "file": "tv/read_identity.py",

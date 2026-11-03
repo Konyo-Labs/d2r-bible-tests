@@ -23085,7 +23085,9 @@ window._lockMark = function(isOpen, px, label){
       if (ch.cls) whoBits.push(ch.cls + (ch.level ? ' ' + ch.level : ''));
     } else whoBits.push('UNKNOWN');   /* an unresolved character still says UNKNOWN beside a known scenario */
     if (typeof s.scenario === 'string' && s.scenario) whoBits.push(s.scenario);
-    var who = whoBits.length ? whoBits.join(' · ') : 'UNKNOWN';
+    /* v3856 - reads that disagree on who played are UNKNOWN, said alone: a scenario beside them read as a settled row */
+    var _whoConflict = !!(ch && Array.isArray(ch.conflict) && ch.conflict.length);
+    var who = (!_whoConflict && whoBits.length) ? whoBits.join(' · ') : 'UNKNOWN';
     var whyBits = [];
     /* v3856 - the hover says what each read said, in plain words: the character picked at login, the character panel,
        the class the avatar looks like. Older records without `seen` keep the source list. */
