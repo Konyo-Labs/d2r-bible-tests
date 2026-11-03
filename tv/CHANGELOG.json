@@ -10,7 +10,8 @@
       "v3857 #247: the heart window's ✕ sits on its corner again at 1024-1440 (was 65px low, clamped to the rail)",
       "v3857 #247: THE FLEET and SWEEP · this PC hold one line in the 1024-1279 rail",
       "v3857 #247: the Shelf door reads THE SHELF, then 'every recorded run' below - no orphan RUN",
-      "v3857 #247: the chronicle Mini pills read 'chronicle / uniques', never 'chronicle / · uniques'"
+      "v3857 #247: the chronicle Mini pills read 'chronicle / uniques', never 'chronicle / · uniques'",
+      "v3857: vault visual laws wait for a painted frame, retry one capture, survive a navigation (10/10 under load)"
     ]
   },
   {

@@ -202,15 +202,75 @@ def _ev(cdp, expr, timeout=60):
     return (res.get("result") or {}).get("value")
 
 
+#: v3857 - a navigation (a reload, a hash route) in flight while a probe runs is not a verdict on the
+#: page: CDP answers "Inspected target navigated or closed" / "context was destroyed" and the next
+#: poll lands in the new document. These words are the only errors a wait may outlive.
+_NAV_GONE = ("navigated or closed", "Execution context was destroyed", "Cannot find context")
+
+
+def _nav_gone(err):
+    return any(w in str(err) for w in _NAV_GONE)
+
+
 def _wait_fn(cdp, expr, timeout=90):
     deadline = time.time() + timeout
     last = None
     while time.time() < deadline:
-        last = _ev(cdp, expr, timeout=15)
-        if last:
+        try:
+            last = _ev(cdp, expr, timeout=15)
+        except (RuntimeError, AssertionError) as e:
+            if not _nav_gone(e):
+                raise
+            last = "navigating: %s" % str(e)[:120]
+            time.sleep(0.4)
+            continue
+        if last and not (isinstance(last, str) and last.startswith("navigating: ")):
             return last
         time.sleep(0.4)
     raise AssertionError("timed out waiting for %s; last=%r" % (expr, last))
+
+
+#: v3857 - a painted, settled frame: the document is complete, its fonts are loaded and two
+#: animation frames have run, so a capture never fires before the first paint (CI took a 311-byte
+#: PNG of a frame with nothing drawn in it).
+_SETTLED = """new Promise(function(res){
+  function two(){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ res(true); }); }); }
+  function go(){ (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(two, two); }
+  if (document.readyState === 'complete') go(); else addEventListener('load', go, {once: true});
+})"""
+
+
+def _settle(cdp, timeout=30):
+    deadline = time.time() + timeout
+    while True:
+        try:
+            res = cdp.call("Runtime.evaluate", {"expression": _SETTLED, "awaitPromise": True,
+                                                "returnByValue": True}, timeout=15)
+            if (res.get("result") or {}).get("value") is True:
+                return
+        except (RuntimeError, TimeoutError) as e:
+            if not (_nav_gone(e) or isinstance(e, TimeoutError)) or time.time() > deadline:
+                raise
+        if time.time() > deadline:
+            raise AssertionError("the page never settled to a painted frame")
+        time.sleep(0.3)
+
+
+def _capture(cdp, params, label, floor=3000):
+    """Settle, capture; on a bad frame settle again and capture ONCE more, then judge."""
+    raw = b""
+    for attempt in (0, 1):
+        _settle(cdp)
+        try:
+            res = cdp.call("Page.captureScreenshot", params, timeout=60)
+            raw = base64.b64decode(res["data"])
+        except RuntimeError as e:
+            if not _nav_gone(e) or attempt:
+                raise
+            continue
+        if raw[:8] == b"\x89PNG\r\n\x1a\n" and len(raw) >= floor:
+            return raw
+    raise AssertionError("bad png %s (%d bytes) after a settled retry" % (label, len(raw)))
 
 
 def _clip(cdp, selector):
@@ -243,15 +303,12 @@ def _clip(cdp, selector):
 
 def _png(cdp, selector, path):
     info = _clip(cdp, selector)
-    res = cdp.call("Page.captureScreenshot", {
+    raw = _capture(cdp, {
         "format": "png",
         "captureBeyondViewport": True,
         "clip": {"x": info["x"], "y": info["y"], "width": info["width"],
                  "height": info["height"], "scale": 1},
-    }, timeout=60)
-    raw = base64.b64decode(res["data"])
-    if raw[:8] != b"\x89PNG\r\n\x1a\n" or len(raw) < 3000:
-        raise AssertionError("bad png %s (%d bytes)" % (path, len(raw)))
+    }, path)
     with open(path, "wb") as fh:
         fh.write(raw)
     return path
@@ -533,15 +590,12 @@ class TestV3769VaultMoveListVisual(unittest.TestCase):
         self.assertFalse(not info or info.get("missing"), info)
         self.assertGreaterEqual(info.get("width") or 0, 8, info)
         self.assertGreaterEqual(info.get("height") or 0, 8, info)
-        res = cdp.call("Page.captureScreenshot", {
+        raw = _capture(cdp, {
             "format": "png",
             "captureBeyondViewport": True,
             "clip": {"x": info["x"], "y": info["y"], "width": info["width"],
                      "height": min(info["height"], 1100), "scale": 1},
-        }, timeout=60)
-        raw = base64.b64decode(res["data"])
-        self.assertEqual(raw[:8], b"\x89PNG\r\n\x1a\n")
-        self.assertGreater(len(raw), 3000)
+        }, name)
         path = os.path.join(SHOTS, name)
         with open(path, "wb") as fh:
             fh.write(raw)

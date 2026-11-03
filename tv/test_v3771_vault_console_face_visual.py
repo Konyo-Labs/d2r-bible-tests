@@ -30,7 +30,7 @@ except Exception:
     pass
 
 from test_v3769_vault_move_list_visual import (  # noqa: E402
-    _CDP, _chrome_path, _ev, _free_ports, _png, _wait_fn, _wrap,
+    _CDP, _capture, _chrome_path, _ev, _free_ports, _png, _wait_fn, _wrap,
 )
 
 NO_BROWSER = "no Chrome/Chromium on this machine"
@@ -131,11 +131,7 @@ def _save(path):
 
 
 def _viewport(cdp, name):
-    res = cdp.call("Page.captureScreenshot", {"format": "png"}, timeout=60)
-    import base64
-    raw = base64.b64decode(res["data"])
-    if raw[:8] != b"\x89PNG\r\n\x1a\n" or len(raw) < 3000:
-        raise AssertionError("bad png %s (%d bytes)" % (name, len(raw)))
+    raw = _capture(cdp, {"format": "png"}, name)
     path = os.path.join(SHOTS, name)
     with open(path, "wb") as fh:
         fh.write(raw)
@@ -208,14 +204,11 @@ class TestV3771VaultConsoleFaceVisual(unittest.TestCase):
 })()
 """ % json.dumps(selector))
         self.assertFalse(not info or info.get("missing"), info)
-        res = cdp.call("Page.captureScreenshot", {
+        raw = _capture(cdp, {
             "format": "png", "captureBeyondViewport": True,
             "clip": {"x": info["x"], "y": info["y"], "width": info["width"],
                      "height": info["height"], "scale": 1},
-        }, timeout=60)
-        raw = base64.b64decode(res["data"])
-        self.assertEqual(raw[:8], b"\x89PNG\r\n\x1a\n")
-        self.assertGreater(len(raw), 3000, len(raw))
+        }, name)
         path = os.path.join(SHOTS, name)
         with open(path, "wb") as fh:
             fh.write(raw)
@@ -392,14 +385,11 @@ def _png_beside(cdp, path):
         raise AssertionError("no element #v3771-beside %s" % (info,))
     if info["width"] < 8 or info["height"] < 8:
         raise AssertionError("empty clip #v3771-beside %s" % (info,))
-    res = cdp.call("Page.captureScreenshot", {
+    raw = _capture(cdp, {
         "format": "png", "captureBeyondViewport": True,
         "clip": {"x": info["x"], "y": info["y"], "width": info["width"],
                  "height": info["height"], "scale": 1},
-    }, timeout=60)
-    raw = base64.b64decode(res["data"])
-    if raw[:8] != b"\x89PNG\r\n\x1a\n" or len(raw) < 3000:
-        raise AssertionError("bad png %s (%d bytes)" % (path, len(raw)))
+    }, path)
     with open(path, "wb") as fh:
         fh.write(raw)
     return path
