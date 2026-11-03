@@ -3,7 +3,8 @@
     "ver": "v3858",
     "date": "2026-11-03",
     "items": [
-      "v3857 #247: below 1080px the glyph-only NAME pill hugs its glyph instead of stretching to the clock column"
+      "v3857 #247: below 1080px the glyph-only NAME pill hugs its glyph instead of stretching to the clock column",
+      "v3857 #247: the board keeps a right gutter for its FAB column up to 1620px, so no FAB covers a card edge"
     ]
   },
   {
