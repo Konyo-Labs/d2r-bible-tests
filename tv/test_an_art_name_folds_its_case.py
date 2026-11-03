@@ -80,6 +80,11 @@ RED_PROOF = [
      "find": "_m[l] = (l in _m) ? null : k;",
      "replace": "_m[l] = (l in _m) ? _m[l] : k;",
      "matches": 1, "needs": "node"},
+    {"why": "v3859 - the codex spells the base the game's way, the base-sprite pass looks BASE_DB up exactly, so the axe loses its picture",
+     "file": "bible.html",
+     "find": "        _bb = _bFold[_bb.toLowerCase()] || '';\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
 ]
 
 if __name__ == "__main__":

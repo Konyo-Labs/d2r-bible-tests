@@ -38575,10 +38575,16 @@ try {
      one sprite its uniques share - additive (a base that draws keeps what it draws), and a base no unique is built on, or
      whose uniques disagree, stays UNKNOWN. The picture is still read through artUrl: one resolver, one table. */
   if (typeof BASE_DB !== "undefined" && (typeof ITEM_CODEX !== "undefined" || typeof ITEM_TIP !== "undefined")){
-    var _bSpr = {};
+    var _bSpr = {}, _bFold = null;
     Object.keys(_KEEPER_ART.base).forEach(function(_bu){
       var _bc = (typeof ITEM_CODEX !== "undefined" && ITEM_CODEX[_bu]) || null, _bt = (typeof ITEM_TIP !== "undefined" && ITEM_TIP[_bu]) || null;
       var _bb = (_bc && _bc.base) || (_bt && _bt.b) || '';
+      /* v3859 - the codex now spells a base the game's way ("Silver-edged Axe") while BASE_DB keys "Silver-Edged Axe":
+         an exact-only lookup dropped those bases' sprite. Fold the case to the ONE BASE_DB key it names. */
+      if (_bb && !Object.prototype.hasOwnProperty.call(BASE_DB, _bb)){
+        if (!_bFold){ _bFold = Object.create(null); Object.keys(BASE_DB).forEach(function(k){ var l = k.toLowerCase(); _bFold[l] = (l in _bFold) ? null : k; }); }
+        _bb = _bFold[_bb.toLowerCase()] || '';
+      }
       if (!_bb || !Object.prototype.hasOwnProperty.call(BASE_DB, _bb)) return;
       (_bSpr[_bb] = _bSpr[_bb] || {})[_KEEPER_ART.base[_bu]] = 1;
     });
