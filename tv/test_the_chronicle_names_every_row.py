@@ -274,7 +274,7 @@ class TheChronicleNamesEveryRow(unittest.TestCase):
         self.assertIn("base:base", wall)
 
     def test_the_quest_gap_is_not_painted_as_dark(self):
-        self.assertEqual(self.src.count("var _darkN=(s.chronTotal||0)-s.total;"), 1)
+        self.assertEqual(self.src.count("var _darkN=(s.chronTotal||0)-(s.colTotal||0)-s.total;"), 1)
         self.assertEqual(self.src.count("var _showDark = _darkN;"), 1)
         self.assertNotIn("_darkN - _CHRON_QUESTS.length", self.src)
         self.assertNotIn("_CHRON_QUESTS.length", self.src)
@@ -286,12 +286,12 @@ class TheChronicleNamesEveryRow(unittest.TestCase):
         self.assertIn("'+_showDark+'", band)
         self.assertNotIn("'+_darkN+'", band)
         self.assertEqual(self.src.count("s.chronTotal-s.found"), 1)
-        self.assertEqual(self.src.count("_colossalStillOpen("), 3)
+        self.assertEqual(self.src.count("_colossalStillOpen("), 2)
         self.assertIn("_ownedHas(_ownF, x.n)", self.src)
         self.assertNotIn("_ownF.has(x.n)", self.src)
-        self.assertIn("(s.chronTotal || 0) - s.found + _colossalStillOpen(", self.src)
+        self.assertIn("var _uniLeft = (s.chronTotal || 0) - s.found;", self.src)
         self.assertNotIn("s.chronTotal-s.found-_CHRON_QUESTS.length", self.src)
-        k = self.src.find("var _namedDark = (s.chronTotal - s.total);")
+        k = self.src.find("var _namedDark = (s.chronTotal - (s.colTotal||0) - s.total);")
         self.assertGreater(k, 0)
         m = self.src.find("H.push(_undoBar('uni'))", k)
         self.assertGreater(m, k)
@@ -303,8 +303,8 @@ class TheChronicleNamesEveryRow(unittest.TestCase):
         self.assertNotIn("return t - q", fn)
         self.assertIn("return t;", fn)
         flat = self.src.replace(" ", "")
-        self.assertIn("chronTotal:397", flat)
-        self.assertNotIn("chronTotal:403", flat)
+        self.assertIn("chronTotal:403", flat)
+        self.assertNotIn("chronTotal:397", flat)
 
     def test_the_list_is_actually_called_and_the_resolver_stops(self):
         self.assertEqual(self.src.count("names = _chronicleNameList(names);"), 1)

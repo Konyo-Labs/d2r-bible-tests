@@ -67721,6 +67721,11 @@ function renderJournal(){
     var own=_ownedNames(), items=_uniItems();
     var missing=[], found=0;
     items.forEach(function(x){ if(_ownedHas(own,x.n)) found++; else missing.push(x); });
+    /* v3857 item 16 (#230, Elad 2026-11-03) - THE TALLY IS 403: the 397 hunt cards plus the six colossal jewels.
+       found counts a ticked colossal jewel too; total stays the named-card roster. The six quest items stay off. */
+    var _colRowsT=_colossalTallyRows(), colFound=0;
+    _colRowsT.forEach(function(x){ if(_ownedHas(own,x.n)) colFound++; });
+    found+=colFound;
     var bySrc={};
     missing.forEach(function(x){
       var b=_bestSrc(x); var key=b?b.s.boss:'Anywhere — no verified source yet';
@@ -67834,7 +67839,7 @@ function renderJournal(){
        Stated rather than averaged, because a denominator quietly nudged to make a percentage look
        right is the exact defect this board keeps finding. It does NOT move the answer he asked
        about — 259 found is 64% either way. [[unknown-stays-unknown]] */
-    return { total:items.length, found:found, missing:missing, runs:runs, low:low, sealed:sealed, lowTotal:lowTotal, chronTotal:397 };
+    return { total:items.length, found:found, missing:missing, runs:runs, low:low, sealed:sealed, lowTotal:lowTotal, chronTotal:403, colTotal:_colRowsT.length, colFound:colFound };
   };
 
   var _fuF='all';
@@ -67900,7 +67905,7 @@ function renderJournal(){
                      have: _ownedHas(own, x.n) });
         });
         (_colossalTallyRows() || []).forEach(function(x){
-          out.push({ n: x.n, sub: 'Colossal jewel · outside the 403 · q' + x.qlvl,
+          out.push({ n: x.n, sub: 'Colossal jewel · counted in the 403 · q' + x.qlvl,
                      have: _ownedHas(own, x.n) });
         });
       } else {
@@ -68566,14 +68571,14 @@ function renderJournal(){
     // Keeping both numbers visible kills the '63% here, 59% in game' confusion at the source.
     // v682.1 — the headline meter above IS the in-game number now; this line explains the named-card grid
     if (!_pubUni && s.chronTotal) {
-      var _namedDark = (s.chronTotal - s.total);
+      var _namedDark = (s.chronTotal - (s.colTotal||0) - s.total);
       var _namedTail = (_namedDark > 0)
         ? (' · <b>'+_namedDark+'</b> chronicle rows still dark (names reveal on find)')
         : (' · every chronicle row is named');
       var _namedTitle = (_namedDark > 0)
         ? ('the tally counts the named cards. Quest items are not part of it.')
         : ('every hunt row is named. Quest items are not part of this tally.');
-      H.push('<div class="f-atomsub" style="margin:-4px 0 8px;opacity:.85" title="'+_namedTitle+'">🗂 named cards: <b>'+s.found+' / '+s.total+'</b> ticked'+_namedTail+'</div>');
+      H.push('<div class="f-atomsub" style="margin:-4px 0 8px;opacity:.85" title="'+_namedTitle+'">🗂 named cards: <b>'+(s.found-(s.colFound||0))+' / '+s.total+'</b> ticked'+_namedTail+'</div>');
     }
     H.push(_undoBar('uni'));   // v644 — mis-ticks are one ↩ away, forge-style
     /* v2739 — THE RESET, under the UNIQUES tab exactly where he asked for it. Deliberately quiet:
@@ -68599,7 +68604,7 @@ function renderJournal(){
     })();
     // v560 — UNIFIED sub-tabs across BOTH grail forges (Konyo: same names, same logic, set or unique):
     // ▦ All missing · 🎯 Best runs · ⚡ Quick wins (low-level uniques / 1-piece sets) · ✅ Found
-    var _huntMiss = (s.chronTotal ? (s.chronTotal-s.found) : s.missing.length) + _colossalStillOpen(_ownedNames());
+    var _huntMiss = s.chronTotal ? (s.chronTotal-s.found) : (s.missing.length + _colossalStillOpen(_ownedNames()));
     H.push('<div class="forge-tabs">'
       +_tile('all','▦','All missing','ft-all',_huntMiss,F,'window.funiSetFilter','items')   // hunt cards, plus the open colossal jewel. The six quest items are not in this number.
       +_tile('runs','🎯','Best runs','ft-pipe',s.runs.length,F,'window.funiSetFilter','runs')
@@ -68642,7 +68647,7 @@ function renderJournal(){
          margin, found by an adversarial review of this file.
          A negative here is not a display bug to clamp away — it means the pinned denominator is
          stale and the DATA needs re-deriving, so it says that instead of hiding it. */
-      var _darkN=(s.chronTotal||0)-s.total;
+      var _darkN=(s.chronTotal||0)-(s.colTotal||0)-s.total;
       if(_darkN<0){
         H.push('<div class="f-atomsub" style="margin:-4px 0 8px;color:#f0c060">⚠ the card roster ('
           +s.total+') now exceeds the pinned in-game total ('+s.chronTotal+') — the denominator is '
@@ -68658,7 +68663,7 @@ function renderJournal(){
         return { n:x.n, key:x.n, badge:(x.qlvl>0?'q'+x.qlvl:'') };
       });
       if (_colMiss.length) {
-        H.push(_allGrid('Colossal jewels — tick as you find', 'the game file leaves spawnable blank, so the in-game Chronicle does not count these six', _colMiss, 'grailFoundUni'));
+        H.push(_allGrid('Colossal jewels — tick as you find', 'counted in the 403 tally - the game file leaves spawnable blank, so the in-game panel may not list them', _colMiss, 'grailFoundUni'));
       } else if (_colRows.length === 6) {
         H.push('<div class="f-atomsub" style="margin:8px 0">all 6 colossal jewels ticked</div>');
       }
@@ -68758,7 +68763,7 @@ function renderJournal(){
           if (_ownedHas(_ownMon, x.n) && _inThisMon(_foundWhen(x.n))) _thisMon++;
         });
       } catch(e){}
-      var _uniLeft = (s.chronTotal || 0) - s.found + _colossalStillOpen(_ownMon);
+      var _uniLeft = (s.chronTotal || 0) - s.found;
       H.push('<div class="forge-sec forge-sec-now"><div class="forge-sec-h">✅ Found <span class="forge-sec-ct" id="gf-found-ct">'+s.found+'</span><span class="forge-sec-sub">the chronicle ledger — dated, newest first, synced with the Calculator ✓ — tap to open, ✕ to un-mark</span></div>'
         +'<div class="gs-tally">'
         +'<span class="gs-t gs-t-seal"><b>'+s.found+'</b><i>found</i></span>'

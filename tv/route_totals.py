@@ -23,8 +23,8 @@ WHAT THE DEMOTED NUMBERS ACTUALLY ARE — neither is wrong and neither is delete
 THE TRUE COUNT PER TAB, and where it comes from:
     runeword  99   var RUNEWORD_CHRONICLE_TOTAL  — his v2192 ruling, 2026-08-27
     set      135   the piece catalogue in bible.html — 34 sets, 135 distinct pieces
-    unique   397   the chronicle pin in funiScan. The six quest items are not cards.
-                   The pin and the tally are that same number. Nothing subtracts them again.
+    unique   403   the chronicle pin in funiScan: 397 hunt cards + the 6 colossal jewels (Elad,
+                   2026-11-03). The six quest items stay off. Nothing subtracts them again.
 
 ⚠ IT READS bible.html, NOT THE ARTIFACTS, so the artifacts stop being denominators and become
 checked copies. And every failure returns None, never a fallback constant: a number nobody could

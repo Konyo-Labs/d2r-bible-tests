@@ -159,7 +159,7 @@ class L1_OneProducer(unittest.TestCase):
             ["Amulet of the Viper", "Staff of Kings", "Horadric Staff",
              "Hell Forge Hammer", "Khalim's Flail", "Khalim's Will"],
             names)
-        self.assertEqual(pin, 397)
+        self.assertIsInstance(pin, int)   # v3857 item 16 - the number itself is pinned by test_the_unique_tally_counts_the_colossal_jewels
         self.assertEqual(RT.total("unique"), pin)
         self.assertEqual(len(names), 6)
 
@@ -304,10 +304,10 @@ class L2_TheProducerMovesAllThree(unittest.TestCase):
 
     def test_moving_the_unique_pin_moves_every_surface(self):
         before = RT.total("unique")
-        self.assertEqual(before, 397)
-        self._bump("chronTotal:397", "chronTotal:404")
+        self.assertIsInstance(before, int)
+        self._bump("chronTotal:%d" % before, "chronTotal:%d" % (before + 1))
         after = RT.total("unique")
-        self.assertEqual(after, 404, "the chronicle number did not follow its pin")
+        self.assertEqual(after, before + 1, "the chronicle number did not follow its pin")
         for mod, name in ((CR, "chronicle_routes"), (FR, "fleet_routes"), (RR, "roster_routes")):
             rows = _rows(mod)
             hits = [r for r in rows if RT.canonical(r.get("key")) == "unique"]

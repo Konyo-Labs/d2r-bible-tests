@@ -63,7 +63,7 @@ RED_PROOF = [
     {
         "why": 'the law requires this text in bible.html, where it occurs exactly once and in no other file the gate names; deleting it must turn the gate red',
         "file": 'bible.html',
-        "find": 'chronTotal:397',
+        "find": 'chronTotal:403',
         "replace": '_HEART2_TAMPERED_',
         "matches": 1,
     },
@@ -158,11 +158,11 @@ class OneChronicleDenominator(unittest.TestCase):
                       "machine stays unmeasurable — which is how 398 got onto a screen with no author")
 
     def test_the_pinned_total_is_the_chronicle_number(self):
-        """His ruling, 2026-11-02. The pin and the chronicle number are 397."""
-        self.assertIn("chronTotal:397", self.code.replace(" ", ""),
-                      "funiScan no longer pins chronTotal at 397.")
-        self.assertNotIn("chronTotal:403", self.code.replace(" ", ""),
-                         "the file-row count is back in the pin. The chronicle number is 397.")
+        """His ruling, 2026-11-03 (v3857 item 16): the tally is 403 - the 397 hunt cards plus the six colossal jewels."""
+        self.assertIn("chronTotal:403", self.code.replace(" ", ""),
+                      "funiScan no longer pins chronTotal at 403.")
+        self.assertNotIn("chronTotal:397", self.code.replace(" ", ""),
+                         "the pin dropped the six colossal jewels again. The tally is 403.")
         body = self.code[self.code.index("window.d2rChronTotal = function"):][:800]
         self.assertNotIn("_CHRON_QUESTS", body,
                          "d2rChronTotal subtracts the quest list, so the screen prints 391")
