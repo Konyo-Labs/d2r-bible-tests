@@ -439,6 +439,38 @@ def code_only(text):
     return "\n".join(out)
 
 
+#: v3859 (e) - one parse per file per process. engine_index() is asked 8 times by its own law and once per render; each
+#: ask parsed and walked every tv/*.py again (117 s of the law's 147 s). A file is parsed again when its bytes' stat moves.
+_IMPORTS_SEEN = {}
+
+
+def _imports_of(path, _ast):
+    """-> the top-level module names one .py file imports (parsed, never grepped); () when it will not parse"""
+    try:
+        st = os.stat(path)
+        key = (st.st_mtime_ns, st.st_size)
+    except OSError:
+        return ()
+    hit = _IMPORTS_SEEN.get(path)
+    if hit and hit[0] == key:
+        return hit[1]
+    try:
+        with io.open(path, encoding="utf-8") as fh:
+            tree = _ast.parse(fh.read())
+    except Exception:
+        _IMPORTS_SEEN[path] = (key, ())
+        return ()
+    names = []
+    for node in _ast.walk(tree):
+        if isinstance(node, _ast.Import):
+            names.extend(a.name.split(".")[0] for a in node.names)
+        elif isinstance(node, _ast.ImportFrom) and node.module:
+            names.append(node.module.split(".")[0])
+    out = tuple(sorted(set(names)))
+    _IMPORTS_SEEN[path] = (key, out)
+    return out
+
+
 def engine_index():
     """Every non-test module in tv/, what it does, and what a reader gets wrong. -> (rows, drift)
 
@@ -487,20 +519,9 @@ def engine_index():
     for f in sorted(os.listdir(HERE)):
         if not f.endswith(".py"):
             continue
-        try:
-            with io.open(os.path.join(HERE, f), encoding="utf-8") as fh:
-                tree = _ast.parse(fh.read())
-        except Exception:
-            continue
-        for node in _ast.walk(tree):
-            names = []
-            if isinstance(node, _ast.Import):
-                names = [a.name.split(".")[0] for a in node.names]
-            elif isinstance(node, _ast.ImportFrom) and node.module:
-                names = [node.module.split(".")[0]]
-            for b in names:
-                if b in stems and b != f[:-3]:
-                    imported.add(b)
+        for b in _imports_of(os.path.join(HERE, f), _ast):
+            if b in stems and b != f[:-3]:
+                imported.add(b)
     rows = []
     for f in on_disk:
         c = curated.get(f)
