@@ -6903,6 +6903,8 @@
                               gap: 0 1.6ch; min-width: 0; }
   .fleet-chips > span { min-width: 0; overflow-wrap: anywhere; }
   .fleet-riverstuck { color: #e0795f; font-weight: var(--fw-medium); }
+  .fleet-riverheld { color: var(--muted, #9aa0a6); font-weight: var(--fw-regular, 400); }
+  .fleet-riverowes { color: #e0795f; margin-left: .4em; }
   /* #86 gap 9 — UNKNOWN is not the red alarm and not the quiet row. Same muted word as an unmeasured fact. */
   .fleet-riverunk { color: var(--muted, #8b8071); font-style: italic; font-weight: var(--fw-medium); }
   /* #41 rank 22 (REG-1564) — the picker-disagrees chip, set exactly like the river-stuck one beside it */
@@ -27873,6 +27875,9 @@ function escC(s) {
                  why: keep
                    ? ('no reel among the newest ' + keep + ' on that PC has sat at a station for more than 6 hours')
                    : 'no station on that PC has held a reel for more than 6 hours' }));
+    } else if (sk.every(function (e) { return !!e && typeof e === 'object' && (e.held === true || /^held by the drain, not owed/.test(String(e.why || '').replace(/^older than the newest \d+ - /, ''))); })) {
+      out.push(_fleetPart('stuck', ['none — river flowing, ' + sk.reduce(function (a, e) { return a + (typeof e.n === 'number' ? e.n : 0); }, 0)
+                 + ' held by the drain'], { why: sk.map(function (e) { return e.station + ' ' + e.n + ': ' + String(e.why || ''); }).join('  |  ') }));
     } else {
       var keepN = (typeof rv.stuckKeep === 'number' && isFinite(rv.stuckKeep) && rv.stuckKeep >= 1)
         ? Math.floor(rv.stuckKeep) : 0;
@@ -28038,7 +28043,21 @@ function escC(s) {
     var bits = [];
     /* v3849 — one river chip. A stuck list during the boot window used to draw "river stuck" and "river · starting". */
     var _pending = (census === null && hs && hs.key === 'starting' && _fleetBooting(m, nowMs));
-    if (Array.isArray(sk) && sk.length) {
+    /* v3859 (his 17:27 Fleet: "river stuck" on Konyo with 3 of 4 rows "held by the drain, not owed") - A HELD REEL IS NOT A
+       STUCK ONE. A row the drain holds by its own tag (server `held: true`, or a reason that opens "held by the drain, not
+       owed") draws a neutral "river flowing · N held by the drain"; "river stuck" is only for rows still owed, and a lane's
+       own debt names itself ("vault lane owes 8"). The census-derived "locks shut" below is untouched by held rows. */
+    var _isHeld = function (e) { return !!e && typeof e === 'object' && (e.held === true || /^held by the drain, not owed/.test(String(e.why || '').replace(/^older than the newest \d+ - /, ''))); };
+    var _heldList = Array.isArray(sk) ? sk.filter(_isHeld) : [];
+    if (Array.isArray(sk) && sk.length && _heldList.length === sk.length) {
+      var _heldN = _heldList.reduce(function (a, e) { return a + (typeof e.n === 'number' ? e.n : 0); }, 0);
+      bits.push('<span class="fleet-riverheld" title="' + escC('river flowing - ' + _heldN + ' reel(s) held by the drain, not owed: '
+        + _heldList.map(function (e) { return e.station + ' ' + e.n + ': ' + String(e.why || ''); }).join('  |  '))
+        + '">river flowing \u00b7 ' + _heldN + ' held by the drain</span>');
+    }
+    if (Array.isArray(sk) && sk.length && _heldList.length < sk.length) {
+      var _heldAside = _heldList;
+      sk = sk.filter(function (e) { return !_isHeld(e); });
       /* REG-2072 (GrokBot tick 423 K07) - THE ROW'S CHIP SAYS A SHARED REASON ONCE TOO. REG-2059 grouped the fleet CARD's
          tip through _fleetStuckWhy; this chip kept its own row-by-row copy, so 'vault lane: owes 7 ...' printed for PRINTER 2
          and again for PRINTER 1. And a row past the keep window carries the server's 'older than the newest N - ' in front of
@@ -28063,8 +28082,15 @@ function escC(s) {
           return e.station + (older ? ' older' : '') + ' ' + say;
         });
       if (_waits.length) tip += ' · oldest reel waiting: ' + _waits.join(', ');
+      var _owes = sk.map(function (e) { var mm = /^([A-Za-z][\w -]{0,30}? lane): owes (\d+)/.exec(String((e && e.why) || '')
+        .replace(_olderRe, '')); return mm ? mm[1] + ' owes ' + mm[2] : null; }).filter(Boolean);
+      if (_heldAside.length) tip += ' · also held by the drain, not owed: ' + _heldAside.map(function (e) { return e.station + ' ' + e.n; }).join(', ');
       var _stuckLabel = _pending ? 'river stuck \u00b7 proof check pending' : 'river stuck';
+
       bits.push('<span class="fleet-riverstuck" title="river stuck on this PC - ' + escC(tip) + '">' + _stuckLabel + '</span>');
+      /* v3859 - a lane's own debt names itself beside the chip: "vault lane owes 8", not only a generic "river stuck" */
+      _owes.filter(function (x, i) { return _owes.indexOf(x) === i; }).forEach(function (x) {
+        bits.push('<span class="fleet-riverowes" title="' + escC(tip) + '">' + escC(x) + '</span>'); });
     }
     if (census === 'missing' || census === 'stale' || census === 'unreadable') {
       /* GBL census-lowmem - a proof held back ONLY by free memory says so on the row, not the bare word a broken lock wears */

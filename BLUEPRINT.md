@@ -334,7 +334,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 
 ## GATES
 
-    1468 registered in tv/run_gates.py — every one named below with what it guards,
+    1469 registered in tv/run_gates.py — every one named below with what it guards,
     so that "does a law already exist for this?" is answered by reading this file.
 
 - **blueprint-agrees** — v2403 — TWO MAPS OF ONE FACT, AND WHERE THEY DISAGREE IS THE FINDING.
@@ -522,6 +522,7 @@ re-derives nothing, and it **prints nothing and deletes nothing** — it is a re
 - **test_a_held_lock_shows_its_catch_up** — #180 - a held lock is amber with the census catch-up (N/M proved, K to go), blind red, by-design grey
 - **test_a_held_picks_undo_takes_back_only_its_own_copy** — REG-2534 (V1 round-3 review of REG-2530) - a held planner pick's clear or re-roll put back the copy count it had seen at pick time, so a copy another…
 - **test_a_held_reel_is_named_by_its_hold** — #193 REG-3053: a reel the drain holds is named by the drain's own hold and its age, never as its debt
+- **test_a_held_reel_is_not_river_stuck** — v3859 - a Fleet row whose stuck rows the drain holds says river flowing · N held
 - **test_a_held_relaunch_banner_says_why** — REG-2177 (#266) - the armed relaunch banner said only Relaunch to use it while the drift lane already knew the hold.
 - **test_a_held_stage_does_not_read_as_a_queue** — A STAGE WHOSE EVERY REEL IS HELD MUST NOT RENDER AS A PLAIN COUNT.
 - **test_a_hidden_element_is_actually_hidden** — v3397 (#142) - `hidden` MUST ACTUALLY HIDE, AND THIS HAS COST HIM TWICE.

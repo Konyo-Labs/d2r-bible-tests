@@ -18687,6 +18687,11 @@ def _river_stuck_for_wire(now_ms=None, _rows=None, _shelf=None, _fixtures=None, 
         # station past the window and the same station inside it carry the same reason, and the fleet tip says it once.
         e["why"] = (_word_cut(_river_stuck_why(e["station"]), 200) if e.get("window") is not False
                     else _word_cut(_river_owed_why(e["station"], _keep, _rs), 320))
+        # v3859 - a row the drain holds whole is HELD, not stuck: the Fleet row draws it neutral (control_ui _fleetRowHeld)
+        if e.get("window") is False:
+            _h, _hn = _river_held_say(_rs)
+            if _h and _hn is not None and _hn >= len(_rs):
+                e["held"] = True
     return out
 
 
