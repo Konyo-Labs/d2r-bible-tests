@@ -67529,8 +67529,16 @@ function renderJournal(){
     // v1692 — _UNI_EXTRA is already folded into _gUniqueRoster() and DE-DUPED there (59 of its 66
     // names also live in ITEM_VALUE, e.g. "Blacktongue", "Goreshovel"); concatenating it again here
     // counted those names twice, 57 of them things he has actually found. One list, one pass.
+    /* v3859 - qlvl 0 IS THE DROP TABLE'S "UNKNOWN", NOT A LEVEL. Blinkbat's Form rides every boss
+       table with qlvl 0, so its chip printed "Leather Armor" and no q (his screenshot, v3855). A row
+       with no real qlvl takes the game file's: the builder database row's level, cb-db it[4]. */
+    var _cbq = null;
+    try { _cbq = (typeof window._cbDb === 'function') ? window._cbDb() : null; } catch(e){}
     base.forEach(function(x){
-      if (x && x.qlvl == null && _CHRON_QLVL[x.n] != null) x.qlvl = _CHRON_QLVL[x.n];
+      if (!x || x.qlvl > 0) return;
+      if (_CHRON_QLVL[x.n] != null) { x.qlvl = _CHRON_QLVL[x.n]; return; }
+      var _row = _cbq && _cbq.byName && _cbq.byName[String(x.n).replace(/[\u2018\u2019]/g, "'").toLowerCase()];
+      if (_row && _row[2] === 'u' && _row[4] > 0) x.qlvl = _row[4];
     });
     return base; }
   function _ownedNames(){ try { var s=new Set(JSON.parse(window.LSR.getItem('d2r_owned')||'[]')); Object.keys(JSON.parse(window.LSR.getItem('d2r_foundLog')||'{}')).forEach(function(n){ s.add(n); }); return s; } catch(e){ return new Set(); } }   // v677 — found = ledger ∪ legacy owned

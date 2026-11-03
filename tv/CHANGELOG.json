@@ -11,7 +11,8 @@
       "v3859 (b) - item 18 finished: the frames the vault witnessed ride the shadow upload as small JPEGs (checked by the worker), and a shadow opens one from it before any address",
       "v3859 - the blueprint names session_route.py and read_identity.py again (test_the_blueprint_names_the_engine was red on both)",
       "v3859 (e) - --full is faster: the blueprint's engine index parses each file once per process instead of 8 times (test_the_blueprint_names_the_engine 147 s -> about 25 s, nothing skipped)",
-      "v3859: ITEM_CODEX names 8 unique bases by the CASC item name (Small Charm, Grand Charm, Ring, Amulet, Silver-edged Axe), so the chronicle's base chip and the codex agree at the source"
+      "v3859: ITEM_CODEX names 8 unique bases by the CASC item name (Small Charm, Grand Charm, Ring, Amulet, Silver-edged Axe), so the chronicle's base chip and the codex agree at the source",
+      "v3859: a drop-table qlvl of 0 is 'unknown', not a level - Blinkbat's Form (and any row like it) now takes the game file's qlvl from cb-db, so every chip under 'Every missing unique' shows its q"
     ]
   },
   {
