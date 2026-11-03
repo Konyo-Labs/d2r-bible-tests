@@ -58,7 +58,7 @@ def _css():
 def _rule(css, selector):
     """The declaration block of the FIRST rule whose selector is EXACTLY `selector`.
 
-    ⚠ Finding [3]: `[}\s]#id{` also matched `body.cousin-min #cousin-ribbon{`. The selector must
+    ⚠ Finding [3]: `[}\\s]#id{` also matched `body.cousin-min #cousin-ribbon{`. The selector must
     begin a rule — at a line start or right after a closing brace."""
     m = re.search(r"(?:^|\})\s*" + re.escape(selector) + r"\s*\{([^}]*)\}", css, flags=re.M)
     return m.group(1) if m else None

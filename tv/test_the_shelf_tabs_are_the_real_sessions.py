@@ -905,7 +905,7 @@ class TheShelfTabsAreTheRealSessions(unittest.TestCase):
           1. `assertIn(".sh-chip.sh-chip-stunk", src)` — a sabotage renaming the rule to
              `...-stunkX` STAYED GREEN, because the renamed selector still CONTAINS the old one.
              A guard a rename satisfies is measuring the alphabet.
-          2. Adding a `(?![\w-])` boundary fixed that and it STILL stayed green, because the
+          2. Adding a `(?![\\w-])` boundary fixed that and it STILL stayed green, because the
              class has TWO rules (`.sh-chip-stunk` and `.sh-chip-stunk::after`) and renaming one
              leaves the other.
         Both failures share a cause: the test asserted a STRING EXISTS rather than that the two

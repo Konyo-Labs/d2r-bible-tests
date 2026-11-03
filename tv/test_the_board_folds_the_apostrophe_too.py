@@ -65,7 +65,7 @@ def _code():
     explains that Latent/Renewed must never be folded — so the law read its own documentation as
     the code it was banning. Stripping only `//` was not enough. [[source-reading-guard]] §4
 
-    ⚠ THE BLOCK STRIP IS BOUNDED ON PURPOSE. `/\*.*?\*/` with DOTALL on this 5.6MB mixed
+    ⚠ THE BLOCK STRIP IS BOUNDED ON PURPOSE. `/\\*.*?\\*/` with DOTALL on this 5.6MB mixed
     HTML/CSS/JS file removed 16.9% of it and 170 of its 444 `id=` declarations, because a `/*`
     inside a string or a regex matches forward to the next `*/` anywhere in the file — and the
     mangled view produced FALSE NEGATIVES, the quiet direction. The {0,4000} bound loses none.

@@ -4898,7 +4898,7 @@ class TestV2272TheTaskForceContractIsJOINED(unittest.TestCase):
     consumes — TWO FILES, one contract, and nothing checked that they agreed on the key names.
 
     ⚠ THIS EXISTS BECAUSE I BROKE IT. The v2270 grail->chronicle rename excluded identifiers by
-    looking at the character AFTER the word, and `[A-Za-z0-9_.\-$(\[]` does not contain ':'. So an
+    looking at the character AFTER the word, and `[A-Za-z0-9_.\\-$(\\[]` does not contain ':'. So an
     UNQUOTED OBJECT KEY — `grail:` — was not an identifier as far as that rule was concerned, and
     the summary builder started writing `chronicle: {...}` while the console kept reading
     `fs.grail`. The Uniques row simply stopped rendering: no error, no console warning, the panel
@@ -14527,7 +14527,7 @@ class TestNoOptionalCallToAFunctionThatCannotExist(unittest.TestCase):
     def _strip_js_comments(src, cap=4000):
         """Strip comments — and BOUND the block form, because an unbounded one eats the file.
 
-        v1873, measured on bible.html the hour after v1872 shipped this guard: `/\*.*?\*/` with
+        v1873, measured on bible.html the hour after v1872 shipped this guard: `/\\*.*?\\*/` with
         DOTALL removed 16.9% of a 5.6MB mixed HTML/CSS/JS file and **170 of its 444 `id=`
         declarations**, because a `/*` inside a JS string or a regex literal matches forward to the
         next `*/` anywhere in the file. js_syntax_gate says this in its own docstring — a heuristic
@@ -33576,7 +33576,7 @@ class TestFixedChromeGutterIsReserved(unittest.TestCase):
 
         767 is THE COUNT IS THE TELL — no button is 767px, and a guard that cannot notice that
         about its own output will happily assert nonsense in the other direction too. And the strip
-        is NON-GREEDY on purpose: a greedy `/*.*\*/` once ate 16.9% of this very file.
+        is NON-GREEDY on purpose: a greedy `/*.*\\*/` once ate 16.9% of this very file.
         """
         with open(os.path.join(self.REPO, "bible.html"), encoding="utf-8") as fh:
             raw = fh.read()
@@ -38158,7 +38158,7 @@ class TestV2336TheDailyTaskPanelCannotBeMemoisedIntoInvisibility(unittest.TestCa
 
     @staticmethod
     def _strip_js_comments(src, cap=4000):
-        """Bounded on purpose — an unbounded /\*.*?\*/ once ate 170 of bible.html's 444 ids."""
+        """Bounded on purpose — an unbounded /\\*.*?\\*/ once ate 170 of bible.html's 444 ids."""
         import re
         src = re.sub(r"/\*.{0,%d}?\*/" % int(cap), " ", src, flags=re.S)
         return re.sub(r"(?m)^\s*//.*$", " ", src)

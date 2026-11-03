@@ -234,7 +234,7 @@ class AppCtxNav(unittest.TestCase):
           1. ITS DETECTOR SAW ONE CALL SHAPE. It matched the literal
              `classList.add('engine-driven')`, so rewriting a site to
              `classList.toggle('engine-driven', <test>)`, to `className += ' engine-driven'`, or
-             even to `classList.add('engine-driven','x')` — two arguments defeat the `\s*\)`
+             even to `classList.add('engine-driven','x')` — two arguments defeat the `\\s*\\)`
              tail — made that site INVISIBLE to it. Measured: the module went green with REG-443
              restored and a top-level board back to 0 of 19 tabs.
           2. ITS ASSERTION CHECKED PRESENCE, NOT CONTROL. It asked whether the framing test
