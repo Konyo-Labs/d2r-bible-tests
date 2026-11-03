@@ -114,10 +114,11 @@ class AJudgedVaultRowWearsTheCharactersTierFace(unittest.TestCase):
     def test_the_page_has_one_face_map_and_the_judged_line_calls_it(self):
         src = _page()
         literal = _face_literal(src)
-        # v3855 item E (his ruling): plain words on the face; the gold seal is the mark
-        self.assertIn("WATCHED: 'Not confirmed yet'", literal)
-        self.assertIn("PROVEN: 'Not confirmed yet'", literal)
-        self.assertIn("HARDENED: 'Confirmed'", literal)
+        # v3855 fix 67136382: the Vault's judged row keeps its badges; the Characters plain words live in _CHX_WORD
+        # (v3858's "hygiene" pick re-aimed this at the plain words from a line that predates that split - undone)
+        self.assertIn("WATCHED: '👁 WATCHED'", literal)
+        self.assertIn("PROVEN: '✓ PROVEN'", literal)
+        self.assertIn("HARDENED: '🔒 HARDENED'", literal)
         line = src[src.index("window._vaultEvidenceLine = function"):src.index("window._vaultLookSrc = function")]
         self.assertIn("_TIER_FACE[r.tier]", line)
         self.assertNotIn("WATCHED:", line, "the evidence line grew a second tier map")
