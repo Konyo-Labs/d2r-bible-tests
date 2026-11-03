@@ -357,9 +357,10 @@ RED_PROOF = [
         "file": "tv/control_app.py",
         # v3850 (e686601e6) put `_agent_adopted_pid = None` between the Popen and the seed; the proof moved with it.
         # It still drops only the seed, so the started agent never tells the cache.
-        "find": "            _agent_proc = subprocess.Popen(**popen_kw)\n            _agent_adopted_pid = None\n"
+        # v3859 (Dean, WinError 5) the Popen became _popen_breakaway(...); the proof moved with it and still drops only the seed
+        "find": "_log_fp.flush()))\n            _agent_adopted_pid = None\n"
                 "            _pid_cache_seed(_agent_proc.pid)\n",
-        "replace": "            _agent_proc = subprocess.Popen(**popen_kw)\n            _agent_adopted_pid = None\n",
+        "replace": "_log_fp.flush()))\n            _agent_adopted_pid = None\n",
         "matches": 1,
     },
     {

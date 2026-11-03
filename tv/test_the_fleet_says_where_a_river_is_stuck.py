@@ -1119,7 +1119,7 @@ RED_PROOF = [
     {
         "why": "2026-09-29 - the fleet row stops saying a PC's river is stuck (REG-1461)",
         "file": "tv/control_ui.html",
-        "find": "    if (Array.isArray(sk) && sk.length) {\n",
+        "find": "    if (Array.isArray(sk) && sk.length && _heldList.length < sk.length) {\n",
         "replace": "    if (false) {\n",
         "matches": 1,
     },
