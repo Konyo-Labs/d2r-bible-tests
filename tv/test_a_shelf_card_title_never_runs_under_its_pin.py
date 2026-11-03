@@ -69,6 +69,8 @@ class TheTitleAndTheClusterShareOneRow(unittest.TestCase):
         self.assertIn("' · <span class=\"shc-hm\">' + d0.toLocaleTimeString(", UI,
                       "the title's time is not one unit, so a narrow card splits \"7:40\" from \"AM\"")
         self.assertEqual(_rule(".shc-hm").get("white-space"), "nowrap")
+        self.assertEqual(_rule(".shc-hm").get("display"), "inline-block",
+                         "the time is an inline span, so its font box sticks out of the clamped title (cut by shc-sess)")
 
 
 RED_PROOF = [
@@ -84,8 +86,13 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2755 - the title's time splits from its AM again",
      "file": "control_ui.html",
-     "find": "  .shc-hm { white-space: nowrap; }",
-     "replace": "  .shc-hm { white-space: normal; }",
+     "find": "  .shc-hm { white-space: nowrap; display: inline-block; }",
+     "replace": "  .shc-hm { white-space: normal; display: inline-block; }",
+     "matches": 1},
+    {"why": "v3855 - the time is an inline span again, its 21px font box poking out of the 15px clamped title",
+     "file": "control_ui.html",
+     "find": "  .shc-hm { white-space: nowrap; display: inline-block; }",
+     "replace": "  .shc-hm { white-space: nowrap; }",
      "matches": 1},
     {"why": "REG-2755 - the card leaves its title outside the row",
      "file": "control_ui.html",
