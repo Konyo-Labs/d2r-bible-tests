@@ -2324,7 +2324,9 @@
      title and the cluster are one flex row now: the cluster takes what it needs (flex:none), the title takes the rest
      (min-width:0) whatever the seal says or the font measures, and the time stays one unit (.shc-hm). */
   .shc-top { position: absolute; top: 8px; left: 12px; right: 9px; z-index: 2; display: flex; align-items: flex-start; gap: 8px; }
-  .shc-hm { white-space: nowrap; }
+  .shc-hm { white-space: nowrap; display: inline-block; }   /* v3855 - an inline span's box is its font's ascent+descent (21px of a 15px line in a
+     fallback serif), so under line-height:1 it stuck 3px out of the clamped title on every card and read 'cut by shc-sess'; an
+     inline-block's box is its line-height, the glyphs unmoved, and it stays one unwrappable unit. */
   .shc-sess { position: relative; flex: 1 1 auto; min-width: 0; margin-top: 1px; z-index: 2;
     font: var(--fw-bold) var(--fs-sm)/1 var(--serif);
     /* ⚠ TWO LINES, NOT AN ELLIPSIS. A single nowrap line ellipsised to "Sep 15 · 7:4…" at his
