@@ -21,7 +21,9 @@ ITEMS = ["Harlequin Crest", "Arachnid Mesh", "Tal Rasha's Guardianship", "Grief"
          "Socketed Helm (2os)", "Guillaume's Face", "Windforce", "Nagelring", "Spirit", "Gheed's Fortune",
          "Skin of the Vipermagi", "Herald of Zakarum"]
 KEEP = {"Small Charm of Balance": {"q": "magic", "base": "Small Charm"}, "Doom Spiral": {"q": "rare", "base": "Ring"},
-        "Ruby Jewel of Fervor": {"q": "magic", "base": "Jewel"}, "Grand Charm of Vita": {"q": "magic", "base": "Grand Charm"}}
+        "Ruby Jewel of Fervor": {"q": "magic", "base": "Jewel"}, "Grand Charm of Vita": {"q": "magic", "base": "Grand Charm"},
+        # v3859: a magic-find charm - the one keeper his 2026-10-28 ruling homes on the CHARMS mule (a plain one goes shared)
+        "Small Charm of Good Luck": {"q": "magic", "base": "Small Charm"}}
 #: v3855 C4 - every mule of DEFAULT_ROSTER, and the item filed on it (the Shared Stash and the keeper lockers by their rule)
 MULE_ITEM = {"sets-major": "Tal Rasha's Guardianship", "sets-rest": "Guillaume's Face", "uni-weap": "Windforce",
              "uni-armor": "Arachnid Mesh", "uni-small": "Nagelring", "runewords": "Spirit", "bases": "Socketed Helm (2os)",   # the bases locker files SOCKETED items; a bare Monarch stays loose
@@ -129,6 +131,13 @@ class PencilEverywhere(unittest.TestCase):
                 self.assertTrue(r["edit"] and r["price"], (n, r))
                 self.assertIsInstance(r["press"], dict, (n, r["press"]))
                 self.assertEqual(r["press"]["item"], n)
+
+    def test_the_charms_mule_zoom_draws_its_charm_keeper(self):
+        # v3859 (prover BLIND on [0]): no keeper of the fixture homed on CHARMS, so the C2 span was never drawn (v3855, Elad)
+        r = self.o["zoom"].get("charms|Small Charm of Good Luck")
+        self.assertIsNotNone(r, "the charms window drew no Small Charm of Good Luck (drew %s)"
+                             % sorted(k for k in self.o["zoom"] if k.startswith("charms|")))
+        self.assertTrue(r["price"] and r["edit"], r)
 
     def test_relevance(self):
         for k in ("rune", "gem"):
