@@ -308,7 +308,11 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                 # long each station's oldest reel has waited. Caught by CI on v3841 as this case. That clause is cut from
                 # the ship side here and pinned on its own below; its words are REG-3051's law's to prove.
                 waited = re.compile(u' \u00b7 oldest reel waiting: [^"<]*')
-                self.assertEqual(waited.sub("", cut.sub("", s[m]["ftt"])), cut.sub("", b[m]["ftt"]),
+                # v3859 (5b4b316b, his 17:27 Fleet ruling) ADDED one chip beside river-stuck - a lane's own debt, "route
+                # lane owes 76". Its span is cut from the ship side and pinned on the row below; its words are
+                # test_a_held_reel_is_not_river_stuck's to prove. Nothing else in the card may move.
+                owes = re.compile(r'<span class="fleet-riverowes" title="[^"]*">[^<]*</span>')
+                self.assertEqual(owes.sub("", waited.sub("", cut.sub("", s[m]["ftt"]))), cut.sub("", b[m]["ftt"]),
                                  "%s %s: the hover card changed" % (k, m))
                 if "river stuck" in b[m]["ftt"]:
                     self.assertIn(u" \u00b7 oldest reel waiting: ", s[m]["ftt"],
@@ -318,8 +322,11 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                               "%s %s: the card does not say what each click opens" % (k, m))
                 # the row carries the card, so its #225 click line is cut from both (SNAP already strips the row's own
                 # click and key handlers; the two clicks are proven by test_the_first_click_opens_the_row_and_a_second_opens_the_compare)
-                self.assertEqual(waited.sub("", cut.sub("", s[m]["row"])), cut.sub("", b[m]["row"]),
+                self.assertEqual(owes.sub("", waited.sub("", cut.sub("", s[m]["row"]))), cut.sub("", b[m]["row"]),
                                  "%s %s: the row changed beyond its eyes" % (k, m))
+                if re.search(r'river stuck on this PC - [^"]*\b[A-Za-z][\w -]{0,30}? lane: owes \d+', b[m]["row"]):
+                    self.assertTrue(owes.search(s[m]["row"]),
+                                    "%s %s: a lane that owes reels is no longer named beside river-stuck (v3859)" % (k, m))
 
     def test_the_cross_reference_is_unchanged_but_for_the_folded_diagnostics(self):
         r = _render()
@@ -425,6 +432,11 @@ class TheRouteIsWitnessedWithoutAWindow(unittest.TestCase):
         self.assertEqual(self.owner({"nickname": "someone"}), "")
 
 RED_PROOF = [
+    {"why": "v3859 - a lane that owes reels is no longer named beside river-stuck, and the cut would hide it",
+     "file": "tv/control_ui.html",
+     "find": "      _owes.filter(function (x, i) { return _owes.indexOf(x) === i; }).forEach(",
+     "replace": "      _owes.filter(function (x, i) { return false; }).forEach(",
+     "matches": 1},
     {"why": "REG-3051 follow-up - the river-stuck chip's tip stops naming what waited, and the byte-for-byte pin would not see it",
      "file": "tv/control_ui.html",
      "find": "      if (_waits.length) tip += ' · oldest reel waiting: ' + _waits.join(', ');",
