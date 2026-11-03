@@ -49,6 +49,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 200
+      - name: Fetch the history test_every_ship_lists_all_its_items grades
+        # That law grades every version since v3846 (2026-10-30) against its own commits. A 200-deep clone dropped v3846
+        # out of reach once a bundle ran 174 commits, so its "v3846 drops an item" red-proof read nothing and went BLIND.
+        # shallow-since brings exactly the graded history - from the day before v3846, not the whole repo.
+        timeout-minutes: 3
+        run: git fetch --no-tags --shallow-since=2026-10-29 origin "$GITHUB_SHA"
       - name: Fetch the commits test_a_version_stamp_is_not_a_page_change grades
         # RoutineIOnRealHistory.PINNED (debc96a5, f5919534, a8246cdf and its parent) sit deeper than 200 commits, so a
         # shallow shard reads that class UNMEASURED. depth=2 brings each pinned commit and its parent, not the history.
