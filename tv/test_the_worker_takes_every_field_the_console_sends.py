@@ -76,8 +76,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3080 - the worker's characters list drops sessions/sessionsWhy again, so every profile is refused whole",
      "file": "functions/api/roster.js",
-     "find": '"lobbyBySize",\n                  "sessions", "sessionsWhy"],',
-     "replace": '"lobbyBySize"],',
+     "find": '"lobbyBySize",\n                  "sessions", "sessionsWhy", "identity"],',
+     "replace": '"lobbyBySize", "identity"],',
      "matches": 1},
 ]
 
