@@ -17075,7 +17075,14 @@ window._lockMark = function(isOpen, px, label){
     if (!(sweptKnown || heldKnown)) return '<span style="color:#f0c060">KAI · this beat is not the session close</span>';
     var swept = sweptKnown ? (kk.scanned + ' frames swept') : 'frames swept UNKNOWN';
     var held = heldKnown ? (kk.missedFrames + ' frames held text no eye read') : 'frames held text UNKNOWN';
-    return '<span style="color:#f0c060">🧠 <b>KAI CLOSED THE SESSION</b> · ' + swept + ' · ' + held + '</span>';
+    /* #252/#277 (v3856) - THE THEATRE AND THE SESSION CARD SAY ONE 'SWEPT'. The close beat is the FIRST pass
+       (5 frames held text); the card reads the session summary after the deeper pass ('swept · 3 still unread
+       · 2 of 5 missed frames recovered'). Both were true and neither said so, so the replay seemed to contradict
+       the card it was opened from. The close line now carries the card's own words, from the same _missedSay. */
+    var _ksm = (typeof TH !== 'undefined' && TH && TH.sessions && TH.sessions[TH.sn - 1]) || null;
+    var since = (_ksm && _ksm.kaiMissed != null && typeof _missedSay === 'function')
+      ? ' · since then: ' + esc(_missedSay(_ksm).replace(/^swept · /, '')) : '';
+    return '<span style="color:#f0c060">🧠 <b>KAI CLOSED THE SESSION</b> · ' + swept + ' · ' + held + since + '</span>';
   }
   function thCaption(b){
     if (b && b.lane === 'kai'){

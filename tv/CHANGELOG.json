@@ -9,7 +9,8 @@
       "the Runewords subtitle and a saved build drop the 'rides Backup & Share' jargon - a saved build just says Saved",
       "the version history cards show their date without a stray IDT label",
       "D2JSP: the price-reading cost check now waits for the card list to settle first, so it no longer flakes under load (budget unchanged).",
-      "Theatre: a chronicle row's count ('397 left to hunt') wraps to a second line instead of being cut off on narrower screens."
+      "Theatre: a chronicle row's count ('397 left to hunt') wraps to a second line instead of being cut off on narrower screens.",
+      "Theatre: the KAI close line now also says what the session card says (how many frames are still unread and how many were recovered), so the two agree."
     ]
   },
   {
