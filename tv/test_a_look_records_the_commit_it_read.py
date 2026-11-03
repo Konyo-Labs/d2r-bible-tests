@@ -53,6 +53,36 @@ class TestALookRecordsTheCommitItRead(unittest.TestCase):
         needle = "answer_model=_model_from_transport(), sha=sha"
         self.assertEqual(src.count(needle), 1)
 
+    def test_a_reached_look_driven_through_run_one_writes_its_sha(self):
+        """v3776-v3785 (2026-10-22): six reached grok-cli looks landed in the shared ledger with sha null, because the
+        ask door called record_answer without sha= (fixed 2a03d258). The source-count case above pins the spelling;
+        this one DRIVES the door: a version whose commit resolves must write a row whose sha is that commit."""
+        from unittest import mock
+        fd, path = tempfile.mkstemp(suffix=".jsonl")
+        os.close(fd)
+        ship = "1234abcd5678ef90"
+        prompt = "Code review.\n```python\nx = 1\n```\n"
+        try:
+            with mock.patch.object(L, "LEDGER_PATH", path), \
+                    mock.patch.object(R, "commit_for", lambda v: (ship, "")), \
+                    mock.patch.object(R, "REVIEW_BASE", None), \
+                    mock.patch.object(R, "BUMP_ONLY", True), \
+                    mock.patch.object(R, "payload_for", lambda sha: (prompt, "", [], None, None)), \
+                    mock.patch.object(R, "uncovered_commits", lambda sha: []), \
+                    mock.patch.object(R, "_model_from_transport", lambda: "grok-cli"), \
+                    mock.patch.object(R, "ask", lambda prompt, sha=None: (
+                        '{"verdict":"clean","findings":[],"unseen":""} no concrete defect found in this change',
+                        True, "", {"verdict": "clean", "findings": [], "unseen": ""})):
+                self.assertTrue(R.run_one("v9106"), "the driven look was not recorded at all")
+            rows = L._rows(path)
+            self.assertEqual(len(rows), 1, "the driven look wrote %d rows" % len(rows))
+            self.assertEqual(rows[0].get("sha"), ship,
+                             "a reached look at a version whose commit resolved wrote sha=%r - the v3776-v3785 rows "
+                             "again: their absent files can never be classified, so every one reads BLIND"
+                             % (rows[0].get("sha"),))
+        finally:
+            os.unlink(path)
+
     def test_a_row_carries_the_commit_the_eye_actually_read(self):
         fd, path = tempfile.mkstemp(suffix=".jsonl")
         os.close(fd)
@@ -246,6 +276,11 @@ if __name__ == "__main__":
 
 
 RED_PROOF = [
+    {"why": "v3776-v3785 - the reached-look door drops sha= again, so a driven look writes sha null",
+     "file": "second_eye_run.py",
+     "find": "answer_model=_model_from_transport(), sha=sha,",
+     "replace": "answer_model=_model_from_transport(),",
+     "matches": 1},
     {"why": "REG-2788 - a `(this commit)` row no longer binds through its stamp, so a stamp-only ship is never found",
      "file": "second_eye_run.py",
      "find": "        return _sha_from_version_stamp(version)\n",
