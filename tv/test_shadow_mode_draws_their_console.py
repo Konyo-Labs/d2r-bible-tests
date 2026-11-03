@@ -598,7 +598,10 @@ class ShadowDrawsTheirConsole(unittest.TestCase):
     def test_nothing_left_the_frame_for_the_console(self):
         # Only the board's own font file (a CSS @font-face GET the console serves to every page) is fetched by the frame
         fonts = [h for h in self.frame_hits if h[0] == "GET" and h[1].split("?")[0].startswith("/api/d2r_font/")]
-        rest = [h for h in self.frame_hits if h not in fonts]
+        # v3859 B3 (#230): and its OWNER's witness frames - the one /api read the read-only shim lets through, a GET of
+        # exactly /api/roster-cache?frames=<owner>. Any other owner, verb or query still counts as reaching the console.
+        theirs = [h for h in self.frame_hits if (h[0], h[1]) == ("GET", "/api/roster-cache?frames=" + OWNER)]
+        rest = [h for h in self.frame_hits if h not in fonts and h not in theirs]
         self.assertEqual(rest, [], "the shadow frame reached the console: %r" % rest)
         self.assertGreater(self.flags["refused"], 0, "the frame never had a request to refuse")
         self.assertIn("tvd-shadow-snap", self.flags["cls"])
