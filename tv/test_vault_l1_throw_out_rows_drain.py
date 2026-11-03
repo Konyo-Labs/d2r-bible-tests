@@ -81,6 +81,7 @@ class ThrowOutRows(unittest.TestCase):
         world()
         o = board().run(READ + "var r = row(%s); OUT.has = !!r; OUT.kind = r && r.getAttribute('data-kind');"
                         "OUT.text = r ? r.textContent + ' ' + ((r.querySelector('[data-reason]') || {getAttribute: function(){ return ''; }}).getAttribute('data-reason') || '') : ''; OUT.keep = !!(r && r.querySelector('.vmv-keep'));"
+                        "OUT.reason = r ? ((r.querySelector('[data-reason]') || {getAttribute: function(){ return null; }}).getAttribute('data-reason')) : null;"
                         "OUT.junk = !!(r && r.querySelector('.vmv-junk')); OUT.dock = window._vaultDockNames();"
                         "OUT.org = (document.getElementById('vault-organize') || {}).textContent || '';"
                         "OUT.list = document.getElementById('vault-move-list').textContent;" % json.dumps(HEAD))
@@ -90,6 +91,8 @@ class ThrowOutRows(unittest.TestCase):
         # the plain reason rides on the line (hover + data-reason). v3849 (6fff0ef41): an unvalued set piece is ruled
         # "low set piece" now - no set is "never ruled" - so the plain reason is that one
         self.assertIn("low set piece", o["text"])
+        # REG-2962 - ONE plain reason: the why's first clause, never the whole advice ("... track for chronicle, discard: ...")
+        self.assertEqual(o["reason"], "low set piece", "the row's reason is not the one plain clause: %r" % o["reason"])
         self.assertNotIn("by DEFAULT", o["list"], "the wordy throw-out advice is back in MOVE TASKS")
         self.assertTrue(o["keep"] and o["junk"], "Keep / Junk are not inline on the row")
         self.assertNotIn(HEAD, o["dock"] or [], "the junk item still sits in the Unsorted Dock")
@@ -327,8 +330,10 @@ RED_PROOF = [
      "matches": 1},
     {"why": "The row loses its plain reason and prints the wordy DEFAULT advice.",
      "file": "bible.html",
-     "find": "    if (/never ruled/i.test(w)) return /\\(set\\)/i.test(w) ? 'set never ruled' : 'never ruled';\n",
-     "replace": "    if (/never ruled/i.test(w)) return w;\n",
+     # REG-2962 (v3854 fan-in BLIND, measured 2026-11-03): since v3849 no set is "never ruled", so the reason this row
+     # carries ("low set piece") comes through the DEFAULT-strip line - that is the door, not the never-ruled one
+     "find": "    var first = w.replace(/^by DEFAULT( only)?\\s*[—-]\\s*/i, '').split(' — ')[0].trim();\n",
+     "replace": "    var first = w.trim();\n",
      "matches": 1},
     {"why": "The dock keeps a junk-routed item as a chip.",
      "file": "bible.html",
