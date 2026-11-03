@@ -2519,6 +2519,9 @@ tr.owned-row{background:rgba(102,255,136,.03)}
      floated ~150px clear of the button, pointing at nothing. Scoped to the one control that
      needs it, where `relative` cannot clobber anything. */
   #nav-fab.fab-tip{position:relative}
+  /* #220 (v3856) - A RAIL CONTROL HAS ONE TIP. The ?, the nav and the inbox FABs carried data-tip (this pseudo tip)
+     AND a title, which the prose lane borrowed into #arttip - two tips on one hover, measured with a real pointer.
+     They carry data-tip and aria-label only; test_a_rail_control_has_one_tip sweeps the board for the pair. */
   .fab-tip:hover::after,.fab-tip:focus-visible::after{content:attr(data-tip);position:absolute;
     right:calc(100% + 10px);top:50%;transform:translateY(-50%);background:#1a1207;
     border:1px solid var(--gold-dim);color:var(--text);padding:6px 10px;border-radius:6px;
@@ -15115,7 +15118,7 @@ window._d2rUnseedRestore = function(){
 </script>
 <button id="tvd-return-pill" type="button" onclick="window.switchTab&&window.switchTab('session')">⚡ ← Sessions</button>
 <div class="shortcut-hint" id="shortcut-hint"><span class="kbd">/</span>&nbsp;search&nbsp;&nbsp;<span class="kbd">1-9·0</span>&nbsp;tabs&nbsp;&nbsp;<span class="kbd">?</span>&nbsp;help&nbsp;&nbsp;<span class="kbd">Esc</span>&nbsp;close</div>
-<button class="help-btn fab-tip" data-tip="Help &amp; guide" aria-label="help and guide" onclick="document.getElementById('help-modal').classList.add('show')" title="Help &amp; guide">?</button>
+<button class="help-btn fab-tip" data-tip="Help &amp; guide" aria-label="help and guide" onclick="document.getElementById('help-modal').classList.add('show')">?</button>
 <div class="help-modal" id="help-modal" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="help-content">
     <button type="button" class="help-x" title="close (Esc)" aria-label="close" onclick="document.getElementById('help-modal').classList.remove('show')">✕</button>
@@ -38022,7 +38025,7 @@ function buildNavWidget() {
     + `<div class="nav-chip nav-top" role="button" tabindex="0" onclick="navTop()">`
     + `<span class="nav-ic">⬆️</span><span>Back to top</span></div>`
     + `</div>`
-    + `<button class="nav-fab fab-tip" id="nav-fab" data-tip="Jump to a tab" aria-label="Navigation menu" title="Navigate" onclick="toggleNavPanel(event)">`
+    + `<button class="nav-fab fab-tip" id="nav-fab" data-tip="Jump to a tab" aria-label="Navigation menu" onclick="toggleNavPanel(event)">`
     + `<svg class="nav-compass" viewBox="0 0 48 48" aria-hidden="true" focusable="false">`
     + `<circle class="nc-ring" cx="24" cy="24" r="20"/>`
     + `<g class="nc-ticks"><line x1="24" y1="5" x2="24" y2="10"/><line x1="24" y1="38" x2="24" y2="43"/>`
@@ -81414,7 +81417,6 @@ window._CH_PILL_MAP = {
         w.innerHTML = '<button class="inbox-fab fab-tip" id="inbox-fab" type="button" '
           + 'data-tip="Inbox — names the readers could not call" '
           + 'aria-label="inbox — names the readers could not call on their own" '
-          + 'title="Inbox — names the readers could not call on their own" '
           + 'onclick="window.inboxPopTog()">📥<span class="ibf-n" id="inbox-fab-n"></span></button>'
           + '<div class="inbox-pop" id="inbox-pop"></div>';
         while (w.firstChild) document.body.appendChild(w.firstChild);
