@@ -1349,6 +1349,14 @@
     "purpose": "Re-runnable audit of module-level definitions nothing consumes, counting registry entries and dispatch tables as joins so a registered check is not reported as an orphan.",
     "territory": "console"
   },
+  "machine_sync.py": {
+    "entryPoints": [
+      "judge"
+    ],
+    "gotcha": "judge(facts, now_ms) is pure and never guesses: a stamp that is None stays UNKNOWN, never ok. The facts are read by control_app (the v3860 stamps reader); this module reads no file itself.",
+    "purpose": "One per-machine sync status the recorder, the shadow reader and the Shelf all read: it compares the recorder's last frame, the hourly seal, the digest publish and the Shelf list, and says red when the recorder is silent while the game is up.",
+    "territory": "shadow"
+  },
   "machine_tree.py": {
     "entryPoints": [
       "resolve() — this machine's roots, each carrying the anchor that produced it",
