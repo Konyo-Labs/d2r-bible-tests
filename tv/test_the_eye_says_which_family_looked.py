@@ -44,6 +44,7 @@ report a filled seat that is empty — worse than no ledger at all.
 import io
 import json
 import os
+import tempfile
 import re
 import subprocess
 import sys
@@ -81,7 +82,7 @@ def _render(cases):
           "const cases = " + json.dumps(cases) + ";\n"
           "const out = {}; for (const k in cases) out[k] = _fleetEye(cases[k]);\n"
           "console.log(JSON.stringify(out));")
-    p = os.path.join(os.environ.get("TMPDIR", "/tmp"), "fleet_eye_probe.js")
+    p = os.path.join(tempfile.gettempdir(), "fleet_eye_probe.js")
     io.open(p, "w", encoding="utf-8").write(js)
     try:
         r = subprocess.run(["node", p], capture_output=True, text=True, timeout=90)

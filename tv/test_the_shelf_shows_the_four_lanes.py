@@ -41,6 +41,7 @@ were indistinguishable. Both are fixed. It was found only by printing
 import io
 import json
 import os
+import tempfile
 import re
 import subprocess
 import sys
@@ -92,7 +93,7 @@ def _render(payload):
           + UI[i:j] + "\n"
           "_shLanesRender(" + json.dumps(payload) + ");\n"
           "console.log(JSON.stringify(out));")
-    p = os.path.join(os.environ.get("TMPDIR", "/tmp"), "lanes_probe.js")
+    p = os.path.join(tempfile.gettempdir(), "lanes_probe.js")
     io.open(p, "w", encoding="utf-8").write(js)
     try:
         r = subprocess.run(["node", p], capture_output=True, text=True, timeout=90)

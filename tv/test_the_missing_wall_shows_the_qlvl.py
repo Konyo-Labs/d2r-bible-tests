@@ -39,6 +39,7 @@ which is the honest picture of the data underneath.
 import io
 import json
 import os
+import tempfile
 import re
 import subprocess
 import sys
@@ -92,7 +93,7 @@ def _run_real_reader(names):
           "const _q = " + json.dumps(names) + ";\n"
           "const out = {}; for (const n of _q) out[n] = window._qlvlOf(n);\n"
           "console.log(JSON.stringify(out));")
-    p = os.path.join(os.environ.get("TMPDIR", "/tmp"), "qlvl_probe.js")
+    p = os.path.join(tempfile.gettempdir(), "qlvl_probe.js")
     io.open(p, "w", encoding="utf-8").write(js)
     try:
         r = subprocess.run(["node", p], capture_output=True, text=True, timeout=90)

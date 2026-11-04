@@ -37,6 +37,7 @@ glyph, not a guess." A stock flail under his grail item is exactly that guess.
 import io
 import json
 import os
+import tempfile
 import re
 import subprocess
 import sys
@@ -76,7 +77,7 @@ def _resolve(names):
           + "\nconst _q=" + json.dumps(names) + ";"
           "\nconst out={};for(const n of _q){out[n]=artUrl(n)||null;}"
           "\nconsole.log(JSON.stringify(out));")
-    p = os.path.join(os.environ.get("TMPDIR", "/tmp"), "art_resolve_probe.js")
+    p = os.path.join(tempfile.gettempdir(), "art_resolve_probe.js")
     io.open(p, "w", encoding="utf-8").write(js)
     try:
         r = subprocess.run(["node", p], capture_output=True, text=True, timeout=90)
@@ -187,7 +188,7 @@ class ARolledKeeperWearsItsRecordedBase(unittest.TestCase):
             "(%s).forEach(function(n){ out[n] = artOr(n, '\\u25c6', 'sm'); });\n"
             "console.log(JSON.stringify(out));\n"
         ) % (json.dumps(finds), json.dumps(extras), body, json.dumps(names))
-        p = os.path.join(os.environ.get("TMPDIR", "/tmp"), "art_or_base_probe.js")
+        p = os.path.join(tempfile.gettempdir(), "art_or_base_probe.js")
         io.open(p, "w", encoding="utf-8").write(js)
         try:
             r = subprocess.run(["node", p], capture_output=True, text=True, timeout=30)
@@ -275,7 +276,7 @@ class ARolledKeeperWearsItsRecordedBase(unittest.TestCase):
         js = ("var window = {};\n" + BIBLE[i:j] + "\n" + hd_line + "\n" + charm_block
               + "\nconsole.log(JSON.stringify({c:artUrl('Circlet'),f:artUrl('Falchion'),"
               "g:artUrl('Grand Charm'),s:artUrl('Small Charm'),t:artUrl('The Scourge')||null}));")
-        p = os.path.join(os.environ.get("TMPDIR", "/tmp"), "art_url_base_probe.js")
+        p = os.path.join(tempfile.gettempdir(), "art_url_base_probe.js")
         io.open(p, "w", encoding="utf-8").write(js)
         try:
             r = subprocess.run(["node", p], capture_output=True, text=True, timeout=90)

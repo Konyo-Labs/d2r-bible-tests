@@ -12,6 +12,7 @@ nothing. A clock that was not handed is UNKNOWN, never the other clock and never
 import io
 import json
 import os
+import tempfile
 import shutil
 import subprocess
 import sys
@@ -85,7 +86,7 @@ for (const sc of C.scenes) {
 }
 process.stdout.write(JSON.stringify(out));
 """ % code
-    path = "/tmp/reg3123_scenes.json"
+    path = os.path.join(tempfile.gettempdir(), "reg3123_scenes.json")  # v3860: no /tmp on Windows
     try:
         with io.open(path, "w", encoding="utf-8") as fh:
             json.dump({"scenes": scenes}, fh)

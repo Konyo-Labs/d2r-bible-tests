@@ -32,6 +32,7 @@ runs on his Mac is one nobody can defeat on purpose. [[feedback-fixtures-never-t
 import io
 import json
 import os
+import tempfile
 import sys
 import unittest
 
@@ -363,7 +364,7 @@ def _render(payload):
           ".replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\"/g,'&quot;'); };\n"
           + ui[i:j] + "\n_shLanesRender(" + _json.dumps(payload) + ");\n"
           "console.log(JSON.stringify(out));")
-    path = os.path.join(os.environ.get("TMPDIR", "/tmp"), "whole_life_lanes_probe.js")
+    path = os.path.join(tempfile.gettempdir(), "whole_life_lanes_probe.js")
     io.open(path, "w", encoding="utf-8").write(js)
     try:
         r = subprocess.run(["node", path], capture_output=True, text=True, timeout=90)
