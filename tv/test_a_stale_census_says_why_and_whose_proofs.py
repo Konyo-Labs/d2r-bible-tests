@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """v3855 C6 (Elad 2026-11-02) - A STALE PROOF CENSUS SAYS WHY ON THE FLEET, AND WHOSE FRESH PROOFS IT BORROWS.
 
-The ALT (a take-only PC, PROOF_FLEET_TAKES_ONLY) borrows Dean's, then the Mac's, fresh proofs through the proof carrier,
+The ALT (take-only until v3860; since his 11-04 ruling it proves itself and may still borrow) borrows Dean's, then the Mac's, fresh proofs through the proof carrier,
 as designed (PROOF_CARRIER_ACCEPTS). The beacon sent only census + key, so the Fleet row said "locks shut" with no reason.
 Now the beacon's heart carries `why` (the lane's say, owed count, the carrier's say/doctor) and `takesFrom`, and the Fleet
 row prints both. Pure: heart_stale_why; static: the beacon and the row read it.
@@ -33,7 +33,8 @@ class StaleCensusSaysWhy(unittest.TestCase):
         self.assertIn("borrows from no PC", why)
 
     def test_the_alt_is_still_wired_to_borrow(self):
-        self.assertIn("Konyo · ALT", CA.PROOF_FLEET_TAKES_ONLY)
+        # v3860 - his 11-04 ruling: the ALT proves itself (no longer take-only) and may still borrow Dean's first
+        self.assertNotIn("Konyo · ALT", CA.PROOF_FLEET_TAKES_ONLY)
         self.assertEqual(CA.PROOF_CARRIER_ACCEPTS["Konyo · ALT"][0], "Dean")
 
     def test_beacon_and_fleet_row_carry_it(self):

@@ -327,13 +327,16 @@ class TheCarrierTakesFromThePCHisRulingNames(unittest.TestCase):
         self.assertTrue(self.CA._proof_carrier_source("Dean"), "nobody takes the fleet prover's proofs")
         self.assertTrue(self.CA._proof_carrier_source("Konyo · Mac"), "the Mac is the ALT's backup prover")
 
-    def test_the_alt_never_proves_for_itself_and_still_takes_deans(self):
-        """v3844 - the weak PC only takes: its self-prove lane never starts a proof, while the status the carrier's
-        take waits on (playing, freeMb, owed) is still measured, so the take still runs."""
+    def test_every_pc_proves_for_itself_and_a_take_is_only_a_speed_up(self):
+        """v3860 - his ruling 2026-11-04: every PC proves itself; nobody is take-only. (v3844 had made the ALT take
+        Dean's and never prove; proving locally on the new ALT found six things a carried proof would have hidden.)
+        The take-only MECHANISM below still works when asked, so a future ruling is one name, said in a law."""
         CA = self.CA
-        self.assertTrue(CA._self_prove_takes_only("Konyo · ALT"))
-        for who in ("Dean", "Wife PC", "Konyo · Mac", None):
+        self.assertEqual(CA.PROOF_FLEET_TAKES_ONLY, (), "a PC is take-only again - his 11-04 ruling is that every PC "
+                                                        "proves itself, and taking is an optional speed-up")
+        for who in ("Konyo · ALT", "Dean", "Wife PC", "Konyo · Mac", None):
             self.assertFalse(CA._self_prove_takes_only(who), "%r stopped proving for itself" % who)
+        self.assertTrue(CA._proof_carrier_peers("Konyo · ALT"), "the ALT lost its optional take from Dean / the Mac")
         import self_prove as SP
         census = {"state": "stale", "why": "HEAD moved", "fingerprint": "f", "owed": 40,
                   "owedGates": [["test_x", 1]]}
@@ -390,6 +393,12 @@ class TheCarrierTakesFromThePCHisRulingNames(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3860 - a PC is take-only again: it never proves itself, against his 2026-11-04 ruling that every PC "
+            "proves itself (the new ALT found six Windows defects only by proving locally)",
+     "file": "tv/control_app.py",
+     "find": "PROOF_FLEET_TAKES_ONLY = ()\n",
+     "replace": "PROOF_FLEET_TAKES_ONLY = (\"Konyo \u00b7 ALT\",)\n",
+     "matches": 1},
     {"why": "REG-3118 - a push serves a carried proof to a PC that lacks the tool it needs",
      "file": "tv/heart2.py",
      "find": "        if _lacks is not False:\n            return None, None, []\n",

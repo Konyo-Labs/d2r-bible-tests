@@ -22432,7 +22432,13 @@ PROOF_CARRIER_PLATFORMS = ("win32",)
 #: stale past PROOF_CARRIER_FRESH_S. The Mac's roster label is Konyo · Mac; the route is asked under that label.
 PROOF_CARRIER_ACCEPTS = {"Dean": ("Konyo · ALT",), "Konyo · ALT": ("Dean", "Konyo")}
 #: v3844 - the PCs that never start a proof of their own and only take the fleet prover's (PROOF_CARRIER_ACCEPTS)
-PROOF_FLEET_TAKES_ONLY = ("Konyo · ALT",)
+#: v3860 - EMPTY, BY HIS RULING 2026-11-04 ~14:35: "its better for each locally to prove itself correct? this is why it was
+#: designed?" -> "yea do it". Every PC proves itself again; taking a peer's proofs stays an optional speed-up (a take that
+#: banks proofs at this HEAD shortens the census, a take that finds nothing changes nothing). MEASURED that day: the new
+#: ALT (8 GB) proves on one lane at ~400 proofs/h, and proving locally found six things a carried proof would have hidden
+#: (node invisible to the user, the CRLF checkout, the UTF-8 codepage, the launcher port, two POSIX-only cases). A law
+#: holds this empty (test_a_carried_proof_stands_only_where_it_was_earned): a name added back here is red.
+PROOF_FLEET_TAKES_ONLY = ()
 
 
 def _self_prove_takes_only(owner):
