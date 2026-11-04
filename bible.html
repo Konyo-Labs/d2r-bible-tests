@@ -14128,8 +14128,37 @@ function d2jspBatchHtml(view) {
     if (!panel) return true;
     panel.hidden = !panel.hidden;
     t.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+    if (!panel.hidden) d2jspRevealAboveDock(panel);
     return true;
   };
+  /* v3861 (#230 6643907824 D1, his 00:24 "the ADVANCED for d2jsp is bugged and trapping buttons, something pops up and
+     renders, I can't really see anything there") - Advanced opens INLINE and grows down, so on a 720-tall window what it
+     opened (and the Find / Add an item / Post the list row under it) landed behind the fixed command dock, where a click
+     hits the dock. What it opened is scrolled up to sit above the dock's top edge, never under it. The page already
+     reserves room under the dock (body padding-bottom), so there is always somewhere to scroll to. */
+  function d2jspRevealAboveDock(el){
+    try {
+      if (!el || !el.getBoundingClientRect) return false;
+      var dock = document.querySelector('.control-dock .dock-inner');
+      var top = (dock && dock.getBoundingClientRect && dock.offsetParent !== null) ? dock.getBoundingClientRect().top : window.innerHeight;
+      var r = el.getBoundingClientRect(), over = r.bottom - (top - 12);
+      if (over > 0) { window.scrollBy(0, Math.min(over, Math.max(0, r.top - 12))); return true; }
+    } catch (e) {}
+    return false;
+  }
+  window._d2jspRevealAboveDock = d2jspRevealAboveDock;
+  /* v3861 (#230 6643907824 D1) - Escape closes Advanced too, as it closes the planner and the draft; only when neither of
+     those is open (each keeps its own Escape). */
+  document.addEventListener('keydown', function(e){
+    if (!e || e.key !== 'Escape') return;
+    var panel = document.getElementById('d2jsp-price-backend');
+    if (!panel || panel.hidden) return;
+    var ph = document.getElementById('d2jsp-planner-host'), dh = document.getElementById('d2jsp-draft-host');
+    if ((ph && !ph.hidden) || (dh && !dh.hidden)) return;
+    panel.hidden = true;
+    var door = document.getElementById('d2jsp-price-advanced');
+    if (door) door.setAttribute('aria-expanded', 'false');
+  });
   function d2jspLoadDatabase(){
     var panel = document.getElementById('d2jsp-price-backend');
     var door = document.getElementById('d2jsp-price-advanced');
