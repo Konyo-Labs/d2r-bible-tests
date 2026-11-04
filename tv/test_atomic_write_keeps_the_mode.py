@@ -53,6 +53,9 @@ import bump_version as BV  # noqa: E402
 class AtomicWriteKeepsTheModeAndTheHookStaysArmed(unittest.TestCase):
 
     # ── ⚠⚠ THE LAW ──────────────────────────────────────────────────────────────────────────
+    # v3860 - POSIX ONLY: Windows has no execute bit (NTFS reports 0o666/0o444; a file is never S_IXUSR), so on win32
+    # this case could only fail and never measure. Git for Windows decides by the shebang instead - see the hook case.
+    @unittest.skipUnless(os.name == "posix", "POSIX only: Windows has no execute bit to keep")
     def test_atomic_write_PRESERVES_an_executable_bit(self):
         """★★★ The defect, reproduced end to end. Without this, any tool that edits a script
         through atomic_write disarms it, and the failure is a hint nobody reads."""
@@ -70,6 +73,9 @@ class AtomicWriteKeepsTheModeAndTheHookStaysArmed(unittest.TestCase):
         self.assertTrue(after & stat.S_IXUSR, "the owner-execute bit is gone")
 
     # ── ⚠⚠ v2797 — THE FIX ITSELF LEFT A WINDOW, FOUND BY A COLD CROSS-FAMILY REVIEW ────────
+    # v3860 - POSIX ONLY: Windows has no execute bit (NTFS reports 0o666/0o444; a file is never S_IXUSR), so on win32
+    # this case could only fail and never measure. Git for Windows decides by the shebang instead - see the hook case.
+    @unittest.skipUnless(os.name == "posix", "POSIX only: Windows has no execute bit to keep")
     def test_the_mode_is_ON_THE_TEMP_FILE_at_the_moment_of_replace(self):
         """★★★ THE RACE, AND IT IS THE ORIGINAL DEFECT IN MINIATURE.
 
@@ -180,6 +186,16 @@ class AtomicWriteKeepsTheModeAndTheHookStaysArmed(unittest.TestCase):
         off for whoever is actually pushing."""
         p = os.path.join(REPO, "hooks", "pre-push")
         self.assertTrue(os.path.isfile(p), "the pre-push hook is gone")
+        if os.name == "nt":
+            # ⚠ v3860 - WINDOWS ASKS THE FIRST LINE, NOT THE MODE. MEASURED 2026-11-04 on the new Konyo · ALT (Git
+            # 2.56.0.windows.4): a hook file with mode 0o100666 and no S_IXUSR RAN when it began with `#!/bin/sh`; the
+            # same hook without that line did not run and the commit failed (rc 1). So here the armed hook is the one
+            # whose first two bytes are `#!` - the mode bit is a question Windows never asks.
+            with io.open(p, "rb") as fh:
+                head = fh.read(2)
+            self.assertEqual(head, b"#!", "hooks/pre-push does not start with #!, so Git for Windows will not run "
+                                          "it and this clone pushes with no gates")
+            return
         self.assertTrue(os.stat(p).st_mode & stat.S_IXUSR,
                         "hooks/pre-push is not executable on disk, so git silently skips it and "
                         "this clone pushes with no gates")
@@ -192,6 +208,7 @@ RED_PROOF = [
         'find': '_mode = os.stat(path).st_mode',
         'replace': '_mode = None',
         'matches': 1,
+        'needs': 'posix',   # v3860 - only the POSIX execute-bit cases catch it; Windows has no execute bit
     },
 ]
 

@@ -22,6 +22,7 @@ import ast
 import io
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -165,6 +166,9 @@ class TestAKilledEyeLeavesNoSnapshot(unittest.TestCase):
     signal, and its `finally` and atexit never run. The runner now cleans up on SIGTERM / SIGALRM / SIGHUP, and each
     run sweeps a dead owner's snapshot (or a day-old one, a reused pid)."""
 
+    # v3860 - POSIX ONLY: Windows has no SIGALRM (signal.alarm does not exist there), so the child dies of an
+    # AttributeError with rc 1 and the case could only fail. MEASURED on the new Konyo · ALT, 2026-11-04.
+    @unittest.skipUnless(hasattr(signal, "alarm"), "POSIX only: Windows has no SIGALRM")
     def test_a_real_eye_killed_by_its_own_alarm_leaves_nothing(self):
         import subprocess
         tmp = tempfile.mkdtemp(prefix="eyekill-")
@@ -328,6 +332,7 @@ RED_PROOF = [
         "find": "    for name in (\"SIGTERM\", \"SIGALRM\", \"SIGHUP\"):\n",
         "replace": "    for name in (\"SIGTERM\", \"SIGHUP\"):\n",
         "matches": 1,
+        "needs": "posix-signals",   # v3860 - only the SIGALRM case catches it, and Windows has no SIGALRM
     },
     {
         "why": "#243 - the sweep ignores a dead owner and keeps its young snapshot forever",

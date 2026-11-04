@@ -197,6 +197,10 @@ class TestHalfAHarnessIsNotHalfATree(unittest.TestCase):
                           "a REFUSED root still named a path, which is the one outcome worse "
                           "than no tree")
 
+    # v3860 - POSIX ONLY: chmod 0o555 on a DIRECTORY does not stop a write on Windows (it only toggles the read-only
+    # attribute), so the write lands, the root really is usable, and the fixture never builds the state under test.
+    # MEASURED on the new Konyo · ALT, 2026-11-04: 'found' != 'unusable'. A Windows-real fixture needs an ACL deny.
+    @unittest.skipUnless(os.name == "posix", "POSIX only: chmod cannot make a Windows directory unwritable")
     def test_a_root_has_exactly_ONE_state__even_when_the_derived_one_FAILS(self):
         """⚠⚠ v3412, NAMED BY THE CROSS-FAMILY REVIEW OF v3410 ON CODE ONE HOUR OLD.
 
@@ -330,6 +334,7 @@ RED_PROOF = [
         "find": "        derived_hist = False\n        if frames and not hist:",
         "replace": "        derived_hist = False\n        if frames and not hist:\n            rows.append({\"root\": \"frames/hist\", \"anchor\": \"env\",\n                         \"path\": os.path.join(frames, \"hist\"), \"state\": FOUND,\n                         \"why\": \"optimistic\"})",
         "matches": 1,
+        "needs": "posix",   # v3860 - caught only by the chmod case, and chmod cannot deny a Windows write
     },
     {
         "why": "v3412 — realpath BACK OUTSIDE THE TRY. A path with an embedded NUL raises "

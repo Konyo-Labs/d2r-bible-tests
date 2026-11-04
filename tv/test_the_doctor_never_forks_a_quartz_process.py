@@ -999,6 +999,11 @@ NOT_APPLICABLE = "NOT-APPLICABLE"
 
 # case name -> (state, reason). Written by `_record`; a completeness law reads it back.
 LEDGER = {}
+# v3860 - WINDOWS HAS NO fork(). CreateProcess is the only path there, so the Quartz fork deadlock this file guards cannot
+# happen, and `_posixsubprocess` does not exist to be spied on. MEASURED on the new Konyo · ALT, 2026-11-04: the
+# host-dependent cases died of ModuleNotFoundError before they could record a word. They now record NOT-APPLICABLE.
+NO_FORK = not hasattr(os, "fork")
+NO_FORK_WHY = "this OS has no fork() - CreateProcess is the only path, so there is no fork to take and no deadlock"
 HOST_DEPENDENT = (
     "test_the_baseline_shape_REALLY_DOES_fork",
     "test_a_BARE_executable_name_still_forks",
@@ -1088,6 +1093,9 @@ class TestTheDoctorNeverForksAQuartzProcess(unittest.TestCase):
         """THE ONE THAT MATTERS. Not "does it pass the conditions" — does CPython take the
         non-forking path when this row actually runs."""
         case = "test_the_corpse_row_takes_posix_spawn_and_never_forks"
+        if NO_FORK:
+            _record(case, NOT_APPLICABLE, NO_FORK_WHY)
+            return
         import console_doctor as cd
         fn = dict(cd.CHECKS)["nothing we started is a corpse"]
         with _SyscallSpy() as spy:
@@ -1121,6 +1129,9 @@ class TestTheDoctorNeverForksAQuartzProcess(unittest.TestCase):
         what changes is that it is recorded as NOT-APPLICABLE instead of graded as if the hazard
         were present. NOT a skip, NOT a bare pass."""
         case = "test_the_baseline_shape_REALLY_DOES_fork"
+        if NO_FORK:
+            _record(case, NOT_APPLICABLE, NO_FORK_WHY)
+            return
         got = _fork_count([PROBE_ABS] + PROBE_ARGS, stdout=subprocess.PIPE)
         self.assertIsNotNone(got, "the baseline shape could not be driven at all, so the premise "
                                   "is UNMEASURED rather than confirmed")
@@ -1140,6 +1151,9 @@ class TestTheDoctorNeverForksAQuartzProcess(unittest.TestCase):
         """The dirname condition is half the fix and it is invisible: `close_fds=False` alone reads
         like a complete change and still forks."""
         case = "test_a_BARE_executable_name_still_forks"
+        if NO_FORK:
+            _record(case, NOT_APPLICABLE, NO_FORK_WHY)
+            return
         if PROBE_BARE is None:
             _record(case, UNKNOWN, "no PATH-resolvable probe command on this host, so the bare-name "
                                    "trap could not be driven")
@@ -1188,6 +1202,7 @@ class TestTheDoctorNeverForksAQuartzProcess(unittest.TestCase):
 
     # ---- the instrument, watching itself -------------------------------------------------
 
+    @unittest.skipIf(NO_FORK, "POSIX only: no fork_exec or posix_spawn guard to read on this OS")
     def test_the_syscall_spy_sees_the_name_subprocess_actually_calls(self):
         """⚠ SUSPECT THE INSTRUMENT FIRST. The spy patches `os.posix_spawn` and
         `_posixsubprocess.fork_exec`. If `subprocess` ever binds either at import time
@@ -1210,6 +1225,7 @@ class TestTheDoctorNeverForksAQuartzProcess(unittest.TestCase):
 
     # ---- the classifier, pinned to CPython rather than to memory ------------------------
 
+    @unittest.skipIf(NO_FORK, "POSIX only: no fork_exec or posix_spawn guard to read on this OS")
     def test_the_classifier_covers_every_condition_CPYTHON_ACTUALLY_CHECKS(self):
         """⚠ THE REASON THIS GATE WAS BLIND: IT RECORDED TWO CONDITIONS AND CPYTHON CHECKS
         FOURTEEN. The count is not a number anybody types here — `Popen._execute_child` is parsed
@@ -1813,6 +1829,7 @@ RED_PROOF = [
     {
         "why": "#150 - the spy stops patching the fork_exec binding it found: every fork count reads 0, so the baseline shape that really does fork is reported as never having forked — the CI false-red shape, and on any interpreter a spy that measures nothing",
         "file": "test_the_doctor_never_forks_a_quartz_process.py",
+        "needs": "posix",   # v3860 - the spy patches fork_exec, which only a POSIX interpreter has
         "find": "        if self.fork_binding is not None:\n            owner, attr, _spelling = self.fork_binding",
         "replace": "        if False:\n            owner, attr, _spelling = self.fork_binding",
         "matches": 1,

@@ -121,6 +121,11 @@ class ABrowserIsKilledByItsGroup(unittest.TestCase):
 
     # ---------- the behavioural proof ----------
 
+    # v3860 - POSIX ONLY, AND WHAT WINDOWS DOES IS UNKNOWN. The fake launcher forks, and Windows has no os.fork: there
+    # it dies at once, nothing hangs, and the case read "TimeoutExpired not raised" (MEASURED on the new Konyo · ALT,
+    # 2026-11-04). Whether _run_browser_bounded holds on Windows (no killpg, no getpgid) is NOT measured by any case;
+    # a Windows-real fixture (a Popen grandchild inheriting the pipe) is owed, and it may find a real hang.
+    @unittest.skipUnless(hasattr(os, "fork"), "POSIX only: the fake browser forks; Windows is UNKNOWN, not passing")
     def test_a_pipe_holding_grandchild_does_not_outlive_the_timeout(self):
         """THE WHOLE POINT. subprocess.run would hang here forever; this must raise and clean up."""
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fh:
@@ -227,6 +232,7 @@ RED_PROOF = [
         "find": "                os.killpg(pgid, _signal.SIGKILL)",
         "replace": "                proc.kill()",
         "matches": 1,
+        "needs": "posix",   # v3860 - only the forking case catches it (a second killpg stays in the code)
     },
     {
         "why": "without its own session the launcher shares our group, so killpg would either miss "
