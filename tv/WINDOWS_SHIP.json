@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3859",
+  "ver": "v3860",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3859: session counting, ALT shelf and uniques",
+  "note": "v3860: Windows console fixes, every PC proves itself, three blind CI proofs see their tamper",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

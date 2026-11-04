@@ -1,5 +1,17 @@
 [
   {
+    "ver": "v3860",
+    "date": "2026-11-04",
+    "items": [
+      "v3860 Windows - closing the OCR worker terminates it first, so the close never waits on a stuck write (REG-3130)",
+      "v3860 Windows - the console starts in UTF-8 mode, and every prover it spawns gets UTF-8 mode too (REG-3131)",
+      "v3860 - every PC proves itself again, nobody is take-only, by his 2026-11-04 ruling (REG-3134)",
+      "v3860 gate repair (not counted) - six laws write their probe to the system temp dir, never a fixed tmp path (REG-3132)",
+      "v3860 gate repair (not counted) - POSIX-only premises are pinned or NOT-APPLICABLE on Windows (REG-3133)",
+      "v3860 gate repair (not counted) - three red-proofs blind on the CI prover since 10-23 now go red (REG-3135)"
+    ]
+  },
+  {
     "ver": "v3859",
     "date": "2026-11-03",
     "items": [
