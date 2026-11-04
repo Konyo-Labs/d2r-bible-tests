@@ -49,6 +49,41 @@ _scaled_wait() now stretches _settled, _selector_ready, both activate deadlines 
 (clamped [1, 2.5], so nothing shrinks), and each wait-expired refusal appends _stretch_note(). Law
 test_a_target_wait_stretches_with_the_render_scale (4 tests, 5 red-proofs). OWED: law and red-proofs not run (Mac test
 pause while the v3853 hook ran); render target re-run under load owed.
+### REG-3130 - CLOSING THE WINDOWS OCR WORKER COULD HANG THE CLOSER LOOP: THE CLOSE WAITED ON A WRITE ONLY THE TERMINATE COULD FREE (v3860)
+`close_ocr_worker` closed the worker's stdin (raw close, v3424/#185) and terminated it second. Windows' C runtime locks a
+file descriptor for the whole of a write(), and close() takes that lock, so on win32 the raw close WAITED for a writer
+stuck on a full pipe - and the terminate that would have freed it was queued behind the close. MEASURED 2026-11-04 on the
+new Konyo · ALT (Python 3.12): close first still blocked after 12 s; terminate first returned in 0.0 s, the writer got
+BrokenPipeError. The Windows OCR worker (ocr_win.ps1) runs through this routine. Fix: terminate first, then the raw close,
+then the object close, each in its own try. Law test_a_broken_pipe_must_not_skip_the_reap: a venue-free model of the fd
+lock (red on every OS with the old order), the real-pipe case now uses a SIGTERM-ignoring child so the raw close stays
+load-bearing on POSIX; on the ALT the old order is red on both. The fork/zombie premise case is pinned to POSIX.
+### REG-3131 - THE WINDOWS CONSOLE PROCESS RAN IN THE ANSI CODEPAGE; ONLY ITS CHILDREN WERE IN UTF-8 MODE (v3860)
+control_app.py has set PYTHONUTF8 in os.environ at import since v1463 (win32), which reaches every child but cannot
+change the running interpreter: the console itself read node's UTF-8 and opened files in cp1255/cp1252 (reader thread
+dies -> stdout None, or a middle dot mojibakes). start_tvd_win.ps1 now sets PYTHONUTF8=1 and PYTHONIOENCODING before
+Start-Process, and self_prove.spawn sets PYTHONUTF8 on win32 itself, so a census does not depend on WHO spawned it.
+⚠ OWN-INSTRUMENT NOTE: the new ALT's census on 11-04 was a HAND runner whose env lacked PYTHONUTF8, and it filed at least
+9 laws red that the console's own lane (which inherits the import-time setting) runs green; batches 2-4 on #230 were
+corrected in 6637238383. Law test_a_windows_console_runs_in_utf8_mode (2 red-proofs, both RED).
+### REG-3132 - SIX LAWS WROTE THEIR PROBE TO `/tmp`, WHICH DOES NOT EXIST ON WINDOWS (v3860)
+`os.environ.get("TMPDIR", "/tmp")` (5 laws, 7 sites) and a literal `/tmp/reg3123_scenes.json` (1 law): TMPDIR is unset on
+Windows, so the probe path was `/tmp\x.js` and every case that rendered through node errored FileNotFoundError on the
+ALT (4 of the 5 were predicted on #230 before the census reached them, and went red exactly so). Now
+tempfile.gettempdir(), which reads TMPDIR first, so the Mac and CI are unchanged. The guard is the six laws themselves on
+every Windows PC's census (his 11-04 ruling: every PC proves itself).
+### REG-3133 - POSIX-ONLY PREMISES WERE GRADED ON WINDOWS AND COULD ONLY FAIL THERE (v3860)
+Measured on the new ALT, each red untampered for a reason that is not a defect on Windows: os.fork (fake browser, corpse
+premise), SIGALRM (killed-eye snapshot), chmod 0o555 on a directory (does not deny a Windows write), the owner execute
+bit (NTFS has none: Git 2.56.0.windows.4 ran a 0o100666 hook that starts with #! and refused one without it), and
+_posixsubprocess (the doctor-fork law). Each case is pinned to POSIX with its reason, or records NOT-APPLICABLE; the hook
+case asks for the #! on Windows; every red-proof that only those cases catch says needs posix / posix-signals so Windows
+files it ELSEWHERE, not BLIND. UNKNOWN, owed: whether js_syntax_gate._run_browser_bounded holds on Windows (no killpg).
+### REG-3134 - THE ALT WAS TAKE-ONLY; HIS RULING: EVERY PC PROVES ITSELF (v3860)
+His 2026-11-04 ~14:35 ruling reverses the 10-30 (t966u) one: PROOF_FLEET_TAKES_ONLY = (). Taking a peer's proofs stays
+an optional speed-up. Measured that day: the new ALT (8 GB) proves at ~400 proofs/h on one lane, and proving locally found
+six things a carried proof would have hidden. Law test_a_carried_proof_stands_only_where_it_was_earned holds the list
+empty (red-proof puts the ALT back: RED).
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel
