@@ -11223,6 +11223,7 @@ GATES = [
     Gate('test_play_never_squeezes_the_card_title', [sys.executable, os.path.join(HERE, 'test_play_never_squeezes_the_card_title.py')], 120, needs_app=False, why='v3859: per-card PLAY stacks in the cluster, never squeezes the title'),
     Gate('test_a_clipped_line_wraps_instead', [sys.executable, os.path.join(HERE, 'test_a_clipped_line_wraps_instead.py')], 120, needs_app=False, why='v3859: the Today stat row and the zone why-line wrap, never shaved'),
     Gate('test_a_digest_never_carries_its_own_publish_lane', [sys.executable, os.path.join(HERE, 'test_a_digest_never_carries_its_own_publish_lane.py')], 120, needs_app=False, why='v3859: the published digest never carries its own publish lane, so an unchanged digest is not posted again'),
+    Gate('test_every_gate_gets_one_extension_when_busy', [sys.executable, os.path.join(HERE, 'test_every_gate_gets_one_extension_when_busy.py')], 90, needs_app=False, why="v3861: every gate gets REG-1995's one load-measured extension when the machine is busy at its deadline, capped, and is still killed on a quiet machine - one loaded moment no longer throws away a whole push"),
     Gate('test_d2jsp_advanced_opens_above_the_dock', [sys.executable, os.path.join(HERE, 'test_d2jsp_advanced_opens_above_the_dock.py')], 60, needs_app=False, why="v3861: what d2jsp's Advanced opens is scrolled above the fixed command dock, never left behind it, and Escape closes it unless the planner or draft owns Escape"),
     Gate('test_a_shallow_checkout_gets_its_history', [sys.executable, os.path.join(HERE, 'test_a_shallow_checkout_gets_its_history.py')], 90, needs_app=False, why="v3861: a --depth 1 install is made full history once (promisor + fetch --unshallow --filter=blob:none) and the installer clones --filter=blob:none - a one-commit clone left HEAD~1 unknown and filed proofs BLIND on every new PC"),
     Gate('test_the_fan_maps_through_the_browsers_ctm', [sys.executable, os.path.join(HERE, 'test_the_fan_maps_through_the_browsers_ctm.py')], 60, needs_app=False, why="v3861: the Heart fan solver maps label rects through svg.getScreenCTM(), not the box - a height-capped fan is letterboxed on a wide window, so the box map scored no collisions over labels that overlapped on screen"),
@@ -13128,6 +13129,66 @@ def leaked_by_this_run(before, after, me, here):
 RED_CAP = 45
 
 
+
+#: v3861 - REG-1995's DEADLINE GRACE, FOR EVERY GATE. hooks/pre-push gave the render, blueprint and heart gates ONE
+#: extension when the machine is busy AT the deadline (1-min load above 5), sized base x load/5 and capped at 2.5x, and
+#: still killed a gate that ran long on a QUIET machine (that is the hang the bound exists for). The per-gate bound in
+#: this runner had no grace at all, so on his Mac with D2R open - or on a loaded gate box - one slow-but-healthy gate
+#: threw away a whole push: GrokBot's v3859 run #1 refused at 88 min on five gate timeouts that passed on the same bytes.
+#: Same rule, same numbers, said in the run's output. A machine with no load average (Windows) is never "busy" - no
+#: extension, never a guessed one. A red-capped carried gate keeps its cap (no grace).
+GATE_GRACE_LOAD = 5.0
+GATE_GRACE_MAX = 2.5
+
+
+def _load_now():
+    """-> the 1-minute load average, or None where the OS has none (Windows) or it cannot be read."""
+    try:
+        return float(os.getloadavg()[0])
+    except (AttributeError, OSError, ValueError):
+        return None
+
+
+def _run_with_grace(argv, timeout=None, grace=True, name="", say=None, load=None, **kw):
+    """subprocess.run, plus ONE load-measured extension when the machine is busy at the deadline. Same return and the
+    same TimeoutExpired as subprocess.run; a gate killed at its (extended) bound is reaped exactly as run() reaps it."""
+    if not grace or not timeout:
+        return subprocess.run(argv, timeout=timeout, **kw)
+    say = say or (lambda m: print(m, flush=True))
+    load = load or _load_now
+    if kw.pop("capture_output", False):
+        kw["stdout"] = subprocess.PIPE
+        kw["stderr"] = subprocess.PIPE
+    t0 = time.time()
+    proc = subprocess.Popen(argv, **kw)
+    try:
+        try:
+            out, err = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            l = load()
+            if l is None or l <= GATE_GRACE_LOAD:
+                raise
+            total = timeout * min(l / GATE_GRACE_LOAD, GATE_GRACE_MAX)
+            left = total - (time.time() - t0)
+            if left <= 1:
+                raise
+            say("gate: %s busy at its deadline (load %.1f) - one extension to %ds" % (name or "?", l, int(total)))
+            out, err = proc.communicate(timeout=left)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        if os.name == "nt":
+            try:
+                proc.communicate(timeout=30)
+            except Exception:
+                pass
+        else:
+            proc.wait()
+        raise subprocess.TimeoutExpired(argv, timeout)
+    except BaseException:
+        proc.kill()
+        raise
+    return subprocess.CompletedProcess(argv, proc.returncode, out, err)
+
 def red_cap(g):
     """Seconds an unchanged red gate gets on its capped rerun. -> int"""
     try:
@@ -13404,10 +13465,10 @@ def run(only=None, live_watch=True, live_writer=None, ledger=None):
                     except Exception:
                         _trace = None
                         _env = None
-                p = subprocess.run(_argv, cwd=g.cwd, capture_output=True, text=True,
+                p = _run_with_grace(_argv, cwd=g.cwd, capture_output=True, text=True,
                                    encoding="utf-8", errors="replace",
                                    timeout=red_cap(g) if _capped else g.timeout,  # GATES-RED-CAP
-                                   env=law_env(g.needs_app, _env))
+                                   env=law_env(g.needs_app, _env), grace=not _capped, name=g.name)
                 dt = time.time() - t0
                 # A GATE DECLARES ITS SKIP REASON ON STDOUT. Reading `stdout + stderr` let ANYTHING on
                 # stderr — a SyntaxWarning, an atexit flush, a traceback tail — become the gate's
