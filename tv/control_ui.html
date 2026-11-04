@@ -6093,7 +6093,9 @@
   .fleet-head .util-btn { flex: none; }
   .mini-foc .mf .mf-t { min-width: 0; text-align: center; }
   .mini-foc .mf .mf-w { white-space: nowrap; }
-  @media (max-width: 1200px) { .mini-foc .mf .mf-dot { display: none; } }
+  /* v3859 (render gate on the Mac, 2026-11-04) - 1200 was measured on Linux fonts. On macOS 'chronicle ·' is 106px and
+     overflowed the rail by 2px at 1280x720 (rail clientWidth 283); at 1440 (rail 320) it fits. 1366 covers the band. */
+  @media (max-width: 1366px) { .mini-foc .mf .mf-dot { display: none; } }
   /* v3857 #247 - the Shelf door broke as 'EVERY RECORDED / RUN' (three lines at 1024, an orphan RUN at 2560): its name on one line, what it holds on a smaller second */
   #btn-shelf .glab-dash { display: none; }
   #btn-shelf .glab-sub { display: block; font-size: var(--fs-2xs); letter-spacing: .02em; opacity: .78; margin-top: 3px; }

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The chronicle Mini pills broke as 'chronicle / · uniques', the dot orphaned at a line start. Each word group is now unbreakable, so the label breaks at the dot; at 1200 and under the dot is hidden so the pill does not overflow.
+"""The chronicle Mini pills broke as 'chronicle / · uniques', the dot orphaned at a line start. Each word group is now unbreakable, so the label breaks at the dot; at 1366 and under the dot is hidden so the pill does not overflow (v3859: 1200 was a Linux-font measurement; on macOS 'chronicle ·' overflowed the rail by 2px at 1280x720).
 
 RED_PROOF below: each one, applied, turns this law red."""
 import json, os, shutil, subprocess
@@ -29,7 +29,7 @@ CHECKS = [
  ],
  [
   "tv/control_ui.html",
-  "@media (max-width: 1200px) { .mini-foc .mf .mf-dot { display: none; } }",
+  "@media (max-width: 1366px) { .mini-foc .mf .mf-dot { display: none; } }",
   1
  ]
 ]
@@ -93,7 +93,7 @@ RED_PROOF = [
  },
  {
   "file": "tv/control_ui.html",
-  "find": "@media (max-width: 1200px) { .mini-foc .mf .mf-dot { display: none; } }",
+  "find": "@media (max-width: 1366px) { .mini-foc .mf .mf-dot { display: none; } }",
   "replace": "",
   "matches": 1,
   "why": "with the dot shown at 1024, chronicle · overflows its 112px pill"
