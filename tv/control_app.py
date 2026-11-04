@@ -22272,6 +22272,63 @@ def _prewarm_shelf(port=None, _urlopen=None, _thread=None):
     if _thread is not None:
         return _thread(_run)
     threading.Thread(target=_run, daemon=True, name="tvd-shelf-prewarm").start()
+#: v3861 - THE INSTALLER'S SHALLOW CLONE, REPAIRED ONCE. install-tvd.ps1 cloned with `--depth 1` until v3861, so a fresh
+#: Windows PC held ONE commit: `HEAD~1` was an unknown revision, the shallow guard in test_tasks_ships_are_recorded
+#: skipped, and its five red-proofs filed BLIND on that PC (one BLIND shuts every lock). MEASURED 2026-11-04 on the new
+#: Konyo · ALT, in a scratch clone: a --depth 1 clone made full history with `remote.origin.promisor=true` +
+#: `partialclonefilter=blob:none` and `git fetch --unshallow --filter=blob:none` in 4.8 s (7,185 commits; old file
+#: bodies arrive only when something reads them - a HEAD~5 diff took 1.2 s); `git status` stayed clean.
+HISTORY_REPAIR_TICK = 2           # 20 s after boot, off the request path, before the first proof tick (30)
+HISTORY_REPAIR_TIMEOUT_S = 900
+_HISTORY_REPAIR = {"shallow": None, "repaired": None, "seconds": None, "why": "not asked yet - the console has not been up 20 s"}
+
+
+@_one_pull_at_a_time
+def history_repair(repo=None, run=None, timeout_s=None):
+    """v3861 - make a SHALLOW checkout full-history (commits and trees; blobs on demand), once. -> dict, never raises.
+
+    Holds the pull door, so it never races a pull. A checkout that is already full history is left alone. git that
+    cannot answer is UNKNOWN (shallow None), never "fine"."""
+    repo = repo or REPO
+    run = run or _git_run
+    out = {"shallow": None, "repaired": False, "seconds": None, "why": ""}
+    kw = dict(cwd=repo, capture_output=True, text=True, creationflags=_WIN_CREATE if IS_WIN else 0)
+    try:
+        r = run(["git", "rev-parse", "--is-shallow-repository"], timeout=15, **kw)
+        if r.returncode != 0 or (r.stdout or "").strip() not in ("true", "false"):
+            out["why"] = "git could not say whether this checkout is shallow - UNKNOWN"
+            return out
+        out["shallow"] = (r.stdout or "").strip() == "true"
+        if not out["shallow"]:
+            out["why"] = "this checkout already holds its full history"
+            return out
+        for k, v in (("remote.origin.promisor", "true"), ("remote.origin.partialclonefilter", "blob:none")):
+            run(["git", "config", k, v], timeout=15, **kw)
+        t0 = time.time()
+        r = run(["git", "fetch", "--quiet", "--unshallow", "--filter=blob:none", "origin"],
+                timeout=timeout_s or HISTORY_REPAIR_TIMEOUT_S, **kw)
+        out["seconds"] = round(time.time() - t0, 1)
+        chk = run(["git", "rev-parse", "--is-shallow-repository"], timeout=15, **kw)
+        still = (chk.stdout or "").strip()
+        out["repaired"] = (r.returncode == 0 and still == "false")
+        out["shallow"] = (still == "true") if still in ("true", "false") else None
+        out["why"] = ("fetched the full history (commits and trees; file bodies on demand) in %.1f s" % out["seconds"]
+                      if out["repaired"] else
+                      "the unshallow fetch did not take (exit %s): %s" % (r.returncode, ((r.stderr or "").strip()[-160:])))
+    except Exception as e:
+        out["why"] = "the history repair raised %s - this checkout stays as it was" % type(e).__name__
+    return out
+
+
+def _history_repair_start(_thread=None):
+    """v3861 - run history_repair once, on a daemon thread, and publish what happened (status: historyRepair)."""
+    def _go():
+        _HISTORY_REPAIR.update(history_repair())
+    if _thread is not None:
+        return _thread(_go)
+    threading.Thread(target=_go, daemon=True, name="tvd-history-repair").start()
+
+
 SELF_PROVE_FIRST_TICK = 30
 _SELF_PROVE = {"on": None, "worked": None, "lastTs": None, "owed": None, "key": None,
                "say": "the self-prove lane has not ticked yet since this console started",
@@ -22744,6 +22801,8 @@ def _console_rescue_loop():
             _self_prove_dispatch(_SELF_PROBE["tick"])   # #50 the proof tick / REG-1624 the 10 s guard while it runs
             if _SELF_PROBE["tick"] == SHELF_PREWARM_TICK:
                 _prewarm_shelf()            # REG-1459 — his first SHELF click is served warm
+            if _SELF_PROBE["tick"] == HISTORY_REPAIR_TICK:
+                _history_repair_start()     # v3861 — a shallow install gets its history, once
             if _SELF_PROBE["tick"] == CAPTURE_SWEEP_TICK:
                 _sweep_orphan_captures()    # REG-1502 — end the captures a previous console left running
             if (_SELF_PROBE["tick"] >= CHILD_GUARD_FIRST_TICK
@@ -45255,7 +45314,7 @@ def status_payload():
         # 2026-09-29 — front / background / headless / window-only: the window is a view of the service
         "window": _t("window", window_mode_payload),
         # #71 — can this console still answer its own port (the fault it cannot report over that port)
-        "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
+        "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
         # #83 — the child supervisor's receipts (door / watchdog / RAM); the census itself is the doctor's row
         "childGuard": _child_guard_status(),
         "ver": "v3860",

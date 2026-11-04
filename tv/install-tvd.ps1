@@ -372,7 +372,9 @@ if (Test-Path (Join-Path $repoDir '.git')) {
   }
 } else {
   Say "cloning the bible repo..."
-  git clone --depth 1 $repoUrl $repoDir | Out-Null
+  # v3861 - FULL HISTORY, NOT --depth 1: a one-commit clone left HEAD~1 unknown and filed 5 proofs BLIND on every new PC.
+  # blob:none keeps it small: commits and trees now, file bodies only when something reads them.
+  git clone --filter=blob:none $repoUrl $repoDir | Out-Null
 }
 
 # v761+ twin requires the control app surface
