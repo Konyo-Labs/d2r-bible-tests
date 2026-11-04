@@ -230,6 +230,16 @@ class RoutineIFailsClosed(_Repo):
         self.assertTrue(run)
         self.assertIn("forced", why)
 
+    def test_a_stamp_only_push_skips_on_a_history_built_here(self):
+        """v3860 - THE SKIP, GRADED ON ANY VENUE. Only RoutineIOnRealHistory asked for the skip, on four pinned commits a
+        shallow checkout does not hold - so on the CI prover that class is UNMEASURED, and the red-proof that turns the
+        skip into a run (REG-1753) stayed GREEN on every proof-keys run since 10-23 (BLIND, shard 2). Same question,
+        on a history this case builds: a push whose only change is the build stamp skips the suite, and says so."""
+        head = self.commit(BODY % (STAMP % ("v101", "v101", "second")))
+        run, why = P.routine_i_decision("push", self.base, head, repo=self.repo)
+        self.assertFalse(run, "a stamp-only push ran Routine I: %s" % why)
+        self.assertEqual(why, P.ROUTINE_I_SKIP)
+
     def test_a_range_git_cannot_read_runs_the_suite(self):
         run, why = P.routine_i_decision("push", "no-such-before", "no-such-sha", repo=self.repo)
         self.assertTrue(run)

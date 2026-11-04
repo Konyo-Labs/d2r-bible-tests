@@ -374,6 +374,30 @@ class ACoherentBumpCarries(unittest.TestCase):
         self.assertIn("REFUSED", str(cm.exception))
         self.assertIn('"ver": "%s"' % U, _read(self.root, "tv/control_app.py"))
 
+    def test_the_bump_refuses_a_note_only_the_inert_words_rule_can_see(self):
+        """v3860 - THE CASE ABOVE COULD NOT SEE ITS OWN RULE. Its note carries a URL, so leak_problem (asked first,
+        :313) refuses it with "REFUSED" whether or not the inert-words door exists - and the red-proof that removes
+        that door (BUMP-FREE-TEXT-REFUSE) stayed GREEN on every CI prover run since 10-23 (BLIND, shard 14). This note
+        is no leak and no apostrophe; only free_text_problem refuses it, and the refusal must say so."""
+        import types
+        import bump_version as BV
+        import stamp_leak as L
+        note = "100% of the gates carry"
+        self.assertIsNone(L.leak_problem(note), "premise: an older refusal would catch this note first")
+        self.assertTrue(L.free_text_problem(note), "premise: the inert-words rule must refuse this note")
+        held = sys.modules.get("tree_busy")
+        sys.modules["tree_busy"] = types.SimpleNamespace(why=lambda r: None)
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                BV.bump("v101", "Door test", note, repo=self.root)
+        finally:
+            if held is None:
+                sys.modules.pop("tree_busy", None)
+            else:
+                sys.modules["tree_busy"] = held
+        self.assertIn("inert words", str(cm.exception), "the bump refused for another reason, or not at all")
+        self.assertIn('"ver": "%s"' % U, _read(self.root, "tv/control_app.py"), "the refused bump wrote a stamp")
+
     def _note_bump(self, note):
         new = _files(V, sha_row=True, note=note)
         new["BLUEPRINT.md"] = "# b\n    generated 2026-10-19 13:50\n"

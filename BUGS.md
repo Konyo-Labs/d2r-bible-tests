@@ -84,6 +84,14 @@ His 2026-11-04 ~14:35 ruling reverses the 10-30 (t966u) one: PROOF_FLEET_TAKES_O
 an optional speed-up. Measured that day: the new ALT (8 GB) proves at ~400 proofs/h on one lane, and proving locally found
 six things a carried proof would have hidden. Law test_a_carried_proof_stands_only_where_it_was_earned holds the list
 empty (red-proof puts the ALT back: RED).
+### REG-3135 - THREE RED-PROOFS WERE BLIND ON EVERY CI PROVER RUN SINCE 10-23: THEIR ONLY CATCHING CASE COULD NOT SEE THEM (v3860)
+Each tamper ran and the law stayed green, for a different reason, all measured on the Mac with the tamper applied:
+* test_a_version_stamp_is_not_a_page_change[7] (REG-1753 skip): only RoutineIOnRealHistory asked for the skip, on four pinned
+  commits a shallow CI checkout lacks, so the class is UNMEASURED there. New case on a history it builds itself: RED.
+* test_characters_learn_from_the_reels[9] (#91 spelling vote): _shown re-runs the vote and folds 'SOcket' into 'Socket', so
+  the stored name never decided anything in the old case. New case: two spellings that do not fold, tied 2-2: RED.
+* test_a_version_bump_carries_the_gates_that_ignore_the_version[31] (inert words): the only note carried a URL, which
+  leak_problem refuses first. New case: '100% of the gates carry' - no leak, only the inert-words rule refuses it: RED.
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel

@@ -160,6 +160,15 @@ class OnlyAFewSightingsTeachIt(unittest.TestCase):
         C.record(self.d, "v4", [{"name": "SOcket", "key": "socket", "cls": "Amazon", "level": 1, "title": None}], {"ts": 2})
         self.assertEqual(C.learned(self.d)[0]["name"], "Socket", "a tie keeps the form seen first")
 
+    def test_a_tie_between_two_real_spellings_keeps_the_one_seen_first(self):
+        """v3860 - THE CASE ABOVE COULD NOT SEE THE STORED NAME. 'Socket' and 'SOcket' fold to one form in _shown (the
+        _o_case read), so whichever spelling record() stores, the shown name is the same - and the red-proof that makes
+        the newest read's spelling win (#91) stayed GREEN on every CI prover run since 10-23 (BLIND, shard 13). Two
+        spellings that do NOT fold, two reads each: the tie is broken by the stored name, which must be the first seen."""
+        for v, form in (("v1", "Socket"), ("v2", "Sockit"), ("v3", "Socket"), ("v4", "Sockit")):  # enough visits to teach
+            C.record(self.d, v, [{"name": form, "key": "socket", "cls": "Amazon", "level": 1, "title": None}], {"ts": 1})
+        self.assertEqual(C.learned(self.d)[0]["name"], "Socket", "a 2-2 tie showed the newest spelling, not the first")
+
     def test_a_class_tie_teaches_nothing(self):
         C.record(self.d, "v1", _rows(("Twin", "Warlock", 10)), {"ts": 1})
         C.record(self.d, "v2", _rows(("Twin", "Paladin", 10)), {"ts": 2})
