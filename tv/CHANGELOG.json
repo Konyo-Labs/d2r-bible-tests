@@ -5,7 +5,7 @@
     "items": [
       "v3859 Dean: the recorder (capture_win.ps1) start shares the WinError 5 fallback; its failure says why in plain words",
       "v3859 Dean: WinError 5 on scanner start - a refused job breakaway retries inside the job; plain reason, no bare WinError",
-      "v3859 gate repair (not counted): the reader lamps sit two to a row - the D2JSP lamp widened the header corner and the tab strip wrapped at 1440 and 1000 (J10)",
+      "v3859 gate repair (not counted): reader lamps sit two to a row so the header tabs no longer wrap at 1440/1000",
       "v3859 gate repair (not counted): the 1x1 footprint rule names Small Charm, the CASC base the codex now uses",
       "v3859 gate repair (not counted): REG-2917's stale bodiless heading, re-added by a cherry-pick, is removed again",
       "v3859 gate repair (not counted): the per-card PLAY law makes its stdout encoding-safe for cp1255 consoles",
