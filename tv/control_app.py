@@ -36470,6 +36470,11 @@ def _examined_seals_backfill():
         return 0
 
 
+#: v3861 - the words for each reason an owed reel was passed this tick (the fleet line reads them).
+_VAULT_PASS_WORDS = {"retired": "retired after their tries", "cooling": "cooling down after an empty read",
+                     "quarantined": "quarantined after a hang", "growing": "still recording"}
+
+
 def vault_autoreel_tick():
     """One pass. Starts at most one vault sweep, and every refusal carries a named reason."""
     _examined_seals_backfill()      # REG-2042 - once per process, before anything decides on a seal
@@ -36554,6 +36559,7 @@ def vault_autoreel_tick():
     if _cur in _ids and len(_ids) > 1:
         _k = _ids.index(_cur) + 1
         owed_list = list(owed_list[_k:]) + list(owed_list[:_k])
+    _passed = {"retired": 0, "cooling": 0, "quarantined": 0, "growing": 0}   # v3861 - why each owed reel was passed
     for d in owed_list:
         rid = os.path.basename(str(d))
         # ⚠ the cursor moves on EVERY reel this tick considers, not only on a successful sweep.
@@ -36573,15 +36579,19 @@ def vault_autoreel_tick():
             except Exception:
                 pass
         if rid in _VAULT_AUTOREAD["retired"]:
+            _passed["retired"] += 1
             continue
         if _vault_cooling(rid):          # #188 REG-2560 - a barren held reel waits out its cooldown
+            _passed["cooling"] += 1
             continue
         if rid in _VAULT_SWEEP_QUARANTINE:
             # river watchdog quarantined this reel after it HUNG the measurer; skip it so the lane reads
             # the rest instead of re-hanging on the same reel (cleared on relaunch — a transient hang retries)
+            _passed["quarantined"] += 1
             continue
         if _reel_is_growing(str(d)):
             _VAULT_AUTOREAD["skipped"][rid] = "still growing — not final yet"
+            _passed["growing"] += 1
             continue
         tries = _VAULT_AUTOREAD["tries"].get(rid, 0) + 1
         if tries > _VAULT_AUTOREAD_MAX_TRIES:
@@ -36746,8 +36756,12 @@ def vault_autoreel_tick():
                 "why": "no reel owes the vault lane a read"}
     # REG-1789 — the sentence already said they are owed. ok stayed true, so a tick
     # that started none still read as a tick that closed clean.
-    return {"ok": False, "read": None, "owed": owed,
-            "why": "%d owed, none startable this tick" % owed}
+    # v3861 (his fleet, 2026-11-05: "vault lane owes 8" with nothing saying why it never moves) - THE SKIP IS SAID BY
+    # REASON. "none startable" was true and told nobody whether to wait (cooling, still recording) or act (retired after
+    # its tries, quarantined after a hang). `passed` carries the counts; the sentence names them, largest first.
+    _parts = [("%d %s" % (n, _VAULT_PASS_WORDS[k])) for k, n in sorted(_passed.items(), key=lambda kv: -kv[1]) if n]
+    return {"ok": False, "read": None, "owed": owed, "passed": dict(_passed),
+            "why": "%d owed, none startable this tick%s" % (owed, (": " + ", ".join(_parts)) if _parts else "")}
 
 
 

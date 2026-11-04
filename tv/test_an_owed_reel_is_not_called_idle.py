@@ -256,6 +256,9 @@ class TestALaneRefusalDoesNotRetireTheVaultReel(unittest.TestCase):
         self.assertIs(out.get("ok"), False, out)
         self.assertIn("1 owed, none startable this tick", out.get("why") or "")
         self.assertIsNone(out.get("started"), out)
+        # v3861 (his fleet: "vault lane owes 8" and nothing saying why it never moves) - the skip is said by reason
+        self.assertEqual((out.get("passed") or {}).get("growing"), 1, out)
+        self.assertIn("1 still recording", out.get("why") or "")
 
     def test_nothing_owed_on_the_vault_is_still_a_clean_tick(self):
         import unittest.mock as mock
@@ -309,6 +312,13 @@ class TestALaneRefusalDoesNotRetireTheVaultReel(unittest.TestCase):
 
 RED_PROOF = [
     {
+        "why": "v3861 - the vault lane's skip loses its reason again: 'none startable' with no word on what is waiting",
+        "file": "control_app.py",
+        "find": "            _passed[\"growing\"] += 1\n",
+        "replace": "",
+        "matches": 1,
+    },
+    {
         "why": "a retired reel that still owes a read is skipped before the count, so the tick says nothing is owed",
         "file": "control_app.py",
         "find": "        if rid in _retired:\n            _owed += 1\n            _retired_owing += 1\n            continue\n",
@@ -348,10 +358,8 @@ RED_PROOF = [
     {
         "why": "REG-1789 - a vault tick with reels owed and none started is a clean tick again",
         "file": "control_app.py",
-        "find": "    return {\"ok\": False, \"read\": None, \"owed\": owed,\n"
-                "            \"why\": \"%d owed, none startable this tick\" % owed}\n",
-        "replace": "    return {\"ok\": True, \"read\": None, \"owed\": owed,\n"
-                   "            \"why\": \"%d owed, none startable this tick\" % owed}\n",
+        "find": "    return {\"ok\": False, \"read\": None, \"owed\": owed, \"passed\": dict(_passed),\n",
+        "replace": "    return {\"ok\": True, \"read\": None, \"owed\": owed, \"passed\": dict(_passed),\n",
         "matches": 1,
     },
     {
