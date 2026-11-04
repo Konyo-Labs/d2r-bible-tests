@@ -1052,8 +1052,11 @@ class OneBoxAtATimeOnTheRow(unittest.TestCase):
     def test_a_stuck_word_still_carries_its_own_reason(self):
         alt = [r for t, r in self.rows if 'data-fleet-machine="box-b"' in t]
         self.assertEqual(len(alt), 1)
-        self.assertIn('class="fleet-riverstuck" title="river stuck on this PC - EMPTY 76:', alt[0],
-                      "the stuck word lost the reason it shows on hover")
+        # v3861 (his fleet screenshot) - box-b's census is not current, so EMPTY 76 ("reel.route is LOCKED") is the shut
+        # lock's consequence: it rides the muted "wait on the locks" chip with its reason, never red "river stuck".
+        self.assertIn('class="fleet-riverwait" title="reels this PC cannot move until its locks open: EMPTY 76:', alt[0],
+                      "the lock-held reel lost the reason it shows on hover")
+        self.assertNotIn('river stuck on this PC - EMPTY 76:', alt[0], "a lock-held reel is called river stuck again")
 
     def test_the_card_steps_aside_for_a_word_with_its_own_words(self):
         """CSS cannot be driven without a browser. This pins the rule; the merger's render is the look."""
@@ -1069,6 +1072,11 @@ class OneBoxAtATimeOnTheRow(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3861 - a reel held by a shut lock is called red 'river stuck' again, a second alarm for one cause",
+     "file": "tv/control_ui.html",
+     "find": "    var _byLock = function (e) { return _locksShut && !!e && typeof e === 'object'\n",
+     "replace": "    var _byLock = function (e) { return false && !!e && typeof e === 'object'\n",
+     "matches": 1},
     {
         "why": "REG-2098 - the deleter's sentence repeats its station again, so ROUTED and CAPTURE owing one tombstone read apart",
         "file": "tv/control_app.py",

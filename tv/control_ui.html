@@ -6913,6 +6913,8 @@
   .fleet-riverstuck { color: #e0795f; font-weight: var(--fw-medium); }
   .fleet-riverheld { color: var(--muted, #9aa0a6); font-weight: var(--fw-regular, 400); }
   .fleet-riverowes { color: #e0795f; margin-left: .4em; }
+  /* v3861 - the river's CONSEQUENCE of shut locks: muted, after the cause, never a second alarm */
+  .fleet-riverwait { color: var(--muted, #9aa0a6); font-weight: var(--fw-regular, 400); margin-left: .4em; }
   /* #86 gap 9 — UNKNOWN is not the red alarm and not the quiet row. Same muted word as an unmeasured fact. */
   .fleet-riverunk { color: var(--muted, #8b8071); font-style: italic; font-weight: var(--fw-medium); }
   /* #41 rank 22 (REG-1564) — the picker-disagrees chip, set exactly like the river-stuck one beside it */
@@ -28067,7 +28069,7 @@ function escC(s) {
     var sk = (rv && typeof rv === 'object') ? rv.stuck : undefined;
     var hs = (rv && typeof rv === 'object') ? rv.heart : undefined;
     var census = (hs && typeof hs === 'object') ? hs.census : undefined;
-    var bits = [];
+    var bits = [], _lockWait = '';
     /* v3849 — one river chip. A stuck list during the boot window used to draw "river stuck" and "river · starting". */
     var _pending = (census === null && hs && hs.key === 'starting' && _fleetBooting(m, nowMs));
     /* v3859 (his 17:27 Fleet: "river stuck" on Konyo with 3 of 4 rows "held by the drain, not owed") - A HELD REEL IS NOT A
@@ -28081,6 +28083,23 @@ function escC(s) {
       bits.push('<span class="fleet-riverheld" title="' + escC('river flowing - ' + _heldN + ' reel(s) held by the drain, not owed: '
         + _heldList.map(function (e) { return e.station + ' ' + e.n + ': ' + String(e.why || ''); }).join('  |  '))
         + '">river flowing \u00b7 ' + _heldN + ' held by the drain</span>');
+    }
+    /* v3861 (his fleet screenshot 2026-11-05: "the UX and UI for this error a lot more to the point") - A REEL HELD BY A
+       SHUT LOCK IS THE LOCK'S CONSEQUENCE, NOT A SECOND FAULT. While this PC's proof is not current (or a gate is blind),
+       the drain cannot delete and a shut route cannot move: those rows say LOCKED / route shut / proves its own gates.
+       They become one muted "reels wait on the locks" after the lock chip; "river stuck" stays red for what the locks do
+       not explain. */
+    var _locksShut = (census === 'missing' || census === 'stale' || census === 'unreadable')
+      || (census === 'current' && hs && typeof hs.blind === 'number' && hs.blind > 0);
+    var _byLock = function (e) { return _locksShut && !!e && typeof e === 'object'
+      && /LOCKED|route shut until this PC proves|proves its own gates|census is STALE/i.test(String(e.why || '')); };
+    var _lockRows = Array.isArray(sk) ? sk.filter(function (e) { return !_isHeld(e) && _byLock(e); }) : [];
+    if (_lockRows.length) {
+      var _lockN = _lockRows.reduce(function (a, e) { return a + (typeof e.n === 'number' ? e.n : 0); }, 0);
+      _lockWait = '<span class="fleet-riverwait" title="' + escC('reels this PC cannot move until its locks open: '
+        + _lockRows.map(function (e) { return e.station + ' ' + e.n + ': ' + String(e.why || ''); }).join('  |  '))
+        + '">\u21b3 ' + _lockN + ' reel' + (_lockN === 1 ? '' : 's') + ' wait on the locks</span>';
+      sk = sk.filter(function (e) { return !_byLock(e); });
     }
     if (Array.isArray(sk) && sk.length && _heldList.length < sk.length) {
       var _heldAside = _heldList;
@@ -28109,8 +28128,11 @@ function escC(s) {
           return e.station + (older ? ' older' : '') + ' ' + say;
         });
       if (_waits.length) tip += ' · oldest reel waiting: ' + _waits.join(', ');
-      var _owes = sk.map(function (e) { var mm = /^([A-Za-z][\w -]{0,30}? lane): owes (\d+)/.exec(String((e && e.why) || '')
-        .replace(_olderRe, '')); return mm ? mm[1] + ' owes ' + mm[2] : null; }).filter(Boolean);
+      var _owes = sk.map(function (e) { var w = String((e && e.why) || '').replace(_olderRe, '');
+        var mm = /^([A-Za-z][\w -]{0,30}? lane): owes (\d+)/.exec(w);
+        /* v3861 - and the lane's own top reason for not starting them, when it said one ("5 retired after their tries") */
+        var top = /none startable this tick: ([^,;|]+)/.exec(w);
+        return mm ? mm[1] + ' owes ' + mm[2] + (top ? ' \u00b7 ' + top[1].trim() : '') : null; }).filter(Boolean);
       if (_heldAside.length) tip += ' · also held by the drain, not owed: ' + _heldAside.map(function (e) { return e.station + ' ' + e.n; }).join(', ');
       var _stuckLabel = _pending ? 'river stuck \u00b7 proof check pending' : 'river stuck';
 
@@ -28123,10 +28145,15 @@ function escC(s) {
       /* GBL census-lowmem - a proof held back ONLY by free memory says so on the row, not the bare word a broken lock wears */
       var _memWait = hs && hs.key === 'low-memory';
       var _recheck = hs && hs.key === 'stale-at-boot';
+      /* v3861 - the few words that say what the proof is waiting on (the hover keeps the long form) */
+      var _LOCK_WHY = { 'takes-fleet': 'borrows proofs, proves none', 'start': 'proof waits for an idle PC',
+                        'busy': 'proof waits for an idle PC', 'running': 'proving now', 'stood-aside': 'proof paused',
+                        'playing': 'proof paused while playing' };
+      var _lw = (!_memWait && !_recheck && hs && _LOCK_WHY[hs.key]) ? ' \u00b7 ' + _LOCK_WHY[hs.key] : '';
       bits.push('<span class="fleet-riverstuck" title="' + escC('the locks that move this PC\u2019s river are shut \u2014 its proof is '
         + census + (_memWait ? ' and waiting for free memory to prove' : '') + ', so nothing that spends a reel may act here'
         + (hs && hs.why ? ' \u2014 ' + hs.why : ''))   /* v3855 C6 - the stale reason, said */
-        + '"' + (hs && hs.why ? ' data-census-why="' + escC(hs.why) + '"' : '') + '>' + (_memWait ? 'locks shut \u00b7 census waiting for memory' : (_recheck ? 'locks shut \u00b7 rechecking' : 'locks shut'))
+        + '"' + (hs && hs.why ? ' data-census-why="' + escC(hs.why) + '"' : '') + '>' + (_memWait ? 'locks shut \u00b7 census waiting for memory' : (_recheck ? 'locks shut \u00b7 rechecking' : 'locks shut')) + _lw
         + (hs && Array.isArray(hs.takesFrom) && hs.takesFrom.length ? ' \u00b7 borrows ' + escC(hs.takesFrom.join('/')) + '\u2019s proofs' : '') + '</span>');
     }
     /* v3856 (#230 6506572227) - A CURRENT CENSUS WITH BLIND GATES STILL SHUTS EVERY LOCK. The row drew no chip while all
@@ -28158,6 +28185,7 @@ function escC(s) {
       bits.push('<span class="fleet-riverunk" title="' + escC(unk.join('; ')
         + ' \u2014 UNKNOWN, not a river that was measured draining') + '">river UNKNOWN</span>');
     }
+    if (_lockWait) bits.push(_lockWait);   /* v3861 - the consequence, after its cause */
     return bits.join('');
   };
   /* #41 rank 22 (REG-1564) — THE ONE WORD ON THE ROW for the picker: a red "picker short" (or "picker over") beside the

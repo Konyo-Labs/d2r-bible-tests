@@ -312,9 +312,16 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                 # lane owes 76". Its span is cut from the ship side and pinned on the row below; its words are
                 # test_a_held_reel_is_not_river_stuck's to prove. Nothing else in the card may move.
                 owes = re.compile(r'<span class="fleet-riverowes" title="[^"]*">[^<]*</span>')
-                self.assertEqual(owes.sub("", waited.sub("", cut.sub("", s[m]["ftt"]))), cut.sub("", b[m]["ftt"]),
+                # v3861 (his fleet screenshot, "a lot more to the point") MOVED the river chips: a reel held by a shut
+                # lock left red "river stuck" for a muted "N reels wait on the locks" after the lock chip, and the lock
+                # chip gained its few words of why. The river chips are cut from BOTH sides here; their words are
+                # test_the_fleet_says_where_a_river_is_stuck's and test_starting_never_hides_a_known_stale_census's to
+                # prove. Nothing else in the card or the row may move.
+                river = re.compile(r'<span class="fleet-river(?:stuck|wait|owes)" title="[^"]*"[^>]*>[^<]*</span>')
+                self.assertEqual(river.sub("", owes.sub("", waited.sub("", cut.sub("", s[m]["ftt"])))),
+                                 river.sub("", cut.sub("", b[m]["ftt"])),
                                  "%s %s: the hover card changed" % (k, m))
-                if "river stuck" in b[m]["ftt"]:
+                if "river stuck" in b[m]["ftt"] and "river stuck" in s[m]["ftt"]:
                     self.assertIn(u" \u00b7 oldest reel waiting: ", s[m]["ftt"],
                                   "%s %s: the river-stuck chip no longer says what waited (REG-3051)" % (k, m))
                 self.assertIn('<div class="ftt-click">click: open the row \u00b7 click it again: how this PC films and drains, '
@@ -322,9 +329,10 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                               "%s %s: the card does not say what each click opens" % (k, m))
                 # the row carries the card, so its #225 click line is cut from both (SNAP already strips the row's own
                 # click and key handlers; the two clicks are proven by test_the_first_click_opens_the_row_and_a_second_opens_the_compare)
-                self.assertEqual(owes.sub("", waited.sub("", cut.sub("", s[m]["row"]))), cut.sub("", b[m]["row"]),
+                self.assertEqual(river.sub("", owes.sub("", waited.sub("", cut.sub("", s[m]["row"])))),
+                                 river.sub("", cut.sub("", b[m]["row"])),
                                  "%s %s: the row changed beyond its eyes" % (k, m))
-                if re.search(r'river stuck on this PC - [^"]*\b[A-Za-z][\w -]{0,30}? lane: owes \d+', b[m]["row"]):
+                if re.search(r'river stuck on this PC - [^"]*\b[A-Za-z][\w -]{0,30}? lane: owes \d+', s[m]["row"]):
                     self.assertTrue(owes.search(s[m]["row"]),
                                     "%s %s: a lane that owes reels is no longer named beside river-stuck (v3859)" % (k, m))
 

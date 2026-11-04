@@ -155,6 +155,11 @@ class TestStartingNeverHidesAKnownStaleCensus(unittest.TestCase):
         memory = _chip({"census": "stale", "key": "low-memory", "blind": None}, [])
         self.assertIn("locks shut \u00b7 census waiting for memory", memory)
         self.assertNotIn("rechecking", memory)
+        # v3861 (his fleet screenshot) - the lock chip says what the proof waits on, in a few words, for the keys that have one
+        idle = _chip({"census": "stale", "key": "start", "blind": None}, [])
+        self.assertIn("locks shut \u00b7 proof waits for an idle PC", idle)
+        borrow = _chip({"census": "missing", "key": "takes-fleet", "blind": None}, [])
+        self.assertIn("locks shut \u00b7 borrows proofs, proves none", borrow)
         both = _chip({"census": "unreadable", "key": "stale-at-boot", "blind": None}, None)
         self.assertIn("locks shut \u00b7 rechecking", both)
         self.assertIn("river UNKNOWN", both)
@@ -174,6 +179,11 @@ class TestStartingNeverHidesAKnownStaleCensus(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3861 - the lock chip loses its few words of why: 'locks shut' and nothing about what the proof waits on",
+     "file": "tv/control_ui.html",
+     "find": "'locks shut')) + _lw\n",
+     "replace": "'locks shut'))\n",
+     "matches": 1},
     {"why": "a known shut census is hidden behind starting again",
      "file": "tv/control_app.py",
      "find": "        if _shut in (\"stale\", \"missing\", \"unreadable\"):\n            _census = _shut\n            _key = \"stale-at-boot\"\n",
