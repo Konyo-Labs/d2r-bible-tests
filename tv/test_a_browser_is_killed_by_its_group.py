@@ -104,12 +104,11 @@ def _fn_src(name):
 # reproduces the deadlock without needing Chrome.
 FAKE_BROWSER = textwrap.dedent(
     """
-    import os, sys, time
-    pid = os.fork()
-    if pid == 0:
-        # the grandchild: inherits stdout, never writes, never exits on its own
-        time.sleep(600)
-        os._exit(0)
+    import subprocess, sys, time
+    # v3861 - the grandchild is a Popen, not a fork, so the fixture is real on Windows too (no os.fork there). It is
+    # handed the launcher's stdout explicitly, so it holds the very pipe the timeout must not wait on, on every OS.
+    subprocess.Popen([sys.executable, "-c", "import time; time.sleep(600)", __file__],
+                     stdout=sys.stdout, stderr=subprocess.DEVNULL)
     sys.stderr.write("launcher-up\\n")
     sys.stderr.flush()
     time.sleep(600)
@@ -117,15 +116,23 @@ FAKE_BROWSER = textwrap.dedent(
 )
 
 
+def _ours_alive(fake):
+    """-> [str] the processes still running whose command line names this fixture, on either OS."""
+    if os.name == "nt":
+        ps = ("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*%s*' } | "
+              "ForEach-Object { [string]$_.ProcessId + ' ' + $_.CommandLine }" % os.path.basename(fake))
+        out = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True,
+                             timeout=60).stdout
+        return [ln.strip()[:80] for ln in out.splitlines() if ln.strip() and "Get-CimInstance" not in ln]
+    return [ln.strip()[:80] for ln in os.popen("ps -eo pid,command").read().splitlines()[1:] if fake in ln]
+
+
 class ABrowserIsKilledByItsGroup(unittest.TestCase):
 
     # ---------- the behavioural proof ----------
 
-    # v3860 - POSIX ONLY, AND WHAT WINDOWS DOES IS UNKNOWN. The fake launcher forks, and Windows has no os.fork: there
-    # it dies at once, nothing hangs, and the case read "TimeoutExpired not raised" (MEASURED on the new Konyo · ALT,
-    # 2026-11-04). Whether _run_browser_bounded holds on Windows (no killpg, no getpgid) is NOT measured by any case;
-    # a Windows-real fixture (a Popen grandchild inheriting the pipe) is owed, and it may find a real hang.
-    @unittest.skipUnless(hasattr(os, "fork"), "POSIX only: the fake browser forks; Windows is UNKNOWN, not passing")
+    # v3861 - NOW REAL ON WINDOWS TOO. v3860 pinned this to POSIX because the fake forked; the grandchild is a Popen now,
+    # and on Windows the timeout path ends the tree with `taskkill /T` (there is no process group to kill).
     def test_a_pipe_holding_grandchild_does_not_outlive_the_timeout(self):
         """THE WHOLE POINT. subprocess.run would hang here forever; this must raise and clean up."""
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fh:
@@ -146,10 +153,7 @@ class ABrowserIsKilledByItsGroup(unittest.TestCase):
 
         # and nothing of ours may be left holding the pipe
         time.sleep(0.5)
-        leftovers = []
-        for line in os.popen("ps -eo pid,command").read().splitlines()[1:]:
-            if fake in line:
-                leftovers.append(line.strip()[:80])
+        leftovers = _ours_alive(fake)
         self.assertEqual(leftovers, [],
                          "a child survived the timeout still holding the pipe: %r" % (leftovers,))
 
@@ -229,8 +233,8 @@ RED_PROOF = [
         "why": "the group kill is the fix; without it a pipe-holding grandchild survives and the "
                "second communicate() blocks forever, which is the measured wedge",
         "file": "tv/js_syntax_gate.py",
-        "find": "                os.killpg(pgid, _signal.SIGKILL)",
-        "replace": "                proc.kill()",
+        "find": "                    os.killpg(pgid, _signal.SIGKILL)",
+        "replace": "                    proc.kill()",
         "matches": 1,
         "needs": "posix",   # v3860 - only the forking case catches it (a second killpg stays in the code)
     },

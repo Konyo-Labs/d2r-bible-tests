@@ -391,17 +391,32 @@ def _run_browser_bounded(cmd, timeout):
         # output at all, which is not a clean RED, it is a bomb. A launcher we cannot isolate is
         # killed alone; that leaves the grandchild, which is the defect the behavioural case
         # catches, and it catches it without taking the machine down.
-        try:
-            pgid = os.getpgid(proc.pid)
-            if pgid != os.getpgid(0):
-                os.killpg(pgid, _signal.SIGKILL)
-            else:
-                proc.kill()
-        except Exception:
+        if os.name == "nt":
+            # v3861 - WINDOWS HAS NO PROCESS GROUP TO KILL. os.getpgid does not exist there, so this used to fall
+            # through to proc.kill(): the launcher died and the browser's helpers - the very processes holding the
+            # pipe - were left running, one leak per timeout. `taskkill /T` ends the whole tree under the launcher's
+            # pid (it walks the parent links Windows keeps), and the launcher alone is the fallback.
+            try:
+                subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True, timeout=15,
+                               creationflags=0x08000000)
+            except Exception:
+                pass
             try:
                 proc.kill()
             except Exception:
                 pass
+        else:
+            try:
+                pgid = os.getpgid(proc.pid)
+                if pgid != os.getpgid(0):
+                    os.killpg(pgid, _signal.SIGKILL)
+                else:
+                    proc.kill()
+            except Exception:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
         # close our ends so no later wait can block on an fd a survivor still holds
         for stream in (proc.stdout, proc.stderr):
             try:
