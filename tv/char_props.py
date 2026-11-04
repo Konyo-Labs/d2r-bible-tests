@@ -297,13 +297,20 @@ def assemble(blobs):
         if sid is not None and sid in sk_by_id:
             used_skills[sid] = sk_by_id[sid]
 
-    def lines_of(r, n, pfx="prop", ppar="par", pmin="min", pmax="max"):
+    def lines_of(r, n, pfx="prop", ppar="par", pmin="min", pmax="max", base=None):
         out = []
+        # v3859 - THE GAME CAPS A SOCKET ROLL AT THE BASE. uniqueitems/setitems ask Aldur's Rhythm for 2-5 sockets on a
+        # Jagged Star (max 3) and Heaven's Light for 1-3 on a Mighty Scepter (max 2); GrokBot clamped those two rows in
+        # bible.html by hand (test_a_socket_range_fits_its_base), and this generator - which never knew the cap - then
+        # read the block as hand-edited (the Mac's pre-push, 2026-11-04). The cap lives HERE, where the block is made.
+        cap = (bases.get(base) or [None] * 5)[4] if base else 0
         for i in range(1, n + 1):
             c = (r.get("%s%d" % (pfx, i)) or "").strip()
             if not c:
                 continue
             ln = _line(c, r.get("%s%d" % (ppar, i)), r.get("%s%d" % (pmin, i)), r.get("%s%d" % (pmax, i)))
+            if ln[0] == "sock" and cap and isinstance(ln[3], int) and isinstance(ln[2], int) and ln[3] > cap:
+                ln = [ln[0], ln[1], min(ln[2], cap), cap] + list(ln[4:])
             note_skill(ln[0], ln[1])
             out.append(ln)
         return out
@@ -314,7 +321,7 @@ def assemble(blobs):
         if not code or not str(r.get("*ID") or "").isdigit():
             continue
         uniques.append([shown(r.get("index")), r.get("index") or "", int(r["*ID"]), code, _num(r.get("lvl req")) or 0,
-                        1 if r.get("spawnable") == "1" else 0, lines_of(r, 12)])
+                        1 if r.get("spawnable") == "1" else 0, lines_of(r, 12, base=code)])
 
     setnames = dict((r.get("index"), shown(r.get("name") or r.get("index"))) for r in T["sets"] if r.get("index"))
     sets = []
@@ -334,7 +341,7 @@ def assemble(blobs):
                     note_skill(ln[0], ln[1])
                     al.append([i + 1] + ln)
         sets.append([shown(r.get("index")), r.get("index") or "", int(r["*ID"]), code, _num(r.get("lvl req")) or 0,
-                     setnames.get(sk) or shown(sk), _num(r.get("add func")) or 0, lines_of(r, 9), al])
+                     setnames.get(sk) or shown(sk), _num(r.get("add func")) or 0, lines_of(r, 9, base=code), al])
 
     set_bonus = {}
     for r in T["sets"]:
