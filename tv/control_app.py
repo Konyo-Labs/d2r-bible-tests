@@ -21428,8 +21428,22 @@ def close_ocr_worker(wp, say=None):
       whole reel backlog, if the worker ignores SIGTERM. A daemon thread reaps whenever the child
       actually dies.
     ⚠ AND A FAILED REAP IS NEVER SILENT: the one refusal that says nothing is the one that hides.
+    ⚠⚠ v3860 — TERMINATE FIRST, THEN CLOSE. Windows' C runtime locks a file descriptor for the whole
+      of a write(), so the raw close below WAITS for a writer stuck on a full pipe. On Linux and macOS
+      close(2) does not wait, which is why the close-first order passed everywhere this was measured
+      before. MEASURED 2026-11-04 on the new Konyo · ALT (Python 3.12, win32): a child that never
+      reads, 1 MB stuffed into its stdin from a second thread, then the raw close — close first was
+      STILL BLOCKED after 12 s; terminate first returned in 0.0 s and the stuck writer got
+      BrokenPipeError. The Windows OCR worker (ocr_win.ps1) runs through this routine, so the closer
+      loop on every Windows PC could stall exactly the way v3424 stopped it stalling on the Mac.
+      Killing the worker first frees the writer on every OS; the raw close then still delivers EOF to
+      a worker that ignores SIGTERM, and still never takes the buffered lock.
     [[the-unjoined-end]] [[feedback-silence-is-not-evidence]] [[process-port-discipline]]
     """
+    try:
+        wp.terminate()
+    except Exception:
+        pass                      # it may have exited on its own; wait() still reaps it
     if getattr(wp, "stdin", None) is not None:
         # ⚠⚠ v3424 — CLOSE THE FD, NOT THE BUFFER. The second eye found this reviewing v3421.
         # The worker is spawned `text=True, bufsize=1`, so `wp.stdin` is a buffered
@@ -21466,10 +21480,6 @@ def close_ocr_worker(wp, say=None):
                 wp.stdin.close()  # only a stdin the raw close did not already shut
         except Exception:
             pass                  # a stdin that will not close is NOT a reason to skip the reap
-    try:
-        wp.terminate()
-    except Exception:
-        pass                      # it may have exited on its own; wait() still reaps it
     try:
         threading.Thread(target=wp.wait, daemon=True, name="tvd-ocr-reap").start()
         return True

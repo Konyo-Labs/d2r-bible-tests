@@ -184,6 +184,9 @@ class TestABrokenPipeMustNotSkipTheReap(unittest.TestCase):
                                   "it to _reap_after_kill — so the reap depends on the drain "
                                   "succeeding, which is exactly what just failed" % (bad,))
 
+    # ⚠ v3860 — POSIX ONLY. The premise is os.fork() and a <defunct> child; Windows has neither (no fork, no zombies),
+    # so there the premise case could only fail and never measure. The proof it backs says "needs": "posix".
+    @unittest.skipUnless(hasattr(os, "fork"), "POSIX only: the corpse premise needs os.fork and zombies")
     def test_kill_then_communicate_REALLY_DOES_leave_a_corpse_and_the_door_does_not(self):
         """THE MEASUREMENT THAT SETTLED IT, kept as a case so nobody re-argues it from the docs.
 
@@ -243,7 +246,15 @@ class TestABrokenPipeMustNotSkipTheReap(unittest.TestCase):
         a hard bound on how long the close may take."""
         import subprocess as sp
         import threading as th
-        p = sp.Popen([sys.executable, "-c", "import time; time.sleep(30)"],
+        # ⚠ v3860 — THE CHILD IGNORES SIGTERM. close_ocr_worker now terminates FIRST (Windows' fd lock, see the
+        # case below), and a child that dies on SIGTERM frees the stuck writer on its own - so against an obedient
+        # child this case could no longer tell the raw close from the buffered one. A worker that ignores SIGTERM is
+        # the one terminate-first does not rescue, and it is the case the raw close exists for. (Windows' terminate
+        # cannot be ignored, so there the child dies and the case measures the new order instead.)
+        p = sp.Popen([sys.executable, "-c",
+                      "import signal, time\n"
+                      "try:\n    signal.signal(signal.SIGTERM, signal.SIG_IGN)\nexcept Exception:\n    pass\n"
+                      "time.sleep(30)"],
                      stdin=sp.PIPE, stdout=sp.PIPE, text=True, bufsize=1)
         try:
             # ⚠ THE FILL ITSELF BLOCKS, AND IT IS SETUP, NOT THE SUBJECT. Writing past the pipe
@@ -265,6 +276,69 @@ class TestABrokenPipeMustNotSkipTheReap(unittest.TestCase):
                 p.wait(timeout=5)
             except Exception:
                 pass
+
+    def test_a_close_that_WAITS_FOR_THE_WRITER_cannot_hold_the_caller_hostage(self):
+        """⚠⚠ v3860 — WINDOWS' SHAPE, ON EVERY OS. The C runtime locks a file descriptor for the whole of a write(),
+        and close() takes the same lock, so on win32 the RAW close waits for a writer stuck on a full pipe until the
+        worker dies. The routine used to close first and terminate second: the worker could never die, because the
+        terminate was queued behind the close that was waiting for it. MEASURED 2026-11-04 on the new Konyo · ALT
+        (Python 3.12): close first was still blocked after 12 s; terminate first returned in 0.0 s. Linux and macOS
+        close(2) do not wait, which is why only the Windows prover saw it (the real-pipe case above, red there).
+
+        This removes the venue the way #185 did for Linux: a raw stream whose close() waits on the in-flight
+        write's lock, and a terminate() that kills the child so the write fails. The routine must kill first and
+        return promptly with the stream CLOSED. [[a-probe-licenses-only-what-it-tested]]
+        """
+        import threading as th
+
+        release, entered, fd_lock = th.Event(), th.Event(), th.Lock()
+
+        class _CrtRaw(io.RawIOBase):
+            def writable(self):
+                return True
+
+            def write(self, b):
+                with fd_lock:             # the CRT holds the fd's lock for the whole write
+                    entered.set()
+                    release.wait(30)      # a full pipe: the write returns only when the child is gone
+                    raise BrokenPipeError("the child is gone")
+
+            def close(self):
+                with fd_lock:             # ...and close() takes that same lock, so it WAITS for the write
+                    io.RawIOBase.close(self)
+
+        raw = _CrtRaw()
+        stdin = io.TextIOWrapper(io.BufferedWriter(raw, buffer_size=8), write_through=True)
+
+        class _W(object):
+            def __init__(self):
+                self.stdin, self.terminated = stdin, False
+
+            def terminate(self):
+                self.terminated = True
+                release.set()             # the child dies -> the stuck write fails and lets go of the fd
+
+            def wait(self):
+                pass
+
+        w = _W()
+        th.Thread(target=lambda: self._swallow(lambda: stdin.write("x" * 64)), daemon=True).start()
+        self.assertTrue(entered.wait(5), "premise: the writer never got inside write(), so the fd lock was "
+                                         "never held and this case measures nothing")
+        done = []
+        t = th.Thread(target=lambda: (CA.close_ocr_worker(w), done.append(True)), daemon=True)
+        t0 = time.time()
+        t.start()
+        t.join(5.0)
+        try:
+            self.assertTrue(done, "close_ocr_worker waited over 5s on a close that was waiting for the stuck write - "
+                                  "the terminate that would free it was queued BEHIND that close. On Windows that is "
+                                  "the closer loop, and the whole reel backlog, stalled with nothing in the log")
+            self.assertLess(time.time() - t0, 5.0)
+            self.assertTrue(w.terminated, "the routine returned without terminating the worker")
+            self.assertTrue(raw.closed, "the raw stream was left open")
+        finally:
+            release.set()
 
     def test_a_writer_HOLDING_THE_BUFFER_LOCK_cannot_hold_the_caller_hostage(self):
         """⚠⚠ #185 — THE CASE ABOVE WAS GREEN ON HIS MAC AND RED ON CI, SAME COMMIT. On Linux a thread
@@ -299,8 +373,9 @@ class TestABrokenPipeMustNotSkipTheReap(unittest.TestCase):
                 self.stdin, self.terminated = stdin, False
 
             def terminate(self):
+                # ⚠ v3860 — a worker that IGNORES SIGTERM: the stuck write is NOT freed here. Terminate-first
+                # rescues an obedient worker by itself, so only this shape still measures the raw close.
                 self.terminated = True
-                release.set()         # the child dies -> the stuck write finally returns
 
             def wait(self):
                 pass
@@ -384,6 +459,8 @@ RED_PROOF = [
         "find": "    try:\n        p.wait(timeout=reap_s)\n        return True\n    except Exception:\n        return False",
         "replace": "    try:\n        return p.returncode is not None\n    except Exception:\n        return False",
         "matches": 1,
+        # v3860 - only the fork case catches it, and Windows has no fork: judged where POSIX is, ELSEWHERE there.
+        "needs": "posix",
     },
     {
         "why": "v3424 - THE ONE DOOR, BYPASSED. A handler that kills and re-implements the reap "
@@ -405,6 +482,17 @@ RED_PROOF = [
         # ⚠ #185 — re-anchored: the door that stops the flush is now the RAW close.
         "find": "                _raw.close()      # the fd AND the closed flag — no buffered lock, no flush",
         "replace": "                pass",
+        "matches": 1,
+    },
+    {
+        "why": "v3860 - THE CLOSE MOVED BACK IN FRONT OF THE TERMINATE. Windows' C runtime makes a raw close WAIT "
+               "for a write stuck on a full pipe, and the terminate that would free that write is queued behind "
+               "the close: the closer loop stalls on every Windows PC (measured on the ALT: >12 s, never returned).",
+        "file": "control_app.py",
+        "find": "    try:\n        wp.terminate()\n    except Exception:\n        pass                      # it may have exited on its own; wait() still reaps it\n",
+        "replace": "    _r0 = getattr(getattr(getattr(wp, \"stdin\", None), \"buffer\", None), \"raw\", None)\n"
+                   "    try:\n        if _r0 is not None:\n            _r0.close()\n    except Exception:\n        pass\n"
+                   "    try:\n        wp.terminate()\n    except Exception:\n        pass\n",
         "matches": 1,
     },
 ]
