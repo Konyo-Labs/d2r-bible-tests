@@ -2088,7 +2088,13 @@ class TestExitSafeguard(unittest.TestCase):
             self.assertFalse(ca._WINDOW_LIVE)
             self.assertIsNone(ca._MAIN_WIN)
             self.assertTrue(ca._FORCE_EXIT_ARMED)
-            time.sleep(0.35)
+            # v3860 - WAIT FOR THE STOP, DO NOT GUESS HOW LONG IT TAKES. A fixed 0.35 s sleep failed once in the v3860
+            # push's full set ("('stop', False) not found in []") and passed 3/3 alone - the async stop simply had not
+            # been scheduled yet on a loaded Mac. Poll until it lands, well inside the 5 s hard_delay; it still fails if
+            # the stop never comes. [[taskpolicy-b-false-reds]]
+            _t_end = time.time() + 3.0
+            while ("stop", False) not in self._calls and time.time() < _t_end:
+                time.sleep(0.05)
             self.assertIn(("stop", False), self._calls)
         finally:
             ca._FORCE_EXIT_CANCEL = True     # v1463 — call off the armed deadline for real
