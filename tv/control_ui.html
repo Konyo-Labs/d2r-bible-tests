@@ -8020,7 +8020,11 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
    the two NAMES on the floor token, sized to fit under the chip; the role (primary / shadow) is in each lamp's title,
    which says the rest too. [[visual-regression-detector]] */
 .head-right { flex-direction: column; align-items: flex-end; gap: 4px; }
-.reader-lamps { display: flex; gap: 3px; }
+/* v3859 (gate repair) - THE THIRD LAMP MAY COST THE STRIP NOTHING EITHER. v3858 item 19 put D2JSP beside CLAUDE and
+   GROK in one row; the corner grew by a lamp and the tab strip wrapped to 2 rows at 1440 and 1000 (J10 red, pre-push
+   02:14). The lamps now sit two to a row, so the corner is as wide as the two-lamp corner it was measured at and the
+   D2JSP lamp stays on screen beneath them. */
+.reader-lamps { display: grid; grid-template-columns: repeat(2, auto); justify-content: end; justify-items: end; gap: 3px; }
 .reader-lamps .rl { display: inline-flex; align-items: center; gap: 3px; padding: 0 5px 0 4px; border-radius: 999px;
   border: 1px solid rgba(140,122,104,.35); font: var(--fw-semibold, 600) var(--fs-2xs)/1.3 var(--mono, monospace);
   letter-spacing: 0; color: var(--text-dim); background: rgba(0,0,0,.25); white-space: nowrap; cursor: help; }
