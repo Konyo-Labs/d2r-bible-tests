@@ -489,6 +489,12 @@ class ShadowDrawsTheirConsole(unittest.TestCase):
             time.sleep(1)
             cls.ssv["shelf"] = _ev(cdp, SSV_READ)
             _ev(cdp, "window._shadowSessionsClose(); 1")
+            # v3859 (refused main push 12:40 IDT): his own board's 60 s profile beat posted /api/roster-book from under the
+            # open shadow. Fire that beat now, deterministically: it must decline and send nothing.
+            cls.ssv["ownBeat"] = _ev(cdp, "(function(){ var w = document.getElementById('tvd-eng').contentWindow;"
+                                          " return [typeof w._tvdSnapCovered === 'function' && w._tvdSnapCovered(),"
+                                          " w._tvdSnapPost()]; })()")
+            time.sleep(1)
         except Exception as e:
             cls.ssv = {"error": repr(e)[:800]}
         cls.ssv_hits = list(cls.hits[n1:])
@@ -663,6 +669,7 @@ class ShadowDrawsTheirConsole(unittest.TestCase):
         self.assertEqual([(h[0], h[1]) for h in frames], [("GET", "/api/roster-cache?frames=" + OWNER)] * 2,
                          "each door should ask once, with a GET: %r" % frames)
         self.assertEqual([h for h in self.ssv_hits if h[0] != "GET" and "roster" in h[1]], [])
+        self.assertEqual(self.ssv["ownBeat"], [True, False], "his own board's profile beat posted from under the open shadow")
 
 
 if __name__ == "__main__":

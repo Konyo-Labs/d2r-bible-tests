@@ -3,6 +3,7 @@
     "ver": "v3859",
     "date": "2026-11-03",
     "items": [
+      "v3859 fix: while a shadow is open his own board's 60 s profile beat waits - nothing POSTs /api/roster-book from under it",
       "v3859 Dean: the recorder (capture_win.ps1) start shares the WinError 5 fallback; its failure says why in plain words",
       "v3859 Dean: WinError 5 on scanner start - a refused job breakaway retries inside the job; plain reason, no bare WinError",
       "v3859 gate repair (not counted): reader lamps sit two to a row so the header tabs no longer wrap at 1440/1000",

@@ -89393,9 +89393,16 @@ window.tvStashAutoIntake = async function(tab, opts){
     });
     return Object.keys(stores).length ? stores : null;
   };
+  window._tvdSnapCovered = function () {
+    try { var tb = window.parent && window.parent !== window && window.parent.document.body;
+          return !!(tb && tb.classList.contains('shadow-snap')); } catch (e) { return false; }
+  };
   var gone = false;   // the website has no /api/roster-book: one 404 and this board stops asking
   window._tvdSnapPost = function () {
     if (window._tvdShadow || gone) return false;
+    /* v3859 - while a shadow covers this board its 60 s beat waits: the viewer is reading someone else, and nothing posts
+       from under their board (test_shadow_mode_draws_their_console). The next beat after it closes posts as before. */
+    if (window._tvdSnapCovered()) return false;
     try { if (location.protocol !== 'http:' && location.protocol !== 'https:') return false; } catch (e) { return false; }
     var stores = null;
     try { stores = window._tvdSnapCollect(); } catch (e) { stores = null; }
