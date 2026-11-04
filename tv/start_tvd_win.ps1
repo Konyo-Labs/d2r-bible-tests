@@ -533,6 +533,14 @@ if ($py.Cmd -eq 'py') {
   $argLine = '"' + $control + '" --open'
 }
 if ($Background) { $argLine += ' --background' }   # REG-1660 - hidden from its first second
+# v3860 - THE CONSOLE ITSELF RUNS IN UTF-8 MODE. control_app.py sets PYTHONUTF8 in os.environ at import (v1463), and
+# that reaches every CHILD - but a running interpreter cannot change its own mode, so the console process stayed in
+# the ANSI codepage (cp1255 here, cp1252 on Dean's PC): its own subprocess text reads decoded node's UTF-8 in cp1255
+# (the reader thread dies -> stdout None, or a middle dot comes back as two letters), and its own open() calls without encoding= did too.
+# MEASURED 2026-11-04 on the new Konyo ALT PC: 94 law cases FAILED(3F/20E) in the ANSI codepage, OK(99) with only
+# PYTHONUTF8=1 added. The mode is chosen at interpreter START, so it is set here, where the console is started.
+$env:PYTHONUTF8 = '1'
+$env:PYTHONIOENCODING = 'utf-8'
 
 # v1460/v1463 - never spawn while OUR timed-out pull job may still be rewriting the tree.
 # v1463: only wait when that actually happened. Wait-TvdGitQuiet matches git.exe machine-wide

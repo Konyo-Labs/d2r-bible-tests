@@ -1050,6 +1050,12 @@ def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None
     # looked the same. Unbuffered, every verdict is a line the moment it is judged, and the log's age is a heartbeat.
     env = dict(os.environ, HEART2_PROVE_WORKERS=str(int(workers)), PYTHONIOENCODING="utf-8",
                HEART2_DEADLINE_SCALE=str(PROVER_DEADLINE_SCALE), PYTHONUNBUFFERED="1")
+    # v3860 - UTF-8 MODE ON WINDOWS, SAID HERE AND NOT INHERITED. The console's lane got PYTHONUTF8=1 only because
+    # control_app.py puts it in os.environ at import; any other caller of spawn() (a hand runner, a script) did not,
+    # and its census filed every law that pipes UTF-8 through a child as red in the ANSI codepage. MEASURED
+    # 2026-11-04: the new ALT's hand-run census had at least 9 such laws UNPROVABLE, each OK under PYTHONUTF8=1 alone.
+    if IS_WIN:
+        env["PYTHONUTF8"] = "1"
     kw = {"cwd": HERE, "env": env, "stdin": subprocess.DEVNULL}
     if IS_WIN:
         kw["creationflags"] = _BELOW_NORMAL | _CREATE_NO_WINDOW
