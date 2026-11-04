@@ -135,6 +135,7 @@ out.evBad = d2jspEvidenceHtml(d2jspSimilarPrice({posts: [{fg: 5, w: 1, roll: [],
 out.evBare = d2jspEvidenceHtml(null, {reason: 'read', item: 'Enigma', posts: [{fg: 2000, w: 1, day: '2026-11-02', link: 'https://forums.d2jsp.org/topic.php?t=9', roll: []}], aside: [{why: 'no fg price on the line', day: '2026-11-01', link: 'https://forums.d2jsp.org/topic.php?t=8'}]});
 out.evNone = d2jspEvidenceHtml(null, {reason: 'no prices', item: 'Enigma', posts: [], aside: [{why: 'no fg price on the line', day: '2026-11-01', link: 'https://forums.d2jsp.org/topic.php?t=8'}]});
 out.search = [d2jspParseSearch('anni 20/20/10'), d2jspParseSearch('40/15 shako'), d2jspParseSearch('jmod'), d2jspParseSearch('torch sorc 18/18 eth 2os')];
+out.searchBare = [d2jspParseSearch('shako 141'), d2jspParseSearch('arach 3os'), d2jspParseSearch('griffon 12 15')];
 out.searchLine = d2jspSearchLine({reason: 'read', fg: 18, low: 12, high: 20, n: 3, board: 268}, out.sim, out.search[0]);
 process.stdout.write(JSON.stringify(out));
 """
@@ -184,6 +185,14 @@ process.stdout.write(JSON.stringify(out));
         self.assertEqual((c["item"], c["roll"]), ("jmod", None))
         self.assertEqual((d["item"], d["roll"]), ("torch sorc", [18, 18]))
 
+    def test_one_bare_number_beside_the_item_is_the_roll(self):
+        # v3861 (#230 6644125606): "shako 141" lost its 141 - every bare number was deleted, so the roll never reached the
+        # quote. One bare number is the roll; a socket count is not a roll; two bare numbers stay ambiguous (none).
+        a, b, c = self.out["searchBare"]
+        self.assertEqual((a["item"], a["roll"]), ("shako", [141]))
+        self.assertEqual((b["item"], b["roll"]), ("arach", None))
+        self.assertEqual((c["item"], c["roll"]), ("griffon", None))
+
     def test_the_desk_wears_the_bar_and_a_drawer_under_every_card_quote(self):
         p = self.page
         form = p[p.index('id="d2jsp-price-form"'):p.index('id="d2jsp-find"')]
@@ -197,6 +206,11 @@ process.stdout.write(JSON.stringify(out));
 
 
 RED_PROOF = [
+    {"why": "v3861 - a single bare number is deleted again: 'shako 141' loses the defence he holds",
+     "file": "bible.html",
+     "find": "  return { item: item, roll: tuples[0] || (bare.length === 1 ? [bare[0]] : null), text: t };",
+     "replace": "  return { item: item, roll: tuples[0] || null, text: t };",
+     "matches": 1},
     {"why": "a line with no fg is drawn as a post again",
      "file": "bible.html",
      "find": "  }).join('');\n  var shown = rows.length;\n",

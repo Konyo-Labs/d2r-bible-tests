@@ -763,6 +763,7 @@ var none = d2jspPriceLine({reason:'no prices', fg:null, n:0, low:null, high:null
 var blank = d2jspPriceLine(null);
 var login = d2jspPriceLine({reason:'need-login', fg:null, n:0, low:null, high:null, readAt:'2026-10-12T20:05:00.000Z'});
 var unans = d2jspPriceLine({reason:'unanswered', fg:null, n:0, low:null, high:null, readAt:null});
+var paused = d2jspPriceLine({reason:'paused', say:'paused while checks run', fg:null, n:0, low:null, high:null, readAt:''});
 var badAt = d2jspPriceLine({reason:'no prices', fg:null, n:0, low:null, high:null, readAt:'not a time'});
 process.stdout.write(JSON.stringify({
   list: D2JSP_QUEST,
@@ -775,7 +776,7 @@ process.stdout.write(JSON.stringify({
   baal: d2jspIsQuest("Baal's Eye"),
   token: d2jspIsQuest('Token of Absolution'),
   keys: d2jspIsQuest('Keys'),
-  line: line, one: one, same: same, none: none, blank: blank, login: login, unans: unans, badAt: badAt
+  line: line, one: one, same: same, none: none, blank: blank, login: login, unans: unans, badAt: badAt, paused: paused
 }));
 """
         out = json.loads(_node(self.desk, body))
@@ -806,6 +807,9 @@ process.stdout.write(JSON.stringify({
             self.assertIsNone(_re.search(r"\d{4}-\d\d-\d\dT\d\d:\d\d", out[k]), "a raw ISO stamp in %s: %r" % (k, out[k]))
             self.assertIsNotNone(_re.search(r"\b\d\d:\d\d\b", out[k]), "%s lost its time: %r" % (k, out[k]))
         self.assertEqual(out["unans"], "Public price unknown. No price reader answered this page.")
+        # v3861 (#230 6644125606): his Shako click during a push read "No price reader answered" - the console HAD answered
+        self.assertIn("running its checks", out["paused"])
+        self.assertNotIn("No price reader answered", out["paused"])
         self.assertEqual(out["badAt"], "Public price unknown.", "an unreadable stamp was printed: %r" % out["badAt"])
 
     def test_a_logged_in_search_prices_only_the_lines_that_name_the_item(self):
@@ -2007,6 +2011,11 @@ process.stdout.write(JSON.stringify({
         self.assertNotIn("SECRETCOOKIE", json.dumps(out))
 
 RED_PROOF = [
+    {"why": "v3861 - a paused console reads as a reader that never answered (his Shako click during a push)",
+     "file": "bible.html",
+     "find": "  if (q.reason === 'paused') return 'Price not read yet - this machine is running its checks (' + (q.say || 'paused while checks run') + '). It reads as soon as they finish.';\n",
+     "replace": "",
+     "matches": 1},
     {"why": "GrokBot bug 9 - the price line prints the raw UTC stamp again",
      "file": "bible.html",
      "find": "    var when = d2jspWhen(q.readAt) ? (', read ' + d2jspWhen(q.readAt)) : '';\n",

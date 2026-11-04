@@ -12692,6 +12692,9 @@ function d2jspPriceLine(q) {
   }
   /* v3857 item 19 (#230) - no d2jsp session is said as the step to take, not a silent unknown */
   if (q.reason === 'need-login') return 'Sign in to d2jsp first - the price read uses the Chrome login on this machine; ' + (q.opened ? 'the d2jsp login is open in Chrome on this machine' : 'click the D2JSP lamp on the console') + ', then read the price again.';
+  /* v3861 (#230 6644125606, his Shako click at 00:43) - the console pauses price reads while its checks run (his 10-31
+     ruling: reads never compete with a push); it now says so instead of reading as a reader that never answered. */
+  if (q.reason === 'paused') return 'Price not read yet - this machine is running its checks (' + (q.say || 'paused while checks run') + '). It reads as soon as they finish.';
   if (q.reason === 'unanswered') return 'Public price unknown. No price reader answered this page.';
   if (d2jspWhen(q.readAt)) return 'Public price unknown. The reading at ' + d2jspWhen(q.readAt) + ' returned no fg number.';
   return 'Public price unknown.';
@@ -13067,10 +13070,14 @@ function d2jspEvidenceHtml(sim, q) {
 function d2jspParseSearch(text) {
   var t = String(text || '').replace(/\s+/g, ' ').trim(), tuples = [], m, re = /(\d+(?:\/\d+)+)/g;
   while ((m = re.exec(t))) tuples.push(m[1].split('/').map(Number));
-  var item = t.replace(/\d+(?:\/\d+)+/g, ' ').replace(/@\s*\d+|\d+\s*@/g, ' ').replace(/\b\d+\s*os\b/gi, ' ')
+  var rest = t.replace(/\d+(?:\/\d+)+/g, ' ').replace(/@\s*\d+|\d+\s*@/g, ' ').replace(/\b\d+\s*os\b/gi, ' ');
+  /* v3861 (#230 6644125606) - "shako 141": ONE bare number beside the item is the roll he holds (a Shako's defence).
+     It was deleted with every other bare number, so the roll never reached the quote. Two or more stay ambiguous: none. */
+  var bare = (rest.match(/\b\d+(?:\.\d+)?\b/g) || []).map(Number);
+  var item = rest
     .replace(/\b(?:eth|perf(?:ect)?|up'?d|upped|rand|unid|wts|wtb|ft|fg|price|pc)\b/gi, ' ').replace(/\b\d+(?:\.\d+)?\b/g, ' ')
     .replace(/\s+/g, ' ').trim();
-  return { item: item, roll: tuples[0] || null, text: t };
+  return { item: item, roll: tuples[0] || (bare.length === 1 ? [bare[0]] : null), text: t };
 }
 function d2jspSearchLine(q, sim, parsed) {
   var line = d2jspPriceLine(q);
@@ -13657,7 +13664,7 @@ function d2jspBatchHtml(view) {
       }
       var path = paths[i++];
       fetch(path + encodeURIComponent(name)).then(function(r){ return r.json(); }).then(function(j){
-        if (j && (j.reason === 'no prices' || j.reason === 'read' || j.reason === 'need-login')) { finish(j); return; }
+        if (j && (j.reason === 'no prices' || j.reason === 'read' || j.reason === 'need-login' || j.reason === 'paused')) { finish(j); return; }
         step();
       }).catch(function(){ step(); });
     }
@@ -14095,7 +14102,9 @@ function d2jspBatchHtml(view) {
     function step(){
       if (i >= paths.length) { show({ fg: null, n: 0, readAt: null, reason: 'unanswered' }); return; }
       fetch(paths[i++] + encodeURIComponent(parsed.item)).then(function(r){ return r.json(); }).then(function(j){
-        if (j && (j.reason === 'no prices' || j.reason === 'read' || j.reason === 'need-login')) { show(j); return; }
+        /* v3861 (#230 6644125606) - 'paused' is an ANSWER: the console said why it did not read. It used to fall through to
+           the site path (404 on the console) and print "No price reader answered" while the console had answered. */
+        if (j && (j.reason === 'no prices' || j.reason === 'read' || j.reason === 'need-login' || j.reason === 'paused')) { show(j); return; }
         step();
       }).catch(function(){ step(); });
     }
