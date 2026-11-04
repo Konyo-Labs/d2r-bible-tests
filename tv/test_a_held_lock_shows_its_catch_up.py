@@ -87,7 +87,7 @@ class AHeldLockShowsItsCatchUp(unittest.TestCase):
         self.assertIn("how many are owed UNKNOWN", o["capUnknown"]["paint"], "an unread owed count was given a number")
         self.assertNotIn("1214", o["capUnknown"]["paint"])
         self.assertEqual(o["capBlind"]["paint"], "held · 2 instruments blind", "a blind hold painted a catch-up: %r" % o["capBlind"])
-        self.assertEqual(o["capHeart"]["paint"], "held: no census here", "a hold with no census painted a number")
+        self.assertEqual(o["capHeart"]["paint"], "held: not proven on this PC yet", "a hold with no census painted a number")
 
     def test_the_fan_and_the_list_paint_through_the_rules(self):
         s = _src()

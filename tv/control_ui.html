@@ -14593,7 +14593,7 @@ window._lockMark = function(isOpen, px, label){
   function _hrtHeldCaption(L, n_, d){
     var by = L && L.heldBy;
     var held = { stale: 'the prover is behind', blind: 'an instrument is blind',
-                 heart: 'no census here', upstream: 'blocked upstream' }[by] || 'held';
+                 heart: 'not proven on this PC yet', upstream: 'blocked upstream' }[by] || 'held';
     var ins = (d && d.instruments) || {};
     var paint = 'held: ' + held;
     if (by === 'stale') {
@@ -14861,7 +14861,7 @@ window._lockMark = function(isOpen, px, label){
          defect in a new place. It names what holds the lock, in a word the label can afford;
          the full reason is in the title. [[label-outlived-referent]] */
       var _HELD = { stale: 'the prover is behind', blind: 'an instrument is blind',
-                    heart: 'no census here', upstream: 'blocked upstream' };
+                    heart: 'not proven on this PC yet', upstream: 'blocked upstream' };
       var _heldHover = null;   /* #180 - per lock: a held lock's hover must never ride onto the next lock in the fan */
       if (L.permitted === false && _HELD[L.heldBy]
           && (lst === 'OPEN' || lst === 'HARDENED') && n_ && n_ > 0) {
@@ -15077,14 +15077,14 @@ window._lockMark = function(isOpen, px, label){
              + '" style="' + _halo + '" font-weight="600">' + _hrtEsc(L.lock || L.surface) + '</text>'
              + '<text class="hrt-fan hrt-fan-arith" x="' + gx.toFixed(1) + '" y="' + (gy + _yst + 32).toFixed(1)
              + '" text-anchor="middle" font-size="9.5" fill="' + lc
-             + '" style="' + _halo + '" opacity=".75">' + _hrtEsc(arith) + '</text>'
+             + '" style="' + _halo + '" fill-opacity=".75">' + _hrtEsc(arith) + '</text>'
              + ((arith2 && !_fanOver) ? '<text class="hrt-fan hrt-fan-arith" x="' + gx.toFixed(1) + '" y="' + (gy + _yst + 44).toFixed(1)
                  + '" text-anchor="middle" font-size="9.5" fill="' + lc
                  // ⚠ .62 WAS TOO FAINT FOR A DIGIT. The cold eye read "1.00 of 1.80" as
                  // "1.00 of 1.00" — and 1.00 of 1.00 says the confluence bar is MET, which is the
                  // opposite of what this row exists to say. A number nobody can read is worse than
                  // no number, because it is read anyway. Same weight as the line above it.
-                 + '" style="' + _halo + '" opacity=".75">' + _hrtEsc(arith2) + '</text>' : '');
+                 + '" style="' + _halo + '" fill-opacity=".75">' + _hrtEsc(arith2) + '</text>' : '');
     }
 
     /* ⚠ IT BEATS WHETHER OR NOT ANYTHING IS PROVEN, and that is deliberate. The beat says THE
@@ -15989,7 +15989,16 @@ window._lockMark = function(isOpen, px, label){
   function _hrtFanFit(root) {
     var svg = root && root.querySelector('svg.hrt');
     if (!svg) return { ok: false, why: 'no fan' };
-    var sr = svg.getBoundingClientRect(), scale = sr.width / 960;
+    var sr = svg.getBoundingClientRect();
+    /* ⚠⚠ v3861 — THE BROWSER'S OWN MAP, NOT THE BOX'S. `sr.width / 960` was exact while the svg was width-sized (v2745);
+       v3178 capped its height (max-height: calc(86vh - 150px)), so on a wide window preserveAspectRatio meet scales the
+       fan by HEIGHT and letterboxes it. MEASURED on the Konyo · ALT (viewBox 960x780): at 1440x1000 the box gave 1.359
+       with origin x 60, the CTM 0.910 with origin x 276 — so the solver moved a stack, scored `collisions: 0`, and the
+       pixels still overlapped 10x8 px. getScreenCTM() is the map the browser actually drew with, letterbox included.
+       A stub with no CTM (a node law's fake svg) keeps the box map, and the result says which one it used. */
+    var _M = (typeof svg.getScreenCTM === 'function') ? svg.getScreenCTM() : null;
+    var _ctm = !!(_M && _M.a > 0.05);
+    var scale = _ctm ? _M.a : sr.width / 960, ox0 = _ctm ? _M.e : sr.left, oy0 = _ctm ? _M.f : sr.top;
     if (!(scale > 0.05)) return { ok: false, why: 'the fan has no layout yet' };
 
     var MIN = 3;        // the ratchet's floor, CSS px — the same constant, for the honest verdict
@@ -16088,8 +16097,8 @@ window._lockMark = function(isOpen, px, label){
     for (var i = 0; i < els.length; i++) {
       var e = els[i], rs = e.getClientRects(), boxes = [];
       for (var k = 0; k < rs.length; k++) {
-        boxes.push({ l: (rs[k].left - sr.left) / scale, r: (rs[k].right - sr.left) / scale,
-                     t: (rs[k].top - sr.top) / scale, b: (rs[k].bottom - sr.top) / scale });
+        boxes.push({ l: (rs[k].left - ox0) / scale, r: (rs[k].right - ox0) / scale,
+                     t: (rs[k].top - oy0) / scale, b: (rs[k].bottom - oy0) / scale });
       }
       /* ⚠⚠ v2831 (#54) — CLASSIFY BEFORE SKIPPING, SO AN UNPAINTED FAN LABEL CAN BE NAMED.
          This `continue` used to fire before `isFan` was computed, so an element with no client
@@ -16165,7 +16174,7 @@ window._lockMark = function(isOpen, px, label){
     }
     if (!stacks.length || painted < 2) {
       return { ok: false, why: 'nothing of the fan is painted here', painted: painted,
-               authored: authored, unpainted: unpainted, scale: +scale.toFixed(4) };
+               authored: authored, unpainted: unpainted, scale: +scale.toFixed(4), scaleFrom: _ctm ? 'ctm' : 'box', boxScale: +(sr.width / 960).toFixed(4) };
     }
     stacks.sort(function (p, q) { return p.x - q.x; });
 
@@ -16197,7 +16206,10 @@ window._lockMark = function(isOpen, px, label){
         disp += Math.abs(stacks[i].dx) + 1.6 * Math.abs(stacks[i].dy);
       }
       if (detail) return { collisions: col, adjacent: adj, displacement: +disp.toFixed(1) };
-      return col * 1000 + adj * 10 + disp * 0.5;
+      /* v3861 — AN ADJACENCY MUST BE WORTH MORE THAN THE MOVE THAT CLEARS IT. Clearing one takes up to ADJ (22) units
+         of displacement, which cost up to 22 x 0.5 x 1.6 = 17.6, so at 10 the move never scored a strict gain and the
+         solve stopped at `adjacent: 1` ('held: no census hereby design · no refusal path' at 901, measured). */
+      return col * 1000 + adj * 25 + disp * 0.5;
     }
     function collisions() { return objective(true).collisions; }
     function put(s, dx, dy) {
@@ -16335,7 +16347,7 @@ window._lockMark = function(isOpen, px, label){
                why: ('the placement did not measure better, so none of it landed'
                      + (dropped.length ? ' — and withdrawing ' + dropped.length
                         + ' stack(s) one at a time did not rescue any of it either' : '')),
-               scale: +scale.toFixed(4) };
+               scale: +scale.toFixed(4), scaleFrom: _ctm ? 'ctm' : 'box', boxScale: +(sr.width / 960).toFixed(4) };
     }
     if (dropped.length) {
       /* a PARTIAL solve: some stacks were withdrawn, the rest measured better and stayed. */
@@ -16348,7 +16360,7 @@ window._lockMark = function(isOpen, px, label){
                why: ('the whole placement measured worse, so ' + dropped.length
                      + ' stack(s) were withdrawn one at a time; the remaining ' + kept.length
                      + ' measured better than not moving and landed'),
-               scale: +scale.toFixed(4), moves: landed, attempted: applied };
+               scale: +scale.toFixed(4), scaleFrom: _ctm ? 'ctm' : 'box', boxScale: +(sr.width / 960).toFixed(4), moves: landed, attempted: applied };
     }
     /* ⚠ v2957 — THE THIRD ok:true PATH CARRIES THE COUNTS TOO. The reverted path (all dropped)
        and the partial path (some kept) both reported keptStacks/droppedStacks; this one — the
@@ -16360,7 +16372,7 @@ window._lockMark = function(isOpen, px, label){
              painted: painted, authored: authored, unpainted: unpainted,
              keptStacks: applied.length, droppedStacks: 0,
              solve: { from: startState, to: endState, passes: passes },
-             scale: +scale.toFixed(4), moves: applied, attempted: applied };
+             scale: +scale.toFixed(4), scaleFrom: _ctm ? 'ctm' : 'box', boxScale: +(sr.width / 960).toFixed(4), moves: applied, attempted: applied };
   }
 
   /* ⚠⚠ v2729 — THE MEASURED DODGE, AND IT IS THE FIX [[heartov2]] HAS NEEDED FOR THREE ATTEMPTS.
