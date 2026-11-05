@@ -3064,5 +3064,71 @@
     "gotcha": "A conflict between signals is kept side by side and the attribution is UNKNOWN, never a guess; the game password is cut before the password word and never leaves this module.",
     "purpose": "One extractor of a read's identity signals (game name and farming series, the login character, the character panel, the avatar class) that sessions, the River, the Vault evidence and the Fleet consume.",
     "territory": "ledger-profile"
+  },
+  "ci_verdict.py": {
+    "entryPoints": [
+      "decide",
+      "fetch",
+      "mac_only",
+      "import_proofs",
+      "main"
+    ],
+    "gotcha": "UNKNOWN (gh unreachable) is never green, and a dirty tree is never asked about - the pre-push grades the working tree. The shard caches are HIDDEN files (.heart2_cache.json): `*.json` never matches them (REG-3154).",
+    "purpose": "Does GitHub vouch for this exact commit? GREEN only when every REQUIRED workflow's newest run on the sha succeeded; the pre-push's ci-trust asks it, and --mac-only names the changed laws only this Mac can prove.",
+    "territory": "push"
+  },
+  "proof_release.py": {
+    "entryPoints": [
+      "import_best",
+      "import_bundle",
+      "safe_extract",
+      "download",
+      "owed",
+      "main"
+    ],
+    "gotcha": "The unpack takes ONLY proof-shard-<k>/.heart2_cache.json regular files and refuses the whole bundle on anything else; TLS is never unverified (a forged bundle would mark laws proven). absent/unknown are asked again, never 'imported'.",
+    "purpose": "Each console imports GitHub's proofs for its own commit from the public proof-bank release (proofs-<sha>[-win32].tgz) into heart2 --import-shards, so no PC re-proves what GitHub proved.",
+    "territory": "gates-proofs"
+  },
+  "ship_when_green.py": {
+    "entryPoints": [
+      "ship",
+      "red_runs",
+      "missing",
+      "main"
+    ],
+    "gotcha": "Refuses a dirty tree and a non-fast-forward; stops on the first red run and names it; never --no-verify, never a forced main.",
+    "purpose": "The ship: the exact commit to ci/claude-vNNNN + ci/proof-keys-vNNNN, any path-filtered REQUIRED workflow dispatched, GitHub's verdict polled, main pushed through the hook only on GREEN.",
+    "territory": "push"
+  },
+  "repair_book.py": {
+    "entryPoints": [
+      "apply",
+      "scrub"
+    ],
+    "gotcha": "It never runs anything for a miss, a row-tied entry runs only on MISSING, and a failed repair waits an hour - no install loops.",
+    "purpose": "The repair book: every environment fault already fixed by hand (Pillow, numpy, node, websocket-client, a shallow clone) is fixed again automatically by the console's EXISTING door, on a cadence; an unknown eagle MISSING row is a listed miss.",
+    "territory": "heart-organs"
+  },
+  "repair_diagnose.py": {
+    "entryPoints": [
+      "run_due",
+      "diagnose",
+      "due"
+    ],
+    "gotcha": "Read-only (--allowedTools Read), at most 2 a day, only new misses, never under D2R_NO_CLAUDE or while he plays or a push grades - a re-read loop once maxed his weekly plan.",
+    "purpose": "The PC's own Claude diagnoses a repair-book miss (CAUSE / FIX / VERIFY) and proposes; the proposal rides the presence row to the overwatch line.",
+    "territory": "heart-organs"
+  },
+  "fleet_errors.py": {
+    "entryPoints": [
+      "open_faults",
+      "new_since",
+      "summary",
+      "main"
+    ],
+    "gotcha": "A console that cannot be asked prints nothing (never a false all-clear); a fault that clears and returns is new again, and a proposal arriving for a shown fault is news.",
+    "purpose": "The overwatch line: each PC's unknown faults and failed repairs from the local /api/fleet, printed once per (PC, fault) for a UserPromptSubmit hook.",
+    "territory": "heart-organs"
   }
 }
