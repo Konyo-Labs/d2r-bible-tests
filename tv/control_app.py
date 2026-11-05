@@ -1728,6 +1728,32 @@ def fleet_lag(ver, published):
 
 
 
+def fleet_lag_vs_pull(behind, ver, pull):
+    """v3864 (GrokBot Batch B 1-2, #230 6655906382) - ONE ROW, ONE ANSWER ABOUT HOW FAR BEHIND IT IS. -> dict to merge into
+    the row's lag, or None when the two reports agree.
+
+    The lag is counted here from the version the PC SAYS it runs; its pull report says where its CHECKOUT is. Dean's row said
+    ver v3860 and "level with what origin publishes" while the same row's pull said head v3859, 9 commits behind, with local
+    edits (M tv/control_app.py, M tv/tv_diablo.py) - the card showed him current. GrokBot's row said pull level (its 8-day-old
+    report) and lag 45 behind. Now: a checkout behind origin is never "level", whatever the version stamp says (behind None,
+    the reason names both reports); and a level pull report beside a counted lag is said to be the older of the two."""
+    if not isinstance(pull, dict):
+        return None
+    pb = pull.get("behind")
+    if isinstance(pb, bool) or not isinstance(pb, int):
+        return None
+    edits = bool(pull.get("porcelain")) or "local tracked edits" in str(pull.get("why") or "")
+    head = str(pull.get("head") or "")[:8]
+    if behind == 0 and pb > 0:
+        return {"behind": None, "checkoutBehind": pb, "edits": edits,
+                "why": "says it runs %s, but its checkout%s is %d commit(s) behind origin%s - not level"
+                       % (ver or "?", (" at " + head) if head else "", pb, " with local edits" if edits else "")}
+    if isinstance(behind, int) and behind > 0 and pb == 0:
+        return {"why": "behind what origin publishes - its own pull report still says level, an older report than this count",
+                "pullStale": True}
+    return None
+
+
 def fleet_drop_non_machines(fl):
     """Take the diagnostic beacons out of THE FLEET. -> a NEW dict, with what was dropped STATED.
 
@@ -1849,6 +1875,9 @@ def fleet_annotate_lag(fl):
             if m.get("machine") != me:
                 behind, why = fleet_lag(m.get("ver"), pub)
                 m["lag"] = {"behind": behind, "why": why, "of": pub}
+                _split = fleet_lag_vs_pull(behind, m.get("ver"), m.get("pull"))
+                if _split:
+                    m["lag"].update(_split)
             rows.append(m)
         if bucket in out:
             out[bucket] = rows
