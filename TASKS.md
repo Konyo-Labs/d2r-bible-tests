@@ -28,12 +28,9 @@ beside cloud (REG-3153), ci-trust pre-push (tv/ci_verdict.py). Each item: law + 
        GREEN on the exact sha -> main). Law: test_every_pc_imports_githubs_proofs + test_a_push_trusts_github_....
 3. [ ] WINDOWS PROOFS: a Windows matrix leg of proof-keys (or a windows shard set) so new-code-x-Windows is proved every
        version; Windows PCs import the Windows set. (CRLF/cp1252/POSIX/chrome --version were all new-code-x-Windows.)
-4. [ ] ENV FINGERPRINT (designed, NOT built - held out of v3862 on purpose): a PC whose environment changed (python X.Y,
-       OS build, node major, git autocrlf) should owe EVERY gate once; today nothing re-proves on an env change (the census
-       owes only gates whose own test file changed - gateShas). Traps found while designing: (a) only the console's own
-       slice writes may judge/adopt the fingerprint (a push or an SSH job may run another python -> a re-prove storm);
-       (b) a census already current runs no slice, so its FIRST fingerprint is never recorded - needs a second writer of
-       .heart2.json or an adoption step; (c) any UNKNOWN part (node --version timing out) must never count as a change.
+4. [~] ENV FINGERPRINT (built, REG-3162): .heart2_env.json beside the census; only the console's self-prove lane observes
+       (traps a/c solved that way); the first reading is adopted (trap b: no second writer of the census - its own
+       file); a change owes every declaring gate once, proved without --reuse, census unstamped until done.
 5. [=] ENV SELF-CHECK - ALREADY THE MECHANISM once imports land: a gate whose proofs another tree banked owes one clean
        run HERE (REG-2599), and a proof that needs what this PC lacks is ELSEWHERE, never imported (REG-3044/3045).
 6. [=] SAFETY NET - ALREADY THE RULE: a STALE census refuses only destructive acts (v3042) and only through each lock's own

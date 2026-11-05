@@ -686,10 +686,35 @@ def census_state():
         out.update(state="stale", why="%d BLIND verdict(s) were filed under an older blind rule and are judged again"
                                       % len(_ro))
         out.update(_owed_of(_h2, st))
+    elif _env_er(_h2, st):
+        # v3862 (item 4) - THIS PC'S ENVIRONMENT CHANGED: every law is proved once again under it, without the cache
+        _er = _env_er(_h2, st)
+        out.update(state="stale", why="this PC's environment changed (%s) - every law is proved once again under it, "
+                                      "without the cache: %d owed" % (_h2.env_change_words(_er), len(_er["owed"])))
+        out.update(_owed_of(_h2, st))
     else:
         out.update(state="current", why="proved for the gates on disk: %s of %s, %d blind"
                                         % (st.get("proved"), st.get("declared"), len(out["blind"])))
+    out["envReprove"] = bool(_env_er(_h2, st))
     return out
+
+
+def _env_observe():
+    """v3862 (item 4) - heart2.env_observe for THIS process; never raises, never blocks the tick."""
+    try:
+        import heart2 as _h2
+        return _h2.env_observe()
+    except Exception:
+        return None, "the environment could not be observed"
+
+
+def _env_er(h2, st):
+    """v3862 (item 4) - heart2's open environment re-prove, or None (none open, or an older heart2 without one)."""
+    try:
+        er = h2.env_reprove_state(st)
+    except Exception:
+        return None
+    return er if (er and er.get("owed")) else None
 
 
 def _rule_owed(h2, st):
@@ -1150,7 +1175,7 @@ def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_p
     return True, "a push is grading on this PC (pid %s)" % ", ".join(sorted(hits, key=int)[:4])
 
 
-def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None):
+def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None, reuse=True):
     """Start `heart2.py --prove` hidden and below everything he does. -> pid
     #99 — `names`: prove just these gates as ONE SLICE (`--prove NAMES --slice`); None proves the whole census.
     REG-1670 — `workers` None asks lanes_for() with the memory free right now."""
@@ -1184,7 +1209,9 @@ def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None
     # #186 (his ruling 2026-10-28) - --reuse: this census serves a PROVEN banked over byte-identical inputs and banks
     # what it proves; a plain --prove (run_gates, CI, a hand run) never opens the cache
     cmd = ([py] + list(PROVER_MARK) + [os.path.join(HERE, "heart2.py"), "--prove"]
-           + ((list(names) + ["--slice"]) if names else []) + ["--reuse"])
+           + ((list(names) + ["--slice"]) if names else [])
+           # v3862 (item 4) - an environment re-prove never serves a proof earned under the old environment
+           + (["--reuse"] if reuse else []))
     if not IS_WIN and os.path.exists("/usr/bin/nice"):
         cmd = ["/usr/bin/nice", "-n", "15"] + cmd
     log = open(log_path, "ab")
@@ -1409,7 +1436,9 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
     if mem.get("unreadable"):
         return {"on": enabled(env), "worked": None, "lastTs": None, "owed": None, "key": "store-unreadable",
                 "say": "the self-prove lane's memory would not read (%s) - UNKNOWN" % mem["unreadable"]}
-    census = census_state() if census is None else census
+    if census is None:
+        _env_observe()                      # v3862 (item 4) - the console's own lane is the one judge of its environment
+        census = census_state()
     if not isinstance(census, dict):
         census = {"state": "unknown", "why": "the census reading was not a record"}
     pid, birth = mem.get("pid"), mem.get("pidBirth")
@@ -1568,6 +1597,8 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
                 mem["logFrom"] = 0                            # no log yet: this run's output starts at byte 0
             except OSError:
                 mem["logFrom"] = None                         # start unknown: the last-line rule decides alone
+            import functools as _ft
+            _spawn_real = _ft.partial(spawn, reuse=not census.get("envReprove"))   # v3862 (item 4)
             _owed_g = census.get("owedGates")
             _costs = _gate_costs() if isinstance(_owed_g, list) and _owed_g else None
             # REG-1674 - a slice whose prover went silent is proved AFTER every other owed gate (for these gates)
@@ -1580,16 +1611,16 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
             if _slice and _sm:
                 _slice = plan_slice(_plan, _costs, blind=census.get("blind"),
                                     budget_s=SMALL_SLICE_BUDGET_S, max_gates=SMALL_SLICE_MAX_GATES)
-                _sp_one = spawn_fn or spawn
+                _sp_one = spawn_fn or _spawn_real
                 spawn_fn = lambda _lp, names=None, _f=_sp_one: _f(_lp, names=names, workers=1)  # noqa: E731
             if _slice:
-                mem["pid"] = (spawn_fn or spawn)(log_path, names=_slice)
+                mem["pid"] = (spawn_fn or _spawn_real)(log_path, names=_slice)
                 mem["sliceGates"] = _slice
                 d = dict(d, why="%s - this slice: %d gate(s)%s" % (
                     census.get("owedWhy") or d["why"], len(_slice),
                     "" if _costs is not None else " (gate costs unread - sized by the default guess)"))
             else:
-                mem["pid"] = (spawn_fn or spawn)(log_path)
+                mem["pid"] = (spawn_fn or _spawn_real)(log_path)
             mem["pidBirth"] = proc_birth(mem["pid"])       # REG-1511 — who it is, not just its number
             if mem["pidBirth"] is _PROC_EXITED:
                 # Died before ps could name it. The marker is not a birth, and the store cannot

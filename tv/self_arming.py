@@ -1507,6 +1507,17 @@ def _heart_says_watched():
         return False, ("%d instrument(s) are BLIND (%s) — a surface may not arm itself while the "
                        "gates that would catch its failure cannot go red."
                        % (len(_blind), ", ".join(sorted(_blind)[:3])))
+    # v3862 (item 4) - AN OPEN ENVIRONMENT RE-PROVE IS A PROVER THAT HAS NOT CAUGHT UP: this PC's python, OS build, node
+    # or autocrlf moved, and its proofs were earned under the old one. STALE, so his v3042 rule applies (an act with no
+    # undo waits, an ordinary one refuses on merit); an older heart2 without the re-prove says nothing here.
+    try:
+        _er = _h2.env_reprove_state(_st, path=os.path.join(os.path.dirname(os.path.abspath(_p)), _h2.ENV_NAME))
+    except Exception:
+        _er = None
+    if _er and _er.get("owed"):
+        return False, ("the heart2 PROOF census is STALE (not the Heart panel's live census): this PC's environment "
+                       "changed (%s) and %d gate(s) are proved again under it."
+                       % (_h2.env_change_words(_er), len(_er["owed"])))
     # ⚠ COVERAGE IS REPORTED, NOT GATED. Same review: blind=[] with proved 12 of 47 means almost
     # nothing was exercised. True — and the honest response is to SAY the number, not to invent a
     # ratio bar. `partial` has been True on every run this file has seen, so gating on it locks
@@ -1617,12 +1628,24 @@ def _owed_and_blind():
             return None, None, "no proof census on this PC"
         with io.open(_census, "rb") as _fh:
             raw = _fh.read()
-        key = (hashlib.sha256(raw).hexdigest(), _h2.gates_fingerprint())
+        # v3862 (item 4) - the environment re-prove's record beside THIS census, and in the memo's key: an open re-prove
+        # owes guards while the census bytes have not moved yet
+        _envp = os.path.join(os.path.dirname(os.path.abspath(_census)), getattr(_h2, "ENV_NAME", ".heart2_env.json"))
+        try:
+            with io.open(_envp, "rb") as _fe:
+                _envb = hashlib.sha256(_fe.read()).hexdigest()
+        except OSError:
+            _envb = None
+        key = (hashlib.sha256(raw).hexdigest(), _h2.gates_fingerprint(), _envb)
         if _LOCK_MEMO["key"] == key:
             return _LOCK_MEMO["owed"], _LOCK_MEMO["blind"], _LOCK_MEMO["files"]
         st = json.loads(raw.decode("utf-8"))
         files = dict(_h2.gate_files())
-        owed = set(n for n, _k in (_h2.slice_owed(list(files.items()), st).get("owed") or []))
+        try:
+            _so = _h2.slice_owed(list(files.items()), st, env_path=_envp)
+        except TypeError:                                    # an older heart2 without the re-prove
+            _so = _h2.slice_owed(list(files.items()), st)
+        owed = set(n for n, _k in (_so.get("owed") or []))
         blind = set(st.get("blind") or [])
         _LOCK_MEMO.update(key=key, owed=owed, blind=blind, files=files, src={}, guard={})
         return owed, blind, files

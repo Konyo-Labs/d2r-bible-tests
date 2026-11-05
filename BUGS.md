@@ -186,6 +186,19 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3162 - NOTHING RE-PROVED WHEN A PC'S ENVIRONMENT CHANGED, AND THE CACHE KEPT SERVING THE OLD PROOFS (v3862, item 4)
+His ruling 2026-11-05: "a full proof once per PC or when its environment changes". The census owes a gate only when its
+own test file changes (gateShas), and the proof cache keys on file bytes, proof spec and gate spec - not on python,
+the OS, node or git's autocrlf - so a PC that moved python 3.9 -> 3.12, took a Windows feature update or gained node
+kept serving every proof earned under the old environment. heart2 now records the fingerprint a PC last fully proved
+under in .heart2_env.json beside its census (gitignored). Only the console's own self-prove lane observes it (a push or
+an SSH job may run another python); the first reading is adopted, so the rollout owes nothing. A changed fingerprint
+opens a pending re-prove: every declaring gate whose verdict is older than the change is owed (slice_owed), the census
+reads STALE (census_state; the lock too, through its own guards - #156 asks slice_owed), its slices run WITHOUT --reuse,
+the census stays unstamped while any is left, and then the new fingerprint is the PC's. A part that cannot be read
+(a timed-out `node --version`) is UNKNOWN and never a change; back on the proved environment the re-prove is dropped. The
+lock reads the record beside the census IT read, so a law's fixture never meets his real one. Law
+test_a_pc_reproves_when_its_environment_changes.
 ### REG-3161 - THE FLEET RAN ON THE FREE PLAN'S 1,000 WRITES A DAY ON AN ACCOUNT THAT PAYS FOR WORKERS (v3862, item 12)
 His Billing page, 2026-11-05 10:20: Workers Paid (renews 2026-11-30) and R2 Paid. Every pace in the fleet was sized for
 the free 1,000 KV writes a day (v2283): presence rewritten every 15 min and alive 40 (a dead PC read online for up to

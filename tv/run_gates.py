@@ -13019,6 +13019,12 @@ GATES = [
          why="v3862 (his ruling, the normal model): the pre-push skips its own grading only when every required GitHub "
              "workflow's newest run succeeded on the exact pushed commit and the tree is clean; unknown is never green, "
              "and a failed proof import proves locally"),
+    Gate("test_a_pc_reproves_when_its_environment_changes",
+         [sys.executable, os.path.join(HERE, "test_a_pc_reproves_when_its_environment_changes.py")], 120,
+         needs_app=False,
+         why="v3862 (item 4, his ruling: a full proof once per PC or when its environment changes): a changed python / "
+             "OS build / node / autocrlf owes every law once, proved without the cache; an unreadable part is never a "
+             "change, the rollout adopts, and the new fingerprint is the PC's when nothing is left"),
     Gate("test_the_fleet_shows_each_pcs_proof_meter",
          [sys.executable, os.path.join(HERE, "test_the_fleet_shows_each_pcs_proof_meter.py")], 120,
          needs_app=False,

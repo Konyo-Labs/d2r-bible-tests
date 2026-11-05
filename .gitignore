@@ -281,6 +281,9 @@ tv/.fleet_errors_seen.json.tmp
 # tv/.heart2_v2/ (heart2's stores in a checkout whose git dir could not be found). The machine's own heart2 stores live
 # in git's common dir, which git never lists.
 tv/.heart2_cache*
+# v3862 (item 4) - the environment this PC last fully proved under, and an open re-prove (heart2 env_*)
+tv/.heart2_env.json
+tv/.heart2_env.json.*
 tv/.heart2_red.json.*
 tv/.heart2_v2/
 # v2861 — THE RENDER VERDICT IS A READING, NOT A CONTRACT. I shipped it TRACKED in v2859

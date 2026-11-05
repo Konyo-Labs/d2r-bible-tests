@@ -522,7 +522,7 @@ def blind_rule_owed(state):
     return set(state.get("blind") or [])
 
 
-def slice_owed(gates=None, state=None):
+def slice_owed(gates=None, state=None, env_path=None):
     """#99 — which gates that DECLARE a proof this census has not proved against the file on disk now. -> dict
 
     {"owed": [(name, n_proofs)], "declared": int, "covered": int, "why": str}. `state` is a parsed census; None reads
@@ -556,6 +556,14 @@ def slice_owed(gates=None, state=None):
         # only when its OWN file changes, so a fixed rule would never reach the verdicts the old one filed (Dean's 53).
         elif _rule_blind and n in _rule_blind:
             owed.append((n, len(proofs)))
+    # v3862 (item 4) - a PENDING environment re-prove owes every declaring gate not yet proved since the change
+    _er = env_reprove_state(state if isinstance(state, dict) else {}, gates, path=env_path)
+    if _er and _er.get("owed"):
+        _have_n = {n for n, _k in owed}
+        _np = dict((n, len(red_proofs_in(f) or [])) for n, f in gates)
+        owed.extend((n, _np.get(n, 0)) for n in _er["owed"] if n not in _have_n)
+        why = why or ("this PC's environment changed (%s): %d gate(s) proved again since" % (
+            env_change_words(_er), len(_er["owed"])))
     owed.sort(key=lambda t: t[0])
     return {"owed": owed, "declared": declared, "covered": declared - len(owed),
             "why": why or ("%d of %d declaring gate(s) proved for the files on disk" % (declared - len(owed), declared))}
@@ -6795,6 +6803,17 @@ def _write_state(results, measured=None, stamp=True, unmeasured=None):
         _fp_out = None
     else:
         _fp_out = gates_fingerprint(gates) if (stamp or not _owed) else prior.get("gatesFingerprint")
+    # v3862 (item 4) - AN OPEN ENVIRONMENT RE-PROVE: what it still owes (by the verdict stamps this run just wrote) keeps
+    # the census unstamped, whoever writes; with none left the new environment becomes this PC's.
+    _env_rec = env_load()
+    _env_left = env_owed({"verdictAt": _seen}, _env_rec, have) if isinstance(_env_rec, dict) else []
+    if _env_left:
+        _fp_out = None
+        _owed = sorted(set(_owed) | set(_env_left))
+    else:
+        _env_done = env_finish(_env_rec, _env_left)
+        if _env_done is not None:
+            env_save(_env_done)
     # ⚠⚠ REG-2355 — WHAT IS LEFT TO JUDGE UNDER THE NEW RULE IS CARRIED BY NAME. A gate judged now leaves the list
     # whatever its new verdict, so a slice always shrinks it - a flag stamped "once all are judged" kept re-owing the
     # ones already judged, and a slice of only those landed none and was booked a failure. slice_owed() owes the list
@@ -6807,7 +6826,9 @@ def _write_state(results, measured=None, stamp=True, unmeasured=None):
         "sliceOwed": len(_owed),
         "sliceOwedSample": _owed[:12],
         "unstampedWhy": ("%d gate(s) this run could not measure are owed: %s"
-                         % (len(_unm_owed), ", ".join(_unm_owed[:6])) if _unm_owed else None),
+                         % (len(_unm_owed), ", ".join(_unm_owed[:6])) if _unm_owed else
+                         ("this PC's environment changed: %d gate(s) are proved again under it" % len(_env_left)
+                          if _env_left else None)),
         "stampedBy": (None if _unm_owed else ("run" if stamp else ("slice-complete" if not _owed else None))),
         "proved": len(_proved),
         "provedGates": sorted(_proved),
@@ -7602,6 +7623,185 @@ def export_runtime(which=None, run=None):
     except Exception:
         pass
     return out
+
+
+#: v3862 (item 4, his ruling 2026-11-05: "a full proof once per PC or when its environment changes") - THE ENVIRONMENT A
+#: PC PROVES UNDER, AND WHAT IT OWES WHEN THAT CHANGES. The census owes a gate only when its own test file changes
+#: (gateShas), and the proof cache keys on file bytes alone - so a PC that moved from python 3.9 to 3.12, or a Windows
+#: feature update, or node arriving, kept serving every proof it earned under the old one, and nothing re-proved.
+#: .heart2_env.json (beside the census, gitignored) holds the fingerprint this PC last FULLY proved under. Only the
+#: console's own self-prove lane observes and adopts it (env_observe) - a push or an SSH job may run another python, and
+#: two writers judging two pythons would re-prove for ever. A changed fingerprint opens a PENDING re-prove: every
+#: declaring gate whose verdict is older than the change is owed (slice_owed), proved WITHOUT the cache (self_prove), the
+#: census stays unstamped until none is left (_write_state), and then the new fingerprint is the PC's. Any part that
+#: cannot be read is UNKNOWN and nothing is compared - a timed-out `node --version` is never an environment change.
+ENV_NAME = ".heart2_env.json"
+ENV_KEYS = ("platform", "os", "python", "node", "autocrlf")
+_ENV_FP = {}
+_ENV_HAVE = {"at": 0.0, "have": None}
+
+
+def _os_build():
+    """The OS release a proof could differ across: macOS major, the Windows build, Linux kernel major. -> str | None"""
+    try:
+        import platform as _pf
+        if sys.platform == "darwin":
+            v = _pf.mac_ver()[0]
+            return v.split(".")[0] if v else None
+        if os.name == "nt":
+            return str(sys.getwindowsversion().build)
+        return _pf.release().split(".")[0] or None
+    except Exception:
+        return None
+
+
+def env_fingerprint(refresh=False, runtime=None, os_build=None, git=None):
+    """-> (fingerprint | None, parts). None when any part is UNKNOWN: never compared, never adopted. Cached per process
+    (the environment does not change under a running process); `runtime`/`os_build`/`git` are a law's seams."""
+    if _ENV_FP and not refresh and runtime is None and os_build is None and git is None:
+        return _ENV_FP["fp"], dict(_ENV_FP["parts"])
+    try:
+        rt = runtime if runtime is not None else export_runtime()
+    except Exception:
+        rt = {}
+    parts = {"platform": rt.get("platform"), "python": rt.get("python"), "node": rt.get("node"),
+             "os": (os_build() if os_build else _os_build())}
+    ok, out = (git or _git)("config", "--get", "--default", "unset", "core.autocrlf")
+    parts["autocrlf"] = (out.strip().lower() or None) if ok else None
+    fp = None
+    if all(parts.get(k) not in (None, "") for k in ENV_KEYS):
+        fp = hashlib.sha256(json.dumps(parts, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+    if runtime is None and os_build is None and git is None:
+        _ENV_FP.update(fp=fp, parts=dict(parts))
+    return fp, parts
+
+
+def _env_path():
+    return os.path.join(os.path.dirname(os.path.abspath(STATE)), ENV_NAME)
+
+
+def env_load(path=None):
+    """-> the record ({} when absent) | None (it exists and will not parse: UNKNOWN - never written over, never read)."""
+    p = path or _env_path()
+    if not os.path.exists(p):
+        return {}
+    try:
+        with io.open(p, encoding="utf-8") as fh:
+            body = json.load(fh)
+        return body if isinstance(body, dict) else None
+    except Exception:
+        return None
+
+
+def env_save(rec, path=None):
+    p = path or _env_path()
+    tmp = "%s.%d.tmp" % (p, os.getpid())
+    try:
+        with io.open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(rec, fh, sort_keys=True)
+        os.replace(tmp, p)
+        return True
+    except Exception:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        return False
+
+
+def env_step(rec, cur, parts, now_ms):
+    """What a NEW reading of the environment does to the record. -> the new record, or None (nothing to write). Pure.
+
+    UNKNOWN (cur None) changes nothing. No fingerprint yet: this PC's environment is adopted as it is (rollout never
+    owes a re-prove). The same: nothing. Back to the proved one while a re-prove was open: the re-prove is dropped (the
+    proofs were earned under exactly this). A new one: a re-prove opens, `since` now; the one already open: nothing."""
+    if not cur or rec is None:
+        return None
+    rec = dict(rec)
+    if not rec.get("fingerprint"):
+        return {"fingerprint": cur, "parts": dict(parts or {}), "adoptedAt": int(now_ms)}
+    if rec["fingerprint"] == cur:
+        if rec.get("pending"):
+            for k in ("pending", "pendingParts", "since"):
+                rec.pop(k, None)
+            rec["droppedAt"] = int(now_ms)
+            return rec
+        return None
+    if rec.get("pending") == cur:
+        return None
+    rec.update(pending=cur, pendingParts=dict(parts or {}), since=int(now_ms))
+    return rec
+
+
+def env_owed(state, rec, have):
+    """The declaring gates a pending re-prove still owes: no verdict, or one older than the change. -> sorted [name].
+    Pure. No re-prove open -> []."""
+    if not isinstance(rec, dict) or not rec.get("pending") or not isinstance(rec.get("since"), int):
+        return []
+    seen = (state or {}).get("verdictAt") if isinstance(state, dict) else None
+    seen = seen if isinstance(seen, dict) else {}
+    since = rec["since"]
+    return sorted(n for n in have if not (isinstance(seen.get(n), (int, float)) and seen.get(n) >= since))
+
+
+def env_finish(rec, owed):
+    """A pending re-prove with nothing left owed: the new fingerprint is this PC's. -> new record | None. Pure."""
+    if not isinstance(rec, dict) or not rec.get("pending") or owed:
+        return None
+    out = {k: v for k, v in rec.items() if k not in ("pending", "pendingParts", "since")}
+    out.update(fingerprint=rec["pending"], parts=dict(rec.get("pendingParts") or {}),
+               provedFrom=rec.get("parts"), provedAt=int(time.time() * 1000))
+    return out
+
+
+def env_observe(now_ms=None, path=None):
+    """THE CONSOLE'S SELF-PROVE LANE ONLY: read this process's environment and record what it means. -> (record, why).
+    Never raises."""
+    try:
+        now = int(now_ms if now_ms is not None else time.time() * 1000)
+        rec = env_load(path)
+        if rec is None:
+            return None, "%s will not parse - the environment is UNKNOWN and the file is left as it is" % ENV_NAME
+        cur, parts = env_fingerprint()
+        if not cur:
+            return rec, "a part of this PC's environment could not be read (%s) - nothing compared" % (
+                ", ".join(k for k in ENV_KEYS if not parts.get(k)) or "?")
+        new = env_step(rec, cur, parts, now)
+        if new is not None:
+            env_save(new, path)
+            rec = new
+        return rec, "pending" if rec.get("pending") else "steady"
+    except Exception as e:
+        return None, "the environment check raised %s" % type(e).__name__
+
+
+def env_reprove_state(state=None, gates=None, path=None):
+    """-> {"owed": [name], "from": parts, "to": parts, "since"} while a re-prove is open, else None. Never raises."""
+    try:
+        rec = env_load(path)
+        if not isinstance(rec, dict) or not rec.get("pending"):
+            return None
+        if state is None:
+            with io.open(STATE, encoding="utf-8") as fh:
+                state = json.load(fh)
+        if gates is None and _ENV_HAVE.get("have") is not None and time.time() - _ENV_HAVE["at"] < 30:
+            have = _ENV_HAVE["have"]          # a lock's may() asks on hot paths; the declaring set moves only with code
+        else:
+            have = [n for n, f in (gates if gates is not None else gate_files(say=lambda *a, **k: None))
+                    if red_proofs_in(f)]
+            if gates is None:
+                _ENV_HAVE.update(at=time.time(), have=have)
+        return {"owed": env_owed(state, rec, have), "from": rec.get("parts"), "to": rec.get("pendingParts"),
+                "since": rec.get("since")}
+    except Exception:
+        return None
+
+
+def env_change_words(er):
+    """'python 3.9 -> 3.12, node none -> 22' - the parts that moved. Pure."""
+    a, b = (er or {}).get("from") or {}, (er or {}).get("to") or {}
+    moved = ["%s %s -> %s" % (k, a.get(k), b.get(k)) for k in ENV_KEYS if a.get(k) != b.get(k)]
+    return ", ".join(moved) or "an unrecorded part"
 
 
 def _shard_decls():
