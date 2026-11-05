@@ -150,6 +150,12 @@ profile first with the existing reader; Chrome's app-bound key is never touched.
 cookie file ("unable to open database file", measured), so an open window reads login-open and the lamp re-asks every
 3 s; a v20-only main profile reads chrome-locked (sign in through the console's own window). Laws
 test_the_d2jsp_desk_reads_a_price_before_it_posts, test_the_d2jsp_lamp_sits_with_the_readers.
+### REG-3147 - EVERY ci/* PUSH OF tv/ PYTHON STARTED A BACKGROUND test_agent ON THE MAC AND LEFT IT RUNNING (v3861)
+hooks/pre-push read its stdin refs only after the v3847 fast-gate overlap had started test_agent in the background, so a
+ci-only push - graded on GitHub, "this Mac graded nothing" - started a suite here and exited 0 with it still running
+(the lane law set SUITE_VERDICT_REUSE=0 to keep it out of its own run, a workaround in the law rather than the hook).
+The refs are read first and the overlap skips a ci-only push. Law test_a_ci_push_skips_the_mac_and_never_main
+(ACiPushStartsNoSuiteOnThisMac, two red-proofs).
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel
