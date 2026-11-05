@@ -7,6 +7,15 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3174 - THE SHELF DREW TWO CLOSE BUTTONS SIDE BY SIDE, AND THE THEATRE TITLE WAS CUT TO A THIRD (v3864, GrokBot Batch A 1, 5)
+GrokBot, #230 6656116697 (v3860 at 1024 / 1280 / 1440 / 1920 / 2560): with the SHELF open, the shelf's ✕ (#th-shelf-x) and
+the theatre's "✕ CLOSE" (#th-close) sat on one line (top ~141 at 1024) - two exits, one job. And "🎞 THE THEATRE · EYES ON
+HISTORY" rendered 122px of its 383 at 1024 / 1440 / 1920: REG-2134's flex-basis 0 gave it a third of the spare room. Now the
+theatre's close is display:none while the shelf is open (beside the strip controls that rule already hid), and the title is
+flex 0 1 auto - its own width first, an ellipsis only when the row truly lacks room. Law:
+tv/test_the_shelf_has_one_close_and_its_title_fits.py, 2 red-proofs RED. NOT seen on pixels here (no live console in this
+worktree); the CI render gate and GrokBot's next live look are the eyes on it.
+
 ### REG-3172 - THE MAC'S FLEET ROW READ UNIQUES 395/403 BESIDE ITS OWN LIST'S 384, AND NOTHING ON THE ROW SAID SO (v3864, GrokBot Batch B 3)
 GrokBot, #230 6655906382 (re-read by the Grok CLI): tally.uniques {have 395, total 403} beside masks.uniques {have 384}.
 _fleet_reconcile_tally_with_masks skips the local row on purpose - his board's count is THE number (REG-2035) - so Dean's

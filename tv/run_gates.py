@@ -13413,6 +13413,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_every_runeword_row_fits_its_base.py")], 60,
          needs_app=False,
          why='v3864 (GrokBot Batch B 7) - every RUNEWORDS row says N-sock with N its rune count, and no row asks a wand for more than 2 sockets (Call to Arms read a 5-socket wand)'),
+    Gate("test_the_shelf_has_one_close_and_its_title_fits",
+         [sys.executable, os.path.join(HERE, "test_the_shelf_has_one_close_and_its_title_fits.py")], 60,
+         needs_app=False,
+         why='v3864 (GrokBot Batch A 1, 5) - the theatre close hides while the shelf is open, and the theatre title takes its own width first'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
