@@ -29104,6 +29104,12 @@ function escC(s) {
       var _lagTxt = function (m) {
         var lg = m && m.lag;
         if (!lg) return '';
+        /* v3864 (GrokBot Batch B 1) - a checkout behind origin is never level, whatever its version stamp says */
+        if (lg.behind == null && typeof lg.checkoutBehind === 'number' && lg.checkoutBehind > 0) {
+          return '<span class="fleet-lag" data-lag="checkout" title="' + escC(String(lg.why || '')) + '"> \u00b7 checkout '
+               + lg.checkoutBehind + ' commit' + (lg.checkoutBehind === 1 ? '' : 's') + ' behind'
+               + (lg.edits ? ' \u00b7 local edits' : '') + '</span>';
+        }
         if (lg.behind == null) {
           return '<span class="fleet-lag unk" title="' + escC(String(lg.why || 'not established'))
                + '"> \u00b7 lag unknown</span>';   /* #255 - the version word before it has no trailing space */

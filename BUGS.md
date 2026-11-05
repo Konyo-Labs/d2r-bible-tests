@@ -7,6 +7,16 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3170 - DEAN'S FLEET ROW SAID "LEVEL" WHILE HIS CHECKOUT WAS 9 COMMITS BEHIND WITH LOCAL EDITS (v3864, GrokBot Batch B 1-2)
+GrokBot, #230 6655906382 (the Grok CLI re-read it, 6655933519): /api/fleet's Dean row carried ver v3860 and lag {behind 0,
+"level with what origin publishes"}, and in the same row pull {head e1fd8a98 (v3859), behind 9, local tracked edits: M
+tv/control_app.py, M tv/tv_diablo.py}. fleet_lag counts only from the version a PC says it runs, so the card showed him
+current. GrokBot's row held the opposite split: pull level (an 8-day-old report) beside lag 45. fleet_annotate_lag now asks
+fleet_lag_vs_pull: a checkout behind origin is never level (behind None, checkoutBehind N, edits, a reason naming both
+reports) and the card draws "checkout 9 commits behind · local edits"; a level pull beside a counted lag is named the older
+report. Law: tv/test_a_fleet_row_never_says_level_with_a_checkout_behind.py, 4 red-proofs RED. Why Dean's PC says v3860 on
+a v3859 checkout (the stamp files edited without a commit) is its own question, on card 40.
+
 ### REG-3169 - A RED-THEN-FIXED RE-PUSH RE-PROVED EVERY LAW, AND 16 SHARDS LEFT HALF OF GITHUB PRO IDLE (v3864, his ask 2026-11-05)
 His ask: "work them, push them, and when they come back red fix them all and push again - faster, since they bank the gates
 that passed". GitHub's proof shards started from the last MAIN run's seed only (REG-2961, saved on main), so v3863's fix push
