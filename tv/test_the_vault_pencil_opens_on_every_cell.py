@@ -83,11 +83,27 @@ OUT.place = [[100,100,60,120],[10,10,30,30],[900,300,122,184],[500,20,60,60],[10
 
 NO_PENCIL = {"Ber Rune"}
 
+#: v3864 (prover BLIND on [0], GitHub v3864): REG-2971 made every keeper a record, so on the live model the charm keeper's record
+#: is homed on CHARMS and the C2 span never decides there. It still decides on a board whose SAVED records (current stamp) were
+#: written before REG-2971 - a v3863 board's store holds no keeper record - until a write refreshes them: only the span packs the
+#: keeper. That board here: the page's own store with its keeper rows taken out, read back after the whole body.
+SAVED_BEFORE_KEEPER_RECORDS = r"""
+window._vaultRecordsMigrate({ force: true });
+(function(){ var st = JSON.parse(window.LSR.getItem('d2r_vaultRecords')), K = %s;
+  st.records = st.records.filter(function(r){ return !Object.prototype.hasOwnProperty.call(K, r.name); });
+  window.LSR.setItem('d2r_vaultRecords', JSON.stringify(st)); })();
+""" % json.dumps(KEEP)
+SAVED_READ = r"""
+OUT.savedSource = !!window._vrSourceChoice().store;
+OUT.keeperRecord = window._vaultRecordsSource().records.some(function(r){ return r && r.name === 'Small Charm of Good Luck'; });
+"""
+
 
 class PencilEverywhere(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.o = VPN.run(BODY, prelude=PRELUDE, timeout=300)
+        cls.saved = VPN.run(SAVED_BEFORE_KEEPER_RECORDS + BODY + SAVED_READ, prelude=PRELUDE, timeout=300)
 
     def _check(self, where, rows):
         self.assertTrue(rows, "%s drew no item" % where)
@@ -138,6 +154,16 @@ class PencilEverywhere(unittest.TestCase):
         self.assertIsNotNone(r, "the charms window drew no Small Charm of Good Luck (drew %s)"
                              % sorted(k for k in self.o["zoom"] if k.startswith("charms|")))
         self.assertTrue(r["price"] and r["edit"], r)
+
+    def test_the_charms_mule_zoom_draws_its_charm_keeper_from_records_saved_before_keepers_were(self):
+        o = self.saved
+        self.assertTrue(o["savedSource"] and not o["keeperRecord"],
+                        "PREMISE: the saved records are not the source, or hold the keeper (%r, %r)" % (o["savedSource"], o["keeperRecord"]))
+        r = o["zoom"].get("charms|Small Charm of Good Luck")
+        self.assertIsNotNone(r, "the charms window drew no Small Charm of Good Luck from the saved records (drew %s)"
+                             % sorted(k for k in o["zoom"] if k.startswith("charms|")))
+        self.assertTrue(r["price"] and r["edit"], r)
+        self.assertIsInstance(r["press"], dict, r["press"])
 
     def test_relevance(self):
         for k in ("rune", "gem"):

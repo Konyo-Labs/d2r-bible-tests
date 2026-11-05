@@ -58,6 +58,42 @@ def out():
     return _OUT
 
 
+#: v3864 (prover BLIND on [1] and [2], GitHub v3864): REG-2971 made every keeper a record, so on the live model a keeper's record
+#: already sits on its mule and the keeper-span lines never decide. They still do on a board whose SAVED records were written
+#: before REG-2971 - a v3863 board's store holds no keeper record - until a write refreshes them. That board here: the page's
+#: own store with its keeper rows taken out, read back after the whole body (the pencil law's twin case).
+SAVED_BEFORE_KEEPER_RECORDS = r"""
+window._vaultRecordsMigrate({ force: true });
+(function(){ var st = JSON.parse(window.LSR.getItem('d2r_vaultRecords')), K = %s;
+  st.records = st.records.filter(function(r){ return !Object.prototype.hasOwnProperty.call(K, r.name); });
+  window.LSR.setItem('d2r_vaultRecords', JSON.stringify(st)); })();
+""" % json.dumps(KEEP)
+SAVED_READ = r"""
+OUT.savedSource = !!window._vrSourceChoice().store;
+OUT.keeperRecords = window._vaultRecordsSource().records.filter(function(r){ return r && Object.prototype.hasOwnProperty.call(%s, r.name); }).length;
+""" % json.dumps(KEEP)
+_SAVED = None
+
+
+def out_saved():
+    global _SAVED
+    if _SAVED is None:
+        _SAVED = VPN.run(SAVED_BEFORE_KEEPER_RECORDS + BODY.replace('%NAMES%', json.dumps(NAMES)) + SAVED_READ, prelude=PRELUDE, timeout=300)
+    return _SAVED
+
+
+class KeepersDrawFromRecordsSavedBeforeKeepersWere(unittest.TestCase):
+    def test_a_keeper_is_drawn_where_it_is_homed_on_a_v3863_store(self):
+        o = out_saved()
+        self.assertTrue(o["savedSource"] and o["keeperRecords"] == 0,
+                        "PREMISE: the saved records are not the source, or still hold keeper rows (%r, %r)" % (o["savedSource"], o["keeperRecords"]))
+        r = o["rows"]["Small Charm of Balance"]
+        self.assertEqual(r["home"], "shared", r)
+        self.assertTrue(r["listed"] and r["drawn"], "a charm keeper homed on shared is not drawn from records saved before keepers were: %r" % r)
+        c = o["charms"]
+        self.assertTrue(c["listed"] and c["drawn"], "the CHARMS mule drew no charm keeper from records saved before keepers were: %r" % c)
+
+
 class EveryFiledItemIsDrawn(unittest.TestCase):
     def test_the_fixture_homes_them_on_shared(self):
         rows = out()["rows"]

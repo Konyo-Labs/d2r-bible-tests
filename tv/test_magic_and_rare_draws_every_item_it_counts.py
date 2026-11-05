@@ -132,9 +132,27 @@ if (!W._tvdShadow && OUT.stored){
   var ld = W._vaultRecordsLoad();
   OUT.ksLoaded = (ld && ld.records || []).filter(function(r){ return r && r.name === KS; }).map(function(r){ return [r.kind, r.mule]; });
 }
+/* REG-2850 behind REG-2971: a records store written before every keeper was a record carries the same migrate stamp version,
+   so it is still the owner's source until a refresh rewrites it - a row only for the routed stubs and the kept stub. There the
+   packer's keeper span, not the keepers' records, packs every keeper, and writes nothing */
+if (!W._tvdShadow && OUT.stored){
+  var old = JSON.parse(OUT.stored), KN = %s;
+  old.records = old.records.filter(function(r){ return !(r && KN.indexOf(r.name) >= 0 && r.name !== KS); });
+  W.LSR.setItem('d2r_vaultRecords', JSON.stringify(old));
+  OUT.oldSpan = W._vaultRecordsForMule(MR);
+  var oSets = {}, oRaw = {}; STORES.forEach(function(k){ oSets[k] = H.ls.byKeySet[k] || 0; oRaw[k] = H.RAW.has(k) ? H.RAW.get(k) : null; });
+  var L2 = W._muleLoad(W._muleNamesFor(MR), {}, MR), d2 = {};
+  (L2.mules || []).forEach(function(m){
+    var all = (m.stash || []).concat(m.inv || []);
+    Object.keys(m.tabs || {}).forEach(function(k){ all = all.concat(m.tabs[k] || []); });
+    all.forEach(function(p){ d2[p.n] = (d2[p.n] || 0) + 1; });
+  });
+  OUT.oldDrawn = d2; OUT.oldPhys = L2.phys;
+  OUT.oldWrote = STORES.filter(function(k){ return (H.ls.byKeySet[k] || 0) !== oSets[k] || (H.RAW.has(k) ? H.RAW.get(k) : null) !== oRaw[k]; });
+}
 OUT.errors = H.errors.slice();
 })();
-""" % json.dumps(KEPT_STUB)
+""" % (json.dumps(KEPT_STUB), json.dumps(sorted(KEEPERS)))
 
 
 class MagicAndRareDrawsEveryItemItCounts(unittest.TestCase):
@@ -189,6 +207,15 @@ class MagicAndRareDrawsEveryItemItCounts(unittest.TestCase):
     def test_a_stored_orphan_row_of_a_keeper_takes_the_lockers_home(self):
         self.assertEqual(self.o.get("ksLoaded"), [["filed", "magic-rare"]],
                          "a records store written before the fix keeps the kept stub homeless: %r" % self.o.get("ksLoaded"))
+
+    def test_a_records_store_without_keeper_rows_still_packs_every_keeper(self):
+        o = self.o
+        self.assertEqual(sorted(o.get("oldSpan") or {}), sorted(RECORDS + [KEPT_STUB]),
+                         "PREMISE: the older records store is not the source, or holds keeper rows: %r" % o.get("oldSpan"))
+        self.assertEqual(sorted(o["oldDrawn"]), ALL, "over an older records store the window packs %r of the %d items its card counts"
+                         % (sorted(o["oldDrawn"]), len(ALL)))
+        self.assertEqual(o["oldPhys"], len(ALL), "over an older records store the window packs %r copies" % o["oldPhys"])
+        self.assertEqual(o["oldWrote"], [], "packing over an older records store wrote %r" % o["oldWrote"])
 
     def test_the_shadow_draws_what_the_owner_draws(self):
         o, s = self.o, self.s

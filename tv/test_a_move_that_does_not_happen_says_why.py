@@ -109,10 +109,12 @@ RED_PROOF = [
      "find": "    if (muleId !== 'magic-rare' && !_mrCat && typeof window._vaultInMagicRare === 'function' && window._vaultInMagicRare(name)){\n",
      "replace": "    if (false){\n",
      "matches": 1, "needs": "node"},
-    {"why": "REG-2854 - a unique sitting in Magic & Rare is refused as a keeper",
+    # REG-3042 (#163) moved the catalogue test into _vaultInMagicRare, so the door's own `!_mrCat` can no longer decide (a name
+    # _vaultInMagicRare holds is never a catalogue item): either alone is BLIND here. Both ask _vaultCatalogueItem - the one test.
+    {"why": "REG-2854 - a unique sitting in Magic & Rare is refused as a keeper (REG-3042's one catalogue test forgets a unique)",
      "file": "bible.html",
-     "find": "    if (muleId !== 'magic-rare' && !_mrCat && ",
-     "replace": "    if (muleId !== 'magic-rare' && ",
+     "find": "  function _vaultCatalogueItem(n){ return _vaIsGrailUni(n) || !!(typeof findSetPiece === 'function' && findSetPiece(n)) || _vaIsRW(n); }\n",
+     "replace": "  function _vaultCatalogueItem(n){ return !!(typeof findSetPiece === 'function' && findSetPiece(n)) || _vaIsRW(n); }\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-2854 - a filing returns nothing again",
      "file": "bible.html",

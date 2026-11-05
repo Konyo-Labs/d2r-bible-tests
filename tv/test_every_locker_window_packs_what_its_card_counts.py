@@ -35,11 +35,15 @@ KEEPERS = {
     "Doom Band": {"q": "rare", "base": "Ring", "mods": ["+2 to Mana after each Kill"], "verdict": "keep"},
 }
 HAND = ["Nagelring", "Manald Heal", "Arreat's Face", "Buriza-Do Kyanon", "Wizardspike"]
+#: v3864 (prover BLIND on [0], GitHub v3864): with one copy per CHARMS keeper, the v3855 charm span (one cell per keeper the
+#: records lack) packed the same window as REG-2971's records did. A CHARMS keeper with TWO copies is packed whole only by its
+#: records: without them the window packs 1 of the 2 cells its card draws.
+COPIES = {"Small Charm of Vita": 2, "Fungal Grand Charm": 2}
 PRELUDE = ("Object.defineProperty(navigator, 'webdriver', { get: function(){ return true; }, configurable: true });\n"
            "localStorage.setItem('d2r_ownerClaim', '*');\n"
            "localStorage.setItem('d2r_magicFinds', %s);\n" % json.dumps(json.dumps(KEEPERS))
            + "localStorage.setItem('d2r_owned', %s);\n" % json.dumps(json.dumps(list(KEEPERS)))
-           + "localStorage.setItem('d2r_copies', %s);\n" % json.dumps(json.dumps({"Small Charm of Vita": 2})))
+           + "localStorage.setItem('d2r_copies', %s);\n" % json.dumps(json.dumps(COPIES)))
 BODY = r"""
 (function(){
 var W = window, K = %s, HAND = %s;
@@ -86,6 +90,8 @@ class EveryLockerWindowPacksWhatItsCardCounts(unittest.TestCase):
         self.assertTrue({"charms", "shared", "magic-rare"} <= homes, "PREMISE: the keepers do not span every home: %r" % self.o["homes"])
         self.assertTrue({"charms", "shared", "magic-rare"} <= set(self.o["lockers"]), "PREMISE: a keeper locker drew no cell: %r" % sorted(self.o["lockers"]))
         self.assertGreaterEqual(len(self.o["lockers"]), 5, "PREMISE: too few lockers hold anything: %r" % sorted(self.o["lockers"]))
+        self.assertTrue(any(self.o["homes"].get(n) == "charms" and c >= 2 for n, c in COPIES.items()),
+                        "PREMISE: no CHARMS keeper holds two copies: %r" % self.o["homes"])
 
     def test_every_lockers_window_packs_as_many_copies_as_its_card_draws(self):
         bad = {k: (v["cells"], v["packed"]) for k, v in self.o["lockers"].items() if v["packed"] != v["cells"]}
