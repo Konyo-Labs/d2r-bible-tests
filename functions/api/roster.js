@@ -72,6 +72,16 @@ const QUOTA_WHY = "roster would not take this publish: quota";
 const REFUSAL_HINT = "this is the storage refusing a write, NOT the machine being absent";
 const MAX_BODY = 80000;
 const KEY_PREFIX = "rosterkey:";
+/* v3862 (item 11) - APPROVE A NEW PC. A PC whose label already has another PC's key was refused for good until Konyo
+   ran wrangler on the Mac by hand (the header above) - on 2026-11-04 the new work ALT sat refused as "Konyo · ALT"
+   while the old ALT held the key. Now a refused publish whose signature VERIFIES under a different key leaves a pending
+   request (one write per new key, 14 days), and a PC whose label is in APPROVERS signs {kind:"approve"} with ITS OWN
+   registered key to put the new key in place (or deny it). No Cloudflare credential, no wrangler: the approval is
+   checked like every other signed record here. */
+const REQ_PREFIX = "rosterkeyreq:";
+const REQ_TTL_S = 14 * 86400;
+export const APPROVERS = ["Konyo · Mac"];
+const APPROVE_SKEW_MS = 15 * 60 * 1000;
 const SIGNATURE_HINT = "nothing was stored: the key registered for this owner did not sign this publish. " +
   "A PC that lost its key stays refused until Konyo resets the owner's key from the Mac; a key never changes by itself";
 
@@ -257,11 +267,81 @@ export function intentOf(owner, registered, sig) {
   return { verified: false, keyId: null, register: false };
 }
 
-function refuseSignature(intent, sig) {
+function refuseSignature(intent, sig, requested) {
   const out = { ok: false, why: "roster would not take this publish: " + intent.refused, hint: SIGNATURE_HINT, sig: sig.state };
   if (intent.registeredKeyId) out.keyId = intent.registeredKeyId;
   if (sig.keyId) out.offered = sig.keyId;
+  if (requested) {
+    out.approval = "requested";
+    out.why += " - this PC's key (" + sig.keyId + ") is waiting for " + APPROVERS.join(" or ") + " to approve it";
+  }
   return json(out, 200);
+}
+
+// v3862 (item 11) - a valid signature under ANOTHER key than the registered one: remember it as a request to approve.
+// -> true when a request for this exact key is pending (written now or already there). Never throws.
+export async function noteKeyRequest(kv, owner, sig, registeredKeyId, now) {
+  if (!sig || sig.state !== "valid" || !sig.pub || !sig.keyId) return false;
+  const name = REQ_PREFIX + owner;
+  try {
+    const raw = await kv.get(name);
+    const prev = raw ? JSON.parse(raw) : null;
+    if (prev && prev.pub === sig.pub) return true;          // the same key asking again costs no write
+    await kv.put(name, JSON.stringify({ owner: owner, pub: sig.pub, keyId: sig.keyId, at: now,
+                                        replaces: registeredKeyId || null }), { expirationTtl: REQ_TTL_S });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// v3862 (item 11) - {kind:"approve", approver, owner, keyId, decision:"approve"|"deny", signedAt}, signed by the
+// approver's REGISTERED key. -> the Response
+export async function approvePost(env, sig, body) {
+  const kv = env && env.TZ_HISTORY;
+  if (!kv) return refuse("roster would not take this approval: storage unavailable");
+  const approver = body.approver, owner = body.owner, decision = body.decision;
+  if (APPROVERS.indexOf(approver) === -1) return refuse("roster would not take this approval: " + String(approver).slice(0, 40) + " may not approve a PC");
+  if (OWNERS.indexOf(owner) === -1) return refuse("roster would not take this approval: the owner is not one of the five labels");
+  if (decision !== "approve" && decision !== "deny") return refuse("roster would not take this approval: decision is approve or deny");
+  const now = Date.now();
+  if (typeof body.signedAt !== "number" || !Number.isFinite(body.signedAt) || Math.abs(now - body.signedAt) > APPROVE_SKEW_MS) {
+    return refuse("roster would not take this approval: signedAt is missing or not within 15 min of now");
+  }
+  let registered;
+  try { registered = await registeredOf(kv, approver); } catch (e) { registered = undefined; }
+  if (!registered) return refuse("roster would not take this approval: " + approver + " has no registered key");
+  const intent = intentOf(approver, registered, sig);
+  if (intent.refused || intent.verified !== true || intent.register) {
+    return refuse("roster would not take this approval: " + (intent.refused || "it was not signed by " + approver + "'s registered key"));
+  }
+  const name = REQ_PREFIX + owner;
+  let req = null;
+  try { const raw = await kv.get(name); req = raw ? JSON.parse(raw) : null; } catch (e) { req = null; }
+  if (!req || typeof req !== "object" || req.keyId !== body.keyId || !req.pub) {
+    return refuse("roster would not take this approval: no pending request from key " + String(body.keyId).slice(0, 16) + " for " + owner);
+  }
+  if (decision === "approve") {
+    await kv.put(KEY_PREFIX + owner, JSON.stringify({ pub: req.pub, keyId: req.keyId, at: now, approvedBy: approver,
+                                                      replaced: req.replaces || null }));
+  }
+  await kv.delete(name);
+  return json({ ok: true, owner: owner, keyId: req.keyId, decision: decision, by: approver }, 200);
+}
+
+// v3862 (item 11) - the pending requests, for an approver's fleet card. Key ids and times only; never a pub key.
+export async function requestsGet(kv) {
+  if (!kv) return refuse("roster would not take this fetch: storage unavailable");
+  const out = [];
+  for (const owner of OWNERS) {
+    let req = null;
+    try { const raw = await kv.get(REQ_PREFIX + owner); req = raw ? JSON.parse(raw) : null; } catch (e) { req = null; }
+    if (req && typeof req === "object" && typeof req.keyId === "string") {
+      out.push({ owner: owner, keyId: req.keyId.slice(0, 16), at: typeof req.at === "number" ? req.at : null,
+                 replaces: typeof req.replaces === "string" ? req.replaces.slice(0, 16) : null });
+    }
+  }
+  return json({ ok: true, requests: out, approvers: APPROVERS }, 200);
 }
 
 export async function onRequestPost(context) {
@@ -290,6 +370,7 @@ export async function onRequestPost(context) {
     return refuse("roster would not take this publish: the body was not a record");
   }
   // Shadow mode's profile rides this same route under its own key; rows keep their own 80 KB cap.
+  if (body.kind === "approve") return approvePost(env, sig, body);   // v3862 (item 11)
   if (body.kind === "profile") return profilePost(env, bytes, sig, body);
   // #218 phase 2 - the owner's sessions, summarized (shadow_sessions.digest), under the same registered key
   if (body.kind === "frames") return framesPost(env, bytes, sig, body);
@@ -328,7 +409,12 @@ export async function onRequestPost(context) {
     if (!registered || typeof registered !== "object") registered = { pub: null };
   }
   const intent = intentOf(owner, registered, sig);
-  if (intent.refused) return refuseSignature(intent, sig);
+  if (intent.refused) {
+    // v3862 (item 11) - a valid signature under another key is a new PC asking for this label: remember it for approval
+    const asked = (registered && sig.state === "valid")
+      ? await noteKeyRequest(kv, owner, sig, intent.registeredKeyId, Date.now()) : false;
+    return refuseSignature(intent, sig, asked);
+  }
 
   let prev = null;
   try {
@@ -408,6 +494,9 @@ export async function onRequestGet(context) {
   let framesOwner = null;
   try { framesOwner = new URL(context.request.url).searchParams.get("frames"); } catch (e) { framesOwner = null; }
   if (framesOwner !== null) return framesGet(kv, framesOwner);
+  let wantRequests = null;
+  try { wantRequests = new URL(context.request.url).searchParams.get("requests"); } catch (e) { wantRequests = null; }
+  if (wantRequests !== null) return requestsGet(kv);   // v3862 (item 11)
   if (!kv) return refuse("roster would not take this fetch: storage unavailable");
   const owners = [];
   for (const owner of OWNERS) {

@@ -9029,6 +9029,8 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
               <div id="roster-body"><div class="roster-none">this PC has not fetched a roster yet</div></div>
             </div>
             <div id="shadow-bar" hidden><span id="shadow-who">read only</span><button type="button" id="shadow-sessions" title="their sessions, summarized: dates, reads, names and a few small key frames - read only">📚 Their sessions</button><button type="button" id="shadow-leave" onclick="window._shadowLeave()">✕ LEAVE SHADOW (Esc)</button></div>
+            <!-- v3862 (item 11) - a new PC asking for one of his labels waits HERE for his Approve / Deny (approver PC only) -->
+            <div id="fleet-keyreq" hidden></div>
             <div id="fleet-list"><div class="fleet-none">checking who is online…</div></div>
             <!-- v2213 — the cross-reference box. Hidden until a player is clicked; it answers
                  "what should I chase" where the hover tooltip answers "how far along is he". -->
@@ -27770,6 +27772,48 @@ function escC(s) {
      that a wrap can strand a middot in; `t` is the same facts joined, for a reader that wants one line of text */
   /* v3862 (item 10, the proof meter) - owed / rate / time left, from the PC's own readings. Absent is said by nothing
      (an older build); a rate of 0 is "not moving"; no rate yet is "measuring", never a guessed number. */
+  /* v3862 (item 11) - A NEW PC WAITING FOR ONE OF HIS LABELS. Only an approver PC gets a list (control_app
+     roster_key_requests); each row names the label, the new key's id and when it asked - he compares the id with the one
+     that PC shows before he presses Approve. Pure: -> '' when there is nothing to ask. */
+  window._fleetKeyReqHtml = function (kr, nowMs) {
+    if (!kr || kr.approver !== true || !Array.isArray(kr.requests) || !kr.requests.length) return '';
+    var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    return kr.requests.map(function (q) {
+      var age = (typeof q.at === 'number' && typeof nowMs === 'number')
+        ? Math.max(0, Math.round((nowMs - q.at) / 60000)) + ' min ago' : 'when UNKNOWN';
+      return '<div class="fleet-none" data-keyreq="' + esc(q.owner) + '">\ud83d\udd11 A new PC asks to be <b>'
+           + esc(q.owner) + '</b> \u00b7 key ' + esc(q.keyId) + ' \u00b7 ' + esc(age)
+           + (q.replaces ? ' \u00b7 replaces key ' + esc(q.replaces) : '')
+           + ' - compare the key with the one that PC shows'
+           + ' <button class="util-btn" type="button" data-owner="' + esc(q.owner) + '" data-key="' + esc(q.keyId)
+           + '" data-decision="approve" onclick="window._fleetKeyDecide(this)">Approve</button>'
+           + '<button class="util-btn" type="button" data-owner="' + esc(q.owner) + '" data-key="' + esc(q.keyId)
+           + '" data-decision="deny" onclick="window._fleetKeyDecide(this)">Deny</button></div>';
+    }).join('');
+  };
+  window._fleetKeyReqPaint = function (kr) {
+    var el = document.getElementById('fleet-keyreq');
+    if (!el) return;
+    var h = window._fleetKeyReqHtml(kr, Date.now());
+    el.innerHTML = h;
+    el.hidden = !h;
+  };
+  window._fleetKeyDecide = async function (btn) {
+    var owner = btn.getAttribute('data-owner'), key = btn.getAttribute('data-key'), dec = btn.getAttribute('data-decision');
+    btn.disabled = true;
+    var said = '';
+    try {
+      var r = await fetch('/api/roster_approve', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                   body: JSON.stringify({ owner: owner, keyId: key, decision: dec }) });
+      var j = await r.json();
+      said = (j && j.ok) ? ((dec === 'approve' ? 'approved: ' : 'denied: ') + owner + ' now publishes with key ' + key)
+                         : ('not done - ' + String((j && (j.why || j.reason)) || 'no answer'));
+    } catch (e) { said = 'not done - the console did not answer'; }
+    var row = btn.parentNode;
+    if (row) row.textContent = '\ud83d\udd11 ' + said;
+    try { window._fleetRefresh(true); } catch (e) {}
+  };
   var _proofMeterFacts = function (hs) {
     if (!hs || typeof hs !== 'object' || hs.census === 'current' || typeof hs.owed !== 'number') return [];
     var f = [hs.owed + (hs.owed === 1 ? ' law owed' : ' laws owed')];
@@ -28482,6 +28526,7 @@ function escC(s) {
       if (_gen !== window._fleetGen) return;
       var j = await r.json();
       if (_gen !== window._fleetGen) return;
+      try { window._fleetKeyReqPaint(j && j.keyRequests); } catch (e) {}   /* v3862 (item 11) */
       if (!j || j.ok === false) {
         /* ── v2843 — UNREACHABLE IS NOT THE SAME AS NOTHING TO SHOW ─────────────────────────
            His screenshot, 2026-09-09 11:07: this card printed

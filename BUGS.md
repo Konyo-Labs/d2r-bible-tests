@@ -186,6 +186,17 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3163 - A NEW PC ON A LABEL ANOTHER PC HELD WAS REFUSED FOR GOOD UNTIL WRANGLER RAN BY HAND (v3862, item 11)
+MEASURED 2026-11-04: the new work ALT came up as "Konyo · ALT" while the old ALT's key was registered for that label, so
+each of its publishes was refused - correctly, trust on first use (#95) - and the only way on was `wrangler kv key
+delete rosterkey:<owner>` on the Mac (which this Mac's wrangler cannot even do today: it cannot read the account). Now a
+refused publish whose signature VERIFIES under another key leaves one pending request (rosterkeyreq:<owner>, 14 days;
+the same key asking again costs no write) and its refusal says it is waiting; GET /api/roster?requests=1 lists labels and
+key ids (never a public key); his Mac's console (ROSTER_APPROVERS, held equal to roster.js APPROVERS) shows "A new PC asks
+to be <label> · key <id>" with Approve / Deny on the fleet card, and signs {kind:"approve"} with ITS OWN registered key.
+The worker takes it only from an approver label, signed by that label's registered key, with signedAt within 15 min,
+naming the pending key id - then puts the key in place and deletes the request (used once). Deny drops the request and
+keeps the old key. Law test_a_new_pc_waits_for_his_approval (real Ed25519 keys, the real worker in node).
 ### REG-3162 - NOTHING RE-PROVED WHEN A PC'S ENVIRONMENT CHANGED, AND THE CACHE KEPT SERVING THE OLD PROOFS (v3862, item 4)
 His ruling 2026-11-05: "a full proof once per PC or when its environment changes". The census owes a gate only when its
 own test file changes (gateShas), and the proof cache keys on file bytes, proof spec and gate spec - not on python,

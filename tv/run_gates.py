@@ -13019,6 +13019,12 @@ GATES = [
          why="v3862 (his ruling, the normal model): the pre-push skips its own grading only when every required GitHub "
              "workflow's newest run succeeded on the exact pushed commit and the tree is clean; unknown is never green, "
              "and a failed proof import proves locally"),
+    Gate("test_a_new_pc_waits_for_his_approval",
+         [sys.executable, os.path.join(HERE, "test_a_new_pc_waits_for_his_approval.py")], 180,
+         needs_app=False,
+         why="v3862 (item 11): a new PC's key for a held label waits as one request; only an approver label signed by "
+             "its own registered key, fresh, naming that key, approves it once; deny keeps the old key; the card is "
+             "escaped and offered only on an approver PC"),
     Gate("test_a_pc_reproves_when_its_environment_changes",
          [sys.executable, os.path.join(HERE, "test_a_pc_reproves_when_its_environment_changes.py")], 120,
          needs_app=False,

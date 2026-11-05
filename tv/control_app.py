@@ -5398,6 +5398,60 @@ def _roster_get(url):
     return got
 
 
+#: v3862 (item 11) - THE ROSTER LABELS THAT MAY APPROVE A NEW PC'S KEY (functions/api/roster.js APPROVERS, held equal by
+#: test_a_new_pc_waits_for_his_approval). His main PC; nobody else's console offers the buttons.
+ROSTER_APPROVERS = ("Konyo · Mac",)
+_KEY_REQUESTS = {"at": 0.0, "v": None}
+
+
+def _roster_my_label():
+    import roster_publish as _rp
+    return _rp.owner_of(_roster_claimed_name(), _roster_platform())
+
+
+def roster_key_requests(force=False, _get=None, now=None):
+    """v3862 (item 11) - the new PCs waiting for approval, for THIS PC's fleet card. -> {"approver", "requests", "why"}.
+    Only a PC whose label is an approver asks the worker (cached 120 s); every other PC answers approver False and no list.
+    Never raises; a failed read is requests None (UNKNOWN), never an empty list."""
+    now = time.time() if now is None else now
+    try:
+        label = _roster_my_label()
+    except Exception:
+        label = None
+    if label not in ROSTER_APPROVERS:
+        return {"approver": False, "label": label, "requests": None, "why": "this PC does not approve new PCs"}
+    if not force and _KEY_REQUESTS["v"] is not None and now - _KEY_REQUESTS["at"] < 120:
+        return dict(_KEY_REQUESTS["v"])
+    got = (_get or _roster_get)(_ROSTER_URL + "?requests=1")
+    if not isinstance(got, dict) or got.get("ok") is not True or not isinstance(got.get("requests"), list):
+        v = {"approver": True, "label": label, "requests": None,
+             "why": "the roster could not say which PCs are waiting (%s)" % ((got or {}).get("why") if isinstance(got, dict) else "?")}
+    else:
+        reqs = [r for r in got["requests"] if isinstance(r, dict) and isinstance(r.get("keyId"), str)][:10]
+        v = {"approver": True, "label": label, "requests": reqs,
+             "why": ("%d PC(s) waiting for approval" % len(reqs)) if reqs else "no PC is waiting"}
+    _KEY_REQUESTS.update(at=now, v=v)
+    return dict(v)
+
+
+def roster_approve(owner, key_id, decision, _post=None, now_ms=None):
+    """v3862 (item 11) - approve or deny ONE pending key, signed with THIS PC's registered key. -> the worker's answer.
+    Refused here (nothing posted) unless this PC is an approver and the decision is approve or deny."""
+    try:
+        label = _roster_my_label()
+    except Exception:
+        label = None
+    if label not in ROSTER_APPROVERS:
+        return {"ok": False, "why": "this PC is not one that approves new PCs"}
+    if decision not in ("approve", "deny") or not isinstance(owner, str) or not isinstance(key_id, str):
+        return {"ok": False, "why": "an approval names an owner, a key id and approve or deny"}
+    body = {"kind": "approve", "approver": label, "owner": owner, "keyId": key_id[:16], "decision": decision,
+            "signedAt": int(now_ms if now_ms is not None else time.time() * 1000)}
+    got = (_post or _roster_post)(_ROSTER_URL, body, os.path.join(_log_root(), ".roster_key.json"))
+    _KEY_REQUESTS.update(at=0.0, v=None)            # the next fleet read asks again
+    return got if isinstance(got, dict) else {"ok": False, "why": "the roster answer was not a record"}
+
+
 def _roster_fetch_once():
     """Read every owner's roster into this PC's cache. Never a ledger write."""
     import roster_publish as _rp
@@ -48943,6 +48997,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/fleet":
             # v1496 — who is online and when each machine was last here (60s cached, read-only)
             _fl = fleet_presence(force=("force=1" in (self.path or "")))
+            try:                                    # v3862 (item 11) - the new PCs waiting for HIS approval
+                if isinstance(_fl, dict):
+                    _fl = dict(_fl, keyRequests=roster_key_requests())
+            except Exception:
+                pass
             try:
                 import fleet_presence as _fpz   # v3850 - ONE presence function, stamped on every row
                 _fl = _fpz.stamp_fleet(_fl)
@@ -50363,6 +50422,18 @@ class Handler(BaseHTTPRequestHandler):
                 body, self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
                 sec_fetch_site=self.headers.get("Sec-Fetch-Site"))
             self._json(_code, _out)
+            return
+        if path == "/api/roster_approve":
+            # v3862 (item 11) - his Approve / Deny on a new PC's key. The SAME origin gate as the d2jsp doors: a click
+            # from another tab must never put a stranger's key under one of his labels.
+            import d2jsp_chrome as _d2jsp
+            if not _d2jsp.console_may_post(
+                    self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
+                    self.headers.get("Sec-Fetch-Site")):
+                self._json(403, {"ok": False, "reason": "local"})
+                return
+            b = body if isinstance(body, dict) else {}
+            self._json(200, roster_approve(b.get("owner"), b.get("keyId"), b.get("decision")))
             return
         if path == "/api/roster-book":
             # The board on this PC hands its builds here. The roster route publishes

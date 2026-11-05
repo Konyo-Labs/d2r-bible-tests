@@ -48,7 +48,8 @@ beside cloud (REG-3153), ci-trust pre-push (tv/ci_verdict.py). Each item: law + 
 9. [ ] CLAUDE DIAGNOSIS on each PC for book-misses: diagnose + propose (card / #230), never run a NEW fix alone.
 10. [~] PROOF METER (built, REG-3160): owed / rate / ETA on each fleet row's `proved` part; the worker now also keeps
        the census why it had dropped since v3855. Needs a render + a Grok look on the fleet card after landing.
-11. [ ] APPROVE A NEW PC before it joins/shares a roster profile.
+11. [~] APPROVE A NEW PC (built, REG-3163): a refused new key waits as a request; his Mac's fleet card Approves / Denies,
+       signed with the Mac's own roster key. Needs a render + a Grok look on the card.
 12. [~] KV BUDGET for Workers Paid (built, REG-3161; his Billing page confirmed it 2026-11-05): presence 220 s / 10 min,
        shadow profile every 10 min, frames hourly; the fleet's own ceiling 10,000 writes a day. Roster stays hourly.
 13. [ ] GrokBot LIVE passes on v3861 (fleet chips, Heart fan CTM, Dean uniques cross-ref REG-3150 a-d) -> fixes.
