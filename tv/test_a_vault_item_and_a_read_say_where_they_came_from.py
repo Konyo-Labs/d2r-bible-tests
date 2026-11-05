@@ -262,15 +262,15 @@ RED_PROOF = [
     {
         "why": "the reap record's names are not read — the deleter goes unnamed",
         "file": "read_pictures.py",
-        "find": "        if stem and any(_stem(n) == stem for n in names):\n",
-        "replace": "        if False:\n",
+        "find": "    if stem:\n        for r in idx[\"names\"].get(stem, ()):\n",
+        "replace": "    if False:\n        for r in idx[\"names\"].get(stem, ()):\n",
         "matches": 1,
     },
     {
         "why": "a refused picture is not recognised as 'never written'",
         "file": "read_pictures.py",
-        "find": "        if same:\n            return (\"never-written\",",
-        "replace": "        if False:\n            return (\"never-written\",",
+        "find": "        if same:\n            return {\"code\": \"never-written\",",
+        "replace": "        if False:\n            return {\"code\": \"never-written\",",
         "matches": 1,
     },
     {

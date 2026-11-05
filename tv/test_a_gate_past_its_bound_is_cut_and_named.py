@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """REG-3212 - A PROOF RUN BOUNDS ITSELF INSIDE HIS 75 MINUTES: A GATE PAST ITS BOUND IS CUT, RECORDED TIMEOUT, AND NAMED.
 
-His words (2026-11-05): "2hr and 50 min are you kidding me?" and "...not triggered at an alert somewhere at 75 minutes
-which was max?". MEASURED on v3864 (ci/proof-keys-v3864, run 42061540765): shard 10 held 656 of 8,829 proofs and proved
+His words (2026-11-05): "2hr and 50 min are you kidding me?" (that figure was a UTC-vs-Israel-time misreading, not a
+measurement - Publish took 55.7 min) and "...not triggered at an alert somewhere at 75 minutes which was max?".
+MEASURED on v3864 (ci/proof-keys-v3864, run 42061540765): shard 10 held 656 of 8,829 proofs and proved
 for 87 min of job - every other shard done in 24-57 - until it was cancelled, under a 160-minute prove step and a 180-minute
 job, so no bound ever fired. Held here:
   * heart2 reads its bounds from HEART2_GATE_CAP_S (one gate's wall cap) and HEART2_PROVE_DEADLINE (the run's deadline,

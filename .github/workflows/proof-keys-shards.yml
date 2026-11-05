@@ -12,7 +12,8 @@ name: proof-keys shards (ci/proof-keys-* only)
 # ⚠ N LIVES IN TWO PLACES - PROOF_SHARDS and the matrix list - and
 # tv/test_the_shard_workflow_proves_every_proof_once.py goes red if they disagree. v3864: 22 - GitHub Pro runs 40 jobs at once
 # (2026-11-05), and the version's other checks hold ~18 of them while the shards run (agent tests 5, Playwright 12, Windows 1).
-# v3865 - A VERSION PROVES IN MINUTES (his words that night: "2hr and 50 min are you kidding me?"). MEASURED (UTC) on v3864:
+# v3865 - A VERSION PROVES IN MINUTES (his words that night: "2hr and 50 min are you kidding me?" - that figure was a
+# UTC-vs-Israel-time misreading, not a measurement; Publish took 55.7 min). MEASURED (UTC) on v3864:
 # ci/proof-keys-v3864 (run 42061540765) began 16:08; 21 of 22 shards were done by 17:05, shard 10 (656 of 8,829 proofs)
 # ran until it was cancelled at 17:40 - 87 min, nothing alerted - and its re-run ended the run at 18:18. Publish (run
 # 42084305066) then proved the SAME commit again 18:27 -> 19:22 (56 min): its shards restored only v3863's seed and served

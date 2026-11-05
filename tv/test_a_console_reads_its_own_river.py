@@ -284,8 +284,10 @@ RED_PROOF = [
      "matches": 1},
     {"why": "#193 - a read that never reached the route is counted as work",
      "file": "tv/control_app.py",
-     "find": "        _RIVER_WARM.update(lastTs=now, owed=1, ms=int((time.time() - t0) * 1000),\n",
-     "replace": "        _RIVER_WARM.update(worked=int(_RIVER_WARM.get(\"worked\") or 0) + 1, lastTs=now, owed=1, ms=int((time.time() - t0) * 1000),\n",
+     "find": "        # The route remembers its own failure in _RIVER_LAST; a read that never reached the route says so here.\n"
+             "        _RIVER_WARM.update(lastTs=now, owed=1, ms=int((time.time() - t0) * 1000),\n",
+     "replace": "        # The route remembers its own failure in _RIVER_LAST; a read that never reached the route says so here.\n"
+                "        _RIVER_WARM.update(worked=int(_RIVER_WARM.get(\"worked\") or 0) + 1, lastTs=now, owed=1, ms=int((time.time() - t0) * 1000),\n",
      "matches": 1},
     {"why": "#193 - the card draws the boot window as a bare river UNKNOWN again",
      "file": "tv/control_ui.html",

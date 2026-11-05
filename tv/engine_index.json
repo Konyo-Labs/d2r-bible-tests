@@ -985,10 +985,12 @@
       "watched",
       "measure",
       "render",
+      "tighten",
+      "floor_vs_map",
       "main"
     ],
     "gotcha": "`--check` REFUSES and never regenerates, exactly like blueprint.py, because the pre-push grades the WORKING TREE. ⚠ And an unreadable input is a REFUSAL, never a zero: `_read` returns None (v3231 — it used to return \"\", so an unreadable control_ui.html gave an empty id set and would have BANKED a HEART.md claiming the console paints 0 surfaces). A watcher that cannot be read is named rather than skipped, because dropping it makes every surface it covers look UNWATCHED — a coverage collapse indistinguishable from a real one. `_why_unmeasurable` is TOLD what the caller found and must never re-read the file: bump_version replaces the surfaces atomically and regenerates this map in the same run, so a second look can see a healthy file and strip the reason out of the refusal (v3235).",
-    "purpose": "Derives HEART.md from the tree: every `id` the console PAINTS (the honest unit — a class may be shared by forty nodes, an id names one thing), and which of them any watcher mentions. UNWATCHED is not a defect; what is refused is a surface going unwatched SILENTLY, so the count is a ratchet that may not fall without a reason in heart_floor.json.",
+    "purpose": "Derives HEART.md from the tree: every `id` the console and the board PAINT, and which of them a watcher's CODE names whole. heart_floor.json is a ratchet by NAME. A regeneration raises it whenever the map still watches every floor name. --check refuses a fall, a lost name, or a floor that lags the map. Only `--bless --why` lowers it. Both files are written whole after their text is built (REG-3216).",
     "territory": "heart-organs"
   },
   "his_answers.py": {
@@ -2260,10 +2262,11 @@
       "record",
       "bank",
       "score",
-      "report"
+      "report",
+      "lock_counts"
     ],
-    "gotcha": "k and n count SABOTAGES, never agreements — a lock fed by an agreement rate opens because nothing was ever tested, which is the exact failure it exists to prevent. `n == 0` is UNPROVEN, not failing. `may()` checks the ORDER first and reports the blocked upstream prerequisite rather than its own score, so a high number never reads as 'nearly there'. And the heart gate is split by REVERSIBILITY: a STALE census softens only for non-destructive surfaces, a BLIND instrument never softens. Note control_app counts OPEN as not-open while `report()` counts OPEN + HARDENED together — two tallies of one quantity.",
-    "purpose": "The lock ledger: banks sabotages ATTEMPTED vs guard refusals per surface, scores them with Wilson + confluence, and answers may(lock) in his required order.",
+    "gotcha": "k and n count SABOTAGES, never agreements — a lock fed by an agreement rate opens because nothing was ever tested, which is the exact failure it exists to prevent. `n == 0` is UNPROVEN, not failing. `may()` checks the ORDER first and reports the blocked upstream prerequisite rather than its own score, so a high number never reads as 'nearly there'. And the heart gate is split by REVERSIBILITY: a STALE census softens only for non-destructive surfaces, a BLIND instrument never softens.",
+    "purpose": "The lock ledger. It banks sabotages ATTEMPTED vs guard refusals per surface, scores them with Wilson + confluence, and answers may(lock) in his required order. Every report row also carries the two words a surface prints: act ('may act' / 'shut - <the one reason>') and provenSay ('proven 0.90 >= 0.72'). lock_counts() is the one valve tally every surface quotes: '4 of 9 may act now (7 proven)' (REG-3215).",
     "territory": "gates-proofs"
   },
   "self_prove.py": {
@@ -3194,5 +3197,58 @@
     "gotcha": "A floor rises only to min(CI's count, this machine's push-gate count), and only where the push gate's own last FULL clean run measured above it (tv/.render_verdict.json coverageStale); a partial verdict or an incomplete CI record is refused whole, a LIVE population (render_check.COVERAGE_VOLATILE) is never raised, and nothing is ever lowered. It needs no browser - it reads the record CI's render-bless job uploaded.",
     "purpose": "REG-3081/3083 (#2) - reads the coverage bless CI's render-bless workflow made on a full cold run and applies the floors that may rise on this machine, without running a browser here.",
     "territory": "render-pixels"
+  },
+  "ci_watch.py": {
+    "entryPoints": [
+      "judge",
+      "watch",
+      "fetch_runs",
+      "fetch_jobs",
+      "gh_get",
+      "main"
+    ],
+    "gotcha": "An unread GitHub is UNKNOWN, never green, and 'slow' is RED although the run ended: his 75-minute max was passed. Scheduled routines are left out of a commit's runs. GitHub's unauthenticated API allows 60 reads an hour, so a long watch reads through gh_get (the authenticated gh CLI) and falls back to the public API; a TV_STUB test console never asks.",
+    "purpose": "REG-3213 - judges one commit's GitHub Actions runs (overrun/slow/red/running/green/none/unknown) with on/worked/lastTs/owed and the jobs still running past 75 min. Asked by ship_when_green (authenticated through gh_get) and by the console's CI tick (public API, at most every 5 min).",
+    "territory": "push"
+  },
+  "proof_seed.py": {
+    "entryPoints": [
+      "build",
+      "widen",
+      "wait_for_sibling",
+      "exact_served",
+      "digest",
+      "main"
+    ],
+    "gotcha": "A seed is an optimisation: the CLI exits 0 always, and a seed that cannot be built is a cold run, said and never red. What the seed holds never decides what is served - heart2 serves a seed entry only under the key THIS checkout's bytes give it, and reads served.json only when its sha is the checkout's HEAD. Every shard checks the seed's sha256 against the seed job's digest and refuses to start on another.",
+    "purpose": "REG-3210/3214 - builds a CI proof run's one seed: the restored actions/cache seed plus the proof-bank bundle of the exact head sha (and, for Windows, the newest other set), served.json and its digest. It marks a set its bound cut as bank=partial. --widen merges a re-run shard's earlier attempt into the seed; --wait-sibling waits for this commit's ci round. Never fails a run.",
+    "territory": "gates-proofs"
+  },
+  "art_names.py": {
+    "entryPoints": [
+      "names",
+      "doors",
+      "missing",
+      "in_comment",
+      "main"
+    ],
+    "gotcha": "Read-only: it opens the two pages and the HD manifest and lists art/. A composed name ('art/' + slug) is a DOOR read from the table that feeds it, and a composer it does not know is reported as an unknown door, never skipped. The board's relative art/ resolves to /art/ because the console iframes it from /board, so bible.html's names count too. A name inside a comment is not a request.",
+    "purpose": "Every art name the console and its board can ask /art/ for, read from the code that asks (literals, 12 composers expanded from their tables, the HD manifest; an unknown composer is reported); the CLI checks an art tree and lists what will 404",
+    "territory": "console-ui"
+  },
+  "disk_growers.py": {
+    "entryPoints": [
+      "run",
+      "lane",
+      "find",
+      "salvage",
+      "verify",
+      "prune",
+      "holders",
+      "main"
+    ],
+    "gotcha": "The registry is DECLARED (GROWERS): a directory no entry names is never looked at. A new entry starts in dry-run and arms itself only after ARM_AFTER_PASSES clean passes spanning ARM_AFTER_H hours. Nothing is pruned when holders cannot be read (lsof; psutil on Windows - without it a Windows PC prunes nothing and says why), and the CLI only measures - it never salvages or prunes. Age is the newest of mtime AND ctime, so a copy that kept old mtimes is young.",
+    "purpose": "REG-3208/3209: the growers lane. A DECLARED registry of what keeps growing (seat worktrees and scratch in the temp root, law fixtures in $TMPDIR, %TEMP% on Windows) is measured each pass. What is informational is salvaged into tv/.salvage: unmerged commits as patches, merge history as a bundle, the dirty diff, untracked files, or one record line for a law fixture. Salvages stay under caps and a free-space floor and are read back by sha256. Only then is the grower pruned (git worktree remove for a worktree), with lsof asked again before each prune. New entries stay in dry-run until they earn arming.",
+    "territory": "routines-infra"
   }
 }

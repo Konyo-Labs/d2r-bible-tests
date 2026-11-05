@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """REG-3213 - A VERSION'S CI THAT PASSES 75 MINUTES ALERTS, WITHOUT ANYONE PRESSING ANYTHING.
 
-His words (2026-11-05, v3864): "2hr and 50 min are you kidding me?" and "why has it been stuck for so long and not
-triggered at an alert somewhere at 75 minutes which was max?". MEASURED that night (UTC): ci/proof-keys-v3864 (run
+His words (2026-11-05, v3864): "2hr and 50 min are you kidding me?" (that figure was a UTC-vs-Israel-time misreading,
+not a measurement) and "why has it been stuck for so long and not triggered at an alert somewhere at 75 minutes which
+was max?". MEASURED that night (UTC): ci/proof-keys-v3864 (run
 42061540765) began 16:08; 21 of 22 shards were done by 17:05, shard 10 (656 of 8,829 proofs) ran until it was cancelled at
 17:40 - 87 min, under a 160-minute step cap and a 180-minute job cap; its re-run ended the run at 18:18 (2 h 10 min). Publish
 (run 42084305066) then proved the same commit 18:27 -> 19:22 (56 min): 3 h 14 min from the ci push to the deploy. NOTHING
