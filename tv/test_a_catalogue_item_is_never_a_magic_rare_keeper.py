@@ -27,14 +27,16 @@ except Exception:
 
 import vault_page_node as VPN  # noqa: E402
 
-RHY, KEEP, RW = "Aldur's Rhythm", "Brimstone Clasp", "Enigma"
+# v3864 - his v3849 ruling throws a low set piece out ("only valuable set pieces are kept"), so the set piece here is one
+# his rule keeps (_KEEP_PIECE) - the law is about a catalogue item never being a Magic & Rare keeper, not about Aldur
+RHY, KEEP, RW = "Naj's Puzzler", "Brimstone Clasp", "Enigma"
 #: rolled names that merely CONTAIN a catalogue word (the Grief runeword, Aldur's RHYTHM): keepers, never catalogue items
 ROLLED = ("Grief Mark", "Rhythm Visage")
 STORES = {
     "d2r_ownerClaim": "*", "d2r_ledgerName": "Fixture-Ledger",
     "d2r_owned": [KEEP],
     "d2r_muleAssign": {},
-    "d2r_magicFinds": {RHY: {"q": "magic", "base": "Jagged Star", "sessionId": "s_1_1", "frameId": "f1", "at": 1},
+    "d2r_magicFinds": {RHY: {"q": "magic", "base": "Elder Staff", "sessionId": "s_1_1", "frameId": "f1", "at": 1},
                        KEEP: {"q": "rare", "base": "Amulet"},
                        RW: {"q": "rare", "base": "Archon Plate"},
                        ROLLED[0]: {"q": "rare", "base": "Bone Visage"}, ROLLED[1]: {"q": "rare", "base": "Bone Visage"}},
@@ -61,7 +63,7 @@ OUT.mfAfter = Object.keys(mf).sort();
 OUT.ownedAfter = Array.from(owned).sort();
 OUT.provRhy = JSON.parse(LSR.getItem('d2r_vaultProv') || '{}')[RHY] || null;
 /* the register holds a catalogue name again (an older reader wrote it): every place that homes it must say no */
-magicFinds[RHY] = { q: 'magic', base: 'Jagged Star' };
+magicFinds[RHY] = { q: 'magic', base: 'Elder Staff' };
 OUT.inMR = window._vaultInMagicRare(RHY);
 OUT.keeperHome = window._mfKeeperHome(RHY) === undefined ? 'none' : window._mfKeeperHome(RHY);
 OUT.keepHome = window._mfKeeperHome(KEEP);

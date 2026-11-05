@@ -120,7 +120,8 @@ class ATvStubNeverOutranksWhatTheNameIs(unittest.TestCase):
         for n in ("Raven Whorl", "Doom Eye"):
             self.assertEqual(self.r(n)["rar"], "rare", "%s read as %r" % (n, self.r(n)["rar"]))
             self.assertEqual(self.r(n)["cells"], [1, 1, False], "%s is not sized as its slot: %r" % (n, self.r(n)))
-        self.assertTrue(self.r("Raven Whorl")["ask"], "PREMISE (REG-2903): a ring or a jewel is still asked")
+        # v3864 - his v3849 ruling ("Raven Whorl IS a ring") settles REG-2903's ring-or-jewel question for a Whorl
+        self.assertFalse(self.r("Raven Whorl")["ask"], "a Whorl is asked ring-or-jewel again, against his v3849 ruling")
 
     def test_a_stub_of_a_name_nothing_knows_keeps_its_word(self):
         self.assertEqual(self.r("Zorblax Thing")["rar"], "basic", self.r("Zorblax Thing"))
