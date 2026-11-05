@@ -13013,6 +13013,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_shadow_vault_tab_dates_the_vault_by_its_own_clock.py")], 300,
          needs_app=False,
          why="REG-3123 (#23): the shadow Vault tab says the vault section age beside the board upload age, UNKNOWN when a clock was not handed"),
+    Gate("test_a_proof_stands_aside_for_a_push",
+         [sys.executable, os.path.join(HERE, "test_a_proof_stands_aside_for_a_push.py")], 180,
+         why="v3861: a console proof already running stands aside for a push grading on the same PC and names it, never for "
+             "its own law's fixture hook, never for a ci push over in seconds, and an unreadable process list never freezes it"),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

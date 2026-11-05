@@ -1031,6 +1031,99 @@ def lanes_for(free, cpus):
 #: CPython and change nothing). Only self_prove.spawn's argv carries it: a pre-push or hand-run prover never matches.
 PROVER_MARK = ("-X", "tvd_self_prove")
 
+#: v3861 - how often the console reads the process list for a grading push (its guard runs every 10 s)
+PUSH_ASK_EVERY_S = 20
+#: v3861 - a hook alive this long is a push GRADING. A ci/ push's hook skips the Mac gates and exits in seconds; a stand-aside
+#: books STAND_ASIDE_COOLDOWN_S, so a proof must not give up half an hour for a push that was over before the guard asked.
+PUSH_GRADING_AFTER_S = 60
+
+
+def _etime_s(v):
+    """ps's etime ([[dd-]hh:]mm:ss) -> seconds, or None when it does not read. Pure."""
+    try:
+        v = str(v).strip()
+        days, _, rest = v.rpartition("-")
+        parts = [int(x) for x in rest.split(":")]
+        if not 1 <= len(parts) <= 3:
+            return None
+        while len(parts) < 3:
+            parts.insert(0, 0)
+        return (int(days) if days else 0) * 86400 + parts[0] * 3600 + parts[1] * 60 + parts[2]
+    except (TypeError, ValueError):
+        return None
+
+
+def process_rows(run=None):
+    """v3861 - every process on this PC as [(pid, ppid, age_s | None, command)], or None when the list cannot be read.
+    Never raises. posix asks ps; Windows asks CIM (no pgrep there), in a hidden window."""
+    run = run or subprocess.run
+    try:
+        if IS_WIN:
+            script = ("Get-CimInstance Win32_Process | ForEach-Object { $a = '-'; if ($_.CreationDate) { "
+                      "$a = [int]((Get-Date) - $_.CreationDate).TotalSeconds }; "
+                      "'{0} {1} {2} {3}' -f $_.ProcessId, $_.ParentProcessId, $a, $_.CommandLine }")
+            r = run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script], capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=15, creationflags=_CREATE_NO_WINDOW)
+        else:
+            r = run(["ps", "-axo", "pid=,ppid=,etime=,command="], capture_output=True, text=True, encoding="utf-8",
+                    errors="replace", timeout=15)
+        if r.returncode != 0:
+            return None
+        rows = []
+        for line in (r.stdout or "").splitlines():
+            t = line.split(None, 3)
+            if len(t) < 3 or not t[0].isdigit() or not t[1].isdigit():
+                continue
+            age = None if t[2] == "-" else (int(t[2]) if IS_WIN and t[2].isdigit() else _etime_s(t[2]))
+            rows.append((t[0], t[1], age, t[3] if len(t) > 3 else ""))
+        return rows
+    except Exception:
+        return None
+
+
+def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S):
+    """v3861 - IS A PUSH GRADING ON THIS PC, outside this lane's own prover? -> (True | False | None, detail). Pure.
+
+    MEASURED 2026-11-05 ~02:00 on his Mac: the console's `heart2 --prove test_control` started 20 minutes before the
+    v3860 push and kept running the same suite beside the push's own test_control. stand_aside() stops a running proof
+    for two things only (his game, low memory) and decide() only refuses to START one on a busy machine, so a proof
+    already running when a push begins runs through the whole gate. v3860's push #2 was refused on two timing cases that
+    pass alone; that is the load that refuses a push. The push grades the bytes every PC is about to receive and the
+    proof grades the bytes this PC already has, so the push goes first.
+
+    rows: process_rows(). A pre-push hook or `git push` (tree_busy's ONE definition of running one) counts once it has
+    run `after_s`, unless one of its ancestors is this lane's own prover: laws run the hook inside their fixture repos,
+    and a proof that stood aside for its own law would end itself every slice. An unknown age counts: the hook IS
+    running. rows None -> None (UNKNOWN), and the caller never stops a proof on a reading it never got."""
+    if rows is None:
+        return None, "the process list could not be read"
+    try:
+        import tree_busy as _tb
+        parent, cmd_of, age_of = {}, {}, {}
+        for pid, ppid, age, cmd in rows:
+            parent[str(pid)], cmd_of[str(pid)], age_of[str(pid)] = str(ppid), str(cmd or ""), age
+        hits = []
+        for pid, cmd in cmd_of.items():
+            if not _tb._is_hook_invocation(cmd):
+                continue
+            age = age_of.get(pid)
+            if age is not None and age < after_s:
+                continue
+            seen, p, ours = set(), parent.get(pid), False
+            while p and p not in seen and p != "0":
+                seen.add(p)
+                if mark in cmd_of.get(p, "").split():
+                    ours = True
+                    break
+                p = parent.get(p)
+            if not ours:
+                hits.append(pid)
+    except Exception as e:
+        return None, "the process list could not be judged (%s)" % type(e).__name__
+    if not hits:
+        return False, ""
+    return True, "a push is grading on this PC (pid %s)" % ", ".join(sorted(hits, key=int)[:4])
+
 
 def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None):
     """Start `heart2.py --prove` hidden and below everything he does. -> pid

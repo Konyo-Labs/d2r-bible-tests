@@ -22425,6 +22425,26 @@ def _a_sweep_is_reading():
         return False
 
 
+#: v3861 - the stand-aside reason a push gives, said on the console card and the fleet row
+PUSH_STAND_ASIDE = "a push is grading on this PC - the proof gives it the cores and waits for it"
+_PUSH_GRADING = {"at": 0.0, "v": (False, "")}
+
+
+def _a_push_is_grading():
+    """v3861 - is a push grading on this PC (never the prover's own law)? Asks the process list at most every
+    self_prove.PUSH_ASK_EVERY_S (the guard runs every 10 s). Never raises - a failed read is NOT grading, so a failure
+    can only let the proof run, never freeze it off (the REG-2192 rule). See self_prove.push_grading."""
+    try:
+        import self_prove as _sp
+        now = time.time()
+        if now - _PUSH_GRADING["at"] >= _sp.PUSH_ASK_EVERY_S:
+            _PUSH_GRADING["v"] = _sp.push_grading(_sp.process_rows())
+            _PUSH_GRADING["at"] = now
+        return _PUSH_GRADING["v"][0] is True
+    except Exception:
+        return False
+
+
 def _sp_yield_here():
     """REG-2192 — the self-prove's stand-aside judge, widened: True when he is PLAYING or a chronicle
     SWEEP is reading. The self-prove already runs below everything he does and yields to his game in 10 s
@@ -22437,6 +22457,8 @@ def _sp_yield_here():
             return True
     except Exception:
         pass
+    if _a_push_is_grading():        # v3861 - a push grading on this PC goes first; the proof waits for it
+        return True
     return _sp_playing_here()
 
 
@@ -22462,6 +22484,8 @@ def _self_prove_tick():
         r = _self_prove_free_view(r)     # REG-1957 - memory is the only block: free the view of an idle PC
         if _a_sweep_is_reading() and not _sp_playing_here():   # REG-2192 - name the real reason, not "playing"
             r = dict(r, standAside="a sweep is reading his reels - the proof waits for it (REG-2192)")
+        if _a_push_is_grading() and not _sp_playing_here():   # v3861 - and a push, by its name
+            r = dict(r, standAside=PUSH_STAND_ASIDE)
     except Exception as e:
         r = {"on": None, "worked": None, "lastTs": None, "owed": None, "key": "raised",
              "say": "the self-prove tick raised %s" % type(e).__name__}
@@ -22694,6 +22718,8 @@ def _self_prove_guard():
             r = dict(r, gameOnScreen=shadow_game_detail())
             if _a_sweep_is_reading() and not _sp_playing_here():
                 r = dict(r, standAside="a sweep is reading his reels - the proof waits for it (REG-2192)")
+            if _a_push_is_grading() and not _sp_playing_here():
+                r = dict(r, standAside=PUSH_STAND_ASIDE)
     except Exception as e:
         r = {"on": None, "worked": None, "lastTs": None, "owed": None, "key": "raised",
              "say": "the self-prove guard raised %s" % type(e).__name__}
