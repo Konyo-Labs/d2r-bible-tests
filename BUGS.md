@@ -92,6 +92,64 @@ Each tamper ran and the law stayed green, for a different reason, all measured o
   the stored name never decided anything in the old case. New case: two spellings that do not fold, tied 2-2: RED.
 * test_a_version_bump_carries_the_gates_that_ignore_the_version[31] (inert words): the only note carried a URL, which
   leak_problem refuses first. New case: '100% of the gates carry' - no leak, only the inert-words rule refuses it: RED.
+### REG-3136 - THE HEART FAN PLACED ITS LABELS THROUGH A WIDTH RATIO, NOT THE SVG'S OWN TRANSFORM (v3861)
+_hrtFanFit scaled by sr.width / 960, which is not what the browser draws when the svg letterboxes: at 1440 it solved at
+1.36 where the drawn scale was about 0.91, so vault.sweep_start sat over "by" in "by design" (#230 6631504617). It maps
+through svg.getScreenCTM() now and reports scaleFrom; an adjacency costs 25, so the move that clears it is taken; the
+arith halo uses fill-opacity, so no ray shows through a label; a held lock says 'not proven on this PC yet'. Law
+test_the_fan_maps_through_the_browsers_ctm.
+### REG-3137 - A SHALLOW INSTALL HAD NO HISTORY, SO EVERY LAW THAT READS IT WENT BLIND THERE (v3861)
+install-tvd.ps1 cloned --depth 1. A console now repairs a shallow checkout once at boot (history_repair, one pull at a
+time: promisor + partialclonefilter + fetch --unshallow --filter=blob:none), and the installer clones
+--filter=blob:none, never --depth 1. Law test_a_shallow_checkout_gets_its_history.
+### REG-3138 - A PRICE READ PAUSED FOR A PUSH SAID "NO PRICE READER ANSWERED" (v3861)
+His Shako click during the v3860 push: the console answered reason paused and both page fetch loops dropped it, so the
+line blamed a reader that was only waiting (#230 6644125606). The line now says the price is not read yet because this
+machine is running its checks; and one bare number beside the item is its roll ('shako 141'). Laws: the d2jsp desk and
+price-search laws (paused and bare-roll cases).
+### REG-3139 - ON WINDOWS THE BROWSER LAW'S TIMEOUT KILLED THE BROWSER AND LEFT ITS HELPERS HOLDING THE PIPE (v3861)
+js_syntax_gate ended only the browser pid on Windows; its children kept the output pipe open and the gate hung past its
+bound. The timeout path runs taskkill /T /F. Law test_a_browser_is_killed_by_its_group (the fake browser spawns a real
+grandchild; the killpg proof is needs posix).
+### REG-3140 - A VAULT LANE THAT OWED REELS AND STARTED NONE SAID NOTHING ABOUT WHY (v3861)
+vault_autoreel_tick now counts what it passed over by reason and says "N owed, none startable this tick: ..." - retired
+after their tries, cooling down, quarantined, still recording. Law test_an_owed_reel_is_not_called_idle (passed case).
+### REG-3141 - THE FLEET SAID "RIVER STUCK · LOCKS SHUT" WITH NO CAUSE, AND COUNTED LOCK-HELD REELS AS STUCK (v3861)
+His fleet screenshot (01:26): the consequence was red and the cause had no words. The lock chip comes first with what
+the proof waits on (an idle PC, borrowed proofs, proving now, paused, the census waiting for memory); reels held only
+by shut locks are one muted "wait on the locks" chip, never red; a vault lane's debt names its top reason. Laws
+test_the_fleet_says_where_a_river_is_stuck, test_starting_never_hides_a_known_stale_census.
+### REG-3142 - WHAT d2jsp's ADVANCED OPENED SAT BEHIND THE COMMAND DOCK, AND ESCAPE DID NOTHING (v3861)
+His words 00:24: "the ADVANCED for d2jsp is bugged and trapping buttons". At 1280x720 the panel and the Find / Add an
+item / Post row under it were under the fixed .control-dock (GrokBot, #230 6643907824 D1). Opening scrolls it up by the
+overlap; Escape closes it unless the planner or the draft owns Escape. Law test_d2jsp_advanced_opens_above_the_dock.
+### REG-3143 - RUN_GATES' PER-GATE BOUND HAD NO LOAD GRACE, SO ONE LOADED MOMENT THREW AWAY A PUSH (v3861)
+REG-1995's one extension covered render, blueprint and heart only. _run_with_grace gives every uncapped gate one
+extension to bound x load/5 (capped at 2.5x) when the 1-minute load is above 5 at its deadline, said in the output; a
+quiet machine still kills at the bound; no load reading (Windows) is never busy. Law
+test_every_gate_gets_one_extension_when_busy.
+### REG-3144 - THE FLEET ROW CARRIED A 200-CHARACTER PARAGRAPH BESIDE A PC'S NAME (v3861)
+The work ALT's row printed the whole maskWhy (the window gave up; the board has not handed its stores over). A board
+with no items now reads "can't name pieces - this PC's board has no items yet"; any other long reason is cut at a word;
+the hover keeps every word. Law test_the_fleet_says_where_a_river_is_stuck (TheRowSaysItsWhyInAFewWords).
+### REG-3145 - A PROOF ALREADY RUNNING ON THE MAC RAN THE SAME SUITE BESIDE A PUSH'S GATE (v3861)
+MEASURED 2026-11-05 ~02:00: the console's heart2 --prove test_control started 20 minutes before the v3860 push and kept
+running beside the push's test_control; stand_aside() stopped a proof only for his game and low memory, and decide()
+only refuses to START one on a busy machine. A pre-push hook or git push alive 60 s on this PC now makes the stand-aside
+judge yield and the card names it. The prover's own law running the hook in a fixture never counts (ancestry carries
+-X tvd_self_prove), a ci push over in seconds never counts, an unreadable process list is UNKNOWN. Law
+test_a_proof_stands_aside_for_a_push (five red-proofs).
+### REG-3146 - ON WINDOWS THE d2jsp LAMP COULD NEVER TURN GREEN, AND ITS LOGIN WINDOW CLOSED ITSELF (v3861)
+His report 2026-11-05: the login "kept closing", and after signing in through Chrome the lamp stayed grey. MEASURED on
+the work ALT (Chrome 156): (1) run(argv, timeout=5) on a Chrome that was not already open waited on the browser itself
+and killed it (TimeoutExpired at 6.6 s); (2) the main profile's d2jsp cookies were v20 - app-bound encryption, Chrome
+127+, which only Chrome opens - so every up-to-date Windows PC read "could not read the Chrome login" signed in or not.
+A cookie Chrome writes under any other --user-data-dir is v10 (measured on a throwaway profile with a fake cookie).
+The lamp now opens the forum in %LOCALAPPDATA%\TVD\d2jsp-login, started and left running, and the console reads that
+profile first with the existing reader; Chrome's app-bound key is never touched. Windows locks a running profile's
+cookie file ("unable to open database file", measured), so an open window reads login-open and the lamp re-asks every
+3 s; a v20-only main profile reads chrome-locked (sign in through the console's own window). Laws
+test_the_d2jsp_desk_reads_a_price_before_it_posts, test_the_d2jsp_lamp_sits_with_the_readers.
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel
