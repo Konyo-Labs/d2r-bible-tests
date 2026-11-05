@@ -5580,9 +5580,14 @@ def _prove_push_one(sandbox, name, filename, pr, idx, say, why):
     return v
 
 
-def _cache_serve(cache, sandbox, name, filename, pr, idx, say):
+def _cache_serve(cache, sandbox, name, filename, pr, idx, say, own_only=None):
     """#42 P3 (and #186's census) - proof `idx` served from the verdict cache when every keyed byte is identical.
-    -> (PROVEN | None, key | None, [repo-relative inputs]); None = not served: run it, then hand the key to _cache_bank"""
+    -> (PROVEN | None, key | None, [repo-relative inputs]); None = not served: run it, then hand the key to _cache_bank
+    REG-3191 - `own_only` (None: is this gate in the census's _CENSUS["here"] - an environment self-check gate, or a
+    safety-net run; always empty on a push): a PROVEN another tree banked is not served - it is judged on this PC; one
+    this tree banked still is."""
+    if own_only is None:
+        own_only = name in (_CENSUS.get("here") or ())
     key, rels = None, []
     # REG-3118 (#186, the second eye on v3840) - A PROOF THIS PC CANNOT RUN IS NEVER SERVED, AT PUSH TIME EITHER. Only the
     # census held this (it dropped its cache for the proof); _prove_push_one served any hit first, so a node law the ALT
@@ -5611,6 +5616,12 @@ def _cache_serve(cache, sandbox, name, filename, pr, idx, say):
             cache.say_once(name, kwhy, "     %-52s   ↳ #42 P3: not cacheable - %s; every proof of this law runs on "
                                        "every push" % (label, kwhy))
         else:
+            _own = cache.peek(key) if own_only else None
+            if own_only and _own is not None and _own.get("tree") != TREE_ID:
+                cache.count("misses")         # REG-3191 - another tree's word is not this PC's self-check
+                cache.say_once(name, "REG-3191 own-only", "     %-52s   ↳ REG-3191: judged on this PC - another tree's "
+                                                         "PROVEN is not served to it here" % label)
+                return None, key, rels
             hit = cache.lookup(key)
             if hit is not None:
                 cache.count("hits")
@@ -6552,7 +6563,9 @@ def _reused_ages(cache, results):
 
 #: #186 - the verdict cache the self-prove lane's census serves and banks through. prove(reuse=True) opens it; None means
 #: every proof runs - the verdict of record (run_gates, CI, a hand --prove) never opens it.
-_CENSUS = {"cache": None}
+#: REG-3191: "here" - the gates this census judges on this PC whatever another tree banked (the environment self-check, or
+#: every gate of a safety-net run); REG-3192: "red" - the gates whose clean run went RED here this run.
+_CENSUS = {"cache": None, "here": (), "red": set(), "net": False}
 
 
 def _census_cache(reuse, say=print):
@@ -6626,6 +6639,258 @@ def _census_bank(cache, name, per, say):
     return n
 
 
+# ══ REG-3191 / REG-3192 (his ruling 2026-11-05, items 3 and 4) - IMPORTED PROOFS OPEN THE LOCKS; THE FULL PROOF IS A NET ══
+# His words ~09:05: "(3) Each PC imports the proofs for byte-identical files at update ... and runs only an environment
+# self-check: the laws whose `needs` are platform-specific. Locks open on (imported proofs + local self-check)." ~09:15:
+# "(4) the background full proof keeps running at idle as a SAFETY NET but no longer holds the river shut - a red/blind it
+# finds goes to the fleet + BUGS and closes only the lock its law guards."
+# MEASURED on his Mac (v3864, 2026-11-05 ~21:03): GitHub's 2,928 proofs imported by ~20:55, yet the census owed 162 gates
+# and frame.release stayed shut on 17 of its guards. The slice path already SERVES an imported proof (#186 - _census_one
+# asks no tree; the live lane's last slice served 183 of 251), so the hold was not a refusal: an owed gate is written into
+# the census only when a 40-gate slice reaches it, and the slices queue behind laws that really run (Chrome ones too).
+# trust_pass writes, with NO run, every owed gate whose every proof the bank serves over this checkout's own bytes -
+# BEFORE the slice proves anything - so a lock waits only on the gates the bank cannot serve and on the environment
+# self-check. Those stay owed exactly as before. The push path (_PUSH, REG-2599/REG-2587) never asks any of this.
+#: REG-3191 - THE ENVIRONMENT SELF-CHECK, DECLARED (his 2026-10-22 rule: lists are declared, never inferred from source).
+#: A gate named here, or one any proof of which declares "needs" (REG-1686), is never written on another tree's word: its
+#: foreign proofs are judged on this PC. Seeded only with laws a measured environment find NAMES as its catcher:
+#:   REG-3131 (the cp1255 / ANSI codepage)    test_a_windows_console_runs_in_utf8_mode
+#:   REG-3152 (chrome.exe --version opens one) test_d2jsp_desk
+#:   REG-3151 (his real idle clock)            test_triage_runs_beside_a_shadow_reel
+#:   REG-3145 (a push alive on this PC)        test_a_proof_stands_aside_for_a_push
+#:   REG-3135 (a shallow checkout's history)   test_a_version_stamp_is_not_a_page_change
+#:   REG-3132 (no /tmp on Windows: "the guard is the six laws themselves on every Windows PC's census")
+#: REG-3133's POSIX-only premises are here already: every proof only those cases catch declares needs posix(-signals).
+#: NOT seeded (no law found that names itself their catcher): node invisible on PATH, the CRLF checkout, the launcher port.
+ENV_SELF_CHECK = (
+    "test_a_windows_console_runs_in_utf8_mode",
+    "test_d2jsp_desk",
+    "test_triage_runs_beside_a_shadow_reel",
+    "test_a_proof_stands_aside_for_a_push",
+    "test_a_version_stamp_is_not_a_page_change",
+    "test_a_reels_whole_life_is_one_work_list",
+    "test_the_art_resolver_folds_the_apostrophe",
+    "test_the_eye_says_which_family_looked",
+    "test_the_missing_wall_shows_the_qlvl",
+    "test_the_shadow_vault_tab_dates_the_vault_by_its_own_clock",
+    "test_the_shelf_shows_the_four_lanes",
+)
+
+
+def env_gate(name, proofs):
+    """REG-3191 - is this gate environment-sensitive BY DECLARATION? -> (bool, why)"""
+    if name in ENV_SELF_CHECK:
+        return True, "named in ENV_SELF_CHECK"
+    needs = sorted(set(str(p.get("needs")) for p in (proofs or ()) if isinstance(p, dict) and p.get("needs")))
+    if needs:
+        return True, "a proof declares needs %s" % ", ".join(needs)
+    return False, ""
+
+
+def split_owed(owed, proofs_of, key_of, peek, here):
+    """REG-3191 - what the bank can say for each owed gate. Pure: every read is a callable a caller hands in.
+
+    owed: [gate]; proofs_of(gate) -> (filename, [proof]); key_of(gate, filename, proof) -> key | None (the key the census
+    serve takes over this checkout's bytes); peek(key) -> the servable PROVEN entry | None; here: this tree (TREE_ID).
+    -> {"trusted": {gate: n proofs another tree proved}, "servedHere": [gate], "env": {gate: why},
+        "unservable": {gate: why}, "ages": {gate: oldest provedAt ms}}
+    A gate is trusted only when EVERY proof is served and at least one was proved in another tree; every proof served
+    from this tree is servedHere (proved here already); a served gate that is environment-sensitive by declaration is
+    env (judged here); one proof without a servable PROVEN over these bytes - no key, a key nobody banked (other bytes,
+    no import) - is unservable. The last two stay owed exactly as before."""
+    out = {"trusted": {}, "servedHere": [], "env": {}, "unservable": {}, "ages": {}}
+    for name in owed:
+        try:
+            filename, proofs = proofs_of(name)
+        except Exception as _pe:
+            out["unservable"][name] = "its proofs could not be read (%s)" % type(_pe).__name__
+            continue
+        if not proofs:
+            out["unservable"][name] = "it declares no readable proof"
+            continue
+        foreign, miss, oldest = 0, None, None
+        for i, pr in enumerate(proofs):
+            try:
+                key = key_of(name, filename, pr)
+            except Exception as _ke:
+                miss = "proof %d: its key could not be taken (%s)" % (i, type(_ke).__name__)
+                break
+            if key is None:
+                miss = "proof %d is not keyable here" % i
+                break
+            hit = peek(key)
+            if not isinstance(hit, dict):
+                miss = "proof %d has no PROVEN banked over these bytes" % i
+                break
+            if hit.get("tree") != here:
+                foreign += 1
+            _at = hit.get("provedAt")
+            if isinstance(_at, (int, float)) and not isinstance(_at, bool):
+                oldest = _at if oldest is None else min(oldest, _at)
+        if miss:
+            out["unservable"][name] = miss
+            continue
+        if oldest is not None:
+            out["ages"][name] = int(oldest)
+        if not foreign:
+            out["servedHere"].append(name)
+            continue
+        _env, _ewhy = env_gate(name, proofs)
+        if _env:
+            out["env"][name] = _ewhy
+            continue
+        out["trusted"][name] = foreign
+    return out
+
+
+def trust_pass(cache, say=print, gates=None, state=None, write=True):
+    """REG-3191 - write into the census, with no run, every owed gate the bank serves whole over this checkout's bytes.
+    -> split_owed's answer plus {"owed": n asked, "written": [gate]}
+
+    Asked by prove() for the self-prove lane's census (--reuse, never --push, never --net) before a slice proves
+    anything: what it writes is exactly what the slice's _census_one would serve (the same key, the same peek), only
+    without waiting for a slice to reach it. A gate the census holds BLIND is never written on another tree's word - that
+    BLIND was measured here (his 2026-09-12 ruling). Each written gate keeps the age it was MEASURED at (the oldest
+    provedAt it stands on), never this run's clock, and the census names the ones taken on another tree's word
+    (`trusted`), which the safety net (REG-3192) then judges here at idle."""
+    gates = gates if gates is not None else gate_files()
+    if state is None:
+        state = {}
+        if os.path.exists(STATE):
+            with io.open(STATE, encoding="utf-8") as fh:
+                state = json.load(fh)
+    so = slice_owed(gates, state)
+    _blind = set(state.get("blind") or []) if isinstance(state, dict) else set()
+    owed = [n for n, _k in so.get("owed") or [] if n not in _blind]
+    files = dict(gates)
+
+    def _proofs_of(n):
+        f = files[n]
+        return f, red_proofs_in(f)
+
+    def _key_of(n, f, pr):
+        return cache.key_for(HERE, n, f, pr)[0]
+
+    say("  REG-3191 TRUST PASS: asking the bank for %d owed gate(s) - each written only if it serves every proof over "
+        "these bytes" % len(owed))
+    sp = split_owed(owed, _proofs_of, _key_of, cache.peek, TREE_ID)
+    take = sorted(set(sp["trusted"]) | set(sp["servedHere"]))
+    sp["owed"], sp["written"] = len(owed), []
+    if take and write:
+        _write_state(dict((n, PROVEN) for n in take), measured=dict((n, sp["ages"][n]) for n in take if n in sp["ages"]),
+                     stamp=False, trusted=set(sp["trusted"]))
+        sp["written"] = take
+    say("  REG-3191 TRUST PASS: %d owed gate(s) asked; %d written on another tree's proofs over byte-identical inputs "
+        "(trusted - the safety net judges them here at idle), %d served whole from this tree's own, %d environment "
+        "self-check (judged here), %d the bank cannot serve (proved here as before)"
+        % (len(owed), len(sp["trusted"]), len(sp["servedHere"]), len(sp["env"]), len(sp["unservable"])))
+    return sp
+
+
+def net_owed(state, gates=None):
+    """REG-3192 - the trusted gates the SAFETY NET has not yet judged here, against the files on disk. -> [(gate, n)]"""
+    if not isinstance(state, dict) or not isinstance(state.get("trusted"), dict):
+        return []
+    gates = gates if gates is not None else gate_files()
+    files = dict(gates)
+    shas = gate_shas([(n, files[n]) for n in state["trusted"] if n in files])
+    rec = state.get("gateShas") if isinstance(state.get("gateShas"), dict) else {}
+    finds = state.get("netFinds") if isinstance(state.get("netFinds"), dict) else {}
+    out = []
+    for n, sha in sorted(state["trusted"].items()):
+        if n in files and sha and shas.get(n) == sha and rec.get(n) == sha and n not in finds:
+            out.append((n, len(red_proofs_in(files[n]) or [])))
+    return out
+
+
+def net_finds(state, gates=None):
+    """REG-3192 - the safety net's finds that still speak for the files on disk. -> {gate: find}
+
+    ONE reader for the lock (self_arming._net_heart) and the lane's status (self_prove): a find whose gate file has
+    changed since is moot (the census owes that gate again), and a gate no longer registered has no find."""
+    finds = state.get("netFinds") if isinstance(state, dict) else None
+    if not isinstance(finds, dict) or not finds:
+        return {}
+    files = dict(gates if gates is not None else gate_files())
+    shas = gate_shas([(n, files[n]) for n in finds if n in files])
+    return dict((n, f) for n, f in finds.items()
+                if isinstance(f, dict) and n in files and f.get("sha") and shas.get(n) == f.get("sha"))
+
+
+def net_bugs_line(gate, verdict, why, platform=None):
+    """REG-3192 - the BUGS-ready line a safety-net find leaves (ASCII: it travels to Windows consoles). -> str"""
+    return ("### REG-NNNN - THE SAFETY NET FOUND %s %s ON %s: a law trusted on another tree's proof over the same bytes "
+            "(REG-3191) did not hold here. %s Reproduce: python3 tv/heart2.py --prove %s"
+            % (gate, verdict, platform or sys.platform, str(why or "")[:200], gate))
+
+
+def _write_net(results, red=None, unmeasured=None):
+    """REG-3192 - THE SAFETY NET'S VERDICTS. -> {"proved": [...], "finds": [...], "unjudged": [...]} | None (no census)
+
+    A trusted gate judged PROVEN here leaves `trusted` (proved on this PC now). A clean run that went RED here (`red`), a
+    BLIND or an INVALID is a FIND: recorded per gate in `netFinds` (its sha, verdict, time, platform, a BUGS-ready line)
+    and nowhere else. ⚠ It never touches `blind`, `gateShas` or the fingerprint, so it never turns the census stale and
+    never closes every lock: his 2026-09-12 ruling (BLIND is not STALE, a BLIND closes every lock) stands for every
+    other BLIND; his 2026-11-05 ruling narrows it ONLY for what the safety net finds, which closes only the locks whose
+    guard set holds that law (self_arming._net_heart, the #156 per-lock machinery). A gate the net could not judge (or a
+    lane never measured) is `netUnjudged`, not a find, and is not asked again until its file changes."""
+    if not os.path.exists(STATE):
+        return None
+    try:
+        with io.open(STATE, encoding="utf-8") as fh:
+            prior = json.load(fh)
+    except Exception as _e:
+        print("  ⚠ REG-3192 %s would not parse (%s) - the safety net writes nothing over it"
+              % (os.path.basename(STATE), type(_e).__name__))
+        return None
+    gates = gate_files()
+    shas = gate_shas([(n, f) for n, f in gates if n in (results or {})])
+    rec = prior.get("gateShas") if isinstance(prior.get("gateShas"), dict) else {}
+    tr = dict(prior.get("trusted") or {}) if isinstance(prior.get("trusted"), dict) else {}
+    finds = dict(prior.get("netFinds") or {}) if isinstance(prior.get("netFinds"), dict) else {}
+    unj = dict(prior.get("netUnjudged") or {}) if isinstance(prior.get("netUnjudged"), dict) else {}
+    red, unm = set(red or ()), set(unmeasured or ())
+    now = int(time.time() * 1000)
+    said = {"proved": [], "finds": [], "unjudged": []}
+    for n, v in sorted((results or {}).items()):
+        sha = shas.get(n)
+        if not sha or rec.get(n) != sha:
+            continue                     # the file moved since the census took it: the census owes it, the net says nothing
+        if v == PROVEN:
+            tr.pop(n, None)
+            finds.pop(n, None)
+            unj.pop(n, None)
+            said["proved"].append(n)
+            continue
+        is_red = v == UNPROVABLE and n in red
+        if n not in unm and (v in (BLIND, INVALID) or is_red):
+            _vw = "RED" if is_red else v
+            _why = ("its clean run is RED here, untampered" if is_red else
+                    "a proof of it stayed green tampered here" if v == BLIND else "a proof of it is INVALID here")
+            finds[n] = {"verdict": _vw, "sha": sha, "at": now, "platform": sys.platform, "why": _why,
+                        "line": net_bugs_line(n, _vw, _why)}
+            tr.pop(n, None)
+            said["finds"].append(n)
+            continue
+        unj[n] = {"verdict": v, "sha": sha, "at": now}
+        tr.pop(n, None)
+        said["unjudged"].append(n)
+    out = dict(prior)
+    out.update(trusted=tr, netFinds=finds, netUnjudged=unj)
+    _tmp = "%s.net.%d.tmp" % (STATE, os.getpid())
+    try:
+        with io.open(_tmp, "w", encoding="utf-8") as fh:
+            json.dump(out, fh, indent=1, sort_keys=True)
+        os.replace(_tmp, STATE)
+    except BaseException:
+        try:
+            os.unlink(_tmp)
+        except OSError:
+            pass
+        raise
+    return said
+
+
 def _prove_gate(sandbox, name, filename, proofs, say):
     """Every proof of ONE gate, serially, inside ONE sandbox. -> (verdict, [verdict per proof])
 
@@ -6649,6 +6914,8 @@ def _prove_gate(sandbox, name, filename, proofs, say):
     _CLEAN.pending = [] if _cc is not None else None     # a census PROVEN waits for the closing clean run, as a push's does
     try:
         verdicts = _prove_gate_proofs(sandbox, name, filename, proofs, say)
+        if _CENSUS.get("net") and any(r.get("ok") is False for r in (getattr(_CLEAN, "runs", None) or {}).values()):
+            _CENSUS["red"].add(name)                     # REG-3192 - its clean run went RED here: the net's find
         verdicts = _closing_clean(name, verdicts, say)
         if _cc is not None:
             try:
@@ -6930,7 +7197,7 @@ _GATE_HOOK = {"fn": None}
 SLICE_BANK_EVERY_S = 60
 
 
-def _slice_banker(blank, say=print, every_s=None):
+def _slice_banker(blank, say=print, every_s=None, write=None):
     """REG-1676 — A SLICE BANKS WHAT IT HAS PROVED AS IT GOES. -> callable(out, lock)
 
     MEASURED on his ALT 2026-10-01: a 27-gate slice proved four once-BLIND gates PROVEN, then stood aside at "only 972 MB
@@ -6953,11 +7220,19 @@ def _slice_banker(blank, say=print, every_s=None):
                 snap = {k: v for k, (v, _p) in out.items()}
                 unm = set(blank or ())
             if snap:
-                _write_state(snap, stamp=False, unmeasured=unm, measured=_reused_ages(_CENSUS.get("cache"), snap))
+                if write is not None:
+                    write(snap, unm)                # REG-3192 - a safety-net run banks through its own writer
+                else:
+                    _write_state(snap, stamp=False, unmeasured=unm, measured=_reused_ages(_CENSUS.get("cache"), snap))
                 st["last"] = now
         finally:
             st["lk"].release()
     return bank
+
+
+def _net_bank(snap, unmeasured):
+    """REG-3192 - a safety-net slice banks what it has judged so far, through _write_net only (never _write_state)."""
+    _write_net(snap, red=_CENSUS.get("red"), unmeasured=unmeasured)
 
 
 def _prove_gates(have, say=print, workers=None, blank=None):
@@ -7074,7 +7349,10 @@ def unmatched_names(only, gates):
     return out
 
 
-def prove(only=None, say=print, detail=None, push=False, stopped=None, stamp=True, reuse=False):
+def prove(only=None, say=print, detail=None, push=False, stopped=None, stamp=True, reuse=False, net=False):
+    """Prove `only` (None: every declaring gate) and write the census. `reuse`: the self-prove lane's census (#186, and
+    REG-3191's trust pass first). `net` (REG-3192): the SAFETY NET - these trusted gates proved on this PC, never on
+    another tree's word, written only through _write_net, never into the census's verdicts. -> {gate: verdict}"""
     gates = gate_files()
     todo = gates_named(only, gates)                      # REG-2352 - the one predicate unmatched_names asks too
     # REG-2352 (#42 R11) — NO SILENT PROVE-NOTHING: every name that matches no gate is said here, and main() exits 2 on it
@@ -7111,6 +7389,7 @@ def prove(only=None, say=print, detail=None, push=False, stopped=None, stamp=Tru
         return {}
     _ages = {}
     _blank = set()      # gates written BLIND that no proof measured - never banked as proved against their file
+    _trusted = {}               # REG-3191 - what the census's trust pass wrote (never a push's)
     if push:
         # #42 — hooks/pre-push's run: declared widths, likeliest failure first, stop at the first, one browser at a time,
         # and (P3) a PROVEN reused only over byte-identical inputs - the cache is opened HERE and nowhere else
@@ -7133,15 +7412,47 @@ def prove(only=None, say=print, detail=None, push=False, stopped=None, stamp=Tru
     else:
         # REG-1676 — a SLICE (stamp=False) banks as it goes; a full run keeps its one write at the end
         _GATE_HOOK["fn"] = None if stamp else _slice_banker(_blank, say)
+        if net:
+            # REG-3192 - a SAFETY-NET run banks through _write_net only: its verdicts never reach `blind` or gateShas
+            _GATE_HOOK["fn"] = _slice_banker(_blank, say, write=_net_bank)
         _CENSUS["cache"] = _census_cache(reuse, say)     # #186 - only the self-prove lane's census (--reuse) opens it
+        _CENSUS["red"], _CENSUS["net"] = set(), bool(net)
+        if net:
+            _CENSUS["here"] = set(n for n, _f, _p in have)          # REG-3192 - every proof judged on this PC
+        elif _CENSUS["cache"] is not None:
+            # REG-3191 - the census writes what the bank serves whole over these bytes BEFORE it proves anything, so a
+            # lock waits only on the gates the bank cannot serve and on the environment self-check. Never on a push.
+            try:
+                _tp = trust_pass(_CENSUS["cache"], say=say, gates=gates) or {}
+                _trusted = dict((n, PROVEN) for n in _tp.get("written") or [])
+            except Exception as _te:
+                say("  ⚠ REG-3191 the trust pass raised %s (%s) - nothing was written on the bank's word; this slice proves "
+                    "as before" % (type(_te).__name__, str(_te)[:120]))
+            have = [(n, f, p) for n, f, p in have if n not in _trusted]
+            _CENSUS["here"] = set(n for n, _f, _p in have if env_gate(n, _p)[0])   # the environment self-check
+        if not have:
+            # every gate of this slice was written by the trust pass: an EMPTY result here would read as a full run that
+            # proved nothing and wipe every standing proof (_write_state), so nothing more is written
+            _CENSUS["cache"], _CENSUS["here"], _CENSUS["net"], _GATE_HOOK["fn"] = None, (), False, None
+            return _trusted
         try:
             results, per_proof = _prove_gates(have, say, blank=_blank)
         finally:
             _GATE_HOOK["fn"] = None     # #145 (the v3545 eye) - a raise must not leave this slice's banker installed
             _ccache, _CENSUS["cache"] = _CENSUS["cache"], None
+            _CENSUS["here"], _CENSUS["net"] = (), False
         if _ccache is not None:
             _ages = _reused_ages(_ccache, results or {})
             say("  " + _ccache.summary(sum(len(_p) for _n, _f, _p in have)).replace("#42 P3 CACHE", "#186 CENSUS CACHE", 1))
+        if net:
+            if results is None:
+                return {}
+            _said = _write_net(results, red=_CENSUS.get("red"), unmeasured=_blank) or {}
+            say("  REG-3192 SAFETY NET: %d proved here (no longer trusted), %d FOUND (each closes only the locks its law "
+                "guards): %s; %d could not be judged here"
+                % (len(_said.get("proved") or []), len(_said.get("finds") or []),
+                   ", ".join(_said.get("finds") or []) or "none", len(_said.get("unjudged") or [])))
+            return results
     if results is None:
         return {}
     # `detail` is the per-PROOF verdict list, and it exists so an A/B can compare the lanes
@@ -7149,6 +7460,8 @@ def prove(only=None, say=print, detail=None, push=False, stopped=None, stamp=Tru
     # answers": a faster prove that flips ONE verdict is a broken gate, not a speedup.
     if detail is not None:
         detail.update(per_proof)
+    # REG-3191 - the trust pass wrote its gates already (with `trusted`); this run writes only the gates it proved, as a
+    # partial write, so the census keeps both
     if stamp:
         _write_state(results, measured=_ages, unmeasured=_blank)
     else:
@@ -7156,7 +7469,7 @@ def prove(only=None, say=print, detail=None, push=False, stopped=None, stamp=Tru
     return results
 
 
-def _write_state(results, measured=None, stamp=True, unmeasured=None):
+def _write_state(results, measured=None, stamp=True, unmeasured=None, trusted=None):
     """⚠ THE JOIN. Without this the whole loop is plumbing with no tap: `--prove` would measure
     beautifully and `_heart2_census()` in control_app.py would read an absent file and report
     UNKNOWN for ever, so the heart could never carry what the proving loop learned. This repo's
@@ -7273,6 +7586,24 @@ def _write_state(results, measured=None, stamp=True, unmeasured=None):
             continue
         _gs[_n] = _shas.get(_n)
     _gs = {k: v for k, v in _gs.items() if k in _known}
+    # REG-3191 / REG-3192 - WHO STANDS ON ANOTHER TREE'S WORD, AND WHAT THE SAFETY NET FOUND. `trusted` (the trust pass's
+    # names) records each such gate at the sha it was written for; any other verdict this run wrote for a gate judged it
+    # here, so it leaves the list (and a find on it is settled by that verdict). A record whose gate file has moved is
+    # moot - the gate is owed again and judged afresh - so it is dropped, never carried onto other bytes.
+    _trq = set(trusted or ())
+    _tr = dict(prior.get("trusted") or {}) if isinstance(prior.get("trusted"), dict) else {}
+    _nf = dict(prior.get("netFinds") or {}) if isinstance(prior.get("netFinds"), dict) else {}
+    _nu = dict(prior.get("netUnjudged") or {}) if isinstance(prior.get("netUnjudged"), dict) else {}
+    for _n in (results or {}):
+        if _n in _trq and _n not in _unm:
+            _tr[_n] = _shas.get(_n)
+        else:
+            _tr.pop(_n, None)
+            _nf.pop(_n, None)
+            _nu.pop(_n, None)
+    _tr = {k: v for k, v in _tr.items() if v and v == _shas.get(k) and _gs.get(k) == v}
+    _nf = {k: v for k, v in _nf.items() if isinstance(v, dict) and v.get("sha") and v.get("sha") == _shas.get(k)}
+    _nu = {k: v for k, v in _nu.items() if isinstance(v, dict) and v.get("sha") and v.get("sha") == _shas.get(k)}
     _owed = [n for n in have if not _shas.get(n) or _gs.get(n) != _shas.get(n)]
     # ⚠⚠ REG-1623 (the #231 eye on b135b25a) - A RUN THAT KNOWS IT LEFT A GATE UNMEASURED MAY NOT STAMP. `stamp` let a
     # full or push-time run stamp the tree fingerprint whatever was owed - right for gates it simply did not run (the
@@ -7305,6 +7636,9 @@ def _write_state(results, measured=None, stamp=True, unmeasured=None):
         "blindRule": BLIND_RULE,
         "blindRuleOwed": _rule_left,
         "gateShas": _gs,
+        "trusted": _tr,
+        "netFinds": _nf,
+        "netUnjudged": _nu,
         "sliceOwed": len(_owed),
         "sliceOwedSample": _owed[:12],
         "unstampedWhy": ("%d gate(s) this run could not measure are owed: %s"
@@ -8857,6 +9191,9 @@ def main(argv):
     ap.add_argument("--slice", action="store_true",
                     help="#99 prove these gates as ONE SLICE of a census: the verdicts merge, and the gate fingerprint "
                          "is stamped only once no declaring gate is owed (self_prove's runs on a PC he plays on)")
+    ap.add_argument("--net", action="store_true",
+                    help="REG-3192 the SAFETY NET: prove these trusted gates on this PC (never another tree's word) and "
+                         "record only what it finds (netFinds) - never the census's verdicts (self_prove's idle runs)")
     ap.add_argument("--detect", action="store_true")
     ap.add_argument("--ratchet", action="store_true")
     ap.add_argument("--triage", action="store_true",
@@ -8974,6 +9311,11 @@ def main(argv):
             results = prove(only=set(a.prove) or None, push=True, stopped=_stopped)
         else:
             _rk = {"reuse": True} if a.reuse else {}     # #186 - the flag travels only when the lane set it
+            if a.net:
+                _rk["net"] = True                          # REG-3192 - only named gates: the net never proves a census
+            if a.net and not a.prove:
+                print("  ✗ REG-3192 --net proves named trusted gates only - name them (self_prove does)")
+                return 2
             results = (prove(only=set(a.prove) or None, stamp=False, **_rk) if a.slice
                        else prove(only=set(a.prove) or None, **_rk))
     if a.detect:

@@ -1744,6 +1744,81 @@ def _lock_heart(lock, gwhy=None):
                   "owed elsewhere guard other surfaces, not this one (#156, per-lock)" % (lock, len(owed)))
 
 
+_NET_MEMO = {"key": None, "finds": None, "files": None}
+#: REG-3192 - the words a safety-net refusal starts with; heart_block_kind() reads it as neither STALE nor BLIND, so the
+#: v3042 softening never lets an ordinary act through it
+_NET_PHRASE = "the SAFETY NET found"
+
+
+def _net_finds():
+    """REG-3192 - this PC's safety-net finds that still speak for the files on disk. -> ({gate: find}, files) | (None, why)
+
+    Read from the same census the heart reads (TV_HEART_CENSUS, the call-time seam), through heart2.net_finds - one rule
+    for the lock and for the lane's status. may() asks this on every call, so a census with no finds (the usual case)
+    is answered from its bytes alone, memoised on their digest; only a census that HAS finds reads the found gates'
+    files, every call, because a find whose file changed is moot. UNKNOWN (an unreadable census) is (None, why): the
+    global rule has already failed that closed."""
+    try:
+        import heart2 as _h2
+        _census = os.environ.get("TV_HEART_CENSUS") or os.path.join(_h2.HERE, ".heart2.json")
+        if not os.path.exists(_census):
+            return {}, {}
+        with io.open(_census, "rb") as _fh:
+            raw = _fh.read()
+        key = hashlib.sha256(raw).hexdigest()
+        if _NET_MEMO["key"] == key and not _NET_MEMO["finds"]:
+            return {}, {}
+        st = json.loads(raw.decode("utf-8"))
+        if not (isinstance(st, dict) and st.get("netFinds")) or not hasattr(_h2, "net_finds"):
+            _NET_MEMO.update(key=key, finds={}, files={})
+            return {}, {}
+        files = dict(_h2.gate_files())
+        finds = _h2.net_finds(st, list(files.items()))
+        _NET_MEMO.update(key=key, finds=finds, files=files)
+        return finds, files
+    except Exception as _e:
+        return None, "the safety net's finds could not be read (%s)" % type(_e).__name__
+
+
+def _net_heart(lock, ok, why):
+    """REG-3191 / REG-3192 (his ruling 2026-11-05 (4): "a red/blind it finds goes to the fleet + BUGS and closes only the
+    lock its law guards") - the heart's answer for `lock` once the safety net has spoken. -> (ok, why)
+
+    A find closes a lock whose guard set holds its law - the #156 rule exactly (_guards_lock over LOCK_DOORS / LOCK_MARKS)
+    - and no other. A lock or route with no declared door has no guard set to narrow to: it keeps the global rule, where
+    any law guards it, so every find closes it (broad in the safe direction). A find never makes the census stale and
+    never joins its BLIND list; his 2026-09-12 ruling (a BLIND closes every lock) stands for every other BLIND. Laws that
+    seat _heart_says_watched ask the global rule and are answered by it alone, as _lock_heart does."""
+    if _heart_says_watched is not _HEART_SAYS_WATCHED_REAL:
+        return ok, why
+    finds, files = _net_finds()
+    if not finds:
+        return ok, why
+    stems = LOCK_DOORS.get(lock)
+    hit = []
+    for n in sorted(finds):
+        if stems is None:
+            hit.append(n)
+            continue
+        text = None
+        f = files.get(n) if isinstance(files, dict) else None
+        if f:
+            try:
+                import heart2 as _h2
+                with io.open(f if os.path.isabs(f) else os.path.join(_h2.HERE, f), encoding="utf-8") as _fh:
+                    text = _fh.read()
+            except Exception:
+                text = None
+        if text is None or _guards_lock(text, lock, stems):     # a guard that will not read is counted, never skipped
+            hit.append(n)
+    if not hit:
+        return ok, why
+    f0 = finds[hit[0]]
+    return False, ("%s %d law(s) guarding %s failing on this PC (%s: %s) after they were opened on another tree's proofs "
+                   "over the same bytes (REG-3191). Only the locks those laws guard close; the census is not made stale."
+                   % (_NET_PHRASE, len(hit), lock, hit[0], f0.get("why") or f0.get("verdict")))
+
+
 def may_on_merit(lock):
     """Permission for a READ THAT FEEDS A DISPLAY: this lock's own merit, never the heart's. -> (bool, why)
 
@@ -1806,6 +1881,9 @@ def may(lock):
         _per = _lock_heart(lock, _hwhy)
         if _per is not None:
             _hok, _hwhy = _per
+    # REG-3192 - a safety-net find closes only the locks it guards - asked whatever the heart said, because a STALE
+    # refusal of an ordinary act is softened to merit below (v3042) and a find must not be softened with it
+    _hok, _hwhy = _net_heart(lock, _hok, _hwhy)
     if not _hok:
         _hwhy = _hwhy or "UNKNOWN: the heart refused and gave no reason - which fails CLOSED"
     return _verdict(lock, spec, rows, _hok, _hwhy)
@@ -1864,8 +1942,10 @@ def report():
     # be drawn from `state` alone. Both are published; a surface draws open only when both agree.
     heart = _heart_for_report()
     _leg = sp["legacy"]
-    out = [_with_permit(score(k, rows, legacy=_leg), k, LOCKS[k], rows, _heart_of(k, heart)) for k in sorted(LOCKS)]
-    out += [dict(_with_permit(score(k, rows, legacy=_leg), k, ROUTES[k], rows, heart), kind="route")
+    # REG-3192 - each row's heart once the safety net has spoken, exactly as may() asks it (REG-1737)
+    out = [_with_permit(score(k, rows, legacy=_leg), k, LOCKS[k], rows, _net_of_row(k, _heart_of(k, heart)))
+           for k in sorted(LOCKS)]
+    out += [dict(_with_permit(score(k, rows, legacy=_leg), k, ROUTES[k], rows, _net_of_row(k, heart)), kind="route")
             for k in sorted(ROUTES)]
     return {"ok": True, "locks": out,
             "open": len([x for x in out if x.get("state") in (OPEN, HARDENED)]),
@@ -2014,6 +2094,16 @@ def _heart_of(lock, heart):
     except Exception:
         per = None
     return per if per is not None else heart
+
+
+def _net_of_row(lock, heart):
+    """REG-3192 - a report row's heart once the safety net has spoken, as may() takes it (REG-1737). -> (bool, why)"""
+    if not heart:
+        return heart
+    try:
+        return _net_heart(lock, heart[0], heart[1])
+    except Exception as e:
+        return False, "UNKNOWN: the safety net could not be asked (%s) - which fails CLOSED" % type(e).__name__
 
 
 def _with_permit(row, lock, spec, rows, heart):

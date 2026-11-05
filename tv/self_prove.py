@@ -712,7 +712,28 @@ def census_state():
         out.update(state="current", why="proved for the gates on disk: %s of %s, %d blind"
                                         % (st.get("proved"), st.get("declared"), len(out["blind"])))
     out["envReprove"] = bool(_env_er(_h2, st))
+    out.update(_net_of(_h2, st, out.get("state") == "current"))
     return out
+
+
+def _net_of(h2, st, current):
+    """REG-3191 / REG-3192 - the safety net's view of this census. -> {"trusted", "netFinds", "netOwed"}; {} when it
+    cannot be asked (an older heart2, or a census that will not answer) - then the lane runs exactly as before.
+
+    `trusted`: the gates the census holds on another tree's proofs (REG-3191's trust pass); `netFinds`: what the net has
+    FOUND here (a RED clean run, a BLIND, an INVALID) on files still on disk, each with its BUGS-ready line; `netOwed`:
+    the trusted gates it has not judged yet - asked only of a CURRENT census, because the net never runs while a gate is
+    owed (the census lane comes first)."""
+    try:
+        tr = st.get("trusted") if isinstance(st.get("trusted"), dict) else {}
+        finds = h2.net_finds(st)
+        out = {"trusted": len(tr),
+               "netFinds": [{"gate": n, "verdict": f.get("verdict"), "at": f.get("at"), "why": f.get("why"),
+                             "line": f.get("line")} for n, f in sorted(finds.items())]}
+        out["netOwed"] = [(str(n), int(k)) for n, k in h2.net_owed(st)] if current else []
+        return out
+    except Exception:
+        return {}
 
 
 def _env_observe():
@@ -838,8 +859,14 @@ def decide(census, tree, running_pid, busy_pct, mem, now_s, on=True, playing=Non
         return {"start": False, "key": "running",
                 "why": "a proof is running (pid %s, since %s)" % (running_pid, mem.get("startedAt"))}
     st = (census or {}).get("state")
+    _net = False
     if st == "current":
-        return {"start": False, "key": "current", "why": census.get("why") or "current"}
+        # REG-3192 (his ruling 2026-11-05 (4)) - THE SAFETY NET: over a CURRENT census, the gates written on another
+        # tree's proofs (REG-3191) are judged here, lowest priority, behind every stand-aside rule below. It holds nothing
+        # shut while it waits, so with nothing for it to judge the lane is simply current.
+        if not (isinstance((census or {}).get("netOwed"), list) and census.get("netOwed")):
+            return {"start": False, "key": "current", "why": census.get("why") or "current"}
+        _net = True
     if st == "unknown":
         return {"start": False, "key": "unknown", "why": census.get("why") or "UNKNOWN"}
     # v3844 (his ruling 2026-10-30: "the windows alt will never reach enough memory to prove itself.. maybe deans PC
@@ -892,6 +919,10 @@ def decide(census, tree, running_pid, busy_pct, mem, now_s, on=True, playing=Non
         return {"start": False, "key": "mem-unknown",
                 "why": "free memory could not be measured - a proof is not started on a guess"}
     _small = False
+    if free < MIN_FREE_MB_TO_START and _net:
+        return {"start": False, "key": "low-memory",
+                "why": "only %d MB of memory free - the safety net starts only at %d MB (it is the lowest priority and "
+                       "never takes a small slice)" % (int(free), MIN_FREE_MB_TO_START)}
     if free < MIN_FREE_MB_TO_START:
         _owed_g = (census or {}).get("owedGates")
         if not (playing is False and free >= MIN_FREE_MB_TO_START_SMALL and isinstance(_owed_g, list) and _owed_g):
@@ -929,7 +960,7 @@ def decide(census, tree, running_pid, busy_pct, mem, now_s, on=True, playing=Non
         except (TypeError, ValueError):
             _since = None                          # unreadable: no starve claim on a guess - the run starts over
         _for = (now_s - _since) if _since is not None else None
-        if _small:                                 # a small slice never starves its way in past a busy machine
+        if _small or _net:                         # a small slice, or the safety net, never starves its way in
             _for = None
         if _for is not None and _for >= BUSY_STARVE_S:
             return {"start": True, "key": "start",
@@ -945,6 +976,10 @@ def decide(census, tree, running_pid, busy_pct, mem, now_s, on=True, playing=Non
                 "why": "census %s (%s) - only %d MB free, under the %d MB full start, so a small slice proves "
                        "(one lane, at most %d gates)" % (st, census.get("why"), int(free), MIN_FREE_MB_TO_START,
                                                          SMALL_SLICE_MAX_GATES)}
+    if _net:
+        return {"start": True, "key": "start", "net": True,
+                "why": "census current; the SAFETY NET judges %d gate(s) another tree's proofs opened, here, at idle "
+                       "(REG-3192) - a red it finds closes only the locks its law guards" % len(census.get("netOwed"))}
     return {"start": True, "key": "start",
             "why": "census %s (%s) on an idle installed console - proving" % (st, census.get("why"))}
 
@@ -1191,7 +1226,7 @@ def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_p
     return True, "a push is grading on this PC (pid %s)" % ", ".join(sorted(hits, key=int)[:4])
 
 
-def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None, reuse=True):
+def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None, reuse=True, net=False):
     """Start `heart2.py --prove` hidden and below everything he does. -> pid
     #99 — `names`: prove just these gates as ONE SLICE (`--prove NAMES --slice`); None proves the whole census.
     REG-1670 — `workers` None asks lanes_for() with the memory free right now."""
@@ -1228,6 +1263,8 @@ def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None
            + ((list(names) + ["--slice"]) if names else [])
            # v3862 (item 4) - an environment re-prove never serves a proof earned under the old environment
            + (["--reuse"] if reuse else []))
+    if net and names:
+        cmd.append("--net")                               # REG-3192 - the safety net judges named trusted gates only
     if not IS_WIN and os.path.exists("/usr/bin/nice"):
         cmd = ["/usr/bin/nice", "-n", "15"] + cmd
     log = open(log_path, "ab")
@@ -1437,7 +1474,7 @@ def _ask(v, probe):
 def _forget(mem):
     """The proof this lane was tracking is over (ended, or stood aside and gone): drop every trace of it."""
     for k in ("pid", "pidBirth", "startedFor", "finishingSince", "standingAside", "standingAsideForMemory", "sliceGates",
-              "logFrom", "startedBy"):
+              "logFrom", "startedBy", "net"):
         mem.pop(k, None)
     _STARTED.update(pid=None, birth=None)
 
@@ -1476,7 +1513,7 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
     # (heart2 removes its sandbox after the write). Booked as worked NOW, once, and left to finish for one tick: a
     # kill there cost the booking, and one landing inside heart2's plain census write left it truncated for good.
     finishing = bool(running) and census.get("state") == "current" and mem.get("startedFor") is not None \
-        and census.get("fingerprint") == mem.get("startedFor")
+        and census.get("fingerprint") == mem.get("startedFor") and not mem.get("net")     # REG-3192 - not the net's
     if finishing and not mem.get("finishingSince"):
         mem.update(worked=_int(mem.get("worked")) + 1, lastTs=now_ms, lastOk=census.get("why"),
                    finishingSince=now_ms)
@@ -1529,6 +1566,9 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
         # the proof we started has ended (or its pid now names another process): did it leave a current census?
         if mem.get("finishingSince"):
             pass                                           # booked as worked the tick its census went current
+        elif mem.get("net"):
+            # REG-3192 - the safety net ended: booked on its own counters; what it judged is in the census (netFinds)
+            mem.update(netWorked=_int(mem.get("netWorked")) + 1, netLastTs=now_ms)
         elif census.get("state") == "current":
             mem.update(worked=_int(mem.get("worked")) + 1, lastTs=now_ms, lastOk=census.get("why"))
         elif mem.get("standingAside"):
@@ -1614,8 +1654,11 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
             except OSError:
                 mem["logFrom"] = None                         # start unknown: the last-line rule decides alone
             import functools as _ft
+            _net = bool(d.get("net"))                         # REG-3192 - the safety net's slice
             _spawn_real = _ft.partial(spawn, reuse=not census.get("envReprove"))   # v3862 (item 4)
-            _owed_g = census.get("owedGates")
+            if _net:
+                _spawn_real = _ft.partial(_spawn_real, net=True)    # REG-3192 - spawned as --net over named gates
+            _owed_g = census.get("netOwed") if _net else census.get("owedGates")
             _costs = _gate_costs() if isinstance(_owed_g, list) and _owed_g else None
             # REG-1674 - a slice whose prover went silent is proved AFTER every other owed gate (for these gates)
             _stuck = (set(mem.get("stalledGates") or []) if census.get("fingerprint")
@@ -1629,9 +1672,13 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
                                     budget_s=SMALL_SLICE_BUDGET_S, max_gates=SMALL_SLICE_MAX_GATES)
                 _sp_one = spawn_fn or _spawn_real
                 spawn_fn = lambda _lp, names=None, _f=_sp_one: _f(_lp, names=names, workers=1)  # noqa: E731
+            if _net and not _slice:
+                raise ValueError("no safety-net slice could be planned")    # the net never proves a whole census
             if _slice:
                 mem["pid"] = (spawn_fn or _spawn_real)(log_path, names=_slice)
                 mem["sliceGates"] = _slice
+                if _net:
+                    mem["net"] = True
                 d = dict(d, why="%s - this slice: %d gate(s)%s" % (
                     census.get("owedWhy") or d["why"], len(_slice),
                     "" if _costs is not None else " (gate costs unread - sized by the default guess)"))
@@ -1676,4 +1723,12 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
             "stoodAside": _int(mem.get("stoodAside")), "asideSurvived": _int(mem.get("asideSurvived")),
             # REG-1674 - the heartbeat, in the lane's own words: how long its log has been still, the bound, the stalls
             "logAgeS": (int(_quiet) if _quiet is not None else None), "silentBoundS": _bound,
-            "stalled": _int(mem.get("stalled")), "lastStallWhy": mem.get("lastStallWhy")}
+            "stalled": _int(mem.get("stalled")), "lastStallWhy": mem.get("lastStallWhy"),
+            # REG-3191 / REG-3192 - how many gates stand on another tree's proofs, and the safety net that judges them
+            # here: owed None = UNKNOWN (an older heart2, or a census not current yet - the net waits for the census)
+            "trusted": census.get("trusted") if isinstance(census.get("trusted"), int) else None,
+            "netFinds": census.get("netFinds") if isinstance(census.get("netFinds"), list) else None,
+            "net": {"on": on, "worked": _int(mem.get("netWorked")), "lastTs": mem.get("netLastTs"),
+                    "running": bool(mem.get("pid")) and bool(mem.get("net")),
+                    "owed": (len(census.get("netOwed")) if st == "current" and isinstance(census.get("netOwed"), list)
+                             else None)}}
