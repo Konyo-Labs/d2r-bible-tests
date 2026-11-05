@@ -80,8 +80,9 @@ RED_PROOF = [
      "replace": "    if False:\n        return False\n", "matches": 1},
     {"why": "REG-1618 - Claude's sign-in is re-asked every 5 min even while he is finishing it in the browser",
      "file": "control_app.py",
-     "find": "    _every = (CLAUDE_AUTH_WATCH_EVERY_S if _watch and",
-     "replace": "    _every = (CLAUDE_AUTH_EVERY_S if _watch and", "matches": 1},
+     # v3863 (REG-3168) - the cadence now leads with the fast re-check after a sign-in; the watch arm is its second line
+     "find": "              else CLAUDE_AUTH_WATCH_EVERY_S if _watch and not _green\n",
+     "replace": "              else CLAUDE_AUTH_EVERY_S if _watch and not _green\n", "matches": 1},
     {"why": "REG-1618 - a changed sign-in waits out the 30 s lamp cache instead of repainting",
      "file": "control_app.py",
      "find": "                    _READER_CACHE[\"at\"] = 0.0      # REG-1618",
