@@ -7,7 +7,16 @@
       "v3865 - an unfired proof run is dispatched on its own branch, and a refused dispatch is asked again (REG-3188)",
       "v3865 - each proof shard proves on 3 lanes of its 4-core runner and says what machine it ran on (REG-3189)",
       "v3865 - the proof shards run on Ubicloud 8-core machines only inside 25 dollars a month, else GitHub (REG-3190)",
-      "v3865 - the footer button that opens the task board is named Future (his name for it)"
+      "v3865 - the footer button that opens the task board is named Future (his name for it)",
+      "v3865 - GitHub's proofs key the same on every machine and open the locks at the update import; a safety net keeps proving at idle and closes only its own law's lock (REG-3191, REG-3192)",
+      "v3865 - the proof import keys on the spare cores, says how far it is, and the proof tick runs right after it (REG-3193, REG-3194, REG-3195)",
+      "v3865 - the Fleet tells the truth about every PC's river: importing and proving in amber, offline said offline, a failed read says why (REG-3196 to REG-3199)",
+      "v3865 - a hung vault reel gets a bounded retry, and every PRINTER or STATION reel says which lane moves it or what it waits on (REG-3200, REG-3201)",
+      "v3865 - the Full Bible door opens the whole bible, the Shelf never hangs on opening, Shadow Play is the HD theatre, clickables wear the console pointer (REG-3202 to REG-3205)",
+      "v3865 - every picture the console asks /art/ for ships, and a pruned frame says who pruned it (REG-3206, REG-3207)",
+      "v3865 - a looped growers lane measures what keeps growing on the disk, salvages what is informational, then prunes (REG-3208, REG-3209)",
+      "v3865 - a proof run starts from its own commit's proofs, splits the owed work inside 75 minutes, and a CI run past 75 minutes alerts (REG-3210 to REG-3214)",
+      "v3865 - a lock says may act or shut first, and the heart floor rises with the map (REG-3215, REG-3216)"
     ]
   },
   {
