@@ -30,7 +30,7 @@ except Exception:
 
 import vault_retro as VR  # noqa: E402
 
-FRAME = "/fixture/hist/reel_s_1790000000001_00001/f_1790000000500.jpg"
+FRAME = "/fixture/hist/reel_s_1500000000001_12101/f_1500000000500.jpg"
 
 
 def _occ(cols, rows, taken):
@@ -42,7 +42,7 @@ class TheSweepCarriesEachContainersOwnCells(unittest.TestCase):
 
     def test_the_bag_is_the_inventory_with_its_own_cells_and_clock(self):
         r = VR.container_look(FRAME, "stash", _occ(10, 4, {(0, 0), (3, 2)}), "inventory")
-        self.assertEqual((r["session"], r["frame"], r["capturedAt"]), ("s_1790000000001_00001", "f_1790000000500.jpg", 1790000000500))
+        self.assertEqual((r["session"], r["frame"], r["capturedAt"]), ("s_1500000000001_12101", "f_1500000000500.jpg", 1500000000500))
         self.assertEqual((r["location"], r["page"], r["grid"]), ("inventory", None, [10, 4]))
         self.assertEqual(r["occupied"], [[0, 0], [3, 2]])
 

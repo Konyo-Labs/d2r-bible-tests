@@ -45,6 +45,9 @@ def problems(bible):
     bad = []
     prov = _cut(bible, "  function _provAll(){", "\n  }\n")
     src = _cut(bible, "  function _vaultRecordsSource(){", "\n  }\n")
+    # v3864 (#233) - _vaultRecordsSource asks REG-3042's one source choice; the page's own function comes with it (it reads
+    # _vrRecFollowLive first, which this harness sets, so the live branch is the one measured, as before)
+    src = _cut(bible, "  function _vrSourceChoice(){", "\n  }\n") + src
     wrap = _cut(bible, "  /* v3773 - one FIND pass shares", "  })();\n")
     prog = r"""
 var window = {}; var parses = 0; var RAW = JSON.stringify({a: {x: 1}, b: {y: 2}});

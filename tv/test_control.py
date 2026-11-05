@@ -41462,7 +41462,9 @@ class TestV2369TheDockStaticReservesWhatTheDockMeasures(unittest.TestCase):
             elif css[j] == "}": depth -= 1
             j += 1
         block = css[i:j]
-        m = re.search(r"--dock-h:\s*(\d+)px", block)
+        # v3864 (REG-3090) - the 600px band adds the phone tray bar under the dock: calc(225px + var(--tray-bar-h, 0px)); the
+        # static it reserves is still its own px term
+        m = re.search(r"--dock-h:\s*(?:calc\(\s*)?(\d+)px", block)
         self.assertTrue(m, "no --dock-h inside the %dpx band" % width)
         return int(m.group(1)), css.index(head)
 

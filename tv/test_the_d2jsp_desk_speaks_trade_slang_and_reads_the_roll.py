@@ -188,7 +188,8 @@ process.stdout.write(JSON.stringify(out));
         self.assertEqual(self.out["none"], "Check: could not be read.")
 
     def test_the_post_template_is_unchanged(self):
-        self.assertEqual(self.out["draft"]["body"], "Selling Annihilus Small Charm\n+20 to All Attributes\n250 fg")
+        # v3864 (#233) - his ask 5 (REG-2874): a post says WTS, the d2jsp norm, never "Selling"
+        self.assertEqual(self.out["draft"]["body"], "WTS Annihilus Small Charm\n+20 to All Attributes\n250 fg")
         self.assertIn("+ tierHtml(n, mods)", self.page)
         self.assertNotIn("tier", self.out["draft"]["body"].lower())
 
