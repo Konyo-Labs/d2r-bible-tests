@@ -7,6 +7,13 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3171 - THE RUNEWORD TABLE NAMED A 5-SOCKET WAND FOR CALL TO ARMS (v3864, GrokBot Batch B 7)
+GrokBot, #230 6655906382 (re-read by the Grok CLI, 6655933519): RUNEWORDS' Call to Arms row read base "5-sock weapon/wand",
+and every wand base in BASE_DB holds 1 or 2 sockets. Now "5-sock weapon". GrokBot also counted 101 rows against 99
+runewords: that is Spirit's two bases plus Death's Web, a unique kept for reference on purpose (laws pin it, and the base
+matcher resolves it to nothing), so the count stays and is now pinned with the reason. Law:
+tv/test_every_runeword_row_fits_its_base.py (N-sock equals the rune count; no wand over 2; the 101 named), 2 red-proofs RED.
+
 ### REG-3170 - DEAN'S FLEET ROW SAID "LEVEL" WHILE HIS CHECKOUT WAS 9 COMMITS BEHIND WITH LOCAL EDITS (v3864, GrokBot Batch B 1-2)
 GrokBot, #230 6655906382 (the Grok CLI re-read it, 6655933519): /api/fleet's Dean row carried ver v3860 and lag {behind 0,
 "level with what origin publishes"}, and in the same row pull {head e1fd8a98 (v3859), behind 9, local tracked edits: M

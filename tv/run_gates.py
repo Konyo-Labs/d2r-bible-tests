@@ -13409,6 +13409,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_fleet_row_never_says_level_with_a_checkout_behind.py")], 300,
          needs_app=False,
          why='v3864 (GrokBot Batch B 1-2) - a fleet row whose checkout is behind origin never reads level, and a level pull beside a counted lag is said to be the older report'),
+    Gate("test_every_runeword_row_fits_its_base",
+         [sys.executable, os.path.join(HERE, "test_every_runeword_row_fits_its_base.py")], 60,
+         needs_app=False,
+         why='v3864 (GrokBot Batch B 7) - every RUNEWORDS row says N-sock with N its rune count, and no row asks a wand for more than 2 sockets (Call to Arms read a 5-socket wand)'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
