@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3863",
+  "ver": "v3864",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3863: Dean proves beside his game, the vault wears the tier face, the Claude lamp rechecks, chain slice 1 lands",
+  "note": "v3864: the integration chain lands, Mule 2 is named, the d2jsp desk keeps its history, GitHub proves faster",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
