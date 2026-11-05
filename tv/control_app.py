@@ -19062,8 +19062,123 @@ _RIVER_OWNER = {"TRIAGE": "triage", "EMPTY": "route", "JOIN": "route", "STATION"
                 "PRINTER": "vault", "INTAKE": "survey"}
 
 
-def _river_stuck_why(station):
+#: REG-3201 - what each kind of wait at PRINTER / STATION is waiting ON, in his words. Keyed on the vault picker's own
+#: reason (_vault_pass_reason) or on why no lane's queue holds the reel at all.
+_DELIVERY_WAITS = {
+    "quarantined": "the vault lane, which holds it after a hang",
+    "look": "a person: the vault lane stopped retrying it after it hung the measurer",
+    "sealed": "a new vault reader: the current one read it and took nothing",
+    "cooling": "the vault lane's cooldown after an empty read",
+    "retired": "nothing automatic: the vault lane retired it after its tries",
+    "growing": "the recording to finish",
+    "triage-empty": ("a seal no lane writes: the triage walked it in full and found no stash panel, so the vault "
+                     "lane owes it no read (REG-1749), and only a vault read writes a seal"),
+    "no-queue": "no lane: no lane's queue holds it",
+}
+#: REG-3201 - the waits a lane clears BY ITSELF (a timer or the recording ending). Every other wait needs something
+#: no lane will do on its own - a person, a new reader, a ruling - and the doctor's river row stays MISSING for it.
+_DELIVERY_SELF_CLEARING = ("quarantined", "cooling", "growing")
+#: REG-3201 - the lane each station's standing sentence is about (river_walk.LANE_OF_STATION's owner, in words)
+_STATION_OWN_LANE = {"PRINTER": "the vault lane", "STATION": "the reel sweep"}
+
+
+#: REG-3201 - the reels of the stuck row being worded, per thread. Set only by a LIVE _river_stuck_for_wire (a law that
+#: hands in its own shelf is a fixture and keeps the lane's word: the per-reel reading asks his live lane stores).
+_RIVER_WHY_CTX = threading.local()
+
+
+def _river_drain_why(station):
+    """REG-3201 - the drain's upstream word for a station, about the reels standing at it (one stamp-log read), never the
+    lane's whole queue: his Mac's drain said "waiting at STATION 1 behind STATION: A LANE EXISTS AND THIS QUEUE IS NOT
+    ITS INPUT" over a reel the vault lane owns and was holding after a hang. -> str"""
+    return _river_stuck_why(station, reels=(_reels_at_station(station) if station in ("PRINTER", "STATION")
+                                            else None))
+
+
+def _reels_at_station(station):
+    """REG-3201 - the reels on this shelf whose last river stamp is `station`. -> list | None (UNKNOWN). One file read."""
+    try:
+        import river_stamp as _rvs
+        rep = _rvs.rows()
+        if not rep.get("ok"):
+            return None
+        last = {}
+        for r in (rep.get("rows") or []):
+            last[str(r.get("reel"))] = str(r.get("station"))
+        on = set(_shelf_reel_names())
+        return sorted(k for k, v in last.items() if v == station and k in on)
+    except Exception:
+        return None
+
+
+def _station_delivery(station, reels, owed=None):
+    """REG-3201 - WHO MOVES EACH OF THESE REELS ON, OR WHAT EACH ONE WAITS ON. -> dict | None (UNKNOWN). Spends nothing.
+
+    MEASURED on his Mac 2026-11-05: the eagle said "3 of 42 reel(s) sit at a station that owes work no automatic lane
+    delivers (PRINTER 2, STATION 1)" and the fleet's PRINTER row quoted the vault lane's whole queue ("owes 8 ... 1
+    quarantined after a hang") about two reels that are NOT in that queue. The STATION reel IS the vault lane's - it
+    was the one quarantined after the 854 s hang - so "no automatic lane" was false for it; the two PRINTER reels are
+    in no lane's queue at all. Both facts are per reel, so this answers per reel, from the lanes' own rules:
+    `_vault_owed_reels` + `_vault_pass_reason` (the vault picker), `_chron_reel_owes_a_read` (the reel sweep),
+    `shelf_driver._proven_empty` (REG-1749's veto). {lanes: {lane: [reel]}, waits: [{key, on, reels}], why}"""
+    try:
+        reels = [os.path.basename(str(r)) for r in (reels or [])]
+        if owed is None:
+            owed = _vault_owed_reels()
+        if owed is None:
+            return None
+        vault_owed = dict((os.path.basename(str(d)), d) for d in owed)
+        try:
+            seals = _vault_swept_load()
+        except Exception:
+            seals = None
+        lanes, waits, holds = {}, {}, {}
+        for rid in reels:
+            if rid in vault_owed:
+                why = _vault_pass_reason(rid, vault_owed[rid], seals)
+                if why is None:
+                    lanes.setdefault("the vault lane", []).append(rid)
+                    continue
+                waits.setdefault(why, []).append(rid)
+                if why in ("quarantined", "look"):
+                    holds.setdefault(why, (rid, _vault_hang_hold(rid)))
+                continue
+            if station == "STATION":
+                try:
+                    if _chron_reel_owes_a_read(rid):
+                        lanes.setdefault("the reel sweep", []).append(rid)
+                        continue
+                except Exception:
+                    pass
+            try:
+                import shelf_driver as _sd_dl
+                empty = bool(_sd_dl._proven_empty(rid))
+            except Exception:
+                empty = False
+            waits.setdefault("triage-empty" if empty else "no-queue", []).append(rid)
+        rows = []
+        for k, rs in sorted(waits.items(), key=lambda kv: -len(kv[1])):
+            on = _DELIVERY_WAITS.get(k, k)
+            if k in holds and holds[k][1]:
+                on = "%s - %s %s" % (on, holds[k][0], _vault_hang_words(holds[k][1]))
+            rows.append({"key": k, "on": on, "reels": rs, "selfClearing": k in _DELIVERY_SELF_CLEARING})
+        parts = ["%d %s on %s" % (len(r["reels"]), "waits" if len(r["reels"]) == 1 else "wait", r["on"])
+                 for r in rows]
+        parts += ["%d %s by %s" % (len(rs), "is delivered" if len(rs) == 1 else "are delivered", ln)
+                  for ln, rs in sorted(lanes.items())]
+        return {"station": station, "lanes": lanes, "waits": rows,
+                "noLane": sum(len(r["reels"]) for r in rows if not r["selfClearing"]),
+                "why": "%s %d: %s" % (station, len(reels), "; ".join(parts) if parts else "no reel here")}
+    except Exception:
+        return None
+
+
+def _river_stuck_why(station, reels=None):
     """The OWNING lane's own last word on why a station is not draining. -> str (never raises)
+
+    REG-3201 - at PRINTER and STATION the sentence is about THESE reels (`reels`, or every shelf reel stamped there):
+    which lane delivers each one, or what it waits on (_station_delivery). The lane's whole-queue word is kept only
+    when every one of them is in that lane's queue and startable, which is the one case it describes.
 
     ⚠ 2026-09-30 (REG-1614) — A ROUTE SHUT BY THIS PC'S OWN MISSING PROOF SAYS WHAT THE PROOF IS WAITING FOR. The
     ALT's row read "reel.route is LOCKED — the heart has never run here ... Run `python3 tv/heart2.py --prove`" -
@@ -19080,6 +19195,17 @@ def _river_stuck_why(station):
     both, and the sweep's log said why it read none: "the sweep door is LOCKED on this machine ... vault.sweep_start
     is LOCKED - the heart census is STALE". The drain printed the note instead. The note stays for a sweep that
     owes nothing, which is the only case it describes."""
+    if reels is None:
+        reels = getattr(_RIVER_WHY_CTX, "reels", None)   # the live stuck row being worded (_river_stuck_for_wire)
+    if station in ("PRINTER", "STATION") and reels:
+        try:
+            _dl = _station_delivery(station, list(reels))
+        except Exception:
+            _dl = None
+        # a wait, or a lane that is not the station's own (a vault reel standing at STATION), is said per reel; the
+        # station's own lane delivering every one of them keeps that lane's word below (REG-1844, the vault lamp)
+        if _dl is not None and (_dl.get("waits") or set(_dl.get("lanes") or {}) - {_STATION_OWN_LANE.get(station)}):
+            return _dl["why"]
     if station == "STATION":
         try:
             _owed_r = _chron_owed_count()
@@ -19261,8 +19387,20 @@ def _river_stuck_for_wire(now_ms=None, _rows=None, _shelf=None, _fixtures=None, 
         e["oldestS"] = max(e["oldestS"], int(age))
         e.setdefault("_reels", []).append(reel)   # REG-3053 - which reels, so the drain's own hold can be named
     out = sorted(by.values(), key=lambda e: -e["oldestS"])[:6]
+    try:
+        return _river_stuck_worded(out, _keep, live=(_shelf is None))
+    finally:
+        _RIVER_WHY_CTX.reels = None
+
+
+def _river_stuck_worded(out, _keep, live=False):
+    """_river_stuck_for_wire's wording pass over its rows. -> the rows.
+
+    REG-3201 - while a LIVE row is worded, its own reels ride in _RIVER_WHY_CTX, so PRINTER and STATION say which lane
+    delivers each of those reels or what each waits on (_station_delivery) instead of the lane's whole-queue word."""
     for e in out:
         _rs = e.pop("_reels", [])
+        _RIVER_WHY_CTX.reels = (list(_rs) if live else None)
         # REG-1987 - GrokBot tick 388: the tips ended "...the heart census is S" and "...the lane could not be". A bare
         # [:200] cut the lane's own sentence mid-word; _word_cut ends at a word and says it was cut (REG-1839's helper).
         # REG-2098 (GrokBot tick 427) - the owed sentence cuts its OWN lane reason before it adds the window prefix, so a
@@ -31136,7 +31274,7 @@ def _retention_drain(stop_why=None, unknown_why=None, plan=None, keep_recent=Non
         _last, _lwhy, _ltorn = None, "the stamp store could not be asked (%s)" % type(e).__name__, None
     try:
         _up = _rr_dr.blocked_upstream(
-            _last, plan, upstream=tuple(_RIVER_OWNER), why_of=_river_stuck_why,
+            _last, plan, upstream=tuple(_RIVER_OWNER), why_of=_river_drain_why,
             keep_recent=(keep_recent if keep_recent is not None else _rr_dr.KEEP_RECENT),
             after_s=RIVER_STUCK_AFTER_S, river_why=_lwhy, river_unparsed=_ltorn)
     except Exception as e:
@@ -32347,6 +32485,8 @@ def _vault_quarantine_reel(rid, why=None):
             "at": int(time.time() * 1000), "runReel": rid,
             "why": ("REG-2271 per-reel grouping deadline: %s"
                     % (str(why)[:200] if why else "the reel's measure phase made no progress in budget"))}
+        # REG-3200 — and the hang is an ATTEMPT on record, so a relaunch does not hand the reel straight back
+        _vault_hang_record(rid, _VAULT_SWEEP_QUARANTINE[rid]["why"], run=_VAULT_JOB.get("startedTs"))
     except Exception:
         pass
 
@@ -34812,7 +34952,7 @@ def vault_sweep_state():
 
 
 def _sweep_hang_check(job, lock, progress, sig_fn, label, quarantine=None, reel_key=None,
-                      grouping_deadline_fn=None):
+                      grouping_deadline_fn=None, on_quarantine=None):
     """RIVER WATCHDOG, ONE logic for every sweep lane — clear a sweep whose guard a HANG left set.
 
     Called on the 10 s rescue tick (the only in-process place that can see job["running"]).
@@ -34891,6 +35031,13 @@ def _sweep_hang_check(job, lock, progress, sig_fn, label, quarantine=None, reel_
             quarantine[rid] = {"at": int(now * 1000), "runReel": st.get("runReel"),
                                "why": "measure-phase HANG - the river watchdog cleared the stuck guard "
                                       "and quarantined this reel so the lane reads the rest"}
+            if on_quarantine is not None:
+                # REG-3200 — the lane records the hang as an attempt (persisted, bounded, backed off)
+                try:
+                    on_quarantine(rid, "no progress for %ds (held %ds) in phase %r"
+                                  % (int(stalled), held, st.get("phase")), started, st)
+                except Exception:
+                    pass
         try:
             _sweep_lock_release()
         except Exception:
@@ -34909,6 +35056,7 @@ def _vault_sweep_hang_check():
     """RIVER WATCHDOG for the VAULT lane (see _sweep_hang_check). Quarantines the one reel it targets
     (runReelDir) in _VAULT_SWEEP_QUARANTINE, which both the autoreel picker AND vault_sweep_start now skip."""
     _vr = _vault_retro()
+    _vault_retry_cap_check()        # REG-3200 — a RETRY of a reel that hung before is also bounded in wall clock
     return _sweep_hang_check(
         _VAULT_JOB, _VAULT_LOCK, _VAULT_SWEEP_PROGRESS,
         # REG-2271 — groupTiles is the per-TILE/per-FRAME grouping-progress count. Without it the sig is
@@ -34922,7 +35070,10 @@ def _vault_sweep_hang_check():
         # REG-2271 — during the GROUPING sub-phase, bound no-progress at the per-reel budget (~20s),
         # not 240s: a frozen (uninterruptible) grouping tile then drains ~12x faster. A PROGRESSING
         # grouping advances groupTiles -> sig changes -> clock resets, so this never false-kills it.
-        grouping_deadline_fn=_vr._reel_deadline_budget)
+        grouping_deadline_fn=_vr._reel_deadline_budget,
+        # REG-3200 — the hang is an attempt on record: persisted, backed off, bounded at _VAULT_HANG_TRIES
+        on_quarantine=lambda rid, why, run, st: _vault_hang_record(rid, why, run=run,
+                                                                   reel_dir=st.get("runReelDir")))
 
 
 def _chron_sweep_hang_check():
@@ -35040,6 +35191,226 @@ def _vault_cooling_board(owed, now_ms=None):
     except Exception:
         return out
     return out
+
+
+# == REG-3200 - A REEL THAT HUNG THE MEASURER GETS A BOUNDED RETRY, NOT ONE RETRY PER RELAUNCH ======================
+# MEASURED on his Mac 2026-11-05 (/api/status + /api/river, read only): the console came up at 20:14, the vault lane
+# started its one unsealed owed reel 77 s later, the sweep hung 854 s (the triage stood aside 9 ticks for it) and the
+# watchdog quarantined the reel. The quarantine lived only in memory (_VAULT_SWEEP_QUARANTINE, "cleared on relaunch -
+# a transient hang retries"), and his console relaunches on every ship, so the SAME reel hung again after every boot,
+# forever, while the lane said "8 owed, none startable: 1 quarantined after a hang" and never which reel, or when.
+# Now every hang is a persisted attempt: the reel waits _VAULT_HANG_BACKOFF_MS x4 per hang before its next try, a
+# retry is time-bounded (asked to stop at its next banked read past _VAULT_RETRY_HELD_CAP_S, #130 - nothing it paid
+# for is lost), and after _VAULT_HANG_TRIES hangs it waits for a person: amber "needs a look: <shape>, <why>", never
+# red for ever and never retried for ever. Ways out: a new vault reader (VAULT_PROMPT_VER) retries it on its own -
+# the one change that can make a hung read go differently, REG-2560's rule - or vault_hang_release gives it one more
+# bounded try (POST /api/vault_sweep {"retryReel": <reel>}). [[unknown-stays-unknown]] [[heart-first]]
+_VAULT_HANG_TRIES = 3
+_VAULT_HANG_BACKOFF_MS = 30 * 60 * 1000
+_VAULT_HANG_BACKOFF_MAX_MS = 24 * 3600 * 1000
+_VAULT_RETRY_HELD_CAP_S = int(os.environ.get("TV_VAULT_RETRY_CAP_S") or 1200)
+
+
+def _vault_reel_shape(rid, reel_dir=None):
+    """REG-3200 - '<MB> MB, <n> frame(s), filmed <when>' for the reel a person is asked to look at. Never raises;
+    what could not be measured says so rather than reading as zero."""
+    rid = os.path.basename(os.path.normpath(str(rid or "")))
+    d = str(reel_dir) if reel_dir else os.path.join(os.environ.get("TV_HIST") or HIST_DIR, rid)
+    parts = []
+    try:
+        n, size = 0, 0
+        for root, _dirs, files in os.walk(d):
+            for f in files:
+                size += os.path.getsize(os.path.join(root, f))
+                if f.lower().endswith((".jpg", ".jpeg", ".png")):
+                    n += 1
+        if not os.path.isdir(d):
+            raise OSError("no reel directory")
+        parts.append("%.0f MB, %d frame(s)" % (size / 1e6, n))
+    except Exception:
+        parts.append("its size could not be read")
+    try:
+        ms = int(rid.split("_")[2])
+        parts.append("filmed %s" % time.strftime("%Y-%m-%d %H:%M", time.localtime(ms / 1000.0)))
+    except Exception:
+        pass
+    return ", ".join(parts)
+
+
+def _vault_hang_record(rid, why="", run=None, reel_dir=None, now_ms=None):
+    """REG-3200 - one more hang for `rid`, persisted. -> the entry, or None. Never raises.
+
+    `run` is the sweep's startedTs: the watchdog, the per-reel deadline and the retry cap can all report one sweep,
+    and one sweep is ONE attempt. A count that will not read is UNKNOWN and is judged as the last try, so it asks for
+    a person rather than restarting the backoff at its shortest wait."""
+    try:
+        rid = os.path.basename(os.path.normpath(str(rid or "")))
+        if not rid:
+            return None
+        h = _VAULT_AUTOREAD.get("hung")
+        if not isinstance(h, dict):
+            h = _VAULT_AUTOREAD["hung"] = {}
+        now = time.time() * 1000 if now_ms is None else now_ms
+        old = h.get(rid) if isinstance(h.get(rid), dict) else {}
+        ver = _vault_reader_ver() or str(old.get("promptVer") or "")
+        same_reader = str(old.get("promptVer") or "") == ver
+        if run is not None and same_reader and old.get("run") == run:
+            return old
+        try:
+            n = int(old.get("n") or 0) if same_reader else 0
+        except (TypeError, ValueError):
+            n = _VAULT_HANG_TRIES - 1
+        n += 1
+        look = n >= _VAULT_HANG_TRIES
+        wait = min(_VAULT_HANG_BACKOFF_MAX_MS, _VAULT_HANG_BACKOFF_MS * (4 ** (n - 1)))
+        e = {"n": n, "of": _VAULT_HANG_TRIES, "at": int(now), "look": look,
+             "until": (None if look else int(now + wait)), "promptVer": ver, "run": run,
+             "why": str(why or "the measure phase made no progress")[:200],
+             "shape": _vault_reel_shape(rid, reel_dir)}
+        h[rid] = e
+        _vault_autoread_save()
+        print("   ! vault: reel %s hung (%d of %d) - %s" % (
+            rid, n, _VAULT_HANG_TRIES,
+            "it waits for a person now" if look else "next try in %d min" % (wait // 60000)), flush=True)
+        return e
+    except Exception:
+        return None
+
+
+def _vault_hang_hold(rid, now_ms=None):
+    """REG-3200 - why `rid` must not be swept now after a hang, or None when it may be. -> dict | None. Never raises.
+
+    kind 'backoff' (its next try is at `until`), 'look' (it hung _VAULT_HANG_TRIES times: a person decides), or
+    'quarantined' (an in-process quarantine with no persisted record - a writer that could not save; it holds as
+    before). A record made by an older vault reader no longer holds: a new reader is tried, as REG-2560's cooldown."""
+    try:
+        rid = os.path.basename(os.path.normpath(str(rid or "")))
+        _vault_autoread_load()
+        h = _VAULT_AUTOREAD.get("hung")
+        e = h.get(rid) if isinstance(h, dict) else None
+        if isinstance(e, dict):
+            ver = _vault_reader_ver()
+            if ver and ver != str(e.get("promptVer") or ""):      # REG-2561: a failed lookup is not a new reader
+                _VAULT_SWEEP_QUARANTINE.pop(rid, None)
+                return None
+            if e.get("look") is True:
+                return dict(e, kind="look")
+            try:
+                until = float(e.get("until"))
+            except (TypeError, ValueError):
+                return dict(e, kind="look")
+            now = time.time() * 1000 if now_ms is None else now_ms
+            if now < until:
+                return dict(e, kind="backoff")
+            _VAULT_SWEEP_QUARANTINE.pop(rid, None)
+            return None
+        if rid in _VAULT_SWEEP_QUARANTINE:
+            q = _VAULT_SWEEP_QUARANTINE.get(rid) or {}
+            return {"kind": "quarantined", "n": None, "of": _VAULT_HANG_TRIES, "until": None,
+                    "at": q.get("at"), "why": q.get("why")}
+    except Exception:
+        return None
+    return None
+
+
+def _vault_hang_words(hold, now_ms=None):
+    """REG-3200 - one hold in his words. -> str"""
+    hold = hold or {}
+    kind = hold.get("kind")
+    if kind == "look":
+        return ("needs a look: %s, %s - it hung %s of %s tries; a new vault reader retries it, or "
+                "POST /api/vault_sweep {\"retryReel\": \"<reel>\"} gives it one more bounded try"
+                % (hold.get("shape") or "shape unknown", str(hold.get("why") or "no reason was kept")[:120],
+                   hold.get("n"), hold.get("of")))
+    if kind == "backoff":
+        now = time.time() * 1000 if now_ms is None else now_ms
+        try:
+            mins = max(0, int((float(hold.get("until")) - now) // 60000))
+        except (TypeError, ValueError):
+            mins = None
+        return ("hung %s of %s tries - its next try is in %s" % (
+            hold.get("n"), hold.get("of"), ("%d min" % mins) if mins is not None else "an unknown time"))
+    return "quarantined after a hang in this process - when it is tried again is UNKNOWN (no record was kept)"
+
+
+def vault_hang_release(reel, now_ms=None):
+    """REG-3200 - THE WAY OUT for a reel that waits for a person: one more bounded try, never a reset. -> dict
+
+    The count is set one short of the bound, so the next tick tries it under the retry cap, and a further hang asks
+    for a person again - a release can never become a silent retry loop."""
+    rid = os.path.basename(os.path.normpath(str(reel or "")))
+    if not rid.startswith("reel_"):
+        return {"ok": False, "why": "%r is not a reel name" % (reel,)}
+    if _vault_autoread_load() is None:
+        return {"ok": False, "why": "the vault lane's memory could not be read, so nothing was released"}
+    h = _VAULT_AUTOREAD.get("hung")
+    e = h.get(rid) if isinstance(h, dict) else None
+    was_q = rid in _VAULT_SWEEP_QUARANTINE
+    if not isinstance(e, dict) and not was_q:
+        return {"ok": False, "reel": rid, "why": "%s is not held after a hang" % rid}
+    now = int(time.time() * 1000 if now_ms is None else now_ms)
+    _VAULT_SWEEP_QUARANTINE.pop(rid, None)
+    if not isinstance(h, dict):
+        h = _VAULT_AUTOREAD["hung"] = {}
+    h[rid] = dict(e or {}, n=_VAULT_HANG_TRIES - 1, of=_VAULT_HANG_TRIES, look=False, until=now, released=now,
+                  promptVer=(_vault_reader_ver() or str((e or {}).get("promptVer") or "")))
+    _vault_autoread_save()
+    return {"ok": True, "reel": rid,
+            "why": "%s gets one more bounded try on the next tick; another hang asks for a person again" % rid}
+
+
+def _vault_hang_board(owed, now_ms=None):
+    """REG-3200 - every owed reel held after a hang, in words. -> [{reel, kind, n, of, until, why, say}]"""
+    out = []
+    try:
+        for d in owed or []:
+            rid = os.path.basename(str(d))
+            hold = _vault_hang_hold(rid, now_ms)
+            if hold:
+                out.append({"reel": rid, "kind": hold.get("kind"), "n": hold.get("n"), "of": hold.get("of"),
+                            "until": hold.get("until"), "shape": hold.get("shape"),
+                            "why": hold.get("why"), "say": _vault_hang_words(hold, now_ms)})
+    except Exception:
+        return out
+    return out
+
+
+def _vault_retry_cap_check(now=None):
+    """REG-3200 - A RETRY IS TIME-BOUNDED. -> True when it asked the running retry to stop. Never raises.
+
+    A first attempt keeps the no-progress watchdog only (a long reel may legitimately read for a long time). A retry
+    of a reel that hung before gets _VAULT_RETRY_HELD_CAP_S of wall clock, however its progress signature moves; past
+    it the sweep is asked to stop at its next banked read (the #130 stop: what it paid for is kept and resumes), the
+    attempt is counted as a hang, and the reel waits its backoff. A wedged retry that never reaches a banked read is
+    still cleared by the no-progress watchdog, which counts the same run once."""
+    try:
+        now = time.time() if now is None else now
+        with _VAULT_LOCK:
+            st = dict(_VAULT_JOB)
+        if not st.get("running") or st.get("stopAsk"):
+            return False
+        rdir = st.get("runReelDir")
+        rid = os.path.basename(os.path.normpath(str(rdir))) if rdir else None
+        h = _VAULT_AUTOREAD.get("hung")
+        if not rid or not isinstance(h, dict) or not isinstance(h.get(rid), dict):
+            return False
+        started = st.get("startedTs")
+        held = now - float(started or 0) / 1000.0
+        if not started or held < _VAULT_RETRY_HELD_CAP_S:
+            return False
+        with _VAULT_LOCK:
+            if not (_VAULT_JOB.get("running") and _VAULT_JOB.get("startedTs") == started):
+                return False
+            _VAULT_JOB["stopAsk"] = int(now * 1000)
+        why = ("a retry ran %ds, past its %ds bound - asked to stop at its next banked read"
+               % (int(held), _VAULT_RETRY_HELD_CAP_S))
+        _VAULT_SWEEP_QUARANTINE[rid] = dict(at=int(now * 1000), runReel=rid, why=why)
+        _vault_hang_record(rid, why, run=started, reel_dir=rdir, now_ms=now * 1000)
+        return True
+    except Exception:
+        return False
+
+
 _VAULT_AUTOREAD = {"tries": {}, "skipped": {}, "reads": 0, "lastTs": 0, "retired": {},
                    # v2302 — the LAST reason an attempt on this reel gave. Retirement used
                    # to assert a cause it had never measured; now it can quote one.
@@ -35057,7 +35428,10 @@ _VAULT_AUTOREAD = {"tries": {}, "skipped": {}, "reads": 0, "lastTs": 0, "retired
                    # #188 REG-2560 — a reel the prune holds as panels-never-banked whose read came back
                    # barren: { rid: {"until": ms, "at": ms, "barren": n, "promptVer": str} }. Not read
                    # again before `until` unless the vault reader changes. See _vault_cool.
-                   "cooldown": {}}
+                   "cooldown": {},
+                   # REG-3200 — a reel that HUNG the measurer: { rid: {n, of, at, until, look, promptVer, run, why,
+                   # shape} }. Persisted, so a relaunch no longer hands a hung reel its read straight back.
+                   "hung": {}}
 
 #: ⚠⚠⚠ v2901 (#60) — WHAT THE LANE LEARNS MUST SURVIVE THE PROCESS. MEASURED 2026-09-10: the dict
 #: above had **14 write sites and ZERO persistence sites** — no save, no load, no json anywhere.
@@ -35400,6 +35774,9 @@ def _vault_autoread_load():
         # entry inside it reads as "not cooling" in _vault_cooling, never as an exception.
         if isinstance(d.get("cooldown"), dict):
             _VAULT_AUTOREAD["cooldown"] = dict(d["cooldown"])
+        # REG-3200 — a restart must not hand a reel that hung its read straight back (it hung again after every boot)
+        if isinstance(d.get("hung"), dict):
+            _VAULT_AUTOREAD["hung"] = dict(d["hung"])
         if isinstance(d.get("latticeTried"), dict):
             _VAULT_AUTOREAD["latticeTried"] = dict(d["latticeTried"])
         if isinstance(d.get("joinQueued"), dict):
@@ -35494,6 +35871,9 @@ def _vault_autoread_save():
                # #188 REG-2560 — lost here, every relaunch would re-read each cooling reel at once
                "cooldown": (_VAULT_AUTOREAD.get("cooldown")
                             if isinstance(_VAULT_AUTOREAD.get("cooldown"), dict) else {}),
+               # REG-3200 — lost here, every relaunch would re-run the reel that hung the measurer
+               "hung": (_VAULT_AUTOREAD.get("hung")
+                        if isinstance(_VAULT_AUTOREAD.get("hung"), dict) else {}),
                # ⚠ REG-1651 — v3283 saved "on every cursor change" and this payload never carried
                # the cursor, so every save it added wrote everything EXCEPT the thing it was for, and
                # each relaunch restarted the rotation at the head of the owed list.
@@ -37313,6 +37693,8 @@ def _vault_autoread_state():
                 "triageRuledEmpty": _TRIAGE_RULED_EMPTY.get("vault"),            # REG-1751
                 # #188 REG-2560 - every owed reel that is cooling, with its until-time and why, in words
                 "cooling": _vault_cooling_board(owed),
+                # REG-3200 - every owed reel held after hanging the measurer: its try count, next try, or "needs a look"
+                "hung": _vault_hang_board(owed),
                 "retired": sorted(d.get("retired") or {}),
                 "skipped": {k: str(v)[:90] for k, v in list((d.get("skipped") or {}).items())[:6]},
                 "tries": {k: v for k, v in list((d.get("tries") or {}).items())[:6]}}
@@ -37457,7 +37839,93 @@ def _examined_seals_backfill():
 
 #: v3861 - the words for each reason an owed reel was passed this tick (the fleet line reads them).
 _VAULT_PASS_WORDS = {"retired": "retired after their tries", "cooling": "cooling down after an empty read",
-                     "quarantined": "quarantined after a hang", "growing": "still recording"}
+                     "quarantined": "quarantined after a hang", "growing": "still recording",
+                     # REG-3200 (his Mac 2026-11-05: "8 owed, none startable: 1 quarantined after a hang" - the other
+                     # 7 were passed in silence). A reel the CURRENT reader sealed and whose one solo pass is spent
+                     # waits on a new vault reader (_vault_still_sealed reopens a rows==0 seal only then).
+                     "sealed": "already read by the current vault reader with nothing taken - they wait on a new "
+                               "vault reader",
+                     "look": "need a look after hanging the measurer"}
+
+
+def _vault_seal_spent(rid, seals=None):
+    """REG-3200 - is `rid` sealed by the CURRENT vault reader with nothing left for this lane to start? -> bool | None
+
+    The tick's own sealed branch, asked without starting anything: the door's seal check (vault_sweep_start), the one
+    solo pass a rows==0 seal is owed (_unextracted_seal_needs_one_pass) and the queued join re-read (_join_queue_read).
+    None = the seal store could not be read (UNKNOWN, never 'not sealed')."""
+    try:
+        sw = _vault_swept_load() if seals is None else seals
+    except Exception:
+        return None
+    if not isinstance(sw, dict):
+        return None
+    rec = sw.get(rid)
+    if rec is None:
+        rec = sw.get(str(rid).replace("reel_", "", 1))
+    if rec is None or not _vault_still_sealed(rec):
+        return False
+    prompt = str((rec or {}).get("promptVer") or "?")
+    if rid in (_VAULT_AUTOREAD.get("joinQueued") or {}):
+        prior = str((_VAULT_AUTOREAD.get("reextract") or {}).get(rid) or "")
+        return bool(prior and prompt and prior == prompt)
+    refusal = {"alreadySealed": True, "rows": int((rec or {}).get("rows") or 0),
+               "examinedEmpty": (rec or {}).get("examinedEmpty"), "sealedBy": prompt}
+    return not _unextracted_seal_needs_one_pass(refusal, (_VAULT_AUTOREAD.get("reextract") or {}).get(rid))
+
+
+def _vault_pass_reason(rid, d, seals=None):
+    """REG-3200 - THE ONE PICKER RULE: why the vault tick would pass `rid` over, or None when it would act on it.
+    -> 'retired' | 'cooling' | 'quarantined' | 'look' | 'growing' | 'sealed' | None. The tick and the lane's health
+    ask the same rule, so the eagle cannot call a lane STOPPED that is waiting on named things. [[copy-drift]]"""
+    if rid in (_VAULT_AUTOREAD.get("retired") or {}):
+        return "retired"
+    if _vault_cooling(rid):
+        return "cooling"
+    _hold = _vault_hang_hold(rid)
+    if _hold is not None:
+        return "look" if _hold.get("kind") == "look" else "quarantined"
+    if _reel_is_growing(str(d)):
+        return "growing"
+    if _vault_seal_spent(rid, seals) is True:
+        return "sealed"
+    return None
+
+
+def _vault_lane_reasons(owed=None, now_ms=None):
+    """REG-3200 - what the vault lane owes, how much of it it can START now, and why not the rest. -> dict, never raises
+
+    {owed, actionable, by: {reason: n}, holds: [hang board], why}. owed/actionable None = UNKNOWN (nobody could
+    count), which lane_health keeps as it was. Starts nothing and spends nothing."""
+    try:
+        if owed is None:
+            _vault_autoread_load()
+            owed = _vault_owed_reels()
+        if owed is None:
+            return {"owed": None, "actionable": None, "by": {}, "holds": [],
+                    "why": "the retention plan could not be read, so what the vault lane owes is UNKNOWN"}
+        try:
+            seals = _vault_swept_load()
+        except Exception:
+            seals = None
+        by, act = {}, 0
+        for d in owed:
+            rid = os.path.basename(str(d))
+            why = _vault_pass_reason(rid, d, seals)
+            if why is None:
+                act += 1
+            else:
+                by[why] = by.get(why, 0) + 1
+        holds = _vault_hang_board(owed, now_ms)
+        parts = ["%d %s" % (n, _VAULT_PASS_WORDS.get(k, k)) for k, n in sorted(by.items(), key=lambda kv: -kv[1])]
+        hs = "; ".join("%s %s" % (h["reel"], h["say"]) for h in holds[:2])
+        return {"owed": len(owed), "actionable": act, "by": by, "holds": holds,
+                "why": ("%d of %d owed can be started now%s%s" % (
+                    act, len(owed), (": the rest " + ", ".join(parts)) if parts else "",
+                    (" - " + hs) if hs else ""))}
+    except Exception as e:
+        return {"owed": None, "actionable": None, "by": {}, "holds": [],
+                "why": "the vault lane's reasons could not be read (%s)" % type(e).__name__}
 
 
 def vault_autoreel_tick():
@@ -37544,7 +38012,9 @@ def vault_autoreel_tick():
     if _cur in _ids and len(_ids) > 1:
         _k = _ids.index(_cur) + 1
         owed_list = list(owed_list[_k:]) + list(owed_list[:_k])
-    _passed = {"retired": 0, "cooling": 0, "quarantined": 0, "growing": 0}   # v3861 - why each owed reel was passed
+    _passed = {"retired": 0, "cooling": 0, "quarantined": 0, "growing": 0,   # v3861 - why each owed reel was passed
+               "look": 0, "sealed": 0}                                         # REG-3200 - and the two it never named
+    _hang_seen = []                                                            # REG-3200 - (reel, hold), for the sentence
     for d in owed_list:
         rid = os.path.basename(str(d))
         # ⚠ the cursor moves on EVERY reel this tick considers, not only on a successful sweep.
@@ -37569,10 +38039,14 @@ def vault_autoreel_tick():
         if _vault_cooling(rid):          # #188 REG-2560 - a barren held reel waits out its cooldown
             _passed["cooling"] += 1
             continue
-        if rid in _VAULT_SWEEP_QUARANTINE:
-            # river watchdog quarantined this reel after it HUNG the measurer; skip it so the lane reads
-            # the rest instead of re-hanging on the same reel (cleared on relaunch — a transient hang retries)
-            _passed["quarantined"] += 1
+        _hang = _vault_hang_hold(rid)
+        if _hang is not None:
+            # river watchdog quarantined this reel after it HUNG the measurer; skip it so the lane reads the rest
+            # instead of re-hanging on the same reel. REG-3200: the hold is PERSISTED and bounded - it is tried
+            # again when its backoff ends (a relaunch no longer hands it straight back), and after
+            # _VAULT_HANG_TRIES hangs it waits for a person ('look'), never red for ever, never retried for ever.
+            _passed["look" if _hang.get("kind") == "look" else "quarantined"] += 1
+            _hang_seen.append((rid, _hang))
             continue
         if _reel_is_growing(str(d)):
             _VAULT_AUTOREAD["skipped"][rid] = "still growing — not final yet"
@@ -37693,6 +38167,7 @@ def vault_autoreel_tick():
                     _jq = _join_queue_read(rid, r, d, owed)
                     if _jq is not None:
                         return _jq
+                    _passed["sealed"] += 1         # REG-3200 - its one re-read is spent: say so, never in silence
                     continue
                 # A seal that took no rows did not extract. One solo pass, then the
                 # reader is recorded so the same prompt cannot buy the reel again.
@@ -37718,6 +38193,10 @@ def vault_autoreel_tick():
                         _VAULT_AUTOREAD["skipped"][rid] = why2[:120]
                         return {"ok": False, "reel": rid, "tries": tries, "owed": owed,
                                 "why": why2}
+                # REG-3200 - sealed by the CURRENT reader and its one solo pass spent: the lane passes it, and SAYS so.
+                # Measured on his Mac: 7 of the 8 owed reels left the tick here while the sentence named only the 1
+                # quarantined, so "8 owed, none startable" hid what the other 7 wait on (a new vault reader).
+                _passed["sealed"] += 1
                 continue
             # REG-1765 — a missing lane or a machine lock is not this reel. The flag is
             # the door's. A phrase in the sentence is not, because that once deferred a
@@ -37745,8 +38224,13 @@ def vault_autoreel_tick():
     # REASON. "none startable" was true and told nobody whether to wait (cooling, still recording) or act (retired after
     # its tries, quarantined after a hang). `passed` carries the counts; the sentence names them, largest first.
     _parts = [("%d %s" % (n, _VAULT_PASS_WORDS[k])) for k, n in sorted(_passed.items(), key=lambda kv: -kv[1]) if n]
+    # REG-3200 - a hold after a hang names its reel and when it is tried again (or that it waits for a person)
+    _hs = "; ".join("%s %s" % (_r, _vault_hang_words(_h)) for _r, _h in _hang_seen[:2])
     return {"ok": False, "read": None, "owed": owed, "passed": dict(_passed),
-            "why": "%d owed, none startable this tick%s" % (owed, (": " + ", ".join(_parts)) if _parts else "")}
+            "holds": [{"reel": _r, "kind": _h.get("kind"), "n": _h.get("n"), "until": _h.get("until")}
+                      for _r, _h in _hang_seen],
+            "why": "%d owed, none startable this tick%s%s" % (owed, (": " + ", ".join(_parts)) if _parts else "",
+                                                              (" - " + _hs) if _hs else "")}
 
 
 
@@ -39377,6 +39861,14 @@ def vault_sweep_start(hist_dir=None, limit=None, force=False, reel_dir=None):
     # every caller passes through; `force` is the deliberate override. [[the-unjoined-end]] [[sweep-dont-ask]]
     if reel_dir and not force:
         _qrid = os.path.basename(os.path.normpath(str(reel_dir)))
+        # REG-3200 - the PERSISTED hang record decides first: inside its backoff, or waiting for a person, the door
+        # refuses on every caller (a relaunch no longer clears it); past its backoff the record lets it through
+        # (and drops the in-process entry), so a hung reel is retried a bounded number of times, never for ever.
+        _qhold = _vault_hang_hold(_qrid)
+        if _qhold is not None and _qhold.get("kind") in ("backoff", "look"):
+            return {"ok": False, "quarantined": True, "reel": _qrid, "since": _qhold.get("at"),
+                    "hangHold": _qhold.get("kind"), "until": _qhold.get("until"),
+                    "why": "%s %s" % (_qrid, _vault_hang_words(_qhold))}
         if _qrid in _VAULT_SWEEP_QUARANTINE:
             _q = _VAULT_SWEEP_QUARANTINE.get(_qrid) or {}
             return {"ok": False, "quarantined": True, "reel": _qrid, "since": _q.get("at"),
@@ -51455,6 +51947,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/vault_sweep":
             # v1578 — POST starts it, deliberately (this is the call that spends reads).
             # Needs NO live agent: retro reads sealed film.
+            if body.get("retryReel"):
+                # REG-3200 — the way out for a reel that waits for a person after hanging the measurer: one more
+                # bounded try on the next tick (no sweep starts from this call, so nothing is spent here)
+                self._json(200, vault_hang_release(body.get("retryReel")))
+                return
             try:
                 _vlim = int(body.get("limit") or 0) or None
             except (TypeError, ValueError):

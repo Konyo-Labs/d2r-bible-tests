@@ -119,7 +119,7 @@ def _newest_ts(blob):
     return best
 
 
-def lane(name, now_ms=None, owed=None, actionable=None):
+def lane(name, now_ms=None, owed=None, actionable=None, blocked_why=None):
     """One lane's health. -> dict
 
     ★ v2301 — A LANE WITH NOTHING TO DO IS NOT A LANE THAT STOPPED, and this could not tell them
@@ -164,7 +164,12 @@ def lane(name, now_ms=None, owed=None, actionable=None):
     blocked = bool(over and not idle and isinstance(owed, int) and owed > 0
                    and isinstance(actionable, int) and actionable == 0)
     stalled = bool(over and not idle and not blocked)
-    if blocked:
+    if blocked and blocked_why:
+        # REG-3200 - THE LANE'S OWN REASONS, NOT THE CHRONICLE'S. The tail below is the chronicle's measured story
+        # (no chosen Chronicle focus); a lane that can say what each owed unit waits on says that instead.
+        tail = (" — past the %.0f h mark, BUT it owes %d read(s) and can start NONE of them now, so this lane is "
+                "BLOCKED, not stopped: %s" % (stall_h, owed, blocked_why))
+    elif blocked:
         tail = (" — past the %.0f h mark, BUT it owes %d read(s) and can act on NONE of them, so "
                 "this lane is BLOCKED, not stopped: it is waiting on something nobody has "
                 "supplied. Measured 2026-09-17: the four reels it owes have no chosen Chronicle "
@@ -436,7 +441,32 @@ def actionable_counts():
     ⚠ None means NOBODY COUNTED, exactly as in `owed_counts`, and an uncounted lane keeps whatever
     verdict it had. [[unknown-stays-unknown]]
     """
-    out = {n: None for n in LANES}
+    return {n: r.get("actionable") for n, r in lane_reasons().items()}
+
+
+def _serving(ca):
+    """The control_app SERVING this process (it runs as __main__), else the module imported. -> module
+
+    REG-3200 - the console runs control_app.py as __main__, so `import control_app` here builds a SECOND module whose
+    in-memory lane state is its literals; the hang holds and the tick's memory live in the one serving. The same rule
+    console_doctor._serving_console keeps (REG-1881). [[the-unjoined-end]]"""
+    m = sys.modules.get("__main__")
+    if (m is not None and m is not ca and hasattr(m, "_vault_lane_reasons")
+            and os.path.basename(str(getattr(m, "__file__", "") or "")) == "control_app.py"):
+        return m
+    return ca
+
+
+def lane_reasons():
+    """Per lane: how many owed units it can ACT ON now, and why not the rest. -> {lane: {actionable, why}}
+
+    REG-3200 - THE VAULT LANE COUNTED NOTHING HERE, SO IT COULD ONLY EVER READ "STOPPED". MEASURED on his Mac
+    2026-11-05: "vault: 99 session(s), last did work 194.5 h ago - past the 48 h mark, so this lane has STOPPED",
+    while its own tick said "8 owed, none startable" - 7 sealed by the current reader with nothing taken (they wait
+    on a new vault reader) and 1 quarantined after hanging the measurer. A lane waiting on named things is BLOCKED,
+    and the sentence is the lane's own (control_app._vault_lane_reasons, the tick's one picker rule).
+    None = nobody counted, which keeps the verdict the lane already had. [[unknown-stays-unknown]]"""
+    out = {n: {"actionable": None, "why": None} for n in LANES}
     try:
         import control_app as _ca
     except Exception:
@@ -444,7 +474,14 @@ def actionable_counts():
     try:
         w = _ca._unswept_chron_reels(limit=50)
         if isinstance(w, list):
-            out["chronicle"] = len(w)
+            out["chronicle"]["actionable"] = len(w)
+    except Exception:
+        pass
+    try:
+        r = _serving(_ca)._vault_lane_reasons()
+        a = r.get("actionable") if isinstance(r, dict) else None
+        if isinstance(a, int) and not isinstance(a, bool):
+            out["vault"] = {"actionable": a, "why": r.get("why")}
     except Exception:
         pass
     return out
@@ -527,9 +564,12 @@ def report(now_ms=None, owed=None, actionable=None):
     # line that broke it. A caller supplying `owed` IS a fixture: it gets {} here, every lane
     # comes back actionable=None, and None keeps whatever verdict the lane already had.
     # [[feedback-fixtures-never-touch-live-data]] [[unknown-stays-unknown]]
-    _act = (actionable_counts() if (owed is None and actionable is None)
+    # REG-3200 - live, each lane's reasons travel with its count (one pass, never a second ask of the lane)
+    _rsn = lane_reasons() if (owed is None and actionable is None) else {}
+    _act = ({n: r.get("actionable") for n, r in _rsn.items()} if (owed is None and actionable is None)
             else ({} if actionable is None else dict(actionable)))
-    lanes = {n: lane(n, now_ms, owed=_owed.get(n), actionable=_act.get(n)) for n in LANES}
+    lanes = {n: lane(n, now_ms, owed=_owed.get(n), actionable=_act.get(n),
+                     blocked_why=(_rsn.get(n) or {}).get("why")) for n in LANES}
     # ⚠ same fixture discipline as `_act` above: a caller supplying `owed` is a fixture, and a
     # fixture must not have its divergence decided by his live retention plan. It gets None for
     # both, which is UNCOUNTED, which keeps the pre-v3266 sentence exactly.

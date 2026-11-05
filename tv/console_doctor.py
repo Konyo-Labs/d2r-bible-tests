@@ -1466,6 +1466,7 @@ def _check_the_river_is_moving():
     if not isinstance(rows, list) or not rows:
         return UNKNOWN, "no reel was stationed, so nothing can be concluded about the river"
     stuck = {}
+    at = {}
     for r in rows:
         # the list is guarded above; its ELEMENTS are not, and `(r or {}).get` raises on a truthy
         # non-dict exactly as it did in the two rows above
@@ -1475,14 +1476,49 @@ def _check_the_river_is_moving():
         if not st or st in _BY_DESIGN_STATIONS or st in ("ROUTED", "TOMBSTONE"):
             continue
         if r.get("owes"):
-            stuck[st] = stuck.get(st, 0) + 1
+            if st in _PER_REEL_STATIONS and r.get("reel"):
+                at.setdefault(st, []).append(str(r.get("reel")))
+            else:
+                stuck[st] = stuck.get(st, 0) + 1
+    # REG-3201 - AT PRINTER AND STATION, WHETHER A LANE DELIVERS IS A FACT ABOUT EACH REEL. MEASURED on his Mac
+    # 2026-11-05: "3 of 42 reel(s) ... no automatic lane delivers (PRINTER 2, STATION 1)" - and the STATION reel was the
+    # vault lane's own, quarantined after an 854 s hang; the two PRINTER reels were in no lane's queue. A reel its lane
+    # will start, or that waits on a hold that clears by itself (a hang's backoff, a cooldown, a recording still
+    # rolling), is not undelivered; every other wait is counted and NAMED. Who-delivers UNKNOWN keeps the old reading.
+    waits = []
+    for st in sorted(at):
+        ids = at[st]
+        dl = _river_delivery(st, ids)
+        if not isinstance(dl, dict):
+            stuck[st] = stuck.get(st, 0) + len(ids)
+            continue
+        for w in (dl.get("waits") or []):
+            if isinstance(w, dict) and not w.get("selfClearing"):
+                stuck[st] = stuck.get(st, 0) + len(w.get("reels") or [])
+        if dl.get("waits"):
+            waits.append(str(dl.get("why") or ""))
+    said = (" Per reel: %s." % "; ".join(waits)) if waits else ""
     if not stuck:
-        return OK, "every stationed reel has a lane that can take it (%d reel(s) walked)" % len(rows)
+        return OK, ("every stationed reel has a lane that can take it (%d reel(s) walked)%s"
+                    % (len(rows), (" - waiting only on holds that clear by themselves." + said) if waits else ""))
     total = sum(stuck.values())
     named = ", ".join("%s %d" % (k, v) for k, v in sorted(stuck.items(), key=lambda kv: -kv[1]))
     return MISSING, ("%d of %d reel(s) sit at a station that owes work no automatic lane delivers "
-                     "(%s). They are not stuck on evidence — nothing is scheduled to move them."
-                     % (total, len(rows), named))
+                     "(%s). They are not stuck on evidence — nothing is scheduled to move them.%s"
+                     % (total, len(rows), named, said))
+
+
+#: REG-3201 - the stations whose lane may or may not hold a given reel, so delivery is asked per reel
+_PER_REEL_STATIONS = ("PRINTER", "STATION")
+
+
+def _river_delivery(station, reels):
+    """REG-3201 - the serving console's per-reel answer (control_app._station_delivery). -> dict | None (UNKNOWN). A seam."""
+    try:
+        import control_app as _ca
+        return _serving_console(_ca)._station_delivery(station, reels)
+    except Exception:
+        return None
 
 
 def _check_the_vault_stores_are_readable():
