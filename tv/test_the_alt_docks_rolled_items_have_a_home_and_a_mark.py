@@ -28,10 +28,12 @@ RED_PROOF = [
      "find": "    if (_rb.glyph) fallbackHtml = _rb.glyph;   /* v3850 SB-3 the class glyph, with the question as its title */\n",
      "replace": "",
      "matches": 1},
+    # v3864 - pinned on REG-3088's class branch: it answers a Weapon/Armor-class rare first and returns, so the v3850 itypes
+    # branch further down no longer runs for these names and a tamper there stayed GREEN (BLIND on ci/proof-keys-v3864)
     {"why": "a class-only rare carries no question",
      "file": "bible.html",
-     "find": "      out.ask = 'a rare ' + _ART_CLASS_GLYPH[_irB.itypes[0]][1] + ' - which one? the name does not say; a tooltip look settles it';\n",
-     "replace": "",
+     "find": "      out.ask = 'a rare ' + _ART_CLASS_GLYPH[_cgK][1] + ' - which one? the name does not say; a tooltip look settles it'; return out; }\n",
+     "replace": "      return out; }\n",
      "matches": 1},
 ]
 

@@ -404,9 +404,9 @@ RED_PROOF = [
     {"why": "Guillaume's Face falls back to SETS-REST (the keep-set rule wins over war gear).",
      "file": "bible.html", "find": "    \"guillaume's face\": 'crushing blow + deadly strike helm - war set piece'\n",
      "replace": "    \"guillaume_x\": 'x'\n", "matches": 1},
-    {"why": "A full war stash says nothing.",
-     "file": "bible.html", "find": "    if (_wf.length) unrHtml += '<p class=\"vmv-warfull\"",
-     "replace": "    if (false) unrHtml += '<p class=\"vmv-warfull\"", "matches": 1},
+    # v3864 - 'A full war stash says nothing' moved to test_the_board_makes_the_war_mule_the_overflow_needs (node): REG-2997
+    # (his ruling 2026-10-29 Q2) made a taken-back war mule offer the next one, so no case here reaches the line any more
+    # and the proof went BLIND on GitHub (ci/proof-keys-v3864, 20c90f978).
     {"why": "The tab and in-page row are not read off the shared cell.",
      "file": "bible.html", "find": "        return h + ' · ' + _sharedSpotSay(Math.floor((+m[2]) / 10), +m[1], (+m[2]) % 10);   /* REG-3005 the one spelling */",
      "replace": "        return h + ' (' + ((+m[1]) + 1) + ',' + ((+m[2]) + 1) + ')';", "matches": 1},

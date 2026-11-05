@@ -103,6 +103,10 @@ OUT.add = [SH, SH, SH].map(function(n){ return !!(W.vaultHandAdd(n) || {}).ok; }
 W.renderVault(); H.flush(60, 3);
 OUT.wars = wars(); OUT.auto = W._vaultWarAuto || null;
 OUT.anyWar = []; H.RAW.forEach(function(v, k){ if (/muleRoster/.test(k) && /"name":"WAR/i.test(v)) OUT.anyWar.push(k); });
+OUT.full = (W._vaultWarFull || []).length;
+try { W._vaultMovePaint(); } catch (eP) { OUT.paintErr = String(eP); } H.flush(60, 3);   /* MOVE TASKS, as his panel paints it */
+var _mh = document.getElementById('vault-move-list');   /* this DOM answers no descendant selector: read the panel's markup */
+OUT.line = ((String((_mh && _mh.innerHTML) || '').match(/class="vmv-warfull"[^>]*>([\s\S]*?)<\/p>/) || [])[1] || '').replace(/<[^>]+>/g, '');
 """
 
 BODY_HELD = READ + r"""
@@ -216,6 +220,11 @@ class TheBoardMakesTheWarMuleTheOverflowNeeds(unittest.TestCase):
         self.assertTrue(all(g["add"]), "PREMISE: a guest's hand add did not land: %r" % g)
         self.assertEqual((g["wars"], g["anyWar"]), ([], []), "a guest's world made a WAR mule: %r" % g)
         self.assertIn("guest", (g["auto"] or {}).get("why") or "", g["auto"])
+        # v3864 - the one world left where the overflow keeps no cell (REG-2997 now offers the next war mule for one he took
+        # back), so MOVE TASKS must say so: the witness test_vault_l1_war_stash_overflow's red-proof [16] lost with REG-2997
+        self.assertEqual(g["full"], 2, "PREMISE: two Shakos past the war stash cap: %r" % g)
+        self.assertIn("No room", g["line"], "a full war stash with no war mule says nothing in MOVE TASKS: %r" % g["line"])
+        self.assertIn("Harlequin Crest", g["line"], g["line"])
 
     def test_an_unknown_mule_store_is_never_written(self):
         h = self.held
@@ -250,6 +259,12 @@ class TheBoardMakesTheWarMuleTheOverflowNeeds(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3864 - A full war stash says nothing (moved here from test_vault_l1_war_stash_overflow[16]: REG-2997 took that law's "
+            "only witness, and this one runs in node)",
+     "file": "bible.html",
+     "find": "    if (_wf.length) unrHtml += '<p class=\"vmv-warfull\"",
+     "replace": "    if (false) unrHtml += '<p class=\"vmv-warfull\"",
+     "matches": 1, "needs": "node"},
     {"why": "REG-2803 - the move paint never makes the WAR mule (L1's 'a mule is never created' again)",
      "file": "bible.html",
      "find": "      try { _wa = (typeof _vaultWarAutoMule === 'function') ? _vaultWarAutoMule() : null; } catch (eWa) {",
