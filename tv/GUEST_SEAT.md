@@ -22,7 +22,16 @@ GUEST_BOX_HOST=box bash tv/sync_guest_api.sh --to-box
 ```
 
 **What a run does, in order:** mirrors the read-only endpoints → scrubs every one → scrubs the
-6.4 MB board HTML → restages every fixture pack → runs the leak gate → only then copies.
+6.4 MB board HTML → restages every fixture pack → runs the leak gate → checks every picture the
+board and the console can ask `/art/` for (`tv/art_names.py`) → only then copies, **art included**.
+
+**The art travels with the board (REG-3206).** A refresh used to ship a new board and never the
+pictures it names, so the guest kept an older art tree than its board (~103 distinct `/art/*` 404s
+measured at v3864). `--to-box` now rsyncs the repo's `art/` to `GUEST_BOX_ART` (default
+`$GUEST_BOX_PATH/art`); point that at wherever the box's bridge serves `/art/` from.
+
+**A guest never asks `/api/update` (REG-3207).** `update` is not mirrored, and the mirrored
+`/api/status` says `guest: true`; the console reads that and does not ask.
 
 **It refuses to copy a mirror that still carries his machine.** On the first ever run the raw
 board came back with four of his identifiers and the copy was aborted. That gate is the reason

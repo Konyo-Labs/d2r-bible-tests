@@ -25818,6 +25818,130 @@ def _footage_why(sid, reeln):
                        "question, not a finding that nothing was ever recorded")
 
 
+# REG-3207 - A FRAME THE RETENTION LANE DELETED WAS A BROKEN IMAGE, OR A SILENT BLANK.
+# GrokBot, v3864: 3 /hist 404s on his Mac console; every <img> that asks /hist for a frame the lane
+# already pruned showed a broken picture or hid itself (opacity 0, display none), and nothing said
+# the frame had been retired on purpose. The record that says so is reel_tombstones.json (written
+# BEFORE each reel is removed, with `deletedTs`). _serve_hist now asks it for a missing frame and
+# answers an <img> with a placeholder that SAYS pruned and when; a fetch() still gets a 404, with
+# the same reason as JSON. A frame no record names stays UNKNOWN - never "pruned".
+_HIST_GONE_CACHE = {"key": None, "rows": None}
+_HIST_GONE_LOCK = threading.Lock()
+
+
+def _hist_tombstones():
+    """The retention lane's deleted reels, keyed by reel dir. -> dict, {} when it has deleted none,
+    or None when the record exists and will not read (UNKNOWN, never 'nothing was deleted')."""
+    try:
+        import reel_retention as _rr
+        path = _rr._tombstone_path(HIST_DIR)
+    except Exception:
+        return None
+    try:
+        st = os.stat(path)
+    except FileNotFoundError:
+        return {}
+    except OSError:
+        return None
+    key = (path, st.st_mtime_ns, st.st_size)
+    with _HIST_GONE_LOCK:
+        if _HIST_GONE_CACHE["key"] == key:
+            return _HIST_GONE_CACHE["rows"]
+    try:
+        with open(path, encoding="utf-8") as fh:
+            doc = json.load(fh) or {}
+    except (OSError, ValueError):
+        return None
+    rows = {}
+    for e in (doc.get("reels") if isinstance(doc, dict) else None) or []:
+        if isinstance(e, dict) and isinstance(e.get("reel"), str) and e["reel"]:
+            rows[e["reel"]] = e
+    with _HIST_GONE_LOCK:
+        _HIST_GONE_CACHE["key"], _HIST_GONE_CACHE["rows"] = key, rows
+    return rows
+
+
+def _hist_when(ms):
+    """A console-local 24-hour stamp for a deletedTs (REG-3176: one clock). -> str or None"""
+    try:
+        t = time.localtime(int(ms) / 1000.0)
+    except (TypeError, ValueError, OverflowError, OSError):
+        return None
+    return "%d %s %d %s" % (t.tm_mday, time.strftime("%b", t), t.tm_year, time.strftime("%H:%M", t))
+
+
+def _hist_gone(rel):
+    """WHY a frame /hist was asked for is not on this PC. -> dict
+    {state: 'pruned' | 'unknown', reel, deletedTs, when, say}. 'pruned' only when the retention
+    record names the frame's reel; anything else is UNKNOWN, said as such."""
+    rel = str(rel or "").replace("\\", "/").lstrip("/")
+    reel = rel.split("/", 1)[0] if ("/" in rel and rel.startswith("reel_")) else None
+    out = {"state": "unknown", "reel": reel, "deletedTs": None, "when": None, "say": ""}
+    if reel is None:
+        out["say"] = ("this frame is not on this PC and it is in no reel, so no retention record "
+                      "can say why - UNKNOWN")
+        return out
+    rows = _hist_tombstones()
+    if rows is None:
+        out["say"] = ("this frame is not on this PC and the retention record would not read, so "
+                      "whether it was pruned is UNKNOWN")
+        return out
+    e = rows.get(reel)
+    if e is None:
+        out["say"] = ("this frame is not on this PC and no retention record names %s - why it is "
+                      "gone is UNKNOWN" % reel)
+        return out
+    out["state"] = "pruned"
+    ts = e.get("deletedTs")
+    if isinstance(ts, (int, float)) and not isinstance(ts, bool) and ts > 0:
+        out["deletedTs"] = int(ts)
+        out["when"] = _hist_when(ts)
+    out["say"] = ("pruned by the retention lane %s after its reel gave up its information"
+                  % (("on " + out["when"]) if out["when"] else "(when: UNKNOWN)"))
+    return out
+
+
+def _hist_wants_image(headers):
+    """Did an <img> (or a CSS background) ask, rather than fetch()? -> bool. Both browsers send
+    Sec-Fetch-Dest: image, and every image request leads its Accept with image/; fetch() sends */*."""
+    if headers is None:
+        return False
+    try:
+        if str(headers.get("Sec-Fetch-Dest") or "").strip().lower() == "image":
+            return True
+        return str(headers.get("Accept") or "").strip().lower().startswith("image/")
+    except Exception:
+        return False
+
+
+def _hist_gone_svg(gone):
+    """The placeholder an <img> shows for a missing frame: 16:9, says what it knows. -> bytes"""
+    from xml.sax.saxutils import escape as _esc
+    head = "FRAME PRUNED" if gone.get("state") == "pruned" else "FRAME NOT ON THIS PC"
+    words, lines, cur = str(gone.get("say") or "").split(), [], ""
+    for w in words:
+        if cur and len(cur) + 1 + len(w) > 52:
+            lines.append(cur)
+            cur = w
+        else:
+            cur = (cur + " " + w).strip()
+    if cur:
+        lines.append(cur)
+    body = "".join('<text x="320" y="%d" class="s">%s</text>' % (200 + 26 * i, _esc(l))
+                   for i, l in enumerate(lines[:5]))
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" '
+           'id="hist-gone" data-state="%s">'
+           '<style>.h{font:700 30px sans-serif;fill:#d8c9a3;letter-spacing:2px}'
+           '.s{font:18px sans-serif;fill:#b8ad94}</style>'
+           '<rect width="640" height="360" fill="#16121c"/>'
+           '<rect x="8" y="8" width="624" height="344" rx="10" fill="none" stroke="#5a4a2e" '
+           'stroke-width="2" stroke-dasharray="8 6"/>'
+           '<text x="320" y="150" text-anchor="middle" class="h">%s</text>'
+           '<g text-anchor="middle">%s</g></svg>'
+           % (_esc(str(gone.get("state") or "unknown")), _esc(head), body))
+    return svg.encode("utf-8")
+
+
 def _chron_reels_retired():
     """Reels the loop GAVE UP on — durable, and deliberately NOT the same thing as 'read'.
 
@@ -50120,7 +50244,22 @@ class Handler(BaseHTTPRequestHandler):
         if not target.startswith(os.path.realpath(HIST_DIR) + os.sep) or not target.endswith(".jpg"):
             self._json(403, {"ok": False}); return
         if not os.path.isfile(target):
-            self._json(404, {"ok": False}); return
+            # REG-3207 - say WHY it is gone: an <img> gets a placeholder that says pruned (and
+            # when) or UNKNOWN, never a broken image; a fetch() keeps its 404, with the reason.
+            _gone = _hist_gone(os.path.relpath(target, os.path.realpath(HIST_DIR)))
+            if _hist_wants_image(getattr(self, "headers", None)):
+                _svg = _hist_gone_svg(_gone)
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
+                self.send_header("Content-Length", str(len(_svg)))
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("X-Hist-Gone", _gone["state"])
+                self.end_headers()
+                self.wfile.write(_svg)
+                return
+            self._json(404, {"ok": False, "gone": _gone["state"], "say": _gone["say"],
+                             "deletedTs": _gone["deletedTs"], "reel": _gone["reel"]})
+            return
         want_w = (qs.get("w") or [""])[0]
         # REG-3038 - every PC: the Windows console served the Shelf scrub and the theatre every frame at full size
         if want_w in ("1280", "160"):   # v802 — 160 = scrub thumbnails

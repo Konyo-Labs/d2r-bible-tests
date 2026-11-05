@@ -21378,7 +21378,27 @@ window._lockMark = function(isOpen, px, label){
      The check is worth keeping, so it MOVED rather than died: it is a control inside the panel's
      THE FLEET section now, beside the row that says whether this machine is behind — where someone
      who has just read 'COULD NOT CHECK' would look for the retry. [[the-unjoined-end]] */
+  /* REG-3207 - A GUEST SEAT NEVER ASKS TO UPDATE. GrokBot, v3864: the guest console logged /api/update 404s among its
+     581 failed requests. The guest seat is a read-only mirror served by the box's bridge (tv/GUEST_SEAT.md): `update`
+     is deliberately NOT mirrored, and the mirror's /api/status says `guest: true` (guest_profile.rewrite_status). A
+     mirror has no checkout to pull, so the caller does not ask - the banner, the footer check and UPDATE NOW all read
+     this one answer. A status that will not read is not a guest: the check runs as it always did. */
+  var _guestSeatAsk = null;
+  window._isGuestSeat = function(){
+    var ls = window.__lastStatus;
+    if (ls && typeof ls === 'object') return Promise.resolve(ls.guest === true);
+    if (!_guestSeatAsk){
+      _guestSeatAsk = fetch(API + '/api/status').then(function(r){ return r.json(); })
+        .then(function(j){ return !!(j && j.guest === true); })
+        .catch(function(){ _guestSeatAsk = null; return false; });
+    }
+    return _guestSeatAsk;
+  };
   window._fleetUpdateCheck = async function(){
+      if (await window._isGuestSeat()){
+        toast('this is a guest seat - a read-only mirror of another console, so there is nothing here to update');
+        return;
+      }
       toast('⟳ checking fleet (origin/main)…');
       try {
         var r = await fetch(API + '/api/update'); var j = await r.json();
@@ -21436,6 +21456,7 @@ window._lockMark = function(isOpen, px, label){
        So: fetch without asking, run without surprising him. [[unknown-stays-unknown]] */
     async function look(){
       try {
+        if (await window._isGuestSeat()){ bar.hidden = true; return; }   // REG-3207 - a mirror has nothing to pull
         var r = await fetch(API + '/api/update');
         var j = await r.json();
         // the dismissal is per-VERSION, and it never gates the pull below
@@ -21656,6 +21677,11 @@ window._lockMark = function(isOpen, px, label){
           return;
         }
         go.disabled = false;
+        return;
+      }
+      if (await window._isGuestSeat()){   // REG-3207 - the mirror has no checkout; never POST it a pull
+        txt.textContent = 'a guest seat mirrors another console - there is nothing here to update';
+        go.hidden = true;
         return;
       }
       txt.textContent = 'pulling from GitHub…';
