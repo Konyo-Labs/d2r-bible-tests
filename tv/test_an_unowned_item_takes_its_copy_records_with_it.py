@@ -7,6 +7,9 @@ the shared stash and a WAR mule) until some later rebuild happened to drop them.
 the undo brought each copy back where it was. Now every removal of a name (vaultRemove: the un-own, a card X, the last copy's
 X) takes the name's copy rows into its removal-journal batch - each copy's move, cell and entry - and drops them from the
 store at once; vaultRestoreLast puts them back with the name, so the undo is whole. Driven on the whole page in node.
+v3864 - two of the copies move to a WAR mule the board made; the un-own empties the overflow, so his ruling (d) takes
+that mule back, and the undo brings the overflow back - the board now makes it again under the SAME id it kept, so the
+undo stays whole (it re-pointed the copies at a fresh id until then; v3864's first GitHub run).
 RED_PROOF below.
 """
 import os
@@ -92,6 +95,17 @@ RED_PROOF = [
      "file": "bible.html",
      "find": "          _vrRecGuardedSet(_rbS);\n        }\n      } catch (eRb) {}\n",
      "replace": "        }\n      } catch (eRb) {}\n",
+     "matches": 1, "needs": "node"},
+    {"why": "v3864 - the war mule the un-own took back (his ruling (d)) is made again under a FRESH id, so the undone copies point "
+            "at a mule that never held them",
+     "file": "bible.html",
+     "find": "      var m = { id: _reuse ? _rid : ('m' + Date.now().toString(36) + n), name: v.name,",
+     "replace": "      var m = { id: ('m' + Date.now().toString(36) + n), name: v.name,",
+     "matches": 1, "needs": "node"},
+    {"why": "v3864 - the prune forgets the id of the war mule it took back",
+     "file": "bible.html",
+     "find": "      drop.forEach(function(m){ var wn = _vaultWarRole(m); if (wn && m.id != null) _pr[String(wn)] = String(m.id); });\n",
+     "replace": "",
      "matches": 1, "needs": "node"},
 ]
 

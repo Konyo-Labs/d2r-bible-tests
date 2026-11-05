@@ -173,7 +173,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-3054 - the chronicle-apply writer stubs a runeword the prune's catalogue keeps",
      "file": "bible.html",
-     "find": "            if (typeof window._tvExtraRemember === 'function' && _chronAlreadyUni(n) && !(typeof window.d2rCatalogueKnows === 'function' && window.d2rCatalogueKnows(n))) {\n",
+     "find": "            if (typeof window._tvExtraRemember === 'function' && _chronAlreadyUni(n) && _ckK !== 'runeword' && _ckK !== 'sunder') {\n",
      "replace": "            if (typeof window._tvExtraRemember === 'function' && _chronAlreadyUni(n)) {\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-3055 - a runeword's stub keeps it out of its bases' size",

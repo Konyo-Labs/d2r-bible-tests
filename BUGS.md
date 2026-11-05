@@ -7,6 +7,30 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3185 - A GATE COULD WRITE HIS EAGLE LEDGERS WHEN ITS LAW FORGOT THE REDIRECT, OR POPPED IT (v3864, card 75)
+v3864's first GitHub run: live-state-untouched red on agent shard 3 - tv/.eagle_slow.json and tv/.unknown_age.json created,
+attributed to test_the_character_builder_fits_at_every_width, which touches neither (gates run in parallel slices, so the
+window named a neighbour). fixture_ledgers.redirect() guarded only a law that remembered to call it, and test_cf_handoff's
+tearDowns POPPED the two variables they had set, so every later test in that process wrote the live files. Now
+run_gates.law_env points TV_UNKNOWN_AGE, TV_EAGLE_SLOW and TV_BAKE_RECEIPT at a fresh temp file for every gate the runner
+starts (a caller's own is kept), and test_cf_handoff puts back what it found. The exact writer on shard 3 was NOT
+reproduced; this closes the class. Law: tv/test_no_test_writes_his_eagle_ledgers.py (EveryGateTheRunnerStartsHasItsOwnLedgers).
+
+### REG-3184 - A WAR MULE THE BOARD TOOK BACK CAME BACK UNDER A NEW ID, SO AN UNDO RE-POINTED ITS COPIES (v3864, his ruling (d))
+v3864's first GitHub run, tv/test_an_unowned_item_takes_its_copy_records_with_it (REG-3073): three Shakos, two moved to a WAR
+mule the board made; the un-own emptied the overflow, so REG-3180's prune took the mule back; the undo brought the overflow
+back and _vaultWarAutoMule minted a FRESH id, so the undone copies pointed at a mule that never held them. The prune now keeps
+each taken-back mule's id on the shared stash's entry by war number (warPruned), and the board makes that number again under
+the same id. 2 new red-proofs on the REG-3073 law.
+
+### REG-3183 - A BASE READ OFF THE SCREEN LOST ITS STUB, SO A SWEPT SHAKO WAS NOT DRAWABLE AFTER A RELOAD (v3864, #233 chain)
+tests/v1991_vault_mules_stick.spec.ts on v3864's first GitHub run: EXTRA_ITEMS['Shako'] gone after the reload. REG-3054 (the
+chain) stopped chronicle-apply stubbing "a catalogue runeword or sunder charm" with !d2rCatalogueKnows(n) - but that answers
+'base' too (v2234, BASE_CLASS), so every base (Shako, Monarch, Phase Blade, Archon Plate) lost the stub the boot re-seed
+restores. The guard now skips only 'runeword' and 'sunder'. Found by a read-only agent from the CI log; the REG-3054 law's 8
+red-proofs PROVEN. Same run, same chain: REG-3086 made a read tick the grail only, so v2087's spec turns AUTO INTAKE on
+(his 2026-10-18 rule), and REG-2980's WAR-A naming replaces WAR1 in v3742's.
+
 ### REG-3182 - THE TASK BOARD LIVED ONLY ON HIS MAC, AND NO OTHER PC COULD OPEN IT (v3864, his ask 2026-11-05, card 57)
 His words: a button "next to the history of the versions" at the console's bottom left that opens the task list "as a browser
 in chrome or whatever is defaulted on that PC", and "i want it to work on deans PC for instance". The board was ~/.claude/tasks

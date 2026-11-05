@@ -6202,7 +6202,7 @@ try {
     <button class="tab" data-tab="tvd">📺 TV·D</button><!-- v914 (Konyo: 'yes I want it on the website too') — the live view is a first-class site tab again; app-ctx keeps it in the console header instead -->
    </div>
    <!-- REG-3092 — on a screen 480px tall or less the ? orb yields to the tab strip, and it is the help's only visible door, so the door is here there; elsewhere this stays hidden -->
-   <button type="button" class="tabs-help" id="tabs-help" onclick="document.getElementById('help-modal').classList.add('show')" title="Help &amp; guide" aria-label="help and guide">❓ help</button>
+   <button type="button" class="tabs-help" id="tabs-help" onclick="document.getElementById('help-modal').classList.add('show')" aria-label="help and guide">❓ help</button>
   </div>
   <div class="gsearch-wrap"><!-- v3773 - no title here: its hover tip sat on the first result row; the placeholder says the same -->
     <span class="gsearch-ic-lead">🔍</span>
@@ -57313,12 +57313,17 @@ window.vaultAutoAssign = function(){
       var v = _vmNameOk(name, null);
       if (!v.ok) { fresh(); return { made: made, why: v.why }; }
       var at = new Date().toISOString();
-      var m = { id: 'm' + Date.now().toString(36) + n, name: v.name, icon: '⚔️', note: 'war stash overflow - made by the board ' + at.slice(0, 10),
+      /* v3864 - the board made this war number before and took it back (_vaultWarAutoPrune kept its id): made again, it is the
+         same mule, so the copy records that named it still do */
+      var _rid = (sh.warPruned && typeof sh.warPruned === 'object') ? sh.warPruned[String(n)] : null;
+      var _reuse = !!(_rid && !(typeof muleById === 'function' && muleById(_rid)));
+      var m = { id: _reuse ? _rid : ('m' + Date.now().toString(36) + n), name: v.name, icon: '⚔️', note: 'war stash overflow - made by the board ' + at.slice(0, 10),
                 added: true, role: 'war', warN: n,
                 auto: { by: 'board', at: at, why: lost + ' war stash cop' + (lost === 1 ? 'y had' : 'ies had') + ' no cell'
                         + (_took.length ? '; you took back ' + _took.join(', ') + ', so this is the next one' : '') } };   /* REG-2997 */
       roster.push(m);
-      if (_guardedSet(RK, JSON.stringify(roster)) === false) { roster.pop(); fresh(); return { made: made, why: 'the mule store refused the write' }; }
+      if (_reuse) delete sh.warPruned[String(n)];
+      if (_guardedSet(RK, JSON.stringify(roster)) === false) { roster.pop(); if (_reuse) sh.warPruned[String(n)] = _rid; fresh(); return { made: made, why: 'the mule store refused the write' }; }
       made.push(m.name);
     }
     fresh();
@@ -57441,9 +57446,20 @@ window.vaultAutoAssign = function(){
     var drop = _vaultWarIdle().filter(function(m){ return !m.inGame; });
     if (!drop.length) return { gone: gone };
     var was = roster.slice();
+    /* v3864 (REG-3073's undo, CI) - the id of each war mule taken back is kept on the shared stash's entry, by war number, so
+       when the overflow returns (an undo, a re-add) the board makes THAT mule again under the same id: every copy record that
+       pointed at it comes back whole, never re-pointed at a fresh id */
+    var _sh = (typeof muleById === 'function') ? muleById('shared') : null;
+    var _wasPr = (_sh && _sh.warPruned && typeof _sh.warPruned === 'object') ? Object.assign({}, _sh.warPruned) : null;
+    if (_sh) {
+      var _pr = _wasPr ? Object.assign({}, _wasPr) : {};
+      drop.forEach(function(m){ var wn = _vaultWarRole(m); if (wn && m.id != null) _pr[String(wn)] = String(m.id); });
+      _sh.warPruned = _pr;
+    }
     for (var i = roster.length - 1; i >= 0; i--) if (drop.indexOf(roster[i]) >= 0) roster.splice(i, 1);
     if (_guardedSet(RK, JSON.stringify(roster)) === false) {
       roster.length = 0; was.forEach(function(m){ roster.push(m); });
+      if (_sh) { if (_wasPr) _sh.warPruned = _wasPr; else delete _sh.warPruned; }
       return { gone: [], why: 'the mule store refused the write' };
     }
     drop.forEach(function(m){ gone.push(m.name); });
@@ -72598,7 +72614,10 @@ function renderJournal(){
                (d2rCatalogueKnows, v2208 - the rule the v739 register writer already follows), and a {rarity: 'basic'} stub
                over its own name is what drew Heart of the Oak and Call to Arms white on his boards */
             /* REG-3086 - only a name the vault now holds (its door took it) is made a known name; a read it held or refused is not */
-            if (typeof window._tvExtraRemember === 'function' && _chronAlreadyUni(n) && !(typeof window.d2rCatalogueKnows === 'function' && window.d2rCatalogueKnows(n))) {
+            /* v3864 (v1991 CI) - REG-3054 skips the RUNEWORD and SUNDER catalogue only. d2rCatalogueKnows also answers 'base'
+               (v2234, BASE_CLASS), and a base's 'basic' stub is the truth: skipping it lost EXTRA_ITEMS['Shako'] on the reload */
+            var _ckK = (typeof window.d2rCatalogueKnows === 'function') ? window.d2rCatalogueKnows(n) : false;
+            if (typeof window._tvExtraRemember === 'function' && _chronAlreadyUni(n) && _ckK !== 'runeword' && _ckK !== 'sunder') {
               var _rq2 = (typeof _rolledQuality === 'function') ? _rolledQuality(n) : null;   /* #269 (REG-2054) */
               window._tvExtraRemember(n, { rarity: _rq2 ? _rq2.q : 'basic', base: (_rq2 && _rq2.base) ? _rq2.base : n,
                                            cat:'\ud83d\udcfa TV-vaulted', val:'tv', src:'chronicle-apply' });
@@ -82117,7 +82136,7 @@ try {
      so the dock's observer never fires for it: listen for the two bands and measure again */
   try {
     ['(max-width: 600px)', '(max-height: 480px)'].forEach(function(q){
-      var mq = (typeof matchMedia === 'function') ? matchMedia(q) : null;   /* the browser's own, asked as the board asks it elsewhere */
+      var mq = (typeof window.matchMedia === 'function') ? window.matchMedia(q) : null;   /* the browser's own, asked as the board asks it elsewhere */
       if (mq && mq.addEventListener) mq.addEventListener('change', _dockSync);
       else if (mq && mq.addListener) mq.addListener(_dockSync);
     });

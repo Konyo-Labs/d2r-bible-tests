@@ -1120,8 +1120,11 @@ class TheSameConsoleDrawsIt(unittest.TestCase):
         self.assertEqual(sum(1 for a in allowed if a.startswith("if (window._tvdShadow) return true;")), 3,
                          "a return-true shadow guard that is none of the three named above")
         # v3864 (#233) - 27: main's v3856-v3859 shadow guards and the integration chain's (the D2JSP desk, the full-look
-        # asks, the saves reason) met in one tree, every one of the allowed forms above. A 28th is an edit here, on purpose.
-        self.assertLessEqual(len(allowed), 27, allowed)
+        # asks, the saves reason) met in one tree, every one of the allowed forms above. 28: v3864's war-mule prune
+        # (_vaultWarAutoPrune, his ruling 2026-11-05 (d)) refuses in a shadow exactly as _vaultWarAutoMule does - a writer that
+        # returns, never a draw that branches. A 29th is an edit here, on purpose.
+        self.assertIn("  function _vaultWarAutoPrune(){\n    var gone = [];\n    if (window._tvdShadow) return { gone: gone,", html)
+        self.assertLessEqual(len(allowed), 28, allowed)
 
     def test_the_shadow_frame_is_the_consoles_own_board_document(self):
         ui = _read(UI)
