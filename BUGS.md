@@ -7,6 +7,13 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3189 - EACH PROOF SHARD PROVED ON 2 LANES OF A 4-CORE RUNNER (v3865, his call 2026-11-05: Depot skipped)
+Depot's faster runners need a GitHub organization and this repo lives on a personal account, so he skipped them (moving the
+repo is its own job: 13 files name it). The free speedup first: GitHub's public-repo runners have 4 vCPUs and every proof
+shard ran HEART2_PROVE_WORKERS=2. Now 3, and a step prints each shard's real cores, memory, free disk and provers, so the
+round is measured against the 2-lane rounds (v3863 round 7: shards 33-48 min) before anything more is asked of it. heart2
+scales each gate's deadline by its lanes and caps lanes by free disk; if a timing law flakes, back to 2.
+
 ### REG-3188 - A WORKFLOW GITHUB DID NOT FIRE WAS DISPATCHED ON THE WRONG BRANCH, AND A REFUSED DISPATCH WAS NEVER ASKED AGAIN (v3865)
 v3864 round 3, 2026-11-05 ~18:05 Israel time: GitHub fired no workflow on the ci push, so ship_when_green dispatched all four -
 once each. Two answered HTTP 500/502 and were never asked again (the Windows boot would have left the ship waiting its 5-hour
