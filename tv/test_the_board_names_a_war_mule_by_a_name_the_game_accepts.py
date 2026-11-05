@@ -47,8 +47,8 @@ var W = window, SH = %s;
 W._vaultAutoIntakeSet(false);
 [SH, SH, SH].forEach(function(n){ W.vaultHandAdd(n); }); W.renderVault(); H.flush(60, 3); W.renderVault();
 OUT.wars = JSON.parse(W.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return W._vaultWarRole(m) > 0; }).map(function(m){ return [m.name, W._vaultWarRole(m), !!m.auto]; });
-OUT.make = []; var _mr = /Create mule <b>([^<]*)<\/b> in the game — the board made it/g, _mm, _ml = (document.getElementById('vault-move-list') || {}).innerHTML || '';
-while ((_mm = _mr.exec(_ml))) OUT.make.push(_mm[1]);   /* the CHARMS mule the board makes (REG-2895) asks too */
+OUT.make = []; var _mr = /Create mule <b>([^<]*)<\/b> in the game/g, _mm, _ml = (document.getElementById('vault-move-list') || {}).innerHTML || '';
+while ((_mm = _mr.exec(_ml))) OUT.make.push(_mm[1]);   /* the CHARMS mule the board makes (REG-2895) asks too; v3864 - v3848's words (the not-in-game chip, never 'the board made it') */
 W.prompt = function(){ return 'war-b'; }; W.vaultAddMule();
 OUT.hand = JSON.parse(W.LSR.getItem('d2r_muleRoster') || '[]').filter(function(m){ return String(m.name).toUpperCase() === 'WAR-B'; }).map(function(m){ return [m.name, W._vaultWarRole(m)]; });
 """ % json.dumps(SHAKO)

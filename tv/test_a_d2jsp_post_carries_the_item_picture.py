@@ -69,7 +69,7 @@ process.stdout.write(JSON.stringify(out));
 """
 
 GATE = r"""
-const m = await import(process.argv[1]);
+const m = await import(process.argv[process.argv.length - 1]);   /* v3864 - the program comes on stdin; the path is the last arg */
 const out = {};
 async function ask(method, path, auth){
   const headers = new Map(); if (auth) headers.set('authorization', auth);
@@ -103,8 +103,8 @@ class AD2jspPostCarriesTheItemPicture(unittest.TestCase):
         if r.returncode != 0:
             raise AssertionError("node failed: " + (r.stderr or r.stdout)[-2500:])
         cls.o = json.loads(r.stdout.strip().splitlines()[-1])
-        g = subprocess.run([NODE, "--input-type=module", "-e", GATE, os.path.join(ROOT, "functions", "_middleware.js")],
-                           capture_output=True, text=True, timeout=60)
+        g = subprocess.run([NODE, "--input-type=module", "-", os.path.join(ROOT, "functions", "_middleware.js")],
+                           input=GATE, capture_output=True, text=True, timeout=60)   # v3864 - never a program on argv
         if g.returncode != 0:
             raise AssertionError("node failed on the gate: " + (g.stderr or g.stdout)[-2500:])
         cls.g = json.loads(g.stdout.strip().splitlines()[-1])

@@ -24,7 +24,7 @@ CHECKS = [
  ],
  [
   "bible.html",
-  "'d2r_d2jsp_mods', 'd2r_d2jsp_tags'];",
+  "'d2r_d2jsp_mods', 'd2r_d2jsp_tags', 'd2r_d2jsp_log'];",
   1
  ]
 ]
@@ -71,7 +71,7 @@ RED_PROOF = [
  {
   "why": "a guest world stops copying its tags",
   "file": "bible.html",
-  "find": "'d2r_d2jsp_mods', 'd2r_d2jsp_tags'];",
+  "find": "'d2r_d2jsp_mods', 'd2r_d2jsp_tags', 'd2r_d2jsp_log'];",
   "replace": "'d2r_d2jsp_mods'];",
   "matches": 1
  }
