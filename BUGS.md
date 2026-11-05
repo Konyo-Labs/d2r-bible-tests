@@ -7,6 +7,15 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3186 - ON A SHORT SCREEN THE INBOX'S FIRST ANSWER SCROLLED UNDER THE DOCK'S HANDLE (v3864, #233 chain REG-3092)
+tests/v1800_tray_popovers_reachable.spec.ts on v3864's first GitHub run, 640x400 with the claim bar up: "the panel's first
+answer is covered by dock-handle". REG-2862 hides the inbox orb at <=480px tall and REG-3092 pointed this case at the
+Sessions panel (#inbox-sticky) - first measured on this run. The bar pushes Sessions down, the panel sits at its block's top
+(--inbox-top 281px) where its bottom inset cannot lift it, its 120px floor runs it to y 401, and scrolling the first answer
+into view parked it on the panel's bottom edge under the collapsed dock (z 120 over the panel's 60). The answers now carry
+scroll-margin-bottom: the dock's height + 8px, inside the 480px-tall block. Diagnosed read-only from the CI trace by an agent;
+the spec is the proof, on GitHub.
+
 ### REG-3185 - A GATE COULD WRITE HIS EAGLE LEDGERS WHEN ITS LAW FORGOT THE REDIRECT, OR POPPED IT (v3864, card 75)
 v3864's first GitHub run: live-state-untouched red on agent shard 3 - tv/.eagle_slow.json and tv/.unknown_age.json created,
 attributed to test_the_character_builder_fits_at_every_width, which touches neither (gates run in parallel slices, so the

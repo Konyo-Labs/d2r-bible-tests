@@ -75440,6 +75440,12 @@ html{overflow-x:clip;overflow-y:auto}
   .tools-index .ti-chip.ti-chip-map{display:inline-flex}
   .vault-chip.vault-chip-guide{display:inline-flex}
   #tab-forge .forge-legend-door{display:flex}
+  /* the inbox's door here is its Sessions panel (its orb yields above), so an answer scrolled to must land ABOVE the
+     dock. Measured on CI (v1800, 640x400, claim bar up): the bar pushes Sessions down, the panel sits at its containing
+     block's top (--inbox-top 281px) where its bottom inset cannot lift it, its 120px floor runs it to y 401, and
+     scrolling the first answer into view parked it on the panel's bottom edge, under the collapsed dock's handle.
+     The answer keeps the panel's own bottom reserve, so a scroll or a focus stops that far above the dock. */
+  .inbox-sticky .ibp-b,.inbox-sticky .ibx-ny-b{scroll-margin-bottom:calc(var(--dock-h,84px) + 8px)}
 }
 /* routines bar shares the corner — parked LEFT of the tray column so they never overlap.
    v754 (item 7): the right offset now lives in the single clean base rule (no !important war). */
