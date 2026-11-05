@@ -7,6 +7,14 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3179 - A MULE CARD'S ✕ TOOK A COPY OUT WITH NO QUESTION (v3864, his ruling 2026-11-05 (c))
+His ruling on the board question "should a shelf card's ✕ remove one copy?": "remove the copy with a popup message
+confirmation confirming it". The chain's per-copy ✕ (REG-2849) removed it at once, Undo putting it back. Now the three
+one-copy ✕ (the mule tile, the MAGIC & RARE cell, the MOVE row's expand) call vaultRemoveCopyAsk: the board's own uiConfirm
+("Remove copy 2 of 3 of Nagelring from the vault? The other 2 copies stay. ↶ Undo in the toolbar puts it back."), Cancel
+focused, never the OS confirm box; no popup on the page refuses. Law: tv/test_a_copy_x_asks_before_it_removes.py,
+3 red-proofs; test_his_hand_removes_the_copy_it_names and test_a_magic_keeper_is_a_record_on_every_surface read the ask.
+
 ### REG-3178 - THREE CLIPBOARD COPIES LEFT A REFUSAL UNHANDLED, AND TWO SAID COPIED ANYWAY (v3864, GrokBot Batch A 8)
 GrokBot, #230 6656116697: 17 unhandled Clipboard rejections in its harness. writeText is a promise; a try/catch around it
 catches nothing when the browser refuses. The console's machine-name pill and the board's share chip then printed COPIED

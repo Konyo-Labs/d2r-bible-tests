@@ -13433,6 +13433,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_no_clipboard_copy_goes_unanswered.py")], 60,
          needs_app=False,
          why='v3864 (GrokBot Batch A 8) - every clipboard copy on the console and the board handles its refusal, and no pill says COPIED for a refused copy'),
+    Gate("test_a_copy_x_asks_before_it_removes",
+         [sys.executable, os.path.join(HERE, "test_a_copy_x_asks_before_it_removes.py")], 120,
+         needs_app=False,
+         why='v3864 (his ruling 2026-11-05 (c)) - a vault mule card x removes ONE copy only after the board in-page confirmation, Cancel first, never the OS box'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

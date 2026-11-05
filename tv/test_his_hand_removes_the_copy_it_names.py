@@ -46,7 +46,7 @@ OUT.ist = runeId('Ist'); OUT.ber = runeId('Ber');
 OUT.before = { copies: copyCount(N), ents: ents() };
 /* the opened MOVE row of copy 1 carries the button */
 var hx = W._vaultTaskExpandHtml(N, 0);
-OUT.button = /class="vault-btn vtx-remove"[^>]*window\.vaultRemoveCopy\('Harlequin Crest \(Shako\)',0\)/.test(hx);
+OUT.button = /class="vault-btn vtx-remove"[^>]*window\.vaultRemoveCopyAsk\('Harlequin Crest \(Shako\)',0\)/.test(hx);   /* v3864 - it asks first (his ruling (c)) */
 var r = W.vaultRemoveCopy(N, 0); H.flush(60, 3);
 var log = W.vaultRemovalLog(), last = Array.isArray(log) ? log[log.length - 1] : null;
 OUT.removed = { ok: r && r.ok, why: r && r.why, copies: copyCount(N), owned: owned.has(N), ents: ents(), traded: traded(),
@@ -81,7 +81,9 @@ OUT.oneMule = ((W._vaultRecords().records || []).filter(function(r){ return r.na
 W.openMuleCard(OUT.mule); H.flush(60, 3);
 OUT.before = { copies: copyCount(N), recs: recs(), tiles: tiles() };
 var t1 = OUT.before.tiles.filter(function(t){ return t.ix === 1; })[0];
-if (t1) { (new Function('event', t1.on))({ stopPropagation: function(){}, preventDefault: function(){} }); H.flush(60, 3); }
+/* v3864 - the ✕ asks first (his ruling (c)); the ask is its own law (test_a_copy_x_asks_before_it_removes). Here he has
+   said yes, so the onclick's own call is pressed through to the door it asks for */
+if (t1) { (new Function('event', t1.on.replace('vaultRemoveCopyAsk(', 'vaultRemoveCopy(')))({ stopPropagation: function(){}, preventDefault: function(){} }); H.flush(60, 3); }
 OUT.after = { copies: copyCount(N), recs: recs(), undo: (W._vaultUndo && W._vaultUndo.what) || null };
 OUT.errors = H.errors.slice();
 })();
@@ -134,7 +136,7 @@ class HisHandRemovesTheCopyItNames(unittest.TestCase):
         mine = [x for x in b["tiles"] if x["key"] in ("Nagelring", "Nagelring #2")]
         self.assertEqual(sorted((x["key"], x["ix"]) for x in mine), [("Nagelring", 0), ("Nagelring #2", 1)],
                          "a copy's tile carries no ✕, or one naming another copy: %r" % b["tiles"])
-        self.assertIn("window.vaultRemoveCopy('Nagelring', 1)", [x["on"] for x in mine if x["ix"] == 1][0])
+        self.assertIn("window.vaultRemoveCopyAsk('Nagelring', 1)", [x["on"] for x in mine if x["ix"] == 1][0])   # v3864 - asks first
         self.assertEqual(t["oneMule"], t["mule"], "PREMISE: the item held once is not in the same window: %r" % t["oneMule"])
         self.assertEqual([x["ix"] for x in b["tiles"] if x["key"] == "Manald Heal"], [None], "a tile held once carries a copy ✕")
 
@@ -167,7 +169,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2849 - the opened MOVE row has no button for the copy",
      "file": "bible.html",
-     "find": "      + ' onclick=\"event.stopPropagation();window.vaultRemoveCopy(\\'' + jsArg(m.name) + '\\',' + (m.copyIx | 0) + ')\">✕ Remove this copy</button>'\n",
+     "find": "      + ' onclick=\"event.stopPropagation();window.vaultRemoveCopyAsk(\\'' + jsArg(m.name) + '\\',' + (m.copyIx | 0) + ')\">✕ Remove this copy</button>'\n",
      "replace": "      + '>✕ Remove this copy</button>'\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-2849 - the Undo chip calls a hand removal a trade-out",

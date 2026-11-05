@@ -48801,7 +48801,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
             var _mfE = null; try { _mfE = (_mfN > 1 && typeof window._vaultCopyEntry === 'function') ? window._vaultCopyEntry(n, _mk) : null; } catch (eMfE) { _mfE = null; }
             var _mfSay = (_mfN > 1) ? (' · copy ' + (_mk + 1) + ' of ' + _mfN + ((_mfE && Array.isArray(_mfE.mods) && _mfE.mods.length) ? ' · ' + _mfE.mods.join(' · ') : '')) : '';
             var _mfX = (_mfN > 1)
-              ? '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultRemoveCopy(\''+jsArg(n)+'\', '+_mk+')" title="'+gridActSay('', 'remove this copy (copy '+(_mk + 1)+' of '+_mfN+') - the other copies stay')+'">✕</button></div>'
+              ? '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultRemoveCopyAsk(\''+jsArg(n)+'\', '+_mk+')" title="'+gridActSay('', 'remove this copy (copy '+(_mk + 1)+' of '+_mfN+') - the other copies stay')+'">✕</button></div>'
               : '<button class="vm-unassign vm-cell-x" onclick="event.stopPropagation();window.vaultThrowFind(\''+jsArg(n)+'\')" title="'+gridActSay('', 'throw out — remove from Magic &amp; Rare')+'">✕</button></div>';   /* REG-3117 */
             _mfCells.push('<div class="vm-cell vmc-magicfind'+(_mf.approx?' vmc-approx':'')+'" style="grid-column:span '+_mf.w+';grid-row:span '+_mf.h+';border-color:'+col+';cursor:pointer" data-magic-find="'+esc(n)+'"'+(_mfN > 1 ? ' data-magic-copy="'+_mk+'"' : '')+' data-arttip="'+esc(n)+'" title="'+esc(n)+(base?' · '+esc(base):'')+' ('+q+')'+esc(_mfSay)+'">'
               + _vaultItemBadges(n) + artHtml
@@ -52600,6 +52600,21 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
      ev = {kind, name, copyIx?, at?, post?} -> {ok, kind, name, copyIx?, why} */
   /* REG-2849 (#154 P3c) - his ✕ on ONE copy (the MOVE row's copy, opened): that copy leaves, the others keep their own entries,
      cells and moves. The trade door's copy-out does it; there is no second mechanism. -> the door's answer */
+  /* v3864 (his ruling 2026-11-05 (c), card 33) - A MULE CARD'S ✕ REMOVES ONE COPY, AFTER AN IN-PAGE CONFIRMATION. Every ✕
+     that takes out one copy (the tile, the MAGIC & RARE cell, the MOVE row's expand) asks here first, in the board's own
+     uiConfirm (never the OS confirm box), with Cancel focused. No uiConfirm on the page refuses: a copy is never removed
+     without the question. -> the door's answer, or {ok:false, refused:'kept'|'no-confirm'} */
+  window.vaultRemoveCopyAsk = async function(name, copyIx){
+    var n = 0; try { n = (typeof copyCount === 'function') ? (copyCount(name) | 0) : 0; } catch (eN) { n = 0; }
+    var k = (copyIx | 0) + 1;
+    var msg = 'Remove copy ' + k + (n > 1 ? ' of ' + n : '') + ' of ' + name + ' from the vault?\n'
+            + (n > 1 ? 'The other ' + (n - 1 === 1 ? 'copy stays' : (n - 1) + ' copies stay') + '. ' : '') + '\u21b6 Undo in the toolbar puts it back.';
+    if (typeof window.uiConfirm !== 'function') return { ok: false, refused: 'no-confirm', why: 'the board has no confirmation box here - nothing was removed' };
+    var yes = false;
+    try { yes = !!(await window.uiConfirm(msg, { title: 'Remove one copy', ok: 'Remove this copy', cancel: 'Keep it', cancelFirst: true })); } catch (eC) { yes = false; }
+    if (!yes) return { ok: false, refused: 'kept', why: 'he kept it' };
+    return window.vaultRemoveCopy(name, copyIx);
+  };
   window.vaultRemoveCopy = function(name, copyIx, why){
     return window._vaultTradeEvent({ kind: 'remove-copy', name: name, copyIx: copyIx, why: why || null });
   };
@@ -55686,7 +55701,7 @@ window.vaultAutoAssign = function(){
             _rmCopyBtn = '<button type="button" class="vd-rmcopy" tabindex="-1" data-rmcopy="' + _rcK + '" title="'
               + gridActSay('', 'remove this copy (copy ' + (_rcK + 1) + ' of ' + _rcN + ') - the other copies stay; ↶ Undo puts it back')
               + '" aria-label="' + gridActSay('', 'remove copy ' + (_rcK + 1) + ' of ' + esc(p.n)) + '"'   /* REG-3117 */
-              + ' onclick="event.stopPropagation();window.vaultRemoveCopy(\'' + jsArg(p.n) + '\', ' + _rcK + ')">✕</button>';
+              + ' onclick="event.stopPropagation();window.vaultRemoveCopyAsk(\'' + jsArg(p.n) + '\', ' + _rcK + ')">✕</button>';
         }
       } catch (eRc) { _rmCopyBtn = ''; }
       var _say = esc(p.n) + ' (' + p.w + '×' + p.h + ')'
@@ -58379,7 +58394,7 @@ window.vaultAutoAssign = function(){
       + _vtxAsk(m)   /* REG-3066 / REG-3067 the question this row asks, and its answers */
       /* REG-2849 - his ✕ on this one copy: it leaves, the other copies keep their own entries, cells and moves */
       + '<button type="button" class="vault-btn vtx-remove" title="remove this one copy from the vault (Undo in the toolbar puts it back)"'
-      + ' onclick="event.stopPropagation();window.vaultRemoveCopy(\'' + jsArg(m.name) + '\',' + (m.copyIx | 0) + ')">✕ Remove this copy</button>'
+      + ' onclick="event.stopPropagation();window.vaultRemoveCopyAsk(\'' + jsArg(m.name) + '\',' + (m.copyIx | 0) + ')">✕ Remove this copy</button>'
       + '</div>';   /* REG-2804 */
   }
   function _vaultTaskExpand(name, copyIx, li){

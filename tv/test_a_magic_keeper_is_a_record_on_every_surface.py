@@ -100,8 +100,8 @@ class AMagicKeeperIsARecordOnEverySurface(unittest.TestCase):
         c = self.o["shared"]["C"]
         self.assertIn("copy 1 of 2", c[0]["title"]); self.assertIn("+17 to Life", c[0]["title"])
         self.assertIn("copy 2 of 2", c[1]["title"]); self.assertIn("+20 to Life", c[1]["title"])
-        self.assertIn("vaultRemoveCopy('Small Charm of Vita', 0)", c[0]["x"], c)
-        self.assertIn("vaultRemoveCopy('Small Charm of Vita', 1)", c[1]["x"], c)
+        self.assertIn("vaultRemoveCopyAsk('Small Charm of Vita', 0)", c[0]["x"], c)   # v3864 - asks first
+        self.assertIn("vaultRemoveCopyAsk('Small Charm of Vita', 1)", c[1]["x"], c)
 
     def test_magic_and_rare_draws_as_many_cells_as_its_window_counts(self):
         m, w = self.o["mr"], self.o["win_magic-rare"]
