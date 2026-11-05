@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3865",
+  "ver": "v3866",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3865: a version is pre-flighted before GitHub grades it, and the proof shards run on 8 cores inside 25 dollars a month",
+  "note": "v3866: the task board is derived from the evidence, the second-eye gate is armed again, and the third eye findings are fixed",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

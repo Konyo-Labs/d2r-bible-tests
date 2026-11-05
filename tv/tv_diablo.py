@@ -92,7 +92,7 @@ if sys.platform == "win32":
         except Exception:
             pass
 
-VERSION = "v3865"   # the pre-flight runs before GitHub, shards run on Ubicloud inside a hard 25 dollars
+VERSION = "v3866"   # Honest Board
 HERE   = os.path.dirname(os.path.abspath(__file__))
 FRAMES = os.environ.get("TV_FRAMES_DIR") or os.path.join(HERE, "frames")   # v752 — replay feeds its own watch dir
 

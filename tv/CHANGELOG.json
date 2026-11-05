@@ -1,5 +1,22 @@
 [
   {
+    "ver": "v3866",
+    "date": "2026-11-06",
+    "items": [
+      "v3866 - every task card wears a phase derived from git, the site and the looks, never its own words (REG-3217)",
+      "v3866 - a card whose hand status disagrees with the evidence is flagged with why, and touching it accepts (REG-3218)",
+      "v3866 - a look counts only for what its heading names, and a look that says it fails refutes it (REG-3217)",
+      "v3866 - live is what the site serves (the newest Publish run), never the stamp on main (REG-3217)",
+      "v3866 - a lock refuses when it cannot tell whether the environment of this PC changed (REG-3219)",
+      "v3866 - an unreadable console port is said, never asked as an empty URL (REG-3220)",
+      "v3866 - a console port handed in is that port, never his console by fallback (REG-3220)",
+      "v3866 - a jewel mask missing from a cached fleet row is read again before it is called unpublished (REG-3221)",
+      "v3866 - a session hover says how many reads it did not show (REG-3222)",
+      "v3866 - the windowed-frame doctor row goes red when its reader raises (REG-3222)",
+      "v3866 - the second-eye ship gate is armed again, so no version ships while the one before it has no look"
+    ]
+  },
+  {
     "ver": "v3865",
     "date": "2026-11-05",
     "items": [
