@@ -2572,6 +2572,11 @@ COVERED_BY = {
 }
 # Engines with NO invariant, each with the reason — a blank here would read as covered.
 NO_JOINT_YET = {
+    # REG-3208/3209 (v3865) - the disk growers lane: one source today, said so rather than claimed covered.
+    "disk growers":
+        "the row reads the growers lane's own pass record (tv/disk_growers.py: measured, salvaged, read back, pruned) - "
+        "one witness. An independent second source would be the disk's own free-space reading rising by the bytes the "
+        "lane says it pruned, and the salvage dir's manifest re-read apart from the lane; no joint compares them yet.",
     # REG-3213 (v3865) - this version's CI: one source today, said so rather than claimed covered.
     "this version's CI":
         "the row reads what the console's CI tick recorded from GitHub's public Actions API (tv/ci_watch.py) - one "

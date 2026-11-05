@@ -306,6 +306,8 @@ Law: `test_every_station_has_a_lane_or_says_what_it_waits_on`, 18/18 PROVEN.
 
 **OPEN RULING:** a triage-proven panel-free PRINTER reel has no lane that writes its seal. Retention's chain skips vault-owes for it, so it looks releasable once it leaves the newest 16. That is not verified on his data.
 
+Pre-flight caught one more before GitHub did (test_the_eagles_pass_runs_in_a_child): the doctor asked the SERVING console for each reel's lane, but "the river" runs in the eagle's child (REG-2987), where the serving console is out of reach and a fresh import holds no retired / cooling / hung reels, so a held reel would have read as delivered. Moving the check into the console was measured and refused: one reel_router.route() on his Mac is +197 MB, the spike REG-2987 moved out. The doctor now asks the imported module after it restores the vault lane's store from disk - every input of the picker rule is persisted there - and a store that will not read is UNKNOWN.
+
 ### REG-3196 - A FAILED RIVER READ NEVER SAID WHY (v3865, his Fleet 2026-11-05 21:01)
 His words: "i want the river flowing and the fleet rendering it properly that it is for each and for whoever is not fix it!".
 OLD PC ALT's river.why read "a newer river read failed 1043 s ago - these lanes are the last good read" and nothing more. The

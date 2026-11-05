@@ -56,6 +56,12 @@ import subprocess
 import sys
 import time
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+from console_safe import enable as _console_safe_enable  # noqa: E402 - it prints non-ASCII; a cp1255 console must not crash
+_console_safe_enable()
+
 KIND_GIT = "git-tree"
 KIND_SCRATCH = "scratch"
 DRY = "dry-run"

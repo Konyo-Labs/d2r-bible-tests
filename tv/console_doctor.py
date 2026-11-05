@@ -1592,10 +1592,18 @@ _PER_REEL_STATIONS = ("PRINTER", "STATION")
 
 
 def _river_delivery(station, reels):
-    """REG-3201 - the serving console's per-reel answer (control_app._station_delivery). -> dict | None (UNKNOWN). A seam."""
+    """REG-3201 - who delivers each reel (control_app._station_delivery). -> dict | None (UNKNOWN). A seam.
+
+    v3865 - asked of the IMPORTED module once it has restored the vault lane's store from disk, never of the serving
+    console: "the river" runs in the eagle's child (REG-2987), where the console's memory is out of reach, and asking it
+    in the console instead would walk the river there - one reel_router.route() measured +197 MB on his Mac, the spike
+    REG-2987 moved out. Every input of the picker rule is persisted in that store (retired, cooldown, hung), so it answers
+    as the console would. A store that exists and will not read is UNKNOWN, never "no lane"."""
     try:
         import control_app as _ca
-        return _serving_console(_ca)._station_delivery(station, reels)
+        if _ca._vault_autoread_load() is None:
+            return None
+        return _ca._station_delivery(station, reels)
     except Exception:
         return None
 

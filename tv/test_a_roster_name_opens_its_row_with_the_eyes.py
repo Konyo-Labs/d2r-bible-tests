@@ -332,9 +332,14 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                 self.assertEqual(river.sub("", owes.sub("", waited.sub("", cut.sub("", s[m]["row"])))),
                                  river.sub("", cut.sub("", b[m]["row"])),
                                  "%s %s: the row changed beyond its eyes" % (k, m))
-                if re.search(r'river stuck on this PC - [^"]*\b[A-Za-z][\w -]{0,30}? lane: owes \d+', s[m]["row"]):
+                # v3865 (the r3 review, his ALT row: a red "vault lane owes 0") - a lane that owes NOTHING has no debt to
+                # name, so the chip is asked for only when a lane owes one or more reels, and never drawn for owes 0
+                if re.search(r'river stuck on this PC - [^"]*\b[A-Za-z][\w -]{0,30}? lane: owes [1-9]\d*', s[m]["row"]):
                     self.assertTrue(owes.search(s[m]["row"]),
                                     "%s %s: a lane that owes reels is no longer named beside river-stuck (v3859)" % (k, m))
+                elif re.search(r'river stuck on this PC - [^"]*\b[A-Za-z][\w -]{0,30}? lane: owes 0\b', s[m]["row"]):
+                    self.assertIsNone(owes.search(s[m]["row"]),
+                                      "%s %s: a lane that owes 0 reels is drawn as a debt (the r3 review)" % (k, m))
 
     def test_the_cross_reference_is_unchanged_but_for_the_folded_diagnostics(self):
         r = _render()

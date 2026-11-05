@@ -350,8 +350,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3865 REG-3194 - a new run starts with the last run's count",
      "file": "tv/control_app.py",
-     "find": "    _PROOF_RELEASE.update(running=True, sha=head, state=\"importing\", done=None, of=None, etaS=None, progressAt=None,\n",
-     "replace": "    _PROOF_RELEASE.update(running=True, sha=head, state=\"importing\",\n",
+     "find": "                          done=None, of=None, etaS=None, progressAt=None,\n",
+     "replace": "",
      "matches": 1},
     {"why": "v3865 REG-3194 - the console never hands the import a progress callback",
      "file": "tv/control_app.py",
@@ -360,8 +360,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3865 REG-3194 - heart2's CLI drops --import-progress",
      "file": "tv/heart2.py",
-     "find": "        return import_shards(a.import_shards, progress=a.import_progress)\n",
-     "replace": "        return import_shards(a.import_shards)\n",
+     "find": "        _irc = import_shards(a.import_shards, progress=a.import_progress)\n",
+     "replace": "        _irc = import_shards(a.import_shards)\n",
      "matches": 1},
 ]
 

@@ -25,8 +25,9 @@ THE LAW (control_app._station_delivery, the lanes' own rules, asked per reel; sp
     station and that are still on the shelf (_reels_at_station - its one source of per-reel data, never mocked here);
   - a lane check that could not be asked is UNKNOWN and says which check, never "no lane's queue holds it"; the
     doctor keeps the station reading for it and says it is UNKNOWN;
-  - the doctor reaches the SERVING console's answer (_river_delivery), and the live wire (no fixture shelf) words
-    PRINTER/STATION per reel.
+  - the doctor reaches the console's answer (_river_delivery: the imported control_app once it has restored the vault
+    lane's store from disk - "the river" runs in the eagle's child, REG-2987; a store that will not read is UNKNOWN),
+    and the live wire (no fixture shelf) words PRINTER/STATION per reel.
 [[the-unjoined-end]] [[unknown-stays-unknown]] [[label-outlived-referent]]
 """
 import copy
@@ -283,10 +284,13 @@ class TestTheRealJoins(_World):
         self.assertIn("a seal no lane writes", out[0]["why"], out)
         self.assertNotIn("the whole queue", out[0]["why"], "the live wire quoted the lane's whole queue")
 
-    def test_the_doctor_asks_the_serving_console(self):
+    def test_the_doctor_asks_the_console_rule_over_the_restored_store(self):
         dl = D._river_delivery("PRINTER", [P1])
         self.assertIsInstance(dl, dict, "the doctor's seam reaches no console")
         self.assertEqual(dl.get("noLane"), 1, dl)
+        with mock.patch.object(CA, "_vault_autoread_load", return_value=None):
+            self.assertIsNone(D._river_delivery("PRINTER", [P1]),
+                              "a vault store that would not read was answered as if nothing were retired or cooling")
 
 
 RED_PROOF = [
@@ -372,8 +376,13 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3201 - the doctor's seam reaches no console, so every PRINTER/STATION reel is counted again",
      "file": "tv/console_doctor.py",
-     "find": "        return _serving_console(_ca)._station_delivery(station, reels)\n",
+     "find": "        return _ca._station_delivery(station, reels)\n",
      "replace": "        return None\n",
+     "matches": 1},
+    {"why": "v3865 - a vault store that will not read is answered as an empty one (nothing retired, nothing cooling)",
+     "file": "tv/console_doctor.py",
+     "find": "        if _ca._vault_autoread_load() is None:\n            return None\n",
+     "replace": "",
      "matches": 1},
     {"why": "REG-3201 - the LIVE wire words PRINTER/STATION with the lane's whole-queue sentence",
      "file": "tv/control_app.py",
