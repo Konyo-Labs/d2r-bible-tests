@@ -15,6 +15,11 @@ import re
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+import sys  # noqa: E402
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+from console_safe import enable as _console_safe_enable  # noqa: E402
+_console_safe_enable()
 UI = os.path.join(HERE, "control_ui.html")
 
 
