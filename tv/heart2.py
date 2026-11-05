@@ -3231,6 +3231,53 @@ _PUSH = None            # the running push-time context (_PushRun) while prove(p
 _CLEAN = threading.local()
 
 
+#: REG-3212 - A PROOF CUT AT ITS BOUND. MEASURED on v3864's Publish (run 42084305066): shards 6 and 13 proved 387 and 324
+#: proofs for 2 h 50 min with no gap over 7 minutes - not a hang, a pile - under a 160-minute step cap and a 180-minute job
+#: cap, while his max was 75. A CI run now bounds itself: HEART2_GATE_CAP_S cuts one gate that has run past its cap, and
+#: HEART2_PROVE_DEADLINE (epoch seconds) cuts every proof still to RUN once the run's own deadline has passed - so the
+#: shard FINISHES, writes its manifest and uploads inside its job, instead of being killed with nothing written. A cut
+#: proof is TIMEOUT: never PROVEN, never banked, never dropped - it is owed in the manifest (REG-2591's list), the fan-in
+#: and the census name it, and Publish's verdict holds the deploy when it is one of the push's laws. A proof the cache
+#: SERVES is still served past the bound (it runs nothing). Unset - his Mac's push, a PC's census - nothing is cut.
+TIMEOUT = "TIMEOUT"
+
+
+def _prove_bounds(env=None):
+    """REG-3212 - (gate cap seconds | None, run deadline epoch seconds | None) from HEART2_GATE_CAP_S and
+    HEART2_PROVE_DEADLINE. A value that is not a positive number is no bound (said by the run's seams line)."""
+    env = os.environ if env is None else env
+    out = []
+    for k in ("HEART2_GATE_CAP_S", "HEART2_PROVE_DEADLINE"):
+        try:
+            v = float(str(env.get(k) or "").strip())
+        except ValueError:
+            v = None
+        out.append(v if (v is not None and v > 0) else None)
+    return out[0], out[1]
+
+
+def _past_bound(run, gate_t0, now=None):
+    """REG-3212 - why a proof of a gate that started at `gate_t0` may no longer RUN, or None. -> str | None. Pure."""
+    now = time.time() if now is None else now
+    dl, cap = getattr(run, "deadline", None), getattr(run, "gate_cap", None)
+    if dl is not None and now >= dl:
+        return "the run's deadline passed %d s ago, so no proof still to run starts" % int(now - dl)
+    if cap is not None and now - gate_t0 >= cap:
+        return "this gate has run %d s, past its %d s cap" % (int(now - gate_t0), int(cap))
+    return None
+
+
+def _served_here(cache, sandbox, name, filename, pr):
+    """REG-3212 - would the verdict cache serve this proof (it runs nothing)? peek(), marking nothing. -> bool"""
+    if cache is None:
+        return False
+    try:
+        key = cache.key_for(sandbox, name, filename, pr)[0]
+    except Exception:
+        return False
+    return key is not None and cache.peek(key) is not None
+
+
 class _PushRun(object):
     """#42 — what the lanes of ONE `--prove --push` run share: the order, the browser lock, the stop."""
 
@@ -3256,6 +3303,8 @@ class _PushRun(object):
         self.wave_s = None                      # REG-2353: the clean wave's seconds, when one ran
         self.keys0 = _servable_keys(cache)      # REG-2353: every key the cache would serve when the run began
         self.direct = None                      # REG-2599: gates whose own law file the push changes (None: UNKNOWN)
+        self.gate_cap, self.deadline = _prove_bounds()   # REG-3212: a gate's wall cap and the run's deadline (None: none)
+        self.cut = []                           # REG-3212: every (gate, index) cut at its bound - TIMEOUT, owed, named
         self.ckpt = {"runs": 0, "s": 0.0, "banked": 0, "bankedS": 0.0, "red": 0, "revoked": 0,
                      "resumed": 0, "resumedS": 0.0}  # #150: checkpoint cost and what it bought, for the push record
 
@@ -5634,6 +5683,8 @@ def _wave_gate(sandbox, name, filename, proofs, say, run):
     _q = lambda *a, **k: _held.append(a[0] if a else "")      # noqa: E731 - lines are said only for a red
     try:
         order = run.order.get(name) or list(range(len(proofs)))
+        if getattr(run, "deadline", None) is not None and time.time() >= run.deadline:
+            return NOT_RUN, [None] * len(proofs)        # REG-3212 - past the run's deadline the main pass cuts it, named
         cache = run.cache
         if cache is not None:
             _all = True
@@ -5787,6 +5838,17 @@ def _rebank_here(cache, name, per, say):
     return n
 
 
+def _timeout_owed(run, name, cut, why, say):
+    """REG-3212 - every proof of `name` its bound cut is OWED as TIMEOUT (UNKNOWN, never PROVEN), each by name, and said."""
+    reason = "cut at its bound - %s; UNKNOWN, never PROVEN" % why
+    with run._lock:
+        run.cut.extend((name, i) for i in cut)
+    for i in cut:
+        run.fail(name, i, TIMEOUT, reason)
+    say("  ⏱ REG-3212 TIMEOUT — %s: %d proof(s) cut at their bound (%s): %s. They are OWED and named, never PROVEN."
+        % (name, len(cut), why, ", ".join("[%d]" % i for i in cut[:12]) + (" …" if len(cut) > 12 else "")))
+
+
 def _prove_gate_push(sandbox, name, filename, proofs, say, run):
     """#42 — one gate's proofs at push time: in the run's order, each at its declared widths, the whole run stopped at
     the first failure. -> (verdict | NOT_RUN, [verdict | None per proof, in RED_PROOF order])
@@ -5813,9 +5875,15 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
     try:
         _order = run.order.get(name) or list(range(len(proofs)))
         _ckpt = {"on": True}                             # #150 - False once a checkpoint was not green (the closing run decides)
+        _g0, _cut, _cut_why = time.time(), [], None      # REG-3212 - this gate's clock, and what its bound cut
         for _n, i in enumerate(_order):
             if run.stop.is_set():
                 break
+            _bound = _past_bound(run, _g0)
+            if _bound is not None and not _served_here(run.cache, sandbox, name, filename, proofs[i]):
+                _cut.append(i)                           # REG-3212 - TIMEOUT: not run, never PROVEN, owed and named
+                _cut_why = _cut_why or _bound
+                continue
             if _ckpt["on"] and run.cache is not None and len(getattr(_CLEAN, "pending", None) or []) >= CHECKPOINT_EVERY:
                 _ckpt["on"] = _checkpoint_bank(name, got, say, run)      # #150 (REG-2942) - before proof i, never after the last
             why = {}
@@ -5839,6 +5907,8 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
                         "  ⛔ #42 FAIL FAST — %s[%d] %s: %s. The run stops here: every proof not yet run is NOT RUN, "
                         "and the push is refused on this one." % (name, i, got[i], reason))
                 break
+        if _cut:
+            _timeout_owed(run, name, _cut, _cut_why, say)
         per = [got.get(i) for i in range(len(proofs))]
         per = _clean_here(sandbox, name, filename, proofs, per, say, run)   # REG-2587 - #242 on a push with no wave
         _before = list(per)
@@ -6156,7 +6226,9 @@ def _shard_cut(have, order, gates, say):
     import proof_shard as _PS
     k, n = spec
     # REG-2593 - priced by what a proof MEASURED on a runner, and balanced on the browser queue too (it runs serially)
-    assignment = _PS.plan(have, n, _PS.gate_costs(), browser=_push_browser(have), per_proof=_PS.proof_costs())
+    _rep = {}
+    assignment = _PS.plan(have, n, _PS.gate_costs(), browser=_push_browser(have), per_proof=_PS.proof_costs(),
+                          served=_SHARD.get("served"), report=_rep)     # REG-3211 - the owed work decides, not the names
     own = _PS.mine(assignment, k)
     order2, gates2 = _PS.restrict_order(order, gates, own)
     _SHARD["plan"] = _PS.plan_digest(have, n, assignment)
@@ -6164,7 +6236,48 @@ def _shard_cut(have, order, gates, say):
     say("  REG-2585 PROOF SHARD %d/%d: %d of %d proof(s) in %d gate(s) are this shard's (plan %s); the rest are the "
         "other shards' and are NOT RUN here" % (k, n, sum(len(v) for v in order2.values()),
                                                 sum(len(p) for _n, _f, p in have), len(gates2), _SHARD["plan"][:12]))
+    _w = _rep.get("wall") or []
+    say("  REG-3211 OWED-WORK PLAN: %s; this shard's modelled wall %s s, the slowest shard's %s s, the mean %s s"
+        % ("the bank holds %d of %d proof(s) PROVEN at this exact commit, %d are owed and spread longest-first"
+           % (_rep.get("served", 0), _rep.get("served", 0) + _rep.get("owed", 0), _rep.get("owed", 0))
+           if _SHARD.get("served") is not None else "no served list for this commit, so every proof is priced as owed",
+           ("%.0f" % _w[k - 1]) if len(_w) >= k else "UNKNOWN", ("%.0f" % max(_w)) if _w else "UNKNOWN",
+           ("%.0f" % (sum(_w) / len(_w))) if _w else "UNKNOWN"))
     return order2, gates2
+
+
+def _served_now(have, path=None, head=None, say=None):
+    """REG-3211 - {(gate, index)} the proof bank already holds PROVEN for THIS exact commit: the seed job's served.json
+    (HEART2_SHARD_SERVED), the identities of every servable PROVEN in the commit's own bundle (tv/proof_seed.py). Every
+    shard reads the same file (the seed job's one artifact, its sha256 checked), so every shard cuts the same plan. It
+    prices the plan only - what is served is still decided proof by proof by peek() under THIS checkout's key, so a hint
+    that is wrong costs balance, never a verdict. Not a key per proof here: MEASURED on his Mac (nice 10, load ~12),
+    keying 466 proofs of 60 gates took 81 s - ~25 minutes for the census's 8,847 - which every shard would pay first.
+    -> set | None (no hint, or one for another commit: UNKNOWN - every proof is priced as owed, as before REG-3211)"""
+    path = path if path is not None else (os.environ.get("HEART2_SHARD_SERVED") or "")
+    say = say or (lambda *a, **k: None)
+    if not path:
+        return None
+    try:
+        with io.open(path, encoding="utf-8") as fh:
+            body = json.load(fh)
+        rows = body.get("served") if isinstance(body, dict) else None
+        if not isinstance(rows, list):
+            raise ValueError("no served list")
+    except (OSError, ValueError) as e:
+        say("  REG-3211: the seed's served list %s is unreadable (%s) - every proof is priced as owed"
+            % (os.path.basename(path), type(e).__name__))
+        return None
+    if head is None:
+        ok, h = _git("rev-parse", "HEAD")
+        head = h.strip() if ok else ""
+    if not head or body.get("sha") != head:
+        say("  REG-3211: the seed's served list is for %s, not this checkout's HEAD %s - every proof is priced as owed"
+            % (str(body.get("sha"))[:12], str(head)[:12] or "UNKNOWN"))
+        return None
+    have_ids = set((str(n), i) for n, _f, p in have for i in range(len(p or [])))
+    return set((str(r[0]), r[1]) for r in rows
+               if isinstance(r, list) and len(r) == 2 and type(r[1]) is int and (str(r[0]), r[1]) in have_ids)
 
 
 def _shard_finish(cache, names, stopped, say):
@@ -6223,6 +6336,7 @@ def _prove_push(have, say, stopped=None, cache=None, blank=None):
     say("  #42 SEAMS (REG-2352): %s" % (" · ".join("%s=%s" % kv for kv in _seams.items()) if _seams else
                                         "no HEART2_* variable is set - every default holds"))
     base, order, gates, counts = _push_facts(have, say)
+    _SHARD["served"] = _served_now(have, say=say) if _SHARD.get("spec") else None   # REG-3211 - what is still owed
     order, gates = _shard_cut(have, order, gates, say)                 # REG-2585 - only this shard's proofs
     _keep = bool(_SHARD.get("spec"))                                   # REG-2591 - a CI shard keeps going
     say("  #42 FAIL FAST: likeliest to fail first - %d anchor(s) off, %d entr(ies) new or changed since %s, %d whose "

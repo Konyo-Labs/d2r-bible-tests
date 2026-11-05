@@ -13,7 +13,16 @@ what GitHub cannot:
 Refuses a tree whose `git status` is not empty (GitHub would grade other bytes than the Mac pushes - REG-1131) and a
 HEAD that does not fast-forward origin/main. Never `--no-verify`; never a force push to main.
 
-    python3 tv/ship_when_green.py v3862 [--wait-min 240]
+REG-3213 (v3865, his words: "why has it been stuck for so long and not triggered at an alert somewhere at 75 minutes
+which was max?") - MEASURED on v3864: this script returned the moment main was pushed, and Publish then ran 2 h 50 min
+with nothing watching it. Now it ALERTS, loudly and once, when the ci/ wait passes OVERRUN_MIN, and after the main push
+it WATCHES Publish on the same commit (tv/ci_watch.py, GitHub's public Actions API): it says when Publish passes 75
+minutes and which jobs are still running, and its exit says how Publish ended. --no-watch returns at the main push, as
+before. The console's eagle row "this version's CI" watches the same thing for the commit his console runs.
+
+    python3 tv/ship_when_green.py v3862 [--wait-min 240] [--publish-wait-min 100] [--no-watch]
+    exit 0 main pushed and Publish green · 1 GitHub said red, the main push refused, or Publish red · 2 timed out or
+    unknown (main IS pushed when it says so) · 3 refused
 """
 import argparse
 import os
@@ -28,6 +37,7 @@ if HERE not in sys.path:
 from console_safe import enable as _console_safe_enable  # noqa: E402 - a cp1255 console must survive its own report
 _console_safe_enable()
 import ci_verdict as CV  # noqa: E402
+import ci_watch as CW  # noqa: E402
 
 #: each REQUIRED workflow's file, for `gh workflow run` when its path filter did not fire on the ci push
 WORKFLOW_FILES = {
@@ -37,6 +47,8 @@ WORKFLOW_FILES = {
     CV.REQUIRED[3]: "proof-keys-shards.yml",
 }
 POLL_S = 60
+#: REG-3213 - the workflow that publishes main, watched after the main push
+PUBLISH = "Publish — gates, review, then deploy"
 DISPATCH_AFTER_S = 120          # GitHub starts a push's runs within seconds; after two minutes a missing one never will
 DISPATCH_TRIES = 5              # v3865 - a refused dispatch (GitHub answered 500/502 on 2026-11-05) is asked again next poll
 
@@ -76,8 +88,62 @@ def missing(runs, sha):
     return [wf for wf in CV.REQUIRED if wf not in have]
 
 
-def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_s=240 * 60, remote="origin", preflight=None):
-    """-> exit code: 0 main pushed · 1 GitHub said red / the main push refused · 2 timed out or unknown · 3 refused."""
+def overrun_alert(sha, minutes, runs, watch=None, limit=CW.OVERRUN_MIN):
+    """REG-3213 - the loud line said ONCE when a wait passes his max. Names what is still running: from GitHub's jobs when
+    `watch` (ci_watch.watch) is given, else from the runs already read. -> str. Never raises."""
+    named = []
+    try:
+        if watch is not None:
+            got = watch(sha)
+            named = list(got.get("running") or []) or [x["name"] for x in got.get("runs") or []
+                                                          if isinstance(x, dict) and x.get("status") != "completed"]
+        if not named:
+            named = sorted(set(CV._name(r) for r in runs or [] if isinstance(r, dict)
+                               and str(r.get("headSha") or "").startswith(sha) and r.get("status") != "completed"))
+    except Exception as e:
+        named = ["the running jobs could not be read (%s)" % type(e).__name__]
+    return ("ship: \u26a0\u26a0 ALERT - %s has been on GitHub %d min, past the %d-minute max. Still running: %s"
+            % (sha[:9], int(minutes), limit, "; ".join(named[:10]) or "nothing GitHub would name"))
+
+
+def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN):
+    """REG-3213 - after the main push: follow Publish on `sha` until it ends or `wait_s` passes, alerting once past
+    `limit` minutes. -> 0 Publish green · 1 Publish red · 2 not finished / unknown (main IS pushed either way)."""
+    t0, said, alerted = clock(), None, False
+    say("ship: REG-3213 watching Publish on %s - an alert at %d min, the console's eagle watches it too" % (sha[:9], limit))
+    while True:
+        got = watch(sha)
+        row = next((x for x in (got.get("runs") or []) if isinstance(x, dict) and x.get("name") == PUBLISH), None)
+        mins = row.get("minutes") if row else None
+        if row and row.get("status") == "completed":
+            ok = row.get("conclusion") == "success"
+            say("ship: Publish on %s %s after %s min%s" % (
+                sha[:9], "SUCCEEDED" if ok else "ended %s" % str(row.get("conclusion")).upper(),
+                "UNKNOWN" if mins is None else int(mins),
+                (" - past the %d-minute max" % limit) if (mins or 0) >= limit else ""))
+            return 0 if ok else 1
+        line = ("Publish %s, %s min" % (row.get("status"), "UNKNOWN" if mins is None else int(mins))) if row else (
+            "GitHub has not started Publish on this commit yet" if got.get("worked") else
+            "GitHub could not be read - UNKNOWN")
+        if line != said:
+            say("ship: [publish] %s" % line)
+            said = line
+        if not alerted and row and mins is not None and mins >= limit:
+            alerted = True
+            say("ship: \u26a0\u26a0 ALERT - Publish on %s has run %d min, past the %d-minute max. Still running: %s"
+                % (sha[:9], int(mins), limit, "; ".join((got.get("running") or [])[:10]) or "no job could be named"))
+        if clock() - t0 >= wait_s:
+            say("ship: Publish on %s has not finished after %d min of watching - main IS pushed; the console's eagle row "
+                "\"this version's CI\" keeps watching" % (sha[:9], wait_s // 60))
+            return 2
+        sleep(POLL_S)
+
+
+def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_s=240 * 60, remote="origin", preflight=None,
+         watch=None, watch_publish_s=None):
+    """-> exit code: 0 main pushed (and, when watched, Publish green) · 1 GitHub said red / the main push refused /
+    Publish red · 2 timed out or unknown · 3 refused. REG-3213: `watch` (ci_watch.watch) names the running jobs in the
+    75-minute alert; `watch_publish_s` (main() sets it) follows Publish after the main push."""
     run = run or subprocess.run
     fetch = fetch or CV.fetch
     sleep = sleep or time.sleep
@@ -118,6 +184,7 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
         return 1
     t0 = clock()
     tries, last = {}, None          # v3865 - per workflow: dispatches asked; a refused one is asked again next poll
+    alerted = False                 # REG-3213 - the 75-minute alert is said once, loudly
     while True:
         runs = fetch(sha)
         verdict, why = CV.decide(runs, sha)
@@ -126,6 +193,9 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
             last = why
         if verdict == "green":
             break
+        if not alerted and clock() - t0 >= CW.OVERRUN_MIN * 60:
+            alerted = True
+            say(overrun_alert(sha, (clock() - t0) / 60.0, runs, watch=watch))
         red = red_runs(runs, sha) if runs is not None else []
         if red:
             say("ship: GitHub graded %s RED - main is NOT pushed: %s" % (sha[:9], ", ".join(red)))
@@ -152,6 +222,8 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
         say("ship: the main push was refused (exit %s) - read the pre-push lines above" % m.returncode)
         return 1
     say("ship: %s is on main" % version)
+    if watch_publish_s:
+        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s)
     return 0
 
 
@@ -161,8 +233,12 @@ def main(argv=None):
     ap.add_argument("--wait-min", type=int, default=240)
     ap.add_argument("--no-preflight", action="store_true",
                     help="v3865 - push without the local pre-flight (GitHub then finds what it would have found)")
+    ap.add_argument("--publish-wait-min", type=int, default=100,
+                    help="REG-3213 - how long to follow Publish after the main push (it alerts at %d min)" % CW.OVERRUN_MIN)
+    ap.add_argument("--no-watch", action="store_true", help="REG-3213 - return at the main push without watching Publish")
     a = ap.parse_args(argv)
-    return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None)
+    return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None, watch=CW.watch,
+                watch_publish_s=None if a.no_watch else a.publish_wait_min * 60)
 
 
 if __name__ == "__main__":

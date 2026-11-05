@@ -1,13 +1,22 @@
-name: 🪟 proof-keys windows (after Publish, not required)
+name: 🪟 proof-keys windows (beside the ci shards, not required)
 # v3862 (item 3, his ruling 2026-11-05: "GitHub grades and proves each version once, including a Windows runner").
 # Every Windows-only defect of the last month - CRLF, cp1252/cp1255, POSIX-only paths, `chrome.exe --version` opening a
 # window - was found by a Windows PC proving itself, never by GitHub, because every proof ran on ubuntu. This proves the
 # PUBLISHED commit on windows-latest in 8 shards and banks the whole set as proofs-<sha>-win32.tgz on the proof bank,
 # which a Windows console imports before the Linux one (tv/proof_release.py).
-# It runs AFTER Publish on main, never on the ship's path: GitHub Free runs 20 jobs at once, and 8 Windows shards beside
-# Publish's 16 Linux ones would queue the deploy. It is NOT one of ci_verdict.REQUIRED, and its shards never fail the run
-# (a failure is named in that shard's manifest, as Publish's deploy gate does) - UNMEASURED until its first run.
+# v3865 (REG-3214) - IT RUNS BESIDE THE LINUX SHARDS, ON THE ci/proof-keys-<v> PUSH, BEFORE MAIN. MEASURED: on v3863 it ran
+# only after Publish (67 min), then ~2 h more, and on v3864 never - while OLD PC ALT's proofRelease read "GitHub has no
+# proof bundle for 9d9485ea6 yet (the Linux set is already in)", so a Windows PC re-proved alone for hours after every ship.
+# The GitHub Free limit that kept it off the ship's path is gone (GitHub Pro: 40 jobs; the Linux shards run on Ubicloud,
+# which counts none of them). It starts from the newest Windows set in the bank plus this commit's own (tv/proof_seed.py
+# --prior: a seed serves only byte-identical proofs), plans by owed work, and is bounded like the Linux shards (job 75,
+# step 70, heart2's deadline at job minute 55). It is still NOT one of ci_verdict.REQUIRED, and its shards never fail the
+# run (a failure is named in that shard's manifest). After Publish it runs only when this commit's Windows set is not
+# banked yet (a main push that skipped the ci branches), and by hand (workflow_dispatch).
 on:
+  push:
+    branches:
+      - 'ci/proof-keys-*'
   workflow_run:
     workflows: ["Publish — gates, review, then deploy"]
     types: [completed]
@@ -16,17 +25,61 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: proof-keys-windows
+  group: proof-keys-windows-${{ github.ref }}
   cancel-in-progress: true
 env:
   PROOF_SHARDS: "8"
   HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 jobs:
+  seed:
+    # REG-3214 - the Windows set's one seed: the newest Windows set in the bank (another commit's: --prior) and this commit's
+    # own when there; heart2 serves a seed entry only under the key THIS checkout's bytes give it. Never fails the run.
+    name: seed - the Windows proofs the bank already has
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      seeded: ${{ steps.seed.outputs.seeded || 'false' }}
+      digest: ${{ steps.seed.outputs.digest }}
+      bank: ${{ steps.seed.outputs.bank || 'unknown' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HEAD_SHA }}
+          sparse-checkout: |
+            tv/proof_seed.py
+            tv/proof_release.py
+            tv/proof_shard.py
+            tv/console_safe.py
+          sparse-checkout-cone-mode: false
+      - name: The newest Windows set and this commit's own, merged into one seed (REG-3214)
+        id: seed
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python3 tv/proof_seed.py --sha "$HEAD_SHA" --flavor win32 --prior
+          --work "$RUNNER_TEMP/seed-work" --out "$RUNNER_TEMP/seed-out"
+      - name: Hand every shard the one seed
+        if: ${{ steps.seed.outputs.seeded == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-seed-win32
+          path: ${{ runner.temp }}/seed-out/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
   shard:
     name: windows shard ${{ matrix.shard }}
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    needs: [seed]
+    # after Publish only while this commit's Windows set is not banked yet: the ci/proof-keys push already proved it
+    if: ${{ !cancelled() && needs.seed.result != 'skipped' && (github.event_name != 'workflow_run' || needs.seed.outputs.bank != 'ok') }}
     runs-on: windows-latest
-    timeout-minutes: 340
+    # REG-3212 - the same bounds as the Linux shards: heart2 stops starting proofs at job minute 55, the step 70, the job 75
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       max-parallel: 8
@@ -35,12 +88,15 @@ jobs:
     env:
       D2R_NO_CLAUDE: "1"
       HEART2_PROVE_WORKERS: "2"
+      HEART2_GATE_CAP_S: "1500"
       PYTHONUTF8: "1"
       PYTHONIOENCODING: utf-8
     defaults:
       run:
         shell: bash
     steps:
+      - name: Mark start
+        run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.HEAD_SHA }}
@@ -59,12 +115,27 @@ jobs:
           mkdir -p "$RUNNER_TEMP/noclaude"
           printf '@echo claude is not called on CI (proof-keys windows) 1>&2\r\n@exit /b 97\r\n' > "$RUNNER_TEMP/noclaude/claude.cmd"
           echo "$RUNNER_TEMP/noclaude" >> "$GITHUB_PATH"
+      - name: The run's one seed (REG-3214, built by the seed job)
+        if: ${{ needs.seed.outputs.seeded == 'true' }}
+        uses: actions/download-artifact@v5
+        with:
+          name: proof-seed-win32
+          path: ${{ runner.temp }}/heart2-seed
       - name: Prove this shard on Windows
-        timeout-minutes: 320
+        timeout-minutes: 70
         run: |
           D="$RUNNER_TEMP/shard-${{ matrix.shard }}"
           mkdir -p "$D"
           export HEART2_CACHE_PATH="$D/.heart2_cache.json"
+          export HEART2_SHARD_SEED="$RUNNER_TEMP/heart2-seed/.heart2_cache.json"
+          if [ -f "$HEART2_SHARD_SEED" ]; then echo "REG-3214: seeded (this commit's own set: ${{ needs.seed.outputs.bank }})"; else
+            unset HEART2_SHARD_SEED; echo "REG-3214: no seed - every proof of this shard runs"; fi
+          if [ -n "${HEART2_SHARD_SEED:-}" ] && [ "$(sha256sum "$HEART2_SHARD_SEED" | cut -d' ' -f1)" != "${{ needs.seed.outputs.digest }}" ]; then
+            echo "REG-3210: this shard's seed is not the one the seed job built - it proves cold, and the fan-in refuses a set cut from two plans"
+            unset HEART2_SHARD_SEED; fi
+          export HEART2_SHARD_SERVED="$RUNNER_TEMP/heart2-seed/served.json"
+          { [ -n "${HEART2_SHARD_SEED:-}" ] && [ -f "$HEART2_SHARD_SERVED" ]; } || unset HEART2_SHARD_SERVED
+          export HEART2_PROVE_DEADLINE=$(( T0 + 55 * 60 ))
           set +e
           python -u tv/heart2.py --prove --push --proof-shard "${{ matrix.shard }}/${PROOF_SHARDS}" 2>&1 | tee "$D/prove.log"
           echo "rc=${PIPESTATUS[0]} (a failure is named in this shard's manifest; the run does not fail on it)" | tee -a "$D/prove.log"

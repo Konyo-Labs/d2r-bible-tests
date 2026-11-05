@@ -806,6 +806,41 @@ def _check_the_ledger_backup_covers_every_store():
 _BACKUP_BENIGN = ("wrote ", "unchanged since")
 
 
+def _check_this_versions_ci(rec=None, now=None):
+    """REG-3213 - THIS VERSION'S CI, RED PAST 75 MINUTES. His words (2026-11-05): "why has it been stuck for so long and
+    not triggered at an alert somewhere at 75 minutes which was max?" - v3864's Publish ran 2 h 50 min and no row, no
+    script, nothing said so. The console's CI tick (control_app._ci_watch_tick) reads GitHub's public Actions API for the
+    commit it runs, every 5 minutes; this row reads what it recorded (status.ciWatch, the serving console's _CI_WATCH):
+      overrun / slow / red  -> MISSING, naming the runs past the max and the jobs still running
+      unknown, never read, or a reading older than 3 ticks -> UNKNOWN (an unread GitHub is never green)
+      running inside the max, none, green -> OK, with the minutes"""
+    if rec is None:
+        try:
+            import control_app as _ca
+            rec = dict(getattr(_serving_console(_ca), "_CI_WATCH", None) or {})
+        except Exception as e:
+            return UNKNOWN, "the console's CI watch could not be read (%s) - this version's CI is UNMEASURED" % type(e).__name__
+    now = time.time() if now is None else now
+    try:
+        import ci_watch as _cw
+        every, red = _cw.CI_WATCH_EVERY_S, _cw.RED_STATES
+    except Exception:
+        every, red = 300, ("overrun", "slow", "red")
+    ts = rec.get("lastTs")
+    if not isinstance(ts, (int, float)) or isinstance(ts, bool):
+        return UNKNOWN, "the console has not read this version's CI yet (%s)" % (rec.get("why") or "no reading")
+    age = now - ts / 1000.0
+    st = rec.get("state")
+    if st in red:
+        return MISSING, "this version's CI: %s" % (rec.get("why") or st)
+    if age > 3 * every + 60:
+        return UNKNOWN, ("the last reading of this version's CI is %d min old - the watch stopped reading, so it is "
+                         "UNKNOWN, not green" % int(age // 60))
+    if rec.get("worked") is not True or st in (None, "unknown"):
+        return UNKNOWN, "this version's CI: %s" % (rec.get("why") or "UNKNOWN")
+    return OK, "this version's CI: %s" % (rec.get("why") or st)
+
+
 def _check_the_backup_loop_is_actually_WRITING():
     """v2735 — THE BACKUP LOOP REFUSED EVERY SNAPSHOT FOR A DAY AND NOTHING ASKED.
 
@@ -11090,6 +11125,8 @@ CHECKS = [
     ("evidence ledger", _check_the_evidence_ledger_is_readable),
     ("ledger backup", _check_the_ledger_backup_covers_every_store),
     ("backup loop", _check_the_backup_loop_is_actually_WRITING),
+    # REG-3213 (v3865) - v3864's Publish ran 2 h 50 min and nothing said so; red past his 75-minute max, every tick
+    ("this version's CI", _check_this_versions_ci),
     # 2026-09-27 — a store that FELL (setPieces 134 -> 0, owned 223 -> 0) and every row above was
     # green: `ledger entries` diffs only the two newest snapshots. This reads the loop's durable
     # drop record, which stays open until the store is back — and watches the watcher.
@@ -11346,7 +11383,7 @@ IN_PROCESS = ("a present machine has a fresh last-seen", "no machine went quiet 
               "a fleet row identifies its machine", "a fleet refusal names an action", "every roster publish is signed",
               "fleet reachable", "picker census", "this process runs the code on disk", "console painted whole",
               "nothing we started is a corpse", "this machine can decode a frame",
-              "this machine can cross-check an inventory", "test venue")
+              "this machine can cross-check an inventory", "test venue", "this version's CI")
 
 
 def _slow_path():
@@ -12011,6 +12048,9 @@ WATCHES = {
     "evidence ledger":             (),
     "ledger backup":               ("_ledger_backup_loop",),
     "backup loop":                 ("_ledger_backup_loop",),
+    # REG-3213 (v3865) - it reads /api/status.ciWatch (the console's CI tick) and reaches him through the eagle line; it
+    # owns no element of its own. Empty tuple as a DECLARATION, not an omission.
+    "this version's CI":           (),
     "ledger drop":                 ("_ledger_backup_loop",),
     "console painted whole":       ("console", "page"),
     "names banked":                (),

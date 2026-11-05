@@ -57,6 +57,12 @@ PROOF_COST_FACTOR = 0.42
 #: BROWSER work, which runs one gate at a time (#42 ONE BROWSER AT A TIME) - the old plan balanced only the first, and
 #: its slowest shard ran 2.1x the mean
 RUNNER_LANES = 2
+#: REG-3211 - what one proof the verdict cache SERVES costs a shard: its key and a lookup, no law run. MEASURED on v3864's
+#: Publish (run 42084305066): shard 6 re-proved 387 proofs and shard 13 324 (each 2 h 50 min) while shard 14 re-proved 11,
+#: because the plan priced a served proof like a run, so the owed work fell wherever the names fell
+SERVED_PROOF_S = 0.05
+#: REG-3212 - a proof cut at its bound: neither PROVEN nor a defect of the law - UNKNOWN, owed, and named by the fan-in
+TIMEOUT = "TIMEOUT"
 _SPEC = re.compile(r"^\s*(\d+)\s*/\s*(\d+)\s*$")
 
 
@@ -129,7 +135,7 @@ def measure_costs(bodies):
     return out
 
 
-def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES):
+def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, served=None, report=None):
     """The shard every proof belongs to. -> {(gate, index): k} covering every proof of `have` exactly once (pure).
 
     have       [(name, filename, proofs)] as heart2.prove() holds them
@@ -139,7 +145,13 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES):
     per_proof  REG-2593: {gate: MEASURED seconds per proof on a runner}; a gate it lacks costs PROOF_COST_FACTOR x
                (its run + PROOF_OVERHEAD_S). A chunk of `size` proofs then costs per_proof x (size + 2): the proofs and
                the gate's two clean runs (the wave's and the closing one)
-    lanes      a runner's lanes: a shard's wall is max(its work / lanes, its browser work)"""
+    lanes      a runner's lanes: a shard's wall is max(its work / lanes, its browser work)
+    served     REG-3211: {(gate, index)} already PROVEN at this exact commit - the seed job's served.json, read the same
+               by every shard (heart2._served_now). None: the plan as before REG-3211 exactly. Given, a served proof costs
+               SERVED_PROOF_S and no clean run, and only the OWED proofs are cut by cost and spread longest-first - so
+               the work still owed decides the shards, not where the names fall. Every proof is still assigned once:
+               a served proof is served (copied into its shard's file) by the shard it belongs to
+    report     REG-3211: a dict, filled with each shard's modelled wall and work (seconds) and the owed / served counts"""
     n = int(n)
     if n < 1:
         raise ValueError("a plan needs at least one shard")
@@ -148,6 +160,7 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES):
     default = known[len(known) // 2] if known else 1.0
     oh = PROOF_OVERHEAD_S
     pp = dict(per_proof or {})
+    hit = set((str(g), i) for g, i in (served or ()))
     gates = []
     for name, _f, proofs in sorted(have, key=lambda t: str(t[0])):     # one order, whatever order the names came in
         p = len(proofs or [])
@@ -160,21 +173,27 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES):
                 u = pp.get(str(name))
                 unit = u if u is not None else PROOF_COST_FACTOR * (c + oh)
                 fixed = 2 * unit
-            gates.append((str(name), p, unit, fixed, browser is not None and str(name) in browser))
-    total = sum(u * p + f for _n, p, u, f, _b in gates)
+            owe = [i for i in range(p) if (str(name), i) not in hit]
+            done = [i for i in range(p) if (str(name), i) in hit]
+            gates.append((str(name), owe, done, unit, fixed, browser is not None and str(name) in browser))
+    total = sum(u * len(o) + (f if o else 0.0) + SERVED_PROOF_S * len(d) for _n, o, d, u, f, _b in gates)
     target = total / float(n * CHUNKS_PER_SHARD) if total > 0 else 1.0
     # REG-2593, MODELLED on the measured costs: cutting browser gates finer made N=16 SLOWER (max 1675s vs 1349s): each
     # chunk pays its gate's two clean runs again. One target for every gate; the wall-aware placement below spreads them
     chunks = []
-    for name, p, u, f, b in gates:
-        k = max(1, min(p, int(math.ceil(u * p / target)) if target > 0 else 1))
-        base, extra = divmod(p, k)
-        start = 0
-        for j in range(k):
-            size = base + (1 if j < extra else 0)
-            idx = list(range(start, start + size))
-            start += size
-            chunks.append((u * size + f, b, name, idx))
+    for name, owe, done, u, f, b in gates:
+        p = len(owe)
+        if p:
+            k = max(1, min(p, int(math.ceil(u * p / target)) if target > 0 else 1))
+            base, extra = divmod(p, k)
+            start = 0
+            for j in range(k):
+                size = base + (1 if j < extra else 0)
+                idx = owe[start:start + size]
+                start += size
+                chunks.append((u * size + f, b, name, idx))
+        if done:        # REG-3211 - served: no run, no clean run, never the browser queue
+            chunks.append((SERVED_PROOF_S * len(done), False, name, done))
     chunks.sort(key=lambda t: (-t[0], t[2], t[3][0]))
     tot = [0.0] * n
     brw = [0.0] * n
@@ -190,6 +209,10 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES):
             brw[k] += cost
         for i in idx:
             out[(name, i)] = k + 1
+    if isinstance(report, dict):        # REG-3211 - what the plan expects of each shard, said by the run that cut it
+        report.update(wall=[round(max(t / lanes, w), 1) for t, w in zip(tot, brw)], work=[round(t, 1) for t in tot],
+                      owed=sum(len(o) for _n, o, _d, _u, _f, _b in gates),
+                      served=sum(len(d) for _n, _o, d, _u, _f, _b in gates))
     return out
 
 
@@ -544,6 +567,10 @@ def fan_in(root, n, head, say=print):
             if fails.get(k) else ""))
     _n_owed = sum(len(v) for v in fails.values())
     _n_unb = sum(u for u, _a in owed.values())
+    cut = timeouts(fails)
+    if cut:                             # REG-3212 - every proof cut at its bound, by name: UNKNOWN, never PROVEN
+        say("  ⏱ REG-3212: %d proof(s) were cut at their bound - TIMEOUT, UNKNOWN, never PROVEN, owed: %s"
+            % (len(cut), ", ".join("%s[%s] (shard %d)" % (g, i, k) for k, g, i in cut)))
     say("  ✓ REG-2588 FAN-IN: all %d shards of %s finished on one plan; %d PROVEN entr(ies) to import, %d not servable%s%s."
         % (n, str(head)[:12], len(take), skipped,
            (" - %d shard(s) STOPPED on a failure, owed a fix" % len(stops)) if stops else "",
@@ -553,6 +580,16 @@ def fan_in(root, n, head, say=print):
     say("  REG-2594: %d of %d assigned proof(s) bank nothing from this set (ELSEWHERE on a runner, owed, or never run)"
         % (_n_unb, sum(a for _u, a in owed.values())))
     return 0
+
+
+def timeouts(fails):
+    """REG-3212 - the proofs a shard's bound cut, from {shard k: owed rows}. -> sorted [(k, gate, index)]. Pure."""
+    out = []
+    for k, rows in (fails or {}).items():
+        for f in rows or []:
+            if isinstance(f, list) and len(f) >= 3 and f[2] == TIMEOUT:
+                out.append((k, str(f[0]), f[1]))
+    return sorted(out, key=lambda t: (t[1], str(t[2]), t[0]))
 
 
 def merge_shards(root, out, say=print):
@@ -733,6 +770,10 @@ def census(root, head=None, n=None):
     if lost:
         out.append("⚠ %d of %d shard(s) left no readable store: %s - their laws are UNKNOWN, not green." % (
             len(lost), int(n), ", ".join(str(k) for k in lost)))
+    _cut = [f for f in tot["fix"] if f[2] == TIMEOUT]
+    if _cut:                            # REG-3212 - a bound cut them: UNKNOWN, not a defect of the law, never PROVEN
+        out.append("⏱ %d proof(s) were cut at their bound (TIMEOUT - UNKNOWN, never PROVEN): %s." % (
+            len(_cut), ", ".join("%s[%s]" % (f[0], f[1]) for f in _cut)))
     if walls:
         mean = sum(walls) / float(len(walls))
         out.append("Shard prove walls: slowest %d s, mean %.0f s (%.2fx)." % (max(walls), mean, max(walls) / mean if mean else 0))

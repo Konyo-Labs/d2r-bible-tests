@@ -22689,6 +22689,61 @@ PROOF_RELEASE_EVERY_TICKS = 60
 _PROOF_RELEASE = {"state": None, "sha": None, "seconds": None, "at": None, "running": False,
                   "why": "not asked yet - the console has not been up 40 s"}
 
+#: REG-3213 (v3865, his words: "why has it been stuck for so long and not triggered at an alert somewhere at 75 minutes
+#: which was max?") - THIS VERSION'S CI, WATCHED WITHOUT ANYONE PRESSING ANYTHING. MEASURED on v3864: Publish ran 2 h 50 min
+#: and nothing anywhere said so. The console asks GitHub's public Actions API (tv/ci_watch.py) about the commit it runs,
+#: 60 s after boot and every 5 minutes (CI_WATCH_EVERY_TICKS x 10 s - never more often than ci_watch.CI_WATCH_EVERY_S),
+#: on a daemon thread; the eagle row "this version's CI" (console_doctor) turns red past 75 minutes and names the jobs
+#: still running. on / worked / lastTs / owed: None is UNKNOWN, never 0. [[heart-first]]
+CI_WATCH_FIRST_TICK = 6
+CI_WATCH_EVERY_TICKS = 30
+_CI_WATCH = {"on": True, "worked": None, "lastTs": None, "owed": None, "state": None, "sha": None, "running": [],
+             "runs": [], "minutes": None, "busy": False, "why": "not asked yet - the console has not been up 60 s"}
+
+
+def _ci_watch_tick(_thread=None, _git_run=_git_run, _watch=None, _now=None):
+    """REG-3213 - read this commit's CI from GitHub, at most every CI_WATCH_EVERY_S, on a daemon thread. -> dict (the
+    record it published). Never raises: a stop is a sentence in status.ciWatch, and an unread GitHub is UNKNOWN."""
+    try:
+        import ci_watch as _cw
+        now = time.time() if _now is None else _now
+        if _CI_WATCH.get("busy"):
+            return dict(_CI_WATCH)
+        if os.environ.get("TV_STUB"):           # a test console never calls GitHub: said, never a silent skip
+            _CI_WATCH.update(on=False, worked=None, owed=None, state="unknown",
+                             why="a test console (TV_STUB) does not ask GitHub about its CI")
+            return dict(_CI_WATCH)
+        last = _CI_WATCH.get("askedAt")
+        if last is not None and now - last < _cw.CI_WATCH_EVERY_S:
+            return dict(_CI_WATCH)
+        kw = dict(cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
+                  creationflags=_WIN_CREATE if IS_WIN else 0)
+        h = _git_run(["git", "rev-parse", "HEAD"], **kw)
+        head = (h.stdout or "").strip() if h.returncode == 0 else ""
+        if len(head) != 40:
+            _CI_WATCH.update(worked=False, lastTs=int(now * 1000), state="unknown", owed=None,
+                             why="git could not say which commit this console runs - its CI is UNKNOWN")
+            return dict(_CI_WATCH)
+    except Exception as e:
+        _CI_WATCH.update(worked=False, state="unknown", owed=None, why="the CI watch could not be asked (%s)" % type(e).__name__)
+        return dict(_CI_WATCH)
+
+    def _go():
+        try:
+            r = (_watch or _cw.watch)(head)
+            _CI_WATCH.update(dict((k, r.get(k)) for k in ("on", "worked", "lastTs", "owed", "state", "sha", "running",
+                                                           "runs", "minutes", "limit", "why")))
+        except Exception as e:
+            _CI_WATCH.update(worked=False, state="unknown", owed=None, why="the CI watch raised %s" % type(e).__name__)
+        finally:
+            _CI_WATCH["busy"] = False
+    _CI_WATCH.update(busy=True, askedAt=now)
+    if _thread is not None:
+        _thread(_go)
+    else:
+        threading.Thread(target=_go, daemon=True, name="tvd-ci-watch").start()
+    return dict(_CI_WATCH)
+
 
 def _proof_release_tick(_thread=None, _git_run=_git_run, _import=None, _busy=None):
     """v3862 - import this commit's proofs from the proof bank, once per commit, on a daemon thread. -> dict (the
@@ -23357,6 +23412,9 @@ def _console_rescue_loop():
             if (_SELF_PROBE["tick"] >= PROOF_RELEASE_FIRST_TICK
                     and (_SELF_PROBE["tick"] - PROOF_RELEASE_FIRST_TICK) % PROOF_RELEASE_EVERY_TICKS == 0):
                 _proof_release_tick()       # v3862 — this PC imports GitHub's proofs for its own commit
+            if (_SELF_PROBE["tick"] >= CI_WATCH_FIRST_TICK
+                    and (_SELF_PROBE["tick"] - CI_WATCH_FIRST_TICK) % CI_WATCH_EVERY_TICKS == 0):
+                _ci_watch_tick()            # REG-3213 — this version's CI, red past 75 minutes, unattended
             if (_SELF_PROBE["tick"] >= REPAIR_BOOK_FIRST_TICK
                     and (_SELF_PROBE["tick"] - REPAIR_BOOK_FIRST_TICK) % REPAIR_BOOK_EVERY_TICKS == 0):
                 _repair_book_start()        # v3862 — a fault the book knows is fixed again, automatically
@@ -46065,7 +46123,7 @@ def status_payload():
         # 2026-09-29 — front / background / headless / window-only: the window is a view of the service
         "window": _t("window", window_mode_payload),
         # #71 — can this console still answer its own port (the fault it cannot report over that port)
-        "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "proofRelease": dict(_PROOF_RELEASE), "repairBook": dict(_REPAIR_BOOK), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
+        "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "proofRelease": dict(_PROOF_RELEASE), "ciWatch": dict(_CI_WATCH), "repairBook": dict(_REPAIR_BOOK), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
         # #83 — the child supervisor's receipts (door / watchdog / RAM); the census itself is the doctor's row
         "childGuard": _child_guard_status(),
         "ver": "v3865",

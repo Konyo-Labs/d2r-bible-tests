@@ -396,17 +396,20 @@ class TheBankJob(unittest.TestCase):
 
 
 class TheWindowsSet(unittest.TestCase):
-    """v3862 (item 3) - proof-keys-windows.yml: proves the PUBLISHED commit on windows-latest, off the ship's path."""
+    """v3862 (item 3) - proof-keys-windows.yml proves the commit on windows-latest; v3865 (REG-3214): beside the Linux
+    shards on the ci/proof-keys push, before main (tv/test_windows_proofs_run_before_main.py), and never a ship gate."""
 
     @classmethod
     def setUpClass(cls):
         with io.open(os.path.join(ROOT, ".github", "workflows", "proof-keys-windows.yml"), encoding="utf-8") as fh:
             cls.wf = _code(fh.read())
 
-    def test_it_runs_after_publish_and_is_never_a_ship_gate(self):
+    def test_it_runs_beside_the_ci_shards_and_is_never_a_ship_gate(self):
         import ci_verdict as CV
         self.assertIn('workflows: ["Publish — gates, review, then deploy"]', self.wf)
-        self.assertNotIn("ci/", self.wf.split("\njobs:")[0], "the Windows set runs on a ci/ push - it would queue the ship")
+        # v3865 (REG-3214) - GitHub Pro runs 40 jobs and the Linux shards run on Ubicloud: the Windows set no longer queues
+        # the ship, so it runs on the ci/proof-keys push and its win32 set exists when the ship lands
+        self.assertIn("\n      - 'ci/proof-keys-*'\n", self.wf.split("\njobs:")[0], "the Windows set waits for Publish again")
         name = self.wf.split("\n", 1)[0].split("name:", 1)[1].strip()
         self.assertNotIn(name, CV.REQUIRED, "an unmeasured Windows leg became a gate on every ship")
 

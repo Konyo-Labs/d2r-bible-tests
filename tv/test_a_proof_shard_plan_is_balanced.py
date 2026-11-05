@@ -176,13 +176,13 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2593 - heart2's shard cut plans without the browser set",
      "file": "heart2.py",
-     "find": "    assignment = _PS.plan(have, n, _PS.gate_costs(), browser=_push_browser(have), per_proof=_PS.proof_costs())\n",
-     "replace": "    assignment = _PS.plan(have, n, _PS.gate_costs(), browser=set(), per_proof=_PS.proof_costs())\n",
+     "find": "    assignment = _PS.plan(have, n, _PS.gate_costs(), browser=_push_browser(have), per_proof=_PS.proof_costs(),\n",
+     "replace": "    assignment = _PS.plan(have, n, _PS.gate_costs(), browser=set(), per_proof=_PS.proof_costs(),\n",
      "matches": 1},
     {"why": "REG-2593 - heart2's shard cut plans without the measured costs",
      "file": "heart2.py",
-     "find": "    assignment = _PS.plan(have, n, _PS.gate_costs(), browser=_push_browser(have), per_proof=_PS.proof_costs())\n",
-     "replace": "    assignment = _PS.plan(have, n, _PS.gate_costs(), browser=_push_browser(have), per_proof={})\n",
+     "find": "    assignment = _PS.plan(have, n, _PS.gate_costs(), browser=_push_browser(have), per_proof=_PS.proof_costs(),\n",
+     "replace": "    assignment = _PS.plan(have, n, _PS.gate_costs(), browser=_push_browser(have), per_proof={},\n",
      "matches": 1},
 ]
 
