@@ -97,7 +97,7 @@ def attribute_character(sigs):
             seen.append(one)
     return {"name": None if conflict else (names[0] if names else None), "cls": None if conflict else (classes[0] if classes else None),
             "level": None if conflict else lv, "sources": srcs, "conflict": (names + classes) if conflict else None,
-            "seen": seen[:6]}
+            "seen": seen[:6], "seenN": len(seen)}     # v3866 (#231 on v3858) - the hover shows 6 and says how many more
 
 
 def game_runs(timeline_rows, char=None):

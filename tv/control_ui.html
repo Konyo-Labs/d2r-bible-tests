@@ -23560,7 +23560,8 @@ window._lockMark = function(isOpen, px, label){
     var _seen = (ch && Array.isArray(ch.seen)) ? ch.seen.filter(function(x){ return x && _SEEN_SAY[x.source]; }) : [];
     if (_seen.length) whyBits.push(_seen.map(function(x){
       return _SEEN_SAY[x.source] + ': ' + [x.name, x.cls ? x.cls + (x.level ? ' ' + x.level : '') : null].filter(Boolean).join(' ');
-    }).join(' · '));
+    }).join(' · ') + ((ch && typeof ch.seenN === 'number' && ch.seenN > ch.seen.length)   /* v3866 - reads past the 6 kept */
+      ? ' · +' + (ch.seenN - ch.seen.length) + ' more read(s)' : ''));
     else if (ch && Array.isArray(ch.sources) && ch.sources.length) whyBits.push('character from ' + ch.sources.join(', '));
     if (ch && Array.isArray(ch.conflict) && ch.conflict.length) whyBits.push('reads disagree: ' + ch.conflict.join(' / '));
     if (typeof s.gamesSay === 'string' && s.gamesSay) whyBits.push('games: ' + s.gamesSay

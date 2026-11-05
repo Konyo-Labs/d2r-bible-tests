@@ -16,7 +16,12 @@ def _read(p):
 CHECKS = [
  [
   "tv/read_identity.py",
-  "\"seen\": seen[:6]}",
+  "\"seen\": seen[:6], \"seenN\": len(seen)}",
+  1
+ ],
+ [
+  "tv/control_ui.html",
+  "? ' \u00b7 +' + (ch.seenN - ch.seen.length) + ' more read(s)' : ''));",
   1
  ],
  [
@@ -38,6 +43,18 @@ class TheLawHolds(unittest.TestCase):
             self.assertEqual(_read(f).count(needle), n, "%s: %r should appear %d time(s)" % (f, needle, n))
 
 
+class SevenReadsAreNotSix(unittest.TestCase):
+    """v3866 (the #231 eye on v3858) - the record keeps 6 reads for the hover; the 7th and later were dropped with no word"""
+
+    def test_the_record_counts_every_read_it_does_not_keep(self):
+        import sys
+        sys.path.insert(0, HERE)
+        import read_identity as RI
+        sigs = [{"source": "char-panel", "name": "Konyo", "cls": "Sorceress", "level": 80 + i} for i in range(8)]
+        got = RI.attribute_character(sigs)
+        self.assertEqual((len(got["seen"]), got["seenN"]), (6, 8), got)
+
+
 class TheProofsNameOnePlace(unittest.TestCase):
     def test_each_find_matches_once(self):
         for p in RED_PROOF:
@@ -54,8 +71,15 @@ RED_PROOF = [
  {
   "why": "the record stops carrying what each read said",
   "file": "tv/read_identity.py",
-  "find": "\"seen\": seen[:6]}",
+  "find": "\"seen\": seen[:6], \"seenN\": len(seen)}",
   "replace": "}",
+  "matches": 1
+ },
+ {
+  "why": "v3866 - the hover drops reads past the six kept with no word",
+  "file": "tv/control_ui.html",
+  "find": "? ' \u00b7 +' + (ch.seenN - ch.seen.length) + ' more read(s)' : ''));",
+  "replace": "? '' : ''));",
   "matches": 1
  },
  {
