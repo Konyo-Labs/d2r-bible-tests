@@ -7,8 +7,8 @@ MEASURED on his Mac 2026-11-05 (/api/status + /api/river + /api/fleet, GET only)
   fleet river stuck        PRINTER 2: "vault lane: owes 8, 6901 read(s) on record ... 1 quarantined after a hang"
   retention drain          "waiting at STATION 1 behind STATION: A LANE EXISTS AND THIS QUEUE IS NOT ITS INPUT"
   /api/river population    owedBy vault 8 = 8 panels-never-banked: CAPTURE 5, ROUTED 2, STATION 1 - so the two PRINTER
-                           reels (reel_s_1793614663296_52736, reel_s_1793705809306_17617) are in NO lane's queue, and
-                           the STATION reel (reel_s_1792343240980_21967) is the vault lane's own: the one unsealed owed
+                           reels (reel_s_1500000000006_52736, reel_s_1500000000007_17617) are in NO lane's queue, and
+                           the STATION reel (reel_s_1500000000002_21967) is the vault lane's own: the one unsealed owed
                            reel, the one the watchdog quarantined after the 854 s hang.
 So the doctor called a reel its lane was holding "no automatic lane", the fleet quoted the vault lane's whole queue
 about two reels that are not in it, and the drain blamed a chronicle predicate for a vault reel. Who delivers a reel
@@ -49,11 +49,11 @@ import control_app as CA  # noqa: E402
 import console_doctor as D  # noqa: E402
 import shelf_driver as SD  # noqa: E402
 
-HUNG = "reel_s_1792343240980_21967"
-P1 = "reel_s_1793614663296_52736"
-P2 = "reel_s_1793705809306_17617"
-FREE = "reel_s_1793000000000_11111"
-CHRON = "reel_s_1793100000000_22222"
+HUNG = "reel_s_1500000000002_21967"
+P1 = "reel_s_1500000000006_52736"
+P2 = "reel_s_1500000000007_17617"
+FREE = "reel_s_1500000000003_11111"
+CHRON = "reel_s_1500000000004_22222"
 
 
 def _code_without_comments(name):
@@ -243,7 +243,7 @@ class TestTheRealJoins(_World):
                                      "by": "law", "byKind": "observer"}) + "\n")
 
     def test_the_drain_reads_which_reels_stand_at_each_station(self):
-        gone = "reel_s_1793200000000_33333"          # stamped at STATION, no longer on the shelf
+        gone = "reel_s_1500000000005_33333"          # stamped at STATION, no longer on the shelf
         self._stamps([(FREE, "STATION"), (HUNG, "PRINTER"), (P1, "PRINTER"), (HUNG, "STATION"), (P2, "PRINTER"),
                       (gone, "STATION"), (FREE, "ROUTED")])
         with mock.patch.object(CA, "HIST_DIR", self.tmp):

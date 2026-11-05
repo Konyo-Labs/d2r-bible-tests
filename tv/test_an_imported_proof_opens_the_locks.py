@@ -45,7 +45,10 @@ import self_prove as SP  # noqa: E402
 import proof_release as PR  # noqa: E402
 
 HERE_TREE = H.TREE_ID
-CI_TREE = "/home/runner/work/d2r-bible-tests/d2r-bible-tests"
+# v3865 (GitHub's first round): this was GitHub's own checkout path, so ON A RUNNER "another tree" was this tree and every
+# trusted proof read as served here - green on the Mac, 8 reds on CI. Another tree is a path no checkout can hold.
+CI_TREE = "/fixture/another-tree/that-is-never-a-checkout"
+assert CI_TREE != HERE_TREE, "PREMISE: the fixture's other tree is this tree"
 QUIET = lambda *a, **k: None  # noqa: E731
 
 

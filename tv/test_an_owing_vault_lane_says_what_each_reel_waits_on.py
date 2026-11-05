@@ -49,9 +49,9 @@ _enable()
 import control_app as CA  # noqa: E402
 import lane_health as LH  # noqa: E402
 
-SEALED = "reel_s_1790943996868_84048"
-HUNG = "reel_s_1792343240980_21967"
-FREE = "reel_s_1793000000000_11111"
+SEALED = "reel_s_1500000000001_84048"
+HUNG = "reel_s_1500000000002_21967"
+FREE = "reel_s_1500000000003_11111"
 HOUR = 3600000.0
 
 

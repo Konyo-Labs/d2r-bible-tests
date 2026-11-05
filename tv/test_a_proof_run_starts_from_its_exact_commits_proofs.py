@@ -265,7 +265,8 @@ class TheWorkflowSeedsEveryShardFromIt(unittest.TestCase):
         prove = shard[shard.index("- name: Prove this shard"):]
         w = prove.index("python3 tv/proof_seed.py --widen")
         self.assertLess(prove.index("sha256sum"), w, "the seed is widened before its digest is checked")
-        self.assertIn('--with "$RUNNER_TEMP/heart2-seed/rerun"', prove[w:w + 200])
+        # bounded by the command's own end (the `; then` closing its `if`), never a 200-character guess
+        self.assertIn('--with "$RUNNER_TEMP/heart2-seed/rerun"', prove[w:prove.index("; then", w)])
         self.assertIn('export HEART2_SHARD_SEED="$RUNNER_TEMP/heart2-seed/wide/.heart2_cache.json"; fi', prove[w:])
         self.assertLess(w, prove.index("python3 -u tv/heart2.py --prove --push"))
         self.assertNotIn("HEART2_SHARD_SERVED=", prove[w:], "a re-run shard plans from another served list")

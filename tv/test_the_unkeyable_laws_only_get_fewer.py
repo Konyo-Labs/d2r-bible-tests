@@ -92,6 +92,10 @@ def _lists_itself(fn):
 # gitignored name, must be in EXPOSED with the reason it is safe - so a new law that counts every entry is named here
 # instead of slipping into the floor.
 EXPOSED = {
+    "test_the_heart_floor_rises_with_the_map.py": "lists only the mkdtemp scratch it made for the case, to prove a failed "
+                                                  "render leaves no .tmp- file behind (REG-3216)",
+    "test_what_keeps_growing_is_salvaged_then_pruned.py": "lists the salvage folder its own fixture lane wrote, inside the "
+                                                         "scratch base it built, only to name it in a failure (REG-3209)",
     "test_a_frame_index_lists_each_folder_once.py": "walks only the scratch tree it built (the verbatim reference walk)",
     "vault_fixture_reels.py": "walks the synthetic reel tree it just materialised in its own scratch",
     "test_no_python_door_writes_owned_without_the_door.py": "its '.*' is an EXCLUSION (startswith('.') skips the entry) and it reads only the tv/*.py product files it keeps, so .DS_Store is never counted",

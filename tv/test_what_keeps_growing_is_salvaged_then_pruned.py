@@ -364,6 +364,25 @@ class WhatIsNeverPruned(_Base):
             self.assertTrue(os.path.isdir(os.path.join(fx.root, n)))
         self.assertIn("main tree of 1", _cand(rec, "claude-fx-main")["why"])
 
+    def test_a_main_tree_whose_worktrees_cannot_be_listed_is_kept(self):
+        """v3865 (GitHub's swallow ratchet) - a worktrees folder that exists and will not list was 0 linked worktrees, so a
+        main tree with live worktrees read as an ordinary tree the prune may take. It is UNKNOWN now, and kept."""
+        fx = self.fx
+        main2 = fx.repo(os.path.join(fx.root, "claude-fx-main"))
+        fx.worktree("linked", "linked", main=main2, where=fx.base)
+        real = os.listdir
+
+        def listdir(p="."):
+            if os.path.basename(str(p).rstrip("/")) == "worktrees":
+                raise PermissionError("the worktrees folder will not list")
+            return real(p)
+        with mock.patch.object(DG.os, "listdir", listdir):
+            rec = fx.run([_entry()], now_h=900.0)
+        c = _cand(rec, "claude-fx-main")
+        self.assertEqual(c["state"], "protected", c["why"])
+        self.assertIn("could not be read", c["why"])
+        self.assertTrue(os.path.isdir(os.path.join(fx.root, "claude-fx-main")))
+
     def test_the_disk_over_its_watermark_keeps_what_is_inside_its_bound(self):
         wt = self.unmerged()
         rec = self.fx.run([_entry()], free_gb=500.0)
@@ -743,6 +762,11 @@ class WhatCouldNotBeReadIsSaid(_Base):
 
 
 RED_PROOF = [
+    {"why": "v3865 - a main tree whose worktrees folder will not list reads as holding none, and may be pruned",
+     "file": "tv/disk_growers.py",
+     "find": "            f[\"mainOf\"] = None\n",
+     "replace": "            f[\"mainOf\"] = 0\n",
+     "matches": 1},
     {"why": "REG-3209 - a salvage that does not read back no longer blocks the prune",
      "file": "tv/disk_growers.py",
      "find": "        if not s[\"ok\"]:\n            c.update(state=\"waiting\",",

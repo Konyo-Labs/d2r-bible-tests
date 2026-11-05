@@ -35677,8 +35677,11 @@ def _vault_hang_clear_read(examined):
             _vault_autoread_save()
             print("   vault: read in full after hanging before, off the hang book: %s" % ", ".join(gone[:4]), flush=True)
         return gone
-    except Exception:
-        return []
+    except Exception as e:
+        # v3865 (GitHub's swallow ratchet) - a failed clear is UNKNOWN, never "nothing was on the book": records may already
+        # have been popped before the save failed, so it is said, and the next full read clears again
+        print("   vault: the hang book could not be cleared after a full read (%s) - UNKNOWN" % type(e).__name__, flush=True)
+        return None
 
 
 _VAULT_AUTOREAD = {"tries": {}, "skipped": {}, "reads": 0, "lastTs": 0, "retired": {},

@@ -367,8 +367,12 @@ def git_facts(path):
         wt = os.path.join(f["common"], "worktrees")
         try:
             f["mainOf"] = len([n for n in os.listdir(wt) if os.path.isdir(os.path.join(wt, n))])
+        except FileNotFoundError:
+            f["mainOf"] = 0                 # no worktrees folder at all: a measured none (a plain clone)
         except OSError:
-            f["mainOf"] = 0
+            # v3865 (GitHub's swallow ratchet) - a folder that exists and will not list is UNKNOWN, never "it holds no
+            # worktrees": the prune keeps a tree whose linked worktrees could not be counted, as it keeps the main tree
+            f["mainOf"] = None
     f["head"] = _line(path, ["rev-parse", "--verify", "-q", "HEAD"])
     f["branch"] = _line(path, ["symbolic-ref", "-q", "--short", "HEAD"])
     f["upstream"] = _line(path, ["rev-parse", "--verify", "-q", "origin/main"])
@@ -1051,6 +1055,9 @@ def _pass(rec, entries, root_map, sroot, protect, free_bytes, now_s, platform, h
                 continue
             if facts.get("mainOf"):
                 c.update(state="protected", why="it is the main tree of %d linked worktree(s)" % facts["mainOf"])
+                continue
+            if "mainOf" in facts and facts.get("mainOf") is None:
+                c.update(state="protected", why="whether it is the main tree of linked worktrees could not be read - kept")
                 continue
             c["finished"] = facts.get("finished")
         else:

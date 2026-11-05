@@ -127,10 +127,9 @@ def _gem_files(src):
     m = re.search(r"const GEM_TYPES = (\[.*?\]);\n", src)
     if not m:
         return []
-    try:
-        types = json.loads(m.group(1))
-    except ValueError:
-        return []
+    # v3865 (GitHub's swallow ratchet) - a GEM_TYPES the page carries but that will not parse is a FAILED read: it raises,
+    # so the law goes red, never a shorter list of names that passes while a gem picture is missing
+    types = json.loads(m.group(1))
     out = []
     for t in types:
         for q in t.get("q") or []:
@@ -184,10 +183,9 @@ def names(repo=None, board_path=None, console_path=None):
     repo = repo or REPO
     board = _read(board_path or os.path.join(repo, "bible.html"))
     console = _read(console_path or os.path.join(repo, "tv", "control_ui.html"))
-    try:
-        manifest = json.loads(_read(os.path.join(repo, "art", "HD_ART_MANIFEST.json")))
-    except (OSError, ValueError):
-        manifest = {}
+    # v3865 (GitHub's swallow ratchet) - the HD manifest is a tracked file; one that will not read raises, never an empty
+    # manifest whose names silently drop out of the census
+    manifest = json.loads(_read(os.path.join(repo, "art", "HD_ART_MANIFEST.json")))
     feeds = _feeds(board, console, manifest)
     by_name = {}
     for feed, files in feeds.items():

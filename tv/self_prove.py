@@ -750,8 +750,10 @@ def _net_of(h2, st, current):
                                for n, u in sorted(unj.items()) if isinstance(u, dict) and n in tr]}
         out["netOwed"] = [(str(n), int(k)) for n, k in h2.net_owed(st)] if current else []
         return out
-    except Exception:
-        return {}
+    except Exception as e:
+        # v3865 (GitHub's swallow ratchet) - the net's keys stay ABSENT (the wire reads that as UNKNOWN, never "no finds"),
+        # and the reason is said, so "could not ask" never looks like a measured empty net
+        return {"netWhy": "the safety net could not be read here (%s)" % type(e).__name__}
 
 
 def _env_observe():
