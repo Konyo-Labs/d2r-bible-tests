@@ -60188,7 +60188,7 @@ window.vaultAutoAssign = function(){
   window._vaultSavedLeftPaint = function(){
     var el = document.getElementById('vault-saved-left');
     if (!el) return null;
-    var L = _vaultSavedNotDrawn(), ro = !!window._tvdShadow;
+    var L = _vaultSavedNotDrawn(), ro = (typeof _unconfReadOnly === 'function') ? !!_unconfReadOnly() : false;   /* the page's one read-only test (REG-3117) */
     if (L.ok && !L.rows.length && !_vaultSavedForgot.length){ el.hidden = true; el.innerHTML = ''; return L; }
     var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
     var js = function(s){ return esc(JSON.stringify(String(s))); };
