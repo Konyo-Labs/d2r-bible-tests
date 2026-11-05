@@ -45,7 +45,8 @@ beside cloud (REG-3153), ci-trust pre-push (tv/ci_verdict.py). Each item: law + 
        KV write) + tv/fleet_errors.py --summary (REG-3159). AFTER v3862 LANDS: register the UserPromptSubmit hook
        `cd ~/d2r_bible_tests && python3 tv/fleet_errors.py --summary | sed 's/^/UNKNOWN ERRORS ▸ /'` beside LANES, and
        a quiet fleet-card chip (UI - needs a render + Grok look).
-9. [ ] CLAUDE DIAGNOSIS on each PC for book-misses: diagnose + propose (card / #230), never run a NEW fix alone.
+9. [~] CLAUDE DIAGNOSIS (built, REG-3164): tv/repair_diagnose.py - the PC's own Claude, Read only, 2/day, new misses
+       only, never while playing/pushing or under D2R_NO_CLAUDE; the CAUSE rides the beacon to the overwatch line.
 10. [~] PROOF METER (built, REG-3160): owed / rate / ETA on each fleet row's `proved` part; the worker now also keeps
        the census why it had dropped since v3855. Needs a render + a Grok look on the fleet card after landing.
 11. [~] APPROVE A NEW PC (built, REG-3163): a refused new key waits as a request; his Mac's fleet card Approves / Denies,

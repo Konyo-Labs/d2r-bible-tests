@@ -186,6 +186,16 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3164 - AN UNKNOWN FAULT ON A PC SAT UNTIL SOMEONE SSH'D IN TO LOOK (v3862, item 9)
+His ask 2026-11-05: could Dean's missing node "have been like done automatically by an AI claude on his own end?" Known
+faults now fix themselves (REG-3158); for a repair-book MISS the PC's own signed-in Claude reads the eagle check behind it
+(tv/console_doctor.py) and answers CAUSE / FIX / VERIFY / CONFIDENCE (tv/repair_diagnose.py) - with --allowedTools Read
+only, a turn cap and a timeout: it proposes, it never runs a new fix. Bounded because a re-read loop maxed his weekly
+plan three times in October: only a miss this PC never diagnosed, at most 2 a day, never while he plays or a push grades,
+never under D2R_NO_CLAUDE or with no claude on PATH (neither spends the allowance); a seat that did not answer is retried
+the next day; a fault that clears is forgotten. The CAUSE line rides beside its miss on the presence row (scrubbed on the
+PC and again by the worker) to tv/fleet_errors.py, which shows a proposal arriving for a fault it already showed. Law
+test_an_unknown_fault_is_diagnosed_never_fixed.
 ### REG-3163 - A NEW PC ON A LABEL ANOTHER PC HELD WAS REFUSED FOR GOOD UNTIL WRANGLER RAN BY HAND (v3862, item 11)
 MEASURED 2026-11-04: the new work ALT came up as "Konyo · ALT" while the old ALT's key was registered for that label, so
 each of its publishes was refused - correctly, trust on first use (#95) - and the only way on was `wrangler kv key

@@ -491,7 +491,8 @@ export async function onRequestPost(context) {
           return a.slice(0, n).map(function (e) {
             if (!e || typeof e !== 'object') return null;
             const id = txt(typeof e.id === 'string' ? e.id : '', 80);
-            return id ? { id: id, why: txt(e.why, 200) } : null;
+            const d = txt(e.diag, 200);                 // v3862 (item 9) - this PC's Claude's proposal
+            return id ? (d ? { id: id, why: txt(e.why, 200), diag: d } : { id: id, why: txt(e.why, 200) }) : null;
           }).filter(Boolean);
         };
         out.repair = {

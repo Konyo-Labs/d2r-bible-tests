@@ -18885,8 +18885,9 @@ def _repair_for_wire(book=None):
     return {"ranAt": b.get("ranAt"),
             "fixed": sum(1 for e in ents if e.get("state") == "fixed"),
             "failed": [{"id": e.get("id"), "why": e.get("why")} for e in ents if e.get("state") == "failed"][:6],
-            "misses": [{"id": m.get("check"), "why": m.get("why")} for m in (b.get("misses") or [])
-                       if isinstance(m, dict)][:8]}
+            "misses": [dict({"id": m.get("check"), "why": m.get("why")},
+                            **({"diag": str(m["diag"])[:200]} if m.get("diag") else {}))
+                       for m in (b.get("misses") or []) if isinstance(m, dict)][:8]}
 
 
 def _system_for_wire():
@@ -22557,8 +22558,19 @@ def _book_doors():
     }
 
 
-def _repair_book_start(_thread=None, _doors=None):
-    """v3862 - one pass of the repair book on a daemon thread; the report lands in status.repairBook. Never raises."""
+def _doctor_fn_name(check):
+    """The console_doctor function behind an eagle row's name, for the diagnosis prompt. -> str | None"""
+    try:
+        import console_doctor as _cd
+        return next((fn.__name__ for n, fn in _cd.CHECKS if n == check), None)
+    except Exception:
+        return None
+
+
+def _repair_book_start(_thread=None, _doors=None, _diagnose=None):
+    """v3862 - one pass of the repair book on a daemon thread; the report lands in status.repairBook. Never raises.
+    v3862 (item 9) - then this PC's own Claude diagnoses a miss it has never seen (tv/repair_diagnose.py: read-only,
+    at most two a day, never while he plays or a push grades); each proposal rides beside its miss."""
     if _REPAIR_BOOK.get("running"):
         return dict(_REPAIR_BOOK)
 
@@ -22567,7 +22579,22 @@ def _repair_book_start(_thread=None, _doors=None):
             import repair_book as _rb
             prev = dict(_REPAIR_BOOK)
             rows = list(_EAGLE.get("rows") or []) if _EAGLE.get("checked") else None
-            _REPAIR_BOOK.update(_rb.apply(rows, _doors or _book_doors(), state=prev))
+            rep = _rb.apply(rows, _doors or _book_doors(), state=prev)
+            if rep.get("misses"):
+                try:
+                    if _diagnose is not None:
+                        diag = _diagnose(rep["misses"])
+                    elif _a_push_is_grading() or _sp_proof_playing_here():
+                        diag = {}
+                    else:
+                        import repair_diagnose as _rd
+                        diag = _rd.run_due(rep["misses"], _doctor_fn_name, sys.platform)
+                    for m in rep["misses"]:
+                        if diag.get(m.get("check")):
+                            m["diag"] = diag[m["check"]]
+                except Exception:
+                    pass
+            _REPAIR_BOOK.update(rep)
         except Exception as e:
             _REPAIR_BOOK.update(say="the repair book could not run (%s)" % type(e).__name__)
         finally:

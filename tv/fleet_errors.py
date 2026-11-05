@@ -35,7 +35,10 @@ def open_faults(fleet):
         rp = ((row.get("system") or {}).get("repair") or {})
         for e in rp.get("misses") or []:
             if isinstance(e, dict) and e.get("id"):
-                out.append((m, "unknown", str(e["id"]), str(e.get("why") or "")))
+                why = str(e.get("why") or "")
+                if e.get("diag"):                  # v3862 (item 9) - that PC's Claude's proposal
+                    why = (why + " | its Claude: " + str(e["diag"])) if why else "its Claude: " + str(e["diag"])
+                out.append((m, "unknown", str(e["id"]), why))
         for e in rp.get("failed") or []:
             if isinstance(e, dict) and e.get("id"):
                 out.append((m, "repair failed", str(e["id"]), str(e.get("why") or "")))
@@ -47,7 +50,7 @@ def new_since(faults, seen):
     keep = {}
     new = []
     for m, kind, fid, why in faults:
-        k = "%s|%s|%s" % (m, kind, fid)
+        k = "%s|%s|%s%s" % (m, kind, fid, "|diag" if "its Claude:" in why else "")   # a proposal arriving is news
         keep[k] = True
         if k not in seen:
             new.append((m, kind, fid, why))

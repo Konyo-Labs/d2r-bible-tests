@@ -276,6 +276,9 @@ tv/.proof_release.json.tmp
 # v3862 - which fleet faults the overwatch line has already shown (tv/fleet_errors.py). Per machine.
 tv/.fleet_errors_seen.json
 tv/.fleet_errors_seen.json.tmp
+# v3862 (item 9) - what this PC's own Claude proposed for each unknown fault (tv/repair_diagnose.py). Per PC.
+tv/.repair_diagnoses.json
+tv/.repair_diagnoses.json.tmp
 # REG-2340/2341 (R9) - no generation or side file of heart2's stores ever shows in git status: a writer's own tmp
 # (<name>.<pid>.<thread>.tmp), a .prev, an .unreadable-<ms> kept aside, Windows' lock file (.heart2_cache.lock), and
 # tv/.heart2_v2/ (heart2's stores in a checkout whose git dir could not be found). The machine's own heart2 stores live

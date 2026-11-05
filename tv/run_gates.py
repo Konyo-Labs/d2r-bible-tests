@@ -13019,6 +13019,11 @@ GATES = [
          why="v3862 (his ruling, the normal model): the pre-push skips its own grading only when every required GitHub "
              "workflow's newest run succeeded on the exact pushed commit and the tree is clean; unknown is never green, "
              "and a failed proof import proves locally"),
+    Gate("test_an_unknown_fault_is_diagnosed_never_fixed",
+         [sys.executable, os.path.join(HERE, "test_an_unknown_fault_is_diagnosed_never_fixed.py")], 120,
+         needs_app=False,
+         why="v3862 (item 9): an unknown fault is diagnosed by the PC's own Claude, read-only, at most twice a day, never "
+             "under D2R_NO_CLAUDE; a dead seat is retried tomorrow; the proposal rides the beacon to the overwatch line"),
     Gate("test_a_new_pc_waits_for_his_approval",
          [sys.executable, os.path.join(HERE, "test_a_new_pc_waits_for_his_approval.py")], 180,
          needs_app=False,
