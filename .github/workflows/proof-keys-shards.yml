@@ -10,7 +10,8 @@ name: proof-keys shards (ci/proof-keys-* only)
 # every input's bytes, tv/heart2.py _VerdictCache._key), so a seed of any commit can never serve a proof for other bytes;
 # the shard's own file still starts empty and holds only proofs of its own plan. Main runs save the next seed.
 # ⚠ N LIVES IN TWO PLACES - PROOF_SHARDS and the matrix list - and
-# tv/test_the_shard_workflow_proves_every_proof_once.py goes red if they disagree. 16 <= the Free plan's 20 jobs.
+# tv/test_the_shard_workflow_proves_every_proof_once.py goes red if they disagree. v3864: 22 - GitHub Pro runs 40 jobs at once
+# (2026-11-05), and the version's other checks hold ~18 of them while the shards run (agent tests 5, Playwright 12, Windows 1).
 on:
   push:
     branches:
@@ -28,7 +29,7 @@ concurrency:
   group: proof-keys-shards-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/heads/ci/') }}
 env:
-  PROOF_SHARDS: "16"
+  PROOF_SHARDS: "22"
 jobs:
   shard:
     name: shard ${{ matrix.shard }}
@@ -37,9 +38,9 @@ jobs:
     timeout-minutes: 180
     strategy:
       fail-fast: false
-      max-parallel: 16
+      max-parallel: 22
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
     env:
       D2R_NO_CLAUDE: "1"
       HEART2_PROVE_WORKERS: "2"
@@ -157,12 +158,13 @@ jobs:
           path: census.md
           if-no-files-found: warn
           retention-days: 30
-      - name: Bank this run's proofs as the next run's seed (REG-2961, main only)
-        # main's cache scope is the one every branch may restore; a ci/ branch's cache would serve that branch alone
-        if: ${{ always() && github.ref == 'refs/heads/main' }}
+      - name: Bank this run's proofs as the next run's seed (REG-2961 main; v3864 its own ci/proof-keys branch too)
+        # main's cache scope is the one every branch may restore. v3864: a ci/proof-keys-* branch saves one too, and only that
+        # branch can read it, so a red-then-fixed re-push of one version starts from the proofs its red run made
+        if: ${{ always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci/proof-keys-')) }}
         run: python3 tv/proof_shard.py --merge-shards shards --out "$RUNNER_TEMP/heart2-seed/.heart2_cache.json"
-      - name: Save the seed (REG-2961, main only)
-        if: ${{ always() && github.ref == 'refs/heads/main' }}
+      - name: Save the seed (REG-2961 main; v3864 its own ci/proof-keys branch too)
+        if: ${{ always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci/proof-keys-')) }}
         continue-on-error: true
         uses: actions/cache/save@v4
         with:

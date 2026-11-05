@@ -7,6 +7,18 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3169 - A RED-THEN-FIXED RE-PUSH RE-PROVED EVERY LAW, AND 16 SHARDS LEFT HALF OF GITHUB PRO IDLE (v3864, his ask 2026-11-05)
+His ask: "work them, push them, and when they come back red fix them all and push again - faster, since they bank the gates
+that passed". GitHub's proof shards started from the last MAIN run's seed only (REG-2961, saved on main), so v3863's fix push
+(f6ae55f22, two files changed) began again from v3860's proofs and re-proved ~1,500 laws for ~75 min. Now the fan-in also
+saves the seed on its own ci/proof-keys-* branch (that branch's cache scope only), so a re-push of one version starts from
+the proofs its red run made; heart2 still serves a seed entry only under the key this checkout's bytes give it (REG-2961's
+safety), so only laws whose bytes changed re-prove. And he moved to GitHub Pro (40 jobs at once, from 20): the shards go
+16 -> 22, the count that runs beside the version's other ~18 check jobs without queueing. 22 is UNMEASURED until its first
+run. Laws: test_ci_reuses_a_proof_only_for_identical_bytes (the save names main and the version's own branch, nothing
+else), test_the_shard_workflow_proves_every_proof_once (N=22 within 40-18), test_the_mac_driver_brings_one_commits_set_home
+(reads N from the workflow).
+
 ### REG-3124 - SIX MACHINE METERS MADE A GATE'S READS UNKNOWN, SO 10 GATES RAN ON EVERY PUSH (gate speed, v3855)
 The v3853 hook's fast gate set listed 138 gates "not stored - the gate started X, which the trace cannot follow". Six of
 those X only read the machine: vm_stat, sysctl, true, netstat, ioreg, lsappinfo. None opens a file in this checkout, the

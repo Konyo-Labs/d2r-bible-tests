@@ -193,6 +193,12 @@ class TheWorkflowSeedsEachShardAndSavesFromMainOnly(unittest.TestCase):
         for at in (m, s):
             head = self.code[self.code.rfind("\n      - ", 0, at):at]
             self.assertIn("github.ref == 'refs/heads/main'", head, "a seed is saved off main, where no other branch can read it")
+            # v3864 - and on its own ci/proof-keys branch, which only that branch can restore: a red-then-fixed re-push of one
+            # version starts from its red run's proofs. Never any branch: the condition names exactly these two.
+            self.assertIn("startsWith(github.ref, 'refs/heads/ci/proof-keys-')", head,
+                          "a re-pushed version no longer starts from the proofs its own red run made")
+            self.assertIn("(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci/proof-keys-'))", head,
+                          "the seed is saved on a branch other than main and the version's own ci/proof-keys branch")
         save = self.code[s:self.code.find("\n      - ", s)]
         self.assertIn("path: ${{ runner.temp }}/heart2-seed", save)
         self.assertIn("key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}", save,
@@ -227,8 +233,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2961 - the seed is saved from any branch, where no other branch can restore it",
      "file": ".github/workflows/proof-keys-shards.yml",
-     "find": "      - name: Save the seed (REG-2961, main only)\n        if: ${{ always() && github.ref == 'refs/heads/main' }}\n",
-     "replace": "      - name: Save the seed (REG-2961, main only)\n        if: ${{ always() }}\n",
+     "find": "      - name: Save the seed (REG-2961 main; v3864 its own ci/proof-keys branch too)\n        if: ${{ always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci/proof-keys-')) }}\n",
+     "replace": "      - name: Save the seed (REG-2961 main; v3864 its own ci/proof-keys branch too)\n        if: ${{ always() }}\n",
      "matches": 1},
     {"why": "REG-2961 - the shard never hands heart2 its seed",
      "file": ".github/workflows/proof-keys-shards.yml",

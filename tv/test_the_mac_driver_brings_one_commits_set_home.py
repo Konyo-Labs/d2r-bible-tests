@@ -215,7 +215,7 @@ class OnlyAWholeSetIsImported(unittest.TestCase):
         return ["/t/set/proof-shard-%s/.heart2_cache.json" % k for k in ks]
 
     def test_the_set_is_every_shard_once(self):
-        self.assertEqual(M.shard_count(io.open(M.WORKFLOW_FILE, encoding="utf-8").read()), 16)
+        self.assertEqual(M.shard_count(io.open(M.WORKFLOW_FILE, encoding="utf-8").read()), 22)   # v3864 - GitHub Pro, 40 jobs
         self.assertIsNone(M.whole_set(self.files(range(1, 17)), 16))
         for ks in (range(1, 16), list(range(1, 17)) + [17], list(range(1, 16)) + [1], []):
             self.assertIsNotNone(M.whole_set(self.files(ks), 16), "a broken set %r passed" % list(ks))
@@ -225,7 +225,10 @@ class OnlyAWholeSetIsImported(unittest.TestCase):
 class TheMainFlow(unittest.TestCase):
     """main() end to end with git, GitHub and heart2 stubbed: what runs, in which order, with which environment."""
 
-    def drive(self, n_files=16, head_moves=False, owed=None, said=None, keyers=None):
+    def drive(self, n_files=None, head_moves=False, owed=None, said=None, keyers=None):
+        # v3864 - the set is the workflow's own N (22 on GitHub Pro), read from the file the driver reads
+        if n_files is None:
+            n_files = M.shard_count(io.open(M.WORKFLOW_FILE, encoding="utf-8").read())
         events, envs = [], []
         keyers = [] if keyers is None else keyers
         heads = [SHA, SHA if not head_moves else "e" * 40]
@@ -284,7 +287,7 @@ class TheMainFlow(unittest.TestCase):
             self.assertFalse(set(env) & set(M._SECRET_VARS), "a child was handed a token")
 
     def test_a_short_set_is_not_imported(self):
-        rc, events, _e = self.drive(n_files=15)
+        rc, events, _e = self.drive(n_files=M.shard_count(io.open(M.WORKFLOW_FILE, encoding="utf-8").read()) - 1)
         self.assertEqual(rc, 2)
         self.assertNotIn("import", events, "15 of 16 shard caches were imported as the commit's set")
 

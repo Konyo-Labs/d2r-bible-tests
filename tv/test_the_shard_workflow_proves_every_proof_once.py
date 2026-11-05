@@ -29,7 +29,9 @@ import proof_shard as PS  # noqa: E402
 
 WF = os.path.join(ROOT, ".github", "workflows", "proof-keys-shards.yml")
 HEAD = "c" * 40
-FREE_PLAN_JOBS = 20
+# v3864 - GitHub Pro (his upgrade, 2026-11-05) runs 40 jobs at once; while the shards run, the version's other required
+# checks hold ~18 (agent tests 5, Playwright 10 + 2 slow, Windows boot 1), so the shards that can ALL run at once are 22
+PLAN_JOBS, OTHER_CHECK_JOBS = 40, 18
 
 
 def _wf():
@@ -55,8 +57,10 @@ class TheWorkflowRunsEveryShardOnce(unittest.TestCase):
         self.assertIsNotNone(m, "the shard matrix list is gone - re-anchor this law")
         got = [int(x) for x in m.group(1).split(",")]
         self.assertEqual(got, list(range(1, n + 1)), "the matrix runs %s, not every shard 1..%d once" % (got, n))
-        self.assertLessEqual(n, FREE_PLAN_JOBS, "N=%d shards cannot all run at once on the Free plan" % n)
-        self.assertEqual(n, 16, "the plan this build was measured for is 16 shards (max ~41 min each on 21a78ff6)")
+        self.assertLessEqual(n, PLAN_JOBS - OTHER_CHECK_JOBS,
+                             "N=%d shards cannot all run at once beside the other checks on GitHub Pro's %d jobs" % (n, PLAN_JOBS))
+        # v3864 - 22 on GitHub Pro; UNMEASURED until its first run (16 was measured: max ~41 min each on 21a78ff6)
+        self.assertEqual(n, 22, "the plan this build is set for is 22 shards (GitHub Pro, beside the other checks)")
         mp = re.search(r"^      max-parallel: (\d+)$", text, re.M)
         self.assertTrue(mp and int(mp.group(1)) >= n, "max-parallel holds shards back: the wall time is the sum, not the max")
 
