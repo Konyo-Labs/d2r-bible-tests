@@ -125,13 +125,17 @@ def _chip(d):
     """REG-3217 - a card's DERIVED phase as the site keeps it (tv/task_truth.py), every text scrubbed like the card's own."""
     if not isinstance(d, dict):
         return None
-    lk, th = d.get("look") or {}, d.get("third") or {}
+    lk, th, rf = d.get("look") or {}, d.get("third") or {}, d.get("refuted") or {}
+    # v3866 (the review of REG-3217) - `at` is WHEN the phase was reached and `w` says which moment that is (committed,
+    # shipped, looked, third-eyed): the first cut published the first main commit's time under every phase
     return {"p": _cut(d.get("phase"), 20), "v": _cut(d.get("ver"), 12) if d.get("ver") else None,
             "sha": _cut(d.get("sha"), 12) if d.get("sha") else None,
             "at": d.get("at") if isinstance(d.get("at"), int) else None,
+            "w": _cut(d.get("atWhat"), 12) if d.get("atWhat") else None,
             "keys": [_cut(k, 48) for k in (d.get("keys") or [])[:6]], "basis": d.get("basis"),
             "look": _cut(lk.get("id"), 20) if lk.get("id") else None,
             "third": _cut(th.get("id"), 20) if th.get("id") else None,
+            "refuted": ({"id": _cut(rf.get("id"), 20), "seat": _cut(rf.get("seat"), 20)} if rf.get("id") else None),
             "unknown": [_cut(u, 20) for u in (d.get("unknown") or [])[:4]], "why": _cut(d.get("why"), 200)}
 
 
@@ -165,6 +169,7 @@ def board(cards, title, now_ms, truth=None):
         out["truth"] = {"ok": bool(truth.get("ok")), "why": _cut(truth.get("why"), 200) if truth.get("why") else None,
                         "head": _cut(truth.get("head"), 12) if truth.get("head") else None,
                         "publishedVer": _cut(truth.get("publishedVer"), 12) if truth.get("publishedVer") else None,
+                        "mainVer": _cut(truth.get("mainVer"), 12) if truth.get("mainVer") else None,
                         "looks": _cut(truth.get("looks"), 12), "owed": sm.get("owed") if truth.get("ok") else None,
                         "drift": dict((_cut(k, 32), int(v)) for k, v in (sm.get("drift") or {}).items()),
                         "phases": dict((_cut(k, 20), int(v)) for k, v in (sm.get("phases") or {}).items())}

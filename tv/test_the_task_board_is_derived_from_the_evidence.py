@@ -9,9 +9,13 @@ bank, REG-3157's ship_when_green), none naming the fleet that was running. Nothi
 
 REG-3217 - every card carries a DERIVED phase (tv/task_truth.py): its keys (REG ids, ranges expanded; a version LEADING the
 subject; branch names) resolved against git - no-evidence | building | graded (ci/ only) | shipped vN | live vN (the
-published stamp >= N) | looked (GrokBot on #230, after the ship) | third-eyed (#231 / the Grok CLI seat) - each with its
-evidence. A look is about the versions on its first line that names one, never its evidence list. A tree that would not
-answer is UNKNOWN, never no-evidence; an unread lane is UNKNOWN, never "not looked".
+site serves >= N, read from the newest successful Publish run) | looked (GrokBot's VISUAL seat on #230, after the ship) |
+third-eyed (a SECOND-EYE row on #231) - each with its evidence. A look is about the versions and REG ids on its first line
+that names any, never its evidence list or a changelog recap; the newest look about a key decides, and one that says it
+FAILS refutes it. A tree that would not answer is UNKNOWN, never no-evidence; an unread lane is UNKNOWN, never "not looked".
+v3866 (the review of the first cut, measured on his real board: 13 "ready to close", 0 of them real) - a Grok CLI status
+note, GrokBot's coder seat and a recap line are no looks; a card is flagged only by evidence newer than the hand last set
+it (touching a card accepts a reviewed flag); "shipped and still in progress" is a flag of its own.
 REG-3218 - a card whose hand status disagrees is FLAGGED with the reason (ready to close / closed but never shipped / work
 started on a pending card / in progress with nothing built), published on the board, and counted by the eagle row "the
 board agrees with the tree" (on/worked/lastTs/owed). Nothing rewrites a card.
@@ -107,29 +111,43 @@ def _build_repo():
 COMMENTS = {
     230: [
         {"id": 1001, "created_at": _iso(T0 - 11 * DAY), "updated_at": _iso(T0 - 11 * DAY),
-         "body": "Seat: Grok Bot (visual eyes)\n\nREG-100 is still broken on his screen"},          # before REG-100 shipped
+         "body": "Seat: Grok Bot (visual eyes)\n\nREG-100 checked on his screen"},                  # before REG-100 shipped
         {"id": 1002, "created_at": _iso(T0 - 7 * DAY), "updated_at": _iso(T0 - 7 * DAY),
-         "body": "Seat: Grok Bot (visual eyes)\n\n# v3801 ship check\n\nEvidence: changelog-v3800-01.json, shots/"},
+         "body": "Seat: Grok Bot (visual eyes)\n\n# v3801 ship check\n\nEvidence: changelog-v3800-01.json, shots/\n"
+                 "- REG-100: the first fix (the changelog's recap, not what was looked at)"},
         {"id": 1003, "created_at": _iso(T0 - 7 * DAY), "updated_at": _iso(T0 - 7 * DAY),
          "body": "Seat: Claude (coder) -> GrokBot\n\nACT verify REG-100 and v3800 on glass"},          # not a look
         {"id": 1004, "created_at": _iso(T0 - 6 * DAY), "updated_at": _iso(T0 - 6 * DAY),
-         "body": "Seat: Grok CLI (third eye)\n\nSAW: origin/main stamp v3801, the crops stay with Grok Bot"},
+         "body": "Seat: Grok CLI (third eye)\n\nSAW: origin/main stamp v3801, the crops stay with Grok Bot"},  # a status note
+        {"id": 1005, "created_at": _iso(T0 - 9 * DAY), "updated_at": _iso(T0 - 9 * DAY),
+         "body": "SECOND-EYE\nversion: v3800\nverdict: clean"},              # a second-eye row posted on #230 - not its lane
+        {"id": 1006, "created_at": _iso(T0 - 6 * DAY), "updated_at": _iso(T0 - 6 * DAY),
+         "body": "Seat: Grok Bot (code)\n\n## Plan addendum: v3800 REG-100 read price"},           # the coder seat's plan
+        {"id": 1007, "created_at": _iso(T0 - 5 * DAY), "updated_at": _iso(T0 - 5 * DAY),
+         "body": "Seat: Grok Bot (visual eyes)\n\n# REG-106 recheck: FAIL - still broken on his screen"},
     ],
     231: [
         {"id": 2001, "created_at": _iso(T0 - 6 * DAY), "updated_at": _iso(T0 - 6 * DAY),
          "body": "SECOND-EYE\nversion: v3801\nverdict: findings\nmodel: grok-4.7"},
+        {"id": 2002, "created_at": _iso(T0 - 9 * DAY), "updated_at": _iso(T0 - 9 * DAY),
+         "body": "Seat: Grok CLI (third eye)\n\nSAW: origin/main stamp v3800. This seat has not read the v3800 range."},
     ],
 }
 
 
 class FakeGitHub(object):
-    def __init__(self, fail=False):
-        self.calls, self.fail = [], fail
+    """the two lanes and the Publish runs, as GitHub (through handoff._gh) would answer them"""
+    def __init__(self, fail=False, publish_sha=None):
+        self.calls, self.fail, self.publish_sha, self.pages = [], fail, publish_sha, []
 
-    def __call__(self, api_path):
+    def __call__(self, api_path, paginate=True):
         self.calls.append(api_path)
+        self.pages.append(paginate)
         if self.fail:
             raise RuntimeError("gh exited 1: could not resolve host")
+        if "/actions/workflows/" in api_path:
+            runs = ([{"id": 77, "head_sha": self.publish_sha, "updated_at": _iso(T0 - 2 * DAY)}] if self.publish_sha else [])
+            return [{"total_count": len(runs), "workflow_runs": runs}]
         n = int(api_path.split("/issues/")[1].split("/")[0])
         return [dict(c) for c in COMMENTS[n]]
 
@@ -172,6 +190,12 @@ class TheKeysAreWhatTheCardIsAbout(unittest.TestCase):
         self.assertIsNone(TT.lead_version("v3864's first GitHub run: a law wrote his live ledger"),
                           "a version a subject only talks about was read as the ship it is")
         self.assertEqual(TT.branches_in("lives on claude/v3865. and origin/ci/bless/1, ci/ only"), ["claude/v3865"])
+        # v3866 (the review): a comma list kept its first id, and a range inside a slash list dropped ids
+        self.assertEqual(TT.regs_in("REG-2980, 2986, 3109 were never built"), ["REG-2980", "REG-2986", "REG-3109"])
+        self.assertEqual(TT.regs_in("REG-2914/2915/2976/3021/3086-3089/3098"),
+                         ["REG-2914", "REG-2915", "REG-2976", "REG-3021", "REG-3086", "REG-3087", "REG-3088", "REG-3089",
+                          "REG-3098"])
+        self.assertEqual(TT.regs_in("REG-3090, 12 cards wait"), ["REG-3090"], "a count after a comma was read as an id")
 
     def test_the_subject_names_the_keys_before_the_description(self):
         self.assertEqual(TT.card_keys(_card(1, "pending", "REG-3160 proof meter", "same class as REG-2203")),
@@ -198,7 +222,8 @@ class EachKeyIsResolvedAgainstGit(Fixture):
                 "claude/never-made": ("no-evidence", None), "v3802": ("shipped", "v3802"), "v3804": ("building", None)}
         self.assertEqual(dict((k, (v["phase"], v["ver"])) for k, v in got.items()), want)
         self.assertEqual(got["REG-101"]["sha"], self.c["c2"][:9], "the evidence is the FIRST main commit naming the key")
-        self.assertEqual(got["REG-101"]["at"], T0 - 9 * DAY)
+        self.assertEqual((got["REG-101"]["at"], got["REG-101"]["atWhat"]), (T0 - 8 * DAY, "shipped"),
+                         "a live key's time is not when its version reached main")
 
     def test_a_hook_leaked_git_dir_does_not_point_the_reader_at_another_repo(self):
         with mock.patch.dict(os.environ, {"GIT_DIR": os.path.join(self.tmp, "not-a-repo"),
@@ -228,22 +253,52 @@ class TheLooksAreReadAndUnknownStaysUnknown(Fixture):
 
     def test_a_look_counts_after_the_ship_and_for_what_its_heading_names(self):
         looks, gh, _p = self.looks()
-        self.assertEqual(len(gh.calls), 2)
+        self.assertEqual(len(gh.calls), 3)
         self.assertIn("&since=", gh.calls[0])
         idx = self.idx()
         r101 = TT.resolve_key("REG-101", idx, "v3801", looks)
-        self.assertEqual((r101["phase"], r101["look"]["id"], r101["third"]["id"]), ("third-eyed", "1002", "1004"))
+        self.assertEqual((r101["phase"], r101["look"]["id"], r101["third"]["id"]), ("third-eyed", "1002", "2001"),
+                         "the third eye is a SECOND-EYE row on #231")
         r100 = TT.resolve_key("REG-100", idx, "v3801", looks)
-        self.assertEqual(r100["phase"], "live",
-                         "a look before the ship, or a look whose EVIDENCE named v3800, counted as a look at REG-100")
+        self.assertEqual(r100["phase"], "live", "a look before the ship, a look whose EVIDENCE or RECAP named v3800 / "
+                                                "REG-100, or the coder seat's plan counted as a look at REG-100")
         self.assertIsNone(r100["look"])
+        self.assertIsNone(r100["third"], "a Grok CLI status note, or a second-eye row off its lane, counted as the third eye")
+
+    def test_no_status_note_plan_or_misposted_row_is_a_look(self):
+        rows = dict((c["id"], TT.look_row(c, n)) for n in (230, 231) for c in COMMENTS[n])
+        self.assertEqual(dict((i, (r or {}).get("seat")) for i, r in rows.items()),
+                         {1001: "grokbot", 1002: "grokbot", 1003: None, 1004: None, 1005: None, 1006: None,
+                          1007: "grokbot", 2001: "third", 2002: None})
+        self.assertEqual((rows[1002]["vers"], rows[1002]["regs"]), (["v3801"], []), "a look is about its HEADING only")
+
+    def test_the_newest_look_decides_and_a_failing_one_refutes(self):
+        looks, _gh, _p = self.looks()
+        r = TT.resolve_key("REG-106", self.idx(), "v3801", looks)
+        self.assertEqual((r["phase"], r["look"], (r["refuted"] or {}).get("id")), ("live", None, "1007"),
+                         "a look that says REG-106 still FAILS read as a look that passed it")
+        self.assertIn("still fails", r["why"])
 
     def test_github_is_asked_at_most_every_ten_minutes(self):
         _l, gh, p = self.looks()
         TT.refresh_looks(p, T0 + 5 * 60 * 1000, gh)
-        self.assertEqual(len(gh.calls), 2, "GitHub was asked again inside 10 minutes")
+        self.assertEqual(len(gh.calls), 3, "GitHub was asked again inside 10 minutes")
         TT.refresh_looks(p, T0 + TT.LOOKS_EVERY_MS, gh)
-        self.assertEqual(len(gh.calls), 4)
+        self.assertEqual(len(gh.calls), 6)
+        self.assertEqual([pg for c, pg in zip(gh.calls, gh.pages) if "/actions/" in c], [False, False],
+                         "the newest Publish run was asked with --paginate (every run GitHub keeps)")
+
+    def test_live_is_what_the_site_serves_not_origin_main(self):
+        p = os.path.join(self.tmp, "looks-site.json")
+        if os.path.exists(p):
+            os.remove(p)
+        cache = TT.refresh_looks(p, T0, FakeGitHub(publish_sha=self.c["c1"]))
+        site = TT.site_view(cache, T0, self.repo)
+        self.assertEqual(site["ver"], "v3800", site)
+        r = TT.resolve_key("REG-101", self.idx(), site, TT.looks_view(cache, T0))
+        self.assertEqual(r["phase"], "shipped", "on origin/main read as live while the site still served v3800")
+        self.assertEqual(TT.site_view(cache, T0 + TT.LOOKS_STALE_MS + 1, self.repo)["ver"], None,
+                         "a Publish reading past its age was used as the site's version")
 
     def test_an_unread_lane_is_unknown_never_not_looked(self):
         looks, _gh, _p = self.looks(fail=True, name="looks-failed.json")
@@ -274,13 +329,13 @@ class AHandStatusThatDisagreesIsFlagged(Fixture):
 
     def _derive(self, cards):
         looks, _gh, _p = self.looks()
-        return TT.derive(cards, self.idx(), None, looks, T0)
+        return TT.derive(cards, self.idx(), "v3801", looks, T0)       # the site serves the fixture's v3801
 
     def test_each_kind_of_drift_with_its_reason(self):
-        cards = [_card(1, "in_progress", "REG-101 the second fix"),
+        cards = [_card(1, "in_progress", "REG-101 the second fix", mtime=T0 - 10 * DAY),
                  _card(2, "completed", "REG-104 the building one"),
                  _card(3, "completed", "Shelf questions answered - no change"),
-                 _card(4, "pending", "REG-103 the graded one"),
+                 _card(4, "pending", "REG-103 the graded one", mtime=T0 - 3 * DAY),
                  _card(5, "in_progress", "REG-999 nothing yet", mtime=T0 - 3 * DAY),
                  _card(6, "in_progress", "REG-998 nothing yet, fresh", mtime=T0 - 1 * DAY),
                  _card(7, "in_progress", "REG-997 nothing, age unknown", mtime=None),
@@ -291,15 +346,39 @@ class AHandStatusThatDisagreesIsFlagged(Fixture):
         kinds = dict((cid, (d["drift"] or {}).get("kind")) for cid, d in t["byCard"].items())
         self.assertEqual(kinds, {"1": "ready-to-close", "2": "closed-never-shipped", "3": None, "4": "work-started",
                                  "5": "nothing-built", "6": None, "7": None, "8": None, "9": None})
-        self.assertIn("comment 1002", t["byCard"]["1"]["drift"]["say"], "ready to close does not name the look")
+        self.assertIn("#230 comment 1002", t["byCard"]["1"]["drift"]["say"], "ready to close does not name the look")
+        self.assertIn("#231 comment 2001", t["byCard"]["1"]["drift"]["say"], "ready to close does not name the third eye")
         self.assertIn("REG-104 building", t["byCard"]["2"]["drift"]["say"])
         self.assertEqual(t["byCard"]["9"]["phase"], "building",
                          "a fix still building in the description let an old shipped key read ready to close")
         self.assertEqual(t["summary"]["owed"], 4)
         self.assertEqual(t["summary"]["first"][0]["kind"], "closed-never-shipped", "the red flag is not named first")
 
+    def test_evidence_older_than_the_hand_is_accepted_and_shipped_open_is_said(self):
+        t = self._derive([_card(1, "in_progress", "REG-101 the second fix", mtime=T0 - 1 * DAY),
+                          _card(2, "in_progress", "REG-100 the first fix", mtime=T0 - 12 * DAY),
+                          _card(3, "pending", "REG-103 the graded one", mtime=T0 - 1 * DAY),
+                          _card(4, "pending", "REG-100 the first fix, never moved", mtime=T0 - 12 * DAY)])
+        self.assertIsNone(t["byCard"]["1"]["drift"], "a card touched after its looks (a reviewed flag) was flagged again")
+        self.assertIsNone(t["byCard"]["3"]["drift"], "a card touched after its commits was flagged again")
+        d2 = t["byCard"]["2"]["drift"] or {}
+        self.assertEqual(d2.get("kind"), "shipped-still-open", "a card shipped 10 days ago still read as plain in progress")
+        self.assertIn("left: GrokBot's look on #230", d2.get("say", ""))
+        d4 = t["byCard"]["4"]["drift"] or {}
+        self.assertEqual(d4.get("kind"), "shipped-still-open", "a pending card whose work is live read 'work started'")
+        self.assertIn("shipped and still pending", d4.get("say", ""))
+
+    def test_newer_work_in_the_description_holds_the_card_a_precedent_does_not(self):
+        t = self._derive([_card(1, "in_progress", "REG-101 is INERT", "fixed by REG-102 (on main, not published)",
+                                mtime=T0 - 10 * DAY),
+                          _card(2, "in_progress", "REG-102 the third fix", "same class as REG-100", mtime=T0 - 10 * DAY)])
+        self.assertEqual(t["byCard"]["1"]["phase"], "shipped",
+                         "a fix on main the site does not serve yet let the old key read ready to close")
+        self.assertNotEqual((t["byCard"]["1"]["drift"] or {}).get("kind"), "ready-to-close")
+        self.assertEqual(t["byCard"]["2"]["phase"], "shipped", "a precedent in the description moved the card")
+
     def test_a_description_key_says_it_is_one(self):
-        t = self._derive([_card(1, "pending", "Fleet chip: the repair book", "lives on claude/v3804")])
+        t = self._derive([_card(1, "pending", "Fleet chip: the repair book", "lives on claude/v3804", mtime=T0 - 2 * DAY)])
         self.assertEqual(t["byCard"]["1"]["drift"]["kind"], "work-started")
         self.assertIn("keyed on its description", t["byCard"]["1"]["drift"]["say"])
 
@@ -308,14 +387,18 @@ class TheBoardCarriesItScrubbed(Fixture):
 
     def test_each_card_wears_its_phase_and_flag_and_the_record_counts_them(self):
         looks, _gh, _p = self.looks()
-        cards = [_card(1, "in_progress", "REG-101 the second fix"), _card(2, "completed", "REG-104 the building one")]
-        t = TT.derive(cards, self.idx(), None, looks, T0)
+        cards = [_card(1, "in_progress", "REG-101 the second fix", mtime=T0 - 10 * DAY),
+                 _card(2, "completed", "REG-104 the building one")]
+        t = TT.derive(cards, self.idx(), "v3801", looks, T0)
         b = TB.board(cards, "t", T0, truth=t)
         ph = dict((r["id"], ((r.get("phase") or {}).get("p"), (r.get("phase") or {}).get("v"),
                              (r.get("drift") or {}).get("kind"))) for r in b["cards"])
         self.assertEqual(ph, {"1": ("third-eyed", "v3801", "ready-to-close"), "2": ("building", None, "closed-never-shipped")})
         self.assertEqual((b["truth"]["owed"], b["truth"]["drift"]["ready-to-close"], b["truth"]["publishedVer"]), (2, 1, "v3801"))
-        later = TB.board(cards, "t", T0 + 60 * 1000, truth=TT.derive(cards, self.idx(), None, looks, T0 + 60 * 1000))
+        later = TB.board(cards, "t", T0 + 60 * 1000, truth=TT.derive(cards, self.idx(), "v3801", looks, T0 + 60 * 1000))
+        c1 = dict((r["id"], r) for r in b["cards"])["1"]["phase"]
+        self.assertEqual((c1["look"], c1["third"], c1["w"]), ("1002", "2001", "third-eyed"),
+                         "the chip does not carry which comments made it third-eyed, or what its time is")
         self.assertEqual(TB.digest(later), TB.digest(b), "an unchanged board reads as a new one every minute")
         self.assertNotIn("phase", TB.board(cards, "t", T0)["cards"][0], "a phase nobody derived was published")
 
@@ -343,8 +426,10 @@ class TheConsolePublishesAndTheEagleCounts(Fixture):
         os.makedirs(os.path.join(self.d, "session-x"))
         for c in (_card(1, "in_progress", "REG-101 the second fix"), _card(2, "completed", "REG-104 the building one")):
             c.pop("_mtime")
-            with io.open(os.path.join(self.d, "session-x", "%s.json" % c["id"]), "w", encoding="utf-8") as fh:
+            fp = os.path.join(self.d, "session-x", "%s.json" % c["id"])
+            with io.open(fp, "w", encoding="utf-8") as fh:
                 json.dump(c, fh)
+            os.utime(fp, ((T0 - 10 * DAY) / 1000.0, (T0 - 10 * DAY) / 1000.0))    # the hand set them before the evidence
         self.posts = []
         self._saved = dict(self.CA._TASK_BOARD)
         self._truth = dict(self.CA._TASK_TRUTH)
@@ -379,6 +464,13 @@ class TheConsolePublishesAndTheEagleCounts(Fixture):
                          ("third-eyed", "closed-never-shipped"), "the posted board carries no derived phase")
         self.assertEqual(r["truth"]["summary"]["owed"], 2)
 
+    def test_the_console_reads_the_site_from_the_publish_run(self):
+        cards = [_card(1, "in_progress", "REG-101 the second fix", mtime=T0 - 10 * DAY)]
+        t = self.CA.task_truth_derive(cards, T0, _repo=self.repo, _looks_path=os.path.join(self.d, "looks-site.json"),
+                                      _gh=FakeGitHub(publish_sha=self.c["c1"]))
+        self.assertEqual((t["publishedVer"], t["mainVer"]), ("v3800", "v3801"))
+        self.assertEqual(t["byCard"]["1"]["phase"], "shipped", "the console read origin/main's stamp as what the site serves")
+
     def test_the_lane_derives_on_every_tick_and_settles_the_record(self):
         with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
             src = fh.read()
@@ -406,7 +498,7 @@ class TheConsolePublishesAndTheEagleCounts(Fixture):
                                     now_ms=T0, _path=path)
         self.assertIs(off["on"], False)
         self.assertEqual(CD._board_tree_verdict(off, T0)[0], CD.UNMEASURED)
-        self.assertIn("foot-tasks", CD._board_tree_verdict(off, T0)[1])
+        self.assertIn("Future button", CD._board_tree_verdict(off, T0)[1])
         unk = CA._task_truth_settle({"posted": False, "why": "the board dir would not list - UNKNOWN, nothing posted"},
                                     now_ms=T0, _path=path)
         self.assertIsNone(unk["on"])
@@ -437,7 +529,10 @@ class ThePageDrawsIt(unittest.TestCase):
         for needle in ("    if (c.phase) li.appendChild(chip(c.phase));\n",
                        "    if (c.drift && c.drift.kind) { var dr = el('div', 'dr', c.drift.say || c.drift.kind);",
                        "    if (!t) tr.textContent = 'not compared with the tree (published without a derivation)';\n",
-                       "    var words = ph === 'unknown' ? 'phase UNKNOWN' : ph"):
+                       "    var words = ph === 'unknown' ? 'phase UNKNOWN' : ph",
+                       "    if (p && p.look) words += ' \u00b7 GrokBot #230 comment ' + p.look;\n",
+                       "    if (p && p.third) words += ' \u00b7 third eye #231 comment ' + p.third;\n",
+                       "    words += since(p && p.at, p && p.w);\n"):
             self.assertEqual(script.count(needle), 1, "the page no longer draws: %r" % needle)
         self.assertIn('<span id="tb-truth"></span>', page)
         self.assertNotIn("innerHTML", script)
@@ -446,8 +541,8 @@ class ThePageDrawsIt(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3217 - a REG range on a card (REG-3193..3195) keys only its first id",
      "file": "tv/task_truth.py",
-     "find": "            if lo < hi <= lo + RANGE_MAX:\n                got += list(range(lo + 1, hi + 1))\n",
-     "replace": "            if lo < hi <= lo + RANGE_MAX:\n                pass\n",
+     "find": "                    got += list(range(lo + 1, hi + 1)) if hi - lo <= RANGE_MAX else [hi]\n",
+     "replace": "                    got += [hi]\n",
      "matches": 1},
     {"why": "REG-3217 - a subject that only talks about a version (v3864's first run) is read as its ship",
      "file": "tv/task_truth.py",
@@ -466,7 +561,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3217 - a commit on main reads live while the site still publishes the version before it",
      "file": "tv/task_truth.py",
-     "find": "    if pv < nv:\n        out[\"why\"] = \"on origin/main, the published version is still %s\" % published\n        return out\n",
+     "find": "    elif pv < nv:\n        out[\"why\"] = \"on origin/main; the site still serves %s (the newest successful Publish run)\" % site.get(\"ver\")\n        return out\n",
      "replace": "",
      "matches": 1},
     {"why": "REG-3217 - an unstamped main commit loses the version it shipped in",
@@ -476,13 +571,13 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3217 - a GrokBot comment from BEFORE the ship counts as a look at it",
      "file": "tv/task_truth.py",
-     "find": "    look = _first_look(looks, \"grokbot\", key, ver, at or 0) if known.get(\"grokbot\") else None\n",
-     "replace": "    look = _first_look(looks, \"grokbot\", key, ver, 0) if known.get(\"grokbot\") else None\n",
+     "find": "    look, l_ref = _look_verdict(looks, \"grokbot\", key, ver, t_main or 0) if known.get(\"grokbot\") else (None, None)\n",
+     "replace": "    look, l_ref = _look_verdict(looks, \"grokbot\", key, ver, 0) if known.get(\"grokbot\") else (None, None)\n",
      "matches": 1},
     {"why": "REG-3217 - a version in a look's evidence list counts as a look at that version (measured: 30 of 84 cards)",
      "file": "tv/task_truth.py",
-     "find": "    for line in str(body or \"\")[:LOOK_HEAD_CHARS].splitlines():\n        got = versions_in(line)\n        if got:\n            return got[:12]\n    return []\n",
-     "replace": "    return versions_in(str(body or \"\")[:LOOK_HEAD_CHARS])[:12]\n",
+     "find": "        vs, rs = versions_in(line), regs_in(line)\n",
+     "replace": "        vs, rs = versions_in(str(body or \"\")[:LOOK_HEAD_CHARS]), regs_in(line)\n",
      "matches": 1},
     {"why": "REG-3217 - a lane GitHub never answered reads as read, so 'not looked' is said about nobody's reading",
      "file": "tv/task_truth.py",
@@ -521,7 +616,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3217 - a fix still moving in the description lets an old shipped key read ready to close",
      "file": "tv/task_truth.py",
-     "find": "                if RANK[m[\"phase\"]] < RANK[lo[\"phase\"]]:\n",
+     "find": "                if RANK[r[\"phase\"]] < RANK[lo[\"phase\"]]:\n",
      "replace": "                if False:\n",
      "matches": 1},
     {"why": "REG-3218 - a closed card whose work never reached main is not flagged",
@@ -536,12 +631,12 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3218 - a card merely live (not looked, not third-eyed) is said ready to close",
      "file": "tv/task_truth.py",
-     "find": "    elif RANK[ph] >= RANK[\"third-eyed\"]:\n",
+     "find": "    elif ph == \"third-eyed\" and newer(d.get(\"evidenceAt\")):\n",
      "replace": "    elif RANK[ph] >= RANK[\"live\"]:\n",
      "matches": 1},
     {"why": "REG-3218 - a pending card with commits is not flagged",
      "file": "tv/task_truth.py",
-     "find": "    elif status == \"pending\" and RANK[hi] >= RANK[\"building\"]:\n",
+     "find": "    elif status == \"pending\" and RANK[hi] >= RANK[\"building\"] and newer(d.get(\"lastCommit\")):\n",
      "replace": "    elif False:\n",
      "matches": 1},
     {"why": "REG-3218 - a fresh in_progress card is flagged as nothing built",
@@ -553,6 +648,71 @@ RED_PROOF = [
      "file": "tv/task_truth.py",
      "find": "    if d.get(\"basis\") == \"description\":\n",
      "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "v3866 (review blocker) - a Grok CLI status note on #231 ('has not read the range') counts as the third eye",
+     "file": "tv/task_truth.py",
+     "find": "    (\"third\", re.compile(r\"^(?:second-eye\\b|grok\\s*cli\\s+second\\s+eye\\b|seat:\\s*grok\\s*cli\\s*\\(cross-family)\", re.I)),\n",
+     "replace": "    (\"third\", re.compile(r\"^(?:second-eye\\b|seat:\\s*grok\\s*cli\\b)\", re.I)),\n",
+     "matches": 1},
+    {"why": "v3866 (review blocker) - a look counts on either lane, so a second-eye row posted on #230 is the third eye",
+     "file": "tv/task_truth.py",
+     "find": "    if (seat, int(issue)) not in ((\"grokbot\", GROKBOT_ISSUE), (\"third\", THIRD_ISSUE)):\n",
+     "replace": "    if seat not in (\"grokbot\", \"third\"):\n",
+     "matches": 1},
+    {"why": "v3866 (review) - GrokBot's coder seat ('Seat: Grok Bot (code)', a plan) counts as a GrokBot look",
+     "file": "tv/task_truth.py",
+     "find": "seat:\\s*grok\\s*bot\\s*\\((?!\\s*code)",
+     "replace": "seat:\\s*grok\\s*bot\\s*\\(",
+     "matches": 1},
+    {"why": "v3866 (review) - a REG id anywhere in a look (a changelog recap) counts as what it looked at",
+     "file": "tv/task_truth.py",
+     "find": "            \"regs\": ab[\"regs\"], \"vers\": ab[\"vers\"],",
+     "replace": "            \"regs\": regs_in(body)[:60], \"vers\": ab[\"vers\"],",
+     "matches": 1},
+    {"why": "v3866 (review) - a look that says the work still FAILS counts as a look that passed it",
+     "file": "tv/task_truth.py",
+     "find": "    if last.get(\"fail\") or key in (last.get(\"refutes\") or []):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "v3866 (review) - a comma list of REG ids keeps only its first",
+     "file": "tv/task_truth.py",
+     "find": "            if it and (it.group(1) or len(it.group(2)) == width):\n",
+     "replace": "            if it and it.group(1):\n",
+     "matches": 1},
+    {"why": "v3866 (review) - a fix on main the site does not serve yet, named in the description, no longer holds the card",
+     "file": "tv/task_truth.py",
+     "find": "                if subj_first is None and r[\"phase\"] not in (\"building\", \"graded\"):\n",
+     "replace": "                if r[\"phase\"] not in (\"building\", \"graded\"):\n",
+     "matches": 1},
+    {"why": "v3866 (review) - a card in progress whose work shipped days ago carries no flag (#5 v3862 ship, #9, #10)",
+     "file": "tv/task_truth.py",
+     "find": "    elif status in (\"in_progress\", \"pending\") and RANK[\"shipped\"] <= RANK[ph] < RANK[\"third-eyed\"] \\\n",
+     "replace": "    elif False \\\n",
+     "matches": 1},
+    {"why": "v3866 - a PENDING card whose work is live reads 'work started' instead of shipped and still pending",
+     "file": "tv/task_truth.py",
+     "find": "    elif status in (\"in_progress\", \"pending\") and RANK[\"shipped\"] <= RANK[ph] < RANK[\"third-eyed\"] \\\n",
+     "replace": "    elif status == \"in_progress\" and RANK[\"shipped\"] <= RANK[ph] < RANK[\"third-eyed\"] \\\n",
+     "matches": 1},
+    {"why": "v3866 (review) - a flag he reviewed (the card touched after its evidence) can never be accepted",
+     "file": "tv/task_truth.py",
+     "find": "        return isinstance(t, (int, float)) and (hand is None or t > hand)\n",
+     "replace": "        return isinstance(t, (int, float))\n",
+     "matches": 1},
+    {"why": "v3866 (review) - live is origin/main's stamp again, so the hour a Publish runs reads live",
+     "file": "tv/control_app.py",
+     "find": "    site = _published if _published is not None else _tt.site_view(cache, now_ms, _repo or REPO, run=_run or _git_run)\n",
+     "replace": "    site = _published if _published is not None else idx.get(\"publishedVer\")\n",
+     "matches": 1},
+    {"why": "v3866 (review) - the newest Publish run is asked with --paginate, walking every run GitHub keeps",
+     "file": "tv/task_truth.py",
+     "find": "                 paginate=False)\n",
+     "replace": "                 paginate=True)\n",
+     "matches": 1},
+    {"why": "v3866 (review) - the chip publishes no time-of-what, so the page cannot say which moment its age is",
+     "file": "tv/task_board.py",
+     "find": "            \"w\": _cut(d.get(\"atWhat\"), 12) if d.get(\"atWhat\") else None,\n",
+     "replace": "",
      "matches": 1},
     {"why": "REG-3217 - the published board drops the derived phase",
      "file": "tv/task_board.py",
@@ -597,6 +757,11 @@ RED_PROOF = [
     {"why": "REG-3218 - the eagle never asks",
      "file": "tv/console_doctor.py",
      "find": "    (\"the board agrees with the tree\", _check_the_board_agrees_with_the_tree),\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "v3866 (review) - the page never draws which comment made a card looked",
+     "file": "tv/tasks_board.html",
+     "find": "    if (p && p.look) words += ' \u00b7 GrokBot #230 comment ' + p.look;\n",
      "replace": "",
      "matches": 1},
     {"why": "REG-3217 - the page never draws the derived phase",

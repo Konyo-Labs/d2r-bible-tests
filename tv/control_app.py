@@ -5584,19 +5584,22 @@ def _task_truth_looks_path():
 
 def task_truth_derive(cards, now_ms, _repo=None, _looks_path=None, _gh=None, _published=None, _run=None):
     """REG-3217 - every card's DERIVED phase (tv/task_truth.py): its REG ids, version and branches resolved against git in
-    THIS console's own checkout (cached per HEAD + origin/main), the published version the fleet already reads, and the
-    #230 / #231 looks read through tv/handoff.py's one GitHub reader at most every 10 min. -> task_truth.derive's answer"""
+    THIS console's own checkout (cached per HEAD + origin/main), the version the site serves (the newest successful Publish
+    run), and the #230 / #231 looks, all read through tv/handoff.py's one GitHub reader at most every 10 min.
+    -> task_truth.derive's answer"""
     import task_truth as _tt
     if _gh is None:
         import handoff as _ho
 
-        def _gh(api_path):
-            return _ho._gh(api_path, timeout=_tt.GH_TIMEOUT_S)
+        def _gh(api_path, paginate=True):
+            return _ho._gh(api_path, timeout=_tt.GH_TIMEOUT_S, paginate=paginate)
     cache = _tt.refresh_looks(_looks_path or _task_truth_looks_path(), now_ms, _gh)
     idx = _tt.git_index(_repo or REPO, now_ms, run=_run or _git_run)
-    if _published is None:
-        _published = ((_FLEET_CACHE.get("val") or {}).get("publishedVer")) or None
-    return _tt.derive(cards, idx, _published, _tt.looks_view(cache, now_ms), now_ms)
+    # v3866 (the review of REG-3217) - LIVE IS WHAT THE SITE SERVES, read apart from origin/main: the newest successful
+    # Publish run names the commit it deployed. The fleet's publishedVer is origin/main's stamp - the tree that already
+    # decides "shipped" - so it could never see the hour a Publish runs. `_published` is a law's seam only.
+    site = _published if _published is not None else _tt.site_view(cache, now_ms, _repo or REPO, run=_run or _git_run)
+    return _tt.derive(cards, idx, site, _tt.looks_view(cache, now_ms), now_ms)
 
 
 def _task_truth_settle(r, now_ms=None, _path=None):
@@ -5609,7 +5612,7 @@ def _task_truth_settle(r, now_ms=None, _path=None):
         _TASK_TRUTH.update(on=True, worked=int(_TASK_TRUTH.get("worked") or 0) + 1, lastTs=now_ms, owed=sm.get("owed"),
                            cards=sm.get("cards"), drift=sm.get("drift"), phases=sm.get("phases"), first=sm.get("first"),
                            looks=t.get("looks"), looksWhy=t.get("looksWhy"), head=t.get("head"),
-                           publishedVer=t.get("publishedVer"),
+                           publishedVer=t.get("publishedVer"), mainVer=t.get("mainVer"), siteWhy=t.get("siteWhy"),
                            say="compared %s card(s) with the tree at %s" % (sm.get("cards"), t.get("head")))
     elif isinstance(t, dict):
         _TASK_TRUTH.update(on=True, owed=None, drift=None, first=None,

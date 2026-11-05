@@ -37,14 +37,16 @@ MARKS = os.path.join(HERE, ".handoff_seen.json")
 OWED = ("ACT", "ASK")
 
 
-def _gh(path, method=None, fields=None, timeout=None):
+def _gh(path, method=None, fields=None, timeout=None, paginate=True):
     # ⚠⚠ v3462 — `gh` HAS NO DEADLINE OF ITS OWN, so a GitHub stall became a CALLER stall. The
     # console_doctor lane row shells through here on a timer; unbounded, one hung call would hold
     # up a doctor tick. Bounded HERE rather than in the caller, because a caller that bypasses this
     # function to add its own timeout also bypasses the utf-8 decode and the empty-stdout refusal
     # below — which is exactly what the first cut of that row did, and it silently made every test
     # stub inert and put a real network call inside the suite. One owner for the read.
-    cmd = ["gh", "api", path, "--paginate"]
+    # v3866 (REG-3217) - paginate=False asks ONE page: the board's "newest successful Publish run" asks per_page=1,
+    # and --paginate would walk every run GitHub keeps
+    cmd = ["gh", "api", path] + (["--paginate"] if paginate else [])
     if method:
         cmd = ["gh", "api", "-X", method, path]
     for k, v in (fields or {}).items():

@@ -2571,6 +2571,28 @@
     "purpose": "The Mac's task board, scrubbed, for the site: reads ~/.claude/tasks, builds the record the roster worker keeps (kind tasks), and paces the posts - every 2 min on a change, every 30 min unchanged (v3864, card 57)",
     "territory": "console-ui"
   },
+  "task_truth.py": {
+    "entryPoints": [
+      "regs_in",
+      "card_keys",
+      "read_git",
+      "git_index",
+      "site_view",
+      "look_row",
+      "refresh_looks",
+      "looks_view",
+      "resolve_key",
+      "drift",
+      "derive_card",
+      "derive",
+      "summarize",
+      "say_line",
+      "main"
+    ],
+    "gotcha": "A look is only what its HEADING line names (never an evidence list or a changelog recap), GrokBot counts only from its visual seat on #230 and the third eye only as a SECOND-EYE row on #231 - a Grok CLI status note or GrokBot's coder seat is no look; the newest look about a key decides and one that says it fails refutes it. live is what the SITE serves (the newest successful Publish run, one page - handoff._gh(paginate=False)), never origin/main's stamp. A flag needs evidence newer than the card file's time, so touching a card accepts a reviewed flag. An unread tree or lane is UNKNOWN, never no-evidence or not-looked; nothing here rewrites a card.",
+    "purpose": "The task board derived from the evidence (REG-3217/3218): every card's keys resolved against git, the site's Publish run and the #230/#231 looks into a phase (no-evidence .. third-eyed), and a hand status that disagrees flagged with its reason for the board, the page and the eagle row",
+    "territory": "console-ui"
+  },
   "tasks_freshness.py": {
     "entryPoints": [
       "check",

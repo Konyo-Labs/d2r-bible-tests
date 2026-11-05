@@ -76,17 +76,24 @@
     var m = Math.max(0, Math.round((Date.now() - ms) / 60000));
     return m < 1 ? 'updated under a minute ago' : m < 120 ? 'updated ' + m + ' min ago' : 'updated ' + Math.round(m / 60) + ' hr ago';
   }
-  function since(ms) {
+  /* v3866 - the age names its moment (committed / shipped / looked / third-eyed): the first cut showed the first main
+     commit's time under every phase, so a card looked at today read "9 d ago" */
+  function since(ms, what) {
     if (typeof ms !== 'number' || !isFinite(ms)) return '';
     var h = Math.max(0, (Date.now() - ms) / 3600000);
-    return h < 1 ? ' · under an hour ago' : h < 48 ? ' · ' + Math.round(h) + ' h ago' : ' · ' + Math.round(h / 24) + ' d ago';
+    var w = what ? ' ' + String(what) : '';
+    return h < 1 ? ' ·' + w + ' under an hour ago' : h < 48 ? ' ·' + w + ' ' + Math.round(h) + ' h ago' : ' ·' + w + ' ' + Math.round(h / 24) + ' d ago';
   }
   /* REG-3217 - the phase his Mac derived for this card, with its evidence; UNKNOWN is a phase, never a blank */
   function chip(p) {
     var ph = String((p && p.p) || 'unknown');
     var words = ph === 'unknown' ? 'phase UNKNOWN' : ph + (p.v && /^(shipped|live|looked|third-eyed)$/.test(ph) ? ' ' + p.v : '');
     if (p && p.sha) words += ' · ' + p.sha;
-    words += since(p && p.at);
+    words += since(p && p.at, p && p.w);
+    /* v3866 - WHICH comment made it looked / third-eyed, or says it still fails: the board published them, nothing drew them */
+    if (p && p.look) words += ' · GrokBot #230 comment ' + p.look;
+    if (p && p.third) words += ' · third eye #231 comment ' + p.third;
+    if (p && p.refuted && p.refuted.id) words += ' · ' + (p.refuted.seat || 'a look') + ' says it still fails (comment ' + p.refuted.id + ')';
     if (p && p.keys && p.keys.length) words += ' · ' + p.keys.slice(0, 3).join(', ') + (p.basis === 'description' ? ' (from its description)' : '');
     if (p && p.unknown && p.unknown.length) words += ' · ' + p.unknown.join(', ') + ' UNKNOWN';
     var e = el('div', 'ph', words);
@@ -131,7 +138,8 @@
       var parts = Object.keys(t.drift || {}).filter(function (k) { return (t.drift[k] | 0) > 0; })
         .map(function (k) { return (t.drift[k] | 0) + ' ' + k.replace(/-/g, ' '); });
       tr.textContent = t.owed ? 'the tree disagrees: ' + parts.join(' · ') : 'every card agrees with the tree';
-      tr.textContent += ' · ' + (t.head || '?') + ' · site ' + (t.publishedVer || 'UNKNOWN') + ' · looks ' + (t.looks || 'UNKNOWN');
+      tr.textContent += ' · ' + (t.head || '?') + ' · site ' + (t.publishedVer || 'UNKNOWN')
+        + (t.mainVer && t.mainVer !== t.publishedVer ? ' · main ' + t.mainVer : '') + ' · looks ' + (t.looks || 'UNKNOWN');
       if ((t.drift || {})['closed-never-shipped'] | 0) tr.className = 'bad';
     }
     ['in_progress', 'pending', 'completed'].forEach(function (st) {

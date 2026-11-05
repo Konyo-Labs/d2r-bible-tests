@@ -11029,7 +11029,7 @@ def _board_tree_verdict(rec, now_ms):
     say = str(rec.get("say") or "")[:160]
     if rec.get("on") is False:
         return UNMEASURED, ("this PC does not compare the board with the tree (%s); the board lives on his Mac, and the "
-                            "Future button (foot-tasks) opens it here · %s" % (say, lane))
+                            "Future button at the console's bottom-left opens it here · %s" % (say, lane))
     if rec.get("on") is not True:
         return UNKNOWN, "whether the board agrees with the tree is UNKNOWN: %s · %s" % (say, lane)
     ts = rec.get("lastTs")
