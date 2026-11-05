@@ -175,6 +175,11 @@ RED_PROOF = [
      "find": "            _PROOF_RELEASE.update(etaS=None, ends=int(_PROOF_RELEASE.get(\"ends\") or 0) + 1,\n",
      "replace": "            _PROOF_RELEASE.update(etaS=None,\n",
      "matches": 1},
+    {"why": "v3865 - REG-3197's held flag outlives the tick REG-3195 ran for the same ending, so a second tick runs",
+     "file": "tv/control_app.py",
+     "find": "            _SELF_PROVE.pop(\"afterImport\", None)\n",
+     "replace": "",
+     "matches": 1},
 ]
 
 

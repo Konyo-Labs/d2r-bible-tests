@@ -119,9 +119,9 @@ class TheWorkerAndTheRowSayIt(unittest.TestCase):
     def _chip(self, heart):
         with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as f:
             ui = f.read()
-        fn = _between(ui, "  var _fleetStuckChip = function (m, nowMs) {",
-                      "    if (_lockWait) bits.push(_lockWait);   /* v3861 - the consequence, after its cause */\n"
-                      "    return bits.join('');\n  };\n")
+        # bounded by the function's own end, as the other river-chip laws read it (test_one_river_chip_per_row) - a
+        # fixed tail line broke the moment REG-3196 added a branch after `_lockWait`
+        fn = _between(ui, "  var _fleetStuckChip = function (m, nowMs) {\n", "    return bits.join('');\n  };\n")
         js = ("function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')"
               ".replace(/\"/g,'&quot;'); }\nvar escC = esc;\n"
               "function _fleetBooting(){ return false; }\nfunction _fleetStuckWhy(){ return ''; }\n"

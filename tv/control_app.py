@@ -23784,6 +23784,9 @@ def _self_prove_dispatch(n):
                                   "after, on what is still owed")
             _SELF_PROVE["afterImport"] = True   # REG-3197 - _self_prove_tick replaces the record, which clears it
         else:
+            # v3865 - REG-3195's ending count and REG-3197's held flag both open this door; the tick that runs answers
+            # both, so the flag goes here rather than trusting the tick's record swap to clear it (one tick, not two)
+            _SELF_PROVE.pop("afterImport", None)
             _self_prove_tick()          # #50 — has THIS PC proved its own instruments?
         if n == SELF_PROVE_FIRST_TICK:
             _console_beacon_async("proof")  # v3849 — one beacon, so the fleet row drops "river · starting"
