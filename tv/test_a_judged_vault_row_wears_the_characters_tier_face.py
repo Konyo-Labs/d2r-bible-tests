@@ -120,14 +120,18 @@ class AJudgedVaultRowWearsTheCharactersTierFace(unittest.TestCase):
         self.assertIn("PROVEN: '✓ PROVEN'", literal)
         self.assertIn("HARDENED: '🔒 HARDENED'", literal)
         line = src[src.index("window._vaultEvidenceLine = function"):src.index("window._vaultLookSrc = function")]
-        self.assertIn("_TIER_FACE[r.tier]", line)
+        self.assertIn("_tfm[r.tier]", line)
+        # REG-3110 r2 - the map is private to the Characters tab's IIFE: the Vault reads it ONLY through window, and the
+        # Characters tab publishes it there (the law drives the cut with the map on window alone, as the page does)
+        self.assertIn("window._TIER_FACE", line)
+        self.assertEqual(src.count("  window._TIER_FACE = _TIER_FACE;\n"), 1, "the Characters tab no longer publishes its map")
         self.assertNotIn("WATCHED:", line, "the evidence line grew a second tier map")
         self.assertIn("if (r.kind === 'owned') return who + ' · ' + tally;", line)
 
     def test_a_judged_row_wears_the_face_and_a_receipt_does_not(self):
         src = _page()
         face = _node_json(_face_literal(src))
-        got = _drive("var _TIER_FACE = %s;" % _face_literal(src))
+        got = _drive("window._TIER_FACE = %s;" % _face_literal(src))
         self.assertEqual(got["proven"], face["PROVEN"] + " 12/12 · 3 sessions")
         self.assertEqual(got["watched"], face["WATCHED"] + " 1/1 · 1 session")
         self.assertEqual(got["hardened"], face["HARDENED"] + " 21/21 · 1 session · 🔒 locked")
@@ -160,7 +164,7 @@ class AJudgedVaultRowWearsTheCharactersTierFace(unittest.TestCase):
         self.assertEqual(src.count(join), 1, "the panel stopped using the clause, or Wilson left the row")
         self.assertEqual(src.count("row('Tier', m.tierSay)"), 1)
         face = _node_json(_face_literal(src))
-        got = _drive_clause("var _TIER_FACE = %s;\n" % _face_literal(src), fn)
+        got = _drive_clause("window._TIER_FACE = %s;\n" % _face_literal(src), fn)
         bare = _drive_clause("", fn)
         self.assertEqual(got["proven"], face["PROVEN"] + " 12/12")
         self.assertEqual(got["watched"], face["WATCHED"] + " 1/1")
@@ -220,9 +224,14 @@ if __name__ == "__main__":
 
 
 RED_PROOF = [
+    {"why": "REG-3110 r2 - the Characters tab stops publishing its map: every judged vault row falls back to the bare word",
+     "file": "bible.html",
+     "find": "  window._TIER_FACE = _TIER_FACE;\n",
+     "replace": "",
+     "matches": 1},
     {"why": "REG-3110 - a judged row says the bare tier word again",
      "file": "bible.html",
-     "find": "      var face = (typeof _TIER_FACE === 'object' && _TIER_FACE && typeof _TIER_FACE[r.tier] === 'string') ? _TIER_FACE[r.tier] : r.tier;\n      return face + ' ' + r.successes + '/' + r.trials\n",
+     "find": "      var face = (_tfm && typeof _tfm[r.tier] === 'string') ? _tfm[r.tier] : r.tier;\n      return face + ' ' + r.successes + '/' + r.trials\n",
      "replace": "      return r.tier + ' ' + r.successes + '/' + r.trials\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-3110 - a receipt claims WATCHED",
@@ -237,7 +246,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-3110 - the evidence panel Tier row says the bare tier word again",
      "file": "bible.html",
-     "find": "    var face = (typeof _TIER_FACE === 'object' && _TIER_FACE && typeof _TIER_FACE[tier] === 'string') ? _TIER_FACE[tier] : tier;\n    return face + ' ' + r.successes + '/' + r.trials;\n",
+     "find": "    var face = (_tfm && typeof _tfm[tier] === 'string') ? _tfm[tier] : tier;\n    return face + ' ' + r.successes + '/' + r.trials;\n",
      "replace": "    var face = tier;\n    return face + ' ' + r.successes + '/' + r.trials;\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-3110 - the evidence panel ignores the tier clause",

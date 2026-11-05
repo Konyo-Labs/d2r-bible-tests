@@ -11804,6 +11804,10 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
   var _SLOT_WORD = { helm: 'Helm', amulet: 'Amulet', weapon: 'Weapon', torso: 'Armor', 'off-hand': 'Off-hand',
                      gloves: 'Gloves', ring1: 'Ring 1', belt: 'Belt', ring2: 'Ring 2', boots: 'Boots' };
   var _TIER_FACE = { HARDENED: '🔒 HARDENED', PROVEN: '✓ PROVEN', WATCHED: '👁 WATCHED' };   /* the Vault's judged row keeps its badges */
+  /* REG-3110 r2 (v3863, the 11-03 cross-family look) - PUBLISHED, because this map is private to the Characters tab's IIFE:
+     measured on the page, typeof _TIER_FACE was undefined where the Vault reads it, so every judged row fell back to the
+     bare word while the law stayed green on its own copy. The Vault reads window._TIER_FACE; this is the one map. */
+  window._TIER_FACE = _TIER_FACE;
   var _CHX_WORD = { HARDENED: 'Confirmed', PROVEN: 'Not confirmed yet', WATCHED: 'Not confirmed yet' };   /* v3855 item E: the Characters tab's plain words; the seal is the mark */
   function _gearOf(t){
     var L = (typeof window._cbLearnedNow === 'function') ? window._cbLearnedNow() : null;
@@ -49637,7 +49641,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     if (r.tier && typeof r.successes === 'number' && typeof r.trials === 'number'){
       var sess = Array.isArray(r.sessions) ? r.sessions.length : 0;
       /* REG-3110 - a judged row wears the Characters room's one face. A tier the map does not name stays the word it is. A receipt is not judged and never reaches this line. */
-      var face = (typeof _TIER_FACE === 'object' && _TIER_FACE && typeof _TIER_FACE[r.tier] === 'string') ? _TIER_FACE[r.tier] : r.tier;
+      var _tfm = (typeof window === 'object' && window && window._TIER_FACE) || null;   /* REG-3110 r2 - the published map */
+      var face = (_tfm && typeof _tfm[r.tier] === 'string') ? _tfm[r.tier] : r.tier;
       return face + ' ' + r.successes + '/' + r.trials
         + (sess ? (' · ' + sess + ' session' + (sess === 1 ? '' : 's')) : '')
         + (r.locked === true ? ' · 🔒 locked' : (r.unlockedAt ? ' · unlocked by hand' : ''));   /* #41 rank 17 — the lock is said where the tier is */
@@ -49774,7 +49779,8 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     if (!r || typeof r.successes !== 'number' || typeof r.trials !== 'number') return '';
     var tier = (typeof r.tier === 'string') ? r.tier : '';
     if (!tier) return '';
-    var face = (typeof _TIER_FACE === 'object' && _TIER_FACE && typeof _TIER_FACE[tier] === 'string') ? _TIER_FACE[tier] : tier;
+    var _tfm = (typeof window === 'object' && window && window._TIER_FACE) || null;   /* REG-3110 r2 - the published map */
+    var face = (_tfm && typeof _tfm[tier] === 'string') ? _tfm[tier] : tier;
     return face + ' ' + r.successes + '/' + r.trials;
   };
   window._vaultEvidenceOf = function(name){

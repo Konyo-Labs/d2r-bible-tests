@@ -186,6 +186,13 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3167 - REG-3110 r2: THE VAULT NEVER WORE THE TIER FACE - THE MAP WAS PRIVATE, AND THE LAW GRADED ITS OWN COPY (v3863, #26)
+Found by the 11-03 cross-family look on v3854 and confirmed on main 2026-11-05: `var _TIER_FACE` lives inside the
+Characters tab's IIFE (bible.html ~11806), so where the Vault reads it (the evidence line and the evidence panel's Tier
+row) `typeof _TIER_FACE` is undefined and every judged row fell back to the bare word. The law passed because it drove the
+cut with `var _TIER_FACE` declared beside it - a copy the page never has. Now the Characters tab publishes
+window._TIER_FACE (the one map), both Vault sites read only window._TIER_FACE, and the law drives the cut with the map on
+window alone, asserts the publish line, and a red-proof removes it. Needs GrokBot's live look on a judged vault row.
 ### REG-3166 - DEAN'S PROVER NEVER RAN: A LOCAL GAME STOPPED EVERY PROOF, AND HIS PC IS ON ONLY WHILE HE PLAYS (v3863, #241)
 MEASURED 2026-11-03 23:1x IST over SSH: selfProve key 'playing' while D2R was open with 8.3 GB free on his 32 GB PC; last
 proof 27 h earlier, census stale, owed 140. HIS RULING the same minute: "thats enough ram for his console to prove
