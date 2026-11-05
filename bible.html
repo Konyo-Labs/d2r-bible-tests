@@ -23418,6 +23418,11 @@ function _artRolledBase(name){
   if (rq && rq.q === 'rare' && rq.base) { out.base = String(rq.base); return out; }   /* REG-3089 the base its label states */
   /* REG-3088 - Armor, Shield and Weapon name a class of bases, never one: which one is asked */
   if (rq && rq.q === 'rare' && rq.slots && rq.slots.length === 1 && /^(Armor|Shield|Weapon)$/.test(rq.slots[0])) {
+    /* v3864 (#233) - v3850 SB-3's class mark: a weapon or armour CLASS draws its glyph and 'a rare weapon - which one?' */
+    var _cgK = { Weapon: 'weap', Armor: 'armo' }[rq.slots[0]];
+    if (_cgK && _ART_CLASS_GLYPH[_cgK]) {
+      out.glyph = _ART_CLASS_GLYPH[_cgK][0];
+      out.ask = 'a rare ' + _ART_CLASS_GLYPH[_cgK][1] + ' - which one? the name does not say; a tooltip look settles it'; return out; }
     out.ask = 'which ' + rq.slots[0].toLowerCase() + '? the name does not say; a tooltip look settles it'; return out; }
   if (rq && rq.q === 'rare' && rq.slots && rq.slots.length === 1) { out.base = String(rq.slots[0]); return out; }   /* REG-2851 one grammar */
   if (rq && rq.q === 'rare' && rq.slots && rq.slots.length > 1)
@@ -28921,7 +28926,10 @@ window._rolledBaseFits = _rolledBaseFits;
 /* the router's ONE answer for a rolled name, so the stub path and the catalogue path say the same words */
 function _rolledRoute(rq){
   return rq.q === 'rare'
-    ? {id:'magic-rare', why:'a rare\u2019s rolled name (' + rq.prefix + ' + ' + rq.suffix + ': ' + rq.slots.join(' / ').toLowerCase() + ') \u2014 rolled-name keepers live in MAGIC & RARE'}
+    /* v3864 (#233) - a rare whose grammar names ONE slot carries it as its base, as the intake route always did ('Grim
+       Harness' -> Belt): REG-3088's slot rows now answer such names here, before the intake route, which said the base */
+    ? {id:'magic-rare', base: rq.base || ((rq.slots && rq.slots.length === 1 && !/^(Armor|Shield|Weapon)$/.test(rq.slots[0])) ? rq.slots[0] : null),
+       why:'a rare\u2019s rolled name (' + rq.prefix + ' + ' + rq.suffix + ': ' + rq.slots.join(' / ').toLowerCase() + ') \u2014 rolled-name keepers live in MAGIC & RARE'}
     : {id:'magic-rare', why:'a magic ' + String(rq.base || 'item').toLowerCase() + ' (a rolled prefix / suffix) \u2014 rolled-name keepers live in MAGIC & RARE'};
 }
 window._rolledRoute = _rolledRoute;
@@ -29075,8 +29083,11 @@ function _intakeResolve(name){
 function _intakeStamp(name){
   var rq = null, ir = null;
   try { rq = (typeof _rolledQuality === 'function') ? _rolledQuality(name) : null; } catch (eRq) { rq = null; }
-  if (!rq){ try { ir = _intakeResolve(name); } catch (eIr) { ir = null; } }
-  return { rarity: (rq && rq.q) || (ir && ir.q) || 'basic', base: (rq && rq.base) || (ir && ir.base) || null };
+  /* v3864 (#233) - a rare REG-3088's grammar now knows ('Grim Harness') but whose base it does not state still takes the
+     intake's base (Belt), as it did when the grammar knew four slots and the intake answered it */
+  if (!rq || (rq.q === 'rare' && !rq.base)){ try { ir = _intakeResolve(name); } catch (eIr) { ir = null; } }
+  return { rarity: (rq && rq.q) || (ir && ir.q) || 'basic',
+           base: (rq && rq.base) || (ir && ir.base) || ((rq && rq.slots && rq.slots.length === 1 && !/^(Armor|Shield|Weapon)$/.test(rq.slots[0])) ? rq.slots[0] : null) || null };
 }
 function _intakeRoute(name){
   var ir = null;
@@ -82027,7 +82038,7 @@ try {
      so the dock's observer never fires for it: listen for the two bands and measure again */
   try {
     ['(max-width: 600px)', '(max-height: 480px)'].forEach(function(q){
-      var mq = window.matchMedia ? window.matchMedia(q) : null;
+      var mq = (typeof matchMedia === 'function') ? matchMedia(q) : null;   /* the browser's own, asked as the board asks it elsewhere */
       if (mq && mq.addEventListener) mq.addEventListener('change', _dockSync);
       else if (mq && mq.addListener) mq.addListener(_dockSync);
     });

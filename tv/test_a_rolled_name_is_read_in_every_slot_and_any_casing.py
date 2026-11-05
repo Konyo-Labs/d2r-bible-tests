@@ -93,7 +93,8 @@ class ARolledNameIsReadInEverySlotAndAnyCasing(unittest.TestCase):
 
     def test_a_class_asks_its_base_and_the_old_rows_keep_their_answer(self):
         b = self.o["base"]
-        self.assertEqual((b["Grim Coat"]["base"], b["Grim Coat"]["ask"][:13]), ("", "which armor? "), b["Grim Coat"])
+        # v3864 (#233) - an armour CLASS draws v3850 SB-3's class mark and its question (the glyph, 'a rare armor - which one?')
+        self.assertEqual((b["Grim Coat"]["base"], b["Grim Coat"]["ask"][:28]), ("", "a rare armor - which one? th"), b["Grim Coat"])
         self.assertEqual(b["Grim Hood"]["base"], "Helm", b["Grim Hood"])
         self.assertEqual(self.o["rq"]["Wraith Claw"]["slots"], ["Gloves"], "REG-2402's gloves answer moved")
         # v3849 - his ruling (11:43, on the ALT's MAGIC locker, as bible.html records it): "Raven Whorl IS a ring", so REG-2903's ring-or-jewel

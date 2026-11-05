@@ -751,40 +751,6 @@ UNMEASURED: no run of the job yet. It needs a push to ci/bless/<x> or a dispatch
 the code: the heart targets draw from tv/.heart2.json, which a cold checkout lacks (REG-2451: six heart readings "shrank"
 unseeded). Their counts will be held, not written. If they also fail to RENDER, the record will name them and the bless
 refuses, and that is the next decision.
-### REG-3106 - SHOULD MARKUP-SHAPED OCR READ AS "UNREADABLE TEXT (N CHARS)"? NO - AND THE CHIP'S FACE IS NOW LOCKED (#86 item 5)
-#86 item 5 asked again about the caught-text chip printing raw OCR like `CHAKm •<li•` (thHandoffNote; escaped, so never an
-injection): should markup-shaped garble read as "unreadable text (N chars)" with the raw text in a title? Decided from the
-code and the reads: no. REG-2791 measured these texts on his reels (1,029 on 38 sealed reels, 8,637 on the journal's kai
-rows) and the markup-shaped ones are a letter the OCR misread, often still readable - 'FAsT ArrA<K SpfE' is ATTACK SPEED,
-'kf>uiRfD STRENGT' is REQUIRED STRENGTH. A count would hide that evidence behind a hover a touch screen and a glance never
-make, which is the hiding REG-2791 ruled out ("a read is testimony and is never cleaned"); its quoting, escaping and "raw
-OCR" label are what answer "looks like leaked HTML". The gap found: REG-2791's law read each chip's whole span, title
-included, so moving the read into the title and showing a count passed it (proven: under that sabotage its 3 checks stayed
-green). Now the read must stand on the chip's face, outside every attribute, on the footage chip, the kai chip and the
-kai caption, and no count may stand in for it. No code changed. Law: test_unread_text_is_shown_as_the_ocr_read_it gains
-test_the_read_is_on_the_chips_face_never_only_in_a_title and 2 red-proofs (8 of 8 RED).
-
-### REG-3096 - A SHADOW'S DRAGS AND ITS VAULT / D2JSP / TV·D / RUNES TABS WERE UNKNOWN; MEASURED: NOTHING WRITES (#194, code half)
-GrokBot proved on the guest at v3806 that 0 stores change across 40 controls x 11 tabs in a shadow, and left two parts
-UNKNOWN: drag (vault tiles, dock to mule, mule to mule) and the Vault, d2jsp, TV·D and Runes tabs, which had no store counter
-to compare. The whole page now boots twice in node (vault_page_node): his board with a vault filed by the page's own doors
-(hand adds, vaultAssign to two lockers, one tile placed by hand), then a viewer's board in a snapshot shadow of exactly those
-stores (?tvd-shadow=1, the snapshot on the parent, the page's own shadow boot and veil). Driven in each: five drags by the
-page's own handlers (the right click that unlocks a placed tile, the keyboard carry, a tile pointer-dragged to an empty cell
-and onto a Mule tab, a dock chip dropped on a locker's plate) and every control the four tabs paint (475 in the shadow:
-press, click, keys, input/change, right click, drag start/over/drop/end), in a browser's event order through the page's own
-listeners. On his board every drag writes (d2r_mulePos, d2r_muleAssign) and 99 controls write - the baseline that the
-harness sees a write. In the shadow: no drag starts (each first event stopped) and none writes; no control writes or tries
-to (the storage door, LSR.setItem, is watched, since it drops a shadow's write at its first line); the viewer's real
-storage gets nothing; the 5 requests attempted (the D2JSP prices and sign-in, GETs) are refused by the veil and nothing
-reaches the network. No defect found, so no code changed. Named, not changed: a tab open attempts switchTab's d2r_activeTab
-straight into the frame's memory store, whose setItem the boot made a no-op (it lands nowhere), and the MOVE TASKS toggle
-(a VIEW handler) asks the door to keep vaultTasksOpen, view state the door drops. The harness rebinds vault_page_node's
-top-level store const inside this law (two asserted anchors) so the page's bare `localStorage` is the window's property, as
-in a browser - otherwise the shadow boot refuses to open ("would not isolate"). Law:
-test_a_shadow_writes_nothing_by_drag_or_on_four_tabs (11 tests, 6 red-proofs on the veil, each RED). NEEDS LIVE (#194):
-GrokBot repeats the drags and the four tabs on the ALT's shadow with a store counter, once the ALT is online.
-
 ### REG-3083 - A FLOOR BLESSED ON CI COULD OUTRUN THE PUSH GATE THAT ENFORCES IT (#2)
 CI's render-bless job (REG-3081) measures from a cold sandbox on a Linux Chromium. The floor it writes is enforced by the
 push gate on his Mac. A CI count above what the Mac measures would refuse his next push ("measured X, was Y") over a node
@@ -820,23 +786,6 @@ restores the record too, so its fixture bless never stands as the real one.
 Law test_a_bless_records_what_it_measured (the real _coverage_bless and main(), the browser and the renders stubbed,
 the floor in a temp file), 3 cases, 4 red-proofs RED, baseline green. Coverage neighbours green: test_render_coverage
 (re-proved, bad 0 of 5), test_the_ratchet_is_not_skipped_by_a_subset, test_a_coverage_drop_can_be_named.
-### REG-3094 - THE D2JSP TAB HAD NO HISTORY: A POST OR A TRADE OF AN ITEM OFF THE LIST HAD NO SURFACE LEFT (#83)
-Each card shows its own post attempts (REG-2872, the d2r_d2jsp_log store) and the vault records every copy that left
-(REG-2883, its traded rows), but there was no one place to read what the desk had done, and an item hidden or taken off the
-list lost the only surface its posts and trades had. The tab now has one History (a closed disclosure under the list),
-painted on every paint and after every log write, and only when its text changed. It writes no store and reads two: every
-name's post log rows, listed or not, and the vault's traded rows, the one source for a traded copy. A log 'traded' /
-'for-sale' row speaks only for a name the vault does not track (a planner pick), so the copy Mark sold sends through the
-vault's door is one row, not two. Both clocks (the log's "YYYY-MM-DD HH:MM UTC" and the vault's ISO time) read to one epoch
-and show in the log's spelling, newest first; a time that does not read says "time UNKNOWN" and sorts last, never a guessed
-date. A store that will not read makes its half UNKNOWN, never none, and the count says "some UNKNOWN": the post log read
-strictly (readMap's {} would have said "no post"), and the vault's records through a new window._vaultTradedRead - false
-with no vault on the page, a refused storage read, or JSON that does not parse, where _vaultTradedNames/_vaultTradedOf say
-none. Law: test_the_d2jsp_tab_keeps_one_history (the pane's own script in node over a fake page and vault: read directly,
-painted through the tab's show and its Mark sold click; the vault's own reader cut out and run over a good, missing, corrupt
-and throwing records store; 19 red-proofs, each RED). NEEDS LIVE: GrokBot opens D2JSP -> History on his board and reads it against the cards' Attempts and
-the vault's traded copies.
-
 ### REG-3095 - IN A SHADOW THE D2JSP FG BOX STILL TOOK TYPING, AND A PRICED CARD WOULD HAVE OFFERED POST (#83, GrokBot 06:36)
 GrokBot in the Mac's shadow: Mark sold, Remove from this list and Options changed nothing and sent nothing, and Post was
 disabled - "Small gap: the 'Your fg' box still takes typing in the shadow (typed 99, nothing was sent)". The shadow veil stops
@@ -957,65 +906,6 @@ REG-3087, 3088, 3089 and 3098). The rejuv and the two materials the door refuses
 GUARD: tv/test_a_sweep_apply_claims_possession_only_through_the_vault_door.py, 5 cases on a payload of the console's own
 shape (fixture names), his hand's two doors included. 3 red-proofs, RED. Re-aimed test_a_tv_stub_never_outranks_what_the_name_is:
 its chronicle rows carried no look and were owned by toggleOwned's ungated arm; they now carry two sessions' looks.
-### REG-3081 - THE STALE COVERAGE FLOORS COULD BE RE-BLESSED NOWHERE (#2, still broken in its own note)
-Task #2 names ~30 stale floors in tv/render_coverage.json: the push gate measures more nodes than the floor holds, so
-that many watched nodes could vanish inside a green run. `render_check.py --bless` raises them and needs a browser. His
-Mac does not run one for a suite, and no workflow ran it. NEW .github/workflows/render-bless.yml runs it on CI, under the
-bless's own refusal rules, unchanged:
-- the FULL set or nothing: no target is named, and a subset bless refuses;
-- every target clean: one red or UNKNOWN target refuses, and the record names it (REG-3082);
-- a floor only rises: a lower CI count is held and listed;
-- a cold tree: a fresh checkout every run, no restored sandbox (v3215).
-It starts by hand (workflow_dispatch, once on main) or from a push to ci/bless/**, never on main's pushes. Its token
-reads only and it never commits. TV_RENDER_SCALE is set to render_bound.CAP, since no push hook kills a slow run there and
-the job's own 40-minute ceiling stands.
-One artifact is uploaded even when the bless refuses: the floor, its diff, the log, the record (hidden files included)
-and the shots. The job summary is `render_bless.py report`, and the job's exit code is render_check's (PIPESTATUS, not
-tee's). The floors it hands back are applied with `render_bless.py apply` (REG-3083) on the machine whose push gate
-enforces them.
-Law test_ci_blesses_coverage_on_a_full_cold_run (the workflow text, comments dropped), 6 cases, 8 red-proofs RED,
-baseline green. The workflow is named in test_a_newer_ci_push_cancels_the_older_run's WORKFLOW_FILES, so its concurrency
-block is held with every other ci workflow's; that law, the slow-mirror law and the push-cache law are green.
-UNMEASURED: no run of the job yet. It needs a push to ci/bless/<x> or a dispatch from main. Expected blockers, read from
-the code: the heart targets draw from tv/.heart2.json, which a cold checkout lacks (REG-2451: six heart readings "shrank"
-unseeded). Their counts will be held, not written. If they also fail to RENDER, the record will name them and the bless
-refuses, and that is the next decision.
-
-### REG-3083 - A FLOOR BLESSED ON CI COULD OUTRUN THE PUSH GATE THAT ENFORCES IT (#2)
-CI's render-bless job (REG-3081) measures from a cold sandbox on a Linux Chromium. The floor it writes is enforced by the
-push gate on his Mac. A CI count above what the Mac measures would refuse his next push ("measured X, was Y") over a node
-that was never gone, at ~25 minutes a push. Its diff is a measurement, and not yet a floor this tree can carry.
-NEW tv/render_bless.py, no browser:
-- `report <record>` is the CI job's summary: complete or why it refused, every raise, hold and add.
-- `apply <record> [--verdict PATH] [--write]` raises each floor to min(CI's count, the push gate's count), only where the
-  push gate measured above the floor too. The push gate's count comes from this machine's tv/.render_verdict.json; its
-  coverageStale rows are the widths its last full run measured above the floor.
-- Both numbers are measurements, so nothing is invented and nothing is lowered.
-- Refused whole: a CI record that is not complete, and a verdict that is not a full, clean, unaborted run with a known
-  floor and no coverage refusal.
-- A LIVE population (COVERAGE_VOLATILE) is never raised.
-- --write changes only the floors it raises; the node signatures are diagnostics and stay.
-Law test_a_ci_bless_never_outruns_the_push_gate (Python, fixtures only), 8 cases, 6 red-proofs RED (CI's count goes in
-whole, a width the gate never measured above its floor is raised, a live population is raised, an unclean verdict speaks
-for the gate, a raise lowers a floor, an incomplete record is applied), baseline green.
-
-### REG-3082 - A BLESS LEFT ONLY A MERGED FLOOR, AND A REFUSED ONE LEFT NOTHING (#2)
-`render_check.py --bless` writes tv/render_coverage.json, a merge in which a held count (lower than its floor), a raised
-one and a new width look alike afterwards. A refused bless wrote nothing, and its one line said "this run did not report
-every target" even when every target reported and one was red. On the machine that ran it the scrollback covers that. For
-a bless made on another venue (CI's render-bless job, REG-3081) it would leave a floor and no measurement under it, or a
-red job and no reason.
-The bless now writes .render_bless.json beside the floor (so a law's temporary floor keeps its record with it):
-- every count it measured;
-- what it raised, held and added;
-- or, refused, why: "it asked for N of M targets", "it stopped early at X", "N target(s) did not render cleanly (names)",
-  "N target(s) were UNKNOWN". main() hands that reason in, and the refusal prints it.
-The floor rules are untouched: it only rises, and a run that is not full and clean writes no floor. The record is
-gitignored, a local fact like .render_verdict.json. test_render_coverage's one case that blesses the real floor file now
-restores the record too, so its fixture bless never stands as the real one.
-Law test_a_bless_records_what_it_measured (the real _coverage_bless and main(), the browser and the renders stubbed,
-the floor in a temp file), 3 cases, 4 red-proofs RED, baseline green. Coverage neighbours green: test_render_coverage
-(re-proved, bad 0 of 5), test_the_ratchet_is_not_skipped_by_a_subset, test_a_coverage_drop_can_be_named.
 ### REG-3092 - ON A SHORT SCREEN FOUR FEATURES HAD NO DOOR LEFT: THE TOOLS MAP, THE VAULT GUIDE, THE FORGE LEGEND, THE HELP (CI chain slice 1, his rule via the team lead)
 CI found two laws contradicting each other: REG-2862 hides all seven tray orbs at 480px tall and under (they ride into the
 tab strip there), and tests/v1800_tray_popovers_reachable asked the Tools map and inbox orbs to open their popovers at
@@ -1539,18 +1429,6 @@ GUARD: tv/test_a_hand_add_moves_a_count_through_the_tools_door.py, 5 cases. It p
 - the read chip asks the door;
 - no store is stepped by one outside its door.
 5 red-proofs, all RED.
-
-### REG-2980 - THE BOARD NAMED A WAR MULE "WAR1", A NAME THE GAME REFUSES (#144, his ruling 2026-10-29)
-agent-guide measured that a D2R character name is 2-15 letters with at most one '-' or '_' and no digit. The board made its war
-mule as "WAR1" (REG-2803) and asked him to create that in the game, which he never could. His ruling: "make it ... war-A war-B".
-War number n is now named by letter through one helper, _vaultWarName(n): 1 is WAR-A, 2 WAR-B, 26 WAR-Z, 27 WAR-AA
-(_vaultLetters / _vaultLettersN map both ways). The number still binds to the id (warN, REG-2804) and decides everything; the
-take-back (REG-2889) stays keyed 'WAR'+n. The maker, the keeper why, the shared-stash overflow note, the "you have no ... mule"
-lines, the no-room line and the help text all use the letter name. A mule he adds as WAR-B is war mule 2, as WAR2 was. A war
-mule the BOARD made under the old WAR<n> name takes its letter name once and keeps a mark (auto.letterName), so his later rename
-is never undone; a war mule he named keeps his name. Names are stored uppercase ("WAR-A"), as _vmNameOk stores every mule name.
-Law: test_the_board_names_a_war_mule_by_a_name_the_game_accepts (5 tests, 6 red-proofs RED). The REG-2803, REG-2804,
-REG-2889, saved-target, shared-stash-pages and v3769 laws now read the name from _vaultWarName instead of pinning "WAR1".
 
 ### REG-2995 - REG-2915'S LAW LISTED ITS OWN SCRATCH WITH os.listdir, AND REG-2941'S CENSUS NAMED IT UNKEYABLE (integration, after int-9)
 On the integration chain, test_the_unkeyable_laws_only_get_fewer (REG-2941, int-9) named a new unkeyable law,
@@ -2534,16 +2412,6 @@ card draws it. When nothing shows a second copy, the line stays "N owned", with 
 tv/test_the_vault_header_counts_copies_from_evidence.py, 3 red-proofs. The CI spec v3747_one_record_header_parity still
 reads its owned, filed and loose numbers by their own words; its comment quoting the old line is now out of date.
 
-### REG-2886 - THE VAULT'S POPULATION LINE COUNTED NAMES, SO THREE STORMSHIELDS READ "1 OWNED" (#137, his ruling 2026-10-28: "3 copies if it was witnessed in other areas and coordinates.. its logical yea i do have three im pretty sure")
-Measured on the whole page in node: the line under the vault toolbar counted names only. Three Stormshields read "1 owned ·
-1 filed to mules", and a copy he added moved no number (GrokBot v3740: "the 6 copy-N adds did not count"). It now reads
-"1 owned · 3 copies" when the evidence holds three. The number is the records count the card, the window and FIND
-already use: _vaultRecordsHeader, one record per copy, through _vaultPresenceSpan. That is the distinct cells he was seen
-in (v3767) plus the copies his hand typed (REG-2786). It is never a re-read of one cell and never copies[] alone. A name
-with a keeper target (Stormshield's is 2) counts a re-read under that target as a copy, by his v3767 rule, exactly as the
-card draws it. When nothing shows a second copy, the line stays "N owned", with no guessed number. Law:
-tv/test_the_vault_header_counts_copies_from_evidence.py, 3 red-proofs. The CI spec v3747_one_record_header_parity still
-reads its owned, filed and loose numbers by their own words; its comment quoting the old line is now out of date.
 ### REG-2918 - EVERY NON-BROWSER LAW STILL WITHOUT AN EXECUTABLE RED-PROOF GAINS ONE: 36 OF 42 (#128)
 REG-2917 left 42 gates with no RED_PROOF, 6 of them browser laws. The 36 that run without a browser now each carry
 executable red-proofs that break the PROPERTY the law names. Every anchor matched its file exactly once; every proof was

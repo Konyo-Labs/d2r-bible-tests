@@ -228,13 +228,15 @@ class RolledNameResolvesAtIntake(unittest.TestCase):
         self.assertIn("Raven + Whorl: ring)", r["whorl"]["why"])
         self.assertIn("ring / jewel", r["gyre"]["why"])
         self.assertNotIn("orb", r["gyre"]["why"])
-        self.assertEqual(self.o["stamp"]["whorl"]["base"], "Raven Whorl")
+        # v3864 (#233) - a rare whose grammar names ONE slot carries that slot as its stamp base, as the art path already
+        # did (REG-2851 one grammar): his ruling makes a Whorl a ring, so its base is Ring (it was its own name)
+        self.assertEqual(self.o["stamp"]["whorl"]["base"], "Ring")
         self.assertEqual(self.o["stamp"]["whorl"]["rarity"], "rare")
         self.assertIn("jewel", r["eye"]["why"])
-        self.assertEqual(self.o["stamp"]["eye"]["base"], "Doom Eye")
+        self.assertEqual(self.o["stamp"]["eye"]["base"], "Jewel")   # v3864 - Eye names one slot (a jewel)
         self.assertEqual(self.o["stamp"]["eye"]["rarity"], "rare")
         self.assertIsNone(r["song"]["base"])
-        self.assertIn("itype weap", r["song"]["why"])
+        self.assertIn("Bramble + Song: weapon", r["song"]["why"])   # v3864 - REG-3088's grammar names the class it reads
         self.assertIsNone(r["nails"]["base"])
         self.assertNotIn("ring", r["nails"]["why"])
 
