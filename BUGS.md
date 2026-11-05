@@ -156,6 +156,12 @@ ci-only push - graded on GitHub, "this Mac graded nothing" - started a suite her
 (the lane law set SUITE_VERDICT_REUSE=0 to keep it out of its own run, a workaround in the law rather than the hook).
 The refs are read first and the overlap skips a ci-only push. Law test_a_ci_push_skips_the_mac_and_never_main
 (ACiPushStartsNoSuiteOnThisMac, two red-proofs).
+### REG-3148 - A FIXED SOCKET COUNT IN par SHIPPED PAST ITS BASE: BLADE OF ALI BABA 3 ON A 2-SOCKET TULWAR (v3861)
+v3859's generator cap clamped a socket RANGE and never saw a count held in par with no min/max. My own v3859 second-eye
+reply (#231 6642755318) listed the eight par-held items and said none was over its base without comparing a single one
+to its ceiling; corrected in 6646065958. The generator caps a par-held count now and the block's row says 2; every
+other unique and all 9 set socket lines measured inside their bases. Law test_the_character_sheet_sums_the_game_data
+(TheGeneratorCapsASocketAtItsBase, two red-proofs, both RED).
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel
