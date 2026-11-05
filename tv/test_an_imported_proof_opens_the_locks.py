@@ -1,35 +1,35 @@
 # -*- coding: utf-8 -*-
 """REG-3191 (his ruling 2026-11-05 ~09:05, item 3: "Each PC imports the proofs for byte-identical files at update ... and
 runs only an environment self-check: the laws whose `needs` are platform-specific. Locks open on (imported proofs + local
-self-check).") - AN IMPORTED PROOF OVER IDENTICAL BYTES OPENS THE LOCKS WITHOUT A LOCAL RUN.
+self-check).") - AN IMPORTED PROOF OVER IDENTICAL BYTES OPENS THE LOCKS WITHOUT A LOCAL RUN, AND WITHOUT WAITING FOR IDLE.
 
-MEASURED on his Mac (v3864, 2026-11-05 ~21:03): GitHub's proofs were imported (2,928 entries, ~20:55), yet the self-prove
-lane said "1406 of 1568 declaring gate(s) proved for the files on disk; 162 owed" and self_arming.may('frame.release')
-refused on 17 of its own guard laws. The slice path already SERVED imported proofs (#186; its last slice served 183 of 251
-- MEASURED from /api/status), so the hold was the wait: an owed gate reached the census only when a 40-gate slice got to
-it, behind laws that really run. Read-only on his files at 21:29 (34 owed then): 7 trusted by import - test_control and
-test_vault_l1_rules_drive_every_move among frame.release's 11 owed guards - 9 environment self-check, 18 the bank cannot
-serve. heart2.trust_pass now writes, before a slice proves anything, every owed gate whose every proof the bank serves
-over this checkout's bytes. Held here:
-  * an imported entry over identical bytes is TRUSTED and written into the census (its gateSha, `trusted`, and the age it
-    was measured at - never this run's clock); a gate the census holds BLIND is never written on another tree's word;
+MEASURED on his Mac (v3864, 2026-11-05): GitHub's proofs were imported (~20:55), yet at 21:03 the lane said "1406 of 1568
+declaring gate(s) proved ...; 162 owed" and self_arming.may('frame.release') refused on 17 of its own guard laws. The slice
+path already served imported proofs (#186), so the hold was the WAIT: an owed gate reached the census only when a 40-gate
+slice got to it, and a slice waits for an idle PC - at 22:14 the lane sat 'busy' for 34 min with 6 of its 27 owed gates
+fully servable and unwritten. heart2.trust_pass writes every owed gate whose every proof the bank serves over this
+checkout's bytes, with no law run: before a slice proves anything, right after the update-time import
+(`heart2.py --trust --import-shards`, proof_release), and as the lane's own light start when a slice is held only by its
+cost (`heart2.py --trust`, self_prove.trust_start). Held here, on fixtures:
+  * an imported entry over identical bytes is TRUSTED and written (its gateSha, `trusted`, its measured age); a gate the
+    census holds BLIND - or one a slice files BLIND while the keys are taken - is never written on another tree's word;
   * a gate any proof of which declares "needs", or one named in the DECLARED ENV_SELF_CHECK, is the environment
-    self-check: never trusted, and the census serve never hands it another tree's PROVEN (own_only);
-  * a key mismatch (no PROVEN under the key these bytes give), an unkeyable proof, a key that raises: not trusted;
-  * this tree's own proofs are served-here, not "trusted";
-  * the PUSH path is unchanged: _owes_here still owes a clean run outside a known change set, and only the census branch
-    of prove() asks the trust pass.
+    self-check: never trusted, and prove() judges it here (the census serve hands it no other tree's PROVEN);
+  * a key mismatch, an unkeyable proof, a key that raises: not trusted; an open environment re-prove asks the bank nothing;
+  * prove(reuse=True) never re-proves a gate the trust pass wrote; a hand prove (no --reuse) and a PUSH never ask it;
+  * `--trust` runs it alone, and after an import only when the import landed; proof_release asks for it at update;
+  * the lane starts it when a slice is held by busy / cooldown / backoff / memory / takes-only - never beside his game,
+    never twice for one bank, never during an environment re-prove - and books its end as neither a proof nor a failure.
 Fixtures only: fixture gate files, a fixture census path, a stand-in bank. RED_PROOF below.
 """
-import ast
 import io
 import json
 import os
-import re
 import shutil
+import subprocess
 import sys
+import tarfile
 import tempfile
-import time
 import unittest
 from unittest import mock
 
@@ -38,10 +38,15 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 from console_safe import enable as _console_safe_enable  # noqa: E402
 _console_safe_enable()
+import fixture_tmp as _fx_tmp  # noqa: E402
+_fx_tmp.contain()
 import heart2 as H  # noqa: E402
+import self_prove as SP  # noqa: E402
+import proof_release as PR  # noqa: E402
 
 HERE_TREE = H.TREE_ID
 CI_TREE = "/home/runner/work/d2r-bible-tests/d2r-bible-tests"
+QUIET = lambda *a, **k: None  # noqa: E731
 
 
 def _entry(tree, at=1000):
@@ -77,13 +82,11 @@ class TheSplitTrustsOnlyWhatTheBankServesWhole(unittest.TestCase):
         self.assertEqual(sp["ages"]["plain"], 500, "a trusted gate keeps the OLDEST age it stands on")
         self.assertEqual((sp["env"], sp["unservable"], sp["servedHere"]), ({}, {}, []))
 
-    def test_one_foreign_proof_among_this_trees_own_is_trusted(self):
-        sp = _split({"mixed": [P0, P1]}, {"k:mixed:0": _entry(HERE_TREE), "k:mixed:1": _entry(CI_TREE)})
-        self.assertEqual(sp["trusted"], {"mixed": 1})
-
     def test_this_trees_own_proofs_are_served_here_not_trusted(self):
         sp = _split({"own": [P0, P1]}, {"k:own:0": _entry(HERE_TREE), "k:own:1": _entry(HERE_TREE)})
         self.assertEqual((sp["trusted"], sp["servedHere"]), ({}, ["own"]))
+        sp = _split({"mixed": [P0, P1]}, {"k:mixed:0": _entry(HERE_TREE), "k:mixed:1": _entry(CI_TREE)})
+        self.assertEqual(sp["trusted"], {"mixed": 1})
 
     def test_a_needs_gate_is_the_environment_self_check(self):
         sp = _split({"js": [P0, PN]}, {"k:js:0": _entry(CI_TREE), "k:js:1": _entry(CI_TREE)})
@@ -98,24 +101,41 @@ class TheSplitTrustsOnlyWhatTheBankServesWhole(unittest.TestCase):
             self.assertEqual(sp["trusted"], {}, "%s was trusted on another tree's word" % name)
             self.assertEqual(sp["env"], {name: "named in ENV_SELF_CHECK"})
 
-    def test_a_key_mismatch_is_not_trusted(self):
-        # proof 1 was banked over OTHER bytes: nothing sits under the key these bytes give it
+    def test_a_key_mismatch_or_an_unkeyable_proof_is_not_trusted(self):
         sp = _split({"moved": [P0, P1]}, {"k:moved:0": _entry(CI_TREE), "k:other-bytes:1": _entry(CI_TREE)})
         self.assertEqual(sp["trusted"], {}, "a gate with a proof the bank cannot serve was trusted")
         self.assertEqual(sp["unservable"], {"moved": "proof 1 has no PROVEN banked over these bytes"})
-
-    def test_an_unkeyable_or_raising_key_is_not_trusted(self):
         sp = _split({"nokey": [P0], "boom": [P0]}, {"k:nokey:0": _entry(CI_TREE), "k:boom:0": _entry(CI_TREE)},
                     keys={("nokey", 0): None, ("boom", 0): RuntimeError("x")})
-        self.assertEqual(sp["trusted"], {})
-        self.assertEqual(sorted(sp["unservable"]), ["boom", "nokey"])
+        self.assertEqual((sp["trusted"], sorted(sp["unservable"])), ({}, ["boom", "nokey"]))
 
 
 _GATE_SRC = '''RED_PROOF = [%s]
 '''
 
 
-class TheTrustPassWritesTheCensus(unittest.TestCase):
+class _Bank(object):
+    """A stand-in census cache: the slice's own key_for / peek, over the fixture gates' proofs."""
+
+    def __init__(self, entries, on_key=None):
+        self.entries, self.on_key, self.reused, self.peeked = entries, on_key, {}, []
+
+    def key_for(self, sandbox, name, filename, pr, unread=None, listed=None):
+        if self.on_key is not None:
+            self.on_key(name)
+        return "k:%s:%d" % (name, H.red_proofs_in(filename).index(pr)), [], None
+
+    def peek(self, key):
+        self.peeked.append(key)
+        return self.entries.get(key)
+
+    def summary(self, n):
+        return "#42 P3 CACHE: fixture"
+
+
+class _Census(unittest.TestCase):
+    """Three fixture gates: `plain` (imported, servable whole), `js` (a needs node proof - the self-check), `moved` (no
+    PROVEN under the key its bytes give). The census path, the gate files and the bank are all fixtures."""
 
     def setUp(self):
         self.d = tempfile.mkdtemp(prefix="reg3191-")
@@ -127,67 +147,137 @@ class TheTrustPassWritesTheCensus(unittest.TestCase):
             with io.open(p, "w", encoding="utf-8") as fh:
                 fh.write(_GATE_SRC % ", ".join(repr(x) for x in prs))
             self.gates.append((n, p))
-        self.bank = {"k:plain:0": _entry(CI_TREE, 600), "k:plain:1": _entry(CI_TREE, 400),
-                     "k:js:0": _entry(CI_TREE), "k:js:1": _entry(CI_TREE), "k:other:0": _entry(CI_TREE)}
+        self.bank = _Bank({"k:plain:0": _entry(CI_TREE, 600), "k:plain:1": _entry(CI_TREE, 400),
+                           "k:js:0": _entry(CI_TREE), "k:js:1": _entry(CI_TREE), "k:other:0": _entry(CI_TREE)})
         gates = self.gates
-
-        class Bank(object):
-            def __init__(s, entries):
-                s.entries = entries
-
-            def key_for(s, sandbox, name, filename, pr, unread=None, listed=None):
-                proofs = H.red_proofs_in(filename)
-                return "k:%s:%d" % (name, proofs.index(pr)), [], None
-
-            def peek(s, key):
-                return s.entries.get(key)
-        self.cache = Bank(self.bank)
         for patch in (mock.patch.object(H, "STATE", self.state),
                       mock.patch.object(H, "gate_files", lambda say=print: list(gates)),
-                      mock.patch.object(H, "surface_verdict", lambda *a, **k: None)):
+                      mock.patch.object(H, "surface_verdict", lambda *a, **k: None),
+                      mock.patch.object(H, "env_reprove_state", lambda *a, **k: None),
+                      mock.patch.dict(H._CENSUS, {"cache": None, "here": (), "red": set(), "net": False})):
             patch.start()
             self.addCleanup(patch.stop)
 
-    def _census(self):
+    def census(self):
         with io.open(self.state, encoding="utf-8") as fh:
             return json.load(fh)
 
+    def write(self, body):
+        with io.open(self.state, "w", encoding="utf-8") as fh:
+            json.dump(body, fh)
+
+    def owed(self):
+        return [n for n, _k in H.slice_owed(self.gates, self.census())["owed"]]
+
+
+class TheTrustPassWritesTheCensus(_Census):
+
     def test_trusted_gates_are_recorded_in_the_census(self):
-        sp = H.trust_pass(self.cache, say=lambda *a: None)
+        sp = H.trust_pass(self.bank, say=QUIET)
         self.assertEqual(sp["written"], ["plain"])
-        st = self._census()
+        st = self.census()
         sha = H.gate_shas(self.gates)["plain"]
         self.assertEqual(st["gateShas"].get("plain"), sha, "the trusted gate's sha was not recorded - it stays owed")
         self.assertEqual(st["trusted"], {"plain": sha}, "the census does not say which gate stands on another tree")
-        self.assertIn("plain", st["provedGates"])
         self.assertEqual(st["verdictAt"]["plain"], 400, "a trusted gate was stamped NOW, not when it was measured")
-        for n in ("js", "moved"):
-            self.assertNotIn(n, st["gateShas"], "%s was written on the bank's word" % n)
-        owed = [n for n, _k in H.slice_owed(self.gates, st)["owed"]]
-        self.assertEqual(owed, ["js", "moved"], "only the self-check and the unservable stay owed")
+        self.assertEqual(self.owed(), ["js", "moved"], "only the self-check and the unservable stay owed")
 
     def test_a_gate_the_census_holds_blind_is_never_written_on_another_trees_word(self):
-        with io.open(self.state, "w", encoding="utf-8") as fh:
-            json.dump({"blind": ["plain"], "gateShas": {}}, fh)
-        sp = H.trust_pass(self.cache, say=lambda *a: None)
+        self.write({"blind": ["plain"], "gateShas": {}})
+        sp = H.trust_pass(self.bank, say=QUIET)
         self.assertNotIn("plain", sp["written"])
-        self.assertNotIn("plain", self._census().get("gateShas") or {})
+        self.assertNotIn("plain", self.census().get("gateShas") or {})
+        self.assertEqual(sp["owed"], 2, "a gate the census holds BLIND was asked of the bank at all")
+        self.assertFalse([k for k in self.bank.peeked if k.startswith("k:plain:")],
+                         "the bank was asked to stand in for a BLIND measured here")
+
+    def test_a_blind_a_slice_files_while_the_keys_are_taken_is_not_overwritten(self):
+        self.write({"gateShas": {}})
+        said = []
+
+        def slice_files_blind(name):
+            if not said:
+                said.append(name)
+                with io.open(self.state, "w", encoding="utf-8") as fh:
+                    json.dump({"gateShas": {}, "blind": ["plain"]}, fh)
+        self.bank.on_key = slice_files_blind
+        sp = H.trust_pass(self.bank, say=QUIET)
+        self.assertNotIn("plain", sp["written"], "a BLIND filed during the pass was overwritten on another tree's word")
+        self.assertEqual(self.census().get("blind"), ["plain"])
+
+    def test_an_open_environment_reprove_asks_the_bank_nothing(self):
+        with mock.patch.object(H, "env_reprove_state", lambda *a, **k: {"owed": ["plain"], "from": {}, "to": {}}):
+            sp = H.trust_pass(self.bank, say=QUIET)
+        self.assertEqual((sp["written"], self.bank.peeked), ([], []),
+                         "a proof banked under the old environment was served during its re-prove")
+        self.assertFalse(os.path.exists(self.state))
 
     def test_a_later_verdict_judged_here_ends_the_trust(self):
-        H.trust_pass(self.cache, say=lambda *a: None)
+        H.trust_pass(self.bank, say=QUIET)
         H._write_state({"plain": H.PROVEN}, stamp=False)
-        self.assertEqual(self._census()["trusted"], {}, "a gate judged here still read as another tree's word")
+        self.assertEqual(self.census()["trusted"], {}, "a gate judged here still read as another tree's word")
 
 
-class TheCensusServeJudgesTheSelfCheckHere(unittest.TestCase):
+class ProveTrustsBeforeItProves(_Census):
+    """prove(reuse=True) - the self-prove lane's census - end to end, with only the law runs stood in."""
 
-    def _cache(self, tree):
-        e = dict(_entry(tree), inputs=[])
+    def _prove(self, **kw):
+        seen = {}
+
+        def gates_run(have, say=print, workers=None, blank=None):
+            seen["names"] = sorted(n for n, _f, _p in have)
+            seen["here"] = set(H._CENSUS.get("here") or ())
+            seen["cache"] = H._CENSUS.get("cache")
+            return dict((n, H.PROVEN) for n in seen["names"]), dict((n, [H.PROVEN]) for n in seen["names"])
+        with mock.patch.object(H, "_census_cache", lambda reuse, say=print: self.bank if reuse else None), \
+                mock.patch.object(H, "_prove_gates", gates_run):
+            got = H.prove(say=QUIET, stamp=False, **kw)
+        return got, seen
+
+    def test_the_census_writes_the_imported_gate_and_proves_only_the_rest(self):
+        got, seen = self._prove(reuse=True)
+        self.assertEqual(seen["names"], ["js", "moved"], "a gate the bank serves whole was proved again by the slice")
+        self.assertEqual(seen["here"], {"js"}, "the environment self-check is not judged on this PC")
+        self.assertEqual(self.census()["trusted"], {"plain": H.gate_shas(self.gates)["plain"]})
+        self.assertEqual(self.owed(), [], "the census still owes gates after the slice proved the rest")
+
+    def test_a_hand_prove_never_asks_the_bank(self):
+        with mock.patch.object(H, "trust_pass", mock.Mock(side_effect=AssertionError("asked"))):
+            got, seen = self._prove(reuse=False)
+        self.assertEqual(seen["names"], ["js", "moved", "plain"])
+        self.assertIsNone(seen["cache"])
+        self.assertNotIn("plain", self.census().get("trusted") or {})
+
+
+class ThePushPathIsUnchanged(_Census):
+
+    def test_a_push_with_an_unknown_change_set_still_owes_a_clean_run(self):
+        run = H._PushRun()
+        self.assertIsNone(run.direct)
+        self.assertTrue(H._owes_here(run, "anything"), "a push with an UNKNOWN change set kept another tree's word")
+        run.direct = {"changed"}
+        self.assertTrue(H._owes_here(run, "changed"))
+        self.assertFalse(H._owes_here(run, "untouched"))
+
+    def test_a_push_never_asks_the_trust_pass_and_judges_nothing_here(self):
+        seen = {}
+
+        def push(have, say, stopped, cache=None, blank=None):
+            seen["names"] = sorted(n for n, _f, _p in have)
+            seen["here"] = set(H._CENSUS.get("here") or ())
+            return dict((n, H.PROVEN) for n in seen["names"]), {}
+        with mock.patch.object(H, "trust_pass", mock.Mock(side_effect=AssertionError("a push asked the trust pass"))), \
+                mock.patch.object(H, "open_cache", lambda say=print: None), \
+                mock.patch.object(H, "_prove_push", push), \
+                mock.patch.dict(H._SHARD, {"spec": None}):
+            H.prove(say=QUIET, push=True)
+        self.assertEqual(seen, {"names": ["js", "moved", "plain"], "here": set()})
+
+    def test_the_push_serve_still_takes_another_trees_proof(self):
+        e = dict(_entry(CI_TREE), inputs=[])
 
         class C(object):
-            def __init__(s):
-                s.n = {}
-                s.said = []
+            n = {}
 
             def key_for(s, *a, **k):
                 return "key", [], None
@@ -199,7 +289,7 @@ class TheCensusServeJudgesTheSelfCheckHere(unittest.TestCase):
                 return e
 
             def count(s, what):
-                s.n[what] = s.n.get(what, 0) + 1
+                pass
 
             def count_carried(s, by):
                 pass
@@ -207,78 +297,162 @@ class TheCensusServeJudgesTheSelfCheckHere(unittest.TestCase):
             def reused_at(s, *a):
                 pass
 
-            def say_once(s, name, why, line):
-                s.said.append(line)
-        return C()
-
-    def test_own_only_refuses_another_trees_proof_and_serves_this_trees(self):
-        q = lambda *a: None  # noqa: E731
-        got = H._cache_serve(self._cache(CI_TREE), HERE, "g", "g.py", P0, 0, q, own_only=True)[0]
-        self.assertIsNone(got, "the self-check was served another tree's PROVEN")
-        got = H._cache_serve(self._cache(HERE_TREE), HERE, "g", "g.py", P0, 0, q, own_only=True)[0]
-        self.assertEqual(got, H.PROVEN, "this tree's own PROVEN was refused")
-        got = H._cache_serve(self._cache(CI_TREE), HERE, "g", "g.py", P0, 0, q)[0]
-        self.assertEqual(got, H.PROVEN, "the push's serve (no own_only) changed")
-
-    def test_the_census_hands_own_only_to_the_self_check_gates(self):
-        ran = []
-        with mock.patch.object(H, "_prove_one", lambda *a, **k: ran.append(a[1]) or "RAN"), \
-                mock.patch.object(H, "_cache_bank", lambda *a, **k: None), \
-                mock.patch.dict(H._CENSUS, {"cache": self._cache(CI_TREE), "here": {"g"}, "red": set()}):
-            self.assertEqual(H._census_one(HERE, "g", "g.py", P0, 0, lambda *a: None), "RAN")
-            self.assertEqual(H._census_one(HERE, "other", "g.py", P0, 0, lambda *a: None), H.PROVEN)
-        self.assertEqual(ran, ["g"])
-
-    def test_prove_names_the_self_check_gates_for_the_census(self):
-        body = _code_of("prove")
-        self.assertEqual(body.count('_CENSUS["here"] = set(n for n, _f, _p in have if env_gate(n, _p)[0])'), 1,
-                         "the census no longer judges the environment self-check gates here")
+            def say_once(s, *a):
+                pass
+        self.assertEqual(H._cache_serve(C(), HERE, "g", "g.py", P0, 0, QUIET)[0], H.PROVEN)
+        self.assertIsNone(H._cache_serve(C(), HERE, "g", "g.py", P0, 0, QUIET, own_only=True)[0],
+                          "the self-check was served another tree's PROVEN")
 
 
-def _heart2_src():
-    with io.open(os.path.join(HERE, "heart2.py"), encoding="utf-8") as fh:
-        return fh.read()
+class TheTrustRunsWithoutASlice(_Census):
+
+    def _main(self, argv, rc=0):
+        calls = []
+        with mock.patch.object(H, "_census_cache", lambda reuse, say=print: self.bank), \
+                mock.patch.object(H, "import_shards", lambda paths, say=print, target=None: calls.append(paths) or rc):
+            got = H.main(argv)
+        return got, calls
+
+    def test_trust_alone_writes_what_the_bank_serves(self):
+        got, _c = self._main(["--trust"])
+        self.assertEqual(got, 0)
+        self.assertIn("plain", self.census()["trusted"], "`heart2.py --trust` wrote nothing")
+
+    def test_an_import_that_landed_runs_it_and_a_refused_one_does_not(self):
+        got, calls = self._main(["--trust", "--import-shards", "a.json"], rc=2)
+        self.assertEqual((got, calls), (2, [["a.json"]]))
+        self.assertFalse(os.path.exists(self.state), "a REFUSED import wrote the census on the bank's word")
+        got, calls = self._main(["--trust", "--import-shards", "a.json"], rc=0)
+        self.assertEqual(got, 0)
+        self.assertIn("plain", self.census()["trusted"], "the import landed and the locks still wait for a slice")
+
+    def test_the_update_import_asks_for_the_trust_pass(self):
+        b = os.path.join(self.d, "bundle.tgz")
+        src = os.path.join(self.d, "s.json")
+        with io.open(src, "w", encoding="utf-8") as fh:
+            fh.write("{}")
+        with tarfile.open(b, "w:gz") as t:
+            t.add(src, arcname="proof-shard-1/.heart2_cache.json")
+        with io.open(b, "rb") as fh:
+            data = fh.read()
+
+        class R(object):
+            def __init__(s):
+                s.buf = io.BytesIO(data)
+
+            def read(s, n=-1):
+                return s.buf.read(n)
+
+            def __enter__(s):
+                return s
+
+            def __exit__(s, *a):
+                return False
+        seen = {}
+
+        def run(argv, **kw):
+            seen["argv"] = list(argv)
+            return subprocess.CompletedProcess(argv, 0, "  REG-2586 IMPORTED 1 shard(s)", "")
+        PR.import_bundle("c" * 40, tv_dir=HERE, run=run, urlopen=lambda req, timeout=None: R())
+        argv = seen.get("argv") or []
+        self.assertIn("--import-shards", argv)
+        self.assertIn("--trust", argv, "the update-time import does not open the locks - they wait for an idle slice")
 
 
-def _code_of(fn_name):
-    """One module-level function of heart2.py, comments stripped by the tokenizer (never by a '#' split), blank lines
-    dropped. The function is found by the AST, so the anchor is its name, which occurs once at module level."""
-    import tokenize
-    src = _heart2_src()
-    toks = [t for t in tokenize.generate_tokens(io.StringIO(src).readline) if t.type != tokenize.COMMENT]
-    bare = tokenize.untokenize(toks)
-    tree = ast.parse(src)
-    hits = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == fn_name]
-    assert len(hits) == 1, fn_name
-    lines = bare.splitlines()[hits[0].lineno - 1:hits[0].end_lineno]
-    return "\n".join(ln.rstrip() for ln in lines if ln.strip())
+class TheLaneStartsTheTrustPassWhenASliceIsHeld(unittest.TestCase):
 
+    STALE = {"state": "stale", "why": "x", "trustSig": "FP|1|2", "owedGates": [("g", 1)], "fingerprint": "FP"}
 
-class ThePushPathStillOwesItsCleanRun(unittest.TestCase):
+    def decide(self, census=None, mem=None, **kw):
+        a = dict(running_pid=None, busy_pct=99.0, now_s=1.0e9, playing=False, free=99999.0, tree=("installed", ""))
+        a.update(kw)
+        return SP.decide(dict(self.STALE) if census is None else census, a.pop("tree"), a.pop("running_pid"),
+                         a.pop("busy_pct"), mem or {}, a.pop("now_s"), **a)
 
-    def test_a_push_with_an_unknown_change_set_still_owes_a_clean_run(self):
-        run = H._PushRun()
-        self.assertIsNone(run.direct)
-        self.assertTrue(H._owes_here(run, "anything"), "a push with an UNKNOWN change set kept another tree's word")
-        run.direct = {"changed"}
-        self.assertTrue(H._owes_here(run, "changed"))
-        self.assertFalse(H._owes_here(run, "untouched"))
+    def test_a_busy_pc_starts_the_trust_pass(self):
+        d = self.decide()
+        self.assertEqual((d["start"], d["key"], d.get("trust")), (True, "trust", True), d)
+        for kw in ({"takes_only": True}, {"free": float(SP.MIN_FREE_MB_TO_START - 1)}):
+            self.assertEqual(self.decide(**kw)["key"], "trust", "a slice held by %s held the trust pass too" % kw)
 
-    def test_only_the_census_branch_asks_the_trust_pass(self):
-        tree = ast.parse(_heart2_src())
-        fn = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "prove"][0]
-        tops = [n for n in fn.body if isinstance(n, ast.If) and isinstance(n.test, ast.Name) and n.test.id == "push"
-                and n.orelse]
-        self.assertEqual(len(tops), 1, "prove() no longer has ONE push / census fork")
+    def test_never_twice_for_one_bank(self):
+        self.assertEqual(self.decide(mem={"trustFor": "FP|1|2"})["key"], "busy")
+        self.assertEqual(self.decide(mem={"trustFor": "FP|1|1"})["key"], "trust", "a bank that grew was not read")
 
-        def calls(nodes):
-            return [c.func.id for x in nodes for c in ast.walk(x)
-                    if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)]
-        self.assertNotIn("trust_pass", calls(tops[0].body), "the push branch asks the trust pass")
-        self.assertEqual(calls(tops[0].orelse).count("trust_pass"), 1, "the census branch lost its trust pass")
-        push_one = _code_of("_prove_push_one")
-        self.assertIn("served, key, rels = _cache_serve(cache, sandbox, name, filename, pr, idx, say)\n", push_one + "\n",
-                      "the push's serve now passes own_only")
+    def test_never_beside_his_game_on_a_guess_in_a_dev_tree_or_an_environment_reprove(self):
+        self.assertEqual(self.decide(playing=True)["key"], "playing")
+        self.assertFalse(self.decide(playing=None)["start"])
+        # a slice held by a backoff or by takes-only is refused BEFORE his game is asked: the trust pass asks it itself
+        backoff = {"lastFailAt": 1.0e9 - 60, "lastFailFingerprint": "FP", "lastFailKind": "proof"}
+        for kw in ({"mem": backoff}, {"takes_only": True}):
+            for playing in (True, None):
+                d = self.decide(playing=playing, **kw)
+                self.assertFalse(d["start"], "the trust pass started beside his game (%s, playing %r): %s"
+                                 % (kw, playing, d))
+        self.assertFalse(self.decide(tree=("dev", "x"))["start"])
+        self.assertEqual(self.decide(census=dict(self.STALE, envReprove=True))["key"], "busy",
+                         "the trust pass served old-environment proofs during an environment re-prove")
+        self.assertEqual(self.decide(free=float(SP.TRUST_MIN_FREE_MB - 1))["key"], "low-memory")
+        self.assertEqual(self.decide(census={"state": "current", "why": "ok"})["key"], "current")
+
+    def test_an_idle_pc_proves_its_slice_as_before(self):
+        self.assertEqual(self.decide(busy_pct=0.0)["key"], "start", "an idle PC ran a trust pass instead of its slice")
+
+    def test_the_tick_spawns_it_alone_and_books_its_end_as_neither_proof_nor_failure(self):
+        d = tempfile.mkdtemp(prefix="reg3191-sp-")
+        self.addCleanup(shutil.rmtree, d, True)
+        path = os.path.join(d, "sp.json")
+        calls = []
+
+        def spawn(log_path, names=None, workers=None, trust=False, net=False):
+            calls.append({"names": names, "trust": trust, "net": net})
+            return 4242
+        with mock.patch.object(SP, "proc_birth", lambda pid: 1.0), \
+                mock.patch.object(SP, "identity", lambda pid, birth: True):
+            st = SP.tick(now_s=1.0e9, busy=99.0, tree=("installed", ""), census=dict(self.STALE), path=path,
+                         spawn_fn=spawn, env={"TV_SELF_PROVE": "1"}, playing=False, free=99999.0)
+        self.assertEqual(calls, [{"names": None, "trust": True, "net": False}], "the lane did not start the trust pass")
+        self.assertEqual(st["key"], "trust")
+        mem = SP.load(path)
+        self.assertEqual((mem.get("trust"), mem.get("trustFor")), (True, "FP|1|2"))
+        with mock.patch.object(SP, "identity", lambda pid, birth: False):
+            st = SP.tick(now_s=1.0e9 + 60, busy=99.0, tree=("installed", ""), census=dict(self.STALE), path=path,
+                         spawn_fn=spawn, env={"TV_SELF_PROVE": "1"}, playing=False, free=99999.0)
+        mem = SP.load(path)
+        self.assertEqual(mem.get("trustWorked"), 1, "the trust run's end was not booked as a trust run")
+        self.assertIsNone(mem.get("lastFailAt"), "a trust run's end was booked as a failed proof (a 3 h backoff)")
+        self.assertEqual(st["trust"]["owed"], 0)
+        self.assertEqual(len(calls), 1, "the same bank was read twice")
+
+    def test_its_spawn_runs_no_law(self):
+        got = []
+
+        class P(object):
+            pid = 4242
+        d = tempfile.mkdtemp(prefix="reg3191-sp-")
+        self.addCleanup(shutil.rmtree, d, True)
+        SP.spawn(os.path.join(d, "log"), workers=1, popen=lambda cmd, **kw: got.append(list(cmd)) or P(), trust=True)
+        cmd = got[0]
+        self.assertEqual(cmd[-2:], [os.path.join(SP.HERE, "heart2.py"), "--trust"], cmd)
+        self.assertNotIn("--prove", cmd, "the trust run proves laws")
+
+    def test_the_census_signature_moves_with_the_bank(self):
+        tmp = tempfile.mkdtemp(prefix="reg3191-sig-")
+        self.addCleanup(shutil.rmtree, tmp, True)
+        bank = os.path.join(tmp, "bank.json")
+        with io.open(bank, "w", encoding="utf-8") as fh:
+            fh.write("{}")
+
+        class H2(object):
+            CACHE = bank
+        a = SP._trust_sig(H2, "FP")
+        with io.open(bank, "w", encoding="utf-8") as fh:
+            fh.write('{"entries": {"k": 1}}')
+        b = SP._trust_sig(H2, "FP")
+        self.assertTrue(a and b and a != b, "an import that grew the bank left the trust signature where it was: %r %r"
+                        % (a, b))
+        H2.CACHE = os.path.join(tmp, "absent.json")
+        self.assertIsNone(SP._trust_sig(H2, "FP"), "an unreadable bank gave a signature - a trust run on a guess")
 
 
 RED_PROOF = [
@@ -307,35 +481,115 @@ RED_PROOF = [
      "find": "    owed = [n for n, _k in so.get(\"owed\") or [] if n not in _blind]\n",
      "replace": "    owed = [n for n, _k in so.get(\"owed\") or []]\n",
      "matches": 1},
+    {"why": "REG-3191 - a BLIND a slice filed while the keys were taken is overwritten (no re-read under the lock)",
+     "file": "tv/heart2.py",
+     "find": "            take = [n for n in take if n in _still and n not in _fb]\n",
+     "replace": "            take = list(take)\n",
+     "matches": 1},
     {"why": "REG-3191 - a trusted gate is stamped with this run's clock, not the age it was measured at",
      "file": "tv/heart2.py",
-     "find": "        _write_state(dict((n, PROVEN) for n in take), measured=dict((n, sp[\"ages\"][n]) for n in take if n in sp[\"ages\"]),\n",
-     "replace": "        _write_state(dict((n, PROVEN) for n in take), measured=None,\n",
+     "find": "                                      measured=dict((n, sp[\"ages\"][n]) for n in take if n in sp[\"ages\"]),\n",
+     "replace": "                                      measured=None,\n",
      "matches": 1},
     {"why": "REG-3191 - the census does not record which gates stand on another tree's proofs",
      "file": "tv/heart2.py",
      "find": "        if _n in _trq and _n not in _unm:\n            _tr[_n] = _shas.get(_n)\n",
      "replace": "        if False:\n            _tr[_n] = _shas.get(_n)\n",
      "matches": 1},
+    {"why": "REG-3191 - an open environment re-prove still asks the bank (old-environment proofs served)",
+     "file": "tv/heart2.py",
+     "find": "    if _er and _er.get(\"owed\"):\n        say(\"  REG-3191 TRUST PASS: not asked",
+     "replace": "    if False:\n        say(\"  REG-3191 TRUST PASS: not asked",
+     "matches": 1},
     {"why": "REG-3191 - the census serve hands the self-check gates another tree's PROVEN",
      "file": "tv/heart2.py",
      "find": "            if own_only and _own is not None and _own.get(\"tree\") != TREE_ID:\n",
      "replace": "            if False:\n",
      "matches": 1},
-    {"why": "REG-3191 - the census serve never asks which gates the census judges here, so none is",
-     "file": "tv/heart2.py",
-     "find": "        own_only = name in (_CENSUS.get(\"here\") or ())\n",
-     "replace": "        own_only = False\n",
-     "matches": 1},
-    {"why": "REG-3191 - prove() stops naming the environment self-check gates",
+    {"why": "REG-3191 - prove() stops naming the environment self-check gates (judged on another tree's word)",
      "file": "tv/heart2.py",
      "find": "            _CENSUS[\"here\"] = set(n for n, _f, _p in have if env_gate(n, _p)[0])   # the environment self-check\n",
      "replace": "            _CENSUS[\"here\"] = set()\n",
+     "matches": 1},
+    {"why": "REG-3191 - prove() asks the trust pass but writes nothing (the reviewer's sabotage: the feature dead)",
+     "file": "tv/heart2.py",
+     "find": "                _tp = trust_pass(_CENSUS[\"cache\"], say=say, gates=gates) or {}\n",
+     "replace": "                _tp = trust_pass(_CENSUS[\"cache\"], say=say, gates=gates, write=False) or {}\n",
+     "matches": 1},
+    {"why": "REG-3191 - the slice re-proves the gates the trust pass wrote",
+     "file": "tv/heart2.py",
+     "find": "            have = [(n, f, p) for n, f, p in have if n not in _trusted]\n",
+     "replace": "            have = list(have)\n",
+     "matches": 1},
+    {"why": "REG-2599 (push path unchanged) - a push asks the trust pass",
+     "file": "tv/heart2.py",
+     "find": "        _cache = open_cache(say)\n        results, per_proof = _prove_push(have, say, stopped, cache=_cache, blank=_blank)\n",
+     "replace": "        _cache = open_cache(say)\n        trust_pass(_cache, say=say, gates=gates)\n        results, per_proof = _prove_push(have, say, stopped, cache=_cache, blank=_blank)\n",
      "matches": 1},
     {"why": "REG-2599 (push path unchanged) - a push with an UNKNOWN change set keeps another tree's word",
      "file": "tv/heart2.py",
      "find": "    return direct is None or name in direct\n",
      "replace": "    return direct is not None and name in direct\n",
+     "matches": 1},
+    {"why": "REG-3191 - `heart2.py --trust` alone does nothing",
+     "file": "tv/heart2.py",
+     "find": "    if a.trust and a.prove is None:\n        return trust_now()",
+     "replace": "    if False:\n        return trust_now()",
+     "matches": 1},
+    {"why": "REG-3191 - an import that landed leaves the locks waiting for a slice",
+     "file": "tv/heart2.py",
+     "find": "        if _irc == 0 and a.trust:\n            trust_now()                          # REG-3191 - the import's proofs",
+     "replace": "        if False:\n            trust_now()                          # REG-3191 - the import's proofs",
+     "matches": 1},
+    {"why": "REG-3191 - a REFUSED import still writes the census on the bank's word",
+     "file": "tv/heart2.py",
+     "find": "        if _irc == 0 and a.trust:\n            trust_now()                          # REG-3191 - the import's proofs",
+     "replace": "        if a.trust:\n            trust_now()                          # REG-3191 - the import's proofs",
+     "matches": 1},
+    {"why": "REG-3191 - the update-time import does not ask for the trust pass",
+     "file": "tv/proof_release.py",
+     "find": "\"heart2.py\"), \"--trust\", \"--import-shards\"] + paths,",
+     "replace": "\"heart2.py\"), \"--import-shards\"] + paths,",
+     "matches": 1},
+    {"why": "REG-3191 - a busy PC holds the trust pass like a slice (the measured 34 min)",
+     "file": "tv/self_prove.py",
+     "find": "TRUST_DESPITE = (\"busy\", ",
+     "replace": "TRUST_DESPITE = (\"busy-never\", ",
+     "matches": 1},
+    {"why": "REG-3191 - the trust pass starts beside his game",
+     "file": "tv/self_prove.py",
+     "find": "    if playing is not False:\n        return None\n    try:\n        free = float(free)\n",
+     "replace": "    if False:\n        return None\n    try:\n        free = float(free)\n",
+     "matches": 1},
+    {"why": "REG-3191 - the same bank is read again and again (no signature)",
+     "file": "tv/self_prove.py",
+     "find": "    if not sig or sig == (mem or {}).get(\"trustFor\"):\n",
+     "replace": "    if not sig:\n",
+     "matches": 1},
+    {"why": "REG-3191 - the trust pass runs during an environment re-prove",
+     "file": "tv/self_prove.py",
+     "find": "    if c.get(\"state\") not in (\"stale\", \"missing\") or c.get(\"envReprove\"):\n",
+     "replace": "    if c.get(\"state\") not in (\"stale\", \"missing\"):\n",
+     "matches": 1},
+    {"why": "REG-3191 - the tick never records which bank it read, so it starts a trust run every tick",
+     "file": "tv/self_prove.py",
+     "find": "                mem[\"trustFor\"] = census.get(\"trustSig\")",
+     "replace": "                mem[\"trustFor\"] = None",
+     "matches": 1},
+    {"why": "REG-3191 - a trust run's end is booked as a failed proof (a 3 h backoff on every slice)",
+     "file": "tv/self_prove.py",
+     "find": "        elif mem.get(\"trust\"):\n            # REG-3191 - the trust run ended",
+     "replace": "        elif False:\n            # REG-3191 - the trust run ended",
+     "matches": 1},
+    {"why": "REG-3191 - the trust run proves the whole census instead of running no law",
+     "file": "tv/self_prove.py",
+     "find": "[os.path.join(HERE, \"heart2.py\"), \"--trust\"]   # REG-3191 - no law runs",
+     "replace": "[os.path.join(HERE, \"heart2.py\"), \"--prove\", \"--trust\"]   # REG-3191 - no law runs",
+     "matches": 1},
+    {"why": "REG-3191 - the trust signature ignores the bank, so an import never starts a trust run",
+     "file": "tv/self_prove.py",
+     "find": "        return \"%s|%d|%d\" % (fp, int(bst.st_mtime_ns), int(bst.st_size))\n",
+     "replace": "        return \"%s\" % (fp,)\n",
      "matches": 1},
 ]
 

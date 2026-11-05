@@ -259,7 +259,10 @@ def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="",
             argv += ["--import-progress", os.path.join(d, PROGRESS_NAME)]
             watch = _ProgressWatch(os.path.join(d, PROGRESS_NAME), progress)
         try:
-            r = run(pre + argv + ["--import-shards"] + paths, cwd=tv_dir,
+            # REG-3191 (his ruling 2026-11-05 (3): "Each PC imports the proofs for byte-identical files at update ... Locks
+            # open on (imported proofs + local self-check)") - --trust: once the import lands, heart2 writes into this
+            # PC's census every owed gate the bank now serves whole over these bytes, so the locks open at update
+            r = run(pre + argv + ["--trust", "--import-shards"] + paths, cwd=tv_dir,
                     capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5400,
                     creationflags=flags)
         except Exception as e:

@@ -53,8 +53,12 @@ def free_text_problem(text):
     return None
 
 
-def leak_problem(text):
-    """Why this free text may not be published, or None. -> str|None"""
+def leak_problem(text, machine=True):
+    """Why this free text may not be published, or None. -> str|None
+
+    `machine` False leaves out the one check that reads THIS machine (its home path and user name): REG-3191 - a
+    proof's KEY must be the same on every machine. heart2._inert asks with machine=False; a bump and the gate ledger,
+    which guard what is published from here, keep asking it."""
     t = str(text or "")
     if _HOME_ANY.search(t):  # BUMP-LEAK-HOME-ANY
         return "a home path (any spelling: escaped, encoded, Windows, /home, /root)"
@@ -67,6 +71,8 @@ def leak_problem(text):
         return "a hostname"
     if _LEAK_TOKEN.search(t):  # BUMP-LEAK-TOKEN
         return "a token"
+    if not machine:
+        return None
     try:
         import guest_profile as _gp
         for secret, _repl in _gp._secrets():

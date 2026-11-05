@@ -675,8 +675,8 @@ def census_state():
             fp = _h2.gates_fingerprint()
         except Exception:
             fp = None
-        return dict({"state": "missing", "why": "this PC has never proved its instruments", "fingerprint": fp},
-                    **_owed_of(_h2, {}))
+        return dict({"state": "missing", "why": "this PC has never proved its instruments", "fingerprint": fp,
+                     "trustSig": (_trust_sig(_h2, fp) if fp else None)}, **_owed_of(_h2, {}))
     try:
         with io.open(p, encoding="utf-8") as fh:
             st = json.load(fh)
@@ -713,7 +713,20 @@ def census_state():
                                         % (st.get("proved"), st.get("declared"), len(out["blind"])))
     out["envReprove"] = bool(_env_er(_h2, st))
     out.update(_net_of(_h2, st, out.get("state") == "current"))
+    if out.get("state") == "stale":
+        out["trustSig"] = _trust_sig(_h2, have)
     return out
+
+
+def _trust_sig(h2, fp):
+    """REG-3191 - what a trust pass would read: the gates on disk (their fingerprint) and the bank (its size and mtime).
+    -> str | None (the bank cannot be read: no trust run is started on a guess). The lane starts one trust run per
+    signature, so a bank an import (or a push) just grew is asked once, and an unchanged one is never asked twice."""
+    try:
+        bst = os.stat(h2.CACHE)
+        return "%s|%d|%d" % (fp, int(bst.st_mtime_ns), int(bst.st_size))
+    except Exception:
+        return None
 
 
 def _net_of(h2, st, current):
@@ -727,9 +740,14 @@ def _net_of(h2, st, current):
     try:
         tr = st.get("trusted") if isinstance(st.get("trusted"), dict) else {}
         finds = h2.net_finds(st)
+        unj = st.get("netUnjudged") if isinstance(st.get("netUnjudged"), dict) else {}
         out = {"trusted": len(tr),
-               "netFinds": [{"gate": n, "verdict": f.get("verdict"), "at": f.get("at"), "why": f.get("why"),
-                             "line": f.get("line")} for n, f in sorted(finds.items())]}
+               "netFinds": [{"gate": n, "verdict": f.get("verdict"), "at": f.get("at"), "since": f.get("since"),
+                             "seen": f.get("seen"), "why": f.get("why"), "line": f.get("line")}
+                            for n, f in sorted(finds.items())],
+               # REG-3192 - a trusted gate the net could not judge here (an UNKNOWN or slow run): said, and asked again
+               "netUnjudged": [{"gate": n, "verdict": u.get("verdict"), "at": u.get("at"), "tries": u.get("tries")}
+                               for n, u in sorted(unj.items()) if isinstance(u, dict) and n in tr]}
         out["netOwed"] = [(str(n), int(k)) for n, k in h2.net_owed(st)] if current else []
         return out
     except Exception:
@@ -849,10 +867,60 @@ def tree_state(git=None):
         return "unknown", "git could not be asked (%s)" % type(e).__name__
 
 
+#: REG-3191 - a trust run is not a proof: it reads the bank (tens of MB) and hashes the owed gates' inputs, and runs no law.
+#: It needs memory for the bank, never the full proof's.
+TRUST_MIN_FREE_MB = MIN_FREE_MB_TO_START_SMALL
+#: REG-3191 - the refusals that hold a SLICE only because a slice is costly; a trust run is not held by them. Never his
+#: game (playing), never a guess (play-unknown / mem-unknown), never a dev tree, never an environment re-prove.
+TRUST_DESPITE = ("busy", "aside-cooldown", "backoff", "low-memory", "takes-fleet", "no-sandbox", "sandbox-unknown",
+                 "load-unknown")
+
+
 def decide(census, tree, running_pid, busy_pct, mem, now_s, on=True, playing=None, free=None, sandbox=None,
            takes_only=False):
     """THE ONE DECISION. Pure. -> {"start": bool, "key": str, "why": str}
-    `playing` / `free` (REG-1502): None is UNKNOWN, and a proof is never started on a guess."""
+    `playing` / `free` (REG-1502): None is UNKNOWN, and a proof is never started on a guess.
+
+    REG-3191 - when a slice is held only by its own cost (TRUST_DESPITE), a stale census whose bank or gates moved since
+    the last trust run starts THE TRUST PASS instead (`heart2.py --trust`: no law runs). MEASURED 2026-11-05 22:14 on
+    his Mac: 'busy' for 34 min with 6 of 27 owed gates fully servable and unwritten, because the trust pass ran only
+    inside a slice and a slice waits for idle."""
+    d = _decide(census, tree, running_pid, busy_pct, mem, now_s, on=on, playing=playing, free=free, sandbox=sandbox,
+                takes_only=takes_only)
+    if d.get("start") or d.get("key") not in TRUST_DESPITE:
+        return d
+    t = trust_start(census, tree, mem, playing, free)
+    return t if t is not None else d
+
+
+def trust_start(census, tree, mem, playing, free):
+    """REG-3191 - a trust run's decision, or None. Pure. Only a STALE (or missing) census, outside an environment
+    re-prove, on an installed console, with him not playing and memory for the bank, and only once per trust signature
+    (the gates on disk and the bank as they are now) - so an unchanged bank is never asked twice."""
+    c = census or {}
+    if c.get("state") not in ("stale", "missing") or c.get("envReprove"):
+        return None
+    sig = c.get("trustSig")
+    if not sig or sig == (mem or {}).get("trustFor"):
+        return None
+    if not (isinstance(tree, (tuple, list)) and tree and tree[0] == "installed"):
+        return None
+    if playing is not False:
+        return None
+    try:
+        free = float(free)
+    except (TypeError, ValueError):
+        return None
+    if free != free or free < TRUST_MIN_FREE_MB:
+        return None
+    return {"start": True, "key": "trust", "trust": True,
+            "why": "census %s (%s) - a slice is held, so THE TRUST PASS runs first: every owed gate the bank serves whole "
+                   "over these bytes is written with no law run (REG-3191)" % (c.get("state"), c.get("why"))}
+
+
+def _decide(census, tree, running_pid, busy_pct, mem, now_s, on=True, playing=None, free=None, sandbox=None,
+            takes_only=False):
+    """decide()'s rules for a slice (and the safety net), as they always were. Pure."""
     if not on:
         return {"start": False, "key": "off", "why": "the self-prove lane is off (TV_SELF_PROVE=0)"}
     if running_pid:
@@ -1226,10 +1294,11 @@ def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_p
     return True, "a push is grading on this PC (pid %s)" % ", ".join(sorted(hits, key=int)[:4])
 
 
-def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None, reuse=True, net=False):
+def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None, reuse=True, net=False, trust=False):
     """Start `heart2.py --prove` hidden and below everything he does. -> pid
     #99 — `names`: prove just these gates as ONE SLICE (`--prove NAMES --slice`); None proves the whole census.
-    REG-1670 — `workers` None asks lanes_for() with the memory free right now."""
+    REG-1670 — `workers` None asks lanes_for() with the memory free right now.
+    REG-3191 — `trust`: `heart2.py --trust` instead, the trust pass alone (no law runs), through the same door."""
     if workers is None:
         workers = lanes_for(free_mb(), os.cpu_count())
     py = python or sys.executable
@@ -1265,6 +1334,8 @@ def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None
            + (["--reuse"] if reuse else []))
     if net and names:
         cmd.append("--net")                               # REG-3192 - the safety net judges named trusted gates only
+    if trust:
+        cmd = [py] + list(PROVER_MARK) + [os.path.join(HERE, "heart2.py"), "--trust"]   # REG-3191 - no law runs
     if not IS_WIN and os.path.exists("/usr/bin/nice"):
         cmd = ["/usr/bin/nice", "-n", "15"] + cmd
     log = open(log_path, "ab")
@@ -1474,7 +1545,7 @@ def _ask(v, probe):
 def _forget(mem):
     """The proof this lane was tracking is over (ended, or stood aside and gone): drop every trace of it."""
     for k in ("pid", "pidBirth", "startedFor", "finishingSince", "standingAside", "standingAsideForMemory", "sliceGates",
-              "logFrom", "startedBy", "net"):
+              "logFrom", "startedBy", "net", "trust"):
         mem.pop(k, None)
     _STARTED.update(pid=None, birth=None)
 
@@ -1569,6 +1640,10 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
         elif mem.get("net"):
             # REG-3192 - the safety net ended: booked on its own counters; what it judged is in the census (netFinds)
             mem.update(netWorked=_int(mem.get("netWorked")) + 1, netLastTs=now_ms)
+        elif mem.get("trust"):
+            # REG-3191 - the trust run ended: booked on its own counters, never a failed proof and never a backoff - what
+            # it wrote is in the census, and it is asked again only when the bank or the gates move (trustFor)
+            mem.update(trustWorked=_int(mem.get("trustWorked")) + 1, trustLastTs=now_ms)
         elif census.get("state") == "current":
             mem.update(worked=_int(mem.get("worked")) + 1, lastTs=now_ms, lastOk=census.get("why"))
         elif mem.get("standingAside"):
@@ -1655,6 +1730,7 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
                 mem["logFrom"] = None                         # start unknown: the last-line rule decides alone
             import functools as _ft
             _net = bool(d.get("net"))                         # REG-3192 - the safety net's slice
+            _trust = bool(d.get("trust"))                     # REG-3191 - the trust pass alone, no slice
             _spawn_real = _ft.partial(spawn, reuse=not census.get("envReprove"))   # v3862 (item 4)
             if _net:
                 _spawn_real = _ft.partial(_spawn_real, net=True)    # REG-3192 - spawned as --net over named gates
@@ -1674,7 +1750,11 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
                 spawn_fn = lambda _lp, names=None, _f=_sp_one: _f(_lp, names=names, workers=1)  # noqa: E731
             if _net and not _slice:
                 raise ValueError("no safety-net slice could be planned")    # the net never proves a whole census
-            if _slice:
+            if _trust:
+                mem["pid"] = (spawn_fn or _spawn_real)(log_path, trust=True)
+                mem["trust"] = True
+                mem["trustFor"] = census.get("trustSig")       # one run per signature: a failed one is not retried
+            elif _slice:
                 mem["pid"] = (spawn_fn or _spawn_real)(log_path, names=_slice)
                 mem["sliceGates"] = _slice
                 if _net:
@@ -1704,6 +1784,8 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
     if d["key"] == "busy":
         if mem.get("busySince") is None:
             mem["busySince"] = now_ms
+    elif d["key"] == "trust" or (d["key"] == "running" and mem.get("trust")):
+        pass                                               # REG-3191 - a trust run is not a proof: the busy run goes on
     else:
         mem.pop("busySince", None)
     mem.update(lastKey=d["key"], lastWhy=d["why"], lastTick=now_ms)
@@ -1731,4 +1813,12 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
             "net": {"on": on, "worked": _int(mem.get("netWorked")), "lastTs": mem.get("netLastTs"),
                     "running": bool(mem.get("pid")) and bool(mem.get("net")),
                     "owed": (len(census.get("netOwed")) if st == "current" and isinstance(census.get("netOwed"), list)
-                             else None)}}
+                             else None),
+                    "unjudged": census.get("netUnjudged") if isinstance(census.get("netUnjudged"), list) else None},
+            # REG-3191 - the lane's light trust run: owed 1 while a stale census has a bank it has not read yet
+            "trust": {"on": on, "worked": _int(mem.get("trustWorked")), "lastTs": mem.get("trustLastTs"),
+                      "running": bool(mem.get("pid")) and bool(mem.get("trust")),
+                      "owed": (None if st == "unknown" or (st in ("stale", "missing") and not census.get("trustSig"))
+                               else 1 if (st in ("stale", "missing") and census.get("trustSig") != mem.get("trustFor")
+                                          and not census.get("envReprove"))
+                               else 0)}}

@@ -29021,6 +29021,19 @@ function escC(s) {
         + _blindN + ' gate' + (_blindN === 1 ? ' is' : 's are') + ' blind, so nothing that spends a reel may act here')
         + '">locks shut \u00b7 ' + _blindN + ' gate' + (_blindN === 1 ? '' : 's') + ' blind</span>');
     }
+    /* REG-3192 (his ruling 2026-11-05 (4): "a red/blind it finds goes to the fleet + BUGS and closes only the lock its law
+       guards") - THE SAFETY NET'S FINDS. A find leaves the census CURRENT, so the row read healthy while the found law's
+       lock was shut on that PC. The chip names the law(s) and says only their locks are shut, never every lock. */
+    var _netF = (hs && Array.isArray(hs.netFinds)) ? hs.netFinds.filter(function (e) { return e && e.gate; }) : [];
+    if (_netF.length) {
+      var _netWho = _netF.map(function (e) { return String(e.gate) + ' ' + String(e.verdict || 'failing'); });
+      bits.push('<span class="fleet-riverstuck fleet-netfind" data-netfinds="' + _netF.length + '" title="'
+        + escC('the safety net judged laws here that this PC first took on another tree\u2019s proofs, and '
+        + _netF.length + (_netF.length === 1 ? ' fails' : ' fail') + ' on this PC: ' + _netWho.join(', ')
+        + ' \u2014 only the locks those laws guard are shut; every other lock stands') + '">safety net: '
+        + escC(_netWho.slice(0, 2).join(', ')) + (_netF.length > 2 ? ' +' + (_netF.length - 2) : '')
+        + ' \u00b7 its locks shut</span>');
+    }
     /* #193 (his "river says unknown now", 2026-10-27) - A CONSOLE THAT JUST STARTED IS NOT A BROKEN ONE. Its first proof
        check runs about 5 minutes after a start, and its river is read about a minute after. Until then the beacon says
        key 'starting' with census null: still UNKNOWN, but the row names the wait instead of a bare word that reads as a

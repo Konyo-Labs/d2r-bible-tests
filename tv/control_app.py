@@ -18425,6 +18425,11 @@ def _river_for_wire(now_ms=None):
     out["heart"]["lockWhy"] = _wire_text(_lk.get("why"), 200) if _lk.get("why") else None
     out["heart"]["locksAgeS"] = (round(max(0.0, (now - int(_lk["ts"])) / 1000.0), 1)
                                  if isinstance(_lk.get("ts"), int) and not isinstance(_lk.get("ts"), bool) else None)
+    # REG-3192 (his ruling 2026-11-05 (4): "a red/blind it finds goes to the fleet + BUGS and closes only the lock its law
+    # guards") - THE SAFETY NET'S FINDS RIDE THE FLEET. A find leaves the census CURRENT (it closes only its law's locks),
+    # so without these the row read healthy while this PC's guarded lock was shut. Gate and verdict only - the BUGS-ready
+    # line stays on this PC's own selfProve. None = this console's lane has not said (an older heart2): UNKNOWN, never [].
+    out["heart"].update(net_for_wire(_sp))
     return out
 
 
@@ -18531,6 +18536,25 @@ def _river_locks_note(now_ms=None, ask=None):
     else:
         _RIVER_LOCKS_SEEN.update(ts=now, shut=[l for l, _w in shut], why=(shut[0][1] if shut else None))
     return dict(_RIVER_LOCKS_SEEN)
+
+
+def net_for_wire(sp):
+    """REG-3191 / REG-3192 - the self-prove lane's safety net, as the fleet carries it. Pure. -> {"netFinds", "trusted",
+    "netUnjudged"}: netFinds a list of {gate, verdict, at, seen} (at most 8) or None (not said - UNKNOWN); trusted the
+    number of gates the census holds on another tree's proofs or None; netUnjudged how many of those the net could not
+    judge here yet, or None."""
+    sp = sp if isinstance(sp, dict) else {}
+    nf = sp.get("netFinds")
+    finds = None
+    if isinstance(nf, list):
+        finds = [{"gate": str(f.get("gate")), "verdict": f.get("verdict"), "at": f.get("at"), "seen": f.get("seen")}
+                 for f in nf if isinstance(f, dict) and f.get("gate")][:8]
+    tr = sp.get("trusted")
+    net = sp.get("net") if isinstance(sp.get("net"), dict) else {}
+    unj = net.get("unjudged")
+    return {"netFinds": finds,
+            "trusted": tr if isinstance(tr, int) and not isinstance(tr, bool) else None,
+            "netUnjudged": len(unj) if isinstance(unj, list) else None}
 
 
 #: v3862 (item 10, his "proof meter" ask) - the owed-law readings this console has taken, oldest first: [(ms, owed)].
@@ -48150,17 +48174,27 @@ def _self_prove_row(_spv):
     # the row read OK over exactly that. It warns now and says so; a lane that is off over a current census is still OK.
     _sp_census = str(_spv.get("census") or "")
     _sp_shut = _sp_key == "off" and _sp_census != "current"
+    # REG-3192 (his ruling 2026-11-05 (4)) - a SAFETY-NET find leaves the census current and shuts only its law's locks,
+    # so this row is where this PC says it: a warning naming the law(s), never a healthy census line over a shut lock.
+    # REG-3191 - "trust" (the lane's light trust run while a slice waits for idle) is healthy work, not a fault.
+    _sp_net = [f for f in (_spv.get("netFinds") or []) if isinstance(f, dict) and f.get("gate")] \
+        if isinstance(_spv.get("netFinds"), list) else []
     _sp_ok = (_sp_key in (None, "current", "running", "start", "dev", "off", "busy",
                         "start-small", "playing", "stood-aside", "running-unverified", "low-memory", "aside-cooldown")
-              and not _sp_blind and not _sp_shut)   # REG-1502: deferring to his game is healthy
-    line = ("self-prove: census %s - %s%s%s" % (_spv.get("census") or "not asked yet", _spv.get("say") or "",
+              or _sp_key == "trust") and not _sp_blind and not _sp_shut and not _sp_net   # REG-1502: his game is healthy
+    line = ("self-prove: census %s - %s%s%s%s" % (_spv.get("census") or "not asked yet", _spv.get("say") or "",
                                                 (" · %d instrument(s) BLIND here (%s) - every lock stays shut "
                                                  "until each goes red again" % (len(_sp_blind),
                                                                                ", ".join(_sp_blind[:3])))
                                                 if _sp_blind else "",
                                                 (" · the lane is OFF and the census is %s - nothing will prove this "
                                                  "PC, so every lock it governs stays shut" % (_sp_census or "unknown"))
-                                                if _sp_shut else ""))
+                                                if _sp_shut else "",
+                                                (" · the SAFETY NET found %d law(s) failing here (%s) - only the locks "
+                                                 "they guard are shut" % (len(_sp_net), ", ".join(
+                                                     "%s %s" % (f.get("gate"), f.get("verdict") or "?")
+                                                     for f in _sp_net[:3])))
+                                                if _sp_net else ""))
     return bool(_sp_ok), line
 
 

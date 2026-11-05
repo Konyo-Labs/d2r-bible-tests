@@ -510,6 +510,23 @@ export async function onRequestPost(context) {
             const la = num(rv.heart.locksAgeS, DAY400);
             if (la !== null) out.river.heart.locksAgeS = la;
           }
+          /* REG-3192 (his ruling 2026-11-05 (4): "a red/blind it finds goes to the fleet + BUGS") - THE SAFETY NET'S FINDS:
+             a find leaves the census current, so without them this row read healthy while that PC's guarded lock was
+             shut. A law name and its verdict only, shaped like every key above; absent stays absent (an older console). */
+          if (Array.isArray(rv.heart.netFinds)) {
+            out.river.heart.netFinds = rv.heart.netFinds.slice(0, 8).map(function (e) {
+              if (!e || typeof e !== 'object') return null;
+              const g = String(e.gate || '');
+              if (!/^[A-Za-z0-9_.-]{1,120}$/.test(g)) return null;
+              const v = String(e.verdict || '');
+              return { gate: g, verdict: ['RED', 'BLIND', 'INVALID'].indexOf(v) >= 0 ? v : null,
+                       at: whole(e.at, 9e15), seen: whole(e.seen, 1000000) };
+            }).filter(Boolean);
+          }
+          const _trN = whole(rv.heart.trusted, 100000);
+          if (_trN !== null) out.river.heart.trusted = _trN;
+          const _nuN = whole(rv.heart.netUnjudged, 100000);
+          if (_nuN !== null) out.river.heart.netUnjudged = _nuN;
         }
       }
       /* v3862 - THE REPAIR BOOK, SO AN ERROR NO PC KNOWS HOW TO FIX IS SEEN FROM HERE (his ask 2026-11-05: "unknown errors

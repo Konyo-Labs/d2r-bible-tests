@@ -312,7 +312,7 @@ RED_PROOF = [
     {
         "why": "REG-2602 - second eye: a note or ship subject that is not inert words is masked unchecked",
         "file": "heart2.py",
-        "find": "            if stamp_leak.free_text_problem(t) or stamp_leak.leak_problem(t):\n                return False\n",
+        "find": "            if stamp_leak.free_text_problem(t) or stamp_leak.leak_problem(t, machine=False):\n                return False\n",
         "replace": "            pass\n",
         "matches": 1,
     },
