@@ -33,7 +33,10 @@ env:
 jobs:
   shard:
     name: shard ${{ matrix.shard }}
-    runs-on: ubuntu-latest
+    # v3865 (his call 2026-11-05: one measured round on Depot, inside a hard $20) - the machine is a repository variable,
+    # never the code: `gh variable set PROOF_RUNNER --body depot-ubuntu-24.04-8` points a round at Depot, and unsetting it
+    # (or Depot's minute cap stopping new jobs) puts the shards back on GitHub's free runners with one command, no commit.
+    runs-on: ${{ vars.PROOF_RUNNER || 'ubuntu-latest' }}
     # Planned max ~41 min of proving per shard (21a78ff6, N=16) plus setup; the step cap below fails loud first.
     timeout-minutes: 180
     strategy:
@@ -46,7 +49,7 @@ jobs:
       # v3865 (his ask 2026-11-05, after Depot needed an org) - a free public runner has 4 vCPUs and a shard proved on 2;
       # 3 is measured against the 2-lane rounds before anything more is asked of it (heart2 scales each gate's deadline by
       # its lanes, and caps lanes by free disk). The machine step below says what each shard actually ran on.
-      HEART2_PROVE_WORKERS: "3"
+      HEART2_PROVE_WORKERS: ${{ vars.PROOF_PROVERS || '3' }}
     steps:
       - name: Mark start
         run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
