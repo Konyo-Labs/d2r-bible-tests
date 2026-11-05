@@ -134,6 +134,10 @@ class TheTickAfterAnImport(unittest.TestCase):
         CA._PROOF_RELEASE["ends"] = int(CA._PROOF_RELEASE.get("ends") or 0) + 1         # counted, not yet cleared
         CA._self_prove_dispatch(n + 1)
         self.assertEqual(self.ticks, [], "the tick ran while the import still said running")
+        # v3865 (GitHub's proof shard: this proof stayed GREEN) - REG-3197's held flag ticks after the import anyway, so
+        # the tick count alone cannot see an ending SPENT while the import still ran; the record can
+        self.assertNotEqual(CA._PROOF_RELEASE.get("tickedFor"), CA._PROOF_RELEASE["ends"],
+                            "an ending was answered while the import still ran - its tick is spent before it can run")
         CA._PROOF_RELEASE["ends"] -= 1
         held[0]()                                               # the import ends
         CA._self_prove_dispatch(n + 2)

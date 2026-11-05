@@ -445,10 +445,11 @@ class TheRouteIsWitnessedWithoutAWindow(unittest.TestCase):
         self.assertEqual(self.owner({"nickname": "someone"}), "")
 
 RED_PROOF = [
-    {"why": "v3859 - a lane that owes reels is no longer named beside river-stuck, and the cut would hide it",
+    {"why": "v3865 (the r3 review) - a lane that owes 0 reels is drawn as a red debt again (his ALT row: vault lane owes 0); "
+            "the fixture's lane owes 0, so this is the debt rule it can judge - the owes>=1 chip is test_a_held_reel_is_not_river_stuck's",
      "file": "tv/control_ui.html",
-     "find": "      _owes.filter(function (x, i) { return _owes.indexOf(x) === i; }).forEach(",
-     "replace": "      _owes.filter(function (x, i) { return false; }).forEach(",
+     "find": "return (mm && +mm[2] > 0) ? mm[1] + ' owes ' + mm[2]",
+     "replace": "return mm ? mm[1] + ' owes ' + mm[2]",
      "matches": 1},
     {"why": "REG-3051 follow-up - the river-stuck chip's tip stops naming what waited, and the byte-for-byte pin would not see it",
      "file": "tv/control_ui.html",

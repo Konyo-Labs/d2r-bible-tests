@@ -176,8 +176,8 @@ RED_PROOF = [
         "why": "finding 3 - if vault_sweep_start does not consult the quarantine, a direct caller (relaunch, "
                "manual, busy-retry, api) re-runs the hanging reel and re-hangs until the watchdog fires again",
         "file": "control_app.py",
-        "find": "        if _qrid in _VAULT_SWEEP_QUARANTINE:",
-        "replace": "        if _qrid in ():",
+        "find": "    if reel_dir and not force:\n        _qrid = os.path.basename(os.path.normpath(str(reel_dir)))\n",
+        "replace": "    if False:\n        _qrid = None\n",
         "matches": 1,
     },
 ]
