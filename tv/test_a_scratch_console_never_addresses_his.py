@@ -132,6 +132,19 @@ class AScratchConsoleNeverAddressesHis(unittest.TestCase):
         self.assertEqual(o["controlPort"], SCRATCH, "PREMISE: control_app read another port than the helper")
         self.assertIn(own, o["organ"] or "", "the organ table's live read did not name its own console: %r" % o["organ"])
 
+    def test_a_console_named_only_by_its_control_port_takes_its_own_agent(self):
+        """v3863 - REG-2998's agent default, measured where it applies: a console started with TV_CONTROL_PORT and no TV_PORT
+        (the driver above always names both, so red-proof [7] stayed GREEN through its tamper on CI proof shard 13)"""
+        env = dict(os.environ)
+        env.pop("TV_PORT", None)
+        env["TV_CONTROL_PORT"] = str(SCRATCH)
+        prog = "import sys; sys.path.insert(0, %r); import control_app as C; print('AGENT', C.AGENT_PORT)" % HERE
+        r = subprocess.run([sys.executable, "-c", prog], env=env, capture_output=True, text=True, timeout=180)
+        got = [l for l in (r.stdout or "").splitlines() if l.startswith("AGENT ")]
+        self.assertTrue(got, "control_app would not import for the measure: %s" % (r.stderr or "")[-600:])
+        self.assertEqual(got[-1], "AGENT %d" % (SCRATCH - 1),
+                         "a console named only by its control port takes another agent port (his 17771?): %r" % got[-1])
+
     def test_no_console_named_is_no_console_never_his(self):
         with mock.patch.dict(os.environ, {"TV_CONTROL_PORT": "not-a-port"}):
             self.assertEqual((CP.port(), CP.url("/x")), (None, None))
