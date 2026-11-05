@@ -155,6 +155,21 @@ class AScratchConsoleNeverAddressesHis(unittest.TestCase):
         with mock.patch.dict(os.environ, env, clear=True):
             self.assertEqual(CP.port(), CP.PRIMARY, "a CLI with no console named is his - the one default, said once")
 
+    def test_an_unreadable_port_is_said_never_an_empty_url(self):
+        """v3866 (the #231 eye on v3863) - console_port.url() is None when the port will not read; two readers handed
+        urlopen("") instead: the shelf corroborator recorded the reason as "ValueError" and the journal planner died with
+        a traceback. Both now say the port does not read, and neither asks anything."""
+        import journal_retention as JR
+        import shelf_corroborate as SC
+        asked = []
+        with mock.patch.dict(os.environ, {CP.ENV: "not-a-port"}), \
+                mock.patch("urllib.request.urlopen", side_effect=lambda *a, **k: asked.append(a) or (_ for _ in ()).throw(
+                    AssertionError("urlopen was called with %r" % (a,)))):
+            self.assertIsNone(SC._live_sessions())
+            self.assertIn("port does not read", SC._LAST_ASK_WHY)
+            self.assertEqual(JR.main([]), 2)
+        self.assertEqual(asked, [], "an unreadable port was asked as an empty URL")
+
     def test_no_new_his_port_literal(self):
         bad = []
         for p in sorted(glob.glob(os.path.join(HERE, "*.py"))):
@@ -180,6 +195,16 @@ class AScratchConsoleNeverAddressesHis(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3866 (#231 on v3863) - the shelf corroborator asks urlopen('') and records only 'ValueError'",
+     "file": "tv/shelf_corroborate.py",
+     "find": "        if not _u:\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "v3866 (#231 on v3863) - the journal planner dies with a traceback on an unreadable port",
+     "file": "tv/journal_retention.py",
+     "find": "    if not _u:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
     {"why": "REG-2998 - the doctor addresses his console by its port again",
      "file": "tv/console_doctor.py",
      "find": "CONSOLE = _cport.url() or \"\"\n",

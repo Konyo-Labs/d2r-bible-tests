@@ -351,7 +351,12 @@ def main(argv=None):
     import json
     import urllib.request
     import console_port as _cport       # REG-2998 - the console's port (TV_PORT is the AGENT's), never :17772 by name
-    with urllib.request.urlopen(_cport.url("/api/sessions") or "", timeout=120) as r:
+    _u = _cport.url("/api/sessions")
+    if not _u:
+        # v3866 (the #231 eye on v3863) - urlopen("") died with a traceback; an unreadable port is said and exits 2
+        print("journal retention: the console's port does not read (%s) - no console to ask, nothing planned" % _cport.ENV)
+        return 2
+    with urllib.request.urlopen(_u, timeout=120) as r:
         rows = json.loads(r.read().decode("utf-8", "replace")).get("sessions") or []
     p = plan(rows)
     print(p["say"])

@@ -250,7 +250,12 @@ def _live_sessions():
     try:
         import urllib.request
         import console_port as _cport   # REG-2998 - this process's console
-        with urllib.request.urlopen(_cport.url("/api/sessions") or "", timeout=30) as fh:
+        _u = _cport.url("/api/sessions")
+        if not _u:
+            # v3866 (the #231 eye on v3863) - urlopen("") raised and the reason read "ValueError"; say which fact it is
+            globals()["_LAST_ASK_WHY"] = "the console's port does not read (%s) - no console to ask" % _cport.ENV
+            return None
+        with urllib.request.urlopen(_u, timeout=30) as fh:
             return (json.load(fh) or {}).get("sessions") or []
     except Exception as e:
         globals()["_LAST_ASK_WHY"] = "%s" % type(e).__name__
