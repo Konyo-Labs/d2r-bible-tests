@@ -81,6 +81,9 @@ W._vaultAutoIntakeSet(false);
 OUT.add = [SH, 'The Stone of Jordan', 'The Stone of Jordan', 'Raven Frost'].map(function(n){ return !!(W.vaultHandAdd(n) || {}).ok; });
 W.renderVault(); H.flush(60, 3);
 OUT.wars = wars(); OUT.full = (W._vaultWarFull || []).length;
+/* v3864 - the maker asked directly: a paint now also runs REG-3180's prune, which takes an idle mule straight back, so the
+   end state alone cannot tell a maker that made nothing from one that made a mule and lost it the same paint */
+var _d = W._vaultWarAutoMule(); OUT.direct = (_d && _d.made) || null; OUT.directWars = wars();
 """
 
 BODY_SEEN = READ + r"""
@@ -198,6 +201,8 @@ class TheBoardMakesTheWarMuleTheOverflowNeeds(unittest.TestCase):
         self.assertTrue(all(n["add"]), n["add"])
         self.assertEqual(n["full"], 0, "PREMISE: this vault overflows: %r" % n)
         self.assertEqual(n["wars"], [], "a WAR mule was made with nothing past the war stash: %r" % n["wars"])
+        self.assertEqual((n["direct"], n["directWars"]), ([], []),
+                         "asked directly, the maker made a WAR mule with nothing past the war stash: %r" % ((n["direct"], n["directWars"]),))
 
     def test_an_item_read_on_war1_closes_the_task_without_a_tick(self):
         s = self.seen
@@ -282,7 +287,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2803 - the board's mule is not one his delete can take back (no added flag, no mint id)",
      "file": "bible.html",
-     "find": "      var m = { id: 'm' + Date.now().toString(36) + n, name: v.name, icon: '⚔️', note: 'war stash overflow - made by the board ' + at.slice(0, 10),\n                added: true, role: 'war', warN: n,\n",
+     "find": "      var m = { id: _reuse ? _rid : ('m' + Date.now().toString(36) + n), name: v.name, icon: '⚔️', note: 'war stash overflow - made by the board ' + at.slice(0, 10),\n                added: true, role: 'war', warN: n,\n",
      "replace": "      var m = { id: 'war-board-' + n, name: v.name, icon: '⚔️', note: 'war stash overflow - made by the board ' + at.slice(0, 10),\n                role: 'war', warN: n,\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-2803 - he is never tasked to make it in the game",
