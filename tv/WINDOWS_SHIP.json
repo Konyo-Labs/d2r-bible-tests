@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3861",
+  "ver": "v3862",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3861: a sunder counted once, d2jsp sign-in on Windows, fleet reasons",
+  "note": "v3862: GitHub proves once and every PC imports, known errors fix themselves, the paid fleet budget",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

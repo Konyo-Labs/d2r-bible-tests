@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3862",
+    "date": "2026-11-05",
+    "items": [
+      "v3862 - a push trusts GitHub for the exact commit: the Mac runs only what GitHub cannot (REG-3156)",
+      "v3862 - every PC imports GitHub proofs for its own commit from the public proof bank (REG-3155)",
+      "v3862 - the ci-trust import finds the hidden shard caches (REG-3154)",
+      "v3862 - ship_when_green: ci branches, GitHub green on the exact commit, then main (REG-3157)",
+      "v3862 - the repair book: known errors fix themselves on the PC that has them (REG-3158)",
+      "v3862 - unknown errors ride the fleet row, scrubbed, and reach the overwatch line (REG-3159)",
+      "v3862 - each PC Claude diagnoses an unknown error, read-only, twice a day at most (REG-3164)",
+      "v3862 - the proof meter on every fleet row: owed, rate, time left (REG-3160)",
+      "v3862 - the fleet runs on the Workers Paid budget: fresher presence and shadow (REG-3161)",
+      "v3862 - a PC whose environment changed proves every law once again (REG-3162)",
+      "v3862 - a new PC on one of his labels waits for his Mac approval (REG-3163)",
+      "v3862 - GitHub proves each published commit on Windows too (REG-3165)",
+      "v3862 - a proof runs beside a cloud game client; only the local game stops it (REG-3153)",
+      "v3862 Windows - Chrome version is read from its folder, never by opening Chrome (REG-3152)",
+      "v3862 - carries v3861 (REG-3136 to REG-3151), whose own push was refused by load"
+    ]
+  },
+  {
     "ver": "v3861",
     "date": "2026-11-05",
     "items": [
