@@ -36,6 +36,8 @@ except Exception:
     pass
 import fixture_tmp as _fx_tmp  # noqa: E402
 _fx_tmp.contain()
+import fixture_ledgers as _fx_ledgers  # noqa: E402  a real doctor pass writes the eagle ledgers (unknown_age)
+_fx_ledgers.redirect()                  # module level: this process and every child it starts write a temp ledger, never his
 import console_port as CP  # noqa: E402
 
 SCRATCH = 17993

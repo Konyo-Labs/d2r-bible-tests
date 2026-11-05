@@ -134,7 +134,8 @@ def _cache_root():
         import chronicle_routes as _cr
         return _cr._routes_cache_root()
     except Exception:
-        return HERE
+        # v3863 - a fixture world's TV_HIST is still its root when the census module will not load (never his tv/)
+        return os.environ.get("TV_HIST") or HERE
 
 
 _DISK = {}
