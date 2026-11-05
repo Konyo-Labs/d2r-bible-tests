@@ -137,11 +137,46 @@ class NoTestWritesHisEagleLedgers(unittest.TestCase):
                           "never as the suite writing his state" % n)
 
 
+class EveryGateTheRunnerStartsHasItsOwnLedgers(unittest.TestCase):
+    """v3864 (card 75) - v3864's first GitHub run created tv/.eagle_slow.json and tv/.unknown_age.json on shard 3 (live-state-
+    untouched red), named against a gate that touches neither. run_gates.law_env now points each of the three ledgers at its own
+    temp file for every gate, unless the caller set one - and a law that pops what it set (test_cf_handoff did) puts back the
+    runner's, never nothing."""
+
+    def test_a_gate_gets_temp_ledgers_and_a_callers_own_is_kept(self):
+        import run_gates as RG
+        env = RG.law_env(False, base={"PATH": os.environ.get("PATH", "")})
+        for var, _stem in RG.LAW_LEDGERS:
+            got = env.get(var)
+            self.assertTrue(got, "a gate starts with %s unset - its writes land in his live tv/" % var)
+            self.assertFalse(os.path.abspath(got).startswith(HERE + os.sep), "%s points into tv/: %r" % (var, got))
+        other = RG.law_env(False, base={"PATH": os.environ.get("PATH", "")})
+        self.assertNotEqual(env["TV_EAGLE_SLOW"], other["TV_EAGLE_SLOW"], "two gates share one temp ledger")
+        mine = RG.law_env(False, base={"PATH": os.environ.get("PATH", ""), "TV_EAGLE_SLOW": "/fixture/slow.json"})
+        self.assertEqual(mine["TV_EAGLE_SLOW"], "/fixture/slow.json", "the caller's own ledger was overridden")
+
+    def test_a_law_puts_back_the_ledger_it_found(self):
+        src = io.open(os.path.join(HERE, "test_cf_handoff.py"), encoding="utf-8").read()
+        for var in ("TV_UNKNOWN_AGE", "TV_EAGLE_SLOW"):
+            self.assertIn('        self._was = os.environ.get("%s")' % var, src, "test_cf_handoff no longer keeps the %s it found" % var)
+            self.assertIn('            os.environ["%s"] = self._was\n' % var, src, "test_cf_handoff deletes the %s it found" % var)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
 
 
 RED_PROOF = [
+    {"why": "v3864 (card 75) - a gate starts with no ledger redirect, so a law that forgets fixture_ledgers writes his live tv/",
+     "file": "tv/run_gates.py",
+     "find": "        if not env.get(_var):\n            env[_var] = _law_ledger_path(_stem)\n",
+     "replace": "        pass\n",
+     "matches": 1},
+    {"why": "v3864 (card 75) - test_cf_handoff pops the ledger it found, so every test after it in that process writes his live file",
+     "file": "tv/test_cf_handoff.py",
+     "find": "        if self._was is None:\n            os.environ.pop(\"TV_EAGLE_SLOW\", None)\n        else:\n            os.environ[\"TV_EAGLE_SLOW\"] = self._was\n",
+     "replace": "        os.environ.pop(\"TV_EAGLE_SLOW\", None)\n",
+     "matches": 1},
     {
         "why": "REG-1257 - the #229 pass law drives a real doctor pass unredirected again (CI caught it writing .unknown_age.json)",
         "file": "test_a_pass_says_which_check_it_is_in.py",

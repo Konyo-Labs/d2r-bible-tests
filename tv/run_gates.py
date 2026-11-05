@@ -146,9 +146,35 @@ def git_free_env(base=None, **extra):
     return env
 
 
+#: v3864 (card 75) - the ledgers a gate may never write on his PC, each pointed at its own temp file by law_env when the caller
+#: set none (the same three fixture_ledgers.redirect fills for a law run by hand).
+LAW_LEDGERS = (("TV_UNKNOWN_AGE", "unknown_age"), ("TV_EAGLE_SLOW", "eagle_slow"), ("TV_BAKE_RECEIPT", "bake_seed_receipt"))
+_LAW_LEDGER = {"dir": None, "n": 0}
+
+
+def _law_ledger_path(stem):
+    """A fresh temp path for one gate's copy of one ledger, under one per-run dir removed at exit. -> str"""
+    if _LAW_LEDGER["dir"] is None:
+        import atexit
+        import shutil
+        import tempfile
+        _LAW_LEDGER["dir"] = tempfile.mkdtemp(prefix="tvd-gate-ledgers-")
+        atexit.register(shutil.rmtree, _LAW_LEDGER["dir"], True)
+    _LAW_LEDGER["n"] += 1
+    return os.path.join(_LAW_LEDGER["dir"], "%s_%d.json" % (stem, _LAW_LEDGER["n"]))
+
+
 def law_env(needs_app, base=None):
     """The environment a gate runs in. -> dict (a copy; `base` defaults to os.environ; no GIT_* variable - REG-2396)"""
     env = git_free_env(base)
+    # v3864 (card 75) - A GATE NEVER WRITES HIS EAGLE LEDGERS. v3864's first GitHub run: live-state-untouched went red on
+    # shard 3 with tv/.eagle_slow.json and tv/.unknown_age.json created, attributed to a gate that never touches either (gates
+    # run in parallel slices, so the window named a neighbour). fixture_ledgers.redirect() guards a law that remembers to call
+    # it; this guards every gate the runner starts, so a law that forgot - or one that pops the variable it set - cannot reach
+    # his files. A caller that set a ledger itself keeps it.
+    for _var, _stem in LAW_LEDGERS:
+        if not env.get(_var):
+            env[_var] = _law_ledger_path(_stem)
     # REG-2569 - A GATE NEVER CALLS THE CLAUDE CLI (Elad 2026-10-22: his plan sits at 98%). test_screen_parity's console
     # import asked `claude auth status`. Every gate runs with D2R_NO_CLAUDE=1 (claude_signin answers UNKNOWN without
     # spawning) and a refusing `claude` first on PATH.

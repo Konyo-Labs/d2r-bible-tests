@@ -43,6 +43,7 @@ class TestCF8UnknownCarriesAge(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="ua_")
         self.path = os.path.join(self.tmp, "age.json")
+        self._was = os.environ.get("TV_UNKNOWN_AGE")   # v3864 (card 75) - put back what was there, never just delete it
         os.environ["TV_UNKNOWN_AGE"] = self.path
         import unknown_age as ua
         self.ua = ua
@@ -51,7 +52,10 @@ class TestCF8UnknownCarriesAge(unittest.TestCase):
             os.remove(self.path)
 
     def tearDown(self):
-        os.environ.pop("TV_UNKNOWN_AGE", None)
+        if self._was is None:
+            os.environ.pop("TV_UNKNOWN_AGE", None)
+        else:
+            os.environ["TV_UNKNOWN_AGE"] = self._was
         shutil.rmtree(self.tmp, True)
 
     def test_two_unknowns_keep_first_seen_and_move_last_attempt(self):
@@ -206,12 +210,16 @@ class TestCF12SlowChecksReachASidecar(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="es_")
         self.path = os.path.join(self.tmp, "slow.json")
+        self._was = os.environ.get("TV_EAGLE_SLOW")   # v3864 (card 75) - put back what was there, never just delete it
         os.environ["TV_EAGLE_SLOW"] = self.path
         import console_doctor as cd
         self.cd = cd
 
     def tearDown(self):
-        os.environ.pop("TV_EAGLE_SLOW", None)
+        if self._was is None:
+            os.environ.pop("TV_EAGLE_SLOW", None)
+        else:
+            os.environ["TV_EAGLE_SLOW"] = self._was
         shutil.rmtree(self.tmp, True)
 
     def test_the_premise_is_true_two_named_slow_checks(self):
