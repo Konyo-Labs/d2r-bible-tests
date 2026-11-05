@@ -77,6 +77,12 @@ class ARolledNameIsReadInEverySlotAndAnyCasing(unittest.TestCase):
         bad = ["%s -> %r, wants %r" % (n, self.o["route"].get(n), want) for n, want in ROUTE.items() if self.o["route"].get(n) != want]
         self.assertEqual(bad, [], "\n".join(bad))
 
+    def test_an_of_the_suffix_is_read_as_magic_not_only_routed(self):
+        # v3864 (prover BLIND on [2], GitHub v3864): with the 'of the X' suffix unread, _rolledQuality answered null and the
+        # route still said MAGIC & RARE by another rule - so the home alone could not tell. The read itself is the subject.
+        for n in ("Shadow Amulet of the Whale", "Amulet of the Fox"):
+            self.assertEqual((self.o["rq"].get(n) or {}).get("q"), "magic", "%s is not READ as a magic item: %r" % (n, self.o["rq"].get(n)))
+
     def test_capitals_are_read_in_the_games_casing_and_nothing_else_is_touched(self):
         self.assertEqual(self.o["spell"], ["Fine Small Charm of Vita", "Gheed's Fortune", "Shimmering Small Charm", "X"])
         self.assertIsNone(self.o["rq"]["RAVEN CLAW"], "a real unique in capitals was read as a rare")
