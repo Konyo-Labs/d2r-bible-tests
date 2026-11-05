@@ -186,6 +186,15 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3152 - ON WINDOWS, READING CHROME'S VERSION OPENED A CHROME WINDOW, OVER AND OVER (v3862)
+His words 2026-11-05 ~08:40: "the old PC laptop ALT is buging out... chrome keeps reopening a page randomly". MEASURED on
+the old ALT over SSH: its console's background proof (heart2 --prove) was running test_the_d2jsp_desk_reads_a_price_before_it_
+posts, whose path reaches chrome_user_agent(), whose Windows branch ran `chrome.exe --version` - which on Windows does NOT
+print a version: it starts the browser (pid 10684, his own profile, ~20 renderers, 08:45:18). run()'s 5 s timeout then
+killed it, and each proof run opened it again. The same read sat under every d2jsp price and send on every Windows PC.
+The version is now the version folder Chrome installs beside chrome.exe (156.0.8078.80 there); nothing is launched.
+Law test_the_d2jsp_desk_reads_a_price_before_it_posts (no-launch case with subprocess.run forbidden; red-proof).
+Stopped on the old ALT at once by ending that proof tree (taskkill /T on the -X tvd_self_prove heart2).
 ### REG-3151 - A TRIAGE LAW READ HIS REAL IDLE CLOCK, SO IT WENT RED WHENEVER HE HAD BEEN AWAY 3 HOURS (v3861 gate repair)
 v3855's stale-play rule reads this PC's keyboard/mouse idle time; test_triage_runs_beside_a_shadow_reel never stubbed it.
 MEASURED 2026-11-05: green in the v3860 push at 04:30 (he was active) and on CI (no idle clock), RED in the v3861 push

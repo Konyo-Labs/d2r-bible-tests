@@ -997,6 +997,28 @@ def _chrome_bin(platform=None, which=None):
     return None
 
 
+def _windows_chrome_version(binary, listdir=None):
+    """v3862 - the installed Chrome's version on Windows, WITHOUT running Chrome. -> "156.0.8078.80" | None
+
+    ⚠ `chrome.exe --version` DOES NOT PRINT A VERSION ON WINDOWS - IT OPENS A BROWSER WINDOW. MEASURED 2026-11-05 on
+    the old ALT: his console's background proof ran the d2jsp desk law, the law reached this read, and every run launched
+    `chrome.exe --version` as a real browser (pid 10684, the user's own profile, ~20 renderers); run()'s 5 s timeout
+    then killed it, so Chrome kept opening and closing a page - "chrome keeps reopening a page randomly" (Elad). The
+    same read sat under every d2jsp price on every Windows PC. The installer keeps one folder per version beside
+    chrome.exe (Application\\156.0.8078.80 on that PC), so the version is a directory listing; the newest wins
+    during an update, and nothing readable is None (the caller keeps its fallback)."""
+    if not binary:
+        return None
+    try:
+        names = (listdir or os.listdir)(os.path.dirname(binary))
+    except OSError:
+        return None
+    vers = [n for n in names if re.fullmatch(r"\d+(?:\.\d+){2,3}", str(n))]
+    if not vers:
+        return None
+    return max(vers, key=lambda v: tuple(int(x) for x in v.split(".")))
+
+
 def chrome_user_agent(platform=None, version=None):
     """The installed Chrome's own signature. A clearance cookie is bound to it.
 
@@ -1043,20 +1065,7 @@ def chrome_user_agent(platform=None, version=None):
                     if re.fullmatch(r"\d+(?:\.\d+){2,3}", got):
                         version = got
         elif plat == "win32" and plat == sys.platform:
-            binary = _chrome_bin(platform=plat)
-            if binary:
-                try:
-                    proc = subprocess.run(
-                        [binary, "--version"],
-                        capture_output=True, timeout=5, text=True,
-                        encoding="utf-8", errors="replace",
-                    )
-                except (OSError, subprocess.SubprocessError):
-                    proc = None
-                if proc is not None and proc.returncode == 0:
-                    got = (proc.stdout or "").strip().rsplit(" ", 1)[-1]
-                    if re.fullmatch(r"\d+(?:\.\d+){2,3}", got):
-                        version = got
+            version = _windows_chrome_version(_chrome_bin(platform=plat)) or version
     if str(plat).startswith("linux"):
         system = "X11; Linux x86_64"
     elif plat == "win32":

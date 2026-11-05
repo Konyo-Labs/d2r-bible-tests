@@ -1690,6 +1690,32 @@ process.stdout.write(JSON.stringify({
         finally:
             desk._windows_cookie_header = saved
 
+    def test_windows_reads_chromes_version_without_launching_chrome(self):
+        """v3862 - on Windows `chrome.exe --version` OPENS A BROWSER WINDOW instead of printing a version. MEASURED
+        2026-11-05 on the old ALT: the console's proof of this very law opened Chrome over and over ("chrome keeps
+        reopening a page randomly"). The version is the folder Chrome installs beside chrome.exe; nothing is run."""
+        from unittest import mock
+        import d2jsp_chrome as desk
+        ran = []
+
+        def no_launch(argv, *a, **k):
+            ran.append(list(argv))
+            raise AssertionError("Chrome was launched to read its version: %r" % (argv,))
+        with mock.patch.object(desk.sys, "platform", "win32"), \
+                mock.patch.object(desk.subprocess, "run", no_launch), \
+                mock.patch.object(desk, "_chrome_bin", lambda platform=None, which=None: "C:\\Chrome\\Application\\chrome.exe"), \
+                mock.patch.object(desk.os, "listdir", lambda d: ["chrome.exe", "155.0.1.2", "156.0.8078.80", "SetupMetrics"]):
+            agent = desk.chrome_user_agent()
+        self.assertEqual(ran, [], "the Windows version read ran a process")
+        self.assertIn("Chrome/156.0.8078.80", agent, "the newest version folder is not the version")
+        self.assertIn("Windows NT 10.0", agent)
+        self.assertIsNone(desk._windows_chrome_version(None))
+        self.assertIsNone(desk._windows_chrome_version("C:\\x\\chrome.exe", listdir=lambda d: ["chrome.exe", "Locales"]))
+
+        def unreadable(d):
+            raise OSError("denied")
+        self.assertIsNone(desk._windows_chrome_version("C:\\x\\chrome.exe", listdir=unreadable))
+
     def test_a_windows_console_signs_in_through_a_profile_it_owns(self):
         """v3861 - MEASURED 2026-11-05 on the work ALT (Chrome 156): the main profile's d2jsp cookies are v20, so the lamp
         stayed grey signed in or not. A profile the console owns stores v10, opened by its own Local State key; while its
@@ -2099,6 +2125,13 @@ process.stdout.write(JSON.stringify({
         self.assertNotIn("SECRETCOOKIE", json.dumps(out))
 
 RED_PROOF = [
+    {
+        "why": "v3862 - Windows reads Chrome's version by launching chrome.exe --version, which opens a browser window",
+        "file": "tv/d2jsp_chrome.py",
+        "find": "            version = _windows_chrome_version(_chrome_bin(platform=plat)) or version\n",
+        "replace": "            subprocess.run([_chrome_bin(platform=plat), \"--version\"], capture_output=True, timeout=5)\n",
+        "matches": 1,
+    },
     {"why": "v3861 - a paused console reads as a reader that never answered (his Shako click during a push)",
      "file": "bible.html",
      "find": "  if (q.reason === 'paused') return 'Price not read yet - this machine is running its checks (' + (q.say || 'paused while checks run') + '). It reads as soon as they finish.';\n",
