@@ -6333,17 +6333,34 @@ def _check_the_shelf_is_where_it_says_it_is():
         # OPENING SHELF WORE THE EMPTY-HERO BOX, so this row called a stuck open "no runs to show yet - the correct
         # state". The page now publishes `opening` and how long it has said so; the page's own bound
         # (TH_SHELF_OPEN_BOUND_MS) turns a stuck one into the UNKNOWN shelf, and past that bound this row says MISSING.
+        # REG-3203 - AND THE UNKNOWN SHELF IS NOT THE EMPTY ONE. What a stuck opening becomes at the page's bound (and
+        # REG-3050's failed list) is `.sh-empty-hero.sh-unknown`: "your runs: UNKNOWN ... This is not an empty shelf".
+        # The beat counted it as the empty hero, so this row answered "no runs to show yet - the correct state" over it.
+        # The page now publishes `unknown` with its own why; his runs are not on the shelf, which is the fault.
+        if shelf.get("unknown") is True:
+            _uw = shelf.get("unknownWhy")
+            return MISSING, ("THE SHELF IS OPEN AND SAYS HIS RUNS ARE UNKNOWN - the sessions list did not reach it "
+                             "(the page's why: %s). The page says so honestly, and his runs are still not on the "
+                             "shelf." % (_uw if isinstance(_uw, str) and _uw else "none given"))
         if shelf.get("opening") is True:
             _os = shelf.get("openingS")
             if not isinstance(_os, (int, float)):
                 return UNKNOWN, ("the shelf is open and still says it is opening, and how long it has said so "
                                  "is UNKNOWN (no start stamp on the beat)")
+            # [[stale-reading]] openingS is the age AT THE BEAT, and the beat itself may be up to 300 s old: past the
+            # bound by the beat's own words is MISSING; past it only once the beat's age is added is UNKNOWN (no newer
+            # beat says whether it still says "opening"); inside it either way is OK.
             if _os > SHELF_OPENING_BOUND_S:
-                return MISSING, ("THE SHELF HAS SAID 'opening' FOR %ds - past the %ds bound in which it must "
-                                 "show his runs or say why. The list never arrived, and the page's own bound "
-                                 "did not end it." % (int(_os), SHELF_OPENING_BOUND_S))
-            return OK, ("the shelf is open and still opening (%ds so far, bound %ds) - waiting on the "
-                        "sessions list, not a fault yet" % (int(_os), SHELF_OPENING_BOUND_S))
+                return MISSING, ("THE SHELF HAS SAID 'opening' FOR %ds (on a beat %ds old) - past the %ds bound in "
+                                 "which it must show his runs or say why. The list never arrived, and the page's "
+                                 "own bound did not end it." % (int(_os), int(_bage), SHELF_OPENING_BOUND_S))
+            if _os + _bage > SHELF_OPENING_BOUND_S:
+                return UNKNOWN, ("the shelf said 'opening' for %ds on a beat that is %ds old - %ds by now if it still "
+                                 "says so, past the %ds bound, and no newer beat says whether it does"
+                                 % (int(_os), int(_bage), int(_os + _bage), SHELF_OPENING_BOUND_S))
+            return OK, ("the shelf is open and still opening (%ds so far, counting the beat's own %ds age; bound "
+                        "%ds) - waiting on the sessions list, not a fault yet"
+                        % (int(_os + _bage), int(_bage), SHELF_OPENING_BOUND_S))
         if shelf.get("emptyHero") is True:
             return OK, ("the shelf is open and on screen and has no runs to show yet — the empty "
                         "hero is rendered, which is the correct state, not a fault")

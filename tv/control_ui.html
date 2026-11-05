@@ -4484,6 +4484,7 @@
     #ver-xref .vx-btn,
     #foot-hist,
     #foot-tasks,
+    #foot-ver,
     #hist-x,
     #heart-chip,
     .fx-adv > summary,
@@ -12315,6 +12316,14 @@ window._lockMark = function(isOpen, px, label){
   // otherwise → session N + the recorded time span. Re-run on paint, session load, and refresh.
   function thRibbon(door){
     var el = $('th-ribbon'); if (!el) return;
+    /* REG-3204 - A SHADOW'S REEL ON THIS STAGE IS THEIR PAST. paint(st) re-runs this line on every status poll while
+       TH.open, and a shadow reel keeps TH.open: within 1.5 s it wrote 'THEATRE · session <this PC's TH.sn> · <this PC's
+       span>' over the owner's frames. While TH.shadowReel is up the ribbon names whose past it is and nothing of this PC. */
+    if (TH.shadowReel){
+      el.classList.remove('on-air');
+      el.textContent = '📼 SHADOW REPLAY — ' + (TH.shadowReel.owner || 'this owner') + '’s past, read only';
+      return;
+    }
     var onAir = document.body.getAttribute('data-state') === 'on';
     /* #287 (REG-2076, GrokBot ticks 419 + 423) - THE SHELF DOOR IS NOT A REEL. Opening the shelf shows the theatre shell
        first, and this line painted from TH.sn - the LAST reel (or 'session 1' on a fresh console) - so 'THEATRE · SESSION 41
@@ -16984,7 +16993,8 @@ window._lockMark = function(isOpen, px, label){
     /* addEventListener, not .onclick — this element has carried a click handler before and
        assigning would silently replace whatever else is bound to it. */
     if (_fvEl) {
-      _fvEl.style.cursor = 'pointer';
+      /* REG-3205 - its pointer is the console's (#foot-ver in the pointer contract): a cursor set here loses to the
+         inherit rule and painted nothing */
       _fvEl.addEventListener('click', function(ev){ ev.preventDefault(); _verXrefOpen(); });
     }
     var _vxOv = document.getElementById('ver-xref');
@@ -23739,8 +23749,7 @@ window._lockMark = function(isOpen, px, label){
     var ss = document.getElementById('th-sess');
     if (ss) ss.textContent = who + '’s ' + (typeof ix === 'number' ? 'session' : 'last ' + (window._ssvReelN || 0) + ' sessions')
       + ' · ' + n + ' key frame' + (n === 1 ? '' : 's') + ' · read only';
-    var rb = document.getElementById('th-ribbon');
-    if (rb) rb.textContent = '📼 SHADOW REPLAY — ' + who + '’s past, read only';
+    try { thRibbon(); } catch (eR) {}   /* the ribbon's one writer says whose past this is (TH.shadowReel is set above) */
     var tp = document.getElementById('th-play');
     if (tp) tp.textContent = '⏸';
     var sp = document.getElementById('th-speed');
@@ -27526,7 +27535,7 @@ window._lockMark = function(isOpen, px, label){
       var thumb = s.frameId
         ? '<img class="tsh" src="/hist/'+encodeURI(s.frameId)+'.jpg?w=160" loading="lazy" '
           + 'onclick="event.stopPropagation();window.open(\'/hist/'+encodeURI(s.frameId)+'.jpg\',\'_blank\')" '
-          + 'onerror="this.style.opacity=.25;this.style.cursor=\'default\';this.onclick=null;this.title=\'frame not archived\'">'
+          + 'onerror="this.style.opacity=.25;this.style.cursor=\'default\';this.onclick=null;this.removeAttribute(\'onclick\');this.title=\'frame not archived\'">'
         : '<div class="tsh" style="display:flex;align-items:center;justify-content:center;color:#6b5a3e;font: var(--fw-medium) var(--fs-2xs) var(--mono)">no frame</div>';
       var open = (TLY.expanded === gi);
       // the expanded detail: EVERY count, larger frame, ok/total/errors, the ids
@@ -34188,8 +34197,17 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
                 /* the legitimate empty state, so a console with NO RUNS YET is never called a fault.
                    REG-3203 - an OPENING shelf wears the same hero box and is not that state: it is published as
                    opening, with its age (null = UNKNOWN), and console_doctor judges it against the bound. */
-                try { o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero:not(.sh-opening)'); }
+                /* REG-3203 - and the UNKNOWN shelf (REG-3050, and what a stuck opening becomes at its bound) wears it too:
+                   "your runs: UNKNOWN ... This is not an empty shelf". Counted as the empty hero, the Doctor answered
+                   "no runs to show yet - the correct state" over it within 60 s of the stuck shelf GrokBot saw. It is
+                   published as unknown with the page's own why, and is never the empty state. */
+                try { o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero:not(.sh-opening):not(.sh-unknown)'); }
                 catch(e){ o.shelf.emptyHero = null; }
+                try {
+                  o.shelf.unknown = ov.hidden ? false : !!ov.querySelector('.sh-unknown');
+                  o.shelf.unknownWhy = (o.shelf.unknown && typeof TH !== 'undefined' && TH.sessionsFailWhy)
+                    ? String(TH.sessionsFailWhy).slice(0, 240) : null;
+                } catch(e){ o.shelf.unknown = null; o.shelf.unknownWhy = null; }
                 try {
                   var _op = ov.hidden ? null : ov.querySelector('.sh-opening');
                   o.shelf.opening = !!_op;
@@ -34438,8 +34456,17 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
            long as he likes; closing that would be a worse bug than the one being fixed. A stage
            that HAS its sessions is left alone forever, whether it is playing or not, and any
            interaction inside the theatre defers the heal. */
+        /* REG-3204 - WHAT "LOADED" MEANS FOR A SHADOW'S REEL. A shadow's Play puts THEIR served frames on this stage and
+           holds none of this PC's, so on a guest that had not opened its own Shelf or Theatre since boot (TH.sessions
+           empty) this closed their reel ~12 s after the last mouse move, left body.shadow-theatre on (a bare stage in their
+           hub) and posted a false theatre-stuck-black. A shadow reel is loaded when its walk holds frames. Kept inline:
+           a helper outside the interval is one more name every cut of this callback must carry (REG-2057). */
         var loaded = false;
-        try { loaded = !!(window.TH && TH.sessions && TH.sessions.length); } catch (e) { loaded = false; }
+        try {
+          loaded = (window.TH && window.TH.shadowReel)
+            ? (Array.isArray(window._ssvReels) && window._ssvReels.length > 0)
+            : !!(window.TH && TH.sessions && TH.sessions.length);
+        } catch (e) { loaded = false; }
         var touchedRecently = (Date.now() - (window._thTouchedAt || 0)) < 12000;
         /* v2432 — `ink === false` is a MEASURED absence of pixels and now defeats the early
            return. `ink === null` (unjudgeable surface) leaves the old behaviour exactly as it was. */
@@ -34478,7 +34505,15 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
               painted: !!painted, loaded: !!loaded
             };
           } catch (e) { _before = {measureFailed: String(e && e.message || e)}; }
+          /* REG-3204 - a shadow reel the heal closes goes the way its own ✕ does: the walk stops, body.shadow-theatre goes
+             and their list comes back. Hiding #theatre alone left the shadow stage class on (a bare stage in their hub),
+             TH.shadowReel set (its key capture kept swallowing his keys) and the walk ticking under a closed stage. */
+          var _wasShadow = !!(window.TH && window.TH.shadowReel);
+          if (_wasShadow && typeof window._shadowTheatreDown === 'function') {
+            try { window._shadowTheatreDown(true); } catch (eSd) {}
+          }
           document.body.classList.remove('theatre-open');
+          document.body.classList.remove('shadow-theatre');   /* REG-3204 - never a bare shadow stage left in their hub */
           th.hidden = true;
           try { window.TH && (window.TH.open = false); } catch(e){}
           console.warn('[theatre] open but empty for 12s — closed itself rather than staying black');
@@ -34486,8 +34521,10 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
              happening and keeps being reported by him instead of by the machine. */
           try {
             fetch('/api/ui_fault', {method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({kind:'theatre-stuck-black',
-                why:'the stage was open for 12s and ' + (painted
+              body: JSON.stringify({kind:'theatre-stuck-black', shadowReel: _wasShadow,
+                why: _wasShadow ? ('a shadow reel was open for 12s with no picture on the stage ('
+                      + ((window._thInk || {}).why || 'no frame to show') + ') - it went back to their list')
+                  : 'the stage was open for 12s and ' + (painted
                       ? 'still held no sessions though a frame was painted (v2322 shape)'
                       : 'had nothing on it at all (v2228 shape)') + ' - it closed itself',
                 where:'control_ui thOpen / self-heal',

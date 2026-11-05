@@ -21,7 +21,17 @@ law reads the cascade, not one rule:
   4. nothing outweighs it with a system `cursor: pointer !important`;
   5. `not-allowed` is said only by what is off: the disabled rule comes AFTER the pointer rule at the same weight and
      names only [disabled] / [aria-disabled="true"]; every other `not-allowed` in the file is on `:disabled`,
-     `[disabled]`, or a thin TZ zone - whose markup carries aria-disabled="true".
+     `[disabled]`, or a thin TZ zone - whose markup carries aria-disabled="true";
+  6. (adversarial review of the first cut, reproduced) A CURSOR SET FROM SCRIPT OR INLINE LOSES TO THE INHERIT RULE.
+     #foot-ver (a <span> wired by addEventListener, its `style.cursor = 'pointer'` set in script) still wore the
+     gauntlet: it is in the contract now, no script sets a pointer, every inline `cursor:pointer` sits on an element a
+     generic selector already names, and a reel thumbnail whose frame is not archived drops its [onclick] (it kept the
+     pointer over a click that had been nulled);
+  7. bible.html, the board every other header room shows: its shadow-board rule put `cursor:not-allowed !important` on
+     every button/input/select/textarea/label/vault chip that is not a tab or a VIEW handler - nearly every control of a
+     shadow, and the only not-allowed in that file that beats its `*{cursor:var(--kcur) !important}` hand. A dead
+     control is dimmed (that stays) and rests on the hand; the cancel sign is not painted over the whole board.
+     (Whether this is the screen behind his words is UNVERIFIED - no eye on his glass from here; the rule is measured.)
 Pure python over the shipped CSS (comments stripped first). RED_PROOF below.
 """
 import io
@@ -40,6 +50,11 @@ except Exception:
     pass
 
 UI = io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8").read()
+BIBLE = io.open(os.path.join(os.path.dirname(HERE), "bible.html"), encoding="utf-8").read()
+TSH_DEAD = ("'onerror=\"this.style.opacity=.25;this.style.cursor=\\'default\\';this.onclick=null;"
+            "this.removeAttribute(\\'onclick\\');this.title=\\'frame not archived\\'\">'")
+SHADOW_DEAD = ("      css.textContent = 'html.tvd-shadow-snap :is(button, input, select, textarea, label, [contenteditable], "
+               ".vault-chip)'\n        + ':not(.tab)' + live + '{opacity:.38 !important;filter:grayscale(.6)}';\n")
 GENERIC = ("a[href]", "button", '[role="button"]', "[onclick]", "summary", "label[for]", "select")
 POINTER_OPEN = "  html :where(\n"
 POINTER_VALUE_END = ") 12 2, pointer !important; }"
@@ -152,11 +167,64 @@ class EveryPressableThingWearsTheConsolePointer(unittest.TestCase):
         self.assertEqual(UI.count(THIN_ATTRS), 1, "a thin TZ zone shows not-allowed but no longer says aria-disabled")
 
 
+def _code():
+    """the file with its block comments and // comment lines out - a cursor quoted in prose is never a cursor"""
+    code = re.sub(r"/\*.*?\*/", "", UI, flags=re.S)
+    return "\n".join(ln for ln in code.split("\n") if not ln.lstrip().startswith("//"))
+
+
+class ACursorSetFromScriptOrInlineIsNotTheContract(unittest.TestCase):
+
+    def test_the_version_stamp_wears_the_pointer(self):
+        css, rule, start, lists = _contract()
+        self.assertIn("#foot-ver", _split(lists[0]), "#foot-ver opens the version cross-reference and wears the gauntlet")
+
+    def test_no_script_sets_a_pointer(self):
+        code = _code()
+        for live in ("_fvEl.addEventListener('click'", 'id="mind-tag"', "function _shadowTheatreUp(ix){"):
+            self.assertIn(live, code, "the comment stripper swallowed live code (%r) - this guard is blind there" % live)
+        found = re.findall(r"\.style\.cursor\s*=\s*['\"]pointer['\"]|setProperty\(\s*['\"]cursor['\"]", code)
+        self.assertEqual(found, [], "a cursor set from script loses to `:where(body *){cursor:inherit !important}` - put the "
+                                    "element's selector in the pointer contract instead: %r" % found)
+
+    def test_every_inline_pointer_sits_on_a_generic_clickable(self):
+        seen, bad = 0, []
+        for m in re.finditer(r"<([a-zA-Z]+)\b([^<>]*?)\bstyle=\\?\"[^\"]*?cursor\s*:\s*pointer[^\"]*\\?\"([^<>]*)>", _code()):
+            seen += 1
+            tag, attrs = m.group(1).lower(), m.group(2) + m.group(3)
+            if not (tag in ("button", "summary", "select") or (tag == "a" and "href=" in attrs)
+                    or 'role="button"' in attrs or "onclick=" in attrs or (tag == "label" and " for=" in attrs)):
+                bad.append("<%s %s>" % (tag, attrs.strip()[:80]))
+        self.assertGreater(seen, 0, "the scan found no inline pointer at all - the scan is blind, not the file clean")
+        self.assertEqual(bad, [], "an inline cursor:pointer loses to the inherit rule on these: %r" % bad)
+
+    def test_a_thumbnail_with_no_frame_stops_wearing_the_pointer(self):
+        self.assertEqual(UI.count(TSH_DEAD), 1, "a reel thumbnail whose frame is not archived keeps [onclick], so the "
+                                                "contract still shows the pointer over a click that was nulled")
+
+
+class AShadowBoardDoesNotSayNoOverEveryControl(unittest.TestCase):
+
+    def test_the_dead_controls_are_dimmed_and_rest_on_the_hand(self):
+        self.assertEqual(BIBLE.count("css.id = 'tvd-shadow-dead';"), 1, "the shadow board's dead-control rule moved")
+        self.assertEqual(BIBLE.count(SHADOW_DEAD), 1, "the shadow board's dead-control rule is not: dimmed, grey, and no "
+                                                      "cursor of its own")
+
+    def test_no_not_allowed_in_the_board_beats_its_hand(self):
+        css = "\n".join(re.sub(r"/\*.*?\*/", "", b, flags=re.S)
+                        for b in re.findall(r"<style[^>]*>(.*?)</style>", BIBLE, re.S))
+        loud = re.findall(r"cursor\s*:\s*not-allowed\s*!important", css)
+        self.assertEqual(loud, [], "a not-allowed in bible.html outweighs the board's hand: %r" % loud)
+        self.assertEqual(re.findall(r"cursor:not-allowed !important", BIBLE[BIBLE.index("css.id = 'tvd-shadow-dead';"):][:600]),
+                         [], "the shadow board paints the cancel sign over every dead control again")
+
+
 class TheProofsNameOnePlace(unittest.TestCase):
 
     def test_each_find_matches_once(self):
         for proof in RED_PROOF:
-            self.assertEqual(UI.count(proof["find"]), proof["matches"], proof["why"])
+            src = BIBLE if proof["file"] == "bible.html" else UI
+            self.assertEqual(src.count(proof["find"]), proof["matches"], proof["why"])
 
 
 RED_PROOF = [
@@ -194,6 +262,26 @@ RED_PROOF = [
      "file": "tv/control_ui.html",
      "find": "*{cursor:url(\"data:image/png;base64,",
      "replace": "*{cursor:default;--was:url(\"data:image/png;base64,",
+     "matches": 1},
+    {"why": "REG-3205 - the version stamp is pressable and wears the gauntlet",
+     "file": "tv/control_ui.html",
+     "find": "    #foot-tasks,\n    #foot-ver,\n",
+     "replace": "    #foot-tasks,\n",
+     "matches": 1},
+    {"why": "REG-3205 - a pointer set from script, which the inherit rule beats",
+     "file": "tv/control_ui.html",
+     "find": "    if (_fvEl) {\n",
+     "replace": "    if (_fvEl) {\n      _fvEl.style.cursor = 'pointer';\n",
+     "matches": 1},
+    {"why": "REG-3205 - a thumbnail with no frame keeps [onclick] and the pointer over a nulled click",
+     "file": "tv/control_ui.html",
+     "find": "this.onclick=null;this.removeAttribute(\\'onclick\\');this.title=",
+     "replace": "this.onclick=null;this.title=",
+     "matches": 1},
+    {"why": "REG-3205 - a shadow board paints the cancel sign over every dead control",
+     "file": "bible.html",
+     "find": "'{opacity:.38 !important;filter:grayscale(.6)}';",
+     "replace": "'{opacity:.38 !important;cursor:not-allowed !important;filter:grayscale(.6)}';",
      "matches": 1},
 ]
 

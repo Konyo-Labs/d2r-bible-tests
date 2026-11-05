@@ -19,11 +19,19 @@ node on a virtual clock), the shipped beat block, and console_doctor's row:
      Doctor is told (ui_fault shelf-open-stuck); a shelf that already painted, or was closed, is left alone;
   4. the beat publishes opening + its age and never counts an opening shelf as the empty one;
   5. console_doctor: opening past its bound is MISSING, within it OK, with no start stamp UNKNOWN.
+  6. (adversarial review of the first cut, reproduced) THE UNKNOWN SHELF IS NOT THE EMPTY ONE EITHER. What the watch
+     turns a stuck opening into is `.sh-empty-hero.sh-unknown`, which `.sh-empty-hero:not(.sh-opening)` still matched:
+     emptyHero=true, and the Doctor answered OK "no runs to show yet - the correct state" within 60 s of the stuck shelf.
+     The beat now publishes unknown + the page's why, and the row says MISSING. Proven as one chain: the shipped watch's
+     painted shelf -> the shipped beat (its selector matched by CLASSES, never by its spelling) -> the Doctor's row.
+  7. [[stale-reading]] openingS is the age at the beat; a beat may be 300 s old. 10 s on a 280-s-old beat was printed
+     "10s so far"; now past the bound only once the beat's age is added is UNKNOWN, inside it OK counting that age.
 A missing node raises; this law does not skip. RED_PROOF below.
 """
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -172,18 +180,26 @@ BEAT = r"""
 var CASE = %s;
 var NOWB = 1800000000000;
 Date.now = function(){ return NOWB; };
+/* the shelf's one hero box, by its class list; a selector is matched by its classes, never by its spelling, so a selector
+   the page changes is judged by what it would match, not by whether this fake knew the string */
+function _matches(sel, cls){
+  var m = /^\.([\w-]+)((?::not\(\.[\w-]+\))*)$/.exec(String(sel));
+  if (!m) return false;
+  if (cls.indexOf(m[1]) < 0) return false;
+  var nots = (m[2].match(/:not\(\.[\w-]+\)/g) || []).map(function(x){ return x.slice(6, -1); });
+  return nots.every(function(n){ return cls.indexOf(n) < 0; });
+}
 var ov = {
   hidden: !!CASE.hidden, scrollHeight: 0, clientHeight: 0, scrollTop: 0,
   getBoundingClientRect: function(){ return {height: 300, width: 800, top: 40, bottom: 340, left: 0, right: 800}; },
   getClientRects: function(){ return [1]; },
   querySelectorAll: function(){ return []; },
   querySelector: function(sel){
-    if (sel === '.sh-opening') return CASE.opening ? { getAttribute: function(){ return CASE.since === null ? null : String(CASE.since); } } : null;
-    if (sel === '.sh-empty-hero:not(.sh-opening)') return (CASE.hero && !CASE.opening) ? {} : null;
-    if (String(sel).indexOf('sh-empty-hero') >= 0) return CASE.hero ? {} : null;
-    return null;
+    if (!CASE.hero || !_matches(sel, CASE.hero)) return null;
+    return { getAttribute: function(k){ return (k === 'data-since' && CASE.since !== null) ? String(CASE.since) : null; } };
   }
 };
+var TH = { sessionsFailWhy: CASE.failWhy };
 var document = { getElementById: function(id){ return id === 'th-shelfov' ? ov : null; } };
 var window = { innerHeight: 800, innerWidth: 1120 };
 var o = {};
@@ -218,9 +234,17 @@ def _beat(**case):
     blk = SHB._block()
     if blk is None:
         raise AssertionError("the shelf geometry block this law drives is gone")
-    base = {"hidden": False, "opening": False, "since": None, "hero": False}
+    base = {"hidden": False, "since": None, "hero": None, "failWhy": None}
     base.update(case)
     return _node(BEAT % (json.dumps(base), blk))
+
+
+def _hero_classes(html):
+    """-> the class list of the one .sh-empty-hero box in a painted shelf"""
+    found = re.findall(r'class="(sh-empty-hero[^"]*)"', html)
+    if len(found) != 1:
+        raise AssertionError("expected one hero box in the painted shelf, found %d: %r" % (len(found), html[:300]))
+    return found[0].split()
 
 
 class TheShelfNeverHangsOnOpening(unittest.TestCase):
@@ -265,33 +289,46 @@ class TheShelfNeverHangsOnOpening(unittest.TestCase):
         c = self.got["closed"]
         self.assertEqual(c["faults"], [], "the watch reported a shelf he had closed: %r" % c)
 
-    def test_the_beat_tells_opening_from_empty(self):
-        op = _beat(opening=True, since=1800000000000 - 42000, hero=True)
+    def test_the_beat_tells_opening_and_unknown_from_empty(self):
+        opening = ["sh-empty-hero", "sh-opening"]
+        op = _beat(hero=opening, since=1800000000000 - 42000)
         self.assertIs(op.get("opening"), True, op)
         self.assertEqual(op.get("openingS"), 42, op)
         self.assertIs(op.get("emptyHero"), False, "an opening shelf was published as the empty one: %r" % op)
-        unk = _beat(opening=True, since=None, hero=True)
-        self.assertIsNone(unk.get("openingS"), "an opening with no start stamp got an age: %r" % unk)
-        empty = _beat(opening=False, hero=True)
+        self.assertIs(op.get("unknown"), False, op)
+        nostamp = _beat(hero=opening, since=None)
+        self.assertIsNone(nostamp.get("openingS"), "an opening with no start stamp got an age: %r" % nostamp)
+        empty = _beat(hero=["sh-empty-hero"])
         self.assertIs(empty.get("emptyHero"), True, empty)
         self.assertIs(empty.get("opening"), False, empty)
-        shut = _beat(hidden=True, opening=True, since=1800000000000 - 5000)
+        self.assertIs(empty.get("unknown"), False, empty)
+        shut = _beat(hidden=True, hero=opening, since=1800000000000 - 5000)
         self.assertIs(shut.get("opening"), False, "a closed shelf was published as opening: %r" % shut)
+        why = "it still said opening 61 s after it began - the sessions list never arrived"
+        unk = _beat(hero=["sh-empty-hero", "sh-unknown"], failWhy=why)
+        self.assertIs(unk.get("emptyHero"), False, "the UNKNOWN shelf was published as the empty one: %r" % unk)
+        self.assertIs(unk.get("unknown"), True, unk)
+        self.assertEqual(unk.get("unknownWhy"), why, unk)
+        self.assertIs(unk.get("opening"), False, unk)
+        unk_shut = _beat(hidden=True, hero=["sh-empty-hero", "sh-unknown"], failWhy=why)
+        self.assertIs(unk_shut.get("unknown"), False, "a closed shelf was published as unknown: %r" % unk_shut)
 
-    def _verdict(self, shelf):
+    def _verdict(self, shelf, age=2.0):
         import console_doctor as cd
         real = cd._get
-        cd._get = lambda path, *a, **k: ({"uiBeat": {"n": 7, "ageS": 2.0, "panels": {"shelf": shelf}}}
+        cd._get = lambda path, *a, **k: ({"uiBeat": {"n": 7, "ageS": age, "panels": {"shelf": shelf}}}
                                          if path == "/api/status" else real(path))
         try:
             return cd._check_the_shelf_is_where_it_says_it_is()
         finally:
             cd._get = real
 
+    BASE = {"open": True, "filled": True, "cards": 0, "gridCards": 0, "visibleCards": 0, "box": "shown",
+            "boxes": 1, "h": 300, "top": 40, "w": 800, "vh": 800, "emptyHero": False}
+
     def test_the_doctor_judges_an_opening_shelf_against_its_bound(self):
         import console_doctor as cd
-        base = {"open": True, "filled": True, "cards": 0, "gridCards": 0, "visibleCards": 0, "box": "shown",
-                "boxes": 1, "h": 300, "top": 40, "w": 800, "vh": 800, "emptyHero": False, "opening": True}
+        base = dict(self.BASE, opening=True)
         st, why = self._verdict(dict(base, openingS=200))
         self.assertEqual(st, cd.MISSING, why)
         self.assertIn("opening", why)
@@ -301,6 +338,31 @@ class TheShelfNeverHangsOnOpening(unittest.TestCase):
         st, why = self._verdict(dict(base, openingS=None))
         self.assertEqual(st, cd.UNKNOWN, why)
         self.assertGreater(cd.SHELF_OPENING_BOUND_S, 60, "the Doctor's bound is inside the page's own 60 s bound")
+
+    def test_the_doctor_counts_the_beats_own_age(self):
+        """[[stale-reading]] 10 s of 'opening' on a beat 280 s old is ~290 s by now if it still says so - not '10s so far'"""
+        import console_doctor as cd
+        st, why = self._verdict(dict(self.BASE, opening=True, openingS=10), age=280.0)
+        self.assertEqual(st, cd.UNKNOWN, "a 290-s opening was judged by its 10-s reading: %r" % why)
+        self.assertIn("280s old", why, why)
+        st, why = self._verdict(dict(self.BASE, opening=True, openingS=10), age=30.0)
+        self.assertEqual(st, cd.OK, why)
+        self.assertIn("40s so far", why, why)
+
+    def test_the_unknown_shelf_is_a_fault_from_the_page_to_the_doctor(self):
+        """the joined chain: the shipped watch's own UNKNOWN shelf -> the shipped beat -> console_doctor's row"""
+        import console_doctor as cd
+        stuck = self.got["stuck"]
+        hero = _hero_classes(stuck["after"])
+        beat = _beat(hero=hero, failWhy=stuck["why"])
+        self.assertIs(beat.get("emptyHero"), False, "the beat called the UNKNOWN shelf the empty one: %r" % beat)
+        shelf = dict(self.BASE)
+        shelf.update({k: beat.get(k) for k in ("emptyHero", "opening", "openingS", "unknown", "unknownWhy")})
+        st, why = self._verdict(shelf)
+        self.assertEqual(st, cd.MISSING, "the Doctor passed a shelf that says 'your runs: UNKNOWN': %r" % why)
+        self.assertIn("UNKNOWN", why, why)
+        self.assertIn("61 s after it began", why, "the Doctor did not carry the page's own why: %r" % why)
+        self.assertNotIn("no runs to show", why, why)
 
 
 class TheProofsNameOnePlace(unittest.TestCase):
@@ -329,13 +391,33 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-3203 - the beat counts an opening shelf as the legitimate empty one",
      "file": "tv/control_ui.html",
-     "find": "o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero:not(.sh-opening)');",
-     "replace": "o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero');",
+     "find": "o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero:not(.sh-opening):not(.sh-unknown)');",
+     "replace": "o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero:not(.sh-unknown)');",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3203 - the beat counts the UNKNOWN shelf as the legitimate empty one",
+     "file": "tv/control_ui.html",
+     "find": "o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero:not(.sh-opening):not(.sh-unknown)');",
+     "replace": "o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero:not(.sh-opening)');",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3203 - the beat never says the shelf is UNKNOWN",
+     "file": "tv/control_ui.html",
+     "find": "o.shelf.unknown = ov.hidden ? false : !!ov.querySelector('.sh-unknown');",
+     "replace": "o.shelf.unknown = false;",
      "matches": 1, "needs": "node"},
     {"why": "REG-3203 - the Doctor calls a stuck opening 'no runs yet'",
      "file": "tv/console_doctor.py",
      "find": "        if shelf.get(\"opening\") is True:\n",
      "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "REG-3203 - the Doctor passes the UNKNOWN shelf",
+     "file": "tv/console_doctor.py",
+     "find": "        if shelf.get(\"unknown\") is True:\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "REG-3203 - the Doctor judges an opening by a beat's reading and not its age",
+     "file": "tv/console_doctor.py",
+     "find": "            if _os + _bage > SHELF_OPENING_BOUND_S:\n",
+     "replace": "            if False:\n",
      "matches": 1},
 ]
 

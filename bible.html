@@ -4225,12 +4225,17 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
     })();
     // ...and they LOOK dead: every control a click cannot reach is dimmed in place (opacity only, so the layout
     // and the text stay one-to-one with their console).
+    // REG-3205 (his words 2026-11-05: "everything is showing me a mouse cancel sign") - THE DIMMING SAYS DEAD; THE CURSOR
+    // DOES NOT SHOUT IT OVER EVERY CONTROL. This rule also put `cursor:not-allowed !important` on every button, input,
+    // select, textarea, label and vault chip of a shadow board that is not a tab or a VIEW handler - nearly every control
+    // on their screen, and the only not-allowed in this file that beats the `*{cursor:var(--kcur) !important}` hand
+    // (the four authored `[disabled]` ones lose to it). A dead control now rests on the same gauntlet as the page.
     try {
       var live = VIEW.map(function (n) { return ':not([onclick*="' + n + '("])'; }).join('');
       var css = document.createElement('style');
       css.id = 'tvd-shadow-dead';
       css.textContent = 'html.tvd-shadow-snap :is(button, input, select, textarea, label, [contenteditable], .vault-chip)'
-        + ':not(.tab)' + live + '{opacity:.38 !important;cursor:not-allowed !important;filter:grayscale(.6)}';
+        + ':not(.tab)' + live + '{opacity:.38 !important;filter:grayscale(.6)}';
       (document.head || document.documentElement).appendChild(css);
     } catch (e) {}
     /* v3857 item 18 (#230, Elad 10:39 on v3855) - A SHADOW'S WITNESS FRAME IS THE OWNER'S. The viewer's chain addressed
