@@ -106,7 +106,40 @@ class ACiBranchNeverDeploys(unittest.TestCase):
         self.assertEqual(["main"], [b.strip().strip("'\"") for b in m.group(1).split(",") if b.strip()])
 
 
+
+class ACiPushStartsNoSuiteOnThisMac(unittest.TestCase):
+    """v3861 - the hook read its ref lines only AFTER the fast-gate overlap, so every ci/* push of tv/ python started a
+    background test_agent on his Mac and then left by the ci-only lane with it running (the case above sets
+    SUITE_VERDICT_REUSE=0 for exactly that reason). The refs are read first now, and the overlap skips a ci-only push.
+    Graded on the hook's code with its comments stripped: whether a real push would start the suite depends on the
+    push range, which differs per checkout, so a run of the hook here could not see a regression on every tree."""
+
+    def test_the_refs_are_read_first_and_the_overlap_skips_a_ci_push(self):
+        with io.open(HOOK, encoding="utf-8") as fh:
+            code = "\n".join(l for l in fh.read().split("\n") if not l.lstrip().startswith("#"))
+        read = '_PUSH_REFS="$(cat)"'
+        lane = ('_pp_lane_early="$(printf \'%s\\n\' "$_PUSH_REFS" | python3 "$REPO/tv/push_lane.py" 2>/dev/null)" '
+                '|| _pp_lane_early="full"')
+        start = 'python3 "$REPO/tv/suite_verdict.py" --run test_agent'
+        self.assertEqual(code.count(read), 1, "the ref lines are not read exactly once")
+        self.assertEqual(code.count(lane), 1, "the early lane is not decided from those refs")
+        self.assertEqual(code.count(start), 1)
+        self.assertLess(code.index(read), code.index(lane))
+        self.assertLess(code.index(lane), code.index(start), "the overlap starts before the push's refs are known")
+        self.assertIn('&& [ "${SUITE_VERDICT_REUSE:-1}" != "0" ] && [ "$_pp_lane_early" != "ci-only" ]; then', code,
+                      "a ci-only push starts test_agent on this Mac again")
+
 RED_PROOF = [
+    {"why": "v3861 - a ci-only push starts a background test_agent on his Mac again",
+     "file": "hooks/pre-push",
+     "find": ' && [ "$_pp_lane_early" != "ci-only" ]; then\n',
+     "replace": "; then\n",
+     "matches": 1},
+    {"why": "v3861 - the ref lines are read after the overlap again, so it cannot know a push is ci-only",
+     "file": "hooks/pre-push",
+     "find": '_PUSH_REFS="$(cat)"\n_pp_lane_early=',
+     "replace": "_pp_lane_early=",
+     "matches": 1},
     {
         "why": "#182 - a push that names main (a deletion of main beside a ci push) takes the ci-only lane",
         "file": "tv/push_lane.py",

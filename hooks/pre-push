@@ -82,13 +82,19 @@ for _pp_v in $(git rev-parse --local-env-vars 2>/dev/null) GIT_DIR GIT_WORK_TREE
 done
 # <<< scrub-git-env
 
+# v3861 - THE REF LINES ARE READ HERE, before the overlap below, so a ci-only push starts nothing on this Mac. Until v3861
+# the overlap ran before the read: every ci/* push of tv/ python started a background test_agent here and then left by
+# the ci-only lane with that suite still running (the lane law had to set SUITE_VERDICT_REUSE=0 to keep it out).
+# Read once; the v2143.1 note at the old site below says why one read feeds every consumer.
+_PUSH_REFS="$(cat)"
+_pp_lane_early="$(printf '%s\n' "$_PUSH_REFS" | python3 "$REPO/tv/push_lane.py" 2>/dev/null)" || _pp_lane_early="full"
 # >>> fast-gate-overlap
 # v3847 FAST GATE - THE CHROME-FREE SUITE RUNS BESIDE THE CHROME STAGES. test_agent starts no browser, so it runs now,
 # in the background, while render / console demos use the one Chrome; the tv lane's `suite_verdict.py --check
 # test_agent --wait 900` below finds this run (in flight or green on these exact bytes) instead of starting its own.
 # A red or unfinished background run is not reused - the lane then runs the suite itself, as before. Never a skip.
 if [ -n "${TV_PUSH_BASE:-}" ] && git diff --name-only "${TV_PUSH_BASE}..HEAD" 2>/dev/null | grep -qE '^tv/.*\.py$' \
-   && [ "${SUITE_VERDICT_REUSE:-1}" != "0" ]; then
+   && [ "${SUITE_VERDICT_REUSE:-1}" != "0" ] && [ "$_pp_lane_early" != "ci-only" ]; then
   ( cd "$REPO" && python3 "$REPO/tv/suite_verdict.py" --run test_agent >"${TMPDIR:-/tmp}/tv-prepush-agent-bg.log" 2>&1 ) &
   _fg_agent_bg=$!
   echo "pre-push: [$(_pp_el)] test_agent started beside the browser stages (pid $_fg_agent_bg, no Chrome)"
@@ -333,7 +339,7 @@ fi
 # so the gate skipped itself entirely. Slurping here also closes the LATENT stdin-inheritance hazard
 # this file documents at the top: with the lines in a variable, nothing a gate child does to stdin
 # can leave the loop at EOF.
-_PUSH_REFS="$(cat)"
+# v3861 - the read itself moved above the fast-gate overlap (search "_PUSH_REFS=") so a ci-only push starts no suite.
 # REG-2360 - THE PUSHED COMMIT, BY NAME. TestTheStampsAgreeInTheCOMMITNotJustTheWorktree asks what the bytes
 # being PUSHED say. In heart2's sandbox from a worktree (then a copy with no .git) it reached that commit only through
 # the GIT_DIR this hook now unsets; the sandbox's own history (REG-2364) holds HEAD, and the pushed commit need not be
