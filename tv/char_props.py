@@ -311,6 +311,12 @@ def assemble(blobs):
             ln = _line(c, r.get("%s%d" % (ppar, i)), r.get("%s%d" % (pmin, i)), r.get("%s%d" % (pmax, i)))
             if ln[0] == "sock" and cap and isinstance(ln[3], int) and isinstance(ln[2], int) and ln[3] > cap:
                 ln = [ln[0], ln[1], min(ln[2], cap), cap] + list(ln[4:])
+            # v3861 - AND A FIXED COUNT IN par. MEASURED on the shipped block: Blade of Ali Baba carries sock par '3' on a
+            # Tulwar (max 2) with no min/max, which the range rule above never saw; the page's display door
+            # (_cbSockCapLine, REG-3071) was the only thing between that 3 and his screen.
+            elif (ln[0] == "sock" and cap and ln[2] is None and ln[3] is None and str(ln[1]).isdigit()
+                  and int(ln[1]) > cap):
+                ln = [ln[0], str(cap), None, None] + list(ln[4:])
             note_skill(ln[0], ln[1])
             out.append(ln)
         return out

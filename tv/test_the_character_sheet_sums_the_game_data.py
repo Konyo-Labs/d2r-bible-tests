@@ -494,6 +494,34 @@ def _fake(**over):
     return lambda p: by_path.get(p)
 
 
+
+class TheGeneratorCapsASocketAtItsBase(unittest.TestCase):
+    """v3859 + v3861 - the game caps an item's sockets at its base's ceiling (REG-3071), and the block is made HERE. A
+    Corona holds 3: a 2..5 range ships as 2..3 (v3859), a fixed 4 in par ships as 3 (v3861 - Blade of Ali Baba carried
+    '3' on a 2-socket Tulwar), and a count inside the base is never touched."""
+
+    @classmethod
+    def setUpClass(cls):
+        rows = [["Crown of Ages", 1, "urn", 82, 1, "res-all", "", 20, 30],
+                ["Range Over", 2, "urn", 60, 1, "sock", "", 2, 5],
+                ["Fixed Over", 3, "urn", 60, 1, "sock", "4", "", ""],
+                ["Fixed Inside", 4, "urn", 60, 1, "sock", "2", "", ""]]
+        pull = _fake(uniqueitems=_tsv(["index", "*ID", "code", "lvl req", "spawnable", "prop1", "par1", "min1", "max1"],
+                                      *rows))
+        data, why = CP.build(pull)
+        assert why is None, why
+        cls.lines = dict((u[0], u[-1]) for u in data["uniques"])
+
+    def test_a_range_past_the_base_is_capped(self):
+        self.assertEqual(self.lines["Range Over"], [["sock", "", 2, 3]])
+
+    def test_a_fixed_count_past_the_base_is_capped(self):
+        self.assertEqual(self.lines["Fixed Over"], [["sock", "3", None, None]],
+                         "a fixed socket count past its base ships uncapped")
+
+    def test_a_count_inside_the_base_is_never_touched(self):
+        self.assertEqual(self.lines["Fixed Inside"], [["sock", "2", None, None]])
+
 class TheBlockKnowsWhenItIsStale(unittest.TestCase):
 
     def _page(self, pull):
@@ -610,6 +638,16 @@ if __name__ == "__main__":
 
 
 RED_PROOF = [
+    {"why": "v3859 - a socket range past its base ships uncapped from the generator again",
+     "file": "tv/char_props.py",
+     "find": "                ln = [ln[0], ln[1], min(ln[2], cap), cap] + list(ln[4:])\n",
+     "replace": "                pass\n",
+     "matches": 1},
+    {"why": "v3861 - a fixed socket count in par past its base ships uncapped (Blade of Ali Baba 3 on a Tulwar)",
+     "file": "tv/char_props.py",
+     "find": "                ln = [ln[0], str(cap), None, None] + list(ln[4:])\n",
+     "replace": "                pass\n",
+     "matches": 1},
     {
         "why": "#174 v-B2 fix round - +% max damage per level is filed under Enhanced Damage again (Hellslayer ED 340)",
         "file": "bible.html",
