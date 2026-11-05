@@ -104,7 +104,8 @@ class _Base(unittest.TestCase):
 
     STUBS = ("_capture_is_live", "_agent_origin", "_agent_proc", "_agent_alive", "_cpu_busy_pct",
              "vault_sweep_state", "_CHRON_JOB", "HIST_DIR", "_TRIAGE_ON", "_TRIAGE_LANE",
-             "_TRIAGE_STORE_SEED", "_TRIAGE_BACKLOG_SEED", "IS_WIN", "stash_screen_open_cached")
+             "_TRIAGE_STORE_SEED", "_TRIAGE_BACKLOG_SEED", "IS_WIN", "stash_screen_open_cached",
+             "_os_input_idle_s")
     ENV = ("TV_HIST", "TV_TRIAGE_SHADOW_MAX_CPU", "TV_TRIAGE_WIN_MAX_CPU")
 
     def setUp(self):
@@ -143,6 +144,11 @@ class _Base(unittest.TestCase):
         ca.vault_sweep_state = lambda: {"running": False}
         ca._CHRON_JOB = {}
         ca.stash_screen_open_cached = lambda f: None
+        # ⚠ v3861 - THE REAL IDLE CLOCK IS HIS. v3855's stale-play rule reads this PC's keyboard/mouse idle time, and a
+        # fixture that left it live went RED on the v3861 push at 06:xx (8 failures, 2 errors: 'surveyed' != 'playing')
+        # because the Mac had been idle 4.2 h, past the 3 h bar - and green at 04:30 and on CI, where nobody is idle.
+        # Every case here is an ACTIVE player; test_a_game_left_open_is_not_play owns the idle rule.
+        ca._os_input_idle_s = lambda: 0.0
         # ⚠ the real probes would ask HIS machine whether D2R.exe runs (pgrep on this Mac)
         TVD._pgrep_d2r_state = self._pgrep
         TVD._toolhelp_d2r_state = lambda: self.playing

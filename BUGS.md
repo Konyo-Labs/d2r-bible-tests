@@ -186,6 +186,12 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3151 - A TRIAGE LAW READ HIS REAL IDLE CLOCK, SO IT WENT RED WHENEVER HE HAD BEEN AWAY 3 HOURS (v3861 gate repair)
+v3855's stale-play rule reads this PC's keyboard/mouse idle time; test_triage_runs_beside_a_shadow_reel never stubbed it.
+MEASURED 2026-11-05: green in the v3860 push at 04:30 (he was active) and on CI (no idle clock), RED in the v3861 push
+at 06:xx - 8 failures, 2 errors, 'surveyed' != 'playing' - with the Mac idle 15,199 s against the 3 h bar; identical on
+v3860's own bytes, so not a v3861 regression. The fixture now pins an active player; test_a_game_left_open_is_not_play
+owns the idle rule. Swept: the two farmgate laws that fake D2R running never reach the rule (green while idle).
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel
