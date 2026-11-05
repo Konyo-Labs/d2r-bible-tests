@@ -211,6 +211,42 @@ class TheFleetSeesIt(unittest.TestCase):
         self.assertNotIn("konyo", flat, "a Mac user folder crossed into the fleet record")
 
 
+@unittest.skipIf(__import__("shutil").which("node") is None, "node is absent - the card is UNMEASURED here")
+class TheCardSaysIt(unittest.TestCase):
+
+    def _facts(self, rp):
+        import json
+        import subprocess
+        with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as fh:
+            ui = fh.read()
+        i = ui.index("  var _repairFacts = function (rp) {")
+        j = ui.index("\n  };", i)
+        js = ui[i:j + 4] + "\nconsole.log(JSON.stringify(_repairFacts(%s)));" % json.dumps(rp)
+        r = subprocess.run(["node", "-"], input=js, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                           timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr[:400])
+        return json.loads(r.stdout.strip().splitlines()[-1])
+
+    def test_a_quiet_pc_or_an_older_build_draws_nothing(self):
+        self.assertIsNone(self._facts(None))
+        self.assertIsNone(self._facts({"ranAt": 1, "fixed": 2, "failed": [], "misses": []}))
+
+    def test_faults_and_their_proposals(self):
+        got = self._facts({"failed": [{"id": "node", "why": "hash mismatch"}],
+                           "misses": [{"id": "the ledger backup covers every store", "why": "x", "diag": "root moved"},
+                                      {"id": "two eyes compared", "why": "y"}]})
+        self.assertEqual(got["f"], ["2 unknown faults", "1 repair failed"])
+        self.assertIn("its Claude: root moved", got["why"])
+        self.assertIn("not diagnosed yet", got["why"])
+        self.assertIn("REPAIR FAILED: node", got["why"])
+
+    def test_the_row_draws_it(self):
+        with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as fh:
+            ui = fh.read()
+        self.assertIn("    var _rpF = _repairFacts(sy && sy.repair);\n"
+                      "    if (_rpF) out.push(_fleetPart('repairs', _rpF.f, { warn: true, why: _rpF.why }));", ui)
+
+
 class TheOverwatchLine(unittest.TestCase):
     """tv/fleet_errors.py - what a UserPromptSubmit hook prints: each PC's new faults once, nothing when none."""
 
@@ -284,6 +320,11 @@ RED_PROOF = [
      "file": "functions/api/console.js",
      "find": "            return id ? { id: id, why: txt(e.why, 200) } : null;\n",
      "replace": "            return id ? { id: id, why: e.why } : null;\n",
+     "matches": 1},
+    {"why": "v3862 - the card stops counting a PC's unknown faults (nobody sees them without the line)",
+     "file": "tv/control_ui.html",
+     "find": "    if (miss.length) f.push(miss.length + (miss.length === 1 ? ' unknown fault' : ' unknown faults'));\n",
+     "replace": "",
      "matches": 1},
     {"why": "v3862 - the overwatch line repeats every fault on every prompt (it becomes furniture)",
      "file": "tv/fleet_errors.py",

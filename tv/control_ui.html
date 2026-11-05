@@ -27814,6 +27814,22 @@ function escC(s) {
     if (row) row.textContent = '\ud83d\udd11 ' + said;
     try { window._fleetRefresh(true); } catch (e) {}
   };
+  /* v3862 - the repair book's open faults as a row's facts. -> null when there is nothing to say. Pure. */
+  var _repairFacts = function (rp) {
+    if (!rp || typeof rp !== 'object') return null;
+    var miss = Array.isArray(rp.misses) ? rp.misses.filter(function (e) { return e && e.id; }) : [];
+    var fail = Array.isArray(rp.failed) ? rp.failed.filter(function (e) { return e && e.id; }) : [];
+    if (!miss.length && !fail.length) return null;
+    var f = [];
+    if (miss.length) f.push(miss.length + (miss.length === 1 ? ' unknown fault' : ' unknown faults'));
+    if (fail.length) f.push(fail.length + (fail.length === 1 ? ' repair failed' : ' repairs failed'));
+    var why = miss.map(function (e) {
+      return 'UNKNOWN: ' + String(e.id) + (e.why ? ' - ' + String(e.why) : '') + (e.diag ? ' | its Claude: ' + String(e.diag) : ' | not diagnosed yet');
+    }).concat(fail.map(function (e) {
+      return 'REPAIR FAILED: ' + String(e.id) + (e.why ? ' - ' + String(e.why) : '');
+    })).join(' \u2022 ');
+    return { f: f, why: why };
+  };
   var _proofMeterFacts = function (hs) {
     if (!hs || typeof hs !== 'object' || hs.census === 'current' || typeof hs.owed !== 'number') return [];
     var f = [hs.owed + (hs.owed === 1 ? ' law owed' : ' laws owed')];
@@ -28020,6 +28036,11 @@ function escC(s) {
                  why: 'every lock that moves this PC\u2019s river opens only on its OWN proof' + (hs.key ? ' - lane: ' + hs.key : '')
                       + (hs.why ? ' - ' + String(hs.why) : '') }));
     }
+    /* 5b. v3862 (REG-3158/3159/3164) - WHAT ITS REPAIR BOOK COULD NOT FIX: eagle faults it does not know (with that PC's
+       own Claude's proposal in the hover) and known repairs that failed. Nothing is drawn for a PC with neither, or for
+       an older build that does not send the book - a quiet row is the honest one. */
+    var _rpF = _repairFacts(sy && sy.repair);
+    if (_rpF) out.push(_fleetPart('repairs', _rpF.f, { warn: true, why: _rpF.why }));
     /* 6. #41 rank 22 (REG-1564) \u2014 WHAT ITS CHARACTER PICKER OFFERS, AGAINST WHAT ITS OWN DATABASE HOLDS. Nothing on
        any PC reported what the picker lists (his ALT showed empty pickers for days, #174 v-B4). The beacon carries
        `picker` {ok, slot, label, offers, holds, all, ageS, why}: `offers` is the picker's Base Items rows for the slot
