@@ -13019,6 +13019,11 @@ GATES = [
          why="v3862 (his ruling, the normal model): the pre-push skips its own grading only when every required GitHub "
              "workflow's newest run succeeded on the exact pushed commit and the tree is clean; unknown is never green, "
              "and a failed proof import proves locally"),
+    Gate("test_the_claude_light_rechecks_after_any_sign_in",
+         [sys.executable, os.path.join(HERE, "test_the_claude_light_rechecks_after_any_sign_in.py")], 120,
+         needs_app=False,
+         why="v3863 (#238): a red CLAUDE lamp asks every 5 s for 2 min after a credential file moves (a sign-in from any "
+             "window), a green one never asks faster, a red answer names the binary, only the live lamp watches"),
     Gate("test_an_unknown_fault_is_diagnosed_never_fixed",
          [sys.executable, os.path.join(HERE, "test_an_unknown_fault_is_diagnosed_never_fixed.py")], 120,
          needs_app=False,

@@ -186,6 +186,13 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3168 - A SIGN-IN FROM A TERMINAL LEFT THE CLAUDE LAMP RED FOR UP TO 5 MINUTES, AND RED NEVER SAID WHAT IT ASKED (v3863, #238)
+GrokBot plan item 4. The lamp asked `claude auth status` every 300 s, and every 10 s only after a sign-in this console's
+own button started (REG-1618). Now, while the lamp is RED and ~/.claude.json or ~/.claude/.credentials.json moves, it asks
+every 5 s for 2 min, so a sign-in from any window turns it green in seconds; a green lamp never asks faster (Claude Code
+rewrites ~/.claude.json constantly). A red answer names the binary it asked (folder + name, never the whole path), and no
+binary found is UNKNOWN, never "signed out". Only the live lamp passes the credential watcher; a law calling the state
+directly never sees his files. Law test_the_claude_light_rechecks_after_any_sign_in.
 ### REG-3167 - REG-3110 r2: THE VAULT NEVER WORE THE TIER FACE - THE MAP WAS PRIVATE, AND THE LAW GRADED ITS OWN COPY (v3863, #26)
 Found by the 11-03 cross-family look on v3854 and confirmed on main 2026-11-05: `var _TIER_FACE` lives inside the
 Characters tab's IIFE (bible.html ~11806), so where the Vault reads it (the evidence line and the evidence panel's Tier

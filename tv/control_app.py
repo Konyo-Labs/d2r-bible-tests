@@ -441,10 +441,35 @@ CLAUDE_AUTH_EVERY_S = 300
 #: REG-1618 — while a sign-in he clicked is being finished (claude_signin.watching), asked every 10 s instead, so the
 #: CLAUDE lamp turns green within seconds of the browser saying done - not up to 5 min later
 CLAUDE_AUTH_WATCH_EVERY_S = 10
-_CLAUDE_AUTH = {"at": 0.0, "val": None, "busy": False}
+#: v3863 (#238) - A SIGN-IN ANYWHERE TURNS THE LAMP GREEN IN SECONDS. A sign-in from a terminal or the desktop app (not this
+#: console's button) left the lamp red for up to CLAUDE_AUTH_EVERY_S. While the lamp is RED and a Claude credential file
+#: moves, it is asked every CLAUDE_AUTH_FAST_EVERY_S for CLAUDE_AUTH_AFTER_SIGNIN_S. Never while green: Claude Code
+#: rewrites ~/.claude.json all the time, and a green lamp does not need asking faster.
+CLAUDE_AUTH_FAST_EVERY_S = 5
+CLAUDE_AUTH_AFTER_SIGNIN_S = 120
+_CLAUDE_AUTH = {"at": 0.0, "val": None, "busy": False, "credAt": None, "fastUntil": 0.0}
 
 
-def _claude_auth_state(now=None, _probe=None, _thread=None, _watching=None):
+def _claude_cred_mtime(_paths=None):
+    """The newest mtime of the files a Claude sign-in writes. -> float | None (none of them exists or can be read)"""
+    best = None
+    for p in (_paths or (os.path.expanduser("~/.claude.json"), os.path.expanduser("~/.claude/.credentials.json"))):
+        try:
+            m = os.path.getmtime(p)
+        except OSError:
+            continue
+        best = m if best is None or m > best else best
+    return best
+
+
+def _bin_short(b):
+    """A binary named for the lamp: its folder and name, never the whole path (the why can ride the fleet)."""
+    if not b:
+        return None
+    return os.path.join(os.path.basename(os.path.dirname(str(b))), os.path.basename(str(b)))
+
+
+def _claude_auth_state(now=None, _probe=None, _thread=None, _watching=None, _cred=None, _bin=None):
     """The last `claude auth status` answer (None until the first has come back). Starts a refresh when it is older than
     its cadence and none is running - the caller never waits on the CLI. -> dict | None
 
@@ -457,7 +482,17 @@ def _claude_auth_state(now=None, _probe=None, _thread=None, _watching=None):
         _watch = bool((_watching or _csi0.watching)(now))
     except Exception:
         _watch = False
-    _every = (CLAUDE_AUTH_WATCH_EVERY_S if _watch and not (isinstance(_prev, dict) and _prev.get("loggedIn") is True)
+    _green = isinstance(_prev, dict) and _prev.get("loggedIn") is True
+    try:                                   # v3863 (#238) - a credential file moved: a sign-in may just have happened
+        _m = _cred() if _cred is not None else None      # only the live lamp watches (a law calls with no watcher)
+    except Exception:
+        _m = None
+    if _m is not None:
+        if _CLAUDE_AUTH.get("credAt") is not None and _m > _CLAUDE_AUTH["credAt"]:
+            _CLAUDE_AUTH["fastUntil"] = now + CLAUDE_AUTH_AFTER_SIGNIN_S
+        _CLAUDE_AUTH["credAt"] = _m
+    _every = (CLAUDE_AUTH_FAST_EVERY_S if (not _green and now < float(_CLAUDE_AUTH.get("fastUntil") or 0))
+              else CLAUDE_AUTH_WATCH_EVERY_S if _watch and not _green
               else CLAUDE_AUTH_EVERY_S)
     if not _CLAUDE_AUTH["busy"] and now - float(_CLAUDE_AUTH["at"] or 0) >= _every:
         _CLAUDE_AUTH.update(busy=True, at=now)
@@ -465,7 +500,16 @@ def _claude_auth_state(now=None, _probe=None, _thread=None, _watching=None):
         def _go():
             try:
                 import claude_signin as _csi
-                _CLAUDE_AUTH["val"] = (_probe or _csi.status)(_find_claude_bin())
+                _b = _bin() if _bin is not None else _find_claude_bin()
+                if not _b:
+                    _CLAUDE_AUTH["val"] = {"loggedIn": None, "method": None, "bin": None,
+                                           "why": "no claude binary was found on this PC - UNKNOWN, nothing could be asked"}
+                else:
+                    _v = dict((_probe or _csi.status)(_b) or {})
+                    _v["bin"] = _bin_short(_b)        # v3863 (#238) - the lamp names the binary it asked
+                    if _v.get("loggedIn") is not True:
+                        _v["why"] = "%s (asked %s)" % (_v.get("why") or "no answer", _v["bin"])
+                    _CLAUDE_AUTH["val"] = _v
             except Exception as e:
                 _CLAUDE_AUTH["val"] = {"loggedIn": None, "method": None,
                                        "why": "claude auth status raised %s - UNKNOWN" % type(e).__name__}
@@ -590,7 +634,7 @@ def _reader_health(now_ms=None, rows=None, g5=None, use_cache=True, auth=None):
     # REG-1617 — AND THE CLI'S OWN WORD ON ITS SIGN-IN, so SIGN IN shows before a read has to fail (a PC that is not
     # recording reads nothing, and its lamp would sit at UNKNOWN while it is signed out). A read that just SUCCEEDED
     # outranks it; a probe that cannot answer changes nothing - UNKNOWN is not "signed out".
-    _au = auth if auth is not None else (_claude_auth_state() if _live else None)
+    _au = auth if auth is not None else (_claude_auth_state(_cred=_claude_cred_mtime) if _live else None)
     if isinstance(_au, dict) and _au.get("loggedIn") is False and lamp.get("state") != "on":
         lamp.update(state="off", kind="signed-out", needsLogin=True,
                     why="Claude is signed out on this PC (%s) - click CLAUDE or SIGN IN at the top right, or run "
