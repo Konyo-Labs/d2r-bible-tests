@@ -13013,6 +13013,12 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_shadow_vault_tab_dates_the_vault_by_its_own_clock.py")], 300,
          needs_app=False,
          why="REG-3123 (#23): the shadow Vault tab says the vault section age beside the board upload age, UNKNOWN when a clock was not handed"),
+    Gate("test_a_push_trusts_github_only_for_the_exact_commit",
+         [sys.executable, os.path.join(HERE, "test_a_push_trusts_github_only_for_the_exact_commit.py")], 120,
+         needs_app=False,
+         why="v3862 (his ruling, the normal model): the pre-push skips its own grading only when every required GitHub "
+             "workflow's newest run succeeded on the exact pushed commit and the tree is clean; unknown is never green, "
+             "and a failed proof import proves locally"),
     Gate("test_a_proof_runs_beside_a_cloud_client",
          [sys.executable, os.path.join(HERE, "test_a_proof_runs_beside_a_cloud_client.py")], 120,
          why="v3862 (his ruling 2026-11-05, prove beside cloud): only a local D2R.exe stops a proof; a cloud client never "

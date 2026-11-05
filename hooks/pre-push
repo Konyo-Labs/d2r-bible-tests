@@ -918,6 +918,25 @@ ledger_carry() {
 # with no line (the changed-law block below already fell back and said so; this lane did neither). It reads the range
 # the push-range block resolved at the top (@{push}, else origin/main..HEAD). A range that cannot be read RUNS the
 # lane, and every outcome names the range it read. Law: test_a_leaked_git_dir_never_writes_the_real_repo.
+# >>> ci-trust
+# v3862 - HIS RULING 2026-11-05, THE NORMAL MODEL: GitHub grades and proves each version once. When its required workflows
+# (tv/ci_verdict.py REQUIRED: the full gate set, the browser suite, the Windows runner, the proofs) all SUCCEEDED on the
+# EXACT commit being pushed to main, and this tree is that commit with nothing uncommitted, the Mac does not grade it a
+# second time: the tv suites, the fast gate set and local proving were GitHub's, and GitHub's proofs are imported. The
+# render, console demos, anchors, visual-lock and smoke above and below still run here - GitHub cannot see macOS.
+# Anything else - no verdict, a red or running workflow, another sha, a dirty tree, gh unreachable - grades in full, as
+# before. Never --no-verify. Law: test_a_push_trusts_github_only_for_the_exact_commit.
+_ci_trust=0
+if [ -n "${_se_local:-}" ] && [ "$(git rev-parse HEAD 2>/dev/null)" = "$_se_local" ] && [ -z "$(git status --porcelain 2>/dev/null)" ]; then
+  if _ci_line="$(python3 "$REPO/tv/ci_verdict.py" "$_se_local" 2>&1)"; then
+    _ci_trust=1
+    echo "pre-push: [$(_pp_el)] ☁ $_ci_line"
+    echo "          the tv suites, the fast gate set and the proving are GitHub's; this Mac runs what GitHub cannot."
+  else
+    echo "pre-push: [$(_pp_el)] ${_ci_line:-GitHub gave no verdict} - this Mac grades in full."
+  fi
+fi
+# <<< ci-trust
 # >>> tv-lane
 _tv_lane=""
 if [ -z "${TV_PUSH_BASE:-}" ]; then
@@ -936,6 +955,10 @@ else
   echo "pre-push: [$(_pp_el)] ⏭  no tv/*.py changed in ${TV_PUSH_RANGE:-?} - the tv suites do not run."
 fi
 # <<< tv-lane
+if [ "$_ci_trust" = 1 ] && [ -n "$_tv_lane" ]; then
+  echo "pre-push: [$(_pp_el)] ⏭  the tv suites ran on GitHub for this exact commit (ci-trust) - not again here."
+  _tv_lane=""
+fi
 if [ -n "$_tv_lane" ]; then
   # #42 lever 2 (REG-1720) — A GREEN SUITE RUN IS REUSED ONLY ON IDENTICAL BYTES. MEASURED on v3556's push: these two
   # suites were 10m26s of 17m16s, re-running a commit that had already passed them. tv/suite_verdict.py reuses a green
@@ -1064,12 +1087,16 @@ fi
 # on main (tv/nightly_full_gates.sh). Law: test_the_fast_gate_runs_the_core_and_what_changed.
 # A full set that cannot split runs one at a time. 5400 was the split budget and it killed a
 # passing grade. 10800 still kills a hang. The split plan is unchanged.
+if [ "$_ci_trust" = 1 ]; then
+  echo "pre-push: [$(_pp_el)] ⏭  the gate set ran on GitHub for this exact commit (ci-trust) - not again here."
+else
 if ! gate_run "fast gate set" "python3 tv/run_gates.py --fast" 10800 -- \
      env TV_FAST_BASE="${TV_PUSH_BASE:-origin/main}" python3 "$REPO/tv/run_gates.py" --fast; then
   echo "          ↑ a gate in the fast set is red - fix it; the push does not go."
   exit 1
 fi
 echo "pre-push: [$(_pp_el)] ✅ fast gate set green."
+fi
 # <<< fast-gate
 
 # ══ v3292 — A CHANGED LAW MUST DEMONSTRATE IT CAN STILL GO RED ════════════════════════════════
@@ -1189,7 +1216,11 @@ said = []
 n = h.prove_workers(int(sys.argv[1]), say=said.append)
 print("%d lane(s)%s" % (n, (" - " + said[-1].strip()) if said else ""))' "$(echo $_gates | wc -w | tr -d ' ')" 2>/dev/null | tail -1)
     echo "pre-push: [$(_pp_el)] proving $(echo $_gates | wc -w | tr -d ' ') changed law(s) in ${_lanes_say:-UNKNOWN lane(s) - heart2 could not say}"
-    if python3 "$REPO/tv/heart2.py" --prove $_gates --push > "$_prove_log" 2>&1; then
+    if [ "$_ci_trust" = 1 ] && python3 "$REPO/tv/ci_verdict.py" --import "$_se_local" > "$_prove_log" 2>&1; then
+      echo "pre-push: [$(_pp_el)] ☁ $(tail -1 "$_prove_log") - no local proving (ci-trust)."
+      ( cd "$REPO/tv" && python3 -c 'import proof_carrier as pc; pc.note_gate_run("pre-push")' ) || true
+      rm -f "$_prove_log"
+    elif python3 "$REPO/tv/heart2.py" --prove $_gates --push > "$_prove_log" 2>&1; then
       echo "pre-push: [$(_pp_el)] ✅ every changed law demonstrated it can still go red."
       ( cd "$REPO/tv" && python3 -c 'import proof_carrier as pc; pc.note_gate_run("pre-push")' ) || true
       rm -f "$_prove_log"
