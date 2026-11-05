@@ -232,7 +232,25 @@ class TheSecondEyeLedgerIsOnePerMachine(unittest.TestCase):
         self.assertTrue(os.path.isfile(self.m.ledger), "--gate did not fold the checkouts into the machine's ledger")
 
 
+class TheShipGateIsArmed(unittest.TestCase):
+    """v3866 - his ruling 2026-11-05 ("Lift after v3865"): hooks/pre-push waived the second-family look from 2026-11-02,
+    printing a waiver and exiting 0, and v3856-v3864 shipped with no recorded look. The ship gate asks this ledger again
+    and refuses on its answer; the waiver line is gone from the code (comments stripped, so the history may say it)."""
+
+    def test_the_hook_asks_the_ledger_and_refuses_on_its_answer(self):
+        with io.open(os.path.join(os.path.dirname(HERE), "hooks", "pre-push"), encoding="utf-8") as fh:
+            code = "\n".join(l for l in fh.read().splitlines() if not l.lstrip().startswith("#"))
+        call = 'python3 "$REPO/tv/second_eye_ledger.py" --check "$_prev_ver" --gate; then'
+        self.assertEqual(code.count(call), 1, "the ship gate no longer asks the second-eye ledger")
+        self.assertNotIn("is waived for now", code, "the second-eye waiver is back in the hook")
+
+
 RED_PROOF = [
+    {"why": "v3866 - the second-eye ship gate is waived again: it prints and exits 0",
+     "file": "hooks/pre-push",
+     "find": "         python3 \"$REPO/tv/second_eye_ledger.py\" --check \"$_prev_ver\" --gate; then\n",
+     "replace": "         bash -c \"echo second eye on $_prev_ver is waived for now\"; then\n",
+     "matches": 1},
     {"why": "#178 - the ledger resolves to the checkout's own tv/.second_eye.jsonl again (the HERE path), so a fresh "
             "push worktree has none and a look recorded in a worktree dies with it",
      "file": "second_eye_ledger.py",

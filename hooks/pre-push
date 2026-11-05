@@ -439,14 +439,20 @@ except Exception:
     exit 1
   fi
   if [ -n "$_prev_ver" ] && [ "$_prev_ver" != "$_this_ver" ]; then
-    # 2026-11-02. He waived the second-family look on every ship until he asks for it again.
-    # The look stays owed. The stage stays in the hook, bound 30, and the command exits 0.
-    # It prints the waiver. It does not look, and it does not block.
-    if ! gate_run "second-eye" "echo second eye waived" 30 -- \
-         bash -c "echo \"pre-push: second eye on $_prev_ver is waived for now, by order. The look stays owed.\""; then
-      echo "pre-push: [$(_pp_el)] ❌ second-eye stage did not finish — push blocked."
+    # v3866 - RE-ARMED, his ruling 2026-11-05 ("Lift after v3865"): the waiver of 2026-11-02 is gone, so a version may
+    # not ship while the one before it has no recorded look by a different model family. v3856-v3864 were looked at by
+    # the Grok CLI that night (posted on #231 2026-11-05 22:54Z); v3864's answer was cannot-tell, which is not a look.
+    if ! gate_run "second-eye" "python3 tv/second_eye_ledger.py --check $_prev_ver --gate" 30 -- \
+         python3 "$REPO/tv/second_eye_ledger.py" --check "$_prev_ver" --gate; then
+      echo "pre-push: [$(_pp_el)] ❌ $_this_ver may not ship while $_prev_ver has never been looked at by a"
+      echo "          different model family. Run it: python3 tv/second_eye_run.py $_prev_ver"
+      echo "          (cold, comment-stripped, measured; it records what came back). To see the state:"
+      echo "              python3 tv/second_eye_ledger.py --audit"
+      echo "          A dead CLI does not count — an unreachable eye is an empty seat, not agreement."
+      echo "          (deliberate exception: git push --no-verify)"
       exit 1
     fi
+    echo "pre-push: [$(_pp_el)] ✅ the second eye looked at $_prev_ver."
   fi
   # ⚠⚠ 2026-09-28 — AN UNBUMPED PUSH OF A SURFACE HE CAN SEE IS REFUSED. The block above asks for the second
   # eye only when the version CHANGES, so a push that never bumps skips the look for ever - and his console keeps
