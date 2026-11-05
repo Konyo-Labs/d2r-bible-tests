@@ -7137,6 +7137,12 @@ body.app-ctx .profile-pill{z-index:70}
 /* v935.6 — engine pane inside the console shell: console header owns the tab rail.
    Hide the board's duplicate sticky tabs + CONSOLE pill (host shell has ⌂ CONSOLE · esc). */
 body.app-ctx.engine-driven .tabs{display:none !important}
+/* REG-3202 - THE CONSOLE'S FULL BIBLE DOOR. The console stamps bible-full on this body only while its "full bible" door
+   opened the pane (control_ui openFullBible -> _fullBibleRail); every other route clears it. Then the pane is the whole
+   bible: this page's own rail is back, with every room on it, not only the console's five. */
+body.app-ctx.engine-driven.bible-full .tabs{display:flex !important;flex-wrap:wrap}
+body.app-ctx.bible-full .tabs .tab{display:inline-flex}
+body.app-ctx.bible-full .tabs-data{display:flex}
 body.app-ctx.engine-driven #tvf-console-return,
 body.app-ctx.engine-driven .tvf-console-pill{display:none !important}
 body.app-ctx.engine-driven .header{padding:2px 10px 0}

@@ -48,6 +48,8 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 OK, MISSING, UNKNOWN, UNMEASURED = "ok", "missing", "unknown", "unmeasured"
+#: REG-3203 - the page's own bound on an "opening" Shelf (control_ui TH_SHELF_OPEN_BOUND_MS, 60 s) plus a beat's slack
+SHELF_OPENING_BOUND_S = 75
 
 
 def _this_os():
@@ -6327,6 +6329,21 @@ def _check_the_shelf_is_where_it_says_it_is():
         # console behaving correctly, while printing "the page itself says: filled=false" over a
         # payload that said filled=true. A row that cries wolf is one he learns to skip.
         _vis = shelf.get("visibleCards")
+        # REG-3203 (GrokBot on v3864: his Mac's Shelf sat on "opening the shelf..." while the guest's filled) - AN
+        # OPENING SHELF WORE THE EMPTY-HERO BOX, so this row called a stuck open "no runs to show yet - the correct
+        # state". The page now publishes `opening` and how long it has said so; the page's own bound
+        # (TH_SHELF_OPEN_BOUND_MS) turns a stuck one into the UNKNOWN shelf, and past that bound this row says MISSING.
+        if shelf.get("opening") is True:
+            _os = shelf.get("openingS")
+            if not isinstance(_os, (int, float)):
+                return UNKNOWN, ("the shelf is open and still says it is opening, and how long it has said so "
+                                 "is UNKNOWN (no start stamp on the beat)")
+            if _os > SHELF_OPENING_BOUND_S:
+                return MISSING, ("THE SHELF HAS SAID 'opening' FOR %ds - past the %ds bound in which it must "
+                                 "show his runs or say why. The list never arrived, and the page's own bound "
+                                 "did not end it." % (int(_os), SHELF_OPENING_BOUND_S))
+            return OK, ("the shelf is open and still opening (%ds so far, bound %ds) - waiting on the "
+                        "sessions list, not a fault yet" % (int(_os), SHELF_OPENING_BOUND_S))
         if shelf.get("emptyHero") is True:
             return OK, ("the shelf is open and on screen and has no runs to show yet — the empty "
                         "hero is rendered, which is the correct state, not a fault")

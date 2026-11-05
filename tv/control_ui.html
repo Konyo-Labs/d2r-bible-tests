@@ -4363,6 +4363,146 @@
   /* the two verdict cursors survive the blanket rule — a disabled control and an unfarmable zone
      must still say no with the pointer, which is the whole of v1915. */
   .tzz.tzz-thin, .tzz.tzz-thin *, button:disabled, .act:disabled { cursor: not-allowed !important; }
+  /* ══ REG-3205 — THE CONSOLE CURSOR: THE GAUNTLET AT REST, A GOLD POINTER ON WHAT CAN BE PRESSED, A NO ONLY ON WHAT IS OFF ══
+     His words: "the mouse cursor needs fixing within the console like for buttons that are clickable should be emphasized.
+     right now everything is showing me a mouse cancel sign.. and it should be a custom mouse cursor pointer for the console".
+     COUNTED, every cursor rule in this file: 96 `cursor: pointer` and 14 `cursor: default` rules, all under the `*`
+     gauntlet pair above (`!important`, so it beat every one of them) - no control ever looked different from the page
+     around it, and the only cursors that could differ from the gauntlet were the `not-allowed !important` verdicts. A
+     button that shows the same glove as dead space reads as dead; one disabled control showing the cancel sign then
+     reads as all of them (v2951 found one that never re-enabled).
+     The default stays the gauntlet (his v1916/v2765/v3034 asks, pinned to art/hd_cursor_hand32.png): the `*` pair puts it
+     on <html> and <body>, and every element under <body> INHERITS its cursor (cursor is an inherited property) - so a
+     control's own cursor reaches the label, icon and text inside it. Everything that can be pressed - the generic
+     clickables plus every selector this file declares `cursor: pointer` on - wears one custom pointer: a gold hand (the
+     console's --gold on its dark ink), an inline SVG with the `pointer` keyword behind it if the picture cannot draw.
+     `not-allowed` is said only by a control that IS off: [disabled] and [aria-disabled="true"] (a thin TZ zone carries
+     aria-disabled, so v1915's verdict stays). The inherit rule weighs nothing (:where), so it beats only the `*` pair
+     before it and loses to every rule that names an element - the text caret above (textarea included), the pointer
+     and the disabled rule; those two weigh the same (one element), so their order below is the cascade.
+     No `:where(...) *` descendant rule: on a page that reaches 84k elements (v2760) a universal right-hand side would walk
+     every ancestor of every element on each style pass, and inheritance does the same job for free.
+     tv/test_every_pressable_thing_wears_the_console_pointer.py holds every pointer selector in this file to this list. */
+  :where(body *) { cursor: inherit !important; }
+  html :where(
+    a[href],
+    button,
+    [role="button"],
+    [onclick],
+    summary,
+    label[for],
+    select,
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    input[type="checkbox"],
+    input[type="radio"],
+    input[type="file"],
+    input[type="range"],
+    .ht,
+    .sigil,
+    button.act,
+    button.ghost,
+    .rc-go,
+    .fx-open,
+    .fx-x,
+    .fx-read,
+    .th-x,
+    .th-drawer-x,
+    .th-drawer details.th-raw > summary,
+    .thhd-nav,
+    #th-credits,
+    #th-shelfov .shr-fold > summary,
+    #th-shelfov .sh-card,
+    .shc-pin,
+    .th-btn,
+    .shc-play,
+    .th-timeline,
+    .th-fs-thumb,
+    .util-btn,
+    .sig-adv > summary,
+    .win-ctl button,
+    .find-card,
+    .find-more,
+    .cmp-back,
+    .cmp-sel,
+    .hm-back,
+    .dsr-back,
+    .dsr-x,
+    .dsr-edit-btn,
+    .dsr-note-add,
+    .dsr-pin,
+    .dsr-open,
+    .dsr-mont,
+    .dsr-chap,
+    .dsr-miss-row,
+    .dsr-regret-row,
+    .ch-ev,
+    .readh-det > summary,
+    .chron-v.can,
+    .chron-n > summary,
+    .tzz-live,
+    .hh-go,
+    .tf-go,
+    .hd-go,
+    .mini-foc .mf,
+    .chron-warn.settled > b,
+    .chron-frames summary,
+    .chron-btn,
+    .hd-hist-head,
+    .hd-hist-all,
+    .hh-card,
+    .sh-filterfold > summary,
+    .sh-chip,
+    .sh-sort-sel,
+    .sh-cmp,
+    .shi-clk,
+    .ch-inbox-row,
+    .ch-inbox,
+    .ch-clear,
+    .ch-sweep,
+    .ch-x,
+    .ch-pill,
+    .ch-card-item .ch-chk,
+    .ch-btn,
+    .ch-sess-tog,
+    body[data-view="sessions"] .hub-bible,
+    .tf-t b.tf-nm,
+    .hh-altgo,
+    .hd-chip.tly-btn,
+    .tly-x,
+    .tly-tab,
+    .tly-shot,
+    .eh-legend-btn,
+    #th-legend-btn,
+    #shadow-bar #shadow-leave,
+    .ssv-play,
+    .ssv-speed,
+    .fleet-clickable,
+    .fxr-tab,
+    #ver-xref .vx-fold > summary,
+    #ver-xref .vx-btn,
+    #foot-hist,
+    #foot-tasks,
+    #hist-x,
+    #heart-chip,
+    .fx-adv > summary,
+    .fleet-hd-eyes,
+    .g5-auth-btn,
+    .shadow-adv-sw,
+    .g5-seg-btn,
+    .hd-pg,
+    .hd-grid .sh-card,
+    .eng-fold > summary,
+    .head-tabs .ht,
+    .fleet-bar .fb-go,
+    .fleet-bar .fb-x,
+    .rl-signin,
+    .reader-lamps button.rl,
+    body.shell-open #head-tabs .ht,
+    :is(.th-x,.tly-x,.th-drawer-x,.sh-x,.fx-x,.thhd-x,.dsr-x,.ch-x,.gbc-close,.cb-x,.vd-close,.vtp-x,.vmm-close,.vll-x,.vev-x,.tlg-x,.tlp-close,.tvz-th-x,.aic-x,.bn-x,.glossary-close,.aid-header-close,.help-x,.ovx-made)
+  ) { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M10 3.5c0-1.1.9-2 2-2s2 .9 2 2V12l.6-.1c.2-1 1-1.7 2-1.7s1.8.7 2 1.6c.4-.6 1-.9 1.7-.9 1 0 1.9.8 2 1.8.4-.3.9-.5 1.4-.5 1.1 0 2 .9 2 2v6.3c0 4.4-3.6 8-8 8h-1.6c-2.6 0-5-1.2-6.5-3.3l-4.3-5.6c-.7-.9-.5-2.2.4-2.9.8-.6 2-.6 2.7.2l1.6 1.7z' fill='%23f0c060' stroke='%231a1206' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M14 12v5M18.4 12.5v4.5M22.1 13.5v4' stroke='%231a1206' stroke-width='1.1' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") 12 2, pointer !important; }
+  html :where([disabled], [aria-disabled="true"]) { cursor: not-allowed !important; }
   .hd-chron .chron-body { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
   /* v1914 — the Sessions-side pointer at the waiting proposal. Sized like a banner note, not a
      button that competes with the hunt; the arrow is the only thing that says it goes somewhere. */
@@ -5419,6 +5559,14 @@
      through thOpen. Worst case is now "no stage here" instead of "a black rectangle here", and
      an absent surface is honest where an empty one is not. */
   body[data-view="sessions"] .stage { display: none !important; }
+  /* REG-3204 - a shadow's Play lifts the theatre over whatever view the shadow is on (their hub is data-view=sessions,
+     which hides the stage just above): the stage is kept in the layout, the theatre fills the window above the shadow
+     frame (945) and its sessions list (975), and every control that acts on THIS PC's reels is not drawn. */
+  body.shadow-theatre .stage { display: flex !important; visibility: visible !important; }
+  body.shadow-theatre #theatre { position: fixed !important; inset: 0 !important; z-index: 976 !important;
+    border-radius: 0; pointer-events: auto !important; visibility: visible !important; }
+  body.shadow-theatre #theatre :is(#th-open-reel, #th-reclose, #th-prev-s, #th-next-s, #th-mode, #th-shelf, .th-more-wrap,
+    #th-fs-toggle, #th-filmstrip-wrap, #th-timeline, #th-drawer, #th-shelfov) { display: none !important; }
   .hub-bible { display: none; }
   /* v3286 - THE DOOR TO THE FULL BIBLE LOOKED LIKE A FOOTNOTE. Konyo: "the button within the
      console that routes us to the full bible page i want also upgraded and emphasized and seen
@@ -8336,7 +8484,7 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
          compact strip under the live stage when ON. -->
     <section class="home-dash" id="home-dash">
       <!-- v1376 (SESSIONS FLAGSHIP R3) — the console-native Sessions view's link into bible.html for deep data -->
-      <a class="hub-bible" id="hub-bible" href="#" title="open the full bible — deep session data, ledgers, tools" onclick="if(window._shellOpen){window._shellOpen('session');}return false;">📖 full bible →</a>
+      <a class="hub-bible" id="hub-bible" href="/board?app=1#session" title="open the full bible — every room, deep session data, ledgers, tools" onclick="return !(window._openFullBible &amp;&amp; window._openFullBible());">📖 full bible →</a>
       <!-- v1378 (SESSIONS FLAGSHIP R4) — the chronicle CREST + GRAIL-METER signature, then the NEXT GRAIL hero (EV-rank) -->
       <div class="hub-crown">
         <div class="hub-crest"><div class="hc-ey">⚔ the chronicle</div><div class="hc-t">My <span>Hunt</span></div></div>
@@ -18384,11 +18532,23 @@ window._lockMark = function(isOpen, px, label){
         if (_doorOv) {
           _doorOv.hidden = false;
           _doorOv.innerHTML = '<div class="sh-head">🎞 THE SHELF</div>'
-            + '<div class="sh-empty-hero"><div class="she-lead">opening the shelf…</div></div>';
+            + '<div class="sh-empty-hero sh-opening" data-since="' + Date.now() + '"><div class="she-lead">opening the shelf…</div></div>';
+          if (typeof _shelfOpeningWatch === 'function') _shelfOpeningWatch();   /* REG-3203 - an "opening" still there at the bound says why */
         }
       } catch (e) {}
     }
     thLit();
+    /* REG-3203 (GrokBot on v3864: his Mac's Shelf sat on "opening the shelf..." while the guest's filled) - A SHELF WITH RUNS
+       IN HAND OPENS ON THEM. The door waited for a fresh /api/sessions before painting anything, every time - up to
+       TH_SESSIONS_BOUND_MS (45 s) on a Mac whose list took 44 s to build at boot (status shelfPrewarm.ms 44303) - and
+       then thShelf asked a second time. Runs this page already holds paint at once; thShelf's own refresh brings the
+       new list, and a refresh that fails keeps them and says how old they are (REG-3050's stale note). */
+    if (_shelfDoor && (TH.sessions || []).length) {
+      try { $('th-caption').textContent = 'the shelf'; } catch (e) {}
+      TH.cardPrefOwed = true;   // REG-1944 - the same debt the waited door path records
+      thLit();
+      return;
+    }
     /* ══ v2228 — A STAGE THAT CANNOT LOAD ITS REEL MUST NOT SIT BLACK FOREVER ═══════════════
        HIS REPORT, 2026-08-28, with two screenshots: "the console has this bug thats its black
        screened ... but when i hover over something i nail on something and it renders something ...
@@ -18540,6 +18700,7 @@ window._lockMark = function(isOpen, px, label){
     /* v3304 (#59) — INVALIDATE ANY OPEN STILL IN FLIGHT. Without this the pending thOpen()
        resolves after the teardown and re-shows an empty stage; that is the reopen-after-close
        failure he reported five times. */
+    try { if (TH.shadowReel) _shadowTheatreDown(false); } catch (e) {}   /* REG-3204 - a full close ends a shadow reel too */
     TH.gen = (TH.gen | 0) + 1;
     TH.open = false; clearTimeout(TH.timer); TH.playing = false;
     TH.loadGen = (TH.loadGen || 0) + 1;   /* REG-2091 - and any REEL still loading: it must not paint a closed stage */
@@ -19026,6 +19187,33 @@ window._lockMark = function(isOpen, px, label){
   // v837 (SIMULATION_SPEC #5) — THE SESSION SHELF: pick any reel by sight, not blind arrows.
   /* REG-3050 - THE SHELF WHEN /api/sessions DID NOT ANSWER: UNKNOWN in place, never "No runs recorded yet" and never closed.
      It carries its own ↻ and ✕ because the shelf's click handler is set only by a paint that had runs. */
+  /* REG-3203 - AN "OPENING" SHELF ENDS WITHIN A BOUND. Both waits paint a .sh-opening placeholder (thOpen's door, thShelf's
+     first load) stamped with when it began. Its own fetch is bounded (TH_SESSIONS_BOUND_MS), but a wait that is overtaken
+     returns without painting, and a timer WebKit throttles in a hidden window runs late; either left the words up for as
+     long as he looked. Whatever still says "opening" at TH_SHELF_OPEN_BOUND_MS becomes the UNKNOWN shelf (its why, ↻ and ✕)
+     and the Doctor is told (ui_fault shelf-open-stuck). The beat publishes shelf.opening and its age, and an opening shelf
+     is no longer counted as the legitimate empty one. */
+  var TH_SHELF_OPEN_BOUND_MS = 60000;
+  function _shelfOpeningWatch(){
+    try { if (TH.shelfOpenWatch) clearTimeout(TH.shelfOpenWatch); } catch (e) {}
+    TH.shelfOpenWatch = setTimeout(function(){
+      TH.shelfOpenWatch = 0;
+      var ov = $('th-shelfov');
+      if (!ov || ov.hidden) return;
+      var op = ov.querySelector('.sh-opening');
+      if (!op) return;
+      var since = Number(op.getAttribute('data-since'));
+      var secs = (since > 0) ? Math.round((Date.now() - since) / 1000) : null;
+      var why = 'it still said opening ' + (secs === null ? 'after an UNKNOWN time' : secs + ' s after it began')
+        + ' - the sessions list never arrived';
+      TH.sessionsFailWhy = why;
+      _shelfUnknownPaint(ov, why);
+      try {
+        fetch('/api/ui_fault', {method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({kind: 'shelf-open-stuck', why: why, where: 'control_ui _shelfOpeningWatch'})});
+      } catch (e) {}
+    }, TH_SHELF_OPEN_BOUND_MS);
+  }
   function _shelfUnknownPaint(ov, why){
     ov.innerHTML = '<div class="sh-head">🎞 THE SHELF</div>'
       + '<div class="sh-empty-hero sh-unknown"><div class="she-lead">your runs: UNKNOWN</div>'
@@ -19895,8 +20083,9 @@ window._lockMark = function(isOpen, px, label){
     else {
       ov.hidden = false;
       /* REG-3050 - asked again after a failed ask, it says so rather than a plain first load */
-      ov.innerHTML = '<div class="sh-head">🎞 THE SHELF</div><div class="sh-empty-hero"><div class="she-lead">'
+      ov.innerHTML = '<div class="sh-head">🎞 THE SHELF</div><div class="sh-empty-hero sh-opening" data-since="' + Date.now() + '"><div class="she-lead">'
         + (TH.sessionsFailWhy ? 'asking the console again\u2026' : 'Loading runs…') + '</div></div>';
+      if (typeof _shelfOpeningWatch === 'function') _shelfOpeningWatch();   /* REG-3203 */
     }
     window._sessionsJson().then(function(j){   /* GrokBot v3817 - the theatre's wait and this share one request */
       var fresh = (j && j.sessions) || [];
@@ -23384,16 +23573,20 @@ window._lockMark = function(isOpen, px, label){
     /* The last N reels this record already holds (newest first). Play walks them oldest first, and only a
        key frame whose body is base64 — a frame the owner already served. Nothing here is fetched. */
     function arm(rows){
-      var reels = [], each = [];
+      var reels = [], each = [], ids = [], eachIds = [];
       (Array.isArray(rows) ? rows : []).forEach(function(s){
-        var own = [];
+        var own = [], ownIds = [];
         (Array.isArray(s && s.frames) ? s.frames : []).slice(0, 3).forEach(function(f){
           var b = (f && typeof f.jpg === 'string') ? f.jpg : '';
           if (b && _SSV_B64.test(b)) own.push('data:image/jpeg;base64,' + b);
+          /* REG-3204 - the frame's id rides beside its served picture, so the theatre can ask the owner for its HD copy */
+          if (b && _SSV_B64.test(b)) ownIds.push((f && typeof f.id === 'string' && /^\d{1,6}_\d{13}$/.test(f.id)) ? f.id : '');
         });
         each.push(own);
+        eachIds.push(ownIds);
       });
       each.slice().reverse().forEach(function(own){ reels = reels.concat(own); });
+      eachIds.slice().reverse().forEach(function(own){ ids = ids.concat(own); });
       /* a page arms its player; a renderer with no window (a law under node) only draws */
       var W = (typeof window !== 'undefined') ? window : null;
       if (!W) return;
@@ -23403,6 +23596,8 @@ window._lockMark = function(isOpen, px, label){
       W._ssvReels = reels;
       W._ssvAll = reels;
       W._ssvEach = each;   /* v3855 - one reel per session, the row's own PLAY plays only it */
+      W._ssvAllIds = ids;  /* REG-3204 - each served frame's id, in the same order as its picture */
+      W._ssvEachIds = eachIds;
       W._ssvReelN = Array.isArray(rows) ? rows.length : 0;
     }
     arm(d.ok === true ? (Array.isArray(d.sessions) ? d.sessions : null) : []);
@@ -23434,6 +23629,8 @@ window._lockMark = function(isOpen, px, label){
         if (window._ssvPlay.timer) { clearTimeout(window._ssvPlay.timer); window._ssvPlay.timer = 0; }
       }
     } catch (eP) {}
+    /* REG-3204 - leaving the shadow (or closing their list) with their reel on the theatre closes the theatre too */
+    try { if (typeof TH !== 'undefined' && TH.shadowReel && typeof thClose === 'function') thClose(); } catch (eT) {}
     var ov = document.getElementById('shadow-sess-ov');
     if (ov) ov.hidden = true;
   }
@@ -23455,6 +23652,8 @@ window._lockMark = function(isOpen, px, label){
     if (p.timer) { clearTimeout(p.timer); p.timer = 0; }
     var b = document.getElementById('ssv-play');
     if (b) b.textContent = '▶ PLAY the last ' + (window._ssvReelN || 0) + ((window._ssvReelN === 1) ? ' reel' : ' reels');
+    var tp = document.getElementById('th-play');
+    if (tp && typeof TH !== 'undefined' && TH.shadowReel) tp.textContent = '▶';   /* REG-3204 - the theatre's own button says paused */
   }
   function _shadowSessionsPlayTick(){
     var p = window._ssvPlay;
@@ -23464,6 +23663,7 @@ window._lockMark = function(isOpen, px, label){
     var src = frames[p.at];
     p.at++;
     window._ssvShown = src;
+    if (typeof _shadowTheatreShow === 'function') _shadowTheatreShow(p.at - 1);   /* REG-3204 */
     var st = document.getElementById('ssv-stage');
     if (st) st.innerHTML = '<img class="ssv-img" alt="a served key frame" src="' + src + '">';
     var wait = Math.max(1, Math.round(800 / (p.speed || 1)));
@@ -23477,6 +23677,9 @@ window._lockMark = function(isOpen, px, label){
     if (typeof ix === 'number') window._ssvReels = (Array.isArray(window._ssvEach) && Array.isArray(window._ssvEach[ix])) ? window._ssvEach[ix] : [];
     else if (Array.isArray(window._ssvAll)) window._ssvReels = window._ssvAll;
     window._ssvPlayIx = (typeof ix === 'number') ? ix : null;
+    window._ssvIds = (typeof ix === 'number')
+      ? ((Array.isArray(window._ssvEachIds) && Array.isArray(window._ssvEachIds[ix])) ? window._ssvEachIds[ix] : [])
+      : (Array.isArray(window._ssvAllIds) ? window._ssvAllIds : []);   /* REG-3204 */
     var frames = Array.isArray(window._ssvReels) ? window._ssvReels : [];
     if (!frames.length) {
       window._ssvShown = null;
@@ -23488,11 +23691,172 @@ window._lockMark = function(isOpen, px, label){
     window._ssvPlay.at = 0;
     var b = document.getElementById('ssv-play');
     if (b) b.textContent = '⏸';
+    /* REG-3204 - SHADOW PLAY IS THE HD THEATRE: the walk below paints the theatre's own stage (#th-film), not a thumbnail */
+    if (typeof _shadowTheatreUp === 'function') _shadowTheatreUp(ix);
     _shadowSessionsPlayTick();
     return true;
   }
   window._shadowSessionsPlay = _shadowSessionsPlay;
   window._shadowSessionsSpeed = _shadowSessionsSpeed;
+  /* ══ REG-3204 (GrokBot on v3864: "shadow Play is still the _shadowSessionsPlay slideshow, not HD #th-film") - SHADOW
+     PLAY IS THE SAME HD THEATRE AS REGULAR PLAY. His ask: Play on a shadow opens the theatre he plays his own reels in.
+     It drew a 160 px thumbnail into a strip (#ssv-stage) inside the sessions list. Now the same walk (the served frames,
+     their order, the theatre's 1/2/4/8 speeds) paints the theatre's own stage: #theatre lifted over the shadow
+     (body.shadow-theatre), #th-film, its ▶/⏸, ‹ ›, speed, fullscreen and ✕. Each step shows the served frame at once
+     and then the HD copy from the OWNER's console - its address off the shadow snapshot, the same leg v3849 (a) uses for
+     a shadow's pictures (_tvdShadow.origin) - with the caption saying which one is on screen and why. Read only: the
+     stage holds none of this PC's reels (TH.beats emptied), and every control that acts on this PC's reels (shelf, older
+     and newer session, mode, more, open folder, reclose) is hidden and refused while it is up. ✕ and Esc go back one
+     layer, to their sessions list; any full close (a header tab, Close Theatre) ends it too. */
+  var _SSV_ORIGIN = /^https?:\/\/[A-Za-z0-9][A-Za-z0-9.\-]*(?::\d{1,5})?$/;
+  function _shadowOwnerOrigin(){
+    try {
+      var f = document.getElementById('shadow-eng'), w = f && f.contentWindow;
+      var o = w && w._tvdShadow && w._tvdShadow.origin;
+      return (typeof o === 'string' && _SSV_ORIGIN.test(o)) ? o : null;
+    } catch (e) { return null; }
+  }
+  function _shadowTheatreHd(id, origin){
+    if (!origin || !_SSV_ORIGIN.test(String(origin))) return null;
+    if (typeof id !== 'string' || !/^\d{1,6}_\d{13}$/.test(id)) return null;
+    return origin + '/hist/' + id + '.jpg?w=1280';
+  }
+  function _shadowTheatreUp(ix){
+    var th = document.getElementById('theatre');
+    if (!th || typeof TH === 'undefined') return false;
+    if (!TH.shadowReel && TH.open) { try { thClose(); } catch (e) {} }   /* a reel of this PC never sits under theirs */
+    TH.shadowReel = { owner: (typeof window._shadowWho === 'string') ? window._shadowWho : '',
+                      ix: (typeof ix === 'number') ? ix : null, origin: _shadowOwnerOrigin() };
+    TH.beats = []; TH.allBeats = []; TH.i = 0; TH.playing = false;   /* nothing of this PC's for thPaint to draw */
+    TH.open = true;
+    var ov = document.getElementById('shadow-sess-ov');
+    if (ov) ov.hidden = true;
+    th.hidden = false;
+    document.body.classList.add('theatre-open', 'shadow-theatre');
+    try { thLit(); } catch (e) {}
+    var n = Array.isArray(window._ssvReels) ? window._ssvReels.length : 0;
+    var who = TH.shadowReel.owner || 'this owner';
+    var ss = document.getElementById('th-sess');
+    if (ss) ss.textContent = who + '’s ' + (typeof ix === 'number' ? 'session' : 'last ' + (window._ssvReelN || 0) + ' sessions')
+      + ' · ' + n + ' key frame' + (n === 1 ? '' : 's') + ' · read only';
+    var rb = document.getElementById('th-ribbon');
+    if (rb) rb.textContent = '📼 SHADOW REPLAY — ' + who + '’s past, read only';
+    var tp = document.getElementById('th-play');
+    if (tp) tp.textContent = '⏸';
+    var sp = document.getElementById('th-speed');
+    if (sp) sp.textContent = ((window._ssvPlay && window._ssvPlay.speed) || 1) + '×';
+    return true;
+  }
+  function _shadowTheatreShow(i){
+    if (typeof TH === 'undefined' || !TH.shadowReel) return;
+    var film = document.getElementById('th-film');
+    if (!film) return;
+    var reels = Array.isArray(window._ssvReels) ? window._ssvReels : [];
+    var ids = Array.isArray(window._ssvIds) ? window._ssvIds : [];
+    var low = reels[i];
+    if (typeof low !== 'string') return;
+    var who = TH.shadowReel.owner || 'their console';
+    var cap = document.getElementById('th-caption');
+    var head = 'frame ' + (i + 1) + ' of ' + reels.length + ' · ';
+    var say = function(t){ if (cap) cap.textContent = head + t; };
+    var hd = _shadowTheatreHd(ids[i], TH.shadowReel.origin);
+    film.style.opacity = 1;
+    film.__url = '';
+    film.src = low;          /* this frame's served picture at once - never the last frame under this frame's label */
+    film.__ssvWant = hd || '';
+    if (!hd) {
+      say('the served key frame (160 px): ' + (TH.shadowReel.origin
+        ? 'this frame carries no id to ask ' + who + '’s console for'
+        : who + '’s console address is not on this snapshot, so its HD frame cannot be asked for'));
+      return;
+    }
+    say('asking ' + who + '’s console for the HD frame…');
+    var probe = new Image();
+    probe.onload = function(){ if (film.__ssvWant === hd) { film.src = hd; say('HD, from ' + who + '’s console'); } };
+    probe.onerror = function(){
+      if (film.__ssvWant === hd) say('the served key frame (160 px): ' + who + '’s console did not answer for the HD frame');
+    };
+    probe.src = hd;
+  }
+  function _shadowTheatreDown(back){
+    if (typeof TH === 'undefined' || !TH.shadowReel) return false;
+    TH.shadowReel = null;
+    try { _shadowSessionsPlayStop(); } catch (e) {}
+    document.body.classList.remove('shadow-theatre');
+    var film = document.getElementById('th-film');
+    if (film) { film.__ssvWant = ''; film.__url = ''; film.removeAttribute('src'); }
+    var rb = document.getElementById('th-ribbon');
+    if (rb) rb.textContent = '📼 REPLAY — the PAST, not live';
+    if (back) {
+      TH.open = false;
+      var th = document.getElementById('theatre');
+      if (th) th.hidden = true;
+      try { if (document.body.classList.contains('cinema') && typeof thCinema === 'function') thCinema(false); } catch (eC) {}
+      document.body.classList.remove('theatre-open', 'cinema');
+      try { thLit(); } catch (e) {}
+      var ov = document.getElementById('shadow-sess-ov');
+      if (ov && _consoleShadowUp()) ov.hidden = false;   /* one layer back: their sessions list, as he left it */
+    }
+    return true;
+  }
+  function _shadowTheatreToggle(){
+    var p = window._ssvPlay;
+    if (p && p.on) { _shadowSessionsPlayStop(); return false; }
+    var frames = Array.isArray(window._ssvReels) ? window._ssvReels : [];
+    if (!frames.length || !p) return false;
+    if (p.at >= frames.length) p.at = 0;   /* ▶ at the end replays from the first frame, like a reel */
+    p.on = true;
+    var tp = document.getElementById('th-play');
+    if (tp) tp.textContent = '⏸';
+    _shadowSessionsPlayTick();
+    return true;
+  }
+  function _shadowTheatreStep(d){
+    var p = window._ssvPlay;
+    var frames = Array.isArray(window._ssvReels) ? window._ssvReels : [];
+    if (!p || !frames.length) return;
+    _shadowSessionsPlayStop();
+    var cur = Math.max(0, (p.at || 1) - 1);
+    var i = Math.max(0, Math.min(frames.length - 1, cur + d));
+    p.at = i + 1;
+    window._ssvShown = frames[i];
+    _shadowTheatreShow(i);
+  }
+  window._shadowTheatreDown = _shadowTheatreDown;
+  (function(){
+    var th = document.getElementById('theatre');
+    if (!th) return;
+    /* capture on the stage: while a shadow reel is up its transport drives the shadow walk, and nothing that acts on this
+       PC's reels runs */
+    th.addEventListener('click', function(e){
+      if (typeof TH === 'undefined' || !TH.shadowReel) return;
+      var t = e.target && e.target.closest ? e.target.closest('button, #th-film') : null;
+      if (!t) return;
+      if (t.id === 'th-fs' || t.id === 'th-legend-btn') return;   /* fullscreen and the key work as on any reel */
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      if (t.id === 'th-close') _shadowTheatreDown(true);
+      else if (t.id === 'th-play') _shadowTheatreToggle();
+      else if (t.id === 'th-prev-b') _shadowTheatreStep(-1);
+      else if (t.id === 'th-next-b') _shadowTheatreStep(1);
+      else if (t.id === 'th-speed') t.textContent = _shadowSessionsSpeed() + '×';
+    }, true);
+    window.addEventListener('keydown', function(e){
+      if (typeof TH === 'undefined' || !TH.shadowReel) return;
+      var tg = e.target;
+      if (tg && tg.closest && tg.closest('input,textarea,[contenteditable="true"]')) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;   /* a shortcut of the window (reload, quit) is not the reel's */
+      var k = e.key;
+      if (k === 'f' || k === 'F') return;   /* the theatre's own fullscreen */
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      if (k === 'Escape') {
+        if (document.body.classList.contains('cinema')) { try { thCinema(false); } catch (eC) {} return; }
+        _shadowTheatreDown(true);
+      }
+      else if (k === ' ') _shadowTheatreToggle();
+      else if (k === 'ArrowLeft') _shadowTheatreStep(-1);
+      else if (k === 'ArrowRight') _shadowTheatreStep(1);
+    }, true);
+  })();
   /* -> true when the list opened (a shadow is up and its owner is known), else false and nothing is drawn */
   function _shadowSessionsOpen(){
     var owner = (typeof window._shadowWho === 'string') ? window._shadowWho : '';
@@ -23849,6 +24213,7 @@ window._lockMark = function(isOpen, px, label){
   function _shellRestoreConsole(){
     // Force the homepage (stage + home-dash + rail + tick + foot) back into the grid.
     // v935.6 hid them with visibility; some WebKit paths left them swallowed after demote.
+    if (typeof _fullBibleMark === 'function') _fullBibleMark(false);   /* REG-3202 - leaving the pane leaves the full bible */
     try {
       document.body.classList.remove('shell-open', 'gliding');
       var shell = document.querySelector('.shell');
@@ -23875,6 +24240,7 @@ window._lockMark = function(isOpen, px, label){
     try {
       var w = f.contentWindow;
       if (!w || !w.document) return false;
+      if (typeof _fullBibleRail === 'function') _fullBibleRail(w);   /* REG-3202 - the board's own rail only while the Full Bible door opened it */
       if (typeof w.switchTab === 'function'){
         /* REG-2321 - a room render that throws AFTER switchTab moved the board is still a landed route */
         try { w.switchTab(tab); } catch (_sw) {}
@@ -23920,9 +24286,63 @@ window._lockMark = function(isOpen, px, label){
     try { if (typeof _shellPaintAgain === 'function') _shellPaintAgain(function(){}); } catch (e) {}
     try { document.querySelectorAll('#head-tabs .ht.ht-opening').forEach(function(b){ b.classList.remove('ht-opening'); }); } catch (e) {}
   }
+  /* REG-3202 (GrokBot on v3864, his Mac and a guest: "Full bible ->" did nothing) - THE FULL BIBLE DOOR OPENS THE FULL BIBLE.
+     His ask (v3286): "the button within the console that routes us to the full bible page". The door was href="#" calling
+     _shellOpen('session'): the engine pane on the board's SESSIONS room, which is the Task Force the hub already shows,
+     under a header that already lit Sessions - and the pane hides the board's own tab row (v935.6: the console header is
+     the rail), so none of the bible's other rooms could be reached from it. In a shadow it promoted #tvd-eng, which
+     body.shadow-on hides (visibility:hidden !important), and left shadow-hub on, so nothing on screen moved at all.
+     The door now opens the same pane (same store, the engine stays alive) in FULL mode: data-full-bible on this body and
+     bible-full on the board's, which shows the board's whole rail - every room of the bible. In a shadow it is their
+     board, the way the header tabs route one. Any other route leaves full mode (shellOpen clears it, and so does
+     _shellRestoreConsole, which every way home calls). The href is the full page itself, so a console whose script
+     never got here still goes somewhere real. */
+  var _fullBibleNext = false;
+  function _fullBibleMark(on){
+    try {
+      if (on) document.body.setAttribute('data-full-bible', '1');
+      else document.body.removeAttribute('data-full-bible');
+    } catch (e) {}
+    if (!on) {
+      ['tvd-eng', 'shadow-eng'].forEach(function(id){
+        try { var fr = document.getElementById(id); if (fr && fr.contentWindow) _fullBibleRail(fr.contentWindow); } catch (e) {}
+      });
+    }
+  }
+  function _fullBibleRail(w){
+    try {
+      var full = document.body.getAttribute('data-full-bible') === '1';
+      if (w && w.document && w.document.body) w.document.body.classList.toggle('bible-full', full);
+    } catch (e) {}
+  }
+  function openFullBible(){
+    var b = document.body, shadow = false;
+    try {
+      shadow = b.classList.contains('shadow-on') || b.classList.contains('shadow-snap');
+      if (shadow) b.classList.remove('shadow-hub');
+    } catch (e) {}
+    _fullBibleNext = true;
+    /* their board lands on Characters, the room a shadow opens on: its Sessions room is this console's hub (the header's
+       rule, and the board's backTo refuses it) - the full rail then reaches every other room */
+    try { shellOpen(shadow ? 'chars' : 'session'); }
+    catch (e) {
+      _fullBibleNext = false;
+      try {
+        fetch('/api/ui_fault', {method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({kind: 'full-bible-door-dead', why: String(e).slice(0, 160), where: 'control_ui openFullBible'})});
+      } catch (_f) {}
+      return false;
+    }
+    return true;
+  }
+  window._openFullBible = openFullBible;
   function shellOpen(tab){
     tab = tab || 'session';
     _shellTab = tab;
+    /* REG-3202 - only the door's own open is the full bible (typeof: laws run shellOpen cut out on its own) */
+    var _full = (typeof _fullBibleNext !== 'undefined') && _fullBibleNext === true;
+    if (typeof _fullBibleNext !== 'undefined') _fullBibleNext = false;
+    if (typeof _fullBibleMark === 'function') _fullBibleMark(_full);
     var f = document.getElementById('tvd-eng');
     if (!f){ _glide('/board?app=1#' + encodeURIComponent(tab)); return; }
     var already = document.body.classList.contains('shell-open');
@@ -27403,7 +27823,6 @@ body.shell-open #head-tabs {
 }
 body.shell-open #head-tabs .ht {
   pointer-events: auto !important;
-  cursor: pointer !important;
   position: relative;
   z-index: 2;
 }
@@ -33766,9 +34185,17 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
                   o.shelf.gridCards = _all.length;
                   o.shelf.visibleCards = _vis.length;
                 } catch(e){ o.shelf.gridCards = null; o.shelf.visibleCards = null; }
-                /* the legitimate empty state, so a console with NO RUNS YET is never called a fault */
-                try { o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero'); }
+                /* the legitimate empty state, so a console with NO RUNS YET is never called a fault.
+                   REG-3203 - an OPENING shelf wears the same hero box and is not that state: it is published as
+                   opening, with its age (null = UNKNOWN), and console_doctor judges it against the bound. */
+                try { o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero:not(.sh-opening)'); }
                 catch(e){ o.shelf.emptyHero = null; }
+                try {
+                  var _op = ov.hidden ? null : ov.querySelector('.sh-opening');
+                  o.shelf.opening = !!_op;
+                  var _opAt = _op ? Number(_op.getAttribute('data-since')) : 0;
+                  o.shelf.openingS = (_op && _opAt > 0) ? Math.round((Date.now() - _opAt) / 1000) : null;
+                } catch(e){ o.shelf.opening = null; o.shelf.openingS = null; }
               })();
               return o;
             })()
