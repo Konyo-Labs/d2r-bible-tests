@@ -13437,6 +13437,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_copy_x_asks_before_it_removes.py")], 120,
          needs_app=False,
          why='v3864 (his ruling 2026-11-05 (c)) - a vault mule card x removes ONE copy only after the board in-page confirmation, Cancel first, never the OS box'),
+    Gate("test_the_task_board_goes_online_scrubbed",
+         [sys.executable, os.path.join(HERE, "test_the_task_board_goes_online_scrubbed.py")], 120,
+         needs_app=False,
+         why='v3864 (card 57) - his Mac publishes the task board scrubbed, the worker keeps it only from an approver, every console footer opens it'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

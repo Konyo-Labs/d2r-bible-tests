@@ -5543,6 +5543,92 @@ def roster_approve(owner, key_id, decision, _post=None, now_ms=None):
     return got if isinstance(got, dict) else {"ok": False, "why": "the roster answer was not a record"}
 
 
+TASK_BOARD_URL = "https://bull-4-u.com/d2r/tasks.html"
+TASK_BOARD_EVERY_S = 60
+_TASK_BOARD = {"at": None, "why": None, "state": None, "posted": 0}
+
+
+def task_board_open(_open=None):
+    """v3864 (card 57) - open the online task board in this PC's default browser. -> {ok, url, why}"""
+    try:
+        if _open is not None:
+            _open(TASK_BOARD_URL)
+        elif IS_WIN:
+            os.startfile(TASK_BOARD_URL)  # type: ignore[attr-defined]
+        else:
+            import webbrowser
+            if not webbrowser.open(TASK_BOARD_URL):
+                return {"ok": False, "url": TASK_BOARD_URL, "why": "no browser on this PC took the address"}
+        return {"ok": True, "url": TASK_BOARD_URL}
+    except Exception as e:
+        return {"ok": False, "url": TASK_BOARD_URL, "why": "the browser would not open (%s)" % type(e).__name__}
+
+
+def _task_board_state_path():
+    return os.path.join(_log_root(), ".task_board_state.json")
+
+
+def task_board_publish_once(now_ms=None, _post=None, _tasks_dir=None, _label=None, _platform=None):
+    """v3864 (card 57) - THE MAC'S BOARD, SCRUBBED, TO THE SITE. Only his Mac (an approver label, darwin, with a board dir)
+    publishes; a suppressed console never reaches the site. -> {posted: bool, why}"""
+    import task_board as _tb
+    now_ms = int(now_ms if now_ms is not None else time.time() * 1000)
+    plat = _platform or sys.platform
+    if plat != "darwin":
+        return {"posted": False, "why": "the board lives on his Mac; this PC only reads it"}
+    held = _beacon_suppressed_by()
+    if held:
+        return {"posted": False, "why": "suppressed: " + str(held)[:120]}
+    label = _label if _label is not None else _roster_my_label()
+    if label not in ROSTER_APPROVERS:
+        return {"posted": False, "why": "this PC does not publish the board"}
+    sessions = _tb.session_dirs(_tasks_dir)
+    if not sessions:
+        return {"posted": False, "why": "no session on this Mac holds a card"}
+    sid = sessions[0][1]
+    root = _tasks_dir or _tb.TASKS_DIR
+    cards = _tb.load_cards(os.path.join(root, sid))
+    if cards is None:
+        return {"posted": False, "why": "the session's cards would not read - UNKNOWN, nothing posted"}
+    b = _tb.board(cards, _tb.session_name(sid, _tasks_dir) or "the task board", now_ms)
+    st = _TASK_BOARD.get("state")
+    if st is None:
+        try:
+            with open(_task_board_state_path(), encoding="utf-8") as fh:
+                st = json.load(fh)
+        except Exception:
+            st = {}
+    go, why = _tb.due(st, b, now_ms)
+    if not go:
+        return {"posted": False, "why": why}
+    body = {"kind": "tasks", "poster": label, "board": b, "signedAt": now_ms}
+    got = (_post or _roster_post)(_ROSTER_URL, body, os.path.join(_log_root(), ".roster_key.json"))
+    ok = isinstance(got, dict) and got.get("ok") is True
+    if ok:
+        st = {"hash": _tb.digest(b), "at": now_ms}
+        _TASK_BOARD.update(state=st, posted=_TASK_BOARD["posted"] + 1)
+        try:
+            _tp = _task_board_state_path()
+            with open(_tp + ".tmp", "w", encoding="utf-8") as fh:
+                json.dump(st, fh)
+            os.replace(_tp + ".tmp", _tp)
+        except Exception as _we:
+            _TASK_BOARD["why"] = "posted, and the pacing record would not write (%s)" % type(_we).__name__
+    return {"posted": ok, "why": why if ok else ((got or {}).get("why") if isinstance(got, dict) else "the site did not answer")}
+
+
+def _task_board_loop():
+    time.sleep(45)
+    while True:
+        _lane_tick("_task_board_loop", TASK_BOARD_EVERY_S * 3)
+        try:
+            r = task_board_publish_once()
+            _TASK_BOARD.update(at=time.time(), why=r.get("why"))
+        except Exception as e:
+            _TASK_BOARD.update(at=time.time(), why="the publish raised %s" % type(e).__name__)
+        time.sleep(TASK_BOARD_EVERY_S)
+
+
 def _roster_fetch_once():
     """Read every owner's roster into this PC's cache. Never a ledger write."""
     import roster_publish as _rp
@@ -50733,6 +50819,17 @@ class Handler(BaseHTTPRequestHandler):
                                             % (type(_e).__name__, str(_e)))[:200]}
             self._json(_code, _out)
             return
+        if path == "/api/open_tasks":
+            # v3864 (card 57) - the footer's Tasks button: the ONE page it opens, in this PC's own default browser. Never an
+            # address from the request; the same origin gate as the d2jsp doors, so another tab cannot open windows here.
+            import d2jsp_chrome as _d2jsp
+            if not _d2jsp.console_may_post(
+                    self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
+                    self.headers.get("Sec-Fetch-Site")):
+                self._json(403, {"ok": False, "reason": "local"})
+                return
+            self._json(200, task_board_open())
+            return
         if path == "/api/roster_approve":
             # v3862 (item 11) - his Approve / Deny on a new PC's key. The SAME origin gate as the d2jsp doors: a click
             # from another tab must never put a stranger's key under one of his labels.
@@ -52546,6 +52643,7 @@ def main():
     threading.Thread(target=_console_beacon_loop, daemon=True, name="tvd-beacon").start()   # v875
     threading.Thread(target=_roster_publish_loop, daemon=True, name="tvd-roster").start()
     threading.Thread(target=_roster_fetch_loop, daemon=True, name="tvd-roster-fetch").start()
+    threading.Thread(target=_task_board_loop, daemon=True, name="tvd-task-board").start()   # v3864 (card 57) - his Mac only
     threading.Thread(target=_fleet_change_loop, daemon=True, name="tvd-fleet-change").start()
     t = threading.Thread(target=srv.serve_forever, daemon=True)
     t.start()

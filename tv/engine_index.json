@@ -2524,6 +2524,20 @@
     "purpose": "Proves the PAID sweep door refuses: chronicle_sweep_start must reject busy, no-lane, a limit of -5/0/'x', and a non-existent hist dir. No attempt has a success path. Banks under vault.sweep_start.",
     "territory": "gates-proofs"
   },
+  "task_board.py": {
+    "entryPoints": [
+      "scrub",
+      "session_dirs",
+      "session_name",
+      "load_cards",
+      "board",
+      "digest",
+      "due"
+    ],
+    "gotcha": "The site password is in the public repo, so every text goes through scrub() before it leaves the Mac: home, temp and Windows user paths, IPs, e-mails, user@host, .local hosts and token shapes. A huge board gives up description words, never a card. An unreadable session dir is None (UNKNOWN), never an empty board. digest() leaves the time out, so an unchanged board is not a new one. Only control_app.task_board_publish_once posts it, and only on his Mac under an approver label.",
+    "purpose": "The Mac's task board, scrubbed, for the site: reads ~/.claude/tasks, builds the record the roster worker keeps (kind tasks), and paces the posts - every 2 min on a change, every 30 min unchanged (v3864, card 57)",
+    "territory": "console-ui"
+  },
   "tasks_freshness.py": {
     "entryPoints": [
       "check",

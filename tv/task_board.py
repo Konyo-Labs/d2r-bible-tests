@@ -1,0 +1,149 @@
+# -*- coding: utf-8 -*-
+"""v3864 (his ask 2026-11-05, card 57) - THE TASK BOARD ONLINE: what the Mac's board says, readable from any of his PCs.
+
+His words: "a link button ... it can open up as a browser in chrome or whatever is defaulted on that PC" and "i want it to work
+on deans PC for instance". The board lives on his Mac (~/.claude/tasks/<session>/<n>.json, drawn by claude-task-viewer on
+:17955, which no other PC can reach). So the Mac's console publishes a SCRUBBED copy through the roster worker it already
+signs with (kind "tasks", his approver key only), the site renders it at /d2r/tasks.html behind the site password, and every
+console's footer has a button that opens that page in the PC's own default browser.
+
+THE SITE PASSWORD IS IN THE PUBLIC REPO, so the page is semi-public and every text is scrubbed before it leaves the Mac:
+home paths, temp paths, Windows user paths, IP addresses, e-mail addresses, user@host, .local hostnames and token-shaped
+strings never leave. Pure functions here; the console's lane does the reading, the posting and the pacing.
+"""
+import hashlib
+import io
+import json
+import os
+import re
+
+TASKS_DIR = os.path.join(os.path.expanduser("~"), ".claude", "tasks")
+NAMES_FILE = "_session_names.json"
+MAX_CARDS = 200
+SUBJECT_MAX = 300
+ACTIVE_MAX = 120
+DESC_MAX = 1500
+BOARD_MAX_BYTES = 180 * 1024
+POST_MIN_GAP_MS = 2 * 60 * 1000          # a change is published at most every 2 min
+POST_REFRESH_MS = 30 * 60 * 1000         # an unchanged board is re-posted every 30 min (the page says how old it is)
+STATUSES = ("in_progress", "pending", "completed")
+
+_SCRUB = (
+    (re.compile(r"/(?:Users|home)/[^/\s'\"`)]+(?:/[^\s'\"`)]*)?"), "<path>"),
+    (re.compile(r"/(?:private/)?(?:tmp|var/folders)/[^\s'\"`)]*"), "<path>"),
+    (re.compile(r"[A-Za-z]:\\\\?Users\\\\?[^\s'\"`)]+"), "<path>"),
+    (re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b"), "<email>"),
+    (re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b"), "<ip>"),
+    (re.compile(r"\b[\w-]+@[\w.-]+\b"), "<login>"),
+    (re.compile(r"\b[\w-]+\.local\b"), "<host>"),
+    (re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|xox[abpr]-[A-Za-z0-9-]{10,})\b"), "<token>"),
+)
+
+
+def scrub(text):
+    """A card's words with nothing that names a machine, a person's path or a secret. -> str"""
+    s = str(text if text is not None else "")
+    for rx, rep in _SCRUB:
+        s = rx.sub(rep, s)
+    return s
+
+
+def _cut(text, n):
+    s = scrub(text)
+    return s if len(s) <= n else s[: n - 1] + "…"
+
+
+def session_dirs(tasks_dir=None):
+    """-> [(newest card mtime, dir name)] of the session dirs that hold at least one card, newest first"""
+    root = tasks_dir or TASKS_DIR
+    out = []
+    try:
+        names = os.listdir(root)
+    except OSError:
+        return []
+    for d in names:
+        p = os.path.join(root, d)
+        if not os.path.isdir(p):
+            continue
+        newest = None
+        try:
+            for f in os.listdir(p):
+                if f.endswith(".json"):
+                    t = os.path.getmtime(os.path.join(p, f))
+                    newest = t if newest is None or t > newest else newest
+        except OSError:
+            continue
+        if newest is not None:
+            out.append((newest, d))
+    return sorted(out, reverse=True)
+
+
+def session_name(session, tasks_dir=None):
+    """The name he gave the session (_session_names.json), scrubbed, or None"""
+    try:
+        with io.open(os.path.join(tasks_dir or TASKS_DIR, NAMES_FILE), encoding="utf-8") as fh:
+            names = json.load(fh)
+        n = names.get(session) if isinstance(names, dict) else None
+        return _cut(n, 120) if isinstance(n, str) and n.strip() else None
+    except Exception:
+        return None
+
+
+def load_cards(session_dir):
+    """-> [card dicts] read from one session dir, or None when the dir will not read (UNKNOWN, never an empty board)"""
+    try:
+        files = [f for f in os.listdir(session_dir) if f.endswith(".json")]
+    except OSError:
+        return None
+    cards = []
+    for f in files:
+        try:
+            with io.open(os.path.join(session_dir, f), encoding="utf-8") as fh:
+                c = json.load(fh)
+        except Exception:
+            continue
+        if isinstance(c, dict) and c.get("subject"):
+            cards.append(c)
+    return cards
+
+
+def _id_key(c):
+    i = str(c.get("id") or "")
+    return (0, int(i)) if i.isdigit() else (1, i)
+
+
+def board(cards, title, now_ms):
+    """-> the record the site keeps: {title, at, counts, cards: [{id, subject, status, active, description}]}"""
+    rows = []
+    for c in sorted(cards or [], key=_id_key)[:MAX_CARDS]:
+        st = c.get("status") if c.get("status") in STATUSES else "pending"
+        rows.append({"id": _cut(c.get("id"), 12), "subject": _cut(c.get("subject"), SUBJECT_MAX), "status": st,
+                     "active": _cut(c.get("activeForm"), ACTIVE_MAX), "description": _cut(c.get("description"), DESC_MAX)})
+    counts = dict((s, sum(1 for r in rows if r["status"] == s)) for s in STATUSES)
+    out = {"title": _cut(title or "the task board", 120), "at": int(now_ms), "counts": counts, "cards": rows}
+    # a board past the site's cap gives up description words first, the longest first, never a card
+    while len(json.dumps(out, ensure_ascii=False).encode("utf-8")) > BOARD_MAX_BYTES:
+        longest = max(rows, key=lambda r: len(r["description"]), default=None)
+        if not longest or len(longest["description"]) <= 80:
+            break
+        longest["description"] = longest["description"][: len(longest["description"]) // 2] + "…"
+    return out
+
+
+def digest(b):
+    """the board's content fingerprint, its time left out (an unchanged board is not a new one)"""
+    core = {k: v for k, v in (b or {}).items() if k != "at"}
+    return hashlib.sha256(json.dumps(core, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+
+
+def due(state, b, now_ms):
+    """-> (True, why) when this board should be posted now, else (False, why). state: {hash, at} of the last post"""
+    state = state if isinstance(state, dict) else {}
+    last = state.get("at") if isinstance(state.get("at"), int) else None
+    h = digest(b)
+    if last is None:
+        return True, "first post"
+    gap = now_ms - last
+    if h != state.get("hash"):
+        return (gap >= POST_MIN_GAP_MS), ("changed" if gap >= POST_MIN_GAP_MS else "changed - waits out the 2 min gap")
+    return (gap >= POST_REFRESH_MS), ("unchanged - refreshed every 30 min" if gap >= POST_REFRESH_MS else "unchanged")

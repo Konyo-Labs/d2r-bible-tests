@@ -106,6 +106,9 @@ tv/roster_book.json.tmp
 # atomic-write partner (path + ".tmp" in load_or_create).
 tv/.roster_key.json
 tv/.roster_key.json.tmp
+# v3864 (card 57) - when his Mac last published the task board (per-PC pacing, never shipped)
+tv/.task_board_state.json
+tv/.task_board_state.json.tmp
 # v3328 — the read-names feeder's LANE STATE, per-machine and rewritten every 45s.
 # Every sibling lane store is ignored (.vault_autoread.json, .second_eye.jsonl,
 # .heart2.json, .handoff_seen.json); I copied _vault_autoread_save's persistence idiom

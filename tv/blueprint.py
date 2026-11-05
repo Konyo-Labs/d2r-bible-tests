@@ -154,7 +154,8 @@ def ledgers():
                    (".grok_prune.jsonl", "every automatic prune of his Grok chats: what went, how big, how old, why (REG-2743)"),
                    ("vault_seen.json", "vault sightings"),
                    ("chronicle_swept.json", "which reels the chronicle lane has read"),
-                   (".proof_release.json", "which commit this PC last imported GitHub's proofs for, and how it went (v3862)")):
+                   (".proof_release.json", "which commit this PC last imported GitHub's proofs for, and how it went (v3862)"),
+                   (".task_board_state.json", "when his Mac last published the scrubbed task board, and its fingerprint (v3864)")):
         p = os.path.join(HERE, f)
         out.append((f, why, os.path.exists(p),
                     (os.path.getsize(p) if os.path.exists(p) else 0)))

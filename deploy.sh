@@ -35,6 +35,7 @@ cp -R art "$DIST/d2r/art"              # MUST include — self-hosted item art
 cp -R functions "$DIST/functions"      # MUST include — api/intake.js (AI vision)
 cp tv/install-tvd.ps1 "$DIST/d2r/install-tvd.ps1"   # 📺 Windows: irm …/d2r/install-tvd.ps1 | iex
 cp tv/install-tvd.sh  "$DIST/d2r/install-tvd.sh"    # 📺 Mac:     curl -fsSL …/d2r/install-tvd.sh | bash
+cp tv/tasks_board.html "$DIST/d2r/tasks.html"      # v3864 (card 57) - his task board online, behind the site password
 # v687 — do NOT ship orphan /d2r/v44/* (Session Cockpit is native in bible.html; external
 # v44 CSS/JS/SW were a dead layer and caused ghost/404 confusion). Dist is only index+art+functions.
 # v696 — GHOST EXORCISM (live audit): the Phase-Z service worker + a 41KB v44 orphan were STILL
@@ -67,6 +68,8 @@ cat > "$DIST/_headers" <<'HDRS'
 /d2r/index.html
   Cache-Control: no-cache, must-revalidate
 /d2r/sw.js
+  Cache-Control: no-cache, must-revalidate
+/d2r/tasks.html
   Cache-Control: no-cache, must-revalidate
 /d2r/v44/*
   Cache-Control: no-cache, must-revalidate

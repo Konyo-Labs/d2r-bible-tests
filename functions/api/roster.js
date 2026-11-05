@@ -329,6 +329,52 @@ export async function approvePost(env, sig, body) {
   return json({ ok: true, owner: owner, keyId: req.keyId, decision: decision, by: approver }, 200);
 }
 
+// v3864 (his ask 2026-11-05, card 57) - THE TASK BOARD ONLINE. {kind:"tasks", poster, board:{title, at, counts, cards}, signedAt},
+// signed by an APPROVER's registered key (his Mac publishes its board; no other PC may), the board scrubbed on the Mac before
+// it was signed (tv/task_board.py). One KV record, replaced; a write closer than TASKS_MIN_GAP_MS to the last is refused, so a
+// busy board cannot spend the KV budget. GET ?tasks=1 hands it to /d2r/tasks.html (behind the site password).
+export const TASKS_KEY = "tasks:board";
+export const TASKS_MAX_BODY = 200000;
+export const TASKS_MIN_GAP_MS = 60 * 1000;
+export async function tasksPost(env, bytes, sig, body) {
+  const kv = env && env.TZ_HISTORY;
+  if (!kv) return refuse("roster would not take this board: storage unavailable");
+  if (!bytes || bytes.byteLength > TASKS_MAX_BODY) return refuse("roster would not take this board: it is larger than the board it keeps");
+  const poster = body.poster;
+  if (APPROVERS.indexOf(poster) === -1) return refuse("roster would not take this board: " + String(poster).slice(0, 40) + " does not publish the board");
+  const now = Date.now();
+  if (typeof body.signedAt !== "number" || !Number.isFinite(body.signedAt) || Math.abs(now - body.signedAt) > APPROVE_SKEW_MS) {
+    return refuse("roster would not take this board: signedAt is missing or not within 15 min of now");
+  }
+  const b = body.board;
+  if (!b || typeof b !== "object" || !Array.isArray(b.cards) || b.cards.length > 400) {
+    return refuse("roster would not take this board: it has no list of cards");
+  }
+  let registered;
+  try { registered = await registeredOf(kv, poster); } catch (e) { registered = undefined; }
+  if (!registered) return refuse("roster would not take this board: " + poster + " has no registered key");
+  const intent = intentOf(poster, registered, sig);
+  if (intent.refused || intent.verified !== true || intent.register) {
+    return refuse("roster would not take this board: " + (intent.refused || "it was not signed by " + poster + "'s registered key"));
+  }
+  let prev = null;
+  try { const raw = await kv.get(TASKS_KEY); prev = raw ? JSON.parse(raw) : null; } catch (e) { prev = null; }
+  if (prev && typeof prev.at === "number" && now - prev.at < TASKS_MIN_GAP_MS) {
+    return refuse("roster would not take this board: the last one landed under a minute ago");
+  }
+  const keep = { at: now, by: poster, board: b };
+  await kv.put(TASKS_KEY, JSON.stringify(keep));
+  return json({ ok: true, at: now, cards: b.cards.length }, 200);
+}
+
+export async function tasksGet(kv) {
+  if (!kv) return refuse("roster would not take this fetch: storage unavailable");
+  let rec = null;
+  try { const raw = await kv.get(TASKS_KEY); rec = raw ? JSON.parse(raw) : null; } catch (e) { rec = null; }
+  if (!rec || typeof rec !== "object" || !rec.board) return json({ ok: true, board: null, why: "his Mac has not published the board yet" }, 200);
+  return json({ ok: true, at: rec.at, by: rec.by, board: rec.board }, 200);
+}
+
 // v3862 (item 11) - the pending requests, for an approver's fleet card. Key ids and times only; never a pub key.
 export async function requestsGet(kv) {
   if (!kv) return refuse("roster would not take this fetch: storage unavailable");
@@ -371,6 +417,7 @@ export async function onRequestPost(context) {
   }
   // Shadow mode's profile rides this same route under its own key; rows keep their own 80 KB cap.
   if (body.kind === "approve") return approvePost(env, sig, body);   // v3862 (item 11)
+  if (body.kind === "tasks") return tasksPost(env, bytes, sig, body);  // v3864 (card 57) his Mac's board
   if (body.kind === "profile") return profilePost(env, bytes, sig, body);
   // #218 phase 2 - the owner's sessions, summarized (shadow_sessions.digest), under the same registered key
   if (body.kind === "frames") return framesPost(env, bytes, sig, body);
@@ -498,6 +545,9 @@ export async function onRequestGet(context) {
   let wantRequests = null;
   try { wantRequests = new URL(context.request.url).searchParams.get("requests"); } catch (e) { wantRequests = null; }
   if (wantRequests !== null) return requestsGet(kv);   // v3862 (item 11)
+  let wantTasks = null;
+  try { wantTasks = new URL(context.request.url).searchParams.get("tasks"); } catch (e) { wantTasks = null; }
+  if (wantTasks !== null) return tasksGet(kv);         // v3864 (card 57)
   if (!kv) return refuse("roster would not take this fetch: storage unavailable");
   const owners = [];
   for (const owner of OWNERS) {

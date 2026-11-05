@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task Board</title>
+<!-- v3864 (his ask 2026-11-05, card 57) - THE TASK BOARD ONLINE. His Mac's console publishes its board, scrubbed (tv/task_board.py),
+     to the roster worker; this page reads it at /api/roster?tasks=1 (behind the site password) and draws it the way the Mac's
+     own viewer does: in progress, pending, done. Every text is set with textContent, never as markup. It says how old the
+     board is, and an unreadable answer says so - never an empty board. -->
+<style>
+  :root { --bg: #0d0b09; --panel: #16130f; --card: #1d1914; --edge: #3a3226; --text: #e9e1cf; --muted: #a2967d;
+          --gold: #e0b45a; --live: #5fb8ff; --done: #66c28a; --wait: #c9a85a; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --bg: #f6f2ea; --panel: #fffdf8; --card: #ffffff; --edge: #ddd3c2; --text: #2a241b;
+          --muted: #6f6450; --gold: #9a6b12; --live: #1f6fb5; --done: #2b7d4c; --wait: #8a6a1e; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, "Segoe UI", system-ui, sans-serif; }
+  header { padding: 18px 16px 10px; border-bottom: 1px solid var(--edge); background: var(--panel); position: sticky; top: 0; z-index: 2; }
+  h1 { margin: 0; font-size: 18px; letter-spacing: .02em; color: var(--gold); }
+  .meta { margin-top: 4px; color: var(--muted); font-size: 12px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .meta b { color: var(--text); font-weight: 600; }
+  .meta .stale { color: #e07a5a; }
+  main { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 14px 16px 40px; }
+  @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
+  section { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; min-width: 0; }
+  section h2 { margin: 0; padding: 10px 12px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+               border-bottom: 1px solid var(--edge); display: flex; justify-content: space-between; }
+  section[data-st="in_progress"] h2 { color: var(--live); }
+  section[data-st="pending"] h2 { color: var(--wait); }
+  section[data-st="completed"] h2 { color: var(--done); }
+  ol { list-style: none; margin: 0; padding: 8px; display: grid; gap: 8px; }
+  li { background: var(--card); border: 1px solid var(--edge); border-radius: 8px; padding: 9px 10px; min-width: 0; }
+  .sub { font-weight: 600; overflow-wrap: anywhere; }
+  .sub i { font-style: normal; color: var(--muted); font-weight: 500; margin-right: 6px; }
+  .act { margin-top: 3px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  details { margin-top: 6px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  .desc { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12.5px; margin-top: 6px; color: var(--text); }
+  .empty { padding: 14px 12px; color: var(--muted); }
+  .why { padding: 24px 16px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="tb-title">Task board</h1>
+  <div class="meta"><span id="tb-age">reading…</span><span id="tb-counts"></span><span id="tb-note">refreshes every minute</span></div>
+</header>
+<div class="why" id="tb-why" hidden></div>
+<main id="tb-cols">
+  <section data-st="in_progress"><h2><span>In progress</span><span data-n></span></h2><ol></ol></section>
+  <section data-st="pending"><h2><span>Pending</span><span data-n></span></h2><ol></ol></section>
+  <section data-st="completed"><h2><span>Done</span><span data-n></span></h2><ol></ol></section>
+</main>
+<script>
+(function () {
+  'use strict';
+  var STALE_MS = 45 * 60 * 1000;   /* his Mac re-posts an unchanged board every 30 min; past 45 it is said stale */
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = String(text); return e; }
+  function ago(ms) {
+    if (typeof ms !== 'number' || !isFinite(ms)) return 'age UNKNOWN';
+    var m = Math.max(0, Math.round((Date.now() - ms) / 60000));
+    return m < 1 ? 'updated under a minute ago' : m < 120 ? 'updated ' + m + ' min ago' : 'updated ' + Math.round(m / 60) + ' hr ago';
+  }
+  function card(c) {
+    var li = el('li');
+    var sub = el('div', 'sub'); sub.appendChild(el('i', '', '#' + c.id)); sub.appendChild(document.createTextNode(c.subject || ''));
+    li.appendChild(sub);
+    if (c.active) li.appendChild(el('div', 'act', c.active));
+    if (c.description) { var d = el('details'); d.appendChild(el('summary', '', 'details')); d.appendChild(el('div', 'desc', c.description)); li.appendChild(d); }
+    return li;
+  }
+  function say(why) { var w = document.getElementById('tb-why'); w.hidden = !why; w.textContent = why || ''; }
+  function paint(rec) {
+    var b = rec && rec.board;
+    if (!b || !Array.isArray(b.cards)) {
+      say((rec && rec.why) || 'The board has not been published yet.');
+      document.getElementById('tb-age').textContent = 'no board yet';
+      return;
+    }
+    say('');
+    document.getElementById('tb-title').textContent = b.title || 'Task board';
+    document.title = (b.title || 'Task board').slice(0, 60);
+    var at = typeof rec.at === 'number' ? rec.at : b.at;
+    var age = document.getElementById('tb-age');
+    age.textContent = ago(at);
+    if (typeof at === 'number') age.dataset.at = String(at);
+    age.className = (typeof at === 'number' && Date.now() - at > STALE_MS) ? 'stale' : '';
+    var n = b.counts || {};
+    document.getElementById('tb-counts').textContent = (n.completed | 0) + ' done · ' + (n.in_progress | 0) + ' in progress · ' + (n.pending | 0) + ' pending';
+    ['in_progress', 'pending', 'completed'].forEach(function (st) {
+      var sec = document.querySelector('section[data-st="' + st + '"]');
+      var ol = sec.querySelector('ol'); ol.textContent = '';
+      var rows = b.cards.filter(function (c) { return c && c.status === st; });
+      sec.querySelector('[data-n]').textContent = String(rows.length);
+      if (!rows.length) { ol.appendChild(el('li', 'empty', 'nothing here')); return; }
+      rows.forEach(function (c) { ol.appendChild(card(c)); });
+    });
+  }
+  function load() {
+    fetch('/api/roster?tasks=1', { cache: 'no-store', credentials: 'same-origin' })
+      .then(function (r) { if (!r.ok) throw new Error('the site answered ' + r.status); return r.json(); })
+      .then(paint)
+      .catch(function (e) { say('The board would not read right now (' + String((e && e.message) || e) + ') - UNKNOWN, not empty. It tries again in a minute.'); });
+  }
+  load();
+  setInterval(load, 60000);
+  setInterval(function () { /* the age ticks between reads */
+    var a = document.getElementById('tb-age'); if (a && a.dataset && a.dataset.at) a.textContent = ago(+a.dataset.at);
+  }, 30000);
+})();
+</script>
+</body>
+</html>

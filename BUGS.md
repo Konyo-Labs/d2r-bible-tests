@@ -7,6 +7,19 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3182 - THE TASK BOARD LIVED ONLY ON HIS MAC, AND NO OTHER PC COULD OPEN IT (v3864, his ask 2026-11-05, card 57)
+His words: a button "next to the history of the versions" at the console's bottom left that opens the task list "as a browser
+in chrome or whatever is defaulted on that PC", and "i want it to work on deans PC for instance". The board was ~/.claude/tasks
+on his Mac, drawn by a viewer only the Mac can reach. Now his Mac's console (darwin, an approver label, not suppressed)
+publishes it through the roster worker it already signs with (kind "tasks"; at most every 2 min when it changes, every 30 min
+when it does not). Every text is SCRUBBED first in tv/task_board.py, because the site password is in this public repo: home and
+temp paths, Windows user paths, IPs, e-mails, user@host, .local hosts and token shapes never leave. The worker keeps one record,
+only from an APPROVER's registered key, refuses a write under a minute after the last, and hands it at GET /api/roster?tasks=1;
+/d2r/tasks.html (deploy.sh) draws it with textContent and says how old it is. "📋 tasks" sits beside "history" in every
+console's footer; POST /api/open_tasks opens that one page in the PC's default browser, behind the d2jsp doors' origin gate.
+Law: tv/test_the_task_board_goes_online_scrubbed.py (9 red-proofs). Until the site deploy runs, the page and the worker route
+are not live - a console's button opens a page the site does not serve yet.
+
 ### REG-3181 - THE PHONE-BAR RENDER TARGET NEVER ACTIVATED, SO IT NEVER HAD A FLOOR AND STOPPED EVERY CI BLESS (v3864, #224)
 The chain's REG-3090 render target `phone-bar` had no coverage floor (test_render_coverage and test_control's orphan check went
 red on CI), and two CI blesses refused the whole set over it: "the panel could not be ACTIVATED after 30 s of polling" -
