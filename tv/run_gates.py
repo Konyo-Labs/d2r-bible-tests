@@ -13417,6 +13417,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_shelf_has_one_close_and_its_title_fits.py")], 60,
          needs_app=False,
          why='v3864 (GrokBot Batch A 1, 5) - the theatre close hides while the shelf is open, and the theatre title takes its own width first'),
+    Gate("test_a_vault_read_says_its_own_age",
+         [sys.executable, os.path.join(HERE, "test_a_vault_read_says_its_own_age.py")], 120,
+         needs_app=False,
+         why='v3864 (GrokBot Batch B 6) - the vault lane says how old its last READ is (lastReadAgeS, readStale), not only how old the status cache is'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
