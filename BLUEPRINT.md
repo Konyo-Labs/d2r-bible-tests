@@ -129,6 +129,7 @@ geometry, not preference.
     .grok_prune.jsonl        empty         -  every automatic prune of his Grok chats: what went, how big, how old, why (REG-2743)
     vault_seen.json          empty         -  vault sightings
     chronicle_swept.json     empty         -  which reels the chronicle lane has read
+    .proof_release.json      empty         -  which commit this PC last imported GitHub's proofs for, and how it went (v3862)
 <!-- LIVE:END -->
 
 ## WILSON — one statistic, every lane that scores itself

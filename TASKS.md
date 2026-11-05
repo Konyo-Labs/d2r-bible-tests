@@ -16,26 +16,44 @@ Status: `READY` may be applied now · `BLOCKED` names what blocks it · `HIS CAL
 Worktree /private/tmp/claude-v3862, branch claude/v3862 (on v3861 7998ea4cb). DONE: chrome --version fix (REG-3152), prove
 beside cloud (REG-3153), ci-trust pre-push (tv/ci_verdict.py). Each item: law + red-proofs + BUGS REG, graded on ci/ first.
 1. [x] ci-trust: the pre-push skips its own grading when GitHub's REQUIRED workflows succeeded on the EXACT sha + clean tree.
-2. [ ] PROOFS FOR EVERY PC: publish.yml (main) makes a public release `proofs-<sha12>` with the merged proof cache
-       (proof_shard --merge-shards) as an asset; a console, after it pulls a new HEAD, downloads that asset (no auth, public
-       repo) and runs heart2 --import-proved on it (re-keys on its own LF-normalised bytes). Locks open on the import.
+2. [~] PROOFS FOR EVERY PC (built, laws written, not yet run): proof-keys-shards.yml's `proof-bank` job (the only job
+       that may write; no repo code) packs a whole fan-in-checked set's 16 shard caches (34 MB measured) into
+       proofs-<sha>.tgz on ONE rolling public release `proof-bank` (newest 40 kept); each console's proof-release tick
+       (tv/proof_release.py, status.proofRelease) downloads its own commit's bundle with no gh/token, unpacks ONLY
+       proof-shard-<k>/.heart2_cache.json, and runs heart2 --import-shards at low priority (waits for a push, the local
+       game, a dirty tree; the proof tick holds while it runs). Under ci-trust the pre-push no longer imports (estimated ~17 min, not measured)
+       or proves what a runner proved: it proves only the changed laws only the Mac can prove (ci_verdict --mac-only).
+       FOUND while building: ci_verdict.import_proofs globbed `*.json`, which never matches the HIDDEN shard caches.
+       Ship flow: tv/ship_when_green.py vNNNN (ci/ branches -> dispatch any REQUIRED workflow its paths did not fire ->
+       GREEN on the exact sha -> main). Law: test_every_pc_imports_githubs_proofs + test_a_push_trusts_github_....
 3. [ ] WINDOWS PROOFS: a Windows matrix leg of proof-keys (or a windows shard set) so new-code-x-Windows is proved every
        version; Windows PCs import the Windows set. (CRLF/cp1252/POSIX/chrome --version were all new-code-x-Windows.)
-4. [ ] ONCE-PER-PC FULL PROOF keyed by an ENV FINGERPRINT (python ver, chrome major, OS build, node, git autocrlf, fresh
-       install): a changed fingerprint re-proves fully at idle; otherwise import + the self-check below.
-5. [ ] ENV SELF-CHECK every version: the environment-sensitive laws only (needs: node/posix/dir-link/d2r-install/macos,
-       + process/path/encoding laws) - minutes.
-6. [ ] BACKGROUND PROOF = SAFETY NET: keeps proving at idle but no longer holds the river shut; a red/blind it finds goes to
-       the fleet + BUGS and closes only the lock its law guards.
-7. [ ] REPAIR BOOK (his ruling: known errors fix AUTOMATICALLY, no click): entries {probe, fix, verify, REG}; first: node
-       absent -> winget user-scope LTS + PATH refresh; CRLF renormalize; prover deps (exists); launcher port; shallow
-       history (exists, v3861). Wired to the doctor/heart.
-8. [ ] UNKNOWN ERRORS ONLINE: a book-miss rides the beacon to the worker's PRIVATE KV (scrubbed: no paths/users/IPs),
-       deduped per signature per PC; a UserPromptSubmit hook "UNKNOWN ERRORS ▸ N new"; a quiet fleet chip; closes once fixed.
+4. [ ] ENV FINGERPRINT (designed, NOT built - held out of v3862 on purpose): a PC whose environment changed (python X.Y,
+       OS build, node major, git autocrlf) should owe EVERY gate once; today nothing re-proves on an env change (the census
+       owes only gates whose own test file changed - gateShas). Traps found while designing: (a) only the console's own
+       slice writes may judge/adopt the fingerprint (a push or an SSH job may run another python -> a re-prove storm);
+       (b) a census already current runs no slice, so its FIRST fingerprint is never recorded - needs a second writer of
+       .heart2.json or an adoption step; (c) any UNKNOWN part (node --version timing out) must never count as a change.
+5. [=] ENV SELF-CHECK - ALREADY THE MECHANISM once imports land: a gate whose proofs another tree banked owes one clean
+       run HERE (REG-2599), and a proof that needs what this PC lacks is ELSEWHERE, never imported (REG-3044/3045).
+6. [=] SAFETY NET - ALREADY THE RULE: a STALE census refuses only destructive acts (v3042) and only through each lock's own
+       guard laws (#156); BLIND closes everything. With imports the owed guard laws cost one clean run each. Verify on the
+       fleet after v3862 lands (rivers on the work ALT, old ALT, Dean).
+7. [~] REPAIR BOOK (built, law written, not yet run): tv/repair_book.py + control_app doors (REG-3158). Entries wrap the
+       console's EXISTING repairs: Pillow #227, numpy REG-1719, node REG-2484 (already auto since then - Dean's case),
+       websocket-client REG-1457, shallow history v3861. 3 min after boot + every 30 min; row-tied only on MISSING; failed
+       -> 1 h cooldown; an unknown eagle MISSING row is a MISS (listed, never acted on). status.repairBook. NOT YET: a CRLF
+       renormalize entry (no measured fix on record to wrap) and a launcher-port entry (same) - add when next measured.
+8. [~] UNKNOWN ERRORS ONLINE (built): system.repair on the presence row (fixed / failed / misses, scrubbed twice, no new
+       KV write) + tv/fleet_errors.py --summary (REG-3159). AFTER v3862 LANDS: register the UserPromptSubmit hook
+       `cd ~/d2r_bible_tests && python3 tv/fleet_errors.py --summary | sed 's/^/UNKNOWN ERRORS ▸ /'` beside LANES, and
+       a quiet fleet-card chip (UI - needs a render + Grok look).
 9. [ ] CLAUDE DIAGNOSIS on each PC for book-misses: diagnose + propose (card / #230), never run a NEW fix alone.
 10. [ ] PROOF METER per fleet row: owed / proved / rate / ETA from the self-prove census.
 11. [ ] APPROVE A NEW PC before it joins/shares a roster profile.
-12. [ ] KV BUDGET for the paid $5 plan (tv/console_snapshot.py: 948/day sized for the free 1,000).
+12. [ ] KV BUDGET for the paid $5 plan (tv/console_snapshot.py: 948/day sized for the free 1,000). WAITS ON HIM: the
+       Mac's wrangler cannot read the account ("Failed to automatically retrieve account IDs"), so Workers Paid is
+       unconfirmed; raising writes on the free plan would 500 the roster again (v2283). He checks Subscribed first.
 13. [ ] GrokBot LIVE passes on v3861 (fleet chips, Heart fan CTM, Dean uniques cross-ref REG-3150 a-d) -> fixes.
 SHIP FLOW from v3862 on: push ci/claude-vNNNN (gates) + ci/proof-keys-vNNNN (proofs) on the final sha -> GREEN -> push main
 (ci-trust ~15 min) -> PCs import the release proofs. Run laws in a worktree OTHER than the one you push (REG-3151 night).

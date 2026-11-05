@@ -186,6 +186,52 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3159 - NO PC'S UNKNOWN ERROR COULD BE SEEN FROM ANYWHERE BUT THAT PC'S OWN EAGLE PANEL (v3862)
+His ask 2026-11-05: "unknown errors can maybe even be like an online thing so its fetched and can be seen by you? so we
+can overwatch properly". The repair book's report rides each console's presence row as system.repair - what it fixed,
+the known repairs that FAILED there, and the eagle faults it does not know (misses) - scrubbed of paths on the PC and
+again by the worker's own txt() (functions/api/console.js), inside the row the PC already writes: no new KV key, no new
+write, so the free plan's 1,000/day budget is untouched. tv/fleet_errors.py --summary reads the local /api/fleet and
+prints each (PC, fault) once, for a UserPromptSubmit hook beside LANES (registered once v3862 is in his tree). Law
+test_known_errors_fix_themselves (TheFleetSeesIt, TheOverwatchLine).
+### REG-3158 - THE CONSOLE'S SELF-REPAIRS RAN ONCE AT BOOT, AND NOTHING SAID WHICH OF THEM HAD FIRED (v3862)
+His ruling 2026-11-05: "i think just automatically it should be fixed based on the errors it knos" (after asking whether
+Dean's missing node could have fixed itself on Dean's end). It already does for node since REG-2484, and for Pillow
+(#227), numpy (REG-1719), the prover's websocket-client (REG-1457) and the shallow install clone (v3861) - but each door
+ran once, at boot or at a proof's start, and reported nowhere together. tv/repair_book.py is the one inventory: each
+entry names its fault, its REG and the console's EXISTING door (never a copy); the console asks them 3 min after boot
+and every 30 min (status.repairBook) - a row-tied entry only when its eagle row reads MISSING, a failed repair after a
+one-hour cooldown, never in a loop. An eagle MISSING row the book does not know is a MISS: listed, never acted on. Law
+test_known_errors_fix_themselves.
+### REG-3157 - "WAIT FOR GITHUB'S VERDICT" COULD WAIT FOREVER: TWO REQUIRED WORKFLOWS RUN ONLY ON SOME PATHS (v3862)
+Routine I (bible.html, tests/, control_ui.html, control_app.py ...) and the Windows boot (tv/**) are path-filtered, so a
+version that touches neither never gets a run on its sha and ci_verdict reads NOT for good. tv/ship_when_green.py vNNNN
+is the ship: refuses a dirty tree or a non-fast-forward, pushes the exact HEAD to ci/claude-vNNNN + ci/proof-keys-vNNNN,
+dispatches (`gh workflow run --ref ci/claude-vNNNN`) every REQUIRED workflow that has not started after 2 minutes, stops
+on the first red or cancelled run and names it, and pushes main ONLY on GREEN - through the hook, never forced. Law
+test_a_push_trusts_github_only_for_the_exact_commit (TheShipWaitsForGitHubOnTheExactCommit, 3 more red-proofs).
+### REG-3156 - UNDER CI-TRUST THE PUSH PROVED NOTHING HERE, NOT EVEN THE LAWS ONLY THE MAC CAN PROVE (v3862, pre-ship)
+Found reviewing a8d6921bf before it shipped: the trusted path replaced `heart2 --prove $_gates --push` with an import of
+GitHub's shards, so a changed law whose proof needs what a runner lacks (or an untracked PROOF_NEEDS path - Publish's
+REG-2962 rule says "the hook proved it there") was proved nowhere. Now the trusted push asks `ci_verdict.py --mac-only`
+(proof_shard._mac_only, Publish's own rule) and proves exactly those; an unreadable rule proves every changed law here.
+It no longer imports at all (an import re-keys every proof on this checkout's bytes: minutes, estimated ~17 on his Mac, NOT measured): each PC imports from the proof bank (REG-3155).
+### REG-3155 - EVERY PC RE-PROVED WHAT GITHUB HAD ALREADY PROVED ON THE SAME BYTES (v3862, his "normal model")
+His words: "every version getting shipped needs to proof 5000 things and takes 8 hours each isnt so logical". The 16
+proof-keys shard caches of a commit lived only as an Actions artifact (login + gh to read), so no console ever used them.
+proof-keys-shards.yml's new proof-bank job (the ONLY job that may write; it runs no repo code) packs a fan-in-checked
+whole set - only proof-shard-<k>/.heart2_cache.json - into proofs-<sha>.tgz on one rolling public release `proof-bank`
+(newest 40 kept; 34 MB measured for 16cc3872c30b, runner paths only). Each console's proof-release tick
+(tv/proof_release.py) fetches its own commit's bundle with verified TLS (never unverified), unpacks only shard caches
+(a link, `..`, an absolute path, a stray file or an oversize member refuses the whole bundle) and runs heart2
+--import-shards at low priority; it waits for a push grading there, the local game and a tracked-dirty tree, and the
+self-prove tick holds while it runs. A reused proof from another tree still owes one clean run here (REG-2599), and a
+proof needing what this PC lacks is never imported (REG-3044/3045). Law test_every_pc_imports_githubs_proofs.
+### REG-3154 - THE CI-TRUST IMPORT COULD NEVER FIND A SHARD CACHE: `*.json` DOES NOT MATCH A HIDDEN FILE (v3862, pre-ship)
+ci_verdict.import_proofs globbed `**/*.json`; every shard cache is `.heart2_cache.json`, and glob's `*` skips names that
+start with a dot - so the import always answered "held no shard cache" and fell back. Found by reading a real artifact
+(proof-shards-16cc3872c30b..., 251 MB unpacked: cache, cache.prev, red, red.prev, prove.log per shard). It now names
+.heart2_cache.json exactly (never the .prev). Law test_a_push_trusts_github_only_for_the_exact_commit.
 ### REG-3153 - THE WORK ALT NEVER PROVED ITSELF: BOOSTEROID + THE AFK CLICKER READ AS "PLAYING" FOREVER (v3862)
 MEASURED on the fleet 2026-11-05 ~08:50: the work ALT's census was MISSING, its river stuck ("route shut until this PC
 proves its own gates - its prover: he is playing on this PC (the game or its cloud client)"). Boosteroid stays open there

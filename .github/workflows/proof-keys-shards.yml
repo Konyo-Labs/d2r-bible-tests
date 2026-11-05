@@ -134,6 +134,8 @@ jobs:
     permissions:
       contents: read
       actions: read
+    outputs:
+      whole: ${{ steps.whole.outputs.whole }}
     steps:
       - uses: actions/checkout@v4
       - name: Fetch every shard's cache
@@ -176,6 +178,9 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
+      - name: The set is whole - the proof bank may publish it (v3862)
+        id: whole
+        run: echo "whole=true" >> "$GITHUB_OUTPUT"
       - name: May this commit publish? (REG-2962, Publish's gate only)
         # every law the push changed since the last commit Publish published must be PROVEN here (or be one only the
         # Mac can prove, which the hook proved); no last publish or no diff -> every law is this push's
@@ -190,3 +195,44 @@ jobs:
           fi
           echo "last published commit: ${BASE:-UNKNOWN}"
           python3 tv/proof_shard.py --deploy-verdict shards --shards "$PROOF_SHARDS" --head "$GITHUB_SHA" --base "$BASE"
+
+  # v3862 - EVERY PC IMPORTS THESE PROOFS FROM ONE PUBLIC DOWNLOAD (his ruling 2026-11-05: GitHub proves each version once;
+  # each PC imports instead of proving again). The fan-in checked this commit's 16 caches whole; this job packs ONLY the
+  # shard caches into proofs-<sha>.tgz on the rolling `proof-bank` release, where a console with no gh and no token reads
+  # it (tv/proof_release.py). The one job here that may write, and it runs no repo code: an artifact download, tar, gh.
+  proof-bank:
+    name: proof bank - publish this commit's proofs for every PC
+    needs: [fan-in]
+    if: ${{ always() && needs.fan-in.outputs.whole == 'true' }}
+    # a bank that could not publish never fails Publish's deploy or a ci/ verdict: each PC then reads "absent" and says so
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Fetch the whole set
+        uses: actions/download-artifact@v5
+        with:
+          name: proof-shards-${{ github.sha }}
+          path: shards
+      - name: Pack the shard caches, nothing else
+        run: |
+          cd shards
+          ls -d proof-shard-*/ >/dev/null
+          find . -path './proof-shard-*/.heart2_cache.json' -type f | sed 's|^\./||' | sort > ../members.txt
+          test -s ../members.txt
+          tar -czf "../proofs-${GITHUB_SHA}.tgz" -T ../members.txt
+          echo "packed $(wc -l < ../members.txt) shard cache(s), $(du -h "../proofs-${GITHUB_SHA}.tgz" | cut -f1)"
+      - name: Publish to the proof bank, keep the newest 40
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release view proof-bank >/dev/null 2>&1 || gh release create proof-bank --prerelease --latest=false \
+            --title "Proof bank" --notes "Each commit's proofs, proved once on GitHub, for every PC to import (tv/proof_release.py)." \
+            || gh release view proof-bank >/dev/null
+          gh release upload proof-bank "proofs-${GITHUB_SHA}.tgz" --clobber
+          gh api "repos/$GH_REPO/releases/tags/proof-bank" --jq '.assets | sort_by(.created_at) | reverse | .[40:] | .[].id' \
+            | while read -r id; do gh api -X DELETE "repos/$GH_REPO/releases/assets/$id" || true; done

@@ -13019,6 +13019,18 @@ GATES = [
          why="v3862 (his ruling, the normal model): the pre-push skips its own grading only when every required GitHub "
              "workflow's newest run succeeded on the exact pushed commit and the tree is clean; unknown is never green, "
              "and a failed proof import proves locally"),
+    Gate("test_known_errors_fix_themselves",
+         [sys.executable, os.path.join(HERE, "test_known_errors_fix_themselves.py")], 120,
+         needs_app=False,
+         why="v3862 (his ruling: known errors fix themselves): the repair book re-asks the console's existing repairs "
+             "on a cadence, runs a row-tied one only on MISSING, waits out a cooldown after a failure, and lists an "
+             "unknown fault scrubbed without running anything for it"),
+    Gate("test_every_pc_imports_githubs_proofs",
+         [sys.executable, os.path.join(HERE, "test_every_pc_imports_githubs_proofs.py")], 120,
+         needs_app=False,
+         why="v3862 (his ruling, the normal model): each PC imports GitHub's proofs for its own commit from the public "
+             "proof bank - only shard caches are unpacked, absent/unknown are asked again and never imported, the "
+             "console waits for a push, the local game and a dirty tree, and only the bank job may write"),
     Gate("test_a_proof_runs_beside_a_cloud_client",
          [sys.executable, os.path.join(HERE, "test_a_proof_runs_beside_a_cloud_client.py")], 120,
          why="v3862 (his ruling 2026-11-05, prove beside cloud): only a local D2R.exe stops a proof; a cloud client never "

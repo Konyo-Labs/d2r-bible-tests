@@ -474,6 +474,26 @@ export async function onRequestPost(context) {
           };
         }
       }
+      /* v3862 - THE REPAIR BOOK, SO AN ERROR NO PC KNOWS HOW TO FIX IS SEEN FROM HERE (his ask 2026-11-05: "unknown errors
+         ... fetched and can be seen by you? so we can overwatch properly"). Counts and short scrubbed lines only - the same
+         txt() scrub as every why above runs again here, whatever the console sent - inside the row this PC already writes. */
+      if (s.repair && typeof s.repair === 'object') {
+        const rp = s.repair;
+        const items = function (a, n) {
+          if (!Array.isArray(a)) return [];
+          return a.slice(0, n).map(function (e) {
+            if (!e || typeof e !== 'object') return null;
+            const id = txt(typeof e.id === 'string' ? e.id : '', 80);
+            return id ? { id: id, why: txt(e.why, 200) } : null;
+          }).filter(Boolean);
+        };
+        out.repair = {
+          ranAt: whole(rp.ranAt, 9e15),
+          fixed: whole(rp.fixed, 1000),
+          failed: items(rp.failed, 6),
+          misses: items(rp.misses, 8),
+        };
+      }
       return out;
     })(body.system),
     masks: (function (m) {

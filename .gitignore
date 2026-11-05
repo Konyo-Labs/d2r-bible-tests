@@ -269,6 +269,13 @@ tv/.heart2_red.json
 tv/.heart2_red.json.tmp
 # REG-2590 - the Mac driver's alongside-pass log (tv/proof_keys_mac.py)
 tv/.proof_keys_local.log
+# v3862 - which commit this PC last imported GitHub's proofs for (tv/proof_release.py). Per machine; an untracked
+# file here would also stop the pre-push trusting GitHub's verdict (it asks for an empty git status).
+tv/.proof_release.json
+tv/.proof_release.json.tmp
+# v3862 - which fleet faults the overwatch line has already shown (tv/fleet_errors.py). Per machine.
+tv/.fleet_errors_seen.json
+tv/.fleet_errors_seen.json.tmp
 # REG-2340/2341 (R9) - no generation or side file of heart2's stores ever shows in git status: a writer's own tmp
 # (<name>.<pid>.<thread>.tmp), a .prev, an .unreadable-<ms> kept aside, Windows' lock file (.heart2_cache.lock), and
 # tv/.heart2_v2/ (heart2's stores in a checkout whose git dir could not be found). The machine's own heart2 stores live

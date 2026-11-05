@@ -14,6 +14,7 @@ The answer is one of three, and only one of them skips anything:
     UNKNOWN  GitHub could not be asked (no gh, no network, a parse failure) - never "green" [[unknown-stays-unknown]]
 
     python3 tv/ci_verdict.py <sha>     exit 0 GREEN · 1 NOT · 2 UNKNOWN, one line saying which and why
+    python3 tv/ci_verdict.py --mac-only LAW...   the changed laws only this Mac can prove (exit 2: unreadable)
 """
 import json
 import os
@@ -103,7 +104,6 @@ def import_proofs(sha, run=None, repo=REPO_SLUG):
     takes the newest successful proof run on the sha, downloads its `proof-shards-<full sha>` artifact and hands every
     shard cache to `heart2.py --import-shards`, which refuses a partial set or another commit's shards (REG-2586) and
     re-keys each proof on THIS checkout's bytes. Any failure is (False, why) and the hook proves locally instead."""
-    import glob
     import shutil
     import tempfile
     run = run or subprocess.run
@@ -124,7 +124,9 @@ def import_proofs(sha, run=None, repo=REPO_SLUG):
             return False, "the proof artifact could not be downloaded (%s)" % type(e).__name__
         if getattr(r, "returncode", 1) != 0:
             return False, "the proof artifact could not be downloaded: %s" % ((r.stderr or "").strip()[-160:])
-        files = sorted(glob.glob(os.path.join(d, "**", "*.json"), recursive=True))
+        # v3862 - the shard caches are HIDDEN files (.heart2_cache.json), which `*.json` never matches: name them exactly
+        files = sorted(os.path.join(root, n) for root, _dirs, names in os.walk(d) for n in names
+                       if n == ".heart2_cache.json")
         if not files:
             return False, "the proof artifact of run %d held no shard cache" % rid
         here = os.path.dirname(os.path.abspath(__file__))
@@ -140,8 +142,35 @@ def import_proofs(sha, run=None, repo=REPO_SLUG):
         shutil.rmtree(d, ignore_errors=True)
 
 
+def mac_only(names, rule=None):
+    """Of the changed laws `names`, the ones only this Mac can prove (a proof that needs what a runner lacks, or a
+    PROOF_NEEDS path git does not track - proof_shard._mac_only, the rule Publish's verdict uses). -> sorted [name] |
+    None (the rule could not be read: the caller proves every changed law). Never raises.
+
+    Under ci-trust the pre-push proves ONLY these: GitHub's proof run on this exact commit succeeded, so every law a
+    runner can prove was PROVEN there, and each PC imports those proofs from the proof bank (tv/proof_release.py)."""
+    try:
+        if rule is None:
+            here = os.path.dirname(os.path.abspath(__file__))
+            if here not in sys.path:
+                sys.path.insert(0, here)
+            import proof_shard as _PS
+            rule = _PS._mac_only
+        got = rule(list(names))
+        return sorted(set(got)) if got is not None else None
+    except Exception:
+        return None
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ["--mac-only"]:
+        got = mac_only(argv[1:])
+        if got is None:
+            print("the rule for laws only the Mac can prove could not be read", file=sys.stderr)
+            return 2
+        print(" ".join(got))
+        return 0
     if argv[:1] == ["--import"]:
         ok, why = import_proofs(argv[1] if len(argv) > 1 else "")
         print(why)

@@ -9,7 +9,8 @@ artifact while GitHub had graded the same bytes green. The skip is the dangerous
   · UNKNOWN (gh unreachable) is never green;
   · the hook asks only when HEAD is the pushed commit AND `git status --porcelain` is empty (a dirty tree is graded in
     full - the pre-push grades the WORKING TREE, REG-1131, and GitHub never saw those bytes);
-  · under trust, local proving is replaced by importing GitHub's proof shards, and a failed import proves locally.
+  · under trust the Mac proves only the changed laws a runner cannot (Publish's own rule), never imports (each PC
+    imports from the proof bank), and a rule that cannot be read proves every changed law here.
 """
 import ast
 import io
@@ -148,10 +149,103 @@ class TheHookAsksOnlyWhenItMayTrust(unittest.TestCase):
         j = self.code.index('python3 "$REPO/tv/run_gates.py" --fast', i)
         self.assertLess(i, j, "the fast gate set is no longer behind the trust check")
 
-    def test_a_failed_import_falls_back_to_local_proving(self):
-        a = self.code.index('if [ "$_ci_trust" = 1 ] && python3 "$REPO/tv/ci_verdict.py" --import "$_se_local"')
-        b = self.code.index('elif python3 "$REPO/tv/heart2.py" --prove $_gates --push', a)
-        self.assertLess(a, b)
+    def test_under_trust_only_the_macs_own_laws_are_proved_here(self):
+        """v3862 - the push no longer imports (each PC imports from the proof bank, tv/proof_release.py); it proves
+        only the changed laws a runner cannot, and an unreadable rule proves EVERY changed law here."""
+        a = self.code.index('if [ "$_ci_trust" = 1 ] && [ -n "$_gates" ]; then')
+        b = self.code.index('if _gates_mac="$(python3 "$REPO/tv/ci_verdict.py" --mac-only $_gates 2>/dev/null)"; then', a)
+        c = self.code.index('_gates="$_gates_mac"', b)
+        d = self.code.index("every changed law is proved here", c)
+        e = self.code.index('if python3 "$REPO/tv/heart2.py" --prove $_gates --push', d)
+        self.assertLess(a, e)
+        self.assertNotIn("ci_verdict.py\" --import", self.code, "the push imports GitHub's proofs again (~17 min)")
+
+
+class TheMacOnlySplit(unittest.TestCase):
+
+    def test_the_rule_answers_and_an_unreadable_rule_is_none(self):
+        self.assertEqual(CV.mac_only(["b", "a", "c"], rule=lambda names: {"c", "a"}), ["a", "c"])
+
+        def broken(names):
+            raise ImportError("no proof_shard")
+        self.assertIsNone(CV.mac_only(["a"], rule=broken), "an unreadable rule read as 'nothing only the Mac proves'")
+        self.assertIsNone(CV.mac_only(["a"], rule=lambda names: None))
+
+    def test_the_cli_exits_2_when_the_rule_cannot_be_read(self):
+        saved = CV.mac_only
+        CV.mac_only = lambda names, rule=None: None
+        try:
+            self.assertEqual(CV.main(["--mac-only", "a"]), 2)
+        finally:
+            CV.mac_only = saved
+
+
+class TheShipWaitsForGitHubOnTheExactCommit(unittest.TestCase):
+    """v3862 - tv/ship_when_green.py: ci/ branches first, GitHub's verdict on THAT sha, main only on green."""
+
+    def _ship(self, verdicts, dirty="", ff=0, wait_s=600):
+        import ship_when_green as SW
+        calls, said, t = [], [], [0.0]
+        feed = list(verdicts)
+
+        def run(argv, **kw):
+            calls.append(list(argv))
+            if argv[:3] == ["git", "status", "--porcelain"]:
+                return subprocess.CompletedProcess(argv, 0, dirty, "")
+            if argv[:3] == ["git", "rev-parse", "HEAD"]:
+                return subprocess.CompletedProcess(argv, 0, SHA + "\n", "")
+            if argv[:3] == ["git", "merge-base", "--is-ancestor"]:
+                return subprocess.CompletedProcess(argv, ff, "", "")
+            return subprocess.CompletedProcess(argv, 0, "", "")
+
+        def fetch(sha):
+            self.assertEqual(sha, SHA, "the verdict was asked about another commit")
+            return feed.pop(0) if len(feed) > 1 else feed[0]
+
+        def sleep(s):
+            t[0] += s
+        rc = SW.ship("v3862", run=run, fetch=fetch, sleep=sleep, clock=lambda: t[0], say=said.append, wait_s=wait_s)
+        mains = [c for c in calls if c[:1] == ["git"] and "HEAD:main" in c]
+        return rc, calls, mains, said
+
+    def test_a_dirty_tree_or_a_non_fast_forward_pushes_nothing(self):
+        for kw in ({"dirty": " M tv/control_app.py\n"}, {"ff": 1}):
+            with self.subTest(**kw):
+                rc, calls, mains, said = self._ship([_all_green()], **kw)
+                self.assertEqual(rc, 3)
+                self.assertFalse([c for c in calls if "push" in c], "pushed from a tree GitHub never graded")
+
+    def test_green_pushes_the_ci_branches_then_main_through_the_hook(self):
+        rc, calls, mains, said = self._ship([_all_green()])
+        self.assertEqual(rc, 0, said)
+        ci = next(c for c in calls if "push" in c)
+        self.assertIn("+HEAD:refs/heads/ci/claude-v3862", ci)
+        self.assertIn("+HEAD:refs/heads/ci/proof-keys-v3862", ci)
+        self.assertEqual(len(mains), 1)
+        self.assertIn("core.hooksPath=hooks", mains[0])
+        self.assertFalse(any("--no-verify" in c or "-f" in c or "--force" in c for c in mains), "main was forced")
+
+    def test_red_stops_the_ship_and_names_the_workflow(self):
+        runs = _all_green()
+        runs[2] = _run(CV.REQUIRED[2], conclusion="failure")
+        rc, calls, mains, said = self._ship([runs])
+        self.assertEqual(rc, 1)
+        self.assertEqual(mains, [], "main was pushed over a red GitHub run")
+        self.assertIn(CV.REQUIRED[2], said[-1])
+
+    def test_pending_or_unknown_never_pushes_main(self):
+        for feed in ([_all_green()[:2]], [None]):
+            with self.subTest(feed=feed):
+                rc, calls, mains, said = self._ship(feed, wait_s=300)
+                self.assertEqual(rc, 2)
+                self.assertEqual(mains, [], "main was pushed without a GitHub verdict")
+
+    def test_a_workflow_its_paths_did_not_fire_is_dispatched_once_on_the_ci_branch(self):
+        rc, calls, mains, said = self._ship([_all_green()[:3]] * 6 + [_all_green()])
+        self.assertEqual(rc, 0, said)
+        disp = [c for c in calls if c[:3] == ["gh", "workflow", "run"]]
+        self.assertEqual(disp, [["gh", "workflow", "run", "proof-keys-shards.yml", "--repo", CV.REPO_SLUG,
+                                 "--ref", "ci/claude-v3862"]])
 
 
 RED_PROOF = [
@@ -169,6 +263,31 @@ RED_PROOF = [
      "file": "tv/ci_verdict.py",
      "find": "    if runs is None:\n        return \"unknown\",",
      "replace": "    if runs is None:\n        return \"green\",",
+     "matches": 1},
+    {"why": "v3862 - an unreadable Mac-only rule reads as 'none': the Mac's own changed laws go unproved under trust",
+     "file": "tv/ci_verdict.py",
+     "find": "        return sorted(set(got)) if got is not None else None\n    except Exception:\n        return None\n",
+     "replace": "        return sorted(set(got)) if got is not None else None\n    except Exception:\n        return []\n",
+     "matches": 1},
+    {"why": "v3862 - the hook narrows to the Mac-only laws even when the rule failed",
+     "file": "hooks/pre-push",
+     "find": "    if _gates_mac=\"$(python3 \"$REPO/tv/ci_verdict.py\" --mac-only $_gates 2>/dev/null)\"; then\n",
+     "replace": "    if _gates_mac=\"$(python3 \"$REPO/tv/ci_verdict.py\" --mac-only $_gates 2>/dev/null || true)\"; then\n",
+     "matches": 1},
+    {"why": "v3862 - the ship pushes main over a red GitHub run (it waits it out instead of stopping)",
+     "file": "tv/ship_when_green.py",
+     "find": "        if red:\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "v3862 - the ship pushes from a dirty tree, so GitHub grades bytes the Mac never sends",
+     "file": "tv/ship_when_green.py",
+     "find": "    if st.returncode != 0 or (st.stdout or \"\").strip():\n",
+     "replace": "    if st.returncode != 0:\n",
+     "matches": 1},
+    {"why": "v3862 - the ship pushes main on a pending verdict",
+     "file": "tv/ship_when_green.py",
+     "find": "        if verdict == \"green\":\n            break\n",
+     "replace": "        if verdict in (\"green\", \"not\"):\n            break\n",
      "matches": 1},
     {"why": "v3862 - a DIRTY tree is trusted on GitHub's verdict for the commit (the pre-push grades the working tree)",
      "file": "hooks/pre-push",

@@ -1174,7 +1174,26 @@ PYGATE
     fi
   fi
   # <<< browser split
-  if [ -z "$_gates" ] && [ -z "$_gates_ci" ]; then
+  # >>> ci-trust narrowing (v3862) - GITHUB PROVED THIS EXACT COMMIT, SO THE MAC PROVES ONLY WHAT A RUNNER CANNOT.
+  # Under ci-trust the proof-keys run on THIS sha succeeded: every law a runner can prove was PROVEN there, and every PC
+  # imports those proofs from the proof bank (tv/proof_release.py) - the push no longer imports or proves them. What a
+  # runner cannot prove (a proof that needs what it lacks, an untracked PROOF_NEEDS path: Publish's own rule) is proved
+  # here, as before. A rule that cannot be read proves every changed law here. Law:
+  # test_a_push_trusts_github_only_for_the_exact_commit.
+  _ci_narrowed=0
+  if [ "$_ci_trust" = 1 ] && [ -n "$_gates" ]; then
+    if _gates_mac="$(python3 "$REPO/tv/ci_verdict.py" --mac-only $_gates 2>/dev/null)"; then
+      echo "pre-push: [$(_pp_el)] ☁ GitHub proved this exact commit: of $(echo $_gates | wc -w | tr -d ' ') changed law(s), $(echo $_gates_mac | wc -w | tr -d ' ') only the Mac can prove${_gates_mac:+: $_gates_mac}"
+      _gates="$_gates_mac"
+      _ci_narrowed=1
+    else
+      echo "pre-push: [$(_pp_el)] ⚠ which changed laws only the Mac can prove could not be read - every changed law is proved here"
+    fi
+  fi
+  # <<< ci-trust narrowing
+  if [ -z "$_gates" ] && [ "$_ci_narrowed" = 1 ]; then
+    echo "pre-push: [$(_pp_el)] ☁ every changed law was proven on GitHub for this exact commit - nothing only the Mac can prove"
+  elif [ -z "$_gates" ] && [ -z "$_gates_ci" ]; then
     echo "pre-push: [$(_pp_el)] ⚠ tv/test_*.py changed but no gate name could be derived, so no red-proof was"
     echo "          exercised. THIS IS A SKIP, NOT A PASS."
   elif [ -z "$_gates" ]; then
@@ -1216,11 +1235,7 @@ said = []
 n = h.prove_workers(int(sys.argv[1]), say=said.append)
 print("%d lane(s)%s" % (n, (" - " + said[-1].strip()) if said else ""))' "$(echo $_gates | wc -w | tr -d ' ')" 2>/dev/null | tail -1)
     echo "pre-push: [$(_pp_el)] proving $(echo $_gates | wc -w | tr -d ' ') changed law(s) in ${_lanes_say:-UNKNOWN lane(s) - heart2 could not say}"
-    if [ "$_ci_trust" = 1 ] && python3 "$REPO/tv/ci_verdict.py" --import "$_se_local" > "$_prove_log" 2>&1; then
-      echo "pre-push: [$(_pp_el)] ☁ $(tail -1 "$_prove_log") - no local proving (ci-trust)."
-      ( cd "$REPO/tv" && python3 -c 'import proof_carrier as pc; pc.note_gate_run("pre-push")' ) || true
-      rm -f "$_prove_log"
-    elif python3 "$REPO/tv/heart2.py" --prove $_gates --push > "$_prove_log" 2>&1; then
+    if python3 "$REPO/tv/heart2.py" --prove $_gates --push > "$_prove_log" 2>&1; then
       echo "pre-push: [$(_pp_el)] ✅ every changed law demonstrated it can still go red."
       ( cd "$REPO/tv" && python3 -c 'import proof_carrier as pc; pc.note_gate_run("pre-push")' ) || true
       rm -f "$_prove_log"

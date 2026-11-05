@@ -18783,6 +18783,23 @@ def _river_owed_why(station, keep, reels=None):
     return why + (" - the drain: " + say if say else "")
 
 
+def _repair_for_wire(book=None):
+    """v3862 (his ask: "unknown errors ... fetched and can be seen by you? so we can overwatch properly") - the repair
+    book's answer for the fleet: what it fixed, the known repairs that FAILED here, and the eagle faults it does not
+    know yet (misses). -> {"ranAt", "fixed", "failed": [{id, why}], "misses": [{id, why}]} | None (the book has not
+    run). Whys are already scrubbed of paths by the book; the worker scrubs again. Rides inside the presence row
+    this PC already writes - no new KV key, no new write. Pure over `book`."""
+    b = dict(_REPAIR_BOOK) if book is None else (book or {})
+    if not b.get("ranAt"):
+        return None
+    ents = [e for e in (b.get("entries") or []) if isinstance(e, dict)]
+    return {"ranAt": b.get("ranAt"),
+            "fixed": sum(1 for e in ents if e.get("state") == "fixed"),
+            "failed": [{"id": e.get("id"), "why": e.get("why")} for e in ents if e.get("state") == "failed"][:6],
+            "misses": [{"id": m.get("check"), "why": m.get("why")} for m in (b.get("misses") or [])
+                       if isinstance(m, dict)][:8]}
+
+
 def _system_for_wire():
     """#229 — THIS MACHINE'S OWN SYSTEM, COUNTS ONLY, SO THE FLEET CAN SEE EACH CONSOLE STANDS ON ITS OWN.
     -> {"tree": "ok"|"missing"|"unmeasured"|"unknown"|None, "reels": int|None,
@@ -18828,6 +18845,7 @@ def _system_for_wire():
                            if n.startswith("reel_") and os.path.isdir(os.path.join(hist, n)))
     except Exception:
         out["reels"] = None
+    out["repair"] = _repair_for_wire()
     return out
 
 
@@ -22331,6 +22349,148 @@ def _history_repair_start(_thread=None):
     threading.Thread(target=_go, daemon=True, name="tvd-history-repair").start()
 
 
+#: v3862 - THIS PC IMPORTS GITHUB'S PROOFS FOR ITS OWN COMMIT (his ruling 2026-11-05, the normal model: GitHub proves
+#: each version once, each PC imports). tv/proof_release.py downloads the commit's bundle from the public proof bank and
+#: hands it to heart2 --import-shards. Asked 40 s after boot and every 10 minutes after; a commit already imported (or
+#: refused - final for that commit, named) is not asked again until the checkout moves. It waits for a push grading on
+#: this PC, for the local game, and for a tree whose tracked files differ from HEAD (an import would refuse it).
+PROOF_RELEASE_FIRST_TICK = 4
+PROOF_RELEASE_EVERY_TICKS = 60
+_PROOF_RELEASE = {"state": None, "sha": None, "seconds": None, "at": None, "running": False,
+                  "why": "not asked yet - the console has not been up 40 s"}
+
+
+def _proof_release_tick(_thread=None, _git_run=_git_run, _import=None, _busy=None):
+    """v3862 - import this commit's proofs from the proof bank, once per commit, on a daemon thread. -> dict (the
+    status it published). Never raises: every stop is a sentence in status.proofRelease, never a silent skip."""
+    try:
+        import proof_release as _pr
+        if _PROOF_RELEASE.get("running"):
+            return dict(_PROOF_RELEASE)
+        busy = _busy() if _busy is not None else (
+            "a push is grading on this PC" if _a_push_is_grading() else
+            "the game is running on this PC" if _sp_proof_playing_here() else None)
+        if busy:
+            _PROOF_RELEASE.update(why="%s - the proof import waits for it" % busy)
+            return dict(_PROOF_RELEASE)
+        kw = dict(cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
+                  creationflags=_WIN_CREATE if IS_WIN else 0)
+        h = _git_run(["git", "rev-parse", "HEAD"], **kw)
+        head = (h.stdout or "").strip() if h.returncode == 0 else ""
+        if len(head) != 40:
+            _PROOF_RELEASE.update(why="git could not say which commit this checkout is on - UNKNOWN, asked again later")
+            return dict(_PROOF_RELEASE)
+        rec = _pr.load_state(HERE)
+        if not _pr.owed(rec, head):
+            _PROOF_RELEASE.update(rec, running=False)
+            return dict(_PROOF_RELEASE)
+        d = _git_run(["git", "status", "--porcelain", "--untracked-files=no"], **kw)
+        if d.returncode != 0 or (d.stdout or "").strip():
+            _PROOF_RELEASE.update(sha=head, state="waiting",
+                                  why="this checkout's tracked files differ from its commit (or git could not say) - "
+                                      "an import would be refused, so it waits")
+            return dict(_PROOF_RELEASE)
+    except Exception as e:
+        _PROOF_RELEASE.update(why="the proof import could not be asked (%s)" % type(e).__name__)
+        return dict(_PROOF_RELEASE)
+
+    def _go():
+        try:
+            r = (_import or _pr.import_bundle)(head, tv_dir=HERE)
+            _pr.save_state(r, HERE)
+            _PROOF_RELEASE.update(r)
+        except Exception as e:
+            _PROOF_RELEASE.update(state="unknown", why="the proof import raised %s" % type(e).__name__)
+        finally:
+            _PROOF_RELEASE["running"] = False
+    _PROOF_RELEASE.update(running=True, sha=head, state="importing",
+                          why="importing GitHub's proofs for %s from the proof bank" % head[:9])
+    if _thread is not None:
+        _thread(_go)
+    else:
+        threading.Thread(target=_go, daemon=True, name="tvd-proof-release").start()
+    return dict(_PROOF_RELEASE)
+
+
+#: v3862 - THE REPAIR BOOK (tv/repair_book.py): every environment fault we have met and fixed by hand is fixed again
+#: AUTOMATICALLY on the PC that has it (his ruling 2026-11-05: "just automatically it should be fixed based on the errors
+#: it knos"). The doors are this console's existing repairs; the book asks them 3 minutes after boot (after the boot
+#: doors) and every 30 minutes, so a package removed or a node deleted is fixed at the next pass, not the next relaunch.
+REPAIR_BOOK_FIRST_TICK = 18
+REPAIR_BOOK_EVERY_TICKS = 180
+_REPAIR_BOOK = {"ranAt": None, "entries": [], "misses": [], "counts": {}, "running": False,
+                "say": "not asked yet - the repair book first runs 3 minutes after the console starts"}
+
+
+def _book_rec(rec, done_key, not_here):
+    """A boot door's record -> the book's (state, why). Pure. done_key names the field that says the door ACTED."""
+    if rec is None:
+        return "not-here", not_here
+    why = str(rec.get("why") or "")
+    if rec.get("ok") is True:
+        return ("fixed" if rec.get(done_key) else "fine"), why
+    if rec.get("ok") is False:
+        return "failed", why
+    return ("waiting" if "background" in why else "unknown"), why
+
+
+def _book_history():
+    r = history_repair()
+    if r.get("shallow") is False and not r.get("repaired"):
+        return "fine", r.get("why") or "full history"
+    if r.get("repaired"):
+        return "fixed", r.get("why") or "unshallowed"
+    if r.get("shallow") is True:
+        return "failed", r.get("why") or "still shallow"
+    return "unknown", r.get("why") or "git could not say"
+
+
+def _book_prover_deps():
+    import self_prove as _sp
+    r = _sp.ensure_prover_deps()
+    if r.get("ok") and r.get("installed"):
+        return "fixed", r.get("why") or "installed"
+    if r.get("ok"):
+        return "fine", r.get("why") or "present"
+    return ("not-here" if not IS_WIN else "failed"), r.get("why") or "missing"
+
+
+def _book_doors():
+    """v3862 - the repair book's doors: the console's EXISTING repairs, each answering (state, why). Never a copy."""
+    off = "the console installs it only on Windows (his Mac and CI carry it)"
+    return {
+        "pillow": lambda: _book_rec(_ensure_pillow_at_boot(), "tried", off),
+        "numpy": lambda: _book_rec(_ensure_numpy_at_boot(), "tried", off),
+        "node": lambda: _book_rec(_ensure_node_at_boot(), "fetched",
+                                  "node is fetched only on Windows; this PC resolves its own"),
+        "prover-deps": _book_prover_deps,
+        "history": _book_history,
+    }
+
+
+def _repair_book_start(_thread=None, _doors=None):
+    """v3862 - one pass of the repair book on a daemon thread; the report lands in status.repairBook. Never raises."""
+    if _REPAIR_BOOK.get("running"):
+        return dict(_REPAIR_BOOK)
+
+    def _go():
+        try:
+            import repair_book as _rb
+            prev = dict(_REPAIR_BOOK)
+            rows = list(_EAGLE.get("rows") or []) if _EAGLE.get("checked") else None
+            _REPAIR_BOOK.update(_rb.apply(rows, _doors or _book_doors(), state=prev))
+        except Exception as e:
+            _REPAIR_BOOK.update(say="the repair book could not run (%s)" % type(e).__name__)
+        finally:
+            _REPAIR_BOOK["running"] = False
+    _REPAIR_BOOK["running"] = True
+    if _thread is not None:
+        _thread(_go)
+    else:
+        threading.Thread(target=_go, daemon=True, name="tvd-repair-book").start()
+    return dict(_REPAIR_BOOK)
+
+
 SELF_PROVE_FIRST_TICK = 30
 _SELF_PROVE = {"on": None, "worked": None, "lastTs": None, "owed": None, "key": None,
                "say": "the self-prove lane has not ticked yet since this console started",
@@ -22702,7 +22862,11 @@ def _self_prove_dispatch(n):
     """REG-1624 — the rescue loop's one call into the self-prove lane on tick `n`. -> what ran ("tick"/"guard"/None)"""
     step = _self_prove_step(n, _SELF_PROVE)
     if step == "tick":
-        _self_prove_tick()          # #50 — has THIS PC proved its own instruments?
+        if _PROOF_RELEASE.get("running"):   # v3862 — GitHub's proofs land first; proving them here too is waste
+            _SELF_PROVE["say"] = ("GitHub's proofs for this commit are being imported - the next proof tick starts "
+                                  "after, on what is still owed")
+        else:
+            _self_prove_tick()          # #50 — has THIS PC proved its own instruments?
         if n == SELF_PROVE_FIRST_TICK:
             _console_beacon_async("proof")  # v3849 — one beacon, so the fleet row drops "river · starting"
     elif step == "guard":
@@ -22831,6 +22995,12 @@ def _console_rescue_loop():
                 _prewarm_shelf()            # REG-1459 — his first SHELF click is served warm
             if _SELF_PROBE["tick"] == HISTORY_REPAIR_TICK:
                 _history_repair_start()     # v3861 — a shallow install gets its history, once
+            if (_SELF_PROBE["tick"] >= PROOF_RELEASE_FIRST_TICK
+                    and (_SELF_PROBE["tick"] - PROOF_RELEASE_FIRST_TICK) % PROOF_RELEASE_EVERY_TICKS == 0):
+                _proof_release_tick()       # v3862 — this PC imports GitHub's proofs for its own commit
+            if (_SELF_PROBE["tick"] >= REPAIR_BOOK_FIRST_TICK
+                    and (_SELF_PROBE["tick"] - REPAIR_BOOK_FIRST_TICK) % REPAIR_BOOK_EVERY_TICKS == 0):
+                _repair_book_start()        # v3862 — a fault the book knows is fixed again, automatically
             if _SELF_PROBE["tick"] == CAPTURE_SWEEP_TICK:
                 _sweep_orphan_captures()    # REG-1502 — end the captures a previous console left running
             if (_SELF_PROBE["tick"] >= CHILD_GUARD_FIRST_TICK
@@ -45432,7 +45602,7 @@ def status_payload():
         # 2026-09-29 — front / background / headless / window-only: the window is a view of the service
         "window": _t("window", window_mode_payload),
         # #71 — can this console still answer its own port (the fault it cannot report over that port)
-        "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
+        "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "proofRelease": dict(_PROOF_RELEASE), "repairBook": dict(_REPAIR_BOOK), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
         # #83 — the child supervisor's receipts (door / watchdog / RAM); the census itself is the doctor's row
         "childGuard": _child_guard_status(),
         "ver": "v3861",

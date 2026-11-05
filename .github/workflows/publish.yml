@@ -293,7 +293,7 @@ jobs:
     with:
       gate: deploy
     permissions:
-      contents: read
+      contents: write             # v3862 - its proof-bank job publishes this commit's proofs for every PC
       actions: read
 
   deploy:
