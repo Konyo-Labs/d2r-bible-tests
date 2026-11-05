@@ -1697,7 +1697,10 @@
      clock share what is left, the clock twice as much, each ends in an ellipsis), the session line alone on a second row
      (one line, its whole text on hover), and the caption may never grow past the header's real height (--th-top-h). */
   .th-topline { flex-wrap: wrap; row-gap: 4px; }
-  .th-topline .th-tag { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 0; }
+  /* v3864 (GrokBot Batch A 5) - the title takes its own width first (flex-basis auto) and gives way only when the row
+     truly lacks room; the clock takes what is left. With basis 0 it got a third of the spare room and read 122px of
+     its 383 ('THE THEATRE · EY…') at 1024, 1440 and 1920. Still one line, still an ellipsis when narrow (REG-2134). */
+  .th-topline .th-tag { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
   .th-topline .th-clock { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 2 1 0; }
   .th-topline > button { flex: none; white-space: nowrap; }
   .th-topline .th-sess { order: 10; flex: 1 0 100%; margin-left: 0; min-width: 0;
@@ -1885,6 +1888,10 @@
   body:has(#th-shelfov:not([hidden])) .th-strip #th-mode,
   body:has(#th-shelfov:not([hidden])) .th-strip #th-speed,
   body:has(#th-shelfov:not([hidden])) .th-strip #th-fs { display: none !important; }
+  /* v3864 (GrokBot Batch A 1, #230 6656116697) - ONE CLOSE ON THE SHELF. The shelf's own ✕ (#th-shelf-x) and the theatre's
+     '✕ CLOSE' (#th-close) sat side by side on one line at every width (top ~141 at 1024) - two exits for one job, the
+     d2jsp picker's old bug. While the shelf is open its ✕ is the exit; the theatre's comes back when it closes. */
+  body:has(#th-shelfov:not([hidden])) #th-close { display: none !important; }
 
   #th-shelfov .sh-head { font: var(--fw-bold) var(--fs-xl)/var(--lh-snug) var(--serif); color: #e8cf96; letter-spacing: var(--ls-wider); margin-bottom: 14px; padding-right: 48px; }
   #th-shelfov .sh-x { position: sticky; float: right; top: 0; margin: -4px 0 0 0; z-index: 4; }
