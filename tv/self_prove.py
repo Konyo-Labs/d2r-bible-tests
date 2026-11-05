@@ -1081,7 +1081,7 @@ def process_rows(run=None):
         return None
 
 
-def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S):
+def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_pid=None):
     """v3861 - IS A PUSH GRADING ON THIS PC, outside this lane's own prover? -> (True | False | None, detail). Pure.
 
     MEASURED 2026-11-05 ~02:00 on his Mac: the console's `heart2 --prove test_control` started 20 minutes before the
@@ -1094,7 +1094,12 @@ def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S):
     rows: process_rows(). A pre-push hook or `git push` (tree_busy's ONE definition of running one) counts once it has
     run `after_s`, unless one of its ancestors is this lane's own prover: laws run the hook inside their fixture repos,
     and a proof that stood aside for its own law would end itself every slice. An unknown age counts: the hook IS
-    running. rows None -> None (UNKNOWN), and the caller never stops a proof on a reading it never got."""
+    running. rows None -> None (UNKNOWN), and the caller never stops a proof on a reading it never got.
+
+    `self_pid`: a hook that is an ANCESTOR of the asking process is the push that is running it - a law inside the
+    pre-push gate - never one to stand aside for. CAUGHT BY THE v3861 PUSH ITSELF: TheSelfProveYieldsToASweep asked
+    _sp_yield_here() inside the pre-push, saw that very push and read "yield" on an idle fixture (green on CI, where no
+    push runs). His real console is never a child of a hook, so it still yields."""
     if rows is None:
         return None, "the process list could not be read"
     try:
@@ -1102,10 +1107,16 @@ def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S):
         parent, cmd_of, age_of = {}, {}, {}
         for pid, ppid, age, cmd in rows:
             parent[str(pid)], cmd_of[str(pid)], age_of[str(pid)] = str(ppid), str(cmd or ""), age
+        mine, p = set(), (str(self_pid) if self_pid is not None else None)
+        while p and p not in mine and p != "0":
+            mine.add(p)
+            p = parent.get(p)
         hits = []
         for pid, cmd in cmd_of.items():
             if not _tb._is_hook_invocation(cmd):
                 continue
+            if pid in mine:
+                continue                       # the push that is running THIS process (a law inside the gate)
             age = age_of.get(pid)
             if age is not None and age < after_s:
                 continue

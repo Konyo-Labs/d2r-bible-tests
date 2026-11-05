@@ -22440,7 +22440,7 @@ def _a_push_is_grading():
         import self_prove as _sp
         now = time.time()
         if now - _PUSH_GRADING["at"] >= _sp.PUSH_ASK_EVERY_S:
-            _PUSH_GRADING["v"] = _sp.push_grading(_sp.process_rows())
+            _PUSH_GRADING["v"] = _sp.push_grading(_sp.process_rows(), self_pid=os.getpid())
             _PUSH_GRADING["at"] = now
         return _PUSH_GRADING["v"][0] is True
     except Exception:

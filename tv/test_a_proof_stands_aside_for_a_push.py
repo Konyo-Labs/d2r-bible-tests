@@ -70,6 +70,17 @@ class PushGrading(unittest.TestCase):
         self.assertIsNone(got, "a process list nobody read was given a verdict")
         self.assertIn("could not be read", why)
 
+    def test_the_push_that_is_running_the_asker_is_not_one_to_yield_to(self):
+        """CAUGHT BY THE v3861 PUSH ITSELF: a law inside the pre-push asked the judge, saw that very push, and read
+        "yield" on an idle fixture. A hook that is an ancestor of the asking process is the push running it."""
+        rows = _table(("800", "500", 300, GIT_PUSH), ("801", "800", 299, HOOK),
+                      ("900", "801", 120, "/usr/bin/python3 tv/run_gates.py --fast"),
+                      ("901", "900", 30, "/usr/bin/python3 tv/test_control.py"))
+        self.assertIs(SP.push_grading(rows, self_pid="901")[0], False,
+                      "a law inside the gate yields to the push that is running it")
+        self.assertIs(SP.push_grading(rows, self_pid="700")[0], True,
+                      "his console (no hook above it) stopped seeing a real push")
+
     def test_naming_the_hook_is_not_running_it(self):
         rows = _table(("820", "500", 900, "grep -n pre-push hooks/pre-push"), ("821", "500", 900, "git log --grep push"))
         self.assertEqual(SP.push_grading(rows)[0], False)
@@ -147,6 +158,11 @@ class TheConsoleYieldsAndSaysWhy(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3861 - a law inside the pre-push yields to the push that is running it (an idle fixture reads busy)",
+     "file": "tv/self_prove.py",
+     "find": "            if pid in mine:\n                continue                       # the push that is running THIS process (a law inside the gate)\n",
+     "replace": "",
+     "matches": 1},
     {"why": "v3861 - a running proof no longer yields to a push grading on this PC: it runs the same suites beside the gate",
      "file": "tv/control_app.py",
      "find": "    if _a_push_is_grading():        # v3861 - a push grading on this PC goes first; the proof waits for it\n"

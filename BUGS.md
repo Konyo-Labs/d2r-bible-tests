@@ -138,7 +138,10 @@ running beside the push's test_control; stand_aside() stopped a proof only for h
 only refuses to START one on a busy machine. A pre-push hook or git push alive 60 s on this PC now makes the stand-aside
 judge yield and the card names it. The prover's own law running the hook in a fixture never counts (ancestry carries
 -X tvd_self_prove), a ci push over in seconds never counts, an unreadable process list is UNKNOWN. Law
-test_a_proof_stands_aside_for_a_push (five red-proofs).
+test_a_proof_stands_aside_for_a_push (five red-proofs). CAUGHT BY ITS OWN FIRST PUSH: inside the pre-push a law
+asked the judge, saw that very push, and read "yield" on an idle fixture (8 cases across two laws; green on CI,
+where no push runs). A hook that is an ANCESTOR of the asking process is the push running it and never counts;
+reproduced under a 62-s-old fake hook: 8 red without the rule, 26 green with it (sixth red-proof).
 ### REG-3146 - ON WINDOWS THE d2jsp LAMP COULD NEVER TURN GREEN, AND ITS LOGIN WINDOW CLOSED ITSELF (v3861)
 His report 2026-11-05: the login "kept closing", and after signing in through Chrome the lamp stayed grey. MEASURED on
 the work ALT (Chrome 156): (1) run(argv, timeout=5) on a Chrome that was not already open waited on the browser itself
