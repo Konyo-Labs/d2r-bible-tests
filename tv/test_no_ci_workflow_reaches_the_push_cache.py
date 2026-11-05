@@ -29,12 +29,16 @@ class NoCiWorkflowReachesThePushCache(unittest.TestCase):
 
     def test_no_workflow_runs_a_push_time_prove_or_names_the_cache(self):
         wf = os.path.join(ROOT, ".github", "workflows")
-        names = sorted(os.listdir(wf)) if os.path.isdir(wf) else []
+        # v3863 - only workflow files: a stray .DS_Store in the folder is not a workflow (and the unkeyable ratchet keys a
+        # filtered listing by what it reads)
+        names = sorted(n for n in os.listdir(wf) if n.endswith((".yml", ".yaml"))) if os.path.isdir(wf) else []
         self.assertTrue(names, "PREMISE: no CI workflow was found to read")
         for n in names:
             with io.open(os.path.join(wf, n), encoding="utf-8", errors="replace") as fh:
                 text = fh.read()
-            if n == "proof-keys-shards.yml":
+            # v3862 (REG-3165) - proof-keys-windows.yml proves the published commit in Windows shards by the SAME
+            # mechanism (its own fresh per-shard cache, --proof-shard on every --push line), so the same rules hold it
+            if n in ("proof-keys-shards.yml", "proof-keys-windows.yml"):
                 # REG-2588 - the ONE exception: a proof shard proves at push time into its OWN fresh cache (REG-2585
                 # refuses one that already exists). Every --push line must be a shard's, and the cache may be named only
                 # where its fresh per-shard path is set - or, REG-2961, as the shard's READ-ONLY seed (HEART2_SHARD_SEED:

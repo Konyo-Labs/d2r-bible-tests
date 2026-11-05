@@ -94,6 +94,7 @@ def _lists_itself(fn):
 EXPOSED = {
     "test_a_frame_index_lists_each_folder_once.py": "walks only the scratch tree it built (the verbatim reference walk)",
     "vault_fixture_reels.py": "walks the synthetic reel tree it just materialised in its own scratch",
+    "test_no_python_door_writes_owned_without_the_door.py": "its '.*' is an EXCLUSION (startswith('.') skips the entry) and it reads only the tv/*.py product files it keeps, so .DS_Store is never counted",
     "corroborate.py": "lists his ledger backups and his footage: outside the tree, or a dir no sandbox carries - never banked",
     "test_the_shipped_packs_are_staged_not_his_live_footage.py":
         "censuses fixtures/ by name and size ON PURPOSE (a pack's cap); a gitignored file there would count unkeyed - "

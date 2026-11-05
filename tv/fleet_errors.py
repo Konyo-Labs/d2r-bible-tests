@@ -26,7 +26,7 @@ if HERE not in sys.path:
 from console_safe import enable as _console_safe_enable  # noqa: E402 - a cp1255 console must survive its own report
 _console_safe_enable()
 SEEN = os.path.join(HERE, ".fleet_errors_seen.json")
-FLEET_URL = "http://127.0.0.1:17772/api/fleet"
+FLEET_PATH = "/api/fleet"               # asked of THIS console through console_port's one helper, never a port by name
 
 
 def open_faults(fleet):
@@ -69,7 +69,12 @@ def summary(new):
     return "%d new - %s%s" % (len(new), head, more)
 
 
-def _fetch(url=FLEET_URL, urlopen=None):
+def _fetch(url=None, urlopen=None):
+    if url is None:
+        import console_port as _cp
+        url = _cp.url(FLEET_PATH)
+        if url is None:
+            return None                   # no console this process belongs to: nobody is asked
     try:
         with (urlopen or urllib.request.urlopen)(url, timeout=8) as r:
             return json.loads(r.read().decode("utf-8", "replace"))

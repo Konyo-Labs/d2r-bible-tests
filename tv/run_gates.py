@@ -13092,7 +13092,7 @@ GATES = [
     Gate("test_no_ci_workflow_reaches_the_push_cache",
          [sys.executable, os.path.join(HERE, "test_no_ci_workflow_reaches_the_push_cache.py")], 300,
          needs_app=False,
-         why="#173 (REG-2939) - no CI workflow runs a push-time prove or names .heart2_cache except a proof shard's own fresh cache; moved out of the cache law because it lists .github/workflows, so that law's 27 proofs can be saved"),
+         why="#173 (REG-2939) - no CI workflow runs a push-time prove or names the push-time proof cache, except a proof shard's own fresh one; moved out of the cache law because it lists .github/workflows, so that law's 27 proofs can be saved"),
     Gate("test_no_law_opens_the_real_console",
          [sys.executable, os.path.join(HERE, "test_no_law_opens_the_real_console.py")], 300,
          needs_app=False,
