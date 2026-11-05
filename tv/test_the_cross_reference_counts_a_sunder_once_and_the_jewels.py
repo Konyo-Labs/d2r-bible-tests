@@ -156,8 +156,29 @@ class TheConsoleComparesBothSides(unittest.TestCase):
         self.assertIn("not judged yet", note)
         self.assertIn("Defender's Bile", note)
 
+    def test_a_jewel_mask_missing_only_from_the_cache_is_read_again(self):
+        """v3866 (the #231 eye on v3861) - Dean's cached row predates his colossal mask; the forced read has it."""
+        stale = {"uniques": self.masks_dean["uniques"]}
+        forced = []
+
+        def presence(force=False):
+            forced.append(force)
+            return {"ok": True, "online": [{"machine": "dean-box", "nickname": "Dean", "ver": "v3861",
+                                            "masks": (self.masks_dean if force else stale)}], "offline": []}
+        CA.fleet_presence = presence
+        r = CA.fleet_compare("dean-box", "uniques")
+        self.assertTrue(r.get("ok"), r.get("why"))
+        self.assertIn(True, forced, "a jewel mask absent from a CACHED row was said absent without one forced read")
+        self.assertTrue(r.get("colossalJudged"), r.get("colossalWhy"))
+        self.assertIn("Protector's Stone", r["theyHaveIDont"])
+
 
 RED_PROOF = [
+    {"why": "v3866 (#231 on v3861) - a jewel mask missing only from the cached row is never read again",
+     "file": "tv/control_app.py",
+     "find": "        if not ((them.get(\"masks\") or {}) or {}).get(\"colossal\") and not _forced:\n",
+     "replace": "        if False:\n",
+     "matches": 1},
     {"why": "v3861 - the uniques compare stops folding: one sunder lands on both sides again",
      "file": "tv/control_app.py",
      "find": "                      fold=(_fm.chronicle_key if ledger == \"uniques\" else None))\n",
@@ -170,7 +191,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3861 - the six colossal jewels never reach the compare: Defender's Bile cannot be a both-need row",
      "file": "tv/control_app.py",
-     "find": "        out = _fleet_merge_colossal(out, them)\n",
+     "find": "        out = _fleet_merge_colossal(out, _cthem)\n",
      "replace": "        pass\n",
      "matches": 1},
     {"why": "v3861 - the facet split is not counted, so the both-need column refuses again",

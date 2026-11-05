@@ -46405,9 +46405,11 @@ def fleet_compare(machine, ledger="sets"):
     # So a miss earns exactly one authoritative re-read before the sentence is allowed to be said.
     # Only if the FORCED read still has no mask is "he has not reported" a statement of fact.
     # [[stale-reading]] [[unknown-stays-unknown]]
+    _forced = False
     if their_mask is None:
         try:
             _fresh = fleet_presence(force=True)
+            _forced = True
             if isinstance(_fresh, dict):
                 _rows2 = list(_fresh.get("online") or []) + list(_fresh.get("offline") or [])
                 _them2 = next((r for r in _rows2
@@ -46428,7 +46430,22 @@ def fleet_compare(machine, ledger="sets"):
     out = _fm.compare(mine_mask, their_mask, roster, fp,
                       fold=(_fm.chronicle_key if ledger == "uniques" else None))
     if ledger == "uniques" and out.get("ok"):
-        out = _fleet_merge_colossal(out, them)
+        # v3866 (the #231 eye on v3861) - THE JEWELS' MASK EARNS THE SAME ONE FORCED RE-READ. A cached row that holds the
+        # uniques mask was never re-read, so a row cached before the peer published colossal said "not judged - they
+        # have not published" from the cache. Absent in the cache is not absent in the world (v2814); only a forced read
+        # that still has none may say so. The uniques compare above keeps the row it was made from.
+        _cthem = them
+        if not ((them.get("masks") or {}) or {}).get("colossal") and not _forced:
+            try:
+                _fresh = fleet_presence(force=True)
+                if isinstance(_fresh, dict):
+                    _rows3 = list(_fresh.get("online") or []) + list(_fresh.get("offline") or [])
+                    _them3 = next((r for r in _rows3 if str(r.get("machine") or "") == machine), None)
+                    if _them3 is not None and ((_them3.get("masks") or {}) or {}).get("colossal"):
+                        _cthem = _them3
+            except Exception:
+                pass
+        out = _fleet_merge_colossal(out, _cthem)
     out["machine"] = machine
     out["ledger"] = ledger
     out["who"] = str(them.get("nickname") or them.get("machine") or "")[:40]
