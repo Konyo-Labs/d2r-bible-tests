@@ -222,12 +222,16 @@ def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="")
 
 
 def load_state(tv_dir=None):
+    """-> the record ({} when absent) | None (it exists and will not read: UNKNOWN - owed() then asks again, which is
+    safe: an import is all or nothing and takes nothing twice)"""
     try:
         with io.open(os.path.join(tv_dir or HERE, STATE_NAME), encoding="utf-8") as fh:
             body = json.load(fh)
-        return body if isinstance(body, dict) else {}
-    except Exception:
+    except FileNotFoundError:
         return {}
+    except (OSError, ValueError):
+        return None
+    return body if isinstance(body, dict) else None
 
 
 def save_state(body, tv_dir=None):

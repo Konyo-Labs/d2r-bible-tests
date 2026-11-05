@@ -191,7 +191,8 @@ class TheBootWindowHasAName(unittest.TestCase):
     def test_the_worker_carries_starting_and_keeps_the_census_null(self):
         got = S.TheRelayShapesIt._shape(self, {"tree": "ok", "reels": 3, "river": {
             "lanes": None, "stuck": None, "heart": {"census": None, "key": "starting", "blind": None}}})
-        self.assertEqual(got["river"]["heart"], {"census": None, "key": "starting", "blind": None})
+        # v3862 (REG-3160) - the meter and the why ride beside the census; a beacon that sends none reads them null
+        self.assertEqual(got["river"]["heart"], {"census": None, "key": "starting", "blind": None, "owed": None, "ratePerH": None, "etaS": None, "why": None})
 
 
 class TheRowSaysStartingNotUnknown(unittest.TestCase):

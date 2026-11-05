@@ -7695,6 +7695,8 @@ def env_load(path=None):
 
 def env_save(rec, path=None):
     p = path or _env_path()
+    if os.path.basename(p) != ENV_NAME:      # heart2's own record, beside its census, refused by name like CACHE
+        return False
     tmp = "%s.%d.tmp" % (p, os.getpid())
     try:
         with io.open(tmp, "w", encoding="utf-8") as fh:

@@ -88,14 +88,18 @@ def main(argv=None, fetch=None, seen_path=None):
             print("%s · %s · %s · %s" % f)
         return 0
     path = seen_path or SEEN
+    note = ""
     try:
         with io.open(path, encoding="utf-8") as fh:
             seen = json.load(fh)
-        seen = seen if isinstance(seen, dict) else {}
-    except Exception:
+    except FileNotFoundError:
         seen = {}
+    except (OSError, ValueError):
+        seen = None                       # UNKNOWN: every open fault is shown again, and the line says why
+    if not isinstance(seen, dict):
+        seen, note = {}, " (the overwatch watermark could not be read - every open fault is shown)"
     new, keep = new_since(faults, seen)
-    line = summary(new)
+    line = summary(new) + (note if new else "")
     if line:
         print(line)
     try:

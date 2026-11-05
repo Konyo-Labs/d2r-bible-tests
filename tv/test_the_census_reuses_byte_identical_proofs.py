@@ -290,8 +290,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "#186 - the lane spawns the census without --reuse",
      "file": "tv/self_prove.py",
-     "find": "           + ((list(names) + [\"--slice\"]) if names else []) + [\"--reuse\"])\n",
-     "replace": "           + ((list(names) + [\"--slice\"]) if names else []))\n",
+     "find": "           + ([\"--reuse\"] if reuse else []))\n",
+     "replace": "           )\n",
      "matches": 1},
 ]
 

@@ -168,7 +168,8 @@ class TestStartingNeverHidesAKnownStaleCensus(unittest.TestCase):
         got = _relay({"tree": "ok", "reels": 1, "river": {
             "lanes": None, "stuck": None,
             "heart": {"census": "missing", "key": "stale-at-boot", "blind": None}}})
-        self.assertEqual(got["river"]["heart"], {"census": "missing", "key": "stale-at-boot", "blind": None})
+        # v3862 (REG-3160) - the meter and the why ride beside the census; a beacon that sends none reads them null
+        self.assertEqual(got["river"]["heart"], {"census": "missing", "key": "stale-at-boot", "blind": None, "owed": None, "ratePerH": None, "etaS": None, "why": None})
 
     def test_the_red_proof_finds_match_once(self):
         for proof in RED_PROOF:

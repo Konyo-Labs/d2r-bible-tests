@@ -181,6 +181,15 @@ jobs:
       - name: The set is whole - the proof bank may publish it (v3862)
         id: whole
         run: echo "whole=true" >> "$GITHUB_OUTPUT"
+      - name: Pack this commit's proofs for the bank (v3862, read-only - the job that writes runs no repo code)
+        run: python3 tv/proof_shard.py --bank shards --out "$RUNNER_TEMP/bank/proofs-${GITHUB_SHA}.tgz"
+      - name: Hand the bank its bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-bank-${{ github.sha }}
+          path: ${{ runner.temp }}/bank/
+          if-no-files-found: error
+          retention-days: 3
       - name: May this commit publish? (REG-2962, Publish's gate only)
         # every law the push changed since the last commit Publish published must be PROVEN here (or be one only the
         # Mac can prove, which the hook proved); no last publish or no diff -> every law is this push's
@@ -212,19 +221,11 @@ jobs:
       contents: write
       actions: read
     steps:
-      - name: Fetch the whole set
+      - name: Fetch the bundle the fan-in packed
         uses: actions/download-artifact@v5
         with:
-          name: proof-shards-${{ github.sha }}
-          path: shards
-      - name: Pack the shard caches, nothing else
-        run: |
-          cd shards
-          ls -d proof-shard-*/ >/dev/null
-          find . -path './proof-shard-*/.heart2_cache.json' -type f | sed 's|^\./||' | sort > ../members.txt
-          test -s ../members.txt
-          tar -czf "../proofs-${GITHUB_SHA}.tgz" -T ../members.txt
-          echo "packed $(wc -l < ../members.txt) shard cache(s), $(du -h "../proofs-${GITHUB_SHA}.tgz" | cut -f1)"
+          name: proof-bank-${{ github.sha }}
+          path: bank
       - name: Publish to the proof bank, keep the newest 40
         env:
           GH_TOKEN: ${{ github.token }}
@@ -233,6 +234,6 @@ jobs:
           gh release view proof-bank >/dev/null 2>&1 || gh release create proof-bank --prerelease --latest=false \
             --title "Proof bank" --notes "Each commit's proofs, proved once on GitHub, for every PC to import (tv/proof_release.py)." \
             || gh release view proof-bank >/dev/null
-          gh release upload proof-bank "proofs-${GITHUB_SHA}.tgz" --clobber
+          gh release upload proof-bank "bank/proofs-${GITHUB_SHA}.tgz" --clobber
           gh api "repos/$GH_REPO/releases/tags/proof-bank" --jq '.assets | sort_by(.created_at) | reverse | .[40:] | .[].id' \
             | while read -r id; do gh api -X DELETE "repos/$GH_REPO/releases/assets/$id" || true; done

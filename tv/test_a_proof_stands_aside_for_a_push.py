@@ -186,7 +186,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3861 - the guard stands aside for a push and the card does not say why",
      "file": "tv/control_app.py",
-     "find": "            if _a_push_is_grading() and not _sp_playing_here():\n"
+     "find": "            if _a_push_is_grading() and not _sp_proof_playing_here():\n"
              "                r = dict(r, standAside=PUSH_STAND_ASIDE)\n",
      "replace": "",
      "matches": 1},

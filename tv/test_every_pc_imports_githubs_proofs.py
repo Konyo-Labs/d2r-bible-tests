@@ -362,10 +362,29 @@ class TheBankJob(unittest.TestCase):
         self.assertLess(a, b, "the set is called whole before the fan-in checked it")
 
     def test_it_packs_only_shard_caches_under_this_commit(self):
-        self.assertIn("find . -path './proof-shard-*/.heart2_cache.json' -type f", self.bank)
-        self.assertIn('"proofs-${GITHUB_SHA}.tgz"', self.bank)
+        fan = self.wf[self.wf.index("\n  fan-in:\n"):self.wf.index("\n  proof-bank:\n")]
+        self.assertIn('python3 tv/proof_shard.py --bank shards --out "$RUNNER_TEMP/bank/proofs-${GITHUB_SHA}.tgz"', fan,
+                      "the bundle is no longer packed by the read-only fan-in")
+        self.assertIn('"bank/proofs-${GITHUB_SHA}.tgz"', self.bank)
         self.assertIn("gh release upload proof-bank", self.bank)
         self.assertIn(PR.RELEASE_TAG, self.bank)
+        self.assertNotIn("python3 tv/", self.bank, "the job that may write runs repo code")
+
+    def test_the_bank_packs_only_stores_and_the_pc_takes_exactly_that(self):
+        import proof_shard as PS
+        d = tempfile.mkdtemp(prefix="bank-")
+        try:
+            for k in (1, 2):
+                os.makedirs(os.path.join(d, "shards", "proof-shard-%d" % k))
+                io.open(os.path.join(d, "shards", "proof-shard-%d" % k, PS.STORE_NAME), "w").write("{}")
+                io.open(os.path.join(d, "shards", "proof-shard-%d" % k, "prove.log"), "w").write("log")
+            out = os.path.join(d, "bank", "b.tgz")
+            self.assertEqual(PS.bank(os.path.join(d, "shards"), out, say=lambda *a: None), 0)
+            paths, why = PR.safe_extract(out, os.path.join(d, "x"))
+            self.assertIsNone(why, "the PC refused the bundle the bank packed")
+            self.assertEqual(len(paths), 2, "the bank packed something besides the two stores")
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
 
     def test_publish_lets_the_bank_write(self):
         job = self.pub[self.pub.index("\n  proof:\n"):self.pub.index("\n  deploy:\n")]
@@ -396,7 +415,8 @@ class TheWindowsSet(unittest.TestCase):
         self.assertIn("exit 0", shard)
         self.assertEqual(self.wf.count("contents: write"), 1)
         self.assertIn("contents: write", self.wf[self.wf.index("\n  proof-bank:\n"):])
-        self.assertIn('"proofs-${HEAD_SHA}-win32.tgz"', self.wf)
+        self.assertIn('"bank/proofs-${HEAD_SHA}-win32.tgz"', self.wf)
+        self.assertIn("--bank shards --out", self.wf[self.wf.index("\n  fan-in:\n"):self.wf.index("\n  proof-bank:\n")])
         self.assertIn("runs-on: windows-latest", shard)
 
 
@@ -420,8 +440,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3862 - an absent bundle is never asked again: the PC never imports its commit",
      "file": "tv/proof_release.py",
-     "find": "s.get(\"state\") in (\"imported\", \"refused\"))",
-     "replace": "s.get(\"state\") in (\"imported\", \"refused\", \"absent\"))",
+     "find": "    return [s.get(\"flavor\") or \"\"] if s.get(\"state\") == \"imported\" else []",
+     "replace": "    return [s.get(\"flavor\") or \"\"] if s.get(\"state\") in (\"imported\", \"absent\") else []",
      "matches": 1},
     {"why": "v3862 - the import runs during a push grading on this PC",
      "file": "tv/control_app.py",

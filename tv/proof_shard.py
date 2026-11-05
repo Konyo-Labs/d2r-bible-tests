@@ -753,6 +753,27 @@ def census(root, head=None, n=None):
     return "\n".join(out) + "\n", tot
 
 
+def bank(root, out, say=print):
+    """v3862 (REG-3155) - the proof bank's bundle: ONLY each shard dir's STORE_NAME, as proof-shard-<k>/STORE_NAME, in one
+    .tgz at `out` - what tv/proof_release.safe_extract takes and nothing it would refuse. Built in the fan-in (read-only),
+    so the one job that may write runs no repo code and no workflow names the cache file. -> exit 0 packed, 2 nothing"""
+    import tarfile
+    members = []
+    for d in sorted(os.listdir(root)) if os.path.isdir(root) else []:
+        p = os.path.join(root, d, STORE_NAME)
+        if os.path.isfile(p) and not os.path.islink(p):
+            members.append((p, d + "/" + STORE_NAME))
+    if not members:
+        say("  ✗ no shard store under %s - nothing to bank" % root)
+        return 2
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    with tarfile.open(out, "w:gz") as tf:
+        for p, arc in members:
+            tf.add(p, arcname=arc, recursive=False)
+    say("  REG-3155: %d shard store(s) packed into %s (%d bytes)" % (len(members), os.path.basename(out), os.path.getsize(out)))
+    return 0
+
+
 def main(argv=None):
     import argparse
     import subprocess
@@ -770,7 +791,12 @@ def main(argv=None):
     ap.add_argument("--deploy-verdict", dest="verdict", default=None,
                     help="REG-2962: dir of shard artifacts -> may this commit publish (with --shards, --head, --base)")
     ap.add_argument("--base", default=None, help="with --deploy-verdict: the last commit that published (empty: UNKNOWN)")
+    ap.add_argument("--bank", default=None, help="v3862: dir of shard artifacts -> one proof-bank bundle (--out FILE.tgz)")
     a = ap.parse_args(argv)
+    if a.bank:
+        if not a.out:
+            ap.error("--bank needs --out FILE")
+        return bank(a.bank, a.out)
     if a.merge:
         if not a.out:
             ap.error("--merge-shards needs --out FILE")

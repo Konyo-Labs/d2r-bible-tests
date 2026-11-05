@@ -7132,12 +7132,16 @@ class TestV2283TheRosterMustNotSpendItselfToDeath(unittest.TestCase):
                                 "presence TTL %ds does not cover two missed %ds refreshes" % (t, r))
 
     def test_the_daily_write_budget_fits_UNDER_the_free_tier(self):
-        """The arithmetic that failed before, done here so it cannot drift back over."""
+        """The arithmetic that failed before, done here so it cannot drift back over. v3862 (REG-3161): his account is
+        on Workers Paid (his Billing page, 2026-11-05); the ceiling is the fleet's OWN 10,000 a day (roster.js KV_WRITES),
+        a third of what the plan includes - read from the worker, never typed here - and the fleet is sized for SIX."""
         import re
         r = int(re.search(r"REFRESH_S\s*=\s*(\d+)", self.js).group(1))
-        # ⚠ FOUR, not three. A budget sized exactly to today's fleet fails the day he adds a
+        _rjs = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "functions", "api",
+                                 "roster.js"), encoding="utf-8").read()
+        # ⚠ SIX, not today's four. A budget sized exactly to today's fleet fails the day he adds a
         # machine, and that failure looks like everyone going offline at once.
-        machines, ceiling = 4, 1000
+        machines, ceiling = 6, int(re.search(r"const KV_WRITES = (\d+);", _rjs).group(1))
         worst = machines * (3600.0 / r) * 24 * 2      # both keys, every refresh, all day
         self.assertLess(worst, ceiling,
                         "worst-case %d writes/day for %d machines exceeds the %d/day free tier — "
@@ -46884,10 +46888,13 @@ class TheSelfProveYieldsToASweep(unittest.TestCase):
     def setUp(self):
         self._cs = ca.chronicle_sweep_state
         self._pl = ca._sp_playing_here
+        self._ppl = ca._sp_proof_playing_here           # v3862 - the proof lane's own judge (the local game only)
+        ca._sp_proof_playing_here = lambda: False       # never this machine's real game in a law
 
     def tearDown(self):
         ca.chronicle_sweep_state = self._cs
         ca._sp_playing_here = self._pl
+        ca._sp_proof_playing_here = self._ppl
 
     def test_a_running_sweep_makes_the_proof_stand_aside(self):
         ca._sp_playing_here = lambda: False
@@ -46902,7 +46909,8 @@ class TheSelfProveYieldsToASweep(unittest.TestCase):
         self.assertFalse(ca._sp_yield_here())
 
     def test_playing_with_no_sweep_still_yields(self):
-        ca._sp_playing_here = lambda: True
+        # v3862 (REG-3153, prove beside cloud) - the proof yields to the PROOF judge (the local game), never a cloud client
+        ca._sp_proof_playing_here = lambda: True
         ca.chronicle_sweep_state = lambda: {"running": False}
         self.assertTrue(ca._sp_yield_here())
 

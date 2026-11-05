@@ -422,8 +422,13 @@ class TheWorkerChecksTheBytesItWasSent(unittest.TestCase):
             self.assertIn(word, r["why"])
             self.assertIn(SIGNATURE_HINT, r["hint"], "step %d's refusal carried the wrong hint" % i)
             self.assertNotIn(STORAGE_HINT, r["hint"])
-            self.assertEqual(s[i]["puts"], [], "a refused step %d wrote %r" % (i, s[i]["puts"]))
-            self.assertEqual(s[i]["after"], s[i]["before"], "a refused step %d changed the KV" % i)
+            # v3862 (REG-3163) - a VALID signature under a different key leaves ONE pending request for his approval;
+            # it never touches the row or the registered key. Every other refusal writes nothing.
+            req = ["rosterkeyreq:" + OWNER] if word == "different key" else []
+            self.assertEqual(s[i]["puts"], req, "a refused step %d wrote %r" % (i, s[i]["puts"]))
+            self.assertEqual({k: v for k, v in s[i]["after"].items() if not k.startswith("rosterkeyreq:")},
+                             {k: v for k, v in s[i]["before"].items() if not k.startswith("rosterkeyreq:")},
+                             "a refused step %d changed the KV beyond a pending request" % i)
         self.assertEqual(s[3]["reply"].get("offered"), RS.key_id(pub_b))
         self.assertEqual(s[3]["reply"].get("keyId"), RS.key_id(pub_a))
         self.assertEqual((s[5]["reply"]["ok"], s[5]["reply"]["intentVerified"], s[5]["reply"]["stored"]),
@@ -1457,7 +1462,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2510 (#95): a refused publish still writes the row before it answers ok:false",
      "file": "functions/api/roster.js",
-     "find": "  if (intent.refused) return refuseSignature(intent, sig);\n",
+     "find": "    return refuseSignature(intent, sig, asked);\n",
      "replace": "  if (intent.refused) { await kv.put(key, JSON.stringify({ owner: owner, t: Date.now(), day: \"2000-01-01\", "
                 "n: 1, hash: \"forged\", sections: shaped }), { expirationTtl: TTL_S }); return refuseSignature(intent, sig); }\n",
      "matches": 1, "needs": "node"},

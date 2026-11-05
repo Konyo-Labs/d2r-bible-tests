@@ -514,7 +514,9 @@ class AProvenVerdictIsReusedOnlyOnIdenticalBytes(_Case):
         for n in names:
             with io.open(os.path.join(wf, n), encoding="utf-8", errors="replace") as fh:
                 text = fh.read()
-            if n == "proof-keys-shards.yml":
+            # v3862 (REG-3165) - proof-keys-windows.yml proves the published commit in Windows shards by the SAME
+            # mechanism (its own fresh per-shard cache, --proof-shard on every --push line), so the same rules hold it
+            if n in ("proof-keys-shards.yml", "proof-keys-windows.yml"):
                 # REG-2588 - the ONE exception: a proof shard proves at push time into its OWN fresh cache (REG-2585
                 # refuses one that already exists). Every --push line must be a shard's, and the cache may be named only
                 # where its fresh per-shard path is set - or, REG-2961, as the shard's READ-ONLY seed (HEART2_SHARD_SEED:

@@ -411,7 +411,8 @@ export async function onRequestPost(context) {
   const intent = intentOf(owner, registered, sig);
   if (intent.refused) {
     // v3862 (item 11) - a valid signature under another key is a new PC asking for this label: remember it for approval
-    const asked = (registered && sig.state === "valid")
+    // only a READABLE registered key can be replaced by an approval - an unreadable one stays a refusal and writes nothing
+    const asked = (registered && intent.registeredKeyId && sig.state === "valid")
       ? await noteKeyRequest(kv, owner, sig, intent.registeredKeyId, Date.now()) : false;
     return refuseSignature(intent, sig, asked);
   }

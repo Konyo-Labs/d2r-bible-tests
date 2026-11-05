@@ -110,12 +110,16 @@ def diagnose(miss, fn_name, platform, run=None, env=None, which=None):
 
 
 def load(path):
+    """-> the state ({} when the file is absent) | None (it exists and will not read: UNKNOWN - nothing is asked over it,
+    or a corrupt file would re-spend the day's allowance on faults already diagnosed)"""
     try:
         with io.open(path, encoding="utf-8") as fh:
             st = json.load(fh)
-        return st if isinstance(st, dict) else {}
-    except Exception:
+    except FileNotFoundError:
         return {}
+    except (OSError, ValueError):
+        return None
+    return st if isinstance(st, dict) else None
 
 
 def save(path, st):
@@ -132,7 +136,10 @@ def run_due(misses, fn_of, platform, path=None, now_s=None, ask=None):
     """One pass: forget cleared faults, diagnose what is due, record. -> {check: summary} for every miss known here."""
     path = path or os.path.join(HERE, STATE_NAME)
     now_s = time.time() if now_s is None else now_s
-    st = forget_cleared(load(path), misses)
+    prev = load(path)
+    if prev is None:
+        return {}                         # UNKNOWN state: spend nothing, overwrite nothing
+    st = forget_cleared(prev, misses)
     said = {}
     for m in due(misses, st, now_s):
         rec = (ask or diagnose)(m, fn_of(m.get("check")), platform)

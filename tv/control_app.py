@@ -22684,7 +22684,7 @@ def _self_prove_free_view(r, owed="a proof is owed and memory is short"):
         if not isinstance(r, dict) or r.get("key") != "low-memory":
             return r
         mode = (window_mode_payload() or {}).get("mode")
-        ok, why = view_release_for_proof(r.get("key"), _sp_proof_playing_here(), mode, _os_input_idle_s())
+        ok, why = view_release_for_proof(r.get("key"), _sp_playing_here(), mode, _os_input_idle_s())   # v3862: his window stays while he plays in ANY form, cloud too
         r = dict(r, viewRelease=why)
         if ok:
             q = _quit_window_keeps_service(owed)

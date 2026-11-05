@@ -29,7 +29,7 @@ _console_safe_enable()
 import repair_diagnose as RD  # noqa: E402
 
 NOW = 1_800_000_000.0
-MISS = {"check": "the ledger backup covers every store", "why": "C:\\Users\\dean\\x.json unreadable"}
+MISS = {"check": "the ledger backup covers every store", "why": "C:\\Users\\<name>\\x.json unreadable"}
 
 
 def _ran(log, out="CAUSE: the backup root moved\nFIX: point it back\nVERIFY: the row reads ok\nCONFIDENCE: medium", rc=0):
@@ -55,7 +55,7 @@ class TheAsk(unittest.TestCase):
         argv = log[0]
         self.assertEqual(argv[argv.index("--allowedTools") + 1], "Read", "the diagnosis may do more than read")
         self.assertIn("--max-turns", argv)
-        self.assertNotIn("dean", argv[-1], "the prompt carries his user folder")
+        self.assertNotIn("<name>", argv[-1], "the prompt carries a user folder")
         self.assertTrue(r["ok"])
         self.assertEqual(r["summary"], "the backup root moved")
 

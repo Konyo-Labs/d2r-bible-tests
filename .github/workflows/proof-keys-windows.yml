@@ -117,6 +117,15 @@ jobs:
       - name: The set is whole
         id: whole
         run: echo "whole=true" >> "$GITHUB_OUTPUT"
+      - name: Pack this commit's Windows proofs for the bank (read-only)
+        run: python3 tv/proof_shard.py --bank shards --out "$RUNNER_TEMP/bank/proofs-${HEAD_SHA}-win32.tgz"
+      - name: Hand the bank its bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-bank-win32-${{ env.HEAD_SHA }}
+          path: ${{ runner.temp }}/bank/
+          if-no-files-found: error
+          retention-days: 3
 
   proof-bank:
     name: proof bank - publish this commit's Windows proofs
@@ -129,18 +138,11 @@ jobs:
       contents: write
       actions: read
     steps:
-      - name: Fetch the whole set
+      - name: Fetch the bundle the fan-in packed
         uses: actions/download-artifact@v5
         with:
-          name: proof-shards-win32-${{ env.HEAD_SHA }}
-          path: shards
-      - name: Pack the shard caches, nothing else
-        run: |
-          cd shards
-          find . -path './proof-shard-*/.heart2_cache.json' -type f | sed 's|^\./||' | sort > ../members.txt
-          test -s ../members.txt
-          tar -czf "../proofs-${HEAD_SHA}-win32.tgz" -T ../members.txt
-          echo "packed $(wc -l < ../members.txt) shard cache(s)"
+          name: proof-bank-win32-${{ env.HEAD_SHA }}
+          path: bank
       - name: Publish to the proof bank
         env:
           GH_TOKEN: ${{ github.token }}
@@ -149,4 +151,4 @@ jobs:
           gh release view proof-bank >/dev/null 2>&1 || gh release create proof-bank --prerelease --latest=false \
             --title "Proof bank" --notes "Each commit's proofs, proved once on GitHub, for every PC to import (tv/proof_release.py)." \
             || gh release view proof-bank >/dev/null
-          gh release upload proof-bank "proofs-${HEAD_SHA}-win32.tgz" --clobber
+          gh release upload proof-bank "bank/proofs-${HEAD_SHA}-win32.tgz" --clobber

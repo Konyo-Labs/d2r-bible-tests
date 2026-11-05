@@ -87,12 +87,11 @@ class TheBook(unittest.TestCase):
     def test_an_unknown_fault_is_listed_scrubbed_and_nothing_runs_for_it(self):
         log = []
         rows = [{"check": "the ledger backup covers every store", "state": "missing",
-                 "why": "C:\\Users\\dean\\d2r\\tv\\x.json and /Users/konyo/d2r/tv/y.json unreadable"}]
+                 "why": "C:\\Users\\<name>\\d2r\\tv\\x.json and /Users/<name>/d2r/tv/y.json unreadable"}]
         rep = RB.apply(rows, _doors(log), now_ms=NOW)
         self.assertEqual([m["check"] for m in rep["misses"]], ["the ledger backup covers every store"])
         why = rep["misses"][0]["why"]
-        self.assertNotIn("dean", why)
-        self.assertNotIn("konyo", why)
+        self.assertNotIn("<name>", why, "a user folder survived the scrub")
         self.assertIn("<path>", why)
         self.assertEqual(sorted(log), sorted(e["door"] for e in RB.ENTRIES if not e["check"]),
                          "something ran for a fault the book does not know")
@@ -197,8 +196,8 @@ class TheFleetSeesIt(unittest.TestCase):
         fn = "(" + src[i + len("    system: "):j - len("(body.system),")] + ")"
         body = {"tree": "ok", "reels": 1, "repair": {
             "ranAt": NOW, "fixed": 2,
-            "failed": [{"id": "node", "why": "C:\\Users\\dean\\AppData\\node.zip hash mismatch"}],
-            "misses": [{"id": "the ledger backup covers every store", "why": "/Users/konyo/d2r/tv/x.json unreadable"}]}}
+            "failed": [{"id": "node", "why": "C:\\Users\\<name>\\AppData\\node.zip hash mismatch"}],
+            "misses": [{"id": "the ledger backup covers every store", "why": "/Users/<name>/d2r/tv/x.json unreadable"}]}}
         js = _ws.prelude(src) + "var shape = %s; console.log(JSON.stringify(shape(%s)));" % (fn, json.dumps(body))
         r = subprocess.run(["node", "-"], input=js, capture_output=True, text=True, timeout=60)
         self.assertEqual(r.returncode, 0, r.stderr[:400])
@@ -207,8 +206,7 @@ class TheFleetSeesIt(unittest.TestCase):
         self.assertEqual(got["failed"][0]["id"], "node")
         self.assertEqual(got["misses"][0]["id"], "the ledger backup covers every store")
         flat = json.dumps(got)
-        self.assertNotIn("dean", flat, "a Windows user folder crossed into the fleet record")
-        self.assertNotIn("konyo", flat, "a Mac user folder crossed into the fleet record")
+        self.assertNotIn("<name>", flat, "a user folder crossed into the fleet record")
 
 
 @unittest.skipIf(__import__("shutil").which("node") is None, "node is absent - the card is UNMEASURED here")
@@ -318,8 +316,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3862 - the worker keeps a miss's why unscrubbed (a user folder reaches the fleet record)",
      "file": "functions/api/console.js",
-     "find": "            return id ? { id: id, why: txt(e.why, 200) } : null;\n",
-     "replace": "            return id ? { id: id, why: e.why } : null;\n",
+     "find": "            return id ? (d ? { id: id, why: txt(e.why, 200), diag: d } : { id: id, why: txt(e.why, 200) }) : null;\n",
+     "replace": "            return id ? (d ? { id: id, why: e.why, diag: d } : { id: id, why: e.why }) : null;\n",
      "matches": 1},
     {"why": "v3862 - the card stops counting a PC's unknown faults (nobody sees them without the line)",
      "file": "tv/control_ui.html",
