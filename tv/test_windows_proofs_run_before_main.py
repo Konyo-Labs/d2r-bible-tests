@@ -11,7 +11,15 @@ set is already in)", so it re-proved alone for hours after every ship. Held here
   * it starts from one seed job: the newest Windows set in the bank for ANOTHER commit plus this commit's own
     (tv/proof_seed.py --flavor win32 --prior) - a seed serves only byte-identical proofs - and is bounded like the
     Linux shards (job 75, step 70, heart2's deadline at job minute 55);
-  * newest_prior picks the newest asset of THIS flavor for another commit, never this one, never the other flavor.
+  * newest_prior picks the newest asset of THIS flavor for another commit, never this one, never the other flavor;
+  * (the second eye on v3865) ONE ROUND MUST FIT ITS BOUND, AND WHAT IT CANNOT FIT IS PROVED NEXT. MEASURED: v3863's 8
+    Windows shards ran 70.8-126.3 min of job each (805 job-minutes), and a set carries ~2% of its keys to the next version
+    (v3863 -> v3864: 179 of 8,053), so at 8 shards the 55-minute deadline would cut about half: 16 shards now, every one
+    in the matrix. A set that owes TIMEOUTs is bank=partial (never ok), so the round after Publish proves the rest; that
+    round first WAITS while this commit's ci/proof-keys round of the same workflow is still proving (never two rounds of
+    one set side by side) - its own run, other workflows and main's runs never hold it;
+  * GitHub fired nothing on the v3864 ci push (only the REQUIRED runs were dispatched), so tv/ship_when_green.py
+    dispatches the Windows set on ci/proof-keys-<v> like a missing required run - and never waits on it.
 Fixtures only - the bank listing and download are replaced; no network. RED_PROOF below.
 """
 import io
@@ -88,6 +96,104 @@ class TheWorkflowRunsBesideTheCiShards(unittest.TestCase):
         self.assertIn("export HEART2_PROVE_DEADLINE=$(( T0 + 55 * 60 ))", prove)
         self.assertIn('export HEART2_SHARD_SEED="$RUNNER_TEMP/heart2-seed/.heart2_cache.json"', prove)
         self.assertIn("path: ${{ runner.temp }}/heart2-seed", shard)
+
+
+class OneRoundFitsAndTheNextProvesTheRest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        with io.open(WF, encoding="utf-8") as fh:
+            cls.wf = _code(fh.read())
+
+    def test_sixteen_shards_every_one_in_the_matrix_all_at_once(self):
+        n = int(re.search(r'\n  PROOF_SHARDS: "(\d+)"\n', self.wf).group(1))
+        self.assertGreaterEqual(n, 16, "8 Windows shards cannot fit v3863's 805 job-minutes inside a 55-minute deadline")
+        shard = _job(self.wf, "shard")
+        got = [int(x) for x in re.search(r"\n        shard: \[([\d, ]+)\]\n", shard).group(1).split(",")]
+        self.assertEqual(got, list(range(1, n + 1)), "the matrix runs another N than the plan cuts")
+        self.assertEqual(int(re.search(r"\n      max-parallel: (\d+)\n", shard).group(1)), n,
+                         "half the shards wait for the other half - the set lands past the bound")
+
+    def test_after_publish_it_first_waits_for_this_commits_ci_round(self):
+        seed = _job(self.wf, "seed")
+        self.assertIn("WAIT_SIBLING: ${{ github.event_name == 'workflow_run' && github.workflow || '' }}", seed)
+        self.assertIn('${WAIT_SIBLING:+--wait-sibling "$WAIT_SIBLING" --wait-min 45}', seed)
+        self.assertGreaterEqual(int(re.search(r"\n    timeout-minutes: (\d+)\n", seed).group(1)), 50,
+                                "the seed job is killed while it waits")
+        self.assertIn("      actions: read\n", seed, "the seed job cannot read the runs it waits on")
+
+    def _runs(self, states):
+        return {"workflow_runs": [dict(name=n, head_branch=b, status=st, id=i) for n, b, st, i in states]}
+
+    def test_the_wait_holds_only_for_this_workflows_ci_round(self):
+        name = self.wf.split("\n", 1)[0].split("name:", 1)[1].strip()
+        clock = {"t": 0.0}
+        seq = [self._runs([(name, "ci/proof-keys-v3865", "in_progress", 1), (name, "main", "in_progress", 2),
+                           ("Publish — gates, review, then deploy", "main", "in_progress", 3)]),
+               self._runs([(name, "ci/proof-keys-v3865", "in_progress", 1), (name, "main", "in_progress", 2)]),
+               self._runs([(name, "ci/proof-keys-v3865", "completed", 1), (name, "main", "in_progress", 2)])]
+        asked = []
+
+        def get(path):
+            asked.append(path)
+            return seq[min(len(asked), len(seq)) - 1]
+        said = []
+        got = SEED.wait_for_sibling(SHA, name, get=get, sleep=lambda s: clock.update(t=clock["t"] + s),
+                                    clock=lambda: clock["t"], max_s=600, run_id=2, say=said.append)
+        self.assertEqual(got, "done", said)
+        self.assertEqual(len(asked), 3, "it stopped waiting while the ci round still proved, or waited on another run")
+        self.assertIn("head_sha=%s" % SHA, asked[0])
+        # main's own after-Publish run (another id) never holds it either
+        tick = lambda s: clock.update(t=clock["t"] + s)      # noqa: E731 - a wait that never ends still ends here
+        got = SEED.wait_for_sibling(SHA, name, get=lambda p: self._runs([(name, "main", "in_progress", 7)]),
+                                    sleep=tick, clock=lambda: clock["t"], max_s=600, run_id=2, say=said.append)
+        self.assertEqual(got, "done", "a main-branch run of this workflow held the round after Publish")
+        got = SEED.wait_for_sibling(SHA, name, get=lambda p: self._runs([(name, "ci/proof-keys-v3865", "queued", 9)]),
+                                    sleep=lambda s: clock.update(t=clock["t"] + s), clock=lambda: clock["t"],
+                                    max_s=120, run_id=2, say=said.append)
+        self.assertEqual(got, "timeout")
+        self.assertEqual(SEED.wait_for_sibling(SHA, name, get=lambda p: None, sleep=lambda s: None, clock=lambda: 0.0,
+                                               say=said.append), "unknown")
+        self.assertEqual(SEED.wait_for_sibling(SHA, name, get=lambda p: self._runs(
+            [(name, "ci/proof-keys-v3865", "in_progress", 2)]), sleep=tick, clock=lambda: clock["t"], max_s=600, run_id=2,
+            say=said.append), "done", "a run waited on itself")
+
+
+class ShipDispatchesTheWindowsSetBeside(unittest.TestCase):
+
+    def test_its_name_is_the_workflows_own(self):
+        import ship_when_green as S
+        with io.open(WF, encoding="utf-8") as fh:
+            name = fh.read().split("\n", 1)[0].split("name:", 1)[1].strip()
+        self.assertEqual(S.BESIDE.get(name), "proof-keys-windows.yml", "ship_when_green names a workflow that is not there")
+        self.assertEqual(S.dispatch_ref(name, "v3865"), "ci/proof-keys-v3865",
+                         "the Windows set is dispatched where its seed and cache are not")
+
+    def test_a_missing_windows_set_is_dispatched_and_never_waited_on(self):
+        import subprocess
+        import ship_when_green as S
+        name = sorted(S.BESIDE)[0]
+        clock = {"t": 0.0}
+        calls, said = [], []
+
+        def run(argv, **kw):
+            calls.append(argv)
+            if argv[:2] == ["git", "rev-parse"]:
+                return subprocess.CompletedProcess(argv, 0, SHA + "\n", "")
+            return subprocess.CompletedProcess(argv, 0, "", "")
+
+        def fetch(sha):
+            st = "completed" if clock["t"] >= 600 else "in_progress"
+            return [{"workflowName": n, "headSha": SHA, "status": st, "conclusion": "success" if st == "completed" else None,
+                     "createdAt": "x"} for n in S.CV.REQUIRED]
+        code = S.ship("v3865", run=run, fetch=fetch, sleep=lambda s: clock.update(t=clock["t"] + s),
+                      clock=lambda: clock["t"], say=said.append, wait_s=60 * 60, preflight=lambda v, say: 0)
+        self.assertEqual(code, 0, "\n".join(said[-5:]))
+        disp = [c for c in calls if c[:3] == ["gh", "workflow", "run"]]
+        self.assertEqual([(c[3], c[c.index("--ref") + 1]) for c in disp], [("proof-keys-windows.yml", "ci/proof-keys-v3865")],
+                         "the Windows set was never dispatched when the ci push fired nothing (v3864), or twice")
+        self.assertTrue(any(c[:2] == ["git", "-c"] and "HEAD:main" in c for c in calls),
+                        "the ship waited on the Windows set - it is not REQUIRED")
 
 
 class TheSeedTakesTheNewestOtherSetOfItsFlavor(unittest.TestCase):
@@ -168,6 +274,36 @@ RED_PROOF = [
      "file": "tv/proof_seed.py",
      "find": "    pat = re.compile(r\"^proofs-([0-9a-f]{40})%s\\.tgz$\" % (re.escape(\"-\" + flavor) if flavor else \"\"))\n",
      "replace": "    pat = re.compile(r\"^proofs-([0-9a-f]{40})(?:-win32)?\\.tgz$\")\n",
+     "matches": 1},
+    {"why": "REG-3214 (second eye) - back to 8 Windows shards: half of v3863's set past the 55-minute deadline",
+     "file": ".github/workflows/proof-keys-windows.yml",
+     "find": "  PROOF_SHARDS: \"16\"\n",
+     "replace": "  PROOF_SHARDS: \"8\"\n",
+     "matches": 1},
+    {"why": "REG-3214 (second eye) - after Publish the round never waits: two rounds prove one set side by side",
+     "file": ".github/workflows/proof-keys-windows.yml",
+     "find": "          ${WAIT_SIBLING:+--wait-sibling \"$WAIT_SIBLING\" --wait-min 45}\n",
+     "replace": "\n",
+     "matches": 1},
+    {"why": "REG-3214 (second eye) - the wait holds on main's own run of the workflow, not only the ci round",
+     "file": "tv/proof_seed.py",
+     "find": "                 and str(r.get(\"head_branch\") or \"\").startswith(\"ci/proof-keys-\") and r.get(\"id\") != run_id]\n",
+     "replace": "                 and r.get(\"id\") != run_id]\n",
+     "matches": 1},
+    {"why": "REG-3214 (second eye) - a run waits on itself until its own seed job is killed",
+     "file": "tv/proof_seed.py",
+     "find": " and r.get(\"id\") != run_id]\n",
+     "replace": "]\n",
+     "matches": 1},
+    {"why": "REG-3214 (second eye) - the ship dispatches only REQUIRED runs: no Windows set before main when the push fires nothing",
+     "file": "tv/ship_when_green.py",
+     "find": "            for wf in missing(runs, sha) + missing(runs, sha, among=sorted(BESIDE)):",
+     "replace": "            for wf in missing(runs, sha):",
+     "matches": 1},
+    {"why": "REG-3214 (second eye) - the Windows set is dispatched on ci/claude, where its run is not the ci round",
+     "file": "tv/ship_when_green.py",
+     "find": "                                                                                   \"proof-keys-windows.yml\")",
+     "replace": "                                                                                   \"proof-keys-shards.yml\")",
      "matches": 1},
 ]
 

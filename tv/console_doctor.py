@@ -808,8 +808,9 @@ _BACKUP_BENIGN = ("wrote ", "unchanged since")
 
 def _check_this_versions_ci(rec=None, now=None):
     """REG-3213 - THIS VERSION'S CI, RED PAST 75 MINUTES. His words (2026-11-05): "why has it been stuck for so long and
-    not triggered at an alert somewhere at 75 minutes which was max?" - v3864's Publish ran 2 h 50 min and no row, no
-    script, nothing said so. The console's CI tick (control_app._ci_watch_tick) reads GitHub's public Actions API for the
+    not triggered at an alert somewhere at 75 minutes which was max?" - on v3864 shard 10 of ci/proof-keys-v3864 ran 87 min
+    (the run 2 h 10 min, then Publish 56 min more) and no row, no script, nothing said so. The console's CI tick
+    (control_app._ci_watch_tick) reads GitHub's public Actions API for the
     commit it runs, every 5 minutes; this row reads what it recorded (status.ciWatch, the serving console's _CI_WATCH):
       overrun / slow / red  -> MISSING, naming the runs past the max and the jobs still running
       unknown, never read, or a reading older than 3 ticks -> UNKNOWN (an unread GitHub is never green)
@@ -11125,7 +11126,7 @@ CHECKS = [
     ("evidence ledger", _check_the_evidence_ledger_is_readable),
     ("ledger backup", _check_the_ledger_backup_covers_every_store),
     ("backup loop", _check_the_backup_loop_is_actually_WRITING),
-    # REG-3213 (v3865) - v3864's Publish ran 2 h 50 min and nothing said so; red past his 75-minute max, every tick
+    # REG-3213 (v3865) - v3864's shard 10 ran 87 min and nothing said so; red past his 75-minute max, every tick
     ("this version's CI", _check_this_versions_ci),
     # 2026-09-27 — a store that FELL (setPieces 134 -> 0, owned 223 -> 0) and every row above was
     # green: `ledger entries` diffs only the two newest snapshots. This reads the loop's durable

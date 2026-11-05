@@ -14,8 +14,9 @@ Refuses a tree whose `git status` is not empty (GitHub would grade other bytes t
 HEAD that does not fast-forward origin/main. Never `--no-verify`; never a force push to main.
 
 REG-3213 (v3865, his words: "why has it been stuck for so long and not triggered at an alert somewhere at 75 minutes
-which was max?") - MEASURED on v3864: this script returned the moment main was pushed, and Publish then ran 2 h 50 min
-with nothing watching it. Now it ALERTS, loudly and once, when the ci/ wait passes OVERRUN_MIN, and after the main push
+which was max?") - MEASURED on v3864: shard 10 of ci/proof-keys-v3864 ran 87 min while this script waited without a word,
+then it returned the moment main was pushed and Publish ran 56 min more with nothing watching it. Now it ALERTS, loudly
+and once, when the ci/ wait passes OVERRUN_MIN, and after the main push
 it WATCHES Publish on the same commit (tv/ci_watch.py, GitHub's public Actions API): it says when Publish passes 75
 minutes and which jobs are still running, and its exit says how Publish ended. --no-watch returns at the main push, as
 before. The console's eagle row "this version's CI" watches the same thing for the commit his console runs.
@@ -49,6 +50,18 @@ WORKFLOW_FILES = {
 POLL_S = 60
 #: REG-3213 - the workflow that publishes main, watched after the main push
 PUBLISH = "Publish — gates, review, then deploy"
+#: REG-3213 (the second eye on v3865) - how often Publish is asked after the main push. MEASURED: GitHub allows 60
+#: unauthenticated reads an hour per address, and a 60 s poll spent all of them before the console's own 5-minute tick -
+#: a simulated watch was refused 21 of 141 reads and blind from minute 49 to 60. So the watch reads through the `gh` CLI
+#: (authenticated: 5,000 an hour, as ci_verdict.fetch already does) and asks every 2 minutes; only when gh cannot answer
+#: does it fall back to the public API (30 an hour, + the console's 12-24 = inside 60).
+PUBLISH_POLL_S = 120
+#: REG-3214 - workflows that run BESIDE the required ones on the ci/proof-keys push and are never waited on. GitHub fired
+#: nothing on the v3864 ci push (round 3) and only the REQUIRED ones were dispatched, so a Windows set that runs only on a
+#: push would never run before main: it is dispatched like a missing required one, and its verdict never holds the ship
+BESIDE = {
+    "🪟 proof-keys windows (beside the ci shards, not required)": "proof-keys-windows.yml",
+}
 DISPATCH_AFTER_S = 120          # GitHub starts a push's runs within seconds; after two minutes a missing one never will
 DISPATCH_TRIES = 5              # v3865 - a refused dispatch (GitHub answered 500/502 on 2026-11-05) is asked again next poll
 
@@ -57,7 +70,9 @@ def dispatch_ref(wf, version):
     """v3865 - the branch a missing workflow is dispatched on. The proof shards run on ci/proof-keys-<v>: a run dispatched on
     ci/claude-<v> cannot restore the proofs its version's red run banked (GitHub's cache is scoped by branch) and re-proves
     everything (measured 2026-11-05, v3864 round 3: GitHub fired nothing on the push and the dispatch went to ci/claude)."""
-    return ("ci/proof-keys-%s" if WORKFLOW_FILES.get(wf) == "proof-keys-shards.yml" else "ci/claude-%s") % version
+    return ("ci/proof-keys-%s" if (WORKFLOW_FILES.get(wf) or BESIDE.get(wf)) in ("proof-keys-shards.yml",
+                                                                                   "proof-keys-windows.yml")
+            else "ci/claude-%s") % version
 
 
 def _preflight(version, say):
@@ -82,10 +97,10 @@ def red_runs(runs, sha):
     return out
 
 
-def missing(runs, sha):
-    """The REQUIRED workflows with no run at all on this sha. -> [name]. Pure."""
+def missing(runs, sha, among=None):
+    """The REQUIRED workflows (or those of `among`) with no run at all on this sha. -> [name]. Pure."""
     have = set(CV._name(r) for r in runs or [] if isinstance(r, dict) and str(r.get("headSha") or "").startswith(sha))
-    return [wf for wf in CV.REQUIRED if wf not in have]
+    return [wf for wf in (CV.REQUIRED if among is None else among) if wf not in have]
 
 
 def overrun_alert(sha, minutes, runs, watch=None, limit=CW.OVERRUN_MIN):
@@ -136,7 +151,7 @@ def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN):
             say("ship: Publish on %s has not finished after %d min of watching - main IS pushed; the console's eagle row "
                 "\"this version's CI\" keeps watching" % (sha[:9], wait_s // 60))
             return 2
-        sleep(POLL_S)
+        sleep(PUBLISH_POLL_S)
 
 
 def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_s=240 * 60, remote="origin", preflight=None,
@@ -201,11 +216,11 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
             say("ship: GitHub graded %s RED - main is NOT pushed: %s" % (sha[:9], ", ".join(red)))
             return 1
         if runs is not None and clock() - t0 >= DISPATCH_AFTER_S:
-            for wf in missing(runs, sha):
+            for wf in missing(runs, sha) + missing(runs, sha, among=sorted(BESIDE)):   # REG-3214 - the Windows set too
                 n = tries.get(wf, 0)
                 if n < 0 or n >= DISPATCH_TRIES:      # dispatched (-1), or asked DISPATCH_TRIES times and refused each
                     continue
-                d = run(["gh", "workflow", "run", WORKFLOW_FILES[wf], "--repo", CV.REPO_SLUG,
+                d = run(["gh", "workflow", "run", WORKFLOW_FILES.get(wf) or BESIDE[wf], "--repo", CV.REPO_SLUG,
                          "--ref", dispatch_ref(wf, version)], capture_output=True, text=True, encoding="utf-8",
                         errors="replace")
                 tries[wf] = -1 if d.returncode == 0 else n + 1
@@ -237,8 +252,13 @@ def main(argv=None):
                     help="REG-3213 - how long to follow Publish after the main push (it alerts at %d min)" % CW.OVERRUN_MIN)
     ap.add_argument("--no-watch", action="store_true", help="REG-3213 - return at the main push without watching Publish")
     a = ap.parse_args(argv)
-    return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None, watch=CW.watch,
+    return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None, watch=_watch_authed,
                 watch_publish_s=None if a.no_watch else a.publish_wait_min * 60)
+
+
+def _watch_authed(sha):
+    """REG-3213 - ci_watch.watch read through the authenticated `gh` CLI, the public API only when gh cannot answer."""
+    return CW.watch(sha, get=CW.gh_get)
 
 
 if __name__ == "__main__":

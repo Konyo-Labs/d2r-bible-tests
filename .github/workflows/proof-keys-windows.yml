@@ -12,7 +12,14 @@ name: 🪟 proof-keys windows (beside the ci shards, not required)
 # --prior: a seed serves only byte-identical proofs), plans by owed work, and is bounded like the Linux shards (job 75,
 # step 70, heart2's deadline at job minute 55). It is still NOT one of ci_verdict.REQUIRED, and its shards never fail the
 # run (a failure is named in that shard's manifest). After Publish it runs only when this commit's Windows set is not
-# banked yet (a main push that skipped the ci branches), and by hand (workflow_dispatch).
+# banked WHOLE (a main push that skipped the ci branches, or a set its bound cut), and by hand (workflow_dispatch).
+# v3865 (REG-3214, the second eye) - ONE ROUND MUST FIT ITS BOUND, AND WHAT IT CANNOT FIT IS PROVED NEXT, NEVER DROPPED.
+# MEASURED: v3863's 8 Windows shards ran 70.8 to 126.3 min of job each (805 job-minutes), and a set carries ~2% of its keys
+# to the next version (v3863 -> v3864: 179 of 8,053), so the prior seed serves little: at 8 shards the 55-minute deadline
+# would cut about half. So 16 shards (~50 min each, modelled from those walls - only a real run measures it). A set that
+# still owes TIMEOUTs is banked PARTIAL (tv/proof_seed.py: bank=partial, never ok), and the round after Publish proves the
+# rest from it - after first waiting while this commit's ci/proof-keys round is still proving (--wait-sibling), so the two
+# never prove the same set side by side.
 on:
   push:
     branches:
@@ -28,7 +35,7 @@ concurrency:
   group: proof-keys-windows-${{ github.ref }}
   cancel-in-progress: true
 env:
-  PROOF_SHARDS: "8"
+  PROOF_SHARDS: "16"
   HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 jobs:
   seed:
@@ -37,9 +44,11 @@ jobs:
     name: seed - the Windows proofs the bank already has
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # after Publish it may first wait up to 45 min for this commit's ci/proof-keys round to bank its set
+    timeout-minutes: 55
     permissions:
       contents: read
+      actions: read
     outputs:
       seeded: ${{ steps.seed.outputs.seeded || 'false' }}
       digest: ${{ steps.seed.outputs.digest }}
@@ -59,9 +68,12 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+          # REG-3214 - after Publish only: wait while this commit's ci/proof-keys round of this workflow is still proving
+          WAIT_SIBLING: ${{ github.event_name == 'workflow_run' && github.workflow || '' }}
         run: >-
           python3 tv/proof_seed.py --sha "$HEAD_SHA" --flavor win32 --prior
           --work "$RUNNER_TEMP/seed-work" --out "$RUNNER_TEMP/seed-out"
+          ${WAIT_SIBLING:+--wait-sibling "$WAIT_SIBLING" --wait-min 45}
       - name: Hand every shard the one seed
         if: ${{ steps.seed.outputs.seeded == 'true' }}
         uses: actions/upload-artifact@v4
@@ -75,16 +87,16 @@ jobs:
   shard:
     name: windows shard ${{ matrix.shard }}
     needs: [seed]
-    # after Publish only while this commit's Windows set is not banked yet: the ci/proof-keys push already proved it
+    # after Publish only while this commit's Windows set is not banked WHOLE: absent, or PARTIAL (its bound cut proofs)
     if: ${{ !cancelled() && needs.seed.result != 'skipped' && (github.event_name != 'workflow_run' || needs.seed.outputs.bank != 'ok') }}
     runs-on: windows-latest
     # REG-3212 - the same bounds as the Linux shards: heart2 stops starting proofs at job minute 55, the step 70, the job 75
     timeout-minutes: 75
     strategy:
       fail-fast: false
-      max-parallel: 8
+      max-parallel: 16
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
     env:
       D2R_NO_CLAUDE: "1"
       HEART2_PROVE_WORKERS: "2"

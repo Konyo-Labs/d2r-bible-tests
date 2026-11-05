@@ -58,8 +58,10 @@ PROOF_COST_FACTOR = 0.42
 #: its slowest shard ran 2.1x the mean
 RUNNER_LANES = 2
 #: REG-3211 - what one proof the verdict cache SERVES costs a shard: its key and a lookup, no law run. MEASURED on v3864's
-#: Publish (run 42084305066): shard 6 re-proved 387 proofs and shard 13 324 (each 2 h 50 min) while shard 14 re-proved 11,
-#: because the plan priced a served proof like a run, so the owed work fell wherever the names fell
+#: Publish (run 42084305066, a commit ci/proof-keys-v3864 had already proved): shard 6 proved 380 of its 388 again (49.5
+#: min) and shard 14 its 11 (23.5 min); slowest 3,170 s against a mean of 2,297 s. Once the exact commit's proofs are in the
+#: seed (REG-3210) most of a plan is served, and a plan that priced a served proof like a run would pile the owed rest
+#: wherever the names fell
 SERVED_PROOF_S = 0.05
 #: REG-3212 - a proof cut at its bound: neither PROVEN nor a defect of the law - UNKNOWN, owed, and named by the fan-in
 TIMEOUT = "TIMEOUT"
@@ -692,7 +694,7 @@ def deploy_verdict(root, n, head, base, say=print, changed=None, gates_of=None, 
     mine = sorted(set(names) - set(local))
     _text, tot = census(root, head, n)
     owed = {}
-    for f in tot["fix"]:
+    for f in tot["fix"] + tot["cut"]:   # REG-3212 - a TIMEOUT on one of this push's laws holds the deploy too: UNPROVEN
         owed.setdefault(str(f[0]), []).append(f)
     held = [g for g in mine if g in owed]
     scope = ("the %d law(s) this push changed since %s" % (len(names), str(base)[:12])) if changed is not None else (
@@ -706,7 +708,8 @@ def deploy_verdict(root, n, head, base, say=print, changed=None, gates_of=None, 
         say("  REG-2962: %d law(s) this push did NOT change are owed a fix on CI (the census lists them); they do not hold "
             "this deploy: %s" % (len(others), ", ".join(others[:12])))
     if held:
-        say("  ✗ REG-2962 DEPLOY HELD: %d law(s) of %s are owed a fix on CI:" % (len(held), scope))
+        say("  ✗ REG-2962 DEPLOY HELD: %d law(s) of %s are owed on CI (a fix, or a proof its bound cut - TIMEOUT):"
+            % (len(held), scope))
         for g in held:
             for f in owed[g]:
                 say("     %s[%s] %s - %s (shard %s)" % (f[0], f[1], f[2], str(f[3])[:140], f[4]))
@@ -719,7 +722,7 @@ def census(root, head=None, n=None):
     """REG-2595 - the post-push CENSUS of one 16-shard run: what each shard proved, and which laws the next batch must
     fix. Never a gate: it reads whatever the shards left (a missing or broken store is named, never fatal).
     -> (markdown text, {"assigned", "proven", "owed", "unbanked", "fix": [[gate, idx, verdict, why, shard]]})"""
-    rows, fix, walls, unb, missing = [], [], [], {}, []
+    rows, fix, cut, walls, unb, missing = [], [], [], [], {}, []
     for d in sorted(os.listdir(root)) if os.path.isdir(root) else []:
         body = None
         try:
@@ -751,7 +754,9 @@ def census(root, head=None, n=None):
             missing.append(d + " (unreadable store)")
             continue
         for f in bad:
-            fix.append(f + [sh.get("k")])
+            # REG-3212 (the second eye on v3865) - a proof cut at its bound is owed, but it is no defect of its law: it is
+            # listed apart, never under "laws owed a fix" (a law that only ran out of time read as one to repair)
+            (cut if f[2] == TIMEOUT else fix).append(f + [sh.get("k")])
         failed = set((str(f[0]), f[1]) for f in bad)
         for g, i in asg - got - failed:
             unb[g] = unb.get(g, 0) + 1
@@ -759,21 +764,24 @@ def census(root, head=None, n=None):
     heads = sorted(set(r[4] for r in rows))
     ks = set(r[0] for r in rows)
     lost = [k for k in range(1, int(n) + 1) if k not in ks] if n else []
+    _order = lambda f: (str(f[0]), f[1] if isinstance(f[1], int) else 0)      # noqa: E731
     tot = dict(assigned=sum(r[1] for r in rows), proven=sum(r[2] for r in rows), owed=len(fix),
-               unbanked=sum(unb.values()), fix=sorted(fix, key=lambda f: (str(f[0]), f[1] if isinstance(f[1], int) else 0)))
+               unbanked=sum(unb.values()), fix=sorted(fix, key=_order), cut=sorted(cut, key=_order))
     out = ["## Proof census at %s" % (", ".join(heads) or "(no shard store)"), ""]
     if head and heads and heads != [str(head)[:12]]:
         out += ["⚠ the shards ran on %s, not %s" % (", ".join(heads), str(head)[:12]), ""]
     out.append("%d shard store(s)%s. Assigned %d proof(s): PROVEN %d · owed a fix %d · unbanked %d (ELSEWHERE on a "
-               "runner, or never run)." % (len(rows), (" - %d dir(s) carry none: %s" % (len(missing), ", ".join(missing[:6])))
-                                           if missing else "", tot["assigned"], tot["proven"], tot["owed"], tot["unbanked"]))
+               "runner, or never run)%s." % (len(rows), (" - %d dir(s) carry none: %s" % (len(missing), ", ".join(missing[:6])))
+                                            if missing else "", tot["assigned"], tot["proven"], tot["owed"], tot["unbanked"],
+                                            (" · cut at the bound %d (TIMEOUT - owed to the next round, not a fix)"
+                                             % len(tot["cut"])) if tot["cut"] else ""))
     if lost:
         out.append("⚠ %d of %d shard(s) left no readable store: %s - their laws are UNKNOWN, not green." % (
             len(lost), int(n), ", ".join(str(k) for k in lost)))
-    _cut = [f for f in tot["fix"] if f[2] == TIMEOUT]
+    _cut = tot["cut"]
     if _cut:                            # REG-3212 - a bound cut them: UNKNOWN, not a defect of the law, never PROVEN
-        out.append("⏱ %d proof(s) were cut at their bound (TIMEOUT - UNKNOWN, never PROVEN): %s." % (
-            len(_cut), ", ".join("%s[%s]" % (f[0], f[1]) for f in _cut)))
+        out.append("⏱ %d proof(s) were cut at their bound (TIMEOUT - UNKNOWN, never PROVEN; owed to the next round, not a "
+                   "fix): %s." % (len(_cut), ", ".join("%s[%s] (shard %s)" % (f[0], f[1], f[4]) for f in _cut)))
     if walls:
         mean = sum(walls) / float(len(walls))
         out.append("Shard prove walls: slowest %d s, mean %.0f s (%.2fx)." % (max(walls), mean, max(walls) / mean if mean else 0))

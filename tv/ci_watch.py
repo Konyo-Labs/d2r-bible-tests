@@ -2,9 +2,12 @@
 """REG-3213 - A VERSION'S CI THAT PASSES 75 MINUTES ALERTS, WITHOUT ANYONE PRESSING ANYTHING.
 
 His words (2026-11-05, v3864): "2hr and 50 min are you kidding me?" and "why has it been stuck for so long and not
-triggered at an alert somewhere at 75 minutes which was max?". MEASURED that night: Publish's run 42084305066 ran
-18:27 -> ~21:20 under a 160-minute step cap and a 180-minute job cap, and NOTHING watched it: tv/ship_when_green.py
-waited on the ci/ branches only and returned the moment main was pushed, and the console had no row for CI at all.
+triggered at an alert somewhere at 75 minutes which was max?". MEASURED that night (UTC): ci/proof-keys-v3864 (run
+42061540765) began 16:08; 21 of 22 shards were done by 17:05, shard 10 (656 of 8,829 proofs) ran until it was cancelled at
+17:40 - 87 min, under a 160-minute step cap and a 180-minute job cap; its re-run ended the run at 18:18 (2 h 10 min). Publish
+(run 42084305066) then proved the same commit 18:27 -> 19:22 (56 min): 3 h 14 min from the ci push to the deploy. NOTHING
+watched any of it: tv/ship_when_green.py waited on the ci/ branches without a word past 75 min and returned the moment main
+was pushed, and the console had no row for CI at all.
 
 This module is the one rule both watchers ask:
   * tv/ship_when_green.py, while it waits on the ci/ branches and after it pushes main (it watches Publish);
@@ -68,6 +71,22 @@ def _get(path, opener=None, timeout=15):
             return json.loads(r.read().decode("utf-8", "replace"))
     except Exception:
         return None
+
+
+def gh_get(path, run=None, fallback=None):
+    """REG-3213 (the second eye on v3865) - GET one API path through the `gh` CLI, authenticated (5,000 reads an hour,
+    the way ci_verdict.fetch reads), and through the public API only when gh cannot answer (not installed, not logged in,
+    refused). tv/ship_when_green.py watches with it; the console stays on the public API at one read per 5 minutes.
+    -> parsed JSON | None. Never raises."""
+    import subprocess
+    try:
+        r = (run or subprocess.run)(["gh", "api", "-H", "Accept: application/vnd.github+json", path],
+                                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+        if getattr(r, "returncode", 1) == 0:
+            return json.loads(r.stdout or "null")
+    except Exception:
+        pass
+    return (fallback or _get)(path)
 
 
 def fetch_runs(sha, get=None, repo=REPO_SLUG):

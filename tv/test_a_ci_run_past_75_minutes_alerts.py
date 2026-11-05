@@ -2,7 +2,8 @@
 """REG-3213 - A VERSION'S CI THAT PASSES 75 MINUTES ALERTS, WITHOUT ANYONE PRESSING ANYTHING.
 
 His words (2026-11-05): "why has it been stuck for so long and not triggered at an alert somewhere at 75 minutes which
-was max?". MEASURED on v3864: Publish (run 42084305066) ran 18:27 -> ~21:20, and NOTHING watched it - tv/ship_when_green.py
+was max?". MEASURED on v3864: ci/proof-keys-v3864's shard 10 ran 87 min (run 42061540765: 2 h 10 min with its re-run),
+then Publish (run 42084305066) 56 min more on the same commit, and NOTHING watched either - tv/ship_when_green.py
 waited on the ci/ branches only and returned at the main push, and the console had no row for CI. Held here:
   * tv/ci_watch.judge, over GitHub's runs on one commit: a run still going past 75 min is `overrun` and names the jobs
     still running; one that finished past 75 is `slow`; a failed one `red` - all three RED; inside the max it is
@@ -15,7 +16,10 @@ waited on the ci/ branches only and returned at the main push, and the console h
     and the eagle row "this version's CI" turns MISSING on overrun / slow / red, UNKNOWN when unread or stale - it is on
     the roster and asked in the console's own process;
   * tv/ship_when_green.py alerts ONCE, loudly, when its ci/ wait passes 75 min, and after the main push it watches
-    Publish: an alert past 75 min with the running jobs, its exit says how Publish ended - and its CLI turns that on.
+    Publish: an alert past 75 min with the running jobs, its exit says how Publish ended - and its CLI turns that on;
+  * (the second eye on v3865) that watch reads through the authenticated `gh` CLI (ci_watch.gh_get; the public API only
+    when gh cannot answer) and asks every PUBLISH_POLL_S >= 120 s: a 60 s unauthenticated poll spent GitHub's whole
+    60-an-hour allowance, and a simulated watch went blind from minute 49 to 60, so the alert could slip.
 Fixtures only - GitHub, git and the clock are replaced; no network. RED_PROOF below.
 """
 import inspect
@@ -70,7 +74,7 @@ class TheJudge(unittest.TestCase):
 
     def test_a_run_that_finished_past_the_max_is_slow_and_red(self):
         r = CW.judge([_run(PUBLISH, 170, "completed", "success")], SHA, now=T0 + 171 * 60)
-        self.assertEqual(r["state"], "slow", "a 2 h 50 min Publish that ended green reads green")
+        self.assertEqual(r["state"], "slow", "a 2 h 10 min proof run that ended green reads green")
         self.assertIn(r["state"], CW.RED_STATES)
 
     def test_a_failed_run_is_red(self):
@@ -252,6 +256,44 @@ class ShipWhenGreenAlerts(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("main IS pushed", said[-1])
 
+    def test_publish_is_asked_every_two_minutes_through_the_authenticated_cli(self):
+        S = self.S
+        sleeps = []
+        clock = {"t": 0.0}
+
+        def sleep(s):
+            sleeps.append(s)
+            clock["t"] += s
+        S.watch_publish(SHA, lambda sha: {"worked": True, "runs": [{"name": PUBLISH, "status": "in_progress",
+                                                                    "minutes": clock["t"] / 60}]},
+                        sleep, lambda: clock["t"], lambda *a: None, 60 * 60)
+        self.assertTrue(sleeps and set(sleeps) == {S.PUBLISH_POLL_S}, sleeps[:3])
+        self.assertGreaterEqual(S.PUBLISH_POLL_S, 120, "the watch spends GitHub's 60-an-hour public allowance alone")
+        asked = []
+        saved = CW.watch
+        try:
+            CW.watch = lambda sha, get=None, **kw: asked.append(get) or {}
+            S._watch_authed(SHA)
+        finally:
+            CW.watch = saved
+        self.assertEqual(asked, [CW.gh_get], "the watch reads GitHub unauthenticated")
+
+    def test_gh_get_is_authenticated_and_falls_back_to_the_public_api(self):
+        calls = []
+
+        def ok(argv, **kw):
+            calls.append(argv)
+            return subprocess.CompletedProcess(argv, 0, '{"workflow_runs": []}', "")
+        self.assertEqual(CW.gh_get("/repos/x/actions/runs", run=ok, fallback=lambda p: "public"), {"workflow_runs": []})
+        self.assertEqual(calls[0][:2], ["gh", "api"])
+        self.assertIn("/repos/x/actions/runs", calls[0])
+        no = lambda argv, **kw: subprocess.CompletedProcess(argv, 4, "", "gh: not logged in")   # noqa: E731
+        self.assertEqual(CW.gh_get("/p", run=no, fallback=lambda p: "public"), "public")
+
+        def gone(argv, **kw):
+            raise FileNotFoundError("gh")
+        self.assertEqual(CW.gh_get("/p", run=gone, fallback=lambda p: "public"), "public")
+
     def test_the_cli_watches_publish(self):
         S = self.S
         seen = {}
@@ -260,7 +302,7 @@ class ShipWhenGreenAlerts(unittest.TestCase):
             S.ship = lambda version, **kw: seen.update(kw) or 0
             S.main(["v3864"])
             self.assertEqual(seen.get("watch_publish_s"), 100 * 60, "the CLI returns at the main push, unwatched")
-            self.assertIs(seen.get("watch"), CW.watch)
+            self.assertIs(seen.get("watch"), S._watch_authed)
             S.main(["v3864", "--no-watch"])
             self.assertIsNone(seen.get("watch_publish_s"))
         finally:
@@ -268,7 +310,7 @@ class ShipWhenGreenAlerts(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "REG-3213 - a run still going past 75 minutes is never called overrun (v3864: 2 h 50 min, no alert)",
+    {"why": "REG-3213 - a run still going past 75 minutes is never called overrun (v3864: shard 10 at 87 min, no alert)",
      "file": "tv/ci_watch.py",
      "find": "        elif not done and m is not None and m >= limit:\n",
      "replace": "        elif False:\n",
@@ -322,6 +364,21 @@ RED_PROOF = [
      "file": "tv/ship_when_green.py",
      "find": "                watch_publish_s=None if a.no_watch else a.publish_wait_min * 60)",
      "replace": "                watch_publish_s=None)",
+     "matches": 1},
+    {"why": "REG-3213 (second eye) - the Publish watch polls every 60 s again and spends GitHub's public allowance",
+     "file": "tv/ship_when_green.py",
+     "find": "        sleep(PUBLISH_POLL_S)\n",
+     "replace": "        sleep(POLL_S)\n",
+     "matches": 1},
+    {"why": "REG-3213 (second eye) - the Publish watch reads GitHub unauthenticated",
+     "file": "tv/ship_when_green.py",
+     "find": "    return CW.watch(sha, get=CW.gh_get)\n",
+     "replace": "    return CW.watch(sha)\n",
+     "matches": 1},
+    {"why": "REG-3213 (second eye) - gh's authenticated answer is thrown away for the public API",
+     "file": "tv/ci_watch.py",
+     "find": "        if getattr(r, \"returncode\", 1) == 0:\n            return json.loads(r.stdout or \"null\")\n",
+     "replace": "        if False:\n            return json.loads(r.stdout or \"null\")\n",
      "matches": 1},
 ]
 

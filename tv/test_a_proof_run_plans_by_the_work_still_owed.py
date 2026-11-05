@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """REG-3211 - A PROOF RUN'S SHARDS ARE PLANNED BY THE WORK STILL OWED, NOT BY WHERE THE NAMES FALL.
 
-MEASURED on v3864's Publish (run 42084305066, 2026-11-05): 22 of 24 shards finished in 25-50 min, but shard 6 re-proved
-387 proofs (53 gates - test_a_roster_publish_is_signed_and_a_forgery_is_refused 62, test_the_fleet_says_where_a_river_is_stuck
-40) and shard 13 324, both 18:27 -> ~21:20 (2 h 50 min, no gap over 7 min: a pile, not a hang), while shard 14 re-proved 11.
-The plan priced a proof the cache would SERVE exactly like one it must RUN, so the owed work landed wherever the gate names
-put it. Held here:
+MEASURED on v3864's Publish (run 42084305066, 2026-11-05, 56 min): shard 6 was assigned 388 proofs (53 gates -
+test_a_roster_publish_is_signed_and_a_forgery_is_refused 62, test_the_fleet_says_where_a_river_is_stuck 40) and proved 380
+of them again for 49.5 min, shard 13 for 52.8 min, while shard 14 proved 11 in 23.5 min - slowest 3,170 s, mean 2,297 s
+(1.38x). Once Publish starts from the exact commit's proofs (REG-3210), most of every plan is SERVED; a plan that priced a
+served proof exactly like one it must RUN would land the owed rest wherever the gate names put it. Held here:
   * given the proofs already PROVEN at this exact commit (`served`), the plan costs each at SERVED_PROOF_S with no clean
     run, cuts only the OWED proofs by cost and places them longest-first - so the owed work per shard is balanced
     (a fixture shaped like v3864: the old plan's slowest shard carries 5.1x the mean owed work, this one <=1.25x);

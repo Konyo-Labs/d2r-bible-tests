@@ -22690,8 +22690,9 @@ _PROOF_RELEASE = {"state": None, "sha": None, "seconds": None, "at": None, "runn
                   "why": "not asked yet - the console has not been up 40 s"}
 
 #: REG-3213 (v3865, his words: "why has it been stuck for so long and not triggered at an alert somewhere at 75 minutes
-#: which was max?") - THIS VERSION'S CI, WATCHED WITHOUT ANYONE PRESSING ANYTHING. MEASURED on v3864: Publish ran 2 h 50 min
-#: and nothing anywhere said so. The console asks GitHub's public Actions API (tv/ci_watch.py) about the commit it runs,
+#: which was max?") - THIS VERSION'S CI, WATCHED WITHOUT ANYONE PRESSING ANYTHING. MEASURED on v3864: shard 10 of the ci
+#: proof run ran 87 min (the run 2 h 10 min with its re-run, then Publish 56 min) and nothing anywhere said so. The
+#: console asks GitHub's public Actions API (tv/ci_watch.py) about the commit it runs,
 #: 60 s after boot and every 5 minutes (CI_WATCH_EVERY_TICKS x 10 s - never more often than ci_watch.CI_WATCH_EVERY_S),
 #: on a daemon thread; the eagle row "this version's CI" (console_doctor) turns red past 75 minutes and names the jobs
 #: still running. on / worked / lastTs / owed: None is UNKNOWN, never 0. [[heart-first]]

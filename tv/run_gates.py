@@ -13474,7 +13474,7 @@ GATES = [
     Gate("test_a_proof_run_plans_by_the_work_still_owed",
          [sys.executable, os.path.join(HERE, "test_a_proof_run_plans_by_the_work_still_owed.py")], 60,
          needs_app=False,
-         why='v3865 REG-3211 - the shard plan prices a proof already PROVEN at this commit as served and spreads only the owed work, longest first (v3864: one shard 387 proofs, another 11)'),
+         why='v3865 REG-3211 - the shard plan prices a proof already PROVEN at this commit as served and spreads only the owed work, longest first (v3864: ci shard 10 held 656 proofs and ran 87 min while the others took 24-57)'),
     Gate("test_a_gate_past_its_bound_is_cut_and_named",
          [sys.executable, os.path.join(HERE, "test_a_gate_past_its_bound_is_cut_and_named.py")], 60,
          needs_app=False,

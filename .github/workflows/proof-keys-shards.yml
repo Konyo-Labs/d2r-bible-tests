@@ -12,10 +12,11 @@ name: proof-keys shards (ci/proof-keys-* only)
 # ⚠ N LIVES IN TWO PLACES - PROOF_SHARDS and the matrix list - and
 # tv/test_the_shard_workflow_proves_every_proof_once.py goes red if they disagree. v3864: 22 - GitHub Pro runs 40 jobs at once
 # (2026-11-05), and the version's other checks hold ~18 of them while the shards run (agent tests 5, Playwright 12, Windows 1).
-# v3865 - A VERSION PROVES IN MINUTES, NEVER 2 H 50 MIN (his words that night: "2hr and 50 min are you kidding me?"). MEASURED
-# on v3864's Publish (run 42084305066): 22 of 24 shards finished in 25-50 min, but shards 6 and 13 re-proved 387 and 324
-# proofs for 2 h 50 min while shard 14 re-proved 11, each "serving" 1-2 from a seed of v3863 - though ci/proof-keys-v3864 had
-# proved this EXACT commit and banked it nine minutes before. So:
+# v3865 - A VERSION PROVES IN MINUTES (his words that night: "2hr and 50 min are you kidding me?"). MEASURED (UTC) on v3864:
+# ci/proof-keys-v3864 (run 42061540765) began 16:08; 21 of 22 shards were done by 17:05, shard 10 (656 of 8,829 proofs)
+# ran until it was cancelled at 17:40 - 87 min, nothing alerted - and its re-run ended the run at 18:18. Publish (run
+# 42084305066) then proved the SAME commit again 18:27 -> 19:22 (56 min): its shards restored only v3863's seed and served
+# 1-2 proofs each, though ci/proof-keys-v3864 had banked this EXACT commit nine minutes before. 3 h 14 min in all. So:
 #   REG-3210 the `seed` job builds ONE seed: the restored one + this exact commit's proof-bank bundle (tv/proof_seed.py);
 #   REG-3211 every shard reads that one seed and plans by the work still OWED, longest first (proof_shard.plan served=);
 #   REG-3212 bounds his 75-minute max can trust: the shard job 75, the prove step 70, and inside heart2 a per-gate cap and a
@@ -114,7 +115,8 @@ jobs:
           path: ${{ runner.temp }}/seed-out/
           include-hidden-files: true
           if-no-files-found: error
-          retention-days: 1
+          # a "Re-run failed jobs" days later still finds it (the seed job is not re-run)
+          retention-days: 3
   shard:
     name: shard ${{ matrix.shard }}
     needs: [budget, seed]
@@ -124,7 +126,7 @@ jobs:
     runs-on: ${{ needs.budget.outputs.runner || 'ubuntu-latest' }}
     # REG-3212 - his max is 75 minutes. heart2 stops STARTING proofs at job minute 55 (HEART2_PROVE_DEADLINE below) and cuts
     # any one gate past HEART2_GATE_CAP_S, so a shard finishes and writes its manifest well inside the job; the step's 70
-    # and the job's 75 are the backstops, never the plan (v3864's were 160 and 180, and a shard ran 2 h 50 min under them).
+    # and the job's 75 are the backstops, never the plan (v3864's were 160 and 180, and shard 10 ran 87 min under them).
     timeout-minutes: 75
     strategy:
       fail-fast: false
@@ -186,6 +188,16 @@ jobs:
         with:
           name: proof-seed
           path: ${{ runner.temp }}/heart2-seed
+      - name: What this run's earlier attempt proved (REG-3210 - "Re-run failed jobs")
+        # the seed job is not re-run, so its seed predates attempt 1. v3864's stuck shard 10 (656 proofs, 87 min) was
+        # rescued by exactly this cache: its re-run served 47 gates whole and finished in 36 min. Attempt 1 finds nothing.
+        if: ${{ github.run_attempt != '1' }}
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/heart2-seed/rerun
+          key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-rerun
+          restore-keys: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-
       - name: A claude that refuses
         run: |
           mkdir -p "$RUNNER_TEMP/noclaude"
@@ -206,7 +218,12 @@ jobs:
             echo "REG-3210: this shard's seed is not the one the seed job built - its plan would differ from its siblings'"; exit 3; fi
           export HEART2_SHARD_SERVED="$RUNNER_TEMP/heart2-seed/served.json"
           [ -f "$HEART2_SHARD_SERVED" ] || unset HEART2_SHARD_SERVED
-          # REG-3212 - no proof still to run starts after job minute 55: the rest is TIMEOUT, owed and named
+          # REG-3210 - a re-run shard also serves what this run's earlier attempt proved (the plan stays the seed job's)
+          if [ -d "$RUNNER_TEMP/heart2-seed/rerun" ] && [ -n "$(python3 tv/proof_seed.py --widen "${HEART2_SHARD_SEED:-}" \
+                --with "$RUNNER_TEMP/heart2-seed/rerun" --out "$RUNNER_TEMP/heart2-seed/wide" | sed -n 's/^widened=//p')" ]; then
+            export HEART2_SHARD_SEED="$RUNNER_TEMP/heart2-seed/wide/.heart2_cache.json"; fi
+          # REG-3212 - no proof still to run starts after job minute 55, and a law run still going at minute 63 (heart2's
+          # HARD_STOP_AFTER_S) is killed: the rest is TIMEOUT, owed and named - the manifest is written inside the step
           export HEART2_PROVE_DEADLINE=$(( T0 + 55 * 60 ))
           S=$(date +%s)
           set +e

@@ -4,8 +4,8 @@
 MEASURED on v3864 (2026-11-05): the ci/proof-keys-v3864 run proved commit 9d9485ea6 and published its proofs to the proof
 bank (proofs-9d9485ea61f7482320cdc47a5d0e05f670776e77.tgz, 18:17). Nine minutes later Publish began on THE SAME commit,
 and its 22 shards restored only "the proofs the last MAIN run banked" (REG-2961: v3863's) - each served 1-2 proofs and
-re-proved the rest; shards 6 and 13 ran 2 h 50 min. Every PC imports that very bundle (tv/proof_release.py), and GitHub
-did not.
+re-proved the rest; Publish took 56 min on a commit already proved (shard 6 proved 380 of its 388 again). Every PC
+imports that very bundle (tv/proof_release.py), and GitHub did not.
 
 Now one job of the proof run (the workflow's `seed` job) builds the run's seed ONCE, before any shard starts:
   * the seed actions/cache restored (REG-2961: the last main run's proofs, or this ci branch's own);
@@ -22,7 +22,12 @@ A seed that cannot be built is a cold run, never a red one: every proof then run
     python3 tv/proof_seed.py --sha <full sha> --work DIR --out DIR [--restored DIR] [--flavor win32] [--prior]
         --restored: the dir actions/cache restored into; --work: scratch for the bundles; --prior (the Windows set):
         also the newest other set of the flavor. Writes the seed and served.json into --out, and under GitHub
-        Actions the job outputs seeded / digest / bank / prior / entries / served.
+        Actions the job outputs seeded / digest / bank / prior / entries / served. bank is ok (this commit's set,
+        whole), partial (its set owes proofs cut at their bound - REG-3214: the next round proves the rest),
+        absent, refused or unknown. --wait-sibling NAME (after Publish): first wait while that workflow's
+        ci/proof-keys run on this commit is still proving.
+    python3 tv/proof_seed.py --widen SEED --with EARLIER --out DIR
+        REG-3210: a re-run shard merges what its run's earlier attempt proved into the seed; prints widened=<path>.
         Exit 0 always (a seed is an optimisation; its absence is said, never a failure).
 """
 import argparse
@@ -75,6 +80,25 @@ def exact_served(paths, sha):
             if PS.servable(e) and e.get("gate") and type(e.get("proof")) is int:
                 out.add((str(e["gate"]), e["proof"]))
     return sorted([g, i] for g, i in out)
+
+
+def cut_in(paths, sha):
+    """REG-3214 (the second eye on v3865) - how many proofs the bundle's shard files of `sha` OWE as TIMEOUT: a set cut at
+    its bound is PARTIAL, never "banked" - the next round (after Publish) proves the rest from it. -> int | None (no shard
+    file of this commit could be read: UNKNOWN)"""
+    n, read = 0, 0
+    for p in paths or []:
+        try:
+            with open(p, encoding="utf-8") as fh:
+                body = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        m = body.get("shard") if isinstance(body, dict) else None
+        if not isinstance(m, dict) or m.get("head") != sha:
+            continue
+        read += 1
+        n += sum(1 for f in (m.get("owed") or []) if isinstance(f, list) and len(f) >= 3 and f[2] == PS.TIMEOUT)
+    return n if read else None
 
 
 def newest_prior(sha, flavor="", get=None, repo=PR.REPO_SLUG):
@@ -137,11 +161,19 @@ def build(sha, restored, work, out_dir, flavor="", prior=False, download=None, g
     work      a scratch dir for the bundles
     prior     REG-3214: also take the newest bundle of this flavor for another commit (the Windows set has no
               actions/cache seed: the bank is where the last version's Windows proofs live)"""
-    rec = {"seeded": False, "digest": None, "bank": "unknown", "prior": None, "why": "", "entries": 0, "served": 0}
+    rec = {"seeded": False, "digest": None, "bank": "unknown", "prior": None, "why": "", "entries": 0, "served": 0,
+           "cut": None}
     out = os.path.join(out_dir, PS.STORE_NAME)
     try:
         os.makedirs(work, exist_ok=True)
         rec["bank"], exact = _bundle(sha, flavor, work, "exact", download, say)
+        if rec["bank"] == "ok":
+            _c = cut_in(exact, sha)
+            rec["cut"] = _c
+            if _c:                          # REG-3214 - a set its bound cut is partial: the next round proves the rest
+                rec["bank"] = "partial"
+                say("  REG-3214 BANK: PARTIAL - this commit's set owes %d proof(s) cut at their bound (TIMEOUT); a "
+                    "round seeded from it proves only those" % _c)
         stores = list(exact)
         if prior:
             psha, pwhy = newest_prior(sha, flavor, get=get)
@@ -189,6 +221,70 @@ def build(sha, restored, work, out_dir, flavor="", prior=False, download=None, g
         return rec
 
 
+def widen(seed, extra, out_dir, say=print):
+    """REG-3210 (the second eye on v3865) - A RE-RUN SHARD STARTS FROM WHAT ITS RUN'S EARLIER ATTEMPT PROVED. MEASURED on
+    ci/proof-keys-v3864 (run 42061540765): shard 10 held 656 of 8,829 proofs, ran 87 min after every other shard had
+    finished, and was cancelled; "Re-run failed jobs" restored the cache attempt 1's fan-in saved and the shard served 47
+    gates whole and finished in 36 min. The seed job is not re-run (it succeeded), so its seed predates attempt 1: the
+    shard merges the cache of this run's earlier attempt into it here. Only what is SERVED widens - the plan still comes
+    from the seed job's served.json, so the re-run shard cuts the same plan its siblings did.
+    seed, extra: store files, or dirs holding one ("" or missing: left out). -> the widened store's path | None (nothing to
+    widen). Never raises."""
+    import shutil
+    try:
+        seed, extra = [os.path.join(p, PS.STORE_NAME) if p and os.path.isdir(p) else p for p in (seed, extra)]
+        have = [p for p in (seed, extra) if p and os.path.isfile(p)]
+        if not extra or not os.path.isfile(extra):
+            say("  REG-3210 RE-RUN: no earlier attempt of this run banked a seed - the run's seed stands as it is")
+            return None
+        flat = os.path.join(out_dir, "parts")
+        for i, p in enumerate(have):
+            d = os.path.join(flat, "s%d" % i)
+            os.makedirs(d, exist_ok=True)
+            shutil.copyfile(p, os.path.join(d, PS.STORE_NAME))
+        out = os.path.join(out_dir, PS.STORE_NAME)
+        code = PS.merge_shards(flat, out, say=say)
+        shutil.rmtree(flat, ignore_errors=True)
+        if code != 0 or not os.path.isfile(out):
+            say("  REG-3210 RE-RUN: the earlier attempt's proofs could not be merged - the run's seed stands as it is")
+            return None
+        say("  REG-3210 RE-RUN: this run's earlier attempt's proofs are merged into the seed (%s) - what it proved is "
+            "served, never proved again" % ("with the seed job's" if seed and os.path.isfile(seed) else "no seed job's seed"))
+        return out
+    except Exception as e:
+        say("  REG-3210 RE-RUN: widening the seed raised %s - the run's seed stands as it is" % type(e).__name__)
+        return None
+
+
+def wait_for_sibling(sha, workflow, get=None, sleep=None, clock=None, max_s=45 * 60, every_s=60, run_id=None, say=print):
+    """REG-3214 (the second eye on v3865) - after Publish, WAIT while this commit's ci/proof-keys run of the same workflow
+    is still proving, so the round after Publish starts from the set it banks instead of proving the whole set beside it.
+    -> "done" (none running), "timeout" (still running after max_s), "unknown" (GitHub could not be read). Never raises."""
+    import time as _t
+    sleep = sleep or _t.sleep
+    clock = clock or _t.time
+    t0 = clock()
+    while True:
+        try:
+            body = (get or _api_get)("/repos/%s/actions/runs?head_sha=%s&per_page=100" % (PR.REPO_SLUG, sha))
+            runs = body.get("workflow_runs") if isinstance(body, dict) else None
+        except Exception:
+            runs = None
+        if not isinstance(runs, list):
+            say("  REG-3214 WAIT: GitHub's runs on %s could not be read - UNKNOWN, the round goes on" % sha[:9])
+            return "unknown"
+        going = [r for r in runs if isinstance(r, dict) and r.get("name") == workflow and r.get("status") != "completed"
+                 and str(r.get("head_branch") or "").startswith("ci/proof-keys-") and r.get("id") != run_id]
+        if not going:
+            say("  REG-3214 WAIT: no ci/proof-keys run of %r is still proving %s" % (workflow, sha[:9]))
+            return "done"
+        if clock() - t0 >= max_s:
+            say("  REG-3214 WAIT: the ci/proof-keys run is still proving after %d min - this round goes on beside it"
+                % (max_s // 60))
+            return "timeout"
+        sleep(every_s)
+
+
 def write_outputs(rec, path):
     """The job outputs the shards read. -> True when written"""
     if not path:
@@ -201,6 +297,7 @@ def write_outputs(rec, path):
             fh.write("prior=%s\n" % (rec.get("prior") or ""))
             fh.write("entries=%s\n" % (rec.get("entries") if rec.get("entries") is not None else ""))
             fh.write("served=%s\n" % int(rec.get("served") or 0))
+            fh.write("cut=%s\n" % (rec.get("cut") if rec.get("cut") is not None else ""))
         return True
     except OSError:
         return False
@@ -208,13 +305,28 @@ def write_outputs(rec, path):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--sha", required=True)
+    ap.add_argument("--sha", default="")
     ap.add_argument("--restored", default="", help="the dir actions/cache restored the last main run's seed into")
-    ap.add_argument("--work", required=True, help="a scratch dir for the bundles")
+    ap.add_argument("--work", default="", help="a scratch dir for the bundles")
     ap.add_argument("--out", required=True, help="the dir the seed (.heart2_cache.json) and served.json are written to")
     ap.add_argument("--flavor", default="")
     ap.add_argument("--prior", action="store_true", help="REG-3214: also seed from the newest other set of this flavor")
+    ap.add_argument("--wait-sibling", default="", help="REG-3214: first wait while this workflow's ci/proof-keys run on "
+                                                       "--sha is still proving (after Publish)")
+    ap.add_argument("--wait-min", type=int, default=45)
+    ap.add_argument("--widen", default=None, help="REG-3210: a re-run shard's seed file, to merge --with into")
+    ap.add_argument("--with", dest="extra", default="", help="REG-3210: the store this run's earlier attempt saved")
     a = ap.parse_args(argv)
+    if a.widen is not None:
+        got = widen(a.widen, a.extra, a.out, say=lambda m: sys.stderr.write(m + "\n"))   # stdout carries the path only
+        print("widened=%s" % (got or ""))
+        return 0
+    if not a.sha or not a.work:
+        ap.error("--sha and --work are needed to build a seed")
+    if a.wait_sibling:
+        wait_for_sibling(a.sha, a.wait_sibling, max_s=a.wait_min * 60,
+                         run_id=int(os.environ["GITHUB_RUN_ID"]) if str(os.environ.get("GITHUB_RUN_ID", "")).isdigit()
+                         else None)
     rec = build(a.sha, a.restored, a.work, a.out, flavor=a.flavor, prior=a.prior)
     write_outputs(rec, os.environ.get("GITHUB_OUTPUT"))
     return 0

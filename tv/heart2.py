@@ -2849,6 +2849,10 @@ def _run_gate_once(sandbox_tv, filename, timeout=180, extra=(), script=None, wid
     p = os.path.join(sandbox_tv, filename)
     if not os.path.exists(p):
         return None, "the gate file is not in the sandbox"
+    timeout, _bwhy = _inflight_limit(timeout)          # REG-3212 - a run already going is cut at its bound too
+    if _bwhy is not None and timeout <= 0:
+        _BOUND.cut = _bwhy
+        return None, "cut at its bound before it started (%s) - UNKNOWN, never PROVEN" % _bwhy
     env = _git_free_env()                      # REG-2396 - a law run never inherits the caller's GIT_DIR
     env["PYTHONDONTWRITEBYTECODE"] = "1"      # no stale .pyc can outlive a tamper
     env["HEART2_LANES"] = str(int(LANES_NOW or 1))   # REG-1997 - the lanes running beside this law right now
@@ -2915,6 +2919,9 @@ def _run_gate_once(sandbox_tv, filename, timeout=180, extra=(), script=None, wid
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
         _tdone = _ended_by_signal(r.returncode) is None
     except subprocess.TimeoutExpired:
+        if _bwhy is not None:                 # REG-3212 - the bound killed it, not the law's own deadline: TIMEOUT
+            _BOUND.cut = _bwhy
+            return None, "cut at its bound after %d s (%s) - UNKNOWN, never PROVEN" % (int(timeout), _bwhy)
         return None, "timed out after %ss" % timeout
     finally:
         try:
@@ -3231,9 +3238,10 @@ _PUSH = None            # the running push-time context (_PushRun) while prove(p
 _CLEAN = threading.local()
 
 
-#: REG-3212 - A PROOF CUT AT ITS BOUND. MEASURED on v3864's Publish (run 42084305066): shards 6 and 13 proved 387 and 324
-#: proofs for 2 h 50 min with no gap over 7 minutes - not a hang, a pile - under a 160-minute step cap and a 180-minute job
-#: cap, while his max was 75. A CI run now bounds itself: HEART2_GATE_CAP_S cuts one gate that has run past its cap, and
+#: REG-3212 - A PROOF CUT AT ITS BOUND. MEASURED on v3864 (ci/proof-keys-v3864, run 42061540765): shard 10 held 656 of
+#: 8,829 proofs and proved from 16:17 until it was cancelled at 17:40 UTC - 87 min of job, every other shard done by 17:05 -
+#: under a 160-minute step cap and a 180-minute job cap, while his max was 75; nothing fired. A CI run now bounds itself:
+#: HEART2_GATE_CAP_S cuts one gate that has run past its cap, and
 #: HEART2_PROVE_DEADLINE (epoch seconds) cuts every proof still to RUN once the run's own deadline has passed - so the
 #: shard FINISHES, writes its manifest and uploads inside its job, instead of being killed with nothing written. A cut
 #: proof is TIMEOUT: never PROVEN, never banked, never dropped - it is owed in the manifest (REG-2591's list), the fan-in
@@ -3265,6 +3273,44 @@ def _past_bound(run, gate_t0, now=None):
     if cap is not None and now - gate_t0 >= cap:
         return "this gate has run %d s, past its %d s cap" % (int(now - gate_t0), int(cap))
     return None
+
+
+#: REG-3212 (the second eye on v3865) - THE BOUND CUTS A RUN ALREADY GOING, NOT ONLY THE NEXT ONE. MEASURED in the first
+#: build: _past_bound was asked once, before each proof, and nothing killed a law run in flight - with 3 lanes the deadline
+#: scale is 2, so a 900-s gate got 1800 s per run (its clean, tampered and closing runs up to 90 min), and a proof started
+#: at minute 54 ran past the 70-minute step cap: the step was killed with no manifest, the fan-in refused the whole set.
+#: Now every law run of a push takes the tighter of its own deadline and the bound: the run's HARD STOP (its deadline +
+#: HARD_STOP_AFTER_S - in-flight runs get that long to finish, so the shard still writes its manifest and uploads inside
+#: its job) and, for a gate's proofs, the gate's cap from its first proof. A run the bound killed is TIMEOUT, owed by name.
+HARD_STOP_AFTER_S = 480
+_BOUND = threading.local()          # REG-3212 - this lane's gate clock (t0: None outside a gate's proofs) and its last cut
+
+
+def _hard_stop(run):
+    """REG-3212 - when a law run still going is killed: the run's deadline + HARD_STOP_AFTER_S. -> epoch s | None"""
+    dl = getattr(run, "deadline", None)
+    return None if dl is None else dl + HARD_STOP_AFTER_S
+
+
+def _inflight_limit(timeout, now=None, run=None, gate_t0=None):
+    """REG-3212 - one law run's timeout under the push's bounds. -> (seconds, why | None). `why` is set only when a bound,
+    not the law's own deadline, is the tighter one: the run is then TIMEOUT when it is killed, and seconds <= 0 means it
+    may not start at all. No push, or no bound: (timeout, None) - his Mac's push and a PC's census are never cut."""
+    run = _PUSH if run is None else run
+    if run is None:
+        return timeout, None
+    now = time.time() if now is None else now
+    best, why = None, None
+    hs = _hard_stop(run)
+    if hs is not None:
+        best, why = hs - now, "the run's hard stop, %d s past its deadline" % HARD_STOP_AFTER_S
+    cap = getattr(run, "gate_cap", None)
+    t0 = getattr(_BOUND, "t0", None) if gate_t0 is None else gate_t0
+    if cap is not None and t0 is not None and (best is None or t0 + cap - now < best):
+        best, why = t0 + cap - now, "this gate's %d s cap" % int(cap)
+    if best is None or (timeout and timeout <= best):
+        return timeout, None
+    return max(0.0, best), why
 
 
 def _served_here(cache, sandbox, name, filename, pr):
@@ -5876,6 +5922,7 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
         _order = run.order.get(name) or list(range(len(proofs)))
         _ckpt = {"on": True}                             # #150 - False once a checkpoint was not green (the closing run decides)
         _g0, _cut, _cut_why = time.time(), [], None      # REG-3212 - this gate's clock, and what its bound cut
+        _BOUND.t0 = _g0                                  # REG-3212 - a run of this gate's proofs is killed at its cap
         for _n, i in enumerate(_order):
             if run.stop.is_set():
                 break
@@ -5888,6 +5935,7 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
                 _ckpt["on"] = _checkpoint_bank(name, got, say, run)      # #150 (REG-2942) - before proof i, never after the last
             why = {}
             _MARK.m = {"t0": time.time()}                # REG-2353 - what this proof was forecast to do, and did
+            _BOUND.cut = None
             try:
                 got[i] = _prove_push_one(sandbox, name, filename, proofs[i], i, say, why)
             except Exception as _pe:
@@ -5895,6 +5943,14 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
                 got[i] = BLIND
             finally:
                 _m, _MARK.m = (getattr(_MARK, "m", None) or {}), None
+            if getattr(_BOUND, "cut", None) is not None and got.get(i) != PROVEN:
+                # REG-3212 - a run of this proof was KILLED at its bound: TIMEOUT (owed, named), never the law's verdict
+                _cut.append(i)
+                _cut_why = _cut_why or _BOUND.cut
+                got.pop(i, None)
+                with run._lock:
+                    run.proofs[(name, i)] = dict(_m, v=TIMEOUT, s=round(time.time() - _m.get("t0", time.time()), 1))
+                continue
             with run._lock:
                 run.proofs[(name, i)] = dict(_m, v=got.get(i), s=round(time.time() - _m.get("t0", time.time()), 1))
             reason = {BLIND: "the tamper ran and the law stayed GREEN",
@@ -5907,12 +5963,23 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
                         "  ⛔ #42 FAIL FAST — %s[%d] %s: %s. The run stops here: every proof not yet run is NOT RUN, "
                         "and the push is refused on this one." % (name, i, got[i], reason))
                 break
-        if _cut:
-            _timeout_owed(run, name, _cut, _cut_why, say)
+        _BOUND.t0, _BOUND.cut = None, None               # REG-3212 - the closing runs answer to the hard stop only
         per = [got.get(i) for i in range(len(proofs))]
+        _pre = list(per)
         per = _clean_here(sandbox, name, filename, proofs, per, say, run)   # REG-2587 - #242 on a push with no wave
         _before = list(per)
         per = _closing_clean(name, per, say)             # REG-1988 - None (NOT RUN) passes through untouched
+        if getattr(_BOUND, "cut", None) is not None:
+            # REG-3212 - the clean run that had to CONFIRM this gate's PROVENs was killed at the hard stop: they are not
+            # PROVEN (never banked) and not the law's defect either - TIMEOUT, owed by name, like a proof never started
+            _srv = set(x[0] for x in (getattr(_CLEAN, "served", None) or []))     # served: judged by its own rules
+            _lost = [j for j in range(len(per)) if _pre[j] == PROVEN and per[j] != PROVEN and j not in _srv]
+            _cut.extend(_lost)
+            _cut_why = _cut_why or _BOUND.cut
+            for j in _lost:
+                per[j] = None
+        if _cut:
+            _timeout_owed(run, name, sorted(set(_cut)), _cut_why, say)
         _f = run.first if (run.first and run.first[0] == name) else None
         if _f is not None and _before[_f[1]] in (BLIND, INVALID) and per[_f[1]] == UNPROVABLE:
             # FAIL CLOSED: the stop already stands. Only its REASON is corrected - the failure may be the drift.
@@ -5947,6 +6014,7 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
         _CLEAN.served = None
         _CLEAN.ckpt_keys = None
         _CLEAN.green_here = False
+        _BOUND.t0, _BOUND.cut = None, None
     if run.cache is not None:
         run.cache.flush()          # P3: what this gate proved reaches the disk now, not only at the end of the run
     return _push_gate_verdict(per), per

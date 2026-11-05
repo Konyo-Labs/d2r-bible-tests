@@ -4,7 +4,9 @@
 MEASURED on v3864 (2026-11-05): ci/proof-keys-v3864 proved commit 9d9485ea6 and published
 proofs-9d9485ea61f7482320cdc47a5d0e05f670776e77.tgz to the proof bank at 18:17; Publish began on THE SAME commit nine
 minutes later (run 42084305066), and every one of its 22 shards restored only v3863's seed, served 1-2 proofs and re-proved
-the rest - shards 6 and 13 ran 2 h 50 min. Every PC imports that bundle; GitHub did not. Held here:
+the rest - 56 min on a commit already proved (shard 6 proved 380 of its 388 again, for 49.5 min). Every PC imports that
+bundle; GitHub did not. And a "Re-run failed jobs" shard serves what its run's earlier attempt proved (ci/proof-keys-v3864's
+shard 10: 656 proofs, 87 min and cancelled; its re-run served 47 gates whole and took 36 min). Held here:
   * tv/proof_seed.py asks the bank for the bundle of EXACTLY the head sha it is given, unpacks it through the PCs' own
     safe unpack, and merges it with the seed actions/cache restored into ONE read-only store (merge_shards: only
     servable PROVENs); a missing bundle or nothing restored is said and is a cold run, never a failure;
@@ -12,7 +14,12 @@ the rest - shards 6 and 13 ran 2 h 50 min. Every PC imports that bundle; GitHub 
   * the store's sha256 is what the shards check: every shard reads the same seed and so cuts the same plan;
   * the workflow builds that seed once (job `seed`, from $GITHUB_SHA, after the REG-2961 restore, never failing the run),
     every shard needs it, downloads it into the dir heart2 seeds from and refuses a seed whose digest is not the seed
-    job's - and Publish runs this very workflow (job `proof`, gate deploy), so Publish takes the exact-sha bank.
+    job's - and Publish runs this very workflow (job `proof`, gate deploy), so Publish takes the exact-sha bank;
+  * (the second eye on v3865) a "Re-run failed jobs" shard restores the cache THIS run's earlier attempt saved and widens
+    the seed with it (proof_seed.widen: AFTER the digest check, the plan still the seed job's served.json), so what
+    attempt 1 proved is served, never proved again - the recovery that rescued v3864's shard 10;
+  * a bundle of this commit that still OWES proofs cut at their bound is bank=partial, never ok (the next round proves
+    the rest from it).
 heart2 serves a seed entry only under the key THIS checkout's bytes give it (test_ci_reuses_a_proof_only_for_identical_bytes),
 so only byte-identical proofs are ever served. Fixtures only - the bank download is replaced; no network. RED_PROOF below.
 """
@@ -149,6 +156,43 @@ class TheSeedTakesThisCommitsOwnProofs(_Tmp):
         self.assertEqual(rec["bank"], "refused")
         self.assertEqual(sorted(self.seed_body()["entries"]), ["k9"])
 
+    def test_a_set_its_bound_cut_is_partial_never_banked(self):
+        root = os.path.join(self.d, "pack-cut")
+        _store(os.path.join(root, "proof-shard-1"), {"k1": _e("ga", 0)}, head=SHA)
+        p2 = os.path.join(root, "proof-shard-2")
+        _store(p2, {"k2": _e("gb", 0)}, head=SHA)
+        with io.open(os.path.join(p2, PS.STORE_NAME), encoding="utf-8") as fh:
+            body = json.load(fh)
+        body["shard"]["owed"] = [["gb", 1, "TIMEOUT", "cut at its bound"], ["gb", 2, "BLIND", "green"]]
+        with io.open(os.path.join(p2, PS.STORE_NAME), "w", encoding="utf-8") as fh:
+            json.dump(body, fh)
+        out = os.path.join(self.d, "cut.tgz")
+        self.assertEqual(PS.bank(root, out, say=lambda *a: None), 0)
+        rec, said = self.build({(SHA, ""): out})
+        self.assertEqual((rec["bank"], rec["cut"]), ("partial", 1), said)
+        self.assertIn("PARTIAL", said)
+        self.assertEqual(self.served()["served"], [["ga", 0], ["gb", 0]], "a partial set's PROVENs are not served")
+        rec2, _s = self.build({(SHA, ""): self.bundle(SHA, [({"k1": _e("ga", 0)}, SHA, False)])})
+        self.assertEqual((rec2["bank"], rec2["cut"]), ("ok", 0))
+        self.assertIsNone(SEED.cut_in([], SHA), "no shard file read is 0 cut - it is UNKNOWN")
+
+    def test_a_rerun_shard_serves_what_its_earlier_attempt_proved(self):
+        seed = os.path.join(self.d, "seed")
+        _store(seed, {"k1": _e("ga", 0, at=5)})
+        earlier = os.path.join(self.d, "rerun")
+        _store(earlier, {"k1": _e("ga", 0, at=9), "k2": _e("gb", 0), "k3": _e("gc", 0, "BLIND")})
+        said = []
+        got = SEED.widen(os.path.join(seed, PS.STORE_NAME), earlier, os.path.join(self.d, "wide"), say=said.append)
+        self.assertEqual(got, os.path.join(self.d, "wide", PS.STORE_NAME), "\n".join(said))
+        with io.open(got, encoding="utf-8") as fh:
+            ent = json.load(fh)["entries"]
+        self.assertEqual(sorted(ent), ["k1", "k2"], "the earlier attempt's proofs are not served, or a BLIND is")
+        self.assertEqual(ent["k1"]["provedAt"], 9)
+        self.assertFalse(os.path.exists(os.path.join(self.d, "wide", "parts")), "the scratch copies were left behind")
+        self.assertIsNone(SEED.widen(os.path.join(seed, PS.STORE_NAME), "", os.path.join(self.d, "w2"), say=said.append))
+        cold = SEED.widen("", os.path.join(earlier, PS.STORE_NAME), os.path.join(self.d, "w3"), say=said.append)
+        self.assertTrue(cold and os.path.isfile(cold), "a cold run's re-run serves nothing its first attempt proved")
+
     def test_the_outputs_the_shards_read(self):
         out = os.path.join(self.d, "gh_output")
         SEED.write_outputs({"seeded": True, "digest": "ab" * 32, "bank": "ok", "entries": 3, "served": 2}, out)
@@ -206,6 +250,26 @@ class TheWorkflowSeedsEveryShardFromIt(unittest.TestCase):
         self.assertIn("exit 3; fi", chk[:chk.index("\n", chk.index("REG-3210")) + 1],
                       "a shard reading another seed than its siblings still proves")
 
+    def test_a_rerun_shard_restores_its_runs_earlier_attempt_and_widens_after_the_digest(self):
+        shard = _job(self.wf, "shard")
+        r = shard.index("key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-rerun\n")
+        step = shard[shard.rfind("\n      - ", 0, r):shard.find("\n      - ", r)]
+        self.assertIn("uses: actions/cache/restore@v4", step)
+        self.assertRegex(step, r"\n          restore-keys: heart2-proofs-\$\{\{ github\.sha \}\}-\$\{\{ github\.run_id \}\}-(\n|$)",
+                         "a re-run restores another run's or another commit's cache, or none")
+        self.assertIn("path: ${{ runner.temp }}/heart2-seed/rerun", step, "the re-run seed lands outside the seed dir")
+        self.assertIn("continue-on-error: true", step)
+        fan = _job(self.wf, "fan-in")
+        self.assertIn("key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}", fan,
+                      "the fan-in no longer saves the attempt the re-run restores")
+        prove = shard[shard.index("- name: Prove this shard"):]
+        w = prove.index("python3 tv/proof_seed.py --widen")
+        self.assertLess(prove.index("sha256sum"), w, "the seed is widened before its digest is checked")
+        self.assertIn('--with "$RUNNER_TEMP/heart2-seed/rerun"', prove[w:w + 200])
+        self.assertIn('export HEART2_SHARD_SEED="$RUNNER_TEMP/heart2-seed/wide/.heart2_cache.json"; fi', prove[w:])
+        self.assertLess(w, prove.index("python3 -u tv/heart2.py --prove --push"))
+        self.assertNotIn("HEART2_SHARD_SERVED=", prove[w:], "a re-run shard plans from another served list")
+
     def test_publish_runs_this_workflow(self):
         proof = _job(self.pub, "proof")
         self.assertIn("uses: ./.github/workflows/proof-keys-shards.yml", proof)
@@ -242,6 +306,26 @@ RED_PROOF = [
      "file": ".github/workflows/proof-keys-shards.yml",
      "find": "    needs: [budget, seed]\n",
      "replace": "    needs: [budget]\n",
+     "matches": 1},
+    {"why": "REG-3210 (second eye) - a re-run shard never restores what its run's earlier attempt proved (v3864 shard 10)",
+     "file": ".github/workflows/proof-keys-shards.yml",
+     "find": "          restore-keys: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-\n",
+     "replace": "          restore-keys: heart2-proofs-${{ github.sha }}-none-\n",
+     "matches": 1},
+    {"why": "REG-3210 (second eye) - the widened seed is built and never handed to heart2",
+     "file": ".github/workflows/proof-keys-shards.yml",
+     "find": "            export HEART2_SHARD_SEED=\"$RUNNER_TEMP/heart2-seed/wide/.heart2_cache.json\"; fi\n",
+     "replace": "            true; fi\n",
+     "matches": 1},
+    {"why": "REG-3210 (second eye) - the earlier attempt's proofs are left out of the widened seed",
+     "file": "tv/proof_seed.py",
+     "find": "        have = [p for p in (seed, extra) if p and os.path.isfile(p)]\n",
+     "replace": "        have = [p for p in (seed,) if p and os.path.isfile(p)]\n",
+     "matches": 1},
+    {"why": "REG-3214 (second eye) - a set its bound cut reads banked, so no round ever proves the rest",
+     "file": "tv/proof_seed.py",
+     "find": "            if _c:                          # REG-3214 - a set its bound cut is partial",
+     "replace": "            if False:                          # REG-3214 - a set its bound cut is partial",
      "matches": 1},
 ]
 
