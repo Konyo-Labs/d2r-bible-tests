@@ -32,7 +32,7 @@ NODE = os.environ.get("NODE") or shutil.which("node")
 from test_v3767_copy_witness import _assigned, _fn, _slice_fn, look_rule  # noqa: E402
 
 FNS = [
-    "packGrid", "vaultSize",
+    "packGrid", "vaultSize", "_sharedSpotSay", "_muleAreaSay", "_muleSpotSay", "_vaultWarMuleNeeded", "_vtxAsk",
     "_vaultCellKey", "_vaultSightGroups", "_vaultPresenceSpan", "_mkWant",
     "_vaultAutoIntakeRead", "_vaultAutoIntakePaint", "_vaultAutoIntakeSet",
     "_vaultAutoIntakeToggle", "_vaultFrameRefuse", "_vaultIntakeGate",
@@ -202,6 +202,9 @@ def move_bundle(src):
     grid = re.search(r"  var MULE_STASH_W = [^\n]*\n  var MULE_INV_W = [^\n]*\n", src).group(0)
     # REG-2703 - the hand door peels its quality words with the page's own _VH_QUAL, never a copy of it
     grid += re.search(r"  var _VH_QUAL = [^\n]*\n", src).group(0)
+    # v3864 (#233) - REG-3062's one spelling names every mule and shared cell, so the page's own helpers and its area table
+    # come with the bundle, never a copy of them (red on the chain head: "_muleSpotSay is not defined")
+    grid += re.search(r"  var MULE_AREAS = \{[\s\S]*?\};\n", src).group(0)
     return "\n".join(
         [grid, lane, kit, looks, evidence, register, reload_owned, look_rule(src)] + [_fn(src, n) for n in FNS] + [TAIL])
 
