@@ -106,6 +106,12 @@ def load_cards(session_dir):
         except Exception:
             continue
         if isinstance(c, dict) and c.get("subject"):
+            # REG-3218 - when the card last changed (its file's mtime, ms): how long an in_progress card has had nothing
+            # built is measured from here; None when it will not stat (UNKNOWN, never "just now")
+            try:
+                c["_mtime"] = int(os.path.getmtime(os.path.join(session_dir, f)) * 1000)
+            except OSError:
+                c["_mtime"] = None
             cards.append(c)
     return cards
 
@@ -115,15 +121,53 @@ def _id_key(c):
     return (0, int(i)) if i.isdigit() else (1, i)
 
 
-def board(cards, title, now_ms):
-    """-> the record the site keeps: {title, at, counts, cards: [{id, subject, status, active, description}]}"""
+def _chip(d):
+    """REG-3217 - a card's DERIVED phase as the site keeps it (tv/task_truth.py), every text scrubbed like the card's own."""
+    if not isinstance(d, dict):
+        return None
+    lk, th = d.get("look") or {}, d.get("third") or {}
+    return {"p": _cut(d.get("phase"), 20), "v": _cut(d.get("ver"), 12) if d.get("ver") else None,
+            "sha": _cut(d.get("sha"), 12) if d.get("sha") else None,
+            "at": d.get("at") if isinstance(d.get("at"), int) else None,
+            "keys": [_cut(k, 48) for k in (d.get("keys") or [])[:6]], "basis": d.get("basis"),
+            "look": _cut(lk.get("id"), 20) if lk.get("id") else None,
+            "third": _cut(th.get("id"), 20) if th.get("id") else None,
+            "unknown": [_cut(u, 20) for u in (d.get("unknown") or [])[:4]], "why": _cut(d.get("why"), 200)}
+
+
+def _drift(d):
+    """REG-3218 - the flag a card wears when its hand status disagrees with the evidence, scrubbed. -> {kind, say} | None"""
+    dr = (d or {}).get("drift") if isinstance(d, dict) else None
+    if not isinstance(dr, dict) or not dr.get("kind"):
+        return None
+    return {"kind": _cut(dr.get("kind"), 32), "say": _cut(dr.get("say"), 300)}
+
+
+def board(cards, title, now_ms, truth=None):
+    """-> the record the site keeps: {title, at, counts, cards: [{id, subject, status, active, description, phase, drift}],
+    truth}. `truth` is tv/task_truth.derive's answer (REG-3217/3218); without one the cards carry no phase and the record no
+    truth - never a phase nobody derived."""
     rows = []
+    by = (truth or {}).get("byCard") if isinstance(truth, dict) else None
     for c in sorted(cards or [], key=_id_key)[:MAX_CARDS]:
         st = c.get("status") if c.get("status") in STATUSES else "pending"
-        rows.append({"id": _cut(c.get("id"), 12), "subject": _cut(c.get("subject"), SUBJECT_MAX), "status": st,
-                     "active": _cut(c.get("activeForm"), ACTIVE_MAX), "description": _cut(c.get("description"), DESC_MAX)})
+        row = {"id": _cut(c.get("id"), 12), "subject": _cut(c.get("subject"), SUBJECT_MAX), "status": st,
+               "active": _cut(c.get("activeForm"), ACTIVE_MAX), "description": _cut(c.get("description"), DESC_MAX)}
+        if isinstance(by, dict):
+            d = by.get(str(c.get("id")))
+            row["phase"] = _chip(d) or {"p": "unknown", "why": "this card was not derived"}
+            row["drift"] = _drift(d)
+        rows.append(row)
     counts = dict((s, sum(1 for r in rows if r["status"] == s)) for s in STATUSES)
     out = {"title": _cut(title or "the task board", 120), "at": int(now_ms), "counts": counts, "cards": rows}
+    if isinstance(truth, dict):
+        sm = truth.get("summary") or {}
+        out["truth"] = {"ok": bool(truth.get("ok")), "why": _cut(truth.get("why"), 200) if truth.get("why") else None,
+                        "head": _cut(truth.get("head"), 12) if truth.get("head") else None,
+                        "publishedVer": _cut(truth.get("publishedVer"), 12) if truth.get("publishedVer") else None,
+                        "looks": _cut(truth.get("looks"), 12), "owed": sm.get("owed") if truth.get("ok") else None,
+                        "drift": dict((_cut(k, 32), int(v)) for k, v in (sm.get("drift") or {}).items()),
+                        "phases": dict((_cut(k, 20), int(v)) for k, v in (sm.get("phases") or {}).items())}
     # a board past the site's cap gives up description words first, the longest first, never a card
     while len(json.dumps(out, ensure_ascii=False).encode("utf-8")) > BOARD_MAX_BYTES:
         longest = max(rows, key=lambda r: len(r["description"]), default=None)

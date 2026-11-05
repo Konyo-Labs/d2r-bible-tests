@@ -2582,6 +2582,11 @@ NO_JOINT_YET = {
         "the row reads what the console's CI tick recorded from GitHub's public Actions API (tv/ci_watch.py) - one "
         "witness. An independent second source would be tv/ship_when_green.py's own Publish watch on the same commit, "
         "or the fan-in's prove_seconds per shard, and no joint compares either with the tick yet.",
+    # REG-3218 (v3865) - the task board against the tree: one source today, said so rather than claimed covered.
+    'the board agrees with the tree':
+        "the row reads the board lane's own record, which tv/task_truth.py derived from git and the #230/#231 looks - one "
+        "witness. An independent second source would be the published board (/api/roster?tasks=1) read back from the site "
+        "and its phases compared with the lane's, which nothing reads yet.",
     # v3856 - windowed lobby frames: one source today, said so rather than claimed covered.
     'a windowed frame is read inside its game':
         "the row measures a synthetic windowed frame through char_select's own game_box and lobby bands - the reader "

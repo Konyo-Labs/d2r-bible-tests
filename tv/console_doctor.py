@@ -11017,6 +11017,67 @@ _LANE_STALE_HOURS = 6.0
 _LANE_GH_TIMEOUT = 20
 
 
+#: REG-3218 - the board lane derives every minute; a record older than this is a stale reading, not an agreeing board
+_BOARD_TRUTH_STALE_MS = 10 * 60 * 1000
+
+
+def _board_tree_verdict(rec, now_ms):
+    """REG-3218 - the eagle's verdict on the lane's record (control_app._task_truth_settle). Pure. -> (state, line)"""
+    if not isinstance(rec, dict):
+        return UNKNOWN, "the board lane's record is not a record - whether the board agrees with the tree is UNKNOWN"
+    lane = "lane: on=%s worked=%s lastTs=%s owed=%s" % (rec.get("on"), rec.get("worked"), rec.get("lastTs"), rec.get("owed"))
+    say = str(rec.get("say") or "")[:160]
+    if rec.get("on") is False:
+        return UNMEASURED, ("this PC does not compare the board with the tree (%s); the board lives on his Mac, and the "
+                            "Future button (foot-tasks) opens it here · %s" % (say, lane))
+    if rec.get("on") is not True:
+        return UNKNOWN, "whether the board agrees with the tree is UNKNOWN: %s · %s" % (say, lane)
+    ts = rec.get("lastTs")
+    if not isinstance(ts, (int, float)) or isinstance(ts, bool):
+        return UNKNOWN, "the board lane is on and has never compared the board with the tree: %s · %s" % (say, lane)
+    age = now_ms - float(ts)
+    if age > _BOARD_TRUTH_STALE_MS:
+        return UNKNOWN, ("the board was last compared with the tree %.0f min ago - a stale reading, not an agreeing "
+                         "board: %s · %s" % (age / 60000.0, say, lane))
+    owed = rec.get("owed")
+    if not isinstance(owed, int) or isinstance(owed, bool):
+        return UNKNOWN, "the tree could not be read, so whether the board agrees with it is UNKNOWN: %s · %s" % (say, lane)
+    looks = rec.get("looks")
+    looks_say = "looks %s" % looks if looks == "read" else "looks %s (%s)" % (looks, str(rec.get("looksWhy") or "")[:90])
+    if owed:
+        kinds = rec.get("drift") or {}
+        parts = ["%d %s" % (n, k.replace("-", " ")) for k, n in kinds.items() if isinstance(n, int) and n]
+        first = "; ".join("#%s %s" % (f.get("id"), str(f.get("say") or "")[:90])
+                          for f in (rec.get("first") or [])[:3] if isinstance(f, dict))
+        return MISSING, ("%d of %s card(s) disagree with the tree (%s) - the derivation SAYS, nothing rewrites a card: "
+                         "%s · %s · %s" % (owed, rec.get("cards"), ", ".join(parts), first, looks_say, lane))
+    return OK, ("all %s card(s) agree with the tree at %s (%s) · %s · %s"
+                % (rec.get("cards"), rec.get("head"),
+                   ", ".join("%s %s" % (n, k) for k, n in sorted((rec.get("phases") or {}).items())), looks_say, lane))
+
+
+def _check_the_board_agrees_with_the_tree():
+    """REG-3217/3218 (his words 2026-11-05: "make sure its derived always console and you and the taskboard synced.. so we
+    are always with our finger on the trigger and know whats still being worked on and not shipped").
+
+    MEASURED that evening: the board had not been touched for 6 hours while the work moved - 25 cards said in_progress,
+    several describing work shipped days earlier. The board lane (control_app._task_board_loop) now derives every card's
+    phase from git and the #230/#231 looks (tv/task_truth.py) and flags a hand status that disagrees; this row reads the
+    record it writes (.task_truth.json - the lane runs in the console, this pass in its child) and goes MISSING while any
+    card disagrees. On a PC that does not hold the board it is UNMEASURED, said; a stale or unreadable record is UNKNOWN,
+    never an agreeing board. [[unknown-stays-unknown]] [[heart-first]]"""
+    import control_app as _ca
+    try:
+        with open(_ca._task_truth_state_path(), encoding="utf-8") as fh:
+            rec = json.load(fh)
+    except FileNotFoundError:
+        return UNKNOWN, ("the board lane has not written its record on this PC yet (it starts 45 s after the console) - "
+                         "whether the board agrees with the tree is UNKNOWN")
+    except Exception as e:
+        return UNKNOWN, "the board lane's record would not read (%s) - UNKNOWN" % type(e).__name__
+    return _board_tree_verdict(rec, time.time() * 1000.0)
+
+
 def _check_a_windowed_frame_is_read_inside_its_game():
     """v3856 - a windowed-mode frame (title bar + letterbox, Dean's 800x409 family) is measured inside its game area."""
     import tempfile, shutil
@@ -11352,6 +11413,8 @@ CHECKS = [
     ("this checkout can update", _check_this_checkout_can_update),
     ("the d2jsp price database is on its tab", _check_the_d2jsp_price_backend_matches_its_database),
     ("a windowed frame is read inside its game", _check_a_windowed_frame_is_read_inside_its_game),
+    # REG-3218 (his words 2026-11-05) - the task board compared with the tree; a card that disagrees is said, never rewritten
+    ("the board agrees with the tree", _check_the_board_agrees_with_the_tree),
 ]
 
 
@@ -12260,6 +12323,9 @@ WATCHES = {
     "his window has a keyboard door": (),
     "the d2jsp price database is on its tab": (),
     "a windowed frame is read inside its game": (),
+    # REG-3218 - DECLARED, NOT OMITTED. It reads the board lane's record (a file the console writes); the board it judges is
+    # a page on the site, not a registry surface, so the empty tuple is the honest answer.
+    "the board agrees with the tree": (),
 }
 
 

@@ -7,7 +7,10 @@
 <!-- v3864 (his ask 2026-11-05, card 57) - THE TASK BOARD ONLINE. His Mac's console publishes its board, scrubbed (tv/task_board.py),
      to the roster worker; this page reads it at /api/roster?tasks=1 (behind the site password) and draws it the way the Mac's
      own viewer does: in progress, pending, done. Every text is set with textContent, never as markup. It says how old the
-     board is, and an unreadable answer says so - never an empty board. -->
+     board is, and an unreadable answer says so - never an empty board.
+     v3865 (REG-3217/3218, his words 2026-11-05: "make sure its derived always") - every card wears the phase his Mac DERIVED
+     from git and the #230/#231 looks (tv/task_truth.py), and a card whose hand status disagrees wears the flag that says how;
+     the header counts them. A board published without a derivation says so - never a phase nobody derived. -->
 <style>
   :root { --bg: #0d0b09; --panel: #16130f; --card: #1d1914; --edge: #3a3226; --text: #e9e1cf; --muted: #a2967d;
           --gold: #e0b45a; --live: #5fb8ff; --done: #66c28a; --wait: #c9a85a; }
@@ -40,12 +43,22 @@
   .desc { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12.5px; margin-top: 6px; color: var(--text); }
   .empty { padding: 14px 12px; color: var(--muted); }
   .why { padding: 24px 16px; color: var(--muted); }
+  .ph { margin-top: 5px; display: inline-block; font-size: 11.5px; letter-spacing: .02em; padding: 1px 7px; border-radius: 999px;
+        border: 1px solid var(--edge); color: var(--muted); overflow-wrap: anywhere; max-width: 100%; }
+  .ph[data-phase="live"], .ph[data-phase="looked"], .ph[data-phase="third-eyed"], .ph[data-phase="shipped"] { color: var(--done); border-color: var(--done); }
+  .ph[data-phase="building"], .ph[data-phase="graded"] { color: var(--live); border-color: var(--live); }
+  .ph[data-phase="unknown"] { color: var(--wait); border-style: dashed; }
+  .dr { margin-top: 5px; font-size: 12px; padding: 4px 7px; border-radius: 6px; border-left: 3px solid var(--wait);
+        background: color-mix(in srgb, var(--wait) 10%, transparent); overflow-wrap: anywhere; }
+  .dr[data-drift="closed-never-shipped"] { border-left-color: #e07a5a; background: color-mix(in srgb, #e07a5a 12%, transparent); }
+  .dr[data-drift="ready-to-close"] { border-left-color: var(--done); background: color-mix(in srgb, var(--done) 10%, transparent); }
+  #tb-truth.bad { color: #e07a5a; }
 </style>
 </head>
 <body>
 <header>
   <h1 id="tb-title">Task board</h1>
-  <div class="meta"><span id="tb-age">reading…</span><span id="tb-counts"></span><span id="tb-note">refreshes every minute</span></div>
+  <div class="meta"><span id="tb-age">reading…</span><span id="tb-counts"></span><span id="tb-truth"></span><span id="tb-note">refreshes every minute</span></div>
 </header>
 <div class="why" id="tb-why" hidden></div>
 <main id="tb-cols">
@@ -63,10 +76,30 @@
     var m = Math.max(0, Math.round((Date.now() - ms) / 60000));
     return m < 1 ? 'updated under a minute ago' : m < 120 ? 'updated ' + m + ' min ago' : 'updated ' + Math.round(m / 60) + ' hr ago';
   }
+  function since(ms) {
+    if (typeof ms !== 'number' || !isFinite(ms)) return '';
+    var h = Math.max(0, (Date.now() - ms) / 3600000);
+    return h < 1 ? ' · under an hour ago' : h < 48 ? ' · ' + Math.round(h) + ' h ago' : ' · ' + Math.round(h / 24) + ' d ago';
+  }
+  /* REG-3217 - the phase his Mac derived for this card, with its evidence; UNKNOWN is a phase, never a blank */
+  function chip(p) {
+    var ph = String((p && p.p) || 'unknown');
+    var words = ph === 'unknown' ? 'phase UNKNOWN' : ph + (p.v && /^(shipped|live|looked|third-eyed)$/.test(ph) ? ' ' + p.v : '');
+    if (p && p.sha) words += ' · ' + p.sha;
+    words += since(p && p.at);
+    if (p && p.keys && p.keys.length) words += ' · ' + p.keys.slice(0, 3).join(', ') + (p.basis === 'description' ? ' (from its description)' : '');
+    if (p && p.unknown && p.unknown.length) words += ' · ' + p.unknown.join(', ') + ' UNKNOWN';
+    var e = el('div', 'ph', words);
+    e.dataset.phase = ph;
+    if (p && p.why) e.title = p.why;
+    return e;
+  }
   function card(c) {
     var li = el('li');
     var sub = el('div', 'sub'); sub.appendChild(el('i', '', '#' + c.id)); sub.appendChild(document.createTextNode(c.subject || ''));
     li.appendChild(sub);
+    if (c.phase) li.appendChild(chip(c.phase));
+    if (c.drift && c.drift.kind) { var dr = el('div', 'dr', c.drift.say || c.drift.kind); dr.dataset.drift = String(c.drift.kind); li.appendChild(dr); }
     if (c.active) li.appendChild(el('div', 'act', c.active));
     if (c.description) { var d = el('details'); d.appendChild(el('summary', '', 'details')); d.appendChild(el('div', 'desc', c.description)); li.appendChild(d); }
     return li;
@@ -89,6 +122,18 @@
     age.className = (typeof at === 'number' && Date.now() - at > STALE_MS) ? 'stale' : '';
     var n = b.counts || {};
     document.getElementById('tb-counts').textContent = (n.completed | 0) + ' done · ' + (n.in_progress | 0) + ' in progress · ' + (n.pending | 0) + ' pending';
+    /* REG-3218 - the board against the tree, counted: what disagrees, or why it could not be compared */
+    var tr = document.getElementById('tb-truth'), t = b.truth;
+    tr.className = '';
+    if (!t) tr.textContent = 'not compared with the tree (published without a derivation)';
+    else if (!t.ok || typeof t.owed !== 'number') { tr.textContent = 'the tree: UNKNOWN' + (t.why ? ' (' + t.why + ')' : ''); tr.className = 'bad'; }
+    else {
+      var parts = Object.keys(t.drift || {}).filter(function (k) { return (t.drift[k] | 0) > 0; })
+        .map(function (k) { return (t.drift[k] | 0) + ' ' + k.replace(/-/g, ' '); });
+      tr.textContent = t.owed ? 'the tree disagrees: ' + parts.join(' · ') : 'every card agrees with the tree';
+      tr.textContent += ' · ' + (t.head || '?') + ' · site ' + (t.publishedVer || 'UNKNOWN') + ' · looks ' + (t.looks || 'UNKNOWN');
+      if ((t.drift || {})['closed-never-shipped'] | 0) tr.className = 'bad';
+    }
     ['in_progress', 'pending', 'completed'].forEach(function (st) {
       var sec = document.querySelector('section[data-st="' + st + '"]');
       var ol = sec.querySelector('ol'); ol.textContent = '';

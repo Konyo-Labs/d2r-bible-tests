@@ -155,7 +155,9 @@ def ledgers():
                    ("vault_seen.json", "vault sightings"),
                    ("chronicle_swept.json", "which reels the chronicle lane has read"),
                    (".proof_release.json", "which commit this PC last imported GitHub's proofs for, and how it went (v3862)"),
-                   (".task_board_state.json", "when his Mac last published the scrubbed task board, and its fingerprint (v3864)")):
+                   (".task_board_state.json", "when his Mac last published the scrubbed task board, and its fingerprint (v3864)"),
+                   (".task_truth.json", "the board compared with the tree: on/worked/lastTs/owed and the cards that disagree (REG-3218)"),
+                   (".task_truth_looks.json", "the #230/#231 looks the derived board cites: ids, seats, REG ids, versions - no bodies (REG-3217)")):
         p = os.path.join(HERE, f)
         out.append((f, why, os.path.exists(p),
                     (os.path.getsize(p) if os.path.exists(p) else 0)))

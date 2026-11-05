@@ -5546,6 +5546,12 @@ def roster_approve(owner, key_id, decision, _post=None, now_ms=None):
 TASK_BOARD_URL = "https://bull-4-u.com/d2r/tasks.html"
 TASK_BOARD_EVERY_S = 60
 _TASK_BOARD = {"at": None, "why": None, "state": None, "posted": 0}
+#: REG-3217/3218 (his words 2026-11-05: "make sure its derived always console and you and the taskboard synced") - the board
+#: compared with the tree: on (this PC derives it: his Mac's board) / worked (derivations this run) / lastTs (the last one,
+#: ms) / owed (cards whose hand status disagrees with the evidence; None = UNKNOWN). Written to .task_truth.json each tick,
+#: where the eagle's child reads it (console_doctor "the board agrees with the tree").
+_TASK_TRUTH = {"on": None, "worked": 0, "lastTs": None, "owed": None,
+               "say": "the board has not been compared with the tree since this console started"}
 
 
 def task_board_open(_open=None):
@@ -5568,9 +5574,65 @@ def _task_board_state_path():
     return os.path.join(_log_root(), ".task_board_state.json")
 
 
-def task_board_publish_once(now_ms=None, _post=None, _tasks_dir=None, _label=None, _platform=None):
+def _task_truth_state_path():
+    return os.path.join(_log_root(), ".task_truth.json")
+
+
+def _task_truth_looks_path():
+    return os.path.join(_log_root(), ".task_truth_looks.json")
+
+
+def task_truth_derive(cards, now_ms, _repo=None, _looks_path=None, _gh=None, _published=None, _run=None):
+    """REG-3217 - every card's DERIVED phase (tv/task_truth.py): its REG ids, version and branches resolved against git in
+    THIS console's own checkout (cached per HEAD + origin/main), the published version the fleet already reads, and the
+    #230 / #231 looks read through tv/handoff.py's one GitHub reader at most every 10 min. -> task_truth.derive's answer"""
+    import task_truth as _tt
+    if _gh is None:
+        import handoff as _ho
+
+        def _gh(api_path):
+            return _ho._gh(api_path, timeout=_tt.GH_TIMEOUT_S)
+    cache = _tt.refresh_looks(_looks_path or _task_truth_looks_path(), now_ms, _gh)
+    idx = _tt.git_index(_repo or REPO, now_ms, run=_run or _git_run)
+    if _published is None:
+        _published = ((_FLEET_CACHE.get("val") or {}).get("publishedVer")) or None
+    return _tt.derive(cards, idx, _published, _tt.looks_view(cache, now_ms), now_ms)
+
+
+def _task_truth_settle(r, now_ms=None, _path=None):
+    """REG-3218 - the lane's on/worked/lastTs/owed from one publish answer, kept and written for the eagle row. A PC that
+    does not derive the board says why (on False); an answer that was UNKNOWN stays UNKNOWN (on None). -> the record"""
+    now_ms = int(now_ms if now_ms is not None else time.time() * 1000)
+    t = r.get("truth") if isinstance(r, dict) else None
+    if isinstance(t, dict) and t.get("ok"):
+        sm = t.get("summary") or {}
+        _TASK_TRUTH.update(on=True, worked=int(_TASK_TRUTH.get("worked") or 0) + 1, lastTs=now_ms, owed=sm.get("owed"),
+                           cards=sm.get("cards"), drift=sm.get("drift"), phases=sm.get("phases"), first=sm.get("first"),
+                           looks=t.get("looks"), looksWhy=t.get("looksWhy"), head=t.get("head"),
+                           publishedVer=t.get("publishedVer"),
+                           say="compared %s card(s) with the tree at %s" % (sm.get("cards"), t.get("head")))
+    elif isinstance(t, dict):
+        _TASK_TRUTH.update(on=True, owed=None, drift=None, first=None,
+                           say="the board could not be compared with the tree: %s" % str(t.get("why") or "no reason")[:200])
+    else:
+        why = str((r or {}).get("why") if isinstance(r, dict) else "") or "the board lane did not answer"
+        _TASK_TRUTH.update(on=(None if "UNKNOWN" in why else False), owed=None, drift=None, first=None, say=why[:200])
+    rec = dict(_TASK_TRUTH, at=now_ms)
+    try:
+        _tp = _path or _task_truth_state_path()
+        with open(_tp + ".tmp", "w", encoding="utf-8") as fh:
+            json.dump(rec, fh)
+        os.replace(_tp + ".tmp", _tp)
+    except Exception as _we:
+        rec["wrote"] = "the record would not write (%s)" % type(_we).__name__
+    return rec
+
+
+def task_board_publish_once(now_ms=None, _post=None, _tasks_dir=None, _label=None, _platform=None, _derive=None):
     """v3864 (card 57) - THE MAC'S BOARD, SCRUBBED, TO THE SITE. Only his Mac (an approver label, darwin, with a board dir)
-    publishes; a suppressed console never reaches the site. -> {posted: bool, why}"""
+    publishes; a suppressed console never reaches the site. REG-3217: with `_derive` (the lane passes task_truth_derive)
+    every card carries its derived phase and drift flag, and the answer carries the derivation as `truth`.
+    -> {posted: bool, why, truth?}"""
     import task_board as _tb
     now_ms = int(now_ms if now_ms is not None else time.time() * 1000)
     plat = _platform or sys.platform
@@ -5592,7 +5654,14 @@ def task_board_publish_once(now_ms=None, _post=None, _tasks_dir=None, _label=Non
     cards = _tb.load_cards(os.path.join(root, sid))
     if cards is None:
         return {"posted": False, "why": "the session's cards would not read - UNKNOWN, nothing posted"}
-    b = _tb.board(cards, _tb.session_name(sid, _tasks_dir) or "the task board", now_ms)
+    truth = None
+    if _derive is not None:
+        try:
+            truth = _derive(cards, now_ms)
+        except Exception as _de:
+            truth = {"ok": False, "why": "the derivation raised %s - UNKNOWN" % type(_de).__name__, "byCard": {},
+                     "summary": {}}
+    b = _tb.board(cards, _tb.session_name(sid, _tasks_dir) or "the task board", now_ms, truth=truth)
     st = _TASK_BOARD.get("state")
     if st is None:
         try:
@@ -5602,10 +5671,10 @@ def task_board_publish_once(now_ms=None, _post=None, _tasks_dir=None, _label=Non
             st = {}                                   # never posted from here: the first post is due
         except Exception as _re:
             return {"posted": False, "why": "the pacing record would not read (%s) - UNKNOWN, nothing posted"
-                                            % type(_re).__name__}
+                                            % type(_re).__name__, "truth": truth}
     go, why = _tb.due(st, b, now_ms)
     if not go:
-        return {"posted": False, "why": why}
+        return {"posted": False, "why": why, "truth": truth}
     body = {"kind": "tasks", "poster": label, "board": b, "signedAt": now_ms}
     got = (_post or _roster_post)(_ROSTER_URL, body, os.path.join(_log_root(), ".roster_key.json"))
     ok = isinstance(got, dict) and got.get("ok") is True
@@ -5619,7 +5688,8 @@ def task_board_publish_once(now_ms=None, _post=None, _tasks_dir=None, _label=Non
             os.replace(_tp + ".tmp", _tp)
         except Exception as _we:
             _TASK_BOARD["why"] = "posted, and the pacing record would not write (%s)" % type(_we).__name__
-    return {"posted": ok, "why": why if ok else ((got or {}).get("why") if isinstance(got, dict) else "the site did not answer")}
+    return {"posted": ok, "why": why if ok else ((got or {}).get("why") if isinstance(got, dict) else "the site did not answer"),
+            "truth": truth}
 
 
 def _task_board_loop():
@@ -5627,10 +5697,15 @@ def _task_board_loop():
     while True:
         _lane_tick("_task_board_loop", TASK_BOARD_EVERY_S * 3)
         try:
-            r = task_board_publish_once()
+            r = task_board_publish_once(_derive=task_truth_derive)
             _TASK_BOARD.update(at=time.time(), why=r.get("why"))
+            _task_truth_settle(r)
         except Exception as e:
             _TASK_BOARD.update(at=time.time(), why="the publish raised %s" % type(e).__name__)
+            try:
+                _task_truth_settle({"why": "the publish raised %s - UNKNOWN" % type(e).__name__})
+            except Exception:
+                pass
         time.sleep(TASK_BOARD_EVERY_S)
 
 
