@@ -22,7 +22,11 @@ class ASealedReel(unittest.TestCase):
     def test_a_seal_after_the_post_opens_the_lane(self):
         import shadow_sessions as ss
         st = {"postedAt": T, "checkedAt": T + 30 * 60000}
-        self.assertTrue(ss.may_build(st, T + H, False, sealed_at=T + H - 60000))
+        # v3862 - INSIDE the lane's own gap, a minute before it would open by time alone: the 1 h gap of Workers Paid made
+        # T + 1 h the very moment the gap ends, so the seal's branch proved nothing there (CI shard 14 read it BLIND)
+        now = T + ss.MIN_GAP_MS - 60000
+        self.assertFalse(ss.may_build(st, now, False, sealed_at=None), "PREMISE: the gap alone opens the lane here")
+        self.assertTrue(ss.may_build(st, now, False, sealed_at=now - 60000))
 
     def test_no_seal_keeps_the_three_hour_gap(self):
         import shadow_sessions as ss
