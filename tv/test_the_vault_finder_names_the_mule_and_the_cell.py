@@ -131,7 +131,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2020 - the finder names no mule-stash cell",
      "file": "bible.html",
-     "find": "            (mu.stash || []).forEach(function(p){ if (p.n === nm) _putW(_muleSpotSay('personal', p.x, p.y, mpW)); });\n",
+     "find": "            (mu.stash || []).forEach(function(p){ if (p.n === nm) _putW(_muleSpotSay('personal', p.x, p.y, mpW, wm)); });\n",
      "replace": "",
      "matches": 1},
     {"why": "REG-2020 - armour his MAIN wears is offered a mule in the finder",

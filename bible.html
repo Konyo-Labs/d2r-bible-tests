@@ -46943,7 +46943,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       if (!ca) return String(cell);
       var at = 'col ' + (ca.x + 1) + ' · row ' + (ca.y + 1);
       if (ca.loc === 'shared') return _sharedSpotSay(ca.page, ca.x, ca.y);   /* REG-3005 the one spelling */
-      return _muleSpotSay(ca.loc, ca.x, ca.y, ca.page);   /* REG-3062 the one spelling */
+      return _muleSpotSay(ca.loc, ca.x, ca.y, ca.page, mule);   /* REG-3062 the one spelling; REG-2996 the locker's mule name */
     }
     var res = document.getElementById('vault-find-results');
     if (!res) return;
@@ -56227,12 +56227,16 @@ window.vaultAutoAssign = function(){
      Every surface that names a mule cell asks this one helper, in _sharedSpotSay's shape: the locker's mule page first
      (when the caller names one), then the area, then col and row. area: a MULE_AREAS key, or a cell's own 'stash' /
      'inventory'; x, y, page 0-based; page null = no mule page said. -> 'Mule 2 · Personal stash · col 3 · row 1' */
-  function _muleAreaSay(area, page){
+  /* v3864 (#233, REG-2996 met REG-3062) - a caller that knows the LOCKER (m) hands it over, and its Mule 2 is said with the
+     character name the game takes ("Mule 2 · ARMOR-A", _vaultLockerMuleSay); a caller that does not still says "Mule 2" */
+  function _muleAreaSay(area, page, m){
     var t = (area === 'stash') ? 'personal' : (area === 'inventory') ? 'inv' : area;
     var A = MULE_AREAS[t];
-    return (page == null ? '' : 'Mule ' + ((+page || 0) + 1) + ' \u00b7 ') + (A ? A[2] + (t === 'inv' ? '' : ' stash') : String(area));
+    var mk = (page == null) ? '' : ((m && typeof _vaultLockerMuleSay === 'function') ? _vaultLockerMuleSay(m, (+page || 0) + 1)
+                                                                                    : 'Mule ' + ((+page || 0) + 1)) + ' \u00b7 ';
+    return mk + (A ? A[2] + (t === 'inv' ? '' : ' stash') : String(area));
   }
-  function _muleSpotSay(area, x, y, page){ return _muleAreaSay(area, page) + ' \u00b7 col ' + ((+x || 0) + 1) + ' \u00b7 row ' + ((+y || 0) + 1); }
+  function _muleSpotSay(area, x, y, page, m){ return _muleAreaSay(area, page, m) + ' \u00b7 col ' + ((+x || 0) + 1) + ' \u00b7 row ' + ((+y || 0) + 1); }
   try { window._muleSpotSay = _muleSpotSay; window._muleAreaSay = _muleAreaSay; } catch (eMs) {}
   /* REG-2878 - A COPY'S TRADE SLOT, READ ONCE PER STORE TEXT for every surface that draws a copy (the card, the window, FIND,
      the MOVE row): -> [{ci, state, at, post}] of this name's copies that carry a slot */
@@ -56630,10 +56634,10 @@ window.vaultAutoAssign = function(){
           var load = _muleLoad(_muleNamesFor(mid), worn, mid);
           (load.mules || []).forEach(function(mu, pi){
             var mp = (load.mules.length > 1) ? pi : null;   /* REG-3062 the one spelling */
-            (mu.stash || []).forEach(function(p){ if (p.n === nm) _put(_muleSpotSay('personal', p.x, p.y, mp)); });
+            (mu.stash || []).forEach(function(p){ if (p.n === nm) _put(_muleSpotSay('personal', p.x, p.y, mp, m)); });
             MULE_STASH_TABS.slice(1).forEach(function(t){ ((mu.tabs || {})[t] || []).forEach(function(p){
-              if (p.n === nm) _put(_muleSpotSay(t, p.x, p.y, mp)); }); });
-            (mu.inv || []).forEach(function(p){ if (p.n === nm) _put(_muleSpotSay('inv', p.x, p.y, mp)); });
+              if (p.n === nm) _put(_muleSpotSay(t, p.x, p.y, mp, m)); }); });
+            (mu.inv || []).forEach(function(p){ if (p.n === nm) _put(_muleSpotSay('inv', p.x, p.y, mp, m)); });
           });
           if (!out.cell && (load.rem || []).some(function(p){ return p && p.n === nm; })){ out.kind = 'over'; out.cell = 'it does not fit - this locker is over its mules'; }
         }
@@ -56660,10 +56664,10 @@ window.vaultAutoAssign = function(){
           var loadW = _muleLoad(_muleNamesFor(pg.id), wornW, pg.id);
           (loadW.mules || []).forEach(function(mu, pi){
             var mpW = (loadW.mules.length > 1) ? pi : null;   /* REG-3062 the one spelling */
-            (mu.stash || []).forEach(function(p){ if (p.n === nm) _putW(_muleSpotSay('personal', p.x, p.y, mpW)); });
+            (mu.stash || []).forEach(function(p){ if (p.n === nm) _putW(_muleSpotSay('personal', p.x, p.y, mpW, wm)); });
             MULE_STASH_TABS.slice(1).forEach(function(t){ ((mu.tabs || {})[t] || []).forEach(function(p){
-              if (p.n === nm) _putW(_muleSpotSay(t, p.x, p.y, mpW)); }); });
-            (mu.inv || []).forEach(function(p){ if (p.n === nm) _putW(_muleSpotSay('inv', p.x, p.y, mpW)); });
+              if (p.n === nm) _putW(_muleSpotSay(t, p.x, p.y, mpW, wm)); }); });
+            (mu.inv || []).forEach(function(p){ if (p.n === nm) _putW(_muleSpotSay('inv', p.x, p.y, mpW, wm)); });
           });
         }
       } catch (eW) { outW.cell = null; outW.cells = []; }
@@ -58417,7 +58421,7 @@ window.vaultAutoAssign = function(){
         return h + ' · ' + _sharedSpotSay(Math.floor((+m[2]) / 10), +m[1], (+m[2]) % 10);   /* REG-3005 the one spelling */
       if (_pm && _vaultWarRole(_pm)) h = h + ' (SHARED STASH · overflow)'; /* L1 a WAR mule reads as the war stash; REG-2804 by its role, never its name */
       var _ca = _vaultCellAt(place.cell);
-      if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null);   /* REG-2875 the next mule of a full locker; REG-3062 the one spelling */
+      if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null, _pm);   /* REG-2875 the next mule of a full locker; REG-3062 the one spelling */
       return h + (m ? ' (' + ((+m[1]) + 1) + ',' + ((+m[2]) + 1) + ')' : '');
     }
     function _vtkDone(t){ return t && (t.status === 'moved-manual' || t.status === 'verified' || t.status === 'closed'); }
