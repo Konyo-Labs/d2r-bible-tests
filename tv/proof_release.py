@@ -32,6 +32,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -181,8 +182,60 @@ def _low_priority():
     return ([nice, "-n", "15"] if nice else []), 0
 
 
-def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor=""):
-    """Download, unpack and import this commit's proofs. -> {"state", "sha", "flavor", "why", "seconds", "at"}."""
+#: REG-3194 - how often the console reads the import's progress file while heart2 keys
+PROGRESS_POLL_S = 2.0
+PROGRESS_NAME = "progress.json"
+
+
+def read_progress(path):
+    """REG-3194 - heart2's --import-progress file -> {"done", "of", "etaS", "at"}, each a whole number or None (UNKNOWN;
+    an etaS of 0 is UNKNOWN too, never "done"), or None when no readable file is there yet. Never raises."""
+    try:
+        with io.open(path, encoding="utf-8") as fh:
+            body = json.load(fh)
+    except Exception:
+        return None
+    if not isinstance(body, dict):
+        return None
+
+    def _n(v, floor):
+        return v if isinstance(v, int) and not isinstance(v, bool) and v >= floor else None
+    return {"done": _n(body.get("done"), 0), "of": _n(body.get("of"), 0), "etaS": _n(body.get("etaS"), 1),
+            "at": _n(body.get("at"), 1)}
+
+
+class _ProgressWatch(object):
+    """REG-3194 - reads the progress file every PROGRESS_POLL_S while heart2 runs and hands each new reading to `cb`;
+    stop() reads it once more, so the last count is never lost. A callback that raises is ignored."""
+
+    def __init__(self, path, cb):
+        self.path, self.cb, self.last = path, cb, None
+        self._halt = threading.Event()
+        self._t = threading.Thread(target=self._loop, daemon=True, name="tvd-proof-release-progress")
+        self._t.start()
+
+    def _read(self):
+        got = read_progress(self.path)
+        if got is not None and got != self.last:
+            self.last = got
+            try:
+                self.cb(dict(got))
+            except Exception:
+                pass
+
+    def _loop(self):
+        while not self._halt.wait(PROGRESS_POLL_S):
+            self._read()
+
+    def stop(self):
+        self._halt.set()
+        self._t.join(10)
+        self._read()
+
+
+def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="", progress=None):
+    """Download, unpack and import this commit's proofs. -> {"state", "sha", "flavor", "why", "seconds", "at"}.
+    REG-3194 - `progress` (a callable) is handed {"done", "of", "etaS", "at"} as heart2 keys the proofs."""
     tv_dir = tv_dir or HERE
     run = run or subprocess.run
     t0 = time.time()
@@ -200,13 +253,21 @@ def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="")
             out.update(state="refused", why="the bundle was refused before import: %s" % why)
             return out
         pre, flags = _low_priority()
+        argv = [sys.executable, os.path.join(tv_dir, "heart2.py")]
+        watch = None
+        if progress is not None:          # REG-3194 - heart2 keeps its count in a file of this scratch dir
+            argv += ["--import-progress", os.path.join(d, PROGRESS_NAME)]
+            watch = _ProgressWatch(os.path.join(d, PROGRESS_NAME), progress)
         try:
-            r = run(pre + [sys.executable, os.path.join(tv_dir, "heart2.py"), "--import-shards"] + paths, cwd=tv_dir,
+            r = run(pre + argv + ["--import-shards"] + paths, cwd=tv_dir,
                     capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5400,
                     creationflags=flags)
         except Exception as e:
             out.update(state="unknown", why="heart2 --import-shards could not run (%s)" % type(e).__name__)
             return out
+        finally:
+            if watch is not None:
+                watch.stop()
         said = ((r.stdout or "") + (r.stderr or "")).strip()
         line = next((l.strip() for l in said.splitlines() if "REG-2586" in l), said.splitlines()[-1] if said else "")
         if r.returncode == 0:

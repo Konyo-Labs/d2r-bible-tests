@@ -4516,17 +4516,22 @@ def _cache_evict(ent, cap, live=None):
     return over
 
 
+#: REG-3193 - "ask git for this set" (the default); an import worker is handed its parent's answer, None (UNKNOWN) too
+_ASK_GIT = object()
+
+
 class _VerdictCache(object):
     """#42 P3 — the PROVEN verdicts one machine may reuse at push time, and the counts a run prints beside them."""
 
-    def __init__(self, path=None, say=print):
+    def __init__(self, path=None, say=print, tracked=_ASK_GIT, kept=_ASK_GIT):
         self.path = path or CACHE
         self.say = say
         self.lock = threading.Lock()
         self.memo = {}                   # (path, size, mtime_ns) -> sha256, this run only
         self.parsed = {}                 # (path, size, mtime_ns) -> (imports, named files), this run only
-        self.tracked = _tracked_files()  # #242 (2026-10-08) - the named files a key may count: tracked ones only
-        self.kept = _kept_files()        # REG-2944 - untracked and not ignored: a listed dir's entries beside the tracked
+        # REG-3193 - an import worker is handed its parent's two answers (None, UNKNOWN, included) and asks git nothing
+        self.tracked = _tracked_files() if tracked is _ASK_GIT else tracked  # #242 (2026-10-08) - the named files a key may count: tracked ones only
+        self.kept = _kept_files() if kept is _ASK_GIT else kept              # REG-2944 - untracked and not ignored: a listed dir's entries beside the tracked
         self.traced = {"banked": 0, "refused": 0, "why": {}}   # REG-2944 - listing laws, this run, for the push record
         self.closures = {}               # (sandbox, filename) -> (inputs, why): one closure walk per law per lane
         self.hits = self.misses = self.stores = self.unkeyable = self.moved = 0
@@ -4624,20 +4629,25 @@ class _VerdictCache(object):
                 h.update(n.encode("utf-8", "replace") + b"\0" + kind.encode("utf-8", "replace") + b"\0")
         return h.hexdigest().encode("ascii"), None
 
-    def key_for(self, sandbox, name, filename, pr, unread=None, listed=None):
+    def key_for(self, sandbox, name, filename, pr, unread=None, listed=None, pre=None):
         """-> (key | None, [repo-relative inputs], why-unkeyable | None), from the SANDBOX's bytes now.
 
         REG-2640: `unread` None asks for the key a reader should look up - the byte-for-byte v1 key, or, when no PROVEN
         is servable under it, the first v2 key (a recorded unread-set of this same proof) that is. A list keys exactly
-        those inputs by name only (v2; [] is v1): the key a traced PROVEN is banked under."""
+        those inputs by name only (v2; [] is v1): the key a traced PROVEN is banked under.
+        REG-3193 - `pre` {(unread, listed): _key's answer} holds what an import worker computed from these same bytes
+        (_key_job); a call it does not hold is computed here. Only _shard_keyer passes it."""
+        def _k(un, ls):
+            got = pre.get((tuple(un), ls)) if pre else None
+            return got if got is not None else self._key(sandbox, name, filename, pr, un, ls)
         if unread is None:
-            k1, rels, why = self._key(sandbox, name, filename, pr, ())
+            k1, rels, why = _k((), None)
             if k1 is None or self.peek(k1) is not None:
                 return k1, rels, why
             for un, ls in self._variants(self.ident(name, filename, pr)):
                 if not set(un) <= set(rels):
                     continue
-                k2, rels2, why2 = self._key(sandbox, name, filename, pr, un, ls)
+                k2, rels2, why2 = _k(un, ls)
                 if k2 is not None and self.peek(k2) is not None:
                     return k2, rels2, why2
             return k1, rels, why
@@ -7807,16 +7817,338 @@ def triage(say=print):
     return {"writable": [n for n, _ in writable], "unprovable": [n for n, _ in unprovable]}
 
 
+# ══ v3865 REG-3193 / REG-3194 — AN IMPORT KEYS ITS PROOFS ON THE PC'S SPARE CORES, AND SAYS HOW FAR IT IS ═════════════
+# MEASURED 2026-11-05 on his Mac: `heart2 --import-shards` - the console's import of GitHub's proofs after an update
+# (proof_release.import_bundle) - took 1,278 s for v3863 (2,625 proofs) and 1,635 s for v3864 on ONE core, and every
+# lock stays shut until it ends. The time is the keyer select() asks once per servable entry: a profile of the first 300
+# entries of the v3864 bundle put 28 of 76 s in law_inputs' closure walks and the rest in _key's hashing (stamp masks,
+# literal counts, relpaths), once per PROOF. _key is a pure function of this checkout's bytes, its tracked/kept sets and
+# the law's closure, so a pool of worker processes computes it before select() runs: each law's RED_PROOF list, its
+# closure, the v1 key of every proof the import names and each v2 variant the target already records for that proof
+# (cache._variants, the one reader of them). key_for then takes those answers (pre=) for exactly the calls it would have
+# made and computes here whatever a worker did not answer - a key is never decided twice, only computed earlier.
+# The pool: spawn, never fork (REG-1653); pythonw on Windows (no console window); cores - 2, at most IMPORT_WORKERS_MAX,
+# and no more than free memory above child_guard's floor holds at IMPORT_WORKER_MB each (the ALT has 8 GB); free memory
+# or the core count UNKNOWN -> one at a time, here. A pool that fails is SAID and what it left is keyed here. A worker
+# asks git nothing and leaves when its parent does. Law: test_an_import_keys_on_spare_cores_exactly_as_one_core_would.
+# [[heart-first]] [[unknown-stays-unknown]]
+IMPORT_WORKERS_MAX = 8
+#: the most proofs of one law in one job: a law with hundreds of proofs (test_control) is shared across the workers,
+#: never left to one of them while the others wait - MEASURED on the first full run, one law's job ran on alone
+IMPORT_JOB_PROOFS = 12
+#: MEASURED (REG-3193) - the peak resident size of one import worker keying the v3864 bundle, rounded up
+IMPORT_WORKER_MB = 400
+#: how often a worker asks whether its parent is still there
+IMPORT_WORKER_WATCH_S = 2.0
+_IMPORT_ASK = object()
+
+
+def _import_floor_mb():
+    """REG-3193 - the free memory an import leaves the PC: child_guard.RAM_FLOOR_MB, the floor under which no
+    secondary worker starts (one figure for every such worker; 1024 when child_guard cannot be read)."""
+    try:
+        import child_guard as _cg
+        return int(_cg.RAM_FLOOR_MB)
+    except Exception:
+        return 1024
+
+
+def import_workers(cpus=_IMPORT_ASK, free_mb=_IMPORT_ASK, floor_mb=_IMPORT_ASK):
+    """REG-3193 - how many worker processes an import may key on here. -> (n, why); n 1 keys here, one at a time.
+    Asked of os.cpu_count() and self_prove.free_mb() (child_guard's one memory reader) unless given; None is UNKNOWN."""
+    if cpus is _IMPORT_ASK:
+        cpus = os.cpu_count()
+    if free_mb is _IMPORT_ASK:
+        try:
+            import self_prove as _sp
+            free_mb = _sp.free_mb()
+        except Exception:
+            free_mb = None
+    floor = _import_floor_mb() if floor_mb is _IMPORT_ASK else int(floor_mb)
+    if not isinstance(cpus, int) or isinstance(cpus, bool) or cpus < 1:
+        return 1, "this PC's core count is UNKNOWN"
+    if not isinstance(free_mb, (int, float)) or isinstance(free_mb, bool):
+        return 1, "this PC's free memory is UNKNOWN"
+    by_cpu = min(IMPORT_WORKERS_MAX, cpus - 2)
+    by_mem = int((free_mb - floor) // IMPORT_WORKER_MB)
+    if by_cpu < 2:
+        return 1, "%d core(s): two are left to the PC" % cpus
+    if by_mem < 2:
+        return 1, "%d MB free: a worker needs %d MB over a %d MB floor" % (free_mb, IMPORT_WORKER_MB, floor)
+    n = min(by_cpu, by_mem)
+    return n, "%d core(s), %d MB free" % (cpus, free_mb)
+
+
+def _pool_executable(platform, exe, isfile=os.path.isfile):
+    """REG-3193 - the interpreter an import's workers run under. -> path | None (the default, sys.executable). Pure.
+    On Windows a python.exe parent hands its workers the pythonw.exe beside it: pythonw owns no console, so a worker
+    never opens a window on his screen."""
+    exe = str(exe or "")
+    if platform == "nt" and exe.lower().endswith("python.exe"):
+        w = exe[:-len("python.exe")] + "pythonw.exe"
+        if isfile(w):
+            return w
+    return None
+
+
+def _import_pool_context():
+    """REG-3193 - spawn (a fork of a process that has loaded Quartz can wedge - REG-1653), pythonw on Windows."""
+    import multiprocessing as _mp
+    ctx = _mp.get_context("spawn")
+    w = _pool_executable(os.name, sys.executable)
+    if w:
+        ctx.set_executable(w)
+    return ctx
+
+
+_KW = {}     # REG-3193 - one import worker's own state, set by _key_worker_init (empty in every other process)
+
+
+def _key_worker_init(tracked, kept, store):
+    """REG-3193 - a worker's start: a cache with no store of its own (`store` names a file that does not exist, in the
+    parent's scratch dir) and the PARENT's tracked/kept sets - so it keys on exactly the parent's sets and asks git
+    nothing (on Windows a git child of a console-less worker opens a window on his screen - control_app v3407). A
+    watch thread ends the worker when its parent is gone: a killed import never leaves workers behind."""
+    _KW["cache"] = _VerdictCache(path=store, say=lambda *a, **k: None, tracked=tracked, kept=kept)
+    _KW["intern"] = {}
+    try:
+        import multiprocessing as _mp
+        parent = _mp.parent_process()
+    except Exception:
+        parent = None
+    if parent is None:
+        return
+
+    def _watch():
+        while True:
+            time.sleep(IMPORT_WORKER_WATCH_S)
+            try:
+                gone = not parent.is_alive()
+            except Exception:
+                gone = True
+            if gone:
+                os._exit(0)
+                return                                 # reached only where _exit is a law's stub
+    threading.Thread(target=_watch, daemon=True, name="heart2-import-worker-watch").start()
+
+
+def _key_job(job):
+    """REG-3193 - in a worker: every answer key_for may ask _key for, for one law's named proofs.
+    job (gate, filename, [idx], {ident: [(unread, listed)]} | None) -> (gate, proofs | None (nothing here: the parent
+    derives it), closure | None, {idx: {(unread, listed): (key, rels, why)}}, {parse memo entries this job added})"""
+    gate, fn, idxs, variants = job
+    c, pool = _KW["cache"], _KW["intern"]
+    before = set(c.parsed)
+    try:
+        proofs = red_proofs_in(fn) or []
+    except Exception:
+        return gate, None, None, {}, {}
+    same, out = {}, {}
+
+    def _keep(got):          # one tuple per distinct input list, one string per path: the answer crosses a pipe
+        t = tuple(pool.setdefault(x, x) for x in (got[1] or ()))
+        return got[0], same.setdefault(t, t), got[2]
+    for i in idxs:
+        if isinstance(i, bool) or not isinstance(i, int) or not 0 <= i < len(proofs):
+            continue
+        pr, got = proofs[i], {}
+        try:
+            got[((), None)] = _keep(c._key(HERE, gate, fn, pr, ()))
+            for un, ls in (variants or {}).get(c.ident(gate, fn, pr), ()):
+                got[(tuple(un), ls)] = _keep(c._key(HERE, gate, fn, pr, tuple(un), ls))
+        except Exception:
+            pass                                     # whatever is missing, the parent keys itself
+        out[i] = got
+    return gate, proofs, c.closures.get((HERE, fn)), out, dict((k, v) for k, v in c.parsed.items() if k not in before)
+
+
+def _keyer_calls(shards):
+    """REG-3194 - how many times select() asks the keyer: once per servable entry. -> {(gate, idx): entries}"""
+    import proof_shard as _PS
+    out = {}
+    for _k, ent, _assigned in shards or ():
+        for e in (ent or {}).values():
+            if isinstance(e, dict) and _PS.servable(e):
+                pk = (str(e.get("gate")), e.get("proof"))
+                out[pk] = out.get(pk, 0) + 1
+    return out
+
+
+def _variant_map(cache):
+    """REG-3193 - {gate: {ident: [(unread, listed)]}}: every v2 variant the target (and its seed) records, as
+    cache._variants gives it - the workers key exactly the variants key_for would ask for."""
+    by = {}
+    for e in list(cache.entries.values()) + list(cache.seed.values()):
+        if isinstance(e, dict) and e.get("ident") and e.get("gate"):
+            by.setdefault(str(e["gate"]), set()).add(e["ident"])
+    out = {}
+    for g, ids in by.items():
+        m = dict((i, v) for i, v in ((i, cache._variants(i)) for i in ids) if v)
+        if m:
+            out[g] = m
+    return out
+
+
+def _prewarm_keys(st, shards, workers=None, say=None, progress=None, pool=None):
+    """REG-3193 - the pool's half of _shard_keyer: the laws this import's servable entries name, keyed in worker
+    processes; their answers land in st["pre"] and st["proofs"], their closures and parses in the cache's memos.
+    `pool` (n, initializer, initargs) -> an executor is a law's seam. -> {"workers", "laws", "answered", "seconds", "why"}"""
+    say = say or (lambda *a, **k: None)
+    calls = _keyer_calls(shards)
+    by_gate = {}
+    for (g, i) in calls:
+        if g in st["files"] and isinstance(i, int) and not isinstance(i, bool):
+            by_gate.setdefault(g, set()).add(i)
+    n, why = (int(workers), "%d asked for" % int(workers)) if workers else import_workers()
+    rep = {"workers": n if n >= 2 else 1, "laws": len(by_gate), "jobs": 0, "answered": 0, "seconds": None, "why": why}
+    if n < 2 or len(by_gate) < 2:
+        say("  import: keying %d law(s) here, one at a time (%s)" % (len(by_gate), why if n < 2 else "too few to share"))
+        rep["workers"] = 1
+        return rep
+    import concurrent.futures as _cf
+    cache, t0 = st["cache"], time.time()
+    vmap = _variant_map(cache)
+    jobs = []
+    for g, ix in sorted(by_gate.items(), key=lambda kv: (-len(kv[1]), kv[0])):   # the law with most proofs first
+        ix = sorted(ix)
+        for a in range(0, len(ix), IMPORT_JOB_PROOFS):
+            jobs.append((g, st["files"][g], ix[a:a + IMPORT_JOB_PROOFS], vmap.get(g)))
+    rep["jobs"] = len(jobs)
+    scratch = tempfile.mkdtemp(prefix="heart2-import-")
+    failed, broke = 0, None
+    try:
+        args = (cache.tracked, cache.kept, os.path.join(scratch, ".heart2_cache.json"))
+        ex = (pool(n, _key_worker_init, args) if pool is not None else
+              _cf.ProcessPoolExecutor(max_workers=n, mp_context=_import_pool_context(),
+                                      initializer=_key_worker_init, initargs=args))
+        with ex:
+            futs = [ex.submit(_key_job, j) for j in jobs]
+            try:
+                for f in _cf.as_completed(futs):
+                    try:
+                        gate, proofs, clo, out, parsed = f.result()
+                    except Exception as e:
+                        failed += 1
+                        broke = broke or type(e).__name__
+                        continue
+                    if proofs is None:
+                        failed += 1
+                        continue
+                    st["proofs"][gate] = proofs
+                    with cache.lock:
+                        if clo is not None:
+                            cache.closures.setdefault((HERE, st["files"][gate]), clo)
+                        for k, v in parsed.items():
+                            cache.parsed.setdefault(k, v)
+                    got = 0
+                    for i, ans in out.items():
+                        if ans:
+                            st["pre"][(gate, i)] = ans
+                            if ((), None) in ans:
+                                got += calls.get((gate, i), 0)
+                    rep["answered"] += 1
+                    if progress is not None:
+                        progress.add(got)
+            except BaseException:
+                for f in futs:          # what has not started is never started; the running jobs end on their own
+                    f.cancel()
+                raise
+    except Exception as e:
+        broke = broke or type(e).__name__
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+    rep["seconds"] = round(time.time() - t0, 1)
+    if broke or failed or rep["answered"] < len(jobs):
+        say("  ⚠ REG-3193 import: the worker pool answered %d of %d job(s) (%s) - the rest are keyed here, one at a "
+            "time" % (rep["answered"], len(jobs), broke or "%d job(s) failed" % failed))
+    say("  import: %d law(s) in %d job(s) keyed in %d worker(s) in %.0f s (%s)" % (
+        len(by_gate), rep["answered"], n, rep["seconds"], why))
+    return rep
+
+
+#: REG-3194 - the one name the import's progress file may have (proof_release.PROGRESS_NAME names it the same)
+IMPORT_PROGRESS_NAME = "progress.json"
+
+
+class _ImportProgress(object):
+    """REG-3194 - how far an import's keying has got, in a small JSON file the console reads while the import runs:
+    {"done", "of", "etaS", "at", "phase"}. done/of count select()'s keyer calls (one per servable entry). etaS is None
+    until 1% is done, and again once all are (what remains - the store's write - has no measured rate): None is UNKNOWN,
+    never 0. Written at most every EVERY_S, atomically; a write that fails is skipped - progress never stops an import.
+    Only a file named IMPORT_PROGRESS_NAME OUTSIDE this checkout is ever written: heart2 never edits a file of the tree."""
+    EVERY_S = 2.0
+
+    def __init__(self, path, of, clock=None):
+        self.path, self.of, self.done = path, max(0, int(of)), 0
+        self.clock = clock or time.time
+        self.t0, self.wrote = self.clock(), None
+        self.write("keying", force=True)
+
+    def eta_s(self):
+        el = self.clock() - self.t0
+        if self.of <= 0 or self.done < max(1, self.of // 100) or self.done >= self.of or el <= 0:
+            return None
+        return max(1, int(round(el * (self.of - self.done) / float(self.done))))
+
+    def add(self, n=1):
+        self.done += max(0, int(n))
+        self.write("keying")
+
+    def write(self, phase, force=False):
+        now = self.clock()
+        if not force and self.wrote is not None and now - self.wrote < self.EVERY_S:
+            return False
+        self.wrote = now
+        body = {"done": self.done, "of": self.of, "etaS": self.eta_s() if phase == "keying" else None,
+                "at": int(now * 1000), "phase": phase}
+        if os.path.basename(self.path) != IMPORT_PROGRESS_NAME or _inside(REPO, self.path):
+            return False                        # only the import's own scratch file, never a file of this checkout
+        try:
+            with io.open(self.path + ".tmp", "w", encoding="utf-8") as fh:
+                json.dump(body, fh)
+            os.replace(self.path + ".tmp", self.path)
+            return True
+        except Exception:
+            return False
+
+
+#: REG-3193 - target -> (shards, say, progress) an import asked to be keyed on the spare cores; _shard_keyer(target)
+#: takes it when it is built (inside select's own argument list, so the call reads as it always has)
+_PREWARM_ASKED = {}
+
+
+@contextlib.contextmanager
+def _keys_prewarmed(target, shards, say=None, progress=None):
+    """REG-3193 - while the block runs, the keyer _shard_keyer(target) builds is prewarmed for `shards` first."""
+    _PREWARM_ASKED[target] = (shards, say, progress)
+    try:
+        yield
+    finally:
+        _PREWARM_ASKED.pop(target, None)
+
+
 def _shard_keyer(target):
     """REG-2586 - (gate, proof index) -> the verdict-cache key THIS checkout's tv/ gives that proof, or None. The key
-    is computed exactly as a push computes it (_VerdictCache.key_for), over the checkout's own bytes."""
+    is computed exactly as a push computes it (_VerdictCache.key_for), over the checkout's own bytes.
+    REG-3193 - keyer.prewarm(shards, say, workers, progress) computes those keys' parts in worker processes first
+    (_prewarm_keys) - at once, when an import asked for it (_keys_prewarmed); REG-3194 - each call the pool did not
+    answer adds one to `progress`."""
     st = {}
 
-    def keyer(gate, idx):
+    def _init():
         if "files" not in st:
             st["files"] = dict(gate_files(say=lambda *a, **k: None))
             st["cache"] = _VerdictCache(path=target, say=lambda *a, **k: None)
             st["proofs"] = {}
+            st["pre"] = {}
+            st["progress"] = None
+
+    def prewarm(shards, say=None, workers=None, progress=None, pool=None):
+        _init()
+        st["progress"] = progress
+        return _prewarm_keys(st, shards, workers=workers, say=say, progress=progress, pool=pool)
+
+    def _key(gate, idx):
         fn = st["files"].get(gate)
         if not fn or isinstance(idx, bool) or not isinstance(idx, int):
             return None
@@ -7826,17 +8158,32 @@ def _shard_keyer(target):
         if not 0 <= idx < len(proofs):
             return None
         try:
-            return st["cache"].key_for(HERE, gate, fn, proofs[idx])[0]
+            return st["cache"].key_for(HERE, gate, fn, proofs[idx], pre=st["pre"].get((gate, idx)))[0]
         except Exception:
             return None
+
+    def keyer(gate, idx):
+        if "files" not in st:
+            _init()
+        try:
+            return _key(gate, idx)
+        finally:
+            if st["progress"] is not None and ((), None) not in (st["pre"].get((gate, idx)) or {}):
+                st["progress"].add(1)
+    keyer.prewarm = prewarm
+    asked = _PREWARM_ASKED.pop(target, None)
+    if asked is not None:
+        prewarm(asked[0], say=asked[1], progress=asked[2])
     return keyer
 
 
-def import_shards(paths, say=print, target=None):
+def import_shards(paths, say=print, target=None, progress=None):
     """REG-2586 — `heart2.py --import-shards FILE...`: the shards' banked PROVENs into this machine's verdict cache, ALL OR
-    NOTHING (tv/proof_shard.py says every rule). -> exit code: 0 imported, 2 refused (nothing written)"""
+    NOTHING (tv/proof_shard.py says every rule). -> exit code: 0 imported, 2 refused (nothing written)
+    REG-3194 - `progress` (--import-progress FILE) names the file _ImportProgress keeps while the keys are computed."""
     import proof_shard as _PS
     target = target or CACHE
+    _prog = None
     ok_h, head = _git("rev-parse", "HEAD")
     head = head.strip() if ok_h else ""
     bodies = []
@@ -7850,7 +8197,12 @@ def import_shards(paths, say=print, target=None):
             ok, why = False, "this checkout's tracked files differ from its HEAD (or git could not say), so its keys are not HEAD's"
     if ok:
         _dropped = []                                  # REG-2596 - a key this tree never gives is left out, named
-        ok, why, take, skipped = _PS.select(shards, keyer=_shard_keyer(target), dropped=_dropped, here=TREE_ID)
+        if progress:                                   # REG-3194 - how far the keying is, for the console
+            _prog = _ImportProgress(progress, sum(_keyer_calls(shards).values()))
+        with _keys_prewarmed(target, shards, say=say, progress=_prog):   # REG-3193 - on the spare cores first
+            ok, why, take, skipped = _PS.select(shards, keyer=_shard_keyer(target), dropped=_dropped, here=TREE_ID)
+        if _prog is not None:
+            _prog.write("writing" if ok else "refused", force=True)
     if not ok:
         say("  ✗ REG-2586 IMPORT REFUSED: %s. Nothing was written to %s." % (why, os.path.basename(target)))
         return 2
@@ -7867,6 +8219,8 @@ def import_shards(paths, say=print, target=None):
     _halted = len(_stops)
     _owed = _PS.unbanked(shards, take)
     w_ok, w_why = _StoreFile(target, say).commit(merge)            # the stores' one locked writer
+    if _prog is not None:
+        _prog.write("imported" if w_ok else "refused", force=True)
     if not w_ok:
         say("  ✗ REG-2586 IMPORT REFUSED: %s could not be written (%s)." % (os.path.basename(target), w_why))
         return 2
@@ -8217,8 +8571,9 @@ def import_proved(paths, say=print, target=None, carried=None, platform=None):
             pr = _decl(str(e.get("gate")), e.get("proof"))
             return _PS.carry_refusal(pr.get("needs") if isinstance(pr, dict) else None,
                                      _man.get(i, {}).get("platform"), platform)
-        ok, why, take, skipped = _PS.select(sets, keyer=_shard_keyer(target), dropped=_gone, here=TREE_ID,
-                                            refuse=_carry, refused=_no)
+        with _keys_prewarmed(target, sets, say=say):   # REG-3193 - the keys' parts computed on the spare cores first
+            ok, why, take, skipped = _PS.select(sets, keyer=_shard_keyer(target), dropped=_gone, here=TREE_ID,
+                                                refuse=_carry, refused=_no)
     if ok and carried is not None:           # REG-3045 - a carried entry says who carried it, under which key, from where
         _now = int(time.time() * 1000)
         for _e in take.values():
@@ -8343,9 +8698,12 @@ def main(argv):
                          "its runtime must match this PC's and every banked entry says who carried it")
     ap.add_argument("--carried-key", default=None, metavar="KEYID",
                     help="REG-3045 with --carried-by: the roster key the carrier verified the export under")
+    ap.add_argument("--import-progress", default=None, metavar="FILE",
+                    help="REG-3194 with --import-shards: keep {done, of, etaS, at, phase} in FILE while the keys are "
+                         "computed (proof_release's console import reads it)")
     a = ap.parse_args(argv)
     if a.import_shards is not None:
-        return import_shards(a.import_shards)
+        return import_shards(a.import_shards, progress=a.import_progress)
     if a.export_proved is not None:
         return export_proved(a.export_proved)
     if a.import_proved is not None:

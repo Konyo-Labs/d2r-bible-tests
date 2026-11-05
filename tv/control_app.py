@@ -22686,7 +22686,14 @@ def _history_repair_start(_thread=None):
 #: this PC, for the local game, and for a tree whose tracked files differ from HEAD (an import would refuse it).
 PROOF_RELEASE_FIRST_TICK = 4
 PROOF_RELEASE_EVERY_TICKS = 60
+#: v3865 REG-3194 - while an import runs: done / of (heart2's keyer calls, one per servable entry) and etaS, read from
+#: heart2's progress file (proof_release._ProgressWatch), with progressAt the ms heart2 wrote that reading. None while
+#: unknown, never 0; each run starts them at None. REG-3195 - ends counts the runs that finished (imported or not) and
+#: endedAt is the last one's ms; tickedFor / tickedAt say which ending the self-prove tick after it answered (see
+#: _self_prove_dispatch) - an ending tickedFor never reached, with no import running, is a tick owed.
 _PROOF_RELEASE = {"state": None, "sha": None, "seconds": None, "at": None, "running": False,
+                  "done": None, "of": None, "etaS": None, "progressAt": None,
+                  "ends": 0, "endedAt": None, "tickedFor": 0, "tickedAt": None,
                   "why": "not asked yet - the console has not been up 40 s"}
 
 
@@ -22724,19 +22731,24 @@ def _proof_release_tick(_thread=None, _git_run=_git_run, _import=None, _busy=Non
         _PROOF_RELEASE.update(why="the proof import could not be asked (%s)" % type(e).__name__)
         return dict(_PROOF_RELEASE)
 
+    def _progress(p):                   # v3865 REG-3194 - heart2's own count, as its progress file says it
+        _PROOF_RELEASE.update(done=p.get("done"), of=p.get("of"), etaS=p.get("etaS"), progressAt=p.get("at"))
+
     def _go():
         try:
             if _import is not None:
                 r = _import(head, tv_dir=HERE)
             else:                       # v3862 (item 3) - a Windows PC takes the Windows set first, the Linux one meanwhile
-                r = _pr.import_best(head, tv_dir=HERE, state=rec)
+                r = _pr.import_best(head, tv_dir=HERE, state=rec, progress=_progress)
             _pr.save_state(r, HERE)
             _PROOF_RELEASE.update(r)
         except Exception as e:
             _PROOF_RELEASE.update(state="unknown", why="the proof import raised %s" % type(e).__name__)
-        finally:
+        finally:                        # v3865 REG-3195 - counted BEFORE running clears: the tick after it reads both
+            _PROOF_RELEASE.update(etaS=None, ends=int(_PROOF_RELEASE.get("ends") or 0) + 1,
+                                  endedAt=int(time.time() * 1000))
             _PROOF_RELEASE["running"] = False
-    _PROOF_RELEASE.update(running=True, sha=head, state="importing",
+    _PROOF_RELEASE.update(running=True, sha=head, state="importing", done=None, of=None, etaS=None, progressAt=None,
                           why="importing GitHub's proofs for %s from the proof bank" % head[:9])
     if _thread is not None:
         _thread(_go)
@@ -23217,9 +23229,22 @@ def _self_prove_step(n, sp):
     return None
 
 
+def _self_prove_after_import(pr):
+    """v3865 REG-3195 - has an import ended that no proof tick has answered yet? -> bool. Pure.
+
+    MEASURED 2026-11-05 on his Mac: the import ended 20:55:40, two minutes after the 20:53 tick it had held back, and the
+    lane sat dead until the next 10-minute tick at 21:02:59. So an ending (imported, refused, absent or raised - `ends`
+    counts every finished run) is answered on the very next rescue tick, ONCE: never while an import still runs."""
+    pr = pr if isinstance(pr, dict) else {}
+    return (not pr.get("running")) and int(pr.get("ends") or 0) != int(pr.get("tickedFor") or 0)
+
+
 def _self_prove_dispatch(n):
     """REG-1624 — the rescue loop's one call into the self-prove lane on tick `n`. -> what ran ("tick"/"guard"/None)"""
     step = _self_prove_step(n, _SELF_PROVE)
+    if _self_prove_after_import(_PROOF_RELEASE):    # v3865 REG-3195 - the tick the import held back, within 10 s
+        _PROOF_RELEASE.update(tickedFor=int(_PROOF_RELEASE.get("ends") or 0), tickedAt=int(time.time() * 1000))
+        step = "tick"
     if step == "tick":
         if _PROOF_RELEASE.get("running"):   # v3862 — GitHub's proofs land first; proving them here too is waste
             _SELF_PROVE["say"] = ("GitHub's proofs for this commit are being imported - the next proof tick starts "
