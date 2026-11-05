@@ -3,7 +3,7 @@
   "ver": "v3864",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3864: the integration chain lands, Mule 2 is named, the d2jsp desk keeps its history, GitHub proves faster",
+  "note": "v3864: the integration chain lands, the task board goes online, his vault rulings c and d, GrokBot Batch A and B fixed",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
