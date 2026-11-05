@@ -7,6 +7,13 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3176 - THE CONSOLE TOLD TIME ON TWO CLOCKS: A 24-HOUR HEADER BESIDE "05:10 PM" (v3864, GrokBot Batch A 4)
+GrokBot, #230 6656116697: the header #clock-t read 12:49:45 (built from getHours) while #tz-updated said "updated 05:10 PM"
+and #hd-forge-when "scanned 5:10:05 PM" on the same screen. 26 stamps on control_ui.html asked toLocaleTimeString() and got
+the PC's locale default; #214 had fixed one by hand. Now the page's first script makes a time that names no hour12 /
+hourCycle 24-hour; a caller that names hour12 keeps it. Law: tv/test_the_console_tells_time_on_one_clock.py (the page's own
+shim, run in node), 2 red-proofs RED. bible.html's own stamps are not covered here.
+
 ### REG-3175 - THE VAULT LANE READ "FRESH" WITH ITS LAST REAL READ 4 DAYS OLD AND 8 REELS OWED (v3864, GrokBot Batch B 6)
 GrokBot, #230 6655906382 (re-read by the Grok CLI at 12:42): /api/status vaultAutoread {stale false, ageMs ~2,000, lastTs
 2026-11-01 13:51, owed 8}. `stale` and `ageMs` are the 3-second status cache's own stamps, so a lane that had read nothing

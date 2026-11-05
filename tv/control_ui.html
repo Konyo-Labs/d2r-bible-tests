@@ -9254,6 +9254,26 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
   </div>
 
 <script>
+/* v3864 (GrokBot Batch A 4, #230 6656116697) - ONE CLOCK ON THE CONSOLE. The header clock is built 24-hour (getHours,
+   HH:MM:SS) while 26 stamps asked toLocaleTimeString() and got the PC's locale default - '05:10 PM' beside '12:49:45'
+   on one screen (#tz-updated, #hd-forge-when, the theatre, the shelf). #214 fixed one of them by hand; this is the
+   class: on this page a time with no hour12 / hourCycle of its own is 24-hour. A caller that names hour12 keeps it. */
+(function(){
+  try {
+    var _tl = Date.prototype.toLocaleTimeString;
+    if (_tl && !_tl.__h23) {
+      var h23 = function(loc, opt){
+        var o = {}; if (opt && typeof opt === 'object') { for (var k in opt) o[k] = opt[k]; }
+        if (o.hour12 === undefined && o.hourCycle === undefined) o.hourCycle = 'h23';
+        return _tl.call(this, loc, o);
+      };
+      h23.__h23 = true;
+      Date.prototype.toLocaleTimeString = h23;
+    }
+  } catch (e) {}
+})();
+</script>
+<script>
 (function(){
         /* 2026-09-27 — AN ICON-ONLY TAB IS NEVER AN EMPTY CHIP (REG-1334). MEASURED in the push gate at 13:52:
            the Tools picture reported complete with naturalWidth 0 and its inline onerror never ran, so the chip
