@@ -111,7 +111,45 @@ class AFindRowOpensEveryMulePageItsCopiesSitOn(unittest.TestCase):
         self.assertEqual(f["navs"], [], f)
 
 
+HAND_ADD_FIND = r"""
+var W = window;
+W._vaultAutoIntakeSet && W._vaultAutoIntakeSet(false);
+OUT.add = ["Arcanna's Sign", "Insight"].map(function(n){ var r = W.vaultHandAdd(n); return !!(r && r.ok); });
+try { W.renderVault(); } catch (e) {} H.flush(60, 3);
+try { W.vaultFind('arcan'); } catch (e) { OUT.err = String(e); } H.flush(60, 3);
+var res = document.getElementById('vault-find-results');
+OUT.text = res ? String(res.textContent || '') : null;
+var t = W._vaultMoveEnsure("Arcanna's Sign (amulet)", 0).task, a = (t && t.to && W._vaultCellAt) ? W._vaultCellAt(t.to.cell) : null;
+OUT.at = a ? ('col ' + (a.x + 1) + ' \u00b7 row ' + (a.y + 1)) : null;
+"""
+
+
+class FindSaysAHandAddIsHisMoveToItsTarget(unittest.TestCase):
+    """v3864 - moved here from tests/test_vault_l1_a_hand_add_routes_by_type.py's RED_PROOF[8] (a browser law, BLIND on
+    ci/proof-keys-v3864): since REG-2884 FIND's own 'would' answer names the cell too, so "the cell is named" no longer told
+    the two apart. Measured in node with the move-target override tampered out: FIND said the hand-added amulet "would go
+    to SETS-REST ... col 1 · row 1 - it files there on its own, nothing to press" - wrong for a hand add, which is HIS move.
+    The override says "· target · MANUAL move"; this case pins that, in node, where it can be proved."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.o = VPN.run(HAND_ADD_FIND, prelude=CLAIM, timeout=300)
+
+    def test_find_names_the_target_cell_and_that_the_move_is_his(self):
+        o = self.o
+        self.assertTrue(all(o["add"]) and o["at"], "PREMISE: the hand adds or their move target did not resolve: %r" % o)
+        self.assertIn(o["at"], o["text"] or "", "FIND does not name the target cell: %r" % o["text"])
+        self.assertIn("target \u00b7 MANUAL move", o["text"] or "", "FIND does not say the hand add is his move to its target: %r" % o["text"])
+        self.assertNotIn("files there on its own", o["text"] or "", "FIND tells him a hand add files itself: %r" % o["text"])
+
+
 RED_PROOF = [
+    {"why": "v3864 - FIND keeps the window's 'would go ... files there on its own' for a hand add the move list already placed "
+            "(moved from test_vault_l1_a_hand_add_routes_by_type[8], a browser law that could not tell)",
+     "file": "bible.html",
+     "find": "if (_mm) w = Object.assign({}, w, { kind:",
+     "replace": "if (false) w = Object.assign({}, w, { kind:",
+     "matches": 1, "needs": "node"},
     {"why": "REG-2884 - FIND prints a hand add's raw target cell (row 11 on a 10-row stash) again",
      "file": "bible.html",
      "find": "cell: _findTargetSay(_mc, (typeof _vaultMuleOfPlace === 'function') ? _vaultMuleOfPlace(_mt.to) : null) + ' · target' + (_ht ? ' · MANUAL move' : '') });",

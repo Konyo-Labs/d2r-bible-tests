@@ -419,11 +419,9 @@ RED_PROOF = [
      "find": "+ '<span class=\"vmv-locks\">' + locks + '</span></div>'; /* v3773 no manual move */",
      "replace": "+ '<span class=\"vmv-locks\">' + locks + '</span><button type=\"button\">Add a move</button></div>'; /* v3773 no manual move */",
      "matches": 1},
-    {"why": "FIND keeps cell UNKNOWN for a hand add the move list already placed.",
-     "file": "bible.html",
-     "find": "if (_mm) w = Object.assign({}, w, { kind:",
-     "replace": "if (false) w = Object.assign({}, w, { kind:",
-     "matches": 1},
+    # v3864 - 'FIND keeps cell UNKNOWN for a hand add the move list already placed' moved to the node law
+    # test_a_find_row_opens_every_mule_page_its_copies_sit_on (FindSaysAHandAddIsHisMoveToItsTarget): since REG-2884 FIND's
+    # own 'would' answer names the cell too, so this browser case stayed green under it (BLIND on ci/proof-keys-v3864).
     {"why": "A hand-typed unruled set piece goes back to throw-out advice in Unsorted.",
      "file": "bible.html",
      "find": "        return { loc: 'filed', mule: 'sets-rest' }; /* L1 he typed a set piece: kept, not thrown out */",

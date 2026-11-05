@@ -329,7 +329,7 @@ RED_PROOF = [
     {"why": "REG-2987 - his eagle button runs the full pass in the console again",
      "file": "tv/control_app.py",
      "find": "                    _where, _rows, _cwhy = _doctor_pass_in_child(_cd, True, True, None)\n",   # v3864 - inside the answer-soon pass
-     "replace": "                _where, _rows, _cwhy = \"here\", None, \"\"\n",
+     "replace": "                    _where, _rows, _cwhy = \"here\", None, \"\"\n",
      "matches": 1},
 ]
 
