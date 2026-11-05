@@ -1101,6 +1101,11 @@ def _open_chrome_login(platform=None, run=None, which=None, popen=None, env=None
         if not binary:
             return False
         own = login_profile_dir(platform=plat, env=env)
+        if own and popen is None:
+            try:
+                os.makedirs(own, exist_ok=True)        # the real launch only: a law hands its own popen and env
+            except OSError:
+                pass
         argv = [binary] + (["--user-data-dir=%s" % own, "--no-first-run", "--no-default-browser-check"] if own else []) \
             + [LOGIN_URL]
         kw = {"creationflags": 0x00000008 | 0x00000200}          # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
