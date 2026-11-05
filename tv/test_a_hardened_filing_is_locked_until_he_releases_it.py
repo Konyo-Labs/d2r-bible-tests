@@ -298,7 +298,10 @@ process.stdout.write(JSON.stringify(OUT));
 
 def _drive():
     s = _src()
-    prog = (FILE.HARNESS + EXTRA + FILE._say_line(s) + FILE._door(s)
+    # v3864 (#233) - assignItem asks REG-3042's one catalogue test; the page's own three tests come with the bundle, never a
+    # stub (red on the chain head: "_vaultCatalogueItem is not defined")
+    cat = _span(s, "  function _vaIsGrailUni(n){", "  try { window._vaultCatalogueItem = _vaultCatalogueItem; } catch (eCat) {}\n")
+    prog = (FILE.HARNESS + EXTRA + cat + FILE._say_line(s) + FILE._door(s)
             + "var magicFinds = {}, unknownReads = new Set();\n" + _span(s, AUDIT_START, AUDIT_END)
             + _fn(s, UNASSIGN_START) + _span(s, ASSIGN_START, ASSIGN_END) + ASSIGN_END
             + _span(s, VR_START, VR_END) + _span(s, REMOVE_START, REMOVE_END) + _fn(s, RESTORE_START) + BODY)
