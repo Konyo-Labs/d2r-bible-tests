@@ -27,7 +27,8 @@ except Exception:
 
 import vault_page_node as VPN  # noqa: E402
 
-DEC, BUL, RHY, ENI, ALMA = "Aldur's Deception", "Bul-Kathos' Sacred Charge", "Aldur's Rhythm", "Enigma", "Alma Negra"
+# v3864 - his v3849 ruling throws a low set piece out, so the piece filed on MAGIC & RARE here is one his rule keeps
+DEC, BUL, RHY, ENI, ALMA = "Aldur's Deception", "Bul-Kathos' Sacred Charge", "Naj's Puzzler", "Enigma", "Alma Negra"
 
 
 def _rec(n, mule):
