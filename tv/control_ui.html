@@ -4363,6 +4363,147 @@
   /* the two verdict cursors survive the blanket rule — a disabled control and an unfarmable zone
      must still say no with the pointer, which is the whole of v1915. */
   .tzz.tzz-thin, .tzz.tzz-thin *, button:disabled, .act:disabled { cursor: not-allowed !important; }
+  /* ══ REG-3205 — THE CONSOLE CURSOR: THE GAUNTLET AT REST, A GOLD POINTER ON WHAT CAN BE PRESSED, A NO ONLY ON WHAT IS OFF ══
+     His words: "the mouse cursor needs fixing within the console like for buttons that are clickable should be emphasized.
+     right now everything is showing me a mouse cancel sign.. and it should be a custom mouse cursor pointer for the console".
+     COUNTED, every cursor rule in this file: 96 `cursor: pointer` and 14 `cursor: default` rules, all under the `*`
+     gauntlet pair above (`!important`, so it beat every one of them) - no control ever looked different from the page
+     around it, and the only cursors that could differ from the gauntlet were the `not-allowed !important` verdicts. A
+     button that shows the same glove as dead space reads as dead; one disabled control showing the cancel sign then
+     reads as all of them (v2951 found one that never re-enabled).
+     The default stays the gauntlet (his v1916/v2765/v3034 asks, pinned to art/hd_cursor_hand32.png): the `*` pair puts it
+     on <html> and <body>, and every element under <body> INHERITS its cursor (cursor is an inherited property) - so a
+     control's own cursor reaches the label, icon and text inside it. Everything that can be pressed - the generic
+     clickables plus every selector this file declares `cursor: pointer` on - wears one custom pointer: a gold hand (the
+     console's --gold on its dark ink), an inline SVG with the `pointer` keyword behind it if the picture cannot draw.
+     `not-allowed` is said only by a control that IS off: [disabled] and [aria-disabled="true"] (a thin TZ zone carries
+     aria-disabled, so v1915's verdict stays). The inherit rule weighs nothing (:where), so it beats only the `*` pair
+     before it and loses to every rule that names an element - the text caret above (textarea included), the pointer
+     and the disabled rule; those two weigh the same (one element), so their order below is the cascade.
+     No `:where(...) *` descendant rule: on a page that reaches 84k elements (v2760) a universal right-hand side would walk
+     every ancestor of every element on each style pass, and inheritance does the same job for free.
+     tv/test_every_pressable_thing_wears_the_console_pointer.py holds every pointer selector in this file to this list. */
+  :where(body *) { cursor: inherit !important; }
+  html :where(
+    a[href],
+    button,
+    [role="button"],
+    [onclick],
+    summary,
+    label[for],
+    select,
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    input[type="checkbox"],
+    input[type="radio"],
+    input[type="file"],
+    input[type="range"],
+    .ht,
+    .sigil,
+    button.act,
+    button.ghost,
+    .rc-go,
+    .fx-open,
+    .fx-x,
+    .fx-read,
+    .th-x,
+    .th-drawer-x,
+    .th-drawer details.th-raw > summary,
+    .thhd-nav,
+    #th-credits,
+    #th-shelfov .shr-fold > summary,
+    #th-shelfov .sh-card,
+    .shc-pin,
+    .th-btn,
+    .shc-play,
+    .th-timeline,
+    .th-fs-thumb,
+    .util-btn,
+    .sig-adv > summary,
+    .win-ctl button,
+    .find-card,
+    .find-more,
+    .cmp-back,
+    .cmp-sel,
+    .hm-back,
+    .dsr-back,
+    .dsr-x,
+    .dsr-edit-btn,
+    .dsr-note-add,
+    .dsr-pin,
+    .dsr-open,
+    .dsr-mont,
+    .dsr-chap,
+    .dsr-miss-row,
+    .dsr-regret-row,
+    .ch-ev,
+    .readh-det > summary,
+    .chron-v.can,
+    .chron-n > summary,
+    .tzz-live,
+    .hh-go,
+    .tf-go,
+    .hd-go,
+    .mini-foc .mf,
+    .chron-warn.settled > b,
+    .chron-frames summary,
+    .chron-btn,
+    .hd-hist-head,
+    .hd-hist-all,
+    .hh-card,
+    .sh-filterfold > summary,
+    .sh-chip,
+    .sh-sort-sel,
+    .sh-cmp,
+    .shi-clk,
+    .ch-inbox-row,
+    .ch-inbox,
+    .ch-clear,
+    .ch-sweep,
+    .ch-x,
+    .ch-pill,
+    .ch-card-item .ch-chk,
+    .ch-btn,
+    .ch-sess-tog,
+    body[data-view="sessions"] .hub-bible,
+    .tf-t b.tf-nm,
+    .hh-altgo,
+    .hd-chip.tly-btn,
+    .tly-x,
+    .tly-tab,
+    .tly-shot,
+    .eh-legend-btn,
+    #th-legend-btn,
+    #shadow-bar #shadow-leave,
+    .ssv-play,
+    .ssv-speed,
+    .fleet-clickable,
+    .fxr-tab,
+    #ver-xref .vx-fold > summary,
+    #ver-xref .vx-btn,
+    #foot-hist,
+    #foot-tasks,
+    #foot-ver,
+    #hist-x,
+    #heart-chip,
+    .fx-adv > summary,
+    .fleet-hd-eyes,
+    .g5-auth-btn,
+    .shadow-adv-sw,
+    .g5-seg-btn,
+    .hd-pg,
+    .hd-grid .sh-card,
+    .eng-fold > summary,
+    .head-tabs .ht,
+    .fleet-bar .fb-go,
+    .fleet-bar .fb-x,
+    .rl-signin,
+    .reader-lamps button.rl,
+    body.shell-open #head-tabs .ht,
+    :is(.th-x,.tly-x,.th-drawer-x,.sh-x,.fx-x,.thhd-x,.dsr-x,.ch-x,.gbc-close,.cb-x,.vd-close,.vtp-x,.vmm-close,.vll-x,.vev-x,.tlg-x,.tlp-close,.tvz-th-x,.aic-x,.bn-x,.glossary-close,.aid-header-close,.help-x,.ovx-made)
+  ) { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M10 3.5c0-1.1.9-2 2-2s2 .9 2 2V12l.6-.1c.2-1 1-1.7 2-1.7s1.8.7 2 1.6c.4-.6 1-.9 1.7-.9 1 0 1.9.8 2 1.8.4-.3.9-.5 1.4-.5 1.1 0 2 .9 2 2v6.3c0 4.4-3.6 8-8 8h-1.6c-2.6 0-5-1.2-6.5-3.3l-4.3-5.6c-.7-.9-.5-2.2.4-2.9.8-.6 2-.6 2.7.2l1.6 1.7z' fill='%23f0c060' stroke='%231a1206' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M14 12v5M18.4 12.5v4.5M22.1 13.5v4' stroke='%231a1206' stroke-width='1.1' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") 12 2, pointer !important; }
+  html :where([disabled], [aria-disabled="true"]) { cursor: not-allowed !important; }
   .hd-chron .chron-body { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
   /* v1914 — the Sessions-side pointer at the waiting proposal. Sized like a banner note, not a
      button that competes with the hunt; the arrow is the only thing that says it goes somewhere. */
@@ -5419,6 +5560,14 @@
      through thOpen. Worst case is now "no stage here" instead of "a black rectangle here", and
      an absent surface is honest where an empty one is not. */
   body[data-view="sessions"] .stage { display: none !important; }
+  /* REG-3204 - a shadow's Play lifts the theatre over whatever view the shadow is on (their hub is data-view=sessions,
+     which hides the stage just above): the stage is kept in the layout, the theatre fills the window above the shadow
+     frame (945) and its sessions list (975), and every control that acts on THIS PC's reels is not drawn. */
+  body.shadow-theatre .stage { display: flex !important; visibility: visible !important; }
+  body.shadow-theatre #theatre { position: fixed !important; inset: 0 !important; z-index: 976 !important;
+    border-radius: 0; pointer-events: auto !important; visibility: visible !important; }
+  body.shadow-theatre #theatre :is(#th-open-reel, #th-reclose, #th-prev-s, #th-next-s, #th-mode, #th-shelf, .th-more-wrap,
+    #th-fs-toggle, #th-filmstrip-wrap, #th-timeline, #th-drawer, #th-shelfov) { display: none !important; }
   .hub-bible { display: none; }
   /* v3286 - THE DOOR TO THE FULL BIBLE LOOKED LIKE A FOOTNOTE. Konyo: "the button within the
      console that routes us to the full bible page i want also upgraded and emphasized and seen
@@ -6930,6 +7079,12 @@
   .fleet-riverwait { color: var(--muted, #9aa0a6); font-weight: var(--fw-regular, 400); margin-left: .4em; }
   /* #86 gap 9 — UNKNOWN is not the red alarm and not the quiet row. Same muted word as an unmeasured fact. */
   .fleet-riverunk { color: var(--muted, #8b8071); font-style: italic; font-weight: var(--fw-medium); }
+  /* REG-3197 - work in progress (GitHub's proofs importing, this PC proving what it owes) and the locks it explains: amber,
+     the working colour, never the red alarm. REG-3198 - an offline row's last word: muted, never red, never UNKNOWN. */
+  .fleet-riverimport { color: var(--st-working, #f0c060); font-weight: var(--fw-medium); }
+  .fleet-riverlocked { color: var(--st-working, #f0c060); font-weight: var(--fw-regular, 400); }
+  .fleet-locknames { color: var(--muted, #9aa0a6); font-weight: var(--fw-regular, 400); }
+  .fleet-riveroff { color: var(--muted, #8b8071); font-weight: var(--fw-regular, 400); }
   /* #41 rank 22 (REG-1564) — the picker-disagrees chip, set exactly like the river-stuck one beside it */
   .fleet-pickerodd  { color: #e0795f; font-weight: var(--fw-medium); }
   /* #108 — a PC whose reader cannot read: the same exception word as river stuck / picker short, and only then */
@@ -8330,7 +8485,7 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
          compact strip under the live stage when ON. -->
     <section class="home-dash" id="home-dash">
       <!-- v1376 (SESSIONS FLAGSHIP R3) — the console-native Sessions view's link into bible.html for deep data -->
-      <a class="hub-bible" id="hub-bible" href="#" title="open the full bible — deep session data, ledgers, tools" onclick="if(window._shellOpen){window._shellOpen('session');}return false;">📖 full bible →</a>
+      <a class="hub-bible" id="hub-bible" href="/board?app=1#session" title="open the full bible — every room, deep session data, ledgers, tools" onclick="return !(window._openFullBible &amp;&amp; window._openFullBible());">📖 full bible →</a>
       <!-- v1378 (SESSIONS FLAGSHIP R4) — the chronicle CREST + GRAIL-METER signature, then the NEXT GRAIL hero (EV-rank) -->
       <div class="hub-crown">
         <div class="hub-crest"><div class="hc-ey">⚔ the chronicle</div><div class="hc-t">My <span>Hunt</span></div></div>
@@ -9325,6 +9480,20 @@ window._lockOpen = function(l){
   if (!l) return false;
   var s = String(l.state || '').toUpperCase();
   return (s === 'OPEN' || s === 'HARDENED') && l.permitted !== false;
+};
+/* REG-3215 - A LOCK ANSWERS TWO QUESTIONS, AND EACH GETS ITS OWN WORD. The heart printed "OPEN" over frame.release
+   (proven 0.90 >= 0.72) while may() refused it - the census is STALE and the lock is destructive - and the Fleet card
+   said "locks shut" about the same lock. "OPEN" answered "is it proven strong enough"; his question is "may it act
+   now". self_arming writes both words on every row (act / actSay / provenSay) and every lock surface prints THEM:
+   the act word leads, the strength is named as what it is. A row from an older server keeps the padlock's own
+   answer and never prints a strength it was not sent. -> {act, actWhy, actSay, provenSay} */
+window._lockWords = function(l){
+  var open = window._lockOpen(l);
+  var act = (l && l.act) || (open ? 'may act' : 'shut');
+  var why = (l && typeof l.actWhy === 'string') ? l.actWhy
+            : (open ? '' : ((l && (l.permittedWhy || l.why)) || 'no lock state has been read'));
+  return { act: act, actWhy: why, actSay: (l && l.actSay) || (why ? act + ' - ' + why : act),
+           provenSay: (l && l.provenSay) || '' };
 };
 window._lockMark = function(isOpen, px, label){
   var w = px || 13, col = isOpen ? '#8fe6a0' : 'currentColor';
@@ -10743,7 +10912,7 @@ window._lockMark = function(isOpen, px, label){
     var frames = rd.frames || [], f0 = frames[0] || {};
     // garble as the fallback layer; the real frame sits on top and hides itself if it 404s (reveals the garble)
     var frameHtml = '<div class="fx-garble">' + esc(f0.raw || '— no frame —') + '</div>'
-      + (f0.frameId ? '<img src="/hist/' + encodeURIComponent(f0.frameId) + '.jpg?w=440" alt="" onerror="this.style.display=\'none\'">' : '');
+      + (f0.frameId ? '<img src="/hist/' + encodeURIComponent(f0.frameId) + '.jpg?w=440&gone=404" alt="" onerror="this.style.display=\'none\'">' : '');   // REG-3207 - keeps the 404: the read's raw text under it says more than a placeholder
     var trail = frames.map(function(fr, i){
       var hit = (i === frames.length - 1) || (rd.status && rd.status.indexOf('recovered') === 0);
       return '<div class="fx-tf'+(hit ? ' hit' : '')+'"><b>'+esc(fr.frameId || ('frame ' + (i + 1)))+'</b>'+(fr.scene ? (function(){ var d = _diabloScene(fr.scene, fr.stashTab || fr.chronicleTab, fr.area);
@@ -11689,11 +11858,16 @@ window._lockMark = function(isOpen, px, label){
            costs ZERO layout width. That matters: the verbose form was removed once because it
            rendered this chip 150.9px wide and broke the Shelf label. */
         var _isOpen = !!l && window._lockOpen(l);
-        el.innerHTML = window._lockMark(_isOpen, 13, _isOpen ? 'OPEN' : 'LOCKED');
+        /* REG-3215 - the act word leads, the strength is named: "shut - the prover is behind · proven 0.90 >= 0.72".
+           It read "OPEN: ... — but it may NOT act now", two answers to one question in one sentence. */
+        var _lw = window._lockWords(l);
+        el.innerHTML = window._lockMark(_isOpen, 13, _lw.act);
         el.title = what + ' — '
-          + (l ? (l.state + ': ' + (l.why || '')
-                  + (l.permitted === false ? ' — but it may NOT act now: ' + (l.permittedWhy || '') : ''))
-               : ((_sa && _sa.why) || 'this console could not read the locks, so it stays locked'));
+          + (l ? ((l.lock ? l.lock + ': ' : '') + _lw.actSay + (_lw.provenSay ? ' · ' + _lw.provenSay : '')
+                  + (l.permitted === false && l.permittedWhy && l.permittedWhy !== _lw.actWhy
+                     ? '. Why shut: ' + l.permittedWhy : '')
+                  + (l.why ? '. Its evidence: ' + l.why : ''))
+               : ((_sa && _sa.why) || 'this console could not read the locks, so it stays shut'));
       };
       _paintChip('lock-vault', 'vault.', 'the vault acts on your ledger');
       /* the SAME lock, quoted twice, never derived twice — one place decides and every
@@ -12142,6 +12316,14 @@ window._lockMark = function(isOpen, px, label){
   // otherwise → session N + the recorded time span. Re-run on paint, session load, and refresh.
   function thRibbon(door){
     var el = $('th-ribbon'); if (!el) return;
+    /* REG-3204 - A SHADOW'S REEL ON THIS STAGE IS THEIR PAST. paint(st) re-runs this line on every status poll while
+       TH.open, and a shadow reel keeps TH.open: within 1.5 s it wrote 'THEATRE · session <this PC's TH.sn> · <this PC's
+       span>' over the owner's frames. While TH.shadowReel is up the ribbon names whose past it is and nothing of this PC. */
+    if (TH.shadowReel){
+      el.classList.remove('on-air');
+      el.textContent = '📼 SHADOW REPLAY — ' + (TH.shadowReel.owner || 'this owner') + '’s past, read only';
+      return;
+    }
     var onAir = document.body.getAttribute('data-state') === 'on';
     /* #287 (REG-2076, GrokBot ticks 419 + 423) - THE SHELF DOOR IS NOT A REEL. Opening the shelf shows the theatre shell
        first, and this line painted from TH.sn - the LAST reel (or 'session 1' on a fresh console) - so 'THEATRE · SESSION 41
@@ -14626,21 +14808,24 @@ window._lockMark = function(isOpen, px, label){
      lane's owed count of the declared laws (NOT proved/declared: those are the last full run's and read 1214/1214 while 31 are
      owed); held because an instrument is blind -> how many are blind; any other hold -> its reason. The merit moves to the hover
      as "trial: N/N refused", so it cannot read as completion. -> {paint, hover} */
+  /* REG-3215 - THE ACT WORD IS "shut", ON THE FAN AS IN THE LIST, THE CHIPS AND THE FLEET CARD ("locks shut"). This
+     caption said "held" for the same answer - two words for one question on one screen. The reason after it is the
+     server's own (actWhy) when it was sent; the four below are self_arming.HELD_SAY, kept for an older server. */
   function _hrtHeldCaption(L, n_, d){
     var by = L && L.heldBy;
-    var held = { stale: 'the prover is behind', blind: 'an instrument is blind',
-                 heart: 'not proven on this PC yet', upstream: 'blocked upstream' }[by] || 'held';
+    var held = (L && L.actWhy) || { stale: 'the prover is behind', blind: 'an instrument is blind',
+                 heart: 'not proven on this PC yet', upstream: 'blocked upstream' }[by] || 'no reason was given';
     var ins = (d && d.instruments) || {};
-    var paint = 'held: ' + held;
+    var paint = 'shut - ' + held;
     if (by === 'stale') {
       var ow = (typeof ins.laneOwed === 'number') ? ins.laneOwed : null, dc = (typeof ins.declared === 'number') ? ins.declared : null;
       paint = (ow != null && dc != null && dc >= ow)
-        ? 'held · ' + ow + ' of ' + dc + ' still to prove'
-        : 'held: ' + held + ' · how many are owed UNKNOWN';
+        ? 'shut · ' + ow + ' of ' + dc + ' still to prove'
+        : 'shut - ' + held + ' · how many are owed UNKNOWN';
     } else if (by === 'blind' && ins.blind && ins.blind.length) {
-      paint = 'held · ' + ins.blind.length + ' instrument' + (ins.blind.length === 1 ? '' : 's') + ' blind';
+      paint = 'shut · ' + ins.blind.length + ' instrument' + (ins.blind.length === 1 ? '' : 's') + ' blind';
     }
-    return { paint: paint, hover: 'held: ' + held + ' · trial: ' + L.k + '/' + n_ + ' refused (its merit, not the census)' };
+    return { paint: paint, hover: 'shut - ' + held + ' · trial: ' + L.k + '/' + n_ + ' refused (its merit, not the census)' };
   }
   window._hrtHeldCaption = _hrtHeldCaption;
   var _hrtBusy = false;
@@ -15081,20 +15266,21 @@ window._lockMark = function(isOpen, px, label){
              : ((n_ && n_ > 0 && _kindsShort)
                   ? ('one kind of look only · ' + _conf.toFixed(2) + ' of ' + _kbar.toFixed(2))
                   : ''));
-      var waiting = open ? 'OPEN — it proved itself'
+      /* REG-3215 - the act word leads the hover too: "may act" or "shut", never "OPEN"/"HELD"/"LOCKED" for one answer */
+      var waiting = open ? 'may act — it proved itself' + (L.provenSay ? ' (' + L.provenSay + ')' : '')
                     /* REG-1737 - earned, and held by something else: say what, never "its own score" */
                     : ((L.permitted === false && (lst === 'OPEN' || lst === 'HARDENED'))
-                         ? ('HELD — it earned its score, but it may not act now: '
-                            + (L.permittedWhy || 'no reason was given'))
+                         ? ('shut — it earned its score' + (L.provenSay ? ' (' + L.provenSay + ')' : '')
+                            + ', but it may not act now: ' + (L.permittedWhy || 'no reason was given'))
                     : (_blind
-                         ? ('INCOMPLETE — ' + _blind.length + ' claim(s) this harness declared '
+                         ? ('shut — ' + _blind.length + ' claim(s) this harness declared '
                             + 'were never exercised, so the score never saw that axis')
                     : (L.provable === false
-                         ? 'LOCKED — and it can never prove itself: there is nothing to sabotage'
-                    : (!n_ ? 'LOCKED — waiting for a first sabotage'
+                         ? 'shut — and it can never prove itself: there is nothing to sabotage'
+                    : (!n_ ? 'shut — waiting for a first sabotage'
                     : (_scoreClears && _kindsShort
-                         ? 'LOCKED — the score clears; it is waiting for a DIFFERENT kind of look'
-                         : 'LOCKED — waiting on its own score')))));
+                         ? 'shut — the score clears; it is waiting for a DIFFERENT kind of look'
+                         : 'shut — waiting on its own score')))));
       gates += '<path d="' + gp + '" fill="none" stroke="' + lc + '" stroke-width="'
              + (open ? 2.4 : 1.8) + '" opacity="' + (open ? .95 : .8) + '"'
              + (open ? '' : ' stroke-dasharray="6 5" stroke-linecap="round"') + '/>';
@@ -15913,11 +16099,16 @@ window._lockMark = function(isOpen, px, label){
          The lock id leads because it is the unique part; the surface follows as context.
          [[sweep-dont-ask]] [[grok-second-eye]] */
       var _lname = L.lock ? (L.lock + (L.surface ? ' · ' + L.surface : '')) : (L.surface || '?');
+      /* REG-3215 - ONE WORD PER QUESTION. This cell printed the evidence tier - "OPEN · MAY NOT ACT" over frame.release
+         while may() refused it - so the heart and the Fleet card answered his question two ways. The act word is the
+         cell ("may act" / "shut"); the one reason leads the detail, then the strength by its own name. */
+      var _lw = window._lockWords(L);
       lrows += '<div class="hrt-row"><span class="hrt-k">' + _hrtEsc(_lname) + '</span>'
         + '<span class="hrt-s" style="color:' + _hrtLockColor(L) + '">'   /* #180 - the list and the fan, one colour rule */
-        + window._lockMark(window._lockOpen(L), 11) + ' ' + _hrtEsc(lst)
-        + (L.permitted === false && (lst === 'OPEN' || lst === 'HARDENED') ? ' · MAY NOT ACT' : '') + '</span>'
-        + '<span class="hrt-w">' + _hrtEsc(ar) + ' — ' + _hrtEsc(L.why || '') + '</span></div>';
+        + window._lockMark(window._lockOpen(L), 11) + ' ' + _hrtEsc(_lw.act) + '</span>'
+        + '<span class="hrt-w">' + (_lw.actWhy ? _hrtEsc(_lw.actWhy) + ' · ' : '')
+        + (_lw.provenSay ? _hrtEsc(_lw.provenSay) + ' · ' : '')
+        + _hrtEsc(ar) + ' — ' + _hrtEsc(L.why || '') + '</span></div>';
     }
     var _unread = '';
     if (d.organsOk === false || d.locksOk === false) {
@@ -15996,8 +16187,11 @@ window._lockMark = function(isOpen, px, label){
       + _hrtJoins(d.joins)
       + _hrtPrinter(d.printer)
       + _hrtDead(d.deadFields)
-      + '<div class="hrt-sec"><div class="hrt-h">The valves · ' + (d.open || 0) + ' of '
-      + (d.total || lk.length) + ' open</div>' + lrows + '</div>'
+      /* REG-3215 - the count in the act's words, self_arming's own sentence: "4 of 9 may act now (7 proven)". It read
+         "7 of 9 open" - the evidence tier - beside a Fleet card that said "locks shut" for the same PC. */
+      + '<div class="hrt-sec"><div class="hrt-h">The valves · ' + _hrtEsc(d.locksSay
+          || ('how many may act now is UNKNOWN (' + (d.open || 0) + ' of ' + (d.total || lk.length) + ' proven)'))
+      + '</div>' + lrows + '</div>'
       /* v2489 — THE ROUTES, DERIVED LIVE ON EVERY OPEN, LIKE EVERYTHING ELSE ON THIS PANEL.
          His ruling: "not draw it — it needs to derive, live, for real". This reads d.routes from
          the SAME /api/heart payload the valves come from, and that payload re-reads the proof
@@ -16799,7 +16993,8 @@ window._lockMark = function(isOpen, px, label){
     /* addEventListener, not .onclick — this element has carried a click handler before and
        assigning would silently replace whatever else is bound to it. */
     if (_fvEl) {
-      _fvEl.style.cursor = 'pointer';
+      /* REG-3205 - its pointer is the console's (#foot-ver in the pointer contract): a cursor set here loses to the
+         inherit rule and painted nothing */
       _fvEl.addEventListener('click', function(ev){ ev.preventDefault(); _verXrefOpen(); });
     }
     var _vxOv = document.getElementById('ver-xref');
@@ -18347,11 +18542,23 @@ window._lockMark = function(isOpen, px, label){
         if (_doorOv) {
           _doorOv.hidden = false;
           _doorOv.innerHTML = '<div class="sh-head">🎞 THE SHELF</div>'
-            + '<div class="sh-empty-hero"><div class="she-lead">opening the shelf…</div></div>';
+            + '<div class="sh-empty-hero sh-opening" data-since="' + Date.now() + '"><div class="she-lead">opening the shelf…</div></div>';
+          if (typeof _shelfOpeningWatch === 'function') _shelfOpeningWatch();   /* REG-3203 - an "opening" still there at the bound says why */
         }
       } catch (e) {}
     }
     thLit();
+    /* REG-3203 (GrokBot on v3864: his Mac's Shelf sat on "opening the shelf..." while the guest's filled) - A SHELF WITH RUNS
+       IN HAND OPENS ON THEM. The door waited for a fresh /api/sessions before painting anything, every time - up to
+       TH_SESSIONS_BOUND_MS (45 s) on a Mac whose list took 44 s to build at boot (status shelfPrewarm.ms 44303) - and
+       then thShelf asked a second time. Runs this page already holds paint at once; thShelf's own refresh brings the
+       new list, and a refresh that fails keeps them and says how old they are (REG-3050's stale note). */
+    if (_shelfDoor && (TH.sessions || []).length) {
+      try { $('th-caption').textContent = 'the shelf'; } catch (e) {}
+      TH.cardPrefOwed = true;   // REG-1944 - the same debt the waited door path records
+      thLit();
+      return;
+    }
     /* ══ v2228 — A STAGE THAT CANNOT LOAD ITS REEL MUST NOT SIT BLACK FOREVER ═══════════════
        HIS REPORT, 2026-08-28, with two screenshots: "the console has this bug thats its black
        screened ... but when i hover over something i nail on something and it renders something ...
@@ -18503,6 +18710,7 @@ window._lockMark = function(isOpen, px, label){
     /* v3304 (#59) — INVALIDATE ANY OPEN STILL IN FLIGHT. Without this the pending thOpen()
        resolves after the teardown and re-shows an empty stage; that is the reopen-after-close
        failure he reported five times. */
+    try { if (TH.shadowReel) _shadowTheatreDown(false); } catch (e) {}   /* REG-3204 - a full close ends a shadow reel too */
     TH.gen = (TH.gen | 0) + 1;
     TH.open = false; clearTimeout(TH.timer); TH.playing = false;
     TH.loadGen = (TH.loadGen || 0) + 1;   /* REG-2091 - and any REEL still loading: it must not paint a closed stage */
@@ -18989,6 +19197,33 @@ window._lockMark = function(isOpen, px, label){
   // v837 (SIMULATION_SPEC #5) — THE SESSION SHELF: pick any reel by sight, not blind arrows.
   /* REG-3050 - THE SHELF WHEN /api/sessions DID NOT ANSWER: UNKNOWN in place, never "No runs recorded yet" and never closed.
      It carries its own ↻ and ✕ because the shelf's click handler is set only by a paint that had runs. */
+  /* REG-3203 - AN "OPENING" SHELF ENDS WITHIN A BOUND. Both waits paint a .sh-opening placeholder (thOpen's door, thShelf's
+     first load) stamped with when it began. Its own fetch is bounded (TH_SESSIONS_BOUND_MS), but a wait that is overtaken
+     returns without painting, and a timer WebKit throttles in a hidden window runs late; either left the words up for as
+     long as he looked. Whatever still says "opening" at TH_SHELF_OPEN_BOUND_MS becomes the UNKNOWN shelf (its why, ↻ and ✕)
+     and the Doctor is told (ui_fault shelf-open-stuck). The beat publishes shelf.opening and its age, and an opening shelf
+     is no longer counted as the legitimate empty one. */
+  var TH_SHELF_OPEN_BOUND_MS = 60000;
+  function _shelfOpeningWatch(){
+    try { if (TH.shelfOpenWatch) clearTimeout(TH.shelfOpenWatch); } catch (e) {}
+    TH.shelfOpenWatch = setTimeout(function(){
+      TH.shelfOpenWatch = 0;
+      var ov = $('th-shelfov');
+      if (!ov || ov.hidden) return;
+      var op = ov.querySelector('.sh-opening');
+      if (!op) return;
+      var since = Number(op.getAttribute('data-since'));
+      var secs = (since > 0) ? Math.round((Date.now() - since) / 1000) : null;
+      var why = 'it still said opening ' + (secs === null ? 'after an UNKNOWN time' : secs + ' s after it began')
+        + ' - the sessions list never arrived';
+      TH.sessionsFailWhy = why;
+      _shelfUnknownPaint(ov, why);
+      try {
+        fetch('/api/ui_fault', {method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({kind: 'shelf-open-stuck', why: why, where: 'control_ui _shelfOpeningWatch'})});
+      } catch (e) {}
+    }, TH_SHELF_OPEN_BOUND_MS);
+  }
   function _shelfUnknownPaint(ov, why){
     ov.innerHTML = '<div class="sh-head">🎞 THE SHELF</div>'
       + '<div class="sh-empty-hero sh-unknown"><div class="she-lead">your runs: UNKNOWN</div>'
@@ -19858,8 +20093,9 @@ window._lockMark = function(isOpen, px, label){
     else {
       ov.hidden = false;
       /* REG-3050 - asked again after a failed ask, it says so rather than a plain first load */
-      ov.innerHTML = '<div class="sh-head">🎞 THE SHELF</div><div class="sh-empty-hero"><div class="she-lead">'
+      ov.innerHTML = '<div class="sh-head">🎞 THE SHELF</div><div class="sh-empty-hero sh-opening" data-since="' + Date.now() + '"><div class="she-lead">'
         + (TH.sessionsFailWhy ? 'asking the console again\u2026' : 'Loading runs…') + '</div></div>';
+      if (typeof _shelfOpeningWatch === 'function') _shelfOpeningWatch();   /* REG-3203 */
     }
     window._sessionsJson().then(function(j){   /* GrokBot v3817 - the theatre's wait and this share one request */
       var fresh = (j && j.sessions) || [];
@@ -21142,10 +21378,40 @@ window._lockMark = function(isOpen, px, label){
      The check is worth keeping, so it MOVED rather than died: it is a control inside the panel's
      THE FLEET section now, beside the row that says whether this machine is behind — where someone
      who has just read 'COULD NOT CHECK' would look for the retry. [[the-unjoined-end]] */
+  /* REG-3207 - A GUEST SEAT NEVER ASKS TO UPDATE. GrokBot, v3864: the guest console logged /api/update 404s among its
+     581 failed requests. The guest seat is a read-only mirror served by the box's bridge (tv/GUEST_SEAT.md): `update`
+     is deliberately NOT mirrored, and the mirror's /api/status says `guest: true` (guest_profile.rewrite_status). A
+     mirror has no checkout to pull, so the caller does not ask - the banner, the footer check and UPDATE NOW all read
+     this one answer. A status that will not read is not a guest: the check runs as it always did. */
+  var _guestSeatAsk = null;
+  window._isGuestSeat = function(){
+    var ls = window.__lastStatus;
+    if (ls && typeof ls === 'object') return Promise.resolve(ls.guest === true);
+    if (!_guestSeatAsk){
+      _guestSeatAsk = fetch(API + '/api/status').then(function(r){ return r.json(); })
+        .then(function(j){ return !!(j && j.guest === true); })
+        .catch(function(){ _guestSeatAsk = null; return false; });
+    }
+    return _guestSeatAsk;
+  };
+  /* REG-3207 (the second eye, reproduced) - THE GUEST GROKBOT MEASURED CARRIES NO guest KEY. Its /api/status is a raw
+     copy of his Mac's (his identity, no `guest` key), staged by GrokBot rather than by tv/sync_guest_api.sh, so the
+     check above read false there and the banner, the footer and UPDATE NOW kept asking. A real console's GET
+     /api/update never answers 404 - control_app catches every failure as 200 ok:false - so a 404 can only mean THIS
+     SERVER HAS NO UPDATE DOOR. The first one is remembered for the life of the page and nothing asks again. */
+  var _updDoorGone = false;
+  window._updateDoorGone = function(r){ if (r && r.status === 404) _updDoorGone = true; return _updDoorGone; };
+  window._noUpdateHere = async function(){ return _updDoorGone || (await window._isGuestSeat()); };
   window._fleetUpdateCheck = async function(){
+      if (await window._noUpdateHere()){
+        toast('this is a guest seat - a read-only mirror of another console, so there is nothing here to update');
+        return;
+      }
       toast('⟳ checking fleet (origin/main)…');
       try {
-        var r = await fetch(API + '/api/update'); var j = await r.json();
+        var r = await fetch(API + '/api/update');
+        if (window._updateDoorGone(r)){ toast('this console\'s server has no update door (404) - a guest seat or a mirror, so there is nothing here to update'); return; }
+        var j = await r.json();
         if (!j.ok) toast('⚠ ' + (j.msg || 'update check failed'));
         else if (!j.behind) toast('✓ FLEET UNIFIED · ' + (j.ver || j.head || 'origin/main') + (j.dirty ? ' · local tracked edits present' : ''));
         else toast('⚠ BEHIND · ' + j.behind + ' commit' + (j.behind > 1 ? 's' : '') + ' — latest: "' + (j.latest || '') + '" · ' + (j.howTo || 'relaunch to auto-pull'));
@@ -21200,7 +21466,9 @@ window._lockMark = function(isOpen, px, label){
        So: fetch without asking, run without surprising him. [[unknown-stays-unknown]] */
     async function look(){
       try {
+        if (await window._noUpdateHere()){ bar.hidden = true; return; }   // REG-3207 - a mirror has nothing to pull
         var r = await fetch(API + '/api/update');
+        if (window._updateDoorGone(r)){ bar.hidden = true; return; }   // REG-3207 - no update door on this server: never ask again
         var j = await r.json();
         // the dismissal is per-VERSION, and it never gates the pull below
         lastSeenLatest = (j && (j.latest || j.ver)) || lastSeenLatest;
@@ -21422,9 +21690,15 @@ window._lockMark = function(isOpen, px, label){
         go.disabled = false;
         return;
       }
+      if (await window._noUpdateHere()){   // REG-3207 - the mirror has no checkout; never POST it a pull
+        txt.textContent = 'a guest seat mirrors another console - there is nothing here to update';
+        go.hidden = true;
+        return;
+      }
       txt.textContent = 'pulling from GitHub…';
       try {
         var r = await fetch(API + '/api/update', { method: 'POST' });
+        if (window._updateDoorGone(r)){ txt.textContent = 'this server has no update door (404) - there is nothing here to update'; go.hidden = true; return; }
         var j = await r.json();
         if (j && j.ok && j.pulled){ armRelaunch(j.ver); return; }
         if (j && j.ok){
@@ -23347,16 +23621,20 @@ window._lockMark = function(isOpen, px, label){
     /* The last N reels this record already holds (newest first). Play walks them oldest first, and only a
        key frame whose body is base64 — a frame the owner already served. Nothing here is fetched. */
     function arm(rows){
-      var reels = [], each = [];
+      var reels = [], each = [], ids = [], eachIds = [];
       (Array.isArray(rows) ? rows : []).forEach(function(s){
-        var own = [];
+        var own = [], ownIds = [];
         (Array.isArray(s && s.frames) ? s.frames : []).slice(0, 3).forEach(function(f){
           var b = (f && typeof f.jpg === 'string') ? f.jpg : '';
           if (b && _SSV_B64.test(b)) own.push('data:image/jpeg;base64,' + b);
+          /* REG-3204 - the frame's id rides beside its served picture, so the theatre can ask the owner for its HD copy */
+          if (b && _SSV_B64.test(b)) ownIds.push((f && typeof f.id === 'string' && /^\d{1,6}_\d{13}$/.test(f.id)) ? f.id : '');
         });
         each.push(own);
+        eachIds.push(ownIds);
       });
       each.slice().reverse().forEach(function(own){ reels = reels.concat(own); });
+      eachIds.slice().reverse().forEach(function(own){ ids = ids.concat(own); });
       /* a page arms its player; a renderer with no window (a law under node) only draws */
       var W = (typeof window !== 'undefined') ? window : null;
       if (!W) return;
@@ -23366,6 +23644,8 @@ window._lockMark = function(isOpen, px, label){
       W._ssvReels = reels;
       W._ssvAll = reels;
       W._ssvEach = each;   /* v3855 - one reel per session, the row's own PLAY plays only it */
+      W._ssvAllIds = ids;  /* REG-3204 - each served frame's id, in the same order as its picture */
+      W._ssvEachIds = eachIds;
       W._ssvReelN = Array.isArray(rows) ? rows.length : 0;
     }
     arm(d.ok === true ? (Array.isArray(d.sessions) ? d.sessions : null) : []);
@@ -23397,6 +23677,8 @@ window._lockMark = function(isOpen, px, label){
         if (window._ssvPlay.timer) { clearTimeout(window._ssvPlay.timer); window._ssvPlay.timer = 0; }
       }
     } catch (eP) {}
+    /* REG-3204 - leaving the shadow (or closing their list) with their reel on the theatre closes the theatre too */
+    try { if (typeof TH !== 'undefined' && TH.shadowReel && typeof thClose === 'function') thClose(); } catch (eT) {}
     var ov = document.getElementById('shadow-sess-ov');
     if (ov) ov.hidden = true;
   }
@@ -23418,6 +23700,8 @@ window._lockMark = function(isOpen, px, label){
     if (p.timer) { clearTimeout(p.timer); p.timer = 0; }
     var b = document.getElementById('ssv-play');
     if (b) b.textContent = '▶ PLAY the last ' + (window._ssvReelN || 0) + ((window._ssvReelN === 1) ? ' reel' : ' reels');
+    var tp = document.getElementById('th-play');
+    if (tp && typeof TH !== 'undefined' && TH.shadowReel) tp.textContent = '▶';   /* REG-3204 - the theatre's own button says paused */
   }
   function _shadowSessionsPlayTick(){
     var p = window._ssvPlay;
@@ -23427,6 +23711,7 @@ window._lockMark = function(isOpen, px, label){
     var src = frames[p.at];
     p.at++;
     window._ssvShown = src;
+    if (typeof _shadowTheatreShow === 'function') _shadowTheatreShow(p.at - 1);   /* REG-3204 */
     var st = document.getElementById('ssv-stage');
     if (st) st.innerHTML = '<img class="ssv-img" alt="a served key frame" src="' + src + '">';
     var wait = Math.max(1, Math.round(800 / (p.speed || 1)));
@@ -23440,6 +23725,9 @@ window._lockMark = function(isOpen, px, label){
     if (typeof ix === 'number') window._ssvReels = (Array.isArray(window._ssvEach) && Array.isArray(window._ssvEach[ix])) ? window._ssvEach[ix] : [];
     else if (Array.isArray(window._ssvAll)) window._ssvReels = window._ssvAll;
     window._ssvPlayIx = (typeof ix === 'number') ? ix : null;
+    window._ssvIds = (typeof ix === 'number')
+      ? ((Array.isArray(window._ssvEachIds) && Array.isArray(window._ssvEachIds[ix])) ? window._ssvEachIds[ix] : [])
+      : (Array.isArray(window._ssvAllIds) ? window._ssvAllIds : []);   /* REG-3204 */
     var frames = Array.isArray(window._ssvReels) ? window._ssvReels : [];
     if (!frames.length) {
       window._ssvShown = null;
@@ -23451,11 +23739,171 @@ window._lockMark = function(isOpen, px, label){
     window._ssvPlay.at = 0;
     var b = document.getElementById('ssv-play');
     if (b) b.textContent = '⏸';
+    /* REG-3204 - SHADOW PLAY IS THE HD THEATRE: the walk below paints the theatre's own stage (#th-film), not a thumbnail */
+    if (typeof _shadowTheatreUp === 'function') _shadowTheatreUp(ix);
     _shadowSessionsPlayTick();
     return true;
   }
   window._shadowSessionsPlay = _shadowSessionsPlay;
   window._shadowSessionsSpeed = _shadowSessionsSpeed;
+  /* ══ REG-3204 (GrokBot on v3864: "shadow Play is still the _shadowSessionsPlay slideshow, not HD #th-film") - SHADOW
+     PLAY IS THE SAME HD THEATRE AS REGULAR PLAY. His ask: Play on a shadow opens the theatre he plays his own reels in.
+     It drew a 160 px thumbnail into a strip (#ssv-stage) inside the sessions list. Now the same walk (the served frames,
+     their order, the theatre's 1/2/4/8 speeds) paints the theatre's own stage: #theatre lifted over the shadow
+     (body.shadow-theatre), #th-film, its ▶/⏸, ‹ ›, speed, fullscreen and ✕. Each step shows the served frame at once
+     and then the HD copy from the OWNER's console - its address off the shadow snapshot, the same leg v3849 (a) uses for
+     a shadow's pictures (_tvdShadow.origin) - with the caption saying which one is on screen and why. Read only: the
+     stage holds none of this PC's reels (TH.beats emptied), and every control that acts on this PC's reels (shelf, older
+     and newer session, mode, more, open folder, reclose) is hidden and refused while it is up. ✕ and Esc go back one
+     layer, to their sessions list; any full close (a header tab, Close Theatre) ends it too. */
+  var _SSV_ORIGIN = /^https?:\/\/[A-Za-z0-9][A-Za-z0-9.\-]*(?::\d{1,5})?$/;
+  function _shadowOwnerOrigin(){
+    try {
+      var f = document.getElementById('shadow-eng'), w = f && f.contentWindow;
+      var o = w && w._tvdShadow && w._tvdShadow.origin;
+      return (typeof o === 'string' && _SSV_ORIGIN.test(o)) ? o : null;
+    } catch (e) { return null; }
+  }
+  function _shadowTheatreHd(id, origin){
+    if (!origin || !_SSV_ORIGIN.test(String(origin))) return null;
+    if (typeof id !== 'string' || !/^\d{1,6}_\d{13}$/.test(id)) return null;
+    return origin + '/hist/' + id + '.jpg?w=1280';
+  }
+  function _shadowTheatreUp(ix){
+    var th = document.getElementById('theatre');
+    if (!th || typeof TH === 'undefined') return false;
+    if (!TH.shadowReel && TH.open) { try { thClose(); } catch (e) {} }   /* a reel of this PC never sits under theirs */
+    TH.shadowReel = { owner: (typeof window._shadowWho === 'string') ? window._shadowWho : '',
+                      ix: (typeof ix === 'number') ? ix : null, origin: _shadowOwnerOrigin() };
+    TH.beats = []; TH.allBeats = []; TH.i = 0; TH.playing = false;   /* nothing of this PC's for thPaint to draw */
+    TH.open = true;
+    var ov = document.getElementById('shadow-sess-ov');
+    if (ov) ov.hidden = true;
+    th.hidden = false;
+    document.body.classList.add('theatre-open', 'shadow-theatre');
+    try { thLit(); } catch (e) {}
+    var n = Array.isArray(window._ssvReels) ? window._ssvReels.length : 0;
+    var who = TH.shadowReel.owner || 'this owner';
+    var ss = document.getElementById('th-sess');
+    if (ss) ss.textContent = who + '’s ' + (typeof ix === 'number' ? 'session' : 'last ' + (window._ssvReelN || 0) + ' sessions')
+      + ' · ' + n + ' key frame' + (n === 1 ? '' : 's') + ' · read only';
+    try { thRibbon(); } catch (eR) {}   /* the ribbon's one writer says whose past this is (TH.shadowReel is set above) */
+    var tp = document.getElementById('th-play');
+    if (tp) tp.textContent = '⏸';
+    var sp = document.getElementById('th-speed');
+    if (sp) sp.textContent = ((window._ssvPlay && window._ssvPlay.speed) || 1) + '×';
+    return true;
+  }
+  function _shadowTheatreShow(i){
+    if (typeof TH === 'undefined' || !TH.shadowReel) return;
+    var film = document.getElementById('th-film');
+    if (!film) return;
+    var reels = Array.isArray(window._ssvReels) ? window._ssvReels : [];
+    var ids = Array.isArray(window._ssvIds) ? window._ssvIds : [];
+    var low = reels[i];
+    if (typeof low !== 'string') return;
+    var who = TH.shadowReel.owner || 'their console';
+    var cap = document.getElementById('th-caption');
+    var head = 'frame ' + (i + 1) + ' of ' + reels.length + ' · ';
+    var say = function(t){ if (cap) cap.textContent = head + t; };
+    var hd = _shadowTheatreHd(ids[i], TH.shadowReel.origin);
+    film.style.opacity = 1;
+    film.__url = '';
+    film.src = low;          /* this frame's served picture at once - never the last frame under this frame's label */
+    film.__ssvWant = hd || '';
+    if (!hd) {
+      say('the served key frame (160 px): ' + (TH.shadowReel.origin
+        ? 'this frame carries no id to ask ' + who + '’s console for'
+        : who + '’s console address is not on this snapshot, so its HD frame cannot be asked for'));
+      return;
+    }
+    say('asking ' + who + '’s console for the HD frame…');
+    var probe = new Image();
+    probe.onload = function(){ if (film.__ssvWant === hd) { film.src = hd; say('HD, from ' + who + '’s console'); } };
+    probe.onerror = function(){
+      if (film.__ssvWant === hd) say('the served key frame (160 px): ' + who + '’s console did not answer for the HD frame');
+    };
+    probe.src = hd;
+  }
+  function _shadowTheatreDown(back){
+    if (typeof TH === 'undefined' || !TH.shadowReel) return false;
+    TH.shadowReel = null;
+    try { _shadowSessionsPlayStop(); } catch (e) {}
+    document.body.classList.remove('shadow-theatre');
+    var film = document.getElementById('th-film');
+    if (film) { film.__ssvWant = ''; film.__url = ''; film.removeAttribute('src'); }
+    var rb = document.getElementById('th-ribbon');
+    if (rb) rb.textContent = '📼 REPLAY — the PAST, not live';
+    if (back) {
+      TH.open = false;
+      var th = document.getElementById('theatre');
+      if (th) th.hidden = true;
+      try { if (document.body.classList.contains('cinema') && typeof thCinema === 'function') thCinema(false); } catch (eC) {}
+      document.body.classList.remove('theatre-open', 'cinema');
+      try { thLit(); } catch (e) {}
+      var ov = document.getElementById('shadow-sess-ov');
+      if (ov && _consoleShadowUp()) ov.hidden = false;   /* one layer back: their sessions list, as he left it */
+    }
+    return true;
+  }
+  function _shadowTheatreToggle(){
+    var p = window._ssvPlay;
+    if (p && p.on) { _shadowSessionsPlayStop(); return false; }
+    var frames = Array.isArray(window._ssvReels) ? window._ssvReels : [];
+    if (!frames.length || !p) return false;
+    if (p.at >= frames.length) p.at = 0;   /* ▶ at the end replays from the first frame, like a reel */
+    p.on = true;
+    var tp = document.getElementById('th-play');
+    if (tp) tp.textContent = '⏸';
+    _shadowSessionsPlayTick();
+    return true;
+  }
+  function _shadowTheatreStep(d){
+    var p = window._ssvPlay;
+    var frames = Array.isArray(window._ssvReels) ? window._ssvReels : [];
+    if (!p || !frames.length) return;
+    _shadowSessionsPlayStop();
+    var cur = Math.max(0, (p.at || 1) - 1);
+    var i = Math.max(0, Math.min(frames.length - 1, cur + d));
+    p.at = i + 1;
+    window._ssvShown = frames[i];
+    _shadowTheatreShow(i);
+  }
+  window._shadowTheatreDown = _shadowTheatreDown;
+  (function(){
+    var th = document.getElementById('theatre');
+    if (!th) return;
+    /* capture on the stage: while a shadow reel is up its transport drives the shadow walk, and nothing that acts on this
+       PC's reels runs */
+    th.addEventListener('click', function(e){
+      if (typeof TH === 'undefined' || !TH.shadowReel) return;
+      var t = e.target && e.target.closest ? e.target.closest('button, #th-film') : null;
+      if (!t) return;
+      if (t.id === 'th-fs' || t.id === 'th-legend-btn') return;   /* fullscreen and the key work as on any reel */
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      if (t.id === 'th-close') _shadowTheatreDown(true);
+      else if (t.id === 'th-play') _shadowTheatreToggle();
+      else if (t.id === 'th-prev-b') _shadowTheatreStep(-1);
+      else if (t.id === 'th-next-b') _shadowTheatreStep(1);
+      else if (t.id === 'th-speed') t.textContent = _shadowSessionsSpeed() + '×';
+    }, true);
+    window.addEventListener('keydown', function(e){
+      if (typeof TH === 'undefined' || !TH.shadowReel) return;
+      var tg = e.target;
+      if (tg && tg.closest && tg.closest('input,textarea,[contenteditable="true"]')) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;   /* a shortcut of the window (reload, quit) is not the reel's */
+      var k = e.key;
+      if (k === 'f' || k === 'F') return;   /* the theatre's own fullscreen */
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      if (k === 'Escape') {
+        if (document.body.classList.contains('cinema')) { try { thCinema(false); } catch (eC) {} return; }
+        _shadowTheatreDown(true);
+      }
+      else if (k === ' ') _shadowTheatreToggle();
+      else if (k === 'ArrowLeft') _shadowTheatreStep(-1);
+      else if (k === 'ArrowRight') _shadowTheatreStep(1);
+    }, true);
+  })();
   /* -> true when the list opened (a shadow is up and its owner is known), else false and nothing is drawn */
   function _shadowSessionsOpen(){
     var owner = (typeof window._shadowWho === 'string') ? window._shadowWho : '';
@@ -23812,6 +24260,7 @@ window._lockMark = function(isOpen, px, label){
   function _shellRestoreConsole(){
     // Force the homepage (stage + home-dash + rail + tick + foot) back into the grid.
     // v935.6 hid them with visibility; some WebKit paths left them swallowed after demote.
+    if (typeof _fullBibleMark === 'function') _fullBibleMark(false);   /* REG-3202 - leaving the pane leaves the full bible */
     try {
       document.body.classList.remove('shell-open', 'gliding');
       var shell = document.querySelector('.shell');
@@ -23838,6 +24287,7 @@ window._lockMark = function(isOpen, px, label){
     try {
       var w = f.contentWindow;
       if (!w || !w.document) return false;
+      if (typeof _fullBibleRail === 'function') _fullBibleRail(w);   /* REG-3202 - the board's own rail only while the Full Bible door opened it */
       if (typeof w.switchTab === 'function'){
         /* REG-2321 - a room render that throws AFTER switchTab moved the board is still a landed route */
         try { w.switchTab(tab); } catch (_sw) {}
@@ -23883,9 +24333,63 @@ window._lockMark = function(isOpen, px, label){
     try { if (typeof _shellPaintAgain === 'function') _shellPaintAgain(function(){}); } catch (e) {}
     try { document.querySelectorAll('#head-tabs .ht.ht-opening').forEach(function(b){ b.classList.remove('ht-opening'); }); } catch (e) {}
   }
+  /* REG-3202 (GrokBot on v3864, his Mac and a guest: "Full bible ->" did nothing) - THE FULL BIBLE DOOR OPENS THE FULL BIBLE.
+     His ask (v3286): "the button within the console that routes us to the full bible page". The door was href="#" calling
+     _shellOpen('session'): the engine pane on the board's SESSIONS room, which is the Task Force the hub already shows,
+     under a header that already lit Sessions - and the pane hides the board's own tab row (v935.6: the console header is
+     the rail), so none of the bible's other rooms could be reached from it. In a shadow it promoted #tvd-eng, which
+     body.shadow-on hides (visibility:hidden !important), and left shadow-hub on, so nothing on screen moved at all.
+     The door now opens the same pane (same store, the engine stays alive) in FULL mode: data-full-bible on this body and
+     bible-full on the board's, which shows the board's whole rail - every room of the bible. In a shadow it is their
+     board, the way the header tabs route one. Any other route leaves full mode (shellOpen clears it, and so does
+     _shellRestoreConsole, which every way home calls). The href is the full page itself, so a console whose script
+     never got here still goes somewhere real. */
+  var _fullBibleNext = false;
+  function _fullBibleMark(on){
+    try {
+      if (on) document.body.setAttribute('data-full-bible', '1');
+      else document.body.removeAttribute('data-full-bible');
+    } catch (e) {}
+    if (!on) {
+      ['tvd-eng', 'shadow-eng'].forEach(function(id){
+        try { var fr = document.getElementById(id); if (fr && fr.contentWindow) _fullBibleRail(fr.contentWindow); } catch (e) {}
+      });
+    }
+  }
+  function _fullBibleRail(w){
+    try {
+      var full = document.body.getAttribute('data-full-bible') === '1';
+      if (w && w.document && w.document.body) w.document.body.classList.toggle('bible-full', full);
+    } catch (e) {}
+  }
+  function openFullBible(){
+    var b = document.body, shadow = false;
+    try {
+      shadow = b.classList.contains('shadow-on') || b.classList.contains('shadow-snap');
+      if (shadow) b.classList.remove('shadow-hub');
+    } catch (e) {}
+    _fullBibleNext = true;
+    /* their board lands on Characters, the room a shadow opens on: its Sessions room is this console's hub (the header's
+       rule, and the board's backTo refuses it) - the full rail then reaches every other room */
+    try { shellOpen(shadow ? 'chars' : 'session'); }
+    catch (e) {
+      _fullBibleNext = false;
+      try {
+        fetch('/api/ui_fault', {method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({kind: 'full-bible-door-dead', why: String(e).slice(0, 160), where: 'control_ui openFullBible'})});
+      } catch (_f) {}
+      return false;
+    }
+    return true;
+  }
+  window._openFullBible = openFullBible;
   function shellOpen(tab){
     tab = tab || 'session';
     _shellTab = tab;
+    /* REG-3202 - only the door's own open is the full bible (typeof: laws run shellOpen cut out on its own) */
+    var _full = (typeof _fullBibleNext !== 'undefined') && _fullBibleNext === true;
+    if (typeof _fullBibleNext !== 'undefined') _fullBibleNext = false;
+    if (typeof _fullBibleMark === 'function') _fullBibleMark(_full);
     var f = document.getElementById('tvd-eng');
     if (!f){ _glide('/board?app=1#' + encodeURIComponent(tab)); return; }
     var already = document.body.classList.contains('shell-open');
@@ -27069,7 +27573,7 @@ window._lockMark = function(isOpen, px, label){
       var thumb = s.frameId
         ? '<img class="tsh" src="/hist/'+encodeURI(s.frameId)+'.jpg?w=160" loading="lazy" '
           + 'onclick="event.stopPropagation();window.open(\'/hist/'+encodeURI(s.frameId)+'.jpg\',\'_blank\')" '
-          + 'onerror="this.style.opacity=.25;this.style.cursor=\'default\';this.onclick=null;this.title=\'frame not archived\'">'
+          + 'onerror="this.style.opacity=.25;this.style.cursor=\'default\';this.onclick=null;this.removeAttribute(\'onclick\');this.title=\'frame not archived\'">'
         : '<div class="tsh" style="display:flex;align-items:center;justify-content:center;color:#6b5a3e;font: var(--fw-medium) var(--fs-2xs) var(--mono)">no frame</div>';
       var open = (TLY.expanded === gi);
       // the expanded detail: EVERY count, larger frame, ok/total/errors, the ids
@@ -27366,7 +27870,6 @@ body.shell-open #head-tabs {
 }
 body.shell-open #head-tabs .ht {
   pointer-events: auto !important;
-  cursor: pointer !important;
   position: relative;
   z-index: 2;
 }
@@ -27902,6 +28405,42 @@ function escC(s) {
   var _fleetAgeTxt = function (sec) {
     return ((sec === null || sec === undefined) ? 'age UNKNOWN' : _fleetAgo(sec)).replace(/ /g, ' ');
   };
+  /* REG-3198 (his Fleet 21:01: Dean, last heard 18 h before, drew red "locks shut" and "river UNKNOWN") - AN OFFLINE ROW
+     IS NOT A READING OF NOW. Past its presence bound (fleet_presence, stamped as m.presence) the row says when the PC was
+     last heard and how old its last river is - ONE reading for the row's chip and its Advanced box (the reviewer on r3:
+     the box still said river UNKNOWN, stuck UNKNOWN and a warning "proof out of date" for Dean). [[stale-reading]]
+     -> null (not offline) | {since, gone, river, riverTip} */
+  var _fleetOffline = function (m, nowMs) {
+    var pres = (m && m.presence && typeof m.presence === 'object') ? m.presence : null;
+    if (!pres || pres.state !== 'offline') return null;
+    var rv = (m && m.system && typeof m.system === 'object') ? m.system.river : null;
+    var offAt = Date.parse(String((m && m.t) || ''));
+    var gone = _fleetReportAgeS(m, nowMs);
+    var p2 = function (x) { return (x < 10 ? '0' : '') + x; };
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var since = 'an unknown time';
+    if (isFinite(offAt)) {
+      var od = new Date(offAt);
+      since = (gone !== null && gone >= 20 * 3600 ? MON[od.getMonth()] + ' ' + od.getDate() + ' ' : '')
+        + p2(od.getHours()) + ':' + p2(od.getMinutes());
+    }
+    var river, tip;
+    if (!rv || typeof rv !== 'object') {
+      river = 'river not reported';
+      tip = 'its console did not report a river (a build older than the field)';
+    } else if (rv.lanes && typeof rv.lanes === 'object' && typeof rv.ageS === 'number' && isFinite(rv.ageS) && rv.ageS >= 0
+               && gone !== null) {
+      river = 'last river ' + _fleetAgo(rv.ageS + gone);   /* its age keeps counting from its last report */
+      tip = 'its last river was computed ' + _fleetAgo(rv.ageS + gone) + (rv.why ? ' - ' + String(rv.why) : '');
+    } else if (rv.lanes && typeof rv.lanes === 'object') {
+      river = 'last river age UNKNOWN';
+      tip = 'its last report carried lanes without an age';
+    } else {
+      river = 'no river in its last run';
+      tip = String(rv.why || 'its last report carried no river');
+    }
+    return { since: since, gone: gone, river: river, riverTip: tip };
+  };
   var _fleetSay = function (k) {
     /* the ONE vocabulary for a triage outcome lives beside the river panel (first script block),
        exported on window; read at CALL time, never bare across the blocks. [[console-ui-two-script-blocks]] */
@@ -28016,6 +28555,9 @@ function escC(s) {
   var _fleetSysParts = function (m, nowMs) {
     var sy = (m && m.system && typeof m.system === 'object') ? m.system : null;
     var out = [];
+    /* REG-3198 (the reviewer on r3) - an offline PC's river, stuck and proof facts are its LAST report, said as such: the
+       same reading the row's chip uses, never "UNKNOWN" and never a live warning. */
+    var _offS = _fleetOffline(m, nowMs);
     /* 1. HOW IT FILMS D2R */
     var c = sy && sy.capture;
     if (!c || typeof c !== 'object') {
@@ -28032,7 +28574,10 @@ function escC(s) {
     }
     /* 2. ITS RIVER — the router's station keys as that console counted them, in ITS order */
     var rv = sy && sy.river;
-    if (!rv || typeof rv !== 'object') {
+    if (_offS && (!rv || typeof rv !== 'object' || !rv.lanes || typeof rv.lanes !== 'object')) {
+      out.push(_fleetPart('river', ['offline since ' + _offS.since, _offS.river], {
+                 why: 'this PC is offline, so this is its last report, not a reading of now - ' + _offS.riverTip }));
+    } else if (!rv || typeof rv !== 'object') {
       out.push(_fleetPart('river', ['UNKNOWN', 'an older build'], { unk: true,
                  why: 'this console did not report its river (a build older than the field)' }));
     } else if (!rv.lanes || typeof rv.lanes !== 'object') {
@@ -28099,7 +28644,13 @@ function escC(s) {
        names itself here, with the owning lane's own reason; `none` is measured-and-flowing, a missing field is
        an older build and a null is an unreadable stamp log - both UNKNOWN, never "flowing". */
     var sk = (rv && typeof rv === 'object') ? rv.stuck : undefined;
-    if (!rv || typeof rv !== 'object' || sk === undefined) {
+    if (_offS && (!rv || typeof rv !== 'object' || sk === undefined || sk === null || !Array.isArray(sk))) {
+      out.push(_fleetPart('stuck', ['not read \u2014 offline since ' + _offS.since], {
+                 why: 'this PC is offline, so whether a station is stuck there now is not read; its last report '
+                    + ((!rv || typeof rv !== 'object' || sk === undefined) ? 'did not carry a stuck list (a build older than the field)'
+                       : (!rv.lanes || typeof rv.lanes !== 'object') ? 'carried no river - ' + _offS.riverTip
+                       : 'could not read its own river stamp log') }));
+    } else if (!rv || typeof rv !== 'object' || sk === undefined) {
       out.push(_fleetPart('stuck', ['UNKNOWN', 'an older build'], { unk: true,
                  why: 'this console does not report which stations are not draining (a build older than the field)' }));
     } else if (sk === null || !Array.isArray(sk)) {
@@ -28162,9 +28713,21 @@ function escC(s) {
     /* 5. #74 (REG-1461) — HAS THAT PC PROVED ITS OWN INSTRUMENTS? Every lock that moves its river (routing, the
        vault sweep, frame release) refuses until it has; REG-1447 makes every PC prove itself in the background. */
     var hs = (rv && typeof rv === 'object') ? rv.heart : undefined;
-    if (!hs || typeof hs !== 'object') {
+    if (_offS && (!hs || typeof hs !== 'object')) {
+      out.push(_fleetPart('proved', ['offline since ' + _offS.since, 'proof not reported'], {
+                 why: 'this PC is offline, and its last report did not say whether it had proved its own instruments '
+                    + '(a build older than the field)' }));
+    } else if (!hs || typeof hs !== 'object') {
       out.push(_fleetPart('proved', ['UNKNOWN'], { unk: true,
                  why: 'this console does not report whether it has proved its own instruments (an older build)' }));
+    } else if (_offS) {
+      var _offProof = { current: 'proved', stale: 'proof out of date', missing: 'never proved on this PC',
+                        unreadable: 'proof unreadable' }[hs.census];
+      out.push(_fleetPart('proved', ['offline since ' + _offS.since,
+                                     _offProof ? _offProof + ' at its last report' : 'no proof check in its last run'], {
+                 why: 'this PC is offline, so this is its last report, not a reading of now'
+                      + (typeof hs.blind === 'number' ? ' - ' + hs.blind + ' blind then' : '')
+                      + (hs.key ? ' - lane: ' + hs.key : '') + (hs.why ? ' - ' + String(hs.why) : '') }));
     } else {
       var hw = { current: 'proved', stale: 'proof out of date', missing: 'never proved on this PC',
                  unreadable: 'proof unreadable', unknown: 'UNKNOWN' }[hs.census]
@@ -28298,6 +28861,44 @@ function escC(s) {
     var hs = (rv && typeof rv === 'object') ? rv.heart : undefined;
     var census = (hs && typeof hs === 'object') ? hs.census : undefined;
     var bits = [], _lockWait = '';
+    /* REG-3198 (his Fleet 21:01: Dean, last heard 18 h before, drew red "locks shut" and "river UNKNOWN") - AN OFFLINE ROW
+       IS NOT A READING OF NOW: one muted chip, never red, never a bare UNKNOWN (_fleetOffline, the box reads the same). */
+    var _pres = (m && m.presence && typeof m.presence === 'object') ? m.presence : null;
+    var _off = (_pres && _pres.state === 'offline') ? _fleetOffline(m, nowMs) : null;
+    if (_off) {
+      return '<span class="fleet-riveroff" title="' + escC('this PC is offline - its console was last heard at ' + _off.since
+        + ' (' + (_off.gone === null ? 'age UNKNOWN' : _fleetAgo(_off.gone)) + '), so nothing here is a reading of now; '
+        + _off.riverTip) + '">offline since '
+        + escC(_off.since) + ' \u00b7 ' + escC(_off.river) + '</span>';
+    }
+    /* REG-3197 (his Fleet 21:01: every online PC "census stale; lane: GitHub's proofs ... are being imported" drawn as red
+       "locks shut" and "river stuck") - WHAT A STALE CENSUS IS WAITING ON, SAID FIRST AND NOT IN RED: GitHub's proofs
+       importing (with the import's own counts when it sent them) and the laws this PC still owes while it proves them.
+       The lock chip after them is their consequence, amber; red stays for what neither explains. */
+    var _imp = (hs && typeof hs === 'object' && hs.importing && typeof hs.importing === 'object') ? hs.importing : null;
+    var _owedHere = (hs && typeof hs === 'object' && typeof hs.owedHere === 'number' && isFinite(hs.owedHere)
+                     && hs.owedHere >= 0) ? Math.round(hs.owedHere) : null;
+    var _num = function (x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+    var _whole = function (x) { return typeof x === 'number' && isFinite(x) && x >= 0; };
+    var _landed = !!(_imp && _imp.landed === true);
+    if (_imp) {
+      var _whose = (typeof _imp.ver === 'string' && /^v\d+$/.test(_imp.ver) ? _imp.ver + '\u2019s' : 'GitHub\u2019s') + ' proofs';
+      /* the reviewer on r3 - an import that has LANDED, with the prover not yet ticked: said as what happened */
+      var _impWords = _landed ? _whose + ' imported \u00b7 the proof check runs next' : 'importing ' + _whose;
+      if (!_landed && _whole(_imp.done) && _whole(_imp.of) && _imp.of > 0) _impWords += ' \u00b7 ' + _num(_imp.done) + ' of ' + _num(_imp.of);
+      if (!_landed && _whole(_imp.etaS)) _impWords += ' \u00b7 ~' + (_imp.etaS < 60 ? '1 min' : _imp.etaS < 5400
+        ? Math.round(_imp.etaS / 60) + ' min' : (_imp.etaS / 3600).toFixed(1) + ' h');
+      bits.push('<span class="fleet-riverimport" title="' + escC((_landed
+        ? 'this PC has imported GitHub\u2019s proofs for its own commit; its proof check runs on its next tick and proves only what is still owed'
+        : 'this PC is importing GitHub\u2019s proofs for its own commit; its census reads ' + String(census)
+          + ' until they land, then it proves only what is still owed')
+        + (hs.why ? ' \u2014 ' + hs.why : '')) + '">' + escC(_impWords) + '</span>');
+    }
+    if (_owedHere !== null) {
+      bits.push('<span class="fleet-riverimport" title="' + escC('this PC is proving its own laws now, a slice at a time; '
+        + _owedHere + ' still owed here' + (hs.why ? ' \u2014 ' + hs.why : '')) + '">proving ' + _num(_owedHere)
+        + ' owed here</span>');
+    }
     /* v3849 — one river chip. A stuck list during the boot window used to draw "river stuck" and "river · starting". */
     var _pending = (census === null && hs && hs.key === 'starting' && _fleetBooting(m, nowMs));
     /* v3859 (his 17:27 Fleet: "river stuck" on Konyo with 3 of 4 rows "held by the drain, not owed") - A HELD REEL IS NOT A
@@ -28360,7 +28961,9 @@ function escC(s) {
         var mm = /^([A-Za-z][\w -]{0,30}? lane): owes (\d+)/.exec(w);
         /* v3861 - and the lane's own top reason for not starting them, when it said one ("5 retired after their tries") */
         var top = /none startable this tick: ([^,;|]+)/.exec(w);
-        return mm ? mm[1] + ' owes ' + mm[2] + (top ? ' \u00b7 ' + top[1].trim() : '') : null; }).filter(Boolean);
+        /* the reviewer on r3 (his ALT row: red "vault lane owes 0") - a lane that owes nothing has no debt to name; the
+           stuck chip's hover keeps its sentence */
+        return (mm && +mm[2] > 0) ? mm[1] + ' owes ' + mm[2] + (top ? ' \u00b7 ' + top[1].trim() : '') : null; }).filter(Boolean);
       if (_heldAside.length) tip += ' · also held by the drain, not owed: ' + _heldAside.map(function (e) { return e.station + ' ' + e.n; }).join(', ');
       var _stuckLabel = _pending ? 'river stuck \u00b7 proof check pending' : 'river stuck';
 
@@ -28372,17 +28975,43 @@ function escC(s) {
     if (census === 'missing' || census === 'stale' || census === 'unreadable') {
       /* GBL census-lowmem - a proof held back ONLY by free memory says so on the row, not the bare word a broken lock wears */
       var _memWait = hs && hs.key === 'low-memory';
-      var _recheck = hs && hs.key === 'stale-at-boot';
+      var _recheck = hs && hs.key === 'stale-at-boot' && !_imp;   /* REG-3197 - an import is not a recheck */
       /* v3861 - the few words that say what the proof is waiting on (the hover keeps the long form) */
       var _LOCK_WHY = { 'takes-fleet': 'borrows proofs, proves none', 'start': 'proof waits for an idle PC',
                         'busy': 'proof waits for an idle PC', 'running': 'proving now', 'stood-aside': 'proof paused',
                         'playing': 'proof paused while playing' };
       var _lw = (!_memWait && !_recheck && hs && _LOCK_WHY[hs.key]) ? ' \u00b7 ' + _LOCK_WHY[hs.key] : '';
-      bits.push('<span class="fleet-riverstuck" title="' + escC('the locks that move this PC\u2019s river are shut \u2014 its proof is '
+      /* REG-3197 - the ONE reason, when the import or this PC's own proving is it; the chip then reads amber, not red.
+         The reviewer on r3 (his live ALT rows: blind 1 and blind 3, drawn amber "until this PC proves") - A BLIND GATE IS
+         NOT LATENESS. may() refuses on a recorded BLIND before it looks at staleness and never softens it, so proving the
+         owed laws does not open these locks: the chip stays red and names the blind gates. And a blind count nobody sent
+         (no census count and no lock reason) is UNKNOWN - the calm words are never said over it. */
+      var _blindN0 = (hs && typeof hs.blind === 'number' && isFinite(hs.blind) && hs.blind >= 0) ? hs.blind : null;
+      var _blindHeld = (_blindN0 !== null && _blindN0 > 0) || !!(hs && typeof hs.lockWhy === 'string' && /are BLIND/.test(hs.lockWhy));
+      var _blindKnown = _blindN0 !== null || !!(hs && typeof hs.lockWhy === 'string' && hs.lockWhy);
+      var _lockCalm = !_blindHeld && _blindKnown && (!!_imp || (_owedHere !== null && !_memWait));
+      if (_blindHeld) _lw = ' \u00b7 ' + (_blindN0 ? _blindN0 + ' gate' + (_blindN0 === 1 ? '' : 's') : 'gates') + ' blind';
+      else if (_lockCalm && _landed) _lw = ' \u00b7 until the proof check runs';
+      else if (_lockCalm && _imp) _lw = ' \u00b7 until GitHub\u2019s proofs land';
+      else if (_lockCalm) _lw = ' \u00b7 until this PC proves';
+      var _shutNames = (hs && Array.isArray(hs.locksShut)) ? hs.locksShut.filter(function (l) { return typeof l === 'string' && l; }) : [];
+      bits.push('<span class="' + (_lockCalm ? 'fleet-riverlocked' : 'fleet-riverstuck') + '" title="' + escC('the locks that move this PC\u2019s river are shut \u2014 its proof is '
         + census + (_memWait ? ' and waiting for free memory to prove' : '') + ', so nothing that spends a reel may act here'
+        + (_blindHeld ? ' \u2014 and a BLIND gate keeps every lock shut whatever this PC proves next (BLIND is not STALE)' : '')
+        + (_shutNames.length ? ' \u2014 shut: ' + _shutNames.join(', ') + (hs.lockWhy ? ' (' + hs.lockWhy + ')' : '') : '')
         + (hs && hs.why ? ' \u2014 ' + hs.why : ''))   /* v3855 C6 - the stale reason, said */
-        + '"' + (hs && hs.why ? ' data-census-why="' + escC(hs.why) + '"' : '') + '>' + (_memWait ? 'locks shut \u00b7 census waiting for memory' : (_recheck ? 'locks shut \u00b7 rechecking' : 'locks shut')) + _lw
+        + '"' + (hs && hs.why ? ' data-census-why="' + escC(hs.why) + '"' : '') + '>' + (_blindHeld ? 'locks shut' : _memWait ? 'locks shut \u00b7 census waiting for memory' : (_recheck ? 'locks shut \u00b7 rechecking' : 'locks shut')) + _lw
         + (hs && Array.isArray(hs.takesFrom) && hs.takesFrom.length ? ' \u00b7 borrows ' + escC(hs.takesFrom.join('/')) + '\u2019s proofs' : '') + '</span>');
+      /* REG-3197 - THE LOCK LINE: which river locks may() last named shut (the console asks on its river lane; the beacon
+         carries the answer), in plain words, with the first one's own reason in the hover. Not sent = not drawn. */
+      if (_shutNames.length) {
+        var _LOCK_WORD = { 'reel.route': 'routing', 'frame.release': 'frame release', 'vault.sweep_start': 'vault sweep',
+                           'vault.apply': 'vault apply' };
+        bits.push('<span class="fleet-locknames" title="' + escC('the river locks this PC\u2019s own may() last named shut'
+          + (typeof hs.locksAgeS === 'number' && isFinite(hs.locksAgeS) ? ', asked ' + _fleetAgo(hs.locksAgeS) + ' before its report' : '')
+          + (hs.lockWhy ? ': ' + hs.lockWhy : '')) + '">' + escC(_shutNames.length + ' shut: '
+          + _shutNames.map(function (l) { return _LOCK_WORD[l] || l; }).join(' \u00b7 ')) + '</span>');
+      }
     }
     /* v3856 (#230 6506572227) - A CURRENT CENSUS WITH BLIND GATES STILL SHUTS EVERY LOCK. The row drew no chip while all
        nine routes said permitted false, so Fleet read healthy. It says so, with how many gates are blind. */
@@ -28414,6 +29043,13 @@ function escC(s) {
         + ' \u2014 UNKNOWN, not a river that was measured draining') + '">river UNKNOWN</span>');
     }
     if (_lockWait) bits.push(_lockWait);   /* v3861 - the consequence, after its cause */
+    /* REG-3196 (his Fleet 21:01: OLD PC ALT "a newer river read failed 1043 s ago" and no reason) - a newer river read that
+       FAILED says so, muted, with its own reason in the hover; the lanes on the card are the last good read. */
+    if (rv && typeof rv === 'object' && typeof rv.failWhy === 'string' && rv.failWhy) {
+      bits.push('<span class="fleet-riverunk" title="' + escC('the newest river read on this PC failed'
+        + (typeof rv.failAgeS === 'number' && isFinite(rv.failAgeS) ? ' ' + _fleetAgo(rv.failAgeS) + ' before its report' : '')
+        + ': ' + rv.failWhy + ' \u2014 the lanes shown are its last good read') + '">last river read failed</span>');
+    }
     return bits.join('');
   };
   /* #41 rank 22 (REG-1564) — THE ONE WORD ON THE ROW for the picker: a red "picker short" (or "picker over") beside the
@@ -29919,6 +30555,32 @@ function escC(s) {
     else if (d && typeof d.ago === 'string' && d.ago) ago = d.ago;
     return { vaultLine: line, boardAgo: ago };
   };
+  /* REG-3199 - "online now" (and "online · recording") on the shadow bar holds only while the check-in it stands on is
+     inside the presence bound. -> words. Pure, and always given the bar's words AS PAINTED AT ENTRY (live.base), so each
+     30 s test starts from the claim, not from its own last rewrite (the reviewer on r3: a rewritten bar kept "last seen
+     9 min ago" for hours). Words with neither claim come back as they were; past liveUntil (or with no clock to test it
+     by) the claim becomes "offline · last seen <age>" / "online UNKNOWN", never a frozen "online". */
+  window._shadowLiveWords = function (words, live, nowMs) {
+    var w = String(words || '');
+    var claim = ' \u00b7 online now';
+    var at = w.indexOf(claim);
+    if (at < 0) { claim = ' \u00b7 online \u00b7 recording'; at = w.indexOf(claim); }
+    if (at < 0) return w;
+    var now = (typeof nowMs === 'number' && isFinite(nowMs)) ? nowMs : Date.now();
+    var until = (live && typeof live.liveUntil === 'number' && isFinite(live.liveUntil)) ? live.liveUntil : null;
+    if (until !== null && now <= until) return w;
+    var _t = function (x) { return (typeof x === 'number' && isFinite(x)) ? x : null; };
+    /* the newest check-in it is known by: the recorder's report (liveAt) or the console's beacon (seenMs) */
+    var seen = (live && (_t(live.liveAt) !== null || _t(live.seenMs) !== null))
+      ? Math.max(_t(live.liveAt) === null ? -Infinity : live.liveAt, _t(live.seenMs) === null ? -Infinity : live.seenMs) : null;
+    var gone = 'online UNKNOWN (no check-in time to test it by)';
+    if (seen !== null) {
+      var mins = Math.max(0, Math.floor((now - seen) / 60000));
+      gone = 'offline \u00b7 last seen ' + (mins < 1 ? 'under 1 min ago' : mins < 120 ? mins + ' min ago'
+        : mins < 2880 ? Math.floor(mins / 60) + ' hr ago' : Math.floor(mins / 1440) + ' days ago');
+    }
+    return w.slice(0, at) + ' \u00b7 ' + gone + w.slice(at + claim.length);
+  };
   window._shadowSnapEnter = function (owner, d) {
     if (typeof window._shadowRemember === 'function') window._shadowRemember();
     var gen = ++_shadowGen;
@@ -29943,6 +30605,24 @@ function escC(s) {
     try { if (typeof d.t === 'number' && d.t > 0) { var _sd = new Date(d.t), _p2 = function (x) { return (x < 10 ? '0' : '') + x; };
       at = ' · snapshot ' + _sd.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + _p2(_sd.getHours()) + ':' + _p2(_sd.getMinutes()); } } catch (e) { at = ''; }
     if (who) who.textContent = String(d.words || owner) + at + ' · read only';
+    /* REG-3199 (GrokBot 2026-11-05: the guest's bar said "Dean · online now" over an old board, with Dean last heard ~18 h
+       before) - "online now" was painted once, at entry, and never asked again. The view carries the beacon's own time
+       (seenMs) and the moment "online now" stops being true (liveUntil, fleet_presence's bound); the bar tests it now
+       and again every 30 s while it stays open. */
+    try {
+      /* base = the words as the view painted them; painted = what this test last wrote, so a bar someone else has
+         repainted since (a new shadow opening) is left alone */
+      var _live = { seenMs: d.seenMs, liveAt: d.liveAt, liveUntil: d.liveUntil, base: who ? who.textContent : '' };
+      window._tvdShadowSnap.live = _live;
+      _live.painted = window._shadowLiveWords(_live.base, _live, Date.now());
+      if (who) who.textContent = _live.painted;
+      if (!window._shadowLiveTimer) window._shadowLiveTimer = setInterval(function () {
+        var sn = window._tvdShadowSnap, el = document.getElementById('shadow-who');
+        if (!(sn && sn.live && el) || el.textContent !== sn.live.painted) return;
+        sn.live.painted = window._shadowLiveWords(sn.live.base, sn.live, Date.now());
+        el.textContent = sn.live.painted;
+      }, 30000);
+    } catch (eLive) {}
     var f = document.createElement('iframe');
     f.id = 'shadow-eng';
     f.setAttribute('title', owner + ' console, read only');
@@ -30021,6 +30701,8 @@ function escC(s) {
       try { built = window._shadowRosterStores(row, fleet, owner); } catch (e) { built = null; }
       var stores = window._shadowMergeStores(snap && snap.stores, built && built.stores);
       var handed = { t: snap && snap.t, words: snap && snap.words, stores: stores,
+                     seenMs: snap && snap.seenMs, liveAt: snap && snap.liveAt,         /* REG-3199 - the check-in's own clock */
+                     liveUntil: snap && snap.liveUntil,
                      ago: snap && snap.ago, vaultLine: (row && row.vaultLine) || null,
                      stall: (snap && typeof snap.stall === 'string') ? snap.stall : null };  /* v3856 online but board stale */
       var clock = window._shadowVaultClock(handed);
@@ -33550,9 +34232,26 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
                   o.shelf.gridCards = _all.length;
                   o.shelf.visibleCards = _vis.length;
                 } catch(e){ o.shelf.gridCards = null; o.shelf.visibleCards = null; }
-                /* the legitimate empty state, so a console with NO RUNS YET is never called a fault */
-                try { o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero'); }
+                /* the legitimate empty state, so a console with NO RUNS YET is never called a fault.
+                   REG-3203 - an OPENING shelf wears the same hero box and is not that state: it is published as
+                   opening, with its age (null = UNKNOWN), and console_doctor judges it against the bound. */
+                /* REG-3203 - and the UNKNOWN shelf (REG-3050, and what a stuck opening becomes at its bound) wears it too:
+                   "your runs: UNKNOWN ... This is not an empty shelf". Counted as the empty hero, the Doctor answered
+                   "no runs to show yet - the correct state" over it within 60 s of the stuck shelf GrokBot saw. It is
+                   published as unknown with the page's own why, and is never the empty state. */
+                try { o.shelf.emptyHero = !!ov.querySelector('.sh-empty-hero:not(.sh-opening):not(.sh-unknown)'); }
                 catch(e){ o.shelf.emptyHero = null; }
+                try {
+                  o.shelf.unknown = ov.hidden ? false : !!ov.querySelector('.sh-unknown');
+                  o.shelf.unknownWhy = (o.shelf.unknown && typeof TH !== 'undefined' && TH.sessionsFailWhy)
+                    ? String(TH.sessionsFailWhy).slice(0, 240) : null;
+                } catch(e){ o.shelf.unknown = null; o.shelf.unknownWhy = null; }
+                try {
+                  var _op = ov.hidden ? null : ov.querySelector('.sh-opening');
+                  o.shelf.opening = !!_op;
+                  var _opAt = _op ? Number(_op.getAttribute('data-since')) : 0;
+                  o.shelf.openingS = (_op && _opAt > 0) ? Math.round((Date.now() - _opAt) / 1000) : null;
+                } catch(e){ o.shelf.opening = null; o.shelf.openingS = null; }
               })();
               return o;
             })()
@@ -33795,8 +34494,17 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
            long as he likes; closing that would be a worse bug than the one being fixed. A stage
            that HAS its sessions is left alone forever, whether it is playing or not, and any
            interaction inside the theatre defers the heal. */
+        /* REG-3204 - WHAT "LOADED" MEANS FOR A SHADOW'S REEL. A shadow's Play puts THEIR served frames on this stage and
+           holds none of this PC's, so on a guest that had not opened its own Shelf or Theatre since boot (TH.sessions
+           empty) this closed their reel ~12 s after the last mouse move, left body.shadow-theatre on (a bare stage in their
+           hub) and posted a false theatre-stuck-black. A shadow reel is loaded when its walk holds frames. Kept inline:
+           a helper outside the interval is one more name every cut of this callback must carry (REG-2057). */
         var loaded = false;
-        try { loaded = !!(window.TH && TH.sessions && TH.sessions.length); } catch (e) { loaded = false; }
+        try {
+          loaded = (window.TH && window.TH.shadowReel)
+            ? (Array.isArray(window._ssvReels) && window._ssvReels.length > 0)
+            : !!(window.TH && TH.sessions && TH.sessions.length);
+        } catch (e) { loaded = false; }
         var touchedRecently = (Date.now() - (window._thTouchedAt || 0)) < 12000;
         /* v2432 — `ink === false` is a MEASURED absence of pixels and now defeats the early
            return. `ink === null` (unjudgeable surface) leaves the old behaviour exactly as it was. */
@@ -33835,7 +34543,15 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
               painted: !!painted, loaded: !!loaded
             };
           } catch (e) { _before = {measureFailed: String(e && e.message || e)}; }
+          /* REG-3204 - a shadow reel the heal closes goes the way its own ✕ does: the walk stops, body.shadow-theatre goes
+             and their list comes back. Hiding #theatre alone left the shadow stage class on (a bare stage in their hub),
+             TH.shadowReel set (its key capture kept swallowing his keys) and the walk ticking under a closed stage. */
+          var _wasShadow = !!(window.TH && window.TH.shadowReel);
+          if (_wasShadow && typeof window._shadowTheatreDown === 'function') {
+            try { window._shadowTheatreDown(true); } catch (eSd) {}
+          }
           document.body.classList.remove('theatre-open');
+          document.body.classList.remove('shadow-theatre');   /* REG-3204 - never a bare shadow stage left in their hub */
           th.hidden = true;
           try { window.TH && (window.TH.open = false); } catch(e){}
           console.warn('[theatre] open but empty for 12s — closed itself rather than staying black');
@@ -33843,8 +34559,10 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
              happening and keeps being reported by him instead of by the machine. */
           try {
             fetch('/api/ui_fault', {method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({kind:'theatre-stuck-black',
-                why:'the stage was open for 12s and ' + (painted
+              body: JSON.stringify({kind:'theatre-stuck-black', shadowReel: _wasShadow,
+                why: _wasShadow ? ('a shadow reel was open for 12s with no picture on the stage ('
+                      + ((window._thInk || {}).why || 'no frame to show') + ') - it went back to their list')
+                  : 'the stage was open for 12s and ' + (painted
                       ? 'still held no sessions though a frame was painted (v2322 shape)'
                       : 'had nothing on it at all (v2228 shape)') + ' - it closed itself',
                 where:'control_ui thOpen / self-heal',

@@ -2572,6 +2572,11 @@ COVERED_BY = {
 }
 # Engines with NO invariant, each with the reason — a blank here would read as covered.
 NO_JOINT_YET = {
+    # REG-3213 (v3865) - this version's CI: one source today, said so rather than claimed covered.
+    "this version's CI":
+        "the row reads what the console's CI tick recorded from GitHub's public Actions API (tv/ci_watch.py) - one "
+        "witness. An independent second source would be tv/ship_when_green.py's own Publish watch on the same commit, "
+        "or the fan-in's prove_seconds per shard, and no joint compares either with the tick yet.",
     # v3856 - windowed lobby frames: one source today, said so rather than claimed covered.
     'a windowed frame is read inside its game':
         "the row measures a synthetic windowed frame through char_select's own game_box and lobby bands - the reader "

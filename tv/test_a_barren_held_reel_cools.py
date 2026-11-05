@@ -96,8 +96,8 @@ RED_PROOF = [
     {
         "why": "REG-2561 - a failed reader lookup reads as a new reader and cancels every cooldown",
         "file": "tv/control_app.py",
-        "find": "    if ver and str(e.get(\"promptVer\") or \"\") != ver:",
-        "replace": "    if str(e.get(\"promptVer\") or \"\") != ver:",
+        "find": "\n    if ver and not _vault_same_reader(e.get(\"promptVer\"), ver):\n",
+        "replace": "\n    if not _vault_same_reader(e.get(\"promptVer\"), ver):\n",
         "matches": 1,
     },
     {

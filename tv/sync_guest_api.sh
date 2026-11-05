@@ -30,6 +30,13 @@ LIVE="${TV_LIVE_URL:-http://127.0.0.1:17772}"
 OUT="${GUEST_MIRROR:-$(cd "$(dirname "$0")/.." && pwd)/guest-mirror}"
 BOX_HOST="${GUEST_BOX_HOST:-}"
 BOX_PATH="${GUEST_BOX_PATH:-/workspace/tv-diablo-guest/api-live}"
+# REG-3206 - THE ART THE BOARD ASKS FOR TRAVELS WITH THE BOARD. Every refresh shipped a NEW board.html
+# and never the pictures it names. The repo's art/ is public content (no scrub needed); it goes to
+# GUEST_BOX_ART - a default path, not a measured one (the box's bridge code is not in this repo).
+# The ~103 /art 404s GrokBot logged at v3864 were on its OWN scratch guest, whose art/ held 21 files;
+# that guest is not fed by this script (tv/GUEST_SEAT.md says how to check it).
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+BOX_ART="${GUEST_BOX_ART:-$BOX_PATH/art}"
 TO_BOX=0
 [ "${1:-}" = "--to-box" ] && TO_BOX=1
 
@@ -211,12 +218,21 @@ PYEOF
 leak_rc=$?
 [ $leak_rc -ne 0 ] && { echo "  ABORTED before copy."; exit $leak_rc; }
 
+# REG-3206 - every picture the mirrored board and this console can ask /art/ for, checked against the
+# art tree that ships with it. A missing picture is not a leak, so it is REPORTED, never a refusal.
+_board="$OUT/board.html"; [ -f "$_board" ] || _board="$REPO_ROOT/bible.html"
+python3 "$REPO_ROOT/tv/art_names.py" --board "$_board" --art "$REPO_ROOT/art" \
+  || echo "  ✗ art: the names above will 404 on the guest until art/ carries them"
+
 if [ "$TO_BOX" = "1" ]; then
   if [ -z "$BOX_HOST" ]; then
     echo "  --to-box needs GUEST_BOX_HOST (e.g. GUEST_BOX_HOST=box ...). Mirror is ready at $OUT"
     exit 0
   fi
   echo "  copying -> $BOX_HOST:$BOX_PATH"
-  rsync -a --delete "$OUT/" "$BOX_HOST:$BOX_PATH/" && echo "  ✓ copied" || { echo "  ✗ copy failed"; exit 1; }
+  # --exclude keeps the box's art/ (when GUEST_BOX_ART sits inside BOX_PATH) out of this --delete
+  rsync -a --delete --exclude '/art/' "$OUT/" "$BOX_HOST:$BOX_PATH/" && echo "  ✓ copied" || { echo "  ✗ copy failed"; exit 1; }
+  echo "  art     -> $BOX_HOST:$BOX_ART"
+  rsync -a --delete "$REPO_ROOT/art/" "$BOX_HOST:$BOX_ART/" && echo "  ✓ art copied" || { echo "  ✗ art copy failed"; exit 1; }
 fi
 echo "  done."

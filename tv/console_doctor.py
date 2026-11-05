@@ -48,6 +48,8 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 OK, MISSING, UNKNOWN, UNMEASURED = "ok", "missing", "unknown", "unmeasured"
+#: REG-3203 - the page's own bound on an "opening" Shelf (control_ui TH_SHELF_OPEN_BOUND_MS, 60 s) plus a beat's slack
+SHELF_OPENING_BOUND_S = 75
 
 
 def _this_os():
@@ -396,6 +398,74 @@ def _check_disk_headroom():
         return MISSING, ("%.1fGB free — %s, so this is about %.1f hour(s) of recording%s"
                          % (free, rate_says, free / rate, tail))
     return OK, "%.1fGB free%s" % (free, tail)
+
+
+#: REG-3208 - the growers lane rides the disk sign's 30-minute pass; a pass (or a wait) older than this is a stopped loop
+GROWERS_STALE_S = 3 * 1800 + 600
+#: REG-3208 review - a loop that only WAITS (his game, a busy machine) still moves checkedTs; a lane whose last MEASURING
+#: pass is older than this is not measuring, and the sizes it last said are that old
+GROWERS_UNMEASURED_H = 24
+
+
+def _check_the_disk_growers_are_salvaged_then_pruned(status=None, now_ms=None, salvage_dir=None):
+    """REG-3208 / REG-3209 - WHAT KEEPS GROWING ON THE DISK, AND WHAT WAITS ON A SALVAGE.
+
+    His words 2026-11-05: "whatever keeps growing needs to have a looped system in place that prunes and extracts and
+    saves any data informational that's needed". `disk headroom` above says how much is free; this row says WHAT is
+    growing (the top growers of disk_growers' declared registry, by size), which link of measure -> salvage -> read
+    back -> prune broke, and it corroborates the lane against the disk: a salvage the lane says it wrote must be on
+    disk under the salvage dir. A console that is not answering, or a lane that never ran, is UNKNOWN, never OK.
+    [[heart-first]] [[unknown-stays-unknown]]"""
+    # REG-2202's lesson: /api/status can take 11.6 s cold, so this periodic row waits 15 s for it, not the 4 s default
+    st = _get("/api/status", timeout=15) if status is None else status
+    if not isinstance(st, dict):
+        return UNKNOWN, "the console is not answering - what grows on the disk cannot be said"
+    g = (st.get("diskSign") or {}).get("growers")
+    if not isinstance(g, dict):
+        return UNKNOWN, "this console publishes no growers lane - what grows on the disk is not measured here"
+    say = str(g.get("say") or "")[:200]
+    now = int(time.time() * 1000) if now_ms is None else int(now_ms)
+    seen = g.get("checkedTs") if isinstance(g.get("checkedTs"), (int, float)) else g.get("lastTs")
+    if not isinstance(seen, (int, float)) or isinstance(seen, bool):
+        return UNKNOWN, "the growers lane has not run a pass yet - %s" % say
+    if now - seen > GROWERS_STALE_S * 1000:
+        return MISSING, ("the growers lane last looked %d min ago - its loop (the disk sign's 30-minute pass) is not "
+                         "running, so nothing that grows is salvaged or pruned" % ((now - seen) // 60000))
+    ran = g.get("lastTs")
+    if not isinstance(ran, (int, float)) or isinstance(ran, bool):
+        return UNKNOWN, "the growers lane has waited every pass and never measured yet - %s" % say
+    age_m = max(0, (now - int(ran)) // 60000)
+    if now - ran > GROWERS_UNMEASURED_H * 3600 * 1000:
+        return MISSING, ("the growers lane has not MEASURED for %.0f h - every pass since waited (%s), so nothing that "
+                         "grows was salvaged or pruned and the sizes it last said are that old" % (age_m / 60.0, say))
+    if g.get("error"):
+        return MISSING, "the growers lane's last pass raised %s - %s" % (g.get("error"), say)
+    top = ", ".join("%s %.2f GB (%s, %d)" % (t.get("name"), t.get("gb") or 0, t.get("owner"), t.get("n") or 0)
+                    for t in (g.get("top") or [])[:3]) or "nothing a declared entry names"
+    top += " (measured %d min ago)" % age_m
+    sw = (" - " + str(g.get("stateWhy"))[:160]) if g.get("stateWhy") else ""
+    last = g.get("lastSalvage")
+    if last:
+        try:
+            import disk_growers as _dg
+            root = salvage_dir or _dg.salvage_root(os.path.dirname(HERE))
+            if not os.path.isfile(os.path.join(root, str(last), "meta.json")):
+                return MISSING, ("the growers lane says it salvaged %s, and that salvage is not on disk under %s - a "
+                                 "prune that trusted it saved nothing" % (last, os.path.basename(root)))
+        except Exception as e:
+            return UNKNOWN, "the salvage dir could not be read (%s) - top growers: %s" % (type(e).__name__, top)
+    wait = g.get("waiting") or []
+    if wait:
+        return MISSING, ("%d grower(s) wait on a salvage or a prune that did not finish: %s - each stays on disk "
+                         "until its salvage is made and reads back. Top growers: %s%s" % (
+                             len(wait), "; ".join("%s (%s)" % (w.get("name"), str(w.get("why"))[:70]) for w in wait[:3]),
+                             top, sw))
+    if g.get("owed") is None:
+        return UNKNOWN, "top growers: %s - %s%s" % (top, say, sw)
+    dry = g.get("dryRun") or []
+    tail = (" - %d entr%s still dry-run (arms after %d clean passes)" % (
+        len(dry), "y" if len(dry) == 1 else "ies", (dry[0] or {}).get("of") or 0)) if dry else ""
+    return OK, "top growers: %s%s - %s%s" % (top, tail, say, sw)
 
 
 def _check_subscription_burn():
@@ -804,6 +874,42 @@ def _check_the_ledger_backup_covers_every_store():
 #: repeating every ten minutes is an outage. ⚠ Kept as a closed allowlist rather than a list of
 #: known error strings: an unrecognised message must read as a failure, never as "probably fine".
 _BACKUP_BENIGN = ("wrote ", "unchanged since")
+
+
+def _check_this_versions_ci(rec=None, now=None):
+    """REG-3213 - THIS VERSION'S CI, RED PAST 75 MINUTES. His words (2026-11-05): "why has it been stuck for so long and
+    not triggered at an alert somewhere at 75 minutes which was max?" - on v3864 shard 10 of ci/proof-keys-v3864 ran 87 min
+    (the run 2 h 10 min, then Publish 56 min more) and no row, no script, nothing said so. The console's CI tick
+    (control_app._ci_watch_tick) reads GitHub's public Actions API for the
+    commit it runs, every 5 minutes; this row reads what it recorded (status.ciWatch, the serving console's _CI_WATCH):
+      overrun / slow / red  -> MISSING, naming the runs past the max and the jobs still running
+      unknown, never read, or a reading older than 3 ticks -> UNKNOWN (an unread GitHub is never green)
+      running inside the max, none, green -> OK, with the minutes"""
+    if rec is None:
+        try:
+            import control_app as _ca
+            rec = dict(getattr(_serving_console(_ca), "_CI_WATCH", None) or {})
+        except Exception as e:
+            return UNKNOWN, "the console's CI watch could not be read (%s) - this version's CI is UNMEASURED" % type(e).__name__
+    now = time.time() if now is None else now
+    try:
+        import ci_watch as _cw
+        every, red = _cw.CI_WATCH_EVERY_S, _cw.RED_STATES
+    except Exception:
+        every, red = 300, ("overrun", "slow", "red")
+    ts = rec.get("lastTs")
+    if not isinstance(ts, (int, float)) or isinstance(ts, bool):
+        return UNKNOWN, "the console has not read this version's CI yet (%s)" % (rec.get("why") or "no reading")
+    age = now - ts / 1000.0
+    st = rec.get("state")
+    if st in red:
+        return MISSING, "this version's CI: %s" % (rec.get("why") or st)
+    if age > 3 * every + 60:
+        return UNKNOWN, ("the last reading of this version's CI is %d min old - the watch stopped reading, so it is "
+                         "UNKNOWN, not green" % int(age // 60))
+    if rec.get("worked") is not True or st in (None, "unknown"):
+        return UNKNOWN, "this version's CI: %s" % (rec.get("why") or "UNKNOWN")
+    return OK, "this version's CI: %s" % (rec.get("why") or st)
 
 
 def _check_the_backup_loop_is_actually_WRITING():
@@ -1430,6 +1536,7 @@ def _check_the_river_is_moving():
     if not isinstance(rows, list) or not rows:
         return UNKNOWN, "no reel was stationed, so nothing can be concluded about the river"
     stuck = {}
+    at = {}
     for r in rows:
         # the list is guarded above; its ELEMENTS are not, and `(r or {}).get` raises on a truthy
         # non-dict exactly as it did in the two rows above
@@ -1439,14 +1546,58 @@ def _check_the_river_is_moving():
         if not st or st in _BY_DESIGN_STATIONS or st in ("ROUTED", "TOMBSTONE"):
             continue
         if r.get("owes"):
-            stuck[st] = stuck.get(st, 0) + 1
+            if st in _PER_REEL_STATIONS and r.get("reel"):
+                at.setdefault(st, []).append(str(r.get("reel")))
+            else:
+                stuck[st] = stuck.get(st, 0) + 1
+    # REG-3201 - AT PRINTER AND STATION, WHETHER A LANE DELIVERS IS A FACT ABOUT EACH REEL. MEASURED on his Mac
+    # 2026-11-05: "3 of 42 reel(s) ... no automatic lane delivers (PRINTER 2, STATION 1)" - and the STATION reel was the
+    # vault lane's own, quarantined after an 854 s hang; the two PRINTER reels were in no lane's queue. A reel its lane
+    # will start, or that waits on a hold that clears by itself (a hang's backoff, a cooldown, a recording still
+    # rolling), is not undelivered; every other wait is counted and NAMED. Who-delivers UNKNOWN keeps the old reading.
+    waits = []
+    unknown = 0
+    for st in sorted(at):
+        ids = at[st]
+        dl = _river_delivery(st, ids)
+        if not isinstance(dl, dict):
+            stuck[st] = stuck.get(st, 0) + len(ids)
+            continue
+        for w in (dl.get("waits") or []):
+            if isinstance(w, dict) and not w.get("selfClearing"):
+                stuck[st] = stuck.get(st, 0) + len(w.get("reels") or [])
+                # r4 review - a reel whose lane check could not be asked keeps the station reading (counted), and
+                # the sentence says it is UNKNOWN rather than letting the count read as "no lane"
+                if w.get("key") == "unknown":
+                    unknown += len(w.get("reels") or [])
+        if dl.get("waits"):
+            waits.append(str(dl.get("why") or ""))
+    said = (" Per reel: %s." % "; ".join(waits)) if waits else ""
+    if unknown:
+        said = (" %d of them %s UNKNOWN: whether a lane holds %s could not be asked, so %s the station's "
+                "reading.%s" % (unknown, "is" if unknown == 1 else "are", "it" if unknown == 1 else "them",
+                                "it keeps" if unknown == 1 else "they keep", said))
     if not stuck:
-        return OK, "every stationed reel has a lane that can take it (%d reel(s) walked)" % len(rows)
+        return OK, ("every stationed reel has a lane that can take it (%d reel(s) walked)%s"
+                    % (len(rows), (" - waiting only on holds that clear by themselves." + said) if waits else ""))
     total = sum(stuck.values())
     named = ", ".join("%s %d" % (k, v) for k, v in sorted(stuck.items(), key=lambda kv: -kv[1]))
     return MISSING, ("%d of %d reel(s) sit at a station that owes work no automatic lane delivers "
-                     "(%s). They are not stuck on evidence — nothing is scheduled to move them."
-                     % (total, len(rows), named))
+                     "(%s). They are not stuck on evidence — nothing is scheduled to move them.%s"
+                     % (total, len(rows), named, said))
+
+
+#: REG-3201 - the stations whose lane may or may not hold a given reel, so delivery is asked per reel
+_PER_REEL_STATIONS = ("PRINTER", "STATION")
+
+
+def _river_delivery(station, reels):
+    """REG-3201 - the serving console's per-reel answer (control_app._station_delivery). -> dict | None (UNKNOWN). A seam."""
+    try:
+        import control_app as _ca
+        return _serving_console(_ca)._station_delivery(station, reels)
+    except Exception:
+        return None
 
 
 def _check_the_vault_stores_are_readable():
@@ -6246,6 +6397,38 @@ def _check_the_shelf_is_where_it_says_it_is():
         # console behaving correctly, while printing "the page itself says: filled=false" over a
         # payload that said filled=true. A row that cries wolf is one he learns to skip.
         _vis = shelf.get("visibleCards")
+        # REG-3203 (GrokBot on v3864: his Mac's Shelf sat on "opening the shelf..." while the guest's filled) - AN
+        # OPENING SHELF WORE THE EMPTY-HERO BOX, so this row called a stuck open "no runs to show yet - the correct
+        # state". The page now publishes `opening` and how long it has said so; the page's own bound
+        # (TH_SHELF_OPEN_BOUND_MS) turns a stuck one into the UNKNOWN shelf, and past that bound this row says MISSING.
+        # REG-3203 - AND THE UNKNOWN SHELF IS NOT THE EMPTY ONE. What a stuck opening becomes at the page's bound (and
+        # REG-3050's failed list) is `.sh-empty-hero.sh-unknown`: "your runs: UNKNOWN ... This is not an empty shelf".
+        # The beat counted it as the empty hero, so this row answered "no runs to show yet - the correct state" over it.
+        # The page now publishes `unknown` with its own why; his runs are not on the shelf, which is the fault.
+        if shelf.get("unknown") is True:
+            _uw = shelf.get("unknownWhy")
+            return MISSING, ("THE SHELF IS OPEN AND SAYS HIS RUNS ARE UNKNOWN - the sessions list did not reach it "
+                             "(the page's why: %s). The page says so honestly, and his runs are still not on the "
+                             "shelf." % (_uw if isinstance(_uw, str) and _uw else "none given"))
+        if shelf.get("opening") is True:
+            _os = shelf.get("openingS")
+            if not isinstance(_os, (int, float)):
+                return UNKNOWN, ("the shelf is open and still says it is opening, and how long it has said so "
+                                 "is UNKNOWN (no start stamp on the beat)")
+            # [[stale-reading]] openingS is the age AT THE BEAT, and the beat itself may be up to 300 s old: past the
+            # bound by the beat's own words is MISSING; past it only once the beat's age is added is UNKNOWN (no newer
+            # beat says whether it still says "opening"); inside it either way is OK.
+            if _os > SHELF_OPENING_BOUND_S:
+                return MISSING, ("THE SHELF HAS SAID 'opening' FOR %ds (on a beat %ds old) - past the %ds bound in "
+                                 "which it must show his runs or say why. The list never arrived, and the page's "
+                                 "own bound did not end it." % (int(_os), int(_bage), SHELF_OPENING_BOUND_S))
+            if _os + _bage > SHELF_OPENING_BOUND_S:
+                return UNKNOWN, ("the shelf said 'opening' for %ds on a beat that is %ds old - %ds by now if it still "
+                                 "says so, past the %ds bound, and no newer beat says whether it does"
+                                 % (int(_os), int(_bage), int(_os + _bage), SHELF_OPENING_BOUND_S))
+            return OK, ("the shelf is open and still opening (%ds so far, counting the beat's own %ds age; bound "
+                        "%ds) - waiting on the sessions list, not a fault yet"
+                        % (int(_os + _bage), int(_bage), SHELF_OPENING_BOUND_S))
         if shelf.get("emptyHero") is True:
             return OK, ("the shelf is open and on screen and has no runs to show yet — the empty "
                         "hero is rendered, which is the correct state, not a fault")
@@ -11064,6 +11247,8 @@ CHECKS = [
     ("lane intent", _check_lane_intent),
     ("what runs without you", _check_what_runs_without_him),
     ("disk headroom", _check_disk_headroom),
+    # REG-3208 - WHAT grows, and what waits on a salvage; the row above only says how much is free
+    ("disk growers", _check_the_disk_growers_are_salvaged_then_pruned),
     ("subscription", _check_subscription_burn),
     ("unattended reel", _check_a_reel_is_not_recording_unattended),
     ("reel population", _check_every_reel_on_disk_is_accounted_for),
@@ -11090,6 +11275,8 @@ CHECKS = [
     ("evidence ledger", _check_the_evidence_ledger_is_readable),
     ("ledger backup", _check_the_ledger_backup_covers_every_store),
     ("backup loop", _check_the_backup_loop_is_actually_WRITING),
+    # REG-3213 (v3865) - v3864's shard 10 ran 87 min and nothing said so; red past his 75-minute max, every tick
+    ("this version's CI", _check_this_versions_ci),
     # 2026-09-27 — a store that FELL (setPieces 134 -> 0, owned 223 -> 0) and every row above was
     # green: `ledger entries` diffs only the two newest snapshots. This reads the loop's durable
     # drop record, which stays open until the store is back — and watches the watcher.
@@ -11327,6 +11514,8 @@ PERIODIC = ("engines corroborate", "sweep would find", "swallowed reads",
             # nothing for 18 days" scar, so it MUST keep running unattended — just hourly, off the
             # ten-minute cheap timer. The 15s _get timeout stays; it just no longer races the budget.
             "backup loop",
+            # REG-3208 - this GETs /api/status too, and the lane it reads moves every 30 min
+            "disk growers",
             "the d2jsp price database is on its tab")
 PERIODIC_EVERY = 6      # eagle ticks. The eagle sleeps ~10 min, so this is roughly hourly.
 
@@ -11346,7 +11535,7 @@ IN_PROCESS = ("a present machine has a fresh last-seen", "no machine went quiet 
               "a fleet row identifies its machine", "a fleet refusal names an action", "every roster publish is signed",
               "fleet reachable", "picker census", "this process runs the code on disk", "console painted whole",
               "nothing we started is a corpse", "this machine can decode a frame",
-              "this machine can cross-check an inventory", "test venue")
+              "this machine can cross-check an inventory", "test venue", "this version's CI")
 
 
 def _slow_path():
@@ -11996,6 +12185,8 @@ WATCHES = {
     "lane intent":                 (),
     "what runs without you":       (),
     "disk headroom":               ("prune.reports",),
+    # REG-3208 - DECLARED, NOT OMITTED. It reads the growers lane from /api/status; no element of its own.
+    "disk growers":                (),
     "subscription":                (),
     "unattended reel":             (),
     "reel extract":                ("reel.route",),
@@ -12011,6 +12202,9 @@ WATCHES = {
     "evidence ledger":             (),
     "ledger backup":               ("_ledger_backup_loop",),
     "backup loop":                 ("_ledger_backup_loop",),
+    # REG-3213 (v3865) - it reads /api/status.ciWatch (the console's CI tick) and reaches him through the eagle line; it
+    # owns no element of its own. Empty tuple as a DECLARATION, not an omission.
+    "this version's CI":           (),
     "ledger drop":                 ("_ledger_backup_loop",),
     "console painted whole":       ("console", "page"),
     "names banked":                (),

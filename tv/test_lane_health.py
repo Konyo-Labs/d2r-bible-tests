@@ -557,11 +557,14 @@ class TestTheThirdStateReachesEveryConsumer(_Tree):
         self._write("vault_swept.json", self._seal(8, 151.5))
         calls = []
         real = LH.actionable_counts
+        real_rs = LH.lane_reasons          # REG-3200 - report() asks lane_reasons now; both are the live machine
         LH.actionable_counts = lambda: calls.append(1) or {"vault": 0}
+        LH.lane_reasons = lambda: calls.append(2) or {"vault": {"actionable": 0, "why": "live"}}
         try:
             rep = LH.report(self.now, owed={"vault": 2})
         finally:
             LH.actionable_counts = real
+            LH.lane_reasons = real_rs
         self.assertEqual(calls, [], "report() measured the LIVE machine for a fixture")
         self.assertIsNone(rep["lanes"]["vault"]["actionable"])
         self.assertEqual(rep["lanes"]["vault"]["state"], "stalled",

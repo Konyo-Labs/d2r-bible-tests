@@ -24,7 +24,9 @@ Every answer that could not be established is UNKNOWN — never "fine", never 0.
 import io
 import json
 import os
+import re
 import sys
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -126,14 +128,67 @@ def _when(ms):
         return "an unknown date"
 
 
-def who_took(frame_id, reaps, tombstones, refusals, read_ts=None, session=None):
-    """Why a read's picture is not on disk. -> (code, words)
+def _ms_of(stem):
+    """The capture clock a frame's own name carries (f_<ms>, <n>_<ms>). -> int | None (a name without one)"""
+    m = re.search(r"(?<!\d)(\d{13})(?!\d)", str(stem or ""))
+    return int(m.group(1)) if m else None
 
-    code: 'never-written' (the recorder refused it — disk floor / hard floor / budget), 'reaped' (the recorder's
-    floor reaper took it — loose film or a whole reel), 'released' (retention released its reel), 'unknown'.
-    Each input may be None (that record could not be read); then the answer can only be UNKNOWN for it.
-    """
+
+def _ts(v):
+    """A record's epoch-ms stamp, or None when it carries none (never 0, which would sort as 'first')."""
+    return int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0 else None
+
+
+def _kept_stems(row):
+    """The frames a trim KEPT, by stem. -> set
+
+    REG-3207 - reel_retention writes `kept` as bare file names (sorted listdir names); this read only
+    {"frame": ...} dicts, a shape the writer never wrote, so every trim read as keeping nothing. Both are read."""
+    out = set()
+    for k in (row.get("kept") or []):
+        if isinstance(k, dict):
+            k = k.get("frame")
+        if isinstance(k, str) and k:
+            out.add(_stem(k))
+    return out
+
+
+def index(reaps, tombstones):
+    """The deleters' records, indexed once: reap rows by every frame stem they NAME, whole-reel reap rows by reel,
+    tombstones by reel and by session. -> dict. Rows keep their record order (both stores are append-only)."""
+    names, whole, tombs = {}, {}, {}
+    for r in (reaps or []):
+        if not isinstance(r, dict):
+            continue
+        for n in (r.get("names") or []):
+            names.setdefault(_stem(n), []).append(r)
+        # a whole-reel reap carries no `kept`; a partial release names exactly what it took, so it is matched by name
+        if r.get("removed") and "kept" not in r and r.get("reel") not in (None, "", "loose"):
+            whole.setdefault(str(r.get("reel")), []).append(r)
+    for t in (tombstones or []):
+        if not isinstance(t, dict):
+            continue
+        for key in set(str(x) for x in (t.get("reel"), t.get("session")) if x):
+            tombs.setdefault(key, []).append(t)
+    return {"names": names, "whole": whole, "tombs": tombs}
+
+
+def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
+    """Why a frame is not on disk. -> {code, words, ts, when, by}
+
+    code: 'never-written' (the recorder refused it - disk floor / hard floor / budget), 'reaped' (the recorder's floor
+    reaper took it - loose film or a whole reel), 'released' (retention released or trimmed its reel), 'unknown'.
+
+    REG-3207 - THE EARLIEST DELETER THAT COULD HAVE TAKEN IT IS THE ONE THAT DID. The retention lane trims one reel
+    again and again (measured on his record: one reel, 92 tombstones - the first took 2,847 frames down to 49, each
+    later one ~50 of what remained), and the reader took the LAST, dating a frame's prune 19 days late. Now a
+    tombstone counts only when it was written after the frame was filmed and its kept list does not hold the frame,
+    and of every deleter that qualifies, the earliest wins. `unread` names records that would not read."""
     stem = _stem(frame_id)
+    ref = str(frame_id or "").replace("\\", "/").lstrip("/")
+    reel = ref.split("/", 1)[0] if ("/" in ref and ref.startswith("reel_")) else None
+    if not session and reel:
+        session = reel[len("reel_"):]
     for r in (refusals or []):
         if r.get("why") == "saved-small":
             continue
@@ -147,24 +202,109 @@ def who_took(frame_id, reaps, tombstones, refusals, read_ts=None, session=None):
             except (TypeError, ValueError):
                 same = False
         if same:
-            return ("never-written", "never written — the recorder was under its disk floor (%s, %s GB free) "
-                                     "when this read was taken" % (r.get("why"), r.get("freeGb")))
-    for r in (reaps or []):
-        names = r.get("names") or []
-        if stem and any(_stem(n) == stem for n in names):
-            return ("reaped", "taken by the recorder's disk-floor reaper on %s (%s)"
-                              % (_when(r.get("ts")), r.get("by") or "recorder"))
-        if session and r.get("reel") in ("reel_" + str(session), str(session)) and r.get("removed"):
-            return ("reaped", "released with its reel on %s by the recorder's disk-floor reaper" % _when(r.get("ts")))
-    for t in (tombstones or []):
-        if session and (t.get("session") == session or t.get("reel") in ("reel_" + str(session), str(session))):
-            kept = [k.get("frame") for k in (t.get("kept") or []) if isinstance(k, dict)]
-            if not any(_stem(k) == stem for k in kept):
-                return ("released", "released with its reel on %s (%s)" % (_when(t.get("deletedTs")), t.get("why") or "retention"))
-    unread = [n for n, v in (("the reap record", reaps), ("the tombstones", tombstones), ("the refusal record", refusals)) if v is None]
+            return {"code": "never-written", "ts": _ts(r.get("ts")), "when": None, "by": "the recorder's disk floor",
+                    "words": "never written — the recorder was under its disk floor (%s, %s GB free) "
+                             "when this read was taken" % (r.get("why"), r.get("freeGb"))}
+    filmed = _ms_of(stem)
+    keys = [k for k in (reel, ("reel_" + str(session)) if session else None, str(session) if session else None) if k]
+    events, seen = [], set()
+    if stem:
+        for r in idx["names"].get(stem, ()):
+            seen.add(id(r))
+            events.append((_ts(r.get("ts")), "reaped", "the recorder's disk-floor reaper",
+                           "taken by the recorder's disk-floor reaper on %s (%s)"
+                           % (_when(r.get("ts")), r.get("by") or "recorder")))
+    for k in keys:
+        for r in idx["whole"].get(k, ()):
+            if id(r) in seen:
+                continue
+            seen.add(id(r))
+            t = _ts(r.get("ts"))
+            if filmed and t and t < filmed:
+                continue                      # it ran before this frame was filmed: it cannot have taken it
+            events.append((t, "reaped", "the recorder's disk-floor reaper",
+                           "released with its reel on %s by the recorder's disk-floor reaper" % _when(r.get("ts"))))
+        for tb in idx["tombs"].get(k, ()):
+            if id(tb) in seen:
+                continue
+            seen.add(id(tb))
+            if stem and stem in _kept_stems(tb):
+                continue                      # this trim KEPT it
+            t = _ts(tb.get("deletedTs"))
+            if filmed and t and t < filmed:
+                continue
+            events.append((t, "released", "the retention lane",
+                           "released with its reel on %s (%s)" % (_when(tb.get("deletedTs")), tb.get("why") or "retention")))
+    if events:
+        # earliest stamp first; a row with no stamp sorts after every stamped one; ties keep record order
+        i = min(range(len(events)), key=lambda j: (events[j][0] is None, events[j][0] or 0, j))
+        t, code, by, words = events[i]
+        return {"code": code, "ts": t, "when": (_when(t) if t else None), "by": by, "words": words}
     if unread:
-        return ("unknown", "UNKNOWN — %s could not be read" % ", ".join(unread))
-    return ("unknown", "UNKNOWN — no deleter recorded taking it and no refusal recorded for it")
+        return {"code": "unknown", "ts": None, "when": None, "by": None,
+                "words": "UNKNOWN — %s could not be read" % ", ".join(unread)}
+    return {"code": "unknown", "ts": None, "when": None, "by": None,
+            "words": "UNKNOWN — no deleter recorded taking it and no refusal recorded for it"}
+
+
+def _unread(reaps, tombstones, refusals):
+    return [n for n, v in (("the reap record", reaps), ("the tombstones", tombstones), ("the refusal record", refusals))
+            if v is None]
+
+
+def who_took(frame_id, reaps, tombstones, refusals, read_ts=None, session=None):
+    """Why a read's picture is not on disk. -> (code, words)
+
+    code: 'never-written' (the recorder refused it — disk floor / hard floor / budget), 'reaped' (the recorder's
+    floor reaper took it — loose film or a whole reel), 'released' (retention released its reel), 'unknown'.
+    Each input may be None (that record could not be read); then the answer can only be UNKNOWN for it.
+    """
+    g = judge(frame_id, index(reaps, tombstones), refusals, read_ts, session, _unread(reaps, tombstones, refusals))
+    return g["code"], g["words"]
+
+
+_RECORDS_MEMO = {"key": None, "val": None}
+_RECORDS_LOCK = threading.Lock()
+
+
+def _stat_key(path):
+    try:
+        st = os.stat(path)
+        return (path, st.st_mtime_ns, st.st_size)
+    except OSError:
+        return (path, None, None)
+
+
+def records(hist_dir):
+    """(reaps, tombstones, refusals, index) for this shelf, read again only when one of the three files changes.
+
+    REG-3207 - /hist asks this for EVERY frame it cannot serve, and a pruned reel's scrub strip asks for dozens at
+    once; the reap record names tens of thousands of frames, so it is read and indexed once per change, never per
+    request."""
+    root = root_of(hist_dir)
+    try:
+        import reel_retention as _rr
+        tomb = _rr._tombstone_path(hist_dir)
+    except Exception:
+        tomb = os.path.join(os.path.dirname(os.path.abspath(hist_dir)), "reel_tombstones.json")
+    key = tuple(_stat_key(p) for p in (os.path.join(root, REAPS), tomb, os.path.join(root, REFUSALS)))
+    with _RECORDS_LOCK:
+        if _RECORDS_MEMO["key"] == key:
+            return _RECORDS_MEMO["val"]
+    reaps = load_jsonl(os.path.join(root, REAPS))
+    tombs = load_tombstones(hist_dir)
+    refusals = load_jsonl(os.path.join(root, REFUSALS))
+    val = (reaps, tombs, refusals, index(reaps, tombs))
+    with _RECORDS_LOCK:
+        _RECORDS_MEMO["key"], _RECORDS_MEMO["val"] = key, val
+    return val
+
+
+def gone_for(frame_ref, hist_dir):
+    """/hist's question: this frame is not on disk - who took it, and when? -> judge()'s dict.
+    The same judge the doctor row and /api/picture_status use, over the memoized records."""
+    reaps, tombs, refusals, idx = records(hist_dir)
+    return judge(frame_ref, idx, refusals, None, None, _unread(reaps, tombs, refusals))
 
 
 def named_reads(rows, now_ms=None, window_ms=DAY_MS):

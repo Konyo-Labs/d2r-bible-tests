@@ -356,25 +356,57 @@ def _release_shared(key):
 _LAST = {}                # key -> {"at": float, "out": dict}
 _REFRESH_S = 5.0
 _REFRESH_ON = set()
+#: REG-3198 (the reviewer on r3) - A WALK THAT FAILED IS NOT TRIED AGAIN ON THE NEXT ASK. A failure wrote nothing, so
+#: every ask after it started a new walk: the console's river lane, asking every 5 s while the route said "computing",
+#: ran a fresh 2-10 s walk back to back for its whole 120 s bound - measured 11 walks in one pass with a raising lanes().
+#: The failure is kept (key -> {"at", "why"}) and no walk for that key starts until it is _FAIL_BACKOFF_S old; a
+#: finished walk clears it. It is never served as lanes: lanes_last still answers only a finished walk.
+_FAIL = {}
+_FAIL_BACKOFF_S = 120.0
+
+
+def _fail_words(e):
+    """A failed walk's reason, short: its class and the first line of its message. -> str"""
+    msg = " ".join(str(e).split())[:160]
+    return type(e).__name__ + ((": " + msg) if msg else "")
 
 
 def _lanes_refresh(key, hide):
-    """One background walk. An exception writes nothing. The caller never waits on this."""
+    """One background walk. An exception keeps only its reason (_FAIL), never lanes. The caller never waits on this."""
     import time
     out = None
-    failed = False
+    failed = None
     try:
         out = lanes(hide=hide)
-    except Exception:
-        failed = True
+    except Exception as e:
+        failed = _fail_words(e)
     finally:
         _release_shared(key)
+        if failed is None and not isinstance(out, dict):
+            failed = "the walk answered %s, not a river" % type(out).__name__
+        # the outcome is written in the same hold that frees the slot, so no ask lands between them and walks again
         with _SHARED_LOCK:
+            if failed is not None:
+                _FAIL[key] = {"at": time.time(), "why": failed}
+            else:
+                _LAST[key] = {"at": time.time(), "out": out}
+                _FAIL.pop(key, None)
             _REFRESH_ON.discard(key)
-    if failed or not isinstance(out, dict):
-        return
+
+
+def last_failure(hide=None):
+    """REG-3198 - the newest walk for this hide set FAILED, and no walk has finished since. Never waits, never walks.
+    -> {"why", "ageS", "retryInS"} | None"""
+    import time
+    key = tuple(sorted(str(x) for x in (hide or ())))
+    now = time.time()
     with _SHARED_LOCK:
-        _LAST[key] = {"at": time.time(), "out": out}
+        f = _FAIL.get(key)
+        g = _LAST.get(key)
+        if f is None or (g is not None and g["at"] >= f["at"]):
+            return None
+        age = max(0.0, now - f["at"])
+        return {"why": f["why"], "ageS": round(age, 1), "retryInS": round(max(0.0, _FAIL_BACKOFF_S - age), 1)}
 
 
 def lanes_last(hide=None):
@@ -392,6 +424,9 @@ def lanes_last(hide=None):
     with _SHARED_LOCK:
         cur = _LAST.get(key)
         due = cur is None or (now - cur["at"]) >= _REFRESH_S
+        _f = _FAIL.get(key)
+        if due and _f is not None and (now - _f["at"]) < _FAIL_BACKOFF_S:
+            due = False         # REG-3198 - a walk that just failed is not walked again on the next ask
         if due and key not in _REFRESH_ON:
             _REFRESH_ON.add(key)
             start = True

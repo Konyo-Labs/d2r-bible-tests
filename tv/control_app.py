@@ -6030,14 +6030,16 @@ def _profile_view(owner):
     if rec is None and unread:
         rec = _cs.read_cache(cdir, owner)
         source = "cache"
-    online = seen = None
+    online = seen = via = live_at = None
     try:
         fl, _age = fleet_presence_last_good()
         online = _cs.online_of(owner, fl)
+        via = _cs.via_of(owner, fl)         # REG-3199 - by what it is online (its console, or only its recorder)
         seen = _cs.seen_of(owner, fl)       # v3856 - the same Fleet row: when the console was last seen
+        live_at = _cs.live_at_of(owner, fl, now_ms)   # REG-3199 - the check-in "online" stands on
     except Exception:
-        online = seen = None
-    return _cs.view(owner, rec, now_ms, online=online, source=source, fetch_why=why, seen=seen)
+        online = seen = via = live_at = None
+    return _cs.view(owner, rec, now_ms, online=online, source=source, via=via, live_at=live_at, fetch_why=why, seen=seen)
 
 
 def _frames_cache_dir():
@@ -18234,8 +18236,11 @@ def _river_remember_once(lanes, error):
     # `n` orders the two records exactly: a good read and a failed one can land in the same ms
     n = next(_RIVER_SEQ)
     if error is not None:
-        _RIVER_LAST["fail"] = {"ts": now, "n": n, "why": "the river could not be read (%s)"
-                                                         % type(error).__name__}
+        # REG-3196 - the reason, not only the exception's class: "(KeyError)" told the Fleet nothing. The message is
+        # scrubbed for the wire (_wire_text) because an exception's text is exactly where a path or a host rides along.
+        _detail = _wire_text(str(error), 120)
+        _RIVER_LAST["fail"] = {"ts": now, "n": n, "why": "the river could not be read (%s%s)"
+                                                         % (type(error).__name__, (": " + _detail) if _detail else "")}
         return
     st = _river_station_counts(lanes)
     if st is None:
@@ -18285,7 +18290,7 @@ def _triage_for_wire():
 
 
 # Asked at most once per process, and only while the self-prove record is still empty. A later tick has its own census.
-_BOOT_CENSUS = {"asked": False, "state": None}
+_BOOT_CENSUS = {"asked": False, "state": None, "blind": None}
 
 
 def _boot_census_once():
@@ -18302,6 +18307,10 @@ def _boot_census_once():
         word = got.get("state") if isinstance(got, dict) else None
         if word in ("stale", "missing", "unreadable"):
             state = word
+            # REG-3197 (the reviewer on r3) - and how many gates that census filed BLIND: a blind gate shuts every lock
+            # whatever is proved next, so the Fleet must not call the boot window "until this PC proves" over one
+            _bl = got.get("blind")
+            _BOOT_CENSUS["blind"] = len(_bl) if isinstance(_bl, list) else None
     except Exception:
         state = None
     _BOOT_CENSUS["state"] = state
@@ -18327,14 +18336,25 @@ def _river_for_wire(now_ms=None):
             out["shelf"] = int(g["shelf"])
         out["ageS"] = round(max(0.0, (now - int(g["ts"])) / 1000.0), 1)
         if isinstance(f, dict) and int(f.get("n") or 0) > int(g.get("n") or 0):
-            out["why"] = ("a newer river read failed %.0f s ago - these lanes are the last good read"
-                          % max(0.0, (now - int(f["ts"])) / 1000.0))
+            # REG-3196 (his Fleet 21:01: OLD PC ALT "a newer river read failed 1043 s ago" and nothing more) - the failed
+            # read's OWN reason crosses with it: _RIVER_LAST["fail"]["why"] was recorded and never reached the wire.
+            _fage = max(0.0, (now - int(f["ts"])) / 1000.0)
+            _fwhy = str(f.get("why") or "") or "it recorded no reason (UNKNOWN)"
+            out["why"] = ("a newer river read failed %.0f s ago - %s - these lanes are the last good read"
+                          % (_fage, _fwhy))
+            out["failWhy"] = _fwhy
+            out["failAgeS"] = round(_fage, 1)
     elif isinstance(f, dict):
         out["why"] = str(f.get("why") or "the last river read failed")
     else:
         # (no route path in this sentence: the worker scrubs anything path-shaped to "<path>")
-        out["why"] = ("this console has not computed its river since it started - nothing has asked "
-                      "for the river yet, and the beacon never computes it itself")
+        # REG-3198 - and WHY it has not: the console's own river lane is what computes it, so its last word is said
+        # (he plays, the machine is busy, it has not run yet) - never "nothing has asked", which was not true since #193.
+        _ws = dict(_RIVER_WARM)
+        out["why"] = ("this console has not computed its river since it started - "
+                      + (("its river lane: " + _wire_text(_ws.get("say"), 140)) if _ws.get("lastTs") is not None
+                         else "its river lane reads it about %d s after a start and has not run yet"
+                         % RIVER_WARM_FIRST_S))
     try:
         out["triage"] = _triage_for_wire()
     except Exception as e:
@@ -18372,8 +18392,19 @@ def _river_for_wire(now_ms=None):
             _key = "stale-at-boot"
         if _key is None:
             _key = "starting"
-    out["heart"] = {"census": _census, "key": _key,
-                    "blind": (len(_sp.get("blind") or []) if _sp.get("blind") is not None else None)}
+    _blind_n = len(_sp.get("blind") or []) if _sp.get("blind") is not None else None
+    if _blind_n is None and _key == "stale-at-boot":
+        _blind_n = _BOOT_CENSUS.get("blind")      # REG-3197 - the boot census's own BLIND count, read with its state
+    # REG-3197 (the reviewer on r3: "locks shut · rechecking" came back red for up to 10 min after every import, with a
+    # why still saying the proofs "are being imported") - THE IMPORT HAS ENDED AND THE PROVER HAS NOT TICKED SINCE: the
+    # lane's sentence is the import's, so it is said as what happened, never as a running import.
+    _rel = dict(_PROOF_RELEASE)
+    if _sp.get("afterImport") is True and _rel.get("running") is not True:
+        _sp["say"] = ("GitHub's proofs for this commit stopped importing (%s%s) - the proof check runs on its next "
+                      "10 s tick, on what is still owed"
+                      % (_wire_text(_rel.get("state"), 20) or "UNKNOWN",
+                         (": " + _wire_text(_rel.get("why"), 100)) if _rel.get("why") else ""))
+    out["heart"] = {"census": _census, "key": _key, "blind": _blind_n}
     # v3862 (item 10) - THE PROOF METER: owed now, the rate this PC has been proving at, and when it will be done
     _owed = _sp.get("owed") if (isinstance(_sp.get("owed"), int) and not isinstance(_sp.get("owed"), bool)) else None
     _PROOF_METER["samples"], _rate, _eta = proof_meter(_PROOF_METER["samples"], now if now else int(time.time() * 1000),
@@ -18383,7 +18414,123 @@ def _river_for_wire(now_ms=None):
     _hw, _hfrom = heart_stale_why(_census, _sp)
     out["heart"]["why"] = _hw
     out["heart"]["takesFrom"] = _hfrom
+    # REG-3197 (his Fleet 21:01: every online PC "census stale; lane: GitHub's proofs ... are being imported", drawn as
+    # red "locks shut" + "river stuck") - WHAT THE CENSUS IS WAITING ON, AS NUMBERS: the import while it runs, and the
+    # laws still owed HERE while this PC's own lane proves. Each is None when it is not happening, never 0.
+    out["heart"]["importing"] = heart_importing(_rel, _sp)
+    out["heart"]["owedHere"] = heart_owed_here(_sp)
+    # REG-3197 - and WHICH river locks are shut, as may() last answered (the river lane asks; the beacon reads memory)
+    _lk = dict(_RIVER_LOCKS_SEEN)
+    out["heart"]["locksShut"] = _lk.get("shut") if isinstance(_lk.get("shut"), list) else None
+    out["heart"]["lockWhy"] = _wire_text(_lk.get("why"), 200) if _lk.get("why") else None
+    out["heart"]["locksAgeS"] = (round(max(0.0, (now - int(_lk["ts"])) / 1000.0), 1)
+                                 if isinstance(_lk.get("ts"), int) and not isinstance(_lk.get("ts"), bool) else None)
     return out
+
+
+#: REG-3197 - the self-prove lane's keys that mean a proof is running HERE now (self_prove.decide: a slice started).
+SP_PROVING_KEYS = ("running", "start", "start-small")
+
+
+def heart_owed_here(sp):
+    """REG-3197 - the laws this PC still owes while its own lane PROVES them. Pure. -> int | None
+
+    None when the lane is not proving (nothing is being worked off here, so a count would read as progress), or when
+    the count is not a whole number. A running prover (sp.running) or a slice key that starts one counts."""
+    sp = sp if isinstance(sp, dict) else {}
+    owed = sp.get("owed")
+    if isinstance(owed, bool) or not isinstance(owed, int) or owed < 0:
+        return None
+    if sp.get("running") is True or sp.get("key") in SP_PROVING_KEYS:
+        return owed
+    return None
+
+
+def heart_importing(rel, sp=None):
+    """REG-3197 - GitHub's proofs being imported for this commit, while the import RUNS. Pure over the two records.
+    -> None | {done, of, etaS, ver} | {done, of, etaS: None, ver, landed: True}
+
+    `rel` is _PROOF_RELEASE. done/of/etaS are the import's own counts (absent on a build that does not count: None, and
+    the row says "importing GitHub's proofs" with no numbers - never a guessed 0). `ver` is the version whose proofs they
+    are, as the import recorded it when it started (the stamp on the clean checkout it imports for, which is HEAD - not
+    the running stamp, which lags HEAD while a relaunch is held); None when it did not record one.
+    `landed` (the reviewer on r3): the import finished, it imported, and this PC's prover - which skipped its tick for
+    it (`sp.afterImport`) - has not ticked since. That window is the import's last word, never a red recheck and never a
+    running import. [[unknown-stays-unknown]] [[stale-reading]]"""
+    if not isinstance(rel, dict):
+        return None
+    running = rel.get("running") is True
+    landed = (not running and isinstance(sp, dict) and sp.get("afterImport") is True
+              and rel.get("state") == "imported")
+    if not (running or landed):
+        return None
+
+    def _n(v):
+        return v if isinstance(v, (int, float)) and not isinstance(v, bool) and v >= 0 else None
+    done, of, eta = _n(rel.get("done")), _n(rel.get("of")), _n(rel.get("etaS"))
+    if done is not None and of is not None and done > of:
+        done = of = None            # a count past its own total is not a count
+    v = rel.get("ver")
+    v = v if isinstance(v, str) and re.match(r"^v\d{1,6}$", v) else None
+    out = {"done": int(done) if done is not None else None, "of": int(of) if of is not None else None,
+           "etaS": int(eta) if (eta is not None and running) else None, "ver": v}
+    if landed:
+        out["landed"] = True
+    return out
+
+
+#: REG-3197 - the four river doors as may() last answered them, read by the river lane (never on the beacon thread):
+#: shut = [lock, ...] (empty = all four may act), why = the first shut lock's own reason, ts = when it was asked.
+#: shut None = not asked yet, or the ask did not come back (UNKNOWN - never "all open").
+_RIVER_LOCKS_SEEN = {"ts": None, "shut": None, "why": None}
+
+
+def _river_locks_read(ask=None):
+    """The four river doors, asked of may(). -> (shut [(lock, why)] | None, why-if-None)
+
+    ONE reading for the doctor's river_locks row and the Fleet's lock line: an ask that does not come back is None
+    with its reason, never an empty (all open) list."""
+    if ask is None:
+        try:
+            import self_arming as _sa
+            ask = _sa.may
+        except Exception as _e:
+            return None, "the lock could not be imported (%s)" % type(_e).__name__
+    shut = []
+    try:
+        for lock in _RIVER_LOCKS_ASKED:
+            got = ask(lock)
+            if not (isinstance(got, tuple) and len(got) == 2 and isinstance(got[0], bool)):
+                return None, "may(%s) did not answer" % lock
+            one_ok, why = got
+            if not one_ok:
+                shut.append((lock, _river_lock_why(why)))
+    except Exception as _e:
+        return None, "the lock could not be asked (%s)" % type(_e).__name__
+    return shut, None
+
+
+def _river_locks_due(playing=None):
+    """REG-3197 - may the river lane ask the four doors now? Not while he plays. -> bool. Never raises.
+    A play probe that raises reads as not playing - the same rule the river walk itself (_river_warm_once) uses."""
+    try:
+        return not (_sp_playing_here() if playing is None else playing)
+    except Exception:
+        return True
+
+
+def _river_locks_note(now_ms=None, ask=None):
+    """REG-3197 - ask the river doors once and keep the answer for the beacon. Never raises. -> _RIVER_LOCKS_SEEN copy"""
+    now = int(time.time() * 1000) if now_ms is None else int(now_ms)
+    try:
+        shut, why = _river_locks_read(ask)
+    except Exception as e:
+        shut, why = None, "the lock read raised %s" % type(e).__name__
+    if shut is None:
+        _RIVER_LOCKS_SEEN.update(ts=now, shut=None, why=why)
+    else:
+        _RIVER_LOCKS_SEEN.update(ts=now, shut=[l for l, _w in shut], why=(shut[0][1] if shut else None))
+    return dict(_RIVER_LOCKS_SEEN)
 
 
 #: v3862 (item 10, his "proof meter" ask) - the owed-law readings this console has taken, oldest first: [(ms, owed)].
@@ -18484,20 +18631,38 @@ RIVER_WARM_EVERY_S = 300
 RIVER_WARM_STALE_S = 15 * 60
 RIVER_WARM_BUSY_PCT = 80.0
 RIVER_WARM_TIMEOUT_S = 120
+#: REG-3198 (his Fleet 21:01, "the river flowing and the fleet rendering it ... for each") - THE FIRST ANSWER IN A PROCESS
+#: IS "computing". /api/river serves the last FINISHED walk (river_lanes.lanes_last) and, before one has finished, answers
+#: {computing: true} and keeps nothing. The lane counted that as a read and slept RIVER_WARM_EVERY_S, so a fresh console
+#: carried no lanes for ~6 minutes and a PC that went offline in between kept "has not computed its river" for good.
+#: The pass now asks again every RIVER_WARM_POLL_S until the walk it started has finished (inside RIVER_WARM_TIMEOUT_S),
+#: and the first good read sends one beacon, the way the first proof tick does (v3849).
+RIVER_WARM_POLL_S = 5.0
+#: REG-3198 - a console with NO river since it started waits for a busy machine at most this long, then reads once
+#: (REG-1905's rule for the prover: GrokBot's PC sat 77% busy for 20 days). His game is never waited out: playing refuses.
+RIVER_WARM_BUSY_MAX_WAIT_S = 20 * 60
 _RIVER_WARM = {"on": True, "worked": 0, "lastTs": None, "owed": None, "ms": None,
-               "say": "the river warm lane has not run yet since this console started"}
+               "say": "the river warm lane has not run yet since this console started",
+               # REG-3198 - when the machine went busy (ms, None = not busy) and whether the first-read beacon went
+               "busySince": None, "beaconed": False}
 
 
-def _river_warm_due(now_ms, last, playing, busy_pct):
+def _river_warm_due(now_ms, last, playing, busy_pct, busy_since_ms=None):
     """#193 - should the warm lane read the river now? -> (bool, why). Pure.
 
     `last` is _RIVER_LAST. A good read younger than RIVER_WARM_STALE_S is enough; a failed read is retried on the same
-    cadence, never in a tight loop. He plays -> never. A busy machine (CPU over RIVER_WARM_BUSY_PCT) -> later."""
+    cadence, never in a tight loop. He plays -> never. A busy machine (CPU over RIVER_WARM_BUSY_PCT) -> later; REG-3198:
+    but a console with no good river since it started waits for busy at most RIVER_WARM_BUSY_MAX_WAIT_S (busy_since_ms
+    is when the machine went busy), then reads once - never for ever."""
     if playing:
         return False, "he is playing - the river walk waits for the game to close"
-    if isinstance(busy_pct, (int, float)) and not isinstance(busy_pct, bool) and busy_pct >= RIVER_WARM_BUSY_PCT:
-        return False, "the machine is busy (%.0f%% CPU) - the river walk waits" % busy_pct
     g = (last or {}).get("good") if isinstance(last, dict) else None
+    if isinstance(busy_pct, (int, float)) and not isinstance(busy_pct, bool) and busy_pct >= RIVER_WARM_BUSY_PCT:
+        _bs = busy_since_ms if isinstance(busy_since_ms, int) and not isinstance(busy_since_ms, bool) else None
+        if not (g is None and _bs is not None and now_ms - _bs >= RIVER_WARM_BUSY_MAX_WAIT_S * 1000):
+            return False, "the machine is busy (%.0f%% CPU) - the river walk waits" % busy_pct
+        return True, ("the machine has been busy (%.0f%% CPU) for %.0f min and this console has no river yet - "
+                      "read once anyway" % (busy_pct, (now_ms - _bs) / 60000.0))
     f = (last or {}).get("fail") if isinstance(last, dict) else None
     newest = max([int(r["ts"]) for r in (g, f) if isinstance(r, dict) and isinstance(r.get("ts"), int)] or [0])
     if newest and now_ms - newest < RIVER_WARM_STALE_S * 1000:
@@ -18506,7 +18671,60 @@ def _river_warm_due(now_ms, last, playing, busy_pct):
                   else "the last river read is %.0f min old" % ((now_ms - newest) / 60000.0))
 
 
-def _river_warm_once(now_ms=None, _urlopen=None, playing=None, busy_pct=None):
+def _river_warm_ask(opener):
+    """One more GET of this console's read-only /api/river, while a walk is computing. -> the answer's raw body"""
+    _resp = opener("http://127.0.0.1:%d/api/river" % int(CONTROL_PORT), timeout=RIVER_WARM_TIMEOUT_S)
+    try:
+        return _resp.read()
+    finally:
+        _shut = getattr(_resp, "close", None)
+        if callable(_shut):
+            _shut()
+
+
+def _river_warm_computing(body):
+    """REG-3198 - did /api/river answer "computing" (the walk it started has not finished)? -> bool. Pure."""
+    try:
+        got = json.loads(body.decode("utf-8", "replace") if isinstance(body, bytes) else str(body or ""))
+    except Exception:
+        return False
+    return isinstance(got, dict) and got.get("computing") is True
+
+
+def _river_warm_refusal(body):
+    """REG-3198 (the reviewer on r3) - was the route's answer a REFUSAL - its walk failed, or the river could not be
+    read? -> the route's own reason | None. Pure. The route has already kept it for the beacon (_river_remember); the
+    lane must not count it as a read."""
+    try:
+        got = json.loads(body.decode("utf-8", "replace") if isinstance(body, bytes) else str(body or ""))
+    except Exception:
+        return None
+    if not isinstance(got, dict) or got.get("computing") is True:
+        return None
+    ln = got.get("lanes")
+    if isinstance(ln, dict) and ln.get("ok") is False:
+        return str(ln.get("why") or "the lane view refused")
+    if got.get("ok") is False and "stations" in got and got.get("stations") is None:
+        return str(got.get("why") or "the river could not be read")
+    return None
+
+
+def _river_warm_wait_walk(body, opener, sleep, clock):
+    """REG-3198 - ask again every RIVER_WARM_POLL_S while the route says "computing", inside RIVER_WARM_TIMEOUT_S.
+    -> (seconds waited, the route's last answer). Raises TimeoutError when the walk has not finished by then (the pass
+    is then a failed read). A walk that FAILS ends the wait at once: the route answers it as a refusal and starts no
+    other walk until river_lanes' own backoff has passed, so one pass is one walk."""
+    t0 = clock()
+    while _river_warm_computing(body):
+        if clock() - t0 >= RIVER_WARM_TIMEOUT_S:
+            raise TimeoutError("the river walk had not finished after %d s" % RIVER_WARM_TIMEOUT_S)
+        sleep(RIVER_WARM_POLL_S)
+        body = _river_warm_ask(opener)
+    return round(clock() - t0, 1), body
+
+
+def _river_warm_once(now_ms=None, _urlopen=None, playing=None, busy_pct=None, _sleep=None, _clock=None,
+                     _beacon=None):
     """#193 - one pass of the warm lane. Never raises. -> the lane record."""
     now = int(time.time() * 1000) if now_ms is None else int(now_ms)
     try:
@@ -18514,7 +18732,13 @@ def _river_warm_once(now_ms=None, _urlopen=None, playing=None, busy_pct=None):
     except Exception:
         _play = False
     _busy = _cpu_busy_pct() if busy_pct is None else busy_pct
-    due, why = _river_warm_due(now, _RIVER_LAST, _play, _busy)
+    # REG-3198 - when the machine went busy, so a console with no river waits for it at most RIVER_WARM_BUSY_MAX_WAIT_S
+    if isinstance(_busy, (int, float)) and not isinstance(_busy, bool) and _busy >= RIVER_WARM_BUSY_PCT:
+        if _RIVER_WARM.get("busySince") is None:
+            _RIVER_WARM["busySince"] = now
+    else:
+        _RIVER_WARM["busySince"] = None
+    due, why = _river_warm_due(now, _RIVER_LAST, _play, _busy, _RIVER_WARM.get("busySince"))
     if not due:
         # the Grok eye on v3813: a pass that waits (he plays, the machine is busy, a fresh read) never clears a failure
         # the lane recorded - `owed` stays what the last real attempt left
@@ -18526,17 +18750,40 @@ def _river_warm_once(now_ms=None, _urlopen=None, playing=None, busy_pct=None):
         _resp = (_urlopen or _ur.urlopen)("http://127.0.0.1:%d/api/river" % int(CONTROL_PORT),
                                           timeout=RIVER_WARM_TIMEOUT_S)
         try:
-            _resp.read()
+            _body = _resp.read()
         finally:
             _close = getattr(_resp, "close", None)      # the Grok eye on v3813: the response is closed, not left to GC
             if callable(_close):
                 _close()
-        _RIVER_WARM.update(worked=int(_RIVER_WARM.get("worked") or 0) + 1, lastTs=now, owed=0,
-                           ms=int((time.time() - t0) * 1000), say="read the river (%s)" % why)
+        # REG-3198 - "computing" is the walk this ask STARTED, not a read: the lane waits for it to finish
+        _waited, _final = _river_warm_wait_walk(_body, _urlopen or _ur.urlopen, _sleep or time.sleep,
+                                                _clock or time.time)
+        _refused = _river_warm_refusal(_final)
+        if _refused is not None:
+            # REG-3198 (the reviewer on r3) - a walk that failed is a failed read, said with the walk's own reason; the
+            # route kept it in _RIVER_LAST, so the next pass waits RIVER_WARM_STALE_S like any failed read
+            _RIVER_WARM.update(lastTs=now, owed=1, ms=int((time.time() - t0) * 1000),
+                               say="the river walk failed - %s" % _wire_text(_refused, 160))
+        else:
+            _RIVER_WARM.update(worked=int(_RIVER_WARM.get("worked") or 0) + 1, lastTs=now, owed=0,
+                               ms=int((time.time() - t0) * 1000),
+                               say="read the river (%s)%s" % (why, (" after its walk finished (%.0f s)" % _waited)
+                                                             if _waited else ""))
     except Exception as e:
         # The route remembers its own failure in _RIVER_LAST; a read that never reached the route says so here.
         _RIVER_WARM.update(lastTs=now, owed=1, ms=int((time.time() - t0) * 1000),
-                           say="the river read could not ask its own route (%s)" % type(e).__name__)
+                           say=(("the river walk did not finish inside %d s - the walk itself may be failing (UNKNOWN)"
+                                 % RIVER_WARM_TIMEOUT_S) if isinstance(e, TimeoutError) and "river walk" in str(e)
+                                else "the river read could not ask its own route (%s%s)"
+                                % (type(e).__name__, (": " + _wire_text(str(e), 100)) if str(e) else "")))
+    # REG-3198 - THE FIRST GOOD RIVER SINCE A START GOES OUT AT ONCE. The boot beacon left before it, and the next one is
+    # minutes away: a PC that went offline in between kept "has not computed its river" on every Fleet for good.
+    if not _RIVER_WARM.get("beaconed") and isinstance(_RIVER_LAST.get("good"), dict):
+        _RIVER_WARM["beaconed"] = True
+        try:
+            (_beacon or _console_beacon_async)("river")
+        except Exception:
+            _RIVER_WARM["beaconed"] = False
     return dict(_RIVER_WARM)
 
 
@@ -18547,6 +18794,11 @@ def _river_warm_loop():
         try:
             _lane_tick('tvd-river-warm', RIVER_WARM_EVERY_S)
             r = _river_warm_once()
+            # REG-3197 - which river locks are shut, asked here on this lane's thread so the beacon only reads memory.
+            # The reviewer on r3: never while he plays (four may() calls hash the gate files, ~0.6 s) - the last answer
+            # stands, with its own age (locksAgeS), until the game closes.
+            if _river_locks_due():
+                _river_locks_note()
             import lane_trace as _lt
             _lt.note('tvd-river-warm', worked=r.get("worked"), owed=r.get("owed"), ms=r.get("ms"),
                      why=str(r.get("say") or "")[:200])
@@ -18644,8 +18896,9 @@ def _disk_sign_measure(candidates=None, budget_s=None, now_ms=None):
     return rows
 
 
-def _disk_sign_once(now_ms=None, playing=None, busy_pct=None, candidates=None):
-    """#151 - one pass of the sign's lane. Never raises. -> the lane record."""
+def _disk_sign_once(now_ms=None, playing=None, busy_pct=None, candidates=None, growers=False):
+    """#151 - one pass of the sign's lane. Never raises. -> the lane record. growers: REG-3208 - the console's own loop
+    asks for the growers lane in this pass; a law that drives this pass never walks his temp root."""
     now = int(time.time() * 1000) if now_ms is None else int(now_ms)
     try:
         _play = _sp_playing_here() if playing is None else playing
@@ -18657,10 +18910,16 @@ def _disk_sign_once(now_ms=None, playing=None, busy_pct=None, candidates=None):
     if _play:
         _DISK_SIGN.update(lastTs=now, say="he is playing - what uses the disk is measured after the game closes")
         _GROK_PRUNE.update(say="waiting - he is playing, and the Grok chat prune never runs beside the game")
+        if growers:
+            _GROWERS.update(checkedTs=now, say="waiting - he is playing, and the growers lane never salvages or prunes "
+                                               "beside the game")
         return dict(_DISK_SIGN)
     if isinstance(_busy, (int, float)) and not isinstance(_busy, bool) and _busy >= DISK_SIGN_BUSY_PCT:
         _DISK_SIGN.update(lastTs=now, say="the machine is busy (%.0f%% CPU) - the measurement waits" % _busy)
         _GROK_PRUNE.update(say="waiting - the machine is busy (%.0f%% CPU), so the Grok chat prune waits too" % _busy)
+        if growers:
+            _GROWERS.update(checkedTs=now, say="waiting - the machine is busy (%.0f%% CPU), so the growers lane waits too"
+                                               % _busy)
         return dict(_DISK_SIGN)
     try:
         rows = _disk_sign_measure(candidates)
@@ -18668,6 +18927,10 @@ def _disk_sign_once(now_ms=None, playing=None, busy_pct=None, candidates=None):
                           measuredAt=now, say="measured %d folder(s)" % len(rows))
     except Exception as e:
         _DISK_SIGN.update(lastTs=now, owed=1, say="the measurement raised %s" % type(e).__name__)
+    # REG-3208 - what keeps growing on this disk (disk_growers' declared registry) is measured, salvaged and read back,
+    # then pruned, in this same pass - so it too waits out his game and a busy machine above
+    if growers:
+        _growers_pass(now)
     # #151 (REG-2743) - his Grok chats, pruned in the same pass and only when needed; this pass already waited out
     # his game and a busy machine above, so the prune never runs beside either
     _grok_prune_pass(now)
@@ -18724,13 +18987,41 @@ def _grok_prune_pass(now_ms=None, _run=None):
     return dict(_GROK_PRUNE)
 
 
+#: REG-3208 (his words 2026-11-05: "whatever keeps growing needs to have a looped system in place that prunes and
+#: extracts and saves any data informational that's needed") - the growers lane, in the shared lane words. worked is
+#: LIFETIME (disk_growers keeps it in the salvage dir's state), owed None is UNKNOWN; checkedTs moves on a pass that
+#: waited too, so a long game never reads as a dead loop.
+_GROWERS = {"on": True, "worked": None, "lastTs": None, "checkedTs": None, "owed": None, "top": None, "biggest": None,
+            "waiting": None, "dryRun": None, "lastSalvage": None, "error": None,
+            "say": "not asked yet - the growers lane runs in the disk sign's pass, about 2 min after a start and then "
+                   "every 30 min, never while he plays"}
+
+
+def _growers_pass(now_ms=None, _run=None):
+    """REG-3208 / REG-3209 - one pass of the growers lane: measure what the declared registry names, salvage what is
+    informational into tv/.salvage and read it back, and only then prune (disk_growers decides; a new entry is a
+    dry-run until it has earned arming). It never touches this console's own tree, the footage or the salvage dir.
+    Never raises. -> the lane record"""
+    now = int(time.time() * 1000) if now_ms is None else int(now_ms)
+    try:
+        import disk_growers as _dg
+        rec = (_run or _dg.run)(salvage_dir=_dg.salvage_root(REPO), protect=(REPO, HIST_DIR),
+                                free_bytes=_disk_free_bytes, now_s=now / 1000.0, repo=REPO)
+        upd = _dg.lane(rec, checked_ms=now)
+    except Exception as e:
+        upd = {"lastTs": now, "checkedTs": now, "owed": None, "error": type(e).__name__,
+               "say": "the growers lane raised %s - nothing was pruned" % type(e).__name__}
+    _GROWERS.update(upd)
+    return dict(_GROWERS)
+
+
 def _disk_sign_loop():
     """#151 - measure what uses the disk two minutes after a start, then every DISK_SIGN_EVERY_S."""
     time.sleep(DISK_SIGN_FIRST_S)
     while True:
         try:
             _lane_tick('tvd-disk-sign', DISK_SIGN_EVERY_S)
-            r = _disk_sign_once()
+            r = _disk_sign_once(growers=True)
             import lane_trace as _lt
             _lt.note('tvd-disk-sign', worked=r.get("worked"), owed=r.get("owed"), why=str(r.get("say") or "")[:200])
         except Exception:
@@ -18801,7 +19092,8 @@ def disk_sign_payload(_free=None):
             "consumers": (cons[:3] if isinstance(cons, list) else None), "measuredAt": _DISK_SIGN.get("measuredAt"),
             "action": ((top or {}).get("action") if lvl in ("red", "amber") else None),
             "lane": {k: _DISK_SIGN.get(k) for k in ("on", "worked", "lastTs", "owed", "say")},
-            "grokPrune": {k: _GROK_PRUNE.get(k) for k in ("on", "worked", "lastTs", "owed", "say", "freedBytes", "last")}}
+            "grokPrune": {k: _GROK_PRUNE.get(k) for k in ("on", "worked", "lastTs", "owed", "say", "freedBytes", "last")},
+            "growers": dict(_GROWERS)}   # REG-3208 - what keeps growing, and what waits on a salvage
 
 #: The stations a reel is meant to LEAVE, and the lane that moves it on. CAPTURE is not here: it waits on a
 #: capture change by design (REG-340), so it is never an alarm; ROUTED and TOMBSTONE are the far end.
@@ -18810,8 +19102,135 @@ _RIVER_OWNER = {"TRIAGE": "triage", "EMPTY": "route", "JOIN": "route", "STATION"
                 "PRINTER": "vault", "INTAKE": "survey"}
 
 
-def _river_stuck_why(station):
+#: REG-3201 - what each kind of wait at PRINTER / STATION is waiting ON, in his words. Keyed on the vault picker's own
+#: reason (_vault_pass_reason) or on why no lane's queue holds the reel at all.
+_DELIVERY_WAITS = {
+    "quarantined": "the vault lane, which holds it after a hang",
+    "look": "a person: the vault lane stopped retrying it after it hung the measurer",
+    "sealed": "a new vault reader: the current one read it and took nothing",
+    "cooling": "the vault lane's cooldown after an empty read",
+    "retired": "nothing automatic: the vault lane retired it after its tries",
+    "growing": "the recording to finish",
+    "triage-empty": ("a seal no lane writes: the triage walked it in full and found no stash panel, so the vault "
+                     "lane owes it no read (REG-1749), and only a vault read writes a seal"),
+    "no-queue": "no lane: no lane's queue holds it",
+    # r4 review - a check that could not be asked is UNKNOWN, never "no lane" (the reason follows the colon)
+    "unknown": "UNKNOWN - who moves it could not be established",
+}
+#: REG-3201 - the waits a lane clears BY ITSELF (a timer or the recording ending). Every other wait needs something
+#: no lane will do on its own - a person, a new reader, a ruling - and the doctor's river row stays MISSING for it.
+_DELIVERY_SELF_CLEARING = ("quarantined", "cooling", "growing")
+#: REG-3201 - the lane each station's standing sentence is about (river_walk.LANE_OF_STATION's owner, in words)
+_STATION_OWN_LANE = {"PRINTER": "the vault lane", "STATION": "the reel sweep"}
+
+
+#: REG-3201 - the reels of the stuck row being worded, per thread. Set only by a LIVE _river_stuck_for_wire (a law that
+#: hands in its own shelf is a fixture and keeps the lane's word: the per-reel reading asks his live lane stores).
+_RIVER_WHY_CTX = threading.local()
+
+
+def _river_drain_why(station):
+    """REG-3201 - the drain's upstream word for a station, about the reels standing at it (one stamp-log read), never the
+    lane's whole queue: his Mac's drain said "waiting at STATION 1 behind STATION: A LANE EXISTS AND THIS QUEUE IS NOT
+    ITS INPUT" over a reel the vault lane owns and was holding after a hang. -> str"""
+    return _river_stuck_why(station, reels=(_reels_at_station(station) if station in ("PRINTER", "STATION")
+                                            else None))
+
+
+def _reels_at_station(station):
+    """REG-3201 - the reels on this shelf whose last river stamp is `station`. -> list | None (UNKNOWN). One file read."""
+    try:
+        import river_stamp as _rvs
+        rep = _rvs.rows()
+        if not rep.get("ok"):
+            return None
+        last = {}
+        for r in (rep.get("rows") or []):
+            last[str(r.get("reel"))] = str(r.get("station"))
+        on = set(_shelf_reel_names())
+        return sorted(k for k, v in last.items() if v == station and k in on)
+    except Exception:
+        return None
+
+
+def _station_delivery(station, reels, owed=None):
+    """REG-3201 - WHO MOVES EACH OF THESE REELS ON, OR WHAT EACH ONE WAITS ON. -> dict | None (UNKNOWN). Spends nothing.
+
+    MEASURED on his Mac 2026-11-05: the eagle said "3 of 42 reel(s) sit at a station that owes work no automatic lane
+    delivers (PRINTER 2, STATION 1)" and the fleet's PRINTER row quoted the vault lane's whole queue ("owes 8 ... 1
+    quarantined after a hang") about two reels that are NOT in that queue. The STATION reel IS the vault lane's - it
+    was the one quarantined after the 854 s hang - so "no automatic lane" was false for it; the two PRINTER reels are
+    in no lane's queue at all. Both facts are per reel, so this answers per reel, from the lanes' own rules:
+    `_vault_owed_reels` + `_vault_pass_reason` (the vault picker), `_chron_reel_owes_a_read` (the reel sweep),
+    `shelf_driver._proven_empty` (REG-1749's veto). A check that could not be asked is the wait 'unknown', which says
+    which check failed - never "no lane's queue holds it" (r4 review).
+    {lanes: {lane: [reel]}, waits: [{key, on, reels, selfClearing}], noLane, unknown, why}"""
+    try:
+        reels = [os.path.basename(str(r)) for r in (reels or [])]
+        if owed is None:
+            owed = _vault_owed_reels()
+        if owed is None:
+            return None
+        vault_owed = dict((os.path.basename(str(d)), d) for d in owed)
+        try:
+            seals = _vault_swept_load()
+        except Exception:
+            seals = None
+        lanes, waits, holds, unk = {}, {}, {}, {}
+        for rid in reels:
+            if rid in vault_owed:
+                why = _vault_pass_reason(rid, vault_owed[rid], seals)
+                if why is None:
+                    lanes.setdefault("the vault lane", []).append(rid)
+                    continue
+                waits.setdefault(why, []).append(rid)
+                if why in ("quarantined", "look"):
+                    holds.setdefault(why, (rid, _vault_hang_hold(rid)))
+                continue
+            if station == "STATION":
+                try:
+                    _sweep_owes = _chron_reel_owes_a_read(rid)
+                except Exception as _ce:
+                    # r4 review: this fell through to "no lane's queue holds it" - a confident no for a question
+                    # nobody could ask. UNKNOWN is the answer, and it says which check failed.
+                    waits.setdefault("unknown", []).append(rid)
+                    unk.setdefault("unknown", "the reel sweep's check could not be asked (%s)" % type(_ce).__name__)
+                    continue
+                if _sweep_owes:
+                    lanes.setdefault("the reel sweep", []).append(rid)
+                    continue
+            try:
+                import shelf_driver as _sd_dl
+                empty = bool(_sd_dl._proven_empty(rid))
+            except Exception:
+                empty = False
+            waits.setdefault("triage-empty" if empty else "no-queue", []).append(rid)
+        rows = []
+        for k, rs in sorted(waits.items(), key=lambda kv: -len(kv[1])):
+            on = _DELIVERY_WAITS.get(k, k)
+            if k in unk:
+                on = "%s: %s" % (on, unk[k])
+            if k in holds and holds[k][1]:
+                on = "%s - %s %s" % (on, holds[k][0], _vault_hang_words(holds[k][1]))
+            rows.append({"key": k, "on": on, "reels": rs, "selfClearing": k in _DELIVERY_SELF_CLEARING})
+        parts = ["%d %s on %s" % (len(r["reels"]), "waits" if len(r["reels"]) == 1 else "wait", r["on"])
+                 for r in rows]
+        parts += ["%d %s by %s" % (len(rs), "is delivered" if len(rs) == 1 else "are delivered", ln)
+                  for ln, rs in sorted(lanes.items())]
+        return {"station": station, "lanes": lanes, "waits": rows,
+                "noLane": sum(len(r["reels"]) for r in rows if not r["selfClearing"] and r["key"] != "unknown"),
+                "unknown": sum(len(r["reels"]) for r in rows if r["key"] == "unknown"),
+                "why": "%s %d: %s" % (station, len(reels), "; ".join(parts) if parts else "no reel here")}
+    except Exception:
+        return None
+
+
+def _river_stuck_why(station, reels=None):
     """The OWNING lane's own last word on why a station is not draining. -> str (never raises)
+
+    REG-3201 - at PRINTER and STATION the sentence is about THESE reels (`reels`, or every shelf reel stamped there):
+    which lane delivers each one, or what it waits on (_station_delivery). The lane's whole-queue word is kept only
+    when every one of them is in that lane's queue and startable, which is the one case it describes.
 
     ⚠ 2026-09-30 (REG-1614) — A ROUTE SHUT BY THIS PC'S OWN MISSING PROOF SAYS WHAT THE PROOF IS WAITING FOR. The
     ALT's row read "reel.route is LOCKED — the heart has never run here ... Run `python3 tv/heart2.py --prove`" -
@@ -18828,6 +19247,17 @@ def _river_stuck_why(station):
     both, and the sweep's log said why it read none: "the sweep door is LOCKED on this machine ... vault.sweep_start
     is LOCKED - the heart census is STALE". The drain printed the note instead. The note stays for a sweep that
     owes nothing, which is the only case it describes."""
+    if reels is None:
+        reels = getattr(_RIVER_WHY_CTX, "reels", None)   # the live stuck row being worded (_river_stuck_for_wire)
+    if station in ("PRINTER", "STATION") and reels:
+        try:
+            _dl = _station_delivery(station, list(reels))
+        except Exception:
+            _dl = None
+        # a wait, or a lane that is not the station's own (a vault reel standing at STATION), is said per reel; the
+        # station's own lane delivering every one of them keeps that lane's word below (REG-1844, the vault lamp)
+        if _dl is not None and (_dl.get("waits") or set(_dl.get("lanes") or {}) - {_STATION_OWN_LANE.get(station)}):
+            return _dl["why"]
     if station == "STATION":
         try:
             _owed_r = _chron_owed_count()
@@ -19009,8 +19439,20 @@ def _river_stuck_for_wire(now_ms=None, _rows=None, _shelf=None, _fixtures=None, 
         e["oldestS"] = max(e["oldestS"], int(age))
         e.setdefault("_reels", []).append(reel)   # REG-3053 - which reels, so the drain's own hold can be named
     out = sorted(by.values(), key=lambda e: -e["oldestS"])[:6]
+    try:
+        return _river_stuck_worded(out, _keep, live=(_shelf is None))
+    finally:
+        _RIVER_WHY_CTX.reels = None
+
+
+def _river_stuck_worded(out, _keep, live=False):
+    """_river_stuck_for_wire's wording pass over its rows. -> the rows.
+
+    REG-3201 - while a LIVE row is worded, its own reels ride in _RIVER_WHY_CTX, so PRINTER and STATION say which lane
+    delivers each of those reels or what each waits on (_station_delivery) instead of the lane's whole-queue word."""
     for e in out:
         _rs = e.pop("_reels", [])
+        _RIVER_WHY_CTX.reels = (list(_rs) if live else None)
         # REG-1987 - GrokBot tick 388: the tips ended "...the heart census is S" and "...the lane could not be". A bare
         # [:200] cut the lane's own sentence mid-word; _word_cut ends at a word and says it was cut (REG-1839's helper).
         # REG-2098 (GrokBot tick 427) - the owed sentence cuts its OWN lane reason before it adds the window prefix, so a
@@ -22696,6 +23138,62 @@ _PROOF_RELEASE = {"state": None, "sha": None, "seconds": None, "at": None, "runn
                   "ends": 0, "endedAt": None, "tickedFor": 0, "tickedAt": None,
                   "why": "not asked yet - the console has not been up 40 s"}
 
+#: REG-3213 (v3865, his words: "why has it been stuck for so long and not triggered at an alert somewhere at 75 minutes
+#: which was max?") - THIS VERSION'S CI, WATCHED WITHOUT ANYONE PRESSING ANYTHING. MEASURED on v3864: shard 10 of the ci
+#: proof run ran 87 min (the run 2 h 10 min with its re-run, then Publish 56 min) and nothing anywhere said so. The
+#: console asks GitHub's public Actions API (tv/ci_watch.py) about the commit it runs,
+#: 60 s after boot and every 5 minutes (CI_WATCH_EVERY_TICKS x 10 s - never more often than ci_watch.CI_WATCH_EVERY_S),
+#: on a daemon thread; the eagle row "this version's CI" (console_doctor) turns red past 75 minutes and names the jobs
+#: still running. on / worked / lastTs / owed: None is UNKNOWN, never 0. [[heart-first]]
+CI_WATCH_FIRST_TICK = 6
+CI_WATCH_EVERY_TICKS = 30
+_CI_WATCH = {"on": True, "worked": None, "lastTs": None, "owed": None, "state": None, "sha": None, "running": [],
+             "runs": [], "minutes": None, "busy": False, "why": "not asked yet - the console has not been up 60 s"}
+
+
+def _ci_watch_tick(_thread=None, _git_run=_git_run, _watch=None, _now=None):
+    """REG-3213 - read this commit's CI from GitHub, at most every CI_WATCH_EVERY_S, on a daemon thread. -> dict (the
+    record it published). Never raises: a stop is a sentence in status.ciWatch, and an unread GitHub is UNKNOWN."""
+    try:
+        import ci_watch as _cw
+        now = time.time() if _now is None else _now
+        if _CI_WATCH.get("busy"):
+            return dict(_CI_WATCH)
+        if os.environ.get("TV_STUB"):           # a test console never calls GitHub: said, never a silent skip
+            _CI_WATCH.update(on=False, worked=None, owed=None, state="unknown",
+                             why="a test console (TV_STUB) does not ask GitHub about its CI")
+            return dict(_CI_WATCH)
+        last = _CI_WATCH.get("askedAt")
+        if last is not None and now - last < _cw.CI_WATCH_EVERY_S:
+            return dict(_CI_WATCH)
+        kw = dict(cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
+                  creationflags=_WIN_CREATE if IS_WIN else 0)
+        h = _git_run(["git", "rev-parse", "HEAD"], **kw)
+        head = (h.stdout or "").strip() if h.returncode == 0 else ""
+        if len(head) != 40:
+            _CI_WATCH.update(worked=False, lastTs=int(now * 1000), state="unknown", owed=None,
+                             why="git could not say which commit this console runs - its CI is UNKNOWN")
+            return dict(_CI_WATCH)
+    except Exception as e:
+        _CI_WATCH.update(worked=False, state="unknown", owed=None, why="the CI watch could not be asked (%s)" % type(e).__name__)
+        return dict(_CI_WATCH)
+
+    def _go():
+        try:
+            r = (_watch or _cw.watch)(head)
+            _CI_WATCH.update(dict((k, r.get(k)) for k in ("on", "worked", "lastTs", "owed", "state", "sha", "running",
+                                                           "runs", "minutes", "limit", "why")))
+        except Exception as e:
+            _CI_WATCH.update(worked=False, state="unknown", owed=None, why="the CI watch raised %s" % type(e).__name__)
+        finally:
+            _CI_WATCH["busy"] = False
+    _CI_WATCH.update(busy=True, askedAt=now)
+    if _thread is not None:
+        _thread(_go)
+    else:
+        threading.Thread(target=_go, daemon=True, name="tvd-ci-watch").start()
+    return dict(_CI_WATCH)
+
 
 def _proof_release_tick(_thread=None, _git_run=_git_run, _import=None, _busy=None):
     """v3862 - import this commit's proofs from the proof bank, once per commit, on a daemon thread. -> dict (the
@@ -22748,7 +23246,14 @@ def _proof_release_tick(_thread=None, _git_run=_git_run, _import=None, _busy=Non
             _PROOF_RELEASE.update(etaS=None, ends=int(_PROOF_RELEASE.get("ends") or 0) + 1,
                                   endedAt=int(time.time() * 1000))
             _PROOF_RELEASE["running"] = False
-    _PROOF_RELEASE.update(running=True, sha=head, state="importing", done=None, of=None, etaS=None, progressAt=None,
+    # REG-3197 (the reviewer on r3) - the version these proofs are FOR: the stamp on this clean checkout (HEAD, the status
+    # check above refused a dirty one), read once here - the running stamp lags HEAD while a relaunch is held
+    try:
+        _for_ver = _disk_ver()
+    except Exception:
+        _for_ver = None
+    _PROOF_RELEASE.update(running=True, sha=head, state="importing", ver=_for_ver,
+                          done=None, of=None, etaS=None, progressAt=None,
                           why="importing GitHub's proofs for %s from the proof bank" % head[:9])
     if _thread is not None:
         _thread(_go)
@@ -23245,10 +23750,15 @@ def _self_prove_dispatch(n):
     if _self_prove_after_import(_PROOF_RELEASE):    # v3865 REG-3195 - the tick the import held back, within 10 s
         _PROOF_RELEASE.update(tickedFor=int(_PROOF_RELEASE.get("ends") or 0), tickedAt=int(time.time() * 1000))
         step = "tick"
+    # REG-3197 (the reviewer on r3) - THE TICK THE IMPORT HELD RUNS AS SOON AS THE IMPORT ENDS, not up to
+    # SELF_PROVE_EVERY_TICKS (10 min) later: for that wait the Fleet drew the 21:01 red "locks shut · rechecking" again.
+    if step != "tick" and _SELF_PROVE.get("afterImport") is True and not _PROOF_RELEASE.get("running"):
+        step = "tick"
     if step == "tick":
         if _PROOF_RELEASE.get("running"):   # v3862 — GitHub's proofs land first; proving them here too is waste
             _SELF_PROVE["say"] = ("GitHub's proofs for this commit are being imported - the next proof tick starts "
                                   "after, on what is still owed")
+            _SELF_PROVE["afterImport"] = True   # REG-3197 - _self_prove_tick replaces the record, which clears it
         else:
             _self_prove_tick()          # #50 — has THIS PC proved its own instruments?
         if n == SELF_PROVE_FIRST_TICK:
@@ -23382,6 +23892,9 @@ def _console_rescue_loop():
             if (_SELF_PROBE["tick"] >= PROOF_RELEASE_FIRST_TICK
                     and (_SELF_PROBE["tick"] - PROOF_RELEASE_FIRST_TICK) % PROOF_RELEASE_EVERY_TICKS == 0):
                 _proof_release_tick()       # v3862 — this PC imports GitHub's proofs for its own commit
+            if (_SELF_PROBE["tick"] >= CI_WATCH_FIRST_TICK
+                    and (_SELF_PROBE["tick"] - CI_WATCH_FIRST_TICK) % CI_WATCH_EVERY_TICKS == 0):
+                _ci_watch_tick()            # REG-3213 — this version's CI, red past 75 minutes, unattended
             if (_SELF_PROBE["tick"] >= REPAIR_BOOK_FIRST_TICK
                     and (_SELF_PROBE["tick"] - REPAIR_BOOK_FIRST_TICK) % REPAIR_BOOK_EVERY_TICKS == 0):
                 _repair_book_start()        # v3862 — a fault the book knows is fixed again, automatically
@@ -25369,6 +25882,109 @@ def _footage_why(sid, reeln):
         pass
     return "unknown", ("no film and no retention record for this run — that is an unanswered "
                        "question, not a finding that nothing was ever recorded")
+
+
+# REG-3207 - A FRAME THE RETENTION LANE DELETED WAS A BROKEN IMAGE, OR A SILENT BLANK.
+# GrokBot, v3864: 3 /hist 404s on his Mac console; every <img> that asks /hist for a frame a deleter
+# already took showed a broken picture or hid itself (opacity 0, display none), and nothing said the
+# frame had been retired on purpose. Who took a picture already has ONE answer: read_pictures.judge,
+# over the retention lane's reel_tombstones.json, the recorder's reel_reaps.jsonl and its refusal record
+# (the doctor row 'a read left no picture' and /api/picture_status read it too). _serve_hist asks it for
+# a missing frame and answers an <img> with a placeholder that SAYS pruned, by whom and when; a fetch()
+# still gets a 404, with the same reason as JSON. A frame no record names stays UNKNOWN - never "pruned".
+_HIST_GONE_HEAD = {"pruned": ("FRAME PRUNED", "PRUNED"), "never-written": ("FRAME NEVER SAVED", "NOT SAVED"),
+                   "unknown": ("FRAME NOT ON THIS PC", "NOT ON PC")}
+
+
+def _hist_gone(rel):
+    """WHY a frame /hist was asked for is not on this PC. -> dict
+    {state: 'pruned' | 'never-written' | 'unknown', code, reel, deletedTs, when, by, say}. 'pruned' only when a
+    deleter's own record names the frame (or its reel, after the frame was filmed, without keeping it)."""
+    rel = str(rel or "").replace("\\", "/").lstrip("/")
+    reel = rel.split("/", 1)[0] if ("/" in rel and rel.startswith("reel_")) else None
+    out = {"state": "unknown", "code": "unknown", "reel": reel, "deletedTs": None, "when": None, "by": None,
+           "say": ""}
+    try:
+        import read_pictures as _rpic
+        g = _rpic.gone_for(rel, HIST_DIR)
+    except Exception as e:
+        out["say"] = "UNKNOWN - the deleters' records could not be asked (%s)" % type(e).__name__
+        return out
+    code = g.get("code") or "unknown"
+    out["code"] = code
+    out["state"] = ("pruned" if code in ("released", "reaped")
+                    else "never-written" if code == "never-written" else "unknown")
+    out["deletedTs"], out["when"], out["by"] = g.get("ts"), g.get("when"), g.get("by")
+    if out["state"] == "pruned":
+        out["say"] = "pruned by %s %s" % (out["by"] or "a deleter",
+                                          ("on " + out["when"]) if out["when"] else "(when: UNKNOWN)")
+    else:
+        out["say"] = str(g.get("words") or "")
+    return out
+
+
+def _hist_wants_image(headers):
+    """Did an <img> (or a CSS background) ask, rather than fetch()? -> bool. Both browsers send
+    Sec-Fetch-Dest: image, and every image request leads its Accept with image/; fetch() sends */*."""
+    if headers is None:
+        return False
+    try:
+        if str(headers.get("Sec-Fetch-Dest") or "").strip().lower() == "image":
+            return True
+        return str(headers.get("Accept") or "").strip().lower().startswith("image/")
+    except Exception:
+        return False
+
+
+def _hist_gone_svg(gone, compact=False):
+    """The placeholder an <img> shows for a missing frame: 16:9, says what it knows. -> bytes
+
+    compact (a thumbnail asked with ?w=480 or less): the scrub strip draws it 46px tall and the history art 66px, where
+    the full card's 18px body shrinks to ~2px. So a thumbnail gets two big lines - the verdict, then the date (or
+    UNKNOWN) - each at least a fifth of the picture's height, and one small line for whoever reads it larger."""
+    from xml.sax.saxutils import escape as _esc
+    state = gone.get("state") if gone.get("state") in _HIST_GONE_HEAD else "unknown"
+    head = _HIST_GONE_HEAD[state][1 if compact else 0]
+    frame = ('<rect width="%d" height="%d" fill="#16121c"/>'
+             '<rect x="%d" y="%d" width="%d" height="%d" rx="%d" fill="none" stroke="#5a4a2e" '
+             'stroke-width="2" stroke-dasharray="8 6"/>')
+    if compact:
+        when = str(gone.get("when") or "")
+        if state == "pruned":
+            big = when.rsplit(" ", 1)[0] if when else "when: UNKNOWN"
+            small = ((when.rsplit(" ", 1)[1] + " - ") if when else "") + str(gone.get("by") or "a deleter").replace(
+                "the recorder's ", "").replace("the ", "")
+        elif state == "never-written":
+            big, small = "disk floor", "the recorder never wrote it"
+        else:
+            big, small = "why: UNKNOWN", "no record names it"
+        svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180" '
+               'id="hist-gone" data-state="%s">'
+               '<style>.h{font:700 50px sans-serif;fill:#d8c9a3}.d{font:700 34px sans-serif;fill:#c8b98f}'
+               '.s{font:20px sans-serif;fill:#b8ad94}</style>' + (frame % (320, 180, 4, 4, 312, 172, 8)) +
+               '<g text-anchor="middle"><text x="160" y="76" class="h">%s</text>'
+               '<text x="160" y="124" class="d">%s</text><text x="160" y="160" class="s">%s</text></g></svg>'
+               ) % (_esc(state), _esc(head), _esc(big), _esc(small))
+        return svg.encode("utf-8")
+    words, lines, cur = str(gone.get("say") or "").split(), [], ""
+    for w in words:
+        if cur and len(cur) + 1 + len(w) > 52:
+            lines.append(cur)
+            cur = w
+        else:
+            cur = (cur + " " + w).strip()
+    if cur:
+        lines.append(cur)
+    body = "".join('<text x="320" y="%d" class="s">%s</text>' % (200 + 26 * i, _esc(l))
+                   for i, l in enumerate(lines[:5]))
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" '
+           'id="hist-gone" data-state="%s">'
+           '<style>.h{font:700 30px sans-serif;fill:#d8c9a3;letter-spacing:2px}'
+           '.s{font:18px sans-serif;fill:#b8ad94}</style>' + (frame % (640, 360, 8, 8, 624, 344, 10)) +
+           '<text x="320" y="150" text-anchor="middle" class="h">%s</text>'
+           '<g text-anchor="middle">%s</g></svg>'
+           ) % (_esc(state), _esc(head), body)
+    return svg.encode("utf-8")
 
 
 def _chron_reels_retired():
@@ -29496,9 +30112,13 @@ def _self_arming_state():
     _WORD = {"OPEN": "PROVEN", "HARDENED": "HARDENED", "LOCKED": "ASSERTED",
              "UNPROVEN": "UNPROVEN", "UNKNOWN": "UNKNOWN", "INERT": "INERT"}
     _OPENISH = ("OPEN", "HARDENED")
+    # REG-3215 - THE COUNT IN THE ACT'S WORDS, FROM THE ONE TALLY. "7 of 9 open" counted the evidence tier while 4 may
+    # act; the heart and the organ row now print self_arming's own sentence, "4 of 9 may act now (7 proven)".
+    _tally = _sa.lock_counts(locks)
     return {
         "ok": bool(rep.get("ok")),
-        "open": sum(1 for l in locks if l.get("state") in _OPENISH), "total": len(locks),
+        "open": _tally["proven"], "total": len(locks),
+        "locksSay": _tally["say"],
         # the count he asked for by name: "the HARDENING stamp badge on it"
         "hardened": sum(1 for l in locks if l.get("state") == "HARDENED"),
         "routesHardened": sum(1 for r in routes if r.get("state") == "HARDENED"),
@@ -29516,7 +30136,8 @@ def _self_arming_state():
         # ⚠⚠ REG-1737 - THE SIXTH FIELD THIS TRIM WOULD HAVE SWALLOWED. report() now carries
         # may()'s own verdict per row; `open` stays the evidence count, `permitted` is how many
         # may act right now, and the heart's reason rides along so a refusal is never a blank.
-        "permitted": sum(1 for l in locks if l.get("permitted")),
+        # REG-3215 - from the same tally as locksSay, so the number and the sentence cannot disagree (None = UNKNOWN)
+        "permitted": _tally["permitted"],
         "heartOk": rep.get("heartOk"), "heartWhy": rep.get("heartWhy", ""),
         # trimmed for a poll: the badge needs state + why + the arithmetic, not the whole row
         "locks": [{"lock": l.get("lock"), "surface": l.get("surface"), "acts": l.get("acts"),
@@ -29527,6 +30148,10 @@ def _self_arming_state():
                    # REG-1737 - may()'s verdict, the padlock's source (state is the evidence tier)
                    "permitted": l.get("permitted"), "permittedWhy": l.get("permittedWhy"),
                    "heldBy": l.get("heldBy"),
+                   # REG-3215 - the two questions, one word each: what every lock surface prints. The seventh field
+                   # this trim would have swallowed; `state` and `permitted` above stay for older readers.
+                   "act": l.get("act"), "actWhy": l.get("actWhy"), "actSay": l.get("actSay"),
+                   "provenSay": l.get("provenSay"),
                    # ⚠ AND WHETHER n=0 IS EVEN ANSWERABLE. self_arming distinguishes a door
                    # nobody has sabotaged yet (provable, waiting on work) from one that has no
                    # refusal path at all and never will be (vault.forget — clearing a rebuildable
@@ -30040,6 +30665,8 @@ def heart_state(force=False):
         "open": locks.get("open"), "total": locks.get("total"),
         # REG-1737 - how many may act now; each lock row carries its own permittedWhy
         "permitted": locks.get("permitted"), "heartWhy": locks.get("heartWhy", ""),
+        # REG-3215 - and that count in words, the act question first: "4 of 9 may act now (7 proven)"
+        "locksSay": locks.get("locksSay"),
         # CF-13 — the scope auditor's rows, joined here as EVIDENCE. It was computed correctly and
         # read by nobody; its only callers repo-wide were its own tests. It fails nothing and is
         # rendered with every reach count visible so the noise reads as noise. [[the-unjoined-end]]
@@ -30828,7 +31455,7 @@ def _retention_drain(stop_why=None, unknown_why=None, plan=None, keep_recent=Non
         _last, _lwhy, _ltorn = None, "the stamp store could not be asked (%s)" % type(e).__name__, None
     try:
         _up = _rr_dr.blocked_upstream(
-            _last, plan, upstream=tuple(_RIVER_OWNER), why_of=_river_stuck_why,
+            _last, plan, upstream=tuple(_RIVER_OWNER), why_of=_river_drain_why,
             keep_recent=(keep_recent if keep_recent is not None else _rr_dr.KEEP_RECENT),
             after_s=RIVER_STUCK_AFTER_S, river_why=_lwhy, river_unparsed=_ltorn)
     except Exception as e:
@@ -32039,6 +32666,8 @@ def _vault_quarantine_reel(rid, why=None):
             "at": int(time.time() * 1000), "runReel": rid,
             "why": ("REG-2271 per-reel grouping deadline: %s"
                     % (str(why)[:200] if why else "the reel's measure phase made no progress in budget"))}
+        # REG-3200 — and the hang is an ATTEMPT on record, so a relaunch does not hand the reel straight back
+        _vault_hang_record(rid, _VAULT_SWEEP_QUARANTINE[rid]["why"], run=_VAULT_JOB.get("startedTs"))
     except Exception:
         pass
 
@@ -34504,7 +35133,7 @@ def vault_sweep_state():
 
 
 def _sweep_hang_check(job, lock, progress, sig_fn, label, quarantine=None, reel_key=None,
-                      grouping_deadline_fn=None):
+                      grouping_deadline_fn=None, on_quarantine=None):
     """RIVER WATCHDOG, ONE logic for every sweep lane — clear a sweep whose guard a HANG left set.
 
     Called on the 10 s rescue tick (the only in-process place that can see job["running"]).
@@ -34583,6 +35212,13 @@ def _sweep_hang_check(job, lock, progress, sig_fn, label, quarantine=None, reel_
             quarantine[rid] = {"at": int(now * 1000), "runReel": st.get("runReel"),
                                "why": "measure-phase HANG - the river watchdog cleared the stuck guard "
                                       "and quarantined this reel so the lane reads the rest"}
+            if on_quarantine is not None:
+                # REG-3200 — the lane records the hang as an attempt (persisted, bounded, backed off)
+                try:
+                    on_quarantine(rid, "no progress for %ds (held %ds) in phase %r"
+                                  % (int(stalled), held, st.get("phase")), started, st)
+                except Exception:
+                    pass
         try:
             _sweep_lock_release()
         except Exception:
@@ -34601,6 +35237,7 @@ def _vault_sweep_hang_check():
     """RIVER WATCHDOG for the VAULT lane (see _sweep_hang_check). Quarantines the one reel it targets
     (runReelDir) in _VAULT_SWEEP_QUARANTINE, which both the autoreel picker AND vault_sweep_start now skip."""
     _vr = _vault_retro()
+    _vault_retry_cap_check()        # REG-3200 — a RETRY of a reel that hung before is also bounded in wall clock
     return _sweep_hang_check(
         _VAULT_JOB, _VAULT_LOCK, _VAULT_SWEEP_PROGRESS,
         # REG-2271 — groupTiles is the per-TILE/per-FRAME grouping-progress count. Without it the sig is
@@ -34614,7 +35251,10 @@ def _vault_sweep_hang_check():
         # REG-2271 — during the GROUPING sub-phase, bound no-progress at the per-reel budget (~20s),
         # not 240s: a frozen (uninterruptible) grouping tile then drains ~12x faster. A PROGRESSING
         # grouping advances groupTiles -> sig changes -> clock resets, so this never false-kills it.
-        grouping_deadline_fn=_vr._reel_deadline_budget)
+        grouping_deadline_fn=_vr._reel_deadline_budget,
+        # REG-3200 — the hang is an attempt on record: persisted, backed off, bounded at _VAULT_HANG_TRIES
+        on_quarantine=lambda rid, why, run, st: _vault_hang_record(rid, why, run=run,
+                                                                   reel_dir=st.get("runReelDir")))
 
 
 def _chron_sweep_hang_check():
@@ -34680,6 +35320,20 @@ def _vault_reader_ver():
         return ""
 
 
+def _vault_same_reader(stamped, current):
+    """REG-3200 - was a lane record stamped `stamped` made by the CURRENT vault reader `current`? -> bool
+
+    The seals' own rule (_vault_still_sealed, his v3554 ruling, REG-2915): a reader that only ADDED questions answers
+    the same as the versions tv_diablo.VAULT_PROMPT_ANSWERS_SAME_AS lists, so what those versions recorded still
+    stands. MEASURED on his Mac 2026-11-05 (his lane store and log, read by the r4 review): reel 21967 was cooling
+    after 6 barren reads under vp3554 until 11-12; the 16:06 bump to vp-reg2915, declared to answer the same as
+    vp3554, ended that cooldown because the cooldown compared versions exactly. So the lane read the reel at 20:28 and
+    the read hung 854 s. The cooldown and the hang book now ask this one rule. An empty `current` is the caller's to
+    handle (REG-2561: a failed lookup is not a new reader). [[copy-drift]]"""
+    s, c = str(stamped or ""), str(current or "")
+    return bool(c) and (s == c or s in _vault_prompt_vers_same_as(c))
+
+
 def _vault_cooling(rid, now_ms=None):
     """-> the cooldown entry when `rid` must not be read yet, else None. A bad entry is "not cooling", never a raise."""
     c = _VAULT_AUTOREAD.get("cooldown")
@@ -34691,7 +35345,8 @@ def _vault_cooling(rid, now_ms=None):
     except (TypeError, ValueError):
         return None
     ver = _vault_reader_ver()
-    if ver and str(e.get("promptVer") or "") != ver:      # REG-2561: a failed lookup is not a new reader
+    # REG-2561: a failed lookup is not a new reader. REG-3200: a reader that answers the same is not one either
+    if ver and not _vault_same_reader(e.get("promptVer"), ver):
         return None
     now = time.time() * 1000 if now_ms is None else now_ms
     return e if now < until else None
@@ -34706,7 +35361,8 @@ def _vault_cool(rid, why="", now_ms=None):
     old = c.get(rid) if isinstance(c.get(rid), dict) else {}
     ver = _vault_reader_ver() or str(old.get("promptVer") or "")   # REG-2561: never stamp an unknown reader
     try:
-        n = int(old.get("barren") or 0) if str(old.get("promptVer") or "") == ver else 0
+        # REG-3200 - a reader that answers the same keeps the count (the seals' rule), so a bump cannot reset it to 6 h
+        n = int(old.get("barren") or 0) if (not ver or _vault_same_reader(old.get("promptVer"), ver)) else 0
     except (TypeError, ValueError):
         n = None   # #188 CI: an unreadable count is UNKNOWN, not zero - it must not reset the backoff to 6 h
     n = 11 if n is None else n + 1   # unknown -> the longest wait (the 7-day cap), never a fresh short one
@@ -34732,6 +35388,272 @@ def _vault_cooling_board(owed, now_ms=None):
     except Exception:
         return out
     return out
+
+
+# == REG-3200 - A REEL THAT HUNG THE MEASURER GETS A BOUNDED RETRY, NOT ONE RETRY PER RELAUNCH ======================
+# MEASURED on his Mac 2026-11-05 (/api/status + /api/river, read only; his console log): the console came up at
+# 20:27:26, the vault lane started its one unsealed owed reel (reel 21967) 77 s later (lastTs 20:28:43), the sweep hung
+# 854 s (the triage stood aside 9 ticks for it) and the watchdog quarantined the reel. It was startable at all only
+# because the 16:06 reader bump had ended its vp3554 cooldown (_vault_same_reader). The quarantine lived only in memory
+# (_VAULT_SWEEP_QUARANTINE, "cleared on relaunch - a transient hang retries"), and his console relaunches on every
+# ship, so the next boot hands a hung reel its read straight back. That loop is in his log: reel 20599 was quarantined
+# 4 times on 2026-10-17, three of them right after a relaunch (v3759, v3760, v3761). Reel 21967 has hung once.
+# Meanwhile the lane said "8 owed, none startable: 1 quarantined after a hang" and never which reel, or when.
+# Now every hang is a persisted attempt: the reel waits _VAULT_HANG_BACKOFF_MS x4 per hang before its next try, a
+# retry is time-bounded (asked to stop at its next banked read past _VAULT_RETRY_HELD_CAP_S, #130 - nothing it paid
+# for is lost), and after _VAULT_HANG_TRIES hangs it waits for a person: amber "needs a look: <shape>, <why>", never
+# red for ever and never retried for ever. A full read takes it off the book (_vault_hang_clear_read). Ways out: a new
+# vault reader that does not answer the same (VAULT_PROMPT_VER, _vault_same_reader) retries it on its own - the one
+# change that can make a hung read go differently, REG-2560's rule - or vault_hang_release gives it one more bounded
+# try (POST /api/vault_sweep {"retryReel": <reel>}). [[unknown-stays-unknown]] [[heart-first]]
+_VAULT_HANG_TRIES = 3
+_VAULT_HANG_BACKOFF_MS = 30 * 60 * 1000
+_VAULT_HANG_BACKOFF_MAX_MS = 24 * 3600 * 1000
+_VAULT_RETRY_HELD_CAP_S = int(os.environ.get("TV_VAULT_RETRY_CAP_S") or 1200)
+
+
+def _vault_reel_shape(rid, reel_dir=None):
+    """REG-3200 - '<MB> MB, <n> frame(s), filmed <when>' for the reel a person is asked to look at. Never raises;
+    what could not be measured says so rather than reading as zero."""
+    rid = os.path.basename(os.path.normpath(str(rid or "")))
+    d = str(reel_dir) if reel_dir else os.path.join(os.environ.get("TV_HIST") or HIST_DIR, rid)
+    parts = []
+    try:
+        n, size = 0, 0
+        for root, _dirs, files in os.walk(d):
+            for f in files:
+                size += os.path.getsize(os.path.join(root, f))
+                if f.lower().endswith((".jpg", ".jpeg", ".png")):
+                    n += 1
+        if not os.path.isdir(d):
+            raise OSError("no reel directory")
+        parts.append("%.0f MB, %d frame(s)" % (size / 1e6, n))
+    except Exception:
+        parts.append("its size could not be read")
+    try:
+        ms = int(rid.split("_")[2])
+        parts.append("filmed %s" % time.strftime("%Y-%m-%d %H:%M", time.localtime(ms / 1000.0)))
+    except Exception:
+        pass
+    return ", ".join(parts)
+
+
+def _vault_hang_record(rid, why="", run=None, reel_dir=None, now_ms=None):
+    """REG-3200 - one more hang for `rid`, persisted. -> the entry, or None. Never raises.
+
+    `run` is the sweep's startedTs: the watchdog, the per-reel deadline and the retry cap can all report one sweep,
+    and one sweep is ONE attempt. A count that will not read is UNKNOWN and is judged as the last try, so it asks for
+    a person rather than restarting the backoff at its shortest wait."""
+    try:
+        rid = os.path.basename(os.path.normpath(str(rid or "")))
+        if not rid:
+            return None
+        h = _VAULT_AUTOREAD.get("hung")
+        if not isinstance(h, dict):
+            h = _VAULT_AUTOREAD["hung"] = {}
+        now = time.time() * 1000 if now_ms is None else now_ms
+        old = h.get(rid) if isinstance(h.get(rid), dict) else {}
+        ver = _vault_reader_ver() or str(old.get("promptVer") or "")
+        # a reader that answers the same as the one that hung keeps the count (the seals' rule): a bump that only
+        # ADDED a question cannot hand a hung reel a fresh set of tries
+        same_reader = (not ver) or _vault_same_reader(old.get("promptVer"), ver)
+        if run is not None and same_reader and old.get("run") == run:
+            return old
+        try:
+            n = int(old.get("n") or 0) if same_reader else 0
+        except (TypeError, ValueError):
+            n = _VAULT_HANG_TRIES - 1
+        n += 1
+        look = n >= _VAULT_HANG_TRIES
+        wait = min(_VAULT_HANG_BACKOFF_MAX_MS, _VAULT_HANG_BACKOFF_MS * (4 ** (n - 1)))
+        e = {"n": n, "of": _VAULT_HANG_TRIES, "at": int(now), "look": look,
+             "until": (None if look else int(now + wait)), "promptVer": ver, "run": run,
+             "why": str(why or "the measure phase made no progress")[:200],
+             "shape": _vault_reel_shape(rid, reel_dir)}
+        h[rid] = e
+        _vault_autoread_save()
+        print("   ! vault: reel %s hung (%d of %d) - %s" % (
+            rid, n, _VAULT_HANG_TRIES,
+            "it waits for a person now" if look else "next try in %d min" % (wait // 60000)), flush=True)
+        return e
+    except Exception:
+        return None
+
+
+def _vault_hang_hold(rid, now_ms=None):
+    """REG-3200 - why `rid` must not be swept now after a hang, or None when it may be. -> dict | None. Never raises.
+
+    kind 'backoff' (its next try is at `until`), 'look' (it hung _VAULT_HANG_TRIES times: a person decides), or
+    'quarantined' (an in-process quarantine with no persisted record - a writer that could not save; it holds as
+    before). A record made by an older vault reader no longer holds: a new reader is tried, as REG-2560's cooldown -
+    unless the current reader answers the same as the one that hung (_vault_same_reader, the seals' rule)."""
+    try:
+        rid = os.path.basename(os.path.normpath(str(rid or "")))
+        _vault_autoread_load()
+        h = _VAULT_AUTOREAD.get("hung")
+        e = h.get(rid) if isinstance(h, dict) else None
+        if isinstance(e, dict):
+            ver = _vault_reader_ver()
+            # REG-2561: a failed lookup is not a new reader, and a reader that answers the same is not one either
+            if ver and not _vault_same_reader(e.get("promptVer"), ver):
+                _VAULT_SWEEP_QUARANTINE.pop(rid, None)
+                return None
+            if e.get("look") is True:
+                return dict(e, kind="look")
+            try:
+                until = float(e.get("until"))
+            except (TypeError, ValueError):
+                return dict(e, kind="look")
+            now = time.time() * 1000 if now_ms is None else now_ms
+            if now < until:
+                return dict(e, kind="backoff")
+            _VAULT_SWEEP_QUARANTINE.pop(rid, None)
+            return None
+        if rid in _VAULT_SWEEP_QUARANTINE:
+            q = _VAULT_SWEEP_QUARANTINE.get(rid) or {}
+            return {"kind": "quarantined", "n": None, "of": _VAULT_HANG_TRIES, "until": None,
+                    "at": q.get("at"), "why": q.get("why")}
+    except Exception:
+        return None
+    return None
+
+
+def _vault_hang_words(hold, now_ms=None):
+    """REG-3200 - one hold in his words. -> str"""
+    hold = hold or {}
+    kind = hold.get("kind")
+    if kind == "look":
+        return ("needs a look: %s, %s - it hung %s of %s tries; a new vault reader retries it, or "
+                "POST /api/vault_sweep {\"retryReel\": \"<reel>\"} gives it one more bounded try"
+                % (hold.get("shape") or "shape unknown", str(hold.get("why") or "no reason was kept")[:120],
+                   hold.get("n"), hold.get("of")))
+    if kind == "backoff":
+        now = time.time() * 1000 if now_ms is None else now_ms
+        try:
+            mins = max(0, int((float(hold.get("until")) - now) // 60000))
+        except (TypeError, ValueError):
+            mins = None
+        return ("hung %s of %s tries - its next try is in %s" % (
+            hold.get("n"), hold.get("of"), ("%d min" % mins) if mins is not None else "an unknown time"))
+    return "quarantined after a hang in this process - when it is tried again is UNKNOWN (no record was kept)"
+
+
+def vault_hang_release(reel, now_ms=None):
+    """REG-3200 - THE WAY OUT for a reel that waits for a person: one more bounded try, never a reset. -> dict
+
+    The count is set one short of the bound, so the next tick tries it under the retry cap, and a further hang asks
+    for a person again - a release can never become a silent retry loop."""
+    rid = os.path.basename(os.path.normpath(str(reel or "")))
+    if not rid.startswith("reel_"):
+        return {"ok": False, "why": "%r is not a reel name" % (reel,)}
+    if _vault_autoread_load() is None:
+        return {"ok": False, "why": "the vault lane's memory could not be read, so nothing was released"}
+    h = _VAULT_AUTOREAD.get("hung")
+    e = h.get(rid) if isinstance(h, dict) else None
+    was_q = rid in _VAULT_SWEEP_QUARANTINE
+    if not isinstance(e, dict) and not was_q:
+        return {"ok": False, "reel": rid, "why": "%s is not held after a hang" % rid}
+    now = int(time.time() * 1000 if now_ms is None else now_ms)
+    _VAULT_SWEEP_QUARANTINE.pop(rid, None)
+    if not isinstance(h, dict):
+        h = _VAULT_AUTOREAD["hung"] = {}
+    h[rid] = dict(e or {}, n=_VAULT_HANG_TRIES - 1, of=_VAULT_HANG_TRIES, look=False, until=now, released=now,
+                  promptVer=(_vault_reader_ver() or str((e or {}).get("promptVer") or "")))
+    _vault_autoread_save()
+    return {"ok": True, "reel": rid,
+            "why": "%s gets one more bounded try on the next tick; another hang asks for a person again" % rid}
+
+
+def _vault_hang_board(owed, now_ms=None):
+    """REG-3200 - every owed reel held after a hang, in words. -> [{reel, kind, n, of, until, why, say}]"""
+    out = []
+    try:
+        for d in owed or []:
+            rid = os.path.basename(str(d))
+            hold = _vault_hang_hold(rid, now_ms)
+            if hold:
+                out.append({"reel": rid, "kind": hold.get("kind"), "n": hold.get("n"), "of": hold.get("of"),
+                            "until": hold.get("until"), "shape": hold.get("shape"),
+                            "why": hold.get("why"), "say": _vault_hang_words(hold, now_ms)})
+    except Exception:
+        return out
+    return out
+
+
+def _vault_retry_cap_check(now=None):
+    """REG-3200 - A RETRY IS TIME-BOUNDED. -> True when it asked the running retry to stop. Never raises.
+
+    A first attempt keeps the no-progress watchdog only (a long reel may legitimately read for a long time). A retry
+    of a reel that hung before gets _VAULT_RETRY_HELD_CAP_S of wall clock, however its progress signature moves; past
+    it the sweep is asked to stop at its next banked read (the #130 stop: what it paid for is kept and resumes), the
+    attempt is counted as a hang, and the reel waits its backoff. A wedged retry that never reaches a banked read is
+    still cleared by the no-progress watchdog, which counts the same run once.
+
+    WHAT COUNTS AS A RETRY (r4 review): a reel whose hang record is still on the book (a full read takes it off,
+    _vault_hang_clear_read) and was made by the reader running now or one that answers the same. A new vault reader
+    tries the reel FRESH - _vault_hang_hold lets it through and _vault_hang_record restarts its count - so its first
+    attempt is a first attempt here too. `runReelDir` is set only for a sweep aimed at ONE reel (vault_sweep_start's
+    reel_dir), so `startedTs` is that reel's start; an untargeted sweep names no reel here and is never capped."""
+    try:
+        now = time.time() if now is None else now
+        with _VAULT_LOCK:
+            st = dict(_VAULT_JOB)
+        if not st.get("running") or st.get("stopAsk"):
+            return False
+        rdir = st.get("runReelDir")
+        rid = os.path.basename(os.path.normpath(str(rdir))) if rdir else None
+        h = _VAULT_AUTOREAD.get("hung")
+        rec = h.get(rid) if (rid and isinstance(h, dict)) else None
+        if not isinstance(rec, dict):
+            return False
+        _ver = _vault_reader_ver()
+        if _ver and not _vault_same_reader(rec.get("promptVer"), _ver):
+            return False            # a new reader's first attempt: the no-progress watchdog only
+        started = st.get("startedTs")
+        held = now - float(started or 0) / 1000.0
+        if not started or held < _VAULT_RETRY_HELD_CAP_S:
+            return False
+        with _VAULT_LOCK:
+            if not (_VAULT_JOB.get("running") and _VAULT_JOB.get("startedTs") == started):
+                return False
+            _VAULT_JOB["stopAsk"] = int(now * 1000)
+        why = ("a retry ran %ds, past its %ds bound - asked to stop at its next banked read"
+               % (int(held), _VAULT_RETRY_HELD_CAP_S))
+        _VAULT_SWEEP_QUARANTINE[rid] = dict(at=int(now * 1000), runReel=rid, why=why)
+        _vault_hang_record(rid, why, run=started, reel_dir=rdir, now_ms=now * 1000)
+        return True
+    except Exception:
+        return False
+
+
+def _vault_hang_clear_read(examined):
+    """REG-3200 - every reel on the hang book that a run has now READ IN FULL leaves it. -> [reel] taken off. Never raises.
+
+    r4 review, reproduced: nothing ever removed a hang record, so a reel that hung once and later read cleanly stayed on
+    the book - every later sweep of it was capped as a "retry", and its old hangs still counted toward "needs a look".
+    `examined` is the returned run's sessionsExamined: a run the #130 stop ended, or the watchdog cleared, never gets
+    here, and vault_retro takes a reel that blew its per-reel deadline back OUT of that list (REG-2271), so only a reel
+    examined to the end is taken off."""
+    try:
+        h = _VAULT_AUTOREAD.get("hung")
+        if not isinstance(h, dict) or not h:
+            return []
+        gone = []
+        for x in (examined or []):
+            x = str(x)
+            for rid in (x, "reel_" + x):
+                if rid in h:
+                    h.pop(rid, None)
+                    _VAULT_SWEEP_QUARANTINE.pop(rid, None)
+                    gone.append(rid)
+        if gone:
+            _vault_autoread_save()
+            print("   vault: read in full after hanging before, off the hang book: %s" % ", ".join(gone[:4]), flush=True)
+        return gone
+    except Exception:
+        return []
+
+
 _VAULT_AUTOREAD = {"tries": {}, "skipped": {}, "reads": 0, "lastTs": 0, "retired": {},
                    # v2302 — the LAST reason an attempt on this reel gave. Retirement used
                    # to assert a cause it had never measured; now it can quote one.
@@ -34749,7 +35671,10 @@ _VAULT_AUTOREAD = {"tries": {}, "skipped": {}, "reads": 0, "lastTs": 0, "retired
                    # #188 REG-2560 — a reel the prune holds as panels-never-banked whose read came back
                    # barren: { rid: {"until": ms, "at": ms, "barren": n, "promptVer": str} }. Not read
                    # again before `until` unless the vault reader changes. See _vault_cool.
-                   "cooldown": {}}
+                   "cooldown": {},
+                   # REG-3200 — a reel that HUNG the measurer: { rid: {n, of, at, until, look, promptVer, run, why,
+                   # shape} }. Persisted, so a relaunch no longer hands a hung reel its read straight back.
+                   "hung": {}}
 
 #: ⚠⚠⚠ v2901 (#60) — WHAT THE LANE LEARNS MUST SURVIVE THE PROCESS. MEASURED 2026-09-10: the dict
 #: above had **14 write sites and ZERO persistence sites** — no save, no load, no json anywhere.
@@ -35092,6 +36017,9 @@ def _vault_autoread_load():
         # entry inside it reads as "not cooling" in _vault_cooling, never as an exception.
         if isinstance(d.get("cooldown"), dict):
             _VAULT_AUTOREAD["cooldown"] = dict(d["cooldown"])
+        # REG-3200 — a restart must not hand a reel that hung its read straight back (reel 20599 hung after 3 boots)
+        if isinstance(d.get("hung"), dict):
+            _VAULT_AUTOREAD["hung"] = dict(d["hung"])
         if isinstance(d.get("latticeTried"), dict):
             _VAULT_AUTOREAD["latticeTried"] = dict(d["latticeTried"])
         if isinstance(d.get("joinQueued"), dict):
@@ -35186,6 +36114,9 @@ def _vault_autoread_save():
                # #188 REG-2560 — lost here, every relaunch would re-read each cooling reel at once
                "cooldown": (_VAULT_AUTOREAD.get("cooldown")
                             if isinstance(_VAULT_AUTOREAD.get("cooldown"), dict) else {}),
+               # REG-3200 — lost here, every relaunch would re-run the reel that hung the measurer
+               "hung": (_VAULT_AUTOREAD.get("hung")
+                        if isinstance(_VAULT_AUTOREAD.get("hung"), dict) else {}),
                # ⚠ REG-1651 — v3283 saved "on every cursor change" and this payload never carried
                # the cursor, so every save it added wrote everything EXCEPT the thing it was for, and
                # each relaunch restarted the rotation at the head of the owed list.
@@ -37005,6 +37936,8 @@ def _vault_autoread_state():
                 "triageRuledEmpty": _TRIAGE_RULED_EMPTY.get("vault"),            # REG-1751
                 # #188 REG-2560 - every owed reel that is cooling, with its until-time and why, in words
                 "cooling": _vault_cooling_board(owed),
+                # REG-3200 - every owed reel held after hanging the measurer: its try count, next try, or "needs a look"
+                "hung": _vault_hang_board(owed),
                 "retired": sorted(d.get("retired") or {}),
                 "skipped": {k: str(v)[:90] for k, v in list((d.get("skipped") or {}).items())[:6]},
                 "tries": {k: v for k, v in list((d.get("tries") or {}).items())[:6]}}
@@ -37149,7 +38082,93 @@ def _examined_seals_backfill():
 
 #: v3861 - the words for each reason an owed reel was passed this tick (the fleet line reads them).
 _VAULT_PASS_WORDS = {"retired": "retired after their tries", "cooling": "cooling down after an empty read",
-                     "quarantined": "quarantined after a hang", "growing": "still recording"}
+                     "quarantined": "quarantined after a hang", "growing": "still recording",
+                     # REG-3200 (his Mac 2026-11-05: "8 owed, none startable: 1 quarantined after a hang" - the other
+                     # 7 were passed in silence). A reel the CURRENT reader sealed and whose one solo pass is spent
+                     # waits on a new vault reader (_vault_still_sealed reopens a rows==0 seal only then).
+                     "sealed": "already read by the current vault reader with nothing taken - they wait on a new "
+                               "vault reader",
+                     "look": "need a look after hanging the measurer"}
+
+
+def _vault_seal_spent(rid, seals=None):
+    """REG-3200 - is `rid` sealed by the CURRENT vault reader with nothing left for this lane to start? -> bool | None
+
+    The tick's own sealed branch, asked without starting anything: the door's seal check (vault_sweep_start), the one
+    solo pass a rows==0 seal is owed (_unextracted_seal_needs_one_pass) and the queued join re-read (_join_queue_read).
+    None = the seal store could not be read (UNKNOWN, never 'not sealed')."""
+    try:
+        sw = _vault_swept_load() if seals is None else seals
+    except Exception:
+        return None
+    if not isinstance(sw, dict):
+        return None
+    rec = sw.get(rid)
+    if rec is None:
+        rec = sw.get(str(rid).replace("reel_", "", 1))
+    if rec is None or not _vault_still_sealed(rec):
+        return False
+    prompt = str((rec or {}).get("promptVer") or "?")
+    if rid in (_VAULT_AUTOREAD.get("joinQueued") or {}):
+        prior = str((_VAULT_AUTOREAD.get("reextract") or {}).get(rid) or "")
+        return bool(prior and prompt and prior == prompt)
+    refusal = {"alreadySealed": True, "rows": int((rec or {}).get("rows") or 0),
+               "examinedEmpty": (rec or {}).get("examinedEmpty"), "sealedBy": prompt}
+    return not _unextracted_seal_needs_one_pass(refusal, (_VAULT_AUTOREAD.get("reextract") or {}).get(rid))
+
+
+def _vault_pass_reason(rid, d, seals=None):
+    """REG-3200 - THE ONE PICKER RULE: why the vault tick would pass `rid` over, or None when it would act on it.
+    -> 'retired' | 'cooling' | 'quarantined' | 'look' | 'growing' | 'sealed' | None. The tick and the lane's health
+    ask the same rule, so the eagle cannot call a lane STOPPED that is waiting on named things. [[copy-drift]]"""
+    if rid in (_VAULT_AUTOREAD.get("retired") or {}):
+        return "retired"
+    if _vault_cooling(rid):
+        return "cooling"
+    _hold = _vault_hang_hold(rid)
+    if _hold is not None:
+        return "look" if _hold.get("kind") == "look" else "quarantined"
+    if _reel_is_growing(str(d)):
+        return "growing"
+    if _vault_seal_spent(rid, seals) is True:
+        return "sealed"
+    return None
+
+
+def _vault_lane_reasons(owed=None, now_ms=None):
+    """REG-3200 - what the vault lane owes, how much of it it can START now, and why not the rest. -> dict, never raises
+
+    {owed, actionable, by: {reason: n}, holds: [hang board], why}. owed/actionable None = UNKNOWN (nobody could
+    count), which lane_health keeps as it was. Starts nothing and spends nothing."""
+    try:
+        if owed is None:
+            _vault_autoread_load()
+            owed = _vault_owed_reels()
+        if owed is None:
+            return {"owed": None, "actionable": None, "by": {}, "holds": [],
+                    "why": "the retention plan could not be read, so what the vault lane owes is UNKNOWN"}
+        try:
+            seals = _vault_swept_load()
+        except Exception:
+            seals = None
+        by, act = {}, 0
+        for d in owed:
+            rid = os.path.basename(str(d))
+            why = _vault_pass_reason(rid, d, seals)
+            if why is None:
+                act += 1
+            else:
+                by[why] = by.get(why, 0) + 1
+        holds = _vault_hang_board(owed, now_ms)
+        parts = ["%d %s" % (n, _VAULT_PASS_WORDS.get(k, k)) for k, n in sorted(by.items(), key=lambda kv: -kv[1])]
+        hs = "; ".join("%s %s" % (h["reel"], h["say"]) for h in holds[:2])
+        return {"owed": len(owed), "actionable": act, "by": by, "holds": holds,
+                "why": ("%d of %d owed can be started now%s%s" % (
+                    act, len(owed), (": the rest " + ", ".join(parts)) if parts else "",
+                    (" - " + hs) if hs else ""))}
+    except Exception as e:
+        return {"owed": None, "actionable": None, "by": {}, "holds": [],
+                "why": "the vault lane's reasons could not be read (%s)" % type(e).__name__}
 
 
 def vault_autoreel_tick():
@@ -37236,7 +38255,9 @@ def vault_autoreel_tick():
     if _cur in _ids and len(_ids) > 1:
         _k = _ids.index(_cur) + 1
         owed_list = list(owed_list[_k:]) + list(owed_list[:_k])
-    _passed = {"retired": 0, "cooling": 0, "quarantined": 0, "growing": 0}   # v3861 - why each owed reel was passed
+    _passed = {"retired": 0, "cooling": 0, "quarantined": 0, "growing": 0,   # v3861 - why each owed reel was passed
+               "look": 0, "sealed": 0}                                         # REG-3200 - and the two it never named
+    _hang_seen = []                                                            # REG-3200 - (reel, hold), for the sentence
     for d in owed_list:
         rid = os.path.basename(str(d))
         # ⚠ the cursor moves on EVERY reel this tick considers, not only on a successful sweep.
@@ -37261,10 +38282,14 @@ def vault_autoreel_tick():
         if _vault_cooling(rid):          # #188 REG-2560 - a barren held reel waits out its cooldown
             _passed["cooling"] += 1
             continue
-        if rid in _VAULT_SWEEP_QUARANTINE:
-            # river watchdog quarantined this reel after it HUNG the measurer; skip it so the lane reads
-            # the rest instead of re-hanging on the same reel (cleared on relaunch — a transient hang retries)
-            _passed["quarantined"] += 1
+        _hang = _vault_hang_hold(rid)
+        if _hang is not None:
+            # river watchdog quarantined this reel after it HUNG the measurer; skip it so the lane reads the rest
+            # instead of re-hanging on the same reel. REG-3200: the hold is PERSISTED and bounded - it is tried
+            # again when its backoff ends (a relaunch no longer hands it straight back), and after
+            # _VAULT_HANG_TRIES hangs it waits for a person ('look'), never red for ever, never retried for ever.
+            _passed["look" if _hang.get("kind") == "look" else "quarantined"] += 1
+            _hang_seen.append((rid, _hang))
             continue
         if _reel_is_growing(str(d)):
             _VAULT_AUTOREAD["skipped"][rid] = "still growing — not final yet"
@@ -37385,6 +38410,7 @@ def vault_autoreel_tick():
                     _jq = _join_queue_read(rid, r, d, owed)
                     if _jq is not None:
                         return _jq
+                    _passed["sealed"] += 1         # REG-3200 - its one re-read is spent: say so, never in silence
                     continue
                 # A seal that took no rows did not extract. One solo pass, then the
                 # reader is recorded so the same prompt cannot buy the reel again.
@@ -37410,6 +38436,10 @@ def vault_autoreel_tick():
                         _VAULT_AUTOREAD["skipped"][rid] = why2[:120]
                         return {"ok": False, "reel": rid, "tries": tries, "owed": owed,
                                 "why": why2}
+                # REG-3200 - sealed by the CURRENT reader and its one solo pass spent: the lane passes it, and SAYS so.
+                # Measured on his Mac: 7 of the 8 owed reels left the tick here while the sentence named only the 1
+                # quarantined, so "8 owed, none startable" hid what the other 7 wait on (a new vault reader).
+                _passed["sealed"] += 1
                 continue
             # REG-1765 — a missing lane or a machine lock is not this reel. The flag is
             # the door's. A phrase in the sentence is not, because that once deferred a
@@ -37437,8 +38467,13 @@ def vault_autoreel_tick():
     # REASON. "none startable" was true and told nobody whether to wait (cooling, still recording) or act (retired after
     # its tries, quarantined after a hang). `passed` carries the counts; the sentence names them, largest first.
     _parts = [("%d %s" % (n, _VAULT_PASS_WORDS[k])) for k, n in sorted(_passed.items(), key=lambda kv: -kv[1]) if n]
+    # REG-3200 - a hold after a hang names its reel and when it is tried again (or that it waits for a person)
+    _hs = "; ".join("%s %s" % (_r, _vault_hang_words(_h)) for _r, _h in _hang_seen[:2])
     return {"ok": False, "read": None, "owed": owed, "passed": dict(_passed),
-            "why": "%d owed, none startable this tick%s" % (owed, (": " + ", ".join(_parts)) if _parts else "")}
+            "holds": [{"reel": _r, "kind": _h.get("kind"), "n": _h.get("n"), "until": _h.get("until")}
+                      for _r, _h in _hang_seen],
+            "why": "%d owed, none startable this tick%s%s" % (owed, (": " + ", ".join(_parts)) if _parts else "",
+                                                              (" - " + _hs) if _hs else "")}
 
 
 
@@ -39069,6 +40104,14 @@ def vault_sweep_start(hist_dir=None, limit=None, force=False, reel_dir=None):
     # every caller passes through; `force` is the deliberate override. [[the-unjoined-end]] [[sweep-dont-ask]]
     if reel_dir and not force:
         _qrid = os.path.basename(os.path.normpath(str(reel_dir)))
+        # REG-3200 - the PERSISTED hang record decides first: inside its backoff, or waiting for a person, the door
+        # refuses on every caller (a relaunch no longer clears it); past its backoff the record lets it through
+        # (and drops the in-process entry), so a hung reel is retried a bounded number of times, never for ever.
+        _qhold = _vault_hang_hold(_qrid)
+        if _qhold is not None and _qhold.get("kind") in ("backoff", "look"):
+            return {"ok": False, "quarantined": True, "reel": _qrid, "since": _qhold.get("at"),
+                    "hangHold": _qhold.get("kind"), "until": _qhold.get("until"),
+                    "why": "%s %s" % (_qrid, _vault_hang_words(_qhold))}
         if _qrid in _VAULT_SWEEP_QUARANTINE:
             _q = _VAULT_SWEEP_QUARANTINE.get(_qrid) or {}
             return {"ok": False, "quarantined": True, "reel": _qrid, "since": _q.get("at"),
@@ -39899,6 +40942,9 @@ def _vault_sweep_run(hist_dir, limit, force=False, reel_dir=None):
         except Exception as _cce:
             print("   ⚠ vault: could not clear a completed reel's resume record (%s)"
                   % str(_cce)[:80], flush=True)
+        # REG-3200 — a reel that hung before and that this run READ IN FULL leaves the hang book, so its next sweep is a
+        # first attempt again (never capped as a retry, its old hangs no longer counted toward "needs a look")
+        _vault_hang_clear_read(prop.get("sessionsExamined"))
         # ⚠⚠ v3078 — A FAILED CALL IS NOT A PROPERTY OF THE FILM, AND IT MUST SAY SO OUT LOUD.
         # `sweep()` only ever sees None from `_classify` and writes "could not be classified —
         # held rather than guessed onto a shelf", which reads as a verdict about the footage. When
@@ -46090,7 +47136,7 @@ def status_payload():
         # 2026-09-29 — front / background / headless / window-only: the window is a view of the service
         "window": _t("window", window_mode_payload),
         # #71 — can this console still answer its own port (the fault it cannot report over that port)
-        "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "proofRelease": dict(_PROOF_RELEASE), "repairBook": dict(_REPAIR_BOOK), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
+        "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "proofRelease": dict(_PROOF_RELEASE), "ciWatch": dict(_CI_WATCH), "riverWarm": dict(_RIVER_WARM), "riverLocks": dict(_RIVER_LOCKS_SEEN), "repairBook": dict(_REPAIR_BOOK), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
         # #83 — the child supervisor's receipts (door / watchdog / RAM); the census itself is the doctor's row
         "childGuard": _child_guard_status(),
         "ver": "v3865",
@@ -47228,25 +48274,10 @@ def _river_locks_doctor_row(ask=None):
     reports that answer. It does not open a lock and it does not start a proof. An ask
     that does not come back is UNMEASURED, never a pass.
     """
-    if ask is None:
-        try:
-            import self_arming as _sa
-            ask = _sa.may
-        except Exception as _e:
-            return _river_locks_unmeasured(
-                "the lock could not be imported (%s)" % type(_e).__name__)
-    shut = []
-    try:
-        for lock in _RIVER_LOCKS_ASKED:
-            got = ask(lock)
-            if not (isinstance(got, tuple) and len(got) == 2 and isinstance(got[0], bool)):
-                return _river_locks_unmeasured("may(%s) did not answer" % lock)
-            one_ok, why = got
-            if not one_ok:
-                shut.append((lock, _river_lock_why(why)))
-    except Exception as _e:
-        return _river_locks_unmeasured(
-            "the lock could not be asked (%s)" % type(_e).__name__)
+    # REG-3197 - one reading for this row and the Fleet's lock line (_river_locks_read): two copies would disagree
+    shut, _unmeasured = _river_locks_read(ask)
+    if shut is None:
+        return _river_locks_unmeasured(_unmeasured)
     if shut:
         said = "; ".join("%s (%s)" % (lock, why) for lock, why in shut)
         return _chk(
@@ -49258,7 +50289,25 @@ class Handler(BaseHTTPRequestHandler):
         if not target.startswith(os.path.realpath(HIST_DIR) + os.sep) or not target.endswith(".jpg"):
             self._json(403, {"ok": False}); return
         if not os.path.isfile(target):
-            self._json(404, {"ok": False}); return
+            # REG-3207 - say WHY it is gone: an <img> gets a placeholder that says pruned (and
+            # when) or UNKNOWN, never a broken image; a fetch() keeps its 404, with the reason.
+            # `gone=404`: a caller whose own fallback says more than a placeholder would (the reads drill shows the
+            # read's raw text under the frame) keeps the 404, so its onerror still reveals that text.
+            _gone = _hist_gone(os.path.relpath(target, os.path.realpath(HIST_DIR)))
+            if _hist_wants_image(getattr(self, "headers", None)) and (qs.get("gone") or [""])[0] != "404":
+                _gw = (qs.get("w") or [""])[0]
+                _svg = _hist_gone_svg(_gone, compact=(_gw.isdigit() and 0 < int(_gw) <= 480))
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
+                self.send_header("Content-Length", str(len(_svg)))
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("X-Hist-Gone", _gone["state"])
+                self.end_headers()
+                self.wfile.write(_svg)
+                return
+            self._json(404, {"ok": False, "gone": _gone["state"], "code": _gone["code"], "say": _gone["say"],
+                             "by": _gone["by"], "deletedTs": _gone["deletedTs"], "reel": _gone["reel"]})
+            return
         want_w = (qs.get("w") or [""])[0]
         # REG-3038 - every PC: the Windows console served the Shelf scrub and the theatre every frame at full size
         if want_w in ("1280", "160"):   # v802 — 160 = scrub thumbnails
@@ -49762,6 +50811,15 @@ class Handler(BaseHTTPRequestHandler):
                     _moving = _pread.get("moving") if isinstance(_pread, dict) else None
                     _as_of = _pread.get("asOf") if isinstance(_pread, dict) else None
                     _lr = _RL.lanes_last(hide=_hide)
+                    # REG-3198 (the reviewer on r3) - A WALK THAT FAILED IS A REFUSAL, NOT "computing". The failure wrote
+                    # nothing, so this answered "computing" for ever and every asker (the river lane every 5 s) started
+                    # another walk. It travels as the refusal below, with the walk's own reason, and _river_remember
+                    # keeps it for the beacon (failWhy, REG-3196).
+                    _lf = _RL.last_failure(hide=_hide) if _lr is None else None
+                    if _lr is None and _lf is not None:
+                        _lr = {"ok": False,
+                               "why": "the river walk failed %.0f s ago (%s) - it is tried again in %.0f s"
+                                      % (_lf["ageS"], _lf["why"], _lf["retryInS"])}
                     if _lr is None:
                         self._json(200, {"ok": False, "computing": True, "hiddenWhy": _hide_why,
                                          "moving": _moving, "asOf": _as_of,
@@ -51153,6 +52211,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/vault_sweep":
             # v1578 — POST starts it, deliberately (this is the call that spends reads).
             # Needs NO live agent: retro reads sealed film.
+            if body.get("retryReel"):
+                # REG-3200 — the way out for a reel that waits for a person after hanging the measurer: one more
+                # bounded try on the next tick (no sweep starts from this call, so nothing is spent here)
+                self._json(200, vault_hang_release(body.get("retryReel")))
+                return
             try:
                 _vlim = int(body.get("limit") or 0) or None
             except (TypeError, ValueError):

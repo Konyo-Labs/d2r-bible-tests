@@ -4225,12 +4225,17 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
     })();
     // ...and they LOOK dead: every control a click cannot reach is dimmed in place (opacity only, so the layout
     // and the text stay one-to-one with their console).
+    // REG-3205 (his words 2026-11-05: "everything is showing me a mouse cancel sign") - THE DIMMING SAYS DEAD; THE CURSOR
+    // DOES NOT SHOUT IT OVER EVERY CONTROL. This rule also put `cursor:not-allowed !important` on every button, input,
+    // select, textarea, label and vault chip of a shadow board that is not a tab or a VIEW handler - nearly every control
+    // on their screen, and the only not-allowed in this file that beats the `*{cursor:var(--kcur) !important}` hand
+    // (the four authored `[disabled]` ones lose to it). A dead control now rests on the same gauntlet as the page.
     try {
       var live = VIEW.map(function (n) { return ':not([onclick*="' + n + '("])'; }).join('');
       var css = document.createElement('style');
       css.id = 'tvd-shadow-dead';
       css.textContent = 'html.tvd-shadow-snap :is(button, input, select, textarea, label, [contenteditable], .vault-chip)'
-        + ':not(.tab)' + live + '{opacity:.38 !important;cursor:not-allowed !important;filter:grayscale(.6)}';
+        + ':not(.tab)' + live + '{opacity:.38 !important;filter:grayscale(.6)}';
       (document.head || document.documentElement).appendChild(css);
     } catch (e) {}
     /* v3857 item 18 (#230, Elad 10:39 on v3855) - A SHADOW'S WITNESS FRAME IS THE OWNER'S. The viewer's chain addressed
@@ -7137,6 +7142,12 @@ body.app-ctx .profile-pill{z-index:70}
 /* v935.6 — engine pane inside the console shell: console header owns the tab rail.
    Hide the board's duplicate sticky tabs + CONSOLE pill (host shell has ⌂ CONSOLE · esc). */
 body.app-ctx.engine-driven .tabs{display:none !important}
+/* REG-3202 - THE CONSOLE'S FULL BIBLE DOOR. The console stamps bible-full on this body only while its "full bible" door
+   opened the pane (control_ui openFullBible -> _fullBibleRail); every other route clears it. Then the pane is the whole
+   bible: this page's own rail is back, with every room on it, not only the console's five. */
+body.app-ctx.engine-driven.bible-full .tabs{display:flex !important;flex-wrap:wrap}
+body.app-ctx.bible-full .tabs .tab{display:inline-flex}
+body.app-ctx.bible-full .tabs-data{display:flex}
 body.app-ctx.engine-driven #tvf-console-return,
 body.app-ctx.engine-driven .tvf-console-pill{display:none !important}
 body.app-ctx.engine-driven .header{padding:2px 10px 0}
@@ -38112,7 +38123,7 @@ const UBER_BOSSES = [
     abil:['Whirlwinds across the platform','Fast, hard-hitting melee with knockback'],
     drop:'Colossal Ancient Jewels', jewels:["Defender's Fire","Defender's Bile"],
     strat:'Kill him LAST to claim Defender\'s Fire (fire) or Defender\'s Bile (poison). Re-roll the encounter (leave + remake) if all three share an immunity your build can\'t break.' },
-  { id:'korlic', name:'Korlic', emoji:'🪓', art:'korlic-opt_graphic.png',
+  { id:'korlic', name:'Korlic', emoji:'🪓', art:'Korlic.gif',   // REG-3206 - the picture D2IO_ART already draws; the -opt_graphic.png name was never in art/
     group:'Colossal Ancient · RotW pinnacle', role:'polearm · Leap Attack',
     loc:'Colossal Summit · cube 5 Colossal Statues → Act 5 red portal',
     type:'Buffed Ancient Barbarian — polearm',
@@ -38121,7 +38132,7 @@ const UBER_BOSSES = [
     abil:['Leap Attack closes distance and stuns','Long-reach polearm strikes'],
     drop:'Colossal Ancient Jewels', jewels:["Protector's Frost","Protector's Stone"],
     strat:'Kill LAST for Protector\'s Frost (cold) or Protector\'s Stone (physical). His leap can pin you to a corner — always keep an escape lane open.' },
-  { id:'madawc', name:'Madawc', emoji:'🌩️', art:'madawc-opt_graphic.png',
+  { id:'madawc', name:'Madawc', emoji:'🌩️', art:'Madawc.gif',   // REG-3206 - the picture D2IO_ART already draws; the -opt_graphic.png name was never in art/
     group:'Colossal Ancient · RotW pinnacle', role:'throwing axes · caster',
     loc:'Colossal Summit · cube 5 Colossal Statues → Act 5 red portal',
     type:'Buffed Ancient Barbarian — dual throwing axes',

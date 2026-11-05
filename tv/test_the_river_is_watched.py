@@ -83,14 +83,18 @@ class _Router(object):
         return self.payload
 
 
-def _verdict(payload):
+def _verdict(payload, delivery=None):
+    """REG-3201 - the per-reel delivery (control_app's lane stores) is a seam too: a fixture's reels are asked of the
+    fixture, never of his live lanes. None = UNKNOWN, which keeps the station-level reading."""
     import reel_router as RR
     fn = dict(D.CHECKS)["the river"]
     real, RR.route = RR.route, _Router(payload)
+    real_dl, D._river_delivery = D._river_delivery, (delivery or (lambda st, reels: None))
     try:
         return fn()
     finally:
         RR.route = real
+        D._river_delivery = real_dl
 
 
 def _reels(*specs):

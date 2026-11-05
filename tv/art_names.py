@@ -1,0 +1,258 @@
+"""Every picture the console and its board can ask /art/ for, read from the code that asks. -> names
+
+REG-3206 (2026-11-05, GrokBot v3864): the guest console logged ~103 distinct /art/* 404s and 581
+failed requests. Nothing in the repo could answer "which art names can this console request, and
+are they all in this art tree?", so a missing picture was only ever found by someone looking at the
+glass. That guest's art/ held 21 files (GrokBot's own scratch stage, not this repo's mirror): run
+`python3 tv/art_names.py --art <its art dir>` there: it counts every name that dir lacks and lists the first 40.
+
+WHERE THE NAMES COME FROM. Two pages ask /art/ for pictures: tv/control_ui.html (absolute
+`/art/<file>`) and the board, bible.html, which the console iframes from /board, so its relative
+`art/<file>` resolves to /art/ too. Most names are written out whole; the rest are COMPOSED in
+code (`'art/' + b.art`, `'art/tz_' + slug + '.jpg'`, ...). Each composer is a DOOR, and each door
+is read here from the table that feeds it. A composer this module does not know is reported as an
+unknown door rather than skipped, so a new one cannot quietly fall outside the check.
+
+The HD manifest (art/HD_ART_MANIFEST.json) is folded into the board's art table at runtime, so its
+items are names the console can ask for as well.
+
+Read-only: it opens the two pages and the manifest, and lists art/.
+"""
+import bisect
+import io
+import json
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.dirname(HERE)
+
+_EXT = r"(?:png|gif|jpe?g|webp|svg)"
+_FILE = r"[A-Za-z0-9_\-]+\." + _EXT
+# `art/<file>` or `/art/<file>`, never `frames/art/...` or `hd_art/...`
+_LITERAL = re.compile(r"(?<![A-Za-z0-9_\-./])/?art/(" + _FILE + r")(?![A-Za-z0-9_\-])")
+# a composer: a string that ENDS in art/ (or art/<prefix>) and is followed by `+`, or TZ_ART_BASE +
+_COMPOSER = re.compile(r"(?<![A-Za-z0-9_\-./])/?art/[A-Za-z0-9_\-]*['\"`]\s*\+|\bTZ_ART_BASE\s*\+")
+
+# Every composer this module knows, by the text that follows it -> the feed that expands it.
+# (page, signature regex matched at the composer, feed)
+DOORS = (
+    ("bible.html", r"art/'\+file\+'\" alt=\"'\+alt", "art-props"),            # _essArt, _wsArt
+    ("bible.html", r"TZ_ART_BASE\+slug\+'_graphic\.png'", "tz-zone-art"),     # _tzArtSrc
+    ("bible.html", r"art/'\+SLOT\[s\]\+'_graphic\.png'", "craft-slots"),      # _wireCraftArt
+    ("bible.html", r"art/' \+ file \+ '\" alt=\"\" loading", "branch-emblems"),
+    ("bible.html", r"art/'\+BM\[k\]", "base-map"),                            # rare/magic base art
+    ("bible.html", r"art/gem_' \+ g\.name", "gems"),
+    ("bible.html", r"art/' \+ b\.art", "art-props"),                          # UBER_BOSSES
+    ("bible.html", r"art/tz_'\+art\+'\.jpg", "tz-info"),
+    ("bible.html", r"art/'\+f\+'\" alt=\"\" loading", "tab-icons"),
+    ("bible.html", r"art/' \+ pic\)", "boss-portraits"),
+    ("bible.html", r"TZ_ART_BASE \+ 'tz_' \+ slug", "tz-info"),
+    ("tv/control_ui.html", r"/art/tz_' \+ file \+ '\.jpg", "console-tz-info"),
+)
+
+
+def _read(path):
+    with io.open(path, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def in_comment(src, pos):
+    """Is the text at `pos` inside a comment? A local judgment, region-aware. -> bool
+
+    Inside a <script> or <style> block: a `//` earlier on the line, or an unclosed `/*` since the
+    block began. In markup: an unclosed `<!--`. Markup is never searched for `/*` because the page
+    carries `accept="image/*"` attributes, which read as an opening comment to a naive scan."""
+    marks = _marks(src)
+
+    def last(tok, lo=0):
+        ps = marks[tok]
+        k = bisect.bisect_left(ps, pos) - 1
+        return ps[k] if k >= 0 and ps[k] >= lo else -1
+
+    lo, lc, so, sc = last("<script"), last("</script>"), last("<style"), last("</style>")
+    start = None
+    if lo > lc:
+        start = src.find(">", lo) + 1
+    elif so > sc:
+        start = src.find(">", so) + 1
+    if start is None or start > pos:
+        return last("<!--") > last("-->")
+    nl = src.rfind("\n", start, pos)
+    if re.search(r"(?:^|[\s;{}(),])//", src[(nl + 1) if nl >= 0 else start:pos]):
+        return True
+    return last("/*", start) > last("*/", start)
+
+
+_MARKS = {}
+
+
+def _marks(src):
+    """Sorted positions of each comment/region token in src, found once per page. -> dict"""
+    key = (len(src), hash(src))
+    got = _MARKS.get(key)
+    if got is None:
+        got = {}
+        for tok in ("<script", "</script>", "<style", "</style>", "<!--", "-->", "/*", "*/"):
+            got[tok] = [m.start() for m in re.finditer(re.escape(tok), src)]
+        _MARKS.clear()
+        _MARKS[key] = got
+    return got
+
+
+def _object_values(src, anchor, quote="'"):
+    """String values of the object literal that starts at `anchor` (the one occurrence). -> list"""
+    i = src.find(anchor)
+    if i < 0:
+        return []
+    j = src.find("};", i)
+    body = src[i + len(anchor):j if j > 0 else len(src)]
+    return re.findall(r":\s*" + quote + r"([^" + quote + r"]+)" + quote, body)
+
+
+def _tz_keys(src):
+    """The art key (third column) of every zone in the page's TZ_INFO table. -> set"""
+    m = re.search(r"\bvar TZ_INFO = (\{.*?\});|\bconst TZ_INFO = (\{.*?\});", src)
+    if not m:
+        return set()
+    try:
+        table = json.loads(m.group(1) or m.group(2))
+    except ValueError:
+        return set()
+    return set(v[2] for v in table.values() if isinstance(v, list) and len(v) > 2 and v[2])
+
+
+def _gem_files(src):
+    m = re.search(r"const GEM_TYPES = (\[.*?\]);\n", src)
+    if not m:
+        return []
+    try:
+        types = json.loads(m.group(1))
+    except ValueError:
+        return []
+    out = []
+    for t in types:
+        for q in t.get("q") or []:
+            slug = re.sub(r"[^a-z0-9]+", "_", str(q.get("name") or "").lower()).strip("_")
+            if slug:
+                out.append("gem_" + slug + ".png")
+    return out
+
+
+def _feeds(board, console, manifest):
+    """feed name -> list of art file names (no `art/` prefix)."""
+    f = {}
+    f["console-literal"] = _LITERAL.findall(console)
+    f["board-literal"] = _LITERAL.findall(board)
+    f["manifest"] = [v[len("art/"):] for v in (manifest.get("items") or {}).values()
+                     if isinstance(v, str) and v.startswith("art/")]
+    f["art-props"] = re.findall(r"\bart:\s*'(" + _FILE + r")'", board)
+    f["tz-zone-art"] = [v + "_graphic.png" for v in _object_values(board, "const TZ_ZONE_ART = {", '"')
+                        if not v.startswith(("data:", "http", "/", "banners/"))]
+    f["craft-slots"] = [v + "_graphic.png" for v in _object_values(board, "var SLOT = {")]
+    f["branch-emblems"] = re.findall(r"branchEmblem\('(" + _FILE + r")'", board)
+    bm = re.search(r"var BM=\{(.*?)\};", board)
+    f["base-map"] = re.findall(r":'(" + _FILE + r")'", bm.group(1)) if bm else []
+    f["gems"] = _gem_files(board)
+    f["tz-info"] = ["tz_%s.jpg" % k for k in sorted(_tz_keys(board))]
+    f["tab-icons"] = [v for v in _object_values(board, "TAB_ICON = {") if re.match(_FILE + "$", v)]
+    f["boss-portraits"] = [v for v in _object_values(board, "BOSS_PORTRAIT = {") if re.match(_FILE + "$", v)]
+    f["console-tz-info"] = ["tz_%s.jpg" % k for k in sorted(_tz_keys(console))]
+    return f
+
+
+def doors(board, console):
+    """Every composer in the two pages, each with the feed that expands it or None. -> list of dicts"""
+    out = []
+    for page, src in (("bible.html", board), ("tv/control_ui.html", console)):
+        for m in _COMPOSER.finditer(src):
+            at = src[m.start():m.start() + 80]
+            feed = None
+            for p, sig, fd in DOORS:
+                if p == page and re.match(sig, at):
+                    feed = fd
+                    break
+            out.append({"page": page, "line": src.count("\n", 0, m.start()) + 1,
+                        "text": at.split("\n", 1)[0][:60], "feed": feed})
+    return out
+
+
+def names(repo=None, board_path=None, console_path=None):
+    """Every art file name the console can request. -> dict
+    {names: {file: [feed, ...]}, feeds: {feed: n}, doors: [...], unknownDoors: [...]}"""
+    repo = repo or REPO
+    board = _read(board_path or os.path.join(repo, "bible.html"))
+    console = _read(console_path or os.path.join(repo, "tv", "control_ui.html"))
+    try:
+        manifest = json.loads(_read(os.path.join(repo, "art", "HD_ART_MANIFEST.json")))
+    except (OSError, ValueError):
+        manifest = {}
+    feeds = _feeds(board, console, manifest)
+    by_name = {}
+    for feed, files in feeds.items():
+        for n in files:
+            by_name.setdefault(n, [])
+            if feed not in by_name[n]:
+                by_name[n].append(feed)
+    # A name written only inside comments is not asked for by any code. Kept in `names` (a comment
+    # naming a file that is gone is still worth reading) and listed apart, so a caller decides.
+    code = set()
+    for src in (board, console):
+        for m in _LITERAL.finditer(src):
+            if not in_comment(src, m.start()):
+                code.add(m.group(1))
+    comment_only = sorted(n for n, fs in by_name.items()
+                          if set(fs) <= {"board-literal", "console-literal"} and n not in code)
+    ds = doors(board, console)
+    return {"names": by_name,
+            "commentOnly": comment_only,
+            "feeds": dict((k, len(v)) for k, v in feeds.items()),
+            "doors": ds,
+            "unknownDoors": [d for d in ds if d["feed"] is None]}
+
+
+def missing(found, art_dir):
+    """Names the console can request that are not files under art_dir. -> sorted list
+
+    Compared against ONE listing, by exact case: a Mac's disk answers isfile('korlic.gif') for
+    Korlic.gif, and the Linux guest and a case-sensitive server 404 it. An art dir that will not
+    list is not 'nothing missing' - every name is reported."""
+    try:
+        have = set(f for f in os.listdir(art_dir) if os.path.isfile(os.path.join(art_dir, f)))
+    except OSError:
+        have = set()
+    return sorted(n for n in found["names"] if n not in have)
+
+
+def main(argv=None):
+    """CLI for the guest refresh: check the names a board (and this console) ask for against an art
+    tree. Exit 0 = every name is there, 1 = some are not (listed), 2 = a page would not read."""
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
+    ap.add_argument("--board", help="the board HTML to read (default: bible.html)")
+    ap.add_argument("--art", help="the art tree to check (default: art/)")
+    a = ap.parse_args(argv)
+    try:
+        found = names(board_path=a.board)
+    except (OSError, UnicodeDecodeError) as e:
+        print("  art check: a page would not read (%s) - UNKNOWN" % str(e)[:80])
+        return 2
+    gone = [n for n in missing(found, a.art or os.path.join(REPO, "art"))
+            if n not in found["commentOnly"]]
+    print("  art check: %d name(s) the console can ask /art/ for, %d door(s), %d unknown door(s)"
+          % (len(found["names"]) - len(found["commentOnly"]), len(found["doors"]),
+             len(found["unknownDoors"])))
+    for d in found["unknownDoors"]:
+        print("  ? unknown art door %s:%d %s" % (d["page"], d["line"], d["text"]))
+    for n in gone[:40]:
+        print("  x MISSING art/%s (asked by %s)" % (n, ", ".join(found["names"][n])))
+    if gone:
+        print("  %d name(s) will 404 on a console that serves this art tree" % len(gone))
+        return 1
+    print("  ok - every one is in the art tree")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

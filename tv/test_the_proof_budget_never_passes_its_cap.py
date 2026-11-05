@@ -123,7 +123,7 @@ class TheWorkflowObeysIt(unittest.TestCase):
     def test_the_shards_take_the_budget_jobs_choice(self):
         wf = io.open(os.path.join(ROOT, ".github", "workflows", "proof-keys-shards.yml"), encoding="utf-8").read()
         shard = wf[wf.index("  shard:\n"):wf.index("    strategy:", wf.index("  shard:\n"))]
-        self.assertIn("    needs: [budget]\n", shard)
+        self.assertIn("    needs: [budget, seed]\n", shard)     # v3865 REG-3210 - and the run's one seed
         self.assertIn("    runs-on: ${{ needs.budget.outputs.runner || 'ubuntu-latest' }}\n", shard,
                       "the shards ignore the budget job's runner")
         self.assertIn("    if: ${{ !cancelled() }}\n", shard, "a newer push no longer cancels the shards")

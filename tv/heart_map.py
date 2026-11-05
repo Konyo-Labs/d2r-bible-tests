@@ -47,6 +47,7 @@ import json
 import os
 import re
 import sys
+import time
 import tokenize
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -318,6 +319,96 @@ def _floor():
         return None
 
 
+# REG-3216 - THE RATCHET NEVER TIGHTENED. Measured 2026-11-05 (GrokBot, #230): HEART.md said the console watches 8 of 406
+# painted surfaces and the board 4 of 602, while heart_floor.json still held 7 of 366 (its names omit `bug`) and 1 of 513
+# (`vault-moved-note` alone). The floor rose only on a hand --bless, so every surface watched since then could stop being
+# watched and --check would still pass: the console could fall back to 7 and the board to 1, silently. Now a
+# regeneration RAISES a page's floor to the map whenever the map still watches every name the floor holds; --check
+# refuses a floor that lags the map, and a floor name the map no longer watches, even when the count held. Only a
+# human LOWERS a floor, and --bless asks why. [[regression-guard]] [[zero-needs-a-denominator]]
+def _entry(fl, name):
+    """A page's floor entry: the console's is the top level, the board's sits under "board". -> dict | None"""
+    if not isinstance(fl, dict):
+        return None
+    if name == BOARD:
+        e = fl.get("board")
+        return e if isinstance(e, dict) else None
+    return fl
+
+
+def floor_vs_map(fl, pages):
+    """Each page's floor against the map. -> [{page, label, was, now, lost, gained, lags}] for every page with a floor
+
+    lost   floor names the map no longer watches (a fall, even when the count held)
+    gained names the map watches that the floor does not hold
+    lags   the map holds every floor name and watches more: a regeneration raises this floor"""
+    out = []
+    for name, label in PAGES:
+        e, pg = _entry(fl, name), pages.get(name) or {}
+        seen = pg.get("seen")
+        if e is None or seen is None:
+            continue
+        have = set(e.get("names") or [])
+        was = int(e.get("watched") or 0)
+        lost = sorted(have - set(seen))
+        gained = sorted(set(seen) - have)
+        out.append({"page": name, "label": label, "was": was, "now": len(seen), "lost": lost, "gained": gained,
+                    "lags": (not lost) and len(seen) >= was and (len(seen) > was or bool(gained))})
+    return out
+
+
+def tighten(fl, pages):
+    """The floor a regeneration writes. -> (new floor dict, or None when nothing rose; [what it said])
+
+    A page's floor rises to the map only when the map still watches every name the floor holds. It never falls here:
+    a lost name leaves that page's floor where it was, for --check to refuse and a human to lower with a reason."""
+    if not isinstance(fl, dict):
+        return None, []
+    new = json.loads(json.dumps(fl))
+    said, rose = [], False
+    for row in floor_vs_map(fl, pages):
+        if row["lost"]:
+            said.append("%s floor NOT raised: %s no longer watched - only a human lowers a floor, saying why"
+                        % (row["label"], ", ".join(row["lost"][:8])))
+            continue
+        if row["now"] < row["was"] or not (row["now"] > row["was"] or row["gained"]):
+            continue                    # nothing new is watched: there is nothing to raise
+        pg = pages[row["page"]]
+        e = _entry(new, row["page"])
+        e["watched"], e["surfaces"], e["names"] = len(pg["seen"]), len(pg["ids"]), list(pg["seen"])
+        rose = True
+        said.append("%s floor raised %d -> %d (now also: %s)"
+                    % (row["label"], row["was"], row["now"], ", ".join(row["gained"][:8]) or "-"))
+    return (new if rose else None), said
+
+
+def _write_whole(path, text):
+    """Write `text` to `path` whole or not at all. -> None
+
+    `io.open(OUT, "w").write(render())` TRUNCATED HEART.md before render() ran, so a render that raised left the map
+    empty in the tree the pre-push grades - the open-for-write-truncates-first scar. The text is built first, written
+    beside the file and swapped in."""
+    tmp = "%s.tmp-%d" % (path, os.getpid())
+    try:
+        with io.open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+
+def _arg(argv, flag):
+    """The value after `flag` (or `flag=value`) in argv, "" when absent or when it is another flag. -> str"""
+    for i, a in enumerate(argv):
+        if a == flag:
+            v = argv[i + 1] if i + 1 < len(argv) else ""
+            return "" if v.startswith("--") else v.strip()
+        if a.startswith(flag + "="):
+            return a[len(flag) + 1:].strip()
+    return ""
+
+
 def main(argv=None):
     try:
         from console_safe import enable
@@ -343,7 +434,8 @@ def main(argv=None):
     if "--check" in argv:
         # ⚠ REFUSE, NEVER REGENERATE — the pre-push grades the working tree.
         try:
-            have = io.open(OUT, encoding="utf-8").read()
+            with io.open(OUT, encoding="utf-8") as _fh:
+                have = _fh.read()
         except Exception:
             print("HEART.md is missing — run: python3 tv/heart_map.py")
             return 1
@@ -356,11 +448,17 @@ def main(argv=None):
                   "UNKNOWN — run: python3 tv/heart_map.py --bless")
             return 1
         was = int(fl.get("watched") or 0)
+        gone = sorted(set(fl.get("names") or []) - set(seen))
         if len(seen) < was:
-            gone = sorted(set(fl.get("names") or []) - set(seen))
             print("HEART coverage FELL %d -> %d. A surface that was watched no longer is: %s"
                   % (was, len(seen), ", ".join(gone[:8]) or "(names not recorded)"))
             print("If that is deliberate, lower it by hand in tv/heart_floor.json and say why.")
+            return 1
+        # REG-3216 - A NAME IS THE FLOOR, NOT ONLY A COUNT: one surface gained can hide one surface lost
+        if gone:
+            print("HEART coverage lost a surface while its count held (%d): no longer watched: %s"
+                  % (len(seen), ", ".join(gone[:8])))
+            print("If that is deliberate, lower it with: python3 tv/heart_map.py --bless --why \"<why>\"")
             return 1
         # #41 rank 25 — the board's own ratchet. A floor with no "board" entry has never measured the
         # board, so whether ITS coverage shrank is UNKNOWN — a refusal, never a pass by omission.
@@ -370,29 +468,66 @@ def main(argv=None):
                   "UNKNOWN — run: python3 tv/heart_map.py --bless")
             return 1
         bwas = int(bfl.get("watched") or 0)
+        bgone = sorted(set(bfl.get("names") or []) - set(bseen))
         if len(bseen) < bwas:
-            bgone = sorted(set(bfl.get("names") or []) - set(bseen))
             print("HEART coverage on the board FELL %d -> %d. A board surface that was watched no longer is: %s"
                   % (bwas, len(bseen), ", ".join(bgone[:8]) or "(names not recorded)"))
             print("If that is deliberate, lower it by hand under \"board\" in tv/heart_floor.json and say why.")
             return 1
+        if bgone:
+            print("HEART coverage on the board lost a surface while its count held (%d): no longer watched: %s"
+                  % (len(bseen), ", ".join(bgone[:8])))
+            print("If that is deliberate, lower it with: python3 tv/heart_map.py --bless --why \"<why>\"")
+            return 1
+        # REG-3216 - A FLOOR THAT LAGS THE MAP IS NAMED AND REFUSED: below the map, a watched surface can stop being
+        # watched and the ratchet says nothing. The fix is the regeneration the bump already runs.
+        lag = [r for r in floor_vs_map(fl, pages) if r["lags"]]
+        if lag:
+            for r in lag:
+                print("HEART floor LAGS the map on %s: the map watches %d, the floor holds %d - not in the floor: %s"
+                      % (r["label"], r["now"], r["was"], ", ".join(r["gained"][:8]) or "-"))
+            print("Below the map, those surfaces could stop being watched and nothing would say so. Raise it: "
+                  "python3 tv/heart_map.py (then commit tv/heart_floor.json).")
+            return 1
         print("heart: %d of %d painted surfaces watched (floor %d) · board: %d of %d watched (floor %d)"
               % (len(seen), len(ids), was, len(bseen), len(bids), bwas))
         return 0
+    text = render()          # REG-3216 - built BEFORE anything is opened for writing
     if "--bless" in argv:
-        io.open(FLOOR, "w", encoding="utf-8").write(json.dumps(
-            {"_why": "HEART coverage ratchet — it may only RISE. A fall means a surface this "
-                     "console used to watch is no longer watched, which in a green run reads "
-                     "exactly like clean. A surface is watched only where a watcher's CODE names "
-                     "it whole (REG-1555): the floor of 17 blessed on 2026-09-29 counted 13 names "
-                     "that stood only in comments, docstrings or inside a longer id, and was "
-                     "lowered to the measured count on 2026-09-30 for that reason.",
-             "watched": len(seen), "surfaces": len(ids), "names": seen,
-             # #41 rank 25 — the board's ratchet, same rule, its own numbers
-             "board": {"watched": len(bseen), "surfaces": len(bids), "names": bseen}},
-            indent=2, sort_keys=True) + "\n")
+        # REG-3216 - A BLESS THAT LOWERS SAYS WHY. --bless wrote whatever the map measured, so a surface that stopped
+        # being watched could be blessed away with no reason anywhere. Lowering is a human's call; this asks for it.
+        old = _floor()
+        dropped = dict((r["page"], r["lost"]) for r in floor_vs_map(old, pages)
+                       if r["lost"] or r["now"] < r["was"])
+        why = _arg(argv, "--why")
+        if dropped and not why:
+            print("REFUSED: this bless would LOWER the heart floor (%s). Say why: "
+                  "python3 tv/heart_map.py --bless --why \"<why>\" - nothing written."
+                  % "; ".join("%s: %s" % (k, ", ".join(v) or "count fell") for k, v in sorted(dropped.items())))
+            return 1
+        record = {"_why": "HEART coverage ratchet — it may only RISE. A fall means a surface this "
+                          "console used to watch is no longer watched, which in a green run reads "
+                          "exactly like clean. A surface is watched only where a watcher's CODE names "
+                          "it whole (REG-1555): the floor of 17 blessed on 2026-09-29 counted 13 names "
+                          "that stood only in comments, docstrings or inside a longer id, and was "
+                          "lowered to the measured count on 2026-09-30 for that reason.",
+                  "watched": len(seen), "surfaces": len(ids), "names": seen,
+                  # #41 rank 25 — the board's ratchet, same rule, its own numbers
+                  "board": {"watched": len(bseen), "surfaces": len(bids), "names": bseen}}
+        if dropped:
+            record["_lowered"] = {"why": why[:400], "dropped": dropped,
+                                  "at": time.strftime("%Y-%m-%d")}
+        _write_whole(FLOOR, json.dumps(record, indent=2, sort_keys=True) + "\n")
         print("  blessed heart floor at %d of %d (board %d of %d)" % (len(seen), len(ids), len(bseen), len(bids)))
-    io.open(OUT, "w", encoding="utf-8").write(render())
+    else:
+        # REG-3216 - THE RATCHET TIGHTENS ON ITS OWN: every name the floor holds is still watched, so the floor rises
+        # to the map. A lost name leaves the floor where it was, for --check to refuse.
+        new, said = tighten(_floor(), pages)
+        if new is not None:
+            _write_whole(FLOOR, json.dumps(new, indent=2, sort_keys=True) + "\n")
+        for line in said:
+            print("  " + line)
+    _write_whole(OUT, text)
     print("  wrote %s — %d of %d painted surfaces watched · board %d of %d"
           % (os.path.relpath(OUT, REPO), len(seen), len(ids), len(bseen), len(bids)))
     return 0

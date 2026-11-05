@@ -251,7 +251,10 @@ class TheShipWaitsForGitHubOnTheExactCommit(unittest.TestCase):
     def test_a_workflow_its_paths_did_not_fire_is_dispatched_once_on_its_own_branch(self):
         # v3865 - the proof shards are dispatched on ci/proof-keys-<v>: a run on ci/claude-<v> cannot restore the proofs its
         # version's red run banked (GitHub scopes the cache by branch) - v3864 round 3, 2026-11-05
-        rc, calls, mains, said = self._ship([_all_green()[:3]] * 6 + [_all_green()])
+        # v3865 (REG-3214) - the Windows set beside them runs here, so only the REQUIRED dispatch is asked of this case
+        import ship_when_green as SW
+        win = [_run(n, status="in_progress", conclusion=None, rid=9) for n in SW.BESIDE]
+        rc, calls, mains, said = self._ship([_all_green()[:3] + win] * 6 + [_all_green() + win])
         self.assertEqual(rc, 0, said)
         disp = [c for c in calls if c[:3] == ["gh", "workflow", "run"]]
         self.assertEqual(disp, [["gh", "workflow", "run", "proof-keys-shards.yml", "--repo", CV.REPO_SLUG,
@@ -261,7 +264,9 @@ class TheShipWaitsForGitHubOnTheExactCommit(unittest.TestCase):
 
     def test_a_refused_dispatch_is_asked_again_on_the_next_poll(self):
         # v3865 - GitHub answered HTTP 500/502 to two dispatches on 2026-11-05; asked once, the ship would have waited 5 h
-        rc, calls, mains, said = self._ship([_all_green()[:3]] * 8 + [_all_green()], refuse_dispatch=2)
+        import ship_when_green as SW
+        win = [_run(n, status="in_progress", conclusion=None, rid=9) for n in SW.BESIDE]     # REG-3214 - it runs here
+        rc, calls, mains, said = self._ship([_all_green()[:3] + win] * 8 + [_all_green() + win], refuse_dispatch=2)
         self.assertEqual(rc, 0, said)
         disp = [c for c in calls if c[:3] == ["gh", "workflow", "run"]]
         self.assertEqual(len(disp), 3, "a refused dispatch was not asked again (or a granted one was asked twice): %r" % disp)
@@ -288,7 +293,9 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3865 - the proof shards are dispatched on ci/claude-<v>, where the banked proofs cannot be restored",
      "file": "tv/ship_when_green.py",
-     "find": "    return (\"ci/proof-keys-%s\" if WORKFLOW_FILES.get(wf) == \"proof-keys-shards.yml\" else \"ci/claude-%s\") % version\n",
+     "find": "    return (\"ci/proof-keys-%s\" if (WORKFLOW_FILES.get(wf) or BESIDE.get(wf)) in (\"proof-keys-shards.yml\",\n"
+             "                                                                                   \"proof-keys-windows.yml\")\n"
+             "            else \"ci/claude-%s\") % version\n",
      "replace": "    return \"ci/claude-%s\" % version\n",
      "matches": 1},
     {"why": "v3865 - a refused dispatch is never asked again",

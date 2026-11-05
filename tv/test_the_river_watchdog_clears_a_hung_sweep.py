@@ -32,6 +32,12 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 from console_safe import enable as _enable  # noqa: E402
 _enable()
+# REG-3200 - a hang is now a persisted attempt (the lane store), so this suite lives in a fixture world: TV_HIST points
+# every store this process could reach at a temp dir, never his live lane memory.
+import tempfile  # noqa: E402
+import fixture_tmp as _fx_tmp  # noqa: E402
+_fx_tmp.contain()
+os.environ.setdefault("TV_HIST", tempfile.mkdtemp(prefix="watchdog-iso-"))
 import control_app as ca  # noqa: E402
 
 REEL = "/reels/reel_s_17913672099321"
