@@ -34,15 +34,15 @@ except Exception:
 
 PAGE = os.path.join(os.path.dirname(HERE), "bible.html")
 NODE = shutil.which("node")
-HELPER = "  function _muleAreaSay(area, page){"
+HELPER = "  function _muleAreaSay(area, page, m){"   # v3864 - m: the locker, for REG-2996's mule name
 CALLS = {
-    "FIND's move-target words": "return _muleSpotSay(ca.loc, ca.x, ca.y, ca.page);",
+    "FIND's move-target words": "return _muleSpotSay(ca.loc, ca.x, ca.y, ca.page, mule);",
     "the organizer": "cells[q.n] = _muleSpotSay('personal', q.x, q.y, mp);",
     "FIND, a WAR mule's copy": "put(wm.name + ' · ' + _muleSpotSay('personal', p.x, p.y, mp));",
-    "FIND's filed answer": "_put(_muleSpotSay('personal', p.x, p.y, mp));",
-    "FIND's would answer": "_putW(_muleSpotSay('personal', p.x, p.y, mpW));",
+    "FIND's filed answer": "_put(_muleSpotSay('personal', p.x, p.y, mp, m));",
+    "FIND's would answer": "_putW(_muleSpotSay('personal', p.x, p.y, mpW, wm));",
     "the move list's cell words": "if (ca) return String(cell) + ' · ' + _muleSpotSay(ca.loc, ca.x, ca.y, ca.page > 0 ? ca.page : null);",
-    "the MOVE row": "if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null);",
+    "the MOVE row": "if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null, _pm);",
     "the MOVE row's expand": "return nm + ' · ' + _muleSpotSay(c.loc, c.x, c.y, c.mule > 0 ? c.mule : null); }",
     "a WAR mule's expand": "return nm + ' (SHARED STASH · overflow) · ' + _muleSpotSay(c.loc, c.x, c.y, c.mule > 0 ? c.mule : null);",
     "a refused hand spot": "var _sp = _muleSpotSay(p.tab, _int(x) ? x : 0, _int(y) ? y : 0, _int(pg) ? pg : 0);",
@@ -102,7 +102,7 @@ class AMuleCellHasOneSpelling(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3062 - the MOVE row spells a mule cell '(3,1)' again",
      "file": "bible.html",
-     "find": "      if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null);",
+     "find": "      if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null, _pm);",
      "replace": "      if (_ca) return h + ' (' + (_ca.x + 1) + ',' + (_ca.y + 1) + ')';",
      "matches": 1},
     {"why": "REG-3062 - the mule window's list says 'STASH col 3 · row 1' again",
@@ -112,8 +112,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3062 - the helper puts the area before the mule page again",
      "file": "bible.html",
-     "find": "    return (page == null ? '' : 'Mule ' + ((+page || 0) + 1) + ' \\u00b7 ') + (A ? A[2] + (t === 'inv' ? '' : ' stash') : String(area));",
-     "replace": "    return (A ? A[2] + (t === 'inv' ? '' : ' stash') : String(area)) + (page == null ? '' : ' \\u00b7 Mule ' + ((+page || 0) + 1));",
+     "find": "    return mk + (A ? A[2] + (t === 'inv' ? '' : ' stash') : String(area));",   # v3864 - the mule page (and name) is mk
+     "replace": "    return (A ? A[2] + (t === 'inv' ? '' : ' stash') : String(area)) + (mk ? ' \\u00b7 ' + mk.slice(0, -3) : '');",
      "matches": 1, "needs": "node"},
     {"why": "REG-3062 - the expand spells a mule cell 'private stash (3,1)' again",
      "file": "bible.html",

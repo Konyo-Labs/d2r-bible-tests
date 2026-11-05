@@ -125,7 +125,8 @@ class ALockersNextMuleIsNamedByANameTheGameAccepts(unittest.TestCase):
         self.assertNotRegex(p["make"][0], r"#\d", "the make task still asks for a '#' name: %r" % p["make"])
         self.assertTrue(p["rows"], "PREMISE: no move row goes to UNI-ARMOR's Mule 2")
         for t in p["rows"]:
-            self.assertRegex(t, r"^UNI-ARMOR · " + re.escape(say) + r" \(\d+,\d+\)$", "the move row does not name the character: %r" % t)
+            # v3864 - in REG-3062's one spelling: the locker, its Mule 2 with the character's name, the area, col and row
+            self.assertRegex(t, r"^UNI-ARMOR · " + re.escape(say) + r" · [A-Za-z ]+ · col \d+ · row \d+$", "the move row does not name the character: %r" % t)
         self.assertTrue(p["onTwo"], "PREMISE: no hand add sits on UNI-ARMOR's Mule 2")
         self.assertTrue(p["where"].startswith(say + " · "), "the where-is cell of a hand add (%s) does not name the character: %r" % (p["kind"], p["where"]))
         self.assertTrue(p["filed"], "PREMISE: no filed copy sits on UNI-ARMOR's Mule 2")
@@ -152,23 +153,23 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2996 - the move row names Mule 2 without its character",
      "file": "bible.html",
-     "find": "return h + ' · ' + _vaultLockerMuleSay(_pm, _ca.page + 1) + ' ('",
-     "replace": "return h + ' · Mule ' + (_ca.page + 1) + ' ('",
+     "find": "_muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null, _pm);",   # v3864 - through the one spelling
+     "replace": "_muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null);",
      "matches": 1, "needs": "node"},
     {"why": "REG-2996 - the where-is cell of a hand add (the would answer) names Mule 2 without its character",
      "file": "bible.html",
-     "find": "            var tagW = (loadW.mules.length > 1 ? _vaultLockerMuleSay(wm, pi + 1) + ' · ' : '');",
-     "replace": "            var tagW = (loadW.mules.length > 1 ? 'Mule ' + (pi + 1) + ' · ' : '');",
-     "matches": 1, "needs": "node"},
+     "find": "mpW, wm))",   # v3864 - the would answer's three areas hand the locker to the one spelling
+     "replace": "mpW))",
+     "matches": 3, "needs": "node"},
     {"why": "REG-2996 - the where-is cell of a filed copy names Mule 2 without its character",
      "file": "bible.html",
-     "find": "            var tag = (load.mules.length > 1 ? _vaultLockerMuleSay(m, pi + 1) + ' · ' : '');",
-     "replace": "            var tag = (load.mules.length > 1 ? 'Mule ' + (pi + 1) + ' · ' : '');",
-     "matches": 1, "needs": "node"},
+     "find": "mp, m))",   # v3864 - a filed copy's three areas hand the locker to the one spelling
+     "replace": "mp))",
+     "matches": 3, "needs": "node"},
     {"why": "REG-2996 - FIND's target cell names Mule 2 without its character",
      "file": "bible.html",
-     "find": "      var mk = (typeof _vaultLockerMuleSay === 'function') ? _vaultLockerMuleSay(mule, ca.page + 1) : 'Mule ' + (ca.page + 1);",
-     "replace": "      var mk = 'Mule ' + (ca.page + 1);",
+     "find": "_muleSpotSay(ca.loc, ca.x, ca.y, ca.page, mule);",   # v3864 - FIND's target through the one spelling
+     "replace": "_muleSpotSay(ca.loc, ca.x, ca.y, ca.page);",
      "matches": 1, "needs": "node"},
     {"why": "REG-2996 - the mule window's header reads 'UNI-ARMOR #2' again",
      "file": "bible.html",
