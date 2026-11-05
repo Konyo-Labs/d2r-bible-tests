@@ -15,6 +15,7 @@ Fixtures only - no network. RED_PROOF below.
 import io
 import datetime
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -85,6 +86,12 @@ class TheCapDecides(unittest.TestCase):
 
     def test_the_step_never_fails_and_writes_its_choice(self):
         d = tempfile.mkdtemp(prefix="budget-law-")
+        try:
+            self._never_fails_in(d)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def _never_fails_in(self, d):
         out = os.path.join(d, "out")
         env = {"PROOF_RUNNER": UBI, "PROOF_BUDGET_USD": "25", "GITHUB_REPOSITORY": "x/y", "GITHUB_OUTPUT": out}
         with mock.patch.dict(os.environ, env), mock.patch.object(B, "fetch_jobs", side_effect=RuntimeError("HTTP 502")):

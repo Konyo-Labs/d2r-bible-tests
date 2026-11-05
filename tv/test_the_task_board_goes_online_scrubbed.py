@@ -11,7 +11,7 @@ reach. Now:
   * the worker keeps one record, takes it only from an APPROVER's registered key, refuses a write under a minute after the
     last, and hands it at GET /api/roster?tasks=1;
   * /d2r/tasks.html (shipped by deploy.sh) draws it with textContent, never markup, and says how old it is;
-  * every console's footer has "📋 tasks" beside "history": POST /api/open_tasks opens that ONE page in the PC's default
+  * every console's footer has "Future" (his name for it, 2026-11-05) beside "history": POST /api/open_tasks opens that ONE page in the PC's default
     browser, behind the same origin gate as the d2jsp doors.
 Fixtures only, in temp dirs; nothing reaches the site. RED_PROOF below.
 """
@@ -204,6 +204,8 @@ import('%s').then(async m => {
 
     def test_the_footer_button_sits_beside_history_and_asks_the_route(self):
         ui = io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8").read()
+        self.assertIn('>Future</button>', ui[ui.index('<button id="foot-tasks"'):ui.index('</button>', ui.index('<button id="foot-tasks"')) + 9],
+                      "the footer button is not named Future (his name for it, 2026-11-05)")
         self.assertIn('title="Version history">history</button><span class="dot">·</span><button id="foot-tasks"', ui,
                       "the tasks button is not beside history at the bottom left")
         self.assertIn("fetch('/api/open_tasks', { method: 'POST'", ui)
