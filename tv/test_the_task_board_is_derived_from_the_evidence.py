@@ -40,6 +40,8 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 from console_safe import enable as _console_safe_enable  # noqa: E402
 _console_safe_enable()
+import fixture_tmp as _fx_tmp  # noqa: E402
+_fx_tmp.contain()        # its temp repos and stores are made under the run's own scratch base, removed with it
 import task_truth as TT  # noqa: E402
 import task_board as TB  # noqa: E402
 
@@ -131,6 +133,8 @@ COMMENTS = {
          "body": "SECOND-EYE\nversion: v3801\nverdict: findings\nmodel: grok-4.7"},
         {"id": 2002, "created_at": _iso(T0 - 9 * DAY), "updated_at": _iso(T0 - 9 * DAY),
          "body": "Seat: Grok CLI (third eye)\n\nSAW: origin/main stamp v3800. This seat has not read the v3800 range."},
+        {"id": 2003, "created_at": _iso(T0 - 9 * DAY), "updated_at": _iso(T0 - 9 * DAY),
+         "body": "SECOND-EYE \u00b7 v3800 (c1) \u00b7 verdict **cannot-tell** \u00b7 model grok-cli"},   # recorded, NOT a look
     ],
 }
 
@@ -269,8 +273,17 @@ class TheLooksAreReadAndUnknownStaysUnknown(Fixture):
         rows = dict((c["id"], TT.look_row(c, n)) for n in (230, 231) for c in COMMENTS[n])
         self.assertEqual(dict((i, (r or {}).get("seat")) for i, r in rows.items()),
                          {1001: "grokbot", 1002: "grokbot", 1003: None, 1004: None, 1005: None, 1006: None,
-                          1007: "grokbot", 2001: "third", 2002: None})
+                          1007: "grokbot", 2001: "third", 2002: None, 2003: "third"})
         self.assertEqual((rows[1002]["vers"], rows[1002]["regs"]), (["v3801"], []), "a look is about its HEADING only")
+
+    def test_an_eye_that_could_not_judge_is_no_look(self):
+        rows = dict((c["id"], TT.look_row(c, 231)) for c in COMMENTS[231])
+        self.assertTrue(rows[2003]["noLook"], "a cannot-tell row was kept as a look")
+        self.assertFalse(rows[2001]["noLook"])
+        looks, _gh, _p = self.looks()
+        r = TT.resolve_key("REG-100", self.idx(), "v3801", looks)
+        self.assertIsNone(r["third"], "a cannot-tell row made v3800 third-eyed")
+        self.assertIsNone(r["refuted"], "a cannot-tell row refuted the work - it judged nothing either way")
 
     def test_the_newest_look_decides_and_a_failing_one_refutes(self):
         looks, _gh, _p = self.looks()
@@ -532,7 +545,7 @@ class ThePageDrawsIt(unittest.TestCase):
                        "    var words = ph === 'unknown' ? 'phase UNKNOWN' : ph",
                        "    if (p && p.look) words += ' \u00b7 GrokBot #230 comment ' + p.look;\n",
                        "    if (p && p.third) words += ' \u00b7 third eye #231 comment ' + p.third;\n",
-                       "    words += since(p && p.at, p && p.w);\n"):
+                       "    words += since(p && p.at, p && p.w && p.w !== ph ? p.w : '');"):
             self.assertEqual(script.count(needle), 1, "the page no longer draws: %r" % needle)
         self.assertIn('<span id="tb-truth"></span>', page)
         self.assertNotIn("innerHTML", script)
@@ -658,6 +671,11 @@ RED_PROOF = [
      "file": "tv/task_truth.py",
      "find": "    if (seat, int(issue)) not in ((\"grokbot\", GROKBOT_ISSUE), (\"third\", THIRD_ISSUE)):\n",
      "replace": "    if seat not in (\"grokbot\", \"third\"):\n",
+     "matches": 1},
+    {"why": "v3866 - a SECOND-EYE row that says cannot-tell counts as the third eye (the v3864 row made 4 cards ready)",
+     "file": "tv/task_truth.py",
+     "find": "        if r.get(\"noLook\"):\n            continue",
+     "replace": "        if False:\n            continue",
      "matches": 1},
     {"why": "v3866 (review) - GrokBot's coder seat ('Seat: Grok Bot (code)', a plan) counts as a GrokBot look",
      "file": "tv/task_truth.py",

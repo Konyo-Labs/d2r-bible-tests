@@ -62,7 +62,7 @@ LOOKS_EVERY_MS = 10 * 60 * 1000      # GitHub is asked at most every 10 min
 LOOKS_STALE_MS = 35 * 60 * 1000      # a lane last read longer ago than this is UNKNOWN, not "not looked"
 LOOKS_WINDOW_DAYS = 14               # the first read goes back this far; the cache keeps LOOKS_KEEP_DAYS
 LOOKS_KEEP_DAYS = 45
-LOOKS_SCHEMA = 2                     # a cache written by another shape is rebuilt, never read as this one
+LOOKS_SCHEMA = 3                     # a cache written by another shape is rebuilt, never read as this one
 GH_TIMEOUT_S = 60
 LOOK_HEAD_CHARS = 600                # a look is ABOUT what the first line naming a version or REG id names, inside its head
 LOOK_BODY_CHARS = 20000              # how much of a look is searched for a line that says the key fails
@@ -362,6 +362,11 @@ _HEAD_FAIL_RX = re.compile(r"\b(?:fail(?:s|ed|ing)?|broken|reopen(?:s|ed)?|not\s
 _LINE_FAIL_RX = re.compile(r"\b(?:fail(?:s|ed|ing)?|broken|reopen(?:s|ed)?|not\s+fixed|regress(?:ed|ion)?)\b", re.I)
 _TAG_FAIL_RX = re.compile(r"\b(?:DIFFERS|STILL)\b")
 _VERDICT_RX = re.compile(r"(?im)^[\s*_#>-]*verdict[\s*_]*:[\s*_]*([A-Za-z][A-Za-z -]{0,30})")
+#: v3866 - a row that RECORDS an eye which did not judge is no look at all: "cannot-tell" (the second-eye ledger's own
+#: word - "recorded, and NOT a look"), an unreachable seat, no answer. MEASURED the night it shipped: the #231 row for
+#: v3864 ("verdict **cannot-tell**") made four v3864 cards read "ready to close" on an eye that said it could not judge.
+_NO_LOOK_RX = re.compile(r"\b(?:cannot[- ]tell|could\s+not\s+(?:tell|judge)|unreachable|empty\s+seat|no\s+answer)\b",
+                         re.I)
 
 
 def seat_of(body):
@@ -436,9 +441,11 @@ def look_row(comment, issue):
         return None
     ab = about(body)
     vm = _VERDICT_RX.search(body[:LOOK_HEAD_CHARS * 2])
+    verdict = vm.group(1).strip().lower()[:20] if vm else None
     return {"id": str(comment.get("id")), "issue": int(issue), "at": at, "seat": seat,
             "regs": ab["regs"], "vers": ab["vers"], "fail": bool(_HEAD_FAIL_RX.search(ab["line"])),
-            "refutes": refuted_in(body), "verdict": (vm.group(1).strip().lower()[:20] if vm else None)}
+            "refutes": refuted_in(body), "verdict": verdict,
+            "noLook": bool(_NO_LOOK_RX.search(ab["line"]) or (verdict and _NO_LOOK_RX.search(verdict)))}
 
 
 def load_looks(path):
@@ -572,6 +579,8 @@ def _look_verdict(looks, seat, key, ver, since_ms):
     for r in looks.get("rows") or []:
         if r.get("seat") != seat or not isinstance(r.get("at"), int) or r["at"] < since_ms:
             continue
+        if r.get("noLook"):
+            continue                                      # v3866 - an eye that did not judge is no look, either way
         if key in (r.get("regs") or []) or (ver and ver in (r.get("vers") or [])):
             about_it.append(r)
     if not about_it:

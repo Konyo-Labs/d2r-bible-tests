@@ -175,6 +175,16 @@ class TestACachedAbsenceIsNotAnAbsence(unittest.TestCase):
                  if isinstance(a, ast.Assign)
                  and "has not reported which" in "".join(_lines[a.lineno - 1:a.end_lineno])]
         self.assertTrue(_reread, "no forced re-read call inside the function")
+        # v3866 - THE RE-READ MUST BE THE LEDGER'S OWN. v3866 added a second forced read in this function (the jewels'
+        # mask, REG-3221), and with the ledger's own re-read deleted this law stayed GREEN on the jewels' call (the proof
+        # shard found it BLIND). So the call must sit inside the `if their_mask is None:` block that guards the sentence.
+        _own = [c.lineno for i in ast.walk(_n)
+                if isinstance(i, ast.If) and "their_mask is None" in _lines[i.lineno - 1]
+                for c in ast.walk(i)
+                if isinstance(c, ast.Call) and isinstance(c.func, ast.Name) and c.func.id == "fleet_presence"
+                and any(k.arg == "force" for k in (c.keywords or []))]
+        self.assertTrue(_own, "the ledger's own missing mask is never re-read by force - another forced read in this "
+                              "function (the jewels') does not stand in for it")
         self.assertTrue(_says, "nothing in this function ASSIGNS the sentence")
         self.assertLess(min(_reread), min(_says),
                         "the forced re-read is at line %d and the sentence is composed at line %d "
@@ -194,8 +204,8 @@ RED_PROOF = [
     {
         "why": "without the forced re-read the panel again claims an absence it only cached",
         "file": "control_app.py",
-        "find": "            _fresh = fleet_presence(force=True)",
-        "replace": "            _fresh = None",
+        "find": "            _fresh = fleet_presence(force=True)\n            _forced = True\n",
+        "replace": "            _fresh = None\n            _forced = True\n",
         "matches": 1,
     },
 ]

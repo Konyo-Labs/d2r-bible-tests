@@ -89,7 +89,7 @@
     var ph = String((p && p.p) || 'unknown');
     var words = ph === 'unknown' ? 'phase UNKNOWN' : ph + (p.v && /^(shipped|live|looked|third-eyed)$/.test(ph) ? ' ' + p.v : '');
     if (p && p.sha) words += ' · ' + p.sha;
-    words += since(p && p.at, p && p.w);
+    words += since(p && p.at, p && p.w && p.w !== ph ? p.w : '');   /* "shipped v3862 · 12 h ago", not "shipped ... shipped" */
     /* v3866 - WHICH comment made it looked / third-eyed, or says it still fails: the board published them, nothing drew them */
     if (p && p.look) words += ' · GrokBot #230 comment ' + p.look;
     if (p && p.third) words += ' · third eye #231 comment ' + p.third;
@@ -138,7 +138,12 @@
       var parts = Object.keys(t.drift || {}).filter(function (k) { return (t.drift[k] | 0) > 0; })
         .map(function (k) { return (t.drift[k] | 0) + ' ' + k.replace(/-/g, ' '); });
       tr.textContent = t.owed ? 'the tree disagrees: ' + parts.join(' · ') : 'every card agrees with the tree';
-      tr.textContent += ' · ' + (t.head || '?') + ' · site ' + (t.publishedVer || 'UNKNOWN')
+      /* v3866 (the Grok CLI on this page: "the header sha sits next to site v3864 - I cannot tell which id the site is")
+         - the commit is the TREE the derivation read, said so; and the rungs are explained in the hover */
+      tr.title = 'each card wears the furthest rung its work reached: no-evidence (no commit names it) - building (a local '
+        + 'branch) - graded (a ci/ branch) - shipped (on main) - live (the site serves it) - looked (GrokBot on #230) - '
+        + 'third-eyed (a SECOND-EYE row on #231). A flag means the card status disagrees with that, and why.';
+      tr.textContent += ' · tree ' + (t.head || '?') + ' · site ' + (t.publishedVer || 'UNKNOWN')
         + (t.mainVer && t.mainVer !== t.publishedVer ? ' · main ' + t.mainVer : '') + ' · looks ' + (t.looks || 'UNKNOWN');
       if ((t.drift || {})['closed-never-shipped'] | 0) tr.className = 'bad';
     }
