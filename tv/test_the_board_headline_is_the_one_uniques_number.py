@@ -70,7 +70,11 @@ class TheBoardHeadlineIsTheOneUniquesNumber(unittest.TestCase):
         u = _reconciled(_row(None, 326, 327, local=True))
         self.assertEqual(u["have"], 326, u)
         self.assertNotIn("saidHave", u, u)
-        self.assertNotIn("maskHave", u, u)
+        # v3864 (GrokBot Batch B 3) - untouched means its headline never moves; the gap to its own list is SAID beside it
+        self.assertEqual(u.get("maskHave"), 327, "his own row's gap to its list is not said: %r" % u)
+        self.assertIn("1 apart", u.get("why") or "", u)
+        same = _reconciled(_row(None, 326, 326, local=True))
+        self.assertNotIn("maskHave", same, "a row whose list agrees grew a gap note: %r" % same)
 
     def test_the_cross_reference_says_the_board_headline_as_yours(self):
         saved = (ca.fleet_presence, ca._mask_cached, ca.board_tally_load)
@@ -113,6 +117,11 @@ RED_PROOF = [
      "file": "control_ui.html",
      "find": "(typeof j.mineHeadline === 'number' ? j.mineHeadline : (j.mineN | 0)) + ' / ' + _fxDen(j) + ' yours'",
      "replace": "(j.mineN | 0) + ' / ' + _fxDen(j) + ' yours'",
+     "matches": 1},
+    {"why": "v3864 (GrokBot Batch B 3) - his own row's gap to its own list is not said again",
+     "file": "tv/control_app.py",
+     "find": "                if _local:\n                    t = dict(t)\n                    t[\"maskHave\"]",
+     "replace": "                if False:\n                    t = dict(t)\n                    t[\"maskHave\"]",
      "matches": 1},
 ]
 

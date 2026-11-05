@@ -2577,8 +2577,7 @@ def _fleet_reconcile_tally_with_masks(fl):
             # the better source, and "the mask wins" would have re-shipped the defect it was written
             # after. A rule that is right for every peer can still be wrong for the one machine you
             # are standing on. [[feedback-blind-fixture-green-gate]] [[copy-drift]]
-            if tally.get("localRead"):
-                continue
+            _local = bool(tally.get("localRead"))
             for led in ("sets", "uniques", "runewords"):
                 m = masks.get(led)
                 if isinstance(m, str):
@@ -2601,6 +2600,19 @@ def _fleet_reconcile_tally_with_masks(fl):
                 if not isinstance(t, dict) or "have" not in t:
                     continue
                 if int(t.get("have") or 0) == int(m.get("have") or 0):
+                    continue
+                # v3864 (GrokBot Batch B 3, #230 6655906382) - HIS OWN ROW KEEPS ITS HEADLINE AND SAYS THE GAP. The exemption
+                # above stays (his board's count is THE number, REG-2035), but the Mac row read uniques 395/403 beside its own
+                # mask's 384 with nothing on the row saying so, while Dean's and the OLD PC's gaps were said. Now the local
+                # row carries maskHave and a why, exactly as a SYNCED peer does; its have is never moved.
+                if _local:
+                    t = dict(t)
+                    t["maskHave"] = int(m.get("have") or 0)
+                    t["why"] = ("this board counts %s %s and its own list names %s - %s apart; the board's count is the "
+                                "number (REG-2035), the list is what the cross-reference can name"
+                                % (t.get("have"), led, t["maskHave"], abs(int(t.get("have") or 0) - t["maskHave"])))
+                    tally[led] = t
+                    n += 1
                     continue
                 # ⚖ REG-2035 (#213) - HIS RULING 2026-10-07: "the board's uniques headline is THE number;
                 # console and fleet card read the board's count, never re-count." The mask-wins rule above was
