@@ -667,7 +667,11 @@ def check_self_arming():
                     "the proof queue could not be read, so no lock may open — %s"
                     % rep.get("why", ""))
     locks = rep.get("locks") or []
-    ev = ["%s: %s — %s" % (l.get("lock"), l.get("state"), l.get("why", "")) for l in locks]
+    # REG-3215 - each lock's evidence line leads with the ACT word ("shut - the prover is behind · proven 0.90 >= 0.72"),
+    # never "OPEN" over a lock that may not act; a row from an older report with no words keeps its state word.
+    ev = ["%s: %s — %s" % (l.get("lock"),
+                           ("%s · %s" % (l.get("actSay"), l.get("provenSay") or "")) if l.get("actSay")
+                           else l.get("state"), l.get("why", "")) for l in locks]
     # A route earns trust in a number. It is not a valve, and the old tally counted it as a
     # lock. HARDENED is earned open, the same pair the heart badge already uses. This row
     # was the second copy, and it counted OPEN only, so a hardened shelf read as none open.
@@ -680,7 +684,6 @@ def check_self_arming():
     inert_routes = [l for l in routes if l.get("state") == SA.LOCKED]
     unproven = [l for l in valves if l.get("state") == SA.UNPROVEN]
     incomplete = [l for l in valves if l.get("state") == SA.INCOMPLETE]
-    opened = [l for l in valves if l.get("state") in (SA.OPEN, SA.HARDENED)]
     # ⚠⚠ v3093 — THE TALLY IS COMPUTED BEFORE THE BRANCHES, BECAUSE IT USED TO REACH ONLY ONE.
     # `k=tot_k, n=tot_n` were passed on the OK return and on NEITHER of the others. So the moment a
     # lock actually went inert — the finding this check exists to make — the row lost its proofK,
@@ -715,7 +718,9 @@ def check_self_arming():
     # from what it reads; this cannot.
     # A missing or blind heart means may() is refusing. A stale census is the prover lagging
     # the code, which is not a verdict about these locks, so it is named and the row stays OK.
-    parts = ["%d of %d locks open" % (len(opened), len(valves))]
+    # REG-3215 - THE ACT QUESTION LEADS. This said "7 of 9 locks open" - the evidence tier - while 4 of the 9 may
+    # act; the count is self_arming's one tally, the same sentence the heart prints: "4 of 9 may act now (7 proven)".
+    parts = [SA.lock_counts(valves)["say"]]
     if incomplete:
         parts.append("%d incomplete (an axis nobody could exercise, not a fault)"
                      % len(incomplete))

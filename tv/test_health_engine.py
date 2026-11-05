@@ -29,10 +29,11 @@ RED_PROOF = [
         "matches": 1,
     },
     {
-        "why": "a HARDENED lock is counted shut again, so a shelf that earned the stronger tier reads as none open",
-        "file": "health_engine.py",
-        "find": "    opened = [l for l in valves if l.get(\"state\") in (SA.OPEN, SA.HARDENED)]\n",
-        "replace": "    opened = [l for l in valves if l.get(\"state\") == SA.OPEN]\n",
+        "why": "a HARDENED lock is counted unproven again, so a shelf that earned the stronger tier reads as none "
+               "proven (REG-3215 moved the count into self_arming.lock_counts, the one tally every surface quotes)",
+        "file": "self_arming.py",
+        "find": "    proven = sum(1 for v in valves if str(v.get(\"state\") or \"\").upper() in (OPEN, HARDENED))\n",
+        "replace": "    proven = sum(1 for v in valves if str(v.get(\"state\") or \"\").upper() == OPEN)\n",
         "matches": 1,
     },
     {
@@ -484,8 +485,9 @@ class AHardenedLockIsOpenAndARouteIsNotALock(unittest.TestCase):
         import self_arming as SA
         r = self._ask([self._one("frame.release", SA.HARDENED)])
         self.assertEqual(r["state"], HE.OK)
-        self.assertIn("1 of 1 locks open", r["line"])
-        self.assertNotIn("0 of 1", r["line"])
+        # REG-3215 - the act question leads; the evidence tier is the "(N proven)" beside it
+        self.assertIn("(1 proven)", r["line"])
+        self.assertNotIn("(0 proven)", r["line"])
 
     def test_a_route_is_not_one_of_the_locks(self):
         import self_arming as SA
@@ -493,9 +495,10 @@ class AHardenedLockIsOpenAndARouteIsNotALock(unittest.TestCase):
             self._one("frame.release", SA.UNPROVEN),
             self._one("chronicle", SA.HARDENED, kind="route"),
         ])
-        self.assertIn("0 of 1 locks open", r["line"])
+        self.assertIn("of 1 may act now", r["line"])
+        self.assertIn("(0 proven)", r["line"])
         self.assertIn("1 of 1 routes proven", r["line"])
-        self.assertNotIn("1 of 2 locks", r["line"])
+        self.assertNotIn("of 2 may act", r["line"])
         self.assertNotIn("2 of 2", r["line"])
 
     def test_an_INCOMPLETE_axis_is_named(self):
@@ -503,14 +506,14 @@ class AHardenedLockIsOpenAndARouteIsNotALock(unittest.TestCase):
         r = self._ask([self._one("miniauto.run", SA.INCOMPLETE, k=0, n=0)])
         self.assertEqual(r["state"], HE.OK)
         self.assertIn("1 incomplete", r["line"])
-        self.assertIn("0 of 1 locks open", r["line"])
+        self.assertIn("(0 proven)", r["line"])
 
     def test_a_missing_heart_is_not_an_open_row(self):
         import self_arming as SA
         r = self._ask([self._one("frame.release", SA.HARDENED)],
                       heart_ok=False, heart_why="the heart has never run here")
         self.assertEqual(r["state"], HE.UNKNOWN)
-        self.assertIn("1 of 1 locks open", r["line"])
+        self.assertIn("(1 proven)", r["line"])
         self.assertIn("none of that may act here", r["line"])
         self.assertIn("the heart has never run here", r["line"])
         self.assertEqual(r.get("proofN"), 2)

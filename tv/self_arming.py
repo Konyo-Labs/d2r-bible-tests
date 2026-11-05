@@ -1852,8 +1852,8 @@ def report():
     rows, why = sp["rows"], sp["why"]
     if rows is None:
         return {"ok": False, "why": why, "ledger": _ledger_summary(sp),
-                "locks": [{"lock": k, "state": UNKNOWN, "why": why, "permitted": False,
-                           "permittedWhy": why} for k in sorted(LOCKS)]}
+                "locks": [with_words({"lock": k, "state": UNKNOWN, "why": why, "permitted": False,
+                                      "permittedWhy": why}) for k in sorted(LOCKS)]}
     # ⚠ ROUTES RIDE THE SAME REPORT, not a second one. The heart reads ONE self_arming.report(),
     # so a route appears beside the valves in the same four words and the corroborator sees them
     # as siblings — which is what he asked for: "all connected to the heart of the console
@@ -1871,6 +1871,8 @@ def report():
             "open": len([x for x in out if x.get("state") in (OPEN, HARDENED)]),
             "hardened": len([x for x in out if x.get("state") == HARDENED]),
             "permitted": len([x for x in out if x.get("permitted")]),
+            # REG-3215 - the valves' count in the act's words ("4 of 9 may act now (7 proven)"); routes are not valves
+            "say": lock_counts([x for x in out if x.get("kind") != "route"])["say"],
             "heartOk": bool(heart[0]), "heartWhy": heart[1] or "",
             "ledger": _ledger_summary(sp),
             "total": len(out)}
@@ -2025,7 +2027,126 @@ def _with_permit(row, lock, spec, rows, heart):
     row["permittedWhy"] = why or ""
     # a short word a centred label can afford: WHAT holds a lock its evidence already earned
     row["heldBy"] = "" if ok else _held_by(why, heart)
+    return with_words(row)
+
+
+# REG-3215 - A LOCK ANSWERS TWO QUESTIONS, AND EACH GETS ITS OWN WORD. Measured on his Mac 2026-11-05 21:23: the
+# heart's lock rows read "OPEN" for frame.release (35 of 35 distinct attacks refused, wilson 0.901 >= 0.722) while
+# may() refused it (the proof census is STALE and the lock is destructive), and the count read "7 of 9 open" where
+# 4 may act - so the Fleet card said "locks shut" and the Heart said OPEN about the same lock (GrokBot, #230 21:08).
+# "OPEN" answered "is it proven strong enough" while his question is "may it act now". Every surface now leads with
+# the ACT word - "may act", or "shut - <the one reason>" - and names the strength as what it is: "proven 0.90 >=
+# 0.72". `state` and `permitted` stay on every row for older readers; these words are what a surface prints.
+ACT_MAY = "may act"
+ACT_SHUT = "shut"
+#: what holds a lock, by heldBy, in the words a label can afford (control_ui.html's fan says the same four)
+HELD_SAY = {"stale": "the prover is behind", "blind": "an instrument is blind",
+            "heart": "not proven on this PC yet", "upstream": "blocked upstream"}
+
+
+def _pair(a, b):
+    """a and b at two decimals - more only when two would print them equal and they are not. -> (str, str)"""
+    for d in (2, 3, 4):
+        sa, sb = "%.*f" % (d, a), "%.*f" % (d, b)
+        if sa != sb or a == b:
+            break
+    return sa, sb
+
+
+def _num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def proven_say(row):
+    """The STRENGTH question - how far this lock's own evidence got - in its own words. -> str
+
+    Never "OPEN": that is a door's word, and the door is the other question (act_say)."""
+    st = str(row.get("state") or UNKNOWN).upper()
+    sc = row.get(row.get("deciding") or "wilson")
+    if sc is None:
+        sc = row.get("wilson")
+    bar = row.get("bar")
+    if st in (OPEN, HARDENED):
+        word = "hardened" if st == HARDENED else "proven"
+        if _num(sc) and _num(bar):
+            return "%s %s >= %s" % ((word,) + _pair(sc, bar))
+        return word
+    if st == UNPROVEN:
+        if row.get("provable") is False:
+            return "by design - nothing to sabotage"
+        return "untested - nobody has tried to break it yet"
+    if st == INCOMPLETE:
+        nb = len(row.get("blindClaims") or [])
+        return "not proven - %s never ran" % ("%d declared claim(s)" % nb if nb else "a declared claim")
+    if st == LOCKED:
+        if _num(sc) and _num(bar):
+            a, b = _pair(sc, bar)
+            if sc < bar:
+                return "not proven %s < %s" % (a, b)
+            return "not proven - %s >= %s, but its evidence is all of one sort" % (a, b)
+        return "not proven"
+    return "UNKNOWN - the proof could not be read"
+
+
+def act_why(row):
+    """The ACT question's one reason when the lock is shut; "" when it may act. -> str"""
+    if row.get("permitted") is True:
+        return ""
+    if not isinstance(row.get("permitted"), bool):
+        return "no verdict was taken, so it fails closed"
+    by = row.get("heldBy")
+    if by == "upstream":
+        m = re.match(r"blocked upstream: (\S+) is ", str(row.get("permittedWhy") or ""))
+        return "blocked upstream (%s)" % m.group(1) if m else HELD_SAY["upstream"]
+    if by in HELD_SAY:
+        return HELD_SAY[by]
+    # its own evidence holds it: the reason is what the evidence still lacks (the figures are proven_say's)
+    st = str(row.get("state") or UNKNOWN).upper()
+    if st in (OPEN, HARDENED):
+        return "the act's own check refused"
+    if st == UNPROVEN:
+        return "by design, nothing to sabotage" if row.get("provable") is False else "nobody has tried to break it yet"
+    if st == INCOMPLETE:
+        return "a declared claim never ran"
+    if st == LOCKED:
+        sc = row.get(row.get("deciding") or "wilson")
+        sc = row.get("wilson") if sc is None else sc
+        bar = row.get("bar")
+        if _num(sc) and _num(bar) and sc >= bar:
+            return "its evidence is all of one sort"
+        return "its score is under the bar"
+    return "the proof could not be read"
+
+
+def act_say(row):
+    """'may act', or 'shut - <the one reason>'. -> str"""
+    why = act_why(row)
+    return ACT_MAY if row.get("permitted") is True else "%s - %s" % (ACT_SHUT, why)
+
+
+def with_words(row):
+    """A report row plus the words a surface prints for its two questions. -> the same dict"""
+    row["act"] = ACT_MAY if row.get("permitted") is True else ACT_SHUT
+    row["actWhy"] = act_why(row)
+    row["actSay"] = act_say(row)
+    row["provenSay"] = proven_say(row)
     return row
+
+
+def lock_counts(valves):
+    """The valve tally every surface quotes. -> {"permitted": int|None, "proven", "total", "say"}
+
+    `permitted` is None when any row carries no verdict: how many may act is then UNKNOWN, never 0."""
+    valves = [v for v in (valves or []) if isinstance(v, dict)]
+    total = len(valves)
+    proven = sum(1 for v in valves if str(v.get("state") or "").upper() in (OPEN, HARDENED))
+    if all(isinstance(v.get("permitted"), bool) for v in valves):
+        permitted = sum(1 for v in valves if v.get("permitted") is True)
+        say = "%d of %d may act now (%d proven)" % (permitted, total, proven)
+    else:
+        permitted = None
+        say = "how many of %d may act now is UNKNOWN (%d proven)" % (total, proven)
+    return {"permitted": permitted, "proven": proven, "total": total, "say": say}
 
 
 def _held_by(why, heart):
@@ -2043,8 +2164,7 @@ def main(argv):
     if "--adopt-legacy-live" in argv:
         return _adopt_cli(argv)      # #181 (REG-2471) - the only writer this command line has, and it asks first
     rep = report()
-    print("SELF-ARMING LOCKS — %s" % ("%d of %d open" % (rep.get("open", 0), rep.get("total", 0))
-                                      if rep.get("ok") else "UNREADABLE: " + rep.get("why", "")))
+    print("SELF-ARMING LOCKS — %s" % ((rep.get("say") or "") if rep.get("ok") else "UNREADABLE: " + rep.get("why", "")))
     _led = rep.get("ledger") or {}
     if _led:
         print("  ledgers: %s (shared: proven in code, %d rows) + %s (this PC: %d rows, %d adopted) - %s"
@@ -2059,11 +2179,12 @@ def main(argv):
         w = l.get(l.get("deciding") or "wilson")
         if w is None:
             w = l.get("wilson")
-        print("  %-9s %-20s %s" % (l.get("state"), l.get("lock"),
+        print("  %-9s %-20s %s" % (l.get("act"), l.get("lock"),
                                    ("wilson %.3f/%.3f%s" % (w, l["bar"],
                                     "" if l.get("deciding") != "wilsonByAttack"
                                     else " (per attack; raw %.3f)" % l["wilson"]))
                                    if w is not None else "no sabotage attempted"))
+        print("            %s · %s" % (l.get("actSay") or "", l.get("provenSay") or ""))
         print("            %s" % (l.get("why") or ""))
     # a report is not a verdict: exit 0 always, because "nothing is open yet" is the CORRECT
     # state on a fresh tree and must not read as a broken build.

@@ -9326,6 +9326,20 @@ window._lockOpen = function(l){
   var s = String(l.state || '').toUpperCase();
   return (s === 'OPEN' || s === 'HARDENED') && l.permitted !== false;
 };
+/* REG-3215 - A LOCK ANSWERS TWO QUESTIONS, AND EACH GETS ITS OWN WORD. The heart printed "OPEN" over frame.release
+   (proven 0.90 >= 0.72) while may() refused it - the census is STALE and the lock is destructive - and the Fleet card
+   said "locks shut" about the same lock. "OPEN" answered "is it proven strong enough"; his question is "may it act
+   now". self_arming writes both words on every row (act / actSay / provenSay) and every lock surface prints THEM:
+   the act word leads, the strength is named as what it is. A row from an older server keeps the padlock's own
+   answer and never prints a strength it was not sent. -> {act, actWhy, actSay, provenSay} */
+window._lockWords = function(l){
+  var open = window._lockOpen(l);
+  var act = (l && l.act) || (open ? 'may act' : 'shut');
+  var why = (l && typeof l.actWhy === 'string') ? l.actWhy
+            : (open ? '' : ((l && (l.permittedWhy || l.why)) || 'no lock state has been read'));
+  return { act: act, actWhy: why, actSay: (l && l.actSay) || (why ? act + ' - ' + why : act),
+           provenSay: (l && l.provenSay) || '' };
+};
 window._lockMark = function(isOpen, px, label){
   var w = px || 13, col = isOpen ? '#8fe6a0' : 'currentColor';
   /* ⚠⚠ THE SHACKLE IS LIFTED CLEAR AS WELL AS ROTATED, AND A SECOND EYE IS WHY.
@@ -11689,11 +11703,16 @@ window._lockMark = function(isOpen, px, label){
            costs ZERO layout width. That matters: the verbose form was removed once because it
            rendered this chip 150.9px wide and broke the Shelf label. */
         var _isOpen = !!l && window._lockOpen(l);
-        el.innerHTML = window._lockMark(_isOpen, 13, _isOpen ? 'OPEN' : 'LOCKED');
+        /* REG-3215 - the act word leads, the strength is named: "shut - the prover is behind · proven 0.90 >= 0.72".
+           It read "OPEN: ... — but it may NOT act now", two answers to one question in one sentence. */
+        var _lw = window._lockWords(l);
+        el.innerHTML = window._lockMark(_isOpen, 13, _lw.act);
         el.title = what + ' — '
-          + (l ? (l.state + ': ' + (l.why || '')
-                  + (l.permitted === false ? ' — but it may NOT act now: ' + (l.permittedWhy || '') : ''))
-               : ((_sa && _sa.why) || 'this console could not read the locks, so it stays locked'));
+          + (l ? ((l.lock ? l.lock + ': ' : '') + _lw.actSay + (_lw.provenSay ? ' · ' + _lw.provenSay : '')
+                  + (l.permitted === false && l.permittedWhy && l.permittedWhy !== _lw.actWhy
+                     ? '. Why shut: ' + l.permittedWhy : '')
+                  + (l.why ? '. Its evidence: ' + l.why : ''))
+               : ((_sa && _sa.why) || 'this console could not read the locks, so it stays shut'));
       };
       _paintChip('lock-vault', 'vault.', 'the vault acts on your ledger');
       /* the SAME lock, quoted twice, never derived twice — one place decides and every
@@ -14626,21 +14645,24 @@ window._lockMark = function(isOpen, px, label){
      lane's owed count of the declared laws (NOT proved/declared: those are the last full run's and read 1214/1214 while 31 are
      owed); held because an instrument is blind -> how many are blind; any other hold -> its reason. The merit moves to the hover
      as "trial: N/N refused", so it cannot read as completion. -> {paint, hover} */
+  /* REG-3215 - THE ACT WORD IS "shut", ON THE FAN AS IN THE LIST, THE CHIPS AND THE FLEET CARD ("locks shut"). This
+     caption said "held" for the same answer - two words for one question on one screen. The reason after it is the
+     server's own (actWhy) when it was sent; the four below are self_arming.HELD_SAY, kept for an older server. */
   function _hrtHeldCaption(L, n_, d){
     var by = L && L.heldBy;
-    var held = { stale: 'the prover is behind', blind: 'an instrument is blind',
-                 heart: 'not proven on this PC yet', upstream: 'blocked upstream' }[by] || 'held';
+    var held = (L && L.actWhy) || { stale: 'the prover is behind', blind: 'an instrument is blind',
+                 heart: 'not proven on this PC yet', upstream: 'blocked upstream' }[by] || 'no reason was given';
     var ins = (d && d.instruments) || {};
-    var paint = 'held: ' + held;
+    var paint = 'shut - ' + held;
     if (by === 'stale') {
       var ow = (typeof ins.laneOwed === 'number') ? ins.laneOwed : null, dc = (typeof ins.declared === 'number') ? ins.declared : null;
       paint = (ow != null && dc != null && dc >= ow)
-        ? 'held · ' + ow + ' of ' + dc + ' still to prove'
-        : 'held: ' + held + ' · how many are owed UNKNOWN';
+        ? 'shut · ' + ow + ' of ' + dc + ' still to prove'
+        : 'shut - ' + held + ' · how many are owed UNKNOWN';
     } else if (by === 'blind' && ins.blind && ins.blind.length) {
-      paint = 'held · ' + ins.blind.length + ' instrument' + (ins.blind.length === 1 ? '' : 's') + ' blind';
+      paint = 'shut · ' + ins.blind.length + ' instrument' + (ins.blind.length === 1 ? '' : 's') + ' blind';
     }
-    return { paint: paint, hover: 'held: ' + held + ' · trial: ' + L.k + '/' + n_ + ' refused (its merit, not the census)' };
+    return { paint: paint, hover: 'shut - ' + held + ' · trial: ' + L.k + '/' + n_ + ' refused (its merit, not the census)' };
   }
   window._hrtHeldCaption = _hrtHeldCaption;
   var _hrtBusy = false;
@@ -15081,20 +15103,21 @@ window._lockMark = function(isOpen, px, label){
              : ((n_ && n_ > 0 && _kindsShort)
                   ? ('one kind of look only · ' + _conf.toFixed(2) + ' of ' + _kbar.toFixed(2))
                   : ''));
-      var waiting = open ? 'OPEN — it proved itself'
+      /* REG-3215 - the act word leads the hover too: "may act" or "shut", never "OPEN"/"HELD"/"LOCKED" for one answer */
+      var waiting = open ? 'may act — it proved itself' + (L.provenSay ? ' (' + L.provenSay + ')' : '')
                     /* REG-1737 - earned, and held by something else: say what, never "its own score" */
                     : ((L.permitted === false && (lst === 'OPEN' || lst === 'HARDENED'))
-                         ? ('HELD — it earned its score, but it may not act now: '
-                            + (L.permittedWhy || 'no reason was given'))
+                         ? ('shut — it earned its score' + (L.provenSay ? ' (' + L.provenSay + ')' : '')
+                            + ', but it may not act now: ' + (L.permittedWhy || 'no reason was given'))
                     : (_blind
-                         ? ('INCOMPLETE — ' + _blind.length + ' claim(s) this harness declared '
+                         ? ('shut — ' + _blind.length + ' claim(s) this harness declared '
                             + 'were never exercised, so the score never saw that axis')
                     : (L.provable === false
-                         ? 'LOCKED — and it can never prove itself: there is nothing to sabotage'
-                    : (!n_ ? 'LOCKED — waiting for a first sabotage'
+                         ? 'shut — and it can never prove itself: there is nothing to sabotage'
+                    : (!n_ ? 'shut — waiting for a first sabotage'
                     : (_scoreClears && _kindsShort
-                         ? 'LOCKED — the score clears; it is waiting for a DIFFERENT kind of look'
-                         : 'LOCKED — waiting on its own score')))));
+                         ? 'shut — the score clears; it is waiting for a DIFFERENT kind of look'
+                         : 'shut — waiting on its own score')))));
       gates += '<path d="' + gp + '" fill="none" stroke="' + lc + '" stroke-width="'
              + (open ? 2.4 : 1.8) + '" opacity="' + (open ? .95 : .8) + '"'
              + (open ? '' : ' stroke-dasharray="6 5" stroke-linecap="round"') + '/>';
@@ -15913,11 +15936,16 @@ window._lockMark = function(isOpen, px, label){
          The lock id leads because it is the unique part; the surface follows as context.
          [[sweep-dont-ask]] [[grok-second-eye]] */
       var _lname = L.lock ? (L.lock + (L.surface ? ' · ' + L.surface : '')) : (L.surface || '?');
+      /* REG-3215 - ONE WORD PER QUESTION. This cell printed the evidence tier - "OPEN · MAY NOT ACT" over frame.release
+         while may() refused it - so the heart and the Fleet card answered his question two ways. The act word is the
+         cell ("may act" / "shut"); the one reason leads the detail, then the strength by its own name. */
+      var _lw = window._lockWords(L);
       lrows += '<div class="hrt-row"><span class="hrt-k">' + _hrtEsc(_lname) + '</span>'
         + '<span class="hrt-s" style="color:' + _hrtLockColor(L) + '">'   /* #180 - the list and the fan, one colour rule */
-        + window._lockMark(window._lockOpen(L), 11) + ' ' + _hrtEsc(lst)
-        + (L.permitted === false && (lst === 'OPEN' || lst === 'HARDENED') ? ' · MAY NOT ACT' : '') + '</span>'
-        + '<span class="hrt-w">' + _hrtEsc(ar) + ' — ' + _hrtEsc(L.why || '') + '</span></div>';
+        + window._lockMark(window._lockOpen(L), 11) + ' ' + _hrtEsc(_lw.act) + '</span>'
+        + '<span class="hrt-w">' + (_lw.actWhy ? _hrtEsc(_lw.actWhy) + ' · ' : '')
+        + (_lw.provenSay ? _hrtEsc(_lw.provenSay) + ' · ' : '')
+        + _hrtEsc(ar) + ' — ' + _hrtEsc(L.why || '') + '</span></div>';
     }
     var _unread = '';
     if (d.organsOk === false || d.locksOk === false) {
@@ -15996,8 +16024,11 @@ window._lockMark = function(isOpen, px, label){
       + _hrtJoins(d.joins)
       + _hrtPrinter(d.printer)
       + _hrtDead(d.deadFields)
-      + '<div class="hrt-sec"><div class="hrt-h">The valves · ' + (d.open || 0) + ' of '
-      + (d.total || lk.length) + ' open</div>' + lrows + '</div>'
+      /* REG-3215 - the count in the act's words, self_arming's own sentence: "4 of 9 may act now (7 proven)". It read
+         "7 of 9 open" - the evidence tier - beside a Fleet card that said "locks shut" for the same PC. */
+      + '<div class="hrt-sec"><div class="hrt-h">The valves · ' + _hrtEsc(d.locksSay
+          || ('how many may act now is UNKNOWN (' + (d.open || 0) + ' of ' + (d.total || lk.length) + ' proven)'))
+      + '</div>' + lrows + '</div>'
       /* v2489 — THE ROUTES, DERIVED LIVE ON EVERY OPEN, LIKE EVERYTHING ELSE ON THIS PANEL.
          His ruling: "not draw it — it needs to derive, live, for real". This reads d.routes from
          the SAME /api/heart payload the valves come from, and that payload re-reads the proof

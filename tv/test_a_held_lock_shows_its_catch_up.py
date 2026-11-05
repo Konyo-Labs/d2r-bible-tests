@@ -79,15 +79,16 @@ class AHeldLockShowsItsCatchUp(unittest.TestCase):
 
     def test_the_caption_is_the_catch_up_and_the_merit_is_a_trial(self):
         o = _run()
-        self.assertEqual(o["cap"]["paint"], "held · 31 of 1214 still to prove",
+        # REG-3215 - the act word on the fan is "shut", the same word as the list, the chips and the Fleet card
+        self.assertEqual(o["cap"]["paint"], "shut · 31 of 1214 still to prove",
                          "a held lock does not show its catch-up from the lane's owed count (#180): %r" % o["cap"])
         self.assertNotIn("1214/1214", o["cap"]["paint"], "a stale census painted the last full run as if it were current")
         self.assertNotIn("earned", o["cap"]["paint"])
         self.assertIn("trial: 85/85 refused", o["cap"]["hover"], "the merit still reads as completion")
         self.assertIn("how many are owed UNKNOWN", o["capUnknown"]["paint"], "an unread owed count was given a number")
         self.assertNotIn("1214", o["capUnknown"]["paint"])
-        self.assertEqual(o["capBlind"]["paint"], "held · 2 instruments blind", "a blind hold painted a catch-up: %r" % o["capBlind"])
-        self.assertEqual(o["capHeart"]["paint"], "held: not proven on this PC yet", "a hold with no census painted a number")
+        self.assertEqual(o["capBlind"]["paint"], "shut · 2 instruments blind", "a blind hold painted a catch-up: %r" % o["capBlind"])
+        self.assertEqual(o["capHeart"]["paint"], "shut - not proven on this PC yet", "a hold with no census painted a number")
 
     def test_the_fan_and_the_list_paint_through_the_rules(self):
         s = _src()
@@ -138,8 +139,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "#180 - the held caption shows the trial record, not the catch-up",
      "file": "tv/control_ui.html",
-     "find": "        ? 'held · ' + ow + ' of ' + dc + ' still to prove'\n",
-     "replace": "        ? 'held · earned ' + L.k + '/' + n_\n",
+     "find": "        ? 'shut · ' + ow + ' of ' + dc + ' still to prove'\n",
+     "replace": "        ? 'shut · earned ' + L.k + '/' + n_\n",
      "matches": 1, "needs": "node"},
     {"why": "#180 - by design / paused locks are amber again",
      "file": "tv/control_ui.html",

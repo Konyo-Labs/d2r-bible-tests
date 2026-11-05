@@ -29530,9 +29530,13 @@ def _self_arming_state():
     _WORD = {"OPEN": "PROVEN", "HARDENED": "HARDENED", "LOCKED": "ASSERTED",
              "UNPROVEN": "UNPROVEN", "UNKNOWN": "UNKNOWN", "INERT": "INERT"}
     _OPENISH = ("OPEN", "HARDENED")
+    # REG-3215 - THE COUNT IN THE ACT'S WORDS, FROM THE ONE TALLY. "7 of 9 open" counted the evidence tier while 4 may
+    # act; the heart and the organ row now print self_arming's own sentence, "4 of 9 may act now (7 proven)".
+    _tally = _sa.lock_counts(locks)
     return {
         "ok": bool(rep.get("ok")),
-        "open": sum(1 for l in locks if l.get("state") in _OPENISH), "total": len(locks),
+        "open": _tally["proven"], "total": len(locks),
+        "locksSay": _tally["say"],
         # the count he asked for by name: "the HARDENING stamp badge on it"
         "hardened": sum(1 for l in locks if l.get("state") == "HARDENED"),
         "routesHardened": sum(1 for r in routes if r.get("state") == "HARDENED"),
@@ -29550,7 +29554,8 @@ def _self_arming_state():
         # ⚠⚠ REG-1737 - THE SIXTH FIELD THIS TRIM WOULD HAVE SWALLOWED. report() now carries
         # may()'s own verdict per row; `open` stays the evidence count, `permitted` is how many
         # may act right now, and the heart's reason rides along so a refusal is never a blank.
-        "permitted": sum(1 for l in locks if l.get("permitted")),
+        # REG-3215 - from the same tally as locksSay, so the number and the sentence cannot disagree (None = UNKNOWN)
+        "permitted": _tally["permitted"],
         "heartOk": rep.get("heartOk"), "heartWhy": rep.get("heartWhy", ""),
         # trimmed for a poll: the badge needs state + why + the arithmetic, not the whole row
         "locks": [{"lock": l.get("lock"), "surface": l.get("surface"), "acts": l.get("acts"),
@@ -29561,6 +29566,10 @@ def _self_arming_state():
                    # REG-1737 - may()'s verdict, the padlock's source (state is the evidence tier)
                    "permitted": l.get("permitted"), "permittedWhy": l.get("permittedWhy"),
                    "heldBy": l.get("heldBy"),
+                   # REG-3215 - the two questions, one word each: what every lock surface prints. The seventh field
+                   # this trim would have swallowed; `state` and `permitted` above stay for older readers.
+                   "act": l.get("act"), "actWhy": l.get("actWhy"), "actSay": l.get("actSay"),
+                   "provenSay": l.get("provenSay"),
                    # ⚠ AND WHETHER n=0 IS EVEN ANSWERABLE. self_arming distinguishes a door
                    # nobody has sabotaged yet (provable, waiting on work) from one that has no
                    # refusal path at all and never will be (vault.forget — clearing a rebuildable
@@ -30074,6 +30083,8 @@ def heart_state(force=False):
         "open": locks.get("open"), "total": locks.get("total"),
         # REG-1737 - how many may act now; each lock row carries its own permittedWhy
         "permitted": locks.get("permitted"), "heartWhy": locks.get("heartWhy", ""),
+        # REG-3215 - and that count in words, the act question first: "4 of 9 may act now (7 proven)"
+        "locksSay": locks.get("locksSay"),
         # CF-13 — the scope auditor's rows, joined here as EVIDENCE. It was computed correctly and
         # read by nobody; its only callers repo-wide were its own tests. It fails nothing and is
         # rendered with every reach count visible so the noise reads as noise. [[the-unjoined-end]]
