@@ -32551,7 +32551,9 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
     clearTimeout(_D2L.t);
     _d2jspLampAsk().then(function (j) {
       var on = !!(j && j.state === 'on');
-      var fast = !on && Date.now() < _D2L.fast;
+      /* v3861 - while the console's own d2jsp window is open (kind signing-in) the lamp keeps asking every 3 s, so it
+         turns green within seconds of that window closing, however long the sign-in took */
+      var fast = !on && (Date.now() < _D2L.fast || !!(j && j.kind === 'signing-in'));
       if (on) _D2L.fast = 0;
       _D2L.t = setTimeout(_d2jspLampLoop, fast ? 3000 : 120000);
     });

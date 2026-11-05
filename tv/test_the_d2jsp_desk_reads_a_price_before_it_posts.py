@@ -1531,27 +1531,41 @@ process.stdout.write(JSON.stringify({
             seen.append(list(argv))
             return type("P", (), {"returncode": 0})()
 
+        launched = []
+
+        def popen(argv, **kw):
+            launched.append(list(argv))
+            return object()
+
         which = lambda name: "/usr/bin/google-chrome" if name == "google-chrome" else None
-        self.assertTrue(desk._open_chrome_login(platform="linux", run=run, which=which))
-        self.assertEqual(seen[-1][0], "/usr/bin/google-chrome")
-        self.assertIn(desk.LOGIN_URL, seen[-1])
-        self.assertNotIn("--user-data-dir", seen[-1])
-        self.assertNotIn("--remote-debugging-port", seen[-1])
-        self.assertTrue(all("9222" not in part for part in seen[-1]))
-        self.assertFalse(desk._open_chrome_login(platform="linux", run=run, which=lambda name: None))
-        self.assertTrue(desk._open_chrome_login(platform="darwin", run=run))
+        self.assertTrue(desk._open_chrome_login(platform="linux", run=run, which=which, popen=popen))
+        self.assertEqual(launched[-1][0], "/usr/bin/google-chrome")
+        self.assertIn(desk.LOGIN_URL, launched[-1])
+        self.assertNotIn("--user-data-dir", " ".join(launched[-1]))
+        self.assertNotIn("--remote-debugging-port", " ".join(launched[-1]))
+        self.assertTrue(all("9222" not in part for part in launched[-1]))
+        self.assertFalse(desk._open_chrome_login(platform="linux", run=run, which=lambda name: None, popen=popen))
+        self.assertTrue(desk._open_chrome_login(platform="darwin", run=run, popen=popen))
         self.assertEqual(seen[-1][:3], ["open", "-a", "Google Chrome"])
         win_chrome = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+        local = "C:\\Users\\U\\AppData\\Local"
         self.assertTrue(desk._open_chrome_login(
-            platform="win32", run=run,
+            platform="win32", run=run, popen=popen, env={"LOCALAPPDATA": local},
             which=lambda name: win_chrome if name == "chrome" else None,
         ))
-        self.assertEqual(seen[-1][0], win_chrome)
-        self.assertIn(desk.LOGIN_URL, seen[-1])
-        self.assertNotIn("--user-data-dir", seen[-1])
-        self.assertNotIn("--remote-debugging-port", seen[-1])
-        self.assertTrue(all("9222" not in part for part in seen[-1]))
-        self.assertFalse(desk._open_chrome_login(platform="win32", run=run, which=lambda name: None))
+        self.assertEqual(launched[-1][0], win_chrome)
+        self.assertIn(desk.LOGIN_URL, launched[-1])
+        # v3861 - Windows signs in through the profile this console owns and reads (Chrome 127+ locks the main
+        # profile's d2jsp cookie to Chrome itself): the Chrome it opens is still the one it reads
+        self.assertIn("--user-data-dir=" + desk.login_profile_dir(platform="win32", env={"LOCALAPPDATA": local}),
+                      launched[-1])
+        self.assertNotIn("--remote-debugging-port", " ".join(launched[-1]))
+        self.assertTrue(all("9222" not in part for part in launched[-1]))
+        self.assertFalse(desk._open_chrome_login(platform="win32", run=run, which=lambda name: None, popen=popen))
+        # v3861 - "it opened a login but it was bugged it kept closing": a waited-on Chrome that was not already open
+        # IS the browser, and the wait's timeout killed it. Linux and Windows start it and leave it running.
+        self.assertEqual([a for a in seen if a[:1] != ["open"]], [],
+                         "the login Chrome was started through a wait that kills it: %r" % (seen,))
         saved_open = desk._open_chrome_login
         try:
             desk._open_chrome_login = lambda: False
@@ -1654,7 +1668,7 @@ process.stdout.write(JSON.stringify({
                 key, now, unprotect,
             )
             self.assertIsNone(unread)
-            self.assertEqual(why, "chrome-unread")
+            self.assertEqual(why, "chrome-locked", "a v20 (app-bound) cookie no longer says the console signs in itself")
             self.assertTrue(all(not bytes(raw).startswith(b"v20") for raw in seen_blobs))
         finally:
             shutil.rmtree(folder, ignore_errors=True)
@@ -1675,6 +1689,80 @@ process.stdout.write(JSON.stringify({
             self.assertEqual(reason, "ok")
         finally:
             desk._windows_cookie_header = saved
+
+    def test_a_windows_console_signs_in_through_a_profile_it_owns(self):
+        """v3861 - MEASURED 2026-11-05 on the work ALT (Chrome 156): the main profile's d2jsp cookies are v20, so the lamp
+        stayed grey signed in or not. A profile the console owns stores v10, opened by its own Local State key; while its
+        Chrome runs, Windows refuses the cookie file ("unable to open database file"), which is login-open."""
+        import base64
+        import sqlite3
+        import tempfile
+        import d2jsp_chrome as desk
+
+        key = bytes.fromhex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+        state = '{"os_crypt": {"encrypted_key": "%s", "app_bound_encrypted_key": "APPB-LEAVE"}}' % (
+            base64.b64encode(b"DPAPI" + b"wrapped-bytes").decode("ascii"))
+
+        def unprotect(raw):
+            return key if bytes(raw) == b"wrapped-bytes" else None
+
+        now = 1_700_000_000
+        far = desk._chrome_now(now) + 10 ** 12
+        bound = bytes.fromhex(
+            "7631300102030405060708090a0b0c"
+            "c382a34efbd2cb3a0add7aad257baf5882500cf46d9c7b9b40ac0f0c501a03"
+            "fde081e8b443c689ecc3c5d58b024b828b770d114e618134ea13f3da43")
+
+        def profile(folder, rows, with_state=True):
+            os.makedirs(os.path.join(folder, "Default", "Network"))
+            if with_state:
+                with open(os.path.join(folder, "Local State"), "w", encoding="utf-8") as fh:
+                    fh.write(state)
+            con = sqlite3.connect(os.path.join(folder, "Default", "Network", "Cookies"))
+            con.execute("create table cookies (host_key text, name text, encrypted_value blob, expires_utc integer)")
+            for r in rows:
+                con.execute("insert into cookies values (?,?,?,?)", r)
+            con.commit()
+            con.close()
+            return folder
+
+        top = tempfile.mkdtemp(prefix="d2jsp-own-")
+        saved = (desk._read_rows, desk.login_profile_dir, desk.live_cookie_header, desk._sweep_stale_scratch)
+        try:
+            own = profile(os.path.join(top, "own"), [(".d2jsp.org", "sid", bound, far)])
+            self.assertEqual(desk._own_login_header(now_utc=now, root=own, unprotect=unprotect),
+                             ("sid=desk-session", "ok"), "the console's own profile did not open with its own key")
+            self.assertEqual(desk._own_login_header(now_utc=now, root=os.path.join(top, "never"))[1], "no-profile")
+            bare = profile(os.path.join(top, "bare"), [("example.com", "x", b"v10zz", far)])
+            self.assertEqual(desk._own_login_header(now_utc=now, root=bare, unprotect=unprotect)[1], "need-login")
+
+            def held(path):
+                raise sqlite3.OperationalError("unable to open database file")
+            desk._read_rows = held
+            self.assertEqual(desk._own_login_header(now_utc=now, root=own, unprotect=unprotect), (None, "login-open"),
+                             "an open sign-in window read as anything but login-open")
+            desk.login_profile_dir = lambda platform=None, env=None: own
+            self.assertEqual(desk._windows_cookie_header(now_utc=now, unprotect=unprotect), (None, "login-open"))
+            desk._read_rows = saved[0]
+            self.assertEqual(desk._windows_cookie_header(now_utc=now, unprotect=unprotect), ("sid=desk-session", "ok"),
+                             "the own profile is not asked first - a locked main profile would win")
+            main = profile(os.path.join(top, "main"), [(".d2jsp.org", "member_id", b"v20" + b"\x00" * 40, far)])
+            self.assertEqual(desk._windows_cookie_header(now_utc=now, paths=[os.path.join(main, "Default", "Network",
+                                                         "Cookies")], key=key, unprotect=unprotect),
+                             (None, "chrome-locked"))
+
+            desk._sweep_stale_scratch = lambda now=None, tmp=None: 0
+            desk.live_cookie_header = lambda now_utc=None: (None, "chrome-locked")
+            lk = desk.d2jsp_login_status()
+            self.assertEqual((lk["state"], lk.get("needsLogin")), ("off", True))
+            self.assertIn("own d2jsp window", lk["why"])
+            desk.live_cookie_header = lambda now_utc=None: (None, "login-open")
+            op = desk.d2jsp_login_status()
+            self.assertEqual((op["state"], op["kind"]), ("off", "signing-in"))
+            self.assertIn("close it", op["why"])
+        finally:
+            desk._read_rows, desk.login_profile_dir, desk.live_cookie_header, desk._sweep_stale_scratch = saved
+            shutil.rmtree(top, ignore_errors=True)
 
     def test_a_vault_filing_can_be_removed_from_the_trade_list(self):
         if NODE is None:
@@ -2096,6 +2184,44 @@ RED_PROOF = [
         "file": "tv/d2jsp_chrome.py",
         "find": "    if sys.platform == \"win32\":\n        return _windows_cookie_header(now_utc)\n",
         "replace": "    pass\n",
+        "matches": 1,
+    },
+    {
+        "why": "v3861 - the login Chrome is waited on again, and the wait's timeout kills a Chrome that was not already open",
+        "file": "tv/d2jsp_chrome.py",
+        "find": "        (popen or subprocess.Popen)(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,\n"
+                "                                    stderr=subprocess.DEVNULL, **kw)\n",
+        "replace": "        runner(argv, capture_output=True, timeout=5)\n",
+        "matches": 1,
+    },
+    {
+        "why": "v3861 - Windows opens the login in Chrome's main profile again, whose d2jsp cookie Chrome locks to itself",
+        "file": "tv/d2jsp_chrome.py",
+        "find": "        own = login_profile_dir(platform=plat, env=env)\n",
+        "replace": "        own = None\n",
+        "matches": 1,
+    },
+    {
+        "why": "v3861 - the console's own sign-in profile is never asked, so a signed-in Windows PC stays grey",
+        "file": "tv/d2jsp_chrome.py",
+        "find": "    if paths is None and key is None and state_text is None:\n"
+                "        # v3861 - the profile this console owns is asked first",
+        "replace": "    if False:\n"
+                   "        # v3861 - the profile this console owns is asked first",
+        "matches": 1,
+    },
+    {
+        "why": "v3861 - an open sign-in window reads as signed out, not as signing in",
+        "file": "tv/d2jsp_chrome.py",
+        "find": "    except (OSError, sqlite3.Error):\n        return None, \"login-open\"\n",
+        "replace": "    except (OSError, sqlite3.Error):\n        return None, \"need-login\"\n",
+        "matches": 1,
+    },
+    {
+        "why": "v3861 - an app-bound (v20) cookie reads as unreadable again, never as the sign-in the console does itself",
+        "file": "tv/d2jsp_chrome.py",
+        "find": "        return None, (\"chrome-locked\" if locked else \"chrome-unread\")",
+        "replace": "        return None, \"chrome-unread\"",
         "matches": 1,
     },
 ]

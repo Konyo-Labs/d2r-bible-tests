@@ -48,6 +48,26 @@ POST_BOARDS = (BOARD, LADDER_BOARD)
 QUOTE_BOARD = 268
 COMPOSE_URL = "https://forums.d2jsp.org/post.php?mode=post&f=268"
 LOGIN_URL = "https://forums.d2jsp.org/login.php"
+
+#: v3861 - WHY WINDOWS SIGNS IN THROUGH A CHROME PROFILE THIS CONSOLE OWNS. MEASURED 2026-11-05 on the work ALT (Chrome 156):
+#: the d2jsp cookies in Chrome's main profile are v20, app-bound encryption (Chrome 127+) that only Chrome itself opens, so
+#: the lamp read "could not read the Chrome login" signed in or not, on every up-to-date Windows PC. A cookie Chrome writes
+#: under any OTHER --user-data-dir is v10 (measured the same hour on a throwaway profile with a fake cookie): the DPAPI key
+#: in that profile's own Local State opens it, with the reader this file already has. So the lamp opens the forum in this
+#: profile, he signs in there once, and the console reads it. Chrome's app-bound key is never touched. ⚠ Windows locks a
+#: profile's cookie file while its Chrome runs (measured: "unable to open database file" at 0 s and at 35 s, read fine
+#: after close), so an open sign-in window reads as "login-open", never as signed out.
+LOGIN_PROFILE_PARTS = ("TVD", "d2jsp-login")
+
+
+def login_profile_dir(platform=None, env=None):
+    """The Chrome profile this console owns for its d2jsp sign-in. -> path | None (none on this platform)"""
+    plat = sys.platform if platform is None else platform
+    env = os.environ if env is None else env
+    if plat == "win32":
+        local = env.get("LOCALAPPDATA")
+        return os.path.join(local, *LOGIN_PROFILE_PARTS) if local else None
+    return None
 _HOST = "forums.d2jsp.org"
 _PRICE_LINE = re.compile(r"^\d+(?:\.\d+)? fg$")
 _CHROME_EPOCH = 11644473600  # seconds from 1601-01-01 to 1970-01-01
@@ -633,6 +653,7 @@ def _windows_rows_to_header(rows, key, now_utc, unprotect):
     pairs = []
     saw_host = False
     failed = False
+    locked = True
     for host, name, blob, expires in rows:
         if not _d2jsp_host(host):
             continue
@@ -646,6 +667,7 @@ def _windows_rows_to_header(rows, key, now_utc, unprotect):
         value = _open_windows_value(blob, key, host, unprotect)
         if not value:
             failed = True
+            locked = locked and isinstance(blob, (bytes, bytearray)) and bytes(blob[:3]) == b"v20"
             continue
         nm = str(name or "")
         if not nm or any(c in nm for c in ("=", ";", " ", "\r", "\n")):
@@ -654,17 +676,50 @@ def _windows_rows_to_header(rows, key, now_utc, unprotect):
     if pairs:
         return "; ".join(pairs), "ok"
     if saw_host and failed:
-        return None, "chrome-unread"
+        return None, ("chrome-locked" if locked else "chrome-unread")   # v3861 - v20: Chrome keeps it to itself
     if saw_host:
         return None, "need-login"
     return None, "need-login"
 
 
+def _own_login_header(now_utc=None, root=None, unprotect=None):
+    """v3861 - the d2jsp cookie header from the profile this console owns. -> (header | None, reason)
+
+    reason: ok · need-login (the profile is there, no d2jsp sign-in in it) · login-open (its Chrome holds the cookie file:
+    the sign-in window is open) · no-profile (never opened on this PC)"""
+    root = login_profile_dir() if root is None else root
+    if not root or not os.path.isdir(root):
+        return None, "no-profile"
+    dbs = _windows_cookie_dbs(root=root) or []
+    if not dbs:
+        return None, "need-login"
+    opener = unprotect or _dpapi_unprotect
+    try:
+        with open(os.path.join(root, "Local State"), encoding="utf-8") as fh:
+            key = _windows_key_from_state(fh.read(), opener)
+    except OSError:
+        key = None
+    try:
+        rows = _read_rows(dbs[0])
+    except (OSError, sqlite3.Error):
+        return None, "login-open"
+    header, reason = _windows_rows_to_header(rows, key, now_utc, opener)
+    return (header, "ok") if header else (None, reason)
+
+
 def _windows_cookie_header(now_utc=None, paths=None, key=None, unprotect=None, state_text=None):
     """A d2jsp cookie header from a Windows Chrome profile, or a reason."""
+    own = None
+    if paths is None and key is None and state_text is None:
+        # v3861 - the profile this console owns is asked first: its cookies are the ones it can open
+        own_header, own = _own_login_header(now_utc, unprotect=unprotect)
+        if own_header:
+            return own_header, "ok"
+        if own == "login-open":
+            return None, "login-open"
     stores = list(paths) if paths is not None else _windows_cookie_dbs()
     if not stores:
-        return None, "chrome-unread"
+        return None, ("need-login" if own == "need-login" else "chrome-unread")
     opener = unprotect or _dpapi_unprotect
     if key is None and state_text is not None:
         key = _windows_key_from_state(state_text, opener)
@@ -672,6 +727,7 @@ def _windows_cookie_header(now_utc=None, paths=None, key=None, unprotect=None, s
         key = _windows_aes_key(opener)
     saw_fail = False
     saw_rows = False
+    saw_locked = False
     for path in stores:
         try:
             rows = _read_rows(path)
@@ -682,11 +738,15 @@ def _windows_cookie_header(now_utc=None, paths=None, key=None, unprotect=None, s
             return header, "ok"
         if reason == "chrome-unread":
             saw_fail = True
+        elif reason == "chrome-locked":
+            saw_locked = True
         elif reason == "need-login":
             saw_rows = True
+    if saw_locked:
+        return None, "chrome-locked"        # v3861 - the actionable word: sign in through the console's own window
     if saw_fail:
         return None, "chrome-unread"
-    if saw_rows:
+    if saw_rows or own == "need-login":
         return None, "need-login"
     return None, "chrome-unread"
 
@@ -752,7 +812,27 @@ def d2jsp_login_status(now_utc=None):
             "state": "off",
             "kind": "signed-out",
             "needsLogin": True,
-            "why": "This machine is not signed into d2jsp. Click the lamp to sign in.",
+            "why": "This machine is not signed into d2jsp. Click the lamp to sign in"
+                   + (" - then close that window: Chrome saves the sign-in when it closes." if sys.platform == "win32"
+                      else "."),
+        }
+    if reason == "chrome-locked":
+        return {
+            "ok": True,
+            "state": "off",
+            "kind": "signed-out",
+            "needsLogin": True,
+            "why": "This PC's Chrome keeps its d2jsp sign-in locked to Chrome itself, so the console signs in through its "
+                   "own d2jsp window. Click the lamp, sign in there once, then close that window.",
+        }
+    if reason == "login-open":
+        return {
+            "ok": True,
+            "state": "off",
+            "kind": "signing-in",
+            "needsLogin": True,
+            "why": "The console's d2jsp window is open. Sign in there, then close it - the lamp turns green once it is "
+                   "closed.",
         }
     return {
         "ok": True,
@@ -989,34 +1069,49 @@ def chrome_user_agent(platform=None, version=None):
     ) % (system, version)
 
 
-def _open_chrome_login(platform=None, run=None, which=None):
+def _open_chrome_login(platform=None, run=None, which=None, popen=None, env=None):
     """Open the forum login in this machine's own Chrome.
 
     Nothing from a draft is in the URL. The page opens in the Chrome this
     console already reads, not a debug port and not another computer's login.
+    On Windows that is the profile this console owns (login_profile_dir, v3861).
+
+    v3861 - ⚠ STARTED AND LEFT RUNNING. MEASURED 2026-11-05 on the work ALT: run(argv, timeout=5) on a Chrome that was not
+    already open made THAT process the browser, which never exits, so the timeout killed it (TimeoutExpired after 6.6 s,
+    headless, a throwaway profile) - "it opened a login but it was bugged it kept closing" (Elad). Only `open -a` (the
+    Mac) returns at once and is still waited on.
     """
     plat = sys.platform if platform is None else platform
     runner = run or subprocess.run
     if plat == "darwin":
         argv = ["open", "-a", "Google Chrome", LOGIN_URL]
-    elif str(plat).startswith("linux"):
+        try:
+            proc = runner(argv, capture_output=True, timeout=5)
+            return getattr(proc, "returncode", 1) == 0
+        except Exception:
+            return False
+    if str(plat).startswith("linux"):
         binary = _chrome_bin(platform=plat, which=which)
         if not binary:
             return False
         argv = [binary, "--no-first-run", LOGIN_URL]
+        kw = {"start_new_session": True}
     elif plat == "win32":
         binary = _chrome_bin(platform=plat, which=which)
         if not binary:
             return False
-        argv = [binary, LOGIN_URL]
+        own = login_profile_dir(platform=plat, env=env)
+        argv = [binary] + (["--user-data-dir=%s" % own, "--no-first-run", "--no-default-browser-check"] if own else []) \
+            + [LOGIN_URL]
+        kw = {"creationflags": 0x00000008 | 0x00000200}          # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
     else:
         return False
     try:
-        proc = runner(argv, capture_output=True, timeout=5)
-        return getattr(proc, "returncode", 1) == 0
+        (popen or subprocess.Popen)(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL, **kw)
+        return True
     except Exception:
         return False
-
 
 def open_d2jsp_login():
     """Open this machine's d2jsp login. The answer says whether the page opened."""

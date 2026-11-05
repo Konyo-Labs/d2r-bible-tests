@@ -42,6 +42,11 @@ CHECKS = [
   1
  ],
  [
+  "tv/control_ui.html",
+  "      var fast = !on && (Date.now() < _D2L.fast || !!(j && j.kind === 'signing-in'));\n",
+  1
+ ],
+ [
   "bible.html",
   "  if (q.reason === 'need-login') return 'Sign in to d2jsp first - the price read uses the Chrome login on this machine; ' + (q.opened",
   1
@@ -124,6 +129,13 @@ RED_PROOF = [
   "replace": "      _D2L.t = setTimeout(_d2jspLampLoop, 120000);\n",
   "matches": 1,
   "why": "no fast re-check after a sign-in"
+ },
+ {
+  "file": "tv/control_ui.html",
+  "find": "      var fast = !on && (Date.now() < _D2L.fast || !!(j && j.kind === 'signing-in'));\n",
+  "replace": "      var fast = !on && Date.now() < _D2L.fast;\n",
+  "matches": 1,
+  "why": "v3861 - an open console d2jsp window stops the fast re-check, so the lamp waits two minutes after it closes"
  },
  {
   "file": "bible.html",
