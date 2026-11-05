@@ -28022,7 +28022,8 @@ function escC(s) {
     return out;
   };
   /* #86 gap 12 (REG-1772) — ONLINE IS A PULSE. THE KEY IS ONLY STORAGE.
-     The roster keeps a presence key for 40 minutes so two missed 15-minute rewrites do not
+     The roster keeps a presence key for PRESENCE_TTL (v3862 Workers Paid: 10 min, refreshed every 220 s; it was
+     40 and 15 on the free plan) so missed rewrites do not
      evict a live console. The card was reading that key as "here": green dot, mint name, and
      a hover that still said ON AIR when the console had died while recording. A live console
      rewrites at most every 900s and beacons every 240s, so two missed rewrites plus one beacon

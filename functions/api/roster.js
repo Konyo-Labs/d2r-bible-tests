@@ -7,9 +7,9 @@
  * owner label (Konyo · Mac, Konyo · ALT, Konyo · GrokBot, Dean, Wife PC).
  * An install id, a hostname, or a path is not a key.
  *
- * Presence is already budgeted at 768 of 1,000 KV writes a day. This route
- * adds at most 4 PCs times 25 writes (868 together). Five labels exist so a
- * row can be named; five PCs at this cap would be 893, still under 1,000.
+ * v3862 (Workers Paid): presence is budgeted at 4,896 of the fleet's own 10,000
+ * KV writes a day (KV_WRITES below). This route adds at most 6 PCs times 25
+ * writes (5,046 together). On the free plan it was 768 + 4 x 25 of 1,000.
  * One key per owner, rewritten only when the body changed, at most once an
  * hour, plus one boot publish inside that hour. The 26th write of the UTC
  * day is refused out loud. A refusal is HTTP 200 with ok:false, never a 500
@@ -55,10 +55,13 @@
  * the record holds a boolean, so a viewer shows that row UNKNOWN, never verified.
  */
 
-const PRESENCE_WRITES = 768;
-const ROSTER_PCS = 4;
+/* v3862 - WORKERS PAID (confirmed 2026-11-05). KV_WRITES is this fleet's OWN daily ceiling, a third of what the plan
+   includes (1,000,000 a month ~ 32,000 a day), sized for six PCs: presence 4,896 (console.js REFRESH_S) + roster
+   6 x 25 + profile 6 x PROFILE_DAY_CAP + frames 6 x FRAMES_DAY_CAP. On the free plan it was 1,000. */
+const PRESENCE_WRITES = 4896;
+const ROSTER_PCS = 6;
 const ROSTER_CAP = 25;
-const KV_WRITES = 1000;
+const KV_WRITES = 10000;
 const HOUR_MS = 3600 * 1000;
 const TTL_S = 60 * 60 * 24 * 400;
 
@@ -447,8 +450,8 @@ export function profileKeyOf(owner) {
 }
 
 const PROFILE_MAX_BODY = 200000;
-const PROFILE_DAY_CAP = 20;
-const PROFILE_MIN_GAP_MS = 30 * 60 * 1000;
+const PROFILE_DAY_CAP = 150;                    // v3862 paid: the console posts at most every 10 min (was 20 a day)
+const PROFILE_MIN_GAP_MS = 8 * 60 * 1000;       // the worker refuses only inside 8 min (the console waits 10)
 const STORE_NAME = /^d2r_[A-Za-z0-9_]{1,60}$/;
 // A signed body is fresh for this long either side of the worker's clock, and each one must be newer than the last
 // stored: a captured upload (the boot one skips the gap) cannot be replayed to roll a console back.
@@ -662,7 +665,7 @@ async function profilePost(env, bytes, sig, body) {
   }
   const age = prev && typeof prev.t === "number" ? now - prev.t : PROFILE_MIN_GAP_MS;
   if (prev && samePub && age < PROFILE_MIN_GAP_MS && body.boot !== true) {
-    return pJson(Object.assign({ ok: true, owner: owner, stored: [], skipped: ["within 30 min"] }, said));
+    return pJson(Object.assign({ ok: true, owner: owner, stored: [], skipped: ["within 8 min"] }, said));
   }
   const today = dayOf(now);
   const n = prev && prev.day === today && typeof prev.n === "number" ? prev.n : 0;
@@ -721,8 +724,8 @@ async function profileGet(kv, owner) {
 // is the ONE place a picture rides: the theatre's own 160 px JPEG thumbnails, at most 3 per session, 16 sessions,
 // each under 20 KB - checked here, never trusted from the sender. Same key, intent and replay rule as the profile.
 const FRAMES_MAX_BODY = 900000;
-const FRAMES_DAY_CAP = 8;
-const FRAMES_MIN_GAP_MS = 3 * 60 * 60 * 1000;
+const FRAMES_DAY_CAP = 24;                      // v3862 paid: the console posts at most hourly (was 8 a day)
+const FRAMES_MIN_GAP_MS = 50 * 60 * 1000;       // the worker refuses only inside 50 min (the console waits 60)
 const FRAMES_MAX_SESSIONS = 16;
 const FRAMES_MAX_PER = 3;
 const FRAMES_MAX_WITNESS = 8;   // v3859 (b) - shadow_sessions.WITNESS_MAX
@@ -815,7 +818,7 @@ async function framesPost(env, bytes, sig, body) {
   }
   const age = prev && typeof prev.t === "number" ? now - prev.t : FRAMES_MIN_GAP_MS;
   if (prev && samePub && age < FRAMES_MIN_GAP_MS && body.boot !== true) {
-    return pJson(Object.assign({ ok: true, owner: owner, stored: [], skipped: ["within 3 h"] }, said));
+    return pJson(Object.assign({ ok: true, owner: owner, stored: [], skipped: ["within 50 min"] }, said));
   }
   const today = dayOf(now);
   const n = prev && prev.day === today && typeof prev.n === "number" ? prev.n : 0;

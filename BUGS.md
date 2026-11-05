@@ -186,6 +186,18 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3161 - THE FLEET RAN ON THE FREE PLAN'S 1,000 WRITES A DAY ON AN ACCOUNT THAT PAYS FOR WORKERS (v3862, item 12)
+His Billing page, 2026-11-05 10:20: Workers Paid (renews 2026-11-30) and R2 Paid. Every pace in the fleet was sized for
+the free 1,000 KV writes a day (v2283): presence rewritten every 15 min and alive 40 (a dead PC read online for up to
+20 min), the shadow profile every 75 min (a shadow lagged its owner by up to an hour and a quarter), shadow frames every
+3 h. Workers Paid includes 1,000,000 writes a month (~32,000 a day); the fleet now holds itself to its own 10,000 a day
+(roster.js KV_WRITES), sized for six PCs: presence REFRESH_S 220 / PRESENCE_TTL 600 (every 240 s heartbeat writes;
+fleet_presence.STALE_AFTER_S 520 s, held equal to the worker's REFRESH_S by a law), profile every 10 min (150 a day,
+worker floor 8 min), frames hourly (24 a day, floor 50 min) - 6,090 a day together, 5,891 for every label at its caps.
+The roster stays hourly (its "within the hour" pacing is pinned across several laws for a small gain). The frames door,
+never counted, is in console_snapshot.budget() now. Laws updated: test_a_roster_publish_stays_off_the_presence_beacon,
+test_shadow_mode_reads_their_console, test_a_shadow_frames_record_is_signed_and_small, test_console_fleet,
+test_every_surface_asks_one_presence.
 ### REG-3160 - A PC'S FLEET ROW SAID "PROOF OUT OF DATE" AND NOTHING ABOUT WHETHER IT WAS MOVING (v3862, item 10)
 GrokBot's v3860 pass named the proof meter as missing. The console now keeps six hours of its own owed-law readings
 (proof_meter, pure) and sends owed / ratePerH / etaS beside the census; the fleet card draws them as facts on `proved`

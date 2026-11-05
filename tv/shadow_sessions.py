@@ -460,8 +460,9 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None):
 
 
 # ── #218 phase 2b (REG-2772): publishing the digest beside the roster row and the profile ──────────────────────
-#: change-only and at most every 3 h unless the console just started - the worker's own floor (roster.js frames door)
-MIN_GAP_MS = 3 * 60 * 60 * 1000
+#: change-only and at most hourly unless the console just started - v3862 Workers Paid (it was 3 h on the free plan);
+#: the worker's own floor is 50 min (roster.js frames door), so the console's pace is the pace
+MIN_GAP_MS = 60 * 60 * 1000
 #: an unchanged digest is not rebuilt every minute: the lane looks again after this long
 LOOK_AGAIN_MS = 30 * 60 * 1000
 

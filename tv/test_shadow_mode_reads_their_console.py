@@ -170,8 +170,14 @@ class WhatLeavesThePC(unittest.TestCase):
     def test_the_kv_budget_stays_under_the_ceiling(self):
         b = CS.budget()
         self.assertLessEqual(b["together"], b["ceiling"])
-        self.assertEqual(b["profile"], 4 * CS.DAY_CAP)
-        self.assertEqual(b["worst"], 768 + len(CS.OWNERS) * (RP.DAY_CAP + CS.DAY_CAP))
+        # v3862 - Workers Paid: six PCs, the frames door counted too, under the fleet's own 10,000-a-day ceiling
+        self.assertEqual(b["profile"], RP.budget()["pcs"] * CS.DAY_CAP)
+        self.assertEqual(b["frames"], RP.budget()["pcs"] * CS.FRAMES_DAY_CAP)
+        self.assertEqual(b["worst"], RP.budget()["presence"]
+                         + len(CS.OWNERS) * (RP.DAY_CAP + CS.DAY_CAP + CS.FRAMES_DAY_CAP))
+        _js = io.open(os.path.join(os.path.dirname(HERE), "functions", "api", "roster.js"), encoding="utf-8").read()
+        for _name, _v in (("PROFILE_DAY_CAP", CS.DAY_CAP), ("FRAMES_DAY_CAP", CS.FRAMES_DAY_CAP)):
+            self.assertIn("const %s = %d;" % (_name, _v), _js, "the console counts a %s the worker does not hold" % _name)
         self.assertLessEqual(b["worst"], b["ceiling"], "every owner label at both caps runs past the KV ceiling")
         self.assertGreaterEqual(CS.MIN_GAP_MS, 24 * 3600 * 1000 // CS.DAY_CAP,
                                 "the console's pace would run into the worker's daily cap")
@@ -478,7 +484,7 @@ class TheWorker(unittest.TestCase):
     def test_change_only_gap_boot_and_the_daily_cap(self):
         s2 = dict(_wstores(), d2r_owned=json.dumps(["Harlequin Crest", "Enigma"]))
         s3 = dict(_wstores(), d2r_owned=json.dumps(["Enigma"]))
-        gap = 30 * 60 * 1000
+        gap = 8 * 60 * 1000          # v3862 - the worker's floor (PROFILE_MIN_GAP_MS)
         steps = [self._post(self._body(), self.key_a, seed=self.seed, now=T0),
                  self._post(self._body(), self.key_a, now=T0 + 10 * gap),
                  self._post(self._body(stores=s2), self.key_a, now=T0 + gap - 1),
@@ -488,13 +494,13 @@ class TheWorker(unittest.TestCase):
         r = [s["reply"] for s in out["steps"]]
         self.assertEqual(r[0]["stored"], ["profile"])
         self.assertEqual(r[1]["skipped"], ["unchanged"])
-        self.assertEqual(r[2]["skipped"], ["within 30 min"])
+        self.assertEqual(r[2]["skipped"], ["within 8 min"])
         self.assertEqual(r[3]["stored"], ["profile"], "the boot upload was held back")
         self.assertEqual(r[4]["stored"], ["profile"])
         self.assertEqual(out["records"]["roster:" + OWNER + ":profile"]["n"], 3)
         day = __import__("time").strftime("%Y-%m-%d", __import__("time").gmtime(T0 // 1000))
         full = dict(self.seed)
-        full["roster:" + OWNER + ":profile"] = {"owner": OWNER, "t": T0 - 4 * gap, "day": day, "n": 20, "hash": "x",
+        full["roster:" + OWNER + ":profile"] = {"owner": OWNER, "t": T0 - 4 * gap, "day": day, "n": 150, "hash": "x",
                                      "stores": {"d2r_owned": "[]"}, "pub": None}
         capped = _node({"steps": [self._post(self._body(), self.key_a, seed=full, now=T0)]})["steps"][0]
         self.assertFalse(capped["reply"]["ok"])

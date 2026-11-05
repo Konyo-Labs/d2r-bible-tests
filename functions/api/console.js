@@ -9,9 +9,9 @@
  *
  * The control app (Mac + Windows + cousins) POSTs here on boot, on ON AIR / OFF
  * transitions, and every ~4 min as a heartbeat. Storage reuses the TZ_HISTORY KV:
- *   console:<machine>         — CURRENT state, rewritten on a material change or every REFRESH_S (15 min),
- *                               TTL PRESENCE_TTL (40 min) → key alive ⇔ console online (REG-3023: this
- *                               line said "TTL 10 min" for a key that lives 40)
+ *   console:<machine>         — CURRENT state, rewritten on a material change or every REFRESH_S (3 min),
+ *                               TTL PRESENCE_TTL (10 min) → key alive ⇔ console online (REG-3023: this
+ *                               line once said "TTL 10 min" for a key that lived 40; v3862 the paid plan)
  *   consolelog:<ts>:<machine> — event log entries (boot/onair/off only, no heartbeats), TTL 30d
  *   lastseen:<machine>        — DURABLE last check-in, TTL 400d, written on EVERY beacon
  *                               INCLUDING heartbeats. One key per machine, so it can never
@@ -678,7 +678,8 @@ export async function onRequestPost(context) {
         with a reason the console can render, because "the roster would not take my beacon" and
         "that machine is gone" are opposite facts and the panel had been printing the second one
         for the first. [[unknown-stays-unknown]] */
-  /* ⚠ THESE TWO NUMBERS ARE A BUDGET, NOT A TASTE. My first cut used 480s and the guard that
+  /* HISTORY - the free-plan sizing, kept because the reasoning still holds (v3862 replaces the numbers below).
+     ⚠ THESE TWO NUMBERS ARE A BUDGET, NOT A TASTE. My first cut used 480s and the guard that
      computes the worst case rejected it: 3 machines x (3600/480) x 24 x 2 keys = 1,080 writes/day,
      still over the 1,000/day ceiling. The optimistic figure (lastseen only on change) is about
      half that — but a budget must be sized on the worst case, or it fails on the one day
@@ -686,8 +687,12 @@ export async function onRequestPost(context) {
        4 x (3600/900) x 24 x 2 = 768 writes/day, comfortably under 1,000.
      Presence is then accurate to within 15 minutes, which is the right trade: a fleet panel that
      is coarse beats a roster that dies at a different hour every day. */
-  const REFRESH_S = 900;          // rewrite presence at most every 15 minutes
-  const PRESENCE_TTL = 2400;      // ...and let it live 40, so two missed refreshes do not evict
+  /* v3862 - WORKERS PAID (his account, confirmed on the Billing page 2026-11-05: renews 2026-11-30). The plan includes
+     1,000,000 KV writes a month (~32,000 a day); this fleet holds itself to KV_WRITES (10,000 a day, roster.js). At
+     220 s every 240 s heartbeat writes: 6 PCs x ceil(3600/220)=17 x 24 x 2 keys = 4,896 writes/day, and a PC that
+     stops reads offline within the 10-minute TTL (it was 40), which still outlives one missed heartbeat (480 s). */
+  const REFRESH_S = 220;          // rewrite presence at most every 220 s: each 240 s heartbeat
+  const PRESENCE_TTL = 600;       // ...and let it live 10 min, so one missed heartbeat does not evict
 
   let prevRaw = null;
   try { prevRaw = await kv.get('console:' + machine); } catch (e) { prevRaw = null; }

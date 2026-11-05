@@ -26,10 +26,14 @@ import re
 import roster_publish as _rp
 
 OWNERS = _rp.OWNERS
-# 20 uploads a day spread over 24 h is one per 72 min; the console waits 75 so the worker's daily cap is
-# a backstop, not the pacing. The worker itself only refuses inside 30 min.
-MIN_GAP_MS = 75 * 60 * 1000
-DAY_CAP = 20
+# v3862 - WORKERS PAID (confirmed 2026-11-05): 150 uploads a day spread over 24 h is one per 9.6 min; the console waits
+# 10 so the worker's daily cap is a backstop, not the pacing. The worker itself only refuses inside 8 min. On the free
+# plan it was 20 a day and 75 min - a shadow lagged its owner by up to an hour and a quarter.
+MIN_GAP_MS = 10 * 60 * 1000
+DAY_CAP = 150
+# the worker's frames door cap (functions/api/roster.js FRAMES_DAY_CAP), counted here so the budget names every writer;
+# test_shadow_mode_reads_their_console holds the two equal
+FRAMES_DAY_CAP = 24
 MAX_STORE = 64 * 1024
 MAX_TOTAL = 180 * 1024
 LIVE_MS = 15 * 60 * 1000
@@ -90,14 +94,15 @@ _PRIVATE = (
 
 
 def budget():
-    """KV writes a day. `together` is today's four PCs: presence 768 + roster 4x25 + snapshot 4xDAY_CAP = 948.
-    `worst` is every owner label writing at both caps: 768 + 5x25 + 5xDAY_CAP = 993. Both under the 1000 ceiling."""
+    """KV writes a day (v3862, Workers Paid). `together` is six PCs: presence 4,896 + roster 6x25 + snapshot 6xDAY_CAP.
+    `worst` is every owner label writing at both caps. Both under the fleet's own 10,000-a-day ceiling (roster.js)."""
     roster = _rp.budget()
     snap = roster["pcs"] * DAY_CAP
+    frames = roster["pcs"] * FRAMES_DAY_CAP
     labels = len(OWNERS)
-    worst = roster["presence"] + labels * roster["perPc"] + labels * DAY_CAP
-    return {"presence": roster["presence"], "roster": roster["roster"], "profile": snap,
-            "together": roster["together"] + snap, "worst": worst, "ceiling": roster["ceiling"]}
+    worst = roster["presence"] + labels * (roster["perPc"] + DAY_CAP + FRAMES_DAY_CAP)
+    return {"presence": roster["presence"], "roster": roster["roster"], "profile": snap, "frames": frames,
+            "together": roster["together"] + snap + frames, "worst": worst, "ceiling": roster["ceiling"]}
 
 
 def profile_key(owner):

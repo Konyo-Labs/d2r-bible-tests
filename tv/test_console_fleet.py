@@ -830,15 +830,15 @@ RED_PROOF = [
     {
         "why": "REG-3023 - the header names a presence TTL the code does not set",
         "file": "functions/api/console.js",
-        "find": " *                               TTL PRESENCE_TTL (40 min) → key alive",
-        "replace": " *                               TTL 10 min → key alive",
+        "find": " *                               TTL PRESENCE_TTL (10 min) → key alive",
+        "replace": " *                               TTL 40 min → key alive",
         "matches": 1,
     },
     {
         "why": "REG-3023 - the presence TTL moves and the header does not",
         "file": "functions/api/console.js",
-        "find": "  const PRESENCE_TTL = 2400; ",
-        "replace": "  const PRESENCE_TTL = 2700; ",
+        "find": "  const PRESENCE_TTL = 600; ",
+        "replace": "  const PRESENCE_TTL = 1200; ",
         "matches": 1,
     },
     {

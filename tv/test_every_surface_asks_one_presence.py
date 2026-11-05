@@ -74,7 +74,13 @@ class ThePresenceRule(unittest.TestCase):
         self.assertEqual(p["words"], "offline \u00b7 last seen 33 min ago")
 
     def test_the_bar_is_one_refresh_plus_one_beacon(self):
-        self.assertEqual(FP.STALE_AFTER_S, 900 + 240 + 60)
+        self.assertEqual(FP.STALE_AFTER_S, FP.REFRESH_S + 240 + 60)
+        import re as _re_v3862
+        _cjs = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "functions", "api",
+                                 "console.js"), encoding="utf-8").read()
+        self.assertEqual(FP.REFRESH_S, int(_re_v3862.search(r"const REFRESH_S = (\d+);", _cjs).group(1)),
+                         "the fleet judges presence on a refresh the worker does not use")
+        self.assertGreater(FP.STALE_AFTER_S, 300 + 60, "the recorder's 5-minute keepalive reads offline between posts")
         self.assertTrue(FP.presence_of(self.row(FP.STALE_AFTER_S), True, NOW)["online"])
         self.assertFalse(FP.presence_of(self.row(FP.STALE_AFTER_S + 1), True, NOW)["online"])
 

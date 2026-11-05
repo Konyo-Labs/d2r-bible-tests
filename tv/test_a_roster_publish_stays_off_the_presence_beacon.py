@@ -118,14 +118,21 @@ class RosterPublishStaysOffTheBeacon(unittest.TestCase):
 
     def test_the_budget_stays_under_the_ceiling(self):
         got = RP.budget()
-        self.assertEqual(got["presence"], 768)
-        self.assertEqual(got["pcs"] * got["perPc"], 100)
-        self.assertEqual(got["together"], 868)
+        # v3862 - Workers Paid (confirmed 2026-11-05): presence for six PCs at REFRESH_S 220, the fleet's own ceiling
+        self.assertEqual(got["presence"], 4896)
+        self.assertEqual(got["pcs"] * got["perPc"], 150)
+        self.assertEqual(got["together"], 5046)
         self.assertLess(got["together"], got["ceiling"])
-        self.assertLess(768 + 5 * 25, 1000, "the five labels at the cap would pass 1000")
+        self.assertLess(4896 + 5 * 25, 10000, "the five labels at the cap would pass the fleet's 10,000 a day")
+        import math as _m
+        import re as _re2
+        _cjs = open(CONSOLE_JS, encoding="utf-8").read()
+        _refresh = int(_re2.search(r"const REFRESH_S = (\d+);", _cjs).group(1))
+        self.assertEqual(got["presence"], got["pcs"] * _m.ceil(3600 / _refresh) * 24 * 2,
+                         "the presence budget is not the one console.js REFRESH_S spends (2 keys per refresh)")
         js = open(ROSTER_JS, encoding="utf-8").read()
-        for line in ("const PRESENCE_WRITES = 768;", "const ROSTER_PCS = 4;",
-                     "const ROSTER_CAP = 25;", "const KV_WRITES = 1000;"):
+        for line in ("const PRESENCE_WRITES = 4896;", "const ROSTER_PCS = 6;",
+                     "const ROSTER_CAP = 25;", "const KV_WRITES = 10000;"):
             self.assertIn(line, js)
         console = open(CONSOLE_JS, encoding="utf-8").read()
         # REG-2204 (#99) — the invariant is ENFORCED by the tally SHAPER, not the comment that

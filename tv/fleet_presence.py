@@ -15,9 +15,12 @@ STALE_AFTER_S has missed a refresh. A row with no readable time is UNKNOWN, neve
 """
 import time
 
-REFRESH_S = 900
+#: v3862 Workers Paid: functions/api/console.js REFRESH_S 220 (was 900), so a row older than ~8.7 min (was 20) has
+#: missed a refresh. The worst age of a LIVE row is one beacon (240) + the fleet's 60 s cache; the recorder's
+#: keepalive posts every 5 min (300 + 60). test_every_surface_asks_one_presence holds REFRESH_S equal to the worker's.
+REFRESH_S = 220
 BEACON_S = 240
-STALE_AFTER_S = REFRESH_S + BEACON_S + 60   # 20 min
+STALE_AFTER_S = REFRESH_S + BEACON_S + 60   # 520 s
 
 
 def _parse_iso_ms(s):

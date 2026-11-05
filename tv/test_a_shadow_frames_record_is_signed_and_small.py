@@ -165,14 +165,14 @@ class TheFramesRecord(unittest.TestCase):
         d, d2 = _digest(), _digest(name="Harlequin Crest")
         steps = [self._post(d, self.key_a, now=T0),
                  self._post(d, self.key_a, now=T0 + 60000),                    # the same digest: unchanged
-                 self._post(d2, self.key_a, now=T0 + 120000),                  # changed, within 3 h
+                 self._post(d2, self.key_a, now=T0 + 120000),                  # changed, within 50 min
                  self._post(d2, self.key_a, now=T0 + 180000, boot=True),       # a console start may publish now
                  self._post(d2, self.key_a, now=T0 + 240000, signed_at=T0 + 1)]  # an older signature: a replay
         out = _node({"seed": self.seed, "steps": steps})
         r = [s["reply"] for s in out["steps"]]
         self.assertEqual(out["steps"][0]["puts"], ["roster:%s:frames" % OWNER])
         self.assertEqual(r[1].get("skipped"), ["unchanged"], r[1])
-        self.assertEqual(r[2].get("skipped"), ["within 3 h"], r[2])
+        self.assertEqual(r[2].get("skipped"), ["within 50 min"], r[2])
         self.assertEqual(out["steps"][3]["puts"], ["roster:%s:frames" % OWNER], "a console start could not publish: %r" % r[3])
         self.assertFalse(r[4].get("ok"), "a replayed (older) signature was accepted: %r" % r[4])
 

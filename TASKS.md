@@ -52,9 +52,8 @@ beside cloud (REG-3153), ci-trust pre-push (tv/ci_verdict.py). Each item: law + 
 10. [~] PROOF METER (built, REG-3160): owed / rate / ETA on each fleet row's `proved` part; the worker now also keeps
        the census why it had dropped since v3855. Needs a render + a Grok look on the fleet card after landing.
 11. [ ] APPROVE A NEW PC before it joins/shares a roster profile.
-12. [ ] KV BUDGET for the paid $5 plan (tv/console_snapshot.py: 948/day sized for the free 1,000). WAITS ON HIM: the
-       Mac's wrangler cannot read the account ("Failed to automatically retrieve account IDs"), so Workers Paid is
-       unconfirmed; raising writes on the free plan would 500 the roster again (v2283). He checks Subscribed first.
+12. [~] KV BUDGET for Workers Paid (built, REG-3161; his Billing page confirmed it 2026-11-05): presence 220 s / 10 min,
+       shadow profile every 10 min, frames hourly; the fleet's own ceiling 10,000 writes a day. Roster stays hourly.
 13. [ ] GrokBot LIVE passes on v3861 (fleet chips, Heart fan CTM, Dean uniques cross-ref REG-3150 a-d) -> fixes.
 SHIP FLOW from v3862 on: push ci/claude-vNNNN (gates) + ci/proof-keys-vNNNN (proofs) on the final sha -> GREEN -> push main
 (ci-trust ~15 min) -> PCs import the release proofs. Run laws in a worktree OTHER than the one you push (REG-3151 night).

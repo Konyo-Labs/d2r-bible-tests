@@ -42,10 +42,12 @@ _BUILD_SLOTS = ("head", "neck", "tors", "rarm", "larm", "rrin", "lrin", "belt", 
 
 
 def budget():
-    """The write budget this publish is allowed to add. Presence is already 768."""
-    presence, pcs, per = 768, 4, DAY_CAP
+    """The write budget this publish is allowed to add. v3862 (Workers Paid, confirmed 2026-11-05): presence is
+    4,896 a day for six PCs (functions/api/console.js REFRESH_S 220), and the ceiling is the fleet's own 10,000 a
+    day - a third of the ~32,000 the plan includes (roster.js KV_WRITES). On the free plan: 768 and 1,000."""
+    presence, pcs, per = 4896, 6, DAY_CAP
     return {"presence": presence, "pcs": pcs, "perPc": per, "roster": pcs * per,
-            "ceiling": 1000, "together": presence + pcs * per}
+            "ceiling": 10000, "together": presence + pcs * per}
 
 
 def owner_of(name, platform=None):
