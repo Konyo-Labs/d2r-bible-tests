@@ -471,6 +471,13 @@ export async function onRequestPost(context) {
             census: ['current', 'stale', 'missing', 'unreadable', 'unknown'].indexOf(hc) >= 0 ? hc : null,
             key: key(rv.heart.key),
             blind: whole(rv.heart.blind, 10000),
+            /* v3862 (item 10) - the proof meter, and the console's own sentence for a census that is not current, which
+               it has sent since v3855 C6 and this block dropped on arrival (the unjoined end, found building the meter).
+               None of them is news (riverNews): they ride the 15-minute refresh, no extra write. */
+            owed: whole(rv.heart.owed, 100000),
+            ratePerH: num(rv.heart.ratePerH, 100000),
+            etaS: num(rv.heart.etaS, DAY400),
+            why: txt(rv.heart.why, 300),
           };
         }
       }

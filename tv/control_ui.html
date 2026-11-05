@@ -27768,6 +27768,25 @@ function escC(s) {
   };
   /* one part = a key and its FACTS (REG-1377): the card draws each fact as its own item, never a middot-joined string
      that a wrap can strand a middot in; `t` is the same facts joined, for a reader that wants one line of text */
+  /* v3862 (item 10, the proof meter) - owed / rate / time left, from the PC's own readings. Absent is said by nothing
+     (an older build); a rate of 0 is "not moving"; no rate yet is "measuring", never a guessed number. */
+  var _proofMeterFacts = function (hs) {
+    if (!hs || typeof hs !== 'object' || hs.census === 'current' || typeof hs.owed !== 'number') return [];
+    var f = [hs.owed + (hs.owed === 1 ? ' law owed' : ' laws owed')];
+    if (typeof hs.ratePerH === 'number' && hs.ratePerH > 0) {
+      f.push('~' + (hs.ratePerH >= 10 ? Math.round(hs.ratePerH) : hs.ratePerH) + '/h');
+      if (typeof hs.etaS === 'number' && hs.etaS > 0) {
+        var e = hs.etaS;
+        f.push('~' + (e < 3600 ? Math.max(1, Math.round(e / 60)) + ' min'
+                      : e < 86400 ? (Math.round(e / 360) / 10) + ' h' : (Math.round(e / 8640) / 10) + ' days') + ' left');
+      }
+    } else if (hs.ratePerH === 0) {
+      f.push('not moving');
+    } else if (hs.owed > 0) {
+      f.push('measuring');
+    }
+    return f;
+  };
   var _fleetPart = function (k, f, o) {
     var p = o || {};
     p.k = k; p.f = f; p.t = f.join(' · ');
@@ -27951,10 +27970,11 @@ function escC(s) {
                  unreadable: 'proof unreadable', unknown: 'UNKNOWN' }[hs.census]
                || ((hs.key === 'starting' && _fleetBooting(m, nowMs)) ? 'first check pending' : 'UNKNOWN');   /* #193 - the boot window, named, and bounded */
       var hb = (typeof hs.blind === 'number') ? (hs.blind + ' blind') : null;
-      out.push(_fleetPart('proved', hb ? [hw, hb] : [hw], {
+      out.push(_fleetPart('proved', (hb ? [hw, hb] : [hw]).concat(_proofMeterFacts(hs)), {
                  warn: hs.census !== 'current' || (typeof hs.blind === 'number' && hs.blind > 0),
                  unk: !hs.census || hs.census === 'unknown',
-                 why: 'every lock that moves this PC\u2019s river opens only on its OWN proof' + (hs.key ? ' - lane: ' + hs.key : '') }));
+                 why: 'every lock that moves this PC\u2019s river opens only on its OWN proof' + (hs.key ? ' - lane: ' + hs.key : '')
+                      + (hs.why ? ' - ' + String(hs.why) : '') }));
     }
     /* 6. #41 rank 22 (REG-1564) \u2014 WHAT ITS CHARACTER PICKER OFFERS, AGAINST WHAT ITS OWN DATABASE HOLDS. Nothing on
        any PC reported what the picker lists (his ALT showed empty pickers for days, #174 v-B4). The beacon carries

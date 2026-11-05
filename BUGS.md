@@ -186,6 +186,15 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3160 - A PC'S FLEET ROW SAID "PROOF OUT OF DATE" AND NOTHING ABOUT WHETHER IT WAS MOVING (v3862, item 10)
+GrokBot's v3860 pass named the proof meter as missing. The console now keeps six hours of its own owed-law readings
+(proof_meter, pure) and sends owed / ratePerH / etaS beside the census; the fleet card draws them as facts on `proved`
+("90 laws owed · ~30/h · ~3 h left"; "not moving" for a measured 0; "measuring" under 20 minutes of readings - never a
+guess; a version that raises owed starts the readings again). FOUND building it: the worker kept only census, key and
+blind of river.heart, so the console's own why-sentence (v3855 C6: why a census is not current, whose proofs it borrows)
+was DROPPED on arrival and never reached another PC; the worker keeps it now and the card's hover says it. None of the
+four is news in riverNews, so they ride the 15-minute refresh with no extra KV write. Law
+test_the_fleet_shows_each_pcs_proof_meter.
 ### REG-3159 - NO PC'S UNKNOWN ERROR COULD BE SEEN FROM ANYWHERE BUT THAT PC'S OWN EAGLE PANEL (v3862)
 His ask 2026-11-05: "unknown errors can maybe even be like an online thing so its fetched and can be seen by you? so we
 can overwatch properly". The repair book's report rides each console's presence row as system.repair - what it fixed,

@@ -49,7 +49,8 @@ beside cloud (REG-3153), ci-trust pre-push (tv/ci_verdict.py). Each item: law + 
        `cd ~/d2r_bible_tests && python3 tv/fleet_errors.py --summary | sed 's/^/UNKNOWN ERRORS ▸ /'` beside LANES, and
        a quiet fleet-card chip (UI - needs a render + Grok look).
 9. [ ] CLAUDE DIAGNOSIS on each PC for book-misses: diagnose + propose (card / #230), never run a NEW fix alone.
-10. [ ] PROOF METER per fleet row: owed / proved / rate / ETA from the self-prove census.
+10. [~] PROOF METER (built, REG-3160): owed / rate / ETA on each fleet row's `proved` part; the worker now also keeps
+       the census why it had dropped since v3855. Needs a render + a Grok look on the fleet card after landing.
 11. [ ] APPROVE A NEW PC before it joins/shares a roster profile.
 12. [ ] KV BUDGET for the paid $5 plan (tv/console_snapshot.py: 948/day sized for the free 1,000). WAITS ON HIM: the
        Mac's wrangler cannot read the account ("Failed to automatically retrieve account IDs"), so Workers Paid is

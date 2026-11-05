@@ -18084,11 +18084,46 @@ def _river_for_wire(now_ms=None):
             _key = "starting"
     out["heart"] = {"census": _census, "key": _key,
                     "blind": (len(_sp.get("blind") or []) if _sp.get("blind") is not None else None)}
+    # v3862 (item 10) - THE PROOF METER: owed now, the rate this PC has been proving at, and when it will be done
+    _owed = _sp.get("owed") if (isinstance(_sp.get("owed"), int) and not isinstance(_sp.get("owed"), bool)) else None
+    _PROOF_METER["samples"], _rate, _eta = proof_meter(_PROOF_METER["samples"], now if now else int(time.time() * 1000),
+                                                       0 if _census == "current" else (None if _census is None else _owed))
+    out["heart"].update(owed=_owed, ratePerH=_rate, etaS=_eta)
     # v3855 C6 (Elad: the ALT's stale census) - THE FLEET SAYS WHY A CENSUS IS NOT CURRENT, AND WHOSE PROOFS IT BORROWS
     _hw, _hfrom = heart_stale_why(_census, _sp)
     out["heart"]["why"] = _hw
     out["heart"]["takesFrom"] = _hfrom
     return out
+
+
+#: v3862 (item 10, his "proof meter" ask) - the owed-law readings this console has taken, oldest first: [(ms, owed)].
+_PROOF_METER = {"samples": []}
+PROOF_METER_WINDOW_MS = 6 * 3600 * 1000      # the rate is read over the last six hours of readings
+PROOF_METER_MIN_SPAN_MS = 20 * 60 * 1000     # under 20 minutes of readings there is no rate yet - "measuring", never a guess
+
+
+def proof_meter(samples, now_ms, owed):
+    """v3862 - HOW FAST THIS PC IS PROVING, AND WHEN IT WILL BE DONE. Pure.
+    -> (samples to keep, ratePerH | None, etaS | None)
+
+    `owed` is the self-prove lane's count of owed laws now (an int), or None (UNKNOWN: nothing is added and no rate is
+    claimed). The rate is (oldest owed - newest owed) / hours across the window; under PROOF_METER_MIN_SPAN_MS of
+    readings it is None. When owed RISES (a new version owed more laws) the readings start again from now - a version's
+    jump is not negative progress. A rate of 0 is measured "not moving", and its ETA is None."""
+    keep = [(int(t), int(o)) for t, o in (samples or []) if now_ms - int(t) <= PROOF_METER_WINDOW_MS]
+    if not isinstance(owed, int) or isinstance(owed, bool) or owed < 0:
+        return keep, None, None
+    if keep and owed > keep[-1][1]:
+        keep = []
+    keep.append((int(now_ms), owed))
+    keep = keep[-200:]
+    span = keep[-1][0] - keep[0][0]
+    if owed == 0:
+        return keep, None, 0
+    if span < PROOF_METER_MIN_SPAN_MS:
+        return keep, None, None
+    rate = max(0.0, (keep[0][1] - keep[-1][1]) * 3600000.0 / span)
+    return keep, round(rate, 1), (int(owed / rate * 3600) if rate > 0 else None)
 
 
 def heart_stale_why(census, sp):

@@ -13019,6 +13019,12 @@ GATES = [
          why="v3862 (his ruling, the normal model): the pre-push skips its own grading only when every required GitHub "
              "workflow's newest run succeeded on the exact pushed commit and the tree is clean; unknown is never green, "
              "and a failed proof import proves locally"),
+    Gate("test_the_fleet_shows_each_pcs_proof_meter",
+         [sys.executable, os.path.join(HERE, "test_the_fleet_shows_each_pcs_proof_meter.py")], 120,
+         needs_app=False,
+         why="v3862 (item 10): each fleet row says laws owed, the rate and the time left - no rate under 20 min of "
+             "readings, a measured 0 is 'not moving', a version that owes more starts again; the worker keeps the "
+             "meter and the console's why (dropped since v3855) without extra writes"),
     Gate("test_known_errors_fix_themselves",
          [sys.executable, os.path.join(HERE, "test_known_errors_fix_themselves.py")], 120,
          needs_app=False,
