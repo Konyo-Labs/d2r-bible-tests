@@ -27939,6 +27939,42 @@ function escC(s) {
   var _fleetAgeTxt = function (sec) {
     return ((sec === null || sec === undefined) ? 'age UNKNOWN' : _fleetAgo(sec)).replace(/ /g, ' ');
   };
+  /* REG-3198 (his Fleet 21:01: Dean, last heard 18 h before, drew red "locks shut" and "river UNKNOWN") - AN OFFLINE ROW
+     IS NOT A READING OF NOW. Past its presence bound (fleet_presence, stamped as m.presence) the row says when the PC was
+     last heard and how old its last river is - ONE reading for the row's chip and its Advanced box (the reviewer on r3:
+     the box still said river UNKNOWN, stuck UNKNOWN and a warning "proof out of date" for Dean). [[stale-reading]]
+     -> null (not offline) | {since, gone, river, riverTip} */
+  var _fleetOffline = function (m, nowMs) {
+    var pres = (m && m.presence && typeof m.presence === 'object') ? m.presence : null;
+    if (!pres || pres.state !== 'offline') return null;
+    var rv = (m && m.system && typeof m.system === 'object') ? m.system.river : null;
+    var offAt = Date.parse(String((m && m.t) || ''));
+    var gone = _fleetReportAgeS(m, nowMs);
+    var p2 = function (x) { return (x < 10 ? '0' : '') + x; };
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var since = 'an unknown time';
+    if (isFinite(offAt)) {
+      var od = new Date(offAt);
+      since = (gone !== null && gone >= 20 * 3600 ? MON[od.getMonth()] + ' ' + od.getDate() + ' ' : '')
+        + p2(od.getHours()) + ':' + p2(od.getMinutes());
+    }
+    var river, tip;
+    if (!rv || typeof rv !== 'object') {
+      river = 'river not reported';
+      tip = 'its console did not report a river (a build older than the field)';
+    } else if (rv.lanes && typeof rv.lanes === 'object' && typeof rv.ageS === 'number' && isFinite(rv.ageS) && rv.ageS >= 0
+               && gone !== null) {
+      river = 'last river ' + _fleetAgo(rv.ageS + gone);   /* its age keeps counting from its last report */
+      tip = 'its last river was computed ' + _fleetAgo(rv.ageS + gone) + (rv.why ? ' - ' + String(rv.why) : '');
+    } else if (rv.lanes && typeof rv.lanes === 'object') {
+      river = 'last river age UNKNOWN';
+      tip = 'its last report carried lanes without an age';
+    } else {
+      river = 'no river in its last run';
+      tip = String(rv.why || 'its last report carried no river');
+    }
+    return { since: since, gone: gone, river: river, riverTip: tip };
+  };
   var _fleetSay = function (k) {
     /* the ONE vocabulary for a triage outcome lives beside the river panel (first script block),
        exported on window; read at CALL time, never bare across the blocks. [[console-ui-two-script-blocks]] */
@@ -28053,6 +28089,9 @@ function escC(s) {
   var _fleetSysParts = function (m, nowMs) {
     var sy = (m && m.system && typeof m.system === 'object') ? m.system : null;
     var out = [];
+    /* REG-3198 (the reviewer on r3) - an offline PC's river, stuck and proof facts are its LAST report, said as such: the
+       same reading the row's chip uses, never "UNKNOWN" and never a live warning. */
+    var _offS = _fleetOffline(m, nowMs);
     /* 1. HOW IT FILMS D2R */
     var c = sy && sy.capture;
     if (!c || typeof c !== 'object') {
@@ -28069,7 +28108,10 @@ function escC(s) {
     }
     /* 2. ITS RIVER — the router's station keys as that console counted them, in ITS order */
     var rv = sy && sy.river;
-    if (!rv || typeof rv !== 'object') {
+    if (_offS && (!rv || typeof rv !== 'object' || !rv.lanes || typeof rv.lanes !== 'object')) {
+      out.push(_fleetPart('river', ['offline since ' + _offS.since, _offS.river], {
+                 why: 'this PC is offline, so this is its last report, not a reading of now - ' + _offS.riverTip }));
+    } else if (!rv || typeof rv !== 'object') {
       out.push(_fleetPart('river', ['UNKNOWN', 'an older build'], { unk: true,
                  why: 'this console did not report its river (a build older than the field)' }));
     } else if (!rv.lanes || typeof rv.lanes !== 'object') {
@@ -28136,7 +28178,13 @@ function escC(s) {
        names itself here, with the owning lane's own reason; `none` is measured-and-flowing, a missing field is
        an older build and a null is an unreadable stamp log - both UNKNOWN, never "flowing". */
     var sk = (rv && typeof rv === 'object') ? rv.stuck : undefined;
-    if (!rv || typeof rv !== 'object' || sk === undefined) {
+    if (_offS && (!rv || typeof rv !== 'object' || sk === undefined || sk === null || !Array.isArray(sk))) {
+      out.push(_fleetPart('stuck', ['not read \u2014 offline since ' + _offS.since], {
+                 why: 'this PC is offline, so whether a station is stuck there now is not read; its last report '
+                    + ((!rv || typeof rv !== 'object' || sk === undefined) ? 'did not carry a stuck list (a build older than the field)'
+                       : (!rv.lanes || typeof rv.lanes !== 'object') ? 'carried no river - ' + _offS.riverTip
+                       : 'could not read its own river stamp log') }));
+    } else if (!rv || typeof rv !== 'object' || sk === undefined) {
       out.push(_fleetPart('stuck', ['UNKNOWN', 'an older build'], { unk: true,
                  why: 'this console does not report which stations are not draining (a build older than the field)' }));
     } else if (sk === null || !Array.isArray(sk)) {
@@ -28199,9 +28247,21 @@ function escC(s) {
     /* 5. #74 (REG-1461) — HAS THAT PC PROVED ITS OWN INSTRUMENTS? Every lock that moves its river (routing, the
        vault sweep, frame release) refuses until it has; REG-1447 makes every PC prove itself in the background. */
     var hs = (rv && typeof rv === 'object') ? rv.heart : undefined;
-    if (!hs || typeof hs !== 'object') {
+    if (_offS && (!hs || typeof hs !== 'object')) {
+      out.push(_fleetPart('proved', ['offline since ' + _offS.since, 'proof not reported'], {
+                 why: 'this PC is offline, and its last report did not say whether it had proved its own instruments '
+                    + '(a build older than the field)' }));
+    } else if (!hs || typeof hs !== 'object') {
       out.push(_fleetPart('proved', ['UNKNOWN'], { unk: true,
                  why: 'this console does not report whether it has proved its own instruments (an older build)' }));
+    } else if (_offS) {
+      var _offProof = { current: 'proved', stale: 'proof out of date', missing: 'never proved on this PC',
+                        unreadable: 'proof unreadable' }[hs.census];
+      out.push(_fleetPart('proved', ['offline since ' + _offS.since,
+                                     _offProof ? _offProof + ' at its last report' : 'no proof check in its last run'], {
+                 why: 'this PC is offline, so this is its last report, not a reading of now'
+                      + (typeof hs.blind === 'number' ? ' - ' + hs.blind + ' blind then' : '')
+                      + (hs.key ? ' - lane: ' + hs.key : '') + (hs.why ? ' - ' + String(hs.why) : '') }));
     } else {
       var hw = { current: 'proved', stale: 'proof out of date', missing: 'never proved on this PC',
                  unreadable: 'proof unreadable', unknown: 'UNKNOWN' }[hs.census]
@@ -28336,38 +28396,14 @@ function escC(s) {
     var census = (hs && typeof hs === 'object') ? hs.census : undefined;
     var bits = [], _lockWait = '';
     /* REG-3198 (his Fleet 21:01: Dean, last heard 18 h before, drew red "locks shut" and "river UNKNOWN") - AN OFFLINE ROW
-       IS NOT A READING OF NOW. Past its presence bound (fleet_presence, stamped as m.presence) the row says when the PC was
-       last heard and how old its last river is: one muted chip, never red, never a bare UNKNOWN. [[stale-reading]] */
+       IS NOT A READING OF NOW: one muted chip, never red, never a bare UNKNOWN (_fleetOffline, the box reads the same). */
     var _pres = (m && m.presence && typeof m.presence === 'object') ? m.presence : null;
-    if (_pres && _pres.state === 'offline') {
-      var _offAt = Date.parse(String((m && m.t) || ''));
-      var _offGone = _fleetReportAgeS(m, nowMs);
-      var _p2 = function (x) { return (x < 10 ? '0' : '') + x; };
-      var _MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      var _offSince = 'an unknown time';
-      if (isFinite(_offAt)) {
-        var _od = new Date(_offAt);
-        _offSince = (_offGone !== null && _offGone >= 20 * 3600 ? _MON[_od.getMonth()] + ' ' + _od.getDate() + ' ' : '')
-          + _p2(_od.getHours()) + ':' + _p2(_od.getMinutes());
-      }
-      var _offRiver, _offTip;
-      if (!rv || typeof rv !== 'object') {
-        _offRiver = 'river not reported';
-        _offTip = 'its console did not report a river (a build older than the field)';
-      } else if (rv.lanes && typeof rv.lanes === 'object' && typeof rv.ageS === 'number' && isFinite(rv.ageS) && rv.ageS >= 0
-                 && _offGone !== null) {
-        _offRiver = 'last river ' + _fleetAgo(rv.ageS + _offGone);
-        _offTip = 'its last river was computed ' + _fleetAgo(rv.ageS + _offGone) + (rv.why ? ' - ' + String(rv.why) : '');
-      } else if (rv.lanes && typeof rv.lanes === 'object') {
-        _offRiver = 'last river age UNKNOWN';
-        _offTip = 'its last report carried lanes without an age';
-      } else {
-        _offRiver = 'no river in its last run';
-        _offTip = String(rv.why || 'its last report carried no river');
-      }
-      return '<span class="fleet-riveroff" title="' + escC('this PC is offline - its console was last heard at ' + _offSince
-        + ' (' + _fleetAgo(_offGone) + '), so nothing here is a reading of now; ' + _offTip) + '">offline since '
-        + escC(_offSince) + ' \u00b7 ' + escC(_offRiver) + '</span>';
+    var _off = (_pres && _pres.state === 'offline') ? _fleetOffline(m, nowMs) : null;
+    if (_off) {
+      return '<span class="fleet-riveroff" title="' + escC('this PC is offline - its console was last heard at ' + _off.since
+        + ' (' + (_off.gone === null ? 'age UNKNOWN' : _fleetAgo(_off.gone)) + '), so nothing here is a reading of now; '
+        + _off.riverTip) + '">offline since '
+        + escC(_off.since) + ' \u00b7 ' + escC(_off.river) + '</span>';
     }
     /* REG-3197 (his Fleet 21:01: every online PC "census stale; lane: GitHub's proofs ... are being imported" drawn as red
        "locks shut" and "river stuck") - WHAT A STALE CENSUS IS WAITING ON, SAID FIRST AND NOT IN RED: GitHub's proofs
@@ -28378,14 +28414,18 @@ function escC(s) {
                      && hs.owedHere >= 0) ? Math.round(hs.owedHere) : null;
     var _num = function (x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
     var _whole = function (x) { return typeof x === 'number' && isFinite(x) && x >= 0; };
+    var _landed = !!(_imp && _imp.landed === true);
     if (_imp) {
-      var _impWords = 'importing ' + (typeof _imp.ver === 'string' && /^v\d+$/.test(_imp.ver) ? _imp.ver + '\u2019s' : 'GitHub\u2019s')
-        + ' proofs';
-      if (_whole(_imp.done) && _whole(_imp.of) && _imp.of > 0) _impWords += ' \u00b7 ' + _num(_imp.done) + ' of ' + _num(_imp.of);
-      if (_whole(_imp.etaS)) _impWords += ' \u00b7 ~' + (_imp.etaS < 60 ? '1 min' : _imp.etaS < 5400
+      var _whose = (typeof _imp.ver === 'string' && /^v\d+$/.test(_imp.ver) ? _imp.ver + '\u2019s' : 'GitHub\u2019s') + ' proofs';
+      /* the reviewer on r3 - an import that has LANDED, with the prover not yet ticked: said as what happened */
+      var _impWords = _landed ? _whose + ' imported \u00b7 the proof check runs next' : 'importing ' + _whose;
+      if (!_landed && _whole(_imp.done) && _whole(_imp.of) && _imp.of > 0) _impWords += ' \u00b7 ' + _num(_imp.done) + ' of ' + _num(_imp.of);
+      if (!_landed && _whole(_imp.etaS)) _impWords += ' \u00b7 ~' + (_imp.etaS < 60 ? '1 min' : _imp.etaS < 5400
         ? Math.round(_imp.etaS / 60) + ' min' : (_imp.etaS / 3600).toFixed(1) + ' h');
-      bits.push('<span class="fleet-riverimport" title="' + escC('this PC is importing GitHub\u2019s proofs for its own commit; '
-        + 'its census reads ' + String(census) + ' until they land, then it proves only what is still owed'
+      bits.push('<span class="fleet-riverimport" title="' + escC((_landed
+        ? 'this PC has imported GitHub\u2019s proofs for its own commit; its proof check runs on its next tick and proves only what is still owed'
+        : 'this PC is importing GitHub\u2019s proofs for its own commit; its census reads ' + String(census)
+          + ' until they land, then it proves only what is still owed')
         + (hs.why ? ' \u2014 ' + hs.why : '')) + '">' + escC(_impWords) + '</span>');
     }
     if (_owedHere !== null) {
@@ -28455,7 +28495,9 @@ function escC(s) {
         var mm = /^([A-Za-z][\w -]{0,30}? lane): owes (\d+)/.exec(w);
         /* v3861 - and the lane's own top reason for not starting them, when it said one ("5 retired after their tries") */
         var top = /none startable this tick: ([^,;|]+)/.exec(w);
-        return mm ? mm[1] + ' owes ' + mm[2] + (top ? ' \u00b7 ' + top[1].trim() : '') : null; }).filter(Boolean);
+        /* the reviewer on r3 (his ALT row: red "vault lane owes 0") - a lane that owes nothing has no debt to name; the
+           stuck chip's hover keeps its sentence */
+        return (mm && +mm[2] > 0) ? mm[1] + ' owes ' + mm[2] + (top ? ' \u00b7 ' + top[1].trim() : '') : null; }).filter(Boolean);
       if (_heldAside.length) tip += ' · also held by the drain, not owed: ' + _heldAside.map(function (e) { return e.station + ' ' + e.n; }).join(', ');
       var _stuckLabel = _pending ? 'river stuck \u00b7 proof check pending' : 'river stuck';
 
@@ -28473,16 +28515,26 @@ function escC(s) {
                         'busy': 'proof waits for an idle PC', 'running': 'proving now', 'stood-aside': 'proof paused',
                         'playing': 'proof paused while playing' };
       var _lw = (!_memWait && !_recheck && hs && _LOCK_WHY[hs.key]) ? ' \u00b7 ' + _LOCK_WHY[hs.key] : '';
-      /* REG-3197 - the ONE reason, when the import or this PC's own proving is it; the chip then reads amber, not red */
-      var _lockCalm = !!_imp || (_owedHere !== null && !_memWait);
-      if (_imp) _lw = ' \u00b7 until GitHub\u2019s proofs land';
+      /* REG-3197 - the ONE reason, when the import or this PC's own proving is it; the chip then reads amber, not red.
+         The reviewer on r3 (his live ALT rows: blind 1 and blind 3, drawn amber "until this PC proves") - A BLIND GATE IS
+         NOT LATENESS. may() refuses on a recorded BLIND before it looks at staleness and never softens it, so proving the
+         owed laws does not open these locks: the chip stays red and names the blind gates. And a blind count nobody sent
+         (no census count and no lock reason) is UNKNOWN - the calm words are never said over it. */
+      var _blindN0 = (hs && typeof hs.blind === 'number' && isFinite(hs.blind) && hs.blind >= 0) ? hs.blind : null;
+      var _blindHeld = (_blindN0 !== null && _blindN0 > 0) || !!(hs && typeof hs.lockWhy === 'string' && /are BLIND/.test(hs.lockWhy));
+      var _blindKnown = _blindN0 !== null || !!(hs && typeof hs.lockWhy === 'string' && hs.lockWhy);
+      var _lockCalm = !_blindHeld && _blindKnown && (!!_imp || (_owedHere !== null && !_memWait));
+      if (_blindHeld) _lw = ' \u00b7 ' + (_blindN0 ? _blindN0 + ' gate' + (_blindN0 === 1 ? '' : 's') : 'gates') + ' blind';
+      else if (_lockCalm && _landed) _lw = ' \u00b7 until the proof check runs';
+      else if (_lockCalm && _imp) _lw = ' \u00b7 until GitHub\u2019s proofs land';
       else if (_lockCalm) _lw = ' \u00b7 until this PC proves';
       var _shutNames = (hs && Array.isArray(hs.locksShut)) ? hs.locksShut.filter(function (l) { return typeof l === 'string' && l; }) : [];
       bits.push('<span class="' + (_lockCalm ? 'fleet-riverlocked' : 'fleet-riverstuck') + '" title="' + escC('the locks that move this PC\u2019s river are shut \u2014 its proof is '
         + census + (_memWait ? ' and waiting for free memory to prove' : '') + ', so nothing that spends a reel may act here'
+        + (_blindHeld ? ' \u2014 and a BLIND gate keeps every lock shut whatever this PC proves next (BLIND is not STALE)' : '')
         + (_shutNames.length ? ' \u2014 shut: ' + _shutNames.join(', ') + (hs.lockWhy ? ' (' + hs.lockWhy + ')' : '') : '')
         + (hs && hs.why ? ' \u2014 ' + hs.why : ''))   /* v3855 C6 - the stale reason, said */
-        + '"' + (hs && hs.why ? ' data-census-why="' + escC(hs.why) + '"' : '') + '>' + (_memWait ? 'locks shut \u00b7 census waiting for memory' : (_recheck ? 'locks shut \u00b7 rechecking' : 'locks shut')) + _lw
+        + '"' + (hs && hs.why ? ' data-census-why="' + escC(hs.why) + '"' : '') + '>' + (_blindHeld ? 'locks shut' : _memWait ? 'locks shut \u00b7 census waiting for memory' : (_recheck ? 'locks shut \u00b7 rechecking' : 'locks shut')) + _lw
         + (hs && Array.isArray(hs.takesFrom) && hs.takesFrom.length ? ' \u00b7 borrows ' + escC(hs.takesFrom.join('/')) + '\u2019s proofs' : '') + '</span>');
       /* REG-3197 - THE LOCK LINE: which river locks may() last named shut (the console asks on its river lane; the beacon
          carries the answer), in plain words, with the first one's own reason in the hover. Not sent = not drawn. */
@@ -30037,24 +30089,31 @@ function escC(s) {
     else if (d && typeof d.ago === 'string' && d.ago) ago = d.ago;
     return { vaultLine: line, boardAgo: ago };
   };
-  /* REG-3199 - "online now" on the shadow bar holds only while the owner's beacon is inside the presence bound. -> words.
-     Pure: words without "online now" come back as they were; past liveUntil (or with no clock to test it by) the claim
-     becomes "offline · last seen <age>" / "online UNKNOWN", never a frozen "online now". */
+  /* REG-3199 - "online now" (and "online · recording") on the shadow bar holds only while the check-in it stands on is
+     inside the presence bound. -> words. Pure, and always given the bar's words AS PAINTED AT ENTRY (live.base), so each
+     30 s test starts from the claim, not from its own last rewrite (the reviewer on r3: a rewritten bar kept "last seen
+     9 min ago" for hours). Words with neither claim come back as they were; past liveUntil (or with no clock to test it
+     by) the claim becomes "offline · last seen <age>" / "online UNKNOWN", never a frozen "online". */
   window._shadowLiveWords = function (words, live, nowMs) {
     var w = String(words || '');
-    var at = w.indexOf(' \u00b7 online now');
+    var claim = ' \u00b7 online now';
+    var at = w.indexOf(claim);
+    if (at < 0) { claim = ' \u00b7 online \u00b7 recording'; at = w.indexOf(claim); }
     if (at < 0) return w;
     var now = (typeof nowMs === 'number' && isFinite(nowMs)) ? nowMs : Date.now();
     var until = (live && typeof live.liveUntil === 'number' && isFinite(live.liveUntil)) ? live.liveUntil : null;
     if (until !== null && now <= until) return w;
-    var seen = (live && typeof live.seenMs === 'number' && isFinite(live.seenMs)) ? live.seenMs : null;
-    var gone = 'online UNKNOWN (no beacon time to test it by)';
+    var _t = function (x) { return (typeof x === 'number' && isFinite(x)) ? x : null; };
+    /* the newest check-in it is known by: the recorder's report (liveAt) or the console's beacon (seenMs) */
+    var seen = (live && (_t(live.liveAt) !== null || _t(live.seenMs) !== null))
+      ? Math.max(_t(live.liveAt) === null ? -Infinity : live.liveAt, _t(live.seenMs) === null ? -Infinity : live.seenMs) : null;
+    var gone = 'online UNKNOWN (no check-in time to test it by)';
     if (seen !== null) {
       var mins = Math.max(0, Math.floor((now - seen) / 60000));
       gone = 'offline \u00b7 last seen ' + (mins < 1 ? 'under 1 min ago' : mins < 120 ? mins + ' min ago'
         : mins < 2880 ? Math.floor(mins / 60) + ' hr ago' : Math.floor(mins / 1440) + ' days ago');
     }
-    return w.slice(0, at) + ' \u00b7 ' + gone + w.slice(at + ' \u00b7 online now'.length);
+    return w.slice(0, at) + ' \u00b7 ' + gone + w.slice(at + claim.length);
   };
   window._shadowSnapEnter = function (owner, d) {
     if (typeof window._shadowRemember === 'function') window._shadowRemember();
@@ -30085,11 +30144,17 @@ function escC(s) {
        (seenMs) and the moment "online now" stops being true (liveUntil, fleet_presence's bound); the bar tests it now
        and again every 30 s while it stays open. */
     try {
-      window._tvdShadowSnap.live = { seenMs: d.seenMs, liveUntil: d.liveUntil };
-      if (who) who.textContent = window._shadowLiveWords(who.textContent, window._tvdShadowSnap.live, Date.now());
+      /* base = the words as the view painted them; painted = what this test last wrote, so a bar someone else has
+         repainted since (a new shadow opening) is left alone */
+      var _live = { seenMs: d.seenMs, liveAt: d.liveAt, liveUntil: d.liveUntil, base: who ? who.textContent : '' };
+      window._tvdShadowSnap.live = _live;
+      _live.painted = window._shadowLiveWords(_live.base, _live, Date.now());
+      if (who) who.textContent = _live.painted;
       if (!window._shadowLiveTimer) window._shadowLiveTimer = setInterval(function () {
         var sn = window._tvdShadowSnap, el = document.getElementById('shadow-who');
-        if (sn && sn.live && el) el.textContent = window._shadowLiveWords(el.textContent, sn.live, Date.now());
+        if (!(sn && sn.live && el) || el.textContent !== sn.live.painted) return;
+        sn.live.painted = window._shadowLiveWords(sn.live.base, sn.live, Date.now());
+        el.textContent = sn.live.painted;
       }, 30000);
     } catch (eLive) {}
     var f = document.createElement('iframe');
@@ -30170,7 +30235,8 @@ function escC(s) {
       try { built = window._shadowRosterStores(row, fleet, owner); } catch (e) { built = null; }
       var stores = window._shadowMergeStores(snap && snap.stores, built && built.stores);
       var handed = { t: snap && snap.t, words: snap && snap.words, stores: stores,
-                     seenMs: snap && snap.seenMs, liveUntil: snap && snap.liveUntil,   /* REG-3199 - the beacon's own clock */
+                     seenMs: snap && snap.seenMs, liveAt: snap && snap.liveAt,         /* REG-3199 - the check-in's own clock */
+                     liveUntil: snap && snap.liveUntil,
                      ago: snap && snap.ago, vaultLine: (row && row.vaultLine) || null,
                      stall: (snap && typeof snap.stall === 'string') ? snap.stall : null };  /* v3856 online but board stale */
       var clock = window._shadowVaultClock(handed);

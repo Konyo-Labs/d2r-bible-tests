@@ -6030,15 +6030,16 @@ def _profile_view(owner):
     if rec is None and unread:
         rec = _cs.read_cache(cdir, owner)
         source = "cache"
-    online = seen = via = None
+    online = seen = via = live_at = None
     try:
         fl, _age = fleet_presence_last_good()
         online = _cs.online_of(owner, fl)
         via = _cs.via_of(owner, fl)         # REG-3199 - by what it is online (its console, or only its recorder)
         seen = _cs.seen_of(owner, fl)       # v3856 - the same Fleet row: when the console was last seen
+        live_at = _cs.live_at_of(owner, fl, now_ms)   # REG-3199 - the check-in "online" stands on
     except Exception:
-        online = seen = via = None
-    return _cs.view(owner, rec, now_ms, online=online, source=source, via=via, fetch_why=why, seen=seen)
+        online = seen = via = live_at = None
+    return _cs.view(owner, rec, now_ms, online=online, source=source, via=via, live_at=live_at, fetch_why=why, seen=seen)
 
 
 def _frames_cache_dir():
@@ -18289,7 +18290,7 @@ def _triage_for_wire():
 
 
 # Asked at most once per process, and only while the self-prove record is still empty. A later tick has its own census.
-_BOOT_CENSUS = {"asked": False, "state": None}
+_BOOT_CENSUS = {"asked": False, "state": None, "blind": None}
 
 
 def _boot_census_once():
@@ -18306,6 +18307,10 @@ def _boot_census_once():
         word = got.get("state") if isinstance(got, dict) else None
         if word in ("stale", "missing", "unreadable"):
             state = word
+            # REG-3197 (the reviewer on r3) - and how many gates that census filed BLIND: a blind gate shuts every lock
+            # whatever is proved next, so the Fleet must not call the boot window "until this PC proves" over one
+            _bl = got.get("blind")
+            _BOOT_CENSUS["blind"] = len(_bl) if isinstance(_bl, list) else None
     except Exception:
         state = None
     _BOOT_CENSUS["state"] = state
@@ -18387,8 +18392,19 @@ def _river_for_wire(now_ms=None):
             _key = "stale-at-boot"
         if _key is None:
             _key = "starting"
-    out["heart"] = {"census": _census, "key": _key,
-                    "blind": (len(_sp.get("blind") or []) if _sp.get("blind") is not None else None)}
+    _blind_n = len(_sp.get("blind") or []) if _sp.get("blind") is not None else None
+    if _blind_n is None and _key == "stale-at-boot":
+        _blind_n = _BOOT_CENSUS.get("blind")      # REG-3197 - the boot census's own BLIND count, read with its state
+    # REG-3197 (the reviewer on r3: "locks shut · rechecking" came back red for up to 10 min after every import, with a
+    # why still saying the proofs "are being imported") - THE IMPORT HAS ENDED AND THE PROVER HAS NOT TICKED SINCE: the
+    # lane's sentence is the import's, so it is said as what happened, never as a running import.
+    _rel = dict(_PROOF_RELEASE)
+    if _sp.get("afterImport") is True and _rel.get("running") is not True:
+        _sp["say"] = ("GitHub's proofs for this commit stopped importing (%s%s) - the proof check runs on its next "
+                      "10 s tick, on what is still owed"
+                      % (_wire_text(_rel.get("state"), 20) or "UNKNOWN",
+                         (": " + _wire_text(_rel.get("why"), 100)) if _rel.get("why") else ""))
+    out["heart"] = {"census": _census, "key": _key, "blind": _blind_n}
     # v3862 (item 10) - THE PROOF METER: owed now, the rate this PC has been proving at, and when it will be done
     _owed = _sp.get("owed") if (isinstance(_sp.get("owed"), int) and not isinstance(_sp.get("owed"), bool)) else None
     _PROOF_METER["samples"], _rate, _eta = proof_meter(_PROOF_METER["samples"], now if now else int(time.time() * 1000),
@@ -18401,7 +18417,7 @@ def _river_for_wire(now_ms=None):
     # REG-3197 (his Fleet 21:01: every online PC "census stale; lane: GitHub's proofs ... are being imported", drawn as
     # red "locks shut" + "river stuck") - WHAT THE CENSUS IS WAITING ON, AS NUMBERS: the import while it runs, and the
     # laws still owed HERE while this PC's own lane proves. Each is None when it is not happening, never 0.
-    out["heart"]["importing"] = heart_importing(_PROOF_RELEASE, _app_ver)
+    out["heart"]["importing"] = heart_importing(_rel, _sp)
     out["heart"]["owedHere"] = heart_owed_here(_sp)
     # REG-3197 - and WHICH river locks are shut, as may() last answered (the river lane asks; the beacon reads memory)
     _lk = dict(_RIVER_LOCKS_SEEN)
@@ -18430,14 +18446,23 @@ def heart_owed_here(sp):
     return None
 
 
-def heart_importing(rel, ver=None):
-    """REG-3197 - GitHub's proofs being imported for this commit, while the import RUNS. Pure over the record.
-    -> None | {done, of, etaS, ver}
+def heart_importing(rel, sp=None):
+    """REG-3197 - GitHub's proofs being imported for this commit, while the import RUNS. Pure over the two records.
+    -> None | {done, of, etaS, ver} | {done, of, etaS: None, ver, landed: True}
 
     `rel` is _PROOF_RELEASE. done/of/etaS are the import's own counts (absent on a build that does not count: None, and
-    the row says "importing GitHub's proofs" with no numbers - never a guessed 0). `ver` names the version whose proofs
-    they are: the running stamp, a callable so a law can hand one in. [[unknown-stays-unknown]]"""
-    if not isinstance(rel, dict) or rel.get("running") is not True:
+    the row says "importing GitHub's proofs" with no numbers - never a guessed 0). `ver` is the version whose proofs they
+    are, as the import recorded it when it started (the stamp on the clean checkout it imports for, which is HEAD - not
+    the running stamp, which lags HEAD while a relaunch is held); None when it did not record one.
+    `landed` (the reviewer on r3): the import finished, it imported, and this PC's prover - which skipped its tick for
+    it (`sp.afterImport`) - has not ticked since. That window is the import's last word, never a red recheck and never a
+    running import. [[unknown-stays-unknown]] [[stale-reading]]"""
+    if not isinstance(rel, dict):
+        return None
+    running = rel.get("running") is True
+    landed = (not running and isinstance(sp, dict) and sp.get("afterImport") is True
+              and rel.get("state") == "imported")
+    if not (running or landed):
         return None
 
     def _n(v):
@@ -18445,13 +18470,13 @@ def heart_importing(rel, ver=None):
     done, of, eta = _n(rel.get("done")), _n(rel.get("of")), _n(rel.get("etaS"))
     if done is not None and of is not None and done > of:
         done = of = None            # a count past its own total is not a count
-    try:
-        v = ver() if callable(ver) else ver
-    except Exception:
-        v = None
+    v = rel.get("ver")
     v = v if isinstance(v, str) and re.match(r"^v\d{1,6}$", v) else None
-    return {"done": int(done) if done is not None else None, "of": int(of) if of is not None else None,
-            "etaS": int(eta) if eta is not None else None, "ver": v}
+    out = {"done": int(done) if done is not None else None, "of": int(of) if of is not None else None,
+           "etaS": int(eta) if (eta is not None and running) else None, "ver": v}
+    if landed:
+        out["landed"] = True
+    return out
 
 
 #: REG-3197 - the four river doors as may() last answered them, read by the river lane (never on the beacon thread):
@@ -18483,6 +18508,15 @@ def _river_locks_read(ask=None):
     except Exception as _e:
         return None, "the lock could not be asked (%s)" % type(_e).__name__
     return shut, None
+
+
+def _river_locks_due(playing=None):
+    """REG-3197 - may the river lane ask the four doors now? Not while he plays. -> bool. Never raises.
+    A play probe that raises reads as not playing - the same rule the river walk itself (_river_warm_once) uses."""
+    try:
+        return not (_sp_playing_here() if playing is None else playing)
+    except Exception:
+        return True
 
 
 def _river_locks_note(now_ms=None, ask=None):
@@ -18657,16 +18691,36 @@ def _river_warm_computing(body):
     return isinstance(got, dict) and got.get("computing") is True
 
 
+def _river_warm_refusal(body):
+    """REG-3198 (the reviewer on r3) - was the route's answer a REFUSAL - its walk failed, or the river could not be
+    read? -> the route's own reason | None. Pure. The route has already kept it for the beacon (_river_remember); the
+    lane must not count it as a read."""
+    try:
+        got = json.loads(body.decode("utf-8", "replace") if isinstance(body, bytes) else str(body or ""))
+    except Exception:
+        return None
+    if not isinstance(got, dict) or got.get("computing") is True:
+        return None
+    ln = got.get("lanes")
+    if isinstance(ln, dict) and ln.get("ok") is False:
+        return str(ln.get("why") or "the lane view refused")
+    if got.get("ok") is False and "stations" in got and got.get("stations") is None:
+        return str(got.get("why") or "the river could not be read")
+    return None
+
+
 def _river_warm_wait_walk(body, opener, sleep, clock):
     """REG-3198 - ask again every RIVER_WARM_POLL_S while the route says "computing", inside RIVER_WARM_TIMEOUT_S.
-    -> seconds waited. Raises TimeoutError when the walk has not finished by then (the pass is then a failed read)."""
+    -> (seconds waited, the route's last answer). Raises TimeoutError when the walk has not finished by then (the pass
+    is then a failed read). A walk that FAILS ends the wait at once: the route answers it as a refusal and starts no
+    other walk until river_lanes' own backoff has passed, so one pass is one walk."""
     t0 = clock()
     while _river_warm_computing(body):
         if clock() - t0 >= RIVER_WARM_TIMEOUT_S:
             raise TimeoutError("the river walk had not finished after %d s" % RIVER_WARM_TIMEOUT_S)
         sleep(RIVER_WARM_POLL_S)
         body = _river_warm_ask(opener)
-    return round(clock() - t0, 1)
+    return round(clock() - t0, 1), body
 
 
 def _river_warm_once(now_ms=None, _urlopen=None, playing=None, busy_pct=None, _sleep=None, _clock=None,
@@ -18702,11 +18756,19 @@ def _river_warm_once(now_ms=None, _urlopen=None, playing=None, busy_pct=None, _s
             if callable(_close):
                 _close()
         # REG-3198 - "computing" is the walk this ask STARTED, not a read: the lane waits for it to finish
-        _waited = _river_warm_wait_walk(_body, _urlopen or _ur.urlopen, _sleep or time.sleep, _clock or time.time)
-        _RIVER_WARM.update(worked=int(_RIVER_WARM.get("worked") or 0) + 1, lastTs=now, owed=0,
-                           ms=int((time.time() - t0) * 1000),
-                           say="read the river (%s)%s" % (why, (" after its walk finished (%.0f s)" % _waited)
-                                                         if _waited else ""))
+        _waited, _final = _river_warm_wait_walk(_body, _urlopen or _ur.urlopen, _sleep or time.sleep,
+                                                _clock or time.time)
+        _refused = _river_warm_refusal(_final)
+        if _refused is not None:
+            # REG-3198 (the reviewer on r3) - a walk that failed is a failed read, said with the walk's own reason; the
+            # route kept it in _RIVER_LAST, so the next pass waits RIVER_WARM_STALE_S like any failed read
+            _RIVER_WARM.update(lastTs=now, owed=1, ms=int((time.time() - t0) * 1000),
+                               say="the river walk failed - %s" % _wire_text(_refused, 160))
+        else:
+            _RIVER_WARM.update(worked=int(_RIVER_WARM.get("worked") or 0) + 1, lastTs=now, owed=0,
+                               ms=int((time.time() - t0) * 1000),
+                               say="read the river (%s)%s" % (why, (" after its walk finished (%.0f s)" % _waited)
+                                                             if _waited else ""))
     except Exception as e:
         # The route remembers its own failure in _RIVER_LAST; a read that never reached the route says so here.
         _RIVER_WARM.update(lastTs=now, owed=1, ms=int((time.time() - t0) * 1000),
@@ -18732,8 +18794,11 @@ def _river_warm_loop():
         try:
             _lane_tick('tvd-river-warm', RIVER_WARM_EVERY_S)
             r = _river_warm_once()
-            # REG-3197 - which river locks are shut, asked here on this lane's thread so the beacon only reads memory
-            _river_locks_note()
+            # REG-3197 - which river locks are shut, asked here on this lane's thread so the beacon only reads memory.
+            # The reviewer on r3: never while he plays (four may() calls hash the gate files, ~0.6 s) - the last answer
+            # stands, with its own age (locksAgeS), until the game closes.
+            if _river_locks_due():
+                _river_locks_note()
             import lane_trace as _lt
             _lt.note('tvd-river-warm', worked=r.get("worked"), owed=r.get("owed"), ms=r.get("ms"),
                      why=str(r.get("say") or "")[:200])
@@ -22979,7 +23044,13 @@ def _proof_release_tick(_thread=None, _git_run=_git_run, _import=None, _busy=Non
             _PROOF_RELEASE.update(state="unknown", why="the proof import raised %s" % type(e).__name__)
         finally:
             _PROOF_RELEASE["running"] = False
-    _PROOF_RELEASE.update(running=True, sha=head, state="importing",
+    # REG-3197 (the reviewer on r3) - the version these proofs are FOR: the stamp on this clean checkout (HEAD, the status
+    # check above refused a dirty one), read once here - the running stamp lags HEAD while a relaunch is held
+    try:
+        _for_ver = _disk_ver()
+    except Exception:
+        _for_ver = None
+    _PROOF_RELEASE.update(running=True, sha=head, state="importing", ver=_for_ver,
                           why="importing GitHub's proofs for %s from the proof bank" % head[:9])
     if _thread is not None:
         _thread(_go)
@@ -23463,10 +23534,15 @@ def _self_prove_step(n, sp):
 def _self_prove_dispatch(n):
     """REG-1624 — the rescue loop's one call into the self-prove lane on tick `n`. -> what ran ("tick"/"guard"/None)"""
     step = _self_prove_step(n, _SELF_PROVE)
+    # REG-3197 (the reviewer on r3) - THE TICK THE IMPORT HELD RUNS AS SOON AS THE IMPORT ENDS, not up to
+    # SELF_PROVE_EVERY_TICKS (10 min) later: for that wait the Fleet drew the 21:01 red "locks shut · rechecking" again.
+    if step != "tick" and _SELF_PROVE.get("afterImport") is True and not _PROOF_RELEASE.get("running"):
+        step = "tick"
     if step == "tick":
         if _PROOF_RELEASE.get("running"):   # v3862 — GitHub's proofs land first; proving them here too is waste
             _SELF_PROVE["say"] = ("GitHub's proofs for this commit are being imported - the next proof tick starts "
                                   "after, on what is still owed")
+            _SELF_PROVE["afterImport"] = True   # REG-3197 - _self_prove_tick replaces the record, which clears it
         else:
             _self_prove_tick()          # #50 — has THIS PC proved its own instruments?
         if n == SELF_PROVE_FIRST_TICK:
@@ -49979,6 +50055,15 @@ class Handler(BaseHTTPRequestHandler):
                     _moving = _pread.get("moving") if isinstance(_pread, dict) else None
                     _as_of = _pread.get("asOf") if isinstance(_pread, dict) else None
                     _lr = _RL.lanes_last(hide=_hide)
+                    # REG-3198 (the reviewer on r3) - A WALK THAT FAILED IS A REFUSAL, NOT "computing". The failure wrote
+                    # nothing, so this answered "computing" for ever and every asker (the river lane every 5 s) started
+                    # another walk. It travels as the refusal below, with the walk's own reason, and _river_remember
+                    # keeps it for the beacon (failWhy, REG-3196).
+                    _lf = _RL.last_failure(hide=_hide) if _lr is None else None
+                    if _lr is None and _lf is not None:
+                        _lr = {"ok": False,
+                               "why": "the river walk failed %.0f s ago (%s) - it is tried again in %.0f s"
+                                      % (_lf["ageS"], _lf["why"], _lf["retryInS"])}
                     if _lr is None:
                         self._json(200, {"ok": False, "computing": True, "hiddenWhy": _hide_why,
                                          "moving": _moving, "asOf": _as_of,

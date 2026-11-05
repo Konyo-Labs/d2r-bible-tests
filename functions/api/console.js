@@ -497,6 +497,8 @@ export async function onRequestPost(context) {
               done: whole(hi.done, 1000000), of: whole(hi.of, 1000000), etaS: num(hi.etaS, DAY400),
               ver: (typeof hi.ver === 'string' && /^v\d{1,6}$/.test(hi.ver)) ? hi.ver : null,
             };
+            /* the reviewer on r3 - the import has landed and the prover has not ticked since: only a literal true crosses */
+            if (hi.landed === true) out.river.heart.importing.landed = true;
           }
           const oh = whole(rv.heart.owedHere, 100000);
           if (oh !== null) out.river.heart.owedHere = oh;
@@ -815,7 +817,7 @@ export async function onRequestPost(context) {
     // words ('river · starting', 'census waiting for memory'), so those two are news; the others move each slice and are not.
     // REG-3197 - an import starting or ending changes the row's words ('importing ... proofs'); its counts are not news
     const heartWord = h ? [h.census, (typeof h.blind === 'number') ? h.blind : null,
-                           (h.importing && typeof h.importing === 'object') ? 'importing' : null,
+                           (h.importing && typeof h.importing === 'object') ? (h.importing.landed === true ? 'landed' : 'importing') : null,
                            (h.key === 'starting' || h.key === 'low-memory') ? h.key : null] : null;
     let laneWord = null;
     if (rv.lanes && typeof rv.lanes === 'object' && !Array.isArray(rv.lanes)) {

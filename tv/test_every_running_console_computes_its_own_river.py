@@ -23,6 +23,17 @@ The joints this closes (the console's own river lane, tvd-river-warm, #193, on t
   * /api/status carries the lane's record (riverWarm) and the last lock reading (riverLocks).
 ⚠ NOT a lowered OS thread priority: a Python thread holding the GIL at a lowered priority makes the shadow recorder in
 the same process wait on it (priority inversion). The walk stays on river_lanes' own daemon thread, never the beacon's.
+
+The adversarial review of this item reproduced two more holes, closed here too:
+  * A FAILING WALK RAN BACK TO BACK. river_lanes._lanes_refresh swallowed the walk's exception and wrote nothing, so the
+    route kept answering "computing" and every 5 s poll started a NEW walk - measured 11 walks in one pass with a raising
+    lanes(), for the whole 120 s bound, every pass, for good (and _RIVER_LAST never heard of it, so the next pass was
+    due at once). Now the failed walk keeps its reason (river_lanes._FAIL), no walk for that key starts again until
+    _FAIL_BACKOFF_S has passed, the route answers it as a REFUSAL with the walk's own reason (so _river_remember keeps
+    it and failWhy carries it, REG-3196), and the lane counts that answer as a failed read - one walk per pass.
+  * THE ADVANCED BOX WAS NOT TOLD. The row's chip said "offline since 02:49 · no river in its last run", while
+    _fleetSysParts (the Advanced box, and the row's own hover through _fleetHoverPlain) still said river UNKNOWN, stuck
+    UNKNOWN and a warning "proof out of date" for Dean, 17 h offline. Both now read one helper (_fleetOffline).
 RED_PROOF below.
 """
 import datetime
@@ -43,9 +54,15 @@ _console_safe_enable()
 import fixture_tmp as _fx_tmp  # noqa: E402
 _fx_tmp.contain()
 import control_app as CA  # noqa: E402
+import river_lanes as RL  # noqa: E402
 import test_one_river_chip_per_row as H  # noqa: E402  (the cut-and-run pieces for _fleetStuckChip)
 
 NOW = 1793900000000
+
+
+def _read(path):
+    with io.open(path, encoding="utf-8") as fh:
+        return fh.read()
 MIN = 60 * 1000
 
 
@@ -69,6 +86,34 @@ def _chip(row, now=NOW):
 
 def _iso(ms):
     return datetime.datetime.fromtimestamp(ms / 1000.0, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
+#: the fleet helpers, both ends anchored once (the same block the card's own law cuts; that law drives Chrome, so its
+#: harness is not imported here)
+FLEET = ("  var _fleetSince = function (iso) {", "  /* \u2500\u2500 v2851 \u2014 A TRANSIENT FAILURE MUST NOT BECOME A PERMANENT CARD")
+
+
+def _box(row, now=NOW):
+    """The SHIPPED _fleetSysParts over one fleet row, run in node (TZ=UTC). -> {key: {t, unk, warn}}"""
+    with io.open(H.UI, encoding="utf-8") as fh:
+        src = fh.read()
+    for a in FLEET:
+        if src.count(a) != 1:
+            raise AssertionError("anchor %r matched %d times" % (a[:40], src.count(a)))
+    i = src.index(FLEET[0])
+    block = src[i:src.index(FLEET[1], i)]
+    js = ("var window = {}; var document = { getElementById: function () { return null; } };\n"
+          "var localStorage = { getItem: function () { return null; }, setItem: function () {} };\n"
+          "function escC(x){ return String(x).replace(/&/g,'&amp;').replace(/\"/g,'&quot;')"
+          ".replace(/</g,'&lt;').replace(/>/g,'&gt;'); }\nvar esc = escC;\n%s\n%s\n"
+          "var out = {}; _fleetSysParts(%s, %d).forEach(function (x) { out[x.k] = { t: String(x.t).replace(/\\u00a0/g, ' '),"
+          " unk: !!x.unk, warn: !!x.warn }; }); console.log(JSON.stringify(out));") % (
+        H._cut(src, H.WHY[0], H.WHY[1]), block, json.dumps(row), now)
+    r = subprocess.run([H._need_node(), "-"], input=js, capture_output=True, text=True, timeout=30,
+                       env=dict(os.environ, TZ="UTC"))
+    if r.returncode != 0:
+        raise AssertionError("the cut box did not run in node: %s" % r.stderr[-600:])
+    return json.loads(r.stdout.strip().splitlines()[-1])
 
 
 class _Resp(object):
@@ -127,6 +172,105 @@ class TheLaneWaitsForTheWalkItStarted(unittest.TestCase):
         self.assertEqual(r["owed"], 1)
         self.assertIn("did not finish inside %d s" % CA.RIVER_WARM_TIMEOUT_S, r["say"], "the lane did not stop at its own bound: %r" % r["say"])
         self.assertLessEqual(len(asked), 2 + int(CA.RIVER_WARM_TIMEOUT_S / CA.RIVER_WARM_POLL_S))
+
+
+class AFailingWalkIsOneWalk(unittest.TestCase):
+    """The reviewer's own shape: lanes() raising, the lane polling while the route says computing."""
+
+    def setUp(self):
+        self._saved = (RL.lanes, dict(RL._LAST), dict(RL._FAIL), set(RL._REFRESH_ON))
+        RL._LAST.clear()
+        RL._FAIL.clear()
+        RL._REFRESH_ON.clear()
+
+    def tearDown(self):
+        RL.lanes = self._saved[0]
+        for d, v in ((RL._LAST, self._saved[1]), (RL._FAIL, self._saved[2])):
+            d.clear()
+            d.update(v)
+        RL._REFRESH_ON.clear()
+        RL._REFRESH_ON.update(self._saved[3])
+
+    def _settle(self):
+        import time
+        for _ in range(200):
+            if not RL._REFRESH_ON:
+                return
+            time.sleep(0.01)
+        raise AssertionError("a background walk never ended")
+
+    def test_a_failed_walk_keeps_its_reason_and_is_not_walked_again_at_once(self):
+        walks = []
+
+        def boom(hide=None):
+            walks.append(1)
+            raise KeyError("ROUTED")
+        RL.lanes = boom
+        self.assertIsNone(RL.lanes_last())
+        self._settle()
+        for _ in range(5):
+            self.assertIsNone(RL.lanes_last(), "a failed walk was served as lanes")
+            self._settle()
+        self.assertEqual(len(walks), 1, "every ask after a failed walk started another walk (%d)" % len(walks))
+        f = RL.last_failure()
+        self.assertIsNotNone(f, "the failed walk's reason was not kept")
+        self.assertIn("KeyError", f["why"])
+        self.assertGreater(f["retryInS"], 0)
+        self.assertEqual(RL._LAST, {})
+        # past the backoff it is tried again, and a walk that finishes clears the failure
+        RL._FAIL[()]["at"] -= RL._FAIL_BACKOFF_S + 1
+        RL.lanes = lambda hide=None: {"ok": True, "lanes": []}
+        self.assertIsNone(RL.lanes_last())
+        self._settle()
+        self.assertIsNotNone(RL.lanes_last())
+        self.assertIsNone(RL.last_failure(), "a finished walk left the old failure standing")
+
+    def test_one_pass_is_one_walk_and_a_refusal_is_a_failed_read(self):
+        import time
+        walks, asked, clock = [], [], _Clock()
+
+        def boom(hide=None):
+            walks.append(1)
+            time.sleep(0.05)        # still walking when the route first answers: "computing", as on a real PC
+            raise KeyError("ROUTED")
+        RL.lanes = boom
+
+        def route(url, timeout=None):
+            # the /api/river decision, from the route's own two calls (its source is pinned below)
+            asked.append(url)
+            lr = RL.lanes_last()
+            lf = RL.last_failure() if lr is None else None
+            self._settle()
+            if lr is None and lf is not None:
+                CA._river_remember({"ok": False, "why": "the river walk failed %.0f s ago (%s)" % (lf["ageS"], lf["why"])})
+                return _Resp(json.dumps({"ok": True, "lanes": {"ok": False, "why": "the river walk failed (%s)"
+                                                                % lf["why"]}}).encode())
+            return _Resp(b'{"ok": false, "computing": true}')
+        last = {"good": None, "fail": None}
+        with mock.patch.object(CA, "_RIVER_WARM", dict(CA._RIVER_WARM, worked=0, owed=None, beaconed=True)), \
+                mock.patch.object(CA, "_RIVER_LAST", last):
+            r = CA._river_warm_once(now_ms=NOW, _urlopen=route, playing=False, busy_pct=5.0,
+                                    _sleep=clock.sleep, _clock=clock)
+            self.assertEqual(len(walks), 1, "one pass ran %d walks back to back" % len(walks))
+            self.assertLessEqual(len(asked), 2, "the lane kept polling after the walk failed (%d asks)" % len(asked))
+            self.assertEqual(r["worked"], 0, "a failed walk was counted as a read")
+            self.assertEqual(r["owed"], 1)
+            self.assertIn("the river walk failed", r["say"])
+            self.assertIn("KeyError", r["say"], "the walk's own reason did not reach the lane: %r" % r["say"])
+            self.assertIn("KeyError", (last.get("fail") or {}).get("why", ""), "the beacon was never told")
+            due, why = CA._river_warm_due(int(time.time() * 1000) + 60 * 1000, last, False, 5.0)
+            self.assertFalse(due, "the next pass was due at once after a failed walk: %s" % why)
+
+    def test_the_route_answers_a_failed_walk_as_a_refusal(self):
+        src = _read(os.path.join(HERE, "control_app.py"))
+        i = src.index("                    _lr = _RL.lanes_last(hide=_hide)\n")
+        block = src[i:src.index("                    if _lr.get(\"ok\"):\n", i)]
+        self.assertEqual(block.count("                    _lf = _RL.last_failure(hide=_hide) if _lr is None else None\n"), 1,
+                         "the route never asks whether its walk failed")
+        self.assertIn("                    if _lr is None and _lf is not None:\n", block, "a failed walk still answers 'computing'")
+        self.assertLess(block.index("                    if _lr is None and _lf is not None:\n"),
+                        block.index("                    if _lr is None:\n"),
+                        "a failed walk still answers 'computing'")
 
 
 class TheFirstRiverGoesOutAtOnce(unittest.TestCase):
@@ -198,7 +342,7 @@ class NoLanesSayWhy(unittest.TestCase):
         self.assertNotIn("nothing has asked", w)
 
     def test_the_status_carries_the_lane(self):
-        src = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
+        src = _read(os.path.join(HERE, "control_app.py"))
         self.assertEqual(src.count('"riverWarm": dict(_RIVER_WARM), "riverLocks": dict(_RIVER_LOCKS_SEEN), '), 1,
                          "/api/status does not carry the river lane's record")
 
@@ -241,6 +385,30 @@ class AnOfflineRowIsSaidOffline(unittest.TestCase):
         html = _chip(row)
         self.assertNotIn("offline since", html)
         self.assertIn("locks shut", html)
+
+    def test_the_advanced_box_says_offline_too(self):
+        # the reviewer on r3, his live rows: Dean 17 h offline read 'river: UNKNOWN', 'stuck: UNKNOWN' and a warning
+        # 'proved: proof out of date' in the box while the chip said offline
+        dean = self._dean({"lanes": None, "ageS": None, "stuck": None,
+                           "why": "this console has not computed its river since it started",
+                           "heart": {"census": "stale", "key": "stale-at-boot", "blind": None}})
+        grok = self._dean({"lanes": None, "stuck": None, "heart": {"census": None, "key": "starting", "blind": None}},
+                          gone_s=8 * 86400)
+        old = dict(self._dean(None, gone_s=65 * 86400), system={"tree": "ok"})   # his Wife PC: v2101, no river field
+        for row, since in ((dean, "23:33"), (grok, "Oct 28 17:33"), (old, "Sep 1 17:33")):
+            parts = _box(row)
+            for k in ("river", "stuck", "proved"):
+                self.assertIn(k, parts, "the box lost its %s line" % k)
+                self.assertNotIn("UNKNOWN", parts[k]["t"], "%s: an offline PC's %s read UNKNOWN" % (since, k))
+                self.assertFalse(parts[k]["unk"] or parts[k]["warn"], "%s: an offline %s line was a warning" % (since, k))
+                self.assertIn("offline since " + since, parts[k]["t"], parts[k]["t"])
+        self.assertIn("no river in its last run", _box(dean)["river"]["t"])
+        self.assertIn("proof out of date at its last report", _box(dean)["proved"]["t"])
+        self.assertIn("no proof check in its last run", _box(grok)["proved"]["t"])
+        self.assertIn("river not reported", _box(old)["river"]["t"])
+        self.assertIn("proof not reported", _box(old)["proved"]["t"])
+        online = dict(dean, presence={"state": "online", "online": True, "via": "console", "ageS": 60})
+        self.assertTrue(_box(online)["river"]["unk"], "an online row with no river stopped saying UNKNOWN")
 
     def test_the_red_proof_finds_match_once(self):
         for p in RED_PROOF:
@@ -286,13 +454,38 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3198 - an 18 h offline row draws red locks and river UNKNOWN again (Dean, his 21:01 Fleet)",
      "file": "tv/control_ui.html",
-     "find": "    if (_pres && _pres.state === 'offline') {\n",
-     "replace": "    if (false) {\n",
+     "find": "    var _off = (_pres && _pres.state === 'offline') ? _fleetOffline(m, nowMs) : null;\n    if (_off) {\n",
+     "replace": "    var _off = (_pres && _pres.state === 'offline') ? _fleetOffline(m, nowMs) : null;\n    if (false) {\n",
      "matches": 1},
     {"why": "REG-3198 - an offline row's last river stops ageing at its beacon",
      "file": "tv/control_ui.html",
-     "find": "        _offRiver = 'last river ' + _fleetAgo(rv.ageS + _offGone);\n",
-     "replace": "        _offRiver = 'last river ' + _fleetAgo(rv.ageS);\n",
+     "find": "      river = 'last river ' + _fleetAgo(rv.ageS + gone);",
+     "replace": "      river = 'last river ' + _fleetAgo(rv.ageS);",
+     "matches": 1},
+    {"why": "REG-3198 (the reviewer on r3) - the Advanced box says river/stuck UNKNOWN and warns for an offline PC",
+     "file": "tv/control_ui.html",
+     "find": "    var _offS = _fleetOffline(m, nowMs);\n",
+     "replace": "    var _offS = null;\n",
+     "matches": 1},
+    {"why": "REG-3198 (the reviewer on r3) - a failed walk is forgotten, so every ask walks again (11 walks in one pass)",
+     "file": "tv/river_lanes.py",
+     "find": "                _FAIL[key] = {\"at\": time.time(), \"why\": failed}\n",
+     "replace": "                pass\n",
+     "matches": 1},
+    {"why": "REG-3198 (the reviewer on r3) - a walk that just failed is walked again on the next ask",
+     "file": "tv/river_lanes.py",
+     "find": "            due = False         # REG-3198",
+     "replace": "            due = True          # REG-3198",
+     "matches": 1},
+    {"why": "REG-3198 (the reviewer on r3) - the route answers a failed walk as 'computing' for ever",
+     "file": "tv/control_app.py",
+     "find": "                    if _lr is None and _lf is not None:\n",
+     "replace": "                    if False:\n",
+     "matches": 1},
+    {"why": "REG-3198 (the reviewer on r3) - the lane counts a refused (failed) walk as a read",
+     "file": "tv/control_app.py",
+     "find": "        _refused = _river_warm_refusal(_final)\n",
+     "replace": "        _refused = None\n",
      "matches": 1},
 ]
 

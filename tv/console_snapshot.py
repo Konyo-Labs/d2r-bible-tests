@@ -497,11 +497,10 @@ def online_of(owner, fleet):
     return None
 
 
-def via_of(owner, fleet):
-    """REG-3199 - HOW this owner is online, from the same row and the same presence function online_of reads:
-    "console" | "recorder" | None (offline, unknown, or not in the fleet)."""
+def _row_of(owner, fleet):
+    """The owner's Fleet row and the list it was read from (True = online). -> (row, listed) | (None, None)"""
     if not isinstance(fleet, dict) or fleet.get("ok") is False:
-        return None
+        return None, None
     for state, rows in ((True, fleet.get("online")), (False, fleet.get("offline"))):
         for row in rows or []:
             if not isinstance(row, dict):
@@ -509,9 +508,36 @@ def via_of(owner, fleet):
             plat = row.get("platform")
             plat = "mac" if plat in ("darwin", "mac", "macos") else plat
             if _rp.owner_of(row.get("nickname"), plat) == owner:
-                import fleet_presence as _fp
-                return _fp.presence_of(row, state).get("via")
-    return None
+                return row, state
+    return None, None
+
+
+def via_of(owner, fleet):
+    """REG-3199 - HOW this owner is online, from the same row and the same presence function online_of reads:
+    "console" | "recorder" | None (offline, unknown, or not in the fleet)."""
+    row, state = _row_of(owner, fleet)
+    if row is None:
+        return None
+    import fleet_presence as _fp
+    return _fp.presence_of(row, state).get("via")
+
+
+def live_at_of(owner, fleet, now_ms=None):
+    """REG-3199 (the reviewer on r3) - WHEN the check-in that makes this owner online was made: its console's beacon, or
+    - when only its recorder is alive - the recorder's own report. -> epoch ms | None (not online, or no readable time).
+    The bar tests "online · recording" against THIS time; the console's beacon is hours old exactly when the recorder
+    is the one keeping the owner online."""
+    row, state = _row_of(owner, fleet)
+    if row is None:
+        return None
+    import fleet_presence as _fp
+    pres = _fp.presence_of(row, state, now_ms)
+    if pres.get("online") is not True:
+        return None
+    if pres.get("via") == "recorder":
+        rec = row.get("recorder") if isinstance(row.get("recorder"), dict) else {}
+        return _fp._parse_iso_ms(rec.get("t"))
+    return _fp._parse_iso_ms(row.get("t"))
 
 
 #: v3856 - a board older than this while its console was seen online is a STALLED upload, said on the banner, and the
@@ -573,7 +599,7 @@ def _ago_words(ms):
     return "%d days ago" % (m // (24 * 60))
 
 
-def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=None, via=None):
+def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=None, via=None, live_at=None):
     """What /api/roster-cache?profile= serves. `live` is the owner's console being up right now; the stores are
     always the last upload, and `words` always says when that upload was made.
 
@@ -596,7 +622,12 @@ def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=
     # last beacon ~18 h before) - "ONLINE NOW" IS A CLAIM ABOUT THE BEACON, so it is tested here, against the one
     # presence bound (fleet_presence.STALE_AFTER_S), with the beacon's own time. A known beacon older than the bound is
     # offline whatever list the row was read from; no beacon time leaves the caller's answer as it was.
-    if online is True and via != "recorder" and beacon_stale(seen, now_ms):
+    # The reviewer on r3: "online · recording" is tested the same way, against the RECORDER's own report (live_at) -
+    # the console's beacon is old exactly when the recorder is what keeps the owner online.
+    _live_at = live_at if (isinstance(live_at, int) and not isinstance(live_at, bool)) else None
+    if _live_at is None and via != "recorder" and isinstance(seen, int) and not isinstance(seen, bool):
+        _live_at = seen
+    if online is True and beacon_stale(_live_at, now_ms):
         online = False
     if online is True and via == "recorder":
         # the console is down and its recorder reports itself alive: presence's own words, never "online now"
@@ -625,7 +656,9 @@ def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=
            # REG-3199 - the beacon's own time and the moment "online now" stops being true, so the bar can test it
            # again while it stays open (it was painted once, at entry, and never re-asked)
            "seenMs": seen if isinstance(seen, int) else None,
-           "liveUntil": (seen + live_bound_ms()) if (state == "live" and isinstance(seen, int)) else None}
+           # the reviewer on r3 - the check-in "online" stands on (the recorder's report when it is the recorder)
+           "liveAt": _live_at,
+           "liveUntil": (_live_at + live_bound_ms()) if (state == "live" and _live_at is not None) else None}
     iv = rec.get("intentVerified")
     out["intentVerified"] = iv if isinstance(iv, bool) else None
     kid = _rp.short_key_id(rec.get("keyId"))
