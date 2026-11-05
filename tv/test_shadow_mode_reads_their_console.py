@@ -1110,9 +1110,18 @@ class TheSameConsoleDrawsIt(unittest.TestCase):
         self.assertEqual(outside, [], "bible.html draws something differently in shadow at line(s) %r - the shadow "
                                       "must render through the same templates as the console" % outside)
         self.assertGreaterEqual(len(allowed), 12, allowed)
-        # REG-3113 - _flShadow refuses the same way _unconfReadOnly does (return true). One new guard of that form.
-        self.assertEqual(sum(1 for a in allowed if a.startswith("if (window._tvdShadow) return true;")), 2)
-        self.assertLessEqual(len(allowed), 21, allowed)
+        # REG-3113 - _flShadow refuses the same way _unconfReadOnly does (return true); v3864 - REG-3095's inShadow (the
+        # D2JSP desk's read-only test) is the third. Each is named by the function it opens, never a running count (REG-3049).
+        for fn in ("function _unconfReadOnly(){\n  if (window._tvdShadow) return true;",
+                   "  function inShadow(){\n    if (window._tvdShadow) return true;",
+                   "  function _flShadow(){\n    if (window._tvdShadow) return true;"):
+            self.assertEqual(html.count(fn), 1, "a return-true shadow guard went missing or doubled: %r"
+                             % fn.split("\n")[0].strip())
+        self.assertEqual(sum(1 for a in allowed if a.startswith("if (window._tvdShadow) return true;")), 3,
+                         "a return-true shadow guard that is none of the three named above")
+        # v3864 (#233) - 27: main's v3856-v3859 shadow guards and the integration chain's (the D2JSP desk, the full-look
+        # asks, the saves reason) met in one tree, every one of the allowed forms above. A 28th is an edit here, on purpose.
+        self.assertLessEqual(len(allowed), 27, allowed)
 
     def test_the_shadow_frame_is_the_consoles_own_board_document(self):
         ui = _read(UI)
