@@ -1,6 +1,6 @@
 {
- "_comment": "GENERATED from bible.html's const RUNEWORDS by tv/build_runeword_roster.py. Both the qualified name (Spirit (sword)) and its bare form (Spirit) are kept: a chronicle page prints the bare one.",
- "sourceHash": "422af4eff3bd72a1278e9588942b89cd58405ef03ea7961e23242810086582fa",
+ "_comment": "GENERATED from bible.html's const RUNEWORDS by tv/build_runeword_roster.py. Both the qualified name and its bare form are kept.",
+ "sourceHash": "5372e186a7b4affa4b9704675b5614af9201f1b46a4726b7c5435bed1aaad8d8",
  "count": 105,
  "names": [
   "Ancients' Pledge",
