@@ -1,5 +1,13 @@
 [
   {
+    "ver": "v3865",
+    "date": "2026-11-05",
+    "items": [
+      "v3865 - cheap non-browser laws, changed-law proofs and anchors run here before GitHub grades a version (REG-3187)",
+      "v3865 - an unfired proof run is dispatched on its own branch, and a refused dispatch is asked again (REG-3188)"
+    ]
+  },
+  {
     "ver": "v3864",
     "date": "2026-11-05",
     "items": [

@@ -1868,7 +1868,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3864** | `(this commit)` | v3864 — the integration chain lands, Mule 2 is named, the d2jsp desk keeps its history, GitHub proves faster |
+| **v3865** | `(this commit)` | v3865 — a version is pre-flighted on this PC before GitHub grades it, and a dispatched proof run reaches its banked proofs |
+| **v3864** | `e21aa5ea` | v3864 — the integration chain lands, Mule 2 is named, the d2jsp desk keeps its history, GitHub proves faster |
 | **v3863** | `080ff808` | v3863 — Dean proves beside his game, the vault wears the tier face, the Claude lamp rechecks, chain slice 1 lands |
 | **v3862** | `aea2fdd2` | v3862 — GitHub proves once and every PC imports, known errors fix themselves, the paid fleet budget |
 | **v3861** | `74cf30a5` | v3861 — a sunder counted once, d2jsp sign-in on Windows, fleet reasons |
