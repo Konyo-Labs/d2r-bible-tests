@@ -89687,7 +89687,13 @@ button:not(:disabled):hover { box-shadow: 0 0 8px rgba(255,170,80,.30); }
   }
   function cardOf(ov) {
     var r = ov.getBoundingClientRect();
-    if (r.width < innerWidth - 8 || r.height < innerHeight - 8) return ov;
+    /* v3861 (GrokBot #230 6646161568) - FULL-SCREEN MEANS THE VIEWPORT WITHOUT ITS SCROLLBAR. innerWidth counts a classic
+       scrollbar (Windows, WebView2, headless Linux: about 15 px) that a fixed inset:0 scrim does not cover, so there every
+       scrim read as "not full-screen" and became its own card: the d2jsp picker got a made x on the screen corner beside
+       its own (a double x). A Mac's overlay scrollbars take no width, which is why it never showed there. */
+    var de = document.documentElement, vw = Math.min(innerWidth, (de && de.clientWidth) || innerWidth),
+        vh = Math.min(innerHeight, (de && de.clientHeight) || innerHeight);
+    if (r.width < vw - 8 || r.height < vh - 8) return ov;
     var best = null, ba = 0, big = 0;
     for (var i = 0; i < ov.children.length; i++) {
       var q = ov.children[i].getBoundingClientRect(), a = q.width * q.height;

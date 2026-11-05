@@ -162,6 +162,15 @@ reply (#231 6642755318) listed the eight par-held items and said none was over i
 to its ceiling; corrected in 6646065958. The generator caps a par-held count now and the block's row says 2; every
 other unique and all 9 set socket lines measured inside their bases. Law test_the_character_sheet_sums_the_game_data
 (TheGeneratorCapsASocketAtItsBase, two red-proofs, both RED).
+### REG-3149 - ON ANY MACHINE WITH A REAL SCROLLBAR EVERY FULL-SCREEN SCRIM WAS ITS OWN CARD: THE d2jsp PICKER SHOWED TWO x (v3861)
+GrokBot measured it (#230 6646161568, 1280x720 to 1920x1080, guest): the picker's own x at its corner and a made x on
+the screen corner. The overlay contract's cardOf called a scrim full-screen only within 8 px of innerWidth, which counts
+a classic scrollbar (Windows, WebView2, headless Linux: about 15 px) that a fixed inset:0 scrim does not cover; so the
+scrim became its own card, xOf skipped the picker's x (it belongs to the inner card) and the tick made a second. The
+Grok CLI traced the same path independently (6646192163). A Mac's overlay scrollbars take no width, so it never showed
+there. Full-screen now means the viewport without its scrollbar (documentElement.clientWidth/Height), in both copies of
+the contract. Law test_every_overlay_closes_the_same_way (node case + red-proof, RED). GrokBot's "the plate covers the
+last rows" was its own correction: the category rail scrolls, 0 px overlap.
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel

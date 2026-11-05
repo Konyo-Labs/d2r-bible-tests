@@ -131,7 +131,44 @@ class EveryOverlayClosesTheSameWay(unittest.TestCase):
                             name + ": a nested overlay is not marked before the outer one picks its x")
 
 
+    def test_a_scrollbar_never_makes_a_scrim_its_own_card(self):
+        """v3861 (GrokBot #230 6646161568): the d2jsp picker showed two x at 1280-1920 in a headless guest. Its scrim
+        (fixed, inset 0) is the viewport WITHOUT the scrollbar, 15 px under innerWidth, so the full-screen test failed, the
+        scrim became its own card, and the tick made a second x on the screen corner. Drives the shipped cardOf in node."""
+        import json, shutil, subprocess
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node absent: UNKNOWN, not passed")
+        for name, src in (("control_ui.html", UI), ("bible.html", BIBLE)):
+            i = src.index("  function cardOf(ov) {")
+            fn = src[i:src.index("  function isX(b) {", i)]
+            js = fn + """
+var innerWidth = 1280, innerHeight = 720;
+function box(w, h, kids){ return { getBoundingClientRect: function(){ return { width: w, height: h }; }, children: kids || [] }; }
+var picker = box(1040, 634); picker.id = 'picker';
+var out = {};
+var document = { documentElement: { clientWidth: 1265, clientHeight: 720 } };
+var scrim = box(1265, 720, [picker]); scrim.id = 'scrim';
+out.withBar = cardOf(scrim).id;
+document = { documentElement: { clientWidth: 1280, clientHeight: 720 } };
+var scrimMac = box(1280, 720, [picker]); scrimMac.id = 'scrim';
+out.noBar = cardOf(scrimMac).id;
+var panel = box(600, 400); panel.id = 'panel';
+out.panel = cardOf(panel).id;
+process.stdout.write(JSON.stringify(out));
+"""
+            r = json.loads(subprocess.check_output([node, "-"], input=js.encode("utf-8"), timeout=30).decode())
+            with self.subTest(name):
+                self.assertEqual(r["noBar"], "picker", name + ": the no-scrollbar premise broke - re-point this case")
+                self.assertEqual(r["withBar"], "picker", name + ": with a 15 px scrollbar the scrim became its own card")
+                self.assertEqual(r["panel"], "panel", name + ": a panel smaller than the screen is not its own card")
+
 RED_PROOF = [
+    {"why": "v3861 - a classic scrollbar makes every scrim its own card again: the d2jsp picker shows two x",
+     "file": "bible.html",
+     "find": "    var de = document.documentElement, vw = Math.min(innerWidth, (de && de.clientWidth) || innerWidth),\n",
+     "replace": "    var de = document.documentElement, vw = innerWidth,\n",
+     "matches": 1, "needs": "node"},
     {"why": "v3847 eye - bible.html's cinema Esc guard goes unpinned",
      "file": "bible.html",
      "find": "    if (document.fullscreenElement || document.body.classList.contains('cinema')) return;\n", "replace": "", "matches": 1},
