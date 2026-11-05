@@ -127,7 +127,8 @@ RED_PROOF = [
     {"matches": 1, "why": "look frames are not asked about", "file": "tv/control_app.py",
      "find": "                        _add(lk.get(\"frame\"))", "replace": "                        pass"},
     {"matches": 1, "why": "the shadow never reads the owner's pictures", "file": "tv/control_app.py",
-     "find": ', ("pictures", _profile_pictures))):', "replace": ')):'},
+     # v3864 - the saves reason (REG-3079) reads after the pictures now, on the line below
+     "find": ', ("pictures", _profile_pictures),\n', "replace": ',\n'},
 ]
 
 if __name__ == "__main__":

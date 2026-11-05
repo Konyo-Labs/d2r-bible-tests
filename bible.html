@@ -58495,7 +58495,7 @@ window.vaultAutoAssign = function(){
           var why = (m.auto && m.auto.why) ? m.auto.why : 'war stash overflow';
           return '<li class="vtk-line vtk-make" data-mule="' + esc(m.id) + '"><input type="checkbox" class="vtk-tick" aria-label="I made ' + esc(m.name) + ' in the game"'
             + ' onclick="event.stopPropagation()" onchange="window._vaultWarMadeInGame(\'' + jsArg(m.id) + '\')">'
-            + '<span class="vtk-say">Create mule <b>' + esc(m.name) + '</b> in the game — the board made it (' + esc(why) + '); the moves to it are below</span>' + window._notInGameChip(m, built.records) + '</li>';
+            + '<span class="vtk-say">Create mule <b>' + esc(m.name) + '</b> in the game (' + esc(why) + '); the moves to it are below</span>' + window._notInGameChip(m, built.records) + '</li>';
         }).join('')
       + pageMakes.map(function(r){
           return '<li class="vtk-line vtk-make" data-mule="' + esc(r.id) + '" data-page="' + r.mule + '"><input type="checkbox" class="vtk-tick" aria-label="I made ' + esc(r.char) + ' in the game"'
