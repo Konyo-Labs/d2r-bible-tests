@@ -1,9 +1,10 @@
 """Every picture the console and its board can ask /art/ for, read from the code that asks. -> names
 
 REG-3206 (2026-11-05, GrokBot v3864): the guest console logged ~103 distinct /art/* 404s and 581
-failed requests; his Mac console 16 broken images per viewport. Nothing in the repo could answer
-"which art names can this console request, and are they all on disk?", so a missing picture
-was only ever found by someone looking at the glass.
+failed requests. Nothing in the repo could answer "which art names can this console request, and
+are they all in this art tree?", so a missing picture was only ever found by someone looking at the
+glass. That guest's art/ held 21 files (GrokBot's own scratch stage, not this repo's mirror): run
+`python3 tv/art_names.py --art <its art dir>` there: it counts every name that dir lacks and lists the first 40.
 
 WHERE THE NAMES COME FROM. Two pages ask /art/ for pictures: tv/control_ui.html (absolute
 `/art/<file>`) and the board, bible.html, which the console iframes from /board, so its relative

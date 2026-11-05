@@ -10912,7 +10912,7 @@ window._lockMark = function(isOpen, px, label){
     var frames = rd.frames || [], f0 = frames[0] || {};
     // garble as the fallback layer; the real frame sits on top and hides itself if it 404s (reveals the garble)
     var frameHtml = '<div class="fx-garble">' + esc(f0.raw || '— no frame —') + '</div>'
-      + (f0.frameId ? '<img src="/hist/' + encodeURIComponent(f0.frameId) + '.jpg?w=440" alt="" onerror="this.style.display=\'none\'">' : '');
+      + (f0.frameId ? '<img src="/hist/' + encodeURIComponent(f0.frameId) + '.jpg?w=440&gone=404" alt="" onerror="this.style.display=\'none\'">' : '');   // REG-3207 - keeps the 404: the read's raw text under it says more than a placeholder
     var trail = frames.map(function(fr, i){
       var hit = (i === frames.length - 1) || (rd.status && rd.status.indexOf('recovered') === 0);
       return '<div class="fx-tf'+(hit ? ' hit' : '')+'"><b>'+esc(fr.frameId || ('frame ' + (i + 1)))+'</b>'+(fr.scene ? (function(){ var d = _diabloScene(fr.scene, fr.stashTab || fr.chronicleTab, fr.area);
@@ -21394,14 +21394,24 @@ window._lockMark = function(isOpen, px, label){
     }
     return _guestSeatAsk;
   };
+  /* REG-3207 (the second eye, reproduced) - THE GUEST GROKBOT MEASURED CARRIES NO guest KEY. Its /api/status is a raw
+     copy of his Mac's (his identity, no `guest` key), staged by GrokBot rather than by tv/sync_guest_api.sh, so the
+     check above read false there and the banner, the footer and UPDATE NOW kept asking. A real console's GET
+     /api/update never answers 404 - control_app catches every failure as 200 ok:false - so a 404 can only mean THIS
+     SERVER HAS NO UPDATE DOOR. The first one is remembered for the life of the page and nothing asks again. */
+  var _updDoorGone = false;
+  window._updateDoorGone = function(r){ if (r && r.status === 404) _updDoorGone = true; return _updDoorGone; };
+  window._noUpdateHere = async function(){ return _updDoorGone || (await window._isGuestSeat()); };
   window._fleetUpdateCheck = async function(){
-      if (await window._isGuestSeat()){
+      if (await window._noUpdateHere()){
         toast('this is a guest seat - a read-only mirror of another console, so there is nothing here to update');
         return;
       }
       toast('⟳ checking fleet (origin/main)…');
       try {
-        var r = await fetch(API + '/api/update'); var j = await r.json();
+        var r = await fetch(API + '/api/update');
+        if (window._updateDoorGone(r)){ toast('this console\'s server has no update door (404) - a guest seat or a mirror, so there is nothing here to update'); return; }
+        var j = await r.json();
         if (!j.ok) toast('⚠ ' + (j.msg || 'update check failed'));
         else if (!j.behind) toast('✓ FLEET UNIFIED · ' + (j.ver || j.head || 'origin/main') + (j.dirty ? ' · local tracked edits present' : ''));
         else toast('⚠ BEHIND · ' + j.behind + ' commit' + (j.behind > 1 ? 's' : '') + ' — latest: "' + (j.latest || '') + '" · ' + (j.howTo || 'relaunch to auto-pull'));
@@ -21456,8 +21466,9 @@ window._lockMark = function(isOpen, px, label){
        So: fetch without asking, run without surprising him. [[unknown-stays-unknown]] */
     async function look(){
       try {
-        if (await window._isGuestSeat()){ bar.hidden = true; return; }   // REG-3207 - a mirror has nothing to pull
+        if (await window._noUpdateHere()){ bar.hidden = true; return; }   // REG-3207 - a mirror has nothing to pull
         var r = await fetch(API + '/api/update');
+        if (window._updateDoorGone(r)){ bar.hidden = true; return; }   // REG-3207 - no update door on this server: never ask again
         var j = await r.json();
         // the dismissal is per-VERSION, and it never gates the pull below
         lastSeenLatest = (j && (j.latest || j.ver)) || lastSeenLatest;
@@ -21679,7 +21690,7 @@ window._lockMark = function(isOpen, px, label){
         go.disabled = false;
         return;
       }
-      if (await window._isGuestSeat()){   // REG-3207 - the mirror has no checkout; never POST it a pull
+      if (await window._noUpdateHere()){   // REG-3207 - the mirror has no checkout; never POST it a pull
         txt.textContent = 'a guest seat mirrors another console - there is nothing here to update';
         go.hidden = true;
         return;
@@ -21687,6 +21698,7 @@ window._lockMark = function(isOpen, px, label){
       txt.textContent = 'pulling from GitHub…';
       try {
         var r = await fetch(API + '/api/update', { method: 'POST' });
+        if (window._updateDoorGone(r)){ txt.textContent = 'this server has no update door (404) - there is nothing here to update'; go.hidden = true; return; }
         var j = await r.json();
         if (j && j.ok && j.pulled){ armRelaunch(j.ver); return; }
         if (j && j.ok){

@@ -26,12 +26,24 @@ GUEST_BOX_HOST=box bash tv/sync_guest_api.sh --to-box
 board and the console can ask `/art/` for (`tv/art_names.py`) → only then copies, **art included**.
 
 **The art travels with the board (REG-3206).** A refresh used to ship a new board and never the
-pictures it names, so the guest kept an older art tree than its board (~103 distinct `/art/*` 404s
-measured at v3864). `--to-box` now rsyncs the repo's `art/` to `GUEST_BOX_ART` (default
-`$GUEST_BOX_PATH/art`); point that at wherever the box's bridge serves `/art/` from.
+pictures it names. `--to-box` now rsyncs the repo's `art/` to `GUEST_BOX_ART` (default
+`$GUEST_BOX_PATH/art`); point that at wherever the box's bridge serves `/art/` from. That path is a
+default, not a measurement: the bridge's code is not in this repo.
 
-**A guest never asks `/api/update` (REG-3207).** `update` is not mirrored, and the mirrored
-`/api/status` says `guest: true`; the console reads that and does not ask.
+⚠ **The guest GrokBot measured at v3864 (~103 distinct `/art/*` 404s) was NOT fed by this script.**
+GrokBot stages its own scratch guest (`:18772` / `:18780`) - `guest-mirror/` here was last written
+on 2026-09-15, and that guest's `/api/status` is an unscrubbed copy with no `guest` key. Its `art/`
+held **21 pulled files** of the repo's ~1,300 (GrokBot, #230 6464730558, 2026-10-28: even
+`hd_great_helm.png` 404'd there while his Mac served it). Every name it 404'd is in the repo's `art/`;
+the repair is on the box - stage the WHOLE tracked `art/` beside the board - and the check is:
+
+```bash
+python3 tv/art_names.py --art <the guest's art dir>      # exit 0 and "ok" = nothing will 404
+```
+
+**A guest never asks `/api/update` (REG-3207).** `update` is not mirrored. The console does not ask
+when `/api/status` says `guest: true` (this script's mirror writes it), and when the route answers 404
+once (any guest, whoever staged it) it never asks again for the life of the page.
 
 **It refuses to copy a mirror that still carries his machine.** On the first ever run the raw
 board came back with four of his identifiers and the copy was aborted. That gate is the reason

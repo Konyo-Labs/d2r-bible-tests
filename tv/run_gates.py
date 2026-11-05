@@ -13546,7 +13546,7 @@ GATES = [
     Gate("test_a_pruned_frame_says_it_was_pruned",
          [sys.executable, os.path.join(HERE, "test_a_pruned_frame_says_it_was_pruned.py")], 120,
          needs_app=False,
-         why='REG-3207 (GrokBot v3864: hist 404s, /api/update 404 on the guest) - a missing /hist frame answers an img with a placeholder saying pruned and when (or UNKNOWN), a fetch keeps its 404; a guest seat never asks /api/update'),
+         why='REG-3207 (GrokBot v3864: hist 404s, /api/update 404 on the guest) - a missing /hist frame answers an img with a placeholder saying who pruned it and when (the earliest deleter that could have taken it: a trim that did not keep it, or the recorder by name), else UNKNOWN; a fetch keeps its 404; a guest seat, or a server whose /api/update answered 404 once, is never asked again'),
     Gate("test_a_version_is_preflighted_before_github_grades_it",
          [sys.executable, os.path.join(HERE, "test_a_version_is_preflighted_before_github_grades_it.py")], 60,
          needs_app=False,

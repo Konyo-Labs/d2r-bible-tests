@@ -25819,85 +25819,41 @@ def _footage_why(sid, reeln):
 
 
 # REG-3207 - A FRAME THE RETENTION LANE DELETED WAS A BROKEN IMAGE, OR A SILENT BLANK.
-# GrokBot, v3864: 3 /hist 404s on his Mac console; every <img> that asks /hist for a frame the lane
-# already pruned showed a broken picture or hid itself (opacity 0, display none), and nothing said
-# the frame had been retired on purpose. The record that says so is reel_tombstones.json (written
-# BEFORE each reel is removed, with `deletedTs`). _serve_hist now asks it for a missing frame and
-# answers an <img> with a placeholder that SAYS pruned and when; a fetch() still gets a 404, with
-# the same reason as JSON. A frame no record names stays UNKNOWN - never "pruned".
-_HIST_GONE_CACHE = {"key": None, "rows": None}
-_HIST_GONE_LOCK = threading.Lock()
-
-
-def _hist_tombstones():
-    """The retention lane's deleted reels, keyed by reel dir. -> dict, {} when it has deleted none,
-    or None when the record exists and will not read (UNKNOWN, never 'nothing was deleted')."""
-    try:
-        import reel_retention as _rr
-        path = _rr._tombstone_path(HIST_DIR)
-    except Exception:
-        return None
-    try:
-        st = os.stat(path)
-    except FileNotFoundError:
-        return {}
-    except OSError:
-        return None
-    key = (path, st.st_mtime_ns, st.st_size)
-    with _HIST_GONE_LOCK:
-        if _HIST_GONE_CACHE["key"] == key:
-            return _HIST_GONE_CACHE["rows"]
-    try:
-        with open(path, encoding="utf-8") as fh:
-            doc = json.load(fh) or {}
-    except (OSError, ValueError):
-        return None
-    rows = {}
-    for e in (doc.get("reels") if isinstance(doc, dict) else None) or []:
-        if isinstance(e, dict) and isinstance(e.get("reel"), str) and e["reel"]:
-            rows[e["reel"]] = e
-    with _HIST_GONE_LOCK:
-        _HIST_GONE_CACHE["key"], _HIST_GONE_CACHE["rows"] = key, rows
-    return rows
-
-
-def _hist_when(ms):
-    """A console-local 24-hour stamp for a deletedTs (REG-3176: one clock). -> str or None"""
-    try:
-        t = time.localtime(int(ms) / 1000.0)
-    except (TypeError, ValueError, OverflowError, OSError):
-        return None
-    return "%d %s %d %s" % (t.tm_mday, time.strftime("%b", t), t.tm_year, time.strftime("%H:%M", t))
+# GrokBot, v3864: 3 /hist 404s on his Mac console; every <img> that asks /hist for a frame a deleter
+# already took showed a broken picture or hid itself (opacity 0, display none), and nothing said the
+# frame had been retired on purpose. Who took a picture already has ONE answer: read_pictures.judge,
+# over the retention lane's reel_tombstones.json, the recorder's reel_reaps.jsonl and its refusal record
+# (the doctor row 'a read left no picture' and /api/picture_status read it too). _serve_hist asks it for
+# a missing frame and answers an <img> with a placeholder that SAYS pruned, by whom and when; a fetch()
+# still gets a 404, with the same reason as JSON. A frame no record names stays UNKNOWN - never "pruned".
+_HIST_GONE_HEAD = {"pruned": ("FRAME PRUNED", "PRUNED"), "never-written": ("FRAME NEVER SAVED", "NOT SAVED"),
+                   "unknown": ("FRAME NOT ON THIS PC", "NOT ON PC")}
 
 
 def _hist_gone(rel):
     """WHY a frame /hist was asked for is not on this PC. -> dict
-    {state: 'pruned' | 'unknown', reel, deletedTs, when, say}. 'pruned' only when the retention
-    record names the frame's reel; anything else is UNKNOWN, said as such."""
+    {state: 'pruned' | 'never-written' | 'unknown', code, reel, deletedTs, when, by, say}. 'pruned' only when a
+    deleter's own record names the frame (or its reel, after the frame was filmed, without keeping it)."""
     rel = str(rel or "").replace("\\", "/").lstrip("/")
     reel = rel.split("/", 1)[0] if ("/" in rel and rel.startswith("reel_")) else None
-    out = {"state": "unknown", "reel": reel, "deletedTs": None, "when": None, "say": ""}
-    if reel is None:
-        out["say"] = ("this frame is not on this PC and it is in no reel, so no retention record "
-                      "can say why - UNKNOWN")
+    out = {"state": "unknown", "code": "unknown", "reel": reel, "deletedTs": None, "when": None, "by": None,
+           "say": ""}
+    try:
+        import read_pictures as _rpic
+        g = _rpic.gone_for(rel, HIST_DIR)
+    except Exception as e:
+        out["say"] = "UNKNOWN - the deleters' records could not be asked (%s)" % type(e).__name__
         return out
-    rows = _hist_tombstones()
-    if rows is None:
-        out["say"] = ("this frame is not on this PC and the retention record would not read, so "
-                      "whether it was pruned is UNKNOWN")
-        return out
-    e = rows.get(reel)
-    if e is None:
-        out["say"] = ("this frame is not on this PC and no retention record names %s - why it is "
-                      "gone is UNKNOWN" % reel)
-        return out
-    out["state"] = "pruned"
-    ts = e.get("deletedTs")
-    if isinstance(ts, (int, float)) and not isinstance(ts, bool) and ts > 0:
-        out["deletedTs"] = int(ts)
-        out["when"] = _hist_when(ts)
-    out["say"] = ("pruned by the retention lane %s after its reel gave up its information"
-                  % (("on " + out["when"]) if out["when"] else "(when: UNKNOWN)"))
+    code = g.get("code") or "unknown"
+    out["code"] = code
+    out["state"] = ("pruned" if code in ("released", "reaped")
+                    else "never-written" if code == "never-written" else "unknown")
+    out["deletedTs"], out["when"], out["by"] = g.get("ts"), g.get("when"), g.get("by")
+    if out["state"] == "pruned":
+        out["say"] = "pruned by %s %s" % (out["by"] or "a deleter",
+                                          ("on " + out["when"]) if out["when"] else "(when: UNKNOWN)")
+    else:
+        out["say"] = str(g.get("words") or "")
     return out
 
 
@@ -25914,10 +25870,36 @@ def _hist_wants_image(headers):
         return False
 
 
-def _hist_gone_svg(gone):
-    """The placeholder an <img> shows for a missing frame: 16:9, says what it knows. -> bytes"""
+def _hist_gone_svg(gone, compact=False):
+    """The placeholder an <img> shows for a missing frame: 16:9, says what it knows. -> bytes
+
+    compact (a thumbnail asked with ?w=480 or less): the scrub strip draws it 46px tall and the history art 66px, where
+    the full card's 18px body shrinks to ~2px. So a thumbnail gets two big lines - the verdict, then the date (or
+    UNKNOWN) - each at least a fifth of the picture's height, and one small line for whoever reads it larger."""
     from xml.sax.saxutils import escape as _esc
-    head = "FRAME PRUNED" if gone.get("state") == "pruned" else "FRAME NOT ON THIS PC"
+    state = gone.get("state") if gone.get("state") in _HIST_GONE_HEAD else "unknown"
+    head = _HIST_GONE_HEAD[state][1 if compact else 0]
+    frame = ('<rect width="%d" height="%d" fill="#16121c"/>'
+             '<rect x="%d" y="%d" width="%d" height="%d" rx="%d" fill="none" stroke="#5a4a2e" '
+             'stroke-width="2" stroke-dasharray="8 6"/>')
+    if compact:
+        when = str(gone.get("when") or "")
+        if state == "pruned":
+            big = when.rsplit(" ", 1)[0] if when else "when: UNKNOWN"
+            small = ((when.rsplit(" ", 1)[1] + " - ") if when else "") + str(gone.get("by") or "a deleter").replace(
+                "the recorder's ", "").replace("the ", "")
+        elif state == "never-written":
+            big, small = "disk floor", "the recorder never wrote it"
+        else:
+            big, small = "why: UNKNOWN", "no record names it"
+        svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180" '
+               'id="hist-gone" data-state="%s">'
+               '<style>.h{font:700 50px sans-serif;fill:#d8c9a3}.d{font:700 34px sans-serif;fill:#c8b98f}'
+               '.s{font:20px sans-serif;fill:#b8ad94}</style>' + (frame % (320, 180, 4, 4, 312, 172, 8)) +
+               '<g text-anchor="middle"><text x="160" y="76" class="h">%s</text>'
+               '<text x="160" y="124" class="d">%s</text><text x="160" y="160" class="s">%s</text></g></svg>'
+               ) % (_esc(state), _esc(head), _esc(big), _esc(small))
+        return svg.encode("utf-8")
     words, lines, cur = str(gone.get("say") or "").split(), [], ""
     for w in words:
         if cur and len(cur) + 1 + len(w) > 52:
@@ -25932,13 +25914,10 @@ def _hist_gone_svg(gone):
     svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" '
            'id="hist-gone" data-state="%s">'
            '<style>.h{font:700 30px sans-serif;fill:#d8c9a3;letter-spacing:2px}'
-           '.s{font:18px sans-serif;fill:#b8ad94}</style>'
-           '<rect width="640" height="360" fill="#16121c"/>'
-           '<rect x="8" y="8" width="624" height="344" rx="10" fill="none" stroke="#5a4a2e" '
-           'stroke-width="2" stroke-dasharray="8 6"/>'
+           '.s{font:18px sans-serif;fill:#b8ad94}</style>' + (frame % (640, 360, 8, 8, 624, 344, 10)) +
            '<text x="320" y="150" text-anchor="middle" class="h">%s</text>'
            '<g text-anchor="middle">%s</g></svg>'
-           % (_esc(str(gone.get("state") or "unknown")), _esc(head), body))
+           ) % (_esc(state), _esc(head), body)
     return svg.encode("utf-8")
 
 
@@ -50246,9 +50225,12 @@ class Handler(BaseHTTPRequestHandler):
         if not os.path.isfile(target):
             # REG-3207 - say WHY it is gone: an <img> gets a placeholder that says pruned (and
             # when) or UNKNOWN, never a broken image; a fetch() keeps its 404, with the reason.
+            # `gone=404`: a caller whose own fallback says more than a placeholder would (the reads drill shows the
+            # read's raw text under the frame) keeps the 404, so its onerror still reveals that text.
             _gone = _hist_gone(os.path.relpath(target, os.path.realpath(HIST_DIR)))
-            if _hist_wants_image(getattr(self, "headers", None)):
-                _svg = _hist_gone_svg(_gone)
+            if _hist_wants_image(getattr(self, "headers", None)) and (qs.get("gone") or [""])[0] != "404":
+                _gw = (qs.get("w") or [""])[0]
+                _svg = _hist_gone_svg(_gone, compact=(_gw.isdigit() and 0 < int(_gw) <= 480))
                 self.send_response(200)
                 self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
                 self.send_header("Content-Length", str(len(_svg)))
@@ -50257,8 +50239,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(_svg)
                 return
-            self._json(404, {"ok": False, "gone": _gone["state"], "say": _gone["say"],
-                             "deletedTs": _gone["deletedTs"], "reel": _gone["reel"]})
+            self._json(404, {"ok": False, "gone": _gone["state"], "code": _gone["code"], "say": _gone["say"],
+                             "by": _gone["by"], "deletedTs": _gone["deletedTs"], "reel": _gone["reel"]})
             return
         want_w = (qs.get("w") or [""])[0]
         # REG-3038 - every PC: the Windows console served the Shelf scrub and the theatre every frame at full size

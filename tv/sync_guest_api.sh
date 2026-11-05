@@ -31,9 +31,10 @@ OUT="${GUEST_MIRROR:-$(cd "$(dirname "$0")/.." && pwd)/guest-mirror}"
 BOX_HOST="${GUEST_BOX_HOST:-}"
 BOX_PATH="${GUEST_BOX_PATH:-/workspace/tv-diablo-guest/api-live}"
 # REG-3206 - THE ART THE BOARD ASKS FOR TRAVELS WITH THE BOARD. Every refresh shipped a NEW board.html
-# and never the pictures it names, so the guest kept an art tree older than its board: GrokBot logged
-# ~103 distinct /art/* 404s there (boss, HD and gem keys) while his Mac served every one. The repo's
-# art/ is public content (no scrub needed); it goes to GUEST_BOX_ART, where the box's bridge serves /art/.
+# and never the pictures it names. The repo's art/ is public content (no scrub needed); it goes to
+# GUEST_BOX_ART - a default path, not a measured one (the box's bridge code is not in this repo).
+# The ~103 /art 404s GrokBot logged at v3864 were on its OWN scratch guest, whose art/ held 21 files;
+# that guest is not fed by this script (tv/GUEST_SEAT.md says how to check it).
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BOX_ART="${GUEST_BOX_ART:-$BOX_PATH/art}"
 TO_BOX=0

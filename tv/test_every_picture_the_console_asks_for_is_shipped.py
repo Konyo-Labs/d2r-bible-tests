@@ -2,17 +2,23 @@
 """REG-3206 (GrokBot v3864, 2026-11-05) - EVERY PICTURE THE CONSOLE CAN ASK /art/ FOR IS A FILE THAT SHIPS.
 
 MEASURED by GrokBot on v3864: the guest console logged ~103 distinct /art/* 404s (boss, HD and gem keys) and 581 failed
-requests; his Mac console's own network log showed no /art failure at all (its fails were 3 /hist 404s). Nothing in
-the repo could say which art names the console can request, so a missing picture was found only on the glass.
+requests; his Mac console's own network log showed no /art failure at all (its fails were 3 /hist 404s).
 
-tv/art_names.py reads them from the code that asks: the console's /art/ literals and its terror-zone composer, the
+WHERE THOSE 404s CAME FROM (the second eye, reproduced): that guest is GrokBot's own scratch stage on the box (:18772 /
+:18780), not this repo's mirror - tv/sync_guest_api.sh last wrote guest-mirror/ on 2026-09-15, and the guest's /api/status
+is an unscrubbed copy with no `guest` key. Its art/ held 21 pulled files of the repo's ~1,300 (GrokBot, #230 6464730558,
+2026-10-28: hd_rondache.png and even hd_great_helm.png 404'd there while his Mac served both). Every name it 404'd IS in
+the repo's art/, so NO check over this repo could have caught it, and none here claims to. The repair is on the box -
+stage the whole tracked art/ - and `python3 tv/art_names.py --art <the guest's art dir>` is the check (exit 0 = nothing
+404s). What this law guards is the repo's half: nothing the console can ask for is missing from what every clone ships.
+
+tv/art_names.py reads the names from the code that asks: the console's /art/ literals and its terror-zone composer, the
 board's art/ literals (the console iframes it from /board) and its eleven composers, each expanded from the table that
 feeds it, and the HD manifest the board folds in at runtime. Found that way on this tree: two names that were never in
-art/ - UBER_BOSSES gave Korlic and Madawc `korlic-opt_graphic.png` / `madawc-opt_graphic.png`. The board's art table
-already drew them as Korlic.gif / Madawc.gif, so UBER_BOSSES now names those files. And the guest's 404s had a
-second cause: the guest refresh (tv/sync_guest_api.sh) shipped a new board.html every time and never the art it
-names, so the guest kept an older art tree than its board. The refresh now ships art/ and checks the board's names
-against it.
+art/ - UBER_BOSSES gave Korlic and Madawc `korlic-opt_graphic.png` / `madawc-opt_graphic.png`. They were DEAD references,
+never requested (UBER_BOSSES registers its picture only `if (b.art && !D2IO_ART[b.name])`, and D2IO_ART already draws
+both as Korlic.gif / Madawc.gif), so nothing changes on screen; UBER_BOSSES now names the files the board draws. The
+repo's own guest refresh (tv/sync_guest_api.sh) shipped a new board.html every time and never the art; it ships art/ now.
 
 Held here:
   * every name is a file in art/, by exact case (a Mac's disk forgives case, the Linux guest and CI do not) - comments
