@@ -13421,6 +13421,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_vault_read_says_its_own_age.py")], 120,
          needs_app=False,
          why='v3864 (GrokBot Batch B 6) - the vault lane says how old its last READ is (lastReadAgeS, readStale), not only how old the status cache is'),
+    Gate("test_the_console_tells_time_on_one_clock",
+         [sys.executable, os.path.join(HERE, "test_the_console_tells_time_on_one_clock.py")], 60,
+         needs_app=False,
+         why='v3864 (GrokBot Batch A 4) - a time on the console with no hour12 of its own is 24-hour, like the header clock'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
