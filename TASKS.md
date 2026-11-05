@@ -12,6 +12,34 @@ closed thing. Where a task has a GitHub issue, it is named explicitly as `gh #NN
 Status: `READY` may be applied now · `BLOCKED` names what blocks it · `HIS CALL` waits on Konyo ·
 `SHIPPED` carries the version.
 
+## v3862 — ONE SHIP, BOTH LISTS (his order 2026-11-05 ~09:45: "v3862 and v3863 together ... the push takes the same time")
+Worktree /private/tmp/claude-v3862, branch claude/v3862 (on v3861 7998ea4cb). DONE: chrome --version fix (REG-3152), prove
+beside cloud (REG-3153), ci-trust pre-push (tv/ci_verdict.py). Each item: law + red-proofs + BUGS REG, graded on ci/ first.
+1. [x] ci-trust: the pre-push skips its own grading when GitHub's REQUIRED workflows succeeded on the EXACT sha + clean tree.
+2. [ ] PROOFS FOR EVERY PC: publish.yml (main) makes a public release `proofs-<sha12>` with the merged proof cache
+       (proof_shard --merge-shards) as an asset; a console, after it pulls a new HEAD, downloads that asset (no auth, public
+       repo) and runs heart2 --import-proved on it (re-keys on its own LF-normalised bytes). Locks open on the import.
+3. [ ] WINDOWS PROOFS: a Windows matrix leg of proof-keys (or a windows shard set) so new-code-x-Windows is proved every
+       version; Windows PCs import the Windows set. (CRLF/cp1252/POSIX/chrome --version were all new-code-x-Windows.)
+4. [ ] ONCE-PER-PC FULL PROOF keyed by an ENV FINGERPRINT (python ver, chrome major, OS build, node, git autocrlf, fresh
+       install): a changed fingerprint re-proves fully at idle; otherwise import + the self-check below.
+5. [ ] ENV SELF-CHECK every version: the environment-sensitive laws only (needs: node/posix/dir-link/d2r-install/macos,
+       + process/path/encoding laws) - minutes.
+6. [ ] BACKGROUND PROOF = SAFETY NET: keeps proving at idle but no longer holds the river shut; a red/blind it finds goes to
+       the fleet + BUGS and closes only the lock its law guards.
+7. [ ] REPAIR BOOK (his ruling: known errors fix AUTOMATICALLY, no click): entries {probe, fix, verify, REG}; first: node
+       absent -> winget user-scope LTS + PATH refresh; CRLF renormalize; prover deps (exists); launcher port; shallow
+       history (exists, v3861). Wired to the doctor/heart.
+8. [ ] UNKNOWN ERRORS ONLINE: a book-miss rides the beacon to the worker's PRIVATE KV (scrubbed: no paths/users/IPs),
+       deduped per signature per PC; a UserPromptSubmit hook "UNKNOWN ERRORS ▸ N new"; a quiet fleet chip; closes once fixed.
+9. [ ] CLAUDE DIAGNOSIS on each PC for book-misses: diagnose + propose (card / #230), never run a NEW fix alone.
+10. [ ] PROOF METER per fleet row: owed / proved / rate / ETA from the self-prove census.
+11. [ ] APPROVE A NEW PC before it joins/shares a roster profile.
+12. [ ] KV BUDGET for the paid $5 plan (tv/console_snapshot.py: 948/day sized for the free 1,000).
+13. [ ] GrokBot LIVE passes on v3861 (fleet chips, Heart fan CTM, Dean uniques cross-ref REG-3150 a-d) -> fixes.
+SHIP FLOW from v3862 on: push ci/claude-vNNNN (gates) + ci/proof-keys-vNNNN (proofs) on the final sha -> GREEN -> push main
+(ci-trust ~15 min) -> PCs import the release proofs. Run laws in a worktree OTHER than the one you push (REG-3151 night).
+
 ## Board #76 and #77 — vault spread (v3767)
 
 Elad, 2026-10-18 13:18 IDT: duplicate copies of a vault item sit next to the original in the SAME mule. This replaces rule E (2 in the shared stash, the 3rd and later in GRAIL-DUPES).
