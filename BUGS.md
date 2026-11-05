@@ -7,6 +7,14 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3175 - THE VAULT LANE READ "FRESH" WITH ITS LAST REAL READ 4 DAYS OLD AND 8 REELS OWED (v3864, GrokBot Batch B 6)
+GrokBot, #230 6655906382 (re-read by the Grok CLI at 12:42): /api/status vaultAutoread {stale false, ageMs ~2,000, lastTs
+2026-11-01 13:51, owed 8}. `stale` and `ageMs` are the 3-second status cache's own stamps, so a lane that had read nothing
+for 4 days looked fresh. The answer now carries lastReadAgeS (seconds since the last real read, None when it never read) and
+readStale (owed and no read for VAULT_READ_STALE_S = 6 h or ever -> True; nothing owed -> False; owed unreadable -> None).
+Law: tv/test_a_vault_read_says_its_own_age.py, 3 red-proofs RED. Why the Mac's lane has not read since Nov 1 is its own
+question (the fleet's "vault lane owes 8"), not answered here.
+
 ### REG-3174 - THE SHELF DREW TWO CLOSE BUTTONS SIDE BY SIDE, AND THE THEATRE TITLE WAS CUT TO A THIRD (v3864, GrokBot Batch A 1, 5)
 GrokBot, #230 6656116697 (v3860 at 1024 / 1280 / 1440 / 1920 / 2560): with the SHELF open, the shelf's ✕ (#th-shelf-x) and
 the theatre's "✕ CLOSE" (#th-close) sat on one line (top ~141 at 1024) - two exits, one job. And "🎞 THE THEATRE · EYES ON

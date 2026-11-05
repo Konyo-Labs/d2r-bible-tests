@@ -36822,6 +36822,29 @@ def _vault_retired_behind_refusal():
     return n
 
 
+VAULT_READ_STALE_S = 6 * 3600
+
+
+def _vault_last_read_age_s(last_ts, now=None):
+    """Seconds since the vault lane's last real read. lastTs is epoch MILLISECONDS (0 = never read).
+    -> int | None (never read, or a stamp that is not a number)"""
+    if isinstance(last_ts, bool) or not isinstance(last_ts, (int, float)) or last_ts <= 0:
+        return None
+    now = time.time() if now is None else now
+    return max(0, int(now - float(last_ts) / 1000.0))
+
+
+def _vault_read_stale(last_ts, owed, now=None):
+    """v3864 - is the vault lane's last READ stale? -> True | False | None. Owed reels with no read for VAULT_READ_STALE_S
+    (or ever) is stale; nothing owed is never stale; an owed count that could not be read is UNKNOWN (None)."""
+    if owed is None:
+        return None
+    if not owed:
+        return False
+    age = _vault_last_read_age_s(last_ts, now)
+    return True if age is None else age >= VAULT_READ_STALE_S
+
+
 def _vault_autoread_state():
     """What the vault watchdog has actually done. Reports UNKNOWN rather than a confident zero."""
     try:
@@ -36849,6 +36872,12 @@ def _vault_autoread_state():
                 "everySeconds": _VAULT_AUTOREAD_EVERY_S,
                 "reads": int(d.get("reads") or 0),
                 "lastTs": d.get("lastTs") or None,
+                # v3864 (GrokBot Batch B 6) - THE READ'S OWN AGE. The `stale`/`ageMs` the status cache stamps on this answer
+                # are about the CACHE (3 s), so the Mac read "stale: false" while its last real read was 4 days old with 8
+                # reels owed. These say how old the last READ is, and readStale is true when reels are owed and none was
+                # read for VAULT_READ_STALE_S (or ever).
+                "lastReadAgeS": _vault_last_read_age_s(d.get("lastTs")),
+                "readStale": _vault_read_stale(d.get("lastTs"), owed),
                 # None, never 0 — "we could not ask" and "nothing is owed" are opposite facts
                 "owed": (None if owed is None else len(owed)),
                 # REG-1627 - an owing lane that started nothing says why, in its last tick's own words
