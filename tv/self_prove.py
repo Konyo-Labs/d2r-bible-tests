@@ -205,13 +205,16 @@ def posix_play_line(line):
     return True
 
 
-def playing_state(game_on_screen=None):
+def playing_state(game_on_screen=None, cloud=True):
     """Is he playing on THIS machine - the game itself, or a cloud client with the GAME on his screen?
     -> True | False | None (UNKNOWN)
 
     REG-1666 — `game_on_screen` is the console's one judge of whether the game is on his screen (a callable -> True |
     False | None). It is asked at most once, and only when a cloud client is running; without it, or when it cannot
-    answer, a running cloud client counts as playing. The same rule on Windows and on the Mac."""
+    answer, a running cloud client counts as playing. The same rule on Windows and on the Mac.
+
+    v3862 - `cloud=False` (HIS RULING 2026-11-05, "prove beside cloud"): only the LOCAL game counts; a cloud client never
+    does, on screen or not. The proof lane asks it this way (proof_playing_state); every other lane keeps cloud=True."""
     seen = {}
 
     def _screen():
@@ -223,6 +226,8 @@ def playing_state(game_on_screen=None):
             import tv_diablo as _tvd
 
             def _pred(name):
+                if not cloud and (name or "").lower() in PLAY_EXES:
+                    return False                # v3862 - a cloud client never stops a proof
                 if (name or "").lower() in CLOUD_EXES_JUDGED_ON_SCREEN:
                     return is_play_proc(name, _screen())
                 return is_play_proc(name)
@@ -234,9 +239,18 @@ def playing_state(game_on_screen=None):
         hits = [ln for ln in lines if posix_play_line(ln)]
         if any(_POSIX_GAME.search(ln) for ln in hits):
             return True                        # the game itself (D2R.exe under CrossOver)
+        if not cloud:
+            return False                       # v3862 - a cloud client never stops a proof
         return bool(hits) and _screen() is not False      # a cloud client: only with the game on his screen
     except Exception:
         return None
+
+
+def proof_playing_state(game_on_screen=None):
+    """v3862 - the PROOF lane's "is he playing here": the local game only (his ruling 2026-11-05, "prove beside cloud").
+    MEASURED that morning: the work ALT's census was MISSING because Boosteroid + his AFK clicker read as playing forever,
+    so its proof never started and its river stayed stuck. A cloud client streams a game that runs elsewhere."""
+    return playing_state(game_on_screen=game_on_screen, cloud=False)
 
 
 _K32 = {}
@@ -1311,7 +1325,7 @@ def guard(now_s=None, path=None, playing=None, free=None, kill_fn=None, _tick=No
         # playing and the next slice waited for the 10-minute tick - REG-1625 again, on the machine REG-1666 was for.
         if not alive:
             return (_tick or tick)(now_s=now_s, path=path, kill_fn=kill_fn, busy=busy, playing=playing, free=free)
-        play_now = _ask(playing, playing_state)
+        play_now = _ask(playing, proof_playing_state)
         free_now = _ask(free, free_mb)
         aside, _why = stand_aside(play_now, free_now)
         if not aside:
@@ -1389,7 +1403,7 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
           takes_only=False):
     now_s = time.time() if now_s is None else now_s
     now_ms = int(now_s * 1000)
-    play_now = _ask(playing, playing_state)
+    play_now = _ask(playing, proof_playing_state)
     free_now = _ask(free, free_mb)
     mem = load(path)
     if mem.get("unreadable"):

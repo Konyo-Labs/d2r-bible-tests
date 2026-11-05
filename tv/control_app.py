@@ -22405,7 +22405,7 @@ def _self_prove_free_view(r, owed="a proof is owed and memory is short"):
         if not isinstance(r, dict) or r.get("key") != "low-memory":
             return r
         mode = (window_mode_payload() or {}).get("mode")
-        ok, why = view_release_for_proof(r.get("key"), _sp_playing_here(), mode, _os_input_idle_s())
+        ok, why = view_release_for_proof(r.get("key"), _sp_proof_playing_here(), mode, _os_input_idle_s())
         r = dict(r, viewRelease=why)
         if ok:
             q = _quit_window_keeps_service(owed)
@@ -22461,7 +22461,7 @@ def _sp_yield_here():
         pass
     if _a_push_is_grading():        # v3861 - a push grading on this PC goes first; the proof waits for it
         return True
-    return _sp_playing_here()
+    return _sp_proof_playing_here()     # v3862 - the local game only (his ruling: prove beside cloud)
 
 
 def _self_prove_tick():
@@ -22484,9 +22484,9 @@ def _self_prove_tick():
                      takes_only=_self_prove_takes_only(_owner))       # v3844 - the ALT takes Dean's
         r = dict(r, gameOnScreen=shadow_game_detail())
         r = _self_prove_free_view(r)     # REG-1957 - memory is the only block: free the view of an idle PC
-        if _a_sweep_is_reading() and not _sp_playing_here():   # REG-2192 - name the real reason, not "playing"
+        if _a_sweep_is_reading() and not _sp_proof_playing_here():   # REG-2192 - name the real reason, not "playing"
             r = dict(r, standAside="a sweep is reading his reels - the proof waits for it (REG-2192)")
-        if _a_push_is_grading() and not _sp_playing_here():   # v3861 - and a push, by its name
+        if _a_push_is_grading() and not _sp_proof_playing_here():   # v3861 - and a push, by its name
             r = dict(r, standAside=PUSH_STAND_ASIDE)
     except Exception as e:
         r = {"on": None, "worked": None, "lastTs": None, "owed": None, "key": "raised",
@@ -22718,9 +22718,9 @@ def _self_prove_guard():
         r = _sp.guard(busy=_cpu_busy_pct, playing=_sp_yield_here)   # REG-2192 - yield to a sweep, not only his game
         if r:
             r = dict(r, gameOnScreen=shadow_game_detail())
-            if _a_sweep_is_reading() and not _sp_playing_here():
+            if _a_sweep_is_reading() and not _sp_proof_playing_here():
                 r = dict(r, standAside="a sweep is reading his reels - the proof waits for it (REG-2192)")
-            if _a_push_is_grading() and not _sp_playing_here():
+            if _a_push_is_grading() and not _sp_proof_playing_here():
                 r = dict(r, standAside=PUSH_STAND_ASIDE)
     except Exception as e:
         r = {"on": None, "worked": None, "lastTs": None, "owed": None, "key": "raised",
@@ -36886,10 +36886,19 @@ def shadow_game_detail(now_ms=None):
 
 
 def _sp_playing_here():
-    """REG-1666 — the self-prove lane's "is he playing here": the game itself by its process, a cloud client
-    (Boosteroid, GeForce NOW) only while this watch says the GAME is on his screen."""
+    """REG-1666 — "is he playing here" for the lanes that stand aside for play (the river warm, the disk sign): the game
+    itself by its process, a cloud client (Boosteroid, GeForce NOW) only while this watch says the GAME is on his
+    screen. v3862 - the PROOF lane asks _sp_proof_playing_here instead (his ruling: prove beside cloud)."""
     import self_prove as _sp
     return _sp.playing_state(game_on_screen=shadow_game_on_screen)
+
+
+def _sp_proof_playing_here():
+    """v3862 - HIS RULING 2026-11-05 ("prove beside cloud"): the proof stands aside for the LOCAL game only. -> True |
+    False | None. A cloud client streams a game that runs elsewhere; the work ALT's census stayed MISSING because
+    Boosteroid + his AFK clicker read as playing forever (measured on the fleet that morning)."""
+    import self_prove as _sp
+    return _sp.proof_playing_state(game_on_screen=shadow_game_on_screen)
 def _shadow_watch_path():
     """v2423 — the same defect as shadow_ledger and capture_doors, found the same way.
 

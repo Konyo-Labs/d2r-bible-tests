@@ -186,6 +186,13 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3153 - THE WORK ALT NEVER PROVED ITSELF: BOOSTEROID + THE AFK CLICKER READ AS "PLAYING" FOREVER (v3862)
+MEASURED on the fleet 2026-11-05 ~08:50: the work ALT's census was MISSING, its river stuck ("route shut until this PC
+proves its own gates - its prover: he is playing on this PC (the game or its cloud client)"). Boosteroid stays open there
+with the MACRO_DIABLO AFK clicker, whose nudges keep the OS idle clock fresh, so neither the play judge nor the stale-play
+rule ever let a proof start. HIS RULING (asked): "prove beside cloud" - only a local D2R.exe stops a proof. The proof lane
+now asks self_prove.proof_playing_state / control_app._sp_proof_playing_here (cloud=False); the river warm, the disk sign
+and the shadow reader keep counting a cloud client with the game on screen. Law test_a_proof_runs_beside_a_cloud_client.
 ### REG-3152 - ON WINDOWS, READING CHROME'S VERSION OPENED A CHROME WINDOW, OVER AND OVER (v3862)
 His words 2026-11-05 ~08:40: "the old PC laptop ALT is buging out... chrome keeps reopening a page randomly". MEASURED on
 the old ALT over SSH: its console's background proof (heart2 --prove) was running test_the_d2jsp_desk_reads_a_price_before_it_
