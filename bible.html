@@ -91648,10 +91648,11 @@ window.tvStashAutoIntake = async function(tab, opts){
       'with its own vault, chronicle and forge progress.'
     ].join(NL);
     el.onclick = function () {
-      try { navigator.clipboard.writeText(s.name + ' [' + s.code + '] ' + m + '/' + p); } catch (e) {}
+      /* v3864 (GrokBot Batch A 8) - COPIED only when the clipboard took it; a refused copy says so */
       var n = document.getElementById('bs-name'), was = n.textContent;
-      n.textContent = 'COPIED';
-      setTimeout(function () { n.textContent = was; }, 900);
+      var _say = function (w) { n.textContent = w; setTimeout(function () { n.textContent = was; }, 900); };
+      try { navigator.clipboard.writeText(s.name + ' [' + s.code + '] ' + m + '/' + p).then(function () { _say('COPIED'); }, function () { _say('COPY REFUSED'); }); }
+      catch (e) { _say('COPY REFUSED'); }
     };
     el.hidden = false;
   }
