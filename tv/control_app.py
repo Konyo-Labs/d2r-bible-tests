@@ -18896,8 +18896,9 @@ def _disk_sign_measure(candidates=None, budget_s=None, now_ms=None):
     return rows
 
 
-def _disk_sign_once(now_ms=None, playing=None, busy_pct=None, candidates=None):
-    """#151 - one pass of the sign's lane. Never raises. -> the lane record."""
+def _disk_sign_once(now_ms=None, playing=None, busy_pct=None, candidates=None, growers=False):
+    """#151 - one pass of the sign's lane. Never raises. -> the lane record. growers: REG-3208 - the console's own loop
+    asks for the growers lane in this pass; a law that drives this pass never walks his temp root."""
     now = int(time.time() * 1000) if now_ms is None else int(now_ms)
     try:
         _play = _sp_playing_here() if playing is None else playing
@@ -18909,10 +18910,16 @@ def _disk_sign_once(now_ms=None, playing=None, busy_pct=None, candidates=None):
     if _play:
         _DISK_SIGN.update(lastTs=now, say="he is playing - what uses the disk is measured after the game closes")
         _GROK_PRUNE.update(say="waiting - he is playing, and the Grok chat prune never runs beside the game")
+        if growers:
+            _GROWERS.update(checkedTs=now, say="waiting - he is playing, and the growers lane never salvages or prunes "
+                                               "beside the game")
         return dict(_DISK_SIGN)
     if isinstance(_busy, (int, float)) and not isinstance(_busy, bool) and _busy >= DISK_SIGN_BUSY_PCT:
         _DISK_SIGN.update(lastTs=now, say="the machine is busy (%.0f%% CPU) - the measurement waits" % _busy)
         _GROK_PRUNE.update(say="waiting - the machine is busy (%.0f%% CPU), so the Grok chat prune waits too" % _busy)
+        if growers:
+            _GROWERS.update(checkedTs=now, say="waiting - the machine is busy (%.0f%% CPU), so the growers lane waits too"
+                                               % _busy)
         return dict(_DISK_SIGN)
     try:
         rows = _disk_sign_measure(candidates)
@@ -18920,6 +18927,10 @@ def _disk_sign_once(now_ms=None, playing=None, busy_pct=None, candidates=None):
                           measuredAt=now, say="measured %d folder(s)" % len(rows))
     except Exception as e:
         _DISK_SIGN.update(lastTs=now, owed=1, say="the measurement raised %s" % type(e).__name__)
+    # REG-3208 - what keeps growing on this disk (disk_growers' declared registry) is measured, salvaged and read back,
+    # then pruned, in this same pass - so it too waits out his game and a busy machine above
+    if growers:
+        _growers_pass(now)
     # #151 (REG-2743) - his Grok chats, pruned in the same pass and only when needed; this pass already waited out
     # his game and a busy machine above, so the prune never runs beside either
     _grok_prune_pass(now)
@@ -18976,13 +18987,41 @@ def _grok_prune_pass(now_ms=None, _run=None):
     return dict(_GROK_PRUNE)
 
 
+#: REG-3208 (his words 2026-11-05: "whatever keeps growing needs to have a looped system in place that prunes and
+#: extracts and saves any data informational that's needed") - the growers lane, in the shared lane words. worked is
+#: LIFETIME (disk_growers keeps it in the salvage dir's state), owed None is UNKNOWN; checkedTs moves on a pass that
+#: waited too, so a long game never reads as a dead loop.
+_GROWERS = {"on": True, "worked": None, "lastTs": None, "checkedTs": None, "owed": None, "top": None, "biggest": None,
+            "waiting": None, "dryRun": None, "lastSalvage": None, "error": None,
+            "say": "not asked yet - the growers lane runs in the disk sign's pass, about 2 min after a start and then "
+                   "every 30 min, never while he plays"}
+
+
+def _growers_pass(now_ms=None, _run=None):
+    """REG-3208 / REG-3209 - one pass of the growers lane: measure what the declared registry names, salvage what is
+    informational into tv/.salvage and read it back, and only then prune (disk_growers decides; a new entry is a
+    dry-run until it has earned arming). It never touches this console's own tree, the footage or the salvage dir.
+    Never raises. -> the lane record"""
+    now = int(time.time() * 1000) if now_ms is None else int(now_ms)
+    try:
+        import disk_growers as _dg
+        rec = (_run or _dg.run)(salvage_dir=_dg.salvage_root(REPO), protect=(REPO, HIST_DIR),
+                                free_bytes=_disk_free_bytes, now_s=now / 1000.0, repo=REPO)
+        upd = _dg.lane(rec, checked_ms=now)
+    except Exception as e:
+        upd = {"lastTs": now, "checkedTs": now, "owed": None, "error": type(e).__name__,
+               "say": "the growers lane raised %s - nothing was pruned" % type(e).__name__}
+    _GROWERS.update(upd)
+    return dict(_GROWERS)
+
+
 def _disk_sign_loop():
     """#151 - measure what uses the disk two minutes after a start, then every DISK_SIGN_EVERY_S."""
     time.sleep(DISK_SIGN_FIRST_S)
     while True:
         try:
             _lane_tick('tvd-disk-sign', DISK_SIGN_EVERY_S)
-            r = _disk_sign_once()
+            r = _disk_sign_once(growers=True)
             import lane_trace as _lt
             _lt.note('tvd-disk-sign', worked=r.get("worked"), owed=r.get("owed"), why=str(r.get("say") or "")[:200])
         except Exception:
@@ -19053,7 +19092,8 @@ def disk_sign_payload(_free=None):
             "consumers": (cons[:3] if isinstance(cons, list) else None), "measuredAt": _DISK_SIGN.get("measuredAt"),
             "action": ((top or {}).get("action") if lvl in ("red", "amber") else None),
             "lane": {k: _DISK_SIGN.get(k) for k in ("on", "worked", "lastTs", "owed", "say")},
-            "grokPrune": {k: _GROK_PRUNE.get(k) for k in ("on", "worked", "lastTs", "owed", "say", "freedBytes", "last")}}
+            "grokPrune": {k: _GROK_PRUNE.get(k) for k in ("on", "worked", "lastTs", "owed", "say", "freedBytes", "last")},
+            "growers": dict(_GROWERS)}   # REG-3208 - what keeps growing, and what waits on a salvage
 
 #: The stations a reel is meant to LEAVE, and the lane that moves it on. CAPTURE is not here: it waits on a
 #: capture change by design (REG-340), so it is never an alarm; ROUTED and TOMBSTONE are the far end.

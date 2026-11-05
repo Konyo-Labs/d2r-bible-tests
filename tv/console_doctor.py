@@ -400,6 +400,62 @@ def _check_disk_headroom():
     return OK, "%.1fGB free%s" % (free, tail)
 
 
+#: REG-3208 - the growers lane rides the disk sign's 30-minute pass; a pass (or a wait) older than this is a stopped loop
+GROWERS_STALE_S = 3 * 1800 + 600
+
+
+def _check_the_disk_growers_are_salvaged_then_pruned(status=None, now_ms=None, salvage_dir=None):
+    """REG-3208 / REG-3209 - WHAT KEEPS GROWING ON THE DISK, AND WHAT WAITS ON A SALVAGE.
+
+    His words 2026-11-05: "whatever keeps growing needs to have a looped system in place that prunes and extracts and
+    saves any data informational that's needed". `disk headroom` above says how much is free; this row says WHAT is
+    growing (the top growers of disk_growers' declared registry, by size), which link of measure -> salvage -> read
+    back -> prune broke, and it corroborates the lane against the disk: a salvage the lane says it wrote must be on
+    disk under the salvage dir. A console that is not answering, or a lane that never ran, is UNKNOWN, never OK.
+    [[heart-first]] [[unknown-stays-unknown]]"""
+    # REG-2202's lesson: /api/status can take 11.6 s cold, so this periodic row waits 15 s for it, not the 4 s default
+    st = _get("/api/status", timeout=15) if status is None else status
+    if not isinstance(st, dict):
+        return UNKNOWN, "the console is not answering - what grows on the disk cannot be said"
+    g = (st.get("diskSign") or {}).get("growers")
+    if not isinstance(g, dict):
+        return UNKNOWN, "this console publishes no growers lane - what grows on the disk is not measured here"
+    say = str(g.get("say") or "")[:200]
+    now = int(time.time() * 1000) if now_ms is None else int(now_ms)
+    seen = g.get("checkedTs") if isinstance(g.get("checkedTs"), (int, float)) else g.get("lastTs")
+    if not isinstance(seen, (int, float)) or isinstance(seen, bool):
+        return UNKNOWN, "the growers lane has not run a pass yet - %s" % say
+    if now - seen > GROWERS_STALE_S * 1000:
+        return MISSING, ("the growers lane last looked %d min ago - its loop (the disk sign's 30-minute pass) is not "
+                         "running, so nothing that grows is salvaged or pruned" % ((now - seen) // 60000))
+    if g.get("error"):
+        return MISSING, "the growers lane's last pass raised %s - %s" % (g.get("error"), say)
+    top = ", ".join("%s %.2f GB (%s, %d)" % (t.get("name"), t.get("gb") or 0, t.get("owner"), t.get("n") or 0)
+                    for t in (g.get("top") or [])[:3]) or "nothing a declared entry names"
+    last = g.get("lastSalvage")
+    if last:
+        try:
+            import disk_growers as _dg
+            root = salvage_dir or _dg.salvage_root(os.path.dirname(HERE))
+            if not os.path.isfile(os.path.join(root, str(last), "meta.json")):
+                return MISSING, ("the growers lane says it salvaged %s, and that salvage is not on disk under %s - a "
+                                 "prune that trusted it saved nothing" % (last, os.path.basename(root)))
+        except Exception as e:
+            return UNKNOWN, "the salvage dir could not be read (%s) - top growers: %s" % (type(e).__name__, top)
+    wait = g.get("waiting") or []
+    if wait:
+        return MISSING, ("%d grower(s) wait on a salvage or a prune that did not finish: %s - nothing of theirs is "
+                         "pruned until it reads back. Top growers: %s" % (
+                             len(wait), "; ".join("%s (%s)" % (w.get("name"), str(w.get("why"))[:70]) for w in wait[:3]),
+                             top))
+    if g.get("owed") is None:
+        return UNKNOWN, "top growers: %s - %s" % (top, say)
+    dry = g.get("dryRun") or []
+    tail = (" - %d entr%s still dry-run (arms after %d clean passes)" % (
+        len(dry), "y" if len(dry) == 1 else "ies", (dry[0] or {}).get("of") or 0)) if dry else ""
+    return OK, "top growers: %s%s - %s" % (top, tail, say)
+
+
 def _check_subscription_burn():
     """Reads against the window. Not tokens — this lane bills none.
 
@@ -11179,6 +11235,8 @@ CHECKS = [
     ("lane intent", _check_lane_intent),
     ("what runs without you", _check_what_runs_without_him),
     ("disk headroom", _check_disk_headroom),
+    # REG-3208 - WHAT grows, and what waits on a salvage; the row above only says how much is free
+    ("disk growers", _check_the_disk_growers_are_salvaged_then_pruned),
     ("subscription", _check_subscription_burn),
     ("unattended reel", _check_a_reel_is_not_recording_unattended),
     ("reel population", _check_every_reel_on_disk_is_accounted_for),
@@ -11444,6 +11502,8 @@ PERIODIC = ("engines corroborate", "sweep would find", "swallowed reads",
             # nothing for 18 days" scar, so it MUST keep running unattended — just hourly, off the
             # ten-minute cheap timer. The 15s _get timeout stays; it just no longer races the budget.
             "backup loop",
+            # REG-3208 - this GETs /api/status too, and the lane it reads moves every 30 min
+            "disk growers",
             "the d2jsp price database is on its tab")
 PERIODIC_EVERY = 6      # eagle ticks. The eagle sleeps ~10 min, so this is roughly hourly.
 
@@ -12113,6 +12173,8 @@ WATCHES = {
     "lane intent":                 (),
     "what runs without you":       (),
     "disk headroom":               ("prune.reports",),
+    # REG-3208 - DECLARED, NOT OMITTED. It reads the growers lane from /api/status; no element of its own.
+    "disk growers":                (),
     "subscription":                (),
     "unattended reel":             (),
     "reel extract":                ("reel.route",),
