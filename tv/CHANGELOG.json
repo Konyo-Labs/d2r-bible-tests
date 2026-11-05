@@ -25,7 +25,11 @@
       "v3864 - the Shelf has one close button and the Theatre title fits (REG-3174)",
       "v3864 - the console tells time on one clock (REG-3176)",
       "v3864 - an open board tab hides the dashboard it covers (REG-3177)",
-      "v3864 - every clipboard copy answers a refusal, and none says COPIED for one (REG-3178)"
+      "v3864 - every clipboard copy answers a refusal, and none says COPIED for one (REG-3178)",
+      "v3864 - a base read off the screen keeps its stub, so a swept Shako still draws after a reload (REG-3183)",
+      "v3864 - a war mule the board takes back keeps its id, so an undo puts every copy back on it (REG-3184)",
+      "v3864 - no gate can write the eagle ledgers on his PC (REG-3185)",
+      "v3864 - an inbox answer on a short screen stops above the dock (REG-3186)"
     ]
   },
   {
