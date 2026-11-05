@@ -7831,12 +7831,15 @@ def triage(say=print):
 # and no more than free memory above child_guard's floor holds at IMPORT_WORKER_MB each (the ALT has 8 GB); free memory
 # or the core count UNKNOWN -> one at a time, here. A pool that fails is SAID and what it left is keyed here. A worker
 # asks git nothing and leaves when its parent does. Law: test_an_import_keys_on_spare_cores_exactly_as_one_core_would.
-# [[heart-first]] [[unknown-stays-unknown]]
+# MEASURED 2026-11-05 on his Mac, the real v3864 bundle (8,577 entries, 1,499 laws) keyed into a scratch store at one
+# commit: one core 1,782.6 s; 3 workers (what this PC chose: 10 cores, 2,574 MB free) 728.5 s; 8 workers 419.8 s - and
+# 0 of the 8,577 keys differed from one core's, at either count. [[heart-first]] [[unknown-stays-unknown]]
 IMPORT_WORKERS_MAX = 8
 #: the most proofs of one law in one job: a law with hundreds of proofs (test_control) is shared across the workers,
 #: never left to one of them while the others wait - MEASURED on the first full run, one law's job ran on alone
 IMPORT_JOB_PROOFS = 12
-#: MEASURED (REG-3193) - the peak resident size of one import worker keying the v3864 bundle, rounded up
+#: REG-3193 - what one import worker may hold. MEASURED keying the v3864 bundle: a worker peaked at 262 MB (3 workers)
+#: and 247 MB (8); 400 leaves room for another python and a bigger tree
 IMPORT_WORKER_MB = 400
 #: how often a worker asks whether its parent is still there
 IMPORT_WORKER_WATCH_S = 2.0
