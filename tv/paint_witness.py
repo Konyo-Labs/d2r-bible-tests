@@ -522,10 +522,12 @@ def console_pid(port=None):
     """
     try:
         import console_port as _cport   # REG-2998 - its own console's port; an unreadable one is no console, never his
-        port = int(port) if port else _cport.port()
+        # v3866 (the #231 eye on v3863) - a port HANDED IN is that port, even 0: `if port` read 0 as "none given" and
+        # asked HIS console's port instead; only None means "this process's own console"
+        port = _cport.port() if port is None else int(port)
     except Exception:
         port = None
-    if not port:
+    if not port or not 0 < port < 65536:
         return None
     try:
         out = subprocess.check_output(["lsof", "-ti", "tcp:%d" % port],

@@ -170,6 +170,18 @@ class AScratchConsoleNeverAddressesHis(unittest.TestCase):
             self.assertEqual(JR.main([]), 2)
         self.assertEqual(asked, [], "an unreadable port was asked as an empty URL")
 
+    def test_a_port_handed_in_is_that_port_even_zero(self):
+        """v3866 (the #231 eye on v3863) - paint_witness.console_pid(port=0) read 0 as "no port given" and asked his
+        console's port; a port handed in is that port, and one no console can hold asks nobody."""
+        import paint_witness as PW
+        asked = []
+        # recorded, not raised: console_pid's own `except Exception` would swallow a raise and read as "asked nobody"
+        with mock.patch.object(PW.subprocess, "check_output", side_effect=lambda argv, **k: asked.append(argv) or b""):
+            self.assertIsNone(PW.console_pid(port=0))
+            self.assertIsNone(PW.console_pid(port="0"))
+            self.assertIsNone(PW.console_pid(port=70000))
+        self.assertEqual(asked, [], "lsof was asked about a port nobody named: %r" % asked)
+
     def test_no_new_his_port_literal(self):
         bad = []
         for p in sorted(glob.glob(os.path.join(HERE, "*.py"))):
@@ -195,6 +207,11 @@ class AScratchConsoleNeverAddressesHis(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3866 (#231 on v3863) - console_pid(port=0) asks his console's port instead",
+     "file": "tv/paint_witness.py",
+     "find": "        port = _cport.port() if port is None else int(port)\n",
+     "replace": "        port = int(port) if port else _cport.port()\n",
+     "matches": 1},
     {"why": "v3866 (#231 on v3863) - the shelf corroborator asks urlopen('') and records only 'ValueError'",
      "file": "tv/shelf_corroborate.py",
      "find": "        if not _u:\n",
