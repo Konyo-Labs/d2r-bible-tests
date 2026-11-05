@@ -13,6 +13,10 @@ lane_health counted what the vault lane could act on for the chronicle only - so
 BLOCKED, only STOPPED, while it was in fact waiting on a new vault reader (7) and a hang's hold (1). Not a lock
 consequence: vault_sweep_start does not ask the self-arming lock (_vault_start_block says so), and the tick's sentence
 was "none startable", not "LOCKED".
+For most of the 194.5 h nothing was startable at all (r4 review, his lane store): the 7 sealed reels, and reel 21967
+cooling after 6 barren reads under vp3554 until 11-12. "Last did work" is the newest seal, and a barren read writes a
+cooldown, not a seal. The 16:06 reader bump ended that cooldown (test_a_hung_reel_gets_a_bounded_retry pins the one
+reader rule now), which is the only reason 21967 was read - and hung - at 20:28.
 
 THE LAW:
   - the tick counts a reel sealed by the current reader with its one solo pass spent, and says what it waits on;
@@ -20,7 +24,9 @@ THE LAW:
     starting nothing - and agrees with the tick;
   - lane_health asks it for the vault lane: a lane past 48 h that can start NONE of what it owes is BLOCKED, with the
     lane's own reasons, never the chronicle's measured story;
-  - the status board lists each owed reel held after a hang (its try count, its next try or "needs a look").
+  - the status board lists each owed reel held after a hang (its try count, its next try or "needs a look");
+  - lane_health asks the SERVING console (it runs control_app.py as __main__), whose memory holds the hang holds -
+    never a second, freshly imported copy whose lane state is its literals.
 Fixtures only: TV_HIST, the lane store and the seal store are temp files; no sweep can start.
 [[unknown-stays-unknown]] [[copy-drift]] [[heart-first]]
 """
@@ -203,6 +209,25 @@ class TestAWaitingVaultLaneIsBlockedNotStopped(unittest.TestCase):
         self.assertEqual(LH.actionable_counts().get("chronicle") is None, False)
 
 
+    def test_lane_reasons_asks_the_serving_console(self):
+        """The console runs control_app.py as __main__; `import control_app` in lane_health builds a second module
+        whose lane memory is its literals. The serving one must answer."""
+        import types
+        serving = types.ModuleType("__main__")
+        serving.__file__ = os.path.join(HERE, "control_app.py")
+        serving._vault_lane_reasons = lambda: {"owed": 8, "actionable": 0, "why": "the SERVING console's reasons"}
+        real_main = sys.modules.get("__main__")
+        sys.modules["__main__"] = serving            # only this one key; the module table is otherwise untouched
+        try:
+            with mock.patch.object(CA, "_vault_lane_reasons", lambda: {"owed": 8, "actionable": 3, "why": "a copy"}), \
+                    mock.patch.object(CA, "_unswept_chron_reels", lambda limit=50: []):
+                got = LH.lane_reasons()
+        finally:
+            sys.modules["__main__"] = real_main
+        self.assertEqual(got["vault"], {"actionable": 0, "why": "the SERVING console's reasons"},
+                         "lane_health asked a freshly imported copy, not the console that serves: %r" % got)
+
+
 RED_PROOF = [
     {"why": "REG-3200 - a sealed reel whose one pass is spent leaves the tick in silence again",
      "file": "tv/control_app.py",
@@ -243,6 +268,11 @@ RED_PROOF = [
      "file": "tv/control_app.py",
      "find": "                \"hung\": _vault_hang_board(owed),\n",
      "replace": "                \"hung\": [],\n",
+     "matches": 1},
+    {"why": "REG-3200 (r4 review) - lane_health asks a freshly imported copy whose hang holds are empty, not the serving console",
+     "file": "tv/lane_health.py",
+     "find": "    if (m is not None and m is not ca and hasattr(m, \"_vault_lane_reasons\")\n",
+     "replace": "    if (False and m is not None and m is not ca and hasattr(m, \"_vault_lane_reasons\")\n",
      "matches": 1},
 ]
 

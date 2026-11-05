@@ -1486,6 +1486,7 @@ def _check_the_river_is_moving():
     # will start, or that waits on a hold that clears by itself (a hang's backoff, a cooldown, a recording still
     # rolling), is not undelivered; every other wait is counted and NAMED. Who-delivers UNKNOWN keeps the old reading.
     waits = []
+    unknown = 0
     for st in sorted(at):
         ids = at[st]
         dl = _river_delivery(st, ids)
@@ -1495,9 +1496,17 @@ def _check_the_river_is_moving():
         for w in (dl.get("waits") or []):
             if isinstance(w, dict) and not w.get("selfClearing"):
                 stuck[st] = stuck.get(st, 0) + len(w.get("reels") or [])
+                # r4 review - a reel whose lane check could not be asked keeps the station reading (counted), and
+                # the sentence says it is UNKNOWN rather than letting the count read as "no lane"
+                if w.get("key") == "unknown":
+                    unknown += len(w.get("reels") or [])
         if dl.get("waits"):
             waits.append(str(dl.get("why") or ""))
     said = (" Per reel: %s." % "; ".join(waits)) if waits else ""
+    if unknown:
+        said = (" %d of them %s UNKNOWN: whether a lane holds %s could not be asked, so %s the station's "
+                "reading.%s" % (unknown, "is" if unknown == 1 else "are", "it" if unknown == 1 else "them",
+                                "it keeps" if unknown == 1 else "they keep", said))
     if not stuck:
         return OK, ("every stationed reel has a lane that can take it (%d reel(s) walked)%s"
                     % (len(rows), (" - waiting only on holds that clear by themselves." + said) if waits else ""))

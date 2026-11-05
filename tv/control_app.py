@@ -19074,6 +19074,8 @@ _DELIVERY_WAITS = {
     "triage-empty": ("a seal no lane writes: the triage walked it in full and found no stash panel, so the vault "
                      "lane owes it no read (REG-1749), and only a vault read writes a seal"),
     "no-queue": "no lane: no lane's queue holds it",
+    # r4 review - a check that could not be asked is UNKNOWN, never "no lane" (the reason follows the colon)
+    "unknown": "UNKNOWN - who moves it could not be established",
 }
 #: REG-3201 - the waits a lane clears BY ITSELF (a timer or the recording ending). Every other wait needs something
 #: no lane will do on its own - a person, a new reader, a ruling - and the doctor's river row stays MISSING for it.
@@ -19120,7 +19122,9 @@ def _station_delivery(station, reels, owed=None):
     was the one quarantined after the 854 s hang - so "no automatic lane" was false for it; the two PRINTER reels are
     in no lane's queue at all. Both facts are per reel, so this answers per reel, from the lanes' own rules:
     `_vault_owed_reels` + `_vault_pass_reason` (the vault picker), `_chron_reel_owes_a_read` (the reel sweep),
-    `shelf_driver._proven_empty` (REG-1749's veto). {lanes: {lane: [reel]}, waits: [{key, on, reels}], why}"""
+    `shelf_driver._proven_empty` (REG-1749's veto). A check that could not be asked is the wait 'unknown', which says
+    which check failed - never "no lane's queue holds it" (r4 review).
+    {lanes: {lane: [reel]}, waits: [{key, on, reels, selfClearing}], noLane, unknown, why}"""
     try:
         reels = [os.path.basename(str(r)) for r in (reels or [])]
         if owed is None:
@@ -19132,7 +19136,7 @@ def _station_delivery(station, reels, owed=None):
             seals = _vault_swept_load()
         except Exception:
             seals = None
-        lanes, waits, holds = {}, {}, {}
+        lanes, waits, holds, unk = {}, {}, {}, {}
         for rid in reels:
             if rid in vault_owed:
                 why = _vault_pass_reason(rid, vault_owed[rid], seals)
@@ -19145,11 +19149,16 @@ def _station_delivery(station, reels, owed=None):
                 continue
             if station == "STATION":
                 try:
-                    if _chron_reel_owes_a_read(rid):
-                        lanes.setdefault("the reel sweep", []).append(rid)
-                        continue
-                except Exception:
-                    pass
+                    _sweep_owes = _chron_reel_owes_a_read(rid)
+                except Exception as _ce:
+                    # r4 review: this fell through to "no lane's queue holds it" - a confident no for a question
+                    # nobody could ask. UNKNOWN is the answer, and it says which check failed.
+                    waits.setdefault("unknown", []).append(rid)
+                    unk.setdefault("unknown", "the reel sweep's check could not be asked (%s)" % type(_ce).__name__)
+                    continue
+                if _sweep_owes:
+                    lanes.setdefault("the reel sweep", []).append(rid)
+                    continue
             try:
                 import shelf_driver as _sd_dl
                 empty = bool(_sd_dl._proven_empty(rid))
@@ -19159,6 +19168,8 @@ def _station_delivery(station, reels, owed=None):
         rows = []
         for k, rs in sorted(waits.items(), key=lambda kv: -len(kv[1])):
             on = _DELIVERY_WAITS.get(k, k)
+            if k in unk:
+                on = "%s: %s" % (on, unk[k])
             if k in holds and holds[k][1]:
                 on = "%s - %s %s" % (on, holds[k][0], _vault_hang_words(holds[k][1]))
             rows.append({"key": k, "on": on, "reels": rs, "selfClearing": k in _DELIVERY_SELF_CLEARING})
@@ -19167,7 +19178,8 @@ def _station_delivery(station, reels, owed=None):
         parts += ["%d %s by %s" % (len(rs), "is delivered" if len(rs) == 1 else "are delivered", ln)
                   for ln, rs in sorted(lanes.items())]
         return {"station": station, "lanes": lanes, "waits": rows,
-                "noLane": sum(len(r["reels"]) for r in rows if not r["selfClearing"]),
+                "noLane": sum(len(r["reels"]) for r in rows if not r["selfClearing"] and r["key"] != "unknown"),
+                "unknown": sum(len(r["reels"]) for r in rows if r["key"] == "unknown"),
                 "why": "%s %d: %s" % (station, len(reels), "; ".join(parts) if parts else "no reel here")}
     except Exception:
         return None
@@ -35139,6 +35151,20 @@ def _vault_reader_ver():
         return ""
 
 
+def _vault_same_reader(stamped, current):
+    """REG-3200 - was a lane record stamped `stamped` made by the CURRENT vault reader `current`? -> bool
+
+    The seals' own rule (_vault_still_sealed, his v3554 ruling, REG-2915): a reader that only ADDED questions answers
+    the same as the versions tv_diablo.VAULT_PROMPT_ANSWERS_SAME_AS lists, so what those versions recorded still
+    stands. MEASURED on his Mac 2026-11-05 (his lane store and log, read by the r4 review): reel 21967 was cooling
+    after 6 barren reads under vp3554 until 11-12; the 16:06 bump to vp-reg2915, declared to answer the same as
+    vp3554, ended that cooldown because the cooldown compared versions exactly. So the lane read the reel at 20:28 and
+    the read hung 854 s. The cooldown and the hang book now ask this one rule. An empty `current` is the caller's to
+    handle (REG-2561: a failed lookup is not a new reader). [[copy-drift]]"""
+    s, c = str(stamped or ""), str(current or "")
+    return bool(c) and (s == c or s in _vault_prompt_vers_same_as(c))
+
+
 def _vault_cooling(rid, now_ms=None):
     """-> the cooldown entry when `rid` must not be read yet, else None. A bad entry is "not cooling", never a raise."""
     c = _VAULT_AUTOREAD.get("cooldown")
@@ -35150,7 +35176,8 @@ def _vault_cooling(rid, now_ms=None):
     except (TypeError, ValueError):
         return None
     ver = _vault_reader_ver()
-    if ver and str(e.get("promptVer") or "") != ver:      # REG-2561: a failed lookup is not a new reader
+    # REG-2561: a failed lookup is not a new reader. REG-3200: a reader that answers the same is not one either
+    if ver and not _vault_same_reader(e.get("promptVer"), ver):
         return None
     now = time.time() * 1000 if now_ms is None else now_ms
     return e if now < until else None
@@ -35165,7 +35192,8 @@ def _vault_cool(rid, why="", now_ms=None):
     old = c.get(rid) if isinstance(c.get(rid), dict) else {}
     ver = _vault_reader_ver() or str(old.get("promptVer") or "")   # REG-2561: never stamp an unknown reader
     try:
-        n = int(old.get("barren") or 0) if str(old.get("promptVer") or "") == ver else 0
+        # REG-3200 - a reader that answers the same keeps the count (the seals' rule), so a bump cannot reset it to 6 h
+        n = int(old.get("barren") or 0) if (not ver or _vault_same_reader(old.get("promptVer"), ver)) else 0
     except (TypeError, ValueError):
         n = None   # #188 CI: an unreadable count is UNKNOWN, not zero - it must not reset the backoff to 6 h
     n = 11 if n is None else n + 1   # unknown -> the longest wait (the 7-day cap), never a fresh short one
@@ -35194,17 +35222,21 @@ def _vault_cooling_board(owed, now_ms=None):
 
 
 # == REG-3200 - A REEL THAT HUNG THE MEASURER GETS A BOUNDED RETRY, NOT ONE RETRY PER RELAUNCH ======================
-# MEASURED on his Mac 2026-11-05 (/api/status + /api/river, read only): the console came up at 20:14, the vault lane
-# started its one unsealed owed reel 77 s later, the sweep hung 854 s (the triage stood aside 9 ticks for it) and the
-# watchdog quarantined the reel. The quarantine lived only in memory (_VAULT_SWEEP_QUARANTINE, "cleared on relaunch -
-# a transient hang retries"), and his console relaunches on every ship, so the SAME reel hung again after every boot,
-# forever, while the lane said "8 owed, none startable: 1 quarantined after a hang" and never which reel, or when.
+# MEASURED on his Mac 2026-11-05 (/api/status + /api/river, read only; his console log): the console came up at
+# 20:27:26, the vault lane started its one unsealed owed reel (reel 21967) 77 s later (lastTs 20:28:43), the sweep hung
+# 854 s (the triage stood aside 9 ticks for it) and the watchdog quarantined the reel. It was startable at all only
+# because the 16:06 reader bump had ended its vp3554 cooldown (_vault_same_reader). The quarantine lived only in memory
+# (_VAULT_SWEEP_QUARANTINE, "cleared on relaunch - a transient hang retries"), and his console relaunches on every
+# ship, so the next boot hands a hung reel its read straight back. That loop is in his log: reel 20599 was quarantined
+# 4 times on 2026-10-17, three of them right after a relaunch (v3759, v3760, v3761). Reel 21967 has hung once.
+# Meanwhile the lane said "8 owed, none startable: 1 quarantined after a hang" and never which reel, or when.
 # Now every hang is a persisted attempt: the reel waits _VAULT_HANG_BACKOFF_MS x4 per hang before its next try, a
 # retry is time-bounded (asked to stop at its next banked read past _VAULT_RETRY_HELD_CAP_S, #130 - nothing it paid
 # for is lost), and after _VAULT_HANG_TRIES hangs it waits for a person: amber "needs a look: <shape>, <why>", never
-# red for ever and never retried for ever. Ways out: a new vault reader (VAULT_PROMPT_VER) retries it on its own -
-# the one change that can make a hung read go differently, REG-2560's rule - or vault_hang_release gives it one more
-# bounded try (POST /api/vault_sweep {"retryReel": <reel>}). [[unknown-stays-unknown]] [[heart-first]]
+# red for ever and never retried for ever. A full read takes it off the book (_vault_hang_clear_read). Ways out: a new
+# vault reader that does not answer the same (VAULT_PROMPT_VER, _vault_same_reader) retries it on its own - the one
+# change that can make a hung read go differently, REG-2560's rule - or vault_hang_release gives it one more bounded
+# try (POST /api/vault_sweep {"retryReel": <reel>}). [[unknown-stays-unknown]] [[heart-first]]
 _VAULT_HANG_TRIES = 3
 _VAULT_HANG_BACKOFF_MS = 30 * 60 * 1000
 _VAULT_HANG_BACKOFF_MAX_MS = 24 * 3600 * 1000
@@ -35253,7 +35285,9 @@ def _vault_hang_record(rid, why="", run=None, reel_dir=None, now_ms=None):
         now = time.time() * 1000 if now_ms is None else now_ms
         old = h.get(rid) if isinstance(h.get(rid), dict) else {}
         ver = _vault_reader_ver() or str(old.get("promptVer") or "")
-        same_reader = str(old.get("promptVer") or "") == ver
+        # a reader that answers the same as the one that hung keeps the count (the seals' rule): a bump that only
+        # ADDED a question cannot hand a hung reel a fresh set of tries
+        same_reader = (not ver) or _vault_same_reader(old.get("promptVer"), ver)
         if run is not None and same_reader and old.get("run") == run:
             return old
         try:
@@ -35282,7 +35316,8 @@ def _vault_hang_hold(rid, now_ms=None):
 
     kind 'backoff' (its next try is at `until`), 'look' (it hung _VAULT_HANG_TRIES times: a person decides), or
     'quarantined' (an in-process quarantine with no persisted record - a writer that could not save; it holds as
-    before). A record made by an older vault reader no longer holds: a new reader is tried, as REG-2560's cooldown."""
+    before). A record made by an older vault reader no longer holds: a new reader is tried, as REG-2560's cooldown -
+    unless the current reader answers the same as the one that hung (_vault_same_reader, the seals' rule)."""
     try:
         rid = os.path.basename(os.path.normpath(str(rid or "")))
         _vault_autoread_load()
@@ -35290,7 +35325,8 @@ def _vault_hang_hold(rid, now_ms=None):
         e = h.get(rid) if isinstance(h, dict) else None
         if isinstance(e, dict):
             ver = _vault_reader_ver()
-            if ver and ver != str(e.get("promptVer") or ""):      # REG-2561: a failed lookup is not a new reader
+            # REG-2561: a failed lookup is not a new reader, and a reader that answers the same is not one either
+            if ver and not _vault_same_reader(e.get("promptVer"), ver):
                 _VAULT_SWEEP_QUARANTINE.pop(rid, None)
                 return None
             if e.get("look") is True:
@@ -35382,7 +35418,13 @@ def _vault_retry_cap_check(now=None):
     of a reel that hung before gets _VAULT_RETRY_HELD_CAP_S of wall clock, however its progress signature moves; past
     it the sweep is asked to stop at its next banked read (the #130 stop: what it paid for is kept and resumes), the
     attempt is counted as a hang, and the reel waits its backoff. A wedged retry that never reaches a banked read is
-    still cleared by the no-progress watchdog, which counts the same run once."""
+    still cleared by the no-progress watchdog, which counts the same run once.
+
+    WHAT COUNTS AS A RETRY (r4 review): a reel whose hang record is still on the book (a full read takes it off,
+    _vault_hang_clear_read) and was made by the reader running now or one that answers the same. A new vault reader
+    tries the reel FRESH - _vault_hang_hold lets it through and _vault_hang_record restarts its count - so its first
+    attempt is a first attempt here too. `runReelDir` is set only for a sweep aimed at ONE reel (vault_sweep_start's
+    reel_dir), so `startedTs` is that reel's start; an untargeted sweep names no reel here and is never capped."""
     try:
         now = time.time() if now is None else now
         with _VAULT_LOCK:
@@ -35392,8 +35434,12 @@ def _vault_retry_cap_check(now=None):
         rdir = st.get("runReelDir")
         rid = os.path.basename(os.path.normpath(str(rdir))) if rdir else None
         h = _VAULT_AUTOREAD.get("hung")
-        if not rid or not isinstance(h, dict) or not isinstance(h.get(rid), dict):
+        rec = h.get(rid) if (rid and isinstance(h, dict)) else None
+        if not isinstance(rec, dict):
             return False
+        _ver = _vault_reader_ver()
+        if _ver and not _vault_same_reader(rec.get("promptVer"), _ver):
+            return False            # a new reader's first attempt: the no-progress watchdog only
         started = st.get("startedTs")
         held = now - float(started or 0) / 1000.0
         if not started or held < _VAULT_RETRY_HELD_CAP_S:
@@ -35409,6 +35455,34 @@ def _vault_retry_cap_check(now=None):
         return True
     except Exception:
         return False
+
+
+def _vault_hang_clear_read(examined):
+    """REG-3200 - every reel on the hang book that a run has now READ IN FULL leaves it. -> [reel] taken off. Never raises.
+
+    r4 review, reproduced: nothing ever removed a hang record, so a reel that hung once and later read cleanly stayed on
+    the book - every later sweep of it was capped as a "retry", and its old hangs still counted toward "needs a look".
+    `examined` is the returned run's sessionsExamined: a run the #130 stop ended, or the watchdog cleared, never gets
+    here, and vault_retro takes a reel that blew its per-reel deadline back OUT of that list (REG-2271), so only a reel
+    examined to the end is taken off."""
+    try:
+        h = _VAULT_AUTOREAD.get("hung")
+        if not isinstance(h, dict) or not h:
+            return []
+        gone = []
+        for x in (examined or []):
+            x = str(x)
+            for rid in (x, "reel_" + x):
+                if rid in h:
+                    h.pop(rid, None)
+                    _VAULT_SWEEP_QUARANTINE.pop(rid, None)
+                    gone.append(rid)
+        if gone:
+            _vault_autoread_save()
+            print("   vault: read in full after hanging before, off the hang book: %s" % ", ".join(gone[:4]), flush=True)
+        return gone
+    except Exception:
+        return []
 
 
 _VAULT_AUTOREAD = {"tries": {}, "skipped": {}, "reads": 0, "lastTs": 0, "retired": {},
@@ -35774,7 +35848,7 @@ def _vault_autoread_load():
         # entry inside it reads as "not cooling" in _vault_cooling, never as an exception.
         if isinstance(d.get("cooldown"), dict):
             _VAULT_AUTOREAD["cooldown"] = dict(d["cooldown"])
-        # REG-3200 — a restart must not hand a reel that hung its read straight back (it hung again after every boot)
+        # REG-3200 — a restart must not hand a reel that hung its read straight back (reel 20599 hung after 3 boots)
         if isinstance(d.get("hung"), dict):
             _VAULT_AUTOREAD["hung"] = dict(d["hung"])
         if isinstance(d.get("latticeTried"), dict):
@@ -40699,6 +40773,9 @@ def _vault_sweep_run(hist_dir, limit, force=False, reel_dir=None):
         except Exception as _cce:
             print("   ⚠ vault: could not clear a completed reel's resume record (%s)"
                   % str(_cce)[:80], flush=True)
+        # REG-3200 — a reel that hung before and that this run READ IN FULL leaves the hang book, so its next sweep is a
+        # first attempt again (never capped as a retry, its old hangs no longer counted toward "needs a look")
+        _vault_hang_clear_read(prop.get("sessionsExamined"))
         # ⚠⚠ v3078 — A FAILED CALL IS NOT A PROPERTY OF THE FILM, AND IT MUST SAY SO OUT LOUD.
         # `sweep()` only ever sees None from `_classify` and writes "could not be classified —
         # held rather than guessed onto a shelf", which reads as a verdict about the footage. When

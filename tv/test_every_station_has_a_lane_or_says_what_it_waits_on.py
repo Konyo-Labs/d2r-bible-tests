@@ -21,7 +21,12 @@ THE LAW (control_app._station_delivery, the lanes' own rules, asked per reel; sp
   - a STATION reel the reel sweep owes is delivered by the reel sweep; a reel in no queue says so; UNKNOWN stays None;
   - the doctor's river row counts only reels no lane will move by itself, and names every wait;
   - the fleet's LIVE stuck row words PRINTER/STATION from those reels; a fixture shelf keeps the lane's word;
-  - the drain's upstream reason is asked per reel too (_river_drain_why).
+  - the drain's upstream reason is asked per reel too (_river_drain_why), from the reels whose LAST stamp is that
+    station and that are still on the shelf (_reels_at_station - its one source of per-reel data, never mocked here);
+  - a lane check that could not be asked is UNKNOWN and says which check, never "no lane's queue holds it"; the
+    doctor keeps the station reading for it and says it is UNKNOWN;
+  - the doctor reaches the SERVING console's answer (_river_delivery), and the live wire (no fixture shelf) words
+    PRINTER/STATION per reel.
 [[the-unjoined-end]] [[unknown-stays-unknown]] [[label-outlived-referent]]
 """
 import copy
@@ -226,6 +231,64 @@ class TestTheFleetRowWordsItsOwnReels(_World):
             "the drain no longer asks its upstream reason per reel")
 
 
+class TestTheRealJoins(_World):
+    """r4 review (C) and the unknown case: the joins exercised without mocking the function under test."""
+
+    def _stamps(self, rows):
+        import json
+        with io.open(os.path.join(self.tmp, "river_stamp.jsonl"), "w", encoding="utf-8") as fh:
+            for i, (reel, st) in enumerate(rows):
+                fh.write(json.dumps({"at": 1793000000000 + i, "seq": i + 1, "reel": reel, "station": st,
+                                     "by": "law", "byKind": "observer"}) + "\n")
+
+    def test_the_drain_reads_which_reels_stand_at_each_station(self):
+        gone = "reel_s_1793200000000_33333"          # stamped at STATION, no longer on the shelf
+        self._stamps([(FREE, "STATION"), (HUNG, "PRINTER"), (P1, "PRINTER"), (HUNG, "STATION"), (P2, "PRINTER"),
+                      (gone, "STATION"), (FREE, "ROUTED")])
+        with mock.patch.object(CA, "HIST_DIR", self.tmp):
+            self.assertEqual(CA._reels_at_station("STATION"), [HUNG],
+                             "the drain's per-reel data is not the reels whose LAST stamp is STATION on the shelf")
+            self.assertEqual(CA._reels_at_station("PRINTER"), [P1, P2])
+            w = CA._river_drain_why("STATION")
+        self.assertIn("the vault lane, which holds it after a hang", w, w)
+        self.assertIn(HUNG, w)
+        self.assertNotIn("NOT ITS INPUT", w, "the measured drain sentence came back")
+
+    def test_a_check_that_cannot_be_asked_is_unknown_not_no_lane(self):
+        def _boom(rid, mem=None, prompt_ver=None):
+            raise KeyError("the chronicle store would not read")
+        with mock.patch.object(CA, "_chron_reel_owes_a_read", _boom):
+            dl = CA._station_delivery("STATION", [CHRON])
+            st, say = TestTheDoctorCountsOnlyWhatNoLaneWillMove._verdict(
+                self, [{"reel": CHRON, "station": "STATION", "owes": "a paid read"}])
+        self.assertEqual([w["key"] for w in dl["waits"]], ["unknown"], dl)
+        self.assertEqual((dl["noLane"], dl["unknown"]), (0, 1), dl)
+        self.assertIn("UNKNOWN - who moves it could not be established: the reel sweep's check could not be asked "
+                      "(KeyError)", dl["why"])
+        self.assertNotIn("no lane's queue holds it", dl["why"], "an unasked check read as a confident no lane")
+        self.assertEqual(st, D.MISSING, say)              # the station's old reading is kept for an UNKNOWN reel...
+        self.assertIn("1 of them is UNKNOWN", say, say)   # ...and the doctor says it is UNKNOWN, not "no lane"
+
+    def test_the_live_wire_words_its_reels(self):
+        now = int(time.time() * 1000)
+        rows = [{"at": now - 9 * 3600 * 1000, "seq": 1, "reel": P1, "station": "PRINTER", "by": "law",
+                 "byKind": "observer"},
+                {"at": now - 8 * 3600 * 1000, "seq": 2, "reel": P2, "station": "PRINTER", "by": "law",
+                 "byKind": "observer"}]
+        with mock.patch.object(CA, "HIST_DIR", self.tmp), \
+                mock.patch.object(CA, "_vault_autoread_state_cached",
+                                  lambda: {"owed": 8, "reads": 6901, "owedWhy": "the whole queue"}):
+            out = CA._river_stuck_for_wire(now_ms=now, _rows=rows, _fixtures=())
+        self.assertEqual([(e["station"], e["n"]) for e in out], [("PRINTER", 2)], out)
+        self.assertIn("a seal no lane writes", out[0]["why"], out)
+        self.assertNotIn("the whole queue", out[0]["why"], "the live wire quoted the lane's whole queue")
+
+    def test_the_doctor_asks_the_serving_console(self):
+        dl = D._river_delivery("PRINTER", [P1])
+        self.assertIsInstance(dl, dict, "the doctor's seam reaches no console")
+        self.assertEqual(dl.get("noLane"), 1, dl)
+
+
 RED_PROOF = [
     {"why": "REG-3201 - the vault picker's reason is not asked, so a held reel reads as delivered",
      "file": "tv/control_app.py",
@@ -244,8 +307,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3201 - a STATION reel the reel sweep owes is not asked of the sweep",
      "file": "tv/control_app.py",
-     "find": "                    if _chron_reel_owes_a_read(rid):\n",
-     "replace": "                    if False:\n",
+     "find": "                    _sweep_owes = _chron_reel_owes_a_read(rid)\n",
+     "replace": "                    _sweep_owes = False\n",
      "matches": 1},
     {"why": "REG-3201 - the doctor counts every PRINTER/STATION reel again, held or not",
      "file": "tv/console_doctor.py",
@@ -281,6 +344,41 @@ RED_PROOF = [
      "file": "tv/control_app.py",
      "find": "            _last, plan, upstream=tuple(_RIVER_OWNER), why_of=_river_drain_why,",
      "replace": "            _last, plan, upstream=tuple(_RIVER_OWNER), why_of=_river_stuck_why,",
+     "matches": 1},
+    {"why": "REG-3201 (r4 review C) - the drain's per-reel data is lost: STATION blames the reel sweep's predicate again",
+     "file": "tv/control_app.py",
+     "find": "        return sorted(k for k, v in last.items() if v == station and k in on)\n",
+     "replace": "        return None\n",
+     "matches": 1},
+    {"why": "REG-3201 - the drain counts reels that left the shelf",
+     "file": "tv/control_app.py",
+     "find": "        return sorted(k for k, v in last.items() if v == station and k in on)\n",
+     "replace": "        return sorted(k for k, v in last.items() if v == station)\n",
+     "matches": 1},
+    {"why": "REG-3201 - the drain reads a reel's FIRST stamp, not where it stands now",
+     "file": "tv/control_app.py",
+     "find": "            last[str(r.get(\"reel\"))] = str(r.get(\"station\"))\n",
+     "replace": "            last.setdefault(str(r.get(\"reel\")), str(r.get(\"station\")))\n",
+     "matches": 1},
+    {"why": "REG-3201 (r4 review) - a reel-sweep check that could not be asked reads as a confident 'no lane'",
+     "file": "tv/control_app.py",
+     "find": "                    waits.setdefault(\"unknown\", []).append(rid)\n",
+     "replace": "                    waits.setdefault(\"no-queue\", []).append(rid)\n",
+     "matches": 1},
+    {"why": "REG-3201 (r4 review) - the doctor counts an UNKNOWN reel as undelivered without saying it is unknown",
+     "file": "tv/console_doctor.py",
+     "find": "                if w.get(\"key\") == \"unknown\":\n",
+     "replace": "                if False:\n",
+     "matches": 1},
+    {"why": "REG-3201 - the doctor's seam reaches no console, so every PRINTER/STATION reel is counted again",
+     "file": "tv/console_doctor.py",
+     "find": "        return _serving_console(_ca)._station_delivery(station, reels)\n",
+     "replace": "        return None\n",
+     "matches": 1},
+    {"why": "REG-3201 - the LIVE wire words PRINTER/STATION with the lane's whole-queue sentence",
+     "file": "tv/control_app.py",
+     "find": "        return _river_stuck_worded(out, _keep, live=(_shelf is None))\n",
+     "replace": "        return _river_stuck_worded(out, _keep, live=False)\n",
      "matches": 1},
 ]
 
