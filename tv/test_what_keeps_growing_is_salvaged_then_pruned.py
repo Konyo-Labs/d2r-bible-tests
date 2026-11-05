@@ -19,6 +19,27 @@ sign's pass; console_doctor's "disk growers" row reads it. Held here, every fixt
     summary, verdicts and the tail of its logs; a skip glob is never looked at;
   * the console asks for the lane only from its own loop, publishes it on the disk sign, and the doctor row says which
     link broke - a salvage the lane claims that is not on disk is MISSING.
+THE ADVERSARIAL REVIEW (each reproduced on a temp fixture before it was fixed, each held here):
+  * lsof was asked ONCE per pass: a shell that entered tree B after tree A's prune did not stop B's. Now it is asked
+    again before EACH prune, after that tree's own salvage;
+  * age was mtime only: a folder made seconds ago by cp -Rp from a 10-day-old one read 240 h old and was pruned at once.
+    Age is now the newer of mtime and ctime, which no copy carries over;
+  * git cherry skips merge commits: a clone's conflict resolution was in no salvaged file. A tree with a merge commit
+    not upstream is now salvaged as a bundle of its unmerged history too, and the bundle restores it;
+  * patches and the dirty diff had no cap and nothing checked free space: a 30 MB dirty binary became a 58 MB salvage on
+    a disk at 2 GB free. Every written byte now counts against SALVAGE_CAP (past it the tree waits, nothing is cut
+    short), a diff whose files sum past READ_CAP is never read, and nothing is written that leaves the salvage disk
+    under SALVAGE_MIN_FREE or the salvage dir past SALVAGE_DIR_CAP;
+  * ONE tree that can never be salvaged (no origin/main, an untracked nested repo that raised IsADirectoryError) reset
+    its whole entry's dry-run every pass, so the entry never armed. A declared wait no longer counts as a failed
+    salvage, and a nested repo waits with its own reason;
+  * $TMPDIR, where the laws leak (vault-law- 518, playwright-artifacts- 414 measured), was not declared: law fixture
+    prefixes now are, as RECORD entries (one manifest line each, no salvage folder, never re-recorded);
+  * owed read 0 while a grower's age was UNKNOWN, and a PC with no psutil was UNKNOWN even with nothing to prune: owed is
+    now UNKNOWN exactly when a grower's decision rested on something unread, and holders are asked lazily;
+  * a corrupt state reset every entry to dry-run and said so nowhere; a lane that only WAITED for days read OK. Both
+    are said now, the second as MISSING after GROWERS_UNMEASURED_H;
+  * a pass is bounded: PRUNES_PER_PASS growers, the rest deferred and counted in owed.
 RED_PROOF below.
 """
 import json
@@ -102,7 +123,7 @@ class Fixture(object):
         return [ln[len("worktree "):] for ln in self.g(self.main, "worktree", "list", "--porcelain").splitlines()
                 if ln.startswith("worktree ")]
 
-    def run(self, entries, now_h=100.0, free_gb=1.0, held=(set(), "a law's holders: nobody"), **kw):
+    def run(self, entries, now_h=100.0, free_gb=5.0, held=(set(), "a law's holders: nobody"), **kw):
         kw.setdefault("salvage_dir", self.salv)
         return DG.run(entries=entries, root_map={"TMP": self.root}, free_bytes=lambda p: free_gb * 1e9,
                       now_s=time.time() + now_h * H, held=held, **kw)
@@ -290,6 +311,7 @@ class InsideTheAgeFloorNothingIsTouched(_Base):
             rec = self.fx.run([_entry()])
         self.assertEqual(_cand(rec, "claude-fx-work")["state"], "unknown")
         self.assertTrue(os.path.isdir(wt))
+        self.assertIsNone(rec["owed"], "a grower whose age nobody could read was reported as a measured owed")
 
 
 class TheDryRunNeverDeletes(_Base):
@@ -300,7 +322,7 @@ class TheDryRunNeverDeletes(_Base):
         t0 = time.time() + 100 * H
         for i, dh in enumerate((0.0, 13.0, 25.0)):
             rec = DG.run(entries=[_entry(mode=DG.DRY)], root_map={"TMP": fx.root}, salvage_dir=fx.salv,
-                         free_bytes=lambda p: 1e9, now_s=t0 + dh * H, held=(set(), "nobody"))
+                         free_bytes=lambda p: 5e9, now_s=t0 + dh * H, held=(set(), "nobody"))
             c = _cand(rec, "claude-fx-work")
             self.assertEqual(c["state"], "would-prune", c["why"])
             self.assertTrue(os.path.isdir(wt), "the dry-run deleted on pass %d" % (i + 1))
@@ -311,7 +333,7 @@ class TheDryRunNeverDeletes(_Base):
                 self.assertFalse(st.get("armedTs"), "a dry-run armed itself inside a day")
         self.assertTrue(st.get("armedTs"), "three clean passes over 25 h did not arm it")
         rec = DG.run(entries=[_entry(mode=DG.DRY)], root_map={"TMP": fx.root}, salvage_dir=fx.salv,
-                     free_bytes=lambda p: 1e9, now_s=t0 + 26 * H, held=(set(), "nobody"))
+                     free_bytes=lambda p: 5e9, now_s=t0 + 26 * H, held=(set(), "nobody"))
         self.assertEqual(_cand(rec, "claude-fx-work")["state"], "pruned")
         self.assertFalse(os.path.exists(wt))
 
@@ -321,7 +343,7 @@ class TheDryRunNeverDeletes(_Base):
         t0 = time.time() + 100 * H
         for dh in (0.0, 0.5, 1.0, 1.5):
             DG.run(entries=[_entry(mode=DG.DRY)], root_map={"TMP": fx.root}, salvage_dir=fx.salv,
-                   free_bytes=lambda p: 1e9, now_s=t0 + dh * H, held=(set(), "nobody"))
+                   free_bytes=lambda p: 5e9, now_s=t0 + dh * H, held=(set(), "nobody"))
         st = json.loads(_r(os.path.join(fx.salv, "state.json")).decode("utf-8"))["entries"]["claude-trees"]
         self.assertEqual(st["cleanPasses"], 4)
         self.assertFalse(st.get("armedTs"), "four passes inside two hours armed a new grower kind")
@@ -452,6 +474,10 @@ class TheConsoleRunsItAndTheDoctorReadsIt(unittest.TestCase):
         self.assertEqual(row(dict(ok, lastTs=None, checkedTs=None))[0], cd.UNKNOWN)
         stale = row(dict(ok, checkedTs=now - 3 * 3600 * 1000))
         self.assertEqual(stale[0], cd.MISSING, stale)
+        # REG-3208 review - a loop that only WAITED (his game, a busy CPU) moves checkedTs; its sizes are that old
+        idle = row(dict(ok, lastTs=now - 30 * 3600 * 1000, say="waiting - the machine is busy (100% CPU)"))
+        self.assertEqual(idle[0], cd.MISSING, idle)
+        self.assertIn("not MEASURED for 30 h", idle[1])
         wait = row(dict(ok, waiting=[{"name": "grok-v3856", "why": "patch did not read back"}]))
         self.assertEqual(wait[0], cd.MISSING)
         self.assertIn("grok-v3856", wait[1])
@@ -461,6 +487,9 @@ class TheConsoleRunsItAndTheDoctorReadsIt(unittest.TestCase):
         good = row(dict(ok, lastSalvage="grok-trees/grok-v3856-abc"))
         self.assertEqual(good[0], cd.OK, good)
         self.assertIn("grok-trees 3.30 GB", good[1])
+        self.assertIn("(measured 0 min ago)", good[1], "the row shows sizes without the age of the reading")
+        reset = row(dict(ok, stateWhy="the growers state did not read (ValueError) - moved aside"))
+        self.assertIn("did not read", reset[1], "a state reset is said nowhere")
         self.assertEqual(row(dict(ok, owed=None))[0], cd.UNKNOWN)
         self.assertIn("disk growers", dict(cd.CHECKS))
         self.assertIn("disk growers", cd.WATCHES)
@@ -469,12 +498,16 @@ class TheConsoleRunsItAndTheDoctorReadsIt(unittest.TestCase):
 class TheRegistryIsDeclared(unittest.TestCase):
 
     def test_every_entry_is_whole_and_a_new_kind_starts_in_dry_run(self):
-        keys = {"name", "platforms", "root", "globs", "skip", "owner", "kind", "floorH", "boundH", "mode", "why"}
+        keys = {"name", "platforms", "root", "globs", "skip", "owner", "kind", "floorH", "boundH", "mode", "salvage",
+                "why"}
         names = [e["name"] for e in DG.GROWERS]
         self.assertEqual(len(names), len(set(names)))
         for e in DG.GROWERS:
             self.assertTrue(keys <= set(e), (e["name"], keys - set(e)))
             self.assertIn(e["kind"], (DG.KIND_GIT, DG.KIND_SCRATCH))
+            self.assertIn(e["salvage"], (DG.COPY, DG.RECORD))
+            self.assertFalse(e["kind"] == DG.KIND_GIT and e["salvage"] == DG.RECORD,
+                             "%s would prune git trees with only a record line" % e["name"])
             self.assertEqual(e["mode"], DG.DRY, "%s is armed in the registry - a kind arms by evidence, not by edit"
                              % e["name"])
             self.assertLess(e["floorH"], e["boundH"])
@@ -482,7 +515,11 @@ class TheRegistryIsDeclared(unittest.TestCase):
     def test_no_glob_names_a_live_folder(self):
         import fnmatch
         live = ("claude-501", "claude-mcp-browser-bridge-someone", "grokbot-presence", "grok-file-lock-501",
-                "tv-nightly", "d2r_chrome_remote_profile", "sessions")
+                "tv-nightly", "d2r_chrome_remote_profile", "sessions",
+                # the per-user temp dir's live residents (REG-3208 review): his console's child guard, the shadow
+                # reader's Chrome profile, the Grok intake, Chrome's own, every program's default prefix
+                "tvd-child-guard-1a2b3c4d", "tvd-shadow-chrome", "tvd-intake-abc", "com.google.Chrome.abc123",
+                "scoped_dir12_34", "tmpab12cd34", "heartlane_x1", "d2r-pre-push.123")
         for e in DG.GROWERS:
             for n in live:
                 hit = any(fnmatch.fnmatch(n, g) for g in e["globs"]) and not any(
@@ -490,8 +527,11 @@ class TheRegistryIsDeclared(unittest.TestCase):
                 self.assertFalse(hit, "%s would look at %s" % (e["name"], n))
 
     def test_each_platform_names_its_own_scratch_root(self):
-        self.assertEqual(DG.roots("darwin", {}), {"TMP": "/private/tmp"})
-        self.assertEqual(DG.roots("linux", {}), {"TMP": "/tmp"})
+        self.assertEqual(DG.roots("darwin", {}), {"TMP": "/private/tmp", "TMPDIR": "/private/tmp"})
+        self.assertEqual(DG.roots("darwin", {"TMPDIR": "/var/folders/xy/abc/T/"}),
+                         {"TMP": "/private/tmp", "TMPDIR": "/var/folders/xy/abc/T"},
+                         "the per-user temp dir, where the laws leak, is not a root")
+        self.assertEqual(DG.roots("linux", {}), {"TMP": "/tmp", "TMPDIR": "/tmp"})
         self.assertEqual(DG.roots("win32", {"TEMP": r"C:\Users\x\AppData\Local\Temp"}),
                          {"TEMP": r"C:\Users\x\AppData\Local\Temp"})
         self.assertEqual(DG.roots("win32", {}), {})
@@ -499,6 +539,207 @@ class TheRegistryIsDeclared(unittest.TestCase):
         win = {tuple(e["globs"]) + (e["kind"],) for e in DG.entries_for("win32")}
         self.assertEqual(posix, win, "a grower declared on the Mac has no twin on a Windows PC")
         self.assertTrue(all(e["root"] == "TEMP" for e in DG.entries_for("win32")))
+        law = [e for e in DG.entries_for("darwin") if e["root"] == "TMPDIR"]
+        self.assertEqual([(e["name"], e["salvage"], e["kind"]) for e in law],
+                         [("law-scratch", DG.RECORD, DG.KIND_SCRATCH)])
+
+
+class EachPruneAsksAgainWhatHoldsIt(_Base):
+    """REG-3208 review (the blocker) - the reviewer's fixture: tree A is pruned, then a shell enters tree B."""
+
+    def test_a_process_that_entered_a_later_tree_mid_pass_stops_its_prune(self):
+        fx = self.fx
+        a = fx.worktree("claude-fx-a", "claude/a")
+        b = fx.worktree("claude-fx-b", "claude/b")
+
+        def lsof(*_a, **_k):
+            # the moment A is gone a shell has cd'd into B - a reading taken before A's prune cannot know it
+            return ({os.path.realpath(b)} if not os.path.exists(a) else set()), "a law's holders"
+        with mock.patch.object(DG, "holders", side_effect=lsof):
+            rec = fx.run([_entry()], held=None)
+        self.assertEqual(_cand(rec, "claude-fx-a")["state"], "pruned", _cand(rec, "claude-fx-a")["why"])
+        self.assertEqual(_cand(rec, "claude-fx-b")["state"], "held", _cand(rec, "claude-fx-b")["why"])
+        self.assertTrue(os.path.isdir(b), "a tree a process entered after the pass's first reading was pruned")
+        self.assertEqual(rec["holdersAsked"], 3, "holders: once to measure, then once before EACH prune")
+
+
+class ACopyThatKeptOldTimesIsYoung(_Base):
+    """REG-3208 review - age was mtime only, and cp -Rp / tar / unzip / rsync -a keep mtimes."""
+
+    def test_a_folder_copied_a_second_ago_from_a_ten_day_old_one_is_inside_its_floor(self):
+        old = os.path.join(self.fx.base, "old-probe")
+        _w(os.path.join(old, "probe.py"), "print('a probe a seat is about to run')\n")
+        ten_days = time.time() - 10 * 86400
+        for q in (os.path.join(old, "probe.py"), old):
+            os.utime(q, (ten_days, ten_days))
+        new = os.path.join(self.fx.root, "grok-copy-just-made")
+        shutil.copytree(old, new)                      # copy2 keeps the mtimes, as cp -p does
+        self.assertGreater(time.time() - os.lstat(new).st_mtime, 9 * 86400, "the fixture's copy did not keep mtimes")
+        ent = _entry(kind=DG.KIND_SCRATCH, name="grok-scratch", globs=("grok-*",), floor=48, bound=72)
+        rec = self.fx.run([ent], now_h=0.0, free_gb=500.0)
+        c = _cand(rec, "grok-copy-just-made")
+        self.assertEqual(c["state"], "young", c["why"])
+        self.assertTrue(os.path.isfile(os.path.join(new, "probe.py")), "a folder made a second ago was pruned")
+
+
+class AMergeCommitIsSalvagedAsABundle(_Base):
+    """REG-3209 review - git cherry skips merge commits, and a clone's branch does not survive its rmtree."""
+
+    def test_the_work_done_inside_a_merge_is_restored_from_the_salvage(self):
+        fx = self.fx
+        clone = os.path.join(fx.root, "claude-fx-clone")
+        r = subprocess.run(["git", "clone", "-q", fx.main, clone], env=fx.env, capture_output=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        fx.g(clone, "checkout", "-q", "-b", "side")
+        _w(os.path.join(clone, "s.txt"), "side\n")
+        fx.g(clone, "add", "s.txt")
+        fx.g(clone, "commit", "-q", "-m", "side")
+        fx.g(clone, "checkout", "-q", "main")
+        _w(os.path.join(clone, "m.txt"), "mainline\n")
+        fx.g(clone, "add", "m.txt")
+        fx.g(clone, "commit", "-q", "-m", "m1")
+        fx.g(clone, "merge", "-q", "--no-ff", "--no-commit", "side")
+        _w(os.path.join(clone, "resolution.txt"), "work done only inside the merge commit\n")
+        fx.g(clone, "add", "resolution.txt")
+        fx.g(clone, "commit", "-q", "-m", "merge side + resolution")
+        fx.g(clone, "branch", "-q", "-D", "side")
+        rec = fx.run([_entry()])
+        c = _cand(rec, "claude-fx-clone")
+        self.assertEqual(c["state"], "pruned", c["why"])
+        self.assertFalse(c["finished"], "a clone holding a merge commit not upstream read as finished")
+        sal = os.path.join(fx.salv, c["salvage"]["dir"])
+        self.assertTrue(os.path.isfile(os.path.join(sal, "history.bundle")), sorted(os.listdir(sal)))
+        back = os.path.join(fx.base, "back")
+        r = subprocess.run(["git", "clone", "-q", fx.main, back], env=fx.env, capture_output=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        fx.g(back, "fetch", "-q", os.path.join(sal, "history.bundle"), "HEAD:refs/heads/salvaged")
+        self.assertEqual(fx.g(back, "show", "salvaged:resolution.txt"), "work done only inside the merge commit")
+
+
+class ASalvageNeverCostsTheDiskMoreThanItRelieves(_Base):
+    """REG-3208 review - a 30 MB dirty binary became a 58 MB salvage on a disk at 2 GB free."""
+
+    def _assert_waits(self, rec, wt, words):
+        c = _cand(rec, "claude-fx-work")
+        self.assertEqual(c["state"], "waiting", c["why"])
+        self.assertIn(words, c["why"])
+        self.assertTrue(os.path.isdir(wt), "a tree whose salvage was refused was pruned")
+        self.assertFalse(os.path.isdir(os.path.join(self.fx.salv, "claude-trees")), "a refused salvage was written")
+
+    def test_unmerged_work_over_the_cap_waits_whole_and_is_never_cut_short(self):
+        wt = self.unmerged()
+        with mock.patch.object(DG, "SALVAGE_CAP", 200):
+            rec = self.fx.run([_entry()])
+        self._assert_waits(rec, wt, "salvage cap")
+
+    def test_a_diff_whose_files_are_too_big_is_never_read(self):
+        wt = self.unmerged()
+        calls = []
+        real_git = DG.git
+
+        def spy(path, args, *a, **k):
+            calls.append(args[0])
+            return real_git(path, args, *a, **k)
+        with mock.patch.object(DG, "READ_CAP", 5), mock.patch.object(DG, "git", side_effect=spy):
+            rec = self.fx.run([_entry()])
+        self._assert_waits(rec, wt, "more than the lane reads")
+        self.assertNotIn("format-patch", calls, "a commit over the read cap was read into memory anyway")
+
+    def test_nothing_is_written_that_leaves_the_salvage_disk_under_its_floor(self):
+        wt = self.unmerged()
+        rec = self.fx.run([_entry()], free_gb=DG.SALVAGE_MIN_FREE / 1e9 + 0.00001)
+        self._assert_waits(rec, wt, "would leave the salvage disk under")
+
+    def test_a_salvage_dir_at_its_cap_takes_no_more(self):
+        wt = self.unmerged()
+        with mock.patch.object(DG, "SALVAGE_DIR_CAP", 1000):
+            rec = self.fx.run([_entry()])
+        self._assert_waits(rec, wt, "at its")
+
+    def test_a_pass_is_bounded_and_the_rest_is_owed(self):
+        fx = self.fx
+        for n in ("claude-fx-s1", "claude-fx-s2"):
+            _w(os.path.join(fx.root, n, "x.txt"), "x")
+        ent = _entry(kind=DG.KIND_SCRATCH, name="claude-scratch")
+        with mock.patch.object(DG, "PRUNES_PER_PASS", 1):
+            rec = fx.run([ent])
+        self.assertEqual(sorted(c["state"] for c in rec["candidates"]), ["deferred", "pruned"])
+        self.assertEqual(rec["owed"], 1, "a grower deferred to a later pass was not owed")
+
+
+class OneTreeThatCannotBeSalvagedDoesNotHoldItsEntryBack(_Base):
+    """REG-3208 review - one stray reset the whole entry's dry-run every pass, so it never armed."""
+
+    def test_the_entry_arms_on_the_trees_it_can_salvage_and_the_strays_wait_with_their_reason(self):
+        fx = self.fx
+        good = fx.worktree("claude-fx-good", "claude/good")
+        stray = fx.repo(os.path.join(fx.root, "claude-fx-stray"), upstream=False)
+        nested = fx.worktree("claude-fx-nested", "claude/nested")
+        inner = fx.repo(os.path.join(nested, "vendor", "lib"), upstream=False)
+        big = self.unmerged("claude-fx-big", "claude/big")
+        t0 = time.time() + 100 * H
+        with mock.patch.object(DG, "SALVAGE_CAP", 200):
+            for dh in (0.0, 13.0, 25.0):
+                rec = DG.run(entries=[_entry(mode=DG.DRY)], root_map={"TMP": fx.root}, salvage_dir=fx.salv,
+                             free_bytes=lambda p: 5e9, now_s=t0 + dh * H, held=(set(), "nobody"))
+        st = json.loads(_r(os.path.join(fx.salv, "state.json")).decode("utf-8"))["entries"]["claude-trees"]
+        self.assertTrue(st.get("armedTs"), "strays it cannot salvage kept the entry from arming: %s" % st)
+        self.assertIn("origin/main", _cand(rec, "claude-fx-stray")["why"])
+        self.assertIn("git repository inside", _cand(rec, "claude-fx-nested")["why"])
+        self.assertIn("salvage cap", _cand(rec, "claude-fx-big")["why"])
+        self.assertEqual(_cand(rec, "claude-fx-good")["state"], "would-prune")
+        for p in (good, stray, nested, inner, big):
+            self.assertTrue(os.path.isdir(p))
+
+
+class LawFixturesInTheUserTempDirAreRecorded(_Base):
+    """REG-3208 review - $TMPDIR was not declared; the laws' leaks live there."""
+
+    def _law(self, mode):
+        return _entry(kind=DG.KIND_SCRATCH, name="law-scratch", globs=DG._LAW, mode=mode, bound=72)
+
+    def test_a_record_line_then_the_prune_and_no_salvage_folder(self):
+        fx = self.fx
+        leak = os.path.join(fx.root, "vault-law-abc123")
+        _w(os.path.join(leak, "fixture.json"), "{}")
+        guard = os.path.join(fx.root, "tvd-child-guard-1a2b3c4d")
+        _w(os.path.join(guard, "pids"), "1")
+        ent = dict(self._law(DG.ARMED), keep=(), salvage=DG.RECORD)
+        rec = fx.run([ent])
+        c = _cand(rec, "vault-law-abc123")
+        self.assertEqual(c["state"], "pruned", c["why"])
+        self.assertNotIn("tvd-child-guard-1a2b3c4d", [x["name"] for x in rec["candidates"]])
+        self.assertTrue(os.path.isdir(guard))
+        ev = [(m["event"], os.path.basename(m["path"]), m.get("bytes")) for m in _manifest(fx)]
+        self.assertEqual(ev, [("record", "vault-law-abc123", 2), ("prune", "vault-law-abc123", 2)])
+        self.assertFalse(os.path.isdir(os.path.join(fx.salv, "law-scratch")), "a law fixture got a salvage folder")
+
+    def test_a_dry_run_records_each_folder_once(self):
+        fx = self.fx
+        _w(os.path.join(fx.root, "tvd-nogit-xyz", "f.txt"), "f")
+        ent = dict(self._law(DG.DRY), keep=(), salvage=DG.RECORD)
+        for h in (100.0, 100.5, 101.0):
+            rec = fx.run([ent], now_h=h)
+            self.assertEqual(_cand(rec, "tvd-nogit-xyz")["state"], "would-prune")
+        self.assertEqual([m["event"] for m in _manifest(fx)], ["record"],
+                         "every 30-min dry pass wrote the same record again")
+
+
+class WhatCouldNotBeReadIsSaid(_Base):
+    """REG-3208 review - owed vs. what was really unread; a state reset said nowhere."""
+
+    def test_nothing_past_its_floor_needs_holders_so_owed_is_measured(self):
+        self.unmerged()
+        rec = self.fx.run([_entry()], now_h=0.0, held=(None, "there is no lsof on Windows and psutil is not installed"))
+        self.assertEqual((rec["owed"], rec["holdersAsked"]), (0, 0), rec["say"])
+
+    def test_a_reset_state_is_said_on_this_pass_and_the_next(self):
+        os.makedirs(self.fx.salv)
+        _w(os.path.join(self.fx.salv, "state.json"), "{not json")
+        rec = self.fx.run([_entry()])
+        self.assertIn("did not read", rec["say"])
+        rec = self.fx.run([_entry()], now_h=101.0)
+        self.assertIn("did not read", rec["say"], "the reset was said once and then forgotten")
 
 
 RED_PROOF = [
@@ -529,18 +770,18 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3208 - a tree a live process holds at measure time is salvaged (and only the late check stops it)",
      "file": "tv/disk_growers.py",
-     "find": "        if _held_by(hs, real, os.path.abspath(row[\"path\"])):\n",
+     "find": "        if _held_by(meas[0][0], real, os.path.abspath(row[\"path\"])):\n",
      "replace": "        if False:\n",
      "matches": 1},
     {"why": "REG-3208 - a process that entered the tree during the pass is not asked about before the prune",
      "file": "tv/disk_growers.py",
-     "find": "        if fresh[0][0] is None or _held_by(fresh[0][0], c[\"real\"], os.path.abspath(c[\"path\"])):\n",
+     "find": "        if fresh[0] is None or _held_by(fresh[0], c[\"real\"], os.path.abspath(c[\"path\"])):\n",
      "replace": "        if False:\n",
      "matches": 1},
-    {"why": "REG-3208 - holders nobody could read is reported as a measured owed",
+    {"why": "REG-3208 - holders (or an age) nobody could read is reported as a measured owed",
      "file": "tv/disk_growers.py",
-     "find": "    rec[\"owed\"] = None if hs is None else len(rec[\"waiting\"]) + len(rec[\"wouldPrune\"])\n",
-     "replace": "    rec[\"owed\"] = len(rec[\"waiting\"]) + len(rec[\"wouldPrune\"])\n",
+     "find": "    rec[\"owed\"] = None if unknown else len(",
+     "replace": "    rec[\"owed\"] = None if False else len(",
      "matches": 1},
     {"why": "REG-3208 - the age floor is gone: a tree written a minute ago is salvaged and pruned",
      "file": "tv/disk_growers.py",
@@ -606,6 +847,109 @@ RED_PROOF = [
      "file": "tv/console_doctor.py",
      "find": "            if not os.path.isfile(os.path.join(root, str(last), \"meta.json\")):\n",
      "replace": "            if False:\n",
+     "matches": 1},
+    # ── the adversarial review's findings, each reproduced on a fixture before it was fixed ──
+    {"why": "REG-3208 review (blocker) - the prune trusts the measure-time holders reading, so a shell that entered tree "
+            "B after tree A's prune does not stop B's",
+     "file": "tv/disk_growers.py",
+     "find": "        fresh = ask()                      # REG-3208 review - asked again before EACH prune, after its own salvage\n",
+     "replace": "        fresh = meas[0]\n",
+     "matches": 1},
+    {"why": "REG-3208 review - age is mtime only, so a folder cp -Rp made a second ago reads 240 h old and is pruned",
+     "file": "tv/disk_growers.py",
+     "find": "    return max(st.st_mtime, st.st_ctime)\n",
+     "replace": "    return st.st_mtime\n",
+     "matches": 1},
+    {"why": "REG-3209 review - a merge commit (which git cherry skips) is not bundled, so the work inside it is lost",
+     "file": "tv/disk_growers.py",
+     "find": "    if facts.get(\"merges\"):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "REG-3209 review - unmerged work over the salvage cap is written anyway",
+     "file": "tv/disk_growers.py",
+     "find": "        if total[0] + len(data) > SALVAGE_CAP:\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "REG-3209 review - a diff whose files sum past the read cap is read into memory anyway",
+     "file": "tv/disk_growers.py",
+     "find": "        if b > READ_CAP:\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "REG-3208 review - a salvage is written that leaves the salvage disk under its floor",
+     "file": "tv/disk_growers.py",
+     "find": "    if rm[\"free\"] - rm[\"spent\"] - n < SALVAGE_MIN_FREE:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "REG-3208 review - the salvage dir (never pruned) takes salvages past its cap",
+     "file": "tv/disk_growers.py",
+     "find": "    if _num(rm[\"dir\"]) and rm[\"dir\"] + rm[\"spent\"] + n > SALVAGE_DIR_CAP:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "REG-3208 review - one tree without origin/main resets its whole entry's dry-run, so the entry never arms",
+     "file": "tv/disk_growers.py",
+     "find": "            rec[\"waiting\"].append({\"name\": c[\"name\"], \"entry\": ent[\"name\"], \"why\": c[\"_facts\"][\"why\"]})\n",
+     "replace": "            rec[\"waiting\"].append({\"name\": c[\"name\"], \"entry\": ent[\"name\"], \"why\": c[\"_facts\"][\"why\"]})\n"
+                "            outcome[ent[\"name\"]] = \"failed\"\n",
+     "matches": 1},
+    {"why": "REG-3208 review - one tree over the salvage cap (a declared refusal) resets its entry's dry-run",
+     "file": "tv/disk_growers.py",
+     "find": "            if not s[\"blocked\"]:\n",
+     "replace": "            if True:\n",
+     "matches": 1},
+    {"why": "REG-3208 review - an untracked nested repo is not seen as one, so it waits for the wrong reason",
+     "file": "tv/disk_growers.py",
+     "find": "    f[\"nested\"] = [n for n in names if n.endswith(\"/\")]\n",
+     "replace": "    f[\"nested\"] = []\n",
+     "matches": 1},
+    {"why": "REG-3208 review - the per-user temp dir, where the laws leak, is not a root",
+     "file": "tv/disk_growers.py",
+     "find": "    return {\"TMP\": tmp, \"TMPDIR\": (env.get(\"TMPDIR\") or tmp).rstrip(\"/\") or \"/\"}\n",
+     "replace": "    return {\"TMP\": tmp}\n",
+     "matches": 1},
+    {"why": "REG-3208 review - a RECORD entry (law fixtures) gets a salvage folder each, and the salvage dir grows by them",
+     "file": "tv/disk_growers.py",
+     "find": "    if entry.get(\"salvage\") == RECORD:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "REG-3208 review - every 30-minute dry pass records the same law fixture again",
+     "file": "tv/disk_growers.py",
+     "find": "    if recorded is not None and recorded.get(c[\"path\"]) == fp:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "REG-3208 review - a PC with nothing past its floor and no psutil reads owed UNKNOWN forever",
+     "file": "tv/disk_growers.py",
+     "find": "    rec[\"owed\"] = None if unknown else len(",
+     "replace": "    rec[\"owed\"] = None if (unknown or meas[0] is None or meas[0][0] is None) else len(",
+     "matches": 1},
+    {"why": "REG-3208 review - a pass is unbounded: every due grower is handled in one pass, none deferred or owed",
+     "file": "tv/disk_growers.py",
+     "find": "        if handled >= PRUNES_PER_PASS or _now() - t0 > budget_s:\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "REG-3208 review - a state reset (every entry back in dry-run) is said nowhere",
+     "file": "tv/disk_growers.py",
+     "find": "    if rec.get(\"stateWhy\"):\n        parts.append(rec[\"stateWhy\"])\n",
+     "replace": "    if False:\n        parts.append(rec[\"stateWhy\"])\n",
+     "matches": 1},
+    {"why": "REG-3208 review - a state reset is said on its own pass and forgotten on the next",
+     "file": "tv/disk_growers.py",
+     "find": "        fresh.update(resetWhy=why)\n",
+     "replace": "        pass\n",
+     "matches": 1},
+    {"why": "REG-3208 review - a lane that only WAITED for a day reads OK with day-old sizes",
+     "file": "tv/console_doctor.py",
+     "find": "    if now - ran > GROWERS_UNMEASURED_H * 3600 * 1000:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "REG-3208 review - the row shows the top growers without the age of the reading",
+     "file": "tv/console_doctor.py",
+     "find": "    top += \" (measured %d min ago)\" % age_m\n",
+     "replace": "    pass\n",
+     "matches": 1},
+    {"why": "REG-3208 review - the row never says a state reset",
+     "file": "tv/console_doctor.py",
+     "find": "    sw = (\" - \" + str(g.get(\"stateWhy\"))[:160]) if g.get(\"stateWhy\") else \"\"\n",
+     "replace": "    sw = \"\"\n",
      "matches": 1},
     {"why": "REG-3208 - the doctor row never says the lane's loop stopped",
      "file": "tv/console_doctor.py",

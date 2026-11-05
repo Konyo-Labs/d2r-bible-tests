@@ -402,6 +402,9 @@ def _check_disk_headroom():
 
 #: REG-3208 - the growers lane rides the disk sign's 30-minute pass; a pass (or a wait) older than this is a stopped loop
 GROWERS_STALE_S = 3 * 1800 + 600
+#: REG-3208 review - a loop that only WAITS (his game, a busy machine) still moves checkedTs; a lane whose last MEASURING
+#: pass is older than this is not measuring, and the sizes it last said are that old
+GROWERS_UNMEASURED_H = 24
 
 
 def _check_the_disk_growers_are_salvaged_then_pruned(status=None, now_ms=None, salvage_dir=None):
@@ -428,10 +431,19 @@ def _check_the_disk_growers_are_salvaged_then_pruned(status=None, now_ms=None, s
     if now - seen > GROWERS_STALE_S * 1000:
         return MISSING, ("the growers lane last looked %d min ago - its loop (the disk sign's 30-minute pass) is not "
                          "running, so nothing that grows is salvaged or pruned" % ((now - seen) // 60000))
+    ran = g.get("lastTs")
+    if not isinstance(ran, (int, float)) or isinstance(ran, bool):
+        return UNKNOWN, "the growers lane has waited every pass and never measured yet - %s" % say
+    age_m = max(0, (now - int(ran)) // 60000)
+    if now - ran > GROWERS_UNMEASURED_H * 3600 * 1000:
+        return MISSING, ("the growers lane has not MEASURED for %.0f h - every pass since waited (%s), so nothing that "
+                         "grows was salvaged or pruned and the sizes it last said are that old" % (age_m / 60.0, say))
     if g.get("error"):
         return MISSING, "the growers lane's last pass raised %s - %s" % (g.get("error"), say)
     top = ", ".join("%s %.2f GB (%s, %d)" % (t.get("name"), t.get("gb") or 0, t.get("owner"), t.get("n") or 0)
                     for t in (g.get("top") or [])[:3]) or "nothing a declared entry names"
+    top += " (measured %d min ago)" % age_m
+    sw = (" - " + str(g.get("stateWhy"))[:160]) if g.get("stateWhy") else ""
     last = g.get("lastSalvage")
     if last:
         try:
@@ -444,16 +456,16 @@ def _check_the_disk_growers_are_salvaged_then_pruned(status=None, now_ms=None, s
             return UNKNOWN, "the salvage dir could not be read (%s) - top growers: %s" % (type(e).__name__, top)
     wait = g.get("waiting") or []
     if wait:
-        return MISSING, ("%d grower(s) wait on a salvage or a prune that did not finish: %s - nothing of theirs is "
-                         "pruned until it reads back. Top growers: %s" % (
+        return MISSING, ("%d grower(s) wait on a salvage or a prune that did not finish: %s - each stays on disk "
+                         "until its salvage is made and reads back. Top growers: %s%s" % (
                              len(wait), "; ".join("%s (%s)" % (w.get("name"), str(w.get("why"))[:70]) for w in wait[:3]),
-                             top))
+                             top, sw))
     if g.get("owed") is None:
-        return UNKNOWN, "top growers: %s - %s" % (top, say)
+        return UNKNOWN, "top growers: %s - %s%s" % (top, say, sw)
     dry = g.get("dryRun") or []
     tail = (" - %d entr%s still dry-run (arms after %d clean passes)" % (
         len(dry), "y" if len(dry) == 1 else "ies", (dry[0] or {}).get("of") or 0)) if dry else ""
-    return OK, "top growers: %s%s - %s" % (top, tail, say)
+    return OK, "top growers: %s%s - %s%s" % (top, tail, say, sw)
 
 
 def _check_subscription_burn():

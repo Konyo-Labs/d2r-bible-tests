@@ -29,10 +29,17 @@ EVERY PASS, IN THIS ORDER (REG-3209 - salvage before prune):
   prune    only then - `git worktree remove --force` for a linked worktree (so the repo's worktree list stays true), else
            a remove that never follows a link - and only when the disk it sits on is under WATERMARK_GB or it is past
            its age bound.
-NEVER PRUNED: anything a live process holds (cwd or an open file), and NOTHING when holders cannot be read; a tree with a
-running git (index.lock / HEAD.lock) or a locked worktree; the main tree of linked worktrees; his console's own tree and
-anything containing it; tv/frames and his reels (reel retention owns them); the salvage dir itself; anything inside its
-age floor; anything whose age could not be measured.
+NEVER PRUNED: anything a live process holds (cwd or an open file) - lsof is asked again before EACH prune, after that
+grower's own salvage - and NOTHING when holders cannot be read; a tree with a running git (index.lock / HEAD.lock) or a
+locked worktree; the main tree of linked worktrees; his console's own tree and anything containing it; tv/frames and his
+reels (reel retention owns them); the salvage dir itself; anything inside its age floor; anything whose age could not be
+measured. AGE is the newest of every file's mtime AND ctime: a copy that keeps mtimes (cp -p, tar, unzip, rsync -a) is new.
+
+A SALVAGE NEVER COSTS THE DISK MORE THAN IT IS MEANT TO RELIEVE (the REG-3208 review): every byte written counts against
+SALVAGE_CAP - unmerged work past it is never cut short, the tree WAITS for a hand; a single diff whose touched files sum
+past READ_CAP is not even read; nothing is written that would leave the salvage disk under SALVAGE_MIN_FREE, or the
+salvage dir past SALVAGE_DIR_CAP. A merge commit (which git cherry skips) is salvaged as a bundle of the unmerged history.
+A law fixture holds nothing informational: its salvage is one manifest RECORD line (what it was, how big), no folder.
 
 WHAT IT SAYS: the pass record (lane() turns it into the shared words on / worked / lastTs / owed - None is UNKNOWN, never
 0) with the top growers by size and what waits on a salvage. Every filesystem and process touch is a parameter, so the
@@ -57,8 +64,16 @@ ARMED = "prune"
 WATERMARK_GB = 16.0                  # the doctor's own line: under 16 GB is about two hours of recording
 ARM_AFTER_PASSES = 3                 # clean dry passes before a dry-run entry arms itself
 ARM_AFTER_H = 24                     # ... spanning at least this long
+COPY = "copy"                        # salvage: a folder of the informational files, a meta.json and a README
+RECORD = "record"                    # salvage: ONE manifest line (what it was, how big) - for a grower that holds nothing else
+
 FILE_CAP = 2 * 1000 ** 2             # an untracked / informational file larger than this is named, not copied
-SALVAGE_CAP = 20 * 1000 ** 2         # copied bytes per salvage
+SALVAGE_CAP = 20 * 1000 ** 2         # bytes WRITTEN per salvage; unmerged work past it is never cut short - the tree waits
+READ_CAP = 200 * 1000 ** 2           # a single diff whose touched files sum past this is never read into memory at all
+SALVAGE_MIN_FREE = 1000 ** 3         # a salvage never leaves the salvage disk with less than this free
+SALVAGE_DIR_CAP = 2 * 1000 ** 3      # the salvage dir (never pruned) past this takes no new salvage, and says so
+PRUNES_PER_PASS = 200                # growers handled per pass: each prune asks lsof again (0.27 s measured on his Mac)
+RESET_SAY_H = 24                     # a growers state that was reset is said for this long after
 LOG_TAIL = 16 * 1024                 # a log is kept as its tail
 BIGGEST_N = 20                       # files a scratch summary names
 WALK_BUDGET_S = 30.0                 # per candidate; past it the size is "at least" and the age UNKNOWN
@@ -71,35 +86,48 @@ _CLAUDE = ("claude-a[0-9]*", "claude-b[0-9]*", "claude-v[0-9]*", "claude-fx-*")
 _GROK = ("grok-*",)
 _GROK_SKIP = ("grok-file-lock-*",)   # the Grok CLI's own lock slots: live, never a grower
 _KEEP = ("*.md", "*verdict*", "*.patch", "*.diff", "*.log", "*.txt", "*.jsonl")
+#: REG-3208 review - law fixture dirs in the per-user temp dir. EACH prefix is one a tv/test_*.py law passes to mkdtemp
+#: (grep-verified 2026-11-05), plus Playwright's own per-run artifact dirs. MEASURED in his $TMPDIR that night: vault-law-
+#: 518, playwright-artifacts- 414, reg2271-iso- 77, tvd-nogit- 73, each left by a run that was killed. NOT declared, on
+#: purpose: Chrome's own temp entries (a live Chrome uses them), tvd-child-guard- (one per checkout - his console's own
+#: among them), tvd-* (the shadow reader's live profile is tvd-shadow-chrome) and tmp* (every program's default prefix).
+_LAW = ("vault-law-*", "reg2271-iso-*", "tvd-nogit-*", "budget-law-*", "tvd-plainrun-*", "tvd-par-dirty-*",
+        "g5-effort-law-*", "growers-law-*", "growers-doctor-*", "playwright-artifacts-*")
 _POSIX = ("darwin", "linux")
 _WIN = ("win32",)
 
 #: THE DECLARED REGISTRY. A new entry starts in DRY (see the module docstring); `why` is the measurement that put it here.
 GROWERS = (
     {"name": "claude-trees", "platforms": _POSIX, "root": "TMP", "globs": _CLAUDE, "skip": (), "owner": "claude",
-     "kind": KIND_GIT, "floorH": 24, "boundH": 168, "mode": DRY,
+     "kind": KIND_GIT, "floorH": 24, "boundH": 168, "mode": DRY, "salvage": COPY,
      "why": "Claude's fleet worktrees - seven shipped ones held 2.2 GB on 2026-11-05"},
     {"name": "claude-scratch", "platforms": _POSIX, "root": "TMP", "globs": _CLAUDE, "skip": (), "owner": "claude",
-     "kind": KIND_SCRATCH, "floorH": 24, "boundH": 72, "mode": DRY, "keep": _KEEP,
+     "kind": KIND_SCRATCH, "floorH": 24, "boundH": 72, "mode": DRY, "keep": _KEEP, "salvage": COPY,
      "why": "Claude's probe and leftover dirs that are not git trees"},
     {"name": "grok-trees", "platforms": _POSIX, "root": "TMP", "globs": _GROK, "skip": _GROK_SKIP, "owner": "grok",
-     "kind": KIND_GIT, "floorH": 48, "boundH": 168, "mode": DRY,
+     "kind": KIND_GIT, "floorH": 48, "boundH": 168, "mode": DRY, "salvage": COPY,
      "why": "the Grok seat's leftover worktrees - ~3.3 GB on 2026-11-05, some not merged"},
     {"name": "grok-scratch", "platforms": _POSIX, "root": "TMP", "globs": _GROK, "skip": _GROK_SKIP, "owner": "grok",
-     "kind": KIND_SCRATCH, "floorH": 48, "boundH": 72, "mode": DRY, "keep": _KEEP,
+     "kind": KIND_SCRATCH, "floorH": 48, "boundH": 72, "mode": DRY, "keep": _KEEP, "salvage": COPY,
      "why": "the Grok seat's dirs that are not git trees"},
     {"name": "claude-trees-win", "platforms": _WIN, "root": "TEMP", "globs": _CLAUDE, "skip": (), "owner": "claude",
-     "kind": KIND_GIT, "floorH": 24, "boundH": 168, "mode": DRY,
+     "kind": KIND_GIT, "floorH": 24, "boundH": 168, "mode": DRY, "salvage": COPY,
      "why": "the same seats on a Windows PC, whose scratch root is %TEMP%"},
     {"name": "claude-scratch-win", "platforms": _WIN, "root": "TEMP", "globs": _CLAUDE, "skip": (), "owner": "claude",
-     "kind": KIND_SCRATCH, "floorH": 24, "boundH": 72, "mode": DRY, "keep": _KEEP,
+     "kind": KIND_SCRATCH, "floorH": 24, "boundH": 72, "mode": DRY, "keep": _KEEP, "salvage": COPY,
      "why": "the same seats on a Windows PC, whose scratch root is %TEMP%"},
     {"name": "grok-trees-win", "platforms": _WIN, "root": "TEMP", "globs": _GROK, "skip": _GROK_SKIP, "owner": "grok",
-     "kind": KIND_GIT, "floorH": 48, "boundH": 168, "mode": DRY,
+     "kind": KIND_GIT, "floorH": 48, "boundH": 168, "mode": DRY, "salvage": COPY,
      "why": "the same seats on a Windows PC, whose scratch root is %TEMP%"},
     {"name": "grok-scratch-win", "platforms": _WIN, "root": "TEMP", "globs": _GROK, "skip": _GROK_SKIP, "owner": "grok",
-     "kind": KIND_SCRATCH, "floorH": 48, "boundH": 72, "mode": DRY, "keep": _KEEP,
+     "kind": KIND_SCRATCH, "floorH": 48, "boundH": 72, "mode": DRY, "keep": _KEEP, "salvage": COPY,
      "why": "the same seats on a Windows PC, whose scratch root is %TEMP%"},
+    {"name": "law-scratch", "platforms": _POSIX, "root": "TMPDIR", "globs": _LAW, "skip": (), "owner": "laws",
+     "kind": KIND_SCRATCH, "floorH": 24, "boundH": 72, "mode": DRY, "keep": (), "salvage": RECORD,
+     "why": "law fixtures a killed run left in the per-user temp dir - 1,100+ of these prefixes on 2026-11-05"},
+    {"name": "law-scratch-win", "platforms": _WIN, "root": "TEMP", "globs": _LAW, "skip": (), "owner": "laws",
+     "kind": KIND_SCRATCH, "floorH": 24, "boundH": 72, "mode": DRY, "keep": (), "salvage": RECORD,
+     "why": "the same law fixtures on a Windows PC, where tempfile writes to %TEMP%"},
 )
 
 #: git's pointer variables: a console started from a hook would otherwise aim every git call at the hook's repo (REG-2360)
@@ -119,7 +147,10 @@ def roots(platform=None, env=None):
     if platform.startswith("win"):
         t = env.get("TEMP") or env.get("TMP")
         return {"TEMP": t} if t else {}
-    return {"TMP": "/private/tmp" if platform == "darwin" else "/tmp"}
+    tmp = "/private/tmp" if platform == "darwin" else "/tmp"
+    # REG-3208 review - the per-user temp dir, where tempfile, the laws and Playwright leave theirs ($TMPDIR on a Mac is
+    # /var/folders/../T); unset, tempfile falls back to the shared temp root itself
+    return {"TMP": tmp, "TMPDIR": (env.get("TMPDIR") or tmp).rstrip("/") or "/"}
 
 
 def entries_for(platform=None, growers=None):
@@ -144,6 +175,14 @@ def _num(x):
 
 # ── measure ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
+def _stamp(st):
+    """When a file was last written OR came to be where it is. -> epoch seconds. REG-3208 review: mtime alone read a folder
+    made seconds ago by cp -Rp from a 10-day-old one as 240 h old, and an armed entry pruned it at once. A copy that keeps
+    mtimes (cp -p, tar, unzip, rsync -a) cannot keep the ctime - setting a time is itself a change - so the newer of the
+    two is the age. A metadata change (chmod, a rename) reads younger, which only keeps a grower longer."""
+    return max(st.st_mtime, st.st_ctime)
+
+
 def walk(path, budget_s=WALK_BUDGET_S, _now=time.time, collect=False):
     """Bytes, newest write, file list under `path`, never following a link. -> dict
     {bytes, newest, files, links, complete, nestedGit, list}. complete False: the budget ran out (bytes are AT LEAST,
@@ -151,7 +190,7 @@ def walk(path, budget_s=WALK_BUDGET_S, _now=time.time, collect=False):
     t_end = _now() + float(budget_s)
     out = {"bytes": 0, "newest": None, "files": 0, "links": 0, "complete": True, "nestedGit": False, "list": []}
     try:
-        newest = os.lstat(path).st_mtime
+        newest = _stamp(os.lstat(path))
     except OSError:
         out.update(complete=False)
         return out
@@ -168,7 +207,7 @@ def walk(path, budget_s=WALK_BUDGET_S, _now=time.time, collect=False):
                         st = e.stat(follow_symlinks=False)
                     except OSError:
                         continue
-                    newest = max(newest, st.st_mtime)
+                    newest = max(newest, _stamp(st))
                     if e.is_symlink():
                         out["links"] += 1
                         continue
@@ -232,12 +271,13 @@ def _git_env():
     return {k: v for k, v in os.environ.items() if k not in _GIT_POINTERS}
 
 
-def git(path, args, timeout=GIT_TIMEOUT_S):
-    """One git call in `path`, through the ONE door (git_quiet), with git's pointer variables scrubbed.
+def git(path, args, timeout=GIT_TIMEOUT_S, input=None):
+    """One git call in `path`, through the ONE door (git_quiet, which also sets GIT_OPTIONAL_LOCKS=0, so a read never
+    rewrites a grower's index), with git's pointer variables scrubbed.
     -> (returncode, stdout bytes, stderr text); (None, b"", why) when git could not run."""
     try:
         import git_quiet as _gq
-        r = _gq.run(["git", "-C", path] + list(args), capture_output=True, timeout=timeout, env=_git_env())
+        r = _gq.run(["git", "-C", path] + list(args), capture_output=True, timeout=timeout, env=_git_env(), input=input)
     except Exception as e:
         return None, b"", "%s: %s" % (type(e).__name__, str(e)[:120])
     return r.returncode, r.stdout or b"", (r.stderr or b"").decode("utf-8", "replace")
@@ -251,12 +291,55 @@ def _line(path, args):
     return s or None
 
 
+def _raw(out):
+    """git's --raw -z records. -> [(old sha, new sha, path)]; a zero new sha is the working tree's side."""
+    parts, rows, i = out.split(b"\0"), [], 0
+    while i < len(parts):
+        head = parts[i]
+        if head.startswith(b":") and i + 1 < len(parts):
+            f = head[1:].split()
+            if len(f) >= 4:
+                rows.append((f[2].decode("ascii", "replace"), f[3].decode("ascii", "replace"),
+                             parts[i + 1].decode("utf-8", "replace")))
+            i += 2
+            continue
+        i += 1
+    return rows
+
+
+def change_bound(path, args):
+    """REG-3209 review - the bytes the files a change touches hold, both sides summed: an upper bound on what its diff can
+    be, read BEFORE the diff is, so a regenerated 2 GB binary is never pulled into the console's memory.
+    args: a diff / diff-tree spec. -> (bytes | None, why)"""
+    rc, out, err = git(path, list(args) + ["--raw", "-z", "--no-abbrev", "--no-renames"])
+    if rc != 0:
+        return None, "its change could not be listed (%s)" % err.strip()[:80]
+    total, shas = 0, []
+    for old, new, name in _raw(out):
+        for sha in (old, new):
+            if sha.strip("0"):
+                shas.append(sha)
+        if not new.strip("0"):
+            try:
+                total += os.lstat(os.path.join(path, name)).st_size
+            except OSError:
+                pass
+    if shas:
+        rc, out, err = git(path, ["cat-file", "--batch-check=%(objectsize)"],
+                           input=("\n".join(shas) + "\n").encode("ascii"))
+        if rc != 0:
+            return None, "the sizes of its files could not be read (%s)" % err.strip()[:80]
+        for ln in out.decode("ascii", "replace").splitlines():
+            total += int(ln) if ln.strip().isdigit() else 0
+    return total, None
+
+
 def git_facts(path):
     """What a git tree at `path` holds that is not upstream. -> dict (why set when it cannot be told)."""
     real = _real(path)
     f = {"top": None, "gitdir": None, "common": None, "linked": None, "head": None, "branch": None, "upstream": None,
-         "plus": [], "dirty": b"", "untracked": [], "stashes": [], "running": None, "locked": False,
-         "mainOf": 0, "finished": None, "why": None}
+         "plus": [], "merges": [], "refs": [], "dirty": b"", "untracked": [], "nested": [], "stashes": [],
+         "running": None, "locked": False, "mainOf": 0, "finished": None, "why": None}
     top = _line(path, ["rev-parse", "--show-toplevel"])
     if top is None or _real(top) != real:
         f["why"] = "not the top of a git tree"
@@ -304,21 +387,36 @@ def git_facts(path):
                 sha = ln[2:].strip()
                 if sha not in plus:
                     plus.append(sha)
-    f["plus"] = plus
-    rc, dirty, err = git(path, ["diff", "HEAD", "--binary"])
+    f["plus"], f["refs"] = plus, refs
+    # REG-3209 review - git cherry SKIPS merge commits, so the work done inside a merge (a conflict resolution, an edit made
+    # while merging) is in no patch; a tree that holds one is salvaged as a bundle of its unmerged history as well
+    rc, out, err = git(path, ["rev-list", "--merges", "^origin/main"] + refs)
+    if rc != 0:
+        f["why"] = "its merge commits could not be listed (%s)" % err.strip()[:80]
+        return f
+    f["merges"] = out.decode("ascii", "replace").split()
+    # the tracked change is LISTED here (the diff itself is read only after its size is bounded, in the salvage)
+    rc, raw, err = git(path, ["diff", "HEAD", "--raw", "-z", "--no-abbrev", "--no-renames"])
     if rc != 0:
         f["why"] = "the tracked diff could not be read (%s)" % err.strip()[:80]
         return f
-    f["dirty"] = dirty
+    f["dirty"] = raw
     rc, out, err = git(path, ["ls-files", "--others", "--exclude-standard", "-z"])
     if rc != 0:
         f["why"] = "the untracked files could not be listed (%s)" % err.strip()[:80]
         return f
-    f["untracked"] = [n for n in out.decode("utf-8", "replace").split("\0") if n]
+    names = [n for n in out.decode("utf-8", "replace").split("\0") if n]
+    # REG-3208 review - git lists an untracked repository inside the tree as "dir/"; opening it raised IsADirectoryError and
+    # a patch could never carry its history anyway
+    f["nested"] = [n for n in names if n.endswith("/")]
+    f["untracked"] = [n for n in names if not n.endswith("/")]
     if not f["linked"]:
         st = _line(path, ["stash", "list", "--format=%H"])
         f["stashes"] = (st or "").split()
-    f["finished"] = not (f["plus"] or f["dirty"] or f["untracked"] or f["stashes"])
+    f["finished"] = not (f["plus"] or f["merges"] or f["dirty"] or f["untracked"] or f["nested"] or f["stashes"])
+    if f["nested"]:
+        f["why"] = ("it holds a git repository inside that it does not track (%s) - a patch cannot carry another "
+                    "repository's history, so it waits for a hand" % ", ".join(f["nested"][:3]))
     return f
 
 
@@ -333,23 +431,91 @@ def _safe_rel(name):
     return None if (os.path.isabs(n) or n.startswith("..") or n in (".", "")) else n
 
 
-def _git_payload(path, facts):
-    """The informational files of a git tree. -> (files [(rel, bytes)], notSaved [{path, bytes, why}], why | None)"""
-    files, not_saved, total = [], [], 0
-    for i, sha in enumerate(facts["plus"]):
-        rc, out, err = git(path, ["format-patch", "-1", "--stdout", "--binary", sha])
-        if rc != 0 or not out:
-            rc, out, err = git(path, ["show", "--binary", "--first-parent", "--format=fuller", sha])
-        if rc != 0 or not out:
-            return files, not_saved, "commit %s could not be written as a patch (%s)" % (sha[:12], err.strip()[:80])
-        files.append(("patches/%04d-%s.patch" % (i + 1, sha[:12]), out))
-    if facts["dirty"]:
-        files.append(("dirty.diff", facts["dirty"]))
-    for j, s in enumerate(facts["stashes"]):
-        rc, out, err = git(path, ["diff", "--binary", s + "^1", s])
+def _git_payload(path, facts, scratch=None, rm=None):
+    """The informational files of a git tree. -> (files [(rel, bytes)], notSaved [{path, bytes, why}], why | None, blocked)
+    blocked True: a DECLARED refusal (over a cap) - the tree waits for a hand; False with a why: the salvage failed.
+    REG-3209 review: every byte of unmerged work counts against SALVAGE_CAP and is never cut short; each diff is bounded
+    by its touched files' sizes before it is read; untracked files over the cap are named, the rest are copied."""
+    files, not_saved, total = [], [], [0]
+
+    def take(rel, data):
+        if total[0] + len(data) > SALVAGE_CAP:
+            return ("its unmerged work is over the %d MB salvage cap (%s alone is %.1f MB) - salvage it by hand"
+                    % (SALVAGE_CAP // 1000 ** 2, rel, len(data) / 1e6))
+        total[0] += len(data)
+        files.append((rel, data))
+        return None
+
+    def read(what, spec, args):
+        b, bwhy = change_bound(path, spec)
+        if b is None:
+            return None, "%s: %s" % (what, bwhy), False
+        if b > READ_CAP:
+            return None, ("%s touches %.0f MB of files, more than the lane reads (%d MB) - salvage it by hand"
+                          % (what, b / 1e6, READ_CAP // 1000 ** 2)), True
+        rc, out, err = git(path, args)
         if rc != 0:
-            return files, not_saved, "stash %s could not be read (%s)" % (s[:12], err.strip()[:80])
-        files.append(("stash/%02d-%s.diff" % (j, s[:12]), out))
+            return None, "%s could not be read (%s)" % (what, err.strip()[:80]), False
+        return out, None, False
+
+    for i, sha in enumerate(facts["plus"]):
+        out, why, blocked = read("commit %s" % sha[:12], ["diff-tree", "-r", "--root", "--no-commit-id", sha],
+                                 ["format-patch", "-1", "--stdout", "--binary", sha])
+        if why:
+            return files, not_saved, why, blocked
+        if not out:
+            rc, out, err = git(path, ["show", "--binary", "--first-parent", "--format=fuller", sha])
+            if rc != 0 or not out:
+                return files, not_saved, "commit %s could not be written as a patch (%s)" % (sha[:12], err.strip()[:80]), False
+        why = take("patches/%04d-%s.patch" % (i + 1, sha[:12]), out)
+        if why:
+            return files, not_saved, why, True
+    if facts.get("merges"):
+        rc, out, err = git(path, ["rev-list", "--objects", "--disk-usage", "^origin/main"] + list(facts["refs"]))
+        b = int(out.strip()) if rc == 0 and out.strip().isdigit() else None
+        if b is None:
+            return files, not_saved, ("it holds %d merge commit(s) not upstream, and the size of that history could not "
+                                      "be told (%s)" % (len(facts["merges"]), err.strip()[:60] or "git rev-list")), True
+        if b > SALVAGE_CAP:
+            return files, not_saved, ("its unmerged history (with %d merge commit(s)) is %.1f MB, over the %d MB salvage "
+                                      "cap - salvage it by hand" % (len(facts["merges"]), b / 1e6,
+                                                                    SALVAGE_CAP // 1000 ** 2)), True
+        why = _room_refuses(rm, b)              # the bundle is written to a file before it is read
+        if why:
+            return files, not_saved, why, True
+        scratch = scratch or os.path.dirname(path)
+        os.makedirs(scratch, exist_ok=True)
+        tmp = os.path.join(scratch, ".growers-%d-history.bundle" % os.getpid())
+        try:
+            rc, _out, err = git(path, ["bundle", "create", "-q", tmp, "^origin/main"] + list(facts["refs"]))
+            data = None
+            if rc == 0:
+                with open(tmp, "rb") as fh:
+                    data = fh.read()
+        finally:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+        if not data:
+            return files, not_saved, "its unmerged history could not be bundled (%s)" % err.strip()[:80], False
+        why = take("history.bundle", data)
+        if why:
+            return files, not_saved, why, True
+    if facts["dirty"]:
+        out, why, blocked = read("the tracked change", ["diff", "HEAD"], ["diff", "HEAD", "--binary"])
+        if why:
+            return files, not_saved, why, blocked
+        why = take("dirty.diff", out) if out else None
+        if why:
+            return files, not_saved, why, True
+    for j, st in enumerate(facts["stashes"]):
+        out, why, blocked = read("stash %s" % st[:12], ["diff", st + "^1", st], ["diff", "--binary", st + "^1", st])
+        if why:
+            return files, not_saved, why, blocked
+        why = take("stash/%02d-%s.diff" % (j, st[:12]), out)
+        if why:
+            return files, not_saved, why, True
     for name in facts["untracked"]:
         rel = _safe_rel(name)
         full = os.path.join(path, name)
@@ -362,14 +528,16 @@ def _git_payload(path, facts):
             not_saved.append({"path": name, "bytes": st.st_size, "why": "a name outside the tree"})
         elif os.path.islink(full):
             not_saved.append({"path": name, "bytes": st.st_size, "why": "a link (to %s)" % os.readlink(full)[:120]})
-        elif st.st_size > FILE_CAP or total + st.st_size > SALVAGE_CAP:
+        elif not os.path.isfile(full):
+            return files, not_saved, "untracked %s is not a regular file, so what it holds cannot be told" % name, True
+        elif st.st_size > FILE_CAP or total[0] + st.st_size > SALVAGE_CAP:
             not_saved.append({"path": name, "bytes": st.st_size, "why": "over the size cap"})
         else:
             with open(full, "rb") as fh:
                 data = fh.read()
-            total += len(data)
+            total[0] += len(data)
             files.append(("untracked/" + rel, data))
-    return files, not_saved, None
+    return files, not_saved, None, False
 
 
 def _scratch_payload(path, entry, w):
@@ -401,7 +569,7 @@ def _scratch_payload(path, entry, w):
             continue
         total += len(data)
         files.append(("kept/" + rel + (".tail" if is_log and size > LOG_TAIL else ""), data))
-    return files, not_saved, None
+    return files, not_saved, None, False
 
 
 def _readme(meta):
@@ -410,6 +578,8 @@ def _readme(meta):
     if meta["kind"] == KIND_GIT:
         lines += ["HEAD %s on %s." % (meta.get("head"), meta.get("branch") or "a detached HEAD"),
                   "patches/  every commit not upstream by patch-id (git cherry origin/main) - restore with git am",
+                  "history.bundle  (when it held a merge commit, which git cherry skips) every commit not on "
+                  "origin/main - restore with git fetch <bundle> HEAD:refs/heads/salvaged",
                   "dirty.diff  the tracked changes against HEAD - restore with git apply --binary",
                   "untracked/  untracked, not ignored files under the size cap; notSaved in meta.json names the rest"]
     else:
@@ -460,31 +630,112 @@ def _manifest_has(manifest, rel_dir, fp):
     return False
 
 
+def _stat_key(full):
+    try:
+        st = os.lstat(full)
+        return [st.st_size, st.st_mtime_ns, st.st_ctime_ns]
+    except OSError:
+        return [None, None, None]
+
+
 def _fingerprint(c, facts, w):
+    """What the grower holds that a salvage must match: a reused salvage is one whose fingerprint still is. A write
+    moves mtime and ctime, and a copy that keeps mtimes still moves ctime."""
     if c["kind"] == KIND_GIT:
-        un = []
-        for n in facts["untracked"]:
-            try:
-                st = os.lstat(os.path.join(c["path"], n))
-                un.append([n, st.st_size, int(st.st_mtime)])
-            except OSError:
-                un.append([n, None, None])
-        parts = [facts["head"], facts["plus"], _sha(facts["dirty"]), un, facts["stashes"]]
+        un = [[n] + _stat_key(os.path.join(c["path"], n)) for n in facts["untracked"]]
+        dirty = [[n] + _stat_key(os.path.join(c["path"], n)) for _o, new, n in _raw(facts["dirty"]) if not new.strip("0")]
+        parts = [facts["head"], facts["plus"], facts.get("merges") or [], _sha(facts["dirty"]), dirty, un,
+                 facts["stashes"]]
     else:
         parts = [w["bytes"], w["files"], w["newest"]]
     return _sha(json.dumps([c["kind"]] + parts, sort_keys=True, default=str).encode("utf-8"))
 
 
-def salvage(c, facts, w, sroot, now_s):
+def append_line(manifest, data):
+    """Append one line and read exactly that line back from where it was written. -> bool"""
+    with open(manifest, "ab") as fh:
+        off = fh.seek(0, os.SEEK_END)
+        fh.write(data)
+        fh.flush()
+    with open(manifest, "rb") as fh:
+        fh.seek(off)
+        return fh.read(len(data)) == data
+
+
+def room(free_fn, sroot, dir_bytes):
+    """What a pass may still write into the salvage dir. -> dict (free asked once, lazily; spent counted as written)"""
+    return {"fn": free_fn, "root": sroot, "free": None, "asked": False, "dir": dir_bytes, "spent": 0}
+
+
+def _room_refuses(rm, n):
+    """REG-3208 review - a salvage runs exactly when the disk is short, so it never writes what would leave the salvage
+    disk under SALVAGE_MIN_FREE or the salvage dir past SALVAGE_DIR_CAP. -> why | None"""
+    if rm is None:
+        return None
+    if not rm["asked"]:
+        rm["asked"] = True
+        try:
+            rm["free"] = None if rm["fn"] is None else float(rm["fn"](rm["root"]))
+        except Exception:
+            rm["free"] = None
+    if not _num(rm["free"]):
+        return "the salvage disk's free space could not be read, so nothing is written to it"
+    if rm["free"] - rm["spent"] - n < SALVAGE_MIN_FREE:
+        return ("writing %.1f MB would leave the salvage disk under %.1f GB free"
+                % (n / 1e6, SALVAGE_MIN_FREE / 1e9))
+    if _num(rm["dir"]) and rm["dir"] + rm["spent"] + n > SALVAGE_DIR_CAP:
+        return ("the salvage dir holds %.0f MB, at its %.1f GB cap - nothing new is salvaged until it is read and "
+                "cleared" % ((rm["dir"] + rm["spent"]) / 1e6, SALVAGE_DIR_CAP / 1e9))
+    return None
+
+
+def _record(c, fp, w, sroot, now_s, rm, recorded):
+    """A RECORD entry's salvage: one manifest line saying what the folder was, read back. A folder whose fingerprint was
+    recorded already is not recorded again, so a dry-run's every-30-min pass writes nothing new. -> as salvage()"""
+    entry = c["entry"]
+    res = {"ok": False, "dir": None, "fingerprint": fp, "files": 0, "bytes": 0, "notSaved": [], "reused": False,
+           "why": None, "blocked": False, "record": True}
+    if recorded is not None and recorded.get(c["path"]) == fp:
+        res.update(ok=True, reused=True)
+        return res
+    biggest = sorted(w.get("list") or [], key=lambda t: -t[1])[:3]
+    line = {"ts": int(now_s), "event": "record", "entry": entry["name"], "owner": entry["owner"], "path": c["path"],
+            "fingerprint": fp, "bytes": w["bytes"], "files": w["files"], "newest": w["newest"],
+            "biggest": [[r, b] for r, b, _m in biggest]}
+    data = (json.dumps(line, sort_keys=True) + "\n").encode("utf-8")
+    why = _room_refuses(rm, len(data))
+    if why:
+        res.update(why=why, blocked=True)
+        return res
+    try:
+        os.makedirs(sroot, exist_ok=True)
+        if not append_line(os.path.join(sroot, "manifest.jsonl"), data):
+            res["why"] = "the record line did not read back"
+            return res
+    except Exception as e:
+        res["why"] = "the record raised %s: %s" % (type(e).__name__, str(e)[:100])
+        return res
+    if rm is not None:
+        rm["spent"] += len(data)
+    if recorded is not None:
+        recorded[c["path"]] = fp
+    res.update(ok=True, files=1, bytes=len(data))
+    return res
+
+
+def salvage(c, facts, w, sroot, now_s, rm=None, recorded=None):
     """Extract what is informational in candidate `c`, write it under the salvage root, read it back, and append one
-    manifest line. -> {ok, dir, fingerprint, files, bytes, notSaved, reused, why}. ok False BLOCKS the prune."""
+    manifest line. -> {ok, dir, fingerprint, files, bytes, notSaved, reused, why, blocked}. ok False BLOCKS the prune;
+    blocked True says it was a declared refusal (a cap, the disk) rather than a salvage that failed."""
     entry = c["entry"]
     fp = _fingerprint(c, facts, w)
+    if entry.get("salvage") == RECORD:
+        return _record(c, fp, w, sroot, now_s, rm, recorded)
     rel_dir = os.path.join(entry["name"], "%s-%s" % (os.path.basename(c["path"]), fp[:12]))
     dest = os.path.join(sroot, rel_dir)
     manifest = os.path.join(sroot, "manifest.jsonl")
     res = {"ok": False, "dir": rel_dir, "fingerprint": fp, "files": 0, "bytes": 0, "notSaved": [], "reused": False,
-           "why": None}
+           "why": None, "blocked": False}
     try:
         if os.path.isdir(dest):
             ok, why = verify(dest)
@@ -496,16 +747,21 @@ def salvage(c, facts, w, sroot, now_s):
                            notSaved=m.get("notSaved") or [])
                 return res
         if c["kind"] == KIND_GIT:
-            files, not_saved, why = _git_payload(c["path"], facts)
+            files, not_saved, why, blocked = _git_payload(c["path"], facts, scratch=sroot, rm=rm)
         else:
-            files, not_saved, why = _scratch_payload(c["path"], entry, w)
+            files, not_saved, why, blocked = _scratch_payload(c["path"], entry, w)
         if why:
-            res["why"] = why
+            res.update(why=why, blocked=blocked)
             return res
         meta = {"entry": entry["name"], "owner": entry["owner"], "kind": c["kind"], "path": c["path"],
                 "fingerprint": fp, "ts": int(now_s), "measuredBytes": w["bytes"], "newest": w["newest"],
                 "head": facts.get("head") if facts else None, "branch": facts.get("branch") if facts else None,
-                "notSaved": not_saved, "files": {}}
+                "merges": (facts.get("merges") or []) if facts else [], "notSaved": not_saved, "files": {}}
+        planned = sum(len(d) for _r, d in files) + 64 * 1024        # + the README, meta.json and the manifest line
+        why = _room_refuses(rm, planned)
+        if why:
+            res.update(why=why, blocked=True)
+            return res
         files = list(files) + [("README.txt", None)]
         os.makedirs(dest, exist_ok=True)
         for rel, data in files:
@@ -516,6 +772,8 @@ def salvage(c, facts, w, sroot, now_s):
             _write(full, data)
             meta["files"][rel] = {"bytes": len(data), "sha256": _sha(data)}
         _write(os.path.join(dest, "meta.json"), json.dumps(meta, indent=1, sort_keys=True).encode("utf-8"))
+        if rm is not None:
+            rm["spent"] += planned
         ok, why = verify(dest, meta)
         if not ok:
             res["why"] = why
@@ -523,9 +781,7 @@ def salvage(c, facts, w, sroot, now_s):
         line = {"ts": int(now_s), "event": "salvage", "entry": entry["name"], "owner": entry["owner"],
                 "path": c["path"], "dir": rel_dir, "fingerprint": fp, "files": len(meta["files"]),
                 "bytes": sum(r["bytes"] for r in meta["files"].values()), "notSaved": len(not_saved)}
-        with open(manifest, "a", encoding="utf-8") as fh:
-            fh.write(json.dumps(line, sort_keys=True) + "\n")
-        if not _manifest_has(manifest, rel_dir, fp):
+        if not append_line(manifest, (json.dumps(line, sort_keys=True) + "\n").encode("utf-8")):
             res["why"] = "the manifest line did not read back"
             return res
         res.update(ok=True, files=line["files"], bytes=line["bytes"], notSaved=not_saved)
@@ -617,7 +873,10 @@ def load_state(path):
             os.replace(path, aside)
         except OSError:
             pass
-        return fresh, "the growers state did not read (%s) - moved aside, every entry is back in dry-run" % type(e).__name__
+        why = "the growers state did not read (%s) - moved aside, every entry is back in dry-run" % type(e).__name__
+        # REG-3208 review - kept in the fresh state, so the passes after this one still say it (for RESET_SAY_H)
+        fresh.update(resetWhy=why)
+        return fresh, why
 
 
 def effective_mode(entry, est):
@@ -667,15 +926,16 @@ def run(entries=None, root_map=None, salvage_dir=None, protect=(), free_bytes=No
         held=None, measure_only=False, watermark_gb=None, budget_s=PASS_BUDGET_S, _now=time.time, repo=None):
     """One pass: measure -> extract -> verify -> prune. Never raises. -> the pass record.
 
-    free_bytes: a callable(path) -> bytes (raising = UNKNOWN), or None (UNKNOWN). held: (set | None, why) to use instead
-    of asking the machine. measure_only: no salvage, no prune, no state written (the CLI). repo: the console's repo,
-    whose worktree entries that name a folder that is gone are counted and said."""
+    free_bytes: a callable(path) -> bytes (raising = UNKNOWN), or None (UNKNOWN); it reads the growers' disks and the
+    salvage disk. held: (set | None, why) to use instead of asking the machine, every time it would be asked.
+    measure_only: no salvage, no prune, no state written (the CLI). repo: the console's repo, whose worktree entries that
+    name a folder that is gone are counted and said."""
     now_s = _now() if now_s is None else now_s
     t0 = _now()
-    rec = {"ts": int(now_s * 1000), "candidates": [], "removed": [], "waiting": [], "wouldPrune": [], "freed": 0,
-           "growers": [], "held": None, "free": None, "watermark": None, "stateWhy": None, "error": None,
-           "salvaged": 0, "owed": None, "say": None, "worked": None, "freedBytes": None, "dryRun": [],
-           "salvageRoot": salvage_dir, "lastSalvage": None, "biggest": [],
+    rec = {"ts": int(now_s * 1000), "candidates": [], "removed": [], "waiting": [], "wouldPrune": [], "deferred": [],
+           "freed": 0, "growers": [], "held": None, "holdersAsked": 0, "free": None, "watermark": None,
+           "stateWhy": None, "error": None, "salvaged": 0, "owed": None, "say": None, "worked": None,
+           "freedBytes": None, "dryRun": [], "salvageRoot": salvage_dir, "lastSalvage": None, "biggest": [],
            "salvageBytes": None, "salvageAtLeast": False, "staleWorktrees": None, "staleNames": []}
     try:
         _pass(rec, entries, root_map, salvage_dir, protect, free_bytes, now_s, platform, held, measure_only,
@@ -696,9 +956,24 @@ def _pass(rec, entries, root_map, sroot, protect, free_bytes, now_s, platform, h
     guard = [_real(p) for p in tuple(protect) + ((sroot,) if sroot else ()) if p]
     state_path = os.path.join(sroot, "state.json") if sroot else None
     state, rec["stateWhy"] = load_state(state_path) if state_path else ({"entries": {}}, "no salvage dir")
-    hs, hwhy = held if held is not None else holders(platform)
-    rec["held"] = hwhy if hs is not None else ("UNKNOWN - " + hwhy)
+    if state.get("resetWhy") and not state.get("resetTs"):
+        state["resetTs"] = now_s                  # the pass's own clock, which the laws can move
+    if not rec["stateWhy"] and state.get("resetWhy") and now_s - float(state.get("resetTs") or 0) < RESET_SAY_H * 3600:
+        rec["stateWhy"] = state["resetWhy"]
+    recorded_all = state.setdefault("recorded", {})
+
+    def ask():
+        """REG-3208 review - holders are asked LAZILY (a PC with nothing past its floor never needs them, so a Windows
+        PC without psutil is not UNKNOWN forever) and AGAIN before each prune."""
+        r = held if held is not None else holders(platform)
+        rec["holdersAsked"] += 1
+        return r
+
+    meas = [None]                          # the measure-time holders reading, asked at the first grower past its floor
+    rec["held"] = "not asked - no grower was past its age floor"
     found = find(entries, root_map)
+    # REG-3208 review - what the salvage dir already holds is what SALVAGE_DIR_CAP holds it to (none yet: 0)
+    rm = room(free_bytes, sroot, walk(sroot, budget_s=10.0)["bytes"] if os.path.isdir(sroot) else 0) if sroot else None
     free_by_root = {}
     per_entry = {e["name"]: {"name": e["name"], "owner": e["owner"], "kind": e["kind"], "n": 0, "bytes": 0,
                              "atLeast": False, "mode": effective_mode(e, state["entries"].get(e["name"]))}
@@ -735,7 +1010,7 @@ def _pass(rec, entries, root_map, sroot, protect, free_bytes, now_s, platform, h
             if facts.get("gitdir"):
                 for nm in ("index", "HEAD", "logs/HEAD"):
                     try:
-                        newest = max(newest, os.stat(os.path.join(facts["gitdir"], nm)).st_mtime) if newest else newest
+                        newest = max(newest, _stamp(os.stat(os.path.join(facts["gitdir"], nm)))) if newest else newest
                     except OSError:
                         pass
         elif w["nestedGit"]:
@@ -749,10 +1024,13 @@ def _pass(rec, entries, root_map, sroot, protect, free_bytes, now_s, platform, h
         if age_h < ent["floorH"]:
             c.update(state="young", why="written %.1f h ago, inside its %d h floor" % (age_h, ent["floorH"]))
             continue
-        if hs is None:
-            c.update(state="unknown", why="what holds it cannot be read (%s)" % hwhy)
+        if meas[0] is None:
+            meas[0] = ask()
+            rec["held"] = meas[0][1] if meas[0][0] is not None else ("UNKNOWN - " + str(meas[0][1]))
+        if meas[0][0] is None:
+            c.update(state="unknown", why="what holds it cannot be read (%s)" % meas[0][1])
             continue
-        if _held_by(hs, real, os.path.abspath(row["path"])):
+        if _held_by(meas[0][0], real, os.path.abspath(row["path"])):
             c.update(state="held", why="a live process holds it (its cwd or an open file)")
             continue
         if facts is not None:
@@ -801,8 +1079,7 @@ def _pass(rec, entries, root_map, sroot, protect, free_bytes, now_s, platform, h
                      % (wm / 1e9, c["entry"]["boundH"]))
             continue
         freed_est[c["_root"]] = freed_est.get(c["_root"], 0) + (c["bytes"] or 0)
-    outcome = {}
-    fresh = [None]                       # holders asked again just before the first prune of this pass
+    outcome, handled = {}, 0
     for c in due:
         ent = c["entry"]
         mode = per_entry[ent["name"]]["mode"]
@@ -810,48 +1087,60 @@ def _pass(rec, entries, root_map, sroot, protect, free_bytes, now_s, platform, h
         if measure_only:
             c.update(state="due", why="%s - measured only, nothing salvaged or pruned" % trig)
             continue
+        if handled >= PRUNES_PER_PASS or _now() - t0 > budget_s:
+            # bounded: a backlog drains over several passes instead of one pass holding the machine
+            c.update(state="deferred", why="%s - this pass reached its %d-grower / %d s bound, so it goes on a later "
+                                           "pass" % (trig, PRUNES_PER_PASS, budget_s))
+            rec["deferred"].append({"name": c["name"], "entry": ent["name"]})
+            continue
+        handled += 1
         if not sroot:
             c.update(state="waiting", why="no salvage dir, so nothing may be pruned")
             rec["waiting"].append({"name": c["name"], "entry": ent["name"], "why": c["why"]})
             continue
         if c["_facts"] is not None and c["_facts"].get("why"):
-            # REG-3209 - a tree whose unmerged work cannot be READ cannot be salvaged, so it is never pruned
+            # REG-3209 - a tree whose unmerged work cannot be READ cannot be salvaged, so it is never pruned. A declared
+            # wait, not a failed salvage: the trees beside it still earn their entry's arming (REG-3208 review)
             c.update(state="waiting", why="its salvage cannot be made: %s" % c["_facts"]["why"])
             rec["waiting"].append({"name": c["name"], "entry": ent["name"], "why": c["_facts"]["why"]})
-            outcome[ent["name"]] = "failed"
             continue
-        s = salvage(c, c["_facts"], c["_walk"], sroot, now_s)
+        s = salvage(c, c["_facts"], c["_walk"], sroot, now_s, rm=rm,
+                    recorded=recorded_all.setdefault(ent["name"], {}))
         c["salvage"] = {k: s[k] for k in ("ok", "dir", "files", "bytes", "reused", "why")}
         c["salvage"]["notSaved"] = len(s["notSaved"])
         if not s["ok"]:
-            c.update(state="waiting", why="its salvage did not read back (%s) - it is not pruned" % s["why"])
+            c.update(state="waiting", why="its salvage %s (%s) - it stays on disk" % (
+                "was not made" if s["blocked"] else "did not finish", s["why"]))
             rec["waiting"].append({"name": c["name"], "entry": ent["name"], "why": s["why"]})
-            outcome[ent["name"]] = "failed"
+            if not s["blocked"]:
+                outcome[ent["name"]] = "failed"       # the lane's own salvage broke: the entry does not arm on it
             continue
         if not s["reused"]:
             rec["salvaged"] += 1
-        rec["lastSalvage"] = s["dir"]
+        if s["dir"]:
+            rec["lastSalvage"] = s["dir"]
         if outcome.get(ent["name"]) != "failed":
             outcome[ent["name"]] = "clean"
+        where = s["dir"] or "the manifest (a record line)"
         if mode != ARMED:
-            c.update(state="would-prune", why="%s; salvaged to %s and read back - dry-run, so it stays" % (trig, s["dir"]))
+            c.update(state="would-prune", why="%s; salvaged to %s and read back - dry-run, so it stays" % (trig, where))
             rec["wouldPrune"].append({"name": c["name"], "entry": ent["name"], "bytes": c["bytes"]})
             continue
-        if fresh[0] is None:
-            fresh[0] = held if held is not None else holders(platform)
-        if fresh[0][0] is None or _held_by(fresh[0][0], c["real"], os.path.abspath(c["path"])):
+        fresh = ask()                      # REG-3208 review - asked again before EACH prune, after its own salvage
+        if fresh[0] is None or _held_by(fresh[0], c["real"], os.path.abspath(c["path"])):
             c.update(state="held", why="salvaged to %s; a live process holds it now (or holders could not be read), "
-                                       "so it stays" % s["dir"])
+                                       "so it stays" % where)
             continue
         ok, why = prune(c, c["_facts"])
         if not ok:
-            c.update(state="failed", why="salvaged to %s, and the prune failed: %s" % (s["dir"], why))
+            c.update(state="failed", why="salvaged to %s, and the prune failed: %s" % (where, why))
             rec["waiting"].append({"name": c["name"], "entry": ent["name"], "why": why})
             continue
-        c.update(state="pruned", why="%s; salvaged to %s first" % (trig, s["dir"]))
+        c.update(state="pruned", why="%s; salvaged to %s first" % (trig, where))
         rec["removed"].append({"name": c["name"], "entry": ent["name"], "bytes": c["bytes"], "salvage": s["dir"],
                                "finished": c["finished"]})
         rec["freed"] += int(c["bytes"] or 0)
+        recorded_all.get(ent["name"], {}).pop(c["path"], None)
         try:
             with open(os.path.join(sroot, "manifest.jsonl"), "a", encoding="utf-8") as fh:
                 fh.write(json.dumps({"ts": int(now_s), "event": "prune", "entry": ent["name"], "path": c["path"],
@@ -859,6 +1148,17 @@ def _pass(rec, entries, root_map, sroot, protect, free_bytes, now_s, platform, h
                                     sort_keys=True) + "\n")
         except OSError:
             pass
+    # a record kept only for folders still there, so the map is as big as the population and never more
+    alive = {}
+    for c in rows:
+        if c.get("entry") and os.path.lexists(c["path"]):
+            alive.setdefault(c["entry"]["name"], set()).add(c["path"])
+    for name in list(recorded_all):
+        kept = {p: f for p, f in recorded_all[name].items() if p in alive.get(name, ())}
+        if kept:
+            recorded_all[name] = kept
+        else:
+            recorded_all.pop(name)
     for c in rows:
         for k in ("_facts", "_walk", "_free", "_bound", "_root"):
             c.pop(k, None)
@@ -897,7 +1197,9 @@ def _pass(rec, entries, root_map, sroot, protect, free_bytes, now_s, platform, h
     if repo:
         rec["staleWorktrees"], rec["staleNames"] = stale_worktrees(repo)
     unknown = sum(1 for c in rows if c["state"] == "unknown")
-    rec["owed"] = None if hs is None else len(rec["waiting"]) + len(rec["wouldPrune"])
+    # REG-3208 review - owed is UNKNOWN when any grower's decision rested on something that could not be read (its age,
+    # its holders); a pass that never needed holders owes a measured number
+    rec["owed"] = None if unknown else len(rec["waiting"]) + len(rec["wouldPrune"]) + len(rec["deferred"])
     rec["say"] = _say(rec, unknown)
 
 
@@ -921,6 +1223,10 @@ def _say(rec, unknown):
         parts.append("%d UNKNOWN (age or holders could not be read)" % unknown)
     if rec["held"] and rec["held"].startswith("UNKNOWN"):
         parts.append("nothing may be pruned: " + rec["held"])
+    if rec.get("deferred"):
+        parts.append("%d more due, deferred to a later pass (each pass is bounded)" % len(rec["deferred"]))
+    if rec.get("stateWhy"):
+        parts.append(rec["stateWhy"])
     if rec.get("staleWorktrees"):
         parts.append("%d worktree entr%s name a folder that is gone (%s) - git worktree prune clears them" % (
             rec["staleWorktrees"], "y" if rec["staleWorktrees"] == 1 else "ies", ", ".join(rec["staleNames"][:4])))
@@ -937,6 +1243,7 @@ def lane(rec, checked_ms=None):
     return {"on": True, "worked": rec.get("worked"), "lastTs": rec.get("ts"), "checkedTs": checked_ms or rec.get("ts"),
             "owed": rec.get("owed"), "say": rec.get("say"), "top": top, "waiting": list(rec.get("waiting") or []),
             "wouldPrune": len(rec.get("wouldPrune") or []), "removed": len(rec.get("removed") or []),
+            "deferred": len(rec.get("deferred") or []),
             "freed": rec.get("freed"), "freedBytes": rec.get("freedBytes"), "dryRun": list(rec.get("dryRun") or []),
             "biggest": [{"name": b["name"], "owner": b.get("owner"), "gb": round((b["bytes"] or 0) / 1e9, 2),
                          "state": b["state"]} for b in (rec.get("biggest") or [])],
