@@ -21622,7 +21622,7 @@ window._lockMark = function(isOpen, px, label){
       var j = await r.json();
       if (j && j.ok && j.path) {
         toast('film folder · ' + j.path + (j.opened ? ' · opened' : ' · copy path'));
-        try { if (j.path) navigator.clipboard && navigator.clipboard.writeText(j.path); } catch(e2){}
+        try { if (j.path && navigator.clipboard) navigator.clipboard.writeText(j.path).then(null, function () { toast('film folder · ' + j.path + ' · the clipboard refused the copy'); }); } catch(e2){}   /* v3864 (GrokBot Batch A 8) */
       } else toast((j && j.msg) || 'no reel folder for this session');
     } catch (err) { toast('reel path failed'); }
   };
@@ -27691,9 +27691,12 @@ function escC(s) {
     // for a machine that already has a name and nothing left to ask for.
     if (!lastNick) { startNaming(); return; }
     var t = el.title || '';
-    try { navigator.clipboard.writeText(t.split('\n\n')[0]); } catch (e) {}
-    var was = nm.textContent; nm.textContent = 'COPIED';
-    setTimeout(function () { nm.textContent = was; }, 900);
+    /* v3864 (GrokBot Batch A 8) - the pill says COPIED only when the clipboard took it; a refused copy says so (it was an
+       unhandled rejection under a word that claimed success) */
+    var was = nm.textContent;
+    var _say = function (w) { nm.textContent = w; setTimeout(function () { nm.textContent = was; }, 900); };
+    try { navigator.clipboard.writeText(t.split('\n\n')[0]).then(function () { _say('COPIED'); }, function () { _say('COPY REFUSED'); }); }
+    catch (e) { _say('COPY REFUSED'); }
   });
 
   // v1496 — WHO IS ONLINE, AND WHEN WAS EACH LAST HERE. Konyo: "i want to have a tracker for whose

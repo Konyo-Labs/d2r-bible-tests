@@ -7,6 +7,13 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3178 - THREE CLIPBOARD COPIES LEFT A REFUSAL UNHANDLED, AND TWO SAID COPIED ANYWAY (v3864, GrokBot Batch A 8)
+GrokBot, #230 6656116697: 17 unhandled Clipboard rejections in its harness. writeText is a promise; a try/catch around it
+catches nothing when the browser refuses. The console's machine-name pill and the board's share chip then printed COPIED
+whatever happened, and the film-folder path copy had no answer at all. Now each carries a refusal path (COPY REFUSED on the
+pills, a toast for the path), and a law walks every writeText on both pages. Law: tv/test_no_clipboard_copy_goes_unanswered.py,
+3 red-proofs RED. The ~103 /art 404s GrokBot saw on its guest copy (Batch A 7) are UNKNOWN on his live tree until GET-checked.
+
 ### REG-3177 - A DEAD HOME DASHBOARD PAINTED UNDER AN OPEN BOARD TAB, ITS BUTTONS LOOKING LIVE (v3864, GrokBot Batch A 2)
 GrokBot, #230 6656116697, v3860 at 1440x1000: with Runewords (a board tab) open, #home-dash painted through under the board,
 and `body.shell-open .shell > :not(.topbar){pointer-events:none}` had made it dead on purpose, so #chron-scan, #chron-run and

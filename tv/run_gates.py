@@ -13429,6 +13429,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_board_tab_hides_the_dashboard_it_covers.py")], 60,
          needs_app=False,
          why='v3864 (GrokBot Batch A 2) - the dead home dashboard is not painted under an open board tab (opacity, the layout tree kept)'),
+    Gate("test_no_clipboard_copy_goes_unanswered",
+         [sys.executable, os.path.join(HERE, "test_no_clipboard_copy_goes_unanswered.py")], 60,
+         needs_app=False,
+         why='v3864 (GrokBot Batch A 8) - every clipboard copy on the console and the board handles its refusal, and no pill says COPIED for a refused copy'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
