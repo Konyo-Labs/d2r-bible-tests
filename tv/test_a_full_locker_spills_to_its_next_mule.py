@@ -133,7 +133,7 @@ class AFullLockerSpillsToItsNextMule(unittest.TestCase):
         rows = [r for r in self.o["rows"] if " · Mule " in r]
         self.assertTrue(rows, "no row names a Mule 2+: %r" % self.o["rows"][:5])
         for r in rows:
-            self.assertRegex(r, r"^[A-Z][A-Z\-]+ · Mule [2-9]\d* · [A-Z][a-z]+(?: stash)? · col \d+ · row \d+$", r)   # REG-3062 the one spelling
+            self.assertRegex(r, r"^[A-Z][A-Z\-]+ · Mule [2-9]\d* · [A-Z][A-Z\-]+ · [A-Z][a-z]+(?: stash)? · col \d+ · row \d+$", r)   # REG-3062 the one spelling; v3864 REG-2996 the mule's character name
 
     def test_he_is_tasked_to_make_the_next_mule_and_his_tick_is_kept(self):
         o = self.o
@@ -183,8 +183,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2875 - the row does not name the Mule",
      "file": "bible.html",
-     "find": "      if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null);",
-     "replace": "      if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, null);",
+     "find": "      if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, _ca.page > 0 ? _ca.page : null, _pm);",
+     "replace": "      if (_ca) return h + ' · ' + _muleSpotSay(_ca.loc, _ca.x, _ca.y, null, _pm);",
      "matches": 1, "needs": "node"},
     {"why": "REG-2875 - a page's saved cells are not taken before it packs (a new item lands on a saved target)",
      "file": "bible.html",
