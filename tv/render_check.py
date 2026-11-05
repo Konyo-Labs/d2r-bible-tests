@@ -3269,6 +3269,8 @@ TARGETS = {
                "of a locker plate - where the old column sat over his vault at 375 - is hit-tested as the plate itself. "
                "The middle-of-the-element sample this gate takes everywhere else reported that column covered 0/1",
         # its own small world: lockers with plates, so a plate's right end is on screen to be hit-tested
+        # v3864 - the bar exists only at <=600px: measured on a phone, never at a desktop width where it cannot be drawn
+        "widths": ((375, 800),),
         "seed": """(function(){
             localStorage.setItem('d2r_ownerClaim','*');
             ['Windforce','Doombringer','The Grandfather','Lacerator','Bonehew','Stormlash'].forEach(function(n){
