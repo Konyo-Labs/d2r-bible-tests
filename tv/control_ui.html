@@ -27388,6 +27388,13 @@ body.shell-open #head-tabs .ht {
 body.shell-open .shell > :not(.topbar) {
   pointer-events: none;
 }
+/* v3864 (GrokBot Batch A 2, #230 6656116697) - WHAT CANNOT BE PRESSED IS NOT SHOWN. With a board tab open (Runewords at
+   1440x1000) the home dashboard painted through under the board: #chron-scan, #chron-run and the vault twins looked live
+   and, under the rule above, did nothing. opacity, not visibility: the subtree stays in the layout tree as the rule above
+   requires, it just stops painting while the board is up. */
+body.shell-open #home-dash {
+  opacity: 0;
+}
 /* The shadow bar is position:fixed over the board, but it lives in the rail, so the
    rule above makes Leave look pressable while every click falls through onto the
    other profile. Closing the window hides this same page, so reopening comes back

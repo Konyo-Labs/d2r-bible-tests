@@ -7,6 +7,13 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3177 - A DEAD HOME DASHBOARD PAINTED UNDER AN OPEN BOARD TAB, ITS BUTTONS LOOKING LIVE (v3864, GrokBot Batch A 2)
+GrokBot, #230 6656116697, v3860 at 1440x1000: with Runewords (a board tab) open, #home-dash painted through under the board,
+and `body.shell-open .shell > :not(.topbar){pointer-events:none}` had made it dead on purpose, so #chron-scan, #chron-run and
+the vault twins looked pressable and did nothing. Now #home-dash is opacity 0 while a board tab is open (opacity, not
+visibility: the rule above keeps the console subtree in the layout tree on purpose). Law:
+tv/test_a_board_tab_hides_the_dashboard_it_covers.py, 1 red-proof RED. Not seen on pixels here; GrokBot's next look.
+
 ### REG-3176 - THE CONSOLE TOLD TIME ON TWO CLOCKS: A 24-HOUR HEADER BESIDE "05:10 PM" (v3864, GrokBot Batch A 4)
 GrokBot, #230 6656116697: the header #clock-t read 12:49:45 (built from getHours) while #tz-updated said "updated 05:10 PM"
 and #hd-forge-when "scanned 5:10:05 PM" on the same screen. 26 stamps on control_ui.html asked toLocaleTimeString() and got
