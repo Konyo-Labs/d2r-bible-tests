@@ -9258,11 +9258,11 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
   </div>
 
 <script>
+(function(){
 /* v3864 (GrokBot Batch A 4, #230 6656116697) - ONE CLOCK ON THE CONSOLE. The header clock is built 24-hour (getHours,
    HH:MM:SS) while 26 stamps asked toLocaleTimeString() and got the PC's locale default - '05:10 PM' beside '12:49:45'
    on one screen (#tz-updated, #hd-forge-when, the theatre, the shelf). #214 fixed one of them by hand; this is the
    class: on this page a time with no hour12 / hourCycle of its own is 24-hour. A caller that names hour12 keeps it. */
-(function(){
   try {
     var _tl = Date.prototype.toLocaleTimeString;
     if (_tl && !_tl.__h23) {

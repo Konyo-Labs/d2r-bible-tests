@@ -5583,6 +5583,8 @@ def task_board_publish_once(now_ms=None, _post=None, _tasks_dir=None, _label=Non
     if label not in ROSTER_APPROVERS:
         return {"posted": False, "why": "this PC does not publish the board"}
     sessions = _tb.session_dirs(_tasks_dir)
+    if sessions is None:
+        return {"posted": False, "why": "the board dir would not list - UNKNOWN, nothing posted"}
     if not sessions:
         return {"posted": False, "why": "no session on this Mac holds a card"}
     sid = sessions[0][1]
@@ -5596,8 +5598,11 @@ def task_board_publish_once(now_ms=None, _post=None, _tasks_dir=None, _label=Non
         try:
             with open(_task_board_state_path(), encoding="utf-8") as fh:
                 st = json.load(fh)
-        except Exception:
-            st = {}
+        except FileNotFoundError:
+            st = {}                                   # never posted from here: the first post is due
+        except Exception as _re:
+            return {"posted": False, "why": "the pacing record would not read (%s) - UNKNOWN, nothing posted"
+                                            % type(_re).__name__}
     go, why = _tb.due(st, b, now_ms)
     if not go:
         return {"posted": False, "why": why}

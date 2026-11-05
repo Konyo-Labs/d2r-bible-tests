@@ -54,13 +54,16 @@ def _cut(text, n):
 
 
 def session_dirs(tasks_dir=None):
-    """-> [(newest card mtime, dir name)] of the session dirs that hold at least one card, newest first"""
+    """-> [(newest card mtime, dir name)] of the session dirs that hold at least one card, newest first; [] when the board
+    dir does not exist (no board yet, a fact); None when it exists and will not list (UNKNOWN - never an empty board)"""
     root = tasks_dir or TASKS_DIR
     out = []
     try:
         names = os.listdir(root)
-    except OSError:
+    except FileNotFoundError:
         return []
+    except OSError:
+        return None
     for d in names:
         p = os.path.join(root, d)
         if not os.path.isdir(p):

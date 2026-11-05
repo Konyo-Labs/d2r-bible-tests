@@ -16,7 +16,7 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 UI = os.path.join(HERE, "control_ui.html")
-START = "/* v3864 (GrokBot Batch A 4, #230 6656116697) - ONE CLOCK ON THE CONSOLE."
+START = "(function(){\n/* v3864 (GrokBot Batch A 4, #230 6656116697) - ONE CLOCK ON THE CONSOLE."   # test_control V2279: the block opens on its IIFE
 
 
 def _shim():

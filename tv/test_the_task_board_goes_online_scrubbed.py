@@ -35,9 +35,11 @@ import control_app as CA  # noqa: E402
 
 ROOT = os.path.dirname(HERE)
 T0 = 1793900000000
-DIRTY = ("see /Users/someone/d2r_bible_tests/tv/x.py and /private/tmp/claude-v3864/tv on 10.0.0.12, "
-         "ssh user@10.0.0.12 or hoshi@dean-pc, mail someone@example.com, host konyo-mac.local, "
-         "C:\\Users\\Dean\\AppData and " + "gh" + "p_" + "0" * 36)   # built here, so the repo never holds a token shape
+# every machine, person and path here is a stand-in, and the home path and token shape are built at run time: this file is
+# public, so it may hold none of them literally (test_no_new_home_path_is_published counts /Users/<name>/)
+DIRTY = ("see " + "/" + "Users/someone/d2r_bible_tests/tv/x.py and /private/tmp/claude-v3864/tv on 192.0.2.7, "
+         "ssh player@192.0.2.7 or player@host-b, mail someone@example.com, host host-a.local, "
+         "C:\\Users\\Player\\AppData and " + "gh" + "p_" + "0" * 36)
 
 
 def _card(i, st, subject, desc=""):
@@ -48,7 +50,7 @@ class TheBoardIsScrubbed(unittest.TestCase):
 
     def test_nothing_that_names_a_machine_a_path_or_a_secret_leaves(self):
         out = TB.scrub(DIRTY)
-        for bad in ("/Users/", "/private/tmp", "10.0.0.12", "user@", "hoshi@", "someone@example.com", ".local",
+        for bad in ("/Users/", "/private/tmp", "192.0.2.7", "player@", "someone@example.com", ".local",
                     "C:\\Users", "gh" + "p_", "@"):
             self.assertNotIn(bad, out, "%r left the Mac in %r" % (bad, out))
         self.assertIn("<path>", out)
@@ -118,6 +120,28 @@ class OnlyHisMacPublishesIt(unittest.TestCase):
         self.assertEqual(len(body["board"]["cards"]), 2)
         self.assertNotIn("/Users/", json.dumps(body), "the posted board carries a home path")
         self.assertFalse(self._run(now=T0 + 1000)["posted"], "an unchanged board was posted again at once")
+
+    def test_a_board_dir_that_will_not_list_is_unknown_never_empty(self):
+        # Routine M (RANK 1): a failed listing read as "no sessions" - an empty board nobody measured
+        self.assertEqual(TB.session_dirs(os.path.join(self.d, "never-made")), [], "a missing board dir is not 'no board'")
+        locked = os.path.join(self.d, "locked")
+        os.makedirs(locked)
+        os.chmod(locked, 0)
+        try:
+            if os.access(locked, os.R_OK):
+                self.skipTest("this account reads a mode-0 dir (root) - the refusal cannot be staged here")
+            self.assertIsNone(TB.session_dirs(locked), "a board dir that would not list read as an empty board")
+            r = self._run_dir(locked)
+            self.assertFalse(r["posted"], r)
+            self.assertIn("UNKNOWN", r["why"])
+        finally:
+            os.chmod(locked, 0o755)
+
+    def _run_dir(self, d):
+        with mock.patch.object(CA, "_beacon_suppressed_by", return_value=None), \
+                mock.patch.object(CA, "_task_board_state_path", return_value=os.path.join(self.d, "state.json")):
+            return CA.task_board_publish_once(now_ms=T0, _post=self._post, _tasks_dir=d, _label="Konyo · Mac",
+                                              _platform="darwin")
 
     def test_no_other_pc_and_no_suppressed_console_posts(self):
         self.assertFalse(self._run(plat="win32")["posted"])
@@ -195,6 +219,11 @@ import('%s').then(async m => {
 
 
 RED_PROOF = [
+    {"why": "v3864 (Routine M) - a board dir that will not list reads as an empty board",
+     "file": "tv/task_board.py",
+     "find": "    except FileNotFoundError:\n        return []\n    except OSError:\n        return None\n",
+     "replace": "    except FileNotFoundError:\n        return []\n    except OSError:\n        return []\n",
+     "matches": 1},
     {"why": "v3864 - a home path leaves the Mac on the public board",
      "file": "tv/task_board.py",
      "find": "    (re.compile(r\"/(?:Users|home)/[^/\\s'\\\"`)]+(?:/[^\\s'\\\"`)]*)?\"), \"<path>\"),\n",
