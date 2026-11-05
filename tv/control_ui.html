@@ -29135,7 +29135,14 @@ function escC(s) {
                   _rw = '<span class="fleet-meta fleet-why" title="'
                       + escC('this console can COUNT its pieces but cannot NAME them, because: '
                              + _rk.join('; ') + '. Waiting will not clear that on its own.')
-                      + '">' + escC('\u00b7 ' + _rk[0]) + '</span>';
+                      + '">' + escC('\u00b7 ' + (function (w) {
+                        /* v3861 (his fleet screenshot) - the ROW says it in a few words; the hover keeps every word. The
+                           board-stores give-up was a 200-character paragraph on the row of a PC whose board simply has
+                           no items yet (a fresh install); anything else long is cut at a word with an ellipsis. */
+                        if (/no store present on this board|has not handed its stores/.test(w))
+                          return 'can\u2019t name pieces \u2014 this PC\u2019s board has no items yet';
+                        return w.length > 64 ? w.slice(0, 61).replace(/\s+\S*$/, '') + '\u2026' : w;
+                      })(String(_rk[0]))) + '</span>';
                 }
               } catch (_) {}
               return '<span class="fleet-meta fleet-word ' + w.c + '"'

@@ -974,6 +974,45 @@ class AnUnplacedReelIsNotTheWholeRiver(unittest.TestCase):
 
 
 
+#: v3861 - the sentence control_app builds when the window path gave up and the board has handed nothing over (a fresh
+#: PC whose board holds no items): it filled the row of the work ALT in his fleet screenshot
+_BOARD_WHY = ("the native window gave up; and the board has not handed its stores over either "
+              "(no store present on this board)")
+_OTHER_WHY = "the window path refused because the console was relaunching its view while a capture was being written out"
+
+
+class TheRowSaysItsWhyInAFewWords(unittest.TestCase):
+    """v3861 (his fleet screenshot, 2026-11-05): the fleet row carried the whole maskWhy - a paragraph - beside the PC's
+    name. The row now says it in a few words; the hover keeps every word."""
+
+    @classmethod
+    def setUpClass(cls):
+        def tweak(fx):
+            fx["online"][0]["maskWhy"] = {"sets": _BOARD_WHY, "uniques": _BOARD_WHY}
+            fx["online"][1]["maskWhy"] = {"sets": _OTHER_WHY}
+        cls.rows = _rail(tweak)
+
+    def _why(self, machine):
+        row = [r for t, r in self.rows if 'data-fleet-machine="%s"' % machine in t]
+        self.assertEqual(len(row), 1, "the rail drew no row for " + machine)
+        i = row[0].find('<span class="fleet-meta fleet-why" title="')
+        self.assertGreater(i, -1, "the row lost its why clause: " + machine)
+        span = row[0][i:row[0].index("</span>", i)]
+        title = span.split('title="', 1)[1].split('"', 1)[0]
+        return span.split(">", 1)[1], title
+
+    def test_a_board_with_no_items_says_so_in_a_few_words(self):
+        shown, title = self._why("box-a")
+        self.assertEqual(shown, "\u00b7 can\u2019t name pieces \u2014 this PC\u2019s board has no items yet")
+        self.assertIn("no store present on this board", title, "the hover lost the whole reason")
+
+    def test_any_other_long_reason_is_cut_at_a_word(self):
+        shown, title = self._why("box-b")
+        self.assertLessEqual(len(shown), 2 + 62, "a long reason runs the row again: %r" % shown)
+        self.assertTrue(shown.endswith("\u2026"), shown)
+        self.assertTrue(_OTHER_WHY.startswith(shown[2:-1]), "the cut is not a prefix at a word: %r" % shown)
+        self.assertIn(_OTHER_WHY, title)
+
 #: REG-1828 — the comment that opens the block after _fleetRefresh; F._cut counts it once
 _REFRESH_END = "  /* ⚠⚠ v3086 — NOBODY EVER ASKED."
 _CLICK = "click: open the row · click it again: how this PC films and drains, and their set pieces against yours"   # #225 (his ruling 2026-10-28): the row first, the compare on a second click
@@ -982,12 +1021,15 @@ _STEP_ASIDE = (".fleet-row.has-ftt:has(:is([title], [data-tip-held]):hover) .ftt
                "{ opacity: 0; visibility: hidden; }")
 
 
-def _rail():
+def _rail(tweak=None):
     """The SHIPPED _fleetRefresh in node over the fixture roster. -> [(row tag, row html)]
 
-    One row carries counts so both of the card's paths draw (counted, and no report)."""
+    One row carries counts so both of the card's paths draw (counted, and no report). `tweak(fx)` edits the roster
+    first (v3861: a case's own maskWhy)."""
     fx = F._fixture()
     fx["online"][0]["tally"] = {"ok": True, "at": F._iso(F.NOW)}
+    if tweak:
+        tweak(fx)
     # REG-2072 - the rail's river chip now groups its tip through _fleetStuckWhy, defined further down the page; the cut
     # region does not hold it, so it is declared from the page's own bytes (a free name the harness was never told).
     prog = (F.HARNESS + F._cut("  function _fleetStuckWhy(list, label){\n", "join('  |  ');\n  }\n", inclusive_end=True) + "\n"
@@ -1072,6 +1114,16 @@ class OneBoxAtATimeOnTheRow(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3861 - the fleet row carries the whole board-stores paragraph again beside the PC's name",
+     "file": "tv/control_ui.html",
+     "find": "                        if (/no store present on this board|has not handed its stores/.test(w))\n",
+     "replace": "                        if (false)\n",
+     "matches": 1},
+    {"why": "v3861 - any other long reason runs the fleet row uncut again",
+     "file": "tv/control_ui.html",
+     "find": "                        return w.length > 64 ? w.slice(0, 61).replace(/\\s+\\S*$/, '') + '\\u2026' : w;\n",
+     "replace": "                        return w;\n",
+     "matches": 1},
     {"why": "v3861 - a reel held by a shut lock is called red 'river stuck' again, a second alarm for one cause",
      "file": "tv/control_ui.html",
      "find": "    var _byLock = function (e) { return _locksShut && !!e && typeof e === 'object'\n",
