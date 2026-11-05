@@ -46,8 +46,11 @@ class TheProofJudgeIgnoresACloudClient(unittest.TestCase):
                       "PREMISE: a cloud client with the game on screen stopped counting as play for EVERY lane")
 
     def test_the_proof_runs_beside_a_cloud_client(self):
+        # free=1000, under BESIDE_GAME_FREE_MB: the CLOUD rule must decide this, not v3863's room-beside-the-game rule. With
+        # free unpinned, a CI runner's >=4 GB free answered False for a cloud client counted as play, and red-proof [2] was
+        # BLIND on GitHub while it went red on his Mac (v3863 shard 19, 2026-11-05).
         with mock.patch.object(SP, "IS_WIN", False), mock.patch.object(SP.subprocess, "run", _ps(BOOST)):
-            self.assertIs(SP.proof_playing_state(game_on_screen=lambda: True), False,
+            self.assertIs(SP.proof_playing_state(game_on_screen=lambda: True, free=1000), False,
                           "a cloud client still stops the proof - the work ALT never proves")
 
     def test_the_local_game_still_stops_the_proof(self):
@@ -64,8 +67,8 @@ class TheProofJudgeIgnoresACloudClient(unittest.TestCase):
         fake = types.SimpleNamespace(_toolhelp_any=any_proc)
         with mock.patch.object(SP, "IS_WIN", True), mock.patch.dict(sys.modules, {"tv_diablo": fake}):
             self.assertIs(SP.playing_state(game_on_screen=lambda: True), True, "PREMISE: Windows cloud-on-screen")
-            self.assertIs(SP.proof_playing_state(game_on_screen=lambda: True), False,
-                          "Windows: Boosteroid still stops the proof")
+            self.assertIs(SP.proof_playing_state(game_on_screen=lambda: True, free=1000), False,
+                          "Windows: Boosteroid still stops the proof")   # free pinned under the line, as above
 
             def with_game(pred):
                 return any(pred(n) for n in ("Boosteroid.exe", "D2R.exe"))
