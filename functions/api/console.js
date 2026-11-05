@@ -444,6 +444,14 @@ export async function onRequestPost(context) {
         out.river = { lanes: lanes, ageS: num(rv.ageS, DAY400), why: txt(rv.why, 200), triage: tri };
         if (unk !== null) out.river.unknown = unk;
         if (shelfN !== null) out.river.shelf = shelfN;
+        /* REG-3196 - a newer river read that failed, with its OWN reason and its age. Absent stays absent (no newer
+           failure, or an older console); the reason is scrubbed by txt() like every why here. */
+        const fw = txt(rv.failWhy, 200);
+        if (fw !== null) {
+          out.river.failWhy = fw;
+          const fa = num(rv.failAgeS, DAY400);
+          if (fa !== null) out.river.failAgeS = fa;
+        }
         /* #74 (REG-1461) — WHICH STATIONS ARE NOT DRAINING ON THAT PC, AND WHY; AND WHETHER IT HAS PROVED ITSELF.
            His ask 2026-09-29: see Dean's river from his own console. Shaped like everything above: station keys
            from the router's vocabulary, counts and ages clamped, the lane's sentence capped and scrubbed. `stuck`
@@ -479,6 +487,27 @@ export async function onRequestPost(context) {
             etaS: num(rv.heart.etaS, DAY400),
             why: txt(rv.heart.why, 300),
           };
+          /* REG-3197 - what a census that is not current waits on, as numbers: GitHub's proofs importing ({done, of,
+             etaS, ver}; each null when the console could not count it), the laws owed HERE while its own lane proves,
+             and which river locks may() last named shut, with the first one's reason. Absent stays absent - an older
+             console, or nothing importing / proving - so a row stores exactly what it stored before. */
+          const hi = rv.heart.importing;
+          if (hi && typeof hi === 'object' && !Array.isArray(hi)) {
+            out.river.heart.importing = {
+              done: whole(hi.done, 1000000), of: whole(hi.of, 1000000), etaS: num(hi.etaS, DAY400),
+              ver: (typeof hi.ver === 'string' && /^v\d{1,6}$/.test(hi.ver)) ? hi.ver : null,
+            };
+          }
+          const oh = whole(rv.heart.owedHere, 100000);
+          if (oh !== null) out.river.heart.owedHere = oh;
+          if (Array.isArray(rv.heart.locksShut)) {
+            out.river.heart.locksShut = rv.heart.locksShut.slice(0, 8)
+              .filter(function (l) { return typeof l === 'string' && /^[a-z][a-z_]{0,23}\.[a-z][a-z_]{0,31}$/.test(l); });
+            const lw = txt(rv.heart.lockWhy, 200);
+            if (lw !== null) out.river.heart.lockWhy = lw;
+            const la = num(rv.heart.locksAgeS, DAY400);
+            if (la !== null) out.river.heart.locksAgeS = la;
+          }
         }
       }
       /* v3862 - THE REPAIR BOOK, SO AN ERROR NO PC KNOWS HOW TO FIX IS SEEN FROM HERE (his ask 2026-11-05: "unknown errors
@@ -784,7 +813,9 @@ export async function onRequestPost(context) {
     const h = (rv.heart && typeof rv.heart === 'object') ? rv.heart : null;
     // #193 (his Fleet, 2026-10-28: Dean "says STarting it could be stale") - the row prints two of the prover's keys as
     // words ('river · starting', 'census waiting for memory'), so those two are news; the others move each slice and are not.
+    // REG-3197 - an import starting or ending changes the row's words ('importing ... proofs'); its counts are not news
     const heartWord = h ? [h.census, (typeof h.blind === 'number') ? h.blind : null,
+                           (h.importing && typeof h.importing === 'object') ? 'importing' : null,
                            (h.key === 'starting' || h.key === 'low-memory') ? h.key : null] : null;
     let laneWord = null;
     if (rv.lanes && typeof rv.lanes === 'object' && !Array.isArray(rv.lanes)) {

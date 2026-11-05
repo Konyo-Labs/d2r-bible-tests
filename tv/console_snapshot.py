@@ -497,6 +497,23 @@ def online_of(owner, fleet):
     return None
 
 
+def via_of(owner, fleet):
+    """REG-3199 - HOW this owner is online, from the same row and the same presence function online_of reads:
+    "console" | "recorder" | None (offline, unknown, or not in the fleet)."""
+    if not isinstance(fleet, dict) or fleet.get("ok") is False:
+        return None
+    for state, rows in ((True, fleet.get("online")), (False, fleet.get("offline"))):
+        for row in rows or []:
+            if not isinstance(row, dict):
+                continue
+            plat = row.get("platform")
+            plat = "mac" if plat in ("darwin", "mac", "macos") else plat
+            if _rp.owner_of(row.get("nickname"), plat) == owner:
+                import fleet_presence as _fp
+                return _fp.presence_of(row, state).get("via")
+    return None
+
+
 #: v3856 - a board older than this while its console was seen online is a STALLED upload, said on the banner, and the
 #: console itself re-posts even an unchanged board past it (the site may have lost or refused the last one).
 STALE_MS = 6 * 60 * 60 * 1000
@@ -524,6 +541,20 @@ def seen_of(owner, fleet):
     return None
 
 
+def live_bound_ms():
+    """REG-3199 - how old a console's beacon may be and still be "online now": fleet_presence's one bound. -> ms"""
+    import fleet_presence as _fp
+    return int(_fp.STALE_AFTER_S) * 1000
+
+
+def beacon_stale(seen_ms, now_ms):
+    """REG-3199 - is this beacon time past the online bound? -> True | False; False when there is no beacon time (the
+    caller's own answer stands - an unread time is not evidence of offline). Pure."""
+    if not isinstance(seen_ms, int) or isinstance(seen_ms, bool):
+        return False
+    return now_ms - seen_ms > live_bound_ms()
+
+
 def stall_of(rec_t, seen_ms, now_ms):
     """-> words when the console was seen online well after its board upload (an upload that stalled), else None."""
     if not isinstance(rec_t, int) or not isinstance(seen_ms, int) or seen_ms - rec_t <= STALE_MS:
@@ -542,7 +573,7 @@ def _ago_words(ms):
     return "%d days ago" % (m // (24 * 60))
 
 
-def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=None):
+def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=None, via=None):
     """What /api/roster-cache?profile= serves. `live` is the owner's console being up right now; the stores are
     always the last upload, and `words` always says when that upload was made.
 
@@ -561,7 +592,16 @@ def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=
         return {"ok": False, "owner": owner, "why": why, "source": source}
     t = rec["t"]
     ago = _ago_words(now_ms - t)
-    if online is True:
+    # REG-3199 (GrokBot, 2026-11-05: the guest's shadow bar said "Dean · online now" over a board hours old, with Dean's
+    # last beacon ~18 h before) - "ONLINE NOW" IS A CLAIM ABOUT THE BEACON, so it is tested here, against the one
+    # presence bound (fleet_presence.STALE_AFTER_S), with the beacon's own time. A known beacon older than the bound is
+    # offline whatever list the row was read from; no beacon time leaves the caller's answer as it was.
+    if online is True and via != "recorder" and beacon_stale(seen, now_ms):
+        online = False
+    if online is True and via == "recorder":
+        # the console is down and its recorder reports itself alive: presence's own words, never "online now"
+        state, words = "live", "%s · online · recording · board uploaded %s" % (owner, ago)
+    elif online is True:
         # #214 (GrokBot) - "live" beside "uploaded 20 min ago" read as a live view; the CONSOLE is online, the stores are the upload
         state, words = "live", "%s · online now · board uploaded %s" % (owner, ago)
     elif online is False:
@@ -581,7 +621,11 @@ def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=
             " and %d more" % (len(unsent) - 5) if len(unsent) > 5 else "")
     out = {"ok": True, "owner": owner, "t": t, "hash": rec["hash"], "stores": rec["stores"],
            "state": state, "words": words, "source": source, "ago": ago, "unsent": unsent, "stall": stall,
-           "seenAgo": _ago_words(now_ms - seen) if isinstance(seen, int) else None}
+           "seenAgo": _ago_words(now_ms - seen) if isinstance(seen, int) else None,
+           # REG-3199 - the beacon's own time and the moment "online now" stops being true, so the bar can test it
+           # again while it stays open (it was painted once, at entry, and never re-asked)
+           "seenMs": seen if isinstance(seen, int) else None,
+           "liveUntil": (seen + live_bound_ms()) if (state == "live" and isinstance(seen, int)) else None}
     iv = rec.get("intentVerified")
     out["intentVerified"] = iv if isinstance(iv, bool) else None
     kid = _rp.short_key_id(rec.get("keyId"))

@@ -6030,14 +6030,15 @@ def _profile_view(owner):
     if rec is None and unread:
         rec = _cs.read_cache(cdir, owner)
         source = "cache"
-    online = seen = None
+    online = seen = via = None
     try:
         fl, _age = fleet_presence_last_good()
         online = _cs.online_of(owner, fl)
+        via = _cs.via_of(owner, fl)         # REG-3199 - by what it is online (its console, or only its recorder)
         seen = _cs.seen_of(owner, fl)       # v3856 - the same Fleet row: when the console was last seen
     except Exception:
-        online = seen = None
-    return _cs.view(owner, rec, now_ms, online=online, source=source, fetch_why=why, seen=seen)
+        online = seen = via = None
+    return _cs.view(owner, rec, now_ms, online=online, source=source, via=via, fetch_why=why, seen=seen)
 
 
 def _frames_cache_dir():
@@ -18234,8 +18235,11 @@ def _river_remember_once(lanes, error):
     # `n` orders the two records exactly: a good read and a failed one can land in the same ms
     n = next(_RIVER_SEQ)
     if error is not None:
-        _RIVER_LAST["fail"] = {"ts": now, "n": n, "why": "the river could not be read (%s)"
-                                                         % type(error).__name__}
+        # REG-3196 - the reason, not only the exception's class: "(KeyError)" told the Fleet nothing. The message is
+        # scrubbed for the wire (_wire_text) because an exception's text is exactly where a path or a host rides along.
+        _detail = _wire_text(str(error), 120)
+        _RIVER_LAST["fail"] = {"ts": now, "n": n, "why": "the river could not be read (%s%s)"
+                                                         % (type(error).__name__, (": " + _detail) if _detail else "")}
         return
     st = _river_station_counts(lanes)
     if st is None:
@@ -18327,14 +18331,25 @@ def _river_for_wire(now_ms=None):
             out["shelf"] = int(g["shelf"])
         out["ageS"] = round(max(0.0, (now - int(g["ts"])) / 1000.0), 1)
         if isinstance(f, dict) and int(f.get("n") or 0) > int(g.get("n") or 0):
-            out["why"] = ("a newer river read failed %.0f s ago - these lanes are the last good read"
-                          % max(0.0, (now - int(f["ts"])) / 1000.0))
+            # REG-3196 (his Fleet 21:01: OLD PC ALT "a newer river read failed 1043 s ago" and nothing more) - the failed
+            # read's OWN reason crosses with it: _RIVER_LAST["fail"]["why"] was recorded and never reached the wire.
+            _fage = max(0.0, (now - int(f["ts"])) / 1000.0)
+            _fwhy = str(f.get("why") or "") or "it recorded no reason (UNKNOWN)"
+            out["why"] = ("a newer river read failed %.0f s ago - %s - these lanes are the last good read"
+                          % (_fage, _fwhy))
+            out["failWhy"] = _fwhy
+            out["failAgeS"] = round(_fage, 1)
     elif isinstance(f, dict):
         out["why"] = str(f.get("why") or "the last river read failed")
     else:
         # (no route path in this sentence: the worker scrubs anything path-shaped to "<path>")
-        out["why"] = ("this console has not computed its river since it started - nothing has asked "
-                      "for the river yet, and the beacon never computes it itself")
+        # REG-3198 - and WHY it has not: the console's own river lane is what computes it, so its last word is said
+        # (he plays, the machine is busy, it has not run yet) - never "nothing has asked", which was not true since #193.
+        _ws = dict(_RIVER_WARM)
+        out["why"] = ("this console has not computed its river since it started - "
+                      + (("its river lane: " + _wire_text(_ws.get("say"), 140)) if _ws.get("lastTs") is not None
+                         else "its river lane reads it about %d s after a start and has not run yet"
+                         % RIVER_WARM_FIRST_S))
     try:
         out["triage"] = _triage_for_wire()
     except Exception as e:
@@ -18383,7 +18398,105 @@ def _river_for_wire(now_ms=None):
     _hw, _hfrom = heart_stale_why(_census, _sp)
     out["heart"]["why"] = _hw
     out["heart"]["takesFrom"] = _hfrom
+    # REG-3197 (his Fleet 21:01: every online PC "census stale; lane: GitHub's proofs ... are being imported", drawn as
+    # red "locks shut" + "river stuck") - WHAT THE CENSUS IS WAITING ON, AS NUMBERS: the import while it runs, and the
+    # laws still owed HERE while this PC's own lane proves. Each is None when it is not happening, never 0.
+    out["heart"]["importing"] = heart_importing(_PROOF_RELEASE, _app_ver)
+    out["heart"]["owedHere"] = heart_owed_here(_sp)
+    # REG-3197 - and WHICH river locks are shut, as may() last answered (the river lane asks; the beacon reads memory)
+    _lk = dict(_RIVER_LOCKS_SEEN)
+    out["heart"]["locksShut"] = _lk.get("shut") if isinstance(_lk.get("shut"), list) else None
+    out["heart"]["lockWhy"] = _wire_text(_lk.get("why"), 200) if _lk.get("why") else None
+    out["heart"]["locksAgeS"] = (round(max(0.0, (now - int(_lk["ts"])) / 1000.0), 1)
+                                 if isinstance(_lk.get("ts"), int) and not isinstance(_lk.get("ts"), bool) else None)
     return out
+
+
+#: REG-3197 - the self-prove lane's keys that mean a proof is running HERE now (self_prove.decide: a slice started).
+SP_PROVING_KEYS = ("running", "start", "start-small")
+
+
+def heart_owed_here(sp):
+    """REG-3197 - the laws this PC still owes while its own lane PROVES them. Pure. -> int | None
+
+    None when the lane is not proving (nothing is being worked off here, so a count would read as progress), or when
+    the count is not a whole number. A running prover (sp.running) or a slice key that starts one counts."""
+    sp = sp if isinstance(sp, dict) else {}
+    owed = sp.get("owed")
+    if isinstance(owed, bool) or not isinstance(owed, int) or owed < 0:
+        return None
+    if sp.get("running") is True or sp.get("key") in SP_PROVING_KEYS:
+        return owed
+    return None
+
+
+def heart_importing(rel, ver=None):
+    """REG-3197 - GitHub's proofs being imported for this commit, while the import RUNS. Pure over the record.
+    -> None | {done, of, etaS, ver}
+
+    `rel` is _PROOF_RELEASE. done/of/etaS are the import's own counts (absent on a build that does not count: None, and
+    the row says "importing GitHub's proofs" with no numbers - never a guessed 0). `ver` names the version whose proofs
+    they are: the running stamp, a callable so a law can hand one in. [[unknown-stays-unknown]]"""
+    if not isinstance(rel, dict) or rel.get("running") is not True:
+        return None
+
+    def _n(v):
+        return v if isinstance(v, (int, float)) and not isinstance(v, bool) and v >= 0 else None
+    done, of, eta = _n(rel.get("done")), _n(rel.get("of")), _n(rel.get("etaS"))
+    if done is not None and of is not None and done > of:
+        done = of = None            # a count past its own total is not a count
+    try:
+        v = ver() if callable(ver) else ver
+    except Exception:
+        v = None
+    v = v if isinstance(v, str) and re.match(r"^v\d{1,6}$", v) else None
+    return {"done": int(done) if done is not None else None, "of": int(of) if of is not None else None,
+            "etaS": int(eta) if eta is not None else None, "ver": v}
+
+
+#: REG-3197 - the four river doors as may() last answered them, read by the river lane (never on the beacon thread):
+#: shut = [lock, ...] (empty = all four may act), why = the first shut lock's own reason, ts = when it was asked.
+#: shut None = not asked yet, or the ask did not come back (UNKNOWN - never "all open").
+_RIVER_LOCKS_SEEN = {"ts": None, "shut": None, "why": None}
+
+
+def _river_locks_read(ask=None):
+    """The four river doors, asked of may(). -> (shut [(lock, why)] | None, why-if-None)
+
+    ONE reading for the doctor's river_locks row and the Fleet's lock line: an ask that does not come back is None
+    with its reason, never an empty (all open) list."""
+    if ask is None:
+        try:
+            import self_arming as _sa
+            ask = _sa.may
+        except Exception as _e:
+            return None, "the lock could not be imported (%s)" % type(_e).__name__
+    shut = []
+    try:
+        for lock in _RIVER_LOCKS_ASKED:
+            got = ask(lock)
+            if not (isinstance(got, tuple) and len(got) == 2 and isinstance(got[0], bool)):
+                return None, "may(%s) did not answer" % lock
+            one_ok, why = got
+            if not one_ok:
+                shut.append((lock, _river_lock_why(why)))
+    except Exception as _e:
+        return None, "the lock could not be asked (%s)" % type(_e).__name__
+    return shut, None
+
+
+def _river_locks_note(now_ms=None, ask=None):
+    """REG-3197 - ask the river doors once and keep the answer for the beacon. Never raises. -> _RIVER_LOCKS_SEEN copy"""
+    now = int(time.time() * 1000) if now_ms is None else int(now_ms)
+    try:
+        shut, why = _river_locks_read(ask)
+    except Exception as e:
+        shut, why = None, "the lock read raised %s" % type(e).__name__
+    if shut is None:
+        _RIVER_LOCKS_SEEN.update(ts=now, shut=None, why=why)
+    else:
+        _RIVER_LOCKS_SEEN.update(ts=now, shut=[l for l, _w in shut], why=(shut[0][1] if shut else None))
+    return dict(_RIVER_LOCKS_SEEN)
 
 
 #: v3862 (item 10, his "proof meter" ask) - the owed-law readings this console has taken, oldest first: [(ms, owed)].
@@ -18484,20 +18597,38 @@ RIVER_WARM_EVERY_S = 300
 RIVER_WARM_STALE_S = 15 * 60
 RIVER_WARM_BUSY_PCT = 80.0
 RIVER_WARM_TIMEOUT_S = 120
+#: REG-3198 (his Fleet 21:01, "the river flowing and the fleet rendering it ... for each") - THE FIRST ANSWER IN A PROCESS
+#: IS "computing". /api/river serves the last FINISHED walk (river_lanes.lanes_last) and, before one has finished, answers
+#: {computing: true} and keeps nothing. The lane counted that as a read and slept RIVER_WARM_EVERY_S, so a fresh console
+#: carried no lanes for ~6 minutes and a PC that went offline in between kept "has not computed its river" for good.
+#: The pass now asks again every RIVER_WARM_POLL_S until the walk it started has finished (inside RIVER_WARM_TIMEOUT_S),
+#: and the first good read sends one beacon, the way the first proof tick does (v3849).
+RIVER_WARM_POLL_S = 5.0
+#: REG-3198 - a console with NO river since it started waits for a busy machine at most this long, then reads once
+#: (REG-1905's rule for the prover: GrokBot's PC sat 77% busy for 20 days). His game is never waited out: playing refuses.
+RIVER_WARM_BUSY_MAX_WAIT_S = 20 * 60
 _RIVER_WARM = {"on": True, "worked": 0, "lastTs": None, "owed": None, "ms": None,
-               "say": "the river warm lane has not run yet since this console started"}
+               "say": "the river warm lane has not run yet since this console started",
+               # REG-3198 - when the machine went busy (ms, None = not busy) and whether the first-read beacon went
+               "busySince": None, "beaconed": False}
 
 
-def _river_warm_due(now_ms, last, playing, busy_pct):
+def _river_warm_due(now_ms, last, playing, busy_pct, busy_since_ms=None):
     """#193 - should the warm lane read the river now? -> (bool, why). Pure.
 
     `last` is _RIVER_LAST. A good read younger than RIVER_WARM_STALE_S is enough; a failed read is retried on the same
-    cadence, never in a tight loop. He plays -> never. A busy machine (CPU over RIVER_WARM_BUSY_PCT) -> later."""
+    cadence, never in a tight loop. He plays -> never. A busy machine (CPU over RIVER_WARM_BUSY_PCT) -> later; REG-3198:
+    but a console with no good river since it started waits for busy at most RIVER_WARM_BUSY_MAX_WAIT_S (busy_since_ms
+    is when the machine went busy), then reads once - never for ever."""
     if playing:
         return False, "he is playing - the river walk waits for the game to close"
-    if isinstance(busy_pct, (int, float)) and not isinstance(busy_pct, bool) and busy_pct >= RIVER_WARM_BUSY_PCT:
-        return False, "the machine is busy (%.0f%% CPU) - the river walk waits" % busy_pct
     g = (last or {}).get("good") if isinstance(last, dict) else None
+    if isinstance(busy_pct, (int, float)) and not isinstance(busy_pct, bool) and busy_pct >= RIVER_WARM_BUSY_PCT:
+        _bs = busy_since_ms if isinstance(busy_since_ms, int) and not isinstance(busy_since_ms, bool) else None
+        if not (g is None and _bs is not None and now_ms - _bs >= RIVER_WARM_BUSY_MAX_WAIT_S * 1000):
+            return False, "the machine is busy (%.0f%% CPU) - the river walk waits" % busy_pct
+        return True, ("the machine has been busy (%.0f%% CPU) for %.0f min and this console has no river yet - "
+                      "read once anyway" % (busy_pct, (now_ms - _bs) / 60000.0))
     f = (last or {}).get("fail") if isinstance(last, dict) else None
     newest = max([int(r["ts"]) for r in (g, f) if isinstance(r, dict) and isinstance(r.get("ts"), int)] or [0])
     if newest and now_ms - newest < RIVER_WARM_STALE_S * 1000:
@@ -18506,7 +18637,40 @@ def _river_warm_due(now_ms, last, playing, busy_pct):
                   else "the last river read is %.0f min old" % ((now_ms - newest) / 60000.0))
 
 
-def _river_warm_once(now_ms=None, _urlopen=None, playing=None, busy_pct=None):
+def _river_warm_ask(opener):
+    """One more GET of this console's read-only /api/river, while a walk is computing. -> the answer's raw body"""
+    _resp = opener("http://127.0.0.1:%d/api/river" % int(CONTROL_PORT), timeout=RIVER_WARM_TIMEOUT_S)
+    try:
+        return _resp.read()
+    finally:
+        _shut = getattr(_resp, "close", None)
+        if callable(_shut):
+            _shut()
+
+
+def _river_warm_computing(body):
+    """REG-3198 - did /api/river answer "computing" (the walk it started has not finished)? -> bool. Pure."""
+    try:
+        got = json.loads(body.decode("utf-8", "replace") if isinstance(body, bytes) else str(body or ""))
+    except Exception:
+        return False
+    return isinstance(got, dict) and got.get("computing") is True
+
+
+def _river_warm_wait_walk(body, opener, sleep, clock):
+    """REG-3198 - ask again every RIVER_WARM_POLL_S while the route says "computing", inside RIVER_WARM_TIMEOUT_S.
+    -> seconds waited. Raises TimeoutError when the walk has not finished by then (the pass is then a failed read)."""
+    t0 = clock()
+    while _river_warm_computing(body):
+        if clock() - t0 >= RIVER_WARM_TIMEOUT_S:
+            raise TimeoutError("the river walk had not finished after %d s" % RIVER_WARM_TIMEOUT_S)
+        sleep(RIVER_WARM_POLL_S)
+        body = _river_warm_ask(opener)
+    return round(clock() - t0, 1)
+
+
+def _river_warm_once(now_ms=None, _urlopen=None, playing=None, busy_pct=None, _sleep=None, _clock=None,
+                     _beacon=None):
     """#193 - one pass of the warm lane. Never raises. -> the lane record."""
     now = int(time.time() * 1000) if now_ms is None else int(now_ms)
     try:
@@ -18514,7 +18678,13 @@ def _river_warm_once(now_ms=None, _urlopen=None, playing=None, busy_pct=None):
     except Exception:
         _play = False
     _busy = _cpu_busy_pct() if busy_pct is None else busy_pct
-    due, why = _river_warm_due(now, _RIVER_LAST, _play, _busy)
+    # REG-3198 - when the machine went busy, so a console with no river waits for it at most RIVER_WARM_BUSY_MAX_WAIT_S
+    if isinstance(_busy, (int, float)) and not isinstance(_busy, bool) and _busy >= RIVER_WARM_BUSY_PCT:
+        if _RIVER_WARM.get("busySince") is None:
+            _RIVER_WARM["busySince"] = now
+    else:
+        _RIVER_WARM["busySince"] = None
+    due, why = _river_warm_due(now, _RIVER_LAST, _play, _busy, _RIVER_WARM.get("busySince"))
     if not due:
         # the Grok eye on v3813: a pass that waits (he plays, the machine is busy, a fresh read) never clears a failure
         # the lane recorded - `owed` stays what the last real attempt left
@@ -18526,17 +18696,32 @@ def _river_warm_once(now_ms=None, _urlopen=None, playing=None, busy_pct=None):
         _resp = (_urlopen or _ur.urlopen)("http://127.0.0.1:%d/api/river" % int(CONTROL_PORT),
                                           timeout=RIVER_WARM_TIMEOUT_S)
         try:
-            _resp.read()
+            _body = _resp.read()
         finally:
             _close = getattr(_resp, "close", None)      # the Grok eye on v3813: the response is closed, not left to GC
             if callable(_close):
                 _close()
+        # REG-3198 - "computing" is the walk this ask STARTED, not a read: the lane waits for it to finish
+        _waited = _river_warm_wait_walk(_body, _urlopen or _ur.urlopen, _sleep or time.sleep, _clock or time.time)
         _RIVER_WARM.update(worked=int(_RIVER_WARM.get("worked") or 0) + 1, lastTs=now, owed=0,
-                           ms=int((time.time() - t0) * 1000), say="read the river (%s)" % why)
+                           ms=int((time.time() - t0) * 1000),
+                           say="read the river (%s)%s" % (why, (" after its walk finished (%.0f s)" % _waited)
+                                                         if _waited else ""))
     except Exception as e:
         # The route remembers its own failure in _RIVER_LAST; a read that never reached the route says so here.
         _RIVER_WARM.update(lastTs=now, owed=1, ms=int((time.time() - t0) * 1000),
-                           say="the river read could not ask its own route (%s)" % type(e).__name__)
+                           say=(("the river walk did not finish inside %d s - the walk itself may be failing (UNKNOWN)"
+                                 % RIVER_WARM_TIMEOUT_S) if isinstance(e, TimeoutError) and "river walk" in str(e)
+                                else "the river read could not ask its own route (%s%s)"
+                                % (type(e).__name__, (": " + _wire_text(str(e), 100)) if str(e) else "")))
+    # REG-3198 - THE FIRST GOOD RIVER SINCE A START GOES OUT AT ONCE. The boot beacon left before it, and the next one is
+    # minutes away: a PC that went offline in between kept "has not computed its river" on every Fleet for good.
+    if not _RIVER_WARM.get("beaconed") and isinstance(_RIVER_LAST.get("good"), dict):
+        _RIVER_WARM["beaconed"] = True
+        try:
+            (_beacon or _console_beacon_async)("river")
+        except Exception:
+            _RIVER_WARM["beaconed"] = False
     return dict(_RIVER_WARM)
 
 
@@ -18547,6 +18732,8 @@ def _river_warm_loop():
         try:
             _lane_tick('tvd-river-warm', RIVER_WARM_EVERY_S)
             r = _river_warm_once()
+            # REG-3197 - which river locks are shut, asked here on this lane's thread so the beacon only reads memory
+            _river_locks_note()
             import lane_trace as _lt
             _lt.note('tvd-river-warm', worked=r.get("worked"), owed=r.get("owed"), ms=r.get("ms"),
                      why=str(r.get("say") or "")[:200])
@@ -46135,7 +46322,7 @@ def status_payload():
         # 2026-09-29 — front / background / headless / window-only: the window is a view of the service
         "window": _t("window", window_mode_payload),
         # #71 — can this console still answer its own port (the fault it cannot report over that port)
-        "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "proofRelease": dict(_PROOF_RELEASE), "ciWatch": dict(_CI_WATCH), "repairBook": dict(_REPAIR_BOOK), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
+        "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "proofRelease": dict(_PROOF_RELEASE), "ciWatch": dict(_CI_WATCH), "riverWarm": dict(_RIVER_WARM), "riverLocks": dict(_RIVER_LOCKS_SEEN), "repairBook": dict(_REPAIR_BOOK), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
         # #83 — the child supervisor's receipts (door / watchdog / RAM); the census itself is the doctor's row
         "childGuard": _child_guard_status(),
         "ver": "v3865",
@@ -47273,25 +47460,10 @@ def _river_locks_doctor_row(ask=None):
     reports that answer. It does not open a lock and it does not start a proof. An ask
     that does not come back is UNMEASURED, never a pass.
     """
-    if ask is None:
-        try:
-            import self_arming as _sa
-            ask = _sa.may
-        except Exception as _e:
-            return _river_locks_unmeasured(
-                "the lock could not be imported (%s)" % type(_e).__name__)
-    shut = []
-    try:
-        for lock in _RIVER_LOCKS_ASKED:
-            got = ask(lock)
-            if not (isinstance(got, tuple) and len(got) == 2 and isinstance(got[0], bool)):
-                return _river_locks_unmeasured("may(%s) did not answer" % lock)
-            one_ok, why = got
-            if not one_ok:
-                shut.append((lock, _river_lock_why(why)))
-    except Exception as _e:
-        return _river_locks_unmeasured(
-            "the lock could not be asked (%s)" % type(_e).__name__)
+    # REG-3197 - one reading for this row and the Fleet's lock line (_river_locks_read): two copies would disagree
+    shut, _unmeasured = _river_locks_read(ask)
+    if shut is None:
+        return _river_locks_unmeasured(_unmeasured)
     if shut:
         said = "; ".join("%s (%s)" % (lock, why) for lock, why in shut)
         return _chk(
