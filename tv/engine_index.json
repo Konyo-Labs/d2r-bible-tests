@@ -328,6 +328,19 @@
     "purpose": "Banks the dated CASC re-derivation of the Chronicle denominator — 439 rows minus 24 disableChronicle = 415, minus 12 unspawnable = 403 — and re-derives it from uniqueitems.txt.",
     "territory": "ledger-profile"
   },
+  "ci_budget.py": {
+    "entryPoints": [
+      "vcpus",
+      "job_cost",
+      "month_spend",
+      "decide",
+      "fetch_jobs",
+      "main"
+    ],
+    "gotcha": "The cap is OURS - Ubicloud only alerts. Spend is measured from GitHub's own job records (labels, start, finish) for the workflows that may run on Ubicloud, every started minute rounded UP at the higher published rate; one unreadable job makes the spend UNKNOWN, and UNKNOWN, an unset PROOF_RUNNER or a non-number budget all route to GitHub's free runner. A round goes to Ubicloud only when spend + the next round (the last measured round, else ROUND_DEFAULT_USD) fits PROOF_BUDGET_USD. main() always exits 0.",
+    "purpose": "The proof shards' monthly spending cap (his ruling 2026-11-05: a hard $25): the workflow's budget job asks it which machine this round may use - Ubicloud's 8-core while the month's measured spend plus the next round fits, else GitHub's free runners (v3865)",
+    "territory": "routines-infra"
+  },
   "ci_sim.py": {
     "entryPoints": [
       "python3 tv/ci_sim.py",

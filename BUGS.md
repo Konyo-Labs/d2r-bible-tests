@@ -7,6 +7,17 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3190 - THE PROOF SHARDS COULD RUN ON A PAID RUNNER WITH NO SPENDING CAP (v3865, his ruling 2026-11-05)
+His words: "no way we pass 30$ .. this stops completely and goes back to github if we hit our monthly cap - 25$ is better".
+Ubicloud runs the shards on 8-core machines (measured that evening on a one-job probe: 8 cores, 31 GB, the GitHub-compatible
+ubuntu-24.04 image, on his personal account - no organization needed) for a fraction of GitHub's price, and has NO hard
+cap - its usage alerts "are only for informational purposes and no action is taken automatically". tv/ci_budget.py is the
+cap: the proof workflow's budget job runs first and sends a round to vars.PROOF_RUNNER only while this month's measured
+Ubicloud spend + the next round fits vars.PROOF_BUDGET_USD (25); past it, and whenever the spend cannot be read, GitHub's
+free runners. The meter rounds every started minute up at the higher published rate; the step never fails the run; a
+newer push still cancels the shards (!cancelled(), never always()). Law: tv/test_the_proof_budget_never_passes_its_cap.py
+(7 red-proofs). Depot was measured out first: its $20 plan covers ~one round a month.
+
 ### REG-3189 - EACH PROOF SHARD PROVED ON 2 LANES OF A 4-CORE RUNNER (v3865, his call 2026-11-05: Depot skipped)
 Depot's faster runners need a GitHub organization and this repo lives on a personal account, so he skipped them (moving the
 repo is its own job: 13 files name it). The free speedup first: GitHub's public-repo runners have 4 vCPUs and every proof
