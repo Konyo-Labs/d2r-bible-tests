@@ -9062,9 +9062,16 @@ def env_observe(now_ms=None, path=None):
 
 
 def env_reprove_state(state=None, gates=None, path=None):
-    """-> {"owed": [name], "from": parts, "to": parts, "since"} while a re-prove is open, else None. Never raises."""
+    """-> {"owed": [name], "from": parts, "to": parts, "since"} while a re-prove is open; {"owed": None, "unknown": why}
+    when whether one is open cannot be told; else None. Never raises.
+
+    v3866 (the #231 eye on v3862) - "could not tell" was None, the same answer as "none open", so a corrupt record or a
+    failure after a pending one was found let self_arming arm a surface over a census it had just called stale. Callers
+    that read only `owed` see nothing new; the lock reads `unknown` and fails CLOSED. [[unknown-stays-unknown]]"""
     try:
         rec = env_load(path)
+        if rec is None:
+            return {"owed": None, "unknown": "this PC's environment record exists and will not parse"}
         if not isinstance(rec, dict) or not rec.get("pending"):
             return None
         if state is None:
@@ -9079,8 +9086,8 @@ def env_reprove_state(state=None, gates=None, path=None):
                 _ENV_HAVE.update(at=time.time(), have=have)
         return {"owed": env_owed(state, rec, have), "from": rec.get("parts"), "to": rec.get("pendingParts"),
                 "since": rec.get("since")}
-    except Exception:
-        return None
+    except Exception as e:
+        return {"owed": None, "unknown": "the open environment re-prove could not be read (%s)" % type(e).__name__}
 
 
 def env_change_words(er):

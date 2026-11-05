@@ -301,11 +301,10 @@ _SHADOW_CACHE = {"mtime": -1.0, "on": True}
 
 
 def shadow_ai_on():
-    """Is the lurking reader allowed to fire right now? Default ON, and ABSENT means ON.
-
-    A missing file must read as ON, not OFF: the eye has run by default since v932 and a fresh
-    checkout, a wiped frames dir or a first run must not silently switch it off. Off is only ever
-    something he chose.
+    """Is the lurking reader allowed to fire right now? ALWAYS ON (his ruling 2026-11-03: "shadow reader shouldnt be able
+    to be turned on or off"). A missing, unreadable or stale OFF file reads ON, and control_app._shadow_set writes ON
+    whatever it is asked; only the TV_TEXT_EYE=0 boot override turns it off. (v3866: this said "Off is only ever
+    something he chose" after v3859 made OFF impossible - the #231 eye on v3860 read the prose as the contract.)
 
     Cached on mtime because the caller polls this every 0.7s; a stat is cheap, a json parse 86,000
     times an hour is not.

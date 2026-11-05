@@ -21,6 +21,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -164,7 +165,84 @@ class TheLaneProvesItWithoutTheCache(unittest.TestCase):
         self.assertIn("_env_observe()                      # v3862 (item 4)", src)
 
 
+class TheLockReadsIt(unittest.TestCase):
+    """v3866 (the #231 eye on v3862: "self_arming._heart_says_watched fails open") - the lock's environment branch, driven
+    through the real _heart_says_watched() on a census file whose every earlier check passes (its TV_HEART_CENSUS seam).
+    An open re-prove is STALE; a record whose state cannot be told fails CLOSED - it was None, the answer for "none
+    open", so the lock armed over it."""
+
+    def setUp(self):
+        import self_arming as SA
+        self.SA = SA
+        self.d = tempfile.mkdtemp(prefix="env-lock-")
+        self.p = os.path.join(self.d, ".heart2.json")
+        with io.open(self.p, "w", encoding="utf-8") as fh:
+            json.dump({"gatesFingerprint": "fp-law", "blind": [], "verdictAt": {}}, fh)
+        self.saved = os.environ.get("TV_HEART_CENSUS")
+        os.environ["TV_HEART_CENSUS"] = self.p
+        self.fp = mock.patch.object(H, "gates_fingerprint", lambda: "fp-law")
+        self.fp.start()
+        H._ENV_HAVE.update(at=0.0, have=None)
+
+    def tearDown(self):
+        self.fp.stop()
+        if self.saved is None:
+            os.environ.pop("TV_HEART_CENSUS", None)
+        else:
+            os.environ["TV_HEART_CENSUS"] = self.saved
+        H._ENV_HAVE.update(at=0.0, have=None)
+        shutil.rmtree(self.d, ignore_errors=True)
+
+    def _env(self, raw):
+        with io.open(os.path.join(self.d, H.ENV_NAME), "w", encoding="utf-8") as fh:
+            fh.write(raw)
+
+    def test_no_record_says_nothing_about_the_environment(self):
+        _ok, why = self.SA._heart_says_watched()
+        self.assertNotIn("environment", str(why), "a PC with no environment record was refused over it: %r" % why)
+
+    def test_an_open_re_prove_reads_stale(self):
+        self._env(json.dumps({"fingerprint": "aaa", "parts": {"python": "3.9"}, "pending": "bbb",
+                              "pendingParts": {"python": "3.12"}, "since": T0}))
+        ok, why = self.SA._heart_says_watched()
+        self.assertFalse(ok)
+        self.assertIn("environment changed", why)
+        self.assertEqual(self.SA.heart_block_kind(why), "stale")
+
+    def test_a_record_that_will_not_parse_fails_closed(self):
+        self._env("{ not json")
+        self.assertEqual(H.env_reprove_state({}, path=os.path.join(self.d, H.ENV_NAME)).get("owed"), None)
+        ok, why = self.SA._heart_says_watched()
+        self.assertFalse(ok, "the lock armed while whether this PC's environment changed could not be told")
+        self.assertIn("cannot be told", why)
+        self.assertEqual(self.SA.heart_block_kind(why), "other", "UNKNOWN was softened to a prover catching up: %r" % why)
+
+    def test_a_failure_after_a_pending_record_is_found_fails_closed(self):
+        self._env(json.dumps({"fingerprint": "aaa", "pending": "bbb", "since": T0}))
+        with mock.patch.object(H, "env_owed", side_effect=RuntimeError("boom")):
+            er = H.env_reprove_state({}, path=os.path.join(self.d, H.ENV_NAME))
+            self.assertEqual((er.get("owed"), "could not be read" in er.get("unknown", "")), (None, True), er)
+            ok, why = self.SA._heart_says_watched()
+        self.assertFalse(ok)
+        self.assertIn("cannot be told", why)
+
+
 RED_PROOF = [
+    {"why": "v3866 (#231 on v3862) - an environment record that will not parse reads as 'no re-prove open', so locks arm",
+     "file": "tv/heart2.py",
+     "find": "        if rec is None:\n            return {\"owed\": None, \"unknown\": \"this PC's environment record exists and will not parse\"}\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "v3866 (#231 on v3862) - a failure after a pending record is found reads as 'none open'",
+     "file": "tv/heart2.py",
+     "find": "        return {\"owed\": None, \"unknown\": \"the open environment re-prove could not be read (%s)\" % type(e).__name__}\n",
+     "replace": "        return None\n",
+     "matches": 1},
+    {"why": "v3866 (#231 on v3862) - the lock reads 'cannot be told' as permission (fails open)",
+     "file": "tv/self_arming.py",
+     "find": "    if _er and _er.get(\"unknown\"):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
     {"why": "v3862 - a part that could not be read becomes a fingerprint (a timeout re-proves every law)",
      "file": "tv/heart2.py",
      "find": "    if all(parts.get(k) not in (None, \"\") for k in ENV_KEYS):\n",

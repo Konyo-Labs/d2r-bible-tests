@@ -1510,10 +1510,17 @@ def _heart_says_watched():
     # v3862 (item 4) - AN OPEN ENVIRONMENT RE-PROVE IS A PROVER THAT HAS NOT CAUGHT UP: this PC's python, OS build, node
     # or autocrlf moved, and its proofs were earned under the old one. STALE, so his v3042 rule applies (an act with no
     # undo waits, an ordinary one refuses on merit); an older heart2 without the re-prove says nothing here.
-    try:
-        _er = _h2.env_reprove_state(_st, path=os.path.join(os.path.dirname(os.path.abspath(_p)), _h2.ENV_NAME))
-    except Exception:
-        _er = None
+    # v3866 (the #231 eye on v3862) - "could not tell" fails CLOSED like every other unreadable branch above; only an older
+    # heart2 that has no re-prove at all says nothing here
+    _er = None
+    if hasattr(_h2, "env_reprove_state"):
+        try:
+            _er = _h2.env_reprove_state(_st, path=os.path.join(os.path.dirname(os.path.abspath(_p)), _h2.ENV_NAME))
+        except Exception as _e:
+            _er = {"owed": None, "unknown": "the environment re-prove check raised %s" % type(_e).__name__}
+    if _er and _er.get("unknown"):
+        return False, ("the heart2 PROOF census may be STALE: whether this PC's environment changed cannot be told (%s) "
+                       "- UNKNOWN fails CLOSED." % str(_er.get("unknown"))[:160])
     if _er and _er.get("owed"):
         return False, ("the heart2 PROOF census is STALE (not the Heart panel's live census): this PC's environment "
                        "changed (%s) and %d gate(s) are proved again under it."
