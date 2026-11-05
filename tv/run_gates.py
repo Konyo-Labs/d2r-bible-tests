@@ -13425,6 +13425,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_console_tells_time_on_one_clock.py")], 60,
          needs_app=False,
          why='v3864 (GrokBot Batch A 4) - a time on the console with no hour12 of its own is 24-hour, like the header clock'),
+    Gate("test_a_board_tab_hides_the_dashboard_it_covers",
+         [sys.executable, os.path.join(HERE, "test_a_board_tab_hides_the_dashboard_it_covers.py")], 60,
+         needs_app=False,
+         why='v3864 (GrokBot Batch A 2) - the dead home dashboard is not painted under an open board tab (opacity, the layout tree kept)'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
