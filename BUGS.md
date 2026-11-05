@@ -7,6 +7,21 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3180 - A WAR MULE THE BOARD MADE STAYED ON THE ROSTER AFTER ITS OVERFLOW WAS GONE (v3864, his ruling 2026-11-05 (d))
+His ruling on the board question "should the board delete a war mule it made once nothing lands on it?": "if a vault gets
+reset then yes it will delete it automatically ... open to opening mules automatically and if not needed like war mules only
+when the shared is full". REG-3101 stopped the make task and left the mule ("his call"). Now every move paint takes back a war
+mule the board made (auto.by 'board') that _vaultWarMuleNeeded says nothing lands on, so after a vault reset too, and MOVE
+TASKS says so for the rest of the page ("The board removed WAR-A - it made it for a war stash overflow that is gone"). His
+hand wins: a mule he renamed stays (needed by that test), one he ticked as made in the game is never removed - it becomes a
+"Delete in the game" task whose tick makes the board forget it (_vaultWarForget), and one with anything filed on it stays. A
+shadow, a guest world or a held store changes nothing. Laws: test_a_war_mule_whose_overflow_is_gone_is_no_longer_a_task
+(rewritten to the ruling, 2 new red-proofs), test_the_board_names_a_war_mule_by_a_name_the_game_accepts (its old WAR1 is one
+he made in the game).
+GAP, NOT A PASS: REG-3101's make filter and its "no longer needed" words are now the fallback for a REFUSED take-back
+(a shadow, a guest world, a held mule store); their two red-proofs went BLIND (the take-back removes the case) and are
+retired, and no law reaches a refused world yet - the page's own boot paint takes the mule back first.
+
 ### REG-3179 - A MULE CARD'S ✕ TOOK A COPY OUT WITH NO QUESTION (v3864, his ruling 2026-11-05 (c))
 His ruling on the board question "should a shelf card's ✕ remove one copy?": "remove the copy with a popup message
 confirmation confirming it". The chain's per-copy ✕ (REG-2849) removed it at once, Undo putting it back. Now the three

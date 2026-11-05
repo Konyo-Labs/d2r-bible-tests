@@ -9,7 +9,8 @@ stayed, still saying the moves to it were below: a task with nothing behind it, 
 Now a make row is asked whether anything he owns lands on its mule (an open or done move row, or a name filed on it). A
 board-made war mule with nothing landing on it loses its make line, and MOVE TASKS says why in its place ("WAR-A - no longer
 needed: its overflow is gone ..."), never silently. His hand always wins: a war mule he made in the game, or renamed, keeps
-what it had. The mule itself stays on the roster (no door retracts a board-made mule; that is his call - delete it). The
+what it had. v3864 - his ruling 2026-11-05 (d): the board now TAKES BACK a war mule it made that nothing lands on (and says
+so), and a war mule he made in the game becomes his "Delete in the game" task; it is never removed by the board. The
 CHARMS mule's line is not an overflow's and is untouched. His un-own's undo (vaultRestoreLast) brings the line back, because
 the line is read off the plan on every paint.
 
@@ -47,7 +48,8 @@ function paint(){ W.renderVault(); H.flush(60, 3); W.renderVault(); }
 function list(){ return (document.getElementById('vault-move-list') || {}).innerHTML || ''; }
 function makeRows(){ return (list().match(/<li class="vtk-line vtk-make"[\s\S]*?<\/li>/g) || []).map(function(x){ return x.replace(/<[^>]+>/g, ''); }); }
 function goneRows(){ return (list().match(/<p class="vtk-make-gone"[\s\S]*?<\/p>/g) || []).map(function(x){ return x.replace(/<[^>]+>/g, ''); }); }
-function look(){ return { owned: owned.has(SH), wars: wars().map(function(m){ return m.name; }), make: makeRows(), gone: goneRows(),
+function unmakeRows(){ return (list().match(/<li class="vtk-line vtk-unmake"[\s\S]*?<\/li>/g) || []).map(function(x){ return x.replace(/<[^>]+>/g, ''); }); }
+function look(){ return { owned: owned.has(SH), wars: wars().map(function(m){ return m.name; }), make: makeRows(), gone: goneRows(), unmake: unmakeRows(),
   badge: (document.getElementById('vault-tasks-n') || {}).textContent || '' }; }
 window.uiConfirm = function(){ return Promise.resolve(true); };
 W._vaultAutoIntakeSet(false);
@@ -75,10 +77,9 @@ W.vaultRemove([SH], { why: 'he sold it' }); paint();
 OUT.b = look();
 """
 FILED = BASE + r"""
-W.vaultRemove([SH], { why: 'he sold it' }); paint();
-OUT.b = look();
 W.vaultHandAdd('Arreat\'s Face'); OUT.filed = (W.vaultAssign('Arreat\'s Face', _war.id) || {}); paint();
 OUT.filed = { ok: OUT.filed.ok !== false, why: OUT.filed.why || null };
+W.vaultRemove([SH], { why: 'he sold it' }); paint();
 OUT.c = look();
 """
 SEEDED = r"""
@@ -129,9 +130,11 @@ class AWarMuleWhoseOverflowIsGoneIsNoLongerATask(unittest.TestCase):
         b = o["b"]
         self.assertTrue(o["rm"] and b["owned"] is False, "PREMISE: the Shako was not removed: %r" % b)
         self.assertEqual(self._war_make(b, o["name"]), [], "the make task stayed after its overflow was gone: %r" % b["make"])
-        self.assertTrue([g for g in b["gone"] if g.startswith(o["name"]) and "no longer needed: its overflow is gone" in g],
-                        "the make task vanished without a word: %r" % b["gone"])
-        self.assertEqual(b["wars"], [o["name"]], "the board retracted the mule itself - that is his call: %r" % b["wars"])
+        # v3864 - his ruling 2026-11-05 (d): a war mule the board made lives only while the shared stash overflows. The board
+        # takes it back (it had been "his call", REG-3101) and says so; the CHARMS mule and his hand are untouched.
+        self.assertTrue([g for g in b["gone"] if g.startswith("The board removed") and o["name"] in g],
+                        "the war mule left without a word: %r" % b["gone"])
+        self.assertEqual(b["wars"], [], "a war mule the board made for an overflow that is gone is still on the roster: %r" % b["wars"])
 
     def test_the_charms_mule_keeps_its_line(self):
         b = self.w["gone"]["b"]
@@ -151,21 +154,27 @@ class AWarMuleWhoseOverflowIsGoneIsNoLongerATask(unittest.TestCase):
         self._ok(o)
         self.assertEqual((o["out2"], o["out1"], o["copies"]), (True, True, 1), "PREMISE: two copies did not leave: %r" % o)
         self.assertEqual(self._war_make(o["b"], o["name"]), [], "one Shako left, still a make task: %r" % o["b"]["make"])
-        self.assertTrue([g for g in o["b"]["gone"] if g.startswith(o["name"])], o["b"]["gone"])
+        self.assertTrue([g for g in o["b"]["gone"] if o["name"] in g], o["b"]["gone"])
+        self.assertEqual(o["b"]["wars"], [], "two copies out, the overflow is gone, and the board kept the war mule: %r" % o["b"]["wars"])
 
     def test_a_war_mule_he_made_in_the_game_is_never_said_gone(self):
         o = self.w["ingame"]
         self._ok(o)
         self.assertTrue(o["ticked"], "PREMISE: his tick did not take")
-        self.assertEqual(o["b"]["gone"], [], "a mule he made in the game was called no longer needed: %r" % o["b"])
+        self.assertEqual(o["b"]["gone"], [], "a mule he made in the game was said removed: %r" % o["b"])
+        # v3864 - his ruling (d): one he made in the game is never removed by the board; it is his task to delete it there
+        self.assertEqual(o["b"]["wars"], [o["name"]], "the board removed a war mule he had made in the game: %r" % o["b"]["wars"])
+        self.assertTrue([u for u in o["b"]["unmake"] if ("Delete mule %s in the game" % o["name"]) in u],
+                        "a war mule he made in the game that nothing lands on is not his task to delete: %r" % o["b"])
 
     def test_something_filed_on_it_keeps_the_task(self):
         o = self.w["filed"]
         self._ok(o)
-        self.assertEqual(self._war_make(o["b"], o["name"]), [], "PREMISE: the removal did not end the task: %r" % o["b"])
         self.assertTrue(o["filed"]["ok"], "PREMISE: the filing was refused: %r" % o["filed"])
+        # v3864 - something he filed on it keeps it needed after the overflow goes: never taken back, its task stays
+        self.assertEqual(o["c"]["wars"], [o["name"]], "the board took back a war mule something he owns is filed on: %r" % o["c"])
         self.assertTrue(self._war_make(o["c"], o["name"]),
-                        "an item he filed on the war mule did not bring its make task back: %r" % o["c"])
+                        "an item he filed on the war mule did not keep its make task: %r" % o["c"])
         self.assertEqual(o["c"]["gone"], [], o["c"]["gone"])
 
     def test_an_overflow_the_plan_holds_with_no_move_record_yet_keeps_its_task(self):
@@ -187,37 +196,17 @@ class AWarMuleWhoseOverflowIsGoneIsNoLongerATask(unittest.TestCase):
         self.assertEqual(b["gone"], [], b["gone"])
 
 
+# v3864 - REG-3101's two red-proofs (the make filter, and its "no longer needed" words) are RETIRED: his ruling (d) has
+# the board take the mule back, so on an owner's board those lines no longer decide anything a law can see. They are the
+# fallback for a REFUSED take-back (a shadow, a guest world, a held mule store), which this harness cannot reach: the
+# page's own boot paint takes WAR-A back first. Recorded in BUGS REG-3180 as a gap, not a pass.
 RED_PROOF = [
-    {"why": "REG-3101 - a war mule whose overflow is gone keeps its make task",
-     "file": "bible.html",
-     "find": "    makes = makes.filter(function(m){ if (_vaultWarMuleNeeded(m)) return true; _gone.push(m); return false; });\n",
-     "replace": "",
-     "matches": 1, "needs": "node"},
-    {"why": "REG-3101 - the make task vanishes without a word",
-     "file": "bible.html",
-     "find": "    if (_gone.length) html += _gone.map(function(m){",
-     "replace": "    if (false) html += _gone.map(function(m){",
-     "matches": 1, "needs": "node"},
-    {"why": "REG-3101 - a war mule he renamed is called no longer needed",
-     "file": "bible.html",
-     "find": "    if (m.name !== _vaultWarName(wn) && m.name !== 'WAR' + wn) return true;   /* a name he gave it: his hand */\n",
-     "replace": "",
-     "matches": 1, "needs": "node"},
-    {"why": "REG-3101 - every make row is asked, not only a war mule's under the board's name: CHARMS loses its make task",
-     "file": "bible.html",
-     "find": "    if (!wn || m.id == null) return true;\n    if (m.name !== _vaultWarName(wn) && m.name !== 'WAR' + wn) return true;   /* a name he gave it: his hand */\n",
-     "replace": "    if (m.id == null) return true;\n",
-     "matches": 1, "needs": "node"},
-    {"why": "REG-3101 - the war stash's plan is not asked: an overflow with no move record yet loses its make task",
-     "file": "bible.html",
-     "find": "      if (Object.keys(plan).some(function(k){ var p = plan[k]; return !!(p && p.id === m.id && owned.has(k.split('\\u0000')[0])); })) return true;\n",
-     "replace": "",
-     "matches": 1, "needs": "node"},
-    {"why": "REG-3101 - his filing is not asked: an item he filed on the war mule does not keep its task",
-     "file": "bible.html",
-     "find": "    try { return Object.keys(assign || {}).some(function(n){ return assign[n] === m.id && owned.has(n); }); } catch (eA) { return true; }\n",
-     "replace": "    return false;\n",
-     "matches": 1, "needs": "node"},
+    {"why": "REG-3101 - a war mule he renamed is called no longer needed", "file": "bible.html", "find": "    if (m.name !== _vaultWarName(wn) && m.name !== 'WAR' + wn) return true;   /* a name he gave it: his hand */\n", "replace": "", "matches": 1, "needs": "node"},
+    {"why": "REG-3101 - every make row is asked, not only a war mule's under the board's name: CHARMS loses its make task", "file": "bible.html", "find": "    if (!wn || m.id == null) return true;\n    if (m.name !== _vaultWarName(wn) && m.name !== 'WAR' + wn) return true;   /* a name he gave it: his hand */\n", "replace": "    if (m.id == null) return true;\n", "matches": 1, "needs": "node"},
+    {"why": "REG-3101 - the war stash's plan is not asked: an overflow with no move record yet loses its make task", "file": "bible.html", "find": "      if (Object.keys(plan).some(function(k){ var p = plan[k]; return !!(p && p.id === m.id && owned.has(k.split('\\u0000')[0])); })) return true;\n", "replace": "", "matches": 1, "needs": "node"},
+    {"why": "REG-3101 - his filing is not asked: an item he filed on the war mule does not keep its task", "file": "bible.html", "find": "    try { return Object.keys(assign || {}).some(function(n){ return assign[n] === m.id && owned.has(n); }); } catch (eA) { return true; }\n", "replace": "    return false;\n", "matches": 1, "needs": "node"},
+    {"why": "v3864 (his ruling (d)) - the board keeps a war mule it made after its overflow is gone", "file": "bible.html", "find": "    var drop = _vaultWarIdle().filter(function(m){ return !m.inGame; });\n", "replace": "    var drop = [];\n", "matches": 1, "needs": "node"},
+    {"why": "v3864 (his ruling (d)) - a war mule he made in the game that nothing lands on is not his task to delete", "file": "bible.html", "find": "    var _idleIn = (typeof _vaultWarIdle === 'function') ? _vaultWarIdle().filter(function(m){ return !!m.inGame; }) : [];\n", "replace": "    var _idleIn = [];\n", "matches": 1, "needs": "node"},
 ]
 
 if __name__ == "__main__":

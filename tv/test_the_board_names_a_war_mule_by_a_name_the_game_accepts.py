@@ -84,7 +84,9 @@ class TheBoardNamesAWarMuleByANameTheGameAccepts(unittest.TestCase):
         cls.guest = VPN.run(GUEST, prelude="", timeout=300)
         roster = _base() + [
             {"id": "mboard1", "name": "WAR1", "icon": "x", "added": True, "role": "war", "warN": 1,
-             "auto": {"by": "board", "at": "2026-10-28T18:00:00Z", "why": "law"}},          # the board made it, old name
+             "auto": {"by": "board", "at": "2026-10-28T18:00:00Z", "why": "law"},           # the board made it, old name
+             # v3864 - his ruling 2026-11-05 (d) takes back an idle board-made war mule; one he made in the game stays
+             "inGame": {"by": "hand", "at": "2026-10-28T19:00:00Z"}},
             {"id": "mhis2", "name": "WAR2", "icon": "x", "added": True, "role": "war", "warN": 2}]   # he named it
         cls.legacy = VPN.run(LEGACY, prelude=CLAIM + "localStorage.setItem('d2r_muleRoster', %s);\n" % json.dumps(json.dumps(roster)), timeout=300)
         cls.again = VPN.run(LEGACY, prelude=CLAIM + "localStorage.setItem('d2r_muleRoster', %s);\n"

@@ -57421,6 +57421,49 @@ window.vaultAutoAssign = function(){
     try { renderVault(); } catch (eR) {}
     return { ok: true };
   };
+  /* v3864 (his ruling 2026-11-05 (d), card 38) - A WAR MULE THE BOARD MADE LIVES ONLY WHILE THE SHARED STASH OVERFLOWS.
+     His words: "if a vault gets reset then yes it will delete it automatically ... open to opening mules automatically and if
+     not needed like war mules only when the shared is full". REG-3101 stopped tasking him to make a war mule nothing lands on,
+     and left the mule on the roster ("his call"). Now the board takes back a war mule IT made (auto.by 'board') that
+     _vaultWarMuleNeeded says nothing lands on, on every move paint - so after a vault reset too. His hand always wins: a mule
+     he renamed is 'needed' by that test and stays; one he ticked as made in the game is never removed by the board - it
+     becomes a "Delete in the game" task, and his tick there makes the board forget it. A shadow, a guest world or a held
+     store changes nothing. */
+  function _vaultWarIdle(){
+    return roster.filter(function(m){ return !!(m && m.auto && m.auto.by === 'board' && _vaultWarRole(m) && !_vaultWarMuleNeeded(m)); });
+  }
+  function _vaultWarAutoPrune(){
+    var gone = [];
+    if (window._tvdShadow) return { gone: gone, why: 'a shadow is read only' };
+    if (window._D2R_OWNER !== true) return { gone: gone, why: 'a guest world changes no mule' };
+    var held = (typeof window._vaultHeldFor === 'function') ? window._vaultHeldFor([RK]) : null;
+    if (held) return { gone: gone, why: held.why };
+    var drop = _vaultWarIdle().filter(function(m){ return !m.inGame; });
+    if (!drop.length) return { gone: gone };
+    var was = roster.slice();
+    for (var i = roster.length - 1; i >= 0; i--) if (drop.indexOf(roster[i]) >= 0) roster.splice(i, 1);
+    if (_guardedSet(RK, JSON.stringify(roster)) === false) {
+      roster.length = 0; was.forEach(function(m){ roster.push(m); });
+      return { gone: [], why: 'the mule store refused the write' };
+    }
+    drop.forEach(function(m){ gone.push(m.name); });
+    return { gone: gone };
+  }
+  /* his tick on "Delete in the game": the war mule he made is gone there, so the board forgets it */
+  window._vaultWarForget = function(id){
+    var m = (typeof muleById === 'function') ? muleById(id) : null;
+    if (!m || !m.auto || m.auto.by !== 'board' || !_vaultWarRole(m)) return { ok: false, why: 'not a war mule the board made' };
+    if (_vaultWarMuleNeeded(m)) return { ok: false, why: 'something you own still lands on it' };
+    var held = (typeof window._vaultHeldFor === 'function') ? window._vaultHeldFor([RK]) : null;
+    if (held) { try { status('⚠ ' + m.name + ' was not forgotten - ' + held.why); } catch (eS) {} return { ok: false, why: held.why }; }
+    var i = roster.indexOf(m);
+    if (i < 0) return { ok: false, why: 'it is not on the roster' };
+    roster.splice(i, 1);
+    if (_guardedSet(RK, JSON.stringify(roster)) === false) { roster.splice(i, 0, m); return { ok: false, why: 'the mule store refused the write' }; }
+    try { renderVault(); } catch (eR) {}
+    return { ok: true };
+  };
+  try { window._vaultWarAutoPrune = _vaultWarAutoPrune; window._vaultWarIdle = _vaultWarIdle; } catch (eWp0) {}
   /* his delete of a WAR mule: its war number is kept on the shared stash's entry (saved with the roster the delete writes), so
      the board does not make it again. Only a WAR mule; any other mule he deletes changes nothing here. -> bool (recorded)
      REG-2889 (the full-diff second eye on v3834, reproduced in node) - KEYED BY THE WAR NUMBER, NEVER THE NAME. The board
@@ -58537,6 +58580,17 @@ window.vaultAutoAssign = function(){
         return '<p class="vtk-make-gone" data-mule="' + esc(m.id) + '"><b>' + esc(m.name) + '</b> — no longer needed: its overflow is gone, so'
           + ' making it in the game is not a task now (nothing you own lands on it). The board keeps the mule it made; delete it if you will not need it.</p>';
       }).join('');
+    /* v3864 (his ruling (d)) - what the board took back is said once; a war mule he made in the game that nothing lands on is his task */
+    var _pr = (window._vaultWarPrunedSay || []).filter(function(n){ return !(typeof _vaultWarMules === 'function' && _vaultWarMules().some(function(w){ return w.name === n; })); });   /* a name the board made again is not 'removed' */
+    if (_pr.length) html += '<p class="vtk-make-gone" data-pruned="' + _pr.length + '">The board removed <b>' + _pr.map(esc).join('</b>, <b>') + '</b> - it made '
+      + (_pr.length === 1 ? 'it' : 'them') + ' for a war stash overflow that is gone, and you had not made ' + (_pr.length === 1 ? 'it' : 'them') + ' in the game.</p>';
+    var _idleIn = (typeof _vaultWarIdle === 'function') ? _vaultWarIdle().filter(function(m){ return !!m.inGame; }) : [];
+    if (_idleIn.length) html += '<p class="vtk-sec" data-sec="unmake">Delete in the game · ' + _idleIn.length + '</p><ol class="vtk-list" data-sec="unmake">'
+      + _idleIn.map(function(m){
+          return '<li class="vtk-line vtk-unmake" data-mule="' + esc(m.id) + '"><input type="checkbox" class="vtk-tick" aria-label="I deleted ' + esc(m.name) + ' in the game"'
+            + ' onclick="event.stopPropagation()" onchange="window._vaultWarForget(\'' + jsArg(m.id) + '\')">'
+            + '<span class="vtk-say">Delete mule <b>' + esc(m.name) + '</b> in the game - its war stash overflow is gone and nothing you own lands on it; tick when it is gone and the board forgets it</span></li>';
+        }).join('') + '</ol>';
     if (moves.length) html += '<p class="vtk-sec" data-sec="moves">Moves · ' + moves.length + '</p>'
       + '<ol class="vtk-list" data-sec="moves">' + moves.map(line).join('') + '</ol>'; /* L1 (Elad v3778) one collapsed row per task, never a shared 'Location not seen yet' block */
     if (throws.length) html += '<section class="vmv-throw" data-holder="THROW OUT"><p class="vtk-sec" data-sec="throws">Throw-outs · ' + throws.length + '</p><ol class="vtk-list" data-sec="throws">' + throws.map(line).join('') + '</ol></section>';
@@ -59427,6 +59481,16 @@ window.vaultAutoAssign = function(){
       try { _wa = (typeof _vaultWarAutoMule === 'function') ? _vaultWarAutoMule() : null; } catch (eWa) { _wa = { made: [], why: 'it raised (' + String((eWa && eWa.message) || eWa).slice(0, 60) + ')' }; }
       window._vaultWarAuto = _wa;
       if (_wa && _wa.made && _wa.made.length) built = _vaultMoveCollect();
+      /* v3864 (his ruling (d)) - and takes back the war mules it made that nothing lands on any more */
+      var _wp = null;
+      try { _wp = (typeof _vaultWarAutoPrune === 'function') ? _vaultWarAutoPrune() : null; } catch (eWp) { _wp = { gone: [], why: 'it raised' }; }
+      window._vaultWarPruned = _wp;
+      if (_wp && _wp.gone && _wp.gone.length) {
+        /* said for the rest of this page's life, not only on the paint that took it back (the next paint has nothing to prune) */
+        var _said = window._vaultWarPrunedSay || (window._vaultWarPrunedSay = []);
+        _wp.gone.forEach(function(n){ if (_said.indexOf(n) < 0) _said.push(n); });
+        built = _vaultMoveCollect();
+      }
       window._moveModel = built;
       var host = (typeof document !== 'undefined' && document.getElementById) ? document.getElementById('vault-move-list') : null;
       if (host) { host.hidden = false; host.innerHTML = ((typeof _vaultMoveHeldHtml === 'function') ? _vaultMoveHeldHtml() : '') + _vaultMoveHtml(built); }
