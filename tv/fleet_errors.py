@@ -21,6 +21,10 @@ import sys
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+from console_safe import enable as _console_safe_enable  # noqa: E402 - a cp1255 console must survive its own report
+_console_safe_enable()
 SEEN = os.path.join(HERE, ".fleet_errors_seen.json")
 FLEET_URL = "http://127.0.0.1:17772/api/fleet"
 

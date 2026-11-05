@@ -21,6 +21,11 @@ import os
 import subprocess
 import sys
 
+if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from console_safe import enable as _console_safe_enable  # noqa: E402 - a cp1255 console must survive its own report
+_console_safe_enable()
+
 REPO_SLUG = "KonyoDigital/d2r-bible-tests"
 
 #: what GitHub must have SUCCEEDED on the exact sha before the Mac may skip its own grading. Named by workflow, matched

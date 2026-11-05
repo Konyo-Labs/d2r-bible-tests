@@ -25,6 +25,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
+from console_safe import enable as _console_safe_enable  # noqa: E402 - a cp1255 console must survive its own report
+_console_safe_enable()
 import ci_verdict as CV  # noqa: E402
 
 #: each REQUIRED workflow's file, for `gh workflow run` when its path filter did not fire on the ci push
@@ -87,7 +89,9 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
     p = _git(run, "-c", "core.hooksPath=hooks", "push", remote,
              "+HEAD:refs/heads/ci/claude-%s" % version, "+HEAD:refs/heads/ci/proof-keys-%s" % version)
     if p.returncode != 0:
-        say("ship: the ci push was refused:\n%s" % (p.stderr or p.stdout or "").strip()[-600:])
+        _all = ((p.stdout or "") + "\n" + (p.stderr or "")).splitlines()
+        _why = [l for l in _all if "\u274c" in l or "\u2717" in l or "refused" in l.lower()] or _all[-8:]
+        say("ship: the ci push was refused (the hook's own words):\n%s" % "\n".join(_why[:12]))
         return 1
     t0 = clock()
     dispatched, last = False, None
