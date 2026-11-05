@@ -1,5 +1,23 @@
 [
   {
+    "ver": "v3864",
+    "date": "2026-11-05",
+    "items": [
+      "v3864 - the integration chain lands, 93 vault, d2jsp and heart commits replayed onto main (#233)",
+      "v3864 - a locker next mule is named by its character on every surface (REG-2996, REG-3062)",
+      "v3864 - the d2jsp desk is read only in a shadow, and every post and trade has a history (REG-3094, REG-3095)",
+      "v3864 - the heart fan places each caption from its width so no two overlap (REG-3091, #84)",
+      "v3864 - the Characters room says why this PC saves name what they name (REG-2927, REG-3079)",
+      "v3864 - a vault copy keeps its own cell, base and trade slot, and its tile X takes out that copy (REG-2849)",
+      "v3864 - the rare grammar reads every slot of the game rare tables (REG-3087, REG-3088, REG-3089)",
+      "v3864 - terror zones get their own players factor, and the Pit odds come from Pit Level 1 (REG-2954, REG-2955)",
+      "v3864 - the eagle doctor pass runs in a short-lived child (REG-2987)",
+      "v3864 - a red re-push on GitHub starts from its red run proofs, and Pro runs 22 proof shards (REG-3169)",
+      "v3864 - a lock whose door lives in the console app is guarded only by laws on its own code (REG-2865)",
+      "v3864 - every Magic and Rare keeper is a record, one cell per copy (REG-2971 to 2975)"
+    ]
+  },
+  {
     "ver": "v3863",
     "date": "2026-11-05",
     "items": [
