@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3860",
+  "ver": "v3861",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3860: Windows console fixes, every PC proves itself, three blind CI proofs see their tamper",
+  "note": "v3861: a sunder counted once, d2jsp sign-in on Windows, fleet reasons",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

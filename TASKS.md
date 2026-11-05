@@ -1823,7 +1823,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3860** | `(this commit)` | v3860 — Windows console fixes, every PC proves itself, three blind CI proofs see their tamper |
+| **v3861** | `(this commit)` | v3861 — a sunder counted once, d2jsp sign-in on Windows, fleet reasons |
+| **v3860** | `8d75f273` | v3860 — Windows console fixes, every PC proves itself, three blind CI proofs see their tamper |
 | **v3859** | `a550cee8` | v3859 — session counting, ALT shelf and uniques |
 | **v3858** | `41ceb8e3` | v3858 — layout, sockets, pushes and worn pictures |
 | **v3857** | `7d10ee58` | v3857 — shadow Characters, theatre and d2jsp fixes |
