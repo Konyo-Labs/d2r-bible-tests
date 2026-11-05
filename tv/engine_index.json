@@ -1564,6 +1564,23 @@
     "purpose": "REG-1632 - the one resolver for a real POSIX bash, used by every law that drives a shell snippet (the pre-push port chooser, the launcher block, the push-line clock), so those laws prove on the ALT too.",
     "territory": "gates-proofs"
   },
+  "preflight.py": {
+    "entryPoints": [
+      "read_costs",
+      "drives_browser",
+      "select",
+      "run_one",
+      "run_laws",
+      "prove_base",
+      "prove_changed",
+      "anchors",
+      "preflight",
+      "main"
+    ],
+    "gotcha": "Runs only NON-BROWSER laws (a law whose own file or a test module it imports, two levels down, CALLS a Board, render_check or Playwright is GitHub's - containing launch code is not calling it) and only those costing <= CAP_S on CI (tv/gate_costs.json); both kinds are named as GitHub's, never counted as passed. The changed laws are measured from origin/ci/claude-<v> when it is an ancestor (a fix re-push proves only what changed since GitHub last graded), else origin/main; past PROVE_MAX they are GitHub's and it says so. An unreadable cost table or an unknown changed set is UNKNOWN (exit 2), never green.",
+    "purpose": "The pre-flight ship_when_green runs before a version's ci branches go up: every cheap non-browser law at nice 10, heart2 --prove over the changed laws, and the hook's anchor census - what GitHub would find in its first hour, found here in ~10 minutes (v3865, his ask 2026-11-05)",
+    "territory": "routines-infra"
+  },
   "printer.py": {
     "entryPoints": [
       "stream",

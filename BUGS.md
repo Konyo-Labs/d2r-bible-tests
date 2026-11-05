@@ -7,6 +7,25 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3188 - A WORKFLOW GITHUB DID NOT FIRE WAS DISPATCHED ON THE WRONG BRANCH, AND A REFUSED DISPATCH WAS NEVER ASKED AGAIN (v3865)
+v3864 round 3, 2026-11-05 ~18:05 Israel time: GitHub fired no workflow on the ci push, so ship_when_green dispatched all four -
+once each. Two answered HTTP 500/502 and were never asked again (the Windows boot would have left the ship waiting its 5-hour
+limit), and the proof shards went to ci/claude-v3864, where GitHub's branch-scoped cache could not restore the proofs that
+version's red run had banked on ci/proof-keys-v3864 (REG-3169's whole point). Now dispatch_ref sends the proof shards to
+ci/proof-keys-<v>, and a refused dispatch is asked again on the next poll, up to DISPATCH_TRIES. Law:
+tv/test_a_push_trusts_github_only_for_the_exact_commit.py (3 new red-proofs).
+
+### REG-3187 - A VERSION WENT TO GITHUB WITH REDS THIS PC COULD HAVE FOUND IN MINUTES, AND EACH COST A 40-60 MIN ROUND (v3865, his ask)
+His words, 2026-11-05: "we need to integrate or implement something for this not to re-run another 40 minutes everytime".
+Measured that day: a proof is served only over byte-identical inputs and bible.html is in ~88% of the laws' inputs
+(control_app.py ~72%), so any real fix re-proves most of the set - kept whole on purpose (prove once, never wrong). What
+costs the hours is a RED round: v3864's first came back with 16 reds (14 of 17 agent-suite reds in laws <= 20 s on CI), its
+second with 9 BLIND proofs a local prove reproduced. tv/preflight.py now runs before ship_when_green pushes the ci branches:
+every non-browser law <= 20 s on CI (~1,380 laws, ~10 min at 3 workers here; v3864's tree: 1,382 of 1,382 clean), heart2
+--prove over the laws changed since GitHub last graded the version (up to 40 - past that GitHub's, said), and the hook's
+anchor census; a red never pushes. Browser-driving laws (two imports deep) are never run here. `--no-preflight` skips it,
+by name. Law: tv/test_a_version_is_preflighted_before_github_grades_it.py (8 red-proofs).
+
 ### REG-3186 - ON A SHORT SCREEN THE INBOX'S FIRST ANSWER SCROLLED UNDER THE DOCK'S HANDLE (v3864, #233 chain REG-3092)
 tests/v1800_tray_popovers_reachable.spec.ts on v3864's first GitHub run, 640x400 with the claim bar up: "the panel's first
 answer is covered by dock-handle". REG-2862 hides the inbox orb at <=480px tall and REG-3092 pointed this case at the

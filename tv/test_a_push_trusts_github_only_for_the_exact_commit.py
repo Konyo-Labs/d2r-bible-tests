@@ -184,13 +184,17 @@ class TheMacOnlySplit(unittest.TestCase):
 class TheShipWaitsForGitHubOnTheExactCommit(unittest.TestCase):
     """v3862 - tv/ship_when_green.py: ci/ branches first, GitHub's verdict on THAT sha, main only on green."""
 
-    def _ship(self, verdicts, dirty="", ff=0, wait_s=600):
+    def _ship(self, verdicts, dirty="", ff=0, wait_s=600, preflight=0, refuse_dispatch=0):
         import ship_when_green as SW
         calls, said, t = [], [], [0.0]
         feed = list(verdicts)
+        refused = [refuse_dispatch]
 
         def run(argv, **kw):
             calls.append(list(argv))
+            if argv[:3] == ["gh", "workflow", "run"] and refused[0] > 0:
+                refused[0] -= 1
+                return subprocess.CompletedProcess(argv, 1, "", "HTTP 502: Server Error")
             if argv[:3] == ["git", "status", "--porcelain"]:
                 return subprocess.CompletedProcess(argv, 0, dirty, "")
             if argv[:3] == ["git", "rev-parse", "HEAD"]:
@@ -205,7 +209,10 @@ class TheShipWaitsForGitHubOnTheExactCommit(unittest.TestCase):
 
         def sleep(s):
             t[0] += s
-        rc = SW.ship("v3862", run=run, fetch=fetch, sleep=sleep, clock=lambda: t[0], say=said.append, wait_s=wait_s)
+        pf = []
+        rc = SW.ship("v3862", run=run, fetch=fetch, sleep=sleep, clock=lambda: t[0], say=said.append, wait_s=wait_s,
+                     preflight=lambda v, say: (pf.append(v), preflight)[1])
+        self.pf_asked = pf
         mains = [c for c in calls if c[:1] == ["git"] and "HEAD:main" in c]
         return rc, calls, mains, said
 
@@ -241,15 +248,54 @@ class TheShipWaitsForGitHubOnTheExactCommit(unittest.TestCase):
                 self.assertEqual(rc, 2)
                 self.assertEqual(mains, [], "main was pushed without a GitHub verdict")
 
-    def test_a_workflow_its_paths_did_not_fire_is_dispatched_once_on_the_ci_branch(self):
+    def test_a_workflow_its_paths_did_not_fire_is_dispatched_once_on_its_own_branch(self):
+        # v3865 - the proof shards are dispatched on ci/proof-keys-<v>: a run on ci/claude-<v> cannot restore the proofs its
+        # version's red run banked (GitHub scopes the cache by branch) - v3864 round 3, 2026-11-05
         rc, calls, mains, said = self._ship([_all_green()[:3]] * 6 + [_all_green()])
         self.assertEqual(rc, 0, said)
         disp = [c for c in calls if c[:3] == ["gh", "workflow", "run"]]
         self.assertEqual(disp, [["gh", "workflow", "run", "proof-keys-shards.yml", "--repo", CV.REPO_SLUG,
-                                 "--ref", "ci/claude-v3862"]])
+                                 "--ref", "ci/proof-keys-v3862"]])
+        import ship_when_green as SW
+        self.assertEqual(SW.dispatch_ref(CV.REQUIRED[0], "v3862"), "ci/claude-v3862", "the other workflows left their branch")
+
+    def test_a_refused_dispatch_is_asked_again_on_the_next_poll(self):
+        # v3865 - GitHub answered HTTP 500/502 to two dispatches on 2026-11-05; asked once, the ship would have waited 5 h
+        rc, calls, mains, said = self._ship([_all_green()[:3]] * 8 + [_all_green()], refuse_dispatch=2)
+        self.assertEqual(rc, 0, said)
+        disp = [c for c in calls if c[:3] == ["gh", "workflow", "run"]]
+        self.assertEqual(len(disp), 3, "a refused dispatch was not asked again (or a granted one was asked twice): %r" % disp)
+        self.assertTrue(any("REFUSED (try 1" in l for l in said), said)
+
+    def test_a_red_or_unknown_pre_flight_pushes_nothing(self):
+        # v3865 (his ask 2026-11-05: "not to re-run another 40 minutes everytime") - what GitHub would find first is
+        # looked for on this PC first; a red one never reaches GitHub
+        for code, want in ((1, 1), (2, 2)):
+            with self.subTest(preflight=code):
+                rc, calls, mains, said = self._ship([_all_green()], preflight=code)
+                self.assertEqual(rc, want, said)
+                self.assertEqual(self.pf_asked, ["v3862"], "the pre-flight was not asked about this version")
+                self.assertFalse([c for c in calls if "push" in c], "pushed to GitHub over a %s pre-flight" % code)
+        rc, calls, mains, said = self._ship([_all_green()])
+        self.assertEqual((rc, self.pf_asked), (0, ["v3862"]), said)
 
 
 RED_PROOF = [
+    {"why": "v3865 - a red pre-flight still pushes the version to GitHub",
+     "file": "tv/ship_when_green.py",
+     "find": "        if pcode != 0:\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "v3865 - the proof shards are dispatched on ci/claude-<v>, where the banked proofs cannot be restored",
+     "file": "tv/ship_when_green.py",
+     "find": "    return (\"ci/proof-keys-%s\" if WORKFLOW_FILES.get(wf) == \"proof-keys-shards.yml\" else \"ci/claude-%s\") % version\n",
+     "replace": "    return \"ci/claude-%s\" % version\n",
+     "matches": 1},
+    {"why": "v3865 - a refused dispatch is never asked again",
+     "file": "tv/ship_when_green.py",
+     "find": "                tries[wf] = -1 if d.returncode == 0 else n + 1\n",
+     "replace": "                tries[wf] = -1\n",
+     "matches": 1},
     {"why": "v3862 - a green run on ANOTHER commit vouches for this one",
      "file": "tv/ci_verdict.py",
      "find": "    mine = [r for r in runs if isinstance(r, dict) and str(r.get(\"headSha\") or \"\").startswith(sha)]\n",

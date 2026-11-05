@@ -38,6 +38,21 @@ WORKFLOW_FILES = {
 }
 POLL_S = 60
 DISPATCH_AFTER_S = 120          # GitHub starts a push's runs within seconds; after two minutes a missing one never will
+DISPATCH_TRIES = 5              # v3865 - a refused dispatch (GitHub answered 500/502 on 2026-11-05) is asked again next poll
+
+
+def dispatch_ref(wf, version):
+    """v3865 - the branch a missing workflow is dispatched on. The proof shards run on ci/proof-keys-<v>: a run dispatched on
+    ci/claude-<v> cannot restore the proofs its version's red run banked (GitHub's cache is scoped by branch) and re-proves
+    everything (measured 2026-11-05, v3864 round 3: GitHub fired nothing on the push and the dispatch went to ci/claude)."""
+    return ("ci/proof-keys-%s" if WORKFLOW_FILES.get(wf) == "proof-keys-shards.yml" else "ci/claude-%s") % version
+
+
+def _preflight(version, say):
+    """v3865 (his ask 2026-11-05) - tv/preflight.py before the ci branches go up. -> its exit code (0 green, 1 red, 2 unknown)"""
+    import preflight as _pf
+    code, _reds = _pf.preflight(say=say, version=version)
+    return code
 
 
 def _git(run, *args, **kw):
@@ -61,7 +76,7 @@ def missing(runs, sha):
     return [wf for wf in CV.REQUIRED if wf not in have]
 
 
-def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_s=240 * 60, remote="origin"):
+def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_s=240 * 60, remote="origin", preflight=None):
     """-> exit code: 0 main pushed · 1 GitHub said red / the main push refused · 2 timed out or unknown · 3 refused."""
     run = run or subprocess.run
     fetch = fetch or CV.fetch
@@ -85,6 +100,14 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
     if ff.returncode != 0:
         say("ship: refused - HEAD %s does not fast-forward %s/main" % (sha[:9], remote))
         return 3
+    # v3865 (his ask 2026-11-05: "not to re-run another 40 minutes everytime") - what GitHub would find in its first hour is
+    # looked for here first; a red pre-flight never reaches GitHub. preflight=False is the explicit skip (--no-preflight).
+    if preflight is not False:
+        pcode = (preflight or _preflight)(version, say)
+        if pcode != 0:
+            say("ship: the pre-flight is %s - the ci branches are NOT pushed; fix it here, it costs minutes, GitHub costs a round"
+                % ("RED" if pcode == 1 else "UNKNOWN"))
+            return 1 if pcode == 1 else 2
     say("ship: %s at %s -> ci/claude-%s + ci/proof-keys-%s" % (version, sha[:9], version, version))
     p = _git(run, "-c", "core.hooksPath=hooks", "push", remote,
              "+HEAD:refs/heads/ci/claude-%s" % version, "+HEAD:refs/heads/ci/proof-keys-%s" % version)
@@ -94,7 +117,7 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
         say("ship: the ci push was refused (the hook's own words):\n%s" % "\n".join(_why[:12]))
         return 1
     t0 = clock()
-    dispatched, last = False, None
+    tries, last = {}, None          # v3865 - per workflow: dispatches asked; a refused one is asked again next poll
     while True:
         runs = fetch(sha)
         verdict, why = CV.decide(runs, sha)
@@ -107,14 +130,18 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
         if red:
             say("ship: GitHub graded %s RED - main is NOT pushed: %s" % (sha[:9], ", ".join(red)))
             return 1
-        if runs is not None and not dispatched and clock() - t0 >= DISPATCH_AFTER_S:
+        if runs is not None and clock() - t0 >= DISPATCH_AFTER_S:
             for wf in missing(runs, sha):
+                n = tries.get(wf, 0)
+                if n < 0 or n >= DISPATCH_TRIES:      # dispatched (-1), or asked DISPATCH_TRIES times and refused each
+                    continue
                 d = run(["gh", "workflow", "run", WORKFLOW_FILES[wf], "--repo", CV.REPO_SLUG,
-                         "--ref", "ci/claude-%s" % version], capture_output=True, text=True, encoding="utf-8",
+                         "--ref", dispatch_ref(wf, version)], capture_output=True, text=True, encoding="utf-8",
                         errors="replace")
-                say("ship: %s never started on this commit (its paths did not fire) - dispatched: %s"
-                    % (wf, "ok" if d.returncode == 0 else (d.stderr or "").strip()[-160:]))
-            dispatched = True
+                tries[wf] = -1 if d.returncode == 0 else n + 1
+                say("ship: %s never started on this commit (its paths did not fire) - dispatched on %s: %s"
+                    % (wf, dispatch_ref(wf, version), "ok" if d.returncode == 0 else
+                       "REFUSED (try %d of %d): %s" % (n + 1, DISPATCH_TRIES, (d.stderr or "").strip()[-160:])))
         if clock() - t0 >= wait_s:
             say("ship: no GitHub verdict on %s after %d min - main is NOT pushed" % (sha[:9], wait_s // 60))
             return 2
@@ -132,8 +159,10 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("version")
     ap.add_argument("--wait-min", type=int, default=240)
+    ap.add_argument("--no-preflight", action="store_true",
+                    help="v3865 - push without the local pre-flight (GitHub then finds what it would have found)")
     a = ap.parse_args(argv)
-    return ship(a.version, wait_s=a.wait_min * 60)
+    return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None)
 
 
 if __name__ == "__main__":
