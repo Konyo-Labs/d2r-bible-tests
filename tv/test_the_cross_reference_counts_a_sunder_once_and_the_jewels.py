@@ -175,7 +175,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3861 - the facet split is not counted, so the both-need column refuses again",
      "file": "tv/control_app.py",
-     "find": "        cov = folded - 1 + _fm.FACET_VARIANTS\n",
+     "find": "        cov = folded - 1 + FMX.FACET_VARIANTS\n",
      "replace": "        cov = folded\n",
      "matches": 1},
     {"why": "v3861 - an older peer with no jewel mask blanks the both-need column",

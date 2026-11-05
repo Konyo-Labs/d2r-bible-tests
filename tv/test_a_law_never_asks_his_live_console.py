@@ -78,14 +78,31 @@ class BothRunnersUseTheDoor(unittest.TestCase):
             tree = ast.parse(fh.read())
         launches = []
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "run" \
-                    and isinstance(node.func.value, ast.Name) and node.func.value.id == "subprocess" \
-                    and node.args and isinstance(node.args[0], ast.Name) and node.args[0].id == "_argv":
+            if not (isinstance(node, ast.Call) and node.args and isinstance(node.args[0], ast.Name)
+                    and node.args[0].id == "_argv"):
+                continue
+            f = node.func
+            # v3861 - the one gate launch goes through _run_with_grace (REG-1995's load grace for every gate)
+            if (isinstance(f, ast.Attribute) and f.attr == "run" and isinstance(f.value, ast.Name)
+                    and f.value.id == "subprocess") or (isinstance(f, ast.Name) and f.id == "_run_with_grace"):
                 launches.append(node)
-        self.assertEqual(len(launches), 1, "PREMISE: run_gates' one gate launch (subprocess.run(_argv, ...)) moved")
+        self.assertEqual(len(launches), 1, "PREMISE: run_gates' one gate launch (_run_with_grace(_argv, ...)) moved")
         env = [k.value for k in launches[0].keywords if k.arg == "env"]
         self.assertTrue(env and isinstance(env[0], ast.Call) and getattr(env[0].func, "id", None) == "law_env",
                         "run_gates launches a gate without law_env - it inherits his console's port")
+        # v3861 - and the grace launcher hands every keyword (env among them) to the child on BOTH of its paths
+        fn = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_run_with_grace"]
+        if isinstance(launches[0].func, ast.Name):
+            self.assertEqual(len(fn), 1, "PREMISE: _run_with_grace is not defined once in run_gates")
+            spawns = [c for c in ast.walk(fn[0]) if isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)
+                      and isinstance(c.func.value, ast.Name) and c.func.value.id == "subprocess"
+                      and c.func.attr in ("run", "Popen")]
+            self.assertEqual(sorted(c.func.attr for c in spawns), ["Popen", "run"])
+            for c in spawns:
+                self.assertTrue(any(k.arg is None and isinstance(k.value, ast.Name) and k.value.id == "kw"
+                                    for k in c.keywords),
+                                "_run_with_grace's subprocess.%s drops the caller's keywords - env=law_env "
+                                "never reaches the gate" % c.func.attr)
 
 
 class TheLaneStampKeepsTheReservedPort(unittest.TestCase):
@@ -135,8 +152,8 @@ class TheLaneStampKeepsTheReservedPort(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-1729 - run_gates launches every gate on the inherited env again: a law reaches :17772",
      "file": "run_gates.py",
-     "find": "                               env=law_env(g.needs_app, _env))\n",
-     "replace": "                               env=None)\n",
+     "find": "                                   env=law_env(g.needs_app, _env), grace=not _capped, name=g.name)\n",
+     "replace": "                                   env=None, grace=not _capped, name=g.name)\n",
      "matches": 1},
     {"why": "REG-1729 - heart2's sandbox runs a law on the inherited env again",
      "file": "heart2.py",

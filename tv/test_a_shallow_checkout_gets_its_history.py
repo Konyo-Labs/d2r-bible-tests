@@ -113,8 +113,8 @@ RED_PROOF = [
     {"why": "v3861 - the repair never fetches the history: a shallow install stays one commit deep and five proofs "
             "file BLIND on it",
      "file": "tv/control_app.py",
-     "find": "        r = run([\"git\", \"fetch\", \"--quiet\", \"--unshallow\", \"--filter=blob:none\", \"origin\"],\n",
-     "replace": "        r = run([\"git\", \"rev-parse\", \"HEAD\"],\n",
+     "find": "        r = _git_run([\"git\", \"fetch\", \"--quiet\", \"--unshallow\", \"--filter=blob:none\", \"origin\"],\n",
+     "replace": "        r = _git_run([\"git\", \"rev-parse\", \"HEAD\"],\n",
      "matches": 1},
     {"why": "v3861 - the installer clones --depth 1 again",
      "file": "tv/install-tvd.ps1",

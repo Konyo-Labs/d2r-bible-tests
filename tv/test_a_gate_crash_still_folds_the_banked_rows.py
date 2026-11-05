@@ -36,7 +36,9 @@ class ARunThatDiesStillFolds(unittest.TestCase):
         q = os.path.join(tempfile.mkdtemp(prefix="arm-crash."), "queue.jsonl")
         g1, g2 = C._gate(root, "t_bank.py"), C._gate(root, "t_two.py")
         g1.name, g2.name = "banker", "crasher"
-        held, real, held_fold = RG.GATES, RG.subprocess.run, SA.fold_deferred
+        # v3861 - every gate launches through run_gates._run_with_grace (REG-1995's load grace for every gate), so that
+        # is the launch this law kills; subprocess.run stays untouched under it
+        held, real, held_fold = RG.GATES, RG._run_with_grace, SA.fold_deferred
         seen = []
 
         def spy(*a, **kw):
@@ -52,7 +54,7 @@ class ARunThatDiesStillFolds(unittest.TestCase):
                 if crash and len(seen) == 2:
                     raise KeyboardInterrupt("a gate died mid-run")
             return real(*a, **kw)
-        RG.GATES, RG.subprocess.run = [g1, g2], spy
+        RG.GATES, RG._run_with_grace = [g1, g2], spy
         if fold is not None:
             SA.fold_deferred = fold
         buf, raised = io.StringIO(), None
@@ -66,7 +68,7 @@ class ARunThatDiesStillFolds(unittest.TestCase):
                         raised = e
                 after = os.environ.get("TV_SELF_ARMING_DEFER")
         finally:
-            RG.GATES, RG.subprocess.run, SA.fold_deferred = held, real, held_fold
+            RG.GATES, RG._run_with_grace, SA.fold_deferred = held, real, held_fold
         text = ""
         if os.path.exists(q):
             with io.open(q, encoding="utf-8") as fh:

@@ -1863,7 +1863,10 @@ def surface_pairs():
     """
     #: the store each tally pair is counted from, named where control_app counts it
     TALLY_STORE = {"uniques": "d2r_foundLog", "sets": "d2r_setPieces",
-                   "runewords": "d2r_rwMade"}
+                   "runewords": "d2r_rwMade",
+                   # v3861 - the six colossal jewels: the board counts them inside the uniques tally (403 = 397 + 6),
+                   # from the same found ledger their own mask reads
+                   "colossal": "d2r_foundLog"}
     out = []
     try:
         import fleet_mask as _fm

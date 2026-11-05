@@ -22285,17 +22285,18 @@ _HISTORY_REPAIR = {"shallow": None, "repaired": None, "seconds": None, "why": "n
 
 
 @_one_pull_at_a_time
-def history_repair(repo=None, run=None, timeout_s=None):
+def history_repair(repo=None, run=None, timeout_s=None, _git_run=_git_run):
     """v3861 - make a SHALLOW checkout full-history (commits and trees; blobs on demand), once. -> dict, never raises.
 
     Holds the pull door, so it never races a pull. A checkout that is already full history is left alone. git that
     cannot answer is UNKNOWN (shallow None), never "fine"."""
     repo = repo or REPO
-    run = run or _git_run
+    if run is not None:          # a law hands its own runner; every call below still names the ONE door
+        _git_run = run
     out = {"shallow": None, "repaired": False, "seconds": None, "why": ""}
     kw = dict(cwd=repo, capture_output=True, text=True, creationflags=_WIN_CREATE if IS_WIN else 0)
     try:
-        r = run(["git", "rev-parse", "--is-shallow-repository"], timeout=15, **kw)
+        r = _git_run(["git", "rev-parse", "--is-shallow-repository"], timeout=15, **kw)
         if r.returncode != 0 or (r.stdout or "").strip() not in ("true", "false"):
             out["why"] = "git could not say whether this checkout is shallow - UNKNOWN"
             return out
@@ -22304,12 +22305,12 @@ def history_repair(repo=None, run=None, timeout_s=None):
             out["why"] = "this checkout already holds its full history"
             return out
         for k, v in (("remote.origin.promisor", "true"), ("remote.origin.partialclonefilter", "blob:none")):
-            run(["git", "config", k, v], timeout=15, **kw)
+            _git_run(["git", "config", k, v], timeout=15, **kw)
         t0 = time.time()
-        r = run(["git", "fetch", "--quiet", "--unshallow", "--filter=blob:none", "origin"],
+        r = _git_run(["git", "fetch", "--quiet", "--unshallow", "--filter=blob:none", "origin"],
                 timeout=timeout_s or HISTORY_REPAIR_TIMEOUT_S, **kw)
         out["seconds"] = round(time.time() - t0, 1)
-        chk = run(["git", "rev-parse", "--is-shallow-repository"], timeout=15, **kw)
+        chk = _git_run(["git", "rev-parse", "--is-shallow-repository"], timeout=15, **kw)
         still = (chk.stdout or "").strip()
         out["repaired"] = (r.returncode == 0 and still == "false")
         out["shallow"] = (still == "true") if still in ("true", "false") else None
@@ -44324,13 +44325,13 @@ def _fleet_merge_colossal(out, them):
     Wire-additive (fleet_mask.LEDGERS["colossal"]): a peer that has not updated publishes no colossal mask, so its
     jewels are NOT JUDGED - named as such, never read as "they have none". [[unknown-stays-unknown]]"""
     try:
-        import fleet_mask as _fm
-        croster, cfp = _fm.load_roster_for("colossal")
+        import fleet_mask as FMX     # not _fm: test_mask_encoders_agree counts the encoder bindings
+        croster, cfp = FMX.load_roster_for("colossal")
         if not croster:
             out["colossalJudged"], out["colossalWhy"] = False, "this console cannot read its colossal roster"
             return out
         theirs = ((them.get("masks") or {}) or {}).get("colossal") if isinstance(them, dict) else None
-        co = _fm.compare(_mask_cached("colossal"), theirs, croster, cfp)
+        co = FMX.compare(_mask_cached("colossal"), theirs, croster, cfp)
         out["colossalNames"] = list(croster)
         if not co.get("ok"):
             out["colossalJudged"], out["colossalWhy"] = False, co.get("why")
@@ -44353,13 +44354,13 @@ def _fleet_covered_universe(out, ledger):
     if ledger != "uniques":
         return out.get("rosterN"), {}
     try:
-        import fleet_mask as _fm
+        import fleet_mask as FMX     # not _fm: test_mask_encoders_agree counts the encoder bindings
         folded = out.get("foldedN")
         if not isinstance(folded, int):
             return None, {}
-        cov = folded - 1 + _fm.FACET_VARIANTS
+        cov = folded - 1 + FMX.FACET_VARIANTS
         say = ("%s is judged as one name here - your board counts its %d variants, and the cross-reference carries "
-               "one bit for all of them" % (_fm.FACET_NAME, _fm.FACET_VARIANTS))
+               "one bit for all of them" % (FMX.FACET_NAME, FMX.FACET_VARIANTS))
         jewels = list(out.get("colossalNames") or [])
         if out.get("colossalJudged"):
             return cov + len(jewels), {"say": say}
