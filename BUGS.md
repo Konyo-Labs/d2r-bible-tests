@@ -7,6 +7,19 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3172 - THE MAC'S FLEET ROW READ UNIQUES 395/403 BESIDE ITS OWN LIST'S 384, AND NOTHING ON THE ROW SAID SO (v3864, GrokBot Batch B 3)
+GrokBot, #230 6655906382 (re-read by the Grok CLI): tally.uniques {have 395, total 403} beside masks.uniques {have 384}.
+_fleet_reconcile_tally_with_masks skips the local row on purpose - his board's count is THE number (REG-2035) - so Dean's
+(384 -> 373) and the OLD PC's (60 -> 57) gaps were said and his own was not. The local row now keeps its headline and carries
+maskHave and a why ("this board counts 395 uniques and its own list names 384 - 11 apart"), as a SYNCED peer already did.
+The fleet card drawing the gap is the next step. Law: test_the_board_headline_is_the_one_uniques_number (his headline never
+moves; the gap is said; an agreeing row grows nothing), red-proof [3] RED.
+
+### REG-3173 - CARD 63's DENOMINATORS, NOT YET FIXED: masks n 396/398, ledgerBackup uniquesTotal 396, roster uniquesNamed 523
+Recorded, not fixed, in v3864: route_totals pins 403 (397 + 6 colossal); the mask's n is 396 on four PCs (398 on GrokBot's
+v3815) and status ledgerBackup.counts.uniquesTotal reads 396, while the roster's uniquesNamed is 523 = foundLog (a count of
+log rows, not names). Each needs its own reader traced before a number is changed.
+
 ### REG-3171 - THE RUNEWORD TABLE NAMED A 5-SOCKET WAND FOR CALL TO ARMS (v3864, GrokBot Batch B 7)
 GrokBot, #230 6655906382 (re-read by the Grok CLI, 6655933519): RUNEWORDS' Call to Arms row read base "5-sock weapon/wand",
 and every wand base in BASE_DB holds 1 or 2 sockets. Now "5-sock weapon". GrokBot also counted 101 rows against 99
