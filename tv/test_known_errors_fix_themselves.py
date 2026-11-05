@@ -193,8 +193,8 @@ class TheFleetSeesIt(unittest.TestCase):
         with io.open(os.path.join(root, "functions", "api", "console.js"), encoding="utf-8") as fh:
             src = fh.read()
         i = src.index("    system: (function (s) {")
-        j = src.index("    })(body.system),", i)
-        fn = "(" + src[i + len("    system: "):j] + "})"
+        j = src.index("    })(body.system),", i) + len("    })(body.system),")
+        fn = "(" + src[i + len("    system: "):j - len("(body.system),")] + ")"
         body = {"tree": "ok", "reels": 1, "repair": {
             "ranAt": NOW, "fixed": 2,
             "failed": [{"id": "node", "why": "C:\\Users\\dean\\AppData\\node.zip hash mismatch"}],

@@ -46,7 +46,7 @@ def setUpModule():
     # REG-1502 — the cases below are about the census, the tree and the load. Whether HIS machine is playing (his Mac
     # runs D2R under CrossOver) or short of memory must not decide them, so both probes answer "idle, roomy" here,
     # and the stand-aside cases pass their own values.
-    SP.playing_state = lambda: False
+    SP.playing_state = lambda *a, **k: False      # v3862 - the proof judge asks it with cloud=False
     SP.free_mb = lambda: 8000
 
 

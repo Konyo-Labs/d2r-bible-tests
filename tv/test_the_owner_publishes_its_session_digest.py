@@ -32,7 +32,7 @@ _fx.contain()
 import shadow_sessions as SS  # noqa: E402
 
 T0 = 1794000000000
-H3 = 3 * 3600 * 1000
+H3 = SS.MIN_GAP_MS          # v3862 - the frames gap is the lane's own constant (1 h on Workers Paid; it was 3 h)
 
 
 def _rows(name="Shako"):

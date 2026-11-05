@@ -493,7 +493,9 @@ class TheWorkerCarriesIt(unittest.TestCase):
         rv = got["river"]
         self.assertEqual([e["station"] for e in rv["stuck"]], ["PRINTER"], "a bad station key crossed")
         self.assertNotIn("Dean", rv["stuck"][0]["why"], "a user path crossed the PUBLIC wire")
-        self.assertEqual(rv["heart"], {"census": "missing", "key": "busy", "blind": 0})
+        # v3862 (REG-3160) - the meter and the why ride beside the census; a beacon that sends none reads them null
+        self.assertEqual(rv["heart"], {"census": "missing", "key": "busy", "blind": 0, "owed": None, "ratePerH": None,
+                                       "etaS": None, "why": None})
 
     def test_null_stays_null_and_absent_stays_absent(self):
         self.assertIsNone(self._shape({"lanes": {}, "stuck": None})["river"]["stuck"])
@@ -684,7 +686,7 @@ class AStalePresenceIsNotOnline(unittest.TestCase):
         self.assertNotIn("UNKNOWN", p["why"])
 
     def test_a_beacon_older_than_two_refreshes_is_not_on_air(self):
-        """v3850 (Elad 17:51) - one bar, fleet_presence.STALE_AFTER_S (one refresh + one beacon + 60 s = 20 min).
+        """v3850 (Elad 17:51) - one bar, fleet_presence.STALE_AFTER_S (one refresh + one beacon + 60 s; 8 min on Workers Paid).
         At the bar a row is still here; one second past it the card says offline with its last-seen age."""
         import fleet_presence as _fp
         still = self._pres(_fp.STALE_AFTER_S)
@@ -692,7 +694,7 @@ class AStalePresenceIsNotOnline(unittest.TestCase):
         gone = self._pres(_fp.STALE_AFTER_S + 1)
         self.assertEqual(gone["state"], "silent", gone)
         self.assertEqual(gone["dot"], "silent")
-        self.assertIn("offline \u00b7 last seen 20 min ago", gone["word"])
+        self.assertIn("offline \u00b7 last seen %d min ago" % ((_fp.STALE_AFTER_S + 1) // 60), gone["word"])
         self.assertNotIn("ON AIR", gone["word"])
         died = self._pres(38 * 60)
         self.assertIn("last seen 38 min ago", died["word"])

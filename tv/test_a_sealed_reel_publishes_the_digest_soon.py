@@ -26,8 +26,9 @@ class ASealedReel(unittest.TestCase):
 
     def test_no_seal_keeps_the_three_hour_gap(self):
         import shadow_sessions as ss
-        self.assertFalse(ss.may_build({"postedAt": T}, T + H, False, sealed_at=None))
-        self.assertFalse(ss.may_build({"postedAt": T}, T + H, False, sealed_at=T - 1000))
+        # v3862 - the gap is the lane's own MIN_GAP_MS (1 h on Workers Paid; it was 3 h): one ms inside it
+        self.assertFalse(ss.may_build({"postedAt": T}, T + ss.MIN_GAP_MS - 1, False, sealed_at=None))
+        self.assertFalse(ss.may_build({"postedAt": T}, T + ss.MIN_GAP_MS - 1, False, sealed_at=T - 1000))
 
     def test_the_rate_limit_holds(self):
         import shadow_sessions as ss

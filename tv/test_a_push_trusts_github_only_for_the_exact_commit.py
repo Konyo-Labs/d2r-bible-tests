@@ -122,7 +122,8 @@ class TheProofImport(unittest.TestCase):
                 return subprocess.CompletedProcess(argv, 0, json.dumps(_all_green()), "")
             if argv[:3] == ["gh", "run", "download"]:
                 d = argv[argv.index("-D") + 1]
-                io.open(os.path.join(d, "x.json"), "w").write("{}")
+                os.makedirs(os.path.join(d, "proof-shard-1"), exist_ok=True)
+                io.open(os.path.join(d, "proof-shard-1", ".heart2_cache.json"), "w").write("{}")
                 return subprocess.CompletedProcess(argv, 0, "", "")
             return subprocess.CompletedProcess(argv, 1, "", "a partial set")
         ok, why = CV.import_proofs(SHA, run=fake)

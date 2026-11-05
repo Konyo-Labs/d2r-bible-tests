@@ -305,8 +305,8 @@ class TheNextSliceStartsTheMomentOneEnds(unittest.TestCase):
         """REG-1671 (the v3542 cross-family eye) - the ALT's steady state: Boosteroid open in the tray, the console's shadow
         watch saying the GAME is not on his screen. The tick the guard chains must ask that judge; a bare process list
         reads the tray client as play and the next slice waits for the 10-minute tick."""
-        def boosteroid_running(game_on_screen=None):          # REG-1666's real rule for a running cloud client
-            return SP.is_play_proc("Boosteroid.exe", SP._ask(game_on_screen, lambda: None))
+        def boosteroid_running(game_on_screen=None, cloud=True):   # REG-1666's rule; v3862: the proof asks cloud=False
+            return cloud and SP.is_play_proc("Boosteroid.exe", SP._ask(game_on_screen, lambda: None))
         with mock.patch.object(SP, "playing_state", boosteroid_running), \
                 mock.patch.object(ca, "shadow_game_on_screen", lambda *a, **k: False):
             r = self._guard(5.0)
@@ -314,14 +314,25 @@ class TheNextSliceStartsTheMomentOneEnds(unittest.TestCase):
                                                "(the chained tick never asked the console's judge): %r" % (r,))
 
     def test_the_game_on_his_screen_still_holds_the_next_slice(self):
-        """REG-1671 - the other side: the same tray client WITH the game on his screen is play, and nothing starts"""
-        def boosteroid_running(game_on_screen=None):
-            return SP.is_play_proc("Boosteroid.exe", SP._ask(game_on_screen, lambda: None))
-        with mock.patch.object(SP, "playing_state", boosteroid_running), \
+        """REG-1671 - the other side: the LOCAL game is play, and nothing starts. v3862 (his ruling 2026-11-05, "prove beside
+        cloud"): a cloud client with the game on his screen no longer holds a proof - the game runs elsewhere - so the
+        case that must hold is D2R.exe on this PC (test_a_proof_runs_beside_a_cloud_client pins the cloud half)."""
+        def local_game(game_on_screen=None, cloud=True):
+            return SP.is_play_proc("D2R.exe", SP._ask(game_on_screen, lambda: None))
+        with mock.patch.object(SP, "playing_state", local_game), \
                 mock.patch.object(ca, "shadow_game_on_screen", lambda *a, **k: True):
             r = self._guard(5.0)
         self.assertEqual(self.spawned, [], "a slice started beside his game: %r" % (r,))
         self.assertEqual(r.get("key"), "playing", r)
+
+    def test_a_cloud_game_on_his_screen_lets_the_next_slice_start(self):
+        """v3862 (his ruling, "prove beside cloud") - Boosteroid WITH the game on his screen: the proof runs beside it"""
+        def boosteroid_running(game_on_screen=None, cloud=True):
+            return cloud and SP.is_play_proc("Boosteroid.exe", SP._ask(game_on_screen, lambda: None))
+        with mock.patch.object(SP, "playing_state", boosteroid_running), \
+                mock.patch.object(ca, "shadow_game_on_screen", lambda *a, **k: True):
+            r = self._guard(5.0)
+        self.assertEqual(len(self.spawned), 1, "a cloud game on his screen still held the next slice: %r" % (r,))
 
     def test_a_live_pid_with_no_recorded_birth_is_left_alone(self):
         """a store from before REG-1511: no birth to check - the fast path keeps the old answer and starts nothing"""
