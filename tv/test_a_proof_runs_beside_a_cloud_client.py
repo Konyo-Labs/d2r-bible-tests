@@ -52,8 +52,8 @@ class TheProofJudgeIgnoresACloudClient(unittest.TestCase):
 
     def test_the_local_game_still_stops_the_proof(self):
         with mock.patch.object(SP, "IS_WIN", False), mock.patch.object(SP.subprocess, "run", _ps(BOOST, GAME)):
-            self.assertIs(SP.proof_playing_state(game_on_screen=lambda: False), True,
-                          "the local game no longer stops a proof")
+            self.assertIs(SP.proof_playing_state(game_on_screen=lambda: False, free=1000), True,
+                          "the local game no longer stops a proof on a PC short of memory")
 
     def test_windows_the_same_rule(self):
         seen = []
@@ -70,7 +70,8 @@ class TheProofJudgeIgnoresACloudClient(unittest.TestCase):
             def with_game(pred):
                 return any(pred(n) for n in ("Boosteroid.exe", "D2R.exe"))
             fake._toolhelp_any = with_game
-            self.assertIs(SP.proof_playing_state(game_on_screen=lambda: True), True, "Windows: D2R.exe stopped counting")
+            self.assertIs(SP.proof_playing_state(game_on_screen=lambda: True, free=1000), True,
+                          "Windows: D2R.exe stopped counting on a PC short of memory")
         self.assertTrue(seen)
 
     def test_the_lane_s_own_default_is_the_proof_judge(self):
@@ -115,6 +116,33 @@ class TheConsoleProvesBesideCloud(unittest.TestCase):
             CA._sp_proof_playing_here()
         self.assertIs(got.get("cloud"), False)
 
+
+class TheLocalGameWithRoomToProve(unittest.TestCase):
+    """v3863 (#241, his ruling 2026-11-03: Dean's 32 GB PC had 8.3 GB free with D2R open - "thats enough ram for his
+    console to prove himself"). The local game stops a proof only while free memory is under BESIDE_GAME_FREE_MB."""
+
+    def _ask(self, free):
+        with mock.patch.object(SP, "IS_WIN", False), mock.patch.object(SP.subprocess, "run", _ps(GAME)):
+            return SP.proof_playing_state(game_on_screen=lambda: True, free=free)
+
+    def test_room_to_prove_beside_the_game(self):
+        self.assertIs(self._ask(8300), False, "Dean's 8.3 GB free with D2R open still stops every proof")
+        self.assertIs(self._ask(SP.BESIDE_GAME_FREE_MB), False)
+
+    def test_short_of_memory_the_game_wins(self):
+        self.assertIs(self._ask(SP.BESIDE_GAME_FREE_MB - 1), True, "a proof ran beside the game under the floor")
+        self.assertIs(self._ask(1500), True, "the 8 GB ALT with the game open proved beside it")
+
+    def test_memory_nobody_measured_is_the_game_winning(self):
+        with mock.patch.object(SP, "free_mb", lambda: None):
+            with mock.patch.object(SP, "IS_WIN", False), mock.patch.object(SP.subprocess, "run", _ps(GAME)):
+                self.assertIs(SP.proof_playing_state(game_on_screen=lambda: True), True,
+                              "UNKNOWN free memory read as room to prove")
+
+    def test_no_game_is_untouched(self):
+        with mock.patch.object(SP, "IS_WIN", False), mock.patch.object(SP.subprocess, "run", _ps()):
+            self.assertIs(SP.proof_playing_state(game_on_screen=lambda: False, free=100), False)
+
     def test_the_other_lanes_still_count_a_cloud_client(self):
         for fn in (CA._river_warm_once, CA._disk_sign_once):
             names = set(fn.__code__.co_names)
@@ -123,6 +151,16 @@ class TheConsoleProvesBesideCloud(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3863 (#241) - the local game stops every proof again, whatever is free: Dean never proves",
+     "file": "tv/self_prove.py",
+     "find": "    if isinstance(f, (int, float)) and not isinstance(f, bool) and f >= BESIDE_GAME_FREE_MB:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "v3863 (#241) - a proof runs beside the game with no memory floor at all (the 8 GB ALT stutters)",
+     "file": "tv/self_prove.py",
+     "find": "    if isinstance(f, (int, float)) and not isinstance(f, bool) and f >= BESIDE_GAME_FREE_MB:\n",
+     "replace": "    if True:\n",
+     "matches": 1},
     {"why": "v3862 - a cloud client stops the proof again: the work ALT never proves (posix)",
      "file": "tv/self_prove.py",
      "find": "        if not cloud:\n            return False                       # v3862 - a cloud client never stops a proof\n",

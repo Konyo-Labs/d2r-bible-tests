@@ -186,6 +186,16 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3166 - DEAN'S PROVER NEVER RAN: A LOCAL GAME STOPPED EVERY PROOF, AND HIS PC IS ON ONLY WHILE HE PLAYS (v3863, #241)
+MEASURED 2026-11-03 23:1x IST over SSH: selfProve key 'playing' while D2R was open with 8.3 GB free on his 32 GB PC; last
+proof 27 h earlier, census stale, owed 140. HIS RULING the same minute: "thats enough ram for his console to prove
+himself". v3862's prove-beside-cloud covered a cloud client only; a local D2R.exe still stopped every proof. Now
+self_prove.proof_playing_state lets a proof run beside the LOCAL game while free memory stays at or above
+BESIDE_GAME_FREE_MB (4096); under it the game wins and a running proof stands aside on the next guard tick (REG-1624/1666's
+rule, kept for the 8 GB ALT, which stays under it with the game open). Free memory nobody measured is UNKNOWN, so the game
+wins. A push grading here and a sweep reading still come first (_sp_yield_here). Laws
+test_a_proof_runs_beside_a_cloud_client (TheLocalGameWithRoomToProve, 2 more red-proofs) and
+test_a_proof_yields_the_moment_the_game_starts (both sides of the floor).
 ### REG-3165 - EVERY WINDOWS-ONLY DEFECT WAS FOUND BY A WINDOWS PC PROVING ITSELF, NEVER BY GITHUB (v3862, item 3)
 His refined ruling 2026-11-05: "GitHub grades and proves each version once, including a Windows runner". CRLF,
 cp1252/cp1255, POSIX-only paths and `chrome.exe --version` were each found on Dean's PC or an ALT, because every proof

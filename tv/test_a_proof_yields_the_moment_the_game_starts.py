@@ -320,10 +320,21 @@ class TheNextSliceStartsTheMomentOneEnds(unittest.TestCase):
         def local_game(game_on_screen=None, cloud=True):
             return SP.is_play_proc("D2R.exe", SP._ask(game_on_screen, lambda: None))
         with mock.patch.object(SP, "playing_state", local_game), \
+                mock.patch.object(SP, "free_mb", lambda: 1500), \
                 mock.patch.object(ca, "shadow_game_on_screen", lambda *a, **k: True):
             r = self._guard(5.0)
-        self.assertEqual(self.spawned, [], "a slice started beside his game: %r" % (r,))
+        self.assertEqual(self.spawned, [], "a slice started beside his game on a PC short of memory: %r" % (r,))
         self.assertEqual(r.get("key"), "playing", r)
+
+    def test_the_local_game_with_room_to_spare_lets_the_next_slice_start(self):
+        """v3863 (#241, his ruling 2026-11-03: Dean's 8.3 GB free with D2R open is enough to prove himself)"""
+        def local_game(game_on_screen=None, cloud=True):
+            return SP.is_play_proc("D2R.exe", SP._ask(game_on_screen, lambda: None))
+        with mock.patch.object(SP, "playing_state", local_game), \
+                mock.patch.object(SP, "free_mb", lambda: 8300), \
+                mock.patch.object(ca, "shadow_game_on_screen", lambda *a, **k: True):
+            r = self._guard(5.0)
+        self.assertEqual(len(self.spawned), 1, "Dean's PC with 8.3 GB free still held the slice for his game: %r" % (r,))
 
     def test_a_cloud_game_on_his_screen_lets_the_next_slice_start(self):
         """v3862 (his ruling, "prove beside cloud") - Boosteroid WITH the game on his screen: the proof runs beside it"""

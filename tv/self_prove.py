@@ -246,11 +246,27 @@ def playing_state(game_on_screen=None, cloud=True):
         return None
 
 
-def proof_playing_state(game_on_screen=None):
+#: v3863 (#241, his ruling 2026-11-03 ~23:10 IST: "thats enough ram for his console to prove himself" - Dean's 32 GB PC had
+#: 8.3 GB free with D2R open, and its prover had not run in 27 h because a local game stopped every proof and his PC is on
+#: only while he plays). A proof may run BESIDE the local game while this much memory stays free; under it the game wins
+#: and the proof stands aside, as REG-1624/1666 decided on the 8 GB ALT (which stays below it with the game open). The
+#: prover already runs at BelowNormal / nice 15 with no window.
+BESIDE_GAME_FREE_MB = 4096
+
+
+def proof_playing_state(game_on_screen=None, free=None):
     """v3862 - the PROOF lane's "is he playing here": the local game only (his ruling 2026-11-05, "prove beside cloud").
     MEASURED that morning: the work ALT's census was MISSING because Boosteroid + his AFK clicker read as playing forever,
-    so its proof never started and its river stayed stuck. A cloud client streams a game that runs elsewhere."""
-    return playing_state(game_on_screen=game_on_screen, cloud=False)
+    so its proof never started and its river stayed stuck. A cloud client streams a game that runs elsewhere.
+    v3863 (#241) - and the local game stops a proof only while free memory is under BESIDE_GAME_FREE_MB. Free memory that
+    cannot be read is UNKNOWN, so the game still wins. `free` is a law's seam; None reads free_mb()."""
+    play = playing_state(game_on_screen=game_on_screen, cloud=False)
+    if play is not True:
+        return play
+    f = free_mb() if free is None else free
+    if isinstance(f, (int, float)) and not isinstance(f, bool) and f >= BESIDE_GAME_FREE_MB:
+        return False                      # v3863 (#241) - the game is open, and there is room to prove beside it
+    return True
 
 
 _K32 = {}
