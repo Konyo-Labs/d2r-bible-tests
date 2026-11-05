@@ -3693,7 +3693,8 @@ def _tally_cached():
     return _state_seed_provenance(dict(v))
 
 
-_MASK_CACHE = {"sets": {"t": 0.0, "val": None}, "uniques": {"t": 0.0, "val": None}}
+_MASK_CACHE = {"sets": {"t": 0.0, "val": None}, "uniques": {"t": 0.0, "val": None},
+               "colossal": {"t": 0.0, "val": None}}      # v3861 - the six jewels get their own slot
 _MASK_TTL_S = 300.0
 # N-3 — every None from board_mask used to look the same on the wire. The next heartbeat
 # names WHICH link gave up. Never an item name. Cleared on a successful mask.
@@ -4157,7 +4158,7 @@ def accept_handed_stores(body, who):
                                     if isinstance(body.get("storeWhy"), dict) else {}),
                        "at": int(time.time() * 1000)})
     try:
-        for lk in ("sets", "uniques"):
+        for lk in list(_MASK_CACHE):        # v3861 - every ledger slot, the colossal jewels included
             _MASK_CACHE[lk]["t"] = 0.0     # let the next beacon mint from what just landed
     except Exception:
         pass
@@ -44317,6 +44318,62 @@ def ledger_counts_before(at_ms, bdir=None):
                   "UNDERSTATED by whatever arrived in between"))
 
 
+def _fleet_merge_colossal(out, them):
+    """v3861 - the six colossal jewels, compared from their own mask and merged into the uniques lists. -> out
+
+    Wire-additive (fleet_mask.LEDGERS["colossal"]): a peer that has not updated publishes no colossal mask, so its
+    jewels are NOT JUDGED - named as such, never read as "they have none". [[unknown-stays-unknown]]"""
+    try:
+        import fleet_mask as _fm
+        croster, cfp = _fm.load_roster_for("colossal")
+        if not croster:
+            out["colossalJudged"], out["colossalWhy"] = False, "this console cannot read its colossal roster"
+            return out
+        theirs = ((them.get("masks") or {}) or {}).get("colossal") if isinstance(them, dict) else None
+        co = _fm.compare(_mask_cached("colossal"), theirs, croster, cfp)
+        out["colossalNames"] = list(croster)
+        if not co.get("ok"):
+            out["colossalJudged"], out["colossalWhy"] = False, co.get("why")
+            return out
+        for k in ("theyHaveIDont", "iHaveTheyDont", "neitherHas"):
+            if isinstance(out.get(k), list):
+                out[k] = list(out[k]) + list(co.get(k) or [])
+        out["colossalJudged"], out["colossalWhy"] = True, None
+    except Exception as e:
+        out["colossalJudged"], out["colossalWhy"] = False, "the colossal compare raised %s" % type(e).__name__
+    return out
+
+
+def _fleet_covered_universe(out, ledger):
+    """v3861 - how many of the board's own names the compare can judge. -> (count | None, note dict)
+
+    The board's unique tally is 403 = 397 hunt cards + 6 colossal jewels. The compare judges the FOLDED uniques
+    roster (each sunder once), in which "Rainbow Facet" is ONE bit standing for the board's FACET_VARIANTS chronicle
+    variants, plus the six jewels when both sides published them. Sets: the roster itself."""
+    if ledger != "uniques":
+        return out.get("rosterN"), {}
+    try:
+        import fleet_mask as _fm
+        folded = out.get("foldedN")
+        if not isinstance(folded, int):
+            return None, {}
+        cov = folded - 1 + _fm.FACET_VARIANTS
+        say = ("%s is judged as one name here - your board counts its %d variants, and the cross-reference carries "
+               "one bit for all of them" % (_fm.FACET_NAME, _fm.FACET_VARIANTS))
+        jewels = list(out.get("colossalNames") or [])
+        if out.get("colossalJudged"):
+            return cov + len(jewels), {"say": say}
+        partial = {"say": "not judged yet: %s - %s; %s" % (", ".join(jewels) or "the six colossal jewels",
+                                                          out.get("colossalWhy") or "the other console has not "
+                                                          "published them", say)}
+        show = out.get("showN")
+        if jewels and isinstance(show, int) and cov + len(jewels) == show:
+            partial["partialOk"] = True
+        return cov, partial
+    except Exception:
+        return None, {}
+
+
 def _neither_is_publishable(roster_n, show_n, ledger, show_n_why=None):
     """May a "both need" list be shown for this ledger? -> (bool, why)
 
@@ -44544,7 +44601,12 @@ def fleet_compare(machine, ledger="sets"):
     # is up to five minutes stale and he is sitting in front of this one.
     mine_mask = _mask_cached(ledger)
 
-    out = _fm.compare(mine_mask, their_mask, roster, fp)
+    # v3861 - the uniques compare counts a sunder ONCE whatever its spelling (his v2680/v3183 rulings; MEASURED
+    # 2026-11-05: his console published the six as Latent, Dean's as bare, and the panel listed them on both sides).
+    out = _fm.compare(mine_mask, their_mask, roster, fp,
+                      fold=(_fm.chronicle_key if ledger == "uniques" else None))
+    if ledger == "uniques" and out.get("ok"):
+        out = _fleet_merge_colossal(out, them)
     out["machine"] = machine
     out["ledger"] = ledger
     out["who"] = str(them.get("nickname") or them.get("machine") or "")[:40]
@@ -44628,11 +44690,17 @@ def fleet_compare(machine, ledger="sets"):
     # own total catches the measured danger; the remaining exposure is a roster that matches HIS
     # universe and not THEIRS, which stays UNKNOWN here and is named as such in the why.
     if out.get("ok"):
-        _keep, _why = _neither_is_publishable(out.get("rosterN"), out.get("showN"), ledger,
+        _cov, _note = _fleet_covered_universe(out, ledger)
+        _keep, _why = _neither_is_publishable(_cov, out.get("showN"), ledger,
                                               out.get("showNWhy"))
+        if not _keep and _note.get("partialOk"):
+            # v3861 - the ONLY names outside the compare are the six jewels a peer has not published yet: the list is
+            # shown, and those six are NAMED as not judged, so it never claims to be exhaustive.
+            _keep, _why = True, None
         if not _keep:
             out["neitherHas"] = None
         out["neitherWhy"] = _why
+        out["neitherNote"] = _note.get("say") if _keep else None
     if not out.get("ok") and their_mask is None:
         # v2329 — the ledger names itself here too. "which pieces it holds" is set wording, and
         # printing it on a UNIQUES comparison is a label describing the wrong thing at exactly the

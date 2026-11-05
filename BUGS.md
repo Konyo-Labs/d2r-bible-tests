@@ -171,6 +171,18 @@ Grok CLI traced the same path independently (6646192163). A Mac's overlay scroll
 there. Full-screen now means the viewport without its scrollbar (documentElement.clientWidth/Height), in both copies of
 the contract. Law test_every_overlay_closes_the_same_way (node case + red-proof, RED). GrokBot's "the plate covers the
 last rows" was its own correction: the category rail scrolls, 0 px overlap.
+### REG-3150 - THE FLEET CROSS-REFERENCE LISTED ONE SUNDER ON BOTH SIDES, AND "BOTH NEED" COULD NEVER SHOW (v3861)
+His words 2026-11-05: "i have all the latents so something here is bugged" and "we both need defenders bile.. and we
+need short staff which is the bane ash". MEASURED on the live fleet record: his console published all six sunders as
+Latent, Dean's all six bare, so the panel put Black Cleft / Cold Rupture / Crack of the Heavens / Flame Rift under
+"they have" and the six Latent names under "you have" (8 / 19). His rulings (v2680, v3183) count a sunder ONCE; the
+board folded it, the compare did not. And "both need" refused itself: the board's 403 = 397 hunt cards + 6 colossal
+jewels, the roster is 396 and carried no jewel at all. The uniques compare now folds every sunder spelling to its bare
+name (fleet_mask.chronicle_key; the masks keep every spelling for the vault); the six jewels travel in a "colossal"
+mask of their own (wire-additive; the worker's allow-list carries it; an older peer's jewels are named as not judged);
+and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
+and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
+Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
 ### REG-3121 - THE DRAIN'S HOLD MAP READ ONLY ITS FIRST 400 KEPT ROWS, SO A LATER HOLD WAS CALLED A DEBT (second eye on v3841)
 _retention_holds sliced plan()'s kept rows to the first 400 BEFORE its tag filter ('recent' rows spent slots too), so a reel held
 at row 400 or later was missing from _RETENTION["holds"] and the stuck reader said "the drain owes them a tombstone" for a reel

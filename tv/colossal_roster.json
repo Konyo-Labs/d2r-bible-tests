@@ -1,0 +1,13 @@
+{
+ "_comment": "v3861 - the six colossal jewels, in bible.html _colossalTallyRows() order. Hand-kept: a law pins this list to the page (test_the_cross_reference_counts_a_sunder_once_and_the_jewels). sourceHash is the sha256 of the NUL-joined names, so the fingerprint moves only when the list does.",
+ "sourceHash": "7fbd41100525faf2102bb2078363304a150ea8c92de1dca6af1e734ea521a9ce",
+ "count": 6,
+ "names": [
+  "Defender's Bile",
+  "Guardian's Thunder",
+  "Protector's Frost",
+  "Defender's Fire",
+  "Protector's Stone",
+  "Guardian's Light"
+ ]
+}

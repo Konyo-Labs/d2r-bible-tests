@@ -13013,6 +13013,11 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_shadow_vault_tab_dates_the_vault_by_its_own_clock.py")], 300,
          needs_app=False,
          why="REG-3123 (#23): the shadow Vault tab says the vault section age beside the board upload age, UNKNOWN when a clock was not handed"),
+    Gate("test_the_cross_reference_counts_a_sunder_once_and_the_jewels",
+         [sys.executable, os.path.join(HERE, "test_the_cross_reference_counts_a_sunder_once_and_the_jewels.py")], 180,
+         why="v3861: the fleet cross-reference counts a sunder once whatever its spelling, carries the six colossal "
+             "jewels in a mask of their own, and shows both-need when every board name is accounted for - an older "
+             "peer's jewels are named as not judged, never read as none"),
     Gate("test_a_proof_stands_aside_for_a_push",
          [sys.executable, os.path.join(HERE, "test_a_proof_stands_aside_for_a_push.py")], 180,
          why="v3861: a console proof already running stands aside for a push grading on the same PC and names it, never for "

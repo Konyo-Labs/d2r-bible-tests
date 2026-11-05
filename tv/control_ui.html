@@ -6706,6 +6706,8 @@
   .fleet-xref .fx-col-unknown { opacity: .72; }
   .fleet-xref .fx-col-unknown .fx-col-h { color: #8a7e68; }
   .fx-none.fx-unknown { font-style: italic; color: #8a7e68; line-height: 1.45; }
+  /* v3861 - what a column's list does not judge, said once under its header; quieter than a name */
+  .fx-note { font-style: italic; color: #8a7e68; line-height: 1.45; margin: 2px 0 8px; }
   .fx-col { min-width: 0; }
   /* ⚠ v3033 — BOTTOM-ALIGNED AND FLOOR-HEIGHTED, so the rule under every column title sits at
      ONE y and the three item lists start level regardless of how many lines each title wraps to.
@@ -30042,7 +30044,7 @@ function escC(s) {
              : '<span class="fx-noimg">◻</span>')
         + '<span class="fx-name">' + escC(shown) + '</span></div>';
     };
-    var col = function (title, names, why, side) {
+    var col = function (title, names, why, side, note) {
       /* ⚠ v3022 — `names` MAY BE null, and null is not empty. The both-need column is REFUSED
          when the roster is not known to be the universe, and a refused column must still be
          DRAWN, carrying its reason — a column that silently vanishes hides the one thing the
@@ -30052,6 +30054,8 @@ function escC(s) {
       return '<div class="fx-col' + (known ? '' : ' fx-col-unknown') + '">'
         + '<div class="fx-col-h">' + escC(title)
         + '<span class="fx-n">' + (known ? names.length : '—') + '</span></div>'
+        /* v3861 - a list that judges less than the board counts names what it leaves out, under its header */
+        + (known && note ? '<div class="fx-note">' + escC(note) + '</div>' : '')
         + (!known ? '<div class="fx-none fx-unknown">' + escC(why) + '</div>'
                   : names.length ? names.map(function (n) { return tile(n, side); }).join('')
                                  : '<div class="fx-none">' + escC(why) + '</div>') + '</div>';
@@ -30127,7 +30131,7 @@ function escC(s) {
          you both need". Null reaches col() and is drawn as an em-dash with the reason.
          [[unknown-stays-unknown]] */
       + (j.ok ? col('you both need', j.neitherHas,
-                    j.neitherWhy || 'there is nothing neither of you has', 'neither') : '')
+                    j.neitherWhy || 'there is nothing neither of you has', 'neither', j.neitherNote) : '')
       + '</div>'
       /* ⚠⚠ `showN`, NOT `rosterN`. This printed the roster length — 398 for uniques — and
          bible.html:3757 says of that number: "produced by neither, and NO array on the page is

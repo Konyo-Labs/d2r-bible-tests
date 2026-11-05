@@ -127,7 +127,43 @@ LEDGERS = {
     "uniques": {"roster": "unique_roster.json", "key": "names",  "store": "d2r_foundLog",
                 "stores": ["d2r_foundLog", "d2r_owned"],
                 "label": "uniques"},
+    # ══ v3861 — THE SIX COLOSSAL JEWELS TRAVEL IN A MASK OF THEIR OWN ══════════════════════════════
+    # His board's unique tally is 403 = 397 hunt cards + these six (route_totals.py, his ruling), but
+    # the uniques roster is the hunt-card table and never carried them, so the cross-reference could
+    # not say whether either side holds Defender's Bile - and the "both need" column refused itself
+    # (his words 2026-11-05: "we both need defenders bile"). A ledger of their own is WIRE-ADDITIVE:
+    # the 396-name uniques mask keeps its bits and fingerprint, so a console that has not updated
+    # still compares, and simply has not published this one yet. Same stores as uniques: a jewel he
+    # ticks is a found-ledger name like any other.
+    "colossal": {"roster": "colossal_roster.json", "key": "names", "store": "d2r_foundLog",
+                 "stores": ["d2r_foundLog", "d2r_owned"],
+                 "label": "colossal jewels"},
 }
+
+# ══ v3861 — ONE SUNDER, ONE NAME, IN THE CROSS-REFERENCE ═══════════════════════════════════════════
+# His rulings: v2680 "for the chronicle all sunders 6 of them need to be counted ... as 1 tally for each",
+# v3183 "for chronicle there is only one name for it". The board folds Latent/Renewed into the bare
+# sunder (bible.html _isUpgradedSunder / _uniItems); the cross-reference diffed the raw roster names, so
+# MEASURED 2026-11-05 on the fleet: his console published all six as Latent, Dean's all six as bare, and
+# the uniques panel listed the same six charms on BOTH sides ("i have all the latents so something here
+# is bugged"). chronicle_key() is the board's fold, for the compare only - the masks keep every spelling,
+# because the VAULT still holds each as its own entity (v3183). A law pins this tuple to bible.html.
+SUNDER_BASES = ("Bone Break", "Cold Rupture", "Crack of the Heavens", "Flame Rift", "Rotting Fissure",
+                "Black Cleft")
+#: the board splits ONE roster name, "Rainbow Facet", into this many chronicle variants (bible.html
+#: _CHRON_FACETS); the mask carries one bit for all of them. A law pins it to the page.
+FACET_VARIANTS = 8
+FACET_NAME = "Rainbow Facet"
+
+
+def chronicle_key(name):
+    """The name the chronicle counts this roster name under. -> str. Pure.
+    'Latent Cold Rupture' / 'Renewed Cold Rupture' -> 'Cold Rupture'; anything else unchanged."""
+    s = str(name)
+    for q in ("Latent ", "Renewed "):
+        if s.startswith(q) and s[len(q):] in SUNDER_BASES:
+            return s[len(q):]
+    return s
 
 
 def ledger_spec(ledger):
@@ -262,7 +298,7 @@ def decode(mask, roster, fingerprint, side="that machine"):
     return out, None
 
 
-def compare(mine, theirs, roster, fingerprint):
+def compare(mine, theirs, roster, fingerprint, fold=None):
     """The whole point: what THEY have that I do not, and what I have that THEY do not.
 
     -> {"ok", "why", "theyHaveIDont": [...], "iHaveTheyDont": [...], "neitherHas": [...],
@@ -289,6 +325,22 @@ def compare(mine, theirs, roster, fingerprint):
     if b is None:
         return {"ok": False, "why": "THEIR side is the one missing: %s." % why_b}
     sa, sb = set(a), set(b)
+    if fold is not None:
+        # v3861 - every side's names folded to the key they are COUNTED under, and each key listed once,
+        # at its first roster position. rosterN stays the bit count; foldedN is the folded universe.
+        sa, sb = {fold(n) for n in sa}, {fold(n) for n in sb}
+        _keys, _seen = [], set()
+        for n in roster:
+            k = fold(n)
+            if k not in _seen:
+                _seen.add(k)
+                _keys.append(k)
+        return {"ok": True, "why": None,
+                "theyHaveIDont": [n for n in _keys if n in sb and n not in sa],
+                "iHaveTheyDont": [n for n in _keys if n in sa and n not in sb],
+                "neitherHas": [n for n in _keys if n not in sa and n not in sb],
+                "rosterN": len(roster), "foldedN": len(_keys),
+                "both": len(sa & sb), "mineN": len(sa), "theirsN": len(sb)}
     # ⚠⚠ v3021 — `neitherHas` IS NOT THE SAME KIND OF STATEMENT AS THE TWO LISTS ABOVE IT, and the
     # difference decides whether it can be published. His ask: "tell me the items we BOTH need
     # combined not only the items we each have that the other doesnt".

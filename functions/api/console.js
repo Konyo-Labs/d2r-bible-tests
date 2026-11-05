@@ -503,7 +503,8 @@ export async function onRequestPost(context) {
          could never have worked end to end no matter what the boards did.
          The allow-list stays an allow-list — a client cannot invent ledgers — it is just no
          longer one entry long. [[the-unjoined-end]] [[copy-drift]] */
-      const LEDGERS = ['sets', 'uniques'];
+      /* v3861 - and the six colossal jewels, which travel in a mask of their own (tv/fleet_mask.py LEDGERS) */
+      const LEDGERS = ['sets', 'uniques', 'colossal'];
       const out = {};
       for (const k of LEDGERS) {
         const v = one(m[k]);
@@ -519,7 +520,7 @@ export async function onRequestPost(context) {
     maskWhy: (function (w) {
       if (!w || typeof w !== 'object') return null;
       const out = {};
-      for (const k of ['sets', 'uniques']) {
+      for (const k of ['sets', 'uniques', 'colossal']) {   /* v3861 - the same ledgers as `masks` */
         const v = w[k];
         if (typeof v === 'string' && v) out[k] = cutAtWord(v, 160);
       }

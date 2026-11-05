@@ -37920,8 +37920,10 @@ class TestV2329TheCrossReferenceHasTwoLedgers(unittest.TestCase):
         """One shared slot would serve the sets mask AS the uniques mask for five minutes. That is
         not a stale answer, it is a WRONG one - different roster, different items.
         [[label-outlived-referent]]"""
-        self.assertEqual(sorted(ca._MASK_CACHE), ["sets", "uniques"])
-        for led in ("sets", "uniques"):
+        # v3861 - one slot per fleet_mask ledger, the colossal jewels included: the slots follow the table
+        import fleet_mask as _fmk
+        self.assertEqual(sorted(ca._MASK_CACHE), sorted(_fmk.LEDGERS))
+        for led in sorted(_fmk.LEDGERS):
             self.assertIn("t", ca._MASK_CACHE[led])
             self.assertIn("val", ca._MASK_CACHE[led])
         self.assertIsNone(ca._mask_cached("wardrobe"),

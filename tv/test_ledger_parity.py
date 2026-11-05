@@ -51,16 +51,16 @@ RED_PROOF = [
                "publish, so a uniques mask is DISCARDED on arrival and every surface downstream "
                "says 'we have not heard from that machine' however correct its board is",
         "file": "functions/api/console.js",
-        "find": "const LEDGERS = ['sets', 'uniques'];",
-        "replace": "const LEDGERS = ['sets'];",
+        "find": "const LEDGERS = ['sets', 'uniques', 'colossal'];",
+        "replace": "const LEDGERS = ['sets', 'colossal'];",
         "matches": 1,
     },
     {
         "why": "the reverse direction — a key the console can never produce, which reads in the "
                "schema as a feature that exists and will never carry data",
         "file": "functions/api/console.js",
-        "find": "const LEDGERS = ['sets', 'uniques'];",
-        "replace": "const LEDGERS = ['sets', 'uniques', 'runewords'];",
+        "find": "const LEDGERS = ['sets', 'uniques', 'colossal'];",
+        "replace": "const LEDGERS = ['sets', 'uniques', 'colossal', 'runewords'];",
         "matches": 1,
     },
 ]

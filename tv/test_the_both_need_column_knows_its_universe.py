@@ -187,7 +187,7 @@ class TheThirdColumnRendersItsRefusal(unittest.TestCase):
             self.assertGreater(j, m.start(), "could not find the end of %s" % what)
             return src[m.start():j + len(end_pat)]
 
-        col = _between(r"var col = function \(title, names, why, side\) \{", "\n    };", "col()")
+        col = _between(r"var col = function \(title, names, why, side, note\) \{", "\n    };", "col()")   # v3861 - a column may carry a note under its header
         d = tempfile.mkdtemp(prefix="fxcol.")
         self.addCleanup(__import__("shutil").rmtree, d, True)
         f = os.path.join(d, "t.js")
