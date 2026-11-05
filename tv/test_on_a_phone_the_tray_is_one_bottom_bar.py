@@ -9,7 +9,8 @@ The render gate reported it covered 0/1 because it samples the middle of an elem
 reserves the gutter inside one card only.
 
 At <=600px the column now turns on its side in a bar of its own under the dock (#tray-bar). This law holds the RESERVE,
-never an overlap (visual-regression-detector's rule; the pixels are the render gate's `phone-bar` target, on CI):
+never an overlap (visual-regression-detector's rule; the pixels were meant to be the render gate's `phone-bar` target - v3864:
+PARKED, it never activated on CI, so the bar's pixels are UNMEASURED until it does):
   * every orb of the column sits IN the bar: its phone anchor no longer climbs on --dock-h, and its inset plus its
     height fits the bar's height - all three read from the stylesheet, never remembered;
   * the row is the column turned on its side: each orb's slot from the corner is its slot up the column (the three

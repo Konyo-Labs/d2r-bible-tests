@@ -7,6 +7,13 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3181 - THE PHONE-BAR RENDER TARGET NEVER ACTIVATED, SO IT NEVER HAD A FLOOR AND STOPPED EVERY CI BLESS (v3864, #224)
+The chain's REG-3090 render target `phone-bar` had no coverage floor (test_render_coverage and test_control's orphan check went
+red on CI), and two CI blesses refused the whole set over it: "the panel could not be ACTIVATED after 30 s of polling" -
+first at every width (the bar exists only at <=600px), then with widths ((375, 800),) at 375 alone. A floor nobody measured is
+a number nobody can defend, so the target is PARKED in render_check.PARKED_TARGETS (not run) with its reason, and the bar's
+pixels are UNMEASURED until a CI bless renders it clean. Its rules still hold in tv/test_on_a_phone_the_tray_is_one_bottom_bar.py.
+
 ### REG-3180 - A WAR MULE THE BOARD MADE STAYED ON THE ROSTER AFTER ITS OVERFLOW WAS GONE (v3864, his ruling 2026-11-05 (d))
 His ruling on the board question "should the board delete a war mule it made once nothing lands on it?": "if a vault gets
 reset then yes it will delete it automatically ... open to opening mules automatically and if not needed like war mules only
