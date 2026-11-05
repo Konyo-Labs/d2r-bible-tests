@@ -7,6 +7,344 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3215 - THE HEART SAID OPEN OVER A LOCK THAT MAY NOT ACT, AND THE FLEET CARD SAID SHUT (v3865, GrokBot #230 2026-11-05)
+GrokBot on glass at 21:08: "Fleet 'locks shut' while frame.release is OPEN - glass trusts stale proof census". Measured at 21:23: the heart's frame.release row carried state "OPEN" ("35 of 35 DISTINCT ATTACKS refused ... wilson 0.901 >= 0.722") and permitted false ("the heart2 PROOF census is STALE ..."), heldBy stale. The top counted open 7, total 9, permitted 4, and may('frame.release') was False. So the Fleet card was right. "OPEN" answered "is it proven strong enough", but his question is "may it act now".
+
+The same word sat on every lock surface: the list cell read "OPEN · MAY NOT ACT", the valves header "7 of 9 open", the organ row "7 of 9 locks open", the Vault chip hover "OPEN: ... — but it may NOT act now", and the fan hover "OPEN — it proved itself" or "HELD — ...". The fan caption said "held" where the Fleet said "shut".
+
+Fix: self_arming writes both answers on every row. `act` is "may act" or "shut"; `actSay` is "shut - the prover is behind"; `provenSay` names the strength, e.g. "proven 0.90 >= 0.72", "not proven 0.44 < 0.51" or "by design - nothing to sabotage". A row with no verdict reads shut. `lock_counts()` is the one valve tally, "4 of 9 may act now (7 proven)", and a missing verdict makes the count UNKNOWN, never 0. The trim (the seventh field it would have swallowed), the heart route, the selfArming organ row, the chips, the heart's list and header, and the fan's hover and shut caption all print those words. `state` and `permitted` stay for older readers. Law `test_a_lock_says_may_act_or_shut_first` (17 red-proofs PROVEN). Moved anchors: `test_health_engine` (the HARDENED red-proof now targets the one tally) and `test_a_held_lock_shows_its_catch_up` (held -> shut).
+
+### REG-3216 - THE HEART FLOOR NEVER TIGHTENED WHEN COVERAGE ROSE (v3865, GrokBot #230 2026-11-05)
+HEART.md said the console watches 8 of 406 painted surfaces and the board 4 of 602. tv/heart_floor.json still held 7 of 366 (its names omit `bug`) and 1 of 513 (`vault-moved-note` alone). The floor rose only on a hand `--bless`, and `--check` compared counts. So `bug` could stop being watched and the console fall back to 7, or the board to 1, with the gate green. The ratchet only held as far back as the last bless.
+
+Fix: a regeneration now raises a page's floor to the map whenever the map still watches every name the floor holds. A lost name leaves that page's floor alone, so the loss cannot be blessed away by a regeneration. `--check` refuses a floor that lags the map and names what it is missing. It also refuses a lost name even when the count held, because one gained surface can hide one lost. A bless that lowers the floor needs `--why`, which is recorded as `_lowered`. HEART.md and the floor are built first, then written whole. Before, `io.open(OUT,"w").write(render())` emptied HEART.md when render raised. The committed floor is raised to the measured map: 8/406 with `bug`, and the board at 4/602. Law `test_the_heart_floor_rises_with_the_map` (8 red-proofs PROVEN).
+
+### REG-3210 - PUBLISH RE-PROVED A COMMIT ITS ci/ ROUND HAD ALREADY PROVED, AND THE FIX FIRST BROKE THE RE-RUN THAT RESCUES A STUCK SHARD (v3865, his words: "2hr and 50 min are you kidding me?")
+That figure was a UTC-vs-Israel-time misreading, not a measurement. What GitHub recorded:
+On 2026-11-05 the ci/proof-keys-v3864 run banked proofs-9d9485ea6…tgz at 18:17 UTC. Publish (run 42084305066) began nine
+minutes later on the same commit. Its shards restored only "the proofs the last MAIN run banked" (REG-2961: v3863's) and
+served 1-2 proofs each. Shard 6 proved 380 of its 388 again, for 49.5 min, and the whole Publish took 55.7 min on a commit
+already proved. Every PC imports that bundle; GitHub did not. Now proof-keys-shards.yml's `seed` job builds one seed per
+run: the REG-2961 restore plus the proof-bank bundle for exactly $GITHUB_SHA. tv/proof_seed.py fetches it through the PCs'
+own proof_release.download and safe_extract, and merge_shards keeps only servable PROVENs. served.json names what this
+commit already proved. Every shard downloads the seed and checks its sha256; on a mismatch it exits 3. heart2 still
+serves a seed entry only under this checkout's own key. A seed that cannot be built is a cold run, said and never red.
+Second eye: moving the restore into the seed job broke the rescue that got v3864 out. Shard 10 of run 42061540765 held 656
+of 8,829 proofs and ran 87 min until it was cancelled at 17:40 UTC. "Re-run failed jobs" restored the cache attempt 1's
+fan-in saved (heart2-proofs-<sha>-42061540765-1); the shard served 47 gates whole and finished in 36 min. The seed job is
+not re-run, so its seed predates attempt 1. Now a re-run shard restores heart2-proofs-<sha>-<run_id>- into
+heart2-seed/rerun, and `proof_seed.py --widen` merges it after the digest check. The plan stays the seed job's
+served.json, so the re-run shard cuts the same plan as its siblings. Law: tv/test_a_proof_run_starts_from_its_exact_commits_proofs.py
+(10 red-proofs, 10 PROVEN).
+
+### REG-3211 - THE SHARD PLAN PRICED A PROOF THE CACHE WOULD SERVE LIKE ONE IT MUST RUN (v3865)
+Once a run starts from its exact commit's proofs (REG-3210), most of every plan is served. The plan still priced each
+served proof as a full run, so the owed rest would land wherever the gate names fell. MEASURED on v3864's Publish (run
+42084305066): the slowest shard proved for 3,170 s against a mean of 2,297 s (1.38x). Shard 14 took 23.5 min for 11
+proofs. Now proof_shard.plan(served=) prices a proof already PROVEN at this commit at SERVED_PROOF_S with no clean run,
+and cuts and places only the owed proofs, longest first. Every proof is still assigned exactly once, and served=None
+gives exactly the old plan. heart2._served_now reads the seed job's served.json, and only when its sha is this
+checkout's HEAD. heart2 says each shard's modelled wall ("REG-3211 OWED-WORK PLAN"). On a fixture shaped like v3864 the
+old plan's slowest shard carries 5.1x the mean owed work; the new one at most 1.25x. A cold run (no served list) plans as
+before. Its pile is now bounded by REG-3212 and picked up by REG-3210's re-run. Law:
+tv/test_a_proof_run_plans_by_the_work_still_owed.py (6 red-proofs, 6 PROVEN).
+
+### REG-3212 - A PROOF RUN HAD NO BOUND HIS 75 MINUTES COULD TRUST, AND THE FIRST BOUND COULD NOT CUT A RUN ALREADY GOING (v3865, his words: "why has it been stuck for so long and not triggered at an alert somewhere at 75 minutes which was max?")
+Shard 10 of ci/proof-keys-v3864 (run 42061540765) proved for 87 min of job; every other shard was done by 17:05 UTC. It
+ran under a 160-minute step cap and a 180-minute job cap, so nothing fired. Now the shard job is capped at 75 min and
+the prove step at 70. heart2 reads HEART2_PROVE_DEADLINE (job start + 55 min) and HEART2_GATE_CAP_S (1500). Past either
+bound, a proof that would have to run is not started. It is recorded TIMEOUT: owed by name, never PROVEN, never banked.
+A proof the cache serves is still served.
+Second eye: the bound was asked only before a proof started. With 3 lanes the deadline scale is 2, so a 900-s gate got
+1800 s per run, and a proof started at minute 54 could run past the step cap and leave no manifest. Now every law run
+of a push takes the tighter of two limits: its own deadline, or the bound. The bound is the run's hard stop (its
+deadline + HARD_STOP_AFTER_S 480 s: minute 63) and, for a gate's proofs, the gate's cap. A run the bound killed or would
+not start is TIMEOUT. So are the PROVENs whose closing clean run the hard stop killed (they are never banked
+unconfirmed). The fan-in names every TIMEOUT with its shard. The census lists TIMEOUT apart from "laws owed a fix", since
+a law that only ran out of time is no defect. Publish's verdict still holds the deploy on a TIMEOUT of one of the push's
+laws. With no bound set (his Mac, a PC's census) nothing is cut. Law: tv/test_a_gate_past_its_bound_is_cut_and_named.py
+(17 red-proofs, 17 PROVEN).
+
+### REG-3213 - NOTHING WATCHED A VERSION'S CI PAST 75 MINUTES (v3865, his words: "...not triggered at an alert somewhere at 75 minutes which was max?")
+On v3864, tv/ship_when_green.py waited on the ci/ branches without a word past 75 min, then returned the moment main was
+pushed, and the console had no CI row. Nothing said that shard 10 had run 87 min, nor that Publish then took another
+56 min. Now tv/ci_watch.py reads GitHub's Actions API for one commit and judges it: overrun / slow / red (all red),
+running, green, none, or unknown (an unread GitHub is never green). It answers on/worked/lastTs/owed, and an overrun names
+the jobs still running. Scheduled routines are left out. ship_when_green alerts once at 75 min on the ci/ wait. After the
+main push it follows Publish, alerts past 75 min, and its exit says how Publish ended (--no-watch keeps the old
+behaviour). The console's CI tick (control_app._ci_watch_tick) runs at most every 5 min, on a thread, never from a
+TV_STUB console. It publishes /api/status.ciWatch, and the eagle row "this version's CI" reads MISSING on overrun, slow
+or red, and UNKNOWN when unread or stale.
+Second eye: the Publish watch polled GitHub's unauthenticated API every 60 s, its whole 60-an-hour allowance. A simulated
+watch was refused 21 of 141 reads and went blind from minute 49 to 60. It now reads through the authenticated gh CLI
+(ci_watch.gh_get, falling back to the public API) every PUBLISH_POLL_S = 120 s. Law:
+tv/test_a_ci_run_past_75_minutes_alerts.py (14 red-proofs, 14 PROVEN).
+
+### REG-3214 - THE WINDOWS PROOFS RAN ONLY AFTER PUBLISH, SO A WINDOWS PC RE-PROVED ALONE AFTER EVERY SHIP (v3865)
+v3863's Windows set ran only after Publish: Publish took 67 min, then the Windows set about 2 h more. On v3864 there was
+none at all. OLD PC ALT's proofRelease read "GitHub has no proof bundle for 9d9485ea6 yet (the Linux set is already in)".
+Now proof-keys-windows.yml also runs on the ci/proof-keys-<v> push, beside the Linux shards. It is seeded from the bank's
+newest other win32 set plus this commit's own, and bounded 75/70/55. Its shards never fail the run, and it is still not
+in ci_verdict.REQUIRED.
+Second eye: one round could not fit, and a cut set read as banked. v3863's 8 shards ran 70.8-126.3 min of job (805
+job-minutes), and a set carries about 2% of its keys to the next version (v3863 -> v3864: 179 of 8,053). At 8 shards the
+55-minute deadline would cut about half (modelled). So: 16 shards, all at once. A set that still owes TIMEOUTs is
+bank=partial, never ok, so the round after Publish proves the rest from it. That round first waits up to 45 min while
+this commit's ci/proof-keys round is still proving (proof_seed --wait-sibling). GitHub fired nothing on the v3864 ci push
+(REG-3188), so ship_when_green now dispatches the Windows set on ci/proof-keys-<v> like a missing required run, and never
+waits on it. Law: tv/test_windows_proofs_run_before_main.py (12 red-proofs, 12 PROVEN).
+
+### REG-3208 - NOTHING MEASURED OR PRUNED WHAT KEPT GROWING ON THE DISK, AND THE FIRST LANE FOR IT HAD NINE HOLES (v3865, his words 2026-11-05)
+His words: "whatever keeps growing needs to have a looped system in place that prunes and extracts and saves any data informational that's needed". Measured that night: 6.9 GiB free, under his 8 GB ON AIR floor. What had grown: 94 scratch dirs in the temp root, ~3.3 GB of Grok-seat worktrees (some not merged, some not git trees), 2.2 GB of Claude's shipped worktrees, and a 2.7 GB clone holding one commit not upstream. Reel retention owns only reels and frames, grok_chat_prune only his Grok chats, and the doctor's disk headroom row only free GB.
+
+tv/disk_growers.py is the lane. It works from a DECLARED registry (seat worktrees and scratch in /private/tmp, law fixtures in $TMPDIR, %TEMP% twins on Windows). Each pass goes measure -> salvage -> read back -> prune. It prunes only under a 16 GB watermark or past an age bound. Every entry starts in dry-run and arms itself after 3 clean passes over 24 h. The console runs it in the disk sign's pass, and the doctor row is "disk growers".
+
+The adversarial review reproduced nine holes on temp fixtures, and each is now closed:
+- lsof was asked once per pass, so a shell entering tree B after A's prune did not stop B's. It is now asked again before EACH prune (0.27 s).
+- Age was mtime only, so a cp -Rp copy read 240 h old. Age is now the newer of mtime and ctime.
+- One tree with no origin/main, or an untracked nested repo (IsADirectoryError), reset its whole entry's dry-run forever. A declared wait no longer fails arming.
+- $TMPDIR (vault-law- 518, playwright-artifacts- 414) was undeclared. law-scratch entries now record each fixture with one manifest line.
+- owed read 0 while an age was UNKNOWN, and a PC without psutil was UNKNOWN with nothing to prune. Holders are now lazy, and owed is None exactly when something was unread.
+- A state reset was said nowhere. It is now said in the lane and the doctor.
+- A lane that only waited for days read OK. The doctor now shows the reading's age and goes MISSING after 24 h unmeasured.
+- A pass was unbounded. It now handles 200 growers and defers the rest as owed.
+
+Law: tv/test_what_keeps_growing_is_salvaged_then_pruned.py (34 tests, 42 red-proofs, all PROVEN).
+
+### REG-3209 - A GROWER'S INFORMATION IS SALVAGED AND READ BACK BEFORE IT IS PRUNED, AND THE SALVAGE NEVER COSTS THE DISK MORE THAN IT RELIEVES (v3865)
+Claude had to salvage that 2.7 GB clone by hand (git cherry against origin/main, git format-patch, a README) before removing it.
+
+The lane now salvages into tv/.salvage (git-ignored):
+- every commit not upstream by patch-id, as a format-patch;
+- the tracked dirty diff;
+- untracked files under a cap (the larger ones are named);
+- a clone's stashes;
+- a scratch dir's summary, verdicts and log tails.
+
+It reads every file back by sha256 and size, plus meta.json and its manifest line. A salvage that does not read back blocks the prune, and so does a tree whose upstream cannot be told.
+
+The review found two more holes:
+- git cherry skips merge commits, so a clone's conflict resolution was in no salvaged file and the clone was pruned. A tree with a merge commit not upstream is now also saved as history.bundle, and `git fetch <bundle> HEAD:refs/heads/salvaged` restores it.
+- Patches, the dirty diff and stashes had no cap, and nothing checked free space: a 30 MB dirty binary became a 58 MB salvage on a disk at 2 GB free. Now:
+  - every written byte counts against SALVAGE_CAP (20 MB), and past it the tree waits whole, never cut short;
+  - a single diff whose touched files sum past READ_CAP (200 MB) is never read into memory;
+  - nothing is written that would leave the salvage disk under 1 GB or push the salvage dir past 2 GB.
+
+Same law as REG-3208.
+
+### REG-3206 - THE GUEST CONSOLE DREW ~103 DISTINCT /art 404s, AND NOTHING IN THE REPO COULD SAY WHICH PICTURES THE CONSOLE ASKS FOR (v3865, GrokBot v3864, #230 6666359708)
+GrokBot, v3864: the guest console (:18772) logged ~103 distinct /art/* 404s among 581 failed requests. His Mac's own network
+log had no /art failure. MEASURED CAUSE: that guest is GrokBot's own scratch stage on the box, and its art/ held 21 pulled files
+of the repo's ~1,300 (GrokBot #230 6464730558, 2026-10-28: hd_rondache.png and hd_great_helm.png 404'd there and returned 200
+on his Mac). It is not fed by tv/sync_guest_api.sh, which last wrote guest-mirror/ on 2026-09-15. Every name it 404'd is in
+the repo, so no repo check could have caught it. The repair is on the box: stage the whole tracked art/. The check is
+`python3 tv/art_names.py --art <dir>`; on a 21-file dir it reports 1,251 names missing, exit 1. In the repo: tv/art_names.py
+reads every name the console and its board can request (literals, 12 composers expanded from their tables, the HD manifest;
+an unknown composer is reported, never skipped): 1,271 names, 0 missing from art/ by exact case. The repo's own guest refresh
+shipped a new board and never its art; it now rsyncs art/ to GUEST_BOX_ART (a default path - the box's bridge is not in this
+repo) and runs the check first. UBER_BOSSES named Korlic/Madawc two files never in art/. They were dead references, never
+requested (D2IO_ART registers those names first), and now name the files the board draws. Law:
+tv/test_every_picture_the_console_asks_for_is_shipped.py, 6 red-proofs RED. NOT fixed here: the box's guest art tree.
+
+### REG-3207 - A /hist FRAME A DELETER TOOK WAS A BROKEN IMAGE OR A SILENT BLANK, AND A GUEST ASKED /api/update ALL SESSION (v3865, GrokBot v3864)
+GrokBot, v3864: 3 /hist 404s on his Mac (?w=440, image requests), and /api/update 404s among the guest's 581 failed requests.
+_serve_hist answered a missing frame with a bare 404, so about a dozen img sites drew a broken picture or hid it. It now asks
+read_pictures.judge. That is the one "who took this picture" answer the doctor row and /api/picture_status already read, over
+reel_tombstones.json, reel_reaps.jsonl and the refusal record. An img gets a no-store SVG: FRAME PRUNED, by whom and when, or
+FRAME NOT ON THIS PC + UNKNOWN when no record names it. A thumbnail (?w<=480) gets a compact card readable at 46px. A fetch
+keeps its 404, now carrying {gone, code, say, by, deletedTs, reel}. The reads drill keeps its 404 (gone=404) so its raw read
+text still shows. The second eye reproduced two defects on a copy of his record. First, a first cut kept the LAST tombstone of
+a reel the lane trimmed 92 times, dating the measured frame 28 Oct instead of 9 Oct. Second, who_took read `kept` only as
+{frame} dicts, which reel_retention never writes. Now the earliest deleter that could have taken the frame wins (written after
+it was filmed, kept list without it), both kept shapes are read, and frames the recorder took name the recorder. /api/update:
+the console skips it when /api/status says guest:true. GrokBot's guest is a copy with no guest key, so the console also
+remembers the first 404 (a real console's GET never answers 404) and does not ask again for the life of the page. His Mac's
+"16 broken images per viewport" is a probe count (complete && naturalWidth 0). It includes 4 src-less markup imgs (#stage-film,
+#th-film, #thhd-img, the #th-thumb img) that paint nothing; the other ~12 are unidentified (nothing may render on his Mac).
+Law: tv/test_a_pruned_frame_says_it_was_pruned.py, 19 red-proofs RED. NOT seen on pixels.
+
+### REG-3202 - THE CONSOLE'S "FULL BIBLE" DOOR OPENED NOTHING NEW, AND IN A SHADOW NOTHING AT ALL (v3865, GrokBot on v3864, his Mac + a guest)
+GrokBot on glass: "Full bible ->" (#hub-bible) was a no-op on both consoles. Read in source: it was `href="#"` calling
+`_shellOpen('session')`, which promoted the engine pane on the board's SESSIONS room. That is the Task Force the hub already
+shows, under a header that already lit Sessions, and the pane hides the board's own tab row (bible.html v935.6:
+`body.app-ctx.engine-driven .tabs{display:none !important}`), so no other room of the bible could be reached from it. In a
+shadow it promoted #tvd-eng, which `body.shadow-on #tvd-eng` hides (visibility:hidden !important), and it left shadow-hub
+on, so nothing on screen moved. His ask (v3286): "the button within the console that routes us to the full bible page".
+`window._openFullBible()` now opens the same pane in FULL mode: the same store, the engine stays alive,
+`body[data-full-bible="1"]` on the console and `bible-full` on the board, under which bible.html shows its whole rail (every
+tab plus the data and lore clusters). In a shadow it drops shadow-hub and opens THEIR board on Characters (its Sessions
+room is this console's hub). Any other shellOpen, and `_shellRestoreConsole`, which every way home calls, leaves full mode.
+The href is the full page itself (`/board?app=1#session`), so a console whose script never ran still goes somewhere real.
+Law: tv/test_the_full_bible_door_opens_the_full_bible.py (7 red-proofs).
+
+### REG-3203 - HIS MAC'S SHELF SAT ON "opening the shelf..." AND THE DOCTOR CALLED IT "NO RUNS YET" (v3865, GrokBot on v3864)
+GrokBot: his Mac's Shelf stuck on "opening the shelf..." while a guest's Shelf filled. Measured on his live console:
+/api/status shelfPrewarm.ms 44303 (the list took 44 s to build at boot). The door awaited a fresh /api/sessions before
+painting anything, every time, bounded only at TH_SESSIONS_BOUND_MS (45 s), and then thShelf asked a second time. A wait
+that is overtaken returns without painting, and a timer WebKit throttles runs late, so nothing ever replaced the words.
+Runs in hand now paint at once, and the refresh follows (REG-3050's stale note covers a failure). Both "opening" placeholders
+are `.sh-opening[data-since]` and arm `_shelfOpeningWatch`: still there at TH_SHELF_OPEN_BOUND_MS (60 s), the placeholder
+becomes the UNKNOWN shelf (why, ↻, ✕) and posts ui_fault `shelf-open-stuck`. The beat publishes shelf.opening + openingS.
+THE REVIEW FOUND THE DOCTOR HALF HOLLOW, reproduced: the UNKNOWN shelf is `.sh-empty-hero.sh-unknown`, and
+`.sh-empty-hero:not(.sh-opening)` still matched it, so console_doctor answered OK "has no runs to show yet - the correct
+state" within 60 s of the stuck shelf GrokBot saw. The beat now excludes `.sh-unknown` from emptyHero and publishes `unknown`
+with the page's own why, and the row says MISSING. And [[stale-reading]]: openingS is the age at the beat, and a beat may be
+300 s old, so 10 s on a 280 s beat was printed "10s so far". Past the bound only once the beat's age is added is UNKNOWN
+now. Law: tv/test_the_shelf_never_hangs_on_opening.py (9 red-proofs). The UNKNOWN-shelf case is proven as one chain:
+the shipped watch's painted shelf, then the shipped beat (its selector matched by classes), then the Doctor's row.
+
+### REG-3204 - SHADOW PLAY WAS A 160 PX SLIDESHOW, NOT THE HD THEATRE HE PLAYS HIS OWN REELS IN (v3865, his ask; GrokBot on v3864)
+His ask: Play on a shadow is the same HD theatre as regular play. `_shadowSessionsPlayTick` drew the digest's 160 px key
+frame into #ssv-stage, a strip inside their sessions list. The same walk (the served frames, their order, the 1/2/4/8 speeds)
+now paints the theatre's own stage. #theatre is lifted fixed over the shadow (body.shadow-theatre, z 976, above the frame at 945
+and the list at 975), and frames go to #th-film. Each step shows the served frame at once, then asks the OWNER's console (its
+origin off the snapshot, the v3849 (a) leg) for /hist/<frameId>.jpg?w=1280. The caption says which picture is on screen, and
+a late HD answer never paints over the next frame. Read only: TH.beats is emptied, and the controls that act on this PC's
+reels are hidden and refused. ✕ and Esc go back to their list; thClose, a header tab, or leaving the shadow ends it.
+THE REVIEW REPRODUCED TWO MORE, in node on the shipped code. (1) The theatre self-heal calls a stage loaded only when it holds
+THIS PC's sessions, so on a guest that had not opened its own Shelf (TH.sessions empty) it closed their reel ~12 s after the
+last mouse move. It left body.shadow-theatre on (a bare stage in their hub), TH.shadowReel set (the key capture kept
+swallowing keys) and the walk ticking, and it posted a false theatre-stuck-black. A shadow reel is now loaded when its walk
+holds frames. The check is inline in the interval, since a helper outside it broke the REG-2057 law's cut, measured. A
+reel that really shows no picture is closed through _shadowTheatreDown(true), back to their list. (2) paint(st) re-runs
+thRibbon on every 1.5 s status poll while TH.open, so within one poll the ribbon read "THEATRE · session 1 · <this PC's
+span>" over their frames. thRibbon now names the owner while a shadow reel is up. Law:
+tv/test_shadow_play_is_the_hd_theatre.py (11 red-proofs; it runs the shipped heal body, thRibbon and the poll line).
+
+### REG-3205 - "EVERYTHING IS SHOWING ME A MOUSE CANCEL SIGN" - NO CONTROL LOOKED PRESSABLE (v3865, his words 2026-11-05)
+His words: "the mouse cursor needs fixing within the console like for buttons that are clickable should be emphasized.
+right now everything is showing me a mouse cancel sign.. and it should be a custom mouse cursor pointer for the console".
+Counted in control_ui.html: 96 `cursor: pointer` and 14 `cursor: default` rules, all beaten by the `*{gauntlet !important}`
+pair, so a button showed the same glove as dead space, and the only cursors that could differ were the not-allowed verdicts
+(REG-955's shape again). Now `:where(body *){cursor:inherit !important}` lets a control's cursor reach the label inside it.
+One gold SVG hand (fill #f0c060, keyline #1a1206, hotspot 12 2, `pointer` fallback) sits on `html :where(<generic clickables +
+every authored pointer selector>)`, and not-allowed shows only on [disabled]/[aria-disabled="true"] (thin TZ zones carry
+aria-disabled). The header tabs' system `cursor: pointer !important` is gone. Review fixes: #foot-ver had a script-set
+pointer, which the inherit rule beat, so it wore the gauntlet; it is now in the contract. A reel thumbnail whose frame is not
+archived now drops its [onclick]. bible.html's shadow-board style put `cursor:not-allowed !important` on every
+button/input/select/textarea/label/vault chip that is not a tab or a VIEW handler. That is nearly every control of a
+shadow, and it is the only not-allowed in bible.html that beats the board's `*{cursor:var(--kcur) !important}` hand (its four
+`[disabled]` rules lose to it). The dimming stays; the cancel sign is gone. Whether that rule is the screen behind his words
+is UNVERIFIED. The default stays his gauntlet (REG-266/v1916: one hand across console and board; v3034). The board keeps its
+one animated hand (v605) and v613 sparkles; a gold pointer there is his call. visual_lock_invariant stays OK. Law:
+tv/test_every_pressable_thing_wears_the_console_pointer.py (11 red-proofs).
+
+### REG-3200 - THE VAULT LANE RE-RAN A HUNG REEL AFTER EVERY RELAUNCH, AND A READER BUMP THAT ANSWERS THE SAME ENDED ITS COOLDOWN (v3865)
+
+MEASURED on his Mac 2026-11-05 (GET /api/status, /api/river, /api/fleet; his console log read only):
+- The tick said *"8 owed, none startable this tick: 1 quarantined after a hang"*.
+- The eagle said *"vault: 99 session(s), last did work 194.5 h ago - past the 48 h mark, so this lane has STOPPED"*.
+
+WHAT THE 8 OWED REELS ARE:
+- 7 are sealed by the current reader with 0 rows, and their one solo re-read is spent. The tick's sealed branch `continue`d without counting them, so they were passed over in silence.
+- The 8th is reel 21967. It was cooling after 6 barren reads under vp3554, until 11-12.
+- The 16:06 bump to vp-reg2915 is declared to answer the same as vp3554 (`VAULT_PROMPT_ANSWERS_SAME_AS`, so its seals stand). `_vault_cooling` compared versions exactly, so the bump ended the cooldown.
+
+WHAT HAPPENED NEXT:
+- The console booted at 20:27:26. The lane started 21967 at 20:28:43, the sweep hung 854 s, and the watchdog quarantined the reel in memory only.
+- A relaunch hands an in-memory quarantine straight back. His log shows that loop on reel 20599: 4 quarantines on 10-17, three right after the v3759/v3760/v3761 boots. Reel 21967 has hung once.
+- lane_health counted startable work for the chronicle lane only, so the vault lane could only ever read STOPPED.
+
+⚠ **NOT A LOCK CONSEQUENCE.** vault_sweep_start never asks the self-arming lock, and the tick said "none startable", not LOCKED. Opening the locks starts none of the 8.
+
+**FIX:**
+- A hang is a persisted attempt (`.vault_autoread.json` "hung"). The reel backs off 30 min, then 2 h.
+- A retry under the same reader is wall-clock bounded. Past 1200 s it gets the #130 stop at its next banked read, enforced from the 10 s rescue tick.
+- One sweep counts as one attempt.
+- After 3 hangs the reel shows amber *"needs a look: <MB, frames, filmed>, <why>"*. Ways out: a new reader, or POST /api/vault_sweep {"retryReel": <reel>} for exactly one more bounded try.
+- The hold is checked at the picker and the start door, and it survives a relaunch.
+- A run that returns having examined the reel in full takes it off the book.
+- A new reader's first attempt is never capped.
+- **One reader rule, `_vault_same_reader` (the seals' rule),** for the cooldown, its barren count, the hang hold, the hang count and the retry bound.
+- The tick counts and names sealed reels (*"wait on a new vault reader"*) and the held reel's next try.
+- `_vault_lane_reasons` uses the tick's own picker rule. lane_health asks it through the serving console, so a waiting vault lane reads BLOCKED with its own reasons.
+- Paid reads only go down.
+
+Laws:
+- `test_a_hung_reel_gets_a_bounded_retry`: 21/21 PROVEN.
+- `test_an_owing_vault_lane_says_what_each_reel_waits_on`: 9/9 PROVEN.
+- `test_a_barren_held_reel_cools`: its REG-2561 sabotage re-anchored, 4/4 PROVEN.
+
+### REG-3201 - THE EAGLE CALLED A REEL ITS OWN LANE WAS HOLDING "NO AUTOMATIC LANE" (v3865)
+
+MEASURED on his Mac 2026-11-05 (GET only):
+- The eagle said *"3 of 42 reel(s) sit at a station that owes work no automatic lane delivers (PRINTER 2, STATION 1)"*.
+- The fleet's PRINTER row quoted the vault lane's whole queue (*"owes 8 ... 1 quarantined after a hang"*).
+- The drain said *"waiting at STATION 1 behind STATION: A LANE EXISTS AND THIS QUEUE IS NOT ITS INPUT"*.
+
+WHAT IS ACTUALLY THERE:
+- The STATION reel is 21967, the vault lane's own reel.
+- The two PRINTER reels (52736, 17617) are in no lane's queue. The vault lane owes 8 without them, and the r4 review found retro_triage has both at full=true, panels=0.
+
+**FIX:**
+- `_station_delivery` decides per reel who moves it, from each lane's own rule: the vault picker `_vault_pass_reason`, the reel sweep's `_chron_reel_owes_a_read`, and REG-1749's `_proven_empty` veto.
+- The doctor's river row, the live fleet stuck row and the drain's upstream reason (`_river_drain_why` over `_reels_at_station`) all use it.
+- A hold that clears by itself (a hang's backoff, a cooldown, a reel still recording) is not counted. Every other wait is named.
+- A check that could not be asked is the wait 'unknown' and names the failed check, never *"no lane's queue holds it"*. The doctor keeps the station reading for it and says it is UNKNOWN.
+- A fixture shelf keeps the lane's own word.
+
+Law: `test_every_station_has_a_lane_or_says_what_it_waits_on`, 18/18 PROVEN.
+
+**OPEN RULING:** a triage-proven panel-free PRINTER reel has no lane that writes its seal. Retention's chain skips vault-owes for it, so it looks releasable once it leaves the newest 16. That is not verified on his data.
+
+### REG-3196 - A FAILED RIVER READ NEVER SAID WHY (v3865, his Fleet 2026-11-05 21:01)
+His words: "i want the river flowing and the fleet rendering it properly that it is for each and for whoever is not fix it!".
+OLD PC ALT's river.why read "a newer river read failed 1043 s ago - these lanes are the last good read" and nothing more. The
+reason was recorded on that PC (_RIVER_LAST['fail']['why']) and never reached the wire, and it was only the exception's
+class ("the river could not be read (KeyError)"). Now the failure keeps its message, scrubbed for the wire with _wire_text.
+A newer failed read sends it in river.why and as river.failWhy / failAgeS, the worker forwards both (absent stays absent),
+and the row draws a muted "last river read failed" with the reason in its hover. A failing river WALK now reaches it too
+(REG-3198). Law: tv/test_a_failed_river_read_says_why.py (5 red-proofs).
+
+### REG-3197 - THE FLEET DREW A PROOF IMPORT AS A RED "RIVER STUCK", AND CALLED BLIND GATES LATENESS (v3865, his Fleet 21:01)
+Measured at 21:01: every online PC's river.heart was {census:'stale', key:'stale-at-boot', why:"... GitHub's proofs for this
+commit are being imported ..."}, drawn as red "locks shut · rechecking" plus red "river stuck". Now river.heart carries:
+- importing {done, of, etaS, ver} while the import runs (None counts, never 0);
+- owedHere while this PC's own lane proves;
+- locksShut / lockWhy / locksAgeS: which river doors may() last named shut, asked on the river lane's thread through the
+  doctor's one reading (_river_locks_read).
+The row says "importing v3864's proofs · 1,240 of 2,928 · ~4 min" or "proving 162 owed here" in amber. The lock chip after
+it is amber with its one reason, and a lock line names the shut locks.
+The review then reproduced more on his live rows (22:08, 22:27), all closed:
+- Konyo · ALT {stale, running, blind 1} and OLD PC ALT {blind 3} drew amber "until this PC proves". But self_arming refuses
+  on a recorded BLIND before staleness and never softens it, so the chip now stays red, "locks shut · N gates blind". An
+  unsent blind count never gets the calm words, and the boot window sends its census's BLIND count.
+- When the import ended, the row went back to red "rechecking", with a why still saying "being imported", for up to
+  SELF_PROVE_EVERY_TICKS (10 min). The held tick now runs on the next 10 s rescue tick (_SELF_PROVE['afterImport']). The
+  gap reads "v3864's proofs imported · the proof check runs next".
+- importing.ver was the running stamp. It is now the stamp the import records for its clean checkout (_disk_ver).
+- The doors are not asked while he plays.
+- A lane that owes 0 is no longer drawn as a red debt (his ALT: "vault lane owes 0").
+Law: tv/test_the_fleet_says_importing_not_river_stuck.py (25 red-proofs).
+
+### REG-3198 - A CONSOLE'S OWN RIVER WAS NOT COMPUTED, A FAILING WALK RAN BACK TO BACK, AND AN OFFLINE PC READ UNKNOWN (v3865, his Fleet 21:01)
+Measured at 21:01: Dean (v3860, last beacon 02:49) and GrokBot (v3815, offline since 10-27) sent river.lanes null with
+"nothing has asked for the river yet", and Dean's row drew red "locks shut · rechecking" plus "river UNKNOWN" 18 h later.
+- /api/river answers "computing" until its first walk ends. The river lane took that for a read and slept 300 s. It now
+  asks again every 5 s, up to 120 s.
+- The first good river sends one beacon.
+- A machine that stays busy is waited out for at most 20 min when the console has no river.
+- No lanes is said in the lane's own words.
+- An offline row reads one muted chip, "offline since <time> · last river <age>". The Advanced box (and the row's hover)
+  now says the same for river, stuck and proved, where it said UNKNOWN and warned (the review, live rows).
+The review also measured a failing walk running back to back: river_lanes swallowed the exception, so every 5 s poll
+started a new walk (11 walks in one pass, every pass). Now the failure keeps its reason (_FAIL), no walk for that key starts
+for _FAIL_BACKOFF_S (120 s), /api/river answers it as a refusal with the walk's own reason, and the lane counts it as a
+failed read: one walk per pass. Law: tv/test_every_running_console_computes_its_own_river.py (14 red-proofs).
+
+### REG-3199 - THE GUEST'S SHADOW BAR SAID "ONLINE NOW" OVER AN 18 H OLD BEACON, AND KEPT A FROZEN AGE (v3865, GrokBot 2026-11-05)
+GrokBot saw "Dean · online now" on the guest's shadow bar over an old board, with Dean's last beacon ~18 h before. Fixes:
+- console_snapshot.view tests "online now" against fleet_presence's one bound, using the check-in's own time.
+- A recorder-only presence reads "online · recording".
+- The bar re-tests its words at paint and every 30 s.
+The review then found two more holes:
+- The 30 s check tested its own last rewrite, so "last seen 9 min ago" stood for hours. It now rebuilds from the words the
+  view painted (live.base) and leaves alone a bar someone else has repainted.
+- "online · recording" was never re-tested, and its bound was the console's old beacon. It is now tested against the
+  recorder's own report: live_at_of feeds view's liveAt / liveUntil.
+Not established: which hole GrokBot saw (online_of('Dean') over the live fleet already reads False on this tree). Law:
+tv/test_the_guest_does_not_call_an_old_beacon_online.py (13 red-proofs).
+
 ### REG-3190 - THE PROOF SHARDS COULD RUN ON A PAID RUNNER WITH NO SPENDING CAP (v3865, his ruling 2026-11-05)
 His words: "no way we pass 30$ .. this stops completely and goes back to github if we hit our monthly cap - 25$ is better".
 Ubicloud runs the shards on 8-core machines (measured that evening on a one-job probe: 8 cores, 31 GB, the GitHub-compatible

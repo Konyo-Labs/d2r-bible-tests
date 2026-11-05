@@ -12,6 +12,34 @@ closed thing. Where a task has a GitHub issue, it is named explicitly as `gh #NN
 Status: `READY` may be applied now · `BLOCKED` names what blocks it · `HIS CALL` waits on Konyo ·
 `SHIPPED` carries the version.
 
+## v3865 — THE EVENING FLEET, INTEGRATED (2026-11-05 evening)
+Seven reviewed branches on claude/v3865, in order: fx-ci, fx-lock, fx-r3, fx-r4, fx-ui, fx-art, fx-grow. NOT taken (not
+ready): fx-r1, fx-r2, fx-board. Each item: law + red-proofs + BUGS REG. UNVERIFIED until CI and GrokBot: nothing was
+rendered on his Mac, and the proof-run changes are proven only by a real GitHub run.
+- [x] REG-3196 a failed river read carries its own reason to the Fleet row chip.
+- [x] REG-3197 the Fleet says importing / proving N owed here in amber, names shut locks and blind gates, not "river stuck".
+- [x] REG-3198 every running console computes its own river; a failing walk runs once; offline says offline since <time>.
+- [x] REG-3199 the guest's shadow bar tests "online" against the beacon's age, at paint and while open.
+- [x] REG-3200 a hung vault reel gets a persisted, bounded retry; a reader that answers the same keeps the cooldown.
+- [x] REG-3201 every PRINTER or STATION reel says which lane moves it or what it waits on.
+- [x] REG-3202 the console's Full Bible door opens the whole bible.
+- [x] REG-3203 the Shelf never hangs on "opening"; the Doctor calls an UNKNOWN shelf a fault.
+- [x] REG-3204 Shadow Play is the HD theatre; a shadow reel survives the theatre heal.
+- [x] REG-3205 every pressable thing wears the console pointer; no cancel sign covers a shadow board.
+- [x] REG-3206 every picture the console can ask /art/ for ships (tv/art_names.py).
+- [x] REG-3207 a pruned frame says it was pruned and names the trim that took it; a guest asks /api/update once.
+- [x] REG-3208 the growers lane measures what keeps growing on the disk (tv/disk_growers.py, dry-run until armed).
+- [x] REG-3209 a grower is salvaged and read back before any prune; lsof before each prune; salvage capped.
+- [x] REG-3210 a proof run seeds from its exact commit's banked proofs (tv/proof_seed.py); a re-run shard keeps attempt 1.
+- [x] REG-3211 the shard plan spreads only the work still owed, longest first.
+- [x] REG-3212 a proof past its bound is cut TIMEOUT and named, inside 75 minutes.
+- [x] REG-3213 a version's CI past 75 minutes alerts: ship_when_green, the console's eagle row (tv/ci_watch.py).
+- [x] REG-3214 the Windows proofs run before main, in 16 shards; what one round cannot fit is proved after Publish.
+- [x] REG-3215 every lock surface says "may act" or "shut - <reason>" before how proven it is.
+- [x] REG-3216 the heart floor rises with the map; only a bless with --why lowers it.
+- [ ] GrokBot on glass (#230): the Fleet river chips, lock words, Shelf, Shadow Play, pointer, pruned-frame card.
+- [ ] fx-r1, fx-r2, fx-board: integrate when their reviews pass.
+
 ## v3862 — ONE SHIP, BOTH LISTS (his order 2026-11-05 ~09:45: "v3862 and v3863 together ... the push takes the same time")
 Worktree /private/tmp/claude-v3862, branch claude/v3862 (on v3861 7998ea4cb). DONE: chrome --version fix (REG-3152), prove
 beside cloud (REG-3153), ci-trust pre-push (tv/ci_verdict.py). Each item: law + red-proofs + BUGS REG, graded on ci/ first.
