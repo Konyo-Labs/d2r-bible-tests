@@ -11087,10 +11087,17 @@ def _check_a_windowed_frame_is_read_inside_its_game():
         return UNKNOWN, "char_select would not load (%s), so windowed frames are unknown" % type(e).__name__
     d = tempfile.mkdtemp(prefix="doc_win_")
     try:
-        p = CS.windowed_fixture(os.path.join(d, "f_1.jpg"))
-        ok, why = CS.looks_like_lobby(CS.lobby_stats(p))
-    except Exception as e:
-        return UNKNOWN, "the windowed lobby frame could not be measured (%s)" % type(e).__name__
+        try:
+            p = CS.windowed_fixture(os.path.join(d, "f_1.jpg"))
+        except Exception as e:
+            return UNKNOWN, "the windowed lobby frame could not be built here (%s), so it was not measured" % type(e).__name__
+        # v3866 (the #231 eye on v3858) - a reader that RAISES on the frame this check just built is a reader that fails,
+        # not an unknown: it was UNKNOWN, so the row could never go red for the defect it watches
+        try:
+            ok, why = CS.looks_like_lobby(CS.lobby_stats(p))
+        except Exception as e:
+            return MISSING, ("the lobby reader raised %s on a windowed frame this check built - a lobby filmed in a window "
+                             "is not seen" % type(e).__name__)
     finally:
         shutil.rmtree(d, True)
     if not ok:

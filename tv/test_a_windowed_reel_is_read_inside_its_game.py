@@ -36,6 +36,11 @@ CHECKS = [
   "bible.html",
   "data-none-why=",
   1
+ ],
+ [
+  "tv/console_doctor.py",
+  "            return MISSING, (\"the lobby reader raised %s on a windowed frame this check built - a lobby filmed in a window \"\n",
+  1
  ]
 ]
 
@@ -66,6 +71,23 @@ class TheLawHolds(unittest.TestCase):
             shutil.rmtree(d, True)
 
 
+class TheDoctorRowGoesRed(unittest.TestCase):
+    """v3866 (the #231 eye on v3858) - a reader that RAISES on the frame the row built is red; only a frame that could not
+    be built here is UNKNOWN."""
+
+    def test_a_reader_that_raises_is_missing_and_an_unbuilt_frame_is_unknown(self):
+        from unittest import mock
+        sys.path.insert(0, HERE)
+        import char_select as C
+        import console_doctor as CD
+        self.assertEqual(CD._check_a_windowed_frame_is_read_inside_its_game()[0], CD.OK)
+        with mock.patch.object(C, "lobby_stats", side_effect=ValueError("reader broke")):
+            st, why = CD._check_a_windowed_frame_is_read_inside_its_game()
+        self.assertEqual(st, CD.MISSING, "a reader that raised on its own fixture read as UNKNOWN: %s" % why)
+        with mock.patch.object(C, "windowed_fixture", side_effect=OSError("no image library")):
+            self.assertEqual(CD._check_a_windowed_frame_is_read_inside_its_game()[0], CD.UNKNOWN)
+
+
 class TheProofsNameOnePlace(unittest.TestCase):
     def test_each_find_matches_once(self):
         for p in RED_PROOF:
@@ -79,6 +101,13 @@ class TheProofsNameOnePlace(unittest.TestCase):
 
 
 RED_PROOF = [
+ {
+  "why": "v3866 (#231 on v3858) - a reader that raises on the row's own windowed frame reads UNKNOWN, never red",
+  "file": "tv/console_doctor.py",
+  "find": "            return MISSING, (\"the lobby reader raised %s on a windowed frame this check built - a lobby filmed in a window \"\n",
+  "replace": "            return UNKNOWN, (\"the lobby reader raised %s on a windowed frame this check built - a lobby filmed in a window \"\n",
+  "matches": 1
+ },
  {
   "why": "the lobby scan measures the whole window again",
   "file": "tv/char_select.py",
