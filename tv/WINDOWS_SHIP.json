@@ -3,7 +3,7 @@
   "ver": "v3865",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3865: a version is pre-flighted on this PC before GitHub grades it, and a dispatched proof run reaches its banked proofs",
+  "note": "v3865: a version is pre-flighted before GitHub grades it, and the proof shards run on 8 cores inside 25 dollars a month",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
