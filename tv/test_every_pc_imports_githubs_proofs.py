@@ -200,13 +200,40 @@ class TheImport(_Tmp):
 class WhenACommitIsOwed(unittest.TestCase):
 
     def test_owed(self):
-        self.assertTrue(PR.owed({}, SHA))
-        self.assertTrue(PR.owed({"sha": OTHER, "state": "imported"}, SHA), "another commit's import vouched for this one")
-        self.assertFalse(PR.owed({"sha": SHA, "state": "imported"}, SHA))
-        self.assertFalse(PR.owed({"sha": SHA, "state": "refused"}, SHA))
-        self.assertTrue(PR.owed({"sha": SHA, "state": "absent"}, SHA), "an absent bundle was never asked again")
-        self.assertTrue(PR.owed({"sha": SHA, "state": "unknown"}, SHA))
-        self.assertFalse(PR.owed({}, "not-a-sha"))
+        M = "darwin"
+        self.assertTrue(PR.owed({}, SHA, M))
+        self.assertTrue(PR.owed({"sha": OTHER, "state": "imported"}, SHA, M), "another commit's import vouched for this one")
+        self.assertFalse(PR.owed({"sha": SHA, "state": "imported"}, SHA, M))
+        self.assertFalse(PR.owed({"sha": SHA, "state": "refused"}, SHA, M))
+        self.assertTrue(PR.owed({"sha": SHA, "state": "absent"}, SHA, M), "an absent bundle was never asked again")
+        self.assertTrue(PR.owed({"sha": SHA, "state": "unknown"}, SHA, M))
+        self.assertFalse(PR.owed({}, "not-a-sha", M))
+
+    def test_a_windows_pc_wants_the_windows_set(self):
+        W = "win32"
+        self.assertEqual(PR.flavors(W), ("win32", ""))
+        self.assertEqual(PR.asset_name(SHA, "win32"), "proofs-%s-win32.tgz" % SHA)
+        self.assertTrue(PR.owed({"sha": SHA, "state": "imported", "imported": [""]}, SHA, W),
+                        "a Windows PC that took the Linux set stopped asking for the Windows one")
+        self.assertFalse(PR.owed({"sha": SHA, "state": "imported", "imported": ["", "win32"]}, SHA, W))
+
+    def test_the_best_set_first_and_the_linux_one_meanwhile(self):
+        asked = []
+
+        def imp(sha, tv_dir=None, flavor="", **kw):
+            asked.append(flavor)
+            return {"state": "absent" if flavor == "win32" else "imported", "sha": sha, "flavor": flavor, "why": "x"}
+        saved = PR.import_bundle
+        PR.import_bundle = imp
+        try:
+            r = PR.import_best(SHA, platform="win32")
+            self.assertEqual(asked, ["win32", ""])
+            self.assertEqual(r["imported"], [""])
+            asked.clear()
+            r2 = PR.import_best(SHA, platform="win32", state=r)
+            self.assertEqual(asked, ["win32"], "the Linux set was fetched again after it was in")
+        finally:
+            PR.import_bundle = saved
 
 
 class TheConsoleTick(_Tmp):
@@ -247,7 +274,8 @@ class TheConsoleTick(_Tmp):
 
         def imp(sha, tv_dir=None):
             calls.append(sha)
-            return {"state": "imported", "sha": sha, "why": "imported", "seconds": 1.0, "at": 1}
+            return {"state": "imported", "sha": sha, "why": "imported", "seconds": 1.0, "at": 1,
+                    "imported": [PR.flavors()[0]]}
         r = self.CA._proof_release_tick(_thread=lambda f: f(), _import=imp, **kw)
         return r, calls
 
@@ -348,6 +376,30 @@ class TheBankJob(unittest.TestCase):
             self.assertIn("\ntv/.proof_release.json\n", fh.read())
 
 
+class TheWindowsSet(unittest.TestCase):
+    """v3862 (item 3) - proof-keys-windows.yml: proves the PUBLISHED commit on windows-latest, off the ship's path."""
+
+    @classmethod
+    def setUpClass(cls):
+        with io.open(os.path.join(ROOT, ".github", "workflows", "proof-keys-windows.yml"), encoding="utf-8") as fh:
+            cls.wf = _code(fh.read())
+
+    def test_it_runs_after_publish_and_is_never_a_ship_gate(self):
+        import ci_verdict as CV
+        self.assertIn('workflows: ["Publish — gates, review, then deploy"]', self.wf)
+        self.assertNotIn("ci/", self.wf.split("\njobs:")[0], "the Windows set runs on a ci/ push - it would queue the ship")
+        name = self.wf.split("\n", 1)[0].split("name:", 1)[1].strip()
+        self.assertNotIn(name, CV.REQUIRED, "an unmeasured Windows leg became a gate on every ship")
+
+    def test_its_shards_never_fail_the_run_and_only_the_bank_writes(self):
+        shard = self.wf[self.wf.index("\n  shard:\n"):self.wf.index("\n  fan-in:\n")]
+        self.assertIn("exit 0", shard)
+        self.assertEqual(self.wf.count("contents: write"), 1)
+        self.assertIn("contents: write", self.wf[self.wf.index("\n  proof-bank:\n"):])
+        self.assertIn('"proofs-${HEAD_SHA}-win32.tgz"', self.wf)
+        self.assertIn("runs-on: windows-latest", shard)
+
+
 RED_PROOF = [
     {"why": "v3862 - a stray file in the bundle is unpacked (prove.log overwrites a shard cache)",
      "file": "tv/proof_release.py",
@@ -385,6 +437,11 @@ RED_PROOF = [
      "file": "tv/control_app.py",
      "find": "        if _PROOF_RELEASE.get(\"running\"):   # v3862",
      "replace": "        if False:   # v3862",
+     "matches": 1},
+    {"why": "v3862 - a Windows PC never asks for the set proved on Windows",
+     "file": "tv/proof_release.py",
+     "find": "    return (\"win32\", \"\") if (platform or sys.platform) == \"win32\" else (\"\",)",
+     "replace": "    return (\"\",)",
      "matches": 1},
     {"why": "v3862 - the bank publishes a set the fan-in never called whole",
      "file": ".github/workflows/proof-keys-shards.yml",

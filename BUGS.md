@@ -186,6 +186,15 @@ mask of their own (wire-additive; the worker's allow-list carries it; an older p
 and both-need publishes when the folded roster, the Rainbow Facet split (one bit, 8 variants, said under the column)
 and the jewels account for the board's count. On his real masks: 4 / 13, both need Bane Ash, Blinkbat's Form, Death's
 Web, Tyrael's Might. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (five red-proofs, all RED).
+### REG-3165 - EVERY WINDOWS-ONLY DEFECT WAS FOUND BY A WINDOWS PC PROVING ITSELF, NEVER BY GITHUB (v3862, item 3)
+His refined ruling 2026-11-05: "GitHub grades and proves each version once, including a Windows runner". CRLF,
+cp1252/cp1255, POSIX-only paths and `chrome.exe --version` were each found on Dean's PC or an ALT, because every proof
+ran on ubuntu. .github/workflows/proof-keys-windows.yml proves the PUBLISHED commit on windows-latest in 8 shards after
+Publish completes on main (GitHub Free runs 20 jobs at once: beside Publish's 16 Linux shards it would queue the deploy),
+its shards never fail the run, and its own bank job publishes proofs-<sha>-win32.tgz to the proof bank. A Windows
+console now asks for that set first and takes the Linux one meanwhile (proof_release.flavors / import_best), and keeps
+asking for the Windows one until it is in. NOT one of ci_verdict.REQUIRED. UNMEASURED until its first run after v3862
+publishes. Law test_every_pc_imports_githubs_proofs (TheWindowsSet, the Windows cases).
 ### REG-3164 - AN UNKNOWN FAULT ON A PC SAT UNTIL SOMEONE SSH'D IN TO LOOK (v3862, item 9)
 His ask 2026-11-05: could Dean's missing node "have been like done automatically by an AI claude on his own end?" Known
 faults now fix themselves (REG-3158); for a repair-book MISS the PC's own signed-in Claude reads the eagle check behind it

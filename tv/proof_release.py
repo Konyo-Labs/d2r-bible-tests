@@ -48,12 +48,19 @@ _MEMBER = re.compile(r"^proof-shard-(\d{1,3})/\.heart2_cache\.json$")
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 
 
-def asset_name(sha):
-    return "proofs-%s.tgz" % sha
+def asset_name(sha, flavor=""):
+    """The Linux set is proofs-<sha>.tgz; the Windows set (proof-keys-windows.yml, after Publish) proofs-<sha>-win32.tgz."""
+    return "proofs-%s%s.tgz" % (sha, ("-" + flavor) if flavor else "")
 
 
-def asset_url(sha, repo=REPO_SLUG):
-    return "https://github.com/%s/releases/download/%s/%s" % (repo, RELEASE_TAG, asset_name(sha))
+def asset_url(sha, repo=REPO_SLUG, flavor=""):
+    return "https://github.com/%s/releases/download/%s/%s" % (repo, RELEASE_TAG, asset_name(sha, flavor))
+
+
+def flavors(platform=None):
+    """The bundles this PC imports, best first. A Windows PC wants the set proved ON WINDOWS (item 3) and takes the
+    Linux one while that is not published yet - it lands hours after the ship, off its path. -> tuple. Pure."""
+    return ("win32", "") if (platform or sys.platform) == "win32" else ("",)
 
 
 def _ssl_context():
@@ -70,7 +77,7 @@ def _ssl_context():
         return None
 
 
-def download(sha, dest, urlopen=None, run=None, max_bytes=MAX_BUNDLE_BYTES):
+def download(sha, dest, urlopen=None, run=None, max_bytes=MAX_BUNDLE_BYTES, flavor=""):
     """Fetch this commit's bundle to `dest`. -> ("ok" | "absent" | "unknown", why). Never raises.
 
     absent: GitHub answered 404 - no bundle for this commit (yet). unknown: anything else that stopped the read."""
@@ -78,7 +85,7 @@ def download(sha, dest, urlopen=None, run=None, max_bytes=MAX_BUNDLE_BYTES):
     import urllib.request
     if not _SHA.match(str(sha or "")):
         return "unknown", "no full commit id to ask about"
-    url = asset_url(sha)
+    url = asset_url(sha, flavor=flavor)
     opener = urlopen or urllib.request.urlopen
     why_tls = None
     try:
@@ -174,16 +181,17 @@ def _low_priority():
     return ([nice, "-n", "15"] if nice else []), 0
 
 
-def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None):
-    """Download, unpack and import this commit's proofs. -> {"state", "sha", "why", "seconds", "at"}. Never raises."""
+def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor=""):
+    """Download, unpack and import this commit's proofs. -> {"state", "sha", "flavor", "why", "seconds", "at"}."""
     tv_dir = tv_dir or HERE
     run = run or subprocess.run
     t0 = time.time()
-    out = {"state": "unknown", "sha": str(sha or ""), "why": "", "seconds": None, "at": int(time.time() * 1000)}
+    out = {"state": "unknown", "sha": str(sha or ""), "flavor": flavor, "why": "", "seconds": None,
+           "at": int(time.time() * 1000)}
     d = tempfile.mkdtemp(prefix="tvd-proof-release-")
     try:
         bundle = os.path.join(d, "bundle.tgz")
-        got, why = download(sha, bundle, urlopen=urlopen, run=run)
+        got, why = download(sha, bundle, urlopen=urlopen, run=run, flavor=flavor)
         if got != "ok":
             out.update(state=got, why=why)
             return out
@@ -233,15 +241,51 @@ def save_state(body, tv_dir=None):
         return False
 
 
-def owed(state, head):
+def _imported(s):
+    got = s.get("imported")
+    if isinstance(got, list):
+        return got
+    return [s.get("flavor") or ""] if s.get("state") == "imported" else []      # a record from before flavors
+
+
+def owed(state, head, platform=None):
     """Does this checkout still owe an import for `head`? -> bool. Pure.
 
-    imported or refused on this very commit: done (a refusal is final for the commit, and named). absent or unknown:
-    asked again. Another commit, or nothing recorded: owed."""
+    The BEST bundle for this PC imported (or refused - final for the commit, and named) on this very commit: done. A
+    Windows PC that took the Linux set still asks for the Windows one. absent or unknown: asked again. Another commit, or
+    nothing recorded: owed."""
     if not _SHA.match(str(head or "")):
         return False
     s = state if isinstance(state, dict) else {}
-    return not (s.get("sha") == head and s.get("state") in ("imported", "refused"))
+    if s.get("sha") != head:
+        return True
+    best = flavors(platform)[0]
+    if best in _imported(s):
+        return False
+    return not (s.get("state") == "refused" and (s.get("flavor") or "") == best)
+
+
+def import_best(sha, tv_dir=None, state=None, platform=None, **kw):
+    """Import the best bundle this PC can get for `sha`, best first; a flavor already imported is not fetched again.
+    -> the record to keep: the last answer, plus `imported` (every flavor taken for this commit). Never raises."""
+    s = state if isinstance(state, dict) and state.get("sha") == sha else {}
+    done = list(_imported(s))
+    last = None
+    for fl in flavors(platform):
+        if fl in done:
+            break
+        r = import_bundle(sha, tv_dir=tv_dir, flavor=fl, **kw)
+        last = r
+        if r["state"] == "imported":
+            done.append(fl)
+            break
+        if r["state"] == "refused":
+            break
+    rec = dict(last or s or {"sha": sha, "state": "imported"})
+    rec.update(sha=sha, imported=done)
+    if done and rec.get("state") != "imported":
+        rec["why"] = "%s (the %s set is already in)" % (rec.get("why") or "", "Linux" if "" in done else done[0])
+    return rec
 
 
 def main(argv=None):

@@ -26,8 +26,8 @@ beside cloud (REG-3153), ci-trust pre-push (tv/ci_verdict.py). Each item: law + 
        FOUND while building: ci_verdict.import_proofs globbed `*.json`, which never matches the HIDDEN shard caches.
        Ship flow: tv/ship_when_green.py vNNNN (ci/ branches -> dispatch any REQUIRED workflow its paths did not fire ->
        GREEN on the exact sha -> main). Law: test_every_pc_imports_githubs_proofs + test_a_push_trusts_github_....
-3. [ ] WINDOWS PROOFS: a Windows matrix leg of proof-keys (or a windows shard set) so new-code-x-Windows is proved every
-       version; Windows PCs import the Windows set. (CRLF/cp1252/POSIX/chrome --version were all new-code-x-Windows.)
+3. [~] WINDOWS PROOFS (built, REG-3165, UNMEASURED until its first run): proof-keys-windows.yml after Publish, 8 shards on
+       windows-latest, proofs-<sha>-win32.tgz; Windows consoles take it first, the Linux set meanwhile. Not a ship gate.
 4. [~] ENV FINGERPRINT (built, REG-3162): .heart2_env.json beside the census; only the console's self-prove lane observes
        (traps a/c solved that way); the first reading is adopted (trap b: no second writer of the census - its own
        file); a change owes every declaring gate once, proved without --reuse, census unstamped until done.

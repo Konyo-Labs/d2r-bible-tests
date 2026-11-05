@@ -1,0 +1,152 @@
+name: 🪟 proof-keys windows (after Publish, not required)
+# v3862 (item 3, his ruling 2026-11-05: "GitHub grades and proves each version once, including a Windows runner").
+# Every Windows-only defect of the last month - CRLF, cp1252/cp1255, POSIX-only paths, `chrome.exe --version` opening a
+# window - was found by a Windows PC proving itself, never by GitHub, because every proof ran on ubuntu. This proves the
+# PUBLISHED commit on windows-latest in 8 shards and banks the whole set as proofs-<sha>-win32.tgz on the proof bank,
+# which a Windows console imports before the Linux one (tv/proof_release.py).
+# It runs AFTER Publish on main, never on the ship's path: GitHub Free runs 20 jobs at once, and 8 Windows shards beside
+# Publish's 16 Linux ones would queue the deploy. It is NOT one of ci_verdict.REQUIRED, and its shards never fail the run
+# (a failure is named in that shard's manifest, as Publish's deploy gate does) - UNMEASURED until its first run.
+on:
+  workflow_run:
+    workflows: ["Publish — gates, review, then deploy"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: proof-keys-windows
+  cancel-in-progress: true
+env:
+  PROOF_SHARDS: "8"
+  HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+jobs:
+  shard:
+    name: windows shard ${{ matrix.shard }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: windows-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    env:
+      D2R_NO_CLAUDE: "1"
+      HEART2_PROVE_WORKERS: "2"
+      PYTHONUTF8: "1"
+      PYTHONIOENCODING: utf-8
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HEAD_SHA }}
+          fetch-depth: 200
+      - name: Fetch the history the stamp laws grade
+        timeout-minutes: 3
+        continue-on-error: true
+        run: git fetch --no-tags --shallow-since=2026-10-29 origin "$HEAD_SHA"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: The console's own imports (Pillow, numpy, websocket-client)
+        run: python -m pip install --quiet pillow numpy websocket-client
+      - name: A claude that refuses
+        run: |
+          mkdir -p "$RUNNER_TEMP/noclaude"
+          printf '@echo claude is not called on CI (proof-keys windows) 1>&2\r\n@exit /b 97\r\n' > "$RUNNER_TEMP/noclaude/claude.cmd"
+          echo "$RUNNER_TEMP/noclaude" >> "$GITHUB_PATH"
+      - name: Prove this shard on Windows
+        timeout-minutes: 320
+        run: |
+          D="$RUNNER_TEMP/shard-${{ matrix.shard }}"
+          mkdir -p "$D"
+          export HEART2_CACHE_PATH="$D/.heart2_cache.json"
+          set +e
+          python -u tv/heart2.py --prove --push --proof-shard "${{ matrix.shard }}/${PROOF_SHARDS}" 2>&1 | tee "$D/prove.log"
+          echo "rc=${PIPESTATUS[0]} (a failure is named in this shard's manifest; the run does not fail on it)" | tee -a "$D/prove.log"
+          exit 0
+      - name: Upload this shard's cache
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-shard-win-${{ matrix.shard }}
+          path: ${{ runner.temp }}/shard-${{ matrix.shard }}/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
+
+  fan-in:
+    name: windows fan-in - one whole set of this commit, or none
+    needs: [shard]
+    if: ${{ always() && needs.shard.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      whole: ${{ steps.whole.outputs.whole }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HEAD_SHA }}
+      - name: Fetch every Windows shard's cache
+        uses: actions/download-artifact@v5
+        with:
+          pattern: proof-shard-win-*
+          path: shards
+      - name: Name the shard folders as one set
+        run: |
+          cd shards
+          for d in proof-shard-win-*; do [ -d "$d" ] && mv "$d" "proof-shard-${d#proof-shard-win-}"; done
+          ls
+      - name: Every shard finished, on this commit, on one plan
+        run: python3 tv/proof_shard.py --fan-in shards --shards "$PROOF_SHARDS" --head "$HEAD_SHA"
+      - name: Hand the whole set on
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-shards-win32-${{ env.HEAD_SHA }}
+          path: shards/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+      - name: The set is whole
+        id: whole
+        run: echo "whole=true" >> "$GITHUB_OUTPUT"
+
+  proof-bank:
+    name: proof bank - publish this commit's Windows proofs
+    needs: [fan-in]
+    if: ${{ always() && needs.fan-in.outputs.whole == 'true' }}
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Fetch the whole set
+        uses: actions/download-artifact@v5
+        with:
+          name: proof-shards-win32-${{ env.HEAD_SHA }}
+          path: shards
+      - name: Pack the shard caches, nothing else
+        run: |
+          cd shards
+          find . -path './proof-shard-*/.heart2_cache.json' -type f | sed 's|^\./||' | sort > ../members.txt
+          test -s ../members.txt
+          tar -czf "../proofs-${HEAD_SHA}-win32.tgz" -T ../members.txt
+          echo "packed $(wc -l < ../members.txt) shard cache(s)"
+      - name: Publish to the proof bank
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release view proof-bank >/dev/null 2>&1 || gh release create proof-bank --prerelease --latest=false \
+            --title "Proof bank" --notes "Each commit's proofs, proved once on GitHub, for every PC to import (tv/proof_release.py)." \
+            || gh release view proof-bank >/dev/null
+          gh release upload proof-bank "proofs-${HEAD_SHA}-win32.tgz" --clobber

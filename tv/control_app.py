@@ -22486,7 +22486,10 @@ def _proof_release_tick(_thread=None, _git_run=_git_run, _import=None, _busy=Non
 
     def _go():
         try:
-            r = (_import or _pr.import_bundle)(head, tv_dir=HERE)
+            if _import is not None:
+                r = _import(head, tv_dir=HERE)
+            else:                       # v3862 (item 3) - a Windows PC takes the Windows set first, the Linux one meanwhile
+                r = _pr.import_best(head, tv_dir=HERE, state=rec)
             _pr.save_state(r, HERE)
             _PROOF_RELEASE.update(r)
         except Exception as e:
