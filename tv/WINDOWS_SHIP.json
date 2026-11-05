@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3862",
+  "ver": "v3863",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3862: GitHub proves once and every PC imports, known errors fix themselves, the paid fleet budget",
+  "note": "v3863: Dean proves beside his game, the vault wears the tier face, the Claude lamp rechecks, chain slice 1 lands",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
