@@ -26,7 +26,7 @@ CHECKS = [
  ],
  [
   "bible.html",
-  "var hit = /^\\/api\\/(chars_learned|main_locks)$/.exec(path);",
+  "var hit = /^\\/api\\/(chars_learned|main_locks|saves)$/.exec(path);",
   1
  ]
 ]
@@ -61,8 +61,8 @@ RED_PROOF = [
  {
   "why": "the shim stops serving their chars_learned",
   "file": "bible.html",
-  "find": "var hit = /^\\/api\\/(chars_learned|main_locks)$/.exec(path);",
-  "replace": "var hit = /^\\/api\\/(main_locks)$/.exec(path);",
+  "find": "var hit = /^\\/api\\/(chars_learned|main_locks|saves)$/.exec(path);",
+  "replace": "var hit = /^\\/api\\/(main_locks|saves)$/.exec(path);",
   "matches": 1
  }
 ]

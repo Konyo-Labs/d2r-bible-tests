@@ -161,13 +161,13 @@ class TheCropIsCutFromTheReadsBox(unittest.TestCase):
                          "a crop was written with no box")
 
     def test_a_box_too_big_to_be_a_tooltip_is_refused_never_a_full_frame_crop(self):
-        rel, why = v._crop_from_box(self.d, sorted(os.listdir(self.d))[0], [0, 0] + MAP["space"], dict(MAP), self.store)
+        rel, why = v._crop_from_box(self.d, sorted(f for f in os.listdir(self.d) if f.endswith(".jpg"))[0], [0, 0] + MAP["space"], dict(MAP), self.store)
         self.assertIsNone(rel, "a whole-picture box was cut as a crop")
         self.assertIn("not a tooltip", why)
         self.assertFalse(os.path.isdir(self.store) and [f for f in os.listdir(self.store) if f.endswith(".jpg")])
 
     def test_a_box_with_no_picture_map_is_unknown_never_assumed(self):
-        rel, why = v._crop_from_box(self.d, sorted(os.listdir(self.d))[0], _box_in_read_space(), None, self.store)
+        rel, why = v._crop_from_box(self.d, sorted(f for f in os.listdir(self.d) if f.endswith(".jpg"))[0], _box_in_read_space(), None, self.store)
         self.assertIsNone(rel)
         self.assertIn("UNKNOWN", why)
 

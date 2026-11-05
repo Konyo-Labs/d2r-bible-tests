@@ -91,7 +91,8 @@ class TestASlowAnswerIsWorkedOutBesideTheRequest(unittest.TestCase):
     def test_the_three_routes_ask_through_it(self):
         self.assertEqual(APP.count('_answer_soon("chronicle_scan", _hist_signature('), 1)
         self.assertEqual(APP.count('_answer_soon("vault_scan", _hist_signature('), 1)
-        self.assertEqual(APP.count('_answer_soon("eagle", None, lambda: {"ok": True, "rows": _cd.run()}, max_age_s=60)'), 1)
+        # v3864 - the eagle's full pass runs in a child (REG-2987) inside the same answer-soon (never waited on by the route)
+        self.assertEqual(APP.count('_answer_soon("eagle", None, _eagle_full, max_age_s=60)'), 1)
         self.assertEqual(UI.count("if (j.pending) {"), 1)
 
 
