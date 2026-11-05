@@ -45,7 +45,10 @@ test('shared overflow note is honest: no "preview", names the items, says the 5 
   expect(unit.note).toContain('Grief');
   expect(unit.note.toLowerCase()).not.toContain('preview');   // the misleading word is gone
   expect(unit.note).toContain('will not fit on the 5 shared pages');   // honest headline
-  expect(unit.note).toContain('WAR1');                        // says where the rest goes (here: there is no WAR1 to take it)
+  // REG-2980 (#144): the board names a war mule WAR-A, WAR-B ... - a name the game accepts - never WAR1, and it MAKES the
+  // next one (REG-2803), so with this overflow the note names the WAR-A it made
+  expect(unit.note).toContain('WAR-A');                       // says where the rest goes
+  expect(unit.note).not.toContain('WAR1');                    // never a name the game refuses
 
   // PART B — the note is WIRED into the live render (the-unjoined-end), read synchronously (no re-render race).
   const rendered = await page.evaluate(() => {

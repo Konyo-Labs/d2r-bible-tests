@@ -74,11 +74,10 @@ def unanswered():
                 break
             seen += 1
             j = _close(s, i + len(CALL))
-            rest = s[j:j + 12]
             ok = False
-            if rest.startswith(".catch("):
+            if s.startswith(".catch(", j):
                 ok = True
-            elif rest.startswith(".then("):
+            elif s.startswith(".then(", j):
                 k = j + len(".then(")
                 ok = _args(s, k) >= 2 or s[_close(s, k):].startswith(".catch(")
             if not ok:

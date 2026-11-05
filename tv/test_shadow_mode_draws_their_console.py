@@ -96,7 +96,11 @@ def stores():
          "d2r_runeStash": {"Ber": 2, "Jah": 1, "Ist": 7}, "d2r_gemStash": {"Perfect Amethyst": 4},
          "d2r_api_chars_learned": learned,
          "d2r_api_main_locks": {"ok": True, "locked": [], "tracked": 0, "floor": 3, "minSightings": 3,
-                                "canEverLock": True, "blockedWhy": None}}
+                                "canEverLock": True, "blockedWhy": None},
+         # v3864 - a console sends its saves answer with its upload (#251 REG-3079, roster.js API_NAMES 'saves'): A's own
+         # board and its shadow both say the one reason, in the shape d2s_read.saves gives a folder with no .d2s in it
+         "d2r_api_saves": {"ok": True, "state": "folder", "folders": 1, "chars": [], "d2s": [], "files": 0,
+                           "d2sWhy": "no .d2s on this PC; online characters live on Battle.net"}}
     return {k: (v if isinstance(v, str) else json.dumps(v, separators=(",", ":"), sort_keys=True)) for k, v in s.items()}
 
 

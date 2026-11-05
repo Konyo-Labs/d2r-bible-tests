@@ -22,7 +22,8 @@ START = "/* v3864 (GrokBot Batch A 4, #230 6656116697) - ONE CLOCK ON THE CONSOL
 def _shim():
     s = io.open(UI, encoding="utf-8").read()
     i = s.index(START)
-    j = s.index("</script>", i)
+    j = s.index("\n})();\n", i) + len("\n})();\n")   # the shim's own IIFE: it shares its block with the icon-tab helper
+    assert j < s.index("</script>", i), "the shim's IIFE does not close inside its block"
     return s, s[i:j]
 
 

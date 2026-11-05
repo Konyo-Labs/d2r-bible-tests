@@ -21,7 +21,7 @@ async function readBoard(page: any) {
   return page.evaluate(() => {
     const w: any = window;
     const names = /Konyo(?:lock|din|ress|ssin)/gi, forKonyo = /For Konyo/g;
-    let nameHits = 0, forHits = 0;
+    let nameHits = 0, forHits = 0, walked = 0;
     const samples: string[] = [];
     const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
     let t: any;
@@ -29,6 +29,7 @@ async function readBoard(page: any) {
       const p = t.parentNode && t.parentNode.nodeName;
       if (p === 'SCRIPT' || p === 'STYLE' || p === 'TEXTAREA') continue;
       const v = String(t.nodeValue || '');
+      if (v.trim()) walked++;
       const a = (v.match(names) || []).length, b = (v.match(forKonyo) || []).length;
       if ((a || b) && samples.length < 4) samples.push(v.trim().slice(0, 120));
       nameHits += a; forHits += b;
@@ -39,7 +40,7 @@ async function readBoard(page: any) {
     };
     return {
       seeds: w._seedsBelongHere === true,
-      nameHits, forHits, samples,
+      nameHits, forHits, samples, walked,
       chips: { '553': chip('553'), '699': chip('699') },
       mfVal: (document.getElementById('mf-val') || {} as any).textContent || '',
     };
@@ -71,6 +72,8 @@ test('another board: no name of his in the markup, his presets are plain, MF not
 
   const b = await readBoard(page);
   expect(b.seeds, 'PREMISE: this board reads as his ledger - nothing below would mean anything').toBe(false);
+  // #80 - show the thing before finding it gone: a page that never painted its text holds no names either
+  expect(b.walked, 'PREMISE: the walker read almost no text - zero names below would mean nothing').toBeGreaterThan(200);
   expect(b.nameHits, 'the markup still names his characters on another board: ' + JSON.stringify(b.samples)).toBe(0);
   expect(b.forHits, 'a guide box still says "For Konyo" on another board: ' + JSON.stringify(b.samples)).toBe(0);
   for (const v of ['553', '699']) {

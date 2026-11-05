@@ -149,6 +149,11 @@ test('every door into the vault opens it, not just the purpose-built one', async
     /* #246 — the vault files only on a witness now, so the three are registered WITH one (two independent
        stash looks, each with its own frame and conf); the doors under test need filed cells to show. */
     const LOOKS = [{ session: 's_a', frame: 'f_a.jpg', conf: 0.9 }, { session: 's_b', frame: 'f_b.jpg', conf: 0.85 }];
+    /* REG-3086 (db037ec1f) — a read's row now ticks the grail only (toggleOwned grailOnly); possession is
+       tvVaultRegister's alone, and it refuses a frame while AUTO INTAKE is off. world() wiped every d2r_ key,
+       so AUTO INTAKE is absent = off and the three were never owned: 0 cells at every door. Turned on exactly
+       as the TV-pickup test above does. */
+    if ((window as any).LSR) (window as any).LSR.setItem('d2r_vaultAutoIntake', 'on');
     (window as any).chronicleApply({ wouldAdd: { uniques: ['Shako', 'Monarch', 'Phase Blade']
       .map((n) => ({ name: n, loc: 'stash', witnesses: LOOKS })), sets: [] } });
     try { (window as any).vaultAutoAssign && (window as any).vaultAutoAssign(); } catch (e) {}

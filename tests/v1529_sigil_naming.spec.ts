@@ -109,6 +109,12 @@ test.describe('v1529 — when the pill asks for a name, clicking it gives one', 
   test('a NAMED machine keeps copy on click, and renames on double-click', async ({ page }) => {
     await open(page, 'DeanDush');
     expect(await page.textContent('#sg-name')).toBe('DeanDush');
+    // v3864 (REG-3178) - the pill says COPIED only when the clipboard TOOK it, and a headless runner's clipboard refuses.
+    // So this case hands the page a clipboard that takes the copy; the refused half is held by
+    // tv/test_no_clipboard_copy_goes_unanswered.py.
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => Promise.resolve() } });
+    });
     await page.click('#sigil');
     await page.waitForTimeout(150);
     expect(await page.textContent('#sg-name'), 'copy is still the click action once it has a name').toBe('COPIED');
