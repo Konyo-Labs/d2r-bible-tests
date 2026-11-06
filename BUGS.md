@@ -101,6 +101,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3303 - ANNIHILUS AND THE SIX COLOSSAL JEWELS SAID "NO VERIFIED SOURCE - DROPS BROADLY" ON QUICK WINS; NONE OF THEM DROPS BROADLY (v3876, #85)
+After the full pull (REG-3290) Quick wins ranks a place for 388 of 396 uniques; the other 8 come from no monster, and their
+cards fall back to _srcNote, which knew only the Hellfire Torch and the Sunder charms. So Annihilus (Uber Diablo, the Diablo
+Clone event, only) and Defender's Bile / Fire, Protector's Frost / Stone, Guardian's Thunder / Light (the Colossal Ancient
+fight, the pair decided by the Ancient killed last, 1 per character) read "no verified source - drops broadly": a false
+statement on exactly the cards he would be reading to find them. Now each says its real source, read from the page's own
+COLOSSAL_JEWELS (its `ancient`) and SPECIAL_DROPS, and opens its card. Law: test_quick_wins_shows_each_place_with_its_picture
+(+ AnItemWithNoPlaceSaysWhereItComesFrom, driven in node), red-proofs PROVEN (2 new).
+
 ### REG-3302 - SEVEN OF NIHLATHAK'S NORMAL AND NIGHTMARE DROP FIGURES WERE NOT SILOSPEN'S - CARRIED FROM v41, SEEN ONLY WHEN QUICK WINS COVERED EVERY UNIQUE (v3876, #85)
 test_quick_wins_ranks_every_place compares every stored per-boss figure a Quick wins place also runs with silospen's (his
 "is the page's drop math the calculator's?"). With all uniques pulled (REG-3290) it compared 3192 and 7 differed, all from
@@ -162,8 +171,8 @@ GrokBot's live look (#230 6655590795): Dean offline, the Vault LOCKED, the insta
 His screenshot: ALL MISSING 8 items, QUICK WINS 3 items, and his words "8 items need to be for quick runs im missing 8 so they each need to render their data from where to farm and everything". funiScan built the list as missing.filter(qlvl <= 35) - a gate for the early game, when hundreds were missing; at 8 it hid five of them (Death's Web, Stormlash, Tyrael's Might among them) from the one view that names where to farm each. Every missing unique is a quick win now, ordered by the card's own first row (the fewest runs / time to a 50% chance); one with no known route sorts last and says so on its card (_srcNoteHtml). The seal reads "all N uniques found - nothing left to farm". Guard: tv/test_quick_wins_shows_each_place_with_its_picture.py.
 THE FARM DATA (14:20Z): his 8 missing are endgame uniques, and QW_PLACES held only the 148 early ones (qlvl <= 35), so their
 cards had no 1st-4th places. Re-pulled from silospen (read-only, ~800 GETs, MF 300 /players 1): all 396 uniques, 388 with
-places - the 8 without are the event drops silospen gives no monster for (Annihilus, Hellfire Torch, the six Rainbow
-Facets; their cards sort last and say so). 44 new super-unique targets; 5643 checkpoints re-emitted to
+places - the 8 without are the event drops silospen gives no monster for (Annihilus, Hellfire Torch and the six Colossal
+jewels; their cards sort last and name their real source, REG-3303). 44 new super-unique targets; 5643 checkpoints re-emitted to
 tv/data/silospen_places_rotw30.json. Death's Web, Stormlash, Tyrael's Might, Harlequin Crest, Templar's Might and Griffon's
 Eye now carry 8-12 ranked places each. Three new places drew no zone art (Tal Rasha's Tomb, Lower Kurast, and Pindleskin,
 whose loc leads with "Red Portal by Anya"): mapped in _QW_ZONE_OF. The MF strict-share floor (0.97, measured on 451 early

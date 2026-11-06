@@ -71123,6 +71123,11 @@ function renderJournal(){
       var sun=(window.SUNDER_CHARMS||[]).some(function(c){ return window._regKey(c.n)===k; });
       if (sun) return { t:'not a boss drop — cube Worldstone Shards into a Latent Sunder, then upgrade to Renewed', go:'Sunder Charms' };
       if (k===window._regKey('Hellfire Torch')) return { t:'not a boss drop — the Uber Tristram trio is the only source', go:'Hellfire Torch' };
+      /* REG-3303 (#85) - Annihilus and the six Colossal jewels have no monster to farm (silospen lists none), and their Quick
+         wins cards said "no verified source - drops broadly". Their real sources, from the page's own tables. */
+      if (k===window._regKey('Annihilus')) return { t:'not a boss drop — Uber Diablo (the Diablo Clone event) is the only source', go:'Annihilus' };
+      var cj=(typeof COLOSSAL_JEWELS!=='undefined'?COLOSSAL_JEWELS:[]).filter(function(j){ return window._regKey(j.n)===k; })[0];
+      if (cj) return { t:'not a monster drop — the Colossal Ancient fight: kill '+cj.ancient+' last and one of its two jewels drops (1 per character)', go:cj.n };
       if (k===window._regKey('Crescent Moon')) return { t:'two different uniques carry this name (amulet and sword) — one row cannot claim the odds of either', go:null };
       return null;
     } catch(e){ return null; }

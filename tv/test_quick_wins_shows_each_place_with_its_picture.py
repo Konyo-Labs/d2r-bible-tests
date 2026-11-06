@@ -168,6 +168,45 @@ class EveryMissingUniqueIsAQuickWin(unittest.TestCase):
         self.assertNotRegex(body, r"var low=missing\.filter", "the quick-wins list filters the missing uniques again")
         self.assertIn(".sort(function(a,b){ return a._qh-b._qh", body, "the list is not ordered fastest first")
 
+class AnItemWithNoPlaceSaysWhereItComesFrom(unittest.TestCase):
+    """REG-3303 (#85) - silospen gives no monster for Annihilus and the six Colossal jewels, so Quick wins has no place to
+    rank for them and their cards fell to "no verified source - drops broadly", which is false for every one: Annihilus is
+    Uber Diablo's, the Torch Uber Tristram's, each jewel the Colossal Ancient its own table names. Driven in node from the
+    page's _srcNote, COLOSSAL_JEWELS and SPECIAL_DROPS."""
+
+    def test_every_event_item_without_a_place_names_its_real_source(self):
+        if not NODE:
+            self.skipTest("no node - the page's _srcNote is not driven here (UNMEASURED)")
+        src = _read()
+        places = _table(src, "QW_PLACES")
+        code = (_cut(src, "const COLOSSAL_JEWELS = [", "];") + "\n"
+                + _cut(src, "  function _srcNote(n){", "  window._srcNote=_srcNote;"))
+        ev = _cut(src, "  uberCharm: {", "  },", keep_end=False)
+        event = re.findall(r'\{n: "([^"]+)", from: \["([^"]+)"', ev)
+        self.assertGreaterEqual(len(event), 2, "PREMISE: the page's Uber Charms table names no items")
+        prog = ("var window = { SUNDER_CHARMS: [], _regKey: function(n){ return String(n || '').toLowerCase(); } };\n"
+                + code + "\n"
+                + "var out = {}; COLOSSAL_JEWELS.forEach(function(j){ out[j.n] = [_srcNote(j.n), j.ancient]; });\n"
+                + "%s.forEach(function(e){ out[e[0]] = [_srcNote(e[0]), e[1]]; });\n" % json.dumps(event)
+                + "process.stdout.write(JSON.stringify(out));")
+        r = subprocess.run([NODE, "-"], input=prog, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr[-1500:])
+        out = json.loads(r.stdout)
+        self.assertEqual(len([n for n in out if n not in dict(event)]), 6, "PREMISE: the page names six Colossal jewels")
+        missing, wrong = [], []
+        for name, (note, source) in sorted(out.items()):
+            if name in places:
+                continue                      # a place to farm: the grid speaks for it
+            if not note or not note.get("t"):
+                missing.append(name)
+                continue
+            key = source if name not in dict(event) else source.split(" (")[0].replace(" completion", "")
+            if key.split()[-1].lower() not in note["t"].lower():
+                wrong.append("%s: %r does not name %r" % (name, note["t"], key))
+        self.assertEqual(missing, [], "these have no place to farm and their card says 'drops broadly': %s" % missing)
+        self.assertEqual(wrong, [], "\n".join(wrong))
+
+
 class TheDoctorWatchesThePictures(unittest.TestCase):
     """REG-3269's watcher: an art clean-up that removes a picture the grid names must read MISSING, never ok."""
 
@@ -219,6 +258,16 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 
 
 RED_PROOF = [
+    {'why': "REG-3303 - Annihilus's card says 'drops broadly' again (Uber Diablo is the only source)",
+     'file': 'bible.html',
+     'find': "      if (k===window._regKey('Annihilus')) return {",
+     'replace': "      if (k===window._regKey('Annihilus (unmapped)')) return {",
+     'matches': 1},
+    {'why': "REG-3303 - the six Colossal jewels' cards say 'drops broadly' again (the Colossal Ancient fight is their only source)",
+     'file': 'bible.html',
+     'find': '.filter(function(j){ return window._regKey(j.n)===k; })[0];',
+     'replace': '.filter(function(j){ return false; })[0];',
+     'matches': 1},
     {'why': "REG-3290 - Pindleskin's place (his loc leads with the Red Portal) draws no zone art",
      'file': 'bible.html',
      'find': '    \'Red Portal by Anya\': "Nihlathak\'s Temple" };',
