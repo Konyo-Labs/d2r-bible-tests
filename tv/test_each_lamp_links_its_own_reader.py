@@ -57,6 +57,14 @@ NODE = shutil.which("node")
 NOW = 1790780000000
 
 RED_PROOF = [
+    {"why": "REG-3227 - a Claude lamp that timed out opens `claude auth login` again on click",
+     "file": "tv/control_ui.html",
+     "find": "    if (k === 'claude' && L && L.needsLogin !== true && (kind === 'timed-out' || kind === 'read-failed')) {\n",
+     "replace": "    if (false) {\n", "matches": 1},
+    {"why": "REG-3227 - the hint offers a sign-in that the click will not open",
+     "file": "tv/control_ui.html",
+     "find": "      return 'not a sign-in problem - click to see why';",
+     "replace": "      return 'click to open Claude sign-in on this PC';", "matches": 1},
     {"why": "REG-1618 - a Grok whose sign-in just went reads 'switched off' again: the lamp keys on the effective mode",
      "file": "control_app.py",
      "find": "    _his_off = (_sw == \"off\") if _sw is not None else (\n",
@@ -392,6 +400,56 @@ class TheCornerLampsAreTheLinks(unittest.TestCase):
             self.assertEqual(a.get("type"), "button")
             self.assertEqual(a.get("onclick"), "window._lampClick('%s', this)" % k)
             self.assertIn("reader-lamps", parents)
+
+    @unittest.skipUnless(NODE, "node drives the page's own painter and click")
+    def test_a_claude_lamp_opens_a_sign_in_only_for_a_sign_in(self):
+        """REG-3227 - his ALT 11-06: a read ran out of time, the lamp went off, its click opened `claude auth login`, and
+        he signed in again for nothing. The click asks the server only when a sign-in is what failed."""
+        ui = _read(UI)
+        a = ui.index("  function _rlHint(k, L, state) {")
+        b = ui.index("  window._lampClick = _lampClick;", a)
+        prog = r"""
+var ELS = {}, POSTS = [], TOASTS = [];
+function El(){ this.attrs = {}; this.title = ''; this.hidden = true; this.disabled = false; this.textContent = '';
+  var cls = {}; this.classList = { add: function(c){ cls[c] = 1; }, remove: function(){ for (var i = 0; i < arguments.length; i++) delete cls[arguments[i]]; },
+                                   contains: function(c){ return !!cls[c]; } }; }
+El.prototype.setAttribute = function(k, v){ this.attrs[k] = String(v); };
+El.prototype.getAttribute = function(k){ return (k in this.attrs) ? this.attrs[k] : null; };
+var document = { getElementById: function(id){ return ELS[id] || (ELS[id] = new El()); } };
+var window = {};
+function toastC(m){ TOASTS.push(m); }
+function fetch(u, o){ POSTS.push(u);
+  return Promise.resolve({ json: function(){ return { ok: true, started: true, reason: 'spawned', why: 'opened' }; } }); }
+""" + ui[a:b] + r"""
+var ON = { state: 'on', kind: 'on', why: 'reading' };
+var SLOW = { state: 'unknown', kind: 'timed-out', needsLogin: false,
+             why: "Claude's last read on this PC ran out of time (claude timed out) - not a sign-in problem" };
+var FAILED = { state: 'off', kind: 'read-failed', needsLogin: false, why: "Claude's last read on this PC failed: exit 3" };
+var OUT = { state: 'off', kind: 'signed-out', needsLogin: true, why: 'OAuth session expired' };
+var out = {};
+_paintReaderLamps({ claude: ON, grok: ON }); TOASTS.length = 0;
+_paintReaderLamps({ claude: SLOW, grok: ON });
+out.slowPaint = { lamp: ELS['rl-claude'].attrs['data-lamp'], toasts: TOASTS.slice(), title: ELS['rl-claude'].title };
+Promise.resolve()
+.then(function(){ return _lampClick('claude'); })
+.then(function(j){ out.slow = [j && j.reason, POSTS.length, TOASTS[TOASTS.length - 1] || ''];
+  _paintReaderLamps({ claude: FAILED, grok: ON }); return _lampClick('claude'); })
+.then(function(j){ out.failed = [j && j.reason, POSTS.length];
+  _paintReaderLamps({ claude: OUT, grok: ON }); return _lampClick('claude'); })
+.then(function(j){ out.signedOut = [j && j.reason, POSTS.slice()]; process.stdout.write(JSON.stringify(out)); });
+"""
+        r = subprocess.run([NODE, "-"], input=prog, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr[-800:])
+        o = json.loads(r.stdout)
+        self.assertEqual(o["slowPaint"]["lamp"], "unknown", o["slowPaint"])
+        self.assertFalse([t for t in o["slowPaint"]["toasts"] if "disconnected" in t],
+                         "a read that ran out of time was announced as a disconnect: %r" % o["slowPaint"]["toasts"])
+        self.assertNotIn("sign-in on this PC", o["slowPaint"]["title"], "the hint offers a sign-in the click will not open")
+        self.assertEqual(o["slow"][:2], ["timed-out", 0], "a timed-out lamp opened a sign-in: %r" % o["slow"])
+        self.assertIn("nothing to sign in to", o["slow"][2])
+        self.assertEqual(o["failed"], ["read-failed", 0], "a failed read opened a sign-in: %r" % o["failed"])
+        self.assertEqual(o["signedOut"], ["spawned", ["/api/claude_login"]],
+                         "a signed-out lamp no longer opens the sign-in: %r" % o["signedOut"])
 
     @unittest.skipUnless(NODE, "node drives the page's own painter and click")
     def test_each_lamp_remembers_rings_and_clicks_on_its_own(self):

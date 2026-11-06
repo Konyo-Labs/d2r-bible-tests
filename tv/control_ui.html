@@ -33320,6 +33320,8 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
     if (state === 'on') return 'linked - nothing to sign in';
     if (k === 'grok' && kind === 'switched-off') return 'you switched Grok off - pick BOTH or GROK ONLY under Advanced > EYES';
     if (k === 'grok' && kind === 'not-installed') return 'install the Grok CLI first - Advanced > EYES says how';
+    if (k === 'claude' && L && L.needsLogin !== true && (kind === 'timed-out' || kind === 'read-failed'))
+      return 'not a sign-in problem - click to see why';   /* REG-3227 - the hint never offers a sign-in the click will not open */
     return 'click to open ' + (k === 'claude' ? "Claude's" : "Grok's") + ' sign-in on this PC';
   }
   window._rlHint = _rlHint;
@@ -33439,6 +33441,13 @@ var TZ_INFO = {"Abaddon":[800,85,"act4-lava"],"Ancient Tunnels":[680,85,"act2-to
     }
     if (k === 'grok' && (kind === 'switched-off' || kind === 'not-installed')) {
       say('GROK: ' + hint(k, L, state));
+      return Promise.resolve({ ok: true, started: false, reason: kind });
+    }
+    /* REG-3227 - HIS ALT, 11-06: a read ran out of time on a busy PC, the lamp went off, and this click opened
+       `claude auth login` for a sign-in that was never broken. A Claude lamp opens a sign-in only when a sign-in is what
+       failed; a read that timed out or failed for its own reason says that reason instead. */
+    if (k === 'claude' && L && L.needsLogin !== true && (kind === 'timed-out' || kind === 'read-failed')) {
+      say('CLAUDE: ' + ((L && L.why) || 'its last read did not finish') + ' - nothing to sign in to');
       return Promise.resolve({ ok: true, started: false, reason: kind });
     }
     if (el && el.setAttribute) el.setAttribute('data-busy', '1');

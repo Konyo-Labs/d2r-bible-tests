@@ -79,11 +79,52 @@ class ClaudeSaysWhatItJustDid(unittest.TestCase):
         self.assertEqual(h["state"], "on", "the NEWEST read returned, yet the lamp is %r" % h)
 
     def test_a_failure_that_is_not_a_sign_in_says_its_own_words(self):
-        timeout = dict(ALT_FAILED, raw="claude timed out after 120 s")
-        h = _health([_at(GOOD, 20), _at(timeout, 1)])["claude"]
+        broken = dict(ALT_FAILED, raw="claude exit 3: the image could not be decoded")
+        h = _health([_at(GOOD, 20), _at(broken, 1)])["claude"]
         self.assertEqual(h["state"], "off")
-        self.assertFalse(h["needsLogin"], "a timeout was sent to /login")
-        self.assertIn("timed out", h["why"])
+        self.assertEqual(h["kind"], "read-failed")
+        self.assertFalse(h["needsLogin"], "a failed read was sent to /login")
+        self.assertIn("could not be decoded", h["why"])
+
+    def test_a_read_that_ran_out_of_time_is_unknown_never_a_disconnection(self):
+        """REG-3227 - his ALT 11-06 03:08/03:13: 'backup: claude timed out - grok -p timeout 140s' lit CLAUDE off, the
+        page said 'CLAUDE disconnected', and he signed in again to fix a sign-in that was never broken."""
+        for words in ("backup: claude timed out \u2014 grok -p timeout 140s", "claude timed out after 120 s"):
+            h = _health([_at(GOOD, 20), _at(dict(ALT_FAILED, raw=words), 1)])["claude"]
+            self.assertEqual(h["state"], "unknown", "a timeout lit the lamp %r: %r" % (h["state"], h))
+            self.assertEqual(h["kind"], "timed-out")
+            self.assertFalse(h["needsLogin"], "a timeout was sent to /login")
+            self.assertIn("not a sign-in problem", h["why"])
+            self.assertIn("timed out", h["why"])
+        # and a sign-in failure is still a sign-in failure, even when its words also say time
+        both = dict(ALT_FAILED, raw="Failed to authenticate: OAuth refresh timed out")
+        h = _health([_at(both, 1)])["claude"]
+        self.assertEqual((h["state"], h["kind"]), ("off", "signed-out"), h)
+
+    def test_signing_in_again_lights_the_lamp_before_the_next_read(self):
+        """REG-3227 - the CLI's 'signed in', asked AFTER the read that could not sign in, is the newer word on the very
+        thing that failed. Asked BEFORE it, it changes nothing."""
+        rows = [_at(GOOD, 90), _at(ALT_FAILED, 5)]
+        after = {"loggedIn": True, "why": "claude auth status: signed in", "askedAtMs": NOW - 60000}
+        h = ca._reader_health(now_ms=NOW, rows=rows, g5=G5_ON, use_cache=False, auth=after)["claude"]
+        self.assertEqual((h["state"], h["kind"], h["needsLogin"]), ("on", "signed-in-again", False), h)
+        self.assertIn("signed in again", h["why"])
+        before = dict(after, askedAtMs=NOW - 10 * 60000)
+        h = ca._reader_health(now_ms=NOW, rows=rows, g5=G5_ON, use_cache=False, auth=before)["claude"]
+        self.assertEqual((h["state"], h["kind"]), ("off", "signed-out"), "an older 'signed in' outranked a newer failure")
+        undated = {"loggedIn": True, "why": "claude auth status: signed in"}
+        h = ca._reader_health(now_ms=NOW, rows=rows, g5=G5_ON, use_cache=False, auth=undated)["claude"]
+        self.assertEqual(h["state"], "off", "a 'signed in' with no time outranked a failed read")
+        slow = ca._reader_health(now_ms=NOW, rows=[_at(GOOD, 20), _at(dict(ALT_FAILED, raw="claude timed out"), 1)],
+                                 g5=G5_ON, use_cache=False, auth=after)["claude"]
+        self.assertEqual((slow["state"], slow["kind"]), ("unknown", "timed-out"),
+                         "signed in turned a read that ran out of time into 'no read to judge it by': %r" % slow)
+        self.assertIn("Claude is signed in", slow["why"])
+
+    def test_the_probe_stamps_when_it_was_asked(self):
+        src = open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
+        self.assertEqual(src.count('_v["askedAtMs"] = int(time.time() * 1000)'), 1,
+                         "the CLI's answer carries no time, so it can never be newer than a failed read")
 
     def test_no_read_is_unknown_never_on_and_never_off(self):
         self.assertEqual(_health([])["claude"]["state"], "unknown")
@@ -217,6 +258,22 @@ process.stdout.write(JSON.stringify(out));
 
 
 RED_PROOF = [
+    {"why": "REG-3227 - a read that ran out of time lights Claude OFF again (his ALT 11-06: 'CLAUDE disconnected')",
+     "file": "tv/control_app.py",
+     "find": "            _slow = (not lamp[\"needsLogin\"]) and any(w in _why.lower() for w in _READER_TIMEOUT_WORDS)\n",
+     "replace": "            _slow = False\n", "matches": 1},
+    {"why": "REG-3227 - signing in again leaves the lamp off until a read comes back",
+     "file": "tv/control_app.py",
+     "find": "          and _au[\"askedAtMs\"] > lamp[\"lastFailTs\"]):\n",
+     "replace": "          and False):\n", "matches": 1},
+    {"why": "REG-3227 - an older 'signed in' outranks a newer failed read",
+     "file": "tv/control_app.py",
+     "find": "          and _au[\"askedAtMs\"] > lamp[\"lastFailTs\"]):\n",
+     "replace": "          and True):\n", "matches": 1},
+    {"why": "REG-3227 - signed in turns a timed-out read into 'no read to judge it by' (green over a read that did not finish)",
+     "file": "tv/control_app.py",
+     "find": "    elif (isinstance(_au, dict) and _au.get(\"loggedIn\") is True and lamp.get(\"state\") == \"unknown\"\n          and lamp.get(\"kind\") == \"timed-out\"):\n",
+     "replace": "    elif False:\n", "matches": 1},
     {"why": "REG-1824 - the tail reader calls a missing journal unreadable again, so a fresh install's lamp says broken",
      "file": "control_app.py",
      "find": "        if st is None:\n            return out\n",

@@ -414,6 +414,8 @@ _READER_WINDOW_MS = 2 * 3600 * 1000
 _READER_CACHE_S = 30.0
 _READER_CACHE = {"at": 0.0, "val": None}
 _READER_AUTH_WORDS = ("authenticate", "oauth", "login", "log in", "not logged", "unauthorized", "401")
+#: REG-3227 - a read that ran out of time on a busy PC: not a sign-in, and never a disconnection (his ALT 11-06 03:08)
+_READER_TIMEOUT_WORDS = ("timed out", "timeout")
 
 
 def _reader_family(row):
@@ -507,6 +509,7 @@ def _claude_auth_state(now=None, _probe=None, _thread=None, _watching=None, _cre
                 else:
                     _v = dict((_probe or _csi.status)(_b) or {})
                     _v["bin"] = _bin_short(_b)        # v3863 (#238) - the lamp names the binary it asked
+                    _v["askedAtMs"] = int(time.time() * 1000)   # REG-3227 - WHEN the CLI said it (after a failed read?)
                     if _v.get("loggedIn") is not True:
                         _v["why"] = "%s (asked %s)" % (_v.get("why") or "no answer", _v["bin"])
                     _CLAUDE_AUTH["val"] = _v
@@ -624,10 +627,22 @@ def _reader_health(now_ms=None, rows=None, g5=None, use_cache=True, auth=None):
                         break
             _why = _why or "the read returned nothing"
             lamp["needsLogin"] = any(w in _why.lower() for w in _READER_AUTH_WORDS)
-            lamp.update(state="off", kind=("signed-out" if lamp["needsLogin"] else "read-failed"),
-                        why=("Claude cannot sign in on this PC: %s - click CLAUDE or SIGN IN at the top right, or run "
-                             "`claude` and type /login" % _why)
-                        if lamp["needsLogin"] else ("Claude's last read on this PC failed: %s" % _why))
+            # REG-3227 - HIS ALT, 11-06 03:08 and 03:13: two reads ran out of time while a proof import and the game
+            # shared 8 GB ("backup: claude timed out - grok -p timeout 140s"). The lamp went OFF, the page toasted
+            # "CLAUDE disconnected", and its click opened `claude auth login` - so he signed in again to fix a sign-in
+            # that was never broken, and the lamp stayed off until a read came back. A timeout says nothing about the
+            # sign-in either way: UNKNOWN until the next read, never off (the Grok lamp's rule since #105).
+            _slow = (not lamp["needsLogin"]) and any(w in _why.lower() for w in _READER_TIMEOUT_WORDS)
+            if _slow:
+                lamp.update(state="unknown", kind="timed-out",
+                            why=("Claude's last read on this PC ran out of time (%s, %d min ago) - the PC was busy; "
+                                 "this is not a sign-in problem and signing in will not change it. The next read "
+                                 "decides" % (_why, max(0, int((now - last_t) / 60000)))))
+            else:
+                lamp.update(state="off", kind=("signed-out" if lamp["needsLogin"] else "read-failed"),
+                            why=("Claude cannot sign in on this PC: %s - click CLAUDE or SIGN IN at the top right, or "
+                                 "run `claude` and type /login" % _why)
+                            if lamp["needsLogin"] else ("Claude's last read on this PC failed: %s" % _why))
         else:
             lamp.update(state="on", kind="on", why="Claude read on this PC %d min ago (%d ok, %d failed in 2 h)"
                         % (max(0, int((now - last_t) / 60000)), len(good), len(failed)))
@@ -639,6 +654,19 @@ def _reader_health(now_ms=None, rows=None, g5=None, use_cache=True, auth=None):
         lamp.update(state="off", kind="signed-out", needsLogin=True,
                     why="Claude is signed out on this PC (%s) - click CLAUDE or SIGN IN at the top right, or run "
                         "`claude` and type /login" % (_au.get("why") or "claude auth status"))
+    elif (isinstance(_au, dict) and _au.get("loggedIn") is True and lamp.get("kind") == "signed-out"
+          and isinstance(_au.get("askedAtMs"), (int, float)) and lamp.get("lastFailTs")
+          and _au["askedAtMs"] > lamp["lastFailTs"]):
+        # REG-3227 - HE SIGNED IN AGAIN AND THE LAMP STAYED OFF. The sign-in failure that turned it off is OLDER than
+        # the CLI's own "signed in": that answer is the newer word on the very thing that failed, so the lamp is on
+        # until a read says otherwise. A read failing to sign in AFTER this answer turns it off again.
+        lamp.update(state="on", kind="signed-in-again", needsLogin=False,
+                    why="Claude is signed in again on this PC (%s, %d min ago) - the read before it could not sign in; "
+                        "the next read confirms" % (_au.get("why") or "claude auth status",
+                                                    max(0, int((now - float(_au["askedAtMs"])) / 60000))))
+    elif (isinstance(_au, dict) and _au.get("loggedIn") is True and lamp.get("state") == "unknown"
+          and lamp.get("kind") == "timed-out"):
+        lamp["why"] = "%s. Claude is signed in (%s)" % (lamp["why"], _au.get("why") or "claude auth status")
     elif isinstance(_au, dict) and _au.get("loggedIn") is True and lamp.get("state") == "unknown":
         # his "nothing is showing me the CLAUDE specifically on and off light" (2026-09-30): a PC that has not read
         # in 2 h sat at "?" while its CLI said signed in. Signed in is connected; the reads still decide once there
