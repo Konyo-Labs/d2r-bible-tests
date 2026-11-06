@@ -265,6 +265,21 @@ class TestTheRealJoins(_World):
         self.assertEqual((dl["noLane"], dl["unknown"]), (0, 1), dl)
         self.assertIn("the empty-reel check could not be asked (OSError)", dl["why"])
 
+    def test_two_checks_that_could_not_be_asked_are_both_named(self):
+        """REG-3247 (the #231 look at v3867): one reel's sweep check and another's empty check both failed - the why named
+        only the first, so the second reel's failure was stated as the first's."""
+        def _owes(rid, mem=None, prompt_ver=None):
+            if rid == P1:
+                raise ValueError("the chronicle memo would not read")
+            return False
+        def _empty(reel):
+            raise OSError("the triage store would not read")
+        with mock.patch.object(CA, "_chron_reel_owes_a_read", _owes), mock.patch.object(SD, "_proven_empty", _empty):
+            dl = CA._station_delivery("STATION", [P1, P2])
+        self.assertEqual((dl["noLane"], dl["unknown"]), (0, 2), dl)
+        self.assertIn("the reel sweep's check could not be asked (ValueError)", dl["why"])
+        self.assertIn("the empty-reel check could not be asked (OSError)", dl["why"])
+
     def test_who_delivers_unasked_is_said_unknown_by_the_doctor(self):
         """v3867 - the Grok CLI on REG-3201: _river_delivery None (the store would not load, or the ask raised) was
         counted as 'no automatic lane delivers' with no UNKNOWN in the sentence."""
@@ -314,6 +329,11 @@ class TestTheRealJoins(_World):
 
 
 RED_PROOF = [
+    {"why": "REG-3247 - the why names only the first check that could not be asked",
+     "file": "tv/control_app.py",
+     "find": "                on = \"%s: %s\" % (on, \"; \".join(unk[k]))\n",
+     "replace": "                on = \"%s: %s\" % (on, unk[k][0])\n",
+     "matches": 1},
     {"why": "v3867 - an empty-reel check that raises files the reel as 'no lane's queue holds it' again",
      "file": "tv/control_app.py",
      "find": "                waits.setdefault(\"unknown\", []).append(rid)\n                unk.setdefault(\"unknown\", \"the empty-reel check could not be asked (%s)\" % type(_pe).__name__)\n                continue\n",

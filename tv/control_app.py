@@ -19334,7 +19334,9 @@ def _station_delivery(station, reels, owed=None):
                     # r4 review: this fell through to "no lane's queue holds it" - a confident no for a question
                     # nobody could ask. UNKNOWN is the answer, and it says which check failed.
                     waits.setdefault("unknown", []).append(rid)
-                    unk.setdefault("unknown", "the reel sweep's check could not be asked (%s)" % type(_ce).__name__)
+                    _uw = "the reel sweep's check could not be asked (%s)" % type(_ce).__name__   # REG-3247: every distinct reason
+                    if _uw not in unk.setdefault("unknown", []):
+                        unk["unknown"].append(_uw)
                     continue
                 if _sweep_owes:
                     lanes.setdefault("the reel sweep", []).append(rid)
@@ -19346,14 +19348,18 @@ def _station_delivery(station, reels, owed=None):
                 # v3867 (the Grok CLI on REG-3201, #231 6674616604) - this filed the reel as "no lane's queue holds it":
                 # a confident no for a check that could not be asked. UNKNOWN, as the STATION check above says it.
                 waits.setdefault("unknown", []).append(rid)
-                unk.setdefault("unknown", "the empty-reel check could not be asked (%s)" % type(_pe).__name__)
+                _uw = "the empty-reel check could not be asked (%s)" % type(_pe).__name__
+                if _uw not in unk.setdefault("unknown", []):
+                    unk["unknown"].append(_uw)
                 continue
             waits.setdefault("triage-empty" if empty else "no-queue", []).append(rid)
         rows = []
         for k, rs in sorted(waits.items(), key=lambda kv: -len(kv[1])):
             on = _DELIVERY_WAITS.get(k, k)
             if k in unk:
-                on = "%s: %s" % (on, unk[k])
+                # REG-3247 (the #231 look at v3867) - every distinct check that could not be asked is named: setdefault
+                # kept the FIRST, so a reel whose empty-check failed was said under another reel's sweep-check reason
+                on = "%s: %s" % (on, "; ".join(unk[k]))
             if k in holds and holds[k][1]:
                 on = "%s - %s %s" % (on, holds[k][0], _vault_hang_words(holds[k][1]))
             rows.append({"key": k, "on": on, "reels": rs, "selfClearing": k in _DELIVERY_SELF_CLEARING})
