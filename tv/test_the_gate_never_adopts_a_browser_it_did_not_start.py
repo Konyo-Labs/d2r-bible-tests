@@ -71,34 +71,40 @@ def _choose(from_port):
     return int(m.group(1))
 
 
+#: REG-3286 - the band the fixture borrows its ports from: below every OS's EPHEMERAL range (Linux 32768+, macOS and
+#: Windows 49152+), so no process that asks for port 0 is ever handed one of them, and clear of 9222-9300 and the 179xx
+#: scratch servers. MEASURED: the law went red only inside the parallel pre-flight (v3873, twice; 4 of 4 green alone):
+#: a number borrowed from the ephemeral pool and released was taken by another law's server before the hook snippet
+#: looked, and the snippet then rightly chose p+1 - "the first port is chosen" read red on a race, not on the gate.
+PORT_BAND = (20000, 32000)
+
+
+def _bind_free(port):
+    s = socket.socket()
+    try:
+        s.bind(("127.0.0.1", port))
+        return True
+    except OSError:
+        return False
+    finally:
+        s.close()
+
+
 def _free_block():
-    """A port P above 9224 where P and P+1 both bind right now (the OS picks; we only borrow the number)."""
-    for _ in range(20):
-        a = socket.socket()
-        a.bind(("127.0.0.1", 0))
-        p = a.getsockname()[1]
-        a.close()
-        if p < 9300 or p > 65000:
-            continue
-        try:
-            b = socket.socket()
-            b.bind(("127.0.0.1", p + 1))
-            b.close()
+    """A port P where P and P+1 both bind right now, from PORT_BAND (never the OS's ephemeral pool)."""
+    import random
+    for _ in range(40):
+        p = random.randrange(PORT_BAND[0], PORT_BAND[1] - 2)
+        if _bind_free(p) and _bind_free(p + 1):
             return p
-        except OSError:
-            continue
     raise unittest.SkipTest("no free port pair found - UNMEASURED, not passing")
 
 
 def _full_window():
-    """Hold all 41 ports of a window [base, base+40] with real listeners. -> (base, sockets)"""
+    """Hold all 41 ports of a window [base, base+40] with real listeners, from PORT_BAND. -> (base, sockets)"""
+    import random
     for _ in range(30):
-        a = socket.socket()
-        a.bind(("127.0.0.1", 0))
-        base = a.getsockname()[1]
-        a.close()
-        if base < 9300 or base > 65000 - 41:
-            continue
+        base = random.randrange(PORT_BAND[0], PORT_BAND[1] - 42)
         held = []
         try:
             for p in range(base, base + 41):
@@ -136,6 +142,13 @@ class TheLawsBashIsAPosixBash(unittest.TestCase):
 
 
 class TheGateNeverAdoptsABrowserItDidNotStart(unittest.TestCase):
+
+    def test_the_borrowed_ports_are_never_the_oss_ephemeral_ones(self):
+        """REG-3286 - a port borrowed from the ephemeral pool is handed to the next process that asks for port 0."""
+        self.assertLess(PORT_BAND[1], 32768, "the fixture's band reaches into Linux's ephemeral range")
+        for _ in range(20):
+            self.assertTrue(PORT_BAND[0] <= _free_block() < PORT_BAND[1])
+
 
     @_NEEDS_BASH
     def test_premise_with_nothing_held_the_first_port_is_chosen(self):
@@ -202,6 +215,11 @@ if __name__ == "__main__":
 
 
 RED_PROOF = [
+    {"why": "REG-3286 - the fixture borrows its ports from the OS's ephemeral pool again (the parallel pre-flight's red)",
+     "file": "tv/test_the_gate_never_adopts_a_browser_it_did_not_start.py",
+     "find": "PORT_BAND = (20000, 32000)\n",
+     "replace": "PORT_BAND = (49152, 65000)\n",
+     "matches": 1},
     {
         "why": "REG-1278 - a full window falls back to the start port again: the gate adopts the browser holding it",
         "file": "hooks/pre-push",
