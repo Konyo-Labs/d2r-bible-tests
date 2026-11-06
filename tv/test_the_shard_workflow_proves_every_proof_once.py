@@ -32,10 +32,6 @@ HEAD = "c" * 40
 # v3864 - GitHub Pro (his upgrade, 2026-11-05) runs 40 jobs at once; while the shards run, the version's other required
 # checks hold ~18 (agent tests 5, Playwright 10 + 2 slow, Windows boot 1), so the shards that can ALL run at once are 22
 PLAN_JOBS, OTHER_CHECK_JOBS = 40, 18
-# v3867 - and on Ubicloud (vars.PROOF_RUNNER, REG-3190) the account runs 17 of its 8-core machines at once: MEASURED in both
-# v3865 rounds (42127666133 and 42132571943 started 17 shards in the same minute; the other 5 queued 16-23 min and set the
-# run's end at 55 min). A shard that waits for a machine adds its whole length to the run.
-UBICLOUD_AT_ONCE = 17
 
 
 def _wf():
@@ -63,11 +59,8 @@ class TheWorkflowRunsEveryShardOnce(unittest.TestCase):
         self.assertEqual(got, list(range(1, n + 1)), "the matrix runs %s, not every shard 1..%d once" % (got, n))
         self.assertLessEqual(n, PLAN_JOBS - OTHER_CHECK_JOBS,
                              "N=%d shards cannot all run at once beside the other checks on GitHub Pro's %d jobs" % (n, PLAN_JOBS))
-        self.assertLessEqual(n, UBICLOUD_AT_ONCE,
-                             "N=%d shards: Ubicloud runs %d at once, so %d wait a whole shard for a machine"
-                             % (n, UBICLOUD_AT_ONCE, n - UBICLOUD_AT_ONCE))
-        # v3867 - 17: every shard starts at once on Ubicloud (measured), and fits GitHub Pro's jobs when the budget falls back
-        self.assertEqual(n, 17, "the plan this build is set for is 17 shards (what Ubicloud runs at once)")
+        # v3864 - 22 on GitHub Pro; UNMEASURED until its first run (16 was measured: max ~41 min each on 21a78ff6)
+        self.assertEqual(n, 22, "the plan this build is set for is 22 shards (GitHub Pro, beside the other checks)")
         mp = re.search(r"^      max-parallel: (\d+)$", text, re.M)
         self.assertTrue(mp and int(mp.group(1)) >= n, "max-parallel holds shards back: the wall time is the sum, not the max")
 
@@ -193,11 +186,6 @@ class TheFanInPassesOnlyAWholeSet(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "v3867 - N goes back past what Ubicloud runs at once, so 5 shards queue a whole shard each (v3865: 55 min, not ~30)",
-     "file": ".github/workflows/proof-keys-shards.yml",
-     "find": "  PROOF_SHARDS: \"17\"\n",
-     "replace": "  PROOF_SHARDS: \"22\"\n",
-     "matches": 1},
     {"why": "shard 16 census - the pinned-commit fetch drops one, so RoutineIOnRealHistory reads UNMEASURED again",
      "file": ".github/workflows/proof-keys-shards.yml",
      "find": "          f591953451f7a0aff8db3f22938c6f1ded12ce88\n",
@@ -210,8 +198,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2588 - the matrix drops a shard: its slice is never proved and every import refuses the set",
      "file": ".github/workflows/proof-keys-shards.yml",
-     "find": "        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]\n",
-     "replace": "        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]\n",
+     "find": "        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]\n",
+     "replace": "        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]\n",
      "matches": 1},
     {"why": "REG-2588 - the cache upload drops dot-files, so .heart2_cache.json never leaves the runner",
      "file": ".github/workflows/proof-keys-shards.yml",
