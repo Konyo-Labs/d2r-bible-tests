@@ -219,6 +219,9 @@ jobs:
             echo "REG-3210: this shard's seed is not the one the seed job built - its plan would differ from its siblings'"; exit 3; fi
           export HEART2_SHARD_SERVED="$RUNNER_TEMP/heart2-seed/served.json"
           [ -f "$HEART2_SHARD_SERVED" ] || unset HEART2_SHARD_SERVED
+          # REG-3274 - the prices the last round measured (the seed job carries them); absent: the committed table alone
+          export HEART2_SHARD_COSTS="$RUNNER_TEMP/heart2-seed/proof_costs.json"
+          [ -f "$HEART2_SHARD_COSTS" ] || unset HEART2_SHARD_COSTS
           # REG-3210 - a re-run shard also serves what this run's earlier attempt proved (the plan stays the seed job's)
           if [ -d "$RUNNER_TEMP/heart2-seed/rerun" ] && [ -n "$(python3 tv/proof_seed.py --widen "${HEART2_SHARD_SEED:-}" \
                 --with "$RUNNER_TEMP/heart2-seed/rerun" --out "$RUNNER_TEMP/heart2-seed/wide" | sed -n 's/^widened=//p')" ]; then
@@ -270,21 +273,28 @@ jobs:
       - name: The census - what this commit proved, and the laws the next batch fixes (REG-2595)
         if: ${{ always() }}
         run: |
-          python3 tv/proof_shard.py --census shards --shards "$PROOF_SHARDS" --head "$GITHUB_SHA" --out census.md
+          python3 tv/proof_shard.py --census shards --shards "$PROOF_SHARDS" --head "$GITHUB_SHA" --out census.md \
+            --json census.json
           cat census.md >> "$GITHUB_STEP_SUMMARY"
       - name: Keep the census
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: proof-census-${{ github.sha }}
-          path: census.md
+          # REG-3270 - census.json is what tv/ship_when_green.py reads to make up a round whose only debt is TIMEOUTs
+          path: |
+            census.md
+            census.json
           if-no-files-found: warn
           retention-days: 30
       - name: Bank this run's proofs as the next run's seed (REG-2961 main; v3864 its own ci/proof-keys branch too)
         # main's cache scope is the one every branch may restore. v3864: a ci/proof-keys-* branch saves one too, and only that
         # branch can read it, so a red-then-fixed re-push of one version starts from the proofs its red run made
         if: ${{ always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci/proof-keys-')) }}
-        run: python3 tv/proof_shard.py --merge-shards shards --out "$RUNNER_TEMP/heart2-seed/.heart2_cache.json"
+        # REG-3274 - and this round's MEASURED per-proof prices beside it: the next round's plan reads them (HEART2_SHARD_COSTS)
+        run: |
+          python3 tv/proof_shard.py --merge-shards shards --out "$RUNNER_TEMP/heart2-seed/.heart2_cache.json"
+          python3 tv/proof_shard.py --measure-costs shards --out "$RUNNER_TEMP/heart2-seed/proof_costs.json" || true
       - name: Save the seed (REG-2961 main; v3864 its own ci/proof-keys branch too)
         if: ${{ always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci/proof-keys-')) }}
         continue-on-error: true

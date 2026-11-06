@@ -97,6 +97,63 @@ def red_runs(runs, sha):
     return out
 
 
+#: REG-3270 - how long a run this script asked to re-run may still read its old "completed, failure" before GitHub
+#: starts the re-run (a re-run of failed jobs is queued within seconds; five polls is room, never a hiding place)
+MAKEUP_GRACE_S = 5 * 60
+
+
+def proof_run(runs, sha):
+    """REG-3270 - the newest proof-keys shards run on this sha. -> dict | None. Pure."""
+    rs = sorted((r for r in runs or [] if isinstance(r, dict) and CV._name(r) == CV.REQUIRED[3]
+                 and str(r.get("headSha") or "").startswith(sha)), key=lambda r: str(r.get("createdAt") or ""))
+    return rs[-1] if rs else None
+
+
+def makeup(sha, runs, run, say, made, clock, tmp=None):
+    """REG-3270 - A ROUND WHOSE ONLY DEBT IS PROOFS THE DEADLINE CUT IS MADE UP, NOT LOST. MEASURED on v3872 (0d4e24537):
+    20 of 22 shards green, shards 14 and 22 red with 27 proofs cut at minute 55 (TIMEOUT - no law red), and the ship
+    stopped: the round was re-run by hand an hour later. Now the shards run's census (census.json, the fan-in's) is read;
+    when proof_shard.makeup_due says the debt is ONLY cut proofs, its failed jobs are re-run ONCE - a re-run shard serves
+    what it proved and runs only what was cut (REG-3210) - and the wait goes on. A law that went red, a shard with no
+    store, or a second red on the same run is never made up. -> True when a re-run was asked"""
+    import json
+    import shutil
+    import tempfile
+    import proof_shard as PS
+    r = proof_run(runs, sha)
+    rid = (r or {}).get("databaseId")
+    if not rid or rid in made:
+        return False
+    d = tmp or tempfile.mkdtemp(prefix="makeup-")
+    try:
+        g = run(["gh", "run", "download", str(rid), "--repo", CV.REPO_SLUG, "-n", "proof-census-%s" % sha, "-D", d],
+                capture_output=True, text=True, encoding="utf-8", errors="replace")
+        tot = None
+        if getattr(g, "returncode", 1) == 0:
+            try:
+                with open(os.path.join(d, "census.json"), encoding="utf-8") as fh:
+                    tot = json.load(fh)
+            except (OSError, ValueError):
+                tot = None
+        due, why = PS.makeup_due(tot)
+        if not due:
+            say("ship: REG-3270 not made up - %s" % (why if tot is not None else "the census could not be read (UNKNOWN)"))
+            made[rid] = None
+            return False
+        q = run(["gh", "run", "rerun", str(rid), "--failed", "--repo", CV.REPO_SLUG], capture_output=True, text=True,
+                encoding="utf-8", errors="replace")
+        if getattr(q, "returncode", 1) != 0:
+            say("ship: REG-3270 the make-up re-run was REFUSED: %s" % ((q.stderr or q.stdout or "").strip()[-160:]))
+            made[rid] = None
+            return False
+        made[rid] = clock()
+        say("ship: REG-3270 MAKE-UP - %s; re-running the failed shards of run %s once and waiting on" % (why, rid))
+        return True
+    finally:
+        if tmp is None:
+            shutil.rmtree(d, ignore_errors=True)
+
+
 def missing(runs, sha, among=None):
     """The REQUIRED workflows (or those of `among`) with no run at all on this sha. -> [name]. Pure."""
     have = set(CV._name(r) for r in runs or [] if isinstance(r, dict) and str(r.get("headSha") or "").startswith(sha))
@@ -211,6 +268,7 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
         return 1
     t0 = clock()
     tries, last = {}, None          # v3865 - per workflow: dispatches asked; a refused one is asked again next poll
+    made = {}                       # REG-3270 - run id -> when its make-up re-run was asked (None: judged, not made up)
     alerted = False                 # REG-3213 - the 75-minute alert is said once, loudly
     while True:
         runs = fetch(sha)
@@ -224,6 +282,14 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
             alerted = True
             say(overrun_alert(sha, (clock() - t0) / 60.0, runs, watch=watch))
         red = red_runs(runs, sha) if runs is not None else []
+        if red and runs is not None:    # REG-3270 - a red that is only cut proofs is made up once, then waited on
+            pr = proof_run(runs, sha) or {}
+            asked = made.get(pr.get("databaseId"))
+            only_proofs = all(x.startswith(CV.REQUIRED[3]) for x in red)
+            if only_proofs and asked is not None and clock() - asked < MAKEUP_GRACE_S:
+                red = []                # the re-run was asked a moment ago and GitHub has not started it yet
+            elif only_proofs and makeup(sha, runs, run, say, made, clock):
+                red = []
         if red:
             say("ship: GitHub graded %s RED - main is NOT pushed: %s" % (sha[:9], ", ".join(red)))
             return 1

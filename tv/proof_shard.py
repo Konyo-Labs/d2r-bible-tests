@@ -69,6 +69,21 @@ RUNNER_LANES = 2
 SERVED_PROOF_S = 0.05
 #: REG-3212 - a proof cut at its bound: neither PROVEN nor a defect of the law - UNKNOWN, owed, and named by the fan-in
 TIMEOUT = "TIMEOUT"
+#: REG-3271 - the longest gap between two provedAt stamps of one gate that is still ONE proof's cost: the shard job's own
+#: bound. MEASURED on v3872's set (0d4e24537): shard 14's store held 258 proofs of 10:0x-11:01 and one served from 04:21,
+#: so that gate's "per-proof" gap read 6 hours; a gate of 2-3 proofs took it as its median and was priced at hours
+MAX_PROOF_GAP_S = 75 * 60
+#: REG-3272 - a shard's real prove time over the plan's work / lanes. MEASURED on v3872 (22 shards, every one of 9,378
+#: proofs run fresh, 0 served): with the re-measured per-proof prices, real = 1.30 x modelled (fit through 0, residual
+#: mean 154 s over 22 shards; the clean wave, the checkpoint writes and two lanes never perfectly busy are not in the
+#: per-proof gaps). The plan's balance is unchanged by a common factor; the wall it SAYS, and its headroom, are not
+SHARD_WALL_FACTOR = 1.30
+#: REG-3273 - the share of a shard's proving window (heart2 starts no proof past job minute 55) the plan's slowest shard
+#: may fill. v3872's slowest shard needed 1.9x its modelled wall and the deadline cut 27 proofs; past this share the plan
+#: says so in the shard's first lines, before a round is spent finding out
+PLAN_HEADROOM = 0.70
+#: the window those 55 minutes leave once a shard has set up (setup MEASURED 75-374 s on v3872's shards)
+PROVE_WINDOW_S = 55 * 60 - 180
 _SPEC = re.compile(r"^\s*(\d+)\s*/\s*(\d+)\s*$")
 
 
@@ -102,10 +117,23 @@ def gate_costs(path=None):
         return None                     # REG-2597 - there and unreadable is UNKNOWN, never "no costs"
 
 
-def proof_costs(path=None):
+def proof_costs(path=None, env=None):
     """REG-2593 - {gate: seconds per proof ON A RUNNER} from proof_costs.json (measure_costs' rows). -> dict ({} when
-    absent: the plan then prices every gate from gate_costs, as it did), None when there and unreadable (REG-2597)"""
-    path = path or os.path.join(os.path.dirname(os.path.abspath(__file__)), "proof_costs.json")
+    absent: the plan then prices every gate from gate_costs, as it did), None when there and unreadable (REG-2597)
+
+    REG-3274 - THE PRICES UPDATE THEMSELVES. With no `path`, HEART2_SHARD_COSTS names the costs the LAST round measured
+    (the fan-in writes them beside the seed it saves; the seed job hands them to every shard in the one proof-seed
+    artifact, so every shard reads the same file and cuts the same plan). Its rows win over tv/proof_costs.json's; a
+    gate it never measured keeps the committed price. Unreadable or absent: the committed file alone, as before."""
+    if path is None:
+        base = proof_costs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "proof_costs.json"))
+        lp = (env if env is not None else os.environ).get("HEART2_SHARD_COSTS") or ""
+        last = proof_costs(lp) if lp and os.path.isfile(lp) else None
+        if base is None or not last:
+            return base
+        out = dict(base)
+        out.update(last)
+        return out
     try:
         with open(path, encoding="utf-8") as fh:
             c = json.load(fh).get("perProof") or {}
@@ -131,7 +159,8 @@ def measure_costs(bodies):
                 per.setdefault(str(e["gate"]), []).append(t)
         for g, ts in per.items():
             ts.sort()
-            gaps.setdefault(g, []).extend((b - a) / 1000.0 for a, b in zip(ts, ts[1:]))
+            # REG-3271 - a gap past the job's bound joins two rounds (a served proof beside a fresh one), never one proof
+            gaps.setdefault(g, []).extend(x for x in ((b - a) / 1000.0 for a, b in zip(ts, ts[1:])) if x <= MAX_PROOF_GAP_S)
     out = {}
     for g, v in gaps.items():
         if v:
@@ -216,7 +245,9 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
         for i in idx:
             out[(name, i)] = k + 1
     if isinstance(report, dict):        # REG-3211 - what the plan expects of each shard, said by the run that cut it
-        report.update(wall=[round(max(t / lanes, w), 1) for t, w in zip(tot, brw)], work=[round(t, 1) for t in tot],
+        # REG-3272 - the wall a shard will REALLY take: the work over its lanes times the measured SHARD_WALL_FACTOR
+        report.update(wall=[round(SHARD_WALL_FACTOR * max(t / lanes, w), 1) for t, w in zip(tot, brw)],
+                      work=[round(t, 1) for t in tot], factor=SHARD_WALL_FACTOR,
                       owed=sum(len(o) for _n, o, _d, _u, _f, _b in gates),
                       served=sum(len(d) for _n, _o, d, _u, _f, _b in gates))
     return out
@@ -598,6 +629,43 @@ def timeouts(fails):
     return sorted(out, key=lambda t: (t[1], str(t[2]), t[0]))
 
 
+def headroom(wall, window=PROVE_WINDOW_S, share=PLAN_HEADROOM):
+    """REG-3273 - the plan's slowest modelled wall against the proving window. -> (ok, sentence). Pure."""
+    try:
+        w = float(max(wall or [0]))
+    except (TypeError, ValueError):
+        return False, "the plan said no wall - its headroom is UNKNOWN"
+    pct = 100.0 * w / float(window) if window else 0.0
+    if w <= share * window:
+        return True, "the slowest shard models %d s, %.0f%% of the %d-s proving window (at most %.0f%%)" % (
+            w, pct, window, 100 * share)
+    return False, ("⚠ REG-3273 the slowest shard models %d s, %.0f%% of the %d-s proving window - over the %.0f%% "
+                   "headroom: its tail may be cut at minute 55 (TIMEOUT, owed); more shards or provers would fit it"
+                   % (w, pct, window, 100 * share))
+
+
+def makeup_due(tot):
+    """REG-3270 - may a red proof round be made up by re-running its failed shards once? -> (due, why). Pure.
+
+    Due only when the ONLY debt is proofs a bound cut (TIMEOUT): no law owes a fix, every shard left a readable store,
+    and at least one proof was cut. A re-run shard serves everything its first attempt proved (the rerun seed, REG-3210)
+    and runs only what the deadline cut. A law that went red, or a shard that left nothing, is never "made up" - those
+    are a human's (or the next version's) to read."""
+    if not isinstance(tot, dict):
+        return False, "no census to read - not made up"
+    cut, fix = tot.get("cut") or [], tot.get("fix") or []
+    lost, missing = tot.get("lost") or [], tot.get("missing") or []
+    if fix:
+        return False, "%d proof(s) owe a fix (a law went red) - a re-run cannot make that up" % len(fix)
+    if lost or missing:
+        return False, "%d shard(s) left no readable store - UNKNOWN, not made up" % (len(lost) + len(missing))
+    if not cut:
+        return False, "nothing was cut at its bound"
+    shards = sorted(set(str(f[4]) for f in cut if len(f) > 4))
+    return True, "only %d proof(s) cut at their bound (TIMEOUT) on shard(s) %s - a re-run proves just those" % (
+        len(cut), ", ".join(shards))
+
+
 def merge_shards(root, out, say=print):
     """REG-2961 (#161 stage 2) - THE SEED THE NEXT RUN RESTORES: every servable entry the shard files under `root` hold,
     in one heart2 store at `out` (no shard manifest - it is no shard's file). Read only by heart2's seed (HEART2_SHARD_SEED),
@@ -770,7 +838,8 @@ def census(root, head=None, n=None):
     lost = [k for k in range(1, int(n) + 1) if k not in ks] if n else []
     _order = lambda f: (str(f[0]), f[1] if isinstance(f[1], int) else 0)      # noqa: E731
     tot = dict(assigned=sum(r[1] for r in rows), proven=sum(r[2] for r in rows), owed=len(fix),
-               unbanked=sum(unb.values()), fix=sorted(fix, key=_order), cut=sorted(cut, key=_order))
+               unbanked=sum(unb.values()), fix=sorted(fix, key=_order), cut=sorted(cut, key=_order),
+               lost=lost, missing=missing, stores=len(rows))      # REG-3270 - what makeup_due reads
     out = ["## Proof census at %s" % (", ".join(heads) or "(no shard store)"), ""]
     if head and heads and heads != [str(head)[:12]]:
         out += ["⚠ the shards ran on %s, not %s" % (", ".join(heads), str(head)[:12]), ""]
@@ -837,6 +906,8 @@ def main(argv=None):
     ap.add_argument("--measure-costs", dest="measure", default=None,
                     help="REG-2593: dir of finished shard artifacts -> write proof_costs.json (seconds per proof)")
     ap.add_argument("--census", default=None, help="REG-2595: dir of shard artifacts -> the post-push census (markdown)")
+    ap.add_argument("--json", dest="json_out", default=None,
+                    help="REG-3270: with --census, also write its totals as JSON (what tv/ship_when_green.py's make-up reads)")
     ap.add_argument("--out", default=None, help="with --census: also write the census to this file; with --merge-shards: "
                                                 "the seed file")
     ap.add_argument("--merge-shards", dest="merge", default=None,
@@ -869,6 +940,10 @@ def main(argv=None):
         if a.out:
             with open(a.out, "w", encoding="utf-8") as fh:
                 fh.write(text)
+        if a.json_out:                  # REG-3270 - the totals, for the make-up decision on the Mac
+            _due, _why = makeup_due(_t)
+            with open(a.json_out, "w", encoding="utf-8") as fh:
+                json.dump(dict(_t, head=a.head, n=a.shards, makeupDue=_due, makeupWhy=_why), fh, ensure_ascii=False)
         return 0                        # a census informs the next batch; it never gates a push
     if a.measure:
         bodies = []
@@ -881,14 +956,17 @@ def main(argv=None):
         if not got:                     # second eye: an empty or wrong dir never blanks the table the plan reads
             print("  ✗ REG-2593: no shard cache under that dir priced any gate - proof_costs.json is left as it was")
             return 2
-        out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "proof_costs.json")
+        # REG-3274 - --out: the round's own prices, saved beside the next seed (the committed table is left as it is)
+        out = a.out or os.path.join(os.path.dirname(os.path.abspath(__file__)), "proof_costs.json")
         heads = sorted(set(str(((b or {}).get("shard") or {}).get("head") or "")[:12] for b in bodies))
+        os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
         with open(out + ".tmp", "w", encoding="utf-8") as fh:
             json.dump({"v": 1, "measuredOn": "a GitHub runner, %d shard(s) at %s" % (len(bodies), ",".join(heads)),
                        "perProof": dict(sorted(got.items()))}, fh, indent=2, ensure_ascii=False)
             fh.write("\n")
         os.replace(out + ".tmp", out)
-        print("  REG-2593: %d gate(s) priced from %d shard cache(s) -> tv/proof_costs.json" % (len(got), len(bodies)))
+        print("  REG-2593: %d gate(s) priced from %d shard cache(s) -> %s" % (len(got), len(bodies),
+                                                                          a.out or "tv/proof_costs.json"))
         return 0
     if not a.root or a.shards is None:
         ap.error("--fan-in DIR and --shards N are required (or --measure-costs DIR)")

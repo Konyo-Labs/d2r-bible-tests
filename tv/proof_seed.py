@@ -153,6 +153,26 @@ def _bundle(sha, flavor, work, tag, download, say):
     return got, paths
 
 
+#: REG-3274 - the round's measured per-proof prices, saved beside the seed by the fan-in (proof_shard --measure-costs --out)
+PRICES_NAME = "proof_costs.json"
+
+
+def carry_prices(restored, out_dir, say=print):
+    """REG-3274 - copy the last round's measured prices from the restored seed dir into the run's seed. -> the gate count
+    carried, 0 when none were restored (the shards then plan on the committed table alone). A file that does not read as
+    prices is never carried: a broken table would split the plan between shards that could and could not read it."""
+    src = os.path.join(restored, PRICES_NAME) if restored else ""
+    got = PS.proof_costs(src) if src and os.path.isfile(src) else None
+    if not got:
+        say("  REG-3274 PRICES: no measured prices were restored - the shards plan on tv/proof_costs.json alone")
+        return 0
+    with open(os.path.join(out_dir, PRICES_NAME), "w", encoding="utf-8") as fh:
+        json.dump({"v": 1, "measuredOn": "the last round's shards (restored with its seed)", "perProof": got}, fh)
+    say("  REG-3274 PRICES: %d gate(s) priced by the last round ride with the seed - they win over the committed table"
+        % len(got))
+    return len(got)
+
+
 def build(sha, restored, work, out_dir, flavor="", prior=False, download=None, get=None, say=print):
     """Build the run's seed in `out_dir` (its .heart2_cache.json, and served.json beside it). Never raises.
     -> {"seeded", "digest", "bank", "prior", "why", "entries", "served"}
@@ -205,6 +225,8 @@ def build(sha, restored, work, out_dir, flavor="", prior=False, download=None, g
             return rec
         with open(os.path.join(os.path.dirname(os.path.abspath(out)), SERVED_NAME), "w", encoding="utf-8") as fh:
             json.dump({"sha": sha, "flavor": flavor, "served": served}, fh)
+        # REG-3274 - the prices the last round measured ride in the same artifact, so every shard plans on the same table
+        rec["prices"] = carry_prices(restored, out_dir, say=say)
         try:
             with open(out, encoding="utf-8") as fh:
                 rec["entries"] = len((json.load(fh) or {}).get("entries") or {})

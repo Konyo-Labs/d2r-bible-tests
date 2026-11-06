@@ -6371,6 +6371,8 @@ def _shard_cut(have, order, gates, say):
            if _SHARD.get("served") is not None else "no served list for this commit, so every proof is priced as owed",
            ("%.0f" % _w[k - 1]) if len(_w) >= k else "UNKNOWN", ("%.0f" % max(_w)) if _w else "UNKNOWN",
            ("%.0f" % (sum(_w) / len(_w))) if _w else "UNKNOWN"))
+    # REG-3273 - the plan says whether its slowest shard fits the proving window with room, before the round finds out
+    say("  REG-3273 HEADROOM: %s" % _PS.headroom(_w)[1] if _w else "  REG-3273 HEADROOM: UNKNOWN - the plan said no wall")
     return order2, gates2
 
 
