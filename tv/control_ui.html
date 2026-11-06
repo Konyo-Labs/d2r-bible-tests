@@ -29720,6 +29720,20 @@ function escC(s) {
               }).join('<br>') + '</div>';
             }
           }
+          /* REG-3254 (#63, GrokBot's v3869 pass) - A LEDGER WHOSE COUNT AND LIST DIFFER SAYS SO ON THE CARD. The server
+             has carried maskHave and its why since v3864 (REG-3172) and nothing drew them, so the Mac row read uniques
+             395/403 beside a list of 384 with no word, and GrokBot read the gap off the API as unexplained. The count stays
+             the number (REG-2035); the line says the list names fewer, and the hover carries the server's why. */
+          var _tl = m && m.tally;
+          var _gaps = ['sets', 'uniques', 'runewords'].filter(function (k) {
+            var p = _tl && _tl[k];
+            return !!p && typeof p.have === 'number' && typeof p.maskHave === 'number' && p.maskHave !== p.have;
+          }).map(function (k) {
+            var p = _tl[k];
+            return '<span title="' + escC(String(p.why || '')) + '">' + escC(k) + ': ' + escC(String(p.have))
+              + ' counted, ' + escC(String(p.maskHave)) + ' named on its list \u2014 the count is the number</span>';
+          });
+          if (_gaps.length) _mwLine += '<div class="ftt-mw">' + _gaps.join('<br>') + '</div>';
         } catch (_) {}
         /* ⚠⚠ v2739 — SAY WHEN A ROW'S PROGRESS WAS INHERITED RATHER THAN EARNED.
            Konyo, reading Dean's card: "it should be rendering for him 0 meaning its not and has

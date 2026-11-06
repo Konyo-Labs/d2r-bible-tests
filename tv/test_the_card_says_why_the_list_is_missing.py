@@ -112,7 +112,41 @@ class TheCardSaysWhyTheListIsMissing(unittest.TestCase):
         self.assertNotIn("<img", html, "a fleet row is remote input and must be escaped")
         self.assertIn("&lt;img", html)
 
+    def test_a_count_its_list_does_not_match_is_said_on_the_card(self):
+        """REG-3254 (#63) - GrokBot's v3869 pass: 'Uniques: Mac 395 (mask 384) / 403' - read off the API, never drawn."""
+        row = {"tally": {"ok": True, "uniques": {"have": 395, "total": 403, "maskHave": 384,
+                                                  "why": "this board counts 395 uniques and its own list names 384"},
+                         "sets": {"have": 128, "total": 135, "maskHave": 128},
+                         "runewords": {"have": 99, "total": 99}}}
+        html = self.drive(row)
+        self.assertIn("uniques: 395 counted, 384 named on its list", html, html)
+        self.assertIn('title="this board counts 395 uniques and its own list names 384"', html, html)
+        self.assertNotIn("sets:", html, "a ledger whose list agrees grew a gap line: %s" % html)
+        self.assertNotIn("runewords:", html, "a ledger with no list count grew a gap line: %s" % html)
+
+    def test_no_gap_no_line_and_the_why_is_escaped(self):
+        self.assertEqual(self.drive({"tally": {"ok": True, "uniques": {"have": 300, "maskHave": 300}}}), "")
+        self.assertEqual(self.drive({"tally": None}), "")
+        html = self.drive({"tally": {"uniques": {"have": 2, "maskHave": 1, "why": '<img src=x onerror="1">'}}})
+        self.assertNotIn("<img", html, "the why, remote fleet input, reached the card unescaped: %s" % html)
+
+
 RED_PROOF = [
+    {"why": "REG-3254 - the count/list gap the server sends is never drawn, so the Mac row reads short with no word",
+     "file": "tv/control_ui.html",
+     "find": "          if (_gaps.length) _mwLine += ",
+     "replace": "          if (false) _mwLine += ",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3254 - a ledger whose list agrees with its count still grows a gap line",
+     "file": "tv/control_ui.html",
+     "find": "typeof p.maskHave === 'number' && p.maskHave !== p.have;",
+     "replace": "typeof p.maskHave === 'number';",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3254 - the server's why, remote fleet input, is printed into the card unescaped",
+     "file": "tv/control_ui.html",
+     "find": "            return '<span title=\"' + escC(String(p.why || '')) + '\">'",
+     "replace": "            return '<span title=\"' + String(p.why || '') + '\">'",
+     "matches": 1, "needs": "node"},
     {"why": "v3169's shape - the server publishes maskWhy and the card the user hovers renders nothing",
      "file": "tv/control_ui.html",
      "find": "            if (_any) {\n              _mwLine",
