@@ -54,9 +54,13 @@ class TheCrestIsMeasuredBeforeItIsCalledQuiet(unittest.TestCase):
             src = fh.read()
         body = src[src.index("\ndef main():"):]
         claim = body.index("localStorage.setItem('d2r_ownerClaim','*')")
-        line = body[body.rindex("\n", 0, claim):claim]
-        self.assertIn("localStorage.clear();", line, "the gate inherits whatever the gate before it left in storage")
-        self.assertIn("sessionStorage.clear();", line)
+        setup = body[body.rindex("t.ev(", 0, claim):claim]
+        self.assertIn("localStorage.clear();", setup, "the gate inherits whatever the gate before it left in storage")
+        self.assertIn("sessionStorage.clear();", setup)
+        # REG-3313 - the Mac owner's world on every venue: Linux is the 'windows' world, whose blue cousin ribbon
+        # out-shouted a solid-red crest on GitHub (86.8% vs 88.7%)
+        self.assertIn("localStorage.setItem('d2r_activeMachine','mac');", setup, "the gate measures whichever world the venue's platform picks")
+        self.assertIn("localStorage.setItem('d2r_machineSource','user');", setup, "an 'auto' machine is re-detected from the platform")
         self.assertLess(claim, body.index('t.send("Page.reload")'), "the world is cleared after the page it measures loaded")
 
     def test_main_decides_through_verdict(self):
@@ -70,6 +74,11 @@ class TheCrestIsMeasuredBeforeItIsCalledQuiet(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3313 - the crest gate measures whichever storage world the venue's platform picks (Linux: the cousin ribbon)",
+     "file": "tv/crest_loudness.py",
+     "find": "localStorage.setItem('d2r_activeMachine','mac');",
+     "replace": "localStorage.setItem('d2r_activeMachine_unused','mac');",
+     "matches": 1},
     {"why": "REG-3307 - the crest gate inherits the storage the gate before it left (ladder mode's ribbon)",
      "file": "tv/crest_loudness.py",
      "find": "t.ev(\"try{localStorage.clear();sessionStorage.clear();localStorage.setItem('d2r_ownerClaim','*')}catch(e){}\")",

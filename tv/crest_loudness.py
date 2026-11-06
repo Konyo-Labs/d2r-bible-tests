@@ -126,7 +126,13 @@ def main():
         # 92.9% here, 2.1 points under a solid-red crest) is on this page too. Measured with ladder mode left on: the ribbon
         # ranks #2 behind the tampered crest on this Mac, where its fonts leave the margin; the shard that went BLIND ran
         # this gate straight after test_control. Cleared, the page is the default board every time.
-        t.ev("try{localStorage.clear();sessionStorage.clear();localStorage.setItem('d2r_ownerClaim','*')}catch(e){}")
+        # REG-3313 (v3875 round 4) - AND THE SAME MACHINE ON EVERY VENUE. The page puts every non-Mac platform in the
+        # 'windows' storage world, whose cousin shell draws #cousin-ribbon - a blue bar. On GitHub's Linux runner the
+        # tamper's solid-red crest measured 86.8% behind that ribbon's 88.7%, and the gate stayed green through its own
+        # defeat (BLIND; the line said so, REG-3306). The gate claims the Mac owner's world by the page's own contract
+        # (d2r_activeMachine + source 'user'), so it measures the board he sees, wherever it runs.
+        t.ev("try{localStorage.clear();sessionStorage.clear();localStorage.setItem('d2r_activeMachine','mac');"
+             "localStorage.setItem('d2r_machineSource','user');localStorage.setItem('d2r_ownerClaim','*')}catch(e){}")
         # ⚠ v2426 — THE RELOAD WAS FIRE-AND-FORGET, AND v2424's MESSAGE CLAIMED OTHERWISE.
         # Swapping an inline poll for `_selector_ready` fixed the HIDDEN-NODE predicate and did
         # nothing about the reload: `.bd-sigil` is true on BOTH sides of it, so any wait can be
