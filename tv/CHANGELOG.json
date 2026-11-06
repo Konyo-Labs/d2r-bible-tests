@@ -10,7 +10,8 @@
       "v3872 - an image the engine frame canceled is asked again once, so a slow console shows no broken icons (REG-3255)",
       "v3872 - the shadow sessions list says so after 30 s when a busy console does not answer (REG-3256)",
       "v3872 - three law fixtures go red on Windows too, so the work ALT locks can open (REG-3257)",
-      "v3872 - a plain heart read answers at once from the last census with its age, never a 40 s wait (REG-3258)"
+      "v3872 - a plain heart read answers at once from the last census with its age, never a 40 s wait (REG-3258)",
+      "v3872 - carries v3871, whose own round went red on one blind proof (fixed here, the Wilson law pins the fold line)"
     ]
   },
   {

@@ -98,7 +98,9 @@ class ThePriceBackendShowsItsWilson(unittest.TestCase):
         with open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
             app = fh.read()
         self.assertEqual(app.count('_out["db"] = _d2jsp_db_fold(_out)'), 1)
-        self.assertIn('priced["proof"] = _PDB.explain', app)
+        # v3872 - THE FOLD'S OWN LINE, WHOLE. v3871's read-only _d2jsp_db_view attaches its proof with a line that starts the
+        # same way, so the bare prefix matched there with the fold's line tampered, and CI's shard 14 filed proof [2] BLIND.
+        self.assertIn('priced["proof"] = _PDB.explain(db, reading.get("item"), now)', app)
         route = app[app.index('if path == "/api/d2jsp_price_db"'):app.index('if path in ("/", "/index.html", "/ui")')]
         self.assertNotIn("d2jsp_quote", route)
         self.assertIn("_PDB.view(_db)", route)
