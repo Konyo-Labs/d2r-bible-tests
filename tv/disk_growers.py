@@ -244,15 +244,33 @@ def holders(platform=None, _run=None):
             import psutil  # optional
         except Exception:
             return None, "there is no lsof on Windows and psutil is not installed, so what holds a folder cannot be read"
-        held, denied = set(), 0
+        held, denied, mine = set(), 0, 0
+        try:
+            import getpass
+            me = (getpass.getuser() or "").lower()
+        except Exception:
+            me = ""
         for p in psutil.process_iter():
             try:
                 held.add(_real(p.cwd()))
                 for f in p.open_files():
                     held.add(_real(f.path))
             except Exception:
-                denied += 1
-        return held, "psutil read %d path(s); %d process(es) would not answer" % (len(held), denied)
+                # v3867 (the Grok CLI on REG-3208, #231 6674616986) - a process that would not answer was dropped, and
+                # the set of whatever answered (empty when none did) read as a finished read. Another account's
+                # process is counted; one of THIS user's, or one whose owner cannot be read, makes the read UNKNOWN.
+                try:
+                    owner = (p.username() or "").split("\\")[-1].lower()
+                except Exception:
+                    owner = None
+                if not owner or not me or owner == me:
+                    mine += 1
+                else:
+                    denied += 1
+        if mine:
+            return None, ("%d process(es) of this user (or of an owner that could not be read) would not say what they "
+                          "hold, so what holds a folder is UNKNOWN" % mine)
+        return held, "psutil read %d path(s); %d other account process(es) would not answer" % (len(held), denied)
     run = _run or subprocess.run
     try:
         r = run(["lsof", "-n", "-P", "-w", "-F", "pn"], capture_output=True, timeout=HOLDERS_TIMEOUT_S)
@@ -262,6 +280,12 @@ def holders(platform=None, _run=None):
     procs = sum(1 for ln in out.splitlines() if ln.startswith("p"))
     if not procs:
         return None, "lsof named no process (exit %s), so what holds a folder is UNKNOWN" % getattr(r, "returncode", "?")
+    # v3867 (the Grok CLI on REG-3208) - lsof's exit status was ignored once any process line came back, so a listing
+    # that failed part-way read as complete and a file it never listed as free. MEASURED on his Mac 2026-11-06: a full
+    # `lsof -n -P -w -F pn` exits 0, so any other exit is a partial listing - UNKNOWN, nothing pruned.
+    if getattr(r, "returncode", None) != 0:
+        return None, ("lsof exited %s after naming %d process(es) - its listing may be partial, so what holds a folder "
+                      "is UNKNOWN" % (getattr(r, "returncode", "?"), procs))
     held = {ln[1:] for ln in out.splitlines() if ln.startswith("n/")}
     return held, "lsof read %d process(es)" % procs
 
@@ -526,6 +550,22 @@ def _git_payload(path, facts, scratch=None, rm=None):
         why = take("stash/%02d-%s.diff" % (j, st[:12]), out)
         if why:
             return files, not_saved, why, True
+        # v3867 (the Grok CLI on REG-3209, #231 6674616986) - `git stash -u` keeps the untracked files ONLY on the
+        # stash's third parent: the diff above names nothing, the folder no longer has them, and the salvage still read
+        # back ok before the prune removed the only copy (reproduced in a scratch repo). Its own root diff is saved too.
+        rc3, _o3, _e3 = git(path, ["rev-parse", "--verify", "-q", st + "^3"])
+        if rc3 == 0:
+            out, why, blocked = read("stash %s's untracked files" % st[:12],
+                                     ["diff-tree", "-r", "--root", "--no-commit-id", st + "^3"],
+                                     ["diff-tree", "-p", "--binary", "--root", "--no-commit-id", st + "^3"])
+            if why:
+                return files, not_saved, why, blocked
+            if not out:
+                return files, not_saved, ("stash %s holds untracked files that could not be written as a diff"
+                                          % st[:12]), False
+            why = take("stash/%02d-%s.untracked.diff" % (j, st[:12]), out)
+            if why:
+                return files, not_saved, why, True
     for name in facts["untracked"]:
         rel = _safe_rel(name)
         full = os.path.join(path, name)
@@ -1140,7 +1180,11 @@ def _pass(rec, entries, root_map, sroot, protect, free_bytes, now_s, platform, h
             rec["wouldPrune"].append({"name": c["name"], "entry": ent["name"], "bytes": c["bytes"]})
             continue
         fresh = ask()                      # REG-3208 review - asked again before EACH prune, after its own salvage
-        if fresh[0] is None or _held_by(fresh[0], c["real"], os.path.abspath(c["path"])):
+        # v3867 (the Grok CLI on REG-3208) - `git worktree remove` deletes the worktree's gitdir too (its index, HEAD,
+        # logs under the main tree's .git/worktrees/<name>), so a process holding only that is a hold as well
+        _gd = (c.get("_facts") or {}).get("gitdir") if (c.get("_facts") or {}).get("linked") else None
+        if fresh[0] is None or _held_by(fresh[0], c["real"], os.path.abspath(c["path"]), _gd,
+                                        _real(_gd) if _gd else None):
             c.update(state="held", why="salvaged to %s; a live process holds it now (or holders could not be read), "
                                        "so it stays" % where)
             continue

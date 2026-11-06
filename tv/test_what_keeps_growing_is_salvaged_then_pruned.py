@@ -582,6 +582,91 @@ class EachPruneAsksAgainWhatHoldsIt(_Base):
         self.assertEqual(rec["holdersAsked"], 3, "holders: once to measure, then once before EACH prune")
 
 
+class TheGrokCliOnREG3208And3209(_Base):
+    """v3867 - the Grok CLI's look at v3865's post-stamp commits (#231 6674616986): four ways a prune could take
+    something that was not saved, or a hold nobody read."""
+
+    def test_a_stash_of_untracked_files_is_restored_from_the_salvage(self):
+        fx = self.fx
+        clone = os.path.join(fx.root, "claude-fx-stash")
+        r = subprocess.run(["git", "clone", "-q", fx.main, clone], env=fx.env, capture_output=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        _w(os.path.join(clone, "only_here.txt"), "work that lives only in the stash\n")
+        fx.g(clone, "stash", "-u", "-q")
+        self.assertFalse(os.path.exists(os.path.join(clone, "only_here.txt")), "the fixture's stash did not take it")
+        st = fx.g(clone, "stash", "list", "--format=%H").split()[0]
+        self.assertEqual(fx.g(clone, "diff", st + "^1", st), "", "premise: the first-parent diff names nothing")
+        rec = fx.run([_entry()])
+        c = _cand(rec, "claude-fx-stash")
+        self.assertEqual(c["state"], "pruned", c["why"])
+        sal = os.path.join(fx.salv, c["salvage"]["dir"])
+        got = [n for n in os.listdir(os.path.join(sal, "stash")) if n.endswith(".untracked.diff")]
+        self.assertEqual(len(got), 1, "the stash's untracked files were not salvaged: %s" % os.listdir(os.path.join(sal, "stash")))
+        back = os.path.join(fx.base, "back")
+        r = subprocess.run(["git", "clone", "-q", fx.main, back], env=fx.env, capture_output=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        fx.g(back, "apply", os.path.join(sal, "stash", got[0]))
+        self.assertEqual(_r(os.path.join(back, "only_here.txt")).decode("utf-8"), "work that lives only in the stash\n")
+
+    def test_a_process_of_this_user_that_will_not_answer_is_unknown_on_windows(self):
+        import getpass
+        me = getpass.getuser()
+
+        class _P(object):
+            def __init__(self, owner, ok):
+                self.owner, self.ok = owner, ok
+
+            def cwd(self):
+                if not self.ok:
+                    raise PermissionError("denied")
+                return "/x"
+
+            def open_files(self):
+                return []
+
+            def username(self):
+                if self.owner is None:
+                    raise PermissionError("denied")
+                return self.owner
+        for procs, unknown in (([_P("NT AUTHORITY\\SYSTEM", False), _P(me, True)], False),
+                               ([_P("DOMAIN\\" + me, False)], True),
+                               ([_P(None, False)], True),
+                               ([_P(None, False), _P("NT AUTHORITY\\SYSTEM", False)], True)):
+            fake = type(sys)("psutil")
+            fake.process_iter = lambda procs=procs: iter(procs)
+            with mock.patch.dict(sys.modules, {"psutil": fake}):
+                held, why = DG.holders(platform="win32")
+            self.assertEqual(held is None, unknown, "%r -> %r (%s)" % ([(p.owner, p.ok) for p in procs], held, why))
+
+    def test_a_partial_lsof_is_unknown(self):
+        class _R(object):
+            stdout = b"p123\nn/some/file\n"
+            returncode = 1
+        held, why = DG.holders(platform="darwin", _run=lambda *a, **k: _R())
+        self.assertIsNone(held, "an lsof that exited 1 read as a complete listing: %r" % (why,))
+        self.assertIn("partial", why)
+        _R.returncode = 0
+        held, _why = DG.holders(platform="darwin", _run=lambda *a, **k: _R())
+        self.assertEqual(held, {"/some/file"})
+
+    def test_a_process_holding_only_the_worktrees_gitdir_stops_its_prune(self):
+        fx = self.fx
+        wt = self.unmerged()
+        gd = fx.g(wt, "rev-parse", "--absolute-git-dir")
+        self.assertIn(os.sep + "worktrees" + os.sep, gd, "premise: a linked worktree's gitdir is under the main .git")
+        calls = []
+
+        def lsof(*_a, **_k):
+            calls.append(1)
+            # the measuring read sees nobody; the re-ask before the prune sees a process holding the worktree's index
+            return (set() if len(calls) == 1 else {os.path.join(os.path.realpath(gd), "index")}), "a law's holders"
+        with mock.patch.object(DG, "holders", side_effect=lsof):
+            rec = fx.run([_entry()], held=None)
+        c = _cand(rec, os.path.basename(wt))
+        self.assertEqual(c["state"], "held", c["why"])
+        self.assertTrue(os.path.isdir(wt), "a worktree whose gitdir a process held was pruned")
+
+
 class ACopyThatKeptOldTimesIsYoung(_Base):
     """REG-3208 review - age was mtime only, and cp -Rp / tar / unzip / rsync -a keep mtimes."""
 
@@ -762,6 +847,26 @@ class WhatCouldNotBeReadIsSaid(_Base):
 
 
 RED_PROOF = [
+    {"why": "v3867 - a stash's untracked files (its third parent) are not salvaged, and the prune removes the only copy",
+     "file": "tv/disk_growers.py",
+     "find": "        rc3, _o3, _e3 = git(path, [\"rev-parse\", \"--verify\", \"-q\", st + \"^3\"])\n        if rc3 == 0:\n",
+     "replace": "        rc3, _o3, _e3 = git(path, [\"rev-parse\", \"--verify\", \"-q\", st + \"^3\"])\n        if False:\n",
+     "matches": 1},
+    {"why": "v3867 - a process of this user that will not answer is dropped again, and an armed prune proceeds",
+     "file": "tv/disk_growers.py",
+     "find": "        if mine:\n            return None, (",
+     "replace": "        if False:\n            return None, (",
+     "matches": 1},
+    {"why": "v3867 - lsof's exit status is ignored once any process line came back",
+     "file": "tv/disk_growers.py",
+     "find": "    if getattr(r, \"returncode\", None) != 0:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "v3867 - the re-ask before a prune ignores the worktree's own gitdir",
+     "file": "tv/disk_growers.py",
+     "find": "        _gd = (c.get(\"_facts\") or {}).get(\"gitdir\") if (c.get(\"_facts\") or {}).get(\"linked\") else None\n",
+     "replace": "        _gd = None\n",
+     "matches": 1},
     {"why": "v3865 - a main tree whose worktrees folder will not list reads as holding none, and may be pruned",
      "file": "tv/disk_growers.py",
      "find": "            f[\"mainOf\"] = None\n",

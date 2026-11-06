@@ -9,7 +9,9 @@
       "v3867 - a proof store keeps each input path once in memory - the ALT import paged for 9 hours on 8 GB (REG-3229)",
       "v3867 - an offline PC's Fleet box says its last report, never that its stations are draining now (REG-3230)",
       "v3867 - the full vault sweep skips a reel the hang book holds, as a named sweep does (REG-3231)",
-      "v3867 - a delivery check that could not be asked is UNKNOWN, never no lane (REG-3231)"
+      "v3867 - a delivery check that could not be asked is UNKNOWN, never no lane (REG-3231)",
+      "v3867 - the disk-growers salvage keeps a stash's untracked files before any prune (REG-3232)",
+      "v3867 - a holders read that is partial or unanswered is UNKNOWN, and a worktree's gitdir is a hold (REG-3232)"
     ]
   },
   {
