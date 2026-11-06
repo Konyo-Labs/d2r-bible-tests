@@ -3274,10 +3274,30 @@ def _prove_bounds(env=None):
     return out[0], out[1]
 
 
-def _past_bound(run, gate_t0, now=None):
-    """REG-3212 - why a proof of a gate that started at `gate_t0` may no longer RUN, or None. -> str | None. Pure."""
+def _gate_cap_for(name, run_cap):
+    """REG-3317 - this gate's cap: the run's HEART2_GATE_CAP_S, or a larger prove_cap_s its registration declares (its proofs
+    measured past the run's cap). -> seconds | None. No run cap (his Mac's push, a PC's census): None - nothing is cut there."""
+    if run_cap is None:
+        return None
+    try:
+        import run_gates as _rg_cap
+        for g in getattr(_rg_cap, "GATES", []):
+            if getattr(g, "name", None) == name:
+                own = getattr(g, "prove_cap_s", None)
+                if isinstance(own, (int, float)) and own > run_cap:
+                    return float(own)
+                break
+    except Exception:
+        pass
+    return run_cap
+
+
+def _past_bound(run, gate_t0, now=None, cap=None):
+    """REG-3212 - why a proof of a gate that started at `gate_t0` may no longer RUN, or None. -> str | None. Pure.
+    `cap` is the gate's own cap (REG-3317, _gate_cap_for); None takes the run's."""
     now = time.time() if now is None else now
-    dl, cap = getattr(run, "deadline", None), getattr(run, "gate_cap", None)
+    dl = getattr(run, "deadline", None)
+    cap = cap if cap is not None else getattr(run, "gate_cap", None)
     if dl is not None and now >= dl:
         return "the run's deadline passed %d s ago, so no proof still to run starts" % int(now - dl)
     if cap is not None and now - gate_t0 >= cap:
@@ -3314,8 +3334,8 @@ def _inflight_limit(timeout, now=None, run=None, gate_t0=None):
     hs = _hard_stop(run)
     if hs is not None:
         best, why = hs - now, "the run's hard stop, %d s past its deadline" % HARD_STOP_AFTER_S
-    cap = getattr(run, "gate_cap", None)
     t0 = getattr(_BOUND, "t0", None) if gate_t0 is None else gate_t0
+    cap = (getattr(_BOUND, "cap", None) if t0 is not None else None) or getattr(run, "gate_cap", None)   # REG-3317
     if cap is not None and t0 is not None and (best is None or t0 + cap - now < best):
         best, why = t0 + cap - now, "this gate's %d s cap" % int(cap)
     if best is None or (timeout and timeout <= best):
@@ -5991,10 +6011,11 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
         _ckpt = {"on": True}                             # #150 - False once a checkpoint was not green (the closing run decides)
         _g0, _cut, _cut_why = time.time(), [], None      # REG-3212 - this gate's clock, and what its bound cut
         _BOUND.t0 = _g0                                  # REG-3212 - a run of this gate's proofs is killed at its cap
+        _BOUND.cap = _gate_cap_for(name, getattr(run, "gate_cap", None))   # REG-3317 - its own declared cap, if larger
         for _n, i in enumerate(_order):
             if run.stop.is_set():
                 break
-            _bound = _past_bound(run, _g0)
+            _bound = _past_bound(run, _g0, cap=_BOUND.cap)
             if _bound is not None and not _served_here(run.cache, sandbox, name, filename, proofs[i]):
                 _cut.append(i)                           # REG-3212 - TIMEOUT: not run, never PROVEN, owed and named
                 _cut_why = _cut_why or _bound
@@ -6031,7 +6052,7 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
                         "  ⛔ #42 FAIL FAST — %s[%d] %s: %s. The run stops here: every proof not yet run is NOT RUN, "
                         "and the push is refused on this one." % (name, i, got[i], reason))
                 break
-        _BOUND.t0, _BOUND.cut = None, None               # REG-3212 - the closing runs answer to the hard stop only
+        _BOUND.t0, _BOUND.cut, _BOUND.cap = None, None, None   # REG-3212 - the closing runs answer to the hard stop only
         per = [got.get(i) for i in range(len(proofs))]
         _pre = list(per)
         per = _clean_here(sandbox, name, filename, proofs, per, say, run)   # REG-2587 - #242 on a push with no wave
@@ -6082,7 +6103,7 @@ def _prove_gate_push(sandbox, name, filename, proofs, say, run):
         _CLEAN.served = None
         _CLEAN.ckpt_keys = None
         _CLEAN.green_here = False
-        _BOUND.t0, _BOUND.cut = None, None
+        _BOUND.t0, _BOUND.cut, _BOUND.cap = None, None, None
     if run.cache is not None:
         run.cache.flush()          # P3: what this gate proved reaches the disk now, not only at the end of the run
     return _push_gate_verdict(per), per

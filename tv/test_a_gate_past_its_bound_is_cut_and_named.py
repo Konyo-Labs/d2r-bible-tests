@@ -184,6 +184,48 @@ class TheFanInNamesEveryTimeout(unittest.TestCase):
         self.assertIn("ga[1] TIMEOUT", "\n".join(said))
 
 
+class AGateMayDeclareItsOwnCap(unittest.TestCase):
+    """REG-3317 (his 11-06: "these shards and these tests need to be smooth and work fast") - the run's one cap (1,500 s)
+    cut the two width laws in v3872's round and v3875's rounds 1, 3 and 5: their proofs MEASURED ~1,600-1,700 s, and each
+    cut cost a make-up re-run or a red round. A gate may declare its own larger cap beside its registration; it never
+    lowers the run's, and where no run cap is set (his Mac's push, a PC's census) nothing is cut."""
+
+    class _G(object):
+        def __init__(self, name, cap=None):
+            self.name, self.prove_cap_s = name, cap
+
+    def _with(self, gates):
+        import run_gates
+        return mock.patch.object(run_gates, "GATES", gates)
+
+    def test_the_declared_cap_wins_only_when_it_is_larger(self):
+        gates = [self._G("g_wide", 2400), self._G("g_plain"), self._G("g_small", 1000)]
+        with self._with(gates):
+            self.assertEqual(heart2._gate_cap_for("g_wide", 1500.0), 2400.0)
+            self.assertEqual(heart2._gate_cap_for("g_plain", 1500.0), 1500.0)
+            self.assertEqual(heart2._gate_cap_for("g_small", 1500.0), 1500.0, "a declared cap lowered the run's")
+            self.assertIsNone(heart2._gate_cap_for("g_wide", None), "a declared cap cut where no run cap is set")
+
+    def test_both_bounds_use_the_gates_own_cap(self):
+        run = heart2._PushRun(keep_going=True)
+        run.gate_cap, run.deadline = 1500.0, None
+        self.assertIsNone(heart2._past_bound(run, 0.0, now=1600.0, cap=2400.0), "the declared cap was not used")
+        self.assertIn("1500 s cap", heart2._past_bound(run, 0.0, now=1600.0), "premise: the run's cap cuts at 1,600 s")
+        heart2._BOUND.t0, heart2._BOUND.cap = 1000.0, 2400.0
+        try:
+            secs, why = heart2._inflight_limit(5000, now=2600.0, run=run)
+            self.assertEqual((round(secs), why), (800, "this gate's 2400 s cap"), "a run already going ignores the declared cap")
+        finally:
+            heart2._BOUND.t0, heart2._BOUND.cap = None, None
+
+    def test_the_two_width_laws_declare_their_measured_cap(self):
+        import run_gates
+        caps = {g.name: getattr(g, "prove_cap_s", None) for g in run_gates.GATES}
+        for name in ("test_the_character_builder_fits_at_every_width", "test_the_mule_window_fits_at_every_width"):
+            self.assertIsNotNone(caps.get(name), "%s is cut at the run's 1,500 s cap again" % name)
+            self.assertGreaterEqual(caps[name], 2000, name)
+
+
 class ARunAlreadyGoingIsCut(unittest.TestCase):
     """The second eye on v3865: the bound was asked only BEFORE a proof, and nothing killed a law run in flight."""
 
@@ -301,6 +343,21 @@ class TheWorkflowBoundsAreHisMax(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3317 - a gate's declared cap is ignored, and the width laws are cut at 1,500 s again",
+     "file": "tv/heart2.py",
+     "find": "                if isinstance(own, (int, float)) and own > run_cap:\n",
+     "replace": "                if False:\n",
+     "matches": 1},
+    {"why": "REG-3317 - a law run already going is killed at the run's cap, not the gate's own",
+     "file": "tv/heart2.py",
+     "find": "    cap = (getattr(_BOUND, \"cap\", None) if t0 is not None else None) or getattr(run, \"gate_cap\", None)   # REG-3317\n",
+     "replace": "    cap = getattr(run, \"gate_cap\", None)\n",
+     "matches": 1},
+    {"why": "REG-3317 - the character builder's width law loses its measured cap",
+     "file": "tv/run_gates.py",
+     "find": '    Gate("test_the_character_builder_fits_at_every_width",\n         [sys.executable, os.path.join(HERE, "test_the_character_builder_fits_at_every_width.py")], 300,\n         needs_app=False,\n         # REG-3317 - measured on GitHub\'s shards: its width proofs need ~1,600-1,700 s and were cut at the 1,500 s cap in\n         # v3872\'s round and v3875\'s rounds 1, 3 and 5 (each a make-up re-run or a red round); 2,400 s leaves headroom\n         prove_cap_s=2400,',
+     "replace": '    Gate("test_the_character_builder_fits_at_every_width",\n         [sys.executable, os.path.join(HERE, "test_the_character_builder_fits_at_every_width.py")], 300,\n         needs_app=False,\n         # REG-3317 - measured on GitHub\'s shards: its width proofs need ~1,600-1,700 s and were cut at the 1,500 s cap in\n         # v3872\'s round and v3875\'s rounds 1, 3 and 5 (each a make-up re-run or a red round); 2,400 s leaves headroom\n         prove_cap_s=None,',
+     "matches": 1},
     {"why": "REG-3212 - a gate past its bound keeps proving (v3864: shard 10, 656 proofs, 87 min)",
      "file": "tv/heart2.py",
      "find": "            if _bound is not None and not _served_here(run.cache, sandbox, name, filename, proofs[i]):\n",

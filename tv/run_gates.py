@@ -92,10 +92,13 @@ class Gate:
     # beside a green verdict. Declare a reason only when the lane genuinely cannot exist on some
     # venue (a browser lane on his Mac runs on CI instead — [[test-venue]]); "it broke today" is
     # never a reason to add one.
-    def __init__(self, name, argv, timeout=900, needs_app=False, cwd=REPO, why="", skip_ok=()):
+    # REG-3317 - prove_cap_s: this gate's own cap on GitHub's proof shards (seconds), when its proofs MEASURED need more than
+    # the run's HEART2_GATE_CAP_S. Declared beside the gate with the measurement, never a guess; None keeps the run's cap.
+    def __init__(self, name, argv, timeout=900, needs_app=False, cwd=REPO, why="", skip_ok=(), prove_cap_s=None):
         self.name, self.argv, self.timeout = name, argv, timeout
         self.needs_app, self.cwd, self.why = needs_app, cwd, why
         self.skip_ok = tuple(skip_ok)
+        self.prove_cap_s = prove_cap_s
 
 
 # REG-1729 (#156) — A LAW NEVER ASKS HIS LIVE CONSOLE. The shelf witness, the doctor and the health engine read
@@ -8585,6 +8588,9 @@ GATES = [
     Gate("test_the_character_builder_fits_at_every_width",
          [sys.executable, os.path.join(HERE, "test_the_character_builder_fits_at_every_width.py")], 300,
          needs_app=False,
+         # REG-3317 - measured on GitHub's shards: its width proofs need ~1,600-1,700 s and were cut at the 1,500 s cap in
+         # v3872's round and v3875's rounds 1, 3 and 5 (each a make-up re-run or a red round); 2,400 s leaves headroom
+         prove_cap_s=2400,
          why="#174 v-B2 - the Character Builder measured in a REAL browser (its own headless Chrome on a free port) at 7 "
              "widths in 5 states - as it opens, with Crown of Ages worn and Annihilus in the inventory, the helm's picker "
              "open, the helm in Edit, the stash open: no word or control cut or outside its panel, nothing sideways, no "
@@ -8633,6 +8639,9 @@ GATES = [
     Gate("test_the_mule_window_fits_at_every_width",
          [sys.executable, os.path.join(HERE, "test_the_mule_window_fits_at_every_width.py")], 300,
          needs_app=False,
+         # REG-3317 - measured on GitHub's shards: its width proofs need ~1,600-1,700 s and were cut at the 1,500 s cap in
+         # v3872's round and v3875's rounds 1, 3 and 5 (each a make-up re-run or a red round); 2,400 s leaves headroom
+         prove_cap_s=2400,
          why="#174 - the mule window's words were cut ON SCREEN while the node law, reading innerHTML, stayed green: "
              "every length was N*--u and the type was fixed px, so between 900 and 1250 wide the MERCENARY note lost its "
              "(v-C) line (his 1120), STRENGTHS AND WEAKNESSES read TRENGTHS AND WEAKNESSE and the Stash button covered "

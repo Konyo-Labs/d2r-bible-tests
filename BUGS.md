@@ -101,6 +101,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3317 - TWO WIDTH LAWS RAN OUT OF THE SHARDS' ONE 1,500-SECOND CAP ROUND AFTER ROUND, AND EVERY CUT COST A RE-RUN OR A RED ROUND (v3876, his 11-06: "make this top priority")
+GitHub's proof shards run every law under one cap, HEART2_GATE_CAP_S=1500 (REG-3212), so a law that eats a shard is cut and
+its uncut proofs named TIMEOUT. Measured: test_the_character_builder_fits_at_every_width was cut in v3875's round 3 ([39],
+[40]) and round 5 ([38]-[40], shard 20 - the round's only debt, made up by a re-run), and
+test_the_mule_window_fits_at_every_width in round 1 ([16]) and v3872's round (shard 22, re-run by hand). Their proofs need
+~1,600-1,700 s (round 5: cut at 1,500 s with 3 of 41 left, ~40 s each). His question: "wont this happen again and again?" -
+yes, every round. Now a gate may declare its own cap beside its registration (run_gates.Gate prove_cap_s), the measurement
+written next to it; heart2 uses it before a proof starts (_past_bound) and for a run already going (_inflight_limit). It
+never lowers the run's cap, and where no run cap is set (his Mac's push, a PC's census) nothing is cut. The two width laws
+declare 2,400 s. The shard's own 55-minute deadline still bounds everything. Law: test_a_gate_past_its_bound_is_cut_and_
+named (+ AGateMayDeclareItsOwnCap), red-proofs PROVEN (20).
+
 ### REG-3316 - THE SIX COLOSSAL JEWELS WERE IN HIS 403 AND NEVER IN QUICK WINS, AND NOTHING SAID WHICH ANCIENT DROPS WHICH (v3876, #90, his 11-06 ask)
 His words: "6 jewels are also related to chronicle and can be farmed.. each of the 3 ancients can drop 2 jewels specifically
 always and locked per ancients ... webfetch it and add them also to the quick wins ... i want to know how and which of the
