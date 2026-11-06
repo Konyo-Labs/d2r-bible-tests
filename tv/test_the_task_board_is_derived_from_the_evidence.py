@@ -285,6 +285,17 @@ class TheLooksAreReadAndUnknownStaysUnknown(Fixture):
         self.assertIsNone(r["third"], "a cannot-tell row made v3800 third-eyed")
         self.assertIsNone(r["refuted"], "a cannot-tell row refuted the work - it judged nothing either way")
 
+    def test_a_headline_that_names_an_unreachable_eye_does_not_hide_a_verdict(self):
+        """REG-3246 (the #231 look at v3867): a row whose headline mentions an eye that was unreachable but which STATES a
+        verdict, or fails, is a look - skipping it let an older passing look decide the card."""
+        said = {"id": 9001, "created_at": _iso(T0), "updated_at": _iso(T0),
+                "body": "SECOND-EYE\nREG-3201: the eye was unreachable twice, then answered\nverdict: findings\nmodel: grok-cli"}
+        failed = {"id": 9002, "created_at": _iso(T0), "updated_at": _iso(T0),
+                  "body": "SECOND-EYE\nREG-3202: unreachable last night - still FAILS on the second look"}
+        self.assertFalse(TT.look_row(said, 231)["noLook"], "a stated verdict was hidden by an 'unreachable' headline")
+        self.assertFalse(TT.look_row(failed, 231)["noLook"], "a failing look was hidden by an 'unreachable' headline")
+        self.assertTrue(TT.look_row(COMMENTS[231][2], 231)["noLook"], "premise: an inline cannot-tell is still no look")
+
     def test_the_newest_look_decides_and_a_failing_one_refutes(self):
         looks, _gh, _p = self.looks()
         r = TT.resolve_key("REG-106", self.idx(), "v3801", looks)
@@ -552,6 +563,11 @@ class ThePageDrawsIt(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3246 - the headline alone makes a row no look again, so a stated verdict under an 'unreachable' headline is skipped",
+     "file": "tv/task_truth.py",
+     "find": "    if verdict:\n        no_look = bool(_NO_LOOK_RX.search(verdict))\n    else:\n        no_look = (not fail and not refutes) and bool(_NO_LOOK_RX.search(ab[\"line\"]))\n",
+     "replace": "    no_look = bool(_NO_LOOK_RX.search(ab[\"line\"]) or (verdict and _NO_LOOK_RX.search(verdict)))\n",
+     "matches": 1},
     {"why": "REG-3217 - a REG range on a card (REG-3193..3195) keys only its first id",
      "file": "tv/task_truth.py",
      "find": "                    got += list(range(lo + 1, hi + 1)) if hi - lo <= RANGE_MAX else [hi]\n",

@@ -442,10 +442,18 @@ def look_row(comment, issue):
     ab = about(body)
     vm = _VERDICT_RX.search(body[:LOOK_HEAD_CHARS * 2])
     verdict = vm.group(1).strip().lower()[:20] if vm else None
+    fail, refutes = bool(_HEAD_FAIL_RX.search(ab["line"])), refuted_in(body)
+    # REG-3246 (the #231 look at v3867) - A STATED VERDICT DECIDES, AND A LOOK THAT FAILS OR REFUTES JUDGED. The headline
+    # alone used to make a row "no look": "REG-3201: the eye was unreachable twice, then answered" with verdict: findings
+    # was skipped, and an OLDER passing look became the newest one - the card read looked-and-clear. The headline still
+    # decides a row that states no verdict and fails or refutes nothing ("verdict **cannot-tell**" inline, no "verdict:").
+    if verdict:
+        no_look = bool(_NO_LOOK_RX.search(verdict))
+    else:
+        no_look = (not fail and not refutes) and bool(_NO_LOOK_RX.search(ab["line"]))
     return {"id": str(comment.get("id")), "issue": int(issue), "at": at, "seat": seat,
-            "regs": ab["regs"], "vers": ab["vers"], "fail": bool(_HEAD_FAIL_RX.search(ab["line"])),
-            "refutes": refuted_in(body), "verdict": verdict,
-            "noLook": bool(_NO_LOOK_RX.search(ab["line"]) or (verdict and _NO_LOOK_RX.search(verdict)))}
+            "regs": ab["regs"], "vers": ab["vers"], "fail": fail,
+            "refutes": refutes, "verdict": verdict, "noLook": no_look}
 
 
 def load_looks(path):
