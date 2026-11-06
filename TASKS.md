@@ -1904,7 +1904,7 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3867** | `(this commit)` | v3867 — a slow Claude read is not a sign-out, proof stores fit 8 GB, the Grok CLI findings on later v3865 commits fixed |
+| **v3867** | `(this commit)` | v3867 — a slow Claude read is not a sign-out, proof stores fit 8 GB, per-lane CPU, the Grok CLI findings fixed |
 | **v3866** | `05384161` | v3866 — the task board is derived from the evidence, the second-eye gate is armed again, and the third eye findings are fixed |
 | **v3865** | `b0f7bc55` | v3865 — a version is pre-flighted on this PC before GitHub grades it, and a dispatched proof run reaches its banked proofs |
 | **v3864** | `e21aa5ea` | v3864 — the integration chain lands, Mule 2 is named, the d2jsp desk keeps its history, GitHub proves faster |

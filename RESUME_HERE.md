@@ -6,7 +6,7 @@
 | | |
 |---|---|
 | version stamp | v3867 |
-| gates registered | 1615 *(when this was written — ask run_gates for now)* |
+| gates registered | 1616 *(when this was written — ask run_gates for now)* |
 
 ⚠ **HEAD, origin/main, what is unpushed and whether the tree is clean are NOT written here.** A file inside a commit cannot name that commit, and the push always runs after the bump, so this block was wrong about all four on every ship (#164). Ask git, now:
 
@@ -14,7 +14,7 @@
 
 ⚠ **Nothing has shipped until `origin/main` equals `HEAD`.** Verify BY THE REF (`git fetch -q origin && git rev-parse --short origin/main`), never by a push's exit code — `git push | tail` reports tail's status.
 
-*Derived 2026-11-06 04:12 by `tv/resume_state.py`. Everything outside these markers is narrative a machine cannot measure, written by hand.*
+*Derived 2026-11-06 05:17 by `tv/resume_state.py`. Everything outside these markers is narrative a machine cannot measure, written by hand.*
 
 <!-- END DERIVED -->
 
