@@ -92,7 +92,7 @@ if sys.platform == "win32":
         except Exception:
             pass
 
-VERSION = "v3868"   # Second Eye Answered
+VERSION = "v3869"   # Every Place
 HERE   = os.path.dirname(os.path.abspath(__file__))
 FRAMES = os.environ.get("TV_FRAMES_DIR") or os.path.join(HERE, "frames")   # v752 — replay feeds its own watch dir
 

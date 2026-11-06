@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3868",
+  "ver": "v3869",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3868: the second eye findings on v3867 fixed - diagnoses land, the census and pruned frames honest, per-lane CPU on Windows",
+  "note": "v3869: Quick wins names the 1st-4th best places for each early unique, by fewest runs, on silospen numbers",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
