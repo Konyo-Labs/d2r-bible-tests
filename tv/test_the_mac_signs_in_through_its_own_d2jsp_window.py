@@ -54,6 +54,20 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
         with open(os.path.join(self.root, "Default", "Preferences"), encoding="utf-8") as fh:
             self.assertEqual(json.load(fh).get("other"), 7, "seeding wiped what Chrome keeps there")
 
+    def test_a_session_that_is_not_a_dict_is_replaced_not_a_crash(self):
+        """REG-3282 (the Grok CLI on v3872) - "session": "1" raised AttributeError out of the seed and the doctor."""
+        d = os.path.join(self.root, "Default")
+        os.makedirs(d)
+        for bad in ("1", [1], 7):
+            with open(os.path.join(d, "Preferences"), "w", encoding="utf-8") as fh:
+                json.dump({"session": bad, "other": 3}, fh)
+            self.assertFalse(D.session_restores({"session": bad}))
+            self.assertTrue(D.seed_login_profile(self.root), "a %r session made the seed fail" % (bad,))
+            with open(os.path.join(d, "Preferences"), encoding="utf-8") as fh:
+                prefs = json.load(fh)
+            self.assertTrue(D.session_restores(prefs), "a %r session was not replaced by the seed" % (bad,))
+            self.assertEqual(prefs.get("other"), 3)
+
     def test_the_opener_starts_a_separate_chrome_on_the_own_profile(self):
         seen = []
 
@@ -112,10 +126,20 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3282 - a session value that is not a dict crashes the seed (and the doctor)",
+     "file": "tv/d2jsp_chrome.py",
+     "find": "        if not isinstance(prefs.get(\"session\"), dict):\n            prefs[\"session\"] = {}",
+     "replace": "        if False:\n            prefs[\"session\"] = {}",
+     "matches": 1},
+    {"why": "REG-3282 - the predicate reads a non-dict session as restoring",
+     "file": "tv/d2jsp_chrome.py",
+     "find": "    return isinstance(sess, dict) and sess.get(\"restore_on_startup\") == 1\n",
+     "replace": "    return bool(sess)\n",
+     "matches": 1},
     {"why": "#87 - the own profile forgets its session: the sign-in's session cookie dies with the window",
      "file": "tv/d2jsp_chrome.py",
-     "find": "        prefs.setdefault(\"session\", {})[\"restore_on_startup\"] = 1\n",
-     "replace": "        prefs.setdefault(\"session\", {})\n",
+     "find": "        prefs[\"session\"][\"restore_on_startup\"] = 1\n",
+     "replace": "        prefs[\"session\"]\n",
      "matches": 1},
     {"why": "#87 - reads ask his Chrome first and the copy d2jsp turns away wins",
      "file": "tv/d2jsp_chrome.py",

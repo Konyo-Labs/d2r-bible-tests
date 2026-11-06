@@ -384,6 +384,13 @@ class TheGrokCliOnREG3207(unittest.TestCase):
                          "the one trim after the keep is the only one that could have taken it: %r" % g)
         g = self._judge("reel_A/frame_12.jpg", [keep], reaps=[{"ts": DELETED, "reel": "reel_A", "removed": True}])
         self.assertIsNone(g["ts"], "a whole-reel reap before the keep took its date: %r" % g)
+        # REG-3283 (the Grok CLI on v3872) - a keep with no date protected nothing: the omitting trim still dated the frame
+        undated = dict(keep, deletedTs=None)
+        g = self._judge("reel_A/frame_12.jpg", [omit, undated])
+        self.assertIsNone(g["ts"], "a trim that kept it at an unknown time let an omitting trim date it: %r" % g)
+        self.assertIn("carries no date", g["words"])
+        g = self._judge("reel_A/frame_12.jpg", [omit])
+        self.assertEqual(g["ts"], DELETED, "premise: with no keep at all the one omitting trim dates it")
 
     def test_a_refusal_says_when(self):
         g = self._judge("reel_A/%d.jpg" % (DELETED - 60000),
@@ -394,10 +401,15 @@ class TheGrokCliOnREG3207(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3283 - a keep with no date protects nothing and an omitting trim dates the frame",
+     "file": "tv/read_pictures.py",
+     "find": "        if undated_keep and (len(events[i]) < 5 or events[i][4] != \"named\"):\n",
+     "replace": "        if False:\n",
+     "matches": 1},
     {"why": "REG-3252 - a trim before the one that KEPT the frame dates it again",
      "file": "tv/read_pictures.py",
-     "find": "    alive = max([t for t in kept_at if t] or [0])\n    if alive:\n",
-     "replace": "    alive = max([t for t in kept_at if t] or [0])\n    if False:\n",
+     "find": "    undated_keep = any(not t for t in kept_at)\n    if alive:\n",
+     "replace": "    undated_keep = any(not t for t in kept_at)\n    if False:\n",
      "matches": 1},
     {"why": "v3868 - a frame with no capture time is dated on its reel's first trim again",
      "file": "tv/read_pictures.py",

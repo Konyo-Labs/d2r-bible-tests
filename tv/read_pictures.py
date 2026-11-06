@@ -241,6 +241,9 @@ def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
             events.append((t, "released", "the retention lane",
                            "released with its reel on %s (%s)" % (_when(tb.get("deletedTs")), tb.get("why") or "retention")))
     alive = max([t for t in kept_at if t] or [0])
+    # REG-3283 (the Grok CLI on v3872) - a trim that KEPT it but carries no date proves the frame outlived SOME trim, at a
+    # time nobody can place: no omitting trim may then date it (the keep may have come after it), so the date is UNKNOWN
+    undated_keep = any(not t for t in kept_at)
     if alive:
         # REG-3252 (the Grok CLI on REG-3239, #231 6680105032) - A TRIM THAT KEPT IT PROVES IT WAS STILL ON DISK THEN, so
         # no deleter stamped at or before the latest keep took it. Only the omitting trims were weighed, so trim 1 (omits)
@@ -267,6 +270,11 @@ def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
                        words="%s - which of its trims took it cannot be told: its name carries no capture time" % (
                            "released with its reel by the retention lane" if code == "released"
                            else "taken with its reel by the recorder's disk-floor reaper"))
+        if undated_keep and (len(events[i]) < 5 or events[i][4] != "named"):
+            out.update(ts=None, when=None,
+                       words="%s - a trim that KEPT it carries no date, so whether this one came after it cannot be told"
+                             % ("released with its reel by the retention lane" if code == "released"
+                                else "taken with its reel by the recorder's disk-floor reaper"))
         if unread:
             # v3868 (the Grok CLI on REG-3207) - an unreadable record may hold an EARLIER deleter: said, never hidden
             out["words"] += " (%s could not be read, so an earlier deleter cannot be ruled out)" % ", ".join(unread)

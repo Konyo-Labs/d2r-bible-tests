@@ -11223,7 +11223,7 @@ def _check_the_macs_own_d2jsp_window_keeps_its_session():
         return MISSING, "the console's own d2jsp profile has no Preferences, so a sign-in there dies with the window"
     except (OSError, ValueError) as e:
         return UNKNOWN, "the console's own d2jsp profile settings would not read (%s)" % type(e).__name__
-    if ((prefs.get("session") or {}) if isinstance(prefs, dict) else {}).get("restore_on_startup") != 1:
+    if not dj.session_restores(prefs):         # REG-3282 - the seed's own predicate, safe on any shape
         return MISSING, ("the console's own d2jsp profile no longer continues where it left off, so the sign-in's session "
                          "cookie dies when that window closes")
     return OK, "the D2JSP lamp opens the console's own d2jsp window, and that profile keeps its sign-in when it closes"

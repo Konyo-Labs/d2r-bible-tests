@@ -75,6 +75,14 @@ def login_profile_dir(platform=None, env=None):
     return None
 
 
+def session_restores(prefs):
+    """#87 / REG-3282 - does this profile's Preferences continue where it left off (so a session cookie is kept)? -> bool.
+    One predicate for the seed and the doctor. A `session` that is not a dict ("1", a list - the Grok CLI on v3872) reads
+    False, never an AttributeError out of either."""
+    sess = prefs.get("session") if isinstance(prefs, dict) else None
+    return isinstance(sess, dict) and sess.get("restore_on_startup") == 1
+
+
 def seed_login_profile(root):
     """#87 - a profile this console owns KEEPS its session: Chrome writes session-only cookies to its cookie file only
     when the profile continues where it left off, and a sign-in whose session cookie lives only in memory is lost when
@@ -90,9 +98,11 @@ def seed_login_profile(root):
             prefs = {}
         if not isinstance(prefs, dict):
             prefs = {}
-        if ((prefs.get("session") or {}).get("restore_on_startup")) == 1:
+        if session_restores(prefs):
             return True
-        prefs.setdefault("session", {})["restore_on_startup"] = 1
+        if not isinstance(prefs.get("session"), dict):
+            prefs["session"] = {}          # REG-3282 - a session that is not a dict is replaced, never indexed
+        prefs["session"]["restore_on_startup"] = 1
         tmp = p + ".tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
             json.dump(prefs, fh)
