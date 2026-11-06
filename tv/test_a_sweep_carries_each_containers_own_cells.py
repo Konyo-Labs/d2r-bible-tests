@@ -81,7 +81,8 @@ class TheSweepCarriesEachContainersOwnCells(unittest.TestCase):
             src = fh.read()
         code = re.sub(r"(?m)^\s*#.*$", "", src)
         own = "_oc2, _counted = _own_panel_cells(_vc2, p, surface) if _vc2 else (None, None)"
-        call = "_cl = _vault_retro().container_look(p, surface, _oc2, _counted)"
+        # REG-3248 (#67) - the call carries the READ's tab and page: the sweep's surface names no tab
+        call = '_cl = _vault_retro().container_look(p, surface, _oc2, _counted, tab=_r.get("tab"), page=_r.get("page"))'
         self.assertEqual((code.count(own), code.count(call)), (1, 1), "the sweep no longer keeps the counted panel's cells")
         self.assertLess(code.index(own), code.index(call))
         self.assertEqual(code.count('prop["containers"] = _vault_retro().newest_container_looks(_containers)'), 1,
@@ -91,8 +92,8 @@ class TheSweepCarriesEachContainersOwnCells(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3104 - a shared tab's look is filed as the personal stash (a page leak)",
      "file": "vault_retro.py",
-     "find": '    tab = {"shared": "shared", "personal": "stash"}.get(s)          # a "stash" surface named no tab: UNKNOWN\n',
-     "replace": '    tab = {"shared": "stash", "personal": "stash", "stash": "stash"}.get(s)\n',
+     "find": '    tab = {"shared": "shared", "personal": "stash"}.get(s) or tab_named   # a "stash" surface names no tab: the read\'s, or UNKNOWN\n',
+     "replace": '    tab = {"shared": "stash", "personal": "stash", "stash": "stash"}.get(s) or tab_named\n',
      "matches": 1},
     {"why": "REG-3104 - an unread panel is reported empty",
      "file": "vault_retro.py",
@@ -111,7 +112,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3104 - the sweep keeps no container look",
      "file": "control_app.py",
-     "find": "                        _cl = _vault_retro().container_look(p, surface, _oc2, _counted)\n",
+     "find": "                        _cl = _vault_retro().container_look(p, surface, _oc2, _counted, tab=_r.get(\"tab\"), page=_r.get(\"page\"))   # REG-3248 (#67)\n",
      "replace": "                        _cl = None\n",
      "matches": 1},
 ]

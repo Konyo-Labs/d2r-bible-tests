@@ -7393,7 +7393,13 @@ def _oneshot_inner(ap, model, timeout=90, prompt=None, raw_json=False):
 # with nothing; the vault side recorded only a timestamp, which makes its seal permanent however much
 # the reader improves. That is the same "a stale verdict made permanent" defect v1830 fixed on the
 # other lane, still live on this one. BUMP THIS WHENEVER VAULT_READ_PROMPT CHANGES.
-VAULT_PROMPT_VER = "vp-reg2915"   # REG-2915 (#158.7) — each tooltip-read item's tooltip box ("tip") is asked; bump whenever VAULT_READ_PROMPT changes
+VAULT_PROMPT_VER = "vp-reg3248"   # REG-3248 (#67) — the highlighted stash TAB and a shared tab's page are asked; bump whenever VAULT_READ_PROMPT changes
+#: REG-3248 (#67, his call 2026-11-06 07:10 Israel: "the vault reader names the tab, and the reels are re-read with paid
+#: Claude reads") - a witness recorded session, frame, point and cell but NOT which stash tab the cell was on, so on his
+#: Mac 11 stash cells were claimed by two or three owned names (stash:c6r3 Blood Finger and Doom Grip inside ONE session):
+#: a missing key dimension, not two owners. The sweep's surface never names one (OWNERSHIP_SURFACES has "stash", not
+#: personal / shared), so only the read can. This version ADDS tab and page and is DELIBERATELY NOT in
+#: VAULT_PROMPT_ANSWERS_SAME_AS: its seals do not stand, every vault reel is re-read once, and its witnesses gain their tab.
 #: v3554 — HIS RULING (2026-10-01, "thats even better"): points are asked FROM NOW ON, no re-read of old footage. vp3554
 #: only ADDED each item's point; the name, kind, count, sockets, eth, quality and throw-out are asked exactly as vp3368
 #: asked them. So a vp3368 seal still stands (control_app._vault_still_sealed) and its rows still count as this prompt's
@@ -7428,7 +7434,13 @@ VAULT_READ_PROMPT = (
     "Image {path} = a Diablo II Resurrected (RotW mod) {surface} panel: a grid of item icons, some "
     "with a name label or a stack count.\n"
     "Reply with STRICT JSON only, no markdown, no prose:\n"
-    '{{"surface":"{surface}","items":[],"conf":0.0}}\n'
+    '{{"surface":"{surface}","tab":"personal|shared|runes|gems|materials|null","page":<int or null>,"items":[],"conf":0.0}}\n'
+    # REG-3248 (#67) - the TAB the panel shows, read off the tab row, so each item's cell is a cell OF A TAB
+    'tab = the stash TAB that is selected (highlighted) in the row of tabs along the top of the stash panel: personal, '
+    'shared, runes, gems or materials. null when no tab row is visible or you cannot tell which tab is selected. '
+    'page = for a shared tab ONLY, its position among the SHARED tabs counting from the left (1 = the first shared tab); '
+    'null for any other tab or when you cannot tell. Read both from the tab row alone - never from the items: a wrong '
+    'tab files his items on the wrong page, a null only costs a question.\n'
     # ── v2011 — `throwWhy` WAS IN THE PROSE AND NOWHERE IN THE SHAPE ──────────────────────────
     # The exact mirror of v1903, which found `throwOut` in the schema and nowhere in the prose. The
     # instruction below says "When you set it true, also give throwWhy = a short reason in your own
@@ -7845,6 +7857,10 @@ def claude_vault_read(image_path, surface, timeout=None):
     except Exception:
         conf = None
     answered = {"items": out, "conf": conf, "surface": surface, "xy": _xy_map}
+    # REG-3248 (#67) - the tab and a shared tab's page, passed RAW: vault_retro.read_tab is their one parser
+    for _tk in ("tab", "page"):
+        if d.get(_tk) is not None:
+            answered[_tk] = d.get(_tk)
     if d.get("eye"):
         answered["eye"] = d.get("eye")
     if d.get("backup"):

@@ -336,7 +336,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3867 - an empty-reel check that raises files the reel as 'no lane's queue holds it' again",
      "file": "tv/control_app.py",
-     "find": "                waits.setdefault(\"unknown\", []).append(rid)\n                unk.setdefault(\"unknown\", \"the empty-reel check could not be asked (%s)\" % type(_pe).__name__)\n                continue\n",
+     "find": "                waits.setdefault(\"unknown\", []).append(rid)\n                _uw = \"the empty-reel check could not be asked (%s)\" % type(_pe).__name__\n                if _uw not in unk.setdefault(\"unknown\", []):\n                    unk[\"unknown\"].append(_uw)\n                continue\n",
      "replace": "                empty = False\n",
      "matches": 1},
     {"why": "v3867 - the doctor counts an unasked delivery as 'no lane' and never says UNKNOWN",

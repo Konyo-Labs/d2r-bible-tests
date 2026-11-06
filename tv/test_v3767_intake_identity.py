@@ -254,8 +254,8 @@ class TestV3767IntakeIdentity(unittest.TestCase):
 RED_PROOF = [
     {"why": "The retro row drops the holder, so two mules on one cell become one unknown.",
      "file": "tv/vault_retro.py",
-     "find": '        for _vf in ("sockets", "eth", "quality", "promptVer", "point", "cell", "cellWhy", "holder"):   # v3767 - who holds it, and where',
-     "replace": '        for _vf in ("sockets", "eth", "quality", "promptVer", "point", "cell", "cellWhy"):   # v3767 - who holds it, and where',
+     "find": '        for _vf in ("sockets", "eth", "quality", "promptVer", "point", "cell", "cellWhy", "holder", "tab", "page"):   # v3767 - who holds it, and where; REG-3248 - on which tab',
+     "replace": '        for _vf in ("sockets", "eth", "quality", "promptVer", "point", "cell", "cellWhy", "tab", "page"):   # v3767 - who holds it, and where; REG-3248 - on which tab',
      "matches": 1},
     {"why": "The receipt look drops holder and cell.",
      "file": "bible.html",

@@ -227,8 +227,8 @@ RED_PROOF = [
     {
         "why": "the projection rebuilding the row from a closed field list is how conf, the witness id and the crop were each lost",
         "file": "tv/vault_retro.py",
-        "find": '        for _vf in ("sockets", "eth", "quality", "promptVer", "point", "cell", "cellWhy", "holder"):   # v3767 - who holds it, and where\n            if e.get(_vf) is not None:',
-        "replace": '        for _vf in ("sockets", "eth", "quality", "promptVer", "point", "cell", "cellWhy", "holder"):   # v3767 - who holds it, and where\n            if False:',
+        "find": '        for _vf in ("sockets", "eth", "quality", "promptVer", "point", "cell", "cellWhy", "holder", "tab", "page"):   # v3767 - who holds it, and where; REG-3248 - on which tab\n            if e.get(_vf) is not None:',
+        "replace": '        for _vf in ("sockets", "eth", "quality", "promptVer", "point", "cell", "cellWhy", "holder", "tab", "page"):   # v3767 - who holds it, and where; REG-3248 - on which tab\n            if False:',
         "matches": 1,
     },
     {

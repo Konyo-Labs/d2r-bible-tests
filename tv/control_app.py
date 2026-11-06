@@ -40859,7 +40859,7 @@ def _vault_sweep_run(hist_dir, limit, force=False, reel_dir=None):
                         # or the bag (as before) when that grid is not on the frame. `counted` travels.
                         _oc2, _counted = _own_panel_cells(_vc2, p, surface) if _vc2 else (None, None)
                         # REG-3104 (#158 P4) - the counted panel's own cells travel to the board, read or UNKNOWN
-                        _cl = _vault_retro().container_look(p, surface, _oc2, _counted)
+                        _cl = _vault_retro().container_look(p, surface, _oc2, _counted, tab=_r.get("tab"), page=_r.get("page"))   # REG-3248 (#67)
                         if _cl:
                             _containers.append(_cl)
                         if _oc2 is not None:

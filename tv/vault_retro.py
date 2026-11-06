@@ -461,6 +461,23 @@ def _box_of(v):
     return None
 
 
+def read_tab(tab, page):
+    """REG-3248 (#67) - the tab a vault read names, in the board's words. -> (location, page) where location is "stash"
+    (the personal stash), "shared" or None, and page is a shared tab's 0-based index (the board's own numbering, his
+    "Page 1" is 0) or None. Anything the reader did not say plainly is None: an unknown tab is asked about, never guessed."""
+    t = str(tab or "").strip().lower()
+    loc = {"personal": "stash", "stash": "stash", "shared": "shared"}.get(t)
+    pg = None
+    if loc == "shared" and not isinstance(page, bool):
+        try:
+            n = int(page)
+            if 1 <= n <= 9 and str(page).strip().lstrip("+") in (str(n), "%d.0" % n):
+                pg = n - 1
+        except (TypeError, ValueError):
+            pg = None
+    return loc, pg
+
+
 def place_on_grid(xy, xy_map, lane):
     """v3554 (#146 3b) — WHERE a vault look saw the item. -> {"point": [x, y] | None, "cell": str | None, "why": str | None}
 
@@ -1059,7 +1076,7 @@ def _witness_rows(evidence):
         #
         # `is not None`, never truthiness: eth=False and sockets=0 are ANSWERS, and `if e.get("eth")`
         # would throw both away as if the reader had said nothing. [[unknown-stays-unknown]]
-        for _vf in ("sockets", "eth", "quality", "promptVer", "point", "cell", "cellWhy", "holder"):   # v3767 - who holds it, and where
+        for _vf in ("sockets", "eth", "quality", "promptVer", "point", "cell", "cellWhy", "holder", "tab", "page"):   # v3767 - who holds it, and where; REG-3248 - on which tab
             if e.get(_vf) is not None:
                 r[_vf] = e.get(_vf)
         if e.get("cropFrom") is not None:   # REG-2915 - how the crop was cut (the read's tooltip box, or the frame difference)
@@ -2192,6 +2209,7 @@ def sweep(hist_dirs, sig=None, reader=None, classify=None, limit=None, resolve=N
                                               "nothing was invented for it" % (name, sid)})
                         continue
                     _lane_said = item["lane"]
+                    _rtab = read_tab(resp.get("tab"), resp.get("page"))   # REG-3248 (#67)
                     item["lane"], _pl = lane_by_point(item["lane"], item.get("xy"), resp.get("xy"))   # v3554 · REG-1911
                     # REG-2915 (#158.7) - THE CROP IS CUT FROM THE TOOLTIP BOX THE READ RETURNED. A read with no box behaves as
                     # before (the frame-difference crop, or why there is none) and says the box is UNKNOWN; never a
@@ -2224,6 +2242,9 @@ def sweep(hist_dirs, sig=None, reader=None, classify=None, limit=None, resolve=N
                              # v3554 (#146 3b) — WHERE THIS LOOK SAW IT: the frame point and its cell, or why
                              # there is none. In the literal, so the field census reads them like every other key.
                              "point": _pl["point"], "cell": _pl["cell"], "cellWhy": _pl["why"],
+                             # REG-3248 (#67) - WHICH TAB that cell is on, as the read named it (None: not said)
+                             "tab": _rtab[0] if item["lane"] == "stash" else None,
+                             "page": _rtab[1] if item["lane"] == "stash" else None,
                              # REG-1911 - what the reader SAID, kept beside where it was filed, when the two differ
                              "laneSaid": _lane_said if _lane_said != item["lane"] else None}
                     key = (item["name"], item["lane"])
@@ -2462,10 +2483,14 @@ def _verdict(totals, owned, unsure):
 _CONTAINER_GRIDS = {"stash": (10, 10), "shared": (10, 10), "inventory": (10, 4)}
 
 
-def container_look(frame_path, surface, occupancy, counted):
-    """One read frame's look at the panel whose cells were counted. -> dict | None (not a container panel)"""
+def container_look(frame_path, surface, occupancy, counted, tab=None, page=None):
+    """One read frame's look at the panel whose cells were counted. -> dict | None (not a container panel)
+
+    REG-3248 (#67) - `tab` / `page` are what the READ named (claude_vault_read passes them raw): the sweep's surface is
+    "stash" and names no tab, so the read's tab is the only one there is; a surface that does name one keeps it."""
     s = str(surface or "").strip().lower()
-    tab = {"shared": "shared", "personal": "stash"}.get(s)          # a "stash" surface named no tab: UNKNOWN
+    tab_named, page_named = read_tab(tab, page)
+    tab = {"shared": "shared", "personal": "stash"}.get(s) or tab_named   # a "stash" surface names no tab: the read's, or UNKNOWN
     if counted == "inventory":
         loc = "inventory"
     elif counted == "stash" or (occupancy is None and s in ("stash", "shared", "personal")):
@@ -2478,7 +2503,8 @@ def container_look(frame_path, surface, occupancy, counted):
     frame = os.path.basename(fp) or None
     m = re.match(r"^f_(\d{10,})", frame or "")
     out = {"session": session, "frame": frame, "capturedAt": int(m.group(1)) if m else None,
-           "location": loc, "page": None, "surface": s or None, "counted": counted or None,
+           "location": loc, "page": page_named if loc == "shared" else None,   # REG-3248 - the read's page, his call B lifted
+           "surface": s or None, "counted": counted or None,
            "grid": list(_CONTAINER_GRIDS.get(loc or "stash")), "occupied": None, "why": None}
     if not isinstance(occupancy, dict) or not occupancy.get("ok"):
         out["why"] = "the cells of this panel could not be read on this frame - UNKNOWN, never an empty panel"

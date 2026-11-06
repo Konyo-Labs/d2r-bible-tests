@@ -164,6 +164,7 @@
   "test_each_lane_says_its_cpu": 3.0,
   "test_a_store_keeps_each_input_once": 0.3,
   "test_quick_wins_ranks_every_place": 1.0,
+  "test_a_read_belongs_to_the_tab_it_was_seen_on": 1.0,
   "test_a_fleet_row_shows_whose_vault_how_old": 0.2,
   "test_a_foreign_proof_owes_a_clean_run_only_where_the_push_changed_its_law": 0.5,
   "test_a_foreign_world_does_not_overwrite_banked_stores": 0.1,

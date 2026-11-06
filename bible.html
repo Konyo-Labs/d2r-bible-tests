@@ -59036,6 +59036,22 @@ window.vaultAutoAssign = function(){
         var sid = String(w.session || w.reel || w.witness || '').replace(/#\d+$/, '');
         if (!sid || sid !== String(look.session)) return;
         if (typeof window._vaultLookCounts === 'function' && !window._vaultLookCounts(w, scored)) return;
+        /* REG-3248 (#67) - A READ BELONGS TO THE TAB IT WAS SEEN ON. A cell is a cell OF A TAB: on his Mac 11 stash cells
+           were claimed by two or three names (c6r3 Blood Finger + Doom Grip inside ONE session) because a session that showed
+           the personal stash AND a shared page laid both pages' reads on one container. A read that names its tab counts
+           only on that tab (and a shared read only on its page). A read from before the tab was asked counts when it was
+           made on this look's own frame, or when this session showed no other stash container - else it is ambiguous and
+           left out, and the look asks about the cells it cannot name rather than inventing a collision. */
+        if (loc !== 'inventory'){
+          var _wt = (typeof w.tab === 'string' && w.tab) ? w.tab.toLowerCase() : null;
+          if (_wt){
+            if (_wt !== loc) return;
+            if (loc === 'shared' && look.page != null && w.page != null && +w.page !== +look.page) return;
+          } else if (!(w.frame && look.frame && String(w.frame) === String(look.frame))){
+            var _sl = Array.isArray(look.sessionLocations) ? look.sessionLocations : null;
+            if (!_sl || _sl.length !== 1 || _sl[0] !== loc) return;
+          }
+        }
         var m = /^([a-z]+):c(\d+)r(\d+)$/i.exec(String(w.cell || ''));
         if (!m || !pre[m[1].toLowerCase()] || +m[2] >= dims[0] || +m[3] >= dims[1]) return;
         var k = nm + '|' + m[2] + '|' + m[3];
@@ -59188,7 +59204,16 @@ window.vaultAutoAssign = function(){
       : { refused: 'no-gate', why: 'the frame gate is not on this page - no look is assembled' };
     if (gate) { out.held = gate.why || gate.refused; return out; }
     var rows = [].concat(Array.isArray(p.items) ? p.items : [], Array.isArray(p.unsure) ? p.unsure : []);
+    /* REG-3248 (#67) - which stash containers each session showed: a read made before the tab was asked is certain of its
+       container only when its session showed one. Carried on the look, so a question asked from it keeps the answer. */
+    var _locs = {};
     looks.forEach(function(lk){
+      if (lk && lk.session && lk.location && lk.location !== 'inventory') (_locs[lk.session] = _locs[lk.session] || {})[lk.location + (lk.location === 'shared' ? ':' + lk.page : '')] = lk.location;
+    });
+    looks.forEach(function(lk0){
+      var _seen = _locs[lk0 && lk0.session] || {}, _ls = [];
+      Object.keys(_seen).forEach(function(k){ _ls.push(_seen[k]); });
+      var lk = Object.assign({}, lk0, { sessionLocations: _ls });   /* one entry per distinct container: two shared pages are two */
       var r = _flOne(lk, rows, null);
       if (r.stamped) out.stamped++;
       if (r.asked) out.asked++;
