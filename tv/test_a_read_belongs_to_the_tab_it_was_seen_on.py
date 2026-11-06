@@ -52,11 +52,10 @@ class TheReaderIsAskedTheTab(unittest.TestCase):
         self.assertIn('"page":<int or null>', p, "the template does not ask a shared tab's page")
         self.assertIn("counting from the left (1 = the first shared tab)", p, "the page's numbering is not stated")
 
-    def test_the_version_moved_and_old_seals_do_not_stand(self):
+    def test_the_version_moved_and_asks_the_tab(self):
         self.assertNotEqual(TD.VAULT_PROMPT_VER, "vp-reg2915", "the prompt changed and its version did not")
-        self.assertNotIn(TD.VAULT_PROMPT_VER, TD.VAULT_PROMPT_ANSWERS_SAME_AS)
-        self.assertNotIn("vp-reg2915", TD.VAULT_PROMPT_ANSWERS_SAME_AS,
-                         "the old reads still stand, so no reel is re-read and no witness gains its tab (his call: re-read)")
+        self.assertIn(TD.VAULT_PROMPT_VER, TD.VAULT_TAB_ASKED_BY, "the current reader is not marked as asking the tab")
+        self.assertNotIn("vp-reg2915", TD.VAULT_TAB_ASKED_BY, "an old reader is counted as having asked the tab")
 
     def test_the_read_passes_the_tab_through(self):
         from PIL import Image
@@ -71,6 +70,32 @@ class TheReaderIsAskedTheTab(unittest.TestCase):
                 mock.patch.object(TD, "_reader_choice", lambda *a, **k: "claude"):
             r = TD.claude_vault_read(f, "stash")
         self.assertEqual((r.get("tab"), r.get("page")), ("shared", 2), "the read's tab never left the reader: %r" % r)
+
+
+class OnlyReelsThatFoundItemsAreReRead(unittest.TestCase):
+    """His call was the re-read; the cost is his subscription. MEASURED 11-06: 99 seals, 66 took nothing - the tab cannot turn
+    "nothing here" into items, so those stand; a reel that FOUND items under a reader that never asked the tab reopens once."""
+
+    def setUp(self):
+        import control_app as CA
+        self.CA = CA
+        self.cur = TD.VAULT_PROMPT_VER
+
+    def test_a_reel_that_found_items_reopens_once(self):
+        self.assertFalse(self.CA._vault_still_sealed({"rows": 3, "promptVer": "vp-reg2915"}, self.cur),
+                         "a reel with items, read before the tab was asked, is not re-read - its witnesses never gain a tab")
+        self.assertTrue(self.CA._vault_still_sealed({"rows": 3, "promptVer": self.cur}, self.cur),
+                        "a reel re-read by the tab-asking reader reopened again - the re-read would never end")
+
+    def test_a_barren_reel_keeps_its_seal(self):
+        for v in ("vp-reg2915", "vp3554", "vp3368"):
+            self.assertTrue(self.CA._vault_still_sealed({"rows": 0, "promptVer": v}, self.cur),
+                            "a reel that found nothing under %s reopens for the tab question - paid reads for no item" % v)
+
+    def test_a_record_that_will_not_read_stays_sealed(self):
+        self.assertTrue(self.CA._vault_still_sealed(None, self.cur))
+        self.assertTrue(self.CA._vault_still_sealed({"rows": 2, "promptVer": "vp-reg2915"}, "vpSOMEOTHER"),
+                        "a caller asking about another reader reopened a reel")
 
 
 class OneParser(unittest.TestCase):
@@ -173,6 +198,14 @@ class TheBoardCountsAReadOnItsOwnTab(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3248 - a reel that found items is never re-read, so its witnesses never gain their tab", "file": "tv/control_app.py",
+     "find": "        return not _vault_tab_owed(rec, prompt_ver)   # REG-3248 (#67) - found items, never asked their tab: re-read ONCE\n",
+     "replace": "        return True\n",
+     "matches": 1},
+    {"why": "REG-3248 - every barren reel reopens for the tab question (paid reads for no item)", "file": "tv/tv_diablo.py",
+     "find": "VAULT_PROMPT_ANSWERS_SAME_AS = (\"vp3554\", \"vp3368\", \"vp-reg2915\")\n",
+     "replace": "VAULT_PROMPT_ANSWERS_SAME_AS = (\"vp3554\", \"vp3368\")\n",
+     "matches": 1},
     {"why": "REG-3248 - the prompt stops asking the tab", "file": "tv/tv_diablo.py",
      "find": "    '{{\"surface\":\"{surface}\",\"tab\":\"personal|shared|runes|gems|materials|null\",\"page\":<int or null>,\"items\":[],\"conf\":0.0}}\\n'\n",
      "replace": "    '{{\"surface\":\"{surface}\",\"items\":[],\"conf\":0.0}}\\n'\n",

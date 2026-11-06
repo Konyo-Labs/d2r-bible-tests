@@ -33402,7 +33402,7 @@ def _vault_still_sealed(rec, prompt_ver=None):
     if not isinstance(rec, dict):
         return True
     if (rec.get("rows") or 0) > 0:
-        return True
+        return not _vault_tab_owed(rec, prompt_ver)   # REG-3248 (#67) - found items, never asked their tab: re-read ONCE
     want = prompt_ver
     if want is None:
         try:
@@ -33414,6 +33414,23 @@ def _vault_still_sealed(rec, prompt_ver=None):
         return True       # cannot tell which reader is current -> change nothing
     # v3554 — HIS RULING: a seal by a reader whose answers still answer today's question stands (forward only)
     return str(rec.get("promptVer") or "") in (str(want),) + _vault_prompt_vers_same_as(want)
+
+
+def _vault_tab_owed(rec, prompt_ver=None):
+    """REG-3248 (#67, his call 2026-11-06: "the reels are re-read with paid Claude reads") - does a reel that FOUND items
+    owe one re-read so its witnesses gain the stash tab? True only when the current reader asks the tab
+    (tv_diablo.VAULT_TAB_ASKED_BY) and this seal was made by a reader that did not. -> bool (any doubt: False, sealed -
+    a record that will not read is never a licence to re-spend his subscription)"""
+    try:
+        import tv_diablo as _tvd
+        cur = str(getattr(_tvd, "VAULT_PROMPT_VER", "") or "")
+        asked = tuple(str(v) for v in (getattr(_tvd, "VAULT_TAB_ASKED_BY", ()) or ()))
+    except Exception:
+        return False
+    want = str(prompt_ver) if prompt_ver is not None else cur
+    if not want or want != cur or want not in asked:
+        return False
+    return str(rec.get("promptVer") or "") not in asked
 
 
 def _vault_prompt_vers_same_as(prompt_ver):

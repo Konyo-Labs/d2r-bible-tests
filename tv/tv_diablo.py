@@ -7406,7 +7406,14 @@ VAULT_PROMPT_VER = "vp-reg3248"   # REG-3248 (#67) — the highlighted stash TAB
 #: (the sockets/eth/quality doctor row). A prompt that changes the QUESTION lists nothing here. [[stale-reading]]
 #: REG-2915 (#158.7) - vp-reg2915 only ADDED the tooltip box ("tip"): every other key is asked exactly as vp3554 asked it, and
 #: vp3554 asked the same as vp3368. Its seals stand; the box (and its crop) comes from reads made from now on. [[stale-reading]]
-VAULT_PROMPT_ANSWERS_SAME_AS = ("vp3554", "vp3368")
+VAULT_PROMPT_ANSWERS_SAME_AS = ("vp3554", "vp3368", "vp-reg2915")
+#: REG-3248 (#67) - vp-reg3248 asks everything vp-reg2915 asked, plus the tab. So for a reel that FOUND NOTHING the old
+#: answer still answers (the tab cannot turn "nothing was here" into items) and that seal stands - the list above. A
+#: reel that FOUND items under a reader that never asked the tab is what his call re-reads: control_app._vault_tab_owed
+#: reopens it ONCE, and its new seal (a version in VAULT_TAB_ASKED_BY) stands for good. MEASURED 11-06: 99 seals, 66 took
+#: nothing; 17 reels hold stash witnesses of his owned items, 8 of them still on disk - a full re-read would have spent
+#: its reads on the barren 66 and gained no tab for anything.
+VAULT_TAB_ASKED_BY = ("vp-reg3248",)
 
 VAULT_READ_PROMPT = (
     # ── v2016 — THE VAULT READER WAS NEVER TOLD ABOUT THE HOVER TOOLTIP ──────────────────────
