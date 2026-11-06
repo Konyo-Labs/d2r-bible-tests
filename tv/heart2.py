@@ -3735,6 +3735,30 @@ def _store_locked(folder, say=None):
             _win_unlock(win)
 
 
+def _compact_inputs():
+    """v3867 - a json object_hook that stores each entry's `inputs` ONCE: every path string interned, and entries whose
+    input lists are equal share one list. -> hook(dict) -> dict. The bytes read and written do not change.
+
+    MEASURED: his Mac's .heart2_cache.json is 320 MB holding 7,489,763 input paths in 8,007 entries - about 2,000
+    distinct paths and 303 distinct lists. Loaded plain it is 1,392 MB resident; interned 702 MB; interned and shared
+    334 MB. His work ALT (8 GB, the game beside it) imported v3865's 22 shards with 783 MB free and the commit at 13.0 of
+    14.3 GB: 489 MB private, 15 MB of it resident, 19 proofs keyed a minute and a 9-hour ETA, every lock shut meanwhile.
+    ⚠ A shared list is shared: nothing may change an entry's inputs in place - replace the list, never append to it
+    (test_a_store_keeps_each_input_once pins that over tv/)."""
+    shared = {}
+
+    def hook(d):
+        v = d.get("inputs")
+        if type(v) is list and v:
+            t = tuple(sys.intern(x) if type(x) is str else x for x in v)
+            got = shared.get(t)
+            if got is None:
+                got = shared[t] = list(t)
+            d["inputs"] = got
+        return d
+    return hook
+
+
 def _read_store(path, valid=None):
     """-> (body, None); ({}, None) when the file is absent (nothing stored yet); (None, why) when it will not parse or
     `valid(body)` names what is wrong with it (without `valid`, anything but a JSON object is wrong)."""
@@ -3742,7 +3766,7 @@ def _read_store(path, valid=None):
         return {}, None
     try:
         with io.open(path, encoding="utf-8") as fh:
-            body = json.load(fh)
+            body = json.load(fh, object_hook=_compact_inputs())     # v3867 - each input stored once (see the hook)
     except Exception as _e:
         return None, "it would not parse (%s)" % type(_e).__name__
     bad = valid(body) if valid is not None else (None if isinstance(body, dict) else "it is not a JSON object")
