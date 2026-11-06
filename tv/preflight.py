@@ -93,6 +93,8 @@ def drives_browser(name, here=HERE, depth=2, _seen=None):
 def _registered(here=HERE):
     """v3866 - {gate name: (argv, cwd)} for every registered gate that is one python script and needs no app. -> dict
     ({} when the registry will not import - those gates then stay 'other', said in the summary)."""
+    if not os.path.isfile(os.path.join(here, "run_gates.py")):
+        return {}                         # REG-3299 - the registry is the one in THIS tree; a tree without one has none
     try:
         if here not in sys.path:
             sys.path.insert(0, here)
@@ -141,6 +143,25 @@ def select(costs, here=HERE, cap_s=CAP_S, _registry=None):
         else:
             out["run"].append(g)
     return out
+
+
+def uncosted(costs, here=HERE, _registry=None):
+    """REG-3299 (v3875's GitHub round) - A REGISTERED LAW WITH NO MEASURED COST WAS NEVER RUN HERE, AND THE PRE-FLIGHT SAID
+    GREEN. The population was tv/gate_costs.json, which lags the registry: 36 registered gates were in run_gates and not in
+    the table, test_every_picture_the_console_asks_for_is_shipped among them - it failed on this PC in 4 s and GitHub spent
+    a round finding it. A registered python gate the cost table has not measured yet runs here (bounded by LAW_TIMEOUT_S),
+    unless its script drives a browser. -> (names to run, {name: argv}, names that are GitHub's for the browser)"""
+    reg = _registry if _registry is not None else _registered(here)
+    run, argv, browser = [], {}, []
+    for g in sorted(set(reg) - set(costs or {})):
+        hit = reg[g]
+        script = os.path.splitext(os.path.basename(str(hit[0][1])))[0]
+        if drives_browser(script, here):
+            browser.append(g)
+        else:
+            run.append(g)
+            argv[g] = hit
+    return run, argv, browser
 
 
 def _law_env():
@@ -260,13 +281,20 @@ def anchors(here=HERE, _run=None):
 
 
 def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, version=None, _laws=None, _prove=None,
-              _anchors=None):
+              _anchors=None, _registry=None):
     """-> (exit code 0 green / 1 red / 2 unknown, [red lines])"""
     costs = read_costs(os.path.join(here, "gate_costs.json"))
     if not costs:
         say("preflight: UNKNOWN - tv/gate_costs.json would not read, so no law could be chosen")
         return 2, []
     s = select(costs, here, cap_s)
+    un_run, un_argv, un_browser = uncosted(costs, here, _registry=_registry)
+    s["run"] = s["run"] + un_run
+    s["argv"].update(un_argv)
+    s["browser"] = s["browser"] + un_browser
+    if un_run or un_browser:
+        say("preflight: %d registered law(s) have no measured CI cost yet - %d run here (bounded at %ds each), %d drive a "
+            "browser and are GitHub's" % (len(un_run) + len(un_browser), len(un_run), LAW_TIMEOUT_S, len(un_browser)))
     say("preflight: %d law(s) here (<= %gs on CI, %d of them by their registered command) · %d browser-driving, %d over "
         "the cap and %d that are not one python law (node, shell, the app) are GitHub's, not passed here"
         % (len(s["run"]), cap_s, len(s["argv"]), len(s["browser"]), len(s["slow"]), len(s["other"])))

@@ -61,7 +61,7 @@ COMMENT_ONLY_MISSING = {
 FLOORS = {"console-literal": (55, 40), "board-literal": (2694, 2000), "manifest": (639, 600), "art-props": (18, 15),
           "tz-zone-art": (11, 8), "craft-slots": (9, 9), "branch-emblems": (2, 2), "base-map": (23, 20),
           "gems": (35, 35), "tz-info": (31, 25), "tab-icons": (17, 15), "boss-portraits": (12, 10),
-          "console-tz-info": (31, 25)}
+          "console-tz-info": (31, 25), "qw-su-sprites": (10, 10)}
 
 
 class EveryPictureIsAFileThatShips(unittest.TestCase):
@@ -196,6 +196,21 @@ class TheGrokCliOnREG3206(unittest.TestCase):
 
 
 RED_PROOF = [
+    {'why': "REG-3298 - a Quick wins tile's superunique sprite is an art door the law does not know",
+     'file': 'tv/art_names.py',
+     'find': 'r"art/\' \\+ su :", "qw-su-sprites"),',
+     'replace': 'r"art/\' \\+ su :", None),',
+     'matches': 1},
+    {'why': 'REG-3298 - the Quick wins zone art is an art door the law does not know',
+     'file': 'tv/art_names.py',
+     'find': 'r"art/tz_\' \\+ slug \\+ \'\\.jpg\'", "tz-info"),',
+     'replace': 'r"art/tz_\' \\+ slug \\+ \'\\.jpg\'", None),',
+     'matches': 1},
+    {'why': 'REG-3298 - the superunique sprites are never read, so a missing .gif ships unseen',
+     'file': 'tv/art_names.py',
+     'find': '    f["qw-su-sprites"] = [v for v in _object_values(board, "var _QW_SU_ART = {") if re.match(_FILE + "$", v)]\n',
+     'replace': '    f["qw-su-sprites"] = []\n',
+     'matches': 1},
     {"why": "v3868 - a known door whose feed read nothing passes as ok again",
      "file": "tv/art_names.py",
      "find": "    blind = sorted(set(d[\"feed\"] for d in found[\"doors\"] if d[\"feed\"] and not found[\"feeds\"].get(d[\"feed\"])))\n",

@@ -77,6 +77,28 @@ class ItChoosesWhatThisPCMayRun(unittest.TestCase):
         placed = sorted(sum((v for k, v in s.items() if k != "argv"), []))
         self.assertEqual(placed, sorted(costs), "a gate was dropped or counted twice")
 
+    def test_a_registered_law_the_cost_table_never_measured_runs_here(self):
+        """REG-3299 (v3875's GitHub round) - the population was tv/gate_costs.json, which lags the registry: 36 registered
+        gates were never run here and the pre-flight still said GREEN; test_every_picture_the_console_asks_for_is_shipped
+        was one, red on this PC in 4 s, and GitHub spent a round on it. An uncosted registered law runs here; one whose
+        script drives a browser stays GitHub's."""
+        _w(self.d, "test_new_law", "import unittest\n")
+        reg = {"test_new_law": (["python3", os.path.join(self.d, "test_new_law.py")], None, ()),
+               "test_cheap": (["python3", os.path.join(self.d, "test_cheap.py")], None, ()),
+               "new_browser_gate": (["python3", os.path.join(self.d, "test_harness_board.py")], None, ())}
+        run, argv, browser = PF.uncosted(self.costs, self.d, _registry=reg)
+        self.assertEqual(run, ["test_new_law"], "a law the cost table already places was added twice, or the new one dropped")
+        self.assertEqual(argv["test_new_law"][0][1], os.path.join(self.d, "test_new_law.py"))
+        self.assertEqual(browser, ["new_browser_gate"], "an uncosted browser gate would run on his Mac")
+        with io.open(os.path.join(self.d, "gate_costs.json"), "w", encoding="utf-8") as fh:
+            json.dump({"test_cheap": 1.0}, fh)
+        seen, said = [], []
+        code, _r = PF.preflight(here=self.d, say=said.append, _laws=lambda n: (seen.extend(n) or []),
+                                _prove=lambda: ([], [], None), _anchors=lambda: (True, ""), _registry=reg)
+        self.assertIn("test_new_law", seen, "the pre-flight never ran a registered law the cost table has not measured")
+        self.assertNotIn("new_browser_gate", seen)
+        self.assertTrue(any("no measured CI cost" in l for l in said), said)
+
     def test_a_declared_skip_is_said_never_a_pass_or_a_red(self):
         _w(self.d, "skipper", "import sys\nprint('SKIPPED - no human-eyes ledger on this venue')\nsys.exit(1)\n")
         _w(self.d, "breaker", "import sys\nprint('it broke')\nsys.exit(1)\n")
@@ -171,6 +193,11 @@ class TheChangedLawsAreMeasuredFromWhatGitHubLastGraded(unittest.TestCase):
 
 
 RED_PROOF = [
+    {'why': 'REG-3299 - a registered law the cost table never measured is never run here again',
+     'file': 'tv/preflight.py',
+     'find': '    s["run"] = s["run"] + un_run\n',
+     'replace': '    s["run"] = s["run"]\n',
+     'matches': 1},
     {"why": "v3866 - a registered gate whose name is not its file's is never run here again (94 gates, two reds slipped)",
      "file": "tv/preflight.py",
      "find": "            hit = reg.get(g)\n",

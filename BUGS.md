@@ -21,6 +21,26 @@ The Grok CLI's backlog look at v3858 (#231 comment 6671667775, finding 2). Repro
 ### REG-3221 - A PEER'S JEWELS READ "NOT PUBLISHED" FROM A CACHED ROW (v3866, the #231 eye on v3861)
 The Grok CLI's backlog look at v3861 (#231 comment 6671668579, finding 1). Reproduced in the code: fleet_compare's v2814 rule ("an absence in a cached record is not an absence in the world" - one forced re-read before saying a peer has not reported) covered only the ledger's own mask. A cached row that held the uniques mask was never re-read, so when it predated the peer's colossal mask, _fleet_merge_colossal named the six jewels "not judged" as if the peer had never published them. Fix: the jewels' mask earns the same single forced read when the cached row lacks it (and no forced read happened for uniques); the uniques compare keeps the row it was made from. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (+1 case, red-proof PROVEN).
 
+### REG-3299 - THE PRE-FLIGHT SAID GREEN OVER 36 REGISTERED LAWS IT NEVER RAN: ITS POPULATION WAS THE COST TABLE, WHICH LAGS THE REGISTRY (v3875, GitHub's round)
+v3875's first GitHub round came back red on one law, test_every_picture_the_console_asks_for_is_shipped, which fails on this
+PC in 4 s - and the pre-flight had said "GREEN - 1477 law(s) ran clean" ten minutes earlier. tv/preflight.py chose its laws
+from tv/gate_costs.json, and a law is added to that table only after CI has timed it: measured, 36 registered gates were in
+run_gates and not in the table, every law written since the table was last refreshed. None of them ran here, and nothing
+said so. Now `preflight.uncosted()` adds every registered python gate the table has not measured: it runs here, bounded by
+LAW_TIMEOUT_S, unless its script drives a browser (GitHub's, his rule). The pre-flight says how many. Measured on the fix:
+32 run here (all 32 green with REG-3298 in, 21 s), 4 drive a browser. The registry is read from the tree being
+pre-flighted (a tree without run_gates.py has none). Law: test_a_version_is_preflighted_before_github_grades_it
+(+ test_a_registered_law_the_cost_table_never_measured_runs_here), red-proof PROVEN.
+
+### REG-3298 - v3874'S QUICK WINS TILES COMPOSED THREE ART PATHS THE PICTURE LAW HAD NEVER MET, SO IT ANSWERED UNKNOWN (v3875, GitHub's round)
+GitHub, agent suite, v3875: test_every_picture_the_console_asks_for_is_shipped FAILED - "unknown art door bible.html:70266
+art/tz_' + slug + '.jpg" and two at 70280. v3874's `_qwZoneArt` composes `art/tz_<slug>.jpg` from tzArtFor, and `_qwTile`
+composes `art/<BOSS_PORTRAIT>` and `art/<_QW_SU_ART>`; tv/art_names.py knew none of the three, so it could not say whether
+the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1271 names, 0 missing). Now the three are
+doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
+new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
+showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+
 ### REG-3288 - THE VERDICT ROW READ THE PARSER'S SAFE OVERRIDE AS THE PARSER DENYING ITS OWN ANSWER (v3875, his console's eagle row)
 Read off his Mac 11-06: "verdict matches the answer" MISSING - "2 of 1412 look(s) judged by v3376 store a verdict their own answer denies: v3377(stored findings, said clean), v3578(stored findings, said clean)". Re-judged today both still come out "findings": each answer states clean and carries a block the parser reads as a defect claim ("disagree", "fails"), and _verdict_for keeps "findings" over a stated "clean" on purpose - a declaration alone can never clear a real defect claim. The row compared the stored verdict with the stated one only. It now excuses exactly that documented direction (stated clean, stored findings, a claiming block) and says how many; a stated "findings" stored clean, or findings with no claim over a stated clean, still read MISSING. On this tree: 1412 looks, none contradicts itself, 2 kept as findings in the safe direction. Guard: tv/test_the_parsers_safe_override_is_not_a_contradiction.py.
 

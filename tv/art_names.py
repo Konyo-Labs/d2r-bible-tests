@@ -53,6 +53,11 @@ DOORS = (
     ("bible.html", r"art/' \+ pic\)", "boss-portraits"),
     ("bible.html", r"TZ_ART_BASE \+ 'tz_' \+ slug", "tz-info"),
     ("tv/control_ui.html", r"/art/tz_' \+ file \+ '\.jpg", "console-tz-info"),
+    # REG-3298 (v3875's GitHub round, the agent suite) - v3874's Quick wins tiles composed three art paths the law had
+    # never met, so the picture law answered UNKNOWN on GitHub while every name they ask for was in art/
+    ("bible.html", r"art/tz_' \+ slug \+ '\.jpg'", "tz-info"),                 # _qwZoneArt
+    ("bible.html", r"art/' \+ bp :", "boss-portraits"),                       # _qwTile, a boss with a portrait
+    ("bible.html", r"art/' \+ su :", "qw-su-sprites"),                        # _qwTile, a superunique's sprite
 )
 
 
@@ -161,6 +166,7 @@ def _feeds(board, console, manifest):
     f["tab-icons"] = [v for v in _object_values(board, "TAB_ICON = {") if re.match(_FILE + "$", v)]
     f["boss-portraits"] = [v for v in _object_values(board, "BOSS_PORTRAIT = {") if re.match(_FILE + "$", v)]
     f["console-tz-info"] = ["tz_%s.jpg" % k for k in sorted(_tz_keys(console))]
+    f["qw-su-sprites"] = [v for v in _object_values(board, "var _QW_SU_ART = {") if re.match(_FILE + "$", v)]
     return f
 
 
