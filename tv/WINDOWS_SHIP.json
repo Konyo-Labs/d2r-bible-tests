@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3875",
+  "ver": "v3876",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3875: a proof round cut only by its deadline is made up, prices measure themselves, held reels released, and 16 more",
+  "note": "v3876: Carries v3875. A law may declare its own proof cap. His 11-06 asks - farm places, Colossal jewels, sprites, Gull, rivers",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
