@@ -1,5 +1,13 @@
 [
   {
+    "ver": "v3871",
+    "date": "2026-11-06",
+    "items": [
+      "v3871 - a price check shows the price already researched in the console database, with its posts (REG-3249)",
+      "v3871 - a price read d2jsp turned away says so, never sign in first, while his Chrome is signed in (REG-3250)"
+    ]
+  },
+  {
     "ver": "v3870",
     "date": "2026-11-06",
     "items": [

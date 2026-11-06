@@ -2200,7 +2200,14 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
             opened = page
         if isinstance(opened, str) and opened and not _challenge_page(opened):
             page = opened
-    return 200, parse_public_quote(page, item, read_at, node_run=node_run)
+    out = parse_public_quote(page, item, read_at, node_run=node_run)
+    _r = (out or {}).get("reason") if isinstance(out, dict) else None
+    if _r == "need-login":
+        # REG-3250 (his check 2026-11-06 ~10:10: "im still signed in to d2jsp ... the lamp green is actually correct") -
+        # the cookie WAS read from his signed-in Chrome, so this is d2jsp turning away the console's COPY of that sign-in,
+        # never "sign in first": the page says so, and the lamp stays as it is.
+        out["copyRefused"] = True
+    return 200, out
 
 
 def open_quote_login_once():

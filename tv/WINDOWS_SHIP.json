@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3870",
+  "ver": "v3871",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3870: The vault reader names the stash tab and the shared page, so a cell belongs to one tab",
+  "note": "v3871: A price check shows the price already researched, with its posts, and says when d2jsp turned away the console copy of the sign-in",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

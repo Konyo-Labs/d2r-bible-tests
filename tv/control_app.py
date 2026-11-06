@@ -199,6 +199,22 @@ def _d2jsp_db_fold(reading):
         return priced
 
 
+def _d2jsp_db_view(item):
+    """REG-3249 (his call 2026-11-06: "price check just brings up the price of that item that was already ... researched")
+    - the item's STORED price and the posts behind it, READ-ONLY: nothing is folded or written. A DB that will not read is
+    UNKNOWN, never an empty price."""
+    import d2jsp_price_db as _PDB
+    path = os.path.join(_fixture_root_for_state(), "d2jsp_price_db.json")
+    with _D2JSP_DB_LOCK:
+        db = _PDB.load(path)
+    if db is None:
+        return {"unknown": "the price DB at this console would not read"}
+    now = time.time()
+    priced = _PDB.price(db, item, now)
+    priced["proof"] = _PDB.explain(db, item, now)
+    return priced
+
+
 def _fixture_root_for_state():
     """HERE, unless TV_HIST says this is a fixture's world — the v1867/v1869 rule, one call.
 
@@ -47385,7 +47401,7 @@ def status_payload():
         "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "proofRelease": dict(_PROOF_RELEASE), "ciWatch": dict(_CI_WATCH), "riverWarm": dict(_RIVER_WARM), "riverLocks": dict(_RIVER_LOCKS_SEEN), "repairBook": dict(_REPAIR_BOOK), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
         # #83 — the child supervisor's receipts (door / watchdog / RAM); the census itself is the doctor's row
         "childGuard": _child_guard_status(),
-        "ver": "v3870",
+        "ver": "v3871",
         # v3288 — WHICH QUESTION THE NUMBER ABOVE ANSWERS. `ver` is a literal compiled into the
         # module that is running; `moduleFreshness` says whether that module is still the file on
         # disk, measured from this module's OWN import rather than from a PID or a string compare.
@@ -50627,9 +50643,15 @@ class Handler(BaseHTTPRequestHandler):
             from urllib.parse import parse_qs, urlparse
             _item = (parse_qs(urlparse(self.path).query).get("item") or [""])[0]
             if _PDB.checks_running() is not False:
+                # his 10-31 ruling stands - a LIVE read never competes with a push; REG-3249: the stored price does not
+                # wait, it is a local read
+                try:
+                    _stored = _d2jsp_db_view(_item)
+                except Exception as _se:
+                    _stored = {"unknown": "the price DB would not read (%s)" % type(_se).__name__}
                 self._json(200, {"item": _item, "fg": None, "n": 0, "reason": "paused",
                                   "say": "paused while checks run", "posts": [], "low": None,
-                                  "high": None, "readAt": "", "board": 268})
+                                  "high": None, "readAt": "", "board": 268, "db": _stored})
                 return
             _code, _out = _d2jsp.d2jsp_quote(
                 _item, self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
