@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3869** | `(this commit)` | v3869 — Quick wins names the 1st-4th best places for each early unique, by fewest runs, on silospen numbers |
+| **v3870** | `(this commit)` | v3870 — The vault reader names the stash tab and the shared page, so a cell belongs to one tab |
+| **v3869** | `eca33ffc` | v3869 — Quick wins names the 1st-4th best places for each early unique, by fewest runs, on silospen numbers |
 | **v3868** | `b2fba5d8` | v3868 — the second eye findings on v3867 fixed - diagnoses land, the census and pruned frames honest, per-lane CPU on Windows |
 | **v3867** | `b87c5997` | v3867 — a slow Claude read is not a sign-out, proof stores fit 8 GB, per-lane CPU, the Grok CLI findings fixed |
 | **v3866** | `05384161` | v3866 — the task board is derived from the evidence, the second-eye gate is armed again, and the third eye findings are fixed |

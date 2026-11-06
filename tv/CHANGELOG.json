@@ -1,5 +1,15 @@
 [
   {
+    "ver": "v3870",
+    "date": "2026-11-06",
+    "items": [
+      "v3870 - the vault reader names the stash tab and a shared page, and a read counts only on its own tab (REG-3248, #67)",
+      "v3870 - every vault reel is re-read once, so the old sightings gain their tab (REG-3248, his call)",
+      "v3870 - a look whose headline names an unreachable eye still counts when it states a verdict (REG-3246)",
+      "v3870 - a station names every check that could not be asked, not only the first (REG-3247)"
+    ]
+  },
+  {
     "ver": "v3869",
     "date": "2026-11-06",
     "items": [
