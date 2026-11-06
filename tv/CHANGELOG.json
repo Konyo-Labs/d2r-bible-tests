@@ -6,7 +6,8 @@
       "v3867 - a Claude read that ran out of time is UNKNOWN and says it is not a sign-in problem, not disconnected (REG-3227)",
       "v3867 - signing Claude in again lights its lamp at once, before the next read (REG-3227)",
       "v3867 - the Claude lamp opens a sign-in only when a sign-in is what failed (REG-3227)",
-      "v3867 - a proof store keeps each input path once in memory - the ALT import paged for 9 hours on 8 GB (REG-3229)"
+      "v3867 - a proof store keeps each input path once in memory - the ALT import paged for 9 hours on 8 GB (REG-3229)",
+      "v3867 - an offline PC's Fleet box says its last report, never that its stations are draining now (REG-3230)"
     ]
   },
   {

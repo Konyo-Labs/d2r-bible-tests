@@ -28645,12 +28645,18 @@ function escC(s) {
        names itself here, with the owning lane's own reason; `none` is measured-and-flowing, a missing field is
        an older build and a null is an unreadable stamp log - both UNKNOWN, never "flowing". */
     var sk = (rv && typeof rv === 'object') ? rv.stuck : undefined;
-    if (_offS && (!rv || typeof rv !== 'object' || sk === undefined || sk === null || !Array.isArray(sk))) {
+    /* v3867 (the Grok CLI on REG-3198, #231 6674616420) - EVERY offline PC takes this branch. It took it only when the
+       last report carried no stuck list, so an offline PC whose last beacon held one painted the present-tense
+       "every station is draining", or a warn line in the stuck chip's red, while its row chip said offline. */
+    if (_offS) {
       out.push(_fleetPart('stuck', ['not read \u2014 offline since ' + _offS.since], {
                  why: 'this PC is offline, so whether a station is stuck there now is not read; its last report '
                     + ((!rv || typeof rv !== 'object' || sk === undefined) ? 'did not carry a stuck list (a build older than the field)'
-                       : (!rv.lanes || typeof rv.lanes !== 'object') ? 'carried no river - ' + _offS.riverTip
-                       : 'could not read its own river stamp log') }));
+                       : (sk === null || !Array.isArray(sk))
+                         ? ((!rv.lanes || typeof rv.lanes !== 'object') ? 'carried no river - ' + _offS.riverTip
+                            : 'could not read its own river stamp log')
+                       : sk.length ? ('named ' + sk.length + ' station(s) stuck then - not a reading of now')
+                       : 'named no station stuck then - not a reading of now') }));
     } else if (!rv || typeof rv !== 'object' || sk === undefined) {
       out.push(_fleetPart('stuck', ['UNKNOWN', 'an older build'], { unk: true,
                  why: 'this console does not report which stations are not draining (a build older than the field)' }));

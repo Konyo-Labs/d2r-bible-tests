@@ -107,7 +107,7 @@ def _box(row, now=NOW):
           "function escC(x){ return String(x).replace(/&/g,'&amp;').replace(/\"/g,'&quot;')"
           ".replace(/</g,'&lt;').replace(/>/g,'&gt;'); }\nvar esc = escC;\n%s\n%s\n"
           "var out = {}; _fleetSysParts(%s, %d).forEach(function (x) { out[x.k] = { t: String(x.t).replace(/\\u00a0/g, ' '),"
-          " unk: !!x.unk, warn: !!x.warn }; }); console.log(JSON.stringify(out));") % (
+          " unk: !!x.unk, warn: !!x.warn, why: String(x.why || '') }; }); console.log(JSON.stringify(out));") % (
         H._cut(src, H.WHY[0], H.WHY[1]), block, json.dumps(row), now)
     r = subprocess.run([H._need_node(), "-"], input=js, capture_output=True, text=True, timeout=30,
                        env=dict(os.environ, TZ="UTC"))
@@ -410,6 +410,21 @@ class AnOfflineRowIsSaidOffline(unittest.TestCase):
         online = dict(dean, presence={"state": "online", "online": True, "via": "console", "ageS": 60})
         self.assertTrue(_box(online)["river"]["unk"], "an online row with no river stopped saying UNKNOWN")
 
+    def test_an_offline_pc_whose_last_report_carried_a_stuck_list_is_still_offline(self):
+        """v3867 - the Grok CLI on REG-3198 (#231 6674616420): the box's offline branch ran only when the stuck field was
+        missing, null or not a list. An offline PC whose last beacon carried one painted the live "every station is
+        draining", or a warn line in the stuck chip's red, while its row said offline."""
+        for stuck, said in (([], "named no station stuck then"),
+                            ([{"station": "PRINTER", "n": 3, "oldestS": 30000, "why": "waits on the vault lane"}],
+                             "named 1 station(s) stuck then")):
+            row = self._dean({"lanes": {"ROUTED": 4}, "ageS": 30.0, "stuck": stuck,
+                              "heart": {"census": "fresh", "key": "ok", "blind": None}})
+            part = _box(row)["stuck"]
+            self.assertIn("offline since 23:33", part["t"], "an offline PC's stuck line read %r" % part["t"])
+            self.assertNotIn("draining", part["t"], "an offline PC said its stations are draining now")
+            self.assertFalse(part["warn"] or part["unk"], "an offline stuck line was a warning: %r" % part)
+            self.assertIn(said, part["why"])
+
     def test_the_red_proof_finds_match_once(self):
         for p in RED_PROOF:
             with io.open(os.path.join(ROOT, p["file"]), encoding="utf-8") as fh:
@@ -417,6 +432,11 @@ class AnOfflineRowIsSaidOffline(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3867 - the box's offline branch runs again only when the last report carried no stuck list",
+     "file": "tv/control_ui.html",
+     "find": "    if (_offS) {\n      out.push(_fleetPart('stuck', ['not read \\u2014 offline since ' + _offS.since], {\n",
+     "replace": "    if (_offS && (!rv || typeof rv !== 'object' || sk === undefined || sk === null || !Array.isArray(sk))) {\n      out.push(_fleetPart('stuck', ['not read \\u2014 offline since ' + _offS.since], {\n",
+     "matches": 1},
     {"why": "REG-3198 - 'computing' is counted as a read again, and the river waits a whole cadence",
      "file": "tv/control_app.py",
      "find": "    while _river_warm_computing(body):\n",
