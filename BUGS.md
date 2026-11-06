@@ -21,6 +21,23 @@ The Grok CLI's backlog look at v3858 (#231 comment 6671667775, finding 2). Repro
 ### REG-3221 - A PEER'S JEWELS READ "NOT PUBLISHED" FROM A CACHED ROW (v3866, the #231 eye on v3861)
 The Grok CLI's backlog look at v3861 (#231 comment 6671668579, finding 1). Reproduced in the code: fleet_compare's v2814 rule ("an absence in a cached record is not an absence in the world" - one forced re-read before saying a peer has not reported) covered only the ledger's own mask. A cached row that held the uniques mask was never re-read, so when it predated the peer's colossal mask, _fleet_merge_colossal named the six jewels "not judged" as if the peer had never published them. Fix: the jewels' mask earns the same single forced read when the cached row lacks it (and no forced read happened for uniques); the uniques compare keeps the row it was made from. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (+1 case, red-proof PROVEN).
 
+### REG-3305 - v3874'S QUICK WINS LAW READ A FIXED 200-CHARACTER WINDOW, AND THE WINDOW CENSUS WENT OVER ITS CEILING (v3875, GitHub's round)
+GitHub, agent suite (3), v3875: test_a_source_window_must_reach_its_subject FAILED - "fixed-size source windows rose to 45
+(ceiling 44)". Measured against origin/main, the one new window was test_quick_wins_shows_each_place_with_its_picture's
+`g[i:i + 200]` (v3874): a guess at how far the per-kill heading reaches. It now reads the heading element itself, both ends
+from the markup (`<div class="qw-also-h">` to its `</div>`); the census is 44 again. The pre-flight passed this law to GitHub
+because it costs 44 s there, over the 20 s cap.
+
+### REG-3304 - test_control PINNED THE OLD LETTER OF THE BEACON'S WRITE GATE, SO A BOUNDED WRITE READ AS AN UNBOUNDED ONE (v3875, GitHub's round)
+GitHub, agent suite (3) and every proof shard's clean run: test_control 1 failure of 2274 -
+TestV2283TheRosterMustNotSpendItselfToDeath.test_the_durable_row_is_BOUNDED_not_unconditional asserted the literal
+`if (material || ageS >= REFRESH_S) {`, and v3873's daily material cap (REG-3277) named that condition `writeNow`
+(`(material && !wOver) || ageS >= REFRESH_S`). The law held - more tightly - and the guard read its rename as the v2283
+quota death. It now pins the new condition and the `if (writeNow)` that gates the lastseen write (2 sites carry it, the
+lastseen one matches once, as before). Reproduced here by running that class alone (source reads only, no browser); green
+after. The shard's record kept only "FAILED (failures=1)" for a 2274-case suite, never the case's name: found through the
+agent suite's tail instead.
+
 ### REG-3299 - THE PRE-FLIGHT SAID GREEN OVER 36 REGISTERED LAWS IT NEVER RAN: ITS POPULATION WAS THE COST TABLE, WHICH LAGS THE REGISTRY (v3875, GitHub's round)
 v3875's first GitHub round came back red on one law, test_every_picture_the_console_asks_for_is_shipped, which fails on this
 PC in 4 s - and the pre-flight had said "GREEN - 1477 law(s) ran clean" ten minutes earlier. tv/preflight.py chose its laws

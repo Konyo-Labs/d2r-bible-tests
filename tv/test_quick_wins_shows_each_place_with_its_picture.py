@@ -144,7 +144,10 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         g = self.o["grid"]
         i = g.index('<div class="qw-also">')
         self.assertLess(g.index('<div class="qw-grid">'), i)
-        self.assertIn("priced per kill", g[i:i + 200])
+        # REG-3305 - the heading itself, both ends from the markup (a fixed 200-character window was a guess about its
+        # length, and test_a_source_window_must_reach_its_subject counted it: 45 over its ceiling of 44)
+        h = g.index('<div class="qw-also-h">', i)
+        self.assertIn("priced per kill", g[h:g.index("</div>", h)])
         self.assertIn("Normal The Cow King", g[i:])
         self.assertIn("art/hellbovine_graphic.png", g[i:], "the Cow King's row lost its picture")
         self.assertNotIn("Normal The Cow King", g[:i], "a per-kill place sat among the ranked rows")

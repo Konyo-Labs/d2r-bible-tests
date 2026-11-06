@@ -7109,14 +7109,17 @@ class TestV2283TheRosterMustNotSpendItselfToDeath(unittest.TestCase):
         than the law, and a name that states inverted behaviour has to be corrected rather than
         left to mislead the next reader. [[regression-guard]] section 4
         """
-        self.assertIn("if (material || ageS >= REFRESH_S) {", self.js,
+        # REG-3304 (v3875's GitHub round) - v3873's daily material cap (REG-3277) named the condition `writeNow`, and this
+        # pinned the old letter `if (material || ageS >= REFRESH_S) {`: red on GitHub over a law that still held. The law
+        # is the same - a material change OR the REFRESH_S cadence, and now a material write also stops at the day's cap.
+        self.assertIn("const writeNow = (material && !wOver) || ageS >= REFRESH_S;", self.js,
                       "the durable row is no longer bounded by REFRESH_S — it is either "
                       "unconditional (the v2283 quota death, ~2,160 writes/day) or back to "
                       "change-only (the v3390 frozen row)")
         # ⚠ TWO sites carry that condition now — presence AND lastseen. Pinning the bare line
         # would pass on the PRESENCE guard alone while lastseen was anything at all, so the
         # anchor includes the kv.put beneath it. Measured: bare line matches 2, this matches 1.
-        self.assertIn("if (material || ageS >= REFRESH_S) {\n"
+        self.assertIn("if (writeNow) {\n"
                       "      await kv.put('lastseen:' + machine", self.js,
                       "the REFRESH_S guard is on presence only; the durable row is not bounded "
                       "by it")
