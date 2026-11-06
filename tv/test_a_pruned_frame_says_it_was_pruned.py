@@ -378,7 +378,7 @@ class TheGrokCliOnREG3207(unittest.TestCase):
 RED_PROOF = [
     {"why": "v3868 - a frame with no capture time is dated on its reel's first trim again",
      "file": "tv/read_pictures.py",
-     "find": "        if filmed is None and (len(events[i]) < 5 or events[i][4] != \"named\"):\n",
+     "find": "        if filmed is None and (len(events[i]) < 5 or events[i][4] != \"named\") and len(unnamed) > 1:\n",
      "replace": "        if False:\n",
      "matches": 1},
     {"why": "v3868 - another reel's earlier trim wins for a path that names its reel",

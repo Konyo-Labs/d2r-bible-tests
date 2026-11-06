@@ -250,10 +250,12 @@ def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
         i = min(pool, key=lambda j: (events[j][0] is None, events[j][0] or 0, j))
         t, code, by, words = events[i][:4]
         out = {"code": code, "ts": t, "when": (_when(t) if t else None), "by": by, "words": words}
-        if filmed is None and (len(events[i]) < 5 or events[i][4] != "named"):
-            # v3868 (the Grok CLI on REG-3207) - A FRAME WITH NO CAPTURE TIME CANNOT BE DATED AGAINST A TRIM. The
-            # filmed-after guard never ran, so the reel's FIRST trim won even for a frame filmed after it. A reap that
-            # NAMES the frame is direct evidence and keeps its date.
+        unnamed = [e for e in events if len(e) < 5 or e[4] != "named"]
+        if filmed is None and (len(events[i]) < 5 or events[i][4] != "named") and len(unnamed) > 1:
+            # v3868 (the Grok CLI on REG-3207) - A FRAME WITH NO CAPTURE TIME CANNOT BE DATED AGAINST SEVERAL TRIMS.
+            # The filmed-after guard never ran, so the reel's FIRST trim won even for a frame filmed after it. One trim
+            # alone is the only deleter that could have taken it, so it keeps its date; a reap that NAMES the frame is
+            # direct evidence and keeps its date.
             out.update(ts=None, when=None,
                        words="%s - which of its trims took it cannot be told: its name carries no capture time" % (
                            "released with its reel by the retention lane" if code == "released"
