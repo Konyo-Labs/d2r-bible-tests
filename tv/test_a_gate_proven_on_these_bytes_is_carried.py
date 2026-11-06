@@ -1711,8 +1711,8 @@ RED_PROOF = [
     {
         "why": "REG-2293 r5: node's readFileSync is not traced, so a file only node read carries over an edit",
         "file": "gate_trace/node_trace.cjs",
-        "find": "  const R = (p) => note('R', p);\n",
-        "replace": "  const R = (p) => null;\n",
+        "find": "  const R = (p) => { note('R', p); base2('R', p); };\n",
+        "replace": "  const R = (p) => { base2('R', p); };\n",   # REG-3319 - the gate's half alone goes blind
         "matches": 1,
     },
     {

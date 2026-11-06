@@ -53,6 +53,18 @@ _READS = {
     # says no hello, and only the hello count can tell
     "hidden": ("import subprocess; subprocess.run([sys.executable, '-W', 'ignore', '-S', '-c', 'open(%r).read()' % "
                "os.path.join(here, 'page' + '.css')])\n"),
+    # REG-3319 - node children: the hook rides NODE_OPTIONS; a node that reads, one that does not, one without the hook
+    "node_never": "import subprocess, shutil; subprocess.run([shutil.which('node'), '-e', '1'], capture_output=True)\n",
+    "node_reads": ("import subprocess, shutil; subprocess.run([shutil.which('node'), '-e', "
+                   "'require(\"fs\").readFileSync(process.argv[1])', os.path.join(here, 'page' + '.css')], "
+                   "capture_output=True)\n"),
+    "node_bare": ("import subprocess, shutil; subprocess.run([shutil.which('node'), '-e', "
+                  "'require(\"fs\").readFileSync(process.argv[1])', os.path.join(here, 'page' + '.css')], "
+                  "env={'PATH': os.environ.get('PATH', '')}, capture_output=True)\n"),
+    "node_version": "import subprocess, shutil; subprocess.run([shutil.which('node'), '--version'], capture_output=True)\n",
+    "node_shell": ("import subprocess, shutil; subprocess.run([shutil.which('node'), '-e', "
+                   "'require(\"child_process\").execSync(\"cat \" + process.argv[1])', os.path.join(here, 'page' + '.css')], "
+                   "capture_output=True)\n"),
 }
 
 
@@ -90,6 +102,92 @@ class _Case(P3._Case):
         self.tree.files["tv/page.css"] = ".a { color: blue }   /* a one-line CSS edit */\n"
         H._TRACES.clear()                                 # the next push is another process
         return self.push(env=env)
+
+
+_NODE = shutil.which("node") or shutil.which("nodejs")
+_HOOK = os.path.join(HERE, "gate_trace", "node_trace.cjs")
+
+
+@unittest.skipUnless(_NODE and os.path.isfile(_HOOK), "no node here - the node half of the trace is not measured (UNMEASURED)")
+class ANodeChildIsTracedToo(_Case):
+    """REG-3319 (board #92 - his 11-06 'these shards and these tests need to be smooth and work fast'). A node child used
+    to be untraced (U), so every law that runs node kept the byte-for-byte key over its whole closure: 1,555 of the 4,067
+    proofs keyed on >1,500 files at 219a4846c had a node child and nothing else. node_trace.cjs now writes heart2's trace
+    too, and heart2 counts a hooked node child like a python child: it must say its own hello."""
+
+    def setUp(self):
+        super(ANodeChildIsTracedToo, self).setUp()
+        with io.open(_HOOK, encoding="utf-8") as fh:
+            self.tree.files["tv/gate_trace/node_trace.cjs"] = fh.read()
+        self.tree.files["tv/helper_p3.py"] += "DATA = 'data_p3.json'\n"
+        self.tree.files["tv/data_p3.json"] = '{"n": 1}\n'
+
+    def edit_then_push(self, how, path, body, env=None):
+        self.law(how)
+        H._TRACES.clear()
+        results, per, stopped, runs, said = self.push(env=env)
+        self.assertEqual((results, stopped), ({P3._GATE: H.PROVEN}, []), "\n".join(said))
+        self.tree.files[path] = body
+        H._TRACES.clear()
+        return self.push(env=env)
+
+    def test_a_node_child_that_never_opens_the_file_lets_it_go(self):
+        """★ THE POINT: the law runs node, node opens nothing of the tree - a CSS edit re-proves nothing"""
+        results, per, stopped, runs, said = self.cold_then_edit("node_never")
+        self.assertReused(runs, results, said, "an edit to a file no node or python run of the law opened")
+
+    def test_a_node_child_that_reads_the_file_re_proves(self):
+        """★ SOUNDNESS: node reads page.css through fs - its bytes stay a key input"""
+        results, per, stopped, runs, said = self.cold_then_edit("node_reads")
+        self.assertRan(runs, said, "an edit to a file a traced node child read")
+
+    def test_a_node_child_without_the_hook_drops_nothing(self):
+        """★ SOUNDNESS: a node started with a scrubbed env never loads the hook - it is untraced, nothing is dropped"""
+        results, per, stopped, runs, said = self.cold_then_edit("node_bare")
+        self.assertRan(runs, said, "an edit read by a node child the hook never reached")
+
+    def test_a_shell_started_by_node_drops_nothing(self):
+        """★ SOUNDNESS: node's execSync runs `cat` through a shell no hook is in"""
+        results, per, stopped, runs, said = self.cold_then_edit("node_shell")
+        self.assertRan(runs, said, "an edit read by a shell a node child started")
+
+    def test_node_version_reads_nothing(self):
+        """`node --version` exits before any preload says hello (REG-3127): it is pure, never an untraced child"""
+        results, per, stopped, runs, said = self.cold_then_edit("node_version")
+        self.assertReused(runs, results, said, "an edit beside a law that only asked node its version")
+
+    def test_once_a_node_ran_a_named_json_file_stays_a_byte_input(self):
+        """★ SOUNDNESS ON ANY NODE: a module loader may read an ES module's imports or a JSON module past fs, so after a
+        node child ran no JavaScript-family input is dropped - an edit to the named JSON re-proves, read or not"""
+        results, per, stopped, runs, said = self.edit_then_push("node_never", "tv/data_p3.json", '{"n": 2}\n')
+        self.assertRan(runs, said, "an edit to a JSON file beside a node child")
+
+    def test_without_a_node_the_same_json_file_is_keyed_by_name(self):
+        """the contrast: a law with no node child lets the same unread JSON go, so the rule is node's, not JSON's"""
+        results, per, stopped, runs, said = self.edit_then_push("never", "tv/data_p3.json", '{"n": 2}\n')
+        self.assertReused(runs, results, said, "an edit to an unread JSON file, no node in the run")
+
+    def test_a_round_says_why_a_law_kept_every_byte(self):
+        """REG-3319 - the round's RECORD line: which laws traced completely, and the CAUSE for the rest (here: the shell
+        child `cat`), so what keeps keys wide is measured, never estimated from source text"""
+        self.law("shell")
+        H._TRACES.clear()
+        self.push()
+        c = H._trace_why_census()
+        self.assertEqual((c["laws"], c["ok"]), (1, 0), c)
+        self.assertTrue(any(k.startswith("spawn cat") for k, _n in c["causes"]), "the cause is not named: %s" % c)
+        self.law("node_never")
+        H._TRACES.clear()
+        self.push()
+        c = H._trace_why_census()
+        self.assertEqual((c["laws"], c["ok"], c["causes"]), (1, 1, []), "a node-only law is not counted traced: %s" % c)
+
+    def test_an_edit_to_the_node_hook_re_proves(self):
+        """★ the hook decides what a key may drop: it is a byte input of every key, like the prover"""
+        hook = self.tree.files["tv/gate_trace/node_trace.cjs"]
+        results, per, stopped, runs, said = self.edit_then_push("node_never", "tv/gate_trace/node_trace.cjs",
+                                                                hook + "// an edit to the hook\n")
+        self.assertRan(runs, said, "an edit to node_trace.cjs")
 
 
 class ANamedFileTheLawNeverOpenedIsKeyedByName(_Case):
@@ -349,6 +447,48 @@ class ANamedFileTheLawNeverOpenedIsKeyedByName(_Case):
 
 RED_PROOF = [
     {
+        "why": "REG-3319 - the round's census names no cause: what keeps keys wide goes back to being estimated",
+        "file": "heart2.py",
+        "find": "                    if why is not None:\n                        why.add(rest[:60])\n",
+        "replace": "                    pass\n",
+        "matches": 1,
+    },
+    {
+        "why": "REG-3319 - node's reads never reach heart2's trace: a CSS edit a node child read reuses a PROVEN",
+        "file": "gate_trace/node_trace.cjs",
+        "find": "  const R = (p) => { note('R', p); base2('R', p); };\n",
+        "replace": "  const R = (p) => { note('R', p); };\n",
+        "matches": 1,
+    },
+    {
+        "why": "REG-3319 - every node child is called pure: one with no hook reads page.css and the edit reuses a PROVEN",
+        "file": "heart2.py",
+        "find": "            elif node_version_only(exe, argv):\n",
+        "replace": "            elif what in (\"node\", \"nodejs\"):\n",
+        "matches": 1,
+    },
+    {
+        "why": "REG-3319 - after a node ran, an unread JSON is dropped: a loader that reads past fs leaves a stale key",
+        "file": "heart2.py",
+        "find": "                  and not (node_ran and r.lower().endswith(_NODE_KEEP_EXT)))\n",
+        "replace": "                  )\n",
+        "matches": 1,
+    },
+    {
+        "why": "REG-3319 - the node hook is not a key input: an edit to what decides a drop serves every narrowed PROVEN",
+        "file": "heart2.py",
+        "find": "    for prover in (\"heart2.py\", \"law_widths.py\", os.path.join(\"gate_trace\", \"node_trace.cjs\")):\n",
+        "replace": "    for prover in (\"heart2.py\", \"law_widths.py\"):\n",
+        "matches": 1,
+    },
+    {
+        "why": "REG-3319 - a traced law run never arms NODE_OPTIONS: every node child stays untraced (narrowing lost)",
+        "file": "heart2.py",
+        "find": "                if os.path.isfile(_ntr) and \"node_trace.cjs\" not in str(env.get(\"NODE_OPTIONS\") or \"\"):\n",
+        "replace": "                if False:\n",
+        "matches": 1,
+    },
+    {
         "why": "v3796 node law red - the trace chains into a second gate_trace copy while one already runs",
         "file": "heart2.py",
         "find": "                                        and not (_ran and _gt(p))])",
@@ -400,8 +540,8 @@ RED_PROOF = [
     {
         "why": "REG-2640 - every named data file is keyed by name, read or not: a CSS edit the law reads reuses a PROVEN",
         "file": "heart2.py",
-        "find": "    return sorted(r for r in rels if r not in keep\n                  and r.rsplit(\"/\", 1)[-1] not in names)\n",
-        "replace": "    return sorted(r for r in rels if r not in keep)\n",
+        "find": "                  and r.rsplit(\"/\", 1)[-1] not in names\n",
+        "replace": "",
         "matches": 1,
     },
     {

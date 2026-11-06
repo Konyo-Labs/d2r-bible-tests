@@ -112,6 +112,32 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3319 - A NODE CHILD MADE EVERY LAW THAT RAN IT KEEP ITS 1,861-FILE KEY, SO ANY EDIT RE-PROVED THOUSANDS OF PROOFS (v3877, board #92 - his 11-06 "these shards and these tests need to be smooth and work fast")
+His words: "again 75min to push a full run? when only 1 proof is red?" MEASURED on v3876's banked round (219a4846c, 22
+shard caches, 9,163 PROVENs): 6,509 proofs (71%) are keyed on more than 1,500 files - a law that imports run_gates.py
+names all 1,633 law files through its registrations, so its closure is ~1,861 files (1,820 .py). The REG-2640 trace
+already keys an unopened named file by NAME, but only when every run of the law was traced; 4,067 of those proofs kept
+the byte-for-byte key because a run was not. Classified by the children their law file spawns (a static estimate - the
+trace never said why, see below): node only 1,555 proofs / 151 laws, none visible in the law file 1,106 / 150, git 289
+/ 21, node + Chrome 256 / 18, Chrome 253 / 35, the rest ~600. A node child was always `U` (untraced).
+NOW: tv/gate_trace/node_trace.cjs (the gate ledger's node hook since v3772) also writes heart2's trace when
+HEART2_TRACE_LOG is set - its hello (`H pid ppid`), every path read/written/stat'd by basename and real basename, every
+listing, `P` for a node or python child that inherits both traces, `A` for `node --version`, `U` for anything else (a
+shell, git, Chrome, an ES module entry point). heart2 arms NODE_OPTIONS with it for a traced law run and counts a hooked
+node child like a python child: it must say its own hello, or nothing is dropped. MEASURED before trusting it: on node
+24 the hook sees require()'d .js/.json, a dynamic import() and an ES module's static import; GitHub pins node 20, and a
+loader on some node version may read past fs - so once a node child ran, NO JavaScript-family input (.js .mjs .cjs
+.json .ts .tsx .wasm .node) is dropped, whatever the trace saw. The hook is a byte input of every key beside heart2.py
+(it decides what a key may drop). And the trace now SAYS why a law kept every byte: _trace_read records the cause, and
+every round prints "#42 RECORD REG-3319 trace: N of M law file(s) traced completely ... not traced because: spawn git
+xA; ..." - the next step of #92 (git, Chrome, heart2's own bytes in every key) is chosen from that line, not estimated.
+Laws: test_a_named_file_the_law_never_opened_is_keyed_by_name (+ ANodeChildIsTracedToo: a node that opens nothing lets
+the CSS go; one that reads it, one with no hook, a shell from node, all re-prove; node --version is pure; a named JSON
+stays a byte input once node ran, and is let go when only python ran; an edit to the hook re-proves; the census names
+`spawn cat` and calls a node-only law traced); red-proofs PROVEN. Re-aimed: the gate ledger's "node's readFileSync is
+not traced" proof (test_a_gate_proven_on_these_bytes_is_carried) now blinds only the gate half of R; REG-2640's own
+"names ignored" proof cuts only the names condition.
+
 ### REG-3318 - GITHUB MOVED UBUNTU-LATEST TO 26.04 AND PLAYWRIGHT 1.60 REFUSED TO INSTALL CHROMIUM THERE: v3876 WAS GREEN ON ITS ROUND AND PUBLISH COULD NOT DEPLOY IT (v3876 ship, 11-06)
 MEASURED 11-06 21:30-21:50Z on main 219a4846c: Publish's Smoke gate and Routines G, H, J, K and L each failed in their
 install step - "ERROR: Playwright does not support chromium on ubuntu26.04-x64", every job on runner image ubuntu-26.04

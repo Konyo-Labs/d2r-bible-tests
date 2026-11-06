@@ -2300,6 +2300,39 @@ def _h2_install():
         except Exception:
             return False
 
+    def _eget(src, k):
+        try:
+            v = src.get(k)
+        except Exception:
+            v = None
+        if v is None:
+            try:
+                v = src.get(k.encode())
+            except Exception:
+                v = None
+        return v.decode("utf-8", "replace") if isinstance(v, bytes) else (str(v) if v is not None else "")
+
+    def nodeish(exe, env, argv=None):
+        # REG-3319 - a node child that inherits node_trace.cjs (NODE_OPTIONS) and this same log says its own hello, so it is
+        # counted like a python child; one that does not inherit both is not traced (U), and the hello count is the check
+        try:
+            b = _base(str(_fspath(exe)))
+        except Exception:
+            return False
+        if b not in ("node", "nodejs"):
+            return False
+        src = env if env is not None else _o.environ
+        return "node_trace.cjs" in _eget(src, "NODE_OPTIONS") and _eget(src, "HEART2_TRACE_LOG") == log
+
+    def node_version_only(exe, argv):
+        # `node --version` exits before NODE_OPTIONS loads any preload (REG-3127): it reads nothing and never says hello
+        try:
+            b = _base(str(_fspath(exe)))
+            a = [str(_fspath(x)) for x in list(argv)[1:]] if isinstance(argv, (list, tuple)) else None
+        except Exception:
+            return False
+        return b in ("node", "nodejs") and a in (["--version"], ["-v"])
+
     # the process-table and clock tools a law asks about ITS OWN machine: none of them opens a file of the tree,
     # whatever it is handed (no shell, no interpreter, nothing that takes a path to read)
     _PURE = frozenset(("ps", "pgrep", "kill", "uname", "sysctl", "sw_vers", "true", "false", "sleep", "id", "whoami",
@@ -2377,12 +2410,17 @@ def _h2_install():
                 what = "?"
             if pyish(exe, args[3] if len(args) > 3 else None, argv):
                 emit("P", "spawn " + what)
+            elif node_version_only(exe, argv):
+                emit("A", "spawn " + what)      # REG-3319 - reads nothing; exits before any preload
+            elif nodeish(exe, args[3] if len(args) > 3 else None, argv):
+                emit("P", "spawn " + what)      # REG-3319 - a traced node child: counted, says its own hello
             elif what in _PURE and not _shell_ish(argv):
                 emit("A", "spawn " + what)      # reads no file of the tree, whatever its arguments
             else:
                 emit("U", "spawn " + what)
         elif ev == "os.exec":
-            emit("P" if pyish(args[0], args[2] if len(args) > 2 else None, args[1]) else "U", ev)
+            emit("P" if (pyish(args[0], args[2] if len(args) > 2 else None, args[1])
+                         or nodeish(args[0], args[2] if len(args) > 2 else None, args[1])) else "U", ev)
         elif ev == "os.posix_spawn":   # subprocess raises this too, after its own Popen event: never counted twice
             try:
                 what = _base(str(_fspath(args[0])))
@@ -2390,8 +2428,9 @@ def _h2_install():
                 what = "?"
             mine = getattr(busy, "popen", False)
             busy.popen = False
-            py = pyish(args[0], args[2] if len(args) > 2 else None, args[1])
-            if mine and (py or what in _PURE):
+            py = (pyish(args[0], args[2] if len(args) > 2 else None, args[1])
+                  or nodeish(args[0], args[2] if len(args) > 2 else None, args[1]))     # REG-3319
+            if mine and (py or what in _PURE or node_version_only(args[0], args[1])):
                 emit("p", ev + " " + what)          # its Popen line already counted it
             else:                                  # a direct os.posix_spawn: a python child is counted, all else U
                 emit("P" if py else "U", ev + " " + what)
@@ -2560,9 +2599,10 @@ def _trace_wanted(filename, env=None):
         return False
 
 
-def _trace_read(log, root_ppid, listed=None):
+def _trace_read(log, root_ppid, listed=None, why=None):
     """REG-2640 - one traced run's log. -> (basenames read or stat'd, complete: bool). REG-2944 - the full real path of
-    every directory the run listed is added to `listed` when a set is handed in."""
+    every directory the run listed is added to `listed` when a set is handed in. REG-3319 - and WHY a run was not
+    complete is added to `why` (the untraced child, a missing hello), so a round can say what keeps keys wide."""
     seen, hellos, root, py, untraced = set(), set(), False, 0, False
     try:
         with io.open(log, encoding="utf-8", errors="replace") as fh:
@@ -2580,6 +2620,8 @@ def _trace_read(log, root_ppid, listed=None):
                     py += 1
                 elif tag in ("p", "A"):
                     pass
+                elif tag == "N":                 # REG-3319 - a node child ran: no JavaScript-family input is dropped
+                    seen.add(_NODE_MARK)
                 elif tag == "L":                 # REG-2944 - a listing, by full path
                     if listed is not None:
                         listed.add(rest)
@@ -2587,18 +2629,53 @@ def _trace_read(log, root_ppid, listed=None):
                     untraced = True
                     _TRACE_WHY.append(rest[:60])
                     del _TRACE_WHY[:-200]
+                    if why is not None:
+                        why.add(rest[:60])
     except OSError:
+        if why is not None:
+            why.add("its trace log would not read")
         return seen, False
+    if why is not None:
+        if not root:
+            why.add("the law itself said no hello")
+        if len(hellos) < py:
+            why.add("a child said no hello")
     return seen, bool(root and not untraced and len(hellos) >= py)
 
 
-def _trace_record(filename, seen, ok, listed=None):
+def _trace_record(filename, seen, ok, listed=None, why=None):
     with _TRACE_LOCK:
         t = _TRACES.setdefault(filename, {"names": set(), "ok": True, "runs": 0})
         t["names"] |= seen
         t["ok"] = bool(t["ok"] and ok)
         t["runs"] += 1
+        if not ok:      # REG-3319 - why this law keeps its byte-for-byte key, for the round's RECORD line
+            t.setdefault("why", set()).update(why or ("UNKNOWN - no cause was read",))
         t.setdefault("listed", set()).update(listed or ())     # REG-2944 - every dir any traced run of it listed
+
+
+def _trace_why_census():
+    """REG-3319 - this process's traced law files: how many traced completely, and why the rest did not (per law file, a
+    cause counted once; 'spawn X' keeps the program's name). -> {"laws", "ok", "causes": [(cause, n)]} | None"""
+    with _TRACE_LOCK:
+        rows = [(bool(t.get("ok")) and t.get("runs", 0) > 0, set(t.get("why") or ())) for t in _TRACES.values()]
+    if not rows:
+        return None
+    causes = {}
+    for ok, why in rows:
+        if ok:
+            continue
+        for w in (why or {"UNKNOWN - no cause was read"}):
+            k = " ".join(str(w).split()[:3])
+            causes[k] = causes.get(k, 0) + 1
+    return {"laws": len(rows), "ok": sum(1 for ok, _w in rows if ok),
+            "causes": sorted(causes.items(), key=lambda kv: (-kv[1], kv[0]))}
+
+
+_NODE_MARK = "\x00node-ran"     # REG-3319 - a name no file has: "a node child of this law ran" (see _trace_unread)
+#: REG-3319 - what a node module loader may read past fs on some node version (an ES module's static imports, JSON
+#: modules, wasm): once a node child ran, these are never dropped, whatever the trace saw
+_NODE_KEEP_EXT = (".js", ".mjs", ".cjs", ".json", ".ts", ".tsx", ".wasm", ".node")
 
 
 def _trace_unread(filename, rels, keep):
@@ -2609,8 +2686,10 @@ def _trace_unread(filename, rels, keep):
         if not t or not t["ok"] or t["runs"] < 1:
             return []
         names = set(t["names"])
+    node_ran = _NODE_MARK in names
     return sorted(r for r in rels if r not in keep
-                  and r.rsplit("/", 1)[-1] not in names)
+                  and r.rsplit("/", 1)[-1] not in names
+                  and not (node_ran and r.lower().endswith(_NODE_KEEP_EXT)))
 
 
 # ══ REG-2944 (REG-2296 for the PROOF cache) — A LAW THAT LISTS A DIRECTORY IS KEYED BY WHAT ITS TRACED RUN LISTED ═════
@@ -2907,6 +2986,12 @@ def _run_gate_once(sandbox_tv, filename, timeout=180, extra=(), script=None, wid
                 os.close(_tfd)
                 env["PYTHONPATH"] = _tsite + ((os.pathsep + env["PYTHONPATH"]) if env.get("PYTHONPATH") else "")
                 env["HEART2_TRACE_LOG"], env["HEART2_TRACE_SITE"] = _tlog, _tsite
+                # REG-3319 - and a node child of the run loads node_trace.cjs, which writes this same log (one hook per
+                # process: an outer gate trace that already named it keeps its copy, and that copy sees this log too)
+                _ntr = os.path.join(sandbox_tv, "gate_trace", "node_trace.cjs")
+                _tenv["NODE_OPTIONS"] = env.get("NODE_OPTIONS")
+                if os.path.isfile(_ntr) and "node_trace.cjs" not in str(env.get("NODE_OPTIONS") or ""):
+                    env["NODE_OPTIONS"] = ('--require "%s"' % _ntr) + ((" " + env["NODE_OPTIONS"]) if env.get("NODE_OPTIONS") else "")
             except BaseException:             # REG-2640 - any setup failure: env restored, no log, nothing dropped
                 for _k, _v in _tenv.items():
                     if _v is None:
@@ -2944,11 +3029,15 @@ def _run_gate_once(sandbox_tv, filename, timeout=180, extra=(), script=None, wid
                 except OSError:
                     pass
             if _tlog is not None:             # REG-2640 - recorded on every exit; complete only if it ran out, unkilled
-                _tseen, _tok, _tls = set(), False, set()
+                _tseen, _tok, _tls, _twhy = set(), False, set(), set()
                 try:
-                    _tseen, _tok = _trace_read(_tlog, os.getpid(), listed=_tls)
+                    _tseen, _tok = _trace_read(_tlog, os.getpid(), listed=_tls, why=_twhy)
                 finally:
-                    _trace_record(filename, _tseen, bool(_tok and _tdone and _killed == []), listed=_tls)
+                    if not _tdone:
+                        _twhy.add("the run did not end on its own (timeout or a signal)")
+                    if _killed:
+                        _twhy.add("a child of the run was killed")
+                    _trace_record(filename, _tseen, bool(_tok and _tdone and _killed == []), listed=_tls, why=_twhy)
                     try:
                         os.unlink(_tlog)
                     except OSError:
@@ -4574,7 +4663,9 @@ def law_inputs(sandbox, filename, proofs, parsed=None, tracked=None, allow_listi
         if os.path.isfile(s):
             inputs.add(s)
         # absent: the sandbox never brought it, so the gate reads UNPROVABLE there and this proof is never PROVEN
-    for prover in ("heart2.py", "law_widths.py"):
+    # REG-3319 - the trace that decides what a key may drop is part of the prover: its node half (node_trace.cjs) is a
+    # byte input of every key beside heart2.py, so a change to what the hook sees re-proves every narrowed proof
+    for prover in ("heart2.py", "law_widths.py", os.path.join("gate_trace", "node_trace.cjs")):
         p = os.path.join(sandbox, prover)
         if os.path.isfile(p):
             inputs.add(p)
@@ -5567,7 +5658,8 @@ def _keep_for(sandbox, filename, pr):
     PROOF_NEEDS file and the prover. -> {repo-relative path}"""
     repo = os.path.dirname(os.path.abspath(sandbox))
     rel = lambda p: os.path.relpath(os.path.normpath(p), repo).replace(os.sep, "/")   # noqa: E731
-    keep = {rel(os.path.join(sandbox, "heart2.py")), rel(os.path.join(sandbox, "law_widths.py"))}
+    keep = {rel(os.path.join(sandbox, "heart2.py")), rel(os.path.join(sandbox, "law_widths.py")),
+            rel(os.path.join(sandbox, "gate_trace", "node_trace.cjs"))}   # REG-3319 - the node half of the trace
     tf = str(pr.get("file") or "") if isinstance(pr, dict) else ""
     if tf:
         keep.add(rel(resolve_proof_target(sandbox, tf)))
@@ -6580,6 +6672,13 @@ def _prove_push(have, say, stopped=None, cache=None, blank=None):
                 "banked%s" % (_tl["banked"], _tl["refused"],
                               (" - " + "; ".join("%s x%d" % kv for kv in list(_tl["why"].items())[:3])) if _tl["why"]
                               else ""))
+        _tw = _trace_why_census()
+        if _tw is not None:
+            say("  #42 RECORD REG-3319 trace: %d of %d law file(s) this run traced completely - their PROVENs may be keyed "
+                "by name; the rest keep every byte%s" % (_tw["ok"], _tw["laws"],
+                                                         (" - not traced because: " + "; ".join(
+                                                             "%s x%d" % kv for kv in _tw["causes"][:6])) if _tw["causes"]
+                                                         else ""))
         for _v in (_r["proveOnceViolations"] or [])[:6]:
             say("     ⚠ PROVE-ONCE VIOLATION: %s[%d] was banked for these exact bytes before this run began and ran "
                 "again (%s)" % (_v["g"], _v["i"], _v["a"]))
