@@ -178,9 +178,20 @@ jobs:
         timeout-minutes: 6
         run: npx playwright install chromium
       - name: OS deps for Chromium (best effort)
+        # REG-3279 - apt runs only when a downloaded browser is MISSING a library. MEASURED on v3872 (run 42200089396): shard
+        # 22's install-deps ran into this step's 5-minute bound (10:07:49 -> 10:13:01) while shard 14's whole setup took 75 s,
+        # and heart2's minute-55 deadline counts from job start - 5 of its 55 proving minutes went to apt, and its tail was cut
         timeout-minutes: 5
         continue-on-error: true
-        run: npx playwright install-deps chromium
+        run: |
+          miss=0; seen=0
+          for b in $(find "$HOME/.cache/ms-playwright" -type f \( -name chrome -o -name chrome-headless-shell \) 2>/dev/null); do
+            seen=$((seen+1)); if ldd "$b" 2>/dev/null | grep -q "not found"; then miss=$((miss+1)); fi
+          done
+          if [ "$seen" -gt 0 ] && [ "$miss" -eq 0 ]; then
+            echo "REG-3279: $seen browser binar(ies) link every library - no apt step"; exit 0; fi
+          echo "REG-3279: $miss of $seen browser binar(ies) miss a library (0 seen = UNKNOWN) - installing the OS deps"
+          npx playwright install-deps chromium
       - name: The run's one seed (REG-2961 + REG-3210, built by the seed job)
         # no seed built is a cold run, the same on every shard; a seed built and not fetched fails this shard LOUD, since
         # a shard that planned without it would cut another plan than its siblings (the fan-in refuses the set by digest)

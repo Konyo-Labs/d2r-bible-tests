@@ -275,7 +275,71 @@ class TheWorkflowCarriesIt(unittest.TestCase):
         self.assertLess(prove.index(line), prove.index("python3 -u tv/heart2.py --prove --push"))
 
 
+class TheAptStepRunsOnlyWhenNeeded(unittest.TestCase):
+    """REG-3279 - v3872's shard 22 spent its OS-deps step's whole 5 minutes in apt while its browsers needed nothing."""
+
+    def _script(self):
+        with io.open(os.path.join(ROOT, ".github", "workflows", "proof-keys-shards.yml"), encoding="utf-8") as fh:
+            y = fh.read()
+        i = y.index("      - name: OS deps for Chromium (best effort)")
+        j = y.index("\n      - name:", i + 10)
+        step = y[i:j]
+        body = step[step.index("        run: |\n") + len("        run: |\n"):]
+        return "\n".join(l[10:] for l in body.split("\n"))
+
+    def _run(self, ldd_says_missing, browsers=2):
+        if not shutil.which("bash"):
+            self.skipTest("no bash - this case runs the step's own script")
+        t = tempfile.mkdtemp()
+        try:
+            home, binp = os.path.join(t, "home"), os.path.join(t, "bin")
+            os.makedirs(binp)
+            for k in range(browsers):
+                d = os.path.join(home, ".cache", "ms-playwright", "chromium-%d" % k, "chrome-linux64")
+                os.makedirs(d)
+                with io.open(os.path.join(d, "chrome" if k == 0 else "chrome-headless-shell"), "w") as fh:
+                    fh.write("x")
+            calls = os.path.join(t, "calls")
+            with io.open(os.path.join(binp, "ldd"), "w") as fh:
+                fh.write("#!/bin/sh\necho 'libc.so.6 => /lib/libc.so.6'\n%s\n"
+                         % ("echo 'libnss3.so => not found'" if ldd_says_missing else ""))
+            with io.open(os.path.join(binp, "npx"), "w") as fh:
+                fh.write("#!/bin/sh\necho \"$@\" >> %s\n" % calls)
+            for f in ("ldd", "npx"):
+                os.chmod(os.path.join(binp, f), 0o755)
+            env = dict(os.environ, HOME=home, PATH=binp + os.pathsep + os.environ.get("PATH", ""))
+            r = subprocess.run(["bash", "-c", self._script()], env=env, capture_output=True, text=True, timeout=60)
+            ran = io.open(calls).read() if os.path.exists(calls) else ""
+            return r, ran
+        finally:
+            shutil.rmtree(t, ignore_errors=True)
+
+    def test_a_browser_that_links_every_library_skips_apt(self):
+        r, ran = self._run(False)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(ran, "", "apt ran for browsers that need nothing")
+        self.assertIn("link every library - no apt step", r.stdout)
+
+    def test_a_missing_library_still_installs_the_deps(self):
+        r, ran = self._run(True)
+        self.assertIn("install-deps chromium", ran, "a browser missing a library got no OS deps")
+
+    def test_no_browser_found_is_unknown_and_installs(self):
+        r, ran = self._run(False, browsers=0)
+        self.assertIn("install-deps chromium", ran, "no browser seen read as every library present")
+
+
 RED_PROOF = [
+    {"why": "REG-3279 - apt runs whatever the browsers need (v3872's shard 22: 5 of 55 proving minutes)",
+     "file": ".github/workflows/proof-keys-shards.yml",
+     "find": "          if [ \"$seen\" -gt 0 ] && [ \"$miss\" -eq 0 ]; then\n",
+     "replace": "          if false; then\n",
+     "matches": 1, "needs": "posix"},
+    {"why": "REG-3279 - no browser seen reads as every library present",
+     "file": ".github/workflows/proof-keys-shards.yml",
+     "find": "          if [ \"$seen\" -gt 0 ] && [ \"$miss\" -eq 0 ]; then\n",
+     "replace": "          if [ \"$miss\" -eq 0 ]; then\n",
+     "matches": 1, "needs": "posix"},
     {"why": "REG-3270 - a round with a red law is made up as if only cut",
      "file": "tv/proof_shard.py",
      "find": "    if fix:\n        return False, \"%d proof(s) owe a fix (a law went red) - a re-run cannot make that up\" % len(fix)\n",
