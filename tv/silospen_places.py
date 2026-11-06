@@ -32,6 +32,10 @@ import urllib.parse
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+from console_safe import enable as _console_safe_enable  # noqa: E402  (it prints the page block's markers)
+_console_safe_enable()
 BASE = "https://dropcalc.silospen.com/dropcalc.php"
 VERSION = "D2R_ROW_3_0"
 UA = "d2r-bible-calc-check"

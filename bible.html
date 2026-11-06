@@ -10635,10 +10635,10 @@ body:has(#tab-vault.active) .vgd-target{outline:2px solid #f0c060!important;outl
 .gf-src{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:12px;color:#b6a888}
 .gf-src b{color:#9fd4ff}
 .gf-ttf{color:#8fe0a0}   /* v1565 */
-.gf-qw-alt{margin-top:3px;font-size:11.5px;opacity:.92}   /* #85 - the 2nd-4th best places, the 1st row's look one step quieter */
+.gf-qw-alt{margin-top:3px;font-size:var(--fs-meta);opacity:.92}   /* #85 - the 2nd-4th best places, the 1st row's look one step quieter */
 .gf-qw-ord{min-width:26px;color:#b6a888;font-weight:var(--fw-semibold)}
-.gf-qw-area{color:#b6a888;font-size:11px}
-.gf-qw-also{margin-top:4px;font-size:11px;color:#b6a888;line-height:1.45}
+.gf-qw-area{color:#b6a888;font-size:var(--fs-meta)}
+.gf-qw-also{margin-top:4px;font-size:var(--fs-meta);color:#b6a888;line-height:1.45}
 .gf-qw-also b{color:#d8c9a8;font-weight:var(--fw-semibold)}
 /* v2285 — the area-run assumption, quieter than the odds it qualifies: it is a caveat, not
    a finding, and must not compete with the hour it is attached to. */
@@ -70113,30 +70113,38 @@ function renderJournal(){
      [[unknown-stays-unknown]] [[the-unjoined-end]] */
   var _QW_DIFF = { norm: 'Normal', nm: 'NM', hell: 'Hell' };
   function _qwPlaces(x){
+    /* the Grok CLI's look (v3869): one bad row no longer empties the list (a try per row), `seen` guards both loops,
+       and equal labels compare as equal */
     var out = [], seen = {};
-    try {
-      (x && x.sources || []).forEach(function(s){
+    (x && x.sources || []).forEach(function(s){
+      try {
+        var k = s.bossId + '|' + s.diffKey;
+        if (seen[k]) return;
         var c = _adjC(s, x.n); if (c == null || isEventP(c)) return;
         var kpr = killsPerRun(s.bossId), kph = srcKph(s);
         var runs = hoursFor(c, 0.5, 1, kpr), hrs = hoursFor(c, 0.5, kph, kpr);
         if (runs == null) return;
-        seen[s.bossId + '|' + s.diffKey] = 1;
+        seen[k] = 1;
         out.push({ label: s.boss, area: '', s: s, chance: c, runs: runs, hours: hrs, kph: kph, kpr: kpr, est: false });
-      });
-      var P = (typeof QW_PLACES !== 'undefined') ? QW_PLACES[x && x.n] : null;
+      } catch (eS) {}
+    });
+    var P = (typeof QW_PLACES !== 'undefined') ? QW_PLACES[x && x.n] : null;
       ((P && P.f) || []).forEach(function(r){
         var tid = r[0], dk = r[1], n = r[2], T = (typeof QW_TARGETS !== 'undefined') ? QW_TARGETS[tid] : null;
         if (!T || T.once || seen[tid + '|' + dk]) return;
-        var mult = dk === 'norm' ? 1.2 : dk === 'nm' ? 1.1 : 1.0;
-        var s = { boss: _QW_DIFF[dk] + ' ' + T.n, bossId: tid, diffKey: dk, chance: n, kph: Math.round(T.kph * mult), verified: false };
-        var c = _adjC(s, x.n); if (c == null || isEventP(c)) return;
-        var runs = hoursFor(c, 0.5, 1, 1), hrs = hoursFor(c, 0.5, s.kph, 1);
-        if (runs == null) return;
-        out.push({ label: s.boss, area: T.a, s: s, chance: c, runs: runs, hours: hrs, kph: s.kph, kpr: 1, est: true });
+        try {
+          var mult = dk === 'norm' ? 1.2 : dk === 'nm' ? 1.1 : 1.0, kpr = killsPerRun(tid);
+          var s = { boss: _QW_DIFF[dk] + ' ' + T.n, bossId: tid, diffKey: dk, chance: n, kph: Math.round(T.kph * mult), verified: false };
+          var c = _adjC(s, x.n); if (c == null || isEventP(c)) return;
+          var runs = hoursFor(c, 0.5, 1, kpr), hrs = hoursFor(c, 0.5, s.kph, kpr);
+          if (runs == null) return;
+          seen[tid + '|' + dk] = 1;
+          out.push({ label: s.boss, area: T.a, s: s, chance: c, runs: runs, hours: hrs, kph: s.kph, kpr: kpr, est: true });
+        } catch (eR) {}
       });
-    } catch (e) { return []; }
-    return out.sort(function(a, b){ return (a.runs - b.runs) || ((a.hours || 9e9) - (b.hours || 9e9)) || (a.label < b.label ? -1 : 1); });
+    return out.sort(function(a, b){ return (a.runs - b.runs) || (_qwH(a) - _qwH(b)) || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0); });
   }
+  function _qwH(p){ return (p.hours != null && isFinite(p.hours)) ? p.hours : 9e9; }
   window._qwPlaces = _qwPlaces;
   /* the kinds shown beside the ranked rows, never as one: the Cow King and random packs, at his MF */
   function _qwAlso(x, worst){
@@ -70144,7 +70152,7 @@ function renderJournal(){
     try {
       ((P && P.f) || []).forEach(function(r){
         var T = (typeof QW_TARGETS !== 'undefined') ? QW_TARGETS[r[0]] : null;
-        if (T && T.once) out.push({ who: _QW_DIFF[r[1]] + ' ' + T.n, area: T.a, kind: 'once', chance: adjustChance(r[2], mf) });
+        if (T && T.once) out.push({ who: _QW_DIFF[r[1]] + ' ' + T.n, area: T.a, kind: 'once', chance: effChance(r[2], r[0], r[1]) });   // his own /players factor (PLACE_PF)
       });
       ((P && P.r) || []).forEach(function(r){
         out.push({ who: _QW_DIFF[r[1]] + ' ' + r[0], area: r[3], kind: r[2], chance: adjustChance(r[4], mf) });
@@ -70174,7 +70182,7 @@ function renderJournal(){
     return '<div class="gf-qw-also" title="silospen prices these per kill; none is a run you can repeat and count">silospen per kill also: '
       + list.map(function(a){
           var why = a.kind === 'once' ? 'killing him bars that character from the Secret Cow Level in that difficulty (D2R; RotW unconfirmed)'
-                  : 'a random ' + a.kind + ' pack - it spawns by chance, so no run count';
+                  : 'a random ' + a.kind + ' pack - it spawns by chance, so no run count; at your MF, its /players factor is not measured';
           return '<span title="' + esc(why) + '"><b>' + esc(a.who) + '</b> (' + esc(a.area) + (a.kind === 'once' ? ', ⚠ not a repeatable run' : ', random ' + a.kind) + ') ' + fmtOdds(a.chance) + '</span>';
         }).join(' · ') + '</div>';
   }
