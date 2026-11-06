@@ -78,6 +78,15 @@ class ASelfUpdatedConsoleCanReadItsFrames(unittest.TestCase):
         self.assertIs(rec.get("ok"), True)
         self.assertIs(cd.PILLOW_BOOT, rec, "the doctor cannot see the attempt")
 
+    def test_the_install_this_process_made_is_still_said_when_the_book_asks(self):
+        """REG-3268 (the Grok CLI on REG-3158) - the book's later call replaced the boot install's record: 'fine', never 'fixed'."""
+        first = ca._ensure_pillow_at_boot(_find=self._find, _run=self._run())
+        self.assertIs(first.get("tried"), True)
+        later = ca._ensure_pillow_at_boot(_find=self._find, _run=self._run())
+        self.assertIs(later.get("tried"), True, "the install that fired was forgotten when the book asked: %r" % later)
+        self.assertEqual(ca._book_rec(later, "tried", "x")[0], "fixed")
+        self.assertEqual(len(self.calls), 1, "a present package was installed again")
+
     def test_present_pillow_is_left_alone(self):
         self.present[0] = True
         rec = ca._ensure_pillow_at_boot(_find=self._find, _run=self._run())
@@ -161,6 +170,11 @@ if __name__ == "__main__":
 
 
 RED_PROOF = [
+    {"why": "REG-3268 - the repair book's later call replaces the boot install's record, so a repair that fired reads fine",
+     "file": "tv/control_app.py",
+     "find": "        if isinstance(_prev, dict) and _prev.get(\"tried\") is True and _prev.get(\"ok\") is True:\n            return _prev\n",
+     "replace": "        pass\n",
+     "matches": 1},
     {
         "why": "REG-1719 - main() stops starting the boot numpy step: a self-updated Windows PC never measures a grid",
         "file": "control_app.py",

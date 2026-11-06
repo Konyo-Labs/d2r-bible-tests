@@ -2597,6 +2597,11 @@ NO_JOINT_YET = {
         "the row reads bible.html and control_app.py for the Advanced door and the quote's fold, then grades "
         "d2jsp_price_db on a seeded fixture - the source and the module it imports, one witness. A real second "
         "source would be the rendered D2JSP tab showing the same Wilson score the quote returned, which is not built.",
+    # #85 (REG-3269) - the Quick wins grid's pictures.
+    'quick wins places have their pictures':
+        "the row reads the page's picture map and the files in art/ - the page and the disk, one witness of whether a "
+        "file exists. A real second source would be the rendered tiles reporting a loaded image each, which only "
+        "render_check's quick-wins target sees (imgs broken 0 of 602), never the console.",
     # #87 (REG-3253) - the Mac's own d2jsp window.
     'the Mac signs in to d2jsp through its own window':
         "the row asks the lamp's opener for its command and reads the console's own d2jsp profile settings - the "

@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3873",
+  "ver": "v3874",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3873: The Grok CLI findings on the v3862 cards fixed, each reproduced first - faults, proofs, repairs and the write budget",
+  "note": "v3874: Quick wins shows each place in one grid with its zone art and monster, and the last two repair book findings are fixed",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

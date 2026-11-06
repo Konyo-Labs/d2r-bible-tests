@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Konyo's D2R Farming Bible v3873 · TV DIABLO</title>
-<meta name="d2r-build" content="v3873">
+  <title>Konyo's D2R Farming Bible v3874 · TV DIABLO</title>
+<meta name="d2r-build" content="v3874">
 <meta name="d2r-build-date" content="2026-11-06">
-<meta name="d2r-build-note" content="The Grok CLI findings on the v3862 cards fixed, each reproduced first - faults, proofs, repairs and the write budget">
+<meta name="d2r-build-note" content="Quick wins shows each place in one grid with its zone art and monster, and the last two repair book findings are fixed">
 <style>
 :root{--bg:#0a0805;--surface:#1a140d;--surface-2:#241c12;--surface-3:#2f261a;--surface-4:#3a2f1e;--border:#3a2f1e;--border-light:#4a3f2a;--text:#f4e8d0;--text-muted:#b5a48a;--text-dim:#8c7a68;--gold:#d4a847;--gold-bright:#f0c060;--gold-dim:#a07830;--bg-elev0:var(--surface);--bg-elev1:var(--surface-2);--best-dim:color-mix(in srgb,var(--best) 55%,var(--surface));--norm:#6fc06f;--nm:#ffcc44;--hell:#ff4040;--terror:#ff00d4;--uber:#ff00d4;--su:#e8b24a;--grail:#00ffff;--rune:#ff7d3c;--best:#66ff88;--block-mlvl:#ff8855;--block-tc:#ff5588;--star:#ffd040;--verified:#00ffaa;--q-unique:#c7b377;--q-set:#00fc00;--q-orange:#ffa800;--q-magic:#6e6eff;--q-rare:#ffff64;--q-normal:#f4f4f4;--q-runeword:var(--q-unique);--q-grey:#8a8a8a;--fs-display:24px;--fs-title:15px;--fs-body:13px;--fs-meta:11px;--fs-micro:10px;--fw-regular:400;--fw-normal:500;--fw-medium:600;--fw-semibold:700;--fw-bold:800;--fw-black:900;--ls-tight:.02em;--ls-snug:.04em;--ls-normal:.06em;--ls-wide:.10em;--ls-label:.14em;--ls-wider:.20em;--ls-widest:.28em;--lh-none:1;--lh-tightest:1.1;--lh-tight:1.2;--lh-snug:1.35;--lh-normal:1.5;--lh-relaxed:1.65;--lh-loose:1.8;--acc-action:var(--gold-bright);--acc-done:var(--best);--acc-danger:#ff5555;--acc-intel:#6fb8e8;--acc-rotw:#b58cff;--chrome-top:70px;--scroll-pad-card:calc(var(--chrome-top) + 60px);--scroll-pad-deep:calc(var(--chrome-top) + 80px)}
 *{box-sizing:border-box}
@@ -10635,11 +10635,49 @@ body:has(#tab-vault.active) .vgd-target{outline:2px solid #f0c060!important;outl
 .gf-src{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:12px;color:#b6a888}
 .gf-src b{color:#9fd4ff}
 .gf-ttf{color:#8fe0a0}   /* v1565 */
-.gf-qw-alt{margin-top:3px;font-size:var(--fs-meta);opacity:.92}   /* #85 - the 2nd-4th best places, the 1st row's look one step quieter */
-.gf-qw-ord{min-width:26px;color:#b6a888;font-weight:var(--fw-semibold)}
-.gf-qw-area{color:#b6a888;font-size:var(--fs-meta)}
-.gf-qw-also{margin-top:4px;font-size:var(--fs-meta);color:#b6a888;line-height:1.45}
-.gf-qw-also b{color:#d8c9a8;font-weight:var(--fw-semibold)}
+/* #85 - QUICK WINS AS ONE GRID (his ask 2026-11-06): every row shares one column template, so the picture, the place and
+   the four numbers line up down the card; each number sits over its own subtitle. */
+.qw-grid{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.qw-row{display:grid;grid-template-columns:72px minmax(0,2fr) repeat(4,minmax(0,1fr));column-gap:16px;align-items:center;
+  padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid rgba(240,192,96,.10)}
+.qw-row.qw-best{background:linear-gradient(90deg,rgba(240,192,96,.13),rgba(240,192,96,.04));border-color:rgba(240,192,96,.42)}
+.qw-tile{position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;background:#0d0a07 center/cover no-repeat;
+  box-shadow:inset 0 0 0 1px rgba(240,192,96,.30),0 2px 8px rgba(0,0,0,.5)}
+.qw-tile::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:10px;
+  box-shadow:inset 0 0 0 1px rgba(240,192,96,.30),inset 0 -14px 18px -10px rgba(0,0,0,.55)}
+/* a boss portrait fills the tile from its upper body (the HD renders are dark and tall, so a whole figure shrunk into the
+   tile read as a black square); a super-unique sprite stays whole and its black ground blends away */
+/* ⚠ SCOPED BY THE TABS' OWN IDS ON PURPOSE: ":is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .f-artname img" sizes every
+   image in a forge card to 18px, and an ID outweighs any class - measured: the portrait rendered 18x18 in its 72px tile,
+   a red speck in the corner. The same ID scope plus one class wins on specificity, not on order. */
+.qw-mon, :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .qw-tile img.qw-mon{position:absolute;inset:0;width:100%;height:100%;
+  max-width:none;margin:0;object-fit:cover;object-position:50% 18%;z-index:1;vertical-align:top;
+  filter:brightness(1.22) contrast(1.08) drop-shadow(0 2px 4px rgba(0,0,0,.8))}
+.qw-mon.qw-mon-sprite, :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .qw-tile img.qw-mon.qw-mon-sprite{inset:5px;
+  width:calc(100% - 10px);height:calc(100% - 10px);object-fit:contain;mix-blend-mode:screen;filter:brightness(1.15)}
+.qw-place{display:flex;flex-direction:column;min-width:0;gap:1px}
+.qw-rank{font-size:var(--fs-micro);font-weight:var(--fw-bold);letter-spacing:.08em;text-transform:uppercase;color:#c9a65a}
+.qw-best .qw-rank{color:var(--gold-bright,#f0c060)}
+.qw-name{font-size:var(--fs-body);font-weight:var(--fw-semibold);color:#efe3c6;line-height:1.25;overflow-wrap:anywhere}
+.qw-stat{display:flex;flex-direction:column;min-width:0;gap:1px}
+.qw-stat b{font-size:var(--fs-body);font-weight:var(--fw-bold);white-space:nowrap;color:#e8dcc0}
+.qw-sub{font-size:var(--fs-micro);color:#9a8c72;letter-spacing:.04em;line-height:1.25}
+.qw-area{text-transform:none;letter-spacing:0}
+.qw-odds b{color:#9fd4ff}
+.qw-ttf b{color:#8fe0a0}
+.qw-also{margin-top:14px;padding-top:10px;border-top:1px dashed rgba(240,192,96,.22)}   /* its own section, never a caption for the rows above */
+.qw-also-h{font-size:var(--fs-micro);font-weight:var(--fw-bold);letter-spacing:.08em;text-transform:uppercase;color:#9a8c72;margin:0 0 5px 2px}
+.qw-also .qw-row{grid-template-columns:52px minmax(0,2fr) minmax(0,1fr) minmax(0,3fr);padding:6px 12px;background:rgba(255,255,255,.015)}
+.qw-also .qw-tile{width:52px;height:52px}
+@media (max-width: 640px){
+  /* a phone: four numbers in a row left ~50px each (measured at 375: "~1,392" ran into "~13h"), so they stand 2 x 2 */
+  .qw-row{grid-template-columns:56px repeat(2,minmax(0,1fr));row-gap:6px;column-gap:12px;padding:8px}
+  .qw-row > .qw-tile{grid-row:1 / span 3;width:56px;height:56px;align-self:start}
+  .qw-row > .qw-place{grid-column:2 / span 2}
+  .qw-also .qw-row{grid-template-columns:52px minmax(0,1fr) auto}
+  .qw-also .qw-row > .qw-place{grid-column:auto}
+  .qw-also .qw-row > .qw-tile{grid-row:auto}
+}
 /* v2285 — the area-run assumption, quieter than the odds it qualifies: it is a caveat, not
    a finding, and must not compete with the hour it is attached to. */
 .gf-kpr{opacity:.7;cursor:help}
@@ -70187,7 +70225,7 @@ function renderJournal(){
     try {
       ((P && P.f) || []).forEach(function(r){
         var T = (typeof QW_TARGETS !== 'undefined') ? QW_TARGETS[r[0]] : null;
-        if (T && T.once) out.push({ who: _QW_DIFF[r[1]] + ' ' + T.n, area: T.a, kind: 'once', chance: effChance(r[2], r[0], r[1]) });   // his own /players factor (PLACE_PF)
+        if (T && T.once) out.push({ id: r[0], who: _QW_DIFF[r[1]] + ' ' + T.n, area: T.a, kind: 'once', chance: effChance(r[2], r[0], r[1]) });   // his own /players factor (PLACE_PF)
       });
       ((P && P.r) || []).forEach(function(r){
         out.push({ who: _QW_DIFF[r[1]] + ' ' + r[0], area: r[3], kind: r[2], chance: adjustChance(r[4], mf) });
@@ -70202,25 +70240,89 @@ function renderJournal(){
      its per-KILL odds beside other rows' per-run odds. An area run says what one RUN gives, beside the per-kill figure. */
   function _qwRunOdds(p){ var pr = perRunChance(p.chance, p.s.bossId); return (pr > 0 && pr < 1) ? '<span class="gf-odds" title="one run of this place, ~' + killsPerRun(p.s.bossId) + ' kills">' + fmtOdds(Math.max(1, Math.round(1 / pr))) + ' a run</span>' : ''; }
   function _qwRunsTxt(n){ return n == null ? '' : '~' + (n >= 10000 ? (Math.round(n / 100) / 10) + 'k' : Number(n).toLocaleString()) + ' runs'; }
-  function _qwRow(p, i){
-    var ord = ['1st', '2nd', '3rd', '4th'][i];
-    var kphT = p.est ? ' title="run rate is an estimate (no measured clear for this place); the runs count does not depend on it"' : '';
-    return '<div class="gf-src gf-qw-alt"><span class="gf-qw-ord">' + ord + '</span> <b class="gf-boss">' + esc(p.label) + '</b>'
-      + (p.area ? ' <span class="gf-qw-area">' + esc(p.area) + '</span>' : '')
-      + ' <span class="gf-odds">' + fmtOdds(p.chance) + (p.kpr > 1 ? ' a kill' : '') + '</span>' + (p.kpr > 1 ? _qwRunOdds(p) : '')
-      + '<span class="gf-odds gf-qw-runs">' + _qwRunsTxt(p.runs) + '</span>'
-      + (p.hours != null ? '<span class="gf-odds gf-ttf"' + kphT + '>~' + _fmtHunt(p.hours) + '</span>' : '')
-      + (p.kpr > 1 ? _kprChip(p.s.bossId) : '') + '</div>';
+  /* #85 - THE PLACES AS ONE GRID, EACH WITH ITS PICTURE (his ask 2026-11-06, on a screenshot of the Gull and Bane Ash
+     cards: "designed better with hd art image for each area and the rows symmetric and organized and each rendering in an
+     organized grid with subtitles for each row ... with the images for each boss/level that we are farming"). The 1st row
+     was a sentence and rows 2-4 loose chips: no two lines lined up and no number said what it was. Each place is now a row
+     of one shared grid - its picture (the zone's level art behind the monster: a boss's HD portrait, a super-unique's own
+     sprite; every file OPENED before it was wired to a name, never a name match - v1629's soulstone-as-Mephisto), its name
+     and area, then four numbers, each over its own subtitle. The ranking is untouched (_qwPlaces above and its law). */
+  var _QW_SU_ART = { su_coldcrow: 'Coldcrow.gif', su_pitspawnfouldog: 'Pitspawn_Fouldog.gif', su_bishibosh: 'Bishibosh.gif',
+    su_rakanishu: 'Rakanishu.gif', su_bloodraven: 'Blood_Raven.gif', su_griswold: 'Griswold.gif', su_boneash: 'Bone_Ash.gif',
+    su_thesmith: 'smith_graphic.png', su_thesummoner: 'summoner_graphic.png', su_thecowking: 'hellbovine_graphic.png' };
+  /* a place's area -> its terror-zone name where the two spell it differently. Radament's sewers are Lut Gholein's, not
+     Kurast's: a bare "Sewers" picks act 3's art, the wrong act. */
+  var _QW_ZONE_OF = { 'Cave Level 1': 'The Cave', 'Cave Level 2': 'The Cave', 'Sewers Level 3': 'Lut Gholein Sewers',
+    'The Secret Cow Level': 'Moo Moo Farm', 'Monastery Gate': 'Outer Cloister' };
+  function _qwZoneArt(area){
+    if (typeof tzArtFor !== 'function' || !area) return null;
+    var a = String(area).trim(), bare = a.replace(/\s+(Level\s+\d+|L\d+(-L?\d+)?)$/i, '').trim();   /* "Level 3" and "L3" alike */
+    var tries = [_QW_ZONE_OF[a], a, bare, 'The ' + bare];
+    for (var i = 0; i < tries.length; i++){ var slug = tries[i] && tzArtFor(tries[i]); if (slug) return 'art/tz_' + slug + '.jpg'; }
+    return null;
   }
-  function _qwAlsoHtml(list){
+  window._qwZoneArt = _qwZoneArt;
+  function _qwAreaOf(bossId, area){
+    if (area) return area;
+    try {
+      var B = (typeof BOSSES !== 'undefined') ? BOSSES : (window.BOSSES || []);
+      for (var i = 0; i < B.length; i++) if (B[i] && B[i].id === bossId) return String(B[i].loc || '').split('·')[0].trim();
+    } catch (e) {}
+    return '';
+  }
+  function _qwTile(bossId, area, label){
+    var bp = (window.BOSS_PORTRAIT || {})[bossId], su = _QW_SU_ART[bossId];
+    var mon = bp ? 'art/' + bp : (su ? 'art/' + su : null), zone = _qwZoneArt(area);
+    var v = function(u){ return (typeof _artV === 'function') ? _artV(u) : u; };
+    return '<span class="qw-tile' + (mon ? '' : ' qw-tile-zone') + '"' + (zone ? ' style="background-image:url(' + v(zone) + ')"' : '')
+      + ' title="' + esc(label + (area ? ' · ' + area : '')) + '">'
+      + (mon ? '<img class="qw-mon' + (/\.gif$/i.test(mon) ? ' qw-mon-sprite' : '') + '" src="' + v(mon) + '" alt="" loading="lazy" onerror="this.remove()">' : '')
+      + '</span>';
+  }
+  function _qwStat(val, sub, cls, title){
+    return '<span class="qw-stat ' + cls + '"' + (title ? ' title="' + esc(title) + '"' : '') + '><b>' + val + '</b><span class="qw-sub">' + sub + '</span></span>';
+  }
+  function _qwPlaceRow(p, i){
+    var area = _qwAreaOf(p.s.bossId, p.area), multi = p.kpr > 1;
+    var pr = multi ? perRunChance(p.chance, p.s.bossId) : null;
+    /* ONE UNIT DOWN THE COLUMN (the Grok CLI's look at this grid, 2026-11-06: "odds a kill" beside The Pit's "odds a run"
+       compared a kill with a run). A boss run IS one kill, so every row says what one RUN gives; an area's per-kill figure
+       rides its hover beside the kills it assumes. */
+    var odds = (multi && pr > 0 && pr < 1)
+      ? _qwStat(fmtOdds(Math.max(1, Math.round(1 / pr))), 'odds a run', 'qw-odds',
+                fmtOdds(p.chance) + ' a kill; one run of this place is ~' + p.kpr + ' kills (an estimate - the run odds move with it)')
+      : _qwStat(fmtOdds(p.chance), 'odds a run', 'qw-odds', 'one run of this place is one kill');
+    return '<div class="qw-row' + (i === 0 ? ' qw-best' : '') + '">'
+      + _qwTile(p.s.bossId, area, p.label)
+      + '<span class="qw-place"><span class="qw-rank">' + (i === 0 ? '1st · best run' : ['1st', '2nd', '3rd', '4th'][i]) + '</span>'
+      + '<b class="qw-name">' + esc(p.label) + '</b>'
+      + '<span class="qw-sub qw-area">' + esc(area) + (multi ? ' · ~' + p.kpr + ' kills a run' : '') + '</span></span>'
+      + odds
+      + _qwStat(p.runs != null ? '~' + Number(p.runs).toLocaleString() : '—', 'runs for a 50% chance', 'qw-runs',
+                'runs for an even (50%) chance of the drop - ' + _qwRunsTxt(p.runs))
+      + _qwStat(p.hours != null && isFinite(p.hours) ? '~' + _fmtHunt(p.hours) : '—', 'time for a 50% chance', 'qw-ttf',
+                'time for an even (50%) chance, at the runs an hour beside it')
+      + _qwStat(p.kph ? '~' + p.kph : '—', 'runs an hour' + (p.est ? ' · est' : ''), 'qw-kph',
+                p.est ? 'run rate is an estimate (no measured clear for this place); the runs count does not depend on it' : '')
+      + '</div>';
+  }
+  function _qwAlsoGrid(list){
     if (!list.length) return '';
-    return '<div class="gf-qw-also" title="silospen prices these per kill; none is a run you can repeat and count">silospen per kill also: '
+    return '<div class="qw-also"><div class="qw-also-h">Also drops here · priced per kill, not a run you can repeat</div>'
       + list.map(function(a){
           var why = a.kind === 'once' ? 'killing him bars that character from the Secret Cow Level in that difficulty (D2R; RotW unconfirmed)'
                   : 'a random ' + a.kind + ' pack - it spawns by chance, so no run count; at your MF, its /players factor is not measured';
-          return '<span title="' + esc(why) + '"><b>' + esc(a.who) + '</b> (' + esc(a.area) + (a.kind === 'once' ? ', ⚠ not a repeatable run' : ', random ' + a.kind) + ') ' + fmtOdds(a.chance) + '</span>';
-        }).join(' · ') + '</div>';
+          return '<div class="qw-row qw-row-also" title="' + esc(why) + '">' + _qwTile(a.id || '', a.area, a.who)
+            + '<span class="qw-place"><span class="qw-rank">' + (a.kind === 'once' ? 'once' : 'random') + '</span>'
+            + '<b class="qw-name">' + esc(a.who) + '</b><span class="qw-sub qw-area">' + esc(a.area)
+            + (a.kind === 'once' ? ' · not a repeatable run' : ' · random ' + esc(a.kind) + ' pack') + '</span></span>'
+            + _qwStat(fmtOdds(a.chance), 'odds a kill', 'qw-odds', '') + '</div>';
+        }).join('') + '</div>';
   }
+  function _qwGridHtml(qp, also){
+    return '<div class="qw-grid">' + qp.slice(0, 4).map(_qwPlaceRow).join('') + '</div>' + _qwAlsoGrid(also);
+  }
+  window._qwGridHtml = _qwGridHtml;
   /* v1561 — the moment funiScan exists, the landing ring can stop guessing. See the note on
      renderGrailProgress: it paints before this block loads, so it needs telling. */
   try { setTimeout(function(){
@@ -71032,14 +71134,7 @@ function renderJournal(){
        keeps the line it always had; rows 2-4 sit under it; the Cow King and random packs are named, never ranked. */
     var _qp=_qwPlaces(x);
     if(_qp.length){
-      var q1=_qp[0];
-      src='<div class="gf-src">📍 best run: <b class="gf-boss">'+esc(q1.label)+'</b>'+(q1.area?' <span class="gf-qw-area">'+esc(q1.area)+'</span>':'')
-        +' <span class="gf-odds">'+fmtOdds(q1.chance)+(q1.kpr>1?' a kill':'')+'</span>'+(q1.kpr>1?_qwRunOdds(q1):'')+'<span class="gf-odds gf-qw-runs">'+_qwRunsTxt(q1.runs)+'</span>'
-        +(q1.hours!=null?'<span class="gf-odds gf-ttf">~'+_fmtHunt(q1.hours)+' to find</span>':'')
-        +(q1.kph?'<span class="gf-odds"'+(q1.est?' title="run rate is an estimate (no measured clear for this place); the runs count does not depend on it"':'')+'>~'+q1.kph+' kph</span>':'')
-        +(q1.kpr>1?_kprChip(q1.s.bossId):'')+'</div>'
-        +_qp.slice(1,4).map(function(p,i){ return _qwRow(p,i+1); }).join('')
-        +_qwAlsoHtml(_qwAlso(x, _qwWorst(_qp)));
+      src=_qwGridHtml(_qp, _qwAlso(x, _qwWorst(_qp)));   /* #85 - one grid, each place with its picture */
     }
     /* v1624 — QUICK WINS still shows the ITEM (his call: "for quick wins we dont touch and leave
        it as is which is the item as the main") — it just stops being an inert picture. */
@@ -82649,7 +82744,7 @@ body.engine-driven.cousin-shell .gsearch-wrap{margin-left:196px!important}
 </style>
 <script id="v687-p0-boot">
 (function(){
-  window.D2R_BUILD = { id:'v3873', name:'v3873 - Honest Faults', date:'2026-11-06', note:'The Grok CLI findings on the v3862 cards fixed, each reproduced first - faults, proofs, repairs and the write budget' };
+  window.D2R_BUILD = { id:'v3874', name:'v3874 - Quick Wins Grid', date:'2026-11-06', note:'Quick wins shows each place in one grid with its zone art and monster, and the last two repair book findings are fixed' };
   /* v1643 — CATCH THE EARLY BIRDS. _artV stamps every art url with D2R_BUILD.id, but a few images
      are painted by code that runs BEFORE this assignment, so they were leaving with the '?v=0'
      fallback — i.e. no cache-bust at all, which is the exact bug _artV exists to kill.

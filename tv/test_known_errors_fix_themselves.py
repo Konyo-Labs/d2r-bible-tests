@@ -135,6 +135,35 @@ class APassThatDidNotAnswerIsNotACalm(unittest.TestCase):
             CA._EAGLE.update(saved[1])
 
 
+class EveryFaultTheBookCannotFixRides(unittest.TestCase):
+    """REG-3267 (the Grok CLI on REG-3159) - two faults that rode nowhere."""
+
+    def test_a_repair_the_eagle_contradicts_is_a_miss(self):
+        pillow = next(e for e in RB.ENTRIES if e["id"] == "pillow")
+        rows = [{"check": pillow["check"], "state": "missing", "why": "Pillow imports but could not decode a 4x3 BMP"}]
+        rep = RB.apply(rows, _doors([], {"pillow": ("fine", "Pillow was already importable")}), now_ms=NOW)
+        self.assertEqual(_by(rep)["pillow"]["state"], "unknown", "a repair the eagle contradicts read fine")
+        self.assertIn(pillow["check"], [m["check"] for m in rep["misses"]], "the contradicted fault rode nowhere: %r" % rep)
+        ok = RB.apply([{"check": pillow["check"], "state": "ok"}], _doors([], {"pillow": ("fine", "x")}), now_ms=NOW)
+        self.assertEqual(ok["misses"], [], "a fine row grew a miss")
+
+    def test_a_slow_doctors_missing_row_reaches_the_book(self):
+        import control_app as CA
+        saved = (dict(CA._REPAIR_BOOK), dict(CA._EAGLE))
+        try:
+            CA._REPAIR_BOOK.update(running=False, misses=[], ranAt=None)
+            CA._EAGLE.update(checked=NOW, rows=[], passOk=True,
+                             slowRows=[{"check": "the other doctors' slow check", "state": "missing", "why": "x"}])
+            CA._repair_book_start(_thread=lambda f: f(), _doors=_doors([]), _diagnose=lambda misses: {})
+            self.assertIn("the other doctors' slow check", [m["check"] for m in CA._REPAIR_BOOK.get("misses") or []],
+                          "a slow doctor's MISSING row never became a miss")
+        finally:
+            CA._REPAIR_BOOK.clear()
+            CA._REPAIR_BOOK.update(saved[0])
+            CA._EAGLE.clear()
+            CA._EAGLE.update(saved[1])
+
+
 class AHeadlessConsoleAsksTheBookToo(unittest.TestCase):
     """REG-3262 (the Grok CLI on REG-3158) - a --no-open console never ran the repair book."""
 
@@ -389,6 +418,16 @@ class TheOverwatchLine(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3267 - a repair the eagle contradicts reads fine again and the fault rides nowhere",
+     "file": "tv/repair_book.py",
+     "find": "        if ent[\"check\"] and st in (\"fine\", \"not-here\"):\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "REG-3267 - the slow doctors' MISSING rows never reach the book again",
+     "file": "tv/control_app.py",
+     "find": "            if rows is not None:\n                _have = set(",
+     "replace": "            if False:\n                _have = set(",
+     "matches": 1},
     {"why": "REG-3262 - the headless book runs beside a window's rescue loop, so the book is asked on two cadences",
      "file": "tv/control_app.py",
      "find": "        if any(getattr(t, \"name\", None) == \"console-rescue\" and t.is_alive() for t in threading.enumerate()):\n            return False\n",

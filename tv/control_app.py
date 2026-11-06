@@ -7930,6 +7930,16 @@ def _ensure_pkg_at_boot(mod, pkg, rec_attr, _find=None, _run=None):
     import importlib
     import importlib.util
     find = _find or importlib.util.find_spec
+    # REG-3268 (the Grok CLI on REG-3158) - AN INSTALL THIS PROCESS ALREADY MADE STAYS SAID. The boot thread installs the
+    # package (tried, ok); the repair book asks later, finds it importable, and a fresh record replaced the install's - so
+    # status.repairBook read "fine" with fixedAt null and never said the repair had fired.
+    try:
+        import console_doctor as _cd0
+        _prev = getattr(_cd0, rec_attr, None)
+        if isinstance(_prev, dict) and _prev.get("tried") is True and _prev.get("ok") is True:
+            return _prev
+    except Exception:
+        pass
     rec = {"ts": int(time.time() * 1000), "tried": False, "ok": None, "why": None}
     try:
         import console_doctor as _cd
@@ -23523,6 +23533,13 @@ def _repair_book_start(_thread=None, _doors=None, _diagnose=None):
             # misses, the beacon carried none, and the Fleet row drew no repairs line while the eagle said UNKNOWN.
             rows = (list(_EAGLE.get("rows") or [])
                     if _EAGLE.get("checked") and _EAGLE.get("passOk") is not False else None)
+            # REG-3267 (the Grok CLI on REG-3159) - THE SLOW DOCTORS' ROWS TOO. The panel draws slowRows ("the other
+            # doctors"), and a MISSING one there never became a miss: the book read the fast rows only, so that fault rode
+            # no presence row. Merged by check name; a fast row wins a name both carry.
+            if rows is not None:
+                _have = set(r.get("check") for r in rows if isinstance(r, dict))
+                rows += [r for r in (_EAGLE.get("slowRows") or [])
+                         if isinstance(r, dict) and r.get("check") and r.get("check") not in _have]
             rep = _rb.apply(rows, _doors or _book_doors(), state=prev)
             if rep.get("misses"):
                 try:
@@ -47454,7 +47471,7 @@ def status_payload():
         "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "proofRelease": dict(_PROOF_RELEASE), "ciWatch": dict(_CI_WATCH), "riverWarm": dict(_RIVER_WARM), "riverLocks": dict(_RIVER_LOCKS_SEEN), "repairBook": dict(_REPAIR_BOOK), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
         # #83 — the child supervisor's receipts (door / watchdog / RAM); the census itself is the doctor's row
         "childGuard": _child_guard_status(),
-        "ver": "v3873",
+        "ver": "v3874",
         # v3288 — WHICH QUESTION THE NUMBER ABOVE ANSWERS. `ver` is a literal compiled into the
         # module that is running; `moduleFreshness` says whether that module is still the file on
         # disk, measured from this module's OWN import rather than from a PID or a string compare.

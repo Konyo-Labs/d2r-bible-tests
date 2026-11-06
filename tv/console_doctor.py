@@ -11146,6 +11146,34 @@ def _check_the_d2jsp_price_backend_matches_its_database():
         return MISSING, "a set-aside post moved the price or left the record"
     return OK, "the D2JSP tab shows the database price and the posts it was weighed from"
 
+def _check_quick_wins_places_have_their_pictures():
+    """#85 (REG-3269) - every picture the Quick wins grid names is in art/: each super-unique's sprite or portrait
+    (_QW_SU_ART) and every zone's level art (TZ_INFO's slugs, art/tz_<slug>.jpg). A tile whose file is gone renders as an
+    empty dark square under a confident name - an art clean-up is exactly what would do it, and no gate opens the page."""
+    try:
+        with open(os.path.join(ROOT, "bible.html"), encoding="utf-8", errors="replace") as fh:
+            page = fh.read()
+    except OSError:
+        return UNKNOWN, "bible.html could not be read, so the Quick wins pictures are unknown"
+    m = re.search(r"var _QW_SU_ART = \{(.*?)\};", page, re.S)
+    t = re.search(r"var TZ_INFO = (\{.*?\});", page)
+    if not m or not t:
+        return MISSING, "the Quick wins grid's picture map (_QW_SU_ART) or the zone table (TZ_INFO) is gone from the page"
+    files = re.findall(r"'([^']+\.(?:gif|png|jpg))'", m.group(1))
+    try:
+        slugs = sorted(set(v[2] for v in json.loads(t.group(1)).values() if isinstance(v, list) and len(v) > 2))
+    except ValueError:
+        return UNKNOWN, "the zone table would not parse, so the zone pictures are unknown"
+    want = ["art/" + f for f in files] + ["art/tz_%s.jpg" % s for s in slugs]
+    gone = [w for w in want if not os.path.isfile(os.path.join(ROOT, w))]
+    if not files:
+        return MISSING, "the Quick wins grid names no monster picture - its map is empty"
+    if gone:
+        return MISSING, "%d of the %d pictures the Quick wins grid names are not in art/: %s" % (
+            len(gone), len(want), ", ".join(gone[:6]))
+    return OK, "all %d pictures the Quick wins grid names are in art/ (%d monsters, %d zones)" % (len(want), len(files), len(slugs))
+
+
 def _check_the_macs_own_d2jsp_window_keeps_its_session():
     """#87 (REG-3253) - the Mac signs in to d2jsp through a profile the console owns. That sign-in survives closing the
     window only while the profile continues where it left off (a session-only cookie is then written to disk), and the
@@ -11461,6 +11489,7 @@ CHECKS = [
     ("this checkout can update", _check_this_checkout_can_update),
     ("the d2jsp price database is on its tab", _check_the_d2jsp_price_backend_matches_its_database),
     ("the Mac signs in to d2jsp through its own window", _check_the_macs_own_d2jsp_window_keeps_its_session),
+    ("quick wins places have their pictures", _check_quick_wins_places_have_their_pictures),
     ("a windowed frame is read inside its game", _check_a_windowed_frame_is_read_inside_its_game),
     # REG-3218 (his words 2026-11-05) - the task board compared with the tree; a card that disagrees is said, never rewritten
     ("the board agrees with the tree", _check_the_board_agrees_with_the_tree),
@@ -12373,6 +12402,8 @@ WATCHES = {
     "the d2jsp price database is on its tab": (),
     # #87 (REG-3253) - it asks the lamp's opener for its command and reads the profile's own settings; no element of its own.
     "the Mac signs in to d2jsp through its own window": (),
+    # #85 (REG-3269) - it reads the page's picture map and checks art/ on disk; no element of its own.
+    "quick wins places have their pictures": (),
     "a windowed frame is read inside its game": (),
     # REG-3218 - DECLARED, NOT OMITTED. It reads the board lane's record (a file the console writes); the board it judges is
     # a page on the site, not a registry surface, so the empty tuple is the honest answer.

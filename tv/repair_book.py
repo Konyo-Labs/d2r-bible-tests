@@ -62,6 +62,7 @@ def apply(rows, doors, state=None, now_ms=None):
         if isinstance(r, dict) and r.get("check"):
             by_check[r["check"]] = r
     out = []
+    contradicted = []
     for ent in ENTRIES:
         p = prev.get(ent["id"]) or {}
         res = {"id": ent["id"], "reg": ent["reg"], "says": ent["says"], "state": "unknown", "why": "",
@@ -94,6 +95,13 @@ def apply(rows, doors, state=None, now_ms=None):
         if st not in STATES:
             st, why = "unknown", "the door answered an unknown state %r (%s)" % (st, why)
         res.update(state=st, why=scrub(why, 300))
+        if ent["check"] and st in ("fine", "not-here"):
+            # REG-3267 (the Grok CLI on REG-3159) - THE EAGLE SAYS MISSING AND THE KNOWN REPAIR SAYS FINE: a fault this
+            # repair does not cover (Pillow imports, and still cannot decode a frame). It read "fine" and rode nowhere -
+            # no miss, not failed - so the Fleet row showed nothing. It is now its own miss, with both sides said.
+            res.update(state="unknown", why=scrub("the eagle reads %r missing and its known repair says %s (%s) - this "
+                                                  "repair does not cover the fault" % (ent["check"], st, why), 300))
+            contradicted.append({"check": ent["check"], "why": res["why"]})
         if st in ("fixed", "failed", "waiting"):
             res["lastTry"] = now
         if st == "fixed":
@@ -109,6 +117,8 @@ def apply(rows, doors, state=None, now_ms=None):
     carried = rows is None and isinstance(prev_misses, list) and bool(prev_misses)
     if carried:
         misses = [dict(m, stale=True) for m in prev_misses if isinstance(m, dict) and m.get("check")]
+    else:
+        misses += [m for m in contradicted if m["check"] not in set(x.get("check") for x in misses)]
     misses_at = ((state or {}).get("missesAt") or (state or {}).get("ranAt")) if carried else now
     counts = {}
     for r in out:

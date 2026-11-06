@@ -1539,7 +1539,7 @@ TARGETS = {
               window.__rcQwOpened = 1;
               try { window.switchTab('funi'); window.funiSetFilter('low'); } catch (e) { window.__rcQwErr = String(e); }
             }
-            var row = document.querySelector('#funi-body .gf-qw-alt');
+            var row = document.querySelector('#funi-body .qw-row');   /* #85 - the grid's rows (v3874) */
             var card = row && row.closest('.f-card');
             if (!card) return false;
             var r = card.getBoundingClientRect();

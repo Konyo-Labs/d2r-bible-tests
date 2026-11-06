@@ -164,6 +164,7 @@
   "test_each_lane_says_its_cpu": 3.0,
   "test_a_store_keeps_each_input_once": 0.3,
   "test_quick_wins_ranks_every_place": 1.0,
+  "test_quick_wins_shows_each_place_with_its_picture": 0.4,
   "test_a_read_belongs_to_the_tab_it_was_seen_on": 1.0,
   "test_a_price_check_shows_the_known_price_first": 1.0,
   "test_the_mac_signs_in_through_its_own_d2jsp_window": 0.3,
