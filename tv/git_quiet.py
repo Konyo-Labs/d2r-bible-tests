@@ -93,7 +93,10 @@ def run(argv, **kw):
     env = dict(os.environ if kw.get("env") is None else kw["env"])
     env["GIT_OPTIONAL_LOCKS"] = "0"
     kw["env"] = env
-    if IS_WIN:
+    # v3866 - IS_WIN is read once, at import: a law that pretends to be Windows (sys.platform patched) and first
+    # imports this module inside that pretence would build Windows-only arguments on a Mac. Only a Python that
+    # really has Windows' process API takes the Windows branch.
+    if IS_WIN and hasattr(subprocess, "STARTUPINFO"):
         if argv and argv[0] == "git":
             _rg = real_git()
             if _rg:

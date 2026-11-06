@@ -338,8 +338,8 @@ RED_PROOF = [
     {
         "why": "2026-09-29 - the sandbox's git index is left empty, so ls-files laws read nothing",
         "file": "tv/heart2.py",
-        "find": "        subprocess.run([\"git\", \"read-tree\", \"HEAD\"], cwd=os.path.dirname(dst),\n",
-        "replace": "        subprocess.run([\"git\", \"--version\"], cwd=os.path.dirname(dst),\n",
+        "find": "        _gq.run([\"git\", \"read-tree\", \"HEAD\"], cwd=os.path.dirname(dst),\n",
+        "replace": "        _gq.run([\"git\", \"--version\"], cwd=os.path.dirname(dst),\n",
         "matches": 1,
     },
     {
