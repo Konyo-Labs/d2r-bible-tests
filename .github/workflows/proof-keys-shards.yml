@@ -313,6 +313,24 @@ jobs:
         with:
           path: ${{ runner.temp }}/heart2-seed
           key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Keep this attempt's proofs where a "Re-run failed jobs" restores them (REG-3280)
+        # actions/cache serves an entry only to a restore with the SAME path. The save above is heart2-seed; the shard's
+        # re-run restore is heart2-seed/rerun - so since REG-3210 moved it there no re-run was ever served. MEASURED on
+        # v3872 (run 42200089396): "Cache saved with key: heart2-proofs-...-1", then the re-run of shard 14 read "Cache not
+        # found" and proved its 280 proofs again (35 min) to make up 3 the deadline had cut
+        if: ${{ always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci/proof-keys-')) }}
+        run: |
+          if [ -f "$RUNNER_TEMP/heart2-seed/.heart2_cache.json" ]; then
+            mkdir -p "$RUNNER_TEMP/heart2-seed/rerun"
+            cp "$RUNNER_TEMP/heart2-seed/.heart2_cache.json" "$RUNNER_TEMP/heart2-seed/rerun/.heart2_cache.json"
+          fi
+      - name: Save it under the re-run's own path (REG-3280)
+        if: ${{ always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci/proof-keys-')) }}
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/heart2-seed/rerun
+          key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-rerun-${{ github.run_attempt }}
       - name: Every shard finished, on this commit, on one plan
         run: python3 tv/proof_shard.py --fan-in shards --shards "$PROOF_SHARDS" --head "$GITHUB_SHA"
       - name: Hand the whole set on as one artifact

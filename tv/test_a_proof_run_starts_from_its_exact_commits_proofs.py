@@ -262,6 +262,20 @@ class TheWorkflowSeedsEveryShardFromIt(unittest.TestCase):
         fan = _job(self.wf, "fan-in")
         self.assertIn("key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}", fan,
                       "the fan-in no longer saves the attempt the re-run restores")
+        # REG-3280 - THE JOINT, NOT THE HALVES. actions/cache serves an entry only to a restore with the SAME path, so the
+        # fan-in must save one under the exact path the shard restores, and with a key the restore's prefix matches.
+        # v3872: the key was there, the paths differed (heart2-seed vs heart2-seed/rerun), and no re-run was ever served.
+        rpath = re.search(r"\n          path: (.+)\n", step).group(1)
+        saves = [b for b in fan.split("\n      - ")[1:] if "uses: actions/cache/save@v4" in b]
+        joined = [b for b in saves if ("\n          path: %s\n" % rpath) in b + "\n"]
+        self.assertEqual(len(joined), 1, "no fan-in save is under the re-run's restore path %r - the re-run serves nothing"
+                         % rpath)
+        key = re.search(r"\n          key: (.+)", joined[0]).group(1)
+        self.assertTrue(key.startswith("heart2-proofs-${{ github.sha }}-${{ github.run_id }}-"),
+                        "the re-run's restore-keys prefix never matches the saved key %r" % key)
+        cp = fan.index('cp "$RUNNER_TEMP/heart2-seed/.heart2_cache.json" "$RUNNER_TEMP/heart2-seed/rerun/.heart2_cache.json"')
+        self.assertLess(fan.index("--merge-shards shards --out"), cp)
+        self.assertLess(cp, fan.index(joined[0]), "the re-run copy is saved before it is written")
         prove = shard[shard.index("- name: Prove this shard"):]
         w = prove.index("python3 tv/proof_seed.py --widen")
         self.assertLess(prove.index("sha256sum"), w, "the seed is widened before its digest is checked")
@@ -278,6 +292,11 @@ class TheWorkflowSeedsEveryShardFromIt(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3280 - the fan-in saves the re-run's proofs under another path than the re-run restores (v3872)",
+     "file": ".github/workflows/proof-keys-shards.yml",
+     "find": "          path: ${{ runner.temp }}/heart2-seed/rerun\n          key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-rerun-${{ github.run_attempt }}\n",
+     "replace": "          path: ${{ runner.temp }}/heart2-seed\n          key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-rerun-${{ github.run_attempt }}\n",
+     "matches": 1},
     {"why": "REG-3210 - the bank is asked for another commit than the head sha (v3864: Publish never took 9d9485ea6's)",
      "file": "tv/proof_seed.py",
      "find": "        rec[\"bank\"], exact = _bundle(sha, flavor, work, \"exact\", download, say)\n",
