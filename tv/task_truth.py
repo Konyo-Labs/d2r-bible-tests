@@ -62,7 +62,7 @@ LOOKS_EVERY_MS = 10 * 60 * 1000      # GitHub is asked at most every 10 min
 LOOKS_STALE_MS = 35 * 60 * 1000      # a lane last read longer ago than this is UNKNOWN, not "not looked"
 LOOKS_WINDOW_DAYS = 14               # the first read goes back this far; the cache keeps LOOKS_KEEP_DAYS
 LOOKS_KEEP_DAYS = 45
-LOOKS_SCHEMA = 3                     # a cache written by another shape is rebuilt, never read as this one
+LOOKS_SCHEMA = 4                     # a cache written by another shape is rebuilt, never read as this one
 GH_TIMEOUT_S = 60
 LOOK_HEAD_CHARS = 600                # a look is ABOUT what the first line naming a version or REG id names, inside its head
 LOOK_BODY_CHARS = 20000              # how much of a look is searched for a line that says the key fails
@@ -415,6 +415,31 @@ def about_versions(body):
     return about(body)["vers"]
 
 
+#: REG-3281 (#86) - a GrokBot per-card answer: "#73 broken images: FIXED", "#81 ALT sessions - STILL ...". Its tags are
+#: upper case, as it writes them; UNKNOWN is neither
+_CARD_RX = re.compile(r"(?<![\w/&])#(\d{1,4})\b")
+_CARD_PASS_RX = re.compile(r"\b(?:FIXED|SAW)\b")
+
+
+def cards_in(body):
+    """REG-3281 (#86) - the board cards a look answers per card: (fixed, still), each [card id str], read line by line - a
+    line naming #NN with FIXED / SAW passes it, with STILL / DIFFERS (or fails / broken) refutes it. The lanes' own issue
+    numbers (#230, #231) are never cards."""
+    fixed, still = [], []
+    for line in str(body or "")[:LOOK_BODY_CHARS].splitlines():
+        ids = [i for i in _CARD_RX.findall(line) if int(i) not in (GROKBOT_ISSUE, THIRD_ISSUE)]
+        if not ids:
+            continue
+        bad = bool(_TAG_FAIL_RX.search(line) or _LINE_FAIL_RX.search(line))
+        good = bool(_CARD_PASS_RX.search(line))
+        for i in ids:
+            if bad and i not in still:
+                still.append(i)
+            elif good and not bad and i not in fixed:
+                fixed.append(i)
+    return fixed[:60], still[:60]
+
+
 def refuted_in(body):
     """The REG ids a look names on a line that says they fail (fail / broken / reopen / not fixed / regressed, or the
     DIFFERS / STILL tags). -> ["REG-101"]"""
@@ -451,9 +476,11 @@ def look_row(comment, issue):
         no_look = bool(_NO_LOOK_RX.search(verdict))
     else:
         no_look = (not fail and not refutes) and bool(_NO_LOOK_RX.search(ab["line"]))
+    fixed, still = cards_in(body)
     return {"id": str(comment.get("id")), "issue": int(issue), "at": at, "seat": seat,
             "regs": ab["regs"], "vers": ab["vers"], "fail": fail,
-            "refutes": refutes, "verdict": verdict, "noLook": no_look}
+            "refutes": refutes, "verdict": verdict, "noLook": no_look,
+            "cardsFixed": fixed, "cardsStill": still}
 
 
 def load_looks(path):
@@ -581,22 +608,36 @@ def looks_view(cache, now_ms, issues=ISSUES):
 
 # ------------------------------------------------------------------------------------------------------------- derive
 
-def _look_verdict(looks, seat, key, ver, since_ms):
-    """The NEWEST look by `seat` after `since_ms` about this key or its version decides. -> (passing row, refuting row)"""
-    about_it = []
+def _look_verdict(looks, seat, key, ver, since_ms, card=None, by_version=True):
+    """The NEWEST look by `seat` after `since_ms` about this key (or its version, `by_version`) decides.
+    -> (passing row, refuting row, newest version-only row)
+
+    REG-3281 (#86) - MEASURED 11-06 08:36: GrokBot's #230 6677563412, whose heading says it re-glassed v3865, made six
+    cards "ready to close" - and that pass never looked at #57's Task board button and listed the heart fan (#31) as
+    UNKNOWN. A version-level VISUAL look is evidence about what it NAMED: with by_version False (GrokBot's seat) a look
+    counts for a key only when its heading names the key itself (the REG, or the version a card is keyed on) or it
+    answers the card by number (FIXED / SAW passes, STILL / DIFFERS refutes); a look that names only the version is
+    returned apart, as "looked at the version, not this card". The third eye reviews the version's whole diff, so its
+    version row stays a look at every key in it (by_version True)."""
+    about_it, ver_only = [], []
     for r in looks.get("rows") or []:
         if r.get("seat") != seat or not isinstance(r.get("at"), int) or r["at"] < since_ms:
             continue
         if r.get("noLook"):
             continue                                      # v3866 - an eye that did not judge is no look, either way
-        if key in (r.get("regs") or []) or (ver and ver in (r.get("vers") or [])):
+        named = key in (r.get("regs") or []) or (key.startswith("v") and key in (r.get("vers") or []))
+        carded = bool(card) and (card in (r.get("cardsFixed") or []) or card in (r.get("cardsStill") or []))
+        if named or carded:
             about_it.append(r)
+        elif ver and ver in (r.get("vers") or []):
+            (about_it if by_version else ver_only).append(r)
+    newest_ver = max(ver_only, key=lambda r: (r["at"], r.get("id"))) if ver_only else None
     if not about_it:
-        return None, None
+        return None, None, newest_ver
     last = max(about_it, key=lambda r: (r["at"], r.get("id")))
-    if last.get("fail") or key in (last.get("refutes") or []):
-        return None, last
-    return last, None
+    if last.get("fail") or key in (last.get("refutes") or []) or (card and card in (last.get("cardsStill") or [])):
+        return None, last, newest_ver
+    return last, None, newest_ver
 
 
 def _ref(r):
@@ -609,12 +650,15 @@ def _site(site):
     return {"ver": site, "why": None if site else "the site's version was not read"}
 
 
-def resolve_key(key, idx, site, looks):
+def resolve_key(key, idx, site, looks, card=None):
     """One key against the evidence. -> {key, phase, sha, ver, at, atWhat, first, last, shipAt, look, third, refuted,
-    unknown: [rungs], why}. `site` is site_view's answer (a bare version string is taken as one)."""
+    versionLook, unknown: [rungs], why}. `site` is site_view's answer (a bare version string is taken as one). `card`: the
+    board card's id, so a GrokBot answer that names the card counts for it (REG-3281)."""
     site = _site(site)
+    card = str(card) if card not in (None, "") else None
     out = {"key": key, "phase": "no-evidence", "sha": None, "ver": None, "at": None, "atWhat": None, "first": None,
-           "last": None, "shipAt": None, "look": None, "third": None, "refuted": None, "unknown": [], "why": None}
+           "last": None, "shipAt": None, "look": None, "third": None, "refuted": None, "versionLook": None,
+           "unknown": [], "why": None}
     main_set, ci = idx["main_set"], idx["ci"]
     if key.startswith("REG-") or _VER_RX.match(key):
         hits = idx["keys"].get(key) or []
@@ -660,14 +704,19 @@ def resolve_key(key, idx, site, looks):
         out["why"] = "published (the site serves %s)" % site.get("ver")
     known = looks.get("known") or {}
     before_window = isinstance(looks.get("from"), int) and t_main is not None and t_main < looks["from"]
-    look, l_ref = _look_verdict(looks, "grokbot", key, ver, t_main or 0) if known.get("grokbot") else (None, None)
-    third, t_ref = _look_verdict(looks, "third", key, ver, first_any) if known.get("third") else (None, None)
+    look, l_ref, l_ver = (_look_verdict(looks, "grokbot", key, ver, t_main or 0, card=card, by_version=False)
+                          if known.get("grokbot") else (None, None, None))
+    third, t_ref, _tv = _look_verdict(looks, "third", key, ver, first_any) if known.get("third") else (None, None, None)
     if look:
         out["look"] = _ref(look)
     elif l_ref:
         out["refuted"] = dict(_ref(l_ref), seat="GrokBot")
     elif not known.get("grokbot") or before_window:
         out["unknown"].append("looked")
+    elif l_ver:                                           # REG-3281 (#86) - it looked at the version, not at this card
+        out["versionLook"] = _ref(l_ver)
+        out["why"] = "%s; GrokBot looked at %s (comment %s) but not at this card - a version-level look counts for what " \
+                     "it names" % (out["why"], ver, l_ver["id"])
     if third:
         out["third"] = _ref(third)
     elif t_ref:
@@ -784,7 +833,7 @@ def derive_card(card, idx, site, looks, now_ms):
     if not keys:
         d.update(phase="no-evidence", hi="no-evidence", why="it names no REG id, version or branch")
     else:
-        per = [resolve_key(k, idx, site, looks) for k in keys]
+        per = [resolve_key(k, idx, site, looks, card=card.get("id")) for k in keys]
         lo = min(per, key=lambda r: RANK[r["phase"]])
         top = max(per, key=lambda r: RANK[r["phase"]])
         rows = list(per)
@@ -797,7 +846,7 @@ def derive_card(card, idx, site, looks, now_ms):
             # When the subject's keys name nothing in git there is no "before" to measure, and only a description REG
             # still on a branch counts (work in flight for this card).
             subj_first = min(r["first"] for r in per if r["first"]) if any(r["first"] for r in per) else None
-            for r in (resolve_key(k, idx, site, looks) for k in regs_in(card.get("description"))[:KEYS_MAX]
+            for r in (resolve_key(k, idx, site, looks, card=card.get("id")) for k in regs_in(card.get("description"))[:KEYS_MAX]
                       if k not in keys):
                 if subj_first is None and r["phase"] not in ("building", "graded"):
                     continue

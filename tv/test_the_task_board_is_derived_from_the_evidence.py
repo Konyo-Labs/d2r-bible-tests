@@ -127,6 +127,9 @@ COMMENTS = {
          "body": "Seat: Grok Bot (code)\n\n## Plan addendum: v3800 REG-100 read price"},           # the coder seat's plan
         {"id": 1007, "created_at": _iso(T0 - 5 * DAY), "updated_at": _iso(T0 - 5 * DAY),
          "body": "Seat: Grok Bot (visual eyes)\n\n# REG-106 recheck: FAIL - still broken on his screen"},
+        # REG-3281 (#86) - a look that names the key: only this one, never 1002's version-level ship check, looks at REG-101
+        {"id": 1008, "created_at": _iso(T0 - 6 * DAY), "updated_at": _iso(T0 - 6 * DAY),
+         "body": "Seat: Grok Bot (visual eyes)\n\n# REG-101 recheck: SAW the lamp on his screen"},
     ],
     231: [
         {"id": 2001, "created_at": _iso(T0 - 6 * DAY), "updated_at": _iso(T0 - 6 * DAY),
@@ -261,19 +264,48 @@ class TheLooksAreReadAndUnknownStaysUnknown(Fixture):
         self.assertIn("&since=", gh.calls[0])
         idx = self.idx()
         r101 = TT.resolve_key("REG-101", idx, "v3801", looks)
-        self.assertEqual((r101["phase"], r101["look"]["id"], r101["third"]["id"]), ("third-eyed", "1002", "2001"),
-                         "the third eye is a SECOND-EYE row on #231")
+        self.assertEqual((r101["phase"], (r101["look"] or {}).get("id"), (r101["third"] or {}).get("id")),
+                         ("third-eyed", "1008", "2001"), "the third eye is a SECOND-EYE row on #231")
         r100 = TT.resolve_key("REG-100", idx, "v3801", looks)
         self.assertEqual(r100["phase"], "live", "a look before the ship, a look whose EVIDENCE or RECAP named v3800 / "
                                                 "REG-100, or the coder seat's plan counted as a look at REG-100")
         self.assertIsNone(r100["look"])
         self.assertIsNone(r100["third"], "a Grok CLI status note, or a second-eye row off its lane, counted as the third eye")
 
+    def test_a_look_at_the_version_is_not_a_look_at_every_card_in_it(self):
+        """REG-3281 (#86) - GrokBot's #230 6677563412 re-glassed v3865 and made six cards 'ready to close', four of which
+        it never looked at. A version-only visual look is 'looked at the version, not this card'."""
+        looks, _gh, _p = self.looks()
+        rows = [r for r in looks["rows"] if r["id"] != "1008"]
+        only_version = dict(looks, rows=rows)
+        r = TT.resolve_key("REG-101", self.idx(), "v3801", only_version)
+        self.assertEqual(r["phase"], "live", "a version-level look closed a card it never named")
+        self.assertIsNone(r["look"])
+        self.assertEqual((r["versionLook"] or {}).get("id"), "1002", "the version-level look was not said")
+        self.assertIn("not at this card", r["why"])
+
+    def test_a_per_card_answer_counts_for_that_card_only(self):
+        """REG-3281 (#86) - GrokBot answers per CARD ("#73 broken images: FIXED"); that names the card, not the version."""
+        body = ("Seat: Grok Bot (visual eyes)\n\n# v3801 per-card answers\n- **#5 the lamp:** FIXED - reads off\n"
+                "- #6 the fan: STILL overlapping\n- #7 the meter: UNKNOWN, could not open it\n- posted on #230 6677563412 FIXED")
+        fixed, still = TT.cards_in(body)
+        self.assertEqual((fixed, still), (["5"], ["6"]), "the per-card tags were misread (or #230 read as a card)")
+        looks, _gh, _p = self.looks()
+        row = dict(TT.look_row({"id": 1099, "created_at": _iso(T0 - 6 * DAY), "body": body}, 230))
+        rows = [x for x in looks["rows"] if x["id"] not in ("1008", "1002")] + [row]
+        lk = dict(looks, rows=rows)
+        idx = self.idx()
+        self.assertEqual((TT.resolve_key("REG-101", idx, "v3801", lk, card=5)["look"] or {}).get("id"), "1099")
+        self.assertEqual((TT.resolve_key("REG-101", idx, "v3801", lk, card=6)["refuted"] or {}).get("id"), "1099",
+                         "a STILL answer for the card did not refute it")
+        self.assertIsNone(TT.resolve_key("REG-101", idx, "v3801", lk, card=7)["look"], "an UNKNOWN answer passed a card")
+        self.assertIsNone(TT.resolve_key("REG-101", idx, "v3801", lk, card=8)["look"], "another card's answer counted")
+
     def test_no_status_note_plan_or_misposted_row_is_a_look(self):
         rows = dict((c["id"], TT.look_row(c, n)) for n in (230, 231) for c in COMMENTS[n])
         self.assertEqual(dict((i, (r or {}).get("seat")) for i, r in rows.items()),
                          {1001: "grokbot", 1002: "grokbot", 1003: None, 1004: None, 1005: None, 1006: None,
-                          1007: "grokbot", 2001: "third", 2002: None, 2003: "third"})
+                          1007: "grokbot", 1008: "grokbot", 2001: "third", 2002: None, 2003: "third"})
         self.assertEqual((rows[1002]["vers"], rows[1002]["regs"]), (["v3801"], []), "a look is about its HEADING only")
 
     def test_an_eye_that_could_not_judge_is_no_look(self):
@@ -370,7 +402,7 @@ class AHandStatusThatDisagreesIsFlagged(Fixture):
         kinds = dict((cid, (d["drift"] or {}).get("kind")) for cid, d in t["byCard"].items())
         self.assertEqual(kinds, {"1": "ready-to-close", "2": "closed-never-shipped", "3": None, "4": "work-started",
                                  "5": "nothing-built", "6": None, "7": None, "8": None, "9": None})
-        self.assertIn("#230 comment 1002", t["byCard"]["1"]["drift"]["say"], "ready to close does not name the look")
+        self.assertIn("#230 comment 1008", t["byCard"]["1"]["drift"]["say"], "ready to close does not name the look")
         self.assertIn("#231 comment 2001", t["byCard"]["1"]["drift"]["say"], "ready to close does not name the third eye")
         self.assertIn("REG-104 building", t["byCard"]["2"]["drift"]["say"])
         self.assertEqual(t["byCard"]["9"]["phase"], "building",
@@ -421,7 +453,7 @@ class TheBoardCarriesItScrubbed(Fixture):
         self.assertEqual((b["truth"]["owed"], b["truth"]["drift"]["ready-to-close"], b["truth"]["publishedVer"]), (2, 1, "v3801"))
         later = TB.board(cards, "t", T0 + 60 * 1000, truth=TT.derive(cards, self.idx(), "v3801", looks, T0 + 60 * 1000))
         c1 = dict((r["id"], r) for r in b["cards"])["1"]["phase"]
-        self.assertEqual((c1["look"], c1["third"], c1["w"]), ("1002", "2001", "third-eyed"),
+        self.assertEqual((c1["look"], c1["third"], c1["w"]), ("1008", "2001", "third-eyed"),
                          "the chip does not carry which comments made it third-eyed, or what its time is")
         self.assertEqual(TB.digest(later), TB.digest(b), "an unchanged board reads as a new one every minute")
         self.assertNotIn("phase", TB.board(cards, "t", T0)["cards"][0], "a phase nobody derived was published")
@@ -563,6 +595,21 @@ class ThePageDrawsIt(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3281 (#86) - a GrokBot look at the VERSION counts for every card shipped in it again",
+     "file": "tv/task_truth.py",
+     "find": "            (about_it if by_version else ver_only).append(r)\n",
+     "replace": "            about_it.append(r)\n",
+     "matches": 1},
+    {"why": "REG-3281 (#86) - a STILL answer for the card never refutes it",
+     "file": "tv/task_truth.py",
+     "find": " or (card and card in (last.get(\"cardsStill\") or [])):\n",
+     "replace": ":\n",
+     "matches": 1},
+    {"why": "REG-3281 (#86) - a per-card FIXED answer never counts for the card",
+     "file": "tv/task_truth.py",
+     "find": "        carded = bool(card) and (card in (r.get(\"cardsFixed\") or []) or card in (r.get(\"cardsStill\") or []))\n",
+     "replace": "        carded = False\n",
+     "matches": 1},
     {"why": "REG-3246 - the headline alone makes a row no look again, so a stated verdict under an 'unreachable' headline is skipped",
      "file": "tv/task_truth.py",
      "find": "    if verdict:\n        no_look = bool(_NO_LOOK_RX.search(verdict))\n    else:\n        no_look = (not fail and not refutes) and bool(_NO_LOOK_RX.search(ab[\"line\"]))\n",
@@ -600,8 +647,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3217 - a GrokBot comment from BEFORE the ship counts as a look at it",
      "file": "tv/task_truth.py",
-     "find": "    look, l_ref = _look_verdict(looks, \"grokbot\", key, ver, t_main or 0) if known.get(\"grokbot\") else (None, None)\n",
-     "replace": "    look, l_ref = _look_verdict(looks, \"grokbot\", key, ver, 0) if known.get(\"grokbot\") else (None, None)\n",
+     "find": "    look, l_ref, l_ver = (_look_verdict(looks, \"grokbot\", key, ver, t_main or 0, card=card, by_version=False)\n",
+     "replace": "    look, l_ref, l_ver = (_look_verdict(looks, \"grokbot\", key, ver, 0, card=card, by_version=False)\n",
      "matches": 1},
     {"why": "REG-3217 - a version in a look's evidence list counts as a look at that version (measured: 30 of 84 cards)",
      "file": "tv/task_truth.py",
@@ -705,7 +752,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3866 (review) - a look that says the work still FAILS counts as a look that passed it",
      "file": "tv/task_truth.py",
-     "find": "    if last.get(\"fail\") or key in (last.get(\"refutes\") or []):\n",
+     "find": "    if last.get(\"fail\") or key in (last.get(\"refutes\") or []) or (card and card in (last.get(\"cardsStill\") or [])):\n",
      "replace": "    if False:\n",
      "matches": 1},
     {"why": "v3866 (review) - a comma list of REG ids keeps only its first",
