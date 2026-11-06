@@ -77,6 +77,17 @@ class ItChoosesWhatThisPCMayRun(unittest.TestCase):
         placed = sorted(sum((v for k, v in s.items() if k != "argv"), []))
         self.assertEqual(placed, sorted(costs), "a gate was dropped or counted twice")
 
+    def test_a_law_that_opens_the_render_harness_is_a_browser_law(self):
+        """REG-3310 - RC._Tab(...) and _chrome_up() start render_check's headless Chrome, and BROWSER_CALLS named neither:
+        15 laws that open it ran in every pre-flight on his Mac since v3865 (measured: the v3875 pre-flight's
+        test_a_roster_name_opens_its_row_with_the_eyes was the parent of a --remote-debugging-port Chrome)."""
+        _w(self.d, "test_opens_a_tab", "import render_check as RC\nt = RC._Tab('about:blank')\n")
+        _w(self.d, "test_starts_chrome", "import render_check as R\nR._chrome_up()\n")
+        _w(self.d, "test_rides_the_tab", "import test_opens_a_tab\n")
+        for n in ("test_opens_a_tab", "test_starts_chrome", "test_rides_the_tab"):
+            self.assertTrue(PF.drives_browser(n, self.d), "%s opens the render harness's Chrome and would run on his Mac" % n)
+        self.assertFalse(PF.drives_browser("test_cheap", self.d), "premise: a plain law is not a browser law")
+
     def test_a_registered_law_the_cost_table_never_measured_runs_here(self):
         """REG-3299 (v3875's GitHub round) - the population was tv/gate_costs.json, which lags the registry: 36 registered
         gates were never run here and the pre-flight still said GREEN; test_every_picture_the_console_asks_for_is_shipped
@@ -193,6 +204,11 @@ class TheChangedLawsAreMeasuredFromWhatGitHubLastGraded(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3310 - a law that opens the render harness's Chrome (RC._Tab, _chrome_up) runs on his Mac again",
+     "file": "tv/preflight.py",
+     "find": "                           r\"|\\b_Tab\\(|\\b_chrome_up\\(|\\b(?:RC|rc|R|render_check)\\.check\\(\")",
+     "replace": "                           r\"|\\bTab_never_named\\(\")",
+     "matches": 1},
     {'why': 'REG-3299 - a registered law the cost table never measured is never run here again',
      'file': 'tv/preflight.py',
      'find': '    s["run"] = s["run"] + un_run\n',

@@ -43,8 +43,12 @@ PROVE_MAX = 40
 LAW_TIMEOUT_S = 600
 COSTS = os.path.join(HERE, "gate_costs.json")
 #: what a law CALLS when it drives a browser - importing a module that merely contains launch code is not running it
+#: REG-3310 - and the render harness's own handles: a law that opens RC._Tab(...) or calls _chrome_up() starts render_check's
+#: headless Chrome. Twelve laws did and none matched, so the pre-flight ran them on his Mac - measured 11-06 with the v3875
+#: pre-flight's test_a_roster_name_opens_its_row_with_the_eyes as the parent of a --remote-debugging-port Chrome.
 BROWSER_CALLS = re.compile(r"board\(\)|Board\(\)|H\.Board|\.Board\(|render_check\.(?:run|render|main|measure)|RC\.(?:run|render)"
-                           r"|playwright|launch_chrome|--remote-debugging|headless=new")
+                           r"|playwright|launch_chrome|--remote-debugging|headless=new"
+                           r"|\b_Tab\(|\b_chrome_up\(|\b(?:RC|rc|R|render_check)\.check\(")
 ANCHOR_CENSUS = ["test_the_heart_can_see_its_own_instruments.py",
                  "TestHeartSeesItsInstruments.test_every_declared_red_proof_is_well_formed"]
 

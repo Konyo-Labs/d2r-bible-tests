@@ -21,6 +21,16 @@ The Grok CLI's backlog look at v3858 (#231 comment 6671667775, finding 2). Repro
 ### REG-3221 - A PEER'S JEWELS READ "NOT PUBLISHED" FROM A CACHED ROW (v3866, the #231 eye on v3861)
 The Grok CLI's backlog look at v3861 (#231 comment 6671668579, finding 1). Reproduced in the code: fleet_compare's v2814 rule ("an absence in a cached record is not an absence in the world" - one forced re-read before saying a peer has not reported) covered only the ledger's own mask. A cached row that held the uniques mask was never re-read, so when it predated the peer's colossal mask, _fleet_merge_colossal named the six jewels "not judged" as if the peer had never published them. Fix: the jewels' mask earns the same single forced read when the cached row lacks it (and no forced read happened for uniques); the uniques compare keeps the row it was made from. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (+1 case, red-proof PROVEN).
 
+### REG-3310 - THE PRE-FLIGHT RAN 15 BROWSER LAWS ON HIS MAC: IT KNEW RC._Tab AND _chrome_up AS PLAIN PYTHON (v3875)
+His rule: browser laws run on GitHub, never on his Mac. tv/preflight.py keeps them out by BROWSER_CALLS, which named a
+Board, render_check.run/render/main/measure, Playwright and the launch flags - not the render harness's own handles. Caught
+11-06 while checking which law started a headless Chrome: its parent was the v3875 pre-flight's
+test_a_roster_name_opens_its_row_with_the_eyes (`RC._Tab("about:blank")`). Measured: 12 laws open `_Tab(` / `_chrome_up(`
+directly and 7 more import them; 15 of the 19 were in the pre-flight's local run, every pre-flight since v3865 (crest_loudness,
+test_build_stamp, test_safe_copy and the fleet-row laws among them). BROWSER_CALLS now names `_Tab(`, `_chrome_up(` and
+`render_check.check(`; all 19 are GitHub's, and none leaves the local run for any other reason. The pre-flight in flight
+was stopped before it pushed. Law: test_a_version_is_preflighted_before_github_grades_it (+1 case), red-proof PROVEN.
+
 ### REG-3307 - crest_loudness CALLED A CREST IT NEVER MEASURED QUIET, AND A TIE WENT TO WHICHEVER ELEMENT SORTED FIRST (v3875, GitHub's round)
 v3875's first proof round: crest_loudness[0] BLIND on shard 7 (Linux) - its tamper paints the crest solid red and the gate
 stayed green. PROVEN on v3872's round and on this Mac today (tampered: #bs-glyph 95.0% against .help-btn 75.7%). What it saw
