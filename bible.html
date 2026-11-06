@@ -70376,7 +70376,12 @@ function renderJournal(){
          print" this comment promises; b.s.chance stopped being that the moment the cards adjusted. */
       var h=(typeof hoursFor==='function')?hoursFor(b.chance!=null?b.chance:b.s.chance,0.5,b.s.kph||100,killsPerRun(b.s.bossId)):null;
       return (h===null||!isFinite(h))?1e9:h; };
-    var low=missing.filter(function(x){ return (x.qlvl||99)<=35; })
+    /* REG-3290 (his ask 2026-11-06, with a screenshot: Quick wins 3 beside All missing 8 - "8 items need to be for quick
+       runs im missing 8 so they each need to render their data from where to farm and everything"). The qlvl <= 35 gate
+       was for the early game, when hundreds were missing; at 8 it hid five of them from the one view that says where to
+       farm. Every missing unique is a quick win now, the fastest to cross off first; one with no known route sorts last
+       and says so on its own card. */
+    var low=missing.slice()
       .map(function(x){ x._qh=_lowHrs(x); return x; })
       .sort(function(a,b){ return a._qh-b._qh || (a.qlvl||0)-(b.qlvl||0); });
     // v619 (Konyo: F-Uniques gets the same smart sync + stamps) — SEALED GROUNDS: group EVERY verified-
@@ -70388,7 +70393,7 @@ function renderJournal(){
       var g=(byAll[k]=byAll[k]||{boss:k, total:0, found:0, names:[]}); g.total++; if(own.has(x.n)) g.found++; else g.names.push(x.n); });
     var sealed=Object.keys(byAll).map(function(k){return byAll[k];}).filter(function(g){ return g.total>=2 && g.found===g.total; })
       .sort(function(a,b){ return b.total-a.total; });
-    var lowTotal=items.filter(function(x){ return (x.qlvl||99)<=35; }).length;
+    var lowTotal=items.length;   // REG-3290 - every unique: the seal says the whole chronicle is found
     // v663 — GAME-TRUE DENOMINATOR (Konyo: 'calibrate and fix the percentages'). The in-game Chronicle
     // counts 403 unique entries (uniqueitems.txt, spawnable, extracted from the live RotW CASC store
     // 2026-07-12) — the site's 364 named cards are a subset (39 gap entries: internal-typo aliases,
@@ -71334,11 +71339,11 @@ function renderJournal(){
       H.push('<div class="forge-empty forge-empty-sm">Nothing in this bucket right now — no missing unique maps to a ranked run. Tap <b>▦ All</b> for the full missing grid, or <b>⚡ Quick wins</b> for the fastest crosses.</div>');   // v681 — same 0-count fall-through class as the v678 quick-wins fix
     }
     if(show('low')&&!s.low.length&&s.lowTotal>0){
-      // v619 — every quick-win (qlvl ≤35, the Normal/Nightmare hunts) found → the seal, not an empty tab
-      H.push('<div class="forge-sec forge-sec-done"><div class="rw-stamp-mini rw-band" style="margin:6px 0"><span class="rw-band-t">✓ quick wins complete</span><span class="rw-band-s">all '+s.lowTotal+' low-level (qlvl ≤35) uniques found — the early game is sealed</span></div></div>');
+      // v619 — every quick win found → the seal, not an empty tab (REG-3290: every unique is one now)
+      H.push('<div class="forge-sec forge-sec-done"><div class="rw-stamp-mini rw-band" style="margin:6px 0"><span class="rw-band-t">✓ quick wins complete</span><span class="rw-band-s">all '+s.lowTotal+' uniques found — nothing left to farm</span></div></div>');
     }
     if(show('low')&&s.low.length){
-      H.push('<div class="forge-sec forge-sec-step"><div class="forge-sec-h">⚡ Quick wins <span class="forge-sec-ct">'+s.low.length+'</span><span class="forge-sec-sub">qlvl ≤ 35 — the early uniques skipped on the way to Hell, fastest to cross off</span></div>');
+      H.push('<div class="forge-sec forge-sec-step"><div class="forge-sec-h">⚡ Quick wins <span class="forge-sec-ct">'+s.low.length+'</span><span class="forge-sec-sub">every missing unique, fastest to cross off first - where to farm each, and how long</span></div>');
       H.push(_moreWrap(s.low.map(function(x){ return _uniItemCard(x); }), F==='low'?12:6, 'quick wins'));   // v647 — ALL of them, drawer-tailed
       H.push('</div>');
     }

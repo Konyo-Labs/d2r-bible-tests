@@ -153,6 +153,21 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         self.assertNotIn("Normal The Cow King", g[:i], "a per-kill place sat among the ranked rows")
 
 
+class EveryMissingUniqueIsAQuickWin(unittest.TestCase):
+    """REG-3290 (his ask 2026-11-06, a screenshot: Quick wins 3 beside All missing 8 - "8 items need to be for quick runs
+    im missing 8 so they each need to render their data from where to farm and everything")."""
+
+    def test_the_list_is_every_missing_unique_fastest_first(self):
+        with io.open(os.path.join(ROOT, "bible.html"), encoding="utf-8") as fh:
+            page = fh.read()
+        a = page.index("  window.funiScan=function(){")
+        b = page.index("    return { total:items.length, found:found, missing:missing, runs:runs, low:low,", a)
+        body = re.sub(r"/\*.{0,6000}?\*/", "", page[a:b], flags=re.S)
+        body = "\n".join(l.split("//", 1)[0] for l in body.split("\n"))
+        self.assertEqual(body.count("var low=missing.slice()"), 1, "the quick-wins list is not built from every missing unique")
+        self.assertNotRegex(body, r"var low=missing\.filter", "the quick-wins list filters the missing uniques again")
+        self.assertIn(".sort(function(a,b){ return a._qh-b._qh", body, "the list is not ordered fastest first")
+
 class TheDoctorWatchesThePictures(unittest.TestCase):
     """REG-3269's watcher: an art clean-up that removes a picture the grid names must read MISSING, never ok."""
 
@@ -204,6 +219,11 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3290 - Quick wins hides every missing unique above qlvl 35 again (3 of his 8)",
+     "file": "bible.html",
+     "find": "    var low=missing.slice()\n",
+     "replace": "    var low=missing.filter(function(x){ return (x.qlvl||99)<=35; })\n",
+     "matches": 1},
     {"why": "REG-3278 - the boss portraits a tile uses first are never checked",
      "file": "tv/console_doctor.py",
      "find": "    mon = sorted(set(\"art/\" + f for f in files + bosses))\n",
