@@ -23,11 +23,13 @@ test('A — F·Uniques: perfect partition of all missing uniques into runs; all-
     const dupes = runItems.length - new Set(runItems).size;
     const strayInRuns = runItems.filter((n) => !missingNames.has(n));
     // mark EVERYTHING found → the forge must empty
-    const _fl: any = {}; s0.missing.forEach((x: any) => (_fl[x.n] = 'sim')); localStorage.setItem('d2r_foundLog', JSON.stringify(_fl)); (window as any)._gFoundDirty && (window as any)._gFoundDirty();   // v677 — found = the LEDGER
+    const _fl: any = {}; s0.missing.forEach((x: any) => (_fl[x.n] = 'sim'));
+    // REG-3316 - the six Colossal jewels are in Quick wins now (his 11-06 ask): all-found marks them too
+    (w._colossalTallyRows ? w._colossalTallyRows() : []).forEach((x: any) => (_fl[x.n] = 'sim')); localStorage.setItem('d2r_foundLog', JSON.stringify(_fl)); (window as any)._gFoundDirty && (window as any)._gFoundDirty();   // v677 — found = the LEDGER
     const s1 = w.funiScan();
     return { total: s0.total, found0: s0.found, missing0: s0.missing.length,
       notInAnyRun, dupes, strayInRuns,
-      found1: s1.found, missing1: s1.missing.length, runs1: s1.runs.length, low1: s1.low.length };
+      found1: s1.found, missing1: s1.missing.length, runs1: s1.runs.length, low1: s1.low.length, colTotal: s1.colTotal };
   });
   expect(r.total).toBeGreaterThan(300);        // the tracked unique grail universe
   expect(r.found0).toBe(0);
@@ -35,7 +37,7 @@ test('A — F·Uniques: perfect partition of all missing uniques into runs; all-
   expect(r.notInAnyRun).toEqual([]);           // every missing unique is in a run group — none falls through
   expect(r.dupes).toBe(0);                     // …and in exactly ONE (perfect partition)
   expect(r.strayInRuns).toEqual([]);           // no phantom items in runs
-  expect(r.found1).toBe(r.total);              // all-found → grail complete
+  expect(r.found1).toBe(r.total + (r.colTotal || 0));   // all-found → grail complete (the 397 cards + the six jewels)
   expect(r.missing1).toBe(0);
   expect(r.runs1).toBe(0);
   expect(r.low1).toBe(0);

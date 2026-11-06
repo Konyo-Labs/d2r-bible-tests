@@ -70380,6 +70380,37 @@ function renderJournal(){
     return '<div class="qw-grid">' + qp.slice(0, 4).map(_qwPlaceRow).join('') + '</div>' + _qwAlsoGrid(also);
   }
   window._qwGridHtml = _qwGridHtml;
+  /* REG-3316 (#90, his 11-06 ask: "each of the 3 ancients can drop 2 jewels specifically ... i want to know how and which
+     of the three i need to hunt") - a Colossal jewel has no monster to farm, so its card ranked no place and fell to a
+     one-line note. Its card is a grid row now, in the same columns as every place: the Ancient to kill LAST (his sprite,
+     the same file D2IO_ART names for him), the Colossal Summit, and his pair at 50/50. Verified 11-06: the wiki's Colossal
+     Ancients page ("which one drops depends on who was defeated last; ... a 50/50 chance for either"), and Icy Veins and
+     AOEAH for the pairs (Talic: Defender's Fire/Bile, Korlic: Protector's Frost/Stone, Madawc: Guardian's Thunder/Light) -
+     the same pairs COLOSSAL_JEWELS carries. Nothing here is a measured time: those columns say so. */
+  function _qwColossalRow(name){
+    var J = (typeof COLOSSAL_JEWELS !== 'undefined') ? COLOSSAL_JEWELS : [];
+    var j = null;
+    for (var i = 0; i < J.length; i++){ if (J[i] && J[i].n === name){ j = J[i]; break; } }
+    if (!j || !j.ancient) return '';
+    var pic = (typeof D2IO_ART !== 'undefined' && D2IO_ART[j.ancient]) ? D2IO_ART[j.ancient] : null;
+    var v = function(u){ return (typeof _artV === 'function') ? _artV(u) : u; };
+    var pair = esc(j.n) + (j.sister ? ' or ' + esc(j.sister) : '');
+    return '<div class="qw-grid"><div class="qw-row qw-best qw-colossal">'
+      + '<span class="qw-tile" title="' + esc(j.ancient) + ' · Colossal Summit">'
+      + (pic ? '<img class="qw-mon qw-mon-sprite" src="' + v(pic) + '" alt="" loading="lazy" onerror="this.remove()">' : '')
+      + '</span>'
+      + '<span class="qw-place"><span class="qw-rank">the only way</span>'
+      + '<b class="qw-name">Kill ' + esc(j.ancient) + ' last</b>'
+      + '<span class="qw-sub qw-area">Colossal Summit · the Colossal Ancients fight</span></span>'
+      + _qwStat('1:2', 'odds a fight', 'qw-odds', 'the Ancient you kill last drops one of his two jewels, 50/50: ' + j.n + (j.sister ? ' or ' + j.sister : ''))
+      + _qwStat('~1', 'fights for a 50% chance', 'qw-runs', 'one fight with ' + j.ancient + ' last is an even chance at ' + j.n)
+      + _qwStat('—', 'time for a 50% chance', 'qw-ttf qw-unmeasured', 'not measured - the fight’s length is not on record')
+      + _qwStat('—', 'fights an hour', 'qw-kph qw-unmeasured', 'not measured')
+      + '</div></div>'
+      + '<div class="gf-note qw-colossal-how">Summon them: cube all five Colossal Ancient statues into the Colossal Summit. '
+      + 'Kill the other two first and ' + esc(j.ancient) + ' last: he drops ' + pair + '.</div>';
+  }
+  window._qwColossalRow = _qwColossalRow;
   /* v1561 — the moment funiScan exists, the landing ring can stop guessing. See the note on
      renderGrailProgress: it paints before this block loads, so it needs telling. */
   try { setTimeout(function(){
@@ -70445,7 +70476,12 @@ function renderJournal(){
       var g=(byAll[k]=byAll[k]||{boss:k, total:0, found:0, names:[]}); g.total++; if(own.has(x.n)) g.found++; else g.names.push(x.n); });
     var sealed=Object.keys(byAll).map(function(k){return byAll[k];}).filter(function(g){ return g.total>=2 && g.found===g.total; })
       .sort(function(a,b){ return b.total-a.total; });
-    var lowTotal=items.length;   // REG-3290 - every unique: the seal says the whole chronicle is found
+    /* REG-3316 (#90, his 11-06 ask: "6 jewels are also related to chronicle and can be farmed ... add them also to the
+       quick wins") - the six Colossal jewels are in his 403 and were never in this list: a missing one now joins it, after
+       every unique with a farm time (it has none - the fight's length is not on record), and its card names the Ancient to
+       kill last (_qwColossalRow). */
+    _colRowsT.forEach(function(x){ if(!_ownedHas(own, x.n)) low.push(x); });
+    var lowTotal=items.length+_colRowsT.length;   // REG-3290/3316 - every unique and the six jewels: the 403
     // v663 — GAME-TRUE DENOMINATOR (Konyo: 'calibrate and fix the percentages'). The in-game Chronicle
     // counts 403 unique entries (uniqueitems.txt, spawnable, extracted from the live RotW CASC store
     // 2026-07-12) — the site's 364 named cards are a subset (39 gap entries: internal-typo aliases,
@@ -71202,6 +71238,10 @@ function renderJournal(){
     var _qp=_qwPlaces(x);
     if(_qp.length){
       src=_qwGridHtml(_qp, _qwAlso(x, _qwWorst(_qp)));   /* #85 - one grid, each place with its picture */
+    }
+    else {
+      var _cj = _qwColossalRow(x.n);                     /* REG-3316 (#90) - a Colossal jewel: the Ancient to kill last */
+      if (_cj) src = _cj;
     }
     /* v1624 — QUICK WINS still shows the ITEM (his call: "for quick wins we dont touch and leave
        it as is which is the item as the main") — it just stops being an inert picture. */

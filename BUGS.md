@@ -101,6 +101,21 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3316 - THE SIX COLOSSAL JEWELS WERE IN HIS 403 AND NEVER IN QUICK WINS, AND NOTHING SAID WHICH ANCIENT DROPS WHICH (v3876, #90, his 11-06 ask)
+His words: "6 jewels are also related to chronicle and can be farmed.. each of the 3 ancients can drop 2 jewels specifically
+always and locked per ancients ... webfetch it and add them also to the quick wins ... i want to know how and which of the
+three i need to hunt". funiScan counted a found jewel toward the 403 but listed only the 397 cards, so Quick wins read 397
+and a missing jewel never appeared. Verified online first: the wiki's Colossal Ancients page ("which one drops depends on who
+was defeated last; ... a 50/50 chance for either") and, for the pairs, Icy Veins and AOEAH (Talic: Defender's Fire/Bile,
+Korlic: Protector's Frost/Stone, Madawc: Guardian's Thunder/Light; one mtmmo guide differs and is outvoted) - the same pairs
+the page's COLOSSAL_JEWELS carries. Now a missing jewel joins Quick wins (after every unique with a farm time - it has none
+on record) and its card is ONE grid row in the place columns: the Ancient's sprite (the file D2IO_ART names, REG-3315),
+"Kill <Ancient> last", Colossal Summit, 1:2 odds a fight, ~1 fight for a 50% chance, the two time columns marked not
+measured, and a line on how to summon them. Quick wins reads 403. Rendered: 6 of 6 jewel rows painted at 1440 and 375, 0
+clipped, 0 broken images (the pixels of the row itself are owed to a look). Laws: test_quick_wins_shows_each_place_with_its_
+picture (+ EachColossalJewelNamesTheAncientToHunt, driven in node, the pairs pinned to the sources), red-proofs PROVEN;
+tests/v566_grail_forges_all_items_sim.spec.ts marks the jewels too in its all-found case (GitHub runs it).
+
 ### REG-3315 - EVERY QUICK WINS MONSTER WAS A CROPPED 100x100 STILL, AND THE SAME MONSTER DREW DIFFERENT PICTURES ON DIFFERENT SURFACES (v3876, #89/#91, his 11-06 asks)
 His words: "a .GIF for coldcrow just like it is here" (the wiki's animated Coldcrow (Diablo II).gif) and "anywhere these
 monsters/levels/character NPC ... are already image related i want them unified across the platform and rendering the

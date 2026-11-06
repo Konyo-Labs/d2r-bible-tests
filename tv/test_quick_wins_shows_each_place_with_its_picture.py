@@ -242,6 +242,45 @@ class OneMonsterOnePicture(unittest.TestCase):
             self.assertTrue(r.get("url", "").startswith("https://"), "%s's sprite has no source" % r["name"])
 
 
+class EachColossalJewelNamesTheAncientToHunt(unittest.TestCase):
+    """REG-3316 (#90, his 11-06 ask: "which of the three i need to hunt for trying to get a specific one") - a Colossal
+    jewel's Quick wins card is a grid row naming the Ancient to kill LAST, with his sprite (the file D2IO_ART names for
+    him) and his pair at 50/50. The pairs are the verified ones (the wiki's Colossal Ancients page; Icy Veins and AOEAH):
+    Talic - Defender's Fire/Bile, Korlic - Protector's Frost/Stone, Madawc - Guardian's Thunder/Light."""
+
+    PAIRS = {"Defender's Fire": "Talic", "Defender's Bile": "Talic", "Protector's Frost": "Korlic",
+             "Protector's Stone": "Korlic", "Guardian's Thunder": "Madawc", "Guardian's Light": "Madawc"}
+
+    def test_each_jewel_row_names_its_ancient_his_sprite_and_the_pair(self):
+        if not NODE:
+            self.skipTest("no node - the page's row is not driven here (UNMEASURED)")
+        src = _read()
+        i = src.index("const D2IO_ART = {")
+        art = dict(re.findall(r'^\s*"([^"]+)":\s*"([^"]+)"', src[i:src.index("\n};", i)], re.M))
+        code = (_cut(src, "const COLOSSAL_JEWELS = [", "];") + "\n"
+                + _cut(src, "  function _qwStat(", "\n  }") + "\n"
+                + _cut(src, "  function _qwColossalRow(name){", "\n  window._qwColossalRow = _qwColossalRow;", keep_end=False))
+        prog = ("var window = {};\nfunction esc(s){ return String(s == null ? '' : s).replace(/[&<>\"']/g, function(c){"
+                " return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]; }); }\n"
+                "var D2IO_ART = " + json.dumps({k: art[k] for k in ("Talic", "Korlic", "Madawc") if k in art}) + ";\n"
+                + code + "\nvar out = {};\n"
+                + json.dumps(sorted(self.PAIRS)) + ".forEach(function(n){ out[n] = _qwColossalRow(n); });\n"
+                "out.__none = _qwColossalRow('Stormlash');\nprocess.stdout.write(JSON.stringify(out));")
+        r = subprocess.run([NODE, "-"], input=prog, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr[-1500:])
+        out = json.loads(r.stdout)
+        self.assertEqual(out["__none"], "", "a unique that is not a Colossal jewel drew an Ancient row")
+        for jewel, anc in sorted(self.PAIRS.items()):
+            row = out[jewel]
+            self.assertIn("Kill %s last" % anc, row, "%s's row does not name %s to kill last" % (jewel, anc))
+            self.assertIn('src="%s"' % art[anc], row, "%s's row does not show %s's sprite" % (jewel, anc))
+            self.assertIn("1:2", row)
+            sister = [j for j, a in self.PAIRS.items() if a == anc and j != jewel][0]
+            for nm in (jewel, sister):
+                self.assertIn(nm.replace("'", "&#39;"), row, "%s's row does not name the pair (%s)" % (jewel, nm))
+            self.assertEqual(row.count('class="qw-row'), 1, "the jewel's card is not one grid row")
+
+
 class TheDoctorWatchesThePictures(unittest.TestCase):
     """REG-3269's watcher: an art clean-up that removes a picture the grid names must read MISSING, never ok."""
 
@@ -293,6 +332,11 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3316 - a Colossal jewel's card stops naming the Ancient to kill last",
+     "file": "bible.html",
+     "find": "      + '<b class=\"qw-name\">Kill ' + esc(j.ancient) + ' last</b>'",
+     "replace": "      + '<b class=\"qw-name\">Colossal Summit</b>'",
+     "matches": 1, "needs": "node"},
     {'why': "REG-3303 - Annihilus's card says 'drops broadly' again (Uber Diablo is the only source)",
      'file': 'bible.html',
      'find': "      if (k===window._regKey('Annihilus')) return {",
