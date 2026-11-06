@@ -168,8 +168,6 @@ class TestARemeasurementCoversTheSamePopulation(unittest.TestCase):
                 mentioned.add(node.attr)
             elif isinstance(node, ast.Constant) and isinstance(node.value, str):
                 mentioned.add(node.value)
-            elif isinstance(node, ast.Str):            # py<3.8 shape, harmless to keep
-                mentioned.add(node.s)
         for needed in ("SLOW", "PERIODIC"):
             self.assertIn(
                 needed, mentioned,

@@ -21,6 +21,18 @@ The Grok CLI's backlog look at v3858 (#231 comment 6671667775, finding 2). Repro
 ### REG-3221 - A PEER'S JEWELS READ "NOT PUBLISHED" FROM A CACHED ROW (v3866, the #231 eye on v3861)
 The Grok CLI's backlog look at v3861 (#231 comment 6671668579, finding 1). Reproduced in the code: fleet_compare's v2814 rule ("an absence in a cached record is not an absence in the world" - one forced re-read before saying a peer has not reported) covered only the ledger's own mask. A cached row that held the uniques mask was never re-read, so when it predated the peer's colossal mask, _fleet_merge_colossal named the six jewels "not judged" as if the peer had never published them. Fix: the jewels' mask earns the same single forced read when the cached row lacks it (and no forced read happened for uniques); the uniques compare keeps the row it was made from. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (+1 case, red-proof PROVEN).
 
+### REG-3311 - GITHUB'S RUNNER MOVED TO PYTHON 3.14 BETWEEN TWO ROUNDS, AND TWO LAWS BROKE ON IT (v3875, rounds 2 and 3)
+Round 1 (13:33Z) was green on test_the_gates_load_on_windows; round 2 (14:29Z) owed it with no change to the files it reads,
+and round 3 named both 3.14 signatures. The agent suite runs ubuntu-latest's own python3, and it had become 3.14:
+  * sabotage_extract_gap_holding.py:169 - `return 3` inside a `finally`, which 3.14 warns about (PEP 765: it swallows
+    whatever the try raised); the compile law counts a warning as a failure. The return now follows the finally; the restore
+    and its message stay inside it, so a failed restore is still said even when the gate raised.
+  * test_a_remeasurement_covers_the_same_population - `isinstance(node, ast.Str)`: ast.Str is gone in 3.14, so the first
+    non-string constant raised AttributeError. The py<3.8 branch is removed; ast.Constant covers every Python here.
+Measured with a standalone 3.14.4 (uv) on this Mac: all 1899 .py files compile with 0 warnings, both laws OK on 3.14; the
+original file's return-in-finally is found at line 169 by the same sweep. This Mac's pre-flight runs 3.9, which cannot see
+either - the gap that let them reach GitHub.
+
 ### REG-3310 - THE PRE-FLIGHT RAN 15 BROWSER LAWS ON HIS MAC: IT KNEW RC._Tab AND _chrome_up AS PLAIN PYTHON (v3875)
 His rule: browser laws run on GitHub, never on his Mac. tv/preflight.py keeps them out by BROWSER_CALLS, which named a
 Board, render_check.run/render/main/measure, Playwright and the launch flags - not the render harness's own handles. Caught

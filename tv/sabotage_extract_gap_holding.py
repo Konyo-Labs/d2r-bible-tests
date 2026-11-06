@@ -166,7 +166,10 @@ def main():
             back = _sha(TARGET)
             if back != clean_sha:
                 print("      ⛔ RESTORE FAILED — sha %s != %s. STOPPING." % (back[:12], clean_sha[:12]))
-                return 3
+        # REG-3311 - the return sits OUTSIDE the finally: a return inside one swallows whatever the try raised (Python 3.14
+        # warns, PEP 765), and test_the_gates_load_on_windows went red on GitHub's newer Python over it
+        if back != clean_sha:
+            return 3
         print("      gate went %s   %s" % ("GREEN (the law is unproven)" if passed else "RED", tail))
         print("      law: %s" % law)
         results.append((name, law, not passed))
