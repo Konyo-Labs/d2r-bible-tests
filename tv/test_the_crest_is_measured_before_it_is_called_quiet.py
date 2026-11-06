@@ -20,6 +20,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
+import console_safe  # noqa: E402,F401 - this law prints non-ASCII; a cp1255 console must not crash reporting it
 import crest_loudness as C  # noqa: E402
 
 
