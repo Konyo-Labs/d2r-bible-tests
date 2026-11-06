@@ -172,6 +172,40 @@ class OneRoundFitsAndTheNextProvesTheRest(unittest.TestCase):
             say=said.append), "done", "a run waited on itself")
 
 
+class TheWaitDoesNotEndOnOneBadPoll(unittest.TestCase):
+    """v3868 (the Grok CLI on REG-3234, #231 6676508919): one unreadable poll ended the 45-minute wait, and an empty first
+    page read as finished though the sibling may not be listed yet."""
+
+    LINUX = "proof-keys shards (ci/proof-keys-* only)"
+
+    def _wait(self, pages):
+        clock, asked = {"t": 0.0}, []
+
+        def get(path):
+            asked.append(path)
+            p = pages[min(len(asked), len(pages)) - 1]
+            if isinstance(p, Exception):
+                raise p
+            return p
+        got = SEED.wait_for_sibling(SHA, self.LINUX, get=get, sleep=lambda s: clock.update(t=clock["t"] + s),
+                                    clock=lambda: clock["t"], max_s=3600, say=lambda *a: None)
+        return got, len(asked)
+
+    def _runs(self, status):
+        return {"workflow_runs": [{"name": self.LINUX, "head_branch": "ci/proof-keys-v3868", "status": status, "id": 5}]}
+
+    def test_one_bad_poll_mid_wait_does_not_end_it(self):
+        got, n = self._wait([self._runs("in_progress"), {"message": "Server Error"}, self._runs("in_progress"),
+                             self._runs("completed")])
+        self.assertEqual((got, n), ("done", 4), "one bad poll ended the wait: %r after %d polls" % (got, n))
+        got, n = self._wait([RuntimeError("x"), RuntimeError("x"), RuntimeError("x")])
+        self.assertEqual(got, "unknown", "GitHub never answering is not UNKNOWN")
+
+    def test_an_empty_first_page_is_asked_again(self):
+        got, n = self._wait([{"workflow_runs": []}, self._runs("in_progress"), self._runs("completed")])
+        self.assertEqual((got, n), ("done", 3), "an empty first page read as finished: %r after %d polls" % (got, n))
+
+
 class ShipDispatchesTheWindowsSetBeside(unittest.TestCase):
 
     def test_its_name_is_the_workflows_own(self):
@@ -258,6 +292,16 @@ class TheSeedTakesTheNewestOtherSetOfItsFlavor(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3868 - one unreadable poll ends the wait again",
+     "file": "tv/proof_seed.py",
+     "find": "            if bad >= max(1, int(unreadable_tries)):\n",
+     "replace": "            if bad >= 1:\n",
+     "matches": 1},
+    {"why": "v3868 - an empty first page reads as finished again",
+     "file": "tv/proof_seed.py",
+     "find": "            if seen or empties >= 2:\n",
+     "replace": "            if seen or empties >= 1:\n",
+     "matches": 1},
     {"why": "v3867 - the Windows set starts beside the Linux shards again on the ci push and queues the required checks",
      "file": ".github/workflows/proof-keys-windows.yml",
      "find": "github.workflow || 'proof-keys shards (ci/proof-keys-* only)' }}\n",

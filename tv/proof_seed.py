@@ -256,14 +256,21 @@ def widen(seed, extra, out_dir, say=print):
         return None
 
 
-def wait_for_sibling(sha, workflow, get=None, sleep=None, clock=None, max_s=45 * 60, every_s=60, run_id=None, say=print):
+def wait_for_sibling(sha, workflow, get=None, sleep=None, clock=None, max_s=45 * 60, every_s=60, run_id=None, say=print,
+                     unreadable_tries=3):
     """REG-3214 (the second eye on v3865) - after Publish, WAIT while this commit's ci/proof-keys run of the same workflow
     is still proving, so the round after Publish starts from the set it banks instead of proving the whole set beside it.
-    -> "done" (none running), "timeout" (still running after max_s), "unknown" (GitHub could not be read). Never raises."""
+    v3867 (REG-3234) - and on the ci push, the Windows set waits for this commit's LINUX shards the same way.
+    -> "done" (none running), "timeout" (still running after max_s), "unknown" (GitHub could not be read). Never raises.
+
+    v3868 (the Grok CLI on REG-3234, #231 6676508919): ONE unreadable poll ended the wait (a 5xx or a rate-limit body), and
+    an EMPTY first page read as "finished" though the sibling may simply not be listed yet. Now `unreadable_tries` polls in
+    a row must fail before it is UNKNOWN, and "done" needs two empty polls in a row unless a sibling was seen running."""
     import time as _t
     sleep = sleep or _t.sleep
     clock = clock or _t.time
     t0 = clock()
+    bad, empties, seen = 0, 0, False
     while True:
         try:
             body = (get or _api_get)("/repos/%s/actions/runs?head_sha=%s&per_page=100" % (PR.REPO_SLUG, sha))
@@ -271,13 +278,23 @@ def wait_for_sibling(sha, workflow, get=None, sleep=None, clock=None, max_s=45 *
         except Exception:
             runs = None
         if not isinstance(runs, list):
-            say("  REG-3214 WAIT: GitHub's runs on %s could not be read - UNKNOWN, the round goes on" % sha[:9])
-            return "unknown"
+            bad += 1
+            if bad >= max(1, int(unreadable_tries)):
+                say("  REG-3214 WAIT: GitHub's runs on %s could not be read %d time(s) in a row - UNKNOWN, the round goes on"
+                    % (sha[:9], bad))
+                return "unknown"
+            sleep(every_s)
+            continue
+        bad = 0
         going = [r for r in runs if isinstance(r, dict) and r.get("name") == workflow and r.get("status") != "completed"
                  and str(r.get("head_branch") or "").startswith("ci/proof-keys-") and r.get("id") != run_id]
         if not going:
-            say("  REG-3214 WAIT: no ci/proof-keys run of %r is still proving %s" % (workflow, sha[:9]))
-            return "done"
+            empties += 1
+            if seen or empties >= 2:
+                say("  REG-3214 WAIT: no ci/proof-keys run of %r is still proving %s" % (workflow, sha[:9]))
+                return "done"
+        else:
+            seen, empties = True, 0
         if clock() - t0 >= max_s:
             say("  REG-3214 WAIT: the ci/proof-keys run is still proving after %d min - this round goes on beside it"
                 % (max_s // 60))
