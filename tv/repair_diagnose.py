@@ -26,7 +26,13 @@ REPO = os.path.dirname(HERE)
 STATE_NAME = ".repair_diagnoses.json"         # gitignored, per PC
 MAX_PER_DAY = 2
 TIMEOUT_S = 300
-MAX_TURNS = 8
+#: v3867 (#17) - MEASURED 2026-11-06: his Mac held 8 unknown faults, both of the day's asks were spent and NEITHER landed
+#: (.repair_diagnoses.json: n 2, seen {}). A hand run of the same ask answered in 72 s and named the cause itself: 8 turns
+#: of Read-only paging through a ~12k-line console_doctor.py, inside a repo whose CLAUDE.md orders skill loads before the
+#: first tool call. The ask now runs OUTSIDE the project (tv_diablo's lean form: --add-dir, user settings only, no MCP, no
+#: session) with Grep beside Read - still read-only - and 20 turns.
+MAX_TURNS = 20
+ALLOWED_TOOLS = "Read,Grep"
 DEAD_SEAT = ("not logged in", "please run /login", "invalid api key", "usage limit", "rate limit", "credit balance")
 _PATHISH = re.compile(r"([A-Za-z]:\\[^\s'\"]+|/(?:Users|home|private|tmp|var)/[^\s'\"]+)")
 
@@ -59,11 +65,14 @@ def forget_cleared(state, misses):
     st = dict(state or {})
     now = set(m.get("check") for m in misses or [] if isinstance(m, dict))
     st["seen"] = {k: v for k, v in (st.get("seen") or {}).items() if k in now}
+    if st.get("failed"):
+        st["failed"] = {k: v for k, v in st["failed"].items() if k in now}
     return st
 
 
 def prompt_for(miss, fn_name, platform):
-    return ("You are diagnosing ONE fault on a TV DIABLO console PC (platform %s), repo at the current directory. "
+    return ("You are diagnosing ONE fault on a TV DIABLO console PC (platform %s), in the repo you were given with "
+            "--add-dir (it holds tv/console_doctor.py). "
             "Its eagle-eye check %r reads MISSING with this reason: %r. The check is %s in tv/console_doctor.py. "
             "Read that function and whatever it reads, find the most likely cause ON THIS PC, and answer in at most "
             "12 lines, exactly:\nCAUSE: <one sentence>\nFIX: <the smallest change or command that would repair it>\n"
@@ -79,6 +88,12 @@ def summary_of(text):
     return scrub((m.group(1) if m else t.strip().split("\n")[0]).strip(), 200)
 
 
+def _neutral_cwd():
+    """v3867 (#17) - where the ask runs: outside the repo, so its CLAUDE.md and project settings never load. -> dir"""
+    import tempfile
+    return tempfile.gettempdir()
+
+
 def diagnose(miss, fn_name, platform, run=None, env=None, which=None):
     """Ask this PC's Claude about one miss. -> record. Never raises; never under D2R_NO_CLAUDE."""
     env = os.environ if env is None else env
@@ -92,8 +107,10 @@ def diagnose(miss, fn_name, platform, run=None, env=None, which=None):
         return rec
     try:
         p = (run or subprocess.run)(
-            [exe, "-p", "--allowedTools", "Read", "--max-turns", str(MAX_TURNS), prompt_for(miss, fn_name, platform)],
-            cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=TIMEOUT_S,
+            [exe, "-p", "--allowedTools", ALLOWED_TOOLS, "--max-turns", str(MAX_TURNS),
+             "--setting-sources", "user", "--strict-mcp-config", "--no-session-persistence", "--add-dir", REPO,
+             prompt_for(miss, fn_name, platform)],
+            cwd=_neutral_cwd(), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=TIMEOUT_S,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         text = ((p.stdout or "") + "\n" + (p.stderr or "")).strip()
         rc = p.returncode
@@ -146,15 +163,23 @@ def run_due(misses, fn_of, platform, path=None, now_s=None, ask=None):
         said[m["check"]] = rec.get("summary")
         if str(rec.get("summary") or "").startswith("not asked"):
             continue                          # nothing was spent: no claude, or a law's D2R_NO_CLAUDE
+        if not rec.get("ok"):
+            # v3867 (#17) - THE REASON STAYS. A spent ask that did not land kept nothing, so the Fleet hover said "not
+            # diagnosed yet" all day with the allowance gone and no why. It is kept per fault until a later ask lands.
+            st.setdefault("failed", {})[m["check"]] = {"at": rec.get("at"), "summary": rec.get("summary")}
         today = day_of(now_s)
         st["n"] = (int(st.get("n") or 0) if st.get("day") == today else 0) + 1
         st["day"] = today
         if rec.get("ok"):                     # a seat that did not answer is asked again tomorrow, never marked done
+            (st.get("failed") or {}).pop(m["check"], None)
             st.setdefault("seen", {})[m["check"]] = {"at": rec.get("at"), "summary": rec.get("summary"),
                                                      "text": rec.get("text")}
         save(path, st)
     save(path, st)
     out = {k: (v or {}).get("summary") for k, v in (st.get("seen") or {}).items()}
+    for k, v in (st.get("failed") or {}).items():
+        if k not in out and any(m.get("check") == k for m in misses or ()):
+            out[k] = "its last ask did not land - %s" % ((v or {}).get("summary") or "no reason was recorded")
     for k, v in said.items():
         out.setdefault(k, v)
     return out

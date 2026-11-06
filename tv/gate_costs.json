@@ -161,6 +161,7 @@
   "test_a_fleet_card_opens_where_it_can_be_read": 0.1,
   "test_a_fleet_row_identifies_its_machine": 0.5,
   "test_a_fleet_row_never_says_level_with_a_checkout_behind": 0.2,
+  "test_each_lane_says_its_cpu": 3.0,
   "test_a_store_keeps_each_input_once": 0.3,
   "test_a_fleet_row_shows_whose_vault_how_old": 0.2,
   "test_a_foreign_proof_owes_a_clean_run_only_where_the_push_changed_its_law": 0.5,

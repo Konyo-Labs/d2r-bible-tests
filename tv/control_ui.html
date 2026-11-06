@@ -9487,6 +9487,24 @@ window._lockOpen = function(l){
    now". self_arming writes both words on every row (act / actSay / provenSay) and every lock surface prints THEM:
    the act word leads, the strength is named as what it is. A row from an older server keeps the padlock's own
    answer and never prints a strength it was not sent. -> {act, actWhy, actSay, provenSay} */
+/* v3867 (#41) - the heart's "busiest lanes" section from heart_state's laneCpu. -> html. Pure. */
+window._hrtLaneCpu = function(lc){
+  var esc = function(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  if (!lc || typeof lc !== 'object') return '<div class="hrt-sec"><div class="hrt-h">The busiest lanes · UNKNOWN</div>'
+    + '<div class="hrt-note">this console did not send the reading (a build older than v3867)</div></div>';
+  if (!lc.ok) return '<div class="hrt-sec"><div class="hrt-h">The busiest lanes · UNKNOWN</div><div class="hrt-note">'
+    + esc(lc.why || 'no reason given') + '</div></div>';
+  var rows = (lc.rows || []).filter(function(r){ return r && r.cpuS > 0; });
+  var h = '<div class="hrt-sec"><div class="hrt-h">The busiest lanes · last ' + esc(Math.round(lc.windowS || 0)) + ' s · '
+    + esc(lc.total == null ? '?' : lc.total) + '% of one core in all</div>';
+  if (!rows.length) return h + '<div class="hrt-note">no lane used measurable CPU in the window</div></div>';
+  rows.forEach(function(r){
+    h += '<div class="hrt-row"><span class="hrt-k">' + esc(r.name) + '</span><span class="hrt-s">' + esc(r.pct) + '%</span>'
+       + '<span class="hrt-w">' + esc(r.cpuS) + ' s of CPU</span></div>';
+  });
+  return h + '</div>';
+};
+var _hrtLaneCpu = window._hrtLaneCpu;
 window._lockWords = function(l){
   var open = window._lockOpen(l);
   var act = (l && l.act) || (open ? 'may act' : 'shut');
@@ -16189,6 +16207,10 @@ window._lockMark = function(isOpen, px, label){
       + _hrtDead(d.deadFields)
       /* REG-3215 - the count in the act's words, self_arming's own sentence: "4 of 9 may act now (7 proven)". It read
          "7 of 9 open" - the evidence tier - beside a Fleet card that said "locks shut" for the same PC. */
+      /* v3867 (#41) - WHICH LANE IS EATING THE CPU. The console's own per-thread reading over about a minute (one core =
+         100%); a reading that could not be taken says why, never a zero. On his ALT the heart timed out at 40 s and only
+         the process total could be seen. */
+      + _hrtLaneCpu(d.laneCpu)
       + '<div class="hrt-sec"><div class="hrt-h">The valves · ' + _hrtEsc(d.locksSay
           || ('how many may act now is UNKNOWN (' + (d.open || 0) + ' of ' + (d.total || lk.length) + ' proven)'))
       + '</div>' + lrows + '</div>'

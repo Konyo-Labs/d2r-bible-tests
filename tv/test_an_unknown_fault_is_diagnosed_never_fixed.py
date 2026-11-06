@@ -53,11 +53,32 @@ class TheAsk(unittest.TestCase):
         log = []
         r = RD.diagnose(MISS, "_check_x", "win32", run=_ran(log), env={}, which=lambda n: "/x/claude")
         argv = log[0]
-        self.assertEqual(argv[argv.index("--allowedTools") + 1], "Read", "the diagnosis may do more than read")
+        tools = set(argv[argv.index("--allowedTools") + 1].split(","))
+        self.assertTrue(tools and tools <= {"Read", "Grep", "Glob"}, "the diagnosis may do more than read: %r" % tools)
         self.assertIn("--max-turns", argv)
         self.assertNotIn("<name>", argv[-1], "the prompt carries a user folder")
         self.assertTrue(r["ok"])
         self.assertEqual(r["summary"], "the backup root moved")
+
+    def test_it_asks_from_outside_the_project_with_room_to_find_the_function(self):
+        """v3867 (#17) - MEASURED: both of a day's asks spent and none landed (8 Read-only turns through a ~12k-line file,
+        inside a repo whose CLAUDE.md orders skill loads first). A hand run of the same ask answered and named that."""
+        log, cwds = [], []
+
+        def run(argv, **kw):
+            log.append(argv)
+            cwds.append(kw.get("cwd"))
+            return _ran([])(argv, **kw)
+        RD.diagnose(MISS, "_check_x", "darwin", run=run, env={}, which=lambda n: "/x/claude")
+        argv = log[0]
+        self.assertNotEqual(os.path.realpath(cwds[0]), os.path.realpath(RD.REPO), "the ask runs inside the project again")
+        self.assertEqual(argv[argv.index("--add-dir") + 1], RD.REPO, "the ask cannot read the repo it diagnoses")
+        for flag in ("--strict-mcp-config", "--no-session-persistence"):
+            self.assertIn(flag, argv)
+        self.assertEqual(argv[argv.index("--setting-sources") + 1], "user")
+        self.assertIn("Grep", argv[argv.index("--allowedTools") + 1].split(","), "finding the function costs a page a turn")
+        self.assertGreaterEqual(int(argv[argv.index("--max-turns") + 1]), 16)
+        self.assertNotIn(RD.REPO, argv[-1], "the prompt carries the repo's absolute path (a user folder)")
 
     def test_a_dead_seat_is_not_an_answer(self):
         r = RD.diagnose(MISS, "_check_x", "win32", run=_ran([], out="Not logged in - please run /login", rc=1),
@@ -91,6 +112,26 @@ class TheAllowance(unittest.TestCase):
         out = RD.run_due(self._misses(5), lambda c: None, "darwin", path=self.path, now_s=NOW + 86400, ask=ask)
         self.assertEqual(asked[2:], ["fault 2", "fault 3"], "a diagnosed fault was asked again, or a new day asked none")
         self.assertEqual(out["fault 0"], "cause of fault 0")
+
+    def test_a_spent_ask_that_did_not_land_says_why_until_one_lands(self):
+        """v3867 (#17) - the hover said 'not diagnosed yet' all day with the allowance gone and no reason."""
+        def dead(m, fn, plat):
+            return {"check": m["check"], "ok": False, "summary": "not answered: Error: Reached max turns (8)"}
+        got = RD.run_due(self._misses(1), lambda c: None, "darwin", path=self.path, now_s=NOW, ask=dead)
+        self.assertIn("Reached max turns", got.get("fault 0") or "", "a spent ask's reason was not kept: %r" % got)
+        RD.run_due(self._misses(1), lambda c: None, "darwin", path=self.path, now_s=NOW + 60, ask=dead)   # the 2nd of 2
+        again = RD.run_due(self._misses(1), lambda c: None, "darwin", path=self.path, now_s=NOW + 120,
+                           ask=lambda m, fn, plat: self.fail("asked past the day's allowance"))
+        self.assertIn("did not land", again.get("fault 0") or "", "with the allowance spent the reason was gone: %r" % again)
+        self.assertIn("Reached max turns", again.get("fault 0") or "")
+
+        def ok(m, fn, plat):
+            return {"check": m["check"], "ok": True, "summary": "the backup root moved", "at": 1}
+        later = RD.run_due(self._misses(1), lambda c: None, "darwin", path=self.path, now_s=NOW + 2 * 86400, ask=ok)
+        self.assertEqual(later.get("fault 0"), "the backup root moved")
+        self.assertNotIn("fault 0", RD.load(self.path).get("failed") or {}, "a landed diagnosis kept its old failure")
+        RD.run_due([], lambda c: None, "darwin", path=self.path, now_s=NOW + 3 * 86400, ask=ok)
+        self.assertEqual(RD.load(self.path).get("failed") or {}, {}, "a cleared fault kept its failure record")
 
     def test_not_asked_costs_nothing_and_not_answered_is_retried(self):
         calls = []
@@ -145,6 +186,16 @@ class ItRidesToTheOverwatch(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3867 (#17) - the ask runs inside the project again, where its CLAUDE.md and paging Reads spend every turn",
+     "file": "tv/repair_diagnose.py",
+     "find": "            cwd=_neutral_cwd(), capture_output=True,",
+     "replace": "            cwd=REPO, capture_output=True,",
+     "matches": 1},
+    {"why": "v3867 (#17) - a spent ask that did not land keeps no reason again",
+     "file": "tv/repair_diagnose.py",
+     "find": "            st.setdefault(\"failed\", {})[m[\"check\"]] = {\"at\": rec.get(\"at\"), \"summary\": rec.get(\"summary\")}\n",
+     "replace": "            pass\n",
+     "matches": 1},
     {"why": "v3862 - a diagnosis runs under D2R_NO_CLAUDE (a law spends his plan)",
      "file": "tv/repair_diagnose.py",
      "find": "    if env.get(\"D2R_NO_CLAUDE\") == \"1\":\n",
@@ -152,7 +203,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3862 - the diagnosis may edit and run, not only read",
      "file": "tv/repair_diagnose.py",
-     "find": "[exe, \"-p\", \"--allowedTools\", \"Read\", \"--max-turns\"",
+     "find": "[exe, \"-p\", \"--allowedTools\", ALLOWED_TOOLS, \"--max-turns\"",
      "replace": "[exe, \"-p\", \"--allowedTools\", \"Read,Edit,Write,Bash\", \"--max-turns\"",
      "matches": 1},
     {"why": "v3862 - the daily allowance is ignored",

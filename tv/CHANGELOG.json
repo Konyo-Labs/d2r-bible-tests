@@ -13,7 +13,10 @@
       "v3867 - the disk-growers salvage keeps the untracked files of a stash before any prune (REG-3232)",
       "v3867 - a partial or unanswered holders read is UNKNOWN, and the gitdir of a worktree is a hold (REG-3232)",
       "v3867 - the proof import no longer waits for good on the record the console rewrites itself (REG-3233)",
-      "v3867 - the Windows proof set waits for the Linux shards on the ci push, so required checks never queue (REG-3234)"
+      "v3867 - the Windows proof set waits for the Linux shards on the ci push, so required checks never queue (REG-3234)",
+      "v3867 - the Claude diagnosis of an unknown fault runs outside the project with room to read, and lands (REG-3235)",
+      "v3867 - a diagnosis that did not land says why on the fault until one does (REG-3235)",
+      "v3867 - the heart and the status say which lane is eating the CPU, read per thread from the OS (REG-3236)"
     ]
   },
   {

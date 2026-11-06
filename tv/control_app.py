@@ -30731,6 +30731,18 @@ def _heart2_census():
                 "proved": None, "unproven": None, "blind": None}
 
 
+def _lane_cpu_state():
+    """v3867 (#41, REG-2986 never built) - CPU per named lane of THIS console over about a minute (tv/lane_cpu.py: the OS's
+    per-thread times matched to each threading.Thread by its native id). -> {ok, windowS, rows, total, why}. Never raises;
+    a reading that cannot be taken is UNKNOWN with its reason, never a zero."""
+    try:
+        import lane_cpu as _lc
+        return _lc.state()
+    except Exception as e:
+        return {"ok": False, "windowS": None, "rows": [], "total": None,
+                "why": "the lane CPU reader raised %s" % type(e).__name__}
+
+
 def heart_state(force=False):
     """The heart, derived on every read. -> dict
 
@@ -30812,6 +30824,7 @@ def heart_state(force=False):
         # by one layer. His #28 asks for it to be WATCHED, and watched means HE can see it.
         # [[the-unjoined-end]]
         "riders": rep.get("riders") or [],
+        "laneCpu": _lane_cpu_state(),                    # v3867 (#41) - the busiest lanes over the last minute
         "vessels": rep.get("vessels") or [],
         "locks": locks.get("locks") or [],
         # v2487 — THE ROUTES, on the same heart, from the same report. Nine of them, each earning
@@ -47459,6 +47472,7 @@ def status_payload():
         # #105 (REG-1604) - is each reader CONNECTED on this PC, measured from what it just did (the lamps
         # under the corner chip and the doctor row both ask _reader_health; cached 30 s)
         "readers": _t("readers", _reader_health),
+        "laneCpu": _t("laneCpu", _lane_cpu_state),       # v3867 (#41) - which lane is eating the CPU, measured
         "agent": mode != "off" and bridge,
         "bridge": bridge,
         "stopping": bool(_stop_inflight),
