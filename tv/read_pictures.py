@@ -244,11 +244,14 @@ def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
     # REG-3283 (the Grok CLI on v3872) - a trim that KEPT it but carries no date proves the frame outlived SOME trim, at a
     # time nobody can place: no omitting trim may then date it (the keep may have come after it), so the date is UNKNOWN
     undated_keep = any(not t for t in kept_at)
+    # REG-3295 (the Grok CLI's second look at v3872) - a deleter stamped at the SAME millisecond as the latest keep cannot be
+    # ordered against it: dropping it as "before the keep" was a guess. It stays, and its date is UNKNOWN.
+    tied = bool(alive) and any(e[0] == alive and not (len(e) > 4 and e[4] == "named") for e in events)
     if alive:
         # REG-3252 (the Grok CLI on REG-3239, #231 6680105032) - A TRIM THAT KEPT IT PROVES IT WAS STILL ON DISK THEN, so
         # no deleter stamped at or before the latest keep took it. Only the omitting trims were weighed, so trim 1 (omits)
         # dated a frame trim 2 kept, and the several-trims guard saw one candidate. A reap that NAMES it stays (direct).
-        events = [e for e in events if (len(e) > 4 and e[4] == "named") or not e[0] or e[0] > alive]
+        events = [e for e in events if (len(e) > 4 and e[4] == "named") or not e[0] or e[0] >= alive]
     if events:
         # earliest stamp first; a row with no stamp sorts after every stamped one; ties keep record order
         pool = range(len(events))
@@ -270,11 +273,12 @@ def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
                        words="%s - which of its trims took it cannot be told: its name carries no capture time" % (
                            "released with its reel by the retention lane" if code == "released"
                            else "taken with its reel by the recorder's disk-floor reaper"))
-        if undated_keep and (len(events[i]) < 5 or events[i][4] != "named"):
+        if (undated_keep or (tied and events[i][0] == alive)) and (len(events[i]) < 5 or events[i][4] != "named"):
             out.update(ts=None, when=None,
-                       words="%s - a trim that KEPT it carries no date, so whether this one came after it cannot be told"
+                       words="%s - a trim that KEPT it %s, so whether this one came after it cannot be told"
                              % ("released with its reel by the retention lane" if code == "released"
-                                else "taken with its reel by the recorder's disk-floor reaper"))
+                                else "taken with its reel by the recorder's disk-floor reaper",
+                                "carries no date" if undated_keep else "shares its very millisecond"))
         if unread:
             # v3868 (the Grok CLI on REG-3207) - an unreadable record may hold an EARLIER deleter: said, never hidden
             out["words"] += " (%s could not be read, so an earlier deleter cannot be ruled out)" % ", ".join(unread)

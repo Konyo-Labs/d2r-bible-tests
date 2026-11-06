@@ -391,6 +391,12 @@ class TheGrokCliOnREG3207(unittest.TestCase):
         self.assertIn("carries no date", g["words"])
         g = self._judge("reel_A/frame_12.jpg", [omit])
         self.assertEqual(g["ts"], DELETED, "premise: with no keep at all the one omitting trim dates it")
+        # REG-3295 (the Grok CLI's second look at v3872) - a deleter at the very millisecond of the keep was dropped as
+        # "before it"; a tie cannot be ordered, so the date is UNKNOWN
+        same = dict(keep, deletedTs=DELETED)
+        g = self._judge("reel_A/frame_12.jpg", [omit, same])
+        self.assertIsNone(g["ts"], "a trim at the keep's very millisecond was ordered by guess: %r" % g)
+        self.assertIn("shares its very millisecond", g["words"])
 
     def test_a_refusal_says_when(self):
         g = self._judge("reel_A/%d.jpg" % (DELETED - 60000),
@@ -401,15 +407,20 @@ class TheGrokCliOnREG3207(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3295 - a deleter at the keep's very millisecond is dropped as if it came first",
+     "file": "tv/read_pictures.py",
+     "find": "        events = [e for e in events if (len(e) > 4 and e[4] == \"named\") or not e[0] or e[0] >= alive]\n",
+     "replace": "        events = [e for e in events if (len(e) > 4 and e[4] == \"named\") or not e[0] or e[0] > alive]\n",
+     "matches": 1},
     {"why": "REG-3283 - a keep with no date protects nothing and an omitting trim dates the frame",
      "file": "tv/read_pictures.py",
-     "find": "        if undated_keep and (len(events[i]) < 5 or events[i][4] != \"named\"):\n",
-     "replace": "        if False:\n",
+     "find": "        if (undated_keep or (tied and events[i][0] == alive)) and (len(events[i]) < 5 or events[i][4] != \"named\"):\n",
+     "replace": "        if (tied and events[i][0] == alive) and (len(events[i]) < 5 or events[i][4] != \"named\"):\n",
      "matches": 1},
     {"why": "REG-3252 - a trim before the one that KEPT the frame dates it again",
      "file": "tv/read_pictures.py",
-     "find": "    undated_keep = any(not t for t in kept_at)\n    if alive:\n",
-     "replace": "    undated_keep = any(not t for t in kept_at)\n    if False:\n",
+     "find": "    if alive:\n        # REG-3252",
+     "replace": "    if False:\n        # REG-3252",
      "matches": 1},
     {"why": "v3868 - a frame with no capture time is dated on its reel's first trim again",
      "file": "tv/read_pictures.py",

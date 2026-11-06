@@ -94,10 +94,14 @@ def seed_login_profile(root):
         try:
             with open(p, encoding="utf-8") as fh:
                 prefs = json.load(fh)
+        except FileNotFoundError:
+            prefs = {}                     # a new profile: the seed is its first Preferences
         except (OSError, ValueError):
-            prefs = {}
+            # REG-3294 (the Grok CLI's second look at v3872) - a Preferences that is THERE and will not read (Chrome
+            # mid-write, a truncated file) is never overwritten: rewriting it from {} would drop every other setting
+            return False
         if not isinstance(prefs, dict):
-            prefs = {}
+            return False                   # REG-3294 - the same: a file that is not a settings object is left alone
         if session_restores(prefs):
             return True
         if not isinstance(prefs.get("session"), dict):

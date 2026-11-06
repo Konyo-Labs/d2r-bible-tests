@@ -68,6 +68,20 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
             self.assertTrue(D.session_restores(prefs), "a %r session was not replaced by the seed" % (bad,))
             self.assertEqual(prefs.get("other"), 3)
 
+    def test_a_preferences_file_that_will_not_read_is_never_overwritten(self):
+        """REG-3294 (the Grok CLI's second look at v3872) - Chrome mid-write left a truncated file; the seed rewrote it
+        from {} and every other setting was lost."""
+        d = os.path.join(self.root, "Default")
+        os.makedirs(d)
+        p = os.path.join(d, "Preferences")
+        with open(p, "w", encoding="utf-8") as fh:
+            fh.write('{"profile": {"name": "his"}, "sess')
+        self.assertFalse(D.seed_login_profile(self.root), "a truncated Preferences read as a seeded profile")
+        with open(p, encoding="utf-8") as fh:
+            self.assertEqual(fh.read(), '{"profile": {"name": "his"}, "sess', "the unreadable file was overwritten")
+        os.remove(p)
+        self.assertTrue(D.seed_login_profile(self.root), "premise: an absent file is created")
+
     def test_the_opener_starts_a_separate_chrome_on_the_own_profile(self):
         seen = []
 
@@ -126,6 +140,11 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3294 - a Preferences file that will not read is overwritten from nothing",
+     "file": "tv/d2jsp_chrome.py",
+     "find": "            # mid-write, a truncated file) is never overwritten: rewriting it from {} would drop every other setting\n            return False\n",
+     "replace": "            # mid-write, a truncated file) is never overwritten: rewriting it from {} would drop every other setting\n            prefs = {}\n",
+     "matches": 1},
     {"why": "REG-3282 - a session value that is not a dict crashes the seed (and the doctor)",
      "file": "tv/d2jsp_chrome.py",
      "find": "        if not isinstance(prefs.get(\"session\"), dict):\n            prefs[\"session\"] = {}",
