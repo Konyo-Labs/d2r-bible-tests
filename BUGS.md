@@ -101,6 +101,20 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3300 - A BACKGROUND NODE FETCH THAT RAISED SAID "FETCHING" FOR THE LIFE OF THE CONSOLE AND WAS NEVER TRIED AGAIN (v3876, the Grok CLI on v3873)
+The Grok CLI's look at v3873 (tv/node_runtime.py _background): the worker thread ran `_fetch_locked`, whose resolver,
+_put_on_path and refresh run before its own try. Reproduced with a resolver that raises on the thread: the thread died with
+no result and `_BG["thread"]` still set, so every later ask answered "fetching node 22.0.0 in the background - ask again"
+and REG-3263's hourly retry never came - it retries only a recorded failure, and there was none. Now the worker turns a raise
+into a recorded failure (its type and message in `why`), which the retry cadence then asks again. Law:
+test_node_is_fetched_where_it_is_missing (+ test_a_fetch_that_raises_is_a_failure_never_a_fetch_forever), red-proof PROVEN.
+The same look's other 11 claims, each checked: v3873's console.js cap DOES stick (the 600th write stores wN=600 and every
+later request reads it); repair_book's carried misses are passed None only by a pass that did not answer (REG-3259) and are
+said stale with their own date; v3874's stale pip record and the doctor's missing boss portraits were already fixed in v3875
+(REG-3276, REG-3278); v3870's container_look calls read_tab itself and claude_vault_read passes tab/page through; a "1.5" page
+is not a page; v3871's copyRefused is set only after a cookie was read (no cookie returns need-login first), price() always
+returns a fresh dict, an empty item keys no row, and the re-read of productive pre-tab seals is his 11-06 ruling.
+
 ### REG-3297 - THE CUSTODY ROW WAS RED FOR EVER ON 530 TOMBSTONES NOBODY CAN REWRITE (v3876, after REG-3293)
 Every both-seals claim the deleter's OLD fixed sentence made over a reel the stores never sealed stays true history - and a row red on history no action can change is a row nobody reads. Each such contradiction is now marked history (the tombstone carries "sealed by BOTH lanes" and not the measured "seals held: ..." sentence REG-3293 writes); it stays on the reel's own record with both sides named, the census counts it apart, and the doctor row turns red only on a contradiction written after the fix, saying the history in words. The law's fixture now carries the fixed deleter's sentence for its live contradictions. Guard: tv/test_a_reel_carries_its_custody.py.
 

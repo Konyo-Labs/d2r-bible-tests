@@ -264,7 +264,14 @@ def _background(args, version):
             _BG.update(result=None, thread=None, at=None)
         if _BG["thread"] is None:
             def _run():
-                r = _fetch_locked(*args)
+                # REG-3300 (the Grok CLI on v3873) - resolve, _put_on_path and refresh run before _fetch_locked's own
+                # try; a raise there killed this thread with no result and the thread slot still taken, so every
+                # later ask said "fetching in the background" for the life of the process and the retry never came.
+                try:
+                    r = _fetch_locked(*args)
+                except Exception as e:
+                    r = _res(False, None, False, False, "the node fetch raised (%s: %s) - nothing was placed"
+                             % (type(e).__name__, str(e)[:160]))
                 with _BG_LOCK:
                     _BG["result"] = r
                     _BG["at"] = time.time()

@@ -228,6 +228,28 @@ class TheBackgroundFetchRunsOncePerProcess(_Fixture):
         self._ensure(blocking=False, fetch=_flaky)
         self.assertEqual(len(self.fetched), 2, "a success was fetched again, or the failure was not retried")
 
+    def test_a_fetch_that_raises_is_a_failure_never_a_fetch_forever(self):
+        """REG-3300 (the Grok CLI on v3873) - a raise before _fetch_locked's own try (here the resolver, which also runs
+        on the thread) killed the thread with no result: every later ask said "fetching" and none was retried."""
+        calls = {"n": 0}
+
+        def _resolve(env):
+            calls["n"] += 1
+            if calls["n"] == 2:
+                raise OSError("the registry would not read")
+            return None
+        self._ensure(blocking=False, resolve=_resolve)
+        self._join_now()
+        r = self._ensure(blocking=False, resolve=_resolve)
+        self.assertFalse(r["ok"], "a fetch whose thread raised still says it is fetching: %r" % r)
+        self.assertIn("OSError", r["why"])
+        with NR._BG_LOCK:
+            NR._BG["at"] = time.time() - NR.RETRY_FAILED_S - 1
+        r = self._ensure(blocking=False, resolve=_resolve)
+        self.assertIsNone(r["ok"], "a raised fetch was never asked again: %r" % r)
+        self._join_now()
+        self.assertTrue(self._ensure(blocking=False, resolve=_resolve)["ok"])
+
     def _join_now(self):
         t = NR._BG.get("thread")
         self.assertIsNotNone(t, "no background fetch was started")
@@ -299,6 +321,11 @@ class TheInstallerAndThePin(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3300 - a background fetch that raises leaves the thread slot taken and says fetching forever",
+     "file": "tv/node_runtime.py",
+     "find": "                try:\n                    r = _fetch_locked(*args)\n                except Exception as e:\n",
+     "replace": "                if True:\n                    r = _fetch_locked(*args)\n                if False:\n",
+     "matches": 1},
     {"why": "REG-3263 - a failed node fetch is this process's answer forever, so the book's hourly retry never fetches",
      "file": "tv/node_runtime.py",
      "find": "            if not (failed and time.time() - float(_BG.get(\"at\") or 0) >= RETRY_FAILED_S):\n",
