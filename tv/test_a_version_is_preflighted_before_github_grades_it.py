@@ -88,6 +88,21 @@ class ItChoosesWhatThisPCMayRun(unittest.TestCase):
             self.assertTrue(PF.drives_browser(n, self.d), "%s opens the render harness's Chrome and would run on his Mac" % n)
         self.assertFalse(PF.drives_browser("test_cheap", self.d), "premise: a plain law is not a browser law")
 
+    def test_a_slow_law_runs_here_after_the_fast_ones(self):
+        """REG-3308 (v3875's GitHub round) - test_a_source_window_must_reach_its_subject costs 44 s on CI, so it was
+        GitHub's, went red there, and cost a round this PC finds in under a minute. A slow law that drives no browser runs
+        here after the fast ones; a slow browser law stays GitHub's."""
+        _w(self.d, "test_slow_harness", "def board():\n    return H.Board().open()\n")
+        costs = {"test_cheap": 1.0, "test_slow": 45.0, "test_slow_harness": 60.0}
+        with io.open(os.path.join(self.d, "gate_costs.json"), "w", encoding="utf-8") as fh:
+            json.dump(costs, fh)
+        seen, said = [], []
+        code, _r = PF.preflight(here=self.d, say=said.append, _laws=lambda n: (seen.extend(n) or []),
+                                _prove=lambda: ([], [], None), _anchors=lambda: (True, ""), _registry={})
+        self.assertEqual(seen, ["test_cheap", "test_slow"], "the slow law was left to GitHub, or ran before the fast ones")
+        self.assertNotIn("test_slow_harness", seen, "a slow BROWSER law ran on his Mac")
+        self.assertTrue(any("1 slower - run here too" in l for l in said), said)
+
     def test_a_registered_law_the_cost_table_never_measured_runs_here(self):
         """REG-3299 (v3875's GitHub round) - the population was tv/gate_costs.json, which lags the registry: 36 registered
         gates were never run here and the pre-flight still said GREEN; test_every_picture_the_console_asks_for_is_shipped
@@ -208,6 +223,11 @@ RED_PROOF = [
      "file": "tv/preflight.py",
      "find": "                           r\"|\\b_Tab\\(|\\b_chrome_up\\(|\\b(?:RC|rc|R|render_check)\\.check\\(\")",
      "replace": "                           r\"|\\bTab_never_named\\(\")",
+     "matches": 1},
+    {"why": "REG-3308 - the laws over the cap are GitHub's again, and a 44-second law costs a round",
+     "file": "tv/preflight.py",
+     "find": "    s[\"run\"] = s[\"run\"] + list(s[\"slow\"])\n",
+     "replace": "    s[\"run\"] = s[\"run\"]\n",
      "matches": 1},
     {'why': 'REG-3299 - a registered law the cost table never measured is never run here again',
      'file': 'tv/preflight.py',

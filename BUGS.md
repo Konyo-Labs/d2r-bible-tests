@@ -101,6 +101,22 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3309 - TWO LAWS WERE NEVER PRE-FLIGHTED BECAUSE THEIR PROSE NAMES A BROWSER CALL (v3876)
+preflight.drives_browser matched BROWSER_CALLS over the whole source, comments and docstrings included. Measured 11-06: 2
+laws matched only in prose - test_a_cut_off_gate_set_is_not_a_verdict and test_what_keeps_growing_is_salvaged_then_pruned
+- and were GitHub's for that alone. Now the match runs over preflight.code_text(src): comments and docstrings blanked by
+their exact span, every other string kept (a launch flag like '--headless=new' IS a string, so stripping strings would put
+a real browser on his Mac); a file that will not parse is matched whole. The two run here now and launch nothing - checked by
+watching for a debugging-port Chrome while each ran alone (the one seen beside them was the v3875 pre-flight's, REG-3310).
+No law changed class but those two. Law: test_a_version_is_preflighted_before_github_grades_it, red-proof PROVEN.
+
+### REG-3308 - THE SLOW LAWS WERE GITHUB'S, AND A 44-SECOND ONE COST A ROUND (v3876, v3875's GitHub round)
+The pre-flight ran only laws costing <= 20 s on CI; the rest went to GitHub with the browser laws. v3875's round went red on
+test_a_source_window_must_reach_its_subject (44 s there, REG-3305) - a law this PC answers in under a minute - and paid a
+~55-minute round for it. Measured 11-06: all 27 slow non-browser laws run here in 406 s at 3 workers. They run after the
+fast ones now; the pre-flight says how many ("N slower - run here too"); only a browser law stays GitHub's. Law:
+test_a_version_is_preflighted_before_github_grades_it (+1 case), red-proof PROVEN.
+
 ### REG-3303 - ANNIHILUS AND THE SIX COLOSSAL JEWELS SAID "NO VERIFIED SOURCE - DROPS BROADLY" ON QUICK WINS; NONE OF THEM DROPS BROADLY (v3876, #85)
 After the full pull (REG-3290) Quick wins ranks a place for 388 of 396 uniques; the other 8 come from no monster, and their
 cards fall back to _srcNote, which knew only the Hellfire Torch and the Sunder charms. So Annihilus (Uber Diablo, the Diablo

@@ -11,14 +11,15 @@ that class never reaches GitHub. v3864's second run found 9 BLIND proofs; 8 of t
 the version touched reproduces in minutes.
 
 So before ship_when_green pushes the ci branches it runs this, and refuses the push on a red:
-  1. every NON-BROWSER law whose measured CI cost (tv/gate_costs.json) is <= CAP_S, 3 at a time, at nice 10, in the
-     environment a gate gets (run_gates.law_env: no Claude CLI, the eagle ledgers redirected);
+  1. every NON-BROWSER law, 3 at a time, at nice 10, in the environment a gate gets (run_gates.law_env: no Claude CLI,
+     the eagle ledgers redirected) - those whose measured CI cost (tv/gate_costs.json) is <= CAP_S first, the slower ones
+     after them (REG-3308), and the registered laws the cost table has not measured yet (REG-3299);
   2. heart2 --prove over the version's changed-law set (heart2.changed_gates: since @{push}, else origin/main), browser
      laws left out;
   3. the hook's own red-proof anchor census.
 A law that drives a browser (its harness opens a Board, render_check or Playwright - in its own file or a test module it
-imports, two levels deep) is NEVER run here: browser suites run on GitHub only (his rule). Those, and the laws over the
-cap, are named as GitHub's - never counted as passed. Nothing here writes the tree.
+imports, two levels deep) is NEVER run here: browser suites run on GitHub only (his rule). Those are named as GitHub's -
+never counted as passed. Nothing here writes the tree.
 """
 import concurrent.futures as cf
 import io
@@ -73,6 +74,41 @@ def read_costs(path=COSTS):
     return out
 
 
+def code_text(src):
+    """REG-3309 - the source without its comments and docstrings, the prose that NAMES a browser call without making one.
+    -> str (the whole source when it will not parse: a law that cannot be read stays GitHub's)
+
+    Measured 11-06: 2 laws (test_a_cut_off_gate_set_is_not_a_verdict, test_what_keeps_growing_is_salvaged_then_pruned)
+    matched BROWSER_CALLS only in a comment or docstring and were never run here. Every other string stays: a launch flag
+    such as '--headless=new' IS a string, so stripping strings would put a real browser on his Mac."""
+    import ast
+    import tokenize
+    try:
+        tree = ast.parse(src)
+    except (SyntaxError, ValueError):
+        return src
+    lines = src.split("\n")
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) and node.body:
+            d = node.body[0]
+            if isinstance(d, ast.Expr) and isinstance(getattr(d, "value", None), ast.Constant) \
+                    and isinstance(d.value.value, str):
+                for ln in range(d.lineno, d.end_lineno + 1):
+                    row = lines[ln - 1]
+                    a0 = d.col_offset if ln == d.lineno else 0
+                    a1 = d.end_col_offset if ln == d.end_lineno else len(row)
+                    lines[ln - 1] = row[:a0] + " " * (a1 - a0) + row[a1:]
+    out = []
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO("\n".join(lines)).readline):
+            if tok.type == tokenize.COMMENT:
+                continue
+            out.append(" %s " % tok.string if tok.type == tokenize.STRING else tok.string)
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        return src
+    return "".join(out)
+
+
 def drives_browser(name, here=HERE, depth=2, _seen=None):
     """Does law `name` (or a test_* module it imports, `depth` levels down) CALL a browser? -> bool"""
     seen = _seen if _seen is not None else set()
@@ -84,7 +120,7 @@ def drives_browser(name, here=HERE, depth=2, _seen=None):
         src = io.open(p, encoding="utf-8", errors="replace").read()
     except OSError:
         return True                                   # a law that will not read is not run here: GitHub's
-    if BROWSER_CALLS.search(src):
+    if BROWSER_CALLS.search(code_text(src)):
         return True
     if depth <= 0:
         return False
@@ -136,6 +172,7 @@ def select(costs, here=HERE, cap_s=CAP_S, _registry=None):
                 out["browser"].append(g)
             elif cap_s < costs[g]:
                 out["slow"].append(g)
+                out["argv"][g] = hit          # REG-3308 - a slow registered gate runs here too, by its own command
             else:
                 out["run"].append(g)
                 out["argv"][g] = hit
@@ -299,9 +336,15 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
     if un_run or un_browser:
         say("preflight: %d registered law(s) have no measured CI cost yet - %d run here (bounded at %ds each), %d drive a "
             "browser and are GitHub's" % (len(un_run) + len(un_browser), len(un_run), LAW_TIMEOUT_S, len(un_browser)))
-    say("preflight: %d law(s) here (<= %gs on CI, %d of them by their registered command) · %d browser-driving, %d over "
-        "the cap and %d that are not one python law (node, shell, the app) are GitHub's, not passed here"
-        % (len(s["run"]), cap_s, len(s["argv"]), len(s["browser"]), len(s["slow"]), len(s["other"])))
+    # REG-3308 (v3875's GitHub round) - THE SLOW LAWS ARE NOT A BROWSER, AND ONE OF THEM COST A ROUND. Laws over CAP_S on CI
+    # were GitHub's: test_a_source_window_must_reach_its_subject (44 s there) went red on v3875 and GitHub spent a round
+    # finding what this PC finds in under a minute. Measured 11-06: all 27 run here in 406 s at 3 workers, the pre-flight
+    # about 7 minutes longer against a ~55-minute round. They run after the fast laws; only a browser stays GitHub's.
+    n_fast, n_slow = len(s["run"]), len(s["slow"])
+    s["run"] = s["run"] + list(s["slow"])
+    say("preflight: %d law(s) here (%d at <= %gs on CI, %d slower - run here too, after them; %d by their registered "
+        "command) · %d browser-driving and %d that are not one python law (node, shell, the app) are GitHub's, not passed "
+        "here" % (len(s["run"]), n_fast, cap_s, n_slow, len(s["argv"]), len(s["browser"]), len(s["other"])))
     reds = []
     a_ok, a_tail = (_anchors or (lambda: anchors(here)))()
     if not a_ok:
