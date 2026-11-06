@@ -6838,6 +6838,12 @@ def _check_the_second_eye_was_asked_twice():
 #: A fault row older than this CANNOT carry one, so counting it would make the heart row
 #: red on the day it was born. Historical boundary, not a threshold: it never moves.
 EVIDENCE_SINCE_MS = 1789833019729
+#: REG-3287 - the console fault kinds sent WITH a pre-rescue snapshot (`before`): the paint faults, where WHAT was on the
+#: stage is the question #24 turned on. Every other console kind reports that an answer never came or a door refused -
+#: there is no screen state to snapshot. MEASURED 11-06 on his Mac: the row read MISSING on 5 'theatre-open-no-sessions'
+#: rows (/api/sessions did not answer, 10-28) - true of the wrong population, as this row's own comment warns.
+#: tv/test_a_ui_fault_counts_only_the_kinds_that_carry_a_snapshot.py holds it to the page's own senders.
+SNAPSHOT_KINDS = ("theatre-stuck-black",)
 
 
 def _check_the_item_facts_are_reaching_the_row():
@@ -7029,10 +7035,11 @@ def _check_a_ui_fault_keeps_its_evidence():
     # unlike a freshness threshold it legitimately never moves. [[zero-needs-a-denominator]]
     mine = [r for r in rows
             if str((r or {}).get("where") or "").startswith("control_ui")
-            and ((r or {}).get("at") or 0) >= EVIDENCE_SINCE_MS]
+            and ((r or {}).get("at") or 0) >= EVIDENCE_SINCE_MS
+            and str((r or {}).get("kind") or "") in SNAPSHOT_KINDS]      # REG-3287 - only the kinds that carry one
     if not mine:
-        return UNKNOWN, ("no console-reported fault since the snapshot shipped, so whether it "
-                         "travels is UNMEASURED - not clean, and not a defect either")
+        return UNKNOWN, ("no console paint fault (%s) in 14 days since the snapshot shipped, so whether it travels is "
+                         "UNMEASURED - not clean, and not a defect either" % ", ".join(SNAPSHOT_KINDS))
     have = [r for r in mine if isinstance((r or {}).get("before"), dict)]
     if not have:
         return MISSING, ("%d console-reported fault(s) in 14 days and NOT ONE carries a pre-rescue "
