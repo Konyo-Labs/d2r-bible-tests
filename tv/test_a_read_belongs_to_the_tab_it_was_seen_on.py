@@ -139,10 +139,12 @@ var w = function(name, frame, cell, tab, page){ var o = { session: 's_1', frame:
   if (tab) o.tab = tab; if (page != null) o.page = page; return { name: name, witnesses: [o] }; };
 var rows = [ w('Blood Finger', 'f_1.jpg', 'stash:c6r3', 'stash'), w('Doom Grip', 'f_2.jpg', 'stash:c6r3', 'shared', 0),
              w('Old Personal', 'f_1.jpg', 'stash:c1r1'), w('Old Elsewhere', 'f_9.jpg', 'stash:c2r2'),
-             w('Shared Page 2', 'f_3.jpg', 'stash:c4r4', 'shared', 1) ];
+             w('Shared Page 2', 'f_3.jpg', 'stash:c4r4', 'shared', 1),
+             w('Shared No Page', 'f_3.jpg', 'stash:c7r7', 'shared'), w('Shared No Page Here', 'f_2.jpg', 'stash:c8r8', 'shared') ];
 var names = function(look){ return _flReadsOf(look, rows).map(function(r){ return r.name; }).sort(); };
 out.personal = names({ session: 's_1', frame: 'f_1.jpg', location: 'stash', sessionLocations: ['stash', 'shared', 'shared'] });
 out.shared0 = names({ session: 's_1', frame: 'f_2.jpg', location: 'shared', page: 0, sessionLocations: ['stash', 'shared', 'shared'] });
+out.shared1 = names({ session: 's_1', frame: 'f_3.jpg', location: 'shared', page: 1, sessionLocations: ['stash', 'shared', 'shared'] });
 out.onlyOne = names({ session: 's_1', frame: 'f_1.jpg', location: 'stash', sessionLocations: ['stash'] });
 var seen = [];
 _flOne = function(lk){ seen.push(lk.sessionLocations); return {}; };
@@ -182,7 +184,15 @@ class TheBoardCountsAReadOnItsOwnTab(unittest.TestCase):
     def test_a_named_read_counts_only_on_its_tab_and_page(self):
         self.assertNotIn("Doom Grip", self.o["personal"], "a shared-page read was laid on the personal stash (c6r3)")
         self.assertIn("Blood Finger", self.o["personal"])
-        self.assertEqual(self.o["shared0"], ["Doom Grip"], "shared page 1's look took another tab's or page's reads")
+        self.assertEqual([n for n in self.o["shared0"] if not n.startswith("Shared No Page")], ["Doom Grip"],
+                         "shared page 1's look took another tab's or page's reads")
+
+    def test_a_shared_read_with_no_page_counts_only_on_its_own_frames_page(self):
+        """REG-3284 (the Grok CLI on v3872) - a shared read naming no page came back on shared page 0 AND page 1."""
+        self.assertIn("Shared No Page Here", self.o["shared0"], "a pageless shared read on this look's own frame was lost")
+        self.assertNotIn("Shared No Page", self.o["shared0"], "a pageless shared read from another frame was laid on page 0")
+        self.assertIn("Shared No Page", self.o["shared1"])
+        self.assertNotIn("Shared No Page Here", self.o["shared1"], "one pageless read was counted on two shared pages")
 
     def test_an_old_read_is_certain_only_on_its_frame_or_a_one_container_session(self):
         self.assertIn("Old Personal", self.o["personal"], "an old read on the look's own frame is that tab")
@@ -198,6 +208,11 @@ class TheBoardCountsAReadOnItsOwnTab(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3284 - a shared read that names no page is laid on every shared page of the session",
+     "file": "bible.html",
+     "find": "              if (w.page == null){ if (!(w.frame && look.frame && String(w.frame) === String(look.frame))) return; }\n",
+     "replace": "              if (w.page == null){ }\n",
+     "matches": 1, "needs": "node"},
     {"why": "REG-3248 - a reel that found items is never re-read, so its witnesses never gain their tab", "file": "tv/control_app.py",
      "find": "        return not _vault_tab_owed(rec, prompt_ver)   # REG-3248 (#67) - found items, never asked their tab: re-read ONCE\n",
      "replace": "        return True\n",

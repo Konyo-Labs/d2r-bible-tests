@@ -59094,7 +59094,12 @@ window.vaultAutoAssign = function(){
           var _wt = (typeof w.tab === 'string' && w.tab) ? w.tab.toLowerCase() : null;
           if (_wt){
             if (_wt !== loc) return;
-            if (loc === 'shared' && look.page != null && w.page != null && +w.page !== +look.page) return;
+            /* REG-3284 (the Grok CLI on v3872) - a shared read that names NO page was laid on EVERY shared page of the session.
+               It counts on a page only when it was made on that look's own frame; else it is left out and the look asks. */
+            if (loc === 'shared' && look.page != null){
+              if (w.page == null){ if (!(w.frame && look.frame && String(w.frame) === String(look.frame))) return; }
+              else if (+w.page !== +look.page) return;
+            }
           } else if (!(w.frame && look.frame && String(w.frame) === String(look.frame))){
             var _sl = Array.isArray(look.sessionLocations) ? look.sessionLocations : null;
             if (!_sl || _sl.length !== 1 || _sl[0] !== loc) return;
