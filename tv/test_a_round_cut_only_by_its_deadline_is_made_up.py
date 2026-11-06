@@ -59,6 +59,17 @@ class TheMakeupDecision(unittest.TestCase):
         self.assertFalse(due)
         self.assertIn("owe a fix", why)
 
+    def test_an_unreadable_job_list_is_unknown_and_makes_no_shard_up(self):
+        """The swallow ratchet on v3876's pre-flight: an unparseable job list became [] - "no runner killed one", a reading
+        no caller could tell from a real one. It is None (UNKNOWN) now, which makes no lost shard up."""
+        class _R(object):
+            def __init__(self, rc, out):
+                self.returncode, self.stdout = rc, out
+        for res in (_R(0, "{not json"), _R(1, "")):
+            got = SW.killed_shards(42, [7], lambda *a, **k: res)
+            self.assertIsNone(got, "an unreadable job list was answered as a reading: %r" % (got,))
+            self.assertFalse(PS.makeup_due({"cut": [], "fix": [], "lost": [7], "missing": []}, killed=got)[0])
+
     def test_a_runner_killed_shard_is_due_and_no_other_lost_one(self):
         """REG-3292 - only the shards the runner killed; one more lost shard makes the round UNKNOWN again."""
         self.assertTrue(PS.makeup_due({"cut": [], "fix": [], "lost": [7], "missing": []}, killed={"7"})[0])
@@ -355,6 +366,11 @@ class TheAptStepRunsOnlyWhenNeeded(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "the swallow ratchet on v3876 - an unreadable job list is answered as 'no runner killed one' again",
+     "file": "tv/ship_when_green.py",
+     "find": "        return None          # the swallow ratchet (v3876 pre-flight) - an unreadable list is UNKNOWN, never \"none killed\"\n",
+     "replace": "        jobs = []\n",
+     "matches": 1},
     {"why": "REG-3292 - a shard the runner killed is never made up (REG-3085's case stays a hand re-run)",
      "file": "tv/ship_when_green.py",
      "find": "        if getattr(g, \"returncode\", 1) == 0 and RUNNER_KILLED in (g.stdout or \"\"):\n",

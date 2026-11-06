@@ -106,17 +106,20 @@ RUNNER_KILLED = "The runner has received a shutdown signal"
 
 def killed_shards(rid, lost, run):
     """REG-3292 - which of the shards that left no store were ended by their RUNNER, read from each one's own job log.
-    -> set of shard numbers (str). A job or log that cannot be read is not counted - UNKNOWN never makes a shard up."""
+    -> set of shard numbers (str), or None when the job list itself could not be read (UNKNOWN: makeup_due then makes no
+    lost shard up). A single job's log that cannot be read is not counted - UNKNOWN never makes a shard up."""
     import json
     out = set()
     if not lost:
         return out
     j = run(["gh", "run", "view", str(rid), "--repo", CV.REPO_SLUG, "--json", "jobs"], capture_output=True, text=True,
             encoding="utf-8", errors="replace")
+    if getattr(j, "returncode", 1) != 0:
+        return None          # the job list could not be asked - UNKNOWN, which makes no shard up (makeup_due: None)
     try:
-        jobs = (json.loads(j.stdout or "{}") or {}).get("jobs") or [] if getattr(j, "returncode", 1) == 0 else []
+        jobs = (json.loads(j.stdout or "{}") or {}).get("jobs") or []
     except ValueError:
-        jobs = []
+        return None          # the swallow ratchet (v3876 pre-flight) - an unreadable list is UNKNOWN, never "none killed"
     want = set(str(k) for k in lost)
     for job in jobs:
         name = str((job or {}).get("name") or "")

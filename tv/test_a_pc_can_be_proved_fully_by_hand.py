@@ -26,6 +26,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import heart2 as H  # noqa: E402
+import fixture_tmp  # noqa: E402
+fixture_tmp.contain()   # every scratch dir this law makes lives under one parent the run removes
 
 FP, PARTS = "fp-mac-1", {"python": "3.9.6", "os": "darwin 25", "node": "22", "git": "2.39", "autocrlf": "input"}
 

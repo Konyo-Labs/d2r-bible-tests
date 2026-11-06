@@ -55,7 +55,12 @@ function Image(){ this.complete = false; this._src = ''; this.onload = null; thi
 Object.defineProperty(Image.prototype, 'src', { get: function(){ return this._src; },
   set: function(v){ this._src = 'http://127.0.0.1:17999' + v; this.complete = false; } });
 function cls(){ var set = {}; return { toggle: function(c, on){ if (on) set[c] = 1; else delete set[c]; }, contains: function(c){ return !!set[c]; } }; }
-var FILM = { src: '', classList: cls() };
+/* REG-3291 (v3876) - thShowFrame clears a frame's 'data-missing' mark and may set one, so the stand-in film carries the
+   attribute methods every element has (the v3876 pre-flight found it without them) */
+var FILM = { src: '', classList: cls(), _attrs: {}, title: '', style: {},
+  setAttribute: function(k, v){ this._attrs[k] = String(v); },
+  getAttribute: function(k){ return k in this._attrs ? this._attrs[k] : null; },
+  removeAttribute: function(k){ delete this._attrs[k]; if (k === 'src') this.src = ''; } };
 function $(id){ return id === 'th-film' ? FILM : null; }
 __CUT__
 function load(i){ var p = _thPool[i]; p.complete = true; if (p.onload) p.onload(); }
@@ -74,7 +79,7 @@ thShowFrame(D); OUT.quickAsked = state(); load(0); flush(); OUT.quick = state();
 /* the prefetch pool already holds E, decoded: it lands at once */
 _thPool[2].src = E; _thPool[2].complete = true; thShowFrame(E); flush(); OUT.pool = state();
 /* F fails to load: the wait still ends */
-thShowFrame(F); flush(); fail(0); OUT.failed = state();
+thShowFrame(F); flush(); fail(0); OUT.failed = state(); OUT.failedWhy = FILM.getAttribute('data-missing');
 console.log(JSON.stringify(OUT));
 """
 
@@ -125,7 +130,10 @@ class ATheatreFramePaintsItsOwnPicture(unittest.TestCase):
         self.assertFalse(o["quickAsked"]["pending"], "the film dimmed the moment a frame was asked - playback flickers: %r" % o["quickAsked"])
         self.assertEqual(o["quick"], {"src": D, "want": D, "pending": False}, "a load inside the beat flickered: %r" % o["quick"])
         self.assertEqual(o["pool"], {"src": E, "want": E, "pending": False}, "a decoded frame did not land at once: %r" % o["pool"])
-        self.assertEqual(o["failed"], {"src": F, "want": F, "pending": False}, "a failed load left the wait on: %r" % o["failed"])
+        # REG-3291 (#58) - a picture nobody could serve is never put on the film (it drew a broken box); the wait still ends
+        self.assertEqual(o["failed"], {"src": "", "want": F, "pending": False}, "a failed load left the wait on, or "
+                         "put the picture that failed on the film: %r" % o["failed"])
+        self.assertTrue(o.get("failedWhy"), "a frame nobody could serve does not say why")
 
 
 RED_PROOF = [
