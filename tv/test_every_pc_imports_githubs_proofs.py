@@ -470,7 +470,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3862 - a dirty tree is imported into (heart2 refuses it, and the refusal is final for the commit)",
      "file": "tv/control_app.py",
-     "find": "        if d.returncode != 0 or (d.stdout or \"\").strip():\n            _PROOF_RELEASE.update(sha=head, state=\"waiting\",",
+     "find": "        if d.returncode != 0 or _edits is None or _edits:\n            _PROOF_RELEASE.update(sha=head, state=\"waiting\",",
      "replace": "        if False:\n            _PROOF_RELEASE.update(sha=head, state=\"waiting\",",
      "matches": 1},
     {"why": "v3862 - a proof starts beside the import of the same proofs",

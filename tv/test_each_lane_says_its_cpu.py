@@ -115,16 +115,35 @@ class ARealReadingOnThisMachine(unittest.TestCase):
         self.assertTrue(not idle_row or idle_row[0]["pct"] < 10.0, idle_row)
 
     @unittest.skipUnless(sys.platform == "darwin", "Mach ports are a macOS question")
-    def test_every_mach_port_is_given_back(self):
-        def ports():
-            out = subprocess.run(["top", "-l", "1", "-pid", str(os.getpid()), "-stats", "ports"],
-                                 capture_output=True, text=True, timeout=30).stdout
-            return int(out.strip().splitlines()[-1].strip())
-        L.sample()
-        before = ports()
-        for _ in range(500):
+    def test_every_mach_port_reference_is_given_back(self):
+        """task_threads hands back the SAME port names on every call and adds a send reference to each, so a reader that
+        never deallocates leaks REFERENCES, not names - a count of ports stays flat either way (measured: 19 before and
+        after 2,000 samples both ways). The send-right reference count on one live thread's port is what moves."""
+        import ctypes
+        import ctypes.util
+        libc = ctypes.CDLL(ctypes.util.find_library("c"))
+        libc.mach_task_self.restype = ctypes.c_uint
+        libc.task_threads.argtypes = [ctypes.c_uint, ctypes.POINTER(ctypes.POINTER(ctypes.c_uint)),
+                                      ctypes.POINTER(ctypes.c_uint)]
+        libc.mach_port_get_refs.argtypes = [ctypes.c_uint, ctypes.c_uint, ctypes.c_uint, ctypes.POINTER(ctypes.c_uint)]
+        libc.mach_port_deallocate.argtypes = [ctypes.c_uint, ctypes.c_uint]
+        libc.vm_deallocate.argtypes = [ctypes.c_uint, ctypes.c_size_t, ctypes.c_size_t]
+        task = libc.mach_task_self()
+        lst, n = ctypes.POINTER(ctypes.c_uint)(), ctypes.c_uint()
+        self.assertEqual(libc.task_threads(task, ctypes.byref(lst), ctypes.byref(n)), 0)
+        port = lst[0]
+        for i in range(n.value):
+            libc.mach_port_deallocate(task, lst[i])       # this law's own references go back too
+        libc.vm_deallocate(task, ctypes.cast(lst, ctypes.c_void_p).value or 0, n.value * ctypes.sizeof(ctypes.c_uint))
+
+        def refs():
+            r = ctypes.c_uint()
+            self.assertEqual(libc.mach_port_get_refs(task, port, 0, ctypes.byref(r)), 0)   # MACH_PORT_RIGHT_SEND
+            return r.value
+        before = refs()
+        for _ in range(50):
             L.sample()
-        self.assertLessEqual(ports(), before + 2, "the reader leaks Mach ports: %d before 500 samples" % before)
+        self.assertLessEqual(refs() - before, 1, "the reader keeps a send reference per sample (%d before 50)" % before)
 
 
 class TheConsoleSaysIt(unittest.TestCase):
@@ -177,6 +196,7 @@ RED_PROOF = [
      "file": "tv/lane_cpu.py",
      "find": "                libc.mach_port_deallocate(task, port)\n",
      "replace": "                pass\n",
+     "needs": "macos",
      "matches": 1},
     {"why": "v3867 - the heart draws an unknown reading as a zero",
      "file": "tv/control_ui.html",
