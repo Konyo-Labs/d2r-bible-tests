@@ -40,7 +40,11 @@ concurrency:
   group: proof-keys-shards-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/heads/ci/') }}
 env:
-  PROOF_SHARDS: "22"
+  # v3867 (his "raise the limit ... if theres an option for more optimized speed do it", 11-06) - 17, MEASURED: in both
+  # v3865 rounds (runs 42127666133, 42132571943) Ubicloud started exactly 17 of the 22 8-core shards at once and the other
+  # 5 waited 16-23 min for a machine to free up, so those 5 ended the run at 55 min where the 17 had all finished by ~30.
+  # N = what runs at once. Raise it with the account's runner limit, never past it.
+  PROOF_SHARDS: "17"
 jobs:
   budget:
     # v3865 (his ruling 2026-11-05: "no way we pass 30$ .. this stops completely and goes back to github if we hit our
@@ -131,9 +135,9 @@ jobs:
     timeout-minutes: 75
     strategy:
       fail-fast: false
-      max-parallel: 22
+      max-parallel: 17
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
     env:
       D2R_NO_CLAUDE: "1"
       # v3865 (his ask 2026-11-05, after Depot needed an org) - a free public runner has 4 vCPUs and a shard proved on 2;

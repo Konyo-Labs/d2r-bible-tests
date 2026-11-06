@@ -5,7 +5,8 @@
     "items": [
       "v3867 - a Claude read that ran out of time is UNKNOWN and says it is not a sign-in problem, not disconnected (REG-3227)",
       "v3867 - signing Claude in again lights its lamp at once, before the next read (REG-3227)",
-      "v3867 - the Claude lamp opens a sign-in only when a sign-in is what failed (REG-3227)"
+      "v3867 - the Claude lamp opens a sign-in only when a sign-in is what failed (REG-3227)",
+      "v3867 - the proof shards are 17, what Ubicloud runs at once - none waits a whole shard for a machine (REG-3228)"
     ]
   },
   {
