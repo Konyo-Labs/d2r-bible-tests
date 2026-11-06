@@ -124,6 +124,21 @@ def _linux_sample(ids):
     return out
 
 
+def snapshot(platform=None, threads=None, _sample=None):
+    """v3868 (the Grok CLI on REG-3236) - one reading WITH what it could not read and whose thread each id was AT THAT
+    MOMENT. -> ({"cpu": {id: s}, "names": {id: name}, "missing": {id}} | None, why). Never raises.
+    A thread asked for and not read is `missing` - never "born inside the window" (that counted a 500 s lane from zero:
+    933% of a core); no thread read at all is UNKNOWN; names are taken now, not at the next status call."""
+    ths = list(threads if threads is not None else threading.enumerate())
+    names = dict((t.native_id, t.name) for t in ths if getattr(t, "native_id", None))
+    got, why = (_sample or sample)(platform, ths)
+    if got is None:
+        return None, why
+    if names and not any(tid in got for tid in names):
+        return None, "no thread of this process could be read (%d asked)" % len(names)
+    return {"cpu": got, "names": names, "missing": set(tid for tid in names if tid not in got)}, None
+
+
 def sample(platform=None, threads=None):
     """One reading. -> ({native_id: cpu seconds} | None, why | None). Never raises."""
     plat = sys.platform if platform is None else platform
@@ -145,15 +160,20 @@ def sample(platform=None, threads=None):
     return got, None
 
 
-def window(old, new, dt, names):
+def window(old, new, dt, names, old_missing=(), old_names=None):
     """CPU per named lane between two samples. -> rows [{name, cpuS, pct}] busiest first. Pure.
     pct is the share of ONE core over `dt` (100 = a core busy the whole window). A thread in `new` but not `old` was born
-    inside the window: its whole CPU so far counts. A thread with no name in `names` is said by its id."""
+    inside the window: its whole CPU so far counts. A thread with no name in `names` is said by its id.
+    v3868 - an id the OLD reading asked for and could not read is left out (UNKNOWN, never counted from zero); an id the
+    old reading knew under ANOTHER name is a reused id - its new thread was born inside the window."""
     rows = []
     if not dt or dt <= 0:
         return rows
     for tid, cpu in (new or {}).items():
-        used = cpu - (old or {}).get(tid, 0.0)
+        if tid in (old_missing or ()):
+            continue
+        reused = old_names is not None and tid in (old or {}) and old_names.get(tid) != names.get(tid)
+        used = cpu - (0.0 if reused else (old or {}).get(tid, 0.0))
         if used < 0:
             continue                      # an id reused by a new thread with less CPU than the old one: not this lane
         rows.append({"name": names.get(tid) or ("thread %d" % tid), "cpuS": round(used, 3),
@@ -168,21 +188,17 @@ def state(now=None, platform=None, _sample=None):
     now = time.monotonic() if now is None else now
     with _LOCK:
         if not _SAMPLES or now - _SAMPLES[-1][0] >= SAMPLE_EVERY_S:
-            got, why = (_sample or sample)(platform)
-            if got is None:
+            snap, why = snapshot(platform, _sample=_sample)
+            if snap is None:
                 return {"ok": False, "windowS": None, "rows": [], "total": None, "why": why}
-            _SAMPLES.append((now, got))
+            _SAMPLES.append((now, snap))
         t_new, s_new = _SAMPLES[-1]
-        base = None
-        for t, s in _SAMPLES:
-            if t_new - t <= WINDOW_S:
-                base = (t, s)
-                break
-        if base is None or base[0] >= t_new:
+        base = next(((t, s) for t, s in _SAMPLES if t_new - t <= WINDOW_S and t < t_new), None)
+        if base is None:
             return {"ok": False, "windowS": None, "rows": [], "total": None,
-                    "why": "one sample so far - the next status call measures the window"}
-    names = {t.native_id: t.name for t in threading.enumerate() if getattr(t, "native_id", None)}
+                    "why": "one reading in the last %d s - a window needs two, at least %d s apart"
+                           % (int(WINDOW_S), int(SAMPLE_EVERY_S))}
     dt = t_new - base[0]
-    rows = window(base[1], s_new, dt, names)
+    rows = window(base[1]["cpu"], s_new["cpu"], dt, s_new["names"], base[1]["missing"], base[1]["names"])
     return {"ok": True, "windowS": round(dt, 1), "rows": rows[:TOP],
             "total": round(sum(r["pct"] for r in rows), 1), "why": None}

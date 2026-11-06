@@ -61,21 +61,39 @@ class UnknownIsNeverZero(unittest.TestCase):
         L._SAMPLES.extend(self._saved)
 
     def test_an_unreadable_os_is_unknown_with_its_reason(self):
-        got = L.state(now=100.0, _sample=lambda plat: (None, "the OS would not list this process's threads"))
+        got = L.state(now=100.0, _sample=lambda plat, ths=None: (None, "the OS would not list this process's threads"))
         self.assertFalse(got["ok"])
         self.assertIsNone(got["total"], "an unreadable reading carried a number")
         self.assertEqual(got["rows"], [])
         self.assertIn("would not list", got["why"])
 
     def test_one_sample_is_not_a_window_and_two_are(self):
-        seq = [({1: 1.0}, None), ({1: 4.0}, None)]
-        first = L.state(now=100.0, _sample=lambda plat: seq.pop(0))
+        me = threading.current_thread().native_id
+        seq = [({me: 1.0}, None), ({me: 4.0}, None)]
+        first = L.state(now=100.0, _sample=lambda plat, ths=None: seq.pop(0))
         self.assertFalse(first["ok"])
-        self.assertIn("one sample", first["why"])
-        second = L.state(now=100.0 + L.SAMPLE_EVERY_S + 1, _sample=lambda plat: seq.pop(0))
+        self.assertIn("one reading", first["why"])
+        second = L.state(now=100.0 + L.SAMPLE_EVERY_S + 1, _sample=lambda plat, ths=None: seq.pop(0))
         self.assertTrue(second["ok"], second)
         self.assertEqual(second["rows"][0]["cpuS"], 3.0)
         self.assertEqual(second["windowS"], round(L.SAMPLE_EVERY_S + 1, 1))
+
+    def test_a_thread_the_old_reading_could_not_read_is_left_out_never_counted_from_zero(self):
+        """v3868 (the Grok CLI on REG-3236, Windows/Linux half): a lane alive with 500 s of CPU whose OLD read failed
+        was counted from zero - 933% of a core."""
+        rows = L.window({1: 2.0}, {1: 3.0, 7: 560.0}, 60.0, {1: "a", 7: "tvd-river"}, old_missing={7})
+        self.assertEqual([r["name"] for r in rows], ["a"], "a thread the old reading could not read was counted: %r" % rows)
+
+    def test_nothing_read_at_all_is_unknown(self):
+        class T(object):
+            native_id, name = 4242, "law-lane"
+        snap, why = L.snapshot(threads=[T()], _sample=lambda plat, ths: ({}, None))
+        self.assertIsNone(snap, "a reading that read no thread was a measured zero")
+        self.assertIn("could be read", why)
+
+    def test_an_id_reused_by_another_thread_is_a_new_thread(self):
+        rows = L.window({9: 40.0}, {9: 50.0}, 60.0, {9: "new-lane"}, old_names={9: "old-lane"})
+        self.assertEqual(rows[0]["cpuS"], 50.0, "a reused id was given the old thread's baseline: %r" % rows)
 
     def test_an_unknown_platform_is_said(self):
         got, why = L.sample(platform="plan9")
@@ -185,10 +203,25 @@ process.stdout.write(JSON.stringify(out));
 
 
 RED_PROOF = [
+    {"why": "v3868 - a thread the old reading could not read is counted from zero again (933% of a core)",
+     "file": "tv/lane_cpu.py",
+     "find": "        if tid in (old_missing or ()):\n            continue\n",
+     "replace": "        if False:\n            continue\n",
+     "matches": 1},
+    {"why": "v3868 - a reading that read no thread is a measured zero again",
+     "file": "tv/lane_cpu.py",
+     "find": "    if names and not any(tid in got for tid in names):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "v3868 - a reused id keeps the old thread's baseline",
+     "file": "tv/lane_cpu.py",
+     "find": "        used = cpu - (0.0 if reused else (old or {}).get(tid, 0.0))\n",
+     "replace": "        used = cpu - (old or {}).get(tid, 0.0)\n",
+     "matches": 1},
     {"why": "v3867 - a thread born inside the window loses its CPU (only threads seen twice count)",
      "file": "tv/lane_cpu.py",
-     "find": "        used = cpu - (old or {}).get(tid, 0.0)\n",
-     "replace": "        used = cpu - (old or {}).get(tid, cpu)\n",
+     "find": "        used = cpu - (0.0 if reused else (old or {}).get(tid, 0.0))\n",
+     "replace": "        used = cpu - (0.0 if reused else (old or {}).get(tid, cpu))\n",
      "matches": 1},
     {"why": "v3867 - an unreadable OS reads as a zero total instead of UNKNOWN",
      "file": "tv/lane_cpu.py",
