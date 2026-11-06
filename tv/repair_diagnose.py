@@ -25,6 +25,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 STATE_NAME = ".repair_diagnoses.json"         # gitignored, per PC
 MAX_PER_DAY = 2
+_SPENT = {}          # v3868 - {(state file, day): asks spent by THIS process}, so a failed save cannot re-open the allowance
 TIMEOUT_S = 300
 #: v3867 (#17) - MEASURED 2026-11-06: his Mac held 8 unknown faults, both of the day's asks were spent and NEITHER landed
 #: (.repair_diagnoses.json: n 2, seen {}). A hand run of the same ask answered in 72 s and named the cause itself: 8 turns
@@ -51,11 +52,18 @@ def due(misses, state, now_s, max_per_day=MAX_PER_DAY):
     seen = st.get("seen") if isinstance(st.get("seen"), dict) else {}
     used = int(st.get("n") or 0) if st.get("day") == day_of(now_s) else 0
     left = max(0, max_per_day - used)
+    failed = st.get("failed") if isinstance(st.get("failed"), dict) else {}
+    today = day_of(now_s)
+
+    def _failed_today(check):
+        # v3868 (the Grok CLI on REG-3235) - one stuck fault took both of the day's asks while others waited
+        at = (failed.get(check) or {}).get("at") if isinstance(failed.get(check), dict) else None
+        return isinstance(at, (int, float)) and day_of(at / 1000.0) == today
     out = []
     for m in misses or []:
         if len(out) >= left:
             break
-        if isinstance(m, dict) and m.get("check") and m["check"] not in seen:
+        if isinstance(m, dict) and m.get("check") and m["check"] not in seen and not _failed_today(m["check"]):
             out.append(m)
     return out
 
@@ -119,8 +127,14 @@ def diagnose(miss, fn_name, platform, run=None, env=None, which=None):
     except Exception as e:
         text, rc = "claude could not be started (%s)" % type(e).__name__, 127
     low = text.lower()
-    if rc != 0 or any(s in low for s in DEAD_SEAT):
-        rec["summary"] = "not answered: " + scrub(text.split("\n")[0], 160)
+    # v3868 (the Grok CLI on REG-3235, #231 6676508919) - AN ANSWER IS A CAUSE LINE. A dead-seat phrase dropped a real
+    # proposal whose fault was itself about signing in ("CAUSE: the console is not logged in"), and an exit 0 that
+    # never reached a CAUSE line was stored as diagnosed for good. Now: no CAUSE line is not an answer; a dead-seat
+    # phrase marks a dead seat only when there is no CAUSE line; a non-zero exit is still not an answer.
+    has_cause = re.search(r"(?m)^\s*CAUSE:\s*\S", text) is not None
+    if rc != 0 or not has_cause:
+        why = (next((s for s in DEAD_SEAT if s in low), None) if not has_cause else None)
+        rec["summary"] = "not answered: " + (("%s - " % why) if why else "") + scrub(text.split("\n")[0], 160)
         return rec
     rec.update(ok=True, summary=summary_of(text), text=scrub(text, 4000))
     return rec
@@ -155,8 +169,17 @@ def run_due(misses, fn_of, platform, path=None, now_s=None, ask=None):
     now_s = time.time() if now_s is None else now_s
     prev = load(path)
     if prev is None:
-        return {}                         # UNKNOWN state: spend nothing, overwrite nothing
+        # UNKNOWN state: spend nothing, overwrite nothing - and SAY it (v3868: it read as "not diagnosed yet" forever)
+        return dict((m["check"], "UNKNOWN - this PC's diagnosis record will not read, so nothing was asked")
+                    for m in (misses or ()) if isinstance(m, dict) and m.get("check"))
     st = forget_cleared(prev, misses)
+    # v3868 (the Grok CLI on REG-3235) - THE DAY'S SPEND IS KEPT IN THIS PROCESS TOO: a save that failed (a full disk, a
+    # kill before os.replace) left the file's `n` behind, and the next pass spent the allowance again.
+    _today = day_of(now_s)
+    if _SPENT.get((path, _today)):
+        if st.get("day") != _today:
+            st["day"], st["n"] = _today, 0
+        st["n"] = max(int(st.get("n") or 0), _SPENT[(path, _today)])
     said = {}
     for m in due(misses, st, now_s):
         rec = (ask or diagnose)(m, fn_of(m.get("check")), platform)
@@ -170,6 +193,7 @@ def run_due(misses, fn_of, platform, path=None, now_s=None, ask=None):
         today = day_of(now_s)
         st["n"] = (int(st.get("n") or 0) if st.get("day") == today else 0) + 1
         st["day"] = today
+        _SPENT[(path, today)] = max(_SPENT.get((path, today), 0), st["n"])
         if rec.get("ok"):                     # a seat that did not answer is asked again tomorrow, never marked done
             (st.get("failed") or {}).pop(m["check"], None)
             st.setdefault("seen", {})[m["check"]] = {"at": rec.get("at"), "summary": rec.get("summary"),

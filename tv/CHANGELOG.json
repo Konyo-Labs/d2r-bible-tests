@@ -1,5 +1,13 @@
 [
   {
+    "ver": "v3868",
+    "date": "2026-11-06",
+    "items": [
+      "v3868 - a Claude diagnosis is an answer when it has a CAUSE line, whatever words it uses (REG-3237)",
+      "v3868 - one stuck fault no longer takes the day of diagnoses, and an unreadable record is said (REG-3237)"
+    ]
+  },
+  {
     "ver": "v3867",
     "date": "2026-11-06",
     "items": [

@@ -80,6 +80,21 @@ class TheAsk(unittest.TestCase):
         self.assertGreaterEqual(int(argv[argv.index("--max-turns") + 1]), 16)
         self.assertNotIn(RD.REPO, argv[-1], "the prompt carries the repo's absolute path (a user folder)")
 
+    def test_an_answer_is_a_cause_line_whatever_words_it_uses(self):
+        """v3868 (the Grok CLI on REG-3235, #231 6676508919): a fault about signing in answers in a dead seat's words, and
+        a run that exits 0 without ever writing CAUSE was stored as diagnosed."""
+        out = "CAUSE: the console is not logged in to Claude\nFIX: run claude and /login\nVERIFY: the lamp\nCONFIDENCE: high"
+        r = RD.diagnose(MISS, "_check_x", "darwin", run=_ran([], out=out), env={}, which=lambda n: "/x/claude")
+        self.assertTrue(r["ok"], "a real proposal was dropped for naming its own fault: %r" % r)
+        self.assertIn("not logged in", r["summary"])
+        r = RD.diagnose(MISS, "_check_x", "darwin", run=_ran([], out="I could not finish reading the checker"),
+                        env={}, which=lambda n: "/x/claude")
+        self.assertFalse(r["ok"], "an exit 0 with no CAUSE line was stored as diagnosed")
+        r = RD.diagnose(MISS, "_check_x", "darwin", run=_ran([], out="Error: usage limit reached"), env={},
+                        which=lambda n: "/x/claude")
+        self.assertFalse(r["ok"])
+        self.assertIn("usage limit", r["summary"], "a dead seat no longer says it is one")
+
     def test_a_dead_seat_is_not_an_answer(self):
         r = RD.diagnose(MISS, "_check_x", "win32", run=_ran([], out="Not logged in - please run /login", rc=1),
                         env={}, which=lambda n: "/x/claude")
@@ -132,6 +147,40 @@ class TheAllowance(unittest.TestCase):
         self.assertNotIn("fault 0", RD.load(self.path).get("failed") or {}, "a landed diagnosis kept its old failure")
         RD.run_due([], lambda c: None, "darwin", path=self.path, now_s=NOW + 3 * 86400, ask=ok)
         self.assertEqual(RD.load(self.path).get("failed") or {}, {}, "a cleared fault kept its failure record")
+
+    def test_a_fault_that_failed_today_waits_and_another_is_asked(self):
+        """v3868 (the Grok CLI on REG-3235): one stuck fault took both of the day's asks while another waited."""
+        asked = []
+
+        def ask(m, fn, plat):
+            asked.append(m["check"])
+            return {"check": m["check"], "at": NOW * 1000, "ok": m["check"] != "fault 0",
+                    "summary": "not answered: timed out" if m["check"] == "fault 0" else "cause of " + m["check"]}
+        RD.run_due(self._misses(1), lambda c: None, "darwin", path=self.path, now_s=NOW, ask=ask)
+        RD.run_due(self._misses(2), lambda c: None, "darwin", path=self.path, now_s=NOW + 60, ask=ask)
+        self.assertEqual(asked, ["fault 0", "fault 1"], "the fault that failed today took the second ask: %r" % asked)
+
+    def test_an_unreadable_record_is_said_and_spends_nothing(self):
+        with open(self.path, "w") as fh:
+            fh.write("{not json")
+        got = RD.run_due(self._misses(1), lambda c: None, "darwin", path=self.path, now_s=NOW,
+                         ask=lambda m, fn, plat: self.fail("asked over a record that will not read"))
+        self.assertIn("will not read", got.get("fault 0") or "", "an unreadable record read as 'not diagnosed yet'")
+
+    def test_a_save_that_fails_does_not_reopen_the_days_allowance(self):
+        asked = []
+
+        def ask(m, fn, plat):
+            asked.append(m["check"])
+            return {"check": m["check"], "at": 1, "ok": False, "summary": "not answered: timed out"}
+        real = RD.save
+        RD.save = lambda path, st: False
+        try:
+            RD.run_due(self._misses(3), lambda c: None, "darwin", path=self.path, now_s=NOW, ask=ask)
+            RD.run_due(self._misses(5), lambda c: None, "darwin", path=self.path, now_s=NOW + 60, ask=ask)
+        finally:
+            RD.save = real
+        self.assertEqual(len(asked), RD.MAX_PER_DAY, "a failed save re-opened the allowance: %r" % asked)
 
     def test_not_asked_costs_nothing_and_not_answered_is_retried(self):
         calls = []
@@ -186,6 +235,26 @@ class ItRidesToTheOverwatch(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3868 - a dead-seat phrase drops a real CAUSE again, and an exit 0 without one is stored as diagnosed",
+     "file": "tv/repair_diagnose.py",
+     "find": "    if rc != 0 or not has_cause:\n",
+     "replace": "    if rc != 0 or any(s in low for s in DEAD_SEAT):\n",
+     "matches": 1},
+    {"why": "v3868 - a fault that failed today is asked again and takes the other faults' ask",
+     "file": "tv/repair_diagnose.py",
+     "find": "and m[\"check\"] not in seen and not _failed_today(m[\"check\"]):\n",
+     "replace": "and m[\"check\"] not in seen:\n",
+     "matches": 1},
+    {"why": "v3868 - an unreadable record answers nothing, so the hover says 'not diagnosed yet' for good",
+     "file": "tv/repair_diagnose.py",
+     "find": "        return dict((m[\"check\"], \"UNKNOWN - this PC's diagnosis record will not read, so nothing was asked\")\n",
+     "replace": "        return {}\n        return dict((m[\"check\"], \"UNKNOWN - this PC's diagnosis record will not read, so nothing was asked\")\n",
+     "matches": 1},
+    {"why": "v3868 - a failed save re-opens the day's allowance",
+     "file": "tv/repair_diagnose.py",
+     "find": "        _SPENT[(path, today)] = max(_SPENT.get((path, today), 0), st[\"n\"])\n",
+     "replace": "        pass\n",
+     "matches": 1},
     {"why": "v3867 (#17) - the ask runs inside the project again, where its CLAUDE.md and paging Reads spend every turn",
      "file": "tv/repair_diagnose.py",
      "find": "            cwd=_neutral_cwd(), capture_output=True,",
@@ -213,8 +282,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3862 - a fault already diagnosed is asked again every pass",
      "file": "tv/repair_diagnose.py",
-     "find": "        if isinstance(m, dict) and m.get(\"check\") and m[\"check\"] not in seen:\n",
-     "replace": "        if isinstance(m, dict) and m.get(\"check\"):\n",
+     "find": "        if isinstance(m, dict) and m.get(\"check\") and m[\"check\"] not in seen and not _failed_today(m[\"check\"]):\n",
+     "replace": "        if isinstance(m, dict) and m.get(\"check\") and not _failed_today(m[\"check\"]):\n",
      "matches": 1},
 ]
 
