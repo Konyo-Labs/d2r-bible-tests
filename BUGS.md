@@ -101,6 +101,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3302 - SEVEN OF NIHLATHAK'S NORMAL AND NIGHTMARE DROP FIGURES WERE NOT SILOSPEN'S - CARRIED FROM v41, SEEN ONLY WHEN QUICK WINS COVERED EVERY UNIQUE (v3876, #85)
+test_quick_wins_ranks_every_place compares every stored per-boss figure a Quick wins place also runs with silospen's (his
+"is the page's drop math the calculator's?"). With all uniques pulled (REG-3290) it compared 3192 and 7 differed, all from
+Nihlathak: normal Atma's Scarab, The Cat's Eye and Saracen's Chance 1:7879 vs silospen 1:7812, Entropy Locket 1:39395 vs
+1:39056, Measured Wrath 1:4878 vs 1:4856; nightmare Opalvein and Sling 1:20976 vs 1:20055 (4.6%). The figures are in BOSSES'
+nihl dropTable since the initial commit (v41); no earlier check reached them because the early set held none of these items.
+The seven are silospen's now (the reference he ruled). Not chased further: why the old table differs for these items only
+(a TC slot both share passes for the early items) - the TZ columns were never compared and are left as they were. Law:
+test_quick_wins_ranks_every_place, red-proof PROVEN.
+
 ### REG-3301 - THE PHONE-BAR RENDER TARGET WAS ACTIVATED AT 1440 WIDE, WHERE THE BAR DOES NOT EXIST, SO IT WAS PARKED UNMEASURED (v3876, #74)
 v3864 parked the `phone-bar` target (REG-3090's bottom bar at <=600px): two CI blesses on 11-05 could not ACTIVATE it, so the
 bar's pixels were UNMEASURED. Run here from PARKED_TARGETS, its own reason said "the bar is not drawn at 1440x1213 (0x0)":
@@ -150,6 +160,16 @@ GrokBot's live look (#230 6655590795): Dean offline, the Vault LOCKED, the insta
 
 ### REG-3290 - QUICK WINS SHOWED 3 OF HIS 8 MISSING UNIQUES: IT ONLY TOOK qlvl <= 35 (v3876, his ask with a screenshot 2026-11-06)
 His screenshot: ALL MISSING 8 items, QUICK WINS 3 items, and his words "8 items need to be for quick runs im missing 8 so they each need to render their data from where to farm and everything". funiScan built the list as missing.filter(qlvl <= 35) - a gate for the early game, when hundreds were missing; at 8 it hid five of them (Death's Web, Stormlash, Tyrael's Might among them) from the one view that names where to farm each. Every missing unique is a quick win now, ordered by the card's own first row (the fewest runs / time to a 50% chance); one with no known route sorts last and says so on its card (_srcNoteHtml). The seal reads "all N uniques found - nothing left to farm". Guard: tv/test_quick_wins_shows_each_place_with_its_picture.py.
+THE FARM DATA (14:20Z): his 8 missing are endgame uniques, and QW_PLACES held only the 148 early ones (qlvl <= 35), so their
+cards had no 1st-4th places. Re-pulled from silospen (read-only, ~800 GETs, MF 300 /players 1): all 396 uniques, 388 with
+places - the 8 without are the event drops silospen gives no monster for (Annihilus, Hellfire Torch, the six Rainbow
+Facets; their cards sort last and say so). 44 new super-unique targets; 5643 checkpoints re-emitted to
+tv/data/silospen_places_rotw30.json. Death's Web, Stormlash, Tyrael's Might, Harlequin Crest, Templar's Might and Griffon's
+Eye now carry 8-12 ranked places each. Three new places drew no zone art (Tal Rasha's Tomb, Lower Kurast, and Pindleskin,
+whose loc leads with "Red Portal by Anya"): mapped in _QW_ZONE_OF. The MF strict-share floor (0.97, measured on 451 early
+checkpoints) re-measured on 1539: 96.95%, every miss inside MF_EPS, worst 0.044% bar the known Felloak MF 0 - re-pinned at
+0.96 with the breakdown beside it. Rendered quick-wins clean at 4 widths (0 of 1911 images broken), the 1440 PNG looked at.
+Laws: test_quick_wins_ranks_every_place, test_quick_wins_shows_each_place_with_its_picture (+1 red-proof each, PROVEN).
 
 ### REG-3289 - "PROVE THIS PC FULLY": AN OPTIONAL BUTTON THAT HAS A PC PROVE EVERY LAW AGAIN ON ITS OWN (v3876, #55, his 11-05 idea)
 His words: an optional button that locally proves everything for that PC "as a extra precaution and extra safety measure". GitHub proves each version once and every PC imports; this is the per-PC safety net beside it. Built on REG-3162: heart2.env_full_reprove opens a pending re-prove on the environment the PC has NOW (since = the press, askedBy), so every declaring gate whose verdict is older is owed and the console's own self-prove lane proves it without --reuse, at its low priority and only above the memory floor beside the game. env_step had dropped any pending re-prove once the environment read "back to the proved one", which would have cancelled his press on the next check; a re-prove he asked for now stays. Refused with the reason: one already open, an environment that cannot be read, a record that will not parse. Finishing records fullProvedAt; the census and the lock say "a full re-prove asked by his click". The Fleet card carries the button (two presses in the page, never a native dialog) behind the console's origin gate (POST /api/prove_pc_fully); the PROVED part of the row counts it down (owed / per hour / time left). Guard: tv/test_a_pc_can_be_proved_fully_by_hand.py.

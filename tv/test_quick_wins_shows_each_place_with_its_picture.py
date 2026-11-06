@@ -219,6 +219,11 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 
 
 RED_PROOF = [
+    {'why': "REG-3290 - Pindleskin's place (his loc leads with the Red Portal) draws no zone art",
+     'file': 'bible.html',
+     'find': '    \'Red Portal by Anya\': "Nihlathak\'s Temple" };',
+     'replace': '    \'Red Portal by Anya (unmapped)\': "Nihlathak\'s Temple" };',
+     'matches': 1},
     {"why": "REG-3290 - Quick wins hides every missing unique above qlvl 35 again (3 of his 8)",
      "file": "bible.html",
      "find": "    var low=missing.slice()\n",
