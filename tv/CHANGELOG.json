@@ -11,7 +11,8 @@
       "v3867 - the full vault sweep skips a reel the hang book holds, as a named sweep does (REG-3231)",
       "v3867 - a delivery check that could not be asked is UNKNOWN, never no lane (REG-3231)",
       "v3867 - the disk-growers salvage keeps the untracked files of a stash before any prune (REG-3232)",
-      "v3867 - a partial or unanswered holders read is UNKNOWN, and the gitdir of a worktree is a hold (REG-3232)"
+      "v3867 - a partial or unanswered holders read is UNKNOWN, and the gitdir of a worktree is a hold (REG-3232)",
+      "v3867 - the proof import no longer waits for good on the record the console rewrites itself (REG-3233)"
     ]
   },
   {

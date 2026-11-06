@@ -23364,10 +23364,24 @@ def _proof_release_tick(_thread=None, _git_run=_git_run, _import=None, _busy=Non
             _PROOF_RELEASE.update(rec, running=False)
             return dict(_PROOF_RELEASE)
         d = _git_run(["git", "status", "--porcelain", "--untracked-files=no"], **kw)
-        if d.returncode != 0 or (d.stdout or "").strip():
+        # v3867 - THE CONSOLE'S OWN RECORDS ARE NOT LOCAL EDITS, HERE AS AT EVERY OTHER DIRTY-TREE READER. This read the
+        # raw porcelain, so ` M tv/.status_worst.json` - the record this console rewrites itself - kept the import
+        # "waiting" for good. MEASURED on Dean's PC 2026-11-06, right after it caught up to v3865: that one row, and
+        # proofRelease said "tracked files differ ... so it waits". heart2._tracked_dirty (the import's own door,
+        # REG-2630) and the pull lane (REG-1865) already forgive it through self_prove.tracked_edits; this third copy
+        # did not. A rule that cannot be asked keeps waiting (the safe direction).
+        _edits = None
+        if d.returncode == 0:
+            try:
+                import self_prove as _spe
+                _edits, _ew = _spe.tracked_edits(d.stdout or "")
+            except Exception:
+                _edits = None
+        if d.returncode != 0 or _edits is None or _edits:
             _PROOF_RELEASE.update(sha=head, state="waiting",
                                   why="this checkout's tracked files differ from its commit (or git could not say) - "
-                                      "an import would be refused, so it waits")
+                                      "an import would be refused, so it waits"
+                                      + ((" (%s)" % ", ".join(str(x).strip() for x in _edits[:3])) if _edits else ""))
             return dict(_PROOF_RELEASE)
     except Exception as e:
         _PROOF_RELEASE.update(why="the proof import could not be asked (%s)" % type(e).__name__)

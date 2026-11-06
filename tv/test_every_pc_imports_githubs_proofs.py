@@ -306,6 +306,18 @@ class TheConsoleTick(_Tmp):
         r, calls = self._tick(_git_run=self._git())
         self.assertEqual(calls, [SHA], "a tree cleaned later never imported")
 
+    def test_the_consoles_own_record_is_not_a_local_edit(self):
+        """v3867 - MEASURED on Dean's PC 2026-11-06: the only tracked edit was the record this console rewrites itself,
+        and the release lane said 'tracked files differ ... so it waits' for good - the third dirty-tree reader that
+        did not ask self_prove.tracked_edits."""
+        r, calls = self._tick(_git_run=self._git(dirty=" M tv/.status_worst.json\n M tv/control_app.py\n"))
+        self.assertEqual(calls, [], "a real edit beside the record was imported into")
+        self.assertEqual(r["state"], "waiting")
+        self.assertIn("tv/control_app.py", r["why"], "the wait does not name the edit that holds it")
+        self.assertNotIn("status_worst", r["why"], "the console's own record was named as a local edit")
+        r, calls = self._tick(_git_run=self._git(dirty=" M tv/.status_worst.json\n"))
+        self.assertEqual(calls, [SHA], "the console's own record held the import: %r" % (r.get("why"),))
+
     def test_the_proof_tick_holds_while_an_import_runs_and_still_beacons(self):
         CA = self.CA
         ran, beacons = [], []
@@ -424,6 +436,11 @@ class TheWindowsSet(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3867 - the release lane reads the raw porcelain again: the console's own record holds every import",
+     "file": "tv/control_app.py",
+     "find": "                _edits, _ew = _spe.tracked_edits(d.stdout or \"\")\n",
+     "replace": "                _edits, _ew = [l for l in (d.stdout or \"\").splitlines() if l.strip()], None\n",
+     "matches": 1},
     {"why": "v3862 - a stray file in the bundle is unpacked (prove.log overwrites a shard cache)",
      "file": "tv/proof_release.py",
      "find": "                if not _MEMBER.match(name):\n"
