@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3874** | `(this commit)` | v3874 — Quick wins shows each place in one grid with its zone art and monster, and the last two repair book findings are fixed |
+| **v3875** | `(this commit)` | v3875 — a proof round cut only by its deadline is made up, prices measure themselves, held reels released, and 16 more |
+| **v3874** | `6010af3f` | v3874 — Quick wins shows each place in one grid with its zone art and monster, and the last two repair book findings are fixed |
 | **v3873** | `5814fff4` | v3873 — The Grok CLI findings on the v3862 cards fixed, each reproduced first - faults, proofs, repairs and the write budget |
 | **v3872** | `79540d14` | v3872 — The Mac signs in to d2jsp through the console own d2jsp window, and a landed diagnosis or a kept frame is never misread |
 | **v3871** | `41554ba1` | v3871 — A price check shows the price already researched, with its posts, and says when d2jsp turned away the console copy of the sign-in |

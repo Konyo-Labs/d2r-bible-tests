@@ -1,5 +1,29 @@
 [
   {
+    "ver": "v3875",
+    "date": "2026-11-06",
+    "items": [
+      "A proof round cut only by its deadline is re-run once by the ship (REG-3270)",
+      "Proof prices drop gaps that span two rounds (REG-3271)",
+      "The plan says the real wall of each shard and its headroom (REG-3272, REG-3273)",
+      "Each round prices the next from what it measured (REG-3274)",
+      "Held reels the tab reader re-read that bank nothing are released, panel frames kept (REG-3275, #44)",
+      "A package removed after the boot install is installed again, one door per package (REG-3276)",
+      "Refresh writes no longer spend the daily material write budget (REG-3277)",
+      "The Quick wins doctor checks the boss portraits too (REG-3278)",
+      "Shards run apt only when a browser misses a library (REG-3279)",
+      "A re-run shard is served what its earlier attempt proved (REG-3280)",
+      "A card closes on a look that names it, not on a look at its version (REG-3281, #86)",
+      "A d2jsp session setting of any shape no longer crashes the seed or the doctor (REG-3282)",
+      "A trim that kept a frame but has no date leaves its date UNKNOWN (REG-3283)",
+      "A shared stash read with no page stays on its own page (REG-3284)",
+      "The shell matrix walks the D2JSP tab (REG-3285)",
+      "A port law borrows ports outside the OS ephemeral range (REG-3286)",
+      "The fault evidence row counts only paint faults (REG-3287)",
+      "The verdict row knows the parser safe direction (REG-3288)"
+    ]
+  },
+  {
     "ver": "v3874",
     "date": "2026-11-06",
     "items": [

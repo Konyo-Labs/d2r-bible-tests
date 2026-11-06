@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3874",
+  "ver": "v3875",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3874: Quick wins shows each place in one grid with its zone art and monster, and the last two repair book findings are fixed",
+  "note": "v3875: a proof round cut only by its deadline is made up, prices measure themselves, held reels released, and 16 more",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
