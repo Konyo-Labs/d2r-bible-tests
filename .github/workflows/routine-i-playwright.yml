@@ -56,6 +56,11 @@ on:
       - 'ci/proof-keys-**'
 
 env:
+  # REG-3318 (11-06) - GitHub's ubuntu-latest moved to Ubuntu 26.04; Playwright 1.60 knows hosts up to 24.04 and its
+  # `playwright install chromium` REFUSED the 26.04 host (Publish's smoke gate + Routines G/H/J/K/L red on v3876).
+  # Every job in this file is Linux: install and run the 24.04 build, which runs on 26.04 (Routine I's cached
+  # 24.04 browser passed on it). Held by tv/test_a_playwright_install_names_a_host_it_knows.py.
+  PLAYWRIGHT_HOST_PLATFORM_OVERRIDE: "ubuntu24.04-x64"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 # v699.1 (Konyo: 'routines I jumping alot at me') — ship-storm days queued a full 6-shard run per

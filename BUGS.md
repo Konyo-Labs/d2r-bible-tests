@@ -101,6 +101,22 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3318 - GITHUB MOVED UBUNTU-LATEST TO 26.04 AND PLAYWRIGHT 1.60 REFUSED TO INSTALL CHROMIUM THERE: v3876 WAS GREEN ON ITS ROUND AND PUBLISH COULD NOT DEPLOY IT (v3876 ship, 11-06)
+MEASURED 11-06 21:30-21:50Z on main 219a4846c: Publish's Smoke gate and Routines G, H, J, K and L each failed in their
+install step - "ERROR: Playwright does not support chromium on ubuntu26.04-x64", every job on runner image ubuntu-26.04
+20261101.186.1 (the same rollout that moved the agent suite to Python 3.14 that morning, REG-3311). Routine I passed on
+the same image only because its browser came from a cache built on 24.04 and it never ran `playwright install`; the
+ci/ round grades Routine I, so the version reached main green and the deploy then held. GrokBot saw the red board
+first (#230 6696373011). Attributed by delta: Routine G was green on v3872; H/J/K/L had mixed runs on v3872.
+Playwright 1.60's calculatePlatform() reads PLAYWRIGHT_HOST_PLATFORM_OVERRIDE before probing /etc/os-release, and it
+knows ubuntu20.04/22.04/24.04-x64. Every one of the ten Linux workflows that install Chromium (publish, render-bless,
+proof-keys-shards, routines G/H/I/J/K/L, tv-tests) now names "ubuntu24.04-x64" in its top-level env - all their jobs
+are Linux (the proof shards' runner comes from ci_budget.py, an ubuntu name). The 24.04 build is the one Routine I
+already ran on 26.04. Upgrading Playwright to a release that knows 26.04 is a separate, visual-diff-bearing change.
+Law: test_a_playwright_install_names_a_host_it_knows (every Linux install names its host; the host is one the
+installed Playwright knows; no Windows/macOS workflow sets it at the top level); red-proofs PROVEN (2/2, each on its
+own case, on a scratch copy).
+
 ### REG-3317 - TWO WIDTH LAWS RAN OUT OF THE SHARDS' ONE 1,500-SECOND CAP ROUND AFTER ROUND, AND EVERY CUT COST A RE-RUN OR A RED ROUND (v3876, his 11-06: "make this top priority")
 GitHub's proof shards run every law under one cap, HEART2_GATE_CAP_S=1500 (REG-3212), so a law that eats a shard is cut and
 its uncut proofs named TIMEOUT. Measured: test_the_character_builder_fits_at_every_width was cut in v3875's round 3 ([39],
