@@ -34,6 +34,7 @@ Fixtures only: TV_HIST and the lane store point at a temp dir; the sweep door is
 """
 import copy
 import json
+import io
 import os
 import shutil
 import sys
@@ -304,6 +305,33 @@ class TestAHungReelGetsABoundedRetry(_World):
         self.assertIsNone(CA._VAULT_JOB.get("stopAsk"))
         self.assertEqual(CA._VAULT_AUTOREAD["hung"][RID]["n"], 1, "a new reader's first attempt was counted")
 
+    def test_a_full_sweep_skips_a_reel_the_hang_book_holds(self):
+        """v3867 - the Grok CLI on REG-3200 (#231 6674616604): the door read the hang book only for a NAMED reel, so the
+        route's full sweep re-ran a reel the persisted backoff was holding."""
+        holds = {"reel_backoff": {"kind": "backoff"}, "reel_look": {"kind": "look"}, "reel_free": None}
+
+        def hold(rid):
+            if rid == "reel_broken":
+                raise ValueError("unreadable")
+            return holds.get(rid)
+        dirs = ["/h/reel_backoff", "/h/reel_free", "/h/reel_look", "/h/reel_quarantined", "/h/reel_broken"]
+        keep, held = CA._sweep_skip_held(dirs, _hold=hold, _quarantine={"reel_quarantined": {}})
+        self.assertEqual(keep, ["/h/reel_free", "/h/reel_broken"], keep)
+        self.assertEqual(held, ["reel_backoff", "reel_look", "reel_quarantined"], held)
+        self._hang_by_watchdog(int(time.time() * 1000) - 900000)           # the real book, through the real watchdog
+        keep, held = CA._sweep_skip_held([self.reel, "/h/reel_other"])
+        self.assertEqual(held, [RID], "the full sweep did not see the hang book's own hold")
+
+    def test_the_full_sweep_asks_it_and_force_does_not(self):
+        with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
+            code = fh.read()
+        call = ("        if not reel_dir and dirs and not force:\n"
+                "            dirs, _held = _sweep_skip_held(dirs)\n")
+        self.assertEqual(code.count(call), 1, "the full sweep no longer asks the hang book (or force does)")
+        i = code.index("def vault_sweep_start(")
+        self.assertGreater(code.index(call, i), code.index("            dirs = _hit\n", i),
+                           "the skip runs before the named-reel pick, not on the full sweep's list")
+
     def test_an_untargeted_sweep_is_never_capped(self):
         """runReelDir is set only for a sweep aimed at ONE reel, so startedTs is that reel's start; a sweep that names
         no reel is never cut by the bound (r4 review's third point, reproduced the other way)."""
@@ -369,6 +397,16 @@ def _code_without_comments(name):
 
 
 RED_PROOF = [
+    {"why": "v3867 - the full sweep stops asking the hang book: a held reel is re-run by the route's sweep",
+     "file": "tv/control_app.py",
+     "find": "        if not reel_dir and dirs and not force:\n            dirs, _held = _sweep_skip_held(dirs)\n",
+     "replace": "        if False:\n            dirs, _held = _sweep_skip_held(dirs)\n",
+     "matches": 1},
+    {"why": "v3867 - the skip reads only the quarantine, not the persisted backoff (a relaunch forgets the hold)",
+     "file": "tv/control_app.py",
+     "find": "        if (isinstance(h, dict) and h.get(\"kind\") in (\"backoff\", \"look\")) or rid in q:\n",
+     "replace": "        if rid in q:\n",
+     "matches": 1},
     {"why": "REG-3200 - the watchdog's hang is not recorded, so a relaunch re-runs the hung reel (the measured loop)",
      "file": "tv/control_app.py",
      "find": "                    on_quarantine(rid, \"no progress for %ds (held %ds) in phase %r\"\n",

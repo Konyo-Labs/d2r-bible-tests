@@ -19342,8 +19342,12 @@ def _station_delivery(station, reels, owed=None):
             try:
                 import shelf_driver as _sd_dl
                 empty = bool(_sd_dl._proven_empty(rid))
-            except Exception:
-                empty = False
+            except Exception as _pe:
+                # v3867 (the Grok CLI on REG-3201, #231 6674616604) - this filed the reel as "no lane's queue holds it":
+                # a confident no for a check that could not be asked. UNKNOWN, as the STATION check above says it.
+                waits.setdefault("unknown", []).append(rid)
+                unk.setdefault("unknown", "the empty-reel check could not be asked (%s)" % type(_pe).__name__)
+                continue
             waits.setdefault("triage-empty" if empty else "no-queue", []).append(rid)
         rows = []
         for k, rs in sorted(waits.items(), key=lambda kv: -len(kv[1])):
@@ -40237,6 +40241,29 @@ def _sweep_skipped_because_reader_is_grok():
                     "Nothing was read and the reel stays unswept.")}
 
 
+def _sweep_skip_held(dirs, _hold=None, _quarantine=None):
+    """v3867 (the Grok CLI on REG-3200, #231 6674616604) - THE FULL SWEEP ASKS THE HANG BOOK TOO. -> (dirs, [held ids])
+
+    vault_sweep_start's door read the hang book only for a NAMED reel, so the route's full sweep (limit and force, no
+    reel_dir) took every unsealed reel and re-ran one the persisted backoff, or this process's quarantine, was holding.
+    The caller asks this only without force (force still re-tries a held reel, as at the door). A hold that will not
+    read holds nothing here - the door's own rule (it raises into "no hold")."""
+    hold = _hold or _vault_hang_hold
+    q = _VAULT_SWEEP_QUARANTINE if _quarantine is None else _quarantine
+    keep, held = [], []
+    for d in dirs or ():
+        rid = os.path.basename(os.path.normpath(str(d)))
+        try:
+            h = hold(rid)
+        except Exception:
+            h = None
+        if (isinstance(h, dict) and h.get("kind") in ("backoff", "look")) or rid in q:
+            held.append(rid)
+        else:
+            keep.append(d)
+    return keep, held
+
+
 def vault_sweep_start(hist_dir=None, limit=None, force=False, reel_dir=None):
     """Kick the background vault sweep. Refuses a second one — two sweeps over the same reels
     double the spend and produce two proposals that each look like the whole truth.
@@ -40558,6 +40585,12 @@ def _vault_sweep_run(hist_dir, limit, force=False, reel_dir=None):
                 # one reel too many costs a read; skipping one wrongly loses its names.
                 print("   \u26a0 could not ask the router which reels are EMPTY (%s) - sweeping "
                       "all of them" % type(_re).__name__)
+        # v3867 (the Grok CLI on REG-3200) - the full sweep asks the hang book too: see _sweep_skip_held.
+        if not reel_dir and dirs and not force:
+            dirs, _held = _sweep_skip_held(dirs)
+            if _held:
+                print("   \u23f8 %d reel(s) held by the hang book or the quarantine are skipped (force re-tries them): %s"
+                      % (len(_held), ", ".join(_held[:4])), flush=True)
         # ⚠ v3222 — SAY WHICH REASON. This printed "sealed with no rows by an OLDER vault reader"
         # for every reel in the list that carried a seal — including ones present only because
         # `force` was asked, or because they were named. On his console the seal said vp2017 and

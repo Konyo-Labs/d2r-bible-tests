@@ -1561,7 +1561,10 @@ def _check_the_river_is_moving():
         ids = at[st]
         dl = _river_delivery(st, ids)
         if not isinstance(dl, dict):
+            # v3867 (the Grok CLI on REG-3201, #231 6674616604) - who delivers them could not be asked (the vault store
+            # would not load, or the ask raised): counted, as the station reads, and SAID UNKNOWN - never "no lane"
             stuck[st] = stuck.get(st, 0) + len(ids)
+            unknown += len(ids)
             continue
         for w in (dl.get("waits") or []):
             if isinstance(w, dict) and not w.get("selfClearing"):

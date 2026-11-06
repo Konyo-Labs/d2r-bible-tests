@@ -255,6 +255,26 @@ class TestTheRealJoins(_World):
         self.assertIn(HUNG, w)
         self.assertNotIn("NOT ITS INPUT", w, "the measured drain sentence came back")
 
+    def test_an_empty_check_that_cannot_be_asked_is_unknown_not_no_queue(self):
+        """v3867 - the Grok CLI on REG-3201 (#231 6674616604): _proven_empty raising filed the reel as 'no-queue'."""
+        def _boom(reel):
+            raise OSError("the triage store would not read")
+        with mock.patch.object(SD, "_proven_empty", _boom):
+            dl = CA._station_delivery("PRINTER", [P1])
+        self.assertEqual([w["key"] for w in dl["waits"]], ["unknown"], dl)
+        self.assertEqual((dl["noLane"], dl["unknown"]), (0, 1), dl)
+        self.assertIn("the empty-reel check could not be asked (OSError)", dl["why"])
+
+    def test_who_delivers_unasked_is_said_unknown_by_the_doctor(self):
+        """v3867 - the Grok CLI on REG-3201: _river_delivery None (the store would not load, or the ask raised) was
+        counted as 'no automatic lane delivers' with no UNKNOWN in the sentence."""
+        with mock.patch.object(D, "_river_delivery", lambda st, ids: None):
+            st, say = TestTheDoctorCountsOnlyWhatNoLaneWillMove._verdict(
+                self, [{"reel": P1, "station": "PRINTER", "owes": "SEAL"},
+                       {"reel": P2, "station": "PRINTER", "owes": "SEAL"}])
+        self.assertEqual(st, D.MISSING, say)              # the station's reading is kept...
+        self.assertIn("2 of them are UNKNOWN", say, say)  # ...and said UNKNOWN, never a plain "no lane"
+
     def test_a_check_that_cannot_be_asked_is_unknown_not_no_lane(self):
         def _boom(rid, mem=None, prompt_ver=None):
             raise KeyError("the chronicle store would not read")
@@ -294,6 +314,16 @@ class TestTheRealJoins(_World):
 
 
 RED_PROOF = [
+    {"why": "v3867 - an empty-reel check that raises files the reel as 'no lane's queue holds it' again",
+     "file": "tv/control_app.py",
+     "find": "                waits.setdefault(\"unknown\", []).append(rid)\n                unk.setdefault(\"unknown\", \"the empty-reel check could not be asked (%s)\" % type(_pe).__name__)\n                continue\n",
+     "replace": "                empty = False\n",
+     "matches": 1},
+    {"why": "v3867 - the doctor counts an unasked delivery as 'no lane' and never says UNKNOWN",
+     "file": "tv/console_doctor.py",
+     "find": "            stuck[st] = stuck.get(st, 0) + len(ids)\n            unknown += len(ids)\n            continue\n",
+     "replace": "            stuck[st] = stuck.get(st, 0) + len(ids)\n            continue\n",
+     "matches": 1},
     {"why": "REG-3201 - the vault picker's reason is not asked, so a held reel reads as delivered",
      "file": "tv/control_app.py",
      "find": "                why = _vault_pass_reason(rid, vault_owed[rid], seals)\n",
