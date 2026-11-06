@@ -53,13 +53,38 @@ class ItChoosesWhatThisPCMayRun(unittest.TestCase):
         shutil.rmtree(self.d, ignore_errors=True)
 
     def test_browser_laws_and_slow_laws_are_githubs(self):
-        s = PF.select(self.costs, self.d, cap_s=20)
+        s = PF.select(self.costs, self.d, cap_s=20, _registry={})
         self.assertEqual(s["run"], ["test_cheap", "test_imports_launch_code"], s)
         self.assertEqual(s["browser"], ["test_harness_board", "test_rides_a_board", "test_two_deep"], s)
         self.assertEqual(s["slow"], ["test_slow"], s)
         self.assertEqual(s["other"], ["swallow_ratchet"], s)
-        placed = sorted(sum(s.values(), []))
+        placed = sorted(sum((v for k, v in s.items() if k != "argv"), []))
         self.assertEqual(placed, sorted(self.costs), "a gate was dropped or counted twice")
+
+    def test_a_registered_gate_whose_name_is_not_its_file_runs_by_its_command(self):
+        """v3866 (GitHub's first v3865 round) - test_no_pinned_footage and swallow_ratchet were 'other' and never ran
+        here: two of that round's six reds came through. A registered python gate runs by its argv; one whose script
+        drives a browser is still GitHub's; one the registry does not hold stays 'other', counted."""
+        _w(self.d, "swallow_census", "print('ok')\n")
+        costs = dict(self.costs, render_gate=2.0, node_gate=1.0)
+        reg = {"swallow_ratchet": (["python3", os.path.join(self.d, "swallow_census.py"), "--check"], None, ()),
+               "render_gate": (["python3", os.path.join(self.d, "test_harness_board.py")], None, ())}
+        s = PF.select(costs, self.d, cap_s=20, _registry=reg)
+        self.assertIn("swallow_ratchet", s["run"], s)
+        self.assertEqual(s["argv"]["swallow_ratchet"][0][1:], [os.path.join(self.d, "swallow_census.py"), "--check"])
+        self.assertIn("render_gate", s["browser"], "a registered gate whose script drives a browser ran here")
+        self.assertEqual(s["other"], ["node_gate"], s)
+        placed = sorted(sum((v for k, v in s.items() if k != "argv"), []))
+        self.assertEqual(placed, sorted(costs), "a gate was dropped or counted twice")
+
+    def test_a_declared_skip_is_said_never_a_pass_or_a_red(self):
+        _w(self.d, "skipper", "import sys\nprint('SKIPPED - no human-eyes ledger on this venue')\nsys.exit(1)\n")
+        _w(self.d, "breaker", "import sys\nprint('it broke')\nsys.exit(1)\n")
+        sk = (["python3", os.path.join(self.d, "skipper.py")], self.d, ("no human-eyes ledger",))
+        br = (["python3", os.path.join(self.d, "breaker.py")], self.d, ("no human-eyes ledger",))
+        self.assertEqual(PF.run_one("human-eyes", self.d, dict(os.environ), argv=sk)[1], "skip")
+        self.assertEqual(PF.run_one("breaker", self.d, dict(os.environ), argv=br)[1], "red",
+                         "a failure that is not the declared skip read as one")
 
     def test_an_unreadable_cost_table_is_unknown(self):
         p = os.path.join(self.d, "gate_costs.json")
@@ -146,6 +171,16 @@ class TheChangedLawsAreMeasuredFromWhatGitHubLastGraded(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3866 - a registered gate whose name is not its file's is never run here again (94 gates, two reds slipped)",
+     "file": "tv/preflight.py",
+     "find": "            hit = reg.get(g)\n",
+     "replace": "            hit = None\n",
+     "matches": 1},
+    {"why": "v3866 - a skip a gate declares reads as a red (or a pass) here",
+     "file": "tv/preflight.py",
+     "find": "    if r.returncode != 0 and any(re.search(p, tail, re.I) for p in skip_ok):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
     {"why": "v3865 - a law that drives a browser one import away is run on his PC",
      "file": "tv/preflight.py",
      "find": "        if drives_browser(m, here, depth - 1, seen):\n            return True\n",
@@ -158,8 +193,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3865 - a red law is not a red pre-flight",
      "file": "tv/preflight.py",
-     "find": "        if v != \"ok\":\n            reds.append(",
-     "replace": "        if False:\n            reds.append(",
+     "find": "        elif v != \"ok\":\n            reds.append(",
+     "replace": "        elif False:\n            reds.append(",
      "matches": 1},
     {"why": "v3865 - a broken anchor is not a red pre-flight",
      "file": "tv/preflight.py",

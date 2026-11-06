@@ -90,13 +90,51 @@ def drives_browser(name, here=HERE, depth=2, _seen=None):
     return False
 
 
-def select(costs, here=HERE, cap_s=CAP_S):
-    """-> {"run": [...], "browser": [...], "slow": [...], "other": [...]} - every timed gate placed in exactly one list"""
-    out = {"run": [], "browser": [], "slow": [], "other": []}
+def _registered(here=HERE):
+    """v3866 - {gate name: (argv, cwd)} for every registered gate that is one python script and needs no app. -> dict
+    ({} when the registry will not import - those gates then stay 'other', said in the summary)."""
+    try:
+        if here not in sys.path:
+            sys.path.insert(0, here)
+        import run_gates as _rg
+    except Exception:
+        return {}
+    out = {}
+    for g in getattr(_rg, "GATES", []):
+        argv = list(getattr(g, "argv", None) or [])
+        if (len(argv) >= 2 and os.path.basename(str(argv[0])).lower().startswith("python")
+                and str(argv[1]).endswith(".py") and not getattr(g, "needs_app", False)):
+            out[g.name] = (argv, getattr(g, "cwd", None), tuple(getattr(g, "skip_ok", ()) or ()))
+    return out
+
+
+def select(costs, here=HERE, cap_s=CAP_S, _registry=None):
+    """-> {"run": [...], "browser": [...], "slow": [...], "other": [...], "argv": {name: (argv, cwd)}} - every timed gate
+    placed in exactly one list.
+
+    v3866 (GitHub's first v3865 round) - A GATE WHOSE NAME IS NOT ITS FILE'S WAS NEVER RUN HERE. Only `<gate>.py` was
+    looked for, so test_no_pinned_footage (test_a_gate_may_not_pin_his_footage.py), swallow_ratchet (swallow_census.py
+    --check) and 92 more registered gates under the cap went to 'other' and were never said - the pre-flight read GREEN
+    over a population it had not run, and two of that round's six reds came through that hole. Now a registered gate that
+    is one python script, needs no app and drives no browser runs here by its registered argv."""
+    out = {"run": [], "browser": [], "slow": [], "other": [], "argv": {}}
+    reg = None
     for g in sorted(costs or {}):
         if not g.startswith("test_") or not os.path.isfile(os.path.join(here, g + ".py")):
-            out["other"].append(g)                    # a gate that is not one law file (a census, a scanner): run_gates's
-        elif drives_browser(g, here):
+            reg = _registry if _registry is not None else (reg if reg is not None else _registered(here))
+            hit = reg.get(g)
+            script = os.path.splitext(os.path.basename(str(hit[0][1])))[0] if hit else None
+            if hit is None:
+                out["other"].append(g)                # not one python law (a node or shell gate, one that needs the app)
+            elif drives_browser(script, here):
+                out["browser"].append(g)
+            elif cap_s < costs[g]:
+                out["slow"].append(g)
+            else:
+                out["run"].append(g)
+                out["argv"][g] = hit
+            continue
+        if drives_browser(g, here):
             out["browser"].append(g)
         elif costs[g] > cap_s:
             out["slow"].append(g)
@@ -115,22 +153,33 @@ def _law_env():
         return env
 
 
-def run_one(name, here=HERE, env=None, timeout=LAW_TIMEOUT_S, _run=None):
-    """-> (name, "ok" | "red" | "time", tail) - one law, at nice 10, in a gate's environment"""
-    cmd = ([] if os.name == "nt" else ["nice", "-n", "10"]) + [sys.executable, name + ".py"]
+def run_one(name, here=HERE, env=None, timeout=LAW_TIMEOUT_S, _run=None, argv=None):
+    """-> (name, "ok" | "red" | "time", tail) - one law, at nice 10, in a gate's environment. `argv` is (argv, cwd) for a
+    registered gate whose name is not its file's (v3866)"""
+    cwd, skip_ok = here, ()
+    if argv:
+        cmd_tail, cwd = [sys.executable] + list(argv[0][1:]), (argv[1] or here)
+        skip_ok = tuple(argv[2]) if len(argv) > 2 else ()
+    else:
+        cmd_tail = [sys.executable, name + ".py"]
+    cmd = ([] if os.name == "nt" else ["nice", "-n", "10"]) + cmd_tail
     try:
-        r = (_run or subprocess.run)(cmd, cwd=here, env=env, capture_output=True, text=True, encoding="utf-8",
+        r = (_run or subprocess.run)(cmd, cwd=cwd, env=env, capture_output=True, text=True, encoding="utf-8",
                                      errors="replace", timeout=timeout)
     except subprocess.TimeoutExpired:
         return name, "time", "over %ds" % timeout
     tail = "\n".join(((r.stdout or "") + (r.stderr or "")).strip().splitlines()[-6:])
+    if r.returncode != 0 and any(re.search(p, tail, re.I) for p in skip_ok):
+        return name, "skip", tail        # v3866 - a skip the gate DECLARES (run_gates' skip_ok): said, never a pass or a red
     return name, ("ok" if r.returncode == 0 else "red"), tail
 
 
-def run_laws(names, workers=WORKERS, here=HERE, env=None, _one=None, say=print):
-    """-> [(name, verdict, tail)] in the order given; `_one` is a law's seam"""
+def run_laws(names, workers=WORKERS, here=HERE, env=None, _one=None, say=print, argvs=None):
+    """-> [(name, verdict, tail)] in the order given; `_one` is a law's seam; `argvs` the registered commands of gates
+    whose name is not their file's"""
     env = env if env is not None else _law_env()
-    one = _one or (lambda n: run_one(n, here, env))
+    argvs = argvs or {}
+    one = _one or (lambda n: run_one(n, here, env, argv=argvs.get(n)))
     res = {}
     t0 = time.time()
     with cf.ThreadPoolExecutor(max_workers=max(1, int(workers))) as ex:
@@ -218,15 +267,22 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
         say("preflight: UNKNOWN - tv/gate_costs.json would not read, so no law could be chosen")
         return 2, []
     s = select(costs, here, cap_s)
-    say("preflight: %d law(s) here (<= %gs on CI) · %d browser-driving and %d over the cap are GitHub's, not passed here"
-        % (len(s["run"]), cap_s, len(s["browser"]), len(s["slow"])))
+    say("preflight: %d law(s) here (<= %gs on CI, %d of them by their registered command) · %d browser-driving, %d over "
+        "the cap and %d that are not one python law (node, shell, the app) are GitHub's, not passed here"
+        % (len(s["run"]), cap_s, len(s["argv"]), len(s["browser"]), len(s["slow"]), len(s["other"])))
     reds = []
     a_ok, a_tail = (_anchors or (lambda: anchors(here)))()
     if not a_ok:
         reds.append("red-proof anchors: " + a_tail.replace("\n", " | ")[:300])
-    for n, v, tail in (_laws or (lambda names: run_laws(names, workers, here, say=say)))(s["run"]):
-        if v != "ok":
+    skipped = []
+    for n, v, tail in (_laws or (lambda names: run_laws(names, workers, here, say=say, argvs=s["argv"])))(s["run"]):
+        if v == "skip":
+            skipped.append(n)
+        elif v != "ok":
             reds.append("%s %s: %s" % (v.upper(), n, tail.replace("\n", " | ")[:300]))
+    if skipped:
+        say("preflight: %d gate(s) SKIPPED for a reason they declare (not a pass, GitHub runs them): %s"
+            % (len(skipped), ", ".join(skipped[:8])))
     if prove:
         owed, _proved, why = (_prove or (lambda: prove_changed(version, here, say=say)))()
         if why:
@@ -238,7 +294,9 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
         for l in reds:
             say("   " + l)
         return 1, reds
-    say("preflight: GREEN - %d law(s) ran clean%s, anchors hold" % (len(s["run"]), ", the changed laws are proven" if prove else ""))
+    say("preflight: GREEN - %d law(s) ran clean%s%s, anchors hold" % (
+        len(s["run"]) - len(skipped), (" (%d skipped, said above)" % len(skipped)) if skipped else "",
+        ", the changed laws are proven" if prove else ""))
     return 0, []
 
 
