@@ -644,26 +644,38 @@ def headroom(wall, window=PROVE_WINDOW_S, share=PLAN_HEADROOM):
                    % (w, pct, window, 100 * share))
 
 
-def makeup_due(tot):
+def makeup_due(tot, killed=None):
     """REG-3270 - may a red proof round be made up by re-running its failed shards once? -> (due, why). Pure.
 
     Due only when the ONLY debt is proofs a bound cut (TIMEOUT): no law owes a fix, every shard left a readable store,
     and at least one proof was cut. A re-run shard serves everything its first attempt proved (the rerun seed, REG-3210)
     and runs only what the deadline cut. A law that went red, or a shard that left nothing, is never "made up" - those
-    are a human's (or the next version's) to read."""
+    are a human's (or the next version's) to read.
+
+    REG-3292 - `killed`: the shard numbers whose own job log says the RUNNER shut them down (tv/ship_when_green.py reads
+    it); those may be made up too. A shard that left nothing for any other reason still is not."""
     if not isinstance(tot, dict):
         return False, "no census to read - not made up"
     cut, fix = tot.get("cut") or [], tot.get("fix") or []
     lost, missing = tot.get("lost") or [], tot.get("missing") or []
     if fix:
         return False, "%d proof(s) owe a fix (a law went red) - a re-run cannot make that up" % len(fix)
-    if lost or missing:
-        return False, "%d shard(s) left no readable store - UNKNOWN, not made up" % (len(lost) + len(missing))
-    if not cut:
+    # REG-3292 (REG-3085's case, parked since 10-29) - a shard the RUNNER killed leaves no store, through no fault of a
+    # law (Publish 40812615686: "The runner has received a shutdown signal", exit 143, no manifest). Only a shard whose
+    # own job log says so is made up; any other missing store stays UNKNOWN.
+    killed = set(str(k) for k in (killed or ()))
+    unexplained = [str(k) for k in lost if str(k) not in killed] + list(missing)
+    if unexplained:
+        return False, "%d shard(s) left no readable store - UNKNOWN, not made up" % len(unexplained)
+    if not cut and not lost:
         return False, "nothing was cut at its bound"
     shards = sorted(set(str(f[4]) for f in cut if len(f) > 4))
-    return True, "only %d proof(s) cut at their bound (TIMEOUT) on shard(s) %s - a re-run proves just those" % (
-        len(cut), ", ".join(shards))
+    parts = []
+    if cut:
+        parts.append("%d proof(s) cut at their bound (TIMEOUT) on shard(s) %s" % (len(cut), ", ".join(shards)))
+    if lost:
+        parts.append("shard(s) %s killed by the runner (its log says so)" % ", ".join(sorted(str(k) for k in lost)))
+    return True, "only " + " and ".join(parts) + " - a re-run proves just those"
 
 
 def merge_shards(root, out, say=print):

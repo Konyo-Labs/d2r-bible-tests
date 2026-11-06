@@ -59,6 +59,13 @@ class TheMakeupDecision(unittest.TestCase):
         self.assertFalse(due)
         self.assertIn("owe a fix", why)
 
+    def test_a_runner_killed_shard_is_due_and_no_other_lost_one(self):
+        """REG-3292 - only the shards the runner killed; one more lost shard makes the round UNKNOWN again."""
+        self.assertTrue(PS.makeup_due({"cut": [], "fix": [], "lost": [7], "missing": []}, killed={"7"})[0])
+        self.assertFalse(PS.makeup_due({"cut": [], "fix": [], "lost": [7, 9], "missing": []}, killed={"7"})[0])
+        self.assertFalse(PS.makeup_due({"cut": [], "fix": [["x", 0, "RED", "", 2]], "lost": [7], "missing": []},
+                                       killed={"7"})[0], "a red law rode in on a runner kill")
+
     def test_a_shard_with_no_store_is_never_made_up(self):
         self.assertFalse(PS.makeup_due({"cut": [["g", 3, PS.TIMEOUT, "x", 14]], "fix": [], "lost": [7],
                                         "missing": []})[0])
@@ -102,8 +109,8 @@ class TheMakeupDecision(unittest.TestCase):
 class _Gh(object):
     """A fake `gh`/`git` for ship(): runs on one sha; the proof run red until re-run, then green (or red again)."""
 
-    def __init__(self, census, second="success"):
-        self.census, self.second, self.reruns, self.calls = census, second, 0, []
+    def __init__(self, census, second="success", job_log=""):
+        self.census, self.second, self.reruns, self.calls, self.job_log = census, second, 0, [], job_log
 
     def runs(self):
         rs = [{"workflowName": wf, "headSha": SHA, "status": "completed", "conclusion": "success",
@@ -127,6 +134,10 @@ class _Gh(object):
                 json.dump(self.census, fh)
         elif cmd[:3] == ["gh", "run", "rerun"]:
             self.reruns += 1
+        elif cmd[:3] == ["gh", "run", "view"] and "--json" in cmd:      # REG-3292 - the run's jobs
+            out = json.dumps({"jobs": [{"name": "shard 7", "databaseId": 555}, {"name": "shard 8", "databaseId": 556}]})
+        elif cmd[:2] == ["gh", "api"] and cmd[2].endswith("/jobs/555/logs"):
+            out = self.job_log
         elif cmd[:2] == ["git", "rev-parse"]:
             out = SHA + "\n"
         elif cmd[:2] == ["git", "ls-remote"]:
@@ -170,6 +181,20 @@ class TheShipMakesUpARound(unittest.TestCase):
         code, said = _ship(gh)
         self.assertEqual(gh.reruns, 0)
         self.assertEqual(code, 1)
+        self.assertTrue(any("not made up" in s for s in said), said)
+
+    def test_a_shard_the_runner_killed_is_re_run_once(self):
+        """REG-3292 (REG-3085's case) - Publish 40812615686: shard 7 'The runner has received a shutdown signal', no store."""
+        lost = dict(CUT, cut=[], lost=[7])
+        gh = _Gh(lost, job_log="2026-10-29T08:00Z ##[error]" + SW.RUNNER_KILLED + ".\nexit 143")
+        code, said = _ship(gh)
+        self.assertEqual((gh.reruns, code), (1, 0), said)
+        self.assertTrue(any("killed by the runner" in s for s in said), said)
+
+    def test_a_lost_shard_with_no_runner_shutdown_is_not_re_run(self):
+        gh = _Gh(dict(CUT, cut=[], lost=[7]), job_log="Traceback: the prover crashed")
+        code, said = _ship(gh)
+        self.assertEqual((gh.reruns, code), (0, 1), said)
         self.assertTrue(any("not made up" in s for s in said), said)
 
     def test_an_unreadable_census_is_not_re_run(self):
@@ -330,6 +355,16 @@ class TheAptStepRunsOnlyWhenNeeded(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3292 - a shard the runner killed is never made up (REG-3085's case stays a hand re-run)",
+     "file": "tv/ship_when_green.py",
+     "find": "        if getattr(g, \"returncode\", 1) == 0 and RUNNER_KILLED in (g.stdout or \"\"):\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "REG-3292 - every lost shard counts as runner-killed, whatever its log says",
+     "file": "tv/proof_shard.py",
+     "find": "    unexplained = [str(k) for k in lost if str(k) not in killed] + list(missing)\n",
+     "replace": "    unexplained = list(missing)\n",
+     "matches": 1},
     {"why": "REG-3279 - apt runs whatever the browsers need (v3872's shard 22: 5 of 55 proving minutes)",
      "file": ".github/workflows/proof-keys-shards.yml",
      "find": "          if [ \"$seen\" -gt 0 ] && [ \"$miss\" -eq 0 ]; then\n",
@@ -347,7 +382,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3270 - a missing shard store is made up",
      "file": "tv/proof_shard.py",
-     "find": "    if lost or missing:\n",
+     "find": "    if unexplained:\n",
      "replace": "    if False:\n",
      "matches": 1},
     {"why": "REG-3270 - the census JSON never says what the decision reads",

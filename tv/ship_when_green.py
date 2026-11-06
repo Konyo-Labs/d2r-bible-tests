@@ -100,6 +100,34 @@ def red_runs(runs, sha):
 #: REG-3270 - how long a run this script asked to re-run may still read its old "completed, failure" before GitHub
 #: starts the re-run (a re-run of failed jobs is queued within seconds; five polls is room, never a hiding place)
 MAKEUP_GRACE_S = 5 * 60
+#: REG-3292 - the words GitHub writes into a job's log when the RUNNER, not the job, ended it (Publish 40812615686, shard 7)
+RUNNER_KILLED = "The runner has received a shutdown signal"
+
+
+def killed_shards(rid, lost, run):
+    """REG-3292 - which of the shards that left no store were ended by their RUNNER, read from each one's own job log.
+    -> set of shard numbers (str). A job or log that cannot be read is not counted - UNKNOWN never makes a shard up."""
+    import json
+    out = set()
+    if not lost:
+        return out
+    j = run(["gh", "run", "view", str(rid), "--repo", CV.REPO_SLUG, "--json", "jobs"], capture_output=True, text=True,
+            encoding="utf-8", errors="replace")
+    try:
+        jobs = (json.loads(j.stdout or "{}") or {}).get("jobs") or [] if getattr(j, "returncode", 1) == 0 else []
+    except ValueError:
+        jobs = []
+    want = set(str(k) for k in lost)
+    for job in jobs:
+        name = str((job or {}).get("name") or "")
+        k = name[len("shard "):].strip() if name.startswith("shard ") else None
+        if k not in want or not (job or {}).get("databaseId"):
+            continue
+        g = run(["gh", "api", "repos/%s/actions/jobs/%s/logs" % (CV.REPO_SLUG, job["databaseId"])], capture_output=True,
+                text=True, encoding="utf-8", errors="replace")
+        if getattr(g, "returncode", 1) == 0 and RUNNER_KILLED in (g.stdout or ""):
+            out.add(k)
+    return out
 
 
 def proof_run(runs, sha):
@@ -135,7 +163,10 @@ def makeup(sha, runs, run, say, made, clock, tmp=None):
                     tot = json.load(fh)
             except (OSError, ValueError):
                 tot = None
-        due, why = PS.makeup_due(tot)
+        killed = set()
+        if isinstance(tot, dict) and tot.get("lost") and not tot.get("fix"):
+            killed = killed_shards(rid, tot.get("lost"), run)          # REG-3292 - a runner shutdown is no law's fault
+        due, why = PS.makeup_due(tot, killed=killed)
         if not due:
             say("ship: REG-3270 not made up - %s" % (why if tot is not None else "the census could not be read (UNKNOWN)"))
             made[rid] = None
