@@ -3283,6 +3283,63 @@ TARGETS = {
             return lanes2.length === lanes.length;
         })()""",
     },
+    "phone-bar": {
+        "why": "#224 (REG-3090, his Q12 2026-10-29: bottom bar on phones) - at <=600px the tray orbs (help, compass, the "
+               "legend, the inbox, MOVE TASKS) ride ONE bar at the bottom of the screen, under the dock, and the RIGHT END "
+               "of a locker plate - where the old column sat over his vault at 375 - is hit-tested as the plate itself. "
+               "The middle-of-the-element sample this gate takes everywhere else reported that column covered 0/1",
+        # its own small world: lockers with plates, so a plate's right end is on screen to be hit-tested
+        "seed": """(function(){
+            localStorage.setItem('d2r_ownerClaim','*');
+            ['Windforce','Doombringer','The Grandfather','Lacerator','Bonehew','Stormlash'].forEach(function(n){
+                try{ var h = window.vaultHandAdd(n, undefined, { by: 'the render seed' }); window.vaultAssign((h && h.name) || n,'uni-weap'); }catch(e){} });
+            return 1; })()""",
+        "activate": """(function(){
+            var why = function(w){ window.__rcPhoneBar = w; return false; };
+            var t=[].slice.call(document.querySelectorAll('.tab,[data-tab]')).filter(function(x){
+              return /vault/i.test((x.getAttribute&&x.getAttribute('data-tab'))||x.textContent||'');})[0];
+            if (t && !document.documentElement.classList.contains('vault-open')) t.click();
+            try{ window.renderVault && window.renderVault(); }catch(e){}
+            /* the bar, from the RECT: full width, at the bottom edge, not 0x0 */
+            var bar = document.getElementById('tray-bar');
+            if (!bar) return why('the page has no #tray-bar');
+            var br = bar.getBoundingClientRect();
+            if (getComputedStyle(bar).display === 'none' || !(br.height >= 40))
+              return why('the bar is not drawn at ' + innerWidth + 'x' + innerHeight + ' (' + Math.round(br.width) + 'x' + Math.round(br.height) + ')');
+            /* REG-3301 - the layout width: innerWidth counts the headless desktop scrollbar (11px at 375), which a fixed
+               full-width bar never spans - a phone's overlay scrollbar takes none */
+            var vw = document.documentElement.clientWidth;
+            if (br.width < vw - 1 || Math.abs(br.bottom - innerHeight) > 1)
+              return why('the bar is not the bottom edge: ' + Math.round(br.left) + ',' + Math.round(br.top) + ' ' + Math.round(br.width) + 'x' + Math.round(br.height));
+            /* every orb on screen sits INSIDE the bar - none rides up the right edge */
+            var orbs = [].slice.call(document.querySelectorAll('.help-btn,.nav-fab,.forge-legend-fab,.tools-legend-fab,.vault-guide-fab,.inbox-fab,.vault-tasks-fab'))
+              .filter(function(o){ var cs = getComputedStyle(o), r = o.getBoundingClientRect(); return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 1; });
+            if (orbs.length < 2) return why('PREMISE: ' + orbs.length + ' orb(s) on screen - the help and the compass at least should be');
+            var out = orbs.filter(function(o){ var r = o.getBoundingClientRect();
+              return r.top < br.top - 1 || r.bottom > br.bottom + 1 || r.left < -1 || r.right > vw + 1; });
+            if (out.length) return why('orb(s) outside the bar: ' + out.map(function(o){ var r = o.getBoundingClientRect();
+              return String(o.className).split(' ')[0] + '@' + Math.round(r.left) + ',' + Math.round(r.top); }).join(' '));
+            /* the RIGHT END of a locker plate, centred where the old column sat, hit-tests as the plate */
+            var m = [].slice.call(document.querySelectorAll('[data-vault-mule]')).filter(function(x){
+              var r = x.getBoundingClientRect(); return r.width > 40 && r.height > 12; })[0];
+            if (!m) return why('no locker plate is drawn');
+            m.scrollIntoView({block: 'center'});
+            var r = m.getBoundingClientRect(), bad = [];
+            [8, 24, 40].forEach(function(dx){ [0.25, 0.5, 0.75].forEach(function(fy){
+              var x = Math.round(r.right - dx), y = Math.round(r.top + r.height * fy);
+              var h = document.elementFromPoint(x, y);
+              if (!(h && (h === m || m.contains(h))))
+                bad.push(x + ',' + y + ' -> ' + (h ? ((h.id ? '#' + h.id : String(h.className || h.tagName)).split(' ')[0]) : 'nothing'));
+            }); });
+            if (bad.length) return why('the plate\\'s right end is covered: ' + bad.slice(0, 4).join(' | '));
+            window.__rcPhoneBar = 'ok';
+            return true; })()""",
+        "activateWhy": """(function(){ return String(window.__rcPhoneBar || 'activate never reached a verdict'); })()""",
+        "sel": "#tray-bar, .help-btn, .nav-fab",
+        # only where the bar exists: at 601px and up there is no bar, and a 0x0 surface is a refusal, never a pass
+        "widths": ((375, 800), (600, 900)),
+        "activate_at": (375, 800),      # REG-3301 - activated where the bar exists, never at the harness's 1440x1213
+    },
 }
 
 
@@ -5296,6 +5353,13 @@ def check(name, spec, shots=True):
         # fails under load teaches him to re-run it until it agrees — which is how a gate stops
         # being evidence"). The number moves to where the evidence is, per target, and stays 12.0
         # for everything that has never needed more. [[regression-guard]] [[stale-reading]]
+        # REG-3301 (#74) - A TARGET DRAWN ONLY AT A NARROW WIDTH WAS ACTIVATED AT THE HARNESS'S DEFAULT 1440x1213, NEVER AT
+        # ONE OF ITS OWN. phone-bar's surface exists only at <=600px; its activate refused "the bar is not drawn at
+        # 1440x1213 (0x0)" on every run, here and on CI, and the target was parked. A target may declare `activate_at`, the
+        # viewport its surface exists at; the width loop below still sets each of its own widths before measuring.
+        if spec.get("activate_at"):
+            _aw, _ah = spec["activate_at"]
+            tab.send("Emulation.setDeviceMetricsOverride", width=_aw, height=_ah, deviceScaleFactor=1, mobile=False)
         _deadline = _t0 + _scaled_wait(spec.get("activate_budget") or _ACTIVATE_BUDGET_DEFAULT)  # TARGET-WAIT-SCALED
         while time.time() < _deadline:
             act = tab.ev(spec["activate"])
@@ -6663,63 +6727,7 @@ if __name__ == "__main__":
         # ephemeral port is the same litter as a surviving Chrome. [[i-own-everything-i-start]]
         _console_down()
 
-# v3864 (#233) - PARKED, NOT RUN: the chain's phone-bar target (REG-3090) never ACTIVATED on CI - two full blesses on
-# 2026-11-05 ('the panel could not be ACTIVATED after 30 s of polling', at every width and then at 375 alone), so it never had
-# a coverage floor, and a floor nobody measured would be a number nobody can defend. Its pixels are UNMEASURED until it
-# activates; tv/test_on_a_phone_the_tray_is_one_bottom_bar.py still holds the bar's rules. Move it back into TARGETS when a
-# CI bless renders it clean.
-PARKED_TARGETS = {
-    "phone-bar": {
-        "why": "#224 (REG-3090, his Q12 2026-10-29: bottom bar on phones) - at <=600px the tray orbs (help, compass, the "
-               "legend, the inbox, MOVE TASKS) ride ONE bar at the bottom of the screen, under the dock, and the RIGHT END "
-               "of a locker plate - where the old column sat over his vault at 375 - is hit-tested as the plate itself. "
-               "The middle-of-the-element sample this gate takes everywhere else reported that column covered 0/1",
-        # its own small world: lockers with plates, so a plate's right end is on screen to be hit-tested
-        "seed": """(function(){
-            localStorage.setItem('d2r_ownerClaim','*');
-            ['Windforce','Doombringer','The Grandfather','Lacerator','Bonehew','Stormlash'].forEach(function(n){
-                try{ var h = window.vaultHandAdd(n, undefined, { by: 'the render seed' }); window.vaultAssign((h && h.name) || n,'uni-weap'); }catch(e){} });
-            return 1; })()""",
-        "activate": """(function(){
-            var why = function(w){ window.__rcPhoneBar = w; return false; };
-            var t=[].slice.call(document.querySelectorAll('.tab,[data-tab]')).filter(function(x){
-              return /vault/i.test((x.getAttribute&&x.getAttribute('data-tab'))||x.textContent||'');})[0];
-            if (t && !document.documentElement.classList.contains('vault-open')) t.click();
-            try{ window.renderVault && window.renderVault(); }catch(e){}
-            /* the bar, from the RECT: full width, at the bottom edge, not 0x0 */
-            var bar = document.getElementById('tray-bar');
-            if (!bar) return why('the page has no #tray-bar');
-            var br = bar.getBoundingClientRect();
-            if (getComputedStyle(bar).display === 'none' || !(br.height >= 40))
-              return why('the bar is not drawn at ' + innerWidth + 'x' + innerHeight + ' (' + Math.round(br.width) + 'x' + Math.round(br.height) + ')');
-            if (br.width < innerWidth - 1 || Math.abs(br.bottom - innerHeight) > 1)
-              return why('the bar is not the bottom edge: ' + Math.round(br.left) + ',' + Math.round(br.top) + ' ' + Math.round(br.width) + 'x' + Math.round(br.height));
-            /* every orb on screen sits INSIDE the bar - none rides up the right edge */
-            var orbs = [].slice.call(document.querySelectorAll('.help-btn,.nav-fab,.forge-legend-fab,.tools-legend-fab,.vault-guide-fab,.inbox-fab,.vault-tasks-fab'))
-              .filter(function(o){ var cs = getComputedStyle(o), r = o.getBoundingClientRect(); return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 1; });
-            if (orbs.length < 2) return why('PREMISE: ' + orbs.length + ' orb(s) on screen - the help and the compass at least should be');
-            var out = orbs.filter(function(o){ var r = o.getBoundingClientRect();
-              return r.top < br.top - 1 || r.bottom > br.bottom + 1 || r.left < -1 || r.right > innerWidth + 1; });
-            if (out.length) return why('orb(s) outside the bar: ' + out.map(function(o){ var r = o.getBoundingClientRect();
-              return String(o.className).split(' ')[0] + '@' + Math.round(r.left) + ',' + Math.round(r.top); }).join(' '));
-            /* the RIGHT END of a locker plate, centred where the old column sat, hit-tests as the plate */
-            var m = [].slice.call(document.querySelectorAll('[data-vault-mule]')).filter(function(x){
-              var r = x.getBoundingClientRect(); return r.width > 40 && r.height > 12; })[0];
-            if (!m) return why('no locker plate is drawn');
-            m.scrollIntoView({block: 'center'});
-            var r = m.getBoundingClientRect(), bad = [];
-            [8, 24, 40].forEach(function(dx){ [0.25, 0.5, 0.75].forEach(function(fy){
-              var x = Math.round(r.right - dx), y = Math.round(r.top + r.height * fy);
-              var h = document.elementFromPoint(x, y);
-              if (!(h && (h === m || m.contains(h))))
-                bad.push(x + ',' + y + ' -> ' + (h ? ((h.id ? '#' + h.id : String(h.className || h.tagName)).split(' ')[0]) : 'nothing'));
-            }); });
-            if (bad.length) return why('the plate\\'s right end is covered: ' + bad.slice(0, 4).join(' | '));
-            window.__rcPhoneBar = 'ok';
-            return true; })()""",
-        "activateWhy": """(function(){ return String(window.__rcPhoneBar || 'activate never reached a verdict'); })()""",
-        "sel": "#tray-bar, .help-btn, .nav-fab",
-        # only where the bar exists: at 601px and up there is no bar, and a 0x0 surface is a refusal, never a pass
-        "widths": ((375, 800), (600, 900)),
-    },
-}
+# v3864 (#233) parked the phone-bar target: it never ACTIVATED on CI. REG-3301 (#74) found why - it was activated at the
+# harness's default 1440x1213, where the bar does not exist, and measured against innerWidth, which counts the headless
+# scrollbar. It activates at its own width now and is back in TARGETS. A target parked again goes here, with its reason.
+PARKED_TARGETS = {}

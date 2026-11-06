@@ -101,6 +101,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3301 - THE PHONE-BAR RENDER TARGET WAS ACTIVATED AT 1440 WIDE, WHERE THE BAR DOES NOT EXIST, SO IT WAS PARKED UNMEASURED (v3876, #74)
+v3864 parked the `phone-bar` target (REG-3090's bottom bar at <=600px): two CI blesses on 11-05 could not ACTIVATE it, so the
+bar's pixels were UNMEASURED. Run here from PARKED_TARGETS, its own reason said "the bar is not drawn at 1440x1213 (0x0)":
+check() polls a target's `activate` at the harness's default viewport and sets the target's widths only afterwards, in the
+width loop - and this target's surface exists only at 375 and 600. With the viewport fixed the next reason was "the bar is
+not the bottom edge: 0,744 364x56": the check compared the bar with innerWidth (375), which counts the headless desktop
+scrollbar (11px) that a fixed full-width bar never spans; a phone's overlay scrollbar takes none. Now a target may declare
+`activate_at` (phone-bar: 375x800), set before activation polls, and the bar is measured against the layout width
+(clientWidth). Rendered here: clean at 375x800 and 600x900 (painted 3/3, clipped 0/14, covered 0/3), and the 375 PNG looked
+at - five orbs in one bar, none up the right edge. phone-bar is back in TARGETS with a coverage floor of the 3 nodes it found
+at each width. Law: test_a_narrow_target_is_activated_at_its_own_width (new), red-proofs PROVEN; test_render_coverage green.
+
 ### REG-3300 - A BACKGROUND NODE FETCH THAT RAISED SAID "FETCHING" FOR THE LIFE OF THE CONSOLE AND WAS NEVER TRIED AGAIN (v3876, the Grok CLI on v3873)
 The Grok CLI's look at v3873 (tv/node_runtime.py _background): the worker thread ran `_fetch_locked`, whose resolver,
 _put_on_path and refresh run before its own try. Reproduced with a resolver that raises on the thread: the thread died with
