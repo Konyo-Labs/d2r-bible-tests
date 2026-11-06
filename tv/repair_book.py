@@ -102,9 +102,19 @@ def apply(rows, doors, state=None, now_ms=None):
     known = set(e["check"] for e in ENTRIES if e["check"])
     misses = [{"check": r["check"], "why": scrub(r.get("why"))} for r in (rows or [])
               if isinstance(r, dict) and r.get("state") == "missing" and r.get("check") not in known]
+    # REG-3259 (the Grok CLI on REG-3159, #231 6681759774) - NO PASS ANSWERED, SO THE LAST ONE'S FAULTS STAND. rows None is
+    # "the eagle has not answered" (no pass yet, or one that failed). Listing none there wiped the misses a real pass had
+    # found, and every surface downstream (beacon, Fleet row, diagnosis lane) read a calm the eagle never measured.
+    prev_misses = (state or {}).get("misses") if isinstance(state, dict) else None
+    carried = rows is None and isinstance(prev_misses, list) and bool(prev_misses)
+    if carried:
+        misses = [dict(m, stale=True) for m in prev_misses if isinstance(m, dict) and m.get("check")]
+    misses_at = ((state or {}).get("missesAt") or (state or {}).get("ranAt")) if carried else now
     counts = {}
     for r in out:
         counts[r["state"]] = counts.get(r["state"], 0) + 1
     say = ", ".join("%d %s" % (counts[k], k) for k in STATES if counts.get(k))
-    return {"ranAt": now, "entries": out, "misses": misses, "counts": counts,
-            "say": "the repair book: %s; %d eagle row(s) it does not know" % (say or "nothing asked", len(misses))}
+    return {"ranAt": now, "entries": out, "misses": misses, "missesAt": misses_at, "counts": counts,
+            "say": "the repair book: %s; %d eagle row(s) it does not know%s" % (
+                say or "nothing asked", len(misses),
+                " - the eagle's last pass did not answer, so these are the last answering pass's" if carried else "")}

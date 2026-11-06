@@ -32,7 +32,12 @@ FLEET_PATH = "/api/fleet"               # asked of THIS console through console_
 def open_faults(fleet):
     """[(machine, kind, id, why)] from a /api/fleet payload. kind: 'unknown' (a miss) | 'repair failed'. Pure."""
     out = []
-    for row in (fleet or {}).get("online") or []:
+    # REG-3260 (the Grok CLI on REG-3159, #231 6681759774) - AN OFFLINE PC'S LAST REPORT IS READ TOO. Its fault rode
+    # only the offline row (lastseen: keeps system.repair after console: expires), and this walked `online` alone, so
+    # Dean's and the old ALT's faults never reached the line. The PC's name stays the key (going offline is not news);
+    # the words say it is the last report.
+    rows = [(r, False) for r in (fleet or {}).get("online") or []] + [(r, True) for r in (fleet or {}).get("offline") or []]
+    for row, off in rows:
         if not isinstance(row, dict):
             continue
         m = str(row.get("nickname") or row.get("machine") or "?")
@@ -40,32 +45,48 @@ def open_faults(fleet):
         for e in rp.get("misses") or []:
             if isinstance(e, dict) and e.get("id"):
                 why = str(e.get("why") or "")
+                if off:
+                    why = ("offline - its last report: " + why) if why else "offline - its last report"
                 if e.get("diag"):                  # v3862 (item 9) - that PC's Claude's proposal
                     why = (why + " | its Claude: " + str(e["diag"])) if why else "its Claude: " + str(e["diag"])
                 out.append((m, "unknown", str(e["id"]), why))
         for e in rp.get("failed") or []:
             if isinstance(e, dict) and e.get("id"):
-                out.append((m, "repair failed", str(e["id"]), str(e.get("why") or "")))
+                why = str(e.get("why") or "")
+                out.append((m, "repair failed", str(e["id"]), ("offline - its last report: " + why) if off else why))
     return out
 
 
+#: REG-3260 - how many new faults one line names; the rest stay new for the next line.
+NAMED = 3
+
+
+def fault_key(m, kind, fid, why):
+    return "%s|%s|%s%s" % (m, kind, fid, "|diag" if "its Claude:" in why else "")   # a proposal arriving is news
+
+
 def new_since(faults, seen):
-    """-> (new faults, the watermark to keep). A fault is new once per (machine, kind, id). Pure."""
+    """-> (new faults, the watermark to keep). A fault is new once per (machine, kind, id). Pure.
+    REG-3260 (the Grok CLI on REG-3159) - only a fault the line NAMES leaves "new": the line names NAMED of them and said
+    "+N more" for the rest, and the watermark took all of them, so the unnamed ones were never printed anywhere."""
     keep = {}
     new = []
-    for m, kind, fid, why in faults:
-        k = "%s|%s|%s%s" % (m, kind, fid, "|diag" if "its Claude:" in why else "")   # a proposal arriving is news
-        keep[k] = True
-        if k not in seen:
-            new.append((m, kind, fid, why))
+    for f in faults:
+        k = fault_key(*f)
+        if k in seen:
+            keep[k] = True
+        else:
+            if len(new) < NAMED:
+                keep[k] = True
+            new.append(f)
     return new, keep
 
 
 def summary(new):
     if not new:
         return ""
-    head = "; ".join("%s: %s %s%s" % (m, kind, fid, (" (%s)" % why[:90]) if why else "") for m, kind, fid, why in new[:3])
-    more = " +%d more" % (len(new) - 3) if len(new) > 3 else ""
+    head = "; ".join("%s: %s %s%s" % (m, kind, fid, (" (%s)" % why[:90]) if why else "") for m, kind, fid, why in new[:NAMED])
+    more = " +%d more, named on the next lines" % (len(new) - NAMED) if len(new) > NAMED else ""
     return "%d new - %s%s" % (len(new), head, more)
 
 

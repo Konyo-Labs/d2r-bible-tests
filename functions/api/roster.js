@@ -463,8 +463,19 @@ export async function onRequestPost(context) {
   if (intent.refused) {
     // v3862 (item 11) - a valid signature under another key is a new PC asking for this label: remember it for approval
     // only a READABLE registered key can be replaced by an approval - an unreadable one stays a refusal and writes nothing
-    const asked = (registered && intent.registeredKeyId && sig.state === "valid")
-      ? await noteKeyRequest(kv, owner, sig, intent.registeredKeyId, Date.now()) : false;
+    // REG-3265 (the Grok CLI on REG-3163, #231 6681926045) - a key placed by hand is often the bare pub with no keyId (the
+    // shape this file still accepts). It is READABLE - 32 bytes - so its id is derived the way every id is (keyIdOf);
+    // without it the request was never written and the refusal never said a key was waiting. An unreadable one has no
+    // 32 bytes to hash and still writes nothing.
+    let regKeyId = intent.registeredKeyId || null;
+    if (!regKeyId && registered && sig.state === "valid") {
+      const rp = bytesOfB64u(registered.pub);
+      if (rp && rp.length === 32) {
+        try { regKeyId = await keyIdOf(rp); } catch (e) { regKeyId = null; }
+      }
+    }
+    const asked = (registered && regKeyId && sig.state === "valid")
+      ? await noteKeyRequest(kv, owner, sig, regKeyId, Date.now()) : false;
     return refuseSignature(intent, sig, asked);
   }
 

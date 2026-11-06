@@ -252,6 +252,11 @@ def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="",
         if paths is None:
             out.update(state="refused", why="the bundle was refused before import: %s" % why)
             return out
+        try:
+            import proof_seed as _psd                   # REG-3261 - how many proofs this set owes as TIMEOUT (partial)
+            out["cut"] = _psd.cut_in(paths, sha)
+        except Exception:
+            out["cut"] = None
         pre, flags = _low_priority()
         argv = [sys.executable, os.path.join(tv_dir, "heart2.py")]
         watch = None
@@ -316,7 +321,25 @@ def _imported(s):
     return [s.get("flavor") or ""] if s.get("state") == "imported" else []      # a record from before flavors
 
 
-def owed(state, head, platform=None):
+#: REG-3261 (the Grok CLI on REG-3165, #231 6681759437) - a set whose shards owed proofs cut at their bound (TIMEOUT) is
+#: PARTIAL: the round after Publish proves the rest and re-uploads the bundle. Its import is asked again this often,
+#: this many times per commit, so the completed set reaches the PC instead of the PC proving those laws itself.
+PARTIAL_REASK_S = 45 * 60
+PARTIAL_MAX_TRIES = 4
+
+
+def _partial_due(s, flavor, now):
+    """REG-3261 - is `flavor`'s import for this commit a partial set that is due to be asked again? -> bool. Pure."""
+    cut = (s.get("cut") or {}).get(flavor) if isinstance(s.get("cut"), dict) else None
+    if not isinstance(cut, int) or isinstance(cut, bool) or cut <= 0:
+        return False
+    tries = (s.get("partialTries") or {}).get(flavor) if isinstance(s.get("partialTries"), dict) else 0
+    at = s.get("at")
+    return (int(tries or 0) < PARTIAL_MAX_TRIES and isinstance(at, (int, float))
+            and now - at / 1000.0 >= PARTIAL_REASK_S)
+
+
+def owed(state, head, platform=None, now=None):
     """Does this checkout still owe an import for `head`? -> bool. Pure.
 
     The BEST bundle for this PC imported (or refused - final for the commit, and named) on this very commit: done. A
@@ -329,7 +352,7 @@ def owed(state, head, platform=None):
         return True
     best = flavors(platform)[0]
     if best in _imported(s):
-        return False
+        return _partial_due(s, best, time.time() if now is None else now)     # REG-3261 - a partial set is asked again
     return not (s.get("state") == "refused" and (s.get("flavor") or "") == best)
 
 
@@ -338,19 +361,28 @@ def import_best(sha, tv_dir=None, state=None, platform=None, **kw):
     -> the record to keep: the last answer, plus `imported` (every flavor taken for this commit). Never raises."""
     s = state if isinstance(state, dict) and state.get("sha") == sha else {}
     done = list(_imported(s))
+    cut = dict(s.get("cut") or {}) if isinstance(s.get("cut"), dict) else {}
+    tries = dict(s.get("partialTries") or {}) if isinstance(s.get("partialTries"), dict) else {}
+    now = time.time()
     last = None
     for fl in flavors(platform):
-        if fl in done:
+        again = fl in done and _partial_due(s, fl, now)      # REG-3261 - a partial set already in, due to be asked again
+        if fl in done and not again:
             break
         r = import_bundle(sha, tv_dir=tv_dir, flavor=fl, **kw)
         last = r
+        if again:
+            tries[fl] = int(tries.get(fl) or 0) + 1
         if r["state"] == "imported":
-            done.append(fl)
+            if fl not in done:
+                done.append(fl)
+            got = r.get("cut")
+            cut[fl] = got if isinstance(got, int) and not isinstance(got, bool) else 0
             break
-        if r["state"] == "refused":
-            break
+        if r["state"] == "refused" or again:
+            break                                            # a re-ask that did not land keeps the set already in
     rec = dict(last or s or {"sha": sha, "state": "imported"})
-    rec.update(sha=sha, imported=done)
+    rec.update(sha=sha, imported=done, cut=cut, partialTries=tries)
     if done and rec.get("state") != "imported":
         rec["why"] = "%s (the %s set is already in)" % (rec.get("why") or "", "Linux" if "" in done else done[0])
     return rec

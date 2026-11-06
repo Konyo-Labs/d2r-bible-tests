@@ -23518,7 +23518,11 @@ def _repair_book_start(_thread=None, _doors=None, _diagnose=None):
         try:
             import repair_book as _rb
             prev = dict(_REPAIR_BOOK)
-            rows = list(_EAGLE.get("rows") or []) if _EAGLE.get("checked") else None
+            # REG-3259 (the Grok CLI on REG-3159, #231 6681759774) - A PASS THAT DID NOT ANSWER IS NOT "NO FAULTS". Both
+            # failure paths set `checked` with rows [], and the book read that as a pass that found none: it wiped its
+            # misses, the beacon carried none, and the Fleet row drew no repairs line while the eagle said UNKNOWN.
+            rows = (list(_EAGLE.get("rows") or [])
+                    if _EAGLE.get("checked") and _EAGLE.get("passOk") is not False else None)
             rep = _rb.apply(rows, _doors or _book_doors(), state=prev)
             if rep.get("misses"):
                 try:
@@ -29937,6 +29941,7 @@ def _eagle_once():
         if _where == "child" and rows is None:
             with _PRUNE_LOCK:
                 _EAGLE.update({"checked": int(time.time() * 1000), "needsYou": None, "unknown": None, "rows": [],
+                               "passOk": False,   # REG-3259 - a pass that did not answer is no list of faults
                                "say": "the eagle's pass runs in a child, and it did not answer (%s) - UNKNOWN until "
                                       "the next tick" % str(_cwhy)[:110]})
             return []
@@ -29946,7 +29951,8 @@ def _eagle_once():
     except Exception as e:
         with _PRUNE_LOCK:
             _EAGLE.update({"checked": int(time.time() * 1000), "needsYou": None, "unknown": None,
-                           "rows": [], "say": "the eagle could not run: %s" % str(e)[:110]})
+                           "rows": [], "passOk": False,   # REG-3259
+                           "say": "the eagle could not run: %s" % str(e)[:110]})
         return []
     # v2284 — "N NEED YOU" MUST MEAN THINGS HE CAN DO. Konyo, reading 4 on the bottom bar:
     # "4 need me? make sure to verify and fix what needs me for real". Measured that minute: two of
@@ -30045,7 +30051,7 @@ def _eagle_once():
                   flush=True)
     with _PRUNE_LOCK:
         _EAGLE.update({
-            "checked": int(time.time() * 1000), "rows": rows,
+            "checked": int(time.time() * 1000), "rows": rows, "passOk": True,   # REG-3259
             # ⚠ v2407 — SAY WHICH PASS THIS WAS. `eagle-ran-every-check` compares this row count
             # against an expected one, and the expectation is NOT a constant: a cheap pass emits
             # len(CHECKS) - len(SLOW) rows and a complete pass emits len(CHECKS). Without this
@@ -30178,6 +30184,25 @@ def _eagle_once():
     return bad
 
 
+def _repair_book_headless_due(now=None):
+    """REG-3262 (the Grok CLI on REG-3158, #231 6681759774) - IS THE REPAIR BOOK DUE ON A CONSOLE WITH NO WINDOW? -> bool.
+    The book ran only from the window's rescue loop (_console_rescue_loop, armed by open_control_window), so a --no-open
+    console - a headless one, or the supervisor's revive - never asked it: status.repairBook stayed "not asked yet" and no
+    known fault there was ever fixed. The eagle lane runs on every console and the book reads the eagle's rows, so the
+    eagle asks this after each pass: never while a window's rescue loop runs (that loop keeps its own cadence), else the
+    rescue loop's 30-minute cadence."""
+    try:
+        if any(getattr(t, "name", None) == "console-rescue" and t.is_alive() for t in threading.enumerate()):
+            return False
+    except Exception:
+        return False
+    if _REPAIR_BOOK.get("running"):
+        return False
+    now = time.time() if now is None else now
+    last = _REPAIR_BOOK.get("ranAt")
+    return not isinstance(last, (int, float)) or (now - last / 1000.0) >= REPAIR_BOOK_EVERY_TICKS * 10.0
+
+
 def _eagle_watch_loop():
     said = set()
     # Same correction, in the code that repeated the defect the day it was written: the eagle slept
@@ -30191,6 +30216,8 @@ def _eagle_watch_loop():
             first = False
             _lane_tick('tvd-eagle-watch', _EAGLE_EVERY_S)
             bad = _eagle_once()
+            if _repair_book_headless_due():
+                _repair_book_start()        # REG-3262 - a console with no window asks the book here
             for r in bad:
                 key = "%s|%s" % (r.get("check"), (r.get("why") or "")[:60])
                 if key in said:
@@ -47427,7 +47454,7 @@ def status_payload():
         "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "proofRelease": dict(_PROOF_RELEASE), "ciWatch": dict(_CI_WATCH), "riverWarm": dict(_RIVER_WARM), "riverLocks": dict(_RIVER_LOCKS_SEEN), "repairBook": dict(_REPAIR_BOOK), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
         # #83 — the child supervisor's receipts (door / watchdog / RAM); the census itself is the doctor's row
         "childGuard": _child_guard_status(),
-        "ver": "v3872",
+        "ver": "v3873",
         # v3288 — WHICH QUESTION THE NUMBER ABOVE ANSWERS. `ver` is a literal compiled into the
         # module that is running; `moduleFreshness` says whether that module is still the file on
         # disk, measured from this module's OWN import rather than from a PID or a string compare.

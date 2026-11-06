@@ -131,6 +131,22 @@ class TheWorkerWaitsForHim(unittest.TestCase):
         self.assertEqual(a["puts"], ["rosterkeyreq:" + OWNER])
         self.assertEqual(b["puts"], [], "the same key asking again spent a write")
 
+    def test_a_hand_placed_bare_key_still_lets_a_new_pc_ask(self):
+        """REG-3265 - a registered key with no keyId (the bare pub a hand placement stores) wrote no request at all."""
+        bare = dict(self.seed)
+        bare["rosterkey:" + OWNER] = RS.b64u(_pub_of(self.keys["old_alt"]))
+        out = _node({"seed": bare, "steps": [self._rows("new_alt")]})
+        a = out["steps"][0]
+        self.assertFalse(a["reply"]["ok"])
+        self.assertEqual(a["reply"].get("approval"), "requested", "a bare registered key made the new PC's ask vanish: %r" % a)
+        self.assertEqual(a["puts"], ["rosterkeyreq:" + OWNER])
+        req = json.loads(out["store"]["rosterkeyreq:" + OWNER])
+        self.assertEqual(req["replaces"], self.ids["old_alt"], "the derived id is not the one roster_sign computes")
+        junk = dict(self.seed)
+        junk["rosterkey:" + OWNER] = "not-a-key"
+        self.assertEqual(_node({"seed": junk, "steps": [self._rows("new_alt")]})["steps"][0]["puts"], [],
+                         "an unreadable registered key wrote a request")
+
     def test_the_list_names_labels_and_ids_never_a_key(self):
         out = _node({"seed": self.seed, "steps": [self._rows("new_alt"), {"get": "requests=1"}]})
         got = out["steps"][1]["get"]
@@ -238,6 +254,11 @@ class TheConsoleOffersIt(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3265 - a hand-placed bare key makes a new PC's request vanish again",
+     "file": "functions/api/roster.js",
+     "find": "    if (!regKeyId && registered && sig.state === \"valid\") {\n",
+     "replace": "    if (false) {\n",
+     "matches": 1, "needs": "node"},
     {"why": "v3862 - an approval signed by ANY key is taken (the approver's registered key is never asked)",
      "file": "functions/api/roster.js",
      "find": "  if (intent.refused || intent.verified !== true || intent.register) {\n"
@@ -256,7 +277,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3862 - a refused new key leaves no request: he is never asked and the PC stays refused",
      "file": "functions/api/roster.js",
-     "find": "      ? await noteKeyRequest(kv, owner, sig, intent.registeredKeyId, Date.now()) : false;\n",
+     "find": "      ? await noteKeyRequest(kv, owner, sig, regKeyId, Date.now()) : false;\n",
      "replace": "      ? false : false;\n",
      "matches": 1},
     {"why": "v3862 - the card paints a label unescaped",

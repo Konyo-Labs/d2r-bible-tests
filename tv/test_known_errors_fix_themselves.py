@@ -97,6 +97,74 @@ class TheBook(unittest.TestCase):
                          "something ran for a fault the book does not know")
 
 
+class APassThatDidNotAnswerIsNotACalm(unittest.TestCase):
+    """REG-3259 (the Grok CLI on REG-3159) - a failed eagle pass wiped the misses a real pass had found."""
+
+    def test_the_last_answering_passes_faults_are_carried_and_said(self):
+        log = []
+        first = RB.apply([{"check": "the ledger backup covers every store", "state": "missing", "why": "x"}],
+                         _doors(log), now_ms=NOW)
+        self.assertEqual([m["check"] for m in first["misses"]], ["the ledger backup covers every store"])
+        later = RB.apply(None, _doors(log), state=first, now_ms=NOW + 60_000)
+        self.assertEqual([m["check"] for m in later["misses"]], ["the ledger backup covers every store"],
+                         "a pass that did not answer wiped the faults a real pass found: %r" % later)
+        self.assertTrue(all(m.get("stale") for m in later["misses"]))
+        self.assertEqual(later["missesAt"], NOW, "the carried faults wear the later pass's clock")
+        self.assertIn("did not answer", later["say"])
+        cleared = RB.apply([], _doors(log), state=later, now_ms=NOW + 120_000)
+        self.assertEqual(cleared["misses"], [], "a pass that answered with no faults kept the old ones")
+
+    def test_the_first_pass_with_nothing_to_carry_lists_none(self):
+        self.assertEqual(RB.apply(None, _doors([]), now_ms=NOW)["misses"], [])
+
+    def test_the_console_hands_the_book_no_rows_after_a_failed_pass(self):
+        import control_app as CA
+        saved = (dict(CA._REPAIR_BOOK), dict(CA._EAGLE))
+        try:
+            CA._REPAIR_BOOK.update(running=False, misses=[{"check": "fault A", "why": "x"}], ranAt=NOW)
+            CA._EAGLE.update(checked=NOW + 1, rows=[], passOk=False)
+            CA._repair_book_start(_thread=lambda f: f(), _doors=_doors([]), _diagnose=lambda misses: {})
+            self.assertEqual([m["check"] for m in CA._REPAIR_BOOK.get("misses") or []], ["fault A"],
+                             "a failed eagle pass wiped the book's misses")
+            src = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
+            self.assertEqual(src.count('"passOk": False,'), 2, "a failure path of the eagle does not say it failed")
+        finally:
+            CA._REPAIR_BOOK.clear()
+            CA._REPAIR_BOOK.update(saved[0])
+            CA._EAGLE.clear()
+            CA._EAGLE.update(saved[1])
+
+
+class AHeadlessConsoleAsksTheBookToo(unittest.TestCase):
+    """REG-3262 (the Grok CLI on REG-3158) - a --no-open console never ran the repair book."""
+
+    def test_due_on_its_own_cadence_and_never_beside_a_rescue_loop(self):
+        import threading
+        import control_app as CA
+        saved = dict(CA._REPAIR_BOOK)
+        stop = threading.Event()
+        try:
+            CA._REPAIR_BOOK.update(running=False, ranAt=None)
+            self.assertTrue(CA._repair_book_headless_due(now=NOW / 1000.0), "a console with no window never asks the book")
+            CA._REPAIR_BOOK.update(ranAt=NOW)
+            self.assertFalse(CA._repair_book_headless_due(now=NOW / 1000.0 + 60), "asked again a minute later")
+            self.assertTrue(CA._repair_book_headless_due(now=NOW / 1000.0 + CA.REPAIR_BOOK_EVERY_TICKS * 10.0 + 1))
+            t = threading.Thread(target=stop.wait, name="console-rescue", daemon=True)
+            t.start()
+            self.assertFalse(CA._repair_book_headless_due(now=NOW / 1000.0 + 10 ** 6),
+                             "the book ran beside a window's rescue loop, which keeps its own cadence")
+        finally:
+            stop.set()
+            CA._REPAIR_BOOK.clear()
+            CA._REPAIR_BOOK.update(saved)
+
+    def test_the_eagle_lane_asks_it(self):
+        import inspect
+        import control_app as CA
+        src = inspect.getsource(CA._eagle_watch_loop)
+        self.assertIn("if _repair_book_headless_due():\n                _repair_book_start()", src)
+
+
 class TheConsoleDoors(unittest.TestCase):
 
     @classmethod
@@ -287,8 +355,70 @@ class TheOverwatchLine(unittest.TestCase):
         self.assertIn("2 new", third, "a fault that cleared and came back was not new again")
         self.assertEqual(down, "", "a console that could not be asked printed something")
 
+    def _run(self, fleet, seen):
+        import fleet_errors as FE
+        saved = sys.stdout
+        try:
+            sys.stdout = io.StringIO()
+            FE.main(["--summary"], fetch=lambda: fleet, seen_path=seen)
+            return sys.stdout.getvalue()
+        finally:
+            sys.stdout = saved
+
+    def test_every_new_fault_is_named_on_some_line(self):
+        """REG-3260 - five new faults: the line named three, watermarked five, and two were never printed."""
+        import tempfile
+        d = tempfile.mkdtemp(prefix="fleet-errors-")
+        self.addCleanup(__import__("shutil").rmtree, d, True)
+        seen = os.path.join(d, "seen.json")
+        fleet = {"online": [{"nickname": "alt", "system": {"repair": {"misses": [
+            {"id": "fault %d" % i, "why": "w%d" % i} for i in range(5)]}}}]}
+        first, second, third = self._run(fleet, seen), self._run(fleet, seen), self._run(fleet, seen)
+        named = " ".join((first, second))
+        for i in range(5):
+            self.assertIn("alt: unknown fault %d" % i, named, "fault %d was never named on any line" % i)
+        self.assertEqual(third, "", "a named fault was shown again")
+
+    def test_an_offline_pcs_last_report_is_read(self):
+        """REG-3260 - Dean's faults rode only his offline row and never reached the line."""
+        import fleet_errors as FE
+        got = FE.open_faults({"online": [], "offline": [{"nickname": "Dean", "system": {"repair": {
+            "misses": [{"id": "the river", "why": "stuck"}], "failed": [{"id": "node", "why": "hash"}]}}}]})
+        self.assertEqual([(m, k, f) for m, k, f, w in got], [("Dean", "unknown", "the river"), ("Dean", "repair failed", "node")])
+        self.assertTrue(all(w.startswith("offline - its last report") for m, k, f, w in got), got)
+
 
 RED_PROOF = [
+    {"why": "REG-3262 - the headless book runs beside a window's rescue loop, so the book is asked on two cadences",
+     "file": "tv/control_app.py",
+     "find": "        if any(getattr(t, \"name\", None) == \"console-rescue\" and t.is_alive() for t in threading.enumerate()):\n            return False\n",
+     "replace": "        pass\n",
+     "matches": 1},
+    {"why": "REG-3262 - a console with no window never asks the repair book again",
+     "file": "tv/control_app.py",
+     "find": "            if _repair_book_headless_due():\n                _repair_book_start()",
+     "replace": "            if False:\n                _repair_book_start()",
+     "matches": 1},
+    {"why": "REG-3260 - the watermark takes every new fault again, so the ones past the third are never named",
+     "file": "tv/fleet_errors.py",
+     "find": "            if len(new) < NAMED:\n                keep[k] = True\n",
+     "replace": "            if True:\n                keep[k] = True\n",
+     "matches": 1},
+    {"why": "REG-3260 - an offline PC's last report is not read again",
+     "file": "tv/fleet_errors.py",
+     "find": " + [(r, True) for r in (fleet or {}).get(\"offline\") or []]",
+     "replace": "",
+     "matches": 1},
+    {"why": "REG-3259 - a pass that did not answer lists no faults again, so the misses a real pass found are wiped",
+     "file": "tv/repair_book.py",
+     "find": "    carried = rows is None and isinstance(prev_misses, list) and bool(prev_misses)\n",
+     "replace": "    carried = False\n",
+     "matches": 1},
+    {"why": "REG-3259 - the console hands the book a failed pass's empty rows as a pass that found none",
+     "file": "tv/control_app.py",
+     "find": "if _EAGLE.get(\"checked\") and _EAGLE.get(\"passOk\") is not False else None)\n",
+     "replace": "if _EAGLE.get(\"checked\") else None)\n",
+     "matches": 1},
     {"why": "v3862 - a door runs for an eagle row that reads OK (every pass re-installs what is there)",
      "file": "tv/repair_book.py",
      "find": "            if row.get(\"state\") != \"missing\":\n",
@@ -326,8 +456,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3862 - the overwatch line repeats every fault on every prompt (it becomes furniture)",
      "file": "tv/fleet_errors.py",
-     "find": "        if k not in seen:\n",
-     "replace": "        if True:\n",
+     "find": "        if k in seen:\n            keep[k] = True\n        else:\n",
+     "replace": "        if False:\n            keep[k] = True\n        else:\n",
      "matches": 1},
     {"why": "v3862 - a background node fetch reads unknown, not waiting",
      "file": "tv/control_app.py",

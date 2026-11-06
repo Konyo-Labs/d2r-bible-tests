@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3872",
+  "ver": "v3873",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3872: The Mac signs in to d2jsp through the console own d2jsp window, and a landed diagnosis or a kept frame is never misread",
+  "note": "v3873: The Grok CLI findings on the v3862 cards fixed, each reproduced first - faults, proofs, repairs and the write budget",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

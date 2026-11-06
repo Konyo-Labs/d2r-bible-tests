@@ -895,12 +895,28 @@ export async function onRequestPost(context) {
     || readersNews(prev) !== readersNews(rec)
     || !!(prev.eye && prev.eye.live) !== !!(rec.eye && rec.eye.live);
 
+  /* REG-3266 (the Grok CLI on REG-3161, #231 6681760195) - THE DAILY CEILING IS HELD HERE, NOT ONLY WRITTEN DOWN. KV_WRITES
+     (10,000 a day, roster.js) was read by no write: every material beacon stored both keys with no gap, so a console whose
+     windowMode kept differing from its row (the 60 s presence posts) wrote 2 x 1,440 a day, and six of them 17,280. Each
+     PC now spends at most MATERIAL_PAIRS_PER_DAY material pairs a day (6 x 600 x 2 = 7,200, beside the refresh cadence's
+     4,896 and the roster/frames writes), counted in the row it already writes - no extra write. News lands at once until
+     then; past it the row still refreshes every REFRESH_S, so the fleet stays at most 220 s behind. */
+  const MATERIAL_PAIRS_PER_DAY = 600;
+  const wDay = new Date().toISOString().slice(0, 10);
+  const wSpent = (prev && prev.wDay === wDay && Number.isFinite(prev.wN)) ? prev.wN : 0;
+  const wOver = wSpent >= MATERIAL_PAIRS_PER_DAY;
+  const writeNow = (material && !wOver) || ageS >= REFRESH_S;
+  rec.wDay = wDay;
+  rec.wN = wSpent + (writeNow ? 1 : 0);
+
   try {
-    if (material || ageS >= REFRESH_S) {
+    if (writeNow) {
       await kv.put('console:' + machine, JSON.stringify(rec), { expirationTtl: PRESENCE_TTL });
       stored.push('console');
     } else {
-      skipped.push('console (unchanged, refreshed ' + Math.round(ageS) + 's ago)');
+      skipped.push(material ? ('console (this PC has spent today\'s ' + MATERIAL_PAIRS_PER_DAY + ' material writes - '
+                               + 'it refreshes every ' + REFRESH_S + ' s)')
+                            : ('console (unchanged, refreshed ' + Math.round(ageS) + 's ago)'));
     }
 
     // ⚠⚠ v3390 (#135) — THE LAST CHECK-IN, NOT THE LAST CHANGE. Until now this read
@@ -913,7 +929,7 @@ export async function onRequestPost(context) {
     // writes/day" — the x 2 is BOTH keys at the 15-minute cadence. The code was the odd one out.
     // ⚠ Bounded by the SAME REFRESH_S as presence, so the write budget is unchanged from the one
     // that comment computed; this is not a new cost, it is the cost already budgeted.
-    if (material || ageS >= REFRESH_S) {
+    if (writeNow) {
       await kv.put('lastseen:' + machine, JSON.stringify(rec), {
         expirationTtl: 60 * 60 * 24 * 400,  // 400 days
       });

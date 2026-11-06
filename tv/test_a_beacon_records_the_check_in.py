@@ -105,6 +105,11 @@ for (let i = 0; i < CFG.beacons.length; i++) {
       store.set(k, JSON.stringify(o));
     }
   }
+  if (i > 0 && CFG.patchBetween) {          // REG-3266 - a law's seam: what the stored row already counts
+    const k = 'console:' + CFG.machine;
+    const cur = store.get(k);
+    if (cur) store.set(k, JSON.stringify(Object.assign(JSON.parse(cur), CFG.patchBetween)));
+  }
   const body = CFG.beacons[i];
   const req = new Request('https://bull-4-u.com/api/console', {
     method: 'POST', body: JSON.stringify(body),
@@ -123,9 +128,9 @@ process.stdout.write(JSON.stringify({
 """
 
 
-def _beacons(bodies, seed=None, machine="dean-pc", age_between=0):
+def _beacons(bodies, seed=None, machine="dean-pc", age_between=0, patch_between=None):
     cfg = {"file": API, "beacons": bodies, "seed": seed or {}, "machine": machine,
-           "ageBetween": age_between}
+           "ageBetween": age_between, "patchBetween": patch_between}
     src = _HARNESS.replace("__CFG__", json.dumps(cfg))
     with tempfile.TemporaryDirectory(prefix="tvd_beacon_") as d:
         p = os.path.join(d, "h.mjs")
@@ -189,6 +194,19 @@ class ABeaconRecordsTheCheckIn(unittest.TestCase):
         self.assertIn("lastseen", stored,
                       "he ticked a piece 60s after the last beacon and the roster did not "
                       "record it (stored=%r)" % (stored,))
+
+    def test_a_pc_past_its_daily_material_writes_waits_for_the_refresh(self):
+        """REG-3266 - a windowMode that kept differing stored both keys every 60 s: 17,280 writes a day for six PCs."""
+        import datetime
+        today = datetime.datetime.utcnow().date().isoformat()
+        moved = dict(BASE, tally={"ok": True, "sets": {"have": 1, "total": 135}})
+        v = _beacons([dict(BASE), moved], age_between=60, patch_between={"wDay": today, "wN": 600})
+        stored = (v["replies"][1] or {}).get("stored") or []
+        self.assertNotIn("lastseen", stored, "a PC past its daily material writes still wrote at once (stored=%r)" % stored)
+        v = _beacons([dict(BASE), moved], age_between=1800, patch_between={"wDay": today, "wN": 600})
+        self.assertIn("lastseen", (v["replies"][1] or {}).get("stored") or [], "the refresh cadence stopped too")
+        v = _beacons([dict(BASE), moved], age_between=60, patch_between={"wDay": "2000-01-01", "wN": 600})
+        self.assertIn("lastseen", (v["replies"][1] or {}).get("stored") or [], "yesterday's count held today's news back")
 
     def test_a_first_ever_beacon_is_recorded(self):
         """A cold console is not a repeat; `ageS` falls back to 1e9 and `material` is true."""
@@ -256,6 +274,11 @@ class ABeaconRecordsTheCheckIn(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3266 - every material beacon writes both keys again, whatever the PC spent today",
+     "file": "functions/api/console.js",
+     "find": "  const writeNow = (material && !wOver) || ageS >= REFRESH_S;\n",
+     "replace": "  const writeNow = material || ageS >= REFRESH_S;\n",
+     "matches": 1, "needs": "node"},
     {
         # ⚠ THE ONE-LINE ANCHOR MATCHES 2 AFTER THE FIX - `console:` has the identical condition.
         # Measured before writing this: 2 for the bare line, 1 with the kv.put beneath it.
@@ -263,20 +286,17 @@ RED_PROOF = [
         "why": "restoring `if (material)` is the exact defect: an idle console stops being "
                "recorded and its row freezes at the last change",
         "file": "functions/api/console.js",
-        "find": "    if (material || ageS >= REFRESH_S) {\n"
-                "      await kv.put('lastseen:' + machine, JSON.stringify(rec), {",
-        "replace": "    if (material) {\n"
-                   "      await kv.put('lastseen:' + machine, JSON.stringify(rec), {",
+        # v3873 (REG-3266) - both keys follow one decision now (writeNow), so the sabotage aims at it
+        "find": "  const writeNow = (material && !wOver) || ageS >= REFRESH_S;\n",
+        "replace": "  const writeNow = (material && !wOver);\n",
         "matches": 1,
     },
     {
         "why": "dropping the material arm makes news wait for a timer, so a tick he just made "
                "would not reach the roster for up to 15 minutes",
-        "find": "    if (material || ageS >= REFRESH_S) {\n"
-                "      await kv.put('lastseen:' + machine, JSON.stringify(rec), {",
+        "find": "  const writeNow = (material && !wOver) || ageS >= REFRESH_S;\n",
         "file": "functions/api/console.js",
-        "replace": "    if (ageS >= REFRESH_S) {\n"
-                   "      await kv.put('lastseen:' + machine, JSON.stringify(rec), {",
+        "replace": "  const writeNow = ageS >= REFRESH_S;\n",
         "matches": 1,
     },
 ]

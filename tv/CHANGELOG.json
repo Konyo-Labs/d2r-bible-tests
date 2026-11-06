@@ -1,5 +1,18 @@
 [
   {
+    "ver": "v3873",
+    "date": "2026-11-06",
+    "items": [
+      "v3873 - a failed eagle pass keeps the faults a real pass found, never a calm nobody measured (REG-3259)",
+      "v3873 - the fault line names every new fault and reads offline PCs too (REG-3260)",
+      "v3873 - a partial Windows proof set is fetched again once GitHub completes it (REG-3261)",
+      "v3873 - a console with no window runs the repair book, and a failed node fetch is retried hourly (REG-3262, REG-3263)",
+      "v3873 - a console sees its own environment change without a relaunch (REG-3264)",
+      "v3873 - a hand-placed roster key still lets a new PC ask for approval (REG-3265)",
+      "v3873 - each PC holds itself to a daily budget of roster writes (REG-3266)"
+    ]
+  },
+  {
     "ver": "v3872",
     "date": "2026-11-06",
     "items": [

@@ -236,6 +236,42 @@ class WhenACommitIsOwed(unittest.TestCase):
             PR.import_bundle = saved
 
 
+class APartialSetIsAskedAgain(unittest.TestCase):
+    """REG-3261 (the Grok CLI on REG-3165) - a partial Windows set was imported once and never fetched again."""
+
+    def test_a_partial_import_is_owed_again_after_its_wait_and_a_few_times_only(self):
+        W, now = "win32", 1_800_000_000.0
+        rec = {"sha": SHA, "state": "imported", "imported": ["", "win32"], "cut": {"win32": 7}, "partialTries": {},
+               "at": int((now - PR.PARTIAL_REASK_S - 60) * 1000)}
+        self.assertTrue(PR.owed(rec, SHA, W, now=now), "a partial set was taken as final for the commit")
+        self.assertFalse(PR.owed(dict(rec, at=int((now - 60) * 1000)), SHA, W, now=now), "asked again at once")
+        self.assertFalse(PR.owed(dict(rec, partialTries={"win32": PR.PARTIAL_MAX_TRIES}), SHA, W, now=now))
+        self.assertFalse(PR.owed(dict(rec, cut={"win32": 0}), SHA, W, now=now), "a whole set was asked again")
+
+    def test_import_best_fetches_the_partial_set_again_and_keeps_it_on_a_miss(self):
+        asked = []
+        answers = {"cut": 0, "state": "imported"}
+
+        def imp(sha, tv_dir=None, flavor="", **kw):
+            asked.append(flavor)
+            return {"state": answers["state"], "sha": sha, "flavor": flavor, "why": "x", "cut": answers["cut"],
+                    "at": 1}
+        saved = PR.import_bundle
+        PR.import_bundle = imp
+        try:
+            old = {"sha": SHA, "state": "imported", "imported": ["", "win32"], "cut": {"win32": 7}, "at": 1}
+            r = PR.import_best(SHA, platform="win32", state=old)
+            self.assertEqual(asked, ["win32"], "the partial Windows set was not fetched again")
+            self.assertEqual(r["cut"]["win32"], 0)
+            self.assertEqual(r["partialTries"]["win32"], 1)
+            asked.clear()
+            answers["state"] = "absent"
+            r2 = PR.import_best(SHA, platform="win32", state=old)
+            self.assertEqual(r2["imported"], ["", "win32"], "a re-ask that missed dropped the set already in")
+        finally:
+            PR.import_bundle = saved
+
+
 class TheConsoleTick(_Tmp):
 
     @classmethod
@@ -436,6 +472,16 @@ class TheWindowsSet(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3261 - a partial set imported once is final for the commit again, so the completed set never reaches the PC",
+     "file": "tv/proof_release.py",
+     "find": "        return _partial_due(s, best, time.time() if now is None else now)",
+     "replace": "        return False",
+     "matches": 1},
+    {"why": "REG-3261 - import_best never fetches a partial set it already holds",
+     "file": "tv/proof_release.py",
+     "find": "        again = fl in done and _partial_due(s, fl, now)",
+     "replace": "        again = False",
+     "matches": 1},
     {"why": "v3867 - the release lane reads the raw porcelain again: the console's own record holds every import",
      "file": "tv/control_app.py",
      "find": "                _edits, _ew = _spe.tracked_edits(d.stdout or \"\")\n",

@@ -23,6 +23,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 import zipfile
 from unittest import mock
@@ -204,6 +205,29 @@ class TheBackgroundFetchRunsOncePerProcess(_Fixture):
         self.assertIn("could not be fetched", r["why"])
         self.assertEqual(len(self.fetched), 1, "a failed fetch was retried in the same process")
 
+    def test_a_failed_fetch_is_tried_again_after_an_hour_and_a_success_never(self):
+        """REG-3263 - the repair book's hourly node door got this process's cached failure forever."""
+        calls = {"n": 0}
+
+        def _flaky(url, dest):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                self.fetched.append(url)
+                raise IOError("the network is down")
+            return self._fetch(url, dest)
+        self._ensure(blocking=False, fetch=_flaky)
+        self._join_now()
+        with NR._BG_LOCK:
+            NR._BG["at"] = time.time() - NR.RETRY_FAILED_S - 1
+        r = self._ensure(blocking=False, fetch=_flaky)
+        self.assertIsNone(r["ok"], "an hour-old failure was not asked again: %r" % r)
+        self._join_now()
+        self.assertTrue(self._ensure(blocking=False, fetch=_flaky)["ok"])
+        with NR._BG_LOCK:
+            NR._BG["at"] = time.time() - NR.RETRY_FAILED_S - 1
+        self._ensure(blocking=False, fetch=_flaky)
+        self.assertEqual(len(self.fetched), 2, "a success was fetched again, or the failure was not retried")
+
     def _join_now(self):
         t = NR._BG.get("thread")
         self.assertIsNotNone(t, "no background fetch was started")
@@ -275,6 +299,11 @@ class TheInstallerAndThePin(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3263 - a failed node fetch is this process's answer forever, so the book's hourly retry never fetches",
+     "file": "tv/node_runtime.py",
+     "find": "            if not (failed and time.time() - float(_BG.get(\"at\") or 0) >= RETRY_FAILED_S):\n",
+     "replace": "            if True:\n",
+     "matches": 1},
     {
         "why": "REG-2484 - the download is no longer checked against the pin: any zip is unpacked and placed",
         "file": "node_runtime.py",

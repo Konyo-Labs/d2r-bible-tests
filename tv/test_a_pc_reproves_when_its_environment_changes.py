@@ -46,6 +46,31 @@ class TheFingerprint(unittest.TestCase):
         self.assertTrue(a and b and a != b, "a python upgrade left the fingerprint where it was")
         self.assertEqual(pa["autocrlf"], "false")
 
+    def test_a_reading_stands_its_ttl_then_is_taken_again(self):
+        """REG-3264 - node placed on this process's PATH at first boot never reached env_observe until a relaunch."""
+        saved = dict(H._ENV_FP)
+        calls = []
+        real = H.export_runtime
+        try:
+            H._ENV_FP.clear()
+            H.export_runtime = lambda which=None, run=None: calls.append(1) or dict(RT, node="none" if len(calls) == 1 else "22")
+            real_os, real_git = H._os_build, H._git
+            H._os_build, H._git = (lambda: "25"), _git()
+            try:
+                a = H.env_fingerprint(now=1000.0)
+                b = H.env_fingerprint(now=1000.0 + 60)
+                self.assertEqual(a, b, "a reading did not stand inside its TTL")
+                self.assertEqual(len(calls), 1)
+                c = H.env_fingerprint(now=1000.0 + H.ENV_FP_TTL_S + 1)
+                self.assertEqual(len(calls), 2, "the environment was never read again in this process")
+                self.assertNotEqual(c[0], a[0], "node placed mid-process did not move the fingerprint")
+            finally:
+                H._os_build, H._git = real_os, real_git
+        finally:
+            H.export_runtime = real
+            H._ENV_FP.clear()
+            H._ENV_FP.update(saved)
+
     def test_any_unknown_part_is_no_fingerprint(self):
         for rt, osb, git in ((dict(RT, node=None), lambda: "25", _git()),
                              (RT, lambda: None, _git()),
@@ -228,6 +253,11 @@ class TheLockReadsIt(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3264 - one reading of the environment stands for the life of the process again",
+     "file": "tv/heart2.py",
+     "find": "            and _now - float(_ENV_FP.get(\"at\") or 0) < ENV_FP_TTL_S):\n",
+     "replace": "            ):\n",
+     "matches": 1},
     {"why": "v3866 (#231 on v3862) - an environment record that will not parse reads as 'no re-prove open', so locks arm",
      "file": "tv/heart2.py",
      "find": "        if rec is None:\n            return {\"owed\": None, \"unknown\": \"this PC's environment record exists and will not parse\"}\n",

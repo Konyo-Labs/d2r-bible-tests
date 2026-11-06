@@ -8950,6 +8950,11 @@ def export_runtime(which=None, run=None):
 ENV_NAME = ".heart2_env.json"
 ENV_KEYS = ("platform", "os", "python", "node", "autocrlf")
 _ENV_FP = {}
+#: REG-3264 (the Grok CLI on REG-3162, #231 6681926045) - how long one reading of this PC's environment stands. It was
+#: cached for the life of the process ("the environment does not change under a running process"), and it does: a
+#: Windows console puts node on its own PATH at first boot (node_runtime step 5), and `git config core.autocrlf` can be
+#: set beside a running console - neither reached env_observe until a relaunch, so the old proofs kept being served.
+ENV_FP_TTL_S = 600
 _ENV_HAVE = {"at": 0.0, "have": None}
 
 
@@ -8967,10 +8972,13 @@ def _os_build():
         return None
 
 
-def env_fingerprint(refresh=False, runtime=None, os_build=None, git=None):
-    """-> (fingerprint | None, parts). None when any part is UNKNOWN: never compared, never adopted. Cached per process
-    (the environment does not change under a running process); `runtime`/`os_build`/`git` are a law's seams."""
-    if _ENV_FP and not refresh and runtime is None and os_build is None and git is None:
+def env_fingerprint(refresh=False, runtime=None, os_build=None, git=None, now=None):
+    """-> (fingerprint | None, parts). None when any part is UNKNOWN: never compared, never adopted. One reading stands
+    ENV_FP_TTL_S (REG-3264 - a process's environment does change: node placed on its PATH, autocrlf set beside it);
+    `runtime`/`os_build`/`git`/`now` are a law's seams."""
+    _now = time.time() if now is None else now
+    if (_ENV_FP and not refresh and runtime is None and os_build is None and git is None
+            and _now - float(_ENV_FP.get("at") or 0) < ENV_FP_TTL_S):
         return _ENV_FP["fp"], dict(_ENV_FP["parts"])
     try:
         rt = runtime if runtime is not None else export_runtime()
@@ -8984,7 +8992,7 @@ def env_fingerprint(refresh=False, runtime=None, os_build=None, git=None):
     if all(parts.get(k) not in (None, "") for k in ENV_KEYS):
         fp = hashlib.sha256(json.dumps(parts, sort_keys=True).encode("utf-8")).hexdigest()[:16]
     if runtime is None and os_build is None and git is None:
-        _ENV_FP.update(fp=fp, parts=dict(parts))
+        _ENV_FP.update(fp=fp, parts=dict(parts), at=_now)
     return fp, parts
 
 

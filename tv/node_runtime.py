@@ -51,7 +51,12 @@ FETCH_TIMEOUT_S = 60
 #: a pinned zip heavier than this is refused mid-download (v24.22.1 win-x64 measured 37,748,064 bytes)
 MAX_ZIP_BYTES = 200 * 1024 * 1024
 
-_BG = {"thread": None, "result": None}
+_BG = {"thread": None, "result": None, "at": None}
+#: REG-3263 (the Grok CLI on REG-3158, #231 6681759774) - a FAILED background fetch may be asked again after this long -
+#: the repair book's own one-hour cooldown - and never sooner. The book's hourly node door got this process's cached
+#: failure forever, so a Windows PC whose first fetch failed (the network down at boot) stayed without node until a
+#: relaunch. A success is still never fetched again; a failure is retried at most hourly, never in a loop.
+RETRY_FAILED_S = 3600
 _BG_LOCK = threading.Lock()
 _FETCH_LOCK = threading.Lock()
 
@@ -251,13 +256,18 @@ def _fetch_locked(env, plat, pin, fetch, refresh, resolve, target):
 
 def _background(args, version):
     with _BG_LOCK:
-        if _BG["result"] is not None:
-            return _BG["result"]           # this process's one fetch has answered; it is never repeated in a loop
+        r0 = _BG["result"]
+        if r0 is not None:
+            failed = isinstance(r0, dict) and r0.get("ok") is False
+            if not (failed and time.time() - float(_BG.get("at") or 0) >= RETRY_FAILED_S):
+                return r0                  # this process's fetch has answered; never repeated in a loop (REG-3263)
+            _BG.update(result=None, thread=None, at=None)
         if _BG["thread"] is None:
             def _run():
                 r = _fetch_locked(*args)
                 with _BG_LOCK:
                     _BG["result"] = r
+                    _BG["at"] = time.time()
             t = threading.Thread(target=_run, name="node-runtime-fetch")
             t.daemon = True
             _BG["thread"] = t
