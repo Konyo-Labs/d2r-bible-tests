@@ -134,6 +134,19 @@ class TheMeasuredCosts(unittest.TestCase):
         self.assertIsNone(PS.proof_costs(p))            # REG-2597 - unreadable is UNKNOWN, never "no costs"
         self.assertEqual(PS.proof_costs(os.path.join(tmp, "never_written.json")), {})
 
+    def test_the_factor_is_the_one_the_measured_costs_give(self):
+        """REG-3243 - a gate with no per-proof row of its own is priced at PROOF_COST_FACTOR x its clean run, and that ratio
+        is read off the same measurements as proof_costs.json. Re-measuring the file and leaving the factor behind is how
+        v3867's plan priced every shard at ~18 min while they ran 18-55 (shard 7 hit the 55-minute deadline with 6 proofs
+        unstarted). The factor stays within 0.1 of the table's own median ratio."""
+        pp, gc = PS.proof_costs(), PS.gate_costs()
+        r = [pp[k] / (gc[k] + PS.PROOF_OVERHEAD_S) for k in pp if gc.get(k)]
+        self.assertGreater(len(r), 300, "premise: too few gates carry both a per-proof and a clean-run cost (%d)" % len(r))
+        med = statistics.median(r)
+        self.assertLess(abs(med - PS.PROOF_COST_FACTOR), 0.1,
+                        "PROOF_COST_FACTOR %.2f, the measured costs' median %.2f over %d gates - re-derive it"
+                        % (PS.PROOF_COST_FACTOR, med, len(r)))
+
 
 class HeartTwosCutUsesIt(unittest.TestCase):
 
@@ -154,6 +167,11 @@ class HeartTwosCutUsesIt(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3243 - the factor is left behind the re-measured costs (v3867's shards ran 3x their plan)",
+     "file": "proof_shard.py",
+     "find": "PROOF_COST_FACTOR = 0.62\n",
+     "replace": "PROOF_COST_FACTOR = 0.42\n",
+     "matches": 1},
     {"why": "REG-2593 - the measured costs are never read: the plan prices every proof from his Mac again",
      "file": "proof_shard.py",
      "find": "            c = json.load(fh).get(\"perProof\") or {}\n",
