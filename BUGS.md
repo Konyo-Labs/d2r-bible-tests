@@ -79,8 +79,8 @@ TestV2283TheRosterMustNotSpendItselfToDeath.test_the_durable_row_is_BOUNDED_not_
 (`(material && !wOver) || ageS >= REFRESH_S`). The law held - more tightly - and the guard read its rename as the v2283
 quota death. It now pins the new condition and the `if (writeNow)` that gates the lastseen write (2 sites carry it, the
 lastseen one matches once, as before). Reproduced here by running that class alone (source reads only, no browser); green
-after. The shard's record kept only "FAILED (failures=1)" for a 2274-case suite, never the case's name: found through the
-agent suite's tail instead.
+after. (Corrected in v3876: an earlier line here said the shard never named the case. It did - REG-1877's
+"its red case(s), named" line, one below the UNPROVABLE row; my filter for UNPROVABLE dropped it.)
 
 ### REG-3299 - THE PRE-FLIGHT SAID GREEN OVER 36 REGISTERED LAWS IT NEVER RAN: ITS POPULATION WAS THE COST TABLE, WHICH LAGS THE REGISTRY (v3875, GitHub's round)
 v3875's first GitHub round came back red on one law, test_every_picture_the_console_asks_for_is_shipped, which fails on this
