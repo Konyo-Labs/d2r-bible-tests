@@ -194,6 +194,12 @@ def sources(hist=None, stamp_path=None, w=None):
         src["shelf"] = None
         src["shelfWhy"] = "the shelf at %s could not be listed (%s)" % (os.path.basename(w["hist"]),
                                                                         type(e).__name__)
+    # REG-3296 - the EVIDENCE REMNANTS: released reels whose kept pictures stayed (his §26), by the deleter's own rule
+    try:
+        import reel_retention as _rr_rem
+        src["remnants"] = _rr_rem.remnant_reels(w["hist"])
+    except Exception:
+        src["remnants"] = None
     # the witness index: which sessions the durable stores cite. ok=False when ANY of them was unreadable.
     try:
         import frame_authority as _fa
@@ -283,8 +289,13 @@ def _recorder(reel, session, src, list_frames):
     refused = None
     if refusals is not None:
         refused = [r for r in refusals if str(r.get("session") or "") == session and r.get("why") != "saved-small"]
+    rems = src.get("remnants")
+    remnant = None if (rems is None or on_disk is None) else bool(on_disk and reel in rems)
     if on_disk is None:
         why = src.get("shelfWhy") or "the shelf could not be listed, so whether this reel is on it is UNKNOWN"
+    elif remnant:
+        why = ("on the shelf as an EVIDENCE REMNANT - released, and only the pictures a find stands on stayed "
+               "(his §26)")
     elif on_disk:
         why = "on the shelf%s" % ((", filmed %s (clock: %s)" % (_when(at), clock)) if at else "")
     elif removed:
@@ -294,7 +305,7 @@ def _recorder(reel, session, src, list_frames):
     return _hand("recorder", on_disk, at, why, clock=clock, frames=frames,
                  reaps=(None if mine is None else len(mine)), removedByReaper=removed,
                  reapedReadOwed=reaped_owed, reapedAtStation=reaped_at,
-                 refusals=(None if refused is None else len(refused)))
+                 refusals=(None if refused is None else len(refused)), remnant=remnant)
 
 
 def _triage(reel, src):
@@ -501,7 +512,9 @@ def _contradictions(reel, hands, journey):
                         "right": {"who": "the seal stores", "says": " and ".join(missing)},
                         "why": "the permanent record of an irreversible delete names a hand whose own "
                                "record never touched the reel"})
-    if t["held"] is True and r["held"] is True:
+    # REG-3296 - a remnant is the deleter's own design (its kept pictures stay), never "a removal the shelf does not show".
+    # MEASURED on his Mac 11-06: all 12 'deleted-but-present' reels held exactly their kept pictures and their index.
+    if t["held"] is True and r["held"] is True and not r.get("remnant"):
         out.append({"kind": "deleted-but-present",
                     "left": {"who": WRITER["tombstone"], "says": "closed out on %s" % _when(t.get("at"))},
                     "right": {"who": WRITER["recorder"], "says": "the directory is still on the shelf"},

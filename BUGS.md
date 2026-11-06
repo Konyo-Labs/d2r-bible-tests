@@ -101,6 +101,9 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3296 - TWELVE EVIDENCE REMNANTS WERE CALLED "A REMOVAL THE SHELF DOES NOT SHOW" (v3876, his console's eagle row "reel custody")
+The custody row's second count, deleted-but-present x12: a tombstone and a directory for the same reel. MEASURED on his Mac 11-06: all 12 directories hold exactly their tombstone's kept pictures plus index.json / kai_report.json, and the deleter's own rule (reel_retention.remnant_reels, his tree) names exactly those 12 - released reels whose pictures a find stands on stayed, by his §26. reel_custody now asks that rule (one owner) and reads a remnant as one ("on the shelf as an EVIDENCE REMNANT"), never as a contradiction; a directory holding MORE than its kept pictures still is. Guard: tv/test_a_reel_carries_its_custody.py.
+
 ### REG-3295 - A DELETER AT THE KEEP'S VERY MILLISECOND WAS ORDERED BY GUESS (v3876, the Grok CLI's second look at v3872)
 REG-3252 drops every deleter stamped at or before the latest trim that KEPT the frame. One at exactly the keep's millisecond cannot be ordered against it, and dropping it as "before" was a guess. It now stays, and when it is the one that dates the frame the date is UNKNOWN ("a trim that KEPT it shares its very millisecond"). Guard: tv/test_a_pruned_frame_says_it_was_pruned.py.
 

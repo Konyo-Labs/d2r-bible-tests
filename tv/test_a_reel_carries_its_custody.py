@@ -307,6 +307,26 @@ class AReelCarriesItsCustody(unittest.TestCase):
         # the deleter's own stamp is not a contradiction: the ledger row backs it
         self.assertEqual(c["journey"]["current"], "TOMBSTONE")
 
+    def test_an_evidence_remnant_is_not_a_removal_the_shelf_still_shows(self):
+        """REG-3296 - all 12 of his 'deleted-but-present' reels were remnants: released, only their kept pictures stayed
+        (his §26). The deleter's own rule (reel_retention.remnant_reels) says so; custody now asks it."""
+        rows = json.load(io.open(self.W.w["reel_tombstones"], encoding="utf-8"))
+        kept = ["f_%d.jpg" % (1000000000000 + 5 * 10 + k) for k in range(3)]
+        for r in rows["reels"]:
+            if r.get("reel") == _reel(5):
+                r["kept"] = kept
+        _dump(self.W.w["reel_tombstones"], rows)
+        c = RC.custody(_reel(5), src=RC.sources(hist=self.W.hist, stamp_path=self.W.stamp))
+        self.assertNotIn("deleted-but-present", [k["kind"] for k in c["contradictions"]],
+                         "a remnant holding only its kept pictures read as a removal the shelf still shows")
+        self.assertIs(_hand(c, "recorder")["remnant"], True)
+        self.assertIn("EVIDENCE REMNANT", _hand(c, "recorder")["why"])
+        rows["reels"] = [dict(r, kept=kept[:1]) if r.get("reel") == _reel(5) else r for r in rows["reels"]]
+        _dump(self.W.w["reel_tombstones"], rows)
+        c = RC.custody(_reel(5), src=RC.sources(hist=self.W.hist, stamp_path=self.W.stamp))
+        self.assertIn("deleted-but-present", [k["kind"] for k in c["contradictions"]],
+                      "a reel holding MORE than its kept pictures was excused as a remnant")
+
     def test_a_backed_claim_is_no_contradiction_and_the_door_is_quoted(self):
         c = RC.custody(_reel(6), src=self.W.src)
         self.assertEqual(c["entered"], ["triage", "printer", "vault", "tombstone"])
@@ -529,6 +549,11 @@ class TheRowIsOnTheHeart(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3296 - an evidence remnant reads as a removal the shelf still shows (his 12)",
+     "file": "tv/reel_custody.py",
+     "find": "    if t[\"held\"] is True and r[\"held\"] is True and not r.get(\"remnant\"):\n",
+     "replace": "    if t[\"held\"] is True and r[\"held\"] is True:\n",
+     "matches": 1},
     {"why": "REG-3293 - custody never reads the deleter's measured both-seals sentence as a claim",
      "file": "tv/reel_custody.py",
      "find": " or _rr_s.SEALS_BOTH in str(why_txt))\n",
