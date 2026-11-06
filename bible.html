@@ -37391,9 +37391,24 @@ function _cardLeadsWithTypedMods(nm, res){
 }
 window._cardLeadsWithTypedMods = _cardLeadsWithTypedMods;
 function _arttipResolve(nm){ return _cardLeadsWithTypedMods(nm, _arttipResolveCatalogue(nm)); }
+/* REG-3320 (#100, GrokBot 6697102521 on his window: Gull's floating card "only the dagger picture and the name Gull, with
+   no mods"). REG-3312 aliased ITEM_CODEX by the bare name and the hover never reads ITEM_CODEX - it reads ITEM_TIP, which
+   keys "Gull (dagger)" and "Harlequin Crest (Shako)" too, as do ~20 other tables (drops, art, the chronicle's aliases).
+   So the bare name is mapped ONCE, at the resolver, never table by table: a name the catalogue does not hold that is the
+   bare form of a CODEX_SLOT_ALIASES key resolves as that key (the list's own law keeps it closed - every unique keyed
+   with its slot whose bare name is free and names no runeword). -> the catalogue's name for nm */
+function _slotCanonName(nm){
+  if (typeof ITEM_TIP === 'undefined' || ITEM_TIP[nm] || typeof CODEX_SLOT_ALIASES === 'undefined') return nm;
+  for (var i = 0; i < CODEX_SLOT_ALIASES.length; i++){
+    var full = CODEX_SLOT_ALIASES[i];
+    if (String(full).replace(/\s*\([^)]*\)$/, '') === nm && ITEM_TIP[full]) return full;
+  }
+  return nm;
+}
 function _arttipResolveCatalogue(nm){
   var _builtTip = _plannerBuiltTip(nm);
   if (_builtTip) return _builtTip;
+  nm = _slotCanonName(nm);   /* REG-3320 (#100) - the game prints "Gull"; the catalogue keys "Gull (dagger)" */
   var t = SUNDER_TIP[nm] || (_SUN_BASES[nm] ? SUNDER_TIP[_SUN_BASES[nm]] : null);
   /* #111 (REG-2805) - the hover draws the charm's OWN picture when it has one, as its row does. Measured: the six Latent
      Sunder charms drew their own icon in the row (mr_latentblackcleft) and the plain charm's carving in the hover

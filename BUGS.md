@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3320 - REG-3312 WAS HALF A FIX: GULL'S FLOATING CARD STILL HAD NO MODS, BECAUSE THE HOVER READS A SECOND TABLE (v3877, board #100, GrokBot on his window)
+GrokBot 6697102521 (11-07 00:12 IST), his LIVE console on v3876: hovered Gull on Uniques > "last found: Gull" - "only the
+dagger picture and the name Gull, with no mods". REG-3312 (v3876) aliased ITEM_CODEX by the bare name and its law read
+only ITEM_CODEX; the floating card's resolver (_arttipResolveCatalogue) reads ITEM_TIP, which keys "Gull (dagger)" and
+"Harlequin Crest (Shako)" too - and so do ~20 other tables (drops, art, the chronicle's aliases): the slot-keyed name
+is the page's canonical name. The same defect in a sibling table, never swept. NOW the bare name is mapped ONCE, at the
+resolver: _slotCanonName(nm) returns the CODEX_SLOT_ALIASES key whose bare form is nm when ITEM_TIP does not hold nm
+(the list's own law keeps it closed). The law now drives the HOVER PATH: the page's _arttipResolveCatalogue and
+_slotCanonName in node over the page's ITEM_TIP - Gull's card carries "100% Better Chance of Getting Magic Items", the
+Shako's "+2 To All Skills", and Crescent Moon (no slot key) takes nothing. Law: test_a_unique_named_with_its_slot_answers
+_its_bare_name (+ test_the_floating_card_of_a_bare_name_carries_its_mods); red-proofs PROVEN (2/2 on a scratch copy).
+
 ### REG-3319 - A NODE CHILD MADE EVERY LAW THAT RAN IT KEEP ITS 1,861-FILE KEY, SO ANY EDIT RE-PROVED THOUSANDS OF PROOFS (v3877, board #92 - his 11-06 "these shards and these tests need to be smooth and work fast")
 His words: "again 75min to push a full run? when only 1 proof is red?" MEASURED on v3876's banked round (219a4846c, 22
 shard caches, 9,163 PROVENs): 6,509 proofs (71%) are keyed on more than 1,500 files - a law that imports run_gates.py
@@ -230,6 +242,9 @@ game prints, so the lookup missed. They are aliased by their bare names beside t
 another item shares ("Crescent Moon" is the amulet AND a runeword), never a set summary ("... (any)"). Law:
 test_a_unique_named_with_its_slot_answers_its_bare_name (new: drives the page's codex in node; the class is closed - every
 unique keyed with its slot whose bare name is free is aliased), red-proof PROVEN.
+
+CORRECTION (v3877, REG-3320): this fixed ITEM_CODEX only - the floating card reads ITEM_TIP, and GrokBot saw Gull's card
+still without mods on his window. Fixed at the hover resolver in REG-3320.
 
 ### REG-3309 - TWO LAWS WERE NEVER PRE-FLIGHTED BECAUSE THEIR PROSE NAMES A BROWSER CALL (v3876)
 preflight.drives_browser matched BROWSER_CALLS over the whole source, comments and docstrings included. Measured 11-06: 2
