@@ -247,7 +247,9 @@ RED_PROOF = [
                "_GIT_MINGW leaves a helper that looks careful and still alt-tabs him off the game.",
         "file": "git_quiet.py",
         "find": '            _rg = real_git()\n            if _rg:\n                argv[0] = _rg\n',
-        "replace": "",
+        # v3867 - a tamper must leave VALID code: "" left `if argv and argv[0] == "git":` with no body, so the law went red
+        # on a SyntaxError (heart2's prover rightly calls that INVALID - v3866's proof shard 7 did)
+        "replace": "            pass\n",
         "matches": 1,
     },
     {
