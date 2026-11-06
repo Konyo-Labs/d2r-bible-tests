@@ -211,7 +211,7 @@ def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
     # caller's session let another reel's earlier trim win the earliest-deleter rule.
     keys = ([reel] if reel else
             [k for k in (("reel_" + str(session)) if session else None, str(session) if session else None) if k])
-    events, seen = [], set()
+    events, seen, kept_at = [], set(), []
     if stem:
         for r in idx["names"].get(stem, ()):
             seen.add(id(r))
@@ -233,12 +233,19 @@ def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
                 continue
             seen.add(id(tb))
             if stem and stem in _kept_stems(tb):
+                kept_at.append(_ts(tb.get("deletedTs")))
                 continue                      # this trim KEPT it
             t = _ts(tb.get("deletedTs"))
             if filmed and t and t < filmed:
                 continue
             events.append((t, "released", "the retention lane",
                            "released with its reel on %s (%s)" % (_when(tb.get("deletedTs")), tb.get("why") or "retention")))
+    alive = max([t for t in kept_at if t] or [0])
+    if alive:
+        # REG-3252 (the Grok CLI on REG-3239, #231 6680105032) - A TRIM THAT KEPT IT PROVES IT WAS STILL ON DISK THEN, so
+        # no deleter stamped at or before the latest keep took it. Only the omitting trims were weighed, so trim 1 (omits)
+        # dated a frame trim 2 kept, and the several-trims guard saw one candidate. A reap that NAMES it stays (direct).
+        events = [e for e in events if (len(e) > 4 and e[4] == "named") or not e[0] or e[0] > alive]
     if events:
         # earliest stamp first; a row with no stamp sorts after every stamped one; ties keep record order
         pool = range(len(events))

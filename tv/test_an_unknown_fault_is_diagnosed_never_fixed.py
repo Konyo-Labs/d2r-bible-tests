@@ -167,20 +167,60 @@ class TheAllowance(unittest.TestCase):
                          ask=lambda m, fn, plat: self.fail("asked over a record that will not read"))
         self.assertIn("will not read", got.get("fault 0") or "", "an unreadable record read as 'not diagnosed yet'")
 
-    def test_a_save_that_fails_does_not_reopen_the_days_allowance(self):
+    def test_a_record_that_will_not_write_asks_nothing_and_says_so(self):
+        """REG-3251 - an ask that cannot be counted on disk is never made: a later pass or process would spend it again."""
+        real = RD.save
+        RD.save = lambda path, st: False
+        try:
+            got = RD.run_due(self._misses(3), lambda c: None, "darwin", path=self.path, now_s=NOW,
+                             ask=lambda m, fn, plat: self.fail("asked with no way to count the ask"))
+        finally:
+            RD.save = real
+        self.assertIn("will not write", got.get("fault 0") or "", got)
+
+    def test_a_landed_answer_whose_save_fails_is_not_asked_again(self):
+        """REG-3251 (the Grok CLI on REG-3237, #231 6680104597) - one landed ask, cap 2, was asked on both passes."""
         asked = []
 
         def ask(m, fn, plat):
             asked.append(m["check"])
-            return {"check": m["check"], "at": 1, "ok": False, "summary": "not answered: timed out"}
+            return {"check": m["check"], "at": NOW * 1000, "ok": True, "summary": "the backup root moved", "text": "x"}
         real = RD.save
-        RD.save = lambda path, st: False
+
+        def answer_will_not_write(path, st):       # the reservation writes; the landed answer does not
+            return False if (st.get("seen") or {}) else real(path, st)
+        RD.save = answer_will_not_write
+        self.addCleanup(RD._KEPT.pop, self.path, None)
         try:
-            RD.run_due(self._misses(3), lambda c: None, "darwin", path=self.path, now_s=NOW, ask=ask)
-            RD.run_due(self._misses(5), lambda c: None, "darwin", path=self.path, now_s=NOW + 60, ask=ask)
+            RD.run_due(self._misses(1), lambda c: None, "darwin", path=self.path, now_s=NOW, ask=ask)
+            got = RD.run_due(self._misses(1), lambda c: None, "darwin", path=self.path, now_s=NOW + 60, ask=ask)
         finally:
             RD.save = real
-        self.assertEqual(len(asked), RD.MAX_PER_DAY, "a failed save re-opened the allowance: %r" % asked)
+        self.assertEqual(asked, ["fault 0"], "a landed answer whose save failed was asked again: %r" % asked)
+        self.assertEqual(got.get("fault 0"), "the backup root moved", got)
+
+    def test_a_kill_mid_ask_spends_its_ask_and_says_so(self):
+        """REG-3251 - a kill before os.replace took the count with the process; the next one spent over the old file."""
+        class Killed(BaseException):
+            pass
+
+        def killed(m, fn, plat):
+            raise Killed()
+        with self.assertRaises(Killed):
+            RD.run_due(self._misses(1), lambda c: None, "darwin", path=self.path, now_s=NOW, ask=killed)
+        RD._KEPT.pop(self.path, None)              # a new process
+        asked = []
+
+        def ask(m, fn, plat):
+            asked.append(m["check"])
+            return {"check": m["check"], "at": NOW * 1000, "ok": True, "summary": "cause of " + m["check"], "text": "x"}
+        got = RD.run_due(self._misses(2), lambda c: None, "darwin", path=self.path, now_s=NOW + 60, ask=ask)
+        self.assertEqual(asked, ["fault 1"], "the killed ask was not counted, or was asked again today: %r" % asked)
+        self.assertEqual(got.get("fault 0"), RD.CUT_OFF, got)
+        RD.run_due(self._misses(3), lambda c: None, "darwin", path=self.path, now_s=NOW + 120, ask=ask)
+        self.assertEqual(asked, ["fault 1"], "the killed ask re-opened the day's allowance")
+        RD.run_due(self._misses(2), lambda c: None, "darwin", path=self.path, now_s=NOW + 86400, ask=ask)
+        self.assertEqual(asked, ["fault 1", "fault 0"], "a cut-off ask was never asked again")
 
     def test_not_asked_costs_nothing_and_not_answered_is_retried(self):
         calls = []
@@ -250,10 +290,20 @@ RED_PROOF = [
      "find": "        return dict((m[\"check\"], \"UNKNOWN - this PC's diagnosis record will not read, so nothing was asked\")\n",
      "replace": "        return {}\n        return dict((m[\"check\"], \"UNKNOWN - this PC's diagnosis record will not read, so nothing was asked\")\n",
      "matches": 1},
-    {"why": "v3868 - a failed save re-opens the day's allowance",
+    {"why": "REG-3251 - the ask is made before it is counted on disk, so a kill or a failed save spends it again",
      "file": "tv/repair_diagnose.py",
-     "find": "        _SPENT[(path, today)] = max(_SPENT.get((path, today), 0), st[\"n\"])\n",
-     "replace": "        pass\n",
+     "find": "        st.setdefault(\"failed\", {})[check] = {\"at\": int(now_s * 1000), \"summary\": CUT_OFF, \"pending\": True}\n        if not save(path, st):\n",
+     "replace": "        st.setdefault(\"failed\", {})\n        if False:\n",
+     "matches": 1},
+    {"why": "REG-3251 - a landed answer that would not save is asked again on the next pass",
+     "file": "tv/repair_diagnose.py",
+     "find": "        if k in live and k not in (st.get(\"seen\") or {}):\n            st.setdefault(\"seen\", {})[k] = v\n",
+     "replace": "        if False:\n            st.setdefault(\"seen\", {})[k] = v\n",
+     "matches": 1},
+    {"why": "REG-3251 - a cut-off ask reads as an ask that did not land, with no word that the console stopped",
+     "file": "tv/repair_diagnose.py",
+     "find": "            out[k] = (CUT_OFF if (v or {}).get(\"pending\") else\n",
+     "replace": "            out[k] = (CUT_OFF if False else\n",
      "matches": 1},
     {"why": "v3867 (#17) - the ask runs inside the project again, where its CLAUDE.md and paging Reads spend every turn",
      "file": "tv/repair_diagnose.py",
@@ -262,7 +312,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3867 (#17) - a spent ask that did not land keeps no reason again",
      "file": "tv/repair_diagnose.py",
-     "find": "            st.setdefault(\"failed\", {})[m[\"check\"]] = {\"at\": rec.get(\"at\"), \"summary\": rec.get(\"summary\")}\n",
+     "find": "            st[\"failed\"][check] = {\"at\": rec.get(\"at\") or int(now_s * 1000), \"summary\": rec.get(\"summary\")}\n",
      "replace": "            pass\n",
      "matches": 1},
     {"why": "v3862 - a diagnosis runs under D2R_NO_CLAUDE (a law spends his plan)",

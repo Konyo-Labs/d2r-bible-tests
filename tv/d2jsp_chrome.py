@@ -67,7 +67,39 @@ def login_profile_dir(platform=None, env=None):
     if plat == "win32":
         local = env.get("LOCALAPPDATA")
         return os.path.join(local, *LOGIN_PROFILE_PARTS) if local else None
+    if plat == "darwin":
+        # #87 (his call 2026-11-06 10:15: "its own d2jsp window") - d2jsp turned away the console's COPY of his signed-in
+        # Chrome's cookies (it overwrote member_id); a sign-in made IN a profile this console owns is the one it reads.
+        home = env.get("HOME") or os.path.expanduser("~")
+        return os.path.join(home, "Library", "Application Support", *LOGIN_PROFILE_PARTS) if home else None
     return None
+
+
+def seed_login_profile(root):
+    """#87 - a profile this console owns KEEPS its session: Chrome writes session-only cookies to its cookie file only
+    when the profile continues where it left off, and a sign-in whose session cookie lives only in memory is lost when
+    the window closes - the likeliest reason his own Chrome's sign-in did not survive the copy. -> True when seeded"""
+    try:
+        d = os.path.join(root, "Default")
+        os.makedirs(d, exist_ok=True)
+        p = os.path.join(d, "Preferences")
+        try:
+            with open(p, encoding="utf-8") as fh:
+                prefs = json.load(fh)
+        except (OSError, ValueError):
+            prefs = {}
+        if not isinstance(prefs, dict):
+            prefs = {}
+        if ((prefs.get("session") or {}).get("restore_on_startup")) == 1:
+            return True
+        prefs.setdefault("session", {})["restore_on_startup"] = 1
+        tmp = p + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(prefs, fh)
+        os.replace(tmp, p)
+        return True
+    except OSError:
+        return False
 _HOST = "forums.d2jsp.org"
 _PRICE_LINE = re.compile(r"^\d+(?:\.\d+)? fg$")
 _CHROME_EPOCH = 11644473600  # seconds from 1601-01-01 to 1970-01-01
@@ -422,10 +454,10 @@ def _note(why, text):
         why.append(text)
 
 
-def _cookie_db_path():
+def _cookie_db_path(root=None):
     if sys.platform != "darwin":
         return None
-    root = os.path.join(os.path.expanduser("~"), "Library", "Application Support", "Google", "Chrome", "Default")
+    root = root or os.path.join(os.path.expanduser("~"), "Library", "Application Support", "Google", "Chrome", "Default")
     for rel in ("Cookies", os.path.join("Network", "Cookies")):
         path = os.path.join(root, rel)
         if os.path.isfile(path):
@@ -774,9 +806,10 @@ def _windows_cookie_header(now_utc=None, paths=None, key=None, unprotect=None, s
     return None, "chrome-unread"
 
 
-def _mac_cookie_header(now_utc=None, why=None):
-    """The d2jsp cookie header from this Mac's Chrome, or a reason it could not be read. `why` gets which step failed."""
-    path = _cookie_db_path()
+def _mac_cookie_header(now_utc=None, why=None, root=None):
+    """The d2jsp cookie header from this Mac's Chrome (`root`: a profile's Default dir - #87 the console's own), or a
+    reason it could not be read. `why` gets which step failed."""
+    path = _cookie_db_path(root)
     if not path:
         _note(why, "no Chrome cookie file under ~/Library/Application Support/Google/Chrome/Default")
         return None, "chrome-unread"
@@ -808,10 +841,27 @@ def _mac_cookie_header(now_utc=None, why=None):
     return header, reason
 
 
+def mac_own_login_header(now_utc=None, root=None, why=None):
+    """#87 - the d2jsp cookie header from the profile this console owns on the Mac. -> (header | None, reason):
+    ok · need-login (opened, not signed in yet) · no-profile (the lamp never opened it) · chrome-unread (the file is
+    there and would not read - `why` names the step, so a keychain refusal never reads as signed out)"""
+    root = login_profile_dir(platform="darwin") if root is None else root
+    if not root or not os.path.isdir(root):
+        return None, "no-profile"
+    default = os.path.join(root, "Default")
+    if not any(os.path.isfile(os.path.join(default, rel)) for rel in ("Cookies", os.path.join("Network", "Cookies"))):
+        return None, "need-login"          # opened, and nothing signed in there has been written yet
+    header, reason = _mac_cookie_header(now_utc, why=why, root=default)
+    return (header, "ok") if header else (None, reason)
+
+
 def live_cookie_header(now_utc=None, why=None):
     """The d2jsp cookie header from this machine's Chrome, or a reason it could not be read. `why` (a list) gets
     which step failed (REG-2870), so a refusal names it instead of a bare word."""
     if sys.platform == "darwin":
+        own = mac_own_login_header(now_utc)
+        if own[0]:
+            return own                     # #87 - the sign-in made in the console's own d2jsp window
         return _mac_cookie_header(now_utc, why=why)
     if sys.platform.startswith("linux"):
         return _linux_cookie_header(now_utc, why=why)
@@ -822,6 +872,7 @@ def live_cookie_header(now_utc=None, why=None):
 
 
 _LIVE_READER = live_cookie_header
+_MAC_OWN_READER = live_cookie_header       # #87 - the lamp asks the own profile only while the real reader is in place
 
 
 def _read_cookie(reader, now_utc=None, why=None):
@@ -845,7 +896,18 @@ def d2jsp_login_status(now_utc=None):
     except Exception:
         pass
     said = []
-    _header, reason = _read_cookie(live_cookie_header, now_utc, why=said)
+    if sys.platform == "darwin" and live_cookie_header is _MAC_OWN_READER:
+        _own, _own_reason = mac_own_login_header(now_utc, why=said)
+        if _own:
+            return {"ok": True, "state": "on", "kind": "on",
+                    "why": "Signed into d2jsp in the console's own d2jsp window on this Mac."}
+        if _own_reason in ("no-profile", "need-login"):
+            return {"ok": True, "state": "off", "kind": "own-window", "needsLogin": True,
+                    "why": "The console signs in to d2jsp through its own window: d2jsp turns away a copy of your "
+                           "Chrome's sign-in. Click this lamp, sign in there once, then close that window."}
+        reason = _own_reason               # the own profile is there and would not read - UNKNOWN, with its step
+    else:
+        _header, reason = _read_cookie(live_cookie_header, now_utc, why=said)
     if reason == "ok":
         return {
             "ok": True,
@@ -1140,7 +1202,16 @@ def _open_chrome_login(platform=None, run=None, which=None, popen=None, env=None
     plat = sys.platform if platform is None else platform
     runner = run or subprocess.run
     if plat == "darwin":
-        argv = ["open", "-a", "Google Chrome", LOGIN_URL]
+        own = login_profile_dir(platform=plat, env=env)
+        if own and run is None:                    # the real launch only: a law hands its own run and env
+            try:
+                os.makedirs(own, exist_ok=True)
+            except OSError:
+                pass
+            seed_login_profile(own)
+        # #87 - `open -na` starts a SEPARATE Chrome on the console's own profile beside his own Chrome
+        argv = (["open", "-na", "Google Chrome", "--args", "--user-data-dir=%s" % own, "--no-first-run",
+                 "--no-default-browser-check", LOGIN_URL] if own else ["open", "-a", "Google Chrome", LOGIN_URL])
         try:
             proc = runner(argv, capture_output=True, timeout=5)
             return getattr(proc, "returncode", 1) == 0

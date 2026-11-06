@@ -367,6 +367,24 @@ class TheGrokCliOnREG3207(unittest.TestCase):
         self.assertIn("could not be read", g["words"], "an unreadable record was hidden behind the answer")
         self.assertEqual(g.get("unread"), ["the reap record"])
 
+    def test_a_later_trim_that_kept_it_rules_out_the_earlier_trims(self):
+        """REG-3252 (the Grok CLI on REG-3239, #231 6680105032) - trim 1 omits frame_12, trim 2 keeps it: trim 1 dated it."""
+        omit = {"reel": "reel_A", "deletedTs": DELETED, "kept": [], "why": "trim 1"}
+        keep = {"reel": "reel_A", "deletedTs": DELETED + 86400000, "kept": ["frame_12.jpg"], "why": "trim 2"}
+        g = self._judge("reel_A/frame_12.jpg", [omit, keep])
+        self.assertIsNone(g["ts"], "a trim before the one that KEPT it took its date: %r" % g)
+        self.assertEqual(g["code"], "unknown", g)
+        filmed = DELETED - 3600000
+        stamped = dict(keep, kept=["%d.jpg" % filmed])
+        g = self._judge("reel_A/%d.jpg" % filmed, [omit, stamped])
+        self.assertIsNone(g["ts"], "filmed before trim 1, kept by trim 2, and still dated on trim 1: %r" % g)
+        third = {"reel": "reel_A", "deletedTs": DELETED + 2 * 86400000, "kept": [], "why": "trim 3"}
+        g = self._judge("reel_A/frame_12.jpg", [omit, keep, third])
+        self.assertEqual((g["code"], g["ts"]), ("released", DELETED + 2 * 86400000),
+                         "the one trim after the keep is the only one that could have taken it: %r" % g)
+        g = self._judge("reel_A/frame_12.jpg", [keep], reaps=[{"ts": DELETED, "reel": "reel_A", "removed": True}])
+        self.assertIsNone(g["ts"], "a whole-reel reap before the keep took its date: %r" % g)
+
     def test_a_refusal_says_when(self):
         g = self._judge("reel_A/%d.jpg" % (DELETED - 60000),
                         refusals=[{"frameId": "reel_A/%d.jpg" % (DELETED - 60000), "ts": DELETED, "why": "disk-floor",
@@ -376,6 +394,11 @@ class TheGrokCliOnREG3207(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3252 - a trim before the one that KEPT the frame dates it again",
+     "file": "tv/read_pictures.py",
+     "find": "    alive = max([t for t in kept_at if t] or [0])\n    if alive:\n",
+     "replace": "    alive = max([t for t in kept_at if t] or [0])\n    if False:\n",
+     "matches": 1},
     {"why": "v3868 - a frame with no capture time is dated on its reel's first trim again",
      "file": "tv/read_pictures.py",
      "find": "        if filmed is None and (len(events[i]) < 5 or events[i][4] != \"named\") and len(unnamed) > 1:\n",
@@ -438,7 +461,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3207 (second eye) - a trim that KEPT the frame is blamed for taking it",
      "file": "tv/read_pictures.py",
-     "find": "            if stem and stem in _kept_stems(tb):\n                continue                      # this trim KEPT it\n",
+     "find": "            if stem and stem in _kept_stems(tb):\n                kept_at.append(_ts(tb.get(\"deletedTs\")))\n                continue                      # this trim KEPT it\n",
      "replace": "",
      "matches": 1},
     {"why": "REG-3207 (second eye) - kept lists in the writer's own shape (bare file names) are not read",

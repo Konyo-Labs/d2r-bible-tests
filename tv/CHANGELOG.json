@@ -1,5 +1,14 @@
 [
   {
+    "ver": "v3872",
+    "date": "2026-11-06",
+    "items": [
+      "v3872 - the Mac signs in to d2jsp through the console own d2jsp window, like Windows (#87, REG-3253)",
+      "v3872 - a landed diagnosis whose save fails is never asked again, and each ask is counted before it is made (REG-3251)",
+      "v3872 - a trim before the one that kept a frame no longer dates its prune (REG-3252)"
+    ]
+  },
+  {
     "ver": "v3871",
     "date": "2026-11-06",
     "items": [

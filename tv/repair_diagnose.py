@@ -25,7 +25,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 STATE_NAME = ".repair_diagnoses.json"         # gitignored, per PC
 MAX_PER_DAY = 2
-_SPENT = {}          # v3868 - {(state file, day): asks spent by THIS process}, so a failed save cannot re-open the allowance
+#: REG-3251 (the Grok CLI on REG-3237, #231 6680104597) - {state file: {"seen": {...}, "failed": {...}}}: what landed in
+#: THIS process and would not save, so the next pass does not ask it again. The day's spend is no longer kept here: each
+#: ask is RESERVED on disk before it is made, so neither a failed save nor a kill can re-open the allowance.
+_KEPT = {}
+CUT_OFF = "its last ask was cut off before its answer was saved (the console stopped mid-ask) - it is asked again tomorrow"
 TIMEOUT_S = 300
 #: v3867 (#17) - MEASURED 2026-11-06: his Mac held 8 unknown faults, both of the day's asks were spent and NEITHER landed
 #: (.repair_diagnoses.json: n 2, seen {}). A hand run of the same ask answered in 72 s and named the cause itself: 8 turns
@@ -173,37 +177,71 @@ def run_due(misses, fn_of, platform, path=None, now_s=None, ask=None):
         return dict((m["check"], "UNKNOWN - this PC's diagnosis record will not read, so nothing was asked")
                     for m in (misses or ()) if isinstance(m, dict) and m.get("check"))
     st = forget_cleared(prev, misses)
-    # v3868 (the Grok CLI on REG-3235) - THE DAY'S SPEND IS KEPT IN THIS PROCESS TOO: a save that failed (a full disk, a
-    # kill before os.replace) left the file's `n` behind, and the next pass spent the allowance again.
-    _today = day_of(now_s)
-    if _SPENT.get((path, _today)):
-        if st.get("day") != _today:
-            st["day"], st["n"] = _today, 0
-        st["n"] = max(int(st.get("n") or 0), _SPENT[(path, _today)])
+    # REG-3251 - what landed in this process and would not save is laid back over the file, so it is not asked again.
+    live = set(m.get("check") for m in misses or () if isinstance(m, dict))
+    kept = _KEPT.get(path) or {}
+    for k, v in (kept.get("seen") or {}).items():
+        if k in live and k not in (st.get("seen") or {}):
+            st.setdefault("seen", {})[k] = v
+            (st.get("failed") or {}).pop(k, None)
+    for k, v in (kept.get("failed") or {}).items():
+        if k in live and k not in (st.get("seen") or {}):
+            st.setdefault("failed", {})[k] = v
     said = {}
+    today = day_of(now_s)
     for m in due(misses, st, now_s):
+        check = m["check"]
+        # REG-3251 - THE ASK IS RESERVED ON DISK BEFORE IT IS MADE. The count used to move only after the answer, so a
+        # save that failed, or a kill before os.replace, lost the spend and the next pass (or process) spent it again.
+        # The reservation also marks the fault: a kill mid-ask leaves "cut off", and the fault waits for tomorrow.
+        before = (st.get("day"), st.get("n"), (st.get("failed") or {}).get(check))
+        st["n"] = (int(st.get("n") or 0) if st.get("day") == today else 0) + 1
+        st["day"] = today
+        st.setdefault("failed", {})[check] = {"at": int(now_s * 1000), "summary": CUT_OFF, "pending": True}
+        if not save(path, st):
+            st["day"], st["n"] = before[0], before[1]
+            if before[2] is None:
+                st["failed"].pop(check, None)
+            else:
+                st["failed"][check] = before[2]
+            said[check] = "not asked - this PC's diagnosis record will not write, so an ask could not be counted"
+            break
         rec = (ask or diagnose)(m, fn_of(m.get("check")), platform)
-        said[m["check"]] = rec.get("summary")
+        said[check] = rec.get("summary")
         if str(rec.get("summary") or "").startswith("not asked"):
-            continue                          # nothing was spent: no claude, or a law's D2R_NO_CLAUDE
+            # nothing was spent: no claude, or a law's D2R_NO_CLAUDE - the reservation is given back
+            st["day"], st["n"] = before[0], before[1]
+            if before[2] is None:
+                st["failed"].pop(check, None)
+            else:
+                st["failed"][check] = before[2]
+            save(path, st)
+            continue
         if not rec.get("ok"):
             # v3867 (#17) - THE REASON STAYS. A spent ask that did not land kept nothing, so the Fleet hover said "not
             # diagnosed yet" all day with the allowance gone and no why. It is kept per fault until a later ask lands.
-            st.setdefault("failed", {})[m["check"]] = {"at": rec.get("at"), "summary": rec.get("summary")}
-        today = day_of(now_s)
-        st["n"] = (int(st.get("n") or 0) if st.get("day") == today else 0) + 1
-        st["day"] = today
-        _SPENT[(path, today)] = max(_SPENT.get((path, today), 0), st["n"])
-        if rec.get("ok"):                     # a seat that did not answer is asked again tomorrow, never marked done
-            (st.get("failed") or {}).pop(m["check"], None)
-            st.setdefault("seen", {})[m["check"]] = {"at": rec.get("at"), "summary": rec.get("summary"),
-                                                     "text": rec.get("text")}
-        save(path, st)
-    save(path, st)
+            st["failed"][check] = {"at": rec.get("at") or int(now_s * 1000), "summary": rec.get("summary")}
+        else:                                 # a seat that did not answer is asked again tomorrow, never marked done
+            st["failed"].pop(check, None)
+            st.setdefault("seen", {})[check] = {"at": rec.get("at"), "summary": rec.get("summary"),
+                                                "text": rec.get("text")}
+        if not save(path, st):
+            box = _KEPT.setdefault(path, {"seen": {}, "failed": {}})
+            if rec.get("ok"):
+                box["seen"][check] = st["seen"][check]
+                box["failed"].pop(check, None)
+            else:
+                box["failed"][check] = st["failed"][check]
+        elif path in _KEPT:
+            _KEPT[path]["seen"].pop(check, None)
+            _KEPT[path]["failed"].pop(check, None)
+    if save(path, st) and path in _KEPT:
+        _KEPT.pop(path, None)                 # everything this process held is on disk now
     out = {k: (v or {}).get("summary") for k, v in (st.get("seen") or {}).items()}
     for k, v in (st.get("failed") or {}).items():
         if k not in out and any(m.get("check") == k for m in misses or ()):
-            out[k] = "its last ask did not land - %s" % ((v or {}).get("summary") or "no reason was recorded")
+            out[k] = (CUT_OFF if (v or {}).get("pending") else
+                      "its last ask did not land - %s" % ((v or {}).get("summary") or "no reason was recorded"))
     for k, v in said.items():
         out.setdefault(k, v)
     return out

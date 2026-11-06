@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3871** | `(this commit)` | v3871 — A price check shows the price already researched, with its posts, and says when d2jsp turned away the console copy of the sign-in |
+| **v3872** | `(this commit)` | v3872 — The Mac signs in to d2jsp through the console own d2jsp window, and a landed diagnosis or a kept frame is never misread |
+| **v3871** | `41554ba1` | v3871 — A price check shows the price already researched, with its posts, and says when d2jsp turned away the console copy of the sign-in |
 | **v3870** | `80956d59` | v3870 — The vault reader names the stash tab and the shared page, so a cell belongs to one tab |
 | **v3869** | `eca33ffc` | v3869 — Quick wins names the 1st-4th best places for each early unique, by fewest runs, on silospen numbers |
 | **v3868** | `b2fba5d8` | v3868 — the second eye findings on v3867 fixed - diagnoses land, the census and pruned frames honest, per-lane CPU on Windows |

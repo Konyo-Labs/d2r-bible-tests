@@ -11146,6 +11146,44 @@ def _check_the_d2jsp_price_backend_matches_its_database():
         return MISSING, "a set-aside post moved the price or left the record"
     return OK, "the D2JSP tab shows the database price and the posts it was weighed from"
 
+def _check_the_macs_own_d2jsp_window_keeps_its_session():
+    """#87 (REG-3253) - the Mac signs in to d2jsp through a profile the console owns. That sign-in survives closing the
+    window only while the profile continues where it left off (a session-only cookie is then written to disk), and the
+    lamp's opener must start that profile, never his own Chrome. Read-only: nothing is opened, written or launched."""
+    if sys.platform != "darwin":
+        return OK, "not a Mac - this PC signs in to d2jsp through its own lane"
+    try:
+        import d2jsp_chrome as dj
+    except Exception as e:
+        return UNKNOWN, "the d2jsp desk would not import (%s), so its own window is unknown" % type(e).__name__
+    root = dj.login_profile_dir(platform="darwin")
+    seen = []
+    try:
+        dj._open_chrome_login(platform="darwin", run=lambda argv, **kw: seen.append(list(argv)) or
+                              type("P", (), {"returncode": 0})())
+    except Exception as e:
+        return UNKNOWN, "the lamp's opener raised %s when asked for its command, so its own window is unknown" % (
+            type(e).__name__)
+    argv = seen[-1] if seen else []
+    if not root or ("--user-data-dir=%s" % root) not in argv:
+        return MISSING, "the D2JSP lamp opens his own Chrome, whose sign-in d2jsp turns away, not the console's own window"
+    if any("9222" in a or "remote-debugging" in a for a in argv):
+        return MISSING, "the D2JSP lamp's window asks for a debugging port (9222 is his Chrome's)"
+    if not os.path.isdir(root):
+        return OK, "the console's own d2jsp window has not been opened on this Mac yet - the lamp says to click it"
+    prefs_path = os.path.join(root, "Default", "Preferences")
+    try:
+        with open(prefs_path, encoding="utf-8") as fh:
+            prefs = json.load(fh)
+    except FileNotFoundError:
+        return MISSING, "the console's own d2jsp profile has no Preferences, so a sign-in there dies with the window"
+    except (OSError, ValueError) as e:
+        return UNKNOWN, "the console's own d2jsp profile settings would not read (%s)" % type(e).__name__
+    if ((prefs.get("session") or {}) if isinstance(prefs, dict) else {}).get("restore_on_startup") != 1:
+        return MISSING, ("the console's own d2jsp profile no longer continues where it left off, so the sign-in's session "
+                         "cookie dies when that window closes")
+    return OK, "the D2JSP lamp opens the console's own d2jsp window, and that profile keeps its sign-in when it closes"
+
 CHECKS = [
     # v2961 (#67) — the drift lane compares version LABELS; this compares the BYTES, which is the
     # only way an unstamped save can be seen. See the docstring for why it asks the console rather
@@ -11422,6 +11460,7 @@ CHECKS = [
     # #64 — the WHY behind the row above: the pull lane's own record of whether its pulls land.
     ("this checkout can update", _check_this_checkout_can_update),
     ("the d2jsp price database is on its tab", _check_the_d2jsp_price_backend_matches_its_database),
+    ("the Mac signs in to d2jsp through its own window", _check_the_macs_own_d2jsp_window_keeps_its_session),
     ("a windowed frame is read inside its game", _check_a_windowed_frame_is_read_inside_its_game),
     # REG-3218 (his words 2026-11-05) - the task board compared with the tree; a card that disagrees is said, never rewritten
     ("the board agrees with the tree", _check_the_board_agrees_with_the_tree),
