@@ -30536,6 +30536,32 @@ def _heart_memo_last(now):
     return shown
 
 
+#: REG-3258 (#41) - how long a plain /api/heart waits for a fresh census when an older one can be shown instead.
+_HEART_PLAIN_WAIT_S = 2.0
+
+
+def heart_read(query=""):
+    """REG-3258 (#41, GrokBot's v3869 pass: the work ALT's /api/heart "no reply after 40 s") - WHAT EVERY FORM OF
+    /api/heart ANSWERS. -> dict
+
+    ?fast=1 is the panel's read (REG-1685) and ?force=1 a fresh census, both as before. A plain read used to derive the
+    census whenever the 45 s memo had expired - MEASURED on the ALT 2026-11-06: 35.4 s and 46.0 s cold, then 0.0 s warm
+    - so any reader that came by once (GrokBot, a script, a probe) waited the whole census and gave up at 40 s, though a
+    census minutes old sat in memory. Now, when one was ever taken, a plain read is answered the way the panel's is: a
+    fresh one if it lands within _HEART_PLAIN_WAIT_S, else the last one with its real age, stale and refreshing. Only a
+    console that has never taken one derives it in the call (the header chip's one boot read, 4 s after boot)."""
+    import time as _t
+    q = str(query or "")
+    if "fast=1" in q:
+        return heart_state_now(refresh=("refresh=1" in q))
+    if "force=1" in q:
+        return heart_state(force=True)
+    now = _t.time()
+    if _heart_memo_last(now) is not None:      # a fresh memo is answered as it is by heart_state_now too
+        return heart_state_now(wait_s=_HEART_PLAIN_WAIT_S)
+    return heart_state()
+
+
 def _heart_refresh_async():
     """REG-1685 — take ONE fresh census in the background. -> True when this call started it, False when one is
     already running (that ask joins it) or the thread would not start (said in lastError, never silent)."""
@@ -50972,10 +50998,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/heart":
             # v2443 — ♥ THE HEART. Derived per read (45 s memo), never stored. ?force=1 re-derives.
             # REG-1685 — ?fast=1 is the panel's read: the last census at once, a fresh one in the background.
-            if "fast=1" in (self.path or ""):
-                self._json(200, heart_state_now(refresh=("refresh=1" in (self.path or ""))))
-                return
-            self._json(200, heart_state(force=("force=1" in (self.path or ""))))
+            self._json(200, heart_read(self.path or ""))     # REG-3258 (#41) - one rule for every form of the read
             return
         if path == "/api/chronicle_sweep":
             # v1519 — progress + result of the REAL sweep. GET never starts one; starting spends

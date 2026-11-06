@@ -143,11 +143,52 @@ class TheServerAnswersAtOnce(_Server):
         self.assertFalse(r.get("pending"), "a failed census left the panel pending for a census nobody is taking")
         self.assertIn("boom", r.get("why") or "")
 
-    def test_the_route_sends_fast_reads_here(self):
+    def test_the_route_sends_every_read_through_heart_read(self):
         src = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
         code = "\n".join(l.split("#", 1)[0] for l in src.split("\n"))
-        self.assertEqual(code.count('self._json(200, heart_state_now(refresh=("refresh=1" in (self.path or ""))))'),
-                         1, "/api/heart?fast=1 does not reach heart_state_now")
+        self.assertEqual(code.count('self._json(200, heart_read(self.path or ""))'), 1,
+                         "/api/heart does not reach heart_read (REG-3258)")
+        self.memo(5)
+        r = ca.heart_read("/api/heart?fast=1")
+        self.assertIn("refresh", r, "?fast=1 no longer reaches heart_state_now (only it says how its refresh stands): %r" % r)
+
+
+class APlainReadNeverWaitsOnACensusItHas(_Server):
+    """REG-3258 (#41) - GrokBot's v3869 pass: the work ALT's /api/heart 'no reply after 40 s'. Measured there: 35.4 s and
+    46.0 s cold, 0.0 s warm - a plain read derived the census whenever the 45 s memo had expired."""
+
+    def setUp(self):
+        super().setUp()
+        self._wait = ca._HEART_PLAIN_WAIT_S
+        ca._HEART_PLAIN_WAIT_S = 0.1
+        self.addCleanup(setattr, ca, "_HEART_PLAIN_WAIT_S", self._wait)
+
+    def test_an_expired_census_is_answered_at_once_with_its_age(self):
+        self.memo(600)
+        self.take = 3.0
+        t0 = time.time()
+        r = ca.heart_read("/api/heart")
+        self.assertLess(time.time() - t0, 1.0, "a plain read waited for the whole census again")
+        self.assertTrue(r.get("stale") and r.get("refreshing"), r)
+        self.assertGreaterEqual(r.get("ageMs") or 0, 590000, "the census shown was not given its real age")
+        self.assertEqual(self.calls, [True], "the fresh census was not taken in the background: %r" % self.calls)
+
+    def test_a_fresh_census_is_answered_as_it_is(self):
+        self.memo(5)
+        r = ca.heart_read("/api/heart")
+        self.assertTrue(r.get("ok"))
+        self.assertNotIn("stale", r)
+        self.assertEqual(self.calls, [], "a fresh census was walked again")
+
+    def test_a_console_that_never_took_one_derives_it_in_the_call(self):
+        r = ca.heart_read("/api/heart")
+        self.assertTrue(r.get("ok"), r)
+        self.assertEqual(self.calls, [False], "the header chip's first read did not derive the census: %r" % self.calls)
+
+    def test_force_still_takes_a_fresh_one(self):
+        self.memo(5)
+        ca.heart_read("/api/heart?force=1")
+        self.assertEqual(self.calls, [True])
 
 
 # ══ THE PANEL ══════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -331,6 +372,11 @@ class ThePanelNeverSticks(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3258 - a plain /api/heart derives the census again whenever the memo expired, so a reader waits 35-46 s on the ALT",
+     "file": "tv/control_app.py",
+     "find": "    if _heart_memo_last(now) is not None:      # a fresh memo is answered as it is by heart_state_now too\n        return heart_state_now(wait_s=_HEART_PLAIN_WAIT_S)\n",
+     "replace": "",
+     "matches": 1},
     {"why": "REG-1685 - a click while a census is on its way is swallowed again",
      "file": "control_ui.html",
      "find": "      else if (again !== 'again') ov.hidden = false;\n",
