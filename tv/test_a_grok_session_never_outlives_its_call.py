@@ -53,7 +53,11 @@ def _cut_drop(s):
 
 
 def _enc(p):
-    return p.replace("/", "%2F")
+    # REG-3257 - the way Grok names a session folder on either OS: every separator encoded (%2F on a Mac, %5C on Windows,
+    # g5_grok_eyes.session_tail) and a drive's colon, so the name is ONE folder. A Windows cwd kept its backslashes and
+    # its C: before, so os.path.join(sd, name) dropped sd and planted the session INSIDE the look's own cwd - which the cwd
+    # cleanup deletes anyway - and the work ALT filed proof [5] BLIND, which shut all four of its locks.
+    return p.replace("/", "%2F").replace("\\", "%5C").replace(":", "%3A")
 
 
 class _Folder(unittest.TestCase):
@@ -76,6 +80,19 @@ class _Folder(unittest.TestCase):
 
     def left(self):
         return sorted(_fx_tmp.list_own(self.sd))
+
+
+class TheFixtureNamesOneFolderOnEitherOS(unittest.TestCase):
+
+    def test_a_windows_cwd_is_one_folder_name_with_its_tail(self):
+        """REG-3257 - the ALT filed proof [5] BLIND because a Windows cwd was not one folder name here."""
+        win = "C:\\Users\\U\\AppData\\Local\\Temp\\eyecwd_x\\second_eye_77777"
+        name = _enc(win)
+        for ch in ("\\", "/", ":"):
+            self.assertNotIn(ch, name, "a session name still holds %r, so it is not one folder: %r" % (ch, name))
+        import g5_grok_eyes as G5
+        self.assertEqual(G5.session_tail(name), "second_eye_77777")
+        self.assertEqual(G5.session_tail(_enc("/var/folders/T/second_eye_42")), "second_eye_42")
 
 
 class TheReadLanesSweepKnowsBothNames(_Folder):

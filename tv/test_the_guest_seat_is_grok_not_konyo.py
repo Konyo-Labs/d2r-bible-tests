@@ -86,7 +86,10 @@ class TheGuestSeatIsGrokNotKonyo(unittest.TestCase):
         # removing the Konyo pair passed the leaks() check and was caught only here. A detector
         # must not be its own witness. [[feedback-blind-fixture-green-gate]]
         blob = json.dumps(out, ensure_ascii=False)
-        for literal in ("Konyo", "someone-2", "/Users/someone"):
+        # REG-3257 - "someone" itself: on the work ALT the home folder is named "User", the scrub's home pair rewrites
+        # every "User" (so "/Users/someone" read "/groks/someone"), and with the user pair sabotaged that literal still
+        # vanished - the ALT filed proof [6] BLIND, which shut all four of its locks. The user name survives on every OS.
+        for literal in ("Konyo", "someone-2", "/Users/someone", "someone"):
             self.assertNotIn(literal, blob,
                              "%r survived the scrub into the guest mirror" % literal)
 

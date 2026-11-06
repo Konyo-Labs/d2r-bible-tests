@@ -140,9 +140,11 @@ RED_PROOF = [
      "find": 'BIND_FILE = re.compile(r"^([A-Za-z][A-Za-z_-]{1,14})(\\d{3,12})\\.(?:ctlo|keyo)$")',
      "replace": 'BIND_FILE = re.compile(r"^([A-Za-z][A-Za-z0-9_-]{1,14})(\\d{3,12})\\.(?:ctlo|keyo)$")',
      "matches": 1},
+    # REG-3257 - judged only where a folder can be made unlistable: its one catching case skips on Windows, the work ALT
+    # filed it BLIND, and one BLIND shut all four of the ALT's locks.
     {"why": "#251 (REG-2925) - a save folder that will not list is skipped silently and the short list reads whole",
      "file": "tv/d2s_read.py",
      "find": "        except OSError:\n            unread += 1\n            continue\n",
      "replace": "        except OSError:\n            continue\n",
-     "matches": 1},
+     "matches": 1, "needs": "posix"},
 ]

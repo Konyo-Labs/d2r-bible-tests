@@ -8,7 +8,8 @@
       "v3872 - a trim before the one that kept a frame no longer dates its prune (REG-3252)",
       "v3872 - the fleet card says when a count and its list differ, so the Mac uniques 395 beside 384 is explained (REG-3254)",
       "v3872 - an image the engine frame canceled is asked again once, so a slow console shows no broken icons (REG-3255)",
-      "v3872 - the shadow sessions list says so after 30 s when a busy console does not answer (REG-3256)"
+      "v3872 - the shadow sessions list says so after 30 s when a busy console does not answer (REG-3256)",
+      "v3872 - three law fixtures go red on Windows too, so the work ALT locks can open (REG-3257)"
     ]
   },
   {
