@@ -1527,6 +1527,26 @@ TARGETS = {
         "sel": ".cb-modal",
         "widths": ((1440, 1000), (901, 900), (375, 800)),
     },
+    "quick-wins": {
+        "why": "#85 - UNIQUES > QUICK WINS NAMES THE 1st-4th BEST PLACES. Each early unique's card keeps its best-run line "
+               "and gains the 2nd-4th best places under it (every boss and super-unique a candidate, by fewest runs at his "
+               "MF and /players), plus silospen's per-kill readings that are not a run (the Cow King, random packs). Its "
+               "law drives the ranker in node; this is the card on pixels",
+        "seed": """(function(){ return 1; })()""",
+        "activate": """(function(){
+            /* IDEMPOTENT: the harness re-runs this every 0.4s, so the tab and the filter are set once */
+            if (!window.__rcQwOpened) {
+              window.__rcQwOpened = 1;
+              try { window.switchTab('funi'); window.funiSetFilter('low'); } catch (e) { window.__rcQwErr = String(e); }
+            }
+            var row = document.querySelector('#funi-body .gf-qw-alt');
+            var card = row && row.closest('.f-card');
+            if (!card) return false;
+            var r = card.getBoundingClientRect();
+            return !!(r.width > 0 && r.height > 0 && getComputedStyle(card).display !== 'none'); })()""",
+        "sel": "#funi-body .forge-sec-step",
+        "widths": ((1440, 1000), (1120, 900), (901, 900), (375, 800)),
+    },
     "material-craft": {
         "why": "REG-2138 - WHAT I CAN MAKE. The Renewed Sunder row names what its closest held charm still lacks (that charm's "
                "Perfect Gem, its Rune, each of its own shards) instead of reading ready on any charm and any shard, so the "

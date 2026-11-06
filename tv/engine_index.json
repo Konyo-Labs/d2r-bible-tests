@@ -3282,5 +3282,17 @@
     "gotcha": "The registry is DECLARED (GROWERS): a directory no entry names is never looked at. A new entry starts in dry-run and arms itself only after ARM_AFTER_PASSES clean passes spanning ARM_AFTER_H hours. Nothing is pruned when holders cannot be read (lsof; psutil on Windows - without it a Windows PC prunes nothing and says why), and the CLI only measures - it never salvages or prunes. Age is the newest of mtime AND ctime, so a copy that kept old mtimes is young.",
     "purpose": "REG-3208/3209: the growers lane. A DECLARED registry of what keeps growing (seat worktrees and scratch in the temp root, law fixtures in $TMPDIR, %TEMP% on Windows) is measured each pass. What is informational is salvaged into tv/.salvage: unmerged commits as patches, merge history as a bundle, the dirty diff, untracked files, or one record line for a law fixture. Salvages stay under caps and a free-space floor and are read back by sha256. Only then is the grower pruned (git worktree remove for a worktree), with lsof asked again before each prune. New entries stay in dry-run until they earn arming.",
     "territory": "routines-infra"
+  },
+  "silospen_places.py": {
+    "entryPoints": [
+      "pull",
+      "build_places",
+      "factors",
+      "emit_into",
+      "evidence"
+    ],
+    "gotcha": "Read-only GETs to silospen's calculator, paced. A target the page already runs (andariel, countess ...) keeps the page's stored figure; only a target with no run becomes a new place, and each carries its OWN /players factor (a super-unique's treasure class is its own - Coldcrow never moves, Blood Raven x1.46). The Cow King is shown, never ranked (his kill bars that character from the cow level); random packs are priced per kill only. Never hand-edit the page's QW_* block: re-pull and --emit.",
+    "purpose": "#85 - every place an early unique drops, as silospen ranks it: the bosses and super-unique Quick wins ranks by runs (QW_TARGETS / QW_PLACES / PLACE_PF in bible.html) and the checkpoints its law reads (tv/data/silospen_places_rotw30.json).",
+    "territory": "routing"
   }
 }
