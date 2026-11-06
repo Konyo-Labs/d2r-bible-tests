@@ -70155,13 +70155,16 @@ function renderJournal(){
   }
   /* the 4th row's per-run 1:N: a per-kill reading better than it would have ranked in silospen's own top 4 */
   function _qwWorst(qp){ if(!qp || qp.length<4) return null; var r=qp[3], pr=perRunChance(r.chance, r.s.bossId); return pr>0 ? 1/pr : null; }
+  /* the Grok CLI's look at the Bane Ash card: an area row read 1:709.2k between 1:6k and 1:8.1k and ranked between them -
+     its per-KILL odds beside other rows' per-run odds. An area run says what one RUN gives, beside the per-kill figure. */
+  function _qwRunOdds(p){ var pr = perRunChance(p.chance, p.s.bossId); return (pr > 0 && pr < 1) ? '<span class="gf-odds" title="one run of this place, ~' + killsPerRun(p.s.bossId) + ' kills">' + fmtOdds(Math.max(1, Math.round(1 / pr))) + ' a run</span>' : ''; }
   function _qwRunsTxt(n){ return n == null ? '' : '~' + (n >= 10000 ? (Math.round(n / 100) / 10) + 'k' : Number(n).toLocaleString()) + ' runs'; }
   function _qwRow(p, i){
     var ord = ['1st', '2nd', '3rd', '4th'][i];
     var kphT = p.est ? ' title="run rate is an estimate (no measured clear for this place); the runs count does not depend on it"' : '';
     return '<div class="gf-src gf-qw-alt"><span class="gf-qw-ord">' + ord + '</span> <b class="gf-boss">' + esc(p.label) + '</b>'
       + (p.area ? ' <span class="gf-qw-area">' + esc(p.area) + '</span>' : '')
-      + ' <span class="gf-odds">' + fmtOdds(p.chance) + '</span>'
+      + ' <span class="gf-odds">' + fmtOdds(p.chance) + (p.kpr > 1 ? ' a kill' : '') + '</span>' + (p.kpr > 1 ? _qwRunOdds(p) : '')
       + '<span class="gf-odds gf-qw-runs">' + _qwRunsTxt(p.runs) + '</span>'
       + (p.hours != null ? '<span class="gf-odds gf-ttf"' + kphT + '>~' + _fmtHunt(p.hours) + '</span>' : '')
       + (p.kpr > 1 ? _kprChip(p.s.bossId) : '') + '</div>';
@@ -70172,7 +70175,7 @@ function renderJournal(){
       + list.map(function(a){
           var why = a.kind === 'once' ? 'killing him bars that character from the Secret Cow Level in that difficulty (D2R; RotW unconfirmed)'
                   : 'a random ' + a.kind + ' pack - it spawns by chance, so no run count';
-          return '<span title="' + esc(why) + '"><b>' + esc(a.who) + '</b> (' + esc(a.area) + (a.kind === 'once' ? ' ⚠' : ', random ' + a.kind) + ') ' + fmtOdds(a.chance) + '</span>';
+          return '<span title="' + esc(why) + '"><b>' + esc(a.who) + '</b> (' + esc(a.area) + (a.kind === 'once' ? ', ⚠ not a repeatable run' : ', random ' + a.kind) + ') ' + fmtOdds(a.chance) + '</span>';
         }).join(' · ') + '</div>';
   }
   /* v1561 — the moment funiScan exists, the landing ring can stop guessing. See the note on
@@ -70988,7 +70991,7 @@ function renderJournal(){
     if(_qp.length){
       var q1=_qp[0];
       src='<div class="gf-src">📍 best run: <b class="gf-boss">'+esc(q1.label)+'</b>'+(q1.area?' <span class="gf-qw-area">'+esc(q1.area)+'</span>':'')
-        +' <span class="gf-odds">'+fmtOdds(q1.chance)+'</span><span class="gf-odds gf-qw-runs">'+_qwRunsTxt(q1.runs)+'</span>'
+        +' <span class="gf-odds">'+fmtOdds(q1.chance)+(q1.kpr>1?' a kill':'')+'</span>'+(q1.kpr>1?_qwRunOdds(q1):'')+'<span class="gf-odds gf-qw-runs">'+_qwRunsTxt(q1.runs)+'</span>'
         +(q1.hours!=null?'<span class="gf-odds gf-ttf">~'+_fmtHunt(q1.hours)+' to find</span>':'')
         +(q1.kph?'<span class="gf-odds"'+(q1.est?' title="run rate is an estimate (no measured clear for this place); the runs count does not depend on it"':'')+'>~'+q1.kph+' kph</span>':'')
         +(q1.kpr>1?_kprChip(q1.s.bossId):'')+'</div>'
