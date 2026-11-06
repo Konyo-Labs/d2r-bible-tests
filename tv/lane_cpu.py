@@ -116,7 +116,7 @@ def _linux_sample(ids):
     out = {}
     for tid in ids:
         try:
-            with open("/proc/self/task/%d/stat" % int(tid)) as fh:
+            with open("/proc/self/task/%d/stat" % int(tid), encoding="ascii", errors="replace") as fh:
                 rest = fh.read().rsplit(")", 1)[1].split()
             out[int(tid)] = (int(rest[11]) + int(rest[12])) / float(tick)    # fields 14, 15 (utime, stime)
         except (OSError, ValueError, IndexError):

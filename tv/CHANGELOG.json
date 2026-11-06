@@ -16,7 +16,8 @@
       "v3867 - the Windows proof set waits for the Linux shards on the ci push, so required checks never queue (REG-3234)",
       "v3867 - the Claude diagnosis of an unknown fault runs outside the project with room to read, and lands (REG-3235)",
       "v3867 - a diagnosis that did not land says why on the fault until one does (REG-3235)",
-      "v3867 - the heart and the status say which lane is eating the CPU, read per thread from the OS (REG-3236)"
+      "v3867 - the heart and the status say which lane is eating the CPU, read per thread from the OS (REG-3236)",
+      "v3867 - three red-proofs the real prover refused now leave valid code and measure what they claim"
     ]
   },
   {

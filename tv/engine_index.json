@@ -3185,8 +3185,18 @@
       "diagnose",
       "due"
     ],
-    "gotcha": "Read-only (--allowedTools Read), at most 2 a day, only new misses, never under D2R_NO_CLAUDE or while he plays or a push grades - a re-read loop once maxed his weekly plan.",
+    "gotcha": "Read-only (--allowedTools Read,Grep), run OUTSIDE the project with --add-dir (REG-3235: inside it, CLAUDE.md and paging Reads spent all 8 turns), at most 2 a day, only new misses, a failed ask keeps its reason, never under D2R_NO_CLAUDE or while he plays or a push grades - a re-read loop once maxed his weekly plan.",
     "purpose": "The PC's own Claude diagnoses a repair-book miss (CAUSE / FIX / VERIFY) and proposes; the proposal rides the presence row to the overwatch line.",
+    "territory": "heart-organs"
+  },
+  "lane_cpu.py": {
+    "entryPoints": [
+      "state",
+      "sample",
+      "window"
+    ],
+    "gotcha": "Per-thread CPU from the OS with no dependency (Mach thread_info on macOS - its thread_id IS threading's native_id; GetThreadTimes on Windows; /proc on Linux). Every Mach port reference is deallocated (a port COUNT never moves on a leak - only send references do). UNKNOWN is never a zero.",
+    "purpose": "Which lane is eating the CPU: each named thread's CPU over about a minute, on /api/status (laneCpu) and the heart's busiest-lanes section (REG-3236).",
     "territory": "heart-organs"
   },
   "fleet_errors.py": {
