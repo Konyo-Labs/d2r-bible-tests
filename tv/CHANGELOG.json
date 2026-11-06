@@ -7,7 +7,8 @@
       "v3868 - one stuck fault no longer takes the day of diagnoses, and an unreadable record is said (REG-3237)",
       "v3868 - the Windows set keeps waiting for the Linux shards through one bad poll or one empty page (REG-3238)",
       "v3868 - a pruned frame with no capture time is never dated on a trim before it was filmed (REG-3239)",
-      "v3868 - a pruned frame is judged by its own reel, and an unreadable record is named beside the answer (REG-3239)"
+      "v3868 - a pruned frame is judged by its own reel, and an unreadable record is named beside the answer (REG-3239)",
+      "v3868 - the art census says UNKNOWN when a door is unchecked, never that every picture ships (REG-3240)"
     ]
   },
   {

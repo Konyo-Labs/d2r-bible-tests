@@ -29,7 +29,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 
 _EXT = r"(?:png|gif|jpe?g|webp|svg)"
-_FILE = r"[A-Za-z0-9_\-]+\." + _EXT
+# v3868 (the Grok CLI on REG-3206, #231 6675924693) - a name may carry inner dots (hd.unique.png) and an upper-case
+# extension (Korlic.GIF): the old pattern recorded neither, and neither became an unknown door. None exists today
+# (measured: the wider pattern adds 0 names), so this closes a gap without moving a count.
+_FILE = r"[A-Za-z0-9_\-]+(?:\.[A-Za-z0-9_\-]+)*\.(?i:png|gif|jpe?g|webp|svg)"
 # `art/<file>` or `/art/<file>`, never `frames/art/...` or `hd_art/...`
 _LITERAL = re.compile(r"(?<![A-Za-z0-9_\-./])/?art/(" + _FILE + r")(?![A-Za-z0-9_\-])")
 # a composer: a string that ENDS in art/ (or art/<prefix>) and is followed by `+`, or TZ_ART_BASE +
@@ -243,11 +246,21 @@ def main(argv=None):
              len(found["unknownDoors"])))
     for d in found["unknownDoors"]:
         print("  ? unknown art door %s:%d %s" % (d["page"], d["line"], d["text"]))
+    # v3868 (the Grok CLI on REG-3206) - A KNOWN DOOR WHOSE FEED READ NOTHING EXPANDS TO NOTHING: its anchor moved (a
+    # declaration re-spaced, a table re-quoted) and every picture behind it went unchecked while this said "ok".
+    blind = sorted(set(d["feed"] for d in found["doors"] if d["feed"] and not found["feeds"].get(d["feed"])))
+    for fd in blind:
+        print("  ? the %r feed read no names - the door it expands is unchecked (its anchor moved)" % fd)
     for n in gone[:40]:
         print("  x MISSING art/%s (asked by %s)" % (n, ", ".join(found["names"][n])))
     if gone:
         print("  %d name(s) will 404 on a console that serves this art tree" % len(gone))
         return 1
+    if found["unknownDoors"] or blind:
+        # v3868 - an unchecked door is not "every one is in the tree": UNKNOWN, the same exit as a page that won't read
+        print("  UNKNOWN - %d unknown door(s) and %d empty feed(s): what they ask for was never checked"
+              % (len(found["unknownDoors"]), len(blind)))
+        return 2
     print("  ok - every one is in the art tree")
     return 0
 

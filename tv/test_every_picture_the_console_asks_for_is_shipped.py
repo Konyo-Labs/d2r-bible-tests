@@ -154,7 +154,63 @@ class TheGuestRefreshShipsTheArt(unittest.TestCase):
             shutil.rmtree(d, True)
 
 
+class TheGrokCliOnREG3206(unittest.TestCase):
+    """v3868 - the Grok CLI's look at the census (#231 6675924693): it said "ok" while a door went unchecked."""
+
+    def _tree(self, names):
+        d = tempfile.mkdtemp(prefix="art_names_v3868_")
+        self.addCleanup(shutil.rmtree, d, True)
+        for n in names:
+            io.open(os.path.join(d, n), "wb").close()
+        return d
+
+    def _main_with(self, found):
+        real = A.names
+        A.names = lambda **kw: found
+        try:
+            buf = io.StringIO()
+            import contextlib
+            with contextlib.redirect_stdout(buf):
+                rc = A.main(["--art", self._tree(sorted(found["names"]))])
+            return rc, buf.getvalue()
+        finally:
+            A.names = real
+
+    def test_a_known_door_whose_feed_read_nothing_is_unknown_never_ok(self):
+        found = {"names": {"a.png": ["board-literal"]}, "commentOnly": [], "feeds": {"board-literal": 1, "gems": 0},
+                 "doors": [{"page": "bible.html", "line": 9, "text": "art/gem_'+", "feed": "gems"}], "unknownDoors": []}
+        rc, out = self._main_with(found)
+        self.assertEqual(rc, 2, "an empty feed behind a known door read as every picture shipped: %r" % out)
+        self.assertIn("'gems' feed read no names", out)
+
+    def test_an_unknown_door_is_unknown_never_ok(self):
+        door = {"page": "bible.html", "line": 7, "text": "art/' + monster.art", "feed": None}
+        found = {"names": {"a.png": ["board-literal"]}, "commentOnly": [], "feeds": {"board-literal": 1},
+                 "doors": [door], "unknownDoors": [door]}
+        rc, out = self._main_with(found)
+        self.assertEqual(rc, 2, "an unknown door passed as ok: %r" % out)
+
+    def test_a_name_with_inner_dots_or_an_upper_case_extension_is_recorded(self):
+        got = set(A._LITERAL.findall("x = 'art/hd.unique.png'; y = \"/art/Korlic.GIF\"; z = 'art/plain.jpg';"))
+        self.assertEqual(got, {"hd.unique.png", "Korlic.GIF", "plain.jpg"})
+
+
 RED_PROOF = [
+    {"why": "v3868 - a known door whose feed read nothing passes as ok again",
+     "file": "tv/art_names.py",
+     "find": "    blind = sorted(set(d[\"feed\"] for d in found[\"doors\"] if d[\"feed\"] and not found[\"feeds\"].get(d[\"feed\"])))\n",
+     "replace": "    blind = []\n",
+     "matches": 1},
+    {"why": "v3868 - an unknown door passes as ok again",
+     "file": "tv/art_names.py",
+     "find": "    if found[\"unknownDoors\"] or blind:\n",
+     "replace": "    if blind:\n",
+     "matches": 1},
+    {"why": "v3868 - a name with an inner dot or an upper-case extension is not recorded",
+     "file": "tv/art_names.py",
+     "find": "_FILE = r\"[A-Za-z0-9_\\-]+(?:\\.[A-Za-z0-9_\\-]+)*\\.(?i:png|gif|jpe?g|webp|svg)\"\n",
+     "replace": "_FILE = r\"[A-Za-z0-9_\\-]+\\.\" + _EXT\n",
+     "matches": 1},
     {"why": "REG-3206 - UBER_BOSSES names Korlic a picture that was never in art/ (the 404 found on this tree)",
      "file": "bible.html",
      "find": "art:'Korlic.gif',",
