@@ -252,9 +252,11 @@ test.describe('v71 d2art artwork layer', () => {
     expect(r.andaText).toContain('Andariel');
   });
 
-  test('every super-unique resolves verified diablo2.io art (full SU coverage, no emoji-only)', async ({ page }) => {
-    // v108: the whole SUPER_UNIQUES roster (incl. Lister the Tormentor) now carries real
-    // diablo2.io art — each URL was probed live (200 + image content-type) before shipping.
+  test('every super-unique resolves verified art (full SU coverage, no emoji-only)', async ({ page }) => {
+    // v108: the whole SUPER_UNIQUES roster (incl. Lister the Tormentor) carries real art - each
+    // URL was probed live (200 + image content-type) before shipping. v3876 (REG-3315, his 11-06
+    // ask: one HD picture per monster, platform-wide) moved the monsters onto their animated
+    // in-game sprites, shipped as art/d2mon_<Name>.gif (sources in tv/data/monster_art_fandom.json).
     // This locks the coverage so a future entry can't silently regress to an emoji-only card.
     const r = await page.evaluate(() => {
       const sus = (SUPER_UNIQUES as any[]);
@@ -267,7 +269,7 @@ test.describe('v71 d2art artwork layer', () => {
     });
     expect(r.total).toBeGreaterThanOrEqual(18);
     expect(r.missing).toEqual([]);                       // EVERY super-unique has real art
-    expect(r.lister).toMatch(/lister01_graphic\.png(?:\?|$)/);    // the MONSTER portrait, not the item
+    expect(r.lister).toMatch(/d2mon_Lister_the_Tormentor\.gif(?:\?|$)/);    // the MONSTER's sprite, not the item
   });
 
   test('the new Lister super-unique card renders its verified portrait art', async ({ page }) => {
@@ -287,7 +289,7 @@ test.describe('v71 d2art artwork layer', () => {
     });
     expect(r.hasCard).toBe(true);
     expect(r.name).toMatch(/Lister the Tormentor/);
-    expect(r.src).toMatch(/lister01_graphic\.png(?:\?|$)/);
+    expect(r.src).toMatch(/d2mon_Lister_the_Tormentor\.gif(?:\?|$)/);   // the same picture artUrl answers (REG-3315)
     expect(r.lazy).toBe('lazy');
   });
 

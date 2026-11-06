@@ -21,12 +21,14 @@ const SU_WITH_ART = [
   'Battlemaid Sarina', 'Infector of Souls', 'Sharptooth Slayer',
   'Colenzo the Annihilator', 'Ventar the Unholy',
   'Ismail Vilehand', 'Geleb Flamefinger', 'Toorc Icefist', 'Bremm Sparkfist',
-  'Wyand Voidbringer', 'Maffer Dragonhand', 'Bartuc the Bloody',
+  'Wyand Voidbringer', 'Maffer Dragonhand', 'Bartuc the Bloody', 'Dac Farren',
 ];
-// SU with NO verified avatar — must NOT get a data-arttip (no broken-image hover)
-const SU_NO_ART = [
-  'Dac Farren',
-];
+// SU with NO verified avatar — must NOT get a data-arttip (no broken-image hover).
+// v3876 (REG-3315): Dac Farren, the last one, got its in-game sprite (art/d2mon_Dac_Farren.gif), so
+// the named list is empty. The law below no longer leans on a name: across EVERY bind .su-link, a
+// link carries data-arttip exactly when artUrl answers for it - an art-less SU added later stays
+// untagged, and an SU with art is never left bare.
+const SU_NO_ART: string[] = [];
 const ALL_RUNES = ['El','Eld','Tir','Nef','Eth','Ith','Tal','Ral','Ort','Thul','Amn','Sol',
   'Shael','Dol','Hel','Io','Lum','Ko','Fal','Lem','Pul','Um','Mal','Ist','Gul','Vex','Ohm',
   'Lo','Sur','Ber','Jah','Cham','Zod'];
@@ -82,8 +84,20 @@ test.describe('v139 super-unique + rune hover popups', () => {
         const el = links.find((l) => (l.getAttribute('onclick') || '').includes("openBindSUByName('" + n + "'"));
         untagged[n] = !!el && !el.hasAttribute('data-arttip');
       }
-      return { tagged, untagged };
+      // the class law: every bind link is tagged exactly when its art resolves (REG-3315)
+      const mismatch: string[] = [];
+      let bindLinks = 0;
+      for (const l of Array.from(document.querySelectorAll('.su-link')) as HTMLElement[]) {
+        const m = (l.getAttribute('onclick') || '').match(/openBindSUByName\('([^']+)'/);
+        if (!m) continue;
+        bindLinks++;
+        const has = !!(window as any).artUrl(m[1]);
+        if (l.hasAttribute('data-arttip') !== has) mismatch.push(m[1] + (has ? ' has art but is untagged' : ' is tagged with no art'));
+      }
+      return { tagged, untagged, mismatch, bindLinks };
     }, { withArt: SU_WITH_ART, noArt: SU_NO_ART });
+    expect(r.bindLinks, 'PREMISE: the bind table rendered its SU links').toBeGreaterThanOrEqual(15);
+    expect(r.mismatch).toEqual([]);
     for (const n of SU_WITH_ART) {
       expect(r.tagged[n].src, n).toContain(r.tagged[n].expected);
     }

@@ -146,6 +146,14 @@ Wild, Lord De Seis, Treehead WoodFist (they keep older art or none). Found besid
 test_quick_wins_shows_each_place_with_its_picture (+ OneMonsterOnePicture: the two maps name one file per monster; every
 recorded sprite is in art/ with a source), test_every_picture_the_console_asks_for_is_shipped (the three Ancients compared
 with D2IO_ART, never a pinned name); red-proofs PROVEN (two re-aimed from the old file names).
+CORRECTION (GitHub round 1 on c2176a4f5, Routine I shards 2 and 7): two Playwright specs still pinned the OLD pictures, and
+the Mac pre-flight cannot see a browser spec. tests/v71_d2art.spec.ts expected Lister's diablo2.io lister01_graphic.png (2
+cases); tests/v139_su_rune_hover_popup.spec.ts listed Dac Farren as the one art-less super-unique, and it now has its
+sprite. Both re-aimed: Lister to the shipped sprite file; v139's art-less list is empty, so it now holds the CLASS law
+instead of one name - every bind .su-link carries data-arttip exactly when artUrl answers for it (decorateSULinks' own
+rule), with a premise that the bind table rendered at least 15 links. The sweep that should have run first: every art
+file name this version removed from bible.html, grepped by STEM through tests/ and tv/ (a spec writes the name as a
+regex, lister01_graphic\.png, so a fixed-string grep for the file name misses it) - these two were the only pins.
 
 ### REG-3314 - PANEL-FREE REELS WAITED AT PRINTER FOR EVER ON "A SEAL NO LANE WRITES", AND THE FLEET ROW READ "RIVER STUCK" (v3876, his 11-06 ruling "seal and flow")
 His Fleet 11-06 20:03: "river stuck" on the Mac and the ALT. Measured: the Mac's only non-held stuck row was PRINTER 2 (the
