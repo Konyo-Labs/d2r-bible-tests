@@ -17618,8 +17618,16 @@ class TestV2002AVaultSealIsNotALifeSentence(unittest.TestCase):
         return ca._vault_still_sealed
 
     def test_a_productive_seal_is_never_respent(self):
-        """His subscription pays for these reads. Findings outlive the reader that found them."""
-        self.assertTrue(self._f()({"ts": 1, "rows": 7, "promptVer": "vp0001"}))
+        """His subscription pays for these reads. Findings outlive the reader that found them - with the ONE exception he
+        called (REG-3248, #67, 2026-11-06): a reel that found items under a reader that never asked the stash tab is
+        re-read once, by the reader that asks it, so its items gain their tab. That reader's own seals are never respent."""
+        import tv_diablo as tv
+        cur = tv.VAULT_PROMPT_VER
+        self.assertTrue(self._f()({"ts": 1, "rows": 7, "promptVer": cur}), "today's reader's productive seal was respent")
+        for asked in getattr(tv, "VAULT_TAB_ASKED_BY", ()):
+            self.assertTrue(self._f()({"ts": 1, "rows": 7, "promptVer": asked}), "a tab-asking seal reopened again")
+        self.assertFalse(self._f()({"ts": 1, "rows": 7, "promptVer": "vp0001"}),
+                         "his call: a productive seal made before the tab was asked is re-read once")
 
     def test_an_empty_seal_reopens_only_when_the_reader_changed(self):
         import tv_diablo as tv
