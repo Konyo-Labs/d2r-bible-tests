@@ -1,0 +1,514 @@
+{
+ "_why": "#89/#91 (his 11-06 asks: 'a .GIF for coldcrow just like it is here', 'unified across the platform and rendering the same'). One sprite per monster, the same file in D2IO_ART (every artUrl/artOr surface) and in Quick wins' _QW_SU_ART. Source order: diablo.fandom.com's '<Name> (Diablo II).gif' (his example), else rankedboost.com's assets/boss/<Name>.gif (the same classic sprites: Coldcrow is byte-for-byte the same 57x73, 13 frames on both). Every one was looked at, enlarged where small, before it was used.",
+ "pulledAt": "2026-11-06",
+ "sprites": [
+  {
+   "name": "Achmel the Cursed",
+   "ids": [
+    "su_achmelthecursed"
+   ],
+   "file": "art/d2mon_Achmel_the_Cursed.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/1/12/Achmel_the_Cursed_%28Diablo_II%29.gif/revision/latest",
+   "sha1": "e6e7ec16b24bcc032c83c1eb108d735ef3b7b7d7",
+   "bytes": 24915
+  },
+  {
+   "name": "Ancient Kaa the Soulless",
+   "ids": [
+    "su_ancientkaathesoulless"
+   ],
+   "file": "art/d2mon_Ancient_Kaa_the_Soulless.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Ancient%20Kaa%20the%20Soulless.gif",
+   "sha1": "aa47b9cf675d27cbf51c79a3ea88577af205bd80",
+   "bytes": 26648
+  },
+  {
+   "name": "Bartuc the Bloody",
+   "ids": [
+    "su_bartucthebloody"
+   ],
+   "file": "art/d2mon_Bartuc_the_Bloody.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Bartuc%20the%20Bloody.gif",
+   "sha1": "1bb82681809b55c9959778cba0df947e3a3abd94",
+   "bytes": 11055
+  },
+  {
+   "name": "Battlemaid Sarina",
+   "ids": [
+    "su_battlemaidsarina"
+   ],
+   "file": "art/d2mon_Battlemaid_Sarina.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Battlemaid%20Sarina.gif",
+   "sha1": "2b5e161216df103ecbf99f9f38a9eb922b0b7d6a",
+   "bytes": 15762
+  },
+  {
+   "name": "Beetleburst",
+   "ids": [
+    "su_beetleburst"
+   ],
+   "file": "art/d2mon_Beetleburst.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Beetleburst.gif",
+   "sha1": "1156b1513cd4b608623e7616025045f46626135a",
+   "bytes": 11908
+  },
+  {
+   "name": "Bishibosh",
+   "ids": [
+    "su_bishibosh"
+   ],
+   "file": "art/d2mon_Bishibosh.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/3/36/Bishibosh_%28Diablo_II%29.gif/revision/latest",
+   "sha1": "3344c1702f80cf1e515e060107cac8a9fab2712d",
+   "bytes": 15037
+  },
+  {
+   "name": "Blood Raven",
+   "ids": [
+    "su_bloodraven"
+   ],
+   "file": "art/d2mon_Blood_Raven.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/b/bf/Blood_Raven_%28Diablo_II%29.gif/revision/latest",
+   "sha1": "cf4d1a24215e53caa2a366b7c93e8134c523f038",
+   "bytes": 17167
+  },
+  {
+   "name": "Bone Ash",
+   "ids": [
+    "su_boneash"
+   ],
+   "file": "art/d2mon_Bone_Ash.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Bone%20Ash.gif",
+   "sha1": "3833593efb75930cf43c6a417b85b8baad562fa1",
+   "bytes": 7254
+  },
+  {
+   "name": "Bonebreaker",
+   "ids": [
+    "su_bonebreaker"
+   ],
+   "file": "art/d2mon_Bonebreaker.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/3/35/Bonebreaker_%28Diablo_II%29.gif/revision/latest",
+   "sha1": "4bb72bf5d44ef1b31cc5033540cdd9e6f6c6f728",
+   "bytes": 9064
+  },
+  {
+   "name": "Bonesaw Breaker",
+   "ids": [
+    "su_bonesawbreaker"
+   ],
+   "file": "art/d2mon_Bonesaw_Breaker.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Bonesaw%20Breaker.gif",
+   "sha1": "b4c5bd8b266c265e325c00474cc72564b85938b1",
+   "bytes": 11618
+  },
+  {
+   "name": "Coldcrow",
+   "ids": [
+    "su_coldcrow"
+   ],
+   "file": "art/d2mon_Coldcrow.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/f/fb/Coldcrow_%28Diablo_II%29.gif/revision/latest",
+   "sha1": "e00656426b8469d8f9a75f0465a54cc20acc0c1f",
+   "bytes": 14505
+  },
+  {
+   "name": "Coldworm the Burrower",
+   "ids": [
+    "su_coldwormtheburrower"
+   ],
+   "file": "art/d2mon_Coldworm_the_Burrower.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Coldworm%20the%20Burrower.gif",
+   "sha1": "221b8e769a124dc858af3e6ef9041f3cc2a1ded0",
+   "bytes": 155442
+  },
+  {
+   "name": "Colenzo the Annihilator",
+   "ids": [
+    "su_colenzotheannihilator"
+   ],
+   "file": "art/d2mon_Colenzo_the_Annihilator.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/f/fb/Colenzo_the_Annihilator_%28Diablo_II%29.gif/revision/latest",
+   "sha1": "835f4db5868bc8939c0423deeeb61e919825d548",
+   "bytes": 12885
+  },
+  {
+   "name": "Corpsefire",
+   "ids": [
+    "su_corpsefire"
+   ],
+   "file": "art/d2mon_Corpsefire.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/6/6a/Corpsefire_%28Diablo_II%29.gif/revision/latest",
+   "sha1": "e8aecc4a35b31157fd4cecee6b7cef9eb589062b",
+   "bytes": 6840
+  },
+  {
+   "name": "Creeping Feature",
+   "ids": [
+    "su_creepingfeature"
+   ],
+   "file": "art/d2mon_Creeping_Feature.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Creeping%20Feature.gif",
+   "sha1": "cdf74d4e5404e82c660d561ba846ad0ac9543c0a",
+   "bytes": 12984
+  },
+  {
+   "name": "Dac Farren",
+   "ids": [
+    "su_dacfarren"
+   ],
+   "file": "art/d2mon_Dac_Farren.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Dac%20Farren.gif",
+   "sha1": "bf6e4cbdf1dac4aae6ceb5994e73e6405153d51a",
+   "bytes": 9066
+  },
+  {
+   "name": "Dark Elder",
+   "ids": [
+    "su_darkelder"
+   ],
+   "file": "art/d2mon_Dark_Elder.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Dark%20Elder.gif",
+   "sha1": "f1ac46096a21b5bc096837863ac9ba793a5183e7",
+   "bytes": 4777
+  },
+  {
+   "name": "Eldritch the Rectifier",
+   "ids": [
+    "su_eldritchtherectifier"
+   ],
+   "file": "art/d2mon_Eldritch_the_Rectifier.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Eldritch%20the%20Rectifier.gif",
+   "sha1": "fec66adcb2b3de5e547ef7455c204e795571418a",
+   "bytes": 10855
+  },
+  {
+   "name": "Eyeback the Unleashed",
+   "ids": [
+    "su_eyebacktheunleashed"
+   ],
+   "file": "art/d2mon_Eyeback_the_Unleashed.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Eyeback%20the%20Unleashed.gif",
+   "sha1": "94408ab9dd4fffe46333fdd7d4ebeb2a002bce62",
+   "bytes": 22496
+  },
+  {
+   "name": "Frozenstein",
+   "ids": [
+    "su_frozenstein"
+   ],
+   "file": "art/d2mon_Frozenstein.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Frozenstein.gif",
+   "sha1": "9145a54bfd94d54ad6e1853f1128dd56c30d1c68",
+   "bytes": 30908
+  },
+  {
+   "name": "Grand Vizier of Chaos",
+   "ids": [
+    "su_grandvizierofchaos"
+   ],
+   "file": "art/d2mon_Grand_Vizier_of_Chaos.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Grand%20Vizier%20of%20Chaos.gif",
+   "sha1": "099fbc7364047ec23e87fed2b2a2679d8038d442",
+   "bytes": 30141
+  },
+  {
+   "name": "Griswold",
+   "ids": [
+    "su_griswold"
+   ],
+   "file": "art/d2mon_Griswold.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Griswold.gif",
+   "sha1": "16d08aaa0089f1d63802166a31ecf6875de9e2a6",
+   "bytes": 8085
+  },
+  {
+   "name": "Hephasto The Armorer",
+   "ids": [
+    "su_hephastothearmorer"
+   ],
+   "file": "art/d2mon_Hephasto_The_Armorer.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/a/af/Hephasto.gif/revision/latest",
+   "sha1": "343cc974b816d24c68623f642d11ca03cc578a52",
+   "bytes": 19493
+  },
+  {
+   "name": "Icehawk Riftwing",
+   "ids": [
+    "su_icehawkriftwing"
+   ],
+   "file": "art/d2mon_Icehawk_Riftwing.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Icehawk%20Riftwing.gif",
+   "sha1": "5d6628d57df79857e71e8712b9b840beb981a5a2",
+   "bytes": 10076
+  },
+  {
+   "name": "Infector of Souls",
+   "ids": [
+    "su_infectorofsouls"
+   ],
+   "file": "art/d2mon_Infector_of_Souls.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Infector%20of%20Souls.gif",
+   "sha1": "2ac8c70c980686f6537ff5213a1121857aa1ab23",
+   "bytes": 27336
+  },
+  {
+   "name": "Izual",
+   "ids": [
+    "su_izual"
+   ],
+   "file": "art/d2mon_Izual.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Izual.gif",
+   "sha1": "627444fac48bb666031ccb1041d78a147deb5ed2",
+   "bytes": 33583
+  },
+  {
+   "name": "Korlic",
+   "ids": [],
+   "file": "art/d2mon_Korlic.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/Korlic.gif",
+   "sha1": "6ad8c3eec1719c5ea33bbc70262190e78629f673",
+   "bytes": 37386
+  },
+  {
+   "name": "Lister the Tormentor",
+   "ids": [
+    "su_listerthetormentor"
+   ],
+   "file": "art/d2mon_Lister_the_Tormentor.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Lister%20the%20Tormentor.gif",
+   "sha1": "551256928c80a0c6dd6ae8f86298f0add441e2cf",
+   "bytes": 41229
+  },
+  {
+   "name": "Madawc",
+   "ids": [],
+   "file": "art/d2mon_Madawc.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/Madawc.gif",
+   "sha1": "139327b31d58ffb50cb2395a9ff3b0caa92c200c",
+   "bytes": 29645
+  },
+  {
+   "name": "Pitspawn Fouldog",
+   "ids": [
+    "su_pitspawnfouldog"
+   ],
+   "file": "art/d2mon_Pitspawn_Fouldog.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Pitspawn%20Fouldog.gif",
+   "sha1": "573bf507096cd8dbd05b541ec1b2be8278c59b56",
+   "bytes": 12762
+  },
+  {
+   "name": "Radament",
+   "ids": [
+    "su_radament"
+   ],
+   "file": "art/d2mon_Radament.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Radament.gif",
+   "sha1": "2b25d88fe566206882ee4a646d263fe9d09821eb",
+   "bytes": 26334
+  },
+  {
+   "name": "Rakanishu",
+   "ids": [
+    "su_rakanishu"
+   ],
+   "file": "art/d2mon_Rakanishu.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Rakanishu.gif",
+   "sha1": "40d94358e4082517fea495856a4ce450e1a4dafc",
+   "bytes": 14218
+  },
+  {
+   "name": "Sharptooth Slayer",
+   "ids": [
+    "su_sharptoothslayer"
+   ],
+   "file": "art/d2mon_Sharptooth_Slayer.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Sharptooth%20Slayer.gif",
+   "sha1": "664590fee4b8189cef6fedc414bcbe29a8e5c6f9",
+   "bytes": 36202
+  },
+  {
+   "name": "Shenk the Overseer",
+   "ids": [
+    "su_shenktheoverseer"
+   ],
+   "file": "art/d2mon_Shenk_the_Overseer.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Shenk%20the%20Overseer.gif",
+   "sha1": "40b91b538d2d7c9cb4c7031a498a1c6bfd8a6cf5",
+   "bytes": 29064
+  },
+  {
+   "name": "Snapchip Shatter",
+   "ids": [
+    "su_snapchipshatter"
+   ],
+   "file": "art/d2mon_Snapchip_Shatter.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Snapchip%20Shatter.gif",
+   "sha1": "fe97792a5652c61f01c76a1004bdd6e126a1c39b",
+   "bytes": 18239
+  },
+  {
+   "name": "Sszark the Burning",
+   "ids": [
+    "su_sszarktheburning"
+   ],
+   "file": "art/d2mon_Sszark_the_Burning.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Sszark%20the%20Burning.gif",
+   "sha1": "4ef699b6c0417f6ec24db4650309c1782d4750c6",
+   "bytes": 26536
+  },
+  {
+   "name": "Stormtree",
+   "ids": [
+    "su_stormtree"
+   ],
+   "file": "art/d2mon_Stormtree.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Stormtree.gif",
+   "sha1": "87af5682fef222b534b8f1cbcddb19a36d20c76b",
+   "bytes": 78399
+  },
+  {
+   "name": "Talic",
+   "ids": [],
+   "file": "art/d2mon_Talic.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/Talic.gif",
+   "sha1": "098600b1af8bf31d3386de7f5fbce983eceed233",
+   "bytes": 36955
+  },
+  {
+   "name": "The Cow King",
+   "ids": [
+    "su_thecowking"
+   ],
+   "file": "art/d2mon_The_Cow_King.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/The%20Cow%20King.gif",
+   "sha1": "3056ed3dcb445601f0adf6d0364b1f5ca0b89eae",
+   "bytes": 23998
+  },
+  {
+   "name": "The Smith",
+   "ids": [
+    "su_thesmith"
+   ],
+   "file": "art/d2mon_The_Smith.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/The%20Smith.gif",
+   "sha1": "f9058665681abf4d881678d4a9875736707e40d0",
+   "bytes": 23527
+  },
+  {
+   "name": "The Summoner",
+   "ids": [
+    "su_thesummoner"
+   ],
+   "file": "art/d2mon_The_Summoner.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/The%20Summoner.gif",
+   "sha1": "7a8ac285d37ef38e7870d7601261e0147dbf9281",
+   "bytes": 11006
+  },
+  {
+   "name": "Thresh Socket",
+   "ids": [
+    "su_threshsocket"
+   ],
+   "file": "art/d2mon_Thresh_Socket.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Thresh%20Socket.gif",
+   "sha1": "0c419bdcfc1dfc308ff11fd99b53666d5eae92c8",
+   "bytes": 63866
+  },
+  {
+   "name": "Ventar the Unholy",
+   "ids": [
+    "su_ventartheunholy"
+   ],
+   "file": "art/d2mon_Ventar_the_Unholy.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Ventar%20the%20Unholy.gif",
+   "sha1": "f690b92a6e2d2497b45639b95617cc11f570c2c0",
+   "bytes": 28001
+  },
+  {
+   "name": "Witch Doctor Endugu",
+   "ids": [
+    "su_witchdoctorendugu"
+   ],
+   "file": "art/d2mon_Witch_Doctor_Endugu.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Witch%20Doctor%20Endugu.gif",
+   "sha1": "fc02990561f35ffc35d3b2bbdb8ebf9927f6ff6a",
+   "bytes": 16273
+  }
+ ],
+ "rejected": [
+  {
+   "name": "Griswold",
+   "site": "diablo.fandom.com",
+   "file": "Griswold.gif",
+   "why": "Diablo 1's Griswold the blacksmith, not D2's undead Griswold (rankedboost's is the undead one, used)"
+  },
+  {
+   "name": "Coldworm the Burrower",
+   "site": "diablo.fandom.com",
+   "file": "Coldworm.gif",
+   "why": "a static framed illustration card (rankedboost's sprite used)"
+  },
+  {
+   "name": "Frozenstein",
+   "site": "diablo.fandom.com",
+   "file": "Frozenstein.gif",
+   "why": "a static framed illustration card (rankedboost's sprite used)"
+  },
+  {
+   "name": "Izual / The Summoner",
+   "site": "diablo.fandom.com",
+   "why": "on a black background; rankedboost's transparent sprites used"
+  }
+ ],
+ "noSpriteFound": [
+  "Bloodwitch the Wild",
+  "Lord De Seis",
+  "Treehead WoodFist"
+ ]
+}

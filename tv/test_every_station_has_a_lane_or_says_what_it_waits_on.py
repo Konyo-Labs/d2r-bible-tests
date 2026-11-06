@@ -134,13 +134,16 @@ class TestEachReelSaysWhoDeliversIt(_World):
         self.assertIn(HUNG, dl["why"])
         self.assertIn("next try is in", dl["why"])
 
-    def test_a_triage_empty_printer_reel_waits_on_a_seal_no_lane_writes(self):
+    def test_a_triage_empty_printer_reel_waits_on_the_drain_alone(self):
+        """REG-3314 (his 11-06 ruling "seal and flow") - a reel the full triage proved panel-free is done for the vault;
+        it waited on "a seal no lane writes" for ever. It waits on the drain alone now, which moves it by itself."""
         dl = CA._station_delivery("PRINTER", [P1, P2])
         self.assertEqual([(w["key"], len(w["reels"])) for w in dl["waits"]], [("triage-empty", 2)], dl)
-        self.assertFalse(dl["waits"][0]["selfClearing"], dl)
-        self.assertEqual(dl["noLane"], 2)
-        self.assertTrue(dl["why"].startswith("PRINTER 2: 2 wait on a seal no lane writes"), dl["why"])
-        self.assertIn("REG-1749", dl["why"])
+        self.assertTrue(dl["waits"][0]["selfClearing"], "a panel-free reel still waits on something no lane will do")
+        self.assertEqual(dl["noLane"], 0)
+        self.assertTrue(dl["why"].startswith("PRINTER 2: 2 wait on the drain only: it is panel-free"), dl["why"])
+        self.assertIn("read names are already in the journal", dl["why"])
+        self.assertNotIn("a seal no lane writes", dl["why"])
 
     def test_startable_and_swept_reels_are_delivered_and_the_rest_say_so(self):
         self.empty = set()
@@ -170,11 +173,16 @@ class TestTheDoctorCountsOnlyWhatNoLaneWillMove(_World):
                 {"reel": P1, "station": "PRINTER", "owes": "SEAL"},
                 {"reel": P2, "station": "PRINTER", "owes": "SEAL"}]
         st, say = self._verdict(rows)
+        # REG-3314 - a hung reel its lane holds and two panel-free reels the drain moves: every wait clears by itself
+        self.assertEqual(st, D.OK, say)
+        self.assertIn("holds that clear by themselves", say)
+        self.assertIn("the drain only: it is panel-free", say, "the PRINTER wait is not named")
+        self.assertIn("the vault lane, which holds it after a hang", say, "the STATION wait is not named")
+        self.empty = set()      # the same two reels NOT proven panel-free: no lane moves them, and the doctor says so
+        st, say = self._verdict(rows)
         self.assertEqual(st, D.MISSING, say)
         self.assertTrue(say.startswith("2 of 3 reel(s)"), "the reel its lane holds was counted: %s" % say)
         self.assertIn("(PRINTER 2)", say)
-        self.assertIn("a seal no lane writes", say, "the PRINTER wait is not named")
-        self.assertIn("the vault lane, which holds it after a hang", say, "the STATION wait is not named")
 
     def test_only_self_clearing_waits_is_ok_and_still_named(self):
         st, say = self._verdict([{"reel": HUNG, "station": "STATION", "owes": "a paid read"}])
@@ -196,7 +204,7 @@ class TestTheFleetRowWordsItsOwnReels(_World):
                                lambda: {"owed": 8, "reads": 6901, "owedWhy": "the whole queue"}):
             out = CA._river_stuck_worded([{"station": "PRINTER", "n": 2, "oldestS": 9 * 3600,
                                            "_reels": [P1, P2]}], 16, live=True)
-        self.assertIn("a seal no lane writes", out[0]["why"], out)
+        self.assertIn("the drain only: it is panel-free", out[0]["why"], out)
         self.assertNotIn("the whole queue", out[0]["why"], "the row quoted the lane's whole queue about two reels "
                                                            "that are not in it")
 
@@ -206,6 +214,7 @@ class TestTheFleetRowWordsItsOwnReels(_World):
                  "byKind": "observer"}]
         asked = []
         real = CA._station_delivery
+        self.empty = set()      # REG-3314 - a panel-free reel inside the window is not stuck at all; this case is the wording
         with mock.patch.object(CA, "_vault_autoread_state_cached",
                                lambda: {"owed": 8, "reads": 6901, "owedWhy": "the whole queue"}), \
                 mock.patch.object(CA, "_station_delivery", lambda *a, **k: asked.append(a) or real(*a, **k)):
@@ -311,24 +320,50 @@ class TestTheRealJoins(_World):
                  "byKind": "observer"},
                 {"at": now - 8 * 3600 * 1000, "seq": 2, "reel": P2, "station": "PRINTER", "by": "law",
                  "byKind": "observer"}]
+        self.empty = set()      # REG-3314 - reels NOT proven panel-free still owe their lane, and the row words them
         with mock.patch.object(CA, "HIST_DIR", self.tmp), \
                 mock.patch.object(CA, "_vault_autoread_state_cached",
                                   lambda: {"owed": 8, "reads": 6901, "owedWhy": "the whole queue"}):
             out = CA._river_stuck_for_wire(now_ms=now, _rows=rows, _fixtures=())
         self.assertEqual([(e["station"], e["n"]) for e in out], [("PRINTER", 2)], out)
-        self.assertIn("a seal no lane writes", out[0]["why"], out)
+        self.assertIn("no lane's queue holds it", out[0]["why"], out)
         self.assertNotIn("the whole queue", out[0]["why"], "the live wire quoted the lane's whole queue")
+
+    def test_a_panel_free_reel_inside_the_window_is_not_stuck(self):
+        """REG-3314 (his 11-06 ruling "seal and flow") - the Fleet row read "river stuck" for ever over reels the full
+        triage proved panel-free. Inside the window they owe no lane a move; a reel that is NOT proven panel-free still
+        does, and an unaskable check keeps it owed."""
+        now = int(time.time() * 1000)
+        rows = [{"at": now - 9 * 3600 * 1000, "seq": 1, "reel": P1, "station": "PRINTER", "by": "law", "byKind": "observer"},
+                {"at": now - 8 * 3600 * 1000, "seq": 2, "reel": P2, "station": "PRINTER", "by": "law", "byKind": "observer"}]
+        pf = lambda reel: reel == P1
+        out = CA._river_stuck_for_wire(now_ms=now, _rows=rows, _shelf={P1, P2}, _fixtures=(), _remnants=(), _panel_free=pf)
+        self.assertEqual([(e["station"], e["n"]) for e in out], [("PRINTER", 1)], "the panel-free reel was still called stuck")
+        def boom(reel):
+            raise OSError("the triage store would not read")
+        out = CA._river_stuck_for_wire(now_ms=now, _rows=rows, _shelf={P1, P2}, _fixtures=(), _remnants=(), _panel_free=boom)
+        self.assertEqual([(e["station"], e["n"]) for e in out], [("PRINTER", 2)], "an unaskable check let a reel flow")
 
     def test_the_doctor_asks_the_console_rule_over_the_restored_store(self):
         dl = D._river_delivery("PRINTER", [P1])
         self.assertIsInstance(dl, dict, "the doctor's seam reaches no console")
-        self.assertEqual(dl.get("noLane"), 1, dl)
+        self.assertEqual([w["key"] for w in dl.get("waits") or []], ["triage-empty"], dl)   # the console's own rule
         with mock.patch.object(CA, "_vault_autoread_load", return_value=None):
             self.assertIsNone(D._river_delivery("PRINTER", [P1]),
                               "a vault store that would not read was answered as if nothing were retired or cooling")
 
 
 RED_PROOF = [
+    {"why": "REG-3314 - a panel-free PRINTER reel inside the window is called stuck for ever again",
+     "file": "tv/control_app.py",
+     "find": "        if inside and st == \"PRINTER\" and _river_panel_free(reel, _panel_free):\n",
+     "replace": "        if False and _river_panel_free(reel, _panel_free):\n",
+     "matches": 1},
+    {"why": "REG-3314 - the panel-free wait no lane clears turns the doctor's river row MISSING again",
+     "file": "tv/control_app.py",
+     "find": "_DELIVERY_SELF_CLEARING = (\"quarantined\", \"cooling\", \"growing\", \"triage-empty\")",
+     "replace": "_DELIVERY_SELF_CLEARING = (\"quarantined\", \"cooling\", \"growing\")",
+     "matches": 1},
     {"why": "REG-3247 - the why names only the first check that could not be asked",
      "file": "tv/control_app.py",
      "find": "                on = \"%s: %s\" % (on, \"; \".join(unk[k]))\n",

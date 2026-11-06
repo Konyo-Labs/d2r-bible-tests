@@ -125,7 +125,8 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         self.assertTrue(named, "no tile carries a monster picture - the grid lost its art")
         gone = sorted(set(u for u in named if not self._art_exists(u)))
         self.assertEqual(gone, [], "the grid names pictures that are not in art/: %r" % gone)
-        self.assertIn("art/Coldcrow.gif", named)
+        crow = re.search(r"su_coldcrow:\s*'([^']+)'", _read()).group(1)
+        self.assertIn("art/" + crow, named, "Coldcrow's tile does not carry the picture the page names for him")
         self.assertIn("art/Andariel_graphic.png", named)
 
     def test_a_ranked_row_is_a_tile_a_place_and_four_captioned_numbers(self):
@@ -149,7 +150,9 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         h = g.index('<div class="qw-also-h">', i)
         self.assertIn("priced per kill", g[h:g.index("</div>", h)])
         self.assertIn("Normal The Cow King", g[i:])
-        self.assertIn("art/hellbovine_graphic.png", g[i:], "the Cow King's row lost its picture")
+        # #89 - the picture the page's own map names for him (a pinned file name broke when his sprite became the shared one)
+        cow = re.search(r"su_thecowking:\s*'([^']+)'", _read()).group(1)
+        self.assertIn("art/" + cow, g[i:], "the Cow King's row lost its picture")
         self.assertNotIn("Normal The Cow King", g[:i], "a per-kill place sat among the ranked rows")
 
 
@@ -205,6 +208,38 @@ class AnItemWithNoPlaceSaysWhereItComesFrom(unittest.TestCase):
                 wrong.append("%s: %r does not name %r" % (name, note["t"], key))
         self.assertEqual(missing, [], "these have no place to farm and their card says 'drops broadly': %s" % missing)
         self.assertEqual(wrong, [], "\n".join(wrong))
+
+
+class OneMonsterOnePicture(unittest.TestCase):
+    """#89 / #91 (his 11-06 asks: "a .GIF for coldcrow just like it is here" ... "unified across the platform and rendering
+    the same") - a super-unique's Quick wins tile and every artUrl/artOr surface draw ONE file: _QW_SU_ART names, for each
+    id, exactly the file D2IO_ART names for that monster's name. Each sprite's source is recorded in
+    tv/data/monster_art_fandom.json, and every recorded file is in art/."""
+
+    def test_quick_wins_and_the_board_name_the_same_file(self):
+        src = _read()
+        targets = json.loads(re.search(r"QW_TARGETS\s*=\s*(\{.*?\});", src, re.S).group(1))
+        su = dict(re.findall(r"(su_\w+):\s*'([^']+)'", re.search(r"var _QW_SU_ART = \{(.*?)\};", src, re.S).group(1)))
+        i = src.index("const D2IO_ART = {")
+        d2 = dict(re.findall(r'^\s*"([^"]+)":\s*"art/([^"]+)"', src[i:src.index("\n};", i)], re.M))
+        checked, differ = 0, []
+        for sid, f in sorted(su.items()):
+            name = (targets.get(sid) or {}).get("n")
+            if not name or name not in d2:
+                continue
+            checked += 1
+            if d2[name] != f:
+                differ.append("%s (%s): Quick wins %s, the board %s" % (sid, name, f, d2[name]))
+        self.assertGreaterEqual(checked, 30, "premise: too few monsters are named by both maps (%d)" % checked)
+        self.assertEqual(differ, [], "one monster, two pictures:\n  " + "\n  ".join(differ))
+
+    def test_every_recorded_sprite_is_shipped_and_sourced(self):
+        with io.open(os.path.join(HERE, "data", "monster_art_fandom.json"), encoding="utf-8") as fh:
+            rec = json.load(fh)
+        self.assertGreaterEqual(len(rec["sprites"]), 40)
+        for r in rec["sprites"]:
+            self.assertTrue(os.path.isfile(os.path.join(ROOT, r["file"])), "%s's sprite is not in art/" % r["name"])
+            self.assertTrue(r.get("url", "").startswith("https://"), "%s's sprite has no source" % r["name"])
 
 
 class TheDoctorWatchesThePictures(unittest.TestCase):
@@ -310,7 +345,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "#85 - a super-unique's picture names a file that is not in art/",
      "file": "bible.html",
-     "find": "su_coldcrow: 'Coldcrow.gif'",
+     "find": "su_coldcrow: 'd2mon_Coldcrow.gif'",
      "replace": "su_coldcrow: 'Coldcrow_gone.gif'",
      "matches": 1, "needs": "node"},
     {"why": "#85 - a ranked row loses the subtitle under its time",

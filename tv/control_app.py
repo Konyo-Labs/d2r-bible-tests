@@ -19318,15 +19318,19 @@ _DELIVERY_WAITS = {
     "cooling": "the vault lane's cooldown after an empty read",
     "retired": "nothing automatic: the vault lane retired it after its tries",
     "growing": "the recording to finish",
-    "triage-empty": ("a seal no lane writes: the triage walked it in full and found no stash panel, so the vault "
-                     "lane owes it no read (REG-1749), and only a vault read writes a seal"),
+    # REG-3314 (his 11-06 ruling: "seal and flow") - a reel the FULL triage proved panel-free is done for the vault: there
+    # is no stash to read, and the names it did read are already in the read journal. It used to wait on "a seal no lane
+    # writes" for ever and turn the Fleet row red "river stuck"; it now waits on the drain alone, like any finished reel.
+    "triage-empty": ("the drain only: it is panel-free - the full triage found no stash panel, so the vault has nothing "
+                     "to read (REG-1749) and its read names are already in the journal; it leaves under the keep-16 "
+                     "rule like any finished reel (REG-3314)"),
     "no-queue": "no lane: no lane's queue holds it",
     # r4 review - a check that could not be asked is UNKNOWN, never "no lane" (the reason follows the colon)
     "unknown": "UNKNOWN - who moves it could not be established",
 }
 #: REG-3201 - the waits a lane clears BY ITSELF (a timer or the recording ending). Every other wait needs something
 #: no lane will do on its own - a person, a new reader, a ruling - and the doctor's river row stays MISSING for it.
-_DELIVERY_SELF_CLEARING = ("quarantined", "cooling", "growing")
+_DELIVERY_SELF_CLEARING = ("quarantined", "cooling", "growing", "triage-empty")   # REG-3314: the drain moves it
 #: REG-3201 - the lane each station's standing sentence is about (river_walk.LANE_OF_STATION's owner, in words)
 _STATION_OWN_LANE = {"PRINTER": "the vault lane", "STATION": "the reel sweep"}
 
@@ -19533,7 +19537,7 @@ def _river_stuck_why(station, reels=None):
     return "no lane has moved these on"
 
 
-def _river_stuck_for_wire(now_ms=None, _rows=None, _shelf=None, _fixtures=None, _remnants=None):
+def _river_stuck_for_wire(now_ms=None, _rows=None, _shelf=None, _fixtures=None, _remnants=None, _panel_free=None):
     """#74 (REG-1461) — WHICH STATIONS ARE NOT DRAINING ON THIS PC, AND WHY. -> list | None
 
     His ask 2026-09-29, after the ALT was found with 76 reels at EMPTY and 25 at PRINTER for two days and
@@ -19641,6 +19645,11 @@ def _river_stuck_for_wire(now_ms=None, _rows=None, _shelf=None, _fixtures=None, 
         inside = reel not in _left
         if inside and st not in _RIVER_OWNER:
             continue
+        # REG-3314 (his 11-06 ruling) - inside the window a PRINTER reel the full triage proved panel-free owes no lane a
+        # move: the vault has nothing to read and its names are in the journal. Past the window it owes the drain, as
+        # every reel does. A check that cannot be asked keeps the reel owed (never "flowing" on an unknown).
+        if inside and st == "PRINTER" and _river_panel_free(reel, _panel_free):
+            continue
         try:
             since = int(r.get("at"))
         except (TypeError, ValueError):
@@ -19660,6 +19669,18 @@ def _river_stuck_for_wire(now_ms=None, _rows=None, _shelf=None, _fixtures=None, 
         return _river_stuck_worded(out, _keep, live=(_shelf is None))
     finally:
         _RIVER_WHY_CTX.reels = None
+
+
+def _river_panel_free(reel, seam=None):
+    """REG-3314 - did a FULL triage prove this reel panel-free (shelf_driver._proven_empty, retention's own rule)?
+    -> bool. Anything that cannot be asked is False, which keeps the reel owed."""
+    try:
+        if seam is not None:
+            return bool(seam(reel))
+        import shelf_driver as _sd_pf
+        return bool(_sd_pf._proven_empty(reel))
+    except Exception:
+        return False
 
 
 def _river_stuck_worded(out, _keep, live=False):

@@ -105,11 +105,15 @@ class EveryPictureIsAFileThatShips(unittest.TestCase):
         the one D2IO_ART already draws for that name - never a second, absent one."""
         with io.open(os.path.join(ROOT, "bible.html"), encoding="utf-8") as fh:
             b = fh.read()
-        for nm in ("Korlic", "Madawc"):
-            self.assertIn('"%s": "art/%s.gif"' % (nm, nm), b, "D2IO_ART no longer draws %s" % nm)
+        # #91 (his 11-06 ask: "unified across the platform and rendering the same") - all three Ancients, compared with
+        # whatever D2IO_ART draws for the name, never a pinned file name (Talic's entry named a third picture until 11-06)
+        for nm in ("Talic", "Korlic", "Madawc"):
+            d = re.search(r'"%s": "art/([^"]+)"' % nm, b)
+            self.assertIsNotNone(d, "D2IO_ART no longer draws %s" % nm)
             m = re.search(r"\{ id:'%s', name:'%s', emoji:'[^']*', art:'([^']+)'" % (nm.lower(), nm), b)
             self.assertIsNotNone(m, "UBER_BOSSES lost %s" % nm)
-            self.assertEqual("%s.gif" % nm, m.group(1), "UBER_BOSSES names %s a picture the board does not draw" % nm)
+            self.assertEqual(d.group(1), m.group(1), "UBER_BOSSES names %s a picture the board does not draw" % nm)
+            self.assertTrue(os.path.isfile(os.path.join(ROOT, "art", d.group(1))), "%s's picture is not in art/" % nm)
 
 
 class TheGuestRefreshShipsTheArt(unittest.TestCase):
@@ -228,7 +232,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3206 - UBER_BOSSES names Korlic a picture that was never in art/ (the 404 found on this tree)",
      "file": "bible.html",
-     "find": "art:'Korlic.gif',",
+     "find": "art:'d2mon_Korlic.gif',",
      "replace": "art:'korlic-opt_graphic.png',",
      "matches": 1},
     {"why": "REG-3206 - a console icon is renamed to a file art/ does not carry",

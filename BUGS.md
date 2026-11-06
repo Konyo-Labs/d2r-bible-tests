@@ -101,6 +101,48 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3315 - EVERY QUICK WINS MONSTER WAS A CROPPED 100x100 STILL, AND THE SAME MONSTER DREW DIFFERENT PICTURES ON DIFFERENT SURFACES (v3876, #89/#91, his 11-06 asks)
+His words: "a .GIF for coldcrow just like it is here" (the wiki's animated Coldcrow (Diablo II).gif) and "anywhere these
+monsters/levels/character NPC ... are already image related i want them unified across the platform and rendering the
+same". Quick wins showed diablo2.io's 100x100 crops (Coldcrow zoomed and cut off on black) for 10 super-uniques and nothing
+for the other 34 of its 44 targets. Now 41 of 44 super-uniques and the 3 Colossal Ancients carry their own animated Diablo
+II sprite, self-hosted as art/d2mon_*.gif: diablo.fandom.com's "<Name> (Diablo II).gif" first (his example), else
+rankedboost.com's boss GIFs (the same classic sprites - Coldcrow byte-identical, 57x73, 13 frames, on both). Every one
+was looked at, the small ones enlarged; the wiki's Griswold.gif was rejected (Diablo 1's blacksmith, not D2's undead
+Griswold), its Coldworm/Frozenstein (framed cards) and its black-background Izual/Summoner too. Sources, sha1 and the
+rejections: tv/data/monster_art_fandom.json. ONE PICTURE PER MONSTER: the same file is in D2IO_ART (every artUrl/artOr
+surface - 25 names repointed, 19 added), Quick wins' _QW_SU_ART (16 -> 41) and UBER_BOSSES (Talic's entry named a THIRD
+picture, talic-opt_graphic.png). The new law caught "The Summoner" twice in D2IO_ART (the later key wins in JS, so the
+first edit changed the one that does not count); both now name the sprite. No sprite on either source: Bloodwitch the
+Wild, Lord De Seis, Treehead WoodFist (they keep older art or none). Found beside it, left for #91 (v3877): D2IO_ART holds
+21 duplicate keys (set pieces mostly) - one name, two pictures, the later silently winning. Laws:
+test_quick_wins_shows_each_place_with_its_picture (+ OneMonsterOnePicture: the two maps name one file per monster; every
+recorded sprite is in art/ with a source), test_every_picture_the_console_asks_for_is_shipped (the three Ancients compared
+with D2IO_ART, never a pinned name); red-proofs PROVEN (two re-aimed from the old file names).
+
+### REG-3314 - PANEL-FREE REELS WAITED AT PRINTER FOR EVER ON "A SEAL NO LANE WRITES", AND THE FLEET ROW READ "RIVER STUCK" (v3876, his 11-06 ruling "seal and flow")
+His Fleet 11-06 20:03: "river stuck" on the Mac and the ALT. Measured: the Mac's only non-held stuck row was PRINTER 2 (the
+oldest ~4 days), the ALT's PRINTER 3 (~27 h) - reels whose FULL triage found no stash panel (REG-1749), so the vault lane
+owes them no read, and only a vault read writes the seal that lets a reel leave PRINTER. Before anything moved, the
+extraction was checked (his reminder: extracted before tombstoned): extract_gap on his live tree - both Mac reels UNSEALED,
+panel-free, and their read names already in the durable read journal (Harlequin Crest; War Traveler, Wraithstep, Goblin
+Toe ...), with no stash so no vault holdings to seal; retention already releases a proven-empty reel under its normal
+rules. Asked him: "Seal and flow". Now a panel-free PRINTER reel inside the newest-16 window owes no lane a move (the
+Fleet row stops calling it stuck); past the window it owes the drain like every reel; the wait reads "the drain only: it
+is panel-free ... its read names are already in the journal" and clears by itself (the doctor's river row is no longer
+MISSING over it). A check that cannot be asked keeps the reel owed. Not a seal write: a zero-row seal is reopened by the
+next vault prompt bump (a paid read of an empty reel), and a seal without the names puts a reel at JOIN. Law:
+test_every_station_has_a_lane_or_says_what_it_waits_on (five cases re-aimed to the ruling, + the window case), red-proofs
+PROVEN (24).
+
+### REG-3312 - GULL'S FLOATING CARD CARRIED NO MODS: THE CODEX KEYED IT "Gull (dagger)" (v3876, his 11-06 report)
+His words: "for GULL i saw that the image doesnt carry any mods ... the other items have mods already". ITEM_CODEX keys
+two unique items with a slot ("Gull (dagger)", "Harlequin Crest (Shako)") and every card looks an item up by the name the
+game prints, so the lookup missed. They are aliased by their bare names beside the older Bul-Kathos alias; never a name
+another item shares ("Crescent Moon" is the amulet AND a runeword), never a set summary ("... (any)"). Law:
+test_a_unique_named_with_its_slot_answers_its_bare_name (new: drives the page's codex in node; the class is closed - every
+unique keyed with its slot whose bare name is free is aliased), red-proof PROVEN.
+
 ### REG-3309 - TWO LAWS WERE NEVER PRE-FLIGHTED BECAUSE THEIR PROSE NAMES A BROWSER CALL (v3876)
 preflight.drives_browser matched BROWSER_CALLS over the whole source, comments and docstrings included. Measured 11-06: 2
 laws matched only in prose - test_a_cut_off_gate_set_is_not_a_verdict and test_what_keeps_growing_is_salvaged_then_pruned
