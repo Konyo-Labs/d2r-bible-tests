@@ -45,7 +45,7 @@ try {
   ({ chromium } = require('playwright'));
 }
 
-const PANE_TABS = ['forge', 'crafts', 'funi', 'fsets', 'tools', 'vault'];  // v1377 — 'session' removed: Sessions is now console-native (data-view=sessions), no longer opens a bible pane
+const PANE_TABS = ['forge', 'crafts', 'funi', 'fsets', 'tools', 'vault', 'd2jsp'];  // REG-3285 - the D2JSP tab (v3858) shipped with J1 never walking it; his console's eagle row 'surfaces agree' said so  // v1377 — 'session' removed: Sessions is now console-native (data-view=sessions), no longer opens a bible pane
 // v2092 — 'vault' added. The console got a Vault tab between Tools and TV·D this ship, and this
 // list is what J1 SHELL MATRIX actually walks — so without it the new tab would have shipped
 // with the matrix reporting a confident green about the four tabs it already knew.
