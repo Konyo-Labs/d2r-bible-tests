@@ -190,8 +190,20 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
                 % ("RED" if pcode == 1 else "UNKNOWN"))
             return 1 if pcode == 1 else 2
     say("ship: %s at %s -> ci/claude-%s + ci/proof-keys-%s" % (version, sha[:9], version, version))
-    p = _git(run, "-c", "core.hooksPath=hooks", "push", remote,
-             "+HEAD:refs/heads/ci/claude-%s" % version, "+HEAD:refs/heads/ci/proof-keys-%s" % version)
+    # v3866 - A RESUMED SHIP DOES NOT PUSH WHAT IS ALREADY THERE. Measured 2026-11-06 (v3865, resuming after a flaky
+    # Playwright re-run): both ci branches already pointed at HEAD, git ran the pre-push hook with NO ref lines (an
+    # up-to-date push sends none), tv/push_lane.py rightly reads "no ref ships" as the FULL gate, and a flaky test_control
+    # case refused a push that shipped nothing - so the ship exited without ever reading GitHub's verdict.
+    ci_refs = ("refs/heads/ci/claude-%s" % version, "refs/heads/ci/proof-keys-%s" % version)
+    have = _git(run, "ls-remote", remote, *ci_refs)
+    at = dict((ln.split()[1], ln.split()[0]) for ln in (have.stdout or "").splitlines() if len(ln.split()) == 2)
+    if have.returncode == 0 and all(at.get(r) == sha for r in ci_refs):
+        say("ship: both ci branches already point at %s - not pushed again (git hands the hook no ref for an up-to-date "
+            "push, and no ref is read as the full Mac gate); reading GitHub's verdict" % sha[:9])
+        p = subprocess.CompletedProcess(["git", "push"], 0, "", "")
+    else:
+        p = _git(run, "-c", "core.hooksPath=hooks", "push", remote,
+                 "+HEAD:refs/heads/ci/claude-%s" % version, "+HEAD:refs/heads/ci/proof-keys-%s" % version)
     if p.returncode != 0:
         _all = ((p.stdout or "") + "\n" + (p.stderr or "")).splitlines()
         _why = [l for l in _all if "\u274c" in l or "\u2717" in l or "refused" in l.lower()] or _all[-8:]

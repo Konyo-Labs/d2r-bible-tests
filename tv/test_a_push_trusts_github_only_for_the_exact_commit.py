@@ -233,6 +233,30 @@ class TheShipWaitsForGitHubOnTheExactCommit(unittest.TestCase):
         self.assertIn("core.hooksPath=hooks", mains[0])
         self.assertFalse(any("--no-verify" in c or "-f" in c or "--force" in c for c in mains), "main was forced")
 
+    def test_a_resumed_ship_does_not_push_ci_branches_already_at_head(self):
+        """v3866 - both ci branches already at HEAD: an up-to-date push hands the hook no refs, and no refs is the full
+        Mac gate; a resumed ship reads GitHub's verdict instead of pushing nothing through the whole gate."""
+        import ship_when_green as SW
+        listed = "%s\trefs/heads/ci/claude-v3862\n%s\trefs/heads/ci/proof-keys-v3862\n" % (SHA, SHA)
+        t, calls, said = [0], [], []
+
+        def run(argv, **kw):
+            calls.append(list(argv))
+            if argv[:2] == ["git", "ls-remote"]:
+                return subprocess.CompletedProcess(argv, 0, listed, "")
+            if argv[:3] == ["git", "status", "--porcelain"]:
+                return subprocess.CompletedProcess(argv, 0, "", "")
+            if argv[:3] == ["git", "rev-parse", "HEAD"]:
+                return subprocess.CompletedProcess(argv, 0, SHA + "\n", "")
+            return subprocess.CompletedProcess(argv, 0, "", "")
+        rc = SW.ship("v3862", run=run, fetch=lambda sha: _all_green(), sleep=lambda s: None, clock=lambda: t[0],
+                     say=said.append, preflight=False)
+        self.assertEqual(rc, 0, said)
+        ci = [c for c in calls if "push" in c and any("refs/heads/ci/" in x for x in c)]
+        self.assertEqual(ci, [], "ci branches already at HEAD were pushed again through the full gate")
+        self.assertEqual(len([c for c in calls if c[:1] == ["git"] and "HEAD:main" in c]), 1, "main was not pushed")
+        self.assertTrue(any("already point at" in l for l in said), said)
+
     def test_red_stops_the_ship_and_names_the_workflow(self):
         runs = _all_green()
         runs[2] = _run(CV.REQUIRED[2], conclusion="failure")
@@ -286,6 +310,11 @@ class TheShipWaitsForGitHubOnTheExactCommit(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3866 - a resumed ship pushes ci branches already at HEAD, and the empty ref list runs the full Mac gate",
+     "file": "tv/ship_when_green.py",
+     "find": "    if have.returncode == 0 and all(at.get(r) == sha for r in ci_refs):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
     {"why": "v3865 - a red pre-flight still pushes the version to GitHub",
      "file": "tv/ship_when_green.py",
      "find": "        if pcode != 0:\n",
