@@ -17644,6 +17644,7 @@ window._lockMark = function(isOpen, px, label){
     // v829 — RACE FIX: film remembers __want; stale probe callbacks ignored.
     var film = $('th-film'); if (!film) return;
     if (film.__url === url){ film.__want = url; _thPend(film, false); return; }
+    film.removeAttribute('data-missing');
     film.__want = url;
     for (var pi = 0; pi < _thPool.length; pi++){
       if (_thPool[pi].complete && _thPool[pi].src && _thPool[pi].src.indexOf(url) >= 0){
@@ -17653,7 +17654,24 @@ window._lockMark = function(isOpen, px, label){
     var probe = _thPool[0];
     var land = function(){ if (film.__want === url){ film.src = url; film.__url = url; _thPend(film, false); } };
     probe.onload = land;
-    probe.onerror = land;
+    /* REG-3291 (#58, GrokBot on #230: Dean offline, the instant-replay frames drew broken images, naturalWidth 0) - A PICTURE
+       NOBODY COULD SERVE SAYS WHY, never a broken box (#237). The error handler was `land`: it put the failed URL on the
+       stage. Now the stage keeps no picture, dims, and the caption and the hover say why. */
+    probe.onerror = function(){
+      if (film.__want !== url) return;
+      film.removeAttribute('src'); film.__url = url; _thPend(film, false);
+      film.style.opacity = .25;
+      var shadow = false;
+      try { shadow = (typeof _consoleShadowUp === 'function') && _consoleShadowUp(); } catch (eS) { shadow = false; }
+      var why = shadow ? 'the owner\u2019s console did not serve this picture - its PC may be offline'
+                       : 'this picture is not on this PC - it was pruned or never written';
+      film.title = why;
+      film.setAttribute('data-missing', why);
+      try {
+        var c = $('th-caption');
+        if (c && String(c.textContent || '').indexOf(why) < 0) c.innerHTML += ' <span class="ar-dim th-missing-say">\u00b7 ' + why + '</span>';
+      } catch (eC) {}
+    };
     if (probe.src && probe.src.indexOf(url) >= 0) { film.src = url; film.__url = url; _thPend(film, false); }
     else {
       probe.src = url;
