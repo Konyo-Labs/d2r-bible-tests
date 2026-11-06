@@ -165,8 +165,52 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
         self.assertEqual(state, CD.MISSING, "a picture the grid names went missing and the doctor said %r" % why)
         self.assertIn("Coldcrow.gif", why)
 
+    def test_a_missing_boss_portrait_reads_missing(self):
+        """REG-3278 (the Grok CLI on v3874) - a tile uses BOSS_PORTRAIT first; its files were never checked."""
+        from unittest import mock
+        sys.path.insert(0, HERE)
+        import console_doctor as CD
+        real = os.path.isfile
+        with mock.patch.object(CD.os.path, "isfile", lambda p: False if p.endswith("Andariel_graphic.png") else real(p)):
+            state, why = CD._check_quick_wins_places_have_their_pictures()
+        self.assertEqual(state, CD.MISSING, "Andariel's portrait went missing and the doctor said %r" % why)
+        self.assertIn("Andariel_graphic.png", why)
+
+    def test_a_zone_table_that_will_not_parse_still_names_a_missing_monster(self):
+        """REG-3278 - the zone parse failed first and returned UNKNOWN over a monster file already known gone."""
+        from unittest import mock
+        sys.path.insert(0, HERE)
+        import console_doctor as CD
+        real_open, real_isfile = open, os.path.isfile
+        page = real_open(os.path.join(ROOT, "bible.html"), encoding="utf-8").read()
+        i = page.index("var TZ_INFO = {") + len("var TZ_INFO = {")
+        broken = page[:i] + "'not json'," + page[i:]
+
+        def fake_open(path, *a, **k):
+            if str(path).endswith("bible.html"):
+                import io as _io
+                return _io.StringIO(broken)
+            return real_open(path, *a, **k)
+        with mock.patch("builtins.open", fake_open):
+            state, why = CD._check_quick_wins_places_have_their_pictures()
+            self.assertEqual(state, CD.UNKNOWN, "premise: a table that will not parse is UNKNOWN when nothing is gone: %r" % why)
+            with mock.patch.object(CD.os.path, "isfile", lambda p: False if p.endswith("Coldcrow.gif") else real_isfile(p)):
+                state, why = CD._check_quick_wins_places_have_their_pictures()
+        self.assertEqual(state, CD.MISSING, "a missing monster hid behind the zone table's parse error: %r" % why)
+        self.assertIn("Coldcrow.gif", why)
+
 
 RED_PROOF = [
+    {"why": "REG-3278 - the boss portraits a tile uses first are never checked",
+     "file": "tv/console_doctor.py",
+     "find": "    mon = sorted(set(\"art/\" + f for f in files + bosses))\n",
+     "replace": "    mon = sorted(set(\"art/\" + f for f in files))\n",
+     "matches": 1},
+    {"why": "REG-3278 - a zone table that will not parse hides a missing monster picture",
+     "file": "tv/console_doctor.py",
+     "find": "    except ValueError:\n        if gone_mon:\n",
+     "replace": "    except ValueError:\n        if False:\n",
+     "matches": 1},
     {"why": "REG-3269 - the doctor reads ok while a picture the Quick wins grid names is gone from art/",
      "file": "tv/console_doctor.py",
      "find": "    if gone:\n        return MISSING, \"%d of the %d pictures the Quick wins grid names are not in art/: %s\" % (\n",

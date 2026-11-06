@@ -907,7 +907,11 @@ export async function onRequestPost(context) {
   const wOver = wSpent >= MATERIAL_PAIRS_PER_DAY;
   const writeNow = (material && !wOver) || ageS >= REFRESH_S;
   rec.wDay = wDay;
-  rec.wN = wSpent + (writeNow ? 1 : 0);
+  /* REG-3277 (the Grok CLI on v3873) - only a write the refresh cadence would NOT have made spends the material budget:
+     counting the REFRESH_S writes too (about 390 a day at 220 s) left a busy PC some 210 material pairs, not the 600 the
+     ceiling above budgets beside the cadence. Two posts in flight at once can still both count one (KV has no
+     compare-and-set) - beacons are 60 s apart, so the ceiling is a bound to within a write, said here. */
+  rec.wN = wSpent + ((writeNow && ageS < REFRESH_S) ? 1 : 0);
 
   try {
     if (writeNow) {

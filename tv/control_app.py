@@ -7898,6 +7898,10 @@ def _establish_tree_at_boot():
 
 #: REG-1719 — two boot installs never run pip at the same moment
 _PIP_BOOT_LOCK = threading.Lock()
+#: REG-3276 (the Grok CLI on v3874) - one door per package: the boot thread and the repair book's later ask never run it
+#: at once (the second waits and then reads the first one's record), so neither overwrites the other's attempt
+_PKG_DOOR_LOCKS = {}
+_PKG_DOOR_GUARD = threading.Lock()
 
 
 def _ensure_pkg_at_boot(mod, pkg, rec_attr, _find=None, _run=None):
@@ -7927,17 +7931,34 @@ def _ensure_pkg_at_boot(mod, pkg, rec_attr, _find=None, _run=None):
             return None
     except Exception:
         return None
+    # REG-3276 (the Grok CLI on v3874, finding 5) - the boot thread and the repair book both call this door; unserialized,
+    # the second set a fresh tried=False record over the first one's install still in flight
+    with _PKG_DOOR_GUARD:
+        _lk = _PKG_DOOR_LOCKS.setdefault(rec_attr, threading.Lock())
+    with _lk:
+        return _ensure_pkg_door(mod, pkg, rec_attr, _find, _run)
+
+
+def _ensure_pkg_door(mod, pkg, rec_attr, _find=None, _run=None):
+    """_ensure_pkg_at_boot's body, run under its package's own door lock (REG-3276)."""
     import importlib
     import importlib.util
     find = _find or importlib.util.find_spec
     # REG-3268 (the Grok CLI on REG-3158) - AN INSTALL THIS PROCESS ALREADY MADE STAYS SAID. The boot thread installs the
     # package (tried, ok); the repair book asks later, finds it importable, and a fresh record replaced the install's - so
     # status.repairBook read "fine" with fixedAt null and never said the repair had fired.
+    # REG-3276 (the Grok CLI on v3874, finding 1) - but only while the package STILL imports: one removed after the boot
+    # install read "fixed" for ever and pip never ran again, which is the repair the book asks this door for.
     try:
         import console_doctor as _cd0
         _prev = getattr(_cd0, rec_attr, None)
         if isinstance(_prev, dict) and _prev.get("tried") is True and _prev.get("ok") is True:
-            return _prev
+            try:
+                _still = find(mod) is not None
+            except Exception:
+                _still = False
+            if _still:
+                return _prev
     except Exception:
         pass
     rec = {"ts": int(time.time() * 1000), "tried": False, "ok": None, "why": None}

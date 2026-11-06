@@ -208,6 +208,17 @@ class ABeaconRecordsTheCheckIn(unittest.TestCase):
         v = _beacons([dict(BASE), moved], age_between=60, patch_between={"wDay": "2000-01-01", "wN": 600})
         self.assertIn("lastseen", (v["replies"][1] or {}).get("stored") or [], "yesterday's count held today's news back")
 
+    def test_a_refresh_write_does_not_spend_the_material_budget(self):
+        """REG-3277 (the Grok CLI on v3873) - every REFRESH_S write counted as material: a busy PC kept ~210 of its 600."""
+        import datetime
+        today = datetime.datetime.utcnow().date().isoformat()
+        v = _beacons([dict(BASE), dict(BASE)], age_between=1800, patch_between={"wDay": today, "wN": 5})
+        self.assertIn("lastseen", (v["replies"][1] or {}).get("stored") or [], "premise: the refresh wrote")
+        self.assertEqual((v["lastseen"] or {}).get("wN"), 5, "a refresh-only write spent a material write")
+        moved = dict(BASE, tally={"ok": True, "sets": {"have": 1, "total": 135}})
+        v = _beacons([dict(BASE), moved], age_between=60, patch_between={"wDay": today, "wN": 5})
+        self.assertEqual((v["lastseen"] or {}).get("wN"), 6, "a material write inside the window was not counted")
+
     def test_a_first_ever_beacon_is_recorded(self):
         """A cold console is not a repeat; `ageS` falls back to 1e9 and `material` is true."""
         v = _beacons([dict(BASE)])
@@ -274,6 +285,11 @@ class ABeaconRecordsTheCheckIn(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3277 - a refresh the cadence makes anyway spends the material budget",
+     "file": "functions/api/console.js",
+     "find": "  rec.wN = wSpent + ((writeNow && ageS < REFRESH_S) ? 1 : 0);\n",
+     "replace": "  rec.wN = wSpent + (writeNow ? 1 : 0);\n",
+     "matches": 1, "needs": "node"},
     {"why": "REG-3266 - every material beacon writes both keys again, whatever the PC spent today",
      "file": "functions/api/console.js",
      "find": "  const writeNow = (material && !wOver) || ageS >= REFRESH_S;\n",

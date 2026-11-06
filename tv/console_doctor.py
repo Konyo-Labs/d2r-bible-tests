@@ -11147,31 +11147,47 @@ def _check_the_d2jsp_price_backend_matches_its_database():
     return OK, "the D2JSP tab shows the database price and the posts it was weighed from"
 
 def _check_quick_wins_places_have_their_pictures():
-    """#85 (REG-3269) - every picture the Quick wins grid names is in art/: each super-unique's sprite or portrait
-    (_QW_SU_ART) and every zone's level art (TZ_INFO's slugs, art/tz_<slug>.jpg). A tile whose file is gone renders as an
-    empty dark square under a confident name - an art clean-up is exactly what would do it, and no gate opens the page."""
+    """#85 (REG-3269) - every picture the Quick wins grid names is in art/: each boss's HD portrait (BOSS_PORTRAIT, which a
+    tile uses FIRST), each super-unique's sprite or portrait (_QW_SU_ART) and every zone's level art (TZ_INFO's slugs,
+    art/tz_<slug>.jpg). A tile whose file is gone renders as an empty dark square under a confident name - an art clean-up
+    is exactly what would do it, and no gate opens the page.
+
+    REG-3278 (the Grok CLI on v3874) - the boss portraits were never checked (a deleted Andariel_graphic.png read OK while
+    her tile drew no monster), and a zone table that would not parse returned UNKNOWN before the monster files it had
+    already listed were looked at; it is matched across lines now, and a missing monster picture is said either way."""
     try:
         with open(os.path.join(ROOT, "bible.html"), encoding="utf-8", errors="replace") as fh:
             page = fh.read()
     except OSError:
         return UNKNOWN, "bible.html could not be read, so the Quick wins pictures are unknown"
     m = re.search(r"var _QW_SU_ART = \{(.*?)\};", page, re.S)
-    t = re.search(r"var TZ_INFO = (\{.*?\});", page)
-    if not m or not t:
-        return MISSING, "the Quick wins grid's picture map (_QW_SU_ART) or the zone table (TZ_INFO) is gone from the page"
+    t = re.search(r"var TZ_INFO = (\{.*?\});", page, re.S)
+    b = re.search(r"var BOSS_PORTRAIT = \{(.*?)\n  \};", page, re.S)
+    lost = [n for n, x in (("_QW_SU_ART", m), ("TZ_INFO", t), ("BOSS_PORTRAIT", b)) if not x]
+    if lost:
+        return MISSING, "the Quick wins grid's %s is gone from the page" % " and ".join(lost)
     files = re.findall(r"'([^']+\.(?:gif|png|jpg))'", m.group(1))
+    bosses = re.findall(r"[\w$]+\s*:\s*'([^']+\.(?:gif|png|jpg|webp))'", re.sub(r"/\*.{0,8000}?\*/", "", b.group(1), flags=re.S))
+    if not files:
+        return MISSING, "the Quick wins grid names no monster picture - its map is empty"
+    if not bosses:
+        return MISSING, "the Quick wins grid's boss portraits (BOSS_PORTRAIT) name no file"
+    mon = sorted(set("art/" + f for f in files + bosses))
+    gone_mon = [w for w in mon if not os.path.isfile(os.path.join(ROOT, w))]
     try:
         slugs = sorted(set(v[2] for v in json.loads(t.group(1)).values() if isinstance(v, list) and len(v) > 2))
     except ValueError:
-        return UNKNOWN, "the zone table would not parse, so the zone pictures are unknown"
-    want = ["art/" + f for f in files] + ["art/tz_%s.jpg" % s for s in slugs]
+        if gone_mon:
+            return MISSING, "%d of the %d monster pictures the Quick wins grid names are not in art/: %s (the zone table " \
+                            "would not parse, so the zone pictures are unknown)" % (len(gone_mon), len(mon), ", ".join(gone_mon[:6]))
+        return UNKNOWN, "the zone table would not parse, so the zone pictures are unknown (all %d monster pictures are " \
+                        "in art/)" % len(mon)
+    want = mon + ["art/tz_%s.jpg" % s for s in slugs]
     gone = [w for w in want if not os.path.isfile(os.path.join(ROOT, w))]
-    if not files:
-        return MISSING, "the Quick wins grid names no monster picture - its map is empty"
     if gone:
         return MISSING, "%d of the %d pictures the Quick wins grid names are not in art/: %s" % (
             len(gone), len(want), ", ".join(gone[:6]))
-    return OK, "all %d pictures the Quick wins grid names are in art/ (%d monsters, %d zones)" % (len(want), len(files), len(slugs))
+    return OK, "all %d pictures the Quick wins grid names are in art/ (%d monsters, %d zones)" % (len(want), len(mon), len(slugs))
 
 
 def _check_the_macs_own_d2jsp_window_keeps_its_session():

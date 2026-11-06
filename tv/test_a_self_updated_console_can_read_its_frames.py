@@ -87,6 +87,42 @@ class ASelfUpdatedConsoleCanReadItsFrames(unittest.TestCase):
         self.assertEqual(ca._book_rec(later, "tried", "x")[0], "fixed")
         self.assertEqual(len(self.calls), 1, "a present package was installed again")
 
+    def test_a_package_removed_after_the_boot_install_is_installed_again(self):
+        """REG-3276 (the Grok CLI on v3874, finding 1) - the earlier install's record answered for a package that is gone."""
+        first = ca._ensure_pillow_at_boot(_find=self._find, _run=self._run())
+        self.assertIs(first.get("ok"), True)
+        self.present[0] = False                     # Pillow uninstalled after the boot pip
+        again = ca._ensure_pillow_at_boot(_find=self._find, _run=self._run())
+        self.assertEqual(len(self.calls), 2, "a package that is gone read as fixed - pip never ran again")
+        self.assertIs(again.get("tried"), True)
+        self.assertIsNot(again, first, "the stale install record answered for a missing package")
+
+    def test_two_callers_never_run_the_door_at_once(self):
+        """REG-3276 (finding 5) - the boot thread and the repair book overlap: the second waits for the first's install."""
+        import threading as _t
+        gate, inside, most = _t.Event(), [0], [0]
+
+        def slow_run(argv, **kw):
+            inside[0] += 1
+            most[0] = max(most[0], inside[0])
+            gate.wait(2)
+            self.calls.append((argv, kw))
+            self.present[0] = True
+            inside[0] -= 1
+            return _P(0, "")
+        out = []
+        ts = [_t.Thread(target=lambda: out.append(ca._ensure_pillow_at_boot(_find=self._find, _run=slow_run)))
+              for _ in range(2)]
+        for t in ts:
+            t.start()
+        gate.set()
+        for t in ts:
+            t.join(5)
+        self.assertEqual(len(self.calls), 1, "both callers ran pip")
+        self.assertEqual(most[0], 1)
+        self.assertTrue(all(r is not None and r.get("tried") is True for r in out), out)
+        self.assertIs(cd.PILLOW_BOOT.get("tried"), True, "the doctor's record lost the install: %r" % cd.PILLOW_BOOT)
+
     def test_present_pillow_is_left_alone(self):
         self.present[0] = True
         rec = ca._ensure_pillow_at_boot(_find=self._find, _run=self._run())
@@ -172,8 +208,18 @@ if __name__ == "__main__":
 RED_PROOF = [
     {"why": "REG-3268 - the repair book's later call replaces the boot install's record, so a repair that fired reads fine",
      "file": "tv/control_app.py",
-     "find": "        if isinstance(_prev, dict) and _prev.get(\"tried\") is True and _prev.get(\"ok\") is True:\n            return _prev\n",
-     "replace": "        pass\n",
+     "find": "            if _still:\n                return _prev\n",
+     "replace": "            if False:\n                return _prev\n",
+     "matches": 1},
+    {"why": "REG-3276 - a package removed after the boot install reads fixed for ever",
+     "file": "tv/control_app.py",
+     "find": "                _still = find(mod) is not None\n",
+     "replace": "                _still = True\n",
+     "matches": 1},
+    {"why": "REG-3276 - the boot thread and the repair book run the door at once",
+     "file": "tv/control_app.py",
+     "find": "    with _lk:\n        return _ensure_pkg_door(mod, pkg, rec_attr, _find, _run)\n",
+     "replace": "    if True:\n        return _ensure_pkg_door(mod, pkg, rec_attr, _find, _run)\n",
      "matches": 1},
     {
         "why": "REG-1719 - main() stops starting the boot numpy step: a self-updated Windows PC never measures a grid",
