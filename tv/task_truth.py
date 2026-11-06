@@ -422,22 +422,27 @@ _CARD_PASS_RX = re.compile(r"\b(?:FIXED|SAW)\b")
 
 
 def cards_in(body):
-    """REG-3281 (#86) - the board cards a look answers per card: (fixed, still), each [card id str], read line by line - a
-    line naming #NN with FIXED / SAW passes it, with STILL / DIFFERS (or fails / broken) refutes it. The lanes' own issue
-    numbers (#230, #231) are never cards."""
-    fixed, still = [], []
+    """REG-3281 (#86) - the board cards a look answers per card, read line by line: [[card id, [keys the line names],
+    "fixed" | "still"]]. A line naming #NN with FIXED / SAW passes it, with STILL / DIFFERS (or fails / broken) refutes
+    it; UNKNOWN is neither. The lanes' own issue numbers (#230, #231) are never cards.
+
+    ⚠ A CARD NUMBER ALONE IS AMBIGUOUS, so the keys go with it. MEASURED on #230 the same day (12:05Z): GrokBot answered
+    "cards #21 · #27 · #45 · #59" as the GitHub ISSUES of those numbers (v2078-v2090 P1s) - "#59 ... SAW" was a Tools
+    signpost, while board card #59 is the NAME pill. A per-card answer counts for a key only when its line also names
+    that key (_look_verdict)."""
+    out = []
     for line in str(body or "")[:LOOK_BODY_CHARS].splitlines():
         ids = [i for i in _CARD_RX.findall(line) if int(i) not in (GROKBOT_ISSUE, THIRD_ISSUE)]
         if not ids:
             continue
         bad = bool(_TAG_FAIL_RX.search(line) or _LINE_FAIL_RX.search(line))
         good = bool(_CARD_PASS_RX.search(line))
+        if not (bad or good):
+            continue
+        keys = regs_in(line) + versions_in(line)
         for i in ids:
-            if bad and i not in still:
-                still.append(i)
-            elif good and not bad and i not in fixed:
-                fixed.append(i)
-    return fixed[:60], still[:60]
+            out.append([i, keys[:12], "still" if bad else "fixed"])
+    return out[:60]
 
 
 def refuted_in(body):
@@ -476,11 +481,10 @@ def look_row(comment, issue):
         no_look = bool(_NO_LOOK_RX.search(verdict))
     else:
         no_look = (not fail and not refutes) and bool(_NO_LOOK_RX.search(ab["line"]))
-    fixed, still = cards_in(body)
     return {"id": str(comment.get("id")), "issue": int(issue), "at": at, "seat": seat,
             "regs": ab["regs"], "vers": ab["vers"], "fail": fail,
             "refutes": refutes, "verdict": verdict, "noLook": no_look,
-            "cardsFixed": fixed, "cardsStill": still}
+            "cardAnswers": cards_in(body)}
 
 
 def load_looks(path):
@@ -626,7 +630,7 @@ def _look_verdict(looks, seat, key, ver, since_ms, card=None, by_version=True):
         if r.get("noLook"):
             continue                                      # v3866 - an eye that did not judge is no look, either way
         named = key in (r.get("regs") or []) or (key.startswith("v") and key in (r.get("vers") or []))
-        carded = bool(card) and (card in (r.get("cardsFixed") or []) or card in (r.get("cardsStill") or []))
+        carded = bool(card) and any(a[0] == card and key in a[1] for a in (r.get("cardAnswers") or []))
         if named or carded:
             about_it.append(r)
         elif ver and ver in (r.get("vers") or []):
@@ -635,7 +639,8 @@ def _look_verdict(looks, seat, key, ver, since_ms, card=None, by_version=True):
     if not about_it:
         return None, None, newest_ver
     last = max(about_it, key=lambda r: (r["at"], r.get("id")))
-    if last.get("fail") or key in (last.get("refutes") or []) or (card and card in (last.get("cardsStill") or [])):
+    if last.get("fail") or key in (last.get("refutes") or []) or (card and any(
+            a[0] == card and key in a[1] and a[2] == "still" for a in (last.get("cardAnswers") or []))):
         return None, last, newest_ver
     return last, None, newest_ver
 
