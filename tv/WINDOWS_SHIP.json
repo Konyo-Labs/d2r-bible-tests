@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3866",
+  "ver": "v3867",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3866: the task board is derived from the evidence, the second-eye gate is armed again, and the third eye findings are fixed",
+  "note": "v3867: a slow Claude read is not a sign-out, proof stores fit 8 GB, the Grok CLI findings on later v3865 commits fixed",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

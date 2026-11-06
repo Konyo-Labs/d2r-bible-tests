@@ -7,11 +7,11 @@
       "v3867 - signing Claude in again lights its lamp at once, before the next read (REG-3227)",
       "v3867 - the Claude lamp opens a sign-in only when a sign-in is what failed (REG-3227)",
       "v3867 - a proof store keeps each input path once in memory - the ALT import paged for 9 hours on 8 GB (REG-3229)",
-      "v3867 - an offline PC's Fleet box says its last report, never that its stations are draining now (REG-3230)",
+      "v3867 - the Fleet box of an offline PC says its last report, never that its stations drain now (REG-3230)",
       "v3867 - the full vault sweep skips a reel the hang book holds, as a named sweep does (REG-3231)",
       "v3867 - a delivery check that could not be asked is UNKNOWN, never no lane (REG-3231)",
-      "v3867 - the disk-growers salvage keeps a stash's untracked files before any prune (REG-3232)",
-      "v3867 - a holders read that is partial or unanswered is UNKNOWN, and a worktree's gitdir is a hold (REG-3232)"
+      "v3867 - the disk-growers salvage keeps the untracked files of a stash before any prune (REG-3232)",
+      "v3867 - a partial or unanswered holders read is UNKNOWN, and the gitdir of a worktree is a hold (REG-3232)"
     ]
   },
   {
