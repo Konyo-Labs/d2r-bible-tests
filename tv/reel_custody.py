@@ -422,7 +422,10 @@ def _tombstone(reel, src, plan):
         return _hand("tombstone", False, None, "no tombstone — the ledger does not record this reel as removed",
                      claimsBothSeals=None, door=None, intent=intent)
     why_txt = row.get("why")
-    claims = None if why_txt is None else (BOTH_LANES in str(why_txt))
+    # REG-3293 - the deleter's sentence now names the seals it held; "seals held: chronicle and vault" is the both-seals
+    # claim, and the old fixed sentence still counts as one (the history it wrote stays reported, never excused)
+    import reel_retention as _rr_s           # one sentence, one owner: the deleter that writes it
+    claims = None if why_txt is None else (BOTH_LANES in str(why_txt) or _rr_s.SEALS_BOTH in str(why_txt))
     door = None
     try:
         import end_routes as _er

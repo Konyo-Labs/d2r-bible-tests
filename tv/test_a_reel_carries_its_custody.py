@@ -275,6 +275,27 @@ class AReelCarriesItsCustody(unittest.TestCase):
                          "the chronicle seal EXISTS (0 pages) — only the missing hand is named")
         self.assertIn("1 contradiction", c["why"])
 
+    def test_the_deleters_measured_sentence_claims_only_the_seals_it_held(self):
+        """REG-3293 - the eligible sentence names the seals it held: a 'chronicle only' release of a reel with no vault
+        seal claims nothing false; a 'chronicle and vault' one whose vault seal is gone is still caught."""
+        import reel_retention as RR
+        rows = json.load(io.open(self.W.w["reel_tombstones"], encoding="utf-8"))
+        for r in rows["reels"]:
+            if r.get("reel") == _reel(4):
+                r["why"] = "read (0 pages); seals held: chronicle only - it has given up its information"
+        _dump(self.W.w["reel_tombstones"], rows)
+        src = RC.sources(hist=self.W.hist, stamp_path=self.W.stamp)
+        c = RC.custody(_reel(4), src=src)
+        self.assertIs(_hand(c, "tombstone")["claimsBothSeals"], False)
+        self.assertEqual([k["kind"] for k in c["contradictions"]], [], "a true one-seal sentence was called a lie")
+        for r in rows["reels"]:
+            if r.get("reel") == _reel(4):
+                r["why"] = "read (0 pages); %s - it has given up its information" % RR.SEALS_BOTH
+        _dump(self.W.w["reel_tombstones"], rows)
+        c = RC.custody(_reel(4), src=RC.sources(hist=self.W.hist, stamp_path=self.W.stamp))
+        self.assertEqual([k["kind"] for k in c["contradictions"]], ["tombstone-claims-seals"],
+                         "a both-seals sentence over a missing vault seal went unread")
+
     def test_a_removal_the_shelf_still_shows_is_a_contradiction(self):
         c = RC.custody(_reel(5), src=self.W.src)
         self.assertEqual(c["entered"], ["recorder", "tombstone"])
@@ -508,6 +529,11 @@ class TheRowIsOnTheHeart(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3293 - custody never reads the deleter's measured both-seals sentence as a claim",
+     "file": "tv/reel_custody.py",
+     "find": " or _rr_s.SEALS_BOTH in str(why_txt))\n",
+     "replace": ")\n",
+     "matches": 1},
     {
         "why": "v3526 - the doctor names the first contradiction from the capped rows again ('first: ?')",
         "file": "tv/reel_custody.py",

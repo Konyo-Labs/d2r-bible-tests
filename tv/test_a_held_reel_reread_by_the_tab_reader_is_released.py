@@ -120,6 +120,18 @@ class TheRulingReleases(unittest.TestCase):
             self.assertEqual(row.get("keepPanels"), sorted(PANELS), "the remnant is not exactly its panel frames")
             self.assertEqual(row.get("ruling"), RR.HELD_REREAD_RULING)
             self.assertIn(sh.subject, p.get("releasedAfterReread") or [])
+            # REG-3293 - its tombstone sentence names the seals it really held (chronicle and vault here)
+            self.assertIn(RR.SEALS_BOTH, row.get("why") or "")
+            self.assertNotIn("sealed by BOTH lanes", row.get("why") or "")
+
+    def test_a_reel_with_only_a_chronicle_seal_says_so_on_its_way_out(self):
+        """REG-3293 - 529 of his 1,832 tombstones say 'sealed by BOTH lanes' over a reel the vault never sealed."""
+        with _Shelf(None, panels=0, panel_frames={}) as sh:
+            _p, row = sh.plan()
+            self.assertEqual(row.get("tag"), "eligible", "premise: a panel-free, chronicle-sealed reel is eligible: %r"
+                             % row.get("tag"))
+            self.assertIn("seals held: chronicle only", row.get("why") or "")
+            self.assertNotIn(RR.SEALS_BOTH, row.get("why") or "")
 
     def test_a_zero_pages_hold_yields_to_the_ruling_too(self):
         with _Shelf(_seal(), panels=1, panel_frames={FRAMES[1]: "chronicle"}, kind="chronicle") as sh:
@@ -193,6 +205,11 @@ class TheDoorsAgree(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3293 - the eligible sentence claims both seals whatever the reel held again",
+     "file": "tv/reel_retention.py",
+     "find": "                _seals = (SEALS_BOTH if len(_held) == 2 else\n",
+     "replace": "                _seals = (SEALS_BOTH if True else\n",
+     "matches": 1},
     {"why": "REG-3275 - the ruling never releases a panels-never-banked reel",
      "file": "tv/reel_retention.py",
      "find": "            elif _panels_never_banked(reel, ve) and not _rel(reel, ve):   # REG-3275 (#44) - his 11-06 ruling\n",

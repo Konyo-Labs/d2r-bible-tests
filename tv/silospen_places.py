@@ -39,7 +39,9 @@ _console_safe_enable()
 BASE = "https://dropcalc.silospen.com/dropcalc.php"
 VERSION = "D2R_ROW_3_0"
 UA = "d2r-bible-calc-check"
-LEVEL_MAX = 40          # Quick wins is qlvl <= 35; silospen's level is read with a margin, the page decides the list
+#: REG-3290 (his ask 2026-11-06: "im missing 8 so they each need to render their data from where to farm") - every
+#: unique: Quick wins lists every missing one now, so every one needs its places. Was 40 (Quick wins was qlvl <= 35).
+LEVEL_MAX = 99
 KEEP_FIXED = 12         # fixed targets kept per item (his MF / players can reorder the top few, never the twelfth)
 KEEP_RANDOM = 3         # random packs kept per item - shown as silospen's per-kill reading, never as a run
 PACE_S = 0.6

@@ -366,6 +366,9 @@ def _triage_row(reel):
     return (rec if isinstance(rec, dict) else None), True
 
 
+#: REG-3293 - the eligible sentence when BOTH lanes' seals were held (reel_custody may read it as the both-seals claim)
+SEALS_BOTH = "seals held: chronicle and vault"
+
 #: REG-3275 (#44) - the text a reel released under his 11-06 ruling carries on the plan and the tombstone
 HELD_REREAD_RULING = ("his 11-06 ruling (#44) - re-read once by the tab-aware vault reader, it still banks nothing: "
                       "released, its panel frames kept")
@@ -1612,10 +1615,16 @@ def plan(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT, *, _fresh=False):
                 # because I had checked _PRUNE_SAFE_TO_RUN and not retention_may_act().
                 # [[feedback-suspect-the-instrument]]
                 freed += size
+                # REG-3293 - THE TOMBSTONE'S SENTENCE STATES THE SEALS THIS REEL HELD. It said "sealed by BOTH lanes" for
+                # every release; MEASURED on his ledger 11-06: 1,832 tombstones all say it and 529 of those reels never
+                # had a vault seal (a full survey with no stash panel owes the vault no read). reel_custody reports each
+                # as a tombstone claiming seals the stores never held - true of the history; this stops writing more.
+                _held = [n for n, e in (("chronicle", ce), ("vault", ve)) if e is not None]
+                _seals = (SEALS_BOTH if len(_held) == 2 else
+                          ("seals held: %s only" % _held[0]) if _held else "seals held: none")
                 _c = {"reel": reel, "mb": round(size, 1), "pages": pages,
                       "why": _rule("eligible",
-                                   "read (%d pages) and sealed by BOTH lanes — it has "
-                                   "given up its information" % pages),
+                                   "read (%d pages); %s - it has given up its information" % (pages, _seals)),
                       "tag": "eligible"}
                 _r = _released.get(reel)
                 if _r and _r[0]:            # REG-3275 (#44) - released by his ruling: its panel frames stay
