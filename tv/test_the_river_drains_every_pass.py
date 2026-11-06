@@ -1044,7 +1044,7 @@ RED_PROOF = [
     {
         "why": "2026-09-28 §26 - a released reel takes the picture a vault item stands on again (rmtree whole)",
         "file": "reel_retention.py",
-        "find": "            kept = sorted(f for f in os.listdir(path) if f in _evid)\n",
+        "find": "            kept = sorted(f for f in os.listdir(path) if f in _evid or f in _pan)\n",
         "replace": "            kept = []\n",
         "matches": 1,
     },

@@ -273,8 +273,8 @@ class TheWorkflowSeedsEveryShardFromIt(unittest.TestCase):
         key = re.search(r"\n          key: (.+)", joined[0]).group(1)
         self.assertTrue(key.startswith("heart2-proofs-${{ github.sha }}-${{ github.run_id }}-"),
                         "the re-run's restore-keys prefix never matches the saved key %r" % key)
-        cp = fan.index('cp "$RUNNER_TEMP/heart2-seed/.heart2_cache.json" "$RUNNER_TEMP/heart2-seed/rerun/.heart2_cache.json"')
-        self.assertLess(fan.index("--merge-shards shards --out"), cp)
+        cp = fan.index('--merge-shards shards --out "$RUNNER_TEMP/heart2-seed/rerun/.heart2_cache.json"')
+        self.assertLess(fan.index('--merge-shards shards --out "$RUNNER_TEMP/heart2-seed/.heart2_cache.json"'), cp)
         self.assertLess(cp, fan.index(joined[0]), "the re-run copy is saved before it is written")
         prove = shard[shard.index("- name: Prove this shard"):]
         w = prove.index("python3 tv/proof_seed.py --widen")

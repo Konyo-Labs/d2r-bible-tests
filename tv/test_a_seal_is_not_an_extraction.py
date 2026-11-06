@@ -75,8 +75,8 @@ RED_PROOF = [
                "panel anywhere are held waiting for a prompt improvement that can never find a "
                "page, and vault-owes is never reached",
         "file": "reel_retention.py",
-        "find": "        elif pages < MIN_PAGES and not _proven_empty(reel) and not _no_chronicle_to_find(reel):",
-        "replace": "        elif pages < MIN_PAGES and not _proven_empty(reel):",
+        "find": "        elif (pages < MIN_PAGES and not _proven_empty(reel) and not _no_chronicle_to_find(reel)",
+        "replace": "        elif (pages < MIN_PAGES and not _proven_empty(reel)",
         "matches": 1,
     },
     {
@@ -84,8 +84,8 @@ RED_PROOF = [
                "on the strength of a seal with zero rows behind it — the stash rows live only in "
                "those frames, and deleting them destroys the only copy",
         "file": "reel_retention.py",
-        "find": "        elif _panels_never_banked(reel, ve):",
-        "replace": "        elif False and _panels_never_banked(reel, ve):",
+        "find": "        elif _panels_never_banked(reel, ve) and not _rel(reel, ve):",
+        "replace": "        elif False and _panels_never_banked(reel, ve) and not _rel(reel, ve):",
         "matches": 1,
     },
 ]

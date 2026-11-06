@@ -319,11 +319,8 @@ jobs:
         # v3872 (run 42200089396): "Cache saved with key: heart2-proofs-...-1", then the re-run of shard 14 read "Cache not
         # found" and proved its 280 proofs again (35 min) to make up 3 the deadline had cut
         if: ${{ always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci/proof-keys-')) }}
-        run: |
-          if [ -f "$RUNNER_TEMP/heart2-seed/.heart2_cache.json" ]; then
-            mkdir -p "$RUNNER_TEMP/heart2-seed/rerun"
-            cp "$RUNNER_TEMP/heart2-seed/.heart2_cache.json" "$RUNNER_TEMP/heart2-seed/rerun/.heart2_cache.json"
-          fi
+        # the store is written by the shard merge into the seed dir - the one way a workflow may name it (the push-cache law)
+        run: python3 tv/proof_shard.py --merge-shards shards --out "$RUNNER_TEMP/heart2-seed/rerun/.heart2_cache.json"
       - name: Save it under the re-run's own path (REG-3280)
         if: ${{ always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci/proof-keys-')) }}
         continue-on-error: true
