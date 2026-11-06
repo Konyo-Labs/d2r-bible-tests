@@ -5134,7 +5134,17 @@ def _roster_reads(now_ms):
         _ROSTER_FAIL["vault"] = why
     else:
         _ROSTER_FAIL.pop("vault", None)
-    got = _rp.vault_read("ok" if rows is not None else why, rows, as_of)
+    # v3866 (his call 2026-11-06) - the sweep's evidence ledger rides beside the board's records: its grounded count and
+    # its store's own mtime, so the Fleet row says both numbers. A ledger that will not read sends none (UNKNOWN, unsaid).
+    _sweep = None
+    try:
+        _lv = vault_ledger_view()
+        _acc = ((_lv.get("stores") or {}).get("accum") or {}) if isinstance(_lv, dict) else {}
+        if _acc.get("state") == "ok":
+            _sweep = {"owned": ((_lv.get("totals") or {}).get("owned")), "asOf": _acc.get("mtime")}
+    except Exception as _se:
+        _ROSTER_FAIL["vaultSweep"] = type(_se).__name__
+    got = _rp.vault_read("ok" if rows is not None else why, rows, as_of, sweep=_sweep)
     if got is not None:
         reads["vault"] = got
 

@@ -59,6 +59,57 @@ class TheLineSaysTheVaultAndItsOwnAge(unittest.TestCase):
         self.assertEqual(self.say(_row("Dean", {"counts": 1, "asOf": NOW - 30 * 1000, "rows": []}))[1],
                          "vault 1 item · as of under 1 min ago")
 
+    def test_both_stores_are_said_each_with_its_own_age(self):
+        """v3866 (his call 2026-11-06: "show both numbers on the fleet row") - the Mac's row read "vault 1 item · STALE"
+        while the console's vault routes said 92: two stores (the board's records; the sweep's evidence ledger), one
+        number shown. Both are said now, each aged by its own store, never one folded into the other."""
+        row = _row("Konyo \u00b7 Mac", {"counts": 1, "asOf": NOW - 3 * MIN, "rows": [],
+                                        "sweep": {"owned": 92, "asOf": NOW - 86 * MIN}})
+        self.assertEqual(self.say(row), ("current", "vault 1 item \u00b7 as of 3 min ago \u00b7 sweep evidence 92 (not filed) "
+                                                    "\u00b7 86 min ago", "roster-sec"))
+        stale = _row("Dean", {"counts": 40, "asOf": NOW - 3 * 60 * MIN, "rows": [], "sweep": {"owned": 5, "asOf": 0}})
+        self.assertEqual(self.say(stale)[1], "vault 40 items \u00b7 as of 3 hr ago \u00b7 STALE",
+                         "a sweep pair whose age will not read was said")
+        self.assertIsNone(RP.sweep_of({"owned": True, "asOf": NOW}), "a bool was taken as a count")
+        self.assertIsNone(RP.sweep_of({"owned": -1, "asOf": NOW}))
+
+    def test_the_hash_takes_the_sweeps_count_never_its_age(self):
+        a = RP.for_hash({"vault": {"counts": 1, "asOf": 5, "rows": [], "sweep": {"owned": 92, "asOf": 100}}})
+        b = RP.for_hash({"vault": {"counts": 1, "asOf": 5, "rows": [], "sweep": {"owned": 92, "asOf": 999}}})
+        c = RP.for_hash({"vault": {"counts": 1, "asOf": 5, "rows": [], "sweep": {"owned": 93, "asOf": 100}}})
+        self.assertEqual(a, b, "every touch of the ledger file would republish the roster row")
+        self.assertNotEqual(a, c, "a new grounded row would never reach the Fleet")
+
+    @unittest.skipUnless(NODE, "node is absent - the worker is UNMEASURED here, never a pass")
+    def test_the_worker_keeps_the_pair_and_hashes_the_count(self):
+        import io
+        script = r"""
+import { pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+const CFG = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+const m = await import(pathToFileURL(CFG.file).href);
+const base = { asOf: 5, counts: 1, rows: [{ name: 'x' }] };
+const a = m.shapeSection(Object.assign({}, base, { sweep: { owned: 92, asOf: 100 } }));
+const b = m.shapeSection(Object.assign({}, base, { sweep: { owned: 92, asOf: 999 } }));
+const bad = m.shapeSection(Object.assign({}, base, { sweep: { owned: 'x', asOf: 100 } }));
+process.stdout.write(JSON.stringify({ kept: a.sweep, bad: bad.sweep || null,
+  same: m.forHash({ vault: a }) === m.forHash({ vault: b }) }));
+"""
+        d = tempfile.mkdtemp(prefix="vault-sweep-worker-")
+        try:
+            h, c = os.path.join(d, "h.mjs"), os.path.join(d, "cfg.json")
+            io.open(h, "w", encoding="utf-8").write(script)
+            io.open(c, "w", encoding="utf-8").write(json.dumps({"file": os.path.join(os.path.dirname(HERE), "functions", "api",
+                                                                                      "roster.js")}))
+            r = subprocess.run([NODE, h, c], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
+        finally:
+            shutil.rmtree(d, True)
+        self.assertEqual(r.returncode, 0, r.stderr[-800:])
+        o = json.loads(r.stdout)
+        self.assertEqual(o["kept"], {"owned": 92, "asOf": 100}, "the worker drops the sweep's number")
+        self.assertIsNone(o["bad"], "the worker kept a count that is not a number")
+        self.assertTrue(o["same"], "the worker hashes the sweep's age, so the PC and the worker disagree on every touch")
+
     def test_past_the_ttl_it_says_stale(self):
         self.assertEqual(self.say(_row("Dean", {"counts": 40, "asOf": NOW - 3 * 60 * MIN, "rows": []})),
                          ("stale", "vault 40 items · as of 3 hr ago · STALE", "roster-stale"))
@@ -216,6 +267,21 @@ class TheConsolePrintsTheRoutesWords(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3866 - the Fleet row says one store's number again (the sweep's 92 never reaches the row)",
+     "file": "tv/roster_publish.py",
+     "find": "    sw = sweep_of(sec.get(\"sweep\"))\n    tail = \"\"\n",
+     "replace": "    sw = None\n    tail = \"\"\n",
+     "matches": 1},
+    {"why": "v3866 - every touch of the sweep ledger republishes the roster row (its age is hashed)",
+     "file": "tv/roster_publish.py",
+     "find": "            kept[\"sweep\"] = {\"owned\": kept[\"sweep\"].get(\"owned\")}",
+     "replace": "            kept[\"sweep\"] = kept[\"sweep\"]",
+     "matches": 1},
+    {"why": "v3866 - the worker drops the sweep pair on arrival",
+     "file": "functions/api/roster.js",
+     "find": "&& typeof sw.asOf === \"number\" && Number.isFinite(sw.asOf) && sw.asOf > 0) out.sweep = { owned: sw.owned, asOf: sw.asOf };",
+     "replace": "&& typeof sw.asOf === \"number\" && Number.isFinite(sw.asOf) && sw.asOf > 0) {}",
+     "matches": 1},
     {"why": "REG-3122 - the line dates the vault by the copy's time, not the vault's own asOf",
      "file": "tv/roster_publish.py",
      "find": "    state, words = _ago(sec.get(\"asOf\"), now_ms)\n    head = \"vault %d item%s\"",
@@ -223,7 +289,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3122 - a vault past the TTL reads as current",
      "file": "tv/roster_publish.py",
-     "find": "    if state == \"stale\":\n        return {\"cls\": \"roster-stale\", \"state\": \"stale\", \"words\": head + \" \\u00b7 as of \" + words + \" \\u00b7 STALE\"}\n",
+     "find": "    if state == \"stale\":\n        return {\"cls\": \"roster-stale\", \"state\": \"stale\", \"words\": head + \" \\u00b7 as of \" + words + \" \\u00b7 STALE\" + tail}\n",
      "replace": "",
      "matches": 1},
     {"why": "REG-3122 - a row with no vault section reads as an empty vault",

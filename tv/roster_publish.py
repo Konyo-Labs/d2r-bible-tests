@@ -199,7 +199,22 @@ def section_of(raw, now_ms=None):
     rows_as_of = raw.get("rowsAsOf")
     if "rows" in out and isinstance(rows_as_of, int) and not isinstance(rows_as_of, bool) and rows_as_of > 0:
         out["rowsAsOf"] = rows_as_of
+    sw = sweep_of(raw.get("sweep"))
+    if sw is not None:
+        out["sweep"] = sw
     return out
+
+
+def sweep_of(sw):
+    """v3866 (his call 2026-11-06: "show both numbers on the fleet row") - what the SWEEP's evidence ledger grounds
+    (vault_accum.json: rows the AI sweep saw on his reels, REG-2817's "evidence, not truth"), carried beside the board's
+    own records: {owned, asOf} - a count and that store's OWN age - or None when either will not read."""
+    if not isinstance(sw, dict):
+        return None
+    n, at = sw.get("owned"), sw.get("asOf")
+    if isinstance(n, bool) or not isinstance(n, int) or n < 0 or isinstance(at, bool) or not isinstance(at, int) or at <= 0:
+        return None
+    return {"owned": n, "asOf": at}
 
 
 def sections_from(reads, now_ms=None):
@@ -275,13 +290,17 @@ def with_save_names(section, saves, now_ms):
     return out
 
 
-def vault_read(state, rows, as_of):
+def vault_read(state, rows, as_of, sweep=None):
     if state != "ok" or rows is None or not isinstance(rows, list):
         return None
     if isinstance(as_of, bool) or not isinstance(as_of, int) or as_of <= 0:
         return None
-    return {"read": True, "asOf": as_of, "counts": len(rows), "rows": rows,
-            "allow": ("name", "tier", "mule", "locker", "looks", "evidence")}
+    out = {"read": True, "asOf": as_of, "counts": len(rows), "rows": rows,
+           "allow": ("name", "tier", "mule", "locker", "looks", "evidence")}
+    sw = sweep_of(sweep)
+    if sw is not None:
+        out["sweep"] = sw          # v3866 - the sweep ledger's count rides beside the board's records, its own age with it
+    return out
 
 
 def stash_read(rows, as_of):
@@ -639,6 +658,8 @@ def for_hash(sections):
         if not isinstance(sec, dict):
             continue
         kept = {k: sec[k] for k in sorted(sec) if k not in ("asOf", "rowsAsOf", "hash", "allow")}   # REG-2745
+        if isinstance(kept.get("sweep"), dict):
+            kept["sweep"] = {"owned": kept["sweep"].get("owned")}   # v3866 - the count, never its age (no churn)
         out[name] = kept
     return out
 
@@ -1367,11 +1388,18 @@ def vault_line(row, now_ms):
         return {"cls": "roster-unknown", "state": "unknown", "words": "vault UNKNOWN (its count would not read)"}
     state, words = _ago(sec.get("asOf"), now_ms)
     head = "vault %d item%s" % (n, "" if n == 1 else "s")
+    # v3866 (his call 2026-11-06: "show both numbers on the fleet row") - the board's records (the vault) and what the
+    # SWEEP's evidence ledger grounds are two stores; both are said, each with its own age, never one summed into the other
+    sw = sweep_of(sec.get("sweep"))
+    tail = ""
+    if sw is not None:
+        s_state, s_words = _ago(sw["asOf"], now_ms)
+        tail = " \u00b7 sweep evidence %d (not filed) \u00b7 %s" % (sw["owned"], s_words if s_state != "unknown" else "age UNKNOWN")
     if state == "unknown":
-        return {"cls": "roster-unknown", "state": "unknown", "words": head + " \u00b7 age UNKNOWN"}
+        return {"cls": "roster-unknown", "state": "unknown", "words": head + " \u00b7 age UNKNOWN" + tail}
     if state == "stale":
-        return {"cls": "roster-stale", "state": "stale", "words": head + " \u00b7 as of " + words + " \u00b7 STALE"}
-    return {"cls": "roster-sec", "state": "current", "words": head + " \u00b7 as of " + words}
+        return {"cls": "roster-stale", "state": "stale", "words": head + " \u00b7 as of " + words + " \u00b7 STALE" + tail}
+    return {"cls": "roster-sec", "state": "current", "words": head + " \u00b7 as of " + words + tail}
 
 
 def panel_words(payload):

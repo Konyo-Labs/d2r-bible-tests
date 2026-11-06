@@ -159,6 +159,10 @@ export function shapeSection(raw) {   // exported for its law (REG-2745)
   if (!("counts" in out) && !("rows" in out)) return null;
   // #200 (REG-2745) - when the rows were read; kept beside them, never hashed (forHash below)
   if (out.rows && typeof raw.rowsAsOf === "number" && Number.isFinite(raw.rowsAsOf) && raw.rowsAsOf > 0) out.rowsAsOf = raw.rowsAsOf;
+  // v3866 (his call 2026-11-06) - the vault's sweep evidence beside the board's records: a count and that store's own age
+  const sw = raw.sweep;
+  if (sw && typeof sw === "object" && !Array.isArray(sw) && Number.isInteger(sw.owned) && sw.owned >= 0
+      && typeof sw.asOf === "number" && Number.isFinite(sw.asOf) && sw.asOf > 0) out.sweep = { owned: sw.owned, asOf: sw.asOf };
   return out;
 }
 
@@ -169,7 +173,7 @@ export function forHash(sections) {   // exported for its law (REG-2745)
     const c = {};
     for (const k of Object.keys(sec).sort()) {
       if (k === "asOf" || k === "rowsAsOf" || k === "hash") continue;   // REG-2745
-      c[k] = sec[k];
+      c[k] = (k === "sweep" && sec[k] && typeof sec[k] === "object") ? { owned: sec[k].owned } : sec[k];   // v3866 - its count only
     }
     o[name] = c;
   }
