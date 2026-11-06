@@ -23964,6 +23964,16 @@ window._lockMark = function(isOpen, px, label){
     var gen = ++_ssvGen;
     ov._ssvBody.innerHTML = _shadowSessionsHead(owner) + '<div class="ssv-sub">reading their published sessions\u2026</div>';
     ov.hidden = false;
+    /* REG-3256 (#81, GrokBot's v3869 pass on the work ALT) - THE WAIT HAS A BOUND. The fetch had none, so a console
+       too busy to answer (the ALT importing 9,032 proofs on 8 GB beside the game) left "reading their published
+       sessions..." up for good with nothing to press. Measured once it was idle: the same route answers in under 1 s.
+       After 30 s the list says so; an answer that lands later is still drawn. */
+    setTimeout(function(){
+      if (gen === _ssvGen && !ov.hidden && String(ov._ssvBody.innerHTML).indexOf('reading their published sessions') >= 0)
+        ov._ssvBody.innerHTML = _shadowSessionsHtml({ ok: false, owner: owner,
+          why: 'this console has not answered in 30 s - it is busy (a proof import or a long read may be running); '
+             + 'close this and press SHELF again to ask again' });
+    }, 30000);
     fetch(API + '/api/roster-cache?frames=' + encodeURIComponent(owner), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
       .then(function(d){ if (gen === _ssvGen) ov._ssvBody.innerHTML = _shadowSessionsHtml(d); })
@@ -27847,6 +27857,38 @@ window._lockMark = function(isOpen, px, label){
 <iframe id="tvd-eng" src="/board?app=1&engine=1&v=boot#session" title="TVD engine + shell pane"
         style="position:fixed; left:0; bottom:0; width:2px; height:2px; opacity:0;
                pointer-events:none; border:0; z-index:-1" loading="eager"></iframe>
+<script>
+/* REG-3255 (#73) - AN IMAGE WHOSE LOAD THE ENGINE FRAME CANCELED IS ASKED AGAIN, ONCE. MEASURED on the work ALT
+   (headless, 1920, GETs only, 2026-11-06): every /art/ request the engine frame starts is canceled (net::ERR_ABORTED)
+   when the first status poll re-points it from v=boot to the version, and once more after; Blink shares one in-flight
+   image load between documents, so the console's own #hero, header tab icons and rune icons - asking for the same files
+   at that moment - inherit the cancel and stay broken with NO error event (complete, naturalWidth 0, onerror never
+   runs). A slow console shows it most loads (4-9 broken on the ALT; GrokBot: Mac 4-8, ALT 6-16), a fast one rarely.
+   Measured: re-asking each such image once took 9, 7 and 5 broken to 0. An image still loading, a lazy one not yet
+   asked, a loaded one and a data:/blob: one are left alone; each element is re-asked at most once. */
+(function () {
+  function _reaskCanceledImages() {
+    var n = 0;
+    try {
+      Array.prototype.forEach.call(document.images, function (im) {
+        if (!im || !im.complete || im.naturalWidth !== 0 || im.getAttribute('data-reasked')) return;
+        var src = im.getAttribute('src') || '';
+        if (!src || /^(data|blob):/i.test(src)) return;
+        im.setAttribute('data-reasked', '1');
+        im.src = src + (src.indexOf('?') < 0 ? '?' : '&') + 'reask=1';
+        n++;
+      });
+    } catch (e) {}
+    return n;
+  }
+  window._reaskCanceledImages = _reaskCanceledImages;
+  try {
+    var eng = document.getElementById('tvd-eng');
+    if (eng) eng.addEventListener('load', function () { setTimeout(_reaskCanceledImages, 1500); });
+    window.addEventListener('load', function () { setTimeout(_reaskCanceledImages, 1500); });
+  } catch (e) {}
+})();
+</script>
 <!-- v935.10 — no ⌂ CONSOLE · esc chrome. ONE SHELL: top tabs are the only nav.
      TV·D tab (and Esc) return to the live console; no floating escape pill. -->
 <style>

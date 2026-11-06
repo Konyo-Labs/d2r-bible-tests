@@ -74,7 +74,7 @@ def _line(start):
 HARNESS = r"""
 import { readFileSync } from 'node:fs';
 const CFG = JSON.parse(readFileSync(process.argv[2], 'utf8'));
-const REG = {}, CALLS = [], PENDING = [];
+const REG = {}, CALLS = [], PENDING = [], TIMERS = [];
 let CLASSES = [];
 function El(tag){ this.tagName = tag; this.children = []; this.attrs = {}; this.hidden = false; this.innerHTML = '';
                   this.listeners = {}; }
@@ -89,6 +89,7 @@ const env = {
               createElement: (t) => new El(t), getElementById: (id) => REG[id] || null, addEventListener: () => {} },
   fetch: (url, init) => { CALLS.push({ url: String(url), init: init || null });
     return new Promise((res) => PENDING.push(() => res({ json: () => Promise.resolve(CFG.answer) }))); },
+  setTimeout: (f, ms) => { TIMERS.push({ f: f, ms: ms }); return TIMERS.length; },
 };
 const F = new Function('env', 'with (env) {\n' + CFG.code + '\nreturn { html: _shadowSessionsHtml, open: _shadowSessionsOpen,'
   + ' close: _shadowSessionsClose }; }')(env);
@@ -111,6 +112,15 @@ const before = ov._ssvBody.innerHTML;
 CFG.answer = { ok: true, owner: 'Wife PC', sessions: [], ago: 'LATE' };
 await flush();
 out.late = { hidden: ov.hidden, before: before, after: ov._ssvBody.innerHTML };
+// REG-3256 - an answer that never comes ends in words after the bound; a late one still lands
+TIMERS.length = 0; PENDING.length = 0;
+F.open();
+const waitMs = TIMERS.length ? TIMERS[TIMERS.length - 1].ms : null;
+TIMERS.splice(0).forEach((t) => t.f());
+const bounded = ov._ssvBody.innerHTML;
+CFG.answer = { ok: true, owner: 'Wife PC', sessions: [], ago: 'LATE-BUT-REAL' };
+await flush();
+out.bound = { waitMs: waitMs, said: bounded, late: ov._ssvBody.innerHTML, expectLate: F.html(CFG.answer) };
 process.stdout.write(JSON.stringify(out));
 """
 
@@ -235,6 +245,23 @@ class TheListOpensReadOnly(unittest.TestCase):
         self.assertEqual(late["after"], late["before"], "an answer that landed after Close was drawn anyway")
 
 
+class TheWaitHasABound(unittest.TestCase):
+    """REG-3256 (#81) - GrokBot on the work ALT: the list sat on 'reading their published sessions...' for good."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.got = _drive()["bound"]
+
+    def test_an_answer_that_never_comes_ends_in_words(self):
+        self.assertIsNotNone(self.got["waitMs"], "the opener set no bound on its wait")
+        self.assertLessEqual(self.got["waitMs"], 30000, self.got)
+        self.assertNotIn("reading their published sessions", self.got["said"], "still 'reading...' after the bound")
+        self.assertIn("has not answered in 30 s", self.got["said"])
+
+    def test_a_late_answer_still_lands(self):
+        self.assertEqual(self.got["late"], self.got["expectLate"], "an answer after the bound was dropped")
+
+
 class TheAgeIsTheServersOneRule(unittest.TestCase):
 
     def test_the_view_carries_the_profiles_age_words_and_the_list_prints_them(self):
@@ -280,6 +307,11 @@ class TheDoorsAreJoined(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3256 - the wait has no bound again, so a busy console leaves 'reading...' up for good",
+     "file": "tv/control_ui.html",
+     "find": "      if (gen === _ssvGen && !ov.hidden && String(ov._ssvBody.innerHTML).indexOf('reading their published sessions') >= 0)\n",
+     "replace": "      if (false)\n",
+     "matches": 1},
     {"why": "v3845 - in a shadow the Shelf's press opens nothing (the first click is spent blurring their frame)",
      "file": "tv/control_ui.html", "find": "      _bshelf.onclick();\n", "replace": "", "matches": 1},
     {"why": "REG-2810 - the names read go into the page unescaped",
