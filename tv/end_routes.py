@@ -537,6 +537,18 @@ def unextracted_door(reel, src):
     # that the DEPARTURE was fine and the missing extraction was the defect — a defect stays
     # visible as an unexplained row rather than being papered over by a door built to absorb it.
     # [[unknown-stays-unknown]] [[regression-guard]]
+    #
+    # REG-3275 (#44) - HIS RULING 2026-11-06, "Re-read once, then release": a reel the tab-aware vault reader READ and
+    # that still banks nothing HAS been extracted - it is extracted-and-empty, and the deleter releases it keeping its
+    # panel frames. Asked of the deleter's own predicate with THIS world's survey row, never a second copy of the rule.
+    try:
+        import reel_retention as _rr_h
+        _hrel, _hpf, _hwhy = _rr_h.held_reel_released(reel, vrow, row)
+    except Exception:
+        _hrel, _hwhy = False, None
+    if _hrel:
+        ev["ruling"] = _hwhy
+        return True, [], ev
     return False, [_gap("extracted rows before the tombstone", 0, ">0",
                         "this reel holds %s panel frame(s) on film and NO vault row — nothing has "
                         "extracted it, so it does not qualify for the end route and, if it has "

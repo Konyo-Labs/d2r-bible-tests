@@ -350,6 +350,68 @@ _TRIAGE_CACHE = {"at": None, "store": None}
 _UNSUPPLIED = object()
 
 
+def _triage_row(reel):
+    """The triage survey's row for this reel. -> (row | None, readable: bool). The one cached read both rules below use."""
+    import os as _os
+    import retro_triage as _rt
+    p = _rt._store_path()
+    key = (p, _os.path.getmtime(p))
+    if _TRIAGE_CACHE["at"] != key:
+        store, ok = _rt.load()
+        if not ok:
+            return None, False
+        _TRIAGE_CACHE["store"] = store
+        _TRIAGE_CACHE["at"] = key
+    rec = (_TRIAGE_CACHE["store"] or {}).get(reel)
+    return (rec if isinstance(rec, dict) else None), True
+
+
+#: REG-3275 (#44) - the text a reel released under his 11-06 ruling carries on the plan and the tombstone
+HELD_REREAD_RULING = ("his 11-06 ruling (#44) - re-read once by the tab-aware vault reader, it still banks nothing: "
+                      "released, its panel frames kept")
+
+
+def held_reel_released(reel, seal, triage=_UNSUPPLIED):
+    """REG-3275 (#44) - HIS RULING 2026-11-06: "Re-read once, then release." A reel the drain HOLDS because it banks
+    nothing (`panels-never-banked`, `zero-pages`) is released - keeping only its panel frames - once the vault reader
+    that asks the stash TAB (tv_diablo.VAULT_TAB_ASKED_BY, REG-3248) has read it and its seal still says rows 0.
+    -> (released: bool, panel frames [names] | None, why)
+
+    ⚠ NEVER A REEL THE NEW READER HAS NOT READ (his words carried in the ruling): a seal by an older reader, a seal with
+    no rows count, a rows that is not a whole number, or no seal at all holds. ⚠ AND NEVER A REEL WHOSE PANEL FRAMES
+    CANNOT BE NAMED: the remnant is what he keeps, so a survey row that is not full or carries no `panelFrames` map (a
+    reel surveyed before v2393) is UNKNOWN and holds. `{}` from a full survey is a measured "no panel frame".
+    [[unknown-stays-unknown]]
+
+    `triage`: the caller's own survey row for this reel (end_routes passes the one its `src` world resolved, so a
+    fixture world is never answered from his live store); left out, the live survey is asked."""
+    try:
+        if not isinstance(seal, dict):
+            return False, None, "no vault seal - the new reader has not read it"
+        n = seal.get("rows")
+        if isinstance(n, bool) or not isinstance(n, int):
+            return False, None, "its seal carries no rows count"
+        if n != 0:
+            return False, None, "its seal banked %d row(s) - not a barren reel" % n
+        import tv_diablo as _tvd
+        asked = tuple(str(v) for v in (getattr(_tvd, "VAULT_TAB_ASKED_BY", ()) or ()))
+        pv = str(seal.get("promptVer") or "")
+        if not asked or pv not in asked:
+            return False, None, "sealed by reader %s, not one that asks the stash tab (%s) - owed its re-read first" % (
+                pv or "UNKNOWN", ", ".join(asked) or "none named")
+        rec, ok = _triage_row(reel) if triage is _UNSUPPLIED else (triage, True)
+        if not ok:
+            return False, None, "the triage survey will not read - its panel frames cannot be named"
+        if not isinstance(rec, dict) or not rec.get("full"):
+            return False, None, "no full survey - its panel frames cannot be named"
+        pf = rec.get("panelFrames")
+        if not isinstance(pf, dict):
+            return False, None, "its survey predates panelFrames - its panel frames cannot be named"
+        return True, sorted(str(f) for f in pf), HELD_REREAD_RULING
+    except Exception as e:
+        return False, None, "UNKNOWN (%s) - held" % type(e).__name__
+
+
 def _panels_never_banked(reel, seal=_UNSUPPLIED):
     """A full survey saw panels here, and the vault ledger holds nothing from this reel. -> bool
 
@@ -362,17 +424,9 @@ def _panels_never_banked(reel, seal=_UNSUPPLIED):
     un-delete. [[unknown-stays-unknown]]
     """
     try:
-        import os as _os
-        import retro_triage as _rt
-        p = _rt._store_path()
-        key = (p, _os.path.getmtime(p))
-        if _TRIAGE_CACHE["at"] != key:
-            store, ok = _rt.load()
-            if not ok:
-                return False              # cannot read the survey -> other rules decide
-            _TRIAGE_CACHE["store"] = store
-            _TRIAGE_CACHE["at"] = key
-        rec = (_TRIAGE_CACHE["store"] or {}).get(reel)
+        rec, ok = _triage_row(reel)
+        if not ok:
+            return False                  # cannot read the survey -> other rules decide
         if not isinstance(rec, dict) or not rec.get("full"):
             return False                  # not surveyed -> _proven_empty/never-swept rules apply
         if int(rec.get("panels") or 0) <= 0:
@@ -1386,6 +1440,13 @@ def plan(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT, *, _fresh=False):
             _last[0] = tag
             return why
 
+        _released = {}                  # REG-3275 (#44) - reel -> (released, panel frames, why), asked once per reel
+
+        def _rel(reel, ve):
+            if reel not in _released:
+                _released[reel] = held_reel_released(reel, ve)
+            return _released[reel][0]
+
         for reel in reels:
             path = os.path.join(hist, reel)
             size = _dir_mb(path)
@@ -1462,11 +1523,12 @@ def plan(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT, *, _fresh=False):
             elif ce is None and not _proven_empty(reel):
                 why = _rule("never-chronicle-swept",
                             "never chronicle-swept — it has not been read even once")
-            elif pages < MIN_PAGES and not _proven_empty(reel) and not _no_chronicle_to_find(reel):
+            elif (pages < MIN_PAGES and not _proven_empty(reel) and not _no_chronicle_to_find(reel)
+                  and not _rel(reel, ve)):        # REG-3275 (#44) - re-read by the tab reader, still barren: released
                 why = _rule("zero-pages",
                             "sealed with 0 pages — that is 'this reader found nothing', not 'done'; "
                             "the engine reopens these when the prompt improves")
-            elif _panels_never_banked(reel, ve):
+            elif _panels_never_banked(reel, ve) and not _rel(reel, ve):   # REG-3275 (#44) - his 11-06 ruling
                 # ⚠⚠⚠ v2875 — THE SAFETY HALF OF _no_chronicle_to_find, AND IT IS NOT OPTIONAL.
                 # Lifting the chronicle hold exposed eleven reels the chain then called
                 # "sealed by BOTH lanes — it has given up its information". MEASURED, they had not:
@@ -1550,11 +1612,16 @@ def plan(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT, *, _fresh=False):
                 # because I had checked _PRUNE_SAFE_TO_RUN and not retention_may_act().
                 # [[feedback-suspect-the-instrument]]
                 freed += size
-                candidates.append({"reel": reel, "mb": round(size, 1), "pages": pages,
-                                   "why": _rule("eligible",
-                                                "read (%d pages) and sealed by BOTH lanes — it has "
-                                                "given up its information" % pages),
-                                   "tag": "eligible"})
+                _c = {"reel": reel, "mb": round(size, 1), "pages": pages,
+                      "why": _rule("eligible",
+                                   "read (%d pages) and sealed by BOTH lanes — it has "
+                                   "given up its information" % pages),
+                      "tag": "eligible"}
+                _r = _released.get(reel)
+                if _r and _r[0]:            # REG-3275 (#44) - released by his ruling: its panel frames stay
+                    _c["keepPanels"] = list(_r[1] or [])
+                    _c["ruling"] = _r[2]
+                candidates.append(_c)
                 continue
             kept.append({"reel": reel, "mb": round(size, 1), "why": why, "pages": pages,
                                  "tag": _last[0]})
@@ -1582,6 +1649,8 @@ def plan(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT, *, _fresh=False):
                 # [[label-outlived-referent]] [[d2r-g5-budget-unit-collision]]
                 "eligibleMb": round(freed, 1),
                 "freeMb": round(freed, 1), "onDisk": len(reels), "remnants": _remnant_list,
+                # REG-3275 (#44) - the held reels his 11-06 ruling released, each keeping its panel frames
+                "releasedAfterReread": sorted(r for r, v in _released.items() if v[0]),
                 "vaultLedger": bool(vault),
                 # Published so a caller cannot repeat the mistake this fix corrects: an empty
                 # `candidates` because everything is held reads identically to an empty one because
@@ -1753,6 +1822,8 @@ def _tombstone(hist, cands):
         rec = {"reel": c["reel"], "session": _reel_ts_key(c["reel"]),
                "mb": c.get("mb"), "pages": c.get("pages"), "why": c.get("why"),
                "deletedTs": int(time.time() * 1000)}
+        if c.get("ruling"):             # REG-3275 (#44) - which ruling released it travels with the record
+            rec["ruling"] = c.get("ruling")
         try:
             rec["frames"] = len([f for f in os.listdir(d) if f.endswith(".jpg")])
         except Exception:
@@ -1898,8 +1969,10 @@ def apply_plan(p, yes=False):
             failed.append({"reel": c["reel"], "why": "HELD, nothing deleted - which pictures in it are evidence is "
                                                      "UNKNOWN: %s" % _ewhy})
             continue
+        # REG-3275 (#44) - a held reel his 11-06 ruling released keeps its PANEL frames too: the remnant he keeps
+        _pan = set(str(x) for x in (c.get("keepPanels") or ()) if isinstance(x, str)) if isinstance(c, dict) else set()
         try:
-            kept = sorted(f for f in os.listdir(path) if f in _evid)
+            kept = sorted(f for f in os.listdir(path) if f in _evid or f in _pan)
         except OSError as e:
             failed.append({"reel": c["reel"], "why": "the reel could not be listed (%s)" % str(e)[:80]})
             continue
