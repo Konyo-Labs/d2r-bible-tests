@@ -785,7 +785,8 @@ def _rule_owed(h2, st):
 
 def _git(*args, timeout=15):
     env = dict(os.environ, GIT_OPTIONAL_LOCKS="0")
-    r = subprocess.run(["git"] + list(args), cwd=REPO, capture_output=True, text=True,
+    import git_quiet as _gq            # v3866 - on Windows a plain spawn opened a terminal over his game
+    r = _gq.run(["git"] + list(args), cwd=REPO, capture_output=True, text=True,
                        encoding="utf-8", errors="replace", timeout=timeout, env=env)
     return r.returncode, (r.stdout or "").strip()
 

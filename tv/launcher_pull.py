@@ -35,7 +35,8 @@ def bytes_match_ignoring_cr(left, right):
 
 def _run(repo, args):
     try:
-        r = subprocess.run(
+        import git_quiet as _gq        # v3866 - on Windows a plain spawn opened a terminal over his game
+        r = _gq.run(
             ["git", "-C", repo] + list(args),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20,
         )

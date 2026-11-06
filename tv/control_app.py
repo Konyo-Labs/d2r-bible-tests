@@ -1966,7 +1966,7 @@ def fleet_origin_status(force_fetch=False):
             ("origin", ["git", "rev-parse", "--short", "origin/main"]),
         ):
             try:
-                r = subprocess.run(
+                r = _git_run(       # v3866 - a variable argv hid this plain spawn from the window law; it popped a terminal
                     args, cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5,
                     creationflags=_WIN_CREATE if IS_WIN else 0,
                 )

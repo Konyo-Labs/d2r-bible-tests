@@ -28,7 +28,12 @@ SRC_PATH = os.path.join(HERE, "control_app.py")
 # --name-only`, and `git rev-list --count HEAD..origin/main` on the eagle tick). This guard only
 # ever opened control_app.py, so it was green while two more console-popping spawns survived in a
 # file it never looked at. A guard's REACH is part of its verdict.
-SRC_PATHS = (SRC_PATH, os.path.join(HERE, "console_doctor.py"))
+SRC_PATHS = (SRC_PATH, os.path.join(HERE, "console_doctor.py"),
+             # v3866 (his work ALT, 2026-11-06 03:08: a terminal window kept popping over his game) - every module whose git
+             # runs inside the console or its pythonw children on Windows: the self-prove lane, heart2 (the proof import and
+             # prove), the gate ledger heart2 keys with, and the launcher's pull
+             os.path.join(HERE, "self_prove.py"), os.path.join(HERE, "heart2.py"), os.path.join(HERE, "gate_ledger.py"),
+             os.path.join(HERE, "launcher_pull.py"))
 DOOR_PATH = os.path.join(HERE, "git_quiet.py")
 
 
@@ -50,6 +55,26 @@ def _is_git_argv(node):
         e0 = a0.elts[0]
         return isinstance(e0, ast.Constant) and e0.value == "git"
     return False
+
+
+def _git_names(tree):
+    """v3866 - names a git argv is BOUND to: `for key, args in (("head", ["git", ...]), ...)` and `x = ["git", ...]`.
+    MEASURED on his work ALT: control_app's fleet reader spawned `args` - a name - through subprocess.run, so the literal
+    check above never saw it, and it opened a terminal over his game every 2 minutes. -> {name}"""
+    out = set()
+
+    def _gitlist(n):
+        return isinstance(n, (ast.List, ast.Tuple)) and n.elts and isinstance(n.elts[0], ast.Constant) and n.elts[0].value == "git"
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Assign) and _gitlist(n.value):
+            out.update(t.id for t in n.targets if isinstance(t, ast.Name))
+        if isinstance(n, ast.For) and isinstance(n.iter, (ast.List, ast.Tuple)):
+            pairs = [e for e in n.iter.elts if isinstance(e, (ast.List, ast.Tuple))]
+            if pairs and any(any(_gitlist(x) for x in p.elts) for p in pairs) and isinstance(n.target, ast.Tuple):
+                for i, t in enumerate(n.target.elts):
+                    if isinstance(t, ast.Name) and any(len(p.elts) > i and _gitlist(p.elts[i]) for p in pairs):
+                        out.add(t.id)
+    return out
 
 
 # Aliases the one door is imported under. `git_quiet.run` and `_gq.run` are the door;
@@ -88,16 +113,51 @@ def _is_the_one_door(name):
     return attr == "run" and mod in DOOR_MODULES
 
 
+class TheRealGitIsFoundInEveryLayout(unittest.TestCase):
+    """v3866 - Git for Windows ships mingw64, ucrt64 and clang64 builds. His work ALT has ucrt64 and no mingw64, so the door
+    fell back to PATH's Git\\cmd\\git.exe wrapper and every console git call opened a terminal over his game."""
+
+    def _found(self, present, which=r"C:\Program Files\Git\cmd\git.exe", env=None):
+        import sys
+        sys.path.insert(0, HERE)
+        import git_quiet as G
+        return G.real_git(_isfile=lambda p: p in present, _which=lambda n: which,
+                          _env={"ProgramFiles": r"C:\Program Files"} if env is None else env)
+
+    def test_ucrt64_mingw64_and_clang64_are_each_found_beside_the_wrapper(self):
+        for lay in ("ucrt64", "mingw64", "clang64"):
+            p = r"C:\Program Files\Git\%s\bin\git.exe" % lay
+            self.assertEqual(self._found({p}), p, "%s git was not found, so the wrapper runs and a window opens" % lay)
+
+    def test_an_install_elsewhere_is_found_through_the_path(self):
+        p = r"D:\Tools\Git\ucrt64\bin\git.exe"
+        self.assertEqual(self._found({p}, which=r"D:\Tools\Git\cmd\git.exe", env={}), p)
+
+    def test_no_real_git_is_none_never_the_wrapper(self):
+        self.assertIsNone(self._found(set()))
+
+
 class TestWindowsGitSpawnsHideTheConsole(unittest.TestCase):
     def test_every_git_argv_goes_through_the_ONE_door(self):
         offenders, total = [], 0
         for p in SRC_PATHS:
             with io.open(p, encoding="utf-8") as fh:
                 src = fh.read()
-            for node in ast.walk(ast.parse(src)):
+            tree = ast.parse(src)
+            # a name is a git argv only inside the function that binds it (taskkill's `args` is not the fleet's), and only
+            # a SPAWNING call can pop a window (isinstance(args, ...) cannot)
+            bound_calls = set()
+            for fn in [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]:
+                names = _git_names(fn)
+                for c in ast.walk(fn):
+                    if (isinstance(c, ast.Call) and c.args and isinstance(c.args[0], ast.Name) and c.args[0].id in names
+                            and (_callee_name(c) or "").rpartition(".")[2] in ("run", "Popen", "check_output", "call",
+                                                                             "check_call", "_git_run")):
+                        bound_calls.add(id(c))
+            for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):
                     continue
-                if not _is_git_argv(node):
+                if not (_is_git_argv(node) or id(node) in bound_calls):
                     continue
                 total += 1
                 name = _callee_name(node)
@@ -138,7 +198,7 @@ class TestWindowsGitSpawnsHideTheConsole(unittest.TestCase):
         self.assertGreater(i, -1, "git_quiet.run is gone, so nothing hides git consoles")
         blk = src[i:src.find("\ndef ", i + 1)]
         self.assertIn("WIN_CREATE", blk, "the one door dropped CREATE_NO_WINDOW")
-        self.assertIn("GIT_MINGW", blk, "the one door no longer calls mingw64 git directly")
+        self.assertIn("real_git()", blk, "the one door no longer calls the real git binary directly")
         self.assertNotIn("headless-git", blk,
                          "headless-git.exe still spawns a CUI git.exe child that WT focuses")
         self.assertIn("STARTF_USESHOWWINDOW", blk, "the one door dropped SW_HIDE")
@@ -146,6 +206,28 @@ class TestWindowsGitSpawnsHideTheConsole(unittest.TestCase):
 
 
 RED_PROOF = [
+    {
+        "why": "v3866 - the door knows only mingw64 again: on his work ALT (ucrt64 Git) every console git call opened a "
+               "terminal over his game, 7 in 8 seconds",
+        "file": "git_quiet.py",
+        "find": 'GIT_LAYOUTS = ("mingw64", "ucrt64", "clang64", "clangarm64", "mingw32")',
+        "replace": 'GIT_LAYOUTS = ("mingw64",)',
+        "matches": 1,
+    },
+    {
+        "why": "v3866 - a git argv bound to a NAME goes back to subprocess.run (the fleet reader that popped every 2 min)",
+        "file": "control_app.py",
+        "find": "                r = _git_run(       # v3866 - a variable argv hid this plain spawn from the window law; it popped a terminal\n",
+        "replace": "                r = subprocess.run(       # v3866 - a variable argv hid this plain spawn from the window law; it popped a terminal\n",
+        "matches": 1,
+    },
+    {
+        "why": "v3866 - heart2's own git question (the proof import, a pythonw child) spawns git plainly again",
+        "file": "heart2.py",
+        "find": '        r = _gq.run(["git", "-C", REPO] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE,\n',
+        "replace": '        r = subprocess.run(["git", "-C", REPO] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE,\n',
+        "matches": 1,
+    },
     {
         "why": "v3407 — ONE SITE IS ENOUGH TO POP A WINDOW. Sending a single git argv back to "
                "subprocess.run restores a CUI child on Windows: `pythonw` owns no console, so the "
@@ -164,7 +246,7 @@ RED_PROOF = [
                "inheriting CREATE_NO_WINDOW, so hiding the wrapper hides nothing. Dropping "
                "_GIT_MINGW leaves a helper that looks careful and still alt-tabs him off the game.",
         "file": "git_quiet.py",
-        "find": '        if argv and argv[0] == "git" and os.path.isfile(GIT_MINGW):\n            argv[0] = GIT_MINGW\n',
+        "find": '            _rg = real_git()\n            if _rg:\n                argv[0] = _rg\n',
         "replace": "",
         "matches": 1,
     },

@@ -1169,7 +1169,8 @@ def _share_history(work_tree, dst, say):
     tmp = dst + ".shared"
     placed = False
     try:
-        r = subprocess.run(["git", "clone", "-q", "--shared", "--no-checkout", work_tree, tmp],
+        import git_quiet as _gq        # v3866 - a pythonw child's plain git opened a terminal over his game
+        r = _gq.run(["git", "clone", "-q", "--shared", "--no-checkout", work_tree, tmp],
                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300, env=env)
         if r.returncode != 0:
             say("  could not share the git history into the sandbox (git clone --shared exit %s) — gates "
@@ -1177,7 +1178,7 @@ def _share_history(work_tree, dst, say):
             return False
         os.replace(os.path.join(tmp, ".git"), dst)
         placed = True
-        subprocess.run(["git", "read-tree", "HEAD"], cwd=os.path.dirname(dst),
+        _gq.run(["git", "read-tree", "HEAD"], cwd=os.path.dirname(dst),
                        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, env=env)
         if not _shut_push(dst, say):
             _rmtree_hard(dst)
@@ -2660,7 +2661,8 @@ def _kept_files(repo=None):
     None (UNKNOWN). With _tracked_files, what a listed directory's key holds; everything else in it is runtime data."""
     repo = REPO if repo is None else repo
     try:
-        r = subprocess.run(["git", "-C", repo, "ls-files", "-z", "--others", "--exclude-standard"],
+        import git_quiet as _gq
+        r = _gq.run(["git", "-C", repo, "ls-files", "-z", "--others", "--exclude-standard"],
                            capture_output=True, timeout=30, env=_git_free_env())
     except (OSError, subprocess.SubprocessError):
         return None
@@ -4429,7 +4431,8 @@ def _tracked_files(repo=None):
     the prover are unchanged. None (git not answering) leaves the key as it was - over-inclusion, never a stale PROVEN."""
     repo = REPO if repo is None else repo
     try:
-        r = subprocess.run(["git", "-C", repo, "ls-files", "-z"], capture_output=True, timeout=30, env=_git_free_env())
+        import git_quiet as _gq
+        r = _gq.run(["git", "-C", repo, "ls-files", "-z"], capture_output=True, timeout=30, env=_git_free_env())
     except (OSError, subprocess.SubprocessError):
         return None
     if r.returncode != 0:
@@ -5276,7 +5279,8 @@ def _proof_target_rel(pr):
 def _git(*args):
     """#42 — one read-only git question about this repo. -> (ok, stdout)"""
     try:
-        r = subprocess.run(["git", "-C", REPO] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        import git_quiet as _gq
+        r = _gq.run(["git", "-C", REPO] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                            timeout=30, env=_git_free_env())
     except Exception as _e:
         # the question could not be asked: said as a failed answer (ok False), which the caller reports as UNKNOWN

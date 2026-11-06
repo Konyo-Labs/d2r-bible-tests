@@ -31,6 +31,47 @@ IS_WIN = sys.platform.startswith("win")
 WIN_CREATE = 0x00000200 | 0x08000000 if IS_WIN else 0
 
 GIT_MINGW = r"C:\Program Files\Git\mingw64\bin\git.exe"
+#: v3866 - GIT FOR WINDOWS SHIPS MORE THAN ONE LAYOUT. Measured on his work ALT 2026-11-06 03:09 (playing through Boosteroid):
+#: Git for Windows there is the ucrt64 build - there is no mingw64\bin\git.exe - so run() fell back to the bare "git", PATH gave
+#: Git\cmd\git.exe, and that CUI wrapper spawned the real ucrt64\bin\git.exe WITHOUT the flag: every console git call opened a
+#: terminal window over his game (7 in 8 s at 03:08). The real binary is looked for in every layout, beside the wrapper PATH finds.
+GIT_LAYOUTS = ("mingw64", "ucrt64", "clang64", "clangarm64", "mingw32")
+_REAL_GIT = {}
+
+
+def real_git(_isfile=os.path.isfile, _which=None, _env=None):
+    r"""The git.exe that actually runs (no CUI wrapper in front of it), or None. Cached once found. -> path | None
+
+    Tries each Git for Windows layout under the install the PATH's git belongs to (Git\cmd\git.exe -> Git\<layout>\bin\git.exe),
+    then under %ProgramFiles%\Git, then the historical mingw64 path."""
+    if "path" in _REAL_GIT and _isfile is os.path.isfile:
+        return _REAL_GIT["path"]
+    import ntpath as _np          # Windows paths on every OS, so a law can drive this from the Mac
+    import shutil
+    env = os.environ if _env is None else _env
+    roots = []
+    w = (_which or shutil.which)("git")
+    if w:
+        d = _np.dirname(_np.normpath(w))
+        if _np.basename(d).lower() in ("cmd", "bin"):
+            roots.append(_np.dirname(d))
+    for pf in (env.get("ProgramFiles"), env.get("ProgramW6432"), r"C:\Program Files"):
+        if pf:
+            roots.append(_np.join(pf, "Git"))
+    found = None
+    for root in roots:
+        for lay in GIT_LAYOUTS:
+            p = _np.join(root, lay, "bin", "git.exe")
+            if _isfile(p):
+                found = p
+                break
+        if found:
+            break
+    if found is None and _isfile(GIT_MINGW):
+        found = GIT_MINGW
+    if _isfile is os.path.isfile and found:
+        _REAL_GIT["path"] = found
+    return found
 
 
 def run(argv, **kw):
@@ -53,8 +94,10 @@ def run(argv, **kw):
     env["GIT_OPTIONAL_LOCKS"] = "0"
     kw["env"] = env
     if IS_WIN:
-        if argv and argv[0] == "git" and os.path.isfile(GIT_MINGW):
-            argv[0] = GIT_MINGW
+        if argv and argv[0] == "git":
+            _rg = real_git()
+            if _rg:
+                argv[0] = _rg
         kw["creationflags"] = kw.get("creationflags", 0) | WIN_CREATE
         # ⚠ Git Credential Manager opens a window of its OWN and then sits there until the caller's
         # timeout kills it. A prompt nobody can answer is a stolen screen plus a stalled lane.

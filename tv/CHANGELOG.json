@@ -16,7 +16,9 @@
       "v3866 - the second-eye ship gate is armed again, so no version ships while the one before it has no look",
       "v3866 - the pre-flight runs the 89 gates whose name is not their file, and says a declared skip (REG-3224)",
       "v3866 - the Fleet row says both vault numbers, the board records and the sweep evidence, each with its age (REG-3225)",
-      "v3866 - a resumed ship reads GitHub instead of pushing ci branches already at its commit (REG-3224)"
+      "v3866 - a resumed ship reads GitHub instead of pushing ci branches already at its commit (REG-3224)",
+      "v3866 - no git window opens on Windows - the console finds the real git in every Git for Windows layout (REG-3226)",
+      "v3866 - ten git calls that bypassed the quiet door now go through it (REG-3226)"
     ]
   },
   {

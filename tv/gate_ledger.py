@@ -467,7 +467,8 @@ def ledger_path():
 def _common_ledger_dir():
     """<git common dir>/tvd-gate-ledger for this checkout, or None when git cannot say. -> path | None"""
     try:
-        p = subprocess.run(["git", "-C", HERE, "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        import git_quiet as _gq        # v3866 - on Windows a plain spawn opened a terminal over his game
+        p = _gq.run(["git", "-C", HERE, "rev-parse", "--path-format=absolute", "--git-common-dir"],
                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20, env=_git_free_env())
     except Exception:
         return None
@@ -512,7 +513,8 @@ def head_sha(root):
         return forced
     for cwd in (root, REPO):
         try:
-            proc = subprocess.run(
+            import git_quiet as _gq
+            proc = _gq.run(
                 ["git", "-C", cwd, "rev-parse", "HEAD"],
                 capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15, env=_git_free_env())
         except Exception:
@@ -534,7 +536,8 @@ def _git_free_env():
 def _git(root, args):
     """One git invocation. -> CompletedProcess | None"""
     try:
-        return subprocess.run(["git", "-C", root] + list(args),
+        import git_quiet as _gq
+        return _gq.run(["git", "-C", root] + list(args),
                               capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
                               env=_git_free_env())
     except Exception:
