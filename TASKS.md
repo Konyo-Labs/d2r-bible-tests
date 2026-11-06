@@ -12,6 +12,14 @@ closed thing. Where a task has a GitHub issue, it is named explicitly as `gh #NN
 Status: `READY` may be applied now · `BLOCKED` names what blocks it · `HIS CALL` waits on Konyo ·
 `SHIPPED` carries the version.
 
+## Board #85 — QUICK WINS: THE 4 BEST PLACES PER ITEM (his ask 2026-11-06 02:44, GitHub #254) — PENDING
+
+Quick wins put Bane Ash under "Run Normal Andariel (~3.6h)"; silospen's calculator ranks Cave Level 1 above Andariel. Verify the
+console's drop math against the calculator (Bane Ash as he reads it: Cave Lvl 1, Cow King, Banished, Spike Fiend), drop "bosses
+only", and give EVERY item in Quick wins four rows - 1st (today's row) to 4th best place, ranked by fewest RUNS at his MF and
+player count, hours beside. Additive design, same look. Done = matches the calculator on hand-measured items, a law pins it,
+renders at his widths, Grok CLI #231 + GrokBot #230 look.
+
 ## v3865 — THE EVENING FLEET, INTEGRATED (2026-11-05 evening)
 Seven reviewed branches on claude/v3865, in order: fx-ci, fx-lock, fx-r3, fx-r4, fx-ui, fx-art, fx-grow. NOT taken (not
 ready): fx-r1, fx-r2, fx-board. Each item: law + red-proofs + BUGS REG. UNVERIFIED until CI and GrokBot: nothing was
