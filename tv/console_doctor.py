@@ -7523,21 +7523,31 @@ def _check_no_row_contradicts_its_own_stated_verdict():
                          "so whether today parser contradicts itself is UNMEASURED - not clean. "
                          "%d row(s) from earlier generations are re-judgement debt and belong to "
                          "verdict_provenance()" % (gen, older))
-    bad = []
+    bad, overruled = [], 0
     for r in mine:
         try:
             stated = R._stated_verdict(r.get("answerHead") or "")
         except Exception:
             continue
         stored = str(r.get("verdict") or "")
+        # REG-3288 - THE PARSER'S DOCUMENTED ASYMMETRY IS NOT A CONTRADICTION. _verdict_for keeps "findings" over a stated
+        # "clean" when a stored block CLAIMS a defect ("a declaration alone can never clear a real defect claim" - the safe
+        # direction). MEASURED on his Mac 11-06: this row was MISSING on exactly those two rows, v3377 ("disagree") and
+        # v3578 ("fails") - the override doing its job, read as the parser denying itself. Every other mismatch still
+        # counts, above all a stated "findings" stored clean (the dangerous direction).
+        if (stated == "clean" and stored == "findings" and hasattr(R, "_claims_a_defect")
+                and any(R._claims_a_defect(f) for f in (r.get("findings") or []))):
+            overruled += 1
+            continue
         if stated and stored and stated != stored:
             bad.append("%s(stored %s, said %s)" % (r.get("version"), stored, stated))
     if bad:
         return MISSING, ("%d of %d look(s) judged by %s store a verdict their own answer denies: "
                          "%s" % (len(bad), len(mine), gen, ", ".join(sorted(set(bad))[:5])))
     return OK, ("%d look(s) judged by %s were re-read against their own words; none contradicts "
-                "itself (%d older row(s) are re-judgement debt, counted by verdict_provenance)"
-                % (len(mine), gen, older))
+                "itself%s (%d older row(s) are re-judgement debt, counted by verdict_provenance)"
+                % (len(mine), gen, ((" - %d said clean and were kept as findings because a block claims a defect "
+                                     "(the parser's safe direction)" % overruled) if overruled else ""), older))
 
 
 def _check_a_worker_read_has_a_deadline():
