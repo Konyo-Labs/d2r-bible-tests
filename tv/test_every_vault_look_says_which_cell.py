@@ -246,8 +246,8 @@ RED_PROOF = [
     {
         "why": "v3554 - the banked witness drops the point and the cell",
         "file": "vault_retro.py",
-        "find": "        for _vf in (\"sockets\", \"eth\", \"quality\", \"promptVer\", \"point\", \"cell\", \"cellWhy\", \"holder\"):   # v3767 - who holds it, and where",
-        "replace": "        for _vf in (\"sockets\", \"eth\", \"quality\", \"promptVer\", \"holder\"):   # v3767 - who holds it, and where",
+        "find": "        for _vf in (\"sockets\", \"eth\", \"quality\", \"promptVer\", \"point\", \"cell\", \"cellWhy\", \"holder\", \"tab\", \"page\"):   # v3767 - who holds it, and where; REG-3248 - on which tab",
+        "replace": "        for _vf in (\"sockets\", \"eth\", \"quality\", \"promptVer\", \"holder\", \"tab\", \"page\"):   # v3767 - who holds it, and where",
         "matches": 1,
     },    {
         "why": "REG-1911 - the point is ignored again: an inventory tooltip labelled stash is banked as a vault witness",

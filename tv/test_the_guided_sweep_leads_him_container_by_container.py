@@ -41,13 +41,18 @@ def _look(sid, frame, loc, occupied, page=None):
             "grid": [10, 10], "occupied": occupied, "why": None}
 
 
-def _row(name, sid, cells):
-    return {"name": name, "witnesses": [{"session": sid, "frame": "f_17900000%05d.jpg" % (i + 1), "conf": 0.9, "lane": "stash",
-                                         "cell": "stash:c%dr%d" % (c, r)} for i, (c, r) in enumerate(cells)]}
+def _row(name, sid, cells, tab=None):
+    # REG-3248 (#67) - a v3870 read names its tab; tab=None is a read from before the tab was asked
+    return {"name": name, "witnesses": [dict({"session": sid, "frame": "f_17900000%05d.jpg" % (i + 1), "conf": 0.9, "lane": "stash",
+                                              "cell": "stash:c%dr%d" % (c, r)}, **({"tab": tab} if tab else {}))
+                                        for i, (c, r) in enumerate(cells)]}
 
 
 HC = [[0, 0], [1, 0], [0, 1], [1, 1]]
-SWEEP1 = {"items": [_row("Harlequin Crest", S1, [(0, 0)]), _row("Annihilus", S2, [(4, 4)])], "unsure": [],
+# REG-3248 - S2 shows the personal stash AND a shared page: Annihilus names its tab; the Stone of Jordan is a read from before
+# the tab was asked, off both looks' frames - it may be on the shared page, so it is never laid on c7r7 (still "never named")
+SWEEP1 = {"items": [_row("Harlequin Crest", S1, [(0, 0)]), _row("Annihilus", S2, [(4, 4)], tab="stash"),
+                    _row("Stone of Jordan", S2, [(7, 7)])], "unsure": [],
           "containers": [_look(S1, "f_1790000000100.jpg", "stash", HC),                       # UNI-ARMOR seen whole
                          _look(S2, "f_1790000000200.jpg", "stash", [[4, 4], [7, 7]]),           # SETS-REST: c7r7 never named
                          _look(S2, "f_1790000000300.jpg", "shared", [[2, 2]])]}                 # a shared page: which one?

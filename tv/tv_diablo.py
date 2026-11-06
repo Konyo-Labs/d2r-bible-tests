@@ -7398,8 +7398,9 @@ VAULT_PROMPT_VER = "vp-reg3248"   # REG-3248 (#67) — the highlighted stash TAB
 #: Claude reads") - a witness recorded session, frame, point and cell but NOT which stash tab the cell was on, so on his
 #: Mac 11 stash cells were claimed by two or three owned names (stash:c6r3 Blood Finger and Doom Grip inside ONE session):
 #: a missing key dimension, not two owners. The sweep's surface never names one (OWNERSHIP_SURFACES has "stash", not
-#: personal / shared), so only the read can. This version ADDS tab and page and is DELIBERATELY NOT in
-#: VAULT_PROMPT_ANSWERS_SAME_AS: its seals do not stand, every vault reel is re-read once, and its witnesses gain their tab.
+#: personal / shared), so only the read can. This version ADDS tab and page. A reel that FOUND items under an older
+#: reader reopens once (control_app._vault_tab_owed, VAULT_TAB_ASKED_BY below) so its witnesses gain their tab; a reel that
+#: found nothing keeps its seal (the older versions are in VAULT_PROMPT_ANSWERS_SAME_AS).
 #: v3554 — HIS RULING (2026-10-01, "thats even better"): points are asked FROM NOW ON, no re-read of old footage. vp3554
 #: only ADDED each item's point; the name, kind, count, sockets, eth, quality and throw-out are asked exactly as vp3368
 #: asked them. So a vp3368 seal still stands (control_app._vault_still_sealed) and its rows still count as this prompt's

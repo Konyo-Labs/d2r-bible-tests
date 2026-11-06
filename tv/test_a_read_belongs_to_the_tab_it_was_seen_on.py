@@ -7,8 +7,8 @@ witness recorded session, frame, point and cell but NOT which stash tab the cell
 names one (OWNERSHIP_SURFACES says "stash", not personal / shared). So the board's full look laid a session's personal
 reads and its shared-page reads on ONE container: a missing key dimension read as a collision.
 
-  1. The vault reader is asked the selected TAB and a shared tab's PAGE, off the tab row (VAULT_READ_PROMPT), and the
-     version moves WITHOUT joining VAULT_PROMPT_ANSWERS_SAME_AS - every vault reel is re-read once (his call: paid).
+  1. The vault reader is asked the selected TAB and a shared tab's PAGE, off the tab row (VAULT_READ_PROMPT). A reel that
+     FOUND items under an older reader is re-read once (his call: paid); a reel that found nothing keeps its seal.
   2. claude_vault_read passes them through; vault_retro.read_tab is their one parser (personal -> "stash", shared + its
      1-based page -> "shared" + the board's 0-based page; anything not said plainly is None).
   3. The sweep's sighting and the banked witness carry tab and page; the container look takes the READ's tab and page.
