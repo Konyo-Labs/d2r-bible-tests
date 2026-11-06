@@ -220,7 +220,8 @@ class TheConsoleAnswersOnlyItsOwnPage(unittest.TestCase):
         now = 1790000000000
         ok_read = [{"lane": "deep", "model": "claude-sonnet", "completedTs": now - 60000}]
         bad_read = [{"lane": "deep", "model": "claude-sonnet", "completedTs": now - 60000, "readFailed": True,
-                     "readErr": "the read timed out"}]
+                     "readErr": "claude exit 3: the image could not be decoded"}]
+        slow_read = [dict(bad_read[0], readErr="the read timed out")]
         out = ca._reader_health(now_ms=now, rows=[], g5={}, auth={"loggedIn": False, "why": "claude auth status: signed out (none)"})
         self.assertEqual((out["claude"]["state"], out["claude"]["needsLogin"]), ("off", True), out["claude"])
         self.assertIn("SIGN IN", out["claude"]["why"])
@@ -234,6 +235,9 @@ class TheConsoleAnswersOnlyItsOwnPage(unittest.TestCase):
                          "a read that just succeeded was overruled by the probe")
         failed = ca._reader_health(now_ms=now, rows=bad_read, g5={}, auth={"loggedIn": True})
         self.assertEqual(failed["claude"]["state"], "off", "a read that just FAILED was painted ON because the CLI is signed in")
+        slow = ca._reader_health(now_ms=now, rows=slow_read, g5={}, auth={"loggedIn": True})
+        self.assertEqual(slow["claude"]["state"], "unknown",
+                         "REG-3227 - a read that ran out of time was painted %r beside a signed-in CLI" % slow["claude"]["state"])
         unk = ca._reader_health(now_ms=now, rows=[], g5={}, auth={"loggedIn": None, "why": "UNKNOWN"})
         self.assertEqual(unk["claude"]["state"], "unknown", "an UNKNOWN probe was read as a verdict")
 
