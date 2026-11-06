@@ -1547,10 +1547,10 @@ process.stdout.write(JSON.stringify({
         self.assertNotIn("--remote-debugging-port", " ".join(launched[-1]))
         self.assertTrue(all("9222" not in part for part in launched[-1]))
         self.assertFalse(desk._open_chrome_login(platform="linux", run=run, which=lambda name: None, popen=popen))
-        self.assertTrue(desk._open_chrome_login(platform="darwin", run=run, popen=popen, env={"HOME": "/Users/U"}))
+        self.assertTrue(desk._open_chrome_login(platform="darwin", run=run, popen=popen, env={"HOME": "/h/U"}))
         # #87 (his call 2026-11-06) - the Mac signs in through a profile this console owns, a separate Chrome beside his
         self.assertEqual(seen[-1][:4], ["open", "-na", "Google Chrome", "--args"])
-        self.assertIn("--user-data-dir=/Users/U/Library/Application Support/TVD/d2jsp-login", seen[-1])
+        self.assertIn("--user-data-dir=/h/U/Library/Application Support/TVD/d2jsp-login", seen[-1])
         self.assertIn(desk.LOGIN_URL, seen[-1])
         self.assertTrue(all("9222" not in part for part in seen[-1]))
         win_chrome = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
@@ -2237,8 +2237,8 @@ RED_PROOF = [
     {
         "why": "v3861 - Windows opens the login in Chrome's main profile again, whose d2jsp cookie Chrome locks to itself",
         "file": "tv/d2jsp_chrome.py",
-        "find": "        own = login_profile_dir(platform=plat, env=env)\n",
-        "replace": "        own = None\n",
+        "find": "            return False\n        own = login_profile_dir(platform=plat, env=env)\n",
+        "replace": "            return False\n        own = None\n",
         "matches": 1,
     },
     {

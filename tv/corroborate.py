@@ -2597,6 +2597,11 @@ NO_JOINT_YET = {
         "the row reads bible.html and control_app.py for the Advanced door and the quote's fold, then grades "
         "d2jsp_price_db on a seeded fixture - the source and the module it imports, one witness. A real second "
         "source would be the rendered D2JSP tab showing the same Wilson score the quote returned, which is not built.",
+    # #87 (REG-3253) - the Mac's own d2jsp window.
+    'the Mac signs in to d2jsp through its own window':
+        "the row asks the lamp's opener for its command and reads the console's own d2jsp profile settings - the "
+        "code and the file it writes, one witness. A real second source would be d2jsp itself answering a read sent "
+        "with that profile's cookie, which only a live price read does (and that never runs during checks).",
     # #36 (REG-2909) - one reader names the character on every screen it reads.
     'which character each session is on':
         "the row reads char_select's ledger: character select, the lobby and the C panel are all read by the console's "
