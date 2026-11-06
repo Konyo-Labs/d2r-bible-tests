@@ -437,6 +437,8 @@ def _tombstone(reel, src, plan):
     # claim, and the old fixed sentence still counts as one (the history it wrote stays reported, never excused)
     import reel_retention as _rr_s           # one sentence, one owner: the deleter that writes it
     claims = None if why_txt is None else (BOTH_LANES in str(why_txt) or _rr_s.SEALS_BOTH in str(why_txt))
+    # REG-3297 - the deleter's OLD fixed sentence ("sealed by BOTH lanes", written whatever the reel held, REG-3293)
+    old_sentence = None if why_txt is None else (BOTH_LANES in str(why_txt) and _rr_s.SEALS_BOTH not in str(why_txt))
     door = None
     try:
         import end_routes as _er
@@ -452,7 +454,7 @@ def _tombstone(reel, src, plan):
                     (" ⚠ the ledger holds %d rows for this reel — recorded as removed %d times" % (n_rows, n_rows)
                      if n_rows > 1 else "")),
                  ledgerRows=n_rows,
-                 claimsBothSeals=claims, mb=row.get("mb"), frames=_int(row.get("frames")),
+                 claimsBothSeals=claims, oldSentence=old_sentence, mb=row.get("mb"), frames=_int(row.get("frames")),
                  pages=_int(row.get("pages")), startedTs=_int(row.get("startedTs")),
                  kept=(len(row["kept"]) if isinstance(row.get("kept"), list) else None),
                  door=door, intent=intent)
@@ -507,7 +509,7 @@ def _contradictions(reel, hands, journey):
         if p["held"] is False:
             missing.append("chronicle_swept.json holds no seal for it")
         if missing:
-            out.append({"kind": "tombstone-claims-seals",
+            out.append({"kind": "tombstone-claims-seals", "history": bool(t.get("oldSentence")),
                         "left": {"who": WRITER["tombstone"], "says": "\"%s\"" % BOTH_LANES},
                         "right": {"who": "the seal stores", "says": " and ".join(missing)},
                         "why": "the permanent record of an irreversible delete names a hand whose own "
@@ -620,14 +622,18 @@ def census(src=None, plan=None, hist=None, stamp_path=None, limit=200):
         cur = c["current"] or "none"
         out["byCurrent"][cur] = out["byCurrent"].get(cur, 0) + 1
         out["unknownHands"] += len(c["unknown"])
-        if c["contradictions"]:
+        # REG-3297 - a contradiction the deleter's OLD fixed sentence wrote is history: counted apart, still drawn
+        _hist = [k for k in c["contradictions"] if k.get("history")]
+        out["history"] = out.get("history", 0) + len(_hist)
+        _live = [k for k in c["contradictions"] if not k.get("history")]
+        if _live:
             out["contradicted"] += 1
-            out["contradictions"] += len(c["contradictions"])
+            out["contradictions"] += len(_live)
             # v3526 (#231 second eye on v3525) — the FIRST contradicted reel over ALL reels, not over the rows kept:
             # past the draw cap the doctor named "first: ?" while its own count said there were some
             if out["firstContradicted"] is None:
-                out["firstContradicted"] = {"reel": nm, "contradictions": [k["kind"] for k in c["contradictions"]]}
-            for k in c["contradictions"]:
+                out["firstContradicted"] = {"reel": nm, "contradictions": [k["kind"] for k in _live]}
+            for k in _live:
                 out["byKind"][k["kind"]] = out["byKind"].get(k["kind"], 0) + 1
         if len(out["rows"]) < limit:
             out["rows"].append({"reel": nm, "current": c["current"], "entered": c["entered"],
@@ -672,8 +678,12 @@ def doctor(src=None, hist=None, stamp_path=None):
                             first["reel"] if first else "?", ", ".join(first["contradictions"]) if first else "?"))
     if c["n"] == 0:
         return OK, "no reel on the shelf and none in the tombstone ledger — nothing to hold custody of (measured, 0 of 0)"
-    return OK, ("%d reel(s) (%d on the shelf, %d tombstoned) and every one's stores agree about who held it"
-                % (c["n"], c["shelf"] or 0, c["tombstoned"] or 0))
+    hist_n = c.get("history") or 0
+    return OK, ("%d reel(s) (%d on the shelf, %d tombstoned) and every one's stores agree about who held it%s"
+                % (c["n"], c["shelf"] or 0, c["tombstoned"] or 0,
+                   (" · %d older tombstone(s) carry the deleter's old fixed sentence \"%s\" over a reel the seal stores "
+                    "never sealed - history (REG-3293), kept on the record; the deleter now writes the seals it held"
+                    % (hist_n, BOTH_LANES)) if hist_n else ""))
 
 
 def _when(ms):

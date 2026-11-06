@@ -56,7 +56,9 @@ def _sess(n):
     return "s_150000000000%d_%d" % (n, n)
 
 
-BOTH = "read (0 pages) and sealed by BOTH lanes - it has given up its information"
+# REG-3297 - the sentence the deleter writes NOW when it held both seals; the old fixed one is HISTORY (OLD below)
+BOTH = "read (0 pages); seals held: chronicle and vault - it has given up its information"
+OLD = "read (0 pages) and sealed by BOTH lanes - it has given up its information"
 
 
 def _dump(path, obj):
@@ -327,6 +329,23 @@ class AReelCarriesItsCustody(unittest.TestCase):
         self.assertIn("deleted-but-present", [k["kind"] for k in c["contradictions"]],
                       "a reel holding MORE than its kept pictures was excused as a remnant")
 
+    def test_the_old_fixed_sentence_is_history_counted_apart(self):
+        """REG-3297 - 530 of his tombstones carry the deleter's OLD fixed sentence over a reel the stores never sealed.
+        They stay on each reel's record, both sides named, and the census counts them as history - the row is red only
+        on a contradiction written after the fix."""
+        rows = json.load(io.open(self.W.w["reel_tombstones"], encoding="utf-8"))
+        for r in rows["reels"]:
+            if r.get("reel") == _reel(4):
+                r["why"] = OLD
+        _dump(self.W.w["reel_tombstones"], rows)
+        src = RC.sources(hist=self.W.hist, stamp_path=self.W.stamp)
+        c = RC.custody(_reel(4), src=src)
+        k = [x for x in c["contradictions"] if x["kind"] == "tombstone-claims-seals"]
+        self.assertTrue(k and k[0]["history"] is True, "the old sentence's claim is not marked history: %r" % k)
+        cen = RC.census(src=src, limit=1000)
+        self.assertEqual(cen["history"], 1)
+        self.assertEqual(cen["byKind"].get("tombstone-claims-seals"), 1, "history counted as a live contradiction")
+
     def test_a_backed_claim_is_no_contradiction_and_the_door_is_quoted(self):
         c = RC.custody(_reel(6), src=self.W.src)
         self.assertEqual(c["entered"], ["triage", "printer", "vault", "tombstone"])
@@ -549,6 +568,11 @@ class TheRowIsOnTheHeart(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3297 - the old fixed sentence's history counts as a live contradiction again (530 red forever)",
+     "file": "tv/reel_custody.py",
+     "find": "        _live = [k for k in c[\"contradictions\"] if not k.get(\"history\")]\n",
+     "replace": "        _live = list(c[\"contradictions\"])\n",
+     "matches": 1},
     {"why": "REG-3296 - an evidence remnant reads as a removal the shelf still shows (his 12)",
      "file": "tv/reel_custody.py",
      "find": "    if t[\"held\"] is True and r[\"held\"] is True and not r.get(\"remnant\"):\n",
