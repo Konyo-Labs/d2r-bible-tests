@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3867",
+  "ver": "v3868",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3867: a slow Claude read is not a sign-out, proof stores fit 8 GB, per-lane CPU, the Grok CLI findings fixed",
+  "note": "v3868: the second eye findings on v3867 fixed - diagnoses land, the census and pruned frames honest, per-lane CPU on Windows",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
