@@ -5579,6 +5579,26 @@ def roster_key_requests(force=False, _get=None, now=None):
     return dict(v)
 
 
+def prove_pc_fully(now_ms=None, path=None):
+    """REG-3289 (#55) - open a full re-prove of THIS PC (heart2.env_full_reprove) for his "Prove this PC fully" button.
+    -> {ok, since, why, owed?}. The self-prove lane does the proving at its own low priority, beside the game only above
+    the memory floor; the Fleet row's proof meter shows owed / rate / time left. Never raises."""
+    try:
+        import heart2 as _h2
+    except Exception as e:
+        return {"ok": False, "why": "heart2 will not import here (%s) - nothing was opened" % type(e).__name__}
+    got = _h2.env_full_reprove(now_ms=now_ms, path=path)
+    if got.get("ok"):
+        try:
+            er = _h2.env_reprove_state(None, path=path)
+            got["owed"] = len(er.get("owed") or []) if isinstance(er, dict) and er.get("owed") is not None else None
+        except Exception:
+            got["owed"] = None
+        got["why"] = "%s - this PC's own lane proves %s law(s) again, without the shared cache; the Fleet row counts them" % (
+            got.get("why"), "UNKNOWN" if got.get("owed") is None else got["owed"])
+    return got
+
+
 def roster_approve(owner, key_id, decision, _post=None, now_ms=None):
     """v3862 (item 11) - approve or deny ONE pending key, signed with THIS PC's registered key. -> the worker's answer.
     Refused here (nothing posted) unless this PC is an approver and the decision is approve or deny."""
@@ -52284,6 +52304,17 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(403, {"ok": False, "reason": "local"})
                 return
             self._json(200, task_board_open())
+            return
+        if path == "/api/prove_pc_fully":
+            # REG-3289 (#55, his 11-05 idea) - "Prove this PC fully": every law that declares a proof is owed again on THIS
+            # PC, proved by its own self-prove lane without the shared cache. The SAME origin gate as his other write doors.
+            import d2jsp_chrome as _d2jsp
+            if not _d2jsp.console_may_post(
+                    self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
+                    self.headers.get("Sec-Fetch-Site")):
+                self._json(403, {"ok": False, "reason": "local"})
+                return
+            self._json(200, prove_pc_fully())
             return
         if path == "/api/roster_approve":
             # v3862 (item 11) - his Approve / Deny on a new PC's key. The SAME origin gate as the d2jsp doors: a click

@@ -9054,7 +9054,10 @@ def env_step(rec, cur, parts, now_ms):
         return {"fingerprint": cur, "parts": dict(parts or {}), "adoptedAt": int(now_ms)}
     if rec["fingerprint"] == cur:
         if rec.get("pending"):
-            for k in ("pending", "pendingParts", "since"):
+            # REG-3289 (#55) - a re-prove HE ASKED FOR on this very environment is not "back to the proved one": it stays
+            if rec.get("askedBy") and rec.get("pending") == cur:
+                return None
+            for k in ("pending", "pendingParts", "since", "askedBy"):
                 rec.pop(k, None)
             rec["droppedAt"] = int(now_ms)
             return rec
@@ -9076,13 +9079,47 @@ def env_owed(state, rec, have):
     return sorted(n for n in have if not (isinstance(seen.get(n), (int, float)) and seen.get(n) >= since))
 
 
+def env_full_reprove(now_ms=None, path=None, by="his click"):
+    """REG-3289 (#55, his 11-05 idea: an optional button that proves everything on THIS PC "as a extra precaution and extra
+    safety measure") - open a pending re-prove on the environment this PC has NOW, exactly as a changed environment
+    opens one (REG-3162): every declaring gate whose verdict is older than `since` is owed, the self-prove lane runs its
+    slices WITHOUT --reuse at its own low priority, and the census stays unstamped until none is left. Shared proofs
+    stay the speed path; this is the per-PC safety net. -> {"ok", "since", "why"}. Never raises.
+
+    Refused, with the reason: an environment that cannot be read (UNKNOWN is never a fingerprint), a record that will not
+    parse, or a re-prove already open (one at a time - the meter already counts it)."""
+    try:
+        now = int(now_ms if now_ms is not None else time.time() * 1000)
+        rec = env_load(path)
+        if rec is None:
+            return {"ok": False, "why": "%s will not parse - nothing was opened" % ENV_NAME}
+        if rec.get("pending"):
+            return {"ok": False, "since": rec.get("since"),
+                    "why": "a re-prove is already open on this PC (since %s) - it is being proved now" % rec.get("since")}
+        cur, parts = env_fingerprint()
+        if not cur:
+            return {"ok": False, "why": "a part of this PC's environment could not be read (%s) - nothing was opened" % (
+                ", ".join(k for k in ENV_KEYS if not parts.get(k)) or "?")}
+        new = dict(rec)
+        if not new.get("fingerprint"):
+            new.update(fingerprint=cur, parts=dict(parts or {}), adoptedAt=now)
+        new.update(pending=cur, pendingParts=dict(parts or {}), since=now, askedBy=str(by or "his click")[:60])
+        if not env_save(new, path):
+            return {"ok": False, "why": "%s could not be written - nothing was opened" % ENV_NAME}
+        return {"ok": True, "since": now, "why": "every law that declares a proof is owed again on this PC from now"}
+    except Exception as e:
+        return {"ok": False, "why": "opening the re-prove raised %s" % type(e).__name__}
+
+
 def env_finish(rec, owed):
     """A pending re-prove with nothing left owed: the new fingerprint is this PC's. -> new record | None. Pure."""
     if not isinstance(rec, dict) or not rec.get("pending") or owed:
         return None
-    out = {k: v for k, v in rec.items() if k not in ("pending", "pendingParts", "since")}
+    out = {k: v for k, v in rec.items() if k not in ("pending", "pendingParts", "since", "askedBy")}
     out.update(fingerprint=rec["pending"], parts=dict(rec.get("pendingParts") or {}),
                provedFrom=rec.get("parts"), provedAt=int(time.time() * 1000))
+    if rec.get("askedBy"):                     # REG-3289 - when he last had this PC prove everything, kept on the record
+        out["fullProvedAt"] = out["provedAt"]
     return out
 
 
@@ -9131,7 +9168,7 @@ def env_reprove_state(state=None, gates=None, path=None):
             if gates is None:
                 _ENV_HAVE.update(at=time.time(), have=have)
         return {"owed": env_owed(state, rec, have), "from": rec.get("parts"), "to": rec.get("pendingParts"),
-                "since": rec.get("since")}
+                "since": rec.get("since"), "asked": rec.get("askedBy")}
     except Exception as e:
         return {"owed": None, "unknown": "the open environment re-prove could not be read (%s)" % type(e).__name__}
 
@@ -9140,6 +9177,8 @@ def env_change_words(er):
     """'python 3.9 -> 3.12, node none -> 22' - the parts that moved. Pure."""
     a, b = (er or {}).get("from") or {}, (er or {}).get("to") or {}
     moved = ["%s %s -> %s" % (k, a.get(k), b.get(k)) for k in ENV_KEYS if a.get(k) != b.get(k)]
+    if not moved and (er or {}).get("asked"):             # REG-3289 - nothing moved: he asked this PC to prove it all
+        return "a full re-prove asked by %s" % er["asked"]
     return ", ".join(moved) or "an unrecorded part"
 
 

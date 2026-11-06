@@ -9197,6 +9197,10 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
             <div id="shadow-bar" hidden><span id="shadow-who">read only</span><button type="button" id="shadow-sessions" title="their sessions, summarized: dates, reads, names and a few small key frames - read only">📚 Their sessions</button><button type="button" id="shadow-leave" onclick="window._shadowLeave()">✕ LEAVE SHADOW (Esc)</button></div>
             <!-- v3862 (item 11) - a new PC asking for one of his labels waits HERE for his Approve / Deny (approver PC only) -->
             <div id="fleet-keyreq" hidden></div>
+            <!-- REG-3289 (#55, his 11-05 idea) - an optional full re-prove of THIS PC: every law proved here again, without
+                 the shared cache, by this PC's own lane at low priority. Two presses, in the page - never a native dialog. -->
+            <div id="fleet-provepc" class="fleet-none"><button class="util-btn" type="button" id="fleet-provepc-btn"
+                 onclick="window._provePcClick(this)" title="Every law that declares a proof is proved again on THIS PC, without the shared cache - a safety net beside GitHub's proofs. It runs in the background at low priority and the PROVED part of this PC's row counts it down.">Prove this PC fully</button><span id="fleet-provepc-say"></span></div>
             <div id="fleet-list"><div class="fleet-none">checking who is online…</div></div>
             <!-- v2213 — the cross-reference box. Hidden until a player is clicked; it answers
                  "what should I chase" where the hover tooltip answers "how far along is he". -->
@@ -28540,6 +28544,35 @@ function escC(s) {
     var h = window._fleetKeyReqHtml(kr, Date.now());
     el.innerHTML = h;
     el.hidden = !h;
+  };
+  /* REG-3289 (#55) - "Prove this PC fully": the first press asks in the page, the second sends. Its answer is said beside
+     it, and the PROVED part of this PC's row then counts the owed laws down (owed / per hour / time left). */
+  window._provePcClick = async function (btn) {
+    var say = document.getElementById('fleet-provepc-say');
+    if (btn.getAttribute('data-armed') !== '1') {
+      btn.setAttribute('data-armed', '1');
+      btn.textContent = 'Yes - prove every law on this PC again';
+      if (say) say.textContent = ' hours of background work at low priority, beside the game only above its memory floor - press again to start';
+      setTimeout(function () {
+        if (btn.getAttribute('data-armed') === '1' && !btn.disabled) {
+          btn.removeAttribute('data-armed'); btn.textContent = 'Prove this PC fully';
+          if (say) say.textContent = '';
+        }
+      }, 15000);
+      return;
+    }
+    btn.disabled = true;
+    var said = '';
+    try {
+      var r = await fetch('/api/prove_pc_fully', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      var j = await r.json();
+      said = (j && j.ok) ? ('started - ' + String(j.why || '')) : ('not started - ' + String((j && (j.why || j.reason)) || 'no answer'));
+    } catch (e) { said = 'not started - the console did not answer'; }
+    btn.removeAttribute('data-armed');
+    btn.textContent = 'Prove this PC fully';
+    btn.disabled = false;
+    if (say) say.textContent = ' ' + said;
+    try { window._fleetRefresh(true); } catch (e) {}
   };
   window._fleetKeyDecide = async function (btn) {
     var owner = btn.getAttribute('data-owner'), key = btn.getAttribute('data-key'), dec = btn.getAttribute('data-decision');
