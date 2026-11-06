@@ -12371,6 +12371,8 @@ WATCHES = {
     # own and the empty tuple is the honest answer.
     "his window has a keyboard door": (),
     "the d2jsp price database is on its tab": (),
+    # #87 (REG-3253) - it asks the lamp's opener for its command and reads the profile's own settings; no element of its own.
+    "the Mac signs in to d2jsp through its own window": (),
     "a windowed frame is read inside its game": (),
     # REG-3218 - DECLARED, NOT OMITTED. It reads the board lane's record (a file the console writes); the board it judges is
     # a page on the site, not a registry surface, so the empty tuple is the honest answer.

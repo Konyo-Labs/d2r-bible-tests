@@ -28,7 +28,7 @@ except Exception:
     pass
 UI = os.path.join(HERE, "control_ui.html")
 START = "/* REG-3255 (#73) - AN IMAGE WHOSE LOAD THE ENGINE FRAME CANCELED IS ASKED AGAIN, ONCE."
-END = "})();\n</script>"
+END = "})();   /* ⟦REG-3255 END⟧ */"
 
 
 def _block():
@@ -38,7 +38,7 @@ def _block():
     assert i >= 0, "the re-ask block is gone from the console"
     j = src.find(END, i)
     assert j > i, "the re-ask block's end is gone"
-    return src[i:j + len("})();")]
+    return src[i:j + len("})();")]   # the IIFE, up to its own end marker
 
 
 HARNESS = r"""
