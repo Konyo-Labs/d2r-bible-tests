@@ -61,6 +61,28 @@ def _rank(tab, img):
     return scored
 
 
+def verdict(scored):
+    """[(share, selector)] loudest first -> (exit code, lines). 1 red, 0 green, 2 UNKNOWN.
+
+    REG-3307 (v3875's GitHub round: crest_loudness[0] BLIND on a Linux shard, PROVEN on the Mac) - two greens that measured
+    nothing about the crest. A crest absent from the ranking read "the crest is not in the ranking, behind X - identity is
+    quiet": a crest below the fold, collapsed under 12x8 or hidden passed whatever colour it was painted. And a crest TIED
+    with the loudest element passed when the sort happened to put the other one first. The crest must be measured to be
+    called quiet, and as loud as the loudest is the loudest."""
+    rank = next((i for i, (_, s) in enumerate(scored) if s in CREST), None)
+    if rank is None:
+        return 2, ["⚪ UNKNOWN — the install crest (%s) is not among the %d element(s) measured above the fold, so how loud it "
+                   "is was never measured. That is not a quiet crest. Loudest: %s at %.1f%%."
+                   % (", ".join(CREST), len(scored), scored[0][1], 100 * scored[0][0])]
+    share, sel = scored[rank]
+    if share >= scored[0][0]:
+        return 1, ["🔴 THE INSTALL CREST IS THE LOUDEST THING ON THE BOARD (%s at %.1f%%%s)."
+                   % (sel, 100 * share, "" if rank == 0 else ", tied with %s" % scored[0][1]),
+                   "   It says which machine this is. It must never out-shout the hunt."]
+    return 0, ["🟢 the crest is #%d (%s at %.1f%%), behind %s at %.1f%% — identity is quiet, and its hue is untouched."
+               % (rank + 1, sel, 100 * share, scored[0][1], 100 * scored[0][0])]
+
+
 def main():
     try:
         import render_check as rc
@@ -99,7 +121,12 @@ def main():
     try:
         t.send("Emulation.setDeviceMetricsOverride", width=W, height=H,
                deviceScaleFactor=1, mobile=False)
-        t.ev("try{localStorage.setItem('d2r_ownerClaim','*')}catch(e){}")
+        # REG-3307 - ITS OWN EMPTY WORLD. A proof shard runs every browser gate in ONE Chrome, and a file:// page's storage
+        # is shared by all of them: whatever the gate before left (ladder mode draws #ladder-ribbon, a gold bar that measures
+        # 92.9% here, 2.1 points under a solid-red crest) is on this page too. Measured with ladder mode left on: the ribbon
+        # ranks #2 behind the tampered crest on this Mac, where its fonts leave the margin; the shard that went BLIND ran
+        # this gate straight after test_control. Cleared, the page is the default board every time.
+        t.ev("try{localStorage.clear();sessionStorage.clear();localStorage.setItem('d2r_ownerClaim','*')}catch(e){}")
         # ⚠ v2426 — THE RELOAD WAS FIRE-AND-FORGET, AND v2424's MESSAGE CLAIMED OTHERWISE.
         # Swapping an inline poll for `_selector_ready` fixed the HIDDEN-NODE predicate and did
         # nothing about the reload: `.bd-sigil` is true on BOTH sides of it, so any wait can be
@@ -209,19 +236,11 @@ def main():
         print("── loudest above the fold, by saturated-pixel share ──")
         for d, sel in scored[:6]:
             print("   %5.1f%%  %s" % (100 * d, sel))
-        top = scored[0][1]
-        rank = next((i for i, (_, s) in enumerate(scored) if s in CREST), None)
-        if top in CREST:
-            print()
-            print("🔴 THE INSTALL CREST IS THE LOUDEST THING ON THE BOARD (%s at %.1f%%)."
-                  % (top, 100 * scored[0][0]))
-            print("   It says which machine this is. It must never out-shout the hunt.")
-            return 1
-        where = ("#%d" % (rank + 1)) if rank is not None else "not in the ranking"
+        code, lines = verdict(scored)
         print()
-        print("🟢 the crest is %s, behind %s — identity is quiet, and its hue is untouched."
-              % (where, scored[0][1]))
-        return 0
+        for l in lines:
+            print(l)
+        return code
     finally:
         t.close()
 

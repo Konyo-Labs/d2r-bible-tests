@@ -2046,6 +2046,14 @@ def blind_reason(why, matches, tail, widths=None):
     _rn = re.search(r"Ran (\d+) test", tail or "")
     n_skipped = int(_sk.group(1)) if _sk else 0
     if not n_skipped:
+        # REG-3306 (v3875's GitHub round) - A SCRIPT GATE'S BLIND KEPT NOTHING OF WHAT IT SAW. crest_loudness[0] came back
+        # BLIND on a Linux shard and PROVEN on this Mac; the tamper paints the crest solid red, and the line kept only the
+        # proof's why, never the law's own verdict line under the tamper ("the crest is #N, behind X"), which is the one
+        # fact that says what out-shouted a red crest there. A unittest tail ("Ran N tests | OK") says nothing more; a
+        # script gate's last line is its finding, so it is quoted.
+        _t = str(tail or "").strip()
+        if _t and _rn is None and not re.match(r"(OK|FAILED)\b", _t):
+            return _base + "  - under the tamper the law said: " + _t[:200]
         return _base
     if widths:
         import law_widths as _LW

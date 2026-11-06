@@ -21,6 +21,28 @@ The Grok CLI's backlog look at v3858 (#231 comment 6671667775, finding 2). Repro
 ### REG-3221 - A PEER'S JEWELS READ "NOT PUBLISHED" FROM A CACHED ROW (v3866, the #231 eye on v3861)
 The Grok CLI's backlog look at v3861 (#231 comment 6671668579, finding 1). Reproduced in the code: fleet_compare's v2814 rule ("an absence in a cached record is not an absence in the world" - one forced re-read before saying a peer has not reported) covered only the ledger's own mask. A cached row that held the uniques mask was never re-read, so when it predated the peer's colossal mask, _fleet_merge_colossal named the six jewels "not judged" as if the peer had never published them. Fix: the jewels' mask earns the same single forced read when the cached row lacks it (and no forced read happened for uniques); the uniques compare keeps the row it was made from. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (+1 case, red-proof PROVEN).
 
+### REG-3307 - crest_loudness CALLED A CREST IT NEVER MEASURED QUIET, AND A TIE WENT TO WHICHEVER ELEMENT SORTED FIRST (v3875, GitHub's round)
+v3875's first proof round: crest_loudness[0] BLIND on shard 7 (Linux) - its tamper paints the crest solid red and the gate
+stayed green. PROVEN on v3872's round and on this Mac today (tampered: #bs-glyph 95.0% against .help-btn 75.7%). What it saw
+on that shard was not kept (REG-3306), so the cause there is UNKNOWN. Reading the verdict found two greens that measured
+nothing about the crest: a crest absent from the ranking (below the fold, under the 12x8 floor, hidden) printed "the crest
+is not in the ranking, behind X - identity is quiet" whatever its colour; and a crest tied with the loudest passed whenever
+the stable sort put the other element first. The decision is crest_loudness.verdict() now: no crest measured is UNKNOWN
+(exit 2), as loud as the loudest is red, and a quiet crest names its share and the leader's. Live here: "#23 (#bs-glyph at
+17.0%), behind .help-btn at 75.7%". THE LIKELY CAUSE THERE: a shard proves every browser gate in one Chrome, so a file://
+page's storage is shared, and shard 7 ran this gate straight after test_control. With ladder mode left in storage the page
+draws #ladder-ribbon, a gold bar measuring 92.9% here - 2.1 points under the tampered crest's 95.0% on this Mac's fonts. The
+gate now clears local and session storage before it claims the board, so it measures its own default world every time. Law: test_the_crest_is_measured_before_it_is_called_quiet (new), red-proofs PROVEN;
+crest_loudness[0] PROVEN.
+
+### REG-3306 - A SCRIPT GATE'S BLIND LINE KEPT NOTHING OF WHAT THE LAW SAW UNDER THE TAMPER (v3875, GitHub's round)
+heart2's BLIND line carried the red-proof's why and, for a unittest law, its skip counts. A script gate's own verdict line -
+crest_loudness prints "the crest is #N, behind X" - was in the tail blind_reason received and was dropped, so shard 7's
+BLIND could not say what out-shouted a solid red crest on Linux, and nothing in the shard's artifact kept it either. Now a
+BLIND from a tail that is not a unittest summary quotes it ("under the tamper the law said: ..."); a unittest summary is
+not quoted (it says nothing more). Law: test_a_blind_verdict_names_the_skip (+1 case), red-proofs PROVEN (its skip-branch
+proof re-aimed at the moved lines).
+
 ### REG-3305 - v3874'S QUICK WINS LAW READ A FIXED 200-CHARACTER WINDOW, AND THE WINDOW CENSUS WENT OVER ITS CEILING (v3875, GitHub's round)
 GitHub, agent suite (3), v3875: test_a_source_window_must_reach_its_subject FAILED - "fixed-size source windows rose to 45
 (ceiling 44)". Measured against origin/main, the one new window was test_quick_wins_shows_each_place_with_its_picture's

@@ -42,13 +42,18 @@ import heart2 as H  # noqa: E402
 
 
 RED_PROOF = [
+    {"why": "REG-3306 - a script gate's BLIND drops what the law said under the tamper",
+     "file": "tv/heart2.py",
+     "find": "            return _base + \"  - under the tamper the law said: \" + _t[:200]\n",
+     "replace": "            return _base\n",
+     "matches": 1},
     {
         "why": "switching off the skip branch returns the BLIND line to one sentence for opposite "
                "states — a law that was never run reads exactly like a law that was run and "
                "survived, which is how v2865 shipped blind:1 without anyone knowing why",
         "file": "heart2.py",
-        "find": "    if not n_skipped:\n        return _base",
-        "replace": "    if True:\n        return _base",
+        "find": "    if not n_skipped:\n        # REG-3306",
+        "replace": "    if True:\n        # REG-3306",
         "matches": 1,
     },
     {
@@ -132,6 +137,15 @@ class ABlindVerdictNamesTheSkip(unittest.TestCase):
         self.assertNotIn("SKIP", out.upper(),
                          "`skipped=0` was read as evidence of skipping — a truthy-string bug in "
                          "the very check written to stop a green from lying")
+
+    def test_a_script_gates_blind_quotes_what_the_law_said(self):
+        """REG-3306 - crest_loudness[0] went BLIND on a Linux shard and the line kept only the proof's why. A script gate's
+        last line is its own finding under the tamper; a unittest summary is not quoted (it says nothing more)."""
+        said = "the crest is #3, behind .some-loud-thing - identity is quiet, and its hue is untouched."
+        out = H.blind_reason("the why text", 1, said)
+        self.assertIn("under the tamper the law said: " + said[:60], out)
+        for unit in ("OK", "Ran 4 tests in 0.2s | OK", "FAILED (failures=1)"):
+            self.assertNotIn("the law said", H.blind_reason("the why text", 1, unit), unit)
 
     def test_the_plain_sentence_survives(self):
         """★ The old text still carries the match count and the why; the warning is an addition."""
