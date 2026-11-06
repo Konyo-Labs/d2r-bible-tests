@@ -202,18 +202,22 @@ def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
             except (TypeError, ValueError):
                 same = False
         if same:
-            return {"code": "never-written", "ts": _ts(r.get("ts")), "when": None, "by": "the recorder's disk floor",
+            return {"code": "never-written", "ts": _ts(r.get("ts")), "when": (_when(r.get("ts")) if _ts(r.get("ts")) else None),
+                    "by": "the recorder's disk floor",
                     "words": "never written — the recorder was under its disk floor (%s, %s GB free) "
                              "when this read was taken" % (r.get("why"), r.get("freeGb"))}
     filmed = _ms_of(stem)
-    keys = [k for k in (reel, ("reel_" + str(session)) if session else None, str(session) if session else None) if k]
+    # v3868 (the Grok CLI on REG-3207, #231 6675925066) - a path that NAMES its reel is that reel's frame: unioning the
+    # caller's session let another reel's earlier trim win the earliest-deleter rule.
+    keys = ([reel] if reel else
+            [k for k in (("reel_" + str(session)) if session else None, str(session) if session else None) if k])
     events, seen = [], set()
     if stem:
         for r in idx["names"].get(stem, ()):
             seen.add(id(r))
             events.append((_ts(r.get("ts")), "reaped", "the recorder's disk-floor reaper",
                            "taken by the recorder's disk-floor reaper on %s (%s)"
-                           % (_when(r.get("ts")), r.get("by") or "recorder")))
+                           % (_when(r.get("ts")), r.get("by") or "recorder"), "named"))
     for k in keys:
         for r in idx["whole"].get(k, ()):
             if id(r) in seen:
@@ -237,9 +241,28 @@ def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
                            "released with its reel on %s (%s)" % (_when(tb.get("deletedTs")), tb.get("why") or "retention")))
     if events:
         # earliest stamp first; a row with no stamp sorts after every stamped one; ties keep record order
-        i = min(range(len(events)), key=lambda j: (events[j][0] is None, events[j][0] or 0, j))
-        t, code, by, words = events[i]
-        return {"code": code, "ts": t, "when": (_when(t) if t else None), "by": by, "words": words}
+        pool = range(len(events))
+        if filmed is None:
+            # v3868 - with no capture time, a reap that NAMES the frame is the only evidence that dates it: the frame still
+            # existed when it was taken, so no earlier trim could have taken it
+            named = [j for j in pool if len(events[j]) > 4 and events[j][4] == "named"]
+            pool = named or pool
+        i = min(pool, key=lambda j: (events[j][0] is None, events[j][0] or 0, j))
+        t, code, by, words = events[i][:4]
+        out = {"code": code, "ts": t, "when": (_when(t) if t else None), "by": by, "words": words}
+        if filmed is None and (len(events[i]) < 5 or events[i][4] != "named"):
+            # v3868 (the Grok CLI on REG-3207) - A FRAME WITH NO CAPTURE TIME CANNOT BE DATED AGAINST A TRIM. The
+            # filmed-after guard never ran, so the reel's FIRST trim won even for a frame filmed after it. A reap that
+            # NAMES the frame is direct evidence and keeps its date.
+            out.update(ts=None, when=None,
+                       words="%s - which of its trims took it cannot be told: its name carries no capture time" % (
+                           "released with its reel by the retention lane" if code == "released"
+                           else "taken with its reel by the recorder's disk-floor reaper"))
+        if unread:
+            # v3868 (the Grok CLI on REG-3207) - an unreadable record may hold an EARLIER deleter: said, never hidden
+            out["words"] += " (%s could not be read, so an earlier deleter cannot be ruled out)" % ", ".join(unread)
+            out["unread"] = list(unread)
+        return out
     if unread:
         return {"code": "unknown", "ts": None, "when": None, "by": None,
                 "words": "UNKNOWN — %s could not be read" % ", ".join(unread)}
@@ -286,10 +309,11 @@ def records(hist_dir):
         import reel_retention as _rr
         tomb = _rr._tombstone_path(hist_dir)
     except Exception:
-        tomb = os.path.join(os.path.dirname(os.path.abspath(hist_dir)), "reel_tombstones.json")
-    key = tuple(_stat_key(p) for p in (os.path.join(root, REAPS), tomb, os.path.join(root, REFUSALS)))
+        tomb = None          # v3868 (the Grok CLI on REG-3207) - a key over a path the loader may not read is no key
+    key = (tuple(_stat_key(p) for p in (os.path.join(root, REAPS), tomb, os.path.join(root, REFUSALS)))
+           if tomb else None)
     with _RECORDS_LOCK:
-        if _RECORDS_MEMO["key"] == key:
+        if key is not None and _RECORDS_MEMO["key"] == key:
             return _RECORDS_MEMO["val"]
     reaps = load_jsonl(os.path.join(root, REAPS))
     tombs = load_tombstones(hist_dir)

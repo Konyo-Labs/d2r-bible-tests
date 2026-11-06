@@ -335,7 +335,67 @@ class AGuestNeverAsksToUpdate(unittest.TestCase):
                                "fetch(API + '/api/update', { method: 'POST' })", "UPDATE NOW")
 
 
+class TheGrokCliOnREG3207(unittest.TestCase):
+    """v3868 - the Grok CLI's look at REG-3207 (#231 6675925066): judge()'s answers, straight from the records."""
+
+    def _judge(self, frame, tombs=(), reaps=(), refusals=(), session=None, unread=()):
+        return RP.judge(frame, RP.index(list(reaps), list(tombs)), list(refusals), None, session, list(unread))
+
+    def test_a_frame_with_no_capture_time_is_not_dated_on_the_first_trim(self):
+        tombs = [{"reel": "reel_A", "deletedTs": DELETED, "kept": [], "why": "trim 1"},
+                 {"reel": "reel_A", "deletedTs": DELETED + 86400000, "kept": [], "why": "trim 2"}]
+        g = self._judge("reel_A/frame_12.jpg", tombs)
+        self.assertEqual(g["code"], "released")
+        self.assertIsNone(g["ts"], "a frame with no capture time took the reel's first trim's date: %r" % g)
+        self.assertIn("cannot be told", g["words"])
+        named = self._judge("reel_A/frame_12.jpg", tombs,
+                            reaps=[{"ts": DELETED + 5, "names": ["frame_12.jpg"], "by": "recorder"}])
+        self.assertEqual(named["ts"], DELETED + 5, "a reap that NAMES the frame lost its date")
+
+    def test_a_path_that_names_its_reel_is_not_judged_by_another_reels_trim(self):
+        filmed = DELETED - 3600000
+        tombs = [{"reel": "reel_A", "deletedTs": DELETED + 7200000, "kept": [], "why": "A's trim"},
+                 {"reel": "reel_B", "session": "B", "deletedTs": DELETED, "kept": [], "why": "B's trim"}]
+        g = self._judge("reel_A/%d.jpg" % filmed, tombs, session="B")
+        self.assertEqual(g["ts"], DELETED + 7200000, "another reel's earlier trim took this frame: %r" % g)
+
+    def test_an_unreadable_record_is_named_beside_the_answer(self):
+        filmed = DELETED - 3600000
+        g = self._judge("reel_A/%d.jpg" % filmed, [{"reel": "reel_A", "deletedTs": DELETED, "kept": [], "why": "t"}],
+                        unread=["the reap record"])
+        self.assertEqual(g["code"], "released")
+        self.assertIn("could not be read", g["words"], "an unreadable record was hidden behind the answer")
+        self.assertEqual(g.get("unread"), ["the reap record"])
+
+    def test_a_refusal_says_when(self):
+        g = self._judge("reel_A/%d.jpg" % (DELETED - 60000),
+                        refusals=[{"frameId": "reel_A/%d.jpg" % (DELETED - 60000), "ts": DELETED, "why": "disk-floor",
+                                   "freeGb": 1.2}])
+        self.assertEqual(g["code"], "never-written")
+        self.assertIsNotNone(g["when"], "a refusal kept its stamp and dropped its time: %r" % g)
+
+
 RED_PROOF = [
+    {"why": "v3868 - a frame with no capture time is dated on its reel's first trim again",
+     "file": "tv/read_pictures.py",
+     "find": "        if filmed is None and (len(events[i]) < 5 or events[i][4] != \"named\"):\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "v3868 - another reel's earlier trim wins for a path that names its reel",
+     "file": "tv/read_pictures.py",
+     "find": "    keys = ([reel] if reel else\n",
+     "replace": "    keys = ([reel, \"reel_\" + str(session), str(session)] if (reel and session) else [reel] if reel else\n",
+     "matches": 1},
+    {"why": "v3868 - an unreadable record is hidden behind the answer",
+     "file": "tv/read_pictures.py",
+     "find": "        if unread:\n            # v3868 (the Grok CLI on REG-3207) - an unreadable record may hold an EARLIER deleter: said, never hidden\n",
+     "replace": "        if False:\n            # v3868 (the Grok CLI on REG-3207) - an unreadable record may hold an EARLIER deleter: said, never hidden\n",
+     "matches": 1},
+    {"why": "v3868 - a refusal drops its time",
+     "file": "tv/read_pictures.py",
+     "find": "\"when\": (_when(r.get(\"ts\")) if _ts(r.get(\"ts\")) else None),\n",
+     "replace": "\"when\": None,\n",
+     "matches": 1},
     {"why": "REG-3207 - an <img> that leads its Accept with image/ is no longer told apart from a fetch()",
      "file": "tv/control_app.py",
      "find": "        return str(headers.get(\"Accept\") or \"\").strip().lower().startswith(\"image/\")\n",
@@ -373,7 +433,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3207 (second eye) - the LAST tombstone of a many-times-trimmed reel dates the frame, not the first",
      "file": "tv/read_pictures.py",
-     "find": "        i = min(range(len(events)), key=lambda j: (events[j][0] is None, events[j][0] or 0, j))\n",
+     "find": "        i = min(pool, key=lambda j: (events[j][0] is None, events[j][0] or 0, j))\n",
      "replace": "        i = len(events) - 1\n",
      "matches": 1},
     {"why": "REG-3207 (second eye) - a trim that KEPT the frame is blamed for taking it",
