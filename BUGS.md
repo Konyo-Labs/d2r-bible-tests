@@ -21,6 +21,17 @@ The Grok CLI's backlog look at v3858 (#231 comment 6671667775, finding 2). Repro
 ### REG-3221 - A PEER'S JEWELS READ "NOT PUBLISHED" FROM A CACHED ROW (v3866, the #231 eye on v3861)
 The Grok CLI's backlog look at v3861 (#231 comment 6671668579, finding 1). Reproduced in the code: fleet_compare's v2814 rule ("an absence in a cached record is not an absence in the world" - one forced re-read before saying a peer has not reported) covered only the ledger's own mask. A cached row that held the uniques mask was never re-read, so when it predated the peer's colossal mask, _fleet_merge_colossal named the six jewels "not judged" as if the peer had never published them. Fix: the jewels' mask earns the same single forced read when the cached row lacks it (and no forced read happened for uniques); the uniques compare keeps the row it was made from. Law test_the_cross_reference_counts_a_sunder_once_and_the_jewels (+1 case, red-proof PROVEN).
 
+### REG-3313 - crest_loudness MEASURED A DIFFERENT BOARD ON GITHUB: LINUX IS THE 'windows' WORLD, AND ITS BLUE RIBBON OUT-SHOUTED A RED CREST (v3875, round 4)
+Round 4's only owed proof: crest_loudness[0] BLIND again, and this time the line said what the law saw (REG-3306): "the
+crest is #2 (#bs-glyph at 86.8%), behind #cousin-ribbon at 88.7%". The page puts every non-Mac platform in the 'windows'
+storage world (D2R_MACHINE), whose cousin shell draws #cousin-ribbon, a blue bar; GitHub's runner is Linux. REG-3307's
+"likely cause" (a ladder state another gate left) was wrong - storage was not the cause, the platform was. The gate now
+claims the Mac owner's world by the page's own contract (d2r_activeMachine='mac', d2r_machineSource='user') after clearing
+storage, so it measures the board he sees on every venue. Measured here with Chrome told it is Linux (user agent and
+platform overridden): the page reads D2R_MACHINE=mac, no cousin ribbon, source=user; clean crest #20 at 19.8% (green),
+tampered crest 93.2% and loudest (red). Law: test_the_crest_is_measured_before_it_is_called_quiet (+ the machine claim),
+red-proof PROVEN.
+
 ### REG-3311 - GITHUB'S RUNNER MOVED TO PYTHON 3.14 BETWEEN TWO ROUNDS, AND TWO LAWS BROKE ON IT (v3875, rounds 2 and 3)
 Round 1 (13:33Z) was green on test_the_gates_load_on_windows; round 2 (14:29Z) owed it with no change to the files it reads,
 and round 3 named both 3.14 signatures. The agent suite runs ubuntu-latest's own python3, and it had become 3.14:
@@ -51,7 +62,7 @@ nothing about the crest: a crest absent from the ranking (below the fold, under 
 is not in the ranking, behind X - identity is quiet" whatever its colour; and a crest tied with the loudest passed whenever
 the stable sort put the other element first. The decision is crest_loudness.verdict() now: no crest measured is UNKNOWN
 (exit 2), as loud as the loudest is red, and a quiet crest names its share and the leader's. Live here: "#23 (#bs-glyph at
-17.0%), behind .help-btn at 75.7%". THE LIKELY CAUSE THERE: a shard proves every browser gate in one Chrome, so a file://
+17.0%), behind .help-btn at 75.7%". (CORRECTED by REG-3313: the cause was the platform, not storage.) THE FIRST GUESS: a shard proves every browser gate in one Chrome, so a file://
 page's storage is shared, and shard 7 ran this gate straight after test_control. With ladder mode left in storage the page
 draws #ladder-ribbon, a gold bar measuring 92.9% here - 2.1 points under the tampered crest's 95.0% on this Mac's fonts. The
 gate now clears local and session storage before it claims the board, so it measures its own default world every time. Law: test_the_crest_is_measured_before_it_is_called_quiet (new), red-proofs PROVEN;
