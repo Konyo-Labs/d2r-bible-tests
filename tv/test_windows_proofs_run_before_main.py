@@ -116,7 +116,20 @@ class OneRoundFitsAndTheNextProvesTheRest(unittest.TestCase):
 
     def test_after_publish_it_first_waits_for_this_commits_ci_round(self):
         seed = _job(self.wf, "seed")
-        self.assertIn("WAIT_SIBLING: ${{ github.event_name == 'workflow_run' && github.workflow || '' }}", seed)
+        self.assertIn("WAIT_SIBLING: ${{ github.event_name == 'workflow_run' && github.workflow || "
+                      "'proof-keys shards (ci/proof-keys-* only)' }}", seed)
+
+    def test_on_the_ci_push_it_waits_for_the_linux_shards_by_their_own_name(self):
+        """v3867 - MEASURED on v3866: the required checks alone fill GitHub Pro's 40 jobs, so these 16 shards beside them
+        queued 18 required jobs. On the ci push the seed waits for the Linux shards of this commit - named exactly as that
+        workflow names itself, or the wait finds nothing and the 16 start beside them again."""
+        lin = os.path.join(os.path.dirname(WF), "proof-keys-shards.yml")
+        with io.open(lin, encoding="utf-8") as fh:
+            linux_name = fh.readline().split("name:", 1)[1].strip()
+        seed = _job(self.wf, "seed")
+        m = re.search(r"WAIT_SIBLING: \$\{\{ github.event_name == 'workflow_run' && github.workflow \|\| '([^']+)' \}\}", seed)
+        self.assertIsNotNone(m, "the ci push waits for nothing - its 16 shards take the required checks' slots")
+        self.assertEqual(m.group(1), linux_name, "the seed waits for a workflow name the Linux shards do not carry")
         self.assertIn('${WAIT_SIBLING:+--wait-sibling "$WAIT_SIBLING" --wait-min 45}', seed)
         self.assertGreaterEqual(int(re.search(r"\n    timeout-minutes: (\d+)\n", seed).group(1)), 50,
                                 "the seed job is killed while it waits")
@@ -245,6 +258,11 @@ class TheSeedTakesTheNewestOtherSetOfItsFlavor(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3867 - the Windows set starts beside the Linux shards again on the ci push and queues the required checks",
+     "file": ".github/workflows/proof-keys-windows.yml",
+     "find": "github.workflow || 'proof-keys shards (ci/proof-keys-* only)' }}\n",
+     "replace": "github.workflow || '' }}\n",
+     "matches": 1},
     {"why": "REG-3214 - the Windows set runs only after Publish again (v3864: no win32 set ever)",
      "file": ".github/workflows/proof-keys-windows.yml",
      "find": "on:\n  push:\n    branches:\n      - 'ci/proof-keys-*'\n  workflow_run:\n",

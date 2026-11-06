@@ -69,7 +69,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           # REG-3214 - after Publish only: wait while this commit's ci/proof-keys round of this workflow is still proving
-          WAIT_SIBLING: ${{ github.event_name == 'workflow_run' && github.workflow || '' }}
+          # v3867 - ON THE ci PUSH IT WAITS FOR THE LINUX SHARDS. MEASURED on v3866 (11-06 02:07Z): GitHub Pro runs 40
+          # jobs at once and the REQUIRED checks alone are 40 (22 Linux shards, 5 agent, 12 Playwright, 1 boot), so these
+          # 16 shards started beside them took 16 slots and 18 required jobs queued. One seed job waits instead (bounded
+          # at 45 min, then it goes on); after Publish it waits for its own ci round, as before (REG-3214).
+          WAIT_SIBLING: ${{ github.event_name == 'workflow_run' && github.workflow || 'proof-keys shards (ci/proof-keys-* only)' }}
         run: >-
           python3 tv/proof_seed.py --sha "$HEAD_SHA" --flavor win32 --prior
           --work "$RUNNER_TEMP/seed-work" --out "$RUNNER_TEMP/seed-out"
