@@ -294,7 +294,7 @@ MEASURE = r"""(function(){ try {
 #: view, is hit-tested (elementFromPoint must be that element or inside it) and then pressed with CDP mouse events.
 #: A programmatic .click() skips hit-testing, so a covered or clipped control would be "clicked" anyway.
 AIM = r"""(function(sel, i){ var e = document.querySelectorAll(sel)[i]; if (!e) return JSON.stringify(null);
-  e.scrollIntoView({ block: 'center', inline: 'nearest' }); var r = e.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+  e.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }); var r = e.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
   var at = document.elementFromPoint(x, y); return JSON.stringify({ x: x, y: y, hit: !!(at && (at === e || e.contains(at))) }); })(%s, %d)"""
 OPT_AT = r"""(function(want){ var o = document.querySelectorAll('#vault-detail .mp-pick .mp-opt');
   for (var i = 0; i < o.length; i++) if ((o[i].textContent || '').indexOf(want) >= 0) return i; return -1; })(%s)"""
@@ -374,7 +374,7 @@ def _hover_worn(t, view="equip"):
         t.send("Input.dispatchMouseEvent", type="mouseMoved", x=2, y=2, button="none")
         time.sleep(0.3)
         r = json.loads(t.ev("(function(){ var a = document.querySelector(%s), e = a && (a.querySelector('.d2art-wrap[aria-label]') || a);"
-                            " if (!e) return 'null'; e.scrollIntoView({ block: 'nearest', inline: 'nearest' });"
+                            " if (!e) return 'null'; e.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });"
                             " var r = e.getBoundingClientRect(); return JSON.stringify([r.left + r.width / 2, r.top + r.height / 2]); })()"
                             % json.dumps(sel)))
         if not r:
@@ -392,7 +392,7 @@ def _hover_worn(t, view="equip"):
 #: is really the tile (elementFromPoint), so a covered item fails instead of being pressed through
 TILE = r"""(function(k){ var e = [].filter.call(document.querySelectorAll('#vault-detail .vd-item[data-key]'), function(e){ return e.getAttribute('data-key').indexOf(k) >= 0; })[0];
   if (!e) return JSON.stringify(null);
-  e.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  e.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
   var g = e.closest('.vd-grid'), r = e.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, at = document.elementFromPoint(x, y);
   return JSON.stringify({ key: e.getAttribute('data-key'), area: g.getAttribute('data-area'), x: +e.getAttribute('data-x'), y: +e.getAttribute('data-y'),
     held: e.classList.contains('vd-held'), cx: x, cy: y, hit: !!(at && (at === e || e.contains(at))),

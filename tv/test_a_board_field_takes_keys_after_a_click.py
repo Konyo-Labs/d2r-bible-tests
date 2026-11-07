@@ -3,7 +3,12 @@ window PRICE SEARCH and "Find a filed item" on the D2JSP board took no keystroke
 WKWebView on his Mac: once the field has focus, native keys type into it - the lost step is the click
 giving focus. Here a capture listener cancels mousedown's default (the focus a click normally gives), the
 way his window behaves, then a REAL CDP click and REAL key events must still land text in both fields.
-NO CHROME = a declared skip, never a pass. RED_PROOF below. [[regression-guard]]"""
+NO CHROME = a declared skip, never a pass. RED_PROOF below. [[regression-guard]]
+
+v3879 fix (v3878's proof round 42376032118, shard 17): RED UNTAMPERED in the proof sandbox ("Ran 1 test in 2.766s |
+FAILED") while the same commit's agent suite passed it. The board sets html{scroll-behavior:smooth}, so scrollIntoView
+ANIMATED and the field's rect was read mid-scroll - the click could land beside the field on a busy runner. The scroll is
+now instant, so the point read is the point clicked (the same in the two sibling laws that click by coordinates)."""
 import json
 import os
 import sys
@@ -27,7 +32,7 @@ class ABoardFieldTakesKeysAfterAClick(unittest.TestCase):
         b.run("window.fetch = (function(f){ return function(u, o){ if (String(u).indexOf('/api/ui_fault') >= 0) return Promise.resolve(new Response('{}')); return f.apply(this, arguments); }; })(window.fetch);"
               "switchTab('d2jsp'); document.addEventListener('mousedown', function(e){ if (e.target.closest && e.target.closest('input')) e.preventDefault(); }, true);")
         for sel in ("#d2jsp-price-q", "#d2jsp-find"):
-            r = b.run("var el = document.querySelector('%s'); el.value = ''; el.scrollIntoView({block:'center'}); document.body.focus();"
+            r = b.run("var el = document.querySelector('%s'); el.value = ''; el.scrollIntoView({block:'center', behavior:'instant'}); document.body.focus();"
                       "var q = el.getBoundingClientRect(); OUT.x = q.left + q.width / 2; OUT.y = q.top + q.height / 2;" % sel)
             for ty in ("mousePressed", "mouseReleased"):
                 t.send("Input.dispatchMouseEvent", type=ty, x=r["x"], y=r["y"], button="left", clickCount=1)
