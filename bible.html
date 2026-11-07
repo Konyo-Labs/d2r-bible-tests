@@ -74803,6 +74803,12 @@ body:not(.ladder-profile) .pp-main,body.ladder-profile .pp-ladder{background:rgb
   color: var(--gold-bright, #ffdf9a); font: inherit; }
 #claim-btn:hover { background: rgba(240,192,96,.26); }
 #claim-btn:disabled { opacity: .6; cursor: default; }
+/* REG-3330 (#98 - the v3876 pre-live Grok batch at 901 wide: "MAIN, BOSSES, CALCULATOR, TZ ZONES, TZ TRACKER and RUNES are
+   cut through horizontally"; GrokBot at 1024x720: "nav plus banner take about the top half"). The claim bar and the tabs
+   were BOTH sticky at top:0, the bar above (z 9997) - and at narrow widths its sentence and button wrap, so it grows and
+   covers more of the tabs. The tabs now stick BELOW the bar's measured height (0 when there is no bar - his console's
+   usual state), so a first-time visitor sees both. */
+.tabs, body.app-ctx .tabs { top: var(--claim-bar-h, 0px); }
 /* v1466 — THE PROFILE SIGIL: pills = which world, sigil = which install.
    Colour comes from the generator via --bs-hue, so the crest is self-colouring.
    v1691 — OFF THE ABSOLUTE RAIL, ONTO ITS OWN ROW. It used to sit at `position:absolute;right:340px`,
@@ -82710,13 +82716,15 @@ try {
   var _claimEl = document.getElementById('claim-bar');
   var _claimSync = function(){
     try {
-      var h = 0;
+      var h = 0, h0 = 0;
       if (_claimEl && !_claimEl.hidden){
         var r = _claimEl.getBoundingClientRect();
-        if (r.height > 0) h = Math.ceil(r.height) + 8;   // +8 = the gap the popovers already use
+        if (r.height > 0){ h0 = Math.ceil(r.height); h = h0 + 8; }   // +8 = the gap the popovers already use
       }
       if (h > 260) h = 260;
       document.documentElement.style.setProperty('--claim-h', h + 'px');
+      /* REG-3330 (#98) - the bar's OWN height, for the sticky tabs that sit below it (no popover gap) */
+      document.documentElement.style.setProperty('--claim-bar-h', Math.min(h0, 252) + 'px');
     } catch(e){}
   };
   if (_claimEl && typeof ResizeObserver !== 'undefined'){ new ResizeObserver(_roDefer(_claimSync)).observe(_claimEl); }

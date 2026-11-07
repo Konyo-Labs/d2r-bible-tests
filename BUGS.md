@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3330 - A FIRST VISITOR'S CLAIM BAR COVERED THE NAV AT 901 AND 1024 WIDE (v3877, board #98, the v3876 pre-live Grok batch + GrokBot)
+The Grok CLI on v3876's render at 901 wide: "MAIN, BOSSES, CALCULATOR, TZ ZONES, TZ TRACKER and RUNES are cut through
+horizontally, so only the lower part of each icon and word remains"; GrokBot at 1024x720: "nav plus banner take about the
+top half of the screen". MEASURED: #claim-bar ("This browser has its own empty world", the first-visit claim) and .tabs
+were both position:sticky at top:0, the bar above (z 9997); at narrow widths its sentence and button wrap and it grows.
+NOW the bar's existing observer (_claimSync, which already fed --claim-h to the popovers) also publishes its OWN height
+(--claim-bar-h, 0 with no bar - his console's usual state) and the tabs stick below it; the two earlier rules that set
+the tabs' top (both 0) sit before the override, which nothing after overrides. Law: test_the_tabs_stick_below_the_claim_bar
+(the observer publishes the height; the tabs read it); red-proof PROVEN. Pixels at 901/1024: the v3877 render batch.
+
 ### REG-3329 - THE ROUTER STATIONED 12 ALREADY-RELEASED REELS AS LIVE ONES: 42 AGAINST THE SHELF'S 30, AND 4 "OWED" A TOMBSTONE THEY HAD (v3877, board #44, his river asks)
 His console's fleet faults (11-06/07): "engines corroborate - router-and-shelf-agree - reels the router stations says 42
 and reels on the shelf says 30, and they must be ==". MEASURED on his Mac (read-only): reel_router.route() 42,
