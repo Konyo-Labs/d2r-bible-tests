@@ -112,6 +112,21 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3401 - v3880'S SHARD 5 WAS CUT AT MINUTE 55 BY ONE GATE PRICED 5.5x LOW - A MEASURED PRICE WAS FORGOTTEN (v3881, HIS ORDER)
+His words 11-07 23:31: "if this shard times out again i want you making sure going forward it doesnt happen make sure of it".
+It did: v3880's round on 6f20c0cb2, shard 5 of 22, 20:33 -> 21:30 UTC, its last 9 proofs cut (the ship's make-up re-ran them).
+MEASURED from the round's 22 shard stores (all 9,646 proofs fresh): the plan was balanced - every shard modelled at 2,555 s (82%
+of the window; its own REG-3273 line warned) and the other 21 finished in 23-36 min - but test_a_safety_net_red_closes_only_its_
+own_lock was priced 10.4 s a proof (v3872's committed table) and cost 57.5 s: 27 proofs planned as 270 s, real ~1,550 s, all on
+shard 5. More shards would not have helped: one gate's proofs stay in one shard unless its price says to split them. The cause
+was the price: each round saved ONLY the prices it re-measured (REG-3274), so a round that SERVED a gate dropped its measured
+price and the next plan fell back to the committed table. Now (1) the committed table is raised to that round's measurement
+wherever it measured higher, never lowered - 584 raised (7 by more than 1.5x: this one 5.5x, test_health_engine 3.0x ...), 31
+priced for the first time; (2) every shard hands on the prices it was planned on (proof_costs.prev.json) and the fan-in saves
+those prices with this round's measurements written over them - a price measured once carries until re-measured, and a round that
+measured nothing still hands them on. Law: test_a_price_once_measured_is_never_forgotten (5 cases, 3 red-proofs RED); the 28 laws
+that read the shard workflow, proof_shard or the price table green. Defense already behind it: a cut is re-run at once (REG-3386)
+and finished on GitHub (REG-3387). Measured again on v3881's own round.
 ### REG-3400 - TWO MAC-ONLY LAWS READ BLIND ON DEAN'S PC AND KEPT ALL FOUR OF HIS RIVER LOCKS SHUT (v3881, his "dean is online" ask)
 MEASURED 11-07 23:01 IST over SSH (GET + a read of his census) and on the Mac's Fleet: Dean on v3879, importing v3879's proofs
 and proving 319 owed - and blind=2, so routing, frame release, vault sweep and vault apply were all shut whatever he proved next

@@ -238,6 +238,9 @@ jobs:
           # REG-3274 - the prices the last round measured (the seed job carries them); absent: the committed table alone
           export HEART2_SHARD_COSTS="$RUNNER_TEMP/heart2-seed/proof_costs.json"
           [ -f "$HEART2_SHARD_COSTS" ] || unset HEART2_SHARD_COSTS
+          # REG-3401 - the prices this shard is planned on travel beside its cache: the fan-in carries every one the round
+          # does not re-measure into the next round's table, so a gate served from the bank keeps its measured price
+          if [ -n "${HEART2_SHARD_COSTS:-}" ]; then cp "$HEART2_SHARD_COSTS" "$D/proof_costs.prev.json"; fi
           # REG-3210 - a re-run shard also serves what this run's earlier attempt proved (the plan stays the seed job's)
           if [ -d "$RUNNER_TEMP/heart2-seed/rerun" ] && [ -n "$(python3 tv/proof_seed.py --widen "${HEART2_SHARD_SEED:-}" \
                 --with "$RUNNER_TEMP/heart2-seed/rerun" --out "$RUNNER_TEMP/heart2-seed/wide" | sed -n 's/^widened=//p')" ]; then

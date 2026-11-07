@@ -69,6 +69,9 @@ RUNNER_LANES = 2
 SERVED_PROOF_S = 0.05
 #: REG-3212 - a proof cut at its bound: neither PROVEN nor a defect of the law - UNKNOWN, owed, and named by the fan-in
 TIMEOUT = "TIMEOUT"
+#: REG-3401 - the prices a shard was planned on (HEART2_SHARD_COSTS), handed on beside its cache so the fan-in carries
+#: every price the round did not re-measure into the next round's table
+PREV_COSTS_NAME = "proof_costs.prev.json"
 #: REG-3271 - the longest gap between two provedAt stamps of one gate that is still ONE proof's cost: the shard job's own
 #: bound. MEASURED on v3872's set (0d4e24537): shard 14's store held 258 proofs of 10:0x-11:01 and one served from 04:21,
 #: so that gate's "per-proof" gap read 6 hours; a gate of 2-3 proofs took it as its median and was priced at hours
@@ -1109,9 +1112,26 @@ def main(argv=None):
                 with open(f, encoding="utf-8") as fh:
                     bodies.append(json.load(fh))
         got = measure_costs(bodies)
-        if not got:                     # second eye: an empty or wrong dir never blanks the table the plan reads
+        # REG-3401 (his "if this shard times out again ... make sure it doesnt happen", 11-07) - A PRICE ONCE MEASURED IS NEVER
+        # FORGOTTEN. Each round saved ONLY what it re-measured, so a gate a round SERVED from the bank lost its measured
+        # price and the next plan fell back to the committed table. MEASURED on v3880's round (6f20c0cb2): test_a_safety_
+        # net_red_closes_only_its_own_lock was planned at 10.4 s a proof (v3872's table) and cost 57.5 s - 27 proofs, ~21
+        # min unplanned, all on shard 5, and its last 9 were cut at minute 55. Every shard hands on the prices it was planned
+        # on (PREV_COSTS_NAME, beside its cache); the round's saved table is those prices, with what this round measured
+        # written over them.
+        prev = {}
+        for d in sorted(os.listdir(a.measure)):
+            pf = os.path.join(a.measure, d, PREV_COSTS_NAME)
+            if os.path.isfile(pf):
+                pv = proof_costs(pf)
+                if pv:
+                    prev = pv
+                    break
+        if not got and not prev:        # second eye: an empty or wrong dir never blanks the table the plan reads
             print("  ✗ REG-2593: no shard cache under that dir priced any gate - proof_costs.json is left as it was")
             return 2
+        carried = len(set(prev) - set(got))
+        got = dict(prev, **got)
         # REG-3274 - --out: the round's own prices, saved beside the next seed (the committed table is left as it is)
         out = a.out or os.path.join(os.path.dirname(os.path.abspath(__file__)), "proof_costs.json")
         heads = sorted(set(str(((b or {}).get("shard") or {}).get("head") or "")[:12] for b in bodies))
@@ -1121,8 +1141,8 @@ def main(argv=None):
                        "perProof": dict(sorted(got.items()))}, fh, indent=2, ensure_ascii=False)
             fh.write("\n")
         os.replace(out + ".tmp", out)
-        print("  REG-2593: %d gate(s) priced from %d shard cache(s) -> %s" % (len(got), len(bodies),
-                                                                          a.out or "tv/proof_costs.json"))
+        print("  REG-2593: %d gate(s) priced from %d shard cache(s) -> %s (REG-3401: %d carried from the prices this round "
+              "was planned on)" % (len(got), len(bodies), a.out or "tv/proof_costs.json", carried))
         return 0
     if not a.root or a.shards is None:
         ap.error("--fan-in DIR and --shards N are required (or --measure-costs DIR)")
