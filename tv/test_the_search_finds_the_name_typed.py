@@ -132,12 +132,21 @@ class EverySetIsFoundByItsName(unittest.TestCase):
         self.assertNotIn("Griswold's Legacy", labels)
         self.assertEqual(len(labels), len(set(labels)), "a set is indexed twice")
 
+    def test_a_curly_apostrophe_is_the_same_set(self):
+        """_setKeyOf keys a set's IDENTITY (TestV2286): a label already indexed with a curly apostrophe is not doubled"""
+        o = _sets([u"Bul-Kathos\u2019 Children (any)"])
+        self.assertNotIn("Bul-Kathos' Children", [a["label"] for a in o["added"]])
+
     def test_a_set_is_found_by_its_pieces_too(self):
         tal = [a for a in self.o["added"] if a["label"] == "Tal Rasha's Wrappings"][0]
         self.assertIn("tal rasha's guardianship", tal["kw"])
 
 
 RED_PROOF = [
+    {"why": "REG-3397 x TestV2286 - the set key no longer folds the curly apostrophe (a set indexed twice)",
+     "file": "bible.html",
+     "find": "toLowerCase().replace(/[‘’ʼ´`]/g, \"'\")\n        .replace(/\\s*\\([^)]*\\)\\s*$/, '').replace(/\\s+set$/, ''); };",
+     "replace": "toLowerCase()\n        .replace(/\\s*\\([^)]*\\)\\s*$/, '').replace(/\\s+set$/, ''); };", "matches": 1},
     {"why": "REG-3397 - 'Spirit' + Enter opens Spirit Ward again (a qualified name ties every longer name at 80)",
      "file": "bible.html",
      "find": "        if (l.replace(/\\s*\\([^)]*\\)\\s*$/, '') === q) return 95;\n", "replace": "\n", "matches": 1},
@@ -147,7 +156,7 @@ RED_PROOF = [
      "replace": "        var c = ITEM_CODEX[k]; if (!c || c.cat !== 'set' || true) return;\n", "matches": 1},
     {"why": "REG-3397 - a set a drop list already indexes is listed twice",
      "file": "bible.html",
-     "find": "        if (have[_k(nm)]) return; have[_k(nm)] = 1;\n", "replace": "        have[_k(nm)] = 1;\n", "matches": 1},
+     "find": "        if (have[_setKeyOf(nm)]) return; have[_setKeyOf(nm)] = 1;\n", "replace": "        have[_setKeyOf(nm)] = 1;\n", "matches": 1},
 ]
 
 

@@ -41992,12 +41992,14 @@ _v41_whenReady(() => {
        openDrop) - could not be found. Each set's own name now opens its set card; a name already indexed is not doubled. */
     (function(){
       if (typeof ITEM_CODEX === 'undefined') return;
-      var _k = function (t) { return String(t || '').toLowerCase().replace(/\s*\([^)]*\)\s*$/, '').replace(/\s+set$/, ''); };
-      var have = {}; cmds.forEach(function(c){ have[_k(c.label)] = 1; });   /* "Immortal King set (any)" already finds Immortal King */
+      /* it keys a set's IDENTITY (TestV2286): the curly apostrophe folds, so "Bul-Kathos’ Children" is not a second set */
+      var _setKeyOf = function (t) { return String(t || '').toLowerCase().replace(/[‘’ʼ´`]/g, "'")
+        .replace(/\s*\([^)]*\)\s*$/, '').replace(/\s+set$/, ''); };
+      var have = {}; cmds.forEach(function(c){ have[_setKeyOf(c.label)] = 1; });   /* "Immortal King set (any)" already finds Immortal King */
       Object.keys(ITEM_CODEX).forEach(function(k){
         var c = ITEM_CODEX[k]; if (!c || c.cat !== 'set') return;
         var nm = String(c.setName || k), key = nm.toLowerCase();
-        if (have[_k(nm)]) return; have[_k(nm)] = 1;
+        if (have[_setKeyOf(nm)]) return; have[_setKeyOf(nm)] = 1;
         var mem = (c.setMembers || []).map(function(m){ return String(m.name || ''); }).filter(Boolean);
         cmds.push({
           icon: '💎', label: nm, sub: 'Set · ' + mem.length + ' piece' + (mem.length === 1 ? '' : 's'),
