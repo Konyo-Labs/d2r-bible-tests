@@ -1466,6 +1466,28 @@ def _search_keywords(item, node_run=None):
     return plain
 
 
+def _resolved_name(item, node_run=None):
+    """#97 - the ITEM trader text names, by the quote block's own resolver (d2jspResolveItem: "shako" -> Harlequin Crest,
+    "anni" -> Annihilus), so the page can draw that item's NORMAL and PERFECT cards. -> name | None (never a guess)"""
+    node = shutil.which("node") if node_run is None else None
+    if node_run is None and not node:
+        return None
+    try:
+        prog = (_read_quote_parser() + "\nprocess.stdout.write(String((d2jspResolveItem(" + json.dumps(str(item or ""))
+                + ") || {}).item || ''));\n")
+        if node_run is None:
+            proc = subprocess.run([node, "-e", prog], capture_output=True, timeout=20, text=True,
+                                  encoding="utf-8", errors="replace")
+        else:
+            proc = node_run(prog, "")
+        if getattr(proc, "returncode", 1) == 0:
+            v = (getattr(proc, "stdout", "") or "").strip()
+            return v[:80] if v and "\n" not in v and "{" not in v else None
+    except (OSError, ValueError, subprocess.SubprocessError):
+        pass
+    return None
+
+
 def _search_url(item):
     """The forum's own post search for the Softcore non-ladder trading board (v3843; it was Switch Ladder)."""
     return "https://forums.d2jsp.org/search.php?c=7&f=%d&t=0" % QUOTE_BOARD
@@ -2330,6 +2352,10 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
                 out["searched"] = _w.strip()[:80]
         except Exception:
             pass
+    if isinstance(out, dict):
+        _rn = _resolved_name(item, node_run=node_run)             # #97 - the item the page draws the two cards of
+        if _rn:
+            out["resolved"] = _rn
     if _held and isinstance(out, dict) and out.get("reason") == "unread":
         out["why"] = ("the forum showed no search results within 20 s - a search sent right after another is held "
                       "back" if _held == "search: no results page" else "the forum search did not run (%s)" % _held)

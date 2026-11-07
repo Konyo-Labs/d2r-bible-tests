@@ -14641,7 +14641,9 @@ function d2jspBatchHtml(view) {
       var _first = (_known && j && !(Number(j.fg) > 0))
         ? '<div class="d2jsp-known" data-d2jsp-known><div class="d2jsp-say">Known price for ' + esc(parsed.item) + ', from the price database on this console:</div>' + d2jspBackendHtml(_db, null, {}) + '</div>'
         : '';
-      out.innerHTML = _first + '<div>' + esc(d2jspSearchLine(j, sim, parsed)) + '</div>' + (j && (j.reason === 'read' || j.reason === 'no prices') ? d2jspEvidenceHtml(j.reason === 'read' ? sim : null, j) : '');
+      out.innerHTML = _first + '<div>' + esc(d2jspSearchLine(j, sim, parsed)) + '</div>'
+        + d2jspTierCardsHtml((j && typeof j.resolved === 'string' && j.resolved) || parsed.item, j && j.db)   /* #97 */
+        + (j && (j.reason === 'read' || j.reason === 'no prices') ? d2jspEvidenceHtml(j.reason === 'read' ? sim : null, j) : '');
       var backend = document.getElementById('d2jsp-price-backend');
       if (backend) backend.innerHTML = d2jspBackendHtml(j && j.db, j && j.fg, {sync:true, say:j && j.say}) + d2jspDatabaseButton();
     }
@@ -14657,6 +14659,43 @@ function d2jspBatchHtml(view) {
     step();
   }
   window._d2jspPriceSearch = priceSearch;
+  /* #97 (his 11-06: "when price checking an item it should also pull up a image of that item from the local database and
+     have an image with the mods ... on the left normal tier ... and its mods that it can range from minimum to maximum.
+     and the right side an image of PERFECT ... with perfected mods ... in the same format and structure and theme") -
+     TWO CARDS UNDER THE PRICE: the item's picture (artUrl - the board's one art map) over the game's own box (d2Tip, the
+     Character Builder's ADD ITEM look): NORMAL with every untouched roll as its range, PERFECT with every ranged roll at
+     its top (_cbTopRolls). Each carries its tier's stored price. The item is the one the desk resolved the trader text to
+     (the console's d2jspResolveItem - "shako" is Harlequin Crest), else the text itself; a name that is not one item says
+     so in a line. -> html */
+  function d2jspTierCardsHtml(name, db){
+    if (!name || typeof window._mtEntryFor !== 'function' || typeof window.d2Tip !== 'function') return '';
+    var R = null;
+    try { R = (typeof window.d2rResolveItem === 'function') ? window.d2rResolveItem(name) : null; } catch (e) { R = null; }
+    var nm = (R && R.canonical && R.kind && R.kind !== 'base' && R.kind !== 'unknown') ? R.canonical : null;
+    var unk = function(why){ return '<div class="d2jsp-tiers-none" data-d2jsp-tiers="none">No item card - ' + esc(why) + '.</div>'; };
+    if (!nm) return unk(name + ' is not one unique, set piece or runeword in this page\u2019s item database');
+    var normal = null, perfect = null;
+    try { normal = window._mtEntryFor(nm); perfect = window._mtEntryFor(nm, null, { top: true }); } catch (e2) { normal = null; }
+    var bad = function(t){ return !t || !t.lines || (t.lines.length === 1 && t.lines[0].cls === 'd2t-unk'); };
+    if (bad(normal) || bad(perfect)) return unk(nm + '\u2019s mods are not in the item database this page carries');
+    var art = null;
+    try { art = (typeof window.artUrl === 'function') ? window.artUrl(nm) : null; } catch (e3) { art = null; }
+    var ok = db && typeof db === 'object' && !db.unknown;
+    function card(kind, label, entry, tier){
+      return '<figure class="d2jsp-tier d2jsp-tier-' + kind + '" data-d2jsp-tier-card="' + kind + '">'
+        + '<figcaption class="d2jsp-tier-h">' + label + '</figcaption>'
+        + (art ? '<img class="d2jsp-tier-art" src="' + esc(art) + '" alt="' + esc(nm) + '" loading="lazy" onerror="this.remove()">' : '')
+        /* the builder's "strength / dexterity UNKNOWN until the character has attributes" note is a CHARACTER's - a price card
+           has none, so the note stays in the builder and off this card */
+        + '<div class="d2tip d2jsp-tier-box">' + String(window.d2Tip(entry)).replace(/<div class="d2t-note">strength \/ dexterity:[^<]*<\/div>/, '') + '</div>'
+        + '<div class="d2jsp-tier-price">' + esc(tier) + '</div></figure>';
+    }
+    return '<div class="d2jsp-tiers" data-d2jsp-tiers="' + esc(nm) + '">'
+      + card('normal', 'Normal \u00b7 every mod in its range', normal, ok ? d2jspTierSay('Normal', db.normal) : 'Normal price: the price database did not answer (UNKNOWN)')
+      + card('perfect', 'Perfect \u00b7 every mod at its top', perfect, ok ? d2jspTierSay('Perfect', db.perfect) : 'Perfect price: the price database did not answer (UNKNOWN)')
+      + '</div>';
+  }
+  window._d2jspTierCardsHtml = d2jspTierCardsHtml;
   document.addEventListener('submit', function(ev){
     if (ev.target && ev.target.id === 'd2jsp-price-form') { ev.preventDefault(); priceSearch(); }
   });
@@ -76507,6 +76546,16 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
    properties blue, a requirement red only when the character fails it. */
 .d2tip{--cb-d2:"D2 Exocet","Cinzel",var(--serif-display),serif;--fs-cb-tip:calc(var(--fs-title)*1.2);position:fixed;z-index:2147483100;pointer-events:none;background:rgba(8,8,8,.95);padding:6px 9px;max-width:min(680px,calc(100vw - 16px));min-width:180px;text-align:center;font-family:var(--cb-d2);font-size:var(--fs-cb-tip);line-height:var(--lh-snug);color:rgb(255,255,255);border:1px solid rgba(90,90,90,.35);box-shadow:0 6px 24px rgba(0,0,0,.7)}
 .d2tip[hidden]{display:none}
+/* #97 - the price check's NORMAL / PERFECT cards: the game's box in place (never fixed, never over the page) */
+.d2jsp-tiers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:10px 0}
+@media (max-width:700px){.d2jsp-tiers{grid-template-columns:1fr}}
+.d2jsp-tier{margin:0;padding:10px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(180deg,rgba(26,20,13,.9),rgba(10,8,5,.95));display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.d2jsp-tier-perfect{border-color:var(--gold-dim,#8a6d2c)}
+.d2jsp-tier-h{font-family:var(--serif-display,serif);font-size:var(--fs-title);letter-spacing:.06em;text-transform:uppercase;color:var(--gold-bright,#f0c060)}
+.d2jsp-tier-art{width:96px;height:96px;object-fit:contain}
+.d2tip.d2jsp-tier-box{position:static;z-index:auto;pointer-events:auto;max-width:100%;min-width:0;width:100%;box-sizing:border-box}
+.d2jsp-tier-price{font-size:var(--fs-meta);color:var(--text-muted);text-align:center}
+.d2jsp-tiers-none{font-size:var(--fs-meta);color:var(--text-dim);font-style:italic;margin:8px 0}
 .d2tip div{white-space:normal}
 .d2tip .d2t-u,.d2tip .d2t-r{color:rgb(199,179,119)}.d2tip .d2t-s{color:rgb(0,255,0)}.d2tip .d2t-c{color:rgb(255,168,0)}.d2tip .d2t-b{color:rgb(255,255,255)}.d2tip .d2t-m{color:rgb(105,105,255)}.d2tip .d2t-rare{color:rgb(255,255,100)}
 .d2tip .d2t-w,.cb-ed-base .d2t-w{color:rgb(255,255,255)}
@@ -80927,7 +80976,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
   }
   function unknown(name, why){ return { name: name, q: 'b', lines: [{ t: why, cls: 'd2t-unk' }] }; }
   /* a vault name -> the d2Tip entry the builder's database gives it (the slot says which socket class a rune adds) */
-  function entryFor(name, slot){
+  function entryFor(name, slot, opts){
     var ix = index(), d = window._cbDb && window._cbDb();
     if (!ix || !d || typeof window._cbTipEntry !== 'function') return unknown(name, 'the item database is not loaded - UNKNOWN');
     var tries = [name, bare(name)], paren = /\(([^()]*)\)\s*$/.exec(String(name || ''));
@@ -80940,6 +80989,8 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       if (hits.length > 1) return unknown(name, hits.length + ' items print this name - which one this is is not on record, so none is shown');
       if (hits.length === 1){
         var it = hits[0], e = window._cbEntryFor(it);
+        /* #97 - the PERFECT card: every ranged roll at the top of its range (_cbTopRolls - the crafted editor's own rule) */
+        if (opts && opts.top && typeof window._cbTopRolls === 'function') e.rolls = window._cbTopRolls(it[6]);
         if (it[2] === 'r'){
           /* a runeword's defense and damage are its BASE's: known only when the vault name says it ("Enigma (Mage Plate)") */
           var bc = paren ? (ix.b[fold(paren[1])] || []) : [];
@@ -80947,6 +80998,8 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
         }
         var t = window._cbTipEntry(e, it, null, slot);
         if (it[2] === 'r' && !e.base) t.lines.push({ t: 'its base is not on record, so its defense and damage are UNKNOWN', cls: 'd2t-unk' });
+        /* #97 - and a PERFECT item's defense is the top of its range too (a perfect Shako is 141, not 98-141) */
+        if (opts && opts.top && Array.isArray(t.defense) && t.defense.length === 2) t.defense = [t.defense[1], t.defense[1]];
         return t;
       }
       var sk = ix.sk[f] || [];

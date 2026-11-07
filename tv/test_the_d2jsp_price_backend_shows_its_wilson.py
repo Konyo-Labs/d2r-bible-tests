@@ -100,7 +100,7 @@ class ThePriceBackendShowsItsWilson(unittest.TestCase):
         self.assertEqual(app.count('_out["db"] = _d2jsp_db_fold(_out)'), 1)
         # v3872 - THE FOLD'S OWN LINE, WHOLE. v3871's read-only _d2jsp_db_view attaches its proof with a line that starts the
         # same way, so the bare prefix matched there with the fold's line tampered, and CI's shard 14 filed proof [2] BLIND.
-        self.assertIn('priced["proof"] = _PDB.explain(db, reading.get("item"), now)', app)
+        self.assertIn('priced["proof"] = _PDB.explain(db, reading.get("item"), now, key=_key)', app)
         route = app[app.index('if path == "/api/d2jsp_price_db"'):app.index('if path in ("/", "/index.html", "/ui")')]
         self.assertNotIn("d2jsp_quote", route)
         self.assertIn("_PDB.view(_db)", route)
@@ -120,7 +120,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "the quote fold no longer attaches the posts the price was weighed from",
      "file": "tv/control_app.py",
-     "find": 'priced["proof"] = _PDB.explain(db, reading.get("item"), now)\n',
+     "find": 'priced["proof"] = _PDB.explain(db, reading.get("item"), now, key=_key)\n',
      "replace": "priced['proof'] = None\n",
      "matches": 1},
 ]

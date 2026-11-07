@@ -189,7 +189,7 @@ RED_PROOF = [
     {"why": "v3849 - confidence ignores how many posts agree", "file": "d2jsp_price_db.py",
      "find": "\"conf\": round(wilson_low(ok, n_eff), 3)", "replace": "\"conf\": 1.0", "matches": 1},
     {"why": "v3849 - a read never goes stale", "file": "d2jsp_price_db.py",
-     "find": "    if now - float(it.get(\"readAt\") or 0) > REFRESH_DAYS * 86400:\n",
+     "find": "    if now - read_at > REFRESH_DAYS * 86400:\n",
      "replace": "    if False:\n", "matches": 1},
     {"why": "v3849 - merge is order-dependent (last wins)", "file": "d2jsp_price_db.py",
      "find": "if cur is None or (p.get(\"seenAt\", 0), json.dumps(p, sort_keys=True)) > (cur.get(\"seenAt\", 0), json.dumps(cur, sort_keys=True)):",

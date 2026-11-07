@@ -127,6 +127,21 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3343 - THE PRICE CHECK SHOWED NUMBERS AND NO ITEM: NOW A NORMAL AND A PERFECT CARD (v3878, board #97, his ask)
+His words (11-06): "when price checking an item it should also pull up a image of that item from the local database and
+have an image with the mods ... on the left normal tier ... its mods that it can range from minimum to maximum. and the
+right side an image of PERFECT shako with perfected mods ... in the same format and structure and theme". Built from what
+the page already carries, no second copy: the item's picture (artUrl), the game's own box (d2Tip - the Character Builder's
+ADD ITEM look, its D2 Exocet type and colours) through the vault's entryFor (window._mtEntryFor), which now takes a
+top-rolls option (_cbTopRolls - the crafted editor's rule) and, for PERFECT, the top of the defense range too. NORMAL reads
+each untouched roll as its range ("90-120% Enhanced Defense", "Defense: (98-141)"), PERFECT each at its top ("+120%",
+"Defense: 141"); each card carries its tier's stored price (d2jspTierSay) or "did not answer (UNKNOWN)". The item is the one
+the console's d2jspResolveItem names - the quote answer now carries `resolved` ("shako" is Harlequin Crest; a bare
+"shako" on the page alone is the BASE) - else the text, and a name that is not one unique, set piece or runeword says so in
+a line. The builder's "strength / dexterity UNKNOWN until the character has attributes" note stays in the builder.
+Law: test_the_price_check_draws_normal_and_perfect_cards (new, 7 cases: the page in node + the resolver in node); red-proofs
+PROVEN (4). Neighbours re-aimed: the desk law counts the parser's page asks only (the resolver asks with an empty page);
+two price-DB red-proofs and one backend source pin re-anchored to REG-3342's key (the anchor census is green).
 ### REG-3342 - ONE ITEM, TWO PRICES: THE DB KEPT EACH NAME APART THOUGH THE FORUM SEARCH WAS ONE (v3878, board #96)
 His ask (11-06 ~23:10): "make sure the price is properly being wilson scored and averaged ... and for price check it
 should be joined logic to the database so this is a communicating and whole system". GrokBot 6700580776: Shako and

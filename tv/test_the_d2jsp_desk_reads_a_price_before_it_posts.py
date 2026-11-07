@@ -2127,7 +2127,9 @@ process.stdout.write(JSON.stringify({
             )
         finally:
             desk.chrome_user_agent = real_ua
-        self.assertEqual(asked, ["Grief 40 fg"], "the parser was never asked, so this case proved nothing")
+        # #97 - the quote also asks node which item the text names (an empty page, never the forum's): the PARSER's asks are
+        # the ones that carry the page
+        self.assertEqual([a for a in asked if a], ["Grief 40 fg"], "the parser was never asked, so this case proved nothing")
         self.assertEqual((code, out.get("fg"), out.get("reason")), (200, None, "unread"), out)
         self.assertNotIn("SECRETCOOKIE", json.dumps(out))
 
