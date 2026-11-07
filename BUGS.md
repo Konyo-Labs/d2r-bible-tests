@@ -112,6 +112,28 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3324 - ONE FLAKY RED OF ONE GIANT LAW SHUT ALL NINE LOCKS ON HIS MAC, AND THE NET WOULD NOT ASK AGAIN FOR SIX HOURS (v3877, board #103 A+B, his 11-07 question)
+His words: "if the river proves itself already why does every proof going forward not related to it need to continue
+proofing it over and over again for it to unlock? maybe this lock/unlock for the river needs better coding" and "not
+just alts for every pc". MEASURED 11-06 ~23:55Z on his Mac (tv/self_arming.py read-only): the per-lock rule (#156)
+answered TRUE for all nine locks - every lock's own guard laws proven against the files on disk - yet may() was FALSE for
+all nine: the SAFETY NET (REG-3191/3192) had judged test_control's clean run RED once at 23:38Z, while I was running heavy
+proving beside his console, and test_control (2,274 cases in 486 classes) names every lock, so it counted as a guard of
+all nine. Re-run quietly 25 minutes later: 2,274 OK. The net asks a found gate again only after NET_RETRY_S (6 h).
+NOW (A): in the safety net only (never a proof's own verdict - REG-2351: there a red is a finding), a red clean run is
+re-run ONCE (_net_red_holds, through the run's own again()); green again is a FLAKE - recorded in netFlakes with the cases
+its red named, said on the run, closing nothing; red again stands as the find and carries its failing CASES
+(_red_cases reads both unittest formats). (B): a law that guards NET_NARROW_MIN_LOCKS (5) or more locks is narrowed to
+its failing cases' CLASSES (_net_case_guards): a lock closes only when one of those classes guards it. Measured on
+test_control: 373 of its 486 classes guard no lock at all (a red there now closes none), frame.release is guarded by 15
+classes, vault.sweep_start by 93. Broad in the safe direction everywhere else: a find naming no case, a class that
+cannot be found, and every focused law (fewer locks) close by the whole file as before. NOT YET (#103 C, v3878): a PC
+importing a new version's proofs re-imports all 9,163 and its locks wait for the import to land and the trust pass
+after it - the order alone gains nothing until the trust pass runs per batch. Laws: test_a_safety_net_red_closes_only
+_its_own_lock (+ a red that comes back green is a flake, a red that repeats is a find naming its cases, the census keeps
+cases and flakes apart, a giant law closes only what its failing classes guard - over the real test_control);
+red-proofs PROVEN (2 new, each RED on its own cases, files restored); the 3 other lock/net laws pass.
+
 ### REG-3323 - THE CLAUDE LIGHT NAMED WHAT IT ASKS BUT NEVER WHEN IT LAST ASKED (v3877, board #51, GrokBot 6695970506)
 GrokBot on his live window (11-06 21:23Z): "Claude (primary reader): CONNECTED - Claude is signed in on this PC (claude
 auth status: signed in) - no read in the last 2 h to judge it by ... It names the program check (claude auth status) but

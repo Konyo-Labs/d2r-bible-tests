@@ -111,6 +111,17 @@ class TheNetWritesOnlyItsOwnRecord(_Fixture):
         self.assertIn("g_idle", st["netUnjudged"], "an UNPROVABLE that was not RED became a find")
         self.assertNotIn("g_idle", st["netFinds"])
 
+    def test_a_find_carries_its_cases_and_a_flake_is_kept_apart(self):
+        """REG-3324 - the census keeps WHICH cases failed on a find, and a flake in netFlakes (named, dated), never in
+        netFinds - so the lock rule can narrow, and nothing a flake did is lost"""
+        self.write(self.current())
+        with mock.patch.dict(H._CENSUS, {"redCases": {"g_frame": ["TestB.test_y"]}, "flakes": {"g_print": ["TestA.test_x"]}}):
+            H._write_net({"g_frame": H.UNPROVABLE, "g_print": H.PROVEN}, red={"g_frame"})
+        st = self.census()
+        self.assertEqual(st["netFinds"]["g_frame"].get("cases"), ["TestB.test_y"])
+        self.assertNotIn("g_print", st["netFinds"])
+        self.assertEqual(st["netFlakes"]["g_print"]["cases"], ["TestA.test_x"], "the flake was not kept")
+
     def test_a_found_or_unjudged_gate_stays_trusted_so_it_is_asked_again(self):
         self.write(self.current())
         H._write_net({"g_frame": H.UNPROVABLE, "g_idle": H.UNPROVABLE}, red={"g_frame"})
@@ -182,6 +193,33 @@ class TheNetLearnsARedCleanRun(unittest.TestCase):
         self.assertEqual(self._gate(True, red), {"g_frame"}, "a CLOSING clean run that went RED was not a find")
         unk = {"ok": True, "reused": 1, "by": [0], "again": lambda: (None, "deadline")}
         self.assertEqual(self._gate(True, unk), set(), "an UNKNOWN closing run was filed as a red")
+
+    def _gate_records(self, run):
+        """REG-3324 - the net's red set, its flakes and its failing cases, read inside the patch."""
+        def proofs(sandbox, name, filename, prs, say):
+            H._CLEAN.runs[("g.py",)] = dict(run)
+            return [H.UNPROVABLE if run.get("ok") is False else H.PROVEN]
+        with mock.patch.object(H, "_prove_gate_proofs", proofs), \
+                mock.patch.object(H, "_reset_lane_records", lambda *a, **k: None), \
+                mock.patch.dict(H._CENSUS, {"cache": None, "here": (), "red": set(), "net": True,
+                                            "flakes": {}, "redCases": {}}):
+            H._prove_gate(HERE, "g_frame", "g.py", [{"find": "a"}], QUIET)
+            return set(H._CENSUS["red"]), dict(H._CENSUS["flakes"]), dict(H._CENSUS["redCases"])
+
+    def test_a_red_that_comes_back_green_on_its_recheck_is_a_flake_never_a_find(self):
+        """REG-3324 (#103) - MEASURED 11-06 23:38Z: test_control went RED once under load and closed all nine locks; it ran
+        2,274 OK 25 minutes later. The net re-runs a red clean run ONCE: green again is a FLAKE (named, closes nothing)."""
+        red, flakes, cases = self._gate_records({"ok": False, "tail": "FAIL: test_x (test_control.TestA)\n",
+                                                 "again": lambda: (True, "OK")})
+        self.assertEqual(red, set(), "a red that did not repeat became a find - one flake closes every lock it guards")
+        self.assertEqual(flakes, {"g_frame": ["TestA.test_x"]}, "the flake is not recorded with the case that failed")
+
+    def test_a_red_that_repeats_is_a_find_naming_its_cases(self):
+        red, flakes, cases = self._gate_records({"ok": False, "tail": "FAIL: test_y (m.TestB)\n",
+                                                 "again": lambda: (False, "ERROR: test_z (m.TestC.test_z)\n")})
+        self.assertEqual(red, {"g_frame"}, "a red that repeated on its re-check is not a find")
+        self.assertEqual(flakes, {})
+        self.assertEqual(cases, {"g_frame": ["TestB.test_y", "TestC.test_z"]}, "the find does not carry its failing cases")
 
     def test_a_green_clean_run_or_a_census_run_records_nothing(self):
         self.assertEqual(self._gate(True, {"ok": True}), set())
@@ -293,6 +331,38 @@ class AFindClosesOnlyTheLockItsLawGuards(unittest.TestCase):
         self.assertFalse(ok, "an ordinary act was let through a find because the census also read STALE")
         self.assertIn(SA._NET_PHRASE, why)
 
+    def _census_cases(self, find, cases):
+        self.census(find)
+        with open(self.path, encoding="utf-8") as fh:
+            st = json.load(fh)
+        if cases is not None:
+            st["netFinds"][find]["cases"] = cases
+        with open(self.path, "w", encoding="utf-8") as fh:
+            json.dump(st, fh)
+        SA._LOCK_MEMO.update(key=None)
+        SA._NET_MEMO.update(key=None, finds=None, files=None)
+
+    def test_a_giant_law_closes_only_the_locks_its_failing_classes_guard(self):
+        """REG-3324 (#103) - test_control names every lock, so one red of it closed the whole river. A law guarding
+        NET_NARROW_MIN_LOCKS or more locks closes only what its FAILING CLASSES guard; with no case named it stays broad."""
+        import re as _re
+        if "test_control" not in FILES:
+            self.skipTest("PREMISE: test_control is not a registered gate here")
+        text = _text("test_control")
+        n = sum(1 for lk in SA.LOCK_DOORS if SA._guards_lock(text, lk, SA.LOCK_DOORS[lk]))
+        self.assertGreaterEqual(n, SA.NET_NARROW_MIN_LOCKS, "PREMISE: test_control no longer guards enough locks to narrow")
+        classes = _re.findall(r"(?m)^class\s+(\w+)", text)
+        quiet = [c for c in classes if not any(SA._guards_lock(SA._case_class_source(text, c + ".t") or "", lk, SA.LOCK_DOORS[lk])
+                                               for lk in SA.LOCK_DOORS)]
+        river = [c for c in classes if SA._guards_lock(SA._case_class_source(text, c + ".t") or "", FRAME, SA.LOCK_DOORS[FRAME])]
+        self.assertTrue(quiet and river, "PREMISE: no class guards no lock, or none guards the river")
+        self._census_cases("test_control", [quiet[0] + ".test_x"])
+        self.assertNotIn(SA._NET_PHRASE, SA.may(FRAME)[1], "a red in a class that guards no lock closed the river")
+        self._census_cases("test_control", [river[0] + ".test_x"])
+        self.assertIn(SA._NET_PHRASE, SA.may(FRAME)[1], "a red in a class that guards the river left it open")
+        self._census_cases("test_control", None)
+        self.assertIn(SA._NET_PHRASE, SA.may(FRAME)[1], "a find naming no case was narrowed - it must stay broad")
+
     def test_a_find_whose_file_changed_since_is_moot(self):
         self.census(ONLY_FRAME[0], sha="an-older-sha")
         self.assertNotIn(SA._NET_PHRASE, SA.may(FRAME)[1])
@@ -391,6 +461,16 @@ class TheLaneRunsTheNetOnlyOverACurrentCensus(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3324 - the net never re-checks a red: one flake under load closes every lock its law guards again",
+     "file": "heart2.py",
+     "find": "        if _CENSUS.get(\"net\") and _clean_went_red(getattr(_CLEAN, \"runs\", None)) and _net_red_holds(name, say):\n",
+     "replace": "        if _CENSUS.get(\"net\") and _clean_went_red(getattr(_CLEAN, \"runs\", None)):\n",
+     "matches": 1},
+    {"why": "REG-3324 - a giant law's find closes every lock it names again, whatever class failed (the river shut)",
+     "file": "self_arming.py",
+     "find": "    if n_locks < NET_NARROW_MIN_LOCKS:\n        return True\n",
+     "replace": "    if n_locks < 10 ** 6:\n        return True\n",
+     "matches": 1},
     {"why": "REG-3192 - a safety-net find joins the census's BLIND list, so it closes every lock",
      "file": "tv/heart2.py",
      "find": "    out.update(trusted=tr, netFinds=finds, netUnjudged=unj)\n",

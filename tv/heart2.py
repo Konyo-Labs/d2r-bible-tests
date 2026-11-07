@@ -7136,6 +7136,8 @@ def _write_net(results, red=None, unmeasured=None):
             finds[n] = {"verdict": _vw, "sha": sha, "at": now, "since": _was.get("since") or now,
                         "seen": int(_was.get("seen") or 0) + (0 if n in _once else 1), "platform": sys.platform, "why": _why,
                         "line": net_bugs_line(n, _vw, _why)}
+            if is_red and (_CENSUS.get("redCases") or {}).get(n):
+                finds[n]["cases"] = list(_CENSUS["redCases"][n])[:40]     # REG-3324 - only these cases' locks close
             unj.pop(n, None)
             said["finds"].append(n)
             _once.add(n)
@@ -7144,8 +7146,16 @@ def _write_net(results, red=None, unmeasured=None):
         unj[n] = {"verdict": v, "sha": sha, "at": now, "tries": int(_was.get("tries") or 0) + (0 if n in _once else 1)}
         said["unjudged"].append(n)
         _once.add(n)
+    # REG-3324 - a red that did not repeat on its re-check: kept, named, dated - and it closes nothing
+    flk = dict(prior.get("netFlakes") or {}) if isinstance(prior.get("netFlakes"), dict) else {}
+    for n, cases in sorted((_CENSUS.get("flakes") or {}).items()):
+        if n in (results or {}) and shas.get(n):
+            _was = flk.get(n) if isinstance(flk.get(n), dict) else {}
+            flk[n] = {"sha": shas.get(n), "at": now, "cases": list(cases)[:40], "platform": sys.platform,
+                      "seen": int(_was.get("seen") or 0) + 1}
+            finds.pop(n, None)
     out = dict(prior)
-    out.update(trusted=tr, netFinds=finds, netUnjudged=unj)
+    out.update(trusted=tr, netFinds=finds, netUnjudged=unj, netFlakes=flk)
     _tmp = "%s.net.%d.tmp" % (STATE, os.getpid())
     try:
         with io.open(_tmp, "w", encoding="utf-8") as fh:
@@ -7191,7 +7201,7 @@ def _prove_gate(sandbox, name, filename, proofs, say):
     try:
         verdicts = _prove_gate_proofs(sandbox, name, filename, proofs, say)
         verdicts = _closing_clean(name, verdicts, say)
-        if _CENSUS.get("net") and _clean_went_red(getattr(_CLEAN, "runs", None)):
+        if _CENSUS.get("net") and _clean_went_red(getattr(_CLEAN, "runs", None)) and _net_red_holds(name, say):
             _CENSUS["red"].add(name)                     # REG-3192 - a clean run of it went RED here: the net's find
         if _cc is not None:
             try:
@@ -7307,6 +7317,49 @@ def _checkpoint_close(name, run):
     n = len(_ck)
     del _ck[:]
     return n
+
+
+#: REG-3324 - a unittest failure line's case: "FAIL: test_x (module.Class)" / "ERROR: test_x (module.Class.test_x)"
+_FAIL_CASE_RX = re.compile(r"^(?:FAIL|ERROR): (test\w+) \(([\w.]+)\)", re.M)
+
+
+def _red_cases(tail):
+    """REG-3324 - the case names a red run's output names. -> sorted ["Class.test_x", ...] ([] when it names none)"""
+    out = set()
+    for meth, where in _FAIL_CASE_RX.findall(str(tail or "")):
+        parts = [x for x in where.split(".") if x and x != meth]
+        out.add("%s.%s" % (parts[-1] if parts else "?", meth))
+    return sorted(out)
+
+
+def _net_red_holds(name, say):
+    """REG-3324 (#103 - his 11-07 "if the river proves itself already why does every proof ... need to continue proofing it
+    over and over again for it to unlock"). MEASURED 11-06 23:38Z on his Mac: the safety net judged test_control RED once,
+    under a load I had put on his machine, and ONE red of one 2,274-case law closed all nine locks; 25 minutes later the
+    same law ran 2,274 OK. So, in the SAFETY NET only (never a proof's own verdict - there red is a finding and is never
+    asked again, REG-2351): a red clean run is re-run ONCE before it becomes a find. Green the second time is a FLAKE -
+    recorded with the cases it named (netFlakes), said, and it closes nothing; red again (or a re-run that cannot finish)
+    stands as the find, carrying the cases that failed so the lock rule can narrow to them. -> True when the find stands"""
+    runs = getattr(_CLEAN, "runs", None) or {}
+    red = [r for r in runs.values() if isinstance(r, dict) and (r.get("ok") is False or r.get("closingRed") is True)]
+    if not red:
+        return False
+    r = red[0]
+    cases = _red_cases(r.get("tail"))
+    again = r.get("again")
+    ok, tail2 = None, ""
+    if callable(again):
+        try:
+            ok, tail2 = again()
+        except Exception as _ae:
+            ok, tail2 = None, "the re-check raised %s" % type(_ae).__name__
+    if ok is True:
+        _CENSUS.setdefault("flakes", {})[name] = cases
+        say("     %-52s   ↳ REG-3324: its clean run went RED here once and its re-check came back GREEN - a FLAKE (%s): "
+            "recorded, never a find, no lock closes" % (name, ", ".join(cases[:3]) or "the red run named no case"))
+        return False
+    _CENSUS.setdefault("redCases", {})[name] = sorted(set(cases) | set(_red_cases(tail2)))
+    return True
 
 
 def _closing_clean(name, verdicts, say):
@@ -7695,6 +7748,7 @@ def prove(only=None, say=print, detail=None, push=False, stopped=None, stamp=Tru
             _GATE_HOOK["fn"] = _slice_banker(_blank, say, write=_net_bank)
         _CENSUS["cache"] = _census_cache(reuse, say)     # #186 - only the self-prove lane's census (--reuse) opens it
         _CENSUS["red"], _CENSUS["net"], _CENSUS["netSaid"] = set(), bool(net), set()
+        _CENSUS["flakes"], _CENSUS["redCases"] = {}, {}     # REG-3324 - this pass's flakes and failing cases only
         if net:
             _CENSUS["here"] = set(n for n, _f, _p in have)          # REG-3192 - every proof judged on this PC
         elif _CENSUS["cache"] is not None:

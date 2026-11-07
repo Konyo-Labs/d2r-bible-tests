@@ -1628,6 +1628,47 @@ LOCK_MARKS = {
 _LOCK_MEMO = {"key": None, "owed": None, "blind": None, "why": None, "src": {}, "guard": {}}
 
 
+#: REG-3324 - a law that guards at least this many locks is narrowed to its failing cases' classes when the net finds it
+NET_NARROW_MIN_LOCKS = 5
+
+
+def _case_class_source(text, case):
+    """REG-3324 - the source of the TestCase class a failing case ("Class.test_x") belongs to. -> str | None"""
+    cls = str(case).split(".", 1)[0]
+    m = re.search(r"(?m)^class\s+%s\b[^\n]*:\n" % re.escape(cls), text or "")
+    if not m:
+        return None
+    nxt = re.search(r"(?m)^(?:class\s|def\s|[A-Za-z_]\w*\s*=)", text[m.end():])
+    return text[m.start(): m.end() + (nxt.start() if nxt else len(text) - m.end())]
+
+
+def _net_case_guards(name, text, find, lock, stems):
+    """REG-3324 (#103) - does this safety-net FIND close `lock`? -> bool
+
+    MEASURED 11-06 23:38Z on his Mac: test_control (one 2,274-case file that names every lock) was found RED once and,
+    guarding all nine, closed the whole river. A law that guards NET_NARROW_MIN_LOCKS or more locks is narrowed to the
+    CLASSES of the cases that failed (the find's `cases`, REG-3324 heart2): the lock closes when one of those classes
+    guards it (_guards_lock on that class's source). Anything less certain stays broad, in the safe direction: a find
+    that names no case, a case whose class cannot be found, and every focused law (fewer locks) close by the whole file
+    exactly as before."""
+    if not _guards_lock(text, lock, stems):
+        return False
+    cases = find.get("cases") if isinstance(find, dict) else None
+    if not cases:
+        return True
+    try:
+        n_locks = sum(1 for lk in LOCK_DOORS if _guards_lock(text, lk, LOCK_DOORS[lk]))
+    except Exception:
+        return True
+    if n_locks < NET_NARROW_MIN_LOCKS:
+        return True
+    for c in cases:
+        src = _case_class_source(text, c)
+        if src is None or _guards_lock(src, lock, stems):
+            return True
+    return False
+
+
 def _guards_lock(text, lock, stems):
     """Does this gate's source guard `lock`? -> bool. Names the lock or one of its marks, or directly imports / opens
     one of its door modules or the lock machinery - a BROAD_DOORS module only when the lock declares no marks (REG-2865).
@@ -1816,7 +1857,10 @@ def _net_heart(lock, ok, why):
                     text = _fh.read()
             except Exception:
                 text = None
-        if text is None or _guards_lock(text, lock, stems):     # a guard that will not read is counted, never skipped
+        if text is None:                                          # a guard that will not read is counted, never skipped
+            hit.append(n)
+            continue
+        if _net_case_guards(n, text, finds[n], lock, stems):
             hit.append(n)
     if not hit:
         return ok, why
