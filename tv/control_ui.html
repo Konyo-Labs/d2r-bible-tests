@@ -14757,10 +14757,17 @@ window._lockMark = function(isOpen, px, label){
     if (_nMine !== mineRows.length) _gap.push('code ' + _nMine + ' vs ' + mineRows.length + ' shown');
     if (_nUnk !== unkRows.length)  _gap.push('not-measured ' + _nUnk + ' vs ' + unkRows.length + ' shown');
     if (_nDesign !== designRows.length) _gap.push('by-design ' + _nDesign + ' vs ' + designRows.length + ' shown');
+    /* v3880 (the Grok CLI, cold, on v3880's State panel render) - with NO doctor report on the payload (st.eagle absent, so
+       e = {}) every count fell back to an empty list's length and this line said "nothing is waiting on you · nothing
+       waiting on code · everything was measured" - three confident zeros nobody measured. A doctor that published no
+       count and no row is UNKNOWN, said so. [[unknown-stays-unknown]] */
+    var _eHeard = ['needsYou', 'mine', 'unknown', 'byDesign'].some(function (k) { return e[k] != null; })
+      || !!(youRows.length || mineRows.length || unkRows.length || designRows.length);
     _lead.push('<div class="vx-lead-s">' + esc(
-        (_nYou ? _nYou + ' thing(s) are waiting on YOU' : 'nothing is waiting on you')
+        (!_eHeard ? 'the doctor has not reported on this payload \u2014 what waits on you, or on code, is UNKNOWN, not "nothing"'
+        : ((_nYou ? _nYou + ' thing(s) are waiting on YOU' : 'nothing is waiting on you')
       + ' \u00b7 ' + (_nMine ? _nMine + ' waiting on CODE' : 'nothing waiting on code')
-      + ' \u00b7 ' + (_nUnk ? _nUnk + ' not measured' : 'everything was measured')
+      + ' \u00b7 ' + (_nUnk ? _nUnk + ' not measured' : 'everything was measured')))
       + (_nDesign ? ' \u00b7 ' + _nDesign + ' RED ON PURPOSE (not yours)' : '')
       + (_dSay ? ' \u00b7 ' + _dSay : '')
       + (_gap.length ? ' \u00b7 \u26a0 the counter and this panel disagree (' + _gap.join(', ')

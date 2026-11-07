@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3374 - THE STATE PANEL SAID "NOTHING IS WAITING ON YOU · EVERYTHING WAS MEASURED" WITH NO DOCTOR REPORT AT ALL (v3880)
+The Grok CLI, reading v3880's State panel render cold, quoted its summary as contradicting itself: "nothing is waiting on you
+· nothing waiting on code · everything was measured · not measured yet". The payload carried no st.eagle, so `e =
+st.eagle || {}` gave every headline count its (empty) list's length and the line stated three zeros nobody measured - an
+all-clear on any boot whose doctor has not answered. Now a doctor that published no count and no row reads "the doctor has
+not reported on this payload - what waits on you, or on code, is UNKNOWN, not 'nothing'"; counted zeros are still said out
+loud. Law: test_the_state_summary_never_claims_what_nobody_measured drives the panel's own summary code in node (2
+red-proofs, seen RED).
 ### REG-3373 - ONE LAW'S 28 PROOFS ON ONE SHARD: v3878 NEEDED 6+ FORTY-MINUTE ATTEMPTS (v3880; v3878's round)
 MEASURED on run 42360263008: proof_shard.plan put test_control[13]-[27] (attempt 1; [0]-[27] by attempt 5) on shard 10,
 priced at the last round's ~90 s a proof (real ~270 s), under heart2's 1500 s cut of one gate. Fresh proofs per attempt:
