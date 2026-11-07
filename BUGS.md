@@ -112,6 +112,21 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3350 - TWO OF MY REG-3319 RED-PROOFS STAYED GREEN ON GITHUB'S PROOF ROUND AND RED ON THE MAC (v3877, GitHub's round 7)
+GitHub, proof-keys shards, v3877 at 2fa719744: test_a_named_file_the_law_never_opened_is_keyed_by_name[2] and
+test_a_gate_proven_on_these_bytes_is_carried[59] BLIND ("stayed GREEN through its own defeat"); both were RED here. Two
+causes, both mine. (1) [2] broke only the Popen line's node_version_only call. On Linux with glibc 2.34+ under Python
+3.13+ (GitHub's 3.14), subprocess starts a child with os.posix_spawn even with close_fds, and that event's branch asks
+node_version_only AGAIN: the bare node still said U and the edit re-proved. MEASURED with the two audit events raised by
+hand under the trace site: old sabotage Linux path [A, U], new sabotage [A, p]; the Mac's 3.9 raises Popen alone. NOW the
+proof breaks node_version_only itself. (2) REG-3319 made heart2 arm node_trace.cjs in NODE_OPTIONS for every traced law
+run, and that one hook file writes the ledger's trace and whatever HEART2_TRACE_LOG a child carries. So under the prover,
+the ledger law's and the named-file law's fixtures inherited a working hook: a broken arming in gate_ledger (ledger [59]) or
+in the fixture's heart2 (named [5], unrun on GitHub because the gate stopped at [2]) stayed green. MEASURED with
+NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] RED without it. NOW both fixtures take any
+node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
+outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
+arms something for every law run, re-prove the laws that test the same arming under it.
 ### REG-3336 - A BOSS'S HOVER CARD DREW ITS SPRITE IN THE 52x78 ITEM FRAME (v3877, board #102, caught in its own render batch)
 His ask: "image cursor floating enlarged of that item/boss or whatever image im hovering ... just like the rest of the
 console". MEASURED on the v3877 render (Uniques > Quick wins, the Gull card, 1440 and 1024, the page's own mouseover):

@@ -108,6 +108,12 @@ _NODE = shutil.which("node") or shutil.which("nodejs")
 _HOOK = os.path.join(HERE, "gate_trace", "node_trace.cjs")
 
 
+def _without_node_hook(opts):
+    """REG-3350 - NODE_OPTIONS with every --require of a node_trace.cjs taken out (an outer prover's hook). -> str"""
+    import re
+    return re.sub(r'--require\s+(?:"[^"]*node_trace\.cjs"|\S*node_trace\.cjs)\s*', "", opts or "").strip()
+
+
 @unittest.skipUnless(_NODE and os.path.isfile(_HOOK), "no node here - the node half of the trace is not measured (UNMEASURED)")
 class ANodeChildIsTracedToo(_Case):
     """REG-3319 (board #92 - his 11-06 'these shards and these tests need to be smooth and work fast'). A node child used
@@ -117,6 +123,15 @@ class ANodeChildIsTracedToo(_Case):
 
     def setUp(self):
         super(ANodeChildIsTracedToo, self).setUp()
+        # REG-3350 - the prover running THIS law arms its own node_trace.cjs in NODE_OPTIONS (REG-3319), and that hook
+        # writes whichever HEART2_TRACE_LOG a child carries - the fixture's too. Inherited, it traces node for the
+        # fixture's heart2 even when the fixture's heart2 never armed it, and a broken arming stays green. The fixture
+        # measures its own heart2's arming alone.
+        _opts = os.environ.get("NODE_OPTIONS")
+        if _opts is not None and "node_trace.cjs" in _opts:
+            _p = mock.patch.dict(os.environ, {"NODE_OPTIONS": _without_node_hook(_opts)})
+            _p.start()
+            self.addCleanup(_p.stop)
         with io.open(_HOOK, encoding="utf-8") as fh:
             self.tree.files["tv/gate_trace/node_trace.cjs"] = fh.read()
         self.tree.files["tv/helper_p3.py"] += "DATA = 'data_p3.json'\n"
@@ -461,10 +476,13 @@ RED_PROOF = [
         "matches": 1,
     },
     {
+        # REG-3350 - the ask itself is broken, not the Popen line that calls it: on Linux under Python 3.13+ a child
+        # also raises os.posix_spawn, whose branch asks node_version_only again, and an untouched ask there said U
+        # (BLIND on GitHub's 3.14 shard while RED on the Mac's 3.9)
         "why": "REG-3319 - every node child is called pure: one with no hook reads page.css and the edit reuses a PROVEN",
         "file": "heart2.py",
-        "find": "            elif node_version_only(exe, argv):\n",
-        "replace": "            elif what in (\"node\", \"nodejs\"):\n",
+        "find": "        return b in (\"node\", \"nodejs\") and a in ([\"--version\"], [\"-v\"])\n",
+        "replace": "        return b in (\"node\", \"nodejs\")\n",
         "matches": 1,
     },
     {

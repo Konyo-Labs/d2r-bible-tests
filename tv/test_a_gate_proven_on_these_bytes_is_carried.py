@@ -116,7 +116,14 @@ def _run_traced(gate, root=None):
     root = root or os.path.dirname(os.path.dirname(os.path.abspath(
         [a for a in gate.argv if str(a).endswith(".py")][0])))
     trace = GL.trace_path()
-    env = GL.trace_env(dict(os.environ), root, trace)
+    base = dict(os.environ)
+    # REG-3350 - the prover running THIS law arms its own node_trace.cjs in NODE_OPTIONS (heart2, REG-3319), and that one
+    # hook file writes the ledger's trace too: inherited, it traces node for the ledger even when trace_env never armed
+    # it, and a broken arming stays green. The fixture measures the ledger's own arming alone.
+    if "node_trace.cjs" in (base.get("NODE_OPTIONS") or ""):
+        base["NODE_OPTIONS"] = re.sub(r'--require\s+(?:"[^"]*node_trace\.cjs"|\S*node_trace\.cjs)\s*', "",
+                                      base["NODE_OPTIONS"]).strip()
+    env = GL.trace_env(base, root, trace)
     proc = subprocess.run(list(gate.argv), cwd=gate.cwd, env=env, capture_output=True, text=True)
     return proc.returncode, trace
 
