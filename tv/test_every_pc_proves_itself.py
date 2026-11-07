@@ -1323,8 +1323,8 @@ RED_PROOF = [
     {
         "why": "2026-09-29 (second eye) - a corrupt lane memory makes every tick raise into the rescue loop",
         "file": "tv/self_prove.py",
-        "find": "        return _tick(now_s, busy, tree, census, path, spawn_fn, env, playing, free, kill_fn, sandbox, takes_only)\n    except Exception as e:\n",
-        "replace": "        return _tick(now_s, busy, tree, census, path, spawn_fn, env, playing, free, kill_fn, sandbox, takes_only)\n    except ZeroDivisionError as e:\n",
+        "find": "        return _tick(now_s, busy, tree, census, path, spawn_fn, env, playing, free, kill_fn, sandbox, takes_only,\n                     lock_rank)\n    except Exception as e:\n",
+        "replace": "        return _tick(now_s, busy, tree, census, path, spawn_fn, env, playing, free, kill_fn, sandbox, takes_only,\n                     lock_rank)\n    except ZeroDivisionError as e:\n",
         "matches": 1,
     },
     {

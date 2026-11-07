@@ -1076,7 +1076,7 @@ def _gate_costs(path=None):
         return None
 
 
-def plan_slice(owed, costs=None, budget_s=None, max_gates=None, blind=None):
+def plan_slice(owed, costs=None, budget_s=None, max_gates=None, blind=None, first=None):
     """#99 — ONE SLICE of the owed gates. Pure. -> [names]
 
     `owed` is [(name, n_proofs)]. Cheapest first (a gate's cost x (n_proofs + 1): one clean run and one per tamper), up
@@ -1088,11 +1088,22 @@ def plan_slice(owed, costs=None, budget_s=None, max_gates=None, blind=None):
     change what the PC may do - and a slice writes its census only when ALL its gates are done. MEASURED on his ALT
     2026-10-01: the four REG-1668 gates proved PROVEN inside a 27-gate slice that ran 70+ minutes before any of them
     could reach the census, with the river shut the whole time. So an owed gate the census records BLIND is a slice of
-    its own kind: only those gates, cheapest first, and the rest wait for the next one."""
+    its own kind: only those gates, cheapest first, and the rest wait for the next one.
+
+    #103-C - THEN THE SHUT LOCKS' GUARDS, ALSO A SLICE OF THEIR OWN. `first` is self_arming.owed_guard_rank()'s rank
+    ({gate: n}, 0 = a guard of the lock that opens after the fewest proofs). A per-lock door opens the moment its own guards
+    are proven (#156), and only when the slice holding them writes the census - so a slice of guards holds nothing else,
+    the lock with the fewest owed guards first, cheapest first within it. MEASURED on the ALT 11-07: vault.sweep_start
+    shut ~42 h on 26 owed guards while 71 owed laws went cheapest-first. A BLIND still goes before all of it."""
     _blind = {str(b) for b in (blind or ()) if b}
     _first = [t for t in (owed or []) if t and str(t[0]) in _blind]
+    rank = {}
     if _first:
         owed = _first
+    elif first:
+        _guards = [t for t in (owed or []) if t and str(t[0]) in first]
+        if _guards:
+            owed, rank = _guards, first
     costs = costs if costs is not None else {}
     budget = SLICE_BUDGET_S if budget_s is None else budget_s
     cap = SLICE_MAX_GATES if max_gates is None else max_gates
@@ -1107,13 +1118,42 @@ def plan_slice(owed, costs=None, budget_s=None, max_gates=None, blind=None):
             c = SLICE_UNKNOWN_COST_S
         return c * (max(0, int(k)) + 1)
     out, spent = [], 0.0
-    for item in sorted(owed or [], key=lambda t: (est(t), t[0])):
+    for item in sorted(owed or [], key=lambda t: (rank.get(str(t[0]), 0), est(t), t[0])):
         e = est(item)
         if out and (spent + e > budget or len(out) >= cap):
             break
         out.append(item[0])
         spent += e
     return out
+
+
+def shut_lock_rank(ask=None):
+    """#103-C - self_arming's rank of the owed laws that keep a door lock shut. -> {"rank", "locks", "why"}. Never raises;
+    an empty rank (the lane's own order) when the ranking cannot be had. `ask` is the seam (owed_guard_rank)."""
+    try:
+        if ask is None:
+            import self_arming as _sa
+            ask = _sa.owed_guard_rank
+        r = ask()
+        if isinstance(r, dict) and isinstance(r.get("rank"), dict):
+            return {"rank": dict(r["rank"]), "locks": list(r.get("locks") or []), "why": str(r.get("why") or "")}
+    except Exception as e:
+        return {"rank": {}, "locks": [], "why": "the shut locks could not be ranked (%s)" % type(e).__name__}
+    return {"rank": {}, "locks": [], "why": "the shut locks' rank was not an answer"}
+
+
+def lock_first_words(names, lf):
+    """#103-C - what a slice drawn from the shut locks' guards says. -> str ("" when the slice holds no guard). Pure."""
+    rank = (lf or {}).get("rank") or {}
+    took = [n for n in (names or []) if n in rank]
+    if not took:
+        return ""
+    want = sorted(set(rank[n] for n in took))
+    locks = (lf or {}).get("locks") or []
+    named = ["%s (%d owed guard(s))" % (locks[i][0], locks[i][1]) for i in want
+             if i < len(locks) and isinstance(locks[i], (list, tuple)) and len(locks[i]) == 2]
+    return ("the guards of the shut lock(s) first: %s - %d of this slice's %d gate(s)"
+            % (", ".join(named) or "a door lock", len(took), len(names)))
 
 
 def _slice_landed(census, names):
@@ -1434,12 +1474,15 @@ def _hold_awake(pid, real=True):
 
 
 def tick(now_s=None, busy=None, tree=None, census=None, path=None, spawn_fn=None, env=None,
-         playing=None, free=None, kill_fn=None, sandbox=None, takes_only=False):
+         playing=None, free=None, kill_fn=None, sandbox=None, takes_only=False, lock_rank=None):
     """One pass of the lane. NEVER raises - it runs inside the rescue loop that also watches whether the
     console can still answer its own port. -> the lane's status in the shared vocabulary.
-    `playing` / `free` are callables or values (REG-1502); None asks this machine."""
+    `playing` / `free` are callables or values (REG-1502); None asks this machine. #103-C - `lock_rank` (a callable,
+    self_arming.owed_guard_rank's shape) ranks the shut locks' guards; None ranks them only for a census this tick read
+    itself, so a census handed in is never ranked against this PC's real one."""
     try:
-        return _tick(now_s, busy, tree, census, path, spawn_fn, env, playing, free, kill_fn, sandbox, takes_only)
+        return _tick(now_s, busy, tree, census, path, spawn_fn, env, playing, free, kill_fn, sandbox, takes_only,
+                     lock_rank)
     except Exception as e:
         return {"on": enabled(env), "worked": None, "lastTs": None, "owed": None, "key": "raised",
                 "say": "the self-prove tick raised %s - nothing was started" % type(e).__name__}
@@ -1554,7 +1597,8 @@ def _forget(mem):
 
 
 def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=None, kill_fn=None, sandbox=None,
-          takes_only=False):
+          takes_only=False, lock_rank=None):
+    _rank_here = lock_rank is not None or census is None     # #103-C - the rank speaks only for the census it ranks
     now_s = time.time() if now_s is None else now_s
     now_ms = int(now_s * 1000)
     play_now = _ask(playing, proof_playing_state)
@@ -1744,13 +1788,18 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
                       and mem.get("stalledFor") == census.get("fingerprint") else set())
             _plan = ([t for t in _owed_g if str(t[0]) not in _stuck] or _owed_g) if isinstance(_owed_g, list) else _owed_g
             _sm = bool(d.get("small"))                     # GBL census-lowmem - short of the full start: a small slice
-            _slice = (plan_slice(_plan, _costs, blind=census.get("blind"))     # REG-1673 - a recorded BLIND first
+            # #103-C - the shut locks' guards before every other owed law (never for the net: it judges trusted gates)
+            _lf = (shut_lock_rank(lock_rank) if (_rank_here and isinstance(_owed_g, list) and _owed_g and not _net)
+                   else {"rank": {}, "locks": []})
+            _slice = (plan_slice(_plan, _costs, blind=census.get("blind"), first=_lf["rank"])   # REG-1673 - a BLIND first
                       if isinstance(_owed_g, list) and _owed_g else None)
             if _slice and _sm:
-                _slice = plan_slice(_plan, _costs, blind=census.get("blind"),
+                _slice = plan_slice(_plan, _costs, blind=census.get("blind"), first=_lf["rank"],
                                     budget_s=SMALL_SLICE_BUDGET_S, max_gates=SMALL_SLICE_MAX_GATES)
                 _sp_one = spawn_fn or _spawn_real
                 spawn_fn = lambda _lp, names=None, _f=_sp_one: _f(_lp, names=names, workers=1)  # noqa: E731
+            _for_locks = lock_first_words(_slice, _lf)
+            mem["lockFirst"] = _for_locks
             if _net and not _slice:
                 raise ValueError("no safety-net slice could be planned")    # the net never proves a whole census
             if _trust:
@@ -1762,8 +1811,9 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
                 mem["sliceGates"] = _slice
                 if _net:
                     mem["net"] = True
-                d = dict(d, why="%s - this slice: %d gate(s)%s" % (
+                d = dict(d, why="%s - this slice: %d gate(s)%s%s" % (
                     census.get("owedWhy") or d["why"], len(_slice),
+                    " - %s" % _for_locks if _for_locks else "",
                     "" if _costs is not None else " (gate costs unread - sized by the default guess)"))
             else:
                 mem["pid"] = (spawn_fn or _spawn_real)(log_path)

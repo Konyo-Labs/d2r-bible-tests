@@ -1730,6 +1730,76 @@ def _owed_and_blind():
         return None, None, "the census could not be read for one lock (%s)" % type(_e).__name__
 
 
+def _lock_src(name, files):
+    """#156 - one owed gate's source, read once per census (memoised in _LOCK_MEMO). -> str | None (would not read)"""
+    if name in _LOCK_MEMO["src"]:
+        return _LOCK_MEMO["src"][name]
+    f = files.get(name) if isinstance(files, dict) else None
+    text = None
+    if f:
+        try:
+            import heart2 as _h2
+            with io.open(f if os.path.isabs(f) else os.path.join(_h2.HERE, f), encoding="utf-8") as _fh:
+                text = _fh.read()
+        except Exception:
+            text = None
+    _LOCK_MEMO["src"][name] = text
+    return text
+
+
+def _lock_guard(name, lock, files):
+    """#156 - does this owed gate guard `lock`? -> bool. ONE rule for the per-lock answer and the order the self-prove lane
+    proves in (#103-C), so the two can never disagree about which laws keep a lock shut. [[copy-drift]]"""
+    # v3856 gate - one answer per (gate, lock, doors) per census: report() asks every lock, and re-running the regex
+    # walk over every owed gate's source for each one took test_heart past its 60 s budget (48,204 walks per report)
+    stems = LOCK_DOORS.get(lock) or ()
+    gk = (name, lock, tuple(stems))
+    memo = _LOCK_MEMO.setdefault("guard", {})
+    if gk not in memo:
+        t = _lock_src(name, files)
+        memo[gk] = True if t is None else _guards_lock(t, lock, stems)   # a gate that will not read is counted, never skipped
+    return memo[gk]
+
+
+def owed_guard_rank():
+    """#103-C - THE LAWS THAT KEEP A LOCK SHUT, AND WHICH LOCK EACH OPENS SOONEST. -> {"rank": {gate: int},
+    "locks": [[lock, n owed guards]], "why": str}. Never raises.
+
+    His question (11-07 ~01:45 IST): "if the river proves itself already why does every proof going forward not related to
+    it need to continue proofing it over and over again for it to unlock?". MEASURED on the ALT 11-07 ~09:50 IST (v3876):
+    its vault autoread loop FLOWING every 45 s and vault.sweep_start OPEN-not-permitted for ~42 h - "26 of its own guard
+    law(s) changed or are unproven" - while the self-prove lane worked 71 owed laws cheapest-first, so the sweep lock's
+    guards waited behind laws that guard nothing. A lock that answers per lock (#156, LOCK_DOORS) opens the moment ITS
+    guards are proven, so those go first: rank 0 = a guard of the door lock with the FEWEST owed guards (it opens after
+    the fewest proofs), 1 the next, and a law guarding two locks takes the sooner one. A gate guarding no door lock has no
+    rank. {} when the census cannot be read, and when it records a BLIND: a BLIND shuts every lock and is proved first,
+    alone (REG-1673), whatever this says. [[heart-first]] [[unknown-stays-unknown]]"""
+    out = {"rank": {}, "locks": [], "why": ""}
+    try:
+        owed, blind, files = _owed_and_blind()
+        if owed is None:
+            out["why"] = "the census could not be asked (%s) - the lane keeps its own order" % files
+            return out
+        if blind:
+            out["why"] = "the census records a BLIND - it is proved first, alone (REG-1673)"
+            return out
+        per = []
+        for lock in sorted(LOCK_DOORS):
+            g = sorted(n for n in owed if _lock_guard(n, lock, files))
+            if g:
+                per.append((len(g), lock, g))
+        per.sort(key=lambda t: (t[0], t[1]))
+        for pos, (_n, _lock, g) in enumerate(per):
+            for n in g:
+                out["rank"].setdefault(n, pos)
+        out["locks"] = [[lock, n] for n, lock, _g in per]
+        out["why"] = ("%d owed law(s) keep %d lock(s) shut - proved first, the lock with the fewest owed guards first"
+                      % (len(out["rank"]), len(per)) if per else "no owed law guards a door lock")
+    except Exception as _e:
+        out = {"rank": {}, "locks": [], "why": "the shut locks' guards could not be ranked (%s)" % type(_e).__name__}
+    return out
+
+
 def _lock_heart(lock, gwhy=None):
     """#156 - the heart's answer for ONE lock, from its own guard laws, when the global rule called the census STALE.
     -> (ok, why) | None (no per-lock answer: the global rule stands). Asked by may() and report() only when the global
@@ -1756,34 +1826,7 @@ def _lock_heart(lock, gwhy=None):
     owed, blind, files = _owed_and_blind()
     if owed is None or blind:
         return None
-    stems = LOCK_DOORS[lock]
-
-    def _src(name):
-        if name in _LOCK_MEMO["src"]:
-            return _LOCK_MEMO["src"][name]
-        f = files.get(name) if isinstance(files, dict) else None
-        text = None
-        if f:
-            try:
-                import heart2 as _h2
-                with io.open(f if os.path.isabs(f) else os.path.join(_h2.HERE, f), encoding="utf-8") as _fh:
-                    text = _fh.read()
-            except Exception:
-                text = None
-        _LOCK_MEMO["src"][name] = text
-        return text
-
-    def _guard(name):
-        # v3856 gate - one answer per (gate, lock, doors) per census: report() asks every lock, and re-running the regex
-        # walk over every owed gate's source for each one took test_heart past its 60 s budget (48,204 walks per report)
-        gk = (name, lock, tuple(stems))
-        memo = _LOCK_MEMO.setdefault("guard", {})
-        if gk not in memo:
-            t = _src(name)
-            memo[gk] = True if t is None else _guards_lock(t, lock, stems)   # a gate that will not read is counted, never skipped
-        return memo[gk]
-
-    g_owed = sorted(n for n in owed if _guard(n))
+    g_owed = sorted(n for n in owed if _lock_guard(n, lock, files))
     if g_owed:
         return False, ("%s For %s (#156, per-lock): %d of its own guard law(s) changed or are unproven since it ran (%s); "
                        "the rest of the tree does not decide this lock."

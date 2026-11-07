@@ -359,8 +359,8 @@ RED_PROOF = [
      "replace": "    if False:\n        owed = _first\n", "matches": 1},
     {"why": "REG-1673 - the tick never hands the census's BLIND list to the planner",
      "file": "tv/self_prove.py",
-     "find": "plan_slice(_plan, _costs, blind=census.get(\"blind\"))",     # REG-1674 re-anchor
-     "replace": "plan_slice(_plan, _costs)", "matches": 1},
+     "find": "plan_slice(_plan, _costs, blind=census.get(\"blind\"), first=_lf[\"rank\"])",   # REG-3351 re-anchor     # REG-1674 re-anchor
+     "replace": "plan_slice(_plan, _costs, first=_lf[\"rank\"])", "matches": 1},
     {"why": "REG-1623 - a full run stamps the census over a gate it could not measure",
      "file": "tv/heart2.py",
      "find": "    if _unm_owed:\n        _fp_out = None\n    else:\n",
