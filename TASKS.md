@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3880** | `(this commit)` | v3880 — Each PC in one Sanctuary word, the State panel draws every PC, and no proof shard gets a chunk its cut ends |
+| **v3881** | `(this commit)` | v3881 — Each PC in one Diablo word on the Fleet, card names fit a phone, Spirit opens the runeword, every set searchable |
+| **v3880** | `72e67cb6` | v3880 — Each PC in one Sanctuary word, the State panel draws every PC, and no proof shard gets a chunk its cut ends |
 | **v3879** | `ffd5f76c` | v3879 — Every Quick wins monster, uber and Terror Zone wears its own sprite, and the ALT proofs stop stalling |
 | **v3878** | `44f63262` | v3878 — 13 board cards - one price per item that refreshes itself, Dean characters reach his shadow, d2jsp continues by default |
 | **v3877** | `b36dbd05` | v3877 — 15 board cards - node proof keys, Quick wins pictures, prices that say why, fan plates, the name pill, the claim bar |

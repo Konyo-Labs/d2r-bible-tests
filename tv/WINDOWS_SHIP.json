@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3880",
+  "ver": "v3881",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3880: Each PC in one Sanctuary word, the State panel draws every PC, and no proof shard gets a chunk its cut ends",
+  "note": "v3881: Each PC in one Diablo word on the Fleet, card names fit a phone, Spirit opens the runeword, every set searchable",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
