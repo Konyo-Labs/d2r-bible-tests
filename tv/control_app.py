@@ -53278,6 +53278,7 @@ class Handler(BaseHTTPRequestHandler):
             # website's key. TV_INTAKE_LOCAL_STRICT=1 → answer 502 honestly, never fall back.
             # #151 - and at GROK ONLY the website proxy is not a fallback either: it reads with Claude on the site's key
             _strict = os.environ.get("TV_INTAKE_LOCAL_STRICT") == "1" or _grok_only_i
+            _last_err = ""   # #122 - read by the fallback's 502 whether or not a runner was reached
             if _runners:
                 try:
                     globals()["_INTAKE_INFLIGHT"] = _inflight_i + 1
@@ -53363,6 +53364,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(502, {"ok": False, "lane": "subscription-failed",
                                  "msg": "local intake lane disabled/missing (strict: no website fallback)"})
                 return
+            # #122 (measured twice, v3880 19:50 and v3881 23:20: test_a_capped_runner_reaches_the_board_as_429 read 502 "intake
+            # proxy failed - is the Mac online?" in the pre-flight's parallel run, green alone and on GitHub) - THE FALLBACK
+            # SAYS WHAT IT FELL BACK FROM. The website proxy's failure was the only words on the 502, so a local lane that
+            # failed first left no trace and the red named no cause. What the local lane last said rides beside it now.
+            _local_said = (("the local lane before it: " + str(_last_err)[-200:]) if (_runners and str(_last_err or "").strip())
+                           else ("the local lane before it failed and said nothing" if _runners else "no local lane ran"))
             try:
                 # do_POST already consumed rfile into `body` — a second read blocks forever
                 body_in = json.dumps(body).encode("utf-8")
@@ -53387,9 +53394,10 @@ class Handler(BaseHTTPRequestHandler):
             except urllib.error.HTTPError as e:
                 out = e.read() if hasattr(e, "read") else b'{"ok":false}'
                 self._json(e.code, {"ok": False, "msg": "intake upstream %d" % e.code,
-                                    "detail": out.decode("utf-8", "replace")[:300]})
+                                    "detail": out.decode("utf-8", "replace")[:300], "local": _local_said})
             except Exception as e:
-                self._json(502, {"ok": False, "msg": "intake proxy failed — is the Mac online? " + str(e)[:200]})
+                self._json(502, {"ok": False, "msg": "intake proxy failed — is the Mac online? " + str(e)[:200],
+                                 "local": _local_said})
             return
         if path == "/api/session/delete":
             # v834 (Konyo: 'an option to delete a session if i want to') — POST {n} removes that

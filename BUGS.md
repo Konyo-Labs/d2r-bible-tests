@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3407 - THE INTAKE'S 502 SAID "IS THE MAC ONLINE?" AND NOTHING OF THE LOCAL LANE THAT FAILED FIRST (v3882, #122)
+MEASURED twice (v3880's pre-flight 19:50, v3881's 23:20): test_a_capped_runner_reaches_the_board_as_429 read 502 "intake
+proxy failed - is the Mac online?" inside the Mac pre-flight's parallel run, green alone and on GitHub. That 502 is the
+WEBSITE proxy's failure, reached only after the local subscription lane did not answer; it carried the website's words
+alone, so the local lane's failure - the cause - left no trace, and two reds named nothing. Now the 502 (and an upstream
+HTTP error) carries "local": what the local lane last said, "failed and said nothing", or "no local lane ran". The
+collision itself is not yet found: the next red names it (#122 stays open). Law:
+test_an_intake_fallback_names_what_it_fell_back_from (3 cases, 2 red-proofs RED); the 429 law stays green.
 ### REG-3406 - ONE FLEET ROW SAID "RIVER FLOWING" AND "LOCKS SHUT" ABOUT THE SAME MOMENT (v3882, #120)
 MEASURED 11-07 21:19 on the Mac's own beacon, as both ALTs saw it: locksShut [] (may() named no river door shut 3.8 s before
 the report) while the census was stale, so the row drew "river flowing - 13 held by the drain" AND "locks shut - until this
