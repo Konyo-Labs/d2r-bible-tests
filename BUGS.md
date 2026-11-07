@@ -127,6 +127,13 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3340 - A ROW DREW AN OLD RIVER AS IF CURRENT, SAYING ONLY "LAST RIVER READ FAILED" (v3878, board #24, GrokBot 6700580776)
+GrokBot (11-07, Dean): two reads 8 min apart both showed ROUTED 160 / JOIN 10 / PRINTER 9 / EMPTY 5 - the API said "a
+newer river read failed ... ConnectionAbortedError WinError 10053 ... these lanes are the last good read" - while the row
+said only "last river read failed" (the reason and the age lived in the hover). The lanes beside it read as current. NOW the
+chip says what the lanes are first: "lanes from its last good read (33m ago) · a newer read failed", the reason stays in the
+hover. Law: test_a_failed_river_read_says_why (the row case re-aimed); red-proof PROVEN (1). Not this entry: WHY Dean's
+river read aborts (WinError 10053 while his PC is 100% busy importing) - card #40.
 ### REG-3339 - EVERY REPAIR-BOOK SELF-ASK FAILED BEFORE IT ASKED: THE PROMPT WAS READ AS A DIRECTORY (v3878, board #17/#19/#11, GrokBot 6700580776)
 GrokBot (11-07, both PCs, GETs): the eagle's self-asking misses never land - the Mac's diag "stdin is unreadable (EBADF)",
 the ALT's "Input must be provided either through stdin or as a prompt argument when using --print". MEASURED in

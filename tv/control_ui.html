@@ -29220,7 +29220,11 @@ function escC(s) {
     if (rv && typeof rv === 'object' && typeof rv.failWhy === 'string' && rv.failWhy) {
       bits.push('<span class="fleet-riverunk" title="' + escC('the newest river read on this PC failed'
         + (typeof rv.failAgeS === 'number' && isFinite(rv.failAgeS) ? ' ' + _fleetAgo(rv.failAgeS) + ' before its report' : '')
-        + ': ' + rv.failWhy + ' \u2014 the lanes shown are its last good read') + '">last river read failed</span>');
+        + ': ' + rv.failWhy + ' \u2014 the lanes shown are its last good read') + '">'
+        /* #24 (GrokBot 6700580776: Dean's lanes were the last good read while the row said only "last river read failed")
+           - the chip says the lanes beside it are an OLDER read, and how old, before it says a newer one failed */
+        + escC('lanes from its last good read' + (typeof rv.ageS === 'number' && isFinite(rv.ageS) ? ' (' + _fleetAgo(rv.ageS) + ')' : '')
+               + ' \u00b7 a newer read failed') + '</span>');
     }
     return bits.join('');
   };

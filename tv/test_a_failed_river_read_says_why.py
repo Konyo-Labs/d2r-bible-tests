@@ -13,7 +13,7 @@ Now:
   * a newer failed read sends its reason in river.why AND as river.failWhy / river.failAgeS;
   * the worker (functions/api/console.js, its REAL shaper in node) forwards failWhy / failAgeS, scrubbed and capped,
     and an absent one stays absent;
-  * the Fleet row (control_ui.html, the REAL _fleetStuckChip in node) draws a muted "last river read failed" whose hover
+  * the Fleet row (control_ui.html, the REAL _fleetStuckChip in node) draws a muted "lanes from its last good read (age) · a newer read failed" (#24) whose hover
     carries the reason; a row with no newer failure draws nothing of the kind.
 RED_PROOF below.
 """
@@ -121,7 +121,9 @@ class TheRowSaysIt(unittest.TestCase):
         html = _chip(_row({"lanes": {"PRINTER": 2}, "ageS": 2000, "stuck": [],
                            "heart": {"census": "current", "key": "current", "blind": 0},
                            "failWhy": "the river could not be read (OSError: disk read timed out)", "failAgeS": 1043}))
-        self.assertIn(">last river read failed<", html, "a newer failed read drew nothing on the row: %r" % html)
+        # #24 (GrokBot 6700580776) - the chip says the lanes beside it are the last GOOD read, and its age, first
+        self.assertIn(">lanes from its last good read (33m ago) · a newer read failed<", html,
+                      "a newer failed read drew nothing, or did not say the lanes are an older read: %r" % html)
         self.assertIn("disk read timed out", html, "the chip's hover does not say why it failed")
         self.assertIn("fleet-riverunk", html)
         self.assertNotIn("fleet-riverstuck", html, "a failed read was drawn as the red alarm")
@@ -138,6 +140,11 @@ class TheRowSaysIt(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "#24 - the chip says only that a read failed, not that the lanes beside it are an older read",
+     "file": "tv/control_ui.html",
+     "find": "        + escC('lanes from its last good read' + (typeof rv.ageS === 'number' && isFinite(rv.ageS) ? ' (' + _fleetAgo(rv.ageS) + ')' : '')\n",
+     "replace": "        + escC('last river read failed' + (false ? ' (' + _fleetAgo(rv.ageS) + ')' : '')\n",
+     "matches": 1, "needs": "node"},
     {"why": "REG-3196 - the failed read's reason stays on the PC: no failWhy on the wire",
      "file": "tv/control_app.py",
      "find": "            out[\"failWhy\"] = _fwhy\n",
