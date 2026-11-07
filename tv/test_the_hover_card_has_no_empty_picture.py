@@ -24,7 +24,8 @@ class TheHoverCardHasNoEmptyPicture(unittest.TestCase):
         with io.open(os.path.join(ROOT, "bible.html"), encoding="utf-8") as fh:
             cls.src = fh.read()
         a = cls.src.index("tip.id='arttip'")
-        cls.block = cls.src[a:a + 40000]
+        # anchor to anchor: the card's builder, through its last picture write (never a fixed-size window)
+        cls.block = cls.src[a:cls.src.index("var showing = tip.classList.contains('on') && img.style.display !== 'none'", a)]
 
     def test_the_picture_is_born_hidden_and_named(self):
         self.assertEqual(self.src.count("tip.id='arttip'"), 1, "PREMISE: the hover card is built in one place")

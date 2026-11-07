@@ -309,7 +309,7 @@ class TheFanCaptionsNeverOverlap(unittest.TestCase):
                         continue
                     crossed += 1
                     if not mine or at > min(p["at"] for p in mine):
-                        over.append("%s through %s" % (svg[at:at + 40], s["name"]))
+                        over.append("%s through %s" % (svg[at:svg.index(">", at) + 1], s["name"]))   # the path's own tag
                 for p in mine:
                     self.assertLess(p["at"], first_caption, "%s: %s's plate is painted over the captions" % (label, s["name"]))
             self.assertEqual(over, [], "%s: a line is painted over a caption: %s" % (label, over[:4]))
@@ -322,7 +322,8 @@ class TheFanCaptionsNeverOverlap(unittest.TestCase):
         a = ui.find("  function _hrtPlateSync(root) {")
         b = ui.find("\n  }\n", a) + 4
         self.assertGreater(a, 0, "_hrtPlateSync is gone - re-point this law")
-        self.assertIn("_hrtPlateSync(ov);", ui[ui.find("var _ff = _hrtFanFit(ov);"):][:120],
+        f0 = ui.index("var _ff = _hrtFanFit(ov);")
+        self.assertIn("_hrtPlateSync(ov);", ui[f0:ui.index("window._hrtFanLast = _ff;", f0)],
                       "the plates are not synced right after the fit pass moves the stacks")
         prog = ui[a:b] + r"""
 function El(attrs){ this.a = attrs; }
@@ -336,7 +337,7 @@ var root = { querySelector: function(){ return svg; } };
 var n = _hrtPlateSync(root);
 process.stdout.write(JSON.stringify([n, p1.getAttribute('transform'), p2.getAttribute('transform')]));
 """
-        r = subprocess.run([NODE, "-e", prog], capture_output=True, text=True, timeout=60)
+        r = subprocess.run([NODE, "-"], input=prog, capture_output=True, text=True, timeout=60)   # #242 - the program on stdin
         self.assertEqual(r.returncode, 0, r.stderr[-800:])
         n, t1, t2 = json.loads(r.stdout)
         self.assertEqual(t1, "translate(4.0,6.0)", "a moved stack's plate stayed behind")
