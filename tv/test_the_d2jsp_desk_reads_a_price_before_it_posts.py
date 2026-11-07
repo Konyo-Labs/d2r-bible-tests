@@ -35,6 +35,29 @@ BIBLE = os.path.join(ROOT, "bible.html")
 QUOTE = os.path.join(ROOT, "functions", "api", "d2jsp_quote.js")
 UI = os.path.join(HERE, "control_ui.html")
 BEACON = os.path.join(ROOT, "functions", "api", "console.js")
+
+#: v3880 (REG-3363, #56) - THE ONLY d2jsp THE SITE'S BEACON CARRIES IS THE ONCE-A-DAY CHECK: did d2jsp answer a real price search
+#: on that PC, and when. This law said the beacon never mentions d2jsp at all (the cookie is read on this machine, never stored,
+#: never returned), and REG-3363 put that check record on the beacon - GitHub graded v3880 red on the two laws' contradiction.
+#: Both hold when the rule is the real one: these five lines are the beacon's whole d2jsp, the record's fields are exactly
+#: ok / at / item / reason / why, and nothing in it names a cookie, a password, a session or a token.
+_D2JSP_ON_THE_BEACON = ("    d2jsp: (function (d) {", "    })(body.d2jsp),", "  const d2jspNews = (r) => {",
+                        "    const x = r && r.d2jsp;", "    || d2jspNews(prev) !== d2jspNews(rec)")
+
+
+def _beacon_carries_no_d2jsp_login(tc):
+    import re as _re
+    src = _read(BEACON)
+    code = _re.sub(r"/\*.{0,4000}?\*/", "", src, flags=_re.S)
+    code = "\n".join(l for l in code.split("\n") if not l.lstrip().startswith("//"))
+    stray = [l for l in code.split("\n") if "d2jsp" in l.lower() and l.rstrip() not in _D2JSP_ON_THE_BEACON]
+    tc.assertEqual(stray, [], "the beacon carries d2jsp beyond its once-a-day check: %r" % stray)
+    i = src.index("    d2jsp: (function (d) {")
+    block = src[i:src.index("    })(body.d2jsp),", i)]
+    tc.assertEqual(sorted(_re.findall(r"^ {8}(\w+):", block, _re.M)), ["at", "item", "ok", "reason", "why"],
+                   "the beacon's d2jsp record grew a field")
+    for w in ("cookie", "password", "session", "token", "secret"):
+        tc.assertNotIn(w, block.lower(), "the beacon's d2jsp record names a %s" % w)
 NODE = shutil.which("node")
 # Story quest codes in tv/item_tables.json. Pandemonium keys, organs, essences
 # and the token are the trade, so they are not in this tuple.
@@ -142,7 +165,7 @@ class TheD2jspDeskReadsAPriceBeforeItPosts(unittest.TestCase):
         self.assertIn('class="ht-lbl">D2JSP</span>', nav)
         self.assertLess(nav.index('data-tab="vault"'), nav.index('data-tab="d2jsp"'))
         self.assertLess(nav.index('data-tab="d2jsp"'), nav.index('data-tab="tvd"'))
-        self.assertNotIn("d2jsp", _read(BEACON))
+        _beacon_carries_no_d2jsp_login(self)
 
     def test_a_public_reading_with_no_price_stays_unknown(self):
         if NODE is None:
@@ -736,7 +759,7 @@ var window = { addEventListener: function(){}, LSR: null };
         qblock = app[quote_route:quote_next]
         self.assertIn("import d2jsp_chrome as _d2jsp", qblock)
         self.assertIn("_d2jsp.d2jsp_quote(", qblock)
-        self.assertNotIn("d2jsp", _read(BEACON))
+        _beacon_carries_no_d2jsp_login(self)
 
     def test_a_quest_item_is_not_a_trade_and_the_range_is_the_reading(self):
         if NODE is None:
@@ -1580,7 +1603,7 @@ process.stdout.write(JSON.stringify({
             self.assertNotIn("cookie", shut)
         finally:
             desk._open_chrome_login = saved_open
-        self.assertNotIn("d2jsp", _read(BEACON))
+        _beacon_carries_no_d2jsp_login(self)
 
     def test_a_windows_chrome_cookie_opens_with_the_raw_key(self):
         """Windows Chrome seals a v10 cookie with the raw key. v20 stays closed."""
@@ -1823,7 +1846,7 @@ process.stdout.write(JSON.stringify({
         filed = script[file_at:open_at]
         self.assertLess(filed.index("d2jspIsQuest"), filed.index("d2r_d2jsp_hide"))
         self.assertNotIn("vaultPlannerFile", filed)
-        self.assertNotIn("d2jsp", _read(BEACON))
+        _beacon_carries_no_d2jsp_login(self)
         stubs = r"""
 var clicks = [];
 var store = {
@@ -2134,6 +2157,13 @@ process.stdout.write(JSON.stringify({
         self.assertNotIn("SECRETCOOKIE", json.dumps(out))
 
 RED_PROOF = [
+    {"why": "REG-3363 x the desk - the beacon's d2jsp record carries the login cookie",
+     "file": "functions/api/console.js",
+     "find": "        ok: d.ok === true ? true : (d.ok === false ? false : null),\n",
+     "replace": "        ok: d.ok === true ? true : (d.ok === false ? false : null),\n        cookie: d.cookie || null,\n", "matches": 1},
+    {"why": "REG-3363 x the desk - the beacon sends d2jsp somewhere beyond its once-a-day check",
+     "file": "functions/api/console.js",
+     "find": "    })(body.d2jsp),\n", "replace": "    })(body.d2jsp),\n    d2jspLogin: body.d2jspLogin || null,\n", "matches": 1},
     {
         "why": "v3862 - Windows reads Chrome's version by launching chrome.exe --version, which opens a browser window",
         "file": "tv/d2jsp_chrome.py",
