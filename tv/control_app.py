@@ -206,7 +206,7 @@ def _d2jsp_db_fold(reading):
             return {"unknown": "the price DB at this console would not read"}
         _key = reading.get("searched") or _d2jsp_canon(reading.get("item"))   # #96 - one item, one entry
         try:
-            if _PDB.ingest(db, reading, socket.gethostname(), key=_key):
+            if _PDB.ingest(db, reading, _d2jsp_source(), key=_key):
                 _PDB.save(path, db)
             elif reading.get("reason") == "read":
                 _PDB.save(path, db)   # readAt moved: a fresh read restarts the refresh clock
@@ -229,6 +229,7 @@ def _d2jsp_db_view(item):
     if db is None:
         return {"unknown": "the price DB at this console would not read"}
     now = time.time()
+    _d2jsp_source()                                # v3881 - its rows said by this PC's nickname, never its host name
     _key = _d2jsp_canon(item)                      # #96 - the stored price of the SEARCH, whichever name asked it
     priced = _PDB.price(db, item, now, key=_key)
     priced["proof"] = _PDB.explain(db, item, now, key=_key)
@@ -47060,6 +47061,23 @@ def fleet_compare(machine, ledger="sets"):
     return out
 
 
+def _d2jsp_source():
+    """v3881 (GrokBot's v3878 pass: the D2JSP database's SOURCE column printed this PC's HOST NAME on every row) - this PC's
+    name in the price DB: its Fleet nickname, else "this PC" - never the host name. Registers host -> name with the price DB
+    so rows written before under the host name are said by the name too. -> the name"""
+    import d2jsp_price_db as _PDB
+    try:
+        nick = str((install_identity() or {}).get("nickname") or "").strip()
+    except Exception:
+        nick = ""
+    name = nick or "this PC"
+    try:
+        _PDB.SOURCE_NAMES[socket.gethostname()] = name
+    except Exception:
+        pass
+    return name
+
+
 def install_identity():
     """v1465 — a STABLE, PER-INSTALL identity. Gitignored, so it never travels between PCs.
 
@@ -50990,6 +51008,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {"reason": "unknown",
                                  "say": "the price DB at this console would not read", "items": []})
                 return
+            _d2jsp_source()          # v3881 - every row said by this PC's nickname, never its host name
             self._json(200, _PDB.view(_db))
             return
         if path in ("/", "/index.html", "/ui"):

@@ -112,6 +112,12 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3379 - HIS D2JSP DATABASE PRINTED THIS PC'S HOST NAME ON EVERY ROW (v3881, GrokBot's v3878 pass)
+GrokBot, on D2JSP > Advanced > "Show the database": the SOURCE column printed the raw machine hostname on every row (it kept the
+name out of the public comment). control_app._d2jsp_price_ingest passed socket.gethostname() as each post's source and the
+board printed p.src. Now _d2jsp_source() records this PC's Fleet nickname (else "this PC") and registers host -> nickname with
+d2jsp_price_db.SOURCE_NAMES before ingest, quote and view, so rows written before are said by the name too (the DB is this
+PC's own). Law: test_a_price_source_is_a_nickname_never_a_host (2 red-proofs seen RED).
 ### REG-3377 - A WINDOWED WINDOWS PC FILMED ITS TITLE BAR, SAVED 800 PX REELS, AND COULD FILM THE DESKTOP (v3881, #255)
 MEASURED 2026-11-07 on a Windows PC playing D2R windowed (client 1507x755) and on the reader-parity bench (48 real frames,
 run on the Mac and a Windows PC): (1) capture_win.ps1 Grab() sized the bitmap to the CLIENT area but called

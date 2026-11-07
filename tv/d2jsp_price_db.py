@@ -79,6 +79,17 @@ def _day_ts(day):
         return None
 
 
+#: v3881 (GrokBot's v3878 pass on his D2JSP database: its SOURCE column printed this PC's HOST NAME on every row) - a source
+#: is said by the PC's Fleet NICKNAME. {host: nickname}, registered by the console from its own install identity; the DB is
+#: this PC's own, so a row written before under its host name is said by the name too. Anything else is said as stored.
+SOURCE_NAMES = {}
+
+
+def source_name(src):
+    s = str(src or "")
+    return SOURCE_NAMES.get(s, s)
+
+
 def ingest(db, reading, src, now=None, key=None):
     """Fold one public reading (d2jsp_chrome._public_fields) into db. -> number of posts new to the DB.
 
@@ -261,7 +272,7 @@ def explain(db, item, now=None, key=None):
             "link": p.get("link") or "",
             "w": p.get("w", 1),
             "perfect": perfect_row,
-            "src": str(p.get("src") or ""),
+            "src": source_name(p.get("src")),
             "seenAt": seen_n,
             "out": str(p.get("out") or "")[:80],
             "ageDays": round(age, 2),
