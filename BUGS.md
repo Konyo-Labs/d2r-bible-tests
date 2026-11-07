@@ -194,6 +194,10 @@ own scroll panel; items grouped by what is known (fresh / stale / freshness not 
 perfect, posts - that opens to its tiers and posts; a reason that only repeats the state is said once. Grouping by freshness is
 my reading of 'groups' (the one grouping every answer carries). Law: test_the_d2jsp_database_is_one_line_per_item (6 cases via
 node + a fake DOM; 4 red-proofs RED). Pixels: headless render + the Grok CLI before the version ships.
+ROUND 2 (v3881's own looks at 390 - mine, then the Grok CLI's, cold): a wrap stranded the line's middot at a line's start
+("· 4 posts") and tore facts apart ("perfect" / "160 fg", "not" / "priced"); the runeword card's subtitle tore "req" /
+"level 25". Each fact is now one unbreakable unit, the middot bound to the fact before it, and "req level N" stays whole. The
+database law pins it (+1 case, +2 red-proofs RED); the card law pins the subtitle (+1 red-proof RED). Looked at the pixels after.
 ### REG-3389 - A LADDER CONSOLE'S D2JSP TAB SAID "BOARD 271" BESIDE "BOARD 268 ONLY" (v3881, GrokBot v3878 #56)
 GrokBot on Dean's shadow D2JSP tab: "Board 271, D2:R RotW Softcore Ladder Trading." next to "Reads d2jsp posts dated 2026 or
 later, board 268 only." Both were true - a ladder console POSTS on 271 (d2jspBoard) and the price search reads 268 whatever

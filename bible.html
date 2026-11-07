@@ -13532,9 +13532,13 @@ function d2jspBatchHtml(view) {
       var nf = it && it.normal && Number(it.normal.fg) > 0 ? Number(it.normal.fg) : null;
       var pf = it && it.perfect && Number(it.perfect.fg) > 0 ? Number(it.perfect.fg) : null;
       var posts = it && it.proof && Array.isArray(it.proof.posts) ? it.proof.posts.length : null;
-      var line = d2jspEscText(name) + ' <span class="d2jsp-db-k">normal ' + (nf != null ? d2jspEscText(d2jspFgText(nf)) + ' fg' : 'not priced')
-        + ' · perfect ' + (pf != null ? d2jspEscText(d2jspFgText(pf)) + ' fg' : 'not priced')
-        + ' · ' + (posts == null ? 'posts not on record' : posts + (posts === 1 ? ' post' : ' posts')) + '</span>';
+      /* the v3881 looks at 390 (mine, then the Grok CLI's): a wrap stranded the middot at a line's start ("· 4 posts") and tore
+         a fact apart ("perfect" / "160 fg", "not" / "priced"). Each fact is ONE unbreakable unit (no-break spaces inside it,
+         and the middot bound to the fact before it), so a line ends on a middot and the next starts with a whole fact. */
+      var NB = '\u00a0', unpriced = 'not' + NB + 'priced';
+      var line = d2jspEscText(name) + ' <span class="d2jsp-db-k">normal' + NB + (nf != null ? d2jspEscText(d2jspFgText(nf)) + NB + 'fg' : unpriced)
+        + NB + '· perfect' + NB + (pf != null ? d2jspEscText(d2jspFgText(pf)) + NB + 'fg' : unpriced)
+        + NB + '· ' + (posts == null ? 'posts' + NB + 'not' + NB + 'on' + NB + 'record' : posts + NB + (posts === 1 ? 'post' : 'posts')) + '</span>';
       return '<details class="d2jsp-db-item" data-d2jsp-batch-item="' + d2jspEscText(name) + '" data-name="' + d2jspEscText(name.toLowerCase())
         + '" data-fg="' + (nf != null ? nf : (pf != null ? pf : -1)) + '" data-posts="' + (posts == null ? -1 : posts) + '"><summary>'
         + line + '</summary>' + d2jspBackendHtml(it, null, {noLaw: true}) + '</details>';
@@ -22399,7 +22403,7 @@ function runewordDetailHtml(name){
     + _rwArt
     + '<div class="gic-id-block">'
     + '<h2 class="gic-name">'+key+' <span class="gic-grail-badge" style="background:linear-gradient(135deg,#3a5a8a,#12243a);color:#bcd6ff">Runeword</span>'+( (typeof _RW_LADDER_ONLY!=='undefined' && _RW_LADDER_ONLY[key]) ? ' <span class="rw-ladder-stamp" title="Ladder-only runeword — only forms on a LADDER character">🪜 LADDER&nbsp;ONLY</span>' : '')+'</h2>'
-    + '<div class="gic-subtitle">'+o.b+(o.r!=null?' · req level '+o.r:'')+'</div>'
+    + '<div class="gic-subtitle">'+o.b+(o.r!=null?' · req\u00a0level\u00a0'+o.r:'')+'</div>'   /* the Grok CLI's look at 390: "req" / "level 25" */
     + '<div class="gic-meta-row"><span class="gic-meta-chip">'+(o.rec||[]).length+' runes</span><span class="gic-meta-chip" style="color:#bcd6ff;border-color:rgba(188,214,255,.4)">crafted</span></div>'
     + '</div>'
     + '<div style="display:flex;flex-direction:column;gap:6px"><button class="gic-close-btn" onclick="window.closeDrop&&window.closeDrop()" title="press ESC">✕ close</button></div>'

@@ -117,8 +117,20 @@ class TheDatabaseIsOneLinePerItem(unittest.TestCase):
         self.assertIn('data-d2jsp-db-group="fresh"><h3>Fresh · 2</h3>', h)
         self.assertIn('data-d2jsp-db-group="stale"><h3>Stale · 1</h3>', h)
         self.assertIn('data-d2jsp-db-group="unknown"><h3>Freshness not known · 1</h3>', h)
-        self.assertIn("shako <span class=\"d2jsp-db-k\">normal 40 fg · perfect 80 fg · 3 posts</span>", h)
-        self.assertIn("anni <span class=\"d2jsp-db-k\">normal not priced · perfect not priced · 0 posts</span>", h)
+        self.assertIn(u"shako <span class=\"d2jsp-db-k\">normal\u00a040\u00a0fg\u00a0· perfect\u00a080\u00a0fg\u00a0· 3\u00a0posts</span>", h)
+        self.assertIn(u"anni <span class=\"d2jsp-db-k\">normal\u00a0not\u00a0priced\u00a0· perfect\u00a0not\u00a0priced\u00a0· 0\u00a0posts</span>", h)
+
+    def test_a_wrap_never_strands_a_middot(self):
+        """the v3881 look at 390: 'Griffon's Eye normal 95 fg · perfect 160 fg' / '· 4 posts' - a line began with the middot.
+        Every middot in an item's line is bound to the fact before it (a no-break space), so a wrap ends a line on it"""
+        h = _render(VIEW)
+        import re
+        lines = re.findall(u'<span class="d2jsp-db-k">(normal[ \u00a0][^<]*)</span>', h)
+        self.assertEqual(len(lines), 4, h)
+        for l in lines:
+            self.assertNotIn(" ·", l.replace(u"\u00a0·", ""), "a middot a wrap can strand: %r" % l)
+            # each fact is one unbreakable unit: the ONLY breakable spaces are the ones after a middot
+            self.assertEqual(l.count(" "), l.count(u"\u00a0· "), "a fact a wrap can tear apart ('perfect' / '160 fg'): %r" % l)
 
     def test_its_own_scroll_panel_with_a_find_and_sort_bar(self):
         h = _render(VIEW)
@@ -153,6 +165,13 @@ class TheDatabaseIsOneLinePerItem(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3881 look - a wrap tears a fact apart again ('perfect' / '160 fg')",
+     "file": "bible.html",
+     "find": "        + NB + '· perfect' + NB + (pf != null", "replace": "        + NB + '· perfect ' + (pf != null", "matches": 1},
+    {"why": "v3881 look - a wrap strands the database line's middot at the start of a line again",
+     "file": "bible.html",
+     "find": "        + NB + '· ' + (posts == null ?", "replace": "        + ' · ' + (posts == null ?",
+     "matches": 1},
     {"why": "REG-3390 - every item prints the weighing rule again",
      "file": "bible.html", "find": "d2jspBackendHtml(it, null, {noLaw: true})", "replace": "d2jspBackendHtml(it, null, {})",
      "matches": 1},

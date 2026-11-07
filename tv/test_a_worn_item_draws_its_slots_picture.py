@@ -189,12 +189,17 @@ class AnIdCardsNameBreaksOnlyBetweenWords(unittest.TestCase):
         # wraps so the name takes the card's full width (one word of "Tal Rasha's Guardianship" is wider than the 130px column).
         # The pixels are test_a_card_name_fits_its_box_on_a_phone's (GitHub's browser).
         self.assertIn("flex-wrap:wrap", name[0], "the card name is a flex row that cannot wrap its badge again")
+        # the Grok CLI's look at 390: the runeword card's subtitle broke "req" / "level 25" - the label stays with its number
+        self.assertIn("' · req\\u00a0level\\u00a0'+o.r", page, "a wrap can tear 'req level' from its number again")
         self.assertIn("    .gic-header{flex-wrap:wrap;justify-content:space-between;row-gap:8px}\n"
                       "    .gic-header > .gic-id-block{order:3;flex-basis:100%}\n", page,
                       "the phone header no longer gives the name the card's full width")
 
 
 RED_PROOF = [
+    {"why": "the Grok CLI's look - the runeword subtitle's 'req level' can be torn from its number again",
+     "file": "bible.html",
+     "find": "' · req\\u00a0level\\u00a0'+o.r", "replace": "' · req level '+o.r", "matches": 1},
     {"why": "#27 round 2 - the card name is a flex row that cannot wrap again (the badge spills past the box at 480)",
      "file": "bible.html",
      "find": "    .gic-name{font-size:20px;overflow-wrap:break-word;flex-wrap:wrap}", "replace": "    .gic-name{font-size:20px;overflow-wrap:break-word}",
