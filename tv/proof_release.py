@@ -233,6 +233,21 @@ class _ProgressWatch(object):
         self._read()
 
 
+def _import_log(d):
+    """REG-3352 - what heart2 --import-shards wrote to its log in the import's scratch dir. -> str ("" when none)"""
+    try:
+        with io.open(os.path.join(d, "import.log"), encoding="utf-8", errors="replace") as fh:
+            return fh.read()
+    except OSError:
+        return ""
+
+
+def _import_tail(d):
+    """REG-3352 - the import log's last line, for a run that did not finish (a killed run's REG-3352 batches)."""
+    lines = [l.strip() for l in _import_log(d).splitlines() if l.strip()]
+    return (" - last line: %s" % lines[-1][:200]) if lines else ""
+
+
 def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="", progress=None):
     """Download, unpack and import this commit's proofs. -> {"state", "sha", "flavor", "why", "seconds", "at"}.
     REG-3194 - `progress` (a callable) is handed {"done", "of", "etaS", "at"} as heart2 keys the proofs."""
@@ -267,16 +282,20 @@ def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="",
             # REG-3191 (his ruling 2026-11-05 (3): "Each PC imports the proofs for byte-identical files at update ... Locks
             # open on (imported proofs + local self-check)") - --trust: once the import lands, heart2 writes into this
             # PC's census every owed gate the bank now serves whole over these bytes, so the locks open at update
-            r = run(pre + argv + ["--trust", "--import-shards"] + paths, cwd=tv_dir,
-                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5400,
-                    creationflags=flags)
+            # REG-3352 - ITS OUTPUT GOES TO A FILE, NOT A PIPE. MEASURED on his ALT 11-07: one re-ask ran 17,673 s
+            # against this 5,400 s bound - on a timeout run() kills heart2 and then waits for its pipes to close, and the
+            # key workers heart2 started still held them. A file has no reader to wait on: the kill ends the wait.
+            with io.open(os.path.join(d, "import.log"), "w", encoding="utf-8", errors="replace") as _log:
+                r = run(pre + argv + ["--trust", "--import-shards"] + paths, cwd=tv_dir,
+                        stdout=_log, stderr=subprocess.STDOUT, timeout=5400, creationflags=flags)
         except Exception as e:
-            out.update(state="unknown", why="heart2 --import-shards could not run (%s)" % type(e).__name__)
+            out.update(state="unknown", why="heart2 --import-shards could not run (%s)%s" % (
+                type(e).__name__, _import_tail(d)))
             return out
         finally:
             if watch is not None:
                 watch.stop()
-        said = ((r.stdout or "") + (r.stderr or "")).strip()
+        said = ((getattr(r, "stdout", None) or "") + (getattr(r, "stderr", None) or "") + _import_log(d)).strip()
         line = next((l.strip() for l in said.splitlines() if "REG-2586" in l), said.splitlines()[-1] if said else "")
         if r.returncode == 0:
             out.update(state="imported", why=line[:400] or "imported")

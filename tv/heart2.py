@@ -9029,6 +9029,96 @@ def _shard_keyer(target):
     return keyer
 
 
+#: REG-3352 - at most this many keyer calls in one import batch (a law never splits: a larger law is a batch of its own)
+IMPORT_BATCH_PROOFS = 1500
+
+
+def _served_keys(target):
+    """REG-3352 - the keys `target` already serves (peek() would answer them). -> set; empty when it will not read"""
+    import proof_shard as _PS
+    try:
+        body, _why = _read_store(target, _entries_shape)
+        ent = (body or {}).get("entries") or {}
+        return set(k for k, e in ent.items() if isinstance(e, dict) and _PS.servable(e))
+    except Exception:
+        return set()
+
+
+def _unserved(shards, served):
+    """REG-3352 - the shards with only the servable entries `served` does not hold. -> (shards, kept n, {key: entry})
+
+    A kept entry is not keyed here: its key is already served on this PC, and merge_into keeps a served key as it is, so
+    banking it again changes nothing. It still counts as banked for its shard (unbanked() asks `take.get(key) is e`)."""
+    import proof_shard as _PS
+    left, kept = [], {}
+    for k, ent, assigned in shards or ():
+        mine = {}
+        for key, e in (ent or {}).items():
+            if key in served and isinstance(e, dict) and _PS.servable(e):
+                kept[key] = e
+            else:
+                mine[key] = e                  # select() decides the rest - what is servable is ITS rule, asked once
+        left.append((k, mine, assigned))
+    return left, len(kept), kept
+
+
+def _import_order(target=None):
+    """REG-3352 / #103-C - {gate: rank} of the owed laws that keep a door lock shut (self_arming), imported first. {} on
+    any failure, and for any store but this PC's own (CACHE): the lock rank speaks for THIS PC's census, never a
+    fixture's. The import then goes by name."""
+    if target is None or os.path.abspath(target) != os.path.abspath(CACHE):
+        return {}
+    try:
+        import self_arming as _sa
+        r = _sa.owed_guard_rank()
+        return dict(r.get("rank") or {}) if isinstance(r, dict) else {}
+    except Exception:
+        return {}
+
+
+def _import_batches(shards, rank=None, size=None):
+    """REG-3352 - the import's entries cut into batches BY LAW: the ranked laws first (rank, then name), then the rest by
+    name; at most `size` entries a batch, a law never split. Each batch keeps every shard's (k, entries, assigned) shape
+    select() reads. -> [shards]. Pure."""
+    size = IMPORT_BATCH_PROOFS if size is None else max(1, int(size))
+    rank = rank or {}
+    by = {}
+    for _k, ent, _assigned in shards or ():
+        for _key, e in (ent or {}).items():
+            by[str(e.get("gate"))] = by.get(str(e.get("gate")), 0) + 1
+    order = sorted(by, key=lambda g: (0, rank[g], g) if g in rank else (1, 0, g))
+    groups, cur, n = [], set(), 0
+    for g in order:
+        if cur and n + by[g] > size:
+            groups.append(cur)
+            cur, n = set(), 0
+        cur.add(g)
+        n += by[g]
+    if cur:
+        groups.append(cur)
+    return [[(k, dict((key, e) for key, e in (ent or {}).items() if str(e.get("gate")) in gs), assigned)
+             for k, ent, assigned in shards] for gs in groups]
+
+
+def _import_write(target, take, say, out):
+    """REG-3352 - one import batch into `target` through the stores' one locked writer. -> (ok, why); adds the batch's
+    banked and evicted counts to `out` once the write landed."""
+    import proof_shard as _PS
+    got = {}
+
+    def merge(disk):
+        ent, added = _PS.merge_into((disk or {}).get("entries"), take)
+        got["added"], got["evicted"] = added, _cache_evict(ent, CACHE_MAX)
+        body = dict((k, v) for k, v in (disk or {}).items() if k not in ("format", "entries"))
+        body.update(format=2, entries=ent)
+        return body
+    w_ok, w_why = _StoreFile(target, say).commit(merge)
+    if w_ok:
+        out["added"] = out.get("added", 0) + got.get("added", 0)
+        out["evicted"] = out.get("evicted", 0) + got.get("evicted", 0)
+    return w_ok, w_why
+
+
 def import_shards(paths, say=print, target=None, progress=None):
     """REG-2586 — `heart2.py --import-shards FILE...`: the shards' banked PROVENs into this machine's verdict cache, ALL OR
     NOTHING (tv/proof_shard.py says every rule). -> exit code: 0 imported, 2 refused (nothing written)
@@ -9047,35 +9137,46 @@ def import_shards(paths, say=print, target=None, progress=None):
         ok_d, dirty = _tracked_dirty()
         if not ok_d or dirty.strip():
             ok, why = False, "this checkout's tracked files differ from its HEAD (or git could not say), so its keys are not HEAD's"
+    out, _resumed, _wrote = {"added": 0, "evicted": 0}, 0, 0
+    if ok:
+        # REG-3352 - THE WHOLE SET'S SHAPE FIRST, BEFORE ANY KEY: a stray entry or a proof index that names no proof still
+        # refuses it all, and nothing is written
+        ok, why, _shape, skipped = _PS.select(shards, keyer=None)
     if ok:
         _dropped = []                                  # REG-2596 - a key this tree never gives is left out, named
+        # REG-3352 - THEN ONLY WHAT THIS PC DOES NOT SERVE YET IS KEYED, A BATCH AT A TIME, EACH WRITTEN BEFORE THE NEXT.
+        # MEASURED on his ALT 11-07: the re-ask for v3876's completed win32 set keyed all ~9,000 proofs again - most of
+        # them already in from the first, partial import - ran past proof_release's 5,400 s bound and kept NOTHING (all or
+        # nothing). A key this PC already serves is kept as it is by merge_into anyway, so keying it again could only cost.
+        _all, _skipped_all = shards, skipped
+        _left, _resumed, took = _unserved(shards, _served_keys(target))
         if progress:                                   # REG-3194 - how far the keying is, for the console
-            _prog = _ImportProgress(progress, sum(_keyer_calls(shards).values()))
-        with _keys_prewarmed(target, shards, say=say, progress=_prog):   # REG-3193 - on the spare cores first
-            ok, why, take, skipped = _PS.select(shards, keyer=_shard_keyer(target), dropped=_dropped, here=TREE_ID)
+            _prog = _ImportProgress(progress, sum(_keyer_calls(_left).values()))
+        for shards in _import_batches(_left, _import_order(target)):   # the shut locks' guards first (#103-C)
+            with _keys_prewarmed(target, shards, say=say, progress=_prog):   # REG-3193 - on the spare cores first
+                ok, why, take, skipped = _PS.select(shards, keyer=_shard_keyer(target), dropped=_dropped, here=TREE_ID)
+            if not ok:
+                break
+            w_ok, w_why = _import_write(target, take, say, out)          # the stores' one locked writer, per batch
+            if not w_ok:
+                ok, why = False, "%s could not be written (%s)" % (os.path.basename(target), w_why)
+                break
+            took.update(take)
+            _wrote += 1
+        shards, take, skipped = _all, took, _skipped_all
         if _prog is not None:
             _prog.write("writing" if ok else "refused", force=True)
     if not ok:
-        say("  ✗ REG-2586 IMPORT REFUSED: %s. Nothing was written to %s." % (why, os.path.basename(target)))
+        say("  ✗ REG-2586 IMPORT REFUSED: %s. %s" % (why, (
+            "Nothing was written to %s." % os.path.basename(target)) if not _wrote else (
+            "%d batch(es) were written before it (each keyed here first); the rest was not." % _wrote)))
         return 2
-    out = {}
-
-    def merge(disk):
-        ent, added = _PS.merge_into((disk or {}).get("entries"), take)
-        out["added"], out["evicted"] = added, _cache_evict(ent, CACHE_MAX)
-        body = dict((k, v) for k, v in (disk or {}).items() if k not in ("format", "entries"))
-        body.update(format=2, entries=ent)
-        return body
     _stops = dict((b["shard"]["k"], b["shard"].get("stopped")) for _l, b, _w in bodies
                   if isinstance(b, dict) and isinstance(b.get("shard"), dict) and b["shard"].get("stopped"))
     _halted = len(_stops)
     _owed = _PS.unbanked(shards, take)
-    w_ok, w_why = _StoreFile(target, say).commit(merge)            # the stores' one locked writer
     if _prog is not None:
-        _prog.write("imported" if w_ok else "refused", force=True)
-    if not w_ok:
-        say("  ✗ REG-2586 IMPORT REFUSED: %s could not be written (%s)." % (os.path.basename(target), w_why))
-        return 2
+        _prog.write("imported", force=True)
     say("  ✓ REG-2586 IMPORTED %d shard(s) of HEAD %s: %d PROVEN entr(ies) banked, %d already served here and kept, "
         "%d not servable and never banked (ELSEWHERE, BLIND, undated...)%s. Each keeps the tree it was proved in, so "
         "a push's clean wave still runs each such gate clean here once (#242).%s"
@@ -9083,6 +9184,8 @@ def import_shards(paths, say=print, target=None, progress=None):
            (", %d evicted over the cap" % out["evicted"]) if out.get("evicted") else "",
            (" ⚠ %d shard(s) STOPPED on a failure: what they banked is sound, what they never ran is not banked, "
             "and the failure itself is still owed a fix." % _halted) if _halted else ""))
+    say("    REG-3352 %d entr(ies) this PC already served were not keyed again; the rest was keyed and written in %d "
+        "batch(es), each before the next" % (_resumed, _wrote))
     if _dropped:
         _dg = {}
         for _s, _g, _i in _dropped:

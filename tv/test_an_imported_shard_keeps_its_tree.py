@@ -228,6 +228,19 @@ class _Fixture(unittest.TestCase):
         return [a, b]
 
 
+class TheMergeNeverDisplacesALocalProof(unittest.TestCase):
+    """REG-3352 - import_shards no longer keys an entry this PC already serves (test_an_import_keeps_what_it_has_keyed),
+    so a served key rarely reaches the merge from it; the merge's own rule still guards a key that became served while an
+    import ran, and every other import path. Asked of the merge itself."""
+
+    def test_a_served_key_is_kept_as_it_is(self):
+        mine = dict(_e("g1", 0), tree="here", provedAt=1761100000000)
+        out, added = proof_shard.merge_into({"k1": mine}, {"k1": _e("g1", 0), "k2": _e("g2", 0)})
+        self.assertIs(out["k1"], mine, "the import displaced a proof this machine already serves")
+        self.assertEqual(added, 1)
+        self.assertIn("k2", out)
+
+
 class AWholeSetComesHome(_Fixture):
     def test_every_proven_is_banked_with_the_tree_it_was_proved_in(self):
         self.assertEqual(self.run_import(self.two()), 0, self.said)
