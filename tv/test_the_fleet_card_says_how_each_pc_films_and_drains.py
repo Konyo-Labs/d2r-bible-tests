@@ -474,6 +474,7 @@ BOX = r"""(function(){ var x = document.getElementById('fleet-xref'); if (!x || 
   var br = x.getBoundingClientRect(), sys = s.querySelector('.fleet-sys:not(.fleet-former)'), fm = s.querySelector('.fleet-former');
   var spill = [].filter.call(s.querySelectorAll('.fs-l'), function(e){ var b = e.getBoundingClientRect(); return b.width > 0 && b.right > br.right + 0.5; }).length;
   return JSON.stringify({ sys: sys ? sys.innerText.replace(/\u00a0/g, ' ') : null, former: fm ? fm.innerText : null, spill: spill,
+                          facts: sys ? sys.querySelectorAll(':scope > .fs-l').length : 0,
                           sw: [document.documentElement.scrollWidth, document.documentElement.clientWidth] }); })()"""
 MACHINES = (("Konyo", "box-a"), ("ALT", "box-b"), ("Wife PC", "box-c"))
 _CACHE = {}
@@ -636,8 +637,13 @@ class TheShippedCardDrawsIt(unittest.TestCase):
             # #74 (REG-1461) - FIVE lines, then SIX: films, river, triage, whether its river is STUCK, whether that PC
             # has PROVED its instruments, (#41 rank 22, REG-1564) what its character PICKER offers, and (#108,
             # REG-1608) whether its READERS can read. An older build knows none of them, so all seven say UNKNOWN.
-            if (wp.get("sys") or "").count("UNKNOWN") != 7:
-                bad.append("%dx%d Wife PC box (an older build): not seven UNKNOWNs (%r)" % (w, h, wp.get("sys")))
+            # v3880 (REG-3363) added an eighth fact, d2jsp, and this case pinned the NUMBER seven: it went red on a correct
+            # box. The LAW is every fact line an older build draws says UNKNOWN - counted against the box's own fact lines
+            # (at least the seven named above), never a literal. [[regression-guard]] pin the law, not the number
+            _facts = int(wp.get("facts") or 0)
+            if _facts < 7 or (wp.get("sys") or "").count("UNKNOWN") != _facts:
+                bad.append("%dx%d Wife PC box (an older build): %d fact line(s), not every one UNKNOWN (%r)"
+                           % (w, h, _facts, wp.get("sys")))
             if m["sw"][0] > m["sw"][1] + 1:
                 bad.append("%dx%d the fleet list scrolls sideways %s" % (w, h, m["sw"]))
         self.assertEqual(r.get("errors"), [], "the page threw: %s" % r.get("errors"))
