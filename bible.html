@@ -2666,11 +2666,21 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
     /* #27 (Grok's cold look, 11-07) - 'anywhere' let a phone break a whole word to squeeze a line ("SPIR / IT", the badge
        "RUNEW / ORD"): break-word breaks only a word that cannot fit at all, and a badge that cannot fit beside the name
        moves to the next line whole */
-    .gic-name{font-size:20px;overflow-wrap:break-word}
+    /* #27 (GrokBot's v3879 pass, 21:24: at 390 the Spirit card's name + RUNEWORD badge sat in its box at scrollWidth 165 > 102) -
+       the page-wide h2 rule (display:flex) makes every card name a FLEX ROW, and a flex row does not wrap: the badge could never
+       move to the next line, whatever the badge's own display said. The row wraps on a phone. */
+    .gic-name{font-size:20px;overflow-wrap:break-word;flex-wrap:wrap}
     .gic-name .gic-grail-badge,.gic-name .gic-uber-badge{margin-left:0;display:inline-block;margin-top:4px;white-space:nowrap}
     .gic-emoji{font-size:32px}
     .gic-source-grid{grid-template-columns:1fr 1fr}
     .hero-grid{grid-template-columns:1fr 1fr}
+  }
+  /* #27 round 2 (measured at 390, every card): the header is picture + name + close in one row, which leaves the name a 130px
+     column - narrower than one word of "Tal Rasha's Guardianship" or "Griswold's Redemption" at 20px, so no wrapping could fit
+     it. On a phone the header wraps: the picture and close on the first line, the name the card's full width under them. */
+  @media (max-width:480px){
+    .gic-header{flex-wrap:wrap;justify-content:space-between;row-gap:8px}
+    .gic-header > .gic-id-block{order:3;flex-basis:100%}
   }
 
 

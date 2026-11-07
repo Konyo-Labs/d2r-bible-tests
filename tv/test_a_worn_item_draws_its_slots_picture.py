@@ -183,9 +183,25 @@ class AnIdCardsNameBreaksOnlyBetweenWords(unittest.TestCase):
         badge = [l for l in blk.splitlines() if ".gic-name .gic-grail-badge" in l]
         self.assertEqual(len(badge), 1)
         self.assertIn("white-space:nowrap", badge[0], "the badge can be broken mid-word again")
+        # #27 round 2 (GrokBot's v3879 pass: at 390 the Spirit name + badge overflowed its box, scrollWidth 165 > 102) - the
+        # page-wide `h2{...display:flex...}` makes every card name a FLEX ROW, so the badge moves to the next line only if that
+        # row WRAPS; the rule above said "the badge moves to the next line whole" and could not. And on a phone the header
+        # wraps so the name takes the card's full width (one word of "Tal Rasha's Guardianship" is wider than the 130px column).
+        # The pixels are test_a_card_name_fits_its_box_on_a_phone's (GitHub's browser).
+        self.assertIn("flex-wrap:wrap", name[0], "the card name is a flex row that cannot wrap its badge again")
+        self.assertIn("    .gic-header{flex-wrap:wrap;justify-content:space-between;row-gap:8px}\n"
+                      "    .gic-header > .gic-id-block{order:3;flex-basis:100%}\n", page,
+                      "the phone header no longer gives the name the card's full width")
 
 
 RED_PROOF = [
+    {"why": "#27 round 2 - the card name is a flex row that cannot wrap again (the badge spills past the box at 480)",
+     "file": "bible.html",
+     "find": "    .gic-name{font-size:20px;overflow-wrap:break-word;flex-wrap:wrap}", "replace": "    .gic-name{font-size:20px;overflow-wrap:break-word}",
+     "matches": 1},
+    {"why": "#27 round 2 - on a phone the name is a 130px column again (one word of Tal Rasha's Guardianship cannot fit)",
+     "file": "bible.html",
+     "find": "    .gic-header > .gic-id-block{order:3;flex-basis:100%}\n", "replace": "\n", "matches": 1},
     {"why": "REG-3070 - the character window draws a worn item by its own name again",
      "file": "bible.html",
      "find": "      var _an = (typeof window._cbSlotArtName === 'function') ? window._cbSlotArtName(s.item, worn, s.base) : s.item;",
@@ -223,8 +239,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "#27 - a phone breaks a card's name mid-word again (SPIR / IT)",
      "file": "bible.html",
-     "find": "    .gic-name{font-size:20px;overflow-wrap:break-word}",
-     "replace": "    .gic-name{font-size:20px;overflow-wrap:anywhere}",
+     "find": "    .gic-name{font-size:20px;overflow-wrap:break-word;flex-wrap:wrap}",
+     "replace": "    .gic-name{font-size:20px;overflow-wrap:anywhere;flex-wrap:wrap}",
      "matches": 1},
 ]
 

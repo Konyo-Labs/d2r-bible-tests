@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3396 - ON A PHONE A CARD'S NAME SPILLED PAST ITS BOX; v3879'S #27 FIX COULD NOT WORK (v3881, GrokBot's v3879 pass)
+GrokBot, his board at 390x844 (#230 21:24): the Spirit card's h2.gic-name "Spirit [Runeword]" in a 102px box, scrollWidth 165.
+v3879 (#27) had made the badge an inline-block "that moves to the next line whole" and a SOURCE law pinned that rule; it could
+not work - the page-wide `h2{...display:flex...}` (bible.html:310) makes every card name a FLEX ROW, and a flex row does not
+wrap. MEASURED at 390 on v3880: 8 of the 10 cards that open overflowed (Spirit 165, Enigma 182, Call to Arms 157, Hand of
+Justice 179 in a 130px box; Tal Rasha's Guardianship 246, Griswold's Redemption 226, Bul-Kathos' Children 222, Herald of Zakarum
+177). Fixed twice over: the narrow name row wraps (flex-wrap), and below 480px the header wraps so the name takes the card's
+width (one WORD of "Tal Rasha's Guardianship" is wider than the 130px column the picture and the close button left it). After:
+all ten fit at 390 / 481 / 720; looked at the pixels. Law: test_a_card_name_fits_its_box_on_a_phone (a real browser, GitHub's;
+3 cases, 2 red-proofs RED), and test_a_worn_item_draws_its_slots_picture pins both rules (+2 red-proofs, 10/10 RED).
 ### REG-3395 - A CLOSED FLEET ROW RAN 5-8 LINES OF RIVER DETAIL; ITS PC'S WORD WAS ONLY IN THE HOVER AND STATE (v3881, HIS ASK)
 His words 11-07 21:12: "maybe this information collapsed for the fleet? ... it gets cutoff a little bit and needs a better
 structural design to it with diablo ii language and human language short and simple and to the point all the desciptions should
