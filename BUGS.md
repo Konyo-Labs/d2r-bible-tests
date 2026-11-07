@@ -112,6 +112,22 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3371 - ON WINDOWS EVERY CHILD OF A TRACED GATE READ "THE TRACE CANNOT FOLLOW": THE AUDIT EVENT CARRIES THE COMMAND LINE (v3880, #107/#103)
+#107's probe: seven trace laws red on GitHub's Windows runner with the same words, e.g. "the gate started node --version,
+which the trace cannot follow" (test_a_node_version_ask_does_not_untrace_a_gate), "sleep 0", "netstat -an". CAUSE: CPython's
+Windows subprocess._execute_child joins argv with list2cmdline BEFORE it raises the `subprocess.Popen` audit event, so
+tv/gate_trace/sitecustomize.py got ONE argument, the whole line. Its name was never node, git, sleep or python, and every
+child wrote a U line. On his ALTs that made every gate that starts any child an untraced run: never carried, proved again
+on every tree - a likely share of #103 (the ALTs owing laws after a full import).
+FIX: the hook splits a Windows command line back by CommandLineToArgvW's rules (_split_cmdline, the inverse of
+list2cmdline), and reads a command's name without .exe / .cmd / .bat / .com, in lower case (_cmd_name). POSIX is
+unchanged; a shell=True string there stays one argument. NOTE: sitecustomize.py is not a prover input, so this re-keys only
+the laws that read it - not every proof (heart2.py is, which is why v3879's round re-proves all of them).
+GUARD: tv/test_a_windows_child_is_followed_by_its_name.py - list2cmdline round-trips on hard arguments, the name rule, and
+a REAL traced child that raises the event in Windows' shape: node.exe --version and SLEEP.EXE trace whole, an unknown
+child still reads untraced. 3 red-proofs, all RED. The seven trace laws stay green on the Mac; their Windows verdict is
+v3880's GitHub Windows round.
+
 ### REG-3370 - #107 FOURTH BATCH: THE LAWS THAT DROVE THE MAC'S PUSH HOOK AND A LINUX JOB'S BASH ON WINDOWS (v3880)
 Four laws ran hooks/pre-push or the verdict job's own bash. On Windows `bash` is the WSL launcher ("has no installed
 distributions") or Git Bash with backslash paths. Neither script runs there: only the Mac pushes, and the verdict job runs

@@ -70,6 +70,82 @@ import _thread
 import os
 import sys
 
+#: #107 (v3880, REG-3371) - ON WINDOWS THE subprocess.Popen AUDIT EVENT CARRIES THE COMMAND LINE, NOT THE LIST. CPython's
+#: Windows _execute_child joins argv with list2cmdline BEFORE it raises the event, so `node --version` arrived here as ONE
+#: argument: its name was never node, git or python, and every child of a traced gate read "the trace cannot follow".
+#: MEASURED on GitHub's Windows runner (#107's probe): test_a_node_version_ask_does_not_untrace_a_gate read "the gate
+#: started node --version, which the trace cannot follow", and six sibling laws the same. On his ALTs that made every gate
+#: that starts a child untraced - never carried, proved again. The line is split back by CommandLineToArgvW's rules, and a
+#: name is read without .exe / .cmd / .bat / .com and in lower case (Windows' file system ignores case).
+_NT = os.name == "nt"
+_WIN_SUFFIXES = (".exe", ".cmd", ".bat", ".com")
+
+
+def _split_cmdline(s):
+    """The argv a Windows command line stands for (CommandLineToArgvW's rules: the inverse of subprocess.list2cmdline)."""
+    out, cur, i, n, quoted, had = [], [], 0, len(s), False, False
+    while i < n:
+        c = s[i]
+        if c == "\\":
+            j = i
+            while j < n and s[j] == "\\":
+                j += 1
+            k = j - i
+            if j < n and s[j] == '"':
+                cur.append("\\" * (k // 2))
+                if k % 2:
+                    cur.append('"')
+                    i = j + 1
+                else:
+                    i = j                       # an even run: the quote that follows toggles, below
+            else:
+                cur.append("\\" * k)
+                i = j
+            had = True
+            continue
+        if c == '"':
+            quoted = not quoted
+            had = True
+            i += 1
+            continue
+        if c in " \t" and not quoted:
+            if had:
+                out.append("".join(cur))
+                cur, had = [], False
+            i += 1
+            continue
+        cur.append(c)
+        had = True
+        i += 1
+    if had:
+        out.append("".join(cur))
+    return out
+
+
+def _argv_of(argv, nt=None):
+    """The child's argv as a list. A list is itself. On Windows a string is the command line list2cmdline made, split back;
+    elsewhere a string (shell=True) stays one element, as before."""
+    if isinstance(argv, (list, tuple)):
+        return [str(a) for a in argv]
+    s = os.fsdecode(argv) if isinstance(argv, bytes) else str(argv or "")
+    if _NT if nt is None else nt:
+        got = _split_cmdline(s)
+        return got if got else [""]
+    return [s]
+
+
+def _cmd_name(a0, nt=None):
+    """A command's name the way the inert lists spell it. On Windows: the last part of either separator, without
+    .exe / .cmd / .bat / .com, in lower case."""
+    a0 = str(a0 or "")
+    if not (_NT if nt is None else nt):
+        return os.path.basename(a0)
+    low = a0.replace("\\", "/").rsplit("/", 1)[-1].lower()
+    for suf in _WIN_SUFFIXES:
+        if low.endswith(suf):
+            return low[:-len(suf)]
+    return low
+
 
 def _boot():
     out = os.environ.get("TV_GATE_TRACE") or ""
@@ -200,8 +276,8 @@ def _boot():
         return False
 
     def child(argv, env, cwd=None):
-        args = [str(a) for a in (argv if isinstance(argv, (list, tuple)) else [argv or ""])]
-        head = os.path.basename(args[0]) if args else ""
+        args = _argv_of(argv)                      # REG-3371 - Windows hands the command LINE; split it back
+        head = _cmd_name(args[0]) if args else ""  # REG-3371 - node.exe is node, Git's sleep.exe is sleep
         if head == "git" and git_child(args, env, cwd):
             return
         if head in ("ps", "pgrep", "sleep"):

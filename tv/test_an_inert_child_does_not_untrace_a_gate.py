@@ -103,7 +103,7 @@ RED_PROOF = [
      "find": "        if head == \"lsof\" and not any(\n", "replace": "        if head == \"no-lsof\" and not any(\n",
      "matches": 1},
     {"why": "an absolute child path is not reduced to its name", "file": "gate_trace/sitecustomize.py",
-     "find": "        head = os.path.basename(args[0]) if args else \"\"\n", "replace": "        head = args[0] if args else \"\"\n",
+     "find": "        head = _cmd_name(args[0]) if args else \"\"  # REG-3371", "replace": "        head = args[0] if args else \"\"  # REG-3371",
      "matches": 1},
     {"why": "a child nobody can follow is dropped silently", "file": "gate_trace/sitecustomize.py",
      "find": "        emit(\"U\", \"started %s\" % (head or \"a process\"))\n", "replace": "        pass\n",
