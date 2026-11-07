@@ -32,15 +32,37 @@ class ABoardFieldTakesKeysAfterAClick(unittest.TestCase):
         b.run("window.fetch = (function(f){ return function(u, o){ if (String(u).indexOf('/api/ui_fault') >= 0) return Promise.resolve(new Response('{}')); return f.apply(this, arguments); }; })(window.fetch);"
               "switchTab('d2jsp'); document.addEventListener('mousedown', function(e){ if (e.target.closest && e.target.closest('input')) e.preventDefault(); }, true);")
         for sel in ("#d2jsp-price-q", "#d2jsp-find"):
+            # v3881 (REG-3391) - THE FIELD MUST HOLD STILL, AND BE WHAT IS UNDER THE POINT, BEFORE THE CLICK. Red untampered on
+            # v3878 shard 17 and again on v3879's second round (run 42394365352, shard 21), green on the same bytes between: the
+            # D2JSP tab paints parts of itself after switchTab (the quote refresh, the lamp, the read line between the two
+            # fields), so under a loaded runner the rect read here could move before the click and the click landed beside the
+            # field. Now the point is read only once the rect is the same on two reads 50 ms apart AND elementFromPoint at its
+            # centre is the field; a field that never settles is said, never clicked blind, and a miss names what was hit.
             r = b.run("var el = document.querySelector('%s'); el.value = ''; el.scrollIntoView({block:'center', behavior:'instant'}); document.body.focus();"
-                      "var q = el.getBoundingClientRect(); OUT.x = q.left + q.width / 2; OUT.y = q.top + q.height / 2;" % sel)
+                      "var prev = null, q = null, hit = null, tries = 0;"
+                      "for (; tries < 60; tries++) {"
+                      "  await new Promise(function(res){ setTimeout(res, 50); });"
+                      "  q = el.getBoundingClientRect();"
+                      "  var key = [q.left, q.top, q.width, q.height].map(Math.round).join(',');"
+                      "  hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);"
+                      "  if (key === prev && hit && (hit === el || el.contains(hit))) break;"
+                      "  prev = key;"
+                      "}"
+                      "OUT.x = q.left + q.width / 2; OUT.y = q.top + q.height / 2; OUT.tries = tries;"
+                      "OUT.hit = hit ? (hit.id ? '#' + hit.id : hit.tagName + '.' + String(hit.className || '')) : 'nothing';"
+                      "OUT.settled = tries < 60;" % sel)
+            self.assertTrue(r["settled"], "%s never held still under its own point (last hit %s after %d reads) - nothing was "
+                                          "clicked blind" % (sel, r["hit"], r["tries"]))
             for ty in ("mousePressed", "mouseReleased"):
                 t.send("Input.dispatchMouseEvent", type=ty, x=r["x"], y=r["y"], button="left", clickCount=1)
             for ch in "ann":
                 t.send("Input.dispatchKeyEvent", type="keyDown", text=ch, key=ch)
                 t.send("Input.dispatchKeyEvent", type="keyUp", key=ch)
-            got = json.loads(t.ev("JSON.stringify([document.querySelector('%s').value, document.activeElement && document.activeElement.id])" % sel))
-            self.assertEqual(got[0], "ann", "%s took no keys after a click that gave no focus: %r" % (sel, got))
+            # REG-3391 - a miss says what the page knew: does it have focus at all, is it visible, who holds focus
+            got = json.loads(t.ev("JSON.stringify([document.querySelector('%s').value, document.activeElement && document.activeElement.id,"
+                                  " document.hasFocus(), document.visibilityState])" % sel))
+            self.assertEqual(got[0], "ann", "%s took no keys after a click that gave no focus: %r (the point was %s after %d "
+                                            "read(s))" % (sel, got, r["hit"], r["tries"]))
 
 
 RED_PROOF = [
