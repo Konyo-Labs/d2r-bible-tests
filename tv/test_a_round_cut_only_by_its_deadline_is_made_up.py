@@ -93,7 +93,7 @@ class TheMakeupDecision(unittest.TestCase):
             _store(os.path.join(t, "proof-shard-1"), 1, 2)
             _store(os.path.join(t, "proof-shard-2"), 2, 2, owed=[["g", 1, PS.TIMEOUT, "the run's deadline passed"]])
             out = os.path.join(t, "census.json")
-            with open(os.devnull, "w") as nul:
+            with open(os.devnull, "w", encoding="utf-8") as nul:   # #107 - Windows' default is cp1252, and the census prints ⏱
                 saved, sys.stdout = sys.stdout, nul
                 try:
                     code = PS.main(["--census", t, "--shards", "2", "--head", SHA, "--json", out])

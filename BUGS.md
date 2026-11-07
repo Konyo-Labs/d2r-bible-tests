@@ -112,6 +112,27 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3366 - #107 FIRST BATCH: EIGHT LAWS RED ON WINDOWS FOR REASONS THAT ARE NOT THE PRODUCT'S (v3880)
+#107's probe kept why each Windows-red law is red (scratchpad classify, run 42367869017). Every one opened so far is the LAW
+assuming Mac/Linux, not a console defect on Windows. Measured on the work ALT over SSH to be sure: tree_busy.why() is None
+and checks_running() False there, so the price refresh does run on Windows. (A stale gate-lock FILE left on a Windows PC
+would read UNKNOWN and pause it - noted, not seen.)
+- test_a_price_refresh_pauses_while_checks_run imported fcntl at module top, so it crashed at import. fcntl is now
+  optional, and the flock-holding case is skipped where there is no flock.
+- test_a_killed_prover_leaves_no_sandbox: the SIGTERM and SIGALRM cases are POSIX-only (Windows has no SIGALRM, and its
+  SIGTERM is TerminateProcess, which runs no handler). Skipped on nt; the one proof only they catch declares
+  needs posix-signals.
+- test_the_launcher_brings_a_running_console_forward: a closed loopback port answers "refused" on Windows only after ~2 s
+  of SYN retries, so its 2 s bound read a timeout. It now asks with the launcher's own 5 s default. The Mac launcher's block
+  ran under Git Bash; it is skipped on nt (it never runs there), and its two proofs declare needs posix.
+- test_a_landed_update_is_not_an_edit and the shared fixture of test_a_sandbox_never_carries_a_run_record (and so
+  test_a_lane_gate_never_starts_on_a_record_the_last_gate_wrote): their temp repos took the PC's autocrlf=true and compared
+  CR LF bytes with LF. The temp repos now set core.autocrlf false, and the disk read is LF before a case builds its forms.
+- test_a_round_cut_only_by_its_deadline_is_made_up opened os.devnull in cp1252 under a census that prints a stopwatch;
+  test_a_d2jsp_post_carries_the_item_picture and test_his_switch_picks_who_reads fed node through stdin in cp1252. All
+  three now use utf-8.
+Every one still runs in full on the Mac (all green). Their Windows verdict is v3880's own GitHub Windows round.
+
 ### REG-3365 - A CHEAP ROUND PRICED test_control AT 19 s A PROOF, SO 14 OF ITS PROOFS RODE ONE SHARD AND v3878 NEEDED FOUR ATTEMPTS
 v3878's GitHub round: shards 7, 8, 10 and 12 were cut at their bound (TIMEOUT, no law red) three times running. Shard 10 held
 test_control's owed proofs. MEASURED from its cache stamps: each took 226-263 s. The plan priced them at 19.059 s (the seed's

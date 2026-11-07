@@ -99,12 +99,13 @@ class AD2jspPostCarriesTheItemPicture(unittest.TestCase):
         with io.open(BIBLE, encoding="utf-8") as fh:
             src = fh.read()
         desk_block = _between(src, "/* ⟦D2JSP DESK BEGIN⟧ */", "/* ⟦D2JSP DESK END⟧ */")
-        r = subprocess.run([NODE, "-"], input=ROOM + desk_block + "\n" + SCENARIO, capture_output=True, text=True, timeout=60)
+        r = subprocess.run([NODE, "-"], input=ROOM + desk_block + "\n" + SCENARIO, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=60)   # #107 - never the PC's cp1252
         if r.returncode != 0:
             raise AssertionError("node failed: " + (r.stderr or r.stdout)[-2500:])
         cls.o = json.loads(r.stdout.strip().splitlines()[-1])
         g = subprocess.run([NODE, "--input-type=module", "-", os.path.join(ROOT, "functions", "_middleware.js")],
-                           input=GATE, capture_output=True, text=True, timeout=60)   # v3864 - never a program on argv
+                           input=GATE, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)   # v3864 - never a program on argv
         if g.returncode != 0:
             raise AssertionError("node failed on the gate: " + (g.stderr or g.stdout)[-2500:])
         cls.g = json.loads(g.stdout.strip().splitlines()[-1])

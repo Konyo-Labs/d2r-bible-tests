@@ -626,7 +626,8 @@ class ThePopupNamesWhoReads(unittest.TestCase):
                 u"CASES.reduce(function(p, c){ return p.then(function(){ window.__rl = c.rl; ST = c.st; TOASTS.length = 0;"
                 u" return setG5(c.mode).then(function(){ OUT.push(TOASTS.slice()); }); }); }, Promise.resolve())"
                 u".then(function(){ process.stdout.write(JSON.stringify(OUT)); });\n")
-        r = subprocess.run([self.NODE, "-"], input=prog, capture_output=True, text=True, timeout=60)
+        r = subprocess.run([self.NODE, "-"], input=prog, capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=60)   # #107 - the page's text carries emoji; never the PC's cp1252
         self.assertEqual(r.returncode, 0, r.stderr[-800:])
         return [t[0] if t else None for t in json.loads(r.stdout)]
 

@@ -6,8 +6,11 @@ tree_busy asks). A caller that passes its own env and names that key is asked ab
 only, so this law never consults a live pre-push. The console calls checks_running() with no
 env, and that path is tree_busy.why(). Unknown is not free: it pauses and does not fetch.
 """
-import fcntl
 import os
+try:
+    import fcntl   # #107 - the gate lock is a POSIX flock; Windows has no fcntl (the module crashed at import there)
+except ImportError:
+    fcntl = None
 import shutil
 import sys
 import tempfile
@@ -76,6 +79,8 @@ class PriceRefreshPauses(unittest.TestCase):
         self.assertEqual(got, {"say": SAY, "fetched": []})
         self.assertEqual(self.seen, [])
 
+    @unittest.skipIf(fcntl is None, "the gate lock is a POSIX flock - on Windows a present lock file reads UNKNOWN, "
+                                     "which pauses too (test_an_unreadable_lock_does_not_fetch)")
     def test_a_held_gate_lock_pauses(self):
         key = self._key()
         self._hold(key)

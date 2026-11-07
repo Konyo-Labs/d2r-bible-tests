@@ -74,6 +74,9 @@ class AKilledProverLeavesNoSandbox(unittest.TestCase):
         self.assertTrue(root and os.path.isdir(root), "the child never made its sandbox - UNKNOWN, not passing")
         return p, root
 
+    # #107 - a POSIX signal's handler is what this case measures. Windows has no SIGALRM, and its SIGTERM is
+    # TerminateProcess, which runs no handler at all; the sandbox sweep (the next cases) is what cleans up there.
+    @unittest.skipIf(os.name == "nt", "POSIX signals only - Windows has no SIGALRM and its SIGTERM runs no handler")
     def test_sigterm_removes_the_sandbox_before_the_prover_dies(self):
         p, root = self._child(alarm=False)
         p.send_signal(signal.SIGTERM)
@@ -82,6 +85,9 @@ class AKilledProverLeavesNoSandbox(unittest.TestCase):
         self.assertEqual(rc, 128 + signal.SIGTERM, "the prover did not exit the way SIGTERM meant (rc %s)" % rc)
         self.assertFalse(os.path.exists(root), "a SIGTERM'd prover left its sandbox behind: %s" % root)
 
+    # #107 - a POSIX signal's handler is what this case measures. Windows has no SIGALRM, and its SIGTERM is
+    # TerminateProcess, which runs no handler at all; the sandbox sweep (the next cases) is what cleans up there.
+    @unittest.skipIf(os.name == "nt", "POSIX signals only - Windows has no SIGALRM and its SIGTERM runs no handler")
     def test_its_own_alarm_removes_the_sandbox_too(self):
         p, root = self._child(alarm=True)
         rc = p.wait(timeout=20)
@@ -168,6 +174,7 @@ RED_PROOF = [
         "find": "    _remove_all_sandboxes()\n    os._exit(128 + int(signum))\n",
         "replace": "    os._exit(128 + int(signum))\n",
         "matches": 1,
+        "needs": "posix-signals",
     },
     {
         "why": "the sweep removes a sandbox whose owner is ALIVE - another prover's, mid-run",

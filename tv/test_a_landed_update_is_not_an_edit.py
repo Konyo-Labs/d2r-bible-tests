@@ -48,7 +48,8 @@ class ALandedUpdateIsNotAnEdit(unittest.TestCase):
         self.root = os.path.dirname(ca.HERE)
         self.rel = "tv/control_app.py"
         with open(os.path.join(self.root, self.rel), "rb") as fh:
-            self.disk = fh.read()
+            # #107 - a Windows checkout (autocrlf=true) is already CR LF; each case builds its own form from LF
+            self.disk = fh.read().replace(b"\r\n", b"\n")
 
     def tearDown(self):
         ca._git_run = self._saved_git
@@ -353,6 +354,8 @@ class TheLauncherUsesTheSameRule(unittest.TestCase):
         d = tempfile.mkdtemp(prefix="launcher_pull_")
         self.addCleanup(self._rm, d)
         subprocess.check_call(["git", "init", "-q"], cwd=d)
+        # #107 - the case's bytes, not the PC's git default (Git for Windows installs autocrlf=true)
+        subprocess.check_call(["git", "-C", d, "config", "core.autocrlf", "false"])
         subprocess.check_call(["git", "-C", d, "config", "user.email", "t@example.com"])
         subprocess.check_call(["git", "-C", d, "config", "user.name", "t"])
         path = os.path.join(d, "a.txt")
@@ -540,6 +543,8 @@ class TheLauncherUsesTheSameRule(unittest.TestCase):
         d = tempfile.mkdtemp(prefix="launcher_pull_")
         self.addCleanup(self._rm, d)
         subprocess.check_call(["git", "init", "-q"], cwd=d)
+        # #107 - the case's bytes, not the PC's git default (Git for Windows installs autocrlf=true)
+        subprocess.check_call(["git", "-C", d, "config", "core.autocrlf", "false"])
         subprocess.check_call(["git", "-C", d, "config", "user.email", "t@example.com"])
         subprocess.check_call(["git", "-C", d, "config", "user.name", "t"])
         return d

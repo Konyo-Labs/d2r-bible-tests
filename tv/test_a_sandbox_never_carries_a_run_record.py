@@ -118,6 +118,7 @@ class _Case(unittest.TestCase):
         _write(os.path.join(self.repo, "tv", "control_app.py"), u"# fixture\n")
         _write(os.path.join(self.repo, *TRACKED.split("/")), COMMITTED)
         _git("init", "-q", self.repo)
+        _git("-C", self.repo, "config", "core.autocrlf", "false")   # #107 - the fixture's bytes, not the PC's git default
         _git("-C", self.repo, "add", "-A")
         _git("-C", self.repo, "commit", "-q", "-m", "the fixture's commit")
         _write(os.path.join(self.repo, *TRACKED.split("/")), COMMITTED + LIVE)       # a run banked past HEAD

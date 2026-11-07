@@ -189,7 +189,9 @@ class TheDecision(_FakeConsoleCase):
         s.bind(("127.0.0.1", 0))
         dead = s.getsockname()[1]
         s.close()
-        verdict, why = LD.decide(dead, "law", timeout=2.0)
+        # #107 - Windows answers a closed loopback port only after ~2 s of SYN retries (refused, WinError 10061); a 2 s
+        # bound read that as a timeout (LEAVE). The launcher asks with its own 5 s default - this case asks the same.
+        verdict, why = LD.decide(dead, "law")
         self.assertEqual(LD.REPLACE, verdict, why)
         self.assertIn("nothing is serving", why)
 
@@ -273,6 +275,10 @@ class UnknownIsNotConsent(_FakeConsoleCase):
         _Console.window_delay = 0
 
 
+# #107 - start_tvd_mac.sh's block runs only on a Mac. On Windows a "real POSIX bash" is Git Bash, whose python3 is not the
+# one the Mac launcher finds, so the fake decide never answers and the block falls through - a Windows-only artefact of
+# running the MAC launcher where it never runs. Windows' own click is pinned by TheWindowsClickUsesTheSameDecision below.
+@unittest.skipIf(os.name == "nt", "the Mac launcher's block - it never runs on Windows (TheWindowsClick* pin that side)")
 class TheShellBlockRunsUnderSetE(unittest.TestCase):
     """v3525 — the law above drove launcher_decide.py and never the SHELL that calls it. start_tvd_mac.sh runs
     under `set -euo pipefail`, and `x=$(cmd)` whose cmd exits 1 ends the script on that line: with the console
@@ -539,7 +545,7 @@ RED_PROOF = [
         "file": "tv/start_tvd_mac.sh",
         "find": "  _tvd_why=$(python3 \"$HERE/launcher_decide.py\" --port 17772 --from mac-launcher 2>/dev/null) || _tvd_rc=$?\n",
         "replace": "  _tvd_why=$(python3 \"$HERE/launcher_decide.py\" --port 17772 --from mac-launcher 2>/dev/null)\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         # REG-1940 - both lines go: replacing the call alone left `$decideRc = $LASTEXITCODE` to overwrite the
@@ -612,7 +618,7 @@ RED_PROOF = [
         "file": "tv/start_tvd_mac.sh",
         "find": "  if [ \"$_tvd_rc\" -eq 2 ] && [ -n \"$_tvd_why\" ]; then\n",
         "replace": "  if false; then\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
 ]
 
