@@ -25,7 +25,7 @@ test.describe('v123 inline item logos (decorateItemLogos)', () => {
     "Diablo's Horn": 'hd_horn.png',
     "Baal's Eye": 'hd_eye.png',
     'Annihilus': 'mr_annihilus.png',
-    'Colossal Ancient Statue': 'talic-opt_graphic.png',
+    'Colossal Ancient Statue': 'd2mon_Talic.gif',   // REG-3321 (v3877 #102/#91): one picture per monster - the boss's own animated sprite, never a stone-backed render
     'Colossal Ancient Jewels': 'colossal_jewel1_graphic.png',
   };
 

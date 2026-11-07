@@ -111,10 +111,10 @@ test.describe('v47 event cards — pinnacle events expand inline like boss/TZ de
     const r = await page.evaluate(() => {
       const want: Record<string, { art: RegExp; emoji: string }> = {
         'event-uber-tristram':    { art: /hellfiretorch_graphic\.png(?:\?|$)/, emoji: '🌀' },
-        'event-uber-id-cards':    { art: /baal-opt_graphic\.png(?:\?|$)/,      emoji: '👹' },
+        'event-uber-id-cards':    { art: /d2mon_Baal\.gif(?:\?|$)/,      emoji: '👹' },   // REG-3321 (v3877 #102/#91): one picture per monster - the boss's own animated sprite, never a stone-backed render
         'event-cow-level':        { art: /hellbovine_graphic\.png(?:\?|$)/,    emoji: '🐄' },
-        'event-diablo-clone':     { art: /diablo_graphic\.png(?:\?|$)/,        emoji: '🌑' },
-        'event-colossal-ancients':{ art: /talic-opt_graphic\.png(?:\?|$)/,     emoji: '⚡' },
+        'event-diablo-clone':     { art: /d2mon_Diablo\.gif(?:\?|$)/,        emoji: '🌑' },
+        'event-colossal-ancients':{ art: /d2mon_Talic\.gif(?:\?|$)/,     emoji: '⚡' },
       };
       return Object.entries(want).map(([id, w]) => {
         const head = document.querySelector(`#${id} .event-card-head`)!;

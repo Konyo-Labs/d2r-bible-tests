@@ -63,20 +63,20 @@ window.BOSS_PORTRAIT = BOSS_PORTRAIT;
 var CFG = %(cfg)s, out = { zones: {}, tiles: {}, bossZones: {} };
 Object.keys(CFG.targets).forEach(function(id){
   var T = CFG.targets[id];
-  out.tiles[id] = _qwTile(id, T.a, T.n);
+  out.tiles[id] = _qwTile(id, T.a, T.n, T.n);   // REG-3321 - the page passes the plain name for the hover
   out.zones[id] = _qwZoneArt(T.a);
 });
 CFG.bossIds.forEach(function(id){ var a = _qwAreaOf(id, ''); out.bossZones[id] = [a, _qwZoneArt(a), _qwTile(id, a, id)]; });
 out.sewers = _qwZoneArt('Sewers Level 3');
 out.durance = _qwZoneArt('Durance of Hate L3');
 var places = [
-  { label: 'Normal Coldcrow', area: 'Cave Level 1', s: { bossId: 'su_coldcrow' }, chance: 307, runs: 213, hours: 2.5, kph: 84, kpr: 1, est: true },
+  { label: 'Normal Coldcrow', area: 'Cave Level 1', s: { bossId: 'su_coldcrow', name: 'Coldcrow' }, chance: 307, runs: 213, hours: 2.5, kph: 84, kpr: 1, est: true },
   { label: 'Normal Andariel', area: '', s: { bossId: 'andariel' }, chance: 741, runs: 514, hours: 4.8, kph: 108, kpr: 1, est: false },
   { label: 'Normal The Pit', area: '', s: { bossId: 'pit' }, chance: 87700, runs: 553, hours: 10, kph: 54, kpr: 110, est: false },
-  { label: 'Normal Pitspawn Fouldog', area: 'Jail Level 2', s: { bossId: 'su_pitspawnfouldog' }, chance: 1000, runs: 699, hours: 9.7, kph: 72, kpr: 1, est: true }
+  { label: 'Normal Pitspawn Fouldog', area: 'Jail Level 2', s: { bossId: 'su_pitspawnfouldog', name: 'Pitspawn Fouldog' }, chance: 1000, runs: 699, hours: 9.7, kph: 72, kpr: 1, est: true }
 ];
-var also = [ { id: 'su_thecowking', who: 'Normal The Cow King', area: 'The Secret Cow Level', kind: 'once', chance: 312 },
-             { who: 'Normal The Banished', area: 'Catacombs Level 3', kind: 'unique', chance: 603 } ];
+var also = [ { id: 'su_thecowking', name: 'The Cow King', who: 'Normal The Cow King', area: 'The Secret Cow Level', kind: 'once', chance: 312 },
+             { name: 'The Banished', who: 'Normal The Banished', area: 'Catacombs Level 3', kind: 'unique', chance: 603 } ];
 out.grid = _qwGridHtml(places, also);
 out.gridNoAlso = _qwGridHtml(places, []);
 process.stdout.write(JSON.stringify(out));
@@ -127,7 +127,53 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         self.assertEqual(gone, [], "the grid names pictures that are not in art/: %r" % gone)
         crow = re.search(r"su_coldcrow:\s*'([^']+)'", _read()).group(1)
         self.assertIn("art/" + crow, named, "Coldcrow's tile does not carry the picture the page names for him")
-        self.assertIn("art/Andariel_graphic.png", named)
+        anda = re.search(r"andariel:\s*'([^']+)'", _read()).group(1)   # REG-3321 - the file the page names, never pinned
+        self.assertIn("art/" + anda, named, "Andariel's tile does not carry BOSS_PORTRAIT's picture")
+
+    def test_a_monster_tile_draws_the_monster_alone(self):
+        """REG-3321 (#102 - his 11-07 "it should render just the monster not the area behind it"): a tile that carries a
+        monster has NO zone background and no native title tip over the row; a sprite is drawn as a sprite; a place with no
+        monster (an area run) still wears its zone"""
+        tiles = list(self.o["tiles"].values()) + [t for (_a, _z, t) in self.o["bossZones"].values()]
+        mon = [t for t in tiles if 'class="qw-mon' in t]
+        self.assertGreater(len(mon), 20, "PREMISE: too few monster tiles were drawn")
+        for t in mon:
+            head = t[:t.index(">") + 1]
+            self.assertNotIn("background-image", head, "a monster tile paints the zone behind the monster: %s" % head)
+            self.assertIn("qw-tile-mon", head)
+            self.assertNotIn(" title=", head, "a native title tip still covers the row: %s" % head)
+            src = re.search(r'<img class="(qw-mon[^"]*)" src="([^"]+)"', t)
+            if "d2mon_" in src.group(2):
+                self.assertIn("qw-mon-sprite", src.group(1), "a sprite is not drawn as one: %s" % t[:200])
+        pit = self.o["bossZones"].get("pit")
+        if pit:
+            self.assertIn("background-image", pit[2][:pit[2].index(">") + 1], "an area run lost its zone picture")
+
+    def test_every_place_floats_the_consoles_card(self):
+        """REG-3321 (#102 - "image cursor floating enlarged ... just like the rest of the console"): a boss the board knows
+        floats its boss card (data-boss-tip, an id lookup); a super-unique floats its own sprite by name (data-arttip) - on
+        the picture AND on the name"""
+        for bid, (_a, _z, t) in self.o["bossZones"].items():
+            self.assertIn('data-boss-tip="%s"' % bid, t[:t.index(">") + 1], "boss %s floats no boss card" % bid)
+        for tid, t in self.o["tiles"].items():
+            if tid.startswith("su_") and tid not in self.o["bossZones"]:
+                self.assertIn('data-arttip="%s"' % self.targets[tid]["n"].replace("'", "&#39;"), t[:t.index(">") + 1],
+                              "super-unique %s floats no card" % tid)
+        g = self.o["grid"]
+        self.assertIn('<b class="qw-name" data-arttip="Coldcrow">', g, "a row's NAME floats no card")
+        self.assertIn('<b class="qw-name" data-boss-tip="andariel">', g, "a boss row's NAME floats no boss card")
+
+    def test_the_sprite_is_never_blended_and_the_item_is_the_title(self):
+        """REG-3321 - screen blending made every dark pixel vanish (Talic's armour, the stone through Coldcrow); one rule fits
+        every sprite on every surface; the Quick wins card sets the ITEM as its title"""
+        src = _read()
+        rule = src[src.index(".qw-mon.qw-mon-sprite, :is("):]
+        rule = rule[:rule.index("}") + 1]
+        self.assertNotIn("mix-blend-mode:screen", rule, "the sprite tile blends again: %s" % rule)
+        self.assertIn('img[src*="d2mon_"]{object-fit:contain!important;mix-blend-mode:normal!important', src)
+        self.assertIn("'<div class=\"f-card f-step f-atom qw-card\">", src, "the Quick wins card lost its own class")
+        self.assertIn("#tab-funi .qw-card .f-atomact .f-rwbig{font-family:var(--serif-display,serif);font-size:calc(var(--fs-display)*1.2)", src,
+                      "the item's name is not set as the card's title")
 
     def test_a_ranked_row_is_a_tile_a_place_and_four_captioned_numbers(self):
         g = self.o["gridNoAlso"]
@@ -233,6 +279,54 @@ class OneMonsterOnePicture(unittest.TestCase):
         self.assertGreaterEqual(checked, 30, "premise: too few monsters are named by both maps (%d)" % checked)
         self.assertEqual(differ, [], "one monster, two pictures:\n  " + "\n  ".join(differ))
 
+    def _sprites(self):
+        src = _read()
+        i = src.index("const D2IO_ART = {")
+        d2 = re.findall(r'^\s*"([^"]+)":\s*"(art/[^"]+)"', src[i:src.index("\n};", i)], re.M)
+        return src, d2
+
+    @staticmethod
+    def _norm(n):
+        n = re.sub(r"[^a-z]", "", n.lower())
+        return n[3:] if n.startswith("the") else n
+
+    def test_one_monster_is_one_key_whatever_its_case(self):
+        """REG-3321 (the Grok CLI, #231 6697191216): "Hephasto the Armorer" (the bind rows, 28 uses) named
+        hephasto_graphic.png and "Hephasto The Armorer" (Quick wins) the sprite - artUrl's case fold calls such a pair
+        ambiguous and draws nothing. No two art-map keys equal under case may name different files."""
+        _src, d2 = self._sprites()
+        by = {}
+        for k, v in d2:
+            by.setdefault(k.lower(), set()).add(v)
+        split = dict((k, sorted(v)) for k, v in by.items() if len(v) > 1 and any("d2mon_" in x for x in v))
+        self.assertEqual(split, {}, "one monster, two keys, two pictures: %r" % split)
+
+    def test_no_baked_picture_draws_a_monster_off_its_sprite(self):
+        """REG-3321 (the same eye): an <img> written into the page bypasses artUrl - the Colossal tiles painted Talic.gif
+        while the map named his sprite, and the bind rows Lister's, the Smith's, Shenk's... old files. Every baked <img>
+        whose FILE NAME spells a monster that has a sprite draws that sprite (matched by the file's own name, never by
+        nearby text)."""
+        src, d2 = self._sprites()
+        sprites = {}
+        for k, v in d2:
+            if "d2mon_" in v:
+                sprites.setdefault(self._norm(k), v)
+        self.assertGreater(len(sprites), 40, "PREMISE: the art map names too few sprites")
+
+        def stem(f):
+            t = re.sub(r"(_graphic)?\.(png|gif|jpg)$", "", f.split("/")[-1].lower())
+            t = re.sub(r"[^a-z]", "", re.sub(r"-opt$|\d+$", "", t))
+            return t[3:] if t.startswith("the") else t
+        off = []
+        for m in re.finditer(r'<img\b[^>]*\bsrc=["\'](art/[^"\'?]+)', src):
+            f = m.group(1)
+            if "d2mon_" in f or len(stem(f)) < 4:
+                continue
+            c = sorted(set(v for n, v in sprites.items() if n == stem(f) or n.startswith(stem(f))))
+            if len(c) == 1:
+                off.append("line %d: %s (its sprite is %s)" % (src.count("\n", 0, m.start()) + 1, f, c[0]))
+        self.assertEqual(off, [], "a baked picture draws a monster off its sprite:\n  " + "\n  ".join(off[:12]))
+
     def test_every_recorded_sprite_is_shipped_and_sourced(self):
         with io.open(os.path.join(HERE, "data", "monster_art_fandom.json"), encoding="utf-8") as fh:
             rec = json.load(fh)
@@ -302,10 +396,11 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
         sys.path.insert(0, HERE)
         import console_doctor as CD
         real = os.path.isfile
-        with mock.patch.object(CD.os.path, "isfile", lambda p: False if p.endswith("Andariel_graphic.png") else real(p)):
+        anda = re.search(r"andariel:\s*'([^']+)'", _read()).group(1)   # REG-3321 - whatever file BOSS_PORTRAIT names
+        with mock.patch.object(CD.os.path, "isfile", lambda p: False if p.endswith(anda) else real(p)):
             state, why = CD._check_quick_wins_places_have_their_pictures()
         self.assertEqual(state, CD.MISSING, "Andariel's portrait went missing and the doctor said %r" % why)
-        self.assertIn("Andariel_graphic.png", why)
+        self.assertIn(anda, why)
 
     def test_a_zone_table_that_will_not_parse_still_names_a_missing_monster(self):
         """REG-3278 - the zone parse failed first and returned UNKNOWN over a monster file already known gone."""
@@ -332,6 +427,31 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3321 - Hephasto's two spellings name two pictures again",
+     "file": "bible.html",
+     "find": "\"Hephasto the Armorer\": \"art/d2mon_Hephasto_The_Armorer.gif\"",
+     "replace": "\"Hephasto the Armorer\": \"art/hephasto_graphic.png\"",
+     "matches": 1},
+    {"why": "REG-3321 - a baked Colossal tile paints Talic's old file while the map names his sprite",
+     "file": "bible.html",
+     "find": "<img class=\"d2art-img\" src=\"art/d2mon_Talic.gif\" alt=\"Talic\"",
+     "replace": "<img class=\"d2art-img\" src=\"art/Talic.gif\" alt=\"Talic\"",
+     "matches": 1},
+    {"why": "REG-3321 - a monster tile paints the zone behind the monster again (his 'messy' tiles)",
+     "file": "bible.html",
+     "find": "    var mon = bp ? 'art/' + bp : (su ? 'art/' + su : null), zone = mon ? null : _qwZoneArt(area);\n",
+     "replace": "    var mon = bp ? 'art/' + bp : (su ? 'art/' + su : null), zone = _qwZoneArt(area);\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3321 - a place's picture floats no card (his 'image cursor floating enlarged')",
+     "file": "bible.html",
+     "find": "      + _qwHover(bossId, monName) + ' aria-label=\"' + esc(label + (area ? ' · ' + area : '')) + '\">'\n",
+     "replace": "      + ' aria-label=\"' + esc(label + (area ? ' · ' + area : '')) + '\">'\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3321 - the sprite is screen-blended again: dark pixels vanish (Talic in a black square)",
+     "file": "bible.html",
+     "find": "  width:calc(100% - 8px);height:calc(100% - 8px);object-fit:contain;mix-blend-mode:normal;\n",
+     "replace": "  width:calc(100% - 8px);height:calc(100% - 8px);object-fit:contain;mix-blend-mode:screen;\n",
+     "matches": 1},
     {"why": "REG-3316 - a Colossal jewel's card stops naming the Ancient to kill last",
      "file": "bible.html",
      "find": "      + '<b class=\"qw-name\">Kill ' + esc(j.ancient) + ' last</b>'",

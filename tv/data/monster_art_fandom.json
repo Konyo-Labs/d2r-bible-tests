@@ -1,5 +1,5 @@
 {
- "_why": "#89/#91 (his 11-06 asks: 'a .GIF for coldcrow just like it is here', 'unified across the platform and rendering the same'). One sprite per monster, the same file in D2IO_ART (every artUrl/artOr surface) and in Quick wins' _QW_SU_ART. Source order: diablo.fandom.com's '<Name> (Diablo II).gif' (his example), else rankedboost.com's assets/boss/<Name>.gif (the same classic sprites: Coldcrow is byte-for-byte the same 57x73, 13 frames on both). Every one was looked at, enlarged where small, before it was used.",
+ "_why": "#89/#91 (his 11-06 asks: 'a .GIF for coldcrow just like it is here', 'unified across the platform and rendering the same'). One sprite per monster, the same file in D2IO_ART (every artUrl/artOr surface) and in Quick wins' _QW_SU_ART. Source order: diablo.fandom.com's '<Name> (Diablo II).gif' (his example), else rankedboost.com's assets/boss/<Name>.gif (the same classic sprites: Coldcrow is byte-for-byte the same 57x73, 13 frames on both). Every one was looked at, enlarged where small, before it was used. | v3877 #102 (his 11-07 'render just the monster not the area behind it'): the act bosses' sprites joined - fandom first (Andariel, Baal, Mephisto), rankedboost otherwise (Diablo, Duriel, Nihlathak, Pindleskin); each looked at on a contact sheet before it entered the page.",
  "pulledAt": "2026-11-06",
  "sprites": [
   {
@@ -479,6 +479,83 @@
    "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Witch%20Doctor%20Endugu.gif",
    "sha1": "fc02990561f35ffc35d3b2bbdb8ebf9927f6ff6a",
    "bytes": 16273
+  },
+  {
+   "name": "Andariel",
+   "ids": [
+    "andariel"
+   ],
+   "file": "art/d2mon_Andariel.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/3/34/Andariel_%28Diablo_II%29.gif/revision/latest",
+   "sha1": "f1f194705a4b3584576e6399b0af4dfcb16993d8",
+   "bytes": 70748
+  },
+  {
+   "name": "Baal",
+   "ids": [
+    "baal"
+   ],
+   "file": "art/d2mon_Baal.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/f/f9/Baal_%28Diablo_II%29.gif/revision/latest",
+   "sha1": "63fdbc70c623cc51892802018a99a6dd4efa233f",
+   "bytes": 59416
+  },
+  {
+   "name": "Mephisto",
+   "ids": [
+    "mephisto"
+   ],
+   "file": "art/d2mon_Mephisto.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/8/88/Mephisto_%28Diablo_II%29.gif/revision/latest",
+   "sha1": "c0e8132f37d90cb3a212c2586ddcefc3b9531c4b",
+   "bytes": 61200
+  },
+  {
+   "name": "Diablo",
+   "ids": [
+    "diablo"
+   ],
+   "file": "art/d2mon_Diablo.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Diablo.gif",
+   "sha1": "5dec31c516a97ac3febef28ba012a84b32b0563c",
+   "bytes": 60839
+  },
+  {
+   "name": "Duriel",
+   "ids": [
+    "duriel"
+   ],
+   "file": "art/d2mon_Duriel.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Duriel.gif",
+   "sha1": "f9b64f11b6a2f2e8ea650a5f01adc9233673030f",
+   "bytes": 104950
+  },
+  {
+   "name": "Nihlathak",
+   "ids": [
+    "nihl"
+   ],
+   "file": "art/d2mon_Nihlathak.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Nihlathak.gif",
+   "sha1": "7a2f951cb1069f826e6f177266744a68b07276cd",
+   "bytes": 12309
+  },
+  {
+   "name": "Pindleskin",
+   "ids": [
+    "pindle"
+   ],
+   "file": "art/d2mon_Pindleskin.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Pindleskin.gif",
+   "sha1": "b4c5bd8b266c265e325c00474cc72564b85938b1",
+   "bytes": 11618
   }
  ],
  "rejected": [
@@ -504,11 +581,19 @@
    "name": "Izual / The Summoner",
    "site": "diablo.fandom.com",
    "why": "on a black background; rankedboost's transparent sprites used"
+  },
+  {
+   "name": "Council Member",
+   "site": "diablo.fandom.com",
+   "file": "Councilmember.gif",
+   "why": "a 125x150 sprite on a SOLID BLACK box (no transparency) - the box is the mess he asked to remove (v3877 #102)"
   }
  ],
  "noSpriteFound": [
   "Bloodwitch the Wild",
   "Lord De Seis",
-  "Treehead WoodFist"
+  "Treehead WoodFist",
+  "The Countess",
+  "Hell Bovine"
  ]
 }

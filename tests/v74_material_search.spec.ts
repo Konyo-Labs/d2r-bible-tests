@@ -97,7 +97,7 @@ test.describe('v74 materials are searchable + route to their ID card', () => {
     expect(art.collapsible).toBe(true);
     expect(art.startsCollapsed).toBe(true);
     expect(art.bodyHiddenAtStart).toBe(true);
-    expect(art.src).toMatch(/talic-opt_graphic\.png(?:\?|$)/);
+    expect(art.src).toMatch(/d2mon_Talic\.gif(?:\?|$)/);   // REG-3321 (v3877 #102/#91): one picture per monster - the boss's own animated sprite, never a stone-backed render
     expect(art.lazy).toBe(true);
     expect(art.onerr).toBe(true);
     // clicking the header expands its body (does NOT open a card)

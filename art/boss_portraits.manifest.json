@@ -1,5 +1,5 @@
 {
-  "_what": "The TWELVE boss portraits BOSS_PORTRAIT (bible.html) serves (v1643; was eleven at v1642, ten at v1636), each with a description of what a human ACTUALLY SAW when they opened the file. This manifest exists because v1629 'verified' these portraits without looking at any of them.",
+  "_what": "The TWELVE boss portraits BOSS_PORTRAIT (bible.html) serves (v1643; was eleven at v1642, ten at v1636), each with a description of what a human ACTUALLY SAW when they opened the file. This manifest exists because v1629 'verified' these portraits without looking at any of them. | v3877 REG-3321: seven of them are the bosses' animated sprites now (art/d2mon_*.gif), each opened before wiring.",
   "_why": "art/mephisto_graphic.png shipped for seven weeks as a blue soulstone gem and art/diablo_graphic.png as a leather-bound book. Every automated check passed the whole time: the paths resolved, naturalWidth was > 0, md5 across art/ found zero duplicates, and file size flagged Mephisto (10KB) while missing Diablo (46KB, a book). A filename, a hash, a byte count and a successful load all prove a file EXISTS. None of them proves it is the RIGHT PICTURE.",
   "_root_cause": "commit ff2787e (v269, 'more D2R HD items ... via fuzzy base-item matching') rewrote 230 art/*_graphic.png files from item art. Two of its slugs collided with boss portraits that share a name with an ITEM: 'mephisto' -> Mephisto's Soulstone, 'diablo' -> a tome. The matcher had no notion that some *_graphic.png files are monsters, not items, so it silently clobbered them.",
   "_restored": "v1636 restored both from ab079b8 (the commit before v269) and re-opened them to confirm the pixels depict the boss. Restoring beat re-extracting from CASC: the other eight are diablo2.io-style full-body renders on white, and a raw SpA1 sprite frame would not have matched them.",
@@ -13,51 +13,57 @@
   "portraits": [
     {
       "bossId": "andariel",
-      "file": "Andariel_graphic.png",
-      "bytes": 160704,
-      "sha256": "5a989fe1b5ab4a20394bdcf52a39622029cbb6839787db8bc95ba8fcf3c2e231",
-      "depicts": "Pale humanoid demoness, arms outstretched, with a crown of red spines/hair and six dark chitinous spider legs fanning from her back. Andariel.",
-      "verdict": "correct"
+      "file": "d2mon_Andariel.gif",
+      "bytes": 70748,
+      "sha256": "aa12258a7569e28cfd4e363acb3ccbe3d644dbf7628590e19abc299b69f90eeb",
+      "depicts": "Animated sprite: the pale demoness with a crown of red spines and six dark chitinous spider legs fanning from her back, on a transparent ground. Andariel.",
+      "verdict": "correct",
+      "opened": "2026-11-07 by Claude on a contact sheet (scratchpad actboss_sheet.png) before wiring; REG-3321"
     },
     {
       "bossId": "mephisto",
-      "file": "mephisto_graphic.png",
-      "bytes": 154022,
-      "sha256": "23598fa1549553f2c13ff484080e0fd7c5ea011630216b30ed6ec8286590cec5",
-      "depicts": "Gaunt red-brown demon with an exposed ribcage, two long ribbed horns curving back over the skull, and four spindly clawed arms. Mephisto, Lord of Hatred.",
-      "verdict": "correct — RESTORED v1636; was a polished deep-blue teardrop gemstone (Mephisto's Soulstone) from v269 until then"
+      "file": "d2mon_Mephisto.gif",
+      "bytes": 61200,
+      "sha256": "7a2962a6a4c7991f73acc7010eb6bb5908d5cd9d817ef7b340c94c0ca6a08157",
+      "depicts": "Animated sprite: the skeletal Lord of Hatred, horned skull, arms spread with long hooked claws, ribbed red torso trailing into a ragged lower body, transparent ground. Mephisto.",
+      "verdict": "correct",
+      "opened": "2026-11-07 by Claude on a contact sheet (scratchpad actboss_sheet.png) before wiring; REG-3321"
     },
     {
       "bossId": "duriel",
-      "file": "duriel_graphic.png",
-      "bytes": 213280,
-      "sha256": "3e31c21b90f940a3bdf4ac5d3e66eb1a60c25a7eb5f85dc864ea7667610f243e",
-      "depicts": "Squat armoured brown maggot-demon, pale horns crowning its head, two large scythe-like pincer arms out to the sides and short clawed insect legs beneath. Duriel.",
-      "verdict": "correct"
+      "file": "d2mon_Duriel.gif",
+      "bytes": 104950,
+      "sha256": "92e361aeaf3d2a7be07c5247f059303ead1d098d21a20e182c962d3ecf2544ba",
+      "depicts": "Animated sprite: the huge armoured maggot-like brute, horned head, heavy red-brown plated body and two great claws, transparent ground. Duriel.",
+      "verdict": "correct",
+      "opened": "2026-11-07 by Claude on a contact sheet (scratchpad actboss_sheet.png) before wiring; REG-3321"
     },
     {
       "bossId": "diablo",
-      "file": "diablo_graphic.png",
-      "bytes": 149265,
-      "sha256": "8a493de7fb2473903a1ea88a04633b45f409c8db74e76955ed95855b507d06ee",
-      "depicts": "Huge muscular blood-red demon in a wide crouch, tan abdomen, hooked claws, and two pairs of long horns swept up and back from a crested red face. Diablo, Lord of Terror.",
-      "verdict": "correct — RESTORED v1636; was a brown-and-gold leather-bound book from v269 until then"
+      "file": "d2mon_Diablo.gif",
+      "bytes": 60839,
+      "sha256": "1fd85cb147575dbf76004542baf9f01e1333e900bb4b56682b3ca1ab57bc38ea",
+      "depicts": "Animated sprite: the red Lord of Terror, crested horned head, spiked shoulders and back, clawed arms, transparent ground. Diablo.",
+      "verdict": "correct",
+      "opened": "2026-11-07 by Claude on a contact sheet (scratchpad actboss_sheet.png) before wiring; REG-3321"
     },
     {
       "bossId": "baal",
-      "file": "baal-opt_graphic.png",
-      "bytes": 191325,
-      "sha256": "2ff3479432708f2408c0ddef32362fb16ea45e7820678f24ea142c46fc0c857a",
-      "depicts": "Bone-white and grey hulk with five long tapering horns rising from a narrow skull, red eyes, heavy armoured shoulders and thin trailing tentacle-legs. Baal.",
-      "verdict": "correct"
+      "file": "d2mon_Baal.gif",
+      "bytes": 59416,
+      "sha256": "bd11ad92e7065c2d70541e6f916bd21b2dfc71dd274a1aead2ad2064db981ad0",
+      "depicts": "Animated sprite: the tall pale Lord of Destruction, swept horns, tentacled lower body and long arms, transparent ground. Baal.",
+      "verdict": "correct",
+      "opened": "2026-11-07 by Claude on a contact sheet (scratchpad actboss_sheet.png) before wiring; REG-3321"
     },
     {
       "bossId": "nihl",
-      "file": "nihlathak-opt_graphic.png",
-      "bytes": 32743,
-      "sha256": "9e061c699402686c0a62fad3b260c5229f21519b054f7b0dedc99c00b4e078df",
-      "depicts": "Tall hooded figure in a long dark grey robe, face hidden, pale hands held out from the body. Nihlathak.",
-      "verdict": "correct"
+      "file": "d2mon_Nihlathak.gif",
+      "bytes": 12309,
+      "sha256": "34154a5345331b7a9b316cb430665cffb8599afafcaa3e5f7f28a9efbf26678c",
+      "depicts": "Animated sprite (small, 23x65): the robed elder in pale grey/white robes, hooded, transparent ground. Nihlathak.",
+      "verdict": "correct",
+      "opened": "2026-11-07 by Claude on a contact sheet (scratchpad actboss_sheet.png) before wiring; REG-3321"
     },
     {
       "bossId": "cows",
@@ -101,11 +107,12 @@
     },
     {
       "bossId": "pindle",
-      "file": "reanimatedhorde-opt_graphic.png",
-      "bytes": 32237,
-      "sha256": "a247557e590530fd556fa3e4fb978f85eb5da7800a2a2ea679ea238dd6700e87",
-      "depicts": "Gaunt undead skeletal warrior standing on white, legs apart, dark brown and grey bone limbs with visible ribs and spine, a plain rectangular shield strapped to its left arm and a long thin spear held angled down and to the left. A Reanimated Horde.",
-      "verdict": "correct — ADDED v1643, and it CORRECTS v1642, which declared in this very file that 'there is no Pindleskin picture anywhere in this repo' and that 'D2IO_ART has no Pindleskin key'. Both statements were false. bible.html:14217 has read \"Pindleskin\": \"art/reanimatedhorde-opt_graphic.png\" for weeks and the file has been on disk since 2026-06-14. Pindleskin IS the unique Reanimated Horde / Defiled Warrior of Nihlathak's Temple, so his own monster class is exactly the right render — and that is the second, independent witness, the app's own name->art map, the same technique that settled dclone one version earlier and was simply not applied a second time. Honest caveat like dclone's: it is a dark, low-contrast render that reads as a silhouette rather than a lit portrait, but the subject (skeleton, shield, spear) is unambiguous. THE REUSABLE LESSON: before concluding an asset does not exist, ask the app what it already believes — one `grep -n Pindleskin bible.html` would have saved a whole version."
+      "file": "d2mon_Pindleskin.gif",
+      "bytes": 11618,
+      "sha256": "fa7c86d5c7f2177512a012a7db6080a8232d8bd5c222c10ae034dfb08500f884",
+      "depicts": "Animated sprite (46x74): a dark armoured undead warrior holding a long blade - a Defiled Warrior / Reanimated Horde, Pindleskin's own class; NOT Nihlathak's robed elder. Transparent ground.",
+      "verdict": "correct",
+      "opened": "2026-11-07 by Claude on a contact sheet (scratchpad actboss_sheet.png) before wiring; REG-3321"
     }
   ],
   "_quarantine": [
@@ -125,7 +132,7 @@
   "_declined": {
     "_what": "bossIds with NO portrait. These are DECISIONS with reasons, not gaps waiting to be filled. verify_boss_portraits.py asserts each is still absent from BOSS_PORTRAIT, so silently 'fixing' one of them fails the check.",
     "_pindle_resolved_v1643": "NO LONGER DECLINED — see the pindle row in \"portraits\" above. v1642's entry here asserted that no Pindleskin render existed and that D2IO_ART had no 'Pindleskin' key; both were FALSE, and the refusal was therefore wrong on the facts, not merely conservative. Kept as a stub because the error is the point: the previous run had already used 'consult the app's own name->art map' to settle dclone, and did not run the same one-line grep for pindle. The HALF of that refusal that WAS right survives and still binds: nihl's portrait must never be borrowed for pindle, because _runBossArt returns { name: b.name } and BOSSES holds a separate {\"id\":\"nihl\",\"name\":\"Nihlathak\"}, so a robed elder would arrive labelled 'Pindleskin'.",
-    "pit":"NOT A BOSS — closed, not pending. The row is { id:'pit', label:'The Pit', why:'mlvl 85 · TC85 — best non-boss item ceiling' } (bible.html:23894). The Pit is an AREA farm with no boss in it, so the LEVEL art is the correct picture and a portrait here would invent a monster that does not exist. Do not re-open this one."
+    "pit": "NOT A BOSS — closed, not pending. The row is { id:'pit', label:'The Pit', why:'mlvl 85 · TC85 — best non-boss item ceiling' } (bible.html:23894). The Pit is an AREA farm with no boss in it, so the LEVEL art is the correct picture and a portrait here would invent a monster that does not exist. Do not re-open this one."
   },
   "_casc_note": "MOOT as of v1643, and instructive. v1642 spent this field explaining why extracting a Pindleskin from the local 28GB D2R install was hard (HD monsters are 3D models, SD monster art is DCC animation, and this repo's extractors — tv/casc_extract.c, tv/extract_ui_icons.py — read SpA1 sprite atlases only). All true, and all irrelevant: the render was already in art/ and already mapped by the app, so the expensive route was being costed before the cheap one had been checked. CHECK THE REPO'S OWN MAPS BEFORE COSTING AN EXTRACTION. Still genuinely NOT ESTABLISHED, recorded so nobody claims otherwise: whether any usable 2D Pindleskin asset exists in CASC. Nothing needs it now.",
   "_also_consumed_here": "art/diablo_graphic.png is served by a SECOND surface, the 'Diablo Clone -> Annihilus' branch emblem (bible.html ~15225). It was showing the book too. Both surfaces now show the same, correct Diablo — if this file is ever swapped again, both break together."

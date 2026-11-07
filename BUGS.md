@@ -112,6 +112,34 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3321 - QUICK WINS: THE ZONE SHOWED THROUGH EVERY MONSTER, THE ITEM WAS NOT THE TITLE, NO PICTURE FLOATED, AND ONE MONSTER STILL DREW TWO PICTURES (v3877, board #102 + #91, his 11-07 asks)
+His words (screenshots of the Bane Ash card): "why is the .gif or image of the boss/monster all messy like this it should
+render just the monster not the area behind it overlapping each other. make it cleaner and better seen and clear";
+"structure for the item title name and then the data within it as the description to the item being the title. here it
+all looks the same, cant distinguish the item name"; "for the bosses and super uniques and monsters i want them also
+with image cursor floating enlarged ... just like the rest of the console". MEASURED: _qwTile painted the ZONE's art as
+the tile background and laid the sprite over it with mix-blend-mode:screen - screen makes every DARK pixel vanish into
+what is behind it, so the stone showed through Coldcrow and Talic's dark armour disappeared ("a small red-and-gold
+figure in a black square", the Grok CLI); the act bosses used diablo2.io renders with the stone baked in; the tile's
+native title tip ("Normal Coldcrow - Cave Level 1") sat on top of the row's rank and name; "Find Bane Ash" was set at
+the row names' size beside a 48px box. NOW: a tile with a monster draws the monster alone (no zone, no blend, a plain dark
+ground; the zone stays for an area run); one rule fits every sprite on every surface whole and crisp
+(img[src*="d2mon_"]); the act bosses draw their own animated sprites - Andariel, Baal, Mephisto (fandom), Diablo, Duriel,
+Nihlathak, Pindleskin (rankedboost), each opened on a contact sheet first and recorded in art/boss_portraits.manifest.json
+(sha256 + what it shows; the Council's sprite was REJECTED - a solid black box; the Countess, the Council and the Hell
+Bovine keep their portraits); each place's picture AND name float the console's own card (data-boss-tip for a boss the
+board knows - an id lookup, never the item map, v1636; data-arttip for a super-unique - its sprite by name); the
+per-kill rows' why rides their odds cell; the Quick wins card sets the ITEM as its title (display serif at the display
+size, the item's picture at 88px, "Find" and qlvl quiet). AND #91's two holes the Grok CLI found in REG-3315 (#231
+6697191216): "Hephasto the Armorer" and "Hephasto The Armorer" named two files - now one; 28 <img> tags written into the
+page drew monsters off their sprite (the Colossal tiles' Talic/Korlic/Madawc.gif, the bind rows' Lister, Smith, Shenk,
+Hephasto, Endugu, Bishibosh, Infector, Sharptooth, Colenzo, Ventar, the Summoner's, the event cards' Baal/Diablo/Talic) -
+each now draws its monster's sprite, matched by the FILE's own name. Specs re-aimed to the sprites: v47, v71, v74, v78,
+v123 (v1625 follows _runBossArt at run time). Laws: test_quick_wins_shows_each_place_with_its_picture (+ a monster tile
+draws the monster alone, every place floats the console's card, the sprite is never blended and the item is the title,
+one monster is one key whatever its case, no baked picture draws a monster off its sprite; Andariel and the doctor's
+missing-portrait case read BOSS_PORTRAIT's file, never a pinned name); art/verify_boss_portraits.py agrees (12 of 12).
+
 ### REG-3320 - REG-3312 WAS HALF A FIX: GULL'S FLOATING CARD STILL HAD NO MODS, BECAUSE THE HOVER READS A SECOND TABLE (v3877, board #100, GrokBot on his window)
 GrokBot 6697102521 (11-07 00:12 IST), his LIVE console on v3876: hovered Gull on Uniques > "last found: Gull" - "only the
 dagger picture and the name Gull, with no mods". REG-3312 (v3876) aliased ITEM_CODEX by the bare name and its law read

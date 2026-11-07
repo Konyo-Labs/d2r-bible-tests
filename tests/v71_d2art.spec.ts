@@ -212,8 +212,8 @@ test.describe('v71 d2art artwork layer', () => {
       }
       return out;
     });
-    expect(r.Baal).toMatch(/baal-opt_graphic\.png(?:\?|$)/);
-    expect(r.Pindleskin).toMatch(/reanimatedhorde-opt_graphic\.png(?:\?|$)/);
+    expect(r.Baal).toMatch(/d2mon_Baal\.gif(?:\?|$)/);   // REG-3321 (v3877 #102/#91): one picture per monster - the boss's own animated sprite, never a stone-backed render
+    expect(r.Pindleskin).toMatch(/d2mon_Pindleskin\.gif(?:\?|$)/);
   });
 
   test('the boss-nav chips show verified portrait art for every boss (incl. Andariel)', async ({ page }) => {
@@ -246,9 +246,9 @@ test.describe('v71 d2art artwork layer', () => {
     expect(r.mephLazy).toBe('lazy');
     expect(r.mephText).toContain('Mephisto');   // name still rendered alongside the art
     expect(r.baalImg).toBe(true);
-    expect(r.baalSrc).toMatch(/baal-opt_graphic\.png(?:\?|$)/);
+    expect(r.baalSrc).toMatch(/d2mon_Baal\.gif(?:\?|$)/);   // REG-3321 (v3877 #102/#91): one picture per monster - the boss's own animated sprite, never a stone-backed render
     expect(r.andaImg).toBe(true);
-    expect(r.andaSrc).toMatch(/Andariel_graphic\.png(?:\?|$)/);
+    expect(r.andaSrc).toMatch(/d2mon_Andariel\.gif(?:\?|$)/);
     expect(r.andaText).toContain('Andariel');
   });
 
