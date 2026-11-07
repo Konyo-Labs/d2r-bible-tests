@@ -113,7 +113,7 @@ doors: the zone art expands through the tz-info feed, the boss through boss-port
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
 ### REG-3404 - QUICK WINS' OTHER PLACES PUT EVERY AREA RUN FIRST, AND ON A PHONE A NAME STOOD ONE LETTER A LINE (v3881, #125)
-His words 11-08 ~00:15: "the secondary should also be like top 1 should be the lowest amount of runs and the fifth should be
+His words 11-08 00:31: "the secondary should also be like top 1 should be the lowest amount of runs and the fifth should be
 the highest so in this case 1 would be normal cow king" and "bosses separated still from the secondary". #101 had ranked the
 area runs first and the per-kill places after them, so a Cow King at ~684 kills sat below a Cow Level at ~944 runs. Now the
 Other places are ONE list, 1st-5th by the number in each row's first column (runs or kills for a 50% chance), fewest first,
@@ -125,7 +125,7 @@ stood one letter a line with its odds over its "runs an hour". On a phone the pi
 stand like the ranked rows (numbers 2 x 2). Laws: test_quick_wins_shows_each_place_with_its_picture (fewest-first, 31
 red-proofs RED) and test_a_quick_wins_place_reads_on_a_phone (pixels at 390, 2 red-proofs RED).
 ### REG-3403 - A WINDOWS PC NEVER READ A d2jsp PRICE: THE FORUM'S REDIRECT TO ITS RESULTS PAGE WAS READ AS 'unread' (v3881, HIS REPORT)
-His words 11-08 00:46: "dean is trying to do d2jsp from his console and its not giving him prices for any searched item hes
+His words 11-08 (after 00:40): "dean is trying to do d2jsp from his console and its not giving him prices for any searched item hes
 doing.. for me it works for deans console it does not". MEASURED over SSH the same minutes: the Fleet beacon read "read" on the
 Mac and "unread" on both Windows ALTs. On the Mac the forum answers the search POST with a challenge page (403), so the
 console's own Chrome runs the search and reads it. On both ALTs it answers 302 -> search.php?c=..&r=.. (its RESULTS page), and

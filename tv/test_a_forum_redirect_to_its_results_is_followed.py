@@ -2,7 +2,7 @@
 """v3881 (REG-3403) - A PRICE SEARCH THE FORUM ANSWERS WITH A REDIRECT TO ITS OWN RESULTS PAGE IS FOLLOWED, ONCE, ON THE
 FORUM'S OWN HOST ONLY - SO A WINDOWS PC READS THE PRICE THE MAC READS.
 
-His words, 11-08 00:46: "dean is trying to do d2jsp from his console and its not giving him prices for any searched item
+His words, 11-08: "dean is trying to do d2jsp from his console and its not giving him prices for any searched item
 hes doing.. for me it works for deans console it does not." MEASURED the same minutes over SSH: the Fleet beacon read
 "read" on the Mac and "unread" on both Windows ALTs. On the Mac the forum answers the search POST with a challenge page
 (403), so the console's own Chrome runs the search and reads it. On both ALTs it answers 302 -> search.php?c=..&r=.. - its

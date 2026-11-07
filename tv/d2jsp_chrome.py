@@ -2505,7 +2505,7 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
             loc = hdrs.get("Location") or hdrs.get("location") or ""
         if "login" in str(loc).lower():
             return 200, _quote_unknown(item, read_at, "need-login")
-        # REG-3403 (his 11-08 00:46: "dean is trying to do d2jsp from his console and its not giving him prices ... for me
+        # REG-3403 (his 11-08: "dean is trying to do d2jsp from his console and its not giving him prices ... for me
         # it works") - MEASURED 11-08 on both Windows ALTs: the forum answers the search POST with 302 -> its results page
         # (search.php?c=..&r=..) where the Mac gets a challenge page, and the redirect was read as 'unread' and never
         # followed. Followed ONCE, on the forum's own host only, the OLD ALT read Shako at 13 fg (5-75, 10 posts) - the
