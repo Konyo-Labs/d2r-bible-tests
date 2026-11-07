@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3877",
+  "ver": "v3878",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3877: 15 board cards - node proof keys, Quick wins pictures, prices that say why, fan plates, the name pill, the claim bar",
+  "note": "v3878: 13 board cards - one price per item that refreshes itself, Dean characters reach his shadow, d2jsp continues by default",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

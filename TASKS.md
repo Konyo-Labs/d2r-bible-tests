@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3877** | `(this commit)` | v3877 — 15 board cards - node proof keys, Quick wins pictures, prices that say why, fan plates, the name pill, the claim bar |
+| **v3878** | `(this commit)` | v3878 — 13 board cards - one price per item that refreshes itself, Dean characters reach his shadow, d2jsp continues by default |
+| **v3877** | `b36dbd05` | v3877 — 15 board cards - node proof keys, Quick wins pictures, prices that say why, fan plates, the name pill, the claim bar |
 | **v3876** | `77047e4a` | v3876 — Carries v3875. A law may declare its own proof cap. His 11-06 asks - farm places, Colossal jewels, sprites, Gull, rivers |
 | **v3875** | `10681e92` | v3875 — a proof round cut only by its deadline is made up, prices measure themselves, held reels released, and 16 more |
 | **v3874** | `6010af3f` | v3874 — Quick wins shows each place in one grid with its zone art and monster, and the last two repair book findings are fixed |

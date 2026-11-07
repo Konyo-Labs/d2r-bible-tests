@@ -1,5 +1,24 @@
 [
   {
+    "ver": "v3878",
+    "date": "2026-11-07",
+    "items": [
+      "A PC with a builds book sends its save names to its shadow, names only (REG-3337, #104)",
+      "A complete import count says finishing the import, all N checked (REG-3338, #13)",
+      "The repair book self-ask puts its prompt right after -p (REG-3339, #17, #19)",
+      "A row whose river read failed says its lanes are the last good read and how old (REG-3340, #24)",
+      "Quick wins lists bosses and super-uniques first, then the other places 1st to 5th (REG-3341, #101)",
+      "One item, one price - the price DB keys by the forum words it was searched by (REG-3342, #96)",
+      "The price check draws the item NORMAL beside PERFECT, each with its tier price (REG-3343, #97)",
+      "A shadow D2JSP lamp is UNKNOWN and says the sign-in lives on the owner PC (REG-3344, #56)",
+      "A reader that hung up after the river was read is no failed river read (REG-3345, #40)",
+      "Held reels on a river whose doors are shut say the river waits (REG-3346, #24)",
+      "The d2jsp restore setting reads Chrome reset record and stops rewriting what Chrome undoes (REG-3347)",
+      "The price database refreshes itself, one due item every 20 min, never while checks run or he plays (REG-3348, #96, #88)",
+      "The d2jsp window continues where it left off by default, set through Chrome own settings (REG-3349)"
+    ]
+  },
+  {
     "ver": "v3877",
     "date": "2026-11-07",
     "items": [
