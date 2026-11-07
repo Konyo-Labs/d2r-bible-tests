@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3406 - ONE FLEET ROW SAID "RIVER FLOWING" AND "LOCKS SHUT" ABOUT THE SAME MOMENT (v3882, #120)
+MEASURED 11-07 21:19 on the Mac's own beacon, as both ALTs saw it: locksShut [] (may() named no river door shut 3.8 s before
+the report) while the census was stale, so the row drew "river flowing - 13 held by the drain" AND "locks shut - until this
+PC proves"; the Grok CLI's cold look: "CANNOT TELL if that is one claim or two". The flowing chip read may()'s answer on the
+river's four doors (REG-3197); the lock chip, the reels-wait grouping and the parts reader's "nothing drains: the locks are
+shut" read the census's age alone. may() is what the river obeys. Now _fleetRiverDoorsOpen(hs): true while may()'s answer is
+fresh (30 min - the lane does not ask while he plays), names no door shut and no gate is blind; the row then says "proof
+stale - river locks open" in amber. A shut door, a blind gate, no answer or an old one keeps the census rule (fail closed).
+Law: test_a_river_flowing_never_sits_with_locks_shut (4 cases, 4 red-proofs RED); the chip laws stay green.
 ### REG-3405 - A PC THAT HAD JUST RELAUNCHED FOR AN UPDATE READ "LOST" ON THE FLEET (v3882, #124, GrokBot's v3880 pass)
 GrokBot, #230, 00:11 IST 11-08: Dean's card read LOST while he was online on v3880 - his console had just relaunched for the
 update, its heart key 'starting', census None. _pcStatus filed any PC whose parts or census could not be read as LOST, so

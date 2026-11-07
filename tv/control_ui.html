@@ -28616,6 +28616,21 @@ function escC(s) {
     return age !== null && age <= FLEET_BOOT_WINDOW_S;
   };
   window._fleetBooting = _fleetBooting;
+  /* #120 (measured 11-07 21:19 on the Mac's own beacon, as both ALTs saw it: locksShut [] - may() named no river lock shut
+     3.8 s before the report - while the census was stale, so one row drew "river flowing" AND "locks shut - until this PC
+     proves"; the Grok CLI's cold look: "CANNOT TELL if that is one claim or two"). TWO CHECKS DISAGREED, AND ONE OF THEM IS
+     WHAT THE RIVER OBEYS: may() is asked on the river's own four doors (REG-3197) and the river acts on its answer; the
+     census's age is the PROOF's age. So the doors are said from may()'s answer while it is fresh, and the census rule
+     (fail closed) decides only when there is no answer, an old one (past 30 min - while he plays the lane does not ask),
+     or a blind gate. -> true (asked, every door open), false (asked, one shut, or a gate blind), null (not answered) */
+  var FLEET_LOCKS_FRESH_S = 30 * 60;
+  var _fleetRiverDoorsOpen = function (hs) {
+    if (!hs || typeof hs !== 'object' || !Array.isArray(hs.locksShut)) return null;
+    if (typeof hs.blind === 'number' && hs.blind > 0) return false;
+    if (!(typeof hs.locksAgeS === 'number' && isFinite(hs.locksAgeS) && hs.locksAgeS >= 0 && hs.locksAgeS <= FLEET_LOCKS_FRESH_S)) return null;
+    return hs.locksShut.filter(function (l) { return typeof l === 'string' && l; }).length === 0;
+  };
+  window._fleetRiverDoorsOpen = _fleetRiverDoorsOpen;
   var _fleetAgeTxt = function (sec) {
     return ((sec === null || sec === undefined) ? 'age UNKNOWN' : _fleetAgo(sec)).replace(/ /g, ' ');
   };
@@ -28942,7 +28957,8 @@ function escC(s) {
          "locks shut" while this tip said "every station is draining" - with the proof missing, stale or unreadable
          every river lock fails closed (_fleetStuckChip's own rule), so nothing that spends a reel may act. */
       var _hs = (rv.heart && typeof rv.heart === 'object') ? rv.heart.census : undefined;
-      if (_hs === 'missing' || _hs === 'stale' || _hs === 'unreadable') {
+      var _doorsOpen = (typeof _fleetRiverDoorsOpen === 'function') ? _fleetRiverDoorsOpen(rv.heart) : null;   /* #120 */
+      if ((_hs === 'missing' || _hs === 'stale' || _hs === 'unreadable') && _doorsOpen !== true) {
         out.push(_fleetPart('stuck', ['none stuck yet — but nothing drains: the locks are shut (proof ' + _hs + ')'], {
                    why: 'no station on that PC has held a reel for more than 6 hours, but its river locks are shut - '
                       + 'its proof is ' + _hs + ', so nothing that spends a reel may act there until it proves' }));
@@ -29374,7 +29390,8 @@ function escC(s) {
        the drain cannot delete and a shut route cannot move: those rows say LOCKED / route shut / proves its own gates.
        They become one muted "reels wait on the locks" after the lock chip; "river stuck" stays red for what the locks do
        not explain. */
-    var _locksShut = (census === 'missing' || census === 'stale' || census === 'unreadable')
+    var _doorsOpen = (typeof _fleetRiverDoorsOpen === 'function') ? _fleetRiverDoorsOpen(hs) : null;   /* #120 */
+    var _locksShut = ((census === 'missing' || census === 'stale' || census === 'unreadable') && _doorsOpen !== true)
       || (census === 'current' && hs && typeof hs.blind === 'number' && hs.blind > 0);
     var _byLock = function (e) { return _locksShut && !!e && typeof e === 'object'
       && /LOCKED|route shut until this PC proves|proves its own gates|census is STALE/i.test(String(e.why || '')); };
@@ -29428,7 +29445,13 @@ function escC(s) {
       _owes.filter(function (x, i) { return _owes.indexOf(x) === i; }).forEach(function (x) {
         bits.push('<span class="fleet-riverowes" title="' + escC(tip) + '">' + escC(x) + '</span>'); });
     }
-    if (census === 'missing' || census === 'stale' || census === 'unreadable') {
+    if ((census === 'missing' || census === 'stale' || census === 'unreadable') && _doorsOpen === true) {
+      /* #120 - the proof is out of date and the river's own doors are open (may() said so, fresh): the row says the proof's
+         age, in amber, and never "locks shut" beside "river flowing" */
+      bits.push('<span class="fleet-riverlocked" title="' + escC('its proof is ' + census + ', and the river\u2019s own locks are open - may() named '
+        + 'none shut ' + _fleetAgo(hs.locksAgeS) + ' before its report' + (hs.why ? ' \u2014 ' + hs.why : '')) + '">proof ' + escC(census)
+        + ' \u00b7 river locks open</span>');
+    } else if (census === 'missing' || census === 'stale' || census === 'unreadable') {
       /* GBL census-lowmem - a proof held back ONLY by free memory says so on the row, not the bare word a broken lock wears */
       var _memWait = hs && hs.key === 'low-memory';
       var _recheck = hs && hs.key === 'stale-at-boot' && !_imp;   /* REG-3197 - an import is not a recheck */
