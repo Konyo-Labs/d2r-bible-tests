@@ -4284,7 +4284,9 @@ class TestFleetUnity(unittest.TestCase):
         real = ca.subprocess.run
 
         def fake(args, **kw):
-            if isinstance(args, (list, tuple)) and len(args) >= 2 and args[0] == "git" and args[1] == "rev-list":
+            # #107 - on Windows git_quiet puts the real git.exe's path in argv[0]; the stand-in matches git by its name
+            if (isinstance(args, (list, tuple)) and len(args) >= 2
+                    and os.path.basename(str(args[0])).lower() in ("git", "git.exe") and args[1] == "rev-list"):
                 class R:
                     returncode = 1
                     stdout = ""
@@ -5464,12 +5466,19 @@ class TestV2304ShadowOnlyRollsAReelWhenItShould(unittest.TestCase):
 
     def _with_window(self, win):
         import tv_diablo as tv
-        real = tv.find_d2r_window_mac
+        # #107 - the preflight asks find_d2r_window_win on Windows and find_d2r_window_mac elsewhere: stand in BOTH, or a
+        # Windows run lists the runner's real windows and the case measures nothing
+        real_mac, real_win = tv.find_d2r_window_mac, getattr(tv, "find_d2r_window_win", None)
         tv.find_d2r_window_mac = lambda *a, **k: win
+        tv.find_d2r_window_win = lambda *a, **k: win
         try:
             return ca.shadow_watch_tick()
         finally:
-            tv.find_d2r_window_mac = real
+            tv.find_d2r_window_mac = real_mac
+            if real_win is None:
+                del tv.find_d2r_window_win
+            else:
+                tv.find_d2r_window_win = real_win
 
     def test_no_game_on_screen_starts_nothing(self):
         r = self._with_window(None)
@@ -13582,7 +13591,7 @@ class TestTheStampsAgreeInTheCOMMITNotJustTheWorktree(unittest.TestCase):
                              % (sha[:12], gd, path, (r.stderr or "").strip()[:200]))
             return r.stdout
         r = subprocess.run(["git", "show", "HEAD:" + path],
-                           capture_output=True, text=True,
+                           capture_output=True, text=True, encoding="utf-8", errors="replace",
                            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         if r.returncode != 0:
             self.skipTest("not a git checkout (%s)" % (r.stderr or "").strip()[:60])
@@ -14355,7 +14364,7 @@ class TestTheGameDateConversionRunsInARealEngine(unittest.TestCase):
             f.write(prog)
             jp = f.name
         try:
-            out = _sp.run([node, jp], capture_output=True, text=True, timeout=60)
+            out = _sp.run([node, jp], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
             self.assertEqual(out.returncode, 0, out.stderr[:400])
             return _json.loads(out.stdout.strip().splitlines()[-1])
         finally:
@@ -14497,7 +14506,7 @@ class TestEveryFoundChipCarriesItsStoryline(unittest.TestCase):
             f.write(prog)
             jp = f.name
         try:
-            out = _sp.run([node, jp], capture_output=True, text=True, timeout=60)
+            out = _sp.run([node, jp], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
             self.assertEqual(out.returncode, 0, out.stderr[:400])
             return _json.loads(out.stdout.strip().splitlines()[-1])
         finally:
@@ -15478,7 +15487,7 @@ class TestEveryWrittenStateFileFollowsAnIsolatedHist(unittest.TestCase):
                   "TV_KNOWN_FRAMES", "TV_SESSIONS", "TV_HIST"):
             env.pop(k, None)
         env.update(extra_env)
-        out = _sp.run([sys.executable, "-c", prog], capture_output=True, text=True,
+        out = _sp.run([sys.executable, "-c", prog], capture_output=True, text=True, encoding="utf-8", errors="replace",
                       env=env, timeout=240)
         self.assertEqual(out.returncode, 0, out.stderr[-400:])
         return _json.loads(out.stdout.strip().splitlines()[-1])
@@ -15542,7 +15551,7 @@ class TestOneWriterForTheAutoReadMarks(unittest.TestCase):
                 "ca._chron_reels_mark('reel_y')\n"          # the REEL writer
                 "ca._chron_autoread_mark(1700000001)\n"     # visit again, AFTER the reel mark
                 "print(json.dumps(json.load(open(ca._CHRON_AUTOREAD_PATH))))\n" % here)
-        out = _sp.run([sys.executable, "-c", prog], capture_output=True, text=True,
+        out = _sp.run([sys.executable, "-c", prog], capture_output=True, text=True, encoding="utf-8", errors="replace",
                       env=dict(os.environ, TV_CHRON_AUTOREAD=path), timeout=180)
         self.assertEqual(out.returncode, 0, out.stderr[-400:])
         got = _json.loads(out.stdout.strip().splitlines()[-1])
@@ -15590,7 +15599,7 @@ class TestAResultSaveMakesItsOwnDirectoryAndSaysWhenItCannot(unittest.TestCase):
                 "        'result': {'ok': True, 'owned': [{'name': 'Ral Rune'}]}, 'resultTs': 1})\n"
                 "ca._vault_result_save()\n"
                 "print(json.dumps({'saved': os.path.isfile(ca._VAULT_RESULT_PATH)}))\n" % here)
-        out = _sp.run([sys.executable, "-c", prog], capture_output=True, text=True,
+        out = _sp.run([sys.executable, "-c", prog], capture_output=True, text=True, encoding="utf-8", errors="replace",
                       env=dict(os.environ, TV_HIST=hist), timeout=180)
         self.assertEqual(out.returncode, 0, out.stderr[-300:])
         self.assertTrue(_json.loads(out.stdout.strip().splitlines()[-1])["saved"],
@@ -15744,7 +15753,7 @@ class TestTheVaultProposalSurvivesARestart(unittest.TestCase):
             "                  'hasTs': bool(st.get('resultTs')),\n"
             "                  'path': ca._VAULT_RESULT_PATH}))\n" % here)
         env = dict(os.environ, TV_HIST=hist)
-        out = _sp.run([sys.executable, "-c", prog], capture_output=True, text=True,
+        out = _sp.run([sys.executable, "-c", prog], capture_output=True, text=True, encoding="utf-8", errors="replace",
                       env=env, timeout=180)
         self.assertEqual(out.returncode, 0, out.stderr[-400:])
         got = _json.loads(out.stdout.strip().splitlines()[-1])
@@ -15803,7 +15812,7 @@ class TestTheVaultProposalSurvivesARestart(unittest.TestCase):
             "        'resultTs': 1787000000000, 'restoredFrom': None})\n"
             "ca._vault_result_save()\n"
             "print(ca._VAULT_RESULT_PATH)\n" % here)
-        out = _sp.run([sys.executable, "-c", prog], capture_output=True, text=True,
+        out = _sp.run([sys.executable, "-c", prog], capture_output=True, text=True, encoding="utf-8", errors="replace",
                       env=dict(os.environ, TV_HIST=hist), timeout=180)
         self.assertEqual(out.returncode, 0, out.stderr[-400:])
         after = sig()
@@ -16051,7 +16060,7 @@ class TestBothTzClocksAgreeOnTheCadence(unittest.TestCase):
             f.write(prog)
             jp = f.name
         try:
-            out = _sp.run([node, jp], capture_output=True, text=True, timeout=60)
+            out = _sp.run([node, jp], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
             self.assertEqual(out.returncode, 0, out.stderr[:400])
             got = _json.loads(out.stdout.strip().splitlines()[-1])
         finally:
@@ -16120,7 +16129,7 @@ class TestTheTzTrackerChasesTheTurn(unittest.TestCase):
             f.write(prog)
             jp = f.name
         try:
-            out = _sp.run([node, jp], capture_output=True, text=True, timeout=60)
+            out = _sp.run([node, jp], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
             self.assertEqual(out.returncode, 0, out.stderr[:400])
             return _json.loads(out.stdout.strip().splitlines()[-1])
         finally:
@@ -18022,7 +18031,7 @@ class TestV2012TheLauncherDoesNotRaceItself(unittest.TestCase):
         _bash = _PS.bash()
         if _bash is None:
             self.skipTest("no real POSIX bash on this PC - the launcher guard is UNMEASURED, not passing")
-        r = subprocess.run([_bash, sh, str(port), str(grace)], capture_output=True, text=True,
+        r = subprocess.run([_bash, sh, str(port), str(grace)], capture_output=True, text=True, encoding="utf-8", errors="replace",
                            timeout=30, env=e)
         return (r.stdout or "").strip()
 
@@ -20905,7 +20914,7 @@ class TestV2064TheLedgerSaysWHENTheAiSawIt(unittest.TestCase):
             f.write(prog)
             jp = f.name
         try:
-            out = _sp.run([node, jp], capture_output=True, text=True, timeout=60)
+            out = _sp.run([node, jp], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
             self.assertEqual(out.returncode, 0, out.stderr[:500])
             return _json.loads(out.stdout.strip().splitlines()[-1])
         finally:
@@ -25875,7 +25884,7 @@ console.log(JSON.stringify({
             fh.write(script)
             path = fh.name
         try:
-            out = subprocess.run([node, path], capture_output=True, text=True, timeout=30)
+            out = subprocess.run([node, path], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
             self.assertEqual(out.returncode, 0,
                              "the comparator would not execute: %s" % (out.stderr or "")[-200:])
             r = _j.loads(out.stdout.strip().splitlines()[-1])
@@ -26049,7 +26058,7 @@ function repaint(e, t){ e.setAttribute('title', t); OBS.forEach(function(o){ if 
             self.skipTest("node is not installed — the shipped lane cannot be driven here (UNKNOWN, not a pass)")
         prog = self.HARNESS + self.lane + ";(function(){ var OUT = {};\n" + body + \
             "\nprocess.stdout.write(JSON.stringify(OUT)); })();\n"
-        r = subprocess.run([self.node, "-"], input=prog, capture_output=True, text=True, timeout=60)
+        r = subprocess.run([self.node, "-"], input=prog, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         self.assertEqual(r.returncode, 0, "the shipped hint lane would not run: %s" % r.stderr[-900:])
         return json.loads(r.stdout)
 
@@ -26166,7 +26175,7 @@ process.stdout.write(JSON.stringify(OUT)); })();
         pairs = self._nested_pairs(board)
         self.assertGreaterEqual(len(pairs), 16, "the board's static nested pairs were not found — this grades nothing")
         prog = prog.replace("__PAIRS__", json.dumps(pairs))
-        r = subprocess.run([self.node, "-"], input=prog, capture_output=True, text=True, timeout=60)
+        r = subprocess.run([self.node, "-"], input=prog, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         self.assertEqual(r.returncode, 0, "the board's shipped lane would not run: %s" % r.stderr[-900:])
         o = json.loads(r.stdout)
         self.assertEqual(o["during"], [None, None],
@@ -26314,7 +26323,7 @@ var OUT_ERR = [];
         prog = (self.HARNESS.replace("__ART__", json.dumps(self.ART)).replace("__D2SEL__", json.dumps(self.D2SEL))
                 + self.d2 + self.art_init + "\narttipInit();\nvar TIP = MADE[0];   // the item card arttipInit made first\n"
                 + ";(function(){ var OUT = {};\n" + body + "\nOUT.err = OUT_ERR; process.stdout.write(JSON.stringify(OUT)); })();\n")
-        r = subprocess.run([self.node, "-"], input=prog, capture_output=True, text=True, timeout=60)
+        r = subprocess.run([self.node, "-"], input=prog, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         self.assertEqual(r.returncode, 0, "the shipped board lanes would not run: %s" % r.stderr[-900:])
         o = json.loads(r.stdout)
         self.assertEqual(o["err"], [], "a lane threw inside its listener (an unmapped selector reads as a pass "
@@ -27743,7 +27752,7 @@ class TestV2143TheSecondEyeCannotBeSkippedQuietly(unittest.TestCase):
             subprocess.check_call(
                 ["git", "-c", "user.email=seat@example.com", "-c", "user.name=Seat",
                  "commit", "-q", "-m", message], cwd=td)
-            return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=td, text=True).strip()
+            return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=td, text=True, encoding="utf-8", errors="replace").strip()
 
         claude_sha = _commit("v0001", "v0001 claude seat")
         grok_sha = _commit("v0002", "v0002 grok backs up claude\n\nSeat: Grok CLI (code)\n")
@@ -28342,7 +28351,7 @@ class TestV2153TheRELAUNCHACTUALLYHAPPENSWhenArmed(unittest.TestCase):
         pulled = []
         repo = os.path.dirname(HERE)
         head_before = subprocess.check_output(
-            ["git", "-C", repo, "rev-parse", "HEAD"], text=True).strip()
+            ["git", "-C", repo, "rev-parse", "HEAD"], text=True, encoding="utf-8", errors="replace").strip()
         with contextlib.ExitStack() as st:
             for p_ in self._clear(ca):
                 st.enter_context(p_)
@@ -28369,7 +28378,7 @@ class TestV2153TheRELAUNCHACTUALLYHAPPENSWhenArmed(unittest.TestCase):
                                "the switch is armed and the path behind it does nothing")
         self.assertTrue(pulled, "the loop never asked to pull, so this is not the shipped drift path")
         head_after = subprocess.check_output(
-            ["git", "-C", repo, "rev-parse", "HEAD"], text=True).strip()
+            ["git", "-C", repo, "rev-parse", "HEAD"], text=True, encoding="utf-8", errors="replace").strip()
         self.assertEqual(head_before, head_after,
                          "the drift-loop proof fast-forwarded this checkout")
 
@@ -29148,7 +29157,7 @@ class TestV2157TheFleetRosterNeverInventsACount(unittest.TestCase):
                 fh.write(js)
                 tmp = fh.name
             try:
-                r = subprocess.run([node, "--check", tmp], capture_output=True, text=True,
+                r = subprocess.run([node, "--check", tmp], capture_output=True, text=True, encoding="utf-8", errors="replace",
                                    timeout=30)
             finally:
                 os.unlink(tmp)
@@ -29268,7 +29277,7 @@ class TestV2157TheFleetRosterNeverInventsACount(unittest.TestCase):
               " sets:{have:120,total:135}, uniques:{have:278,total:403},"
               " runewords:{have:99,total:99}});"
               "console.log(JSON.stringify(got));")
-        r = subprocess.run([node, "-"], input=js, capture_output=True, text=True, timeout=30)
+        r = subprocess.run([node, "-"], input=js, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
         self.assertEqual(r.returncode, 0, "the worker's tally expression did not run: %s"
                          % (r.stderr or "")[-300:])
         got = json.loads((r.stdout or "null").strip())
@@ -30863,7 +30872,7 @@ class TestV2184EveryLiveStateFileIsGitignored(unittest.TestCase):
         sys.path.insert(0, HERE)
         import run_gates
         repo = os.path.dirname(HERE)
-        _ls = subprocess.run(["git", "ls-files", "tv/"], cwd=repo, capture_output=True, text=True)
+        _ls = subprocess.run(["git", "ls-files", "tv/"], cwd=repo, capture_output=True, text=True, encoding="utf-8", errors="replace")
         if _ls.returncode != 0:
             # 2026-10-02 - an empty listing from a git that could not run is "nothing tracked" only by accident: with
             # no repo this passed on ANY index. Said as UNMEASURED instead. [[unknown-stays-unknown]]
@@ -35365,7 +35374,7 @@ class TestV2238TheSimulatorDoesNotShrinkItsOwnCoverage(unittest.TestCase):
         import subprocess, os as _os
         here = _os.path.dirname(_os.path.abspath(__file__))
         r = subprocess.run([sys.executable, _os.path.join(here, "ci_sim.py"), class_name],
-                           capture_output=True, text=True, cwd=here, timeout=300)
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=here, timeout=300)
         out = (r.stdout or "") + (r.stderr or "")
         names = [ln.strip() for ln in out.splitlines()
                  if ln.startswith("      ") and ln.strip().startswith("test_")]
@@ -45190,7 +45199,7 @@ class TestADeclaredSkipCanActuallyFire(unittest.TestCase):
             fh.write(stub)
             path = fh.name
         try:
-            p = subprocess.run([sys.executable, path], capture_output=True, text=True, timeout=180)
+            p = subprocess.run([sys.executable, path], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
         finally:
             try:
                 os.unlink(path)
@@ -45236,7 +45245,7 @@ class TestADeclaredSkipCanActuallyFire(unittest.TestCase):
             fh.write(stub)
             path = fh.name
         try:
-            p = subprocess.run([sys.executable, path], capture_output=True, text=True, timeout=180)
+            p = subprocess.run([sys.executable, path], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
         finally:
             try:
                 os.unlink(path)
