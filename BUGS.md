@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3385 - THE CUT MODEL NEVER COUNTED THE CHECKPOINT CLEAN RUNS (v3881, v3879 shard 5 TIMEOUT)
+v3879's proof round, shard 5: test_a_safety_net_red_closes_only_its_own_lock - 27 proofs on one shard, priced 10.37 s a proof
+by the committed table (stale since v3877 grew the law to 32 proofs; its proofs were served from the cache afterwards, so no
+round re-measured it), really ~55 s (28.7 s a clean run on an idle Mac). Checkpoints banked 21; 6 were cut at the 1500 s cap ->
+the shard red -> a by-hand re-run. REG-3373's cut model (v3880) priced a chunk as its proofs plus TWO clean runs; heart2 also
+runs one clean run every CHECKPOINT_EVERY (4) proofs (#150), uncounted. The plan now counts them (proof_shard.CHECKPOINT_EVERY,
+held equal to heart2's). It cannot see a STALE price at plan time (the gate is in no clean-run table, and 109 gates honestly
+prove cheaper than a clean run) - the runtime half is REG-3386 and the finishing job. Law: test_a_chunk_never_outlasts_its_cut
++3 cases (a heavy round where only the cut splits a 25-proof gate; BASELINE: the old model's chunk really overruns) +1 red-proof.
 ### REG-3384 - THE CONSOLE DEMOS RAN ONLY AT THE MAIN PUSH, SO A STALE DEMO COST A WHOLE ROUND (v3881, v3879's J9)
 GitHub vouched for v3879 (9c5815c6f) after a re-run; the main push's hook then ran tv/demo_console.mjs - which runs only
 there, never on GitHub - and J9 refused it: v3879's own #108 had moved the Terror Zone cards to monster sprites while J9

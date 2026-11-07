@@ -131,6 +131,45 @@ def _count(a, gate):
     return by
 
 
+class TheCutCountsTheCheckpoints(unittest.TestCase):
+    """v3881 (REG-3385) - heart2 runs a checkpoint clean run every CHECKPOINT_EVERY proofs (#150). MEASURED on v3879 shard 5:
+    test_a_safety_net_red_closes_only_its_own_lock ran ~55 s a proof, 27 proofs in one chunk, and its checkpoints added
+    clean runs the cut model never counted - 21 banked, 6 cut at 1500 s."""
+
+    U55 = 55.0
+
+    def _shape(self):
+        """a heavy round (the balance alone keeps a 25-proof gate whole), so only the cut decides how it is split"""
+        have, per, _c = _heavy_round()
+        have = [h for h in have if h[0] != "test_control"] + [("safety", "s.py", list(range(25)))]
+        per = dict(per, safety=self.U55)
+        return have, per
+
+    def _real_cost(self, n):
+        return n * self.U55 + 2 * self.U55 + ((n - 1) // PS.CHECKPOINT_EVERY) * self.U55
+
+    def test_baseline_without_checkpoints_a_chunk_can_overrun(self):
+        """BASELINE - the case can fail: the old model's largest chunk, priced honestly WITH its checkpoints, passes the cut"""
+        per_old = int((CAP - 2 * self.U55) // self.U55)
+        self.assertGreater(self._real_cost(per_old), CAP, "the fixture cannot show the gap - it proves nothing")
+        have, per = self._shape()
+        a = PS.plan(have, 8, {}, per_proof=per, caps={})
+        self.assertEqual(sorted(_count(a, "safety").values()), [25], "the balance alone split the gate - the cut decides nothing")
+
+    def test_every_chunk_fits_its_cut_with_its_checkpoints(self):
+        """* THE POINT: proofs + the two clean runs + one clean run per CHECKPOINT_EVERY proofs fit inside the cut"""
+        have, per = self._shape()
+        a = PS.plan(have, 8, {}, per_proof=per, caps={"safety": CAP})
+        by = _count(a, "safety")
+        self.assertEqual(sum(by.values()), 25)
+        for k, n in by.items():
+            self.assertLessEqual(self._real_cost(n), CAP, "shard %d: %d proofs with their checkpoints pass the cut" % (k, n))
+
+    def test_the_interval_is_heart2s(self):
+        import heart2
+        self.assertEqual(PS.CHECKPOINT_EVERY, heart2.CHECKPOINT_EVERY, "the plan counts checkpoints heart2 does not run")
+
+
 class TheCapRuleIsHeart2s(unittest.TestCase):
     """run_caps is a copy of heart2._gate_cap_for (heart2 keys every proof); the two must answer alike for every gate"""
 
@@ -149,6 +188,10 @@ class TheCapRuleIsHeart2s(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3385 - the cut model forgets the checkpoint clean runs again (v3879 shard 5: 6 proofs cut at 1500 s)",
+     "file": "tv/proof_shard.py",
+     "find": "                while per > 1 and u * per + f + ((per - 1) // CHECKPOINT_EVERY) * u > cap:\n",
+     "replace": "                while False:\n", "matches": 1},
     {"why": "REG-3373 - the plan ignores the cut again (v3878's shard 10: test_control[13]-[27] as one chunk)",
      "file": "tv/proof_shard.py",
      "find": "            if cap and u > 0:                    # REG-3373 - never a chunk its shard's cut will end\n",

@@ -177,6 +177,12 @@ def measure_costs(bodies):
     return out
 
 
+#: v3881 (REG-3385) - heart2.CHECKPOINT_EVERY (#150): a shard runs one more clean run of a gate every this many of its proved
+#: proofs. A copy - heart2 keys every proof, so the planner does not import it; test_a_chunk_never_outlasts_its_cut holds
+#: the two equal. [[copy-drift]]
+CHECKPOINT_EVERY = 4
+
+
 def run_caps(names, env=None, gates=None):
     """v3880 (REG-3373) - {gate: the cut a proof shard applies to it, in seconds} for these gate names: the run's
     HEART2_GATE_CAP_S, raised by a gate's own larger prove_cap_s (REG-3317). {} when the run sets no cap (his Mac's push, a
@@ -268,6 +274,11 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
             cap = capd.get(name)
             if cap and u > 0:                    # REG-3373 - never a chunk its shard's cut will end
                 per = int((cap - f) // u)
+                # v3881 (REG-3385) - AND COUNT THE CHECKPOINTS: heart2 runs one more clean run every CHECKPOINT_EVERY
+                # proofs (#150), so a chunk of s proofs costs u*s + f + ((s - 1) // CHECKPOINT_EVERY) * u, not u*s + f.
+                # MEASURED on v3879 shard 5: a 27-proof chunk ran 6 checkpoint clean runs the cut model never counted.
+                while per > 1 and u * per + f + ((per - 1) // CHECKPOINT_EVERY) * u > cap:
+                    per -= 1
                 if per < 1:
                     per = 1
                     over.append(name)
