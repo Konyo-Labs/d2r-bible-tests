@@ -318,7 +318,16 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                 # test_the_fleet_says_where_a_river_is_stuck's and test_starting_never_hides_a_known_stale_census's to
                 # prove. Nothing else in the card or the row may move.
                 river = re.compile(r'<span class="fleet-river(?:stuck|wait|owes)" title="[^"]*"[^>]*>[^<]*</span>')
-                self.assertEqual(river.sub("", owes.sub("", waited.sub("", cut.sub("", s[m]["ftt"])))),
+                # v3880 (his 11-07 ask, GrokBot #6707144313) ADDED the PC's status under the card's name - ONE element,
+                # .pcs, whose words are test_each_pc_reads_in_a_few_words' to prove - and moved the verdict word's run-on
+                # paragraph off its NATIVE tooltip (a hovered [title] hides this card) onto aria-label. The .pcs element is
+                # cut from the ship side and the word's tooltip attribute from both; nothing else in the card may move.
+                pcs = re.compile(r'<div class="pcs [^"]*">(?:(?!</div>).)*</div>', re.S)
+                word = re.compile(r'(<span class="fleet-meta fleet-word[^>]*?) (?:title|aria-label)="[^"]*"')
+                self.assertEqual(len(pcs.findall(s[m]["ftt"])), 1, "%s %s: the card does not lead with the PC's status" % (k, m))
+                self.assertIsNone(re.search(r'<span class="fleet-meta fleet-word[^>]*? title="', s[m]["row"]),
+                                  "%s %s: the verdict word carries a native tooltip again - it hides this card" % (k, m))
+                self.assertEqual(river.sub("", owes.sub("", waited.sub("", cut.sub("", pcs.sub("", s[m]["ftt"]))))),
                                  river.sub("", cut.sub("", b[m]["ftt"])),
                                  "%s %s: the hover card changed" % (k, m))
                 if "river stuck" in b[m]["ftt"] and "river stuck" in s[m]["ftt"]:
@@ -329,8 +338,8 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                               "%s %s: the card does not say what each click opens" % (k, m))
                 # the row carries the card, so its #225 click line is cut from both (SNAP already strips the row's own
                 # click and key handlers; the two clicks are proven by test_the_first_click_opens_the_row_and_a_second_opens_the_compare)
-                self.assertEqual(river.sub("", owes.sub("", waited.sub("", cut.sub("", s[m]["row"])))),
-                                 river.sub("", cut.sub("", b[m]["row"])),
+                self.assertEqual(river.sub("", owes.sub("", waited.sub("", cut.sub("", word.sub(r"\1", pcs.sub("", s[m]["row"])))))),
+                                 river.sub("", cut.sub("", word.sub(r"\1", b[m]["row"]))),
                                  "%s %s: the row changed beyond its eyes" % (k, m))
                 # v3865 (the r3 review, his ALT row: a red "vault lane owes 0") - a lane that owes NOTHING has no debt to
                 # name, so the chip is asked for only when a lane owes one or more reels, and never drawn for owes 0

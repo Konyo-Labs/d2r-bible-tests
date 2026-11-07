@@ -5043,6 +5043,30 @@
   .ftt-mw { margin-top: 5px; font-size: var(--fs-2xs); line-height: 1.45;
             color: var(--ink-dim, var(--gold-dim)); opacity: .9; }
   .ftt-h .ftt-w.ftts-unknown  { color: var(--muted, #8b8071); font-style: italic; }
+  /* v3880 (GrokBot #6707144313) - EACH PC IN A FEW WORDS: its Sanctuary word, up to three things broken (where), and what
+     happens next. One element (.pcs), spans set as lines; the hover card, the State panel and the Fleet header share it. */
+  .pcs { display: block; margin-top: 5px; font-size: var(--fs-2xs);
+         line-height: var(--lh-snug); color: var(--ink-dim, var(--gold-dim)); }
+  .pcs > span { display: block; margin-top: 2px; }
+  .pcs > .pcs-n, .pcs > .pcs-w { display: inline; }
+  .pcs .pcs-n { font-weight: var(--fw-semibold); color: #e8cf96; margin-right: 8px; }
+  .pcs .pcs-w { font-weight: var(--fw-semibold); letter-spacing: var(--ls-snug); text-transform: uppercase; }
+  .pcs.pcs-ready   .pcs-w { color: var(--mint, #8fe6a0); }
+  .pcs.pcs-healing .pcs-w { color: #e8cf96; }
+  .pcs.pcs-wounded .pcs-w { color: var(--warn, #e0a040); }
+  .pcs.pcs-town    .pcs-w,
+  .pcs.pcs-lost    .pcs-w { color: var(--muted, #8b8071); font-style: italic; }
+  .pcs .pcs-hurt { padding-left: 1.1em; text-indent: -1.1em; overflow-wrap: anywhere; }
+  .pcs .pcs-hurt::before { content: '\2716\00a0'; color: var(--warn, #e0a040); }
+  .pcs .pcs-next { color: var(--gold-dim); overflow-wrap: anywhere; }
+  .pcs .pcs-more { color: var(--muted, #8b8071); font-style: italic; }
+  .pcs .pcs-owed { color: var(--muted, #8b8071); }
+  /* on the rail-wide hover card (v3849 keeps it on the rail) the word runs on into its first line - one line saved */
+  .ftt .pcs { margin-top: 3px; }
+  .ftt .pcs > .pcs-w { margin-right: 6px; }
+  .ftt .pcs > .pcs-w + .pcs-hurt, .ftt .pcs > .pcs-w + .pcs-next { display: inline; }   /* never the dim code line */
+  .pcs-head { margin: 2px 0 6px; font-size: var(--fs-2xs); line-height: var(--lh-snug); letter-spacing: var(--ls-tight);
+              color: var(--gold-dim); overflow-wrap: anywhere; }
   /* v2875 — the row says one word, and the detail it replaced is one hover away */
   /* v3172 — the verdict word on the ROW and the same word in the TOOLTIP (.ftt-h .ftt-w)
      were tracked differently (.03em vs .04em) for no reason anyone recorded. .03em is on no
@@ -6648,6 +6672,9 @@
   @media (min-width: 621px) {
     #ver-xref .vx-row.vx-ask, #ver-xref .vx-row.vx-ans { grid-template-columns: 9.5em max-content minmax(0,1fr); }
   }
+  /* v3880 - EVERY PC: one PC per row at the panel's full width (the row grid above squeezed it into its 9.5em column) */
+  #ver-xref .vx-row.vx-pc { display: block; padding: 6px 0; }
+  #ver-xref .vx-row.vx-pc .pcs { margin-top: 0; font-size: var(--fs-xs); }
   #ver-xref .vx-k { color: var(--muted); letter-spacing: var(--ls-label); text-transform: uppercase;
     font-size: var(--fs-2xs); }
   #ver-xref .vx-v { color: var(--text); font-variant-numeric: tabular-nums;
@@ -14507,6 +14534,25 @@ window._lockMark = function(isOpen, px, label){
         : _vxRow('verdict', 'in sync', 'console, agent and board agree, and the disk holds nothing '
                  + 'newer', 'ok'));
 
+    /* ── 1b. v3880 — EVERY PC, in the Fleet's own words (see the section's comment below) ── */
+    var pcRows = [], _pcHead = '';
+    try {
+      var _fbm = window._fleetByMachine || null, _fks = _fbm ? Object.keys(_fbm) : [];
+      if (_fks.length && typeof window._pcStatusHtml === 'function') {
+        var _now = Date.now(), _ord = window._PC_ORDER || [];
+        var _pcs = _fks.map(function (k) { return _fbm[k]; });
+        _pcHead = window._pcHeader(_pcs, _now);
+        _pcs.map(function (m) { return { m: m, k: _ord.indexOf(window._pcStatus(m, _now).key), n: String(window._pcName(m)) }; })
+          .sort(function (a, b) { return (a.k - b.k) || (a.n < b.n ? -1 : a.n > b.n ? 1 : 0); })
+          .forEach(function (x) {
+            pcRows.push('<div class="vx-row vx-pc">' + window._pcStatusHtml(x.m, _now, { name: x.n, max: 3, where: 'state' }) + '</div>');
+          });
+      } else {
+        pcRows.push(_vxRow('every PC', null, 'the Fleet has not answered on this console yet \u2014 UNKNOWN, not "all well"'));
+      }
+    } catch (_e) {
+      pcRows.push(_vxRow('every PC', null, 'the Fleet\u2019s rows could not be read here'));
+    }
     /* ── 2. THE FLEET ─────────────────────────────────────────────────────────────────────── */
     var fRows = [];
     if (fl.ok === false) {
@@ -14762,6 +14808,12 @@ window._lockMark = function(isOpen, px, label){
             first and the machine detail is grouped under a labelled summary he can collapse
             himself; ORDER was the thing that mattered, not the collapse.
             [[the-unjoined-end]] [[visual-regression-detector]] */
+         /* v3880 (his 11-07 ask: "the State of the console when clicking the bottom left corner chiliad should be
+            rendering all of this information regardless right? so its all connected and joined and logical") -
+            GrokBot #6707144313 saw this panel's THE FLEET say only "this machine | current" while each PC's facts sat as
+            prose inside other rows. EVERY PC is now drawn here by the Fleet card's own _pcStatusHtml, from the same
+            window._fleetByMachine the Fleet rows were drawn from: one source, so the two can never disagree. */
+         + _vxSection('EVERY PC' + (_pcHead ? ' \u2014 ' + _pcHead : ''), pcRows)
          + '<details class="vx-fold" open><summary>the machine detail \u2014 versions, fleet, disk</summary>'
          + _vxSection('VERSIONS', vRows)
          + _vxSection('THE FLEET', fRows)
@@ -28974,6 +29026,106 @@ function escC(s) {
     out.push(_fleetD2jspPart(m, nowMs));
     return out;
   };
+  /* ══ v3880 (his 11-07 ask; GrokBot's third view #6707144313) — EACH PC IN A FEW WORDS ═══════════════════════════════
+     His words: "for fleet i just want to make this a little smoother and more UI and UX friendly and human understandable
+     with diablo ii language and english ... all this info that hovers i want this more organized and structured better and
+     cleaner ... once and when they are fixed i want it smooth and logical meaning i want to understand short and to the
+     point". GrokBot looked at his live fleet (6 rows hovered, the State panel opened) and picked the OPERATOR structure -
+     what is broken, where, what happens next - with the PLAYER's words for the state and the MINIMALIST's one-line header.
+     A fixed thing disappears into one healthy line; a broken one keeps its where and its next step; every number stays one
+     click away (the click box's fold - the arcane).
+     NOTHING NEW IS MEASURED. Every word is read off _fleetSysParts' parts, the proof meter and the presence stamp, and the
+     hover card, the State panel and the header all draw THIS one function. A PC with nothing readable is LOST, never
+     ready; an offline PC is IN TOWN and its last report's faults stay in the arcane, never painted as live wounds.
+     [[unknown-stays-unknown]] [[copy-drift]] [[stale-reading]] */
+  var _PC_WORD = {
+    ready:   { w: 'ready for battle', c: 'pcs-ready',   en: 'its river flows, its proof is current, nothing on it is shut' },
+    healing: { w: 'healing',          c: 'pcs-healing', en: 'it is proving the laws it owes - nothing for you to do' },
+    wounded: { w: 'wounded',          c: 'pcs-wounded', en: 'something on it is stuck, shut or blind' },
+    town:    { w: 'in town',          c: 'pcs-town',    en: 'offline - what it says is its last report, not a reading of now' },
+    lost:    { w: 'lost',             c: 'pcs-lost',    en: 'no report this console can read - UNKNOWN, which is not fine' }
+  };
+  var _PC_ORDER = ['wounded', 'healing', 'lost', 'town', 'ready'];
+  var _pcCut = function (x, n) {
+    x = String(x == null ? '' : x);
+    return x.length > n ? x.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : x;
+  };
+  var _pcStatus = function (m, nowMs) {
+    var now = (typeof nowMs === 'number') ? nowMs : Date.now();
+    var parts = null, off = null;
+    try { parts = _fleetSysParts(m, now) || []; } catch (e) { parts = null; }
+    try { off = _fleetOffline(m, now); } catch (e) { off = null; }
+    var by = {};
+    (parts || []).forEach(function (p) { if (p && p.k && !by[p.k]) by[p.k] = p; });
+    var known = (parts || []).filter(function (p) { return p && !p.unk; }).length;
+    var rv = (m && m.system && typeof m.system === 'object') ? m.system.river : null;
+    var hs = (rv && typeof rv === 'object' && rv.heart && typeof rv.heart === 'object') ? rv.heart : null;
+    var proving = !!(hs && hs.census !== 'current' && typeof hs.owed === 'number' && hs.owed > 0);
+    var eta = proving ? _proofMeterFacts(hs).join(' · ') : '';
+    var hurt = [];
+    var st = by.stuck, pv = by.proved;
+    if (st && st.warn) hurt.push('river stuck: ' + st.t);
+    else if (st && /locks are shut/.test(st.t)) hurt.push('river locks shut until it proves');
+    if (hs && typeof hs.blind === 'number' && hs.blind > 0) hurt.push(hs.blind + (hs.blind === 1 ? ' gate blind' : ' gates blind'));
+    if (hs && !proving && hs.census && hs.census !== 'current' && hs.census !== 'unknown') hurt.push('proof: ' + (pv ? pv.f[0] : hs.census));
+    /* its repair book's leftovers are CODE's to fix, not a wound and not his (GrokBot's "owed by code"): a dim line, never
+       the word - else his own console reads WOUNDED for as long as any eagle fault lacks a known repair */
+    var owed = by.repairs ? ['the code\u2019s to fix, not yours: ' + by.repairs.t] : [];
+    if (by.picker && by.picker.warn) hurt.push('item picker: ' + by.picker.t);
+    if (by.readers && by.readers.warn) hurt.push('readers: ' + by.readers.t);
+    var key, next;
+    if (off) {
+      key = 'town'; hurt = [];
+      next = 'offline since ' + off.since + ' - start its console to hear from it';
+    } else if (!parts || !known) {
+      key = 'lost'; next = 'open the console on that PC once, so it can report';
+    } else if (hurt.length) {
+      key = 'wounded';
+      next = proving ? ('it heals itself: proving ' + eta + ' - nothing for you to do') : '';
+    } else if (proving) {
+      key = 'healing'; next = 'proving ' + eta + ' - nothing for you to do';
+    } else if (!hs || !hs.census || hs.census === 'unknown') {
+      key = 'lost'; next = 'whether it has proved itself could not be read on this console';
+    } else {
+      key = 'ready'; next = '';
+    }
+    var W = _PC_WORD[key];
+    if (off) owed = [];
+    return { key: key, word: W.w, cls: W.c, en: W.en, hurt: hurt, owed: owed, next: next, eta: eta, offSince: off ? off.since : null,
+             look: key === 'wounded' && !proving };
+  };
+  /* ONE element, spans inside: the card, the State panel and a law can each cut it out whole by its class */
+  var _pcStatusHtml = function (m, nowMs, opts) {
+    var o = opts || {}, s = _pcStatus(m, nowMs), max = o.max || 3;
+    var h = '<div class="pcs ' + s.cls + '">' + (o.name ? '<span class="pcs-n">' + escC(o.name) + '</span>' : '')
+      + '<span class="pcs-w" title="' + escC(s.en) + '">' + escC(s.word) + '</span>';
+    s.hurt.slice(0, max).forEach(function (x) { h += '<span class="pcs-hurt">' + escC(_pcCut(x, 96)) + '</span>'; });
+    if (s.hurt.length > max) h += '<span class="pcs-more">+' + (s.hurt.length - max) + ' more - click the row twice</span>';
+    s.owed.forEach(function (x) { h += '<span class="pcs-owed">' + escC(_pcCut(x, 96)) + '</span>'; });
+    if (s.next) h += '<span class="pcs-next">→ ' + escC(_pcCut(s.next, 110)) + '</span>';
+    /* a wound that will not heal by itself: each reason is in the arcane (the click box's fold) - said where it is read */
+    else if (s.look) h += '<span class="pcs-next">\u2192 ' + (o.where === 'state' ? 'each reason: open the Fleet and click its row twice'
+                                                                              : 'each reason: click this row twice (the arcane)') + '</span>';
+    return h + '</div>';
+  };
+  /* the minimalist's header: "6 PCs: 1 wounded · 1 healing · 2 in town · 1 lost · 1 ready for battle" */
+  var _pcHeader = function (list, nowMs) {
+    var n = {};
+    (list || []).forEach(function (m) { var k = _pcStatus(m, nowMs).key; n[k] = (n[k] || 0) + 1; });
+    var bits = _PC_ORDER.filter(function (k) { return n[k]; }).map(function (k) { return n[k] + ' ' + _PC_WORD[k].w; });
+    var c = (list || []).length;
+    return c + (c === 1 ? ' PC' : ' PCs') + (bits.length ? ': ' + bits.join(' · ') : '');
+  };
+  window._PC_WORD = _PC_WORD;
+  window._pcStatus = _pcStatus;
+  window._pcStatusHtml = _pcStatusHtml;
+  window._pcHeader = _pcHeader;
+  /* the name the Fleet row shows, for a panel in the OTHER script block (one naming rule, never a second copy) */
+  window._pcName = function (m) {
+    var all = []; try { all = Object.keys(window._fleetByMachine || {}).map(function (k) { return window._fleetByMachine[k]; }); } catch (e) {}
+    return _fleetName(m, all);
+  };
+  window._PC_ORDER = _PC_ORDER;
   /* #86 gap 12 (REG-1772) — ONLINE IS A PULSE. THE KEY IS ONLY STORAGE.
      The roster keeps a presence key for PRESENCE_TTL (v3862 Workers Paid: 10 min, refreshed every 220 s; it was
      40 and 15 on the free plan) so missed rewrites do not
@@ -29842,7 +29994,7 @@ function escC(s) {
           return '<div class="ftt"><div class="ftt-h">' + escC(_fleetName(m, _fleetRows(j)))
             + ' <span class="ftt-w ftts-unknown" title="this machine has sent no counts, so '
             + 'there is nothing to compare \u2014 UNMEASURED, not disagreement">no report</span>'
-            + '</div><div class="ftt-none">nothing recorded'
+            + '</div>' + _pcStatusHtml(m, Date.now(), { max: 2 }) + '<div class="ftt-none">nothing recorded'
             + (t && t.why ? (' — ' + escC(String(t.why).slice(0, 90))) : '')
             + '</div>' + _fttClick + '</div>';
         }
@@ -29965,7 +30117,7 @@ function escC(s) {
           : '';
         return '<div class="ftt"><div class="ftt-h">' + escC(_fleetName(m, _fleetRows(j)))
           + ' <span class="ftt-w ' + _mw.c + '" title="' + escC(_mw.t) + '">' + escC(_mw.w)
-          + '</span></div>' + seeded + (bars || '<div class="ftt-none">reported no counts</div>')
+          + '</span></div>' + _pcStatusHtml(m, Date.now(), { max: 2 }) + seeded + (bars || '<div class="ftt-none">reported no counts</div>')
           + _mwLine
           + '<div class="ftt-age">as of ' + _flAge(t.at ? new Date(t.at).toISOString() : m.t)
           + '</div>' + _fttClick + '</div>';
@@ -30249,7 +30401,11 @@ function escC(s) {
               return '<span class="fleet-meta fleet-word ' + w.c + '"'
                 + ' data-fl-seen="' + escC(_fleetSeen(m)) + '" data-fl-con="' + escC(String((m && m.t) || ''))
                 + '" data-fl-web="' + escC(String((m && m.webAt) || '')) + '"'   /* REG-1938 — its ages keep aging */
-                + ' title="' + escC(w.t + (plain ? ('  \u2014  ' + plain) : '')) + '">'
+                /* v3880 (GrokBot #6707144313, his "all this info that hovers ... organized and structured") - this word's
+                   run-on paragraph was a NATIVE tooltip, and a hovered [title] hides the styled card (.ftt), so the
+                   worst line on his Fleet was the one he met first. The words are kept for a screen reader; the card
+                   now says them in parts (_pcStatusHtml). */
+                + ' aria-label="' + escC(w.w + ' \u2014 ' + w.t + (plain ? ('  \u2014  ' + plain) : '')) + '">'
                 + escC(w.w) + '</span>'
                 /* REG-1613 — AFTER the verdict, so the verdict keeps row one and the words take row two */
                 + _fleetRowChips(m, heard) + _rw;
@@ -30283,7 +30439,12 @@ function escC(s) {
             return escC(String(w.user || '').trim() || 'no login name') + ' ' + _flAge(w.t);
           }).join(' \u00b7 ')
         + (_wo.length > 6 ? (' \u00b7 +' + (_wo.length - 6) + ' more') : '') + '</div>');
-      box.innerHTML = (rows.length ? rows.join('')
+      /* v3880 (GrokBot #6707144313, the minimalist's header) - the whole fleet in one line above its rows, from the same
+         _pcStatus every row's card reads: "6 PCs: 1 wounded · 1 healing · 2 in town · 1 lost · 1 ready for battle" */
+      var _pcAll = (j.online || []).concat(j.offline || []).filter(function (m) { return m && m.machine; });
+      var _pcHd = _pcAll.length ? ('<div class="pcs-head" title="each PC in a word - hover a row for what is broken on it '
+        + 'and what happens next; the same words open THE STATE OF THIS CONSOLE">' + escC(_pcHeader(_pcAll, Date.now())) + '</div>') : '';
+      box.innerHTML = _pcHd + (rows.length ? rows.join('')
         : '<div class="fleet-none">no console has ever checked in</div>') + _woTxt;
     } catch (e) {
       box.innerHTML = '<div class="fleet-none">fleet unreachable</div>';

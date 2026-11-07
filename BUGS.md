@@ -112,6 +112,24 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3372 - EVERY FLEET HOVER WAS ONE RUN-ON PARAGRAPH, AND THE STATE PANEL'S "THE FLEET" NAMED ONLY THIS MACHINE (v3880, his 11-07 ask)
+His words: "for fleet i just want to make this a little smoother ... human understandable with diablo ii language and english
+... once and when they are fixed i want it smooth and logical meaning i want to understand short and to the point", and the
+State panel "should be rendering all of this information regardless right? so its all connected and joined and logical".
+GrokBot SAW on his live console (#230 6707144313, six rows hovered): hovering a row's verdict word showed a NATIVE tooltip
+(".fleet-row.has-ftt:has([title]:hover) .ftt" hides the styled card), so the first thing he met was one paragraph ("1 of 1
+ledger(s) count differently ... idle · v3877 · background · own tree established ... stuck: PRINTER 3 older for 2d ...
+proved: proof out of date · 0 blind · 15 laws owed · ~18/h · ~51 min left"); OLD PC ALT's tip ran ~17 lines; the State
+panel's THE FLEET said only "this machine | current" while each PC's facts sat as prose in other rows. FIX, on GrokBot's
+picked structure (the OPERATOR's broken-where-next, the PLAYER's words, the MINIMALIST's header): ONE function, _pcStatus,
+reads a PC off _fleetSysParts' parts + the proof meter + the presence stamp and says it as ready for battle / healing /
+wounded / in town / lost, up to three things broken and what happens next. The hover card leads with it, the Fleet list
+opens with a one-line header ("6 PCs: 1 wounded · 1 healing · ..."), and the State panel draws EVERY PC with the same
+function from the same window._fleetByMachine. A PC with nothing readable (or an unreadable proof census) is LOST, never
+ready; an offline PC is IN TOWN and its last report's faults stay in the arcane, never painted as live wounds. The verdict
+word's run-on paragraph moved to aria-label. Law: test_each_pc_reads_in_a_few_words (8 red-proofs, all seen RED by hand
+first; one case added after its sabotage stayed GREEN - the census rule was hiding the empty-reader case);
+test_a_roster_name_opens_its_row_with_the_eyes cuts the new .pcs element and the word's tooltip attribute by name.
 ### REG-3371 - ON WINDOWS EVERY CHILD OF A TRACED GATE READ "THE TRACE CANNOT FOLLOW": THE AUDIT EVENT CARRIES THE COMMAND LINE (v3880, #107/#103)
 #107's probe: seven trace laws red on GitHub's Windows runner with the same words, e.g. "the gate started node --version,
 which the trace cannot follow" (test_a_node_version_ask_does_not_untrace_a_gate), "sleep 0", "netstat -an". CAUSE: CPython's
