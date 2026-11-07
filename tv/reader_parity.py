@@ -52,6 +52,11 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
+try:      # #255 - the bench prints Δ and ✓/✗; Dean's cp1255 console must not crash while reporting
+    from console_safe import enable as _console_safe_enable
+    _console_safe_enable()
+except Exception:
+    pass
 
 CORPUS = os.path.expanduser(os.environ.get("TV_BENCH_CORPUS") or "~/d2r_bench_corpus")
 #: the Windows eye, exactly as tv/capture_win.ps1 SaveAll writes it
