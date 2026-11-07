@@ -163,6 +163,28 @@ class AWornItemDrawsItsSlotsPicture(unittest.TestCase):
         self.assertEqual(bad, [], "\n".join(bad))
 
 
+
+class AnIdCardsNameBreaksOnlyBetweenWords(unittest.TestCase):
+    """#27 (Grok's cold look 11-07 at 390 px): the card's title broke mid-word ("SPIR / IT", "KATHO / S'", the badge
+    "RUNEW / ORD"). At a phone's width the name may wrap only between words; a word breaks only when it cannot fit at
+    all, and the badge moves to the next line whole. Read from the page's own narrow-width rules (no browser on his Mac;
+    the pixels were looked at by hand at 390 / 1024 / 1440)."""
+
+    def test_the_narrow_rules_break_only_between_words(self):
+        here = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(os.path.dirname(here), "bible.html"), encoding="utf-8") as fh:
+            page = fh.read()
+        i = page.index("  @media (max-width:720px){\n    .gic-card{padding:14px}")
+        blk = page[i:page.index("\n  }\n", i)]
+        name = [l for l in blk.splitlines() if l.strip().startswith(".gic-name{")]
+        self.assertEqual(len(name), 1, "premise: one narrow rule for the card's name, got %s" % name)
+        self.assertIn("overflow-wrap:break-word", name[0])
+        self.assertNotIn("anywhere", name[0], "a phone may break a whole word to squeeze a line again")
+        badge = [l for l in blk.splitlines() if ".gic-name .gic-grail-badge" in l]
+        self.assertEqual(len(badge), 1)
+        self.assertIn("white-space:nowrap", badge[0], "the badge can be broken mid-word again")
+
+
 RED_PROOF = [
     {"why": "REG-3070 - the character window draws a worn item by its own name again",
      "file": "bible.html",
@@ -199,6 +221,11 @@ RED_PROOF = [
      "find": "    + _rwMade\n",
      "replace": "    + ''\n",
      "matches": 1, "needs": "node"},
+    {"why": "#27 - a phone breaks a card's name mid-word again (SPIR / IT)",
+     "file": "bible.html",
+     "find": "    .gic-name{font-size:20px;overflow-wrap:break-word}",
+     "replace": "    .gic-name{font-size:20px;overflow-wrap:anywhere}",
+     "matches": 1},
 ]
 
 if __name__ == "__main__":

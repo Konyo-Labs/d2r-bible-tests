@@ -2663,8 +2663,11 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
 
   @media (max-width:720px){
     .gic-card{padding:14px}
-    .gic-name{font-size:20px;overflow-wrap:anywhere}
-    .gic-name .gic-grail-badge,.gic-name .gic-uber-badge{margin-left:0;display:inline-block;margin-top:4px}
+    /* #27 (Grok's cold look, 11-07) - 'anywhere' let a phone break a whole word to squeeze a line ("SPIR / IT", the badge
+       "RUNEW / ORD"): break-word breaks only a word that cannot fit at all, and a badge that cannot fit beside the name
+       moves to the next line whole */
+    .gic-name{font-size:20px;overflow-wrap:break-word}
+    .gic-name .gic-grail-badge,.gic-name .gic-uber-badge{margin-left:0;display:inline-block;margin-top:4px;white-space:nowrap}
     .gic-emoji{font-size:32px}
     .gic-source-grid{grid-template-columns:1fr 1fr}
     .hero-grid{grid-template-columns:1fr 1fr}
