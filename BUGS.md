@@ -127,6 +127,13 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3338 - THE FLEET SAID "IMPORTING ... 6,166 OF 6,166" AFTER EVERY PROOF WAS IN (v3878, board #13, GrokBot 6700580776)
+GrokBot (11-07 03:34-03:42 IL): Dean's row read "importing v3876's proofs · 6,166 of 6,166" while the API's count was
+complete (5268/6166 at 03:34, 6166/6166 at 03:42). MEASURED: heart_importing reports `running` until the import returns -
+after its count reaches the total it still saves the result (and a Windows PC may take the other set) - and the row drew
+"importing N of N" for that whole tail, which reads as an import stuck at its end. NOW a complete count while running says
+"finishing the import of v3876's proofs · all 6,166 checked"; a landed import and a counting one are unchanged.
+Law: test_the_fleet_says_importing_not_river_stuck (+1 case; one older red-proof re-anchored); red-proofs PROVEN (2).
 ### REG-3337 - A PC WITH A BUILDS BOOK NEVER SENT ITS SAVE NAMES, SO ITS SHADOW SHOWED NO CHARACTERS (v3878, board #104)
 His words (11-06, looking at Dean's shadow): "how is it logical that NO character from his reels frames have any character
 names synced from his console" - "through shadow mode for dean im saying i cant see any characters being properly synced

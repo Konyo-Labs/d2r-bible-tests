@@ -321,6 +321,15 @@ class TheRowSaysImportingNotStuck(unittest.TestCase):
         self.assertIn("wait on the locks", txt, "the reels the locks hold lost their muted line")
         self.assertLess(txt.index("importing"), txt.index("locks shut"), "the cause was not said before its consequence")
 
+    def test_an_import_whose_count_is_complete_says_it_is_finishing(self):
+        """#13 (GrokBot 6700580776: Dean "importing v3876's proofs · 6,166 of 6,166" after the count finished)"""
+        heart = {"census": "stale", "key": "stale-at-boot", "blind": 0, "why": ALT_WHY,
+                 "importing": {"done": 6166, "of": 6166, "etaS": 0, "ver": "v3876"}}
+        txt = _plain(_chip(_row(heart, [])))
+        self.assertIn("finishing the import of v3876’s proofs · all 6,166 checked", txt, txt)
+        self.assertNotIn("6,166 of 6,166", txt, "a complete count still reads as an import in progress")
+        self.assertNotIn("importing v3876", txt)
+
     def test_an_import_with_no_counts_says_so_without_numbers(self):
         heart = {"census": "stale", "key": "stale-at-boot", "blind": None, "why": ALT_WHY,
                  "importing": {"done": None, "of": None, "etaS": None, "ver": None}}
@@ -417,6 +426,11 @@ class TheRowSaysImportingNotStuck(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "#13 - a complete count reads 'importing v3876's proofs · 6,166 of 6,166' again",
+     "file": "tv/control_ui.html",
+     "find": "      var _allIn = !_landed && _whole(_imp.done) && _whole(_imp.of) && _imp.of > 0 && _imp.done >= _imp.of;\n",
+     "replace": "      var _allIn = false;\n",
+     "matches": 1, "needs": "node"},
     {"why": "REG-3197 - the beacon never says an import is running",
      "file": "tv/control_app.py",
      "find": "    if not (running or landed):\n        return None\n",
@@ -524,8 +538,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3197 (the reviewer on r3) - a landed import is drawn as 'importing'",
      "file": "tv/control_ui.html",
-     "find": "      var _impWords = _landed ? _whose + ' imported \\u00b7 the proof check runs next' : 'importing ' + _whose;\n",
-     "replace": "      var _impWords = 'importing ' + _whose;\n",
+     "find": "      var _impWords = _landed ? _whose + ' imported \\u00b7 the proof check runs next'\n",
+     "replace": "      var _impWords = false ? _whose + ' imported \\u00b7 the proof check runs next'\n",
      "matches": 1},
     {"why": "REG-3197 (the reviewer on r3) - a lane that owes 0 is drawn as a red debt again",
      "file": "tv/control_ui.html",

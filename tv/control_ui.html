@@ -29037,8 +29037,14 @@ function escC(s) {
     if (_imp) {
       var _whose = (typeof _imp.ver === 'string' && /^v\d+$/.test(_imp.ver) ? _imp.ver + '\u2019s' : 'GitHub\u2019s') + ' proofs';
       /* the reviewer on r3 - an import that has LANDED, with the prover not yet ticked: said as what happened */
-      var _impWords = _landed ? _whose + ' imported \u00b7 the proof check runs next' : 'importing ' + _whose;
-      if (!_landed && _whole(_imp.done) && _whole(_imp.of) && _imp.of > 0) _impWords += ' \u00b7 ' + _num(_imp.done) + ' of ' + _num(_imp.of);
+      /* #13 (GrokBot 6700580776: Dean "importing v3876's proofs · 6,166 of 6,166" with the count finished) - the count reaching
+         its total means every proof was checked and the import is saving them (or, on a Windows PC, takes the other set):
+         said as that, never "importing N of N", which reads as an import stuck at its end */
+      var _allIn = !_landed && _whole(_imp.done) && _whole(_imp.of) && _imp.of > 0 && _imp.done >= _imp.of;
+      var _impWords = _landed ? _whose + ' imported \u00b7 the proof check runs next'
+        : _allIn ? 'finishing the import of ' + _whose + ' \u00b7 all ' + _num(_imp.of) + ' checked'
+        : 'importing ' + _whose;
+      if (!_landed && !_allIn && _whole(_imp.done) && _whole(_imp.of) && _imp.of > 0) _impWords += ' \u00b7 ' + _num(_imp.done) + ' of ' + _num(_imp.of);
       if (!_landed && _whole(_imp.etaS)) _impWords += ' \u00b7 ~' + (_imp.etaS < 60 ? '1 min' : _imp.etaS < 5400
         ? Math.round(_imp.etaS / 60) + ' min' : (_imp.etaS / 3600).toFixed(1) + ' h');
       bits.push('<span class="fleet-riverimport" title="' + escC((_landed
