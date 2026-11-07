@@ -2143,16 +2143,38 @@ def _run_flow(page, st, scripts, clock, nap):
             return st["result"]
 
 
+# REG-3331 (#94, GrokBot 6700580776 11-07 03:38: "every 2nd search fails") - ten searches back to back: items 2, 4, 6, 8
+# and 10 each took ~21 s and came back 'no prices' / 'never read'; the same items 15 s apart both read (SoJ 30 fg n 5,
+# Gull 7 fg n 8). The forum holds a search sent right after another, and the 20 s wait then handed back whatever page
+# was on screen - no "Search Results" - which the parser read as a search that found nothing. Now one forum search
+# runs at a time, at least _SEARCH_GAP_S after the last one began, and a page that never became search results raises.
+_SEARCH_GAP_S = 15.0
+_SEARCH_LOCK = threading.Lock()
+_LAST_SEARCH = [None]
+
+
 def _chrome_search(item, cookie, chrome=None, clock=None, nap=None):
     """Load the Switch Ladder search in a scratch Chrome. The cookie is not logged.
 
     The forum answers a scripted request with a challenge page. A separate Chrome,
     on its own profile and its own port, can submit the board's own search form.
     His open Chrome is not the one this starts. Raises ChromeStart or OSError when
-    that load fails.
+    that load fails, and OSError("search: no results page") when the forum never
+    showed search results (REG-3331 - that is a page not read, never 'no prices').
     """
     clock = clock or time.monotonic
     nap = nap or time.sleep
+    with _SEARCH_LOCK:
+        last = _LAST_SEARCH[0]
+        if last is not None:
+            wait = _SEARCH_GAP_S - (clock() - last)
+            if wait > 0:
+                nap(wait)
+        _LAST_SEARCH[0] = clock()
+        return _chrome_search_once(item, cookie, chrome, clock, nap)
+
+
+def _chrome_search_once(item, cookie, chrome, clock, nap):
     submit = (
         "(function(){var f=document.querySelector('form[action*=\"search.php\"]');"
         "if(!f||!f.stext)return 'no-form';f.stext.value=%s;f.submit();return 'sent';})()"
@@ -2179,9 +2201,7 @@ def _chrome_search(item, cookie, chrome=None, clock=None, nap=None):
                 sent = True
             if sent and "Search Results" in html and not _challenge_page(html):
                 return html
-        if sent and html and not _challenge_page(html):
-            return html
-        raise OSError("search")
+        raise OSError("search: no results page" if sent else "search: the search form never appeared")
 
 
 def _flow_in_chrome(make, cookie, prefix, run):
@@ -2288,15 +2308,22 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
         page = raw.decode("utf-8", "replace")
     else:
         page = str(raw or "")
+    _held = None
     if _challenge_page(page) and chrome_fetch is not False:
         opener = chrome_fetch or _chrome_search
         try:
             opened = opener(item, cookie)
-        except Exception:
+        except Exception as _oe:
             opened = page
+            # REG-3331 - only our own step names travel ("search: ..."), never a message that could hold the page
+            _m = str(_oe.args[0]) if isinstance(_oe, OSError) and _oe.args and isinstance(_oe.args[0], str) else ""
+            _held = _m if _m.startswith("search:") else type(_oe).__name__
         if isinstance(opened, str) and opened and not _challenge_page(opened):
             page = opened
     out = parse_public_quote(page, item, read_at, node_run=node_run)
+    if _held and isinstance(out, dict) and out.get("reason") == "unread":
+        out["why"] = ("the forum showed no search results within 20 s - a search sent right after another is held "
+                      "back" if _held == "search: no results page" else "the forum search did not run (%s)" % _held)
     _r = (out or {}).get("reason") if isinstance(out, dict) else None
     if _r == "need-login":
         # REG-3250 (his check 2026-11-06 ~10:10: "im still signed in to d2jsp ... the lamp green is actually correct") -

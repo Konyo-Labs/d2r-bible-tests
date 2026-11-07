@@ -160,7 +160,94 @@ class TheKnownPriceComesFirst(unittest.TestCase):
         self.assertNotIn("SECRET", json.dumps(out), "the answer carries the cookie or the error text")
 
 
+    def test_a_search_the_forum_held_back_reads_unread_never_no_prices(self):
+        """REG-3331 (#94, GrokBot 6700580776) - ten searches back to back: every second one sat ~21 s and answered
+        'no prices'. A Chrome search whose page never became search results raises; the quote is unread, with why"""
+        import contextlib
+        clock = [100.0]
+        naps = []
+
+        class Page(object):
+            def __init__(self, pages):
+                self.pages = list(pages)
+            def goto(self, url):
+                pass
+            def snapshot(self):
+                return {"html": self.pages.pop(0) if len(self.pages) > 1 else self.pages[0]}
+            def act(self, name, js):
+                return "sent"
+
+        def chrome_of(pages):
+            @contextlib.contextmanager
+            def chrome(cookie, prefix):
+                yield Page(pages)
+            return chrome
+
+        def nap(t):
+            naps.append(round(t, 1))
+            clock[0] += t
+        held = chrome_of(['<form action="search.php"><input name="stext"></form>', "<html>Board 268 - Topics</html>"])
+        D._LAST_SEARCH[0] = None
+        with self.assertRaises(OSError) as e:
+            D._chrome_search("shako", "c=1", chrome=held, clock=lambda: clock[0], nap=nap)
+        self.assertEqual(e.exception.args[0], "search: no results page",
+                         "a page that never showed search results came back as if it were one")
+        code, out = D.d2jsp_quote("Stone of Jordan", "http://127.0.0.1:17772", "127.0.0.1:17772", 17772,
+                                  cookie_get=lambda: ("member_id=SECRET", "ok"),
+                                  transport=lambda *a: (403, {}, b"<title>Just a moment...</title>"),
+                                  chrome_fetch=lambda item, cookie: (_ for _ in ()).throw(OSError("search: no results page")),
+                                  sec_fetch_site="same-origin")
+        self.assertEqual(out.get("reason"), "unread", "a held-back search reads as a search that found no prices")
+        self.assertIn("held back", out.get("why", ""))
+        self.assertNotIn("SECRET", json.dumps(out))
+
+    def test_forum_searches_run_one_at_a_time_fifteen_seconds_apart(self):
+        """REG-3331 (#94) - MEASURED: the same items read when asked 15 s apart. The second search waits out the gap"""
+        import contextlib
+        clock = [500.0]
+        naps = []
+
+        class Page(object):
+            n = 0
+            def goto(self, url):
+                pass
+            def snapshot(self):
+                Page.n += 1
+                return {"html": '<form action="search.php"><input name="stext"></form>' if Page.n == 1
+                        else "<h1>Search Results</h1> Shako 20fg"}
+            def act(self, name, js):
+                return "sent"
+
+        @contextlib.contextmanager
+        def chrome(cookie, prefix):
+            Page.n = 0
+            yield Page()
+
+        def nap(t):
+            naps.append(t)
+            clock[0] += t
+        D._LAST_SEARCH[0] = None
+        D._chrome_search("shako", "c=1", chrome=chrome, clock=lambda: clock[0], nap=nap)
+        first = list(naps)
+        clock[0] += 3.0
+        D._chrome_search("gull", "c=1", chrome=chrome, clock=lambda: clock[0], nap=nap)
+        gap = [t for t in naps[len(first):] if t > 1.0]
+        self.assertEqual(len(gap), 1, "the second search did not wait for the forum's gap: %r" % naps)
+        self.assertAlmostEqual(gap[0], D._SEARCH_GAP_S - 3.0 - sum(first), delta=0.01)
+        self.assertGreaterEqual(D._SEARCH_GAP_S, 15.0, "the measured gap is 15 s")
+
+
 RED_PROOF = [
+    {"why": "REG-3331 - a search the forum held back hands its page on and reads 'no prices' (GrokBot's every 2nd search)",
+     "file": "tv/d2jsp_chrome.py",
+     "find": "        raise OSError(\"search: no results page\" if sent else \"search: the search form never appeared\")\n",
+     "replace": "        if html and not _challenge_page(html):\n            return html\n        raise OSError(\"search: no results page\" if sent else \"search: the search form never appeared\")\n",
+     "matches": 1},
+    {"why": "REG-3331 - two forum searches go out back to back again",
+     "file": "tv/d2jsp_chrome.py",
+     "find": "            if wait > 0:\n                nap(wait)\n",
+     "replace": "            if wait > 0:\n                pass\n",
+     "matches": 1},
     {"why": "REG-3326 - an unread forum reads as 'returned no fg number' again (his Shako search)",
      "file": "bible.html",
      "find": "  if (q.reason === 'unread') return 'Public price unknown. The forum could not be read'",

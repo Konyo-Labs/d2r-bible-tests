@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3331 - EVERY SECOND PRICE SEARCH ANSWERED "NO PRICES" WHEN THE FORUM HELD IT BACK (v3877, board #94, GrokBot 6700580776)
+GrokBot ran ten price searches back to back through the D2JSP tab's own GET (11-07 03:38): items 2, 4, 6, 8 and 10 (Gull,
+Arachnid Mesh, Stone of Jordan, Griffon's Eye, Andariel's Visage) each took ~21 s and came back reason "no prices", db
+"never read"; the ones between read in ~3 s; asked again 15 s apart, SoJ read 30 fg n 5 and Gull 7 fg n 8. MEASURED in
+the code: the plain POST meets the challenge page, the scratch-Chrome search submits the board's form and waits 20 s for
+"Search Results"; when the forum held a search sent right after another, the wait ran out and _chrome_search returned
+WHATEVER page was on screen, which d2jspRead read as a page with no priced posts. NOW one forum search runs at a time, at
+least 15 s after the last one began (_SEARCH_GAP_S, the measured gap), a page that never became search results raises
+"search: no results page", and the quote is "unread" with why "the forum showed no search results within 20 s - a search
+sent right after another is held back" - the price line already says "could not be read ... (why) - the next search asks
+again" (REG-3326). Law: test_a_price_check_shows_the_known_price_first (2 new cases); red-proofs PROVEN (2 new).
 ### REG-3330 - A FIRST VISITOR'S CLAIM BAR COVERED THE NAV AT 901 AND 1024 WIDE (v3877, board #98, the v3876 pre-live Grok batch + GrokBot)
 The Grok CLI on v3876's render at 901 wide: "MAIN, BOSSES, CALCULATOR, TZ ZONES, TZ TRACKER and RUNES are cut through
 horizontally, so only the lower part of each icon and word remains"; GrokBot at 1024x720: "nav plus banner take about the
