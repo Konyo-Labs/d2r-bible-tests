@@ -347,6 +347,17 @@ class TheRowSaysImportingNotStuck(unittest.TestCase):
         self.assertIn("locks shut · until this PC proves", txt)
         self.assertNotIn("fleet-riverstuck", html)
 
+    def test_nothing_owed_and_a_current_census_is_ready_never_proving_zero(self):
+        """v3880 (his 11-07 screenshot: "proving 0 owed here" on his own row - "if im done proving it should say battle ready")"""
+        txt = _plain(_chip(_row({"census": "current", "key": "current", "blind": 0, "owedHere": 0, "why": ""}, [])))
+        self.assertIn("ready for battle · every law proved here", txt, txt)
+        self.assertNotIn("proving 0", txt)
+        blind = _plain(_chip(_row({"census": "current", "key": "current", "blind": 2, "owedHere": 0, "why": ""}, [])))
+        self.assertNotIn("ready for battle", blind, "a PC with blind gates read as ready")
+        stale = _plain(_chip(_row({"census": "stale", "key": "start", "blind": 0, "owedHere": 0, "why": ""}, [])))
+        self.assertIn("nothing owed here · its proof check runs next", stale, stale)
+        self.assertNotIn("proving 0", stale)
+
     def test_a_landed_import_is_amber_not_a_red_recheck(self):
         # the reviewer on r3: the import just FINISHED and the prover had not ticked - 'fleet-riverstuck | locks shut ·
         # rechecking' with a why still saying "being imported"
@@ -426,6 +437,13 @@ class TheRowSaysImportingNotStuck(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3880 - a PC with nothing owed reads 'proving 0 owed here' again (his 11-07 screenshot)",
+     "file": "tv/control_ui.html",
+     "find": "    if (_owedHere !== null && _owedHere > 0) {", "replace": "    if (_owedHere !== null) {", "matches": 1},
+    {"why": "v3880 - a PC with blind gates reads 'ready for battle'",
+     "file": "tv/control_ui.html",
+     "find": "census === 'current' && !(typeof hs.blind === 'number' && hs.blind > 0)) {",
+     "replace": "census === 'current') {", "matches": 1},
     {"why": "#13 - a complete count reads 'importing v3876's proofs · 6,166 of 6,166' again",
      "file": "tv/control_ui.html",
      "find": "      var _allIn = !_landed && _whole(_imp.done) && _whole(_imp.of) && _imp.of > 0 && _imp.done >= _imp.of;\n",
@@ -553,7 +571,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3197 - proving here is not said",
      "file": "tv/control_ui.html",
-     "find": "    if (_owedHere !== null) {\n      bits.push(",
+     "find": "    if (_owedHere !== null && _owedHere > 0) {\n      bits.push(",
      "replace": "    if (false) {\n      bits.push(",
      "matches": 1},
 ]

@@ -5061,6 +5061,7 @@
   .pcs .pcs-next { color: var(--gold-dim); overflow-wrap: anywhere; }
   .pcs .pcs-more { color: var(--muted, #8b8071); font-style: italic; }
   .pcs .pcs-owed { color: var(--muted, #8b8071); }
+  .fleet-riverimport.fleet-proved { color: var(--mint, #8fe6a0); }   /* v3880 - the row's ready word, the card's colour */
   /* on the rail-wide hover card (v3849 keeps it on the rail) the word runs on into its first line - one line saved */
   .ftt .pcs { margin-top: 3px; }
   .ftt .pcs > .pcs-w { margin-right: 6px; }
@@ -29256,10 +29257,21 @@ function escC(s) {
           + ' until they land, then it proves only what is still owed')
         + (hs.why ? ' \u2014 ' + hs.why : '')) + '">' + escC(_impWords) + '</span>');
     }
-    if (_owedHere !== null) {
+    /* v3880 (his 11-07 screenshot: his own row read "proving 0 owed here") - a PC with NOTHING owed is not proving: it is
+       ready, in the same word its hover card and the State panel use (REG-3372). Ready only when its census is current and no
+       gate is blind; zero owed with a census not yet current says its proof check runs next - never a "proving 0". */
+    if (_owedHere !== null && _owedHere > 0) {
       bits.push('<span class="fleet-riverimport" title="' + escC('this PC is proving its own laws now, a slice at a time; '
         + _owedHere + ' still owed here' + (hs.why ? ' \u2014 ' + hs.why : '')) + '">proving ' + _num(_owedHere)
         + ' owed here</span>');
+    } else if (_owedHere === 0 && census === 'current' && !(typeof hs.blind === 'number' && hs.blind > 0)) {
+      bits.push('<span class="fleet-riverimport fleet-proved" title="' + escC('every law this PC proves for its own files is '
+        + 'proved - nothing is owed here, its census is current and no gate is blind' + (hs.why ? ' \u2014 ' + hs.why : ''))
+        + '">ready for battle \u00b7 every law proved here</span>');
+    } else if (_owedHere === 0) {
+      bits.push('<span class="fleet-riverimport" title="' + escC('nothing is owed on this PC, but its census reads '
+        + String(census) + ' - its proof check runs next' + (hs.why ? ' \u2014 ' + hs.why : '')) + '">nothing owed here '
+        + '\u00b7 its proof check runs next</span>');
     }
     /* v3849 — one river chip. A stuck list during the boot window used to draw "river stuck" and "river · starting". */
     var _pending = (census === null && hs && hs.key === 'starting' && _fleetBooting(m, nowMs));
