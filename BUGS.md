@@ -112,6 +112,13 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3382 - /api/river CARRIED NO READ TIME: ITS ONLY CLOCK WAS THE RETENTION PLAN'S (v3881, #40)
+GrokBot's v3878 pass, three GETs at 17:09, 17:10 and 17:20: every answer ok, "there is no readTs field in the payload"; the
+nearest, lanes.asOf, was the same 16:21:57 on all three. asOf is reel_retention.plan_for_reader()'s age - the RETENTION PLAN's,
+not the river's - while the lanes are river_lanes.lanes_last(), the last river walk, whose own ageMs the answer dropped. Now the
+lanes answer carries readTs (when that walk ran, epoch ms) and walkAgeMs beside asOf; a walk with no age is None (UNKNOWN),
+never "now". Law: test_a_failed_river_read_says_why +1 case, +1 red-proof seen RED. ⚠ The v3878 ACT asked GrokBot to "quote
+readTs" - a field that did not exist; the brief was wrong, GrokBot's UNKNOWN was right.
 ### REG-3381 - ONE SHAKO SCREEN SHOWED TWO PRICES: THE READ'S "MIDDLE 50" ABOVE THE ITEM'S "40 FG" (v3881, #96 STILL)
 GrokBot's v3878 pass: "Board 268 (D2:R RotW Softcore Trading) range 15-100 fg, middle 50, from 11 prices, read Nov 7 17:14"
 sat right above the NORMAL/PERFECT boxes reading 40 fg from 15 weighted posts - the raw read's median beside the item's

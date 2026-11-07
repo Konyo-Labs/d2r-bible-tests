@@ -115,6 +115,23 @@ class TheWorkerForwardsIt(unittest.TestCase):
 
 
 @unittest.skipIf(H.NODE is None, "node is not on this machine - this law RUNS the shipped chip and will not re-implement it")
+class TheRiverSaysWhenItWalked(unittest.TestCase):
+    """v3881 (GrokBot's v3878 pass, #40): /api/river carried no read time - asOf is the retention plan's age, and it read the
+    same hour-old value on three reads 11 minutes apart. The lanes are the last river walk; when it ran must travel too."""
+
+    def test_the_lanes_answer_carries_its_walk_time(self):
+        import re
+        here = os.path.dirname(os.path.abspath(__file__))
+        src = io.open(os.path.join(here, "control_app.py"), encoding="utf-8").read()
+        code = "\n".join(l.split("#", 1)[0] for l in src.split("\n"))
+        i = code.index('_lanes = {"ok": True,')
+        blk = code[i:code.index("}", code.index('"lifetime": _lr.get("lifetime")', i))]
+        self.assertIn('"readTs": ((int(time.time() * 1000) - int(_lr["ageMs"]))', blk, "the river answer has no read time")
+        self.assertIn('if isinstance(_lr.get("ageMs"), (int, float)) else None),', blk,
+                      "a walk with no age is said as a time instead of UNKNOWN")
+        self.assertIn('"walkAgeMs":', blk)
+
+
 class TheRowSaysIt(unittest.TestCase):
 
     def test_the_row_says_the_read_failed_with_its_reason(self):
@@ -163,6 +180,9 @@ class AClientThatLeftIsNoRiverFailure(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3881 - the river answer loses its read time again (#40: only the retention plan's hour-old asOf)",
+     "file": "tv/control_app.py", "find": '                                  "readTs": ((int(time.time() * 1000) - int(_lr["ageMs"]))\n',
+     "replace": '                                  "readTsGone": ((int(time.time() * 1000) - int(_lr["ageMs"]))\n', "matches": 1},
     {"why": "#40 - a reader that hung up after the read is filed as a newer FAILED river read again (Dean's WinError 10053)",
      "file": "tv/control_app.py",
      "find": "                if _river_read_kept and isinstance(e, (BrokenPipeError, ConnectionAbortedError, ConnectionResetError)):\n",

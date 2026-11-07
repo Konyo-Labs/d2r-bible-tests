@@ -51491,6 +51491,13 @@ class Handler(BaseHTTPRequestHandler):
                                   "hiddenWhy": _hide_why,
                                   "moving": _moving,
                                   "asOf": _as_of,
+                                  # v3881 (GrokBot's v3878 pass, #40: "there is no readTs field ... lanes.asOf the same
+                                  # hour-old value on all three") - asOf is the RETENTION PLAN's age, not the river's. The
+                                  # lanes are the last river walk, and when THAT ran now travels with them, as epoch ms.
+                                  # A walk with no age is UNKNOWN (None), never "now". [[stale-reading]]
+                                  "readTs": ((int(time.time() * 1000) - int(_lr["ageMs"]))
+                                             if isinstance(_lr.get("ageMs"), (int, float)) else None),
+                                  "walkAgeMs": (int(_lr["ageMs"]) if isinstance(_lr.get("ageMs"), (int, float)) else None),
                                   # ⚠ TWO DENOMINATORS, BOTH SHIPPED. `shelf` is reels on disk
                                   # (what `reconciles` is about); `closed` is reels that have left
                                   # it; `lifetime` is the union. Shipping only the first is how
