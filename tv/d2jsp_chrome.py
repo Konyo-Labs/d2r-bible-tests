@@ -125,7 +125,23 @@ def restore_value(root):
 
 def profile_in_use(root):
     """Does a Chrome hold this profile right now? Chrome keeps SingletonLock (a link to "<host>-<pid>") in the profile
-    while it runs. -> bool; a lock whose pid is gone is not in use."""
+    while it runs. -> bool; a lock whose pid is gone is not in use.
+
+    REG-3355 (v3878 pre-flight, test_a_liveness_probe_never_sends_ctrl_c_on_windows) - ON WINDOWS NEITHER HALF HOLDS:
+    os.kill(pid, 0) there is CTRL_C_EVENT, not a probe, and Chrome on Windows keeps no SingletonLock at all - it holds
+    `lockfile` in the profile open with no sharing while it runs. So the Mac's answer read "not in use" beside his running
+    Chrome, and the headless settings run could have handed a window to it. On Windows a `lockfile` that will not open is
+    in use; one that cannot be told is in use too (nothing is launched over it)."""
+    if os.name == "nt":
+        lf = os.path.join(root, "lockfile")
+        if not os.path.exists(lf):
+            return False
+        try:
+            fd = os.open(lf, os.O_RDONLY)
+        except OSError:
+            return True                 # held with no sharing (a sharing violation), or it cannot be told: in use
+        os.close(fd)
+        return False
     lk = os.path.join(root, "SingletonLock")
     try:
         target = os.readlink(lk)

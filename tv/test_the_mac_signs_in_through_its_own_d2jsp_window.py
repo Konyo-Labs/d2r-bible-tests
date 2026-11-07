@@ -84,6 +84,23 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
         os.symlink("host-999999999", lk)
         self.assertFalse(D.profile_in_use(self.root), "a lock whose Chrome is gone read as in use")
 
+    def test_on_windows_the_held_lockfile_says_in_use_and_no_signal_is_sent(self):
+        """REG-3355 - Windows Chrome keeps no SingletonLock: it holds `lockfile` with no sharing. os.kill(pid, 0) there is
+        a Ctrl-C, so it is never asked; a lockfile that will not open is in use, one that opens is a leftover"""
+        os.makedirs(self.root)
+        killed = []
+        with mock.patch.object(D.os, "name", "nt"), mock.patch.object(D.os, "kill", lambda *a: killed.append(a)):
+            self.assertFalse(D.profile_in_use(self.root), "no lockfile read as a Chrome holding the profile")
+            with io.open(os.path.join(self.root, "lockfile"), "w") as fh:
+                fh.write("")
+            self.assertFalse(D.profile_in_use(self.root), "a leftover lockfile that opens read as in use")
+
+            def held(*a, **k):
+                raise PermissionError(13, "The process cannot access the file because it is being used")
+            with mock.patch.object(D.os, "open", held):
+                self.assertTrue(D.profile_in_use(self.root), "a lockfile Chrome holds read as free")
+        self.assertEqual(killed, [], "a signal was sent on Windows - os.kill(pid, 0) is CTRL_C_EVENT there")
+
     def test_it_is_set_through_chromes_own_settings_by_default(self):
         """REG-3349 (his 11-07: "by default this should be done and not optional on the console end. it should be
         defaulted on") - off and closed -> set (the launch stands in for the headless settings pass); on -> fine"""
@@ -216,6 +233,20 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
 
 
 RED_PROOF = [
+    {
+        "why": "REG-3355 - Windows falls through to the Mac's SingletonLock and os.kill: a Ctrl-C, and his Chrome read as free",
+        "file": "d2jsp_chrome.py",
+        "find": "    if os.name == \"nt\":\n        lf = os.path.join(root, \"lockfile\")\n",
+        "replace": "    if False:\n        lf = os.path.join(root, \"lockfile\")\n",
+        "matches": 1,
+    },
+    {
+        "why": "REG-3355 - a lockfile Chrome holds (it will not open) reads as free on Windows",
+        "file": "d2jsp_chrome.py",
+        "find": "        except OSError:\n            return True                 # held with no sharing",
+        "replace": "        except OSError:\n            return False                # held with no sharing",
+        "matches": 1,
+    },
     {"why": "#24 - the seed rewrites a restore setting Chrome resets, every launch",
      "file": "tv/d2jsp_chrome.py",
      "find": "        if chrome_reset_restore(root):\n",

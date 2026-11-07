@@ -127,6 +127,14 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3355 - MY REG-3349 "IS CHROME HOLDING THIS PROFILE" SENT A CTRL-C ON WINDOWS AND MISSED HIS RUNNING CHROME (v3878, its pre-flight)
+v3878 pre-flight: test_a_liveness_probe_never_sends_ctrl_c_on_windows RED - "d2jsp_chrome.py:135 profile_in_use". The
+function I wrote for REG-3349 asked os.kill(pid, 0) of the pid in Chrome's SingletonLock link. On Windows that call is
+CTRL_C_EVENT, not a probe, and Windows Chrome keeps no SingletonLock at all - it holds `lockfile` in the profile open with no
+sharing while it runs - so the answer there would have been "not in use" beside his running Chrome, and the headless settings
+run could have handed a window to it. NOW, on Windows, a `lockfile` that will not open is in use (a sharing violation, or
+anything that cannot be told), one that opens is a leftover, none is free; no signal is sent. Law:
+test_the_mac_signs_in_through_its_own_d2jsp_window (+1 case), red-proofs PROVEN (2); the Ctrl-C law green again.
 ### REG-3349 - THE D2JSP WINDOW'S "CONTINUE WHERE YOU LEFT OFF" IS ON BY DEFAULT, SET THROUGH CHROME'S OWN SETTINGS (v3878)
 His ruling (11-07, on REG-3347's "set it once by hand"): "by default this should be done and not optional on the console
 end. it should be defaulted on". MEASURED on scratch profiles (headless, never his): a value written into the profile's
