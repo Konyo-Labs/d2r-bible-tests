@@ -123,8 +123,9 @@ def proof_costs(path=None, env=None):
 
     REG-3274 - THE PRICES UPDATE THEMSELVES. With no `path`, HEART2_SHARD_COSTS names the costs the LAST round measured
     (the fan-in writes them beside the seed it saves; the seed job hands them to every shard in the one proof-seed
-    artifact, so every shard reads the same file and cuts the same plan). Its rows win over tv/proof_costs.json's; a
-    gate it never measured keeps the committed price. Unreadable or absent: the committed file alone, as before."""
+    artifact, so every shard reads the same file and cuts the same plan). Its rows win over tv/proof_costs.json's when
+    they are HIGHER (REG-3365: never below the committed price); a gate it never measured keeps the committed price.
+    Unreadable or absent: the committed file alone, as before."""
     if path is None:
         base = proof_costs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "proof_costs.json"))
         lp = (env if env is not None else os.environ).get("HEART2_SHARD_COSTS") or ""
@@ -132,7 +133,13 @@ def proof_costs(path=None, env=None):
         if base is None or not last:
             return base
         out = dict(base)
-        out.update(last)
+        # v3880 (REG-3365) - A ROUND'S PRICE MAY RAISE A GATE, NEVER SINK IT BELOW THE COMMITTED TABLE. MEASURED on v3878's
+        # round: the last round had priced test_control at 19.1 s a proof (its proofs there were cheap - served, or
+        # narrowed to the cases that caught them), the committed table says 272.8 s, and on shard 10 each proof took
+        # 226-263 s. Priced at 19 s, 20 of its 28 owed proofs went to ONE shard (~80 min of proving in a 55-min job), and
+        # the round needed four attempts. Pricing too high costs a few clean runs; pricing too low costs a whole round.
+        for g, v in last.items():
+            out[g] = max(v, base.get(g, 0.0))
         return out
     try:
         with open(path, encoding="utf-8") as fh:

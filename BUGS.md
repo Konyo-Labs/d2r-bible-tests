@@ -112,6 +112,196 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3365 - A CHEAP ROUND PRICED test_control AT 19 s A PROOF, SO 14 OF ITS PROOFS RODE ONE SHARD AND v3878 NEEDED FOUR ATTEMPTS
+v3878's GitHub round: shards 7, 8, 10 and 12 were cut at their bound (TIMEOUT, no law red) three times running. Shard 10 held
+test_control's owed proofs. MEASURED from its cache stamps: each took 226-263 s. The plan priced them at 19.059 s (the seed's
+proof_costs.json, "the last round's shards"), while the committed tv/proof_costs.json says 272.811 s. REG-3274 lets the last
+round's prices WIN, and in that round test_control's proofs had been cheap (served, or narrowed to the cases that caught
+them). Re-planned at a round's size, 19 s puts 14 proofs on each of two shards: one lane at ~245 s each is past the 55-min
+job. At 272.8 s the same plan puts at most 2 on a shard, across 17 shards. Every version that touches control_app.py paid
+this as extra 35-min attempts.
+FIX: proof_shard.proof_costs - a round's measured price may RAISE a gate, never sink it below the committed table. Pricing
+too high costs a few clean runs; pricing too low costs a whole round.
+GUARD: tv/test_a_round_cut_only_by_its_deadline_is_made_up.py +1 case (the v3878 prices, re-planned at a round's size: no
+shard owes more than 4 of test_control's proofs), 1 red-proof, RED; REG-3274's proof re-anchored to the new line, RED.
+
+### REG-3364 - EVERY WINDOWS CHECKOUT WAS CR LF, SO EVERY RAW-BYTE LAW WAS RED THERE (v3880, board #107)
+#107's probe (a one-off GitHub Windows job, branch ci/win107-probe, run 42367869017) ran the 62 laws GitHub's Windows prover
+found red untampered and kept why. One class: a law reading a file's raw bytes on a "\n" anchor - test_one_hunt_clock
+("CUT START MISSING"), test_every_windows_console_starts_itself_at_sign_in ("substring not found" in start_tvd_win.ps1 read
+"rb"), and others. MEASURED 11-07 on the work ALT: core.autocrlf = true, and `git ls-files --eol` reads w/crlf for
+bible.html, control_app.py and start_tvd_win.ps1. That is Git for Windows' default; GitHub's runner does the same. So
+GitHub's Windows set was never whole for those laws, and on the ALTs they were owed for ever.
+FIX: .gitattributes `* text=auto eol=lf`. The index already holds LF only (2765 LF, 0 CRLF or mixed; a real renormalize of a
+clone changed 0 files), so no PC sees anything modified. A Windows checkout writes LF from now on. A CRLF file already on a
+PC stays until a version touches it, and bible.html and control_app.py change every version. Binaries are detected and left
+alone. SIMULATED before shipping: a CRLF checkout pulling the commit fast-forwards cleanly with status clean. The repo
+carries no .bat/.cmd/.vbs, and PowerShell runs LF scripts.
+NOT CHANGED: laws that build their OWN temp repo get the runner's global autocrlf and need their own fix (#107's next batch).
+GUARD: tv/test_every_checkout_gets_lf.py - the rule, a clone made with autocrlf=true gets LF (and a binary's bytes), no
+committed CRLF. 1 red-proof, RED; without eol=lf the same clone measured CR LF.
+
+### REG-3363 - NO PC COULD SAY WHETHER D2JSP ACTUALLY ANSWERS THERE (v3880, board #56, his 11-05 worry)
+His words 11-05: "d2jsp works on Dean's PC? the MacBook never did". The D2JSP lamp says whether a sign-in exists, and
+REG-3344 made a shadow's lamp UNKNOWN. Only a real search proves d2jsp answers, and no PC recorded one where another PC could
+see it.
+FIX: v3878's refresh lane (d2jsp_refresh.run_once) already asks the forum for one stale item a pass on every PC. Now:
+- every read it makes is recorded on that PC (.d2jsp_check.json, gitignored: when, which item, what came back);
+- a day with nothing due asks CHECK_ITEM (Shako) once, so a PC whose database is all fresh still proves its sign-in reads;
+- the record rides the PC's beacon ("d2jsp"), shaped by functions/api/console.js (ok true/false/null, time clamped, words
+  capped). A flip of its outcome is news; a newer read with the same outcome is not.
+- Every Fleet row's box draws it: "d2jsp reads · 3 h ago", "signed out", "did not read (unread)", or UNKNOWN (never asked,
+  or a build older than the field).
+Every stand-aside a refresh honours still holds (checks running, he plays, a sweep reads, a push grades). Nothing is posted.
+GUARD: tv/test_each_pc_reads_d2jsp_once_a_day.py, 9 cases (the lane with a real price database on disk, the worker in
+node, the Fleet part in node). 6 red-proofs, all RED. test_the_price_database_refreshes_itself re-pinned to the call's new
+argument.
+
+### REG-3362 - THE OLD ALT'S 17 CHARACTERS NEVER LEFT IT: ONE LABEL HELD ONE PC (v3880, board #27, his 11-05 ruling)
+GrokBot 11-05 (#230 6655590795): KonyoLock's card in the ALT's shadow read "No gear seen yet" while the ALT had watched
+Enigma on it, and "the ALT has published 0 characters". MEASURED over SSH 11-07: the OLD ALT holds 17 characters and their
+gear (konyolock: Enigma, Goldwrap, Raven Frost; konyodin and konyoress: Fortitude; konyobear: Treachery). Its profile never
+left the PC: .roster_profile_state.json read "the owner is not one of the five labels", because its nickname is "OLD PC
+ALT". The WORK ALT, which holds the "Konyo · ALT" label and key, uploads fine and has learned 0 characters. The site kept
+ONE key per label, so approving the old ALT's key would have REPLACED the work ALT's.
+FIX (his 11-05 ruling "share the profile, just split the rows"):
+- functions/api/roster.js RING: a label keeps its first key and may hold RING_MAX (2) more in `also`. Each is another PC he
+  approves from his Mac with the new "add" decision, never one that replaces the first. A replace keeps the ring.
+- Such a PC publishes its rows, profile and frames digest into its own slot (record name + "@" + its 12-hex key id), so
+  neither PC overwrites the other.
+- The profile GET serves each other PC's characters answer (and its world, nothing else) while its key is in the ring and
+  its stores match their hash. The rows GET lists the other PCs' rows beside the label's.
+- console_snapshot.with_others folds them into the one d2r_api_chars_learned the shadow reads: a character only the other
+  PC learned is added, gear is joined by equipped_ledger.merge_pcs (REG-3069's rule: same item adds its looks, two items
+  take the later look, no time is UNKNOWN), and the shadow's words name that PC, its key and its upload's age.
+- A PC whose nickname is not a label shares one by its identity's `sharesLabel` (only one of the five).
+- The Mac's key request offers "Approve (replace)", "Add as another PC" and "Deny".
+GUARD: tv/test_one_label_holds_two_pcs.py - the real worker in node with real Ed25519 keys, 14 cases. 8 red-proofs, all
+RED. One proof first stayed GREEN: its case never published the first PC's profile, so the GET answered "not published"
+before reading the others. Fixed with a premise assertion.
+OWED AFTER LANDING: set the OLD ALT's identity sharesLabel to "Konyo · ALT". Its next publish asks for its key, and he
+presses "Add as another PC" on his Mac. Approving a PC is his call; no seat presses it for him.
+
+### REG-3361 - THE DOCTOR SAID HIS WORK ALT'S GIT POPS A CONSOLE, WHILE THE DOOR HAD ALREADY FOUND THE REAL GIT (v3879, #12/#103)
+The fleet's UNKNOWN ERRORS line read, for Konyo · ALT: "no git child steals his screen - all 31 git argv site(s) go through
+_git_run, but mingw64 git is not at the expected path". MEASURED over SSH 11-07: its Git 2.56 is the ucrt64 build
+(C:\Program Files\Git has ucrt64, no mingw64). v3866 taught the door, git_quiet.real_git, every layout, so every git child
+there is already hidden. Only the doctor row still looked for the one mingw64 path, so it reported a fallback that does not
+happen - a false fault on his repair book.
+FIX: the row asks git_quiet.real_git, the door's own answer, and names the build it found ("the ucrt64 build"). No real git
+in any layout is still MISSING, and names the layouts it looked in. A resolver that cannot be asked is UNKNOWN.
+GUARD: tv/test_windows_git_spawns_hide_the_console.py +2 cases (driven as win32 from the Mac), 1 red-proof, RED.
+
+### REG-3360 - AN IMPORT OUTLIVED THE CONSOLE THAT ASKED FOR IT: THREE RAN AT ONCE ON THE OLD ALT, ONE FOR 32 HOURS (v3879, board #103)
+MEASURED 11-07 ~12:45 IST over SSH, after GrokBot's #230 6705733326 saw the OLD ALT's river time out. Three `heart2
+--import-shards` were running at once. Two were orphans of consoles that had already exited (parent GONE): one started
+11-06 02:59 and had keyed v3876's bundle for 32 hours, one from 03:43. The live console's own import was the third. The
+PC had 457 MB of 7.9 GB free, and GET /api/river timed out at 60 s. The work ALT, with one import, answered its river in
+2 s. Killing the two orphans by PID freed 575 MB.
+CAUSE: proof_release runs heart2 with subprocess.run. Its timeout (5400 s) lives in the console, so it dies with the
+console when an update or a restart replaces it. Nothing bounded the child.
+FIX: the console passes its pid (--import-parent). heart2's _watch_import_parent asks every 10 s whether that pid is
+alive, and ends the import (exit 3, saying why) once it is gone. This is the console's own _orphan_exit_loop rule: only
+a child that was TOLD its parent watches, so a hand-run import never ends. Stopping between writes is safe: each write is
+atomic, under an OS lock released when the process exits, and REG-3352 keeps what was written. A probe that cannot
+answer keeps the import, never a guessed death.
+GUARD: tv/test_an_import_ends_with_its_console.py - REAL processes: a parent is started and killed, and the import must
+exit 3 by itself. A live parent keeps it. A broken probe keeps it. The argv and main() wiring. 4 red-proofs, all RED.
+NOT CHANGED: the Windows PID-reuse window (a new process with the dead console's pid keeps the import alive, as before).
+
+### REG-3359 - THE RUNEWORD ID CARD DREW AN ANVIL, NO PICTURE: WORN FORTITUDE / PEACE / TREACHERY SHOWED NO BASE (v3879, board #27)
+GrokBot 11-05 (#230 6655590795): worn Fortitude, Peace and Treachery open a runeword card with its recipe but no slot or
+base picture. runewordDetailHtml drew a fixed ⚒️ glyph in the header for all 99 runewords, whatever pictures the board
+had. REG-3070 had fixed the character window's cell, but the card never drew a picture at all.
+FIX: the card draws the runeword's own picture (the one its hover draws). Under "Made in", it draws one base per slot it
+can be made for, through _cbRwSlots(name) in the builder's block. Each base is the one _cbSlotArtName draws in that slot,
+so the card and the character window answer alike. Fortitude: Body armor (Ancient Armor) and Weapon (its crystal sword).
+Peace, Treachery and Enigma: Body armor. Spirit: Weapon and Shield. The off-hand counts only its OWN kinds (a shield, a
+head, a quiver), never a second weapon, so Lawbringer is made in a Weapon only.
+GUARD: tv/test_a_worn_item_draws_its_slots_picture.py +1 case (seven runewords, run on the page in node: the header
+picture is the runeword's own, the slots are the recipe's, each base is of its slot's kind and allowed, and each picture
+is the window's). 3 red-proofs, all RED. Looked at 1440 / 1024 / 390.
+ALSO FIXED, from the Grok CLI's cold look at the crops: at a phone's width every ID card's name broke mid-word ("SPIR /
+IT", "KATHO / S'", the badge "RUNEW / ORD"; the same on v3878). The <=720 px rule's overflow-wrap:anywhere let the browser
+break any word to squeeze a line. Now break-word breaks only a word that cannot fit at all, and the badge is nowrap, so it
+moves to the next line whole. +1 case, 1 red-proof, RED.
+NOT CHANGED: Spirit's Shield tile draws D2's Bone Shield, the first shield its recipe allows, which is the character
+window's rule. Grok read the picture as "a spine with rib-like bones", not a shield. A better-known shield would need
+REG-3070's pick to change for both surfaces, so it is left for his call.
+
+### REG-3358 - THE CONSOLE'S TERROR ZONE CARDS WORE GREY ZONE TILES, NOT THE QUICK WINS SPRITES (v3879, board #108)
+His words 11-07 ~11:30 IST, on the console's Terror Zone panel (Blood Moor, Den of Evil, Nihlathak's Temple, Halls of Anguish):
+"for terror zones section i want them also updated with the proper .gifs related ... so its unified". NOW TZ_MONSTER gives 76 of
+the 80 zones TZ_INFO knows their own monster, the same sprites Quick wins draws: the act boss whose fight the zone is (The Chaos
+Sanctuary: Diablo), else its super-unique (Den of Evil: Corpsefire; Nihlathak's Temple: Pindleskin at its gate; Lut Gholein
+Sewers: Radament), else its most common random pack in the board's own data, else the first monster of the wiki's roster with a
+verified family sprite (Blood Moor: Zombie; The Pit: Devilkin -> Fallen). Six more Arreat Summit families joined for those, each
+read cold by the Grok CLI; its Council Member sprite was REJECTED (read as a grey beast) and Travincal wears the Zakarum Zealot.
+Abaddon, Ancient's Way, Forgotten Tower and Pit of Acheron keep their zone art - no source names them a monster. The lookup
+goes through _tzKey, the key the zone art resolves by. Rendered on a private console (1440, 1024): Pindleskin, the Act 5 Blood
+Lord, the Death Mauler, Bonesaw Breaker and the Abominable on their cards. The board's own Terror Zone rows (tzZoneRowHtml) read
+the SAME picks by the same key - two copies of one record, the law keeps them equal - and every sprite fills its tile. Law:
+test_each_terror_zone_wears_its_own_monster, red-proofs PROVEN (4); tv/art_names.py knows both new art doors.
+### REG-3357 - QUICK WINS: EVERY PACK MONSTER WEARS ITS OWN SPRITE, THE PIT IS THE CAVE, UBERS DIFFER, AND THE COLUMNS ARE IN HIS ORDER (v3879, board #108 / #109)
+His 11-07 asks, on Bane Ash screenshots (v3877): "for banished and for pits and for spike freind ... either .gif or a HD extracted
+art thats related and properly matched for those and others like it"; "classic.battle.net ... these are wonderful try this
+website"; "for uber lilith use this [the Arreat Summit's Andariel]" / "make sure they are diffrent for uber duriel"; and "first
+should be how many runs. then ... time for a 50% chance then ... runs an hour ... and the odds should be at the end". MEASURED:
+65 random-pack monster types in QW_PLACES had no sprite (a zone tile stood in), The Pit wore Tamoe Highland's outdoor tile, every
+uber shared its regular boss's sprite, and - rendering v3878's two sections - Bane Ash's second section was FIVE area runs (The
+Pit + four Cow Level variants) with every per-kill place pushed off. NOW: MONSTER_PACK_ART (64 names -> 49 family gifs from The
+Arreat Summit, Blizzard's own D2 site; each family page's own variant list decides the match, a name two families list is
+settled by its area's act; every file looked at on a contact sheet, read cold by the Grok CLI and trimmed of its black margin
+across all frames; tv/data/monster_art_arreat.json) feeds Quick wins' tile and D2IO_ART's floating card; Blood Wing (no family
+page names it) draws no stand-in. AREA_RUN_ART gives The Pit the wiki's extracted render of the cave. The ubers wear the
+Arreat Summit's sprites, the regulars keep theirs. The second section is one row per area (its fastest variant) and one row per
+monster at one odds across its levels ("Jail Level 1 · Jail Level 2 · Jail Level 3"). Both sections read runs (or kills) for a
+50% chance, time, runs (or kills) an hour, then the odds. Laws: test_quick_wins_shows_each_place_with_its_picture (+8 cases),
+test_every_picture_the_console_asks_for_is_shipped (two new art doors), red-proofs PROVEN (8).
+### REG-3354 - A "LINKED, PRICED" POST WAS ANY STRING STARTING "http" AND ANY NUMBER float() TAKES (v3879, the Grok CLI on v3877)
+The second eye on v3877 (second_eye_run.py, cold): d2jsp_price_db.counts treated a link as a forum post when it merely
+started with "http" - "httpnot-a-url" or a bare "http://" weighed in the price - and a price as anything float() takes, so
+`fg: true` weighed as 1 fg (float(True) is 1.0) and "inf" would own every median. Both reproduced by the new cases. NOW a link
+counts only as http(s) on d2jsp.org with a host (is_post_link), and a price only as a finite number above zero that is not a
+bool. MEASURED on his DB 11-07: 31 of 45 posts link to forums.d2jsp.org, 14 carry none, every fg a float - nothing real is left
+out. Law: test_only_a_linked_priced_post_weighs (+2 cases), red-proofs PROVEN (3 new; REG-3327's re-anchored and RED).
+### REG-3353 - THE ALT'S EMPTY VAULT LEDGER SAID "0 ROWS" FOR 42 h AND NEVER WHY (v3879, board #47)
+Board #47: "ALT vault_ledger empty - the Windows console never feeds it". MEASURED on the ALT 11-07 ~09:50 IST (v3876):
+/api/vault_ledger "0 grounded row(s) and 0 sighting(s) still short of a second witness", both stores ok, last written ~42 h
+before - which reads as "nothing was found". True instead: no vault sweep could start (vault.sweep_start OPEN, not permitted:
+26 of its guard laws unproven - REG-3351 is the cause), and the last sweep's classifier answered about none of its 2 stash
+stills (Claude and the Grok backup both timed out). NOW the route adds `emptyWhy` and ends `say` with it when the ledger has
+no row and was read whole: the sweep lock's own refusal, the last sweep's own why with its age, or that a sweep is reading
+now (_vault_empty_why; self_arming.may and vault_sweep_state as seams). The view itself still asks no lock, so test_control's
+fixture stores never reach the live census. Law: test_an_empty_vault_ledger_says_why, red-proofs PROVEN (5).
+### REG-3352 - THE ALT'S RE-ASK FOR GITHUB'S WINDOWS PROOFS RAN 4.9 h, PAST ITS 90-MIN BOUND, AND KEPT NOTHING (v3879, board #103-C)
+His question 11-07 ~10:00 IST: "not logical that the alt is on 68 proof only when like 8 hours ago we were at 95 or
+something... how is it this slow??? its like not finishing or stale?". MEASURED on the ALT (tv/.proof_release.json, v3876
+9c759b54a): the first win32 import landed a PARTIAL set (cut win32: 2,179 proofs cut at their bound on GitHub); the re-ask
+for the completed set (REG-3261) said "heart2 --import-shards could not run (TimeoutExpired)" after 17,673 s, twice
+(partialTries 2). Two causes. (1) heart2's import keyed EVERY entry again - most of them already served here from the first
+import - and wrote only at the very end, so a run killed at its bound kept nothing. (2) proof_release ran it with
+capture_output: on a timeout run() kills heart2 and then waits for its pipes, which the key workers still held - 17,673 s
+against a 5,400 s bound. Meanwhile the ALT proved its 68+ owed laws itself, two or three at a time. NOW the whole set's
+shape is still checked first (a stray entry refuses it all, nothing written); an entry whose key this PC already serves is
+not keyed again (merge_into keeps a served key anyway) and still counts as banked; the rest is keyed and WRITTEN a batch at a
+time (IMPORT_BATCH_PROOFS, a law never split; the shut locks' guards first on this PC's own store), so a killed run keeps its
+batches and the next one resumes past them; and heart2's output goes to a file, so the bound ends the wait and a killed run
+says its last line. Law: test_an_import_keeps_what_it_has_keyed, red-proofs PROVEN (9); test_an_imported_shard_keeps_its_tree
+gains the merge's own case (its [16] would have gone BLIND: the import no longer hands it a served key).
+### REG-3351 - THE ALT'S VAULT SWEEP LOCK WAITED ~42 h BEHIND 71 OWED LAWS THAT GUARD NOTHING (v3879, board #103-C / #47)
+His question 11-07 ~01:45 IST: "if the river proves itself already why does every proof going forward not related to it
+need to continue proofing it over and over again for it to unlock?". MEASURED on the ALT 11-07 ~09:50 IST (v3876,
+read-only GETs): /api/vault_ledger 0 owned / 0 sightings (written ~42 h before); the vault autoread loop FLOWING every 45 s;
+vault.sweep_start OPEN but not permitted - "26 of its own guard law(s) changed or are unproven"; the self-prove lane worked
+71 owed laws CHEAPEST FIRST (self_prove.plan_slice), so the sweep lock's guards waited behind laws that guard no lock. A
+per-lock door (#156) opens the moment its own guards are proven, and only when the slice holding them writes the census.
+NOW self_arming.owed_guard_rank ranks every owed law that guards a door lock (rank 0 = a guard of the lock that opens after
+the fewest proofs; one guard rule, _lock_guard, shared with the per-lock answer) and plan_slice makes those guards a slice
+of their own, rank then cost; a recorded BLIND still goes first, alone (REG-1673). The tick ranks only a census it read
+itself, and its say names the locks ("the guards of the shut lock(s) first: vault.sweep_start (26 owed guard(s)) ...").
+Law: test_the_shut_locks_guards_are_proved_first, red-proofs PROVEN (8). Not this entry: the ALT's GitHub proof import,
+which timed out twice (4.9 h) and kept nothing - all or nothing under a 5400 s kill (#103-C, the import half).
 ### REG-3350 - TWO OF MY REG-3319 RED-PROOFS STAYED GREEN ON GITHUB'S PROOF ROUND AND RED ON THE MAC (v3877, GitHub's round 7)
 GitHub, proof-keys shards, v3877 at 2fa719744: test_a_named_file_the_law_never_opened_is_keyed_by_name[2] and
 test_a_gate_proven_on_these_bytes_is_carried[59] BLIND ("stayed GREEN through its own defeat"); both were RED here. Two

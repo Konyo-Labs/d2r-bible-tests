@@ -243,6 +243,34 @@ class ThePricesMeasureThemselves(unittest.TestCase):
         finally:
             shutil.rmtree(t, ignore_errors=True)
 
+    def test_a_round_never_prices_a_gate_below_the_committed_table(self):
+        """v3880 (REG-3365) - MEASURED on v3878: the last round priced test_control at 19.1 s a proof, the committed table
+        says 272.8 s, and each proof took 226-263 s on shard 10 - so 20 of its 28 owed proofs went to one shard and the
+        round needed four attempts. A round may raise a price; it never sinks one below the committed table."""
+        t = tempfile.mkdtemp()
+        try:
+            base = PS.proof_costs(env={})
+            self.assertGreater(base.get("test_control", 0), 200, "premise: the committed table prices test_control's full proof")
+            f = os.path.join(t, "proof_costs.json")
+            with io.open(f, "w", encoding="utf-8") as fh:
+                json.dump({"perProof": {"test_control": 19.059}}, fh)
+            got = PS.proof_costs(env={"HEART2_SHARD_COSTS": f})
+            self.assertEqual(got["test_control"], base["test_control"], "a cheap round sank test_control to %r" % got["test_control"])
+            # a round's size: 300 other gates of 30 cheap proofs beside test_control's 28 (v3878 owed ~9,500 proofs)
+            fill = [("f%03d" % i, "f%03d.py" % i, [{}] * 30) for i in range(300)]
+            pp = dict(((n, 3.5) for n, _f, _p in fill), test_control=got["test_control"])
+            plan = PS.plan([("test_control", "test_control.py", [{}] * 28)] + fill, 22,
+                           costs={"test_control": 129.2}, per_proof=pp)
+            shards = {}
+            for (g, i), k in plan.items():
+                if g == "test_control":
+                    shards[k] = shards.get(k, 0) + 1
+            # at 19 s a proof the same plan put 14 on each of two shards: 14 x ~245 s on one lane is past the 55-min job
+            self.assertLessEqual(max(shards.values()), 4,
+                                 "one shard still owes %d of test_control's proofs at its real price" % max(shards.values()))
+        finally:
+            shutil.rmtree(t, ignore_errors=True)
+
     def test_the_seed_carries_the_prices_and_refuses_a_broken_file(self):
         t = tempfile.mkdtemp()
         try:
@@ -433,8 +461,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3274 - the round's prices never reach the plan",
      "file": "tv/proof_shard.py",
-     "find": "        out.update(last)\n",
-     "replace": "        pass\n",
+     "find": "            out[g] = max(v, base.get(g, 0.0))\n",
+     "replace": "            pass\n",
      "matches": 1},
     {"why": "REG-3274 - a broken round file is carried into every shard",
      "file": "tv/proof_seed.py",
@@ -445,6 +473,11 @@ RED_PROOF = [
      "file": ".github/workflows/proof-keys-shards.yml",
      "find": "          python3 tv/proof_shard.py --measure-costs shards --out \"$RUNNER_TEMP/heart2-seed/proof_costs.json\" || true\n",
      "replace": "          true\n",
+     "matches": 1},
+    {"why": "v3880 (REG-3365) - a cheap round sinks a gate below its committed full-proof price (v3878: test_control 19 s)",
+     "file": "tv/proof_shard.py",
+     "find": "            out[g] = max(v, base.get(g, 0.0))\n",
+     "replace": "            out[g] = v\n",
      "matches": 1},
 ]
 
