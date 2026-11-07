@@ -202,7 +202,11 @@ test.describe('v1614 — game art, not emoji', () => {
 
   test('★ the HTML only points at icons that exist on disk', async () => {
     // catches a typo'd src at review time rather than as a silently absent picture in production
-    const refs = [...UI.matchAll(/src="(\/art\/[^"]+)"/g)].map((m) => m[1]);
+    // v3879 (REG-3358): a Terror Zone card's monster is `src="/art/' + mon + '"`, picked from the literal TZ_MONSTER table at
+    // runtime - a path this regex cannot read. Every file in that table is checked on disk by
+    // tv/test_each_terror_zone_wears_its_own_monster.py (test_every_monster_file_is_shipped_and_sourced); a concatenated
+    // src is skipped HERE only, and every literal one is still checked.
+    const refs = [...UI.matchAll(/src="(\/art\/[^"]+)"/g)].map((m) => m[1]).filter((r) => !/' \+ /.test(r));
     expect(refs.length).toBeGreaterThan(5);
     const missing = refs.filter((r) => !fs.existsSync(path.join(REPO, r.replace(/^\//, ''))));
     expect(missing, 'referenced but not in art/').toEqual([]);

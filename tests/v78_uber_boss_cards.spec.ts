@@ -59,8 +59,12 @@ test.describe('v78 Uber Boss ID cards (9)', () => {
     expect(r.count).toBe(9);
     expect(r.allHaveArt).toBe(true);
     expect(r.allHidden).toBe(true);               // collapsed by default
-    expect(r.lilithArt).toMatch(/d2mon_Andariel\.gif(?:\?|$)/);   // REG-3321 (v3877 #102/#91): one picture per monster - the boss's own animated sprite, never a stone-backed render
-    expect(r.baalArt).toMatch(/d2mon_Baal\.gif(?:\?|$)/);
+    // REG-3321 (v3877 #102/#91): one ANIMATED sprite per monster, never a stone-backed render. REG-3357 (v3879 #108/#109,
+    // his ask "ubers differ"): an uber wears ITS OWN sprite, apart from its regular boss - Lilith is not Andariel's picture.
+    expect(r.lilithArt).toMatch(/d2arreat_andariel\.gif(?:\?|$)/);
+    expect(r.baalArt).toMatch(/d2arreat_baal\.gif(?:\?|$)/);
+    expect(r.lilithArt).not.toMatch(/d2mon_Andariel\.gif/);   // the uber is not drawn as its regular boss
+    expect(r.baalArt).not.toMatch(/d2mon_Baal\.gif/);
   });
 
   // REG-2504..2506 (#68): Uber Duriel's Hell resists are physical 50 and 75 for the rest (d2emu) - no resist reaches
