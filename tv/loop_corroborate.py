@@ -59,7 +59,9 @@ SURFACES = ("_ledger_backup_loop", "_vault_autoread_loop",
             # #193 — it leaves a real trace every pass: whether it read the river, and why not
             "_river_warm_loop",
             # #151 — it leaves a real trace every pass: whether it measured the disk, and why not
-            "_disk_sign_loop")
+            "_disk_sign_loop",
+            # v3878 #96/#88 (REG-3348) — it leaves a real trace every pass: what it asked, what it owes, and why it waited
+            "_price_refresh_loop")
 
 #: vessel -> (lane the tick is stamped under, glob for its trace, declared period in seconds)
 #: ⚠ THE LANE NAME IS NOT THE VESSEL NAME. `_ledger_backup_loop` stamps under

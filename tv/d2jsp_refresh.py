@@ -33,14 +33,17 @@ def stale_items(db, now):
     for k, it in sorted(((db or {}).get("items") or {}).items()):
         if not isinstance(it, dict) or not it.get("item"):
             continue
-        due, _why = P.is_stale(db, k, now, key=k)
+        try:
+            due, _why = P.is_stale(db, k, now, key=k)
+        except (TypeError, ValueError):
+            due = True      # its read time will not parse: one bad row must not stop the lane - a fresh read repairs it
         if due:
             try:
-                ra = float(it.get("readAt") or 0)
+                ra = float(it.get("readAt") or 0)      # never read: 0, the stalest
             except (TypeError, ValueError):
-                ra = 0.0
+                ra = None                              # a read time that will not parse is UNKNOWN, never a made-up 0
             out.append((k, str(it["item"]), ra))
-    out.sort(key=lambda r: (r[2], r[0]))
+    out.sort(key=lambda r: (r[2] is not None, r[2] or 0.0, r[0]))     # an unknown read time is asked first
     return out
 
 

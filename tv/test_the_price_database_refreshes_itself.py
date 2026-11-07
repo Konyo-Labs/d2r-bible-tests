@@ -92,6 +92,15 @@ class ThePriceDatabaseRefreshesItself(unittest.TestCase):
         r = self._run(quote=lambda n: (_ for _ in ()).throw(OSError("boom")))
         self.assertIn("raised OSError", r["why"])
 
+    def test_a_read_time_that_will_not_parse_is_unknown_and_asked_first(self):
+        """swallow_ratchet (v3878 pre-flight): an unparseable readAt was turned into 0.0 - a made-up time; it is None
+        (UNKNOWN) and still asked first"""
+        db = _db([("Shako", 5, 1), ("Gull", 9, 2)])
+        db["items"][P.key_of("Shako")]["readAt"] = "not a time"
+        due = R.stale_items(db, NOW + 30 * DAY)
+        self.assertEqual(due[0][1], "Shako", due)
+        self.assertIsNone(due[0][2], "an unreadable read time was handed on as a number: %r" % (due[0],))
+
     def test_the_lane_is_wired_in_every_registry(self):
         with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
             app = fh.read()
@@ -113,6 +122,20 @@ class ThePriceDatabaseRefreshesItself(unittest.TestCase):
 
 
 RED_PROOF = [
+    {
+        "why": "v3878 - one item whose read time will not parse raises out of stale_items and stops the lane for all",
+        "file": "d2jsp_refresh.py",
+        "find": "        try:\n            due, _why = P.is_stale(db, k, now, key=k)\n        except (TypeError, ValueError):\n            due = True",
+        "replace": "        if True:\n            due, _why = P.is_stale(db, k, now, key=k)\n        else:\n            due = True",
+        "matches": 1,
+    },
+    {
+        "why": "v3878 swallow_ratchet - an unparseable read time becomes a made-up 0.0 again",
+        "file": "d2jsp_refresh.py",
+        "find": "                ra = None                              # a read time that will not parse is UNKNOWN",
+        "replace": "                ra = 0.0                               # a read time that will not parse is UNKNOWN",
+        "matches": 1,
+    },
     {"why": "#96 - the refresh asks beside his game (the stand-aside judge is ignored)",
      "file": "tv/d2jsp_refresh.py",
      "find": "            if stand_aside():\n",
