@@ -9063,17 +9063,18 @@ def _unserved(shards, served):
 
 
 def _import_order(target=None):
-    """REG-3352 / #103-C - {gate: rank} of the owed laws that keep a door lock shut (self_arming), imported first. {} on
-    any failure, and for any store but this PC's own (CACHE): the lock rank speaks for THIS PC's census, never a
-    fixture's. The import then goes by name."""
+    """REG-3352 / #103-C - {gate: rank} of the owed laws that keep a door lock shut (self_arming), imported first. {} for
+    any store but this PC's own (CACHE): the lock rank speaks for THIS PC's census, never a fixture's - a known empty.
+    None when the census could not be asked (UNKNOWN, never an empty rank - the swallow ratchet's rank 1). Either way the
+    import then goes by name; only the meaning differs."""
     if target is None or os.path.abspath(target) != os.path.abspath(CACHE):
         return {}
     try:
         import self_arming as _sa
         r = _sa.owed_guard_rank()
-        return dict(r.get("rank") or {}) if isinstance(r, dict) else {}
+        return dict(r.get("rank") or {}) if isinstance(r, dict) else None
     except Exception:
-        return {}
+        return None                                       # could not ask: UNKNOWN, and _import_batches goes by name
 
 
 def _import_batches(shards, rank=None, size=None):

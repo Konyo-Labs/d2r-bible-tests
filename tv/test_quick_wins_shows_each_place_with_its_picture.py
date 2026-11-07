@@ -475,7 +475,7 @@ class OneMonsterOnSeveralLevelsIsOneRow(unittest.TestCase):
     def test_the_levels_join_in_one_row(self):
         src = _read()
         fn = _cut(src, "  function _qwAlso(x, worst, cap){", "\n  }\n")
-        js = ("var mf = 0; var _QW_DIFF = {norm: 'Normal', nm: 'NM', hell: 'Hell'};\n"
+        js = ("var mf = 0; " + _cut(src, "  var _QW_DIFF = {", "};") + "\n"   # the page's own map, never a re-typed copy
               "function adjustChance(c){ return c; } function effChance(c){ return c; }\n"
               "var QW_TARGETS = {};\n"
               "var QW_PLACES = {X: {f: [], r: [['Bone Archer', 'hell', 'unique', 'Jail Level 1', 42745], ['Bone Archer', 'hell', 'unique', 'Jail Level 2', 42745],"

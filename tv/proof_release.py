@@ -234,12 +234,15 @@ class _ProgressWatch(object):
 
 
 def _import_log(d):
-    """REG-3352 - what heart2 --import-shards wrote to its log in the import's scratch dir. -> str ("" when none)"""
+    """REG-3352 - what heart2 --import-shards wrote to its log in the import's scratch dir. -> str ("" when it wrote none;
+    a log that exists and cannot be read SAYS so, never reads as an empty log)"""
     try:
         with io.open(os.path.join(d, "import.log"), encoding="utf-8", errors="replace") as fh:
             return fh.read()
-    except OSError:
-        return ""
+    except FileNotFoundError:
+        return ""                                         # never written: absence, a measurement
+    except OSError as e:
+        return "the import log could not be read (%s)\n" % type(e).__name__
 
 
 def _import_tail(d):
