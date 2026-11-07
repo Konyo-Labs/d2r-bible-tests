@@ -54,6 +54,19 @@ class EachTerrorZoneWearsItsOwnMonster(unittest.TestCase):
         self.assertEqual(self.mon.get("Den of Evil"), "d2mon_Corpsefire.gif")
         self.assertEqual(self.mon.get("Nihlathak's Temple"), "d2mon_Pindleskin.gif")
 
+    def test_the_board_draws_the_same_table_the_same_way(self):
+        """#108 'so its unified' - the board's Terror Zone rows read the SAME picks (two copies, one record: the law keeps them
+        equal) by the zone's own key, and draw the monster alone"""
+        board = _read("bible.html")
+        bm = json.loads(re.search(r"\n  var TZ_MONSTER = (\{.*?\});", board).group(1))
+        self.assertEqual(bm, self.mon, "the board's zone monsters drifted from the console's")
+        i = board.index("function tzZoneRowHtml(zoneName){")
+        row = board[i:board.index("const meta = t.nodata", i)]
+        self.assertIn("const _mk = (typeof tzKey === 'function') ? tzKey(zoneName) : zoneName;", row)
+        self.assertIn('<span class="tzt-z-art tzt-z-art-mon"><img class="tzt-z-mon" src="art/\'+mon+\'"', row)
+        self.assertIn("const face = mon\n    ? '<span class=\"tzt-z-art tzt-z-art-mon\">", row,
+                      "the row's face is not chosen by the zone's monster first")
+
     def test_every_monster_file_is_shipped_and_sourced(self):
         fand = set(os.path.basename(x.get("file", "")) for x in self.fandom.get("sprites") or [])
         bad = []
@@ -81,6 +94,11 @@ class EachTerrorZoneWearsItsOwnMonster(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "#108 - the board's Terror Zone rows go back to zone art while the console wears the monsters (not unified)",
+     "file": "bible.html",
+     "find": "  const face = mon\n    ? '<span class=\"tzt-z-art tzt-z-art-mon\"><img class=\"tzt-z-mon\" src=\"art/'+mon+'\"",
+     "replace": "  const face = false\n    ? '<span class=\"tzt-z-art tzt-z-art-mon\"><img class=\"tzt-z-mon\" src=\"art/'+mon+'\"",
+     "matches": 1},
     {"why": "#108 - a zone loses its monster with no recorded reason (the console and the record disagree)",
      "file": "control_ui.html",
      "find": "\"Den of Evil\": \"d2mon_Corpsefire.gif\", ",
