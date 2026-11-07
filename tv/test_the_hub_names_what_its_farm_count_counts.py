@@ -11,9 +11,17 @@ user-visible string of the console says "grails still out there". RED_PROOF belo
 import io
 import os
 import re
+import sys
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+try:
+    from console_safe import enable as _enable   # it prints non-ASCII: never crash while REPORTING on a non-UTF-8 console
+    _enable()
+except Exception:
+    pass
 
 
 def _code(src):

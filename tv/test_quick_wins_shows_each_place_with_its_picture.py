@@ -27,6 +27,13 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+try:
+    from console_safe import enable as _enable   # it prints non-ASCII: never crash while REPORTING on a non-UTF-8 console
+    _enable()
+except Exception:
+    pass
 NODE = shutil.which("node") or shutil.which("nodejs")
 
 
@@ -198,7 +205,8 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         self.assertNotIn("mix-blend-mode:screen", rule, "the sprite tile blends again: %s" % rule)
         self.assertIn('img[src*="d2mon_"]{object-fit:contain!important;mix-blend-mode:normal!important', src)
         self.assertIn("'<div class=\"f-card f-step f-atom qw-card\">", src, "the Quick wins card lost its own class")
-        self.assertIn("#tab-funi .qw-card .f-atomact .f-rwbig{font-family:var(--serif-display,serif);font-size:calc(var(--fs-display)*1.2)", src,
+        self.assertIn("#tab-funi .qw-card{--fs-qw-title:calc(var(--fs-display)*1.2)}", src, "the title's size token is gone")
+        self.assertIn("#tab-funi .qw-card .f-atomact .f-rwbig{font-family:var(--serif-display,serif);font-size:var(--fs-qw-title)", src,
                       "the item's name is not set as the card's title")
 
     def test_a_ranked_row_is_a_tile_a_place_and_four_captioned_numbers(self):

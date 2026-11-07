@@ -10677,7 +10677,8 @@ img[src*="d2mon_"]{object-fit:contain!important;mix-blend-mode:normal!important;
 #tab-funi .qw-card .f-cardart-hd .f-art, #tab-funi .qw-card .f-cardart-hd img{max-width:78px!important;max-height:78px!important;width:auto;height:auto}
 #tab-funi .qw-card .f-atomact{font-size:var(--fs-meta);letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim,#a89a7c);
   display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;line-height:1.15}
-#tab-funi .qw-card .f-atomact .f-rwbig{font-family:var(--serif-display,serif);font-size:calc(var(--fs-display)*1.2);letter-spacing:.02em;
+#tab-funi .qw-card{--fs-qw-title:calc(var(--fs-display)*1.2)}   /* the visual lock: a size is a var(--fs-*) token, never a raw calc */
+#tab-funi .qw-card .f-atomact .f-rwbig{font-family:var(--serif-display,serif);font-size:var(--fs-qw-title);letter-spacing:.02em;
   text-transform:none;line-height:1.08}
 #tab-funi .qw-card .f-atomact .f-need{letter-spacing:.04em;text-transform:none}
 .qw-place{display:flex;flex-direction:column;min-width:0;gap:1px}
