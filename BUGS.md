@@ -228,6 +228,8 @@ moves to the next line whole. +1 case, 1 red-proof, RED.
 NOT CHANGED: Spirit's Shield tile draws D2's Bone Shield, the first shield its recipe allows, which is the character
 window's rule. Grok read the picture as "a spine with rib-like bones", not a shield. A better-known shield would need
 REG-3070's pick to change for both surfaces, so it is left for his call.
+NOT CHANGED: at 390 px the card's title wraps mid-word ("SPIR / IT"). It is the same on v3878 with the anvil, so it is
+named here and left alone.
 
 ### REG-3358 - THE CONSOLE'S TERROR ZONE CARDS WORE GREY ZONE TILES, NOT THE QUICK WINS SPRITES (v3879, board #108)
 His words 11-07 ~11:30 IST, on the console's Terror Zone panel (Blood Moor, Den of Evil, Nihlathak's Temple, Halls of Anguish):

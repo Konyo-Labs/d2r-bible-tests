@@ -274,6 +274,10 @@ def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="",
             out["cut"] = None
         pre, flags = _low_priority()
         argv = [sys.executable, os.path.join(tv_dir, "heart2.py")]
+        # #103 (MEASURED 11-07 on the OLD ALT) - an import outlived the console that asked for it: three ran at once, two
+        # of them orphans of exited consoles (one 32 h old, keying v3876's bundle), 457 MB free and the river route timing
+        # out. heart2 now ends the import when this console is gone (heart2._watch_import_parent).
+        argv += ["--import-parent", str(os.getpid())]
         watch = None
         if progress is not None:          # REG-3194 - heart2 keeps its count in a file of this scratch dir
             argv += ["--import-progress", os.path.join(d, PROGRESS_NAME)]

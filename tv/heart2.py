@@ -9119,6 +9119,50 @@ def _import_write(target, take, say, out):
     return w_ok, w_why
 
 
+#: #103 - how often an import asks whether the console that started it is still there
+IMPORT_PARENT_EVERY_S = 10.0
+
+
+def _watch_import_parent(ppid, every=None, alive=None, quit=None):
+    """#103 - an import ends when the console that asked for it is gone.
+
+    MEASURED 11-07 ~12:45 IST on the OLD ALT: three `heart2 --import-shards` at once. Two were orphans of consoles that
+    had already exited (parent GONE): one started 11-06 02:59 and had run 32 h keying v3876's bundle, one from 03:43.
+    The live console's own import was the third. 457 MB of 7.9 GB free, and its river route timed out at 60 s. Killing
+    the two orphans freed 575 MB. proof_release runs the import with subprocess.run, so the console's timeout dies with
+    the console. Nothing else bounded the child.
+
+    So the bound moves INTO THE CHILD, like the console's own _orphan_exit_loop. It holds however the console dies, and
+    only an import that was TOLD its parent watches. It is safe to stop between writes: each write is atomic, under an OS
+    lock that is released when the process exits. A stop loses only what was not yet written, and REG-3352 keeps what
+    was. The next console asks for its own import.
+    -> the watching thread"""
+    every = IMPORT_PARENT_EVERY_S if every is None else every
+    alive = alive or _pid_alive
+    quit = quit or (lambda: os._exit(3))
+
+    def _loop():
+        while True:
+            time.sleep(every)
+            try:
+                gone = not alive(ppid)
+            except Exception:
+                gone = False                 # a probe that cannot answer keeps the import: never a guessed death
+            if gone:
+                try:
+                    sys.stderr.write("#103 the console that asked for this import (pid %s) is gone - the import ends; "
+                                     "what it wrote is kept\n" % ppid)
+                    sys.stderr.flush()
+                except Exception:
+                    pass
+                quit()
+                return
+
+    t = threading.Thread(target=_loop, daemon=True, name="heart2-import-parent")
+    t.start()
+    return t
+
+
 def import_shards(paths, say=print, target=None, progress=None):
     """REG-2586 — `heart2.py --import-shards FILE...`: the shards' banked PROVENs into this machine's verdict cache, ALL OR
     NOTHING (tv/proof_shard.py says every rule). -> exit code: 0 imported, 2 refused (nothing written)
@@ -9714,11 +9758,16 @@ def main(argv):
                          "its runtime must match this PC's and every banked entry says who carried it")
     ap.add_argument("--carried-key", default=None, metavar="KEYID",
                     help="REG-3045 with --carried-by: the roster key the carrier verified the export under")
+    ap.add_argument("--import-parent", default=None, type=int, metavar="PID",
+                    help="#103 with --import-shards: the console that asked for the import; the import ends when it is "
+                         "gone (_watch_import_parent)")
     ap.add_argument("--import-progress", default=None, metavar="FILE",
                     help="REG-3194 with --import-shards: keep {done, of, etaS, at, phase} in FILE while the keys are "
                          "computed (proof_release's console import reads it)")
     a = ap.parse_args(argv)
     if a.import_shards is not None:
+        if a.import_parent:
+            _watch_import_parent(a.import_parent)    # #103 - an import never outlives the console that asked for it
         _irc = import_shards(a.import_shards, progress=a.import_progress)
         if _irc == 0 and a.trust:
             trust_now()                          # REG-3191 - the import's proofs open the locks now, not at idle
