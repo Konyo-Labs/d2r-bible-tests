@@ -47161,11 +47161,15 @@ def _d2jsp_source():
     name in the price DB: its Fleet nickname, else "this PC" - never the host name. Registers host -> name with the price DB
     so rows written before under the host name are said by the name too. -> the name"""
     import d2jsp_price_db as _PDB
+    # swallow_ratchet (v3881 pre-flight): an unreadable identity was handed on as "" - a no-nickname that was never read. "this
+    # PC" is true of it either way (never the host name); only a nickname actually read replaces it.
+    name = "this PC"
     try:
         nick = str((install_identity() or {}).get("nickname") or "").strip()
+        if nick:
+            name = nick
     except Exception:
-        nick = ""
-    name = nick or "this PC"
+        name = "this PC"
     try:
         _PDB.SOURCE_NAMES[socket.gethostname()] = name
     except Exception:

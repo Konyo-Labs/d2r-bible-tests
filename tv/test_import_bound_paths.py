@@ -96,6 +96,13 @@ REGISTRY = {
         "not for tests. [[feedback-fixtures-never-touch-live-data]]"),
 
     # ---- second_eye_ledger: which shipped versions a DIFFERENT model family actually looked at.
+    "reader_parity.py:CORPUS": (
+        "TV_BENCH_CORPUS", "import-bound",
+        "MEASURED v3881 (#255, the reader-parity bench): the env is read once at import; bench(corpus=CORPUS) binds the "
+        "default at definition and main() hands --corpus its default from the module attribute. It names a READ-only "
+        "path - the bench reads real frames there and writes only to its own temp dir (removed in a finally) - so a "
+        "fixture passes corpus= to bench(), as test_the_parity_bench_measures_what_it_says does; nothing is ever "
+        "written through it. PRIVATE: the corpus never enters the repo."),
     "second_eye_ledger.py:LEDGER_PATH": (
         "TV_SECOND_EYE_LEDGER", "import-bound",
         "MEASURED v2145: env honoured at import only (a later os.environ[...] is a no-op — checked "

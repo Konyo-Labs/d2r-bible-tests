@@ -25,6 +25,8 @@ try:
 except Exception:
     pass
 
+import fixture_tmp as _fx_tmp  # noqa: E402
+_fx_tmp.contain()   # v3881 pre-flight - its mkdtemp scratch is collected (test_a_test_run_leaves_no_scratch_dirs)
 import stash_eye as se  # noqa: E402
 import tv_diablo as tvd  # noqa: E402
 

@@ -40,6 +40,8 @@ TVD = os.path.join(HERE, "tv_diablo.py")
 ADD = 'Add-Type -ReferencedAssemblies System.Drawing,System.Windows.Forms -TypeDefinition @"'
 
 
+import fixture_tmp as _fx_tmp  # noqa: E402
+_fx_tmp.contain()   # v3881 pre-flight - its mkdtemp scratch is collected (test_a_test_run_leaves_no_scratch_dirs)
 def _ps1():
     return io.open(PS1, encoding="utf-8-sig").read().replace("\r\n", "\n")
 

@@ -46,6 +46,7 @@ import json
 import os
 import platform
 import sys
+import shutil
 import tempfile
 import time
 
@@ -204,54 +205,59 @@ def bench(corpus=CORPUS, per_reel=8, say=print):
     reels = sorted(glob.glob(os.path.join(corpus, "*", "reel_s_*")))
     if not reels:
         raise SystemExit("no corpus at %s - the bench has nothing to read (UNKNOWN, not a pass)" % corpus)
+    # test_production_scratch_dirs_only_get_fewer (v3881 pre-flight): the scratch copies of every variant are removed when
+    # the bench ends, however it ends - only the report leaves this function
     work = tempfile.mkdtemp(prefix="tvd_parity_")
-    rep = {"machine": platform.node(), "os": platform.system(), "python": platform.python_version(),
-           "pillow": getattr(__import__("PIL"), "__version__", "?"), "corpus": corpus, "at": int(time.time()),
-           "frames": [], "tooltips": []}
-    import tooltip_crop as tc
-    for reel in reels:
-        src = os.path.basename(os.path.dirname(reel))
-        frames = sample(reel, per_reel)
-        say("  %s/%s: %d frame(s)" % (src, os.path.basename(reel), len(frames)))
-        # every variant lives in a scratch copy of ITS reel's folder, beside the same index.json: capture_stamp.
-        # beside_frame reads the stamp from the reel a frame sits in, and a variant read stamp-less takes a different
-        # path through prep_stash_grid than its native frame did (the first run measured exactly that artefact)
-        rdir = os.path.join(work, src, os.path.basename(reel))
-        if not os.path.isdir(rdir):
-            os.makedirs(rdir)
-            ix = os.path.join(reel, "index.json")
-            if os.path.isfile(ix):
-                with io.open(ix, "rb") as a_, io.open(os.path.join(rdir, "index.json"), "wb") as b_:
-                    b_.write(a_.read())
-        for f in frames:
-            base = os.path.join(rdir, os.path.basename(f)[:-4])
-            paths = {"native": f}
-            paths["win800"] = win800(f, base + "_w800.jpg")
-            cap = caption_rows(f)
-            if not cap:                     # a frame with no caption: what windowed capture would have handed over
-                paths["titlebar"] = titlebar(f, base + "_tb.jpg")
-                paths["titlebar800"] = win800(paths["titlebar"], base + "_tb800.jpg")
-            else:                           # a frame that already carries one: the caption cut off
-                paths["untitled"] = untitled(f, base + "_untitled.jpg")
-            row = {"set": src, "reel": os.path.basename(reel), "frame": os.path.basename(f), "size": size_of(f),
-                   "captionRows": caption_rows(f), "variants": {}}
-            for k, p in paths.items():
-                row["variants"][k] = {"size": size_of(p), "sharp": sharpness(p), "eyes": run_eyes(p, work)}
-            rep["frames"].append(row)
-        for a, b in zip(frames, frames[1:]):
-            try:
-                r = tc.changed_rect(a, b)
-            except Exception as e:
-                r = {"unknown": str(e)[:80]}
-            w, h = size_of(a) or (1, 1)
-            if isinstance(r, (list, tuple)) and len(r) == 4:
-                r = [round(r[0] / float(w), 3), round(r[1] / float(h), 3), round(r[2] / float(w), 3),
-                     round(r[3] / float(h), 3)]
-            rep["tooltips"].append({"reel": os.path.basename(reel), "a": os.path.basename(a), "b": os.path.basename(b),
-                                    "rect": r})
-    rep["parity"] = parity(rep)
-    rep["paritySets"] = dict((s_, parity(rep, s_)) for s_ in sorted(set(r["set"] for r in rep["frames"])))
-    return rep
+    try:
+        rep = {"machine": platform.node(), "os": platform.system(), "python": platform.python_version(),
+               "pillow": getattr(__import__("PIL"), "__version__", "?"), "corpus": corpus, "at": int(time.time()),
+               "frames": [], "tooltips": []}
+        import tooltip_crop as tc
+        for reel in reels:
+            src = os.path.basename(os.path.dirname(reel))
+            frames = sample(reel, per_reel)
+            say("  %s/%s: %d frame(s)" % (src, os.path.basename(reel), len(frames)))
+            # every variant lives in a scratch copy of ITS reel's folder, beside the same index.json: capture_stamp.
+            # beside_frame reads the stamp from the reel a frame sits in, and a variant read stamp-less takes a different
+            # path through prep_stash_grid than its native frame did (the first run measured exactly that artefact)
+            rdir = os.path.join(work, src, os.path.basename(reel))
+            if not os.path.isdir(rdir):
+                os.makedirs(rdir)
+                ix = os.path.join(reel, "index.json")
+                if os.path.isfile(ix):
+                    with io.open(ix, "rb") as a_, io.open(os.path.join(rdir, "index.json"), "wb") as b_:
+                        b_.write(a_.read())
+            for f in frames:
+                base = os.path.join(rdir, os.path.basename(f)[:-4])
+                paths = {"native": f}
+                paths["win800"] = win800(f, base + "_w800.jpg")
+                cap = caption_rows(f)
+                if not cap:                     # a frame with no caption: what windowed capture would have handed over
+                    paths["titlebar"] = titlebar(f, base + "_tb.jpg")
+                    paths["titlebar800"] = win800(paths["titlebar"], base + "_tb800.jpg")
+                else:                           # a frame that already carries one: the caption cut off
+                    paths["untitled"] = untitled(f, base + "_untitled.jpg")
+                row = {"set": src, "reel": os.path.basename(reel), "frame": os.path.basename(f), "size": size_of(f),
+                       "captionRows": caption_rows(f), "variants": {}}
+                for k, p in paths.items():
+                    row["variants"][k] = {"size": size_of(p), "sharp": sharpness(p), "eyes": run_eyes(p, work)}
+                rep["frames"].append(row)
+            for a, b in zip(frames, frames[1:]):
+                try:
+                    r = tc.changed_rect(a, b)
+                except Exception as e:
+                    r = {"unknown": str(e)[:80]}
+                w, h = size_of(a) or (1, 1)
+                if isinstance(r, (list, tuple)) and len(r) == 4:
+                    r = [round(r[0] / float(w), 3), round(r[1] / float(h), 3), round(r[2] / float(w), 3),
+                         round(r[3] / float(h), 3)]
+                rep["tooltips"].append({"reel": os.path.basename(reel), "a": os.path.basename(a), "b": os.path.basename(b),
+                                        "rect": r})
+        rep["parity"] = parity(rep)
+        rep["paritySets"] = dict((s_, parity(rep, s_)) for s_ in sorted(set(r["set"] for r in rep["frames"])))
+        return rep
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
 
 
 def _same(a, b):
