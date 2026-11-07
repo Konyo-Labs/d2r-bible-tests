@@ -74,6 +74,20 @@ OUT.win = {};
 while ((m = re.exec(h))){ var s = /src="([^"]+)"/.exec(m[0]); OUT.win[m[1]] = s ? s[1].split('?')[0] : null; }
 OUT.want = {};
 Object.keys(wear).forEach(function(s){ var n = W._cbSlotArtName(wear[s], s); OUT.want[s] = n ? String(W.artUrl(n) || '').split('?')[0] : null; });
+/* #27 - the runeword ID card: its header picture, and one base picture per slot it can be made for */
+OUT.rw = ['Fortitude','Peace','Treachery','Enigma','Spirit','Lawbringer','Exile'].map(function(n){
+  var h = W.runewordDetailHtml(n), head = /<header[\s\S]*?<\/header>/.exec(h), hs = head ? /<img[^>]*src="([^"]+)"/.exec(head[0]) : null;
+  var it = d.byName[n.toLowerCase()], allowed = (it && it[7] && it[7].it) || [];
+  var made = [], re = /<span class="rwd-base" data-slot="([^"]+)" data-arttip="([^"]+)">[\s\S]*?src="([^"]+)"/g, m;
+  while ((m = re.exec(h))){
+    var codes = baseOf(m[2]);
+    made.push({ slot: m[1], base: m[2], src: m[3].split('?')[0],
+                doll: String(W.artUrl(W._cbSlotArtName(n, m[1])) || '').split('?')[0],
+                ofSlot: codes.some(function(k){ return isOf(k, m[1] === 'off-hand' ? ['shld','bowq','xboq','head','grim','ashd'] : KIND[m[1]]); }),
+                madeIn: codes.some(function(k){ return isOf(k, allowed); }) });
+  }
+  return { n: n, head: hs ? hs[1].split('?')[0] : null, own: String(W.artUrl(n) || '').split('?')[0], made: made };
+});
 })();
 """
 
@@ -120,6 +134,28 @@ class AWornItemDrawsItsSlotsPicture(unittest.TestCase):
             self.assertTrue(c[(rw, "off-hand")]["shield"], "%s in the off-hand drew a second weapon before a shield" % rw)
         self.assertFalse(c[("Lawbringer", "off-hand")]["shield"], "Lawbringer cannot be a shield, yet drew one")
 
+    def test_the_runeword_card_draws_its_picture_and_each_slots_base(self):
+        """#27 (GrokBot 11-05, #230 6655590795) - worn Fortitude / Peace / Treachery opened a runeword card with its recipe
+        and an anvil glyph, no picture. The card draws the runeword's picture and, under 'Made in', one base per slot it
+        can be made for - the same base the character window draws in that slot"""
+        want = {"Fortitude": ["torso", "weapon"], "Peace": ["torso"], "Treachery": ["torso"], "Enigma": ["torso"],
+                "Spirit": ["weapon", "off-hand"], "Lawbringer": ["weapon"], "Exile": ["off-hand"]}
+        bad = []
+        for c in self.out["rw"]:
+            if not c["head"]:
+                bad.append("%s: the card's header draws no picture" % c["n"])
+            elif c["own"] and c["head"] != c["own"]:
+                bad.append("%s: the header draws %s, not the runeword's own %s" % (c["n"], c["head"], c["own"]))
+            slots = [m["slot"] for m in c["made"]]
+            if slots != want[c["n"]]:
+                bad.append("%s: made in %s, its recipe allows %s" % (c["n"], slots, want[c["n"]]))
+            for m in c["made"]:
+                if not (m["ofSlot"] and m["madeIn"]):
+                    bad.append("%s: %s's base %s is not of that slot's kind or not one its recipe allows" % (c["n"], m["slot"], m["base"]))
+                if m["src"] != m["doll"]:
+                    bad.append("%s: the card's %s picture %s differs from the window's %s" % (c["n"], m["slot"], m["src"], m["doll"]))
+        self.assertEqual(bad, [], "\n".join(bad))
+
     def test_the_character_window_draws_each_cell_by_its_slot(self):
         win, want = self.out["win"], self.out["want"]
         self.assertTrue(win, "the window drew no worn cell")
@@ -147,6 +183,21 @@ RED_PROOF = [
      "file": "bible.html",
      "find": "    return (mine && _cbWornBase(worn, allowed, mine)) || (allowed && _cbWornBase(worn, allowed)) || _cbWornBase(worn, null) || n;",
      "replace": "    return (mine && _cbWornBase(worn, allowed, mine)) || (allowed && _cbWornBase(worn, allowed)) || n;",
+     "matches": 1, "needs": "node"},
+    {"why": "#27 - the runeword card draws an anvil glyph again, no picture",
+     "file": "bible.html",
+     "find": "    + '<header class=\"gic-header\">'\n    + _rwArt",
+     "replace": "    + '<header class=\"gic-header\">'\n    + '<span class=\"d2art-wrap lg\"><span class=\"gic-emoji\">X</span></span>'",
+     "matches": 1, "needs": "node"},
+    {"why": "#27 - the card's Made in counts the off-hand's second weapon (every weapon runeword 'made in a shield')",
+     "file": "bible.html",
+     "find": "      (_cbWornTiers(s)[0] || []).forEach(function(t){",
+     "replace": "      _cbWornCats(s).forEach(function(t){",
+     "matches": 1, "needs": "node"},
+    {"why": "#27 - the card drops its Made in row (worn Fortitude shows no armor)",
+     "file": "bible.html",
+     "find": "    + _rwMade\n",
+     "replace": "    + ''\n",
      "matches": 1, "needs": "node"},
 ]
 

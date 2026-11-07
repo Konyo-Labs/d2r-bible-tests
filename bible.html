@@ -1644,6 +1644,12 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
 .att-rwrec{color:var(--gold-bright);font-family:ui-monospace,monospace;letter-spacing:var(--ls-tight)}
 .rwd-recipe{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
 .rwd-plus{color:var(--text-dim);font-weight:var(--fw-semibold)}
+.rwd-bases{display:flex;flex-wrap:wrap;gap:8px}
+.rwd-base{display:inline-flex;align-items:center;gap:8px;padding:5px 10px 5px 6px;border:1px solid var(--border,#3a2f1e);border-radius:8px;background:rgba(255,255,255,.03)}
+.rwd-base .d2art-wrap.md{width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center}
+.rwd-base .d2art-wrap.md .d2art-img{max-width:44px;max-height:44px;object-fit:contain}
+.rwd-base-t{display:flex;flex-direction:column;line-height:1.25;font-size:12.5px}
+.rwd-base-t b{font-weight:var(--fw-semibold);color:#bcd6ff}
 .rwd-stat .zd-v{color:var(--text)}
 /* v141 — Gem stash grid (7 type rows × 5 grade cells) */
 .gem-stash-grid{display:flex;flex-direction:column;gap:8px;margin:10px 0}
@@ -22238,9 +22244,23 @@ function runewordDetailHtml(name){
     return '<span class="mw-rune-chip" data-arttip="'+rn+'" onclick="window.openDrop&&window.openDrop(\''+e+'\')" title="open the '+rn+' rune card">'+rn+'</span>';
   }).join('<span class="rwd-plus">+</span>');
   var rows = o.l.map(function(l){ return '<div class="zd-row rwd-stat"><span class="zd-v">'+_sunMarkup(l)+'</span></div>'; }).join('');
+  /* #27 - the card draws the runeword's picture, and one base picture per slot it can be made for (worn Fortitude is body
+     armor: its card shows the armor it sits in, not only the sword its own picture is) - never an anvil glyph alone */
+  var _rwU = function(n){ try { return (n && typeof artUrl === 'function') ? (artUrl(n) || null) : null; } catch (eU) { return null; } };
+  var _rwSl = null; try { _rwSl = (typeof window._cbRwSlots === 'function') ? window._cbRwSlots(key) : null; } catch (eS) { _rwSl = null; }
+  _rwSl = (_rwSl || []).filter(function(x){ return x && x.base && _rwU(x.base); });
+  var _rwPic = _rwU(key) || (_rwSl[0] ? _rwU(_rwSl[0].base) : null);
+  var _rwArt = _rwPic ? '<span class="d2art-wrap lg"><img class="d2art-img" src="'+_rwPic+'" alt="'+_d2artEsc(key)+'" onerror="this.parentNode.classList.add(\'d2art-failed\')"><span class="d2art-fallback"><span class="gic-emoji" style="font-family:serif;font-size:30px">⚒️</span></span></span>'
+    : '<span class="d2art-wrap lg"><span class="gic-emoji" style="font-family:serif;font-size:30px">⚒️</span></span>';
+  var _RW_SLOT_WORD = { torso: 'Body armor', weapon: 'Weapon', 'off-hand': 'Shield', helm: 'Helm' };
+  var _rwMade = _rwSl.length ? '<section class="gic-section rwd-made"><div class="gic-section-title">🧱 Made in</div><div class="rwd-bases">'
+    + _rwSl.map(function(x){ return '<span class="rwd-base" data-slot="'+_d2artEsc(x.slot)+'" data-arttip="'+_d2artEsc(x.base)+'">'
+        + '<span class="d2art-wrap md"><img class="d2art-img" src="'+_rwU(x.base)+'" alt="" loading="lazy" onerror="this.parentNode.classList.add(\'d2art-failed\')"></span>'
+        + '<span class="rwd-base-t"><b>'+_RW_SLOT_WORD[x.slot]+'</b><span>'+_d2artEsc(x.base)+'</span></span></span>'; }).join('')
+    + '</div></section>' : '';
   return '<div class="gic-card runeword-card">'
     + '<header class="gic-header">'
-    + '<span class="d2art-wrap lg"><span class="gic-emoji" style="font-family:serif;font-size:30px">⚒️</span></span>'
+    + _rwArt
     + '<div class="gic-id-block">'
     + '<h2 class="gic-name">'+key+' <span class="gic-grail-badge" style="background:linear-gradient(135deg,#3a5a8a,#12243a);color:#bcd6ff">Runeword</span>'+( (typeof _RW_LADDER_ONLY!=='undefined' && _RW_LADDER_ONLY[key]) ? ' <span class="rw-ladder-stamp" title="Ladder-only runeword — only forms on a LADDER character">🪜 LADDER&nbsp;ONLY</span>' : '')+'</h2>'
     + '<div class="gic-subtitle">'+o.b+(o.r!=null?' · req level '+o.r:'')+'</div>'
@@ -22249,6 +22269,7 @@ function runewordDetailHtml(name){
     + '<div style="display:flex;flex-direction:column;gap:6px"><button class="gic-close-btn" onclick="window.closeDrop&&window.closeDrop()" title="press ESC">✕ close</button></div>'
     + '</header>'
     + '<section class="gic-section"><div class="gic-section-title">🔤 Recipe (in order)</div><div class="rwd-recipe">'+recChips+'</div></section>'
+    + _rwMade
     + '<section class="gic-section"><div class="gic-section-title">⚠️ Before you cube — or you waste the runes</div>'
     +   (function(){ var g = (typeof window._rwGuard==='function') ? window._rwGuard(key) : null; if(!g) return '';
          var bg = g.level==='block' ? 'linear-gradient(135deg,rgba(255,60,60,.18),rgba(120,0,0,.12))' : (g.level==='ok' ? 'linear-gradient(135deg,rgba(102,255,136,.15),rgba(0,80,30,.1))' : 'linear-gradient(135deg,rgba(240,192,96,.15),rgba(120,80,0,.1))');
@@ -78643,6 +78664,23 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     return (mine && _cbWornBase(worn, allowed, mine)) || (allowed && _cbWornBase(worn, allowed)) || _cbWornBase(worn, null) || n;
   }
   window._cbSlotArtName = _cbSlotArtName;
+  /* #27 (GrokBot 11-05, #230 6655590795) - the slots a runeword can be made for, each with the base _cbSlotArtName draws
+     there: its own picture when that is one, else a base of that slot's kind its recipe allows. The off-hand counts only
+     for its OWN kinds (a shield, a head, a quiver), never a second weapon. [] for a name that is not a runeword; null when
+     the builder's database cannot be read. */
+  var _CB_RW_SLOTS = ['torso', 'weapon', 'off-hand', 'helm'];
+  function _cbRwSlots(name){
+    var d = _cbDb(); if (!d) return null;
+    var it = d.byName ? d.byName[String(name == null ? '' : name).trim().toLowerCase()] : null;
+    if (!it || it[2] !== 'r' || !it[7] || !Array.isArray(it[7].it)) return [];
+    var allowed = it[7].it, keys = Object.keys(d.b);
+    return _CB_RW_SLOTS.filter(function(s){
+      var own = [];
+      (_cbWornTiers(s)[0] || []).forEach(function(t){ t.forEach(function(x){ if (own.indexOf(x) < 0) own.push(x); }); });
+      return own.length && keys.some(function(k){ return _cbBaseIs(k, own) && _cbBaseIs(k, allowed); });
+    }).map(function(s){ return { slot: s, base: _cbSlotArtName(it[1], s) }; });
+  }
+  window._cbRwSlots = _cbRwSlots;
   function _cbClsIx(name){ var d = _cbDb(); if (!d || !name) return -1; var i = d.clsByName[String(name).toLowerCase()]; return i == null ? -1 : i; }
   function _cbWin(){ return document.getElementById('cb-win'); }
 
