@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3383 - A WINDOWED GAMEPLAY FRAME VOTED CHRONICLE AT 2:1 - HARMLESS ONLY BY A JOIN NOTHING PINNED (v3881, #255)
+The reader-parity bench, on a gameplay frame from a PC that plays D2R windowed, in its caption-cut variant (800x383, aspect
+2.089; the v3881 capture delivers the whole client, ~2.0 there): chronicle_template.detect() said is_chronicle=True on 2 of 4 votes (secondary-gold
+0.0065, list-stone 0.5478, no close-X, no tab marker); the Grok CLI, shown it cold, called it gameplay. The Mac's calibration
+window is 1.45-1.62, so every band went through the DERIVED-NOT-MEASURED scaling. What kept it harmless: the reading is capped
+at 0.6 and says UNCONFIRMED, it names no tab without a clean marker, and the console's one template consumer routes a page only
+on a tab that names a ledger (no production code reads is_chronicle alone) - so it falls through to the paid read. None of that
+was pinned. The vote rule is NOT changed: one negative and ZERO real windowed Chronicle frames is a guess - every Chronicle
+session in that PC's reels was filmed as a DESKTOP frame (REG-3377). Calibration owed on the first client-only Chronicle frames.
+Law: test_a_windowed_chronicle_guess_never_routes_a_page (4 cases incl. a BASELINE; 3 red-proofs each seen RED on its own case).
 ### REG-3382 - /api/river CARRIED NO READ TIME: ITS ONLY CLOCK WAS THE RETENTION PLAN'S (v3881, #40)
 GrokBot's v3878 pass, three GETs at 17:09, 17:10 and 17:20: every answer ok, "there is no readTs field in the payload"; the
 nearest, lanes.asOf, was the same 16:21:57 on all three. asOf is reel_retention.plan_for_reader()'s age - the RETENTION PLAN's,
