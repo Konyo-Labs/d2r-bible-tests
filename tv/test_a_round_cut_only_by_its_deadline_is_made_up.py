@@ -61,6 +61,15 @@ class TheMakeupDecision(unittest.TestCase):
         self.assertFalse(due)
         self.assertIn("owe a fix", why)
 
+    def test_a_cut_shard_beside_a_red_one_is_named_for_its_own_re_run(self):
+        """v3881 (REG-3386) - v3879's round: shard 16 red untampered, shard 5 only TIMEOUT proofs"""
+        tot = {"cut": [["safety", i, PS.TIMEOUT, "cut", 5] for i in range(21, 27)] + [["g", 1, PS.TIMEOUT, "cut", 16]],
+               "fix": [["war", 22, "UNPROVABLE", "red untampered", 16]], "lost": [9], "missing": []}
+        self.assertEqual(PS.timeout_only_shards(tot), ["5"], "a red shard, or one that left no store, was named for a re-run")
+        tot["cut"].append(["h", 0, PS.TIMEOUT, "cut", 9])
+        self.assertEqual(PS.timeout_only_shards(tot), ["5"], "a shard with no store was named")
+        self.assertEqual(PS.timeout_only_shards(dict(tot, fix=[])), [], "with nothing red, makeup_due decides the whole run")
+
     def test_an_unreadable_job_list_is_unknown_and_makes_no_shard_up(self):
         """The swallow ratchet on v3876's pre-flight: an unparseable job list became [] - "no runner killed one", a reading
         no caller could tell from a real one. It is None (UNKNOWN) now, which makes no lost shard up."""
@@ -195,6 +204,16 @@ class TheShipMakesUpARound(unittest.TestCase):
         self.assertEqual(gh.reruns, 0)
         self.assertEqual(code, 1)
         self.assertTrue(any("not made up" in s for s in said), said)
+
+    def test_a_cut_shard_is_re_run_at_once_while_a_red_shard_waits(self):
+        """* REG-3386 THE POINT: the cut shard's job is re-run on its own; the red one is left for a human; nothing ships"""
+        gh = _Gh(dict(CUT, cut=[["safety", 21, PS.TIMEOUT, "cut", 7]], fix=[["war", 22, "RED", "failed", 8]]), second="failure")
+        code, said = _ship(gh)
+        self.assertIn(["gh", "run", "rerun", "--job", "555", "--repo", CV.REPO_SLUG], gh.calls, said)
+        self.assertFalse(any(c[:3] == ["gh", "run", "rerun"] and "--failed" in c for c in gh.calls), "the red shard was re-run")
+        self.assertFalse(any(c[:3] == ["gh", "run", "rerun"] and "556" in c for c in gh.calls), "the red shard's job was re-run")
+        self.assertEqual(code, 1, "a round with a red shard shipped")
+        self.assertTrue(any("REG-3386 PART MAKE-UP" in s for s in said), said)
 
     def test_a_shard_the_runner_killed_is_re_run_once(self):
         """REG-3292 (REG-3085's case) - Publish 40812615686: shard 7 'The runner has received a shutdown signal', no store."""
@@ -396,6 +415,12 @@ class TheAptStepRunsOnlyWhenNeeded(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3386 - a cut shard waits on another shard's red again (v3879: shard 5 re-run by hand beside shard 16)",
+     "file": "tv/ship_when_green.py", "find": "            part_makeup(rid, tot, run, say)\n", "replace": "", "matches": 1},
+    {"why": "REG-3386 - the red shard is named for a re-run with the cut ones (a red law re-run until it greens)",
+     "file": "tv/proof_shard.py",
+     "find": "    part = set(str(f[4]) for f in cut if isinstance(f, (list, tuple)) and len(f) > 4) - red - gone\n",
+     "replace": "    part = set(str(f[4]) for f in cut if isinstance(f, (list, tuple)) and len(f) > 4) - gone\n", "matches": 1},
     {"why": "the swallow ratchet on v3876 - an unreadable job list is answered as 'no runner killed one' again",
      "file": "tv/ship_when_green.py",
      "find": "        return None          # the swallow ratchet (v3876 pre-flight) - an unreadable list is UNKNOWN, never \"none killed\"\n",

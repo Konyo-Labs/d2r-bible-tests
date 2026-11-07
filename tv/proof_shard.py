@@ -751,6 +751,25 @@ def makeup_due(tot, killed=None):
     return True, "only " + " and ".join(parts) + " - a re-run proves just those"
 
 
+def timeout_only_shards(tot):
+    """v3881 (REG-3386) - the shards whose ONLY debt is proofs a bound cut, in a round that ALSO owes a fix elsewhere.
+    -> sorted [shard number as str]; [] when nothing owes a fix (makeup_due then decides the whole run) or no census.
+
+    MEASURED on v3879 (run 42387199487): shard 16 owed a fix (a law red untampered) and shard 5 owed only 6 TIMEOUT proofs.
+    makeup_due refused the whole run - correctly, a red is a human's - so the cut shard waited on that human too, and both
+    were re-run by hand. A cut shard is owed a re-run whatever the red shard's answer is: re-running it AT ONCE has its
+    proofs done by the time the red is read. A shard that owes a fix, or left no store, is never in this list. Pure."""
+    if not isinstance(tot, dict):
+        return []
+    cut, fix = tot.get("cut") or [], tot.get("fix") or []
+    if not fix:
+        return []
+    red = set(str(f[4]) for f in fix if isinstance(f, (list, tuple)) and len(f) > 4)
+    gone = set(str(k) for k in (tot.get("lost") or [])) | set(str(k) for k in (tot.get("missing") or []))
+    part = set(str(f[4]) for f in cut if isinstance(f, (list, tuple)) and len(f) > 4) - red - gone
+    return sorted(part, key=lambda k: (len(k), k))
+
+
 def merge_shards(root, out, say=print):
     """REG-2961 (#161 stage 2) - THE SEED THE NEXT RUN RESTORES: every servable entry the shard files under `root` hold,
     in one heart2 store at `out` (no shard manifest - it is no shard's file). Read only by heart2's seed (HEART2_SHARD_SEED),

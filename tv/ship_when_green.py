@@ -173,6 +173,7 @@ def makeup(sha, runs, run, say, made, clock, tmp=None):
         if not due:
             say("ship: REG-3270 not made up - %s" % (why if tot is not None else "the census could not be read (UNKNOWN)"))
             made[rid] = None
+            part_makeup(rid, tot, run, say)
             return False
         q = run(["gh", "run", "rerun", str(rid), "--failed", "--repo", CV.REPO_SLUG], capture_output=True, text=True,
                 encoding="utf-8", errors="replace")
@@ -186,6 +187,45 @@ def makeup(sha, runs, run, say, made, clock, tmp=None):
     finally:
         if tmp is None:
             shutil.rmtree(d, ignore_errors=True)
+
+
+def part_makeup(rid, tot, run, say):
+    """v3881 (REG-3386) - A CUT SHARD IS RE-RUN AT ONCE, EVEN WHILE ANOTHER SHARD OWES A FIX. proof_shard.timeout_only_shards
+    names them; each is re-run as its own job (`gh run rerun --job`), so the red shard is left for a human and the cut ones
+    are proved while it is read. -> [shard re-run]. Never raises; a job list it cannot read re-runs nothing (UNKNOWN)."""
+    import json
+    import proof_shard as PS
+    part = PS.timeout_only_shards(tot)
+    if not part:
+        return []
+    j = run(["gh", "run", "view", str(rid), "--repo", CV.REPO_SLUG, "--json", "jobs"], capture_output=True, text=True,
+            encoding="utf-8", errors="replace")
+    try:
+        jobs = (json.loads(j.stdout or "{}") or {}).get("jobs") or [] if getattr(j, "returncode", 1) == 0 else None
+    except ValueError:
+        jobs = None
+    if jobs is None:
+        say("ship: REG-3386 the cut shard(s) %s were not re-run - the run's job list could not be read (UNKNOWN)"
+            % ", ".join(part))
+        return []
+    ids = dict((str(x.get("name") or "")[len("shard "):].strip(), x.get("databaseId")) for x in jobs
+               if isinstance(x, dict) and str(x.get("name") or "").startswith("shard ") and x.get("databaseId"))
+    done = []
+    for k in part:
+        if k not in ids:
+            continue
+        q = run(["gh", "run", "rerun", "--job", str(ids[k]), "--repo", CV.REPO_SLUG], capture_output=True, text=True,
+                encoding="utf-8", errors="replace")
+        if getattr(q, "returncode", 1) == 0:
+            done.append(k)
+    red = sorted(set(str(f[4]) for f in (tot.get("fix") or []) if isinstance(f, (list, tuple)) and len(f) > 4))
+    if done:
+        say("ship: REG-3386 PART MAKE-UP - shard(s) %s owe only cut proofs while shard(s) %s owe a fix: re-running just "
+            "those now, so they are proved while the red is read (re-run the red one once these finish)"
+            % (", ".join(done), ", ".join(red) or "?"))
+    else:
+        say("ship: REG-3386 the cut shard(s) %s could not be re-run (no job, or GitHub refused)" % ", ".join(part))
+    return done
 
 
 def missing(runs, sha, among=None):

@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3386 - A CUT SHARD WAITED ON ANOTHER SHARD'S RED (v3881, v3879 shards 5 + 16)
+v3879's round (run 42387199487): shard 16 owed a fix (a law red untampered) and shard 5 owed only 6 TIMEOUT proofs. makeup_due
+refused the whole run - correctly, a red is a human's - so the cut shard waited on that human too and both were re-run by hand.
+A cut shard is owed a re-run whatever the red's answer is. proof_shard.timeout_only_shards names the shards whose ONLY debt is
+cut proofs beside a red one (never the red shard, never one that left no store), and ship_when_green.part_makeup re-runs each
+as its own job (gh run rerun --job) at once: the cut proofs are done while the red is read, and nothing ships until the red is.
+Law: test_a_round_cut_only_by_its_deadline_is_made_up +2 cases (v3879's shape; a ship run that re-runs job 555 and never 556
+or --failed) +2 red-proofs, each seen RED. His ask 11-07: 'a timeout is not red - rounds must not stall on it'.
 ### REG-3385 - THE CUT MODEL NEVER COUNTED THE CHECKPOINT CLEAN RUNS (v3881, v3879 shard 5 TIMEOUT)
 v3879's proof round, shard 5: test_a_safety_net_red_closes_only_its_own_lock - 27 proofs on one shard, priced 10.37 s a proof
 by the committed table (stale since v3877 grew the law to 32 proofs; its proofs were served from the cache afterwards, so no
