@@ -2321,6 +2321,15 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
         if isinstance(opened, str) and opened and not _challenge_page(opened):
             page = opened
     out = parse_public_quote(page, item, read_at, node_run=node_run)
+    # #96 - the forum words this reading searched: the price DB keys the item by them, so two names one search reads
+    # (Harlequin Crest / Shako) are one entry. Words only, the same the search URL carries - never the cookie or the page.
+    if isinstance(out, dict) and out.get("reason") == "read":
+        try:
+            _w = _search_keywords(item, node_run=node_run)
+            if isinstance(_w, str) and _w.strip():
+                out["searched"] = _w.strip()[:80]
+        except Exception:
+            pass
     if _held and isinstance(out, dict) and out.get("reason") == "unread":
         out["why"] = ("the forum showed no search results within 20 s - a search sent right after another is held "
                       "back" if _held == "search: no results page" else "the forum search did not run (%s)" % _held)

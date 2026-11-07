@@ -127,6 +127,20 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3342 - ONE ITEM, TWO PRICES: THE DB KEPT EACH NAME APART THOUGH THE FORUM SEARCH WAS ONE (v3878, board #96)
+His ask (11-06 ~23:10): "make sure the price is properly being wilson scored and averaged ... and for price check it
+should be joined logic to the database so this is a communicating and whole system". GrokBot 6700580776: Shako and
+Harlequin Crest return the SAME 10 posts (byte-identical - the quote block's lexicon searches "shako" for both) while the
+DB's normal tier read Shako 15 fg n 13 and Harlequin 40 fg n 5: d2jsp_price_db keyed an item by the name as asked
+(key_of(reading["item"])), so one item's posts, Wilson and age decay split across two entries and the price check showed
+whichever name was typed. NOW the reading carries the forum words it searched (`searched`, words only - what the search
+URL already carries) and the DB keys by them: ingest folds an entry kept under the asked name into the canonical one
+(every post once, newest seenAt wins) and removes it; price / explain / is_stale read every entry an item is held under
+until that fold; the Advanced table prices each entry by the key it is stored under; the console's stored-price door
+(_d2jsp_db_view) asks by the same key through d2jsp_chrome._search_keywords (the lexicon's one copy, cached). NOT this
+entry: the DB refreshing stale items on its own (fresh_refresh is still unwired) - it means automatic forum searches, so
+it gets its own pacing/playing gates (card #96 keeps it). Law: test_the_d2jsp_price_db_ages_weighs_and_merges (+4 cases);
+red-proofs PROVEN (3).
 ### REG-3341 - QUICK WINS RANKED AN AREA RUN AMONG THE BOSSES AND HID THE OTHER PLACES (v3878, board #101, his ruling)
 His question (11-07 00:48, the Bane Ash card): "for the other items are the best drops all from bosses?? why are the
 others also not synced to silospen from the 5 best drops", and his ruling 00:52: "they both need to be included then as

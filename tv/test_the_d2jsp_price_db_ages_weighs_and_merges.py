@@ -105,7 +105,80 @@ class ThePriceDB(unittest.TestCase):
         self.assertNotIn("perfect", C._public_posts([{"fg": 5, "w": 1, "perfect": 1}])[0])
 
 
+class OneItemOneEntry(unittest.TestCase):
+    """#96 (his 11-06: "for price check it should be joined logic to the database so this is a communicating and whole
+    system"; GrokBot 6700580776: Harlequin Crest and Shako read the SAME 10 posts while the DB held two entries, Shako 15 fg
+    n 13 and Harlequin 40 fg n 5) - an item is keyed by the forum words it is searched by, whichever name asked."""
+
+    def test_two_names_one_search_are_one_entry(self):
+        db = P.empty()
+        P.ingest(db, _reading([_post(40, 1, 1), _post(42, 2, 2)], item="Harlequin Crest"), "mac", NOW, key="shako")
+        P.ingest(db, _reading([_post(44, 1, 3)], item="Shako"), "alt", NOW, key="shako")
+        self.assertEqual(sorted(db["items"]), ["shako"], "two names of one search were kept apart: %r" % sorted(db["items"]))
+        a = P.price(db, "Harlequin Crest", NOW, key="shako")
+        b = P.price(db, "Shako", NOW, key="shako")
+        self.assertEqual((a["normal"], a["perfect"]), (b["normal"], b["perfect"]), "one item priced two ways")
+        self.assertEqual(len(P.explain(db, "Shako", NOW, key="shako")["posts"]), 3)
+
+    def test_an_entry_kept_under_the_old_name_is_folded_on_its_next_read(self):
+        db = P.empty()
+        P.ingest(db, _reading([_post(40, 1, 1)], item="Harlequin Crest"), "mac", NOW)           # before #96: its own key
+        self.assertIn("harlequin crest", db["items"])
+        held = P.price(db, "Harlequin Crest", NOW, key="shako")
+        self.assertIsNotNone(held["normal"]["fg"], "before the fold, the canonical ask lost the old entry's price")
+        P.ingest(db, _reading([_post(44, 1, 3)], item="Harlequin Crest"), "mac", NOW + 60, key="shako")
+        self.assertEqual(sorted(db["items"]), ["shako"], "the old entry was not folded into the canonical one")
+        self.assertEqual(len(db["items"]["shako"]["posts"]), 2, "a post was lost or doubled in the fold")
+
+    def test_the_view_prices_each_entry_by_the_key_it_is_stored_under(self):
+        db = P.empty()
+        P.ingest(db, _reading([_post(40, 1, 1)], item="Harlequin Crest"), "mac", NOW, key="shako")
+        v = P.view(db, NOW)
+        self.assertEqual([(r["item"], r["normal"]["fg"] is not None) for r in v["items"]], [("Harlequin Crest", True)],
+                         "the table priced an entry by its display name and found nothing")
+        self.assertFalse(P.is_stale(db, "Shako", NOW, key="shako")[0])
+
+    def test_the_quote_says_the_words_it_searched_and_the_console_keys_by_them(self):
+        import d2jsp_chrome as C
+
+        class R(object):
+            def __init__(self, out):
+                self.returncode, self.stdout, self.stderr = 0, out, ""
+
+        def node_run(prog, page):
+            if "d2jspSearchWords(" in prog and "d2jspRead(" not in prog.split("process.stdout.write")[-1]:
+                return R("shako")
+            return R(json.dumps({"reason": "read", "fg": 40, "low": 40, "high": 40, "n": 1,
+                                 "posts": [{"fg": 40, "day": "2026-10-30", "link": "https://forums.d2jsp.org/topic.php?t=1", "w": 1}]}))
+        code, out = C.d2jsp_quote("Harlequin Crest", "http://127.0.0.1:17772", "127.0.0.1:17772", 17772,
+                                  cookie_get=lambda: ("member_id=SECRET", "ok"),
+                                  transport=lambda *a: (200, {}, b"<html>Search Results</html>"), node_run=node_run,
+                                  chrome_fetch=False, sec_fetch_site="same-origin")
+        self.assertEqual(out.get("reason"), "read", out)
+        self.assertEqual(out.get("searched"), "shako", "the reading does not say the forum words it searched")
+        self.assertNotIn("SECRET", json.dumps(out))
+        with open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as f:
+            src = f.read()
+        self.assertIn('_key = reading.get("searched") or _d2jsp_canon(reading.get("item"))', src)
+        self.assertIn("priced = _PDB.price(db, item, now, key=_key)", src, "the price check's stored price is not the search's")
+
+
 RED_PROOF = [
+    {"why": "#96 - a reading is keyed by the name that asked, so Harlequin Crest and Shako are two entries again",
+     "file": "d2jsp_price_db.py",
+     "find": "    k = key_of(key or reading.get(\"item\"))\n",
+     "replace": "    k = key_of(reading.get(\"item\"))\n",
+     "matches": 1},
+    {"why": "#96 - an entry kept under the old name is never folded into the canonical one",
+     "file": "d2jsp_price_db.py",
+     "find": "    if old_k and old_k != k and isinstance(items.get(old_k), dict):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "#96 - the table prices an entry by its display name again",
+     "file": "d2jsp_price_db.py",
+     "find": "        row = price(db, _k, now, key=_k)          # #96 - priced by the key it is stored under, said by its name\n",
+     "replace": "        row = price(db, name, now)\n",
+     "matches": 1},
     {"why": "v3849 - no age decay", "file": "d2jsp_price_db.py",
      "find": " * 0.5 ** (age / HALF_LIFE_DAYS)", "replace": "", "matches": 1},
     {"why": "v3849 - an outlier (w 0) weighs like any post", "file": "d2jsp_price_db.py",

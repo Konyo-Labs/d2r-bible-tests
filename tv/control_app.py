@@ -175,6 +175,24 @@ def _ocr_ask(wp, path, timeout=8.0):
 
 
 _D2JSP_DB_LOCK = threading.Lock()   # v3849 - one writer of the price DB at a time
+_D2JSP_CANON = {}
+
+
+def _d2jsp_canon(item):
+    """#96 (his 11-06: "for price check it should be joined logic to the database") - the forum words an item is searched
+    by (d2jsp_chrome._search_keywords, the quote block's own lexicon - never a second copy), so Harlequin Crest and Shako
+    are ONE price-DB entry, as they are one forum search. Cached per name; a lexicon that will not run answers None and
+    the DB keeps the asked name's own key (UNKNOWN is not a guess)."""
+    k = str(item or "").strip()
+    if not k:
+        return None
+    if k not in _D2JSP_CANON:
+        try:
+            import d2jsp_chrome as _d
+            _D2JSP_CANON[k] = _d._search_keywords(k) or None
+        except Exception:
+            return None
+    return _D2JSP_CANON[k]
 
 
 def _d2jsp_db_fold(reading):
@@ -186,16 +204,17 @@ def _d2jsp_db_fold(reading):
         db = _PDB.load(path)
         if db is None:
             return {"unknown": "the price DB at this console would not read"}
+        _key = reading.get("searched") or _d2jsp_canon(reading.get("item"))   # #96 - one item, one entry
         try:
-            if _PDB.ingest(db, reading, socket.gethostname()):
+            if _PDB.ingest(db, reading, socket.gethostname(), key=_key):
                 _PDB.save(path, db)
             elif reading.get("reason") == "read":
                 _PDB.save(path, db)   # readAt moved: a fresh read restarts the refresh clock
         except OSError as e:
             return {"unknown": "the price DB could not be written (%s)" % type(e).__name__}
         now = time.time()
-        priced = _PDB.price(db, reading.get("item"), now)
-        priced["proof"] = _PDB.explain(db, reading.get("item"), now)
+        priced = _PDB.price(db, reading.get("item"), now, key=_key)
+        priced["proof"] = _PDB.explain(db, reading.get("item"), now, key=_key)
         return priced
 
 
@@ -210,8 +229,9 @@ def _d2jsp_db_view(item):
     if db is None:
         return {"unknown": "the price DB at this console would not read"}
     now = time.time()
-    priced = _PDB.price(db, item, now)
-    priced["proof"] = _PDB.explain(db, item, now)
+    _key = _d2jsp_canon(item)                      # #96 - the stored price of the SEARCH, whichever name asked it
+    priced = _PDB.price(db, item, now, key=_key)
+    priced["proof"] = _PDB.explain(db, item, now, key=_key)
     return priced
 
 

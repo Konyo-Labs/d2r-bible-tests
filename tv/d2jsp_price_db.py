@@ -34,6 +34,37 @@ def key_of(item):
     return " ".join(str(item or "").lower().replace("'", "").split())
 
 
+def _keys(item, key=None):
+    """#96 (his 11-06: "price check ... joined logic to the database so this is a communicating and whole system") - the
+    keys one item is held under: its CANONICAL key first (the forum words the desk searches it by - Harlequin Crest and
+    Shako both search "shako", so GrokBot 6700580776 read the same 10 posts for both while the DB kept two entries,
+    Shako 15 fg n 13 and Harlequin 40 fg n 5), then the asked name's own key (an entry written before the canonical key)."""
+    ks = []
+    for x in (key, item):
+        k = key_of(x) if x else ""
+        if k and k not in ks:
+            ks.append(k)
+    return ks
+
+
+def _held(db, item, key=None):
+    """-> (posts {post key: post} | None when no entry holds the item, readAt) - the union of every entry the item is held
+    under, the newest seenAt winning per post. Read-only."""
+    items = (db.get("items") or {}) if isinstance(db, dict) else {}
+    out, read_at, found = {}, 0.0, False
+    for k in _keys(item, key):
+        it = items.get(k)
+        if not isinstance(it, dict):
+            continue
+        found = True
+        read_at = max(read_at, float(it.get("readAt") or 0))
+        for pk, p in (it.get("posts") or {}).items():
+            q = out.get(pk)
+            if q is None or float(p.get("seenAt") or 0) > float(q.get("seenAt") or 0):
+                out[pk] = p
+    return (out if found else None), read_at
+
+
 def _post_key(p):
     link = str(p.get("link") or "")
     if link.startswith("https://forums.d2jsp.org/"):
@@ -48,15 +79,28 @@ def _day_ts(day):
         return None
 
 
-def ingest(db, reading, src, now=None):
-    """Fold one public reading (d2jsp_chrome._public_fields) into db. -> number of posts new to the DB."""
+def ingest(db, reading, src, now=None, key=None):
+    """Fold one public reading (d2jsp_chrome._public_fields) into db. -> number of posts new to the DB.
+
+    #96 - `key` (or the reading's own `searched` words) is the item's canonical key; an entry the asked name was kept
+    under before is folded into it (every post once, the newest seenAt wins) and removed, so one item is one entry."""
     now = time.time() if now is None else now
     if not isinstance(reading, dict) or reading.get("reason") != "read":
         return 0
-    k = key_of(reading.get("item"))
+    key = key or reading.get("searched")
+    k = key_of(key or reading.get("item"))
     if not k:
         return 0
-    it = db.setdefault("items", {}).setdefault(k, {"item": str(reading.get("item")), "posts": {}, "readAt": 0})
+    items = db.setdefault("items", {})
+    it = items.setdefault(k, {"item": str(reading.get("item")), "posts": {}, "readAt": 0})
+    old_k = key_of(reading.get("item"))
+    if old_k and old_k != k and isinstance(items.get(old_k), dict):
+        old = items.pop(old_k)
+        it["readAt"] = max(float(it.get("readAt") or 0), float(old.get("readAt") or 0))
+        for pk, p in (old.get("posts") or {}).items():
+            q = it["posts"].get(pk)
+            if q is None or float(p.get("seenAt") or 0) > float(q.get("seenAt") or 0):
+                it["posts"][pk] = p
     it["readAt"] = max(float(it.get("readAt") or 0), now)
     new = 0
     for p in reading.get("posts") or []:
@@ -137,12 +181,13 @@ def _tier(posts, now):
     return {"fg": fg, "n": len(pairs), "nEff": round(n_eff, 2), "conf": round(wilson_low(ok, n_eff), 3)}
 
 
-def price(db, item, now=None):
-    """-> {"item", "normal": tier, "perfect": tier, "stale": bool, "why"}; a tier with fg None is UNKNOWN."""
+def price(db, item, now=None, key=None):
+    """-> {"item", "normal": tier, "perfect": tier, "stale": bool, "why"}; a tier with fg None is UNKNOWN.
+    #96 - `key` is the item's canonical key (_keys): every entry the item is held under prices together."""
     now = time.time() if now is None else now
-    it = (db.get("items") or {}).get(key_of(item))
-    posts = list((it or {}).get("posts", {}).values())
-    stale, why = is_stale(db, item, now)
+    held, _ra = _held(db, item, key)
+    posts = list((held or {}).values())
+    stale, why = is_stale(db, item, now, key)
     priced = [p for p in posts if counts(p)]                     # REG-3327 - a linked post with a price, or nothing
     return {"item": str(item), "normal": _tier([p for p in priced if not p.get("perfect")], now),
             "perfect": _tier([p for p in priced if p.get("perfect")], now), "stale": stale, "why": why,
@@ -167,14 +212,14 @@ def _median_of(posts, now):
     return _wmedian(pairs) if pairs else None
 
 
-def explain(db, item, now=None):
+def explain(db, item, now=None, key=None):
     """The posts price() weighed, with the age weight and the band. The fg and the Wilson stay on price().
 
     A missing post list is not an empty price. This does not invent a fg. An item with no row has no posts.
     """
     now = time.time() if now is None else now
-    it = (db.get("items") or {}).get(key_of(item)) if isinstance(db, dict) else None
-    every = list((it or {}).get("posts", {}).values()) if isinstance(it, dict) else []
+    held, _ra = _held(db, item, key)
+    every = list((held or {}).values())
     posts = [p for p in every if counts(p)]                       # REG-3327 - the rows the price weighed, no other
     normal = [p for p in posts if not p.get("perfect")]
     perfect = [p for p in posts if p.get("perfect")]
@@ -231,20 +276,21 @@ def view(db, now=None):
         name = it.get("item")
         if not name:
             continue
-        row = price(db, name, now)
-        row["proof"] = explain(db, name, now)
+        row = price(db, _k, now, key=_k)          # #96 - priced by the key it is stored under, said by its name
+        row["item"] = str(name)
+        row["proof"] = explain(db, _k, now, key=_k)
         items.append(row)
     return {"reason": "read", "items": items}
 
 
-def is_stale(db, item, now=None):
+def is_stale(db, item, now=None, key=None):
     now = time.time() if now is None else now
-    it = (db.get("items") or {}).get(key_of(item))
-    if not it:
+    held, read_at = _held(db, item, key)
+    if held is None:
         return True, "never read"
-    if now - float(it.get("readAt") or 0) > REFRESH_DAYS * 86400:
+    if now - read_at > REFRESH_DAYS * 86400:
         return True, "read more than %g days ago" % REFRESH_DAYS
-    days = [_day_ts(p["day"]) for p in it["posts"].values()]
+    days = [_day_ts(p["day"]) for p in held.values()]
     days = [d for d in days if d is not None]
     if not days or now - max(days) > STALE_POST_DAYS * 86400:
         return True, "no post in the last %g days" % STALE_POST_DAYS
@@ -343,11 +389,11 @@ def fresh_refresh(db, fetch, now=None, env=None):
         return {"say": PAUSE, "fetched": []}
     now = time.time() if now is None else now
     got = []
-    for it in ((db or {}).get("items") or {}).values():
+    for _k, it in ((db or {}).get("items") or {}).items():
         name = it.get("item") if isinstance(it, dict) else None
         if not name:
             continue
-        stale, _why = is_stale(db, name, now)
+        stale, _why = is_stale(db, _k, now, key=_k)      # #96 - asked by the key it is stored under
         if not stale:
             continue
         fetch(name)
