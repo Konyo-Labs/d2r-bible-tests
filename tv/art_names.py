@@ -58,6 +58,10 @@ DOORS = (
     ("bible.html", r"art/tz_' \+ slug \+ '\.jpg'", "tz-info"),                 # _qwZoneArt
     ("bible.html", r"art/' \+ bp :", "boss-portraits"),                       # _qwTile, a boss with a portrait
     ("bible.html", r"art/' \+ su :", "qw-su-sprites"),                        # _qwTile, a superunique's sprite
+    # #108 - a random-pack monster's family sprite (The Arreat Summit), by name: the tile and the D2IO_ART fill
+    ("bible.html", r"art/' \+ pk :", "monster-packs"),                        # _qwTile, a random pack's sprite
+    ("bible.html", r"art/' \+ MONSTER_PACK_ART\[k\]", "monster-packs"),       # D2IO_ART, the floating card
+    ("bible.html", r"art/' \+ ar :", "area-runs"),                            # _qwTile, an area run's own place (The Pit)
 )
 
 
@@ -167,6 +171,8 @@ def _feeds(board, console, manifest):
     f["boss-portraits"] = [v for v in _object_values(board, "BOSS_PORTRAIT = {") if re.match(_FILE + "$", v)]
     f["console-tz-info"] = ["tz_%s.jpg" % k for k in sorted(_tz_keys(console))]
     f["qw-su-sprites"] = [v for v in _object_values(board, "var _QW_SU_ART = {") if re.match(_FILE + "$", v)]
+    f["monster-packs"] = [v for v in _object_values(board, "const MONSTER_PACK_ART = {", quote='"') if re.match(_FILE + "$", v)]
+    f["area-runs"] = [v for v in _object_values(board, "const AREA_RUN_ART = {", quote='"') if re.match(_FILE + "$", v)]
     return f
 
 

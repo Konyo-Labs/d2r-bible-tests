@@ -8525,7 +8525,7 @@ body.app-ctx .dock-mini-tab, body.app-ctx .lore-mini{display:none !important}
        ════════════════════════════════════════════════════════════════ -->
   <div class="event-card" id="event-uber-id-cards">
     <div class="event-card-head" onclick="toggleEventCard('event-uber-id-cards')" role="button" tabindex="0" aria-expanded="false">
-      <span class="d2art-wrap ec-logo"><img class="d2art-img" src="art/d2mon_Baal.gif" alt="Uber Boss ID Cards" onerror="this.parentNode.classList.add('d2art-failed')"><span class="d2art-fallback"><span class="ec-emoji">👹</span></span></span>
+      <span class="d2art-wrap ec-logo"><img class="d2art-img" src="art/d2arreat_baal.gif" alt="Uber Boss ID Cards" onerror="this.parentNode.classList.add('d2art-failed')"><span class="d2art-fallback"><span class="ec-emoji">👹</span></span></span>
       <div class="ec-titles"><div class="ec-title">Uber Boss ID Cards</div><div class="ec-sub">9 stat-carded pinnacle bosses · 3 Pandemonium mini-ubers · 3 Tristram trio · 3 Colossal Ancients</div></div>
       <div class="ec-tier"><div class="ec-tier-label">cards</div><div class="ec-tier-val">9</div></div>
       <div class="ec-chevron">▾</div>
@@ -8603,7 +8603,7 @@ body.app-ctx .dock-mini-tab, body.app-ctx .lore-mini{display:none !important}
        ════════════════════════════════════════════════════════════════ -->
   <div class="event-card" id="event-diablo-clone">
     <div class="event-card-head" onclick="toggleEventCard('event-diablo-clone')" role="button" tabindex="0" aria-expanded="false">
-      <span class="d2art-wrap ec-logo"><img class="d2art-img" src="art/d2mon_Diablo.gif" alt="Diablo Clone" onerror="this.parentNode.classList.add('d2art-failed')"><span class="d2art-fallback"><span class="ec-emoji">🌑</span></span></span>
+      <span class="d2art-wrap ec-logo"><img class="d2art-img" src="art/d2arreat_diablo.gif" alt="Diablo Clone" onerror="this.parentNode.classList.add('d2art-failed')"><span class="d2art-fallback"><span class="ec-emoji">🌑</span></span></span>
       <div class="ec-titles"><div class="ec-title">Diablo Clone</div><div class="ec-sub">The Annihilus Hunt · SoJ-triggered world event · only unique small charm</div></div>
       <div class="ec-tier"><div class="ec-tier-label">mlvl</div><div class="ec-tier-val">110</div></div>
       <div class="ec-chevron">▾</div>
@@ -22341,12 +22341,14 @@ const D2IO_ART = {
   "The Summoner": "art/d2mon_The_Summoner.gif",
   "Izual": "art/d2mon_Izual.gif",
   // Pandemonium mini-ubers + Tristram trio (verified 200/image/png 2026-06-09; same art UBER_BOSSES renders)
-  "Lilith": "art/d2mon_Andariel.gif",   /* REG-3321 - Lilith is Andariel's model: her one picture */
-  "Uber Izual": "art/d2mon_Izual.gif",
-  "Uber Duriel": "art/d2mon_Duriel.gif",
-  "Uber Mephisto": "art/d2mon_Mephisto.gif",
-  "Uber Diablo": "art/d2mon_Diablo.gif",
-  "Uber Baal": "art/d2mon_Baal.gif",
+  /* #108 (his 11-07: "for uber lilith use this [the Arreat Summit's Andariel]" ... "make sure they are diffrent for uber
+     duriel") - a boss and its uber never share a picture: the regular keeps its sprite, the uber wears the Arreat Summit's */
+  "Lilith": "art/d2arreat_andariel.gif",
+  "Uber Izual": "art/d2arreat_izual.gif",
+  "Uber Duriel": "art/d2arreat_duriel.gif",
+  "Uber Mephisto": "art/d2arreat_mephisto.gif",
+  "Uber Diablo": "art/d2arreat_diablo.gif",
+  "Uber Baal": "art/d2arreat_baal.gif",
   "Hephasto the Armorer": "art/d2mon_Hephasto_The_Armorer.gif",
   "Ismail Vilehand": "art/councilmember_graphic.png",
   "Geleb Flamefinger": "art/councilmember_graphic.png",
@@ -22856,6 +22858,85 @@ const D2IO_ART = {
   "The Cow King": "art/d2mon_The_Cow_King.gif",
   "Thresh Socket": "art/d2mon_Thresh_Socket.gif"
 };
+/* #108 (his 11-07: "for banished and for pits and for spike freind ... either .gif or a HD extracted art thats related and
+   properly matched for those and others like it"; "classic.battle.net ... these are wonderful try this website") - EVERY
+   RANDOM-PACK MONSTER WEARS ITS FAMILY'S OWN SPRITE from The Arreat Summit, Blizzard's own Diablo II site: the family page
+   whose variant list names the monster (The Banished -> Vampire, Spike Fiend -> Spike Fiend, Night Lord in the Halls of
+   Anguish -> the Act 5 Blood Lord). Every file looked at on a contact sheet and read cold by the Grok CLI; sources, sha1 and
+   its words in tv/data/monster_art_arreat.json. ONE map: Quick wins' tile and the floating card both read it. A name no
+   family page names (Blood Wing) has no entry and draws no stand-in. [[copy-drift]] */
+const MONSTER_PACK_ART = {
+  "Abominable": "d2fam_abominable.gif",
+  "Abyss Knight": "d2fam_undead_horror.gif",
+  "Afflicted": "d2fam_tainted.gif",
+  "Apparition": "d2fam_wraith.gif",
+  "Arach": "d2fam_giant_spider.gif",
+  "Assailant": "d2fam_sand_raider.gif",
+  "Black Lancer": "d2fam_corrupt_rogue_spearwoman.gif",
+  "Black Raptor Nest": "d2fam_blood_hawk_nest.gif",
+  "Black Rogue": "d2fam_corrupt_rogue.gif",
+  "Black Soul": "d2fam_willowisp.gif",
+  "Blood Boss": "d2fam_overseer.gif",
+  "Blood Bringer": "d2fam_siege_beast.gif",
+  "Blood Clan": "d2fam_goatman.gif",
+  "Blood Diver": "d2fam_bat_demon.gif",
+  "Blood Hawk Nest": "d2fam_blood_hawk_nest.gif",
+  "Blood Lord": "d2fam_vampire.gif",
+  "Blood Maggot": "d2fam_sand_maggot.gif",
+  "Blood Temptress": "d2fam_succubus.gif",
+  "Blunderbore": "d2fam_blunderbore.gif",
+  "Bog Creature": "d2fam_frog_demon.gif",
+  "Bone Archer": "d2fam_skeleton_archer.gif",
+  "Bramble Hulk": "d2fam_thorned_hulk.gif",
+  "Brute": "d2fam_wendigo.gif",
+  "Burning Dead": "d2fam_skeleton.gif",
+  "Burning Dead Archer": "d2fam_skeleton_archer.gif",
+  "Burning Dead Mage": "d2fam_skeleton_mage.gif",
+  "Burning Soul": "d2fam_willowisp.gif",
+  "Cadaver": "d2fam_mummy.gif",
+  "Carrion Bird": "d2fam_vulture_demon.gif",
+  "Carver Shaman": "d2fam_fallen_shaman.gif",
+  "Claw Viper": "d2fam_claw_viper.gif",
+  "Cliff Lurker": "d2fam_leaper.gif",
+  "Cloud Stalker": "d2fam_blood_hawk.gif",
+  "Corpulent": "d2fam_regurgitator.gif",
+  "Crusher": "d2fam_wendigo.gif",
+  "Dark Archer": "d2fam_corrupt_rogue_archer.gif",
+  "Dark Familiar": "d2fam_bat_demon.gif",
+  "Dark Lancer": "d2fam_corrupt_rogue_spearwoman.gif",
+  "Dark Ranger": "d2fam_corrupt_rogue_archer.gif",
+  "Dark Shape": "d2fam_wraith.gif",
+  "Death Brawler": "d2fam_death_mauler.gif",
+  "Death Clan": "d2fam_goatman.gif",
+  "Death Lord": "d2fam_blood_lord.gif",
+  "Death Mauler": "d2fam_death_mauler.gif",
+  "Devourer": "d2fam_sand_maggot.gif",
+  "Disfigured": "d2fam_tainted.gif",
+  "Drowned Carcass": "d2fam_zombie.gif",
+  "Fiend": "d2fam_bat_demon.gif",
+  "Flesh Hunter": "d2fam_corrupt_rogue.gif",
+  "Giant Lamprey": "d2fam_sand_maggot.gif",
+  "Grotesque": "d2fam_vile_mother.gif",
+  "Hell Whip": "d2fam_overseer.gif",
+  "Infidel": "d2fam_sand_raider.gif",
+  "Mauler": "d2fam_blunderbore.gif",
+  "Maw Fiend": "d2fam_regurgitator.gif",
+  "Night Lord": "d2fam_blood_lord.gif",
+  "Prowling Dead": "d2fam_reanimated_horde.gif",
+  "Returned Archer": "d2fam_skeleton_archer.gif",
+  "Rock Worm": "d2fam_sand_maggot.gif",
+  "Snow Drifter": "d2fam_abominable.gif",
+  "Spike Fiend": "d2fam_spike_fiend.gif",
+  "The Banished": "d2fam_vampire.gif",
+  "Urdar": "d2fam_blunderbore.gif",
+  "Wretched Defiler": "d2fam_putrid_defiler.gif"
+};
+/* #108 - an AREA run wears its own place, never the outdoor zone above it: The Pit is the cave (tv/data/monster_art_arreat.json
+   "areas" - the wiki's extracted render of the level). A run with no entry keeps its terror-zone art. */
+const AREA_RUN_ART = { "pit": "area_the_pit.jpg" };
+Object.keys(MONSTER_PACK_ART).forEach(function(k){
+  if (!Object.prototype.hasOwnProperty.call(D2IO_ART, k)) D2IO_ART[k] = 'art/' + MONSTER_PACK_ART[k];
+});
 // v258: art file is present but was never mapped — wire it so the set tracker shows it
 if (!Object.prototype.hasOwnProperty.call(D2IO_ART, "Griswold's Redemption")) D2IO_ART["Griswold's Redemption"] = 'art/griswoldsredemption_graphic.png';
 /* v325 — HD + correctly-coloured item art. Uniques/sets repointed to maxroll D2Planner
@@ -38282,7 +38363,7 @@ window.openHeraldCard = openHeraldCard;
 const UBER_BOSSES = [
   /* REG-3321 (#102/#91, his one picture per monster) - each uber boss wears its own Diablo II sprite (Lilith is Andariel's
      model), the same file BOSS_PORTRAIT and D2IO_ART name - the old renders stayed here and the v78 spec caught it on CI */
-  { id:'lilith', name:'Lilith', emoji:'🕷️', art:'d2mon_Andariel.gif',
+  { id:'lilith', name:'Lilith', emoji:'🕷️', art:'d2arreat_andariel.gif',
     group:'Mini-Uber · Pandemonium portal', role:'drops Diablo\'s Horn',
     loc:'Matron\'s Den · opened from Harrogath · Hell only',
     type:'Act 1 Demon Superunique — a.k.a. Uber Andariel (shared model)',
@@ -38291,7 +38372,7 @@ const UBER_BOSSES = [
     abil:['Poison Spray + Poison Bolt (~3,650 poison over 74s)','Cannot be chilled or slowed by cold','Regenerates life at 2× the normal rate'],
     drop:'Diablo\'s Horn',
     strat:'Hits like a truck and her adds are nastier than she is — clear the pack first. +poison-res / antidote and a tanky merc help. Smite is physical, so her immunity does not stop it.' },
-  { id:'izual', name:'Uber Izual', emoji:'❄️', art:'d2mon_Izual.gif',
+  { id:'izual', name:'Uber Izual', emoji:'❄️', art:'d2arreat_izual.gif',
     group:'Mini-Uber · Pandemonium portal', role:'drops Mephisto\'s Brain',
     loc:'Furnace of Pain · opened from Harrogath · Hell only',
     type:'Act 4 Demon Superunique — the fallen Archangel of Justice',
@@ -38300,7 +38381,7 @@ const UBER_BOSSES = [
     abil:['Frost Nova + Cold-Enchanted melee (+85–130 cold)','Chilling Armor (+175% def for 300s)','Teleports onto you'],
     drop:'Mephisto\'s Brain',
     strat:'Cold-immune — cold builds do nothing here; bring physical / fire / magic. He teleports and frost-novas, so keep moving and out-pace his regen with Life Tap.' },
-  { id:'uber-duriel', name:'Uber Duriel', emoji:'🦂', art:'d2mon_Duriel.gif',
+  { id:'uber-duriel', name:'Uber Duriel', emoji:'🦂', art:'d2arreat_duriel.gif',
     group:'Mini-Uber · Pandemonium portal', role:'drops Baal\'s Eye',
     loc:'Forgotten Sands · opened from Harrogath · Hell only',
     type:'Act 2 Demon Superunique — the Lord of Pain, uber form (fought in the Forgotten Sands, Act 5)',
@@ -38309,7 +38390,7 @@ const UBER_BOSSES = [
     abil:['Holy Freeze aura — chills + slows you the whole fight','Knockback melee (A1 468–494 / A2 149–214)','2× life regen · very high drain effectiveness'],
     drop:'Baal\'s Eye',
     strat:'Low Attack Rating — Shout / Defiance gut his hit-chance. His drain is brutal: Life Tap or a life-steal weapon is near-mandatory. Cold resist is 75, not an immunity, so cold damage still lands.' },
-  { id:'uber-mephisto', name:'Uber Mephisto', emoji:'💀', art:'d2mon_Mephisto.gif',
+  { id:'uber-mephisto', name:'Uber Mephisto', emoji:'💀', art:'d2arreat_mephisto.gif',
     group:'Uber Tristram trio', role:'kill FIRST',
     loc:'Uber Tristram · cube 3 organs → red portal · Hell only',
     type:'Prime Uber — the Lord of Hatred',
@@ -38318,7 +38399,7 @@ const UBER_BOSSES = [
     abil:['Level-20 Conviction aura: −125% resist, −90% defense (13⅓ yd)','Charged Bolt · Skull Missile · Blizzard · Frost/Poison Nova','Lightning-Enchanted (8 bolts when struck) · summons Skeleton Mages','Cannot be life- or mana-leeched'],
     drop:null,
     strat:'KILL FIRST — his Conviction aura amplifies the whole room\'s elemental damage onto you and supercharges his skelly mages. Drop him and the fight calms right down.' },
-  { id:'uber-diablo', name:'Uber Diablo', emoji:'🔥', art:'d2mon_Diablo.gif',
+  { id:'uber-diablo', name:'Uber Diablo', emoji:'🔥', art:'d2arreat_diablo.gif',
     group:'Uber Tristram trio', role:'kill SECOND',
     loc:'Uber Tristram · cube 3 organs → red portal · Hell only',
     type:'Prime Uber — Pandemonium Diablo (NOT the SoJ-summoned Diablo Clone)',
@@ -38327,7 +38408,7 @@ const UBER_BOSSES = [
     abil:['Red Lightning Hose (½ physical / ½ lightning) — the big killer','Bone Prison traps you, hirelings & your Town Portals','Fire Nova · Firestorm · Charge','Summons Pit Lords (immune to all but physical)'],
     drop:null,
     strat:'The HP wall — kill SECOND. Max Lightning resist + Damage Reduction (or high block) survives the Lightning Hose. Don\'t get Bone-Prisoned beside all three. Distinct from the Annihilus Diablo Clone.' },
-  { id:'uber-baal', name:'Uber Baal', emoji:'👑', art:'d2mon_Baal.gif',
+  { id:'uber-baal', name:'Uber Baal', emoji:'👑', art:'d2arreat_baal.gif',
     group:'Uber Tristram trio', role:'kill LAST',
     loc:'Uber Tristram · cube 3 organs → red portal · Hell only',
     type:'Prime Uber — the Lord of Destruction',
@@ -70388,8 +70469,14 @@ function renderJournal(){
         var T = (typeof QW_TARGETS !== 'undefined') ? QW_TARGETS[r[0]] : null;
         if (T && T.once) out.push({ id: r[0], name: T.n, who: _QW_DIFF[r[1]] + ' ' + T.n, area: T.a, kind: 'once', chance: effChance(r[2], r[0], r[1]) });   // his own /players factor (PLACE_PF)
       });
+      /* #108 - one monster at the same odds on several levels is ONE row naming them all (Heaven's Light read "Bone Archer"
+         three times, Jail Level 1, 2 and 3, each 1:42,745) */
+      var _same = {};
       ((P && P.r) || []).forEach(function(r){
-        out.push({ name: r[0], who: _QW_DIFF[r[1]] + ' ' + r[0], area: r[3], kind: r[2], chance: adjustChance(r[4], mf) });
+        var k = [r[0], r[1], r[2], r[4]].join('|');
+        if (_same[k]) { _same[k].area += ' · ' + r[3]; return; }
+        _same[k] = { name: r[0], who: _QW_DIFF[r[1]] + ' ' + r[0], area: r[3], kind: r[2], chance: adjustChance(r[4], mf) };
+        out.push(_same[k]);
       });
     } catch (e) { return []; }
     return out.filter(function(a){ return a.chance != null && (worst == null || a.chance < worst); })
@@ -70456,11 +70543,14 @@ function renderJournal(){
     /* REG-3321 (#102) - a tile with a monster draws the monster ALONE: no zone art behind it (the zone stays for an area
        run, which has no monster). The pointer floats the console's own card (_qwHover), so no native title tip covers
        the row's rank and name any more. */
-    var mon = bp ? 'art/' + bp : (su ? 'art/' + su : null), zone = mon ? null : _qwZoneArt(area);
+    /* #108 - a random-pack row has no id: it draws its family's own sprite by NAME (MONSTER_PACK_ART), never the zone tile */
+    var pk = (!bp && !su && monName && typeof MONSTER_PACK_ART !== 'undefined') ? MONSTER_PACK_ART[monName] : null;
+    var ar = (typeof AREA_RUN_ART !== 'undefined') ? AREA_RUN_ART[bossId] : null;
+    var mon = bp ? 'art/' + bp : (su ? 'art/' + su : (pk ? 'art/' + pk : null)), zone = mon ? null : (ar ? 'art/' + ar : _qwZoneArt(area));
     var v = function(u){ return (typeof _artV === 'function') ? _artV(u) : u; };
     return '<span class="qw-tile' + (mon ? ' qw-tile-mon' : ' qw-tile-zone') + '"' + (zone ? ' style="background-image:url(' + v(zone) + ')"' : '')
       + _qwHover(bossId, monName) + ' aria-label="' + esc(label + (area ? ' · ' + area : '')) + '">'
-      + (mon ? '<img class="qw-mon' + (/d2mon_/.test(mon) ? ' qw-mon-sprite' : '') + '" src="' + v(mon) + '" alt="" loading="lazy" onerror="this.remove()">' : '')
+      + (mon ? '<img class="qw-mon' + (/d2mon_|d2fam_|d2arreat_/.test(mon) ? ' qw-mon-sprite' : '') + '" src="' + v(mon) + '" alt="" loading="lazy" onerror="this.remove()">' : '')
       + '</span>';
   }
   /* REG-3321 (#102 - his 11-07 "image cursor floating enlarged of that boss ... just like the rest of the console"). The
@@ -70489,13 +70579,15 @@ function renderJournal(){
       + '<span class="qw-place"><span class="qw-rank">' + (rankSay ? esc(rankSay) : (i === 0 ? '1st · best run' : ['1st', '2nd', '3rd', '4th'][i])) + '</span>'
       + '<b class="qw-name"' + _qwHover(p.s.bossId, p.s.name) + '>' + esc(p.label) + '</b>'
       + '<span class="qw-sub qw-area">' + esc(area) + (multi ? ' · ~' + p.kpr + ' kills a run' : '') + '</span></span>'
-      + odds
+      /* #109 (his 11-07: "first should be how many runs. then ... time for a 50% chance then this third ~84 runs an hour ...
+         and the odds should be at the end on the right for last 4th column") */
       + _qwStat(p.runs != null ? '~' + Number(p.runs).toLocaleString() : '—', 'runs for a 50% chance', 'qw-runs',
                 'runs for an even (50%) chance of the drop - ' + _qwRunsTxt(p.runs))
       + _qwStat(p.hours != null && isFinite(p.hours) ? '~' + _fmtHunt(p.hours) : '—', 'time for a 50% chance', 'qw-ttf',
                 'time for an even (50%) chance, at the runs an hour beside it')
       + _qwStat(p.kph ? '~' + p.kph : '—', 'runs an hour' + (p.est ? ' · est' : ''), 'qw-kph',
                 p.est ? 'run rate is an estimate (no measured clear for this place); the runs count does not depend on it' : '')
+      + odds
       + '</div>';
   }
   /* REG-3325 - kills for an even chance at 1:c a kill: ln(0.5)/ln(1-1/c), the same arithmetic as a run of one kill */
@@ -70523,11 +70615,12 @@ function renderJournal(){
                                                                  : 'random ' + esc(a.kind) + ' pack · spawns by chance') + '</span>'
             + '<b class="qw-name"' + _qwHover(a.id || '', a.name) + '>' + esc(a.who) + '</b><span class="qw-sub qw-area">' + esc(a.area)
             + (a.kind === 'once' ? ' · not a repeatable run' : ' · random ' + esc(a.kind) + ' pack') + '</span></span>'
-            + _qwStat(fmtOdds(a.chance), 'odds a kill', 'qw-odds', why)
+            /* #109 - the same four columns in his order, each saying KILL where the ranked rows say run */
             + _qwStat(_qwKills50(a.chance), 'kills for a 50% chance', 'qw-runs',
                       'kills for an even (50%) chance of the drop at these per-kill odds' + (a.kind === 'once' ? ' - but he can be killed once a character in each difficulty' : ''))
             + _qwStat('—', 'time for a 50% chance', 'qw-ttf qw-unmeasured', 'not measured - no kill rate is on record for this place')
-            + _qwStat('—', 'kills an hour', 'qw-kph qw-unmeasured', 'not measured') + '</div>';
+            + _qwStat('—', 'kills an hour', 'qw-kph qw-unmeasured', 'not measured')
+            + _qwStat(fmtOdds(a.chance), 'odds a kill', 'qw-odds', why) + '</div>';
         }).join('');
   }
   /* #101 (his ruling 11-07 ~00:52: "they both need to be included then as bosses first and then the others as secondary
@@ -70539,7 +70632,17 @@ function renderJournal(){
   function _qwGridHtml(qp, also){
     qp = qp || []; also = also || [];
     var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 4);
-    var areas = qp.filter(function(p){ return p.kpr > 1; }).slice(0, 5);
+    /* #108 (his 11-07 Bane Ash screenshot: the second layer must carry The Banished and Spike Fiend) - ONE row per area: the
+       Cow Level came back as four runs (TZ and not, Normal and NM) and pushed every per-kill place off the card. qp is
+       already fastest-first, so each place keeps its best variant. */
+    var _seenArea = {};
+    var areas = qp.filter(function(p){
+      if (!(p.kpr > 1)) return false;
+      var k = (p.s && p.s.bossId) || p.label;
+      if (_seenArea[k]) return false;
+      _seenArea[k] = 1;
+      return true;
+    }).slice(0, 5);
     var kills = also.slice(0, Math.max(0, 5 - areas.length));
     var sec1 = one.length ? one.map(function(p, i){ return _qwPlaceRow(p, i); }).join('')
       : '<div class="qw-none">No boss or super-unique run on record drops it - its places are below.</div>';

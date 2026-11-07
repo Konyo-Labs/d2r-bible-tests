@@ -87,6 +87,7 @@ var also = [ { id: 'su_thecowking', name: 'The Cow King', who: 'Normal The Cow K
 out.grid = _qwGridHtml(places, also);
 out.gridNoAlso = _qwGridHtml(places, []);
 out.gridBossesOnly = _qwGridHtml(places.filter(function(p){ return p.kpr === 1; }), []);
+out.gridDupArea = _qwGridHtml(places.concat([{ label: 'NM The Pit', area: '', s: { bossId: 'pit' }, chance: 90000, runs: 900, hours: 12, kph: 50, kpr: 110, est: false }]), also);
 out.gridSix = _qwGridHtml(places, also.concat([1, 2, 3, 4].map(function(k){ return { name: 'Pack ' + k, who: 'Hell Pack ' + k, area: 'Somewhere', kind: 'champion', chance: 700 + k }; })));
 process.stdout.write(JSON.stringify(out));
 """
@@ -109,7 +110,9 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         portrait = _cut(src, "  var BOSS_PORTRAIT = {", "\n  };\n")
         grid = _cut(src, "  var _QW_SU_ART = ", "  window._qwGridHtml = _qwGridHtml;")
         odds = _cut(src, "  function fmtOdds(c){", "\n")                      # the page's own 1:N formatter
-        code = "\n".join([tz, key, art, bl.replace("const BOSSES", "var BOSSES", 1), portrait, odds, grid])
+        packs = _cut(src, "const MONSTER_PACK_ART = {", "\n};\n")              # #108 - a random pack's family sprite
+        packs += "\n" + _cut(src, "const AREA_RUN_ART = ", "\n")                  # #108 - an area run's own place
+        code = "\n".join([tz, key, art, bl.replace("const BOSSES", "var BOSSES", 1), portrait, odds, packs, grid])
         js = HARNESS % {"code": code, "cfg": json.dumps({"targets": cls.targets, "bossIds": cls.boss_ids})}
         r = subprocess.run([NODE, "-"], input=js, capture_output=True, text=True, timeout=120)
         if r.returncode != 0:
@@ -154,11 +157,13 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         self.assertIn('<span class="qw-rank">3rd · per kill · random unique pack · spawns by chance</span>', rows[1])
         for row, c in zip(rows, (312, 603)):
             stats = re.findall(r'<span class="qw-stat ([a-z -]+)"[^>]*><b>([^<]*)</b><span class="qw-sub">([^<]*)</span>', row)
-            self.assertEqual([x[0].split()[0] for x in stats], ["qw-odds", "qw-runs", "qw-ttf", "qw-kph"], row[:300])
-            self.assertEqual(stats[1][1], "~" + format(math.ceil(math.log(0.5) / math.log(1 - 1.0 / c)), ","),
+            # #109 (his 11-07 order) - kills for an even chance, time, kills an hour, then the odds LAST
+            self.assertEqual([x[0].split()[0] for x in stats], ["qw-runs", "qw-ttf", "qw-kph", "qw-odds"], row[:300])
+            self.assertEqual(stats[0][1], "~" + format(math.ceil(math.log(0.5) / math.log(1 - 1.0 / c)), ","),
                              "the kills for an even chance are not the per-kill odds' own")
-            self.assertEqual(stats[1][2], "kills for a 50% chance")
-            self.assertIn("qw-unmeasured", stats[2][0] + stats[3][0])
+            self.assertEqual(stats[0][2], "kills for a 50% chance")
+            self.assertIn("qw-unmeasured", stats[1][0] + stats[2][0])
+            self.assertEqual(stats[3][2], "odds a kill", "a per-kill row's odds read as a run's")
 
     def test_a_monster_tile_draws_the_monster_alone(self):
         """REG-3321 (#102 - his 11-07 "it should render just the monster not the area behind it"): a tile that carries a
@@ -178,6 +183,26 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         pit = self.o["bossZones"].get("pit")
         if pit:
             self.assertIn("background-image", pit[2][:pit[2].index(">") + 1], "an area run lost its zone picture")
+
+    def test_a_random_pack_draws_its_familys_sprite_never_the_zone(self):
+        """#108 (his 11-07: "for banished and for pits and for spike freind ... either .gif or a HD extracted art thats related
+        and properly matched") - The Banished's row draws the Vampire family's own sprite (The Arreat Summit), not a
+        Catacombs tile"""
+        row = [r for r in self.o["grid"].split('<div class="qw-row') if "Normal The Banished" in r]
+        self.assertEqual(len(row), 1, "the Banished row is not in the grid")
+        self.assertIn('src="art/d2fam_vampire.gif"', row[0], "a random pack drew no family sprite")
+        self.assertNotIn("background-image:url(art/tz_", row[0], "a random pack still wears a zone tile")
+        self.assertIn("qw-mon-sprite", row[0])
+
+    def test_one_row_per_area_and_the_pit_is_the_cave(self):
+        """#108 - an area is ONE row (its fastest variant; the Cow Level came back four times and pushed every per-kill place
+        off the card), and The Pit wears the cave itself, never Tamoe Highland's outdoor tile"""
+        g = self.o["gridDupArea"]
+        pits = [r for r in g.split('<div class="qw-row') if '<b class="qw-name"' in r and 'The Pit</b>' in r]
+        self.assertEqual(len(pits), 1, "The Pit drew %d rows - one area, one row" % len(pits))
+        self.assertIn("Normal The Pit", pits[0], "the area kept a slower variant over its fastest")
+        self.assertIn("art/area_the_pit.jpg", pits[0], "The Pit wears the outdoor zone again")
+        self.assertIn("Normal The Banished", g, "the per-kill places were pushed off the card")
 
     def test_every_place_floats_the_consoles_card(self):
         """REG-3321 (#102 - "image cursor floating enlarged ... just like the rest of the console"): a boss the board knows
@@ -220,9 +245,11 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         for row in rows:
             self.assertEqual(row.count('class="qw-tile'), 1, row[:200])
             stats = re.findall(r'<span class="qw-stat ([a-z-]+)"[^>]*><b>([^<]*)</b><span class="qw-sub">([^<]*)</span>', row)
-            self.assertEqual([s[0] for s in stats], ["qw-odds", "qw-runs", "qw-ttf", "qw-kph"], row[:400])
+            # #109 (his 11-07: "first should be how many runs. then ... time for a 50% chance then ... runs an hour ... and
+            # the odds should be at the end on the right for last 4th column")
+            self.assertEqual([s[0] for s in stats], ["qw-runs", "qw-ttf", "qw-kph", "qw-odds"], row[:400])
             self.assertTrue(all(s[1] and s[2] for s in stats), "a number without its subtitle: %r" % stats)
-            self.assertEqual(stats[0][2], "odds a run", "the odds column mixes units: %r" % stats[0][2])
+            self.assertEqual(stats[3][2], "odds a run", "the odds column mixes units: %r" % stats[3][2])
 
     def test_bosses_first_then_the_other_places_first_to_fifth(self):
         """#101 (his ruling 11-07 ~00:52: "they both need to be included then as bosses first and then the others as
@@ -396,6 +423,73 @@ class OneMonsterOnePicture(unittest.TestCase):
             self.assertTrue(r.get("url", "").startswith("https://"), "%s's sprite has no source" % r["name"])
 
 
+class EveryPackAndUberWearsItsOwnSprite(unittest.TestCase):
+    """#108 - every random-pack monster Quick wins can list has its family's sprite (The Arreat Summit), each file shipped
+    with the sha1 its record holds, and a boss and its uber never share a picture (his: "make sure they are diffrent")."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.src = _read()
+        with io.open(os.path.join(HERE, "data", "monster_art_arreat.json"), encoding="utf-8") as fh:
+            cls.rec = json.load(fh)
+        cls.packs = json.loads(_cut(cls.src, "const MONSTER_PACK_ART = ", "\n};\n")[len("const MONSTER_PACK_ART = "):].rstrip().rstrip(";"))
+
+    def test_every_pack_monster_on_the_page_has_its_sprite(self):
+        places = _table(self.src, "QW_PLACES")
+        names = sorted(set(r[0] for p in places.values() for r in p.get("r") or []))
+        missing = [n for n in names if n not in self.packs and n not in self.rec["unmatched"]]
+        self.assertEqual(missing, [], "a random-pack monster has no sprite and no stated reason: %s" % missing)
+        self.assertGreaterEqual(len(names), 60, "premise: the page lists %d pack monsters" % len(names))
+
+    def test_every_sprite_is_shipped_with_its_recorded_sha1(self):
+        import hashlib
+        bad = []
+        for f in sorted(set(self.packs.values())):
+            p = os.path.join(ROOT, "art", f)
+            want = (self.rec["files"].get(f) or {}).get("sha1")
+            got = hashlib.sha1(open(p, "rb").read()).hexdigest() if os.path.isfile(p) else None
+            if not want or got != want:
+                bad.append((f, want, got))
+        self.assertEqual(bad, [], "a pack sprite is missing, unrecorded, or not the file its record names: %s" % bad)
+        self.assertTrue(all(v.get("grokCold") for v in self.rec["files"].values()), "a file was wired without its cold look")
+
+    def test_a_boss_and_its_uber_never_share_a_picture(self):
+        i = self.src.index("const D2IO_ART = {")
+        d2 = dict(re.findall(r'^\s*"([^"]+)":\s*"art/([^"]+)"', self.src[i:self.src.index("\n};", i)], re.M))
+        pairs = [("Andariel", "Lilith"), ("Izual", "Uber Izual"), ("Duriel", "Uber Duriel"), ("Mephisto", "Uber Mephisto"),
+                 ("Diablo", "Uber Diablo"), ("Baal", "Uber Baal")]
+        same = [(a, b, d2.get(a)) for a, b in pairs if d2.get(a) == d2.get(b)]
+        self.assertEqual(same, [], "a boss and its uber share one picture: %s" % same)
+        self.assertEqual(d2.get("Lilith"), "d2arreat_andariel.gif", "his ruling: Uber Lilith wears the Arreat Summit's Andariel")
+        self.assertEqual(d2.get("Andariel"), "d2mon_Andariel.gif", "his ruling: Andariel keeps the gif she had")
+        ub = dict(re.findall(r"\{ id:'([a-z\-]+)', name:'[^']+', emoji:'[^']*', art:'([^']+)'", self.src))
+        for uid, f in (("lilith", "d2arreat_andariel.gif"), ("uber-duriel", "d2arreat_duriel.gif"), ("izual", "d2arreat_izual.gif")):
+            self.assertEqual(ub.get(uid), f, "the uber card %s wears %r" % (uid, ub.get(uid)))
+
+
+@unittest.skipUnless(NODE, "node is required to drive the page's own per-kill list - UNMEASURED here, not a pass")
+class OneMonsterOnSeveralLevelsIsOneRow(unittest.TestCase):
+    """#108 (Heaven's Light read "Bone Archer" three times - Jail Level 1, 2 and 3, each 1:42,745) - the page's own _qwAlso,
+    driven: one monster at the same odds on several levels is one row naming every level; a different odds stays apart."""
+
+    def test_the_levels_join_in_one_row(self):
+        src = _read()
+        fn = _cut(src, "  function _qwAlso(x, worst, cap){", "\n  }\n")
+        js = ("var mf = 0; var _QW_DIFF = {norm: 'Normal', nm: 'NM', hell: 'Hell'};\n"
+              "function adjustChance(c){ return c; } function effChance(c){ return c; }\n"
+              "var QW_TARGETS = {};\n"
+              "var QW_PLACES = {X: {f: [], r: [['Bone Archer', 'hell', 'unique', 'Jail Level 1', 42745], ['Bone Archer', 'hell', 'unique', 'Jail Level 2', 42745],"
+              " ['Bone Archer', 'hell', 'unique', 'Jail Level 3', 42745], ['Bone Archer', 'hell', 'champion', 'Barracks', 50000]]}};\n"
+              + fn + "\nprocess.stdout.write(JSON.stringify(_qwAlso({n: 'X'}, null, 5)));")
+        r = subprocess.run([NODE, "-"], input=js, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr[-800:])
+        rows = json.loads(r.stdout)
+        uniq = [x for x in rows if x["kind"] == "unique"]
+        self.assertEqual(len(uniq), 1, "one monster at one odds on three levels drew %d rows" % len(uniq))
+        self.assertEqual(uniq[0]["area"], "Jail Level 1 · Jail Level 2 · Jail Level 3")
+        self.assertEqual(len([x for x in rows if x["kind"] == "champion"]), 1, "a different pack kind was folded in")
+
+
 class EachColossalJewelNamesTheAncientToHunt(unittest.TestCase):
     """REG-3316 (#90, his 11-06 ask: "which of the three i need to hunt for trying to get a specific one") - a Colossal
     jewel's Quick wins card is a grid row naming the Ancient to kill LAST, with his sprite (the file D2IO_ART names for
@@ -487,6 +581,46 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "#108 - an area run draws one row per variant again: the Cow Level pushes every per-kill place off the card",
+     "file": "bible.html",
+     "find": "      if (_seenArea[k]) return false;\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "#108 - The Pit wears Tamoe Highland's outdoor tile again, not the cave",
+     "file": "bible.html",
+     "find": "const AREA_RUN_ART = { \"pit\": \"area_the_pit.jpg\" };",
+     "replace": "const AREA_RUN_ART = {};",
+     "matches": 1, "needs": "node"},
+    {"why": "#108 - one monster at the same odds on three levels draws three rows again",
+     "file": "bible.html",
+     "find": "        if (_same[k]) { _same[k].area += ' · ' + r[3]; return; }\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "#109 - a ranked row drops its odds column (his order: runs, time, runs an hour, then the odds last)",
+     "file": "bible.html",
+     "find": "      + odds\n      + '</div>';",
+     "replace": "      + '</div>';",
+     "matches": 1, "needs": "node"},
+    {"why": "#109 - a per-kill row's odds go first again, ahead of the kills for an even chance",
+     "file": "bible.html",
+     "find": "            + _qwStat(fmtOdds(a.chance), 'odds a kill', 'qw-odds', why) + '</div>';",
+     "replace": "            + '</div>';",
+     "matches": 1, "needs": "node"},
+    {"why": "#108 - a random pack draws its zone tile again instead of its family's sprite",
+     "file": "bible.html",
+     "find": "    var pk = (!bp && !su && monName && typeof MONSTER_PACK_ART !== 'undefined') ? MONSTER_PACK_ART[monName] : null;",
+     "replace": "    var pk = null;",
+     "matches": 1, "needs": "node"},
+    {"why": "#108 - Uber Duriel wears Duriel's own picture again (his: make sure they are different)",
+     "file": "bible.html",
+     "find": "  \"Uber Duriel\": \"art/d2arreat_duriel.gif\",",
+     "replace": "  \"Uber Duriel\": \"art/d2mon_Duriel.gif\",",
+     "matches": 1},
+    {"why": "#108 - a pack monster loses its sprite with no stated reason",
+     "file": "bible.html",
+     "find": "  \"The Banished\": \"d2fam_vampire.gif\",",
+     "replace": "",
+     "matches": 1},
     {"why": "#101 - an area run is ranked among the boss and super-unique runs again (one section)",
      "file": "bible.html",
      "find": "    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 4);\n",
@@ -519,8 +653,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3321 - a monster tile paints the zone behind the monster again (his 'messy' tiles)",
      "file": "bible.html",
-     "find": "    var mon = bp ? 'art/' + bp : (su ? 'art/' + su : null), zone = mon ? null : _qwZoneArt(area);\n",
-     "replace": "    var mon = bp ? 'art/' + bp : (su ? 'art/' + su : null), zone = _qwZoneArt(area);\n",
+     "find": "    var mon = bp ? 'art/' + bp : (su ? 'art/' + su : (pk ? 'art/' + pk : null)), zone = mon ? null : (ar ? 'art/' + ar : _qwZoneArt(area));\n",
+     "replace": "    var mon = bp ? 'art/' + bp : (su ? 'art/' + su : (pk ? 'art/' + pk : null)), zone = (ar ? 'art/' + ar : _qwZoneArt(area));\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-3321 - a place's picture floats no card (his 'image cursor floating enlarged')",
      "file": "bible.html",

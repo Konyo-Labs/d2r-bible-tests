@@ -1,0 +1,1097 @@
+{
+ "_why": "#108 (his 11-07 asks: 'for banished and for pits and for spike freind ... either .gif or a HD extracted art thats related and properly matched for those and others like it'; 'https://classic.battle.net/diablo2exp/monsters/act1-fallen.shtml these are wonderful try this website'; bosses too; 'for uber lilith use this [Arreat's Andariel]'; 'make sure they are diffrent for uber duriel'). Source: The Arreat Summit, Blizzard's own Diablo II site - one animated gif per monster FAMILY, and the family's variant names in its own text. A random-pack name maps to the family page whose variant list names it; a name two families list is settled by its area's act (Blood Lord in the Durance = Vampire; Night Lord in the Halls of Anguish = the Act 5 Blood Lord). Every file was looked at on a labelled contact sheet and read COLD by the Grok CLI on a blind sheet (grokCold, its own words) before it was wired. Bosses: a boss and its uber never share a picture - the regular keeps its earlier sprite (monster_art_fandom.json), the uber wears the Arreat Summit's (Uber Lilith = Arreat's Andariel). Each gif's uniform black margin is trimmed across ALL its frames (the union of where any frame draws, +4px), so the monster fills its tile like the earlier sprites; sourceSha1 is the Arreat Summit's own file, sha1 the trimmed one.",
+ "pulledAt": "2026-11-07",
+ "files": {
+  "d2fam_abominable.gif": {
+   "family": "Abominable",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act5-abominable.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act5/snowyeti-opt.gif",
+   "sha1": "294660ec3b7ca5b4c4fe2be0204577d8b03f5e07",
+   "bytes": 46505,
+   "grokCold": "Hunched shaggy beast with a huge white mane tipped pale blue and white hands.",
+   "names": [
+    "Abominable",
+    "Snow Drifter"
+   ]
+  },
+  "d2fam_undead_horror.gif": {
+   "family": "Undead Horror",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act4-undeadhorror.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act4/undeadfighter.gif",
+   "sha1": "0f663c7ee3a1baf157a3c9a789d70ff79c871561",
+   "bytes": 20038,
+   "grokCold": "Gold-armored horned humanoid with a red cloth, a glowing blue shield, and a spiked weapon.",
+   "names": [
+    "Abyss Knight"
+   ],
+   "sourceSha1": "69b50dff0c88164838e63da9188cd959cc6f7027",
+   "trim": {
+    "box": [
+     11,
+     3,
+     109,
+     141
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_tainted.gif": {
+   "family": "Tainted",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-tainted.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/bighead.gif",
+   "sha1": "c1ec8681010a79dd688080f4ad434d1e3500980e",
+   "bytes": 28490,
+   "grokCold": "Large dark green hunched beast with two pale horns and a long pale tongue.",
+   "names": [
+    "Afflicted",
+    "Disfigured"
+   ],
+   "sourceSha1": "4ea4e1a8ec85120b117a1b40ea9e2e9128da278e",
+   "trim": {
+    "box": [
+     24,
+     31,
+     102,
+     129
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_wraith.gif": {
+   "family": "Wraith",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-wraith.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/wraith.gif",
+   "sha1": "f0facf3520a546049ef3f3de672e58cacca00bb2",
+   "bytes": 23338,
+   "grokCold": "Glowing blue-white spectral figure with wide wing-like flares of light.",
+   "names": [
+    "Apparition",
+    "Dark Shape"
+   ],
+   "sourceSha1": "3f03b01f9407c4b030ffeb02d33cce7d33005304",
+   "trim": {
+    "box": [
+     4,
+     9,
+     120,
+     137
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_giant_spider.gif": {
+   "family": "Giant Spider",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-giantspider.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/evilspider.gif",
+   "sha1": "f5914287ff1e33115216c880b2b106cc3cec18a6",
+   "bytes": 31566,
+   "grokCold": "Large black spider with a red-brown abdomen and two long pale fangs.",
+   "names": [
+    "Arach"
+   ],
+   "sourceSha1": "68ba2a1a5cddc95f7350de9a47ee3d19461b4554",
+   "trim": {
+    "box": [
+     14,
+     2,
+     122,
+     148
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_sand_raider.gif": {
+   "family": "Sand Raider",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-sandraider.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/sandraider.gif",
+   "sha1": "d1ab2f84001b321b98788135c64192dbcae8cab4",
+   "bytes": 17154,
+   "grokCold": "Gaunt tan humanoid with two curved swords and a round gold shield on the shoulder.",
+   "names": [
+    "Assailant",
+    "Infidel"
+   ]
+  },
+  "d2arreat_andariel.gif": {
+   "family": "Andariel",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-andariel.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/Andariel.gif",
+   "sha1": "6e5a6413510a8350d0ea86a24677ae7f9022a6ca",
+   "bytes": 70410,
+   "grokCold": "Tan woman with a tall red spiky crest, four metal blade-limbs from her back, red gloves and greaves.",
+   "names": [],
+   "sourceSha1": "56f81426baec74ee81194f2494eca6ed038fe5d5",
+   "trim": {
+    "box": [
+     3,
+     14,
+     175,
+     200
+    ],
+    "from": [
+     175,
+     200
+    ]
+   }
+  },
+  "d2arreat_baal.gif": {
+   "family": "Baal",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act5-baal.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act5/baal-opt.gif",
+   "sha1": "c440f37cd9ae806ea26566a0b7ba2809fc2f09ac",
+   "bytes": 60422,
+   "grokCold": "Silver-and-gold insect-like creature with a crown of long gold horns, red eyes, and bladed legs.",
+   "names": []
+  },
+  "d2arreat_diablo.gif": {
+   "family": "Diablo",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act4-diablo.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act4/diablo.gif",
+   "sha1": "90df870a4a7fdeb0b7000b4267fcc051743f37ad",
+   "bytes": 90973,
+   "grokCold": "Red muscular demon with many long horns and large claws, no wings.",
+   "names": []
+  },
+  "d2arreat_duriel.gif": {
+   "family": "Duriel",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-duriel.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/duriel.gif",
+   "sha1": "697d5e64de3d7479c5b89617459acc183ed6bc34",
+   "bytes": 50967,
+   "grokCold": "Large red-brown demon with white horns, broad brown wings, and many small clawed limbs.",
+   "names": [],
+   "sourceSha1": "9c106a6c8093e17e2276f6bc09351cdbcd5e85f4",
+   "trim": {
+    "box": [
+     2,
+     36,
+     175,
+     172
+    ],
+    "from": [
+     175,
+     200
+    ]
+   }
+  },
+  "d2arreat_griswold.gif": {
+   "family": "Griswold",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-griswold.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/griswald.gif",
+   "sha1": "0ba76f2aa6636fabec8f275dbc7cd8770ef57930",
+   "bytes": 14062,
+   "grokCold": "Stocky man in orange-brown armor, pale head, red hands, no weapon raised.",
+   "names": [],
+   "sourceSha1": "5509d9a9dc5f203f600627cd00dc37e2adb4925f",
+   "trim": {
+    "box": [
+     29,
+     36,
+     102,
+     122
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2arreat_hephasto_the_armorer.gif": {
+   "family": "Hephasto the Armorer",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act4-hephasto.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/smith.gif",
+   "sha1": "27bb6bafb1c642956e37894704fc61172226578c",
+   "bytes": 22139,
+   "grokCold": "Large brown muscular humanoid with curved horns, shoulder spikes, clawed feet, and a small blade.",
+   "names": [],
+   "sourceSha1": "343cc974b816d24c68623f642d11ca03cc578a52",
+   "trim": {
+    "box": [
+     0,
+     7,
+     104,
+     146
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2arreat_izual.gif": {
+   "family": "Izual",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act4-izual.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act4/izual.gif",
+   "sha1": "5f51697da292fd68edb9501b39263c3adbbeb520",
+   "bytes": 84976,
+   "grokCold": "Blue-and-gold armored humanoid with dark bat wings, curved horns, and a curved sword.",
+   "names": [],
+   "sourceSha1": "40c1293eb982b0d9230cd44117b418a6e9efb536",
+   "trim": {
+    "box": [
+     15,
+     15,
+     175,
+     169
+    ],
+    "from": [
+     175,
+     200
+    ]
+   }
+  },
+  "d2arreat_mephisto.gif": {
+   "family": "Mephisto",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act3-mephisto.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act3/mephisto.gif",
+   "sha1": "f9d9579b848c5f6b7ddf98ba06fedb99ac520d4e",
+   "bytes": 96570,
+   "grokCold": "Pale multi-armed horned skeletal figure rising out of a white cloud.",
+   "names": []
+  },
+  "d2arreat_nihlathak.gif": {
+   "family": "Nihlathak",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act5-nihlathak.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act5/nihlathak-opt.gif",
+   "sha1": "d484bebeefaf576cafd6ef62e52f4798e2f597fa",
+   "bytes": 13048,
+   "grokCold": "Tall thin figure in a long black robe with silver armor on the shoulders, forearms, and feet.",
+   "names": []
+  },
+  "d2arreat_the_summoner.gif": {
+   "family": "The Summoner",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-summoner.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/summoner.gif",
+   "sha1": "5fbdf54c52305703cd059eeee42bcb98685ed671",
+   "bytes": 27430,
+   "grokCold": "Tall figure in a blue-and-gold robe and a wide gold headdress, holding a hooked gold staff.",
+   "names": [],
+   "sourceSha1": "3805c6b21a88f93d75c2f3319a9feeb429de2f13",
+   "trim": {
+    "box": [
+     26,
+     12,
+     117,
+     137
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_corrupt_rogue_spearwoman.gif": {
+   "family": "Corrupt Rogue Spearwoman",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-corruptrogue-spearwoman.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/corruptrogue.gif",
+   "sha1": "09c5df1fb0c6a718e1f8be432e5e817ea6ca5b6d",
+   "bytes": 11115,
+   "grokCold": "Dark-haired woman in black leather and tall boots, hands low in front, no large weapon visible.",
+   "names": [
+    "Black Lancer",
+    "Dark Lancer"
+   ],
+   "sourceSha1": "e052c466ecb0a6116fc23d3c57a105b8971b7484",
+   "trim": {
+    "box": [
+     41,
+     26,
+     79,
+     146
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_blood_hawk_nest.gif": {
+   "family": "Blood Hawk Nest",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-bloodhawknest.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/bloodhawknest.gif",
+   "sha1": "4ce10cac6f530b5aa8e8f11aaf1c9895ebae0fdb",
+   "bytes": 44369,
+   "grokCold": "Big grey-brown tangle of roots or twigs, round mass on top, hanging strands, splayed base.",
+   "names": [
+    "Black Raptor Nest",
+    "Blood Hawk Nest"
+   ],
+   "sourceSha1": "49877378893156b1fb89b58a268db42b380833c7",
+   "trim": {
+    "box": [
+     6,
+     0,
+     111,
+     150
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_corrupt_rogue.gif": {
+   "family": "Corrupt Rogue",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-corruptrogue.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/corruptrogue-hunter.gif",
+   "sha1": "e346cbfcee3ce3c0b300b1b54d69fdc5816b5e87",
+   "bytes": 12989,
+   "grokCold": "Dark-haired woman in black leather with a raised curved sword and a round shield.",
+   "names": [
+    "Black Rogue",
+    "Flesh Hunter"
+   ],
+   "sourceSha1": "1cb9a21f9507562ce743c85e997b408dbd817edf",
+   "trim": {
+    "box": [
+     28,
+     17,
+     95,
+     120
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_willowisp.gif": {
+   "family": "Willowisp",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act5g-willowisp.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act3/willowisp.gif",
+   "sha1": "d025bd932889f3072b2e2469e8f06d180fd2603b",
+   "bytes": 62615,
+   "grokCold": "White glowing spirit with a bright core and wavy tendrils rising around it.",
+   "names": [
+    "Black Soul",
+    "Burning Soul"
+   ]
+  },
+  "d2fam_overseer.gif": {
+   "family": "Overseer",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act5-overseer.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act5/overseer-opt.gif",
+   "sha1": "84ae0c0884de297f2d23a6be40dd374df75ea5d8",
+   "bytes": 47843,
+   "grokCold": "Hunched reddish-brown creature with long claws and a thin whip-like cord.",
+   "names": [
+    "Blood Boss",
+    "Hell Whip"
+   ]
+  },
+  "d2fam_siege_beast.gif": {
+   "family": "Siege Beast",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act5-siegebeast.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act5/siegebeast-opt.gif",
+   "sha1": "28ac53239098757da19d745b470ba00f4d8a3d39",
+   "bytes": 43583,
+   "grokCold": "Dark clawed beast with pale horns and a large brown wooden box or shell on its upper back.",
+   "names": [
+    "Blood Bringer"
+   ]
+  },
+  "d2fam_goatman.gif": {
+   "family": "Goatman",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-goatman.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/goatman.gif",
+   "sha1": "9fec8aa7de23b587d0a917a1f95a3cd3bb87d065",
+   "bytes": 16708,
+   "grokCold": "Tall thin brown humanoid with two long pale horns, gripping a large silver crescent axe.",
+   "names": [
+    "Blood Clan",
+    "Death Clan"
+   ],
+   "sourceSha1": "b2860df94a97978e472aea711b0b4cdc73f8f7eb",
+   "trim": {
+    "box": [
+     16,
+     16,
+     85,
+     128
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_bat_demon.gif": {
+   "family": "Bat Demon",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-batdemon.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/batdemon.gif",
+   "sha1": "6d563360617243c4ff57220f4da2a8de334c7b68",
+   "bytes": 20625,
+   "grokCold": "Small dark creature with broad brown wings, pale horns, and two long white claws below; the body is mostly shadow.",
+   "names": [
+    "Blood Diver",
+    "Dark Familiar",
+    "Fiend"
+   ],
+   "sourceSha1": "c9073aecd5c43e1dcba3f50dc44b9749ccb0a5d3",
+   "trim": {
+    "box": [
+     0,
+     20,
+     125,
+     129
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_vampire.gif": {
+   "family": "Vampire",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-vampire.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/vampire.gif",
+   "sha1": "2070b5e3d9074a7973d0aa0209049a7b70109c9a",
+   "bytes": 14514,
+   "grokCold": "Tall figure in a long black robe with a pale face, a red mark on the chest, and a wooden staff.",
+   "names": [
+    "Blood Lord",
+    "The Banished"
+   ],
+   "sourceSha1": "6fa5f0a503740a1b83831914586243d8d6dd4abf",
+   "trim": {
+    "box": [
+     35,
+     20,
+     102,
+     132
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_sand_maggot.gif": {
+   "family": "Sand Maggot",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-sandmaggot.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/sandmaggot.gif",
+   "sha1": "91090ac82361eea42a5aa3533dba1ce415b1cb3a",
+   "bytes": 29272,
+   "grokCold": "Large orange-brown many-legged insect with two big pale pincer claws.",
+   "names": [
+    "Blood Maggot",
+    "Devourer",
+    "Giant Lamprey",
+    "Rock Worm"
+   ],
+   "sourceSha1": "c33c1300144da2f89cbf4b2dc84a5100e0b5b4b7",
+   "trim": {
+    "box": [
+     0,
+     19,
+     125,
+     140
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_succubus.gif": {
+   "family": "Succubus",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act5-succubus.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act5/succubi1-opt.gif",
+   "sha1": "55db14a724ec9c9ded677e985cbe53b529fdb042",
+   "bytes": 11134,
+   "grokCold": "Slender red, gold, and white figure with two huge curved blade-like wings sweeping upward.",
+   "names": [
+    "Blood Temptress"
+   ]
+  },
+  "d2fam_blunderbore.gif": {
+   "family": "Blunderbore",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-blunderbore.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/pinhead.gif",
+   "sha1": "2f95139cd82272279872a5891ae02cf4ad80f814",
+   "bytes": 40669,
+   "grokCold": "Huge tan muscular humanoid with a metal collar, chains on the chest and wrists, and a red glow in one hand.",
+   "names": [
+    "Blunderbore",
+    "Mauler",
+    "Urdar"
+   ]
+  },
+  "d2fam_frog_demon.gif": {
+   "family": "Frog Demon",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act3-frogdemon.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act3/frogdemon.gif",
+   "sha1": "6e39f0327a987efdaaa4d050726061aa65a4d340",
+   "bytes": 14285,
+   "grokCold": "Orange-red and black insect with a tall head spike and two big white-taloned claws.",
+   "names": [
+    "Bog Creature"
+   ],
+   "sourceSha1": "34fad9371c7759a9a04d697d4daa89e65620b743",
+   "trim": {
+    "box": [
+     28,
+     29,
+     93,
+     121
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_skeleton_archer.gif": {
+   "family": "Skeleton Archer",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-skeleton-archer.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/skeleton-archer.gif",
+   "sha1": "057f33e61fc5800e5855c92daa979048632162aa",
+   "bytes": 7931,
+   "grokCold": "Yellow skeleton with a red cloth at the neck, holding a bow.",
+   "names": [
+    "Bone Archer",
+    "Burning Dead Archer",
+    "Returned Archer"
+   ],
+   "sourceSha1": "1f43f9b9dd56fc4e7cfaf658dfeb7f014cb8f3f2",
+   "trim": {
+    "box": [
+     39,
+     32,
+     88,
+     115
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_thorned_hulk.gif": {
+   "family": "Thorned Hulk",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act3-thornedhulk.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act3/thornedhulk.gif",
+   "sha1": "8bd8ac84764ab0cb231cd72db2248ddc780f0599",
+   "bytes": 29568,
+   "grokCold": "Huge dark horned brute with red eyes, spiked limbs, and one enormous club-like arm.",
+   "names": [
+    "Bramble Hulk"
+   ]
+  },
+  "d2fam_wendigo.gif": {
+   "family": "Wendigo",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-wendigo.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/wendigo.gif",
+   "sha1": "0ff9750dfd79be9e6902d4502a31b835343b8739",
+   "bytes": 34584,
+   "grokCold": "Huge dark shaggy hunched beast with long clawed arms and a lighter face in the fur.",
+   "names": [
+    "Brute",
+    "Crusher"
+   ],
+   "sourceSha1": "df9544ae3e35c11bb14b29f14d1ab20f41187563",
+   "trim": {
+    "box": [
+     16,
+     0,
+     112,
+     150
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_skeleton.gif": {
+   "family": "Skeleton",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-skeleton.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/skeleton-axe.gif",
+   "sha1": "2002af34491b1252c3de5f34949102980e363998",
+   "bytes": 12478,
+   "grokCold": "Yellow skeleton with a red cloth, a round shield, and a small axe raised.",
+   "names": [
+    "Burning Dead"
+   ],
+   "sourceSha1": "53437ee27f9cce75abe6ee7a4403ff6134148afa",
+   "trim": {
+    "box": [
+     25,
+     19,
+     113,
+     123
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_skeleton_mage.gif": {
+   "family": "Skeleton Mage",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-skeleton-mage.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/skeleton-mage.gif",
+   "sha1": "078c44139c1680d81cd9b3df84a3873d3a858426",
+   "bytes": 12526,
+   "grokCold": "Yellow skeleton with two glowing orange fireballs in front of it.",
+   "names": [
+    "Burning Dead Mage"
+   ],
+   "sourceSha1": "b79f0d334a94cf29cb99a5d09c89bf9a67baf39c",
+   "trim": {
+    "box": [
+     29,
+     20,
+     100,
+     119
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_mummy.gif": {
+   "family": "Mummy",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-mummy.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/mummy.gif",
+   "sha1": "6501457a80867cddafca819f22667db9c29fb2a7",
+   "bytes": 13180,
+   "grokCold": "Gaunt grey-green humanoid, mottled skin, standing with empty hands.",
+   "names": [
+    "Cadaver"
+   ],
+   "sourceSha1": "08efe6abe823a0ac110d5fad4cb1f46c5956dab9",
+   "trim": {
+    "box": [
+     37,
+     31,
+     95,
+     123
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_vulture_demon.gif": {
+   "family": "Vulture Demon",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-vulturedemon.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/vulturedemon.gif",
+   "sha1": "1a0c58ac4f57a3165785d796abf2e036aba86714",
+   "bytes": 7756,
+   "grokCold": "Small dark winged creature with a white patch on the head and pale clawed feet.",
+   "names": [
+    "Carrion Bird"
+   ],
+   "sourceSha1": "c9dbeccba113f2bafe3671efd2c68059dd96007f",
+   "trim": {
+    "box": [
+     22,
+     32,
+     98,
+     111
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_fallen_shaman.gif": {
+   "family": "Fallen Shaman",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-fallenshaman.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/fallenshaman.gif",
+   "sha1": "a7860c3a1d7556c60bcf0fa785e20cac4b0cd5f1",
+   "bytes": 19524,
+   "grokCold": "Small red horned humanoid with a blade, beside a taller dark figure with a white horned skull-like head and a staff.",
+   "names": [
+    "Carver Shaman"
+   ],
+   "sourceSha1": "55fc1cd78c29fe69aa42db21b48e3baa9d4c493b",
+   "trim": {
+    "box": [
+     7,
+     10,
+     122,
+     113
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_claw_viper.gif": {
+   "family": "Claw Viper",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-clawviper.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/clawviper.gif",
+   "sha1": "830efe2099021573b6c09f5ef44ab151e544c554",
+   "bytes": 13741,
+   "grokCold": "Red muscular humanoid with long claws, a small pale blade raised overhead, and a brown belly.",
+   "names": [
+    "Claw Viper"
+   ],
+   "sourceSha1": "b0079c97d1dfc431782b3876f6098e931d6eef79",
+   "trim": {
+    "box": [
+     18,
+     28,
+     125,
+     126
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_leaper.gif": {
+   "family": "Leaper",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-leaper.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/sandleaper.gif",
+   "sha1": "0dba937ce2202175c94f102e3445431248076886",
+   "bytes": 10225,
+   "grokCold": "Small olive-green creature with spines on its back and pale-tipped limbs.",
+   "names": [
+    "Cliff Lurker"
+   ],
+   "sourceSha1": "774a3909f4a9bd66593e611e18b06fb883935d9f",
+   "trim": {
+    "box": [
+     21,
+     20,
+     106,
+     118
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_blood_hawk.gif": {
+   "family": "Blood Hawk",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-bloodhawk.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/bloodhawk.gif",
+   "sha1": "ada808f8a5eba5a1c1e4a7cdf9b52f0f48ff2bde",
+   "bytes": 11903,
+   "grokCold": "Small brown flying creature with a pale point on top and two brown wing lobes.",
+   "names": [
+    "Cloud Stalker"
+   ],
+   "sourceSha1": "14204d9dcfde45691fb1f3844896a268f393ceb7",
+   "trim": {
+    "box": [
+     30,
+     23,
+     97,
+     131
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_regurgitator.gif": {
+   "family": "Regurgitator",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act4-regurgitator.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act4/regurgitator.gif",
+   "sha1": "efe314471414cfe844390f7fb77191620f6fb8a5",
+   "bytes": 31211,
+   "grokCold": "Large brown hunched brute with long arms, extra hanging limbs, and a red opening on the belly.",
+   "names": [
+    "Corpulent",
+    "Maw Fiend"
+   ],
+   "sourceSha1": "fec4581d689e5bb32cdf3ab5314a5de0abaca277",
+   "trim": {
+    "box": [
+     14,
+     21,
+     121,
+     128
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_corrupt_rogue_archer.gif": {
+   "family": "Corrupt Rogue Archer",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-corruptrogue-archer.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/corruptrogue-archer.gif",
+   "sha1": "4c5bb7bbf1563fcde663032f6f62c3b8ad5dcfbd",
+   "bytes": 9492,
+   "grokCold": "Dark-haired woman in black leather holding a long wooden bow.",
+   "names": [
+    "Dark Archer",
+    "Dark Ranger"
+   ],
+   "sourceSha1": "c89caa8d63e53cf2512603e3429fe03d2a57f480",
+   "trim": {
+    "box": [
+     28,
+     28,
+     89,
+     118
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_death_mauler.gif": {
+   "family": "Death Mauler",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act5-deathmauler.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act5/deathmauler-opt.gif",
+   "sha1": "fd80b08e189a24ed4ba9fb3c52aedb5f91cabc31",
+   "bytes": 25229,
+   "grokCold": "Dark hunched beast with a huge fan of pale spikes on its back and pale claws.",
+   "names": [
+    "Death Brawler",
+    "Death Mauler"
+   ]
+  },
+  "d2fam_blood_lord.gif": {
+   "family": "Blood Lord",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act5-bloodlord.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act5/bloodlord-opt.gif",
+   "sha1": "e5147dc209c9ad9f6f7d3647c7e39372e43c37b2",
+   "bytes": 73326,
+   "grokCold": "Heavy red-and-brown armored humanoid holding a large dark axe in each hand.",
+   "names": [
+    "Death Lord",
+    "Night Lord"
+   ]
+  },
+  "d2fam_zombie.gif": {
+   "family": "Zombie",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-zombie.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/zombie.gif",
+   "sha1": "271e582db1711b15fe08b850782595e859714e56",
+   "bytes": 10480,
+   "grokCold": "Thin shirtless tan man in dark shorts, bare feet, empty hands.",
+   "names": [
+    "Drowned Carcass"
+   ],
+   "sourceSha1": "57c0d3ccf76877a826c42ff636f180317f5359be",
+   "trim": {
+    "box": [
+     39,
+     27,
+     80,
+     118
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_vile_mother.gif": {
+   "family": "Vile Mother",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act4-vilemother.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act4/vilemother.gif",
+   "sha1": "6b00de70ebd98780c41a82aa59738140e06673fd",
+   "bytes": 25247,
+   "grokCold": "Brown multi-legged skeletal creature with a tall back spike and long clawed limbs.",
+   "names": [
+    "Grotesque"
+   ],
+   "sourceSha1": "1be16e45276b9108410177973dd4e7065b7cb98c",
+   "trim": {
+    "box": [
+     3,
+     18,
+     124,
+     138
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_reanimated_horde.gif": {
+   "family": "Reanimated Horde",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act5-reanimatedhorde.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act5/reanimatedhorde-opt.gif",
+   "sha1": "f67d77e4bcce37591abd7c22d0421a2b5f75de66",
+   "bytes": 9755,
+   "grokCold": "Tall thin dark skeletal figure in ragged cloth, holding a long spear.",
+   "names": [
+    "Prowling Dead"
+   ]
+  },
+  "d2fam_spike_fiend.gif": {
+   "family": "Spike Fiend",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-spikefiend.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/spikedfiend.gif",
+   "sha1": "628a6dea198d60c040a83b5564d2cba1d97c0231",
+   "bytes": 6806,
+   "grokCold": "Tiny dark creature with a blue-green spiky crest and thin legs; the limb count is hard to make out.",
+   "names": [
+    "Spike Fiend"
+   ],
+   "sourceSha1": "8b48f4f3697b78c500c96b415fdb84fc91d8ea87",
+   "trim": {
+    "box": [
+     42,
+     39,
+     81,
+     104
+    ],
+    "from": [
+     125,
+     150
+    ]
+   }
+  },
+  "d2fam_putrid_defiler.gif": {
+   "family": "Putrid Defiler",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act5-putriddefiler.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act5/putriddefiler-opt.gif",
+   "sha1": "4bb0d27a8d5ce030a166bfe45c9d580448632a3d",
+   "bytes": 35568,
+   "grokCold": "Pale fleshy creature with a long neck, a swollen head, and two thin dangling arms.",
+   "names": [
+    "Wretched Defiler"
+   ],
+   "sourceSha1": "05ea9697da6e51f33ede0e94cd3598507921d779",
+   "trim": {
+    "box": [
+     3,
+     0,
+     88,
+     158
+    ],
+    "from": [
+     95,
+     158
+    ]
+   }
+  }
+ },
+ "packs": {
+  "Abominable": "art/d2fam_abominable.gif",
+  "Abyss Knight": "art/d2fam_undead_horror.gif",
+  "Afflicted": "art/d2fam_tainted.gif",
+  "Apparition": "art/d2fam_wraith.gif",
+  "Arach": "art/d2fam_giant_spider.gif",
+  "Assailant": "art/d2fam_sand_raider.gif",
+  "Black Lancer": "art/d2fam_corrupt_rogue_spearwoman.gif",
+  "Black Raptor Nest": "art/d2fam_blood_hawk_nest.gif",
+  "Black Rogue": "art/d2fam_corrupt_rogue.gif",
+  "Black Soul": "art/d2fam_willowisp.gif",
+  "Blood Boss": "art/d2fam_overseer.gif",
+  "Blood Bringer": "art/d2fam_siege_beast.gif",
+  "Blood Clan": "art/d2fam_goatman.gif",
+  "Blood Diver": "art/d2fam_bat_demon.gif",
+  "Blood Hawk Nest": "art/d2fam_blood_hawk_nest.gif",
+  "Blood Lord": "art/d2fam_vampire.gif",
+  "Blood Maggot": "art/d2fam_sand_maggot.gif",
+  "Blood Temptress": "art/d2fam_succubus.gif",
+  "Blunderbore": "art/d2fam_blunderbore.gif",
+  "Bog Creature": "art/d2fam_frog_demon.gif",
+  "Bone Archer": "art/d2fam_skeleton_archer.gif",
+  "Bramble Hulk": "art/d2fam_thorned_hulk.gif",
+  "Brute": "art/d2fam_wendigo.gif",
+  "Burning Dead": "art/d2fam_skeleton.gif",
+  "Burning Dead Archer": "art/d2fam_skeleton_archer.gif",
+  "Burning Dead Mage": "art/d2fam_skeleton_mage.gif",
+  "Burning Soul": "art/d2fam_willowisp.gif",
+  "Cadaver": "art/d2fam_mummy.gif",
+  "Carrion Bird": "art/d2fam_vulture_demon.gif",
+  "Carver Shaman": "art/d2fam_fallen_shaman.gif",
+  "Claw Viper": "art/d2fam_claw_viper.gif",
+  "Cliff Lurker": "art/d2fam_leaper.gif",
+  "Cloud Stalker": "art/d2fam_blood_hawk.gif",
+  "Corpulent": "art/d2fam_regurgitator.gif",
+  "Crusher": "art/d2fam_wendigo.gif",
+  "Dark Archer": "art/d2fam_corrupt_rogue_archer.gif",
+  "Dark Familiar": "art/d2fam_bat_demon.gif",
+  "Dark Lancer": "art/d2fam_corrupt_rogue_spearwoman.gif",
+  "Dark Ranger": "art/d2fam_corrupt_rogue_archer.gif",
+  "Dark Shape": "art/d2fam_wraith.gif",
+  "Death Brawler": "art/d2fam_death_mauler.gif",
+  "Death Clan": "art/d2fam_goatman.gif",
+  "Death Lord": "art/d2fam_blood_lord.gif",
+  "Death Mauler": "art/d2fam_death_mauler.gif",
+  "Devourer": "art/d2fam_sand_maggot.gif",
+  "Disfigured": "art/d2fam_tainted.gif",
+  "Drowned Carcass": "art/d2fam_zombie.gif",
+  "Fiend": "art/d2fam_bat_demon.gif",
+  "Flesh Hunter": "art/d2fam_corrupt_rogue.gif",
+  "Giant Lamprey": "art/d2fam_sand_maggot.gif",
+  "Grotesque": "art/d2fam_vile_mother.gif",
+  "Hell Whip": "art/d2fam_overseer.gif",
+  "Infidel": "art/d2fam_sand_raider.gif",
+  "Mauler": "art/d2fam_blunderbore.gif",
+  "Maw Fiend": "art/d2fam_regurgitator.gif",
+  "Night Lord": "art/d2fam_blood_lord.gif",
+  "Prowling Dead": "art/d2fam_reanimated_horde.gif",
+  "Returned Archer": "art/d2fam_skeleton_archer.gif",
+  "Rock Worm": "art/d2fam_sand_maggot.gif",
+  "Snow Drifter": "art/d2fam_abominable.gif",
+  "Spike Fiend": "art/d2fam_spike_fiend.gif",
+  "The Banished": "art/d2fam_vampire.gif",
+  "Urdar": "art/d2fam_blunderbore.gif",
+  "Wretched Defiler": "art/d2fam_putrid_defiler.gif"
+ },
+ "arreatBosses": {
+  "Andariel": "art/d2arreat_andariel.gif",
+  "Baal": "art/d2arreat_baal.gif",
+  "Diablo": "art/d2arreat_diablo.gif",
+  "Duriel": "art/d2arreat_duriel.gif",
+  "Griswold": "art/d2arreat_griswold.gif",
+  "Hephasto the Armorer": "art/d2arreat_hephasto_the_armorer.gif",
+  "Izual": "art/d2arreat_izual.gif",
+  "Mephisto": "art/d2arreat_mephisto.gif",
+  "Nihlathak": "art/d2arreat_nihlathak.gif",
+  "The Summoner": "art/d2arreat_the_summoner.gif"
+ },
+ "unmatched": {
+  "Blood Wing": "no Arreat Summit family page names it (Kurast Sewers) - no sprite, said, never guessed"
+ },
+ "areas": {
+  "pit": {
+   "file": "area_the_pit.jpg",
+   "page": "https://diablo.fandom.com/wiki/The_Pit",
+   "url": "https://static.wikia.nocookie.net/diablo/images/4/40/Caveroom5.png",
+   "sourceSha1": "ab3688519652147977b7f3a605c517b8748aa009",
+   "sourceSize": [
+    2480,
+    1400
+   ],
+   "crop": [
+    540,
+    322,
+    1400,
+    875
+   ],
+   "size": [
+    640,
+    400
+   ],
+   "sha1": "c9133fce6d69bd1f173d1b307337b3b73c752a22",
+   "why": "his 11-07 'for pits ... HD extracted art thats related and properly matched': the wiki's own image for The Pit, an extracted D2 render of the cave level (torches, stairs between tiers, Fallen); the lit middle cut to 16:10. The Arreat Summit's map pages carry Tamoe Highland, not The Pit. Looked at before it was wired."
+  }
+ }
+}
