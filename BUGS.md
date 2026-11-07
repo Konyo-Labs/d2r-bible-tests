@@ -112,6 +112,29 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3404 - QUICK WINS' OTHER PLACES PUT EVERY AREA RUN FIRST, AND ON A PHONE A NAME STOOD ONE LETTER A LINE (v3881, #125)
+His words 11-08 ~00:15: "the secondary should also be like top 1 should be the lowest amount of runs and the fifth should be
+the highest so in this case 1 would be normal cow king" and "bosses separated still from the secondary". #101 had ranked the
+area runs first and the per-kill places after them, so a Cow King at ~684 kills sat below a Cow Level at ~944 runs. Now the
+Other places are ONE list, 1st-5th by the number in each row's first column (runs or kills for a 50% chance), fewest first,
+the five lowest of every place on record; each row still says per run or per kill; the bosses keep their own section.
+Measured on the real page: Crushflange reads Cow King ~684, TZ Cow Level ~944, Afflicted ~1,530, Arach ~1,533, NM The Pit
+~4,264. Checking it at 390 found a defect already live on v3880: the card kept its 88px picture beside the body (~217px for
+every row) and the Other places phone grid ('52px minmax(0,1fr) auto') put a number beside the name, so "Normal TZ The Pit"
+stood one letter a line with its odds over its "runs an hour". On a phone the picture now sits above the body and those rows
+stand like the ranked rows (numbers 2 x 2). Laws: test_quick_wins_shows_each_place_with_its_picture (fewest-first, 31
+red-proofs RED) and test_a_quick_wins_place_reads_on_a_phone (pixels at 390, 2 red-proofs RED).
+### REG-3403 - A WINDOWS PC NEVER READ A d2jsp PRICE: THE FORUM'S REDIRECT TO ITS RESULTS PAGE WAS READ AS 'unread' (v3881, HIS REPORT)
+His words 11-08 00:46: "dean is trying to do d2jsp from his console and its not giving him prices for any searched item hes
+doing.. for me it works for deans console it does not". MEASURED over SSH the same minutes: the Fleet beacon read "read" on the
+Mac and "unread" on both Windows ALTs. On the Mac the forum answers the search POST with a challenge page (403), so the
+console's own Chrome runs the search and reads it. On both ALTs it answers 302 -> search.php?c=..&r=.. (its RESULTS page), and
+d2jsp_quote read every redirect that was not to the login as 'unread' and stopped. Followed once with the same cookie, the OLD
+ALT read Shako 13 fg (5-75, 10 posts), the Mac's number that minute; with the fix both ALTs read Shako, Harlequin Crest and
+Ber (220 fg) live. The cookie follows only a Location on https://forums.d2jsp.org; a second redirect is not chased; a login
+redirect stays need-login; a challenge on the results page goes to the console's own Chrome as before. Dean's PC is one step
+earlier: its console's own d2jsp window was opened at 00:43 and never got past login.php (0 cookies) - he signs in there once.
+Law: test_a_forum_redirect_to_its_results_is_followed (6 cases, 3 red-proofs RED).
 ### REG-3402 - A GATE A ROUND CUT AT ITS DEADLINE WAS PLANNED THE SAME WAY NEXT ROUND (v3881, HIS RULE)
 His words 11-07 23:58: "we need to split the shard that DO TIME OUT that way they wont". REG-3401 fixed the price; this does not
 wait on one. The fan-in reads each shard's TIMEOUT-cut proofs, counts the shards each cut gate was planned on, and writes

@@ -713,22 +713,34 @@ def timeouts(fails):
 
 
 def _splits_in(path):
-    """REG-3402 - the {gate: min chunks} a prices file carries ("split"). -> dict ({} when absent or unreadable)."""
+    """REG-3402 - the {gate: min chunks} a prices file carries ("split"). -> dict ({} when the file is absent or carries no
+    split), None (UNKNOWN: the file is there and would not read - never "no split learned", which would plan a cut gate
+    whole again)."""
+    if not os.path.isfile(path):
+        return {}
     try:
         with open(path, encoding="utf-8") as fh:
             sp = json.load(fh).get("split") or {}
         return dict((str(k), int(v)) for k, v in sp.items() if isinstance(v, int) and not isinstance(v, bool) and v > 1)
     except (OSError, ValueError, TypeError, AttributeError):
-        return {}
+        return None
 
 
 def proof_splits(env=None):
     """REG-3402 - the least number of chunks each gate is planned in, learned from rounds that CUT it: the committed table's
     and the last round's (HEART2_SHARD_COSTS), the larger winning. -> {gate: k}. Read the same by every shard (one seed)."""
     out = _splits_in(os.path.join(os.path.dirname(os.path.abspath(__file__)), "proof_costs.json"))
+    if out is None:
+        print("  ⚠ REG-3402: the committed proof_costs.json would not read - its learned splits are UNKNOWN this plan",
+              file=sys.stderr)
+        out = {}
     lp = (env if env is not None else os.environ).get("HEART2_SHARD_COSTS") or ""
     if lp and os.path.isfile(lp):
-        for g, k in _splits_in(lp).items():
+        got = _splits_in(lp)
+        if got is None:
+            print("  ⚠ REG-3402: the last round's prices file would not read - its learned splits are UNKNOWN this plan",
+                  file=sys.stderr)
+        for g, k in (got or {}).items():
             out[g] = max(out.get(g, 1), k)
     return out
 
@@ -746,7 +758,7 @@ def cut_splits(bodies, prev=None):
             if isinstance(a, (list, tuple)) and a:
                 on.setdefault(str(a[0]), set()).add(sh.get("k"))
         for f in sh.get("owed") or []:
-            if isinstance(f, list) and len(f) >= 3 and f[2] == TIMEOUT:
+            if isinstance(f, (list, tuple)) and len(f) >= 3 and f[2] == TIMEOUT:      # a row the bound cut
                 cut.add(str(f[0]))
     for g in cut:
         out[g] = max(out.get(g, 1), 2 * max(1, len(on.get(g) or ())))
@@ -1185,6 +1197,8 @@ def main(argv=None):
             pf = os.path.join(a.measure, d, PREV_COSTS_NAME)
             if os.path.isfile(pf):
                 prev_split = _splits_in(pf)
+                if prev_split is None:
+                    print("  ⚠ REG-3402: %s would not read - the splits it carried are UNKNOWN, not carried" % pf)
                 break
         split = cut_splits(bodies, prev_split)     # REG-3402 - what this round cut is split next round
         # REG-3274 - --out: the round's own prices, saved beside the next seed (the committed table is left as it is)

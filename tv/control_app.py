@@ -47166,8 +47166,7 @@ def _d2jsp_source():
     name = "this PC"
     try:
         nick = str((install_identity() or {}).get("nickname") or "").strip()
-        if nick:
-            name = nick
+        name = nick or "this PC"
     except Exception:
         name = "this PC"
     try:

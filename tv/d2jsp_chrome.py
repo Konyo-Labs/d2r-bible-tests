@@ -1660,6 +1660,19 @@ def _search_url(item):
     return "https://forums.d2jsp.org/search.php?c=7&f=%d&t=0" % QUOTE_BOARD
 
 
+def _forum_redirect(loc):
+    """REG-3403 - the forum's own redirect after a search POST, as the absolute URL to GET, or None: a Location off
+    https://forums.d2jsp.org is never followed (the cookie goes only to the forum it came from). -> str | None"""
+    loc = str(loc or "").strip()
+    if not loc:
+        return None
+    url = urllib.parse.urljoin(_search_url(""), loc)
+    u = urllib.parse.urlparse(url)
+    if u.scheme != "https" or (u.hostname or "").lower() != "forums.d2jsp.org" or u.username or u.password:
+        return None
+    return url
+
+
 def _search_body(item):
     return urllib.parse.urlencode({"stext": _search_keywords(item)}).encode("utf-8")
 
@@ -2492,7 +2505,30 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
             loc = hdrs.get("Location") or hdrs.get("location") or ""
         if "login" in str(loc).lower():
             return 200, _quote_unknown(item, read_at, "need-login")
-        return 200, _quote_unknown(item, read_at, "unread")
+        # REG-3403 (his 11-08 00:46: "dean is trying to do d2jsp from his console and its not giving him prices ... for me
+        # it works") - MEASURED 11-08 on both Windows ALTs: the forum answers the search POST with 302 -> its results page
+        # (search.php?c=..&r=..) where the Mac gets a challenge page, and the redirect was read as 'unread' and never
+        # followed. Followed ONCE, on the forum's own host only, the OLD ALT read Shako at 13 fg (5-75, 10 posts) - the
+        # Mac's number from the same minute.
+        nxt = _forum_redirect(loc)
+        if not nxt:
+            out = _quote_unknown(item, read_at, "unread")
+            out["why"] = "the forum's search answered a redirect off the forum"
+            return 200, out
+        get_headers = dict((k, v) for k, v in headers.items() if k != "Content-Type")
+        try:
+            status, hdrs, raw = fetch("GET", nxt, get_headers, None)
+        except Exception as _ge:
+            out = _quote_unknown(item, read_at, "unread")
+            out["why"] = "the forum's results page raised %s" % type(_ge).__name__
+            return 200, out
+        if status in (301, 302, 303, 307, 308):
+            _l2 = (hdrs.get("Location") or hdrs.get("location") or "") if isinstance(hdrs, dict) else ""
+            if "login" in str(_l2).lower():
+                return 200, _quote_unknown(item, read_at, "need-login")
+            out = _quote_unknown(item, read_at, "unread")
+            out["why"] = "the forum's results page redirected again"
+            return 200, out
     if isinstance(raw, (bytes, bytearray)):
         page = raw.decode("utf-8", "replace")
     else:

@@ -10728,9 +10728,14 @@ img[src*="d2mon_"]{object-fit:contain!important;mix-blend-mode:normal!important;
   .qw-row{grid-template-columns:56px repeat(2,minmax(0,1fr));row-gap:6px;column-gap:12px;padding:8px}
   .qw-row > .qw-tile{grid-row:1 / span 3;width:56px;height:56px;align-self:start}
   .qw-row > .qw-place{grid-column:2 / span 2}
-  .qw-also .qw-row{grid-template-columns:52px minmax(0,1fr) auto}
-  .qw-also .qw-row > .qw-place{grid-column:auto}
-  .qw-also .qw-row > .qw-tile{grid-row:auto}
+  /* #125 (MEASURED at 390 on v3880 and v3881) - '52px minmax(0,1fr) auto' set a number's auto column beside the place, and
+     an Other places name fell to one letter a line ("N o r m a l T Z ...") with its odds over its "runs an hour". Those
+     rows now stand like the ranked rows: the picture, the place across two columns, its four numbers 2 x 2. */
+  .qw-also .qw-row{grid-template-columns:52px repeat(2,minmax(0,1fr))}
+  .qw-also .qw-row > .qw-tile{width:52px;height:52px}
+  /* and the item's picture sits ABOVE the card body on a phone: beside it, every row had ~217px of a 370px card */
+  #tab-funi .qw-card{flex-wrap:wrap}
+  #tab-funi .qw-card > .f-cardbody{flex:1 1 100%;min-width:0}
 }
 /* v2285 — the area-run assumption, quieter than the odds it qualifies: it is a caveat, not
    a finding, and must not compete with the hour it is attached to. */
@@ -70791,10 +70796,14 @@ function renderJournal(){
       + '</div>';
   }
   /* REG-3325 - kills for an even chance at 1:c a kill: ln(0.5)/ln(1-1/c), the same arithmetic as a run of one kill */
-  function _qwKills50(c){
+  function _qwKillsN(c){
     var n = Number(c);
-    if (!(n > 1) || !isFinite(n)) return '—';
-    return '~' + Math.ceil(Math.log(0.5) / Math.log(1 - 1 / n)).toLocaleString();
+    if (!(n > 1) || !isFinite(n)) return null;
+    return Math.ceil(Math.log(0.5) / Math.log(1 - 1 / n));
+  }
+  function _qwKills50(c){
+    var k = _qwKillsN(c);
+    return k == null ? '—' : '~' + k.toLocaleString();
   }
   var _QW_NTH = ['1st', '2nd', '3rd', '4th', '5th'];
   function _qwAlsoGrid(list, from){
@@ -70825,10 +70834,12 @@ function renderJournal(){
   }
   /* #101 (his ruling 11-07 ~00:52: "they both need to be included then as bosses first and then the others as secondary
      from 1 to 5") - TWO SECTIONS. 1: the boss and super-unique runs - one kill a run - 1st-4th by runs for a 50% chance,
-     as before. 2: the OTHER places, 1st-5th: the area runs first (a whole level, per RUN - silospen's per-kill odds over a
-     stated kills-a-run, ranked by runs for a 50% chance), then the per-KILL places (the Cow King, random packs - ranked by
-     odds a kill). A run is never ranked against a kill: each row says which it is, and the two keep their own order. A
-     section with nothing says so in one line. */
+     as before. 2: the OTHER places, 1st-5th. #125 (his 11-08 ~00:15: "the secondary should also be like top 1 should be
+     the lowest amount of runs and the fifth should be the highest ... 1 would be normal cow king", and "bosses separated
+     still from the secondary") - ONE list, fewest first by the number in each row's first column: the runs (an area run,
+     a whole level priced per RUN) or the kills (the Cow King, a random pack, priced per KILL) for a 50% chance - the five
+     lowest of every place on record. Each row still says whether it is per run or per kill. A place with no count goes
+     last; a section with nothing says so in one line. */
   function _qwGridHtml(qp, also){
     qp = qp || []; also = also || [];
     var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 4);
@@ -70842,15 +70853,21 @@ function renderJournal(){
       if (_seenArea[k]) return false;
       _seenArea[k] = 1;
       return true;
-    }).slice(0, 5);
-    var kills = also.slice(0, Math.max(0, 5 - areas.length));
+    });
+    var others = areas.map(function(p, k){ return { p: p, n: (p.runs != null && isFinite(p.runs)) ? Number(p.runs) : null, k: k }; })
+      .concat(also.map(function(a, k){ return { a: a, n: _qwKillsN(a.chance), k: areas.length + k }; }));
+    others.sort(function(x, y){
+      var xn = x.n == null ? Infinity : x.n, yn = y.n == null ? Infinity : y.n;
+      return xn < yn ? -1 : (xn > yn ? 1 : x.k - y.k);      /* #125 - fewest for a 50% chance first; a tie keeps its order */
+    });
+    others = others.slice(0, 5);
     var sec1 = one.length ? one.map(function(p, i){ return _qwPlaceRow(p, i); }).join('')
       : '<div class="qw-none">No boss or super-unique run on record drops it - its places are below.</div>';
-    var sec2 = (areas.length || kills.length)
-      ? areas.map(function(p, i){ return _qwPlaceRow(p, i, _QW_NTH[i] + ' · per run · area'); }).join('') + _qwAlsoGrid(kills, areas.length)
+    var sec2 = others.length
+      ? others.map(function(o, i){ return o.p ? _qwPlaceRow(o.p, i, _QW_NTH[i] + ' · per run · area') : _qwAlsoGrid([o.a], i); }).join('')
       : '<div class="qw-none">No other place on record drops it - silospen ranks only boss and super-unique kills for it.</div>';
     return '<div class="qw-grid">' + sec1 + '</div>'
-      + '<div class="qw-also"><div class="qw-also-h">Other places · 1st-5th · area runs priced per run, then places priced per kill</div>'
+      + '<div class="qw-also"><div class="qw-also-h">Other places · 1st-5th · fewest runs or kills for a 50% chance first</div>'
       + sec2 + '</div>';
   }
   window._qwGridHtml = _qwGridHtml;

@@ -152,9 +152,9 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         also = g[g.index('<div class="qw-also">'):]
         rows = re.findall(r'<div class="qw-row qw-row-also"[^>]*>(.*?)</div>', also)
         self.assertEqual(len(rows), 2, "PREMISE: the fixture's two per-kill places did not draw: %s" % also[:300])
-        # #101 - the Pit's area run is the section's 1st (per run); the per-kill places follow, numbered on
-        self.assertIn('<span class="qw-rank">2nd · per kill · once a character · each difficulty</span>', rows[0])
-        self.assertIn('<span class="qw-rank">3rd · per kill · random unique pack · spawns by chance</span>', rows[1])
+        # #125 - fewest for a 50% chance first: the Cow King (~216 kills) 1st, The Banished (~418) 2nd, The Pit (553 runs) 3rd
+        self.assertIn('<span class="qw-rank">1st · per kill · once a character · each difficulty</span>', rows[0])
+        self.assertIn('<span class="qw-rank">2nd · per kill · random unique pack · spawns by chance</span>', rows[1])
         for row, c in zip(rows, (312, 603)):
             stats = re.findall(r'<span class="qw-stat ([a-z -]+)"[^>]*><b>([^<]*)</b><span class="qw-sub">([^<]*)</span>', row)
             # #109 (his 11-07 order) - kills for an even chance, time, kills an hour, then the odds LAST
@@ -253,24 +253,32 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
 
     def test_bosses_first_then_the_other_places_first_to_fifth(self):
         """#101 (his ruling 11-07 ~00:52: "they both need to be included then as bosses first and then the others as
-        secondary from 1 to 5") - section 1 holds only one-kill runs; the area run moves to section 2, ranked first there
-        per RUN, the per-KILL places after it, numbered on, five at most; a run is never ranked against a kill"""
+        secondary from 1 to 5") - section 1 holds only one-kill runs; the area run moves to section 2. #125 (his 11-08:
+        "top 1 should be the lowest amount of runs and the fifth should be the highest ... 1 would be normal cow king",
+        "bosses separated still from the secondary") - section 2 is ONE list, 1st-5th by the number in each row's first
+        column (runs or kills for a 50% chance), fewest first, the five lowest of every place; each row says run or kill"""
         g = self.o["grid"]
         i = g.index('<div class="qw-also">')
         sec1, sec2 = g[:i], g[i:]
         self.assertNotIn("Normal The Pit", sec1, "an area run sat among the boss and super-unique runs")
         for nm in ("Normal Coldcrow", "Normal Andariel", "Normal Pitspawn Fouldog"):
             self.assertIn(nm, sec1)
-        self.assertIn('<span class="qw-rank">1st · per run · area</span>', sec2)
+        self.assertIn('<span class="qw-rank">3rd · per run · area</span>', sec2)
         self.assertIn("~110 kills a run", sec2, "the area row hid the kills a run its price assumes")
-        self.assertLess(sec2.index("Normal The Pit"), sec2.index("Normal The Cow King"), "a kill was ranked before a run")
+        self.assertLess(sec2.index("Normal The Cow King"), sec2.index("Normal The Banished"))
+        self.assertLess(sec2.index("Normal The Banished"), sec2.index("Normal The Pit"),
+                        "the area run led again over places that need fewer for a 50% chance")
         six = self.o["gridSix"]
         sec2six = six[six.index('<div class="qw-also">'):]
         self.assertEqual(len(re.findall(r'<div class="qw-row qw-row-(?:area|also)"', sec2six)), 5,
                          "section 2 holds more or fewer than five places")
         ranks = re.findall(r'<span class="qw-rank">(\d)(?:st|nd|rd|th) · per (run|kill)', sec2six)
         self.assertEqual([r[0] for r in ranks], ["1", "2", "3", "4", "5"], "section 2 is not numbered 1st-5th: %r" % ranks)
-        self.assertEqual(ranks[0][1], "run")
+        firsts = [int(x.replace(",", "")) for x in re.findall(r'<span class="qw-stat qw-runs"[^>]*><b>~([\d,]+)</b>', sec2six)]
+        self.assertEqual(len(firsts), 5, "PREMISE: a row in section 2 has no count: %r" % firsts)
+        self.assertEqual(firsts, sorted(firsts), "section 2 is not fewest-first: %r" % firsts)
+        # the five LOWEST of all seven places: The Pit (553 runs) is the slowest, so it is the one left off
+        self.assertNotIn("Normal The Pit", sec2six, "a slower place took a faster one's slot")
         only = self.o["gridBossesOnly"]
         self.assertIn("No other place on record drops it", only, "an empty section 2 said nothing")
 
@@ -281,7 +289,7 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         # REG-3305 - the heading itself, both ends from the markup (a fixed 200-character window was a guess about its
         # length, and test_a_source_window_must_reach_its_subject counted it: 45 over its ceiling of 44)
         h = g.index('<div class="qw-also-h">', i)
-        self.assertIn("priced per kill", g[h:g.index("</div>", h)])
+        self.assertIn("fewest runs or kills for a 50% chance first", g[h:g.index("</div>", h)])
         self.assertIn("Normal The Cow King", g[i:])
         # #89 - the picture the page's own map names for him (a pinned file name broke when his sprite became the shared one)
         cow = re.search(r"su_thecowking:\s*'([^']+)'", _read()).group(1)
@@ -626,10 +634,15 @@ RED_PROOF = [
      "find": "    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 4);\n",
      "replace": "    var one = qp.slice(0, 4);\n",
      "matches": 1, "needs": "node"},
-    {"why": "#101 - the other places are not numbered 1st-5th (the per-kill rows restart, or the cap is gone)",
+    {"why": "#101 - the other places are not capped at five again",
      "file": "bible.html",
-     "find": "    var kills = also.slice(0, Math.max(0, 5 - areas.length));\n",
-     "replace": "    var kills = also;\n",
+     "find": "    others = others.slice(0, 5);\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "#125 - the other places are not ranked fewest-first again (the area runs lead, his 'top 1 ... lowest')",
+     "file": "bible.html",
+     "find": "      return xn < yn ? -1 : (xn > yn ? 1 : x.k - y.k);      /* #125 - fewest for a 50% chance first; a tie keeps its order */\n",
+     "replace": "      return x.k - y.k;\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-3336 - a monster on the rich boss card shrinks into the item portrait frame again",
      "file": "bible.html",
@@ -638,8 +651,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3325 - a per-kill row carries one number again (his 'also with the odds number of runs')",
      "file": "bible.html",
-     "find": "    return '~' + Math.ceil(Math.log(0.5) / Math.log(1 - 1 / n)).toLocaleString();\n",
-     "replace": "    return '—';\n",
+     "find": "    return Math.ceil(Math.log(0.5) / Math.log(1 - 1 / n));\n",
+     "replace": "    return null;\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-3321 - Hephasto's two spellings name two pictures again",
      "file": "bible.html",
