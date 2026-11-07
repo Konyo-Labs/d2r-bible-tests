@@ -127,6 +127,18 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3348 - THE PRICE DATABASE NEVER REFRESHED ITSELF: fresh_refresh WAS WRITTEN AND NEVER CALLED (v3878, board #96 / #88)
+His words (11-06): "so slowly after time the prices just slowly calliberate themselves to average out base don perfect tier
+or normal tier", and #88 (10:15): "price check just brings up the price of that item that was already researched and
+verified". MEASURED: d2jsp_price_db.fresh_refresh (v3849) had no caller anywhere - a price moved only when he clicked
+"Price it". NOW a lane, tvd-price-refresh (d2jsp_refresh.run_once): ONE due item a pass (is_stale: never read, read over 3
+days ago, or no post in 45 days), the stalest first, through the desk's own quote (one forum search at a time, 15 s apart -
+REG-3331) and the console's one DB writer (_d2jsp_db_fold, REG-3342's key); 15 min after boot, then every 20 min (3 an
+hour). It asks nothing while checks run (his 10-31 ruling), while the prover would stand aside (_sp_yield_here: he plays, a
+sweep reads, a push grades), over a database that will not read, or when nothing is due; need-login is said, nothing is
+opened; it never posts. Built on the chassis: the console's lane roster, auto_scope's sheet (forbids delete), the loop
+corroborator (its trace, 1200 s), the shelf driver's not-a-shelf-lane list, and a harness stands it down. Law:
+test_the_price_database_refreshes_itself (new, 6 cases); red-proofs PROVEN (4); test_control's stand-down set re-aimed.
 ### REG-3347 - THE CONSOLE KEPT WRITING A D2JSP SETTING CHROME UNDOES AS TAMPERING (v3878, the Mac's eagle row)
 The Mac's eagle (11-07): "the Mac signs in to d2jsp through its own window - MISSING: the console's own d2jsp profile no
 longer continues where it left off, so the sign-in's session cookie dies when that window closes". MEASURED read-only on

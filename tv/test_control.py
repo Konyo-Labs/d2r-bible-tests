@@ -24051,7 +24051,9 @@ class TestV2080TheHarnessDoesNotRunTheACTINGWatchers(unittest.TestCase):
             r = start("harness-test")
         self.assertEqual(set(r["stoodDown"]),
                          {"tvd-eagle-watch", "tvd-version-drift", "tvd-retention",
-                          "tvd-retro-triage", "tvd-orphan-fold", "tvd-river-warm", "tvd-disk-sign"})
+                          "tvd-retro-triage", "tvd-orphan-fold", "tvd-river-warm", "tvd-disk-sign",
+                          "tvd-price-refresh"})
+        # #96 - the price refresh searches the forum and writes the price database: an acting watcher a harness never runs
         # #151 - the disk sign's lane walks his Grok folder and his reels: a harness reads no live folder of his
         # REG-2463 (#168, M4) - the orphan-fold lane MOVES his loose frames, so it is an acting watcher too.
         for name in r["stoodDown"]:

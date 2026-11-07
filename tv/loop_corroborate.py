@@ -100,6 +100,10 @@ LOOPS = {
     # after boot (orphan_fold.EVERY_S / FIRST_S).
     "_orphan_fold_loop": ("tvd-orphan-fold",
                           _lt.path_of("tvd-orphan-fold"), 1800.0),
+    # #96 / #88 - the price refresh writes its trace on every pass (no throttle): 1200 s, a first look 900 s after boot
+    # (d2jsp_refresh.EVERY_S / FIRST_S).
+    "_price_refresh_loop": ("tvd-price-refresh",
+                            _lt.path_of("tvd-price-refresh"), 1200.0),
     # #193 — the river warm lane writes its trace on every pass (no throttle): 300 s, a first look 60 s after boot
     # (RIVER_WARM_EVERY_S / RIVER_WARM_FIRST_S).
     "_river_warm_loop": ("tvd-river-warm",

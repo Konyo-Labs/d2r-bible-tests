@@ -205,6 +205,19 @@ LANES = {
         "brakes": "asks what is in flight first and moves nothing on a refusal or when nobody can be asked; one fold "
                   "at a time - while the healer's fold runs it moves nothing; what it leaves loose is named",
     },
+    # #96 / #88 - his 11-06 "so slowly after time the prices just slowly calibrate themselves"
+    "tvd-price-refresh": {
+        "does": "re-asks d2jsp for ONE price-database item that is due again (never read, read over 3 days ago, or no "
+                "post in 45 days), the stalest first, and folds the answer into the database the price check reads",
+        "touches": "one d2jsp forum search (the desk's own, 15 s apart from any other) and this console's price "
+                   "database file",
+        "forbids": ["delete"],
+        "never": "a post, a message or a login on d2jsp - it only reads; never while checks run, while he plays, "
+                 "while a chronicle sweep reads or while a push grades",
+        "when": "fifteen minutes after boot, then one item every twenty minutes",
+        "brakes": "a sign-in that is off answers need-login and the pass says so, opening nothing; a database that will "
+                  "not read is asked nothing (UNKNOWN); one item a pass, so a backlog is worked off over hours",
+    },
     # #193 - his "river says unknown now", 2026-10-27
     "tvd-river-warm": {
         "does": "reads this console's own river (the same read the River tab makes) so the Fleet row has a river to "
@@ -532,6 +545,7 @@ LANE_FN = {
     "tvd-runaway-watch": "_runaway_watch_loop",
     "tvd-tooltip-oracle": "_tooltip_oracle_loop",
     "tvd-orphan-fold": "_orphan_fold_loop",
+    "tvd-price-refresh": "_price_refresh_loop",
     "tvd-river-warm": "_river_warm_loop",
     "tvd-disk-sign": "_disk_sign_loop",
 }

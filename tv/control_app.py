@@ -11329,6 +11329,7 @@ def _win_tint_caption():
 # REG-2463 — and the orphan fold: a harness's loose frames are its fixture, and folding them on a timer would
 # change the footage a render or a demo is reading while it reads it.
 _HARNESS_ONLY_SKIP = ("tvd-eagle-watch", "tvd-version-drift", "tvd-retention",
+                      "tvd-price-refresh",   # #96 - a harness never searches the forum on a timer
                       "tvd-retro-triage", "tvd-orphan-fold", "tvd-river-warm", "tvd-disk-sign")
 
 #: v3297 — lanes the roster SKIPPED at boot (TV_STUB harness), kept module-readable so a doctor
@@ -11505,6 +11506,9 @@ def start_background_watchers(why):
         # REG-2463 (#168) — his ruling 2026-10-21, "FOLD + LANE": loose frames of a session that died before it
         # sealed fold into a reel of their own on every PC. Moves frames only; asks what is in flight first.
         ("tvd-orphan-fold", _orphan_fold_loop),
+        # #96 / #88 - his 11-06 "so slowly after time the prices just slowly calibrate themselves": one due price-database
+        # item a pass, read through the desk's own quote; never while checks run or while he plays.
+        ("tvd-price-refresh", _price_refresh_loop),
         # v2072 — say it out loud when the process is behind the disk. ANNOUNCES ONLY unless
         # TV_AUTO_RELAUNCH=1, and even then refuses while the agent is alive: a restart mid-film
         # orphans the frames of the session it kills.
@@ -32747,6 +32751,41 @@ def _orphan_fold_loop():
                      why=str(r.get("why") or "")[:200])
             if r.get("folded"):
                 print("   \U0001f9f5 orphan fold: %s" % str(r.get("why"))[:200], flush=True)
+        except Exception:
+            pass
+
+
+#: #96 / #88 - the price refresh lane's first look after boot, and its period (d2jsp_refresh.FIRST_S / EVERY_S)
+_PRICE_REFRESH_FIRST_S = 900.0
+_PRICE_REFRESH_EVERY_S = 1200.0
+
+
+def _price_refresh_loop():
+    """#96 / #88 (his 11-06: "so slowly after time the prices just slowly calibrate themselves") - THE PRICE DATABASE
+    REFRESHES ITSELF. d2jsp_price_db.fresh_refresh was written in v3849 and nothing ever called it: a price moved only when
+    he clicked "Price it". One due item a pass (d2jsp_refresh.run_once - the stalest first), through the desk's own quote
+    and this console's one DB writer (_d2jsp_db_fold); never while checks run or while the prover would stand aside (he
+    plays, a sweep reads, a push grades). This loop keeps the cadence, stamps its beat and leaves its trace."""
+    _first = True
+    while True:
+        try:
+            # two plain sleeps, the tooltip loop's shape: BLUEPRINT's lane table reads the cadence off each constant
+            if _first:
+                time.sleep(_PRICE_REFRESH_FIRST_S)
+            else:
+                time.sleep(_PRICE_REFRESH_EVERY_S)
+            _first = False
+            _lane_tick('tvd-price-refresh', _PRICE_REFRESH_EVERY_S)
+            import d2jsp_refresh as _dr
+            import d2jsp_chrome as _dq
+            _me = "127.0.0.1:%d" % CONTROL_PORT
+            r = _dr.run_once(os.path.join(_fixture_root_for_state(), "d2jsp_price_db.json"),
+                             quote=lambda name: _dq.d2jsp_quote(name, "http://" + _me, _me, CONTROL_PORT,
+                                                                sec_fetch_site="same-origin")[1],
+                             fold=_d2jsp_db_fold, stand_aside=_sp_yield_here)
+            import lane_trace as _lt
+            _lt.note('tvd-price-refresh', worked=r.get("worked"), owed=r.get("owed"), asked=r.get("asked"),
+                     reason=r.get("reason"), why=str(r.get("why") or "")[:200])
         except Exception:
             pass
 
