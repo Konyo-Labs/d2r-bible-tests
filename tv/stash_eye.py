@@ -555,7 +555,11 @@ def tab_from_gem(src_path: str) -> Tuple[str, Dict[str, Any]]:
 _INV_BAND = (0.60, 0.08, 1.00, 0.20)
 
 
-def inventory_title_visible(src_path: str) -> bool:
+#: v3881 (REG-3388) - why the last inventory_title_visible() answered None (UNKNOWN), for the bench and a doctor to quote
+_INV_TITLE_LAST: Dict[str, Any] = {"why": None}
+
+
+def inventory_title_visible(src_path: str) -> Optional[bool]:
     """Is D2R's gold INVENTORY title printed on the right of this frame?
 
     WHY THIS EXISTS. stash_screen_open admits a frame only if stash_chrome_canons finds a legible
@@ -594,12 +598,21 @@ def inventory_title_visible(src_path: str) -> bool:
         box = box.resize((box.width * 3, box.height * 3), Image.LANCZOS)
         out = _os.path.join(_tf.gettempdir(), "inv_title_%d.jpg" % _os.getpid())
         box.save(out, quality=92)
-        rd = _tvd.ocr_fast(out) or {}
+        rd = _tvd.ocr_fast(out)
+        if rd is None:
+            # v3881 (REG-3388) - THE OCR DID NOT READ, SO NOTHING WAS SEEN EITHER WAY. ocr_fast answers None when the OCR
+            # is off, has no worker on this OS, or erred - and this said False ("no inventory title") for all three. The
+            # reader-parity bench (#255) counted those as AGREEMENTS between a Mac and a Windows PC whose OCR never ran.
+            # Callers test truthiness, so None refuses exactly as False did; the difference is that UNKNOWN is now SAID.
+            _INV_TITLE_LAST["why"] = "the OCR did not read the title band (off, no worker on this OS, or an error)"
+            return None
         j = " ".join(str(x) for x in (rd.get("raw_lines") or rd.get("lines") or [])).upper()
         j = j.replace("0", "O").replace("&", "O").replace("@", "O").replace(" ", "")
+        _INV_TITLE_LAST["why"] = None
         return ("INVENT" in j) or ("NVENTO" in j) or ("NVENTR" in j)
-    except Exception:
-        return False
+    except Exception as e:
+        _INV_TITLE_LAST["why"] = "the title band could not be read (%s)" % type(e).__name__
+        return None
 
 
 def classify_stash_grid(src_path: str) -> Tuple[str, Dict[str, Any]]:

@@ -22,7 +22,7 @@ builds VARIANTS - the capture shapes a PC can hand the readers:
     untitled      for a frame that ALREADY carries a caption strip: the strip found and cut, the rest kept
 and runs every DETERMINISTIC eye on each (no model call, no network):
     stash_class   stash_eye.classify_stash_grid       -> the tab / grid label
-    inv_title     stash_eye.inventory_title_visible   -> bool
+    inv_title     stash_eye.inventory_title_visible   -> bool, or UNKNOWN when its OCR did not read (REG-3388)
     aspect_branch stash_eye.crops_for_aspect + last_crop_decision -> which crop law the frame's aspect takes
     chronicle     chronicle_template.detect           -> is_chronicle / tab
     prep_stash    surfaces.prepare(.., "stash")       -> the enlarged crop's size + its sharpness
@@ -159,7 +159,11 @@ def run_eyes(path, work):
         lab, det = se.classify_stash_grid(path)
         return lab
     guard("stash_class", _cls)
-    guard("inv_title", lambda: bool(se.inventory_title_visible(path)))
+    def _inv():
+        v = se.inventory_title_visible(path)
+        # v3881 (REG-3388) - an OCR that did not read is UNKNOWN, never an agreement with a PC whose OCR did
+        return {"unknown": (getattr(se, "_INV_TITLE_LAST", {}) or {}).get("why") or "not read"} if v is None else bool(v)
+    guard("inv_title", _inv)
 
     def _aspect():
         w, h = size_of(path)

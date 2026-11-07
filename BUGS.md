@@ -112,6 +112,13 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3388 - AN INVENTORY TITLE THE OCR NEVER READ SAID "NO TITLE" (v3881, #255 reader parity)
+stash_eye.inventory_title_visible (the vault gate's second way in past a tooltip) returned False whenever its OCR did not
+read - OCR off, no worker on that OS, or an exception - and the reader-parity bench scored those as Mac-vs-Windows
+AGREEMENTS. Now ocr_fast's None, or an exception, answers None (UNKNOWN) with its reason in _INV_TITLE_LAST; a read still
+answers True/False. The console's caller tests truthiness, so it refuses on None exactly as before (no admission changes);
+the bench records UNKNOWN, never an agreement. The 2:1 (windowed) band is NOT re-derived here - his work-ALT session at
+Dean's 1507x755 is the calibration. Law: test_an_unread_inventory_title_is_unknown_never_no (4 cases, 3 red-proofs RED).
 ### REG-3387 - A ROUND CUT ONLY BY ITS BOUND CAME BACK AS A FAILED ROUND (v3881, his order 11-07: the finishing job)
 His words: "red is logical but timeout? ... something needs to be done for rounds not being pushed through because a shard
 was timed out instead of red" - and "build this regardless ... as an extra layer". Until now only the Mac's ship script
