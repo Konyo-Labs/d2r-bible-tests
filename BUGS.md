@@ -112,6 +112,19 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3367 - ON WINDOWS A DEAF CONSOLE WAS NEVER RELAUNCHED: ITS HANG-UP READ AS "error", WHICH COUNTS NO STRIKE (v3880, #107)
+Found by #107's probe: on GitHub's Windows runner test_a_deaf_console_relaunches_itself read 'error' != 'reset' for a
+server that accepts and hangs up - the exact deaf console the self-probe exists to catch. server_self_probe classified
+ConnectionResetError and errno 54/104/10054 as "reset". On Windows that shape arrives as ConnectionAbortedError (10053,
+"aborted by the software in your host machine"), which fell to "error". self_probe_verdict counts only reset and refused
+as strikes, so on his ALTs and Dean's PC a deaf console was never relaunched. A REAL Windows defect, not the law's.
+FIX: ConnectionAbortedError, and errno 53/103/10053 (ECONNABORTED on every platform), read as "reset" - the same deaf
+shape. A healthy console answers HTTP, and the cure still needs its consecutive strikes. The closed-port case now asks with
+the probe's own 5 s default: Windows answers a closed loopback port "refused" only after ~2 s of retries, and the 1 s
+bound read a timeout there (the probe's real callers use 5 s).
+GUARD: tv/test_a_deaf_console_relaunches_itself.py +1 case (an aborted connection by class, and by errno), 2 red-proofs,
+RED.
+
 ### REG-3366 - #107 FIRST BATCH: EIGHT LAWS RED ON WINDOWS FOR REASONS THAT ARE NOT THE PRODUCT'S (v3880)
 #107's probe kept why each Windows-red law is red (scratchpad classify, run 42367869017). Every one opened so far is the LAW
 assuming Mac/Linux, not a console defect on Windows. Measured on the work ALT over SSH to be sure: tree_busy.why() is None

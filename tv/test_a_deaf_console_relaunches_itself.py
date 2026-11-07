@@ -112,7 +112,19 @@ class TheProbeHearsTheFourShapes(unittest.TestCase):
                          "a server that reads the request and answers NOTHING read as healthy")
 
     def test_a_closed_port_is_refused(self):
-        self.assertEqual(ca.server_self_probe(_free_port(), timeout=1.0)["kind"], "refused")
+        # #107 - Windows answers a closed loopback port "refused" only after ~2 s of SYN retries; the probe's own 5 s
+        # default is what the console uses, so the case asks with it (1 s read a timeout there)
+        self.assertEqual(ca.server_self_probe(_free_port())["kind"], "refused")
+
+    def test_an_aborted_connection_is_the_deaf_shape_too(self):
+        """#107 (v3880) - on Windows an accept-then-close arrives as 10053, CONNECTION ABORTED. It read 'error', which never
+        counts a strike, so a deaf console there could never be relaunched."""
+        def aborted():
+            raise ConnectionAbortedError("aborted")          # the exception's own class, no errno to lean on
+        self.assertEqual(ca.server_self_probe(1, _connect=aborted)["kind"], "reset")
+        def by_errno():
+            raise OSError(10053, "aborted")
+        self.assertEqual(ca.server_self_probe(1, _connect=by_errno)["kind"], "reset")
 
     def test_a_console_that_never_answers_is_a_timeout_not_deaf(self):
         self.assertEqual(self._probe("hang", timeout=0.5)["kind"], "timeout")
@@ -209,6 +221,16 @@ RED_PROOF = [
         "replace": "                pass\n",
         "matches": 1,
     },
+    {"why": "#107 - on Windows a deaf console's aborted connection (10053) reads 'error' and is never relaunched",
+     "file": "control_app.py",
+     "find": "    except (ConnectionResetError, ConnectionAbortedError):\n",
+     "replace": "    except ConnectionResetError:\n",
+     "matches": 1},
+    {"why": "#107 - an OSError carrying Windows' 10053 (connection aborted) reads 'error' again",
+     "file": "control_app.py",
+     "find": "in (53, 54, 103, 104, 10053, 10054) else \"error\"",
+     "replace": "in (54, 104, 10054) else \"error\"",
+     "matches": 1},
 ]
 
 

@@ -24141,14 +24141,17 @@ def server_self_probe(port, timeout=5.0, _connect=None):
                 pass
         # an empty read is the server closing on us without a word - the deaf shape, same as a reset
         kind = "answered" if data.startswith(b"HTTP/") else "reset"
-    except ConnectionResetError:
+    except (ConnectionResetError, ConnectionAbortedError):
+        # #107 (v3880) - ON WINDOWS A SERVER THAT ACCEPTS AND HANGS UP IS 10053, CONNECTION ABORTED, not a reset. It fell to
+        # "error", which never counts a strike, so a deaf console on his ALTs could never be relaunched (GitHub's Windows
+        # run: test_a_deaf_console_relaunches_itself read 'error' != 'reset'). An abort is the same deaf shape.
         kind = "reset"
     except ConnectionRefusedError:
         kind = "refused"
     except _so.timeout:
         kind = "timeout"
     except OSError as e:
-        kind = "reset" if getattr(e, "errno", None) in (54, 104, 10054) else "error"
+        kind = "reset" if getattr(e, "errno", None) in (53, 54, 103, 104, 10053, 10054) else "error"
     except Exception:
         kind = "error"
     return {"kind": kind, "ms": int((time.time() - t0) * 1000)}
