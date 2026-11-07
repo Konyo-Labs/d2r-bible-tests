@@ -9643,13 +9643,23 @@ def _check_no_git_child_can_steal_his_screen():
         return OK, ("all %d git argv site(s) go through the one door — but the console-allocation "
                     "fault is Windows-only and is NOT EXERCISED on this machine, so this row "
                     "grades the join here and the behaviour only there" % total)
-    if not os.path.isfile(r"C:\Program Files\Git\mingw64\bin\git.exe"):
-        return MISSING, ("all %d git argv site(s) go through _git_run, but mingw64 git is not at "
-                         "the expected path, so the redirect silently falls back to the PATH "
-                         "wrapper — the 46 KB CUI stub that spawns the real git without the flag"
-                         % total)
-    return OK, ("all %d git argv site(s) go through _git_run and mingw64 git is present, so no git "
-                "child allocates a console on this machine" % total)
+    # v3879 - ASK THE DOOR'S OWN RESOLVER, never a second copy of where git lives. His work ALT's Git 2.56 is the ucrt64
+    # build: git_quiet.real_git finds ucrt64\bin\git.exe (v3866) and the door hides every child, while this row still
+    # looked only for mingw64 and reported a fallback that never happens - a false fault on his repair book (#103/#12).
+    import ntpath as _np
+    try:
+        import git_quiet as _gq
+        real = _gq.real_git()
+    except Exception as e:
+        return UNKNOWN, ("all %d git argv site(s) go through _git_run, but the door's own resolver could not be asked "
+                         "(%s), so whether a git child can own a console here is UNKNOWN, not fine" % (total, type(e).__name__))
+    if not real:
+        return MISSING, ("all %d git argv site(s) go through _git_run, but no real git.exe was found in any Git for "
+                         "Windows layout (%s), so the door falls back to the PATH wrapper — the 46 KB CUI stub that "
+                         "spawns the real git without the flag" % (total, ", ".join(_gq.GIT_LAYOUTS)))
+    lay = _np.basename(_np.dirname(_np.dirname(_np.normpath(real))))
+    return OK, ("all %d git argv site(s) go through _git_run and the real git (the %s build) is found, so no git "
+                "child allocates a console on this machine" % (total, lay))
 
 
 def _check_this_machine_can_get_a_second_opinion():

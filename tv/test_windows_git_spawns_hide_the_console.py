@@ -14,6 +14,7 @@ import ast
 import io
 import os
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -135,6 +136,28 @@ class TheRealGitIsFoundInEveryLayout(unittest.TestCase):
 
     def test_no_real_git_is_none_never_the_wrapper(self):
         self.assertIsNone(self._found(set()))
+
+
+class TheDoctorAsksTheDoorsResolver(unittest.TestCase):
+    """v3879 - the doctor row "no git child steals his screen" looked only for mingw64\\bin\\git.exe, so on his work ALT
+    (Git 2.56, the ucrt64 build) it said MISSING - "falls back to the PATH wrapper" - while the door had found ucrt64 and
+    hid every child. The row now asks git_quiet.real_git, the door's own answer."""
+
+    def _row(self, real):
+        import console_doctor as CD
+        import git_quiet as GQ
+        with mock.patch.object(CD.sys, "platform", "win32"), mock.patch.object(GQ, "real_git", lambda *a, **k: real):
+            return CD._check_no_git_child_can_steal_his_screen()
+
+    def test_a_ucrt64_git_is_fine_and_named(self):
+        state, why = self._row(r"C:\Program Files\Git\ucrt64\bin\git.exe")
+        self.assertEqual(state, "ok", why)
+        self.assertIn("the ucrt64 build", why)
+
+    def test_no_real_git_in_any_layout_is_still_the_fault(self):
+        state, why = self._row(None)
+        self.assertEqual(state, "missing", why)
+        self.assertIn("ucrt64", why, "the fault does not say which layouts were looked in")
 
 
 class TestWindowsGitSpawnsHideTheConsole(unittest.TestCase):
@@ -260,6 +283,13 @@ RED_PROOF = [
         "file": "git_quiet.py",
         "find": "        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW\n        si.wShowWindow = 0\n",
         "replace": "",
+        "matches": 1,
+    },
+    {
+        "why": "v3879 - the doctor looks only for mingw64 again: his ucrt64 work ALT reads a fallback that never happens",
+        "file": "console_doctor.py",
+        "find": "        real = _gq.real_git()\n",
+        "replace": "        real = _gq.GIT_MINGW if os.path.isfile(_gq.GIT_MINGW) else None\n",
         "matches": 1,
     },
 ]
