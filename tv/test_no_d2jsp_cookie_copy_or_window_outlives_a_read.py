@@ -297,6 +297,7 @@ RED_PROOF = [
         "matches": 1,
     },
     {
+        "needs": "posix",   # REG-3400 - caught only by a case that skips on Windows (Dean's PC filed it BLIND)
         "why": "REG-2492 - the sweep counts the copies it tried, not the ones that are gone",
         "file": "tv/d2jsp_chrome.py",
         "find": "        if not os.path.lexists(f):\n            removed += 1\n",
@@ -311,6 +312,7 @@ RED_PROOF = [
         "matches": 1,
     },
     {
+        "needs": "posix",   # REG-3400 - caught only by a case that skips on Windows (Dean's PC filed it BLIND)
         "why": "REG-2493 - pgrep reads the --user-data-dir pattern as an option again, so a stale Chrome "
                "holding his session is never killed",
         "file": "tv/d2jsp_chrome.py",
@@ -319,6 +321,7 @@ RED_PROOF = [
         "matches": 1,
     },
     {
+        "needs": "posix",   # REG-3400 - caught only by a case that skips on Windows (Dean's PC filed it BLIND)
         "why": "REG-2493 - the pattern stops at no boundary, so a live profile whose path starts with a "
                "stale one is killed with it",
         "file": "tv/d2jsp_chrome.py",
@@ -335,6 +338,7 @@ RED_PROOF = [
         "matches": 1,
     },
     {
+        "needs": "posix",   # REG-3400 - caught only by a case that skips on Windows (Dean's PC filed it BLIND)
         "why": "REG-2492 - nothing ends a scratch Chrome still in flight when the console exits",
         "file": "tv/d2jsp_chrome.py",
         "find": "atexit.register(_reap_in_flight)\n",

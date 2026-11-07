@@ -73,16 +73,20 @@ class TheNightlySkipsWhenTheMachineIsBusy(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "v3849 - the nightly runs below 15 GB free", "file": "nightly_full_gates.sh",
+    {"needs": "bash",   # REG-3400 - every case skips with no bash (a Mac launchd job); Dean's PC filed it BLIND
+     "why": "v3849 - the nightly runs below 15 GB free", "file": "nightly_full_gates.sh",
      "find": 'if [ "$_free_gb" -lt 15 ]; then', "replace": 'if [ "$_free_gb" -lt 0 ]; then', "matches": 1},
-    {"why": "v3849 - an unread free space reads as a number", "file": "nightly_full_gates.sh",
+    {"needs": "bash",   # REG-3400 - every case skips with no bash (a Mac launchd job); Dean's PC filed it BLIND
+     "why": "v3849 - an unread free space reads as a number", "file": "nightly_full_gates.sh",
      "find": "if [ -z \"$_free_gb\" ]; then", "replace": "if false; then", "matches": 1},
-    {"why": "v3848 - the nightly runs beside a prove/census",
+    {"needs": "bash",   # REG-3400 - every case skips with no bash (a Mac launchd job); Dean's PC filed it BLIND
+     "why": "v3848 - the nightly runs beside a prove/census",
      "file": "nightly_full_gates.sh",
      "find": 'for _busy in "tv/run_gates.py" "tv/heart2.py" "hooks/pre-push"; do\n',
      "replace": 'for _busy in "tv/run_gates.py" "hooks/pre-push"; do\n',
      "matches": 1},
-    {"why": "v3848 - the nightly runs beside a push hook",
+    {"needs": "bash",   # REG-3400 - every case skips with no bash (a Mac launchd job); Dean's PC filed it BLIND
+     "why": "v3848 - the nightly runs beside a push hook",
      "file": "nightly_full_gates.sh",
      "find": 'for _busy in "tv/run_gates.py" "tv/heart2.py" "hooks/pre-push"; do\n',
      "replace": 'for _busy in "tv/run_gates.py" "tv/heart2.py"; do\n',

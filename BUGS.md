@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3400 - TWO MAC-ONLY LAWS READ BLIND ON DEAN'S PC AND KEPT ALL FOUR OF HIS RIVER LOCKS SHUT (v3881, his "dean is online" ask)
+MEASURED 11-07 23:01 IST over SSH (GET + a read of his census) and on the Mac's Fleet: Dean on v3879, importing v3879's proofs
+and proving 319 owed - and blind=2, so routing, frame release, vault sweep and vault apply were all shut whatever he proved next
+(BLIND is not STALE), 5 reels waiting. The two: test_no_d2jsp_cookie_copy_or_window_outlives_a_read (verdict 11-06 04:53) and
+test_the_nightly_skips_when_the_machine_is_busy (11-02 00:50), carried forward unjudged since. Both judge code that runs only
+off Windows: the nightly law skips every case with no bash (a Mac launchd job), and 4 of the cookie law's 10 proofs are caught
+ONLY by cases that skip on Windows (measured: each proof applied on the Mac, the catching cases listed - the copy-count, both
+pgrep patterns, the scratch Chrome at exit). So on Windows those sabotages could never go red. They now declare what they need
+(REG-1686: "bash" x4, "posix" x4), and a PC that lacks it judges them ELSEWHERE, never BLIND; the other 6 cookie proofs are
+caught on Windows too and stay judged there. The laws change, so every PC re-judges both gates under the new declarations.
+Measured on Dean's PC after v3881 lands, not before: his census's blind list.
 ### REG-3399 - A WINDOWS d2jsp PROFILE LOCK THAT COULD NOT BE READ SAID "CHROME HOLDS IT" (v3881, the second eye on v3879)
 The Grok CLI on v3879: profile_in_use's Windows branch returned True for EVERY OSError from os.open - a directory where the
 lockfile should be, a too-long path, an invalid argument all read "Chrome holds the profile", a claim nobody measured. Windows
