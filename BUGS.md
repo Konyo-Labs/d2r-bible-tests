@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3390 - THE D2JSP DATABASE PRINTED EVERY ITEM IN FULL, ITS RULE AGAIN EACH TIME, AND "Fresh. fresh" (v3881, HIS ASK)
+His ask on the v3878 pass: "D2JSP Advanced = own scroll panel, sticky search+sort, groups, one collapsed line per item, rule
+said once, 'Fresh. fresh' -> 'fresh', SOURCE = nickname" (the nickname shipped as REG-3379). Show the database printed each item's
+tiers, the fresh line (the server's reason for a fresh price IS the word 'fresh'), the weighing rule and its whole post table,
+one under another with no bound. Now: the rule once above every item; a sticky Find + Sort (name / price / posts) bar over its
+own scroll panel; items grouped by what is known (fresh / stale / freshness not known), each one collapsed line - name, normal,
+perfect, posts - that opens to its tiers and posts; a reason that only repeats the state is said once. Grouping by freshness is
+my reading of 'groups' (the one grouping every answer carries). Law: test_the_d2jsp_database_is_one_line_per_item (6 cases via
+node + a fake DOM; 4 red-proofs RED). Pixels: headless render + the Grok CLI before the version ships.
 ### REG-3389 - A LADDER CONSOLE'S D2JSP TAB SAID "BOARD 271" BESIDE "BOARD 268 ONLY" (v3881, GrokBot v3878 #56)
 GrokBot on Dean's shadow D2JSP tab: "Board 271, D2:R RotW Softcore Ladder Trading." next to "Reads d2jsp posts dated 2026 or
 later, board 268 only." Both were true - a ladder console POSTS on 271 (d2jspBoard) and the price search reads 268 whatever

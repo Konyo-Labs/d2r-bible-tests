@@ -12501,6 +12501,14 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     #tab-d2jsp .d2jsp-price-search input{font-family:var(--mono);background:#120e08;color:#f6e7c2;border:1px solid rgba(233,208,122,.4);border-radius:6px;padding:6px 8px}
     #tab-d2jsp #d2jsp-price-out{grid-column:1 / -1}
 #tab-d2jsp .d2jsp-advanced-b{grid-column:1 / -1;justify-self:start}
+/* v3881 (REG-3390) - the price database: its own scroll panel, a sticky Find + Sort bar, one line per item */
+#tab-d2jsp .d2jsp-db-scroll{max-height:min(62vh,560px);overflow:auto;overscroll-behavior:contain;border:1px solid rgba(212,168,71,.22);border-radius:10px;padding:0 10px 8px;margin:6px 0}
+#tab-d2jsp .d2jsp-db-bar{position:sticky;top:0;z-index:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;background:var(--bg-elev1);border-bottom:1px solid rgba(212,168,71,.18)}
+#tab-d2jsp .d2jsp-db-bar input{flex:1 1 180px;min-width:0}
+#tab-d2jsp .d2jsp-db-group h3{margin:10px 0 4px;font-size:var(--fs-micro);color:var(--text-dim);letter-spacing:var(--ls-wide)}
+#tab-d2jsp .d2jsp-db-item > summary{cursor:pointer;padding:5px 2px;border-bottom:1px solid rgba(212,168,71,.1);overflow-wrap:anywhere}
+#tab-d2jsp .d2jsp-db-k{color:var(--text-dim);font-size:var(--fs-micro)}
+#tab-d2jsp .d2jsp-db-item table{display:block;overflow-x:auto;max-width:100%}
 #tab-d2jsp .d2jsp-backend{grid-column:1 / -1;border:1px solid rgba(240,192,96,.35);border-radius:8px;padding:10px;margin-top:8px;background:rgba(8,7,5,.65);overflow-x:auto}
 #tab-d2jsp .d2jsp-backend[hidden]{display:none !important}
 #tab-d2jsp .d2jsp-backend table{width:100%;border-collapse:collapse;font-size:var(--fs-micro,12px)}
@@ -13426,8 +13434,13 @@ function d2jspBackendHtml(db, painted, opts) {
   parts.push('<p data-d2jsp-tier="normal">' + d2jspEscText(d2jspTierSay('Normal', db.normal)) + '</p>');
   parts.push('<p data-d2jsp-tier="perfect">' + d2jspEscText(d2jspTierSay('Perfect', db.perfect)) + '</p>');
   var fresh = db.stale === true ? 'Stale' : (db.stale === false ? 'Fresh' : 'Stale flag not on this answer');
-  parts.push('<p data-d2jsp-fresh>' + d2jspEscText(fresh + '. ' + (db.why ? String(db.why) : 'no reason on this answer')) + '</p>');
-  if (proof.halfLifeDays != null && proof.agree != null) {
+  /* v3881 (REG-3390, his D2JSP Advanced ask) - the server's reason for a fresh price is the word "fresh", so this read
+     "Fresh. fresh". A reason that only repeats the state is said once. */
+  var _why = db.why ? String(db.why) : 'no reason on this answer';
+  parts.push('<p data-d2jsp-fresh>' + d2jspEscText(_why.toLowerCase() === fresh.toLowerCase() ? fresh + '.' : fresh + '. ' + _why) + '</p>');
+  if (opts.noLaw) {
+    /* REG-3390 - the database view says the weighing rule ONCE, above every item */
+  } else if (proof.halfLifeDays != null && proof.agree != null) {
     var hasScore = (db.normal && Number(db.normal.fg) > 0) || (db.perfect && Number(db.perfect.fg) > 0);
     parts.push('<p data-d2jsp-law>Age half-life ' + d2jspEscText(proof.halfLifeDays) + ' days. A post agrees when it is within '
       + d2jspEscText(Math.round(Number(proof.agree) * 100)) + '% of the price.'
@@ -13482,12 +13495,78 @@ function d2jspBatchHtml(view) {
   if (!items.length) {
     return '<p class="d2jsp-say" data-d2jsp-backend>The price database has no item yet.</p>' + btn;
   }
-  var body = items.map(function (it) {
-    var name = it && it.item ? String(it.item) : '';
-    return '<section data-d2jsp-batch-item="' + d2jspEscText(name) + '"><h3>' + d2jspEscText(name) + '</h3>' + d2jspBackendHtml(it) + '</section>';
+  /* v3881 (REG-3390) - HIS ASK for D2JSP Advanced: "own scroll panel, sticky search+sort, groups, one collapsed line per
+     item, rule said once". It printed every item in full - its tiers, "Fresh. fresh", the weighing rule AGAIN, and its whole
+     post table - one under another with no bound. Now: the rule once, a sticky Find + Sort bar over its own scroll panel,
+     the items grouped by what is known of their price (fresh / stale / not known), each ONE line (name, normal, perfect,
+     posts) that opens to its tiers and posts. Grouped by freshness: the one grouping every answer carries. */
+  var law = '';
+  for (var li = 0; li < items.length && !law; li++) {
+    var pr = (items[li] && items[li].proof) || {};
+    if (pr.halfLifeDays != null && pr.agree != null) {
+      law = '<p data-d2jsp-law data-d2jsp-db-law>Every item below: age half-life ' + d2jspEscText(pr.halfLifeDays)
+        + ' days; a post agrees when it is within ' + d2jspEscText(Math.round(Number(pr.agree) * 100))
+        + '% of the price; the Wilson lower bound is the database score of the posts marked agrees.</p>';
+    }
+  }
+  if (!law) law = '<p data-d2jsp-law data-d2jsp-db-law>The age half-life and the agree band were not on this answer.</p>';
+  var groups = [['fresh', 'Fresh'], ['stale', 'Stale'], ['unknown', 'Freshness not known']];
+  var html = groups.map(function (g) {
+    var mine = items.filter(function (it) {
+      var st = it && it.stale === false ? 'fresh' : (it && it.stale === true ? 'stale' : 'unknown');
+      return st === g[0];
+    });
+    if (!mine.length) return '';
+    var rows = mine.map(function (it) {
+      var name = it && it.item ? String(it.item) : '';
+      var nf = it && it.normal && Number(it.normal.fg) > 0 ? Number(it.normal.fg) : null;
+      var pf = it && it.perfect && Number(it.perfect.fg) > 0 ? Number(it.perfect.fg) : null;
+      var posts = it && it.proof && Array.isArray(it.proof.posts) ? it.proof.posts.length : null;
+      var line = d2jspEscText(name) + ' <span class="d2jsp-db-k">normal ' + (nf != null ? d2jspEscText(d2jspFgText(nf)) + ' fg' : 'not priced')
+        + ' · perfect ' + (pf != null ? d2jspEscText(d2jspFgText(pf)) + ' fg' : 'not priced')
+        + ' · ' + (posts == null ? 'posts not on record' : posts + (posts === 1 ? ' post' : ' posts')) + '</span>';
+      return '<details class="d2jsp-db-item" data-d2jsp-batch-item="' + d2jspEscText(name) + '" data-name="' + d2jspEscText(name.toLowerCase())
+        + '" data-fg="' + (nf != null ? nf : (pf != null ? pf : -1)) + '" data-posts="' + (posts == null ? -1 : posts) + '"><summary>'
+        + line + '</summary>' + d2jspBackendHtml(it, null, {noLaw: true}) + '</details>';
+    }).join('');
+    return '<section class="d2jsp-db-group" data-d2jsp-db-group="' + g[0] + '"><h3>' + g[1] + ' · ' + mine.length + '</h3>' + rows + '</section>';
   }).join('');
+  var bar = '<div class="d2jsp-db-bar" data-d2jsp-db-bar><input type="search" data-d2jsp-db-find placeholder="Find an item in the database"'
+    + ' aria-label="Find an item in the price database" autocomplete="off" spellcheck="false">'
+    + '<label class="d2jsp-db-k">Sort <select data-d2jsp-db-sort aria-label="Sort the price database">'
+    + '<option value="name">by name</option><option value="fg">by price, highest first</option>'
+    + '<option value="posts">by posts, most first</option></select></label></div>';
   return '<p class="d2jsp-say" data-d2jsp-batch>Every item kept in the price database on this console. ' + items.length
-    + (items.length === 1 ? ' item.' : ' items.') + '</p>' + body + btn;
+    + (items.length === 1 ? ' item.' : ' items.') + '</p>' + law
+    + '<div class="d2jsp-db-scroll" data-d2jsp-db-scroll>' + bar + html + '</div>' + btn;
+}
+/* REG-3390 - Find narrows the items by name; Sort orders each group. Both act only inside the database panel. */
+function d2jspDbArrange(root) {
+  if (!root || !root.querySelector) return 0;
+  var find = root.querySelector('[data-d2jsp-db-find]'), sort = root.querySelector('[data-d2jsp-db-sort]');
+  var q = find ? String(find.value || '').trim().toLowerCase() : '';
+  var key = sort ? String(sort.value || 'name') : 'name';
+  var shown = 0;
+  Array.prototype.forEach.call(root.querySelectorAll('[data-d2jsp-db-group]'), function (g) {
+    var its = Array.prototype.slice.call(g.querySelectorAll('[data-d2jsp-batch-item]'));
+    its.sort(function (a, b) {
+      if (key === 'fg' || key === 'posts') {
+        var d = Number(b.getAttribute('data-' + key)) - Number(a.getAttribute('data-' + key));
+        if (d) return d;
+      }
+      return String(a.getAttribute('data-name')).localeCompare(String(b.getAttribute('data-name')));
+    });
+    var vis = 0;
+    its.forEach(function (it) {
+      var hit = !q || String(it.getAttribute('data-name')).indexOf(q) !== -1;
+      it.hidden = !hit;
+      if (hit) vis++;
+      g.appendChild(it);
+    });
+    g.hidden = !vis;
+    shown += vis;
+  });
+  return shown;
 }
 
 /* ⟦D2JSP DESK END⟧ */
@@ -14749,6 +14828,14 @@ function d2jspBatchHtml(view) {
   window._d2jspTierCardsHtml = d2jspTierCardsHtml;
   document.addEventListener('submit', function(ev){
     if (ev.target && ev.target.id === 'd2jsp-price-form') { ev.preventDefault(); priceSearch(); }
+  });
+  /* REG-3390 - the database panel's Find and Sort */
+  ['input', 'change'].forEach(function (kind) {
+    document.addEventListener(kind, function (ev) {
+      var t = ev.target;
+      if (!t || !t.matches || !t.matches('[data-d2jsp-db-find],[data-d2jsp-db-sort]')) return;
+      d2jspDbArrange(t.closest('[data-d2jsp-db-scroll]'));
+    });
   });
   /* v3854: the Advanced and Show-database buttons ride the desk's ONE delegated click listener (it calls this) */
   window._d2jspPriceClick = function(ev){
