@@ -557,6 +557,15 @@
     "purpose": "CLI lookup over bible.html's top-level <style> rules: for a selector (and optionally one property) it lists every declaring block and says which last declaration actually wins.",
     "territory": "console-ui"
   },
+  "d2jsp_refresh.py": {
+    "entryPoints": [
+      "stale_items",
+      "run_once"
+    ],
+    "gotcha": "One item a pass, never a burst: it waits while checks run (checks_running) and while he plays, a sweep reads or a push grades (the prover's stand-aside judge). A read time that will not parse is UNKNOWN and asked first; one bad row never stops the lane.",
+    "purpose": "#96/#88 (REG-3348): the price DB refreshes itself - every EVERY_S it asks the d2jsp desk's own quote for the stalest due item and folds it through the console's one DB writer, so prices move without a click.",
+    "territory": "d2jsp"
+  },
   "d2s_read.py": {
     "entryPoints": [
       "read",
