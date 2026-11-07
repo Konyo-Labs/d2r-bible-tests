@@ -27125,7 +27125,10 @@ window._lockMark = function(isOpen, px, label){
     if (my !== _hubReq) return;   // a newer call superseded this one
     if (!data || !data.ranked || !data.ranked.length){
       host.className = 'hub-hero idle';
-      host.innerHTML = '<div class="hh-eye">✦ the next chronicle</div><div class="hh-idle">— ' + farm.length + ' grails still out there · ranking unavailable right now —</div>';
+      /* REG-3328 (#63, GrokBot 6698868304: the home card said "380 grails still out there" beside Uniques' 403) - this
+         number is the length of the farm list (d2r_grailFarm: a missing UNIQUE joins it only when it has a farm on
+         record), never the uniques still missing; and "grail" is our word, not the game's (his v2269 ruling) */
+      host.innerHTML = '<div class="hh-eye">✦ the next chronicle</div><div class="hh-idle">— ' + farm.length + ' missing unique' + (farm.length === 1 ? '' : 's') + ' with a farm on record · ranking unavailable right now —</div>';
       _HUB_RANK = null; return;
     }
     _HUB_RANK = data;

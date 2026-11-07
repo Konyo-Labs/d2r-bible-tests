@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3328 - THE HOME CARD SAID "380 GRAILS STILL OUT THERE" BESIDE UNIQUES' 403 - A THIRD NUMBER IN AN INVENTED WORD (v3877, board #63, GrokBot 6698868304)
+GrokBot (11-07, guest box): "Fleet API rosters.uniques = 403, and Quick wins shows 403 (6 + 397). The home card says '380
+grails still out there', which doesn't match." MEASURED: the console hub's next-chronicle card, when /api/evrank cannot
+rank, printed farm.length - the length of d2r_grailFarm, which bible.html's bridge fills with a missing UNIQUE only when it
+has a farm on record (sets ride d2r_setFarm) - as "N grails still out there": the count of FARMABLE missing uniques read
+as the count STILL MISSING, and in the word his v2269 ruling took off the console ("grail is something we invented").
+NOW: "N missing uniques with a farm on record - ranking unavailable right now". The board's other uniques numbers were
+already traced as four different questions, each named (403 the chronicle pin = 397 hunt cards + 6 Colossal jewels; 396
+the roster the board can name; 523 a log count printed nowhere as 'of N') - this was the one surface still saying a
+number as something it is not. Law: test_the_hub_names_what_its_farm_count_counts (the line names its population; no
+console string says "grails still out there"); red-proof PROVEN.
+
 ### REG-3327 - THE PRICE WEIGHED POSTS NOBODY COULD OPEN: 9 OF SHAKO'S 14 HAD NO LINK (v3877, board #95, his 11-06 ruling)
 His words (a screenshot of D2JSP > Advanced for shako): "good that its saving data for perfect tier and normal tier, just
 i want the posts linked there anything without a post or a price is irrelevant". MEASURED 11-07 on his DB (GET
