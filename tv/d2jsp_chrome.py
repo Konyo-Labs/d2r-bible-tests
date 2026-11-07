@@ -2262,10 +2262,21 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
     headers = _headers(cookie)
     headers["Referer"] = "https://forums.d2jsp.org/forum.php?f=%d" % QUOTE_BOARD
     headers["Content-Type"] = "application/x-www-form-urlencoded"
-    try:
-        status, hdrs, raw = fetch("POST", _search_url(item), headers, _search_body(item))
-    except Exception:
-        return 200, _quote_unknown(item, read_at, "unread")
+    # REG-3326 (#94) - a transport that raises is asked ONCE more (MEASURED 11-07: the same Shako search that came back
+    # 'unread' at 22:46 read 7 posts, 20 fg minutes later - intermittent), and an answer that still could not read says
+    # which step raised and its type - never the cookie, the page or the message text
+    _err = None
+    for _try in (1, 2):
+        try:
+            status, hdrs, raw = fetch("POST", _search_url(item), headers, _search_body(item))
+            _err = None
+            break
+        except Exception as _fe:
+            _err = type(_fe).__name__
+    if _err is not None:
+        out = _quote_unknown(item, read_at, "unread")
+        out["why"] = "the forum request raised %s twice" % _err
+        return 200, out
     if status in (301, 302, 303, 307, 308):
         loc = ""
         if isinstance(hdrs, dict):

@@ -109,12 +109,68 @@ class TheKnownPriceComesFirst(unittest.TestCase):
     def test_the_painter_draws_the_known_price_before_the_live_line(self):
         page = _src("bible.html")
         s = page[page.index("    function show(j){"):page.index("    function step(){", page.index("    function show(j){"))]
-        self.assertIn("(j.reason === 'paused' || j.reason === 'need-login')", s)
+        # REG-3326 (#94, his Shako search 11-06 22:46) - first WHENEVER the live read gave no number (paused, signed out,
+        # the forum unread, a read that found none) - REG-3249 drew it only for paused / signed out
+        self.assertIn("var _first = (_known && j && !(Number(j.fg) > 0))", s, "the known price waits for a pause again")
         self.assertIn("d2jspBackendHtml(_db, null, {})", s, "the known price is not drawn with its posts")
         self.assertIn("out.innerHTML = _first + '<div>'", s, "the known price is not drawn ahead of the live line")
 
 
+    def test_an_unread_forum_says_so_and_why(self):
+        """REG-3326 (#94) - 'unread' is the forum request failing, never 'a reading that returned no fg number'"""
+        if not NODE:
+            self.skipTest("no node - the price line is not driven here (UNMEASURED)")
+        import subprocess
+        page = _src("bible.html")
+        def fn(head):
+            a = page.index(head); depth = 0; i = page.index("{", a)
+            for k in range(i, len(page)):
+                if page[k] == "{": depth += 1
+                elif page[k] == "}":
+                    depth -= 1
+                    if depth == 0: return page[a:k + 1]
+        prog = ("function d2jspWhen(t){ return t ? 'Nov 6 22:46' : ''; }\n" + fn("function d2jspPriceLine(q) {") + "\n"
+                "process.stdout.write(JSON.stringify([d2jspPriceLine({reason:'unread', readAt:'x', why:'the forum request raised TimeoutError twice'}),"
+                " d2jspPriceLine({reason:'read', readAt:'x', fg:null, n:0})]));")
+        r = subprocess.run([NODE, "-"], input=prog, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr[-800:])
+        unread, empty = json.loads(r.stdout)
+        self.assertIn("could not be read at Nov 6 22:46 (the forum request raised TimeoutError twice)", unread)
+        self.assertNotIn("returned no fg number", unread, "an unread forum reads as a reading that found nothing")
+        self.assertIn("returned no fg number", empty, "a real read that found no number lost its own words")
+
+    def test_a_transport_that_raises_is_asked_once_more_and_names_its_step(self):
+        """REG-3326 (#94) - MEASURED intermittent: one retry; a second raise answers unread with the step and the type only"""
+        calls = []
+        def flaky(method, url, headers, body=None):
+            calls.append(1)
+            if len(calls) == 1:
+                raise TimeoutError("socket timed out with cookie=SECRET")
+            return 200, {}, b"<html>no posts</html>"
+        D.d2jsp_quote("shako", "http://127.0.0.1:17772", "127.0.0.1:17772", 17772, cookie_get=lambda: ("member_id=SECRET", "ok"),
+                      transport=flaky, node_run=lambda *a, **k: None, chrome_fetch=False, sec_fetch_site="same-origin")
+        self.assertEqual(len(calls), 2, "a transport that raised once was not asked again")
+        def dead(method, url, headers, body=None):
+            raise TimeoutError("socket timed out with cookie=SECRET")
+        code, out = D.d2jsp_quote("shako", "http://127.0.0.1:17772", "127.0.0.1:17772", 17772,
+                                  cookie_get=lambda: ("member_id=SECRET", "ok"), transport=dead,
+                                  chrome_fetch=False, sec_fetch_site="same-origin")
+        self.assertEqual(out.get("reason"), "unread")
+        self.assertEqual(out.get("why"), "the forum request raised TimeoutError twice")
+        self.assertNotIn("SECRET", json.dumps(out), "the answer carries the cookie or the error text")
+
+
 RED_PROOF = [
+    {"why": "REG-3326 - an unread forum reads as 'returned no fg number' again (his Shako search)",
+     "file": "bible.html",
+     "find": "  if (q.reason === 'unread') return 'Public price unknown. The forum could not be read'",
+     "replace": "  if (false) return 'Public price unknown. The forum could not be read'",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3326 - a transport that raised once answers unread with no second ask",
+     "file": "tv/d2jsp_chrome.py",
+     "find": "    for _try in (1, 2):\n",
+     "replace": "    for _try in (1,):\n",
+     "matches": 1},
     {"why": "REG-3250 - a refused copy of his signed-in Chrome reads 'sign in to d2jsp first' again",
      "file": "tv/d2jsp_chrome.py",
      "find": "        out[\"copyRefused\"] = True\n",

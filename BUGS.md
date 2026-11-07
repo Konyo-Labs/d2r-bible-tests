@@ -112,6 +112,22 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3326 - THE SHAKO SEARCH SAID "RETURNED NO FG NUMBER" WHEN THE FORUM WAS NEVER READ, AND HID THE 15 FG IT ALREADY KNEW (v3877, board #94, his 11-06 22:46 report)
+His report (screenshot): PRICE SEARCH "shako" -> "Public price unknown. The reading at Nov 6 22:46 returned no fg number."
+while Advanced showed the database's 15 fg from 9 posts. MEASURED: his console answered reason 'unread' (the forum POST
+raised inside d2jsp_quote, `except Exception: return 'unread'` - the step and the error dropped); the page worded every
+reason with a time as "returned no fg number"; REG-3249's known-price-first block fired only for 'paused' and
+'need-login'. He was signed in the whole time (the Mac's own d2jsp window, lamp on for hours - my first reading of #87
+said otherwise and was corrected). Re-run 11-07 01:00Z through the console's own quote: 7 posts, 20 fg - the plain POST
+got a 403 challenge and the Chrome fetch read it, as designed - so the failure was INTERMITTENT. NOW: a transport that
+raises is asked once more; a second raise answers 'unread' with why = "the forum request raised <Type> twice" (never the
+cookie, the page or the message text); the page says "The forum could not be read at <time> (<why>) - the next search
+asks again" and keeps "returned no fg number" for a real read that found none; and the researched price comes first
+whenever the live read gave no number. Law: test_a_price_check_shows_the_known_price_first (re-aimed from REG-3249's
+two-reason rule; + an unread forum says so and why, driven in node; + a raising transport is asked once more and names
+only its step - with a stand-in transport whose error text carries a fake cookie that must not leak); red-proofs PROVEN
+(5/5, the two new and REG-3249's three).
+
 ### REG-3325 - QUICK WINS' PER-KILL ROWS SAID "ONCE" AND "RANDOM" AND CARRIED ONE NUMBER (v3877, board #102, his 11-07 ask)
 His words (a screenshot of the Bane Ash card's "also drops here" rows): "once? random? i want titles for each one synced
 properly matching and accurate ... also with the odds number of runs.. and etc." MEASURED: the rank label was the bare

@@ -12937,6 +12937,11 @@ function d2jspPriceLine(q) {
      ruling: reads never compete with a push); it now says so instead of reading as a reader that never answered. */
   if (q.reason === 'paused') return 'Price not read yet - this machine is running its checks (' + (q.say || 'paused while checks run') + '). It reads as soon as they finish.';
   if (q.reason === 'unanswered') return 'Public price unknown. No price reader answered this page.';
+  /* REG-3326 (#94 - his Shako check 11-06 22:46: "returned no fg number" while the forum was never read). 'unread' means
+     the forum request itself failed (MEASURED: intermittent - the same search read 7 posts, 20 fg, minutes later), so it
+     says the forum could not be read and why - never that a reading found no number. */
+  if (q.reason === 'unread') return 'Public price unknown. The forum could not be read' + (d2jspWhen(q.readAt) ? ' at ' + d2jspWhen(q.readAt) : '')
+    + (q.why ? ' (' + String(q.why).slice(0, 120) + ')' : '') + ' - the next search asks again.';
   if (d2jspWhen(q.readAt)) return 'Public price unknown. The reading at ' + d2jspWhen(q.readAt) + ' returned no fg number.';
   return 'Public price unknown.';
 }
@@ -14617,7 +14622,10 @@ function d2jspBatchHtml(view) {
          paused or d2jsp turned it away, the database's stored price and the posts behind it (each one an "open post"
          link) come first; the live line follows and says why it did not read. */
       var _db = j && j.db, _known = _db && !_db.unknown && ((_db.normal && _db.normal.fg != null) || (_db.perfect && _db.perfect.fg != null));
-      var _first = (_known && j && (j.reason === 'paused' || j.reason === 'need-login'))
+      /* REG-3326 (#94) - the researched price comes first WHENEVER the live read gave no number (paused, signed out, the
+         forum unread, a read that found none), not only when paused or signed out: his Shako search printed 'unknown'
+         over a database that held 15 fg from 9 posts */
+      var _first = (_known && j && !(Number(j.fg) > 0))
         ? '<div class="d2jsp-known" data-d2jsp-known><div class="d2jsp-say">Known price for ' + esc(parsed.item) + ', from the price database on this console:</div>' + d2jspBackendHtml(_db, null, {}) + '</div>'
         : '';
       out.innerHTML = _first + '<div>' + esc(d2jspSearchLine(j, sim, parsed)) + '</div>' + (j && (j.reason === 'read' || j.reason === 'no prices') ? d2jspEvidenceHtml(j.reason === 'read' ? sim : null, j) : '');
