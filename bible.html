@@ -14652,7 +14652,10 @@ function d2jspBatchHtml(view) {
       fetch(paths[i++] + encodeURIComponent(parsed.item)).then(function(r){ return r.json(); }).then(function(j){
         /* v3861 (#230 6644125606) - 'paused' is an ANSWER: the console said why it did not read. It used to fall through to
            the site path (404 on the console) and print "No price reader answered" while the console had answered. */
-        if (j && (j.reason === 'no prices' || j.reason === 'read' || j.reason === 'need-login' || j.reason === 'paused')) { show(j); return; }
+        /* REG-3356 (the Grok CLI on v3877, #231 6704665595) - EVERY REASON THE CONSOLE GIVES IS ITS ANSWER: 'unread' (the forum
+           request failed twice, or a search was held back - REG-3326/REG-3331) fell through to the site path, a 404 on the
+           console, and painted "No price reader answered" with no database - so neither the stored price nor the why showed */
+        if (j && typeof j.reason === 'string' && j.reason && j.reason !== 'unanswered') { show(j); return; }
         step();
       }).catch(function(){ step(); });
     }

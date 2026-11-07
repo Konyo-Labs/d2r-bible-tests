@@ -116,6 +116,49 @@ class TheKnownPriceComesFirst(unittest.TestCase):
         self.assertIn("out.innerHTML = _first + '<div>'", s, "the known price is not drawn ahead of the live line")
 
 
+    def test_an_unread_answer_is_painted_never_asked_past(self):
+        """REG-3356 (the Grok CLI on v3877) - the page's own priceSearch, driven: the console answers 'unread' with the
+        stored price attached; the page paints THAT answer (the known price first, then why the forum was not read) and
+        never asks the site path, which on the console is a 404 that ended in 'No price reader answered'"""
+        if not NODE:
+            self.skipTest("no node - the price search is not driven here (UNMEASURED)")
+        import subprocess
+        page = _src("bible.html")
+        a = page.index("  function priceSearch(){")
+        depth, i = 0, page.index("{", a)
+        for k in range(i, len(page)):
+            if page[k] == "{":
+                depth += 1
+            elif page[k] == "}":
+                depth -= 1
+                if depth == 0:
+                    body = page[a:k + 1]
+                    break
+        prog = (
+            "var asked = [], els = {'d2jsp-price-q': {value: 'shako'}, 'd2jsp-price-out': {textContent: '', innerHTML: ''}};\n"
+            "var document = {getElementById: function(id){ return els[id] || null; }};\n"
+            "var searchGen = 0;\n"
+            "function esc(x){ return String(x); }\n"
+            "function d2jspParseSearch(v){ return {item: v, roll: null}; }\n"
+            "function d2jspSimilarPrice(){ return null; }\n"
+            "function d2jspBackendHtml(db){ return db ? '[KNOWN ' + db.normal.fg + ' fg]' : ''; }\n"
+            "function d2jspTierCardsHtml(){ return ''; }\n"
+            "function d2jspEvidenceHtml(){ return ''; }\n"
+            "function d2jspDatabaseButton(){ return ''; }\n"
+            "function d2jspSearchLine(q){ return 'LINE:' + q.reason + (q.why ? ' (' + q.why + ')' : ''); }\n"
+            "function fetch(u){ asked.push(u); return Promise.resolve({json: function(){ return {reason: 'unread', fg: null,"
+            " why: 'the forum showed no search results within 20 s', db: {normal: {fg: 15, n: 9}, perfect: {fg: null}}}; }}); }\n"
+            + body + "\n"
+            "priceSearch();\n"
+            "setTimeout(function(){ process.stdout.write(JSON.stringify({asked: asked, html: els['d2jsp-price-out'].innerHTML})); }, 50);\n")
+        r = subprocess.run([NODE, "-"], input=prog, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr[-800:])
+        got = json.loads(r.stdout)
+        self.assertEqual(len(got["asked"]), 1, "the console's unread answer was asked past: %s" % got["asked"])
+        self.assertIn("[KNOWN 15 fg]", got["html"], "the stored price is not painted over an unread forum")
+        self.assertIn("LINE:unread (the forum showed no search results within 20 s)", got["html"])
+        self.assertNotIn("unanswered", got["html"], "the page painted 'No price reader answered' over the console's answer")
+
     def test_an_unread_forum_says_so_and_why(self):
         """REG-3326 (#94) - 'unread' is the forum request failing, never 'a reading that returned no fg number'"""
         if not NODE:
@@ -238,6 +281,11 @@ class TheKnownPriceComesFirst(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3356 - the price search asks past the console's 'unread' answer and paints 'No price reader answered'",
+     "file": "bible.html",
+     "find": "        if (j && typeof j.reason === 'string' && j.reason && j.reason !== 'unanswered') { show(j); return; }",
+     "replace": "        if (j && (j.reason === 'no prices' || j.reason === 'read' || j.reason === 'need-login' || j.reason === 'paused')) { show(j); return; }",
+     "matches": 1, "needs": "node"},
     {"why": "REG-3331 - a search the forum held back hands its page on and reads 'no prices' (GrokBot's every 2nd search)",
      "file": "tv/d2jsp_chrome.py",
      "find": "        raise OSError(\"search: no results page\" if sent else \"search: the search form never appeared\")\n",

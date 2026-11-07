@@ -127,6 +127,14 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3356 - v3877's #94 FIX NEVER REACHED THE SCREEN: THE PRICE SEARCH ASKED PAST THE CONSOLE'S "unread" ANSWER (v3878, the Grok CLI on v3877)
+The second eye on v3877 (#231 6704665595): bible.html priceSearch's step() painted only the reasons 'no prices', 'read',
+'need-login' and 'paused'. REG-3326/REG-3331 made the console answer 'unread' - with the stored price attached and the why
+("the forum showed no search results within 20 s") - and that answer fell through to the site path, a 404 on the console,
+so the page painted "No price reader answered" with no database: neither the known price nor the why showed, in exactly the
+case #94 was built for. The law tested show() and the price line apart and never the gate between them. NOW every reason the
+console gives is its answer (only 'unanswered' or no reason asks the next path). Law: test_a_price_check_shows_the_known_price_first
+(+ the page's own priceSearch driven in node over an 'unread' answer: one fetch, the known price, the why), red-proof PROVEN.
 ### REG-3355 - MY REG-3349 "IS CHROME HOLDING THIS PROFILE" SENT A CTRL-C ON WINDOWS AND MISSED HIS RUNNING CHROME (v3878, its pre-flight)
 v3878 pre-flight: test_a_liveness_probe_never_sends_ctrl_c_on_windows RED - "d2jsp_chrome.py:135 profile_in_use". The
 function I wrote for REG-3349 asked os.kill(pid, 0) of the pid in Chrome's SingletonLock link. On Windows that call is
