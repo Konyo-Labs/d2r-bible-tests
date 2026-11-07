@@ -1,0 +1,5 @@
+# v3880 (#107, REG-3364) - EVERY CHECKOUT GETS LF, ON EVERY PC. Git for Windows installs with core.autocrlf=true, so his
+# ALTs and GitHub's Windows runner checked every text file out with CR LF (MEASURED 11-07 on the work ALT: w/crlf for
+# bible.html, control_app.py, start_tvd_win.ps1). Every law that reads a file's raw bytes on a "\n" anchor then failed there
+# and stayed owed forever. The index already holds LF only; this makes the working tree match it on Windows too.
+* text=auto eol=lf
