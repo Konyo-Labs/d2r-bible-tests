@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3879",
+  "ver": "v3880",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3879: Every Quick wins monster, uber and Terror Zone wears its own sprite, and the ALT proofs stop stalling",
+  "note": "v3880: Each PC in one Sanctuary word, the State panel draws every PC, and no proof shard gets a chunk its cut ends",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

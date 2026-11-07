@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3880",
+    "date": "2026-11-07",
+    "items": [
+      "One label holds two PCs - the old ALT characters reach the KonyoLock card (REG-3362, #27)",
+      "Every PC asks d2jsp a real price once a day and its Fleet row says whether it read (REG-3363, #56)",
+      "Every checkout gets LF, so a Windows PC stops failing every raw-byte law (REG-3364, #107)",
+      "Eight laws stop failing on Windows for reasons that are not the product (REG-3366, #107)",
+      "On Windows a deaf console is relaunched - an aborted connection is a hang-up too (REG-3367, #107)",
+      "Five more laws stop failing on Windows by their own assumptions (REG-3368, #107)",
+      "The unread-path laws stop measuring nothing on Windows (REG-3369, #107)",
+      "The laws driving the Mac push hook and a Linux job bash skip on Windows (REG-3370, #107)",
+      "On Windows the gate trace follows a child by its name, not its whole command line (REG-3371, #107)",
+      "The console suite reads its children as UTF-8, and its stand-ins answer on Windows too (#107)",
+      "Each PC reads in a few words, and the State panel draws every PC the same way (REG-3372)",
+      "The proof-shard plan never hands a shard a chunk its gate cut will end (REG-3373)",
+      "The State panel summary says UNKNOWN when no doctor report arrived (REG-3374)",
+      "A long ask-row reason ends at a sentence or a word with an ellipsis (REG-3375)",
+      "An offline peer is named by its nickname, its last report in this PC clock (REG-3376)"
+    ]
+  },
+  {
     "ver": "v3879",
     "date": "2026-11-07",
     "items": [

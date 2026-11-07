@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3879** | `(this commit)` | v3879 — Every Quick wins monster, uber and Terror Zone wears its own sprite, and the ALT proofs stop stalling |
+| **v3880** | `(this commit)` | v3880 — Each PC in one Sanctuary word, the State panel draws every PC, and no proof shard gets a chunk its cut ends |
+| **v3879** | `ffd5f76c` | v3879 — Every Quick wins monster, uber and Terror Zone wears its own sprite, and the ALT proofs stop stalling |
 | **v3878** | `44f63262` | v3878 — 13 board cards - one price per item that refreshes itself, Dean characters reach his shadow, d2jsp continues by default |
 | **v3877** | `b36dbd05` | v3877 — 15 board cards - node proof keys, Quick wins pictures, prices that say why, fan plates, the name pill, the claim bar |
 | **v3876** | `77047e4a` | v3876 — Carries v3875. A law may declare its own proof cap. His 11-06 asks - farm places, Colossal jewels, sprites, Gull, rivers |
