@@ -83,6 +83,27 @@ def session_restores(prefs):
     return isinstance(sess, dict) and sess.get("restore_on_startup") == 1
 
 
+RESTORE_BY_HAND = ("set it once in that d2jsp window itself: Settings > On startup > Continue where you left off - "
+                   "Chrome keeps a setting chosen there")
+
+
+def chrome_reset_restore(root):
+    """#24 (the Mac's eagle: "the console's own d2jsp profile no longer continues where it left off") - did CHROME reset
+    the restore setting this console wrote? -> True | False | None (UNKNOWN: Secure Preferences would not read).
+    MEASURED 11-07 on his Mac: Default/Secure Preferences holds "prefs.tracked_preferences_reset": ["session.restore_on_startup"]
+    and Preferences holds no `session` at all - Chrome guards that setting with a MAC and undoes a value written from
+    outside as tampering, so the seed below can never make it stick; only a choice made in that window's own Settings does."""
+    try:
+        with open(os.path.join(root, "Default", "Secure Preferences"), encoding="utf-8") as fh:
+            sp = json.load(fh)
+    except FileNotFoundError:
+        return False
+    except (OSError, ValueError):
+        return None
+    reset = sp.get("prefs.tracked_preferences_reset") if isinstance(sp, dict) else None
+    return isinstance(reset, list) and "session.restore_on_startup" in reset
+
+
 def seed_login_profile(root):
     """#87 - a profile this console owns KEEPS its session: Chrome writes session-only cookies to its cookie file only
     when the profile continues where it left off, and a sign-in whose session cookie lives only in memory is lost when
@@ -104,6 +125,10 @@ def seed_login_profile(root):
             return False                   # REG-3294 - the same: a file that is not a settings object is left alone
         if session_restores(prefs):
             return True
+        if chrome_reset_restore(root):
+            # #24 - Chrome reset the value this wrote last time (a tracked preference): writing it again is undone again on
+            # the next start and only adds another reset. It is left to the one place it sticks (RESTORE_BY_HAND).
+            return False
         if not isinstance(prefs.get("session"), dict):
             prefs["session"] = {}          # REG-3282 - a session that is not a dict is replaced, never indexed
         prefs["session"]["restore_on_startup"] = 1

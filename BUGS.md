@@ -127,6 +127,18 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3347 - THE CONSOLE KEPT WRITING A D2JSP SETTING CHROME UNDOES AS TAMPERING (v3878, the Mac's eagle row)
+The Mac's eagle (11-07): "the Mac signs in to d2jsp through its own window - MISSING: the console's own d2jsp profile no
+longer continues where it left off, so the sign-in's session cookie dies when that window closes". MEASURED read-only on
+TVD/d2jsp-login (the lamp's window, open and signed in, pid alive): Preferences holds NO `session` key, and Default/Secure
+Preferences holds "prefs.tracked_preferences_reset": ["session.restore_on_startup"]. Chrome guards that setting with a MAC
+and undoes a value written from outside - so #87's seed (REG-3282) could never make it stick, and every lamp launch wrote it
+again only to be reset again. NOW chrome_reset_restore reads Chrome's own reset record (True / False / None when Secure
+Preferences will not read); the seed does not rewrite a value Chrome reset; the doctor says Chrome reset it and the one thing
+that sticks - set it once in that d2jsp window: Settings > On startup > Continue where you left off. His sign-in works while
+that window stays open (measured: the quote reads posts). NOT done: a launch flag (--restore-last-session) - no source found
+that it keeps session cookies, and proving it means closing his signed-in window. Law:
+test_the_mac_signs_in_through_its_own_d2jsp_window (+1 case); red-proofs PROVEN (2).
 ### REG-3346 - "RIVER FLOWING" WHILE THE RIVER'S OWN DOORS WERE SHUT (v3878, board #24, GrokBot 6700580776)
 GrokBot (11-07, his Mac's Fleet row): "river flowing · 13 held by the drain" beside "safety net: test_control RED · its locks
 shut" - and test_control guards all nine locks, so the river could not move a reel. The held chip (v3859) said "flowing"

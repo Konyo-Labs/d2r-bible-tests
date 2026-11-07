@@ -54,6 +54,29 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
         with open(os.path.join(self.root, "Default", "Preferences"), encoding="utf-8") as fh:
             self.assertEqual(json.load(fh).get("other"), 7, "seeding wiped what Chrome keeps there")
 
+    def test_a_setting_chrome_reset_is_not_written_again_and_the_doctor_says_why(self):
+        """#24 (the Mac's eagle; MEASURED 11-07: Secure Preferences "prefs.tracked_preferences_reset":
+        ["session.restore_on_startup"], Preferences with no session) - Chrome undoes the seed as tampering"""
+        d = os.path.join(self.root, "Default")
+        os.makedirs(d)
+        with open(os.path.join(d, "Preferences"), "w", encoding="utf-8") as fh:
+            json.dump({"profile": {"exit_type": "Normal"}}, fh)
+        with open(os.path.join(d, "Secure Preferences"), "w", encoding="utf-8") as fh:
+            json.dump({"prefs.tracked_preferences_reset": ["session.restore_on_startup"]}, fh)
+        self.assertIs(D.chrome_reset_restore(self.root), True)
+        self.assertFalse(D.seed_login_profile(self.root), "the seed wrote again what Chrome resets")
+        with open(os.path.join(d, "Preferences"), encoding="utf-8") as fh:
+            self.assertNotIn("session", json.load(fh), "a value Chrome undoes was written again")
+        import console_doctor as CD
+        with mock.patch.object(D, "login_profile_dir", lambda **kw: self.root), mock.patch.object(sys, "platform", "darwin"):
+            state, why = CD._check_the_macs_own_d2jsp_window_keeps_its_session()
+        self.assertEqual(state, CD.MISSING)
+        self.assertIn("Chrome reset", why)
+        self.assertIn("On startup > Continue where you left off", why, "the doctor does not say what sticks")
+        with open(os.path.join(d, "Secure Preferences"), "w", encoding="utf-8") as fh:
+            fh.write("{not json")
+        self.assertIsNone(D.chrome_reset_restore(self.root), "an unreadable Secure Preferences read as a known answer")
+
     def test_a_session_that_is_not_a_dict_is_replaced_not_a_crash(self):
         """REG-3282 (the Grok CLI on v3872) - "session": "1" raised AttributeError out of the seed and the doctor."""
         d = os.path.join(self.root, "Default")
@@ -140,6 +163,16 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "#24 - the seed rewrites a restore setting Chrome resets, every launch",
+     "file": "tv/d2jsp_chrome.py",
+     "find": "        if chrome_reset_restore(root):\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "#24 - the doctor never says Chrome reset the setting, nor what sticks",
+     "file": "tv/console_doctor.py",
+     "find": "        if dj.chrome_reset_restore(root):\n",
+     "replace": "        if False:\n",
+     "matches": 1},
     {"why": "REG-3294 - a Preferences file that will not read is overwritten from nothing",
      "file": "tv/d2jsp_chrome.py",
      "find": "            # mid-write, a truncated file) is never overwritten: rewriting it from {} would drop every other setting\n            return False\n",

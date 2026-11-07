@@ -11241,8 +11241,14 @@ def _check_the_macs_own_d2jsp_window_keeps_its_session():
     except (OSError, ValueError) as e:
         return UNKNOWN, "the console's own d2jsp profile settings would not read (%s)" % type(e).__name__
     if not dj.session_restores(prefs):         # REG-3282 - the seed's own predicate, safe on any shape
+        # #24 - say WHY, measured: Chrome resets a restore setting written from outside (a tracked preference), so the
+        # console cannot set it - and what does stick
+        if dj.chrome_reset_restore(root):
+            return MISSING, ("Chrome reset the console's 'continue where you left off' setting for its own d2jsp window (it "
+                             "guards that setting and undoes a value written from outside), so the sign-in's session cookie "
+                             "dies when that window closes - " + dj.RESTORE_BY_HAND)
         return MISSING, ("the console's own d2jsp profile no longer continues where it left off, so the sign-in's session "
-                         "cookie dies when that window closes")
+                         "cookie dies when that window closes - " + dj.RESTORE_BY_HAND)
     return OK, "the D2JSP lamp opens the console's own d2jsp window, and that profile keeps its sign-in when it closes"
 
 CHECKS = [
