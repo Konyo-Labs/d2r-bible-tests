@@ -177,7 +177,33 @@ def measure_costs(bodies):
     return out
 
 
-def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, served=None, report=None):
+def run_caps(names, env=None, gates=None):
+    """v3880 (REG-3373) - {gate: the cut a proof shard applies to it, in seconds} for these gate names: the run's
+    HEART2_GATE_CAP_S, raised by a gate's own larger prove_cap_s (REG-3317). {} when the run sets no cap (his Mac's push, a
+    PC's census - nothing is cut there). The SAME rule heart2._gate_cap_for cuts by; test_a_chunk_never_outlasts_its_cut
+    holds the two equal for every registered gate, so this copy cannot drift from the one that cuts. [[copy-drift]]"""
+    env = os.environ if env is None else env
+    try:
+        run_cap = float(str(env.get("HEART2_GATE_CAP_S") or "").strip())
+    except ValueError:
+        return {}
+    if not run_cap > 0:
+        return {}
+    own = {}
+    try:
+        if gates is None:
+            import run_gates as _rg
+            gates = getattr(_rg, "GATES", [])
+        for g in gates:
+            c = getattr(g, "prove_cap_s", None)
+            if isinstance(c, (int, float)) and c > run_cap:
+                own[getattr(g, "name", None)] = float(c)
+    except Exception:
+        pass
+    return dict((str(nm), own.get(nm, run_cap)) for nm in names)
+
+
+def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, served=None, report=None, caps=None):
     """The shard every proof belongs to. -> {(gate, index): k} covering every proof of `have` exactly once (pure).
 
     have       [(name, filename, proofs)] as heart2.prove() holds them
@@ -193,7 +219,14 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
                SERVED_PROOF_S and no clean run, and only the OWED proofs are cut by cost and spread longest-first - so
                the work still owed decides the shards, not where the names fall. Every proof is still assigned once:
                a served proof is served (copied into its shard's file) by the shard it belongs to
-    report     REG-3211: a dict, filled with each shard's modelled wall and work (seconds) and the owed / served counts"""
+    report     REG-3211: a dict, filled with each shard's modelled wall and work (seconds) and the owed / served counts
+    caps       v3880 (REG-3373): {gate: the cut its shard applies, seconds}; None reads run_caps() for these gates (the
+               run's HEART2_GATE_CAP_S - none set, nothing changes). MEASURED on v3878 (run 42360263008): test_control
+               [13]-[27] were ONE chunk (priced ~90 s/proof, real ~270 s) on a shard whose 1500 s cut ended it after ~4
+               proofs a re-run (attempts 2-5 banked [4]-[7], [8]-[11], [13]-[17], then [13]-[16] again), so one law took
+               6+ forty-minute attempts. Now no chunk is planned longer than its gate's cut (its proofs + the two clean runs),
+               and two OWED chunks of one capped gate never share a shard while a shard without one is left (on one shard
+               they run as one gate, under one cut). A gate whose ONE proof cannot fit is named in report["overCap"]."""
     n = int(n)
     if n < 1:
         raise ValueError("a plan needs at least one shard")
@@ -222,11 +255,23 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
     target = total / float(n * CHUNKS_PER_SHARD) if total > 0 else 1.0
     # REG-2593, MODELLED on the measured costs: cutting browser gates finer made N=16 SLOWER (max 1675s vs 1349s): each
     # chunk pays its gate's two clean runs again. One target for every gate; the wall-aware placement below spreads them
+    if caps is None:
+        caps = run_caps([g[0] for g in gates])
+    capd = dict((str(k_), float(v)) for k_, v in (caps or {}).items() if isinstance(v, (int, float)) and v > 0)
+    over = []
+    owedkeys = set()
     chunks = []
     for name, owe, done, u, f, b in gates:
         p = len(owe)
         if p:
             k = max(1, min(p, int(math.ceil(u * p / target)) if target > 0 else 1))
+            cap = capd.get(name)
+            if cap and u > 0:                    # REG-3373 - never a chunk its shard's cut will end
+                per = int((cap - f) // u)
+                if per < 1:
+                    per = 1
+                    over.append(name)
+                k = max(k, min(p, int(math.ceil(p / float(per)))))
             base, extra = divmod(p, k)
             start = 0
             for j in range(k):
@@ -234,6 +279,7 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
                 idx = owe[start:start + size]
                 start += size
                 chunks.append((u * size + f, b, name, idx))
+                owedkeys.add((name, idx[0]))        # REG-3373 - an OWED chunk (served ones run nothing)
         if done:        # REG-3211 - served: no run, no clean run, never the browser queue
             chunks.append((SERVED_PROOF_S * len(done), False, name, done))
     chunks.sort(key=lambda t: (-t[0], t[2], t[3][0]))
@@ -241,11 +287,20 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
     brw = [0.0] * n
     lanes = max(1, int(lanes))
     out = {}
+    held = {}
     for cost, b, name, idx in chunks:
         if browser is None:
             k = min(range(n), key=lambda s: (tot[s], s))
         else:   # REG-2593: the shard whose WALL grows least - its work over its lanes, or its browser queue
             k = min(range(n), key=lambda s: (max((tot[s] + cost) / lanes, brw[s] + (cost if b else 0.0)), tot[s], s))
+        owed = (name, idx[0]) in owedkeys
+        if owed and name in capd and k in held.get(name, ()):   # REG-3373 - never a second owed chunk of a capped gate
+            free = [s for s in range(n) if s not in held[name]]   # on a shard holding one, while a shard without is left
+            if free:
+                k = min(free, key=lambda s: (tot[s], s) if browser is None
+                        else (max((tot[s] + cost) / lanes, brw[s] + (cost if b else 0.0)), tot[s], s))
+        if owed:
+            held.setdefault(name, set()).add(k)
         tot[k] += cost
         if b:
             brw[k] += cost
@@ -256,7 +311,7 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
         report.update(wall=[round(SHARD_WALL_FACTOR * max(t / lanes, w), 1) for t, w in zip(tot, brw)],
                       work=[round(t, 1) for t in tot], factor=SHARD_WALL_FACTOR,
                       owed=sum(len(o) for _n, o, _d, _u, _f, _b in gates),
-                      served=sum(len(d) for _n, _o, d, _u, _f, _b in gates))
+                      served=sum(len(d) for _n, _o, d, _u, _f, _b in gates), overCap=sorted(set(over)))
     return out
 
 

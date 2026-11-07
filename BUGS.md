@@ -112,6 +112,20 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3373 - ONE LAW'S 28 PROOFS ON ONE SHARD: v3878 NEEDED 6+ FORTY-MINUTE ATTEMPTS (v3880; v3878's round)
+MEASURED on run 42360263008: proof_shard.plan put test_control[13]-[27] (attempt 1; [0]-[27] by attempt 5) on shard 10,
+priced at the last round's ~90 s a proof (real ~270 s), under heart2's 1500 s cut of one gate. Fresh proofs per attempt:
+2 [4]-[7], 3 [8]-[11], 4 [13]-[17], 5 [13]-[16] AGAIN (attempt 5 lost attempt 4's proofs though it restored the
+"...-rerun-4" cache - open, queued). He asked "is this normal to go through 5 rounds everytime"; it was not (v3870-v3877:
+1-2 attempts). REG-3365 (v3879) fixed the PRICE; v3878 got it as fix 6d7ef7a34 and a fresh round. ⚠ That commit's message
+says re-runs "could not converge" - WRONG, read from a `tail` of one attempt's owed list: they carried ~4 a time. THIS fixes
+the PLAN, which never knew the cut: proof_shard.run_caps (HEART2_GATE_CAP_S raised by a gate's prove_cap_s - heart2.
+_gate_cap_for's rule, held equal by the law for every gate, since touching heart2 re-keys every proof) bounds each chunk to
+(cap - the two clean runs) / per-proof price, keeps a capped gate's owed chunks on different shards while one is free (on
+one shard they run as one gate under one cut), and names a gate whose single proof cannot fit (report overCap). No cap set
+(his Mac, a PC census): the plan is unchanged byte for byte. Law: test_a_chunk_never_outlasts_its_cut (9 cases incl. a
+baseline that reproduces v3878's over-cut chunk; 5 red-proofs, all seen RED - the stacking one only after a fixture where
+least-loaded placement WOULD stack was added).
 ### REG-3372 - EVERY FLEET HOVER WAS ONE RUN-ON PARAGRAPH, AND THE STATE PANEL'S "THE FLEET" NAMED ONLY THIS MACHINE (v3880, his 11-07 ask)
 His words: "for fleet i just want to make this a little smoother ... human understandable with diablo ii language and english
 ... once and when they are fixed i want it smooth and logical meaning i want to understand short and to the point", and the
