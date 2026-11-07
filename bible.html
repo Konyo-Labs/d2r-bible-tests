@@ -37635,7 +37635,11 @@ window._jewelTipHtml = _jewelTipHtml;
   function arttipInit(){
     if (window._arttipReady) return; window._arttipReady = true;
     var tip = document.getElementById('arttip');
-    if (!tip){ tip = document.createElement('div'); tip.id='arttip'; tip.innerHTML='<img alt=""><div class="att-name"></div><div class="att-desc"></div>'; document.body.appendChild(tip); }
+    /* REG-3334 (#73, GrokBot 6689949990: "an anonymous <img> with empty src that IS visible on the board (no id/class/alt)")
+       - it is this card's picture before the first hover: the card sits at opacity 0, so no pixel showed, but the image
+       was born with no src and no hidden state, and every census of broken pictures counted it. It is born hidden and
+       named; every path that gives it a picture also sets its display (img.src = ...; img.style.display = ...). */
+    if (!tip){ tip = document.createElement('div'); tip.id='arttip'; tip.innerHTML='<img class="att-img" alt="" style="display:none"><div class="att-name"></div><div class="att-desc"></div>'; document.body.appendChild(tip); }
     if (!tip.querySelector('.att-desc')){ var dd=document.createElement('div'); dd.className='att-desc'; tip.appendChild(dd); }
     /* REG-1871 — EVERY TITLE ABOVE A HOVERED HOST IS BORROWED FOR THE SAME HOVER, by every lane on this board. Taking
        only the host's own title left its nearest titled ancestor as the one the browser asks, and the grey box opened

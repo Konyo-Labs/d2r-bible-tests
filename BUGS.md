@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3334 - THE BOARD'S ONE ANONYMOUS "VISIBLE" EMPTY IMAGE WAS THE HOVER CARD'S UNUSED PICTURE (v3877, board #73, GrokBot 6689949990)
+GrokBot (Mac + ALT, v3872): the board's broken pictures were placeholders, except "an anonymous <img> with empty src that IS
+visible on the board (no id/class/alt)" - UNKNOWN. MEASURED on a sandbox render of /board?app=1 at 1440 (and #session): of
+5 empty-src images, the one with an offsetParent is `#arttip > img`, 90x90 - the floating hover card's picture before the
+first hover. The card sits at opacity:0 with pointer-events:none, so no pixel showed; but its picture was born with no src
+and no hidden state, so every census that counts offsetParent + empty src (GrokBot's, and the art census's) read it as a
+visible broken image. NOW it is born `<img class="att-img" alt="" style="display:none">`; each of the 6 paths that set its
+src already set its display in the same statement (a picture or display:none), and the law holds that pairing.
+Law: test_the_hover_card_has_no_empty_picture (new); red-proofs PROVEN (2).
 ### REG-3333 - BELOW 1080 WIDE THE NAME BESIDE THE SIGIL COLLAPSED TO ITS GLYPH (v3877, board #59, GrokBot STILL twice)
 GrokBot 6691991737 (his live window, v3872) and 6698868304 (5 widths, v3876): "at 1024 and 1080 the NAME pill's 'KONYO'
 text is gone - only the circle shows"; fine at 1366/1920. Not a regression - a v1506-era rule hid the pill's words below
