@@ -29115,9 +29115,17 @@ function escC(s) {
     if (by.picker && by.picker.warn) hurt.push('item picker: ' + by.picker.t);
     if (by.readers && by.readers.warn) hurt.push('readers: ' + by.readers.t);
     var key, next;
+    /* #124 (GrokBot's v3880 pass, 00:11: Dean's card read LOST while he was online - his console had just relaunched for
+       the update, heart key 'starting', census None) - A PC IN ITS BOOT WINDOW IS STARTING UP, NOT LOST: its first proof
+       check lands about 5 minutes after a start. Bounded by the Fleet's own boot window (#193: an old 'starting' report is
+       not "moments ago"), and a wound already known is never painted healing. [[unknown-stays-unknown]] */
+    var booting = !!(hs && hs.key === 'starting' && (hs.census === null || hs.census === undefined)
+                     && typeof _fleetBooting === 'function' && _fleetBooting(m, now));
     if (off) {
       key = 'town'; hurt = [];
       next = 'offline since ' + off.since + ' - start its console to hear from it';
+    } else if (booting && !hurt.length) {
+      key = 'healing'; next = 'starting up - its first proof check lands about 5 minutes after a start';
     } else if (!parts || !known) {
       key = 'lost'; next = 'open the console on that PC once, so it can report';
     } else if (hurt.length) {
@@ -29133,7 +29141,7 @@ function escC(s) {
     var W = _PC_WORD[key];
     if (off) owed = [];
     return { key: key, word: W.w, cls: W.c, en: W.en, hurt: hurt, owed: owed, next: next, eta: eta, offSince: off ? off.since : null,
-             look: key === 'wounded' && !proving };
+             look: key === 'wounded' && !proving, starting: key === 'healing' && booting && !proving };
   };
   /* ONE element, spans inside: the card, the State panel and a law can each cut it out whole by its class */
   var _pcStatusHtml = function (m, nowMs, opts) {
@@ -29187,7 +29195,7 @@ function escC(s) {
     var _eta = function (e) { return (typeof e === 'number' && isFinite(e) && e >= 0)
       ? ' ~' + (e < 60 ? '1 min' : e < 5400 ? Math.round(e / 60) + ' min' : (e / 3600).toFixed(1) + ' h') : ''; };
     var proving = (hs && typeof hs.owed === 'number' && hs.owed > 0) ? 'proving ' + _n(hs.owed) + _eta(hs.etaS) : '';
-    if (s.key === 'healing') return proving || 'proving';
+    if (s.key === 'healing') return s.starting ? 'starting up' : (proving || 'proving');
     /* ONE wound, the one that needs a hand first: a blind gate keeps every lock shut whatever this PC proves next, so it
        leads; the rest are "+N" (the open row and the State panel name them). Then what is healing it, if anything. */
     var _short = function (x) {

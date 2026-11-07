@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3405 - A PC THAT HAD JUST RELAUNCHED FOR AN UPDATE READ "LOST" ON THE FLEET (v3882, #124, GrokBot's v3880 pass)
+GrokBot, #230, 00:11 IST 11-08: Dean's card read LOST while he was online on v3880 - his console had just relaunched for the
+update, its heart key 'starting', census None. _pcStatus filed any PC whose parts or census could not be read as LOST, so
+the moment every PC passes through after each update painted it "UNKNOWN, which is not fine". The Fleet already had the
+boot window (#193, FLEET_BOOT_WINDOW_S, 15 min - the first proof check lands ~5 min after a start) and never asked it here.
+Now a 'starting' heart with no census inside that window reads HEALING, closed-row line "starting up"; an old or undated
+'starting' report is LOST again, and a wound already known is never painted healing. Law:
+test_a_booting_pc_reads_starting_never_lost (4 cases, 4 red-proofs RED); the closed-row law stays green.
 ### REG-3404 - QUICK WINS' OTHER PLACES PUT EVERY AREA RUN FIRST, AND ON A PHONE A NAME STOOD ONE LETTER A LINE (v3881, #125)
 His words 11-08 00:31: "the secondary should also be like top 1 should be the lowest amount of runs and the fifth should be
 the highest so in this case 1 would be normal cow king" and "bosses separated still from the secondary". #101 had ranked the
