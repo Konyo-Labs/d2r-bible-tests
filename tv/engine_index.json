@@ -1726,6 +1726,19 @@
     "purpose": "The ONE answer to 'is the picture of this read on disk, and if not, WHY' - behind the doctor row 'a read left no picture', /api/picture_status (asked by the board's evidence panel before it draws an image), and the recorder's own refusal record.",
     "territory": "vault"
   },
+  "reader_parity.py": {
+    "entryPoints": [
+      "bench",
+      "parity",
+      "run_eyes",
+      "win800",
+      "titlebar",
+      "untitled"
+    ],
+    "gotcha": "Its corpus is PRIVATE (~/d2r_bench_corpus, real sessions) and never enters the repo; a desktop-shaped frame is skipped by size, never opened. It runs only deterministic eyes (no model call, no network), so a parity it reports is about crops and OCR on these frames, not about a model's read.",
+    "purpose": "#255 - every deterministic eye (stash class, inventory title, aspect branch, chronicle, prepared crops, tooltip box) run on the same real frames in every capture shape a PC hands them - native, the Windows 800 px eye, the windowed title-bar shift, both, and the strip cut back off - and compared, so a reader that answers differently on Windows or windowed is named.",
+    "territory": "capture-vision"
+  },
   "reap_shape.py": {
     "entryPoints": [
       "reaps_first_param",
