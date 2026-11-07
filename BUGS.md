@@ -221,6 +221,22 @@ closed row 2-3 lines, a ~400px list, identical from all three PCs. Law: test_a_c
 cases, 7 red-proofs RED); test_the_fleet_row_keeps_its_name_whole now measures closed rows (brief inked, chips not) and open
 rows (every word inked; +1 red-proof, all 3 RED); test_the_fleet_card_says_how_each_pc_films_and_drains asks that the row
 DRAWS "river stuck" (brief or chip), never only that the chip exists in the DOM (20 red-proofs RED).
+### REG-3393 - A ONE-FILE TEST EDIT RE-PROVED 4,419 PROOFS: 62% OF LAWS COULD NOT BE TRACED, SO THEIR KEYS STAYED WIDE (v3882)
+His question 11-07: "didnt we say the proofs get saved ... why does a full run need to keep being done?" then "do it sooner, build
+the narrow keys now". MEASURED on v3879's round on c136dc468 (only tv/demo_console.mjs changed): 5,154 served, 4,419 proved again,
+~30 min a shard. A proof's key is its law + its import closure + every file the closure names; 381 laws import control_app,
+whose closure reaches console_doctor, which reads demo_console.mjs. A law traced completely is keyed only by what it opened
+(REG-2640/3319) - but 320 of 520 law files could not be: spawn git 123 · ctypes 141 · Pillow natives 85 · lsof 47 · chrome 80 ·
+numpy 10. Admitted now, each only in the shape that cannot read a tree byte: lsof/ldconfig; Pillow's codecs and band maths
+(_imaging/_webp/_avif/_imagingmath/_imagingmorph - never _imagingft fonts or _imagingcms profiles, which read paths in C; never
+numpy, whose fromfile does); ctypes libraries by bare name or from the system, and only process/clock/disk-metadata symbols and
+kCF constants; git ONLY in the law's own temp repo (in the temp dir, outside the sandbox - judged by the parent, which knows
+the sandbox), with no GIT_DIR-family env (a hook leaks GIT_DIR), no --git-dir/--work-tree/--no-index and no path argument leaving
+that repo. MEASURED on 11 real laws (git / lsof / Pillow users), old tracer vs new: 1 traced -> 5 traced; the rest stay wide for
+real reasons (git in the tree, numpy, a shell, a leaked GIT_DIR). Chrome laws stay wide. Law:
+test_a_narrow_key_still_sees_what_the_law_reads (13 cases through the REAL trace site; every admission has a wide twin; 6
+red-proofs RED). 128 trace/proof/key/census/heart2 laws green on the new tracer. It edits the prover, so its round re-proves
+once; the gain shows on the rounds after (REG-3319's RECORD line: N of M law files traced).
 ### REG-3392 - THE CLAUDE LAMP WAS GREEN ON A REVOKED LOGIN, AND ITS CLICK WOULD NOT REOPEN THE SIGN-IN (v3881, HIS ASK)
 His words 11-07: "make sure the green lamp for claude is synced to red if it is off ... its reading it as green as if it was
 connected" and "when i click the lamp ... it says its already connected and doesnt let me reconnect". MEASURED on his work ALT:

@@ -2336,7 +2336,74 @@ def _h2_install():
     # the process-table and clock tools a law asks about ITS OWN machine: none of them opens a file of the tree,
     # whatever it is handed (no shell, no interpreter, nothing that takes a path to read)
     _PURE = frozenset(("ps", "pgrep", "kill", "uname", "sysctl", "sw_vers", "true", "false", "sleep", "id", "whoami",
-                       "hostname", "date", "nproc", "getconf", "vm_stat", "tty"))
+                       "hostname", "date", "nproc", "getconf", "vm_stat", "tty",
+                       # v3882 (REG-3393) - the process table and the dynamic-linker cache, never a file of the tree
+                       "lsof", "ldconfig"))
+    # v3882 (REG-3393) - NARROW KEYS. MEASURED on v3879's round (22 shards): 320 of 520 law files could not be traced, and
+    # each kept a byte-for-byte key over its whole closure - a one-file test edit re-proved 4,419 proofs. These are the
+    # causes that never read a byte of the tree, each admitted ONLY in the shape that cannot:
+    #   * Pillow's image codecs and band maths (PIL._imaging/_webp/_avif/_imagingmath/_imagingmorph) work on BYTES and
+    #     bands handed in from Python - an image opened by path is
+    #     opened by builtins.open, which this hook sees. Not _imagingft (a font by path, in C) nor _imagingcms (a profile
+    #     by path, in C): those still keep every byte. numpy still keeps every byte (fromfile opens a path in C).
+    #   * a ctypes library loaded by bare name or from the system, and only the symbols below: process-table, clock and
+    #     disk-metadata calls - none takes a path whose BYTES it reads. Any other symbol keeps every byte.
+    #   * git, in a directory the parent judges (G line): only one inside the temp dir and outside the sandbox - the law's
+    #     own fixture repo - with nothing redirecting git and no path argument leaving that directory.
+    _NATIVE_OK = ("_imaging.", "_webp.", "_avif.", "_imagingmath.", "_imagingmorph.")   # image bytes and bands only
+    _SYM_OK = frozenset(("prctl", "getrusage", "getpid", "getppid", "sysctl", "sysctlbyname", "clock_gettime",
+                         "sched_getaffinity", "getpriority", "setpriority", "mach_task_self", "task_threads", "thread_info",
+                         "vm_deallocate", "mach_port_deallocate", "CFRelease", "CFNumberGetValue",
+                         "CFURLCreateFromFileSystemRepresentation", "CFURLCopyResourcePropertyForKey", "_important_key"))
+    _SYS_LIB = ("/usr/", "/lib/", "/lib64/", "/System/", "/Library/", "/opt/homebrew/", "/nix/store/")
+    _GIT_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY", "GIT_COMMON_DIR",
+                "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_NAMESPACE")
+
+    def native_ok(filename):
+        try:
+            f = _real(str(_fspath(filename)))
+        except Exception:
+            return False
+        b = _base(f)
+        return (_o.sep + "PIL" + _o.sep) in f and b.startswith(_NATIVE_OK)
+
+    def git_dir(cwd, argv, env):
+        """-> the real directory this git child works in, or None when it may leave it (U)"""
+        src = env if env is not None else _o.environ
+        if any(_eget(src, k) for k in _GIT_ENV):
+            return None
+        try:
+            here = str(_fspath(cwd)) if cwd is not None else _getcwd()
+            if isinstance(here, bytes):
+                here = here.decode("utf-8", "surrogateescape")
+            a = [x.decode("utf-8", "surrogateescape") if isinstance(x, bytes) else str(_fspath(x))
+                 for x in (list(argv)[1:] if isinstance(argv, (list, tuple)) else [])]
+        except Exception:
+            return None
+        i, d = 0, here
+        while i < len(a):
+            x = a[i]
+            if x == "-C" and i + 1 < len(a):
+                d = a[i + 1] if _isabs(a[i + 1]) else _join(d, a[i + 1])
+                i += 2
+                continue
+            if x.startswith(("--git-dir", "--work-tree", "--namespace", "--exec-path")) or x == "--no-index":
+                return None
+            if x == "-c":
+                i += 2
+                continue
+            if not x.startswith("-"):
+                break
+            i += 1
+        d = _real(d)
+        for x in a[i:]:
+            if x == "--no-index":
+                return None
+            if (_isabs(x) or ".." in x.replace("\\", "/").split("/")) and not x.startswith("-"):
+                full = _real(x if _isabs(x) else _join(d, x))
+                if not (full == d or full.startswith(d.rstrip(_o.sep) + _o.sep)):
+                    return None
+        return d
 
     def _shell_ish(argv):
         return not isinstance(argv, (list, tuple))      # a string command line runs through a shell
@@ -2394,7 +2461,10 @@ def _h2_install():
     def hook(ev, args):
         if ev == "import":
             if len(args) > 1 and args[1] is not None and native(args[1]):
-                emit("U", "native " + _base(str(args[1])))
+                if native_ok(args[1]):
+                    emit("A", "native " + _base(str(args[1])))     # v3882 (REG-3393) - a codec: bytes in, never a path
+                else:
+                    emit("U", "native " + _base(str(args[1])))
         elif ev == "open":
             names("R", args[0] if args else None)
         elif ev == "sqlite3.connect":
@@ -2416,6 +2486,13 @@ def _h2_install():
                 emit("P", "spawn " + what)      # REG-3319 - a traced node child: counted, says its own hello
             elif what in _PURE and not _shell_ish(argv):
                 emit("A", "spawn " + what)      # reads no file of the tree, whatever its arguments
+            elif what in ("git", "git.exe") and not _shell_ish(argv):
+                _gd = git_dir(args[2] if len(args) > 2 else None, argv, args[3] if len(args) > 3 else None)
+                if _gd:
+                    busy.gitok = True
+                    emit("G", _gd)              # v3882 (REG-3393) - the parent decides: the law's own temp repo, or U
+                else:
+                    emit("U", "spawn git")
             else:
                 emit("U", "spawn " + what)
         elif ev == "os.exec":
@@ -2430,8 +2507,11 @@ def _h2_install():
             busy.popen = False
             py = (pyish(args[0], args[2] if len(args) > 2 else None, args[1])
                   or nodeish(args[0], args[2] if len(args) > 2 else None, args[1]))     # REG-3319
-            if mine and (py or what in _PURE or node_version_only(args[0], args[1])):
-                emit("p", ev + " " + what)          # its Popen line already counted it
+            _gitok = getattr(busy, "gitok", False)
+            busy.gitok = False
+            if mine and (py or what in _PURE or node_version_only(args[0], args[1])
+                         or (_gitok and what in ("git", "git.exe"))):
+                emit("p", ev + " " + what)          # its Popen line already counted it (a G line, for git)
             else:                                  # a direct os.posix_spawn: a python child is counted, all else U
                 emit("P" if py else "U", ev + " " + what)
         elif ev in ("os.listdir", "os.scandir"):
@@ -2442,7 +2522,26 @@ def _h2_install():
             if isinstance(pat, (str, bytes)):
                 pat = pat.decode("utf-8", "surrogateescape") if isinstance(pat, bytes) else pat
                 listing(_o.path.dirname(pat) or ".")
-        elif ev in ("os.system", "os.spawn", "os.startfile", "ctypes.dlopen", "ctypes.dlsym", "os.forkpty"):
+        elif ev == "ctypes.dlopen":
+            # v3882 (REG-3393) - a library by bare name or from the system loads no byte of the tree
+            try:
+                nm = args[0] if args else None
+                nm = nm.decode("utf-8", "surrogateescape") if isinstance(nm, bytes) else (None if nm is None else str(nm))
+            except Exception:
+                nm = "?"
+            if nm is None or (_o.sep not in nm and "/" not in nm) or _real(nm).startswith(_SYS_LIB):
+                emit("A", ev + " " + _base(nm or "self"))
+            else:
+                emit("U", ev + " " + _base(nm))
+        elif ev == "ctypes.dlsym":
+            try:
+                sym = args[1] if len(args) > 1 else None
+                sym = sym.decode("utf-8", "replace") if isinstance(sym, bytes) else str(sym)
+            except Exception:
+                sym = "?"
+            # v3882 (REG-3393) - only calls that read no file; a CoreFoundation kCF... name is a constant (data), never a call
+            emit("A" if (sym in _SYM_OK or sym.startswith("kCF")) else "U", ev + " " + sym)
+        elif ev in ("os.system", "os.spawn", "os.startfile", "os.forkpty"):
             emit("U", ev)
 
     for n in ("stat", "lstat", "access", "readlink"):
@@ -2512,7 +2611,7 @@ def _h2_install():
         pass
     for _m in list(_s.modules.values()):        # an extension loaded before this file ran
         if native(getattr(_m, "__file__", None) or ""):
-            emit("U", "native " + _base(_m.__file__))
+            emit("A" if native_ok(_m.__file__) else "U", "native " + _base(_m.__file__))
     emit("H", "%d %d" % (_o.getpid(), _o.getppid()))
     _s.addaudithook(hook)
     _s._h2_trace_on = True                   # H2-INSTALL-ONCE - only once the hook is really in
@@ -2599,7 +2698,7 @@ def _trace_wanted(filename, env=None):
         return False
 
 
-def _trace_read(log, root_ppid, listed=None, why=None):
+def _trace_read(log, root_ppid, listed=None, why=None, sandbox=None):
     """REG-2640 - one traced run's log. -> (basenames read or stat'd, complete: bool). REG-2944 - the full real path of
     every directory the run listed is added to `listed` when a set is handed in. REG-3319 - and WHY a run was not
     complete is added to `why` (the untraced child, a missing hello), so a round can say what keeps keys wide."""
@@ -2622,6 +2721,14 @@ def _trace_read(log, root_ppid, listed=None, why=None):
                     pass
                 elif tag == "N":                 # REG-3319 - a node child ran: no JavaScript-family input is dropped
                     seen.add(_NODE_MARK)
+                elif tag == "G":                 # v3882 (REG-3393) - a git child, in the directory it named
+                    _gw = _git_child_why(rest, sandbox)
+                    if _gw:
+                        untraced = True
+                        _TRACE_WHY.append(_gw[:60])
+                        del _TRACE_WHY[:-200]
+                        if why is not None:
+                            why.add(_gw[:60])
                 elif tag == "L":                 # REG-2944 - a listing, by full path
                     if listed is not None:
                         listed.add(rest)
@@ -2641,6 +2748,27 @@ def _trace_read(log, root_ppid, listed=None, why=None):
         if len(hellos) < py:
             why.add("a child said no hello")
     return seen, bool(root and not untraced and len(hellos) >= py)
+
+
+def _git_child_why(gdir, sandbox):
+    """v3882 (REG-3393) - may a git child working in `gdir` (a real path the child resolved) be traced past? -> None (it
+    reads only the law's own fixture repo) | why it keeps every byte. Only a directory inside the temp dir and OUTSIDE the
+    sandbox passes: the sandbox IS the tree (and lives in the temp dir too), and his real repo is outside the temp dir."""
+    if not gdir or not os.path.isabs(gdir):
+        return "spawn git (no directory)"
+    if not sandbox:
+        return "spawn git (no sandbox to judge it by)"
+    g = os.path.realpath(gdir)
+    sb = os.path.realpath(sandbox)
+    tmp = os.path.realpath(tempfile.gettempdir())
+
+    def under(p, base):
+        return p == base or p.startswith(base.rstrip(os.sep) + os.sep)
+    if under(g, sb) or under(sb, g):
+        return "spawn git in the tree"
+    if not under(g, tmp):
+        return "spawn git outside the temp dir"
+    return None
 
 
 def _trace_record(filename, seen, ok, listed=None, why=None):
@@ -3031,7 +3159,7 @@ def _run_gate_once(sandbox_tv, filename, timeout=180, extra=(), script=None, wid
             if _tlog is not None:             # REG-2640 - recorded on every exit; complete only if it ran out, unkilled
                 _tseen, _tok, _tls, _twhy = set(), False, set(), set()
                 try:
-                    _tseen, _tok = _trace_read(_tlog, os.getpid(), listed=_tls, why=_twhy)
+                    _tseen, _tok = _trace_read(_tlog, os.getpid(), listed=_tls, why=_twhy, sandbox=_root)
                 finally:
                     if not _tdone:
                         _twhy.add("the run did not end on its own (timeout or a signal)")
