@@ -67,6 +67,7 @@ CLASS = {
     'input[aria-label="search this list and tick items off"]': (L, "the tally search: lists matches; its tick (a click or Enter) stays stopped"),
     'input[aria-label="search the stats"]': (L, "the builder's stats filter: hides rows"),
     'input[aria-label="search the stash"]': (L, "the builder's stash search: filters the stash view"),
+    'input[aria-label="Find an item in the price database"]': (L, "v3881 (REG-3390) the D2JSP price database's Find: d2jspDbArrange hides items, writes nothing"),
     # --- typed boxes that write, or feed a write
     "#d2jsp-price-q": (R, "PRICE SEARCH: asks the console's d2jsp reader, which fetches and logs reads - not a view filter (v3848)"),
     "#vault-planner-q": (R, "add an item from the planner: its picks file items"),
@@ -97,6 +98,7 @@ CLASS = {
     # --- selects
     "#rune-cubeup-target": (R, SEL), "#gem-cubeup-type": (R, SEL), "#gem-cubeup-q": (R, SEL),
     "#cb-filt": (R, SEL), 'select[aria-label="filter results"]': (R, SEL),
+    'select[aria-label="Sort the price database"]': (R, SEL),   # v3881 (REG-3390) the price database's order
     "#cb-build": (R, "picks the active build"), "#cb-cls": (R, "writes a build's class"),
     "#cb-base": (R, "writes an item's base"), "#cb-qual": (R, "writes an item's quality"),
     "#cb-rn0": (R, "writes a rare name"), "#cb-rn1": (R, "writes a rare name"), "#cb-lq": (R, "writes a low-quality word"),
@@ -284,7 +286,11 @@ class TheVeilLetsALookupAnswerAndKeepsTheWritesDead(unittest.TestCase):
         cls.node_encoding = seen.get("encoding")
 
     def test_premise_every_lookup_and_every_refused_text_box_was_driven(self):
-        self.assertEqual(len(self.o["lookup"]), 18)
+        # v3881 (REG-3390's Find made a 19th) - every lookup the table names was DRIVEN, counted against the table, never a
+        # pinned 18 [[regression-guard]] pin the law, not the number
+        look = sorted(k for k, (c, _) in CLASS.items() if c == L)
+        self.assertEqual(sorted(self.o["lookup"]), look)
+        self.assertGreaterEqual(len(look), 18)
         self.assertGreater(len(self.o["refused"]), 30)
 
     def test_find_answers_in_a_shadow(self):
