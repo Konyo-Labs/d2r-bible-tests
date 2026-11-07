@@ -24274,6 +24274,11 @@ window._mfUnset = function(){ return !_mfChosen; };
    say so - "@ 0% MF" would read as a setting this board never made. */
 window._mfAtSay = function(){ return _mfChosen ? mf + '% MF' : 'base odds (MF not set)'; };
 window._mfPctSay = function(){ return _mfChosen ? mf + '%' : 'not set'; };
+/* REG-3322 (#43, GrokBot 6698868304: "Calculator > Harlequin, NM TZ Mephisto: 1:1,902 '@ base odds (MF not set)' ...
+   Quick wins has the same row ... Neither surface names the player count"). Every odds line now says BOTH things its
+   1:N was computed at - the MF (unchanged words, _mfAtSay) and the /players the drop model used. Read at call time, so
+   moving the P# slider re-says it on the next paint. */
+window._oddsAtSay = function(){ return window._mfAtSay() + ' · /players ' + (typeof players !== 'undefined' && players > 0 ? players : 1); };
 let players = parseInt(LS.getItem('d2r_players') || '1');
 let currentFilter = "all";
 let searchQ = "";
@@ -30461,7 +30466,7 @@ function renderWishlistHuntPath() {
       <div class="sec-body" hidden>
       <div class="wishlist-empty-msg">
         🎯 No items starred yet. Click the ☆ on any item card to add it to your wishlist.<br>
-        <span class="wishlist-empty-cta">Quick-add suggestions below: top grails by speed at ${window._mfAtSay()}</span>
+        <span class="wishlist-empty-cta">Quick-add suggestions below: top grails by speed at ${window._oddsAtSay()}</span>
       </div>
       <div class="wishlist-quick-add">
         <span class="wishlist-quick-add-label">Quick-add wishlist:</span>
@@ -30509,7 +30514,7 @@ function renderWishlistHuntPath() {
   panel.innerHTML = `
     <div class="wishlist-header sec-h collapsed" onclick="toggleSec(this)">
       <h3 class="wishlist-title">⭐ Your Wishlist Hunt Path</h3>
-      <span class="wishlist-summary">${starred.length} starred · ${ownedFromWishlist} found · ${remaining.length} to chase · @ ${window._mfAtSay()}</span>
+      <span class="wishlist-summary">${starred.length} starred · ${ownedFromWishlist} found · ${remaining.length} to chase · @ ${window._oddsAtSay()}</span>
       <span class="sec-chev">▾</span>
     </div>
     <div class="sec-body" hidden>
@@ -30549,7 +30554,7 @@ function renderWishlistHuntPath() {
           return `<div class="wishlist-item" onclick="openItemDetail('${h.name.replace(/'/g, "\\'")}')">
             <div class="wishlist-item-rank">⚠ no viable source</div>
             <div class="wishlist-item-name"${_qStyle(h.name,'unique')}>${h.name}</div>
-            <div class="wishlist-item-source">unreachable @ ${window._mfAtSay()}</div>
+            <div class="wishlist-item-source">unreachable @ ${window._oddsAtSay()}</div>
             <span class="wishlist-item-star" onclick="event.stopPropagation();toggleStarred('${h.name.replace(/'/g, "\\'")}');renderWishlistHuntPath();renderHero()" title="unstar">★</span>
           </div>`;
         }
@@ -30688,7 +30693,7 @@ function renderItemDetailCard(itemName) {
           <h2 class="gic-name">${item.n} ${tierBadge}${vaultLoc}${item.qlvl ? `<span class="gic-grail-badge" style="background:linear-gradient(135deg,#888,#555);color:#fff">qlvl ${item.qlvl}</span>`:''}${item.tc ? `<span class="gic-grail-badge" style="background:linear-gradient(135deg,#444,#222);color:#f0c060">TC${item.tc}</span>`:''}</h2>
           <div class="gic-subtitle">${itemInfo?.tagline || item.cat || ''}</div>
           <div class="gic-meta-row">
-            <span class="gic-meta-chip">${sources.length} viable sources @ ${window._mfAtSay()}</span>
+            <span class="gic-meta-chip">${sources.length} viable sources @ ${window._oddsAtSay()}</span>
             <span class="gic-meta-chip" style="color:#00ffaa;border-color:rgba(0,255,170,.4)">best: ${fmt(best.chance)} at ${best.boss}</span>
             ${isOwned ? '<span class="gic-meta-chip" style="color:#00ffaa">✓ owned</span>' : ''}
           </div>
@@ -30706,7 +30711,7 @@ function renderItemDetailCard(itemName) {
       </section>` : ''}
 
       <section class="gic-section">
-        <div class="gic-section-title">⚡ Top 6 Sources @ ${window._mfAtSay()} (click to focus boss)</div>
+        <div class="gic-section-title">⚡ Top 6 Sources @ ${window._oddsAtSay()} (click to focus boss)</div>
         <div class="gic-source-grid">
           ${top6.map((s,i) => `
             <div class="gic-source-cell ${i===0?'best':''}" onclick="window.openBossDetail('${s.bossId}')">
@@ -30721,7 +30726,7 @@ function renderItemDetailCard(itemName) {
 
       <section class="gic-section">
         <div class="gic-quick-take">
-          ⚡ <strong>Quick take @ ${window._mfAtSay()}:</strong> Fastest = <span class="gic-item-link">${best.boss}</span> at <strong>${fmt(best.chance)}</strong> · <strong>${best.r50.toLocaleString()} runs</strong> ≈ <strong style="color:var(--terror)">${fmtHours(best.hrs)}</strong> for 50% drop at ${best.kph}/hr
+          ⚡ <strong>Quick take @ ${window._oddsAtSay()}:</strong> Fastest = <span class="gic-item-link">${best.boss}</span> at <strong>${fmt(best.chance)}</strong> · <strong>${best.r50.toLocaleString()} runs</strong> ≈ <strong style="color:var(--terror)">${fmtHours(best.hrs)}</strong> for 50% drop at ${best.kph}/hr
         </div>
       </section>
 
@@ -30932,7 +30937,7 @@ function renderHeroV31() {
 
     if (final.length === 0) {
       $('hero-picks').innerHTML = `<div style="padding:24px;text-align:center;color:var(--gold-dim);grid-column:1/-1">
-        No chronicle items reachable from <strong>${bossInfo.name}</strong> at ${window._mfAtSay()}.<br>
+        No chronicle items reachable from <strong>${bossInfo.name}</strong> at ${window._oddsAtSay()}.<br>
         <span style="font-size:var(--fs-meta);opacity:.7">try higher MF or another boss</span>
       </div>`;
     } else {
@@ -31227,7 +31232,7 @@ function renderBossDetailCard(bossId, focusDiff) {
 
     <section class="gbc-section">
       <div class="gbc-section-header-row">
-        <div class="gbc-section-label">💎 your top 15 chronicle picks from this boss · @${window._mfAtSay()} · sorted by hours-to-50%</div>
+        <div class="gbc-section-label">💎 your top 15 chronicle picks from this boss · @${window._oddsAtSay()} · sorted by hours-to-50%</div>
         <button class="gbc-section-link" onclick="clearActiveBoss();setTimeout(()=>{document.querySelectorAll('#boss-cards .boss-card.bd-open').forEach(c=>{c.classList.remove('bd-open');c.classList.add('collapsed')});const el=document.getElementById('${boss.id}');if(el){el.classList.remove('collapsed');el.classList.add('bd-open');(window.__alignCard?window.__alignCard('#'+el.id):el.scrollIntoView({behavior:'smooth',block:'start'}));el.querySelector('.boss-header')?.classList.add('flash-gold');setTimeout(()=>el.querySelector('.boss-header')?.classList.remove('flash-gold'),1400)}},120)" title="See every drop across all 6 difficulties — sortable + filterable">View Full Drop Table →</button>
       </div>
       ${top15Html}
@@ -31724,7 +31729,7 @@ function renderBossCards() {
       const diffLabel = bestDiffKey.replace("Tz", " TZ").toUpperCase();
       // v26: null-guard — runsFor + hoursFor can return null when chance is unreachable/blocked
       if (r50 !== null && hrs !== null) {
-        quickTake = `<div class="quick-take">⚡ <strong>Quick take @ ${window._mfAtSay()}:</strong> Best chronicle = <span class="item-link"${_qStyle(bestRow.n,'unique')}>${bestRow.n}</span> at <strong>${fmt(bestChance)}</strong> (${diffLabel}) · <strong>${r50.toLocaleString()} runs</strong> ≈ <strong style="color:var(--terror)">${fmtHours(hrs)}</strong> for 50% drop at ${Math.round(boss.kph * kphMult)}/hr</div>`;
+        quickTake = `<div class="quick-take">⚡ <strong>Quick take @ ${window._oddsAtSay()}:</strong> Best chronicle = <span class="item-link"${_qStyle(bestRow.n,'unique')}>${bestRow.n}</span> at <strong>${fmt(bestChance)}</strong> (${diffLabel}) · <strong>${r50.toLocaleString()} runs</strong> ≈ <strong style="color:var(--terror)">${fmtHours(hrs)}</strong> for 50% drop at ${Math.round(boss.kph * kphMult)}/hr</div>`;
       }
     }
 
@@ -32755,7 +32760,7 @@ function renderAidCard(name, opts){
           <div class="aid-stat">
             <div class="aid-stat-label">chance</div>
             <div class="aid-stat-val">${fmtDrop(focus.adj, name)}</div>
-            <div class="aid-stat-hint">@ ${window._mfAtSay()}</div>
+            <div class="aid-stat-hint">@ ${window._oddsAtSay()}</div>
           </div>
           <div class="aid-stat">
             <div class="aid-stat-label">50% confident</div>
@@ -71494,7 +71499,7 @@ function renderJournal(){
       H.push('<div class="forge-sec forge-sec-done"><div class="rw-stamp-mini rw-band" style="margin:6px 0"><span class="rw-band-t">✓ quick wins complete</span><span class="rw-band-s">all '+s.lowTotal+' uniques found — nothing left to farm</span></div></div>');
     }
     if(show('low')&&s.low.length){
-      H.push('<div class="forge-sec forge-sec-step"><div class="forge-sec-h">⚡ Quick wins <span class="forge-sec-ct">'+s.low.length+'</span><span class="forge-sec-sub">every missing unique, fastest to cross off first - where to farm each, and how long</span></div>');
+      H.push('<div class="forge-sec forge-sec-step"><div class="forge-sec-h">⚡ Quick wins <span class="forge-sec-ct">'+s.low.length+'</span><span class="forge-sec-sub">every missing unique, fastest to cross off first - where to farm each, and how long · odds @ '+esc(window._oddsAtSay())+'</span></div>');
       H.push(_moreWrap(s.low.map(function(x){ return _uniItemCard(x); }), F==='low'?12:6, 'quick wins'));   // v647 — ALL of them, drawer-tailed
       H.push('</div>');
     }

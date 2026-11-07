@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3322 - THE ODDS SAID THE MF AND NEVER THE /PLAYERS THEY WERE COMPUTED AT (v3877, board #43, GrokBot 6698868304)
+GrokBot (11-07, guest box at five widths, the P# slider untouched): "Calculator > Harlequin, NM TZ Mephisto: 1:1,902 '@
+base odds (MF not set)', 1,319 runs ~ 15.0h. Quick wins has the same row: 1:1.9k, ~1,319, ~15h. Neither surface names
+the player count. Only Sessions says 'MF not set - /p1'." The drop model moves with /players (playerMult, the dock's P#
+slider), so a 1:N at /players 1 read the same as one at /players 8. NOW window._oddsAtSay() says both - _mfAtSay's
+unchanged words, then " - /players N", read at call time - and every odds line asks it: the item card's viable sources,
+its Top 6 Sources and Quick take (Calculator), the wishlist's three lines, the boss card's top picks, the focus card's
+chance; the two hero lines that already printed /players keep theirs; Quick wins' header states "odds @ ..." for its
+whole list. Law: test_every_odds_line_names_its_players (the seam's words in node at an unset MF / p1 and 300% / p3; no
+line states its MF through _mfAtSay with no /players beside it; the Quick wins header); red-proofs PROVEN (2/2, scratch).
+
 ### REG-3321 - QUICK WINS: THE ZONE SHOWED THROUGH EVERY MONSTER, THE ITEM WAS NOT THE TITLE, NO PICTURE FLOATED, AND ONE MONSTER STILL DREW TWO PICTURES (v3877, board #102 + #91, his 11-07 asks)
 His words (screenshots of the Bane Ash card): "why is the .gif or image of the boss/monster all messy like this it should
 render just the monster not the area behind it overlapping each other. make it cleaner and better seen and clear";
