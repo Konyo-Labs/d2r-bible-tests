@@ -17,6 +17,10 @@ Nothing here reads his journal. RED_PROOF below. [[unknown-stays-unknown]]
 import inspect
 import json
 import os
+
+#: #107 - chmod(0) makes a file or directory unreadable only where POSIX modes hold; on Windows it only sets
+#: read-only, so a case built on it measures nothing there (its door is pinned by the io-error cases)
+_POSIX_MODES = os.name != "nt"
 import shutil
 import sys
 import tempfile
@@ -125,6 +129,7 @@ class AnUnreadJournalIsNotANightWithNoRows(unittest.TestCase):
         self.assertEqual(rows["journal_gens"]["detail"], "live=yes gens=1,3")
         self.assertIs(rows["journal_gens"]["ok"], True, rows["journal_gens"])
 
+    @unittest.skipUnless(_POSIX_MODES, "chmod(0) cannot make a path unreadable on Windows")
     def test_a_directory_that_will_not_stat_is_not_no_rows(self):
         os.chmod(self.tmp, 0)
         try:
@@ -165,6 +170,7 @@ class AnUnreadJournalIsNotANightWithNoRows(unittest.TestCase):
             rows = self._ask(path)
         self._assert_unread(rows, "disk went away")
 
+    @unittest.skipUnless(_POSIX_MODES, "chmod(0) cannot make a path unreadable on Windows")
     def test_a_file_that_will_not_open_is_not_no_rows(self):
         path = self._at("sessions.jsonl")
         with open(path, "w", encoding="utf-8") as fh:

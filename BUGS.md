@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3369 - #107 THIRD BATCH: THE UNREAD-PATH LAWS, AND ONE WINDOWS GAP THEY HID (v3880)
+Four laws (an unread journal, log, frame directory, journal size) built "unreadable" with chmod(0). On Windows chmod only
+sets read-only, so the path stayed readable and the cases measured nothing. Those cases are skipped there
+(_POSIX_MODES); each door stays pinned by its io-error cases. Simulated before deciding: with every chmod case skipped,
+every proof but one still went RED. That one, the frame law's [0] (an unread directory blocks off air), declares needs posix.
+The log law's directory case now accepts PermissionError on Windows (what opening a directory raises there) beside POSIX's
+IsADirectoryError; both read unread, never "no log yet".
+WINDOWS GAP FIXED IN THE PRODUCT: _live_frame_look - Windows stats a name under a FILE as FileNotFoundError, which read as
+"no frames yet". A frames path that exists and is not a directory is now NotADirectoryError on every platform. +1 case
+(Windows' answer stood in), 1 red-proof, RED.
+
 ### REG-3368 - #107 SECOND BATCH: FIVE MORE LAWS RED ON WINDOWS BY THEIR OWN ASSUMPTIONS (v3880)
 From #107's probe (run 42367869017), each read before changing anything:
 - test_the_windows_eye_is_found_by_its_exe (a Windows law, red ON Windows): it faked HOME, but on Windows

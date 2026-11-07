@@ -48665,6 +48665,11 @@ def _live_frame_look(frames_dir, now=None):
             return {"ok": False, "ages": [], "newest": None, "why": _why_of(exc)}
         ages.append("%s=%.1fs" % (label, age))
         newest = age if newest is None else min(newest, age)
+    # #107 (v3880) - A PATH THAT IS A FILE IS NOT A DIRECTORY WITH NO FRAMES, ON EVERY PLATFORM. POSIX stats a name under a file
+    # as NotADirectoryError (the except above); Windows says FileNotFoundError, which read as "no frames yet" there.
+    if not ages and os.path.exists(frames_dir) and not os.path.isdir(frames_dir):
+        return {"ok": False, "ages": [], "newest": None,
+                "why": "NotADirectoryError: the frames path %s is a file, not a directory" % os.path.basename(str(frames_dir))}
     return {"ok": True, "ages": ages, "newest": newest, "why": None}
 
 

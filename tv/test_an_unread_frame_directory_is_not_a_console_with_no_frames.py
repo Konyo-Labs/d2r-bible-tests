@@ -21,6 +21,10 @@ RED_PROOF below. [[unknown-stays-unknown]]
 import inspect
 import io
 import os
+
+#: #107 - chmod(0) makes a file or directory unreadable only where POSIX modes hold; on Windows it only sets
+#: read-only, so a case built on it measures nothing there (its door is pinned by the io-error cases)
+_POSIX_MODES = os.name != "nt"
 import shutil
 import sys
 import tempfile
@@ -114,6 +118,7 @@ class AnUnreadFrameDirectoryIsNotAConsoleWithNoFrames(unittest.TestCase):
         self.assertIn("OFF by this console's setting", row["detail"])
         self.assertNotIn("UNMEASURED", row["detail"])
 
+    @unittest.skipUnless(_POSIX_MODES, "chmod(0) cannot make a path unreadable on Windows")
     def test_a_directory_that_will_not_stat_is_not_no_frames(self):
         os.chmod(self.tmp, 0)
         try:
@@ -126,6 +131,7 @@ class AnUnreadFrameDirectoryIsNotAConsoleWithNoFrames(unittest.TestCase):
         self.assertIn("PermissionError", got["why"])
         self.assertNotIn("eye.jpg=", got["why"])
 
+    @unittest.skipUnless(_POSIX_MODES, "chmod(0) cannot make a path unreadable on Windows")
     def test_the_check_does_not_call_an_unread_directory_empty(self):
         os.chmod(self.tmp, 0)
         try:
@@ -150,6 +156,20 @@ class AnUnreadFrameDirectoryIsNotAConsoleWithNoFrames(unittest.TestCase):
         # REG-1824 — off air the unread row is not a pass, and it is not a NO-GO either.
         off_air_ok = not any((not c["ok"]) and c["severity"] == "block" for c in [quiet])
         self.assertIs(off_air_ok, True)
+
+    def test_a_file_path_is_not_no_frames_the_way_windows_answers_too(self):
+        """#107 (v3880) - Windows stats a name under a FILE as FileNotFoundError, not NotADirectoryError, so the frames path
+        being a file read as "no frames yet" there. Windows' answer is stood in here, on every platform."""
+        from unittest import mock
+        path = os.path.join(self.tmp, "a_file_not_a_dir")
+        with open(path, "wb") as fh:
+            fh.write(b"x")
+        def windows_stat(fp):
+            raise FileNotFoundError(3, "The system cannot find the path specified", fp)
+        with mock.patch.object(ca.os.path, "getmtime", windows_stat):
+            got = ca._live_frame_look(path)
+        self.assertIs(got["ok"], False, got)
+        self.assertIn("NotADirectoryError", got["why"])
 
     def test_a_path_that_is_not_a_directory_is_not_no_frames(self):
         path = os.path.join(self.tmp, "not_a_dir")
@@ -200,7 +220,7 @@ RED_PROOF = [
         "file": "control_app.py",
         "find": "            \"live_frames\", False, (\"block\" if live else \"warn\"),\n",
         "replace": "            \"live_frames\", False, \"block\",\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-1801 - a failed stat is skipped, so an unreadable directory looks like no frames",
@@ -232,6 +252,11 @@ RED_PROOF = [
                    "            return {\"ok\": False, \"ages\": [], \"newest\": None, \"why\": \"missing\"}\n",
         "matches": 1,
     },
+    {"why": "#107 - on Windows a frames path that is a file reads as no frames yet again",
+     "file": "control_app.py",
+     "find": "    if not ages and os.path.exists(frames_dir) and not os.path.isdir(frames_dir):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
 ]
 
 

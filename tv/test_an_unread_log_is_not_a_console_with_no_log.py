@@ -16,6 +16,10 @@ RED_PROOF below. [[unknown-stays-unknown]]
 import inspect
 import io
 import os
+
+#: #107 - chmod(0) makes a file or directory unreadable only where POSIX modes hold; on Windows it only sets
+#: read-only, so a case built on it measures nothing there (its door is pinned by the io-error cases)
+_POSIX_MODES = os.name != "nt"
 import shutil
 import sys
 import tempfile
@@ -65,6 +69,7 @@ class AnUnreadLogIsNotAConsoleWithNoLog(unittest.TestCase):
         self.assertEqual(got["log"], "TAIL")
         self.assertIsNone(got["why"])
 
+    @unittest.skipUnless(_POSIX_MODES, "chmod(0) cannot make a path unreadable on Windows")
     def test_a_file_that_will_not_read_is_not_no_log_yet(self):
         with open(self.path, "wb") as fh:
             fh.write(b"secret\n")
@@ -83,7 +88,8 @@ class AnUnreadLogIsNotAConsoleWithNoLog(unittest.TestCase):
         got = ca._console_log_read(100, path=self.tmp)
         self.assertIs(got["ok"], False, got)
         self.assertIsNone(got["log"])
-        self.assertIn("IsADirectoryError", got["why"])
+        # #107 - opening a directory is IsADirectoryError on POSIX and PermissionError on Windows; either is unread, not no log
+        self.assertTrue("IsADirectoryError" in got["why"] or (os.name == "nt" and "PermissionError" in got["why"]), got["why"])
 
     def test_an_io_error_is_not_no_log_yet(self):
         with mock.patch("builtins.open", side_effect=OSError("disk went away")):

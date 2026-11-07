@@ -15,6 +15,10 @@ Nothing here reads his journal. RED_PROOF below. [[unknown-stays-unknown]]
 import inspect
 import json
 import os
+
+#: #107 - chmod(0) makes a file or directory unreadable only where POSIX modes hold; on Windows it only sets
+#: read-only, so a case built on it measures nothing there (its door is pinned by the io-error cases)
+_POSIX_MODES = os.name != "nt"
 import shutil
 import subprocess
 import sys
@@ -97,6 +101,7 @@ class AnUnreadJournalSizeIsNotACleanLedger(unittest.TestCase):
             fh.write(b"x" * 1500000)
         self.assertEqual(self._ask(path), 1.5)
 
+    @unittest.skipUnless(_POSIX_MODES, "chmod(0) cannot make a path unreadable on Windows")
     def test_a_directory_that_will_not_stat_is_not_zero(self):
         os.chmod(self.tmp, 0)
         try:
