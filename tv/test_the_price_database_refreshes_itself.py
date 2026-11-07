@@ -101,6 +101,19 @@ class ThePriceDatabaseRefreshesItself(unittest.TestCase):
         self.assertEqual(due[0][1], "Shako", due)
         self.assertIsNone(due[0][2], "an unreadable read time was handed on as a number: %r" % (due[0],))
 
+    def test_a_read_time_that_is_not_a_finite_moment_never_unsorts_the_list(self):
+        """the second eye on v3879 (Grok CLI), REPRODUCED: readAt "nan" parsed to nan, which is not a total order - one such
+        row left the list unsorted (an item read 10 days ago asked before ones read 40 and 70 days ago); "inf" and a negative
+        time sorted as real. Each is UNKNOWN and asked first, and the rest stay stalest-first."""
+        db = _db([("Shako", 10, 1), ("Gull", 40, 2), ("Arachnid Mesh", 70, 3), ("Bane Ash", 5, 1), ("Ber", 6, 1), ("Jah", 7, 1)])
+        db["items"][P.key_of("Bane Ash")]["readAt"] = "nan"
+        db["items"][P.key_of("Ber")]["readAt"] = "inf"
+        db["items"][P.key_of("Jah")]["readAt"] = -50
+        due = R.stale_items(db, NOW + 300 * DAY)
+        self.assertEqual(sorted(d[1] for d in due[:3]), ["Bane Ash", "Ber", "Jah"], due)
+        self.assertTrue(all(d[2] is None for d in due[:3]), "a non-finite or negative read time was handed on as a number: %r" % (due,))
+        self.assertEqual([d[1] for d in due[3:]], ["Arachnid Mesh", "Gull", "Shako"], "the known read times are not stalest first")
+
     def test_the_lane_is_wired_in_every_registry(self):
         with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
             app = fh.read()
@@ -122,6 +135,10 @@ class ThePriceDatabaseRefreshesItself(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "the second eye on v3879 - a nan / inf / negative read time sorts as a real one again (nan unsorts the whole list)",
+     "file": "tv/d2jsp_refresh.py",
+     "find": "            if ra is not None and not (math.isfinite(ra) and ra >= 0):\n                ra = None\n",
+     "replace": "            pass\n", "matches": 1},
     {
         "why": "v3878 - one item whose read time will not parse raises out of stale_items and stops the lane for all",
         "file": "d2jsp_refresh.py",

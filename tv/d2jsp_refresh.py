@@ -17,6 +17,7 @@ This is the lane that calls it, paced so it can never be felt:
 Every pass returns what it did and what it owes, for the lane's trace and the doctor's row. Never raises.
 [[heart-first]] [[unknown-stays-unknown]]
 """
+import math
 import time
 
 import d2jsp_price_db as P
@@ -100,6 +101,11 @@ def stale_items(db, now):
                 ra = float(it.get("readAt") or 0)      # never read: 0, the stalest
             except (TypeError, ValueError):
                 ra = None                              # a read time that will not parse is UNKNOWN, never a made-up 0
+            # the second eye on v3879 (Grok CLI), reproduced: a readAt of "nan" parsed to nan, and nan is not a total order -
+            # one such row left the list UNSORTED (an item read at 500 asked before one read at 100); "inf" and a negative
+            # time sorted as real. A read time that is not a finite moment at or after 0 is UNKNOWN, asked first.
+            if ra is not None and not (math.isfinite(ra) and ra >= 0):
+                ra = None
             out.append((k, str(it["item"]), ra))
     out.sort(key=lambda r: (r[2] is not None, r[2] or 0.0, r[0]))     # an unknown read time is asked first
     return out

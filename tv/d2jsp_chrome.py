@@ -125,7 +125,7 @@ def restore_value(root):
 
 def profile_in_use(root):
     """Does a Chrome hold this profile right now? Chrome keeps SingletonLock (a link to "<host>-<pid>") in the profile
-    while it runs. -> bool; a lock whose pid is gone is not in use.
+    while it runs. -> True / False / None (cannot be told, Windows); a lock whose pid is gone is not in use.
 
     REG-3355 (v3878 pre-flight, test_a_liveness_probe_never_sends_ctrl_c_on_windows) - ON WINDOWS NEITHER HALF HOLDS:
     os.kill(pid, 0) there is CTRL_C_EVENT, not a probe, and Chrome on Windows keeps no SingletonLock at all - it holds
@@ -136,10 +136,17 @@ def profile_in_use(root):
         lf = os.path.join(root, "lockfile")
         if not os.path.exists(lf):
             return False
+        # the second eye on v3879 (Grok CLI): EVERY OSError read "Chrome holds the profile" - a directory where the lock should
+        # be, or a path that will not open for any other reason, is not a Chrome; it cannot be told. Windows reports a
+        # sharing violation through os.open as EACCES (PermissionError), so that alone is a Chrome holding it.
+        if os.path.isdir(lf):
+            return None                 # cannot be told - UNKNOWN, never a claim (the caller launches nothing over it)
         try:
             fd = os.open(lf, os.O_RDONLY)
+        except PermissionError:
+            return True                 # held with no sharing (a sharing violation): in use
         except OSError:
-            return True                 # held with no sharing (a sharing violation), or it cannot be told: in use
+            return None                 # any other refusal cannot be told: UNKNOWN
         os.close(fd)
         return False
     lk = os.path.join(root, "SingletonLock")
@@ -223,7 +230,11 @@ def ensure_restore_on(root, launch=None, platform=None):
     v = restore_value(root)
     if v == 1:
         return "fine", "the console's own d2jsp window continues where it left off"
-    if profile_in_use(root):
+    held = profile_in_use(root)
+    if held is None:
+        return "unknown", ("whether a Chrome holds the console's d2jsp profile could not be told - nothing is launched "
+                           "over it")
+    if held:
         return "waiting", ("the console's d2jsp window is open and Chrome holds its profile - it is set the next time "
                            "that window is closed")
     try:

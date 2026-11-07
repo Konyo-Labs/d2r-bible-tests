@@ -112,6 +112,21 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3399 - A WINDOWS d2jsp PROFILE LOCK THAT COULD NOT BE READ SAID "CHROME HOLDS IT" (v3881, the second eye on v3879)
+The Grok CLI on v3879: profile_in_use's Windows branch returned True for EVERY OSError from os.open - a directory where the
+lockfile should be, a too-long path, an invalid argument all read "Chrome holds the profile", a claim nobody measured. Windows
+reports a sharing violation through os.open as EACCES (PermissionError), so that alone is a Chrome holding it; a directory or any
+other refusal is None (cannot be told), and the repair book says "unknown" - never "waiting", which claims the window is open -
+and launches nothing over it. Latent today (its only caller, ensure_restore_on, runs on the Mac). Law:
+test_the_mac_signs_in_through_its_own_d2jsp_window (+2 cases, +2 red-proofs; two older red-proofs re-pointed onto the rewritten
+lines; 5/5 of the file's REG-3349/3355 proofs RED).
+### REG-3398 - ONE "nan" READ TIME LEFT THE d2jsp REFRESH LIST UNSORTED (v3881, the second eye on v3879, reproduced)
+The Grok CLI on v3879: stale_items parsed readAt "nan" to nan, which is not a total order. REPRODUCED: with a nan row the lane's
+order was a(read at 500), b(nan), f(-50), d(100), c(300), e(inf) - the FRESHEST item asked first, a negative and an infinite read
+time sorted as real. (Its claim that sorted() raises was wrong: it silently mis-sorts.) A read time that is not a finite moment at
+or after 0 is now UNKNOWN and asked first; the rest stay stalest-first. Law: test_the_price_database_refreshes_itself (+1 case,
++1 red-proof RED). The same look's proof_costs finding was REFUTED by reproduction: the cost file's reader already drops None,
+string and bool rows, so max() never sees one (the committed 272.8 s price kept) - no change.
 ### REG-3397 - "SPIRIT" + ENTER OPENED SPIRIT WARD, AND HALF THE SETS COULD NOT BE SEARCHED AT ALL (v3881, GrokBot's v3879 pass)
 GrokBot (#230 21:24): "searching 'Spirit' and pressing Enter opens Spirit Ward, not the runeword", and "Bul-Kathos' Children ...
 the search answers 'No boss, zone, act, or item matches'". MEASURED in a browser on v3880: the runeword's entries are labelled

@@ -99,7 +99,27 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
                 raise PermissionError(13, "The process cannot access the file because it is being used")
             with mock.patch.object(D.os, "open", held):
                 self.assertTrue(D.profile_in_use(self.root), "a lockfile Chrome holds read as free")
+
+            # the second eye on v3879 (Grok CLI): every OSError read "Chrome holds the profile". Anything but the sharing
+            # violation (EACCES) cannot be told - None (UNKNOWN), never a claim either way
+            def other(*a, **k):
+                raise OSError(22, "Invalid argument")
+            with mock.patch.object(D.os, "open", other):
+                self.assertIsNone(D.profile_in_use(self.root), "a lockfile that will not open for another reason read as a Chrome")
+            os.remove(os.path.join(self.root, "lockfile"))
+            os.makedirs(os.path.join(self.root, "lockfile"))
+            self.assertIsNone(D.profile_in_use(self.root), "a directory where the lock should be read as a Chrome holding it")
         self.assertEqual(killed, [], "a signal was sent on Windows - os.kill(pid, 0) is CTRL_C_EVENT there")
+
+    def test_a_lock_that_cannot_be_told_launches_nothing_and_says_unknown(self):
+        """the second eye on v3879 - the repair book says UNKNOWN for a lock it cannot read, never 'waiting' (a claim that the
+        window is open), and nothing is launched over it"""
+        os.makedirs(self.root)
+        launched = []
+        with mock.patch.object(D, "restore_value", lambda r: 0), mock.patch.object(D, "profile_in_use", lambda r: None):
+            st, why = D.ensure_restore_on(self.root, launch=lambda r: launched.append(r), platform="darwin")
+        self.assertEqual((st, launched), ("unknown", []), why)
+        self.assertIn("could not be told", why)
 
     def test_it_is_set_through_chromes_own_settings_by_default(self):
         """REG-3349 (his 11-07: "by default this should be done and not optional on the console end. it should be
@@ -233,6 +253,13 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "the second eye on v3879 - any OSError reads as Chrome holding the profile again",
+     "file": "tv/d2jsp_chrome.py",
+     "find": "        except OSError:\n            return None                 # any other refusal cannot be told: UNKNOWN\n",
+     "replace": "        except OSError:\n            return True\n", "matches": 1},
+    {"why": "the second eye on v3879 - a lock that cannot be told reads as 'waiting' (the window open) again",
+     "file": "tv/d2jsp_chrome.py",
+     "find": "    if held is None:\n", "replace": "    if False:\n", "matches": 1},
     {
         "why": "REG-3355 - Windows falls through to the Mac's SingletonLock and os.kill: a Ctrl-C, and his Chrome read as free",
         "file": "d2jsp_chrome.py",
@@ -243,8 +270,8 @@ RED_PROOF = [
     {
         "why": "REG-3355 - a lockfile Chrome holds (it will not open) reads as free on Windows",
         "file": "d2jsp_chrome.py",
-        "find": "        except OSError:\n            return True                 # held with no sharing",
-        "replace": "        except OSError:\n            return False                # held with no sharing",
+        "find": "        except PermissionError:\n            return True                 # held with no sharing",
+        "replace": "        except PermissionError:\n            return False                # held with no sharing",
         "matches": 1,
     },
     {"why": "#24 - the seed rewrites a restore setting Chrome resets, every launch",
@@ -259,7 +286,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3349 - Chrome is started on a profile another Chrome holds",
      "file": "tv/d2jsp_chrome.py",
-     "find": "    if profile_in_use(root):\n        return \"waiting\"",
+     "find": "    if held:\n        return \"waiting\"",
      "replace": "    if False:\n        return \"waiting\"",
      "matches": 1},
     {"why": "REG-3349 - the repair book never sets it, so it stays off until someone clicks",
