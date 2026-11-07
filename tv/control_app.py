@@ -487,6 +487,16 @@ def _bin_short(b):
     return os.path.join(os.path.basename(os.path.dirname(str(b))), os.path.basename(str(b)))
 
 
+def _auth_checked_say(au, now_ms):
+    """REG-3323 (#51, GrokBot 6695970506 on his window: the tip "names the program check (claude auth status) but gives no
+    last-checked time"). WHEN the CLI last answered, for every lamp sentence built on its word. -> str"""
+    at = au.get("askedAtMs") if isinstance(au, dict) else None
+    if isinstance(at, bool) or not isinstance(at, (int, float)):
+        return "check time not on record"
+    m = max(0, int((float(now_ms) - float(at)) / 60000))
+    return "checked just now" if m < 1 else ("checked %d min ago" % m if m < 120 else "checked %d h ago" % (m // 60))
+
+
 def _claude_auth_state(now=None, _probe=None, _thread=None, _watching=None, _cred=None, _bin=None):
     """The last `claude auth status` answer (None until the first has come back). Starts a refresh when it is older than
     its cadence and none is running - the caller never waits on the CLI. -> dict | None
@@ -668,8 +678,8 @@ def _reader_health(now_ms=None, rows=None, g5=None, use_cache=True, auth=None):
     _au = auth if auth is not None else (_claude_auth_state(_cred=_claude_cred_mtime) if _live else None)
     if isinstance(_au, dict) and _au.get("loggedIn") is False and lamp.get("state") != "on":
         lamp.update(state="off", kind="signed-out", needsLogin=True,
-                    why="Claude is signed out on this PC (%s) - click CLAUDE or SIGN IN at the top right, or run "
-                        "`claude` and type /login" % (_au.get("why") or "claude auth status"))
+                    why="Claude is signed out on this PC (%s, %s) - click CLAUDE or SIGN IN at the top right, or run "
+                        "`claude` and type /login" % (_au.get("why") or "claude auth status", _auth_checked_say(_au, now)))
     elif (isinstance(_au, dict) and _au.get("loggedIn") is True and lamp.get("kind") == "signed-out"
           and isinstance(_au.get("askedAtMs"), (int, float)) and lamp.get("lastFailTs")
           and _au["askedAtMs"] > lamp["lastFailTs"]):
@@ -682,13 +692,14 @@ def _reader_health(now_ms=None, rows=None, g5=None, use_cache=True, auth=None):
                                                     max(0, int((now - float(_au["askedAtMs"])) / 60000))))
     elif (isinstance(_au, dict) and _au.get("loggedIn") is True and lamp.get("state") == "unknown"
           and lamp.get("kind") == "timed-out"):
-        lamp["why"] = "%s. Claude is signed in (%s)" % (lamp["why"], _au.get("why") or "claude auth status")
+        lamp["why"] = "%s. Claude is signed in (%s, %s)" % (lamp["why"], _au.get("why") or "claude auth status",
+                                                          _auth_checked_say(_au, now))
     elif isinstance(_au, dict) and _au.get("loggedIn") is True and lamp.get("state") == "unknown":
         # his "nothing is showing me the CLAUDE specifically on and off light" (2026-09-30): a PC that has not read
         # in 2 h sat at "?" while its CLI said signed in. Signed in is connected; the reads still decide once there
         # are any (a read that FAILED stays off, whatever the sign-in says).
-        lamp.update(state="on", kind="on", why="Claude is signed in on this PC (%s) - no read in the last 2 h to judge it by"
-                                                % (_au.get("why") or "claude auth status"))
+        lamp.update(state="on", kind="on", why="Claude is signed in on this PC (%s, %s) - no read in the last 2 h to judge it by"
+                                                % (_au.get("why") or "claude auth status", _auth_checked_say(_au, now)))
     try:
         # REG-1618: "waiting" for as long as the sign-in he clicked is being finished - on the Mac the Terminal is not
         # ours to watch, so the click's own clock (claude_signin.WATCH_S) - and never once the lamp is back on

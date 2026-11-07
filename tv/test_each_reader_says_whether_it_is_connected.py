@@ -121,6 +121,24 @@ class ClaudeSaysWhatItJustDid(unittest.TestCase):
                          "signed in turned a read that ran out of time into 'no read to judge it by': %r" % slow)
         self.assertIn("Claude is signed in", slow["why"])
 
+    def test_every_sign_in_sentence_says_when_it_was_checked(self):
+        """REG-3323 (#51) - GrokBot on his window: the tip named the program it asks (claude auth status) and never WHEN.
+        Signed in with no read, signed out, and a signed-in note on a timed-out read each say when the CLI answered;
+        an answer with no time says so, never a guessed one."""
+        on = {"loggedIn": True, "why": "claude auth status: signed in", "askedAtMs": NOW - 7 * 60000}
+        h = ca._reader_health(now_ms=NOW, rows=[], g5=G5_ON, use_cache=False, auth=on)["claude"]
+        self.assertEqual(h["state"], "on", h)
+        self.assertIn("claude auth status: signed in, checked 7 min ago", h["why"])
+        off = {"loggedIn": False, "why": "claude auth status: signed out (none)", "askedAtMs": NOW - 3 * 60000}
+        h = ca._reader_health(now_ms=NOW, rows=[], g5=G5_ON, use_cache=False, auth=off)["claude"]
+        self.assertEqual(h["state"], "off", h)
+        self.assertIn("checked 3 min ago", h["why"])
+        h = ca._reader_health(now_ms=NOW, rows=[], g5=G5_ON, use_cache=False, auth={"loggedIn": True, "why": "x"})["claude"]
+        self.assertIn("check time not on record", h["why"], "an answer with no time read as a time")
+        slow = ca._reader_health(now_ms=NOW, rows=[_at(GOOD, 20), _at(dict(ALT_FAILED, raw="claude timed out"), 1)],
+                                 g5=G5_ON, use_cache=False, auth=on)["claude"]
+        self.assertIn("checked 7 min ago", slow["why"])
+
     def test_the_probe_stamps_when_it_was_asked(self):
         src = open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
         self.assertEqual(src.count('_v["askedAtMs"] = int(time.time() * 1000)'), 1,
@@ -258,6 +276,11 @@ process.stdout.write(JSON.stringify(out));
 
 
 RED_PROOF = [
+    {"why": "REG-3323 - the Claude lamp's sign-in sentence never says when the CLI last answered (GrokBot on his window)",
+     "file": "control_app.py",
+     "find": "    return \"checked just now\" if m < 1 else (\"checked %d min ago\" % m if m < 120 else \"checked %d h ago\" % (m // 60))\n",
+     "replace": "    return \"\"\n",
+     "matches": 1},
     {"why": "REG-3227 - a read that ran out of time lights Claude OFF again (his ALT 11-06: 'CLAUDE disconnected')",
      "file": "tv/control_app.py",
      "find": "            _slow = (not lamp[\"needsLogin\"]) and any(w in _why.lower() for w in _READER_TIMEOUT_WORDS)\n",

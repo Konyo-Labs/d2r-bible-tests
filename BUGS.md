@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3323 - THE CLAUDE LIGHT NAMED WHAT IT ASKS BUT NEVER WHEN IT LAST ASKED (v3877, board #51, GrokBot 6695970506)
+GrokBot on his live window (11-06 21:23Z): "Claude (primary reader): CONNECTED - Claude is signed in on this PC (claude
+auth status: signed in) - no read in the last 2 h to judge it by ... It names the program check (claude auth status) but
+gives no last-checked time." The probe has stamped askedAtMs since REG-3227; only the "signed in again" sentence used it.
+NOW _auth_checked_say(au, now) words it - "checked just now" / "checked N min ago" / "checked N h ago", or "check time
+not on record" when the answer carries none - and every lamp sentence built on the CLI's word carries it: signed in with
+no read, signed out, and the signed-in note on a read that ran out of time. Law: test_each_reader_says_whether_it_is_
+connected (+ test_every_sign_in_sentence_says_when_it_was_checked); red-proof PROVEN (RED, file restored).
+
 ### REG-3322 - THE ODDS SAID THE MF AND NEVER THE /PLAYERS THEY WERE COMPUTED AT (v3877, board #43, GrokBot 6698868304)
 GrokBot (11-07, guest box at five widths, the P# slider untouched): "Calculator > Harlequin, NM TZ Mephisto: 1:1,902 '@
 base odds (MF not set)', 1,319 runs ~ 15.0h. Quick wins has the same row: 1:1.9k, ~1,319, ~15h. Neither surface names
