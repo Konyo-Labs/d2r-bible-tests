@@ -23,6 +23,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
+import fixture_tmp as _fx_tmp  # noqa: E402
+_fx_tmp.contain()   # v3880 - its mkdtemp scratch is collected (test_a_test_run_leaves_no_scratch_dirs)
 from console_safe import enable as _console_safe_enable  # noqa: E402
 _console_safe_enable()
 import d2jsp_refresh as DR  # noqa: E402
