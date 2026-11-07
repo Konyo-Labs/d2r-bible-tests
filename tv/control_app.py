@@ -4928,6 +4928,8 @@ def _console_beacon(event="hb"):
             # #108 — this PC's two readers (CLAUDE primary, GROK shadow): can each one read here? so HIS fleet card can
             # say a signed-out PC without anyone standing at it. None = this console cannot measure them (UNKNOWN).
             "readers": _readers_for_wire(),
+            # #56 - did d2jsp answer a REAL price search on this PC, and when (one a day at least); ok None = never asked
+            "d2jsp": _d2jsp_check_for_wire(),
             # #229 — its OWN system: is its tree established, how many reels on its shelf. Counts only.
             "system": _system_for_wire(),
             # #41 rank 22 (REG-1564) — what THIS PC's character picker offers for the Body Armor slot, beside what
@@ -32786,6 +32788,23 @@ _PRICE_REFRESH_FIRST_S = 900.0
 _PRICE_REFRESH_EVERY_S = 1200.0
 
 
+def _d2jsp_check_path():
+    """#56 - this PC's last real d2jsp read (d2jsp_refresh.check_note), beside its price database."""
+    import d2jsp_refresh as _dr
+    return os.path.join(_fixture_root_for_state(), _dr.CHECK_NAME)
+
+
+def _d2jsp_check_for_wire():
+    """#56 (his 11-05 worry: "d2jsp works on Dean's PC? the MacBook never did") - did d2jsp answer a real price search on
+    THIS PC, and when: {ok, at, ageS, item, reason, why}, for its fleet row. ok None = never asked (UNKNOWN). Never raises."""
+    try:
+        import d2jsp_refresh as _dr
+        return _dr.check_for_wire(_dr.check_load(_d2jsp_check_path()), time.time())
+    except Exception as e:
+        return {"ok": None, "at": None, "ageS": None, "item": None, "reason": None,
+                "why": "this PC's d2jsp check could not be read (%s)" % type(e).__name__}
+
+
 def _price_refresh_loop():
     """#96 / #88 (his 11-06: "so slowly after time the prices just slowly calibrate themselves") - THE PRICE DATABASE
     REFRESHES ITSELF. d2jsp_price_db.fresh_refresh was written in v3849 and nothing ever called it: a price moved only when
@@ -32808,7 +32827,8 @@ def _price_refresh_loop():
             r = _dr.run_once(os.path.join(_fixture_root_for_state(), "d2jsp_price_db.json"),
                              quote=lambda name: _dq.d2jsp_quote(name, "http://" + _me, _me, CONTROL_PORT,
                                                                 sec_fetch_site="same-origin")[1],
-                             fold=_d2jsp_db_fold, stand_aside=_sp_yield_here)
+                             fold=_d2jsp_db_fold, stand_aside=_sp_yield_here,
+                             check_path=_d2jsp_check_path())     # #56 - every read recorded; one a day at least
             import lane_trace as _lt
             _lt.note('tvd-price-refresh', worked=r.get("worked"), owed=r.get("owed"), asked=r.get("asked"),
                      reason=r.get("reason"), why=str(r.get("why") or "")[:200])

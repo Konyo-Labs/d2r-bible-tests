@@ -675,6 +675,20 @@ export async function onRequestPost(context) {
       };
       return { claude: lamp(r.claude), grok: lamp(r.grok) };
     })(body.readers),
+    /* #56 (his 11-05 worry: "d2jsp works on Dean's PC? the MacBook never did") - did d2jsp answer a REAL price search on
+       THAT PC, and when. ok stays true/false/null (null = never asked: UNKNOWN), the time clamped to now, the words capped.
+       Absent stays null, so an older console draws UNKNOWN, never a guessed pass. [[unknown-stays-unknown]] */
+    d2jsp: (function (d) {
+      if (!d || typeof d !== 'object') return null;
+      const at = (typeof d.at === 'number' && Number.isFinite(d.at) && d.at > 0 && d.at <= Date.now() + 60000) ? d.at : null;
+      return {
+        ok: d.ok === true ? true : (d.ok === false ? false : null),
+        at: at,
+        item: (typeof d.item === 'string' && d.item.trim()) ? cutAtWord(d.item.replace(/\s+/g, ' ').trim(), 40) : null,
+        reason: (typeof d.reason === 'string' && /^[a-z-]{1,24}$/.test(d.reason)) ? d.reason : null,
+        why: (typeof d.why === 'string' && d.why.trim()) ? cutAtWord(d.why.replace(/\s+/g, ' ').trim(), 160) : null,
+      };
+    })(body.d2jsp),
     ip: request.headers.get('CF-Connecting-IP') || '',
     country: cf.country || '',
     city: cf.city || '',
@@ -801,6 +815,12 @@ export async function onRequestPost(context) {
   };
   // #108 — a reader that stops (or starts) reading on a PC is what its row says, so a flip is news; the reason's words
   // are not (the ok counts inside it move every read).
+  // #56 - a PC whose d2jsp read starts or stops working is news (its row says it); a newer read with the same outcome is
+  // not (the time moves every pass, and the 15-min refresh carries it)
+  const d2jspNews = (r) => {
+    const x = r && r.d2jsp;
+    return (x && typeof x === 'object') ? JSON.stringify([x.ok, x.reason]) : null;
+  };
   const readersNews = (r) => {
     const x = r && r.readers;
     return (x && typeof x === 'object')
@@ -893,6 +913,7 @@ export async function onRequestPost(context) {
     || pickerNews(prev) !== pickerNews(rec)
     || shadowNews(prev) !== shadowNews(rec)
     || readersNews(prev) !== readersNews(rec)
+    || d2jspNews(prev) !== d2jspNews(rec)
     || !!(prev.eye && prev.eye.live) !== !!(rec.eye && rec.eye.live);
 
   /* REG-3266 (the Grok CLI on REG-3161, #231 6681760195) - THE DAILY CEILING IS HELD HERE, NOT ONLY WRITTEN DOWN. KV_WRITES

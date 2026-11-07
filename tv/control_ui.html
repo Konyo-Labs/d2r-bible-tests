@@ -28709,6 +28709,26 @@ function escC(s) {
              why: 'CLAUDE (primary): ' + String(c.why || 'no reason given') + ' | GROK (shadow): ' + String(g.why || 'no reason given') });
   };
   window._fleetReadersPart = _fleetReadersPart;
+  /* #56 (his 11-05 worry: "d2jsp works on Dean's PC? the MacBook never did") - D2JSP, IN THE BOX: did d2jsp answer a REAL
+     price search on that PC, and how long ago (one a day at least, through that PC's own refresh lane). An older build
+     sends no field (UNKNOWN, said so); never asked is UNKNOWN; a search that did not read is the warning, with its reason. */
+  var _fleetD2jspPart = function (m, nowMs) {
+    var d = (m && m.d2jsp && typeof m.d2jsp === 'object') ? m.d2jsp : null;
+    if (!d) {
+      return _fleetPart('d2jsp', ['UNKNOWN', 'an older build'], { unk: true,
+               why: 'this console did not say whether d2jsp answers on it (a build older than the field)' });
+    }
+    var ago = (typeof d.at === 'number' && typeof nowMs === 'number') ? _fleetAgeTxt(Math.max(0, (nowMs - d.at) / 1000)) : null;
+    if (d.ok === true) {
+      return _fleetPart('d2jsp', ['reads', ago || 'when UNKNOWN'], { why: String(d.why || 'd2jsp answered a real price search') });
+    }
+    if (d.ok === false) {
+      return _fleetPart('d2jsp', [d.reason === 'need-login' ? 'signed out' : ('did not read (' + String(d.reason || 'no answer') + ')'),
+               ago || 'when UNKNOWN'], { warn: true, why: String(d.why || 'the last price search did not read') });
+    }
+    return _fleetPart('d2jsp', ['UNKNOWN', 'never asked'], { unk: true, why: String(d.why || 'this PC has not asked d2jsp yet') });
+  };
+  window._fleetD2jspPart = _fleetD2jspPart;
   var _fleetSysParts = function (m, nowMs) {
     var sy = (m && m.system && typeof m.system === 'object') ? m.system : null;
     var out = [];
@@ -28950,6 +28970,8 @@ function escC(s) {
     }
     /* #108 — its two readers, last in the box: can CLAUDE and GROK read on that PC */
     out.push(_fleetReadersPart(m));
+    /* #56 - and whether d2jsp answers a real price search there */
+    out.push(_fleetD2jspPart(m, nowMs));
     return out;
   };
   /* #86 gap 12 (REG-1772) — ONLINE IS A PULSE. THE KEY IS ONLY STORAGE.

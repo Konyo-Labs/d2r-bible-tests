@@ -26,6 +26,64 @@ LANE = "tvd-price-refresh"
 FIRST_S = 900.0
 EVERY_S = 1200.0
 
+#: #56 (his 11-05 worry: "d2jsp works on Dean's PC? the MacBook never did") - A REAL d2jsp READ ON EVERY PC, ONCE A DAY,
+#: ITS OUTCOME ON THAT PC'S FLEET ROW. Every pass that asks the forum records what came back; a day with nothing due asks
+#: CHECK_ITEM once, so a PC whose database is all fresh still proves its sign-in works. It honours every stand-aside a
+#: refresh does (checks running, he plays, a sweep reads, a push grades). Nothing is posted; a signed-out PC says so.
+CHECK_EVERY_S = 86400.0
+CHECK_ITEM = "Shako"
+CHECK_NAME = ".d2jsp_check.json"
+
+
+def check_load(path):
+    """The last real read's record ({at, item, reason, ok}) or None (never read, or the file does not parse)."""
+    import json
+    try:
+        with open(path, encoding="utf-8") as fh:
+            rec = json.load(fh)
+    except Exception:
+        return None
+    return rec if isinstance(rec, dict) else None
+
+
+def check_due(rec, now):
+    """True when this PC has not asked the forum for CHECK_EVERY_S (or never has)."""
+    at = (rec or {}).get("at")
+    if not isinstance(at, (int, float)) or isinstance(at, bool):
+        return True
+    return now - at / 1000.0 >= CHECK_EVERY_S
+
+
+def check_note(path, item, reason, now):
+    """Record one real read, atomically. ok is True only for a read d2jsp answered ("read"). Never raises."""
+    import json
+    import os
+    rec = {"at": int(now * 1000), "item": str(item or "")[:40], "reason": str(reason or "no answer")[:24],
+           "ok": reason == "read"}
+    try:
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(rec, fh)
+        os.replace(tmp, path)
+    except Exception:
+        pass
+    return rec
+
+
+def check_for_wire(rec, now):
+    """What a fleet row carries: {ok, at, ageS, item, reason, why}. ok None = this PC has never asked d2jsp (UNKNOWN)."""
+    if not isinstance(rec, dict) or not isinstance(rec.get("at"), (int, float)) or isinstance(rec.get("at"), bool):
+        return {"ok": None, "at": None, "ageS": None, "item": None, "reason": None,
+                "why": "this PC has not asked d2jsp for a price since this check began"}
+    age = max(0.0, now - rec["at"] / 1000.0)
+    ok = rec.get("ok") is True
+    reason = str(rec.get("reason") or "")[:24]
+    why = ("d2jsp answered a real price search for %s" % rec.get("item")) if ok else (
+        "the console's d2jsp sign-in is off on this PC - sign in through its D2JSP lamp" if reason == "need-login"
+        else "the last price search for %s did not read (%s)" % (rec.get("item"), reason or "no answer"))
+    return {"ok": ok, "at": int(rec["at"]), "ageS": int(age), "item": str(rec.get("item") or "")[:40], "reason": reason,
+            "why": why}
+
 
 def stale_items(db, now):
     """-> [(key, name, readAt)] every item the DB holds that is due again (is_stale), the stalest first. Pure."""
@@ -47,8 +105,9 @@ def stale_items(db, now):
     return out
 
 
-def run_once(db_path, quote, fold, stand_aside, now=None, checks=None):
+def run_once(db_path, quote, fold, stand_aside, now=None, checks=None, check_path=None):
     """One pass. -> {"worked", "owed", "asked", "reason", "why"}; worked True only when the forum was asked.
+    #56 - with `check_path`, every read is recorded there, and a pass with nothing due asks CHECK_ITEM once a day.
 
     `quote(name)` -> the desk's reading; `fold(reading)` -> the DB's answer; `stand_aside()` -> True while he plays (or a
     sweep reads, or a push grades); `checks()` -> d2jsp_price_db.checks_running (True/False/None). Never raises."""
@@ -72,14 +131,20 @@ def run_once(db_path, quote, fold, stand_aside, now=None, checks=None):
             return out
         due = stale_items(db, now)
         out["owed"] = len(due)
-        if not due:
+        if due:
+            _k, name, _ra = due[0]
+        elif check_path and check_due(check_load(check_path), now):
+            name = CHECK_ITEM                    # #56 - a day with nothing due still proves the sign-in reads
+            out["check"] = True
+        else:
             out["why"] = "every item in the price database is fresh"
             return out
-        _k, name, _ra = due[0]
         out["asked"] = name
         reading = quote(name)
         out["worked"] = True
         out["reason"] = reading.get("reason") if isinstance(reading, dict) else None
+        if check_path:
+            check_note(check_path, name, out["reason"], now)
         if out["reason"] == "need-login":
             out["why"] = "asked %s - the console's d2jsp sign-in is off, so the refresh waits for it (nothing opened)" % name
             return out

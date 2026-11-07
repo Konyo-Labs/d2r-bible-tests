@@ -519,6 +519,8 @@ tv/.grok_prune.jsonl
 # v3849: the d2jsp price DB this PC read and merged (per PC, rewritten by the console)
 tv/d2jsp_price_db.json
 tv/d2jsp_price_db.json.tmp
+tv/.d2jsp_check.json
+tv/.d2jsp_check.json.tmp
 
 # REG-3209 - the disk growers lane salvages what is informational in a grower (unmerged commits as patches, a dirty
 # diff, untracked files, a scratch summary) here before it prunes it, with a manifest and its per-PC state. Never public.

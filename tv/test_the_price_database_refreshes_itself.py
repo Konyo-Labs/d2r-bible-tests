@@ -105,7 +105,7 @@ class ThePriceDatabaseRefreshesItself(unittest.TestCase):
         with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
             app = fh.read()
         self.assertIn('        ("tvd-price-refresh", _price_refresh_loop),', app, "the console never starts the lane")
-        self.assertIn('fold=_d2jsp_db_fold, stand_aside=_sp_yield_here)', app,
+        self.assertIn('fold=_d2jsp_db_fold, stand_aside=_sp_yield_here,', app,
                       "the lane does not fold through the one DB writer, or does not stand aside for his game")
         self.assertIn('"tvd-price-refresh",', app[app.index("_HARNESS_ONLY_SKIP = ("):app.index("_LANES_STOOD_DOWN = set()")],
                       "a harness would search the forum on a timer")
