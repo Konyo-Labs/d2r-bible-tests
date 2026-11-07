@@ -10103,7 +10103,7 @@ body:has(#tab-session.active) .inbox-fab.has{display:none}
    where the observer never runs still clears the chrome instead of hiding the title. And the
    max-height above now subtracts the same number, or a panel that starts lower would run off the
    bottom by exactly as much as it gained at the top. */
-.inbox-sticky.has{top:calc(var(--hdr-h,282px) + max(8px, var(--claim-h,0px)));
+.inbox-sticky.has{top:calc(var(--hdr-h,282px) + 8px);
 /* v2477 — THE BUDGET SUBTRACTED THE HEADER AND THE PANEL DOES NOT START AT THE HEADER.
    Measured at 1120x628 with the gate's fixture: --hdr-h 245, so max-height resolved to 208px —
    but `.tab-content` starts at 351 and the panel at 361, so 106px of the budget was spent on
@@ -38222,7 +38222,9 @@ window.openHeraldCard = openHeraldCard;
 // verified monster data (diablo2.io / Arreat Summit). Portraits are HEAD-checked
 // diablo2.io graphics with an emoji fallback. Drops route via openDrop.
 const UBER_BOSSES = [
-  { id:'lilith', name:'Lilith', emoji:'🕷️', art:'Andariel_graphic.png',
+  /* REG-3321 (#102/#91, his one picture per monster) - each uber boss wears its own Diablo II sprite (Lilith is Andariel's
+     model), the same file BOSS_PORTRAIT and D2IO_ART name - the old renders stayed here and the v78 spec caught it on CI */
+  { id:'lilith', name:'Lilith', emoji:'🕷️', art:'d2mon_Andariel.gif',
     group:'Mini-Uber · Pandemonium portal', role:'drops Diablo\'s Horn',
     loc:'Matron\'s Den · opened from Harrogath · Hell only',
     type:'Act 1 Demon Superunique — a.k.a. Uber Andariel (shared model)',
@@ -38231,7 +38233,7 @@ const UBER_BOSSES = [
     abil:['Poison Spray + Poison Bolt (~3,650 poison over 74s)','Cannot be chilled or slowed by cold','Regenerates life at 2× the normal rate'],
     drop:'Diablo\'s Horn',
     strat:'Hits like a truck and her adds are nastier than she is — clear the pack first. +poison-res / antidote and a tanky merc help. Smite is physical, so her immunity does not stop it.' },
-  { id:'izual', name:'Uber Izual', emoji:'❄️', art:'izual_graphic.png',
+  { id:'izual', name:'Uber Izual', emoji:'❄️', art:'d2mon_Izual.gif',
     group:'Mini-Uber · Pandemonium portal', role:'drops Mephisto\'s Brain',
     loc:'Furnace of Pain · opened from Harrogath · Hell only',
     type:'Act 4 Demon Superunique — the fallen Archangel of Justice',
@@ -38240,7 +38242,7 @@ const UBER_BOSSES = [
     abil:['Frost Nova + Cold-Enchanted melee (+85–130 cold)','Chilling Armor (+175% def for 300s)','Teleports onto you'],
     drop:'Mephisto\'s Brain',
     strat:'Cold-immune — cold builds do nothing here; bring physical / fire / magic. He teleports and frost-novas, so keep moving and out-pace his regen with Life Tap.' },
-  { id:'uber-duriel', name:'Uber Duriel', emoji:'🦂', art:'duriel_graphic.png',
+  { id:'uber-duriel', name:'Uber Duriel', emoji:'🦂', art:'d2mon_Duriel.gif',
     group:'Mini-Uber · Pandemonium portal', role:'drops Baal\'s Eye',
     loc:'Forgotten Sands · opened from Harrogath · Hell only',
     type:'Act 2 Demon Superunique — the Lord of Pain, uber form (fought in the Forgotten Sands, Act 5)',
@@ -38249,7 +38251,7 @@ const UBER_BOSSES = [
     abil:['Holy Freeze aura — chills + slows you the whole fight','Knockback melee (A1 468–494 / A2 149–214)','2× life regen · very high drain effectiveness'],
     drop:'Baal\'s Eye',
     strat:'Low Attack Rating — Shout / Defiance gut his hit-chance. His drain is brutal: Life Tap or a life-steal weapon is near-mandatory. Cold resist is 75, not an immunity, so cold damage still lands.' },
-  { id:'uber-mephisto', name:'Uber Mephisto', emoji:'💀', art:'mephisto_graphic.png',
+  { id:'uber-mephisto', name:'Uber Mephisto', emoji:'💀', art:'d2mon_Mephisto.gif',
     group:'Uber Tristram trio', role:'kill FIRST',
     loc:'Uber Tristram · cube 3 organs → red portal · Hell only',
     type:'Prime Uber — the Lord of Hatred',
@@ -38258,7 +38260,7 @@ const UBER_BOSSES = [
     abil:['Level-20 Conviction aura: −125% resist, −90% defense (13⅓ yd)','Charged Bolt · Skull Missile · Blizzard · Frost/Poison Nova','Lightning-Enchanted (8 bolts when struck) · summons Skeleton Mages','Cannot be life- or mana-leeched'],
     drop:null,
     strat:'KILL FIRST — his Conviction aura amplifies the whole room\'s elemental damage onto you and supercharges his skelly mages. Drop him and the fight calms right down.' },
-  { id:'uber-diablo', name:'Uber Diablo', emoji:'🔥', art:'diablo_graphic.png',
+  { id:'uber-diablo', name:'Uber Diablo', emoji:'🔥', art:'d2mon_Diablo.gif',
     group:'Uber Tristram trio', role:'kill SECOND',
     loc:'Uber Tristram · cube 3 organs → red portal · Hell only',
     type:'Prime Uber — Pandemonium Diablo (NOT the SoJ-summoned Diablo Clone)',
@@ -38267,7 +38269,7 @@ const UBER_BOSSES = [
     abil:['Red Lightning Hose (½ physical / ½ lightning) — the big killer','Bone Prison traps you, hirelings & your Town Portals','Fire Nova · Firestorm · Charge','Summons Pit Lords (immune to all but physical)'],
     drop:null,
     strat:'The HP wall — kill SECOND. Max Lightning resist + Damage Reduction (or high block) survives the Lightning Hose. Don\'t get Bone-Prisoned beside all three. Distinct from the Annihilus Diablo Clone.' },
-  { id:'uber-baal', name:'Uber Baal', emoji:'👑', art:'baal-opt_graphic.png',
+  { id:'uber-baal', name:'Uber Baal', emoji:'👑', art:'d2mon_Baal.gif',
     group:'Uber Tristram trio', role:'kill LAST',
     loc:'Uber Tristram · cube 3 organs → red portal · Hell only',
     type:'Prime Uber — the Lord of Destruction',
@@ -74821,7 +74823,13 @@ body:not(.ladder-profile) .pp-main,body.ladder-profile .pp-ladder{background:rgb
    whole nav 88-120px down onto the search bar at every width (measured: tabs 273 vs 185 at 1440, unscrolled). The
    sticky element is .header (line 16), the tabs ride inside it. And it reads v1800's --claim-h (bar + the 8px popover
    gap, 0 with no bar), never a second variable - v2059 already removed one duplicate of this measurement. */
-.header { top: max(0px, calc(var(--claim-h, 0px) - 8px)); }
+@media (min-height: 481px) {
+  /* REG-3335b - only where the window can hold the bar, the header AND what pins under it: at 640x400 (a short screen,
+     REG-3092) the stack covered the Tools map chip and put the inbox panel's first answer under the dock (v1800 on CI).
+     A short screen keeps the old stack - the bar over the header's top - as main shipped it. */
+  .header { top: max(0px, calc(var(--claim-h, 0px) - 8px)); }
+  .inbox-sticky.has { top: calc(var(--hdr-h,282px) + max(8px, var(--claim-h,0px))); }
+}
 /* v1466 — THE PROFILE SIGIL: pills = which world, sigil = which install.
    Colour comes from the generator via --bs-hue, so the crest is self-colouring.
    v1691 — OFF THE ABSOLUTE RAIL, ONTO ITS OWN ROW. It used to sit at `position:absolute;right:340px`,

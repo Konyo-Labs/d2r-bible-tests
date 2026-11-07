@@ -519,6 +519,13 @@ test.describe('v1625 · ITEM 5 — "Find Cow King\'s Hooves" is a real, green, o
       return t ? t.classList.contains('on') : false;
     });
     expect(before, 'the hover card was already up before we hovered — the measurement would be vacuous').toBe(false);
+    /* v3877 (CI on 1b3c6d4f3) - THE PIECE WAS UNDER THE DOCK'S EDGE, NOT DEAD. The longer odds lines (REG-3322, "· /players 1")
+       pushed the first piece to y~710 of a 720 window, behind the command dock: the hover reached it (the card was BUILT -
+       "Sazabi's Ghost Liberator", its mods, its picture) and the pointer sat on the dock's edge, so the card's own
+       pointer check put it down. A person scrolls the piece into view; so does this, to the window's middle. The assertion
+       is untouched: if the card never comes up, this still goes red. */
+    await page.locator(SEL).first().evaluate((el: any) => el.scrollIntoView({ block: 'center' }));
+    await page.waitForTimeout(300);
     await page.locator(SEL).first().hover();
     /* v1717 — WAIT FOR THE CARD, DO NOT SNAPSHOT AT A FIXED 900ms.
        The card is raised by a delegated hover handler and `.on` is a transition class; a single

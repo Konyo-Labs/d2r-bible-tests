@@ -176,7 +176,7 @@ test.describe('v1624 — the run wears its boss, the quick win wears its item', 
          LEVEL art the terror-zone cards use (art/tz_<slug>.jpg). Anything else means the resolver
          has wandered back into the item map. */
       expect(r.path, `${r.id}: boss art must be a portrait or the level art`)
-        .toMatch(/(_graphic\.(png|gif)|\/tz_[\w-]+\.jpg)$/i);
+        .toMatch(/(_graphic\.(png|gif)|\/tz_[\w-]+\.jpg|\/d2mon_[\w-]+\.gif)$/i);   // REG-3321: or the boss's own D2 sprite
       expect(r.path, `${r.id}: resolved to an ITEM sprite — art/ holds durielsshell_graphic.png, ` +
         'and any fuzzy name match grabs it').not.toMatch(/shell|soul_?stone|_key|charm/i);
     }

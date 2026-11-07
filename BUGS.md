@@ -133,6 +133,18 @@ top == the bar's bottom (88/120/159) at every width, plain and ?app=1; pixels at
 the whole header, then the search bar. Law: test_the_tabs_stick_below_the_claim_bar (re-aimed: header offset, one variable,
 no plain-.tabs rule with a non-zero top, the inbox moves with it); red-proofs PROVEN (3). Lesson: a `top` is only a sticky
 offset on the element that is ACTUALLY sticky - read the computed position, never the first rule found by grep.
+### REG-3337a - v3877'S FIRST GITHUB ROUND: FIVE PLAYWRIGHT CASES, ALL MY OWN v3877 CHANGES (Routine I on 1b3c6d4f3)
+(1) v78: the uber-boss table carried its own `art:` (Lilith Andariel_graphic.png, Uber Izual/Duriel/Mephisto/Diablo/Baal
+renders) - REG-3321 re-aimed the spec to the sprites and never the table; the six now wear art/d2mon_*.gif (Lilith is
+Andariel's model). (2) v1624: the boss-art resolver's shape pin knew portraits and level art only; a boss's own D2 sprite
+(art/d2mon_<Name>.gif, REG-3321, the portraits manifest's 12/12) is the third shape. (3+4) v1800 at 640x400 with the claim
+bar up: REG-3335's below-the-bar offsets stacked bar + header + inbox panel past a 400 px window - the Tools map chip went
+under the header and the inbox's first answer under the dock; the offsets now apply only above REG-3092's short screen
+(min-height 481px) and a short screen keeps main's stack (measured on a render: 640x400 v3877 == main, 901x900 header
+at 120). (5) v1625: the first Sets quick-win piece sat at y~710 of a 720 window behind the dock (REG-3322's longer odds
+lines moved it) - the CI log shows the card BUILT and never shown; the spec now scrolls the piece to the middle before
+it hovers, the assertion untouched. Laws: test_the_tabs_stick_below_the_claim_bar (+ the short-screen case, red-proof
+PROVEN); specs v1624, v1625 re-aimed (GitHub runs them).
 ### REG-3334 - THE BOARD'S ONE ANONYMOUS "VISIBLE" EMPTY IMAGE WAS THE HOVER CARD'S UNUSED PICTURE (v3877, board #73, GrokBot 6689949990)
 GrokBot (Mac + ALT, v3872): the board's broken pictures were placeholders, except "an anonymous <img> with empty src that IS
 visible on the board (no id/class/alt)" - UNKNOWN. MEASURED on a sandbox render of /board?app=1 at 1440 (and #session): of

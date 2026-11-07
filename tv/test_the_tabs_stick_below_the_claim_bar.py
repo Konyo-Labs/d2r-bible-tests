@@ -21,8 +21,9 @@ import re
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-HEADER_RULE = ".header { top: max(0px, calc(var(--claim-h, 0px) - 8px)); }"
-INBOX_RULE = ".inbox-sticky.has{top:calc(var(--hdr-h,282px) + max(8px, var(--claim-h,0px)));"
+HEADER_RULE = "  .header { top: max(0px, calc(var(--claim-h, 0px) - 8px)); }"
+INBOX_RULE = "  .inbox-sticky.has { top: calc(var(--hdr-h,282px) + max(8px, var(--claim-h,0px))); }"
+TALL = "@media (min-height: 481px) {"
 
 
 class TheTabsStickBelowTheClaimBar(unittest.TestCase):
@@ -32,8 +33,12 @@ class TheTabsStickBelowTheClaimBar(unittest.TestCase):
         with io.open(os.path.join(ROOT, "bible.html"), encoding="utf-8") as fh:
             cls.src = fh.read()
 
+    def _tall_block(self):
+        a = self.src.index(TALL)
+        return self.src[a:self.src.index("\n}\n", a)]
+
     def test_the_sticky_header_sits_below_the_bar(self):
-        self.assertIn(HEADER_RULE, self.src, "the sticky header no longer clears the claim bar - the bar covers the nav")
+        self.assertIn(HEADER_RULE, self._tall_block(), "the sticky header no longer clears the claim bar - the bar covers the nav")
         self.assertRegex(self.src, r"\.header\{position:sticky;top:0", "PREMISE: the header is no longer the sticky chrome")
         self.assertLess(self.src.index(".header{position:sticky;top:0"), self.src.index(HEADER_RULE),
                         "the override sits before the sticky rule it must outweigh")
@@ -67,24 +72,37 @@ class TheTabsStickBelowTheClaimBar(unittest.TestCase):
         self.assertEqual(bad, [], "a .tabs rule sets a top offset - on the relative tabs it pushes the nav down: %r" % bad)
 
     def test_the_inbox_pinned_under_the_header_moves_with_it(self):
-        self.assertIn(INBOX_RULE, self.src, "the inbox panel pins under where the header WAS - the header now covers it")
+        self.assertIn(INBOX_RULE, self._tall_block(), "the inbox panel pins under where the header WAS - the header now covers it")
+
+    def test_a_short_screen_keeps_the_old_stack(self):
+        """REG-3335b (v1800 on CI, 640x400 with the bar up): bar + header + inbox offset overran a 400 px window - the Tools
+        map chip went under the header and the inbox's first answer under the dock. The offsets live only in a block for
+        windows taller than REG-3092's short screen (480 px), and the base rules are main's."""
+        self.assertIn(".inbox-sticky.has{top:calc(var(--hdr-h,282px) + 8px);", self.src, "the base inbox rule moved")
+        outside = self.src.replace(self._tall_block(), "")
+        self.assertNotIn("max(0px, calc(var(--claim-h, 0px) - 8px))", outside, "the header offset applies on a short screen")
 
 
 RED_PROOF = [
+    {"why": "REG-3335b - the offsets apply on a short screen too: at 640x400 the stack covers the Tools map chip (v1800)",
+     "file": "bible.html",
+     "find": "@media (min-height: 481px) {\n  /* REG-3335b",
+     "replace": "@media (min-height: 1px) {\n  /* REG-3335b",
+     "matches": 1},
     {"why": "REG-3330 - the sticky header sits under the claim bar again (901 wide: the nav cut through)",
      "file": "bible.html",
-     "find": ".header { top: max(0px, calc(var(--claim-h, 0px) - 8px)); }",
-     "replace": ".header { }",
+     "find": "  .header { top: max(0px, calc(var(--claim-h, 0px) - 8px)); }\n",
+     "replace": "  .header { }\n",
      "matches": 1},
     {"why": "REG-3335 - the offset goes on the relative tabs again and pushes the nav onto the search bar",
      "file": "bible.html",
-     "find": ".header { top: max(0px, calc(var(--claim-h, 0px) - 8px)); }",
-     "replace": ".header { top: max(0px, calc(var(--claim-h, 0px) - 8px)); }\n.tabs, body.app-ctx .tabs { top: var(--claim-h, 0px); }",
+     "find": "  .header { top: max(0px, calc(var(--claim-h, 0px) - 8px)); }\n",
+     "replace": "  .header { top: max(0px, calc(var(--claim-h, 0px) - 8px)); }\n.tabs, body.app-ctx .tabs { top: var(--claim-h, 0px); }\n",
      "matches": 1},
     {"why": "REG-3330 - the inbox panel pins under the header's old place",
      "file": "bible.html",
-     "find": ".inbox-sticky.has{top:calc(var(--hdr-h,282px) + max(8px, var(--claim-h,0px)));",
-     "replace": ".inbox-sticky.has{top:calc(var(--hdr-h,282px) + 8px);",
+     "find": "  .inbox-sticky.has { top: calc(var(--hdr-h,282px) + max(8px, var(--claim-h,0px))); }\n",
+     "replace": "",
      "matches": 1},
 ]
 
