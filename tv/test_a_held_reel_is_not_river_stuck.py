@@ -41,6 +41,13 @@ class AHeldReelIsNotRiverStuck(unittest.TestCase):
         self.assertEqual(html.count("fleet-riverstuck"), 0)
         self.assertIn("river flowing \u00b7 12 held by the drain", html)
 
+    def test_a_river_whose_doors_are_shut_is_not_called_flowing(self):
+        """#24 (GrokBot 6700580776: "river flowing" beside "safety net: test_control RED - its locks shut") - held reels
+        whose river doors are shut wait on those locks; "flowing" only while every river door may act"""
+        html = H._html(dict(CUR, locksShut=["reel.route", "frame.release"]), HELD, 60)
+        self.assertNotIn("river flowing", html, "a river with two shut doors read flowing: %r" % html[:300])
+        self.assertIn("12 held by the drain \u00b7 the river waits on 2 shut locks", html)
+
     def test_an_owed_lane_row_is_stuck_and_named(self):
         html = H._html(CUR, HELD + [PRINTER], 60)
         self.assertIn(">river stuck<", html)
@@ -75,6 +82,11 @@ class AHeldReelIsNotRiverStuck(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "#24 - a river whose own doors are shut reads 'river flowing' again",
+     "file": "tv/control_ui.html",
+     "find": "      var _rShut = (hs && Array.isArray(hs.locksShut)) ? hs.locksShut.filter(function (l) { return typeof l === 'string' && l; }) : [];\n",
+     "replace": "      var _rShut = [];\n",
+     "matches": 1},
     {"why": "held rows count as stuck again: the chip says river stuck over the drain's holds",
      "file": "tv/control_ui.html",
      "find": "    var _heldList = Array.isArray(sk) ? sk.filter(_isHeld) : [];",

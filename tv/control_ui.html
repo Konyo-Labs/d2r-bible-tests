@@ -29068,9 +29068,15 @@ function escC(s) {
     var _heldList = Array.isArray(sk) ? sk.filter(_isHeld) : [];
     if (Array.isArray(sk) && sk.length && _heldList.length === sk.length) {
       var _heldN = _heldList.reduce(function (a, e) { return a + (typeof e.n === 'number' ? e.n : 0); }, 0);
-      bits.push('<span class="fleet-riverheld" title="' + escC('river flowing - ' + _heldN + ' reel(s) held by the drain, not owed: '
+      /* #24 (GrokBot 6700580776: "river flowing" beside "safety net: test_control RED · its locks shut") - a river whose
+         OWN doors are shut is not flowing: the row's locksShut (the four river doors as may() last answered, REG-3197)
+         decides. Held reels then wait on those locks, said as that; "flowing" only while every river door may act. */
+      var _rShut = (hs && Array.isArray(hs.locksShut)) ? hs.locksShut.filter(function (l) { return typeof l === 'string' && l; }) : [];
+      bits.push('<span class="fleet-riverheld" title="' + escC((_rShut.length ? 'the river waits - ' + _rShut.join(', ') + ' shut; '
+          : 'river flowing - ') + _heldN + ' reel(s) held by the drain, not owed: '
         + _heldList.map(function (e) { return e.station + ' ' + e.n + ': ' + String(e.why || ''); }).join('  |  '))
-        + '">river flowing \u00b7 ' + _heldN + ' held by the drain</span>');
+        + '">' + (_rShut.length ? _heldN + ' held by the drain \u00b7 the river waits on ' + _rShut.length + ' shut lock'
+          + (_rShut.length === 1 ? '' : 's') : 'river flowing \u00b7 ' + _heldN + ' held by the drain') + '</span>');
     }
     /* v3861 (his fleet screenshot 2026-11-05: "the UX and UI for this error a lot more to the point") - A REEL HELD BY A
        SHUT LOCK IS THE LOCK'S CONSEQUENCE, NOT A SECOND FAULT. While this PC's proof is not current (or a gate is blind),

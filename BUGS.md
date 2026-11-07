@@ -127,6 +127,15 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3346 - "RIVER FLOWING" WHILE THE RIVER'S OWN DOORS WERE SHUT (v3878, board #24, GrokBot 6700580776)
+GrokBot (11-07, his Mac's Fleet row): "river flowing · 13 held by the drain" beside "safety net: test_control RED · its locks
+shut" - and test_control guards all nine locks, so the river could not move a reel. The held chip (v3859) said "flowing"
+whenever every stuck row was held by the drain, without asking whether the river's doors were open. NOW it reads the row's
+locksShut - the four river doors as may() last answered (REG-3197): any shut, and it says "13 held by the drain · the river
+waits on N shut locks" with the names in the hover; "river flowing" only while every river door may act. Law:
+test_a_held_reel_is_not_river_stuck (+1 case); red-proof PROVEN (1). GrokBot's other two #24 points: (1) is REG-3338;
+(3) "vault 1 item" beside "sweep evidence 92 (not filed)" is his v3866 ruling ("show both numbers on the fleet row") - both
+numbers are there, each with its own age, so it is left as ruled.
 ### REG-3345 - A READER THAT HUNG UP WAS FILED AS A FAILED RIVER READ (v3878, board #40, GrokBot 6700580776)
 GrokBot (11-07, Dean, two reads 8 min apart, his PC 100% busy importing): both carried "a newer river read failed ...
 ConnectionAbortedError WinError 10053 ... these lanes are the last good read". WinError 10053 is a connection the OTHER end
