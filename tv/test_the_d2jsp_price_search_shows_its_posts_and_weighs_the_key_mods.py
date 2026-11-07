@@ -137,6 +137,8 @@ out.evNone = d2jspEvidenceHtml(null, {reason: 'no prices', item: 'Enigma', posts
 out.search = [d2jspParseSearch('anni 20/20/10'), d2jspParseSearch('40/15 shako'), d2jspParseSearch('jmod'), d2jspParseSearch('torch sorc 18/18 eth 2os')];
 out.searchBare = [d2jspParseSearch('shako 141'), d2jspParseSearch('arach 3os'), d2jspParseSearch('griffon 12 15')];
 out.searchLine = d2jspSearchLine({reason: 'read', fg: 18, low: 12, high: 20, n: 3, board: 268}, out.sim, out.search[0]);
+out.searchLineDb = d2jspSearchLine({reason: 'read', fg: 50, low: 15, high: 100, n: 11, board: 268,
+  db: {normal: {fg: 40, n: 15}, perfect: {fg: 80, n: 2}}}, null, {item: 'shako', roll: null});
 process.stdout.write(JSON.stringify(out));
 """
         cls.out = _node("var window = {}, document = {};\n" + desk + "\nvar DBJSON = " + db + ";\n" + body)
@@ -162,6 +164,16 @@ process.stdout.write(JSON.stringify(out));
         self.assertGreater(w[0], w[1], "a closer roll did not weigh more")
         self.assertEqual(w[3], 0)
         self.assertIn("Posts like 20/20/10: about 18 fg from 3 posts.", self.out["searchLine"])
+
+    def test_with_the_items_price_below_the_read_line_names_no_second_price(self):
+        """v3881 (GrokBot's v3878 pass, #96: "middle 50 from 11 prices" above "40 fg from 15 posts" - two prices, one item)"""
+        line = self.out["searchLineDb"]
+        self.assertEqual(line, "Board 268 (D2:R RotW Softcore Trading): this read saw 11 prices, 15\u2013100 fg - weighed into "
+                               "the price below.")
+        self.assertNotIn("middle", line)
+        self.assertNotIn("50", line, "the read's own middle price is still printed above the item's price")
+        self.assertIn("range 12\u201320 fg, middle 18, from 3 prices", self.out["searchLine"],
+                      "PREMISE: with no stored price the line reads exactly as before")
 
     def test_the_drawer_lists_every_post_with_link_day_fg_roll_and_weight(self):
         ev = self.out["ev"]
@@ -206,6 +218,9 @@ process.stdout.write(JSON.stringify(out));
 
 
 RED_PROOF = [
+    {"why": "v3881 - with the item's price below, the search line prints the read's own middle price again (two prices, #96)",
+     "file": "bible.html", "find": "  var line = _dbP ? d2jspReadLine(q) : d2jspPriceLine(q);",
+     "replace": "  var line = d2jspPriceLine(q);", "matches": 1, "needs": "node"},
     {"why": "v3861 - a single bare number is deleted again: 'shako 141' loses the defence he holds",
      "file": "bible.html",
      "find": "  return { item: item, roll: tuples[0] || (bare.length === 1 ? [bare[0]] : null), text: t };",

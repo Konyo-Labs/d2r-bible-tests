@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3381 - ONE SHAKO SCREEN SHOWED TWO PRICES: THE READ'S "MIDDLE 50" ABOVE THE ITEM'S "40 FG" (v3881, #96 STILL)
+GrokBot's v3878 pass: "Board 268 (D2:R RotW Softcore Trading) range 15-100 fg, middle 50, from 11 prices, read Nov 7 17:14"
+sat right above the NORMAL/PERFECT boxes reading 40 fg from 15 weighted posts - the raw read's median beside the item's
+weighted price, so one item showed two prices (#96's whole ask was one). d2jspSearchLine now reads the stored price already
+on the answer (q.db): when the item's normal or perfect price is drawn below, the line says what the READ saw ("this read saw
+11 prices, 15-100 fg ... - weighed into the price below") and names no second price; with no stored price it reads exactly as
+before. The call site is untouched (a red-proof anchors on it). Law: the price-search law +1 case (+ its PREMISE that the
+no-price line is unchanged) and +1 red-proof seen RED; d2jspReadLine's skipped clause reworded after the anchor census caught
+it duplicating an older red-proof's anchor line.
 ### REG-3380 - IN THE FLEET EYES' SHADOW EVERY "AM I A SHADOW" CHECK READ FALSE: #56 AND #104 STILL (v3881)
 GrokBot's v3878 pass: in Dean's shadow the D2JSP lamp read "This machine could not read the Chrome login" (never UNKNOWN, never
 "lives on that PC") and Characters said "This PC's saves: no .d2s on this PC" - both #56 and #104 had shadow branches. The

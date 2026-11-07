@@ -13348,8 +13348,24 @@ function d2jspParseSearch(text) {
     .replace(/\s+/g, ' ').trim();
   return { item: item, roll: tuples[0] || (bare.length === 1 ? [bare[0]] : null), text: t };
 }
+/* v3881 (GrokBot's v3878 pass, #96 STILL: one shako screen showed "Board 268 ... range 15-100 fg, middle 50, from 11 prices"
+   right above the item's own "40 fg from 15 weighted posts" - two prices for one item). When the item's stored price is drawn
+   below (its normal or perfect price is on the answer), this line says what the READ saw and that it was weighed into that
+   price; it names no second price. With no stored price it reads exactly as before. */
+function d2jspReadLine(q) {
+  q = q || {};
+  var on = Number(q.board) > 0 ? Number(q.board) : 0;
+  var head = on ? ('Board ' + on + (on === 243 ? ' (D2:R Switch Ladder Trading)' : (on === 268 ? ' (D2:R RotW Softcore Trading)' : ''))) : 'Public';
+  var n = q.n > 0 ? q.n : 1, low = Number(q.low), high = Number(q.high);
+  var when = d2jspWhen(q.readAt) ? (', read ' + d2jspWhen(q.readAt)) : '';
+  var spread = (n > 1 && low > 0 && high > 0 && low !== high) ? (', ' + low + '\u2013' + high + ' fg') : '';
+  var _sk = Number(q.skipped) > 0 ? (' ' + Number(q.skipped) + (Number(q.skipped) === 1 ? ' line skipped.' : ' lines skipped.')) : '';
+  return head + ': this read saw ' + n + ' ' + (n === 1 ? 'price' : 'prices') + spread + when + ' - weighed into the price below.' + _sk;
+}
 function d2jspSearchLine(q, sim, parsed) {
-  var line = d2jspPriceLine(q);
+  var _dbP = !!(q && q.reason === 'read' && Number(q.fg) > 0 && q.db && !q.db.unknown
+    && ((q.db.normal && q.db.normal.fg != null) || (q.db.perfect && q.db.perfect.fg != null)));
+  var line = _dbP ? d2jspReadLine(q) : d2jspPriceLine(q);
   if (q && q.reason === 'read' && parsed && parsed.roll) {
     line += sim && sim.fg != null
       ? (' Posts like ' + parsed.roll.join('/') + ': about ' + sim.fg + ' fg from ' + sim.like + ' ' + (sim.like === 1 ? 'post' : 'posts') + '.')
