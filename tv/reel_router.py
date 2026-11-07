@@ -597,8 +597,24 @@ def route(hist=None, path=None):
     # exactly what `_evidence`'s own hist refusal exists to prevent.
     # [[feedback-fixtures-never-touch-live-data]]
     routed, outlet_why = _routed_by_a_lane(path)
+    # REG-3329 (#44 - the river on every PC). MEASURED 11-07 on his Mac: route() stationed 42 reels while the shelf
+    # (reel_story) held 30, and the console's invariant router-and-shelf-agree read the gap as a fault. All 12 extra
+    # were EVIDENCE REMNANTS - reels the drain already released and tombstoned WITH a `kept` list, whose cited pictures
+    # stayed (his section 26); the folder lives on only for those pictures. The walk saw a folder and stationed each as a
+    # live reel: 8 UNKNOWN (nothing measurable is left) and 4 ROUTED "owes only a tombstone" - a tombstone they already
+    # have, so the river's stuck counts carried work that was done. A remnant is not a reel on the shelf: retention's own
+    # rule (reel_retention.remnant_reels - the ONE authority; a tombstone-ledger record, never a keep tag) is asked here,
+    # and each remnant is NAMED in `remnants`, never silently dropped. Unreadable -> nothing is set apart (as before).
+    try:
+        import reel_retention as _rrem
+        _rem = set(_rrem.remnant_reels(_hist_dir()) or ())
+    except Exception:
+        _rem = set()
+    rep["remnants"] = sorted(r for r in ev if r in _rem)
     rows = []
     for reel, e in ev.items():
+        if reel in _rem:
+            continue
         station, swhy = _station_of(e)
         # ⚠⚠ THE OUTLET. Everything above derives a READ-FATE from the footage; this is the one
         # thing that is not derivable from it. Routing is an ACT — a lane decided the extraction

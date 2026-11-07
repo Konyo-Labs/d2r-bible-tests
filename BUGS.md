@@ -112,6 +112,20 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3329 - THE ROUTER STATIONED 12 ALREADY-RELEASED REELS AS LIVE ONES: 42 AGAINST THE SHELF'S 30, AND 4 "OWED" A TOMBSTONE THEY HAD (v3877, board #44, his river asks)
+His console's fleet faults (11-06/07): "engines corroborate - router-and-shelf-agree - reels the router stations says 42
+and reels on the shelf says 30, and they must be ==". MEASURED on his Mac (read-only): reel_router.route() 42,
+reel_story.story() 30, all 12 extra on the router's side only, every one in reel_retention.plan()['remnants'] - EVIDENCE
+REMNANTS: reels the drain already released and tombstoned WITH a `kept` list, whose cited pictures stayed (his section
+26), so their folders live on. The router's walk saw a folder and stationed each as a live reel: 8 UNKNOWN ("sealed=None
+names=None - unmeasured") and 4 ROUTED "the join is done ... It owes only a tombstone" - a tombstone they already have, so
+the river's stuck counts carried work that was done. NOW route() asks retention's own remnant rule
+(reel_retention.remnant_reels - the one authority; a tombstone-ledger record, not a keep tag, so the router's
+independence guard stands), stations only the shelf's reels, and NAMES each remnant in `remnants`; an unreadable rule sets
+nothing apart (as before). Measured: his router minus his remnants == his shelf, 30 reels exactly. Law: test_reel_router
+(+ TheRiverLeavesItsRemnantsOut: a remnant is named and never stationed; an unreadable rule sets nothing apart);
+red-proof PROVEN; the other 30 router/remnant laws pass.
+
 ### REG-3328 - THE HOME CARD SAID "380 GRAILS STILL OUT THERE" BESIDE UNIQUES' 403 - A THIRD NUMBER IN AN INVENTED WORD (v3877, board #63, GrokBot 6698868304)
 GrokBot (11-07, guest box): "Fleet API rosters.uniques = 403, and Quick wins shows 403 (6 + 397). The home card says '380
 grails still out there', which doesn't match." MEASURED: the console hub's next-chronicle card, when /api/evrank cannot

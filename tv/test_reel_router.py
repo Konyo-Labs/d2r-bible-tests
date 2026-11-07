@@ -240,6 +240,38 @@ class ItRefusesToMixSHELVES(unittest.TestCase):
                         "it refused its OWN shelf: %s" % why)
 
 
+class TheRiverLeavesItsRemnantsOut(unittest.TestCase):
+    """REG-3329 (#44) - MEASURED 11-07 on his Mac: route() stationed 42 reels and the shelf held 30; the 12 extra were
+    EVIDENCE REMNANTS (released and tombstoned WITH a kept list - their folder lives on for the kept pictures), stationed
+    as live reels (8 UNKNOWN, 4 ROUTED 'owes only a tombstone' they already had). route() asks retention's remnant rule,
+    stations only the shelf's reels, and NAMES every remnant it set apart."""
+
+    def test_a_remnant_is_named_and_never_stationed(self):
+        from unittest import mock
+        import reel_retention as _rrem
+        ev = {"reel_s_1_1": {"sealed": True, "names": 3, "surveyed": True, "panels": 2},
+              "reel_s_2_2": {"sealed": None, "names": None}}
+        with mock.patch.object(RR, "_evidence", lambda hist=None: (ev, "")), \
+                mock.patch.object(RR, "_routed_by_a_lane", lambda path=None: ({}, "")), \
+                mock.patch.object(_rrem, "remnant_reels", lambda hist=None: {"reel_s_2_2"}):
+            rep = RR.route()
+        self.assertEqual([r["reel"] for r in rep["reels"]], ["reel_s_1_1"], "a remnant was stationed as a live reel")
+        self.assertEqual(rep.get("remnants"), ["reel_s_2_2"], "the remnant set apart is not named")
+
+    def test_an_unreadable_remnant_rule_sets_nothing_apart(self):
+        from unittest import mock
+        import reel_retention as _rrem
+        ev = {"reel_s_1_1": {"sealed": True, "names": 3, "surveyed": True, "panels": 2}}
+        def boom(hist=None):
+            raise OSError("no ledger")
+        with mock.patch.object(RR, "_evidence", lambda hist=None: (ev, "")), \
+                mock.patch.object(RR, "_routed_by_a_lane", lambda path=None: ({}, "")), \
+                mock.patch.object(_rrem, "remnant_reels", boom):
+            rep = RR.route()
+        self.assertEqual([r["reel"] for r in rep["reels"]], ["reel_s_1_1"])
+        self.assertEqual(rep.get("remnants"), [])
+
+
 class TheGuardRefusesTheCouplingItExistsFor(unittest.TestCase):
     """★★ THE ONE THAT MATTERS. `_stage_of(tag)` is the defect: the keep-reason deciding the
     read-fate. This guard must fail when that returns, in EITHER half."""
@@ -335,6 +367,11 @@ class ItArmsNothing(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3329 - an evidence remnant is stationed as a live reel again (42 vs his shelf's 30)",
+     "file": "reel_router.py",
+     "find": "        if reel in _rem:\n            continue\n",
+     "replace": "",
+     "matches": 1},
     {
         'why': "UNKNOWN is a position, not a default. `_station_of()` returns UNKNOWN the moment EITHER `sealed` or `names` is unmeasured, so a reel nobody could measure is never dressed up as a reel sitting at a real station. Collapsing the `or` to an `and` lets a single unmeasured field fall through into the evidence ladder: sealed=None/names=0 is published as STATION (a paid-read candidate built on nothing) and sealed=True/names=None as CAPTURE, while route()'s `unknown` count drops to 0 so the shelf reports that it could place every reel. That is the confident-zero this module exists to refuse.  MEASURED: untampered GREEN — `python3 test_reel_router.py` -> Ran 30 tests in 0.163s, OK; tampered (all 1) RED — Ran 30 tests, FAILED (failures=3): UnknownIsAPositionNotAGap.test_unmeasur; reddened law test_reel_router.UnknownIsAPositionNotAGap.test_unmeasured_seal_is_UNK; ALONE FAILS ALONE — `python3 -m unittest test_reel_router.UnknownIsAPositionNotAGap.test_unmeasured_seal_i.",
         'file': 'reel_router.py',
