@@ -1,0 +1,47 @@
+name: 🪟 win107 probe - why each Windows-red law is red (one-off, read-only)
+# #107 - GitHub's Windows prover (run 42357749055, main v3877) found 62 laws red untampered. This one-off runs each one
+# on windows-latest exactly as that prover sets up, and uploads its output, so each can be classified (POSIX-only vs a real
+# Windows defect) without loading his PCs. Lives only on the ci/win107-probe branch; never on main.
+on:
+  push:
+    branches:
+      - 'ci/win107-probe'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk: [0, 1]
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONDONTWRITEBYTECODE: "1"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the history the stamp laws grade
+        run: git fetch --no-tags --shallow-since=2026-10-29 origin "$GITHUB_SHA"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: The console's own imports (Pillow, numpy, websocket-client)
+        run: python -m pip install --quiet pillow numpy websocket-client
+      - name: A claude that refuses
+        run: |
+          mkdir -p "$RUNNER_TEMP/noclaude"
+          printf '@echo claude is not called on CI (win107 probe) 1>&2\r\n@exit /b 97\r\n' > "$RUNNER_TEMP/noclaude/claude.cmd"
+          echo "$RUNNER_TEMP/noclaude" >> "$GITHUB_PATH"
+      - name: Run each law untampered and keep why
+        run: python .github/win107_probe.py ${{ matrix.chunk }} 2 "$RUNNER_TEMP/win107"
+      - name: Upload what each law said
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: win107-${{ matrix.chunk }}
+          path: ${{ runner.temp }}/win107
