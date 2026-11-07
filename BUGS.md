@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3409 - DEAN'S PC STILL HAD TWO BLIND LAWS AFTER v3881, SO EVERY LOCK ON IT WOULD HAVE STAYED SHUT (v3882)
+MEASURED 11-08 on his PC (SSH, read-only): may('reel.route') -> "4 instrument(s) are BLIND"; v3881 (REG-3400) clears two of
+them. His own prover log names the other two, each a red-proof that stayed GREEN on Windows:
+(1) test_a_price_refresh_pauses_while_checks_run[2] "a held gate lock no longer pauses the refresh" - the only case that
+catches it holds a real POSIX flock and SKIPS where there is no fcntl. New case: the held lock through tree_busy's own seam,
+on every platform. Proven with fcntl blocked (Windows' situation): all 8 red-proofs RED.
+(2) test_a_deaf_console_relaunches_itself[6] "an OSError carrying Windows' 10053 reads 'error' again" - on Windows Python
+re-classes OSError(10053) as ConnectionAbortedError (errno.ECONNABORTED IS 10053 there), so the case took the class branch
+and never reached the errno list the sabotage edits. The case raises a plain OSError subclass now (never re-classed).
+Proven ON THE WORK ALT (Windows): its own server_self_probe under the sabotage reads 'reset' for OSError(10053) - green,
+blind - and 'error' for the subclass - red. All 7 red-proofs RED here. (A guess that the read-then-close shape was the blind
+one was MEASURED false on the ALT first: there it is an empty read, like the Mac's.)
 ### REG-3408 - A PROOF RUNNING ON DEAN'S PC FOUGHT GITHUB'S IMPORT OF ITS PROOFS FOR THE CORES (v3882, #123)
 MEASURED on Dean's PC (SSH, read-only): his console's heart2 --prove of 15:42 kept running beside the 16:39 import, at up to
 237% CPU; at 23:50 that kind of import crawled at ~19 proofs a minute (2,989 -> 3,056 of 4,954 in 3.5 min). From 00:28 to

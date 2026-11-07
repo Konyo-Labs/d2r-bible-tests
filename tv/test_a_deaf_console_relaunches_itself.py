@@ -122,8 +122,17 @@ class TheProbeHearsTheFourShapes(unittest.TestCase):
         def aborted():
             raise ConnectionAbortedError("aborted")          # the exception's own class, no errno to lean on
         self.assertEqual(ca.server_self_probe(1, _connect=aborted)["kind"], "reset")
+        # v3882 (Dean's BLIND, his own prover log 11-08: "[6] BLIND - an OSError carrying Windows' 10053 ... stayed GREEN").
+        # On Windows Python turns OSError(10053, ...) into ConnectionAbortedError (errno.ECONNABORTED IS 10053 there), so it
+        # took the class branch and never reached the errno list this case guards - the sabotage of that list stayed green
+        # and every lock on his PC stayed shut. A plain OSError subclass is never re-classed on any platform: the case now
+        # reaches the errno list everywhere. (MEASURED the same night on the work ALT: a read-then-close is an empty read,
+        # an accept-then-close raises ConnectionAbortedError 10053.)
+        class _PlainOSError(OSError):
+            pass
+
         def by_errno():
-            raise OSError(10053, "aborted")
+            raise _PlainOSError(10053, "aborted")
         self.assertEqual(ca.server_self_probe(1, _connect=by_errno)["kind"], "reset")
 
     def test_a_console_that_never_answers_is_a_timeout_not_deaf(self):

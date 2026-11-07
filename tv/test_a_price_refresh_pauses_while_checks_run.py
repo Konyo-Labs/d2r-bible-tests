@@ -89,6 +89,17 @@ class PriceRefreshPauses(unittest.TestCase):
         self.assertEqual(got["say"], SAY)
         self.assertEqual(self.seen, [])
 
+    def test_a_held_gate_lock_pauses_on_every_platform(self):
+        """v3882 (Dean's BLIND, measured 11-08 on his PC: may() named this law BLIND and every river lock shut). The real-flock
+        case above SKIPS where there is no fcntl, so on Windows nothing caught red-proof 'a held gate lock no longer pauses
+        the refresh' - the sabotage stayed green and the law went BLIND. The rule itself is platform-free: a lock the gate
+        holds pauses the refresh. Said through tree_busy's own seam, as the unreadable-lock case below says its rule."""
+        env = {"HEART2_LANES": "0", "D2R_GATE_LOCK_KEY": self._key()}
+        with mock.patch("tree_busy._gate_lock_held", return_value=(True, "a gate run holds the lock")):
+            got = P.fresh_refresh(self.db, self._fetch, now=self.now, env=env)
+        self.assertEqual(got["say"], SAY)
+        self.assertEqual(self.seen, [], "a held gate lock and the refresh fetched anyway")
+
     def test_an_unreadable_lock_does_not_fetch(self):
         env = {"D2R_GATE_LOCK_KEY": self._key()}
         with mock.patch("tree_busy._gate_lock_held", return_value=(None, "the gate lock could not be read")):
