@@ -130,6 +130,26 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         anda = re.search(r"andariel:\s*'([^']+)'", _read()).group(1)   # REG-3321 - the file the page names, never pinned
         self.assertIn("art/" + anda, named, "Andariel's tile does not carry BOSS_PORTRAIT's picture")
 
+    def test_a_per_kill_row_says_what_it_is_and_carries_the_four_columns(self):
+        """REG-3325 (#102 - his 11-07 "once? random? i want titles for each one ... also with the odds number of runs"):
+        the Cow King's row says 'once a character - each difficulty', a random pack's says what pack it is; each carries
+        the ranked rows' four captioned columns, its kills for an even chance computed from its own odds, and the two it
+        cannot measure marked so"""
+        import math
+        g = self.o["grid"]
+        also = g[g.index('<div class="qw-also">'):]
+        rows = re.findall(r'<div class="qw-row qw-row-also"[^>]*>(.*?)</div>', also)
+        self.assertEqual(len(rows), 2, "PREMISE: the fixture's two per-kill places did not draw: %s" % also[:300])
+        self.assertIn('<span class="qw-rank">once a character · each difficulty</span>', rows[0])
+        self.assertIn('<span class="qw-rank">random unique pack · spawns by chance</span>', rows[1])
+        for row, c in zip(rows, (312, 603)):
+            stats = re.findall(r'<span class="qw-stat ([a-z -]+)"[^>]*><b>([^<]*)</b><span class="qw-sub">([^<]*)</span>', row)
+            self.assertEqual([x[0].split()[0] for x in stats], ["qw-odds", "qw-runs", "qw-ttf", "qw-kph"], row[:300])
+            self.assertEqual(stats[1][1], "~" + format(math.ceil(math.log(0.5) / math.log(1 - 1.0 / c)), ","),
+                             "the kills for an even chance are not the per-kill odds' own")
+            self.assertEqual(stats[1][2], "kills for a 50% chance")
+            self.assertIn("qw-unmeasured", stats[2][0] + stats[3][0])
+
     def test_a_monster_tile_draws_the_monster_alone(self):
         """REG-3321 (#102 - his 11-07 "it should render just the monster not the area behind it"): a tile that carries a
         monster has NO zone background and no native title tip over the row; a sprite is drawn as a sprite; a place with no
@@ -427,6 +447,11 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3325 - a per-kill row carries one number again (his 'also with the odds number of runs')",
+     "file": "bible.html",
+     "find": "    return '~' + Math.ceil(Math.log(0.5) / Math.log(1 - 1 / n)).toLocaleString();\n",
+     "replace": "    return '—';\n",
+     "matches": 1, "needs": "node"},
     {"why": "REG-3321 - Hephasto's two spellings name two pictures again",
      "file": "bible.html",
      "find": "\"Hephasto the Armorer\": \"art/d2mon_Hephasto_The_Armorer.gif\"",

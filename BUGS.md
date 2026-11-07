@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3325 - QUICK WINS' PER-KILL ROWS SAID "ONCE" AND "RANDOM" AND CARRIED ONE NUMBER (v3877, board #102, his 11-07 ask)
+His words (a screenshot of the Bane Ash card's "also drops here" rows): "once? random? i want titles for each one synced
+properly matching and accurate ... also with the odds number of runs.. and etc." MEASURED: the rank label was the bare
+kind ('once' / 'random'), the row ran a narrower grid (52px, 2fr, 1fr, 3fr) than the ranked rows, and it carried only
+"odds a kill"; its why sat in a native tip over the whole row (REG-3321 moved it to the odds cell). NOW the label says
+what the place is - the Cow King "once a character - each difficulty", a random pack "random <kind> pack - spawns by
+chance" - and the row carries the ranked rows' four columns on their template (so every number lines up down the card):
+odds a kill, kills for a 50% chance computed from those odds (_qwKills50: ln 0.5 / ln(1 - 1/c)), and time for a 50%
+chance / kills an hour as "-" marked not measured until a kill rate is on record (a random pack has none; never a guess).
+Law: test_quick_wins_shows_each_place_with_its_picture (+ a per-kill row says what it is and carries the four columns,
+its kills recomputed from its own odds); red-proof PROVEN (and the five REG-3321 proofs, each RED on its own case).
+
 ### REG-3324 - ONE FLAKY RED OF ONE GIANT LAW SHUT ALL NINE LOCKS ON HIS MAC, AND THE NET WOULD NOT ASK AGAIN FOR SIX HOURS (v3877, board #103 A+B, his 11-07 question)
 His words: "if the river proves itself already why does every proof going forward not related to it need to continue
 proofing it over and over again for it to unlock? maybe this lock/unlock for the river needs better coding" and "not

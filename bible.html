@@ -10688,8 +10688,8 @@ img[src*="d2mon_"]{object-fit:contain!important;mix-blend-mode:normal!important;
 .qw-ttf b{color:#8fe0a0}
 .qw-also{margin-top:14px;padding-top:10px;border-top:1px dashed rgba(240,192,96,.22)}   /* its own section, never a caption for the rows above */
 .qw-also-h{font-size:var(--fs-micro);font-weight:var(--fw-bold);letter-spacing:.08em;text-transform:uppercase;color:#9a8c72;margin:0 0 5px 2px}
-.qw-also .qw-row{grid-template-columns:52px minmax(0,2fr) minmax(0,1fr) minmax(0,3fr);padding:6px 12px;background:rgba(255,255,255,.015)}
-.qw-also .qw-tile{width:52px;height:52px}
+.qw-also .qw-row{grid-template-columns:72px minmax(0,2fr) repeat(4,minmax(0,1fr));padding:6px 12px;background:rgba(255,255,255,.015)}
+.qw-also .qw-tile{width:52px;height:52px;justify-self:center}   /* REG-3325 - the ranked rows' columns, so every number lines up */
 @media (max-width: 640px){
   /* a phone: four numbers in a row left ~50px each (measured at 375: "~1,392" ran into "~13h"), so they stand 2 x 2 */
   .qw-row{grid-template-columns:56px repeat(2,minmax(0,1fr));row-gap:6px;column-gap:12px;padding:8px}
@@ -70415,6 +70415,12 @@ function renderJournal(){
                 p.est ? 'run rate is an estimate (no measured clear for this place); the runs count does not depend on it' : '')
       + '</div>';
   }
+  /* REG-3325 - kills for an even chance at 1:c a kill: ln(0.5)/ln(1-1/c), the same arithmetic as a run of one kill */
+  function _qwKills50(c){
+    var n = Number(c);
+    if (!(n > 1) || !isFinite(n)) return '—';
+    return '~' + Math.ceil(Math.log(0.5) / Math.log(1 - 1 / n)).toLocaleString();
+  }
   function _qwAlsoGrid(list){
     if (!list.length) return '';
     return '<div class="qw-also"><div class="qw-also-h">Also drops here · priced per kill, not a run you can repeat</div>'
@@ -70424,10 +70430,19 @@ function renderJournal(){
           /* REG-3321 (#102) - the row's why rides its odds cell, never a native tip over the whole row; the monster's card
              floats from its picture and name like every place row */
           return '<div class="qw-row qw-row-also" aria-label="' + esc(why) + '">' + _qwTile(a.id || '', a.area, a.who, a.name)
-            + '<span class="qw-place"><span class="qw-rank">' + (a.kind === 'once' ? 'once' : 'random') + '</span>'
+            /* REG-3325 (#102 - his 11-07 "once? random? i want titles for each one synced properly matching and accurate
+               ... also with the odds number of runs.. and etc."): the label says WHAT the place is, and the row carries
+               the ranked rows' four columns - the kills for an even chance computed from the odds; time and rate stay
+               '—', marked not measured, until a kill rate is on record (a random pack has none; never a guess) */
+            + '<span class="qw-place"><span class="qw-rank">' + (a.kind === 'once' ? 'once a character · each difficulty'
+                                                                 : 'random ' + esc(a.kind) + ' pack · spawns by chance') + '</span>'
             + '<b class="qw-name"' + _qwHover(a.id || '', a.name) + '>' + esc(a.who) + '</b><span class="qw-sub qw-area">' + esc(a.area)
             + (a.kind === 'once' ? ' · not a repeatable run' : ' · random ' + esc(a.kind) + ' pack') + '</span></span>'
-            + _qwStat(fmtOdds(a.chance), 'odds a kill', 'qw-odds', why) + '</div>';
+            + _qwStat(fmtOdds(a.chance), 'odds a kill', 'qw-odds', why)
+            + _qwStat(_qwKills50(a.chance), 'kills for a 50% chance', 'qw-runs',
+                      'kills for an even (50%) chance of the drop at these per-kill odds' + (a.kind === 'once' ? ' - but he can be killed once a character in each difficulty' : ''))
+            + _qwStat('—', 'time for a 50% chance', 'qw-ttf qw-unmeasured', 'not measured - no kill rate is on record for this place')
+            + _qwStat('—', 'kills an hour', 'qw-kph qw-unmeasured', 'not measured') + '</div>';
         }).join('') + '</div>';
   }
   function _qwGridHtml(qp, also){
