@@ -1648,7 +1648,7 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
 .rwd-base{display:inline-flex;align-items:center;gap:8px;padding:5px 10px 5px 6px;border:1px solid var(--border,#3a2f1e);border-radius:8px;background:rgba(255,255,255,.03)}
 .rwd-base .d2art-wrap.md{width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center}
 .rwd-base .d2art-wrap.md .d2art-img{max-width:44px;max-height:44px;object-fit:contain}
-.rwd-base-t{display:flex;flex-direction:column;line-height:1.25;font-size:12.5px}
+.rwd-base-t{display:flex;flex-direction:column;line-height:1.25;font-size:var(--fs-body)}
 .rwd-base-t b{font-weight:var(--fw-semibold);color:#bcd6ff}
 .rwd-stat .zd-v{color:var(--text)}
 /* v141 — Gem stash grid (7 type rows × 5 grade cells) */
@@ -22253,7 +22253,7 @@ function runewordDetailHtml(name){
   var _rwSl = null; try { _rwSl = (typeof window._cbRwSlots === 'function') ? window._cbRwSlots(key) : null; } catch (eS) { _rwSl = null; }
   _rwSl = (_rwSl || []).filter(function(x){ return x && x.base && _rwU(x.base); });
   var _rwPic = _rwU(key) || (_rwSl[0] ? _rwU(_rwSl[0].base) : null);
-  var _rwArt = _rwPic ? '<span class="d2art-wrap lg"><img class="d2art-img" src="'+_rwPic+'" alt="'+_d2artEsc(key)+'" onerror="this.parentNode.classList.add(\'d2art-failed\')"><span class="d2art-fallback"><span class="gic-emoji" style="font-family:serif;font-size:30px">⚒️</span></span></span>'
+  var _rwArt = _rwPic ? '<span class="d2art-wrap lg"><img class="d2art-img" src="'+_rwPic+'" alt="'+_d2artEsc(key)+'" onerror="this.parentNode.classList.add(\'d2art-failed\')"><span class="d2art-fallback"><span class="gic-emoji" style="font-family:serif">⚒️</span></span></span>'
     : '<span class="d2art-wrap lg"><span class="gic-emoji" style="font-family:serif;font-size:30px">⚒️</span></span>';
   var _RW_SLOT_WORD = { torso: 'Body armor', weapon: 'Weapon', 'off-hand': 'Shield', helm: 'Helm' };
   var _rwMade = _rwSl.length ? '<section class="gic-section rwd-made"><div class="gic-section-title">🧱 Made in</div><div class="rwd-bases">'
