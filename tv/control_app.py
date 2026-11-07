@@ -5074,6 +5074,19 @@ def _roster_claimed_name():
     name = name.strip()
     if not name:
         return None
+    # v3880 (#27) - A PC WHOSE OWN NAME IS NOT ONE OF THE LABELS MAY SHARE ONE. His 11-05 ruling for the two ALTs: "share
+    # the profile, just split the rows". The OLD ALT's nickname is "OLD PC ALT", so its profile never left the PC ("the
+    # owner is not one of the five labels" - 17 characters and their gear stuck on it since 11-04). `sharesLabel` names
+    # the label it publishes under; the site keeps its rows and profile in their own slot once he approves its key with
+    # "add" (functions/api/roster.js RING). Only one of the five labels is taken - anything else is no label at all.
+    try:
+        import roster_publish as _rpl
+        if name not in _rpl.OWNERS:
+            shares = data.get("sharesLabel")
+            if isinstance(shares, str) and shares.strip() in _rpl.OWNERS:
+                return shares.strip()
+    except Exception:
+        pass
     return name
 
 
@@ -5639,8 +5652,9 @@ def roster_approve(owner, key_id, decision, _post=None, now_ms=None):
         label = None
     if label not in ROSTER_APPROVERS:
         return {"ok": False, "why": "this PC is not one that approves new PCs"}
-    if decision not in ("approve", "deny") or not isinstance(owner, str) or not isinstance(key_id, str):
-        return {"ok": False, "why": "an approval names an owner, a key id and approve or deny"}
+    # v3880 (#27) - "add": the new PC joins the label beside its first key (both keep publishing, each into its own slot)
+    if decision not in ("approve", "add", "deny") or not isinstance(owner, str) or not isinstance(key_id, str):
+        return {"ok": False, "why": "an approval names an owner, a key id and approve, add or deny"}
     body = {"kind": "approve", "approver": label, "owner": owner, "keyId": key_id[:16], "decision": decision,
             "signedAt": int(now_ms if now_ms is not None else time.time() * 1000)}
     got = (_post or _roster_post)(_ROSTER_URL, body, os.path.join(_log_root(), ".roster_key.json"))

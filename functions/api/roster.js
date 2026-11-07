@@ -249,6 +249,35 @@ export async function signatureOf(request, bytes) {
 
 // #95 - may this owner's row be written by this publish, and is it the owner's intent?
 // -> {refused: why, registeredKeyId} | {verified, keyId, register}
+// v3880 (#27) - ONE LABEL, MORE THAN ONE PC. His 11-05 ruling for the two ALTs: "share the profile, just split the rows".
+// The registered record keeps its first key ({pub, keyId}) and may hold RING_MAX more in `also` - each another PC he
+// approved for the label with "add" (approvePost), never one that replaced the first. Each such PC publishes into its own
+// slot: the rows, the profile and the frames digest are stored under the record's name + "@" + its key id, so two PCs of one
+// label never overwrite each other. A slot is a 12-hex key id; anything else in `also` is skipped, never trusted.
+export const RING_MAX = 2;
+export function ringOf(registered) {
+  const also = registered && typeof registered === "object" && Array.isArray(registered.also) ? registered.also : [];
+  const out = [];
+  for (const e of also) {
+    if (!e || typeof e !== "object" || typeof e.keyId !== "string" || !/^[0-9a-f]{12}$/.test(e.keyId)) continue;
+    const pub = bytesOfB64u(e.pub);
+    if (!pub || pub.length !== 32) continue;
+    if (out.some((o) => o.slot === e.keyId)) continue;
+    out.push({ slot: e.keyId, pub: b64uOfBytes(pub) });
+    if (out.length >= RING_MAX) break;
+  }
+  return out;
+}
+// -> the slot (key id) of the ring key that `pub` is, or null
+export function ringSlotOf(registered, pub) {
+  if (typeof pub !== "string" || !pub) return null;
+  const hit = ringOf(registered).find((e) => e.pub === pub);
+  return hit ? hit.slot : null;
+}
+export function slotName(base, slot) {
+  return slot ? base + "@" + slot : base;
+}
+
 export function intentOf(owner, registered, sig) {
   if (registered !== null) {
     const regPub = registered && typeof registered === "object" ? bytesOfB64u(registered.pub) : null;
@@ -263,6 +292,10 @@ export function intentOf(owner, registered, sig) {
       return { refused: "the signature did not verify (" + sig.why + ")", registeredKeyId: regId };
     }
     if (sig.pub !== b64uOfBytes(regPub)) {
+      // v3880 (#27, his 11-05 ruling "share the profile, just split the rows") - another PC he approved for this label
+      // signs with its own key; it publishes into its own slot (the record name + "@" + its key id), never over the first
+      const slot = ringSlotOf(registered, sig.pub);
+      if (slot) return { verified: true, keyId: sig.keyId, register: false, slot: slot };
       return { refused: "this publish was signed by a different key than the one registered for " + owner, registeredKeyId: regId };
     }
     return { verified: true, keyId: sig.keyId, register: false };
@@ -307,7 +340,9 @@ export async function approvePost(env, sig, body) {
   const approver = body.approver, owner = body.owner, decision = body.decision;
   if (APPROVERS.indexOf(approver) === -1) return refuse("roster would not take this approval: " + String(approver).slice(0, 40) + " may not approve a PC");
   if (OWNERS.indexOf(owner) === -1) return refuse("roster would not take this approval: the owner is not one of the five labels");
-  if (decision !== "approve" && decision !== "deny") return refuse("roster would not take this approval: decision is approve or deny");
+  if (decision !== "approve" && decision !== "deny" && decision !== "add") {
+    return refuse("roster would not take this approval: decision is approve, add or deny");
+  }
   const now = Date.now();
   if (typeof body.signedAt !== "number" || !Number.isFinite(body.signedAt) || Math.abs(now - body.signedAt) > APPROVE_SKEW_MS) {
     return refuse("roster would not take this approval: signedAt is missing or not within 15 min of now");
@@ -325,9 +360,29 @@ export async function approvePost(env, sig, body) {
   if (!req || typeof req !== "object" || req.keyId !== body.keyId || !req.pub) {
     return refuse("roster would not take this approval: no pending request from key " + String(body.keyId).slice(0, 16) + " for " + owner);
   }
+  // v3880 (#27) - the owner's record as it stands, so an approval never drops another PC he approved for this label
+  let held = null;
+  try { held = await registeredOf(kv, owner); } catch (e) {
+    return refuse("roster would not take this approval: the key registered for " + owner + " could not be read");
+  }
+  const ring = held ? (Array.isArray(held.also) ? held.also.filter((e) => e && typeof e === "object") : []) : [];
   if (decision === "approve") {
-    await kv.put(KEY_PREFIX + owner, JSON.stringify({ pub: req.pub, keyId: req.keyId, at: now, approvedBy: approver,
-                                                      replaced: req.replaces || null }));
+    const rec = { pub: req.pub, keyId: req.keyId, at: now, approvedBy: approver, replaced: req.replaces || null };
+    const kept = ring.filter((e) => e.keyId !== req.keyId);
+    if (kept.length) rec.also = kept;
+    await kv.put(KEY_PREFIX + owner, JSON.stringify(rec));
+  } else if (decision === "add") {
+    // "ANOTHER PC OF THIS LABEL" - the first key stays; the new one joins the ring, its rows and profile kept apart
+    if (!held || !held.pub) return refuse("roster would not take this approval: " + owner + " has no first key to add a PC beside");
+    if (ring.some((e) => e.keyId === req.keyId)) {
+      await kv.delete(name);
+      return json({ ok: true, owner: owner, keyId: req.keyId, decision: decision, by: approver, already: true }, 200);
+    }
+    if (ringOf(held).length >= RING_MAX) {
+      return refuse("roster would not take this approval: " + owner + " already holds " + RING_MAX + " other PCs - deny or replace one");
+    }
+    const rec = Object.assign({}, held, { also: ring.concat([{ pub: req.pub, keyId: req.keyId, at: now, approvedBy: approver }]) });
+    await kv.put(KEY_PREFIX + owner, JSON.stringify(rec));
   }
   await kv.delete(name);
   return json({ ok: true, owner: owner, keyId: req.keyId, decision: decision, by: approver }, 200);
@@ -479,9 +534,10 @@ export async function onRequestPost(context) {
     return refuseSignature(intent, sig, asked);
   }
 
+  const rowKey = slotName(key, intent.slot);          // v3880 (#27) - another PC of this label keeps its own rows
   let prev = null;
   try {
-    const raw = await kv.get(key);
+    const raw = await kv.get(rowKey);
     prev = raw ? JSON.parse(raw) : null;
   } catch (e) { prev = null; }
   if (!prev || typeof prev !== "object" || prev.owner !== owner) prev = null;
@@ -541,12 +597,31 @@ export async function onRequestPost(context) {
   if (keyId) rec.keyId = keyId;
   if (pub) rec.pub = pub;
   if (verified && typeof body.signedAt === "number" && Number.isFinite(body.signedAt)) rec.signedAt = body.signedAt;
+  if (intent.slot) { rec.slot = intent.slot; said.slot = intent.slot; }
   try {
-    await kv.put(key, JSON.stringify(rec), { expirationTtl: TTL_S });
+    await kv.put(rowKey, JSON.stringify(rec), { expirationTtl: TTL_S });
   } catch (e) {
     return refuse("roster would not take this publish: " + String((e && e.message) || e).slice(0, 140));
   }
-  return json(Object.assign({ ok: true, owner: owner, stored: ["roster"], key: key }, said), 200);
+  return json(Object.assign({ ok: true, owner: owner, stored: ["roster"], key: rowKey }, said), 200);
+}
+
+// v3880 (#27) - "split the rows": the rows each OTHER PC of this label published into its own slot, while its key is in
+// the ring and its sections still match their hash. -> [{keyId, t, sections}]
+async function otherRowsOf(kv, owner) {
+  let registered = null;
+  try { registered = await registeredOf(kv, owner); } catch (e) { return []; }
+  const out = [];
+  for (const e of ringOf(registered)) {
+    let rec = null;
+    try { const raw = await kv.get(slotName("roster:" + owner, e.slot)); rec = raw ? JSON.parse(raw) : null; } catch (x) { rec = null; }
+    if (!rec || typeof rec !== "object" || rec.owner !== owner || rec.slot !== e.slot) continue;
+    if (rec.intentVerified !== true || b64uKey(rec.pub) !== b64uKey(e.pub)) continue;
+    const sections = priorSections(rec);
+    if (rec.hash !== forHash(sections)) continue;
+    out.push({ keyId: e.slot, t: rec.t, sections: sections });
+  }
+  return out;
 }
 
 export async function onRequestGet(context) {
@@ -591,6 +666,8 @@ export async function onRequestGet(context) {
     if (typeof prev.keyId === "string" && /^[0-9a-f]{12}$/.test(prev.keyId)) row.keyId = prev.keyId;
     if (typeof prev.signedAt === "number" && Number.isFinite(prev.signedAt)) row.signedAt = prev.signedAt;
     if (Object.keys(sections).length) row.sections = sections;
+    const others = await otherRowsOf(kv, owner);
+    if (others.length) row.others = others;
     owners.push(row);
   }
   return json({ ok: true, owners: owners }, 200);
@@ -815,7 +892,7 @@ async function profilePost(env, bytes, sig, body) {
   const hash = hashOfStores(stores);
   if (body.hash !== hash) return pRefuse("the stores do not match the hash that was signed");
 
-  const key = profileKeyOf(owner);
+  const key = slotName(profileKeyOf(owner), intent.slot);   // v3880 (#27) - another PC of this label: its own profile
   let prev = null;
   try {
     const raw = await kv.get(key);
@@ -844,6 +921,7 @@ async function profilePost(env, bytes, sig, body) {
   if (n >= PROFILE_DAY_CAP) return pRefuse("quota: " + PROFILE_DAY_CAP + " uploads a day for " + owner);
   const rec = { owner: owner, t: now, day: today, n: n + 1, hash: hash, stores: stores,
                 intentVerified: true, keyId: intent.keyId, pub: sig.pub };
+  if (intent.slot) rec.slot = intent.slot;
   rec.signedAt = signedAt;
   // #210 (GrokBot) - the stores the owner's PC could not send ride beside the record so the shadow can name them.
   // Only d2r_ store names, at most 40; anything else is left off (absent = an older console, UNKNOWN).
@@ -855,6 +933,25 @@ async function profilePost(env, bytes, sig, body) {
     return pRefuse(String((e && e.message) || e).slice(0, 140));
   }
   return pJson(Object.assign({ ok: true, owner: owner, stored: ["profile"], key: key }, said));
+}
+
+// v3880 (#27) - the profiles of the OTHER PCs he approved for this label ("split the rows"): each one's characters answer
+// (and the world it was drawn in), only while its key is still in the ring and its stores still match their hash. A PC
+// whose record is missing, corrupt or signed by a key no longer in the ring is left out, never served as the label's.
+export const OTHER_STORES = ["d2r_api_chars_learned", "d2r_api_world"];
+async function othersOf(kv, owner, registered) {
+  const out = [];
+  for (const e of ringOf(registered)) {
+    let rec = null;
+    try { const raw = await kv.get(slotName(profileKeyOf(owner), e.slot)); rec = raw ? JSON.parse(raw) : null; } catch (x) { rec = null; }
+    if (!rec || typeof rec !== "object" || rec.owner !== owner || rec.slot !== e.slot) continue;
+    if (!storesOk(rec.stores) || rec.hash !== hashOfStores(rec.stores)) continue;
+    if (b64uKey(rec.pub) !== b64uKey(e.pub)) continue;
+    const stores = {};
+    for (const k of OTHER_STORES) if (typeof rec.stores[k] === "string") stores[k] = rec.stores[k];
+    out.push({ keyId: e.slot, t: rec.t, stores: stores });
+  }
+  return out;
 }
 
 async function profileGet(kv, owner) {
@@ -887,6 +984,8 @@ async function profileGet(kv, owner) {
   if (typeof prev.keyId === "string" && /^[0-9a-f]{12}$/.test(prev.keyId)) out.keyId = prev.keyId;
   const unsent = unsentOf(prev.unsent);
   if (unsent) out.unsent = unsent;
+  const others = await othersOf(kv, owner, registered);
+  if (others.length) out.others = others;
   return pJson(out);
 }
 
@@ -971,7 +1070,7 @@ async function framesPost(env, bytes, sig, body) {
   if (why) return pRefuse(why);
   const hash = hashOf(stable(body.digest));
   if (hash !== body.hash) return pRefuse("the digest does not match the hash that was signed");
-  const key = framesKeyOf(owner);
+  const key = slotName(framesKeyOf(owner), intent.slot);   // v3880 (#27) - another PC of this label: its own digest
   let prev = null;
   try {
     const raw = await kv.get(key);

@@ -28587,7 +28587,12 @@ function escC(s) {
            + (q.replaces ? ' \u00b7 replaces key ' + esc(q.replaces) : '')
            + ' - compare the key with the one that PC shows'
            + ' <button class="util-btn" type="button" data-owner="' + esc(q.owner) + '" data-key="' + esc(q.keyId)
-           + '" data-decision="approve" onclick="window._fleetKeyDecide(this)">Approve</button>'
+           + '" data-decision="approve" onclick="window._fleetKeyDecide(this)" title="this PC REPLACES the one that held '
+           + esc(q.owner) + '">Approve (replace)</button>'
+           /* v3880 (#27) - his 11-05 ruling "share the profile, just split the rows": a second PC of the same label */
+           + '<button class="util-btn" type="button" data-owner="' + esc(q.owner) + '" data-key="' + esc(q.keyId)
+           + '" data-decision="add" onclick="window._fleetKeyDecide(this)" title="both PCs keep publishing as '
+           + esc(q.owner) + ', each into its own rows">Add as another PC</button>'
            + '<button class="util-btn" type="button" data-owner="' + esc(q.owner) + '" data-key="' + esc(q.keyId)
            + '" data-decision="deny" onclick="window._fleetKeyDecide(this)">Deny</button></div>';
     }).join('');
@@ -28636,7 +28641,9 @@ function escC(s) {
       var r = await fetch('/api/roster_approve', { method: 'POST', headers: { 'Content-Type': 'application/json' },
                                                    body: JSON.stringify({ owner: owner, keyId: key, decision: dec }) });
       var j = await r.json();
-      said = (j && j.ok) ? ((dec === 'approve' ? 'approved: ' : 'denied: ') + owner + ' now publishes with key ' + key)
+      said = (j && j.ok) ? (dec === 'approve' ? 'approved: ' + owner + ' now publishes with key ' + key
+                            : dec === 'add' ? 'added: key ' + key + ' publishes as ' + owner + ' beside its first PC, in its own rows'
+                            : 'denied: key ' + key + ' does not publish as ' + owner)
                          : ('not done - ' + String((j && (j.why || j.reason)) || 'no answer'));
     } catch (e) { said = 'not done - the console did not answer'; }
     var row = btn.parentNode;
