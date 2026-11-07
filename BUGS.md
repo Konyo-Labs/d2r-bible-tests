@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3333 - BELOW 1080 WIDE THE NAME BESIDE THE SIGIL COLLAPSED TO ITS GLYPH (v3877, board #59, GrokBot STILL twice)
+GrokBot 6691991737 (his live window, v3872) and 6698868304 (5 widths, v3876): "at 1024 and 1080 the NAME pill's 'KONYO'
+text is gone - only the circle shows"; fine at 1366/1920. Not a regression - a v1506-era rule hid the pill's words below
+1080 to save the tab strip's room (v3858 then made the glyph-only pill hug its glyph). MEASURED on a render (sandbox
+console, headless, 4 widths): the strip is flex 1 1 auto and STRETCHED at 1024 (669px, one row, tabs 87px); with the name
+back it is 658-660px, still one row, no tab label clipped (Tools/Characters are icon chips whose 1px labels are hidden on
+purpose at every width); at 901 (2 rows) and 375 (4 rows) the row counts are the same with and without the name. NOW below
+1080 the pill keeps its NAME line, capped at 9ch with an ellipsis, and drops only the machine line (its words are the
+pill's hover). Law: test_the_glyph_only_name_pill_hugs_its_glyph (re-aimed + "no rule hides the name at any width");
+red-proof PROVEN (1 new). Pixels: scratch renders at 375/901/1024/1080/1120/1366.
 ### REG-3332 - THE HEART FAN'S SPOKES RAN THROUGH reel.route'S CAPTION (v3877, board #99, GrokBot 6695970506 on his live window)
 GrokBot, v3872: "No fan caption sits on another caption, but connector lines do cross reel.route's caption text." MEASURED:
 the captions already carried a 3.5px paint-order halo (v2628), which masks only the edge of the ink; the fan staggers its

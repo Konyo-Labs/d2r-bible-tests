@@ -422,7 +422,12 @@
     margin-right: 6px; opacity: .8;
   }
   .sigil .sg-sub .sg-unnamed { color: var(--muted); font-weight: var(--fw-medium); font-style: italic; }
-  @media (max-width: 1080px){ .sigil .sg-txt { display: none; } .sigil { padding: 5px 7px; } }
+  /* REG-3333 (#59, GrokBot 11-06 6691991737 + 11-07 6698868304, STILL twice: "at 1024 and 1080 the NAME pill's 'KONYO'
+     text is gone - only the circle shows") - below 1080 the pill dropped its words to save the tab strip's room. MEASURED
+     on a render at 1024: the strip is stretched (flex 1 1 auto) and had the room - with the name back it is 658px for
+     669, still one row, no tab label clipped. So the NAME stays (one line, capped at 9ch, ellipsis past it); only the
+     machine line goes, and its words are the pill's hover. */
+  @media (max-width: 1080px){ .sigil .sg-txt { max-width: 9ch; } .sigil .sg-sub { display: none; } .sigil { padding: 5px 9px 5px 7px; } }
   /* v3857 #247 - the glyph-only pill hugs its glyph; the brand grid's stretch had pulled it out to the clock column */
   @media (max-width: 1080px){ .brand-id > .sigil { justify-self: start; } }
   .emblem {
