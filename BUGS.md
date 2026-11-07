@@ -127,6 +127,19 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3341 - QUICK WINS RANKED AN AREA RUN AMONG THE BOSSES AND HID THE OTHER PLACES (v3878, board #101, his ruling)
+His question (11-07 00:48, the Bane Ash card): "for the other items are the best drops all from bosses?? why are the
+others also not synced to silospen from the 5 best drops", and his ruling 00:52: "they both need to be included then as
+bosses first and then the others as secondary from 1 to 5". MEASURED on the page: section 1 ranked boss, super-unique AND
+area runs together (The Pit 3rd on Gull), and the per-kill places (the Cow King, random packs) showed only when better than
+the 4th row's per-run odds, three at most. NOW two sections: 1 - the boss and super-unique runs (one kill a run), 1st-4th by
+runs for a 50% chance, as before; 2 - "Other places · 1st-5th": the area runs first (per RUN, silospen's per-kill odds over
+the stated kills a run, ranked by runs for a 50% chance, the kills a run on the row), then the per-KILL places ranked by
+odds a kill, numbered on, five at most; a run is never ranked against a kill. A section with nothing says so in one line.
+NOT this entry: pulling silospen's REGULAR-monster rows for more area runs - only two areas carry a stated kills-a-run
+(Cows 350, The Pit 110; KILLS_PER_RUN), and an area with no sourced kill count is never ranked, so the pull waits on
+sourced counts (card #101 keeps it). Law: test_quick_wins_shows_each_place_with_its_picture (+1 case; the per-kill and
+ranked-row cases re-aimed); red-proofs PROVEN (2; the cap's first sabotage stayed green until the case counted rows).
 ### REG-3340 - A ROW DREW AN OLD RIVER AS IF CURRENT, SAYING ONLY "LAST RIVER READ FAILED" (v3878, board #24, GrokBot 6700580776)
 GrokBot (11-07, Dean): two reads 8 min apart both showed ROUTED 160 / JOIN 10 / PRINTER 9 / EMPTY 5 - the API said "a
 newer river read failed ... ConnectionAbortedError WinError 10053 ... these lanes are the last good read" - while the row

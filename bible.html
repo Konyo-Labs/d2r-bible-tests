@@ -10693,6 +10693,8 @@ img[src*="d2mon_"]{object-fit:contain!important;mix-blend-mode:normal!important;
 .qw-ttf b{color:#8fe0a0}
 .qw-also{margin-top:14px;padding-top:10px;border-top:1px dashed rgba(240,192,96,.22)}   /* its own section, never a caption for the rows above */
 .qw-also-h{font-size:var(--fs-micro);font-weight:var(--fw-bold);letter-spacing:.08em;text-transform:uppercase;color:#9a8c72;margin:0 0 5px 2px}
+/* #101 - a section with nothing on record says so in one muted line */
+.qw-none{font-size:var(--fs-meta);color:var(--text-dim);padding:6px 12px;font-style:italic}
 .qw-also .qw-row{grid-template-columns:72px minmax(0,2fr) repeat(4,minmax(0,1fr));padding:6px 12px;background:rgba(255,255,255,.015)}
 .qw-also .qw-tile{width:52px;height:52px;justify-self:center}   /* REG-3325 - the ranked rows' columns, so every number lines up */
 @media (max-width: 640px){
@@ -70323,7 +70325,7 @@ function renderJournal(){
   function _qwH(p){ return (p.hours != null && isFinite(p.hours)) ? p.hours : 9e9; }
   window._qwPlaces = _qwPlaces;
   /* the kinds shown beside the ranked rows, never as one: the Cow King and random packs, at his MF */
-  function _qwAlso(x, worst){
+  function _qwAlso(x, worst, cap){
     var P = (typeof QW_PLACES !== 'undefined') ? QW_PLACES[x && x.n] : null, out = [];
     try {
       ((P && P.f) || []).forEach(function(r){
@@ -70335,7 +70337,7 @@ function renderJournal(){
       });
     } catch (e) { return []; }
     return out.filter(function(a){ return a.chance != null && (worst == null || a.chance < worst); })
-      .sort(function(a, b){ return a.chance - b.chance; }).slice(0, 3);
+      .sort(function(a, b){ return a.chance - b.chance; }).slice(0, cap > 0 ? cap : 3);
   }
   /* the 4th row's per-run 1:N: a per-kill reading better than it would have ranked in silospen's own top 4 */
   function _qwWorst(qp){ if(!qp || qp.length<4) return null; var r=qp[3], pr=perRunChance(r.chance, r.s.bossId); return pr>0 ? 1/pr : null; }
@@ -70416,7 +70418,7 @@ function renderJournal(){
   function _qwStat(val, sub, cls, title){
     return '<span class="qw-stat ' + cls + '"' + (title ? ' title="' + esc(title) + '"' : '') + '><b>' + val + '</b><span class="qw-sub">' + sub + '</span></span>';
   }
-  function _qwPlaceRow(p, i){
+  function _qwPlaceRow(p, i, rankSay){
     var area = _qwAreaOf(p.s.bossId, p.area), multi = p.kpr > 1;
     var pr = multi ? perRunChance(p.chance, p.s.bossId) : null;
     /* ONE UNIT DOWN THE COLUMN (the Grok CLI's look at this grid, 2026-11-06: "odds a kill" beside The Pit's "odds a run"
@@ -70426,9 +70428,9 @@ function renderJournal(){
       ? _qwStat(fmtOdds(Math.max(1, Math.round(1 / pr))), 'odds a run', 'qw-odds',
                 fmtOdds(p.chance) + ' a kill; one run of this place is ~' + p.kpr + ' kills (an estimate - the run odds move with it)')
       : _qwStat(fmtOdds(p.chance), 'odds a run', 'qw-odds', 'one run of this place is one kill');
-    return '<div class="qw-row' + (i === 0 ? ' qw-best' : '') + '">'
+    return '<div class="qw-row' + (rankSay ? ' qw-row-area' : (i === 0 ? ' qw-best' : '')) + '">'
       + _qwTile(p.s.bossId, area, p.label, p.s.name)
-      + '<span class="qw-place"><span class="qw-rank">' + (i === 0 ? '1st · best run' : ['1st', '2nd', '3rd', '4th'][i]) + '</span>'
+      + '<span class="qw-place"><span class="qw-rank">' + (rankSay ? esc(rankSay) : (i === 0 ? '1st · best run' : ['1st', '2nd', '3rd', '4th'][i])) + '</span>'
       + '<b class="qw-name"' + _qwHover(p.s.bossId, p.s.name) + '>' + esc(p.label) + '</b>'
       + '<span class="qw-sub qw-area">' + esc(area) + (multi ? ' · ~' + p.kpr + ' kills a run' : '') + '</span></span>'
       + odds
@@ -70446,10 +70448,11 @@ function renderJournal(){
     if (!(n > 1) || !isFinite(n)) return '—';
     return '~' + Math.ceil(Math.log(0.5) / Math.log(1 - 1 / n)).toLocaleString();
   }
-  function _qwAlsoGrid(list){
+  var _QW_NTH = ['1st', '2nd', '3rd', '4th', '5th'];
+  function _qwAlsoGrid(list, from){
     if (!list.length) return '';
-    return '<div class="qw-also"><div class="qw-also-h">Also drops here · priced per kill, not a run you can repeat</div>'
-      + list.map(function(a){
+    from = from || 0;
+    return list.map(function(a, k){
           var why = a.kind === 'once' ? 'killing him bars that character from the Secret Cow Level in that difficulty (D2R; RotW unconfirmed)'
                   : 'a random ' + a.kind + ' pack - it spawns by chance, so no run count; at your MF, its /players factor is not measured';
           /* REG-3321 (#102) - the row's why rides its odds cell, never a native tip over the whole row; the monster's card
@@ -70459,7 +70462,8 @@ function renderJournal(){
                ... also with the odds number of runs.. and etc."): the label says WHAT the place is, and the row carries
                the ranked rows' four columns - the kills for an even chance computed from the odds; time and rate stay
                '—', marked not measured, until a kill rate is on record (a random pack has none; never a guess) */
-            + '<span class="qw-place"><span class="qw-rank">' + (a.kind === 'once' ? 'once a character · each difficulty'
+            + '<span class="qw-place"><span class="qw-rank">' + _QW_NTH[from + k] + ' · per kill · '
+                                                                 + (a.kind === 'once' ? 'once a character · each difficulty'
                                                                  : 'random ' + esc(a.kind) + ' pack · spawns by chance') + '</span>'
             + '<b class="qw-name"' + _qwHover(a.id || '', a.name) + '>' + esc(a.who) + '</b><span class="qw-sub qw-area">' + esc(a.area)
             + (a.kind === 'once' ? ' · not a repeatable run' : ' · random ' + esc(a.kind) + ' pack') + '</span></span>'
@@ -70468,10 +70472,27 @@ function renderJournal(){
                       'kills for an even (50%) chance of the drop at these per-kill odds' + (a.kind === 'once' ? ' - but he can be killed once a character in each difficulty' : ''))
             + _qwStat('—', 'time for a 50% chance', 'qw-ttf qw-unmeasured', 'not measured - no kill rate is on record for this place')
             + _qwStat('—', 'kills an hour', 'qw-kph qw-unmeasured', 'not measured') + '</div>';
-        }).join('') + '</div>';
+        }).join('');
   }
+  /* #101 (his ruling 11-07 ~00:52: "they both need to be included then as bosses first and then the others as secondary
+     from 1 to 5") - TWO SECTIONS. 1: the boss and super-unique runs - one kill a run - 1st-4th by runs for a 50% chance,
+     as before. 2: the OTHER places, 1st-5th: the area runs first (a whole level, per RUN - silospen's per-kill odds over a
+     stated kills-a-run, ranked by runs for a 50% chance), then the per-KILL places (the Cow King, random packs - ranked by
+     odds a kill). A run is never ranked against a kill: each row says which it is, and the two keep their own order. A
+     section with nothing says so in one line. */
   function _qwGridHtml(qp, also){
-    return '<div class="qw-grid">' + qp.slice(0, 4).map(_qwPlaceRow).join('') + '</div>' + _qwAlsoGrid(also);
+    qp = qp || []; also = also || [];
+    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 4);
+    var areas = qp.filter(function(p){ return p.kpr > 1; }).slice(0, 5);
+    var kills = also.slice(0, Math.max(0, 5 - areas.length));
+    var sec1 = one.length ? one.map(function(p, i){ return _qwPlaceRow(p, i); }).join('')
+      : '<div class="qw-none">No boss or super-unique run on record drops it - its places are below.</div>';
+    var sec2 = (areas.length || kills.length)
+      ? areas.map(function(p, i){ return _qwPlaceRow(p, i, _QW_NTH[i] + ' · per run · area'); }).join('') + _qwAlsoGrid(kills, areas.length)
+      : '<div class="qw-none">No other place on record drops it - silospen ranks only boss and super-unique kills for it.</div>';
+    return '<div class="qw-grid">' + sec1 + '</div>'
+      + '<div class="qw-also"><div class="qw-also-h">Other places · 1st-5th · area runs priced per run, then places priced per kill</div>'
+      + sec2 + '</div>';
   }
   window._qwGridHtml = _qwGridHtml;
   /* REG-3316 (#90, his 11-06 ask: "each of the 3 ancients can drop 2 jewels specifically ... i want to know how and which
@@ -71336,7 +71357,7 @@ function renderJournal(){
        keeps the line it always had; rows 2-4 sit under it; the Cow King and random packs are named, never ranked. */
     var _qp=_qwPlaces(x);
     if(_qp.length){
-      src=_qwGridHtml(_qp, _qwAlso(x, _qwWorst(_qp)));   /* #85 - one grid, each place with its picture */
+      src=_qwGridHtml(_qp, _qwAlso(x, null, 5));   /* #85 - one grid, each place with its picture; #101 - other places 1st-5th */
     }
     else {
       var _cj = _qwColossalRow(x.n);                     /* REG-3316 (#90) - a Colossal jewel: the Ancient to kill last */

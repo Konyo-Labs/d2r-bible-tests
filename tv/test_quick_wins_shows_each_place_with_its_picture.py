@@ -86,6 +86,8 @@ var also = [ { id: 'su_thecowking', name: 'The Cow King', who: 'Normal The Cow K
              { name: 'The Banished', who: 'Normal The Banished', area: 'Catacombs Level 3', kind: 'unique', chance: 603 } ];
 out.grid = _qwGridHtml(places, also);
 out.gridNoAlso = _qwGridHtml(places, []);
+out.gridBossesOnly = _qwGridHtml(places.filter(function(p){ return p.kpr === 1; }), []);
+out.gridSix = _qwGridHtml(places, also.concat([1, 2, 3, 4].map(function(k){ return { name: 'Pack ' + k, who: 'Hell Pack ' + k, area: 'Somewhere', kind: 'champion', chance: 700 + k }; })));
 process.stdout.write(JSON.stringify(out));
 """
 
@@ -147,8 +149,9 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         also = g[g.index('<div class="qw-also">'):]
         rows = re.findall(r'<div class="qw-row qw-row-also"[^>]*>(.*?)</div>', also)
         self.assertEqual(len(rows), 2, "PREMISE: the fixture's two per-kill places did not draw: %s" % also[:300])
-        self.assertIn('<span class="qw-rank">once a character · each difficulty</span>', rows[0])
-        self.assertIn('<span class="qw-rank">random unique pack · spawns by chance</span>', rows[1])
+        # #101 - the Pit's area run is the section's 1st (per run); the per-kill places follow, numbered on
+        self.assertIn('<span class="qw-rank">2nd · per kill · once a character · each difficulty</span>', rows[0])
+        self.assertIn('<span class="qw-rank">3rd · per kill · random unique pack · spawns by chance</span>', rows[1])
         for row, c in zip(rows, (312, 603)):
             stats = re.findall(r'<span class="qw-stat ([a-z -]+)"[^>]*><b>([^<]*)</b><span class="qw-sub">([^<]*)</span>', row)
             self.assertEqual([x[0].split()[0] for x in stats], ["qw-odds", "qw-runs", "qw-ttf", "qw-kph"], row[:300])
@@ -211,7 +214,7 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
 
     def test_a_ranked_row_is_a_tile_a_place_and_four_captioned_numbers(self):
         g = self.o["gridNoAlso"]
-        rows = re.findall(r'<div class="qw-row(?: qw-best)?">(.*?)</div>', g)
+        rows = re.findall(r'<div class="qw-row(?: qw-best| qw-row-area)?">(.*?)</div>', g)
         self.assertEqual(len(rows), 4, "four places did not make four rows: %s" % g[:300])
         self.assertIn('<div class="qw-row qw-best">', g, "the best place is not marked")
         for row in rows:
@@ -220,6 +223,29 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
             self.assertEqual([s[0] for s in stats], ["qw-odds", "qw-runs", "qw-ttf", "qw-kph"], row[:400])
             self.assertTrue(all(s[1] and s[2] for s in stats), "a number without its subtitle: %r" % stats)
             self.assertEqual(stats[0][2], "odds a run", "the odds column mixes units: %r" % stats[0][2])
+
+    def test_bosses_first_then_the_other_places_first_to_fifth(self):
+        """#101 (his ruling 11-07 ~00:52: "they both need to be included then as bosses first and then the others as
+        secondary from 1 to 5") - section 1 holds only one-kill runs; the area run moves to section 2, ranked first there
+        per RUN, the per-KILL places after it, numbered on, five at most; a run is never ranked against a kill"""
+        g = self.o["grid"]
+        i = g.index('<div class="qw-also">')
+        sec1, sec2 = g[:i], g[i:]
+        self.assertNotIn("Normal The Pit", sec1, "an area run sat among the boss and super-unique runs")
+        for nm in ("Normal Coldcrow", "Normal Andariel", "Normal Pitspawn Fouldog"):
+            self.assertIn(nm, sec1)
+        self.assertIn('<span class="qw-rank">1st · per run · area</span>', sec2)
+        self.assertIn("~110 kills a run", sec2, "the area row hid the kills a run its price assumes")
+        self.assertLess(sec2.index("Normal The Pit"), sec2.index("Normal The Cow King"), "a kill was ranked before a run")
+        six = self.o["gridSix"]
+        sec2six = six[six.index('<div class="qw-also">'):]
+        self.assertEqual(len(re.findall(r'<div class="qw-row qw-row-(?:area|also)"', sec2six)), 5,
+                         "section 2 holds more or fewer than five places")
+        ranks = re.findall(r'<span class="qw-rank">(\d)(?:st|nd|rd|th) · per (run|kill)', sec2six)
+        self.assertEqual([r[0] for r in ranks], ["1", "2", "3", "4", "5"], "section 2 is not numbered 1st-5th: %r" % ranks)
+        self.assertEqual(ranks[0][1], "run")
+        only = self.o["gridBossesOnly"]
+        self.assertIn("No other place on record drops it", only, "an empty section 2 said nothing")
 
     def test_the_per_kill_places_are_their_own_section(self):
         g = self.o["grid"]
@@ -461,6 +487,16 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "#101 - an area run is ranked among the boss and super-unique runs again (one section)",
+     "file": "bible.html",
+     "find": "    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 4);\n",
+     "replace": "    var one = qp.slice(0, 4);\n",
+     "matches": 1, "needs": "node"},
+    {"why": "#101 - the other places are not numbered 1st-5th (the per-kill rows restart, or the cap is gone)",
+     "file": "bible.html",
+     "find": "    var kills = also.slice(0, Math.max(0, 5 - areas.length));\n",
+     "replace": "    var kills = also;\n",
+     "matches": 1, "needs": "node"},
     {"why": "REG-3336 - a monster on the rich boss card shrinks into the item portrait frame again",
      "file": "bible.html",
      "find": '#arttip.tip-rich img[src*="d2mon_"]{width:96px;height:96px;object-fit:contain;margin:0 auto 5px}\n',
