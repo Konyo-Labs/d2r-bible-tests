@@ -193,10 +193,14 @@ class WindowsFindsEveryRoute(unittest.TestCase):
         all; the Mac holds the eye (v1251). Source-pinned: the loop runs only on Windows."""
         code = "\n".join(l.split("#", 1)[0] for l in self.src.split("\n"))
         held = code.find("if (-not $d2rAlive) {\n      Write-Stage 'held'")
-        grab = code.find("[TvdCap]::GrabVirtual($frames)")
+        # #255 (v3881, REG-3377) - the virtual-desktop grab is GONE: with D2R alive and no window pinned, only a monitor a
+        # D2R window covers whole is grabbed (test_windows_films_the_game_not_the_desktop pins that rule)
+        grab = code.find("Write-Stage 'monitor'")
         self.assertGreater(held, -1, "no held-eye branch: auto films the desktop when nothing pins")
-        self.assertLess(held, grab, "the held branch comes after the desktop grab, so it never runs first")
+        self.assertGreater(grab, -1, "the no-pin branch no longer asks for D2R's own monitor")
+        self.assertLess(held, grab, "the held branch comes after the monitor grab, so it never runs first")
         self.assertNotIn("full screen (no D2R)", code, "the desktop is still filmed with no D2R alive")
+        self.assertNotIn("[TvdCap]::GrabVirtual", code, "the whole virtual desktop is grabbed again")
 
     def test_windows_names_a_streaming_window_that_does_not_name_the_game(self):
         code = "\n".join(l.split("//", 1)[0] for l in self.src.split("\n"))

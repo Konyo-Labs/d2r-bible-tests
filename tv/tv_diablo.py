@@ -2494,7 +2494,8 @@ def _archive_footage_copy(src_path, now_f, why="ok", _consume_due=True):
         last = os.path.join(FRAMES, "eye.last.jpg")
         last_tmp = _cap_tmp(last)
         try:
-            _sh.copyfile(src_path, last_tmp)
+            # #255 - a .bmp source (Windows' full frame) is not a jpeg: the last-good copy is the archived film frame
+            _sh.copyfile(dest if str(src_path).lower().endswith(".bmp") else src_path, last_tmp)
             if os.path.isfile(last_tmp) and os.path.getsize(last_tmp) >= 4000:
                 os.replace(last_tmp, last)
                 globals()["_FILM_LAST_GOOD"] = last
@@ -9093,10 +9094,21 @@ def main():
                 _weye = os.path.join(FRAMES, "eye.jpg")
                 _wnow = time.time()
                 _wiv = FOOTAGE_INTERVAL_S
-                if os.path.isfile(_weye) and (_wnow - os.path.getmtime(_weye)) < 5.0 \
+                # #255 (v3881) - THE REEL IS FILMED FROM THE FULL FRAME, AT THE MAC'S SIZE. This archived eye.jpg - the
+                # console's 800 px / q72 thumbnail (capture_win.ps1 SaveAll) - so every Windows reel held 800 px frames
+                # while the Mac's hold 1440 px (FILM_MAX_PX). MEASURED on the bench (tv/reader_parity.py, 48 real
+                # frames): at 800 px the inventory-title eye lost 7 of 16 frames and the runes enlarge changed on 8 of
+                # 16, and the Grok CLI read the same header "crisp" at 1440 and "soft" at 800. live.bmp is the full
+                # capture capture_win.ps1 promotes every second grab; _archive_footage_copy shrinks it to FILM_MAX_PX
+                # exactly as the Mac's film is. The eye stays the fallback when the full frame is not fresh.
+                _wfull = os.path.join(FRAMES, "live.bmp")
+                _wsrc, _wwhy = _weye, "win-eye"
+                if os.path.isfile(_wfull) and (_wnow - os.path.getmtime(_wfull)) < 5.0:
+                    _wsrc, _wwhy = _wfull, "win-full"
+                if os.path.isfile(_wsrc) and (_wnow - os.path.getmtime(_wsrc)) < 5.0 \
                         and _wnow >= globals().get("_FOOTAGE_DUE", 0.0):
                     try:
-                        _archive_footage_copy(_weye, _wnow, why="win-eye")
+                        _archive_footage_copy(_wsrc, _wnow, why=_wwhy)
                     except Exception:
                         globals()["_FOOTAGE_DUE"] = max(globals().get("_FOOTAGE_DUE", 0.0) + _wiv, _wnow - (_wiv - 0.01)) \
                             if globals().get("_FOOTAGE_DUE") else _wnow + _wiv

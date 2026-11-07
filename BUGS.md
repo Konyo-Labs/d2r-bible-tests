@@ -112,6 +112,33 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3377 - A WINDOWED WINDOWS PC FILMED ITS TITLE BAR, SAVED 800 PX REELS, AND COULD FILM THE DESKTOP (v3881, #255)
+MEASURED 2026-11-07 on a Windows PC playing D2R windowed (client 1507x755) and on the reader-parity bench (48 real frames,
+run on the Mac and a Windows PC): (1) capture_win.ps1 Grab() sized the bitmap to the CLIENT area but called
+PrintWindow(hwnd, hdc, 2), which paints the WHOLE window from the bitmap's top-left - 31 of 32 sampled frames carry the
+Windows caption and lose the bottom of the HUD, shifting every anchor (the runes crop band moved 1.4 % of the width with the
+caption cut); (2) tv_diablo archived eye.jpg (800 px / q72 thumbnail) into the reel while the Mac's reels hold 1440 px from
+the full capture - at 800 px the inventory-title eye lost 7 of 16 frames, the runes enlarge changed on 8 of 16, and the Grok
+CLI read the same header "crisp" at 1440 and "soft" at 800; (3) GrabVirtual (every monitor) ran when D2R.exe was alive with
+no window pinned and GrabPrimary (the primary monitor) when the window grab came back black - on a windowed PC that is his
+desktop: one PC's reel held a frame of both monitors (browsers, chat). FIX: PW_CLIENTONLY whenever the bitmap is the client
+size; the reel filmed from live.bmp shrunk to FILM_MAX_PX (the eye only a fallback); a monitor grabbed ONLY when the
+foreground window is a D2R process covering it whole (GrabD2RMonitor) - GrabVirtual and GrabPrimary removed. The C# was
+compiled on a real Windows PC (Add-Type) before commit - the first cut deleted MostlyBlack/Promote with the grabbers and
+the compiler caught it. Law: test_windows_films_the_game_not_the_desktop (4 red-proofs seen RED; its Windows case compiles
+the C#). test_the_eye_finds_d2r_however_he_runs_it moved from "held before GrabVirtual" to "held before the monitor grab,
+and no GrabVirtual at all".
+### REG-3378 - THE READER-PARITY BENCH (v3881, #255): every eye, the same real frames, every capture shape, every machine
+tv/reader_parity.py: a private corpus of real sessions (~/d2r_bench_corpus, never in the repo); per frame the variants a PC
+can hand the readers (native / Windows 800 px eye / windowed caption / both / caption cut), every deterministic eye on each
+(stash tab, inventory title, aspect crop band, chronicle, stash + runes enlarge, tooltip box), each compared with the native
+answer (agree / DIFFERS / UNKNOWN - an eye that raised never agrees), and --compare for two machines' reports. Run 1 (#255):
+the caption is in 31/32 windowed frames and 0/16 Mac frames; at 800 px the inventory eye loses 7/16 and the runes enlarge
+changes 8/16; ONE native frame of identical bytes reads inventory-title True on the Mac and False on Windows (the OCR engines
+differ; its band is calibrated at 1.54:1 and an OCR error returns False); the chronicle detector called a non-chronicle
+frame "chronicle" once its caption was cut (~2:1 aspect) - first reported as "2 hidden Chronicle screens", CORRECTED after
+opening the frame and the Grok CLI's cold read. Its first run also read variants outside their reel folder (no capture
+stamp -> another prep_stash_grid path): fixed in the bench. Law: test_the_parity_bench_measures_what_it_says (5 red-proofs).
 ### REG-3376 - HIS STATE PANEL PRINTED DEAN'S HOST NAME, A UTC ISO STAMP, AND "SWITCHED OFF" - THE GUESS #225 REMOVED (v3880)
 GrokBot (#230 6707144313) read on his State panel: "2 peer(s) are switched off rather than stale: Dean's machine (<its host
 name>) has not reported since 2026-11-07T04:28:40.194Z ..." - a host name nobody asked for (GrokBot redacted it), a UTC stamp

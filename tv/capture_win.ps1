@@ -257,6 +257,7 @@ public static class TvdCap {
     // have been wrong at find-time). Prefer FULL window rect for PrintWindow so chrome
     // + client land 1:1; fall back to stored client size.
     int left = hit.Left, top = hit.Top, bw = hit.W, bh = hit.H;
+    bool clientOnly = false;
     try {
       RECT wr;
       if (GetWindowRect(hit.Hwnd, out wr)) {
@@ -270,7 +271,7 @@ public static class TvdCap {
         if (cw >= 640 && ch >= 400 && cw * ch >= (int)(bw * bh * 0.85)) {
           POINT pt; pt.X = 0; pt.Y = 0;
           if (ClientToScreen(hit.Hwnd, ref pt)) {
-            left = pt.X; top = pt.Y; bw = cw; bh = ch;
+            left = pt.X; top = pt.Y; bw = cw; bh = ch; clientOnly = true;
           }
         }
       }
@@ -285,9 +286,13 @@ public static class TvdCap {
       g = Graphics.FromImage(bmp);
       IntPtr hdc = g.GetHdc();
       try {
-        // 2 = PW_RENDERFULLCONTENT (DWM composition / DirectX games)
-        bool ok = PrintWindow(hit.Hwnd, hdc, 2);
-        if (!ok) PrintWindow(hit.Hwnd, hdc, 0);
+        // 2 = PW_RENDERFULLCONTENT (DWM composition / DirectX games). #255 (v3881): | 1 = PW_CLIENTONLY whenever the bitmap
+        // is the CLIENT size - without it PrintWindow paints the WHOLE window (title bar + borders) from the bitmap's
+        // top-left, so a windowed frame carried the caption and lost the bottom of the HUD (measured: 31 of 32 frames of a
+        // windowed PC). Borderless: client == window, so the flag changes nothing there.
+        uint pwf = clientOnly ? 3u : 2u;
+        bool ok = PrintWindow(hit.Hwnd, hdc, pwf);
+        if (!ok) PrintWindow(hit.Hwnd, hdc, clientOnly ? 1u : 0u);
       } finally {
         g.ReleaseHdc(hdc);
       }
@@ -311,22 +316,42 @@ public static class TvdCap {
     }
   }
 
-  public static void GrabPrimary(string framesDir) {
-    var b = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+  // #255 (v3881) - A MONITOR IS FILMED ONLY WHEN D2R COVERS IT. GrabPrimary filmed the whole primary monitor and GrabVirtual
+  // every monitor whenever the window grab failed while D2R.exe ran - on a windowed PC that is his DESKTOP around the game
+  // (measured 2026-11-04 on one PC: a frame of both monitors, browsers and chat, reached a reel). Both are gone. The one
+  // case they existed for - exclusive / borderless fullscreen, where the monitor IS the game - is kept: the FOREGROUND
+  // window must belong to a D2R process and cover its monitor whole, or nothing is grabbed.
+  public static bool D2RCoversItsMonitor(out Rectangle bounds) {
+    bounds = Rectangle.Empty;
+    IntPtr fg = GetForegroundWindow();
+    if (fg == IntPtr.Zero) return false;
+    uint pid;
+    GetWindowThreadProcessId(fg, out pid);
+    string pn = "";
+    try { using (var pr = Process.GetProcessById((int)pid)) { pn = pr.ProcessName; } } catch { return false; }
+    bool isD2R = false;
+    foreach (var n in ProcNames) if (string.Equals(pn, n, StringComparison.OrdinalIgnoreCase)) isD2R = true;
+    if (!isD2R) return false;
+    RECT wr;
+    if (!GetWindowRect(fg, out wr)) return false;
+    var scr = System.Windows.Forms.Screen.FromHandle(fg).Bounds;
+    if (wr.Left <= scr.Left && wr.Top <= scr.Top && wr.Right >= scr.Right && wr.Bottom >= scr.Bottom) {
+      bounds = scr;
+      return true;
+    }
+    return false;
+  }
+
+  public static bool GrabD2RMonitor(string framesDir) {
+    Rectangle b;
+    if (!D2RCoversItsMonitor(out b)) return false;
     using (var bmp = new Bitmap(b.Width, b.Height))
     using (var g = Graphics.FromImage(bmp)) {
       g.CopyFromScreen(b.X, b.Y, 0, 0, bmp.Size);
+      if (MostlyBlack(bmp)) return false;
       SaveAll(bmp, framesDir);
     }
-  }
-
-  public static void GrabVirtual(string framesDir) {
-    var b = System.Windows.Forms.SystemInformation.VirtualScreen;
-    using (var bmp = new Bitmap(b.Width, b.Height))
-    using (var g = Graphics.FromImage(bmp)) {
-      g.CopyFromScreen(b.Left, b.Top, 0, 0, bmp.Size);
-      SaveAll(bmp, framesDir);
-    }
+    return true;
   }
 
   static bool MostlyBlack(Bitmap bmp) {
@@ -642,11 +667,15 @@ while ($true) {
       if ($best.IsFg) {
         Write-Stage 'primary-fg'
         try {
-          [TvdCap]::GrabPrimary($frames)
-          Write-CapTarget 'window' 'D2R foreground - primary monitor'
+          # #255 (v3881) - its own monitor only when D2R covers it whole; a windowed D2R's monitor holds his desktop
+          if ([TvdCap]::GrabD2RMonitor($frames)) {
+            Write-CapTarget 'window' 'D2R fullscreen - its own monitor'
+          } else {
+            Write-CapTarget 'waiting' 'D2R in front but its window grab came back black and it does not cover its monitor - the desktop is never filmed'
+          }
           Start-Sleep -Milliseconds $pollMs
           continue
-        } catch { Write-Host "  primary fail: $_" }
+        } catch { Write-Host "  monitor grab fail: $_" }
       } else {
         Write-Stage 'need-focus'
         if ($lastLabel -ne '__need_focus__') {
@@ -685,16 +714,20 @@ while ($true) {
       Start-Sleep -Milliseconds 500
       continue
     }
-    Write-Stage 'virtual'
-    if ($lastLabel -ne '__full__') {
-      Write-Host '  full virtual screen (no D2R pin)'
-      $lastLabel = '__full__'
-    }
+    # #255 (v3881) - D2R.exe alive and no window pinned: its own monitor ONLY when it covers it (exclusive fullscreen),
+    # never the virtual desktop. Measured 2026-11-04: this branch filmed both monitors of a windowed PC into a reel.
+    Write-Stage 'monitor'
     try {
-      [TvdCap]::GrabVirtual($frames)
-      Write-CapTarget 'window' 'D2R alive - full virtual fallback'
+      if ([TvdCap]::GrabD2RMonitor($frames)) {
+        if ($lastLabel -ne '__monitor__') { Write-Host '  D2R covers its monitor (fullscreen, no window pin)'; $lastLabel = '__monitor__' }
+        Write-CapTarget 'window' 'D2R fullscreen - its own monitor (no window pin)'
+      } else {
+        $msg = 'eye held - D2R.exe is running but its window could not be grabbed and it covers no monitor, so the desktop is never filmed'
+        if ($lastLabel -ne '__held_alive__') { Write-Host ('  ' + $msg); $lastLabel = '__held_alive__' }
+        Write-CapTarget 'waiting' $msg
+      }
     } catch {
-      Write-Host "  virtual fail: $_"
+      Write-Host "  monitor grab fail: $_"
     }
   } catch {
     Write-Host "  loop err: $_"
