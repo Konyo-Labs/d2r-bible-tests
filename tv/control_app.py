@@ -35315,6 +35315,60 @@ def vault_ledger_view():
     }
 
 
+def _vault_ledger_explained(v, why_fn=None):
+    """REG-3353 (#47) - the ledger view as the route serves it: when it holds no row (and read whole), it says WHY in
+    `emptyWhy` and at the end of `say`. The view itself stays a read of its two stores (it asks no lock). -> v | a copy"""
+    try:
+        if not isinstance(v, dict):
+            return v
+        t = v.get("totals") if isinstance(v.get("totals"), dict) else {}
+        if t.get("owned") or t.get("sightings") or "INCOMPLETE" in str(v.get("say") or ""):
+            return v
+        w = (why_fn or _vault_empty_why)()
+        if w:
+            return dict(v, emptyWhy=w, say="%s Empty because %s." % (str(v.get("say") or "").rstrip(), w))
+    except Exception:
+        pass
+    return v
+
+
+def _vault_empty_why(may_fn=None, sweep_fn=None, now=None):
+    """REG-3353 (#47) - WHY this PC's vault ledger holds no row, in the console's own words. -> str | None. Never raises.
+
+    MEASURED on the ALT 11-07 (v3876): /api/vault_ledger said "0 grounded row(s) and 0 sighting(s)" for ~42 h, which reads
+    as "nothing was found". Two other facts were true: no vault sweep could start (vault.sweep_start OPEN, not permitted -
+    "26 of its own guard law(s) changed or are unproven"), and the last sweep's classifier had answered about none of its 2
+    stash stills (both readers timed out). An empty ledger names the sweep lock's refusal and the last sweep's own why; it
+    never guesses. `may_fn` / `sweep_fn` are seams (self_arming.may, vault_sweep_state). [[unknown-stays-unknown]]"""
+    parts = []
+    try:
+        if may_fn is None:
+            import self_arming as _sa
+            may_fn = _sa.may
+        ok, why = may_fn("vault.sweep_start")
+        if not ok:
+            parts.append("no vault sweep may start on this PC - %s" % _word_cut(" ".join(str(why).split()), 240))
+    except Exception as e:
+        parts.append("whether a vault sweep may start here could not be told (%s)" % type(e).__name__)
+    try:
+        st = (sweep_fn or vault_sweep_state)() or {}
+        res = st.get("result") if isinstance(st.get("result"), dict) else {}
+        ts = st.get("resultTs")
+        if st.get("running"):
+            parts.append("a vault sweep is reading now")
+        elif res.get("why"):
+            _age = ""
+            if isinstance(ts, (int, float)) and ts > 0:
+                _h = max(0.0, ((time.time() if now is None else now) * 1000 - ts) / 3600000.0)
+                _age = " (%s ago)" % ("%d min" % int(_h * 60) if _h < 1 else "%.0f h" % _h)
+            parts.append("the last vault sweep%s: %s" % (_age, _word_cut(" ".join(str(res["why"]).split()), 240)))
+        elif not ts:
+            parts.append("no vault sweep has run on this PC yet")
+    except Exception as e:
+        parts.append("the last vault sweep could not be read (%s)" % type(e).__name__)
+    return "; ".join(parts) or None
+
+
 _VAULT_QUOTE = {"sig": None, "res": None}
 
 
@@ -51709,8 +51763,8 @@ class Handler(BaseHTTPRequestHandler):
             # v2067 — LOOKING AT THE LEDGER IS FREE. Until now vault_ledger_load() had exactly one
             # caller in this file, inside _vault_sweep_run, so the accumulated ledger could only be
             # seen as a side effect of paying for a sweep. Reads two files, writes nothing, calls
-            # no reader.
-            self._json(200, vault_ledger_view())
+            # no reader. REG-3353 (#47) - an empty ledger says why (the sweep lock's own words, the last sweep's).
+            self._json(200, _vault_ledger_explained(vault_ledger_view()))
             return
         if path == "/api/main_locks":
             # #246 W4 — READ-ONLY. What main_character.py has locked as his gear (Wilson over equip
