@@ -12,7 +12,8 @@ wounded / in town / lost) in the hover card, the Fleet header and the State pane
 
 Now a closed row is its name line plus ONE line: the word, then the one thing it is about - a wounded PC's first wound (a
 blind gate leads: it keeps every lock shut whatever the PC proves next), "+N" for the rest, and what is healing it (importing
-proofs ~26 min / proving 8 ~12 min); "since 18:10" for a PC in town. The chips draw on an OPEN row (one click) and the State
+proofs ~26 min / proving 8 ~12 min); "off since 18:10" for a PC in town (the Grok CLI's cold look could not
+tell "IN TOWN" meant switched off, so the plain words ride beside it). The chips draw on an OPEN row (one click) and the State
 panel keeps every wound. Same live data after: 2-3 lines a row, a ~400px list. A wounded PC still reads WOUNDED closed, so a
 hidden chip never lets a dark PC read healthy (v2249 / v2283 / v2296); a brief that cannot be read leaves the chips showing.
 
@@ -91,6 +92,8 @@ CASES = {
                                     _p("proved", ["proof out of date", "0 blind", "129 laws owed"], warn=True)),
                      "heart": {"census": "stale", "blind": 0, "owed": 1290, "ratePerH": 90, "etaS": 51840}},
     "town": {"parts": _with(_p("stuck", ["PRINTER 3 older for 2d"], warn=True)), "off": {"since": "18:10"}, "heart": CURRENT},
+    # off since an earlier day: the date, not the clock (GrokBot's row, "since Oct 28 00:24", wrapped to a second line)
+    "townold": {"parts": WELL, "off": {"since": "Oct 28 00:24"}, "heart": CURRENT},
     "lost": {"parts": [_p(k, ["UNKNOWN"], unk=True) for k in ("films", "river", "stuck", "proved")], "heart": None},
     "many": {"parts": _with(_p("stuck", ["STATION 1 older for 30d"], warn=True), _p("picker", ["broken"], warn=True),
                             _p("readers", ["CLAUDE off", "GROK reads"], warn=True)),
@@ -157,7 +160,8 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
         self.assertEqual(b["healing"]["line"], "proving 8 ~12 min")
         self.assertEqual(b["blind"]["line"], u"1 gate blind +2 · importing proofs ~26 min")
         self.assertEqual(b["importing"]["line"], u"river stuck +1 · importing proofs ~82 min")
-        self.assertEqual(b["town"]["line"], "since 18:10")
+        self.assertEqual(b["town"]["line"], "off since 18:10")       # the Diablo word AND the plain one (the Grok CLI's look)
+        self.assertEqual(b["townold"]["line"], "off since Oct 28")
         self.assertEqual(b["lost"]["line"], "no report this console can read")
 
     def test_a_blind_gate_leads_the_wounds(self):
@@ -213,6 +217,9 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3395 - a PC in town says only the Diablo word again, which a fresh eye cannot read as switched off",
+     "file": "tv/control_ui.html",
+     "find": "      return since ? 'off since ' + since : 'off';", "replace": "      return since ? 'since ' + since : '';", "matches": 1},
     {"why": "REG-3395 - a closed row draws every river chip again (the 5-8 line rows he asked to collapse)",
      "file": "tv/control_ui.html",
      "find": "  .fleet-row:not(.fleet-open) > .fleet-brief ~ .fleet-chips { display: none; }\n", "replace": "\n", "matches": 1},

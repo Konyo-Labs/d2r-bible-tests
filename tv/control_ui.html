@@ -29175,7 +29175,12 @@ function escC(s) {
      EVERY PC keeps the wounds and what happens next. A wounded PC still reads WOUNDED on its closed row, so a hidden chip never
      lets a dark PC read healthy (v2249 / v2283 / v2296). No brief (its reading threw) = the chips stay on the closed row. */
   var _fleetBriefLine = function (s, hs) {
-    if (s.key === 'town') return s.offSince ? 'since ' + s.offSince : 'offline';   /* "in town" already says offline */
+    /* the Grok CLI's cold look at the closed rows (v3881): "IN TOWN is neither fine, trouble, nor off" - the Diablo word and
+       the plain one, side by side (his "diablo ii language and human language"); a day before today keeps its date, not its clock */
+    if (s.key === 'town') {
+      var since = String(s.offSince || '').replace(/^([A-Z][a-z]{2} \d{1,2}) \d{1,2}:\d{2}$/, '$1');
+      return since ? 'off since ' + since : 'off';
+    }
     if (s.key === 'lost') return 'no report this console can read';
     if (s.key === 'ready') return 'every law proved';
     var _n = function (x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };

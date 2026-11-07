@@ -122,8 +122,8 @@ progress, river stuck, locks shut until..., "3 shut: frame release · vault swee
 a 745px list for six PCs, and the open row's vault line wrapped six lines of ~16 characters beside the eyes. v3880 (REG-3372)
 had given each PC its word - ready for battle / healing / wounded / in town / lost - in the hover card, the header and the State
 panel; the row never said it. Now a closed row is its name line plus ONE brief: _pcStatus's own word and one short line (a
-blind gate leads, "+N" for the rest, then what heals it: "importing proofs ~26 min" / "proving 8 ~12 min"; "since 18:10" in
-town). The chips draw on the open row (one click); a status that cannot be read draws no brief and the chips stay (sibling
+blind gate leads, "+N" for the rest, then what heals it: "importing proofs ~26 min" / "proving 8 ~12 min"; "off since 18:10" in
+town - the Grok CLI's cold look could not tell IN TOWN meant switched off). The chips draw on the open row (one click); a status that cannot be read draws no brief and the chips stay (sibling
 rule). The open row's vault line takes its own line, the eyes under it at the line's end (REG-2768). Same live data after: every
 closed row 2-3 lines, a ~400px list, identical from all three PCs. Law: test_a_closed_fleet_row_is_one_word_and_one_line (11
 cases, 7 red-proofs RED); test_the_fleet_row_keeps_its_name_whole now measures closed rows (brief inked, chips not) and open
