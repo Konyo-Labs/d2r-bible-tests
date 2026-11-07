@@ -79,6 +79,19 @@ def ingest(db, reading, src, now=None):
     return new
 
 
+def counts(p):
+    """REG-3327 (#95 - his 11-06 ruling on the Advanced table: "i want the posts linked there anything without a post or a
+    price is irrelevant"). A post weighs in a price only when it carries its forum link AND a price. -> bool
+    MEASURED 11-07 on his DB: shako 14 posts, 9 with NO link (11-01 and 10-31, before links were kept; their key is
+    fg|day|roll - no topic id to recover a link from). Those stay ON RECORD - nothing is deleted - and out of the price."""
+    if not isinstance(p, dict) or not str(p.get("link") or "").startswith("http"):
+        return False
+    try:
+        return float(p.get("fg")) > 0
+    except (TypeError, ValueError):
+        return False
+
+
 def _wmedian(pairs):
     pairs = sorted(pairs)
     tot = sum(w for _, w in pairs)
@@ -130,8 +143,10 @@ def price(db, item, now=None):
     it = (db.get("items") or {}).get(key_of(item))
     posts = list((it or {}).get("posts", {}).values())
     stale, why = is_stale(db, item, now)
-    return {"item": str(item), "normal": _tier([p for p in posts if not p.get("perfect")], now),
-            "perfect": _tier([p for p in posts if p.get("perfect")], now), "stale": stale, "why": why}
+    priced = [p for p in posts if counts(p)]                     # REG-3327 - a linked post with a price, or nothing
+    return {"item": str(item), "normal": _tier([p for p in priced if not p.get("perfect")], now),
+            "perfect": _tier([p for p in priced if p.get("perfect")], now), "stale": stale, "why": why,
+            "leftOut": len(posts) - len(priced)}
 
 
 def _band(fg, w, mid):
@@ -159,7 +174,8 @@ def explain(db, item, now=None):
     """
     now = time.time() if now is None else now
     it = (db.get("items") or {}).get(key_of(item)) if isinstance(db, dict) else None
-    posts = list((it or {}).get("posts", {}).values()) if isinstance(it, dict) else []
+    every = list((it or {}).get("posts", {}).values()) if isinstance(it, dict) else []
+    posts = [p for p in every if counts(p)]                       # REG-3327 - the rows the price weighed, no other
     normal = [p for p in posts if not p.get("perfect")]
     perfect = [p for p in posts if p.get("perfect")]
     mid_n = _median_of(normal, now)
@@ -194,6 +210,7 @@ def explain(db, item, now=None):
     rows.sort(key=lambda r: (r["day"], str(r["link"]), r["fg"]), reverse=True)
     return {
         "posts": rows,
+        "leftOut": len(every) - len(posts),                       # REG-3327 - kept on record, out of the price
         "halfLifeDays": HALF_LIFE_DAYS,
         "agree": AGREE,
         "refreshDays": REFRESH_DAYS,

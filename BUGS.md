@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3327 - THE PRICE WEIGHED POSTS NOBODY COULD OPEN: 9 OF SHAKO'S 14 HAD NO LINK (v3877, board #95, his 11-06 ruling)
+His words (a screenshot of D2JSP > Advanced for shako): "good that its saving data for perfect tier and normal tier, just
+i want the posts linked there anything without a post or a price is irrelevant". MEASURED 11-07 on his DB (GET
+/api/d2jsp_price_db): shako 14 posts - 5 linked (11-03), 9 with NO link (11-01 and 10-31, recorded before links were
+kept; their key is fg|day|roll, so no link can be recovered); the two perfect posts (150, 60 fg) were both unlinked. NOW
+one predicate, d2jsp_price_db.counts(p) - a forum link AND a price - decides what weighs: price() and explain() (the
+Advanced rows and their bands) use it; the rest stay ON RECORD untouched (nothing is deleted) and both say leftOut; the
+table says "N posts have no forum link - kept on record, left out of this table and of the price." Shako, linked only:
+normal 15 fg from 5 posts (7/10/15/40/80 - the same number), perfect UNKNOWN (no linked perfect post), never a number
+nobody can open. Law: test_only_a_linked_priced_post_weighs (the price, the table's rows, the records untouched, the
+page's line driven in node); red-proofs PROVEN (2/2).
+
 ### REG-3326 - THE SHAKO SEARCH SAID "RETURNED NO FG NUMBER" WHEN THE FORUM WAS NEVER READ, AND HID THE 15 FG IT ALREADY KNEW (v3877, board #94, his 11-06 22:46 report)
 His report (screenshot): PRICE SEARCH "shako" -> "Public price unknown. The reading at Nov 6 22:46 returned no fg number."
 while Advanced showed the database's 15 fg from 9 posts. MEASURED: his console answered reason 'unread' (the forum POST

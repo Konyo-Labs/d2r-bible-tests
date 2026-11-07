@@ -13389,10 +13389,16 @@ function d2jspBackendHtml(db, painted, opts) {
     parts.push('<p data-d2jsp-sync>' + d2jspEscText(d2jspPriceSyncLine(painted, db.normal && db.normal.fg)) + '</p>');
   }
   var posts = proof.posts;
+  /* REG-3327 (#95 - his 11-06 ruling: "i want the posts linked there anything without a post or a price is irrelevant") -
+     the table and the price hold only posts with a forum link and a price; the rest stay on record, out of both, and one
+     line says how many */
+  var _left = Number(proof.leftOut) > 0 ? Number(proof.leftOut) : 0;
+  var _leftLine = _left ? ('<p data-d2jsp-leftout>' + _left + (_left === 1 ? ' post has' : ' posts have')
+    + ' no forum link - kept on record, left out of this table and of the price.</p>') : '';
   if (!Array.isArray(posts)) {
     parts.push('<p data-d2jsp-posts>The posts behind this price were not on the answer.</p>');
   } else if (!posts.length) {
-    parts.push('<p data-d2jsp-posts>No post is kept for this item.</p>');
+    parts.push('<p data-d2jsp-posts>' + (_left ? 'No linked post with a price is kept for this item.' : 'No post is kept for this item.') + '</p>' + _leftLine);
   } else {
     var body = posts.map(function (p) {
       var open = (p.link && String(p.link).indexOf('https://forums.d2jsp.org/') === 0)
@@ -13407,7 +13413,7 @@ function d2jspBackendHtml(db, painted, opts) {
         + '</td><td>' + d2jspEscText(d2jspSeenText(p.seenAt)) + '</td><td>' + open + '</td></tr>';
     }).join('');
     parts.push('<table data-d2jsp-proof><thead><tr><th>date</th><th>price</th><th>tier</th><th>age days</th><th>weight</th><th>decayed</th><th>band</th><th>source</th><th>seen</th><th>post</th></tr></thead><tbody>'
-      + body + '</tbody></table>');
+      + body + '</tbody></table>' + _leftLine);
   }
   return parts.join('');
 }
