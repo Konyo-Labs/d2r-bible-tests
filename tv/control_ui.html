@@ -7071,6 +7071,12 @@
   /* REG-2768 (GrokBot's v3824 pass, #225: a second click at the open row's centre landed on "SEE ... CONSOLE" and entered
      the shadow instead of the compare) - the eyes sit at the line's END, so the row's middle stays the row's own click */
   .fleet-row.fleet-open > .fleet-open-eyes { display: flex; justify-content: flex-end; margin-right: 14px; }
+  /* v3881 (his 11-07 screenshot: Dean's open row wrapped "vault 1 item · as of 10 hr ago · STALE ..." into a narrow column
+     beside an eyes box stretched four lines tall - flex's default stretch). The vault line takes the row's width; the eyes
+     keep their own size, centred beside it at the line's END (REG-2768: the row's middle stays the row's own click). */
+  .fleet-row.fleet-open > .fleet-open-eyes { align-items: center; gap: 10px; }
+  .fleet-open-eyes > .fleet-vault { flex: 1 1 auto; min-width: 0; }
+  .fleet-open-eyes > .fleet-hd-eyes { flex: 0 0 auto; align-self: center; }
   .fleet-hd-eyes { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; cursor: pointer;
                    border: 1px solid rgba(240,192,96,.45); border-radius: 6px; background: rgba(240,192,96,.08);
                    color: var(--gold, #f0c060); font: var(--fw-semibold) var(--fs-2xs)/1.3 var(--mono, monospace);

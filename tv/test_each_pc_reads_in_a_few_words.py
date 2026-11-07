@@ -215,7 +215,23 @@ class EverySurfaceDrawsTheOneFunction(unittest.TestCase):
                       self.code)
 
 
+class TheOpenRowStaysBalanced(unittest.TestCase):
+    """v3881 (his 11-07 screenshot: Dean's open row wrapped its vault line into a narrow column beside an eyes box stretched
+    four lines tall). MEASURED in Chrome at his 1120x628: the eyes button was 56x70 (stretched to the text) and is 56x24."""
+
+    def test_the_eyes_keep_their_size_beside_a_vault_line_that_takes_the_width(self):
+        import re
+        code = re.sub(r"/\*.*?\*/", "", _ui(), flags=re.S)
+        self.assertIn(".fleet-row.fleet-open > .fleet-open-eyes { align-items: center; gap: 10px; }", code)
+        self.assertIn(".fleet-open-eyes > .fleet-vault { flex: 1 1 auto; min-width: 0; }", code)
+        self.assertIn(".fleet-open-eyes > .fleet-hd-eyes { flex: 0 0 auto; align-self: center; }", code,
+                      "the eyes stretch to the vault line's height again")
+
+
 RED_PROOF = [
+    {"why": "v3881 - the open row's eyes button stretches to the wrapped vault line again (his 11-07 screenshot)",
+     "file": "tv/control_ui.html",
+     "find": "  .fleet-open-eyes > .fleet-hd-eyes { flex: 0 0 auto; align-self: center; }\n", "replace": "\n", "matches": 1},
     {"why": "v3880 - an offline PC's last report is painted as live wounds again",
      "file": "tv/control_ui.html",
      "find": "      key = 'town'; hurt = [];\n", "replace": "      key = 'town';\n", "matches": 1},
