@@ -31,6 +31,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
+from console_safe import enable as _console_safe_enable  # noqa: E402
+_console_safe_enable()   # v3880 - its census case prints a non-ASCII clock; a cp1255 console must not crash reporting it
 import proof_shard as PS  # noqa: E402
 import proof_seed as SEED  # noqa: E402
 import ship_when_green as SW  # noqa: E402
