@@ -14453,6 +14453,18 @@ window._lockMark = function(isOpen, px, label){
      His ask: "from there to there instead of building another mailbox". The answer itself lives in
      the inbox (one place, one grammar); this row carries the question and an ANSWER -> shortcut
      that opens the Tools tab and lands ON that card. */
+  /* v3880 (REG-3375, GrokBot #6707144313 on his State panel) - A REASON CUT TO FIT SAYS IT WAS CUT. The ask row sliced its
+     why at 260 characters, so his Shadow-gate row read "...more items waiting for you to confirm. Nothing · your choices"
+     - "Nothing" being the first word of a sentence the slice cut off. Now: at the last sentence end when one is near the
+     limit, else at a word, with an ellipsis; a reason that fits is untouched. */
+  function _vxClip(s, n){
+    s = String(s == null ? '' : s);
+    if (s.length <= n) return s;
+    var c = s.slice(0, n), dot = c.lastIndexOf('. ');
+    if (dot >= Math.floor(n * 0.6)) return c.slice(0, dot + 1);
+    return c.replace(/\s+\S*$/, '') + '\u2026';
+  }
+  window._vxClip = _vxClip;
   function _vxAskRow(r, asks){
     var a = asks[0] || {};
     var kind = a.kind === 'do' ? 'SOMETHING TO DO' : 'YOUR CALL';
@@ -14462,7 +14474,7 @@ window._lockMark = function(isOpen, px, label){
          + '" onclick="window._hubGoAsk &amp;&amp; window._hubGoAsk(this.getAttribute(\'data-ask\'))">'
          + esc(kind) + ' \u2014 CHOOSE IN INBOX \u2192</button></span>'
          + '<span class="vx-note"><b>' + esc(a.q || '') + '</b>' + esc(more) + ' \u00b7 '
-         + esc(String(a.why || r.why || '').slice(0, 260))
+         + esc(_vxClip(a.why || r.why, 260))
          /* the choices travel with the shortcut, so the button is not a door to an unknown room */
          + ((a.answers || []).length ? ' \u00b7 your choices: ' + esc((a.answers || []).map(function (x) {
              return x && x.label; }).filter(Boolean).join(' \u00b7 ')) : '')

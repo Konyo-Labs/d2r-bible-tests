@@ -112,6 +112,12 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3375 - A STATE PANEL ASK ROW ENDED "...TO CONFIRM. NOTHING ·" - A 260-CHARACTER SLICE, NOT A SENTENCE (v3880)
+GrokBot (#230 6707144313, his live State panel) quoted the Shadow-gate row: "...Stricter means fewer automatic ticks and more
+items waiting for you to confirm. Nothing · your choices: Keep it as it is ..." - _vxAskRow sliced the reason at 260
+characters, so the first word of the next sentence dangled with nothing saying the text was cut (it was the only fixed slice
+in the State panel builder - swept). _vxClip now ends a long reason at its last sentence when one is near the limit, else at
+a word with an ellipsis. Law: test_a_cut_reason_says_it_was_cut (his row's own text; 2 red-proofs seen RED).
 ### REG-3374 - THE STATE PANEL SAID "NOTHING IS WAITING ON YOU · EVERYTHING WAS MEASURED" WITH NO DOCTOR REPORT AT ALL (v3880)
 The Grok CLI, reading v3880's State panel render cold, quoted its summary as contradicting itself: "nothing is waiting on you
 · nothing waiting on code · everything was measured · not measured yet". The payload carried no st.eagle, so `e =
