@@ -12,6 +12,10 @@ lane a push takes. What is pinned here, each seen RED:
 """
 import io
 import os
+
+#: #107 - this law drives hooks/pre-push or a Linux job's own bash. Neither runs on Windows (only the Mac pushes; the job
+#: runs on ubuntu), and Windows' bash there is the WSL launcher or Git Bash with backslash paths - nothing to measure
+_RUNS_POSIX_HOOKS = os.name != "nt"
 import re
 import subprocess
 import sys
@@ -61,6 +65,8 @@ class TheRealHookStopsOnlyForCi(unittest.TestCase):
     """Runs hooks/pre-push itself, cut at the end of its lane block, with a marker where the gates begin."""
 
     def _run(self, refs):
+        if not _RUNS_POSIX_HOOKS:
+            self.skipTest("hooks/pre-push runs only where pushes happen (the Mac) - never on Windows")
         with io.open(HOOK, encoding="utf-8") as fh:
             src = fh.read()
         self.assertEqual(1, src.count(END), "the lane block's end marker is not in the hook once")
@@ -159,7 +165,7 @@ RED_PROOF = [
         "file": "hooks/pre-push",
         "find": "          (gh run list --branch <the ci branch>). Nothing deploys. Shipping to main still pays the full gate.\"\n  exit 0\n",
         "replace": "          (gh run list --branch <the ci branch>). Nothing deploys. Shipping to main still pays the full gate.\"\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
 ]
 

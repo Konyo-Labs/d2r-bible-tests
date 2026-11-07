@@ -11,6 +11,10 @@ the hook's own gate_run widening lifted out of hooks/pre-push and run in bash.
 """
 import io
 import os
+
+#: #107 - this law drives hooks/pre-push or a Linux job's own bash. Neither runs on Windows (only the Mac pushes; the job
+#: runs on ubuntu), and Windows' bash there is the WSL launcher or Git Bash with backslash paths - nothing to measure
+_RUNS_POSIX_HOOKS = os.name != "nt"
 import re
 import shutil
 import subprocess
@@ -78,7 +82,7 @@ class TheRenderBoundMovesWithTheLoad(unittest.TestCase):
         self.assertEqual(two, [2.0, 634.0, 666.0], "render_check did not move its numbers with the hook's bound")
         self.assertLessEqual(two[2] + 20, 353 * 2, "at x2 the report-by deadline no longer leaves the hook's 20 s margin")
 
-    @unittest.skipUnless(shutil.which("bash"), "bash is not installed")
+    @unittest.skipUnless(_RUNS_POSIX_HOOKS and shutil.which("bash"), "hooks/pre-push runs only where pushes happen - never on Windows (and bash is needed)")
     def test_the_hooks_gate_run_widens_its_limit_by_the_callers_factor(self):
         src = _hook()
         i = src.find(WIDEN)
@@ -123,7 +127,7 @@ RED_PROOF = [
      "matches": 1,
      # REG-2354 - only the bash law runs gate_run; with no bash on PATH it skips and the other four never reach it, so
      # Dean's PC filed this proof BLIND and shut every lock there. Judged where bash is.
-     "needs": "bash"},
+     "needs": "posix"},
     {"why": "REG-1993 - the render call site never hands its measured factor down",
      "file": "hooks/pre-push",
      "find": '    export GATE_SCALE="${_rs:-1.00}" TV_RENDER_SCALE="${_rs:-1.00}" GATE_LOAD_GRACE=1\n',

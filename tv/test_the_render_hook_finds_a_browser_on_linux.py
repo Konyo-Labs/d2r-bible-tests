@@ -8,6 +8,10 @@ push. macOS Chrome stays the first look. Linux then takes google-chrome, chromiu
 chromium-browser, or a Playwright chromium. The profile template carries XXXXXX.
 """
 import os
+
+#: #107 - this law drives hooks/pre-push or a Linux job's own bash. Neither runs on Windows (only the Mac pushes; the job
+#: runs on ubuntu), and Windows' bash there is the WSL launcher or Git Bash with backslash paths - nothing to measure
+_RUNS_POSIX_HOOKS = os.name != "nt"
 import subprocess
 import sys
 import unittest
@@ -41,6 +45,7 @@ def _fn(src):
 
 
 class TheRenderHookFindsABrowserOnLinux(unittest.TestCase):
+    @unittest.skipUnless(_RUNS_POSIX_HOOKS, "hooks/pre-push runs only where pushes happen (the Mac, Linux CI) - never on Windows")
     def test_the_hook_finds_a_browser_and_the_profile_template_is_portable(self):
         src = _src()
         self.assertIn('mktemp -d "${TMPDIR:-/tmp}/d2r-render-profile.XXXXXX"', src)
@@ -95,7 +100,7 @@ RED_PROOF = [
             "    return 1\n"
         ),
         "replace": "    return 1\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
 ]
 

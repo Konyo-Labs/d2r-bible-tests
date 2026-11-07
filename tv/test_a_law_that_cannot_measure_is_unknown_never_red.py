@@ -18,6 +18,10 @@ for exit 0, 1, 2 and 3. RED_PROOF below.
 """
 import io
 import os
+
+#: #107 - this law drives hooks/pre-push or a Linux job's own bash. Neither runs on Windows (only the Mac pushes; the job
+#: runs on ubuntu), and Windows' bash there is the WSL launcher or Git Bash with backslash paths - nothing to measure
+_RUNS_POSIX_HOOKS = os.name != "nt"
 import re
 import shutil
 import subprocess
@@ -255,6 +259,7 @@ class AVenueEndingNeverConcludesGreen(unittest.TestCase):
     """REG-3061 - exit 3 stops a law reading RED; it must never let the WORKFLOW read green. Driven end to end on the
     workflow's own scripts: the gate-set step's exit block, the verdict job's shard aggregator and its conclusion."""
 
+    @unittest.skipUnless(_RUNS_POSIX_HOOKS, "the verdict job runs on ubuntu - its script never runs on Windows")
     def test_exit_3_through_the_verdict_job_is_no_verdict_and_fails(self):
         bash = shutil.which("bash")
         if not bash:

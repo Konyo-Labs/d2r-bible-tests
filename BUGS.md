@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3370 - #107 FOURTH BATCH: THE LAWS THAT DROVE THE MAC'S PUSH HOOK AND A LINUX JOB'S BASH ON WINDOWS (v3880)
+Four laws ran hooks/pre-push or the verdict job's own bash. On Windows `bash` is the WSL launcher ("has no installed
+distributions") or Git Bash with backslash paths. Neither script runs there: only the Mac pushes, and the verdict job runs
+on ubuntu. Those cases now skip on nt (_RUNS_POSIX_HOOKS), while the Windows workflow's own Git Bash steps
+(TheCIStepPublishesUnknown) still run there. Simulated before tagging: with the skips forced, only three proofs went
+blind - test_a_ci_push_skips_the_mac_and_never_main[4], test_the_render_hook_finds_a_browser_on_linux[0] and
+test_the_render_bound_moves_with_the_load[3] (was needs bash). They declare needs posix. Every other proof still went RED.
+(The ci-push law's simulation ran on the v3879 tree: in v3880's worktree the hook's own version-stamp gate stops first, until
+v3880 is stamped.)
+
 ### REG-3369 - #107 THIRD BATCH: THE UNREAD-PATH LAWS, AND ONE WINDOWS GAP THEY HID (v3880)
 Four laws (an unread journal, log, frame directory, journal size) built "unreadable" with chmod(0). On Windows chmod only
 sets read-only, so the path stayed readable and the cases measured nothing. Those cases are skipped there
