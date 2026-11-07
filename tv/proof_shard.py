@@ -212,7 +212,8 @@ def run_caps(names, env=None, gates=None):
     return dict((str(nm), own.get(nm, run_cap)) for nm in names)
 
 
-def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, served=None, report=None, caps=None):
+def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, served=None, report=None, caps=None,
+         splits=None):
     """The shard every proof belongs to. -> {(gate, index): k} covering every proof of `have` exactly once (pure).
 
     have       [(name, filename, proofs)] as heart2.prove() holds them
@@ -267,6 +268,10 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
     if caps is None:
         caps = run_caps([g[0] for g in gates])
     capd = dict((str(k_), float(v)) for k_, v in (caps or {}).items() if isinstance(v, (int, float)) and v > 0)
+    # REG-3402 - a gate a round cut is planned in at least the chunks it learned (None: the committed and last-round tables)
+    if splits is None:
+        splits = proof_splits()
+    spd = dict((str(k_), int(v)) for k_, v in (splits or {}).items() if isinstance(v, int) and v > 1)
     over = []
     owedkeys = set()
     chunks = []
@@ -286,6 +291,8 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
                     per = 1
                     over.append(name)
                 k = max(k, min(p, int(math.ceil(p / float(per)))))
+            if spd.get(name):                    # REG-3402 - cut last round: split, whatever its price says
+                k = max(k, min(p, spd[name]))
             base, extra = divmod(p, k)
             start = 0
             for j in range(k):
@@ -703,6 +710,47 @@ def timeouts(fails):
             if isinstance(f, list) and len(f) >= 3 and f[2] == TIMEOUT:
                 out.append((k, str(f[0]), f[1]))
     return sorted(out, key=lambda t: (t[1], str(t[2]), t[0]))
+
+
+def _splits_in(path):
+    """REG-3402 - the {gate: min chunks} a prices file carries ("split"). -> dict ({} when absent or unreadable)."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            sp = json.load(fh).get("split") or {}
+        return dict((str(k), int(v)) for k, v in sp.items() if isinstance(v, int) and not isinstance(v, bool) and v > 1)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return {}
+
+
+def proof_splits(env=None):
+    """REG-3402 - the least number of chunks each gate is planned in, learned from rounds that CUT it: the committed table's
+    and the last round's (HEART2_SHARD_COSTS), the larger winning. -> {gate: k}. Read the same by every shard (one seed)."""
+    out = _splits_in(os.path.join(os.path.dirname(os.path.abspath(__file__)), "proof_costs.json"))
+    lp = (env if env is not None else os.environ).get("HEART2_SHARD_COSTS") or ""
+    if lp and os.path.isfile(lp):
+        for g, k in _splits_in(lp).items():
+            out[g] = max(out.get(g, 1), k)
+    return out
+
+
+def cut_splits(bodies, prev=None):
+    """REG-3402 (his rule, 11-07 23:58: "we need to split the shard that DO TIME OUT that way they wont") - A GATE A ROUND CUT
+    AT ITS DEADLINE IS SPLIT NEXT ROUND, whatever its price says. Its chunks this round = the shards it was assigned to; the
+    next plan cuts it into at least twice that. A split once learned is carried (prev) and never forgotten; the larger wins.
+    -> {gate: min chunks}. Pure."""
+    out = dict((str(g), int(v)) for g, v in (prev or {}).items() if isinstance(v, int) and not isinstance(v, bool) and v > 1)
+    on, cut = {}, set()
+    for b in bodies or []:
+        sh = (b or {}).get("shard") or {}
+        for a in sh.get("assigned") or []:
+            if isinstance(a, (list, tuple)) and a:
+                on.setdefault(str(a[0]), set()).add(sh.get("k"))
+        for f in sh.get("owed") or []:
+            if isinstance(f, list) and len(f) >= 3 and f[2] == TIMEOUT:
+                cut.add(str(f[0]))
+    for g in cut:
+        out[g] = max(out.get(g, 1), 2 * max(1, len(on.get(g) or ())))
+    return out
 
 
 def headroom(wall, window=PROVE_WINDOW_S, share=PLAN_HEADROOM):
@@ -1132,13 +1180,21 @@ def main(argv=None):
             return 2
         carried = len(set(prev) - set(got))
         got = dict(prev, **got)
+        prev_split = {}
+        for d in sorted(os.listdir(a.measure)):
+            pf = os.path.join(a.measure, d, PREV_COSTS_NAME)
+            if os.path.isfile(pf):
+                prev_split = _splits_in(pf)
+                break
+        split = cut_splits(bodies, prev_split)     # REG-3402 - what this round cut is split next round
         # REG-3274 - --out: the round's own prices, saved beside the next seed (the committed table is left as it is)
         out = a.out or os.path.join(os.path.dirname(os.path.abspath(__file__)), "proof_costs.json")
         heads = sorted(set(str(((b or {}).get("shard") or {}).get("head") or "")[:12] for b in bodies))
         os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
         with open(out + ".tmp", "w", encoding="utf-8") as fh:
             json.dump({"v": 1, "measuredOn": "a GitHub runner, %d shard(s) at %s" % (len(bodies), ",".join(heads)),
-                       "perProof": dict(sorted(got.items()))}, fh, indent=2, ensure_ascii=False)
+                       "perProof": dict(sorted(got.items())), "split": dict(sorted(split.items()))}, fh, indent=2,
+                      ensure_ascii=False)
             fh.write("\n")
         os.replace(out + ".tmp", out)
         print("  REG-2593: %d gate(s) priced from %d shard cache(s) -> %s (REG-3401: %d carried from the prices this round "

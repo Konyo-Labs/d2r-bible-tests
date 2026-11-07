@@ -1314,5 +1314,8 @@
     "test_word_says_whose": 0.648,
     "test_world_ribbon": 0.515,
     "test_your_builds_sit_on_top": 1.361
+  },
+  "split": {
+    "test_a_safety_net_red_closes_only_its_own_lock": 2
   }
 }

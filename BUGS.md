@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3402 - A GATE A ROUND CUT AT ITS DEADLINE WAS PLANNED THE SAME WAY NEXT ROUND (v3881, HIS RULE)
+His words 11-07 23:58: "we need to split the shard that DO TIME OUT that way they wont". REG-3401 fixed the price; this does not
+wait on one. The fan-in reads each shard's TIMEOUT-cut proofs, counts the shards each cut gate was planned on, and writes
+"split": {gate: at least twice that} beside the carried prices; every shard's plan cuts that gate into at least that many
+chunks, spread like any chunk, under the per-gate cut. Carried round to round and never forgotten; the committed table holds
+what v3880's round taught (applied to its real 22 stores the rule learned exactly one gate: the safety-net law, 2). Replayed on
+that round at its measured costs, v3881's plan puts the worst shard at ~58% of the window against v3880's ~76%. Law:
+test_a_gate_a_round_cut_is_split_next_round (5 cases, 3 red-proofs RED); 29 shard-plan laws green.
 ### REG-3401 - v3880'S SHARD 5 WAS CUT AT MINUTE 55 BY ONE GATE PRICED 5.5x LOW - A MEASURED PRICE WAS FORGOTTEN (v3881, HIS ORDER)
 His words 11-07 23:31: "if this shard times out again i want you making sure going forward it doesnt happen make sure of it".
 It did: v3880's round on 6f20c0cb2, shard 5 of 22, 20:33 -> 21:30 UTC, its last 9 proofs cut (the ship's make-up re-ran them).
