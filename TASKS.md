@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3876** | `(this commit)` | v3876 — Carries v3875. A law may declare its own proof cap. His 11-06 asks - farm places, Colossal jewels, sprites, Gull, rivers |
+| **v3877** | `(this commit)` | v3877 — 15 board cards - node proof keys, Quick wins pictures, prices that say why, fan plates, the name pill, the claim bar |
+| **v3876** | `77047e4a` | v3876 — Carries v3875. A law may declare its own proof cap. His 11-06 asks - farm places, Colossal jewels, sprites, Gull, rivers |
 | **v3875** | `10681e92` | v3875 — a proof round cut only by its deadline is made up, prices measure themselves, held reels released, and 16 more |
 | **v3874** | `6010af3f` | v3874 — Quick wins shows each place in one grid with its zone art and monster, and the last two repair book findings are fixed |
 | **v3873** | `5814fff4` | v3873 — The Grok CLI findings on the v3862 cards fixed, each reproduced first - faults, proofs, repairs and the write budget |

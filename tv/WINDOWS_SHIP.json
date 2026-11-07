@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3876",
+  "ver": "v3877",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3876: Carries v3875. A law may declare its own proof cap. His 11-06 asks - farm places, Colossal jewels, sprites, Gull, rivers",
+  "note": "v3877: 15 board cards - node proof keys, Quick wins pictures, prices that say why, fan plates, the name pill, the claim bar",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
