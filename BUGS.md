@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3408 - A PROOF RUNNING ON DEAN'S PC FOUGHT GITHUB'S IMPORT OF ITS PROOFS FOR THE CORES (v3882, #123)
+MEASURED on Dean's PC (SSH, read-only): his console's heart2 --prove of 15:42 kept running beside the 16:39 import, at up to
+237% CPU; at 23:50 that kind of import crawled at ~19 proofs a minute (2,989 -> 3,056 of 4,954 in 3.5 min). From 00:28 to
+00:39, his game up and the proof paused, the next import ran at ~330 a minute and landed 9,295 of 9,295 at 00:57. v3862 kept
+a NEW proof tick from starting during an import; a proof that began BEFORE it had nothing telling it to stop. Now the
+prover asks its own judge, _sp_prove_yield_here = the console's _sp_yield_here (game, sweep, push) + a running import, so a
+running proof gives way within one guard tick and the card says "GitHub's proofs are being imported ... resumes after"; the
+after-import tick (REG-3195) resumes it, after self_prove's 30-min stand-aside cooldown (kept: it stops start-and-die loops).
+The d2jsp price refresh still asks _sp_yield_here. Not yet: the Fleet's stale import count (#123 (3): the console polls the
+progress file every 2 s, so the cause is elsewhere - measured on the next import) and the key-worker balance. Laws:
+test_a_proof_gives_way_to_githubs_import (4 cases, 3 red-proofs RED); the two judge pins (the game-on-screen law, test_control)
+moved to the prover's judge with a containment check (12 red-proofs RED).
 ### REG-3407 - THE INTAKE'S 502 SAID "IS THE MAC ONLINE?" AND NOTHING OF THE LOCAL LANE THAT FAILED FIRST (v3882, #122)
 MEASURED twice (v3880's pre-flight 19:50, v3881's 23:20): test_a_capped_runner_reaches_the_board_as_429 read 502 "intake
 proxy failed - is the Mac online?" inside the Mac pre-flight's parallel run, green alone and on GitHub. That 502 is the

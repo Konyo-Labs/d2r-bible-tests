@@ -23922,6 +23922,22 @@ def _sp_yield_here():
     return _sp_proof_playing_here()     # v3862 - the local game only (his ruling: prove beside cloud)
 
 
+#: v3882 (#123) - what the card says when a running proof gives way to GitHub's import
+IMPORT_STAND_ASIDE = "GitHub's proofs are being imported on this PC - the proof gives the import the cores and resumes after"
+
+
+def _sp_prove_yield_here():
+    """v3882 (#123, MEASURED on Dean's PC 11-07/08) - THE PROVER'S stand-aside judge: _sp_yield_here, and GitHub's import.
+    A new proof tick already waited for a running import (v3862); a proof that began BEFORE the import did not - Dean's
+    heart2 --prove of 15:42 ran beside the 16:39 import at up to 237% CPU, and at 23:50 the import crawled at ~19 proofs a
+    minute. With his game up (the proof paused) the same kind of import ran 00:28-00:39 at ~330 a minute. So a running
+    proof yields to the import within one guard tick, and the after-import tick (REG-3195) resumes it on what is still
+    owed. The prover's own judge, not _sp_yield_here's: the d2jsp price refresh asks that one and has no reason to wait."""
+    if _PROOF_RELEASE.get("running") is True:
+        return True
+    return _sp_yield_here()
+
+
 def _self_prove_tick():
     """#50 (REG-1447) — one pass of `self_prove.tick`. Never raises; the rescue loop must keep going.
 
@@ -23938,7 +23954,7 @@ def _self_prove_tick():
                 _owner = _rpo.owner_of(_roster_claimed_name(), _roster_platform())
             except Exception:
                 _owner = None
-        r = _sp.tick(busy=_cpu_busy_pct, playing=_sp_yield_here,      # REG-1666 game · REG-2192 a sweep too
+        r = _sp.tick(busy=_cpu_busy_pct, playing=_sp_prove_yield_here,   # REG-1666 game · REG-2192 a sweep · #123 an import
                      takes_only=_self_prove_takes_only(_owner))       # v3844 - the ALT takes Dean's
         r = dict(r, gameOnScreen=shadow_game_detail())
         r = _self_prove_free_view(r)     # REG-1957 - memory is the only block: free the view of an idle PC
@@ -23946,6 +23962,8 @@ def _self_prove_tick():
             r = dict(r, standAside="a sweep is reading his reels - the proof waits for it (REG-2192)")
         if _a_push_is_grading() and not _sp_proof_playing_here():   # v3861 - and a push, by its name
             r = dict(r, standAside=PUSH_STAND_ASIDE)
+        if _PROOF_RELEASE.get("running") is True and not _sp_proof_playing_here():   # #123 - and an import, by its name
+            r = dict(r, standAside=IMPORT_STAND_ASIDE)
     except Exception as e:
         r = {"on": None, "worked": None, "lastTs": None, "owed": None, "key": "raised",
              "say": "the self-prove tick raised %s" % type(e).__name__}
@@ -24198,13 +24216,15 @@ def _self_prove_guard():
     try:
         import self_prove as _sp
         # REG-1628 — the same load probe as the tick, or no next slice starts; REG-1666 — and the same play judge
-        r = _sp.guard(busy=_cpu_busy_pct, playing=_sp_yield_here)   # REG-2192 - yield to a sweep, not only his game
+        r = _sp.guard(busy=_cpu_busy_pct, playing=_sp_prove_yield_here)   # REG-2192 a sweep · #123 an import
         if r:
             r = dict(r, gameOnScreen=shadow_game_detail())
             if _a_sweep_is_reading() and not _sp_proof_playing_here():
                 r = dict(r, standAside="a sweep is reading his reels - the proof waits for it (REG-2192)")
             if _a_push_is_grading() and not _sp_proof_playing_here():
                 r = dict(r, standAside=PUSH_STAND_ASIDE)
+            if _PROOF_RELEASE.get("running") is True and not _sp_proof_playing_here():   # #123
+                r = dict(r, standAside=IMPORT_STAND_ASIDE)
     except Exception as e:
         r = {"on": None, "worked": None, "lastTs": None, "owed": None, "key": "raised",
              "say": "the self-prove guard raised %s" % type(e).__name__}

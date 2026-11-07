@@ -46951,7 +46951,7 @@ class TheSelfProveYieldsToASweep(unittest.TestCase):
 
     def test_both_self_prove_call_sites_use_the_widened_judge(self):
         src = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
-        self.assertEqual(src.count("playing=_sp_yield_here"), 2,
+        self.assertEqual(src.count("playing=_sp_prove_yield_here"), 2,   # v3882 (#123) - it holds _sp_yield_here
                          "both _sp.tick and _sp.guard must pass the sweep-aware judge (REG-2192)")
         self.assertNotIn("_sp.tick(busy=_cpu_busy_pct, playing=_sp_playing_here)", src)
         self.assertNotIn("_sp.guard(busy=_cpu_busy_pct, playing=_sp_playing_here)", src)
