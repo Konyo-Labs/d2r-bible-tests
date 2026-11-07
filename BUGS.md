@@ -112,6 +112,13 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3389 - A LADDER CONSOLE'S D2JSP TAB SAID "BOARD 271" BESIDE "BOARD 268 ONLY" (v3881, GrokBot v3878 #56)
+GrokBot on Dean's shadow D2JSP tab: "Board 271, D2:R RotW Softcore Ladder Trading." next to "Reads d2jsp posts dated 2026 or
+later, board 268 only." Both were true - a ladder console POSTS on 271 (d2jspBoard) and the price search reads 268 whatever
+the profile (d2jsp_chrome QUOTE_BOARD) - so a ladder console's quotes are non-ladder posts and nothing said so. The idle read
+line now names both boards on a ladder console and says ladder posts are not read yet; main reads exactly as before; a result
+is never overwritten. NOT done here (logged as its own task): reading ladder posts (271) for a ladder console, with a price DB
+kept per board. Law: test_a_ladder_console_says_its_prices_are_main_boards (4 cases via node, 2 red-proofs RED).
 ### REG-3388 - AN INVENTORY TITLE THE OCR NEVER READ SAID "NO TITLE" (v3881, #255 reader parity)
 stash_eye.inventory_title_visible (the vault gate's second way in past a tooltip) returned False whenever its OCR did not
 read - OCR off, no worker on that OS, or an exception - and the reader-parity bench scored those as Mac-vs-Windows

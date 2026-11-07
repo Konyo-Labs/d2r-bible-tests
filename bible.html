@@ -12598,6 +12598,17 @@ function d2jspBoardSay(kind){
   if (kind === 'wrong') return 'The page is not board ' + n + ', so nothing was posted.';
   return 'Board ' + n + ', ' + d2jspBoardName() + '.';
 }
+/* v3881 (REG-3389, GrokBot's v3878 pass #56) - THE PRICE READ SAYS WHICH BOARD IT READS, AND A LADDER CONSOLE IS TOLD.
+   Dean's shadow D2JSP tab read "Board 271, D2:R RotW Softcore Ladder Trading." beside "Reads d2jsp posts dated 2026 or later,
+   board 268 only." Both were true: a ladder console POSTS on 271, and the price search (d2jsp_chrome QUOTE_BOARD) reads 268
+   whatever the profile - so a ladder console's quotes are non-ladder posts. Until ladder posts are read, the idle line says
+   so instead of a bare "268 only" under a 271 header. [[unknown-stays-unknown]] */
+var D2JSP_READ_IDLE = 'Reads d2jsp posts dated 2026 or later, board 268 only. Nothing is posted.';
+function d2jspReadSay(){
+  if (d2jspBoard() !== D2JSP_LADDER_BOARD) return D2JSP_READ_IDLE;
+  return 'Prices are read from board ' + D2JSP_BOARD + ' (RotW Softcore, non-ladder) posts dated 2026 or later. This console '
+    + 'posts on board ' + D2JSP_LADDER_BOARD + ' (ladder), whose posts are not read yet. Nothing is posted.';
+}
 function d2jspPriceToSend(quoted, typed) {
   var t = String(typed == null ? '' : typed).trim();
   if (t !== '') {
@@ -14226,6 +14237,10 @@ function d2jspBatchHtml(view) {
   window._d2jspShow = function(){
     var boardLine = document.getElementById('d2jsp-board');
     if (boardLine) boardLine.textContent = d2jspBoardSay();
+    var readLine = document.getElementById('d2jsp-price-out');      /* REG-3389 - the idle line only, never a result */
+    if (readLine && (readLine.textContent === D2JSP_READ_IDLE || /^Prices are read from board /.test(readLine.textContent))) {
+      readLine.textContent = d2jspReadSay();
+    }
     ladderNotice();
     paint();
     refreshQuotes();
