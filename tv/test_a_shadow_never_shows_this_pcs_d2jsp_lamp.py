@@ -7,6 +7,7 @@ UNKNOWN and says whose it is, asks this console nothing (no GET /api/d2jsp_login
 POST - a shadow writes nothing, REG-2186). Outside a shadow the lamp asks this console as before. Driven on the whole page
 in node (tv/vault_page_node), with a fetch that records every ask. RED_PROOF below.
 """
+import io
 import os
 import sys
 import unittest
@@ -60,7 +61,26 @@ class AShadowNeverShowsThisPcsLamp(unittest.TestCase):
         self.assertIn("GET /api/d2jsp_login", self.o["home"]["asked"], "PREMISE: the lamp no longer asks its own console")
 
 
+class TheSnapshotShadowSaysItIsAShadow(unittest.TestCase):
+    """v3881 (GrokBot's v3878 pass: #56 and #104 STILL in Dean's shadow). The harness above ADDS tvd-shadow itself, so it
+    passed while the real shadow - the Fleet eyes' snapshot frame, booted by the `?tvd-shadow=` block - only ever marked
+    tvd-shadow-snap: every "am I a shadow" check read false there. This pins the join where it happens: that boot block."""
+
+    def test_the_snapshot_boot_marks_the_page_a_shadow(self):
+        here = os.path.dirname(os.path.abspath(__file__))
+        src = io.open(os.path.join(os.path.dirname(here), "bible.html"), encoding="utf-8").read()
+        i = src.index("if (!/[?&]tvd-shadow=/.test(q)) return;")
+        j = src.index("document.documentElement.classList.add('tvd-shadow-snap');", i)
+        k = src.index("})();", j)
+        self.assertIn("document.documentElement.classList.add('tvd-shadow');", src[j:k],
+                      "the snapshot shadow does not mark itself tvd-shadow - every shadow check reads false in it")
+
+
 RED_PROOF = [
+    {"why": "v3881 - the snapshot shadow stops marking itself tvd-shadow (#56/#104 in Dean's shadow again)",
+     "file": "bible.html",
+     "find": "    document.documentElement.classList.add('tvd-shadow');\n  })();",
+     "replace": "  })();", "matches": 1},
     {"why": "#56 - a shadow asks this console and draws the viewer's d2jsp sign-in as the owner's again",
      "file": "bible.html",
      "find": "    if (document.documentElement.classList.contains('tvd-shadow')) {\n      lamp.removeAttribute('data-busy');\n",

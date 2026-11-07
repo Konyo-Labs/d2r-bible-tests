@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3380 - IN THE FLEET EYES' SHADOW EVERY "AM I A SHADOW" CHECK READ FALSE: #56 AND #104 STILL (v3881)
+GrokBot's v3878 pass: in Dean's shadow the D2JSP lamp read "This machine could not read the Chrome login" (never UNKNOWN, never
+"lives on that PC") and Characters said "This PC's saves: no .d2s on this PC" - both #56 and #104 had shadow branches. The
+shadow the Fleet's eyes open is the SNAPSHOT frame (booted by the `?tvd-shadow=` block), which marked the page
+tvd-shadow-snap; all twelve shadow checks ask for tvd-shadow, which only the roster shadow ever set - so in the real shadow
+every one read "not a shadow". #56's own law ADDED tvd-shadow in its harness before calling the lamp, and so passed on a
+state the real shadow never reached (the unjoined end). Now the snapshot boot marks itself tvd-shadow too (no CSS keys on
+that class; only the twelve checks read it). Law: test_a_shadow_never_shows_this_pcs_d2jsp_lamp +1 case pinning the mark in
+the boot block itself (red-proof seen RED).
 ### REG-3379 - HIS D2JSP DATABASE PRINTED THIS PC'S HOST NAME ON EVERY ROW (v3881, GrokBot's v3878 pass)
 GrokBot, on D2JSP > Advanced > "Show the database": the SOURCE column printed the raw machine hostname on every row (it kept the
 name out of the public comment). control_app._d2jsp_price_ingest passed socket.gethostname() as each post's source and the
