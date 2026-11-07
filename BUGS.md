@@ -127,6 +127,17 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3339 - EVERY REPAIR-BOOK SELF-ASK FAILED BEFORE IT ASKED: THE PROMPT WAS READ AS A DIRECTORY (v3878, board #17/#19/#11, GrokBot 6700580776)
+GrokBot (11-07, both PCs, GETs): the eagle's self-asking misses never land - the Mac's diag "stdin is unreadable (EBADF)",
+the ALT's "Input must be provided either through stdin or as a prompt argument when using --print". MEASURED in
+tv/repair_diagnose.diagnose: the argv ended `... --add-dir REPO <prompt>`, and the CLI's --add-dir takes SEVERAL values
+(`--add-dir <directories...>`, `claude --help`), so the prompt became a second directory and -p had none - the ALT's CLI
+said exactly that; the Mac's fell back to reading stdin, which a GUI-launched console does not have (EBADF). v3867 had
+moved the ask out of the project with `--add-dir` appended LAST; tv_diablo's one-shot read was never affected (it places
+the prompt right after -p since v1463). NOW the prompt rides right after -p and stdin is DEVNULL. Law:
+test_an_unknown_fault_is_diagnosed_never_fixed (+1 case: the prompt is the argument after -p, no bare argument follows a
+many-valued option's value, stdin is empty; two cases re-aimed off argv[-1]); red-proofs PROVEN (2). The real CLI on a PC
+is the next landed self-ask (UNKNOWN until one lands - not spent here on his plan).
 ### REG-3338 - THE FLEET SAID "IMPORTING ... 6,166 OF 6,166" AFTER EVERY PROOF WAS IN (v3878, board #13, GrokBot 6700580776)
 GrokBot (11-07 03:34-03:42 IL): Dean's row read "importing v3876's proofs · 6,166 of 6,166" while the API's count was
 complete (5268/6166 at 03:34, 6166/6166 at 03:42). MEASURED: heart_importing reports `running` until the import returns -

@@ -118,12 +118,17 @@ def diagnose(miss, fn_name, platform, run=None, env=None, which=None):
         rec["summary"] = "not asked: no claude on this PC"
         return rec
     try:
+        # #17/#19 (GrokBot 6700580776: every self-ask failed - the Mac "stdin is unreadable (EBADF)", the ALT "Input must be
+        # provided either through stdin or as a prompt argument when using --print") - THE PROMPT WAS SWALLOWED. It sat
+        # last, after `--add-dir REPO`, and --add-dir takes SEVERAL values (`--add-dir <directories...>`), so the CLI read
+        # the prompt as a second directory and -p had none: the ALT said so, the Mac fell back to reading a stdin a GUI
+        # console does not have. The prompt now rides right after -p, as tv_diablo's one-shot read places it (v1463), and
+        # stdin is empty on purpose, so nothing is ever read from it.
         p = (run or subprocess.run)(
-            [exe, "-p", "--allowedTools", ALLOWED_TOOLS, "--max-turns", str(MAX_TURNS),
-             "--setting-sources", "user", "--strict-mcp-config", "--no-session-persistence", "--add-dir", REPO,
-             prompt_for(miss, fn_name, platform)],
-            cwd=_neutral_cwd(), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=TIMEOUT_S,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            [exe, "-p", prompt_for(miss, fn_name, platform), "--allowedTools", ALLOWED_TOOLS, "--max-turns", str(MAX_TURNS),
+             "--setting-sources", "user", "--strict-mcp-config", "--no-session-persistence", "--add-dir", REPO],
+            cwd=_neutral_cwd(), stdin=subprocess.DEVNULL, capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=TIMEOUT_S, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         text = ((p.stdout or "") + "\n" + (p.stderr or "")).strip()
         rc = p.returncode
     except subprocess.TimeoutExpired:

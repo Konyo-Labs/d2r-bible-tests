@@ -56,7 +56,7 @@ class TheAsk(unittest.TestCase):
         tools = set(argv[argv.index("--allowedTools") + 1].split(","))
         self.assertTrue(tools and tools <= {"Read", "Grep", "Glob"}, "the diagnosis may do more than read: %r" % tools)
         self.assertIn("--max-turns", argv)
-        self.assertNotIn("<name>", argv[-1], "the prompt carries a user folder")
+        self.assertNotIn("<name>", argv[argv.index("-p") + 1], "the prompt carries a user folder")
         self.assertTrue(r["ok"])
         self.assertEqual(r["summary"], "the backup root moved")
 
@@ -78,7 +78,30 @@ class TheAsk(unittest.TestCase):
         self.assertEqual(argv[argv.index("--setting-sources") + 1], "user")
         self.assertIn("Grep", argv[argv.index("--allowedTools") + 1].split(","), "finding the function costs a page a turn")
         self.assertGreaterEqual(int(argv[argv.index("--max-turns") + 1]), 16)
-        self.assertNotIn(RD.REPO, argv[-1], "the prompt carries the repo's absolute path (a user folder)")
+        self.assertNotIn(RD.REPO, argv[argv.index("-p") + 1], "the prompt carries the repo's absolute path (a user folder)")
+
+    def test_the_prompt_is_never_swallowed_by_a_many_valued_option(self):
+        """#17/#19 (GrokBot 6700580776) - every self-ask failed: the Mac "stdin is unreadable (EBADF)", the ALT "Input must
+        be provided either through stdin or as a prompt argument when using --print". The prompt sat after `--add-dir
+        REPO`, and --add-dir (like --allowedTools) takes several values: the CLI read the prompt as a directory."""
+        log, kws = [], []
+
+        def run(argv, **kw):
+            log.append(argv)
+            kws.append(kw)
+            return _ran([])(argv, **kw)
+        RD.diagnose(MISS, "_check_x", "darwin", run=run, env={}, which=lambda n: "/x/claude")
+        argv = log[0]
+        prompt = argv[argv.index("-p") + 1]
+        self.assertTrue(prompt and not prompt.startswith("-") and "_check_x" in prompt,
+                        "the prompt is not the argument right after -p: %r" % prompt[:80])
+        for opt in ("--add-dir", "--allowedTools"):       # the CLI's `<values...>` options
+            i = argv.index(opt)
+            tail = argv[i + 2:]
+            self.assertTrue(not tail or tail[0].startswith("-"),
+                            "a bare argument follows %s's value - the CLI reads it as another %s: %r" % (opt, opt, tail[:1]))
+        self.assertIs(kws[0].get("stdin"), subprocess.DEVNULL,
+                      "the ask leaves stdin to the console's own - a GUI console has none (EBADF)")
 
     def test_an_answer_is_a_cause_line_whatever_words_it_uses(self):
         """v3868 (the Grok CLI on REG-3235, #231 6676508919): a fault about signing in answers in a dead seat's words, and
@@ -275,6 +298,16 @@ class ItRidesToTheOverwatch(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "#17/#19 - the prompt rides last again, after the many-valued --add-dir, and the CLI reads it as a directory",
+     "file": "tv/repair_diagnose.py",
+     "find": "            [exe, \"-p\", prompt_for(miss, fn_name, platform), \"--allowedTools\", ALLOWED_TOOLS, \"--max-turns\", str(MAX_TURNS),\n             \"--setting-sources\", \"user\", \"--strict-mcp-config\", \"--no-session-persistence\", \"--add-dir\", REPO],\n",
+     "replace": "            [exe, \"-p\", \"--allowedTools\", ALLOWED_TOOLS, \"--max-turns\", str(MAX_TURNS),\n             \"--setting-sources\", \"user\", \"--strict-mcp-config\", \"--no-session-persistence\", \"--add-dir\", REPO,\n             prompt_for(miss, fn_name, platform)],\n",
+     "matches": 1},
+    {"why": "#17/#19 - the ask reads the console's own stdin again (EBADF under a GUI console)",
+     "file": "tv/repair_diagnose.py",
+     "find": "            cwd=_neutral_cwd(), stdin=subprocess.DEVNULL, capture_output=True,",
+     "replace": "            cwd=_neutral_cwd(), capture_output=True,",
+     "matches": 1},
     {"why": "v3868 - a dead-seat phrase drops a real CAUSE again, and an exit 0 without one is stored as diagnosed",
      "file": "tv/repair_diagnose.py",
      "find": "    if rc != 0 or not has_cause:\n",
