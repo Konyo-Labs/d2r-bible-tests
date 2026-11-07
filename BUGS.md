@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3384 - THE CONSOLE DEMOS RAN ONLY AT THE MAIN PUSH, SO A STALE DEMO COST A WHOLE ROUND (v3881, v3879's J9)
+GitHub vouched for v3879 (9c5815c6f) after a re-run; the main push's hook then ran tv/demo_console.mjs - which runs only
+there, never on GitHub - and J9 refused it: v3879's own #108 had moved the Terror Zone cards to monster sprites while J9
+still read the zone tile. The pre-flight had handed 'node, shell, the app' to GitHub, which never runs this one; the fix
+changed the sha and bought a new round. tv/preflight.py now asks the hook's own question (does the main push's diff, plus
+the working tree, touch control_ui.html / control_app.py / demo_console.mjs?) and runs the demos, bounded at 300 s: a red
+demo is a red pre-flight, no node is UNKNOWN (exit 2). Law test_the_preflight_runs_the_console_demos_the_main_push_would
+(6 cases; the watch held equal to the hook's; 3 red-proofs each seen RED); test_a_version_is_preflighted... holds the
+step out like its other steps.
 ### REG-3383 - A WINDOWED GAMEPLAY FRAME VOTED CHRONICLE AT 2:1 - HARMLESS ONLY BY A JOIN NOTHING PINNED (v3881, #255)
 The reader-parity bench, on a gameplay frame from a PC that plays D2R windowed, in its caption-cut variant (800x383, aspect
 2.089; the v3881 capture delivers the whole client, ~2.0 there): chronicle_template.detect() said is_chronicle=True on 2 of 4 votes (secondary-gold

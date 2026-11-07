@@ -314,6 +314,47 @@ def prove_changed(version=None, here=HERE, prove_max=PROVE_MAX, _run=None, _git_
     return owed, names, None
 
 
+#: v3881 - THE CONSOLE DEMOS RUN HERE WHEN THE MAIN PUSH WOULD RUN THEM. MEASURED on v3879 (2026-11-07): GitHub vouched for
+#: 9c5815c6f after a re-run, and the main push's hook then ran tv/demo_console.mjs (it runs ONLY there - GitHub never does)
+#: and J9 refused it: v3879's own #108 had moved the Terror Zone cards to monster sprites. The fix changed the sha and cost
+#: a whole new round. The hook's trigger is copied here exactly; test_the_preflight_runs_the_console_demos_the_main_push_would
+#: holds the two equal, so this cannot watch other files than the hook does. [[copy-drift]]
+DEMO_WATCH = r"tv/control_ui\.html|tv/control_app\.py|tv/demo_console\.mjs"
+DEMO_TIMEOUT_S = 300
+
+
+def demos_due(_git_=None):
+    """-> (True | False | None, why): does the diff the MAIN push will carry (origin/main..HEAD, plus the working tree the
+    hook grades) touch what the hook's console-demos watch? None when git cannot say - UNKNOWN, never "not due"."""
+    g = _git_ or _git
+    ok, out = g("diff", "--name-only", "origin/main..HEAD")
+    ok2, out2 = g("diff", "--name-only", "HEAD")
+    if not (ok and ok2):
+        return None, "git could not list the files this version changes - UNKNOWN"
+    hit = sorted(set(l.strip() for l in (out + "\n" + out2).splitlines() if l.strip() and re.search(DEMO_WATCH, l.strip())))
+    if hit:
+        return True, "this version changes %s - the main push runs the console demos" % ", ".join(hit[:3])
+    return False, "nothing the console demos watch changed"
+
+
+def run_demos(_run=None):
+    """node tv/demo_console.mjs from the repo root, bounded. -> (True green | False red | None UNKNOWN, tail)"""
+    import shutil as _sh
+    node = _sh.which("node")
+    if not node and _run is None:
+        return None, "node is not on this PC - the console demos could not run (UNKNOWN, not a pass)"
+    try:
+        r = (_run or subprocess.run)([node or "node", os.path.join("tv", "demo_console.mjs")], cwd=os.path.dirname(HERE),
+                                     capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                     timeout=DEMO_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        return False, "the console demos ran past %d s" % DEMO_TIMEOUT_S
+    lines = ((r.stdout or "") + (r.stderr or "")).strip().splitlines()
+    bad = [l.strip() for l in lines if l.lstrip().startswith("\u274c")]
+    tail = " | ".join(sorted(set(bad))[:4]) if bad else " | ".join(lines[-2:])
+    return r.returncode == 0, tail[:400]
+
+
 def anchors(here=HERE, _run=None):
     """the hook's red-proof anchor census. -> (ok: bool, tail)"""
     r = (_run or subprocess.run)([sys.executable] + ANCHOR_CENSUS, cwd=here, env=_law_env(), capture_output=True, text=True,
@@ -322,7 +363,7 @@ def anchors(here=HERE, _run=None):
 
 
 def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, version=None, _laws=None, _prove=None,
-              _anchors=None, _registry=None):
+              _anchors=None, _registry=None, _demos=None, _demos_due=None):
     """-> (exit code 0 green / 1 red / 2 unknown, [red lines])"""
     costs = read_costs(os.path.join(here, "gate_costs.json"))
     if not costs:
@@ -358,6 +399,19 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
     if skipped:
         say("preflight: %d gate(s) SKIPPED for a reason they declare (not a pass, GitHub runs them): %s"
             % (len(skipped), ", ".join(skipped[:8])))
+    unknown = []
+    due, dwhy = (_demos_due or demos_due)()
+    if due:
+        say("preflight: %s" % dwhy)
+        d_ok, d_tail = (_demos or run_demos)()
+        if d_ok is False:
+            reds.append("console-demos (the main push runs them, GitHub never does): " + d_tail)
+        elif d_ok is None:
+            unknown.append("console-demos: " + d_tail)
+            say("preflight: " + unknown[-1])
+    elif due is None:
+        unknown.append("console-demos: " + dwhy)
+        say("preflight: " + unknown[-1])
     if prove:
         owed, _proved, why = (_prove or (lambda: prove_changed(version, here, say=say)))()
         if why:
@@ -369,6 +423,9 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
         for l in reds:
             say("   " + l)
         return 1, reds
+    if unknown:
+        say("preflight: UNKNOWN - the console demos were owed and could not be measured here")
+        return 2, []
     say("preflight: GREEN - %d law(s) ran clean%s%s, anchors hold" % (
         len(s["run"]) - len(skipped), (" (%d skipped, said above)" % len(skipped)) if skipped else "",
         ", the changed laws are proven" if prove else ""))

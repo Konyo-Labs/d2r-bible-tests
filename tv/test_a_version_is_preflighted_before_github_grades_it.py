@@ -35,6 +35,10 @@ def _w(d, name, body):
         fh.write(body)
 
 
+# v3881 (REG-3384) - the pre-flight's console-demos step is its own law's subject (test_the_preflight_runs_the_console_demos_the_main_push_would); here it is held out like the laws and the proofs
+_NO_DEMOS = lambda: (False, "not under test here")  # noqa: E731
+
+
 class ItChoosesWhatThisPCMayRun(unittest.TestCase):
 
     def setUp(self):
@@ -97,7 +101,7 @@ class ItChoosesWhatThisPCMayRun(unittest.TestCase):
         with io.open(os.path.join(self.d, "gate_costs.json"), "w", encoding="utf-8") as fh:
             json.dump(costs, fh)
         seen, said = [], []
-        code, _r = PF.preflight(here=self.d, say=said.append, _laws=lambda n: (seen.extend(n) or []),
+        code, _r = PF.preflight(here=self.d, _demos_due=_NO_DEMOS, say=said.append, _laws=lambda n: (seen.extend(n) or []),
                                 _prove=lambda: ([], [], None), _anchors=lambda: (True, ""), _registry={})
         self.assertEqual(seen, ["test_cheap", "test_slow"], "the slow law was left to GitHub, or ran before the fast ones")
         self.assertNotIn("test_slow_harness", seen, "a slow BROWSER law ran on his Mac")
@@ -119,7 +123,7 @@ class ItChoosesWhatThisPCMayRun(unittest.TestCase):
         with io.open(os.path.join(self.d, "gate_costs.json"), "w", encoding="utf-8") as fh:
             json.dump({"test_cheap": 1.0}, fh)
         seen, said = [], []
-        code, _r = PF.preflight(here=self.d, say=said.append, _laws=lambda n: (seen.extend(n) or []),
+        code, _r = PF.preflight(here=self.d, _demos_due=_NO_DEMOS, say=said.append, _laws=lambda n: (seen.extend(n) or []),
                                 _prove=lambda: ([], [], None), _anchors=lambda: (True, ""), _registry=reg)
         self.assertIn("test_new_law", seen, "the pre-flight never ran a registered law the cost table has not measured")
         self.assertNotIn("new_browser_gate", seen)
@@ -139,7 +143,7 @@ class ItChoosesWhatThisPCMayRun(unittest.TestCase):
         with io.open(p, "w", encoding="utf-8") as fh:
             fh.write("{not json")
         self.assertIsNone(PF.read_costs(p))
-        code, _r = PF.preflight(here=self.d, say=lambda *_: None, _laws=lambda n: [], _prove=lambda: ([], [], None),
+        code, _r = PF.preflight(here=self.d, _demos_due=_NO_DEMOS, say=lambda *_: None, _laws=lambda n: [], _prove=lambda: ([], [], None),
                                 _anchors=lambda: (True, ""))
         self.assertEqual(code, 2, "a pre-flight that chose nothing said green")
 
@@ -162,7 +166,7 @@ class AnyRedStopsIt(unittest.TestCase):
         def _laws(names):
             seen.extend(names)
             return [(n, (laws or {}).get(n, "ok"), "tail of %s" % n) for n in names]
-        code, reds = PF.preflight(here=self.d, say=lambda *_: None, _laws=_laws,
+        code, reds = PF.preflight(here=self.d, _demos_due=_NO_DEMOS, say=lambda *_: None, _laws=_laws,
                                   _prove=lambda: (list(owed), ["test_a"], why), _anchors=lambda: (anchors_ok, "anchor tail"))
         return code, reds, seen
 
