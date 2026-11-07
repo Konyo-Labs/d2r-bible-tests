@@ -127,6 +127,15 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3344 - DEAN'S SHADOW DREW THE MAC'S OWN D2JSP SIGN-IN AS HIS (v3878, board #56, GrokBot 6700580776)
+GrokBot (11-07, Dean's shadow on the Mac, headless): "the lamp still reads the Mac's own: 'Signed into d2jsp in the
+console's own d2jsp window on this Mac'. The shadow doesn't swap in Dean's lamp ... That may itself be the finding."
+MEASURED in d2jspLamp: in a shadow it still asked THIS console (GET /api/d2jsp_login - the shadow frame answers only
+chars_learned / main_locks / saves from the owner's upload) and drew the viewer's answer as the owner's; a click would have
+POSTed a login open on the viewing Mac. Nothing uploads an owner's d2jsp sign-in. NOW in a shadow the lamp is UNKNOWN and
+its hover says the sign-in lives on that PC; it asks this console nothing and a click opens no login (a shadow writes
+nothing, REG-2186). Outside a shadow it is unchanged. Law: test_a_shadow_never_shows_this_pcs_d2jsp_lamp (new, the page in
+node with every fetch recorded); red-proof PROVEN (1).
 ### REG-3343 - THE PRICE CHECK SHOWED NUMBERS AND NO ITEM: NOW A NORMAL AND A PERFECT CARD (v3878, board #97, his ask)
 His words (11-06): "when price checking an item it should also pull up a image of that item from the local database and
 have an image with the mods ... on the left normal tier ... its mods that it can range from minimum to maximum. and the

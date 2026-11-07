@@ -14659,6 +14659,7 @@ function d2jspBatchHtml(view) {
     step();
   }
   window._d2jspPriceSearch = priceSearch;
+  window._d2jspLamp = function(signIn){ return d2jspLamp(signIn); };   /* #56 - for its law */
   /* #97 (his 11-06: "when price checking an item it should also pull up a image of that item from the local database and
      have an image with the mods ... on the left normal tier ... and its mods that it can range from minimum to maximum.
      and the right side an image of PERFECT ... with perfected mods ... in the same format and structure and theme") -
@@ -14956,6 +14957,19 @@ function d2jspBatchHtml(view) {
     var hostName = '';
     try { hostName = location.hostname; } catch (eLamp) { hostName = ''; }
     if (!lamp) return;
+    /* #56 (GrokBot 6700580776: in Dean's shadow the lamp read "Signed into d2jsp in the console's own d2jsp window on this
+       Mac" - the VIEWER's sign-in, drawn as the owner's) - a shadow is the owner's board, and their d2jsp sign-in lives on
+       their PC; nothing uploads it. So in a shadow the lamp is UNKNOWN and says whose it is, asks this console nothing, and a
+       click opens no login here (a shadow writes nothing - REG-2186). */
+    if (document.documentElement.classList.contains('tvd-shadow')) {
+      lamp.removeAttribute('data-busy');
+      lamp.removeAttribute('data-fault');
+      lamp.setAttribute('data-lamp', 'unknown');
+      lamp.title = 'D2JSP sign-in: this is a shadow of another PC, and its d2jsp sign-in lives on that PC - this page does '
+        + 'not read it (UNKNOWN). Leave the shadow to see this machine\u2019s own lamp.';
+      if (signIn) say('A shadow opens no d2jsp login - the sign-in it shows is the owner\u2019s, on their PC.');
+      return;
+    }
     if (hostName !== '127.0.0.1' && hostName !== 'localhost') {
       lamp.setAttribute('data-lamp', 'unknown');
       lamp.title = 'D2JSP sign-in is read on the console of this machine.';
