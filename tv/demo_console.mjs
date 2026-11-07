@@ -759,6 +759,9 @@ async function j9_terrorZoneFlagship(page) {
     n: (z.querySelector('b') || {}).textContent || '',
     t: [...z.classList].find((c) => ['tzz-prime', 'tzz-good', 'tzz-thin'].includes(c)) || '',
     art: ((z.querySelector('.tzz-art') || {}).style || {}).backgroundImage || '',
+    /* v3879 #108 (REG-3358) - a zone may wear ITS OWN MONSTER instead of its zone art: the sprite named for it in TZ_MONSTER
+       (each pick sourced in tv/data/monster_art_arreat.json). An <img> whose file is missing removes itself (onerror). */
+    mon: (z.querySelector('.tzz-art-mon img.tzz-mon') || { getAttribute: () => '' }).getAttribute('src') || '',
     grey: getComputedStyle(z).filter })));
   const by = (n) => out.find((o) => o.n === n);
   const fail = [];
@@ -944,7 +947,17 @@ async function j9_terrorZoneFlagship(page) {
     if (!place.routes) fail.push('a zone worth running does not route anywhere');
   }
   if (out.some((o) => /^and /i.test(o.n))) fail.push('a chip is labelled "and <Zone>" — the Oxford-comma split is back');
-  if (!out.every((o) => o.art.includes('/art/tz_'))) fail.push('a zone has no game-extracted face');
+  // v3879 #108 - a face is the zone's game-extracted art OR its own monster sprite from TZ_MONSTER; anything else (an act
+  // picture from the web, a guessed sprite, a sprite whose file is missing) is still a zone with no verified face.
+  // The sourced picks live in tv/data/monster_art_arreat.json "zones" (TZ_MONSTER is built from it, and is private to the
+  // painter), so a card's monster must be the one its own zone was given there - never just any sprite.
+  let _tzPicks = {};
+  try { _tzPicks = JSON.parse(fs.readFileSync(path.join(DEMO_DIR, 'data', 'monster_art_arreat.json'), 'utf8')).zones || {}; } catch (_e) { _tzPicks = {}; }
+  const _pickOf = (n) => ((_tzPicks[n] || {}).file ? '/art/' + _tzPicks[n].file : null);
+  const _faced = (o) => o.art.includes('/art/tz_') || (/^\/art\/d2(?:fam|mon)_[A-Za-z0-9_]+\.gif$/.test(o.mon) && o.mon === _pickOf(o.n));
+  if (!Object.keys(_tzPicks).length) fail.push('the monster picks (tv/data/monster_art_arreat.json zones) could not be read - no face can be checked');
+  if (!out.every(_faced)) fail.push('a zone has no verified face (neither its game zone art nor its own monster sprite): '
+                                   + out.filter((o) => !_faced(o)).map((o) => o.n + ' [' + (o.mon || o.art || 'none') + ']').join(' · '));
   if ((by('Travincal') || {}).t !== 'tzz-prime') fail.push('Travincal (density 325, the Council) was not PRIME');
   if ((by('Blood Moor') || {}).t !== 'tzz-thin') fail.push('Blood Moor was not greyed');
   if (!((by('Blood Moor') || {}).grey || '').includes('grayscale')) fail.push('the THIN treatment is not visually distinct');
@@ -1058,7 +1071,7 @@ async function j9_terrorZoneFlagship(page) {
   await page.setViewportSize({ width: 1470, height: 920 });   // v1682 — hand the suite back its window
   record(name, fail.length === 0,
          fail.length ? fail.join(' · ')
-                     : `${out.length} zones · all faces game-extracted · PRIME/THIN separated (Travincal kept by boss override)`
+                     : `${out.length} zones · every face is its zone art or its own sourced monster · PRIME/THIN separated (Travincal kept by boss override)`
                        + ` · cards level across BOTH slots, spread ${place.slotSpread}px `
                        + `(${place.whyNow} why live / ${place.whyNext} up next): ${JSON.stringify(place.allBoxes)}`);
 }
