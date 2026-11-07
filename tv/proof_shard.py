@@ -186,8 +186,8 @@ def run_caps(names, env=None, gates=None):
     try:
         run_cap = float(str(env.get("HEART2_GATE_CAP_S") or "").strip())
     except ValueError:
-        return {}
-    if not run_cap > 0:
+        run_cap = None          # heart2._prove_bounds' own rule: a value that is not a positive number is no bound
+    if run_cap is None or not run_cap > 0:
         return {}
     own = {}
     try:

@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3376 - HIS STATE PANEL PRINTED DEAN'S HOST NAME, A UTC ISO STAMP, AND "SWITCHED OFF" - THE GUESS #225 REMOVED (v3880)
+GrokBot (#230 6707144313) read on his State panel: "2 peer(s) are switched off rather than stale: Dean's machine (<its host
+name>) has not reported since 2026-11-07T04:28:40.194Z ..." - a host name nobody asked for (GrokBot redacted it), a UTC stamp
+three hours off his clock, and console_doctor's wrapper still saying "switched off" though ledger_authority's own sentence was
+made to stop guessing the cause in #225 (measured 2026-09-24: the ALT box was up, only its console had died). Now the peer is
+named by its nickname only, its last report reads "2026-11-07 06:28 (this PC's clock)" (_local_when; a stamp with no zone is
+left as given, never guessed), and the wrapper says "offline (no console beacon), not stale". Law: test_ledger_authority (+1
+case, +3 red-proofs seen RED - the host-name one re-aimed after its first sabotage broke the string formatting and went red
+in a different test).
 ### REG-3375 - A STATE PANEL ASK ROW ENDED "...TO CONFIRM. NOTHING ·" - A 260-CHARACTER SLICE, NOT A SENTENCE (v3880)
 GrokBot (#230 6707144313, his live State panel) quoted the Shadow-gate row: "...Stricter means fewer automatic ticks and more
 items waiting for you to confirm. Nothing · your choices: Keep it as it is ..." - _vxAskRow sliced the reason at 260

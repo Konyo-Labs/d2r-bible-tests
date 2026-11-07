@@ -1283,6 +1283,18 @@ class TheModuleProvesItself(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3376 - an offline peer's sentence prints its machine's host name again (GrokBot read it on his State panel)",
+     "file": "tv/ledger_authority.py",
+     "find": "\"again.\" % (who, _local_when(f[\"lastSeen\"])))",
+     "replace": "\"again.\" % (who + \" (\" + f[\"machine\"] + \")\", _local_when(f[\"lastSeen\"])))",
+     "matches": 1},
+    {"why": "REG-3376 - a peer's last report is printed as raw UTC ISO again",
+     "file": "tv/ledger_authority.py",
+     "find": "    return d.astimezone().strftime(\"%Y-%m-%d %H:%M\") + \" (this PC's clock)\"\n",
+     "replace": "    return s\n", "matches": 1},
+    {"why": "REG-3376 - a stamp with no zone is guessed into this PC's clock",
+     "file": "tv/ledger_authority.py",
+     "find": "    if d.tzinfo is None:\n        return s\n", "replace": "", "matches": 1},
     {
         "why": "#227 - a peer that went silent mid-relaunch reads 'cannot tell which' again: the ALT box's relaunch death looks like a machine that was switched off",
         "file": "ledger_authority.py",
@@ -1444,8 +1456,23 @@ class AMachineThatIsOffIsNotAFigureGoingStale(unittest.TestCase):
         self.assertNotIn("switched off", why, "the row guesses a cause it cannot see again")
         self.assertIn("LAST KNOWN", why)
         self.assertIn("2026-09-15", why, "the sentence does not say WHEN it was last heard from")
+        # v3880 (REG-3376, GrokBot #6707144313) - his panel printed the peer's raw host name and a UTC ISO stamp
+        self.assertNotIn("Dean-BOX", why, "the sentence prints the machine's host name again")
+        self.assertNotIn("T00:24:28", why, "the sentence prints a raw UTC ISO stamp again")
+        self.assertIn("(this PC's clock)", why)
         self.assertNotIn("0 of 403", why,
                          "it republished the boot-time placeholder as if it were Dean's tally")
+
+    def test_a_last_report_reads_in_this_pcs_clock_and_an_unzoned_one_is_left_alone(self):
+        """REG-3376 - a zoned stamp is said in local time; a stamp with no zone is never guessed into one"""
+        import datetime as _dt
+        z = LA._local_when("2026-09-15T00:24:28.324Z")
+        want = _dt.datetime(2026, 9, 15, 0, 24, 28, tzinfo=_dt.timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M")
+        self.assertEqual(z, want + " (this PC's clock)")
+        self.assertEqual(LA._local_when("2026-09-15T00:24:28"), "2026-09-15T00:24:28", "a zoneless stamp was guessed")
+        self.assertEqual(LA._local_when("not a time"), "not a time")
+        self.assertEqual(LA._local_when(""), "unknown")
+        self.assertEqual(LA._local_when(None), "unknown")
 
 
 if __name__ == "__main__":

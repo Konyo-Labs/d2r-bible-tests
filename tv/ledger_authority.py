@@ -88,6 +88,24 @@ import os
 import re
 import time
 
+
+def _local_when(iso):
+    """v3880 (REG-3376, GrokBot #6707144313 on his State panel) - a peer's last report in THIS PC's clock, never raw UTC ISO.
+    GrokBot read "Dean's machine (<its hostname>) has not reported since 2026-11-07T04:28:40.194Z" on his screen: a host name
+    nobody asked for and a UTC stamp three hours off his clock. -> '2026-11-07 06:28 (this PC's clock)'. A stamp with no
+    zone, or one that will not parse, is returned as given (its zone is UNKNOWN - never guessed); none reads 'unknown'."""
+    s = str(iso or "").strip()
+    if not s:
+        return "unknown"
+    try:
+        import datetime as _dt
+        d = _dt.datetime.fromisoformat(s[:-1] + "+00:00" if s.endswith("Z") else s)
+    except ValueError:
+        return s
+    if d.tzinfo is None:
+        return s
+    return d.astimezone().strftime("%Y-%m-%d %H:%M") + " (this PC's clock)"
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 BIBLE = os.path.join(ROOT, "bible.html")
@@ -1808,18 +1826,18 @@ def staleness(own=None, fleet=None, table=None):
             _rl = m.get("relaunch") if isinstance(m.get("relaunch"), dict) else {}
             f["diedRelaunching"] = bool(_ver and _dv and _dv != _ver and _rl.get("armed") and _rl.get("may"))
             if f["diedRelaunching"]:
-                f["why"] = ("%s's machine (%s) went silent MID-RELAUNCH: its last report, at %s, was "
+                f["why"] = ("%s's machine went silent MID-RELAUNCH: its last report, at %s, was "
                             "running %s with %s on disk and a relaunch armed, and nothing came back — "
                             "its console most likely died relaunching (measured once, on the Windows "
                             "ALT). Starting TV DIABLO on that machine brings it back and pulls the fix. "
                             "Its figures are its LAST KNOWN ones, not current."
-                            % (who, f["machine"] or "unknown", f["lastSeen"] or "unknown", _ver, _dv))
+                            % (who, _local_when(f["lastSeen"]), _ver, _dv))
             else:
-                f["why"] = ("%s's machine (%s) has not reported since %s — its console is not "
+                f["why"] = ("%s's machine has not reported since %s — its console is not "
                             "beaconing, which means the console is down OR the machine is off; this "
                             "console cannot tell which. Its figures are its LAST KNOWN ones, not "
                             "current, and nothing here can refresh them until that console reports "
-                            "again." % (who, f["machine"] or "unknown", f["lastSeen"] or "unknown"))
+                            "again." % (who, _local_when(f["lastSeen"])))
         rows.append(f)
 
     # ⚠ v3268 — `stale` keeps its old meaning (the figure IS old) so no existing reader shifts

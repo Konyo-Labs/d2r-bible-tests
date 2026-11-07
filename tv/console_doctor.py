@@ -5320,7 +5320,7 @@ def _check_no_ledger_FIGURE_has_gone_stale_unnoticed():
         # ⚠ the offline peers ride along in the same sentence rather than in a second row, so
         # the count in front and the explanation behind can never drift apart.
         _offsay = ("" if not off else
-                   " · %d peer(s) are switched off rather than stale: %s"
+                   " · %d peer(s) are offline (no console beacon), not stale: %s"
                    % (len(off), "; ".join(str(r.get("why") or r["name"]) for r in off[:2])))
         return MISSING, ("%d of %d ledger figure(s) are out of date: %s.%s%s Threshold arithmetic: "
                          "beacon %.0fs + tally TTL %.0fs + fleet cache %.0fs = %.0fs ceiling, "
