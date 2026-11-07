@@ -123,7 +123,7 @@ class TheOwnersReasonRidesTheUpload(unittest.TestCase):
                 "const f = (o) => m.apiOk('saves', JSON.stringify(o));"
                 "process.stdout.write(JSON.stringify([f({ok: true, chars: [{name: 'Crest'}]}), f({ok: true, chars: [{name: 'Crest', ids: 2}]}),"
                 " f({ok: true, chars: [{name: '../x'}]}), f({ok: false, chars: null, why: 'w'}), f({ok: true, folders: 1})]));});")
-        r = subprocess.run([node, "--input-type=module", "-e", prog], capture_output=True, text=True, timeout=60)
+        r = subprocess.run([node, "--input-type=module", "-"], input=prog, capture_output=True, text=True, timeout=60)   # #242 - stdin
         self.assertEqual(r.returncode, 0, r.stderr[-600:])
         self.assertEqual(json.loads(r.stdout), [True, False, False, True, False],
                          "the worker took an id count, a non-D2R name or a field the console never sends")
