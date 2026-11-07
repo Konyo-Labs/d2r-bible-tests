@@ -13,6 +13,7 @@ call: the Windows way (v3861) on the Mac too.
   4. The lamp is on only for the console's own sign-in; before it, the lamp says to click and sign in there once.
 Temp HOME and stubbed readers only - his profiles are never opened. RED_PROOF below.
 """
+import io
 import json
 import os
 import shutil
@@ -54,28 +55,80 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
         with open(os.path.join(self.root, "Default", "Preferences"), encoding="utf-8") as fh:
             self.assertEqual(json.load(fh).get("other"), 7, "seeding wiped what Chrome keeps there")
 
-    def test_a_setting_chrome_reset_is_not_written_again_and_the_doctor_says_why(self):
-        """#24 (the Mac's eagle; MEASURED 11-07: Secure Preferences "prefs.tracked_preferences_reset":
-        ["session.restore_on_startup"], Preferences with no session) - Chrome undoes the seed as tampering"""
+    def _write(self, name, obj):
         d = os.path.join(self.root, "Default")
-        os.makedirs(d)
-        with open(os.path.join(d, "Preferences"), "w", encoding="utf-8") as fh:
-            json.dump({"profile": {"exit_type": "Normal"}}, fh)
-        with open(os.path.join(d, "Secure Preferences"), "w", encoding="utf-8") as fh:
-            json.dump({"prefs.tracked_preferences_reset": ["session.restore_on_startup"]}, fh)
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, name), "w", encoding="utf-8") as fh:
+            json.dump(obj, fh) if not isinstance(obj, str) else fh.write(obj)
+
+    def test_the_setting_is_read_where_chrome_keeps_it(self):
+        """REG-3349 - MEASURED 11-07 on a scratch profile: Chrome (Mac) keeps session.restore_on_startup in SECURE
+        Preferences; a reader of Preferences alone said 'off' while it was on"""
+        self.assertIsNone(D.restore_value(self.root), "a profile with no settings files read as a known answer")
+        self._write("Preferences", {"profile": {}})
+        self.assertEqual(D.restore_value(self.root), 0)
+        self._write("Secure Preferences", {"session": {"restore_on_startup": 1}})
+        self.assertEqual(D.restore_value(self.root), 1, "the setting where Chrome keeps it was not read")
+        self._write("Secure Preferences", "{not json")
+        self.assertIsNone(D.restore_value(self.root))
+
+    def test_a_profile_chrome_holds_is_never_touched(self):
+        os.makedirs(self.root)
+        lk = os.path.join(self.root, "SingletonLock")
+        os.symlink("host-%d" % os.getpid(), lk)
+        self.assertTrue(D.profile_in_use(self.root))
+        called = []
+        self.assertEqual(D.ensure_restore_on(self.root, launch=lambda r: called.append(r), platform="darwin")[0], "waiting")
+        self.assertEqual(called, [], "Chrome was started on a profile another Chrome holds")
+        os.remove(lk)
+        os.symlink("host-999999999", lk)
+        self.assertFalse(D.profile_in_use(self.root), "a lock whose Chrome is gone read as in use")
+
+    def test_it_is_set_through_chromes_own_settings_by_default(self):
+        """REG-3349 (his 11-07: "by default this should be done and not optional on the console end. it should be
+        defaulted on") - off and closed -> set (the launch stands in for the headless settings pass); on -> fine"""
+        os.makedirs(os.path.join(self.root, "Default"))
+        self._write("Preferences", {"profile": {}})
+        set_it = lambda r: (self._write("Secure Preferences", {"session": {"restore_on_startup": 1}}) or True)
+        self.assertEqual(D.ensure_restore_on(self.root, launch=set_it, platform="darwin")[0], "fixed")
+        self.assertEqual(D.ensure_restore_on(self.root, launch=lambda r: 1 / 0, platform="darwin")[0], "fine",
+                         "a setting already on started Chrome again")
+        self._write("Secure Preferences", {"session": {"restore_on_startup": 5}})
+        st, why = D.ensure_restore_on(self.root, launch=lambda r: False, platform="darwin")
+        self.assertEqual(st, "failed", "a pass that did not take read as fixed")
+        self.assertEqual(D.ensure_restore_on(self.root, launch=lambda r: 1 / 0, platform="darwin")[0], "failed")
+        self.assertEqual(D.ensure_restore_on(self.root, platform="linux")[0], "not-here")
+
+    def test_the_old_seed_never_rewrites_what_chrome_reset(self):
+        """REG-3347 - a value written from outside is reset by Chrome; the seed does not write it again"""
+        self._write("Preferences", {"profile": {}})
+        self._write("Secure Preferences", {"prefs.tracked_preferences_reset": ["session.restore_on_startup"]})
         self.assertIs(D.chrome_reset_restore(self.root), True)
         self.assertFalse(D.seed_login_profile(self.root), "the seed wrote again what Chrome resets")
-        with open(os.path.join(d, "Preferences"), encoding="utf-8") as fh:
-            self.assertNotIn("session", json.load(fh), "a value Chrome undoes was written again")
+        with open(os.path.join(self.root, "Default", "Preferences"), encoding="utf-8") as fh:
+            self.assertNotIn("session", json.load(fh))
+
+    def test_the_doctor_and_the_repair_book_carry_it(self):
+        self._write("Preferences", {"profile": {}})
+        self._write("Secure Preferences", {"prefs.tracked_preferences_reset": ["session.restore_on_startup"]})
         import console_doctor as CD
         with mock.patch.object(D, "login_profile_dir", lambda **kw: self.root), mock.patch.object(sys, "platform", "darwin"):
             state, why = CD._check_the_macs_own_d2jsp_window_keeps_its_session()
-        self.assertEqual(state, CD.MISSING)
-        self.assertIn("Chrome reset", why)
-        self.assertIn("On startup > Continue where you left off", why, "the doctor does not say what sticks")
-        with open(os.path.join(d, "Secure Preferences"), "w", encoding="utf-8") as fh:
-            fh.write("{not json")
-        self.assertIsNone(D.chrome_reset_restore(self.root), "an unreadable Secure Preferences read as a known answer")
+            self.assertEqual(state, CD.MISSING)
+            self.assertIn("the repair book sets it through Chrome's own settings", why)
+            self._write("Secure Preferences", {"session": {"restore_on_startup": 1}})
+            self.assertEqual(CD._check_the_macs_own_d2jsp_window_keeps_its_session()[0], CD.OK,
+                             "the setting where Chrome keeps it reads as off")
+        import repair_book as RB
+        ent = [e for e in RB.ENTRIES if e["id"] == "d2jsp-restore"]
+        self.assertEqual(len(ent), 1, "the repair book does not know this fault")
+        self.assertEqual(ent[0]["check"], "the Mac signs in to d2jsp through its own window")
+        with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
+            app = fh.read()
+        self.assertIn('"d2jsp-restore": _book_d2jsp_restore,', app, "the book is handed no door for it")
+        with io.open(os.path.join(HERE, "d2jsp_chrome.py"), encoding="utf-8") as fh:
+            dj = fh.read()
+        self.assertIn("            ensure_restore_on(own, platform=plat)", dj, "the lamp's opener does not set it first")
 
     def test_a_session_that_is_not_a_dict_is_replaced_not_a_crash(self):
         """REG-3282 (the Grok CLI on v3872) - "session": "1" raised AttributeError out of the seed and the doctor."""
@@ -168,10 +221,20 @@ RED_PROOF = [
      "find": "        if chrome_reset_restore(root):\n",
      "replace": "        if False:\n",
      "matches": 1},
-    {"why": "#24 - the doctor never says Chrome reset the setting, nor what sticks",
-     "file": "tv/console_doctor.py",
-     "find": "        if dj.chrome_reset_restore(root):\n",
-     "replace": "        if False:\n",
+    {"why": "REG-3349 - the setting is read from Preferences only, so it reads off while Chrome keeps it on",
+     "file": "tv/d2jsp_chrome.py",
+     "find": "    for name in (\"Secure Preferences\", \"Preferences\"):\n",
+     "replace": "    for name in (\"Preferences\",):\n",
+     "matches": 1},
+    {"why": "REG-3349 - Chrome is started on a profile another Chrome holds",
+     "file": "tv/d2jsp_chrome.py",
+     "find": "    if profile_in_use(root):\n        return \"waiting\"",
+     "replace": "    if False:\n        return \"waiting\"",
+     "matches": 1},
+    {"why": "REG-3349 - the repair book never sets it, so it stays off until someone clicks",
+     "file": "tv/control_app.py",
+     "find": "        \"d2jsp-restore\": _book_d2jsp_restore,\n",
+     "replace": "",
      "matches": 1},
     {"why": "REG-3294 - a Preferences file that will not read is overwritten from nothing",
      "file": "tv/d2jsp_chrome.py",

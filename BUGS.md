@@ -127,6 +127,20 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3349 - THE D2JSP WINDOW'S "CONTINUE WHERE YOU LEFT OFF" IS ON BY DEFAULT, SET THROUGH CHROME'S OWN SETTINGS (v3878)
+His ruling (11-07, on REG-3347's "set it once by hand"): "by default this should be done and not optional on the console
+end. it should be defaulted on". MEASURED on scratch profiles (headless, never his): a value written into the profile's
+files is reset by Chrome as tampering (REG-3347), but chrome.settingsPrivate.setPref('session.restore_on_startup', 1) on
+chrome://settings - the path a click takes - is written by Chrome with its own signature and survives a relaunch (5 -> 1;
+after relaunch 1; no reset recorded); Chrome on a Mac keeps it in SECURE Preferences, so the doctor's reader of
+Preferences alone said "off" while it was on. NOW: d2jsp_chrome.restore_value reads it where Chrome keeps it (Secure first);
+ensure_restore_on sets it through a headless Chrome on the console's own d2jsp profile (chrome://settings, setPref, the
+settings tab closed before Chrome exits) - ONLY while no Chrome holds that profile (SingletonLock; an open window answers
+"waiting") - measured fixed in 2.0 s, then "fine"; the lamp's opener runs it before it opens the window, and the repair
+book runs it as a known fault (entry d2jsp-restore, door _book_d2jsp_restore) whenever the eagle row reads MISSING; the
+doctor says the book sets it. The old seed is no longer called. His current sign-in still dies when that window closes
+(the setting was off when it started); the next sign-in survives. Law: test_the_mac_signs_in_through_its_own_d2jsp_window
+(cases rewritten + added); red-proofs PROVEN (4). REG-3347's hand instruction is superseded.
 ### REG-3348 - THE PRICE DATABASE NEVER REFRESHED ITSELF: fresh_refresh WAS WRITTEN AND NEVER CALLED (v3878, board #96 / #88)
 His words (11-06): "so slowly after time the prices just slowly calliberate themselves to average out base don perfect tier
 or normal tier", and #88 (10:15): "price check just brings up the price of that item that was already researched and
@@ -147,7 +161,7 @@ Preferences holds "prefs.tracked_preferences_reset": ["session.restore_on_startu
 and undoes a value written from outside - so #87's seed (REG-3282) could never make it stick, and every lamp launch wrote it
 again only to be reset again. NOW chrome_reset_restore reads Chrome's own reset record (True / False / None when Secure
 Preferences will not read); the seed does not rewrite a value Chrome reset; the doctor says Chrome reset it and the one thing
-that sticks - set it once in that d2jsp window: Settings > On startup > Continue where you left off. His sign-in works while
+that sticks - SUPERSEDED by REG-3349 (the console sets it through Chrome's own settings). His sign-in works while
 that window stays open (measured: the quote reads posts). NOT done: a launch flag (--restore-last-session) - no source found
 that it keeps session cookies, and proving it means closing his signed-in window. Law:
 test_the_mac_signs_in_through_its_own_d2jsp_window (+1 case); red-proofs PROVEN (2).

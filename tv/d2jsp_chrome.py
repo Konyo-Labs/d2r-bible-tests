@@ -83,10 +83,6 @@ def session_restores(prefs):
     return isinstance(sess, dict) and sess.get("restore_on_startup") == 1
 
 
-RESTORE_BY_HAND = ("set it once in that d2jsp window itself: Settings > On startup > Continue where you left off - "
-                   "Chrome keeps a setting chosen there")
-
-
 def chrome_reset_restore(root):
     """#24 (the Mac's eagle: "the console's own d2jsp profile no longer continues where it left off") - did CHROME reset
     the restore setting this console wrote? -> True | False | None (UNKNOWN: Secure Preferences would not read).
@@ -102,6 +98,125 @@ def chrome_reset_restore(root):
         return None
     reset = sp.get("prefs.tracked_preferences_reset") if isinstance(sp, dict) else None
     return isinstance(reset, list) and "session.restore_on_startup" in reset
+
+
+def restore_value(root):
+    """#24 - what the console's own d2jsp profile does at startup, as CHROME keeps it. -> 1 (continue where it left off), an
+    other int, 0 when the files hold none (Chrome's default, which does not restore), None (UNKNOWN: no profile files, or
+    one would not read). MEASURED 11-07 on a scratch profile: Chrome on a Mac keeps this tracked setting in Secure
+    Preferences (session.restore_on_startup), not in Preferences - so a reader of Preferences alone says "off" while it is
+    on. Secure Preferences first, then Preferences (a build that keeps it unprotected)."""
+    found = False
+    for name in ("Secure Preferences", "Preferences"):
+        try:
+            with open(os.path.join(root, "Default", name), encoding="utf-8") as fh:
+                d = json.load(fh)
+        except FileNotFoundError:
+            continue
+        except (OSError, ValueError):
+            return None
+        found = True
+        sess = d.get("session") if isinstance(d, dict) else None
+        v = sess.get("restore_on_startup") if isinstance(sess, dict) else None
+        if isinstance(v, int) and not isinstance(v, bool):
+            return v
+    return 0 if found else None
+
+
+def profile_in_use(root):
+    """Does a Chrome hold this profile right now? Chrome keeps SingletonLock (a link to "<host>-<pid>") in the profile
+    while it runs. -> bool; a lock whose pid is gone is not in use."""
+    lk = os.path.join(root, "SingletonLock")
+    try:
+        target = os.readlink(lk)
+    except OSError:
+        return os.path.lexists(lk)
+    try:
+        os.kill(int(str(target).rsplit("-", 1)[-1]), 0)
+        return True
+    except (ValueError, ProcessLookupError):
+        return False
+    except PermissionError:
+        return True
+
+
+def _set_restore_headless(root, chrome=None, port=None, wait_s=25.0):
+    """Set "continue where you left off" THROUGH CHROME'S OWN SETTINGS: a headless Chrome on the profile opens
+    chrome://settings and calls chrome.settingsPrivate.setPref - the path a click on that setting takes - so Chrome writes
+    it with its own signature and keeps it (a value written from outside it resets as tampering). No window is shown; the
+    settings tab is closed before Chrome exits, so it is not what the next window restores. -> what setPref answered"""
+    import urllib.request as _ur
+    import websocket
+    binary = chrome or _chrome_bin()
+    if not binary:
+        raise OSError("no Chrome on this machine")
+    port = port or _free_port()
+    proc = subprocess.Popen([binary, "--headless=new", "--user-data-dir=%s" % root, "--remote-debugging-port=%d" % port,
+                             "--remote-allow-origins=http://127.0.0.1:%d" % port, "--no-first-run",
+                             "--no-default-browser-check", "about:blank"],
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    answer = None
+    try:
+        base, end, ver = "http://127.0.0.1:%d" % port, time_now() + wait_s, None
+        while time_now() < end and ver is None:
+            try:
+                ver = json.loads(_ur.urlopen(base + "/json/version", timeout=2).read())
+            except Exception:
+                time.sleep(0.3)
+        if ver is None:
+            raise OSError("Chrome's settings did not answer in %d s" % int(wait_s))
+        b = websocket.create_connection(ver["webSocketDebuggerUrl"], timeout=20, origin=base)
+        n = [0]
+
+        def call(sock, method, params=None):
+            n[0] += 1
+            sock.send(json.dumps({"id": n[0], "method": method, "params": params or {}}))
+            while True:
+                m = json.loads(sock.recv())
+                if m.get("id") == n[0]:
+                    return m
+        tid = (call(b, "Target.createTarget", {"url": "chrome://settings/onStartup"}).get("result") or {}).get("targetId")
+        time.sleep(1.5)
+        tab = next(t for t in json.loads(_ur.urlopen(base + "/json", timeout=5).read()) if t.get("id") == tid)
+        w = websocket.create_connection(tab["webSocketDebuggerUrl"], timeout=20, origin=base)
+        r = call(w, "Runtime.evaluate", {"expression": "new Promise(r => chrome.settingsPrivate.setPref("
+                                         "'session.restore_on_startup', 1, '', ok => r(ok === true)))",
+                                         "awaitPromise": True, "returnByValue": True})
+        answer = ((r.get("result") or {}).get("result") or {}).get("value")
+        w.close()
+        call(b, "Target.closeTarget", {"targetId": tid})
+        b.send(json.dumps({"id": 999, "method": "Browser.close"}))
+    finally:
+        try:
+            proc.wait(timeout=15)
+        except Exception:
+            proc.kill()
+    return answer
+
+
+def ensure_restore_on(root, launch=None, platform=None):
+    """#24 (his 11-07: "by default this should be done and not optional on the console end. it should be defaulted on")
+    - the console's own d2jsp window CONTINUES WHERE IT LEFT OFF, so his sign-in survives closing it. Set through Chrome's
+    own settings (_set_restore_headless) only while that window is closed - Chrome holds its profile while it runs.
+    -> (state, why), the repair book's words: fine / fixed / failed / waiting / unknown / not-here. Never raises."""
+    plat = sys.platform if platform is None else platform
+    if plat != "darwin":
+        return "not-here", "only the Mac signs in to d2jsp through a window the console owns"
+    if not root or not os.path.isdir(root):
+        return "not-here", "the console's own d2jsp window has not been opened on this Mac yet"
+    v = restore_value(root)
+    if v == 1:
+        return "fine", "the console's own d2jsp window continues where it left off"
+    if profile_in_use(root):
+        return "waiting", ("the console's d2jsp window is open and Chrome holds its profile - it is set the next time "
+                           "that window is closed")
+    try:
+        got = (launch or _set_restore_headless)(root)
+    except Exception as e:
+        return "failed", "setting it through Chrome's own settings raised %s" % type(e).__name__
+    if restore_value(root) == 1:
+        return "fixed", "set through Chrome's own settings - the console's d2jsp window now continues where it left off"
+    return "failed", "Chrome's settings answered %r and the profile still does not continue where it left off" % (got,)
 
 
 def seed_login_profile(root):
@@ -127,7 +242,7 @@ def seed_login_profile(root):
             return True
         if chrome_reset_restore(root):
             # #24 - Chrome reset the value this wrote last time (a tracked preference): writing it again is undone again on
-            # the next start and only adds another reset. It is left to the one place it sticks (RESTORE_BY_HAND).
+            # the next start and only adds another reset. ensure_restore_on sets it through Chrome's own settings instead (REG-3349).
             return False
         if not isinstance(prefs.get("session"), dict):
             prefs["session"] = {}          # REG-3282 - a session that is not a dict is replaced, never indexed
@@ -1247,7 +1362,7 @@ def _open_chrome_login(platform=None, run=None, which=None, popen=None, env=None
                 os.makedirs(own, exist_ok=True)
             except OSError:
                 pass
-            seed_login_profile(own)
+            ensure_restore_on(own, platform=plat)   # #24 - Chrome's own settings, never a value Chrome resets
         # #87 - `open -na` starts a SEPARATE Chrome on the console's own profile beside his own Chrome
         argv = (["open", "-na", "Google Chrome", "--args", "--user-data-dir=%s" % own, "--no-first-run",
                  "--no-default-browser-check", LOGIN_URL] if own else ["open", "-a", "Google Chrome", LOGIN_URL])

@@ -11232,23 +11232,16 @@ def _check_the_macs_own_d2jsp_window_keeps_its_session():
         return MISSING, "the D2JSP lamp's window asks for a debugging port (9222 is his Chrome's)"
     if not os.path.isdir(root):
         return OK, "the console's own d2jsp window has not been opened on this Mac yet - the lamp says to click it"
-    prefs_path = os.path.join(root, "Default", "Preferences")
-    try:
-        with open(prefs_path, encoding="utf-8") as fh:
-            prefs = json.load(fh)
-    except FileNotFoundError:
-        return MISSING, "the console's own d2jsp profile has no Preferences, so a sign-in there dies with the window"
-    except (OSError, ValueError) as e:
-        return UNKNOWN, "the console's own d2jsp profile settings would not read (%s)" % type(e).__name__
-    if not dj.session_restores(prefs):         # REG-3282 - the seed's own predicate, safe on any shape
-        # #24 - say WHY, measured: Chrome resets a restore setting written from outside (a tracked preference), so the
-        # console cannot set it - and what does stick
-        if dj.chrome_reset_restore(root):
-            return MISSING, ("Chrome reset the console's 'continue where you left off' setting for its own d2jsp window (it "
-                             "guards that setting and undoes a value written from outside), so the sign-in's session cookie "
-                             "dies when that window closes - " + dj.RESTORE_BY_HAND)
-        return MISSING, ("the console's own d2jsp profile no longer continues where it left off, so the sign-in's session "
-                         "cookie dies when that window closes - " + dj.RESTORE_BY_HAND)
+    # #24 - Chrome keeps this tracked setting in Secure Preferences (measured 11-07): restore_value reads it where Chrome
+    # does, Secure first; a reader of Preferences alone called it off while it was on
+    v = dj.restore_value(root)
+    if v is None:
+        return UNKNOWN, "the console's own d2jsp profile settings would not read, so whether its sign-in survives is UNKNOWN"
+    if v != 1:
+        return MISSING, ("the console's own d2jsp window does not continue where it left off, so the sign-in's session cookie "
+                         "dies when that window closes - the repair book sets it through Chrome's own settings the next "
+                         "time that window is closed" + (" (Chrome reset a value written from outside)"
+                                                         if dj.chrome_reset_restore(root) else ""))
     return OK, "the D2JSP lamp opens the console's own d2jsp window, and that profile keeps its sign-in when it closes"
 
 CHECKS = [

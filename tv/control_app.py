@@ -23602,7 +23602,19 @@ def _book_doors():
                                   "node is fetched only on Windows; this PC resolves its own"),
         "prover-deps": _book_prover_deps,
         "history": _book_history,
+        "d2jsp-restore": _book_d2jsp_restore,
     }
+
+
+def _book_d2jsp_restore():
+    """REG-3349 (his 11-07: "by default this should be done and not optional on the console end. it should be defaulted
+    on") - the console's own d2jsp window continues where it left off: d2jsp_chrome.ensure_restore_on, Chrome's own
+    settings, only while that window is closed. -> (state, why)"""
+    try:
+        import d2jsp_chrome as _dj
+        return _dj.ensure_restore_on(_dj.login_profile_dir(platform=sys.platform))
+    except Exception as e:
+        return "unknown", "the d2jsp desk could not be asked (%s)" % type(e).__name__
 
 
 def _doctor_fn_name(check):

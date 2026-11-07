@@ -38,6 +38,10 @@ ENTRIES = (
      "says": "websocket-client, which every browser law's prover needs, is installed for this user on Windows"},
     {"id": "shallow-history", "reg": "v3861", "check": None, "door": "history",
      "says": "a --depth 1 install clone gets its full history (blobs on demand), or HEAD~1 laws file BLIND"},
+    {"id": "d2jsp-restore", "reg": "REG-3349", "check": "the Mac signs in to d2jsp through its own window",
+     "door": "d2jsp-restore",
+     "says": "the console's own d2jsp window continues where it left off, set through Chrome's own settings while that "
+             "window is closed, so his d2jsp sign-in survives closing it (his 11-07: 'it should be defaulted on')"},
 )
 STATES = ("fine", "fixed", "failed", "waiting", "unknown", "not-here")
 COOLDOWN_MS = 60 * 60 * 1000            # a failed repair is retried after an hour, never in a loop
