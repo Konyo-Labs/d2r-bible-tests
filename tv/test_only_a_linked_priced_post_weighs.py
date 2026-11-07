@@ -55,6 +55,19 @@ class OnlyALinkedPricedPostWeighs(unittest.TestCase):
         self.assertEqual(pr["leftOut"], 5, "the price does not say how many it left out")
         self.assertEqual(db, before, "pricing changed the records - nothing is deleted")
 
+    def test_a_link_that_only_starts_with_http_is_no_link(self):
+        """REG-3354 (the Grok CLI on v3877) - "httpnot-a-url", a bare "http://" and another site's page are not posts"""
+        for bad in ("httpnot-a-url", "http://", "https://example.com/topic.php?t=1", "ftp://forums.d2jsp.org/x",
+                    "https://forums.d2jsp.org.evil.example/t"):
+            self.assertFalse(P.counts({"link": bad, "fg": 50}), "%r weighed as a linked post" % bad)
+        self.assertTrue(P.counts({"link": L % 1, "fg": 50}))
+        self.assertTrue(P.counts({"link": "http://d2jsp.org/topic.php?t=2", "fg": 50}))
+
+    def test_a_flag_or_an_infinite_number_is_no_price(self):
+        for bad in (True, False, float("inf"), "inf", float("nan"), "nan", 0, -5, "", None, [80]):
+            self.assertFalse(P.counts({"link": L % 1, "fg": bad}), "fg=%r weighed as a price" % (bad,))
+        self.assertTrue(P.counts({"link": L % 1, "fg": "80"}))
+
     def test_the_table_holds_the_same_posts_the_price_weighed(self):
         ex = P.explain(_db(), "shako", now=NOW)
         self.assertEqual(sorted(r["link"] for r in ex["posts"]), sorted(L % i for i in range(5)))
@@ -91,8 +104,23 @@ class OnlyALinkedPricedPostWeighs(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3327 - a post with no link weighs in the price again (his 'anything without a post is irrelevant')",
      "file": "tv/d2jsp_price_db.py",
-     "find": "    if not isinstance(p, dict) or not str(p.get(\"link\") or \"\").startswith(\"http\"):\n",
+     "find": "    if not isinstance(p, dict) or not is_post_link(p.get(\"link\")):\n",
      "replace": "    if not isinstance(p, dict):\n",
+     "matches": 1},
+    {"why": "REG-3354 - any string that starts with http weighs as a forum link again",
+     "file": "tv/d2jsp_price_db.py",
+     "find": "    return u.scheme in (\"http\", \"https\") and (host == \"d2jsp.org\" or host.endswith(\".d2jsp.org\"))\n",
+     "replace": "    return str(link or \"\").startswith(\"http\")\n",
+     "matches": 1},
+    {"why": "REG-3354 - a boolean price weighs as 1 fg (float(True) is 1.0)",
+     "file": "tv/d2jsp_price_db.py",
+     "find": "    if isinstance(fg, bool):\n        return False",
+     "replace": "    if False:\n        return False",
+     "matches": 1},
+    {"why": "REG-3354 - an infinite price weighs and owns every median",
+     "file": "tv/d2jsp_price_db.py",
+     "find": "    return math.isfinite(v) and v > 0",
+     "replace": "    return v > 0",
      "matches": 1},
     {"why": "REG-3327 - the Advanced table drops the unlinked posts and never says how many",
      "file": "bible.html",

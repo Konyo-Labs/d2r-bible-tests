@@ -128,12 +128,29 @@ def counts(p):
     price is irrelevant"). A post weighs in a price only when it carries its forum link AND a price. -> bool
     MEASURED 11-07 on his DB: shako 14 posts, 9 with NO link (11-01 and 10-31, before links were kept; their key is
     fg|day|roll - no topic id to recover a link from). Those stay ON RECORD - nothing is deleted - and out of the price."""
-    if not isinstance(p, dict) or not str(p.get("link") or "").startswith("http"):
+    if not isinstance(p, dict) or not is_post_link(p.get("link")):
         return False
+    fg = p.get("fg")
+    if isinstance(fg, bool):
+        return False                       # REG-3354 - float(True) is 1.0: a flag is not a price
     try:
-        return float(p.get("fg")) > 0
+        v = float(fg)
     except (TypeError, ValueError):
         return False
+    return math.isfinite(v) and v > 0      # REG-3354 - "inf" parses as a price and would own every median
+
+
+def is_post_link(link):
+    """REG-3354 (the Grok CLI on v3877) - a forum post's link: http(s) on d2jsp.org, with a host. -> bool. It was
+    `startswith("http")`, so "httpnot-a-url" or a bare "http://" weighed as a linked post. MEASURED 11-07 on his DB: 31 of
+    45 posts link to forums.d2jsp.org, the other 14 carry no link - nothing real is left out by this."""
+    try:
+        from urllib.parse import urlparse
+        u = urlparse(str(link or "").strip())
+        host = (u.hostname or "").lower()
+    except Exception:
+        return False
+    return u.scheme in ("http", "https") and (host == "d2jsp.org" or host.endswith(".d2jsp.org"))
 
 
 def _wmedian(pairs):
