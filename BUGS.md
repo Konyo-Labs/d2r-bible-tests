@@ -127,6 +127,17 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3345 - A READER THAT HUNG UP WAS FILED AS A FAILED RIVER READ (v3878, board #40, GrokBot 6700580776)
+GrokBot (11-07, Dean, two reads 8 min apart, his PC 100% busy importing): both carried "a newer river read failed ...
+ConnectionAbortedError WinError 10053 ... these lanes are the last good read". WinError 10053 is a connection the OTHER end
+aborted - not a river that would not read. MEASURED in control_app's /api/river: the answer's write (self._json) sits in
+the SAME try as the read, after _river_remember(_lanes) has kept this very read; a reader that timed out on the busy PC and
+hung up made the write raise, and the except filed it as a NEWER failed read - so the row (REG-3340) said its lanes were an
+older read when they were this moment's. NOW the branch marks the read kept right after it is remembered and before the
+answer is written, and a BrokenPipe / ConnectionAborted / ConnectionReset after that is no river failure: nothing is filed
+and nobody is left to answer. A failure inside the read itself is filed as before. Law: test_a_failed_river_read_says_why
+(+1 case, on the source - the handler runs inside the live server); red-proof PROVEN (1). Dean's river NOT draining (ROUTED
+160 / JOIN 10 / PRINTER 9 on two reads) is a separate question - card #40 keeps it.
 ### REG-3344 - DEAN'S SHADOW DREW THE MAC'S OWN D2JSP SIGN-IN AS HIS (v3878, board #56, GrokBot 6700580776)
 GrokBot (11-07, Dean's shadow on the Mac, headless): "the lamp still reads the Mac's own: 'Signed into d2jsp in the
 console's own d2jsp window on this Mac'. The shadow doesn't swap in Dean's lamp ... That may itself be the finding."

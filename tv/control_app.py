@@ -51158,6 +51158,7 @@ class Handler(BaseHTTPRequestHandler):
                 min_witnesses=(q.get("witnesses") or [None])[0]))
             return
         if path == "/api/river":
+            _river_read_kept = False   # #40 - set once this request's read is kept (the except below reads it)
             # v2746 — THE RIVER, WIRED. Konyo: "something needs to run that river", and
             # "the reels going through and getting filtered and plumbed through the processing
             # system 3d and 4 printer and routes already contructed just need wiring".
@@ -51346,6 +51347,7 @@ class Handler(BaseHTTPRequestHandler):
                 # ⚠ 2026-09-28 — KEPT WHERE IT IS COMPUTED, for the fleet beacon, which must never pay
                 # the 2-4 s itself. The beacon carries these counts with THIS moment's age.
                 _river_remember(_lanes)
+                _river_read_kept = True        # #40 - from here an error is the ANSWER's write, not the river's read
                 self._json(200, {
                     "ok": bool(_cen.get("ok")),
                     "lanes": _lanes,
@@ -51423,6 +51425,13 @@ class Handler(BaseHTTPRequestHandler):
                     "detail": _reels,
                 })
             except Exception as e:
+                # #40 (GrokBot 6700580776: Dean's row - "a newer river read failed ... ConnectionAbortedError WinError 10053"
+                # on two reads 8 min apart, his PC 100% busy) - THE CLIENT LEFT, THE RIVER WAS READ. The answer's own write
+                # sits in this try: a reader that timed out and hung up raised here AFTER this very read was kept, and it was
+                # filed as a newer FAILED river read - so the row said the lanes were stale when they were this moment's.
+                # A client gone after the read was kept is no river failure: nothing is recorded and nobody is left to answer.
+                if _river_read_kept and isinstance(e, (BrokenPipeError, ConnectionAbortedError, ConnectionResetError)):
+                    return
                 # UNKNOWN, never an empty shelf — an unreadable river must not render as a river
                 # with nothing in it.
                 _river_remember(error=e)

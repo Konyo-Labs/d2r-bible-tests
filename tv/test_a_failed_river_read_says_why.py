@@ -139,7 +139,35 @@ class TheRowSaysIt(unittest.TestCase):
                 self.assertEqual(fh.read().count(p["find"]), p["matches"], p["why"])
 
 
+class AClientThatLeftIsNoRiverFailure(unittest.TestCase):
+    """#40 (GrokBot 6700580776: Dean's row - "a newer river read failed ... ConnectionAbortedError WinError 10053" on two
+    reads 8 min apart while his PC was 100% busy) - /api/river's answer is WRITTEN inside the same try as the read, so a
+    reader that timed out and hung up raised there after this very read was kept, and was filed as a newer failed read.
+    Held on the source (the handler runs inside the live server): the read is marked kept right after it is remembered and
+    before the answer is written, and the except returns before filing a failure when it was kept and the client left."""
+
+    def test_the_answers_write_is_never_filed_as_the_rivers_read(self):
+        with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
+            src = fh.read()
+        a = src.index('        if path == "/api/river":\n')
+        b = src.index('        if path == ', a + 10)
+        body = src[a:b]
+        self.assertIn("_river_read_kept = False", body, "the river branch never starts unkept")
+        k = body.index("                _river_remember(_lanes)\n")
+        m = body.index("                _river_read_kept = True", k)
+        w = body.index("                self._json(200, {", k)
+        self.assertLess(m, w, "the read is marked kept only after its answer was written - a hang-up still files a failure")
+        e = body.index("                _river_remember(error=e)")
+        g = body.index("if _river_read_kept and isinstance(e, (BrokenPipeError, ConnectionAbortedError, ConnectionResetError)):")
+        self.assertLess(g, e, "a client that left after the read is filed as a failed river read before anything asks")
+
+
 RED_PROOF = [
+    {"why": "#40 - a reader that hung up after the read is filed as a newer FAILED river read again (Dean's WinError 10053)",
+     "file": "tv/control_app.py",
+     "find": "                if _river_read_kept and isinstance(e, (BrokenPipeError, ConnectionAbortedError, ConnectionResetError)):\n",
+     "replace": "                if False:\n",
+     "matches": 1},
     {"why": "#24 - the chip says only that a read failed, not that the lanes beside it are an older read",
      "file": "tv/control_ui.html",
      "find": "        + escC('lanes from its last good read' + (typeof rv.ageS === 'number' && isFinite(rv.ageS) ? ' (' + _fleetAgo(rv.ageS) + ')' : '')\n",
