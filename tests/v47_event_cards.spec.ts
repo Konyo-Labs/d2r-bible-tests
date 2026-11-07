@@ -113,7 +113,7 @@ test.describe('v47 event cards — pinnacle events expand inline like boss/TZ de
         'event-uber-tristram':    { art: /hellfiretorch_graphic\.png(?:\?|$)/, emoji: '🌀' },
         'event-uber-id-cards':    { art: /d2arreat_baal\.gif(?:\?|$)/,   emoji: '👹' },   // REG-3357 (v3879 #108/#109): the uber event wears Uber Baal's OWN sprite, not regular Baal's   // REG-3321 (v3877 #102/#91): one picture per monster - the boss's own animated sprite, never a stone-backed render
         'event-cow-level':        { art: /hellbovine_graphic\.png(?:\?|$)/,    emoji: '🐄' },
-        'event-diablo-clone':     { art: /d2mon_Diablo\.gif(?:\?|$)/,        emoji: '🌑' },
+        'event-diablo-clone':     { art: /d2arreat_diablo\.gif(?:\?|$)/,     emoji: '🌑' },   // REG-3357 (v3879): the clone event wears Uber Diablo's OWN sprite
         'event-colossal-ancients':{ art: /d2mon_Talic\.gif(?:\?|$)/,     emoji: '⚡' },
       };
       return Object.entries(want).map(([id, w]) => {
