@@ -364,7 +364,12 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                                  r'| style="padding-right: \d+px !important;"')
                 # (on a narrow screen the contract also makes room under the x - that inline padding is its fourth mark)
                 self.assertIn(len(ovx.findall(s["html"])), (3, 4), "%s %s: the modal is not under the overlay contract" % (k, m))
-                self.assertEqual(ovx.sub("", s["html"]), b["html"], "%s %s: the modal changed beyond the ADVANCED fold" % (k, m))
+                # v3880 (REG-3363, every PC asks d2jsp once a day) ADDED one fact line to the box's fold - d2jsp, whether this PC
+                # read a real price. Its line is cut from the ship side and pinned present on its own; its words are
+                # test_each_pc_reads_d2jsp_once_a_day's to prove. Nothing else in the modal may move.
+                d2 = re.compile(r'<span class="fs-l[^"]*" title="[^"]*"><i class="fs-k">d2jsp</i>(?:<span class="fs-f">[^<]*</span>)*</span>')
+                self.assertEqual(len(d2.findall(s["html"])), 1, "%s %s: the box has no d2jsp line (REG-3363)" % (k, m))
+                self.assertEqual(d2.sub("", ovx.sub("", s["html"])), b["html"], "%s %s: the modal changed beyond the ADVANCED fold" % (k, m))
                 self.assertEqual(s["adv"], u"ADVANCED \u00b7 DIAGNOSTICS", "%s %s: no ADVANCED fold" % (k, m))
                 self.assertFalse(s["open"], "%s %s: the diagnostics are not collapsed" % (k, m))
                 self.assertFalse(s["eyesInside"], "%s %s: the eyes are inside the modal" % (k, m))
