@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3332 - THE HEART FAN'S SPOKES RAN THROUGH reel.route'S CAPTION (v3877, board #99, GrokBot 6695970506 on his live window)
+GrokBot, v3872: "No fan caption sits on another caption, but connector lines do cross reel.route's caption text." MEASURED:
+the captions already carried a 3.5px paint-order halo (v2628), which masks only the edge of the ink; the fan staggers its
+radii, so a NEIGHBOUR lock's 1.8-2.4px spoke passed under a shorter lock's caption and showed through every gap between
+its letters - and the overlap laws compared text boxes to text boxes, never a <path> to a caption. NOW each caption stack
+sits on a plate of the panel's own background (rect.hrt-fan-plate, the stack's box + 3/2 px), painted after every vein,
+spoke and leader and before every padlock and caption (veins + gates + gplates + gmarks + glabels); the plate carries
+data-fan-x, the same number _hrtFanFit groups a stack by, and _hrtPlateSync gives it the stack's transform after the fit
+pass, so a moved stack keeps its plate. Law: test_the_fan_captions_never_overlap (3 new cases: every stack on its plate;
+no sampled point of any vein/spoke/leader inside a caption is painted after its plate - premise: some do pass under; a
+moved stack's plate moves with it); red-proofs PROVEN (3 new). Pixels: the v3877 render batch.
 ### REG-3331 - EVERY SECOND PRICE SEARCH ANSWERED "NO PRICES" WHEN THE FORUM HELD IT BACK (v3877, board #94, GrokBot 6700580776)
 GrokBot ran ten price searches back to back through the D2JSP tab's own GET (11-07 03:38): items 2, 4, 6, 8 and 10 (Gull,
 Arachnid Mesh, Stone of Jordan, Griffon's Eye, Andariel's Visage) each took ~21 s and came back reason "no prices", db

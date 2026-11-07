@@ -150,6 +150,38 @@ def _stacks(texts):
     return stacks
 
 
+def _plates(svg):
+    """-> [{key, x0, x1, y0, y1, at}] for every caption plate, at = where it sits in the paint order"""
+    out = []
+    for m in re.finditer(r'<rect class="hrt-fan-plate" data-fan-x="([\d.\-]+)" x="([\d.\-]+)" y="([\d.\-]+)" '
+                         r'width="([\d.]+)" height="([\d.]+)"', svg):
+        x, y, w, h = (float(m.group(k)) for k in (2, 3, 4, 5))
+        out.append({"key": m.group(1), "x0": x, "x1": x + w, "y0": y, "y1": y + h, "at": m.start()})
+    return out
+
+
+def _strokes(svg):
+    """-> [(at, [(x, y) ...])] every stroked M..Q / M..L path in the fan (veins, spokes, leaders), sampled along its length"""
+    out = []
+    for m in re.finditer(r'<path (?:class="[^"]*" )?d="M ([\d.\-]+) ([\d.\-]+) (Q|L) ([^"]+)"[^>]*stroke="', svg):
+        x0, y0, op = float(m.group(1)), float(m.group(2)), m.group(3)
+        v = [float(t) for t in m.group(4).split()]
+        pts = []
+        for i in range(81):
+            t = i / 80.0
+            if op == "Q" and len(v) >= 4:
+                pts.append(((1 - t) ** 2 * x0 + 2 * (1 - t) * t * v[0] + t * t * v[2],
+                            (1 - t) ** 2 * y0 + 2 * (1 - t) * t * v[1] + t * t * v[3]))
+            elif op == "L" and len(v) >= 2:
+                pts.append((x0 + (v[0] - x0) * t, y0 + (v[1] - y0) * t))
+        out.append((m.start(), pts))
+    return out
+
+
+def _inside(p, b, inset=0.0):
+    return b["x0"] + inset <= p[0] <= b["x1"] - inset and b["y0"] + inset <= p[1] <= b["y1"] - inset
+
+
 def _hit(a, b):
     return (min(a["x1"], b["x1"]) - max(a["x0"], b["x0"]) > -GAP) and (min(a["y1"], b["y1"]) - max(a["y0"], b["y0"]) > -GAP)
 
@@ -248,7 +280,85 @@ class TheFanCaptionsNeverOverlap(unittest.TestCase):
                                     "%s: %s was moved off its node and nothing leads back to it" % (label, s["name"]))
 
 
+    def test_every_caption_stack_sits_on_its_own_plate(self):
+        """REG-3332 (#99) - each stack is drawn on a plate of the panel's background that holds every one of its lines"""
+        for (label, _), svg in zip(self.cases, self.svgs):
+            plates = _plates(svg)
+            for s in _stacks(_texts(svg)):
+                key = "%.1f" % s["lines"][0]["x"]
+                mine = [p for p in plates if p["key"] == key]   # two stacks can share an x - _hrtFanFit groups them alike
+                self.assertTrue(mine, "%s: %s's caption has no plate under it - a spoke runs through its letters"
+                                % (label, s["name"]))
+                for ln in s["lines"]:
+                    self.assertTrue([p for p in mine if _inside((ln["x0"], ln["y0"]), p) and _inside((ln["x1"], ln["y1"]), p)],
+                                    "%s: %s line %r runs off its plate" % (label, s["name"], ln["text"][:30]))
+
+    def test_no_line_is_painted_over_a_caption(self):
+        """REG-3332 (#99, GrokBot: 'connector lines do cross reel.route's caption text') - a vein, spoke or leader that
+        passes through a caption's box is painted BEFORE that caption's plate, and the plate before the caption"""
+        crossed = 0
+        for (label, _), svg in zip(self.cases, self.svgs):
+            plates = _plates(svg)
+            first_caption = svg.find('<text class="hrt-fan ')
+            over = []
+            for s in _stacks(_texts(svg)):
+                key = "%.1f" % s["lines"][0]["x"]
+                mine = [p for p in plates if p["key"] == key]
+                for at, pts in _strokes(svg):
+                    if not any(_inside(p, ln, 0.5) for p in pts for ln in s["lines"]):
+                        continue
+                    crossed += 1
+                    if not mine or at > min(p["at"] for p in mine):
+                        over.append("%s through %s" % (svg[at:at + 40], s["name"]))
+                for p in mine:
+                    self.assertLess(p["at"], first_caption, "%s: %s's plate is painted over the captions" % (label, s["name"]))
+            self.assertEqual(over, [], "%s: a line is painted over a caption: %s" % (label, over[:4]))
+        self.assertGreater(crossed, 0, "PREMISE: no line passes under any caption in these fans - the case cannot tell a "
+                                       "masked caption from an unmasked one")
+
+    def test_a_plate_moves_with_the_stack_the_fit_pass_moved(self):
+        """REG-3332 (#99) - _hrtFanFit translates a stack's text; its plate wears the same transform, and loses it again"""
+        ui = _ui()
+        a = ui.find("  function _hrtPlateSync(root) {")
+        b = ui.find("\n  }\n", a) + 4
+        self.assertGreater(a, 0, "_hrtPlateSync is gone - re-point this law")
+        self.assertIn("_hrtPlateSync(ov);", ui[ui.find("var _ff = _hrtFanFit(ov);"):][:120],
+                      "the plates are not synced right after the fit pass moves the stacks")
+        prog = ui[a:b] + r"""
+function El(attrs){ this.a = attrs; }
+El.prototype.getAttribute = function(k){ return (k in this.a) ? this.a[k] : null; };
+El.prototype.setAttribute = function(k, v){ this.a[k] = String(v); };
+El.prototype.removeAttribute = function(k){ delete this.a[k]; };
+var t1 = new El({x: '100.0', transform: 'translate(4.0,6.0)'}), t2 = new El({x: '300.0'});
+var p1 = new El({'data-fan-x': '100.0'}), p2 = new El({'data-fan-x': '300.0', transform: 'translate(2.0,0.0)'});
+var svg = { querySelectorAll: function(sel){ return sel.indexOf('rect') === 0 ? [p1, p2] : [t1, t2]; } };
+var root = { querySelector: function(){ return svg; } };
+var n = _hrtPlateSync(root);
+process.stdout.write(JSON.stringify([n, p1.getAttribute('transform'), p2.getAttribute('transform')]));
+"""
+        r = subprocess.run([NODE, "-e", prog], capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr[-800:])
+        n, t1, t2 = json.loads(r.stdout)
+        self.assertEqual(t1, "translate(4.0,6.0)", "a moved stack's plate stayed behind")
+        self.assertIsNone(t2, "a stack the fit put back kept its plate translated")
+
+
 RED_PROOF = [
+    {"why": "REG-3332 - the caption plates are never painted: a neighbour's spoke runs through reel.route's letters again",
+     "file": "tv/control_ui.html",
+     "find": "      + veins + gates + gplates + gmarks + glabels\n",
+     "replace": "      + veins + gates + gmarks + glabels\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3332 - the plates are painted under the spokes, so the lines still cross the captions",
+     "file": "tv/control_ui.html",
+     "find": "      + veins + gates + gplates + gmarks + glabels\n",
+     "replace": "      + gplates + veins + gates + gmarks + glabels\n",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3332 - a stack the fit pass moved leaves its plate behind",
+     "file": "tv/control_ui.html",
+     "find": "      if (tf) { plates[i].setAttribute('transform', tf); n++; } else plates[i].removeAttribute('transform');\n",
+     "replace": "      n++;\n",
+     "matches": 1, "needs": "node"},
     {"why": "REG-3091 - the captions are drawn where their index puts them: the placement never moves a stack down",
      "file": "tv/control_ui.html",
      "find": "        dy += (low + _FAN_GAP) - b.y0;\n",

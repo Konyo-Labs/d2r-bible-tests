@@ -15395,9 +15395,18 @@ window._lockMark = function(isOpen, px, label){
         // no number, because it is read anyway. Same weight as the line above it.
         ? [{ cls: 'hrt-fan hrt-fan-arith', dy: 44, fs: 9.5, text: arith2, extra: ' fill-opacity=".75"' }] : []) });
     }
-    var _fanAt = _hrtFanPlace(_fanStacks, _fanObst, W, H);
+    var _fanAt = _hrtFanPlace(_fanStacks, _fanObst, W, H), gplates = '';
     for (var q = 0; q < _fanStacks.length; q++) {
       var S = _fanStacks[q], A = _fanAt[q], sx = S.x + A.dx;
+      /* REG-3332 (#99, GrokBot 6695970506 on his live window: "No fan caption sits on another caption, but connector lines
+         do cross reel.route's caption text") - the 3.5px halo masks only the ink's edge; a 1-2px spoke of a NEIGHBOUR lock
+         still ran through the gaps between the letters. Each caption stack now sits on a plate of the panel's own
+         background, painted over every vein, spoke and leader and under every padlock and caption, so a line passes
+         UNDER a caption instead of through it. data-fan-x is the stack's key in _hrtFanFit: the plate moves with it. */
+      var _pb = _hrtFanStackBox(S, A.dx, A.dy);
+      gplates += '<rect class="hrt-fan-plate" data-fan-x="' + sx.toFixed(1) + '" x="' + (_pb.x0 - 3).toFixed(1)
+               + '" y="' + (_pb.y0 - 2).toFixed(1) + '" width="' + (_pb.x1 - _pb.x0 + 6).toFixed(1) + '" height="'
+               + (_pb.y1 - _pb.y0 + 4).toFixed(1) + '" rx="3" style="fill:var(--surface-read,#14100c);fill-opacity:.92"/>';
       if (A.dy >= 6 || Math.abs(A.dx) >= 6)
         gates += '<path class="hrt-lead" d="M ' + S.x.toFixed(1) + ' ' + (S.node + 6).toFixed(1) + ' L ' + sx.toFixed(1)
                + ' ' + (S.y0 + A.dy + S.lines[0].dy - 11).toFixed(1) + '" fill="none" stroke="' + S.col
@@ -15450,7 +15459,7 @@ window._lockMark = function(isOpen, px, label){
       + '<clipPath id="hrtClip"><path d="' + HEART_D + '"/></clipPath>'
       + '</defs>'
       + '<circle class="hrt-glow" cx="' + cx + '" cy="' + cy + '" r="112" fill="url(#hrtGlow)"/>'
-      + veins + gates + gmarks + glabels
+      + veins + gates + gplates + gmarks + glabels
       /* ⚠⚠ v2446 — TWO GROUPS, AND THE SECOND ONE IS NOT OPTIONAL. A CSS `transform` on an SVG
          element REPLACES its `transform` presentation attribute; it does not compose with it. The
          first cut put the beat animation on the same <g> that carried translate()+scale(), so the
@@ -16321,6 +16330,21 @@ window._lockMark = function(isOpen, px, label){
      ⚠ AND THE FLOOR IS A REAL GAP, NOT THE GATE'S TOLERANCE. It solves to GAP user units of clear
      air, which is stricter than the ratchet's 3px at every scale this panel renders at, so a
      solution cannot be one that merely fits inside the tolerance of the width it was solved at. */
+  /* REG-3332 (#99) - a caption plate wears its stack's transform, so a stack _hrtFanFit moved (or put back) keeps its
+     plate under it: the stack's key is its text's x attribute, the plate's is data-fan-x, written from the same number */
+  function _hrtPlateSync(root) {
+    var svg = root && root.querySelector('svg.hrt');
+    if (!svg) return 0;
+    var plates = svg.querySelectorAll('rect.hrt-fan-plate'), texts = svg.querySelectorAll('text.hrt-fan'), n = 0;
+    for (var i = 0; i < plates.length; i++) {
+      var key = plates[i].getAttribute('data-fan-x'), tf = null;
+      for (var j = 0; j < texts.length; j++) {
+        if (texts[j].getAttribute('x') === key) { tf = texts[j].getAttribute('transform'); break; }
+      }
+      if (tf) { plates[i].setAttribute('transform', tf); n++; } else plates[i].removeAttribute('transform');
+    }
+    return n;
+  }
   function _hrtFanFit(root) {
     var svg = root && root.querySelector('svg.hrt');
     if (!svg) return { ok: false, why: 'no fan' };
@@ -16864,6 +16888,7 @@ window._lockMark = function(isOpen, px, label){
          fan that CRASHED and a fan that declined to move were the same empty result. */
       try {
         var _ff = _hrtFanFit(ov);
+        _hrtPlateSync(ov);
         window._hrtFanLast = _ff;
         try {
           ov.setAttribute('data-fanfit', JSON.stringify({
