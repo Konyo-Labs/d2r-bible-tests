@@ -41441,6 +41441,10 @@ _v41_whenReady(() => {
       function score(c, q){
         var l=(c.label||'').toLowerCase(), k=(c.keywords||'').toLowerCase(), hay=l+' '+k;
         if (l===q) return 100;
+        /* #118 (GrokBot's v3879 pass: "Spirit" + Enter opened Spirit Ward) - a NAME with a qualifier, "Spirit (sword)", IS the
+           name typed: it outranks every longer name that merely starts the same (Spirit Ward, Spirit Mask, Spirit Forge), which
+           all scored 80 and the shortest label won */
+        if (l.replace(/\s*\([^)]*\)\s*$/, '') === q) return 95;
         if (l.indexOf(q)===0) return 80;
         // v695 🏓R7 — mid-string hits must start at a WORD BOUNDARY: 'ber' inside 'U·ber Meph' or
         // 'Hal·ber·d' polluted the most-typed high-rune queries. Boundary hit keeps 60; a buried
@@ -41978,6 +41982,27 @@ _v41_whenReady(() => {
         action: () => { if (window.openSunderRecipes) window.openSunderRecipes(s.n); }
       });
     });
+    /* #118 (GrokBot's v3879 pass: "Bul-Kathos' Children" -> "No boss, zone, act, or item matches") - EVERY SET IS SEARCHABLE BY
+       ITS NAME. A set was in this index only when some boss's drop list happened to name it ("Immortal King set (any)"), so
+       Tal Rasha's Wrappings and Bul-Kathos' Children - sets the bible has full cards for (ITEM_CODEX cat 'set', opened by
+       openDrop) - could not be found. Each set's own name now opens its set card; a name already indexed is not doubled. */
+    (function(){
+      if (typeof ITEM_CODEX === 'undefined') return;
+      var _k = function (t) { return String(t || '').toLowerCase().replace(/\s*\([^)]*\)\s*$/, '').replace(/\s+set$/, ''); };
+      var have = {}; cmds.forEach(function(c){ have[_k(c.label)] = 1; });   /* "Immortal King set (any)" already finds Immortal King */
+      Object.keys(ITEM_CODEX).forEach(function(k){
+        var c = ITEM_CODEX[k]; if (!c || c.cat !== 'set') return;
+        var nm = String(c.setName || k), key = nm.toLowerCase();
+        if (have[_k(nm)]) return; have[_k(nm)] = 1;
+        var mem = (c.setMembers || []).map(function(m){ return String(m.name || ''); }).filter(Boolean);
+        cmds.push({
+          icon: '💎', label: nm, sub: 'Set · ' + mem.length + ' piece' + (mem.length === 1 ? '' : 's'),
+          cat: 'set', hint: '',
+          keywords: 'set ' + key + ' ' + mem.join(' ').toLowerCase(),
+          action: () => { if (window.openDrop) window.openDrop(nm); }
+        });
+      });
+    })();
     return cmds;
   }
 

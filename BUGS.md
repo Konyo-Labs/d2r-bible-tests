@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3397 - "SPIRIT" + ENTER OPENED SPIRIT WARD, AND HALF THE SETS COULD NOT BE SEARCHED AT ALL (v3881, GrokBot's v3879 pass)
+GrokBot (#230 21:24): "searching 'Spirit' and pressing Enter opens Spirit Ward, not the runeword", and "Bul-Kathos' Children ...
+the search answers 'No boss, zone, act, or item matches'". MEASURED in a browser on v3880: the runeword's entries are labelled
+"Spirit (sword)" / "Spirit (shield)", so nothing matched "spirit" exactly; five labels tied at 80 for starting with it and the
+SHORTEST (Spirit Ward) won Enter. And a set was indexed only when a boss's drop list happened to name it ("Immortal King set
+(any)") - Tal Rasha's Wrappings and Bul-Kathos' Children, which have full set cards, were unfindable. Now a name with a trailing
+qualifier IS the name typed (95: under an exact label, over a longer name that only starts the same), and every set in the
+codex (both blocks: the literal and the set cards added at load) is indexed by its own name, opening its set card, never doubled.
+Browser repro after: Spirit -> the runeword card; both sets found and opened; Spirit Ward still found by its own name. Law:
+test_the_search_finds_the_name_typed (6 cases over the page's own score() and the REAL codex; 3 red-proofs RED).
 ### REG-3396 - ON A PHONE A CARD'S NAME SPILLED PAST ITS BOX; v3879'S #27 FIX COULD NOT WORK (v3881, GrokBot's v3879 pass)
 GrokBot, his board at 390x844 (#230 21:24): the Spirit card's h2.gic-name "Spirit [Runeword]" in a 102px box, scrollWidth 165.
 v3879 (#27) had made the badge an inline-block "that moves to the next line whole" and a SOURCE law pinned that rule; it could
