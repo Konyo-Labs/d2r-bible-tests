@@ -112,6 +112,13 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3336 - A BOSS'S HOVER CARD DREW ITS SPRITE IN THE 52x78 ITEM FRAME (v3877, board #102, caught in its own render batch)
+His ask: "image cursor floating enlarged of that item/boss or whatever image im hovering ... just like the rest of the
+console". MEASURED on the v3877 render (Uniques > Quick wins, the Gull card, 1440 and 1024, the page's own mouseover):
+Coldcrow's name floats the plain card with d2mon_Coldcrow.gif at 96x96; Andariel's floats the RICH boss card
+(#arttip.tip-rich), whose picture rule is the item portrait's 52x78 - her wide sprite read ~40px wide. NOW a d2mon_ sprite on
+the rich card gets the plain card's 96px square (an attribute selector, so it outranks the portrait rule); item portraits
+keep 52x78. Law: test_quick_wins_shows_each_place_with_its_picture (+ the rich-card sprite case); red-proof PROVEN (1).
 ### REG-3335 - MY REG-3330 FIX PUSHED THE BOARD'S WHOLE NAV ~100px DOWN ONTO THE SEARCH BAR (v3877, caught in its own render batch)
 REG-3330 put `top: var(--claim-bar-h)` on .tabs, read as "the sticky tabs". MEASURED on the v3877 render batch (plain
 bible.html, a first visitor, 1440/1024/901/375, against main 9c759b54a): .tabs is position:RELATIVE outside the console -

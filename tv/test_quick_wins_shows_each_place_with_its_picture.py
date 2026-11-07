@@ -182,6 +182,12 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         g = self.o["grid"]
         self.assertIn('<b class="qw-name" data-arttip="Coldcrow">', g, "a row's NAME floats no card")
         self.assertIn('<b class="qw-name" data-boss-tip="andariel">', g, "a boss row's NAME floats no boss card")
+        # REG-3336 - the boss card is the rich one, whose picture frame is an item portrait (52x78): a sprite is enlarged
+        # to the plain card's 96px square there too, and the rule outranks the portrait's (an attribute selector)
+        src = _read()
+        self.assertIn("#arttip img{display:block;width:96px;height:96px", src, "PREMISE: the plain card's picture is not 96px")
+        self.assertIn('#arttip.tip-rich img[src*="d2mon_"]{width:96px;height:96px;object-fit:contain', src,
+                      "a monster on the rich boss card is drawn in the 52x78 item frame - Andariel ~40px wide")
 
     def test_the_sprite_is_never_blended_and_the_item_is_the_title(self):
         """REG-3321 - screen blending made every dark pixel vanish (Talic's armour, the stone through Coldcrow); one rule fits
@@ -447,6 +453,11 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3336 - a monster on the rich boss card shrinks into the item portrait frame again",
+     "file": "bible.html",
+     "find": '#arttip.tip-rich img[src*="d2mon_"]{width:96px;height:96px;object-fit:contain;margin:0 auto 5px}\n',
+     "replace": "",
+     "matches": 1},
     {"why": "REG-3325 - a per-kill row carries one number again (his 'also with the odds number of runs')",
      "file": "bible.html",
      "find": "    return '~' + Math.ceil(Math.log(0.5) / Math.log(1 - 1 / n)).toLocaleString();\n",

@@ -1301,6 +1301,10 @@ tr.owned-row{background:rgba(102,255,136,.03)}
 #arttip.tip-rich{max-width:300px;padding:11px 13px 12px}
 #arttip img{display:block;width:96px;height:96px;object-fit:contain;margin:0 auto 5px}
 #arttip.tip-rich img{width:52px;height:78px;margin:0 auto 4px}
+/* REG-3336 (#102, his "image cursor floating enlarged of that item/boss") - a MONSTER sprite on the rich boss card took the
+   item portrait's 52x78 frame, so a wide sprite (Andariel) read ~40px wide beside Coldcrow's 96px plain card. A sprite
+   gets the plain card's 96px square on both cards; an item portrait keeps 52x78. */
+#arttip.tip-rich img[src*="d2mon_"]{width:96px;height:96px;object-fit:contain;margin:0 auto 5px}
 #arttip.tip-art{max-width:none;padding:10px}
 #arttip.tip-art img{width:168px;height:168px;margin:0 auto 4px}
 #arttip.tip-art .att-name{font-size:12px}
