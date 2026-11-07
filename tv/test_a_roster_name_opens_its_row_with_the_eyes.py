@@ -243,9 +243,13 @@ def _render():
                         r.click(); var c1 = calls.length;
                         var vis1 = eb ? eb.getBoundingClientRect().height : -1;
                         /* REG-2768 - where a second click lands: the spot of the first, and the open row's own centre */
-                        var q1 = r.getBoundingClientRect();
                         var onEyes = function(x, y){ var h = document.elementFromPoint(x, y); return !!(h && h.closest && h.closest('.fleet-hd-eyes')); };
-                        var eyesAt = [onEyes(x0, y0), onEyes(q1.left + q1.width / 2, q1.top + q1.height / 2)];
+                        var eyesAt = [onEyes(x0, y0)];
+                        /* v3881 (REG-3395) - elementFromPoint answers null off-screen, so an open row taller than the window read
+                           its centre as 'not the eyes' whatever sat there: the open row's centre is brought on screen first */
+                        r.scrollIntoView({ block: 'center' });
+                        var q1 = r.getBoundingClientRect();
+                        eyesAt.push(onEyes(q1.left + q1.width / 2, q1.top + q1.height / 2));
                         r.click();
                         var modal = !document.getElementById('fleet-xref').hidden, esc = null;
                         if (eb && !eb.disabled) { eb.focus();
@@ -479,7 +483,10 @@ RED_PROOF = [
     {"why": "REG-2768 - the open row's eyes sit across its middle, so a second click enters the shadow",
      "file": "tv/control_ui.html",
      "find": "  .fleet-row.fleet-open > .fleet-open-eyes { display: flex; justify-content: flex-end; margin-right: 14px; }",
-     "replace": "  .fleet-row.fleet-open > .fleet-open-eyes { display: flex; justify-content: center; }  .fleet-hd-eyes { min-width: 70%; }",
+     # v3881 (REG-3395) - the open row grew (brief, chips, a vault line on its own line) and its eyes sit on its LAST line, so
+     # centring the button no longer reaches the row's middle: this sabotage stayed green. Re-aimed at the defect itself - an
+     # eyes box across the row's middle (centred, wide, and tall enough to hold the open row's centre).
+     "replace": "  .fleet-row.fleet-open > .fleet-open-eyes { display: flex; justify-content: center; }  .fleet-hd-eyes { min-width: 70%; min-height: 70vh; }",
      "matches": 1},
     {"why": "Grok r1 - the eyes swallow every key again, so Escape no longer closes the cross-reference",
      "file": "tv/control_ui.html",
