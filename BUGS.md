@@ -112,6 +112,23 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3395 - A CLOSED FLEET ROW RAN 5-8 LINES OF RIVER DETAIL; ITS PC'S WORD WAS ONLY IN THE HOVER AND STATE (v3881, HIS ASK)
+His words 11-07 21:12: "maybe this information collapsed for the fleet? ... it gets cutoff a little bit and needs a better
+structural design to it with diablo ii language and human language short and simple and to the point all the desciptions should
+be in the state of the console ... or collapsed". MEASURED the same evening: each PC's own live /api/fleet (Mac, work ALT, old
+ALT - the ALTs read over SSH, GET only) drawn with v3880's code in the 227px rail. The three views agreed row for row (the Mac's
+own answer was a 4-minute-old cache, which explained its one different line); every closed row still ran 5-8 lines (import
+progress, river stuck, locks shut until..., "3 shut: frame release · vault sweep · vault apply", "572 reels wait on the locks"),
+a 745px list for six PCs, and the open row's vault line wrapped six lines of ~16 characters beside the eyes. v3880 (REG-3372)
+had given each PC its word - ready for battle / healing / wounded / in town / lost - in the hover card, the header and the State
+panel; the row never said it. Now a closed row is its name line plus ONE brief: _pcStatus's own word and one short line (a
+blind gate leads, "+N" for the rest, then what heals it: "importing proofs ~26 min" / "proving 8 ~12 min"; "since 18:10" in
+town). The chips draw on the open row (one click); a status that cannot be read draws no brief and the chips stay (sibling
+rule). The open row's vault line takes its own line, the eyes under it at the line's end (REG-2768). Same live data after: every
+closed row 2-3 lines, a ~400px list, identical from all three PCs. Law: test_a_closed_fleet_row_is_one_word_and_one_line (11
+cases, 7 red-proofs RED); test_the_fleet_row_keeps_its_name_whole now measures closed rows (brief inked, chips not) and open
+rows (every word inked; +1 red-proof, all 3 RED); test_the_fleet_card_says_how_each_pc_films_and_drains asks that the row
+DRAWS "river stuck" (brief or chip), never only that the chip exists in the DOM (20 red-proofs RED).
 ### REG-3392 - THE CLAUDE LAMP WAS GREEN ON A REVOKED LOGIN, AND ITS CLICK WOULD NOT REOPEN THE SIGN-IN (v3881, HIS ASK)
 His words 11-07: "make sure the green lamp for claude is synced to red if it is off ... its reading it as green as if it was
 connected" and "when i click the lamp ... it says its already connected and doesnt let me reconnect". MEASURED on his work ALT:

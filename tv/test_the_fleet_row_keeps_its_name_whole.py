@@ -66,6 +66,13 @@ RED_PROOF = [
         "replace": "    return s;\n",
         "matches": 1,
     },
+    {
+        "why": "REG-3395 - a closed row draws its exception words again (the 5-8 line rows he asked to collapse), in pixels",
+        "file": "control_ui.html",
+        "find": "  .fleet-row:not(.fleet-open) > .fleet-brief ~ .fleet-chips { display: none; }\n",
+        "replace": "\n",
+        "matches": 1,
+    },
 ]
 
 H = 3600
@@ -121,6 +128,7 @@ MEASURE = r"""(function(){ try {
     var parts = [];
     if (b) parts.push({ k: 'name', rs: ink(b) });
     var w = row.querySelector(':scope > .fleet-word'); if (w) parts.push({ k: 'verdict', rs: ink(w) });
+    var br = row.querySelector(':scope > .fleet-brief');
     [].forEach.call(row.querySelectorAll('.fleet-riverstuck, .fleet-pickerodd, .fleet-readeroff'), function(c){
       parts.push({ k: c.textContent.trim(), rs: ink(c) }); });
     var over = [];
@@ -129,6 +137,7 @@ MEASURE = r"""(function(){ try {
         over.push(parts[i].k + ' / ' + parts[j].k);
     var spill = parts.filter(function(p){ return p.rs.some(function(r){ return r.r > lr.right + 0.5; }); }).map(function(p){ return p.k; });
     return { name: name, words: name ? name.split(' ').length : 0, nameLines: b ? lines(ink(b)) : 0,
+             brief: br ? { painted: ink(br).length > 0, lines: lines(ink(br)), word: ((br.querySelector('.fb-w') || {}).textContent || '') } : null,
              chips: parts.filter(function(p){ return p.k !== 'name' && p.k !== 'verdict'; })
                          .map(function(p){ return { t: p.k, painted: p.rs.length > 0 }; }),
              over: over, spill: spill }; });
@@ -172,6 +181,10 @@ def _render():
                     except Exception:
                         pass
                 time.sleep(0.8)
+                # v3881 (REG-3395) - a CLOSED row is its name and one brief line; the exception words draw on the OPEN row
+                res["%dx%d closed" % (w, h)] = json.loads(t.ev(MEASURE))
+                t.ev("[].forEach.call(document.querySelectorAll('#fleet-list .fleet-row'), function(r){ window._fleetRowOpen(r); }); 1")
+                time.sleep(0.4)
                 res["%dx%d" % (w, h)] = json.loads(t.ev(MEASURE))
             try:
                 t.close()
@@ -186,12 +199,20 @@ def _render():
     return res
 
 
+def _open():
+    return dict((k, m) for k, m in _render().items() if not k.endswith(" closed"))
+
+
+def _closed():
+    return dict((k, m) for k, m in _render().items() if k.endswith(" closed"))
+
+
 @unittest.skipUnless(os.path.exists(RC.CHROME or ""), "no Chrome on this machine - the rail was not rendered (declared skip 77)")
 class TheFleetRowKeepsItsNameWhole(unittest.TestCase):
 
     def test_every_row_and_every_word_was_drawn(self):
         """PREMISE - PRINT THE DENOMINATOR: five rows at each width, and every exception word the stub carries painted."""
-        for k, m in _render().items():
+        for k, m in _open().items():
             self.assertNotIn("err", m, "%s: %r" % (k, m))
             self.assertEqual(len(m["rows"]), 5, "%s: %d rows drawn of 5" % (k, len(m["rows"])))
             words = sorted(c["t"] for r in m["rows"] for c in r["chips"])
@@ -201,7 +222,7 @@ class TheFleetRowKeepsItsNameWhole(unittest.TestCase):
 
     def test_no_name_breaks_inside_a_word(self):
         bad = []
-        for k, m in _render().items():
+        for k, m in _open().items():
             for r in m.get("rows") or []:
                 if r["nameLines"] > r["words"]:
                     bad.append("%s %r: %d lines for %d word(s)" % (k, r["name"], r["nameLines"], r["words"]))
@@ -209,12 +230,30 @@ class TheFleetRowKeepsItsNameWhole(unittest.TestCase):
 
     def test_no_two_words_of_a_row_print_over_each_other_or_past_the_rail(self):
         bad = []
-        for k, m in _render().items():
+        for k, m in _open().items():
             for r in m.get("rows") or []:
                 if r["over"]:
                     bad.append("%s %r: %s" % (k, r["name"], ", ".join(r["over"])))
                 if r["spill"]:
                     bad.append("%s %r runs past the rail: %s" % (k, r["name"], ", ".join(r["spill"])))
+        self.assertEqual(bad, [], "; ".join(bad))
+
+
+    def test_a_closed_row_is_its_name_and_one_brief_line(self):
+        """v3881 (REG-3395, his 11-07 21:12 ask) - closed, every row draws its PC's word and a line of at most two lines, and
+        none of the exception words (they are on the open row, measured above). PREMISE: the same five rows."""
+        bad = []
+        for k, m in _closed().items():
+            self.assertNotIn("err", m, "%s: %r" % (k, m))
+            self.assertEqual(len(m["rows"]), 5, "%s: %d rows drawn of 5" % (k, len(m["rows"])))
+            for r in m["rows"]:
+                b = r.get("brief")
+                if not b or not b["painted"] or not b["word"]:
+                    bad.append("%s %r: no brief drawn" % (k, r["name"]))
+                elif b["lines"] > 2:
+                    bad.append("%s %r: the brief runs %d lines" % (k, r["name"], b["lines"]))
+                if any(c["painted"] for c in r["chips"]):
+                    bad.append("%s %r: a closed row still draws %s" % (k, r["name"], [c["t"] for c in r["chips"] if c["painted"]]))
         self.assertEqual(bad, [], "; ".join(bad))
 
 

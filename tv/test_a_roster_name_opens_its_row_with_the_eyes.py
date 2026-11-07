@@ -338,7 +338,13 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                               "%s %s: the card does not say what each click opens" % (k, m))
                 # the row carries the card, so its #225 click line is cut from both (SNAP already strips the row's own
                 # click and key handlers; the two clicks are proven by test_the_first_click_opens_the_row_and_a_second_opens_the_compare)
-                self.assertEqual(river.sub("", owes.sub("", waited.sub("", cut.sub("", word.sub(r"\1", pcs.sub("", s[m]["row"])))))),
+                # v3881 (REG-3395, his 11-07 21:12 ask) ADDED the PC's word and one line under the row's name - ONE element,
+                # .fleet-brief, whose words are test_a_closed_fleet_row_is_one_word_and_one_line's to prove. It is cut from the
+                # ship side and pinned once per row; nothing else on the row may move.
+                brief = re.compile(r'<span class="fleet-brief [^"]*" data-pc="\w+"><span class="fb-w">[^<]*</span>'
+                                   r'(?:<span class="fb-t">[^<]*</span>)?</span>')
+                self.assertEqual(len(brief.findall(s[m]["row"])), 1, "%s %s: the row does not carry its PC's word once" % (k, m))
+                self.assertEqual(river.sub("", owes.sub("", waited.sub("", cut.sub("", word.sub(r"\1", pcs.sub("", brief.sub("", s[m]["row"]))))))),
                                  river.sub("", cut.sub("", word.sub(r"\1", b[m]["row"]))),
                                  "%s %s: the row changed beyond its eyes" % (k, m))
                 # v3865 (the r3 review, his ALT row: a red "vault lane owes 0") - a lane that owes NOTHING has no debt to

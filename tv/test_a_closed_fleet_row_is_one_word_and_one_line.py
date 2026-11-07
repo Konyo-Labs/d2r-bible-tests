@@ -1,0 +1,245 @@
+# -*- coding: utf-8 -*-
+"""v3881 (REG-3395) - A CLOSED FLEET ROW SAYS ITS PC IN ONE DIABLO WORD AND ONE SHORT LINE; THE RIVER'S DETAIL OPENS ON A CLICK.
+
+His words, 11-07 21:12, on his live Fleet: "maybe this information collapsed for the fleet? i already mentioned this it gets
+cutoff a little bit and needs a better structural design to it with diablo ii language and human language short and simple
+and to the point all the desciptions should be in the state of the console we mentioned or collapsed or better hidden".
+MEASURED the same evening, each PC's own live /api/fleet (the Mac, the work ALT and the old ALT, read over SSH) drawn with
+v3880's code in the 227px rail: the three views agreed row for row, and a CLOSED row still ran 5-8 lines - import progress,
+"river stuck", "locks shut - until GitHub's proofs land", "3 shut: frame release - vault sweep - vault apply", "572 reels wait
+on the locks" - a 745px list for six PCs. v3880 had already given every PC its word (_pcStatus: ready for battle / healing /
+wounded / in town / lost) in the hover card, the Fleet header and the State panel; the row itself never said it.
+
+Now a closed row is its name line plus ONE line: the word, then the one thing it is about - a wounded PC's first wound (a
+blind gate leads: it keeps every lock shut whatever the PC proves next), "+N" for the rest, and what is healing it (importing
+proofs ~26 min / proving 8 ~12 min); "since 18:10" for a PC in town. The chips draw on an OPEN row (one click) and the State
+panel keeps every wound. Same live data after: 2-3 lines a row, a ~400px list. A wounded PC still reads WOUNDED closed, so a
+hidden chip never lets a dark PC read healthy (v2249 / v2283 / v2296); a brief that cannot be read leaves the chips showing.
+
+Drives the page's own _pcStatus / _fleetBriefLine / _fleetBriefHtml in node (only the parts reader is stubbed, as REG-3372's
+law does). The pixels: test_the_fleet_row_keeps_its_name_whole renders closed rows (brief inked, chips not) and open rows
+(every chip inked). RED_PROOF below. [[visual-regression-detector]] [[unknown-stays-unknown]]
+"""
+import io
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import unittest
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+try:
+    from console_safe import enable as _enable
+    _enable()
+except Exception:
+    pass
+NODE = shutil.which("node") or shutil.which("nodejs")
+UI_PATH = os.path.join(ROOT, "tv", "control_ui.html")
+
+
+def _ui():
+    with io.open(UI_PATH, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def _cut(src, start, end):
+    if src.count(start) != 1:
+        raise AssertionError("cut start %r occurs %d times - re-point this law" % (start[:60], src.count(start)))
+    i = src.index(start)
+    return src[i:src.index(end, i + len(start)) + len(end)]
+
+
+def _p(k, f, **o):
+    d = {"k": k, "f": f, "t": u" · ".join(f), "why": "w"}
+    d.update(o)
+    return d
+
+
+WELL = [_p("films", ["window capture", "1m ago"]), _p("river", ["flowing"]), _p("stuck", ["none"]),
+        _p("proved", ["proved", "0 blind"]), _p("readers", ["CLAUDE reads", "GROK reads"])]
+
+
+def _with(*swap):
+    keys = set(x["k"] for x in swap)
+    return [x for x in WELL if x["k"] not in keys] + list(swap)
+
+
+CURRENT = {"census": "current", "blind": 0, "owed": 0}
+CASES = {
+    "ready": {"parts": WELL, "heart": CURRENT},
+    "healing": {"parts": _with(_p("proved", ["proof out of date", "0 blind", "8 laws owed"], warn=True)),
+                "heart": {"census": "stale", "blind": 0, "owed": 8, "ratePerH": 40, "etaS": 720}},
+    # his old ALT, 11-07 21:24: stuck, ONE blind gate, stale, importing v3879's proofs ~26 min
+    "blind": {"parts": _with(_p("stuck", ["CAPTURE 572 older for 2d"], warn=True),
+                             _p("proved", ["proof out of date", "1 blind"], warn=True)),
+              "heart": {"census": "stale", "blind": 1, "importing": {"ver": "v3879", "done": 2800, "of": 9294, "etaS": 1560}}},
+    # his work ALT: stuck, stale, no blind gate, importing ~82 min
+    "importing": {"parts": _with(_p("stuck", ["CAPTURE 1 older for 1d"], warn=True),
+                                 _p("proved", ["proof out of date", "0 blind"], warn=True)),
+                  "heart": {"census": "stale", "blind": 0, "importing": {"ver": "v3879", "done": 890, "of": 9294, "etaS": 4920}}},
+    # an import that has LANDED is not "importing" any more
+    "landed": {"parts": _with(_p("stuck", ["CAPTURE 1 older for 1d"], warn=True),
+                              _p("proved", ["proof out of date", "0 blind"], warn=True)),
+               "heart": {"census": "stale", "blind": 0, "importing": {"ver": "v3879", "landed": True, "etaS": 60}}},
+    # stuck while proving: the wound leads, the healing follows
+    "stuckproving": {"parts": _with(_p("stuck", ["PRINTER 3 older for 2d"], warn=True),
+                                    _p("proved", ["proof out of date", "0 blind", "129 laws owed"], warn=True)),
+                     "heart": {"census": "stale", "blind": 0, "owed": 1290, "ratePerH": 90, "etaS": 51840}},
+    "town": {"parts": _with(_p("stuck", ["PRINTER 3 older for 2d"], warn=True)), "off": {"since": "18:10"}, "heart": CURRENT},
+    "lost": {"parts": [_p(k, ["UNKNOWN"], unk=True) for k in ("films", "river", "stuck", "proved")], "heart": None},
+    "many": {"parts": _with(_p("stuck", ["STATION 1 older for 30d"], warn=True), _p("picker", ["broken"], warn=True),
+                            _p("readers", ["CLAUDE off", "GROK reads"], warn=True)),
+             "heart": {"census": "current", "blind": 2}},
+    # a parts reader that throws is caught by _pcStatus itself: LOST, never ready
+    "throws": {"parts": "THROW", "heart": CURRENT},
+    # the proof wound alone: said once, in the words the parts gave ("proof out of date"), or the census word ("proof stale")
+    "proofonly": {"parts": _with(_p("proved", ["proof out of date", "0 blind"], warn=True)), "heart": {"census": "stale", "blind": 0}},
+    "proofword": {"parts": [x for x in WELL if x["k"] != "proved"], "heart": {"census": "stale", "blind": 0}},
+}
+
+
+def _drive(cases, status_throws=False):
+    src = _ui()
+    meter = _cut(src, "  var _proofMeterFacts = function (hs) {", "\n  };\n")
+    block = _cut(src, "  var _PC_WORD = {", "  window._fleetBriefHtml = _fleetBriefHtml;\n")
+    js = ("var CASES = " + json.dumps(cases) + ";\nvar window = {};\n"
+          "function escC(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }\n"
+          "function _fleetName(m){ return m.nickname || m.machine; }\n"
+          "function _fleetSysParts(m){ if (CASES[m.machine].parts === 'THROW') throw new Error('x'); return CASES[m.machine].parts; }\n"
+          "function _fleetOffline(m){ return CASES[m.machine].off || null; }\n"
+          + meter + "\n" + block + "\n"
+          + ("_pcStatus = function () { throw new Error('status'); };\n" if status_throws else "") +
+          "var OUT = {};\n"
+          "Object.keys(CASES).forEach(function (k) {\n"
+          "  var m = { machine: k, nickname: 'PC ' + k, system: { river: { heart: CASES[k].heart } } };\n"
+          "  var s = null; try { s = _pcStatus(m, 1000); } catch (e) { s = null; }\n"
+          "  OUT[k] = { word: s && s.word, key: s && s.key, html: _fleetBriefHtml(m, 1000) };\n"
+          "});\n"
+          "process.stdout.write(JSON.stringify(OUT));")
+    r = subprocess.run([NODE, "-"], input=js, capture_output=True, text=True, timeout=60, encoding="utf-8")
+    if r.returncode != 0:
+        raise AssertionError("node could not drive the page's own functions: " + r.stderr[-800:])
+    return json.loads(r.stdout)
+
+
+def _brief(html):
+    m = re.match(r'^<span class="fleet-brief ([\w-]+)" data-pc="(\w+)"><span class="fb-w">([^<]*)</span>'
+                 r'(?:<span class="fb-t">([^<]*)</span>)?</span>$', html or "")
+    return None if not m else {"cls": m.group(1), "key": m.group(2), "word": m.group(3), "line": m.group(4) or ""}
+
+
+@unittest.skipUnless(NODE, "node is required to drive the page's own _pcStatus - UNMEASURED here, not a pass")
+class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.o = _drive(CASES)
+        cls.b = dict((k, _brief(v["html"])) for k, v in cls.o.items())
+
+    def test_every_brief_is_one_element_with_the_pcs_own_word(self):
+        """PREMISE - every case but the throwing one drew a brief, and its word IS _pcStatus's (one source, never a copy)"""
+        for k, v in self.o.items():
+            if k == "throws":
+                continue
+            self.assertIsNotNone(self.b[k], "%s: no brief, or not one element: %r" % (k, v["html"]))
+            self.assertEqual((self.b[k]["word"], self.b[k]["key"]), (v["word"], v["key"]), k)
+            self.assertEqual(self.b[k]["cls"], "pcs-" + v["key"], k)
+
+    def test_the_line_says_the_one_thing_the_word_is_about(self):
+        """* THE POINT - his old ALT's and work ALT's live rows, in one line each"""
+        b = self.b
+        self.assertEqual(b["ready"]["line"], "every law proved")
+        self.assertEqual(b["healing"]["line"], "proving 8 ~12 min")
+        self.assertEqual(b["blind"]["line"], u"1 gate blind +2 · importing proofs ~26 min")
+        self.assertEqual(b["importing"]["line"], u"river stuck +1 · importing proofs ~82 min")
+        self.assertEqual(b["town"]["line"], "since 18:10")
+        self.assertEqual(b["lost"]["line"], "no report this console can read")
+
+    def test_a_blind_gate_leads_the_wounds(self):
+        """a blind gate keeps every lock shut whatever the PC proves next - the one wound that will not heal by itself"""
+        self.assertTrue(self.b["blind"]["line"].startswith("1 gate blind"), self.b["blind"]["line"])
+        self.assertTrue(self.b["many"]["line"].startswith("2 gates blind +"), self.b["many"]["line"])
+
+    def test_what_heals_it_follows_the_wound_and_a_landed_import_is_not_importing(self):
+        self.assertEqual(self.b["stuckproving"]["key"], "wounded")
+        self.assertTrue(self.b["stuckproving"]["line"].endswith(u"· proving 1,290 ~14.4 h"), self.b["stuckproving"]["line"])
+        self.assertNotIn("importing", self.b["landed"]["line"])
+
+    def test_the_proof_wound_never_says_proof_twice(self):
+        self.assertNotIn("proof: proof", " ".join(x["line"] for x in self.b.values() if x))
+        self.assertEqual(self.b["proofonly"]["line"], "proof out of date")
+        self.assertEqual(self.b["proofword"]["line"], "proof stale")
+
+    def test_the_line_stays_short_and_an_offline_pc_wears_no_live_wound(self):
+        for k, x in self.b.items():
+            if x:
+                self.assertLessEqual(len(x["line"]), 64, "%s: %r" % (k, x["line"]))
+        self.assertEqual(self.b["town"]["key"], "town")
+        self.assertNotIn("stuck", self.b["town"]["line"])
+
+    def test_an_unreadable_pc_is_lost_never_ready(self):
+        self.assertEqual((self.b["throws"]["key"], self.b["lost"]["key"]), ("lost", "lost"))
+
+    def test_a_status_that_throws_draws_no_brief_so_the_chips_stay(self):
+        """the CSS hides the chips only AFTER a brief (sibling rule): no brief = the closed row keeps its chips"""
+        o = _drive({"ready": CASES["ready"], "blind": CASES["blind"]}, status_throws=True)
+        self.assertEqual([o["ready"]["html"], o["blind"]["html"]], ["", ""])
+
+
+class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
+
+    def test_the_row_draws_the_brief_after_its_word_and_before_its_chips(self):
+        src = _ui()
+        body = _cut(src, "      var _row = function (m, online) {", "\n      };\n")
+        i, j, k = (body.find("escC(w.w) + '</span>'"), body.find("window._fleetBriefHtml(m)"),
+                   body.find("_fleetRowChips(m, heard)"))
+        self.assertTrue(0 <= i < j < k, "the brief is not between the row's word and its chips: %r" % ((i, j, k),))
+
+    def test_a_closed_row_hides_its_chips_only_after_a_brief(self):
+        code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
+        self.assertEqual(code.count(".fleet-row:not(.fleet-open) > .fleet-brief ~ .fleet-chips { display: none; }"), 1)
+        self.assertIn(".fleet-row > .fleet-brief { grid-column: 2 / -1;", code)
+
+    def test_the_open_rows_vault_line_takes_its_own_line(self):
+        """the both-sides render: the vault line wrapped six lines of ~16 characters beside the eyes in the 227px rail"""
+        code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
+        self.assertIn(".fleet-row.fleet-open > .fleet-open-eyes { flex-wrap: wrap; row-gap: 4px; }", code)
+        self.assertIn(".fleet-open-eyes > .fleet-vault { flex-basis: 100%; }", code)
+
+
+RED_PROOF = [
+    {"why": "REG-3395 - a closed row draws every river chip again (the 5-8 line rows he asked to collapse)",
+     "file": "tv/control_ui.html",
+     "find": "  .fleet-row:not(.fleet-open) > .fleet-brief ~ .fleet-chips { display: none; }\n", "replace": "\n", "matches": 1},
+    {"why": "REG-3395 - the row never draws its PC's word",
+     "file": "tv/control_ui.html",
+     "find": "                + (window._fleetBriefHtml ? window._fleetBriefHtml(m) : '')", "replace": "                + ''",
+     "matches": 1},
+    {"why": "REG-3395 - the brief's word is a fixed word, not the PC's own (_pcStatus)",
+     "file": "tv/control_ui.html",
+     "find": "<span class=\"fb-w\">' + escC(s.word)", "replace": "<span class=\"fb-w\">' + escC('ready for battle')",
+     "matches": 1},
+    {"why": "REG-3395 - a blind gate no longer leads a wounded PC's line",
+     "file": "tv/control_ui.html",
+     "find": "    var hurt = s.hurt.slice().sort(function (a, b) { return (/ blind$/.test(b) ? 1 : 0) - (/ blind$/.test(a) ? 1 : 0); });",
+     "replace": "    var hurt = s.hurt.slice();", "matches": 1},
+    {"why": "REG-3395 - the line no longer says what is healing the PC (the import)",
+     "file": "tv/control_ui.html",
+     "find": "    var heal = imp ? 'importing proofs' + _eta(imp.etaS) : proving;", "replace": "    var heal = proving;", "matches": 1},
+    {"why": "REG-3395 - a status that throws hides the chips anyway (no brief, still hidden)",
+     "file": "tv/control_ui.html",
+     "find": "    if (!s || !s.word) return '';", "replace": "    if (!s || !s.word) return '<span class=\"fleet-brief\"></span>';",
+     "matches": 1},
+    {"why": "REG-3395 - the open row's vault line is squeezed beside the eyes again",
+     "file": "tv/control_ui.html",
+     "find": "  .fleet-open-eyes > .fleet-vault { flex-basis: 100%; }\n", "replace": "\n", "matches": 1},
+]
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

@@ -7076,6 +7076,11 @@
      keep their own size, centred beside it at the line's END (REG-2768: the row's middle stays the row's own click). */
   .fleet-row.fleet-open > .fleet-open-eyes { align-items: center; gap: 10px; }
   .fleet-open-eyes > .fleet-vault { flex: 1 1 auto; min-width: 0; }
+  /* v3881 (REG-3395, the both-sides render of his live Fleet: in the 227px rail the vault line still wrapped into six lines
+     of ~16 characters beside the eyes) - the vault line takes its own full line and the eyes wrap under it, still at the
+     line's END (REG-2768: the open row's middle stays the row's own click). */
+  .fleet-row.fleet-open > .fleet-open-eyes { flex-wrap: wrap; row-gap: 4px; }
+  .fleet-open-eyes > .fleet-vault { flex-basis: 100%; }
   .fleet-open-eyes > .fleet-hd-eyes { flex: 0 0 auto; align-self: center; }
   .fleet-hd-eyes { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; cursor: pointer;
                    border: 1px solid rgba(240,192,96,.45); border-radius: 6px; background: rgba(240,192,96,.08);
@@ -7114,6 +7119,16 @@
   .fleet-row > .fleet-chips { grid-column: 2 / -1; display: flex; flex-wrap: wrap; align-items: baseline;
                               gap: 0 1.6ch; min-width: 0; }
   .fleet-chips > span { min-width: 0; overflow-wrap: anywhere; }
+  /* v3881 (REG-3395, his 11-07 21:12 ask) - THE CLOSED ROW: the PC's word and one short line, under the name. The chips after
+     it (the river's detail) draw only on an open row; a row with no brief keeps them (the sibling rule needs the brief). */
+  .fleet-row > .fleet-brief { grid-column: 2 / -1; min-width: 0; overflow-wrap: anywhere; font-weight: var(--fw-normal); }
+  .fleet-brief > .fb-w { font-weight: var(--fw-semibold); letter-spacing: var(--ls-snug); text-transform: uppercase; margin-right: 1ch; }
+  .fleet-brief.pcs-ready   > .fb-w { color: var(--mint, #8fe6a0); }
+  .fleet-brief.pcs-healing > .fb-w { color: #e8cf96; }
+  .fleet-brief.pcs-wounded > .fb-w { color: var(--warn, var(--gold-dim)); }
+  .fleet-brief.pcs-town > .fb-w, .fleet-brief.pcs-lost > .fb-w { color: var(--muted, #8b8071); font-style: italic; }
+  .fleet-brief > .fb-t { color: #9fb0a4; }
+  .fleet-row:not(.fleet-open) > .fleet-brief ~ .fleet-chips { display: none; }
   .fleet-riverstuck { color: #e0795f; font-weight: var(--fw-medium); }
   .fleet-riverheld { color: var(--muted, #9aa0a6); font-weight: var(--fw-regular, 400); }
   .fleet-riverowes { color: #e0795f; margin-left: .4em; }
@@ -29152,6 +29167,48 @@ function escC(s) {
     return _fleetName(m, all);
   };
   window._PC_ORDER = _PC_ORDER;
+  /* v3881 (REG-3395, his 11-07 21:12 ask: "this information collapsed for the fleet ... diablo ii language and human language
+     short and simple and to the point - all the descriptions should be in the state of the console ... or collapsed") - A
+     CLOSED FLEET ROW SAYS ITS PC IN ONE WORD AND ONE SHORT LINE. The word is _pcStatus's own (the hover card, the Fleet header
+     and the State panel draw that function, so the four cannot disagree); the line is the one thing that word is about. The
+     river chips (import, held, stuck, locks, lock names, reels waiting) draw on an OPEN row - one click - and the State panel's
+     EVERY PC keeps the wounds and what happens next. A wounded PC still reads WOUNDED on its closed row, so a hidden chip never
+     lets a dark PC read healthy (v2249 / v2283 / v2296). No brief (its reading threw) = the chips stay on the closed row. */
+  var _fleetBriefLine = function (s, hs) {
+    if (s.key === 'town') return s.offSince ? 'since ' + s.offSince : 'offline';   /* "in town" already says offline */
+    if (s.key === 'lost') return 'no report this console can read';
+    if (s.key === 'ready') return 'every law proved';
+    var _n = function (x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+    var _eta = function (e) { return (typeof e === 'number' && isFinite(e) && e >= 0)
+      ? ' ~' + (e < 60 ? '1 min' : e < 5400 ? Math.round(e / 60) + ' min' : (e / 3600).toFixed(1) + ' h') : ''; };
+    var proving = (hs && typeof hs.owed === 'number' && hs.owed > 0) ? 'proving ' + _n(hs.owed) + _eta(hs.etaS) : '';
+    if (s.key === 'healing') return proving || 'proving';
+    /* ONE wound, the one that needs a hand first: a blind gate keeps every lock shut whatever this PC proves next, so it
+       leads; the rest are "+N" (the open row and the State panel name them). Then what is healing it, if anything. */
+    var _short = function (x) {
+      x = String(x || '');
+      if (/^proof: /.test(x)) { x = x.slice(7); if (!/proof/.test(x)) x = 'proof ' + x; }
+      return x.length <= 28 ? x : x.split(':')[0].trim();
+    };
+    var hurt = s.hurt.slice().sort(function (a, b) { return (/ blind$/.test(b) ? 1 : 0) - (/ blind$/.test(a) ? 1 : 0); });
+    var first = hurt.length ? _short(hurt[0]) + (hurt.length > 1 ? ' +' + (hurt.length - 1) : '') : '';
+    var imp = (hs && hs.importing && typeof hs.importing === 'object' && hs.importing.landed !== true) ? hs.importing : null;
+    var heal = imp ? 'importing proofs' + _eta(imp.etaS) : proving;
+    return [first, heal].filter(Boolean).join(' \u00b7 ');
+  };
+  var _fleetBriefHtml = function (m, nowMs) {
+    var s = null;
+    try { s = _pcStatus(m, nowMs); } catch (e) { s = null; }
+    if (!s || !s.word) return '';
+    var rv = (m && m.system && typeof m.system === 'object') ? m.system.river : null;
+    var hs = (rv && typeof rv === 'object' && rv.heart && typeof rv.heart === 'object') ? rv.heart : null;
+    var t = '';
+    try { t = _pcCut(_fleetBriefLine(s, hs), 64); } catch (e) { t = ''; }
+    return '<span class="fleet-brief ' + escC(s.cls) + '" data-pc="' + escC(s.key) + '"><span class="fb-w">' + escC(s.word)
+      + '</span>' + (t ? '<span class="fb-t">' + escC(t) + '</span>' : '') + '</span>';
+  };
+  window._fleetBriefLine = _fleetBriefLine;
+  window._fleetBriefHtml = _fleetBriefHtml;
   /* #86 gap 12 (REG-1772) — ONLINE IS A PULSE. THE KEY IS ONLY STORAGE.
      The roster keeps a presence key for PRESENCE_TTL (v3862 Workers Paid: 10 min, refreshed every 220 s; it was
      40 and 15 on the free plan) so missed rewrites do not
@@ -30444,6 +30501,7 @@ function escC(s) {
                    now says them in parts (_pcStatusHtml). */
                 + ' aria-label="' + escC(w.w + ' \u2014 ' + w.t + (plain ? ('  \u2014  ' + plain) : '')) + '">'
                 + escC(w.w) + '</span>'
+                + (window._fleetBriefHtml ? window._fleetBriefHtml(m) : '')   /* v3881 (REG-3395) - one word, one line */
                 /* REG-1613 — AFTER the verdict, so the verdict keeps row one and the words take row two */
                 + _fleetRowChips(m, heard) + _rw;
             })()
