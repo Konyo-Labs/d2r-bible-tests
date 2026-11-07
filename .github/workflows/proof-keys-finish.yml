@@ -1,0 +1,63 @@
+name: proof-keys finish - a round cut only by its bound is finished, never failed
+# v3881 (REG-3387) - HIS ORDER 2026-11-07: "red is logical but timeout? ... something needs to be done for rounds not being
+# pushed through because a shard was timed out instead of red" - and, of this finisher: "build this regardless ... as an
+# extra layer". MEASURED on v3879 (run 42387199487): shard 5 owed 6 proofs its 1500 s cap CUT (21 of 27 banked by the
+# checkpoints) beside shard 16's red law; both waited on a human and were re-run by hand, an hour of a round for 6 proofs.
+#
+# The moment a proof-keys round completes red, this reads THAT round's census (the fan-in's proof-census-<sha>.json) and
+# asks tv/proof_shard.py --finish-plan what a re-run can finish:
+#   rerun-failed - the ONLY debt is cut proofs: the run's failed jobs are re-run. A re-run shard serves every proof the run
+#                  already banked (REG-3210/3280) and proves only what was cut.
+#   rerun-jobs   - cut-only shards beside a shard that owes a fix: just those jobs are re-run; the red one never is.
+#   none         - a red law, a shard that left no store (UNKNOWN), or a round already finished twice: a human's.
+# It never re-runs a red law (re-running reds until they pass is a lie, not a proof).
+#
+# SAFETY: a workflow_run job runs THIS file from the default branch and checks out the default branch - no ci/ branch's code
+# ever runs with the actions: write token. The round's census is DATA (JSON), read by main's own proof_shard.py.
+# UNMEASURED until it runs once on main: whether GitHub starts a second workflow_run event for a round this job re-ran
+# (a GITHUB_TOKEN action may not trigger workflows) - if it does not, the bound below never matters and the ship's own
+# make-up (tv/ship_when_green.py, REG-3270/3386) stays the second layer.
+on:
+  workflow_run:
+    workflows: ["proof-keys shards (ci/proof-keys-* only)"]
+    types: [completed]
+permissions:
+  contents: read
+jobs:
+  finish:
+    name: finish - re-run what a bound cut, never a red
+    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.run_attempt <= 2 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RID: ${{ github.event.workflow_run.id }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: The round's census (the fan-in's own artifact)
+        continue-on-error: true
+        run: gh run download "$RID" --repo "$GITHUB_REPOSITORY" -n "proof-census-$SHA" -D census
+      - name: What a re-run can finish (tv/proof_shard.py --finish-plan)
+        run: python3 tv/proof_shard.py --finish-plan census/census.json --attempt "$ATTEMPT" --out plan.json
+      - name: Finish it
+        run: |
+          act="$(python3 -c 'import json; print(json.load(open("plan.json"))["action"])')"
+          why="$(python3 -c 'import json; print(json.load(open("plan.json"))["why"])')"
+          echo "REG-3387 finish: $act - $why" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$act" = "rerun-failed" ]; then
+            gh run rerun "$RID" --failed --repo "$GITHUB_REPOSITORY"
+          elif [ "$act" = "rerun-jobs" ]; then
+            for k in $(python3 -c 'import json; print(" ".join(json.load(open("plan.json"))["shards"]))'); do
+              jid="$(gh run view "$RID" --repo "$GITHUB_REPOSITORY" --json jobs \
+                       --jq ".jobs[] | select(.name == \"shard $k\") | .databaseId" | head -1)"
+              # GitHub re-runs nothing on a run that is in progress, so ONE job is re-run; the others wait for that one
+              if [ -n "$jid" ] && gh run rerun --job "$jid" --repo "$GITHUB_REPOSITORY"; then
+                echo "re-ran shard $k (job $jid) - any other cut shard waits until it completes"; break
+              else echo "shard $k could not be re-run on run $RID"; fi
+            done
+          fi

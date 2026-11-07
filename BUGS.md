@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3387 - A ROUND CUT ONLY BY ITS BOUND CAME BACK AS A FAILED ROUND (v3881, his order 11-07: the finishing job)
+His words: "red is logical but timeout? ... something needs to be done for rounds not being pushed through because a shard
+was timed out instead of red" - and "build this regardless ... as an extra layer". Until now only the Mac's ship script
+made a cut round up (REG-3270), and only while it was running. .github/workflows/proof-keys-finish.yml starts when a
+proof-keys round completes red, reads that round's census and asks proof_shard.finish_plan: only cut proofs -> re-run the
+failed jobs (a re-run serves what was banked, REG-3210/3280, and proves only the cut); cut shards beside a red -> re-run one
+cut job (GitHub re-runs nothing on a run in progress); a red law, a shard with no store, a third attempt -> nothing. It runs
+main's own code (no ci/ code holds its actions: write token), and the ship now waits on a round the finisher re-ran instead
+of stopping on its own refused re-run. UNMEASURED until it runs on main: whether a GITHUB_TOKEN re-run raises a second
+workflow_run event. Law: test_a_timeout_is_finished_on_github_never_failed (12 cases, 5 red-proofs each seen RED).
 ### REG-3386 - A CUT SHARD WAITED ON ANOTHER SHARD'S RED (v3881, v3879 shards 5 + 16)
 v3879's round (run 42387199487): shard 16 owed a fix (a law red untampered) and shard 5 owed only 6 TIMEOUT proofs. makeup_due
 refused the whole run - correctly, a red is a human's - so the cut shard waited on that human too and both were re-run by hand.

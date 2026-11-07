@@ -178,6 +178,11 @@ def makeup(sha, runs, run, say, made, clock, tmp=None):
         q = run(["gh", "run", "rerun", str(rid), "--failed", "--repo", CV.REPO_SLUG], capture_output=True, text=True,
                 encoding="utf-8", errors="replace")
         if getattr(q, "returncode", 1) != 0:
+            if running_again(rid, run):      # v3881 (REG-3387) - GitHub's finisher re-ran it first: wait on that re-run
+                made[rid] = clock()
+                say("ship: REG-3387 run %s is already re-running (GitHub's proof-keys finish job made it up) - waiting on it"
+                    % rid)
+                return True
             say("ship: REG-3270 the make-up re-run was REFUSED: %s" % ((q.stderr or q.stdout or "").strip()[-160:]))
             made[rid] = None
             return False
@@ -187,6 +192,20 @@ def makeup(sha, runs, run, say, made, clock, tmp=None):
     finally:
         if tmp is None:
             shutil.rmtree(d, ignore_errors=True)
+
+
+def running_again(rid, run):
+    """v3881 (REG-3387) - is this run in progress again (GitHub's finisher re-ran it)? -> bool; False when it cannot be read"""
+    import json
+    v = run(["gh", "run", "view", str(rid), "--repo", CV.REPO_SLUG, "--json", "status"], capture_output=True, text=True,
+            encoding="utf-8", errors="replace")
+    if getattr(v, "returncode", 1) != 0:
+        return False
+    try:
+        return str((json.loads(v.stdout or "{}") or {}).get("status") or "") in ("queued", "in_progress", "waiting", "pending",
+                                                                                 "requested")
+    except ValueError:
+        return False
 
 
 def part_makeup(rid, tot, run, say):
@@ -218,11 +237,14 @@ def part_makeup(rid, tot, run, say):
                 encoding="utf-8", errors="replace")
         if getattr(q, "returncode", 1) == 0:
             done.append(k)
+            break           # GitHub re-runs nothing on a run in progress: one job now, the others once it completes
     red = sorted(set(str(f[4]) for f in (tot.get("fix") or []) if isinstance(f, (list, tuple)) and len(f) > 4))
     if done:
-        say("ship: REG-3386 PART MAKE-UP - shard(s) %s owe only cut proofs while shard(s) %s owe a fix: re-running just "
-            "those now, so they are proved while the red is read (re-run the red one once these finish)"
-            % (", ".join(done), ", ".join(red) or "?"))
+        rest = [k for k in part if k not in done]
+        say("ship: REG-3386 PART MAKE-UP - shard(s) %s owe only cut proofs while shard(s) %s owe a fix: re-running %s now, "
+            "so it is proved while the red is read%s (re-run the red one once it finishes)"
+            % (", ".join(part), ", ".join(red) or "?", "shard " + done[0],
+               ("; %s wait - GitHub re-runs nothing on a run in progress" % ", ".join(rest)) if rest else ""))
     else:
         say("ship: REG-3386 the cut shard(s) %s could not be re-run (no job, or GitHub refused)" % ", ".join(part))
     return done

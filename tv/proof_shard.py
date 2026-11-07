@@ -770,6 +770,42 @@ def timeout_only_shards(tot):
     return sorted(part, key=lambda k: (len(k), k))
 
 
+#: v3881 (REG-3387) - the finisher (.github/workflows/proof-keys-finish.yml) re-runs a round at most after its first and
+#: second attempts: a cut re-run serves everything already banked (REG-3210/3280), so each attempt only shrinks the debt, and
+#: a third cut on one round is a human's to read, never an automatic loop.
+FINISH_MAX_ATTEMPT = 2
+
+
+def finish_plan(tot, attempt):
+    """v3881 (REG-3387) - HIS ORDER 2026-11-07: "red is logical but timeout?" - a proof round whose debt includes proofs a
+    bound CUT is finished on GitHub itself, never handed back as a failed round. -> {"action", "shards", "why"}. Pure.
+
+    action  "rerun-failed": the ONLY debt is cut proofs (makeup_due) - re-run the run's failed jobs
+            "rerun-jobs":   cut-only shards beside a shard that owes a fix (timeout_only_shards) - re-run just those jobs;
+                            the red shard is never re-run (a red law is a human's, and re-running reds until green is a lie)
+            "none":         nothing a re-run can finish, or this round was already finished FINISH_MAX_ATTEMPT times
+    A shard that left no store is UNKNOWN here (no job log is read) - never made up by the finisher; the ship still may."""
+    try:
+        n = int(attempt)
+    except (TypeError, ValueError):
+        return {"action": "none", "shards": [], "why": "the run's attempt is unknown - nothing is re-run on a guess"}
+    if n > FINISH_MAX_ATTEMPT:
+        return {"action": "none", "shards": [],
+                "why": "attempt %d: this round was already finished %d time(s) - what is left is a human's" % (n, n - 1)}
+    if not isinstance(tot, dict):
+        return {"action": "none", "shards": [], "why": "no census to read - UNKNOWN, nothing re-run"}
+    due, why = makeup_due(tot)
+    if due:
+        sh = sorted(set(str(f[4]) for f in (tot.get("cut") or []) if isinstance(f, (list, tuple)) and len(f) > 4),
+                    key=lambda k: (len(k), k))
+        return {"action": "rerun-failed", "shards": sh, "why": why}
+    part = timeout_only_shards(tot)
+    if part:
+        return {"action": "rerun-jobs", "shards": part,
+                "why": "shard(s) %s owe only cut proofs beside a red one - only those are re-run" % ", ".join(part)}
+    return {"action": "none", "shards": [], "why": why}
+
+
 def merge_shards(root, out, say=print):
     """REG-2961 (#161 stage 2) - THE SEED THE NEXT RUN RESTORES: every servable entry the shard files under `root` hold,
     in one heart2 store at `out` (no shard manifest - it is no shard's file). Read only by heart2's seed (HEART2_SHARD_SEED),
@@ -1020,7 +1056,23 @@ def main(argv=None):
                     help="REG-2962: dir of shard artifacts -> may this commit publish (with --shards, --head, --base)")
     ap.add_argument("--base", default=None, help="with --deploy-verdict: the last commit that published (empty: UNKNOWN)")
     ap.add_argument("--bank", default=None, help="v3862: dir of shard artifacts -> one proof-bank bundle (--out FILE.tgz)")
+    ap.add_argument("--finish-plan", dest="finish", default=None,
+                    help="v3881 (REG-3387): a round's census.json -> what the finisher re-runs (JSON on stdout, or --out)")
+    ap.add_argument("--attempt", default=None, help="with --finish-plan: the run attempt that just completed")
     a = ap.parse_args(argv)
+    if a.finish is not None:
+        try:
+            with open(a.finish, encoding="utf-8") as fh:
+                tot = json.load(fh)
+        except (OSError, ValueError):
+            tot = None
+        plan_ = finish_plan(tot, a.attempt)
+        text = json.dumps(plan_, ensure_ascii=False)
+        if a.out:
+            with open(a.out, "w", encoding="utf-8") as fh:
+                fh.write(text + "\n")
+        print(text)
+        return 0
     if a.bank:
         if not a.out:
             ap.error("--bank needs --out FILE")
