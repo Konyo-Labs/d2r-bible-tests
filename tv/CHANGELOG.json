@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3879",
+    "date": "2026-11-07",
+    "items": [
+      "A self-proving PC proves the laws that keep a shut lock shut first (REG-3351, #103)",
+      "An import keys only what this PC does not serve yet and keeps each batch it wrote (REG-3352, #103)",
+      "An empty vault ledger says why it is empty, never a bare zero (REG-3353, #47)",
+      "A linked priced post weighs only with a d2jsp link and a finite price (REG-3354)",
+      "Every random pack monster in Quick wins wears its family sprite from The Arreat Summit (REG-3357, #108)",
+      "The Pit wears its cave, never green grass (REG-3357, #108)",
+      "Each uber wears its own animated sprite, different from its regular boss (REG-3357, #108)",
+      "Quick wins rows read runs, time for a 50 percent chance, runs an hour, then the odds last (REG-3357, #109)",
+      "The other places section lists each area once and each monster once across its levels (REG-3357, #108)",
+      "Each console Terror Zone card wears its own monster (REG-3358, #108)",
+      "The board Terror Zone rows wear the same monsters as the console (REG-3358, #108)",
+      "The runeword ID card draws its picture and the base of each slot it is made for (REG-3359, #27)",
+      "An ID card name breaks only between words on a phone (REG-3359, #27)",
+      "An import ends when the console that asked for it is gone (REG-3360, #103)",
+      "The doctor asks the git door where the real git is, so a ucrt64 PC is no false fault (REG-3361, #12)"
+    ]
+  },
+  {
     "ver": "v3878",
     "date": "2026-11-07",
     "items": [
