@@ -112,7 +112,8 @@ class TheVaultLaneRemembersAcrossARestart(unittest.TestCase):
     # ── the store must not be able to reach his live console ─────────────────────────────────
     def test_the_store_lives_under_the_fixture_root(self):
         p = CA._vault_autoread_path()
-        self.assertIn(self.tmp, p,
+        # #107 - realpath on both sides: Windows' temp dir comes back as an 8.3 short name (RUNNER~1), the store as the long one
+        self.assertIn(os.path.normcase(os.path.realpath(self.tmp)), os.path.normcase(os.path.realpath(p)),
                       "the vault store resolved to %r while TV_HIST pointed at a fixture — a suite "
                       "or a render gate would write into his live tv/ and overwrite what his lane "
                       "had retired" % p)

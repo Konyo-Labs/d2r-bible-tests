@@ -112,6 +112,20 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3368 - #107 SECOND BATCH: FIVE MORE LAWS RED ON WINDOWS BY THEIR OWN ASSUMPTIONS (v3880)
+From #107's probe (run 42367869017), each read before changing anything:
+- test_the_windows_eye_is_found_by_its_exe (a Windows law, red ON Windows): it faked HOME, but on Windows
+  os.path.expanduser("~") reads USERPROFILE, never HOME (Python 3.8+), so the resolver rightly looked in the runner's real
+  profile. It now fakes USERPROFILE too. The product resolver was right.
+- test_the_vault_lane_remembers_across_a_restart and test_a_read_verdict_is_never_stored asserted the temp dir's name inside
+  the store's path. Windows hands the temp dir back as an 8.3 short name (RUNNER~1) and the store as the long one. Both
+  sides are now compared through realpath + normcase.
+- test_child_guard_one_tree_per_role: its Linux /proc case stands in os.sysconf, which Windows' os does not have
+  (create=True). It still runs there.
+- test_an_exec_leaves_no_corpse: two cases asked the POSIX reaper without saying POSIX. On Windows the reaper is rightly
+  not asked (REG-1265, pinned by its own case). They now pass posix=True, like the premise case.
+All green on the Mac; their Windows verdict is v3880's GitHub Windows round.
+
 ### REG-3367 - ON WINDOWS A DEAF CONSOLE WAS NEVER RELAUNCHED: ITS HANG-UP READ AS "error", WHICH COUNTS NO STRIKE (v3880, #107)
 Found by #107's probe: on GitHub's Windows runner test_a_deaf_console_relaunches_itself read 'error' != 'reset' for a
 server that accepts and hangs up - the exact deaf console the self-probe exists to catch. server_self_probe classified

@@ -32,7 +32,7 @@ import console_doctor as cd  # noqa: E402
 import g5_grok_eyes as g5  # noqa: E402
 import second_eye_run as ser  # noqa: E402
 
-_ENV = ("HOME", "PATH", "G5_GROK_BIN", "TV_GROK_BIN", "THIRD_EYE_CLI")
+_ENV = ("HOME", "USERPROFILE", "PATH", "G5_GROK_BIN", "TV_GROK_BIN", "THIRD_EYE_CLI")
 
 
 class AWindowsHome(unittest.TestCase):
@@ -49,6 +49,7 @@ class AWindowsHome(unittest.TestCase):
         os.chmod(self.exe, os.stat(self.exe).st_mode | stat.S_IXUSR)
         self.empty_path = tempfile.mkdtemp(prefix="nopath-")
         os.environ["HOME"] = self.home
+        os.environ["USERPROFILE"] = self.home   # #107 - on Windows expanduser("~") reads USERPROFILE, never HOME
         os.environ["PATH"] = self.empty_path          # the GUI process PATH: no grok on it
         for k in ("G5_GROK_BIN", "TV_GROK_BIN", "THIRD_EYE_CLI"):
             os.environ.pop(k, None)

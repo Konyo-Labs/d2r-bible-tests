@@ -114,7 +114,8 @@ class AReadVerdictIsNeverStored(unittest.TestCase):
                         else os.environ.pop("TV_HIST", None))
         import control_app as CA
         p = CA._shadow_watch_path()
-        self.assertIn(d, p, "TV_HIST was not honoured — REFUSING to run against a real store")
+        self.assertIn(os.path.normcase(os.path.realpath(d)), os.path.normcase(os.path.realpath(p)),   # #107 - 8.3 names
+                      "TV_HIST was not honoured — REFUSING to run against a real store")
 
         io.open(p, "w", encoding="utf-8").write(json.dumps(
             {"ok": False, "why": "the shadow reader is switched off", "lookedAt": 1789166507974}))
@@ -139,7 +140,8 @@ class AReadVerdictIsNeverStored(unittest.TestCase):
         import control_app as CA
         import health_engine as HE
         p = CA._shadow_watch_path()
-        self.assertIn(d, p, "TV_HIST was not honoured — REFUSING to run against a real store")
+        self.assertIn(os.path.normcase(os.path.realpath(d)), os.path.normcase(os.path.realpath(p)),   # #107 - 8.3 names
+                      "TV_HIST was not honoured — REFUSING to run against a real store")
 
         def state(rec):
             io.open(p, "w", encoding="utf-8").write(json.dumps(rec))

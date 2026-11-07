@@ -203,7 +203,8 @@ class TheBootReapSaysWhatHappened(unittest.TestCase):
 
     def test_an_unreadable_process_table_is_said_out_loud(self):
         self.fake.children_of = lambda pid=None: None
-        self.assertIn("UNKNOWN", self.ca._reap_inherited_at_boot(),
+        # #107 - the POSIX path, asked as POSIX on every platform (a Windows boot is not asked: the case below)
+        self.assertIn("UNKNOWN", self.ca._reap_inherited_at_boot(posix=True),
                       "an unreadable ps reaped nothing and said nothing - UNKNOWN read as 'no children'")
 
     def test_no_children_is_quiet(self):
@@ -212,7 +213,7 @@ class TheBootReapSaysWhatHappened(unittest.TestCase):
 
     def test_inherited_children_are_counted(self):
         self.fake.children_of = lambda pid=None: [4242, 4243]
-        self.assertIn("inherited 2 child process(es)", self.ca._reap_inherited_at_boot())
+        self.assertIn("inherited 2 child process(es)", self.ca._reap_inherited_at_boot(posix=True))
 
     def test_windows_is_not_asked_and_says_no_false_unknown(self):
         # REG-1265 — the second eye on 229e2397: every Windows boot printed a false UNKNOWN

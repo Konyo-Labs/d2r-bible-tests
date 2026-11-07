@@ -336,7 +336,7 @@ class TheBirthReaderStartsNoProcess(unittest.TestCase):
         with mock.patch.object(cg.sys, "platform", "linux"), \
                 mock.patch.object(cg.os.path, "isdir", lambda d: d == "/proc"), \
                 mock.patch.object(cg, "open", fake_open, create=True), \
-                mock.patch.object(cg.os, "sysconf", lambda k: 100), \
+                mock.patch.object(cg.os, "sysconf", lambda k: 100, create=True), \
                 mock.patch.object(cg.subprocess, "Popen", popen):
             got = cg._birth_posix(9990032)
         self.assertEqual(1700000042, got, "starttime 4200 ticks at 100 Hz after btime 1700000000")
