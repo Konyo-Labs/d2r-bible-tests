@@ -112,6 +112,19 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3392 - THE CLAUDE LAMP WAS GREEN ON A REVOKED LOGIN, AND ITS CLICK WOULD NOT REOPEN THE SIGN-IN (v3881, HIS ASK)
+His words 11-07: "make sure the green lamp for claude is synced to red if it is off ... its reading it as green as if it was
+connected" and "when i click the lamp ... it says its already connected and doesnt let me reconnect". MEASURED on his work ALT:
+`claude -p` -> "401 OAuth access token has been revoked" (rc 1, on stdout) while `claude auth status` -> "loggedIn": true.
+Every read failed; the Grok backup answered three, journaled {model: sonnet, eye: grok, backup: "backup: claude signed out"}; the
+lamp read only `model`, so Grok's answers were Claude's -> GREEN, and the click (state on) answered "linked". Now: a read the
+Grok backup answered is a Claude miss in Claude's own words; "signed out"/"revoked" are sign-in words (OFF + sign in); the
+status file's "signed in" lights the lamp only after a real one-line Claude read answered (asked at most every 30 min, at once
+after a sign-in moved the credentials; a failed line is OFF in its words even with no reads); a GROK ONLY read is never Claude's
+and a timeout stays UNKNOWN (REG-3227). His ask: two clicks on the same Claude lamp in the same state within 5 s open its sign-in
+whatever it says. Law: test_a_claude_lamp_is_green_only_when_claude_answers (12 cases incl. his ALT's rows verbatim; 5 red-proofs
+RED); three lamp laws moved to the new premise (each 'really signed in' fixture carries the real line; twins prove the bare file
+is no longer green); two red-proofs re-anchored onto the rewritten lines (the census caught them).
 ### REG-3391 - THE D2JSP FIELD LAW CLICKED A POINT READ BEFORE THE TAB STOPPED MOVING (v3881; red untampered twice on CI)
 test_a_board_field_takes_keys_after_a_click went red untampered on v3878's shard 17 and again on v3879's second round (run
 42394365352, shard 21: test_click_then_type_lands_in_both_d2jsp_fields), green on the same bytes between. v3879's

@@ -33857,8 +33857,16 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
     var state = (L && (L.state === 'on' || L.state === 'off')) ? L.state : 'unknown';
     var kind = (L && L.kind) || state;
     if (el && el.setAttribute) el.setAttribute('data-alert', '0');
-    if (state === 'on') {
-      say(NAME[k] + ' is linked on this PC - ' + ((L && L.why) || 'connected'));
+    /* v3881 (REG-3392, his ask 11-07: "a double click on the claude lamp forces it to open regardless") - his work ALT's
+       lamp sat green on a REVOKED login and this click answered "linked" with no way through. A second click on the SAME
+       Claude lamp, in the SAME state, within 5 s opens Claude's sign-in whatever the lamp says. Two clicks on two different
+       states are two answers, never a double click. */
+    var _now = Date.now(), _arm = M.arm || null;
+    var forced = (k === 'claude') && !!_arm && _arm.k === k && _arm.kind === kind && (_now - _arm.at) < 5000;
+    M.arm = forced ? null : { k: k, kind: kind, at: _now };
+    var again = (k === 'claude') ? ' · click again within 5 s to open its sign-in anyway' : '';
+    if (state === 'on' && !forced) {
+      say(NAME[k] + ' is linked on this PC - ' + ((L && L.why) || 'connected') + again);
       return Promise.resolve({ ok: true, started: false, reason: 'linked' });
     }
     if (k === 'grok' && (kind === 'switched-off' || kind === 'not-installed')) {
@@ -33868,8 +33876,8 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
     /* REG-3227 - HIS ALT, 11-06: a read ran out of time on a busy PC, the lamp went off, and this click opened
        `claude auth login` for a sign-in that was never broken. A Claude lamp opens a sign-in only when a sign-in is what
        failed; a read that timed out or failed for its own reason says that reason instead. */
-    if (k === 'claude' && L && L.needsLogin !== true && (kind === 'timed-out' || kind === 'read-failed')) {
-      say('CLAUDE: ' + ((L && L.why) || 'its last read did not finish') + ' - nothing to sign in to');
+    if (k === 'claude' && !forced && L && L.needsLogin !== true && (kind === 'timed-out' || kind === 'read-failed')) {
+      say('CLAUDE: ' + ((L && L.why) || 'its last read did not finish') + ' - nothing to sign in to' + again);
       return Promise.resolve({ ok: true, started: false, reason: kind });
     }
     if (el && el.setAttribute) el.setAttribute('data-busy', '1');

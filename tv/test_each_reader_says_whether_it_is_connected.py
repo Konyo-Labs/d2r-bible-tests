@@ -105,10 +105,24 @@ class ClaudeSaysWhatItJustDid(unittest.TestCase):
         """REG-3227 - the CLI's 'signed in', asked AFTER the read that could not sign in, is the newer word on the very
         thing that failed. Asked BEFORE it, it changes nothing."""
         rows = [_at(GOOD, 90), _at(ALT_FAILED, 5)]
-        after = {"loggedIn": True, "why": "claude auth status: signed in", "askedAtMs": NOW - 60000}
+        # v3881 (REG-3392) - "signed in" now means a real one-line read answered too: the status file alone cannot see a
+        # revoked login (his work ALT 11-07). With that proof, after the failure, the lamp lights:
+        after = {"loggedIn": True, "why": "claude auth status: signed in", "askedAtMs": NOW - 60000,
+                 "verified": True, "verifiedAtMs": NOW - 50000}
         h = ca._reader_health(now_ms=NOW, rows=rows, g5=G5_ON, use_cache=False, auth=after)["claude"]
         self.assertEqual((h["state"], h["kind"], h["needsLogin"]), ("on", "signed-in-again", False), h)
         self.assertIn("signed in again", h["why"])
+        # REG-3392 - the status file alone (no real line yet) does not: OFF, and it says a read is confirming it
+        bare = {"loggedIn": True, "why": "claude auth status: signed in", "askedAtMs": NOW - 60000}
+        h = ca._reader_health(now_ms=NOW, rows=rows, g5=G5_ON, use_cache=False, auth=bare)["claude"]
+        self.assertEqual((h["state"], h["kind"]), ("off", "signed-out"), "the status file alone turned the lamp green: %r" % h)
+        self.assertIn("cannot see a revoked login", h["why"])
+        # REG-3392 - and a real line that could NOT sign in is OFF in its own words, whatever the status file says
+        rev = dict(bare, verified=False, why="Failed to authenticate. API Error: 401 OAuth access token has been revoked.",
+                   verifiedAtMs=NOW - 40000)
+        h = ca._reader_health(now_ms=NOW, rows=[], g5=G5_ON, use_cache=False, auth=rev)["claude"]
+        self.assertEqual((h["state"], h["needsLogin"]), ("off", True), h)
+        self.assertIn("revoked", h["why"])
         before = dict(after, askedAtMs=NOW - 10 * 60000)
         h = ca._reader_health(now_ms=NOW, rows=rows, g5=G5_ON, use_cache=False, auth=before)["claude"]
         self.assertEqual((h["state"], h["kind"]), ("off", "signed-out"), "an older 'signed in' outranked a newer failure")
@@ -125,7 +139,8 @@ class ClaudeSaysWhatItJustDid(unittest.TestCase):
         """REG-3323 (#51) - GrokBot on his window: the tip named the program it asks (claude auth status) and never WHEN.
         Signed in with no read, signed out, and a signed-in note on a timed-out read each say when the CLI answered;
         an answer with no time says so, never a guessed one."""
-        on = {"loggedIn": True, "why": "claude auth status: signed in", "askedAtMs": NOW - 7 * 60000}
+        on = {"loggedIn": True, "why": "claude auth status: signed in", "askedAtMs": NOW - 7 * 60000,
+              "verified": True, "verifiedAtMs": NOW - 7 * 60000}     # v3881 (REG-3392) - and a real line answered
         h = ca._reader_health(now_ms=NOW, rows=[], g5=G5_ON, use_cache=False, auth=on)["claude"]
         self.assertEqual(h["state"], "on", h)
         self.assertIn("claude auth status: signed in, checked 7 min ago", h["why"])
@@ -304,7 +319,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "#105 - a failed newest read lights Claude ON (the ALT's signed-out day, green)",
      "file": "tv/control_app.py",
-     "find": "        if last.get(\"readFailed\") or last.get(\"mode\") == \"empty\":\n            _why = str(last.get(\"readErr\") or \"\").strip()\n",
+     "find": "        if _claude_row_missed(last):\n            _why = str(last.get(\"readErr\") or \"\").strip()\n",
      "replace": "        if False:\n            _why = str(last.get(\"readErr\") or \"\").strip()\n", "matches": 1},
     {"why": "#105 - a sign-in failure is not recognised, so the lamp never says /login",
      "file": "tv/control_app.py",

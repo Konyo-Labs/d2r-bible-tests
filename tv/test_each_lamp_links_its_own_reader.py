@@ -59,7 +59,7 @@ NOW = 1790780000000
 RED_PROOF = [
     {"why": "REG-3227 - a Claude lamp that timed out opens `claude auth login` again on click",
      "file": "tv/control_ui.html",
-     "find": "    if (k === 'claude' && L && L.needsLogin !== true && (kind === 'timed-out' || kind === 'read-failed')) {\n",
+     "find": "    if (k === 'claude' && !forced && L && L.needsLogin !== true && (kind === 'timed-out' || kind === 'read-failed')) {\n",
      "replace": "    if (false) {\n", "matches": 1},
     {"why": "REG-3227 - the hint offers a sign-in that the click will not open",
      "file": "tv/control_ui.html",
@@ -369,7 +369,7 @@ class ClaudeHasItsOwnDisconnectLogic(unittest.TestCase):
                 return ca._reader_health(now_ms=NOW, rows=[], g5=_grok(), use_cache=False, auth=auth)["claude"]
         out = lamp({"loggedIn": False, "why": "claude auth status: signed out (none)"})
         self.assertEqual((out["state"], out["kind"], out["signInOpen"]), ("off", "signed-out", True), out)
-        on = lamp({"loggedIn": True, "why": "claude auth status: signed in"})
+        on = lamp({"loggedIn": True, "why": "claude auth status: signed in", "verified": True, "verifiedAtMs": NOW})  # REG-3392
         self.assertEqual((on["state"], on["kind"], on["signInOpen"]), ("on", "on", False), on)
 
 

@@ -450,7 +450,8 @@ def _journal_ring():
 _READER_WINDOW_MS = 2 * 3600 * 1000
 _READER_CACHE_S = 30.0
 _READER_CACHE = {"at": 0.0, "val": None}
-_READER_AUTH_WORDS = ("authenticate", "oauth", "login", "log in", "not logged", "unauthorized", "401")
+_READER_AUTH_WORDS = ("authenticate", "oauth", "login", "log in", "not logged", "unauthorized", "401",
+                      "signed out", "revoked")    # v3881 (REG-3392) - the backup words of a Claude that could not sign in
 #: REG-3227 - a read that ran out of time on a busy PC: not a sign-in, and never a disconnection (his ALT 11-06 03:08)
 _READER_TIMEOUT_WORDS = ("timed out", "timeout")
 
@@ -463,6 +464,33 @@ def _reader_family(row):
     if m in ("sonnet", "haiku", "opus") or m.startswith("claude"):
         return "claude"
     return None
+
+
+def _verified_after(au, after_ms, now_ms):
+    """v3881 (REG-3392) - did a real one-line Claude read answer (verified: True), fresh at now_ms, and after `after_ms`?"""
+    if not isinstance(au, dict) or au.get("verified") is not True:
+        return False
+    t = au.get("verifiedAtMs")
+    if not isinstance(t, (int, float)) or float(now_ms) - t > 2 * CLAUDE_VERIFY_EVERY_S * 1000:
+        return False
+    return after_ms is None or t > float(after_ms)
+
+
+def _claude_backed_up(row):
+    """v3881 (REG-3392) - did Claude MISS this read and the Grok backup answer it? The row keeps the model Claude was asked
+    as (`model: sonnet`), the eye that really answered (`eye: grok`) and Claude's miss (`backup: claude signed out`). A Grok
+    read with no `backup` was never Claude's (his switch at GROK ONLY), so it is not counted against Claude."""
+    r = row or {}
+    return str(r.get("eye") or "").lower() == "grok" and bool(str(r.get("backup") or "").strip())
+
+
+def _claude_row_missed(row):
+    """v3881 (REG-3392) - a Claude read that did not come back from CLAUDE: failed, empty, or answered by the Grok backup.
+    MEASURED on his work ALT 11-07: `claude -p` -> "401 OAuth access token has been revoked" on every read, the Grok backup
+    answered three of them, and each was journaled `model: sonnet, eye: grok, backup: claude signed out` - so the CLAUDE
+    lamp, which read only `model`, counted Grok's answers as Claude's and sat GREEN while Claude could not sign in."""
+    r = row or {}
+    return bool(r.get("readFailed") or r.get("mode") == "empty" or _claude_backed_up(r))
 
 
 def _journal_tail_rows(max_bytes=600000):
@@ -487,6 +515,37 @@ CLAUDE_AUTH_WATCH_EVERY_S = 10
 CLAUDE_AUTH_FAST_EVERY_S = 5
 CLAUDE_AUTH_AFTER_SIGNIN_S = 120
 _CLAUDE_AUTH = {"at": 0.0, "val": None, "busy": False, "credAt": None, "fastUntil": 0.0}
+#: v3881 (REG-3392) - `claude auth status` says loggedIn: true for a REVOKED login (MEASURED on his work ALT 11-07: status
+#: "loggedIn": true while `claude -p` answered "401 OAuth access token has been revoked"). So a lamp that would turn green on
+#: that status alone first asks Claude one line, at most this often - and at once after a sign-in moved the credentials.
+CLAUDE_VERIFY_EVERY_S = 1800
+CLAUDE_VERIFY_PROMPT = "Reply with exactly: OK"
+_CLAUDE_VERIFY = {"want": False, "val": None, "at": 0.0}
+
+
+def _claude_verify_call(bin_path, _run=None, timeout=60):
+    """v3881 (REG-3392) - ONE real line from Claude on this PC. -> {verified: True | False | None, why, verifiedAtMs}
+    True only when it answered; False when it failed to sign in (its own words - the CLI prints them on stdout); None when
+    it could not say (a timeout, a crash): UNKNOWN never turns a lamp green or red."""
+    at = int(time.time() * 1000)
+    env = dict(os.environ)
+    env.pop("ANTHROPIC_API_KEY", None)          # the subscription sign-in is what is asked, never an API key
+    try:
+        r = (_run or subprocess.run)([bin_path, "-p", CLAUDE_VERIFY_PROMPT], capture_output=True, text=True, timeout=timeout,
+                                     encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL, env=env)
+    except subprocess.TimeoutExpired:
+        return {"verified": None, "why": "a one-line Claude read ran past %d s - UNKNOWN" % timeout, "verifiedAtMs": at}
+    except Exception as e:
+        return {"verified": None, "why": "a one-line Claude read could not start (%s) - UNKNOWN" % type(e).__name__,
+                "verifiedAtMs": at}
+    out = ((getattr(r, "stdout", "") or "") + "\n" + (getattr(r, "stderr", "") or "")).strip()
+    first = next((ln.strip() for ln in out.splitlines() if ln.strip()), "")
+    if getattr(r, "returncode", 1) == 0 and "OK" in (getattr(r, "stdout", "") or ""):
+        return {"verified": True, "why": "a one-line Claude read answered", "verifiedAtMs": at}
+    if any(w in out.lower() for w in _READER_AUTH_WORDS):
+        return {"verified": False, "why": first[:200] or "Claude could not sign in", "verifiedAtMs": at}
+    return {"verified": None, "why": "a one-line Claude read did not answer (%s) - UNKNOWN" % (first[:120] or "no output"),
+            "verifiedAtMs": at}
 
 
 def _claude_cred_mtime(_paths=None):
@@ -518,7 +577,7 @@ def _auth_checked_say(au, now_ms):
     return "checked just now" if m < 1 else ("checked %d min ago" % m if m < 120 else "checked %d h ago" % (m // 60))
 
 
-def _claude_auth_state(now=None, _probe=None, _thread=None, _watching=None, _cred=None, _bin=None):
+def _claude_auth_state(now=None, _probe=None, _thread=None, _watching=None, _cred=None, _bin=None, _verify=None):
     """The last `claude auth status` answer (None until the first has come back). Starts a refresh when it is older than
     its cadence and none is running - the caller never waits on the CLI. -> dict | None
 
@@ -557,6 +616,16 @@ def _claude_auth_state(now=None, _probe=None, _thread=None, _watching=None, _cre
                     _v = dict((_probe or _csi.status)(_b) or {})
                     _v["bin"] = _bin_short(_b)        # v3863 (#238) - the lamp names the binary it asked
                     _v["askedAtMs"] = int(time.time() * 1000)   # REG-3227 - WHEN the CLI said it (after a failed read?)
+                    # v3881 (REG-3392) - its "signed in" cannot see a revoked login: when a lamp is about to trust it,
+                    # one real line from Claude says whether it can sign in - at most every CLAUDE_VERIFY_EVERY_S, and
+                    # at once after the credentials moved (a sign-in just happened)
+                    if _v.get("loggedIn") is True and _CLAUDE_VERIFY.get("want"):
+                        _fresh_cred = now < float(_CLAUDE_AUTH.get("fastUntil") or 0)
+                        if _fresh_cred or time.time() - float(_CLAUDE_VERIFY.get("at") or 0) >= CLAUDE_VERIFY_EVERY_S:
+                            _CLAUDE_VERIFY["val"] = (_verify or _claude_verify_call)(_b)
+                            _CLAUDE_VERIFY["at"] = time.time()
+                    if isinstance(_CLAUDE_VERIFY.get("val"), dict):
+                        _v.update(_CLAUDE_VERIFY["val"])
                     if _v.get("loggedIn") is not True:
                         _v["why"] = "%s (asked %s)" % (_v.get("why") or "no answer", _v["bin"])
                     _CLAUDE_AUTH["val"] = _v
@@ -655,8 +724,8 @@ def _reader_health(now_ms=None, rows=None, g5=None, use_cache=True, auth=None):
         if ts and now - ts <= _READER_WINDOW_MS:
             mine.append((ts, r))
     mine.sort(key=lambda x: x[0])
-    failed = [(t, r) for t, r in mine if r.get("readFailed") or r.get("mode") == "empty"]
-    good = [(t, r) for t, r in mine if not (r.get("readFailed") or r.get("mode") == "empty")]
+    failed = [(t, r) for t, r in mine if _claude_row_missed(r)]
+    good = [(t, r) for t, r in mine if not _claude_row_missed(r)]
     lamp = {"ok": len(good), "failed": len(failed), "lastOkTs": (good[-1][0] if good else None),
             "lastFailTs": (failed[-1][0] if failed else None), "needsLogin": False}
     if not mine:
@@ -665,8 +734,10 @@ def _reader_health(now_ms=None, rows=None, g5=None, use_cache=True, auth=None):
                                           "no Claude read in the last 2 h on this PC - whether it can read is UNKNOWN"))
     else:
         last_t, last = mine[-1]
-        if last.get("readFailed") or last.get("mode") == "empty":
+        if _claude_row_missed(last):
             _why = str(last.get("readErr") or "").strip()
+            if not _why and _claude_backed_up(last):     # REG-3392 - Grok answered: Claude's own miss is in `backup`
+                _why = str(last.get("backup") or "").replace("backup:", "", 1).strip()
             if not _why:
                 for ln in str(last.get("raw") or "").splitlines():
                     if ln.strip():
@@ -701,6 +772,22 @@ def _reader_health(now_ms=None, rows=None, g5=None, use_cache=True, auth=None):
         lamp.update(state="off", kind="signed-out", needsLogin=True,
                     why="Claude is signed out on this PC (%s, %s) - click CLAUDE or SIGN IN at the top right, or run "
                         "`claude` and type /login" % (_au.get("why") or "claude auth status", _auth_checked_say(_au, now)))
+    elif (isinstance(_au, dict) and _au.get("loggedIn") is True and _au.get("verified") is False
+          and lamp.get("state") != "on"):
+        # v3881 (REG-3392) - the status file says signed in, and a real line from Claude could not sign in: OFF, its words
+        lamp.update(state="off", kind="signed-out", needsLogin=True,
+                    why="Claude cannot sign in on this PC: %s - `claude auth status` says signed in, but it cannot see a "
+                        "revoked login. Click CLAUDE or SIGN IN at the top right, or run `claude` and type /login"
+                        % (_au.get("why") or "a one-line read failed"))
+    elif (isinstance(_au, dict) and _au.get("loggedIn") is True and lamp.get("kind") == "signed-out"
+          and isinstance(_au.get("askedAtMs"), (int, float)) and lamp.get("lastFailTs")
+          and _au["askedAtMs"] > lamp["lastFailTs"] and not _verified_after(_au, lamp.get("lastFailTs"), now)):
+        # v3881 (REG-3392) - "signed in" from the status file alone is not trusted after a sign-in failure: a revoked
+        # login reads loggedIn: true. A real line is asked; until it answers the lamp stays OFF.
+        if _live:
+            _CLAUDE_VERIFY["want"] = True
+        lamp["why"] = ("%s. `claude auth status` says signed in, but that cannot see a revoked login - a one-line Claude "
+                       "read is confirming it" % lamp.get("why", "Claude could not sign in"))
     elif (isinstance(_au, dict) and _au.get("loggedIn") is True and lamp.get("kind") == "signed-out"
           and isinstance(_au.get("askedAtMs"), (int, float)) and lamp.get("lastFailTs")
           and _au["askedAtMs"] > lamp["lastFailTs"]):
@@ -715,6 +802,14 @@ def _reader_health(now_ms=None, rows=None, g5=None, use_cache=True, auth=None):
           and lamp.get("kind") == "timed-out"):
         lamp["why"] = "%s. Claude is signed in (%s, %s)" % (lamp["why"], _au.get("why") or "claude auth status",
                                                           _auth_checked_say(_au, now))
+    elif (isinstance(_au, dict) and _au.get("loggedIn") is True and lamp.get("state") == "unknown"
+          and lamp.get("kind") != "timed-out" and not _verified_after(_au, None, now)):
+        # v3881 (REG-3392) - no read to judge by and only the status file's word: not green until a real line answers
+        if _live:
+            _CLAUDE_VERIFY["want"] = True
+        lamp["why"] = ("Claude says it is signed in on this PC (%s, %s), but that check cannot see a revoked login - a "
+                       "one-line Claude read is confirming it" % (_au.get("why") or "claude auth status",
+                                                                   _auth_checked_say(_au, now)))
     elif isinstance(_au, dict) and _au.get("loggedIn") is True and lamp.get("state") == "unknown":
         # his "nothing is showing me the CLAUDE specifically on and off light" (2026-09-30): a PC that has not read
         # in 2 h sat at "?" while its CLI said signed in. Signed in is connected; the reads still decide once there

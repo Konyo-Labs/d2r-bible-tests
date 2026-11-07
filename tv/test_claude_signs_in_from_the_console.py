@@ -226,7 +226,8 @@ class TheConsoleAnswersOnlyItsOwnPage(unittest.TestCase):
         self.assertEqual((out["claude"]["state"], out["claude"]["needsLogin"]), ("off", True), out["claude"])
         self.assertIn("SIGN IN", out["claude"]["why"])
         self.assertIn("/login", out["claude"]["why"])
-        on = ca._reader_health(now_ms=now, rows=[], g5={}, auth={"loggedIn": True, "why": "claude auth status: signed in"})
+        on = ca._reader_health(now_ms=now, rows=[], g5={}, auth={"loggedIn": True, "why": "claude auth status: signed in",
+                                                                  "verified": True, "verifiedAtMs": now - 1000})  # REG-3392
         self.assertEqual((on["claude"]["state"], on["claude"]["needsLogin"]), ("on", False),
                          "a signed-in PC with no recent read still shows '?' instead of ON")
         self.assertIn("signed in", on["claude"]["why"])
