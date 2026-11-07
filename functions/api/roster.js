@@ -637,7 +637,8 @@ export const API_FIELDS = {
   // v3849 - a shadow draws the owner's frame: the console's picture map (console_snapshot.pictures_of) rides the
   // profile, and a name missing here refused the whole profile exactly as REG-3080 did.
   pictures: ["ok", "pictures", "origin"],
-  saves: ["ok", "state", "d2sWhy", "why"],   // #251 (REG-3079) - the owner's reason its saves name what they name
+  // #251 (REG-3079) - the owner's reason its saves name what they name; #104 - and their save NAMES (savesOk: names only)
+  saves: ["ok", "state", "d2sWhy", "why", "chars"],
 };
 const WORLD = { machine: ["mac", "windows"], profile: ["main", "ladder"],
                 os: ["MAC", "WINDOWS", "LINUX", "ANDROID", "THIS MACHINE"] };
@@ -677,8 +678,23 @@ export function worldOk(text) {
          !/[\x00-\x1f"<>\\]/.test(w.ledger);
 }
 
+// #104 - the saves answer's names ride a shadow, NAMES ONLY (console_snapshot.saves_of): each row {name} and nothing else,
+// a D2R name (2-15 letters, at most one '-' or '_'), 40 at most - an id count or any other key is refused
+const D2R_NAME = /^[A-Za-z][A-Za-z_-]{1,14}$/;
+export function savesOk(text) {
+  let v;
+  try { v = JSON.parse(text); } catch (e) { return false; }
+  if (!v || typeof v !== "object" || Array.isArray(v)) return false;
+  if (Object.keys(v).some((k) => API_FIELDS.saves.indexOf(k) === -1)) return false;
+  if (v.chars === undefined || v.chars === null) return true;
+  if (!Array.isArray(v.chars) || v.chars.length > 40) return false;
+  return v.chars.every((r) => r && typeof r === "object" && !Array.isArray(r) && Object.keys(r).length === 1 &&
+    typeof r.name === "string" && D2R_NAME.test(r.name) && (r.name.match(/[-_]/g) || []).length <= 1);
+}
+
 export function apiOk(name, text) {   // exported for its law (REG-3080): the field check a profile store must pass
   if (name === "world") return worldOk(text);
+  if (name === "saves") return savesOk(text);
   let v;
   try { v = JSON.parse(text); } catch (e) { return false; }
   if (!v || typeof v !== "object" || Array.isArray(v)) return false;

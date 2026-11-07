@@ -127,6 +127,25 @@ NODE_OPTIONS carrying the hook: the old laws [5] and [59] GREEN, the same [59] R
 node_trace.cjs --require out of the NODE_OPTIONS they inherit, and every one of the 20 + 15 red-proofs goes RED under the
 outer hook. Lesson: a red-proof proven by hand outside the prover is not proven on the prover's environment - when a change
 arms something for every law run, re-prove the laws that test the same arming under it.
+### REG-3337 - A PC WITH A BUILDS BOOK NEVER SENT ITS SAVE NAMES, SO ITS SHADOW SHOWED NO CHARACTERS (v3878, board #104)
+His words (11-06, looking at Dean's shadow): "how is it logical that NO character from his reels frames have any character
+names synced from his console" - "through shadow mode for dean im saying i cant see any characters being properly synced
+from his console". MEASURED by GET on Dean's console: /api/saves answers 18 save names; /api/chars_learned answers 0
+characters. Two paths, both shut for him:
+- the roster's characters section carries save names (REG-2929) ONLY on a PC with no builds book - Dean has three builds,
+  so his section was builds (REG-2929 wrote it down: "NOT DONE: a PC whose console publishes a builds book sends no save
+  names ... needs a new field the worker and the snapshot do not take yet");
+- the snapshot's saves answer (REG-3079) carried the reason only, and the page ignored saves in a shadow by design.
+NOW the snapshot's saves answer carries `chars` as NAMES ONLY (console_snapshot.saves_of: no id count, no folder count, no
+file list; a D2R name - 2-15 letters, at most one '-' or '_' - or nothing; 40 at most); the worker's savesOk takes exactly
+that and refuses an id count or any other key; the page keeps the owner's answer in its own slot (_cbSavesShadow), so a
+shadow never draws THIS PC's names as theirs (REG-2927 holds) and leaving the shadow leaves none behind; the shadow's in-game
+list draws them, class and level UNKNOWN, "Named by their PC's save folder". The worker and the console change in this one
+version (REG-3080 is the scar of changing one side). NOT this entry: class, level and proof from his reels - the lobby IS
+matched (800x402: 151 of 130,358 frames) and no name is ever learned - board #106.
+Laws: test_the_characters_room_says_why_its_saves_name_what_they_name (re-aimed to his ask + 3 cases: the shadow draws only
+D2R names and none after it leaves, the snapshot keeps names only, the worker refuses anything but names) and
+test_the_characters_room_names_this_pcs_saves (its shadow red-proof re-anchored); red-proofs PROVEN (5 new or re-aimed).
 ### REG-3336 - A BOSS'S HOVER CARD DREW ITS SPRITE IN THE 52x78 ITEM FRAME (v3877, board #102, caught in its own render batch)
 His ask: "image cursor floating enlarged of that item/boss or whatever image im hovering ... just like the rest of the
 console". MEASURED on the v3877 render (Uniques > Quick wins, the Gull card, 1440 and 1024, the page's own mouseover):

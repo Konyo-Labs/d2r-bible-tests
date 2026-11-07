@@ -70,8 +70,10 @@ API_FIELDS = {
     # shadow's magnifier draws the OWNER's frame (never a picture of the viewer's own). Names and words only.
     "pictures": ("ok", "pictures", "origin"),
     # #251 (REG-3079) - why this PC's saves name what they name (no .d2s here, no save folder): the shadow's Characters
-    # room says the owner's reason. The names ride in the roster's characters section (REG-2929), not here.
-    "saves": ("ok", "state", "d2sWhy", "why"),
+    # room says the owner's reason. #104 (his 11-06: "through shadow mode for dean ... i cant see any characters being
+    # properly synced from his console") - and the save NAMES, names only (saves_of): a PC with a builds book never sent
+    # them, because its roster characters section is its builds (REG-2929's NOT DONE).
+    "saves": ("ok", "state", "d2sWhy", "why", "chars"),
 }
 # The world the owner's board drew in: which machine and profile its stores belong to, the ledger it keeps and the
 # OS it reported. The shadow frame takes these instead of the viewer's own, so a Mac viewing a Windows owner draws
@@ -200,6 +202,30 @@ _ORIGIN = re.compile(r"^https?://[A-Za-z0-9][A-Za-z0-9.\-]{0,252}(?::[0-9]{1,5})
 PICTURES_MAX = 40
 
 
+_D2R_NAME = re.compile(r"^[A-Za-z][A-Za-z_-]{1,14}$")
+
+
+def saves_of(raw):
+    """#104 - this PC's saves answer as a shadow may hold it: the reason fields as they are, and `chars` as NAMES ONLY -
+    no id count, no folder count, no file list leaves the PC (REG-2929: "only names leave"). A name that is no D2R name
+    (2-15 letters, at most one '-' or '_') is dropped; 40 at most. A list that would not read stays null."""
+    if not isinstance(raw, dict):
+        return raw
+    out = {k: raw[k] for k in ("ok", "state", "d2sWhy", "why") if k in raw}
+    ch = raw.get("chars")
+    if isinstance(ch, list):
+        names = []
+        for r in ch:
+            n = r.get("name") if isinstance(r, dict) else None
+            if (isinstance(n, str) and _D2R_NAME.match(n) and len(re.findall(r"[-_]", n)) <= 1
+                    and n not in names and len(names) < 40):
+                names.append(n)
+        out["chars"] = [{"name": n} for n in names]
+    elif "chars" in raw:
+        out["chars"] = None
+    return out
+
+
 def pictures_of(raw):
     """The console's picture answer -> {ok, pictures, origin?} with closed shapes, or None.
 
@@ -233,6 +259,8 @@ def api_store(name, payload, left_out=None):
         payload = world_of(payload)
     if name == "pictures":
         payload = pictures_of(payload)
+    if name == "saves":
+        payload = saves_of(payload)
     if not fields or not isinstance(payload, dict):
         return None
     kept = {f: payload[f] for f in fields if f in payload}

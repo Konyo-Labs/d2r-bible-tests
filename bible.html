@@ -11975,7 +11975,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
   }
   function _proof(t){
     /* #251 (REG-2927) - a character only this PC's save folder names: its name is all the folder holds */
-    if (t && t.save && !t.seen) return '<div class="chx-proof" data-tier="SAVE">Named by this PC\u2019s save folder · class, level and proof UNKNOWN until the reels see it</div>';
+    if (t && t.save && !t.seen) return '<div class="chx-proof" data-tier="SAVE">Named by ' + (document.documentElement.classList.contains('tvd-shadow') ? 'their' : 'this') + ' PC\u2019s save folder · class, level and proof UNKNOWN until the reels see it</div>';
     var lv = t.pendingLevel ? ' · level ' + (t.pendingLevel | 0) + ' waits for one more look' : '';
     return '<div class="chx-proof" data-tier="' + esc(t.tier || 'UNKNOWN') + '">' + _chxSeal(t.tier, t.looks, t.trials, t.lastTs, true)
       + esc(lv) + '</div>';
@@ -12286,7 +12286,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       : (function(){ var w = window._chxNoneWhy(); return '<span title="A character joins once your reels see its character-select screen twice">No characters seen yet</span>'
           + ' <span class="chx-none-why" data-none-why="' + w.k + '" title="' + esc(w.long) + '">· ' + esc(w.short) + '</span>'; })()) + '</div>';
     /* #251 (REG-2927) - names from the save folder with the reels UNKNOWN: the cards stand, and the room says what is not known */
-    if (ing.length && S.state === 'unknown') cards = '<div class="chx-sec-sub" data-sub="saves-only">Named by this PC\u2019s save folder. Class, level and proof are UNKNOWN here \u2014 ' + esc(S.why) + '.</div>' + cards;
+    if (ing.length && S.state === 'unknown') cards = '<div class="chx-sec-sub" data-sub="saves-only">Named by ' + (document.documentElement.classList.contains('tvd-shadow') ? 'their' : 'this') + ' PC\u2019s save folder. Class, level and proof are UNKNOWN here \u2014 ' + esc(S.why) + '.</div>' + cards;
     var sim = S.sim.map(function(id){ return _card(id, all[id], id === mainId); }).join('');
     /* v3855 item D (his ask): Your builds sit at the TOP, under the header, and + New character is their first card */
     var newTile = '<button type="button" class="chx-newtile" data-act="new" onclick="window._charsNew()">'
@@ -77247,12 +77247,21 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
      saves know joins the in-game list with its class and level UNKNOWN. null = never answered. A shadow never asks:
      their saves are on their PC. A row counts only with its id count (the saves' own shape), never another answer's. */
   var _cbSaves = null;
+  /* #104 (his 11-06: "through shadow mode for dean ... i cant see any characters being properly synced from his console") -
+     THE OWNER'S SAVES, KEPT APART. A shadow's frame answers /api/saves from the owner's upload, which now carries their save
+     NAMES (names only - console_snapshot.saves_of, the worker's savesOk). They land here, never in _cbSaves, so a shadow can
+     never draw THIS PC's names as theirs (REG-2927) and leaving the shadow never leaves their names on this page. */
+  var _cbSavesShadow = null;
   function _cbSavesTake(d){
     if (!d || typeof d !== 'object' || !(d.chars === null || Array.isArray(d.chars))) return;
+    if (document.documentElement.classList.contains('tvd-shadow')) {
+      if (d.ok === true || !(_cbSavesShadow && _cbSavesShadow.ok === true)) _cbSavesShadow = d;
+      return;
+    }
     if (d.ok === true || !(_cbSaves && _cbSaves.ok === true)) _cbSaves = d;
   }
   /* REG-3079 - a shadow asks too: its frame answers /api/saves from the OWNER's upload, so the room says their reason.
-     Their names still never join this page's templates (_cbSaveRows); they ride in the roster's characters section. */
+     #104 - and their save NAMES now join the shadow's in-game list from that same answer (_cbSavesShadow, names only). */
   function _cbSavesAsk(){
     try {
       if (!/^https?:$/.test(location.protocol) || typeof fetch !== 'function') return Promise.resolve();
@@ -77262,7 +77271,11 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     } catch (e) { return Promise.resolve(); }
   }
   function _cbSaveRows(){
-    if (document.documentElement.classList.contains('tvd-shadow')) return [];
+    if (document.documentElement.classList.contains('tvd-shadow')) {
+      /* #104 - the OWNER's names, from their upload: names only (no id count leaves their PC), a D2R name or nothing */
+      var o = (_cbSavesShadow && _cbSavesShadow.ok === true && Array.isArray(_cbSavesShadow.chars)) ? _cbSavesShadow.chars : [];
+      return o.filter(function(r){ return r && typeof r.name === 'string' && /^[A-Za-z][A-Za-z_-]{1,14}$/.test(r.name); });
+    }
     var c = (_cbSaves && _cbSaves.ok === true && Array.isArray(_cbSaves.chars)) ? _cbSaves.chars : [];
     return c.filter(function(r){ return r && typeof r.name === 'string' && r.name && typeof r.ids === 'number'; });
   }
@@ -77272,7 +77285,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
      with no place to look, their console did not send it). A hidden reason reads as nothing. In a shadow it is the
      owner's, answered from their upload. -> text | null (never answered, or nothing to say) */
   window._cbSavesSay = function(){
-    var S = _cbSaves;
+    var S = document.documentElement.classList.contains('tvd-shadow') ? _cbSavesShadow : _cbSaves;   /* #104 - theirs in a shadow */
     if (!S || typeof S !== 'object') return null;
     if (typeof S.d2sWhy === 'string' && S.d2sWhy) return S.d2sWhy;
     if (!Array.isArray(S.chars) && typeof S.why === 'string' && S.why) return S.why;

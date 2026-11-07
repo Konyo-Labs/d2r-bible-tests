@@ -9,7 +9,7 @@ The console answers GET /api/saves (REG-2926) with the names this PC's save fold
   * a name only the saves know joins the in-game list with class and level UNKNOWN - never a guess - and the room's card
     says it is named by this PC's save folder;
   * a row counts only with its id count (the saves' own shape), a failed answer never replaces a good one, and a shadow
-    never takes them (their saves are on their PC).
+    never takes THIS PC's (#104: a shadow draws the OWNER's names from their upload, kept in their own slot).
 Driven on the whole page in node (tv/vault_page_node), the real functions, a fetch that answers in the same turn.
 RED_PROOF below.
 """
@@ -135,10 +135,10 @@ RED_PROOF = [
      "find": "&& r.name && typeof r.ids === 'number'; });",
      "replace": "&& r.name; });",
      "matches": 1, "needs": "node"},
-    {"why": "#251 (REG-2927) - a shadow takes this PC's save names as theirs",
+    {"why": "#251 (REG-2927) - a shadow takes this PC's save names as theirs (#104: the shadow reads its own slot)",
      "file": "bible.html",
-     "find": "  function _cbSaveRows(){\n    if (document.documentElement.classList.contains('tvd-shadow')) return [];\n",
-     "replace": "  function _cbSaveRows(){\n",
+     "find": "      var o = (_cbSavesShadow && _cbSavesShadow.ok === true && Array.isArray(_cbSavesShadow.chars)) ? _cbSavesShadow.chars : [];\n",
+     "replace": "      var o = (_cbSaves && _cbSaves.ok === true && Array.isArray(_cbSaves.chars)) ? _cbSaves.chars : [];\n",
      "matches": 1, "needs": "node"},
     {"why": "#251 (REG-2927) - a save-only card wears the reels' tier line instead of saying where its name comes from",
      "file": "bible.html",

@@ -5,8 +5,11 @@ His two PCs hold no .d2s (his characters are online), and tv/d2s_read.saves says
 online characters live on Battle.net". A PC with no save folder, or a platform with no place to look, says why its
 list is UNKNOWN. That reason is drawn under the room's in-game list - a hidden reason reads as nothing. In a shadow the
 reason is the OWNER's: their console uploads its saves answer (control_app._profile_saves -> console_snapshot.API_FIELDS
-"saves" -> the worker's API_NAMES), and the shadow frame answers /api/saves from that upload. Their names still never
-join this page's templates; they ride in the roster's characters section (REG-2929).
+"saves" -> the worker's API_NAMES), and the shadow frame answers /api/saves from that upload.
+#104 (his 11-06: "through shadow mode for dean ... i cant see any characters being properly synced from his console") - the
+upload now carries their save NAMES too, names only (console_snapshot.saves_of; the worker's savesOk refuses an id count),
+because a PC with a builds book never sent them (its roster characters section is its builds - REG-2929's NOT DONE). The
+shadow keeps them apart from this PC's (_cbSavesShadow) and draws them in its in-game list, class and level UNKNOWN.
 The board half is driven on the whole page in node (tv/vault_page_node); the upload half in Python. RED_PROOF below.
 """
 import io
@@ -76,20 +79,54 @@ class TheRoomSaysTheSavesReason(unittest.TestCase):
     def test_a_pc_whose_saves_hold_a_d2s_says_nothing(self):
         self.assertIsNone(_room(WITH_D2S)["line"])
 
-    def test_a_shadow_says_the_owners_reason_and_takes_none_of_their_names(self):
+    def test_a_shadow_says_the_owners_reason_and_draws_their_names(self):
         o = _room(FOLDER, shadow=True)
         self.assertEqual(o["line"], "<b>Their PC’s saves:</b> " + D.NO_D2S_SAY,
                          "a shadow's room hid the owner's reason, or said it as this PC's")
-        self.assertNotIn("Konyolock", o["names"], "a shadow took the owner's save names as this page's templates")
+        self.assertIn("Konyolock", o["names"], "#104 - a shadow's in-game list never draws the owner's save names")
+
+    def test_a_shadow_draws_only_d2r_names_and_none_after_it_leaves(self):
+        o = VPN.run(r"""
+        var SAVES = { ok: true, state: 'folder', chars: [ { name: 'Crest' }, { name: 'Morph' }, { name: '<b>x</b>' } ] };
+        function _syncThen(v){ return { then: function(f){ var r; try { r = f(v); } catch (e) { r = undefined; } return _syncThen(r); },
+                                        catch: function(){ return this; } }; }
+        document.documentElement.classList.add('tvd-shadow');
+        window._cbSavesTakeForLaw(SAVES);
+        OUT.shadow = window._cbTemplates().map(function(t){ return t.name; });
+        document.documentElement.classList.remove('tvd-shadow');
+        OUT.home = window._cbTemplates().map(function(t){ return t.name; });
+        """, timeout=600)
+        self.assertEqual(o["shadow"], ["Crest", "Morph"], "the owner's names did not draw, or a non-D2R name drew")
+        self.assertEqual(o["home"], [], "the owner's save names stayed on this page after the shadow ended")
 
 
 class TheOwnersReasonRidesTheUpload(unittest.TestCase):
 
-    def test_the_snapshot_keeps_the_reason_and_nothing_else(self):
-        name, text = CS.api_store("saves", dict(FOLDER))
+    def test_the_snapshot_keeps_the_reason_and_the_names_only(self):
+        raw = dict(FOLDER, chars=[{"name": "Konyolock", "ids": 1}, {"name": "Crest", "ids": 3}, {"name": "x1"},
+                                  {"name": "Konyolock", "ids": 1}])
+        name, text = CS.api_store("saves", raw)
         self.assertEqual(name, "d2r_api_saves")
-        self.assertEqual(json.loads(text), {"ok": True, "state": "folder", "d2sWhy": D.NO_D2S_SAY},
-                         "the saves answer did not ride, or carried its names and counts beside the reason")
+        self.assertEqual(json.loads(text), {"ok": True, "state": "folder", "d2sWhy": D.NO_D2S_SAY,
+                                            "chars": [{"name": "Konyolock"}, {"name": "Crest"}]},
+                         "the saves answer did not ride, or carried an id count, a folder count or a non-D2R name")
+        name, text = CS.api_store("saves", dict(NO_FOLDER))
+        self.assertIsNone(json.loads(text)["chars"], "a list that would not read became a list")
+
+    def test_the_worker_refuses_anything_but_names(self):
+        import shutil
+        import subprocess
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node is absent - the worker's check is UNMEASURED here, not passing")
+        prog = ("import('" + os.path.join(ROOT, "functions", "api", "roster.js").replace("\\", "/") + "').then(m => {"
+                "const f = (o) => m.apiOk('saves', JSON.stringify(o));"
+                "process.stdout.write(JSON.stringify([f({ok: true, chars: [{name: 'Crest'}]}), f({ok: true, chars: [{name: 'Crest', ids: 2}]}),"
+                " f({ok: true, chars: [{name: '../x'}]}), f({ok: false, chars: null, why: 'w'}), f({ok: true, folders: 1})]));});")
+        r = subprocess.run([node, "--input-type=module", "-e", prog], capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr[-600:])
+        self.assertEqual(json.loads(r.stdout), [True, False, False, True, False],
+                         "the worker took an id count, a non-D2R name or a field the console never sends")
 
     def test_the_worker_takes_what_the_console_sends(self):
         js = _read("functions/api/roster.js")
@@ -118,6 +155,26 @@ if __name__ == "__main__":
 
 
 RED_PROOF = [
+    {"why": "#104 - a shadow's in-game list never draws the owner's save names again",
+     "file": "bible.html",
+     "find": "      return o.filter(function(r){ return r && typeof r.name === 'string' && /^[A-Za-z][A-Za-z_-]{1,14}$/.test(r.name); });\n",
+     "replace": "      return [];\n",
+     "matches": 1, "needs": "node"},
+    {"why": "#104 - the owner's saves land in this PC's slot, so their names stay on the page after the shadow",
+     "file": "bible.html",
+     "find": "      if (d.ok === true || !(_cbSavesShadow && _cbSavesShadow.ok === true)) _cbSavesShadow = d;\n      return;\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "#104 - the upload carries the id counts beside the names",
+     "file": "tv/console_snapshot.py",
+     "find": "        out[\"chars\"] = [{\"name\": n} for n in names]\n",
+     "replace": "        out[\"chars\"] = ch\n",
+     "matches": 1},
+    {"why": "#104 - the worker takes any saves row, id counts and all",
+     "file": "functions/api/roster.js",
+     "find": "  if (name === \"saves\") return savesOk(text);\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
     {"why": "#251 (REG-3079) - the room never draws the saves' reason",
      "file": "bible.html",
      "find": "'<div class=\"chx-sec-list\">' + cards + _savesSayHtml() + _surfaceWitnessHtml()",
@@ -140,7 +197,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "#251 (REG-3079) - the snapshot keeps no saves answer, so the owner's reason never leaves their PC",
      "file": "tv/console_snapshot.py",
-     "find": "    \"saves\": (\"ok\", \"state\", \"d2sWhy\", \"why\"),\n",
+     "find": "    \"saves\": (\"ok\", \"state\", \"d2sWhy\", \"why\", \"chars\"),\n",
      "replace": "",
      "matches": 1},
     {"why": "#251 (REG-3079) - the worker refuses a profile that carries d2r_api_saves",
