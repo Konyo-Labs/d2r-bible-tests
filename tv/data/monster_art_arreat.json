@@ -987,6 +987,138 @@
      158
     ]
    }
+  },
+  "d2fam_greater_mummy.gif": {
+   "family": "Greater Mummy",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-greatermummy.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/greatermummy.gif",
+   "sourceSha1": "e5f113448555d1815f529b72e6318c1aec994c9b",
+   "sha1": "3143e2b5171c9ee5e47832bf7d71a1f9f084c01f",
+   "bytes": 22726,
+   "trim": {
+    "box": [
+     14,
+     14,
+     125,
+     132
+    ],
+    "from": [
+     125,
+     150
+    ]
+   },
+   "grokCold": "Tall reddish-brown humanoid, white skull mask, grey hip cloth and leg wraps, one large curved pale blade.",
+   "names": []
+  },
+  "d2fam_sabre_cat.gif": {
+   "family": "Sabre Cat",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-sabrecat.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/pantherwoman.gif",
+   "sourceSha1": "323a1f4e08277d91c581f96704bc1f5012f9620a",
+   "sha1": "c2ebd1d9c3871fef611807727320b226df23f626",
+   "bytes": 23656,
+   "trim": {
+    "box": [
+     21,
+     21,
+     95,
+     129
+    ],
+    "from": [
+     125,
+     150
+    ]
+   },
+   "grokCold": "Red-and-black armored humanoid, tall dark helmet, round gold shield, long thin dark weapon.",
+   "names": []
+  },
+  "d2fam_fetish.gif": {
+   "family": "Fetish",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-fetish.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act3/fetish.gif",
+   "sourceSha1": "6f76081ebe63c586f0c9482fae8ac19f4e947468",
+   "sha1": "ed6abc23ba9a6754a22a68c90f2e97093c5dd363",
+   "bytes": 6737,
+   "trim": {
+    "box": [
+     47,
+     46,
+     77,
+     137
+    ],
+    "from": [
+     125,
+     150
+    ]
+   },
+   "grokCold": "Unclear — the figure is tiny in the cell; only a small upright green-and-brown shape shows, and the face, limbs, and any weapon are too small to read. | looked at by Claude enlarged: a small green-and-brown Fetish",
+   "names": []
+  },
+  "d2fam_scarab_demon.gif": {
+   "family": "Scarab Demon",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act2-scarabdemon.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act2/scarabdemon.gif",
+   "sourceSha1": "dc02770c648fc89dc97767e0c414e3049e1e42b6",
+   "sha1": "49a6c5b2f336a9cf32d16aaa4f1e2031384f451f",
+   "bytes": 17376,
+   "trim": {
+    "box": [
+     8,
+     16,
+     98,
+     135
+    ],
+    "from": [
+     125,
+     150
+    ]
+   },
+   "grokCold": "Dark grey spider-like body, many long thin legs, two points rising off the back, a small red mark at the front.",
+   "names": []
+  },
+  "d2fam_fallen.gif": {
+   "family": "Fallen",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act1-fallen.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act1/fallen.gif",
+   "sourceSha1": "89a401d311fd137c1842199023640d00aacdf003",
+   "sha1": "c9e1947b439af84824536350b63cfe1795a30a62",
+   "bytes": 11421,
+   "trim": {
+    "box": [
+     16,
+     48,
+     95,
+     111
+    ],
+    "from": [
+     125,
+     150
+    ]
+   },
+   "grokCold": "Small bright-red horned humanoid holding a short dark blade.",
+   "names": []
+  },
+  "d2fam_zakarum_zealot.gif": {
+   "family": "Zakarum Zealot",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act3-zakarumzealot.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act3/zakarumzealot.gif",
+   "sourceSha1": "064ef34555c9b17e2bd047c01cd2276dbc10bf3f",
+   "sha1": "f824a0659056f2edc0da04e8456e6685085ba278",
+   "bytes": 13208,
+   "trim": {
+    "box": [
+     0,
+     22,
+     99,
+     121
+    ],
+    "from": [
+     125,
+     150
+    ]
+   },
+   "grokCold": "Pale humanoid, white helm with tall side pieces, gold chest, white skirt, brown boots, curved pale sword.",
+   "names": []
   }
  },
  "packs": {
@@ -1092,6 +1224,414 @@
    ],
    "sha1": "c9133fce6d69bd1f173d1b307337b3b73c752a22",
    "why": "his 11-07 'for pits ... HD extracted art thats related and properly matched': the wiki's own image for The Pit, an extracted D2 render of the cave level (torches, stairs between tiers, Fallen); the lit middle cut to 16:10. The Arreat Summit's map pages carry Tamoe Highland, not The Pit. Looked at before it was wired."
+  }
+ },
+ "rejected": {
+  "d2fam_council_member.gif": {
+   "why": "the Grok CLI read it cold as a grey hunched beast in side view - not a robed Council Member; Travincal uses its roster's Zakarum Zealot instead",
+   "grokCold": "Grey hunched beast in side view, pointed head, red patch on the body, pale claws or blades low at the front."
+  }
+ },
+ "zones": {
+  "Abaddon": {
+   "monster": null,
+   "file": null,
+   "by": "no verified source names a monster for this zone - its zone art stays, never a guessed sprite"
+  },
+  "Ancient Tunnels": {
+   "monster": "Plague Bearer",
+   "file": "d2fam_zombie.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Ancient's Way": {
+   "monster": null,
+   "file": null,
+   "by": "no verified source names a monster for this zone - its zone art stays, never a guessed sprite"
+  },
+  "Arachnid Lair": {
+   "monster": "Giant Lamprey",
+   "file": "d2fam_sand_maggot.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Arcane Sanctuary": {
+   "monster": "The Summoner",
+   "file": "d2mon_The_Summoner.gif",
+   "by": "the act boss whose fight this zone is (the page's BOSSES)"
+  },
+  "Arreat Plateau": {
+   "monster": "Thresh Socket",
+   "file": "d2mon_Thresh_Socket.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Barracks": {
+   "monster": "The Smith",
+   "file": "d2mon_The_Smith.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Black Marsh": {
+   "monster": "Blood Hawk Nest",
+   "file": "d2fam_blood_hawk_nest.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Blood Moor": {
+   "monster": "Zombie",
+   "file": "d2fam_zombie.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Bloody Foothills": {
+   "monster": "Dac Farren",
+   "file": "d2mon_Dac_Farren.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Burial Grounds": {
+   "monster": "Blood Raven",
+   "file": "d2mon_Blood_Raven.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Canyon of the Magi": {
+   "monster": "Crusher",
+   "file": "d2fam_wendigo.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Catacombs": {
+   "monster": "Andariel",
+   "file": "d2mon_Andariel.gif",
+   "by": "the act boss whose fight this zone is (the page's BOSSES)"
+  },
+  "Cathedral": {
+   "monster": "Bone Ash",
+   "file": "d2mon_Bone_Ash.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "City of the Damned": {
+   "monster": "Abyss Knight",
+   "file": "d2fam_undead_horror.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Claw Viper Temple": {
+   "monster": "Guardian",
+   "file": "d2fam_greater_mummy.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Cold Plains": {
+   "monster": "Bishibosh",
+   "file": "d2mon_Bishibosh.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Crypt": {
+   "monster": "Bonebreaker",
+   "file": "d2mon_Bonebreaker.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Crystalline Passage": {
+   "monster": "Snow Drifter",
+   "file": "d2fam_abominable.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Dark Wood": {
+   "monster": "Spike Fiend",
+   "file": "d2fam_spike_fiend.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Den of Evil": {
+   "monster": "Corpsefire",
+   "file": "d2mon_Corpsefire.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Disused Fane": {
+   "monster": "Flesh Hunter",
+   "file": "d2fam_corrupt_rogue.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Drifter Cavern": {
+   "monster": "Abominable",
+   "file": "d2fam_abominable.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Dry Hills": {
+   "monster": "Sabre Cat",
+   "file": "d2fam_sabre_cat.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Durance of Hate": {
+   "monster": "Mephisto",
+   "file": "d2mon_Mephisto.gif",
+   "by": "the act boss whose fight this zone is (the page's BOSSES)"
+  },
+  "Far Oasis": {
+   "monster": "Beetleburst",
+   "file": "d2mon_Beetleburst.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Flayer Dungeon": {
+   "monster": "Witch Doctor Endugu",
+   "file": "d2mon_Witch_Doctor_Endugu.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Flayer Jungle": {
+   "monster": "Flayer",
+   "file": "d2fam_fetish.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Forgotten Tower": {
+   "monster": null,
+   "file": null,
+   "by": "no verified source names a monster for this zone - its zone art stays, never a guessed sprite"
+  },
+  "Frigid Highlands": {
+   "monster": "Eldritch the Rectifier",
+   "file": "d2mon_Eldritch_the_Rectifier.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Frozen River": {
+   "monster": "Frozenstein",
+   "file": "d2mon_Frozenstein.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Frozen Tundra": {
+   "monster": "Bone Archer",
+   "file": "d2fam_skeleton_archer.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Glacial Trail": {
+   "monster": "Bonesaw Breaker",
+   "file": "d2mon_Bonesaw_Breaker.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Great Marsh": {
+   "monster": "Bog Creature",
+   "file": "d2fam_frog_demon.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Halls of Anguish": {
+   "monster": "Night Lord",
+   "file": "d2fam_blood_lord.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Halls of Pain": {
+   "monster": "Death Brawler",
+   "file": "d2fam_death_mauler.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Halls of Vaught": {
+   "monster": "Nihlathak",
+   "file": "d2mon_Nihlathak.gif",
+   "by": "the act boss whose fight this zone is (the page's BOSSES)"
+  },
+  "Halls of the Dead": {
+   "monster": "Hollow One",
+   "file": "d2fam_greater_mummy.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Harem": {
+   "monster": "Blunderbore",
+   "file": "d2fam_blunderbore.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Icy Cellar": {
+   "monster": "Snapchip Shatter",
+   "file": "d2mon_Snapchip_Shatter.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Infernal Pit": {
+   "monster": "Death Lord",
+   "file": "d2fam_blood_lord.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Jail": {
+   "monster": "Pitspawn Fouldog",
+   "file": "d2mon_Pitspawn_Fouldog.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Kurast Bazaar": {
+   "monster": "Stormtree",
+   "file": "d2mon_Stormtree.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Kurast Causeway": {
+   "monster": "Infidel",
+   "file": "d2fam_sand_raider.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Lost City": {
+   "monster": "Dark Elder",
+   "file": "d2mon_Dark_Elder.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Lut Gholein Sewers": {
+   "monster": "Radament",
+   "file": "d2mon_Radament.gif",
+   "by": "his sewers: Radament is Lut Gholein Sewers Level 3 (the page's own Quick wins place)"
+  },
+  "Maggot Lair": {
+   "monster": "Coldworm the Burrower",
+   "file": "d2mon_Coldworm_the_Burrower.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Mausoleum": {
+   "monster": "Skeleton",
+   "file": "d2fam_skeleton.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Moo Moo Farm": {
+   "monster": "The Cow King",
+   "file": "d2mon_The_Cow_King.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Nihlathak's Temple": {
+   "monster": "Pindleskin",
+   "file": "d2mon_Pindleskin.gif",
+   "by": "Pindleskin stands at the temple's gate (his red portal from Anya)"
+  },
+  "Outer Cloister": {
+   "monster": "Black Rogue",
+   "file": "d2fam_corrupt_rogue.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Outer Steppes": {
+   "monster": "Cliff Lurker",
+   "file": "d2fam_leaper.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Palace Cellar": {
+   "monster": "Blunderbore",
+   "file": "d2fam_blunderbore.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Pit of Acheron": {
+   "monster": null,
+   "file": null,
+   "by": "no verified source names a monster for this zone - its zone art stays, never a guessed sprite"
+  },
+  "Plains of Despair": {
+   "monster": "Izual",
+   "file": "d2mon_Izual.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "River of Flame": {
+   "monster": "Hephasto The Armorer",
+   "file": "d2mon_Hephasto_The_Armorer.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Rocky Waste": {
+   "monster": "Dung Soldier",
+   "file": "d2fam_scarab_demon.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Ruined Temple": {
+   "monster": "Battlemaid Sarina",
+   "file": "d2mon_Battlemaid_Sarina.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Sewers": {
+   "monster": "Icehawk Riftwing",
+   "file": "d2mon_Icehawk_Riftwing.gif",
+   "by": "the Kurast Sewers' super-unique (Radament's are Lut Gholein's)"
+  },
+  "Spider Cavern": {
+   "monster": "Sszark the Burning",
+   "file": "d2mon_Sszark_the_Burning.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Spider Forest": {
+   "monster": "Cloud Stalker",
+   "file": "d2fam_blood_hawk.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Stony Field": {
+   "monster": "Rakanishu",
+   "file": "d2mon_Rakanishu.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Stony Tomb": {
+   "monster": "Creeping Feature",
+   "file": "d2mon_Creeping_Feature.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Swampy Pit": {
+   "monster": "Preserved Dead",
+   "file": "d2fam_mummy.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Tal Rasha's Chamber": {
+   "monster": "Duriel",
+   "file": "d2mon_Duriel.gif",
+   "by": "the act boss whose fight this zone is (the page's BOSSES)"
+  },
+  "Tal Rasha's Tombs": {
+   "monster": "Ancient Kaa the Soulless",
+   "file": "d2mon_Ancient_Kaa_the_Soulless.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Tamoe Highland": {
+   "monster": "Dark Lancer",
+   "file": "d2fam_corrupt_rogue_spearwoman.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "The Cave": {
+   "monster": "Coldcrow",
+   "file": "d2mon_Coldcrow.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "The Chaos Sanctuary": {
+   "monster": "Diablo",
+   "file": "d2mon_Diablo.gif",
+   "by": "the act boss whose fight this zone is (the page's BOSSES)"
+  },
+  "The Hole": {
+   "monster": "Misshapen",
+   "file": "d2fam_tainted.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "The Pit": {
+   "monster": "Devilkin",
+   "file": "d2fam_fallen.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Throne of Destruction": {
+   "monster": "Achmel the Cursed",
+   "file": "d2mon_Achmel_the_Cursed.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Tower Cellar": {
+   "monster": "Blood Clan",
+   "file": "d2fam_goatman.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Travincal": {
+   "monster": "Zakarum Zealot",
+   "file": "d2fam_zakarum_zealot.gif",
+   "by": "the wiki's Travincal roster; the Council Member sprite was rejected cold"
+  },
+  "Tristram": {
+   "monster": "Griswold",
+   "file": "d2mon_Griswold.gif",
+   "by": "the zone's super-unique (the page's Quick wins places)"
+  },
+  "Underground Passage": {
+   "monster": "Misshapen",
+   "file": "d2fam_tainted.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Upper Kurast": {
+   "monster": "Zealot",
+   "file": "d2fam_zakarum_zealot.gif",
+   "by": "the wiki's roster for the zone (its first monster with a verified family sprite)"
+  },
+  "Valley of Snakes": {
+   "monster": "Claw Viper",
+   "file": "d2fam_claw_viper.gif",
+   "by": "the zone's most common random pack in the page's own data"
+  },
+  "Worldstone Chamber": {
+   "monster": "Baal",
+   "file": "d2mon_Baal.gif",
+   "by": "the act boss whose fight this zone is (the page's BOSSES)"
+  },
+  "Worldstone Keep": {
+   "monster": "Wretched Defiler",
+   "file": "d2fam_putrid_defiler.gif",
+   "by": "the zone's most common random pack in the page's own data"
   }
  }
 }

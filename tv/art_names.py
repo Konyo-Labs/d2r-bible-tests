@@ -62,6 +62,7 @@ DOORS = (
     ("bible.html", r"art/' \+ pk :", "monster-packs"),                        # _qwTile, a random pack's sprite
     ("bible.html", r"art/' \+ MONSTER_PACK_ART\[k\]", "monster-packs"),       # D2IO_ART, the floating card
     ("bible.html", r"art/' \+ ar :", "area-runs"),                            # _qwTile, an area run's own place (The Pit)
+    ("tv/control_ui.html", r"/art/' \+ mon \+ '\"", "console-tz-monsters"),    # #108 - a Terror Zone's own monster
 )
 
 
@@ -173,6 +174,7 @@ def _feeds(board, console, manifest):
     f["qw-su-sprites"] = [v for v in _object_values(board, "var _QW_SU_ART = {") if re.match(_FILE + "$", v)]
     f["monster-packs"] = [v for v in _object_values(board, "const MONSTER_PACK_ART = {", quote='"') if re.match(_FILE + "$", v)]
     f["area-runs"] = [v for v in _object_values(board, "const AREA_RUN_ART = {", quote='"') if re.match(_FILE + "$", v)]
+    f["console-tz-monsters"] = [v for v in _object_values(console, "var TZ_MONSTER = {", quote='"') if re.match(_FILE + "$", v)]
     return f
 
 

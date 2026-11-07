@@ -242,6 +242,8 @@ goes through _tzKey, the key the zone art resolves by. Rendered on a private con
 Lord, the Death Mauler, Bonesaw Breaker and the Abominable on their cards. The board's own Terror Zone rows (tzZoneRowHtml) read
 the SAME picks by the same key - two copies of one record, the law keeps them equal - and every sprite fills its tile. Law:
 test_each_terror_zone_wears_its_own_monster, red-proofs PROVEN (4); tv/art_names.py knows both new art doors.
+Lord, the Death Mauler, Bonesaw Breaker and the Abominable on their cards. Law: test_each_terror_zone_wears_its_own_monster,
+red-proofs PROVEN (3); tv/art_names.py knows the console's new art door.
 ### REG-3357 - QUICK WINS: EVERY PACK MONSTER WEARS ITS OWN SPRITE, THE PIT IS THE CAVE, UBERS DIFFER, AND THE COLUMNS ARE IN HIS ORDER (v3879, board #108 / #109)
 His 11-07 asks, on Bane Ash screenshots (v3877): "for banished and for pits and for spike freind ... either .gif or a HD extracted
 art thats related and properly matched for those and others like it"; "classic.battle.net ... these are wonderful try this
