@@ -169,7 +169,7 @@ class HeartTwosCutUsesIt(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3243 - the factor is left behind the re-measured costs (v3867's shards ran 3x their plan)",
      "file": "proof_shard.py",
-     "find": "PROOF_COST_FACTOR = 0.62\n",
+     "find": "PROOF_COST_FACTOR = 0.72\n",
      "replace": "PROOF_COST_FACTOR = 0.42\n",
      "matches": 1},
     {"why": "REG-2593 - the measured costs are never read: the plan prices every proof from his Mac again",

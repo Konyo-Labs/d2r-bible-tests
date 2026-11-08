@@ -56,7 +56,11 @@ PROOF_OVERHEAD_S = 1.5
 #: their own provedAt gaps): median 0.62 (p25 0.36, p75 0.89). The 0.42 was two weeks and one prover count old, and
 #: proof_costs.json priced 422 gates - every other gate rode this ratio, so v3867's plan modelled each shard at ~18 min
 #: and they ran 18-55: shard 7 reached the 55-minute deadline with 6 proofs unstarted. proof_costs.json now prices 1,276.
-PROOF_COST_FACTOR = 0.62
+#: v3881 (GitHub's round 3 on 4282aab10, shard 1: test_a_proof_shard_plan_is_balanced RED untampered) - RE-DERIVED: REG-3401
+#: carries every measured price forward and raised the committed table, so the ratio moved under the constant - the
+#: committed table's median is 0.703 (1,231 gates, p25 0.42, p75 1.01) and the round's own seed 0.741 (p25 0.45, p75 1.05);
+#: 0.62 sat 0.121 from the seed, past the law's 0.1. 0.72 sits within 0.03 of both.
+PROOF_COST_FACTOR = 0.72
 #: REG-2593 - the lanes one runner proves on (2 cores). A shard's wall is the larger of its work over its lanes and its
 #: BROWSER work, which runs one gate at a time (#42 ONE BROWSER AT A TIME) - the old plan balanced only the first, and
 #: its slowest shard ran 2.1x the mean
