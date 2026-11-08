@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3882",
+  "ver": "v3883",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3882: Windows PCs open - blind laws go red there, a d2jsp sign-in survives its window, the import outruns the prover",
+  "note": "v3883: the Fleet in plain words, the ALTs prove their blind checks beside the import, slivers join their reel",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

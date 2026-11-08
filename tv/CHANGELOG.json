@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3883",
+    "date": "2026-11-08",
+    "items": [
+      "The Fleet speaks plain words - OFFLINE, READY, UPDATING, BLOCKED, UNKNOWN - no Diablo words for machine state",
+      "A closed Fleet row wraps whole phrases, never mid-phrase, and is two lines at a 1512 window",
+      "A blind check a PC still owes is proved beside GitHub import - the work ALT locks no longer wait 83 min",
+      "The prover record names what it gave way to - an import was written down as he started playing",
+      "GitHub proofs import faster on a slow PC - the bible page is no longer re-read for every key (2x faster)",
+      "A loose frame beside a recording joins that recording and leaves with it - the hourly hand-off slivers",
+      "The AI read pictures are named for what they are, not probe artifacts",
+      "A backup ledger holds only stores the restore knows - his un-ticks stay in the full export",
+      "Every set piece is found by its own name in the search and opens its set card",
+      "The Throne of Destruction wears Lister the Tormentor, its top gun",
+      "Every price answer names its item - a paused or signed-out answer drew No item card",
+      "A shadow PC D2JSP lamp says UNKNOWN on the owner PC instead of refusing the ask",
+      "A safety-net red is checked again on a quiet PC - a red only under load closes no lock",
+      "The pre-flight runs the render gate and asks the second eye whenever the main push would",
+      "The proof-shard plan derives its cost factor from the table it plans with"
+    ]
+  },
+  {
     "ver": "v3882",
     "date": "2026-11-08",
     "items": [
@@ -16,7 +37,9 @@
       "GrokBot tally lines and card titles no longer misfile his verdicts (REG-3413, #117)",
       "The Fleet starting-up and open-doors states are photographed at six widths (render target fleet-boot-river)",
       "Narrow proof keys - a law is traced past what cannot read the tree, never past what can (REG-3393)",
-      "The import ETA is the recent rate, and a quiet import says no progress for N min (REG-3414)", "An import batch is sized by time - the work ALT re-keyed one batch for ever and kept nothing (REG-3415)", "A prover sandbox keeps its files, and a red over a sandbox that lost files is never a find (REG-3416)"
+      "The import ETA is the recent rate, and a quiet import says no progress for N min (REG-3414)",
+      "An import batch is sized by time - the work ALT re-keyed one batch for ever and kept nothing (REG-3415)",
+      "A prover sandbox keeps its files, and a red over a sandbox that lost files is never a find (REG-3416)"
     ]
   },
   {

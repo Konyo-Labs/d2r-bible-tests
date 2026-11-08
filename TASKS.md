@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3882** | `(this commit)` | v3882 — Windows PCs open - blind laws go red there, a d2jsp sign-in survives its window, the import outruns the prover |
+| **v3883** | `(this commit)` | v3883 — the Fleet in plain words, the ALTs prove their blind checks beside the import, slivers join their reel |
+| **v3882** | `127e9b79` | v3882 — Windows PCs open - blind laws go red there, a d2jsp sign-in survives its window, the import outruns the prover |
 | **v3881** | `e40be10a` | v3881 — Each PC in one Diablo word on the Fleet, card names fit a phone, Spirit opens the runeword, every set searchable |
 | **v3880** | `72e67cb6` | v3880 — Each PC in one Sanctuary word, the State panel draws every PC, and no proof shard gets a chunk its cut ends |
 | **v3879** | `ffd5f76c` | v3879 — Every Quick wins monster, uber and Terror Zone wears its own sprite, and the ALT proofs stop stalling |
