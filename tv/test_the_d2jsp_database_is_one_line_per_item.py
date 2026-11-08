@@ -30,7 +30,8 @@ except Exception:
 NODE = shutil.which("node") or shutil.which("nodejs")
 BIBLE = os.path.join(os.path.dirname(HERE), "bible.html")
 FUNCS = ["d2jspEscText", "d2jspFgText", "d2jspSeenText", "d2jspPriceSyncLine", "d2jspTierSay", "d2jspDatabaseButton",
-         "d2jspBackendHtml", "d2jspBatchHtml", "d2jspDbArrange"]
+         "d2jspBackendHtml", "d2jspBatchHtml", "d2jspDbArrange",
+         "d2jspItemKind", "d2jspItemArtHtml"]   # v3884 (#130) - the row's colour and art
 
 
 def _fn(src, name):
@@ -78,10 +79,29 @@ def _node(js):
     return json.loads(r.stdout)
 
 
-def _render(view):
+def _render(view, board=False):
+    """board=True gives the functions a stand-in for the board's item database (kind + art), as the page would"""
     src = io.open(BIBLE, encoding="utf-8").read()
-    js = "\n".join(_fn(src, f) for f in FUNCS) + "\nprocess.stdout.write(JSON.stringify(d2jspBatchHtml(%s)));" % json.dumps(view)
+    pre = ""
+    if board:
+        pre = ("var window = {artUrl: function(n){ return {'shako': 'art/shako.png', 'jah': 'art/jah.png'}[n] || null; },"
+               " d2rResolveItem: function(n){ return n === 'shako' ? {kind: 'unique', canonical: 'Harlequin Crest'}"
+               " : (n === 'Arachnid Mesh' ? {kind: 'unique', canonical: n} : {kind: 'unknown', canonical: null}); },"
+               " _mtEntryFor: function(n){ return n === 'jah' ? {q: 'c'} : {q: null}; }};\n")
+    js = pre + "\n".join(_fn(src, f) for f in FUNCS) + "\nprocess.stdout.write(JSON.stringify(d2jspBatchHtml(%s)));" % json.dumps(view)
     return _node(js)
+
+
+def _cells(h):
+    """each item row's three value cells, their text with the tags stripped -> [[normal, perfect, posts], ...]"""
+    import re
+    rows = re.findall(r'<summary>(.*?)</summary>', h, re.S)
+    out = []
+    for r in rows:
+        cells = re.findall(r'<span class="d2jsp-db-c [^"]*">(.*?)</span></span>|<span class="d2jsp-db-c [^"]*">(.*?)(?=<span class="d2jsp-db-c|</span></summary>|$)', r, re.S)
+        vals = [re.sub(r"<[^>]+>", "", a or b) for a, b in cells]
+        out.append(vals)
+    return out
 
 
 def _arrange(q, key):
@@ -117,20 +137,47 @@ class TheDatabaseIsOneLinePerItem(unittest.TestCase):
         self.assertIn('data-d2jsp-db-group="fresh"><h3>Fresh · 2</h3>', h)
         self.assertIn('data-d2jsp-db-group="stale"><h3>Stale · 1</h3>', h)
         self.assertIn('data-d2jsp-db-group="unknown"><h3>Freshness not known · 1</h3>', h)
-        self.assertIn(u"shako <span class=\"d2jsp-db-k\">normal\u00a040\u00a0fg\u00a0· perfect\u00a080\u00a0fg\u00a0· 3\u00a0posts</span>", h)
-        self.assertIn(u"anni <span class=\"d2jsp-db-k\">normal\u00a0not\u00a0priced\u00a0· perfect\u00a0not\u00a0priced\u00a0· 0\u00a0posts</span>", h)
+        # v3884 (#130) - the row is a grid: the item, then three cells; their words stay (hidden labels) for a reader and here
+        import re
+        rows = dict((re.search(r'<span class="d2jsp-db-nm">([^<]*)</span>', r).group(1), re.sub(r"<[^>]+>", "", r))
+                    for r in re.findall(r'<summary>(.*?)</summary>', h, re.S))
+        self.assertIn(u"normal\u00a040\u00a0fg· perfect\u00a080\u00a0fg·\u00a03\u00a0posts", rows["shako"])
+        self.assertIn(u"normal\u00a0not\u00a0priced· perfect\u00a0not\u00a0priced·\u00a00\u00a0posts", rows["anni"])
 
     def test_a_wrap_never_strands_a_middot(self):
         """the v3881 look at 390: 'Griffon's Eye normal 95 fg · perfect 160 fg' / '· 4 posts' - a line began with the middot.
         Every middot in an item's line is bound to the fact before it (a no-break space), so a wrap ends a line on it"""
+        # v3884 (#130) - each fact is its OWN grid cell now, so no line can start with a middot; and a cell's value is one
+        # unbreakable unit (no-break spaces only), so no wrap tears '160' from 'fg'
         h = _render(VIEW)
         import re
-        lines = re.findall(u'<span class="d2jsp-db-k">(normal[ \u00a0][^<]*)</span>', h)
-        self.assertEqual(len(lines), 4, h)
-        for l in lines:
-            self.assertNotIn(" ·", l.replace(u"\u00a0·", ""), "a middot a wrap can strand: %r" % l)
-            # each fact is one unbreakable unit: the ONLY breakable spaces are the ones after a middot
-            self.assertEqual(l.count(" "), l.count(u"\u00a0· "), "a fact a wrap can tear apart ('perfect' / '160 fg'): %r" % l)
+        cells = re.findall(r'<span class="d2jsp-db-c ([^"]*)">(.*?)(?=<span class="d2jsp-db-c |</summary>)', h, re.S)
+        self.assertEqual(len(cells), 12, "four items, three cells each: %r" % [c[0] for c in cells])
+        for cls, body in cells:
+            val = re.sub(r'<span class="d2jsp-db-l">[^<]*</span>', "", body)
+            val = re.sub(r"<[^>]+>", "", val)
+            self.assertNotIn(" ", val, "a value a wrap can tear apart ('160' / 'fg'): %r" % val)
+
+    def test_the_prices_stand_in_one_column_under_their_titles(self):
+        """* v3884 (#130, his 11-08: "the prices should be more grid ... on the right ... in the same column so they are
+        vertically aligned") - the header and every row share ONE grid; a group says its columns once"""
+        h = _render(VIEW)
+        self.assertEqual(h.count('<div class="d2jsp-db-head" aria-hidden="true"><span>item</span><span>normal</span>'
+                                 '<span>perfect</span><span>posts</span></div>'), 3, "each group says its columns")
+        css = io.open(BIBLE, encoding="utf-8").read()
+        self.assertIn("#tab-d2jsp .d2jsp-db-item > summary,#tab-d2jsp .d2jsp-db-head{display:grid;grid-template-columns:"
+                      "minmax(0,1fr) minmax(0,11ch) minmax(0,12ch) minmax(0,9ch);", css,
+                      "the rows and the header no longer share one grid - the prices would not align")
+        self.assertIn("#tab-d2jsp .d2jsp-db-item > summary > .d2jsp-db-k{display:contents}", css)
+
+    def test_a_name_wears_its_kind_and_its_art(self):
+        """v3884 (#130) - the item in its rarity's colour with its HD art (the board's hover card rides the art);
+        an item the board cannot place claims no colour and draws no art"""
+        h = _render(VIEW, board=True)
+        self.assertIn('<span class="d2jsp-db-name d2jsp-q-unique"><span class="d2art-wrap d2jsp-iart xs" aria-label="shako">', h)
+        self.assertIn('<span class="d2jsp-db-name d2jsp-q-unique"><span class="d2jsp-db-nm">Arachnid Mesh</span>', h,
+                      "an item with no art drew a picture anyway")
+        self.assertIn('<span class="d2jsp-db-name"><span class="d2jsp-db-nm">anni</span>', h, "an unplaced item claimed a colour")
 
     def test_its_own_scroll_panel_with_a_find_and_sort_bar(self):
         h = _render(VIEW)
@@ -165,12 +212,26 @@ class TheDatabaseIsOneLinePerItem(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3884 (#130) - the rows and the header stop sharing one grid: the prices drift out of their column",
+     "file": "bible.html",
+     "find": "#tab-d2jsp .d2jsp-db-item > summary,#tab-d2jsp .d2jsp-db-head{display:grid;",
+     "replace": "#tab-d2jsp .d2jsp-db-head{display:grid;", "matches": 1},
+    {"why": "v3884 (#130) - a group no longer says its columns",
+     "file": "bible.html",
+     "find": "      + '<div class=\"d2jsp-db-head\" aria-hidden=\"true\"><span>item</span><span>normal</span><span>perfect</span><span>posts</span></div>'\n",
+     "replace": "", "matches": 1},
+    {"why": "v3884 (#130) - the item's name loses its rarity colour",
+     "file": "bible.html",
+     "find": "      var line = '<span class=\"d2jsp-db-name' + (_kind ? ' d2jsp-q-' + _kind : '') + '\">'",
+     "replace": "      var line = '<span class=\"d2jsp-db-name' + '\">'", "matches": 1},
     {"why": "v3881 look - a wrap tears a fact apart again ('perfect' / '160 fg')",
      "file": "bible.html",
-     "find": "        + NB + '· perfect' + NB + (pf != null", "replace": "        + NB + '· perfect ' + (pf != null", "matches": 1},
-    {"why": "v3881 look - a wrap strands the database line's middot at the start of a line again",
+     "find": "'<span class=\"d2jsp-db-l\">· perfect' + NB + '</span>' + (pf != null ? d2jspEscText(d2jspFgText(pf)) + NB + 'fg'",
+     "replace": "'<span class=\"d2jsp-db-l\">· perfect' + NB + '</span>' + (pf != null ? d2jspEscText(d2jspFgText(pf)) + ' fg'",
+     "matches": 1},   # v3884 re-anchor (#130 - the value cell)
+    {"why": "v3881 look / v3884 cells - a wrap tears the posts count from its word again ('3' / 'posts')",
      "file": "bible.html",
-     "find": "        + NB + '· ' + (posts == null ?", "replace": "        + ' · ' + (posts == null ?",
+     "find": "posts + NB + (posts === 1 ? 'post' : 'posts')))", "replace": "posts + ' ' + (posts === 1 ? 'post' : 'posts')))",
      "matches": 1},
     {"why": "REG-3390 - every item prints the weighing rule again",
      "file": "bible.html", "find": "d2jspBackendHtml(it, null, {noLaw: true})", "replace": "d2jspBackendHtml(it, null, {})",

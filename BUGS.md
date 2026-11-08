@@ -112,6 +112,47 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3427 - A RUNEWORD PRICE CHECK DREW NO CARD: "ENIGMA IS NOT ONE UNIQUE, SET PIECE OR RUNEWORD" (v3884, #130)
+His words 11-08 ~10:25, with his D2JSP screenshots (Enigma: "No item card - Enigma is not one unique, set piece or runeword in
+this page's item database"; Shako: the two cards): "the engima for price check should be rendering the image on the left of a
+normal tier engima and its price under the price check. and for the right side same thing just perfect tier and its price.
+like it is for shako". d2jspTierCardsHtml asked the shared resolver (d2rResolveItem), which knows uniques and set pieces
+only, and is not to be widened (v2267: its callers encode their own rules). The item database's own entry (_mtEntryFor)
+already draws a runeword - MEASURED in a scratch Chrome: Enigma 'JahIthBer', +2 to All Skills ... 750-775 Defense, and with
+{top} +775 Defense; art/hd_plate_mail.png. Now a name the resolver does not place is asked of the item database, and a
+runeword draws its NORMAL and PERFECT cards. Its base is not on record, so the card says so (defense and damage UNKNOWN).
+Law: test_the_price_check_draws_normal_and_perfect_cards (+1 case), red-proof PROVEN.
+
+### REG-3428 - THE PRICE WAS ONE GREY SENTENCE UNDER EACH CARD (v3884, #130)
+His words 11-08: "i want emphasis on the prices and different color so its seen. more title based and structure so its seen
+and understood clearly". The card's price was d2jspTierSay's sentence in --text-muted ("Normal price 40 fg, from 18 weighted
+posts, effective 17.74, Wilson lower bound 0.089."). Now each tier's price is a titled block (d2jspTierPriceHtml): the tier's
+name small (NORMAL PRICE), the price large in its own colour (--fs-display, the rare yellow no other figure on the desk
+wears), the evidence in a quiet line under it; the sentence stays in its title for the hover. An unpriced tier reads
+"unknown", never a number. Pixels (scratch Chrome): "NORMAL PRICE / 1500 fg" the largest figure on the Enigma card. Law: the
+cards law (+1 case), red-proof PROVEN.
+
+### REG-3429 - THE ADVANCED DATABASE'S PRICES WANDERED: ONE SENTENCE PER ITEM, NO COLUMN (v3884, #130)
+His words 11-08: "same for the advanced section it looks good but just the prices should be more grid for and symmetric
+meaning on the right yes but maybe more to the right and in the same column so they are vertically aligned and nicely
+structured". Each item was "name normal 40 fg · perfect 80 fg · 9 posts" in one run of text, so each price sat wherever its
+name ended. Now the row and a per-group header (ITEM · NORMAL · PERFECT · POSTS) share ONE grid - the item takes the width,
+the three facts stand in fixed right-hand columns, each a whole unit; the words stay as hidden labels for a reader. MEASURED:
+the three cells' right edges at 1197 / 1308 / 1394 px on every row. Law: test_the_d2jsp_database_is_one_line_per_item
+(re-pointed to the cells, +2 cases), red-proofs PROVEN (9 of 9).
+
+### REG-3430 - THE D2JSP DESK NAMED ITEMS IN PLAIN TEXT: NO RARITY COLOUR, NO PICTURE, NO HOVER CARD (v3884, #130)
+His words 11-08: "colors and emphasizing the title based on the the color unique/set/runeword whatever it may be relevant and
+individually to the keyword item. and the image itself HD art should be also see next to the keyword so all images of the
+items just like the rest of the console should be also image cursor floating when hovering it all the details and mods".
+Now the price check's item title and every Advanced row carry the item's HD art (artUrl) and its name in its rarity's colour
+(--q-unique / --q-set / --q-runeword, from the item database's own quality letter; an item it cannot place claims no
+colour and draws no picture). The art is a .d2art-wrap[aria-label] inside #d2jsp-card, added to the mule window's d2Tip
+lane - the board's ONE hover card - so hovering it opens the game's box with every mod (MEASURED: hovering Enigma's art
+opened "Enigma / base UNKNOWN / 'JahIthBer' / Required Level: 65 / +2 to All Skills ..."). A first cut named its class
+d2jsp-art, already the filed-item card's 56px art; renamed d2jsp-iart. Laws: both D2JSP laws (+1 case each), red-proofs
+PROVEN.
+
 ### REG-3426 - THE THRONE OF DESTRUCTION WORE ACHMEL THE CURSED, NOT ITS TOP GUN LISTER (v3883, his 11-08 ruling)
 His words 11-08 ~09:57, on the console's TZ tracker (a screenshot of the live Throne of Destruction tile): "for throne of
 destruction is should be lister the tormentor and not that super unique. so its all related to whichever act is the top
