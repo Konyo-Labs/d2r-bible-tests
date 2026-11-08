@@ -7333,9 +7333,12 @@ def _prove_gate(sandbox, name, filename, proofs, say):
     _cc = _CENSUS.get("cache")                           # #186 - the self-prove census serves and banks (his ruling)
     _CLEAN.pending = [] if _cc is not None else None     # a census PROVEN waits for the closing clean run, as a push's does
     try:
+        _v0 = len(_VANISHED)                             # REG-3416 - what vanished from THIS gate's sandbox while it ran
         verdicts = _prove_gate_proofs(sandbox, name, filename, proofs, say)
         verdicts = _closing_clean(name, verdicts, say)
-        if _CENSUS.get("net") and _clean_went_red(getattr(_CLEAN, "runs", None)) and _net_red_holds(name, say):
+        _gone = [v for v in _VANISHED[_v0:] if v[0] == filename]
+        if _CENSUS.get("net") and _clean_went_red(getattr(_CLEAN, "runs", None)) and _net_red_holds(name, say,
+                                                                                                    vanished=_gone):
             _CENSUS["red"].add(name)                     # REG-3192 - a clean run of it went RED here: the net's find
         if _cc is not None:
             try:
@@ -7466,7 +7469,7 @@ def _red_cases(tail):
     return sorted(out)
 
 
-def _net_red_holds(name, say):
+def _net_red_holds(name, say, vanished=None):
     """REG-3324 (#103 - his 11-07 "if the river proves itself already why does every proof ... need to continue proofing it
     over and over again for it to unlock"). MEASURED 11-06 23:38Z on his Mac: the safety net judged test_control RED once,
     under a load I had put on his machine, and ONE red of one 2,274-case law closed all nine locks; 25 minutes later the
@@ -7477,6 +7480,16 @@ def _net_red_holds(name, say):
     runs = getattr(_CLEAN, "runs", None) or {}
     red = [r for r in runs.values() if isinstance(r, dict) and (r.get("ok") is False or r.get("closingRed") is True)]
     if not red:
+        return False
+    if vanished:
+        # REG-3416 - FILES VANISHED FROM THIS GATE'S SANDBOX WHILE IT RAN (#144): the red is the sandbox's, not the law's.
+        # MEASURED on his Mac 11-08 03:44: 1,328 files gone mid-run (macOS's $TMPDIR sweep), test_control's closing clean
+        # run RED, re-checked in the same broken sandbox, filed as a find - every lock it guards shut for 6 h over a law
+        # that ran 2,274 OK quietly minutes later. Not a find and not a flake: the net could not judge it here (it stays
+        # trusted, closes nothing, and is asked again).
+        _CENSUS.setdefault("vanishedRed", {})[name] = sorted(set(str(v[1]) for v in vanished))[:40]
+        say("     %-52s   ↳ REG-3416: its clean run went RED after %d file(s) VANISHED from its sandbox (#144) - the "
+            "sandbox's verdict, not this law's: never a find, judged again" % (name, len(set(v[1] for v in vanished))))
         return False
     r = red[0]
     cases = _red_cases(r.get("tail"))

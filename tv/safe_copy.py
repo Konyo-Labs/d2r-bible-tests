@@ -205,7 +205,13 @@ def copy(src, dst, force=False, say=print):
     if os.path.exists(dst):
         say("REFUSED — %s already exists. Remove it yourself, deliberately." % dst)
         return 2
-    shutil.copytree(src, dst, ignore=_ignore, symlinks=True)
+    # REG-3416 (v3882) - EVERY FILE IS COPIED WITH FRESH TIMES (shutil.copy: bytes + mode), never the source's (copy2).
+    # MEASURED on his Mac 11-08 03:44: the safety net's heart2 sandbox in $TMPDIR lost 1,328 files mid-run - every one
+    # with an access time of 3.2+ days in the repo, none under 3 (571 of 1,924 tv/*.py read in 3 days all stayed). macOS
+    # sweeps $TMPDIR files unread for 3 days, and copy2 had carried each file's OLD access time into the sandbox, so the
+    # sweeper deleted a live prover's files; test_control's closing clean run went RED (14 failures, 29 errors) and the
+    # net shut every lock for 6 h. A git checkout and CI stamp fresh times too, so no law reads a copy's old ones.
+    shutil.copytree(src, dst, ignore=_ignore, symlinks=True, copy_function=shutil.copy)
     say("copied %d file(s), %.1f MB -> %s" % (files, mb, dst))
     return 0
 

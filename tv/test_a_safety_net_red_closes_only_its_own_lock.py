@@ -463,7 +463,8 @@ class TheLaneRunsTheNetOnlyOverACurrentCensus(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3324 - the net never re-checks a red: one flake under load closes every lock its law guards again",
      "file": "heart2.py",
-     "find": "        if _CENSUS.get(\"net\") and _clean_went_red(getattr(_CLEAN, \"runs\", None)) and _net_red_holds(name, say):\n",
+     "find": ("        if _CENSUS.get(\"net\") and _clean_went_red(getattr(_CLEAN, \"runs\", None)) and _net_red_holds(name, say,\n"
+              "                                                                                                    vanished=_gone):\n"),   # REG-3416 re-anchored
      "replace": "        if _CENSUS.get(\"net\") and _clean_went_red(getattr(_CLEAN, \"runs\", None)):\n",
      "matches": 1},
     {"why": "REG-3324 - a giant law's find closes every lock it names again, whatever class failed (the river shut)",
@@ -518,7 +519,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3192 - the net never learns that a gate's clean run was RED here",
      "file": "tv/heart2.py",
-     "find": "        if _CENSUS.get(\"net\") and _clean_went_red(getattr(_CLEAN, \"runs\", None)) and _net_red_holds(name, say):\n",
+     "find": ("        if _CENSUS.get(\"net\") and _clean_went_red(getattr(_CLEAN, \"runs\", None)) and _net_red_holds(name, say,\n"
+              "                                                                                                    vanished=_gone):\n"),   # REG-3416 re-anchored
      "replace": "        if False:\n",
      "matches": 1},
     {"why": "REG-3192 - a census run (not the net) files a red for the net",

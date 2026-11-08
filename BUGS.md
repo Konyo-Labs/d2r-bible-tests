@@ -112,6 +112,21 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3416 - macOS SWEPT 1,328 FILES OUT OF A LIVE PROVER'S SANDBOX, AND THE SAFETY NET SHUT HIS RIVER ON IT (v3882)
+His words 11-08 ~03:45: "rivers flowing finally? i want it finally rendering that it is not stuck". MEASURED on his Mac
+(read-only: tv/.heart2.json, tv/.self_prove.json.log): at 03:44 the safety net filed "test_control: its clean run is RED
+here, untampered" and every lock test_control guards shut - the Fleet's Mac row "safety net: test_control RED · its locks
+shut", its river "waits on 4 shut locks". The log said why and nothing read it: "#144 a tracked file vanished from a lane
+sandbox: .claude/skills/d2r-bible/SKILL.md, ... (running test_control.py, lane 1) [owner file present; sandbox root present;
+created 6979s ago ...; no sweep journal line names it]", then "the CLOSING clean run is RED (Ran 2274 tests ... FAILED
+(failures=14, errors=29))". 1,328 files had vanished, EVERY one with an access time of 3.2+ days in the repo, none under 3,
+while 571 of 1,924 tv/*.py read in the last 3 days all stayed: macOS sweeps $TMPDIR files unread for 3 days, and
+safe_copy's copytree used copy2, which carried each file's OLD times into the sandbox. test_control ran 2,274 OK quietly
+on the same Mac at 04:06; the log holds two earlier such vanishes. Now safe_copy copies bytes and mode with fresh times
+(as a git checkout and CI do), and a red clean run of a gate whose sandbox lost files while THAT gate ran (heart2._VANISHED)
+is not a find - the net could not judge it here, so it stays trusted, closes nothing and is asked again. Law:
+test_a_vanished_sandbox_is_never_a_find (6 cases, 5 red-proofs RED); test_a_safety_net_red_closes_only_its_own_lock's
+two REG-3324 / REG-3192 anchors re-pointed to the statement this split.
 ### REG-3415 - THE WORK ALT RE-KEYED ONE IMPORT BATCH FOR EVER: ITS LOCKS NEVER SAW GITHUB'S PROOFS (v3882)
 His words 11-08 ~03:45: "the proofs being proven properly on all machines ... and rivers flowing finally?". MEASURED on the
 work ALT (8 GB, i3; read-only SSH, v3880): .proof_release.json - the import of GitHub's v3880 proofs ran 5,425 s, killed at
