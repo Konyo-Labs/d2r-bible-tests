@@ -1,0 +1,88 @@
+{
+ "_why": "v3887 (#154, his 11-08: the characters 'should render the visual character ingame like .gif like we have for bosses/monsters ... so paladin is paladin ... render within each cell'; his reference: the classic animated class sprite). Each class's own idle loop from d2runewizard.com/classes (the site whose Banished loop he picked the same evening), one per class, its starting outfit and empty hands; each frame read cold by the Grok CLI (no names given) and matched to its class. A MAIN wears the same figure in a gold frame - no site serves a geared variant per class (measured 11-08).",
+ "pulledAt": "2026-11-08",
+ "files": {
+  "d2rw_cls_amazon.webp": {
+   "class": "Amazon",
+   "url": "https://d2runewizard.com/classes/loops/amazon.webp",
+   "page": "https://d2runewizard.com/classes/amazon",
+   "sha1": "01bef71378153ee030a7a042db1fe28f4a14e1b0",
+   "bytes": 212860,
+   "frames": 12,
+   "grokCold": "A woman, athletic build, blonde high ponytail and gold circlet, red tunic with gold pauldrons and bracers, short red skirt with straps, red-and-gold greaves and sandals; she holds a small silver hand-axe. Colours: red, gold, silver."
+  },
+  "d2rw_cls_assassin.webp": {
+   "class": "Assassin",
+   "url": "https://d2runewizard.com/classes/loops/assassin.webp",
+   "page": "https://d2runewizard.com/classes/assassin",
+   "sha1": "1f25319a56d070e4be666951b18ac7ef670c34b5",
+   "bytes": 461150,
+   "frames": 30,
+   "grokCold": "A woman, slim build, dark hair tied back, silver breastplate, black-and-gold shoulder and hip plates, silver forearm guard, dark red cloth, black-and-gold boots; hands empty. Colours: black, gold, silver, dark red."
+  },
+  "d2rw_cls_barbarian.webp": {
+   "class": "Barbarian",
+   "url": "https://d2runewizard.com/classes/loops/barbarian.webp",
+   "page": "https://d2runewizard.com/classes/barbarian",
+   "sha1": "167b1cd23308099b563b6098ed1ef13afd1ef65d",
+   "bytes": 1202760,
+   "frames": 56,
+   "grokCold": "A bald, heavily muscled man with a short beard, black tunic under ornate silver shoulder and arm plates with gold trim, a red cloth at the hip, brown boots; fists clenched, nothing held. Colours: black, silver, gold, red, brown."
+  },
+  "d2rw_cls_druid.webp": {
+   "class": "Druid",
+   "url": "https://d2runewizard.com/classes/loops/druid.webp",
+   "page": "https://d2runewizard.com/classes/druid",
+   "sha1": "2c6eed8f70bda0056751aacffe32d305607b6754",
+   "bytes": 530234,
+   "frames": 24,
+   "grokCold": "A stocky man with long reddish hair and a full beard, fur mantle, dark leather and metal plates with bone spikes, bronze scale skirt, metal greaves and worn boots; hands empty. Colours: rust-red, brown fur, dark metal, bronze, bone white."
+  },
+  "d2rw_cls_necromancer.webp": {
+   "class": "Necromancer",
+   "url": "https://d2runewizard.com/classes/loops/necromancer.webp",
+   "page": "https://d2runewizard.com/classes/necromancer",
+   "sha1": "531d99e72e0a758b6f90473930721d72edba755f",
+   "bytes": 470686,
+   "frames": 25,
+   "grokCold": "A lean, pale man with white hair, black armour with a white bone ribcage across the chest, a spiked pauldron, black gloves, bright red trousers and dark greaves; one hand open, nothing held. Colours: black, bone white, red."
+  },
+  "d2rw_cls_paladin.webp": {
+   "class": "Paladin",
+   "url": "https://d2runewizard.com/classes/loops/paladin.webp",
+   "page": "https://d2runewizard.com/classes/paladin",
+   "sha1": "c7b329e114cd184ea14c5fbae75f4dd34991ae7a",
+   "bytes": 358902,
+   "frames": 20,
+   "grokCold": "A muscular dark-skinned man with short black hair, tan leather vest and straps, silver-and-gold shoulder and arm plates, green trousers, gold-trimmed greaves and brown boots; fists raised, nothing held. Colours: tan, green, silver, gold, brown."
+  },
+  "d2rw_cls_sorceress.webp": {
+   "class": "Sorceress",
+   "url": "https://d2runewizard.com/classes/loops/sorceress.webp",
+   "page": "https://d2runewizard.com/classes/sorceress",
+   "sha1": "60d018da1befbd84e40656e96a114bf5dbc62f3d",
+   "bytes": 442548,
+   "frames": 22,
+   "grokCold": "A woman, athletic build, long black hair and a gold circlet, ornate gold-and-green plate with a red gem at the chest, green-and-gold bracers, a grey cloth panel at the front, brown-and-green boots; hands empty. Colours: gold, green, brown, red."
+  },
+  "d2rw_cls_warlock.webp": {
+   "class": "Warlock",
+   "url": "https://d2runewizard.com/classes/loops/warlock.webp",
+   "page": "https://d2runewizard.com/classes/warlock",
+   "sha1": "dfa00d0bd3dd964106bf32b189cbc5603db1b243",
+   "bytes": 623304,
+   "frames": 25,
+   "grokCold": "A broad man with dark grey-streaked hair and beard, large silver pauldrons and plate over a maroon robe with gold trim and patterned greaves; both hands open, a purple glow at the left palm. Colours: silver, maroon, gold, purple."
+  }
+ },
+ "classes": {
+  "Amazon": "art/d2rw_cls_amazon.webp",
+  "Assassin": "art/d2rw_cls_assassin.webp",
+  "Barbarian": "art/d2rw_cls_barbarian.webp",
+  "Druid": "art/d2rw_cls_druid.webp",
+  "Necromancer": "art/d2rw_cls_necromancer.webp",
+  "Paladin": "art/d2rw_cls_paladin.webp",
+  "Sorceress": "art/d2rw_cls_sorceress.webp",
+  "Warlock": "art/d2rw_cls_warlock.webp"
+ }
+}

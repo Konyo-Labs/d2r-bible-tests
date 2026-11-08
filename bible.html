@@ -11500,6 +11500,10 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 #tab-chars .chx-card{position:relative;display:flex;flex-direction:column;gap:9px;padding:14px 14px 12px;border-radius:12px;border:1px solid var(--border-light);background:linear-gradient(180deg,var(--surface-2),var(--surface));min-width:0}
 #tab-chars .chx-card.chx-main{border-color:rgba(240,192,96,.75);box-shadow:0 0 18px -6px rgba(240,192,96,.55),inset 0 1px 0 rgba(255,255,255,.05)}
 #tab-chars .chx-top{display:flex;align-items:center;gap:10px;min-width:0}
+/* v3887 (#154) - a class's animated figure in its card: a framed portrait, the figure filling it; a MAIN's frame is gold and lit */
+#tab-chars .chx-crest.chx-crest-sprite{width:76px;height:76px;border-radius:12px;overflow:hidden;padding:0;border-color:rgba(240,192,96,.28);background:radial-gradient(circle at 50% 35%,rgba(240,192,96,.10),rgba(8,6,4,.95) 72%)}
+#tab-chars .chx-crest-sprite img{width:100%;height:100%;object-fit:contain;transform:scale(1.32);transform-origin:50% 42%;display:block}
+#tab-chars .chx-crest.chx-crest-main{border:2px solid var(--chx-gold);box-shadow:0 0 12px rgba(240,192,96,.45),inset 0 0 10px rgba(240,192,96,.18)}
 #tab-chars .chx-crest{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif-display);font-size:var(--fs-title);font-weight:var(--fw-bold);color:var(--chx-gold);border:1px solid rgba(240,192,96,.45);background:radial-gradient(circle at 50% 30%,rgba(240,192,96,.16),rgba(10,8,5,.9) 70%)}
 #tab-chars .chx-id{flex:1 1 auto;min-width:0}
 #tab-chars .chx-name{font-family:var(--serif-display);font-size:var(--fs-chx-name);font-weight:var(--fw-semibold);color:var(--text);line-height:var(--lh-tight);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -11794,7 +11798,19 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
   var own = Object.prototype.hasOwnProperty;
 
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function arg(v){ return esc(JSON.stringify(String(v))); }   // a JS string literal, safe inside an onclick="" attribute
+  function arg(v){ return esc(JSON.stringify(String(v))); }
+  /* v3887 (#154, his 11-08: the characters "should render the visual character ingame like .gif like we have for bosses/monsters
+     ... so paladin is paladin ... render within each cell") - EACH CARD DRAWS ITS CLASS'S OWN ANIMATED FIGURE: d2runewizard's
+     idle loop per class (the site whose Banished loop he picked), its source, sha1 and cold look in tv/data/class_art.json. A
+     MAIN wears it in a gold frame; a class the map does not name, or a file that will not load, keeps the letter. */
+  var _CHX_CLASS_SPRITE = {"Amazon": "art/d2rw_cls_amazon.webp", "Assassin": "art/d2rw_cls_assassin.webp", "Barbarian": "art/d2rw_cls_barbarian.webp", "Druid": "art/d2rw_cls_druid.webp", "Necromancer": "art/d2rw_cls_necromancer.webp", "Paladin": "art/d2rw_cls_paladin.webp", "Sorceress": "art/d2rw_cls_sorceress.webp", "Warlock": "art/d2rw_cls_warlock.webp"};
+  function _chxCrest(cls, isMain){
+    var c = String(cls || ''), k = c.charAt(0).toUpperCase() + c.slice(1).toLowerCase(), src = own.call(_CHX_CLASS_SPRITE, k) ? _CHX_CLASS_SPRITE[k] : null;
+    var letter = esc(c.charAt(0) || '?');
+    if (!src) return '<span class="chx-crest" aria-hidden="true">' + letter + '</span>';
+    return '<span class="chx-crest chx-crest-sprite' + (isMain ? ' chx-crest-main' : '') + '" aria-hidden="true">'
+      + '<img src="' + esc(src) + '" alt="" loading="lazy" onerror="var p=this.parentNode;p.className=\'chx-crest\';p.textContent=\'' + letter + '\'"></span>';
+  }   // a JS string literal, safe inside an onclick="" attribute
   function $id(id){ return document.getElementById(id); }
 
   /* -> {ok: true, all, raw} | {ok: false, why}. Nothing saved yet is an EMPTY store (measured); a store that cannot be
@@ -11874,7 +11890,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       : '<span class="chx-unk">items UNKNOWN — this build\'s sets could not be counted</span>';
     var isArmed = own.call(armed, id), fo = ' data-for="' + esc(id) + '"';
     return '<article class="chx-card' + (isMain ? ' chx-main' : '') + '" data-build="' + esc(id) + '">'
-      + '<div class="chx-top"><span class="chx-crest" aria-hidden="true">' + esc(String(b.cls || '?').charAt(0)) + '</span>'
+      + '<div class="chx-top">' + _chxCrest(b.cls, isMain)
       +   '<div class="chx-id"><div class="chx-name" title="' + esc(b.name || id) + '">' + esc(b.name || 'Unnamed build') + '</div>'
       +   '<div class="chx-cls">' + cls + ' · ' + lv + ((typeof b.title === 'string' && b.title) ? (' · ' + esc(b.title)) : '') + '</div></div>'
       +   (isMain ? '<span class="chx-badge" data-main="1">★ MAIN</span>' : '') + '</div>'
@@ -12211,7 +12227,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
   };
   function _ghost(t){
     return '<article class="chx-card chx-ghost" data-learned="' + esc(t.key) + '">'
-      + '<div class="chx-top"><span class="chx-crest" aria-hidden="true">' + esc(String(t.cls || '?').charAt(0)) + '</span>'
+      + '<div class="chx-top">' + _chxCrest(t.cls, false)
       +   '<div class="chx-id"><div class="chx-name" title="' + esc(t.name) + '">' + esc(t.name) + '</div>'
       +   '<div class="chx-cls">' + (t.cls ? esc(t.cls) : '<span class="chx-unk">class UNKNOWN</span>') + ' · '
       +     (t.level ? 'level ' + (t.level | 0) : '<span class="chx-unk">level UNKNOWN</span>') + (t.title ? ' · ' + esc(t.title) : '') + '</div></div></div>'

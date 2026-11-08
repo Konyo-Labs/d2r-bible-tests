@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3469 - A CHARACTER CARD WAS A LETTER IN A CIRCLE; IT IS ITS CLASS'S OWN ANIMATED FIGURE NOW (v3887, #154, his 11-08)
+"the mules and the character equipped the main characters should render the visual character ingame like .gif like we have
+for bosses/monsters ... paladin is paladin ... render within each cell" (his reference: the classic animated Sorceress). Each
+card's crest draws its class's idle loop from d2runewizard.com/classes (eight animated WebP, the site whose Banished loop he
+picked), each file's source, sha1 and the Grok CLI's cold look - every one matched to its class with no names given - in
+tv/data/class_art.json; a MAIN's card frames it in gold; an unknown class keeps its letter. NOT DONE, said: the figure is
+each class's starting outfit for mules AND mains - no site serves a geared variant per class (measured 11-08); a geared MAIN is
+his install's legacy sprites (a DCC decoder), still owed on #154. GUARD: tv/test_a_character_card_draws_its_class.py (2
+red-proofs RED).
+
 ### REG-3468 - THE BANISHED DRAWS THE SPRITE HE PICKED (v3887, #158, his 11-08)
 "for the banished i want this .gif specifically rendering https://d2runewizard.com/monsters/The%20Banished". That page draws The
 Banished with its own idle loop (loops/vampire5.webp: monster vampire5, the green Banished, 24 frames, 480x480 animated WebP);
