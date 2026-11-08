@@ -98,8 +98,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-1628 - the console asks the guard without its load probe (the measured ALT defect)",
      "file": "control_app.py",
-     "find": "        r = _sp.guard(busy=_cpu_busy_pct, playing=_sp_yield_here)   # REG-2192 - yield to a sweep, not only his game\n",     # REG-2192 re-anchor
-     "replace": "        r = _sp.guard(playing=_sp_yield_here)   # REG-2192 - yield to a sweep, not only his game\n", "matches": 1},
+     "find": "        r = _sp.guard(busy=_cpu_busy_pct, playing=_sp_prove_yield_here)   # REG-2192 a sweep · #123 an import\n",     # v3882 (#123) re-anchor
+     "replace": "        r = _sp.guard(playing=_sp_prove_yield_here)   # REG-2192 a sweep · #123 an import\n", "matches": 1},
     {"why": "REG-1624 - the guard runs a tick even when no proof is running (a 10 s full tick on an idle PC)",
      "file": "self_prove.py",
      "find": "        pid = mem.get(\"pid\") or _STARTED.get(\"pid\")\n        if not pid:\n            return None\n",

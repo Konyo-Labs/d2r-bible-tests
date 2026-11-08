@@ -1155,7 +1155,7 @@ RED_PROOF = [
     {
         "why": "REG-1960 - an empty stuck list under shut locks says 'every station is draining' again",
         "file": "tv/control_ui.html",
-        "find": "      if (_hs === 'missing' || _hs === 'stale' || _hs === 'unreadable') {\n",
+        "find": "      if ((_hs === 'missing' || _hs === 'stale' || _hs === 'unreadable') && _doorsOpen !== true) {\n",   # v3882 (#120) re-anchor
         "replace": "      if (false) {\n",
         "matches": 1,
     },
@@ -1272,8 +1272,8 @@ RED_PROOF = [
     {
         "why": "REG-1770 - a missing proof draws the same empty chip as a river that is draining",
         "file": "tv/control_ui.html",
-        "find": "    if (census === 'missing' || census === 'stale' || census === 'unreadable') {\n",
-        "replace": "    if (false) {\n",
+        "find": "    } else if (census === 'missing' || census === 'stale' || census === 'unreadable') {\n",   # v3882 (#120) re-anchor
+        "replace": "    } else if (false) {\n",
         "matches": 1,
     },
     {
