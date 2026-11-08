@@ -303,8 +303,8 @@ RED_PROOF = [
     {
         "why": "a crafted item rolls from the affix tables; without it in the pool there is nothing to add",
         "file": "bible.html",
-        "find": "    if (!b || !d.af || !(_cbIsBase(it) || _cbIsCraft(it))) return out;\n    var q = _cbQ(e, it), lim = _cbLimits(q, b),",
-        "replace": "    if (!b || !d.af || !_cbIsBase(it)) return out;\n    var q = _cbQ(e, it), lim = _cbLimits(q, b),",
+        "find": "    if (!b || !d.af || !(_cbIsBase(it) || _cbIsCraft(it) || (it && it[2] === 'r' && (b[22] | 0) > 0))) return out;   /* v3886 (#139) */\n    var q = _cbQ(e, it), lim = _cbLimits(q, b),",
+        "replace": "    if (!b || !d.af || !(_cbIsBase(it) || (it && it[2] === 'r' && (b[22] | 0) > 0))) return out;   /* v3886 (#139) */\n    var q = _cbQ(e, it), lim = _cbLimits(q, b),",
         "matches": 1,
     },
     {

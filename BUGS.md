@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3457 - A SPIRIT SACRED TARGE COULD NOT CARRY ITS +45 ALL RES: THE BUILDER GAVE A WHITE, SUPERIOR OR RUNEWORD CLASS BASE NO AUTOMOD (v3886, #139)
+GrokBot's #28 pass (6720634931, adjudicated REAL 11-08): "the builder offers 0 automod rows for an Auric base". The game draws
+a class base's automod (its automagic group, armor / weapons.txt auto prefix: an Auric shield's Shimmering +5-10 ...
+Chromatic +35-45 all res or Sharp ... Knight's ED/AR; an Amazon bow's or javelin's skill tab; an orb's, a head's, a
+grimoire's) on a normal and a superior item as well, and a runeword keeps the base it was made in. _cbLimits gave white,
+superior and runeword 0 automods, and both affix pools turned a runeword away. Now those take ONE automod from the base's own
+group (a runeword's Edit tab draws a Base Automod block), and the sheet sums it like any picked affix; a base without a group
+(a Monarch, a Diadem) still takes none. Law: test_a_class_base_keeps_its_automod_at_any_quality, red-proofs PROVEN (2).
+NOT in this fix, named: #140 - a class base's +1-3 to individual class skills on a white or superior item (the game's
+"staff mods", itemtypes.txt StaffMods) is a different rule; the builder data does not carry it yet.
+
 ### REG-3453 - QUICK WINS RANKED A LIST SILOSPEN NEVER SHOWS: PITSPAWN FOULDOG IN BANE ASH'S BOSSES (v3886, #150, his 11-08)
 His words, with three silospen screenshots (Bane Ash, MF 500): "what the fack is fouldog doing in here ... i want ALL and
 BOSSES.. and the top 5 when you filter in silopen is the top 5 best runs with those odds for bosses/others .. fouldog is
