@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3472 - --no-preflight SKIPPED THE VERSION-WIDE LAWS, AND v3886 LOST A GITHUB ROUND TO A 123-CHARACTER HISTORY LINE (v3887)
+v3886's pre-flight found 3 reds; 7f7dd2098 fixed them and also rewrote the version's history list to 17 lines; the ship was
+relaunched with --no-preflight (the pre-flight had just run) and GitHub's agent suite went red after 32 minutes:
+test_the_bump_carries_its_changelog_entry - three lines at 123/127/129 characters against its 120 cap. That law runs here in
+seconds, and memory had the rule ("a commit after the pre-flight re-runs the version laws") - knowing it did not run it. The
+explicit skip now skips everything except tv/preflight.py's VERSION_LAWS (the history-list laws) and the anchor census
+(version_check, ~24 s); a red or a timed-out one stops the ci push. Measured on v3887's own tree the first time it ran: it
+named the same 123-character line. GUARD: test_a_version_is_preflighted_before_github_grades_it.NoPreflightStillRunsTheVersionLaws
+(3 red-proofs RED).
+
 ### REG-3471 - DEAN'S 19TH MISSING ITEM HAD NO LINE: ONE "RAINBOW FACET" BIT STOOD FOR EIGHT VARIANTS (v3887, #160, his 11-08)
 "DEANS PROFILE currently is showing 384/403 so hes missing 19 but the cross reference ... adds up to 18.. so which item here isnt
 rendering?". MEASURED from Dean's uploaded found log: six of the eight Rainbow Facet chronicle variants (not Lightning on

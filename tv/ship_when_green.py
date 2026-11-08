@@ -82,6 +82,13 @@ def _preflight(version, say):
     return code
 
 
+def _version_check(version, say):
+    """v3887 (REG-3472) - tv/preflight.py's version-wide laws, run even under --no-preflight. -> 0 green, 1 red, 2 unknown"""
+    import preflight as _pf
+    code, _reds = _pf.version_check(say=say)
+    return code
+
+
 def _git(run, *args, **kw):
     return run(["git"] + list(args), cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace", **kw)
 
@@ -321,7 +328,7 @@ def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN):
 
 
 def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_s=240 * 60, remote="origin", preflight=None,
-         watch=None, watch_publish_s=None):
+         watch=None, watch_publish_s=None, version_check=None):
     """-> exit code: 0 main pushed (and, when watched, Publish green) · 1 GitHub said red / the main push refused /
     Publish red · 2 timed out or unknown · 3 refused. REG-3213: `watch` (ci_watch.watch) names the running jobs in the
     75-minute alert; `watch_publish_s` (main() sets it) follows Publish after the main push."""
@@ -355,6 +362,13 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
             say("ship: the pre-flight is %s - the ci branches are NOT pushed; fix it here, it costs minutes, GitHub costs a round"
                 % ("RED" if pcode == 1 else "UNKNOWN"))
             return 1 if pcode == 1 else 2
+    else:
+        # v3887 (REG-3472) - skipping the pre-flight never skips the version-wide laws: their input is every commit
+        vcode = (version_check or _version_check)(version, say)
+        if vcode != 0:
+            say("ship: --no-preflight still runs the version-wide laws and they are %s - the ci branches are NOT pushed"
+                % ("RED" if vcode == 1 else "UNKNOWN"))
+            return 1 if vcode == 1 else 2
     say("ship: %s at %s -> ci/claude-%s + ci/proof-keys-%s" % (version, sha[:9], version, version))
     # v3866 - A RESUMED SHIP DOES NOT PUSH WHAT IS ALREADY THERE. Measured 2026-11-06 (v3865, resuming after a flaky
     # Playwright re-run): both ci branches already pointed at HEAD, git ran the pre-push hook with NO ref lines (an

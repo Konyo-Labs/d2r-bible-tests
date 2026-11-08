@@ -177,7 +177,8 @@ def _ship(gh):
         t[0] += s
 
     code = SW.ship("v3875", run=gh, fetch=lambda sha: gh.runs(), sleep=sleep, clock=lambda: t[0],
-                   say=said.append, wait_s=600 * 60, preflight=False, watch=None, watch_publish_s=None)
+                   say=said.append, wait_s=600 * 60, preflight=False, watch=None, watch_publish_s=None,
+                   version_check=lambda v, say: 0)
     return code, said
 
 

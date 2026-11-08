@@ -250,7 +250,7 @@ class TheShipWaitsForGitHubOnTheExactCommit(unittest.TestCase):
                 return subprocess.CompletedProcess(argv, 0, SHA + "\n", "")
             return subprocess.CompletedProcess(argv, 0, "", "")
         rc = SW.ship("v3862", run=run, fetch=lambda sha: _all_green(), sleep=lambda s: None, clock=lambda: t[0],
-                     say=said.append, preflight=False)
+                     say=said.append, preflight=False, version_check=lambda v, say: 0)
         self.assertEqual(rc, 0, said)
         ci = [c for c in calls if "push" in c and any("refs/heads/ci/" in x for x in c)]
         self.assertEqual(ci, [], "ci branches already at HEAD were pushed again through the full gate")

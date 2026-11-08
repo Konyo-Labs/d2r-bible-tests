@@ -223,7 +223,82 @@ class TheChangedLawsAreMeasuredFromWhatGitHubLastGraded(unittest.TestCase):
         self.assertEqual(len(owed), 1, "a BLIND proof was not owed: %r" % owed)
 
 
+class NoPreflightStillRunsTheVersionLaws(unittest.TestCase):
+    """v3887 (REG-3472) - v3886 fixed the pre-flight's reds in a commit that also rewrote its history list, shipped with
+    --no-preflight, and GitHub's agent suite went red after 32 minutes: three lines over test_the_bump_carries_its_changelog_
+    entry's 120 characters, a law that runs here in seconds. The version-wide laws read every commit of the version, so the
+    explicit skip skips everything else and never them."""
+
+    def _vc(self, laws=None, anchors_ok=True):
+        seen = []
+
+        def _laws(names):
+            seen.extend(names)
+            return [(n, (laws or {}).get(n, "ok"), "tail of %s" % n) for n in names]
+        code, reds = PF.version_check(say=lambda *_: None, _laws=_laws, _anchors=lambda: (anchors_ok, "anchor tail"))
+        return code, reds, seen
+
+    def test_the_version_laws_are_real_registered_laws(self):
+        import run_gates as RG
+        names = set(getattr(g, "name", None) or (g[0] if isinstance(g, (list, tuple)) else g.get("name")) for g in RG.GATES)
+        for n in PF.VERSION_LAWS:
+            self.assertTrue(os.path.isfile(os.path.join(HERE, n + ".py")), "PREMISE: %s is not a law on disk" % n)
+            self.assertIn(n, names, "%s is not a registered gate - GitHub never runs it, so it guards nothing" % n)
+        self.assertIn("test_the_bump_carries_its_changelog_entry", PF.VERSION_LAWS, "the law v3886 lost a round to is not run")
+
+    def test_green_only_when_both_laws_and_the_census_are(self):
+        code, reds, seen = self._vc()
+        self.assertEqual((code, reds), (0, []))
+        self.assertEqual(seen, PF.VERSION_LAWS, "PREMISE: the version laws were not the ones run")
+        for kw, want in (({"laws": {"test_the_bump_carries_its_changelog_entry": "red"}}, 1), ({"anchors_ok": False}, 1),
+                         ({"laws": {"test_every_ship_lists_all_its_items": "time"}}, 2)):
+            with self.subTest(**{k: str(v) for k, v in kw.items()}):
+                self.assertEqual(self._vc(**kw)[0], want, "a red or a timed-out version law did not stop the ship")
+
+    def _ship(self, vcode, preflight=False):
+        import ship_when_green as SW
+        sha, calls, asked = "a" * 40, [], []
+
+        def run(argv, **kw):
+            calls.append(list(argv))
+            if argv[:3] == ["git", "rev-parse", "HEAD"]:
+                return subprocess.CompletedProcess(argv, 0, sha + "\n", "")
+            return subprocess.CompletedProcess(argv, 0, "", "")
+        rc = SW.ship("v3887", run=run, fetch=lambda s: [], sleep=lambda s: None, clock=lambda: 0.0, say=lambda *_: None,
+                     wait_s=0, preflight=preflight, version_check=lambda v, say: (asked.append(v), vcode)[1])
+        return rc, [c for c in calls if "push" in c], asked
+
+    def test_the_explicit_skip_still_asks_the_version_laws_and_a_red_pushes_nothing(self):
+        """* THE POINT"""
+        rc, pushes, asked = self._ship(1)
+        self.assertEqual(asked, ["v3887"], "--no-preflight shipped without asking the version-wide laws")
+        self.assertEqual((rc, pushes), (1, []), "a red version law still sent the ci branches to GitHub")
+        rc, pushes, asked = self._ship(2)
+        self.assertEqual((rc, pushes), (2, []), "an UNKNOWN version law read as green")
+        rc, pushes, asked = self._ship(0)
+        self.assertTrue(pushes, "PREMISE: a green version check never reached the ci push - the case cannot see the stop")
+
+    def test_the_full_preflight_is_not_doubled(self):
+        rc, pushes, asked = self._ship(0, preflight=lambda v, say: 0)
+        self.assertEqual(asked, [], "the full pre-flight ran and the version laws ran again beside it")
+
+
 RED_PROOF = [
+    {"why": "v3887 (REG-3472) - --no-preflight skips the version-wide laws again (v3886 lost a GitHub round to a 120-char line)",
+     "file": "tv/ship_when_green.py",
+     "find": "        vcode = (version_check or _version_check)(version, say)\n",
+     "replace": "        vcode = 0\n",
+     "matches": 1},
+    {"why": "v3887 (REG-3472) - a broken red-proof anchor no longer stops a --no-preflight ship",
+     "file": "tv/preflight.py",
+     "find": "    reds, unknown = ([] if a_ok else [\"red-proof anchors: \" + a_tail.replace(\"\\n\", \" | \")[:300]]), []\n",
+     "replace": "    reds, unknown = [], []\n",
+     "matches": 1},
+    {"why": "v3887 (REG-3472) - a red version law reads as UNKNOWN-and-stop rather than RED (the ship says the wrong word)",
+     "file": "tv/preflight.py",
+     "find": "        if v == \"red\":\n            reds.append(\"RED %s: %s\" % (n, tail.replace(\"\\n\", \" | \")[:300]))\n",
+     "replace": "        if False:\n            pass\n",
+     "matches": 1},
     {"why": "REG-3310 - a law that opens the render harness's Chrome (RC._Tab, _chrome_up) runs on his Mac again",
      "file": "tv/preflight.py",
      "find": "                           r\"|\\b_Tab\\(|\\b_chrome_up\\(|\\b(?:RC|rc|R|render_check)\\.check\\(\")",

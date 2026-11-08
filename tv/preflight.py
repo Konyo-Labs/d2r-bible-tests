@@ -50,6 +50,12 @@ COSTS = os.path.join(HERE, "gate_costs.json")
 BROWSER_CALLS = re.compile(r"board\(\)|Board\(\)|H\.Board|\.Board\(|render_check\.(?:run|render|main|measure)|RC\.(?:run|render)"
                            r"|playwright|launch_chrome|--remote-debugging|headless=new"
                            r"|\b_Tab\(|\b_chrome_up\(|\b(?:RC|rc|R|render_check)\.check\(")
+#: v3887 (REG-3472) - THE VERSION-WIDE LAWS read the WHOLE version (its commits, its history list), so any commit changes
+#: their input however small its diff - and `--no-preflight` used to skip them with everything else. v3886 (11-08) fixed
+#: the pre-flight's reds in a commit that also rewrote the history list, shipped with --no-preflight, and GitHub's agent
+#: suite went red after 32 minutes on three lines over 120 characters - a law that runs here in under ten seconds.
+#: version_check() runs these and the anchor census even when the full pre-flight is skipped.
+VERSION_LAWS = ["test_every_ship_lists_all_its_items", "test_the_bump_carries_its_changelog_entry"]
 ANCHOR_CENSUS = ["test_the_heart_can_see_its_own_instruments.py",
                  "TestHeartSeesItsInstruments.test_every_declared_red_proof_is_well_formed"]
 
@@ -453,6 +459,26 @@ def anchors(here=HERE, _run=None):
     r = (_run or subprocess.run)([sys.executable] + ANCHOR_CENSUS, cwd=here, env=_law_env(), capture_output=True, text=True,
                                  encoding="utf-8", errors="replace", timeout=600)
     return r.returncode == 0, "\n".join(((r.stdout or "") + (r.stderr or "")).strip().splitlines()[-4:])
+
+
+def version_check(here=HERE, say=print, _laws=None, _anchors=None):
+    """v3887 (REG-3472) - the version-wide laws and the anchor census, the part of the pre-flight no commit can skip.
+    -> (0 green / 1 red / 2 unknown, [red lines]). A law that timed out is UNKNOWN, never a pass."""
+    a_ok, a_tail = (_anchors or (lambda: anchors(here)))()
+    reds, unknown = ([] if a_ok else ["red-proof anchors: " + a_tail.replace("\n", " | ")[:300]]), []
+    for n, v, tail in (_laws or (lambda names: run_laws(names, len(names), here, say=say)))(VERSION_LAWS):
+        if v == "red":
+            reds.append("RED %s: %s" % (n, tail.replace("\n", " | ")[:300]))
+        elif v != "ok":
+            unknown.append("%s %s" % (v.upper(), n))
+    if reds:
+        say("version laws: RED - %s" % "; ".join(reds)[:600])
+        return 1, reds
+    if unknown:
+        say("version laws: UNKNOWN - %s did not reach a verdict" % ", ".join(unknown))
+        return 2, []
+    say("version laws: GREEN - %s and the anchor census hold" % ", ".join(VERSION_LAWS))
+    return 0, []
 
 
 def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, version=None, _laws=None, _prove=None,
