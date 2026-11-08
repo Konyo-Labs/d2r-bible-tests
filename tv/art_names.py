@@ -58,6 +58,7 @@ DOORS = (
     ("bible.html", r"art/tz_' \+ slug \+ '\.jpg'", "tz-info"),                 # _qwZoneArt
     ("bible.html", r"art/' \+ bp :", "boss-portraits"),                       # _qwTile, a boss with a portrait
     ("bible.html", r"art/' \+ su :", "qw-su-sprites"),                        # _qwTile, a superunique's sprite
+    ("bible.html", r"art/' \+ _QW_SU_ART\[r\.bossId\]", "qw-su-sprites"),      # v3887 (#155) - _runArtThumb, a super-unique Best run
     # #108 - a random-pack monster's family sprite (The Arreat Summit), by name: the tile and the D2IO_ART fill
     ("bible.html", r"art/' \+ pk :", "monster-packs"),                        # _qwTile, a random pack's sprite
     ("bible.html", r"art/' \+ MONSTER_PACK_ART\[k\]", "monster-packs"),       # D2IO_ART, the floating card

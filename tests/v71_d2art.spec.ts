@@ -24,7 +24,8 @@ test.describe('v71 d2art artwork layer', () => {
         type: typeof m,
         len: names.length,
         allDiablo2io: names.every((n) => /^art\//.test(m[n])),
-        allImageExt: names.every((n) => /\.(png|gif|jpe?g)(?:\?|$)/i.test(m[n])),
+        // v3887 (#158/#161) - d2runewizard's animated idle loops are .webp (The Banished, the three spearwomen): an image too
+        allImageExt: names.every((n) => /\.(png|gif|jpe?g|webp)(?:\?|$)/i.test(m[n])),
         encoded: names.every((n) => !/ /.test(m[n])),           // spaces URL-encoded, no raw spaces
         hasItem: !!m['Arachnid Mesh'],
         hasRune: !!m['Ist'],

@@ -48,6 +48,7 @@ try:
     _enable()
 except Exception:
     pass
+import js_strip  # noqa: E402  - the laws' ONE comment stripper (test_one_comment_stripper_for_the_laws)
 NODE = shutil.which("node") or shutil.which("nodejs")
 UI_PATH = os.path.join(ROOT, "tv", "control_ui.html")
 
@@ -247,7 +248,7 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
 
     def test_the_brief_wraps_whole_units_never_a_cut_and_never_nowrap(self):
         """* v3883 (#116) THE POINT - his live Fleet at 1024: "importing proofs ~15 / min" split under a stranded middot"""
-        code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
+        code = js_strip.strip_js_comments(_ui())
         rule = _cut(code, ".fleet-row > .fleet-brief { grid-column: 1 / -1;", "}")
         for want in ("display: flex;", "flex-wrap: wrap;", "column-gap: 1ch;"):
             self.assertIn(want, rule, "the closed brief is not a wrapping row of whole units: %r missing" % want)
@@ -263,7 +264,7 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
         self.assertTrue(0 <= i < j < k, "the brief is not between the row's word and its chips: %r" % ((i, j, k),))
 
     def test_a_closed_row_hides_its_chips_only_after_a_brief(self):
-        code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
+        code = js_strip.strip_js_comments(_ui())
         self.assertEqual(code.count(".fleet-row:not(.fleet-open) > .fleet-brief ~ .fleet-chips { display: none; }"), 1)
         self.assertIn(".fleet-row > .fleet-brief { grid-column: 1 / -1;", code)
 
@@ -272,7 +273,7 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
         Fleet payload in a private console, every closed row there is 48px (two lines) with the brief on the whole row, the
         name line's eyes at 1em with 2px margins, 3px gaps and "import". Font metrics decide a fit, so the law pins the CSS
         that bought it (a geometry pin would be measuring CI's fonts, not his)."""
-        code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
+        code = js_strip.strip_js_comments(_ui())
         self.assertIn("column-gap: 3px; row-gap: 1px; padding: 3px 0;", _cut(code, "  .fleet-row { display: grid;", "}"))
         self.assertIn(".fleet-row > .fleet-brief { grid-column: 1 / -1;", code)
         self.assertIn(".fleet-row > b > .fleet-shadow svg, .fleet-row > b > .fleet-winview svg { width: 1em; }", code)
@@ -281,7 +282,7 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
 
     def test_the_open_rows_vault_line_takes_its_own_line(self):
         """the both-sides render: the vault line wrapped six lines of ~16 characters beside the eyes in the 227px rail"""
-        code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
+        code = js_strip.strip_js_comments(_ui())
         self.assertIn(".fleet-row.fleet-open > .fleet-open-eyes { flex-wrap: wrap; row-gap: 4px; }", code)
         self.assertIn(".fleet-open-eyes > .fleet-vault { flex-basis: 100%; }", code)
 

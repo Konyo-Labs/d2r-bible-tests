@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3485 - A SUPER-UNIQUE BEST RUN WORE "NO VERIFIED FARM SOURCE YET" AND COULD NEVER SEAL (v3887, GitHub's round on 66e4b94f1)
+#155 made a super-unique a Best run (Normal Coldcrow for Bane Ash, Normal Pitspawn Fouldog for Lenymo) and two halves never
+joined it: the run thumbnail resolves BOSSES only, so Coldcrow's run wore the question-mark glyph that means "we do not know
+where this drops" - false, it is the verified best run (v1624: "Normal Coldcrow has no boss anchor"); and the sealed pool
+still grouped by the boss tables' _bestSrc while the runs group by _bestRun, so owning Fouldog's whole run filed its items
+under a boss and the run never sealed (v619). Now the thumbnail wears the super-unique's own sprite (_QW_SU_ART) with its
+name's hover card and no boss card, and the pool groups by _bestRun (funiScan 57 -> 70 ms). Same round, laws that met v3887's
+truth: v71 accepts d2runewizard's .webp loops as images, v1840 counts the terror-zone level reason (REG-3466, 117 rows at
+99) as a fourth true reason, test_one_hunt_clock cuts from _bestRun, the Fleet-row law uses js_strip (ratchet 184 -> 181),
+art_names knows the run thumbnail's sprite door. GUARD: v1624_run_thumbnails + v619_grail_forges_sync (GitHub).
 ### REG-3483 - THE ITEM CARD'S FULL SOURCE TABLE PRINTED KILLS UNDER "RUNS (50%)" - ~350x ON THE COW LEVEL (v3887, the #231 eye)
 The second eye on v3886's REG-3451 (11-08 22:19): the card's top six and quick take count RUNS, but the full table (more than six
 places) printed r50 - kills for an even chance - under "Runs (50%)", titled "sorted by speed" while _qwRank orders by fewest runs;

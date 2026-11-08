@@ -50,16 +50,22 @@ async function runRows(page: any) {
     for (const b of B) NAME[b.id] = b.name;
     let PORTRAIT: any = {};
     try { PORTRAIT = (0, eval)('BOSS_PORTRAIT') || {}; } catch (e) { PORTRAIT = w.BOSS_PORTRAIT || {}; }
+    const SU: any = w._QW_SU_ART || {};
     const read = (sel: string) => Array.from(document.querySelectorAll(sel)).map((c: any, i: number) => {
       const a: any = c.querySelector('.f-runart');
       const img: any = a && a.querySelector('img');
       const src: string | null = img ? String(img.getAttribute('src') || '') : null;
       const id: string | null = (a && a.getAttribute('data-boss-tip')) || null;
+      // v3887 (#155) - a run can be a SUPER-UNIQUE (Normal Coldcrow): no BOSSES row, its own sprite, its name's hover card
+      const suId: string | null = (a && a.getAttribute('data-su-tip')) || null;
       return {
         i,
         title: (c.querySelector('.f-rwbig') as any)?.textContent?.trim() || '',
         bossId: id,
         bossName: id ? (NAME[id] || null) : null,
+        suId,
+        suFile: suId ? (SU[suId] || null) : null,
+        arttip: (a && a.getAttribute('data-arttip')) || null,
         // v1636 retired this attribute on best-run rows; if it ever comes back, the hover card
         // resolves through the ITEM map again and Mephisto's soulstone returns.
         legacy: (a && a.getAttribute('data-art-logo')) || null,
@@ -86,6 +92,17 @@ test.describe('v1624 — the run wears its boss, the quick win wears its item', 
     // markup + identity on EVERY row: the wrong-boss defect this arc found lived on row 8, and a
     // spec that only ever read the first five would have shipped it again.
     for (const r of pipe) {
+      if (!r.bossId && r.suId) {
+        /* v3887 (#155) - a SUPER-UNIQUE run: it wears ITS OWN sprite (the map Quick wins draws from), floats its monster's
+           card by the name its title carries, and opens no boss card - a super-unique has none. Every other row keeps the
+           boss law below, and a row with neither anchor still fails it. */
+        expect(r.suFile, `${r.title}: data-su-tip="${r.suId}" is not a super-unique the page draws`).toBeTruthy();
+        expect(r.file, `${r.title}: a super-unique run does not wear its own sprite`).toBe(r.suFile);
+        expect(r.arttip, `${r.title}: a super-unique run floats no card`).toBeTruthy();
+        expect(r.title.toLowerCase(), `${r.title}: labelled with ${r.arttip}`).toContain(String(r.arttip).toLowerCase());
+        expect(r.click, `${r.title}: a super-unique has no boss card to open`).not.toContain('openBossDetail');
+        continue;
+      }
       expect(r.bossId, `${r.title} has no boss anchor`).toBeTruthy();
       expect(r.bossName, `${r.title}: data-boss-tip="${r.bossId}" is not an id in BOSSES`).toBeTruthy();
       /* the picture is OF the boss the row is about — the row's title names that boss. Resolved

@@ -52,15 +52,17 @@ test('suppressing the reason does not delete the cannot-drop fact', async ({ pag
   await page.waitForFunction(() => !!(window as any)._allDropItems || !!(window as any).ITEMS);
   const counts = await page.evaluate(() => {
     const items = (window as any)._allDropItems ? (window as any)._allDropItems() : ((window as any).ITEMS || []);
-    let total = 0, pool = 0, tc = 0, qlvl = 0;
+    let total = 0, pool = 0, tc = 0, qlvl = 0, tzlvl = 0;
     (items || []).forEach((it: any) => (it.sources || []).forEach((s: any) => {
       if (!s.blocked) return;
       total++;
       if (/not in /.test(s.blocked)) pool++;
       else if (/^TC \d+ > /.test(s.blocked)) tc++;
       else if (/^qlvl \d+ > /.test(s.blocked)) qlvl++;
+      // v3887 (REG-3466) - a terror-zone row whose level table has no entry at his level is blocked for THAT, by name
+      else if (/^not at character level \d+ - its terror-zone level table$/.test(s.blocked)) tzlvl++;
     }));
-    return { total, pool, tc, qlvl };
+    return { total, pool, tc, qlvl, tzlvl };
   });
   // v1723: a row whose reason was suppressed keeps its entry with a reason true by construction
   expect(counts.total).toBeGreaterThan(5000);
@@ -69,6 +71,7 @@ test('suppressing the reason does not delete the cannot-drop fact', async ({ pag
   // quality levels every cell's own rows broke the qlvl rule, so v1722 suppressed that reason everywhere; with silospen's levels
   // it holds and is cited ("qlvl 20 > Normal mlvl 12"), so rows moved from the fallback "not in ... drop pool" to their real
   // reason and none was deleted (the total grew). The law: every blocked row still carries one of the three true reasons.
-  expect(counts.pool + counts.tc + counts.qlvl, `a blocked row lost its reason: ${JSON.stringify(counts)}`).toBe(counts.total);
+  // v3887 (REG-3466) - a fourth true reason: a TZ source at a level its table does not reach (117 rows at 99, measured 11-09)
+  expect(counts.pool + counts.tc + counts.qlvl + counts.tzlvl, `a blocked row lost its reason: ${JSON.stringify(counts)}`).toBe(counts.total);
   expect(counts.pool).toBeGreaterThan(0);
 });

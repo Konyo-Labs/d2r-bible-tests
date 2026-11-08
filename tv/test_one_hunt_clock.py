@@ -60,7 +60,7 @@ const ENGINE = cut('const EVENT_PCT_MAX = 50;', 'const fmtHours = h => {');
 const CLOCK  = cut('  function _fmtHunt(h){', '  window._kprChip = _kprChip;', true);
 const PICK   = cut('  function _pickSrc(sources, name){', '  window._pickSrc = _pickSrc;', true);
 const SETS   = cut("    var NO_RUN_KEY = 'No verified farm source yet';", "g.hours=g.noRun?null:runHoursFor(g.rows); });", true);
-const UNI    = cut('    missing.forEach(function(x){\n      var b=_bestSrc(x);', '    runs.forEach(function(r){ r.hours = runHoursFor(r.rows); });', true);
+const UNI    = cut('    var _bestRun=function(x){', '    runs.forEach(function(r){ r.hours = runHoursFor(r.rows); });', true);
 
 const SCEN = function(){
   const out = {};

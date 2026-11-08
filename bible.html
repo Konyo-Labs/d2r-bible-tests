@@ -71065,6 +71065,7 @@ function renderJournal(){
     su_sszarktheburning: 'd2mon_Sszark_the_Burning.gif', su_stormtree: 'd2mon_Stormtree.gif', su_thecowking: 'd2mon_The_Cow_King.gif',
     su_thesmith: 'd2mon_The_Smith.gif', su_thesummoner: 'd2mon_The_Summoner.gif', su_threshsocket: 'd2mon_Thresh_Socket.gif',
     su_ventartheunholy: 'd2mon_Ventar_the_Unholy.gif', su_witchdoctorendugu: 'd2mon_Witch_Doctor_Endugu.gif' };
+  try { window._QW_SU_ART = _QW_SU_ART; } catch(e){}   // v3887 (#155) - a super-unique Best run wears this sprite (v1624 reads it)
   /* a place's area -> its terror-zone name where the two spell it differently. Radament's sewers are Lut Gholein's, not
      Kurast's: a bare "Sewers" picks act 3's art, the wrong act. */
   var _QW_ZONE_OF = { 'Cave Level 1': 'The Cave', 'Cave Level 2': 'The Cave', 'Sewers Level 3': 'Lut Gholein Sewers',
@@ -71339,7 +71340,10 @@ function renderJournal(){
     // seal. Only fixed-pool runs can seal honestly — the run must have ≥2 verified items so a lone drop
     // doesn't stamp a whole zone (the Hell TC85 caveat lives on the runs that never fill).
     var byAll={};
-    items.forEach(function(x){ var b=_bestSrc(x); if(!b) return; var k=b.s.boss;
+    /* v3887 (#155, GitHub's round on v619) - the pool groups by the SAME run the Best runs list does (_bestRun): with the boss
+       tables' _bestSrc here and _bestRun there, a super-unique run (Normal Pitspawn Fouldog) whose items were all found was
+       filed under a boss and could never seal - the cancel-out sync broke on exactly the runs #155 added. */
+    items.forEach(function(x){ var b=_bestRun(x); if(!b) return; var k=b.s.boss;
       var g=(byAll[k]=byAll[k]||{boss:k, total:0, found:0, names:[]}); g.total++; if(own.has(x.n)) g.found++; else g.names.push(x.n); });
     var sealed=Object.keys(byAll).map(function(k){return byAll[k];}).filter(function(g){ return g.total>=2 && g.found===g.total; })
       .sort(function(a,b){ return b.total-a.total; });
@@ -71925,6 +71929,17 @@ function renderJournal(){
        already follows is "art if we have it, else a glyph" (see `pic` below) — the no-boss case
        simply fell out of it. A neutral glyph is not the misleading-picture problem the comment
        above warns about: it says "we do not know where this drops", which is exactly true. */
+    /* v3887 (#155, GitHub's round on v1624) - A RUN CAN BE A SUPER-UNIQUE NOW (Normal Coldcrow, silospen's All #1 for Bane Ash):
+       it has no BOSSES row, so _runBossArt answered null and the run wore the "no verified farm source yet" glyph - false, it
+       is the verified best run. It wears its own sprite (Quick wins' _QW_SU_ART) and floats the monster's card by name like
+       its Quick wins tile (_qwHover); a super-unique has no boss card, so it opens none. */
+    if (!b && r.bossId && typeof _QW_SU_ART !== 'undefined' && _QW_SU_ART[r.bossId]) {
+      var _suS = (r.items || []).map(function(x){ return x && x._bs && x._bs.s; }).filter(Boolean)[0];
+      var _suN = (_suS && _suS.name) || String(_QW_SU_ART[r.bossId]).replace(/^d2mon_|\.gif$/g, '').replace(/_/g, ' ');
+      return '<span class="f-runart f-runart-su" data-su-tip="' + esc(r.bossId) + '" data-arttip="' + esc(_suN) + '"'
+        + ' style="cursor:default"><img class="f-art" src="' + esc(_artV('art/' + _QW_SU_ART[r.bossId])) + '" alt=""'
+        + ' loading="lazy" onerror="this.remove()"></span>';
+    }
     if (!b) return '<span class="f-runart" style="cursor:default">'
       + '<span class="f-artglyph" title="no verified farm source yet">\u2753</span></span>';
     var pic = b.url
