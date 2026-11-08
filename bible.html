@@ -10716,6 +10716,11 @@ body:has(#tab-vault.active) .vgd-target{outline:2px solid #f0c060!important;outl
    tile and lifted, so it reads at 56px. Only the d2rw_ loops; the Arreat Summit sprites keep their framing. */
 :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .qw-tile img.qw-mon.qw-mon-sprite[src*="d2rw_"], .qw-mon.qw-mon-sprite[src*="d2rw_"]{
   transform:scale(1.5);transform-origin:50% 32%;filter:brightness(1.45) contrast(1.08) drop-shadow(0 0 3px rgba(150,230,140,.35))}
+/* v3887 (#161, seen on the pixels 11-08: the Grok CLI read the Dark Lancer as "tiny ... dark body on a near-black background")
+   - its loop stands in the RIGHT third of the frame with a spear across it, so it is framed on the body, not the middle, nudged
+   toward the centre (its second look: "sits right of centre"), and lifted harder; a pale glow, not The Banished's green. */
+:is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .qw-tile img.qw-mon.qw-mon-sprite[src*="d2rw_cr_lancer3"], .qw-mon.qw-mon-sprite[src*="d2rw_cr_lancer3"]{
+  transform:translateX(-12%) scale(1.7);transform-origin:78% 34%;filter:brightness(1.75) contrast(1.12) drop-shadow(0 0 3px rgba(210,220,255,.4))}
 /* REG-3321 (#102 - his 11-07 "it should render just the monster not the area behind it ... make it cleaner and better
    seen and clear"). MEASURED: the tile painted the ZONE's art behind the monster and the sprite was drawn with
    mix-blend-mode:screen, which makes every DARK pixel vanish into what is behind it - so the stone showed THROUGH
