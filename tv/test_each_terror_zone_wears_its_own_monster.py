@@ -54,6 +54,15 @@ class EachTerrorZoneWearsItsOwnMonster(unittest.TestCase):
         self.assertEqual(self.mon.get("Den of Evil"), "d2mon_Corpsefire.gif")
         self.assertEqual(self.mon.get("Nihlathak's Temple"), "d2mon_Pindleskin.gif")
 
+    def test_the_throne_wears_its_top_gun(self):
+        """v3883 - his 11-08 ruling, on the console's TZ tracker: "for throne of destruction is should be lister the tormentor and
+        not that super unique. so its all related to whichever act is the top gun there" - the record picked Achmel the Cursed,
+        the first of Baal's minion-wave uniques the Quick wins places list"""
+        self.assertEqual(self.mon.get("Throne of Destruction"), "d2mon_Lister_the_Tormentor.gif")
+        self.assertEqual(self.rec["zones"]["Throne of Destruction"]["monster"], "Lister the Tormentor")
+        self.assertIn("ruling", self.rec["zones"]["Throne of Destruction"]["by"])
+        self.assertTrue(os.path.isfile(os.path.join(ROOT, "art", "d2mon_Lister_the_Tormentor.gif")), "Lister's sprite does not ship")
+
     def test_the_board_draws_the_same_table_the_same_way(self):
         """#108 'so its unified' - the board's Terror Zone rows read the SAME picks (two copies, one record: the law keeps them
         equal) by the zone's own key, and draw the monster alone"""
@@ -94,6 +103,10 @@ class EachTerrorZoneWearsItsOwnMonster(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3883 - the Throne of Destruction wears Achmel the Cursed again, not its top gun Lister (his 11-08 ruling)",
+     "file": "tv/control_ui.html",
+     "find": "\"Throne of Destruction\": \"d2mon_Lister_the_Tormentor.gif\"",
+     "replace": "\"Throne of Destruction\": \"d2mon_Achmel_the_Cursed.gif\"", "matches": 1},
     {"why": "#108 - the board's Terror Zone rows go back to zone art while the console wears the monsters (not unified)",
      "file": "bible.html",
      "find": "  const face = mon\n    ? '<span class=\"tzt-z-art tzt-z-art-mon\"><img class=\"tzt-z-mon\" src=\"art/'+mon+'\"",

@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3426 - THE THRONE OF DESTRUCTION WORE ACHMEL THE CURSED, NOT ITS TOP GUN LISTER (v3883, his 11-08 ruling)
+His words 11-08 ~09:57, on the console's TZ tracker (a screenshot of the live Throne of Destruction tile): "for throne of
+destruction is should be lister the tormentor and not that super unique. so its all related to whichever act is the top
+gun there so lister is definitely the throne of destruction". The #108 record (tv/data/monster_art_arreat.json "zones")
+took "the zone's super-unique (the page's Quick wins places)" - the FIRST listed, Achmel the Cursed, one of Baal's
+minion-wave uniques. Now the record names Lister the Tormentor with his ruling as its reason, and both copies of the table
+(the console's and the board's TZ_MONSTER, which the law holds equal to the record) draw d2mon_Lister_the_Tormentor.gif
+(it ships in art/). The live tile, before and after, in a guest Chrome against his console: Achmel 86x104 -> Lister 86x115,
+nothing else moved. Law: test_each_terror_zone_wears_its_own_monster (+1 case), red-proof PROVEN. He named only this one
+("thats the only one i saw for now"); the other zones keep their recorded picks.
+
 ### REG-3425 - THE AI'S READ PICTURES WERE CALLED "PROBE ARTIFACTS": 11,902 ON DEAN'S PC WITH NO WRITER ANYONE COULD NAME (v3883)
 #129 item 18 (11-08 06:30, Dean's PC): frames/hist held 11,902 `<n>_<ms>.jpg` (1.49 GB) that frame_authority.loose_frames
 called "probe / extract artifacts from the free pixel lane", and no writer was found by grepping for the name. MEASURED
