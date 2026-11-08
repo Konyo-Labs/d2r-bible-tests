@@ -77759,11 +77759,26 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     }).map(function(w){ return w[0]; });
   }
   window._cbRareWords = _cbRareWords;
+  /* v3884 CI round (agent suite, e30ce54ee: test_a_magic_pick_files_once_with_its_mods) - A ROLLED RARE NAME IS NEVER A
+     REAL ITEM'S NAME. The dice rolled "Storm Eye" for a ring; with its space folded that IS Stormeye, the unique wand, so the
+     Vault rightly held the pick as a likely slip of that unique ("Not in a locker yet") and it never filed - 1 roll in 384 for
+     that ring, measured by forcing the two words (Storm Touch files, Storm Eye does not). A suffix that would spell an item's
+     name with the rolled prefix is not offered; if every suffix would, the roll is as before. */
+  var _cbNameTaken = null;
+  function _cbNameFold(n){ return String(n || '').toLowerCase().replace(/[^a-z]/g, ''); }
   function _cbDice(code){
     var p = _cbRareWords(code, 0), s = _cbRareWords(code, 1);
     if (!p.length || !s.length) return null;
-    return [p[Math.floor(Math.random() * p.length)], s[Math.floor(Math.random() * s.length)]];
+    if (!_cbNameTaken){
+      var d = _cbDb(); _cbNameTaken = {};
+      ((d && d.it) || []).forEach(function(x){ if (x && x[1]) _cbNameTaken[_cbNameFold(x[1])] = 1; });
+    }
+    var pw = p[Math.floor(Math.random() * p.length)];
+    var ok = s.filter(function(w){ return !_cbNameTaken[_cbNameFold(pw + w)]; });
+    if (!ok.length) ok = s;
+    return [pw, ok[Math.floor(Math.random() * ok.length)]];
   }
+  window._cbDice = _cbDice;
   /* what an entry is CALLED, and in which colour: a magic item composes prefix + base + suffix ("Chaotic Grand Charm
      of Vita"), a rare is its two words over its base, a superior / low item says so before its base */
   function _cbShown(e, it){

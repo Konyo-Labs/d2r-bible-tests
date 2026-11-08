@@ -53,6 +53,14 @@ var re = cur(), rname = W._cbShown(re, W._cbItem(re.id)).name;
 OUT.rare = { name: rname, plate: plate(), owned: owned_().indexOf(rname) >= 0 };
 W.vaultPlannerClose(); H.flush(60, 3);
 OUT.rareJournal = journal();
+/* v3884 CI round - the dice never roll a real item's name: "Storm Eye" folds to Stormeye (the unique wand), so the Vault
+   held the ring and it never filed (CI, e30ce54ee). Force the two words the dice would have picked. */
+var rc = code('Ring'), P = W._cbRareWords(rc, 0), S = W._cbRareWords(rc, 1), R0 = Math.random, k = 0;
+OUT.stormIdx = [P.indexOf('Storm'), S.indexOf('Eye')];
+var seq = [(OUT.stormIdx[0] + 0.5) / P.length, (OUT.stormIdx[1] + 0.5) / S.length];
+Math.random = function(){ return k < seq.length ? seq[k++] : R0(); };
+try { OUT.forced = W._cbDice(rc); } finally { Math.random = R0; }
+OUT.stormeye = DB.it.some(function(x){ return x[1] === 'Stormeye'; });
 OUT.errors = H.errors.slice();
 })();
 """
@@ -92,12 +100,24 @@ class AMagicPickFilesOnceWithItsMods(unittest.TestCase):
         self.assertTrue(r["owned"], "a rare is no longer filed at the pick: %r" % r)
         self.assertEqual(self.o["rareJournal"], 0)
 
+    def test_a_rolled_rare_name_is_never_an_items_name(self):
+        """v3884 CI round - "Storm Eye" is Stormeye with its space folded: the dice skip it, so the pick still files"""
+        o = self.o
+        self.assertTrue(o["stormeye"] and min(o["stormIdx"]) >= 0, "premise: Stormeye, Storm and Eye are not all in the data: %r" % o["stormIdx"])
+        self.assertEqual(o["forced"][0], "Storm", "premise: the forced prefix was not rolled: %r" % o["forced"])
+        self.assertNotEqual(" ".join(o["forced"]), "Storm Eye", "the dice rolled a real item's name (Stormeye)")
+
 
 RED_PROOF = [
     {"why": "REG-2839 - the bare magic pick is filed at once again, and every magic add takes it back into the journal",
      "file": "bible.html",
      "find": "        if (entry && entry.q === 'm' && !(entry.affixes && entry.affixes.length)) return ctx.hold(entry);\n",
      "replace": "",
+     "matches": 1, "needs": "node"},
+    {"why": "v3884 CI round - the dice roll a real item's name again (Storm Eye = Stormeye, so the ring never files)",
+     "file": "bible.html",
+     "find": "    var ok = s.filter(function(w){ return !_cbNameTaken[_cbNameFold(pw + w)]; });\n",
+     "replace": "    var ok = s;\n",
      "matches": 1, "needs": "node"},
 ]
 
