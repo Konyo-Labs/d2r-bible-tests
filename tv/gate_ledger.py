@@ -1525,6 +1525,17 @@ def trace_path():
     return path
 
 
+def node_require(hook):
+    """The NODE_OPTIONS argument that preloads `hook`. -> str
+
+    v3886 (#107, windows-latest: test_a_node_version_ask_does_not_untrace_a_gate, "a python child of the gate ran without
+    the trace") - node reads a backslash inside a quoted NODE_OPTIONS value as an ESCAPE, on every OS. MEASURED on the Mac:
+    --require "D:\\a\\d2r\\tv\\gate_trace\\node_trace.cjs" -> Cannot find module 'D:ad2rtvgate_tracenode_trace.cjs'. So on
+    Windows every node child of a traced gate failed its own preload and never wrote its B line. Node takes '/' on Windows
+    too, so the path is written with '/' everywhere - one spelling heart2 shares."""
+    return '--require "%s"' % str(hook).replace("\\", "/")
+
+
 def trace_env(env, root, path):
     """The gate's environment with gate_trace/sitecustomize.py armed. -> dict (a copy)"""
     env = dict(env)
@@ -1538,7 +1549,7 @@ def trace_env(env, root, path):
     env["PYTHONPYCACHEPREFIX"] = path + ".pycache"  # LEDGER-TRACE-NOPYC
     hook = os.path.join(TRACE_DIR, "node_trace.cjs")
     node = env.get("NODE_OPTIONS") or ""
-    env["NODE_OPTIONS"] = ('--require "%s"' % hook) + (" " + node if node else "")  # LEDGER-TRACE-NODE
+    env["NODE_OPTIONS"] = node_require(hook) + (" " + node if node else "")  # LEDGER-TRACE-NODE
     return env
 
 

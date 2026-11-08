@@ -15207,6 +15207,12 @@ class TestNoSuiteImportsSomethingCIDoesNotHave(unittest.TestCase):
         FILESYSTEM where the module lives: site-packages, or nowhere at all, means third party."""
         import importlib.util
         import sysconfig
+        # v3886 (#107, windows-latest) - the filesystem cannot answer for another OS's stdlib: fcntl/resource are not on
+        # Windows at all and unicodedata lives in DLLs\, outside the Lib path, so both read as pip packages the runner
+        # lacks. Python 3.10+ names its whole stdlib, every platform's modules included - asked first; 3.9 keeps the probe.
+        names = getattr(sys, "stdlib_module_names", None)
+        if names is not None and mod.split(".")[0] in names:
+            return False
         try:
             spec = importlib.util.find_spec(mod)
         except Exception:

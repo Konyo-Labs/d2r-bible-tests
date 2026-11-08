@@ -220,6 +220,11 @@ class FullscreenOnEachPlatform(_Base):
 
     def test_the_mac_leaves_fullscreen_then_hides_drops_the_dock_icon_and_goes_back(self):
         sys.platform = "darwin"
+        # v3886 (#107, windows-latest) - IS_WIN is read once at import: on a Windows runner it stayed True under this Mac
+        # case, and console_to_front took the Windows branch (no restore()). The Mac case is the Mac's, on every runner.
+        saved_is_win = ca.IS_WIN
+        ca.IS_WIN = False
+        self.addCleanup(setattr, ca, "IS_WIN", saved_is_win)
         state = {"fs": True}
         ca._win_is_fullscreen = lambda win, screens=None: state["fs"]
 

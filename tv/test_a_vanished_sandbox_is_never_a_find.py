@@ -87,7 +87,9 @@ class ASandboxCopyHasFreshTimes(unittest.TestCase):
         safe_copy.copy(self.src, dst, say=lambda *a, **k: None)
         with io.open(os.path.join(dst, "AGENTS.md"), encoding="utf-8") as fh:
             self.assertEqual(fh.read(), "x\n")
-        self.assertTrue(os.stat(os.path.join(dst, "tool.py")).st_mode & 0o100, "the copy lost the file's mode")
+        # v3886 (#107, windows-latest) - an execute bit is a POSIX mode; Windows has none for chmod to set or a copy to keep
+        if os.name == "posix":
+            self.assertTrue(os.stat(os.path.join(dst, "tool.py")).st_mode & 0o100, "the copy lost the file's mode")
 
 
 class _NetFixture(unittest.TestCase):

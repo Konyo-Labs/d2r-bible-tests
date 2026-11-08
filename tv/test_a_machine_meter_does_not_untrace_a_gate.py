@@ -130,8 +130,9 @@ RED_PROOF = [{'why': 'vm_stat untraces the gate',
  {'why': 'a meter given a file here is called inert',
   'file': 'gate_trace/sitecustomize.py',
   # v3859 L1 (10c4ba8d) renamed the check to _here() and added the sysctl -f/-p clause; the proof moved with it
-  'find': '                _here(a) for a in args[1:] if "/" in a) and not (\n',
-  'replace': '                False for a in args[1:] if "/" in a) and not (\n',
+  # v3886 (#107) - the arg test became _pathish (a Windows path is a path); the proof moved with it
+  'find': '                _here(a) for a in args[1:] if _pathish(a)) and not (\n',
+  'replace': '                False for a in args[1:] if _pathish(a)) and not (\n',
   'matches': 1},
  {'why': 'caffeinate is called inert',
   'file': 'gate_trace/sitecustomize.py',

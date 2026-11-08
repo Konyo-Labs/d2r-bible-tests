@@ -1704,14 +1704,14 @@ RED_PROOF = [
     {
         "why": "REG-2293 r5: lsof handed a file in the checkout is waved through as a process-table probe",
         "file": "gate_trace/sitecustomize.py",
-        "find": '        if head == "lsof" and not any(\n                rel(a) is not None for a in args[1:] if "/" in a):\n',
-        "replace": '        if head == "lsof" and not any(\n                False for a in args[1:] if "/" in a):\n',
+        "find": '        if head == "lsof" and not any(\n                rel(a) is not None for a in args[1:] if _pathish(a)):\n',  # v3886 _pathish
+        "replace": '        if head == "lsof" and not any(\n                False for a in args[1:] if _pathish(a)):\n',
         "matches": 1,
     },
     {
         "why": "REG-2293 r5: node children are not armed, so every gate that shells out to node is never stored",
         "file": "gate_ledger.py",
-        "find": "    env[\"NODE_OPTIONS\"] = ('--require \"%s\"' % hook) + (\" \" + node if node else \"\")  # LEDGER-TRACE-NODE\n",
+        "find": "    env[\"NODE_OPTIONS\"] = node_require(hook) + (\" \" + node if node else \"\")  # LEDGER-TRACE-NODE\n",  # v3886 node_require
         "replace": "    env[\"NODE_OPTIONS\"] = node  # LEDGER-TRACE-NODE\n",
         "matches": 1,
     },

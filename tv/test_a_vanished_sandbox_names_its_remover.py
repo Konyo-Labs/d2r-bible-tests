@@ -330,8 +330,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2612 - review r1: the journal is created world-readable",
      "file": "heart2.py",
-     "find": "os.O_RDWR | os.O_CREAT, 0o600)",
-     "replace": "os.O_RDWR | os.O_CREAT, 0o666)",
+     "find": "os.O_RDWR | os.O_CREAT | getattr(os, \"O_BINARY\", 0), 0o600)",   # v3886 (#107) O_BINARY
+     "replace": "os.O_RDWR | os.O_CREAT | getattr(os, \"O_BINARY\", 0), 0o666)",
      "matches": 1},
     {"why": "REG-2612 - review r1: a new sandbox writes no birth line",
      "file": "heart2.py",
@@ -365,8 +365,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2612 - review r3: the journal opened O_APPEND, so the cap's offset-0 write lands at the end",
      "file": "heart2.py",
-     "find": "os.O_RDWR | os.O_CREAT, 0o600)",
-     "replace": "os.O_RDWR | os.O_APPEND | os.O_CREAT, 0o600)",
+     "find": "os.O_RDWR | os.O_CREAT | getattr(os, \"O_BINARY\", 0), 0o600)",   # v3886 (#107) O_BINARY
+     "replace": "os.O_RDWR | os.O_APPEND | os.O_CREAT | getattr(os, \"O_BINARY\", 0), 0o600)",
      "matches": 1},
     {"why": "REG-2612 - review r3: the file is cut before the kept tail is written, so a reader can see it empty",
      "file": "heart2.py",

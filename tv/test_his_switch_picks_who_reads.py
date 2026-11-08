@@ -252,7 +252,9 @@ class ThePreflightFollowsTheSwitch(_Switch):
                 mock.patch.dict(os.environ, {"TV_CLAUDE_BIN": ""}), \
                 mock.patch.object(ca, "_G5", g5):
             got = ca.farmgate_payload()
-        self.pinged = [c for c in pinged if isinstance(c, (list, tuple)) and "-p" in c]
+        # v3886 (#107, windows-latest) - a Claude ping is [claude, "-p", prompt] (control_app's two ping sites); Windows' own
+        # port probe `netstat -ano -p tcp` also carries "-p", and was counted as Claude being pinged
+        self.pinged = [c for c in pinged if isinstance(c, (list, tuple)) and len(c) > 1 and c[1] == "-p"]
         return {c["id"]: c for c in got.get("checks", [])}
 
     def test_grok_only_does_not_need_claude_and_needs_grok(self):

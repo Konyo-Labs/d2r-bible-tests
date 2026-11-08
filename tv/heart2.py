@@ -1558,7 +1558,10 @@ def _sweep_journal(tmp, event, root, code, owner, now):
     try:
         # review r3: NO O_APPEND. The cap must write at offset 0, and an O_APPEND fd cannot; every write is placed by
         # an explicit lseek under the lock instead, so no OS's idea of append decides where a line lands.
-        fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+        # v3886 (#107, windows-latest: "the cap left a torn line") - O_BINARY: Windows opens a bare os.open fd in TEXT
+        # mode, so every "\n" written became "\r\n" on disk while the cap below counts and cuts in bytes it read back
+        # translated - the cut landed inside a line. Binary on every OS (O_BINARY is 0 / absent off Windows).
+        fd = os.open(path, os.O_RDWR | os.O_CREAT | getattr(os, "O_BINARY", 0), 0o600)
         try:
             unlock = _journal_lock(fd)
             held = unlock is not None
@@ -3119,7 +3122,8 @@ def _run_gate_once(sandbox_tv, filename, timeout=180, extra=(), script=None, wid
                 _ntr = os.path.join(sandbox_tv, "gate_trace", "node_trace.cjs")
                 _tenv["NODE_OPTIONS"] = env.get("NODE_OPTIONS")
                 if os.path.isfile(_ntr) and "node_trace.cjs" not in str(env.get("NODE_OPTIONS") or ""):
-                    env["NODE_OPTIONS"] = ('--require "%s"' % _ntr) + ((" " + env["NODE_OPTIONS"]) if env.get("NODE_OPTIONS") else "")
+                    import gate_ledger as _GLn   # v3886 (#107) - the one preload spelling: '/' (node reads '\\' as an escape)
+                    env["NODE_OPTIONS"] = _GLn.node_require(_ntr) + ((" " + env["NODE_OPTIONS"]) if env.get("NODE_OPTIONS") else "")
             except BaseException:             # REG-2640 - any setup failure: env restored, no log, nothing dropped
                 for _k, _v in _tenv.items():
                     if _v is None:

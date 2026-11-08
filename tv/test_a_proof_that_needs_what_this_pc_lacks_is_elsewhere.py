@@ -331,7 +331,10 @@ class ALawWhoseEveryCaseSkipsOffPosixSaysSo(_Sandbox):
             if tampered:
                 return (not tampered_red), ("Ran 3 tests\nFAILED" if tampered_red else "Ran 3 tests\nOK")
             return True, "Ran 3 tests\nOK"
-        with mock.patch.object(H, "_run_gate", run_gate), mock.patch.object(H.sys, "platform", platform):
+        # v3886 (#107, windows-latest: "'ELSEWHERE' != 'PROVEN' : posix") - the "posix" probe reads os.name, which the
+        # platform below never reached: on a Windows runner the simulated Mac still lacked POSIX. The simulated PC is one PC.
+        with mock.patch.object(H, "_run_gate", run_gate), mock.patch.object(H.sys, "platform", platform), \
+                mock.patch.object(H, "_host_is_posix", lambda: not platform.startswith("win")):
             return H._prove_one(self.tv, "test_law", "test_law.py", pr, 0, _say)
 
     def test_the_reader_tells_each_skip_shape_apart(self):

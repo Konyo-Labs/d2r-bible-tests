@@ -95,7 +95,41 @@ class AWindowsChildIsFollowed(unittest.TestCase):
         self.assertIn("cannot follow", why)
 
 
+@unittest.skipIf(shutil.which("node") is None, "node is absent - the preload spelling cannot be asked here (UNMEASURED)")
+class ANodePreloadPathArrivesWhole(unittest.TestCase):
+    """v3886 (#107, windows-latest: "a python child of the gate ran without the trace") - node reads a backslash inside a
+    quoted NODE_OPTIONS value as an escape on every OS, so the Windows hook path D:\\a\\...\\node_trace.cjs reached node
+    as D:a...node_trace.cjs and every node child of a traced gate failed its preload. Asked of the REAL node here: the
+    path gate_ledger arms must be the path node tries to load."""
+
+    def _asked(self, opt):
+        r = subprocess.run([shutil.which("node"), "-e", "1"], capture_output=True, text=True, timeout=30,
+                           env=dict(os.environ, NODE_OPTIONS=opt))
+        return r.stderr
+
+    def test_a_windows_hook_path_reaches_node_whole(self):
+        win = "D:\\a\\d2r-bible-tests\\tv\\gate_trace\\node_trace_absent.cjs"
+        said = self._asked(GL.node_require(win))
+        self.assertIn("D:/a/d2r-bible-tests/tv/gate_trace/node_trace_absent.cjs", said,
+                      "node was handed another path than the hook's: %s" % said[-300:])
+
+    def test_premise_a_backslash_in_the_option_is_an_escape(self):
+        """baseline: written with '\\' the path is mangled - the defect this spelling exists for"""
+        said = self._asked('--require "D:\\a\\b\\h.cjs"')
+        self.assertIn("D:abh.cjs", said, "PREMISE: node no longer reads '\\' as an escape here: %s" % said[-300:])
+
+    def test_trace_env_arms_that_spelling(self):
+        env = GL.trace_env({}, ".", "x.tsv")
+        self.assertTrue(env["NODE_OPTIONS"].startswith(GL.node_require(os.path.join(GL.TRACE_DIR, "node_trace.cjs"))))
+        self.assertNotIn("\\", env["NODE_OPTIONS"])
+
+
 RED_PROOF = [
+    {"why": "v3886 (#107) - the node preload is written with backslashes again: on Windows node loads no hook",
+     "file": "gate_ledger.py",
+     "find": "    return '--require \"%s\"' % str(hook).replace(\"\\\\\", \"/\")\n",
+     "replace": "    return '--require \"%s\"' % str(hook)\n",
+     "matches": 1},
     {"why": "#107 - Windows' command line reaches the trace as one argument again (node --version untraced there)",
      "file": "gate_trace/sitecustomize.py",
      "find": "        args = _argv_of(argv)                      # REG-3371",
