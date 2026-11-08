@@ -87,6 +87,9 @@ CLASS = {
     'input[aria-label="which character or mule holds this"]': (R, "writes where an item is held"),
     'input[aria-label^="per-level roll "]': (R, "the builder: writes a roll"),
     'input[aria-label^="roll "]': (R, "the builder: writes a roll"),
+    # v3886 (#140) - a class base's staff-mod rows: the skill and its +1-3, both written into the build
+    'select[aria-label^="staff mod "]': (R, "the builder: picks a staff mod's skill"),
+    'input[aria-label^="staff mod "]': (R, "the builder: writes a staff mod's +1-3"),
     "#backup-textarea": (R, "a backup code: loads into his store"),
     "#rune-import-box": (R, "rune import: writes his tallies"),
     "#gem-import-box": (R, "gem import: writes his tallies"),

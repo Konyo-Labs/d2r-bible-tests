@@ -11,6 +11,7 @@ replace runs once.
 Drives the SHIPPED _replace_held with os.replace refusing the way Windows does. RED_PROOF below.
 """
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -26,7 +27,7 @@ class AStoreWriteWaitsOutAReaderOnWindows(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="tvd_held_")
-        self.addCleanup(lambda: [os.remove(os.path.join(self.tmp, f)) for f in os.listdir(self.tmp)] and os.rmdir(self.tmp))
+        self.addCleanup(shutil.rmtree, self.tmp, True)   # its own temp folder, removed whole - nothing is listed
         self.src, self.dst = os.path.join(self.tmp, "a.tmp"), os.path.join(self.tmp, "store.json")
         with open(self.src, "w") as fh:
             fh.write("new")

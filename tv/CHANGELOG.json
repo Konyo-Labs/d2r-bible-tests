@@ -3,13 +3,23 @@
     "ver": "v3886",
     "date": "2026-11-08",
     "items": [
-      "Quick wins as silospen lists",
-      "staff mods",
-      "automod",
-      "shield block",
-      "Dean prices",
-      "shadow d2jsp lamp",
-      "Windows laws"
+      "Quick wins is silospen's own Boss and All lists, Terror Zone on and off at his LVL - no Fouldog in Bane Ash's bosses (#150)",
+      "The item card ranks its places the way Quick wins does - Tyrael's Might keeps Diablo (REG-3451)",
+      "Dean's console reads d2jsp prices: a search the forum already ran opens its own results page (REG-3452)",
+      "21 impossible Nightmare/Normal Terror Zone Pindleskin cells removed (#149)",
+      "Pindleskin's Nightmare and Normal Terror Zone level tables - unreadable cells 703 -> 6 (#149)",
+      "Nine random-pack monsters draw their own sprite (#108)",
+      "A shield's Chance to Block reads its base block plus the class factor (#141)",
+      "A class base keeps its automod on white, superior and runeword items - a Spirit Sacred Targe's +45 all res (#139)",
+      "A class base carries its staff mods: +1-3 to its class's skills, printed and summed (#140)",
+      "A shadow's D2JSP lamp says the owner's sign-in, never this PC's (#45)",
+      "Que-Hegan's Wisdom's card reads q59 (a later block overwrote it with 55)",
+      "A hidden console's reason is cut at a word, never mid-word",
+      "An unpicked Renewed Sunder roll is a range, not UNKNOWN - a Paladin's FHR reads 0-24 (9 or 7 frames)",
+      "The laws share one comment stripper; a MIME wildcard is never a comment (#152)",
+      "Windows: the gate tracer reads a Windows path; a node preload path is written with '/'; the fast gate maps a Windows law (#107)",
+      "Windows: a store write waits out a reader; the sandbox journal is binary; the grok resolver and the disk-grower prune work (#107)",
+      "windows-laws: every law red on Windows runs on windows-latest with every word it prints kept (#107)"
     ]
   },
   {
