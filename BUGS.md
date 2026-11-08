@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3432 - THE FLEET'S PLAIN WORDS STILL SAID "DIFFERS", "2 BLIND", "PROVING 102" - OF WHAT? (v3884, the Grok CLI on v3883)
+His 11-08 ruling (REG-3422): fleet data in plain words. The Grok CLI's cold look at v3883's Fleet crops (1512/1120/1024):
+"'differs' does not say what differs. '2 blind' and '1 blind' are not plain machine states. 'proving 102' does not say 102 of
+what. 'no report' does not say what is missing", and at 1512 the header broke "· 1" / "ready" - a count torn from its word.
+Now the tally word says what it compares ("ledgers differ", "no ledgers", "this PC"), a wound says what is blind ("1 check
+blind", "2 checks blind") and what is being proved ("proving 102 checks ~1.4 h"), and the header's every count is bound to
+its word (a no-break space). The keys and classes are unchanged; the hover keeps every detail. Render gate (advanced-fleet,
+fleet-boot-river, fleet-xref): green at every width. Laws re-pointed (never_synced, ledger_word, each_pc, closed_row), +4
+red-proofs PROVEN.
+
 ### REG-3431 - THE UNIQUES TAB SAID "GROUNDS SEALED" FOR RUNS HE NEVER FARMED OUT (v3884, his 11-08 ruling)
 His words 11-08 ~10:31, with a screenshot of six bands ("NORMAL TZ MEPHISTO - GROUNDS SEALED all 103 verified uniques found ·
 runs here are trade loot now"): "sealed ground is not technically right here.. i didnt farm them all like it seems. but

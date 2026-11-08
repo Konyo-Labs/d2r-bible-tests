@@ -68,20 +68,20 @@ class ANeverSyncedLedgerIsNotADifference(unittest.TestCase):
 
     def test_deans_unsynced_uniques_are_not_counted(self):
         w = _words([DEAN])[0]
-        self.assertEqual(w["w"], "differs", w)
+        self.assertEqual(w["w"], "ledgers differ", w)   # v3884 plain words
         self.assertIn("2 of 2 ledger(s) count differently", w["t"], "a never-synced ledger was counted: %r" % w["t"])
         self.assertIn("uniques never synced, so not compared", w["t"], w["t"])
 
     def test_measured_by_overrides_and_an_all_unsynced_row_is_no_report(self):
         t = {"sets": {"have": 0}, "uniques": {"have": 0}, "runewords": {"have": 0},
              "measuredBy": {"sets": False, "uniques": False, "runewords": False}}
-        self.assertEqual(_words([t])[0]["w"], "no report", "three never-synced zeros read as a verdict")
+        self.assertEqual(_words([t])[0]["w"], "no ledgers", "three never-synced zeros read as a verdict")   # v3884
 
     def test_a_measured_mismatch_still_differs(self):
         t = {"sets": {"have": 100}, "uniques": {"have": 327}, "runewords": {"have": 99},
              "measuredBy": {"sets": True, "uniques": True, "runewords": True}}
         w = _words([t])[0]
-        self.assertEqual((w["w"], "1 of 3" in w["t"]), ("differs", True), w)
+        self.assertEqual((w["w"], "1 of 3" in w["t"]), ("ledgers differ", True), w)
 
     def test_the_cell_asks_the_same_reader(self):
         self.assertEqual(_src().count("        var _measOf = function (lab) { return _ledgerMeasured(t, lab); };"), 1,

@@ -82,7 +82,7 @@ class ALedgerWordSaysWhatItCompares(unittest.TestCase):
     def test_the_differs_tip_names_which_ledgers_differ_and_which_match(self):
         alt = {"sets": {"have": 128}, "uniques": {"have": 320}, "runewords": {"have": 0}}
         w = self.words([alt])[0]
-        self.assertEqual(w["w"], "differs")
+        self.assertEqual(w["w"], "ledgers differ")   # v3884 plain words
         self.assertIn("1 of 3 ledger(s) count differently from this console: runewords", w["t"])
         self.assertIn("(sets, uniques match)", w["t"], "the tip never said which ledgers agree: %s" % w["t"])
 
@@ -107,6 +107,10 @@ class ALedgerWordSaysWhatItCompares(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3884 - the row's word says 'differs' without saying what differs",
+     "file": "tv/control_ui.html",
+     "find": "        return {w: 'ledgers differ', c: 'ftts-unsynced',", "replace": "        return {w: 'differs', c: 'ftts-unsynced',",
+     "matches": 1},
     {
         "why": "REG-1986 - the differs tip says only 'N of M disagree' again, under rows that read SYNCED",
         "file": "tv/control_ui.html",

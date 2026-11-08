@@ -29193,7 +29193,8 @@ function escC(s) {
   var _pcHeader = function (list, nowMs) {
     var n = {};
     (list || []).forEach(function (m) { var k = _pcStatus(m, nowMs).key; n[k] = (n[k] || 0) + 1; });
-    var bits = _PC_ORDER.filter(function (k) { return n[k]; }).map(function (k) { return n[k] + ' ' + _PC_WORD[k].w; });
+    /* v3884 - a count and its word are one unit (a no-break space): the Grok CLI saw '... 3 offline · 1' / 'ready' at 1512 */
+    var bits = _PC_ORDER.filter(function (k) { return n[k]; }).map(function (k) { return n[k] + '\u00a0' + _PC_WORD[k].w; });
     var c = (list || []).length;
     return c + (c === 1 ? ' PC' : ' PCs') + (bits.length ? ': ' + bits.join(' · ') : '');
   };
@@ -29226,7 +29227,7 @@ function escC(s) {
     var _n = function (x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
     var _eta = function (e) { return (typeof e === 'number' && isFinite(e) && e >= 0)
       ? ' ~' + (e < 60 ? '1 min' : e < 5400 ? Math.round(e / 60) + ' min' : (e / 3600).toFixed(1) + ' h') : ''; };
-    var proving = (hs && typeof hs.owed === 'number' && hs.owed > 0) ? 'proving ' + _n(hs.owed) + _eta(hs.etaS) : '';
+    var proving = (hs && typeof hs.owed === 'number' && hs.owed > 0) ? 'proving ' + _n(hs.owed) + (hs.owed === 1 ? ' check' : ' checks') + _eta(hs.etaS) : '';
     if (s.key === 'healing') return [s.starting ? 'starting up' : (proving || 'proving')];
     /* ONE wound, the one that needs a hand first: a blind gate keeps every lock shut whatever this PC proves next, so it
        leads; the rest are "+N" (the open row and the State panel name them). Then what is healing it, if anything. */
@@ -29238,7 +29239,8 @@ function escC(s) {
     var hurt = s.hurt.slice().sort(function (a, b) { return (/ blind$/.test(b) ? 1 : 0) - (/ blind$/.test(a) ? 1 : 0); });
     /* v3883 (#116) - the ONE wound, in its shortest words ("2 blind", no "+N": the open row and the State panel list the
        rest) - one line is 25-37 characters at the rail's widths, so every word on it has to earn its place */
-    var first = hurt.length ? _short(hurt[0]).replace(/ gates? blind$/, ' blind') : '';
+    /* v3884 - plain: WHAT is blind and what is being proved (the Grok CLI: "2 blind" / "proving 102 - 102 of what") */
+    var first = hurt.length ? _short(hurt[0]).replace(/ gates? blind$/, function (m) { return / gate blind$/.test(m) ? ' check blind' : ' checks blind'; }) : '';
     var imp = (hs && hs.importing && typeof hs.importing === 'object' && hs.importing.landed !== true) ? hs.importing : null;
     /* v3882 - a quiet import says it is quiet, never a stale ETA (his 11-08: "the 5 min thing isnt correlated") */
     var _quiet = (imp && typeof imp.quietS === 'number' && isFinite(imp.quietS) && imp.quietS > 0)
@@ -30106,7 +30108,7 @@ function escC(s) {
         return t.measured;
       };
       var _machineWord = function (t, isMe) {
-        if (isMe) return {w: 'this console', c: 'ftts-unknown',
+        if (isMe) return {w: 'this PC', c: 'ftts-unknown',   /* v3884 - plain words (his 11-08 ruling): the PC you read this on */
                           t: 'the machine you are reading the card ON \u2014 the reference the '
                            + 'others are compared against, so it has nothing to agree with'};
         if (!_MINE) return {w: 'no reference', c: 'ftts-unknown',
@@ -30124,14 +30126,14 @@ function escC(s) {
           if (_ledgerMeasured(t, k) === false) { _unk.push(k); return; }   /* #298 - '—' on the card is not a difference */
           seen++; if (p.have === mine.have) { same++; _on.push(k); } else { _off.push(k); }
         });
-        if (!seen) return {w: 'no report', c: 'ftts-unknown',
+        if (!seen) return {w: 'no ledgers', c: 'ftts-unknown',   /* v3884 - plain: what it did not report */
                            t: 'this machine reported no ledger this console can compare \u2014 '
                             + 'UNMEASURED, which is not the same as disagreeing'};
         if (same === seen) return {w: 'synced', c: 'ftts-synced',
                                    t: 'every one of the ' + seen + ' ledger(s) it reports agrees '
                                     + 'with this console'
                                     + (_unk.length ? ' (' + _unk.join(', ') + ' never synced, so not compared)' : '')};
-        return {w: 'differs', c: 'ftts-unsynced',
+        return {w: 'ledgers differ', c: 'ftts-unsynced',   /* v3884 - plain: WHAT differs (the Grok CLI: "differs does not say what differs") */
                 t: (seen - same) + ' of ' + seen + ' ledger(s) count differently from this console: '
                  + _off.join(', ') + (_on.length ? ' (' + _on.join(', ') + ' match)' : '')
                  + (_unk.length ? ' \u2014 ' + _unk.join(', ') + ' never synced, so not compared' : '')

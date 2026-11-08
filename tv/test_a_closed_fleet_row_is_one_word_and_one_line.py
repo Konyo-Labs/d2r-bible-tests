@@ -174,8 +174,8 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
         """* THE POINT - his old ALT's and work ALT's live rows, in one line each"""
         b = self.b
         self.assertEqual(b["ready"]["line"], "all proved")              # v3883 (#116) fits 1512 whole
-        self.assertEqual(b["healing"]["line"], "proving 8 ~12 min")
-        self.assertEqual(b["blind"]["line"], u"1 blind · importing ~26 min")                  # v3883 (#116) short words
+        self.assertEqual(b["healing"]["line"], "proving 8 checks ~12 min")   # v3884 what is proved
+        self.assertEqual(b["blind"]["line"], u"1 check blind · importing ~26 min")                  # v3883 (#116) short words
         self.assertEqual(b["importing"]["line"], u"river stuck · importing ~82 min")
         self.assertEqual(b["importquiet"]["line"], u"river stuck · importing · no progress for 3 min")   # v3882
         self.assertEqual(b["town"]["line"], "since 18:10")           # v3883: the word itself says OFFLINE (his 11-08 ruling)
@@ -184,13 +184,13 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
 
     def test_a_blind_gate_leads_the_wounds(self):
         """a blind gate keeps every lock shut whatever the PC proves next - the one wound that will not heal by itself"""
-        self.assertTrue(self.b["blind"]["line"].startswith("1 blind"), self.b["blind"]["line"])
-        self.assertTrue(self.b["many"]["line"].startswith("2 blind"), self.b["many"]["line"])
+        self.assertTrue(self.b["blind"]["line"].startswith("1 check blind"), self.b["blind"]["line"])
+        self.assertTrue(self.b["many"]["line"].startswith("2 checks blind"), self.b["many"]["line"])
 
     def test_each_unit_is_its_own_element(self):
         """v3883 (#116) - the word, the wound and what heals it are separate elements, so a wrap falls BETWEEN them"""
-        self.assertEqual(self.b["blind"]["units"], ["1 blind", "importing ~26 min"])
-        self.assertEqual(self.b["stuckproving"]["units"][-1], "proving 1,290 ~14.4 h")
+        self.assertEqual(self.b["blind"]["units"], ["1 check blind", "importing ~26 min"])
+        self.assertEqual(self.b["stuckproving"]["units"][-1], "proving 1,290 checks ~14.4 h")
         self.assertEqual(self.b["ready"]["units"], ["all proved"])
         self.assertEqual(self.b["importquiet"]["units"], ["river stuck", u"importing · no progress for 3 min"])
 
@@ -204,7 +204,7 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
 
     def test_what_heals_it_follows_the_wound_and_a_landed_import_is_not_importing(self):
         self.assertEqual(self.b["stuckproving"]["key"], "wounded")
-        self.assertTrue(self.b["stuckproving"]["line"].endswith(u"· proving 1,290 ~14.4 h"), self.b["stuckproving"]["line"])
+        self.assertTrue(self.b["stuckproving"]["line"].endswith(u"· proving 1,290 checks ~14.4 h"), self.b["stuckproving"]["line"])
         self.assertNotIn("importing", self.b["landed"]["line"])
 
     def test_the_proof_wound_never_says_proof_twice(self):
@@ -260,6 +260,14 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3884 - a blind count says 'blind' of nothing again ('2 blind' - of what?)",
+     "file": "tv/control_ui.html",
+     "find": "return / gate blind$/.test(m) ? ' check blind' : ' checks blind'; }) : '';",
+     "replace": "return ' blind'; }) : '';", "matches": 1},
+    {"why": "v3884 - a proving count says 'proving 102' of nothing again",
+     "file": "tv/control_ui.html",
+     "find": "'proving ' + _n(hs.owed) + (hs.owed === 1 ? ' check' : ' checks') + _eta(hs.etaS)",
+     "replace": "'proving ' + _n(hs.owed) + _eta(hs.etaS)", "matches": 1},
     {"why": "v3883 (#116) - the brief wraps mid-phrase again (one inline run: '~15 / min' under a stranded middot)",
      "file": "tv/control_ui.html",
      "find": "                              display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 1ch; }\n",
@@ -271,8 +279,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3883 (#116) - the closed line counts the other wounds again (+N)",
      "file": "tv/control_ui.html",
-     "find": "    var first = hurt.length ? _short(hurt[0]).replace(/ gates? blind$/, ' blind') : '';\n",
-     "replace": "    var first = hurt.length ? _short(hurt[0]).replace(/ gates? blind$/, ' blind') + (hurt.length > 1 ? ' +' + (hurt.length - 1) : '') : '';\n",
+     "find": "return / gate blind$/.test(m) ? ' check blind' : ' checks blind'; }) : '';\n",
+     "replace": "return / gate blind$/.test(m) ? ' check blind' : ' checks blind'; }) + (hurt.length > 1 ? ' +' + (hurt.length - 1) : '') : '';\n",   # v3884 re-anchor
      "matches": 1},
     {"why": "v3882 - a quiet import's closed row repeats a stale ETA (or says nothing) instead of how long it has been quiet",
      "file": "tv/control_ui.html", "find": "    var heal = imp ? 'importing' + (_quiet || _eta(imp.etaS)) : proving;\n",

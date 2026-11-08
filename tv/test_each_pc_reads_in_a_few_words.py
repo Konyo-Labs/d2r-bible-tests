@@ -202,7 +202,7 @@ class EachPcInAFewWords(unittest.TestCase):
 
     def test_the_header_counts_each_word_worst_first(self):
         hd = self.out["__header"]
-        self.assertEqual(hd, u"11 PCs: 3 blocked · 1 updating · 4 unknown · 1 offline · 2 ready")
+        self.assertEqual(hd, u"11 PCs: 3\u00a0blocked · 1\u00a0updating · 4\u00a0unknown · 1\u00a0offline · 2\u00a0ready")
 
 
 class EverySurfaceDrawsTheOneFunction(unittest.TestCase):
@@ -244,6 +244,9 @@ class TheOpenRowStaysBalanced(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3884 - the header can split a count from its word again ('... 3 offline · 1' / 'ready' at 1512)",
+     "file": "tv/control_ui.html",
+     "find": "return n[k] + '\\u00a0' + _PC_WORD[k].w; });", "replace": "return n[k] + ' ' + _PC_WORD[k].w; });", "matches": 1},
     {"why": "v3883 - the Fleet says IN TOWN again for an offline PC (his 11-08 ruling: simply write OFFLINE)",
      "file": "tv/control_ui.html",
      "find": "    town:    { w: 'offline',          c: 'pcs-town',", "replace": "    town:    { w: 'in town',          c: 'pcs-town',",
