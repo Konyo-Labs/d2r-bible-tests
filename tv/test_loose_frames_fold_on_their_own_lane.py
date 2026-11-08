@@ -247,6 +247,26 @@ class TheLaneAsksFirstAndFoldsAlone(_Hist):
         self.assertIn("another fold", r["why"])
 
 
+class TheReadPicturesAreNamedForWhatTheyAre(unittest.TestCase):
+    """v3883 - the plan and frame_authority called `<n>_<ms>.jpg` "probe / extract artifacts from the free pixel lane". MEASURED
+    11-08: they are tv_diablo.archive_read_frame's pictures of what the AI read (each reopens its history row), still being
+    written beside the live footage - 4,582 on the work ALT, 11,902 on Dean's PC - and kept by his v861.1 free-disk rule."""
+
+    def test_the_plan_names_them_read_pictures_and_folds_none(self):
+        h = tempfile.mkdtemp(prefix="orphan-reads-")
+        self.addCleanup(shutil.rmtree, h, True)
+        t = int(time.time() * 1000) - 7200000
+        for i in range(3):
+            with io.open(os.path.join(h, "%d_%d.jpg" % (170 + i, t + 11000 * i)), "wb") as fh:
+                fh.write(b"\xff\xd8 read picture")
+        p = OF.plan(h)
+        self.assertIn("3 read picture(s) left alone", p["say"], p["say"])
+        self.assertNotIn("probe", p["say"])
+        self.assertEqual(p["clusters"], [], "a read picture was planned as footage")
+        import frame_authority as FA
+        self.assertIn("the AI's read pictures", FA.loose_frames(h)["say"])
+
+
 class TheConsoleRunsTheLane(unittest.TestCase):
     """Real objects where they can be had, the roster parsed where starting it would start every lane."""
 
@@ -276,6 +296,10 @@ if __name__ == "__main__":
 
 
 RED_PROOF = [
+    {"why": "v3883 - the AI's read pictures are called probe artifacts again",
+     "file": "orphan_fold.py",
+     "find": "\" %d read picture(s) left alone - the AI's reads, not a recording.\" % arte)}",
+     "replace": "\" %d probe artifact(s) left alone; they are not a recording.\" % arte)}", "matches": 1},
     {"why": "v3883 (#128) - a sliver beside a sealed reel is left loose again (read by nothing, pruned by nothing)",
      "file": "orphan_fold.py",
      "find": "        join, jgap = _join_target(lo, hi, _hitw)\n", "replace": "        join, jgap = None, None\n", "matches": 1},

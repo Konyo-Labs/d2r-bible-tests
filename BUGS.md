@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3425 - THE AI'S READ PICTURES WERE CALLED "PROBE ARTIFACTS": 11,902 ON DEAN'S PC WITH NO WRITER ANYONE COULD NAME (v3883)
+#129 item 18 (11-08 06:30, Dean's PC): frames/hist held 11,902 `<n>_<ms>.jpg` (1.49 GB) that frame_authority.loose_frames
+called "probe / extract artifacts from the free pixel lane", and no writer was found by grepping for the name. MEASURED
+11-08 ~09:57 on the work ALT (read-only): 4,582 of them (508 MB), still being written - #173 at 09:55:08, #174 at 09:55:19,
+beside the live footage. The writer is tv_diablo.archive_read_frame (v735): the settled screen each AI read saw, kept so its
+history row reopens it (/frame?id=). They are kept ON PURPOSE by his v861.1 rule ("so much smarter without a cap - it's
+locally stored"): evicted only under the free-disk floor or the hist cap, a journal-named one never. Not a leak; the name
+was wrong, and every surface that read it (the fold's plan, the doctor's loose-frame line) repeated it. Now both say
+"read pictures"; the classifier and its keys are unchanged. Law: test_loose_frames_fold_on_their_own_lane (+1 case: three
+`<n>_<ms>.jpg` are named read pictures and folded into nothing), red-proof PROVEN.
+
 ### REG-3424 - A SET PIECE COULD NOT BE SEARCHED BY ITS OWN NAME: "SIGON'S GAGE" FOUND NOTHING (v3883, GrokBot's v3881 look)
 GrokBot's v3881 pass (#230 6717686258, card 5): "searching 'Tal Rasha's Guardianship' itself only offers the Wrappings set,
 not the piece". MEASURED in the real search box (scratch headless Chrome on :9228, the v3883 page, offline): "Tal Rasha's

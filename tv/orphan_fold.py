@@ -256,7 +256,7 @@ def plan(hist_dir=None, gap_ms=GAP_MS):
                                                         sum(1 for c in out if not c["eligible"] and not c.get("join"))))
                     if out else "no loose recording frames — every frame on disk belongs to a reel")
                    + ("" if arte is None else
-                      " %d probe artifact(s) left alone; they are not a recording." % arte)}
+                      " %d read picture(s) left alone - the AI's reads, not a recording." % arte)}   # v3883 - not "probe artifacts"
 
 
 @_one_fold_at_a_time

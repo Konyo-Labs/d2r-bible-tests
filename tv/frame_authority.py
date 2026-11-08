@@ -973,7 +973,12 @@ def loose_frames(hist_dir):
     They are two different populations and the difference decides everything:
       · `f_<ms>.jpg`      an ungrouped RECORDING. The indexer never turned it into a reel, so no
                           lane has swept it and it may hold names nothing has read.
-      · `<n>_<ms>.jpg`    probe / extract artifacts from the free pixel lane.
+      · `<n>_<ms>.jpg`    the AI's READ PICTURES: tv_diablo.archive_read_frame (v735) keeps the settled screen each read
+                          saw, so its history row can reopen it. v3883 - this line called them "probe / extract
+                          artifacts from the free pixel lane"; MEASURED 11-08 on the work ALT, two written 11 s apart at
+                          09:55 beside the live footage, 4,582 of them (508 MB), Dean 11,902. His v861.1 rule keeps them
+                          ("so much smarter without a cap - it's locally stored"): evicted only under the free-disk floor,
+                          a journal-named one never.
 
     This REPORTS them and refuses all of them. Classifying an ungrouped recording is a different
     job — it needs the indexer, not a deleter — and until that exists "I do not know what this is"
@@ -1000,8 +1005,8 @@ def loose_frames(hist_dir):
             out["artifactBytes"] += n
     out["ok"] = True
     out["say"] = ("%d loose frame(s) belong to no reel (%.2f GB): %d look like an UNGROUPED "
-                  "RECORDING (%.2f GB) that no lane has swept, %d look like probe artifacts "
-                  "(%.2f GB). NONE is offered for deletion — a frame nothing has classified is not "
+                  "RECORDING (%.2f GB) that no lane has swept, %d are the AI's read pictures "
+                  "(%.2f GB - kept under the free-disk rule, each reopens its history row). NONE is offered for deletion — a frame nothing has classified is not "
                   "a frame anything may delete."
                   % (len(names), out["bytes"] / 1e9,
                      len(out["recording"]), out["recordingBytes"] / 1e9,
