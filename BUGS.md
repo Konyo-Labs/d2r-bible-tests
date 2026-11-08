@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3413 - GROKBOT SAID "#101 FIXED" AND THE BOARD KEPT IT WAITING ON HIS LOOK (v3882, #117)
+His rule 11-07 21:18: "you should be tasking them off as we go". MEASURED on GrokBot's v3878 pass (#230 6708917680, read
+back from GitHub): cards_in judged each LINE by any fail word on it, so his TALLY line - "Tally: FIXED 4 (#96 ..., #97,
+#101, REG-3349 lamp) - STILL 2 (#56, #104) - NOT SEEN 4 (...)" - read every card on it "still": #101, FIXED there and on its
+own line, stayed waiting. And "#24 failed river read: NOT SEEN." read "still" off the word "failed" in the card's TITLE. Now
+a line carrying both tags is judged a segment at a time (split at " · ", " | ", "; "), and each line or segment by its FIRST
+capitalised verdict (GrokBot writes them in capitals): FIXED / SAW pass, STILL / DIFFERS / NOT FIXED fail, NOT SEEN / CANNOT
+TELL / UNKNOWN answer nothing; the lowercase fail words only when there is no capitalised verdict. The real comment now
+reads #96 #97 #101 fixed, #56 #104 still, #13 #24 nothing. Law: test_the_task_board_is_derived_from_the_evidence (a new case
+from his lines; 3 new red-proofs RED, its 54 others RED).
 ### REG-3412 - EVERY WINDOWS PC'S DOCTOR SAID "2 DARK" AND NAMED NEITHER LANE (v3882)
 The doctor on Dean's PC and both ALTs, 11-08: "the shelf driver beat 2.9h ago, but 2 dark - a lane in that state has
 stopped reading". MEASURED on Dean's PC: the beat's own rows named them - chronicle DARK (38 owed, 0 units of work ever)

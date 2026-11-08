@@ -439,10 +439,45 @@ def cards_in(body):
         good = bool(_CARD_PASS_RX.search(line))
         if not (bad or good):
             continue
-        keys = regs_in(line) + versions_in(line)
-        for i in ids:
-            out.append([i, keys[:12], "still" if bad else "fixed"])
+        # v3882 (#117, MEASURED on GrokBot's v3878 pass, comment 6708917680), two misreads of one look:
+        #  * its TALLY line - "Tally: FIXED 4 (#96 ..., #97, #101, REG-3349 lamp) · STILL 2 (#56, #104) · NOT SEEN 4 (...)" -
+        #    names cards under BOTH tags, and the whole line read "still" for every card on it: #101, FIXED there and on its
+        #    own line, stayed "waiting on GrokBot's look". A line carrying both is judged a SEGMENT at a time (split at its
+        #    " · ", " | " and "; ");
+        #  * "#24 failed river read: NOT SEEN." read "still" off the word "failed" in the CARD'S TITLE. GrokBot writes its
+        #    verdicts in capitals, so a capitalised verdict decides (the first one); the lowercase fail words only when
+        #    there is none. NOT SEEN / CANNOT TELL / UNKNOWN answer nothing (his read, never the card).
+        segs = re.split(r"\s+[·|]\s+|;\s+", line) if (bad and good) else [line]
+        for seg in segs:
+            sids = [i for i in _CARD_RX.findall(seg) if int(i) not in (GROKBOT_ISSUE, THIRD_ISSUE)]
+            if not sids:
+                continue
+            verdict = _verdict(seg)
+            if verdict is None:
+                continue
+            keys = regs_in(seg) + versions_in(seg)
+            for i in sids:
+                out.append([i, keys[:12], verdict])
     return out[:60]
+
+
+#: v3882 (#117) - GrokBot's verdict words as it writes them (CAPITALS). "NOT FIXED" is a fail before its FIXED is a pass;
+#: NOT SEEN / CANNOT TELL / UNKNOWN are HIS read failing - they answer nothing, never the card.
+_CAP_VERDICTS = ((re.compile(r"\bnot\s+fixed\b", re.I), "still"), (re.compile(r"\b(?:NOT\s+SEEN|CANNOT\s+TELL|UNKNOWN)\b"), None),
+                 (_CARD_PASS_RX, "fixed"), (_TAG_FAIL_RX, "still"))
+
+
+def _verdict(seg):
+    """v3882 (#117) - what one line (or one tally segment) says of the cards it names: the FIRST capitalised verdict; with
+    none, the lowercase fail words (fails / broken / reopened / regressed) read "still". -> "fixed" | "still" | None"""
+    hits = []
+    for rx, v in _CAP_VERDICTS:
+        m = rx.search(seg)
+        if m:
+            hits.append((m.start(), v))
+    if hits:
+        return min(hits, key=lambda h: h[0])[1]
+    return "still" if _LINE_FAIL_RX.search(seg) else None
 
 
 def refuted_in(body):

@@ -284,6 +284,22 @@ class TheLooksAreReadAndUnknownStaysUnknown(Fixture):
         self.assertEqual((r["versionLook"] or {}).get("id"), "1002", "the version-level look was not said")
         self.assertIn("not at this card", r["why"])
 
+    def test_a_tally_line_and_a_card_title_are_read_as_grokbot_wrote_them(self):
+        """v3882 (#117, GrokBot's v3878 pass, #230 6708917680 - his lines, verbatim). The tally named #101 under FIXED and
+        the whole line read "still" for every card on it; "#24 failed river read: NOT SEEN." read "still" off its TITLE."""
+        body = ("Seat: GrokBot (visual eyes / debugger) -> Claude (coder)\n\n"
+                "**Tally: FIXED 4 (#96 with one STILL detail, #97, #101, REG-3349 lamp) \u00b7 STILL 2 (#56, #104) \u00b7 "
+                "NOT SEEN 4 (#96/#88 lane, #13, #24 failed read, #24 held-on-shut-locks) \u00b7 #40 answers but readTs UNKNOWN**\n"
+                "7. **#24 failed river read: NOT SEEN.** No row read \"a newer read failed\".\n"
+                "9. **#9 the dock: NOT FIXED** - still overlaps\n")
+        got = dict((c, v) for c, _k, v in TT.cards_in(body))
+        self.assertEqual(got.get("101"), "fixed", "a card under the tally's FIXED read still: %r" % got)
+        self.assertEqual((got.get("97"), got.get("56"), got.get("104")), ("fixed", "still", "still"), got)
+        self.assertNotIn("13", got, "a card GrokBot did NOT SEE was given a verdict: %r" % got)
+        self.assertNotIn("24", got, "'failed' in a card's TITLE read as its verdict: %r" % got)
+        self.assertNotIn("40", got, "a segment with no verdict word answered: %r" % got)
+        self.assertEqual(got.get("9"), "still", "NOT FIXED read as FIXED")
+
     def test_a_per_card_answer_counts_for_that_card_only(self):
         """REG-3281 (#86) - GrokBot answers per CARD ("#5 the lamp (REG-101): FIXED"); with the card's key on the line, that
         is a look at the card, not at the version."""
@@ -622,6 +638,18 @@ class ThePageDrawsIt(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3882 (#117) - a tally line is judged whole again: every card on it reads 'still' (#101, FIXED, stays waiting)",
+     "file": "tv/task_truth.py",
+     "find": "        segs = re.split(r\"\\s+[·|]\\s+|;\\s+\", line) if (bad and good) else [line]\n",
+     "replace": "        segs = [line]\n", "matches": 1},
+    {"why": "v3882 (#117) - GrokBot's NOT SEEN answers for the card again ('#24 failed river read: NOT SEEN' reads still)",
+     "file": "tv/task_truth.py",
+     "find": "(re.compile(r\"\\b(?:NOT\\s+SEEN|CANNOT\\s+TELL|UNKNOWN)\\b\"), None),",
+     "replace": "", "matches": 1},
+    {"why": "v3882 (#117) - NOT FIXED reads as FIXED (the pass tag inside the fail)",
+     "file": "tv/task_truth.py",
+     "find": "_CAP_VERDICTS = ((re.compile(r\"\\bnot\\s+fixed\\b\", re.I), \"still\"), ",
+     "replace": "_CAP_VERDICTS = (", "matches": 1},
     {"why": "REG-3281 (#86) - a GrokBot look at the VERSION counts for every card shipped in it again",
      "file": "tv/task_truth.py",
      "find": "            (about_it if by_version else ver_only).append(r)\n",
