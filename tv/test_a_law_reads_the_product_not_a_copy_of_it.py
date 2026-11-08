@@ -53,7 +53,7 @@ def _tree():
     page = open(os.path.join(ROOT, "bible.html"), encoding="utf-8").read()
     files = {}
     for p in glob.glob(os.path.join(ROOT, "tv", "test_*.py")) + glob.glob(os.path.join(ROOT, "tests", "*.spec.ts")):
-        rel = os.path.relpath(p, ROOT)
+        rel = os.path.relpath(p, ROOT).replace(os.sep, "/")   # v3886 (#107) - Windows says tv\\x.py; COPIES_KNOWN says tv/x.py
         if rel == "tv/" + os.path.basename(__file__):
             continue
         files[rel] = open(p, encoding="utf-8", errors="replace").read()

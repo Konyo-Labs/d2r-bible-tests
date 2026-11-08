@@ -177,10 +177,17 @@ class APathStubIsABSENTOrNONEXECUTABLE_NeverAWorkingStandIn(unittest.TestCase):
     def test_the_ABSENT_mode_hides_the_path_AND_refuses_the_exec(self):
         """The other mode, driven on a throwaway file so nothing real is hidden."""
         d = tempfile.mkdtemp(prefix="ci_sim_pathstub_")
-        script = os.path.join(d, "a_host_tool")
-        with io.open(script, "w", encoding="utf-8") as fh:
-            fh.write("#!/bin/sh\nexit 0\n")
-        os.chmod(script, 0o755)
+        # v3886 (#107, windows-latest: "[WinError 193] %1 is not a valid Win32 application") - a throwaway tool this OS can
+        # run: a #!/bin/sh script on the Mac, a .cmd batch file on Windows (CreateProcess runs it); the stub is the subject
+        if os.name == "nt":
+            script = os.path.join(d, "a_host_tool.cmd")
+            with io.open(script, "w", encoding="utf-8") as fh:
+                fh.write("@exit /b 0\r\n")
+        else:
+            script = os.path.join(d, "a_host_tool")
+            with io.open(script, "w", encoding="utf-8") as fh:
+                fh.write("#!/bin/sh\nexit 0\n")
+            os.chmod(script, 0o755)
         try:
             # PREMISE: it really is there and really runs, or "absent" proves nothing.
             self.assertTrue(os.path.exists(script))

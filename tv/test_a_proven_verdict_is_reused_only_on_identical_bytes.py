@@ -648,7 +648,7 @@ class TheKeyNamesEveryInput(unittest.TestCase):
                 with io.open(os.path.join(repo, rel), "w", encoding="utf-8") as fh:
                     fh.write(text)
             got, why = H.law_inputs(tv, "t_law.py", [{"file": "subject.txt", "find": "s", "replace": "x"}])
-            rels = sorted(os.path.relpath(p, repo) for p in got)
+            rels = sorted(os.path.relpath(p, repo).replace(os.sep, "/") for p in got)   # v3886 (#107) - one spelling on Windows
             self.assertIsNone(why)
             self.assertEqual(rels, sorted(["tv/t_law.py", "tv/helper_a.py", "tv/helper_b.py", "tv/data.txt",
                                            "tv/subject.txt", "tv/heart2.py", "tv/law_widths.py", "bible.html",
@@ -690,7 +690,7 @@ class TheKeyNamesEveryInput(unittest.TestCase):
             pr = [{"file": "subject.txt", "find": "s", "replace": "x"}]
             every, _w = H.law_inputs(tv, "t_law.py", pr)
             some, _w2 = H.law_inputs(tv, "t_law.py", pr, tracked=frozenset(["tv/t_law.py", "tv/subject.txt", "bible.html"]))
-            rel = lambda xs: sorted(os.path.relpath(p, repo) for p in xs)
+            rel = lambda xs: sorted(os.path.relpath(p, repo).replace(os.sep, "/") for p in xs)   # v3886 (#107)
             self.assertIn("tv/state_p3.json", rel(every), "BASELINE: with no tracked set the named file must be keyed")
             self.assertNotIn("tv/state_p3.json", rel(some), "an untracked runtime file is still a key input (#242)")
             self.assertIn("bible.html", rel(some), "a TRACKED named file left the key")

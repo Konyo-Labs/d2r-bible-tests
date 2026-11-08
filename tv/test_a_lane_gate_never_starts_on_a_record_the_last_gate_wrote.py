@@ -18,6 +18,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import test_a_sandbox_never_carries_a_run_record as base     # noqa: E402 - the fixture, its _Case and its helpers
+
+
+def _lf(text):
+    """v3886 (#107, windows-latest: '{"row": ...}\\r\\n' != '{"row": ...}\\n') - a Windows PC checks text out with
+    core.autocrlf=true, so the sandbox's HEAD record is HEAD's text with CRLF; heart2 keys proofs on LF-normalised bytes
+    (lf_normalised_bytes) for exactly that reason. The record is HEAD's when its LINES are HEAD's."""
+    return None if text is None else text.replace("\r\n", "\n")
 import heart2           # noqa: E402
 
 ROW = u'{"row": "banked by a gate in this lane"}\n'
@@ -38,12 +45,12 @@ class ALaneGateNeverStartsOnARecordTheLastGateWrote(base._Case):
     def test_a_row_a_gate_banked_is_put_back_before_the_next_gate(self):
         tv, sb = self.lane()
         ledger = os.path.join(sb, *base.TRACKED.split("/"))
-        self.assertEqual(base._read(ledger), base.COMMITTED, "PREMISE: the sandbox was not built on HEAD's ledger")
+        self.assertEqual(_lf(base._read(ledger)), base.COMMITTED, "PREMISE: the sandbox was not built on HEAD's ledger")
         before = self.fixture_state()
         base._write(ledger, base.COMMITTED + ROW)                    # what hover-wilson's run does
         got, said = self.reset(tv)
         self.assertEqual(got, [base.TRACKED])
-        self.assertEqual(base._read(ledger), base.COMMITTED)
+        self.assertEqual(_lf(base._read(ledger)), base.COMMITTED)
         self.assertIn("REG-2598", said)
         self.assertIn(base.TRACKED, said)
         self.assertEqual(self.fixture_state(), before, "the reset reached the tree the sandbox was copied from")
@@ -74,7 +81,7 @@ class ALaneGateNeverStartsOnARecordTheLastGateWrote(base._Case):
         os.remove(ledger)
         got, _said = self.reset(tv)
         self.assertEqual(got, [base.TRACKED])
-        self.assertEqual(base._read(ledger), base.COMMITTED)
+        self.assertEqual(_lf(base._read(ledger)), base.COMMITTED)
 
     def test_a_record_a_gate_keeps_is_put_back_as_built(self):
         """second eye - a record a law declares in PROOF_NEEDS stays in the sandbox, and a gate that rewrites it is undone"""
@@ -112,7 +119,7 @@ class ALaneGateNeverStartsOnARecordTheLastGateWrote(base._Case):
         base._write(ledger, base.COMMITTED + ROW)
         got, _said = self.reset(tv)
         self.assertEqual(got, [base.TRACKED], "the failed put-back was re-armed as the lane's baseline")
-        self.assertEqual(base._read(ledger), base.COMMITTED)
+        self.assertEqual(_lf(base._read(ledger)), base.COMMITTED)
 
     def test_a_sandbox_heart2_never_built_is_left_alone(self):
         self.assertEqual(self.reset(os.path.join(self.root, "not-a-sandbox", "tv")), (None, ""))

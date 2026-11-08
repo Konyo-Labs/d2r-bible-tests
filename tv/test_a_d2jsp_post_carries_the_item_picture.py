@@ -69,7 +69,10 @@ process.stdout.write(JSON.stringify(out));
 """
 
 GATE = r"""
-const m = await import(process.argv[process.argv.length - 1]);   /* v3864 - the program comes on stdin; the path is the last arg */
+/* v3864 - the program comes on stdin; the path is the last arg. v3886 (#107, windows-latest: "Only URLs with a scheme in: file,
+   data, and node are supported ... Received protocol 'd:'") - import() takes a URL: a Windows path D:\... is not one */
+const { pathToFileURL } = await import('node:url');
+const m = await import(pathToFileURL(process.argv[process.argv.length - 1]).href);
 const out = {};
 async function ask(method, path, auth){
   const headers = new Map(); if (auth) headers.set('authorization', auth);
