@@ -71,13 +71,19 @@ test.describe('v1542 — Hell before Nightmare before Normal', () => {
       const s: any = (window as any).funiScan();
       const diffs = (s.runs || []).map((x: any) => x.diff);
       const names = (s.runs || []).map((x: any) => (x.items || []).map((i: any) => i.n)).flat();
-      return { n: diffs.length, tiers: [...new Set(diffs)].sort(), fake: names.filter((n: string) => /^(Polaris Spear|The Scourge)$/.test(n)) };
+      return { n: diffs.length, tiers: [...new Set(diffs)].sort(), fake: names.filter((n: string) => /^(Polaris Spear|The Scourge)$/.test(n)),
+               impossible: (s.runs || []).map((x: any) => x.boss).filter((b: string) => /^(NM|Normal) TZ Pindleskin$/.test(b)) };
     });
     // v3859 - measured: 13 runs before c0224c00, 12 after. The 13th was "Hell TZ The Pit" holding ONLY Polaris Spear and
     // The Scourge - a run built of a fake unique and an alias (his rulings 2026-11-03: Polaris is not an item, Scourge is
     // Stormlash). Twelve real runs across three tiers is the resolution this law keeps; a run of non-items is refused below.
     expect(r.fake, 'a run was built from a name that is not a unique').toEqual([]);
-    expect(r.n, 'twenty-ish runs, not a handful of blobs').toBeGreaterThanOrEqual(12);
+    // v3886 (#149) - measured on GitHub (one run fewer than his Mac, in both directions): 12 before, 11 after. The run that went
+    // is "NM TZ Pindleskin" - 15 items grouped on Nightmare / Normal terror-zone Pindleskin cells the game cannot give
+    // (silospen has no such row; GrokBot's v3885 look: "a row silospen never gives, ranked first"). Its items moved to the Hell
+    // Mephisto runs. Eleven real runs over three tiers is still the resolution; a run on an impossible cell is refused below.
+    expect(r.impossible, 'a run was built on a Pindleskin terror-zone cell the game cannot give').toEqual([]);
+    expect(r.n, 'twenty-ish runs, not a handful of blobs').toBeGreaterThanOrEqual(11);
     expect(r.tiers.length, 'lower-tier runs still exist — they just sort below').toBeGreaterThan(1);
   });
 
