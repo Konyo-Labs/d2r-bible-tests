@@ -195,6 +195,28 @@ def _d2jsp_canon(item):
     return _D2JSP_CANON[k]
 
 
+def _quote_names_its_item(out, item, _resolve=None):
+    """v3883 (#97, the Grok CLI's edge on v3878, #231) - EVERY d2jsp price answer names the item the page draws its NORMAL
+    and PERFECT cards of. d2jsp_chrome set `resolved` only on an answer whose forum page it parsed, so a PAUSED answer (this
+    route returns it while checks run) and the quote's early answers (signed out, a sign-in it could not copy, Chrome
+    unread) carried none: the page then resolved the TRADER's words itself ("shako"), found no such item, and drew "No
+    item card" over the very answer #97 was built for. The quote block's own resolver, never a guess: no node adds nothing,
+    and a name it cannot match comes back as typed (as on a read) - the page then says "No item card" exactly as before.
+    An answer that already names its item keeps it. -> the same dict"""
+    if not isinstance(out, dict) or out.get("resolved"):
+        return out
+    try:
+        if _resolve is None:
+            import d2jsp_chrome as _d2c
+            _resolve = _d2c._resolved_name
+        _rn = _resolve(item)
+    except Exception:
+        _rn = None
+    if isinstance(_rn, str) and _rn.strip():
+        out["resolved"] = _rn.strip()
+    return out
+
+
 def _d2jsp_db_fold(reading):
     """v3849 - fold a d2jsp reading into this console's price DB and answer the DB's price for the item.
     A DB that will not read is UNKNOWN: the reading is not folded and the answer says why (never an empty DB)."""
@@ -51116,13 +51138,14 @@ class Handler(BaseHTTPRequestHandler):
                     _stored = _d2jsp_db_view(_item)
                 except Exception as _se:
                     _stored = {"unknown": "the price DB would not read (%s)" % type(_se).__name__}
-                self._json(200, {"item": _item, "fg": None, "n": 0, "reason": "paused",
-                                  "say": "paused while checks run", "posts": [], "low": None,
-                                  "high": None, "readAt": "", "board": 268, "db": _stored})
+                self._json(200, _quote_names_its_item({"item": _item, "fg": None, "n": 0, "reason": "paused",
+                                                       "say": "paused while checks run", "posts": [], "low": None,
+                                                       "high": None, "readAt": "", "board": 268, "db": _stored}, _item))
                 return
             _code, _out = _d2jsp.d2jsp_quote(
                 _item, self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
                 sec_fetch_site=self.headers.get("Sec-Fetch-Site"))
+            _out = _quote_names_its_item(_out, _item)   # v3883 (#97) - every answer, not only one the forum page parsed
             if _out.get("reason") == "need-login":
                 _opened = _d2jsp.open_quote_login_once()
                 if _opened:
