@@ -51,6 +51,9 @@ SRC = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
 
 
 RED_PROOF = [
+    {"why": "v3883 - his un-ticks ride into the backup's ledger block again, a key the restore has no answer for",
+     "file": "control_app.py",
+     "find": '    led.pop("grailUnfound", None)\n', "replace": "", "matches": 1},
     {"why": "v3882 - an empty gameFound the board sent is left out of the backup again (Dean's doctor: MISSING gameFound)",
      "file": "control_app.py",
      "find": '    if isinstance(got.get("gameFound"), dict):\n        led["gameFound"] = got["gameFound"]\n',
@@ -94,7 +97,8 @@ class AnEmptyStoreIsWrittenAsMeasured(unittest.TestCase):
         self.addCleanup(shutil.rmtree, d, True)
         board = {"ok": True, "route": {"key": "fixture"},
                  "counts": {"foundLog": 2, "owned": 1, "setPieces": 1, "runewordsMade": rw_count},
-                 "sample": {"foundLog": ["A", "B"], "owned": ["C"], "setPieces": ["D"]},
+                 "sample": dict({"foundLog": ["A", "B"], "owned": ["C"], "setPieces": ["D"]},
+                                **(getattr(self, "_sample_extra", None) or {})),
                  "gameFound": game_found, "rwMadeFull": rw_full, "fullStores": {}}
         with mock.patch.object(ca, "board_ownership", lambda **k: dict(board)), \
                 mock.patch.object(ca, "_LEDGER_BACKUP_DIR", d), \
@@ -115,6 +119,17 @@ class AnEmptyStoreIsWrittenAsMeasured(unittest.TestCase):
         led = self._snap(None, None, None)
         self.assertNotIn("gameFound", led)
         self.assertNotIn("rwMade", led)
+
+    def test_every_key_of_the_ledger_is_one_the_restore_knows(self):
+        """v3883 - his un-ticks rode the board's SAMPLE (REG-1906) into every backup's ledger from ~10-15, a sixth key
+        ledger_restore has no answer for: the corroborator's backup-restore-vocabulary pair disagreed for weeks. They are
+        backed up in allStores (d2r_grailUnfound, the complete export) - beside the ledger, never inside it"""
+        import ledger_restore as LR
+        self._sample_extra = {"grailUnfound": ["Arkaine's Valor"]}
+        led = self._snap({}, {}, 0)
+        self.assertNotIn("grailUnfound", led, "his un-ticks were copied into the ledger block again")
+        known = set(LR.RESTORABLE) | set(LR.BACKED_UP_ONLY)
+        self.assertEqual(sorted(k for k in led if k not in known), [], "a backup ledger key the restore has no answer for")
 
     def test_a_full_store_is_written_whole(self):
         led = self._snap({"Shako": "05/27/2026"}, {"Spirit": 1}, 1)

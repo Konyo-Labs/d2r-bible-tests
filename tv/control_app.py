@@ -34100,6 +34100,13 @@ def _ledger_snapshot_once(force=False):
         return (None, str((got or {}).get("why") or "the board did not answer"))
     counts = got.get("counts") or {}
     led = dict(got.get("sample") or {})
+    # v3883 - THE SAMPLE IS NOT THE STORE LIST. REG-1906 put his un-ticks in board_ownership's sample (so the cross-reference can
+    # say "you un-ticked it"), and this copied the sample whole, so from ~10-15 every backup's `ledger` carried a sixth key,
+    # grailUnfound, that ledger_restore has no answer for - the corroborator's backup-restore-vocabulary pair has disagreed
+    # since (MEASURED 11-08 on his Mac: stray ['grailUnfound'] in ledger_2026-11-08_083520.json). His un-ticks are backed up
+    # where v2737 put everything that is not one of the five ledger stores: the complete export at the file's top level
+    # (d2r_grailUnfound, present in that same file). Restoring an un-tick is his hand's alone - the board's door is adds only.
+    led.pop("grailUnfound", None)
     # v2052 — KEEP THE DATES. sample.foundLog used to be Object.keys, so a restore could
     # replay names and not stamps. The dict is the ledger.
     if isinstance(got.get("dates"), dict) and got["dates"]:

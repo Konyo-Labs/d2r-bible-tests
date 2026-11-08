@@ -112,6 +112,19 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3421 - EVERY BACKUP SINCE ~10-15 CARRIED HIS UN-TICKS IN ITS LEDGER BLOCK, WHERE THE RESTORE HAS NO ANSWER FOR THEM (v3883)
+The heart on his Mac, 11-08 ~10:40: "2 engine pair(s) disagree: backup-restore-vocabulary - stores in the newest backup
+that ledger_restore does not know". MEASURED (read-only, his ~/d2r_ledger_backups): ledger_2026-11-08_083520.json's
+`ledger` holds six keys - foundLog, gameFound, grailUnfound, owned, rwMade, setPieces - and ledger_restore knows five;
+the key is in every backup back to ledger_2026-10-15 and absent from 10-01's. Cause: REG-1906 added his un-ticks to
+board_ownership's SAMPLE (for the cross-reference's "you un-ticked it"), and _ledger_snapshot_once copies the sample whole
+into the ledger block. His un-ticks are already backed up where v2737 put every store that is not one of the five: the
+complete export at the file's top level (d2r_grailUnfound, present in the same file). The ledger block drops the sample's
+grailUnfound now; restoring an un-tick stays his hand's (the board's door is adds only). Law:
+test_ledger_backup_covers_every_store (+1 case: every key of a backup's ledger is one the restore knows), red-proof
+PROVEN. (A first cut's comment named the complete export's key inside the ledger assembly and tripped that law's own
+source guard - reworded.)
+
 ### REG-3420 - THE HOURLY HAND-OFF LEFT SLIVERS LOOSE FOR DAYS: READ BY NOTHING, PRUNED BY NOTHING (v3883, #128)
 His 11-08 words on loose frames: "the printer 3d/4d machine proccesing filtering system ... routes everytihng properly and
 also should be pruning and deleting automatically looped? do whatever is recommended regardless". MEASURED on the work
