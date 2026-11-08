@@ -112,6 +112,19 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3452 - DEAN'S CONSOLE NEVER READ ONE PRICE: IT THREW AWAY THE FORUM'S RESULTS PAGE AND SEARCHED AGAIN (v3886, his 11-08)
+His words: "deans is showing the picture of engimas the normal tier and the perfect tier but the prices doesnt read out to
+him it says UNKNOWN on his console. whats the reason its not working for him check hes online and logged in". MEASURED over
+SSH, read-only (no window, his price database untouched): Dean online on v3884, his console's own d2jsp sign-in present and
+readable (member_id + msec, the same two his Mac's working sign-in carries; his everyday Chrome's cookies are app-bound and
+cannot be read - that was the 11-07 'chrome-unread'), and NO d2jsp_price_db.json on his PC: not one price had ever read
+there. The console's own search failed 3 of 3: the forum answers the POST with 302 -> search.php?c=..&r=.. (it RAN the
+search), the scripted GET of that page meets Cloudflare (403 "Just a moment..."), and the fallback submitted a SECOND search
+in the console's Chrome seconds later, which the forum holds back - "no results page" every time. Opening the forum's own
+results page in that Chrome read in 1 s: Enigma 1,850 fg (3 posts, 1,400-2,000). Now a challenge on a results page the
+forum named opens THAT page (_chrome_open_results, forum host only, never a submit); a challenge on the POST itself (the
+Mac's) still searches there. The law that pinned the second search (REG-3403's challenge case) was the defect's guard and
+now pins the opposite. Law: tv/test_a_forum_redirect_to_its_results_is_followed.py (9 cases), red-proofs PROVEN (3 new).
 ### REG-3451 - TYRAEL'S MIGHT'S ITEM CARD DROPPED DIABLO: IT RANKED BY TIME ALONE (v3886, his 11-08)
 His words: "for tyraels might it doesnt list diablo anymore but clearly the top 5 should include diablo ... and for others
 obviosuly". renderItemDetailCard sorted its places by hours and kept six, so a place with far better odds but a slow clear

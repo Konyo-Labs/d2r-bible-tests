@@ -2382,6 +2382,31 @@ def _chrome_search(item, cookie, chrome=None, clock=None, nap=None):
         return _chrome_search_once(item, cookie, chrome, clock, nap)
 
 
+def _chrome_open_results(url, cookie, chrome=None, clock=None, nap=None):
+    """v3886 (REG-3452) - open the results page the forum already made for a search, in a scratch Chrome. -> its html
+
+    Never a second search: the forum holds back a search sent right after another (measured on Dean's PC), and this one
+    already ran. Only a page on https://forums.d2jsp.org is opened (_forum_redirect named it). Raises OSError("results: no
+    results page") when the page never shows search results - a page not read, never 'no prices'. The cookie is not logged."""
+    clock = clock or time.monotonic
+    nap = nap or time.sleep
+    if not _forum_redirect(url):
+        raise OSError("results: not the forum's page")
+    with (chrome or _scratch_chrome)(cookie, "d2jsp-quote-") as page:
+        page.goto(url)
+        end = clock() + 20
+        while clock() < end:
+            nap(0.8)
+            try:
+                snap = page.snapshot()
+            except Exception:
+                continue
+            html = (snap or {}).get("html") or ""
+            if "Search Results" in html and not _challenge_page(html):
+                return html
+        raise OSError("results: no results page")
+
+
 def _chrome_search_once(item, cookie, chrome, clock, nap):
     submit = (
         "(function(){var f=document.querySelector('form[action*=\"search.php\"]');"
@@ -2466,7 +2491,8 @@ def _chrome_post(subject, text, cookie, forum=None, chrome=None, clock=None, nap
                                                   clock or time.monotonic, nap or time.sleep))
 
 
-def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_run=None, chrome_fetch=None, sec_fetch_site=None):
+def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_run=None, chrome_fetch=None, sec_fetch_site=None,
+                chrome_open=None):
     """Read one item's fg range from the Switch Ladder search. -> (http code, dict)
 
     The dict is the reading. It never carries the cookie or the page.
@@ -2494,6 +2520,7 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
     # 'unread' at 22:46 read 7 posts, 20 fg minutes later - intermittent), and an answer that still could not read says
     # which step raised and its type - never the cookie, the page or the message text
     _err = None
+    results_url = None          # v3886 - the results page the forum made for THIS search, once a redirect named it
     for _try in (1, 2):
         try:
             status, hdrs, raw = fetch("POST", _search_url(item), headers, _search_body(item))
@@ -2521,6 +2548,7 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
             out = _quote_unknown(item, read_at, "unread")
             out["why"] = "the forum's search answered a redirect off the forum"
             return 200, out
+        results_url = nxt
         get_headers = dict((k, v) for k, v in headers.items() if k != "Content-Type")
         try:
             status, hdrs, raw = fetch("GET", nxt, get_headers, None)
@@ -2541,14 +2569,25 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
         page = str(raw or "")
     _held = None
     if _challenge_page(page) and chrome_fetch is not False:
-        opener = chrome_fetch or _chrome_search
+        # v3886 (REG-3452, his 11-08: "deans is showing the picture of engimas ... but the prices doesnt read out to him") -
+        # THE FORUM ALREADY RAN THIS SEARCH. MEASURED on Dean's PC 11-08: the POST answers 302 -> search.php?c=..&r=.., the
+        # scripted GET of that page meets Cloudflare (403 "Just a moment..."), and a SECOND search submitted in the console's
+        # Chrome seconds later is held back by the forum - 3 of 3 'no results page', no price ever. The console's Chrome opens
+        # the results page the forum made (1 s, Enigma 1,850 fg of 3 posts); a challenge on the POST itself (the Mac's) still
+        # searches there.
+        if results_url:
+            opener = chrome_open or _chrome_open_results
+            _arg = results_url
+        else:
+            opener = chrome_fetch or _chrome_search
+            _arg = item
         try:
-            opened = opener(item, cookie)
+            opened = opener(_arg, cookie)
         except Exception as _oe:
             opened = page
             # REG-3331 - only our own step names travel ("search: ..."), never a message that could hold the page
             _m = str(_oe.args[0]) if isinstance(_oe, OSError) and _oe.args and isinstance(_oe.args[0], str) else ""
-            _held = _m if _m.startswith("search:") else type(_oe).__name__
+            _held = _m if _m.startswith(("search:", "results:")) else type(_oe).__name__
         if isinstance(opened, str) and opened and not _challenge_page(opened):
             page = opened
     out = parse_public_quote(page, item, read_at, node_run=node_run)
@@ -2567,7 +2606,9 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
             out["resolved"] = _rn
     if _held and isinstance(out, dict) and out.get("reason") == "unread":
         out["why"] = ("the forum showed no search results within 20 s - a search sent right after another is held "
-                      "back" if _held == "search: no results page" else "the forum search did not run (%s)" % _held)
+                      "back" if _held == "search: no results page" else
+                      "the forum's results page did not open in the console's Chrome within 20 s" if _held == "results: no results page"
+                      else "the forum search did not run (%s)" % _held)
     _r = (out or {}).get("reason") if isinstance(out, dict) else None
     if _r == "need-login":
         # REG-3250 (his check 2026-11-06 ~10:10: "im still signed in to d2jsp ... the lamp green is actually correct") -

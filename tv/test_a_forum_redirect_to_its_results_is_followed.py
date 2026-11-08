@@ -43,7 +43,7 @@ PAGE = "\n".join([
 ])
 
 
-def _quote(answers, chrome_fetch=None):
+def _quote(answers, chrome_fetch=None, chrome_open=None):
     """d2jsp_quote over a transport that answers `answers` in order. -> (out, calls)"""
     calls = []
     todo = list(answers)
@@ -59,8 +59,12 @@ def _quote(answers, chrome_fetch=None):
     def no_chrome(item, cookie):
         raise AssertionError("a results page that read does not need a second browser")
 
+    def no_open(url, cookie):
+        raise AssertionError("a results page that read does not need a second browser")
+
     code, out = desk.d2jsp_quote("Gheed's Fortune", ORIGIN, HOST, PORT, cookie_get=lambda: (COOKIE, "ok"),
-                                 transport=transport, chrome_fetch=chrome_fetch or no_chrome)
+                                 transport=transport, chrome_fetch=chrome_fetch or no_chrome,
+                                 chrome_open=chrome_open or no_open)
     assert code == 200, code
     return out, calls
 
@@ -110,19 +114,81 @@ class AForumRedirectToItsResultsIsFollowed(unittest.TestCase):
         self.assertEqual(out.get("why"), "the forum's results page raised TimeoutError")
         self.assertNotIn("SECRETCOOKIE", json.dumps(out))
 
-    def test_a_challenge_on_the_results_page_goes_to_the_consoles_chrome(self):
-        """the followed page meets the same door as the Mac's: a challenge is searched in the console's own Chrome"""
-        seen = []
+    def test_a_challenge_on_the_results_page_opens_that_page_never_a_second_search(self):
+        """* v3886 (REG-3452, Dean's PC 11-08) - the forum ran the search and named its results page; Cloudflare stopped the
+        scripted GET (403 'Just a moment...'). The console's Chrome opens THAT page: a second search seconds later is held
+        back by the forum (3 of 3 on his PC, no price ever)"""
+        opened, searched = [], []
+
+        def chrome_open(url, cookie):
+            opened.append((url, cookie))
+            return PAGE
 
         def chrome_fetch(item, cookie):
-            seen.append(item)
+            searched.append(item)
             return PAGE
+        out, calls = _quote([(302, {"Location": "search.php?c=7&r=1"}, b""), (403, {}, b"<title>Just a moment...</title>")],
+                            chrome_fetch=chrome_fetch, chrome_open=chrome_open)
+        self.assertEqual((out["reason"], out["fg"]), ("read", 15), out)
+        self.assertEqual(searched, [], "the forum's own results page was thrown away and the search sent again")
+        self.assertEqual(opened, [("https://forums.d2jsp.org/search.php?c=7&r=1", COOKIE)])
+        self.assertEqual([c["method"] for c in calls], ["POST", "GET"], "one search, one page")
+
+    def test_a_challenge_on_the_search_itself_is_still_searched_in_the_consoles_chrome(self):
+        """baseline: the Mac's door - no redirect named a results page, so the console's Chrome runs the search"""
+        searched = []
+
+        def chrome_fetch(item, cookie):
+            searched.append(item)
+            return PAGE
+        out, calls = _quote([(403, {}, b"<title>Just a moment...</title>")], chrome_fetch=chrome_fetch)
+        self.assertEqual((out["reason"], out["fg"], searched), ("read", 15, ["Gheed's Fortune"]))
+
+    def test_a_results_page_that_never_opens_says_so(self):
+        def chrome_open(url, cookie):
+            raise OSError("results: no results page")
         out, calls = _quote([(302, {"Location": "search.php?r=1"}, b""), (403, {}, b"<title>Just a moment...</title>")],
-                            chrome_fetch=chrome_fetch)
-        self.assertEqual((out["reason"], out["fg"], seen), ("read", 15, ["Gheed's Fortune"]))
+                            chrome_open=chrome_open)
+        self.assertEqual(out["reason"], "unread")
+        self.assertEqual(out.get("why"), "the forum's results page did not open in the console's Chrome within 20 s")
+
+    def test_the_results_opener_loads_the_page_and_never_searches(self):
+        """the opener itself, on a stand-in Chrome: it goes to the forum's page and submits nothing; off the forum it refuses"""
+        import contextlib
+        log = []
+
+        class Page(object):
+            def goto(self, url):
+                log.append(("goto", url))
+
+            def snapshot(self):
+                return {"html": "<title>Viewing Search Results - d2jsp</title> Search Results " + PAGE}
+
+            def act(self, *a):
+                log.append(("act",) + a)
+
+        @contextlib.contextmanager
+        def chrome(cookie, prefix):
+            log.append(("start", cookie == COOKIE))
+            yield Page()
+        html = desk._chrome_open_results("https://forums.d2jsp.org/search.php?c=7&r=1", COOKIE, chrome=chrome, nap=lambda s: None)
+        self.assertIn("Search Results", html)
+        self.assertEqual(log, [("start", True), ("goto", "https://forums.d2jsp.org/search.php?c=7&r=1")])
+        with self.assertRaises(OSError):
+            desk._chrome_open_results("https://evil.example/search.php?r=1", COOKIE, chrome=chrome, nap=lambda s: None)
+        self.assertEqual(len(log), 2, "a page off the forum was opened with his cookie")
 
 
 RED_PROOF = [
+    {"why": "v3886 (REG-3452) - a challenge on the forum's own results page is searched AGAIN (held back: Dean never reads a price)",
+     "file": "tv/d2jsp_chrome.py", "find": "        if results_url:\n            opener = chrome_open or _chrome_open_results\n",
+     "replace": "        if False:\n            opener = chrome_open or _chrome_open_results\n", "matches": 1},
+    {"why": "v3886 (REG-3452) - the results opener opens a page off the forum with his cookie",
+     "file": "tv/d2jsp_chrome.py", "find": "    if not _forum_redirect(url):\n        raise OSError(\"results: not the forum's page\")\n",
+     "replace": "", "matches": 1},
+    {"why": "v3886 (REG-3452) - a results page that never opened reads as a bare failure, not as what did not open",
+     "file": "tv/d2jsp_chrome.py", "find": "            _held = _m if _m.startswith((\"search:\", \"results:\")) else type(_oe).__name__\n",
+     "replace": "            _held = _m if _m.startswith(\"search:\") else type(_oe).__name__\n", "matches": 1},
     {"why": "REG-3403 - the forum's redirect to its results page is read as 'unread' again (Dean and both ALTs: no prices)",
      "file": "tv/d2jsp_chrome.py", "find": "        nxt = _forum_redirect(loc)\n", "replace": "        nxt = None\n",
      "matches": 1},
