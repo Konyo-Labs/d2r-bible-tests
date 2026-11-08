@@ -10711,6 +10711,11 @@ body:has(#tab-vault.active) .vgd-target{outline:2px solid #f0c060!important;outl
 .qw-mon.qw-mon-sprite, :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .qw-tile img.qw-mon.qw-mon-sprite{inset:4px;
   width:calc(100% - 8px);height:calc(100% - 8px);object-fit:contain;mix-blend-mode:normal;
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.85))}
+/* v3887 (#158, seen on the pixels 11-08: The Banished's loop sat small and dark in its tile) - d2runewizard's loops are 480px
+   squares with the figure in the middle ~40%, and a black-robed monster on a dark tile: the figure is scaled up to fill the
+   tile and lifted, so it reads at 56px. Only the d2rw_ loops; the Arreat Summit sprites keep their framing. */
+:is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .qw-tile img.qw-mon.qw-mon-sprite[src*="d2rw_"], .qw-mon.qw-mon-sprite[src*="d2rw_"]{
+  transform:scale(1.5);transform-origin:50% 32%;filter:brightness(1.45) contrast(1.08) drop-shadow(0 0 3px rgba(150,230,140,.35))}
 /* REG-3321 (#102 - his 11-07 "it should render just the monster not the area behind it ... make it cleaner and better
    seen and clear"). MEASURED: the tile painted the ZONE's art behind the monster and the sprite was drawn with
    mix-blend-mode:screen, which makes every DARK pixel vanish into what is behind it - so the stone showed THROUGH
