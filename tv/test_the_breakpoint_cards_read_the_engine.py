@@ -90,8 +90,24 @@ var eng = { bp: { frames: _ceBpFrames, say: _ceBpSay } };
 function card(cls, v){ WHO = { cls: cls }; var g = _ceBpGap('fcr', WHO, v);
   return { html: _cbBpCard('Faster Cast Rate (FCR)', 'fcr', { key: 'fcr', source: 'EXACT', value: { min: v, max: v }, bp: g }, eng, {}),
            tiers: _cbBpTiers('fcr', {}, eng) }; }
+// v3887 (REG-3474) - every class's own rails, as the page draws them: how many ticks, how many carry their label
+var labels = {}, WHOS = [];
+['Amazon', 'Assassin', 'Barbarian', 'Druid', 'Necromancer', 'Paladin', 'Sorceress', 'Warlock'].forEach(function(c){
+  [{}, { weapon: '1h-swing' }, { weapon: 'other' }, { weapon: 'spear' }].forEach(function(x){ WHOS.push(Object.assign({ cls: c }, x)); });
+});
+WHOS.push({ cls: 'Druid', form: 'wolf' }, { cls: 'Druid', form: 'bear' }, { cls: 'Necromancer', form: 'vampire' },
+          { cls: 'Sorceress', lightning: true }, { cls: 'Paladin', holyShield: true });
+WHOS.forEach(function(w){
+  ['fcr', 'fhr', 'fbr'].forEach(function(kind){
+    WHO = w; var g = _ceBpGap(kind, WHO, 0); if (!g || g.frames == null) return;
+    var h = _cbBpCard(kind, kind, { key: kind, source: 'EXACT', value: { min: 0, max: 0 }, bp: g }, eng, {});
+    labels[JSON.stringify(w) + ' ' + kind] = [(h.match(/class="cb-bpc-tick/g) || []).length, (h.match(/<i>/g) || []).length, (h.match(/cb-bpc-low/g) || []).length];
+  });
+});
+WHO = { cls: 'Paladin', weapon: 'other' }; var _g = _ceBpGap('fhr', WHO, 55);
+var palFhr = _cbBpCard('Faster Hit Recovery (FHR)', 'fhr', { key: 'fhr', source: 'EXACT', value: { min: 55, max: 55 }, bp: _g }, eng, {});
 process.stdout.write(JSON.stringify({ sorc105: card('Sorceress', 105), sorc200: card('Sorceress', 200),
-  pal105: card('Paladin', 105), pal125: card('Paladin', 125) }));
+  pal105: card('Paladin', 105), pal125: card('Paladin', 125), labels: labels, palFhr: palFhr }));
 """)
         r2 = subprocess.run([NODE, "-"], input=prog2, capture_output=True, text=True, timeout=60)
         if r2.returncode != 0:
@@ -108,7 +124,8 @@ process.stdout.write(JSON.stringify({ sorc105: card('Sorceress', 105), sorc200: 
         self.assertIn('<b class="cb-bpc-v">105%</b>', h)
         self.assertIn('<div class="cb-bpc-sub">10 frames · tier 6/7</div>', h)
         self.assertIn('>10 frames. +20% more reaches the next step.</div>', h)
-        self.assertIn('class="cb-bpc-mark" style="left:84.00%"', h, "the marker is not at 105 of the rail's 125")
+        # v3887 (REG-3474) - the rail is spaced by tier: 105 is 30 of the 50 between the 75 and 125 ticks (5.6 of 6 steps)
+        self.assertIn('class="cb-bpc-mark" style="left:93.33%"', h, "the marker is not 105's place between the 75 and 125 ticks")
         self.assertEqual(h.count("cb-bpc-tick cb-bpc-on"), 6, "the reached ticks are not the six tiers at or under 105%")
 
     def test_his_example_0_percent_and_the_top(self):
@@ -135,6 +152,18 @@ process.stdout.write(JSON.stringify({ sorc105: card('Sorceress', 105), sorc200: 
         self.assertIn(">9 frames. Top breakpoint.", R["pal125"]["html"])
         self.assertNotIn("Top breakpoint", R["sorc105"]["html"].split("Lightning")[0], "105% read as the top for a Sorceress")
 
+    def test_every_tier_on_every_class_rail_carries_its_label(self):
+        """v3887 (REG-3474) - GrokBot's v3885 look: the Paladin FHR rail drew labels for 0/15/48/86/200 only, '7 (8f) and 27 (6f) are
+        hidden, although the tier count says 7'. A label too close to its neighbour drops to a second row; none is dropped."""
+        lab = self.real["labels"]
+        self.assertGreaterEqual(len(lab), 60, "PREMISE: only %d class rails were drawn: %r" % (len(lab), sorted(lab)))
+        self.assertEqual({k: v for k, v in lab.items() if v[0] != v[1]}, {}, "a tier on a class rail draws no label")
+        h = self.real["palFhr"]
+        for pct in ("7<br>8f", "27<br>6f"):
+            self.assertIn("<i>%s</i>" % pct, h, "the Paladin FHR rail hides its %s tier again" % pct.split("<")[0])
+        lefts = [float(x) for x in re.findall(r'class="cb-bpc-tick[^"]*" style="left:([0-9.]+)%"', h)]
+        self.assertEqual(lefts, [round(i * 100.0 / (len(lefts) - 1), 2) for i in range(len(lefts))], "the ticks are not one equal step apart")
+
     def test_unknown_says_why_and_draws_no_rail(self):
         h = self.o["unk"]
         self.assertIn("UNKNOWN. No weapon is worn, so the attack frames are not known.", self._text(h))
@@ -151,6 +180,16 @@ process.stdout.write(JSON.stringify({ sorc105: card('Sorceress', 105), sorc200: 
 
 
 RED_PROOF = [
+    {"why": "v3887 (REG-3474) - the labels are spaced by percent again, and the dense ones are hidden (Paladin FHR 7 and 27)",
+     "file": "bible.html",
+     "find": "        var reached = t[0] <= now, cur = ix === k - 1, at = ix / (T - 1) * 100;\n",
+     "replace": "        var reached = t[0] <= now, cur = ix === k - 1, at = t[0] / tiers[T - 1][0] * 100;\n",
+     "matches": 1, "needs": "node"},
+    {"why": "v3887 (REG-3474) - the ticks sit by percent while the labels are judged by tier (the gauge and its labels disagree)",
+     "file": "bible.html",
+     "find": "          if (x < tiers[i + 1][0]){ at = (i + (x - tiers[i][0]) / (tiers[i + 1][0] - tiers[i][0])) / (T - 1) * 100; break; }\n",
+     "replace": "          if (x < tiers[i + 1][0]){ at = x / tiers[T - 1][0] * 100; break; }\n",
+     "matches": 1, "needs": "node"},
     {"why": "v3885 (#134) - the top tier says 'This is the last step' again, not his 'Top breakpoint'",
      "file": "bible.html",
      "find": "      if (g.atCap) return _ceBpNum(g.frames) + ' frames. Top breakpoint.';   /* v3885 (#134, his words) */\n",

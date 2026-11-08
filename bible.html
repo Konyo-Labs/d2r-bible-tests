@@ -79783,11 +79783,24 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     if (tiers){
       var now = v.min, k = tiers.filter(function(t){ return t[0] <= now; }).length, T = tiers.length;
       sub = _cbBpNum(g.frames) + ' frames · tier ' + k + '/' + T;
-      var max = Math.max(tiers[T - 1][0], now) || 1, pos = function(x){ return Math.max(0, Math.min(100, x / max * 100)).toFixed(2) + '%'; };
+      /* v3887 (REG-3474, GrokBot's v3885 look: "the FHR rail draws tick labels for 0/15/48/86/200 only; 7 (8f) and 27 (6f) are
+         hidden, although the tier count says 7"). His Design C brief: "Tick marks at every tier threshold, each labelled
+         underneath with threshold and frames". A rail spaced by PERCENT cannot: an Amazon's FHR tiers 0-6-13-20-32-52-86-174-600
+         sit in its first 15%, so labels were hidden to keep them apart (MEASURED over every class / weapon / form rail the
+         engine gives: many hid one or more). So the rail is spaced by TIER - each threshold one equal step - and the value sits
+         between its two thresholds in proportion; the labels still say the percent and the frames. */
+      var pos = function(x){
+        var at = 100;
+        if (x <= tiers[0][0]) at = 0;
+        else for (var i = 0; i < T - 1; i++){
+          if (x < tiers[i + 1][0]){ at = (i + (x - tiers[i][0]) / (tiers[i + 1][0] - tiers[i][0])) / (T - 1) * 100; break; }
+        }
+        return Math.max(0, Math.min(100, at)).toFixed(2) + '%';
+      };
       var lastShown = -100;
       var ticks = tiers.map(function(t, ix){
-        var reached = t[0] <= now, cur = ix === k - 1, at = t[0] / max * 100;
-        var show = cur || ix === T - 1 || at - lastShown >= 7;
+        var reached = t[0] <= now, cur = ix === k - 1, at = ix / (T - 1) * 100;
+        var show = cur || ix === T - 1 || at - lastShown >= 7;   /* only a rail of more than 15 tiers would still be thinned */
         if (show) lastShown = at;
         return '<span class="cb-bpc-tick' + (reached ? ' cb-bpc-on' : '') + (cur ? ' cb-bpc-cur' : '') + '" style="left:' + pos(t[0]) + '"'
           + ' title="' + esc(t[0] + '% → ' + t[1] + ' frames') + '">' + (show ? '<i>' + t[0] + '<br>' + t[1] + 'f</i>' : '') + '</span>';

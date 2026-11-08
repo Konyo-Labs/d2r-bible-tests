@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3474 - A BREAKPOINT RAIL HID THE TIERS IT COUNTED: PALADIN FHR DREW NO 7 OR 27 (v3887, GrokBot's v3885 look)
+GrokBot, v3885 (#230): "the FHR rail draws tick labels for 0/15/48/86/200 only; 7 (8f) and 27 (6f) are hidden, although the tier
+count says 7". His Design C brief: "Tick marks at every tier threshold, each labelled underneath with threshold and frames". The rail
+was spaced by PERCENT and a label closer than 7% to the last was hidden; MEASURED with the real engine over every class / weapon /
+form rail (60+): many hid one or more (an Amazon's FHR 0-6-13-20-32-52-86-174-600 sits in its first 15%). A two-row stagger was
+tried and measured short. The rail is now spaced by TIER - each threshold one equal step, the value placed between its two
+thresholds in proportion - and every label shows; the labels still say the percent and the frames. The Grok CLI read three cards
+cold: every label, the marker between the right two, no overlap. GUARD: test_the_breakpoint_cards_read_the_engine
+.test_every_tier_on_every_class_rail_carries_its_label (2 red-proofs RED; the 105% marker re-pinned to its place, 93.33%).
+
 ### REG-3473 - THE FLEET'S CLOSED ROWS RAN THREE LINES AT 1512 AGAIN: v3885'S SECOND EYE TOOK THE NAME'S ROOM (v3887, GrokBot's v3885 look)
 GrokBot, v3885 (#230): "REG-3395 closed Fleet row wrap: STILL (worse) - at 1512 Konyo · ALT, OLD PC ALT and Konyo are 88 / 88 / 88 px
 (3 lines)". MEASURED on his live Fleet payload (a read-only GET) in a private console: the 317px rail's top line needed 343px - two
