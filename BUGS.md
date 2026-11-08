@@ -112,6 +112,20 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3417 - A CLOSED FLEET ROW STILL RAN 3-5 LINES: ITS "ONE LINE" WRAPPED MID-PHRASE AND THE NAME WRAPPED AT 1024 (v3883, #116)
+GrokBot's v3881 look (#230 6717686258, card 1): STILL. MEASURED again on his live Fleet (guest Chrome, GETs only, Mac fonts):
+at 1512 the two ALT rows were 68px - "WOUNDED 2 gates blind +2 ·" / "importing proofs ~15 min"; at 1024 (a 207px column)
+they were 95px - the name wrapped ("Konyo · ALT" got 97px of the 115 it needs beside "differs") and the brief split
+"~15 / min" under a stranded middot. scrollWidth of the real brief: 303px box at 1512, 213px at 1120 (the console's own
+size), 193px at 1024; the old line needed 465px, and no wording of word + wound + what heals it fits 213px (the shortest,
+278px). A one-line clamp was tried first and REFUSED on the pixels: it cut the ETA off ("WOUNDED 2 blind ·…") - his own
+complaint was "it gets cutoff". Fix: the brief is a wrapping row of WHOLE units (the word, ONE wound, what heals it), the
+gap the separator, so a unit that does not fit moves to the next line whole; short words ("2 blind", no "+N", "importing",
+"all proved"); and a Fleet column of 215px or less drops a closed row's tally word, so the name keeps one line. Same live
+data after (the v3883 page served into a guest Chrome against his console): every closed row 48px (2 lines) at 1512;
+60px at 1120 and 1024 for a wounded/ready PC (the second unit whole on its own line), 42px in town. No nowrap (v2428's law
+holds). Law: test_a_closed_fleet_row_is_one_word_and_one_line (+3 cases), red-proofs PROVEN (14 of 14).
+
 ### REG-3416 - macOS SWEPT 1,328 FILES OUT OF A LIVE PROVER'S SANDBOX, AND THE SAFETY NET SHUT HIS RIVER ON IT (v3882)
 His words 11-08 ~03:45: "rivers flowing finally? i want it finally rendering that it is not stuck". MEASURED on his Mac
 (read-only: tv/.heart2.json, tv/.self_prove.json.log): at 03:44 the safety net filed "test_control: its clean run is RED

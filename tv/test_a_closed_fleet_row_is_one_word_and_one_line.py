@@ -20,6 +20,15 @@ hidden chip never lets a dark PC read healthy (v2249 / v2283 / v2296); a brief t
 Drives the page's own _pcStatus / _fleetBriefLine / _fleetBriefHtml in node (only the parts reader is stubbed, as REG-3372's
 law does). The pixels: test_the_fleet_row_keeps_its_name_whole renders closed rows (brief inked, chips not) and open rows
 (every chip inked). RED_PROOF below. [[visual-regression-detector]] [[unknown-stays-unknown]]
+
+v3883 (#116 - GrokBot's v3881 look said STILL): "one line" was a claim the pixels refused. MEASURED on his live Fleet with
+the Mac's fonts (scrollWidth of the real brief): the box is 303px at 1512, 213px at 1120, 193px at 1024, and "WOUNDED 2
+gates blind +2 · importing proofs ~15 min" needs 465px - it wrapped mid-phrase ("~15 / min") under a stranded middot; at
+1024 the name wrapped too ("Konyo · ALT" got 97px of the 115 it needs beside "differs"). No wording of word + wound + what
+heals it fits 213px (the shortest needs 278), and a one-line clamp tried first CUT the ETA off ("WOUNDED 2 blind ·…") - his
+own complaint was "it gets cutoff". So the brief is a wrapping row of WHOLE units (the word, the wound, what heals it), the
+gap the separator: a unit that does not fit moves to the next line whole, never split, never cut. The words are the short
+ones (ONE wound, "2 blind", "importing"), and a column of 215px or less drops the tally word from a closed name line.
 """
 import io
 import json
@@ -137,8 +146,11 @@ def _drive(cases, status_throws=False):
 
 def _brief(html):
     m = re.match(r'^<span class="fleet-brief ([\w-]+)" data-pc="(\w+)"><span class="fb-w">([^<]*)</span>'
-                 r'(?:<span class="fb-t">([^<]*)</span>)?</span>$', html or "")
-    return None if not m else {"cls": m.group(1), "key": m.group(2), "word": m.group(3), "line": m.group(4) or ""}
+                 r'((?:<span class="fb-t">[^<]*</span>)*)</span>$', html or "")
+    if not m:
+        return None
+    units = re.findall(r'<span class="fb-t">([^<]*)</span>', m.group(4))
+    return {"cls": m.group(1), "key": m.group(2), "word": m.group(3), "units": units, "line": u" · ".join(units)}
 
 
 @unittest.skipUnless(NODE, "node is required to drive the page's own _pcStatus - UNMEASURED here, not a pass")
@@ -161,19 +173,34 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
     def test_the_line_says_the_one_thing_the_word_is_about(self):
         """* THE POINT - his old ALT's and work ALT's live rows, in one line each"""
         b = self.b
-        self.assertEqual(b["ready"]["line"], "every law proved")
+        self.assertEqual(b["ready"]["line"], "all proved")              # v3883 (#116) fits 1512 whole
         self.assertEqual(b["healing"]["line"], "proving 8 ~12 min")
-        self.assertEqual(b["blind"]["line"], u"1 gate blind +2 · importing proofs ~26 min")
-        self.assertEqual(b["importing"]["line"], u"river stuck +1 · importing proofs ~82 min")
-        self.assertEqual(b["importquiet"]["line"], u"river stuck +1 · importing proofs · no progress for 3 min")   # v3882
+        self.assertEqual(b["blind"]["line"], u"1 blind · importing ~26 min")                  # v3883 (#116) short words
+        self.assertEqual(b["importing"]["line"], u"river stuck · importing ~82 min")
+        self.assertEqual(b["importquiet"]["line"], u"river stuck · importing · no progress for 3 min")   # v3882
         self.assertEqual(b["town"]["line"], "off since 18:10")       # the Diablo word AND the plain one (the Grok CLI's look)
         self.assertEqual(b["townold"]["line"], "off since Oct 28")
         self.assertEqual(b["lost"]["line"], "no report this console can read")
 
     def test_a_blind_gate_leads_the_wounds(self):
         """a blind gate keeps every lock shut whatever the PC proves next - the one wound that will not heal by itself"""
-        self.assertTrue(self.b["blind"]["line"].startswith("1 gate blind"), self.b["blind"]["line"])
-        self.assertTrue(self.b["many"]["line"].startswith("2 gates blind +"), self.b["many"]["line"])
+        self.assertTrue(self.b["blind"]["line"].startswith("1 blind"), self.b["blind"]["line"])
+        self.assertTrue(self.b["many"]["line"].startswith("2 blind"), self.b["many"]["line"])
+
+    def test_each_unit_is_its_own_element(self):
+        """v3883 (#116) - the word, the wound and what heals it are separate elements, so a wrap falls BETWEEN them"""
+        self.assertEqual(self.b["blind"]["units"], ["1 blind", "importing ~26 min"])
+        self.assertEqual(self.b["stuckproving"]["units"][-1], "proving 1,290 ~14.4 h")
+        self.assertEqual(self.b["ready"]["units"], ["all proved"])
+        self.assertEqual(self.b["importquiet"]["units"], ["river stuck", u"importing · no progress for 3 min"])
+
+    def test_the_line_names_one_wound_and_no_count_of_the_rest(self):
+        """v3883 (#116) - ONE wound: "+N" spent 3 of a 25-37 character line on what the open row lists"""
+        for k, x in self.b.items():
+            if x:
+                self.assertNotRegex(x["line"], r"\+\d", "%s: %r" % (k, x["line"]))
+                self.assertNotIn("gates blind", x["line"], k)
+                self.assertNotIn("importing proofs", x["line"], k)
 
     def test_what_heals_it_follows_the_wound_and_a_landed_import_is_not_importing(self):
         self.assertEqual(self.b["stuckproving"]["key"], "wounded")
@@ -203,6 +230,22 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
 
 class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
 
+    def test_the_brief_wraps_whole_units_never_a_cut_and_never_nowrap(self):
+        """* v3883 (#116) THE POINT - his live Fleet at 1024: "importing proofs ~15 / min" split under a stranded middot"""
+        code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
+        rule = _cut(code, ".fleet-row > .fleet-brief { grid-column: 2 / -1;", "}")
+        for want in ("display: flex;", "flex-wrap: wrap;", "column-gap: 1ch;"):
+            self.assertIn(want, rule, "the closed brief is not a wrapping row of whole units: %r missing" % want)
+        for banned in ("nowrap", "line-clamp", "ellipsis", "overflow: hidden"):
+            self.assertNotIn(banned, rule, "%r: the brief may never cut its words (his 'it gets cutoff') nor pin the row" % banned)
+
+    def test_a_narrow_column_drops_the_tally_word_from_a_closed_name_line(self):
+        """v3883 (#116) - at 1024 the name line wrapped: the tally word took the name's room"""
+        code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
+        self.assertEqual(code.count("#fleet-list { container-type: inline-size; container-name: fleetlist; }"), 1)
+        blk = _cut(code, "@container fleetlist (max-width: 215px) {", "}")
+        self.assertIn(".fleet-row:not(.fleet-open) > .fleet-word { display: none; }", blk + "}")
+
     def test_the_row_draws_the_brief_after_its_word_and_before_its_chips(self):
         src = _ui()
         body = _cut(src, "      var _row = function (m, online) {", "\n      };\n")
@@ -223,12 +266,30 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3883 (#116) - the brief wraps mid-phrase again (one inline run: '~15 / min' under a stranded middot)",
+     "file": "tv/control_ui.html",
+     "find": "                              display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 1ch; }\n",
+     "replace": "                              display: inline; }\n", "matches": 1},
+    {"why": "v3883 (#116) - the brief draws as ONE run again, so a wrap can split a unit",
+     "file": "tv/control_ui.html",
+     "find": "      + '</span>' + t.map(function (u) { return '<span class=\"fb-t\">' + escC(u) + '</span>'; }).join('') + '</span>';",
+     "replace": "      + '</span>' + (t.length ? '<span class=\"fb-t\">' + escC(t.join(' \\u00b7 ')) + '</span>' : '') + '</span>';",
+     "matches": 1},
+    {"why": "v3883 (#116) - the closed line counts the other wounds again (+N)",
+     "file": "tv/control_ui.html",
+     "find": "    var first = hurt.length ? _short(hurt[0]).replace(/ gates? blind$/, ' blind') : '';\n",
+     "replace": "    var first = hurt.length ? _short(hurt[0]).replace(/ gates? blind$/, ' blind') + (hurt.length > 1 ? ' +' + (hurt.length - 1) : '') : '';\n",
+     "matches": 1},
+    {"why": "v3883 (#116) - a narrow rail keeps the tally word on a closed row and the name wraps (1024)",
+     "file": "tv/control_ui.html",
+     "find": "    .fleet-row:not(.fleet-open) > .fleet-word { display: none; }\n", "replace": "\n", "matches": 1},
     {"why": "v3882 - a quiet import's closed row repeats a stale ETA (or says nothing) instead of how long it has been quiet",
-     "file": "tv/control_ui.html", "find": "    var heal = imp ? 'importing proofs' + (_quiet || _eta(imp.etaS)) : proving;\n",
-     "replace": "    var heal = imp ? 'importing proofs' + _eta(imp.etaS) : proving;\n", "matches": 1},
+     "file": "tv/control_ui.html", "find": "    var heal = imp ? 'importing' + (_quiet || _eta(imp.etaS)) : proving;\n",
+     "replace": "    var heal = imp ? 'importing' + _eta(imp.etaS) : proving;\n", "matches": 1},
     {"why": "REG-3395 - a PC in town says only the Diablo word again, which a fresh eye cannot read as switched off",
      "file": "tv/control_ui.html",
-     "find": "      return since ? 'off since ' + since : 'off';", "replace": "      return since ? 'since ' + since : '';", "matches": 1},
+     "find": "      return [since ? 'off since ' + since : 'off'];", "replace": "      return [since ? 'since ' + since : ''];",   # v3883 re-anchor
+     "matches": 1},
     {"why": "REG-3395 - a closed row draws every river chip again (the 5-8 line rows he asked to collapse)",
      "file": "tv/control_ui.html",
      "find": "  .fleet-row:not(.fleet-open) > .fleet-brief ~ .fleet-chips { display: none; }\n", "replace": "\n", "matches": 1},
@@ -246,7 +307,7 @@ RED_PROOF = [
      "replace": "    var hurt = s.hurt.slice();", "matches": 1},
     {"why": "REG-3395 - the line no longer says what is healing the PC (the import)",
      "file": "tv/control_ui.html",
-     "find": "    var heal = imp ? 'importing proofs' + (_quiet || _eta(imp.etaS)) : proving;", "replace": "    var heal = proving;",   # v3882 re-anchor
+     "find": "    var heal = imp ? 'importing' + (_quiet || _eta(imp.etaS)) : proving;", "replace": "    var heal = proving;",   # v3883 re-anchor
      "matches": 1},
     {"why": "REG-3395 - a status that throws hides the chips anyway (no brief, still hidden)",
      "file": "tv/control_ui.html",

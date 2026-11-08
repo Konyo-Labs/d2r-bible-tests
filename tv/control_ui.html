@@ -7121,8 +7121,24 @@
   .fleet-chips > span { min-width: 0; overflow-wrap: anywhere; }
   /* v3881 (REG-3395, his 11-07 21:12 ask) - THE CLOSED ROW: the PC's word and one short line, under the name. The chips after
      it (the river's detail) draw only on an open row; a row with no brief keeps them (the sibling rule needs the brief). */
-  .fleet-row > .fleet-brief { grid-column: 2 / -1; min-width: 0; overflow-wrap: anywhere; font-weight: var(--fw-normal); }
-  .fleet-brief > .fb-w { font-weight: var(--fw-semibold); letter-spacing: var(--ls-snug); text-transform: uppercase; margin-right: 1ch; }
+  .fleet-row > .fleet-brief { grid-column: 2 / -1; min-width: 0; overflow-wrap: anywhere; font-weight: var(--fw-normal);
+                              display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 1ch; }
+  .fleet-brief > span { min-width: 0; }
+  /* v3883 (#116, GrokBot's v3881 look: STILL) - WHOLE UNITS, NEVER A CUT. MEASURED on his live Fleet with the Mac's fonts
+     (scrollWidth of the real brief): the box is 303px at 1512, 213px at 1120 (the console's own size) and 193px at 1024, and
+     "WOUNDED 2 gates blind +2 · importing proofs ~15 min" needs 465px - it wrapped mid-phrase ("~15 / min") under a stranded
+     middot. No wording of "word + wound + what heals it" fits 213px (the shortest, 278px), and a one-line clamp cut the ETA
+     off ("WOUNDED 2 blind ·…" - his own complaint was "it gets cutoff"). So the brief is a wrapping row of WHOLE units - the
+     Diablo word, the wound, what heals it - the gap is the separator, no glyph to strand (REG-1377): a unit that does not fit
+     moves to the next line whole. No nowrap anywhere (the row must still shrink below its own text, v2428). Their words are
+     the short ones (below). At a column of 215px or less a closed name line drops its tally word ("this console" /
+     "differs"), which squeezed the name onto two lines (Konyo · ALT got 97px of the 115 it needs at 1024); the open row and
+     the hover card keep it. */
+  #fleet-list { container-type: inline-size; container-name: fleetlist; }
+  @container fleetlist (max-width: 215px) {
+    .fleet-row:not(.fleet-open) > .fleet-word { display: none; }
+  }
+  .fleet-brief > .fb-w { font-weight: var(--fw-semibold); letter-spacing: var(--ls-snug); text-transform: uppercase; }
   .fleet-brief.pcs-ready   > .fb-w { color: var(--mint, #8fe6a0); }
   .fleet-brief.pcs-healing > .fb-w { color: #e8cf96; }
   .fleet-brief.pcs-wounded > .fb-w { color: var(--warn, var(--gold-dim)); }
@@ -29198,20 +29214,20 @@ function escC(s) {
      river chips (import, held, stuck, locks, lock names, reels waiting) draw on an OPEN row - one click - and the State panel's
      EVERY PC keeps the wounds and what happens next. A wounded PC still reads WOUNDED on its closed row, so a hidden chip never
      lets a dark PC read healthy (v2249 / v2283 / v2296). No brief (its reading threw) = the chips stay on the closed row. */
-  var _fleetBriefLine = function (s, hs) {
+  var _fleetBriefParts = function (s, hs) {
     /* the Grok CLI's cold look at the closed rows (v3881): "IN TOWN is neither fine, trouble, nor off" - the Diablo word and
        the plain one, side by side (his "diablo ii language and human language"); a day before today keeps its date, not its clock */
     if (s.key === 'town') {
       var since = String(s.offSince || '').replace(/^([A-Z][a-z]{2} \d{1,2}) \d{1,2}:\d{2}$/, '$1');
-      return since ? 'off since ' + since : 'off';
+      return [since ? 'off since ' + since : 'off'];
     }
-    if (s.key === 'lost') return 'no report this console can read';
-    if (s.key === 'ready') return 'every law proved';
+    if (s.key === 'lost') return ['no report this console can read'];
+    if (s.key === 'ready') return ['all proved'];   /* v3883 (#116) - 'every law proved' missed 1512's 303px by 5 */
     var _n = function (x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
     var _eta = function (e) { return (typeof e === 'number' && isFinite(e) && e >= 0)
       ? ' ~' + (e < 60 ? '1 min' : e < 5400 ? Math.round(e / 60) + ' min' : (e / 3600).toFixed(1) + ' h') : ''; };
     var proving = (hs && typeof hs.owed === 'number' && hs.owed > 0) ? 'proving ' + _n(hs.owed) + _eta(hs.etaS) : '';
-    if (s.key === 'healing') return s.starting ? 'starting up' : (proving || 'proving');
+    if (s.key === 'healing') return [s.starting ? 'starting up' : (proving || 'proving')];
     /* ONE wound, the one that needs a hand first: a blind gate keeps every lock shut whatever this PC proves next, so it
        leads; the rest are "+N" (the open row and the State panel name them). Then what is healing it, if anything. */
     var _short = function (x) {
@@ -29220,24 +29236,28 @@ function escC(s) {
       return x.length <= 28 ? x : x.split(':')[0].trim();
     };
     var hurt = s.hurt.slice().sort(function (a, b) { return (/ blind$/.test(b) ? 1 : 0) - (/ blind$/.test(a) ? 1 : 0); });
-    var first = hurt.length ? _short(hurt[0]) + (hurt.length > 1 ? ' +' + (hurt.length - 1) : '') : '';
+    /* v3883 (#116) - the ONE wound, in its shortest words ("2 blind", no "+N": the open row and the State panel list the
+       rest) - one line is 25-37 characters at the rail's widths, so every word on it has to earn its place */
+    var first = hurt.length ? _short(hurt[0]).replace(/ gates? blind$/, ' blind') : '';
     var imp = (hs && hs.importing && typeof hs.importing === 'object' && hs.importing.landed !== true) ? hs.importing : null;
     /* v3882 - a quiet import says it is quiet, never a stale ETA (his 11-08: "the 5 min thing isnt correlated") */
     var _quiet = (imp && typeof imp.quietS === 'number' && isFinite(imp.quietS) && imp.quietS > 0)
       ? ' \u00b7 no progress for ' + (imp.quietS < 5400 ? Math.max(1, Math.round(imp.quietS / 60)) + ' min' : (imp.quietS / 3600).toFixed(1) + ' h') : '';
-    var heal = imp ? 'importing proofs' + (_quiet || _eta(imp.etaS)) : proving;
-    return [first, heal].filter(Boolean).join(' \u00b7 ');
+    var heal = imp ? 'importing' + (_quiet || _eta(imp.etaS)) : proving;
+    return [first, heal].filter(Boolean);
   };
+  /* v3883 (#116) - the line is its units joined (the hover, the laws); the row draws each unit whole */
+  var _fleetBriefLine = function (s, hs) { return _fleetBriefParts(s, hs).join(' \u00b7 '); };
   var _fleetBriefHtml = function (m, nowMs) {
     var s = null;
     try { s = _pcStatus(m, nowMs); } catch (e) { s = null; }
     if (!s || !s.word) return '';
     var rv = (m && m.system && typeof m.system === 'object') ? m.system.river : null;
     var hs = (rv && typeof rv === 'object' && rv.heart && typeof rv.heart === 'object') ? rv.heart : null;
-    var t = '';
-    try { t = _pcCut(_fleetBriefLine(s, hs), 64); } catch (e) { t = ''; }
+    var t = [];
+    try { t = _fleetBriefParts(s, hs).map(function (u) { return _pcCut(u, 64); }); } catch (e) { t = []; }
     return '<span class="fleet-brief ' + escC(s.cls) + '" data-pc="' + escC(s.key) + '"><span class="fb-w">' + escC(s.word)
-      + '</span>' + (t ? '<span class="fb-t">' + escC(t) + '</span>' : '') + '</span>';
+      + '</span>' + t.map(function (u) { return '<span class="fb-t">' + escC(u) + '</span>'; }).join('') + '</span>';
   };
   window._fleetBriefLine = _fleetBriefLine;
   window._fleetBriefHtml = _fleetBriefHtml;
