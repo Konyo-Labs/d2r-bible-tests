@@ -75,6 +75,18 @@ class ALaneCountThatWasNotTakenIsNotAPass(unittest.TestCase):
         st, why = self._ask(_fresh(ok=True, laneCounts={"DARK": 1, "reading": 3}))
         self.assertEqual(self.CD.MISSING, st, "a DARK lane graded %r: %s" % (st, why))
 
+    def test_a_dark_lane_is_named_with_what_it_owes(self):
+        """v3882 (every Windows PC's doctor, 11-08: "but 2 dark" - and nothing said WHICH). Dean's beat, as measured: the
+        chronicle and the deleter dark behind his shut locks, triage untimed, vault idle - the row names the two"""
+        lanes = [{"lane": "chronicle", "state": "DARK", "owed": 38}, {"lane": "deleter", "state": "DARK", "owed": 130},
+                 {"lane": "triage", "state": "UNTIMED", "owed": 45}, {"lane": "vault", "state": "IDLE", "owed": 0}]
+        st, why = self._ask(_fresh(ok=True, laneCounts={"dark": 2, "untimed": 1, "idle": 1}, lanes=lanes))
+        self.assertEqual(self.CD.MISSING, st, why)
+        self.assertIn("chronicle dark (38 owed), deleter dark (130 owed)", why)
+        self.assertNotIn("triage", why, "a lane that is not dark was named as stopped")
+        st2, why2 = self._ask(_fresh(ok=True, laneCounts={"dark": 1}, lanes=None))
+        self.assertEqual(self.CD.MISSING, st2, "a dark count with no rows to name is still MISSING: %s" % why2)
+
     def test_a_stale_beat_is_still_missing_before_the_count(self):
         beat = {"at": (time.time() - 40 * 3600) * 1000.0, "ok": True, "owed": 1}
         st, why = self._ask(beat)
@@ -82,6 +94,11 @@ class ALaneCountThatWasNotTakenIsNotAPass(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3882 - the dark-lanes row says '2 dark' and names none of them again",
+     "file": "tv/console_doctor.py",
+     "find": "                                (\": \" + \", \".join(_named)) if _named else \"\", tail))",
+     "replace": "                                \"\", tail))",
+     "matches": 1},
     {"why": "REG-1783 - a beat with no lane count is a pass again",
      "file": "console_doctor.py",
      "find": "    return UNKNOWN, (\"the shelf driver beat %.1fh ago and reported ok; "

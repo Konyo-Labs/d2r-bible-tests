@@ -6197,10 +6197,18 @@ def _check_the_shelf_lanes_are_still_reading():
         _bad = {k: v for k, v in _lc.items()
                 if str(k).upper() in ("DARK", "STALLED") and isinstance(v, int) and v > 0}
         if _bad:
-            return MISSING, ("the shelf driver beat %.1fh ago, but %s — a lane in that state has "
+            # v3882 (every Windows PC's doctor, 11-08: "but 2 dark" - and nothing said WHICH). MEASURED on Dean's PC the
+            # beat's own rows named them: chronicle (38 owed, 0 work) and deleter (130 owed, 0 work) - both behind locks
+            # his BLIND laws kept shut. The rows are in the beat; the row now names each stopped lane and what it owes.
+            _named = []
+            for _r in (beat.get("lanes") or []):
+                if isinstance(_r, dict) and str(_r.get("state") or "").upper() in ("DARK", "STALLED") and _r.get("lane"):
+                    _named.append("%s %s (%s owed)" % (_r["lane"], str(_r["state"]).lower(),
+                                                       _r.get("owed") if _r.get("owed") is not None else "?"))
+            return MISSING, ("the shelf driver beat %.1fh ago, but %s%s — a lane in that state has "
                              "stopped reading and the plan being readable does not cover it%s"
                              % (age_h, ", ".join("%d %s" % (v, k) for k, v in sorted(_bad.items())),
-                                tail))
+                                (": " + ", ".join(_named)) if _named else "", tail))
         return OK, ("the shelf driver beat %.1fh ago and every lane it counted is reading (%s)%s"
                     % (age_h, ", ".join("%s %s" % (v, k) for k, v in sorted(_lc.items())), tail))
     return UNKNOWN, ("the shelf driver beat %.1fh ago and reported ok; it recorded no per-lane counts, "

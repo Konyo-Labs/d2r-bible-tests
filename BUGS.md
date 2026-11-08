@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3412 - EVERY WINDOWS PC'S DOCTOR SAID "2 DARK" AND NAMED NEITHER LANE (v3882)
+The doctor on Dean's PC and both ALTs, 11-08: "the shelf driver beat 2.9h ago, but 2 dark - a lane in that state has
+stopped reading". MEASURED on Dean's PC: the beat's own rows named them - chronicle DARK (38 owed, 0 units of work ever)
+and deleter DARK (130 owed, 0 work) - and his console log said why on every try: "the sweep door is LOCKED on this
+machine ... vault.sweep_start is LOCKED - 4 instrument(s) are BLIND" (the four v3881's REG-3400 and v3882's REG-3409 clear).
+The row read the counts and never the rows. Now it names each DARK/STALLED lane with what it owes; a dark count with no
+rows to name stays MISSING. Law: test_a_lane_count_that_was_not_taken_is_not_a_pass (a new case, a new red-proof RED; its
+two red-proofs RED).
 ### REG-3411 - DEAN SIGNED IN TO d2jsp AND HIS CONSOLE STILL SAID "SIGN IN FIRST": THE SESSION DIED WITH THE WINDOW (v3882)
 His words 11-08: "dean is trying to do d2jsp from his console and its not giving him prices for any searched item". After
 REG-3403's redirect, the second half. MEASURED on Dean's PC (read-only): the console's own d2jsp window went login.php ->
