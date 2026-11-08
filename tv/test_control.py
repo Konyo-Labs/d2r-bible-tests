@@ -14564,7 +14564,10 @@ class TestNoOptionalCallToAFunctionThatCannotExist(unittest.TestCase):
         444. [[feedback-suspect-the-instrument]] [[feedback-comments-vs-code]]
         """
         import re
-        src = re.sub(r"/\*.{0,%d}?\*/" % int(cap), " ", src, flags=re.S)
+        # v3885 (GitHub's round on 6c5879ab9) - `accept="image/*"` is a MIME wildcard, not a comment: its "/*" is followed by
+        # the attribute's closing quote. Removing the Chronicle buttons brought the next "*/" within the cap and this ate
+        # #funi-body, #tab-fsets, #fsets-body and the Characters ids - live markup. A "/*" a quote follows is never a comment.
+        src = re.sub(r"/\*(?![\"']).{0,%d}?\*/" % int(cap), " ", src, flags=re.S)
         return re.sub(r"(?m)^\s*//.*$", " ", src)
 
     def test_the_stripper_does_not_eat_live_markup(self):
@@ -38198,7 +38201,10 @@ class TestV2336TheDailyTaskPanelCannotBeMemoisedIntoInvisibility(unittest.TestCa
     def _strip_js_comments(src, cap=4000):
         """Bounded on purpose — an unbounded /\\*.*?\\*/ once ate 170 of bible.html's 444 ids."""
         import re
-        src = re.sub(r"/\*.{0,%d}?\*/" % int(cap), " ", src, flags=re.S)
+        # v3885 (GitHub's round on 6c5879ab9) - `accept="image/*"` is a MIME wildcard, not a comment: its "/*" is followed by
+        # the attribute's closing quote. Removing the Chronicle buttons brought the next "*/" within the cap and this ate
+        # #funi-body, #tab-fsets, #fsets-body and the Characters ids - live markup. A "/*" a quote follows is never a comment.
+        src = re.sub(r"/\*(?![\"']).{0,%d}?\*/" % int(cap), " ", src, flags=re.S)
         return re.sub(r"(?m)^\s*//.*$", " ", src)
 
     def _block(self):

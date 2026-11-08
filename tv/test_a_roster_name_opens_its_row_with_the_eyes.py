@@ -334,9 +334,16 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                 # v3884 (his 11-08 plain-words ruling, REG-3434..) RENAMED one word - the reading PC's own verdict, "this
                 # console" -> "this PC". It is cut from both sides and pinned on its own; nothing else in the card may move.
                 me_word = re.compile(r'>this (?:PC|console)</span>')
+                # v3885 (#145, his 11-08: "as a secondary eye in a different color") ADDED one element beside the shadow eye -
+                # .fleet-winview, the green eye for that PC's console window, whose states test_the_fleet_shows_the_shadow_eye
+                # proves. It rides the name, so it is in the row and in the card: cut from the ship side of both and pinned
+                # once per row. Nothing else in the card or the row may move.
+                winview = re.compile(r'<span class="fleet-winview wv-(?:on|off|unk)" title="[^"]*" role="img" '
+                                     r'aria-label="[^"]*">(?:(?!</span>).)*</span>', re.S)
+                self.assertEqual(len(winview.findall(s[m]["row"])), 1, "%s %s: the row does not carry its window eye once" % (k, m))
                 if me_word.search(b[m]["ftt"]):
                     self.assertIn(">this PC</span>", s[m]["ftt"], "%s %s: the reading PC's own word is not 'this PC'" % (k, m))
-                self.assertEqual(me_word.sub(">ME</span>", river.sub("", owes.sub("", waited.sub("", cut.sub("", pcs.sub("", s[m]["ftt"])))))),
+                self.assertEqual(me_word.sub(">ME</span>", river.sub("", owes.sub("", waited.sub("", cut.sub("", pcs.sub("", winview.sub("", s[m]["ftt"]))))))),
                                  me_word.sub(">ME</span>", river.sub("", cut.sub("", b[m]["ftt"]))),
                                  "%s %s: the hover card changed" % (k, m))
                 if "river stuck" in b[m]["ftt"] and "river stuck" in s[m]["ftt"]:
@@ -353,7 +360,7 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                 brief = re.compile(r'<span class="fleet-brief [^"]*" data-pc="\w+"><span class="fb-w">[^<]*</span>'
                                    r'(?:<span class="fb-t">[^<]*</span>)?</span>')
                 self.assertEqual(len(brief.findall(s[m]["row"])), 1, "%s %s: the row does not carry its PC's word once" % (k, m))
-                self.assertEqual(me_word.sub(">ME</span>", river.sub("", owes.sub("", waited.sub("", cut.sub("", word.sub(r"\1", pcs.sub("", brief.sub("", s[m]["row"])))))))),
+                self.assertEqual(me_word.sub(">ME</span>", river.sub("", owes.sub("", waited.sub("", cut.sub("", word.sub(r"\1", pcs.sub("", brief.sub("", winview.sub("", s[m]["row"]))))))))),
                                  me_word.sub(">ME</span>", river.sub("", cut.sub("", word.sub(r"\1", b[m]["row"])))),
                                  "%s %s: the row changed beyond its eyes" % (k, m))
                 # v3865 (the r3 review, his ALT row: a red "vault lane owes 0") - a lane that owes NOTHING has no debt to
