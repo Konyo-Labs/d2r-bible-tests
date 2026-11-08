@@ -79,7 +79,9 @@ class TheKeyDigestsLfNormalisedBytes(unittest.TestCase):
         self.assertNotEqual(self._masked(lf), self._masked(other))
         self.assertNotEqual(self._masked(bcr), self._masked(blf))
         self.assertIn("lf_normalised_bytes", heart2._sha_file.__code__.co_names)
-        self.assertIn("lf_normalised_bytes", heart2._VerdictCache._masked_sha.__code__.co_names)
+        # v3883 (REG-3419) - the masked digest's READ moved into _masked_sha_read (_masked_sha serves it within a quiet stretch)
+        self.assertIn("lf_normalised_bytes", heart2._VerdictCache._masked_sha_read.__code__.co_names)
+        self.assertIn("_masked_sha_read", heart2._VerdictCache._masked_sha.__code__.co_names)
 
 
 class ADarwinExportBanksOnlyTheMatchingEntry(unittest.TestCase):

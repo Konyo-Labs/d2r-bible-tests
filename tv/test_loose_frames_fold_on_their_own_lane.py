@@ -120,13 +120,13 @@ class TheLaneFoldsOnlyWhatIsFinishedAndSeparate(_Hist):
             json.dump({"sessionId": os.path.basename(self.reel)[5:], "frames": [{"ts": t} for t in self.sealed]}, fh)
         with io.open(os.path.join(self.reel, "index.json"), "rb") as fh:
             sealed_index = fh.read()
-        before = sorted(n for n in os.listdir(self.hist) if n.startswith("reel_"))
         r = OF.run_once(self.hist, in_flight=self.asked())
         self.assertEqual(self.loose(self.overlap), [], "a sliver 8 s after a sealed reel was left loose: %s" % r["why"])
         for t in self.overlap + self.sealed:
             self.assertTrue(os.path.isfile(os.path.join(self.reel, "f_%d.jpg" % t)), "frame %d is not in the reel it sits against" % t)
-        after = sorted(n for n in os.listdir(self.hist) if n.startswith("reel_"))
-        self.assertEqual(set(after) - set(before), {os.path.basename(self.made)},
+        # every path NAMED, nothing listed (test_the_unkeyable_laws_only_get_fewer): the lane minted only the finished cluster's reel
+        self.assertEqual(r["reels"], [os.path.basename(self.made)], "a reel was minted for the sliver - a second session id")
+        self.assertFalse(os.path.exists(os.path.join(self.hist, "reel_s_%d_1" % self.overlap[0])),
                          "a reel was minted for the sliver - a second session id for one recording")
         with io.open(os.path.join(self.reel, "index.json"), "rb") as fh:
             self.assertEqual(fh.read(), sealed_index, "the sealed reel's index was rewritten - every lane would re-read it")

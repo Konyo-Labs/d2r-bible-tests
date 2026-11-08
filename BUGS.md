@@ -235,10 +235,13 @@ size), 193px at 1024; the old line needed 465px, and no wording of word + wound 
 278px). A one-line clamp was tried first and REFUSED on the pixels: it cut the ETA off ("WOUNDED 2 blind ·…") - his own
 complaint was "it gets cutoff". Fix: the brief is a wrapping row of WHOLE units (the word, ONE wound, what heals it), the
 gap the separator, so a unit that does not fit moves to the next line whole; short words ("2 blind", no "+N", "importing",
-"all proved"); and a Fleet column of 215px or less drops a closed row's tally word, so the name keeps one line. Same live
-data after (the v3883 page served into a guest Chrome against his console): every closed row 48px (2 lines) at 1512;
-60px at 1120 and 1024 for a wounded/ready PC (the second unit whole on its own line), 42px in town. No nowrap (v2428's law
-holds). Law: test_a_closed_fleet_row_is_one_word_and_one_line (+3 cases), red-proofs PROVEN (14 of 14).
+"all proved"). Same live data after (the v3883 page served into a guest Chrome against his console): every closed row 48px
+(2 lines) at 1512; 60px at 1120 for a wounded/ready PC (the second unit whole on its own line), 42px in town. No nowrap
+(v2428's law holds). NOT in v3883: at a 1024 window the NAME can still wrap beside its tally word. Hiding that word below a
+215px column was built and REFUSED by the pre-flight's render gate (advanced-fleet: 6 of 18 nodes ZERO-SIZE at 901) - a
+node hidden on purpose reads exactly like a collapse, and the gate has no declared "absent by design" allowance yet; that
+allowance and the hide go together in v3884. Law: test_a_closed_fleet_row_is_one_word_and_one_line (+2 cases),
+red-proofs PROVEN.
 
 ### REG-3416 - macOS SWEPT 1,328 FILES OUT OF A LIVE PROVER'S SANDBOX, AND THE SAFETY NET SHUT HIS RIVER ON IT (v3882)
 His words 11-08 ~03:45: "rivers flowing finally? i want it finally rendering that it is not stuck". MEASURED on his Mac

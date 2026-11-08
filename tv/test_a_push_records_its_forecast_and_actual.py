@@ -430,7 +430,10 @@ _ANSWERS_WITH = frozenset(("lock", "say", "file", "memo", "parsed", "closures", 
                            # lazily from self.entries (rebuilt when entries is replaced, never flushed, holds no usedAt).
                            # Like `memo` it is what the cache answers WITH, not a use: a question building it marks nothing.
                            # The on-disk check (flushed() == disk0) still catches any real use a question records.
-                           "_vidx", "_vgen"))
+                           "_vidx", "_vgen",
+                           # v3883 (REG-3419, deliberate): `rels` memoises a path's repo-relative name - two strings in, one
+                           # out, no file state and no use - so a question filling it records nothing
+                           "rels"))
 
 
 def _recorded(cache):

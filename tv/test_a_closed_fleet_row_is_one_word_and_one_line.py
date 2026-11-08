@@ -28,7 +28,7 @@ gates blind +2 · importing proofs ~15 min" needs 465px - it wrapped mid-phrase 
 heals it fits 213px (the shortest needs 278), and a one-line clamp tried first CUT the ETA off ("WOUNDED 2 blind ·…") - his
 own complaint was "it gets cutoff". So the brief is a wrapping row of WHOLE units (the word, the wound, what heals it), the
 gap the separator: a unit that does not fit moves to the next line whole, never split, never cut. The words are the short
-ones (ONE wound, "2 blind", "importing"), and a column of 215px or less drops the tally word from a closed name line.
+ones (ONE wound, "2 blind", "importing"). (A 1024 window can still wrap a NAME beside its tally word - v3884.)
 """
 import io
 import json
@@ -239,12 +239,6 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
         for banned in ("nowrap", "line-clamp", "ellipsis", "overflow: hidden"):
             self.assertNotIn(banned, rule, "%r: the brief may never cut its words (his 'it gets cutoff') nor pin the row" % banned)
 
-    def test_a_narrow_column_drops_the_tally_word_from_a_closed_name_line(self):
-        """v3883 (#116) - at 1024 the name line wrapped: the tally word took the name's room"""
-        code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
-        self.assertEqual(code.count("#fleet-list { container-type: inline-size; container-name: fleetlist; }"), 1)
-        blk = _cut(code, "@container fleetlist (max-width: 215px) {", "}")
-        self.assertIn(".fleet-row:not(.fleet-open) > .fleet-word { display: none; }", blk + "}")
 
     def test_the_row_draws_the_brief_after_its_word_and_before_its_chips(self):
         src = _ui()
@@ -280,9 +274,6 @@ RED_PROOF = [
      "find": "    var first = hurt.length ? _short(hurt[0]).replace(/ gates? blind$/, ' blind') : '';\n",
      "replace": "    var first = hurt.length ? _short(hurt[0]).replace(/ gates? blind$/, ' blind') + (hurt.length > 1 ? ' +' + (hurt.length - 1) : '') : '';\n",
      "matches": 1},
-    {"why": "v3883 (#116) - a narrow rail keeps the tally word on a closed row and the name wraps (1024)",
-     "file": "tv/control_ui.html",
-     "find": "    .fleet-row:not(.fleet-open) > .fleet-word { display: none; }\n", "replace": "\n", "matches": 1},
     {"why": "v3882 - a quiet import's closed row repeats a stale ETA (or says nothing) instead of how long it has been quiet",
      "file": "tv/control_ui.html", "find": "    var heal = imp ? 'importing' + (_quiet || _eta(imp.etaS)) : proving;\n",
      "replace": "    var heal = imp ? 'importing' + _eta(imp.etaS) : proving;\n", "matches": 1},

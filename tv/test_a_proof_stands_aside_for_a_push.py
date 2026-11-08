@@ -166,7 +166,8 @@ RED_PROOF = [
     {"why": "v3861 - a running proof no longer yields to a push grading on this PC: it runs the same suites beside the gate",
      "file": "tv/control_app.py",
      "find": "    if _a_push_is_grading():        # v3861 - a push grading on this PC goes first; the proof waits for it\n"
-             "        return True\n",
+             "        _sp_yield_here.why = PUSH_STAND_ASIDE\n"
+             "        return True\n",   # v3883 re-anchor (REG-3423: the judge carries its reason)
      "replace": "",
      "matches": 1},
     {"why": "v3861 - the prover's own law running the hook in a fixture reads as a push: the proof ends itself every slice",

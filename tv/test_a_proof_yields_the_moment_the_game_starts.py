@@ -67,8 +67,8 @@ RED_PROOF = [
      "replace": "        alive = pid_alive(pid)\n", "matches": 1},
     {"why": "REG-1624 - the guard never stands a running proof aside: it waits for the 10-minute tick",
      "file": "self_prove.py",
-     "find": "        aside, _why = stand_aside(play_now, free_now)\n        if not aside:\n            return None\n",
-     "replace": "        aside, _why = False, ''\n        if not aside:\n            return None\n", "matches": 1},
+     "find": "        aside, _why = stand_aside(play_now, free_now, why=play_why)\n        if not aside:\n            return None\n",
+     "replace": "        aside, _why = False, ''\n        if not aside:\n            return None\n", "matches": 1},   # v3883 re-anchor (REG-3423)
     {"why": "REG-1624 - the loop never asks the guard between ticks, so a proof runs beside his game for 10 minutes",
      "file": "control_app.py",
      "find": "    if isinstance(sp, dict) and (sp.get(\"running\") or sp.get(\"key\") in (\"running\", \"start\", \"aside-survived\")):\n        return \"guard\"\n",

@@ -7131,13 +7131,9 @@
      off ("WOUNDED 2 blind ·…" - his own complaint was "it gets cutoff"). So the brief is a wrapping row of WHOLE units - the
      Diablo word, the wound, what heals it - the gap is the separator, no glyph to strand (REG-1377): a unit that does not fit
      moves to the next line whole. No nowrap anywhere (the row must still shrink below its own text, v2428). Their words are
-     the short ones (below). At a column of 215px or less a closed name line drops its tally word ("this console" /
-     "differs"), which squeezed the name onto two lines (Konyo · ALT got 97px of the 115 it needs at 1024); the open row and
-     the hover card keep it. */
-  #fleet-list { container-type: inline-size; container-name: fleetlist; }
-  @container fleetlist (max-width: 215px) {
-    .fleet-row:not(.fleet-open) > .fleet-word { display: none; }
-  }
+     the short ones (below). (At a 1024 window the NAME can still wrap beside its tally word - Konyo · ALT gets 97px of
+     the 115 it needs. Hiding the word there was tried and refused by the render gate, rightly: a node hidden on purpose
+     reads exactly like a collapse, and the gate has no declared "absent by design" yet - v3884.) */
   .fleet-brief > .fb-w { font-weight: var(--fw-semibold); letter-spacing: var(--ls-snug); text-transform: uppercase; }
   .fleet-brief.pcs-ready   > .fb-w { color: var(--mint, #8fe6a0); }
   .fleet-brief.pcs-healing > .fb-w { color: #e8cf96; }
