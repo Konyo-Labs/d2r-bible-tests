@@ -20,6 +20,13 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
+try:
+    from console_safe import enable as _console_safe_enable   # it prints non-ASCII: never crash while REPORTING
+    _console_safe_enable()
+except Exception:
+    pass
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
 import fleet_mask as FM  # noqa: E402
 
 CURLY = ["Atma’s Scarab", "Saracen’s Chance", "Seraph’s Hymn", "The Cat’s Eye"]

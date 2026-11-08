@@ -16,11 +16,19 @@ uses, plus QW_TARGETS / QW_PLACES / PLACE_PF), and holds the scan's source to as
 import io
 import json
 import os
+import sys
 import shutil
 import subprocess
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+try:
+    from console_safe import enable as _console_safe_enable   # it prints non-ASCII: never crash while REPORTING
+    _console_safe_enable()
+except Exception:
+    pass
 BIBLE = os.path.join(os.path.dirname(HERE), "bible.html")
 NODE = shutil.which("node")
 
