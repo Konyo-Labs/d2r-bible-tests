@@ -292,15 +292,23 @@ def _boot():
                 return True
             return rel(a if isabs(a) else join(_cbase, a)) is not None
 
+        # v3886 (#107, GrokBot's look at windows-latest + the Grok CLI's triage): an argument that LOOKS like a path. "/" was
+        # the only separator, so on Windows a meter, a printer or lsof handed C:\...\tv\x.plist was never checked against
+        # this checkout and a gate that read a file here stayed traced. "\\" is a separator on Windows only - on the Mac a
+        # backslash in an argument (echo "a\nb") is text, never a path.
+        def _pathish(a):
+            a = str(a)
+            return "/" in a or (os.sep == "\\" and "\\" in a)
+
         if head in ("vm_stat", "sysctl", "true", "netstat", "ioreg", "lsappinfo") and not any(
-                _here(a) for a in args[1:] if "/" in a) and not (
+                _here(a) for a in args[1:] if _pathish(a)) and not (
                 head == "sysctl" and any(a.startswith(("-f", "-p", "--load", "--system")) for a in args[1:])):
             return  # a machine meter (memory, kernel, sockets, IO registry, app list), never a file here  # TRACE-INERT-METER
         if head in ("echo", "printf") and not any(
-                _here(a) for a in args[1:] if "/" in a):
+                _here(a) for a in args[1:] if _pathish(a)):
             return  # prints its own argv  # TRACE-INERT-PRINT
         if head == "defaults" and not any(a in ("import", "export") for a in args[1:]) and not any(
-                _here(a) for a in args[1:] if "/" in a or a.startswith("~")):
+                _here(a) for a in args[1:] if _pathish(a) or a.startswith("~")):
             return  # reads a preference domain outside this checkout  # TRACE-INERT-PRINT
         if head == "sips":
             base = fsdecode(cwd) if cwd is not None else getcwd()
@@ -315,7 +323,7 @@ def _boot():
                 out_next = False
             return
         if head == "lsof" and not any(
-                rel(a) is not None for a in args[1:] if "/" in a):
+                rel(a) is not None for a in args[1:] if _pathish(a)):
             return  # the process table, not a file in this checkout
         is_py = bool(args) and (args[0] == sys.executable or head.startswith("python"))
         if env is not None:
