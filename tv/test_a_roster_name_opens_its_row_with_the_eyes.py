@@ -331,8 +331,13 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                 self.assertEqual(len(pcs.findall(s[m]["ftt"])), 1, "%s %s: the card does not lead with the PC's status" % (k, m))
                 self.assertIsNone(re.search(r'<span class="fleet-meta fleet-word[^>]*? title="', s[m]["row"]),
                                   "%s %s: the verdict word carries a native tooltip again - it hides this card" % (k, m))
-                self.assertEqual(river.sub("", owes.sub("", waited.sub("", cut.sub("", pcs.sub("", s[m]["ftt"]))))),
-                                 river.sub("", cut.sub("", b[m]["ftt"])),
+                # v3884 (his 11-08 plain-words ruling, REG-3434..) RENAMED one word - the reading PC's own verdict, "this
+                # console" -> "this PC". It is cut from both sides and pinned on its own; nothing else in the card may move.
+                me_word = re.compile(r'>this (?:PC|console)</span>')
+                if me_word.search(b[m]["ftt"]):
+                    self.assertIn(">this PC</span>", s[m]["ftt"], "%s %s: the reading PC's own word is not 'this PC'" % (k, m))
+                self.assertEqual(me_word.sub(">ME</span>", river.sub("", owes.sub("", waited.sub("", cut.sub("", pcs.sub("", s[m]["ftt"])))))),
+                                 me_word.sub(">ME</span>", river.sub("", cut.sub("", b[m]["ftt"]))),
                                  "%s %s: the hover card changed" % (k, m))
                 if "river stuck" in b[m]["ftt"] and "river stuck" in s[m]["ftt"]:
                     self.assertIn(u" \u00b7 oldest reel waiting: ", s[m]["ftt"],
@@ -348,8 +353,8 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                 brief = re.compile(r'<span class="fleet-brief [^"]*" data-pc="\w+"><span class="fb-w">[^<]*</span>'
                                    r'(?:<span class="fb-t">[^<]*</span>)?</span>')
                 self.assertEqual(len(brief.findall(s[m]["row"])), 1, "%s %s: the row does not carry its PC's word once" % (k, m))
-                self.assertEqual(river.sub("", owes.sub("", waited.sub("", cut.sub("", word.sub(r"\1", pcs.sub("", brief.sub("", s[m]["row"]))))))),
-                                 river.sub("", cut.sub("", word.sub(r"\1", b[m]["row"]))),
+                self.assertEqual(me_word.sub(">ME</span>", river.sub("", owes.sub("", waited.sub("", cut.sub("", word.sub(r"\1", pcs.sub("", brief.sub("", s[m]["row"])))))))),
+                                 me_word.sub(">ME</span>", river.sub("", cut.sub("", word.sub(r"\1", b[m]["row"])))),
                                  "%s %s: the row changed beyond its eyes" % (k, m))
                 # v3865 (the r3 review, his ALT row: a red "vault lane owes 0") - a lane that owes NOTHING has no debt to
                 # name, so the chip is asked for only when a lane owes one or more reels, and never drawn for owes 0

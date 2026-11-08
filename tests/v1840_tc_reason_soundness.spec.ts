@@ -52,15 +52,23 @@ test('suppressing the reason does not delete the cannot-drop fact', async ({ pag
   await page.waitForFunction(() => !!(window as any)._allDropItems || !!(window as any).ITEMS);
   const counts = await page.evaluate(() => {
     const items = (window as any)._allDropItems ? (window as any)._allDropItems() : ((window as any).ITEMS || []);
-    let total = 0, pool = 0;
+    let total = 0, pool = 0, tc = 0, qlvl = 0;
     (items || []).forEach((it: any) => (it.sources || []).forEach((s: any) => {
       if (!s.blocked) return;
       total++;
       if (/not in /.test(s.blocked)) pool++;
+      else if (/^TC \d+ > /.test(s.blocked)) tc++;
+      else if (/^qlvl \d+ > /.test(s.blocked)) qlvl++;
     }));
-    return { total, pool };
+    return { total, pool, tc, qlvl };
   });
   // v1723: a row whose reason was suppressed keeps its entry with a reason true by construction
   expect(counts.total).toBeGreaterThan(5000);
-  expect(counts.pool).toBeGreaterThan(4000);
+  // v3884 (REG-3440, every qlvl is silospen's) - PIN THE LAW, NOT THE NUMBER. This said pool > 4000. Measured 11-08 in headless
+  // Chrome: v3883 total 6462 = pool 5259 + TC 1203 + qlvl 0; v3884 total 8794 = pool 3275 + TC 22 + qlvl 5497. With 366 wrong
+  // quality levels every cell's own rows broke the qlvl rule, so v1722 suppressed that reason everywhere; with silospen's levels
+  // it holds and is cited ("qlvl 20 > Normal mlvl 12"), so rows moved from the fallback "not in ... drop pool" to their real
+  // reason and none was deleted (the total grew). The law: every blocked row still carries one of the three true reasons.
+  expect(counts.pool + counts.tc + counts.qlvl, `a blocked row lost its reason: ${JSON.stringify(counts)}`).toBe(counts.total);
+  expect(counts.pool).toBeGreaterThan(0);
 });
