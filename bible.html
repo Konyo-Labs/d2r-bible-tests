@@ -42008,8 +42008,20 @@ _v41_whenReady(() => {
       Object.keys(ITEM_CODEX).forEach(function(k){
         var c = ITEM_CODEX[k]; if (!c || c.cat !== 'set') return;
         var nm = String(c.setName || k), key = nm.toLowerCase();
-        if (have[_setKeyOf(nm)]) return; have[_setKeyOf(nm)] = 1;
         var mem = (c.setMembers || []).map(function(m){ return String(m.name || ''); }).filter(Boolean);
+        /* v3883 - AND EVERY PIECE BY ITS OWN NAME (GrokBot's v3881 look: "searching 'Tal Rasha's Guardianship' itself only
+           offers the Wrappings set"; MEASURED in the real search box: "Sigon's Gage" and "Immortal King's Stone Crusher"
+           found NOTHING - a piece was indexed only if a boss's drop list named it). A piece opens its set's card, where the
+           piece is drawn; a name already indexed (a drop list's) is not doubled. */
+        mem.forEach(function (pn) {
+          if (have[_setKeyOf(pn)]) return; have[_setKeyOf(pn)] = 1;
+          cmds.push({
+            icon: '💎', label: pn, sub: 'Set piece · ' + nm, cat: 'set', hint: '',
+            keywords: 'set piece ' + pn.toLowerCase() + ' ' + key,
+            action: () => { if (window.openDrop) window.openDrop(nm); }
+          });
+        });
+        if (have[_setKeyOf(nm)]) return; have[_setKeyOf(nm)] = 1;
         cmds.push({
           icon: '💎', label: nm, sub: 'Set · ' + mem.length + ' piece' + (mem.length === 1 ? '' : 's'),
           cat: 'set', hint: '',

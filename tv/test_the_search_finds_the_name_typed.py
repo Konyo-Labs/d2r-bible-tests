@@ -13,6 +13,11 @@ Now a name with a trailing qualifier ("Spirit (sword)") IS the name typed and ra
 longer name that merely starts the same (80); and every ITEM_CODEX set is indexed by its own name, opening its set card, never
 doubled when a drop list already indexes it. Drives the page's own score() and the index's set block in node, the second over
 the REAL ITEM_CODEX. RED_PROOF below. [[the-unjoined-end]]
+
+v3883 - AND EVERY SET PIECE BY ITS OWN NAME. GrokBot's v3881 look: "searching 'Tal Rasha's Guardianship' itself only offers the
+Wrappings set, not the piece". MEASURED in the real search box (scratch Chrome, v3883's page): "Sigon's Gage" and "Immortal
+King's Stone Crusher" found NOTHING - a piece was indexed only when a boss's drop list named it. Each codex set's pieces are
+indexed now, each opening its set's card (where the piece is drawn), never doubling a name a drop list already indexes.
 """
 import io
 import json
@@ -77,8 +82,10 @@ def _sets(prior):
             ".map(function(k){ return ITEM_CODEX[k].setName || k; });\n"
             "var added = cmds.slice(%d);\n" % len(prior)
           + "added.forEach(function(c){ c.action(); });\n"
-            "process.stdout.write(JSON.stringify({setNames: setNames, added: added.map(function(c){ return {label: c.label, cat: c.cat, "
-            "kw: c.keywords}; }), opened: window.opened}));")
+            "var pieces = {}; Object.keys(ITEM_CODEX).forEach(function(k){ var c = ITEM_CODEX[k]; if (c && c.cat === 'set') "
+            "(c.setMembers || []).forEach(function(m){ if (m && m.name) pieces[m.name] = c.setName || k; }); });\n"
+            "process.stdout.write(JSON.stringify({setNames: setNames, pieces: pieces, added: added.map(function(c){ return {label: c.label, "
+            "cat: c.cat, kw: c.keywords, sub: c.sub}; }), opened: window.opened}));")
     return _node(js)
 
 
@@ -112,19 +119,36 @@ class EverySetIsFoundByItsName(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.o = _sets(["Immortal King set (any)", "Griswold's Legacy (any)"])
+        cls.o = _sets(["Immortal King set (any)", "Griswold's Legacy (any)", "Sigon's Visor"])
+        cls.sets = [a for a in cls.o["added"] if not str(a.get("sub") or "").startswith("Set piece")]
+        cls.pieces = [a for a in cls.o["added"] if str(a.get("sub") or "").startswith("Set piece")]
+        cls.opened = dict((a["label"], o) for a, o in zip(cls.o["added"], cls.o["opened"]))
 
     def test_every_set_is_indexed_and_opens_its_own_card(self):
         """* THE POINT - Bul-Kathos' Children and Tal Rasha's Wrappings, and every other set in the codex"""
         names = set(self.o["setNames"])
         # premise: the codex's set cards (13 when written - measured, not pinned), with the two GrokBot could not find among them
         self.assertTrue(names and {"Bul-Kathos' Children", "Tal Rasha's Wrappings"} <= names, "premise: %r" % sorted(names))
-        found = set(a["label"] for a in self.o["added"]) | {"Immortal King", "Griswold's Legacy"}
+        found = set(a["label"] for a in self.sets) | {"Immortal King", "Griswold's Legacy"}
         self.assertEqual(sorted(names - found), [], "sets the search cannot find")
         self.assertIn("Bul-Kathos' Children", found)
         self.assertIn("Tal Rasha's Wrappings", found)
-        self.assertEqual(self.o["opened"], [a["label"] for a in self.o["added"]], "a set entry opens something else")
+        self.assertEqual([self.opened[a["label"]] for a in self.sets], [a["label"] for a in self.sets], "a set entry opens something else")
         self.assertTrue(all(a["cat"] == "set" for a in self.o["added"]))
+
+    def test_every_piece_is_found_by_its_own_name_and_opens_its_set(self):
+        """* v3883 THE POINT - "Sigon's Gage" found nothing; "Tal Rasha's Guardianship" offered only the set"""
+        pieces = self.o["pieces"]
+        self.assertTrue({"Sigon's Gage", "Tal Rasha's Guardianship"} <= set(pieces), "premise: %r" % sorted(pieces)[:12])
+        got = set(a["label"] for a in self.pieces) | {"Sigon's Visor"}
+        self.assertEqual(sorted(set(pieces) - got), [], "set pieces the search cannot find by their own name")
+        for nm in ("Sigon's Gage", "Tal Rasha's Guardianship"):
+            self.assertEqual(self.opened[nm], pieces[nm], "%s does not open its set's card" % nm)
+        g = [a for a in self.pieces if a["label"] == "Sigon's Gage"][0]
+        self.assertEqual(g["sub"], "Set piece \u00b7 " + pieces["Sigon's Gage"])
+
+    def test_a_piece_a_drop_list_already_indexes_is_not_doubled(self):
+        self.assertNotIn("Sigon's Visor", [a["label"] for a in self.pieces], "a piece a drop list indexes was listed twice")
 
     def test_a_set_a_drop_list_already_indexes_is_not_doubled(self):
         labels = [a["label"] for a in self.o["added"]]
@@ -143,6 +167,19 @@ class EverySetIsFoundByItsName(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3883 - a set piece cannot be found by its own name again ('Sigon's Gage' finds nothing)",
+     "file": "bible.html",
+     "find": "        mem.forEach(function (pn) {\n          if (have[_setKeyOf(pn)]) return; have[_setKeyOf(pn)] = 1;\n",
+     "replace": "        mem.forEach(function (pn) {\n          return;\n", "matches": 1},
+    {"why": "v3883 - a piece a drop list already indexes is listed twice",
+     "file": "bible.html",
+     "find": "          if (have[_setKeyOf(pn)]) return; have[_setKeyOf(pn)] = 1;\n",
+     "replace": "          have[_setKeyOf(pn)] = 1;\n", "matches": 1},
+    {"why": "v3883 - a piece opens itself (no card) instead of its set's card",
+     "file": "bible.html",
+     "find": "            keywords: 'set piece ' + pn.toLowerCase() + ' ' + key,\n            action: () => { if (window.openDrop) window.openDrop(nm); }",
+     "replace": "            keywords: 'set piece ' + pn.toLowerCase() + ' ' + key,\n            action: () => { if (window.openDrop) window.openDrop(pn); }",
+     "matches": 1},
     {"why": "REG-3397 x TestV2286 - the set key no longer folds the curly apostrophe (a set indexed twice)",
      "file": "bible.html",
      "find": "toLowerCase().replace(/[‘’ʼ´`]/g, \"'\")\n        .replace(/\\s*\\([^)]*\\)\\s*$/, '').replace(/\\s+set$/, ''); };",

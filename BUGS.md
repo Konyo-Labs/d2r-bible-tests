@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3424 - A SET PIECE COULD NOT BE SEARCHED BY ITS OWN NAME: "SIGON'S GAGE" FOUND NOTHING (v3883, GrokBot's v3881 look)
+GrokBot's v3881 pass (#230 6717686258, card 5): "searching 'Tal Rasha's Guardianship' itself only offers the Wrappings set,
+not the piece". MEASURED in the real search box (scratch headless Chrome on :9228, the v3883 page, offline): "Tal Rasha's
+Guardianship" offered the set row only (its pieces ride the set row's keywords); "Sigon's Gage" and "Immortal King's Stone
+Crusher" found NOTHING. A piece was in the index only when some boss's drop list named it (the ITEMS block); REG-3397 indexed
+every codex SET by name and left its pieces out. Now each codex set's pieces are indexed by their own names ("Set piece ·
+<set>"), each opening its set's card, where the piece is drawn; a name a drop list already indexes is not doubled (the same
+_setKeyOf identity). Real search box after: all three answer, the piece first; "Spirit" still opens the runeword. Law:
+test_the_search_finds_the_name_typed (+2 cases over the REAL ITEM_CODEX), red-proofs PROVEN (3 new, 7 of 7).
+
 ### REG-3423 - BOTH ALTS' PROVERS RECORDED "HE STARTED PLAYING" WITH NO GAME RUNNING: IT WAS GITHUB'S IMPORT (v3883)
 MEASURED 11-08 ~09:47 IST (SSH, read-only): tasklist found no D2R.exe on either ALT, and self_prove.json said
 lastStoodAsideWhy "he started playing - a proof never runs beside his game" at 09:23:08 (OLD ALT) and 09:38:57 (work ALT),
