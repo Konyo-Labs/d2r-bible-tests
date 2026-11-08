@@ -77721,7 +77721,14 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
        random", as this page's own Crafted card and crafting guide say (an ilvl-71+ craft rolls all four). So at most 3
        prefixes and 3 suffixes, 4 in all. The recipe's lines are the item's own (it[6]) and are never counted here. */
     if (q === 'c') return { p: 3, s: 3, a: 1, q: 0, total: 4 };
-    if (q === 'sup') return { p: 0, s: 0, a: 0, q: 1, total: null };
+    /* v3886 (#139, GrokBot's #28 pass 6720634931: "the builder offers 0 automod rows for an Auric base; a Spirit Sacred Targe
+       can carry up to +45 all res the panel never shows") - A CLASS BASE'S AUTOMOD IS ITS OWN, WHATEVER THE QUALITY. A base
+       with an automagic group (b[22]: an Auric shield's all-res / ED-AR, an Amazon bow's or javelin's skill tab, an orb's,
+       a head's, a grimoire's) spawns with it as a normal or superior item too, and a runeword keeps the base it was made in
+       - so those three take ONE automod from the base's own group; a base without one takes none. */
+    var own = !!(b && (b[22] | 0) > 0);
+    if (q === 'sup') return { p: 0, s: 0, a: own ? 1 : 0, q: 1, total: null };
+    if (q === 'b' || q === 'r') return { p: 0, s: 0, a: own ? 1 : 0, q: 0, total: null };
     return { p: 0, s: 0, a: 0, q: 0, total: null };
   }
   window._cbLimits = _cbLimits;
@@ -77741,7 +77748,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
   function _cbAffixPool(e){
     var d = _cbDb(), out = { rows: { p: [], s: [], a: [], q: [] }, full: {}, lim: null, n: { p: 0, s: 0, a: 0, q: 0 }, zero: 0 };
     var b = d && e && d.b[e.base], it = e && _cbItem(e.id);
-    if (!b || !d.af || !(_cbIsBase(it) || _cbIsCraft(it))) return out;
+    if (!b || !d.af || !(_cbIsBase(it) || _cbIsCraft(it) || (it && it[2] === 'r' && (b[22] | 0) > 0))) return out;   /* v3886 (#139) */
     var q = _cbQ(e, it), lim = _cbLimits(q, b), anc = d.anc[b[1]] || {}, ilvl = e.ilvl || 99, alvl = _cbAlvl(b, ilvl);
     var tcls = (d.ty[b[1]] || [])[2], used = {}, cat = d.qm && d.qm.cat ? d.qm.cat[b[1]] : null;
     out.lim = lim; out.alvl = alvl;
@@ -77772,7 +77779,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
   function _cbSpawnPool(e){
     var d = _cbDb(), out = { p: [], s: [], a: [], q: [] };
     var b = d && e && d.b[e.base], it = e && _cbItem(e.id);
-    if (!b || !d.af || !(_cbIsBase(it) || _cbIsCraft(it))) return out;
+    if (!b || !d.af || !(_cbIsBase(it) || _cbIsCraft(it) || (it && it[2] === 'r' && (b[22] | 0) > 0))) return out;   /* v3886 (#139) */
     var q = _cbQ(e, it), anc = d.anc[b[1]] || {}, alvl = _cbAlvl(b, e.ilvl || 99);
     var tcls = (d.ty[b[1]] || [])[2], cat = d.qm && d.qm.cat ? d.qm.cat[b[1]] : null, auto = b[22] | 0;
     (d.af || []).forEach(function(a){
@@ -80215,6 +80222,9 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
        + "Regular Mods · Add Mod"), from the same renderer. Its title is the recipe's name, which already ends in its base
        ("Caster Amulet" printed "Caster Amulet Amulet"): the base is said once. */
     var craft = _cbIsCraft(it), M = craft ? _cbModsHtml(e, slot, 'c', base, clvl) : null;
+    /* v3886 (#139) - a RUNEWORD keeps the base it was made in, automod and all (a Spirit Sacred Targe's +45 all res): its
+       base's own automod group is offered as one Automod row, through the same mods block */
+    var rwAuto = !craft && it[2] === 'r' && !!(base && (base[22] | 0) > 0), MA = rwAuto ? _cbModsHtml(e, slot, 'r', base, clvl) : null;
     var baseSpan = base && base[0] !== it[1] && !(craft && (' ' + it[1].toLowerCase()).slice(-(base[0].length + 1)) === ' ' + base[0].toLowerCase());
     /* #95 (REG-1901) — a crafted item is named by its two rare words over its base, which he can choose or re-roll as a
        rare's; its recipe ("Caster Amulet") is the CRAFTED line below, not its name. One stored before keeps the recipe. */
@@ -80242,6 +80252,8 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       + '</div></div>'
       + '<div class="cb-ed-q">' + esc((CB_Q_SAY[it[2]] || '').toUpperCase()) + (crn.length ? ' · ' + esc(it[1]) : '') + '</div>'
       + '<ul class="cb-lines" id="cb-lines" onchange="window._cbRollInput(event)" onkeydown="if(event.key===\'Enter\'){window._cbRollInput(event)}">' + (lines || '<li class="cb-l-unk">a base item: no properties of its own</li>') + '</ul>'
+      + (MA ? '<div class="cb-mods-h">Base Automod</div>'
+               + '<div class="cb-mods" id="cb-mods" onchange="window._cbRollInput(event)" onkeydown="if(event.key===\'Enter\'){window._cbRollInput(event)}">' + MA.mods + MA.odds + MA.add + '</div>' : '')
       + (craft ? '<div class="cb-mods-h">Regular Mods</div>'
                + '<div class="cb-mods" id="cb-mods" onchange="window._cbRollInput(event)" onkeydown="if(event.key===\'Enter\'){window._cbRollInput(event)}">' + M.mods + M.odds + M.add + '</div>' : '')
       + rollSay

@@ -59,9 +59,17 @@ def _sig(p):
     return float("%.6g" % p)
 
 
+#: v3886 (#149, REG-151 again) - silospen mints the terror-zoned "(d)" id only where the monster differs. Its own monsterList
+#: (desecrated, read 11-08): Pindleskin is "Pindleskind" in Hell and the PLAIN "Pindleskin" in Nightmare and Normal; the
+#: Countess is "The Countessd" in all three. Asking "Pindleskind" in NM / Normal got an empty answer, so Pindle's NM / Normal
+#: TZ columns had no level table and the --check read 703 of their cells as "None".
+FARM_IDS_BY_DIFF = {"pindle": {"nmTz": "Pindleskin", "normTz": "Pindleskin"}}
+
+
 def table_at(get, farm, diff, quality, level):
     """{item: p} for one farm / TZ column / quality at one character level (p > 0 only)."""
     mid, mtype = FARMS[farm]
+    mid = FARM_IDS_BY_DIFF.get(farm, {}).get(diff, mid)
     b = get({"type": "monsterProbabilities", "monsterId": mid, "monsterType": mtype, "difficulty": DIFFS[diff],
              "desecrated": "true", "desecratedLevel": level, "magicFind": 300, "players": 1, "party": 1,
              "itemQuality": quality})
