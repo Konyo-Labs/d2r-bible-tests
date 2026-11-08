@@ -31146,13 +31146,23 @@ function itemCardSources(item) {
     const runs = hoursFor(adj, 0.5, 1, killsPerRun(s.bossId));   // RUNS for a 50% chance - an area run counts a run, not a kill
     if (hrs !== null && r50 !== null && runs !== null) {
       sources.push({boss:s.boss, bossId:s.bossId, diffKey:s.diffKey || '', chance:adj, kph:s.kph||100, hrs, r50, runs,
-                    hours: hrs, label: s.boss, verified:s.verified});
+                    kpr: killsPerRun(s.bossId) || 1, hours: hrs, label: s.boss, verified:s.verified});
     }
   });
   if (typeof window._qwRank === 'function') return window._qwRank(sources);
   return sources.sort((a, b) => (a.runs - b.runs) || (a.hrs - b.hrs));   // the Quick wins block not loaded: runs, then time
 }
 try { window.itemCardSources = itemCardSources; } catch (e) {}
+/* v3887 (REG-3483, the #231 second eye on v3886's REG-3451: "the full source table ... prints the kill count under the heading
+   Runs (50%) ... On the Cow Level one run is about 350 kills, so that table shows about 350 times too many runs") - the odds of
+   ONE RUN of a source: a one-kill boss is its own odds; an area run of k kills is 1 - (1 - 1/c)^k. -> the run's "1:N" N. The
+   card's table, its simulator and its top six all count RUNS (s.runs); r50 is kills and is never printed as runs. */
+function _gicRunOdds(s) {
+  const k = Math.max(1, Number(s && s.kpr) || 1), c = Number(s && s.chance);
+  if (!(c > 0)) return c;
+  return k === 1 ? c : 1 / (1 - Math.pow(1 - 1 / c, k));
+}
+try { window._gicRunOdds = _gicRunOdds; } catch (e) {}
 function renderItemDetailCard(itemName) {
   const panel = document.getElementById('item-detail-panel');
   if (!panel) return;
@@ -31271,7 +31281,7 @@ function renderItemDetailCard(itemName) {
       ${actionPlan}
 
       ${sources.length > 6 ? `<section class="gic-section">
-        <div class="gic-section-title">📊 All ${sources.length} Sources (sorted by speed)</div>
+        <div class="gic-section-title">📊 All ${sources.length} Sources (fewest runs for a 50% chance first)</div>
         <table class="gic-source-table">
           <thead><tr><th>Source</th><th>Chance</th><th>Runs (50%)</th><th>Time</th><th>kph</th><th></th></tr></thead>
           <tbody>
@@ -31279,7 +31289,7 @@ function renderItemDetailCard(itemName) {
               <tr class="${i===0?'best-row':''}" onclick="window.openBossDetail('${s.bossId}')">
                 <td>${s.boss}${s.verified?' 🔒':''}</td>
                 <td>${fmt(s.chance)}</td>
-                <td>${s.r50.toLocaleString()}</td>
+                <td>${Math.round(s.runs).toLocaleString()}</td>
                 <td>${fmtHours(s.hrs)}</td>
                 <td>${s.kph}</td>
                 <td><span class="gic-cross-link">→ boss</span></td>
@@ -31290,16 +31300,16 @@ function renderItemDetailCard(itemName) {
       </section>` : ''}
 
       <section class="gic-section">
-        <div class="gic-section-title">🎲 Drop Simulator — what ${best.r50.toLocaleString()} runs actually feel like</div>
+        <div class="gic-section-title">🎲 Drop Simulator — what ${Math.round(best.runs).toLocaleString()} runs actually feel like</div>
         <div class="gic-sim-box">
           <div class="gic-sim-controls">
-            <span class="gic-sim-label">@ <strong>${best.boss}</strong> · 1:${best.chance.toLocaleString()}</span>
-            <input class="gic-sim-input" type="number" id="gic-sim-runs" aria-label="how many runs to simulate" value="${best.r50}" min="1" max="100000">
+            <span class="gic-sim-label">@ <strong>${best.boss}</strong> · 1:${Math.round(_gicRunOdds(best)).toLocaleString()} a run</span>
+            <input class="gic-sim-input" type="number" id="gic-sim-runs" aria-label="how many runs to simulate" value="${Math.round(best.runs)}" min="1" max="100000">
             <span class="gic-sim-label">runs · 20 simulated sessions</span>
-            <button class="gic-sim-btn" onclick="window.runGicSim(${best.chance})">🎲 simulate</button>
+            <button class="gic-sim-btn" onclick="window.runGicSim(${_gicRunOdds(best)})">🎲 simulate</button>
           </div>
           <div class="gic-sim-result" id="gic-sim-result">
-            <span style="color:var(--gold-dim);font-style:italic">Click 🎲 simulate to roll the dice — see how lucky/unlucky 20 runs of ${best.r50} kills actually feel</span>
+            <span style="color:var(--gold-dim);font-style:italic">Click 🎲 simulate to roll the dice — see how lucky/unlucky 20 sessions of ${Math.round(best.runs).toLocaleString()} runs actually feel</span>
           </div>
         </div>
       </section>

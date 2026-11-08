@@ -112,6 +112,13 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3483 - THE ITEM CARD'S FULL SOURCE TABLE PRINTED KILLS UNDER "RUNS (50%)" - ~350x ON THE COW LEVEL (v3887, the #231 eye)
+The second eye on v3886's REG-3451 (11-08 22:19): the card's top six and quick take count RUNS, but the full table (more than six
+places) printed r50 - kills for an even chance - under "Runs (50%)", titled "sorted by speed" while _qwRank orders by fewest runs;
+on the Cow Level (~350 kills a run) ~350 times too many. The Drop Simulator took the same r50 as "runs" and rolled a kill's odds.
+Now the table and the simulator print s.runs, the title says its order, and the simulator rolls one run's odds (_gicRunOdds:
+1 - (1 - 1/c)^kills). GUARD: test_the_item_card_counts_runs_not_kills (3 red-proofs RED).
+
 ### REG-3477 - A FLEET ROW WEARS THREE EYES AND THE FRAME READER'S HOVER NEVER SAID WHICH IT WAS (v3887, GrokBot's v3885 look)
 GrokBot, v3885 (#230): "OLD PC ALT's red second eye sits beside the hover 'grok second lane ON'. If the second eye means console window
 up, that's consistent; if it means the grok lane, it contradicts." Since v3885 a row carries the shadow-reader eye, the console-window
