@@ -9,7 +9,7 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 // (b) F·Sets: completed sets wear the seal band; toggles from EITHER surface re-scan the other.
 // (c) toggleOwned live-syncs an open grail-forge tab both ways.
 
-test('sealed grounds: a run whose whole verified pool is found earns the band and leaves Best runs', async ({ page }) => {
+test('sealed grounds: a run whose whole verified pool is found leaves Best runs, and no band is drawn (v3884)', async ({ page }) => {
   await page.goto(URL); await page.waitForTimeout(1800);
   const r = await pinEvaluate(page, () => {
     const w: any = window;
@@ -44,7 +44,7 @@ test('sealed grounds: a run whose whole verified pool is found earns the band an
   }, r.target);
   expect(r2.sealed).toBe(true);     // the full pool is found → sealed
   expect(r2.inRuns).toBe(false);    // …and it left the farm list (cancel-out sync)
-  expect(r2.bandInDom).toBe(true);  // …wearing the horizontal seal in the rendered tab
+  expect(r2.bandInDom).toBe(false); // v3884 - his 11-08 ruling: the Sealed grounds band is not drawn (the run still leaves Best runs)
 });
 
 test('completed sets wear the seal band; checklist⇄fsets sync both ways', async ({ page }) => {

@@ -72017,17 +72017,11 @@ function renderJournal(){
       H.push(_moreWrap(s.runs.map(function(r,i){ return _runCard(r,i); }), F==='runs'?12:6, 'runs'));   // v647
       H.push('</div>');
     }
-    // v619 — 🏆 SEALED GROUNDS: runs whose ENTIRE verified pool is found wear the horizontal seal band
-    // (the vault's trade-keeper language) — farm these for trade/friends only, never for your grail.
-    if(show('runs')&&(s.sealed||[]).length){
-      H.push('<div class="forge-sec forge-sec-done"><div class="forge-sec-h">🏆 Sealed grounds <span class="forge-sec-ct">'+s.sealed.length+'</span><span class="forge-sec-sub">every verified unique from these runs is FOUND — nothing left here for your chronicle</span></div>');
-      H.push(_moreWrap(s.sealed.map(function(g){
-        return '<div class="rw-stamp-mini rw-band" style="margin:6px 0"><span class="rw-band-t">✓ '+esc(g.boss)+' — grounds sealed</span><span class="rw-band-s">all '+g.total+' verified uniques found · runs here are trade loot now</span></div>';
-      }), 6, 'sealed grounds'));   // v647
-
-      H.push('</div>');
-    }
-    if(F==='runs'&&!s.runs.length&&!(s.sealed||[]).length){
+    // v3884 - HIS RULING 11-08 ~10:31, on the Uniques tab: "sealed ground is not technically right here.. i didnt farm them all
+    // like it seems. but regardless its pointless to have here and see hide it plesae from the section". The v619 band ("NORMAL TZ
+    // MEPHISTO - GROUNDS SEALED all 103 verified uniques found") is not drawn. The scan still knows s.sealed: a run whose whole
+    // verified pool is found still leaves Best runs (v619's cancel-out sync) - only the band is gone.
+    if(F==='runs'&&!s.runs.length){   // v3884 - no band to stand in for the empty runs list
       H.push('<div class="forge-empty forge-empty-sm">Nothing in this bucket right now — no missing unique maps to a ranked run. Tap <b>▦ All</b> for the full missing grid, or <b>⚡ Quick wins</b> for the fastest crosses.</div>');   // v681 — same 0-count fall-through class as the v678 quick-wins fix
     }
     if(show('low')&&!s.low.length&&s.lowTotal>0){

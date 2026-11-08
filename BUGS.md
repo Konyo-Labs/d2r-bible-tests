@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3431 - THE UNIQUES TAB SAID "GROUNDS SEALED" FOR RUNS HE NEVER FARMED OUT (v3884, his 11-08 ruling)
+His words 11-08 ~10:31, with a screenshot of six bands ("NORMAL TZ MEPHISTO - GROUNDS SEALED all 103 verified uniques found ·
+runs here are trade loot now"): "sealed ground is not technically right here.. i didnt farm them all like it seems. but
+regardless its pointless to have here and see hide it plesae from the section". v619 drew the band for every run whose whole
+verified pool is in his chronicle - true of the ledger, and read as "you farmed these". The band is not drawn now. The scan
+still computes s.sealed, so a run whose pool is found still leaves Best runs (v619's cancel-out sync); an empty runs list now
+says it is empty instead of waiting for a band. Laws: test_the_uniques_tab_draws_no_sealed_grounds (new, 3 cases, red-proofs
+PROVEN 2 of 2); tests/v619_grail_forges_sync.spec.ts asserts the band is NOT in the rendered tab (GitHub's).
+
 ### REG-3427 - A RUNEWORD PRICE CHECK DREW NO CARD: "ENIGMA IS NOT ONE UNIQUE, SET PIECE OR RUNEWORD" (v3884, #130)
 His words 11-08 ~10:25, with his D2JSP screenshots (Enigma: "No item card - Enigma is not one unique, set piece or runeword in
 this page's item database"; Shako: the two cards): "the engima for price check should be rendering the image on the left of a
