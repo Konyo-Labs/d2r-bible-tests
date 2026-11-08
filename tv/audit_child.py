@@ -55,10 +55,12 @@ except Exception:
 CHILD_ENV = "TVD_AUDIT_CHILD"
 #: a cold route census measured 16.1 s on his Mac (v2692); the ALT is slower. Past this the console derives itself.
 TIMEOUT_S = 180
-AUDITS = ("routes", "lane_spans", "red_proofs", "swallow", "doctor")
+AUDITS = ("routes", "lane_spans", "red_proofs", "swallow", "doctor", "lock_index")
 #: the per-file caches a child writes for the console to read (beside the route census's own, fixture-aware)
 RP_CACHE = ".red_proofs_cache.json"
 SW_CACHE = ".swallow_rows_cache.json"
+#: #103 item 3 (REG-3484) - each BROAD gate's lock index (self_arming.lock_index), per file stamp
+LI_CACHE = ".lock_index_cache.json"
 #: a cold miss asks the child at most once in this long; between, the caller derives what it still lacks itself
 ASK_EVERY_S = 600
 #: REG-2987 - the eagle's pass in a child: the ALT measured 229 s (every-tick checks) + 143 s (periodic) standalone
@@ -309,6 +311,12 @@ def red_proofs_for(filename, key):
     return _per_file("red_proofs", RP_CACHE, lambda d: (d.get("files") or {}).get(filename), key)
 
 
+def lock_index_for(filename, key):
+    """#103 item 3 (REG-3484) - self_arming.lock_index's console door: this BROAD gate file's lock index at this stamp, or
+    None (not answered yet - the lock narrows nothing until it is). Parsing test_control in the console's heap is ~140 MB."""
+    return _per_file("lock_index", LI_CACHE, lambda d: (d.get("files") or {}).get(filename), key)
+
+
 def swallow_rows_for(path, root, key):
     """swallow_census._file_rows's console door: this file's rows under this root at this stamp, or None (derive them)."""
     return _per_file("swallow", SW_CACHE,
@@ -364,6 +372,29 @@ def _child(name, argv=()):
                 files[f] = [st.st_mtime_ns, int(st.st_size), got]
         if not _write_cache(RP_CACHE, {"v": 1, "files": files}):
             print("the red-proof lists were derived but their cache could not be written")
+            return 3
+        print(json.dumps({"ok": True, "audit": name, "files": len(files)}))
+        return 0
+    if name == "lock_index":
+        import heart2 as _h2
+        import self_arming as _sa
+        files = {}
+        for _n, f in _h2.gate_files(say=lambda *a, **k: None):
+            p = f if os.path.isabs(f) else os.path.join(_h2.HERE, f)
+            try:
+                st = os.stat(p)
+                with open(p, encoding="utf-8") as fh:
+                    text = fh.read()
+            except (OSError, ValueError):
+                continue
+            # only a BROAD gate is ever narrowed: the cheap text rule first, the parse for those alone
+            if sum(1 for lk in _sa.LOCK_DOORS if _sa._guards_lock(text, lk, _sa.LOCK_DOORS[lk])) < _sa.NET_NARROW_MIN_LOCKS:
+                continue
+            got = _sa.lock_index(text)
+            if got is not None:                      # a file that will not parse is not kept: it is asked again next time
+                files[f] = [st.st_mtime_ns, int(st.st_size), got]
+        if not _write_cache(LI_CACHE, {"v": 1, "files": files}):
+            print("the lock indexes were derived but their cache could not be written")
             return 3
         print(json.dumps({"ok": True, "audit": name, "files": len(files)}))
         return 0

@@ -122,6 +122,20 @@ name's hover card and no boss card, and the pool groups by _bestRun (funiScan 57
 truth: v71 accepts d2runewizard's .webp loops as images, v1840 counts the terror-zone level reason (REG-3466, 117 rows at
 99) as a fourth true reason, test_one_hunt_clock cuts from _bestRun, the Fleet-row law uses js_strip (ratchet 184 -> 181),
 art_names knows the run thumbnail's sprite door; v1628 check 6 reads data-su-tip as a subject. GUARD: v1624_run_thumbnails + v619_grail_forges_sync + v1628 (GitHub).
+art_names knows the run thumbnail's sprite door. GUARD: v1624_run_thumbnails + v619_grail_forges_sync (GitHub).
+### REG-3484 - ONE EDIT ANYWHERE IN A BROAD LAW SHUT EVERY LOCK ON EVERY PC - THE RIVER WAITED ON CLASSES THAT NEVER TOUCH IT (v3888, #103 item 3)
+His 11-07 question, "if the river proves itself already why does every proof going forward not related to it need to continue
+proofing it over and over again for it to unlock?", and 11-08: "for fleet the river should be flowing for all pcs". MEASURED 11-09
+on main, v3878-v3886: whenever a version owed a lock anything, the same few BROAD laws held all nine shut - test_control (486
+classes), test_ledger_authority and the lock-machinery laws - because the whole file imports the lock machinery, so any edit
+anywhere in one owed every lock until it was proven again on that PC (the ALT and Dean's PC wait out GitHub's import, 45-70 min
+a version). Of test_control's 486 classes 1-15 touch a river lock; over the five versions that changed it, the river locks' own
+part was byte-identical in four. Now a law guarding 5+ locks keeps a lock shut only when THAT LOCK'S PART changed since the proof
+this PC banked: heart2 banks `lockShas` beside `gateShas` (self_arming.lock_index / lock_parts - the module code, the classes that
+touch the lock by name or through a door module imported under another name, the classes the red memory saw catch its sabotages,
+the red-proofs aimed at its code, its door modules and the machinery). A focused law, a census with no part, a file that will
+not parse and a console whose index child (audit_child lock_index, #172) has not answered keep the whole-file rule. GUARD:
+test_a_version_that_touches_nothing_a_lock_reads_keeps_it_open (8 red-proofs RED).
 ### REG-3483 - THE ITEM CARD'S FULL SOURCE TABLE PRINTED KILLS UNDER "RUNS (50%)" - ~350x ON THE COW LEVEL (v3887, the #231 eye)
 The second eye on v3886's REG-3451 (11-08 22:19): the card's top six and quick take count RUNS, but the full table (more than six
 places) printed r50 - kills for an even chance - under "Runs (50%)", titled "sorted by speed" while _qwRank orders by fewest runs;

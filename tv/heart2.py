@@ -8064,6 +8064,62 @@ def prove(only=None, say=print, detail=None, push=False, stopped=None, stamp=Tru
 
 
 @_under_census_lock
+def _lock_catchers(name, f, index):
+    """#103 item 3 (REG-3484) - the classes this PC's red memory saw CATCH each lock's sabotages in this gate.
+    -> {lock: [class]}. Read through _red_peek (the one read that marks nothing used); {} when nothing is known."""
+    out = {}
+    try:
+        import self_arming as _sa
+        red = dict((s, lks) for s, lks in ((index or {}).get("red") or []))
+        for idx, pr in enumerate(red_proofs_in(f) or []):
+            lks = red.get(_sa.red_entry_digest(pr))
+            if not lks:
+                continue
+            ids = _red_peek(_red_key(name, idx, pr)) or ()
+            cl = set(str(i).split(".", 1)[0] for i in ids)
+            for lk in lks:
+                out.setdefault(lk, set()).update(cl)
+    except Exception:
+        return {}
+    return dict((k, sorted(v)) for k, v in out.items())
+
+
+def lock_shas_for(name, f, sha):
+    """#103 item 3 (REG-3484) - the per-lock part a BROAD gate is banked with (self_arming.lock_parts). -> dict | None
+
+    {"v", "sha": the bytes it was computed for - the same digest gateShas banks, "locks": {lock: {"d", "c"}}}. None for a
+    focused gate, a file that will not read or parse, and bytes other than `sha` (the file moved under the run): that gate
+    keeps the whole-file rule. A census writer runs in heart2's own processes, never the console's heap (#172)."""
+    try:
+        import self_arming as _sa
+        text = _read_text(f if os.path.isabs(f) else os.path.join(HERE, f))
+        if text is None or _sa._sha16(text) != sha:
+            return None
+        if sum(1 for lk in _sa.LOCK_DOORS if _sa._guards_lock(text, lk, _sa.LOCK_DOORS[lk])) < _sa.NET_NARROW_MIN_LOCKS:
+            return None
+        index = _sa.lock_index(text)
+        parts = _sa.lock_parts(index, _lock_catchers(name, f, index))
+        if not parts:
+            return None
+        return {"v": _sa.LOCK_PART_VERSION, "sha": sha, "locks": parts}
+    except Exception:
+        return None
+
+
+def _lock_shas_merge(prior, results, unmeasured, gs, shas, files):
+    """#103 item 3 - the census's lockShas after this write: every gate judged now re-recorded (or dropped), every record
+    whose bytes are not the banked ones (gateShas) dropped - never carried onto other bytes. -> dict"""
+    ls = dict(prior.get("lockShas") or {}) if isinstance(prior.get("lockShas"), dict) else {}
+    for n in (results or {}):
+        ls.pop(n, None)
+        if n in (unmeasured or ()) or not shas.get(n) or gs.get(n) != shas.get(n) or not files.get(n):
+            continue
+        rec = lock_shas_for(n, files[n], shas[n])
+        if rec:
+            ls[n] = rec
+    return dict((k, v) for k, v in ls.items() if isinstance(v, dict) and v.get("sha") and gs.get(k) == v.get("sha"))
+
+
 def _write_state(results, measured=None, stamp=True, unmeasured=None, trusted=None):
     """⚠ THE JOIN. Without this the whole loop is plumbing with no tap: `--prove` would measure
     beautifully and `_heart2_census()` in control_app.py would read an absent file and report
@@ -8181,6 +8237,8 @@ def _write_state(results, measured=None, stamp=True, unmeasured=None, trusted=No
             continue
         _gs[_n] = _shas.get(_n)
     _gs = {k: v for k, v in _gs.items() if k in _known}
+    # #103 item 3 (REG-3484) - each BROAD gate banked now records its per-lock part beside the digest it was proved against
+    _ls = _lock_shas_merge(prior, results, _unm, _gs, _shas, dict(gates))
     # REG-3191 / REG-3192 - WHO STANDS ON ANOTHER TREE'S WORD, AND WHAT THE SAFETY NET FOUND. `trusted` (the trust pass's
     # names) records each such gate at the sha it was written for; any other verdict this run wrote for a gate judged it
     # here, so it leaves the list (and a find on it is settled by that verdict). A record whose gate file has moved is
@@ -8231,6 +8289,7 @@ def _write_state(results, measured=None, stamp=True, unmeasured=None, trusted=No
         "blindRule": BLIND_RULE,
         "blindRuleOwed": _rule_left,
         "gateShas": _gs,
+        "lockShas": _ls,
         "trusted": _tr,
         "netFinds": _nf,
         "netUnjudged": _nu,

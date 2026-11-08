@@ -385,6 +385,7 @@ tv/.chronicle_routes_cache.json
 tv/.lane_spans_cache.json
 tv/.red_proofs_cache.json
 tv/.swallow_rows_cache.json
+tv/.lock_index_cache.json
 
 # v2875 — the driver's own heartbeat: a runtime RECORD, like .heart2.json and reel_tombstones.
 tv/.shelf_driver.json

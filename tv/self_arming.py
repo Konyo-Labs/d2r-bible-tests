@@ -1691,6 +1691,243 @@ def _guards_lock(text, lock, stems):
     return False
 
 
+# ══ #103 item 3 (REG-3484) - A BROAD LAW HOLDS A LOCK ONLY THROUGH THE PART OF IT THAT GUARDS THAT LOCK ═════════════════
+# His question, 11-07 ~01:45 IST: "if the river proves itself already why does every proof going forward not related to it
+# need to continue proofing it over and over again for it to unlock?" - and 11-08: "for fleet the river should be flowing
+# for all pcs". MEASURED 11-09 on main, v3878-v3886: in every version that owed a lock anything, the same few BROAD laws
+# held all nine shut - test_control (one 2.7 MB file, 486 classes), test_ledger_authority and the lock-machinery laws -
+# because the WHOLE FILE imports the lock machinery, so any edit anywhere in it owed every lock on every PC until that law
+# was proven again there (the ALT and Dean's PC wait out GitHub's proof import, 45-70 min a version). Yet of test_control's
+# 486 classes 1-15 touch a river lock, and over the five versions that changed test_control.py the three river locks' own
+# part of it - its module code, the classes that touch the lock, the red-proofs aimed at its code - was byte-identical in
+# four (scratchpad river103/proto.py).
+#
+# So a law that guards NET_NARROW_MIN_LOCKS or more locks keeps a lock shut only when THAT LOCK'S PART changed since the
+# proof this PC banked. The census records the part's digest beside the law's own (heart2 `lockShas`, written by the same
+# write that banks `gateShas`); the lock compares it with the part of the file on disk now. The part of a lock is:
+#   * the module's own code (everything outside its classes, its RED_PROOF list and its docstring) - an edit there owes
+#     every lock the law guards;
+#   * every class whose source guards the lock (_guards_lock, plus a door or machinery module the file imported under
+#     another name - `import reel_retention as rr` makes a class that says `rr.` a guard);
+#   * every class this PC's red memory saw CATCH a sabotage aimed at the lock, recorded by name with the proof - so a
+#     class that guards the lock without naming it is still in its part, and a renamed or removed one owes it;
+#   * the red-proofs aimed at the lock's code, and the bytes of the lock's own door modules and of this file (the lock
+#     machinery) - a version that changes the lock's own code AND its broad guard owes the guard again.
+# Anything less certain stays broad, in the safe direction: a census with no part recorded, a file that will not parse, a
+# RED_PROOF that is not a literal list (then it is module code), a focused law (fewer locks), and a console whose index
+# child has not answered yet. A class that catches a lock's sabotage on a PC whose red memory never saw it is the one gap
+# the text rule leaves; GitHub proved those exact bytes before main could move (ruling 11-05, CI proves once).
+# The law: test_a_version_that_touches_nothing_a_lock_reads_keeps_it_open. [[heart-first]] [[the-unjoined-end]]
+LOCK_PART_VERSION = 1
+
+
+def _sha16(text):
+    """The digest heart2.gate_shas gives a gate's text. -> str"""
+    return hashlib.sha256(text.encode("utf-8", "replace")).hexdigest()[:16]
+
+
+def _sha24(text):
+    return hashlib.sha256(text.encode("utf-8", "replace")).hexdigest()[:24]
+
+
+def _part_aliases(nodes):
+    """The names a module's top-level imports bind, by the module they come from. -> {stem: {name}} ("*" = a star import)"""
+    import ast
+    out = {}
+
+    def walk(n):
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+            return
+        if isinstance(n, ast.Import):
+            for a in n.names:
+                out.setdefault(a.name.split(".")[0], set()).add((a.asname or a.name).split(".")[0])
+        elif isinstance(n, ast.ImportFrom) and n.module and not n.level:
+            for a in n.names:
+                out.setdefault(n.module.split(".")[0], set()).add(a.asname or a.name)
+        for c in ast.iter_child_nodes(n):
+            walk(c)
+
+    for n in nodes:
+        walk(n)
+    return out
+
+
+def _class_guards(src, lock, aliases):
+    """#103 item 3 - does this class's source guard `lock`? _guards_lock, or a door / machinery module the FILE imported
+    under another name used inside it. -> bool. Broad in the safe direction, like _guards_lock."""
+    stems = LOCK_DOORS.get(lock) or ()
+    if _guards_lock(src, lock, stems):
+        return True
+    marks = LOCK_MARKS.get(lock) or ()
+    for stem in tuple(stems) + LOCK_MACHINERY:
+        if marks and stem in BROAD_DOORS:
+            continue
+        for al in (aliases or {}).get(stem, ()):
+            if al == "*" or re.search(r"(?<![\w.])%s\b" % re.escape(al), src):
+                return True
+    return False
+
+
+def lock_index(text):
+    """#103 item 3 - one gate file, indexed by the part each lock stands on. -> dict | None (it would not parse)
+
+    {"v", "sha": the file's digest (heart2.gate_shas), "m": its module code's digest, "cls": {class: [digest, [locks]]},
+    "red": [[entry digest, [locks]]] | None (RED_PROOF is not a literal list - it is module code then), "all": [the locks
+    the whole file guards]}. Compact on purpose: the console asks a short-lived child for it (audit_child.lock_index_for),
+    because parsing test_control in its own heap costs ~140 MB (#172)."""
+    import ast
+    try:
+        tree = ast.parse(text)
+    except Exception:                                   # SyntaxError, ValueError (a null byte), RecursionError
+        return None
+    lines = text.splitlines(True)
+
+    def seg(n):
+        start = min([n.lineno] + [d.lineno for d in getattr(n, "decorator_list", None) or ()])
+        return "".join(lines[start - 1:getattr(n, "end_lineno", None) or n.lineno])
+
+    body = list(tree.body)
+    if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant) \
+            and isinstance(body[0].value.value, str):
+        body = body[1:]                                 # the module docstring is prose
+    aliases = _part_aliases([n for n in body if not isinstance(n, ast.ClassDef)])
+    module, classes, red = [], {}, None
+    for n in body:
+        if isinstance(n, ast.ClassDef):
+            # a second class of one name: both stay in its part (the later one wins at import, both are its bytes)
+            classes[n.name] = classes.get(n.name, "") + seg(n)
+            continue
+        if red is None and isinstance(n, ast.Assign) and len(n.targets) == 1 \
+                and isinstance(n.targets[0], ast.Name) and n.targets[0].id == "RED_PROOF":
+            try:
+                val = ast.literal_eval(n.value)
+            except Exception:
+                val = None
+            if isinstance(val, (list, tuple)) and all(isinstance(e, dict) for e in val):
+                red = [dict(e) for e in val]
+                continue
+        module.append(seg(n))
+    locks = sorted(LOCK_DOORS)
+    out = {"v": LOCK_PART_VERSION, "sha": _sha16(text), "m": _sha24("".join(module)),
+           "cls": {}, "red": None, "all": [lk for lk in locks if _guards_lock(text, lk, LOCK_DOORS[lk])]}
+    for c, src in classes.items():
+        out["cls"][c] = [_sha24(src), [lk for lk in locks if _class_guards(src, lk, aliases)]]
+    if red is not None:
+        out["red"] = []
+        for e in red:
+            blob = json.dumps(e, sort_keys=True, ensure_ascii=False, default=str)
+            out["red"].append([_sha24(blob), [lk for lk in locks if _guards_lock(blob, lk, LOCK_DOORS[lk])]])
+    return out
+
+
+def red_entry_digest(entry):
+    """#103 item 3 - one RED_PROOF entry's digest, as lock_index files it. -> str | None"""
+    try:
+        return _sha24(json.dumps(dict(entry), sort_keys=True, ensure_ascii=False, default=str))
+    except Exception:
+        return None
+
+
+def _part_door_stems(lock):
+    """The modules whose bytes are part of a lock's part: its own doors (a BROAD_DOORS module only when the lock declares
+    no marks - _guards_lock's rule) and the lock machinery."""
+    marks = LOCK_MARKS.get(lock) or ()
+    return [s for s in tuple(LOCK_DOORS.get(lock) or ()) + LOCK_MACHINERY if not (marks and s in BROAD_DOORS)]
+
+
+def _door_sha(stem):
+    """A door module's digest on disk, or UNREADABLE (never an empty file's digest). -> str"""
+    try:
+        with io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), stem + ".py"), "rb") as fh:
+            return hashlib.sha256(fh.read()).hexdigest()[:16]
+    except OSError:
+        return "UNREADABLE"
+
+
+def lock_part_digest(index, lock, extra=(), door=None):
+    """#103 item 3 - the digest of `lock`'s part of an indexed gate file. -> str. `extra` = classes recorded as catching
+    the lock's sabotages (a name the file no longer has digests as MISSING, so a removed catcher owes the lock); `door`
+    is the door-module reader (a law's seam)."""
+    h = hashlib.sha256(("lockpart/%d\0%s\0%s" % (LOCK_PART_VERSION, lock, (index or {}).get("m"))).encode("utf-8"))
+    cls = (index or {}).get("cls") or {}
+    mine = set(c for c, v in cls.items() if isinstance(v, list) and len(v) == 2 and lock in (v[1] or ()))
+    for c in sorted(mine | set(extra or ())):
+        v = cls.get(c)
+        h.update(("\0C%s=%s" % (c, v[0] if isinstance(v, list) and v else "MISSING")).encode("utf-8"))
+    red = (index or {}).get("red")
+    if red is None:
+        h.update(b"\0R?")
+    else:
+        for s in sorted(s for s, lks in red if lock in (lks or ())):
+            h.update(("\0R" + str(s)).encode("utf-8"))
+    for stem in _part_door_stems(lock):
+        h.update(("\0D%s=%s" % (stem, (door or _door_sha)(stem))).encode("utf-8"))
+    return h.hexdigest()[:24]
+
+
+def lock_parts(index, catchers=None, door=None):
+    """#103 item 3 - what the census records for a BROAD gate it banks. -> {lock: {"d": digest, "c": [classes]}} | None
+
+    None for a gate that guards fewer than NET_NARROW_MIN_LOCKS locks (it keeps the whole-file rule) or no index. `catchers`
+    = {lock: [class, ...]} - the classes the red memory saw catch that lock's sabotages; those not already in its part by
+    their own text are recorded by name, so the lock asks the same classes later."""
+    if not isinstance(index, dict) or len(index.get("all") or ()) < NET_NARROW_MIN_LOCKS:
+        return None
+    cls = index.get("cls") or {}
+    out = {}
+    for lock in index["all"]:
+        mine = set(c for c, v in cls.items() if lock in (v[1] or ()))
+        extra = sorted(set((catchers or {}).get(lock) or ()) - mine)
+        out[lock] = {"d": lock_part_digest(index, lock, extra, door=door), "c": extra}
+    return out
+
+
+def _lock_index_now(name, files, text):
+    """This gate file's lock index now, memoised per census. -> (index | None, pending bool). On a console it is asked of a
+    short-lived child (#172); `pending` = the child has not answered yet - the caller narrows nothing and asks again later."""
+    memo = _LOCK_MEMO.setdefault("index", {})
+    if name in memo:
+        return memo[name], False
+    try:
+        import audit_child as _ac
+        if _ac.wanted():
+            import heart2 as _h2
+            f = files.get(name) if isinstance(files, dict) else None
+            if not f:
+                return None, False
+            st = os.stat(f if os.path.isabs(f) else os.path.join(_h2.HERE, f))
+            got = _ac.lock_index_for(f, (st.st_mtime_ns, int(st.st_size)))
+            if got is None:
+                return None, True
+        else:
+            got = lock_index(text)
+    except Exception:
+        got = None
+    memo[name] = got
+    return got, False
+
+
+def _lock_part_unchanged(name, lock, text, files):
+    """#103 item 3 - is `lock`'s part of this owed BROAD gate the part this PC proved? -> True | False | None (pending)
+
+    False (the whole-file rule stands) whenever anything is uncertain: no part recorded, a record for other bytes than the
+    proved ones, a focused gate, an index for other bytes than these, a lock the proved bytes did not guard."""
+    rec = (_LOCK_MEMO.get("lockShas") or {}).get(name)
+    if not isinstance(rec, dict) or rec.get("v") != LOCK_PART_VERSION or not rec.get("sha") \
+            or rec.get("sha") != (_LOCK_MEMO.get("gateShas") or {}).get(name):
+        return False
+    r = (rec.get("locks") or {}).get(lock)
+    if not isinstance(r, dict) or not r.get("d"):
+        return False
+    idx, pending = _lock_index_now(name, files, text)
+    if pending:
+        return None
+    if not isinstance(idx, dict) or idx.get("v") != LOCK_PART_VERSION or idx.get("sha") != _sha16(text) \
+            or len(idx.get("all") or ()) < NET_NARROW_MIN_LOCKS:
+        return False
+    return lock_part_digest(idx, lock, r.get("c") or ()) == r.get("d")
+
+
 def _owed_and_blind():
     """This PC's proof census against the gate files on disk now. -> (owed names, blind names, files) | (None, None, why)
 
@@ -1713,7 +1950,10 @@ def _owed_and_blind():
                 _envb = hashlib.sha256(_fe.read()).hexdigest()
         except OSError:
             _envb = None
-        key = (hashlib.sha256(raw).hexdigest(), _h2.gates_fingerprint(), _envb)
+        # #103 item 3 - and the door modules' bytes: a lock's part carries them, so a changed door file is never judged
+        # from an answer memoised before it changed
+        _doors = tuple(sorted(set(s for lk in LOCK_DOORS for s in _part_door_stems(lk))))
+        key = (hashlib.sha256(raw).hexdigest(), _h2.gates_fingerprint(), _envb, tuple(_door_sha(s) for s in _doors))
         if _LOCK_MEMO["key"] == key:
             return _LOCK_MEMO["owed"], _LOCK_MEMO["blind"], _LOCK_MEMO["files"]
         st = json.loads(raw.decode("utf-8"))
@@ -1724,7 +1964,10 @@ def _owed_and_blind():
             _so = _h2.slice_owed(list(files.items()), st)
         owed = set(n for n, _k in (_so.get("owed") or []))
         blind = set(st.get("blind") or [])
-        _LOCK_MEMO.update(key=key, owed=owed, blind=blind, files=files, src={}, guard={})
+        _gsr = st.get("gateShas") if isinstance(st.get("gateShas"), dict) else {}
+        _lsr = st.get("lockShas") if isinstance(st.get("lockShas"), dict) else {}
+        _LOCK_MEMO.update(key=key, owed=owed, blind=blind, files=files, src={}, guard={}, index={},
+                          gateShas=_gsr, lockShas=_lsr)
         return owed, blind, files
     except Exception as _e:
         return None, None, "the census could not be read for one lock (%s)" % type(_e).__name__
@@ -1757,7 +2000,16 @@ def _lock_guard(name, lock, files):
     memo = _LOCK_MEMO.setdefault("guard", {})
     if gk not in memo:
         t = _lock_src(name, files)
-        memo[gk] = True if t is None else _guards_lock(t, lock, stems)   # a gate that will not read is counted, never skipped
+        if t is None:
+            memo[gk] = True                       # a gate that will not read is counted, never skipped
+        elif not _guards_lock(t, lock, stems):
+            memo[gk] = False
+        else:
+            # #103 item 3 (REG-3484) - a BROAD gate holds this lock only when the lock's own part of it changed
+            same = _lock_part_unchanged(name, lock, t, files)
+            if same is None:
+                return True                       # the index child has not answered: counted, and asked again later
+            memo[gk] = not same
     return memo[gk]
 
 
@@ -1831,8 +2083,13 @@ def _lock_heart(lock, gwhy=None):
         return False, ("%s For %s (#156, per-lock): %d of its own guard law(s) changed or are unproven since it ran (%s); "
                        "the rest of the tree does not decide this lock."
                        % (str(gwhy).rstrip(), lock, len(g_owed), ", ".join(g_owed[:3])))
+    # #103 item 3 - name the broad laws that changed only outside this lock's part, so an open lock says why it is open
+    _stems = LOCK_DOORS.get(lock) or ()
+    _narrow = sorted(n for n in owed if (lambda t: t is not None and _guards_lock(t, lock, _stems))(_lock_src(n, files)))
     return True, ("instruments watched for %s: every law that guards it is proven against the files on disk; the %d gate(s) "
-                  "owed elsewhere guard other surfaces, not this one (#156, per-lock)" % (lock, len(owed)))
+                  "owed elsewhere guard other surfaces, not this one (#156, per-lock)%s"
+                  % (lock, len(owed), ("; %d broad law(s) changed only outside its part: %s (#103)"
+                                       % (len(_narrow), ", ".join(_narrow[:3]))) if _narrow else ""))
 
 
 _NET_MEMO = {"key": None, "finds": None, "files": None}
