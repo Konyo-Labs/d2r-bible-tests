@@ -3236,6 +3236,18 @@ def _run_gate_once(sandbox_tv, filename, timeout=180, extra=(), script=None, wid
         _ids = _LAST_RED.get(threading.get_ident()) or []
         if _ids:
             _parts.append("red: " + ", ".join(_ids[:12]) + ((" (+%d more)" % (len(_ids) - 12)) if len(_ids) > 12 else ""))
+        else:
+            # v3882 - A RED THAT NAMES NO CASE STILL SAYS ITS FIRST FAILURE LINE. MEASURED: test_vault_l1_war_stash_overflow
+            # went red untampered on v3881's shard 12 and v3882's shard 10 ("Ran 15 tests ... FAILED (failures=1)") and no
+            # log named the case either time, so it could not be fixed. Never into the red memory (_LAST_RED): words only.
+            _first = ""
+            for _l in _lines:
+                _c = _ANSI_RX.sub("", _l).strip()
+                if re.match(r"(?:FAIL|ERROR):\s", _c) or re.search(r"\b\w*(?:Error|Exception):", _c):
+                    _first = _c
+                    break
+            if _first:
+                _parts.append("red: UNNAMED (%s)" % _first[:200])
     return r.returncode == 0, (" | ".join(_parts) if _parts else _last)
 
 
@@ -4197,6 +4209,8 @@ _RED_DEFAULT, _CACHE_DEFAULT = RED_MEMORY, CACHE     # the machine's own stores,
 RED_MEMORY_MAX = 20000     # entries kept, counted AFTER the merge; see _red_evict for who leaves first
 RED_IDS_MAX = 60           # a sabotage that reddens more cases than this is asked in full anyway
 _RED_ID_RX = re.compile(r"^(?:FAIL|ERROR): (\w+) \(([\w.]+)\)")
+#: v3882 - an ANSI colour code (a coloured unittest header) is stripped before a red line is read
+_ANSI_RX = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 _RED_CASE_RX = re.compile(r"^[A-Za-z_]\w*\.test\w*$")
 _RED_LOCK = threading.Lock()
 _LAST_RED = {}             # thread id -> the red cases of that thread's last _run_gate (a side channel: stand-ins stay valid)
@@ -4211,7 +4225,7 @@ def _red_ids(lines):
     A class-level error (setUpClass, a module import) names no case a narrowed run could ask for, so it is dropped."""
     out = set()
     for ln in lines or ():
-        m = _RED_ID_RX.match(str(ln).strip())
+        m = _RED_ID_RX.match(_ANSI_RX.sub("", str(ln)).strip())   # v3882 - a coloured FAIL header is the same case
         if not m:
             continue
         test, where = m.group(1), m.group(2)

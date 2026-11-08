@@ -833,6 +833,28 @@ class AnUntamperedRedRunNamesItsRedCases(unittest.TestCase):
         self.assertIn("Boxy.test_three_errors", tail)
         self.assertNotIn("test_one_is_fine", tail)
 
+    def _run_script(self, body):
+        root = tempfile.mkdtemp(prefix="redname_")
+        self.addCleanup(shutil.rmtree, root, True)
+        with io.open(os.path.join(root, "test_zz_raw.py"), "w") as fh:
+            fh.write(body)
+        return H._run_gate(root, "test_zz_raw.py", timeout=60)
+
+    def test_a_coloured_fail_header_is_still_named(self):
+        """v3882 - Python 3.14's unittest may colour its FAIL header; the escape code must not hide the case"""
+        ok, tail = self._run_script("import sys\nsys.stderr.write('\\x1b[31mFAIL\\x1b[0m: test_x (__main__.Coloured.test_x)\\n"
+                                    "Ran 1 test in 0.001s\\n\\nFAILED (failures=1)\\n')\nsys.exit(1)\n")
+        self.assertIs(ok, False)
+        self.assertIn("red: Coloured.test_x", tail)
+
+    def test_a_red_that_names_no_case_still_says_its_first_failure(self):
+        """* v3882 - test_vault_l1_war_stash_overflow went red untampered on two GitHub shards and no log named the case"""
+        ok, tail = self._run_script("import sys\nsys.stderr.write('Traceback (most recent call last):\\n"
+                                    "AssertionError: 3 != 4 : the 5 war-stash pages were not all filled first\\n"
+                                    "Ran 15 tests in 216.384s\\n\\nFAILED (failures=1)\\n')\nsys.exit(1)\n")
+        self.assertIs(ok, False)
+        self.assertIn("red: UNNAMED (AssertionError: 3 != 4", tail)
+
     def test_a_green_run_carries_no_red_marker(self):
         root = tempfile.mkdtemp(prefix="redname_")
         self.addCleanup(shutil.rmtree, root, True)
@@ -845,6 +867,16 @@ class AnUntamperedRedRunNamesItsRedCases(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3882 - a red that names no case says nothing again (war_stash's red on two shards, no case on either log)",
+     "file": "heart2.py",
+     "find": "            if _first:\n                _parts.append(\"red: UNNAMED (%s)\" % _first[:200])\n",
+     "replace": "            if False:\n                _parts.append(\"red: UNNAMED (%s)\" % _first[:200])\n",
+     "matches": 1},
+    {"why": "v3882 - a coloured FAIL header hides its case from the red reader",
+     "file": "heart2.py",
+     "find": "        m = _RED_ID_RX.match(_ANSI_RX.sub(\"\", str(ln)).strip())   # v3882 - a coloured FAIL header is the same case\n",
+     "replace": "        m = _RED_ID_RX.match(str(ln).strip())\n",
+     "matches": 1},
     {"why": "REG-1877 - a red run's tail stops naming its red cases: the ALT's log reads 'failures=6' and nothing else again",
      "file": "heart2.py",
      "find": "    if r.returncode != 0:\n        _ids = _LAST_RED.get(threading.get_ident()) or []\n",
