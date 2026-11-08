@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3885",
+  "ver": "v3886",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3885: Design C build screen, class-only items, d2jsp rolls, TZ level 68, Fleet eyes, one-shard re-run",
+  "note": "v3886: Quick wins as silospen lists, staff mods, automod, shield block, Dean prices, shadow d2jsp lamp, Windows laws",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
