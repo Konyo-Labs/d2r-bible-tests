@@ -92,7 +92,7 @@ if sys.platform == "win32":
         except Exception:
             pass
 
-VERSION = "v3884"   # Khalims Will
+VERSION = "v3885"   # Khalims Eye
 HERE   = os.path.dirname(os.path.abspath(__file__))
 FRAMES = os.environ.get("TV_FRAMES_DIR") or os.path.join(HERE, "frames")   # v752 — replay feeds its own watch dir
 

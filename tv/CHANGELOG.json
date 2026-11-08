@@ -1,5 +1,29 @@
 [
   {
+    "ver": "v3885",
+    "date": "2026-11-08",
+    "items": [
+      "A d2jsp post is perfect by its rolls, never its words - a socketed Perfect Topaz no longer makes a Shako perfect",
+      "A 775 Enigma post sets the perfect price, not the normal one, and signed Griffon rolls like 12 -20 are read",
+      "One d2jsp shop post is one vote, and each clause on a line keeps its own roll",
+      "The character build screen is Design C - a Breakpoints panel of FCR, FHR, IAS, FBR and Attack Rating cards",
+      "Each breakpoint card reads the engine - its frames, its tier, a rail of real steps and how much reaches the next",
+      "Each class tops out at its own breakpoint - a Sorceress FCR rail runs to 200, a Paladin to 125",
+      "Stash, Loot Filter and Strengths left the build screen, Primary Skills and Mercenary sit under Stats",
+      "No worn slot offers or takes another class item - Paladin shields, Druid pelts, Necromancer heads and the rest",
+      "Inventory, personal stash, shared stash and the Vault still hold anything, as before",
+      "Both Read my Chronicle buttons are gone - the recorder, MINI and ON AIR reading are untouched",
+      "Terror zone odds start at level 68, and a level figure within 2 percent of the stored one is the same figure",
+      "Heaven Light from NM TZ Mephisto, Diablo and Baal ties at 1 in 1,614 and the quickest run leads",
+      "Quick wins runs within 2 percent are a tie and the quicker run leads - Rakanishu now above Pitspawn",
+      "A dragged MF lands on a round ten, so 500 reads 500, not 498",
+      "An import uses at most 6 workers, so a 12-core PC is never pinned at 100 percent",
+      "The Fleet names a waiting prover wait - PC busy or import first - never a 175 hour finish time",
+      "Both Fleet eyes are green when on and red when off, and a second eye shows the console window is up",
+      "One law red once in one proof shard re-runs only that shard, never a whole new round"
+    ]
+  },
+  {
     "ver": "v3884",
     "date": "2026-11-08",
     "items": [

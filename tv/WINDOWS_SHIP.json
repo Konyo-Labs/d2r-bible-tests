@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3884",
+  "ver": "v3885",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3884: D2JSP price cards, TZ odds at your level, every qlvl from silospen, TZ runs tagged",
+  "note": "v3885: Design C build screen, class-only items, d2jsp rolls, TZ level 68, Fleet eyes, one-shard re-run",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
