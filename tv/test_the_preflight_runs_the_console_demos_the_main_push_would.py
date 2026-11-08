@@ -47,7 +47,9 @@ def _run_pf(demo, due=(True, "this version changes tv/control_ui.html"), says=No
         P.select = lambda _c, _h, _cap: {"run": [], "argv": {}, "browser": [], "slow": [], "other": []}
         P.uncosted = lambda _c, _h, _registry=None: ([], {}, [])
         code, reds = P.preflight(prove=False, say=out.append, _laws=lambda names: [], _anchors=lambda: (True, ""),
-                                 _demos=demo, _demos_due=lambda: due)
+                                 _demos=demo, _demos_due=lambda: due,
+                                 _render_due=lambda: (False, "v3883 - not this law's step"),
+                                 _second_eye=lambda: ("same", "v3883 - not this law's step"))
     finally:
         P.read_costs, P.select, P.uncosted = keep
     return code, reds, out

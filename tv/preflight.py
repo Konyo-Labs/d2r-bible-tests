@@ -355,6 +355,99 @@ def run_demos(_run=None):
     return r.returncode == 0, tail[:400]
 
 
+#: v3883 (#129) - THE RENDER GATE AND THE SECOND EYE RUN HERE WHEN THE MAIN PUSH WOULD RUN THEM. MEASURED 2026-11-08 on
+#: v3881: GitHub vouched for a1de4b253 after ~51 min, and the main push was then refused TWICE by the hook's Mac-only gates -
+#: "v3881 may not ship while v3880 has never been looked at" (second_eye_ledger.py --check v3880 --gate), then render:
+#: fleet-xref read 2 of 25 nodes ZERO-SIZE at all six widths (v3881's own REG-3395 had moved a row's chips onto the OPEN
+#: row). The render fix changed the sha and bought a whole new round. The render watch is the hook's _px_watch, held equal by
+#: test_the_preflight_runs_every_mac_only_gate_the_main_push_would, and bible.html counts only beyond its stamp
+#: (tv/page_delta.py, fail-closed) - exactly the hook's question. [[copy-drift]] [[regression-guard]]
+RENDER_WATCH = r"^(tv/control_ui\.html|tv/render_check\.py|tv/render_coverage\.json)$"
+RENDER_TIMEOUT_S = 900
+
+
+def render_due(_git_=None, _page_delta=None):
+    """-> (True | False | None, why): would the MAIN push run the render gate? The hook's watch over origin/main..HEAD plus
+    the working tree it grades, or bible.html changed beyond its stamp. None when git cannot say - UNKNOWN, never "not due"."""
+    g = _git_ or _git
+    ok, out = g("diff", "--name-only", "origin/main..HEAD")
+    ok2, out2 = g("diff", "--name-only", "HEAD")
+    if not (ok and ok2):
+        return None, "git could not list the files this version changes - UNKNOWN"
+    names = sorted(set(l.strip() for l in (out + "\n" + out2).splitlines() if l.strip()))
+    hit = [n for n in names if re.search(RENDER_WATCH, n)]
+    if hit:
+        return True, "this version changes %s - the main push runs the render gate" % ", ".join(hit[:3])
+    if "bible.html" in names:
+        changed = (_page_delta or _page_changed)()
+        if changed is not False:
+            return True, "bible.html changed beyond its version stamp (or that could not be told) - the main push renders it"
+    return False, "nothing the render gate watches changed"
+
+
+def _page_changed(_run=None):
+    """tv/page_delta.py --range origin/main..HEAD: exit 0 = the page changed beyond its stamp (fail-closed). -> bool"""
+    try:
+        r = (_run or subprocess.run)([sys.executable, os.path.join("tv", "page_delta.py"), "--range", "origin/main..HEAD"],
+                                     cwd=os.path.dirname(HERE), capture_output=True, text=True, encoding="utf-8",
+                                     errors="replace", timeout=120)
+        return r.returncode == 0
+    except Exception:
+        return True                                   # could not ask: the hook's rule fails closed, so does this
+
+
+def run_render(_run=None):
+    """python3 tv/render_check.py from the repo root, bounded. -> (True green | False red | None UNKNOWN, tail)
+    render_check exits 0 clean, 1 a real defect, 2 UNKNOWN (no Chrome) - never a pass."""
+    try:
+        r = (_run or subprocess.run)([sys.executable, os.path.join("tv", "render_check.py")], cwd=os.path.dirname(HERE),
+                                     env=_law_env(), capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                     timeout=RENDER_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        return False, "the render gate ran past %d s" % RENDER_TIMEOUT_S
+    lines = ((r.stdout or "") + (r.stderr or "")).strip().splitlines()
+    bad = [l.strip()[:160] for l in lines if l.lstrip().startswith("\U0001F534")]
+    tail = " | ".join(bad[:4]) if bad else " | ".join(lines[-2:])
+    if r.returncode == 0:
+        return True, tail[:400]
+    if r.returncode == 2:
+        return None, "the render gate could not run here (exit 2, UNKNOWN - never a pass): " + tail[:300]
+    return False, tail[:400]
+
+
+def _ver_at(ref, _git_=None):
+    """the version stamped in tv/WINDOWS_SHIP.json at `ref` - the hook's _se_ver_at. -> str | None (unreadable)"""
+    ok, out = (_git_ or _git)("show", "%s:tv/WINDOWS_SHIP.json" % ref)
+    if not ok:
+        return None
+    try:
+        v = str((json.loads(out) or {}).get("ver") or "").strip()
+    except Exception:
+        return None
+    return v or None
+
+
+def second_eye_due(_git_=None, _run=None):
+    """-> (True recorded | False owed | None UNKNOWN | "same", why): has the version live on main (origin/main's stamp) a
+    recorded second-eye look - the hook's `second_eye_ledger.py --check <prev> --gate`? "same" when this push carries no
+    new version (the hook asks nothing then)."""
+    prev, this = _ver_at("origin/main", _git_), _ver_at("HEAD", _git_)
+    if not prev or not this:
+        return None, "the version on main or at HEAD could not be read - whether a look is owed is UNKNOWN"
+    if prev == this:
+        return "same", "this push carries no new version - the hook asks no second eye"
+    try:
+        r = (_run or subprocess.run)([sys.executable, os.path.join("tv", "second_eye_ledger.py"), "--check", prev, "--gate"],
+                                     cwd=os.path.dirname(HERE), capture_output=True, text=True, encoding="utf-8",
+                                     errors="replace", timeout=60)
+    except Exception as e:
+        return None, "the second-eye ledger could not be asked (%s) - UNKNOWN" % type(e).__name__
+    if r.returncode == 0:
+        return True, "%s has its recorded second-eye look" % prev
+    return False, ("%s has no recorded second-eye look - the main push would refuse %s. Run it now: python3 "
+                   "tv/second_eye_run.py %s" % (prev, this, prev))
+
+
 def anchors(here=HERE, _run=None):
     """the hook's red-proof anchor census. -> (ok: bool, tail)"""
     r = (_run or subprocess.run)([sys.executable] + ANCHOR_CENSUS, cwd=here, env=_law_env(), capture_output=True, text=True,
@@ -363,7 +456,8 @@ def anchors(here=HERE, _run=None):
 
 
 def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, version=None, _laws=None, _prove=None,
-              _anchors=None, _registry=None, _demos=None, _demos_due=None):
+              _anchors=None, _registry=None, _demos=None, _demos_due=None, _render=None, _render_due=None,
+              _second_eye=None):
     """-> (exit code 0 green / 1 red / 2 unknown, [red lines])"""
     costs = read_costs(os.path.join(here, "gate_costs.json"))
     if not costs:
@@ -412,6 +506,25 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
     elif due is None:
         unknown.append("console-demos: " + dwhy)
         say("preflight: " + unknown[-1])
+    # v3883 (#129) - the hook's other two Mac-only gates, asked the hook's way (see RENDER_WATCH)
+    se, sewhy = (_second_eye or second_eye_due)()
+    if se is False:
+        reds.append("second-eye (the main push asks it, GitHub never does): " + sewhy)
+    elif se is None:
+        unknown.append("second-eye: " + sewhy)
+        say("preflight: " + unknown[-1])
+    rdue, rwhy = (_render_due or render_due)()
+    if rdue:
+        say("preflight: %s" % rwhy)
+        r_ok, r_tail = (_render or run_render)()
+        if r_ok is False:
+            reds.append("render (the main push runs it, GitHub never does): " + r_tail)
+        elif r_ok is None:
+            unknown.append("render: " + r_tail)
+            say("preflight: " + unknown[-1])
+    elif rdue is None:
+        unknown.append("render: " + rwhy)
+        say("preflight: " + unknown[-1])
     if prove:
         owed, _proved, why = (_prove or (lambda: prove_changed(version, here, say=say)))()
         if why:
@@ -424,7 +537,8 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
             say("   " + l)
         return 1, reds
     if unknown:
-        say("preflight: UNKNOWN - the console demos were owed and could not be measured here")
+        say("preflight: UNKNOWN - a Mac-only gate the main push runs was owed and could not be measured here: %s"
+            % "; ".join(unknown)[:300])
         return 2, []
     say("preflight: GREEN - %d law(s) ran clean%s%s, anchors hold" % (
         len(s["run"]) - len(skipped), (" (%d skipped, said above)" % len(skipped)) if skipped else "",
