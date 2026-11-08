@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3887",
+    "date": "2026-11-08",
+    "items": [
+      "Best runs counts the others - Coldcrow for Bane Ash, Pitspawn Fouldog for Lenymo (#155)",
+      "A terror-zone source joins when the level slider moves (#156)",
+      "Quick wins is three lists - Bosses, Others and Combined, top 5 each (#157)",
+      "The Banished draws the d2runewizard loop he picked (#158)",
+      "Every character card draws its class animated figure, a MAIN in a gold frame (#154)",
+      "The Cat Eye counts as his - a curly and a straight apostrophe are one name (#159)",
+      "The cross-reference with Dean adds up - each Rainbow Facet is its own line (#160)",
+      "Dark Lancer, Black Lancer and Dark Spearwoman draw their own loops, framed on the body (#161)",
+      "The Tamoe Highland zone card draws the same Dark Lancer as Quick wins (#161)",
+      "--no-preflight still runs the version-wide laws (REG-3472)",
+      "Every closed Fleet row is two lines at 1512 (REG-3473)",
+      "Every breakpoint tier carries its label - the rail is spaced by tier (REG-3474)",
+      "A READY Fleet row names its safety-net find - 1 law red, shuts 9 routes (REG-3475)",
+      "The Fleet header wraps whole units - no stranded middot (REG-3476)",
+      "The frame-reader eye hover says which of the three eyes it is (REG-3477)"
+    ]
+  },
+  {
     "ver": "v3886",
     "date": "2026-11-08",
     "items": [
