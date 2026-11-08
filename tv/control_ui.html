@@ -5069,7 +5069,9 @@
   .ftt .pcs > .pcs-w { margin-right: 6px; }
   .ftt .pcs > .pcs-w + .pcs-hurt, .ftt .pcs > .pcs-w + .pcs-next { display: inline; }   /* never the dim code line */
   .pcs-head { margin: 2px 0 6px; font-size: var(--fs-2xs); line-height: var(--lh-snug); letter-spacing: var(--ls-tight);
-              color: var(--gold-dim); overflow-wrap: anywhere; }
+              color: var(--gold-dim); overflow-wrap: anywhere;
+              display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 1.4ch; }   /* v3887 (REG-3476) - whole units */
+  .pcs-head > span { min-width: 0; }
   /* v2875 — the row says one word, and the detail it replaced is one hover away */
   /* v3172 — the verdict word on the ROW and the same word in the TOOLTIP (.ftt-h .ftt-w)
      were tracked differently (.03em vs .04em) for no reason anyone recorded. .03em is on no
@@ -29246,14 +29248,28 @@ function escC(s) {
     return h + '</div>';
   };
   /* the minimalist's header: "6 PCs: 1 blocked · 1 updating · 1 unknown · 2 offline · 1 ready" (v3883 plain words) */
-  var _pcHeader = function (list, nowMs) {
+  var _pcHeaderUnits = function (list, nowMs) {
     var n = {};
     (list || []).forEach(function (m) { var k = _pcStatus(m, nowMs).key; n[k] = (n[k] || 0) + 1; });
     /* v3884 - a count and its word are one unit (a no-break space): the Grok CLI saw '... 3 offline · 1' / 'ready' at 1512 */
     var bits = _PC_ORDER.filter(function (k) { return n[k]; }).map(function (k) { return n[k] + '\u00a0' + _PC_WORD[k].w; });
     var c = (list || []).length;
-    return c + (c === 1 ? ' PC' : ' PCs') + (bits.length ? ': ' + bits.join(' · ') : '');
+    return { head: c + (c === 1 ? ' PC' : ' PCs'), bits: bits };
   };
+  var _pcHeader = function (list, nowMs) {
+    var u = _pcHeaderUnits(list, nowMs);
+    return u.head + (u.bits.length ? ': ' + u.bits.join(' · ') : '');
+  };
+  /* v3887 (REG-3476, seen on the 1512 render of his live Fleet: "6 PCs: 3 blocked · 2 offline ·" / "1 ready") - THE FLEET'S
+     HEADER IS WHOLE UNITS. The joined line kept each count with its word (v3884) and still stranded a middot at the end of a
+     wrapped line: a separator that wraps is orphaned at one end or the other (REG-1377). Each fact is its own element and
+     the gap is the separator, as the river lines already draw. The State panel's section title keeps the one-line text. */
+  var _pcHeaderHtml = function (list, nowMs) {
+    var u = _pcHeaderUnits(list, nowMs);
+    return '<span class="pcs-h-n">' + escC(u.head + (u.bits.length ? ':' : '')) + '</span>'
+      + u.bits.map(function (b) { return '<span class="pcs-h-f">' + escC(b) + '</span>'; }).join('');
+  };
+  window._pcHeaderHtml = _pcHeaderHtml;
   window._PC_WORD = _PC_WORD;
   window._pcStatus = _pcStatus;
   window._pcStatusHtml = _pcStatusHtml;
@@ -30697,7 +30713,7 @@ function escC(s) {
          _pcStatus every row's card reads: "6 PCs: 1 blocked · 1 updating · 1 unknown · 2 offline · 1 ready" (v3883) */
       var _pcAll = (j.online || []).concat(j.offline || []).filter(function (m) { return m && m.machine; });
       var _pcHd = _pcAll.length ? ('<div class="pcs-head" title="each PC in a word - hover a row for what is broken on it '
-        + 'and what happens next; the same words open THE STATE OF THIS CONSOLE">' + escC(_pcHeader(_pcAll, Date.now())) + '</div>') : '';
+        + 'and what happens next; the same words open THE STATE OF THIS CONSOLE">' + _pcHeaderHtml(_pcAll, Date.now()) + '</div>') : '';
       box.innerHTML = _pcHd + (rows.length ? rows.join('')
         : '<div class="fleet-none">no console has ever checked in</div>') + _woTxt;
     } catch (e) {

@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3476 - THE FLEET'S HEADER STRANDED A MIDDOT AT A WRAPPED LINE'S END: "6 PCs: 3 blocked · 2 offline ·" / "1 ready" (v3887)
+Seen on the 1512 render of his live Fleet payload. v3884 glued each count to its word with a no-break space; the separators were still
+glyphs in one joined string, so a wrap left one at a line's end - REG-1377's rule (a separator that wraps is orphaned at one end or the
+other). The Fleet header is now whole units: the count, then each fact its own element, the gap the separator (the river lines' own
+form); the State panel's section title keeps the one-line text from the same counts (one function, _pcHeaderUnits). At 1512 the header
+wraps "6 PCs: 3 blocked 2 offline" / "1 ready". GUARD: test_each_pc_reads_in_a_few_words.test_the_fleet_header_draws_each_fact_as_its
+_own_unit + test_the_fleet_header_is_whole_units_and_no_separator_glyph (2 red-proofs RED).
+
 ### REG-3475 - HIS MAC'S CLOSED FLEET ROW READ "READY all proved" OVER A RED SAFETY-NET FIND THAT SHUT NINE ROUTES (v3887)
 GrokBot, v3884 and v3885 (#230): "Safety-net find names what it shuts: NOT SEEN - no 'shuts N routes' or 'shuts nothing' text on the
 Fleet or in any open fold". MEASURED on his live Fleet payload: the wire carries it (the Mac's find test_a_parallel_proof_is_the_same

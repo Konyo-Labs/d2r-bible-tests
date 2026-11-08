@@ -87,6 +87,7 @@ def _drive(cases):
           "  OUT[k] = { status: _pcStatus(m, 1000), html: _pcStatusHtml(m, 1000, { name: m.nickname }) };\n"
           "});\n"
           "OUT.__header = _pcHeader(ALL, 1000);\n"
+          "OUT.__headerHtml = _pcHeaderHtml(ALL, 1000);\n"
           "process.stdout.write(JSON.stringify(OUT));")
     r = subprocess.run([NODE, "-"], input=js, capture_output=True, text=True, timeout=60, encoding="utf-8")
     if r.returncode != 0:
@@ -204,6 +205,15 @@ class EachPcInAFewWords(unittest.TestCase):
         hd = self.out["__header"]
         self.assertEqual(hd, u"11 PCs: 3\u00a0blocked · 1\u00a0updating · 4\u00a0unknown · 1\u00a0offline · 2\u00a0ready")
 
+    def test_the_fleet_header_draws_each_fact_as_its_own_unit(self):
+        """* v3887 (REG-3476) - no separator glyph to strand; the units are the header's own facts, in its order"""
+        import re
+        h = self.out["__headerHtml"]
+        self.assertNotIn(u"\u00b7", h, "a separator glyph is drawn - it strands at a wrapped line's end")
+        units = re.findall(r'<span class="pcs-h-[nf]">([^<]*)</span>', h)
+        self.assertEqual(units, [u"11 PCs:", u"3\u00a0blocked", u"1\u00a0updating", u"4\u00a0unknown", u"1\u00a0offline", u"2\u00a0ready"])
+        self.assertEqual(units[0] + " " + u" · ".join(units[1:]), self.out["__header"], "the units and the State panel's line disagree")
+
 
 class EverySurfaceDrawsTheOneFunction(unittest.TestCase):
     """the joins, read off the page's code (comments stripped): one function behind the card, the header and the State panel"""
@@ -218,10 +228,21 @@ class EverySurfaceDrawsTheOneFunction(unittest.TestCase):
         self.assertIn("+ '</span></div>' + _pcStatusHtml(m, Date.now(), { max: 2 }) + seeded + (bars ||", self.code)
 
     def test_the_fleet_header_and_the_state_panel_draw_it(self):
-        self.assertIn("escC(_pcHeader(_pcAll, Date.now()))", self.code)
+        self.assertIn("+ _pcHeaderHtml(_pcAll, Date.now()) + '</div>') : '';", self.code)   # v3887 (REG-3476) - whole units
         self.assertIn("pcRows.push('<div class=\"vx-row vx-pc\">' + window._pcStatusHtml(x.m, _now, { name: x.n, max: 3, where: 'state' }) + '</div>');",
                       self.code)
         self.assertIn("+ _vxSection('EVERY PC' + (_pcHead ? ' \\u2014 ' + _pcHead : ''), pcRows)", self.code)
+
+    def test_the_fleet_header_is_whole_units_and_no_separator_glyph(self):
+        """v3887 (REG-3476) - the 1512 render of his live Fleet: "6 PCs: 3 blocked · 2 offline ·" / "1 ready" - a middot stranded
+        at a wrapped line's end. Each fact is its own element, the gap is the separator, and the text is the same facts."""
+        import re
+        code = self.code
+        rule = code[code.index("  .pcs-head { margin: 2px 0 6px;"):]
+        rule = rule[:rule.index("}") + 1]
+        for want in ("display: flex;", "flex-wrap: wrap;", "column-gap: 1.4ch;"):
+            self.assertIn(want, rule, "the Fleet header is not a wrapping row of whole units: %r missing" % want)
+        self.assertNotIn("nowrap", rule)
 
     def test_the_row_word_carries_no_run_on_native_tooltip(self):
         """GrokBot's worst line #1: a hovered [title] hides the styled card, so the paragraph was what he met first"""
@@ -244,6 +265,16 @@ class TheOpenRowStaysBalanced(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3887 (REG-3476) - the Fleet header is one joined string again (a middot strands at a wrapped line's end)",
+     "file": "tv/control_ui.html",
+     "find": "THE STATE OF THIS CONSOLE\">' + _pcHeaderHtml(_pcAll, Date.now()) + '</div>') : '';",
+     "replace": "THE STATE OF THIS CONSOLE\">' + escC(_pcHeader(_pcAll, Date.now())) + '</div>') : '';",
+     "matches": 1},
+    {"why": "v3887 (REG-3476) - the header's units are drawn joined by a middot",
+     "file": "tv/control_ui.html",
+     "find": "      + u.bits.map(function (b) { return '<span class=\"pcs-h-f\">' + escC(b) + '</span>'; }).join('');",
+     "replace": "      + u.bits.map(function (b) { return '<span class=\"pcs-h-f\">' + escC(b) + '</span>'; }).join(' \u00b7 ');",
+     "matches": 1},
     {"why": "v3884 - the header can split a count from its word again ('... 3 offline · 1' / 'ready' at 1512)",
      "file": "tv/control_ui.html",
      "find": "return n[k] + '\\u00a0' + _PC_WORD[k].w; });", "replace": "return n[k] + ' ' + _PC_WORD[k].w; });", "matches": 1},
