@@ -131,8 +131,9 @@ class TheMakeupDecision(unittest.TestCase):
 class _Gh(object):
     """A fake `gh`/`git` for ship(): runs on one sha; the proof run red until re-run, then green (or red again)."""
 
-    def __init__(self, census, second="success", job_log=""):
+    def __init__(self, census, second="success", job_log="", attempt=None):
         self.census, self.second, self.reruns, self.calls, self.job_log = census, second, 0, [], job_log
+        self.attempt = attempt          # #146 - None: the run's attempt cannot be read (UNKNOWN)
 
     def runs(self):
         rs = [{"workflowName": wf, "headSha": SHA, "status": "completed", "conclusion": "success",
@@ -156,6 +157,8 @@ class _Gh(object):
                 json.dump(self.census, fh)
         elif cmd[:3] == ["gh", "run", "rerun"]:
             self.reruns += 1
+        elif cmd[:3] == ["gh", "run", "view"] and "attempt" in cmd:     # #146 - which attempt GitHub graded
+            out = json.dumps({"attempt": self.attempt}) if self.attempt is not None else ""
         elif cmd[:3] == ["gh", "run", "view"] and "--json" in cmd:      # REG-3292 - the run's jobs
             out = json.dumps({"jobs": [{"name": "shard 7", "databaseId": 555}, {"name": "shard 8", "databaseId": 556}]})
         elif cmd[:2] == ["gh", "api"] and cmd[2].endswith("/jobs/555/logs"):
@@ -204,6 +207,33 @@ class TheShipMakesUpARound(unittest.TestCase):
         self.assertEqual(gh.reruns, 0)
         self.assertEqual(code, 1)
         self.assertTrue(any("not made up" in s for s in said), said)
+
+    def test_a_law_red_once_untampered_re_runs_only_its_shard_and_ships(self):
+        """* #146 THE POINT (his 11-08: "from now on the one shard that is red the other that were proved dont need to rerun
+        only the red failed shard") - v3884 round 4: the war-stash fill red once untampered in shard 15, 21 shards green"""
+        red = [["test_vault_l1_war_stash_overflow", 24, "UNPROVABLE", "the law is ALREADY RED untampered, so no proof of it can be judged", 15]]
+        gh = _Gh(dict(CUT, cut=[], fix=red), attempt=1)
+        code, said = _ship(gh)
+        self.assertEqual(gh.reruns, 1, said)
+        self.assertIn(["gh", "run", "rerun", "42200089396", "--failed", "--repo", CV.REPO_SLUG], gh.calls,
+                      "the red shard was not re-run on the same run (only its failed jobs)")
+        self.assertTrue(any("red ONCE untampered" in s for s in said), said)
+        self.assertEqual(code, 0, "\n".join(said))
+        self.assertIn(["git", "-c", "core.hooksPath=hooks", "push", "origin", "HEAD:main"], gh.calls)
+
+    def test_a_law_red_twice_or_on_an_unknown_attempt_is_real(self):
+        red = [["test_x", 0, "UNPROVABLE", "the law is ALREADY RED untampered, so no proof of it can be judged", 15]]
+        again = PS.makeup_due(dict(CUT, cut=[], fix=red), attempt=2)
+        self.assertEqual(again[0], False)
+        self.assertIn("AGAIN on attempt 2", again[1])
+        for att in (None, 2):
+            gh = _Gh(dict(CUT, cut=[], fix=red), attempt=att)
+            code, said = _ship(gh)
+            self.assertEqual((gh.reruns, code), (0, 1), "a clean red was re-run on attempt %r: %s" % (att, said))
+        # a red PROOF (a guard that stayed green under sabotage) is code, never a flake - even on a first attempt
+        gh = _Gh(dict(CUT, cut=[], fix=red + [["test_y", 2, "STAYED GREEN", "the sabotage changed nothing", 3]]), attempt=1)
+        code, said = _ship(gh)
+        self.assertEqual((gh.reruns, code), (0, 1), said)
 
     def test_a_cut_shard_is_re_run_at_once_while_a_red_shard_waits(self):
         """* REG-3386 THE POINT: the cut shard's job is re-run on its own; the red one is left for a human; nothing ships"""
@@ -448,8 +478,8 @@ RED_PROOF = [
      "matches": 1, "needs": "posix"},
     {"why": "REG-3270 - a round with a red law is made up as if only cut",
      "file": "tv/proof_shard.py",
-     "find": "    if fix:\n        return False, \"%d proof(s) owe a fix (a law went red) - a re-run cannot make that up\" % len(fix)\n",
-     "replace": "    if False:\n        return False, \"\"\n",
+     "find": "        return False, \"%d proof(s) owe a fix (a law went red) - a re-run cannot make that up\" % len(fix)\n",
+     "replace": "        pass\n",   # #146 reshaped the block: the refusal is its last line now
      "matches": 1},
     {"why": "REG-3270 - a missing shard store is made up",
      "file": "tv/proof_shard.py",
@@ -506,6 +536,18 @@ RED_PROOF = [
      "find": "            out[g] = max(v, base.get(g, 0.0))\n",
      "replace": "            out[g] = v\n",
      "matches": 1},
+    {"why": "#146 (his 11-08) - a law red once untampered on a first attempt stops the ship again (a whole new round)",
+     "file": "tv/proof_shard.py",
+     "find": "        if attempt == 1 and len(clean) == len(fix):\n",
+     "replace": "        if False and attempt == 1 and len(clean) == len(fix):\n", "matches": 1},
+    {"why": "#146 - a law red untampered is re-run on any attempt (a real red re-runs forever)",
+     "file": "tv/proof_shard.py",
+     "find": "        if attempt == 1 and len(clean) == len(fix):\n",
+     "replace": "        if len(clean) == len(fix):\n", "matches": 1},
+    {"why": "#146 - an unreadable attempt reads as a first attempt",
+     "file": "tv/ship_when_green.py",
+     "find": "        return int(a) if a is not None else None\n",
+     "replace": "        return int(a) if a is not None else 1\n", "matches": 1}
 ]
 
 

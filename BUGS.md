@@ -112,6 +112,19 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3450 - ONE LAW RED ONCE IN ONE SHARD COST A WHOLE NEW ROUND (v3885, #146, his 11-08)
+His words: "i still dont understand why a full round when 23/24 shard pass only one red fails why does it need too redo them
+all again i thought we optimized this" and "from now on the one shard that is red the other that were proved dont need to rerun
+only the red failed shard". MEASURED on v3884: round 3 - one law (test_a_show_toggle_reads_hide_while_open) red untampered in
+shard 17, everything else green; round 4 - one law (test_vault_l1_war_stash_overflow) red once untampered in shard 15, green
+3/3 locally and in round 3. ship_when_green's make-up (REG-3270) re-ran a failed shard only when its debt was proofs a bound
+cut; "a law went red" was refused outright, so a fix (a new commit) forced every check and all 22 shards again (~50-70 min).
+Now proof_shard.makeup_due takes the run's attempt: when EVERY owed fix is a clean-run red ("the law is ALREADY RED
+untampered") on the run's FIRST attempt, only the failed shard(s) re-run on the same sha (every other shard keeps what it
+proved); a second red on attempt 2, an unreadable attempt (UNKNOWN), or any other owed fix (a guard that stayed green under
+sabotage, an anchor that matched nothing) is real and stops the ship as before. Law:
+test_a_round_cut_only_by_its_deadline_is_made_up (2 new cases on v3884's real reds; 21 red-proofs PROVEN, one re-anchored).
+
 ### REG-3449 - THE FLEET'S EYES: ON GREEN, OFF RED, AND A SECOND EYE FOR THE CONSOLE WINDOW (v3885, #145, his 11-08)
 His words: "i want to be able to know not only when the reader is backgrounded and on ... but for the CONSOLE itself being open
 and double clicked phsyically viewing on the desktop i want an added extra feature ... as a secondary eye in a different color",

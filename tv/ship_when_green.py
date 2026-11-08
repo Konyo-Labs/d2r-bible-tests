@@ -169,7 +169,7 @@ def makeup(sha, runs, run, say, made, clock, tmp=None):
         killed = set()
         if isinstance(tot, dict) and tot.get("lost") and not tot.get("fix"):
             killed = killed_shards(rid, tot.get("lost"), run)          # REG-3292 - a runner shutdown is no law's fault
-        due, why = PS.makeup_due(tot, killed=killed)
+        due, why = PS.makeup_due(tot, killed=killed, attempt=run_attempt(rid, run))   # #146 - a first attempt's clean red
         if not due:
             say("ship: REG-3270 not made up - %s" % (why if tot is not None else "the census could not be read (UNKNOWN)"))
             made[rid] = None
@@ -192,6 +192,19 @@ def makeup(sha, runs, run, say, made, clock, tmp=None):
     finally:
         if tmp is None:
             shutil.rmtree(d, ignore_errors=True)
+
+
+def run_attempt(rid, run):
+    """#146 - which attempt of this run GitHub graded (1 = never re-run). -> int | None; None when it cannot be read (then a
+    clean red is NOT re-run - UNKNOWN is never treated as a first attempt)."""
+    import json
+    v = run(["gh", "run", "view", str(rid), "--repo", CV.REPO_SLUG, "--json", "attempt"], capture_output=True, text=True,
+            encoding="utf-8", errors="replace")
+    try:
+        a = json.loads(v.stdout or "{}").get("attempt") if getattr(v, "returncode", 1) == 0 else None
+        return int(a) if a is not None else None
+    except (ValueError, TypeError):
+        return None
 
 
 def running_again(rid, run):

@@ -808,7 +808,15 @@ def headroom(wall, window=PROVE_WINDOW_S, share=PLAN_HEADROOM):
                    % (w, pct, window, 100 * share))
 
 
-def makeup_due(tot, killed=None):
+#: v3885 (#146, his 11-08: "i still dont understand why a full round when 23/24 shard pass only one red fails why does it need
+#: too redo them all again" / "from now on the one shard that is red the other that were proved dont need to rerun only the red
+#: failed shard") - the census's words for a law whose UNTAMPERED run went red (its clean run): on a first attempt that is a
+#: measurement of the sandbox until it reds twice (v3884: show-toggle in round 3, the war-stash fill in round 4 - each green
+#: locally and on the round before, nothing it reads changed)
+CLEAN_RED = "ALREADY RED untampered"
+
+
+def makeup_due(tot, killed=None, attempt=None):
     """REG-3270 - may a red proof round be made up by re-running its failed shards once? -> (due, why). Pure.
 
     Due only when the ONLY debt is proofs a bound cut (TIMEOUT): no law owes a fix, every shard left a readable store,
@@ -823,6 +831,17 @@ def makeup_due(tot, killed=None):
     cut, fix = tot.get("cut") or [], tot.get("fix") or []
     lost, missing = tot.get("lost") or [], tot.get("missing") or []
     if fix:
+        # #146 - A LAW RED ONCE, UNTAMPERED, ON A RUN'S FIRST ATTEMPT IS RE-RUN ONCE - ONLY ITS SHARD, ON THE SAME SHA. Every
+        # other shard keeps what it proved; a re-run shard serves what this run proved and runs only what it owes (REG-3210).
+        # Never a proof that stayed green under sabotage, an anchor that matched nothing, a blind gate - those are code - and
+        # never a second attempt: a law red twice on the same bytes is real.
+        clean = [f for f in fix if len(f) > 3 and CLEAN_RED in str(f[3])]
+        if attempt == 1 and len(clean) == len(fix):
+            names = sorted(set("%s (shard %s)" % (f[0], f[4]) if len(f) > 4 else str(f[0]) for f in fix))
+            return True, ("only %d law(s) red ONCE untampered on the run's first attempt: %s - a flake until it reds twice; "
+                          "only its shard re-runs" % (len(fix), ", ".join(names)))
+        if clean and attempt != 1 and len(clean) == len(fix):
+            return False, "%d law(s) red untampered AGAIN on attempt %s - real: a fix, never another re-run" % (len(fix), attempt)
         return False, "%d proof(s) owe a fix (a law went red) - a re-run cannot make that up" % len(fix)
     # REG-3292 (REG-3085's case, parked since 10-29) - a shard the RUNNER killed leaves no store, through no fault of a
     # law (Publish 40812615686: "The runner has received a shutdown signal", exit 143, no manifest). Only a shard whose
