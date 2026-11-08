@@ -2409,6 +2409,53 @@ TARGETS = {
         "warmup": 10.0,
     },
 
+    # ── v3882 (#124, #120) — A PC STARTING UP, AND A STALE PROOF OVER OPEN RIVER DOORS ──────────
+    # Two states v3882 put words on, photographed: Dean just relaunched for an update (heart 'starting', no census, a
+    # report a minute old) reads HEALING "starting up", never LOST; and a PC whose proof is stale while may() named no
+    # river door shut reads "river flowing" beside "proof stale - river locks open", never beside "locks shut". The
+    # payload is STUBBED (the same clear-stub-re-ask as advanced-fleet-down), so this proves the RENDER, never the wire;
+    # the words are pinned by test_a_booting_pc_reads_starting_never_lost and test_a_river_flowing_never_sits_with_locks_shut.
+    # ⚠ The activation refuses until BOTH new texts are on screen - a target that passed on the healthy fill would be
+    # coverage of the wrong state. [[feedback-blind-fixture-green-gate]]
+    "fleet-boot-river": {
+        "serve": True,
+        "why": "v3882 - a PC starting up reads healing, and a stale proof over open river doors never reads 'locks shut'",
+        "seed": """(function(){
+            try { localStorage.setItem('d2r_advOpen','1'); } catch(e){}
+            var now = new Date().toISOString();
+            var held = [{station:'CAPTURE', n:13, oldestS: 9*86400, window:false, held:true,
+                         why:'older than the newest 16 - held by the drain, not owed: 13 panels-never-banked (no bank yet)'}];
+            var rows = [
+              {machine:'dean', nickname:'Dean', ver:'v3882', t: now, system:{river:{heart:{key:'starting', census:null}}}},
+              {machine:'alt', nickname:'Konyo \u00b7 ALT', ver:'v3882', t: now,
+               system:{river:{stuck: held, heart:{census:'stale', key:'stale', blind:0, locksShut:[], locksAgeS:4}}}},
+              {machine:'mac', nickname:'Konyo', ver:'v3882', t: now,
+               system:{river:{stuck: [], heart:{census:'current', key:'current', blind:0, locksShut:[], locksAgeS:4}}}}];
+            var _f = window.fetch;
+            window.fetch = function(u, o){
+              if (String(u).indexOf('/api/fleet') === 0) {
+                return Promise.resolve(new Response(JSON.stringify({ ok: true, online: rows, offline: [] }),
+                                                    { status: 200, headers: { 'Content-Type': 'application/json' } }));
+              }
+              return _f.apply(this, arguments);
+            };
+            var _b = document.getElementById('fleet-list');
+            if (_b) _b.innerHTML = '';
+            if (window._fleetRefresh) { try { window._fleetRefresh(); } catch(e){} }
+            return 1;
+          })()""",
+        "activate": ("(function(){ var _b = (%s); if (!_b) return false; "
+                     "var rows = [].slice.call(document.querySelectorAll('#fleet-list .fleet-row')); "
+                     "var alt = rows.filter(function(r){ return /ALT/.test(r.textContent); })[0]; "
+                     "if (alt && !alt.classList.contains('fleet-open') && window._fleetRowOpen) window._fleetRowOpen(alt); "
+                     "var t = (document.getElementById('fleet-list') || {}).textContent || ''; "
+                     "return /starting up/.test(t) && /river locks open/.test(t) && !/locks shut/.test(t); })()"
+                     % _adv_activate("fleet-list")),
+        "sel": "#fleet-list .fleet-row, #fleet-list .fleet-brief, #fleet-list .fleet-riverlocked, #fleet-list .fleet-riverheld",
+        "settles": False,
+        "warmup": 10.0,
+    },
+
     # ── v3033 (#82) — THE CROSS-REFERENCE DIALOG, WHICH NOTHING HAS EVER PHOTOGRAPHED ─────────
     # He reported this panel's layout THREE times in one session — "symetric", "+ typography",
     # "its like not aligned" — and every instrument called the console clean, because there was a
