@@ -39552,7 +39552,9 @@ const _sliderFanout = () => {
    exact, and the exact box beside the presets types any number. */
 const _mfSnap = (v, prev) => (Math.abs(v - prev) > 1 && v % 10) ? Math.min(1000, Math.round(v / 10) * 10) : v;
 try { window._mfSnap = _mfSnap; } catch (e) {}
-$("mf").oninput = () => { const _v = _mfSnap(parseInt($("mf").value), mf); if (String(_v) !== $("mf").value) $("mf").value = String(_v); mf = _v; _mfChosen = true; persistSoon(); updateEffMF(); renderHero(); renderBossCards(); if (selectedItem) renderDetail(); if (activeItemDetail) renderItemDetailCard(activeItemDetail); if (typeof activeBossId !== "undefined" && activeBossId) renderBossDetailCard(activeBossId); renderGrailProgress(); renderWishlistHuntPath(); _sliderFanout(); };
+/* v3885 (GitHub's round: "mf 553" from the palette read 550) - ONLY HIS DRAG SNAPS. A preset (553, 699), the number box, the
+   palette's "mf 553" and "mf+50" set the slider and fire this same input event, untrusted; they stay exact. */
+$("mf").oninput = (ev) => { const _raw = parseInt($("mf").value), _v = (ev && ev.isTrusted) ? _mfSnap(_raw, mf) : _raw; if (String(_v) !== $("mf").value) $("mf").value = String(_v); mf = _v; _mfChosen = true; persistSoon(); updateEffMF(); renderHero(); renderBossCards(); if (selectedItem) renderDetail(); if (activeItemDetail) renderItemDetailCard(activeItemDetail); if (typeof activeBossId !== "undefined" && activeBossId) renderBossDetailCard(activeBossId); renderGrailProgress(); renderWishlistHuntPath(); _sliderFanout(); };
 /* v3884 (REG-3437) - the LVL slider: the level every TZ figure is read at (the getters on BOSSES' TZ cells read _TZ_CHAR_LVL) */
 try {
   if ($("clvl")) {

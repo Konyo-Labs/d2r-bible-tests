@@ -164,6 +164,11 @@ and a dragged MF snaps to the nearest 10 (an arrow-key step and a preset stay ex
 re-derives the order from each list's own numbers (8 red-proofs PROVEN, one new); test_a_dragged_mf_lands_on_a_round_ten
 (2 red-proofs PROVEN).
 
+GitHub's first v3885 round (Routine I, tests/v42_full_ux_audit.spec.ts): the palette's "mf 553" read 550. Every value the
+page sets for him (a preset 553 / 699, the number box, "mf 553", "mf+50") fires the slider's input event, and the snap took
+them all for a drag. Only a TRUSTED input (his own drag) snaps now. The law's preset case was _mfSnap(553, 553) - a preset onto an
+MF already 553, which could not fail; it now runs the slider's own handler from MF 300 with trusted and untrusted events.
+
 ### REG-3445 - A LEVEL SPLIT TWO RUNS SILOSPEN CALLS EQUAL - NM TZ BAAL RANKED OVER MEPHISTO ON 0.2% (v3885, #138, his 11-08)
 His words: "its basically the same so leel difference doesnt matter if its 0.2% deifference dont even include the level thing
 then.. its irrelevant daata", "make it no one is farming below level 68 its okay.. default is 68 and up in my case". MEASURED on
