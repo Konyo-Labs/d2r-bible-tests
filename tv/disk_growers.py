@@ -52,6 +52,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -896,7 +897,15 @@ def prune(c, facts):
             return False, "the folder is gone and the worktree list still names it"
         return True, None
     try:
-        shutil.rmtree(path)
+        # v3886 (#107, windows-latest: "the remove raised PermissionError: [WinError 5]") - git marks its object files
+        # read-only, and Windows will not unlink a read-only file: clear the bit and remove that one file again
+        def _writable_retry(func, p, _exc):
+            os.chmod(p, stat.S_IWRITE)
+            func(p)
+        if sys.version_info >= (3, 12):
+            shutil.rmtree(path, onexc=_writable_retry)
+        else:
+            shutil.rmtree(path, onerror=_writable_retry)
     except Exception as e:
         return False, "the remove raised %s: %s" % (type(e).__name__, str(e)[:100])
     return (not os.path.exists(path)), (None if not os.path.exists(path) else "the folder is still there")

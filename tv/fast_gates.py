@@ -92,7 +92,9 @@ def select(gates, files, base="origin/main"):
             keys.add(stem)
         elif f.endswith(".py") and stem:
             short.add(stem)   # v3847 eye: "import foo" names foo.py with no "foo.py" in the text
-    absch = {os.path.join(REPO, f) for f in files}
+    # v3886 (#107, windows-latest: select() returned all 1,688 gates for one changed file) - a Windows argv path is
+    # D:\...\tv\test_x.py: no "/tv/" in it, so no gate mapped to its law and every one ran. Both sides compare normalised.
+    absch = {os.path.normcase(os.path.normpath(os.path.join(REPO, f))) for f in files}
     alts = [r"\b(?:%s)\b" % "|".join(re.escape(k) for k in sorted(keys))] if keys else []
     if short:
         alts.append(r"^\s*(?:from|import)\s+(?:[\w.]+\s*,\s*)*(?:%s)\b" % "|".join(re.escape(k) for k in sorted(short)))
@@ -105,7 +107,7 @@ def select(gates, files, base="origin/main"):
             seen[p] = t is None or bool(rx and rx.search(t))
         return seen[p]
     for g in gates:
-        law = next((str(a) for a in g.argv if str(a).endswith(".py") and "/tv/" in str(a)), None)
+        law = next((str(a) for a in g.argv if str(a).endswith(".py") and "/tv/" in str(a).replace("\\", "/")), None)
         if not law:
             if g.name not in pick:
                 pick.append(g.name)   # a gate with no law file cannot be mapped: run it
@@ -113,7 +115,7 @@ def select(gates, files, base="origin/main"):
         # the law itself: its own file, or its own text naming the changed file / module stem (which covers its
         # direct imports). NOT the import closure: 735 laws import control_app.py, which imports most of tv/, so
         # the closure picks ~650 gates for any tv/ change. The whole set still runs in CI and nightly.
-        if law in absch or names_one(law):
+        if os.path.normcase(os.path.normpath(law)) in absch or names_one(law):
             if g.name not in pick:
                 pick.append(g.name)
     return pick, "%d core + changed-file gates for %d changed file(s)" % (len(want), len(files))

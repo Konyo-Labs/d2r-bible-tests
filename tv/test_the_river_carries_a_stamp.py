@@ -328,6 +328,7 @@ class TheRiverCarriesAStamp(unittest.TestCase):
         self.assertIsNone(c["reels"])
         self.assertIn("UNKNOWN", c["why"])
 
+    @unittest.skipIf(os.name == "nt", "a write-only (0o222) file is a POSIX mode; Windows cannot stage it (v3886, #107)")
     def test_a_stamp_REFUSES_when_it_cannot_read_the_store_it_would_dedupe_against(self):
         """⚠⚠ THIS LAW WAS VACUOUS ON ITS FIRST WRITING AND ITS OWN SABOTAGE CAUGHT IT. The fixture
         was `os.mkdir(self.p)` — a directory where the file belongs. Deleting the refusal outright

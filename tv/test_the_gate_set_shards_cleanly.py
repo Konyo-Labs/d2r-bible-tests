@@ -180,6 +180,8 @@ class TheFillMissingKeepsItsHonesty(unittest.TestCase):
         self.assertEqual([(f["source"], f["date"], f["count"]) for f in r["localEstimates"]["fills"]],
                          [("run one", "d1", 1), ("run two", "d2", 1)], "an earlier fill reads as from the latest log")
 
+    @unittest.skipIf(os.name == "nt", "no fcntl on Windows - gate_costs edits unlocked there and says so: "
+                                      "test_a_platform_without_fcntl_edits_unlocked_and_says_so is that arm (v3886, #107)")
     def test_a_lock_that_cannot_be_taken_refuses_the_write(self):
         """REG-1894 - the lock used to fail OPEN: every exception swallowed, the edit went ahead unlocked, nothing said."""
         from unittest import mock
@@ -245,11 +247,15 @@ class TheFillMissingKeepsItsHonesty(unittest.TestCase):
         self.assertIn("UNLOCKED", err.getvalue())
         self.assertIs(self._rec()["localEstimates"]["fills"][-1]["locked"], False, "an unlocked fill did not record it")
 
+    @unittest.skipIf(os.name == "nt", "no fcntl on Windows - gate_costs edits unlocked there and says so: "
+                                      "test_a_platform_without_fcntl_edits_unlocked_and_says_so is that arm (v3886, #107)")
     def test_a_locked_fill_records_locked_true(self):
         import gate_costs as GC
         GC.fill_missing([self._log("l1", [("c", 4.0)])], "x", "d", table=self.table)
         self.assertIs(self._rec()["localEstimates"]["fills"][-1]["locked"], True)
 
+    @unittest.skipIf(os.name == "nt", "no fcntl on Windows - gate_costs edits unlocked there and says so: "
+                                      "test_a_platform_without_fcntl_edits_unlocked_and_says_so is that arm (v3886, #107)")
     def test_two_fills_that_overlap_both_survive(self):
         """REG-1859 - load -> edit -> replace: the first fill is held at its replace while a second fill runs; without
         the lock the second's cost is overwritten by the first's stale snapshot."""
@@ -295,6 +301,7 @@ RED_PROOF = [
         "find": "            raise LockError(\"could not take the table lock",
         "replace": "            return self; raise LockError(\"could not take the table lock",
         "matches": 1,
+        "needs": "posix",   # v3886 (#107) - its catching cases need fcntl: on Windows it is judged ELSEWHERE, never BLIND
     },
     {
         "why": "REG-1859 - fill_missing edits without the lock: a writer that commits during the fill is lost again",

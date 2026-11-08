@@ -322,7 +322,9 @@ def _grok_bin():
     if hit and os.path.isfile(hit):
         return hit
     for cand in _GROK_CANDIDATES:
-        p = os.path.expanduser(cand)
+        # v3886 (#107, windows-latest) - one spelling: "~/.grok/bin/grok.exe" expanded to C:\...\winhome/.grok/bin/grok.exe,
+        # a path that works and compares unequal to the same file by its own name
+        p = os.path.normpath(os.path.expanduser(cand))
         if os.path.isfile(p) and os.access(p, os.X_OK):
             return p
     return ""

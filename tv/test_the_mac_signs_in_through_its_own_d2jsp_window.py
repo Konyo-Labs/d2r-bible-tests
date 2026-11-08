@@ -72,6 +72,8 @@ class TheMacOwnsItsD2jspSignIn(unittest.TestCase):
         self._write("Secure Preferences", "{not json")
         self.assertIsNone(D.restore_value(self.root))
 
+    @unittest.skipIf(os.name == "nt", "a SingletonLock symlink is the Mac/Linux lock; Windows' held lockfile is "
+                                      "test_on_windows_the_held_lockfile_says_in_use_and_no_signal_is_sent (v3886, #107)")
     def test_a_profile_chrome_holds_is_never_touched(self):
         os.makedirs(self.root)
         lk = os.path.join(self.root, "SingletonLock")
@@ -288,7 +290,7 @@ RED_PROOF = [
      "file": "tv/d2jsp_chrome.py",
      "find": "    if held:\n        return \"waiting\"",
      "replace": "    if False:\n        return \"waiting\"",
-     "matches": 1},
+     "matches": 1, "needs": "posix"},   # v3886 (#107) - caught by the SingletonLock case, which is the Mac/Linux lock
     {"why": "REG-3349 - the repair book never sets it, so it stays off until someone clicks",
      "file": "tv/control_app.py",
      "find": "        \"d2jsp-restore\": _book_d2jsp_restore,\n",

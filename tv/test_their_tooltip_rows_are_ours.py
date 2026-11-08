@@ -347,7 +347,7 @@ class TheReceiptStaysHonest(unittest.TestCase):
         got = H.node_path(env={"TV_NODE": d, "PATH": ""})
         self.assertNotEqual(got, d, "a DIRECTORY was accepted as the node binary")
         self.assertTrue(got is None or os.path.isfile(got), got)
-        fake = os.path.join(d, "node")
+        fake = os.path.join(d, "node.exe" if os.name == "nt" else "node")   # v3886 (#107) - Windows finds node by PATHEXT
         with io.open(fake, "w", encoding="utf-8") as fh:
             fh.write("#!/bin/sh\nexit 0\n")
         os.chmod(fake, 0o755)

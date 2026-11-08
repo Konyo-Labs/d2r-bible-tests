@@ -177,7 +177,7 @@ import('%s').then(async m => {
   out.again = await post('Konyo · Mac', good);
   out.read = await (await m.tasksGet(kv)).json();
   console.log(JSON.stringify(out));
-});""" % (os.path.join(ROOT, "functions", "api", "roster.js").replace("\\", "/"), pub, pub, pub)
+});""" % (__import__("pathlib").Path(ROOT, "functions", "api", "roster.js").as_uri(), pub, pub, pub)   # v3886 (#107) - a file URL
         r = subprocess.run(["node", "--input-type=module", "-"], input=prog, capture_output=True, text=True,
                            encoding="utf-8", timeout=60)
         self.assertEqual(r.returncode, 0, r.stderr[-600:])

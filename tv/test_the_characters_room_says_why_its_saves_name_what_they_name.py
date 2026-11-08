@@ -119,7 +119,9 @@ class TheOwnersReasonRidesTheUpload(unittest.TestCase):
         node = shutil.which("node")
         if not node:
             self.skipTest("node is absent - the worker's check is UNMEASURED here, not passing")
-        prog = ("import('" + os.path.join(ROOT, "functions", "api", "roster.js").replace("\\", "/") + "').then(m => {"
+        # v3886 (#107, windows-latest: ERR_UNSUPPORTED_ESM_URL_SCHEME) - a file URL, never a bare D:/ path
+        import pathlib
+        prog = ("import('" + pathlib.Path(ROOT, "functions", "api", "roster.js").as_uri() + "').then(m => {"
                 "const f = (o) => m.apiOk('saves', JSON.stringify(o));"
                 "process.stdout.write(JSON.stringify([f({ok: true, chars: [{name: 'Crest'}]}), f({ok: true, chars: [{name: 'Crest', ids: 2}]}),"
                 " f({ok: true, chars: [{name: '../x'}]}), f({ok: false, chars: null, why: 'w'}), f({ok: true, folders: 1})]));});")
@@ -137,7 +139,7 @@ class TheOwnersReasonRidesTheUpload(unittest.TestCase):
 
     def test_the_console_uploads_it_and_the_shadow_frame_answers_it(self):
         src = _read("tv/control_app.py")
-        self.assertTrue(re.search(r'\("main_locks", main_locks_view\),(?:\s+\("pictures", _profile_pictures\),)?\s+\("saves", _profile_saves\)\)\):', src),
+        self.assertTrue(re.search(r'\("main_locks", main_locks_view\),(?:\s+\("pictures", _profile_pictures\),)?\s+\("saves", _profile_saves\)(?:, \("d2jsp_login", _profile_d2jsp_login\))?\)\):', src),
                         "the profile upload does not read this PC's saves answer")
         self.assertIn("def _profile_saves():\n", src)
         page = _read("bible.html")
