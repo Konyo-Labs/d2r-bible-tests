@@ -112,6 +112,26 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3435 - HEAVEN'S LIGHT'S BEST RUN READ "NM TZ MEPHISTO" - A TERROR-ZONE RUN RANKED AS IF IT WERE TERRORIZED ALL DAY (v3884, his 11-08)
+His words 11-08 11:18-11:22, with silospen's dropcalc beside the console (RotW, MF 700, Terror Zone OFF): "why does the console
+read not correctly for the heavens light?", "Hell mode and not nightmare.. its a lvl 71 item", "same for quick wins its not
+correctly rendering the best possible drop ... bosses and other places top 5", "based on the odds for heavens light these are
+the top list". The console: Best runs "Run NM TZ Mephisto", Quick wins 1st NM TZ Mephisto, 2nd NM TZ Diablo, 3rd NM TZ Baal,
+1:1.6k each. MEASURED against silospen's own API (MF 0, /players 1): Terror Zone ON, NM Mephisto / Diablo / Baal 1:4,292 each
+(identical at desecratedLevel 76 and 99) - the console's figures ARE silospen's; Terror Zone OFF, Hell Andariel 1:7,615 ·
+Hell Mephisto 1:8,906 · Hell Diablo 1:9,155 · Hell Baal 1:9,246 · NM Baal 1:19,294 - his list. The defect: the one picker
+(pickFastest), Quick wins (_qwPlaces) and the item landing (d2rOpenItem) ranked a TZ row as a run he can do whenever he likes,
+while a zone is terrorized only for its own slot. Now tzRowLive(s): a TZ row competes only while the TZ tracker's /api/tz
+reading (window._tzPeek) is from this slot (_tzTurnBoundary on its ts), not stale, and names the row's zone (TZ_HUNT's own
+words; Nihlathak rides the Pindle / Nihlathak row). Otherwise the list is silospen's with Terror Zone off. Measured in headless
+Chrome on the page, Heaven's Light at MF 0: no reading -> Hell Andariel 1:7,618, Hell Mephisto 1:8,911, Hell Diablo 1:9,164,
+Hell Baal 1:9,251, NM Baal 1:19,300 (silospen's order and odds); Durance of Hate terrorized now -> NM TZ Mephisto 1:4,293
+first; a 3-hour-old reading -> no reading. Best runs on a fresh board: 12 runs (7 of them TZ) -> 9 always-runnable runs.
+Quick wins boss runs show the best FIVE (were four). Laws: test_a_terror_zone_run_ranks_only_in_its_slot (6 cases, red-proofs
+PROVEN 6 of 6), test_quick_wins_shows_each_place_with_its_picture (+1 case, red-proof PROVEN), test_one_hunt_clock (its
+harness reads the Cow Level as terrorized - its subject is one clock); tests/v1542_hardest_first.spec.ts re-pointed (GitHub).
+His /players 3 check at MF 700 against dropcalc is with GrokBot (#230, his 11-08 ask).
+
 ### REG-3434 - THE MAC'S FLEET ROW SAID "READY" BESIDE "SAFETY NET ... RED · ITS LOCKS SHUT" - WHICH LOCKS? (v3884, GrokBot's v3882 pass)
 GrokBot's v3882 pass (#230, 10:28): the Mac's open row read "ready" and "safety net: test_a_parallel_proof_is_the_same_proof
 RED · its locks shut" while riverLocks.shut was []. MEASURED 11-08 ~11:05 on the Mac's own tree (may(), read-only): that one

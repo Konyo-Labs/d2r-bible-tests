@@ -122,7 +122,7 @@ class ThePriceCheckDrawsTwoCards(unittest.TestCase):
         self.assertIn('<div class="d2jsp-item-h d2jsp-q-unique" data-d2jsp-item="Harlequin Crest">', self.o["shako"])
         with io.open(os.path.join(ROOT, "bible.html"), encoding="utf-8") as fh:
             src = fh.read()
-        self.assertIn("    + ',#d2jsp-card .d2art-wrap.d2jsp-iart[aria-label]';", src,
+        self.assertIn(",#d2jsp-card .d2art-wrap.d2jsp-iart[aria-label]';\n  window.D2TIP_SEL = SEL;", src,
                       "the D2JSP art is outside the board's hover-card lane - no box with the mods when he hovers it")
 
     def test_the_search_draws_them_for_the_item_the_console_resolved(self):
@@ -179,7 +179,7 @@ RED_PROOF = [
      "replace": "    return '<div class=\"d2jsp-item-h\" data-d2jsp-item=\"' + esc(nm) + '\">'", "matches": 1, "needs": "node"},
     {"why": "v3884 (#130) - the D2JSP art leaves the board's hover-card lane (no box with the mods on hover)",
      "file": "bible.html",
-     "find": "    + ',#d2jsp-card .d2art-wrap.d2jsp-iart[aria-label]';", "replace": "    + '';", "matches": 1},
+     "find": ",#d2jsp-card .d2art-wrap.d2jsp-iart[aria-label]';\n  window.D2TIP_SEL = SEL;", "replace": "';\n  window.D2TIP_SEL = SEL;", "matches": 1},
     {"why": "#97 - the price search never draws the NORMAL / PERFECT cards",
      "file": "bible.html",
      "find": "        + d2jspTierCardsHtml((j && typeof j.resolved === 'string' && j.resolved) || parsed.item, j && j.db)   /* #97 */\n",

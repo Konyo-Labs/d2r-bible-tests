@@ -116,7 +116,12 @@ const SCEN = function(){
 };
 
 const ctx = {
-  window: {}, console, Math, JSON, isFinite, Number, String, Object, Array, Infinity,
+  // v3884 (REG-3435) - a terror-zone row competes only while the live rotation names its zone. This law's subject is ONE
+  // CLOCK, not the rotation, so the Cow Level is read as terrorized now and its TZ rows compete exactly as before; the
+  // rotation rule itself is test_a_terror_zone_run_ranks_only_in_its_slot.
+  window: { _tzPeek: () => ({ current: 'Secret Cow Level', ts: Date.now() }) },
+  TZ_HUNT: [{ id: 'cows', m: ['cow level', 'moo moo farm'] }], _tzTurnBoundary: (t) => t + 3600000,
+  console, Math, JSON, isFinite, Number, String, Object, Array, Infinity, Date,
   esc: (s) => String(s),
   // a fixed MF factor stands in for effChance, so an ADJUSTED figure is distinguishable from the raw row
   _adjC: (s) => (s && s.chance != null) ? Math.round(s.chance * 0.89) : null,

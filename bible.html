@@ -27674,10 +27674,36 @@ const runHoursFor = (rows, conf) => {
    hours:null — never a guessed hour. */
 const KPH_FALLBACK = 100;   // the bridge's long-standing stand-in; every BOSSES row carries its own kph
 const srcKph = (s) => (s && Number(s.kph) > 0) ? Number(s.kph) : KPH_FALLBACK;
+/* v3884 (REG-3435, his 11-08 11:18-11:21 with silospen's list beside the console: Heaven's Light "Hell mode and not
+   nightmare.. its a lvl 71 item", "based on the odds for heavens light these are the top list") - A TERROR-ZONE RUN RANKS
+   ONLY WHILE ITS ZONE IS TERRORIZED. Every NM TZ / Hell TZ figure here IS silospen's (desecrated=true; measured 11-08:
+   Heaven's Light, NM TZ Mephisto / Diablo / Baal 1:4,292 each at MF 0) - but a zone is terrorized for its own slot, not all
+   day, and the picker ranked those rows as runs he can do whenever he likes: Heaven's Light's 1st run read "NM TZ Mephisto
+   ~12h" over silospen's TZ-off list (Hell Andariel 1:7,615, Hell Mephisto 1:8,906). A TZ row now competes only while the
+   live rotation (/api/tz, the TZ tracker's own reading - window._tzPeek) was read in this slot and names its zone (TZ_HUNT's
+   own zone words, one table); no reading, an old one, a stale one, or a zone this run has no words for -> it waits, and
+   the always-runnable rows rank, which is silospen's list with Terror Zone off. One rule for the picker and Quick wins.
+   [[unknown-stays-unknown]] - an unread rotation is not "terrorized". */
+const TZ_ROW_ALIAS = { nihl: 'pindle' };   // Nihlathak's halls ride TZ_HUNT's Pindle / Nihlathak row
+const tzRowLive = (s, nowMs) => {
+  if (!s || !/Tz$/.test(String(s.diffKey || ''))) return true;      // not a terror-zone row: always runnable
+  try {
+    const d = (typeof window !== 'undefined' && typeof window._tzPeek === 'function') ? window._tzPeek() : null;
+    if (!d || d.stale || typeof d.current !== 'string' || !d.current || !(Number(d.ts) > 0)) return false;
+    const now = (nowMs == null) ? Date.now() : nowMs;
+    if (typeof _tzTurnBoundary !== 'function' || now >= _tzTurnBoundary(Number(d.ts))) return false;   // read in an older slot
+    const id = TZ_ROW_ALIAS[s.bossId] || s.bossId;
+    const h = (typeof TZ_HUNT !== 'undefined' ? TZ_HUNT : []).find(x => x && x.id === id);
+    const cur = d.current.toLowerCase();
+    return !!(h && Array.isArray(h.m) && h.m.some(w => cur.indexOf(w) >= 0));
+  } catch (e) { return false; }
+};
+if (typeof window !== 'undefined') window.tzRowLive = tzRowLive;
 const pickFastest = (sources, adj) => {
   let best = null, bestH = Infinity, bestR = -1, bestC = null;
   for (const s of (sources || [])) {
     if (!s || s.blocked || s.chance == null) continue;
+    if (!tzRowLive(s)) continue;                                   // v3884 (REG-3435) - a TZ run outside its zone's slot
     const c = adj ? adj(s) : s.chance;
     if (c == null || !(c > 0)) continue;
     const k = srcKph(s);
@@ -33272,6 +33298,7 @@ window.d2rOpenItem = function(name, opts){
     try {
       (item.sources || []).forEach(function(s){
         if (!s || !s.chance || s.blocked) return;
+        if (typeof tzRowLive === 'function' && !tzRowLive(s)) return;   // v3884 (REG-3435) - the picker's own TZ rule
         var adj = (typeof effChance === 'function') ? effChance(s.chance, s.bossId, s.diffKey) : s.chance;
         if (!adj || adj <= 0) return;
         var h = (typeof hoursFor === 'function') ? hoursFor(adj, 0.5, s.kph || 100, killsPerRun(s.bossId)) : null;
@@ -70739,6 +70766,7 @@ function renderJournal(){
       try {
         var k = s.bossId + '|' + s.diffKey;
         if (seen[k]) return;
+        if (!tzRowLive(s)) return;                       /* v3884 (REG-3435) - a TZ run ranks only in its zone's slot */
         var c = _adjC(s, x.n); if (c == null || isEventP(c)) return;
         var kpr = killsPerRun(s.bossId), kph = srcKph(s);
         var runs = hoursFor(c, 0.5, 1, kpr), hrs = hoursFor(c, 0.5, kph, kpr);
@@ -70932,7 +70960,7 @@ function renderJournal(){
         }).join('');
   }
   /* #101 (his ruling 11-07 ~00:52: "they both need to be included then as bosses first and then the others as secondary
-     from 1 to 5") - TWO SECTIONS. 1: the boss and super-unique runs - one kill a run - 1st-4th by runs for a 50% chance,
+     from 1 to 5") - TWO SECTIONS. 1: the boss and super-unique runs - one kill a run - 1st-5th (v3884, was 1st-4th) by runs for a 50% chance,
      as before. 2: the OTHER places, 1st-5th. #125 (his 11-08 00:31: "the secondary should also be like top 1 should be
      the lowest amount of runs and the fifth should be the highest ... 1 would be normal cow king", and "bosses separated
      still from the secondary") - ONE list, fewest first by the number in each row's first column: the runs (an area run,
@@ -70941,7 +70969,7 @@ function renderJournal(){
      last; a section with nothing says so in one line. */
   function _qwGridHtml(qp, also){
     qp = qp || []; also = also || [];
-    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 4);
+    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 5);   /* v3884 (his 11-08: "top 5") */
     /* #108 (his 11-07 Bane Ash screenshot: the second layer must carry The Banished and Spike Fiend) - ONE row per area: the
        Cow Level came back as four runs (TZ and not, Normal and NM) and pushed every per-kill place off the card. qp is
        already fastest-first, so each place keeps its best variant. */
@@ -71828,7 +71856,7 @@ function renderJournal(){
          stays exactly as it was. [[unknown-stays-unknown]] */
       +_kprChip(b.bossId)+'</div>')
              :_srcNoteHtml(x.n);
-    /* #85 — the 1st-4th best places, every place a candidate, ranked by fewest runs at his MF and /players. Row 1
+    /* #85 — the 1st-5th best places (v3884; 1st-4th before), every place a candidate, ranked by fewest runs at his MF and /players. Row 1
        keeps the line it always had; rows 2-4 sit under it; the Cow King and random packs are named, never ranked. */
     var _qp=_qwPlaces(x);
     if(_qp.length){
@@ -81420,10 +81448,10 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
   'use strict';
   /* #174 v-B5 — and a tile he placed in the inventory from the item database (data-dbkey): its box is the builder's
      tooltip over the STORED entry (base, typed rolls, sockets, affixes), exactly as a database pick on the doll */
-  var SEL = '#vault-detail .mp .vd-item[data-key],#vault-detail .mp .vd-item[data-dbkey],#vault-detail .mp .mp-slot.mp-has,#vault-detail .mp .d2art-wrap[aria-label]'
-    /* v3884 (#130, his 11-08: the D2JSP item art "just like the rest of the console ... hovering it all the details and mods") -
-       the D2JSP desk's item art opens the same box: nameOf() reads its aria-label, entryFor() builds the game's tooltip */
-    + ',#d2jsp-card .d2art-wrap.d2jsp-iart[aria-label]';
+  /* v3884 (#130, his 11-08: the D2JSP item art "just like the rest of the console ... hovering it all the details and mods") -
+     the D2JSP desk's item art opens the same box (the last selector): nameOf() reads its aria-label, entryFor() builds the
+     game's tooltip. ONE literal on one line - laws read this declaration whole. */
+  var SEL = '#vault-detail .mp .vd-item[data-key],#vault-detail .mp .vd-item[data-dbkey],#vault-detail .mp .mp-slot.mp-has,#vault-detail .mp .d2art-wrap[aria-label],#d2jsp-card .d2art-wrap.d2jsp-iart[aria-label]';
   window.D2TIP_SEL = SEL;
   /* the one question the board's lanes ask: does this lane own what the pointer (or focus) is on? The unlock badge
      inside a tile is a control with its own title, so it stays the prose lane's */

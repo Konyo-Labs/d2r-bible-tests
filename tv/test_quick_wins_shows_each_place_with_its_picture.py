@@ -86,6 +86,8 @@ var also = [ { id: 'su_thecowking', name: 'The Cow King', who: 'Normal The Cow K
              { name: 'The Banished', who: 'Normal The Banished', area: 'Catacombs Level 3', kind: 'unique', chance: 603 } ];
 out.grid = _qwGridHtml(places, also);
 out.gridNoAlso = _qwGridHtml(places, []);
+// v3884 (his 11-08: "bosses and other places top 5") - six boss runs draw the best five
+out.gridSixBoss = _qwGridHtml([1, 2, 3, 4, 5, 6].map(function(i){ return { label: 'Hell Boss' + i, area: '', s: { bossId: 'andariel' }, chance: 1000 * i, runs: 700 * i, hours: 7 * i, kph: 100, kpr: 1, est: false }; }), []);
 out.gridBossesOnly = _qwGridHtml(places.filter(function(p){ return p.kpr === 1; }), []);
 out.gridDupArea = _qwGridHtml(places.concat([{ label: 'NM The Pit', area: '', s: { bossId: 'pit' }, chance: 90000, runs: 900, hours: 12, kph: 50, kpr: 110, est: false }]), also);
 out.gridSix = _qwGridHtml(places, also.concat([1, 2, 3, 4].map(function(k){ return { name: 'Pack ' + k, who: 'Hell Pack ' + k, area: 'Somewhere', kind: 'champion', chance: 700 + k }; })));
@@ -236,6 +238,14 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         self.assertIn("#tab-funi .qw-card{--fs-qw-title:calc(var(--fs-display)*1.2)}", src, "the title's size token is gone")
         self.assertIn("#tab-funi .qw-card .f-atomact .f-rwbig{font-family:var(--serif-display,serif);font-size:var(--fs-qw-title)", src,
                       "the item's name is not set as the card's title")
+
+    def test_the_boss_runs_are_the_best_five(self):
+        """v3884 (his 11-08: "bosses and other places top 5") - six boss runs on record draw the best five, in order"""
+        g = self.o["gridSixBoss"]
+        sec1 = g[:g.index('<div class="qw-also">')]
+        labels = re.findall(r"Hell Boss(\d)", sec1)
+        self.assertEqual(sorted(set(labels), key=labels.index), ["1", "2", "3", "4", "5"],
+                         "the boss runs are not the best five: %s" % labels)
 
     def test_a_ranked_row_is_a_tile_a_place_and_four_captioned_numbers(self):
         g = self.o["gridNoAlso"]
@@ -629,10 +639,15 @@ RED_PROOF = [
      "find": "  \"The Banished\": \"d2fam_vampire.gif\",",
      "replace": "",
      "matches": 1},
+    {"why": "v3884 - the boss runs stop at four again (his 'top 5')",
+     "file": "bible.html",
+     "find": "    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 5);   /* v3884 (his 11-08: \"top 5\") */\n",
+     "replace": "    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 4);\n",
+     "matches": 1, "needs": "node"},
     {"why": "#101 - an area run is ranked among the boss and super-unique runs again (one section)",
      "file": "bible.html",
-     "find": "    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 4);\n",
-     "replace": "    var one = qp.slice(0, 4);\n",
+     "find": "    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 5);   /* v3884 (his 11-08: \"top 5\") */\n",
+     "replace": "    var one = qp.slice(0, 5);\n",
      "matches": 1, "needs": "node"},
     {"why": "#101 - the other places are not capped at five again",
      "file": "bible.html",
