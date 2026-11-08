@@ -40,7 +40,7 @@ class AShowToggleReadsHideWhileOpen(unittest.TestCase):
               " try { a.pause(); } catch (e) {}"
               " this._shHeld = a; return a; }; })(Element.prototype.animate);")
         seen = []
-        for _ in range(2):
+        for k in range(2):
             for ty in ("mousePressed", "mouseReleased"):
                 t.send("Input.dispatchMouseEvent", type=ty, x=r["x"], y=r["y"], button="left", clickCount=1)
             mid = t.ev("(function(){var d=document.querySelector('#sh-probe details');"
@@ -49,9 +49,18 @@ class AShowToggleReadsHideWhileOpen(unittest.TestCase):
                        "return JSON.stringify([d.open,d.querySelector('summary').textContent,d.offsetHeight,"
                        "a ? a.playState : '', a ? a.currentTime : -1, frames]);})()")
             t.ev("(function(){var d=document.querySelector('#sh-probe details'); if (d && d._shAnim) d._shAnim.play(); return true;})()")
-            time.sleep(0.6)
-            end = t.ev("(function(){var d=document.querySelector('#sh-probe details');return JSON.stringify([d.open,d.querySelector('summary').textContent,d.offsetHeight]);})()")
-            seen.append((json.loads(mid), json.loads(end)))
+            # v3883 fix - WAIT FOR THE END STATE, NEVER A FIXED SLEEP (GitHub's proof shard 10/22 on 8045523eb: this law went
+            # RED untampered in a 2-lane sandbox, deadlines x2, after a fixed 0.6 s - green alone on the Mac in 3 s). The slide is
+            # 220 ms; under load its finish lands late. Poll up to 8 s for the state the click must reach: a drawer that never
+            # opens or never closes still fails, on the same assertions below.
+            want_open, end = (k == 0), None
+            deadline = time.time() + 8.0
+            while True:
+                end = json.loads(t.ev("(function(){var d=document.querySelector('#sh-probe details');return JSON.stringify([d.open,d.querySelector('summary').textContent,d.offsetHeight]);})()"))
+                if (end[0] is want_open and ("hide" if want_open else "show") in end[1]) or time.time() > deadline:
+                    break
+                time.sleep(0.1)
+            seen.append((json.loads(mid), end))
         (m1, e1), (m2, e2) = seen
         self.assertTrue(e1[0], "the first click did not open the drawer: %r" % seen)
         self.assertIn("hide the 12 posts", e1[1], "open, the toggle still says show: %r" % seen)
