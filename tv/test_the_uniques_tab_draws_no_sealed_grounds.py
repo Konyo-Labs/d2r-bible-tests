@@ -13,9 +13,17 @@ rendered half is the spec's. RED_PROOF below. [[source-reading-guard]]
 import io
 import os
 import re
+import sys
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+try:
+    from console_safe import enable as _enable   # it prints non-ASCII: never crash while REPORTING
+    _enable()
+except Exception:
+    pass
 BIBLE = os.path.join(os.path.dirname(HERE), "bible.html")
 
 

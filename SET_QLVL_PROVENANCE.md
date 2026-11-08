@@ -52,6 +52,22 @@ keep `qlvl: 0`:
 a near-spelling is not a trace, and mapping one would be exactly the fabrication the rule forbids.
 These want a human ruling. [[unknown-stays-unknown]]
 
+## v3884 (REG-3440) - THE ELEVEN NOW TRACE TO SILOSPEN, AND EVERY QLVL IS SILOSPEN'S LEVEL
+
+His ruling 2026-11-08 ("the Q levels i think its 69 and not 71? could that based on what it reads in silopen", "bane ash
+... the console reads q5 ... it should be q7"): an item's quality level is silospen's `level`. Silospen's RotW 3.0 drop
+calculator lists all eleven pieces above, spelled exactly as the bible spells them (so no near-spelling was mapped):
+
+    Aldur's Rhythm 29 · Dark Adherent 39 · Hwanin's Blessing 28 · Sander's Paragon 20 · Sander's Riprap 20
+    Sander's Superstition 20 · Sander's Taboo 20 · Taebaek's Glory 55 · Tal Rasha's Fine-Spun Cloth 26
+    Tal Rasha's Guardianship 26 · Whitstan's Guard 41
+
+Each agrees with its set-mates (every piece of a set shares one qlvl - the uniformity law still holds). Source:
+`dropcalc.php?type=itemProbabilities&version=D2R_ROW_3_0&itemQuality=SET&itemId=<id>` -> `context.level`, read 2026-11-08,
+vendored in `tv/data/silospen_qlvl_rotw30.json` (536 uniques and set items). Laws: `tv/test_every_qlvl_is_silospens.py`
+(zero mismatches), `tv/test_the_set_pieces_carry_a_real_qlvl.py`, `tv/test_the_missing_wall_shows_the_qlvl.py`.
+The game-table extract above stays the record of where the 1,477 levels first came from.
+
 ## Reproducing it
 
 The extractor lives OUTSIDE this repo at `~/casc-tools/` (rescued from a `/private/tmp` scratchpad

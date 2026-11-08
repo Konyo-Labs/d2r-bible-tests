@@ -32,6 +32,8 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
+from console_safe import enable as _console_safe_enable  # noqa: E402  (its docstring and reports carry non-ASCII)
+_console_safe_enable()
 
 VERSION = "D2R_ROW_3_0"
 LEVEL_MIN, LEVEL_MAX = 1, 99     # silospen's own TZ default is 0; below a farm's first change its odds are level 1's

@@ -3316,5 +3316,18 @@
     "gotcha": "Read-only GETs to silospen's calculator, paced. A target the page already runs (andariel, countess ...) keeps the page's stored figure; only a target with no run becomes a new place, and each carries its OWN /players factor (a super-unique's treasure class is its own - Coldcrow never moves, Blood Raven x1.46). The Cow King is shown, never ranked (his kill bars that character from the cow level); random packs are priced per kill only. Never hand-edit the page's QW_* block: re-pull and --emit.",
     "purpose": "#85 - every place an early unique drops, as silospen ranks it: the bosses and super-unique Quick wins ranks by runs (QW_TARGETS / QW_PLACES / PLACE_PF in bible.html) and the checkpoints its law reads (tv/data/silospen_places_rotw30.json).",
     "territory": "routing"
+  },
+  "silospen_tz_levels.py": {
+    "entryPoints": [
+      "pull",
+      "build",
+      "check",
+      "canon",
+      "page_names",
+      "segments"
+    ],
+    "gotcha": "Read-only GETs to silospen's calculator, paced (monsterProbabilities, Terror Zone ON). The level search is a bisection over 1-99 - a change that reverts inside an interval would be missed (a terror zone's monster level only rises with the character's). Breakpoints are kept only when odds move past TOL (2%); the page table holds only items whose odds move.",
+    "purpose": "v3884 (REG-3437, his 'Add a level setting') - silospen's terror-zone odds at every character level 1-99 for the eight boss / super-unique farms; --build writes the page's tz-level-odds table (the LVL slider reads it through the BOSSES getters), --check holds the stored TZ columns to silospen at their stored levels.",
+    "territory": "routing"
   }
 }

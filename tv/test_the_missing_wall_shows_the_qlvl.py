@@ -109,10 +109,12 @@ def _run_real_reader(names):
 #: the bible says `Fine-Spun Cloth`, and it holds four Aldur's pieces with no `Aldur's Rhythm` among
 #: them. Some are probably naming errors in the bible rather than missing game data, and that wants
 #: a HUMAN ruling — guessing would be the fabrication the sourcing rule exists to forbid.
-STILL_UNKNOWN_PIECES = ("Aldur's Rhythm", "Dark Adherent", "Hwanin's Blessing",
-                        "Sander's Paragon", "Sander's Riprap", "Sander's Superstition",
-                        "Sander's Taboo", "Taebaek's Glory", "Tal Rasha's Fine-Spun Cloth",
-                        "Tal Rasha's Guardianship", "Whitstan's Guard")
+#: v3884 (REG-3440) - EMPTY NOW. The eleven pieces with no game-table row trace to silospen (SET_QLVL_PROVENANCE.md, the
+#: v3884 section; tv/data/silospen_qlvl_rotw30.json), spelled as the bible spells them. A piece that loses its level again
+#: fails the ratchet below; a name added here needs its own provenance row first.
+STILL_UNKNOWN_PIECES = ()
+#: silospen's own quality levels (his 11-08 ruling: the qlvl is silospen's level)
+SILO_LEVELS = json.load(io.open(os.path.join(HERE, "data", "silospen_qlvl_rotw30.json"), encoding="utf-8"))["levels"]
 
 
 class TheMissingWallShowsTheQlvl(unittest.TestCase):
@@ -129,9 +131,12 @@ class TheMissingWallShowsTheQlvl(unittest.TestCase):
         if got is None:
             self.skipTest("node unavailable, so the shipped reader could not be run — a skip is "
                           "NOT a pass and nothing here has been established")
-        self.assertEqual(51, got.get("Atma's Wail"))
-        self.assertEqual(35, got.get("Stealskull"))
-        self.assertEqual(7, got.get("Nagelring"))
+        # v3884 (REG-3440) - silospen's level, read from the vendored pull. This case used to pin 51 / 35 / 7: Atma's Wail's
+        # stray 51 and the WEAR levels of Stealskull (35) and Nagelring (7) - silospen's quality levels are 59 / 43 / 10.
+        for n in ("Atma's Wail", "Stealskull", "Nagelring"):
+            self.assertEqual(SILO_LEVELS[n]["level"], got.get(n), "%s does not read silospen's level" % n)
+        self.assertEqual((59, 43, 10), tuple(SILO_LEVELS[n]["level"] for n in ("Atma's Wail", "Stealskull", "Nagelring")),
+                         "premise: the vendored silospen levels moved - re-read them before trusting this case")
 
     def test_the_zero_sentinel_renders_NOTHING(self):
         """★ 0 is 'never recorded', and q0 under 230 rows would be a fabricated number in the one
@@ -147,11 +152,11 @@ class TheMissingWallShowsTheQlvl(unittest.TestCase):
         # the game table under any spelling. Those are the ones where printing anything would be
         # the fabrication, and they are re-derived from the ledger below rather than pasted, so
         # this cannot go stale the same way twice.
-        STILL_UNKNOWN = ["Aldur's Rhythm", "Dark Adherent", "Hwanin's Blessing",
-                         "Sander's Paragon", "Sander's Riprap", "Sander's Superstition",
-                         "Sander's Taboo", "Taebaek's Glory", "Tal Rasha's Fine-Spun Cloth",
-                         "Tal Rasha's Guardianship", "Whitstan's Guard"]
+        # v3884 (REG-3440) - the eleven carry silospen's level now, so the probes are re-derived: every row the page
+        # still records at qlvl 0 (keys, runes, whole-set aggregates), never a pasted list.
         best, _tier = _best()
+        STILL_UNKNOWN = sorted(n for n, q in best.items() if int(q or 0) == 0)[:12]
+        self.assertTrue(STILL_UNKNOWN, "premise: no row is recorded at qlvl 0 - this case has nothing to probe")
         # ⚠ BASELINE: the names must still BE zeros in the page, or the probe list is the stale
         # thing and this law is grading its own assumption. [[feedback-blind-fixture-green-gate]]
         not_zero = [n for n in STILL_UNKNOWN if int(best.get(n) or 0) > 0]

@@ -108,7 +108,7 @@ CLASS = {
     'select[aria-label="which class it rolled - blank is one random class"]': (R, "the builder: writes a class roll"),
     'select[aria-label^="where every copy of "]': (R, "writes a keeper's destination"),
     # --- numbers, ranges, files, ticks
-    "#mf": (R, "his MF setting"), "#players": (R, "his players setting"), "#mfNumberInput": (R, NUM),
+    "#mf": (R, "his MF setting"), "#players": (R, "his players setting"), "#clvl": (R, "his character level for terror zones (v3884 REG-3437)"), "#mfNumberInput": (R, NUM),
     "#gic-sim-runs": (R, NUM), "#puv-runs": (R, NUM), "#cb-new-lvl": (R, NUM), "#cb-ilvl": (R, NUM),
     "#cb-def": (R, NUM), "#cb-sockets": (R, NUM), 'input[aria-label^="new count for "]': (R, NUM),
     "#backup-file": (R, FILE), "#craft-intake-file": (R, FILE), "#chron-shot-file": (R, FILE),
