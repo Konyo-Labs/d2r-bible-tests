@@ -112,13 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
-### REG-3444 - THE UNIQUES TAB'S "READ MY CHRONICLE" BUTTON FILMED ON ONE PRESS - HE ASKED FOR IT GONE (v3885, #137, his 11-08)
+### REG-3444 - THE "READ MY CHRONICLE" BUTTONS FILMED ON ONE PRESS - HE ASKED FOR THEM GONE (v3885, #137, his 11-08)
 He first asked for a confirm popup on "Read my Chronicle · UNIQUES" (one press started a 75-second MINI), then: "nvm its
 actually not so important", "you can remove it completely as a button. or hide it". The popup was written and taken back
-out unshipped; the Uniques tab's button is removed. The door stays - window._chronShotPick('uniques') still films a
-chronicle-uniques MINI through the console's own /api/mini focus - so every reader of a Chronicle reel is untouched, and the
-Sets tab keeps its own "Read my Chronicle · SETS" button. Pinned in tests/v2141_the_chronicle_button_films_it_instead_of_asking
-(no such button on #tab-funi; the door and the Sets button remain).
+out unshipped; then "the whole read my chronicles is not relevant to me hide it/remove it yea make sure the rest is workiing
+and not touched meaning the recorder/mini/on air still has the techniques and proper reading that it needs". Both buttons
+(UNIQUES on #tab-funi, SETS on #tab-fsets) are removed - only the buttons. window._chronShotPick and the console's
+chronicle-uniques / chronicle-sets MINI focuses stay; no console or reader file changed since v3883 (0 diff lines touch a
+mini, chronicle, focus, ON AIR or reel), and the reading laws pass (chronicle_retro 213, routes 10, route_guard 13, the mini
+focus 3, no technique lost 12, seal 9, windowed guess 4, traffic 11). Pinned in
+tests/v2141_the_chronicle_button_films_it_instead_of_asking (no Read my Chronicle button on the board; the door remains).
 
 ### REG-3443 - THE BUILD SCREEN LET A SORCERESS WEAR A SACRED TARGE - A CLASS'S OWN RAIL OR NODE LISTED ITS ITEMS TO ANY CLASS (v3885, #136, his 11-08)
 His words: "the sacred targe and any paladin based sheilds should not be allowed or even recommended to be equipped as an item

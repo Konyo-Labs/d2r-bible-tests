@@ -11414,8 +11414,8 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 <div class="rs-ai-note">🎞 Chronicle finds arrive from a <b>reel session</b> — the reader proposes, you approve in the Chronicle queue.</div></div></div></div>
   
   <div id="grail-intake-report" class="forge-note" style="display:none;margin:8px 0"></div>
-  <!-- v3885 (his 11-08: "you can remove it completely as a button. or hide it") - the "Read my Chronicle · UNIQUES" button is
-       gone from this tab. Its door stays: window._chronShotPick('uniques') still films a chronicle-uniques MINI (the console's
+  <!-- v3885 (his 11-08: "you can remove it completely as a button. or hide it", "the whole read my chronicles is not relevant
+       to me") - the "Read my Chronicle · UNIQUES" button is gone from this tab (and the SETS one from #tab-fsets). Its door stays: window._chronShotPick('uniques') still films a chronicle-uniques MINI (the console's
        own /api/mini focus), so nothing that reads a Chronicle reel changed, and the button can come back as one line.
        (CHRONICLE PHOTO INTAKE board-side, v2141: the caller STATES the ledger.) -->
   <input type="file" id="chron-shot-file" accept="image/*" multiple style="display:none" onchange="window.chronicleShotIntake(this.files)">
@@ -11433,14 +11433,10 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
        (:8306-8317). Glyph mapping unified across both tabs: 📜 = UNIQUES, 🧩 = SETS (fsets'
        SETS button used to wear 📜; funi's mapping is the one kept). -->
   <div style="margin-top:8px">
-    <!-- v1988 — EACH FORGE TAB READS ITS OWN LEDGER. Konyo: "the Chronicle AI READER for uniques
-     should be located only in uniques and for the tab F-SETS it should only render the
-     Chronicle AI READER for SETS." The cross-button was v1711 convenience — "he can now
-     register a uniques batch while standing on #tab-fsets". Safe to remove: the defect that
-     era fixed was the REPORT NODE, and _chronShotReport still fans out to every
-     .chron-shot-report container, so a read started anywhere still renders where he is
-     standing. Only the extra door goes. -->
-    <button class="f-btn" style="border-color:rgba(181,140,255,.5);color:#c9a6ff;margin-left:6px" onclick="window._chronShotPick('sets')" title="films your in-game Chronicle SETS page as a short MINI — it stops itself, the reader sweeps it, and nothing registers until you approve it">🧩 Read my Chronicle · SETS</button>
+    <!-- v3885 (his 11-08: "the whole read my chronicles is not relevant to me hide it/remove it ... make sure the rest is
+         workiing and not touched meaning the recorder/mini/on air still has the techniques and proper reading that it needs")
+         - the "Read my Chronicle · SETS" button is gone too. Only the button: window._chronShotPick and the console's
+         chronicle-sets MINI focus are untouched, and every reader of a Chronicle reel reads as before. -->
   </div>
   <!-- the SETS read renders HERE when he is on this tab — the Uniques tab's report element is
        display:none with its whole tab, so a shared one would have shown him nothing. -->
