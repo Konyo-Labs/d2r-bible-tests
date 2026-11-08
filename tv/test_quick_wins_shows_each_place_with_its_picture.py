@@ -91,6 +91,8 @@ out.gridSixBoss = _qwGridHtml([1, 2, 3, 4, 5, 6].map(function(i){ return { label
 out.gridNoBoss = _qwGridHtml(places.filter(function(p){ return p.kind !== 'boss'; }), also);
 out.gridDupArea = _qwGridHtml(places.concat([{ label: 'NM The Pit', area: '', s: { bossId: 'pit' }, chance: 90000, runs: 900, hours: 12, kph: 50, kpr: 110, est: false, kind: 'area' }]), also);
 out.gridSix = _qwGridHtml(places, also.concat([1, 2, 3, 4].map(function(k){ return { name: 'Pack ' + k, who: 'Hell Pack ' + k, area: 'Somewhere', kind: 'champion', chance: 700 + k }; })));
+// v3887 (#161) - a Dark Lancer pack on its own: the loop it draws is read off the one map
+out.gridLancer = _qwGridHtml([], [{ name: 'Dark Lancer', who: 'Hell Dark Lancer', area: 'Tamoe Highland', kind: 'champion', chance: 900 }]);
 process.stdout.write(JSON.stringify(out));
 """
 
@@ -202,6 +204,14 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         # The%20Banished") - its own idle loop (vampire5, the green Banished), not the Vampire family's
         self.assertIn('src="art/d2rw_vampire5.webp"', row[0], "The Banished does not draw the sprite he picked")
         self.assertNotIn("background-image:url(art/tz_", row[0], "a random pack still wears a zone tile")
+        self.assertIn("qw-mon-sprite", row[0])
+
+    def test_a_dark_lancer_pack_draws_its_own_loop(self):
+        """v3887 (#161) - the spearwoman family sprite is 38x120 and read as a dark sliver in a 56px tile; Dark Lancer draws its
+        d2runewizard idle loop (cr_lancer3), and its siblings keep the family sprite rather than borrow its colours"""
+        row = [r for r in self.o["gridLancer"].split('<div class="qw-row') if "Hell Dark Lancer" in r]
+        self.assertTrue(row, "PREMISE: no Dark Lancer row was drawn")
+        self.assertIn('src="art/d2rw_cr_lancer3.webp"', row[0], "Dark Lancer still draws the thin family sprite")
         self.assertIn("qw-mon-sprite", row[0])
 
     def test_an_area_run_is_in_neither_list(self):
@@ -678,6 +688,11 @@ RED_PROOF = [
      "find": "  \"The Banished\": \"d2rw_vampire5.webp\",",   # v3887 (#158) - his pick, the page's own Banished loop
      "replace": "",
      "matches": 1},
+    {"why": "v3887 (#161) - Dark Lancer draws the 38x120 family sprite again (a dark sliver in its tile)",
+     "file": "bible.html",
+     "find": "  \"Dark Lancer\": \"d2rw_cr_lancer3.webp\",\n",
+     "replace": "  \"Dark Lancer\": \"d2fam_corrupt_rogue_spearwoman.gif\",\n",
+     "matches": 1, "needs": "node"},
     {"why": "v3884 - the 5th boss row's rank reads 'undefined' (a four-entry ordinal list)",
      "file": "bible.html",
      "find": "(i === 0 ? '1st \u00b7 best run' : (_QW_NTH[i] || ((i + 1) + 'th')))",

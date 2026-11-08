@@ -23159,7 +23159,10 @@ const D2IO_ART = {
    family page names (Blood Wing) has no entry and draws no stand-in. [[copy-drift]]
    v3887 (#158, his 11-08: "for the banished i want this .gif specifically rendering https://d2runewizard.com/monsters/
    The%20Banished") - The Banished draws that page's own idle loop (d2rw_vampire5.webp: vampire5, the green Banished, 24
-   frames), not the Vampire family's sprite; its source, sha1 and cold look are in the same record. */
+   frames), not the Vampire family's sprite; its source, sha1 and cold look are in the same record.
+   v3887 (#161) - Dark Lancer draws its own d2runewizard idle loop (d2rw_cr_lancer3.webp, 20 frames): the family's
+   spearwoman sprite is 38x120 and read as a dark sliver in a 56px tile. Black Lancer and Dark Spearwoman keep the family
+   sprite - another variant's loop would be another monster's colours. Same record, same law. */
 const MONSTER_PACK_ART = {
   "Abominable": "d2fam_abominable.gif",
   "Abyss Knight": "d2fam_undead_horror.gif",
@@ -23200,7 +23203,7 @@ const MONSTER_PACK_ART = {
   "Dark Archer": "d2fam_corrupt_rogue_archer.gif",
   "Dark Familiar": "d2fam_bat_demon.gif",
   "Dark Hunter": "d2fam_corrupt_rogue.gif",
-  "Dark Lancer": "d2fam_corrupt_rogue_spearwoman.gif",
+  "Dark Lancer": "d2rw_cr_lancer3.webp",
   "Dark Ranger": "d2fam_corrupt_rogue_archer.gif",
   "Dark Shape": "d2fam_wraith.gif",
   "Dark Spearwoman": "d2fam_corrupt_rogue_spearwoman.gif",

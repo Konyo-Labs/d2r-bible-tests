@@ -1165,6 +1165,19 @@
     "The Banished"
    ],
    "why": "his 11-08 pick: the page's own 'The Banished idle animation' (24 frames, 480x480 animated WebP) - its own colours, not the family's"
+  },
+  "d2rw_cr_lancer3.webp": {
+   "family": "Corrupt Rogue Spearwoman",
+   "monster": "cr_lancer3",
+   "page": "https://d2runewizard.com/monsters/Dark%20Lancer",
+   "url": "https://d2runewizard.com/monsters/loops/cr_lancer3.webp",
+   "sha1": "35235df35561b1ae7290bf6e46f4448bdbc5f070",
+   "bytes": 381826,
+   "grokCold": "A blue-grey horned humanoid stands in left-facing profile on a black background, wearing a torn blood-red top, dark leather straps, and studded brown boots. It holds a long wooden spear level across its body, the metal point aimed to the left.",
+   "names": [
+    "Dark Lancer"
+   ],
+   "why": "v3887 #161: the family sprite (d2fam_corrupt_rogue_spearwoman.gif, 38x120) read as a dark sliver in the Quick wins tile; the page's own 'Dark Lancer idle animation' (20 frames, 480x480 animated WebP)"
   }
  },
  "packs": {
@@ -1205,7 +1218,7 @@
   "Crusher": "art/d2fam_wendigo.gif",
   "Dark Archer": "art/d2fam_corrupt_rogue_archer.gif",
   "Dark Familiar": "art/d2fam_bat_demon.gif",
-  "Dark Lancer": "art/d2fam_corrupt_rogue_spearwoman.gif",
+  "Dark Lancer": "art/d2rw_cr_lancer3.webp",
   "Dark Ranger": "art/d2fam_corrupt_rogue_archer.gif",
   "Dark Shape": "art/d2fam_wraith.gif",
   "Death Brawler": "art/d2fam_death_mauler.gif",
