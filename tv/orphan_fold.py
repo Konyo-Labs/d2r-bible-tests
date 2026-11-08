@@ -125,6 +125,34 @@ def _reel_windows(hist):
     return out
 
 
+def _join_target(lo, hi, hit):
+    """v3883 (#128, his 11-08 "do whatever is recommended regardless") - THE ONE REEL A REFUSED CLUSTER BELONGS TO.
+    -> (reel name, gap ms) | (None, why). `hit` is [(reel, t_lo, t_hi)] - the reels within the pad of [lo, hi].
+
+    MEASURED on the work ALT 11-08 (orphan_fold.plan, read-only): 8 clusters refused for an overlap, every one OUTSIDE the
+    reels it touched - seven 1-frame slivers 2-4 s after a reel's last frame (the hourly hand-off) and one 39-frame cluster
+    43 s before a reel's first - so they lay loose for days, read by nothing and deleted by nothing. Folding one into a NEW
+    reel mints a second session id for one recording (this module's docstring), and that stays refused. Moving it INTO the
+    reel it sits against mints nothing: the frames take that reel's own session id and leave with it when the drain
+    prunes the reel. Only when the answer is one reel: the cluster lies wholly outside every reel it touches (a cluster
+    that straddles a reel's own frames is not a sliver), and one reel's edge is strictly nearest (a tie refuses)."""
+    if not hit:
+        return None, None
+    near = []
+    for name, wlo, whi in hit:
+        if hi < wlo:
+            near.append((wlo - hi, name))
+        elif lo > whi:
+            near.append((lo - whi, name))
+        else:
+            return None, "it lies across %s's own frames - not a sliver beside it" % name
+    near.sort()
+    if len(near) > 1 and near[0][0] == near[1][0]:
+        return None, "it sits %.0fs from %s and from %s alike - a tie is not one reel" % (
+            near[0][0] / 1000.0, near[0][1], near[1][1])
+    return near[0][1], near[0][0]
+
+
 def plan(hist_dir=None, gap_ms=GAP_MS):
     """What WOULD be folded, and what is refused and why. Writes nothing, moves nothing."""
     hist = hist_dir or os.path.join(HERE, "frames", "hist")
@@ -194,7 +222,9 @@ def plan(hist_dir=None, gap_ms=GAP_MS):
         # the one that can do real harm, and the one an exact-interval test can never refuse. The
         # same silence that separates two clusters has to separate a cluster from a reel.
         pad = max(gap_ms, GAP_MS)
-        hit = [w[0] for w in windows if not (w[2] < lo - pad or w[1] > hi + pad)]
+        _hitw = [w for w in windows if not (w[2] < lo - pad or w[1] > hi + pad)]
+        hit = [w[0] for w in _hitw]
+        join, jgap = _join_target(lo, hi, _hitw)
         size = 0
         for t in run:
             try:
@@ -206,17 +236,24 @@ def plan(hist_dir=None, gap_ms=GAP_MS):
             "reel": "reel_s_%d_1" % lo,
             "overlaps": hit,
             "eligible": not hit,
-            "why": ("REFUSED — this window is already covered by %s. Folding it would mint a second "
-                    "session id for one recording, which forges the independence the keep and throw "
-                    "bars exist to demand." % ", ".join(hit)) if hit else
+            "join": join,
+            "why": (("JOINS %s - it sits %.0fs %s that reel's frames: one recording, so it takes that reel's own "
+                     "session id (no new reel, no second session id) and leaves with the reel when the drain prunes it."
+                     % (join, jgap / 1000.0, "after" if any(w[0] == join and hi > w[2] for w in _hitw) else "before"))
+                    if join else
+                    ("REFUSED — this window is already covered by %s. Folding it would mint a second "
+                     "session id for one recording, which forges the independence the keep and throw "
+                     "bars exist to demand%s." % (", ".join(hit), (" - and it cannot join one: %s" % jgap) if jgap else ""))
+                    ) if hit else
                    ("no reel covers this window — it is an unsealed recording and folding it makes "
                     "it readable by the lanes for the first time"),
         })
     return {"ok": True, "hist": hist, "clusters": out, "gapMs": gap_ms,
             "artifacts": arte,
-            "say": (("%d cluster(s) of loose footage; %d foldable, %d refused for overlapping an "
-                     "existing reel." % (len(out), sum(1 for c in out if c["eligible"]),
-                                         sum(1 for c in out if not c["eligible"])))
+            "say": (("%d cluster(s) of loose footage; %d foldable, %d join the reel they sit against, %d refused for "
+                     "overlapping an existing reel." % (len(out), sum(1 for c in out if c["eligible"]),
+                                                        sum(1 for c in out if c.get("join")),
+                                                        sum(1 for c in out if not c["eligible"] and not c.get("join"))))
                     if out else "no loose recording frames — every frame on disk belongs to a reel")
                    + ("" if arte is None else
                       " %d probe artifact(s) left alone; they are not a recording." % arte)}
@@ -260,7 +297,34 @@ def apply_plan(p, yes=False):
             reel_index.ensure_reel_index(dest)
         except Exception as e:
             failed.append({"reel": c["reel"], "why": "index not written: %s" % str(e)[:100]})
-    return {"ok": not failed, "moved": moved, "reels": made, "failed": failed}
+    # v3883 (#128) - a sliver JOINS the one reel it sits against (plan's `join`): moved into that reel's directory, never
+    # over a frame already there, its index left as sealed (reel_index never rewrites a good index - so nothing re-reads
+    # the reel for it, the river re-read loop's lesson), and it leaves with the reel when the drain prunes it
+    joined = []
+    for c in p.get("clusters") or []:
+        tgt = c.get("join")
+        if c.get("eligible") or not tgt or not str(tgt).startswith("reel_") or os.sep in str(tgt) or "/" in str(tgt):
+            continue
+        dest = os.path.join(hist, tgt)
+        if not os.path.isdir(dest):
+            failed.append({"reel": tgt, "why": "the reel to join is gone"})
+            continue
+        n = 0
+        for name in sorted(os.listdir(hist)):
+            m = FRAME_RE.match(name)
+            if not m or not (c["t0"] <= int(m.group(1)) <= c["t1"]):
+                continue
+            if os.path.exists(os.path.join(dest, name)):
+                failed.append({"frame": name, "why": "the reel already holds a frame of that name - left loose"})
+                continue
+            try:
+                os.replace(os.path.join(hist, name), os.path.join(dest, name))
+                n += 1
+            except OSError as e:
+                failed.append({"frame": name, "why": str(e)[:120]})
+        moved += n
+        joined.append({"reel": tgt, "frames": n})
+    return {"ok": not failed, "moved": moved, "reels": made, "joined": joined, "failed": failed}
 
 
 def run_once(hist_dir=None, in_flight=None, now_ms=None):
@@ -306,15 +370,21 @@ def run_once(hist_dir=None, in_flight=None, now_ms=None):
         moved = int(res.get("moved") or 0)
         out["worked"] = out["folded"] = moved
         out["reels"] = sorted(r for r, n in made.items() if n)
+        out["joined"] = [j for j in (res.get("joined") or []) if isinstance(j, dict) and j.get("frames")]
+        out["folded"] = moved - sum(int(j.get("frames") or 0) for j in out["joined"])   # v3883 - into NEW reels; worked is all moved
         out["refused"] = [{"t0": c.get("t0"), "t1": c.get("t1"), "frames": c.get("frames"),
                            "kind": "overlap" if c.get("overlaps") else "growing", "why": c.get("why")}
-                          for c in clusters if not c.get("eligible")]
+                          for c in clusters if not c.get("eligible") and not c.get("join")]
         short = [c for c in clusters if c.get("eligible") and made.get(c.get("reel"), 0) < int(c.get("frames") or 0)]
         growing = [r for r in out["refused"] if r["kind"] == "growing"]
         overlap = [r for r in out["refused"] if r["kind"] == "overlap"]
         out["owed"] = len(growing) + len(short)
-        parts = [("folded %d loose frame(s) into %d reel(s)" % (moved, len(out["reels"]))) if moved
+        _jn = sum(int(j.get("frames") or 0) for j in out["joined"])
+        parts = [("folded %d loose frame(s) into %d reel(s)" % (moved - _jn, len(out["reels"]))) if moved - _jn
                  else "folded nothing"]
+        if _jn:
+            parts.append("%d sliver frame(s) joined the reel each sits against (%s) - that reel's own session id"
+                         % (_jn, ", ".join(sorted(set(j["reel"] for j in out["joined"])))[:160]))
         if overlap:
             parts.append("%d cluster(s) (%d frame(s)) left loose: a reel already covers each window, and folding "
                          "would mint a second session id for one recording - a person decides"
@@ -349,8 +419,8 @@ def main(argv=None):
     print("   %s" % p["say"])
     for c in p["clusters"]:
         print("   %s  %s -> %s  %4d frame(s)  %6.2f GB  -> %s"
-              % ("FOLD  " if c["eligible"] else "REFUSE", fmt(c["t0"]), fmt(c["t1"]),
-                 c["frames"], c["bytes"] / 1e9, c["reel"]))
+              % ("FOLD  " if c["eligible"] else ("JOIN  " if c.get("join") else "REFUSE"), fmt(c["t0"]), fmt(c["t1"]),
+                 c["frames"], c["bytes"] / 1e9, c.get("join") or c["reel"]))
         print("          %s" % c["why"])
     if a.apply:
         r = apply_plan(p, a.yes)

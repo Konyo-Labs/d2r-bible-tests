@@ -112,6 +112,23 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3420 - THE HOURLY HAND-OFF LEFT SLIVERS LOOSE FOR DAYS: READ BY NOTHING, PRUNED BY NOTHING (v3883, #128)
+His 11-08 words on loose frames: "the printer 3d/4d machine proccesing filtering system ... routes everytihng properly and
+also should be pruning and deleting automatically looped? do whatever is recommended regardless". MEASURED on the work
+ALT (orphan_fold.plan, read-only, 11-08 ~10:30): 10 loose clusters - the live recording (484 frames, correctly left: it is
+still filming) and 9 refused for an overlap, every one OUTSIDE the reel it touched: seven 1-frame slivers 2-4 s after a
+reel's last frame (the hourly hand-off), one 39-frame cluster 43 s before a reel's first, one 1-frame cluster 163 s
+before one. The overlap refusal is right about what it guards - folding them into a NEW reel mints a second session id
+for one recording - and it left them where no lane reads and no deleter reaches (the doctor's "47 frame(s) belong to NO
+reel"). Now a refused cluster JOINS the one reel it sits against: wholly outside every reel it touches, that reel's edge
+strictly nearest (a tie refuses; a cluster across a reel's own frames is no sliver and refuses). The frames move into that
+reel's directory, never over a frame already there; the reel's index stays as sealed (reel_index never rewrites a good
+index, so nothing re-reads it - the river re-read loop's lesson); they leave with the reel when the drain prunes it
+(reel_retention rmtree's the reel). No reel is minted and no session id is made. The lane's line says what joined where;
+the opt-in healer no longer counts a join as a refusal. Law: test_loose_frames_fold_on_their_own_lane (+5 cases, the
+overlap fixture now joins), red-proofs PROVEN (8 of 8); test_control's orphan classes (19) and the waiting-on-you law
+green.
+
 ### REG-3419 - GITHUB'S IMPORT KEYED AT 0.55 PROOFS A SECOND ON THE WORK ALT: EVERY KEY RE-READ BIBLE.HTML AND RE-NAMED EVERY INPUT (v3883)
 MEASURED 11-08 ~09:40-10:20 IST on the work ALT (SSH, read-only): v3882's import keying 6,691 -> 6,724 of 9,463 in 60 s
 (0.55 a second, ~4.8 h for a version), one python at 95% of a core, 1 key worker (1,684 MB free; a worker needs 400 MB

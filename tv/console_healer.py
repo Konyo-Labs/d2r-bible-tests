@@ -282,7 +282,7 @@ def _remedy_fold_orphan_footage():
     if not p.get("ok"):
         return False, "orphan_fold could not read the footage: %s" % str(p.get("why"))[:90]
     ok = [c for c in (p.get("clusters") or []) if c.get("eligible") and c.get("frames")]
-    refused = [c for c in (p.get("clusters") or []) if not c.get("eligible")]
+    refused = [c for c in (p.get("clusters") or []) if not c.get("eligible") and not c.get("join")]   # v3883 - a join is no refusal
     if not ok:
         return None, ("nothing eligible to fold"
                        + (" — %d cluster(s) REFUSED for overlapping an existing reel, which would "

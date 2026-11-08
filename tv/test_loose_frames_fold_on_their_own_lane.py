@@ -18,6 +18,14 @@ THE LAW, on a fixture hist in this law's own scratch (fixture_tmp.contain(); eve
   · the console's roster starts the lane under its own name, the loop stamps that name, and it is started on a
     cadence orphan_fold states.
 RED_PROOF below. [[unknown-stays-unknown]] [[the-unjoined-end]]
+
+v3883 (#128, his 11-08 "do whatever is recommended regardless") - A SLIVER JOINS THE ONE REEL IT SITS AGAINST. MEASURED on the
+work ALT (orphan_fold.plan, read-only): 8 clusters refused for an overlap, every one OUTSIDE the reel it touched - seven
+1-frame slivers 2-4 s after a reel's last frame (the hourly hand-off), one 39-frame cluster 43 s before a reel's first -
+loose for days, read by nothing, pruned by nothing. Folding one into a NEW reel still mints a second session id and stays
+refused; moving it INTO the reel it sits against mints nothing (that reel's own id), leaves the reel's index as sealed (no
+re-read) and lets it leave with the reel when the drain prunes it. A cluster across a reel's own frames, or equally near
+two reels, stays loose and NAMED - a person decides.
 """
 import ast
 import io
@@ -101,26 +109,108 @@ class TheLaneFoldsOnlyWhatIsFinishedAndSeparate(_Hist):
         self.assertTrue(os.path.isfile(os.path.join(self.made, "index.json")), "the folded reel has no index - no lane can read it")
         with io.open(os.path.join(self.made, "index.json"), encoding="utf-8") as fh:
             self.assertEqual(len(json.load(fh).get("frames") or []), len(self.finished))
-        self.assertEqual((r["on"], r["worked"], r["folded"]), (True, len(self.finished), len(self.finished)), r)
+        self.assertEqual((r["on"], r["worked"], r["folded"]),
+                         (True, len(self.finished) + len(self.overlap), len(self.finished)), r)   # v3883 - worked counts the joined sliver
         self.assertEqual(r["reels"], [os.path.basename(self.made)])
         self.assertIn("folded %d loose frame(s) into 1 reel(s)" % len(self.finished), r["why"])
 
-    def test_an_overlapping_and_a_still_filming_cluster_stay_loose_and_are_named(self):
+    def test_a_sliver_beside_a_sealed_reel_joins_it_and_mints_nothing(self):
+        """* v3883 (#128) THE POINT - the work ALT's hand-off slivers, loose for days"""
+        with io.open(os.path.join(self.reel, "index.json"), "w", encoding="utf-8") as fh:
+            json.dump({"sessionId": os.path.basename(self.reel)[5:], "frames": [{"ts": t} for t in self.sealed]}, fh)
+        with io.open(os.path.join(self.reel, "index.json"), "rb") as fh:
+            sealed_index = fh.read()
+        before = sorted(n for n in os.listdir(self.hist) if n.startswith("reel_"))
         r = OF.run_once(self.hist, in_flight=self.asked())
-        self.assertEqual(self.loose(self.overlap), self.overlap,
-                         "frames a sealed reel's window covers were folded - a second session id for one recording")
+        self.assertEqual(self.loose(self.overlap), [], "a sliver 8 s after a sealed reel was left loose: %s" % r["why"])
+        for t in self.overlap + self.sealed:
+            self.assertTrue(os.path.isfile(os.path.join(self.reel, "f_%d.jpg" % t)), "frame %d is not in the reel it sits against" % t)
+        after = sorted(n for n in os.listdir(self.hist) if n.startswith("reel_"))
+        self.assertEqual(set(after) - set(before), {os.path.basename(self.made)},
+                         "a reel was minted for the sliver - a second session id for one recording")
+        with io.open(os.path.join(self.reel, "index.json"), "rb") as fh:
+            self.assertEqual(fh.read(), sealed_index, "the sealed reel's index was rewritten - every lane would re-read it")
+        self.assertEqual(r["joined"], [{"reel": os.path.basename(self.reel), "frames": 3}])
+        self.assertIn("3 sliver frame(s) joined the reel each sits against", r["why"])
+
+    def test_a_still_filming_cluster_stays_loose_and_is_named(self):
+        r = OF.run_once(self.hist, in_flight=self.asked())
         self.assertEqual(self.loose(self.growing), self.growing,
                          "frames of a recording that may still be filming were folded")
         for t in self.sealed:
             self.assertTrue(os.path.isfile(os.path.join(self.reel, "f_%d.jpg" % t)), "the sealed reel lost a frame")
         named = {(c["kind"], c["t0"], c["frames"]) for c in r["refused"]}
-        self.assertEqual(named, {("overlap", self.overlap[0], 3), ("growing", self.growing[0], 3)},
-                         "what the lane left loose is not named: %r" % r["refused"])
-        for c in r["refused"]:
-            self.assertTrue(c.get("why"), "a cluster left loose without its reason")
+        self.assertEqual(named, {("growing", self.growing[0], 3)}, "what the lane left loose is not named: %r" % r["refused"])
         self.assertEqual(r["owed"], 1, "only the cluster that may still be filming is this lane's to fold later")
-        self.assertIn("a person decides", r["why"])
         self.assertIn("may still be filming", r["why"])
+
+
+class AClusterThatIsNotOneReelsStaysLoose(unittest.TestCase):
+    """v3883 (#128) - across a reel's own frames, or equally near two reels: not a sliver of one, a person decides"""
+
+    def setUp(self):
+        self.hist = tempfile.mkdtemp(prefix="orphan-join-")
+        self.addCleanup(shutil.rmtree, self.hist, True)
+        self.t = int(time.time() * 1000) - 21600000
+
+    def _reel(self, ts):
+        d = os.path.join(self.hist, "reel_s_%d_1" % ts[0])
+        os.makedirs(d)
+        for t in ts:
+            _frame(d, t)
+        return d
+
+    def _left(self, ts):
+        return [t for t in ts if os.path.isfile(os.path.join(self.hist, "f_%d.jpg" % t))]
+
+    def test_a_cluster_across_a_reels_own_frames_stays_loose(self):
+        t = self.t
+        self._reel([t + 5000])
+        loose = [t + 1000 * i for i in range(10)]
+        for x in loose:
+            _frame(self.hist, x)
+        r = OF.run_once(self.hist, in_flight=lambda: (True, ""))
+        self.assertEqual(self._left(loose), loose, "a cluster across a reel's own frames was moved: %s" % r["why"])
+        self.assertEqual([c["kind"] for c in r["refused"]], ["overlap"])
+        self.assertIn("across", r["refused"][0]["why"])
+        self.assertIn("a person decides", r["why"])
+
+    def test_a_cluster_equally_near_two_reels_stays_loose(self):
+        t = self.t
+        self._reel([t, t + 1000])
+        self._reel([t + 21000, t + 22000])
+        loose = [t + 11000]                          # 10 s after the first reel, 10 s before the second
+        _frame(self.hist, loose[0])
+        r = OF.run_once(self.hist, in_flight=lambda: (True, ""))
+        self.assertEqual(self._left(loose), loose, "a sliver equally near two reels was given to one: %s" % r["why"])
+        self.assertIn("a tie", r["refused"][0]["why"])
+
+    def test_the_nearer_reel_takes_it(self):
+        t = self.t
+        a = self._reel([t, t + 1000])
+        b = self._reel([t + 21000, t + 22000])
+        loose = [t + 5000]                           # 4 s after the first reel, 16 s before the second
+        _frame(self.hist, loose[0])
+        OF.run_once(self.hist, in_flight=lambda: (True, ""))
+        self.assertTrue(os.path.isfile(os.path.join(a, "f_%d.jpg" % loose[0])), "the sliver did not join the nearer reel")
+        self.assertFalse(os.path.isfile(os.path.join(b, "f_%d.jpg" % loose[0])))
+
+    def test_a_frame_the_reel_already_holds_is_never_written_over(self):
+        """the plan never offers this (a same-named frame puts the cluster across the reel's window); the act still
+        refuses it - a frame that reached the reel between the plan and the move"""
+        t = self.t
+        a = self._reel([t, t + 1000])
+        _frame(self.hist, t + 3000)
+        with io.open(os.path.join(a, "f_%d.jpg" % (t + 3000)), "wb") as fh:
+            fh.write(b"the reel's own")
+        res = OF.apply_plan({"hist": self.hist, "clusters": [{"t0": t + 3000, "t1": t + 3000, "frames": 1, "eligible": False,
+                                                               "join": os.path.basename(a), "reel": "reel_s_%d_1" % (t + 3000)}]},
+                            yes=True)
+        with io.open(os.path.join(a, "f_%d.jpg" % (t + 3000)), "rb") as fh:
+            self.assertEqual(fh.read(), b"the reel's own", "a joined frame wrote over the reel's own")
+        self.assertEqual(self._left([t + 3000]), [t + 3000])
+        r = {"why": str(res.get("failed"))}
+        self.assertIn("already holds", r["why"])
 
 
 class TheLaneAsksFirstAndFoldsAlone(_Hist):
@@ -186,6 +276,20 @@ if __name__ == "__main__":
 
 
 RED_PROOF = [
+    {"why": "v3883 (#128) - a sliver beside a sealed reel is left loose again (read by nothing, pruned by nothing)",
+     "file": "orphan_fold.py",
+     "find": "        join, jgap = _join_target(lo, hi, _hitw)\n", "replace": "        join, jgap = None, None\n", "matches": 1},
+    {"why": "v3883 (#128) - a cluster across a reel's own frames is joined into it",
+     "file": "orphan_fold.py",
+     "find": "            return None, \"it lies across %s's own frames - not a sliver beside it\" % name\n",
+     "replace": "            near.append((0, name))\n", "matches": 1},
+    {"why": "v3883 (#128) - a tie between two reels is given to one",
+     "file": "orphan_fold.py",
+     "find": "    if len(near) > 1 and near[0][0] == near[1][0]:\n", "replace": "    if False:\n", "matches": 1},
+    {"why": "v3883 (#128) - a joined frame writes over a frame the reel already holds",
+     "file": "orphan_fold.py",
+     "find": "            if os.path.exists(os.path.join(dest, name)):\n                failed.append(",
+     "replace": "            if False:\n                failed.append(", "matches": 1},
     {
         "why": "REG-2463 - the fold stops asking whether a cluster is eligible: a window a sealed reel covers is folded "
                "into a second session id, and a recording that may still be filming is sealed under him",
