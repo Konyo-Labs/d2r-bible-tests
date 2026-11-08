@@ -81379,7 +81379,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
   /* ⟦VAULT PLANNER OPEN END⟧ */
   /* stash */
   window._cbOpenStash = function(){ st.pick = st.newb = null; st.stash = { tab: 'stash', area: 'personal', cat: 0, q: '', filt: '', say: '' }; _cbRender(); };
-  window._cbCloseStash = function(){ st.stash = null; window.d2Tip.hide(); _cbRender(); try { var b = document.getElementById('cb-stash-btn'); if (b) b.focus(); } catch (e) {} };
+  window._cbCloseStash = function(){ st.stash = null; window.d2Tip.hide(); _cbRender(); };   // v3885 (#134): Design C removed the Stash button its focus went back to
   window._cbStashTab = function(t){ st.stash.tab = t; if (t === 'create' && !(st.stash.cat | 0)) st.stash.cat = 1; _cbModal(); };
   window._cbStashArea = function(a){ if (!st.stash || !CB_BAG[a]) return; st.stash.area = a; st.stash.tab = 'stash'; _cbModal(); };
   window._cbStashAreaAdd = function(){ if (!st.stash) return; st.stash.tab = 'create'; if (!(st.stash.cat | 0)) st.stash.cat = 1; _cbModal(); };

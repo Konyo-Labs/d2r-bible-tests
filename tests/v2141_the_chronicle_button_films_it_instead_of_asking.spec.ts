@@ -76,8 +76,10 @@ test('the upload capability itself is kept — v1540 drives it directly, just no
     // v3885 (his 11-08: "you can remove it completely as a button. or hide it", "the whole read my chronicles is not
     // relevant to me hide it/remove it") - no "Read my Chronicle" button anywhere; the door itself (above) stays
     btns: document.querySelectorAll('button[onclick*="_chronShotPick"]').length,
+    tabs: document.querySelectorAll('#tab-funi, #tab-fsets').length,
   }));
   expect(kinds.pick).toBe('function');
   expect(kinds.intake, 'tests/v1540_chronicle_photo_intake.spec.ts calls this directly').toBe('function');
+  expect(kinds.tabs, 'premise: the Uniques and Sets tabs are on the page, so "no button" is a reading of them').toBeGreaterThan(1);
   expect(kinds.btns, 'a Read my Chronicle button is back on the board').toBe(0);
 });

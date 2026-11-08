@@ -19,9 +19,17 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+try:
+    from console_safe import enable as _enable   # it prints non-ASCII ('10 frames · tier 6/7'): never crash while REPORTING
+    _enable()
+except Exception:
+    pass
 BIBLE = os.path.join(os.path.dirname(HERE), "bible.html")
 NODE = shutil.which("node")
 PAL_FCR = [[0, 15], [9, 14], [18, 13], [30, 12], [48, 11], [75, 10], [125, 9]]

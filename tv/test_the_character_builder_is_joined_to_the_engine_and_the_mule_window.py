@@ -396,7 +396,11 @@ class TheTooltipAndTheSheetAgree(unittest.TestCase):
 
     def test_a_class_locked_item_on_another_class_is_said_everywhere_and_counts_nothing(self):
         out = _run(r"""
-          mk('Sorceress', 90); wear([['larm', 'Herald of Zakarum'], ['head', "Arreat's Face"]]);
+          /* v3885 (#136) - the picker now refuses another class's item on the doll, so the item reaches a Sorceress the way it
+             still can: worn while the build named no class (or an older saved build), then the class is set */
+          mk('Sorceress', 90); window._cbCommit(function(b){ b.cls = null; });
+          wear([['larm', 'Herald of Zakarum'], ['head', "Arreat's Face"]]);
+          window._cbCommit(function(b){ b.cls = 'Sorceress'; }); window._cbRender();   // the doll is drawn for the class it now has
           var e = cur().sets[0].slots.larm; OUT.only = window._cbTipEntry(e, window._cbItem(e.id), 90, 'larm', 'Sorceress').only;
           OUT.fire = rowOf(eng(), 'res-fire');
           OUT.na = eng().notApplied.map(function(n){ return n.why; });

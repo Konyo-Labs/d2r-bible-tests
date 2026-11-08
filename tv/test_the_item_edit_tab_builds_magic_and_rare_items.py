@@ -337,6 +337,8 @@ class TheEditTabBuildsTheirItems(unittest.TestCase):
           window._cbModKey({ key: 'Enter', preventDefault: function(){} });
           OUT.picked = (cur().sets[0].slots.head.affixes || []).map(function(x){ return x.id; });
           window._cbClosePick();
+          /* v3885 (#136) - an Eagle Orb is the Sorceress's: the picker refuses it on a Warlock's doll, so the orb case is a Sorceress */
+          window._cbCommit(function(b){ b.cls = 'Sorceress'; });
           window._cbOpenPick('slot', 'rarm'); window._cbChoose('b:ob1'); window._cbQuality('m'); window._cbModOpen(true); OUT.orb = /Automod/.test(MODAL._html);
           OUT.words = [window._cbRareWords('uap', 0).filter(function(w){ return /^(Ghoul|Wraith|Fiend)$/.test(w); }).sort(),
                        window._cbRareWords('zlb', 1).indexOf('Strap') >= 0, window._cbRareWords('amu', 1).indexOf('Scarab') >= 0, window._cbRareWords('mac', 1).indexOf('Crusher') >= 0];

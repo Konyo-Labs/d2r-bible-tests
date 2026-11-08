@@ -566,6 +566,17 @@
     "purpose": "#96/#88 (REG-3348): the price DB refreshes itself - every EVERY_S it asks the d2jsp desk's own quote for the stalest due item and folds it through the console's one DB writer, so prices move without a click.",
     "territory": "d2jsp"
   },
+  "d2jsp_rolls.py": {
+    "entryPoints": [
+      "build",
+      "emit",
+      "canon",
+      "block"
+    ],
+    "gotcha": "Builds from the page's own ITEM_CODEX / RUNEWORD_TIP / BASE_DB, never a hand table; a level-scaled mod and a fixed damage add are not rolls (_NOT_A_ROLL). --emit rewrites the worker's D2JSP ROLLS block between its markers; the law holds the two equal.",
+    "purpose": "v3885 (#30, GrokBot's read of 16 real d2jsp topics) - each item's variable rolls, so a d2jsp post is PERFECT when every roll it states sits at that item's maximum (Shako 141, Enigma 775, Griffon -20), never because its words say perfect; writes D2JSP_ROLLS into functions/api/d2jsp_quote.js.",
+    "territory": "d2jsp"
+  },
   "d2s_read.py": {
     "entryPoints": [
       "read",
