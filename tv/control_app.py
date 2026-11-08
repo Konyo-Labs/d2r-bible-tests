@@ -34047,9 +34047,14 @@ def _ledger_snapshot_once(force=False):
     # ⚠ AND IT BLINDED A WATCHER: ledger_highwater ratchets rwMade against snapshots that have
     # never contained it, so that column could only ever read UNKNOWN — which looks exactly like a
     # column with nothing wrong. [[unknown-stays-unknown]] [[the-unjoined-end]]
-    if isinstance(got.get("gameFound"), dict) and got["gameFound"]:
+    # v3882 (the doctor on Dean's PC and both ALTs, 11-08: "the newest backup carries 3 of 5 ledgers - MISSING rwMade,
+    # gameFound") - AN EMPTY STORE IS A MEASURED ZERO. Both folds asked for a NON-EMPTY store, so a board that has none
+    # (Dean has no in-game records yet; the ALTs no runewords) wrote no key, and the doctor - and ledger_restore, which reads
+    # an absent gameFound as UNKNOWN, never a drop - could not tell "he has none" from "nobody copied it". The board sent
+    # the store: it is written as it came, empty included; a store the board did not send (None) stays out - UNKNOWN.
+    if isinstance(got.get("gameFound"), dict):
         led["gameFound"] = got["gameFound"]
-    if isinstance(got.get("rwMadeFull"), dict) and got["rwMadeFull"]:
+    if isinstance(got.get("rwMadeFull"), dict):
         led["rwMade"] = got["rwMadeFull"]
     total = sum(int(counts.get(k) or 0) for k in ("foundLog", "owned", "setPieces"))
     if total <= 0:

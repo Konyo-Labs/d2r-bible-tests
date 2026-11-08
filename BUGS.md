@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3410 - EVERY WINDOWS PC'S DOCTOR SAID ITS LEDGER BACKUP WAS "MISSING rwMade, gameFound" - THE STORES WERE EMPTY (v3882)
+The doctor on Dean's PC and both ALTs, 11-08: "the newest backup carries 3 of 5 ledgers - MISSING rwMade, gameFound".
+MEASURED on Dean's PC: 44 backups, the newest (11-07 17:03) carries rwMade and not gameFound - he has no in-game records
+yet; the Mac's carry all five. _ledger_snapshot_once folded gameFound and rwMade in only when NON-EMPTY, so a board with none
+wrote no key: "he has none" read as "nobody copied it", and ledger_restore - which reads an absent gameFound as UNKNOWN,
+never a drop - could not see a real wipe to zero either. Now a store the board SENT is written as it came, empty included;
+one it did not send (None) stays out, UNKNOWN. Law: test_ledger_backup_covers_every_store (3 new cases driving the real
+snapshot writer over a stand-in board and a temp dir; 3 red-proofs RED); the 4 other backup laws green.
 ### REG-3409 - DEAN'S PC STILL HAD TWO BLIND LAWS AFTER v3881, SO EVERY LOCK ON IT WOULD HAVE STAYED SHUT (v3882)
 MEASURED 11-08 on his PC (SSH, read-only): may('reel.route') -> "4 instrument(s) are BLIND"; v3881 (REG-3400) clears two of
 them. His own prover log names the other two, each a red-proof that stayed GREEN on Windows:

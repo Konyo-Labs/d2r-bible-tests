@@ -96,10 +96,11 @@ DROP_FRAC = 0.25
 #: fall on the board is still written down as an episode. The backup watcher and plan() never pass
 #: one, so their drop line above is unchanged.
 ANY_FALL = 1
-#: The count the board reports INDEPENDENTLY for a store a snapshot OMITS when it is empty —
-#: `_ledger_snapshot_once` folds rwMade/gameFound into the ledger only when non-empty, so an absent
-#: rwMade beside `counts.runewordsMade == 0` is a measured zero. gameFound has no independent count,
-#: so an absent gameFound is UNKNOWN and can never be read as a drop to zero.
+#: The count the board reports INDEPENDENTLY for a store a snapshot OMITS - since v3882 `_ledger_snapshot_once`
+#: writes rwMade/gameFound whenever the board SENT them (empty included: a measured zero), so an absent one is a
+#: board that did not send it, or a snapshot from before v3882 (which left an EMPTY store out). An absent rwMade
+#: beside `counts.runewordsMade == 0` is still a measured zero. gameFound has no independent count, so an absent
+#: gameFound is UNKNOWN and can never be read as a drop to zero.
 _COUNT_KEY = {"foundLog": "foundLog", "setPieces": "setPieces", "owned": "owned",
               "rwMade": "runewordsMade"}
 

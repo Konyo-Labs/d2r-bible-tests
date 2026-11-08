@@ -51,6 +51,16 @@ SRC = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
 
 
 RED_PROOF = [
+    {"why": "v3882 - an empty gameFound the board sent is left out of the backup again (Dean's doctor: MISSING gameFound)",
+     "file": "control_app.py",
+     "find": '    if isinstance(got.get("gameFound"), dict):\n        led["gameFound"] = got["gameFound"]\n',
+     "replace": '    if isinstance(got.get("gameFound"), dict) and got["gameFound"]:\n        led["gameFound"] = got["gameFound"]\n',
+     "matches": 1},
+    {"why": "v3882 - an empty rwMade the board sent is left out of the backup again (the ALTs' doctor: MISSING rwMade)",
+     "file": "control_app.py",
+     "find": '    if isinstance(got.get("rwMadeFull"), dict):\n        led["rwMade"] = got["rwMadeFull"]\n',
+     "replace": '    if isinstance(got.get("rwMadeFull"), dict) and got["rwMadeFull"]:\n        led["rwMade"] = got["rwMadeFull"]\n',
+     "matches": 1},
     {
         "why": 'the law requires this text in control_app.py, where it occurs exactly once and in no other file the gate names; deleting it must turn the gate red',
         "file": 'control_app.py',
@@ -67,6 +77,49 @@ def _between(src, start, end, whence=0):
         return None
     j = src.find(end, i + len(start))
     return None if j < 0 else src[i:j + len(end)]
+
+
+class AnEmptyStoreIsWrittenAsMeasured(unittest.TestCase):
+    """v3882 (the doctor on Dean's PC and both ALTs, 11-08: "the newest backup carries 3 of 5 ledgers - MISSING rwMade,
+    gameFound"). Both folds asked for a NON-EMPTY store, so a board with none wrote no key: "he has none" read as "nobody
+    copied it". Drives the real _ledger_snapshot_once over a stand-in board and a temp backup dir - never his."""
+
+    def _snap(self, game_found, rw_full, rw_count):
+        import json, shutil, tempfile
+        from unittest import mock
+        import fixture_tmp as _fx
+        _fx.contain()
+        import control_app as ca
+        d = tempfile.mkdtemp(prefix="ledger-backup-")
+        self.addCleanup(shutil.rmtree, d, True)
+        board = {"ok": True, "route": {"key": "fixture"},
+                 "counts": {"foundLog": 2, "owned": 1, "setPieces": 1, "runewordsMade": rw_count},
+                 "sample": {"foundLog": ["A", "B"], "owned": ["C"], "setPieces": ["D"]},
+                 "gameFound": game_found, "rwMadeFull": rw_full, "fullStores": {}}
+        with mock.patch.object(ca, "board_ownership", lambda **k: dict(board)), \
+                mock.patch.object(ca, "_LEDGER_BACKUP_DIR", d), \
+                mock.patch.dict(ca._LEDGER_BACKUP_STATE, {"counts": None, "handMade": None}):
+            out, why = ca._ledger_snapshot_once(force=True)
+        self.assertTrue(out, "PREMISE: the stand-in board was not snapshotted: %r" % why)
+        with io.open(out, encoding="utf-8") as fh:
+            return json.load(fh)["ledger"]
+
+    def test_an_empty_store_the_board_sent_is_written_empty(self):
+        """* THE POINT - Dean: no in-game records yet, so d2r_gameFound is {} - a measured zero, written as one"""
+        led = self._snap({}, {}, 0)
+        self.assertEqual(led.get("gameFound"), {}, "an empty gameFound the board sent left no key: %r" % sorted(led))
+        self.assertEqual(led.get("rwMade"), {}, "an empty rwMade the board sent left no key")
+
+    def test_a_store_the_board_did_not_send_stays_out(self):
+        """UNKNOWN stays unknown: a board that sent no gameFound (None) writes no key, never an invented {}"""
+        led = self._snap(None, None, None)
+        self.assertNotIn("gameFound", led)
+        self.assertNotIn("rwMade", led)
+
+    def test_a_full_store_is_written_whole(self):
+        led = self._snap({"Shako": "05/27/2026"}, {"Spirit": 1}, 1)
+        self.assertEqual(led.get("gameFound"), {"Shako": "05/27/2026"})
+        self.assertEqual(led.get("rwMade"), {"Spirit": 1})
 
 
 class LedgerBackupCoversEveryStore(unittest.TestCase):
