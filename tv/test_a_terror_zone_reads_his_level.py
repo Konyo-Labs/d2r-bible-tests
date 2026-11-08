@@ -144,7 +144,9 @@ process.stdout.write(JSON.stringify(out));
 
     def test_the_registry_row_reads_its_cell_and_the_slider_persists_per_account(self):
         code = _code(self.src)
-        self.assertIn('if (_dsc && _dsc.get) Object.defineProperty(_src, "chance", { get(){ return d[k]; }, enumerable: true, configurable: true });',
+        # v3887 (#156) - the getter is guarded by `_live` (the cell has a level table), which also makes a source at every level
+        self.assertIn('const _dsc = Object.getOwnPropertyDescriptor(d, k), _live = !!(_dsc && _dsc.get);', code)
+        self.assertIn('if (_live) {\n          Object.defineProperty(_src, "chance", { get(){ return d[k]; }, enumerable: true, configurable: true });',
                       code, "a source row keeps the level-99 figure it was built with - the cards and Quick wins never move")
         self.assertIn('<input type="range" id="clvl" min="68" max="99" step="1" value="99"', self.src)   # v3885: 68 and up
         self.assertIn("window.LSR.setItem('d2r_charLevel', String(_TZ_CHAR_LVL))", code)
@@ -191,7 +193,7 @@ RED_PROOF = [
      "replace": "  return n;\n", "matches": 1, "needs": "node"},
     {"why": "v3884 (REG-3437) - the registry's source row keeps its build-time figure (no surface follows the level)",
      "file": "bible.html",
-     "find": '        if (_dsc && _dsc.get) Object.defineProperty(_src, "chance", { get(){ return d[k]; }, enumerable: true, configurable: true });   // v3884 (REG-3437) - his level\n',
+     "find": '          Object.defineProperty(_src, "chance", { get(){ return d[k]; }, enumerable: true, configurable: true });   // v3884 (REG-3437) - his level\n',
      "replace": "", "matches": 1},
     {"why": "v3884 (REG-3438) - a TZ run's name is printed plain again",
      "file": "bible.html",
