@@ -2548,6 +2548,18 @@ TARGETS = {
             // selects are photographed open (the v3283 lesson: a fold must never retire them from the gate).
             var adv = box.querySelector('details.fx-adv');
             if (adv && !adv.open) { adv.open = true; return false; }
+            // v3881 (REG-3395 moved a row's chips - the picker word among them - onto the OPEN row; a closed row hides
+            // them). This target kept selecting `#fleet-list .fleet-pickerodd` on closed rows, read the two hidden chips
+            // as ZERO-SIZE and refused v3881's main push. The word is photographed where it lives now: each row that
+            // carries one is opened the way he opens a row to read it (the page's own _fleetRowOpen).
+            var _odd = document.querySelectorAll('#fleet-list .fleet-row:not(.fleet-open) .fleet-pickerodd');
+            if (_odd.length && window._fleetRowOpen) {
+              for (var _k = 0; _k < _odd.length; _k++) {
+                var _r = _odd[_k].closest('.fleet-row');
+                if (_r) window._fleetRowOpen(_r);
+              }
+              return false;
+            }
             var cols = box.querySelector('.fx-cols'), foot = box.querySelector('.fx-foot');
             var hs = box.querySelectorAll('.fx-col-h');
             if (!cols || !foot || hs.length !== 3) return false;
