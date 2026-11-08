@@ -313,8 +313,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3249 - a paused answer carries no stored price, so the check shows nothing he has researched",
      "file": "tv/control_app.py",
-     "find": "                                  \"high\": None, \"readAt\": \"\", \"board\": 268, \"db\": _stored})\n",
-     "replace": "                                  \"high\": None, \"readAt\": \"\", \"board\": 268})\n",
+     "find": "                                                       \"high\": None, \"readAt\": \"\", \"board\": 268, \"db\": _stored}, _item))\n",   # v3883 re-anchor (#97 wraps it)
+     "replace": "                                                       \"high\": None, \"readAt\": \"\", \"board\": 268}, _item))\n",
      "matches": 1},
     {"why": "REG-3249 - the painter draws the live line only",
      "file": "bible.html",

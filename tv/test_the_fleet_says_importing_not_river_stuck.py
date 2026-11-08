@@ -350,10 +350,10 @@ class TheRowSaysImportingNotStuck(unittest.TestCase):
     def test_nothing_owed_and_a_current_census_is_ready_never_proving_zero(self):
         """v3880 (his 11-07 screenshot: "proving 0 owed here" on his own row - "if im done proving it should say battle ready")"""
         txt = _plain(_chip(_row({"census": "current", "key": "current", "blind": 0, "owedHere": 0, "why": ""}, [])))
-        self.assertIn("ready for battle · every law proved here", txt, txt)
+        self.assertIn("ready · every law proved here", txt, txt)   # v3883 plain words
         self.assertNotIn("proving 0", txt)
         blind = _plain(_chip(_row({"census": "current", "key": "current", "blind": 2, "owedHere": 0, "why": ""}, [])))
-        self.assertNotIn("ready for battle", blind, "a PC with blind gates read as ready")
+        self.assertNotIn("every law proved here", blind, "a PC with blind gates read as ready")   # v3883: the words, not the old Diablo phrase
         stale = _plain(_chip(_row({"census": "stale", "key": "start", "blind": 0, "owedHere": 0, "why": ""}, [])))
         self.assertIn("nothing owed here · its proof check runs next", stale, stale)
         self.assertNotIn("proving 0", stale)

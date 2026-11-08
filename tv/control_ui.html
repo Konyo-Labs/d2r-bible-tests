@@ -29111,12 +29111,16 @@ function escC(s) {
      hover card, the State panel and the header all draw THIS one function. A PC with nothing readable is LOST, never
      ready; an offline PC is IN TOWN and its last report's faults stay in the arcane, never painted as live wounds.
      [[unknown-stays-unknown]] [[copy-drift]] [[stale-reading]] */
+  /* v3883 - HIS RULING 11-08 ~09:46, on his live Fleet: "intown is not proper wording or the correct language for offline..
+     simply write OFFLINE and others like this make it more simple to the point forget about the diablo ii language when it
+     comes to the fleet data". The words are plain now; the KEYS (and the classes, the order) are unchanged, so every surface
+     that draws a word - the row, the header, the hover card, the click box, the State panel - follows from here. */
   var _PC_WORD = {
-    ready:   { w: 'ready for battle', c: 'pcs-ready',   en: 'its river flows, its proof is current, nothing on it is shut' },
-    healing: { w: 'healing',          c: 'pcs-healing', en: 'it is proving the laws it owes - nothing for you to do' },
-    wounded: { w: 'wounded',          c: 'pcs-wounded', en: 'something on it is stuck, shut or blind' },
-    town:    { w: 'in town',          c: 'pcs-town',    en: 'offline - what it says is its last report, not a reading of now' },
-    lost:    { w: 'lost',             c: 'pcs-lost',    en: 'no report this console can read - UNKNOWN, which is not fine' }
+    ready:   { w: 'ready',            c: 'pcs-ready',   en: 'its river flows, its proof is current, nothing on it is shut' },
+    healing: { w: 'updating',         c: 'pcs-healing', en: 'it is proving the laws it owes - nothing for you to do' },
+    wounded: { w: 'blocked',          c: 'pcs-wounded', en: 'something on it is stuck, shut or blind' },
+    town:    { w: 'offline',          c: 'pcs-town',    en: 'offline - what it says is its last report, not a reading of now' },
+    lost:    { w: 'unknown',          c: 'pcs-lost',    en: 'no report this console can read - UNKNOWN, which is not fine' }
   };
   var _PC_ORDER = ['wounded', 'healing', 'lost', 'town', 'ready'];
   var _pcCut = function (x, n) {
@@ -29155,7 +29159,7 @@ function escC(s) {
                      && typeof _fleetBooting === 'function' && _fleetBooting(m, now));
     if (off) {
       key = 'town'; hurt = [];
-      next = 'offline since ' + off.since + ' - start its console to hear from it';
+      next = 'since ' + off.since + ' - start its console to hear from it';   /* v3883 - the word says offline */
     } else if (booting && !hurt.length) {
       key = 'healing'; next = 'starting up - its first proof check lands about 5 minutes after a start';
     } else if (!parts || !known) {
@@ -29189,7 +29193,7 @@ function escC(s) {
                                                                               : 'each reason: click this row twice (the arcane)') + '</span>';
     return h + '</div>';
   };
-  /* the minimalist's header: "6 PCs: 1 wounded · 1 healing · 2 in town · 1 lost · 1 ready for battle" */
+  /* the minimalist's header: "6 PCs: 1 blocked · 1 updating · 1 unknown · 2 offline · 1 ready" (v3883 plain words) */
   var _pcHeader = function (list, nowMs) {
     var n = {};
     (list || []).forEach(function (m) { var k = _pcStatus(m, nowMs).key; n[k] = (n[k] || 0) + 1; });
@@ -29219,7 +29223,7 @@ function escC(s) {
        the plain one, side by side (his "diablo ii language and human language"); a day before today keeps its date, not its clock */
     if (s.key === 'town') {
       var since = String(s.offSince || '').replace(/^([A-Z][a-z]{2} \d{1,2}) \d{1,2}:\d{2}$/, '$1');
-      return [since ? 'off since ' + since : 'off'];
+      return since ? ['since ' + since] : [];   /* v3883 - OFFLINE says it; the line says since when */
     }
     if (s.key === 'lost') return ['no report this console can read'];
     if (s.key === 'ready') return ['all proved'];   /* v3883 (#116) - 'every law proved' missed 1512's 303px by 5 */
@@ -29384,7 +29388,7 @@ function escC(s) {
     } else if (_owedHere === 0 && census === 'current' && !(typeof hs.blind === 'number' && hs.blind > 0)) {
       bits.push('<span class="fleet-riverimport fleet-proved" title="' + escC('every law this PC proves for its own files is '
         + 'proved - nothing is owed here, its census is current and no gate is blind' + (hs.why ? ' \u2014 ' + hs.why : ''))
-        + '">ready for battle \u00b7 every law proved here</span>');
+        + '">ready \u00b7 every law proved here</span>');   /* v3883 - plain words (his 11-08 ruling) */
     } else if (_owedHere === 0) {
       bits.push('<span class="fleet-riverimport" title="' + escC('nothing is owed on this PC, but its census reads '
         + String(census) + ' - its proof check runs next' + (hs.why ? ' \u2014 ' + hs.why : '')) + '">nothing owed here '
@@ -30597,7 +30601,7 @@ function escC(s) {
           }).join(' \u00b7 ')
         + (_wo.length > 6 ? (' \u00b7 +' + (_wo.length - 6) + ' more') : '') + '</div>');
       /* v3880 (GrokBot #6707144313, the minimalist's header) - the whole fleet in one line above its rows, from the same
-         _pcStatus every row's card reads: "6 PCs: 1 wounded · 1 healing · 2 in town · 1 lost · 1 ready for battle" */
+         _pcStatus every row's card reads: "6 PCs: 1 blocked · 1 updating · 1 unknown · 2 offline · 1 ready" (v3883) */
       var _pcAll = (j.online || []).concat(j.offline || []).filter(function (m) { return m && m.machine; });
       var _pcHd = _pcAll.length ? ('<div class="pcs-head" title="each PC in a word - hover a row for what is broken on it '
         + 'and what happens next; the same words open THE STATE OF THIS CONSOLE">' + escC(_pcHeader(_pcAll, Date.now())) + '</div>') : '';

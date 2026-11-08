@@ -112,6 +112,21 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3422 - THE FLEET SPOKE DIABLO FOR MACHINE STATE: "IN TOWN" FOR OFFLINE (v3883, his 11-08 ruling)
+His words 11-08 ~09:46, on his live Fleet (Dean's row "IN TOWN off since 06:38", the click box "IN TOWN -> offline since
+06:38"): "intown is not proper wording or the correct language for offline.. simply write OFFLINE and others like this
+make it more simple to the point forget about the diablo ii language when it comes to the fleet data". v3880 gave each PC
+a Diablo word from his 11-07 "diablo ii language and human language"; on the real Fleet it reads as noise for machine
+state. One table (_PC_WORD) draws the word on every surface - the closed row, the header, the hover card, the click box,
+the State panel's EVERY PC - so the words change there and nowhere else: READY (was ready for battle), UPDATING (healing),
+BLOCKED (wounded), OFFLINE (in town), UNKNOWN (lost); the keys, classes and order are unchanged. The lines under the word
+stop repeating it ("OFFLINE since 06:38", the click box "-> since 06:38 - start its console to hear from it"), and the open
+row says "ready · every law proved here". Laws re-pointed (each_pc_reads_in_a_few_words +1 case: no Diablo word in the
+table, 2 red-proofs; booting_pc, fleet_says_importing - its "blind is not ready" check now names the words, not the retired
+phrase, which would have passed forever - and closed_fleet_row), every red-proof PROVEN. The anchor census found two
+red-proofs this version had moved and not followed (the booting law's, moved by REG-3417's units; the price-check law's,
+moved by #97's join) - both re-anchored and proven RED.
+
 ### REG-3421 - EVERY BACKUP SINCE ~10-15 CARRIED HIS UN-TICKS IN ITS LEDGER BLOCK, WHERE THE RESTORE HAS NO ANSWER FOR THEM (v3883)
 The heart on his Mac, 11-08 ~10:40: "2 engine pair(s) disagree: backup-restore-vocabulary - stores in the newest backup
 that ledger_restore does not know". MEASURED (read-only, his ~/d2r_ledger_backups): ledger_2026-11-08_083520.json's

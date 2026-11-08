@@ -137,7 +137,7 @@ class EachPcInAFewWords(unittest.TestCase):
 
     def test_a_fixed_pc_is_one_word_and_nothing_else(self):
         s = self._s("well")
-        self.assertEqual((s["key"], s["word"]), ("ready", "ready for battle"))
+        self.assertEqual((s["key"], s["word"]), ("ready", "ready"))   # v3883 plain words
         self.assertEqual(s["hurt"], [], "a PC with nothing broken still lists something broken")
         self.assertEqual(s["next"], "", "a PC with nothing to do still says what happens next")
 
@@ -165,7 +165,7 @@ class EachPcInAFewWords(unittest.TestCase):
 
     def test_an_offline_pc_is_in_town_and_its_last_faults_are_not_live_wounds(self):
         s = self._s("away")
-        self.assertEqual((s["key"], s["word"]), ("town", "in town"))
+        self.assertEqual((s["key"], s["word"]), ("town", "offline"))   # v3883 plain words
         self.assertEqual(s["hurt"], [], "an offline PC's last report was painted as live wounds")
         self.assertIn("06:28", s["next"])
 
@@ -173,6 +173,21 @@ class EachPcInAFewWords(unittest.TestCase):
         for k in ("silent", "broken", "nocensus", "empty"):
             with self.subTest(case=k):
                 self.assertEqual(self._s(k)["key"], "lost", "%s read as %s" % (k, self._s(k)["key"]))
+
+    def test_the_fleet_words_are_plain_never_diablo(self):
+        """v3883 - HIS RULING 11-08 ~09:46: "intown is not proper wording or the correct language for offline.. simply write
+        OFFLINE and others like this make it more simple to the point forget about the diablo ii language when it comes to
+        the fleet data". One table draws every surface's word; it holds the plain ones."""
+        words = dict((k, self._s(c)["word"]) for k, c in (("ready", "well"), ("town", "away")))
+        self.assertEqual(words, {"ready": "ready", "town": "offline"})
+        src = io.open(UI_PATH, encoding="utf-8").read()
+        i = src.index("  var _PC_WORD = {")
+        table = src[i:src.index("};", i)]
+        for diablo in ("in town", "ready for battle", "wounded", "healing", "'lost'"):
+            self.assertNotIn("w: " + (diablo if diablo.startswith("'") else "'%s'" % diablo), table,
+                             "a Diablo word is back in the Fleet's table: %r" % diablo)
+        for plain in ("'ready'", "'updating'", "'blocked'", "'offline'", "'unknown'"):
+            self.assertIn("w: " + plain, table)
 
     def test_the_lines_are_one_element_capped_and_escaped(self):
         h = self.out["many"]["html"]
@@ -187,7 +202,7 @@ class EachPcInAFewWords(unittest.TestCase):
 
     def test_the_header_counts_each_word_worst_first(self):
         hd = self.out["__header"]
-        self.assertEqual(hd, u"11 PCs: 3 wounded · 1 healing · 4 lost · 1 in town · 2 ready for battle")
+        self.assertEqual(hd, u"11 PCs: 3 blocked · 1 updating · 4 unknown · 1 offline · 2 ready")
 
 
 class EverySurfaceDrawsTheOneFunction(unittest.TestCase):
@@ -229,6 +244,14 @@ class TheOpenRowStaysBalanced(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3883 - the Fleet says IN TOWN again for an offline PC (his 11-08 ruling: simply write OFFLINE)",
+     "file": "tv/control_ui.html",
+     "find": "    town:    { w: 'offline',          c: 'pcs-town',", "replace": "    town:    { w: 'in town',          c: 'pcs-town',",
+     "matches": 1},
+    {"why": "v3883 - the Fleet says READY FOR BATTLE again (his 11-08 ruling: forget the Diablo language for fleet data)",
+     "file": "tv/control_ui.html",
+     "find": "    ready:   { w: 'ready',            c: 'pcs-ready',", "replace": "    ready:   { w: 'ready for battle', c: 'pcs-ready',",
+     "matches": 1},
     {"why": "v3881 - the open row's eyes button stretches to the wrapped vault line again (his 11-07 screenshot)",
      "file": "tv/control_ui.html",
      "find": "  .fleet-open-eyes > .fleet-hd-eyes { flex: 0 0 auto; align-self: center; }\n", "replace": "\n", "matches": 1},

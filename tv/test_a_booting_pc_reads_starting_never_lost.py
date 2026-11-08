@@ -108,7 +108,7 @@ class ABootingPcReadsStartingNeverLost(unittest.TestCase):
     def test_a_pc_that_just_started_is_healing_starting_up(self):
         """* THE POINT - Dean at 00:11: relaunched for the update, nothing readable yet"""
         b = self.o["booting"]
-        self.assertEqual((b["key"], b["word"]), ("healing", "healing"), b)
+        self.assertEqual((b["key"], b["word"]), ("healing", "updating"), b)   # v3883 plain words
         self.assertEqual(_line(b["html"]), "starting up")
         self.assertIn("first proof check", b["next"])
 
@@ -145,8 +145,8 @@ RED_PROOF = [
      "find": "    } else if (booting && !hurt.length) {\n", "replace": "    } else if (booting) {\n", "matches": 1, "needs": "node"},
     {"why": "#124 - the closed row says 'proving' for a PC that is starting up",
      "file": "tv/control_ui.html",
-     "find": "    if (s.key === 'healing') return s.starting ? 'starting up' : (proving || 'proving');\n",
-     "replace": "    if (s.key === 'healing') return proving || 'proving';\n", "matches": 1, "needs": "node"},
+     "find": "    if (s.key === 'healing') return [s.starting ? 'starting up' : (proving || 'proving')];\n",
+     "replace": "    if (s.key === 'healing') return [proving || 'proving'];\n", "matches": 1, "needs": "node"},   # v3883 re-anchor (units)
 ]
 
 

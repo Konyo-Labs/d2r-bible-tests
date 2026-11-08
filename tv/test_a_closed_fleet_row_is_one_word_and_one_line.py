@@ -178,8 +178,8 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
         self.assertEqual(b["blind"]["line"], u"1 blind · importing ~26 min")                  # v3883 (#116) short words
         self.assertEqual(b["importing"]["line"], u"river stuck · importing ~82 min")
         self.assertEqual(b["importquiet"]["line"], u"river stuck · importing · no progress for 3 min")   # v3882
-        self.assertEqual(b["town"]["line"], "off since 18:10")       # the Diablo word AND the plain one (the Grok CLI's look)
-        self.assertEqual(b["townold"]["line"], "off since Oct 28")
+        self.assertEqual(b["town"]["line"], "since 18:10")           # v3883: the word itself says OFFLINE (his 11-08 ruling)
+        self.assertEqual(b["townold"]["line"], "since Oct 28")
         self.assertEqual(b["lost"]["line"], "no report this console can read")
 
     def test_a_blind_gate_leads_the_wounds(self):
@@ -286,9 +286,9 @@ RED_PROOF = [
     {"why": "v3882 - a quiet import's closed row repeats a stale ETA (or says nothing) instead of how long it has been quiet",
      "file": "tv/control_ui.html", "find": "    var heal = imp ? 'importing' + (_quiet || _eta(imp.etaS)) : proving;\n",
      "replace": "    var heal = imp ? 'importing' + _eta(imp.etaS) : proving;\n", "matches": 1},
-    {"why": "REG-3395 - a PC in town says only the Diablo word again, which a fresh eye cannot read as switched off",
+    {"why": "REG-3395 / v3883 - an offline PC's line no longer says since when",
      "file": "tv/control_ui.html",
-     "find": "      return [since ? 'off since ' + since : 'off'];", "replace": "      return [since ? 'since ' + since : ''];",   # v3883 re-anchor
+     "find": "      return since ? ['since ' + since] : [];", "replace": "      return [];",   # v3883 re-anchor: OFFLINE, and since when
      "matches": 1},
     {"why": "REG-3395 - a closed row draws every river chip again (the 5-8 line rows he asked to collapse)",
      "file": "tv/control_ui.html",
