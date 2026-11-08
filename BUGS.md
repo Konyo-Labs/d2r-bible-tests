@@ -476,7 +476,16 @@ on the answer (q.db): when the item's normal or perfect price is drawn below, th
 before. The call site is untouched (a red-proof anchors on it). Law: the price-search law +1 case (+ its PREMISE that the
 no-price line is unchanged) and +1 red-proof seen RED; d2jspReadLine's skipped clause reworded after the anchor census caught
 it duplicating an older red-proof's anchor line.
-### REG-3380 - IN THE FLEET EYES' SHADOW EVERY "AM I A SHADOW" CHECK READ FALSE: #56 AND #104 STILL (v3881 - REVERTED, redone in v3882)
+### REG-3380 - IN THE FLEET EYES' SHADOW EVERY "AM I A SHADOW" CHECK READ FALSE: #56 AND #104 STILL (v3881 - REVERTED; the narrow redo is v3883)
+**REDONE NARROWLY IN v3883 (11-08 ~06:50).** The first narrow plan (the lamp and the saves line ask for tvd-shadow-snap themselves) is
+refused by test_shadow_mode_reads_their_console's test_no_screen_of_the_board_branches_on_the_shadow - no draw may branch on the
+snapshot (his 2026-10-24 ruling: the shadow is their console exactly as if it were his own), and it went red on those four lines.
+The leak was never in the draws: the snapshot frame's fetch shim REFUSED the lamp's GET /api/d2jsp_login, and the lamp's own
+template reads a refusal as "This machine could not read the Chrome login". Now the shim answers it - state unknown, "its d2jsp
+sign-in lives on that PC" - and the lamp draws that through the same template as the console; the refusal count stays 13. The
+saves line in the snapshot says "This PC's saves" for the OWNER's PC (their console as their own), which is the ruling, not the
+defect. Law: test_shadow_mode_reads_their_console +1 case (the ask appended LAST, so no index moved), red-proof RED, all 74 of
+its red-proofs re-proven; test_shadow_mode_draws_their_console run once here, 12 OK.
 **REVERTED before v3881 reached main (11-08 ~02:05).** GitHub's agent suite on 326bbd292 went red on 5 cases of the two
 shadow laws (test_shadow_mode_reads_their_console, test_shadow_mode_draws_their_console): the snapshot frame taking the
 roster shadow's `tvd-shadow` class changed its class list (the law: that class hides their reels), its Characters text

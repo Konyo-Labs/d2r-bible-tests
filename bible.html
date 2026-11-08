@@ -3969,6 +3969,15 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
       if (m !== 'GET') return null;
       var path = '';
       try { path = new URL(String(url), window.location.href).pathname; } catch (e) { return null; }
+      /* REG-3380 (v3883, the narrow redo; GrokBot in Dean's shadow: the D2JSP lamp read "This machine could not read the
+         Chrome login") - the lamp's ask was REFUSED here, and the lamp's own template reads a refusal as THIS machine's
+         failure. The owner's d2jsp sign-in lives on their PC and nothing uploads it, so this frame answers it - UNKNOWN,
+         and whose - and the lamp draws it through the same template as the console (no draw branches on the shadow). */
+      if (path === '/api/d2jsp_login') {
+        return Promise.resolve(new Response(JSON.stringify({ ok: true, state: 'unknown',
+          why: 'D2JSP sign-in: this is a shadow of another PC, and its d2jsp sign-in lives on that PC - this page does '
+             + 'not read it (UNKNOWN).' }), { status: 200, headers: { 'content-type': 'application/json' } }));
+      }
       var hit = /^\/api\/(chars_learned|main_locks|saves)$/.exec(path);   /* #251 (REG-3079) their saves' reason */
       if (!hit) return null;
       // #203 - an answer their console did not send says so (UNKNOWN with its reason), not "shadow: read only"

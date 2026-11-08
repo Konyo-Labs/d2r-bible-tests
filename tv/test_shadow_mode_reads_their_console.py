@@ -1911,7 +1911,8 @@ function run(parentSnap, search) {
   res.install = w.localStorage.getItem('d2r_installId');
   const asks = [['/api/chars_learned', 'GET'], ['/api/main_locks', 'GET'], ['/api/status', 'GET'],
                 ['/api/roster-book', 'POST'], ['/assets/x.png', 'POST'], ['http://evil.example/api/x', 'GET'],
-                ['/api/chars_learned', 'POST'], ['/fonts/a.woff2', 'GET']];
+                ['/api/chars_learned', 'POST'], ['/fonts/a.woff2', 'GET'],
+                ['/api/d2jsp_login', 'GET']];   /* REG-3380 (v3883) - LAST, so every index above stays as it was */
   res.answers = [];
   for (const [u, m] of asks) { const resp = await w.fetch(u, { method: m }); res.answers.push(await resp.text()); }
   // GrokBot bug 5: the viewer's own capture agent (another origin) and the agent's paths here never answer a shadow
@@ -2060,6 +2061,16 @@ class TheShadowFrameBoot(unittest.TestCase):
                          "the viewer's own capture agent answered inside a shadow - TV·D could go LIVE on HIS reads (bug 5)")
         self.assertEqual(self.r["indexedDB"], "undefined")
 
+    def test_the_lamp_asks_and_the_frame_says_whose_sign_in_it_is(self):
+        """* REG-3380 (v3883) - GrokBot in Dean's shadow: the D2JSP lamp read "This machine could not read the Chrome
+        login" - the frame REFUSED the lamp's ask and the lamp drew the refusal as the viewer's own failure. The frame
+        answers it: UNKNOWN, and on whose PC the sign-in lives - and it is answered, never refused (the count stays 13)."""
+        j = json.loads(self.r["answers"][8])
+        self.assertEqual(j.get("state"), "unknown", "the snapshot answered the lamp with a state it never read: %r" % j)
+        self.assertIn("lives on that PC", j.get("why") or "")
+        self.assertNotIn("This machine", j.get("why") or "")
+        self.assertEqual(self.r["refused"], 13, "the lamp's ask was refused - the lamp then speaks for the viewer's machine")
+
     def test_write_controls_and_typing_are_stopped_view_controls_pass(self):
         v = self.r["veil"]
         self.assertTrue(v["del"] and v["set"], "a write button reached the page in shadow")
@@ -2185,6 +2196,11 @@ console.log(JSON.stringify({ me: _fleetOpenEyesHtml(me, true), alt: _fleetOpenEy
 
 
 RED_PROOF = [
+    {"why": "REG-3380 (v3883) - the snapshot refuses the lamp's ask again: Dean's shadow says THIS machine could not read the login",
+     "file": "bible.html",
+     "find": "      if (path === '/api/d2jsp_login') {\n",
+     "replace": "      if (false) {\n",
+     "matches": 1, "needs": "node"},
     {"why": "REG-2860 - the Vault guide is stopped in a shadow (its two doors are not view controls)",
      "file": "bible.html",
      "find": "                'vaultGuideTog', 'vaultGuideGo',\n",
