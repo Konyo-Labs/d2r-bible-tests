@@ -28635,6 +28635,26 @@ function escC(s) {
      census's age is the PROOF's age. So the doors are said from may()'s answer while it is fresh, and the census rule
      (fail closed) decides only when there is no answer, an old one (past 30 min - while he plays the lane does not ask),
      or a blind gate. -> true (asked, every door open), false (asked, one shut, or a gate blind), null (not answered) */
+  /* v3884 - WHAT THE SAFETY NET'S FINDS SHUT ON ONE PC, in plain words. -> {word, why}. Reads each find's `shuts`
+     ({locks:[...], routes:[...]}, the server's net_find_shuts - the rule may() applies). Any find without it (an older
+     console, or the ask failed) -> the old words "its locks shut": the chip never says a smaller harm than it can see. */
+  var _fleetNetShut = function (finds) {
+    var locks = [], routes = [], known = Array.isArray(finds) && finds.length > 0;
+    (finds || []).forEach(function (e) {
+      var sh = e && e.shuts;
+      if (!sh || !Array.isArray(sh.locks) || !Array.isArray(sh.routes)) { known = false; return; }
+      sh.locks.forEach(function (l) { if (locks.indexOf(String(l)) < 0) locks.push(String(l)); });
+      sh.routes.forEach(function (r) { if (routes.indexOf(String(r)) < 0) routes.push(String(r)); });
+    });
+    if (!known) return { word: 'its locks shut', why: 'only the locks those laws guard are shut; every other lock stands' };
+    var parts = [];
+    if (locks.length) parts.push(locks.length <= 2 ? 'shuts ' + locks.join(', ') : 'shuts ' + locks.length + ' locks');
+    if (routes.length) parts.push((parts.length ? '' : 'shuts ') + routes.length + ' route' + (routes.length === 1 ? '' : 's'));
+    if (!parts.length) return { word: 'shuts nothing', why: 'no lock and no route on this PC is shut by it' };
+    return { word: parts.join(' + '), why: 'shut here by it: ' + locks.concat(routes).join(', ')
+      + (locks.length ? '' : ' - no lock: every lock still stands') };
+  };
+  window._fleetNetShut = _fleetNetShut;
   var FLEET_LOCKS_FRESH_S = 30 * 60;
   var _fleetRiverDoorsOpen = function (hs) {
     if (!hs || typeof hs !== 'object' || !Array.isArray(hs.locksShut)) return null;
@@ -29534,12 +29554,17 @@ function escC(s) {
     var _netF = (hs && Array.isArray(hs.netFinds)) ? hs.netFinds.filter(function (e) { return e && e.gate; }) : [];
     if (_netF.length) {
       var _netWho = _netF.map(function (e) { return String(e.gate) + ' ' + String(e.verdict || 'failing'); });
+      /* v3884 (GrokBot's v3882 pass: the Mac's row read "ready" beside "... RED · its locks shut" while every river lock
+         was open) - SAY WHAT THE FIND SHUTS. Each find carries `shuts` (self_arming.net_find_shuts - the rule may()
+         applies): the locks and the routes it closes here. Measured on his Mac 11-08: no lock and all nine routes. A
+         console that does not send it (an older build, or the ask failed) keeps the old words - never a guess. */
+      var _nShut = window._fleetNetShut(_netF);
       bits.push('<span class="fleet-riverstuck fleet-netfind" data-netfinds="' + _netF.length + '" title="'
         + escC('the safety net judged laws here that this PC first took on another tree\u2019s proofs, and '
         + _netF.length + (_netF.length === 1 ? ' fails' : ' fail') + ' on this PC: ' + _netWho.join(', ')
-        + ' \u2014 only the locks those laws guard are shut; every other lock stands') + '">safety net: '
+        + ' \u2014 ' + _nShut.why) + '">safety net: '
         + escC(_netWho.slice(0, 2).join(', ')) + (_netF.length > 2 ? ' +' + (_netF.length - 2) : '')
-        + ' \u00b7 its locks shut</span>');
+        + ' \u00b7 ' + escC(_nShut.word) + '</span>');
     }
     /* #193 (his "river says unknown now", 2026-10-27) - A CONSOLE THAT JUST STARTED IS NOT A BROKEN ONE. Its first proof
        check runs about 5 minutes after a start, and its river is read about a minute after. Until then the beacon says

@@ -114,7 +114,7 @@ RED_PROOF = [
     {
         "why": "REG-1905 - the ceiling is gone: a PC busy for 20 days refuses to prove for ever and its river stays shut",
         "file": "tv/self_prove.py",
-        "find": "        if _for is not None and _for >= BUSY_STARVE_S:\n",
+        "find": "        if _for is not None and _for >= _starve:\n",   # v3884 - the ceiling reads _starve (REG-3433)
         "replace": "        if False:\n",
         "matches": 1,
     },

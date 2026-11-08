@@ -18781,7 +18781,7 @@ def _river_for_wire(now_ms=None):
     # guards") - THE SAFETY NET'S FINDS RIDE THE FLEET. A find leaves the census CURRENT (it closes only its law's locks),
     # so without these the row read healthy while this PC's guarded lock was shut. Gate and verdict only - the BUGS-ready
     # line stays on this PC's own selfProve. None = this console's lane has not said (an older heart2): UNKNOWN, never [].
-    out["heart"].update(net_for_wire(_sp))
+    out["heart"].update(net_for_wire(_sp, _net_shuts_seen(now)))
     return out
 
 
@@ -18906,16 +18906,46 @@ def _river_locks_note(now_ms=None, ask=None):
     return dict(_RIVER_LOCKS_SEEN)
 
 
-def net_for_wire(sp):
+#: v3884 - what each safety-net find shuts, as self_arming last answered (net_find_shuts), kept a minute: the beacon is
+#: built far more often than a find changes, and the answer reads each found law's file.
+NET_SHUTS_TTL_MS = 60 * 1000
+_NET_SHUTS_SEEN = {"ts": None, "shuts": None}
+
+
+def _net_shuts_seen(now_ms=None):
+    """v3884 - self_arming.net_find_shuts(), memoised NET_SHUTS_TTL_MS. -> {gate: {"locks", "routes"}} | {} | None. Never
+    raises: an import or ask that fails is None (UNKNOWN - the chip then says it cannot tell what is shut)."""
+    now = int(time.time() * 1000) if now_ms is None else int(now_ms)
+    ts = _NET_SHUTS_SEEN.get("ts")
+    if isinstance(ts, int) and 0 <= now - ts < NET_SHUTS_TTL_MS:
+        return _NET_SHUTS_SEEN.get("shuts")
+    try:
+        import self_arming as _sa
+        got = _sa.net_find_shuts()
+    except Exception:
+        got = None
+    _NET_SHUTS_SEEN.update(ts=now, shuts=got)
+    return got
+
+
+def net_for_wire(sp, shuts=None):
     """REG-3191 / REG-3192 - the self-prove lane's safety net, as the fleet carries it. Pure. -> {"netFinds", "trusted",
-    "netUnjudged"}: netFinds a list of {gate, verdict, at, seen} (at most 8) or None (not said - UNKNOWN); trusted the
+    "netUnjudged"}: netFinds a list of {gate, verdict, at, seen, shuts} (at most 8) or None (not said - UNKNOWN); trusted the
     number of gates the census holds on another tree's proofs or None; netUnjudged how many of those the net could not
-    judge here yet, or None."""
+    judge here yet, or None. v3884 - `shuts` (self_arming.net_find_shuts, the rule may() applies): each find's
+    {"locks": [...], "routes": [...]} it shuts on this PC, or None when that could not be asked (UNKNOWN, never [])."""
     sp = sp if isinstance(sp, dict) else {}
     nf = sp.get("netFinds")
     finds = None
     if isinstance(nf, list):
-        finds = [{"gate": str(f.get("gate")), "verdict": f.get("verdict"), "at": f.get("at"), "seen": f.get("seen")}
+        def _sh(g):
+            one = shuts.get(g) if isinstance(shuts, dict) else None
+            if not isinstance(one, dict):
+                return None
+            return {"locks": [str(x) for x in (one.get("locks") or [])][:12],
+                    "routes": [str(x) for x in (one.get("routes") or [])][:12]}
+        finds = [{"gate": str(f.get("gate")), "verdict": f.get("verdict"), "at": f.get("at"), "seen": f.get("seen"),
+                  "shuts": _sh(str(f.get("gate")))}
                  for f in nf if isinstance(f, dict) and f.get("gate")][:8]
     tr = sp.get("trusted")
     net = sp.get("net") if isinstance(sp.get("net"), dict) else {}

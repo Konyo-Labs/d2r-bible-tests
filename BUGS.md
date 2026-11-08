@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3434 - THE MAC'S FLEET ROW SAID "READY" BESIDE "SAFETY NET ... RED · ITS LOCKS SHUT" - WHICH LOCKS? (v3884, GrokBot's v3882 pass)
+GrokBot's v3882 pass (#230, 10:28): the Mac's open row read "ready" and "safety net: test_a_parallel_proof_is_the_same_proof
+RED · its locks shut" while riverLocks.shut was []. MEASURED 11-08 ~11:05 on the Mac's own tree (may(), read-only): that one
+find (red under my load at 09:09, green alone; its immediate re-check ran on the same loaded machine) shut NO lock and all
+NINE routes - a route declares no door, so every find closes it (REG-3192's global rule, broad in the safe direction). The
+chip named neither. Now self_arming.net_find_shuts() asks, lock by lock and route by route, the very rule may() applies
+(_net_hits, split out of _net_heart so the two cannot disagree); the beacon carries each find's `shuts`
+(net_for_wire, memoised a minute), the Fleet worker keeps it as lock names only, and the chip says "shuts 9 routes" /
+"shuts vault.apply + 9 routes" / "shuts nothing" - and the old "its locks shut" when a console does not send it (never a
+smaller harm than it can see). Law: test_a_safety_net_find_reaches_the_fleet (13 cases, 5 new), red-proofs PROVEN (15 of 15,
+8 new).
+
 ### REG-3433 - THE WORK ALT NEVER PROVED BESIDE HIS BOOSTEROID STREAM: 85% BUSY, A 6-HOUR WAIT, ITS LOCKS SHUT (v3884)
 GrokBot's v3882 pass (#230 6718652xxx, 10:23-10:28): the work ALT's row read "proof waits for an idle PC - the machine is 81%
 busy". MEASURED 11-08 ~11:00 on that PC (SSH, read-only): twenty 0.5 s GetSystemTimes samples read 82-88% busy (mean 84.7) -

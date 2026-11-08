@@ -1871,6 +1871,68 @@ def _net_finds():
         return None, "the safety net's finds could not be read (%s)" % type(_e).__name__
 
 
+def _net_hits(lock, finds, files, texts=None):
+    """REG-3192 - which of the safety net's finds close `lock`. -> [gate, ...] sorted. ONE rule for may() (_net_heart) and
+    for the Fleet's word on what each find shuts (net_find_shuts, v3884), so the two can never disagree. A lock or route
+    with no declared door keeps the global rule: every find closes it. A found law whose file will not read is counted,
+    never skipped. `texts` memoises each found law's source across locks (net_find_shuts asks all of them)."""
+    stems = LOCK_DOORS.get(lock)
+    hit = []
+    for n in sorted(finds):
+        if stems is None:
+            hit.append(n)
+            continue
+        if texts is not None and n in texts:
+            text = texts[n]
+        else:
+            text = None
+            f = files.get(n) if isinstance(files, dict) else None
+            if f:
+                try:
+                    import heart2 as _h2
+                    with io.open(f if os.path.isabs(f) else os.path.join(_h2.HERE, f), encoding="utf-8") as _fh:
+                        text = _fh.read()
+                except Exception:
+                    text = None
+            if texts is not None:
+                texts[n] = text
+        if text is None:                                          # a guard that will not read is counted, never skipped
+            hit.append(n)
+            continue
+        if _net_case_guards(n, text, finds[n], lock, stems):
+            hit.append(n)
+    return hit
+
+
+def net_find_shuts():
+    """v3884 (GrokBot's v3882 pass on his Mac: "ready" beside "safety net: test_a_parallel_proof_is_the_same_proof RED · its
+    locks shut" while every river lock was open) - WHAT EACH SAFETY-NET FIND ACTUALLY SHUTS on this PC.
+    -> {gate: {"locks": [lock, ...], "routes": [route, ...]}} | {} (no find) | None (UNKNOWN: the finds could not be read)
+
+    MEASURED on his Mac 11-08 ~11:05: its one find (that law, red under load at 09:09 and green alone) shut no lock and all
+    nine routes - a route declares no door, so every find closes it (the global rule, broad in the safe direction). The
+    Fleet chip said "its locks shut", which named neither. Asked through the very rule may() applies (_net_hits), lock by
+    lock and route by route, so the chip can say "shuts 9 routes" or "shuts vault.apply" and never disagree with may().
+    Laws that seat _heart_says_watched are answered by the global rule alone, as _net_heart is: {} here."""
+    if _heart_says_watched is not _HEART_SAYS_WATCHED_REAL:
+        return {}
+    try:
+        finds, files = _net_finds()
+        if finds is None:
+            return None
+        if not finds:
+            return {}
+        texts = {}
+        out = dict((n, {"locks": [], "routes": []}) for n in finds)
+        for kind, names in (("locks", sorted(LOCKS)), ("routes", sorted(ROUTES))):
+            for k in names:
+                for n in _net_hits(k, finds, files, texts):
+                    out[n][kind].append(k)
+        return out
+    except Exception:
+        return None
+
+
 def _net_heart(lock, ok, why):
     """REG-3191 / REG-3192 (his ruling 2026-11-05 (4): "a red/blind it finds goes to the fleet + BUGS and closes only the
     lock its law guards") - the heart's answer for `lock` once the safety net has spoken. -> (ok, why)
@@ -1885,26 +1947,7 @@ def _net_heart(lock, ok, why):
     finds, files = _net_finds()
     if not finds:
         return ok, why
-    stems = LOCK_DOORS.get(lock)
-    hit = []
-    for n in sorted(finds):
-        if stems is None:
-            hit.append(n)
-            continue
-        text = None
-        f = files.get(n) if isinstance(files, dict) else None
-        if f:
-            try:
-                import heart2 as _h2
-                with io.open(f if os.path.isabs(f) else os.path.join(_h2.HERE, f), encoding="utf-8") as _fh:
-                    text = _fh.read()
-            except Exception:
-                text = None
-        if text is None:                                          # a guard that will not read is counted, never skipped
-            hit.append(n)
-            continue
-        if _net_case_guards(n, text, finds[n], lock, stems):
-            hit.append(n)
+    hit = _net_hits(lock, finds, files)
     if not hit:
         return ok, why
     f0 = finds[hit[0]]

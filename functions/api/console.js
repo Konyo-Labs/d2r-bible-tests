@@ -519,8 +519,16 @@ export async function onRequestPost(context) {
               const g = String(e.gate || '');
               if (!/^[A-Za-z0-9_.-]{1,120}$/.test(g)) return null;
               const v = String(e.verdict || '');
-              return { gate: g, verdict: ['RED', 'BLIND', 'INVALID'].indexOf(v) >= 0 ? v : null,
-                       at: whole(e.at, 9e15), seen: whole(e.seen, 1000000) };
+              const f = { gate: g, verdict: ['RED', 'BLIND', 'INVALID'].indexOf(v) >= 0 ? v : null,
+                          at: whole(e.at, 9e15), seen: whole(e.seen, 1000000) };
+              /* v3884 - what the find shuts on that PC (net_find_shuts, the rule may() applies): lock and route names
+                 only, each shaped like a lock's name; a field that is not two lists is dropped (absent = UNKNOWN). */
+              const sh = e.shuts;
+              if (sh && typeof sh === 'object' && Array.isArray(sh.locks) && Array.isArray(sh.routes)) {
+                const nm = function (a) { return a.slice(0, 12).map(String).filter(function (x) { return /^[a-z][a-z0-9_.]{1,60}$/.test(x); }); };
+                f.shuts = { locks: nm(sh.locks), routes: nm(sh.routes) };
+              }
+              return f;
             }).filter(Boolean);
           }
           const _trN = whole(rv.heart.trusted, 100000);
