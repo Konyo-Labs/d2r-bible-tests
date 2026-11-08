@@ -390,6 +390,8 @@ class TheWorkflowCarriesIt(unittest.TestCase):
         self.assertLess(prove.index(line), prove.index("python3 -u tv/heart2.py --prove --push"))
 
 
+@unittest.skipUnless(os.name == "posix", "the proof shards' OS-deps step is a Linux runner's bash, ldd and apt - Git Bash on "
+                                         "Windows is not that step, so here it is UNMEASURED, declared, never a pass (#107)")
 class TheAptStepRunsOnlyWhenNeeded(unittest.TestCase):
     """REG-3279 - v3872's shard 22 spent its OS-deps step's whole 5 minutes in apt while its browsers needed nothing."""
 

@@ -98,6 +98,8 @@ class ACaptureOffConsoleNeverStartsAReel(unittest.TestCase):
         self.assertEqual(self.looked, [], "a capture-off console still ran the window finder")
         self.assertIn("capture is OFF", pre.get("windowWhy") or "")
 
+    @unittest.skipUnless(sys.platform == "darwin", "the stub stands in for the Mac's window finder (find_d2r_window_mac); "
+                                                   "Windows asks its own, so this premise is the Mac's - declared (#107)")
     def test_premise_with_capture_on_the_finder_is_asked(self):
         os.environ["TV_CAPTURE"] = "auto"
         pre = self.ca.capture_preflight("shadow", look_for_window=True)

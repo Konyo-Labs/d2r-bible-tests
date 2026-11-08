@@ -10215,7 +10215,13 @@ def main(argv):
         hits = detect()
     if census or results or hits:
         p = propose(results, census, hits)
-        print("\n  proposals written to %s (it never edits a guard)" % os.path.relpath(p, REPO))
+        # v3886 (#107, windows-latest: "ValueError: path is on mount '\\\\.\\nul', start on mount 'D:'") - on Windows a path
+        # on another drive has no path relative to the repo; a finished run must never die on the line that names its file
+        try:
+            _pw = os.path.relpath(p, REPO)
+        except ValueError:
+            _pw = p
+        print("\n  proposals written to %s (it never edits a guard)" % _pw)
 
     if a.ratchet:
         # ⚠ SAME RULE AS _write_state: an unreadable ledger is UNKNOWN, not an empty one. The

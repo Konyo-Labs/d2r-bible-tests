@@ -41,7 +41,9 @@ def _put(path, text):
     d = os.path.dirname(path)
     if not os.path.isdir(d):
         os.makedirs(d)
-    with io.open(path, "w", encoding="utf-8") as fh:
+    # v3886 (#107, windows-latest: "the copy wrote 750004 bytes, not 750003") - the fixture's own bytes on every OS: text
+    # mode on Windows writes "\n" as "\r\n", one byte more per line than the sizes this law adds up
+    with io.open(path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text)
 
 
