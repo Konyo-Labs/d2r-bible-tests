@@ -61,6 +61,26 @@ PROOF_OVERHEAD_S = 1.5
 #: committed table's median is 0.703 (1,231 gates, p25 0.42, p75 1.01) and the round's own seed 0.741 (p25 0.45, p75 1.05);
 #: 0.62 sat 0.121 from the seed, past the law's 0.1. 0.72 sits within 0.03 of both.
 PROOF_COST_FACTOR = 0.72
+#: v3883 (#129) - THE FACTOR IS DERIVED FROM THE TABLE THE ROUND PLANS WITH, AT PLAN TIME; the constant above is only the
+#: fallback for a table too thin to give one. MEASURED: v3881 lost a GitHub round (4282aab10, shard 1) because REG-3401 moved
+#: the committed table's median ratio to 0.703 and the round's own seed to 0.741 while this constant sat at 0.62 - a hand-set
+#: number re-derived after each re-measure is a stale reading waiting for the next one. cost_factor() reads the median off the
+#: very per-proof table plan() is handed (the committed one, or HEART2_SHARD_COSTS' seed), so the two cannot drift apart.
+COST_FACTOR_MIN_ROWS = 50
+
+
+def cost_factor(costs, per_proof, min_rows=None):
+    """v3883 - what an unmeasured gate's proof is priced at, over its clean run + PROOF_OVERHEAD_S: the MEDIAN of
+    per_proof[g] / (costs[g] + PROOF_OVERHEAD_S) over every gate the table measures both ways. Pure.
+    -> (factor, rows) - rows under COST_FACTOR_MIN_ROWS gives (PROOF_COST_FACTOR, rows): too thin a table is not a measure"""
+    need = COST_FACTOR_MIN_ROWS if min_rows is None else int(min_rows)
+    cs, pp = dict(costs or {}), dict(per_proof or {})
+    r = sorted(float(pp[g]) / (float(cs[g]) + PROOF_OVERHEAD_S) for g in pp
+               if isinstance(pp.get(g), (int, float)) and pp[g] > 0 and isinstance(cs.get(g), (int, float)) and cs[g] > 0)
+    if len(r) < max(1, need):
+        return PROOF_COST_FACTOR, len(r)
+    m = len(r) // 2
+    return (r[m] if len(r) % 2 else (r[m - 1] + r[m]) / 2.0), len(r)
 #: REG-2593 - the lanes one runner proves on (2 cores). A shard's wall is the larger of its work over its lanes and its
 #: BROWSER work, which runs one gate at a time (#42 ONE BROWSER AT A TIME) - the old plan balanced only the first, and
 #: its slowest shard ran 2.1x the mean
@@ -249,6 +269,10 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
     default = known[len(known) // 2] if known else 1.0
     oh = PROOF_OVERHEAD_S
     pp = dict(per_proof or {})
+    factor, _frows = cost_factor(costs, pp) if per_proof is not None else (PROOF_COST_FACTOR, 0)   # v3883
+    if isinstance(report, dict):
+        report["costFactor"] = {"factor": round(factor, 4), "rows": _frows,
+                                "derived": per_proof is not None and _frows >= COST_FACTOR_MIN_ROWS}
     hit = set((str(g), i) for g, i in (served or ()))
     gates = []
     for name, _f, proofs in sorted(have, key=lambda t: str(t[0])):     # one order, whatever order the names came in
@@ -260,7 +284,7 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
                 unit, fixed = c + oh, c                                 # every proof's run, and the gate's clean run
             else:
                 u = pp.get(str(name))
-                unit = u if u is not None else PROOF_COST_FACTOR * (c + oh)
+                unit = u if u is not None else factor * (c + oh)
                 fixed = 2 * unit
             owe = [i for i in range(p) if (str(name), i) not in hit]
             done = [i for i in range(p) if (str(name), i) in hit]

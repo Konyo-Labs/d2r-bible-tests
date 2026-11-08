@@ -55,7 +55,7 @@ def walls(have, a, n, browser, per_proof, costs):
         for g, c in own[k].items():
             u = per_proof.get(g)
             if u is None:
-                u = PS.PROOF_COST_FACTOR * ((costs.get(g) or default) + PS.PROOF_OVERHEAD_S)
+                u = PS.cost_factor(costs, per_proof)[0] * ((costs.get(g) or default) + PS.PROOF_OVERHEAD_S)   # v3883
             tot += u * (c + 2)
             if g in browser:
                 brw += u * (c + 2)
@@ -140,12 +140,28 @@ class TheMeasuredCosts(unittest.TestCase):
         v3867's plan priced every shard at ~18 min while they ran 18-55 (shard 7 hit the 55-minute deadline with 6 proofs
         unstarted). The factor stays within 0.1 of the table's own median ratio."""
         pp, gc = PS.proof_costs(), PS.gate_costs()
-        r = [pp[k] / (gc[k] + PS.PROOF_OVERHEAD_S) for k in pp if gc.get(k)]
+        r = [pp[k] / (gc[k] + PS.PROOF_OVERHEAD_S) for k in pp if gc.get(k) and pp[k] > 0]
         self.assertGreater(len(r), 300, "premise: too few gates carry both a per-proof and a clean-run cost (%d)" % len(r))
         med = statistics.median(r)
-        self.assertLess(abs(med - PS.PROOF_COST_FACTOR), 0.1,
-                        "PROOF_COST_FACTOR %.2f, the measured costs' median %.2f over %d gates - re-derive it"
-                        % (PS.PROOF_COST_FACTOR, med, len(r)))
+        # v3883 (#129) - the plan DERIVES the factor from the table it is handed; the constant is only a thin table's fallback
+        f, rows = PS.cost_factor(gc, pp)
+        self.assertEqual(rows, len(r))
+        self.assertAlmostEqual(f, med, places=9, msg="the plan prices an unmeasured gate at %.3f, the table's median is %.3f"
+                               % (f, med))
+        rep = {}
+        PS.plan([("g", "g.py", [{}] * 3)], 1, costs=gc, per_proof=pp, report=rep)
+        self.assertEqual(rep.get("costFactor", {}).get("derived"), True, rep.get("costFactor"))
+
+    def test_a_round_seed_moves_the_factor_with_it(self):
+        """v3883 - v3881's round 3: the seed's median was 0.741 and a fixed 0.62 priced the shards short; a derived factor
+        follows whichever table the round plans with"""
+        cs = dict(("g%d" % i, 10.0) for i in range(80))
+        slow = dict((g, 0.9 * (10.0 + PS.PROOF_OVERHEAD_S)) for g in cs)
+        self.assertAlmostEqual(PS.cost_factor(cs, slow)[0], 0.9)
+        self.assertEqual(PS.cost_factor(cs, dict(list(slow.items())[:10])), (PS.PROOF_COST_FACTOR, 10),
+                         "a thin table priced every unmeasured gate")
+        a = PS.plan([("x", "x.py", [{}] * 4)], 1, costs=dict(cs, x=10.0), per_proof=slow, report={})
+        self.assertEqual(sorted(a.values()), [1, 1, 1, 1])
 
 
 class HeartTwosCutUsesIt(unittest.TestCase):
@@ -167,10 +183,16 @@ class HeartTwosCutUsesIt(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "REG-3243 - the factor is left behind the re-measured costs (v3867's shards ran 3x their plan)",
+    {"why": "REG-3243 / v3883 - the factor is left behind the re-measured costs (v3867's shards ran 3x their plan, v3881 lost "
+            "a round): the plan prices unmeasured gates at the constant again, not at the table's own median",
      "file": "proof_shard.py",
-     "find": "PROOF_COST_FACTOR = 0.72\n",
-     "replace": "PROOF_COST_FACTOR = 0.42\n",
+     "find": "    factor, _frows = cost_factor(costs, pp) if per_proof is not None else (PROOF_COST_FACTOR, 0)   # v3883\n",
+     "replace": "    factor, _frows = PROOF_COST_FACTOR, 0\n",
+     "matches": 1},
+    {"why": "v3883 - the derived factor is not the table's median (the largest ratio)",
+     "file": "proof_shard.py",
+     "find": "    return (r[m] if len(r) % 2 else (r[m - 1] + r[m]) / 2.0), len(r)\n",
+     "replace": "    return r[-1], len(r)\n",
      "matches": 1},
     {"why": "REG-2593 - the measured costs are never read: the plan prices every proof from his Mac again",
      "file": "proof_shard.py",
