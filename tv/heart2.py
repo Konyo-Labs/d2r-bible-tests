@@ -8932,7 +8932,11 @@ def triage(say=print):
 # MEASURED 2026-11-05 on his Mac, the real v3864 bundle (8,577 entries, 1,499 laws) keyed into a scratch store at one
 # commit: one core 1,782.6 s; 3 workers (what this PC chose: 10 cores, 2,574 MB free) 728.5 s; 8 workers 419.8 s - and
 # 0 of the 8,577 keys differed from one core's, at either count. [[heart-first]] [[unknown-stays-unknown]]
-IMPORT_WORKERS_MAX = 8
+# v3885 (his 11-08: "Dean's PC is pinning all 12 cores with eight worker processes ... cap it to like 5-6") - MEASURED on
+# Dean's PC right after the v3883 update: 8 import workers + the console held 100% of 12 cores, its /api/status took
+# 8.7 s and /api/river did not answer in 75 s (the Mac's: 0.5 s). Six at most: a 12-core PC keeps half its cores for
+# the game and the console (the measured 8-worker key above took 420 s against 3 workers' 729 s; 6 sits between).
+IMPORT_WORKERS_MAX = 6
 #: the most proofs of one law in one job: a law with hundreds of proofs (test_control) is shared across the workers,
 #: never left to one of them while the others wait - MEASURED on the first full run, one law's job ran on alone
 IMPORT_JOB_PROOFS = 12

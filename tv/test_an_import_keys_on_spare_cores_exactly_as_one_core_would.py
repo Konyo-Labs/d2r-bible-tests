@@ -191,7 +191,10 @@ class HowManyWorkers(unittest.TestCase):
     def test_cores_minus_two_capped_and_never_past_free_memory(self):
         fl = 1024
         big = fl + 100 * H.IMPORT_WORKER_MB
-        self.assertEqual(H.import_workers(cpus=10, free_mb=big, floor_mb=fl)[0], 8)
+        self.assertEqual(H.import_workers(cpus=10, free_mb=big, floor_mb=fl)[0], 6)   # v3885: at most 6 (his 11-08)
+        self.assertEqual(H.import_workers(cpus=12, free_mb=big, floor_mb=fl)[0], 6,
+                         "Dean's 12 cores: 8 workers pinned all of them (his 11-08 'cap it to like 5-6')")
+        self.assertEqual(H.IMPORT_WORKERS_MAX, 6)
         self.assertEqual(H.import_workers(cpus=64, free_mb=big, floor_mb=fl)[0], H.IMPORT_WORKERS_MAX)
         self.assertEqual(H.import_workers(cpus=4, free_mb=big, floor_mb=fl)[0], 2)
         self.assertEqual(H.import_workers(cpus=3, free_mb=big, floor_mb=fl)[0], 1, "a 3-core PC gave its last spare core away")
@@ -352,6 +355,10 @@ RED_PROOF = [
      "find": "                            st[\"pre\"][(gate, i)] = ans\n",
      "replace": "                            pass\n",
      "matches": 1},
+    {"why": "v3885 (his 11-08 'cap it to like 5-6') - the import keys on 8 workers again (Dean's 12 cores pinned)",
+     "file": "tv/heart2.py",
+     "find": "IMPORT_WORKERS_MAX = 6\n",
+     "replace": "IMPORT_WORKERS_MAX = 8\n", "matches": 1}
 ]
 
 

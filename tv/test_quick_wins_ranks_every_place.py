@@ -121,6 +121,29 @@ process.stdout.write(JSON.stringify(out));
 """
 
 
+#: v3885 (his 11-08 on Bane Ash: "the monsters/bosses arent corretly in order from best to worst"; "its basically the same ...
+#: 0.2% difference ... irrelevant data") - runs within 2% of a group's fewest-runs row are a tie, and time decides inside it
+QW_SAME = 0.02
+
+
+def _hrs(h):
+    return h if isinstance(h, (int, float)) else 9e9
+
+
+def _runs_then_time(rows):
+    """the page's order, re-derived from the rows' own numbers: by fewest runs; a group is cut from its fewest-runs row and
+    holds every row within 2% of it; inside a group the fewest hours lead (then runs, then the name)"""
+    srt = sorted(rows, key=lambda r: (r[1], _hrs(r[2]), r[0]))
+    want, i = [], 0
+    while i < len(srt):
+        j = i + 1
+        while j < len(srt) and srt[j][1] <= srt[i][1] * (1 + QW_SAME):
+            j += 1
+        want += sorted(srt[i:j], key=lambda r: (_hrs(r[2]), r[1], r[0]))
+        i = j
+    return [r[0] for r in rows] == [r[0] for r in want]
+
+
 @unittest.skipUnless(NODE, "node is required to drive the page's own drop math")
 class QuickWinsRanksEveryPlace(unittest.TestCase):
 
@@ -250,6 +273,10 @@ class QuickWinsRanksEveryPlace(unittest.TestCase):
         whos = [a[0] for a in also]
         self.assertIn("Normal The Cow King", whos, "the Cow King's per-kill reading is not on the card: %s" % whos)
         self.assertIn("Normal The Banished", whos, "the random pack he read is not on the card: %s" % whos)
+        # v3885 (his 11-08) - Pitspawn Fouldog and Rakanishu are within 2% on runs; Rakanishu is the quicker run
+        names = [r[0] for r in rank]
+        self.assertLess(names.index("Normal Rakanishu"), names.index("Normal Pitspawn Fouldog"),
+                        "a 1.5%% runs gap still outranks ~5 hours of farming: %s" % [(r[0], r[1], r[2]) for r in rank[:6]])
 
     def test_every_list_is_ranked_by_runs_and_ranks_only_runs(self):
         once = set(t for t, v in self.targets.items() if v.get("once"))
@@ -261,8 +288,8 @@ class QuickWinsRanksEveryPlace(unittest.TestCase):
         bad = []
         for key, rows in sorted(self.o["rank"].items()):
             runs = [r[1] for r in rows]
-            if any(x is None for x in runs) or runs != sorted(runs):
-                bad.append("%s: not in runs order %s" % (key, [(r[0], r[1]) for r in rows[:6]]))
+            if any(x is None for x in runs) or not _runs_then_time(rows):
+                bad.append("%s: not in runs order (2%% = a tie, time decides) %s" % (key, [(r[0], r[1], r[2]) for r in rows[:6]]))
             for r in rows:
                 if r[3] in once:
                     bad.append("%s: ranks %s, whose kill is not a repeatable run" % (key, r[0]))
@@ -309,8 +336,13 @@ RED_PROOF = [
      "matches": 1},
     {"why": "#85 - the places are ranked by hours (an estimated run rate) instead of runs",
      "file": "bible.html",
-     "find": "    return out.sort(function(a, b){ return (a.runs - b.runs) || (_qwH(a) - _qwH(b)) || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0); });\n",
-     "replace": "    return out.sort(function(a, b){ return (_qwH(a) - _qwH(b)) || (a.runs - b.runs) || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0); });\n",
+     "find": "    out.sort(function(a, b){ return (a.runs - b.runs) || (_qwH(a) - _qwH(b)) || byLabel(a, b); });\n",
+     "replace": "    out.sort(function(a, b){ return (_qwH(a) - _qwH(b)) || (a.runs - b.runs) || byLabel(a, b); });\n",
+     "matches": 1},
+    {"why": "v3885 (his 11-08) - runs within 2% are no tie: Pitspawn Fouldog (2,123 runs, ~29 h) ranks over Rakanishu (2,156, ~24 h) again",
+     "file": "bible.html",
+     "find": "      res = res.concat(out.slice(i, j).sort(function(a, b){ return (_qwH(a) - _qwH(b)) || (a.runs - b.runs) || byLabel(a, b); }));\n",
+     "replace": "      res = res.concat(out.slice(i, j));\n",
      "matches": 1},
     {"why": "#85 - bosses only again: the silospen places are never candidates (Bane Ash goes back to Andariel)",
      "file": "bible.html",

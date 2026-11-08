@@ -39546,7 +39546,13 @@ const _sliderFanout = () => {
     try { if (typeof window._writeSetFarm === 'function') window._writeSetFarm(); } catch(e){}
   }, 220);
 };
-$("mf").oninput = () => { mf = parseInt($("mf").value); _mfChosen = true; persistSoon(); updateEffMF(); renderHero(); renderBossCards(); if (selectedItem) renderDetail(); if (activeItemDetail) renderItemDetailCard(activeItemDetail); if (typeof activeBossId !== "undefined" && activeBossId) renderBossDetailCard(activeBossId); renderGrailProgress(); renderWishlistHuntPath(); _sliderFanout(); };
+/* v3885 (his 11-08: "the console reads a differnt run number for the 500MF toggled or slid and silopen read" - his slide
+   landed on 498, the header read "odds @ 498% MF") - A DRAG LANDS ON A ROUND TEN. 0-1000 in steps of 1 on a short track is
+   several MF a pixel, so a drag snaps to the nearest 10; one arrow-key step (a move of 1) and a preset (553, 699) stay
+   exact, and the exact box beside the presets types any number. */
+const _mfSnap = (v, prev) => (Math.abs(v - prev) > 1 && v % 10) ? Math.min(1000, Math.round(v / 10) * 10) : v;
+try { window._mfSnap = _mfSnap; } catch (e) {}
+$("mf").oninput = () => { const _v = _mfSnap(parseInt($("mf").value), mf); if (String(_v) !== $("mf").value) $("mf").value = String(_v); mf = _v; _mfChosen = true; persistSoon(); updateEffMF(); renderHero(); renderBossCards(); if (selectedItem) renderDetail(); if (activeItemDetail) renderItemDetailCard(activeItemDetail); if (typeof activeBossId !== "undefined" && activeBossId) renderBossDetailCard(activeBossId); renderGrailProgress(); renderWishlistHuntPath(); _sliderFanout(); };
 /* v3884 (REG-3437) - the LVL slider: the level every TZ figure is read at (the getters on BOSSES' TZ cells read _TZ_CHAR_LVL) */
 try {
   if ($("clvl")) {
@@ -70826,8 +70832,22 @@ function renderJournal(){
           out.push({ label: s.boss, area: T.a, s: s, chance: c, runs: runs, hours: hrs, kph: s.kph, kpr: kpr, est: true });
         } catch (eR) {}
       });
-    return out.sort(function(a, b){ return (a.runs - b.runs) || (_qwH(a) - _qwH(b)) || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0); });
+    var byLabel = function(a, b){ return a.label < b.label ? -1 : a.label > b.label ? 1 : 0; };
+    out.sort(function(a, b){ return (a.runs - b.runs) || (_qwH(a) - _qwH(b)) || byLabel(a, b); });
+    /* v3885 (his 11-08 on Bane Ash: "the monsters/bosses arent corretly in order from best to worst" - Pitspawn Fouldog, 2,123
+       runs / ~29 h, sat above Rakanishu, 2,156 runs / ~24 h; and "its basically the same ... 0.2% difference ... irrelevant
+       data") - RUNS WITHIN 2% ARE THE SAME RUN COUNT, AND TIME DECIDES. Groups are cut from the fewest-runs row of each
+       (so the order never depends on the sort's path); inside a group the quicker run leads. */
+    var res = [], i = 0;
+    while (i < out.length){
+      var j = i + 1;
+      while (j < out.length && out[j].runs <= out[i].runs * (1 + QW_SAME)) j++;
+      res = res.concat(out.slice(i, j).sort(function(a, b){ return (_qwH(a) - _qwH(b)) || (a.runs - b.runs) || byLabel(a, b); }));
+      i = j;
+    }
+    return res;
   }
+  var QW_SAME = 0.02;   // v3885 - his "basically the same" (the TZ level rule's 2%)
   function _qwH(p){ return (p.hours != null && isFinite(p.hours)) ? p.hours : 9e9; }
   window._qwPlaces = _qwPlaces;
   /* the kinds shown beside the ranked rows, never as one: the Cow King and random packs, at his MF */

@@ -209,8 +209,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2922 - moving the slider is not counted as a choice",
      "file": "bible.html",
-     "find": "mf = parseInt($(\"mf\").value); _mfChosen = true; persistSoon();",
-     "replace": "mf = parseInt($(\"mf\").value); persistSoon();",
+     "find": "mf = _v; _mfChosen = true; persistSoon();",   # v3885: the slider snaps a drag to a ten first (_mfSnap)
+     "replace": "mf = _v; persistSoon();",
      "matches": 1, "needs": "node"},
     {"why": "REG-2922 - the slider label prints an unset MF as a number",
      "file": "bible.html",

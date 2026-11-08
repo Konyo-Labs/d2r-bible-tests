@@ -112,6 +112,25 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3447 - AN IMPORT KEYED ON 8 WORKERS AND PINNED ALL 12 OF DEAN'S CORES (v3885, #142, his 11-08)
+MEASURED on Dean's PC (read-only, over SSH) right after the v3883 update: 8 pythonw import workers + the console at ~7.5% of
+12 cores each = CPU 100%, D2R not running, his console's /api/status 8.7-13.3 s and /api/river no answer in 75 s (the Mac's:
+0.5 s); RAM was not the limit (31.3 GB, 11.9 GB free). heart2.import_workers keys on min(IMPORT_WORKERS_MAX, cores - 2) and
+the cap was 8. His words: "cap it to like 5-6". IMPORT_WORKERS_MAX = 6 - a 12-core PC keeps half its cores for the game and
+the console. Law: test_an_import_keys_on_spare_cores_exactly_as_one_core_would (12 cores -> 6; 12 red-proofs PROVEN).
+
+### REG-3446 - QUICK WINS RANKED A 1.5% RUNS GAP OVER 5 HOURS, AND A DRAG COULD NOT LAND ON 500 MF (v3885, #143, his 11-08)
+His Bane Ash card (v3883, MF 498): "the monsters/bosses arent corretly in order from best to worst" - Pitspawn Fouldog (2,123
+runs, ~29 h) above Rakanishu (2,156 runs, ~24 h) - and "the console reads a differnt run number for the 500MF toggled or slid
+and silopen read" with "i couldnt simply toggle it within the console". MEASURED: every odds figure on the card equals
+silospen's at MF 500 within 0.3% (Coldcrow 1:935/936, Andariel 2,252/2,254, Pitspawn 3,063/3,062, Rakanishu and Treehead
+3,110, Blood Raven 3,656, the Smith 6,679, Griswold 6,764, Mephisto 6,866, the Countess 6,920, Diablo 7,485/7,491); the
+"~648" he compared is runs for a 50% chance (935 x ln 2), not odds. Now (his "2% = the same" rule, REG-3445): runs within 2%
+of a group's fewest-runs row are a tie and the quicker run leads (Rakanishu before Pitspawn, Mephisto before the Countess);
+and a dragged MF snaps to the nearest 10 (an arrow-key step and a preset stay exact). Laws: test_quick_wins_ranks_every_place
+re-derives the order from each list's own numbers (8 red-proofs PROVEN, one new); test_a_dragged_mf_lands_on_a_round_ten
+(2 red-proofs PROVEN).
+
 ### REG-3445 - A LEVEL SPLIT TWO RUNS SILOSPEN CALLS EQUAL - NM TZ BAAL RANKED OVER MEPHISTO ON 0.2% (v3885, #138, his 11-08)
 His words: "its basically the same so leel difference doesnt matter if its 0.2% deifference dont even include the level thing
 then.. its irrelevant daata", "make it no one is farming below level 68 its okay.. default is 68 and up in my case". MEASURED on
