@@ -1016,6 +1016,51 @@ def _close_owed(vid, v):
     return int(lf.get("ts") or 0) - int(v.get("ts") or 0) >= CLOSE_READ_GAP_MS
 
 
+#: v3888 (REG-3478, the doctor on Dean's PC: our temp dirs older than 3 days - tvd-cs- among them, newest that same day). The
+#: tick's crop dir is removed in a finally, and on Windows rmtree(ignore_errors=True) fails SILENTLY while a reader still has
+#: a crop open (the same as g5_grok_eyes' REG-1687). So the remove is retried and a leftover counted, and each tick sweeps
+#: the crop dirs EARLIER ticks left - matched by this prefix only, and only past CS_SCRATCH_STALE_S, so a concurrent tick's
+#: fresh dir is never touched.
+CS_SCRATCH_PREFIX = "tvd-cs-"
+CS_SCRATCH_STALE_S = 3600
+
+
+def _drop_scratch(path, attempts=4, pause_s=0.25, sleep=time.sleep):
+    """Remove one crop dir. -> True when it is gone (retried: Windows cannot delete an open file)."""
+    for k in range(max(1, int(attempts))):
+        shutil.rmtree(path, ignore_errors=True)
+        if not os.path.exists(path):
+            return True
+        if k + 1 < attempts:
+            sleep(pause_s)
+    return False
+
+
+def _sweep_stale_scratch(root=None, now=None, drop=None):
+    """The crop dirs earlier ticks left in the temp dir. -> (removed, left), or None when the dir could not be listed
+    (UNKNOWN, never "0 swept")."""
+    root = root or tempfile.gettempdir()
+    now = time.time() if now is None else float(now)
+    drop = drop or (lambda p: _drop_scratch(p, attempts=1))
+    try:
+        names = [n for n in os.listdir(root) if n.startswith(CS_SCRATCH_PREFIX)]
+    except OSError:
+        return None
+    removed = left = 0
+    for n in names:
+        p = os.path.join(root, n)
+        try:
+            if not os.path.isdir(p) or now - os.path.getmtime(p) < CS_SCRATCH_STALE_S:
+                continue
+        except OSError:
+            continue
+        if drop(p):
+            removed += 1
+        else:
+            left += 1
+    return removed, left
+
+
 def _backfill_last_frames(d, root, stats, t0, budget_s, clock):
     """#234 step 1 - A VISIT FILED BEFORE v3530 NEVER GETS ITS CLOSING READ. -> (n_found, why)
 
@@ -1551,6 +1596,7 @@ def tick(root=None, stats=None, reader=None, now=None, budget_s=TICK_BUDGET_S, c
     d = load()
     if d is None:
         return {"ok": False, "why": "the ledger could not be read — UNKNOWN, nothing written"}
+    _console_tick = root is None
     root = root or hist_root()
     stats = stats or panel_stats
     reader = reader or _default_reader
@@ -1566,7 +1612,12 @@ def tick(root=None, stats=None, reader=None, now=None, budget_s=TICK_BUDGET_S, c
     alive = set(os.path.basename(r) for r in reels)
     for gone in [k for k in d["reels"] if k not in alive]:
         d["reels"].pop(gone, None)            # the FIFO deleted it; its visits stay in the ledger
-    work = tempfile.mkdtemp(prefix="tvd-cs-")
+    # v3888 (REG-3478) - an earlier tick's crop dir that Windows would not let go of is swept here, by its own name. Only the
+    # console's own tick sweeps (it hands no root): a law that hands its own hist never reaches the machine's temp dir.
+    _cs_gone = _sweep_stale_scratch(now=now_s) if _console_tick else None
+    if _cs_gone is not None:
+        st["scratchSwept"] = int(st.get("scratchSwept") or 0) + _cs_gone[0]
+    work = tempfile.mkdtemp(prefix=CS_SCRATCH_PREFIX)
     scanned = candidates = reads = closed = surfaces = 0
     finished = []
     why = ""
@@ -1686,7 +1737,10 @@ def tick(root=None, stats=None, reader=None, now=None, budget_s=TICK_BUDGET_S, c
             closed += n_close
             why = cwhy or why
     finally:
-        shutil.rmtree(work, ignore_errors=True)   # the crops are throwaway; a nested dir must not strand it
+        # the crops are throwaway; a nested dir must not strand it. v3888 (REG-3478): retried, and one that will not go is
+        # COUNTED - rmtree(ignore_errors=True) failed silently on Windows while a reader still held a crop open
+        if not _drop_scratch(work):
+            st["scratchLeft"] = int(st.get("scratchLeft") or 0) + 1
     st["frames"] = int(st.get("frames") or 0) + scanned
     st["lastTs"] = int(now_s * 1000)
     if why:

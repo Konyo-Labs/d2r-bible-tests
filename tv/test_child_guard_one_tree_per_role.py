@@ -579,7 +579,8 @@ class TheCensusAndTheDoctorRow(_World):
         loop = inspect.getsource(ca._console_rescue_loop)
         self.assertIn("_child_guard_tick()", loop, "nothing runs the watchdog")
         self.assertIn('"childGuard": _child_guard_status()', inspect.getsource(ca))
-        self.assertEqual({"door", "watchdog", "ram"}, set(ca._child_guard_status()))
+        # v3888 (REG-3478) - and the stale-ledger collector's own receipt
+        self.assertEqual({"door", "watchdog", "ram", "collect"}, set(ca._child_guard_status()))
 
     def test_the_console_tick_uses_its_own_doors_and_never_raises(self):
         with mock.patch.object(cg, "watchdog_tick", lambda **k: (_ for _ in ()).throw(RuntimeError("x"))):

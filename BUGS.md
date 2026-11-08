@@ -128,6 +128,20 @@ places) printed r50 - kills for an even chance - under "Runs (50%)", titled "sor
 on the Cow Level (~350 kills a run) ~350 times too many. The Drop Simulator took the same r50 as "runs" and rolled a kill's odds.
 Now the table and the simulator print s.runs, the title says its order, and the simulator rolls one run's odds (_gicRunOdds:
 1 - (1 - 1/c)^kills). GUARD: test_the_item_card_counts_runs_not_kills (3 red-proofs RED).
+### REG-3478 - OUR SCRATCH PILED UP IN DEAN'S %TEMP%: 189 CHILD-GUARD LEDGER DIRS, ONE PER SANDBOXED TREE, AND CROP DIRS WINDOWS WOULD NOT LET GO (v3888)
+The doctor's row on Dean's PC (hook, 11-08): "219 of 296 scratch director(ies) WE made are older than 3 days - oldest 105.0 days".
+MEASURED there, read-only over ssh: 189 tvd-child-guard-<hash> (153 old, newest that afternoon), 23 heartlane_ (none after 10-21),
+15 tvd-nogit, 10 tvd-cs (newest that morning), 2 tvd-par-dirty - all ours (his repo since 07-17). macOS ages its temp out at three
+days; Windows never does. (1) child_guard names LEDGER_DIR by a hash of the tree's path, so each sandbox a proof copied the tree into
+minted one: run_gates.law_env now hands every gate (and the pre-flight and every sandboxed proof - heart2 runs laws through it) a
+ledger dir under the run's own scratch, removed at exit. (2) The ones already there: child_guard.collect_stale_ledger_dirs, from the
+console's rescue tick at most every 6 h - another tree's dir only when every file is 3 days old and every recorded parent and child is
+gone or a newer process (alive with an UNKNOWN birth, or unaskable, keeps it); never this console's own; never from a sandbox's console;
+its receipt rides /api/status (childGuard.collect). (3) char_select's crop dir: rmtree(ignore_errors=True) failed silently while a
+reader held a crop (REG-1687's shape) - retried, a leftover counted (stats.scratchLeft), and the console's own tick sweeps earlier
+ticks' tvd-cs- dirs past an hour. NOT DONE, said: tvd-nogit / tvd-par-dirty are disk_growers' law-scratch-win, still DRY; 23 old
+heartlane_ stay until something collects them - the row will read ~40, not 0, on Dean's PC. GUARD: test_our_old_scratch_is_collected
+(7 red-proofs RED).
 
 ### REG-3477 - A FLEET ROW WEARS THREE EYES AND THE FRAME READER'S HOVER NEVER SAID WHICH IT WAS (v3887, GrokBot's v3885 look)
 GrokBot, v3885 (#230): "OLD PC ALT's red second eye sits beside the hover 'grok second lane ON'. If the second eye means console window

@@ -48676,20 +48676,30 @@ def _child_guard_tick():
     """#83 — one pass of child_guard.watchdog_tick through this console's own kill/alive doors (the laws stub
     them). Never raises; the rescue loop must keep going."""
     try:
-        return _child_guard.watchdog_tick(kill=lambda pid: _kill_pid(pid, force=True), alive=_pid_alive)
+        out = _child_guard.watchdog_tick(kill=lambda pid: _kill_pid(pid, force=True), alive=_pid_alive)
     except Exception as e:
         try:
             _child_guard.WATCHDOG.update(worked=None, owed=None, say="the watchdog tick raised %s" % type(e).__name__)
         except Exception:
             pass
-        return None
+        out = None
+    # v3888 (REG-3478) - and, at most every 6 h, the stale ledger dirs other trees left in his temp dir (child_guard says
+    # when a dir is provably litter; a sandbox's console never collects)
+    try:
+        _child_guard.collect_if_due(alive=_pid_alive)
+    except Exception as e:
+        try:
+            _child_guard.COLLECT.update(worked=None, owed=None, say="the collector raised %s" % type(e).__name__)
+        except Exception:
+            pass
+    return out
 
 
 def _child_guard_status():
     """#83 — the door's receipts for /api/status (no census: that reads the ledger dir and asks every pid)."""
     try:
         return {"door": dict(_child_guard.RECEIPT), "watchdog": dict(_child_guard.WATCHDOG),
-                "ram": dict(_child_guard.RAM)}
+                "ram": dict(_child_guard.RAM), "collect": dict(_child_guard.COLLECT)}   # v3888 (REG-3478)
     except Exception as e:
         return {"door": None, "watchdog": None, "ram": None, "say": "raised %s" % type(e).__name__}
 

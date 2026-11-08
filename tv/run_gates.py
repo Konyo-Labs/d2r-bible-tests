@@ -178,6 +178,13 @@ def law_env(needs_app, base=None):
     for _var, _stem in LAW_LEDGERS:
         if not env.get(_var):
             env[_var] = _law_ledger_path(_stem)
+    # v3888 (REG-3478, the doctor's "our scratch is collected" on Dean's PC: 219 of 296 of our temp dirs older than 3 days,
+    # 189 of them tvd-child-guard-<hash>) - A GATE'S CHILD GUARD KEEPS ITS LEDGER IN THE RUN'S OWN SCRATCH. child_guard names
+    # its ledger dir by a hash of the tree's path, so every sandbox a proof copies the tree into minted a new one in %TEMP%,
+    # and nothing removes a sandbox's - Windows never ages %TEMP% out (MEASURED: 189 on his PC, newest the same day). Each
+    # gate gets a fresh dir under the per-run dir that leaves at exit; a caller that named one keeps it.
+    if not env.get("TV_CHILD_GUARD_DIR"):
+        env["TV_CHILD_GUARD_DIR"] = _law_ledger_path("child_guard")[:-len(".json")]
     # REG-2569 - A GATE NEVER CALLS THE CLAUDE CLI (Elad 2026-10-22: his plan sits at 98%). test_screen_parity's console
     # import asked `claude auth status`. Every gate runs with D2R_NO_CLAUDE=1 (claude_signin answers UNKNOWN without
     # spawning) and a refusing `claude` first on PATH.
@@ -13356,6 +13363,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_item_card_counts_runs_not_kills.py")], 120,
          needs_app=False,
          why="v3887 (REG-3483, the #231 second eye on v3886's REG-3451: the full source table printed kills under Runs (50%), ~350x on the Cow Level) - the table and the drop simulator count runs, the simulator rolls one run's odds, the title says its real order."),
+    Gate("test_our_old_scratch_is_collected",
+         [sys.executable, os.path.join(HERE, "test_our_old_scratch_is_collected.py")], 120,
+         needs_app=False,
+         why="v3888 (REG-3478, the doctor's 'our scratch is collected' on Dean's PC: 219 of our temp dirs older than 3 days, 189 tvd-child-guard-<hash>) - a gate's child guard keeps its ledger in the run's own scratch; another tree's old ledger dir is collected only on proof (every file 3 days old, every recorded process gone or a newer one; unknown keeps it; never our own; never from a sandbox); char_select's crop dir is retried, a leftover counted, and earlier ticks' swept by prefix and age."),
     Gate("test_the_cross_reference_counts_each_rainbow_facet",
          [sys.executable, os.path.join(HERE, "test_the_cross_reference_counts_each_rainbow_facet.py")], 120,
          needs_app=False,

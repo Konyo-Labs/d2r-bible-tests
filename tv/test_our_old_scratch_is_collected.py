@@ -1,0 +1,226 @@
+# -*- coding: utf-8 -*-
+"""v3888 (REG-3478) - OUR SCRATCH IS COLLECTED ON WINDOWS TOO: A SANDBOX'S CHILD-GUARD LEDGER LEAVES WITH IT, THE OLD ONES ARE
+COLLECTED ON PROOF, AND THE CHARACTER READER'S CROP DIRS DO NOT STRAND.
+
+The doctor's row "our scratch is collected" on Dean's PC, 11-08: "219 of 296 scratch director(ies) WE made are older than 3 days -
+oldest 105.0 days". MEASURED there (read-only): 189 tvd-child-guard-<hash> (153 old, the newest that same afternoon), 23 heartlane_
+(none newer than 10-21), 15 tvd-nogit, 10 tvd-cs (the newest that morning), 2 tvd-par-dirty - all of them ours (his repo dates from
+07-17). macOS ages its temp dir out after three days; Windows never touches %TEMP%. Three sources were still minting:
+  * child_guard names its ledger dir by a hash of the tree's path, so every sandbox a proof copied the tree into made its own
+    and nothing removed it -> run_gates.law_env (every gate, the pre-flight, every sandboxed proof) hands each gate a ledger dir
+    under the run's own scratch, removed at exit;
+  * the ones already there -> child_guard.collect_stale_ledger_dirs, from the console's rescue tick at most every 6 h: another
+    tree's dir is removed only when every file is 3 days old and every parent and child it records is gone or a newer process -
+    alive with an UNKNOWN birth, or a pid that cannot be asked, keeps it; this console's own dir is never touched; a sandbox's
+    console (TV_CHILD_GUARD_DIR handed in) never collects;
+  * char_select's crop dir was removed with rmtree(ignore_errors=True), which fails SILENTLY on Windows while a reader holds a
+    crop open (g5_grok_eyes' REG-1687) -> retried and a leftover counted, and the console's own tick sweeps earlier ticks' dirs
+    by their prefix past an hour (a law that hands its own hist never reaches the machine's temp dir).
+tvd-nogit / tvd-par-dirty are disk_growers' law-scratch-win (declared, graduating); heartlane_ stopped minting 10-21.
+Fixtures only (contained temp, fake process tables). RED_PROOF below. [[heart-first]] [[unknown-stays-unknown]]
+"""
+import inspect
+import json
+import os
+import shutil
+import sys
+import tempfile
+import time
+import unittest
+from unittest import mock
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+import fixture_tmp as _fx_tmp  # noqa: E402
+_fx_tmp.contain()
+import child_guard as cg  # noqa: E402
+import char_select as cs  # noqa: E402
+import run_gates as rg  # noqa: E402
+
+NOW = 1_800_000_000.0
+OLD = NOW - 4 * 86400
+YOUNG = NOW - 3600
+
+
+def _ledger_dir(root, name, body, mtime):
+    d = os.path.join(root, "tvd-child-guard-" + name)
+    os.makedirs(d, exist_ok=True)
+    p = os.path.join(d, "%d.json" % int(body.get("parent") or 1))
+    with open(p, "w", encoding="utf-8") as fh:
+        if isinstance(body, dict) and body.get("_raw") is not None:
+            fh.write(body["_raw"])
+        else:
+            json.dump(body, fh)
+    os.utime(p, (mtime, mtime))
+    os.utime(d, (mtime, mtime))
+    return d
+
+
+class AGateKeepsItsLedgerInTheRunsScratch(unittest.TestCase):
+
+    def test_every_gate_gets_a_ledger_dir_that_leaves_with_the_run(self):
+        env = rg.law_env(False, {"PATH": os.environ.get("PATH", "")})
+        d = env.get("TV_CHILD_GUARD_DIR")
+        self.assertTrue(d, "a gate's child guard keeps its ledger in %TEMP% keyed by the tree again - one dir per sandbox")
+        self.assertEqual(os.path.dirname(d), rg._LAW_LEDGER["dir"], "the dir is not under the run's own scratch (removed at exit)")
+        self.assertNotEqual(rg.law_env(False, {})["TV_CHILD_GUARD_DIR"], d, "two gates share one ledger dir")
+        self.assertEqual(rg.law_env(False, {"TV_CHILD_GUARD_DIR": "/x/mine"})["TV_CHILD_GUARD_DIR"], "/x/mine",
+                         "a caller's own dir was overridden")
+
+
+class OldLedgerDirsAreCollectedOnProof(unittest.TestCase):
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp(prefix="cg-collect-law-")
+        self.saved = (cg.LEDGER_DIR, dict(cg.COLLECT), list(cg._COLLECT_AT))
+        cg.LEDGER_DIR = os.path.join(self.root, "tvd-child-guard-OWN")
+        cg.COLLECT.update(on=True, removed=0, worked=None)
+        # pids: 10 gone, 20 alive born 500, 30 alive born 999 (a reuse of a pid recorded born 300), 40 alive birth UNKNOWN
+        self.alive = lambda pid: pid in (20, 30, 40)
+        self.birth = lambda pid: {20: 500, 30: 999, 40: None}.get(pid)
+        self.d = {
+            "dead": _ledger_dir(self.root, "dead", {"parent": 10, "parentBirth": 100, "children": {}}, OLD),
+            "liveparent": _ledger_dir(self.root, "liveparent", {"parent": 20, "parentBirth": 500, "children": {}}, OLD),
+            "livechild": _ledger_dir(self.root, "livechild", {"parent": 10, "parentBirth": 100,
+                                                              "children": {"capture": {"pid": 20, "birth": 500}}}, OLD),
+            "reused": _ledger_dir(self.root, "reused", {"parent": 30, "parentBirth": 300, "children": {}}, OLD),
+            "unknownbirth": _ledger_dir(self.root, "unknownbirth", {"parent": 40, "parentBirth": 400, "children": {}}, OLD),
+            "young": _ledger_dir(self.root, "young", {"parent": 10, "parentBirth": 100, "children": {}}, YOUNG),
+            "own": _ledger_dir(self.root, "OWN", {"parent": 10, "parentBirth": 100, "children": {}}, OLD),
+            "unreadable": _ledger_dir(self.root, "unreadable", {"parent": 11, "_raw": "{not json"}, OLD),
+        }
+        self.other = os.path.join(self.root, "tvd-cs-notmine")
+        os.makedirs(self.other)
+        os.utime(self.other, (OLD, OLD))
+
+    def tearDown(self):
+        cg.LEDGER_DIR, c, at = self.saved
+        cg.COLLECT.clear()
+        cg.COLLECT.update(c)
+        cg._COLLECT_AT[:] = at
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _run(self, **kw):
+        return cg.collect_stale_ledger_dirs(now=NOW, alive=self.alive, birth=self.birth, root=self.root, **kw)
+
+    def test_premise_every_case_is_on_disk(self):
+        self.assertTrue(all(os.path.isdir(p) for p in self.d.values()))
+
+    def test_only_provable_litter_is_removed(self):
+        """* THE POINT - gone or a newer process: removed; anything that may still be theirs, young, our own or unread: kept"""
+        r = self._run()
+        gone = sorted(k for k, p in self.d.items() if not os.path.exists(p))
+        self.assertEqual(gone, ["dead", "reused"], "the collector removed %r" % gone)
+        self.assertTrue(os.path.isdir(self.other), "a dir of another prefix was touched")
+        self.assertEqual((r["kept"], r["left"], r["owed"]), (4, 0, 0), r)
+        self.assertTrue(r["worked"])
+        self.assertIn("2 stale ledger dir(s) of other trees removed", r["say"])
+
+    def test_a_dir_that_will_not_go_is_counted_and_owed(self):
+        r = self._run(remove=lambda p: None)
+        self.assertEqual((r["left"], r["owed"]), (2, 2), "a dir that would not go read as removed")
+        self.assertTrue(os.path.isdir(self.d["dead"]))
+
+    def test_an_unlistable_root_is_unknown_never_zero(self):
+        r = cg.collect_stale_ledger_dirs(now=NOW, alive=self.alive, birth=self.birth, root=os.path.join(self.root, "nope"))
+        self.assertEqual((r["worked"], r["owed"]), (None, None))
+        self.assertIn("UNKNOWN", r["say"])
+
+    def test_it_runs_when_due_and_never_in_a_sandbox(self):
+        with mock.patch.object(cg, "collect_stale_ledger_dirs", lambda **k: {"ran": True}):
+            cg._COLLECT_AT[:] = [None]
+            self.assertEqual(cg.collect_if_due(now=NOW), {"ran": True})
+            self.assertIsNone(cg.collect_if_due(now=NOW + 60), "it ran again a minute later - the throttle is gone")
+            self.assertEqual(cg.collect_if_due(now=NOW + cg.COLLECT_EVERY_S + 1), {"ran": True})
+            cg.COLLECT["on"] = False
+            cg._COLLECT_AT[:] = [None]
+            self.assertIsNone(cg.collect_if_due(now=NOW), "a sandbox's console collected his temp dir")
+
+
+class TheConsoleAsksTheCollector(unittest.TestCase):
+
+    def test_the_rescue_tick_runs_it_and_status_carries_its_receipt(self):
+        import control_app as ca
+        src = inspect.getsource(ca._child_guard_tick)
+        self.assertIn("_child_guard.collect_if_due(alive=_pid_alive)", src, "nothing collects the stale ledger dirs")
+        self.assertIn("collect", cg.status())
+        self.assertFalse(cg.COLLECT["on"] and os.environ.get("TV_CHILD_GUARD_DIR"), "PREMISE: a law's process would collect")
+
+
+class TheCharacterReadersCropsDoNotStrand(unittest.TestCase):
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp(prefix="cs-sweep-law-")
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _mk(self, name, mtime):
+        p = os.path.join(self.root, name)
+        os.makedirs(p)
+        os.utime(p, (mtime, mtime))
+        return p
+
+    def test_earlier_ticks_dirs_are_swept_by_prefix_and_age(self):
+        old, fresh, other = self._mk("tvd-cs-old1", OLD), self._mk("tvd-cs-fresh", NOW - 60), self._mk("tvd-child-guard-x", OLD)
+        self.assertEqual(cs._sweep_stale_scratch(root=self.root, now=NOW), (1, 0))
+        self.assertEqual([os.path.exists(p) for p in (old, fresh, other)], [False, True, True],
+                         "a concurrent tick's fresh dir or another prefix was swept, or the old one stayed")
+        self.assertIsNone(cs._sweep_stale_scratch(root=os.path.join(self.root, "nope"), now=NOW), "an unlistable dir read as 0 swept")
+
+    def test_a_crop_dir_that_will_not_go_is_said_never_pretended(self):
+        p = self._mk("tvd-cs-stuck", NOW)
+        with mock.patch.object(cs.shutil, "rmtree", lambda *a, **k: None):
+            self.assertFalse(cs._drop_scratch(p, attempts=3, sleep=lambda s: None), "a dir that stayed read as gone")
+        self.assertTrue(cs._drop_scratch(p, attempts=3, sleep=lambda s: None))
+        self.assertFalse(os.path.exists(p))
+
+    def test_only_the_consoles_own_tick_sweeps(self):
+        src = inspect.getsource(cs.tick)
+        self.assertIn("_console_tick = root is None", src)
+        self.assertIn("_cs_gone = _sweep_stale_scratch(now=now_s) if _console_tick else None", src)
+        self.assertIn("if not _drop_scratch(work):", src, "the tick's own crop dir is removed silently again")
+
+
+RED_PROOF = [
+    {"why": "v3888 (REG-3478) - a gate's child guard keeps its ledger in %TEMP% keyed by the tree again (one dir per sandbox)",
+     "file": "tv/run_gates.py",
+     "find": "        env[\"TV_CHILD_GUARD_DIR\"] = _law_ledger_path(\"child_guard\")[:-len(\".json\")]\n",
+     "replace": "        pass\n",
+     "matches": 1},
+    {"why": "v3888 (REG-3478) - the collector removes a dir whose process may still be alive",
+     "file": "tv/child_guard.py",
+     "find": "            if any(_still_here(pid, born, alive, birth) for pid, born in recs):\n",
+     "replace": "            if False:\n",
+     "matches": 1},
+    {"why": "v3888 (REG-3478) - the collector removes a young dir",
+     "file": "tv/child_guard.py",
+     "find": "        if now - newest < STALE_LEDGER_DIR_S:\n            continue\n",
+     "replace": "        if False:\n            continue\n",
+     "matches": 1},
+    {"why": "v3888 (REG-3478) - the collector removes this console's own ledger dir",
+     "file": "tv/child_guard.py",
+     "find": "        if os.path.normcase(os.path.abspath(p)) == own or not os.path.isdir(p):\n",
+     "replace": "        if not os.path.isdir(p):\n",
+     "matches": 1},
+    {"why": "v3888 (REG-3478) - nothing asks the collector",
+     "file": "tv/control_app.py",
+     "find": "        _child_guard.collect_if_due(alive=_pid_alive)\n",
+     "replace": "        pass\n",
+     "matches": 1},
+    {"why": "v3888 (REG-3478) - the crop sweep takes a concurrent tick's fresh dir",
+     "file": "tv/char_select.py",
+     "find": "            if not os.path.isdir(p) or now - os.path.getmtime(p) < CS_SCRATCH_STALE_S:\n",
+     "replace": "            if not os.path.isdir(p):\n",
+     "matches": 1},
+    {"why": "v3888 (REG-3478) - a crop dir that stayed reads as removed",
+     "file": "tv/char_select.py",
+     "find": "        if not os.path.exists(path):\n            return True\n        if k + 1 < attempts:\n            sleep(pause_s)\n    return False\n",
+     "replace": "        if not os.path.exists(path):\n            return True\n        if k + 1 < attempts:\n            sleep(pause_s)\n    return True\n",
+     "matches": 1},
+]
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -113,6 +113,14 @@ WATCHDOG = {"on": True, "worked": None, "lastTs": None, "owed": None, "ended": [
             "strangers": [], "bypass": [], "unknown": None, "say": "the watchdog has not ticked yet"}
 RAM = {"lastFreeMb": None, "lastTs": None, "refused": 0, "unknown": 0, "floorMb": RAM_FLOOR_MB,
        "say": "free RAM not read yet"}
+#: v3888 (REG-3478) - another tree's ledger dir untouched this long, with every process it records gone, is litter
+STALE_LEDGER_DIR_S = 3 * 86400
+#: and the console asks at most this often (the scan lists %TEMP% and reads small files)
+COLLECT_EVERY_S = 6 * 3600
+LEDGER_PREFIX = "tvd-child-guard-"
+COLLECT = {"on": not os.environ.get("TV_CHILD_GUARD_DIR"), "worked": None, "lastTs": None, "owed": None, "removed": 0,
+           "kept": 0, "left": 0, "say": "the stale ledger collector has not run yet"}
+_COLLECT_AT = [None]
 
 
 # ── platform edges: every OS call lives behind one small function a law can stub ─────────────────────────────
@@ -1259,6 +1267,113 @@ def secondary_spawn_allowed(free_mb=_UNSET, floor_mb=None):
     return True, RAM["say"]
 
 
+def _still_here(pid, born, alive, birth):
+    """v3888 (REG-3478) - could the process a ledger records still be that process? -> bool. Gone = False; alive with
+    the recorded birth = True; alive born at another time = False (Windows re-hands pids); alive and a birth that is
+    UNKNOWN on either side, or a pid that cannot be asked = True - a dir is only ever collected on a proof, never a guess."""
+    if pid is None:
+        return False
+    try:
+        if not alive(pid):
+            return False
+    except Exception:
+        return True
+    if born is None:
+        return True
+    try:
+        now_born = birth(pid)
+    except Exception:
+        now_born = None
+    if now_born is None:
+        return True
+    return _same_birth(born, now_born)
+
+
+def collect_stale_ledger_dirs(now=None, alive=None, birth=None, root=None, remove=None):
+    """v3888 (REG-3478, the doctor's "our scratch is collected" on Dean's PC: 219 of 296 of our temp dirs older than 3 days,
+    oldest 105 days - 189 of them tvd-child-guard-<hash>, one per tree a proof ever sandboxed). LEDGER_DIR is named by a
+    hash of the tree's path, so every sandbox minted its own, and macOS ages %TMPDIR% out while Windows never touches
+    %TEMP%. This removes ANOTHER tree's ledger dir only when it is provably litter: every file in it untouched for
+    STALE_LEDGER_DIR_S, and every parent and child it records gone or now a newer process (_still_here). This
+    console's own dir is never touched; an unreadable file keeps its dir. Only a console of a real checkout collects
+    (TV_CHILD_GUARD_DIR unset - a sandbox or a law's console never reaches his %TEMP%).
+    -> the COLLECT receipt ({on, worked, lastTs, owed, removed, kept, left, say}); owed = stale dirs it could not remove."""
+    now = time.time() if now is None else float(now)
+    alive = alive or _alive_default
+    birth = birth or _birth_default
+    root = root or tempfile.gettempdir()
+    if remove is None:
+        import shutil
+        remove = lambda p: shutil.rmtree(p, ignore_errors=True)   # noqa: E731
+    own = os.path.normcase(os.path.abspath(LEDGER_DIR))
+    COLLECT["lastTs"] = int(now * 1000)
+    try:
+        names = sorted(n for n in os.listdir(root) if n.startswith(LEDGER_PREFIX))
+    except OSError as e:
+        COLLECT.update(worked=None, owed=None, say="the scratch root could not be listed (%s) - UNKNOWN, never 0"
+                       % type(e).__name__)
+        return dict(COLLECT)
+    removed = kept = left = 0
+    for n in names:
+        p = os.path.join(root, n)
+        if os.path.normcase(os.path.abspath(p)) == own or not os.path.isdir(p):
+            continue
+        try:
+            files = [os.path.join(p, f) for f in os.listdir(p)]
+            newest = max([os.path.getmtime(p)] + [os.path.getmtime(f) for f in files])
+        except OSError:
+            kept += 1
+            continue
+        if now - newest < STALE_LEDGER_DIR_S:
+            continue
+        here = False
+        for f in files:
+            if not f.endswith(".json"):
+                continue
+            try:
+                with open(f, encoding="utf-8") as fh:
+                    body = json.load(fh)
+            except Exception:
+                here = True                 # unreadable: kept, never judged
+                break
+            if not isinstance(body, dict):
+                continue
+            recs = [(body.get("parent"), body.get("parentBirth"))] + [
+                (c.get("pid"), c.get("birth")) for c in (body.get("children") or {}).values() if isinstance(c, dict)]
+            if any(_still_here(pid, born, alive, birth) for pid, born in recs):
+                here = True
+                break
+        if here:
+            kept += 1
+            continue
+        try:
+            remove(p)
+        except Exception:
+            pass
+        if os.path.exists(p):
+            left += 1
+        else:
+            removed += 1
+    COLLECT["removed"] = int(COLLECT.get("removed") or 0) + removed
+    COLLECT.update(worked=removed > 0 or bool(COLLECT.get("worked")), owed=left, kept=kept, left=left,
+                   say="%d stale ledger dir(s) of other trees removed, %d kept (a process may still be theirs), %d would not "
+                       "go" % (removed, kept, left))
+    return dict(COLLECT)
+
+
+def collect_if_due(now=None, **kw):
+    """v3888 (REG-3478) - collect_stale_ledger_dirs at most every COLLECT_EVERY_S, and only for a real checkout's console.
+    -> the receipt, or None when it was not due (or this is a sandbox)."""
+    if not COLLECT.get("on"):
+        COLLECT["say"] = "off: this process keeps its ledger in a dir it was handed (TV_CHILD_GUARD_DIR) - a sandbox or a law"
+        return None
+    now = time.time() if now is None else float(now)
+    if _COLLECT_AT[0] is not None and now - _COLLECT_AT[0] < COLLECT_EVERY_S:
+        return None
+    _COLLECT_AT[0] = now
+    return collect_stale_ledger_dirs(now=now, **kw)
+
+
 def status():
     """Everything /api/status carries about the door: receipts and the census. Never raises."""
     try:
@@ -1270,7 +1385,7 @@ def status():
     except Exception:
         pass
     return {"door": dict(RECEIPT), "watchdog": dict(WATCHDOG), "ram": dict(RAM), "census": c,
-            "ledgerDir": LEDGER_DIR}
+            "collect": dict(COLLECT), "ledgerDir": LEDGER_DIR}
 
 
 if __name__ == "__main__":
