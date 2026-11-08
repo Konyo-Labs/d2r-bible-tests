@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3473 - THE FLEET'S CLOSED ROWS RAN THREE LINES AT 1512 AGAIN: v3885'S SECOND EYE TOOK THE NAME'S ROOM (v3887, GrokBot's v3885 look)
+GrokBot, v3885 (#230): "REG-3395 closed Fleet row wrap: STILL (worse) - at 1512 Konyo · ALT, OLD PC ALT and Konyo are 88 / 88 / 88 px
+(3 lines)". MEASURED on his live Fleet payload (a read-only GET) in a private console: the 317px rail's top line needed 343px - two
+eyes + "Konyo · ALT" 152, the capture eye 28, "ledgers differ" 135, three 7px gaps - and the brief "BLOCKED river stuck importing
+~13 min" 338px of the 303 it had from column 2. Candidates were measured, not guessed (one false fit was my own probe failing to
+restore the text it changed). The fix: on the name line the two eyes are 1em with 2px margins (elsewhere they keep 1.3em), the
+row's gaps 3px, the brief takes the whole row from column 1, and the heal word is "import". Every closed row at 1512 is 48px (two
+lines); at 1120 Dean and OLD PC ALT lose a line. The Grok CLI read the 1512 panel cold: no overlap, nothing cut, nothing
+misaligned. GUARD: test_a_closed_fleet_row_is_one_word_and_one_line.test_the_closed_row_fits_two_lines_at_1512 (the CSS that
+bought it - font metrics decide a fit, so a geometry pin on CI would measure CI's fonts; 2 red-proofs RED).
+
 ### REG-3472 - --no-preflight SKIPPED THE VERSION-WIDE LAWS, AND v3886 LOST A GITHUB ROUND TO A 123-CHARACTER HISTORY LINE (v3887)
 v3886's pre-flight found 3 reds; 7f7dd2098 fixed them and also rewrote the version's history list to 17 lines; the ship was
 relaunched with --no-preflight (the pre-flight had just run) and GitHub's agent suite went red after 32 minutes:

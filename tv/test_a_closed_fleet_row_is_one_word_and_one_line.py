@@ -175,9 +175,9 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
         b = self.b
         self.assertEqual(b["ready"]["line"], "all proved")              # v3883 (#116) fits 1512 whole
         self.assertEqual(b["healing"]["line"], "proving 8 checks ~12 min")   # v3884 what is proved
-        self.assertEqual(b["blind"]["line"], u"1 check blind · importing ~26 min")                  # v3883 (#116) short words
-        self.assertEqual(b["importing"]["line"], u"river stuck · importing ~82 min")
-        self.assertEqual(b["importquiet"]["line"], u"river stuck · importing · no progress for 3 min")   # v3882
+        self.assertEqual(b["blind"]["line"], u"1 check blind · import ~26 min")                  # v3883 (#116) short words
+        self.assertEqual(b["importing"]["line"], u"river stuck · import ~82 min")
+        self.assertEqual(b["importquiet"]["line"], u"river stuck · import · no progress for 3 min")   # v3882
         self.assertEqual(b["town"]["line"], "since 18:10")           # v3883: the word itself says OFFLINE (his 11-08 ruling)
         self.assertEqual(b["townold"]["line"], "since Oct 28")
         self.assertEqual(b["lost"]["line"], "no readable report")
@@ -189,10 +189,10 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
 
     def test_each_unit_is_its_own_element(self):
         """v3883 (#116) - the word, the wound and what heals it are separate elements, so a wrap falls BETWEEN them"""
-        self.assertEqual(self.b["blind"]["units"], ["1 check blind", "importing ~26 min"])
+        self.assertEqual(self.b["blind"]["units"], ["1 check blind", "import ~26 min"])
         self.assertEqual(self.b["stuckproving"]["units"][-1], "proving 1,290 checks ~14.4 h")
         self.assertEqual(self.b["ready"]["units"], ["all proved"])
-        self.assertEqual(self.b["importquiet"]["units"], ["river stuck", u"importing · no progress for 3 min"])
+        self.assertEqual(self.b["importquiet"]["units"], ["river stuck", u"import · no progress for 3 min"])
 
     def test_the_line_names_one_wound_and_no_count_of_the_rest(self):
         """v3883 (#116) - ONE wound: "+N" spent 3 of a 25-37 character line on what the open row lists"""
@@ -205,7 +205,7 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
     def test_what_heals_it_follows_the_wound_and_a_landed_import_is_not_importing(self):
         self.assertEqual(self.b["stuckproving"]["key"], "wounded")
         self.assertTrue(self.b["stuckproving"]["line"].endswith(u"· proving 1,290 checks ~14.4 h"), self.b["stuckproving"]["line"])
-        self.assertNotIn("importing", self.b["landed"]["line"])
+        self.assertNotIn("import", self.b["landed"]["line"])
 
     def test_the_proof_wound_never_says_proof_twice(self):
         self.assertNotIn("proof: proof", " ".join(x["line"] for x in self.b.values() if x))
@@ -233,7 +233,7 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
     def test_the_brief_wraps_whole_units_never_a_cut_and_never_nowrap(self):
         """* v3883 (#116) THE POINT - his live Fleet at 1024: "importing proofs ~15 / min" split under a stranded middot"""
         code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
-        rule = _cut(code, ".fleet-row > .fleet-brief { grid-column: 2 / -1;", "}")
+        rule = _cut(code, ".fleet-row > .fleet-brief { grid-column: 1 / -1;", "}")
         for want in ("display: flex;", "flex-wrap: wrap;", "column-gap: 1ch;"):
             self.assertIn(want, rule, "the closed brief is not a wrapping row of whole units: %r missing" % want)
         for banned in ("nowrap", "line-clamp", "ellipsis", "overflow: hidden"):
@@ -250,7 +250,19 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
     def test_a_closed_row_hides_its_chips_only_after_a_brief(self):
         code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
         self.assertEqual(code.count(".fleet-row:not(.fleet-open) > .fleet-brief ~ .fleet-chips { display: none; }"), 1)
-        self.assertIn(".fleet-row > .fleet-brief { grid-column: 2 / -1;", code)
+        self.assertIn(".fleet-row > .fleet-brief { grid-column: 1 / -1;", code)
+
+    def test_the_closed_row_fits_two_lines_at_1512(self):
+        """v3887 (REG-3473) - GrokBot's v3885 look at 1512: Konyo · ALT, OLD PC ALT and Konyo at 88px (3 lines); MEASURED on his live
+        Fleet payload in a private console, every closed row there is 48px (two lines) with the brief on the whole row, the
+        name line's eyes at 1em with 2px margins, 3px gaps and "import". Font metrics decide a fit, so the law pins the CSS
+        that bought it (a geometry pin would be measuring CI's fonts, not his)."""
+        code = re.sub(r"/\*.{0,4000}?\*/", "", _ui(), flags=re.S)
+        self.assertIn("column-gap: 3px; row-gap: 1px; padding: 3px 0;", _cut(code, "  .fleet-row { display: grid;", "}"))
+        self.assertIn(".fleet-row > .fleet-brief { grid-column: 1 / -1;", code)
+        self.assertIn(".fleet-row > b > .fleet-shadow svg, .fleet-row > b > .fleet-winview svg { width: 1em; }", code)
+        self.assertIn(".fleet-row > b > .fleet-shadow { margin-right: 2px; }", code)
+        self.assertIn(".fleet-row > b > .fleet-winview { margin: 0 2px 0 0; }", code)
 
     def test_the_open_rows_vault_line_takes_its_own_line(self):
         """the both-sides render: the vault line wrapped six lines of ~16 characters beside the eyes in the 227px rail"""
@@ -260,6 +272,16 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3887 (REG-3473) - the brief starts under the name again and wraps at 1512 (303px for 338px)",
+     "file": "tv/control_ui.html",
+     "find": "  .fleet-row > .fleet-brief { grid-column: 1 / -1; min-width: 0;",
+     "replace": "  .fleet-row > .fleet-brief { grid-column: 2 / -1; min-width: 0;",
+     "matches": 1},
+    {"why": "v3887 (REG-3473) - the name line's eyes are full size again and the name wraps at 1512",
+     "file": "tv/control_ui.html",
+     "find": "  .fleet-row > b > .fleet-shadow svg, .fleet-row > b > .fleet-winview svg { width: 1em; }\n",
+     "replace": "",
+     "matches": 1},
     {"why": "v3884 - a blind count says 'blind' of nothing again ('2 blind' - of what?)",
      "file": "tv/control_ui.html",
      "find": "return / gate blind$/.test(m) ? ' check blind' : ' checks blind'; }) : '';",
@@ -283,8 +305,8 @@ RED_PROOF = [
      "replace": "return / gate blind$/.test(m) ? ' check blind' : ' checks blind'; }) + (hurt.length > 1 ? ' +' + (hurt.length - 1) : '') : '';\n",   # v3884 re-anchor
      "matches": 1},
     {"why": "v3882 - a quiet import's closed row repeats a stale ETA (or says nothing) instead of how long it has been quiet",
-     "file": "tv/control_ui.html", "find": "    var heal = imp ? 'importing' + (_quiet || _eta(imp.etaS)) : proving;\n",
-     "replace": "    var heal = imp ? 'importing' + _eta(imp.etaS) : proving;\n", "matches": 1},
+     "file": "tv/control_ui.html", "find": "    var heal = imp ? 'import' + (_quiet || _eta(imp.etaS)) : proving;",
+     "replace": "    var heal = imp ? 'import' + _eta(imp.etaS) : proving;", "matches": 1},
     {"why": "REG-3395 / v3883 - an offline PC's line no longer says since when",
      "file": "tv/control_ui.html",
      "find": "      return since ? ['since ' + since] : [];", "replace": "      return [];",   # v3883 re-anchor: OFFLINE, and since when
@@ -306,7 +328,7 @@ RED_PROOF = [
      "replace": "    var hurt = s.hurt.slice();", "matches": 1},
     {"why": "REG-3395 - the line no longer says what is healing the PC (the import)",
      "file": "tv/control_ui.html",
-     "find": "    var heal = imp ? 'importing' + (_quiet || _eta(imp.etaS)) : proving;", "replace": "    var heal = proving;",   # v3883 re-anchor
+     "find": "    var heal = imp ? 'import' + (_quiet || _eta(imp.etaS)) : proving;", "replace": "    var heal = proving;",   # v3883 re-anchor
      "matches": 1},
     {"why": "REG-3395 - a status that throws hides the chips anyway (no brief, still hidden)",
      "file": "tv/control_ui.html",

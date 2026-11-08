@@ -7005,7 +7005,7 @@
        with nothing set to nowrap. The dot is 7px and fixed; the other three must all be able to
        give. */
     grid-template-columns: auto minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
-    align-items: baseline; column-gap: 7px; row-gap: 1px; padding: 3px 0;
+    align-items: baseline; column-gap: 3px; row-gap: 1px; padding: 3px 0;   /* v3887 (REG-3473) - 7px cost the name its line */
     font: var(--fw-medium) var(--fs-2xs)/var(--lh-snug) var(--mono); color: #9fb0a4; }
   .fleet-row > * { min-width: 0; }
   .fleet-row > .fleet-dot { grid-column: 1; }
@@ -7123,7 +7123,7 @@
   .fleet-chips > span { min-width: 0; overflow-wrap: anywhere; }
   /* v3881 (REG-3395, his 11-07 21:12 ask) - THE CLOSED ROW: the PC's word and one short line, under the name. The chips after
      it (the river's detail) draw only on an open row; a row with no brief keeps them (the sibling rule needs the brief). */
-  .fleet-row > .fleet-brief { grid-column: 2 / -1; min-width: 0; overflow-wrap: anywhere; font-weight: var(--fw-normal);
+  .fleet-row > .fleet-brief { grid-column: 1 / -1; min-width: 0; overflow-wrap: anywhere; font-weight: var(--fw-normal);
                               display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 1ch; }
   .fleet-brief > span { min-width: 0; }
   /* v3883 (#116, GrokBot's v3881 look: STILL) - WHOLE UNITS, NEVER A CUT. MEASURED on his live Fleet with the Mac's fonts
@@ -7218,6 +7218,14 @@
   .fleet-winview { display: inline-block; margin: 0 6px 0 -2px; line-height: 0; vertical-align: -0.12em; cursor: help; }
   .fleet-winview svg { width: 1.3em; height: .8em; overflow: visible; display: block; }
   .fleet-winview .sh-lid { fill: #0d0907; stroke-width: 1.4; }
+  /* v3887 (REG-3473, GrokBot's v3885 look: "closed Fleet row ... STILL (worse) - Konyo · ALT, OLD PC ALT and Konyo are 88 / 88 / 88 px
+     (3 lines)" at 1512). MEASURED on his live Fleet payload in a private console: the 317px rail's top line needed 343px (two eyes
+     + "Konyo · ALT" 152, the capture eye 28, "ledgers differ" 135, three 7px gaps) and the brief 338px of 303. ON THE NAME LINE the
+     two eyes are a little narrower and closer (1em, 2px), the row's gaps 3px, and the brief takes the whole row from column 1 -
+     with "import" (not "importing") every closed row there is two lines, 48px. Elsewhere the eyes keep their size. */
+  .fleet-row > b > .fleet-shadow { margin-right: 2px; }
+  .fleet-row > b > .fleet-winview { margin: 0 2px 0 0; }
+  .fleet-row > b > .fleet-shadow svg, .fleet-row > b > .fleet-winview svg { width: 1em; }
   .fleet-winview .sh-pupil { fill: #050303; }
   .fleet-winview .sh-glint { fill: none; }
   .fleet-winview.wv-on .sh-lid { stroke: #3fbf72; }
@@ -29294,7 +29302,7 @@ function escC(s) {
     /* v3882 - a quiet import says it is quiet, never a stale ETA (his 11-08: "the 5 min thing isnt correlated") */
     var _quiet = (imp && typeof imp.quietS === 'number' && isFinite(imp.quietS) && imp.quietS > 0)
       ? ' \u00b7 no progress for ' + (imp.quietS < 5400 ? Math.max(1, Math.round(imp.quietS / 60)) + ' min' : (imp.quietS / 3600).toFixed(1) + ' h') : '';
-    var heal = imp ? 'importing' + (_quiet || _eta(imp.etaS)) : proving;
+    var heal = imp ? 'import' + (_quiet || _eta(imp.etaS)) : proving;   /* v3887 (REG-3473) - 'importing' cost 1512 its one line */
     return [first, heal].filter(Boolean);
   };
   /* v3883 (#116) - the line is its units joined (the hover, the laws); the row draws each unit whole */
