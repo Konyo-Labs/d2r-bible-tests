@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3883",
+  "ver": "v3884",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3883: the Fleet in plain words, the ALTs prove their blind checks beside the import, slivers join their reel",
+  "note": "v3884: D2JSP price cards, TZ odds at your level, every qlvl from silospen, TZ runs tagged",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

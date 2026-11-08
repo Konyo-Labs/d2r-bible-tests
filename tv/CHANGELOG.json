@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3884",
+    "date": "2026-11-08",
+    "items": [
+      "Price check draws a runeword two cards - Enigma normal and perfect, each with its picture and price, like Shako",
+      "D2JSP prices stand out - a big coloured price under each tier card, the item title in its rarity colour",
+      "D2JSP Advanced prices line up - normal, perfect and posts in fixed columns on the right",
+      "Every D2JSP item wears its HD art, and hovering it opens the full item card with its mods",
+      "Uniques no longer shows a Sealed grounds band",
+      "The Fleet says what differs, what is blind and what is proved - ledgers differ, 2 checks blind, proving 102 checks",
+      "A PC busy only with a cloud stream proves after 30 min, not 6 h",
+      "A safety net find on the Fleet names what it shuts - shuts 9 routes, shuts nothing - never a bare its locks shut",
+      "A first red safety net find is asked again after 1 h, not 6 h - one load flake no longer shuts routes all morning",
+      "Quick wins shows the top 5 boss and super unique runs for every item",
+      "The 5th Quick wins row reads 5th, never undefined",
+      "Every TZ run wears a TZ tag in the terror colour in Quick wins and Best runs, so TZ and plain runs read apart",
+      "LVL slider beside MF and P# - terror zone odds follow your character level, from silospen at levels 1 to 99",
+      "Every item quality level is silospen level - Heavens Light 69, Bane Ash 7, Deaths Web 74 - 366 items corrected",
+      "Tyraels Might no longer lists a Hell Diablo drop silospen never gives, and a law now refuses any such row"
+    ]
+  },
+  {
     "ver": "v3883",
     "date": "2026-11-08",
     "items": [
