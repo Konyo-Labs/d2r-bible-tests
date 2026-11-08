@@ -85,13 +85,24 @@ class EachTerrorZoneWearsItsOwnMonster(unittest.TestCase):
                 bad.append((z, f, "not in art/"))
             elif f in self.rec.get("rejected", {}):
                 bad.append((z, f, "a file the cold look rejected"))
-            elif f.startswith(("d2fam_", "d2arreat_")):
+            elif f.startswith(("d2fam_", "d2arreat_", "d2rw_")):   # v3887 (#161) - a d2runewizard loop, sourced the same way
                 got = hashlib.sha1(open(p, "rb").read()).hexdigest()
                 if (self.rec["files"].get(f) or {}).get("sha1") != got:
                     bad.append((z, f, "not the file its record names"))
             elif f not in fand:
                 bad.append((z, f, "no recorded source"))
         self.assertEqual(bad, [], "a Terror Zone monster is missing, unsourced or rejected: %s" % bad)
+
+    def test_a_pack_monsters_zone_wears_the_sprite_quick_wins_draws(self):
+        """v3887 (#161) - "the same sprite Quick wins draws": a zone whose pick is a random-pack monster wears exactly the file
+        MONSTER_PACK_ART gives that monster, so a better picture there reaches the zone card too (Tamoe Highland's Dark Lancer)"""
+        board = _read("bible.html")
+        i = board.index("const MONSTER_PACK_ART = {")
+        pack = json.loads(board[i + len("const MONSTER_PACK_ART = "):board.index("};", i) + 1])
+        pairs = [(z, v["monster"], v.get("file")) for z, v in self.rec["zones"].items() if v.get("monster") in pack]
+        self.assertGreaterEqual(len(pairs), 20, "PREMISE: only %d zones are picked by a pack monster" % len(pairs))
+        self.assertEqual([p for p in pairs if pack[p[1]] != p[2]], [], "a zone card and Quick wins draw one monster two ways")
+        self.assertEqual(self.mon.get("Tamoe Highland"), pack["Dark Lancer"])
 
     def test_the_card_draws_the_monster_alone_by_the_zones_own_key(self):
         i = self.ui.index("var mon = Object.prototype.hasOwnProperty.call(TZ_MONSTER, _mk)")
@@ -103,6 +114,16 @@ class EachTerrorZoneWearsItsOwnMonster(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3887 (#161) - Tamoe Highland's card keeps the 38x120 sliver while Quick wins draws Dark Lancer's loop",
+     "file": "tv/control_ui.html",
+     "find": "\"Tamoe Highland\": \"d2rw_cr_lancer3.webp\"",
+     "replace": "\"Tamoe Highland\": \"d2fam_corrupt_rogue_spearwoman.gif\"",
+     "matches": 1},
+    {"why": "v3887 (#161) - the record's Tamoe pick drifts from the map Quick wins reads",
+     "file": "tv/data/monster_art_arreat.json",
+     "find": "   \"file\": \"d2rw_cr_lancer3.webp\",\n   \"by\": \"the zone's most common random pack",
+     "replace": "   \"file\": \"d2fam_corrupt_rogue_spearwoman.gif\",\n   \"by\": \"the zone's most common random pack",
+     "matches": 1},
     {"why": "v3883 - the Throne of Destruction wears Achmel the Cursed again, not its top gun Lister (his 11-08 ruling)",
      "file": "tv/control_ui.html",
      "find": "\"Throne of Destruction\": \"d2mon_Lister_the_Tormentor.gif\"",

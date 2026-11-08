@@ -91,8 +91,10 @@ out.gridSixBoss = _qwGridHtml([1, 2, 3, 4, 5, 6].map(function(i){ return { label
 out.gridNoBoss = _qwGridHtml(places.filter(function(p){ return p.kind !== 'boss'; }), also);
 out.gridDupArea = _qwGridHtml(places.concat([{ label: 'NM The Pit', area: '', s: { bossId: 'pit' }, chance: 90000, runs: 900, hours: 12, kph: 50, kpr: 110, est: false, kind: 'area' }]), also);
 out.gridSix = _qwGridHtml(places, also.concat([1, 2, 3, 4].map(function(k){ return { name: 'Pack ' + k, who: 'Hell Pack ' + k, area: 'Somewhere', kind: 'champion', chance: 700 + k }; })));
-// v3887 (#161) - a Dark Lancer pack on its own: the loop it draws is read off the one map
-out.gridLancer = _qwGridHtml([], [{ name: 'Dark Lancer', who: 'Hell Dark Lancer', area: 'Tamoe Highland', kind: 'champion', chance: 900 }]);
+// v3887 (#161) - the three spearwomen packs: the loop each draws is read off the one map
+out.gridLancer = _qwGridHtml([], [{ name: 'Dark Lancer', who: 'Hell Dark Lancer', area: 'Tamoe Highland', kind: 'champion', chance: 900 },
+                                  { name: 'Black Lancer', who: 'Hell Black Lancer', area: 'Tamoe Highland', kind: 'champion', chance: 901 },
+                                  { name: 'Dark Spearwoman', who: 'Hell Dark Spearwoman', area: 'Tamoe Highland', kind: 'champion', chance: 902 }]);
 process.stdout.write(JSON.stringify(out));
 """
 
@@ -206,13 +208,17 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         self.assertNotIn("background-image:url(art/tz_", row[0], "a random pack still wears a zone tile")
         self.assertIn("qw-mon-sprite", row[0])
 
-    def test_a_dark_lancer_pack_draws_its_own_loop(self):
-        """v3887 (#161) - the spearwoman family sprite is 38x120 and read as a dark sliver in a 56px tile; Dark Lancer draws its
-        d2runewizard idle loop (cr_lancer3), and its siblings keep the family sprite rather than borrow its colours"""
-        row = [r for r in self.o["gridLancer"].split('<div class="qw-row') if "Hell Dark Lancer" in r]
-        self.assertTrue(row, "PREMISE: no Dark Lancer row was drawn")
-        self.assertIn('src="art/d2rw_cr_lancer3.webp"', row[0], "Dark Lancer still draws the thin family sprite")
-        self.assertIn("qw-mon-sprite", row[0])
+    def test_each_spearwoman_pack_draws_its_own_loop(self):
+        """v3887 (#161) - the spearwoman family sprite is 38x120 (the thinnest pack sprite) and read as a dark sliver in a 56px
+        tile; each of the three draws its own page's d2runewizard idle loop, never a sibling's colours"""
+        for who, f in (("Hell Dark Lancer", "d2rw_cr_lancer3.webp"), ("Hell Black Lancer", "d2rw_cr_lancer4.webp"),
+                       ("Hell Dark Spearwoman", "d2rw_cr_lancer1.webp")):
+            with self.subTest(who=who):
+                row = [r for r in self.o["gridLancer"].split('<div class="qw-row') if who in r]
+                self.assertTrue(row, "PREMISE: no %s row was drawn" % who)
+                self.assertIn('src="art/%s"' % f, row[0], "%s does not draw its own loop" % who)
+                self.assertNotIn("spearwoman.gif", row[0], "%s still draws the thin family sprite" % who)
+                self.assertIn("qw-mon-sprite", row[0])
 
     def test_an_area_run_is_in_neither_list(self):
         """v3886 (#150, his 11-08 "the top 5 when you filter in silopen") - the Cow Level and the Pit as a RUN (~350 / ~110 kills,
@@ -692,6 +698,16 @@ RED_PROOF = [
      "file": "bible.html",
      "find": "  \"Dark Lancer\": \"d2rw_cr_lancer3.webp\",\n",
      "replace": "  \"Dark Lancer\": \"d2fam_corrupt_rogue_spearwoman.gif\",\n",
+     "matches": 1, "needs": "node"},
+    {"why": "v3887 (#161) - Black Lancer borrows Dark Lancer's loop (a sibling's colours)",
+     "file": "bible.html",
+     "find": "  \"Black Lancer\": \"d2rw_cr_lancer4.webp\",\n",
+     "replace": "  \"Black Lancer\": \"d2rw_cr_lancer3.webp\",\n",
+     "matches": 1, "needs": "node"},
+    {"why": "v3887 (#161) - Dark Spearwoman draws the 38x120 family sprite again",
+     "file": "bible.html",
+     "find": "  \"Dark Spearwoman\": \"d2rw_cr_lancer1.webp\",\n",
+     "replace": "  \"Dark Spearwoman\": \"d2fam_corrupt_rogue_spearwoman.gif\",\n",
      "matches": 1, "needs": "node"},
     {"why": "v3884 - the 5th boss row's rank reads 'undefined' (a four-entry ordinal list)",
      "file": "bible.html",

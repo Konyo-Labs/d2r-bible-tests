@@ -1178,6 +1178,32 @@
     "Dark Lancer"
    ],
    "why": "v3887 #161: the family sprite (d2fam_corrupt_rogue_spearwoman.gif, 38x120) read as a dark sliver in the Quick wins tile; the page's own 'Dark Lancer idle animation' (20 frames, 480x480 animated WebP)"
+  },
+  "d2rw_cr_lancer4.webp": {
+   "family": "Corrupt Rogue Spearwoman",
+   "monster": "cr_lancer4",
+   "page": "https://d2runewizard.com/monsters/Black%20Lancer",
+   "url": "https://d2runewizard.com/monsters/loops/cr_lancer4.webp",
+   "sha1": "30d811c4399552860384e8c6adb8575550908e98",
+   "bytes": 368904,
+   "grokCold": "A barefoot humanoid in dark grey-black armor with red markings, wearing a pale horned skull mask, holds a long dark metal polearm pointed to the left.",
+   "names": [
+    "Black Lancer"
+   ],
+   "why": "v3887 #161 sweep: the family sprite (38x120) is the thinnest pack sprite and read as a dark sliver; the page's own 'Black Lancer idle animation' (20 frames, 480x480 animated WebP)"
+  },
+  "d2rw_cr_lancer1.webp": {
+   "family": "Corrupt Rogue Spearwoman",
+   "monster": "cr_lancer1",
+   "page": "https://d2runewizard.com/monsters/Dark%20Spearwoman",
+   "url": "https://d2runewizard.com/monsters/loops/cr_lancer1.webp",
+   "sha1": "8dd08a0e1eb9ab86b986092077477de993d18476",
+   "bytes": 429464,
+   "grokCold": "A barefoot humanoid with pale skin soaked in red blood, wearing a pale horned skull mask and only a few straps and bone spikes, holds a wooden spear with a metal tip pointed to the left.",
+   "names": [
+    "Dark Spearwoman"
+   ],
+   "why": "v3887 #161 sweep: the family sprite (38x120) is the thinnest pack sprite and read as a dark sliver; the page's own 'Dark Spearwoman idle animation' (20 frames, 480x480 animated WebP)"
   }
  },
  "packs": {
@@ -1187,7 +1213,7 @@
   "Apparition": "art/d2fam_wraith.gif",
   "Arach": "art/d2fam_giant_spider.gif",
   "Assailant": "art/d2fam_sand_raider.gif",
-  "Black Lancer": "art/d2fam_corrupt_rogue_spearwoman.gif",
+  "Black Lancer": "art/d2rw_cr_lancer4.webp",
   "Black Raptor Nest": "art/d2fam_blood_hawk_nest.gif",
   "Black Rogue": "art/d2fam_corrupt_rogue.gif",
   "Black Soul": "art/d2fam_willowisp.gif",
@@ -1250,7 +1276,7 @@
   "Foul Crow": "art/d2fam_blood_hawk.gif",
   "Moon Clan": "art/d2fam_goatman.gif",
   "Dark Hunter": "art/d2fam_corrupt_rogue.gif",
-  "Dark Spearwoman": "art/d2fam_corrupt_rogue_spearwoman.gif",
+  "Dark Spearwoman": "art/d2rw_cr_lancer1.webp",
   "Returned Mage": "art/d2fam_skeleton_mage.gif",
   "Gargantuan Beast": "art/d2fam_wendigo.gif",
   "Balrog": "art/d2fam_mega_demon.gif"
@@ -1634,8 +1660,8 @@
   },
   "Tamoe Highland": {
    "monster": "Dark Lancer",
-   "file": "d2fam_corrupt_rogue_spearwoman.gif",
-   "by": "the zone's most common random pack in the page's own data"
+   "file": "d2rw_cr_lancer3.webp",
+   "by": "the zone's most common random pack in the page's own data - v3887 (#161): the same loop Quick wins draws for it (the family sprite read as a sliver)"
   },
   "The Cave": {
    "monster": "Coldcrow",
