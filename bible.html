@@ -31065,6 +31065,29 @@ window.closeItemDetail = function() {
   document.documentElement.classList.remove('detail-open');   // v694 🏓R6 — dock returns
 };
 
+/* v3886 (his 11-08: "for tyraels might it doesnt list diablo anymore but clearly the top 5 should include diablo" - silospen,
+   Terror Zone on: Baal 1:18,689, Nihlathak 1:138,246, Diablo 1:169,327, Snapchip 1:216,678) - THE ITEM CARD RANKS LIKE QUICK WINS.
+   It sorted its places by TIME alone and kept six, so a run with far better odds but a slow clear fell off: at LVL 90, MF 500,
+   Hell TZ Diablo (1:169,358 a kill, ~3,354 h) sat behind six quicker runs and was not on Tyrael's Might's card while silospen
+   lists it fourth. Now its places are ranked by the one ranking (_qwRank): fewest runs for a 50% chance, runs within 2% a tie
+   that the quicker run wins. -> [{boss, bossId, diffKey, chance, kph, hrs, r50, runs, verified}], best first. Pure. */
+function itemCardSources(item) {
+  const sources = [];
+  (item && item.sources || []).forEach(s => {
+    if (!s.chance || isEventP(s.chance)) return;
+    const adj = effChance(s.chance, s.bossId, s.diffKey);
+    const hrs = hoursFor(adj, 0.5, s.kph || 100, killsPerRun(s.bossId));
+    const r50 = runsFor(adj, 0.5);
+    const runs = hoursFor(adj, 0.5, 1, killsPerRun(s.bossId));   // RUNS for a 50% chance - an area run counts a run, not a kill
+    if (hrs !== null && r50 !== null && runs !== null) {
+      sources.push({boss:s.boss, bossId:s.bossId, diffKey:s.diffKey || '', chance:adj, kph:s.kph||100, hrs, r50, runs,
+                    hours: hrs, label: s.boss, verified:s.verified});
+    }
+  });
+  if (typeof window._qwRank === 'function') return window._qwRank(sources);
+  return sources.sort((a, b) => (a.runs - b.runs) || (a.hrs - b.hrs));   // the Quick wins block not loaded: runs, then time
+}
+try { window.itemCardSources = itemCardSources; } catch (e) {}
 function renderItemDetailCard(itemName) {
   const panel = document.getElementById('item-detail-panel');
   if (!panel) return;
@@ -31079,18 +31102,7 @@ function renderItemDetailCard(itemName) {
   const itemInfo = (typeof ITEM_INFO !== 'undefined' && ITEM_INFO[itemName]) ? ITEM_INFO[itemName] : null;
   const itemDesc = (typeof renderCodexCard !== 'undefined') ? renderCodexCard(itemName) : null;
 
-  // Compute all viable sources at current MF, sorted by hours
-  const sources = [];
-  (item.sources || []).forEach(s => {
-    if (!s.chance || isEventP(s.chance)) return;
-    const adj = effChance(s.chance, s.bossId, s.diffKey);
-    const hrs = hoursFor(adj, 0.5, s.kph || 100, killsPerRun(s.bossId));
-    const r50 = runsFor(adj, 0.5);
-    if (hrs !== null && r50 !== null) {
-      sources.push({boss:s.boss, bossId:s.bossId, diffKey:s.diffKey || '', chance:adj, kph:s.kph||100, hrs, r50, verified:s.verified});
-    }
-  });
-  sources.sort((a,b) => a.hrs - b.hrs);
+  const sources = itemCardSources(item);
 
   if (sources.length === 0) {
     panel.innerHTML = `<div class="gic-card"><h2 class="gic-name">${item.n}</h2><p style="color:var(--gold-dim)">No viable sources at current MF/level constraints.</p></div>`;
@@ -31178,7 +31190,7 @@ function renderItemDetailCard(itemName) {
               <div class="gic-source-label">${(s.diffKey||'source').replace('Tz',' TZ').toUpperCase()}</div>
               <div class="gic-source-boss">${s.boss}</div>
               <div class="gic-source-chance">${fmt(s.chance)}</div>
-              <div class="gic-source-stats">${s.r50.toLocaleString()} runs · ${fmtHours(s.hrs)} · ${s.kph}/hr ${s.verified?'· 🔒':''}</div>
+              <div class="gic-source-stats">${Math.round(s.runs).toLocaleString()} runs · ${fmtHours(s.hrs)} · ${s.kph}/hr ${s.verified?'· 🔒':''}</div>
             </div>
           `).join('')}
         </div>
@@ -31186,7 +31198,7 @@ function renderItemDetailCard(itemName) {
 
       <section class="gic-section">
         <div class="gic-quick-take">
-          ⚡ <strong>Quick take @ ${window._oddsAtSay()}:</strong> Fastest = <span class="gic-item-link">${best.boss}</span> at <strong>${fmt(best.chance)}</strong> · <strong>${best.r50.toLocaleString()} runs</strong> ≈ <strong style="color:var(--terror)">${fmtHours(best.hrs)}</strong> for 50% drop at ${best.kph}/hr
+          ⚡ <strong>Quick take @ ${window._oddsAtSay()}:</strong> Best run = <span class="gic-item-link">${best.boss}</span> at <strong>${fmt(best.chance)}</strong> · <strong>${Math.round(best.runs).toLocaleString()} runs</strong> ≈ <strong style="color:var(--terror)">${fmtHours(best.hrs)}</strong> for 50% drop at ${best.kph}/hr
         </div>
       </section>
 
@@ -70834,6 +70846,11 @@ function renderJournal(){
           out.push({ label: s.boss, area: T.a, s: s, chance: c, runs: runs, hours: hrs, kph: s.kph, kpr: kpr, est: true });
         } catch (eR) {}
       });
+    return _qwRank(out);
+  }
+  /* v3886 (his 11-08 on Tyrael's Might: "it doesnt list diablo anymore but clearly the top 5 should include diablo") - THE ONE
+     RANKING, shared: Quick wins and the item card (itemCardSources) order places by it. Rows carry .runs, .hours and .label. */
+  function _qwRank(out){
     var byLabel = function(a, b){ return a.label < b.label ? -1 : a.label > b.label ? 1 : 0; };
     out.sort(function(a, b){ return (a.runs - b.runs) || (_qwH(a) - _qwH(b)) || byLabel(a, b); });
     /* v3885 (his 11-08 on Bane Ash: "the monsters/bosses arent corretly in order from best to worst" - Pitspawn Fouldog, 2,123
@@ -70849,6 +70866,7 @@ function renderJournal(){
     }
     return res;
   }
+  window._qwRank = _qwRank;
   var QW_SAME = 0.02;   // v3885 - his "basically the same" (the TZ level rule's 2%)
   function _qwH(p){ return (p.hours != null && isFinite(p.hours)) ? p.hours : 9e9; }
   window._qwPlaces = _qwPlaces;

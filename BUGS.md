@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3451 - TYRAEL'S MIGHT'S ITEM CARD DROPPED DIABLO: IT RANKED BY TIME ALONE (v3886, his 11-08)
+His words: "for tyraels might it doesnt list diablo anymore but clearly the top 5 should include diablo ... and for others
+obviosuly". renderItemDetailCard sorted its places by hours and kept six, so a place with far better odds but a slow clear
+fell off it; Quick wins ranks by fewest RUNS (runs within 2% a tie the quicker run wins), so the two surfaces named
+different places for one item. MEASURED at LVL 90 / MF 500: Hell TZ Diablo (1:169,358 a kill, ~3,354 h) was missing from
+the card while silospen (Terror Zone on, same MF) and Quick wins list it fifth. Two more defects in the same card: its
+Quick take said "Fastest =" over a place no longer chosen for speed, and each row printed runsFor(chance) - the kills for a
+50% chance - as its RUNS, so a Cow Level row (350 kills a run) read 350x too many runs. Now itemCardSources(item) hands the
+card's places to Quick wins' own _qwRank (published as window._qwRank), the Quick take says "Best run", and rows print runs.
+Law: tv/test_the_item_card_ranks_like_quick_wins.py (all 2,164 cards at four MF / players settings in the one ranking's
+order, re-derived from their own numbers; a baseline that 2,143 of them differ under time alone; Tyrael's Might keeps
+Diablo). Red-proofs PROVEN (3).
 ### REG-3450 - ONE LAW RED ONCE IN ONE SHARD COST A WHOLE NEW ROUND (v3885, #146, his 11-08)
 His words: "i still dont understand why a full round when 23/24 shard pass only one red fails why does it need too redo them
 all again i thought we optimized this" and "from now on the one shard that is red the other that were proved dont need to rerun
