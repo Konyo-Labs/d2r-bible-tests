@@ -23,6 +23,8 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
+from console_safe import enable as _console_safe_enable  # noqa: E402  (it prints non-ASCII - a cp1255 console must not crash)
+_console_safe_enable()
 import test_one_river_chip_per_row as H  # noqa: E402  (the cut-and-run harness for _fleetStuckChip)
 
 HELD = [{"station": "CAPTURE", "n": 13, "oldestS": 9 * 86400, "window": False,
