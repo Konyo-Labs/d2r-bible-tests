@@ -1,0 +1,68 @@
+name: 🪟 Windows laws — why each one is red on Windows
+# v3886 (#107, his ask: the PCs prove clean - "rivers and unblocking and proving of the fleet finally clean"). GitHub's Windows
+# proof run on v3883 (42477501551) filed 42 laws "ALREADY RED untampered", but its log keeps only each red CASE's name, never
+# its assertion - so whether a red is a law that is POSIX/Mac by nature (to be declared off Windows: never run, owed or counted
+# there) or a real Windows defect (to fix) could only be guessed from names. This runs a named list of laws on windows-latest,
+# in the Windows proof run's own environment, each on its own, verbose, and keeps every word each one printed. It never fails
+# on a red law (finding them is its job); it fails only if it could not run the list. Triggered by a ci/winlaws-* push, which
+# the pre-push grades nowhere (a ci-only push) and whose only changed file is this one, so no other workflow fires.
+on:
+  push:
+    branches: ['ci/winlaws-**']
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  laws:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      D2R_NO_CLAUDE: "1"
+      PYTHONUTF8: "1"
+      PYTHONIOENCODING: utf-8
+      LAWS: "test_a_d2jsp_post_carries_the_item_picture test_a_gate_proven_on_these_bytes_is_carried test_a_host_dependency_is_not_always_an_attribute test_a_lane_gate_never_starts_on_a_record_the_last_gate_wrote test_a_law_reads_the_product_not_a_copy_of_it test_a_leaked_git_dir_never_writes_the_real_repo test_a_machine_meter_does_not_untrace_a_gate test_a_named_file_the_law_never_opened_is_keyed_by_name test_a_node_version_ask_does_not_untrace_a_gate test_a_one_line_css_edit_reproves_only_its_readers test_a_parallel_proof_is_the_same_proof test_a_printing_child_does_not_untrace_a_gate test_a_proof_that_needs_what_this_pc_lacks_is_elsewhere test_a_proven_verdict_is_reused_only_on_identical_bytes test_a_push_proof_runs_only_where_its_defect_shows test_a_push_records_its_forecast_and_actual test_a_push_worktree_is_seeded_before_its_gates test_a_round_cut_only_by_its_deadline_is_made_up test_a_scratch_console_never_films_his_screen test_a_shell_law_without_a_real_bash_is_unmeasured test_a_show_toggle_reads_hide_while_open test_a_vanished_sandbox_is_never_a_find test_a_vanished_sandbox_names_its_remover test_an_inert_child_does_not_untrace_a_gate test_closing_the_window_keeps_the_console_running test_d2jsp_desk test_folder_scans test_his_switch_picks_who_reads test_live_store_skip test_provenance test_the_character_builder_fits_at_every_width test_the_characters_room_says_why_its_saves_name_what_they_name test_the_eye_reads_the_commit_read_only test_the_fast_gate_runs_the_core_and_what_changed test_the_gate_set_shards_cleanly test_the_mac_signs_in_through_its_own_d2jsp_window test_the_planner_spinner_stays_under_the_cursor test_the_river_carries_a_stamp test_the_task_board_goes_online_scrubbed test_the_windows_eye_is_found_by_its_exe test_their_tooltip_rows_are_ours test_what_keeps_growing_is_salvaged_then_pruned "
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 200
+      - name: Fetch the history the stamp laws grade
+        timeout-minutes: 3
+        continue-on-error: true
+        run: git fetch --no-tags --shallow-since=2026-10-29 origin "$GITHUB_SHA"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: The console's own imports (Pillow, numpy, websocket-client)
+        run: python -m pip install --quiet pillow numpy websocket-client
+      - name: A claude that refuses
+        run: |
+          mkdir -p "$RUNNER_TEMP/noclaude"
+          printf '@echo claude is not called on CI (windows laws) 1>&2\r\n@exit /b 97\r\n' > "$RUNNER_TEMP/noclaude/claude.cmd"
+          echo "$RUNNER_TEMP/noclaude" >> "$GITHUB_PATH"
+      - name: Run each law on its own, verbose, every word kept
+        timeout-minutes: 55
+        run: |
+          mkdir -p winlaws
+          printf '| law | exit | seconds | result |\n|---|---|---|---|\n' > winlaws/SUMMARY.md
+          for law in $LAWS; do
+            t0=$(date +%s)
+            # GitHub's bash runs -e -o pipefail: a red law (non-zero) or a grep that matches nothing must not end the step
+            rc=0; timeout 900 python "tv/$law.py" -v > "winlaws/$law.log" 2>&1 || rc=$?
+            t1=$(date +%s)
+            res=$(grep -E '^(OK|FAILED)' "winlaws/$law.log" | tail -1 || true)
+            echo "| $law | $rc | $((t1 - t0)) | $res |" >> winlaws/SUMMARY.md
+            echo "===== $law (exit $rc, $((t1 - t0)) s) $res"
+            grep -E -A40 '^(FAIL|ERROR): ' "winlaws/$law.log" | head -120 || true
+          done
+          cat winlaws/SUMMARY.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep every law's output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-laws
+          path: winlaws/
+          retention-days: 7
