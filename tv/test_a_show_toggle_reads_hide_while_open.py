@@ -40,9 +40,17 @@ class AShowToggleReadsHideWhileOpen(unittest.TestCase):
               " try { a.pause(); } catch (e) {}"
               " this._shHeld = a; return a; }; })(Element.prototype.animate);")
         seen = []
+        # v3884 CI round 3 (proof shard 17 on a7876f309: RED untampered, 11.3 s - the 8 s wait ran out, so the drawer never
+        # opened): the toggle was measured ONCE, before the page's fonts had settled in a loaded sandbox, and a later reflow
+        # moved it from under the click. Wait for the fonts, then measure the toggle again right before each click.
+        fdl = time.time() + 8.0
+        while t.ev("document.fonts ? document.fonts.status : 'loaded'") != "loaded" and time.time() < fdl:
+            time.sleep(0.1)
         for k in range(2):
+            at = json.loads(t.ev("(function(){var q=document.querySelector('#sh-probe summary').getBoundingClientRect();"
+                                 "return JSON.stringify([q.left + 20, q.top + q.height / 2]);})()"))
             for ty in ("mousePressed", "mouseReleased"):
-                t.send("Input.dispatchMouseEvent", type=ty, x=r["x"], y=r["y"], button="left", clickCount=1)
+                t.send("Input.dispatchMouseEvent", type=ty, x=at[0], y=at[1], button="left", clickCount=1)
             mid = t.ev("(function(){var d=document.querySelector('#sh-probe details');"
                        "var a=d._shAnim; var frames=[];"
                        "try { frames = a && a.effect ? a.effect.getKeyframes().map(function(f){ return f.height || ''; }) : []; } catch (e) {}"
