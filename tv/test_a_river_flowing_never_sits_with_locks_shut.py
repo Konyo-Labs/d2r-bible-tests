@@ -9,7 +9,8 @@ claim or two". Two checks disagreed - the finding: the "flowing" chip read may()
 (REG-3197), the "locks shut" chip read the census's age alone. may() is what the river obeys; the census age is the PROOF's.
 
 Now while may()'s answer is fresh (30 min; the lane does not ask while he plays) and names no door shut and no gate is
-blind, the row says "proof stale - river locks open" in amber and never "locks shut"; an answer that names a shut door, a
+blind, the row says "river locks open" in amber (the proof's age rides its hover - the row's word line already says it,
+the Grok CLI's look at v3882's render: the two "repeat the same complaint") and never "locks shut"; an answer that names a shut door, a
 blind gate, no answer, or an old one keeps the census rule - fail closed, "locks shut". Drives the page's own _fleetStuckChip
 (with the boot helpers it reads) in node through test_one_river_chip_per_row's harness; the parts reader's line is pinned on
 its own code. RED_PROOF below. [[the-unjoined-end]] [[stale-reading]] [[unknown-stays-unknown]]
@@ -42,7 +43,8 @@ class ARiverFlowingNeverSitsWithLocksShut(unittest.TestCase):
         html = H._html(_h(locksShut=[], locksAgeS=3.8), HELD, 60)
         self.assertIn("river flowing · 13 held by the drain", html)
         self.assertNotIn("locks shut", html, "the row says flowing AND locks shut again: %r" % html[:400])
-        self.assertIn("proof stale · river locks open", html)
+        self.assertIn(">river locks open</span>", html)
+        self.assertIn("its proof is stale", html, "the proof's age left the chip's hover")
 
     def test_a_shut_door_or_a_blind_gate_keeps_locks_shut(self):
         html = H._html(_h(locksShut=["reel.route"], locksAgeS=3.8), HELD, 60)

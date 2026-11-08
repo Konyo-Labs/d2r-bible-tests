@@ -177,8 +177,8 @@ the report) while the census was stale, so the row drew "river flowing - 13 held
 PC proves"; the Grok CLI's cold look: "CANNOT TELL if that is one claim or two". The flowing chip read may()'s answer on the
 river's four doors (REG-3197); the lock chip, the reels-wait grouping and the parts reader's "nothing drains: the locks are
 shut" read the census's age alone. may() is what the river obeys. Now _fleetRiverDoorsOpen(hs): true while may()'s answer is
-fresh (30 min - the lane does not ask while he plays), names no door shut and no gate is blind; the row then says "proof
-stale - river locks open" in amber. A shut door, a blind gate, no answer or an old one keeps the census rule (fail closed).
+fresh (30 min - the lane does not ask while he plays), names no door shut and no gate is blind; the row then says "river
+locks open" in amber (the proof's age in its hover: the Grok CLI's look found the two repeating). A shut door, a blind gate, no answer or an old one keeps the census rule (fail closed).
 Law: test_a_river_flowing_never_sits_with_locks_shut (4 cases, 4 red-proofs RED); the chip laws stay green.
 ### REG-3405 - A PC THAT HAD JUST RELAUNCHED FOR AN UPDATE READ "LOST" ON THE FLEET (v3882, #124, GrokBot's v3880 pass)
 GrokBot, #230, 00:11 IST 11-08: Dean's card read LOST while he was online on v3880 - his console had just relaunched for the

@@ -29446,11 +29446,12 @@ function escC(s) {
         bits.push('<span class="fleet-riverowes" title="' + escC(tip) + '">' + escC(x) + '</span>'); });
     }
     if ((census === 'missing' || census === 'stale' || census === 'unreadable') && _doorsOpen === true) {
-      /* #120 - the proof is out of date and the river's own doors are open (may() said so, fresh): the row says the proof's
-         age, in amber, and never "locks shut" beside "river flowing" */
+      /* #120 - the proof is out of date and the river's own doors are open (may() said so, fresh): never "locks shut" beside
+         "river flowing". The row's word line already says the proof's age (the Grok CLI's cold look at v3882's render: "proof
+         out of date" and "proof stale repeat the same complaint"), so the chip says only what is new - the doors are open -
+         and keeps the proof's age in its hover */
       bits.push('<span class="fleet-riverlocked" title="' + escC('its proof is ' + census + ', and the river\u2019s own locks are open - may() named '
-        + 'none shut ' + _fleetAgo(hs.locksAgeS) + ' before its report' + (hs.why ? ' \u2014 ' + hs.why : '')) + '">proof ' + escC(census)
-        + ' \u00b7 river locks open</span>');
+        + 'none shut ' + _fleetAgo(hs.locksAgeS) + ' before its report' + (hs.why ? ' \u2014 ' + hs.why : '')) + '">river locks open</span>');
     } else if (census === 'missing' || census === 'stale' || census === 'unreadable') {
       /* GBL census-lowmem - a proof held back ONLY by free memory says so on the row, not the bare word a broken lock wears */
       var _memWait = hs && hs.key === 'low-memory';

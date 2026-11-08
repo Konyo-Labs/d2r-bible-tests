@@ -2412,7 +2412,7 @@ TARGETS = {
     # ── v3882 (#124, #120) — A PC STARTING UP, AND A STALE PROOF OVER OPEN RIVER DOORS ──────────
     # Two states v3882 put words on, photographed: Dean just relaunched for an update (heart 'starting', no census, a
     # report a minute old) reads HEALING "starting up", never LOST; and a PC whose proof is stale while may() named no
-    # river door shut reads "river flowing" beside "proof stale - river locks open", never beside "locks shut". The
+    # river door shut reads "river flowing" beside "river locks open", never beside "locks shut". The
     # payload is STUBBED (the same clear-stub-re-ask as advanced-fleet-down), so this proves the RENDER, never the wire;
     # the words are pinned by test_a_booting_pc_reads_starting_never_lost and test_a_river_flowing_never_sits_with_locks_shut.
     # ⚠ The activation refuses until BOTH new texts are on screen - a target that passed on the healthy fill would be
