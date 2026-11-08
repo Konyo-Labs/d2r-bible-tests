@@ -488,12 +488,15 @@ class ARenewedSunderIsItsBuiltInLinesAndOneRowOfEachGroup(unittest.TestCase):
         self.assertEqual(out["cold"], ["an effect the game&#39;s tables name Gelid-Affix5 but do not describe"],
                          "Gelid-Affix5, which no table carries, was given words")
 
-    def test_an_unpicked_group_makes_its_stats_unknown_and_a_picked_row_sums(self):
+    def test_an_unpicked_group_bounds_its_stats_and_a_picked_row_sums(self):
+        """v3886 (his 11-08 on a Paladin with a Renewed Bone Break: "for FHR why is it unknown ... based on charater build") -
+        an unpicked row of a PickMode-2 group is BOUNDED, not UNKNOWN: each stat any row feeds reads 0 (another row rolled)
+        up to the most a row adds, named; picking the row ("which rolled?") makes it exact, as REG-1868 had it."""
         out = _run(GROUP + r"""
           mk('Warlock', 88); hell();
           window._cbOpenPick('inv', null, [0, 0]); window._cbChoose('u436'); window._cbClosePick();
           OUT.tip0 = invTip(0);
-          var sh0 = eng(); OUT.u0 = ['fhr', 'frw', 'ed', 'life', 'mana', 'mf', 'gf', 'str', 'mdr', 'dr'].map(function(k){ var r = rowOf(sh0, k); return [k, r && r[1], r && r[2]]; });
+          var sh0 = eng(); OUT.u0 = ['fhr', 'frw', 'ed', 'life', 'mana', 'mf', 'gf', 'str', 'mdr', 'dr'].map(function(k){ var r = rowOf(sh0, k); return [k, r && r[1], r && r[2], r && r[0]]; });
           OUT.unmapped0 = sh0.rows.filter(function(r){ return r.group === 'unmapped'; }).length;
           window._cbStashInv(0);
           OUT.p4 = window._cbPickOpt('p6', 1); OUT.p1 = window._cbPickOpt('p3', 0);
@@ -514,11 +517,12 @@ class ARenewedSunderIsItsBuiltInLinesAndOneRowOfEachGroup(unittest.TestCase):
         """)
         self.assertIn(["d2t-unk", "one of: +75-100% Enhanced Damage or -5-10% to Enemy Physical Damage Resistance"], out["tip0"])
         self.assertIn(["d2t-p", "Physical Damage Received Increased by 10%"], out["tip0"])
-        for k, src, why in out["u0"]:
-            self.assertEqual(src, "UNKNOWN", "%s stayed %s beside an unpicked Renewed Bone Break group" % (k, src))
+        most = {"fhr": 24, "frw": 10, "ed": 100, "life": 65, "mana": 75, "mf": 25, "gf": 55, "str": 8, "mdr": 10, "dr": 10}
+        for k, src, why, val in out["u0"]:
+            self.assertEqual(src, "RANGE", "%s read %s beside an unpicked Renewed Bone Break group (bounded, never UNKNOWN)" % (k, src))
+            self.assertEqual(val, {"min": 0, "max": most[k]}, "%s is not 0 up to the most its group adds: %r" % (k, val))
             self.assertIn("Renewed Bone Break", why)
-            self.assertIn("Breaching-Affix", why)
-            self.assertIn("which one is not picked", why)
+            self.assertIn('"which rolled?" on the item makes it exact', why)
         self.assertEqual(out["unmapped0"], 0)
         self.assertTrue(out["p4"] and out["p1"])
         self.assertEqual(out["rolls"], {"p6o": 1, "p3o": 0, "p6": 18})
@@ -529,7 +533,7 @@ class ARenewedSunderIsItsBuiltInLinesAndOneRowOfEachGroup(unittest.TestCase):
         self.assertIn("Renewed Bone Break +18 typed", out["fhr"][2])
         self.assertEqual(out["frw"][:2], [{"min": 0, "max": 0}, "EXACT"], "the group picked FHR and still blanked run/walk")
         self.assertEqual(out["ed"][:2], [{"min": 75, "max": 100}, "RANGE"])
-        self.assertEqual(out["life"][1], "UNKNOWN", "an unpicked group's life row read known")
+        self.assertEqual(out["life"][:2], [{"min": 0, "max": 65}, "RANGE"], "an unpicked group's life row is not 0..65: %r" % (out["life"],))
         self.assertIn("18%", out["fhrRow"])
         self.assertEqual(out["picks"], {"Breaching-Affix4": {"o": 1, "v": 18}, "Breaching-Affix1": {"o": 0, "v": None}})
         self.assertEqual(out["lost"], [], "a group's own key was reported as a roll the engine was not handed")
@@ -611,6 +615,11 @@ class TheClaimsOnHisScreenDrivenThroughTheEngine(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3886 - an unpicked property-group row is UNKNOWN again: his Paladin's FHR reads UNKNOWN beside a Renewed Bone Break",
+     "file": "bible.html",
+     "find": "      if (mode === 2 && opts.length){\n        var seen = {}, bad = false,",
+     "replace": "      if (false){\n        var seen = {}, bad = false,",
+     "matches": 1, "needs": "node"},
     {
         "why": "#166 - a property group line is rendered as its rows; without the dispatch it prints its own placeholder",
         "file": "bible.html",

@@ -92473,6 +92473,39 @@ window.tvStashAutoIntake = async function(tab, opts){
       var rowsSaid = opts.map(function(x){ return x[0] + (x[5] ? ' (its parameter one of ' + x[5][0] + '..' + x[5][1] + ')' : '') + ' ' + _ceRangeText(x[2], x[3]); }).join(' / ');
       var why = mode === 2 ? (code + ' rolls one of ' + rowsSaid + ' - which one is not picked')
         : (code + ' carries rows of ' + rowsSaid + ' - propertygroups.txt PickMode ' + mode + ', and how its rows combine is not in the tables');
+      /* v3886 (his 11-08 on a Paladin carrying a Renewed Bone Break: "for FHR why is it unknown ... based on charater build") -
+         ONE ROW OF A PICKMODE-2 GROUP, NOT PICKED, IS BOUNDED, NOT UNKNOWN. Each stat any row feeds is 0 (another row was
+         rolled) up to the most a row adds: Breaching-Affix4 is +5-10% Faster Run/Walk, +12-24% Faster Hit Recovery or +3-8 all
+         stats, so FHR reads 0-24 (a Paladin: 9 or 7 frames) where it read UNKNOWN. Each row is run through line() itself into a
+         scratch sum - one routing for every property kind. A row this cannot bound (a per-level line, an unknown or unmapped
+         one) keeps REG-1868's UNKNOWN for what it feeds. Picking the row (ctx.pick) still makes it EXACT. */
+      if (mode === 2 && opts.length){
+        var seen = {}, bad = false, keepAcc = acc, keepDyn = dyn, keepUnk = unkStat, keepUnm = unmapped.length;
+        try {
+          opts.forEach(function(x){
+            acc = {}; dyn = {}; unkStat = {};
+            line([x[0], x[1], x[2], x[3]], { src: src, slot: ctx.slot, host: null, via: ctx.via, unsure: ctx.unsure });
+            if (Object.keys(dyn).length || Object.keys(unkStat).length || unmapped.length > keepUnm) bad = true;
+            Object.keys(acc).forEach(function(k){
+              var lo = 0, hi = 0;
+              acc[k].forEach(function(q){ lo += q.lo; hi += q.hi; });
+              if (!isFinite(lo) || !isFinite(hi)) bad = true;
+              var b = seen[k] || (seen[k] = { lo: 0, hi: 0 });
+              b.lo = Math.min(b.lo, lo); b.hi = Math.max(b.hi, hi);
+            });
+          });
+        } finally {
+          acc = keepAcc; dyn = keepDyn; unkStat = keepUnk; unmapped.length = keepUnm;
+        }
+        if (!bad && Object.keys(seen).length){
+          Object.keys(seen).forEach(function(k){
+            add(k, seen[k].lo, seen[k].hi, { src: src, slot: ctx.slot, via: ctx.via || '',
+              how: 'if it rolled this (one of: ' + opts.map(function(x){ return _ceLabel([x[0], x[1], x[2], x[3]]); }).join(' / ')
+                + ' - "which rolled?" on the item makes it exact)' });
+          });
+          return;
+        }
+      }
       var hit = 0;
       opts.forEach(function(x){ (_ceFuncs(x[0]) || []).forEach(function(F){ feeds(F, x[1]).forEach(function(k){ unk(k, src, why); hit++; }); }); });
       if (!hit) unmap(ctx, code, src + ' carries "' + code + '" - ' + why);

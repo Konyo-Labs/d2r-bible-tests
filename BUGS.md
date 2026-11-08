@@ -112,6 +112,20 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3464 - HIS PALADIN'S FASTER HIT RECOVERY READ UNKNOWN: ONE UNPICKED ROW OF A RENEWED SUNDER BLANKED THREE STATS (v3886, his 11-08)
+His screen: a Paladin 89 with nothing worn and one Renewed Bone Break in the inventory read Faster Hit Recovery UNKNOWN and its
+breakpoint "The total is not known, so the next step is not known" ("this is easily researched ... based on charater build").
+The breakpoint table was never the gap: the charm's Breaching-Affix4 rolls ONE of +5-10% Faster Run/Walk, +12-24% Faster
+Hit Recovery or +3-8 all stats, none was picked, and REG-1868 made every stat any row could feed UNKNOWN. Bounded instead:
+each stat reads 0 (another row rolled) up to the most a row adds, named in the game's words with how to make it exact
+("which rolled?" on the item). His Paladin now reads FHR 0-24 RANGE -> "9 or 7 frames. The low end needs +7% more. The high
+end needs +3% more."; FRW 0-10; life 0-65 ... A row the sheet cannot bound (per-level, unknown, unmapped) keeps UNKNOWN; a
+picked row is EXACT as before. Measured on his own saved build (read from a COPY of his board's store) through the page's
+_cbEngineBuild: v3885 FHR null UNKNOWN, v3886 {0, 24} RANGE.
+GUARD: tv/test_the_character_builder_is_joined_to_the_engine_and_the_mule_window.py
+test_an_unpicked_group_bounds_its_stats_and_a_picked_row_sums (renamed: its old name pinned the behaviour he ruled out) + a
+red-proof (RED).
+
 ### REG-3463 - THE ALT'S WINDOW EYE SAID "(the vault lane cannot prove itself a": A HIDDEN REASON SLICED AT 60 (v3886, his fleet 11-08)
 Asked over SSH on 11-08 20:13, the work ALT's console said "background - hidden since 20:03 (started hidden: the console was
 hidden (the vault lane cannot prove itself a)". _control_window_kwargs recorded TV_START_HIDDEN as str(_hidden)[:60] and
