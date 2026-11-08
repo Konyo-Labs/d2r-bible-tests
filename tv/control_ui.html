@@ -29222,7 +29222,10 @@ function escC(s) {
     var hurt = s.hurt.slice().sort(function (a, b) { return (/ blind$/.test(b) ? 1 : 0) - (/ blind$/.test(a) ? 1 : 0); });
     var first = hurt.length ? _short(hurt[0]) + (hurt.length > 1 ? ' +' + (hurt.length - 1) : '') : '';
     var imp = (hs && hs.importing && typeof hs.importing === 'object' && hs.importing.landed !== true) ? hs.importing : null;
-    var heal = imp ? 'importing proofs' + _eta(imp.etaS) : proving;
+    /* v3882 - a quiet import says it is quiet, never a stale ETA (his 11-08: "the 5 min thing isnt correlated") */
+    var _quiet = (imp && typeof imp.quietS === 'number' && isFinite(imp.quietS) && imp.quietS > 0)
+      ? ' \u00b7 no progress for ' + (imp.quietS < 5400 ? Math.max(1, Math.round(imp.quietS / 60)) + ' min' : (imp.quietS / 3600).toFixed(1) + ' h') : '';
+    var heal = imp ? 'importing proofs' + (_quiet || _eta(imp.etaS)) : proving;
     return [first, heal].filter(Boolean).join(' \u00b7 ');
   };
   var _fleetBriefHtml = function (m, nowMs) {
@@ -29341,7 +29344,9 @@ function escC(s) {
         : _allIn ? 'finishing the import of ' + _whose + ' \u00b7 all ' + _num(_imp.of) + ' checked'
         : 'importing ' + _whose;
       if (!_landed && !_allIn && _whole(_imp.done) && _whole(_imp.of) && _imp.of > 0) _impWords += ' \u00b7 ' + _num(_imp.done) + ' of ' + _num(_imp.of);
-      if (!_landed && _whole(_imp.etaS)) _impWords += ' \u00b7 ~' + (_imp.etaS < 60 ? '1 min' : _imp.etaS < 5400
+      if (!_landed && _whole(_imp.quietS) && _imp.quietS > 0) _impWords += ' \u00b7 no progress for '   /* v3882 - quiet, said */
+        + (_imp.quietS < 5400 ? Math.max(1, Math.round(_imp.quietS / 60)) + ' min' : (_imp.quietS / 3600).toFixed(1) + ' h');
+      else if (!_landed && _whole(_imp.etaS)) _impWords += ' \u00b7 ~' + (_imp.etaS < 60 ? '1 min' : _imp.etaS < 5400
         ? Math.round(_imp.etaS / 60) + ' min' : (_imp.etaS / 3600).toFixed(1) + ' h');
       bits.push('<span class="fleet-riverimport" title="' + escC((_landed
         ? 'this PC has imported GitHub\u2019s proofs for its own commit; its proof check runs on its next tick and proves only what is still owed'

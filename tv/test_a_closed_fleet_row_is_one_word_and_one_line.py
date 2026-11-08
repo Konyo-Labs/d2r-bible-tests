@@ -83,6 +83,11 @@ CASES = {
     "importing": {"parts": _with(_p("stuck", ["CAPTURE 1 older for 1d"], warn=True),
                                  _p("proved", ["proof out of date", "0 blind"], warn=True)),
                   "heart": {"census": "stale", "blind": 0, "importing": {"ver": "v3879", "done": 890, "of": 9294, "etaS": 4920}}},
+    # v3882 - an import gone quiet (its last reading 3+ min old) says so, never its stale ETA (Dean 11-08: "~5 min" for an hour)
+    "importquiet": {"parts": _with(_p("stuck", ["CAPTURE 1 older for 1d"], warn=True),
+                                  _p("proved", ["proof out of date", "0 blind"], warn=True)),
+                    "heart": {"census": "stale", "blind": 0, "importing": {"ver": "v3880", "done": 3029, "of": 4396, "etaS": None,
+                                                                         "quietS": 200}}},
     # an import that has LANDED is not "importing" any more
     "landed": {"parts": _with(_p("stuck", ["CAPTURE 1 older for 1d"], warn=True),
                               _p("proved", ["proof out of date", "0 blind"], warn=True)),
@@ -160,6 +165,7 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
         self.assertEqual(b["healing"]["line"], "proving 8 ~12 min")
         self.assertEqual(b["blind"]["line"], u"1 gate blind +2 · importing proofs ~26 min")
         self.assertEqual(b["importing"]["line"], u"river stuck +1 · importing proofs ~82 min")
+        self.assertEqual(b["importquiet"]["line"], u"river stuck +1 · importing proofs · no progress for 3 min")   # v3882
         self.assertEqual(b["town"]["line"], "off since 18:10")       # the Diablo word AND the plain one (the Grok CLI's look)
         self.assertEqual(b["townold"]["line"], "off since Oct 28")
         self.assertEqual(b["lost"]["line"], "no report this console can read")
@@ -217,6 +223,9 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3882 - a quiet import's closed row repeats a stale ETA (or says nothing) instead of how long it has been quiet",
+     "file": "tv/control_ui.html", "find": "    var heal = imp ? 'importing proofs' + (_quiet || _eta(imp.etaS)) : proving;\n",
+     "replace": "    var heal = imp ? 'importing proofs' + _eta(imp.etaS) : proving;\n", "matches": 1},
     {"why": "REG-3395 - a PC in town says only the Diablo word again, which a fresh eye cannot read as switched off",
      "file": "tv/control_ui.html",
      "find": "      return since ? 'off since ' + since : 'off';", "replace": "      return since ? 'since ' + since : '';", "matches": 1},
@@ -237,7 +246,8 @@ RED_PROOF = [
      "replace": "    var hurt = s.hurt.slice();", "matches": 1},
     {"why": "REG-3395 - the line no longer says what is healing the PC (the import)",
      "file": "tv/control_ui.html",
-     "find": "    var heal = imp ? 'importing proofs' + _eta(imp.etaS) : proving;", "replace": "    var heal = proving;", "matches": 1},
+     "find": "    var heal = imp ? 'importing proofs' + (_quiet || _eta(imp.etaS)) : proving;", "replace": "    var heal = proving;",   # v3882 re-anchor
+     "matches": 1},
     {"why": "REG-3395 - a status that throws hides the chips anyway (no brief, still hidden)",
      "file": "tv/control_ui.html",
      "find": "    if (!s || !s.word) return '';", "replace": "    if (!s || !s.word) return '<span class=\"fleet-brief\"></span>';",

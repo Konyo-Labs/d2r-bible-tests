@@ -133,6 +133,57 @@ class TheProgressFile(unittest.TestCase):
         self.assertEqual(PR.read_progress(self.p), {"done": 5, "of": 10, "etaS": 30, "at": 1700000000000})
 
 
+class TheEtaIsTheRecentRate(unittest.TestCase):
+    """v3882 (his 11-08: "the 5 min thing isnt correlated correctly and synced properly to the numbers ... also on the alt
+    pcs"). MEASURED on Dean's PC 03:03: the file said etaS 380-425 while the count moved 2,997 -> 3,029 in 60 s (0.53 a
+    second, ~43 min for the 1,367 left): the ETA was the rate SINCE THE START, six times too short."""
+
+    def setUp(self):
+        self.d = tempfile.mkdtemp(prefix="p-", dir=_SCRATCH)
+        self.p = os.path.join(self.d, "progress.json")
+
+    def tearDown(self):
+        shutil.rmtree(self.d, ignore_errors=True)
+
+    def _dean(self):
+        clk = _Clock()
+        pg = H._ImportProgress(self.p, 10000, clock=clk)
+        for _ in range(60):                    # the fast start: 3,000 keys in a minute
+            clk.t += 1
+            pg.add(50)
+        for k in range(180):                   # then 0.5 a second, beside his game
+            clk.t += 1
+            pg.add(1 if k % 2 == 0 else 0)
+        return clk, pg
+
+    def test_the_eta_follows_the_recent_rate(self):
+        """* THE POINT - Dean's shape: the ETA is the time the CURRENT rate needs, never the start's average"""
+        clk, pg = self._dean()
+        true = (10000 - pg.done) / 0.5
+        eta = pg.eta_s()
+        self.assertTrue(abs(eta - true) <= 0.05 * true, "the ETA %r is not the recent rate's %r" % (eta, true))
+        lifetime = (240 * (10000 - pg.done)) / float(pg.done)
+        self.assertGreater(eta, 10 * lifetime, "PREMISE: the start's average would have said ~%d s" % lifetime)
+        self.assertEqual(_read(self.p)["etaS"], eta, "the file carries another ETA than the one computed")
+
+    def test_no_progress_in_the_window_is_unknown(self):
+        clk, pg = self._dean()
+        clk.t += H._ImportProgress.WINDOW_S + 20
+        self.assertIsNone(pg.eta_s(), "a stalled import still promised a time")
+
+    def test_a_quiet_reading_drops_its_eta_on_the_console(self):
+        import control_app as ca
+        now = 1794100000000
+        rel = {"running": True, "done": 3029, "of": 4396, "etaS": 425, "ver": "v3880", "progressAt": now - 200 * 1000}
+        q = ca.heart_importing(rel, {}, now_ms=now)
+        self.assertIsNone(q["etaS"], "a reading 200 s old repeated its ETA")
+        self.assertEqual(q["quietS"], 200)
+        fresh = ca.heart_importing(dict(rel, progressAt=now - 5 * 1000), {}, now_ms=now)
+        self.assertEqual((fresh["etaS"], fresh.get("quietS")), (425, None))
+        undated = ca.heart_importing(dict(rel, progressAt=None), {}, now_ms=now)
+        self.assertEqual(undated["etaS"], 425, "an undated reading was aged")
+
+
 class TheKeyerCountsEachCallOnce(unittest.TestCase):
 
     @classmethod
@@ -303,6 +354,13 @@ def tearDownModule():
 
 
 RED_PROOF = [
+    {"why": "v3882 - the import ETA is the start's average again (Dean: '~7 min' for ~43 min of keys)",
+     "file": "tv/heart2.py", "find": "        if el < self.MIN_SPAN_S:\n", "replace": "        if True:\n", "matches": 1},
+    {"why": "v3882 - a stalled import keeps promising a time",
+     "file": "tv/heart2.py", "find": "        if span <= 0 or moved <= 0:\n            return None                        # no progress",
+     "replace": "        if span <= 0:\n            return None                        # no progress", "matches": 1},
+    {"why": "v3882 - the console repeats a quiet import's last ETA",
+     "file": "tv/control_app.py", "find": "        if age / 1000.0 > IMPORT_QUIET_S:\n", "replace": "        if False:\n", "matches": 1},
     {"why": "v3865 REG-3194 - an ETA is said from the first few keys (no measured rate yet)",
      "file": "tv/heart2.py",
      "find": "        if self.of <= 0 or self.done < max(1, self.of // 100) or self.done >= self.of or el <= 0:\n",

@@ -9057,21 +9057,42 @@ class _ImportProgress(object):
     never 0. Written at most every EVERY_S, atomically; a write that fails is skipped - progress never stops an import.
     Only a file named IMPORT_PROGRESS_NAME OUTSIDE this checkout is ever written: heart2 never edits a file of the tree."""
     EVERY_S = 2.0
+    #: v3882 (his 11-08: "the 5 min thing isnt correlated correctly and synced properly to the numbers ... also on the alt
+    #: pcs"). MEASURED on Dean's PC 03:03: the file said etaS 380-425 while the count moved 2,997 -> 3,029 in 60 s (0.53 a
+    #: second: ~43 min for the 1,367 left) - the ETA was the rate SINCE THE START (~3.7 a second: the first keys go fast,
+    #: the rest slow, slower still beside his game), six times too short. The rate is the RECENT one, over WINDOW_S; the
+    #: start's average only until MIN_SPAN_S of history exists; no progress in the window is UNKNOWN, never a small number.
+    WINDOW_S = 180.0
+    MIN_SPAN_S = 30.0
 
     def __init__(self, path, of, clock=None):
         self.path, self.of, self.done = path, max(0, int(of)), 0
         self.clock = clock or time.time
         self.t0, self.wrote = self.clock(), None
+        self.samples = [(self.t0, 0)]
         self.write("keying", force=True)
 
     def eta_s(self):
-        el = self.clock() - self.t0
+        now = self.clock()
+        el = now - self.t0
         if self.of <= 0 or self.done < max(1, self.of // 100) or self.done >= self.of or el <= 0:
             return None
-        return max(1, int(round(el * (self.of - self.done) / float(self.done))))
+        if el < self.MIN_SPAN_S:
+            return max(1, int(round(el * (self.of - self.done) / float(self.done))))
+        start = now - self.WINDOW_S
+        older = [smp for smp in self.samples if smp[0] <= start]
+        base = older[-1] if older else self.samples[0]       # the count as the window began (or the first one kept)
+        span, moved = now - base[0], self.done - base[1]
+        if span <= 0 or moved <= 0:
+            return None                        # no progress in the window: UNKNOWN, never a small number
+        return max(1, int(round((self.of - self.done) * span / float(moved))))
 
     def add(self, n=1):
         self.done += max(0, int(n))
+        now = self.clock()
+        self.samples.append((now, self.done))
+        while len(self.samples) > 2 and now - self.samples[1][0] > self.WINDOW_S:
+            self.samples.pop(0)                # keep ONE sample older than the window: the rate's base
         self.write("keying")
 
     def write(self, phase, force=False):

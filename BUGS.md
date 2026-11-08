@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3414 - THE IMPORT SAID "~5 MIN" FOR MOST OF AN HOUR, ON DEAN'S PC AND THE ALTS (v3882)
+His words 11-08 ~03:00: "this is not right we keep saying this but we know it gets stuck and takes so muh longer.. the 5 min
+thing isnt correlated correctly and synced properly to the numbers also on the alt pcs". MEASURED on Dean's PC 03:03: the
+console read etaS 380-425 while the count moved 2,997 -> 3,029 in 60 s - 0.53 a second, ~43 min for the 1,367 left. Two
+causes: (1) heart2's _ImportProgress computed the ETA from the rate SINCE THE START (~3.7 a second: the first keys go fast,
+the rest slow, slower beside his game) - six times too short; (2) heart2 rewrites the progress file only when a key lands,
+so a quiet import left the console repeating its last ETA (one reading was 70 s old). Now the ETA is the RECENT rate (the
+last 180 s; the start's average only for the first 30 s; no progress in the window is UNKNOWN), and the console drops the
+ETA of a reading older than 90 s and says how long it has been quiet ("importing proofs - no progress for 3 min") on the
+closed Fleet row and the river chip. Simulated on Dean's shape: 13,820 s (the true time at 0.5/s), where the old formula
+said 537 s. Laws: test_an_import_says_how_far_it_is (3 new cases, 3 red-proofs RED) and
+test_a_closed_fleet_row_is_one_word_and_one_line (a quiet-import case, a red-proof RED, REG-3395's re-anchored).
 ### REG-3413 - GROKBOT SAID "#101 FIXED" AND THE BOARD KEPT IT WAITING ON HIS LOOK (v3882, #117)
 His rule 11-07 21:18: "you should be tasking them off as we go". MEASURED on GrokBot's v3878 pass (#230 6708917680, read
 back from GitHub): cards_in judged each LINE by any fail word on it, so his TALLY line - "Tally: FIXED 4 (#96 ..., #97,

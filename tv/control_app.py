@@ -18781,7 +18781,12 @@ def heart_owed_here(sp):
     return None
 
 
-def heart_importing(rel, sp=None):
+#: v3882 (his 11-08: "the 5 min thing isnt correlated correctly and synced properly to the numbers") - a progress reading
+#: this old means the import's keying has gone quiet: its ETA is not repeated, the row says how long it has been quiet
+IMPORT_QUIET_S = 90
+
+
+def heart_importing(rel, sp=None, now_ms=None):
     """REG-3197 - GitHub's proofs being imported for this commit, while the import RUNS. Pure over the two records.
     -> None | {done, of, etaS, ver} | {done, of, etaS: None, ver, landed: True}
 
@@ -18807,8 +18812,19 @@ def heart_importing(rel, sp=None):
         done = of = None            # a count past its own total is not a count
     v = rel.get("ver")
     v = v if isinstance(v, str) and re.match(r"^v\d{1,6}$", v) else None
+    # v3882 - THE ETA IS THE READING'S, AND A READING AGES. heart2 rewrites its progress file only when a key lands, so a
+    # quiet import left the console repeating the last ETA it was told (Dean 11-08: "~5 min" for most of an hour). Past
+    # IMPORT_QUIET_S the ETA is dropped and the row says how long it has been quiet. An undated reading is not aged.
+    quiet = None
+    pa = rel.get("progressAt")
+    if running and isinstance(pa, (int, float)) and not isinstance(pa, bool) and pa > 0:
+        age = ((time.time() * 1000.0) if now_ms is None else float(now_ms)) - float(pa)
+        if age / 1000.0 > IMPORT_QUIET_S:
+            quiet = int(age // 1000)
     out = {"done": int(done) if done is not None else None, "of": int(of) if of is not None else None,
-           "etaS": int(eta) if (eta is not None and running) else None, "ver": v}
+           "etaS": int(eta) if (eta is not None and running and quiet is None) else None, "ver": v}
+    if quiet is not None:
+        out["quietS"] = quiet
     if landed:
         out["landed"] = True
     return out
