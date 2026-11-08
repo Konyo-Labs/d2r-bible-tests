@@ -112,6 +112,19 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3419 - GITHUB'S IMPORT KEYED AT 0.55 PROOFS A SECOND ON THE WORK ALT: EVERY KEY RE-READ BIBLE.HTML AND RE-NAMED EVERY INPUT (v3883)
+MEASURED 11-08 ~09:40-10:20 IST on the work ALT (SSH, read-only): v3882's import keying 6,691 -> 6,724 of 9,463 in 60 s
+(0.55 a second, ~4.8 h for a version), one python at 95% of a core, 1 key worker (1,684 MB free; a worker needs 400 MB
+over the 1,024 MB floor). cProfile of the keyer there over the real cache (read-only, 43 keys): 40% os.path.relpath
+(110,150 calls - every input of every key, again for each variant key_for tries when the plain key is new) and 19%
+re-reading the version-stamped surfaces whole on every key (_sha_file and _masked_sha always read; bible.html is 8.9 MB).
+Now _VerdictCache._rel memoises the relative name (pure) and the stamped surfaces are served within a quiet stretch -
+REG-2631's rule, the one every other input of a key already keys by (the same size, mtime, ctime, inode, and no _prove_one
+started or ended since). A/B/A on the work ALT, 42 keyer calls over the real cache in a scratch worktree: v3882 0.171
+and 0.119 s a call, v3883 0.072. What that does to a live import's 1.8 s a call is measured on the next import, not
+claimed here. Law: test_an_import_keys_without_rereading_the_tree (6 cases: the memoised keys equal the keys with every
+memo bypassed, cold and warm; a proof boundary or moved bytes read again), red-proofs PROVEN (5 of 5).
+
 ### REG-3418 - THE WORK ALT'S LOCKS STAYED SHUT ~83 MIN ON TWO BLIND VERDICTS v3882 HAD ALREADY FIXED: THE PROVER WAITED FOR THE IMPORT (v3883)
 MEASURED 11-08 ~09:40 IST on the work ALT (SSH, read-only), v3882 pulled at 09:03: all four locks shut by "2 instrument(s)
 are BLIND (test_a_deaf_console_relaunches_itself, test_a_price_refresh_pauses_while_checks_run)", filed by its v3881 census;

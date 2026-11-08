@@ -4917,6 +4917,7 @@ class _VerdictCache(object):
         self.kept = _kept_files() if kept is _ASK_GIT else kept              # REG-2944 - untracked and not ignored: a listed dir's entries beside the tracked
         self.traced = {"banked": 0, "refused": 0, "why": {}}   # REG-2944 - listing laws, this run, for the push record
         self.closures = {}               # (sandbox, filename) -> (inputs, why): one closure walk per law per lane
+        self.rels = {}                   # v3883 - (path, repo) -> repo-relative "/" name: pure, no file state
         self.hits = self.misses = self.stores = self.unkeyable = self.moved = 0
         self.carried, self.carried_by = 0, {}       # REG-3046 - hits whose PROVEN another PC earned (carried)
         self.dirty = False               # stores since the last flush - written per GATE, not per proof
@@ -5083,13 +5084,14 @@ class _VerdictCache(object):
         inputs = sorted(set(base) | {tgt})
         # REG-2602 - the stamp lines leave this key only for a law that never reads the version, in a coherent tree
         GL = _ledger()
-        stamped = [p for p in inputs if os.path.relpath(p, repo).replace(os.sep, "/") in GL.STAMP_SURFACES]
+        stamped = [p for p in inputs if self._rel(p, repo) in GL.STAMP_SURFACES]
         mask, lits = False, None
         if stamped:
             law = os.path.join(sandbox, filename)
-            with self.lock:
-                surf = tuple(_sha_file(os.path.join(repo, *r.split("/")), self.memo) for r in sorted(GL._STAMP_REQUIRED))
-                law_sha = _sha_file(law, self.memo)
+            # v3883 - served within a quiet stretch (REG-2631's rule, the one every other input already keys by): the four
+            # stamp surfaces - bible.html is 8.9 MB - were read whole on EVERY key, and an import asks up to 9 keys an entry
+            surf = tuple(_sha_quiet(os.path.join(repo, *r.split("/")), self.memo) for r in sorted(GL._STAMP_REQUIRED))
+            law_sha = _sha_quiet(law, self.memo)
             vk, rk = ("REG-2602 version", repo) + surf, ("REG-2602 reads", sandbox, filename, law_sha)
             if vk not in self.closures:            # keyed on the surfaces' bytes: a one-file edit mid-run is seen
                 self.closures[vk] = _tree_version(repo)
@@ -5111,7 +5113,7 @@ class _VerdictCache(object):
             if mask:
                 inputs = sorted(set(inputs) | {os.path.join(sandbox, "gate_ledger.py"), os.path.join(sandbox, "stamp_leak.py")})
         unread = frozenset(unread or ())
-        if unread and not unread <= set(os.path.relpath(p, repo).replace(os.sep, "/") for p in inputs):
+        if unread and not unread <= set(self._rel(p, repo) for p in inputs):
             return None, [], "REG-2640: an unread input is not among this proof's inputs"
         lists = self.lists(sandbox, filename)
         if not lists:
@@ -5134,7 +5136,7 @@ class _VerdictCache(object):
         h.update(json.dumps(gate_spec(name), sort_keys=True, default=str).encode("utf-8", "replace") + b"\0")
         rels, away = [], []
         for p in inputs:
-            rel = os.path.relpath(p, repo).replace(os.sep, "/")
+            rel = self._rel(p, repo)
             if rel in unread:                         # REG-2640 - no traced run opened it: its name, never its bytes
                 d = "unread" if os.path.isfile(p) else None
             elif mask and rel in GL.STAMP_SURFACES:
@@ -5173,9 +5175,38 @@ class _VerdictCache(object):
                 out |= set(got[0])
         return out
 
+    def _rel(self, p, repo):
+        """v3883 - os.path.relpath(p, repo) with "/" separators, memoised (pure: two strings in, one out). MEASURED on the
+        work ALT 11-08: 110,150 relpath calls were 40% of the keyer's time - every input of every key, again per variant."""
+        k = (p, repo)
+        r = self.rels.get(k)
+        if r is None:
+            r = self.rels[k] = os.path.relpath(p, repo).replace(os.sep, "/")
+        return r
+
     def _masked_sha(self, path, rel):
         """REG-2602 - ('m:' + sha256 of the file's bytes with its stamp lines masked, the masked-away text) | (None, None).
-        The digest never equals a raw one, so a masked key and a raw key cannot meet."""
+        The digest never equals a raw one, so a masked key and a raw key cannot meet.
+        v3883 - served within a quiet stretch (REG-2631: the same file identity and no _prove_one started or ended since it
+        was read) - it read and hashed the whole surface on every key, bible.html's 8.9 MB included."""
+        try:
+            st = os.stat(path)
+            qk = ("REG-2602q", path, rel, st.st_size, st.st_mtime_ns, st.st_ctime_ns, st.st_ino, _QUIET["gen"])
+        except OSError:
+            qk = None
+        if qk is not None:
+            with self.lock:
+                if qk in self.memo:
+                    return self.memo[qk]
+        gen = _QUIET["gen"]
+        got = self._masked_sha_read(path, rel)
+        if qk is not None and got[0] is not None and _QUIET["gen"] == gen:
+            with self.lock:
+                self.memo[qk] = got
+        return got
+
+    def _masked_sha_read(self, path, rel):
+        """REG-2602 - _masked_sha's read: the bytes are always read here; only the masking is memoised, on them."""
         try:
             with open(path, "rb") as fh:
                 data = fh.read()
