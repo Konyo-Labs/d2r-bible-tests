@@ -118,8 +118,8 @@ RED_PROOF = [
         "why": "#93 - the row stops drawing the eye beside the name (the helper stays, the join is gone)",
         "file": "control_ui.html",
         # 475f672e - the row passes `heard` (a presence key with a live pulse), not `online`; REG-1833 adds `pres`
-        "find": "          + '<b>' + _fleetShadowEye(m, heard, undefined, pres) + escC(nameFor) + '</b>'\n",
-        "replace": "          + '<b>' + escC(nameFor) + '</b>'\n",
+        "find": "          + '<b>' + _fleetShadowEye(m, heard, undefined, pres) + _fleetWindowEye(m, heard) + escC(nameFor) + '</b>'   // v3885 - the green eye: its window is up\n",
+        "replace": "          + '<b>' + _fleetWindowEye(m, heard) + escC(nameFor) + '</b>'\n",
         "matches": 1,
     },
     {
@@ -132,10 +132,24 @@ RED_PROOF = [
     {
         "why": "REG-1833 - the row stops handing its presence answer to the eye, so a silent key reads offline again",
         "file": "control_ui.html",
-        "find": "_fleetShadowEye(m, heard, undefined, pres) + escC(nameFor)",
-        "replace": "_fleetShadowEye(m, heard) + escC(nameFor)",
+        "find": "_fleetShadowEye(m, heard, undefined, pres) + _fleetWindowEye(m, heard)",
+        "replace": "_fleetShadowEye(m, heard) + _fleetWindowEye(m, heard)",
         "matches": 1,
     },
+    {
+        "why": "v3885 (his 11-08) - a minimized console reads as a window up on its desktop (the second eye lies green)",
+        "file": "control_ui.html",
+        "find": "    } else if (wm === 'front' || wm === 'fullscreen') {\n",
+        "replace": "    } else if (wm !== 'headless') {\n",
+        "matches": 1, "needs": "node",
+    },
+    {
+        "why": "v3885 (his 11-08) - a PC not heard is drawn with a window verdict",
+        "file": "control_ui.html",
+        "find": "    if (!heard || !wm) {\n      st = 'unk';",
+        "replace": "    if (!wm) {\n      st = 'unk';",
+        "matches": 1, "needs": "node",
+    }
 ]
 
 
@@ -343,6 +357,36 @@ class TheEyeOnEveryRow(unittest.TestCase):
         gone = _eye(LIVE, online=False)
         self.assertIn("this PC is offline", gone["title"], "a PC the roster no longer holds stopped saying offline")
 
+    def test_the_second_eye_is_the_console_window(self):
+        """* v3885 (his 11-08) - a second eye beside the reader's: GREEN while that PC's console window is up on its desktop,
+        RED while it is not (minimized / hidden / headless / a second view), grey UNKNOWN when the PC is not heard"""
+        def w(mode, heard=True):
+            row = {"nickname": "Box", "machine": "box-1", "ver": "v3527", "t": _iso(UI_NOW - 40000)}
+            if mode is not None:
+                row["windowMode"] = mode
+            return _ui_run("var h = _fleetWindowEye(%s, %s); OUT.h = h; var m = /fleet-winview wv-([a-z]+)/.exec(h);"
+                           " OUT.st = m ? m[1] : null; var t = /title=\"([^\"]*)\"/.exec(h); OUT.title = t ? t[1] : null;"
+                           % (json.dumps(row), "true" if heard else "false"))
+        full = w("fullscreen")
+        self.assertEqual(full["st"], "on", full)
+        self.assertIn("(fullscreen)", full["title"] or "")
+        self.assertEqual(w("front")["st"], "on")
+        bg = w("background")
+        self.assertEqual(bg["st"], "off", bg)
+        self.assertIn("minimized or hidden", bg["title"] or "")
+        self.assertEqual((w("headless")["st"], w("window-only")["st"]), ("off", "off"))
+        self.assertEqual((w("fullscreen", heard=False)["st"], w(None)["st"]), ("unk", "unk"),
+                         "a PC not heard, or one that does not report its window, was drawn as a verdict")
+
+    def test_on_is_green_and_off_is_red(self):
+        """* v3885 (his 11-08: "when off red. when on green. same for the shadow reader. simple and clean logic")"""
+        with io.open(UI, encoding="utf-8") as f:
+            src = f.read()
+        for rule in (".fleet-shadow.st-lit .sh-lid { stroke: #3fbf72; }", ".fleet-shadow.st-live .sh-lid { stroke: #6df0a0; }",
+                     ".fleet-shadow.st-off .sh-shut { fill: none; stroke: #d0432f;", ".fleet-shadow.st-idle .sh-lid { fill: none; stroke: #c9402e;",
+                     ".fleet-winview.wv-on .sh-lid { stroke: #3fbf72; }", ".fleet-winview.wv-off .sh-lid { stroke: #c9402e; }"):
+            self.assertEqual(src.count(rule), 1, "the eye's colour rule is not on the page: %s" % rule)
+
     def test_the_row_draws_the_eye_inside_the_name_cell(self):
         """The join. The helper is driven above; this pins that the ROW calls it, inside <b> so no grid child is added
         (the row laws measure the grid), and BEFORE the name - after it, a long name wrapped and left the eye alone on
@@ -351,7 +395,7 @@ class TheEyeOnEveryRow(unittest.TestCase):
             src = f.read()
         # 475f672e - the row passes `heard` (a presence key with a live pulse), not `online`; REG-1833 - and `pres`,
         # so a key that outlived its pulse is said UNKNOWN, not offline
-        self.assertEqual(src.count("+ '<b>' + _fleetShadowEye(m, heard, undefined, pres) + escC(nameFor) + '</b>'"), 1,
+        self.assertEqual(src.count("+ '<b>' + _fleetShadowEye(m, heard, undefined, pres) + _fleetWindowEye(m, heard) + escC(nameFor) + '</b>'"), 1,
                          "the fleet row does not draw the shadow eye beside the name")
 
 

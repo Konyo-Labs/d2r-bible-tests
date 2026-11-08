@@ -266,8 +266,8 @@ RED_PROOF = [
      "replace": "return ' blind'; }) : '';", "matches": 1},
     {"why": "v3884 - a proving count says 'proving 102' of nothing again",
      "file": "tv/control_ui.html",
-     "find": "'proving ' + _n(hs.owed) + (hs.owed === 1 ? ' check' : ' checks') + _eta(hs.etaS)",
-     "replace": "'proving ' + _n(hs.owed) + _eta(hs.etaS)", "matches": 1},
+     "find": "'proving ' + _n(hs.owed) + (hs.owed === 1 ? ' check' : ' checks')\n",   # v3885: the wait or the time follows on the next line
+     "replace": "'proving ' + _n(hs.owed)\n", "matches": 1},
     {"why": "v3883 (#116) - the brief wraps mid-phrase again (one inline run: '~15 / min' under a stranded middot)",
      "file": "tv/control_ui.html",
      "find": "                              display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 1ch; }\n",

@@ -112,6 +112,26 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3449 - THE FLEET'S EYES: ON GREEN, OFF RED, AND A SECOND EYE FOR THE CONSOLE WINDOW (v3885, #145, his 11-08)
+His words: "i want to be able to know not only when the reader is backgrounded and on ... but for the CONSOLE itself being open
+and double clicked phsyically viewing on the desktop i want an added extra feature ... as a secondary eye in a different color",
+then "from red.. it should just turn green. so when off red. when on green. same for the shadow reader. simple and clean logic".
+The shadow reader's eye was a red ember when ON (gold when watching) - on read as red. Now both eyes beside a PC's name follow one
+rule: GREEN on, RED off. The reader's eye: on (waiting or watching; watching keeps its glint) green, switched off or its watcher
+stopped red, UNKNOWN grey dashed. The new second eye reads the PC's own beacon (windowMode, already sent): green while that
+PC's console window is up on its desktop (front / fullscreen), red while it is not (minimized or hidden, headless, a second
+view), grey UNKNOWN when the PC is not heard or does not report its window. Law: test_the_fleet_shows_the_shadow_eye (2 new
+cases, 14 red-proofs PROVEN).
+
+### REG-3448 - "PROVING 108 ~175.3 H": A WAITING PROVER WAS GIVEN A FINISH TIME (v3885, #144, his 11-08)
+His Fleet read "proving 54 ~31.8 h" (Konyo · ALT) and "proving 108 ~175.3 h" (OLD PC ALT): "shouldnt be 168 hours lol.. and
+30hours also sounds crazy". MEASURED (the Mac's /api/fleet, then the ALT read-only over SSH): the ALT's lane key was 'busy' -
+77% busy, 4 cores and 2 GB free with Boosteroid (his game) on top, and a proof starts only when the PC is idle - at 1.7 laws an
+hour; the OLD ALT's key was 'aside-cooldown' (its proof standing aside for GitHub's import) at 0.6 an hour. Each hour figure
+divided by a rate measured while the prover mostly waited. While the key says it waits (busy / playing / stood-aside /
+aside-cooldown / backoff / low-memory) the meter and the one-line brief name the wait ("proving 54 checks · PC busy");
+a running prover keeps its measured time. Law: test_a_waiting_prover_has_no_finish_time (3 red-proofs PROVEN).
+
 ### REG-3447 - AN IMPORT KEYED ON 8 WORKERS AND PINNED ALL 12 OF DEAN'S CORES (v3885, #142, his 11-08)
 MEASURED on Dean's PC (read-only, over SSH) right after the v3883 update: 8 pythonw import workers + the console at ~7.5% of
 12 cores each = CPU 100%, D2R not running, his console's /api/status 8.7-13.3 s and /api/river no answer in 75 s (the Mac's:

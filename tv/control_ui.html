@@ -7190,26 +7190,41 @@
   .fleet-shadow .sh-iris { fill: #4a3526; }
   .fleet-shadow .sh-pupil { fill: #050303; }
   .fleet-shadow .sh-glint { fill: none; }
-  /* lit = a deep-red ember; live = a bright gold iris WITH a white glint. The Grok eye could not tell the two apart
-     on a still frame when they differed only in shade and breath speed (2026-09-30), so live differs in SHAPE too. */
-  .fleet-shadow.st-lit .sh-lid { stroke: #b8382a; }
-  .fleet-shadow.st-lit .sh-iris { fill: #c93a26; }
-  .fleet-shadow.st-live .sh-lid { stroke: #ffb340; }
-  .fleet-shadow.st-live .sh-iris { fill: #ffa629; }
-  .fleet-shadow.st-live .sh-glint { fill: #fff8e6; }
-  .fleet-shadow.st-lit svg { filter: drop-shadow(0 0 3px rgba(255, 84, 46, .8)); animation: fleetShadowBreath 3.4s ease-in-out infinite; }
-  .fleet-shadow.st-live svg { filter: drop-shadow(0 0 6px rgba(255, 170, 60, 1)); animation: fleetShadowBreath 1.7s ease-in-out infinite; }
-  /* idle = ON but NOT working: a hollow amber outline, iris an empty ring, no pupil - it must never read as "lit but
-     softer" (the Grok eye's words for the first cut, 2026-09-30), because it means the watcher STOPPED */
-  .fleet-shadow.st-idle .sh-lid { fill: none; stroke: #86755a; stroke-dasharray: none; }
-  .fleet-shadow.st-idle .sh-iris { fill: none; stroke: #86755a; stroke-width: 1.2; }
+  /* v3885 (his 11-08: "from red.. it should just turn green. so when off red. when on green. same for the shadow reader.
+     simple and clean logic") - ON IS GREEN, OFF IS RED, on BOTH eyes. lit (on, waiting) and live (on, watching now) are green -
+     live keeps its white glint and quicker breath, so the two still differ in SHAPE on a still frame (the Grok eye, 2026-09-30);
+     off (switched off) and idle (on, but its watcher STOPPED - not working) are red; UNKNOWN stays a grey dashed outline. */
+  .fleet-shadow.st-lit .sh-lid { stroke: #3fbf72; }
+  .fleet-shadow.st-lit .sh-iris { fill: #2fae62; }
+  .fleet-shadow.st-live .sh-lid { stroke: #6df0a0; }
+  .fleet-shadow.st-live .sh-iris { fill: #4fe08a; }
+  .fleet-shadow.st-live .sh-glint { fill: #f2fff7; }
+  .fleet-shadow.st-lit svg { filter: drop-shadow(0 0 3px rgba(70, 210, 120, .8)); animation: fleetShadowBreath 3.4s ease-in-out infinite; }
+  .fleet-shadow.st-live svg { filter: drop-shadow(0 0 6px rgba(90, 240, 150, 1)); animation: fleetShadowBreath 1.7s ease-in-out infinite; }
+  /* idle = ON but NOT working: a hollow RED outline, iris an empty ring, no pupil - never "lit but softer" */
+  .fleet-shadow.st-idle .sh-lid { fill: none; stroke: #c9402e; stroke-dasharray: none; }
+  .fleet-shadow.st-idle .sh-iris { fill: none; stroke: #c9402e; stroke-width: 1.2; }
   .fleet-shadow.st-idle .sh-pupil { fill: none; }
-  .fleet-shadow.st-off .sh-shut { fill: none; stroke: #8a8076; stroke-width: 1.6; stroke-linecap: round; }
+  .fleet-shadow.st-off .sh-shut { fill: none; stroke: #d0432f; stroke-width: 1.6; stroke-linecap: round; }
   .fleet-shadow.st-unk .sh-lid { fill: none; stroke: #6d6a66; stroke-dasharray: 2.2 2; }
   @keyframes fleetShadowBreath {
-    0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 84, 46, .55)); }
-    50%      { filter: drop-shadow(0 0 7px rgba(255, 84, 46, 1)); }
+    0%, 100% { filter: drop-shadow(0 0 2px rgba(70, 210, 120, .55)); }
+    50%      { filter: drop-shadow(0 0 7px rgba(70, 210, 120, 1)); }
   }
+  /* v3885 - the SECOND eye: that PC's console WINDOW. Green = up on its desktop (front / fullscreen); red = not up
+     (minimized, hidden, headless, a second view); a PC not heard draws the grey dashed UNKNOWN. Same eye, same rule. */
+  .fleet-winview { display: inline-block; margin: 0 6px 0 -2px; line-height: 0; vertical-align: -0.12em; cursor: help; }
+  .fleet-winview svg { width: 1.3em; height: .8em; overflow: visible; display: block; }
+  .fleet-winview .sh-lid { fill: #0d0907; stroke-width: 1.4; }
+  .fleet-winview .sh-pupil { fill: #050303; }
+  .fleet-winview .sh-glint { fill: none; }
+  .fleet-winview.wv-on .sh-lid { stroke: #3fbf72; }
+  .fleet-winview.wv-on .sh-iris { fill: #2fae62; }
+  .fleet-winview.wv-on svg { filter: drop-shadow(0 0 3px rgba(70, 210, 120, .8)); }
+  .fleet-winview.wv-off .sh-lid { stroke: #c9402e; }
+  .fleet-winview.wv-off .sh-iris { fill: #8f2a1f; }
+  .fleet-winview.wv-unk .sh-lid { fill: none; stroke: #6d6a66; stroke-dasharray: 2.2 2; }
+  .fleet-winview.wv-unk .sh-iris, .fleet-winview.wv-unk .sh-pupil { fill: none; }
   @media (prefers-reduced-motion: reduce) { .fleet-shadow svg { animation: none !important; } }
   /* v2766 — the three states are visibly different, not just different in a tooltip. Live is the
      only one that earns full opacity; a dark eye is dimmed but PRESENT (it exists and is resting);
@@ -28806,9 +28821,20 @@ function escC(s) {
     })).join(' \u2022 ');
     return { f: f, why: why };
   };
+  /* v3885 (his 11-08 on the Fleet: "proving 54 ~31.8 h", "proving 108 ~175.3 h" - "shouldnt be 168 hours lol.. and 30hours also
+     sounds crazy") - A PROVER THAT IS WAITING HAS NO FINISH TIME. MEASURED: the work ALT (4 cores, 2 GB free) was 77% busy with
+     Boosteroid - his game - and a proof starts only when the PC is idle, so 54 owed / 1.7 a h read "~31.8 h"; the OLD ALT's
+     proof stood aside for GitHub's import, 108 / 0.6 a h read "~175 h". Both divided by a rate measured while the prover
+     mostly waited. While the lane's key says it is waiting, the row names the wait instead of a time. */
+  /* asked with waitOnly: the wait's few words, or '' - one table, inside the function every Fleet surface already reads */
   var _proofMeterFacts = function (hs) {
+    var waitOnly = arguments[1] === true, W = { busy: 'PC busy', playing: 'you are playing', 'stood-aside': 'import first', 'aside-cooldown': 'import first',
+              backoff: 'retries soon', 'low-memory': 'low memory' };
+    var wait = (hs && typeof hs === 'object' && typeof hs.key === 'string' && Object.prototype.hasOwnProperty.call(W, hs.key)) ? W[hs.key] : '';
+    if (waitOnly) return wait;
     if (!hs || typeof hs !== 'object' || hs.census === 'current' || typeof hs.owed !== 'number') return [];
     var f = [hs.owed + (hs.owed === 1 ? ' law owed' : ' laws owed')];
+    if (wait) { f.push('waits - ' + wait); return f; }   // v3885 - a waiting prover has no finish time
     if (typeof hs.ratePerH === 'number' && hs.ratePerH > 0) {
       f.push('~' + (hs.ratePerH >= 10 ? Math.round(hs.ratePerH) : hs.ratePerH) + '/h');
       if (typeof hs.etaS === 'number' && hs.etaS > 0) {
@@ -29247,7 +29273,8 @@ function escC(s) {
     var _n = function (x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
     var _eta = function (e) { return (typeof e === 'number' && isFinite(e) && e >= 0)
       ? ' ~' + (e < 60 ? '1 min' : e < 5400 ? Math.round(e / 60) + ' min' : (e / 3600).toFixed(1) + ' h') : ''; };
-    var proving = (hs && typeof hs.owed === 'number' && hs.owed > 0) ? 'proving ' + _n(hs.owed) + (hs.owed === 1 ? ' check' : ' checks') + _eta(hs.etaS) : '';
+    var proving = (hs && typeof hs.owed === 'number' && hs.owed > 0) ? 'proving ' + _n(hs.owed) + (hs.owed === 1 ? ' check' : ' checks')
+      + (_proofMeterFacts(hs, true) ? ' \u00b7 ' + _proofMeterFacts(hs, true) : _eta(hs.etaS)) : '';   // v3885 - a waiting prover says why, not "~175 h"
     if (s.key === 'healing') return [s.starting ? 'starting up' : (proving || 'proving')];
     /* ONE wound, the one that needs a hand first: a blind gate keeps every lock shut whatever this PC proves next, so it
        leads; the rest are "+N" (the open row and the State panel name them). Then what is healing it, if anything. */
@@ -29700,6 +29727,25 @@ function escC(s) {
          + (st === 'off' ? _SH_EYE_SHUT : (st === 'unk' ? _SH_EYE_UNK : _SH_EYE_OPEN)) + '</span>';
   };
   window._fleetShadowEye = _fleetShadowEye;
+  /* v3885 (his 11-08: "for the eye next to each profile ... i want to be able to know not only when the reader is backgrounded
+     and on ... but for the CONSOLE itself being open and double clicked phsyically viewing on the desktop i want an added extra
+     feature ... as a secondary eye in a different color") - A SECOND, GREEN EYE: THAT PC'S CONSOLE WINDOW IS UP ON ITS DESKTOP.
+     The red eye stays the shadow reader (on in the background from start-up). This one reads the PC's own beacon
+     (windowMode, control_app.window_mode_payload): 'front' or 'fullscreen' while the PC is heard; minimized / hidden
+     ('background'), headless, a second view, or a PC not heard draw nothing - never a guess. */
+  var _fleetWindowEye = function (m, heard) {
+    var wm = (m && typeof m.windowMode === 'string') ? m.windowMode : '', st, tip;
+    if (!heard || !wm) {
+      st = 'unk'; tip = 'console window UNKNOWN - ' + (heard ? 'this console does not report its window (an older build)' : 'this PC is not reporting');
+    } else if (wm === 'front' || wm === 'fullscreen') {
+      st = 'on'; tip = 'console window OPEN on this PC\u2019s desktop' + (wm === 'fullscreen' ? ' (fullscreen)' : '');
+    } else {
+      st = 'off'; tip = 'console window NOT up on this PC\u2019s desktop - ' + ({ background: 'minimized or hidden; the service runs',
+        headless: 'no window (headless)', 'window-only': 'a second view of another console' }[wm] || wm);
+    }
+    return '<span class="fleet-winview wv-' + st + '" title="' + escC(tip) + '" role="img" aria-label="' + escC(tip) + '">' + _SH_EYE_OPEN + '</span>';
+  };
+  window._fleetWindowEye = _fleetWindowEye;
   /* GBL 2026-10-24 - WHICH ROSTER PROFILE A FLEET ROW IS. The same rule the console publishes under
      (roster_publish.owner_of): a nickname that IS a roster label is that label; Konyo on a mac is Konyo · Mac;
      anything else has no profile, and the eyes say so rather than guess another PC's key. [[unknown-stays-unknown]]
@@ -30537,7 +30583,7 @@ function escC(s) {
           + ' onkeydown="if(event.target!==this)return;if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'
           + 'window._fleetRowClick(this)}">'
           + '<span class="fleet-dot' + (heard ? '' : (online ? ' silent' : ' off')) + '"></span>'
-          + '<b>' + _fleetShadowEye(m, heard, undefined, pres) + escC(nameFor) + '</b>'
+          + '<b>' + _fleetShadowEye(m, heard, undefined, pres) + _fleetWindowEye(m, heard) + escC(nameFor) + '</b>'   // v3885 - the green eye: its window is up
           + _fleetEye(m.eye)
           /* ⚠⚠ v2875 — ONE WORD BESIDE THE NAME. Konyo, 2026-09-10: *"all the jibberish
              next to our names ... should just say synced/unsynced without the rest of the
