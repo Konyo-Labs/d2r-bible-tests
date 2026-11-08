@@ -181,6 +181,7 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         tiles = list(self.o["tiles"].values()) + [t for (_a, _z, t) in self.o["bossZones"].values()]
         mon = [t for t in tiles if 'class="qw-mon' in t]
         self.assertGreater(len(mon), 20, "PREMISE: too few monster tiles were drawn")
+        nonloop = 0
         for t in mon:
             head = t[:t.index(">") + 1]
             self.assertNotIn("background-image", head, "a monster tile paints the zone behind the monster: %s" % head)
@@ -189,6 +190,12 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
             src = re.search(r'<img class="(qw-mon[^"]*)" src="([^"]+)"', t)
             if "d2mon_" in src.group(2):
                 self.assertIn("qw-mon-sprite", src.group(1), "a sprite is not drawn as one: %s" % t[:200])
+            # v3887 (#158/#161) - the render gate excuses a d2runewizard loop's crop by this class, so ONLY a loop wears it
+            # (the loops themselves: test_each_spearwoman_pack_draws_its_own_loop)
+            if "d2rw_" not in src.group(2):
+                nonloop += 1
+                self.assertNotIn("qw-tile-loop", head, "a non-loop tile wears the render gate's excuse: %s" % head)
+        self.assertGreater(nonloop, 20, "PREMISE: too few non-loop monster tiles to see the excuse spread")
         pit = self.o["bossZones"].get("pit")
         if pit:
             self.assertIn("background-image", pit[2][:pit[2].index(">") + 1], "an area run lost its zone picture")
@@ -219,6 +226,10 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
                 self.assertIn('src="art/%s"' % f, row[0], "%s does not draw its own loop" % who)
                 self.assertNotIn("spearwoman.gif", row[0], "%s still draws the thin family sprite" % who)
                 self.assertIn("qw-mon-sprite", row[0])
+                # v3887 - the loop is scaled up inside its tile on purpose; the tile names it for the render gate's excuse
+                tile = re.search(r'<span class="qw-tile[^"]*"', row[0])
+                self.assertTrue(tile, "PREMISE: the %s row drew no tile" % who)
+                self.assertIn("qw-tile-loop", tile.group(0), "%s's scaled loop tile is not named for the render gate" % who)
 
     def test_an_area_run_is_in_neither_list(self):
         """v3886 (#150, his 11-08 "the top 5 when you filter in silopen") - the Cow Level and the Pit as a RUN (~350 / ~110 kills,
@@ -758,6 +769,16 @@ RED_PROOF = [
      "find": "<img class=\"d2art-img\" src=\"art/d2mon_Talic.gif\" alt=\"Talic\"",
      "replace": "<img class=\"d2art-img\" src=\"art/Talic.gif\" alt=\"Talic\"",
      "matches": 1},
+    {"why": "v3887 (#158/#161) - every monster tile wears the render gate's loop excuse (a real clip on any tile hides)",
+     "file": "bible.html",
+     "find": "(mon ? ' qw-tile-mon' + (/d2rw_/.test(mon) ? ' qw-tile-loop' : '') : ' qw-tile-zone')",
+     "replace": "(mon ? ' qw-tile-mon qw-tile-loop' : ' qw-tile-zone')",
+     "matches": 1, "needs": "node"},
+    {"why": "v3887 (#158/#161) - a scaled loop tile is not named, so the render gate reads its designed crop as a clip",
+     "file": "bible.html",
+     "find": "(mon ? ' qw-tile-mon' + (/d2rw_/.test(mon) ? ' qw-tile-loop' : '') : ' qw-tile-zone')",
+     "replace": "(mon ? ' qw-tile-mon' : ' qw-tile-zone')",
+     "matches": 1, "needs": "node"},
     {"why": "REG-3321 - a monster tile paints the zone behind the monster again (his 'messy' tiles)",
      "file": "bible.html",
      "find": "    var mon = bp ? 'art/' + bp : (su ? 'art/' + su : (pk ? 'art/' + pk : null)), zone = mon ? null : (ar ? 'art/' + ar : _qwZoneArt(area));\n",

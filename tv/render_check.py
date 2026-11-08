@@ -1546,6 +1546,11 @@ TARGETS = {
             return !!(r.width > 0 && r.height > 0 && getComputedStyle(card).display !== 'none'); })()""",
         "sel": "#funi-body .forge-sec-step",
         "widths": ((1440, 1000), (1120, 900), (901, 900), (375, 800)),
+        # v3887 (#158/#161) - a d2runewizard idle loop is a 480px frame with the figure in its middle ~40%, so it is scaled
+        # 1.5-1.7x inside the 56px tile to read at all; the tile is the crop and the full loop is the art file. Only a tile
+        # holding a d2rw_ loop carries this class (bible.html _qwTile) - every other monster tile is still measured.
+        "truncation_ok": {"qw-tile-loop": "a d2runewizard loop scaled up inside its 56px tile on purpose - the figure is "
+                                          "cropped by design, there is no text in the tile (#158/#161)"},
     },
     "material-craft": {
         "why": "REG-2138 - WHAT I CAN MAKE. The Renewed Sunder row names what its closest held charm still lacks (that charm's "

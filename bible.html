@@ -71100,7 +71100,9 @@ function renderJournal(){
     var ar = (typeof AREA_RUN_ART !== 'undefined') ? AREA_RUN_ART[bossId] : null;
     var mon = bp ? 'art/' + bp : (su ? 'art/' + su : (pk ? 'art/' + pk : null)), zone = mon ? null : (ar ? 'art/' + ar : _qwZoneArt(area));
     var v = function(u){ return (typeof _artV === 'function') ? _artV(u) : u; };
-    return '<span class="qw-tile' + (mon ? ' qw-tile-mon' : ' qw-tile-zone') + '"' + (zone ? ' style="background-image:url(' + v(zone) + ')"' : '')
+    /* v3887 (#158/#161) - a d2runewizard loop is scaled up inside its tile on purpose (the figure is ~40% of a 480px frame);
+       the tile names it qw-tile-loop so the render gate excuses THAT crop, and only that one (tv/render_check.py) */
+    return '<span class="qw-tile' + (mon ? ' qw-tile-mon' + (/d2rw_/.test(mon) ? ' qw-tile-loop' : '') : ' qw-tile-zone') + '"' + (zone ? ' style="background-image:url(' + v(zone) + ')"' : '')
       + _qwHover(bossId, monName) + ' aria-label="' + esc(label + (area ? ' · ' + area : '')) + '">'
       + (mon ? '<img class="qw-mon' + (/d2mon_|d2fam_|d2arreat_|d2rw_/.test(mon) ? ' qw-mon-sprite' : '') + '" src="' + v(mon) + '" alt="" loading="lazy" onerror="this.remove()">' : '')
       + '</span>';
