@@ -566,6 +566,14 @@
     "purpose": "#96/#88 (REG-3348): the price DB refreshes itself - every EVERY_S it asks the d2jsp desk's own quote for the stalest due item and folds it through the console's one DB writer, so prices move without a click.",
     "territory": "d2jsp"
   },
+  "js_strip.py": {
+    "entryPoints": [
+      "strip_js_comments"
+    ],
+    "gotcha": "Bounded on purpose (CAP 4000): an unbounded block match spans strings and regex literals and once deleted 16.9% of bible.html. A \"/*\" a quote follows is a MIME wildcard (accept=\"image/*\"), never a comment - the case two private copies got wrong in v3885's first round. Line comments only at a line's start, so a // inside a URL stays.",
+    "purpose": "v3886 (#152) - the laws' ONE comment stripper: a law that greps bible.html or control_ui.html for code strips comments here, never with its own copy; test_one_comment_stripper_for_the_laws holds its rules and lets the 184 private copies only fall.",
+    "territory": "gates"
+  },
   "d2jsp_rolls.py": {
     "entryPoints": [
       "build",

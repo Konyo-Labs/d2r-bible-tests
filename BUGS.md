@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3458 - 184 PRIVATE COPIES OF ONE COMMENT STRIPPER, AND TWO OF THEM COST v3885 A ROUND (v3886, #152)
+v3885's first GitHub round went red because two copies of a law's comment stripper in test_control read accept="image/*" as a
+comment opener and ate live markup once the Chronicle buttons left (REG-3446's round notes). The same routine sat in 119
+files under tv/ - 184 regex sites, each a copy that drifts. tv/js_strip.py is now the one stripper (bounded block comments,
+"/*" followed by a quote never a comment, line comments only at a line's start); test_control's two copies call it; and
+test_one_comment_stripper_for_the_laws holds it to those rules on the v3885 shape and on bible.html itself (every id kept),
+and holds the private copies to a ceiling of 184 that may only fall - a new copy is red. Red-proofs PROVEN (2). The other
+copies migrate law by law; the ceiling is lowered as they do.
+
 ### REG-3457 - A SPIRIT SACRED TARGE COULD NOT CARRY ITS +45 ALL RES: THE BUILDER GAVE A WHITE, SUPERIOR OR RUNEWORD CLASS BASE NO AUTOMOD (v3886, #139)
 GrokBot's #28 pass (6720634931, adjudicated REAL 11-08): "the builder offers 0 automod rows for an Auric base". The game draws
 a class base's automod (its automagic group, armor / weapons.txt auto prefix: an Auric shield's Shimmering +5-10 ...

@@ -14563,12 +14563,8 @@ class TestNoOptionalCallToAFunctionThatCannotExist(unittest.TestCase):
         characters is a string that happens to contain the tokens. At cap=4000 the loss is 0 of
         444. [[feedback-suspect-the-instrument]] [[feedback-comments-vs-code]]
         """
-        import re
-        # v3885 (GitHub's round on 6c5879ab9) - `accept="image/*"` is a MIME wildcard, not a comment: its "/*" is followed by
-        # the attribute's closing quote. Removing the Chronicle buttons brought the next "*/" within the cap and this ate
-        # #funi-body, #tab-fsets, #fsets-body and the Characters ids - live markup. A "/*" a quote follows is never a comment.
-        src = re.sub(r"/\*(?![\"']).{0,%d}?\*/" % int(cap), " ", src, flags=re.S)
-        return re.sub(r"(?m)^\s*//.*$", " ", src)
+        import js_strip   # v3886 (#152) - the laws' ONE stripper (a "/*" a quote follows is never a comment: accept="image/*")
+        return js_strip.strip_js_comments(src, cap)
 
     def test_the_stripper_does_not_eat_live_markup(self):
         """The instrument, checked before its verdict is believed. Founding rule 4."""
@@ -38200,12 +38196,8 @@ class TestV2336TheDailyTaskPanelCannotBeMemoisedIntoInvisibility(unittest.TestCa
     @staticmethod
     def _strip_js_comments(src, cap=4000):
         """Bounded on purpose — an unbounded /\\*.*?\\*/ once ate 170 of bible.html's 444 ids."""
-        import re
-        # v3885 (GitHub's round on 6c5879ab9) - `accept="image/*"` is a MIME wildcard, not a comment: its "/*" is followed by
-        # the attribute's closing quote. Removing the Chronicle buttons brought the next "*/" within the cap and this ate
-        # #funi-body, #tab-fsets, #fsets-body and the Characters ids - live markup. A "/*" a quote follows is never a comment.
-        src = re.sub(r"/\*(?![\"']).{0,%d}?\*/" % int(cap), " ", src, flags=re.S)
-        return re.sub(r"(?m)^\s*//.*$", " ", src)
+        import js_strip   # v3886 (#152) - the laws' ONE stripper (a "/*" a quote follows is never a comment: accept="image/*")
+        return js_strip.strip_js_comments(src, cap)
 
     def _block(self):
         src = io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8").read()
