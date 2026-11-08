@@ -77,19 +77,19 @@ CFG.bossIds.forEach(function(id){ var a = _qwAreaOf(id, ''); out.bossZones[id] =
 out.sewers = _qwZoneArt('Sewers Level 3');
 out.durance = _qwZoneArt('Durance of Hate L3');
 var places = [
-  { label: 'Normal Coldcrow', area: 'Cave Level 1', s: { bossId: 'su_coldcrow', name: 'Coldcrow' }, chance: 307, runs: 213, hours: 2.5, kph: 84, kpr: 1, est: true },
-  { label: 'Normal Andariel', area: '', s: { bossId: 'andariel' }, chance: 741, runs: 514, hours: 4.8, kph: 108, kpr: 1, est: false },
-  { label: 'Normal The Pit', area: '', s: { bossId: 'pit' }, chance: 87700, runs: 553, hours: 10, kph: 54, kpr: 110, est: false },
-  { label: 'Normal Pitspawn Fouldog', area: 'Jail Level 2', s: { bossId: 'su_pitspawnfouldog', name: 'Pitspawn Fouldog' }, chance: 1000, runs: 699, hours: 9.7, kph: 72, kpr: 1, est: true }
+  { label: 'Normal Coldcrow', area: 'Cave Level 1', s: { bossId: 'su_coldcrow', name: 'Coldcrow' }, chance: 307, runs: 213, hours: 2.5, kph: 84, kpr: 1, est: true, kind: 'superunique' },
+  { label: 'Normal Andariel', area: '', s: { bossId: 'andariel' }, chance: 741, runs: 514, hours: 4.8, kph: 108, kpr: 1, est: false, kind: 'boss' },
+  { label: 'Normal The Pit', area: '', s: { bossId: 'pit' }, chance: 87700, runs: 553, hours: 10, kph: 54, kpr: 110, est: false, kind: 'area' },
+  { label: 'Normal Pitspawn Fouldog', area: 'Jail Level 2', s: { bossId: 'su_pitspawnfouldog', name: 'Pitspawn Fouldog' }, chance: 1000, runs: 699, hours: 9.7, kph: 72, kpr: 1, est: true, kind: 'superunique' }
 ];
 var also = [ { id: 'su_thecowking', name: 'The Cow King', who: 'Normal The Cow King', area: 'The Secret Cow Level', kind: 'once', chance: 312 },
              { name: 'The Banished', who: 'Normal The Banished', area: 'Catacombs Level 3', kind: 'unique', chance: 603 } ];
 out.grid = _qwGridHtml(places, also);
 out.gridNoAlso = _qwGridHtml(places, []);
 // v3884 (his 11-08: "bosses and other places top 5") - six boss runs draw the best five
-out.gridSixBoss = _qwGridHtml([1, 2, 3, 4, 5, 6].map(function(i){ return { label: 'Hell Boss' + i, area: '', s: { bossId: 'andariel' }, chance: 1000 * i, runs: 700 * i, hours: 7 * i, kph: 100, kpr: 1, est: false }; }), []);
-out.gridBossesOnly = _qwGridHtml(places.filter(function(p){ return p.kpr === 1; }), []);
-out.gridDupArea = _qwGridHtml(places.concat([{ label: 'NM The Pit', area: '', s: { bossId: 'pit' }, chance: 90000, runs: 900, hours: 12, kph: 50, kpr: 110, est: false }]), also);
+out.gridSixBoss = _qwGridHtml([1, 2, 3, 4, 5, 6].map(function(i){ return { label: 'Hell Boss' + i, area: '', s: { bossId: 'andariel' }, chance: 1000 * i, runs: 700 * i, hours: 7 * i, kph: 100, kpr: 1, est: false, kind: 'boss' }; }), []);
+out.gridNoBoss = _qwGridHtml(places.filter(function(p){ return p.kind !== 'boss'; }), also);
+out.gridDupArea = _qwGridHtml(places.concat([{ label: 'NM The Pit', area: '', s: { bossId: 'pit' }, chance: 90000, runs: 900, hours: 12, kph: 50, kpr: 110, est: false, kind: 'area' }]), also);
 out.gridSix = _qwGridHtml(places, also.concat([1, 2, 3, 4].map(function(k){ return { name: 'Pack ' + k, who: 'Hell Pack ' + k, area: 'Somewhere', kind: 'champion', chance: 700 + k }; })));
 process.stdout.write(JSON.stringify(out));
 """
@@ -111,6 +111,8 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         art = _cut(src, "  function tzArtFor(name){", "\n")
         portrait = _cut(src, "  var BOSS_PORTRAIT = {", "\n  };\n")
         grid = _cut(src, "  var _QW_SU_ART = ", "  window._qwGridHtml = _qwGridHtml;")
+        # v3886 (#150) - the grid ranks through the page's ONE ranking and its two lists (_qwRank, _qwLists, beside _qwPlaces)
+        grid = _cut(src, "  function _qwRank(out){", "  window._qwPlaces = _qwPlaces;", keep_end=False) + "\n" + grid
         odds = _cut(src, "  function fmtOdds(c){", "\n")                      # the page's own 1:N formatter
         packs = _cut(src, "const MONSTER_PACK_ART = {", "\n};\n")              # #108 - a random pack's family sprite
         packs += "\n" + _cut(src, "const AREA_RUN_ART = ", "\n")                  # #108 - an area run's own place
@@ -154,9 +156,10 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         also = g[g.index('<div class="qw-also">'):]
         rows = re.findall(r'<div class="qw-row qw-row-also"[^>]*>(.*?)</div>', also)
         self.assertEqual(len(rows), 2, "PREMISE: the fixture's two per-kill places did not draw: %s" % also[:300])
-        # #125 - fewest for a 50% chance first: the Cow King (~216 kills) 1st, The Banished (~418) 2nd, The Pit (553 runs) 3rd
-        self.assertIn('<span class="qw-rank">1st · per kill · once a character · each difficulty</span>', rows[0])
-        self.assertIn('<span class="qw-rank">2nd · per kill · random unique pack · spawns by chance</span>', rows[1])
+        # #125 + v3886 (#150) - fewest for a 50% chance first, in silospen's All list: Coldcrow (213) 1st, the Cow King
+        # (~216 kills) 2nd, The Banished (~418) 3rd
+        self.assertIn('<span class="qw-rank">2nd · per kill · once a character · each difficulty</span>', rows[0])
+        self.assertIn('<span class="qw-rank">3rd · per kill · random unique pack · spawns by chance</span>', rows[1])
         for row, c in zip(rows, (312, 603)):
             stats = re.findall(r'<span class="qw-stat ([a-z -]+)"[^>]*><b>([^<]*)</b><span class="qw-sub">([^<]*)</span>', row)
             # #109 (his 11-07 order) - kills for an even chance, time, kills an hour, then the odds LAST
@@ -196,14 +199,13 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         self.assertNotIn("background-image:url(art/tz_", row[0], "a random pack still wears a zone tile")
         self.assertIn("qw-mon-sprite", row[0])
 
-    def test_one_row_per_area_and_the_pit_is_the_cave(self):
-        """#108 - an area is ONE row (its fastest variant; the Cow Level came back four times and pushed every per-kill place
-        off the card), and The Pit wears the cave itself, never Tamoe Highland's outdoor tile"""
+    def test_an_area_run_is_in_neither_list(self):
+        """v3886 (#150, his 11-08 "the top 5 when you filter in silopen") - the Cow Level and the Pit as a RUN (~350 / ~110 kills,
+        the page's own estimate) are in no silospen list, so neither list draws them, however many variants are on record;
+        the per-kill places keep their slots"""
         g = self.o["gridDupArea"]
         pits = [r for r in g.split('<div class="qw-row') if '<b class="qw-name"' in r and 'The Pit</b>' in r]
-        self.assertEqual(len(pits), 1, "The Pit drew %d rows - one area, one row" % len(pits))
-        self.assertIn("Normal The Pit", pits[0], "the area kept a slower variant over its fastest")
-        self.assertIn("art/area_the_pit.jpg", pits[0], "The Pit wears the outdoor zone again")
+        self.assertEqual(pits, [], "an area run drew in a silospen list: %d row(s)" % len(pits))
         self.assertIn("Normal The Banished", g, "the per-kill places were pushed off the card")
 
     def test_every_place_floats_the_consoles_card(self):
@@ -264,36 +266,36 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
             self.assertTrue(all(s[1] and s[2] for s in stats), "a number without its subtitle: %r" % stats)
             self.assertEqual(stats[3][2], "odds a run", "the odds column mixes units: %r" % stats[3][2])
 
-    def test_bosses_first_then_the_other_places_first_to_fifth(self):
-        """#101 (his ruling 11-07 ~00:52: "they both need to be included then as bosses first and then the others as
-        secondary from 1 to 5") - section 1 holds only one-kill runs; the area run moves to section 2. #125 (his 11-08:
-        "top 1 should be the lowest amount of runs and the fifth should be the highest ... 1 would be normal cow king",
-        "bosses separated still from the secondary") - section 2 is ONE list, 1st-5th by the number in each row's first
-        column (runs or kills for a 50% chance), fewest first, the five lowest of every place; each row says run or kill"""
+    def test_the_bosses_list_is_bosses_and_the_all_list_is_every_monster(self):
+        """v3886 (#150, his 11-08 on Bane Ash: "what the fack is fouldog doing in here ... i want ALL and BOSSES.. and the top 5
+        when you filter in silopen") - section 1 is silospen's Monster Type Boss: no super-unique (Coldcrow, Pitspawn Fouldog)
+        and no area run in it. Section 2 is Monster Type All, ONE list 1st-5th by the first column (runs or kills for a 50%
+        chance), fewest first, the five lowest of every per-kill place - bosses included"""
         g = self.o["grid"]
         i = g.index('<div class="qw-also">')
         sec1, sec2 = g[:i], g[i:]
-        self.assertNotIn("Normal The Pit", sec1, "an area run sat among the boss and super-unique runs")
-        for nm in ("Normal Coldcrow", "Normal Andariel", "Normal Pitspawn Fouldog"):
-            self.assertIn(nm, sec1)
-        self.assertIn('<span class="qw-rank">3rd · per run · area</span>', sec2)
-        self.assertIn("~110 kills a run", sec2, "the area row hid the kills a run its price assumes")
-        self.assertLess(sec2.index("Normal The Cow King"), sec2.index("Normal The Banished"))
-        self.assertLess(sec2.index("Normal The Banished"), sec2.index("Normal The Pit"),
-                        "the area run led again over places that need fewer for a 50% chance")
+        self.assertIn("Normal Andariel", sec1, "PREMISE: the fixture's boss did not draw in the Bosses list")
+        for nm in ("Normal Coldcrow", "Normal Pitspawn Fouldog", "Normal The Pit", "Normal The Cow King"):
+            self.assertNotIn(nm, sec1, "%s is not a boss in silospen's list, and sat in the Bosses list" % nm)
+        order = [nm for nm in ("Normal Coldcrow", "Normal The Cow King", "Normal The Banished", "Normal Andariel",
+                               "Normal Pitspawn Fouldog") if nm in sec2]
+        self.assertEqual(order, ["Normal Coldcrow", "Normal The Cow King", "Normal The Banished", "Normal Andariel",
+                                 "Normal Pitspawn Fouldog"], "the All list is not every per-kill place, fewest first")
+        self.assertEqual([sec2.index(nm) for nm in order], sorted(sec2.index(nm) for nm in order),
+                         "the All list is out of order")
+        self.assertNotIn("Normal The Pit", sec2, "an area run sat in the All list")
         six = self.o["gridSix"]
         sec2six = six[six.index('<div class="qw-also">'):]
         self.assertEqual(len(re.findall(r'<div class="qw-row qw-row-(?:area|also)"', sec2six)), 5,
-                         "section 2 holds more or fewer than five places")
+                         "the All list holds more or fewer than five places")
         ranks = re.findall(r'<span class="qw-rank">(\d)(?:st|nd|rd|th) · per (run|kill)', sec2six)
-        self.assertEqual([r[0] for r in ranks], ["1", "2", "3", "4", "5"], "section 2 is not numbered 1st-5th: %r" % ranks)
+        self.assertEqual([r[0] for r in ranks], ["1", "2", "3", "4", "5"], "the All list is not numbered 1st-5th: %r" % ranks)
         firsts = [int(x.replace(",", "")) for x in re.findall(r'<span class="qw-stat qw-runs"[^>]*><b>~([\d,]+)</b>', sec2six)]
-        self.assertEqual(len(firsts), 5, "PREMISE: a row in section 2 has no count: %r" % firsts)
-        self.assertEqual(firsts, sorted(firsts), "section 2 is not fewest-first: %r" % firsts)
-        # the five LOWEST of all seven places: The Pit (553 runs) is the slowest, so it is the one left off
-        self.assertNotIn("Normal The Pit", sec2six, "a slower place took a faster one's slot")
-        only = self.o["gridBossesOnly"]
-        self.assertIn("No other place on record drops it", only, "an empty section 2 said nothing")
+        self.assertEqual(len(firsts), 5, "PREMISE: a row in the All list has no count: %r" % firsts)
+        self.assertEqual(firsts, sorted(firsts), "the All list is not fewest-first: %r" % firsts)
+        self.assertNotIn("Normal Pitspawn Fouldog", sec2six, "a place needing more kills took a faster one's slot")
+        nob = self.o["gridNoBoss"]
+        self.assertIn("No boss drops it", nob[:nob.index('<div class="qw-also">')], "an empty Bosses list said nothing")
 
     def test_the_per_kill_places_are_their_own_section(self):
         g = self.o["grid"]
@@ -302,7 +304,11 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         # REG-3305 - the heading itself, both ends from the markup (a fixed 200-character window was a guess about its
         # length, and test_a_source_window_must_reach_its_subject counted it: 45 over its ceiling of 44)
         h = g.index('<div class="qw-also-h">', i)
-        self.assertIn("fewest runs or kills for a 50% chance first", g[h:g.index("</div>", h)])
+        self.assertIn("Monster Type: All", g[h:g.index("</div>", h)], "section 2 does not say it is silospen's All list")
+        self.assertIn("fewest kills for a 50% chance first", g[h:g.index("</div>", h)])
+        h1 = g.index('<div class="qw-grid-h">')
+        self.assertLess(h1, g.index('<div class="qw-grid">'))
+        self.assertIn("Monster Type: Boss", g[h1:g.index("</div>", h1)], "section 1 does not say it is silospen's Boss list")
         self.assertIn("Normal The Cow King", g[i:])
         # #89 - the picture the page's own map names for him (a pinned file name broke when his sprite became the shared one)
         cow = re.search(r"su_thecowking:\s*'([^']+)'", _read()).group(1)
@@ -460,7 +466,9 @@ class EveryPackAndUberWearsItsOwnSprite(unittest.TestCase):
         names = sorted(set(r[0] for p in places.values() for r in p.get("r") or []))
         missing = [n for n in names if n not in self.packs and n not in self.rec["unmatched"]]
         self.assertEqual(missing, [], "a random-pack monster has no sprite and no stated reason: %s" % missing)
-        self.assertGreaterEqual(len(names), 60, "premise: the page lists %d pack monsters" % len(names))
+        # v3886 (#150) - only a random row that can reach silospen's All top 5 is stored now (silospen_places ALL_REACH), so
+        # far fewer pack monsters are named than the three-rows-an-item table's 60+; the floor keeps this from passing empty
+        self.assertGreaterEqual(len(names), 20, "premise: the page lists %d pack monsters" % len(names))
 
     def test_every_sprite_is_shipped_with_its_recorded_sha1(self):
         import hashlib
@@ -602,19 +610,14 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "#108 - an area run draws one row per variant again: the Cow Level pushes every per-kill place off the card",
+    {"why": "v3886 (#150) - an area run (the Cow Level, the Pit - the page's own per-run estimate) draws in silospen's lists again",
      "file": "bible.html",
-     "find": "      if (_seenArea[k]) return false;\n",
-     "replace": "",
-     "matches": 1, "needs": "node"},
-    {"why": "#108 - The Pit wears Tamoe Highland's outdoor tile again, not the cave",
-     "file": "bible.html",
-     "find": "const AREA_RUN_ART = { \"pit\": \"area_the_pit.jpg\" };",
-     "replace": "const AREA_RUN_ART = {};",
+     "find": "    var rows = (qp || []).filter(function(p){ return p && p.kind !== 'area' && !(p.kpr > 1); }).map(function(p){\n",
+     "replace": "    var rows = (qp || []).filter(function(p){ return p; }).map(function(p){\n",
      "matches": 1, "needs": "node"},
     {"why": "#108 - one monster at the same odds on three levels draws three rows again",
      "file": "bible.html",
-     "find": "        if (_same[k]) { _same[k].area += ' · ' + r[3]; return; }\n",
+     "find": "        if (_same[k]) { _same[k].area += ' · ' + r[3]; _same[k].areas++; return; }\n",
      "replace": "",
      "matches": 1, "needs": "node"},
     {"why": "#109 - a ranked row drops its odds column (his order: runs, time, runs an hour, then the odds last)",
@@ -649,23 +652,23 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "v3884 - the boss runs stop at four again (his 'top 5')",
      "file": "bible.html",
-     "find": "    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 5);   /* v3884 (his 11-08: \"top 5\") */\n",
-     "replace": "    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 4);\n",
+     "find": "    return { boss: rows.filter(function(r){ return r.kind === 'boss'; }).slice(0, 5), all: rows.slice(0, 5) };\n",
+     "replace": "    return { boss: rows.filter(function(r){ return r.kind === 'boss'; }).slice(0, 4), all: rows.slice(0, 5) };\n",
      "matches": 1, "needs": "node"},
-    {"why": "#101 - an area run is ranked among the boss and super-unique runs again (one section)",
+    {"why": "v3886 (#150) - a super-unique ranks in the Bosses list again (Pitspawn Fouldog on Bane Ash's - his 'fouldog is garbage')",
      "file": "bible.html",
-     "find": "    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 5);   /* v3884 (his 11-08: \"top 5\") */\n",
-     "replace": "    var one = qp.slice(0, 5);\n",
+     "find": "    return { boss: rows.filter(function(r){ return r.kind === 'boss'; }).slice(0, 5), all: rows.slice(0, 5) };\n",
+     "replace": "    return { boss: rows.filter(function(r){ return r.kind !== 'area'; }).slice(0, 5), all: rows.slice(0, 5) };\n",
      "matches": 1, "needs": "node"},
-    {"why": "#101 - the other places are not capped at five again",
+    {"why": "#101 - the All list is not capped at five again",
      "file": "bible.html",
-     "find": "    others = others.slice(0, 5);\n",
+     "find": "    return { boss: rows.filter(function(r){ return r.kind === 'boss'; }).slice(0, 5), all: rows.slice(0, 5) };\n",
+     "replace": "    return { boss: rows.filter(function(r){ return r.kind === 'boss'; }).slice(0, 5), all: rows };\n",
+     "matches": 1, "needs": "node"},
+    {"why": "#125 - the lists are not ranked fewest-first again (his 'top 1 ... lowest')",
+     "file": "bible.html",
+     "find": "    rows = _qwRank(rows);\n",
      "replace": "",
-     "matches": 1, "needs": "node"},
-    {"why": "#125 - the other places are not ranked fewest-first again (the area runs lead, his 'top 1 ... lowest')",
-     "file": "bible.html",
-     "find": "      return xn < yn ? -1 : (xn > yn ? 1 : x.k - y.k);      /* #125 - fewest for a 50% chance first; a tie keeps its order */\n",
-     "replace": "      return x.k - y.k;\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-3336 - a monster on the rich boss card shrinks into the item portrait frame again",
      "file": "bible.html",

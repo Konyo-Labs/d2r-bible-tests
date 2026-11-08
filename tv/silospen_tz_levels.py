@@ -123,6 +123,65 @@ def pull(out_path, say=print, farms=None):
     return raw
 
 
+def monster_ids(get):
+    """v3886 (#150) - silospen's terror-zoned monster ids per difficulty: {(type, diff column): {name: id}} from its own
+    monsterList (desecrated). REG-151: Hell mints a "(d)" id, NM and Normal serve the plain id with desecrated=true - the
+    list says which, so no id is guessed."""
+    out = {}
+    for mtype in ("BOSS", "SUPERUNIQUE"):
+        for col, diff in DIFFS.items():
+            rows = get({"type": "monsterList", "monsterType": mtype, "difficulty": diff, "desecrated": "true",
+                        "desecratedLevel": LEVEL_MAX})
+            m = {}
+            for r in rows if isinstance(rows, list) else []:
+                nm = re.sub(r"\s*\(d\)\s*$", "", str(r.get("name") or "")).strip()
+                if nm and r.get("id"):
+                    m.setdefault(nm, r["id"])
+            out[(mtype, col)] = m
+    return out
+
+
+def pull_places(out_path, places, say=print, lo=LEVEL_FLOOR, hi=LEVEL_MAX):
+    """v3886 (#150, his 11-08 "i want ALL and BOSSES ... the top 5 when you filter in silopen") - the same level tables for the
+    PLACES Quick wins ranks with Terror Zone on that are not one of the eight farms (Radament, the Summoner, Coldcrow ...):
+    `places` = {target id: (silospen name, "BOSS"|"SUPERUNIQUE", [diff columns])}. Uniques only, levels lo..hi (his floor
+    up). -> the raw answer, written to out_path, in pull()'s shape so build() reads it."""
+    import silospen_places as S
+    ids = monster_ids(S._get)
+    raw = {"version": VERSION, "pulledAt": int(time.time()), "mf": 300, "players": 1, "levels": [lo, hi], "farms": {},
+           "asked": 0, "missing": []}
+    for tid, (name, mtype, cols) in sorted(places.items()):
+        for col in cols:
+            mid = (ids.get((mtype, col)) or {}).get(name)
+            if not mid:
+                raw["missing"].append([tid, col, name])
+                say("%-28s %-6s silospen lists no terror-zoned %s here - left at its stored figure" % (tid, col, name))
+                continue
+            FARMS[tid] = (mid, mtype)       # table_at reads the id from FARMS
+            segs, asked = segments(lambda lvl: _table_with(S._get, mid, mtype, col, "UNIQUE", lvl), lo, hi)
+            raw["farms"].setdefault(tid, {})[col] = {"UNIQUE": {"segments": segs, "asked": asked}}
+            raw["asked"] += len(asked)
+            say("%-28s %-6s %d segment(s) from %d level(s) asked" % (tid, col, len(segs), len(asked)))
+    with io.open(out_path, "w", encoding="utf-8") as fh:
+        json.dump(raw, fh, indent=0, sort_keys=True)
+    return raw
+
+
+def _table_with(get, mid, mtype, col, quality, level):
+    b = get({"type": "monsterProbabilities", "monsterId": mid, "monsterType": mtype, "difficulty": DIFFS[col],
+             "desecrated": "true", "desecratedLevel": level, "magicFind": 300, "players": 1, "party": 1,
+             "itemQuality": quality})
+    out = {}
+    for r in b.get("rows") or []:
+        try:
+            p = float(r[2])
+        except (TypeError, ValueError, IndexError):
+            continue
+        if p > 0:
+            out[str(r[0])] = max(out.get(str(r[0]), 0.0), _sig(p))
+    return out
+
+
 def canon(name):
     """One spelling for silospen's name and the page's: no trailing "(...)", no leading "The ", no apostrophes, one case.
     MEASURED 11-08: the page spells eight uniques its own way - "Gull (dagger)", "Harlequin Crest (Shako)", "Iron Jang Bong",
@@ -233,6 +292,26 @@ def check(raw, bible_src):
     return off
 
 
+def build_places_table(raw, bible_src):
+    """v3886 (#150) - the level table for the PLACES Quick wins ranks with Terror Zone on (pull_places' raw answer), only for
+    the place / item pairs the page's QW_PLACES tf rows carry; bases = those rows' level-99 figures. -> {place: {col: {item:
+    [[level, n], ...]}}}, merged beside the eight farms in bible.html `tz-level-odds`. Pure."""
+    m = re.search(r"\nconst QW_PLACES = (\{.*?\});\n", bible_src)
+    places = json.loads(m.group(1)) if m else {}
+    bases, names = {}, {}
+    for item, v in places.items():
+        names[canon(item)] = item
+        for tid, d, n in v.get("tf") or []:
+            bases[(tid, d + "Tz", item)] = n
+    out = {}
+    for tid, cols in build(raw, names, bases).items():
+        for col, items in cols.items():
+            for item, pts in items.items():
+                if (tid, col, item) in bases:
+                    out.setdefault(tid, {}).setdefault(col, {})[item] = pts
+    return out
+
+
 if __name__ == "__main__":
     if len(sys.argv) >= 3 and sys.argv[1] == "--pull":
         pull(sys.argv[2], farms=(sys.argv[3].split(",") if len(sys.argv) > 3 else None))
@@ -242,6 +321,12 @@ if __name__ == "__main__":
         with io.open(os.path.join(os.path.dirname(HERE), "bible.html"), encoding="utf-8") as fh:
             src = fh.read()
         print(json.dumps(build(raw, page_names(src), page_bases(src)), separators=(",", ":"), sort_keys=True))
+    elif len(sys.argv) == 3 and sys.argv[1] == "--build-places":
+        with io.open(sys.argv[2], encoding="utf-8") as fh:
+            raw = json.load(fh)
+        with io.open(os.path.join(os.path.dirname(HERE), "bible.html"), encoding="utf-8") as fh:
+            src = fh.read()
+        print(json.dumps(build_places_table(raw, src), separators=(",", ":"), sort_keys=True))
     elif len(sys.argv) == 3 and sys.argv[1] == "--check":
         with io.open(sys.argv[2], encoding="utf-8") as fh:
             raw = json.load(fh)

@@ -225,7 +225,10 @@ def assemble(blobs):
             return None, "no class-skill property carries class id %d (%s)" % (cid, r.get("class"))
         classes.append([cls_code[cid], r["class"], mods.get(r.get("StrAllSkills") or "") or "",
                         mods.get(r.get("StrClassOnly") or "") or "",
-                        [mods.get(r.get("StrSkillTab%d" % p) or "") or "" for p in (1, 2, 3)]])
+                        [mods.get(r.get("StrSkillTab%d" % p) or "") or "" for p in (1, 2, 3)],
+                        # [5] v3886 (#141) - APPENDED: charstats.txt `BlockFactor`, the class's own block bonus a shield
+                        # adds to (Paladin 30, Amazon / Assassin / Barbarian 25, Druid / Necromancer / Sorceress 20)
+                        _num(r.get("BlockFactor"))])
     cid_of = dict((c[0], i) for i, c in enumerate(classes))
 
     # ── itemtypes.txt: every ancestor of a type through Equiv1/Equiv2
@@ -270,7 +273,9 @@ def assemble(blobs):
             bases[code] = [shown(r.get("namestr") or code, r.get("name")), host,
                            _num(r.get("minac")) or 0, _num(r.get("maxac")) or 0, _num(r.get("gemsockets")) or 0,
                            r.get("type") or "", 1 if "char" in a else 0, _num(r.get("levelreq")) or 0,
-                           walk_class(r.get("type") or "")]
+                           walk_class(r.get("type") or ""),
+                           # [9] v3886 (#141) - APPENDED: armor.txt `block`, a shield's base chance to block (Sacred Targe 30)
+                           _num(r.get("block")) or 0]
 
     # ── skills: id -> [display name, class id or -1, table key]; only the ones an item line names are kept (an item
     #    names a skill by id — "54" — or by its KEY — "Battle Command" — so both must resolve on the page)

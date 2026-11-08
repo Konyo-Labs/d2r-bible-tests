@@ -43,7 +43,13 @@ UA = "d2r-bible-calc-check"
 #: unique: Quick wins lists every missing one now, so every one needs its places. Was 40 (Quick wins was qlvl <= 35).
 LEVEL_MAX = 99
 KEEP_FIXED = 12         # fixed targets kept per item (his MF / players can reorder the top few, never the twelfth)
-KEEP_RANDOM = 3         # random packs kept per item - shown as silospen's per-kill reading, never as a run
+KEEP_RANDOM = 12        # random packs kept per item AND per Terror Zone state - silospen's per-kill reading, never a run
+#: v3886 (#150, his 11-08: "i want ALL and BOSSES.. and the top 5 when you filter in silopen") - Quick wins is silospen's own
+#: Monster Type Boss and Monster Type All lists, Terror Zone on AND off. The TZ-on rows are pulled at this level: the level
+#: every stored Hell TZ figure is at; the eight farms' own TZ cells follow his LVL through tz-level-odds.
+TZ_LEVEL = 99
+SAME = 0.02            # his 2% - a row within it of another row's odds is a tie (the tie count each random row carries)
+ALL_REACH = 8          # a random row is kept when it is within silospen's best 8 places of everything for the item
 PACE_S = 0.6
 DIFF = {"N": "norm", "NM": "nm", "H": "hell"}
 
@@ -85,10 +91,16 @@ def parse_row(row):
         return None
     who = m.group(1).strip()
     minion_of = None
+    tz = False
+    if who.endswith(" (d)"):             # v3886 - silospen marks a terror-zoned monster "(d)" (desecrated): not a minion
+        who, tz = who[:-4].strip(), True
     mm = re.match(r"^(.*?) \((.*)\)$", who)
     if mm:
         who, minion_of = mm.group(1).strip(), mm.group(2).strip()
-    return {"who": who, "code": m.group(2), "diff": DIFF[m.group(3)], "area": str(area), "p": p, "minionOf": minion_of}
+        if minion_of.endswith(" (d)") or minion_of.endswith("(d)"):
+            minion_of, tz = re.sub(r"\s*\(d\)$", "", minion_of).strip(), True
+    return {"who": who, "code": m.group(2), "diff": DIFF[m.group(3)], "area": str(area), "p": p, "minionOf": minion_of,
+            "tz": tz}
 
 
 def slug(who):
@@ -142,6 +154,54 @@ def pull(out_path, say=print, items=None):
     return raw
 
 
+def tz_record(get, iid):
+    """v3886 (#150) - one item's Terror Zone rows at TZ_LEVEL (MF 300, /players 1): every Boss and Super Unique row, the top
+    40 Unique and 20 Champion rows, and how many Unique / Champion rows sit within SAME of the best (the tie). -> dict"""
+    q = {"type": "itemProbabilities", "itemId": iid, "desecrated": "true", "desecratedLevel": TZ_LEVEL}
+    rec = {"level": TZ_LEVEL}
+    for mt, key in (("BOSS", "boss"), ("SUPERUNIQUE", "superunique")):
+        rec[key] = get(dict(q, monsterType=mt)).get("rows") or []
+    for mt, key, keep in (("UNIQUE", "unique", 40), ("CHAMPION", "champion", 20)):
+        rows = sorted(get(dict(q, monsterType=mt)).get("rows") or [], key=lambda r: -float(r[2]))
+        p0 = float(rows[0][2]) if rows else 0.0
+        rec[key] = rows[:keep]
+        rec[key + "Tie"] = sum(1 for r in rows if p0 and float(r[2]) >= p0 / (1 + SAME))
+    return rec
+
+
+def pull_tz(raw_path, say=print):
+    """Add the Terror Zone rows (tz_record) to every built item of a raw pull that lacks them. Writes raw_path in place."""
+    with io.open(raw_path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    todo = [nm for nm, rec in sorted(raw["items"].items()) if "superunique" in rec and "tz" not in rec]
+    for i, nm in enumerate(todo):
+        raw["items"][nm]["tz"] = tz_record(_get, raw["items"][nm]["id"])
+        if (i + 1) % 25 == 0:
+            _write(raw_path, raw)
+            say("  %d of %d" % (i + 1, len(todo)))
+    _write(raw_path, raw)
+    return raw
+
+
+def merge_tz(raw, boss_su, rnd):
+    """The same tz records, from two pulls already made (11-08: Boss + Super Unique per item name, and Unique + Champion
+    with their tie counts) - the one-time join that saved re-asking silospen. Items either pull lacks are left without.
+    -> the number of items given a tz record"""
+    n = 0
+    for nm, rec in raw["items"].items():
+        a, b = boss_su.get(nm), rnd.get(nm)        # b may be missing: the item keeps its Boss / Super Unique TZ rows alone
+        if "superunique" not in rec or not isinstance(a, dict):
+            continue
+        if not isinstance(a.get("BOSS"), list) or not isinstance(a.get("SUPERUNIQUE"), list):
+            continue
+        u, c = (b or {}).get("UNIQUE") or {}, (b or {}).get("CHAMPION") or {}
+        rec["tz"] = {"level": TZ_LEVEL, "boss": a["BOSS"], "superunique": a["SUPERUNIQUE"],
+                     "unique": u.get("rows") or [], "uniqueTie": u.get("tie"), "champion": c.get("rows") or [],
+                     "championTie": c.get("tie")}
+        n += 1
+    return n
+
+
 def _write(path, body):
     tmp = path + ".tmp"
     with io.open(tmp, "w", encoding="utf-8") as fh:
@@ -166,20 +226,55 @@ def build_places(raw):
                 if key not in best or r["p"] > best[key][2]:
                     best[key] = [key[0], key[1], r["p"], r["area"], r["who"], kind]
         fixed = sorted(best.values(), key=lambda t: (-t[2], t[0], t[1]))[:KEEP_FIXED]
-        rnd = []
-        seen = set()
-        for kind, rows in (("unique", rec.get("unique") or []), ("champion", rec.get("champion") or [])):
+        tz = rec.get("tz") or {}
+        # v3886 (#150) - the TERROR-ZONED fixed targets silospen lists (Monster Type Boss / Super Unique, Terror Zone on,
+        # TZ_LEVEL). A farm the page runs already carries its own TZ cells (BOSSES, at his LVL), so only new targets.
+        best_tz = {}
+        for kind, rows in (("boss", tz.get("boss") or []), ("superunique", tz.get("superunique") or [])):
             for row in rows:
                 r = parse_row(row)
                 if not r or r["minionOf"]:
                     continue
-                k = (r["who"], r["diff"], r["area"])
-                if k in seen:
+                key = (target_id(r), r["diff"])
+                if key[0] in EXISTING.values():
                     continue
-                seen.add(k)
-                rnd.append([r["who"], r["diff"], r["p"], r["area"], kind])
-        rnd = sorted(rnd, key=lambda t: -t[2])[:KEEP_RANDOM]
-        out[nm] = {"level": lvl, "fixed": fixed, "random": rnd}
+                if key not in best_tz or r["p"] > best_tz[key][2]:
+                    best_tz[key] = [key[0], key[1], r["p"], r["area"], r["who"], kind]
+        fixed_tz = sorted(best_tz.values(), key=lambda t: (-t[2], t[0], t[1]))[:KEEP_FIXED]
+        # random packs, Terror Zone off (the pull's own rows) and on (tz), each row with its TIE: how many rows of its own
+        # list sit within SAME of its odds, and whether that count reached the end of the rows the pull kept (then it is a
+        # floor, "N or more")
+        rnd = []
+        for on, src in ((0, rec), (1, tz)):
+            for kind in ("unique", "champion"):
+                kept = [r for r in (parse_row(x) for x in (src.get(kind) or [])) if r and not r["minionOf"]]
+                full = src.get(kind + "Tie")               # silospen's own count at the best odds, when the pull kept it
+                seen = set()
+                for i, r in enumerate(kept):
+                    k = (r["who"], r["diff"], r["area"])
+                    if k in seen:
+                        continue
+                    seen.add(k)
+                    tie = sum(1 for x in kept if abs(x["p"] - r["p"]) <= SAME * r["p"])
+                    floor = 1 if (tie == len(kept) and len(kept) >= (40 if kind == "unique" else 20)) else 0
+                    if full and r["p"] >= kept[0]["p"] / (1 + SAME):
+                        tie, floor = int(full), 0
+                    rnd.append([r["who"], r["diff"], r["p"], r["area"], kind, on, tie, floor])
+        rnd = (sorted([t for t in rnd if not t[5]], key=lambda t: -t[2])[:KEEP_RANDOM]
+               + sorted([t for t in rnd if t[5]], key=lambda t: -t[2])[:KEEP_RANDOM])
+        # only a random row that can reach the All list's top 5 is kept: within silospen's best ALL_REACH of everything
+        # this item drops from (bosses, super-uniques, random packs; Terror Zone on and off) - MF and /players can reorder a
+        # few places, never the eighth past the fifth. A tie at the cut is kept whole.
+        every = [t[2] for t in fixed] + [t[2] for t in fixed_tz] + [t[2] for t in rnd]
+        for kind, rows in (("boss", tz.get("boss") or []), ("superunique", tz.get("superunique") or [])):
+            for row in rows:
+                r = parse_row(row)
+                if r and not r["minionOf"]:
+                    every.append(r["p"])
+        every.sort(reverse=True)
+        cut = every[ALL_REACH - 1] if len(every) >= ALL_REACH else 0.0
+        rnd = [t for t in rnd if t[2] >= cut / (1 + SAME)]
+        out[nm] = {"level": lvl, "fixed": fixed, "fixedTz": fixed_tz, "random": rnd}
     return out
 
 
@@ -272,8 +367,20 @@ def emit(raw):
                 if tid in ONCE:
                     t["once"] = 1
                 targets[tid] = t
-        r = [[who, d, kind, area, max(1, int(round(1.0 / p)))] for who, d, p, area, kind in v["random"]]
-        rows[nm] = {"f": f, "r": r, "lvl": v["level"]}
+        tf = []
+        for tid, d, p, area, who, kind in v.get("fixedTz") or []:
+            tf.append([tid, d, max(1, int(round(1.0 / p)))])
+            if tid not in targets:
+                t = {"n": who, "a": area, "k": kind, "kph": KPH_EST.get(tid, KPH_DEFAULT)}
+                if tid in ONCE:
+                    t["once"] = 1
+                targets[tid] = t
+        r = [[who, d, kind, area, max(1, int(round(1.0 / p))), on, tie, floor]
+             for who, d, p, area, kind, on, tie, floor in v["random"]]
+        row = {"f": f, "r": r, "lvl": v["level"]}
+        if tf:
+            row["tf"] = tf
+        rows[nm] = row
     pf = dict((t, v) for t, v in pf.items() if t in targets)      # only the places a list keeps
     def js(o):
         return json.dumps(o, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
@@ -344,7 +451,28 @@ def evidence(raw):
         for nm in sorted(full):               # every OTHER item is a check the factor was not read from
             for (MF, P), pv in sorted(full[nm].items()):
                 checks.append([nm, tid, d, MF, P, pv, 1 if nm == src_nm else 0])
-    return {"version": VERSION, "query": QUERY, "pulledAt": raw.get("pulledAt"), "baseMf": 300, "checks": checks}
+    # v3886 (#149/#150) - per item, which of the page's own farms silospen's TERROR ZONE pull lists at each difficulty (Monster
+    # Type Boss + Super Unique, Terror Zone on, TZ_LEVEL): the pool a stored TZ cell must come from. The Redeemer's NM TZ
+    # Pindleskin cell (1:2,920) sat on the page while silospen gives The Redeemer no Nightmare row at any TZ level.
+    pool = {}
+    for nm, rec in sorted((raw.get("items") or {}).items()):
+        tz = rec.get("tz")
+        if not tz:
+            continue
+        by = {}
+        for row in (tz.get("boss") or []) + (tz.get("superunique") or []):
+            r = parse_row(row)
+            if not r or r["minionOf"]:
+                continue
+            tid = target_id(r)
+            if tid in EXISTING.values():
+                by.setdefault(r["diff"], set()).add(tid)
+        pool[nm] = dict((d, sorted(v)) for d, v in sorted(by.items()))
+    out = {"version": VERSION, "query": QUERY, "pulledAt": raw.get("pulledAt"), "baseMf": 300, "checks": checks}
+    if pool:
+        out["tzPool"] = pool
+        out["tzLevel"] = TZ_LEVEL
+    return out
 
 
 def top_up(raw_path, names, say=print):
@@ -398,6 +526,17 @@ if __name__ == "__main__":
         pull(sys.argv[2])
     elif len(sys.argv) >= 4 and sys.argv[1] == "--top-up":
         top_up(sys.argv[2], sys.argv[3:])
+    elif len(sys.argv) >= 3 and sys.argv[1] == "--pull-tz":
+        pull_tz(sys.argv[2])
+    elif len(sys.argv) >= 5 and sys.argv[1] == "--merge-tz":
+        with io.open(sys.argv[2], encoding="utf-8") as fh:
+            _raw = json.load(fh)
+        with io.open(sys.argv[3], encoding="utf-8") as fh:
+            _bs = json.load(fh)
+        with io.open(sys.argv[4], encoding="utf-8") as fh:
+            _rn = json.load(fh)
+        print("%d item(s) given their Terror Zone rows" % merge_tz(_raw, _bs, _rn))
+        _write(sys.argv[2], _raw)
     elif len(sys.argv) >= 4 and sys.argv[1] == "--emit":
         with io.open(sys.argv[2], encoding="utf-8") as fh:
             print("wrote %d bytes into %s" % (emit_into(sys.argv[3], json.load(fh)), sys.argv[3]))

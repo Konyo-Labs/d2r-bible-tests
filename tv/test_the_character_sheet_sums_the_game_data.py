@@ -693,8 +693,8 @@ RED_PROOF = [
     {
         "why": "#174 v-B2 fix round - the generator drops each base's class, so no class lock can ever fire",
         "file": "char_props.py",
-        "find": "                           walk_class(r.get(\"type\") or \"\")]\n",
-        "replace": "                           \"\"]\n",
+        "find": "                           walk_class(r.get(\"type\") or \"\"),\n",
+        "replace": "                           \"\",\n",
         "matches": 1, "needs": "d2r-install",
     },
     {

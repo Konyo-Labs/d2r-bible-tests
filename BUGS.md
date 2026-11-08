@@ -112,6 +112,50 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3453 - QUICK WINS RANKED A LIST SILOSPEN NEVER SHOWS: PITSPAWN FOULDOG IN BANE ASH'S BOSSES (v3886, #150, his 11-08)
+His words, with three silospen screenshots (Bane Ash, MF 500): "what the fack is fouldog doing in here ... i want ALL and
+BOSSES.. and the top 5 when you filter in silopen is the top 5 best runs with those odds for bosses/others .. fouldog is
+garbage" · "its only if the odds and runs are the lowest 5 they should end up in the console". Section 1 was bosses AND
+super-uniques (Fouldog, a Super Unique, 1:3,062); section 2 the page's own area-run estimates and three stored random rows -
+on Tyrael's Might an alphabetical pick of 217 random packs tied at 1:433,356. Neither matched any list silospen shows. Now
+the two lists ARE silospen's filters (_qwLists): Bosses 1st-5th = Monster Type Boss, All 1st-5th = Monster Type All, Terror
+Zone on and off together, at his MF / players / LVL; the Cow Level and the Pit as a run are in no silospen list and leave
+both; a random row names how many more places tie at its odds. silospen_places.py pulls the Terror Zone rows (tz_record,
+merge_tz: Boss / Super Unique full, Unique / Champion top rows with their tie) and keeps a random row only when it can reach
+the All top 5 (ALL_REACH 8; the table 207 -> 297 KB, not 633). The non-farm TZ places (Radament, the Summoner, Coldcrow ...)
+got level tables (silospen_tz_levels.pull_places / build_places_table, 1,961 rows): a level-99 figure mixed with his LVL-90
+farms had pushed TZ Diablo off Tyrael's Might again (TZ Radament 1:149k at 99, 1:1.53M at 88-90). MEASURED against silospen
+at MF 500: Bane Ash Bosses = Andariel, Blood Raven, Mephisto, Diablo, Baal; All = Coldcrow, the Cow King, The Banished, Spike
+Fiend, Dark Ranger - both exact. Laws: test_quick_wins_ranks_every_place (Bane Ash pinned; the rule on every item at six
+settings; 2 new red-proofs), test_quick_wins_shows_each_place_with_its_picture (the two sections).
+
+### REG-3454 - 21 TERROR ZONE PINDLESKIN CELLS FOR DROPS SILOSPEN SAYS CANNOT HAPPEN; THE REDEEMER'S BEST RUN WAS ONE (v3886, #149)
+The top-5 audit of his and Dean's missing items (11-08) matched silospen to 1% on 23 items but one: The Redeemer's best run
+read "NM TZ Pindleskin 1:2,591" - silospen gives The Redeemer (item level 80) no Nightmare row at any Terror Zone level
+(asked at 76 and 90), while the same column's Heaven's Light cell, 1:21,372, is silospen's to the unit. The plain cells had a
+law holding them to silospen (REG-3439); the TZ cells had none. Now the evidence carries silospen's Terror Zone pool per item
+(tzPool: which of the page's farms its TZ pull lists, per difficulty) and test_a_stored_terror_zone_figure_silospen_never_
+gives_is_refused holds every TZ cell the page would SHOW to it (a cell its level table carries is silospen's level-by-level
+answer and is left to it - Normal TZ Baal's level-50 cells read 0 from 68 up). It found 21, all NM / Normal TZ Pindleskin
+(Lightsabre, Doombringer, The Redeemer ...): nulled. Red-proof PROVEN. Not yet fixed, named: silospen_tz_levels.py asks
+silospen for "Pindleskind" in NM and Normal (REG-151's id), so Pindle's NM / Normal TZ columns carry no level table (703
+cells its --check could not read) - card for v3889.
+
+### REG-3455 - NINE RANDOM-PACK MONSTERS QUICK WINS NOW LISTS HAD NO SPRITE (v3886, #108)
+silospen's All list brings monsters the three-rows-an-item table never named. Each matched to the Arreat Summit family page
+whose own text names it: Thorn Beast (Spike Fiend), Fallen Shaman, Foul Crow (Blood Hawk), Moon Clan (Goatman), Dark Hunter
+(Corrupt Rogue), Dark Spearwoman, Returned Mage (Skeleton Mage), Gargantuan Beast (Wendigo) wear the family files already
+shipped; Balrog wears the Mega Demon (fetched, trimmed by the record's rule - brightness above 16, +4 px, all frames - read
+COLD by the Grok CLI: "a muscular red demon with large veined bat wings and curved horns swings a silver curved blade").
+Black Locusts: the Swarm sprite is a cloud of specks the cold look could not name ("CANNOT TELL") - no sprite, said.
+
+### REG-3456 - A PALADIN'S SACRED TARGE READ NO CHANCE TO BLOCK (v3886, #141, GrokBot's #28 pass)
+The build screen's Chance to Block summed only items' +% Increased Chance of Blocking. The game shows a shield's block as its
+base (armor.txt block, Sacred Targe 30) plus the class's BlockFactor (charstats.txt: Paladin 30, Amazon / Assassin /
+Barbarian / Warlock 25, the rest 20) - 60% for a Paladin. char_props.py now carries both (bases [9], classes [5], APPENDED);
+the row adds the worn shield's figure, names an unknown class factor, and says the character's total (x (Dexterity - 15) /
+(2 x level), at most 75%) waits for Dexterity. Law: test_a_shield_reads_its_block_with_the_class, red-proofs PROVEN (2).
+
 ### REG-3452 - DEAN'S CONSOLE NEVER READ ONE PRICE: IT THREW AWAY THE FORUM'S RESULTS PAGE AND SEARCHED AGAIN (v3886, his 11-08)
 His words: "deans is showing the picture of engimas the normal tier and the perfect tier but the prices doesnt read out to
 him it says UNKNOWN on his console. whats the reason its not working for him check hes online and logged in". MEASURED over

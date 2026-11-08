@@ -301,7 +301,8 @@
    "grokCold": "Dark-haired woman in black leather and tall boots, hands low in front, no large weapon visible.",
    "names": [
     "Black Lancer",
-    "Dark Lancer"
+    "Dark Lancer",
+    "Dark Spearwoman"
    ],
    "sourceSha1": "e052c466ecb0a6116fc23d3c57a105b8971b7484",
    "trim": {
@@ -351,7 +352,8 @@
    "grokCold": "Dark-haired woman in black leather with a raised curved sword and a round shield.",
    "names": [
     "Black Rogue",
-    "Flesh Hunter"
+    "Flesh Hunter",
+    "Dark Hunter"
    ],
    "sourceSha1": "1cb9a21f9507562ce743c85e997b408dbd817edf",
    "trim": {
@@ -411,7 +413,8 @@
    "grokCold": "Tall thin brown humanoid with two long pale horns, gripping a large silver crescent axe.",
    "names": [
     "Blood Clan",
-    "Death Clan"
+    "Death Clan",
+    "Moon Clan"
    ],
    "sourceSha1": "b2860df94a97978e472aea711b0b4cdc73f8f7eb",
    "trim": {
@@ -599,7 +602,8 @@
    "grokCold": "Huge dark shaggy hunched beast with long clawed arms and a lighter face in the fur.",
    "names": [
     "Brute",
-    "Crusher"
+    "Crusher",
+    "Gargantuan Beast"
    ],
    "sourceSha1": "df9544ae3e35c11bb14b29f14d1ab20f41187563",
    "trim": {
@@ -647,7 +651,8 @@
    "bytes": 12526,
    "grokCold": "Yellow skeleton with two glowing orange fireballs in front of it.",
    "names": [
-    "Burning Dead Mage"
+    "Burning Dead Mage",
+    "Returned Mage"
    ],
    "sourceSha1": "b79f0d334a94cf29cb99a5d09c89bf9a67baf39c",
    "trim": {
@@ -719,7 +724,8 @@
    "bytes": 19524,
    "grokCold": "Small red horned humanoid with a blade, beside a taller dark figure with a white horned skull-like head and a staff.",
    "names": [
-    "Carver Shaman"
+    "Carver Shaman",
+    "Fallen Shaman"
    ],
    "sourceSha1": "55fc1cd78c29fe69aa42db21b48e3baa9d4c493b",
    "trim": {
@@ -791,7 +797,8 @@
    "bytes": 11903,
    "grokCold": "Small brown flying creature with a pale point on top and two brown wing lobes.",
    "names": [
-    "Cloud Stalker"
+    "Cloud Stalker",
+    "Foul Crow"
    ],
    "sourceSha1": "14204d9dcfde45691fb1f3844896a268f393ceb7",
    "trim": {
@@ -948,7 +955,8 @@
    "bytes": 6806,
    "grokCold": "Tiny dark creature with a blue-green spiky crest and thin legs; the limb count is hard to make out.",
    "names": [
-    "Spike Fiend"
+    "Spike Fiend",
+    "Thorn Beast"
    ],
    "sourceSha1": "8b48f4f3697b78c500c96b415fdb84fc91d8ea87",
    "trim": {
@@ -1119,6 +1127,31 @@
    },
    "grokCold": "Pale humanoid, white helm with tall side pieces, gold chest, white skirt, brown boots, curved pale sword.",
    "names": []
+  },
+  "d2fam_mega_demon.gif": {
+   "family": "Mega Demon",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act4-megademon.shtml",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/animations/bestiary/act4/megademon.gif",
+   "sha1": "1aa06a1dcdd3437ee8937a1fd56593a08a112e58",
+   "bytes": 24340,
+   "grokCold": "A muscular red demon with large veined bat wings and curved horns swings a silver curved blade from its side up overhead.",
+   "names": [
+    "Balrog"
+   ],
+   "sourceSha1": "7151c7de62403f628f3016c84f6956e6ff6d2f17",
+   "trim": {
+    "box": [
+     0,
+     26,
+     125,
+     141
+    ],
+    "from": [
+     125,
+     150
+    ]
+   },
+   "added": "v3886 (#150): the All list's random packs named it"
   }
  },
  "packs": {
@@ -1185,7 +1218,16 @@
   "Spike Fiend": "art/d2fam_spike_fiend.gif",
   "The Banished": "art/d2fam_vampire.gif",
   "Urdar": "art/d2fam_blunderbore.gif",
-  "Wretched Defiler": "art/d2fam_putrid_defiler.gif"
+  "Wretched Defiler": "art/d2fam_putrid_defiler.gif",
+  "Thorn Beast": "art/d2fam_spike_fiend.gif",
+  "Fallen Shaman": "art/d2fam_fallen_shaman.gif",
+  "Foul Crow": "art/d2fam_blood_hawk.gif",
+  "Moon Clan": "art/d2fam_goatman.gif",
+  "Dark Hunter": "art/d2fam_corrupt_rogue.gif",
+  "Dark Spearwoman": "art/d2fam_corrupt_rogue_spearwoman.gif",
+  "Returned Mage": "art/d2fam_skeleton_mage.gif",
+  "Gargantuan Beast": "art/d2fam_wendigo.gif",
+  "Balrog": "art/d2fam_mega_demon.gif"
  },
  "arreatBosses": {
   "Andariel": "art/d2arreat_andariel.gif",
@@ -1200,7 +1242,8 @@
   "The Summoner": "art/d2arreat_the_summoner.gif"
  },
  "unmatched": {
-  "Blood Wing": "no Arreat Summit family page names it (Kurast Sewers) - no sprite, said, never guessed"
+  "Blood Wing": "no Arreat Summit family page names it (Kurast Sewers) - no sprite, said, never guessed",
+  "Black Locusts": "the Arreat Summit's Swarm family page names it (act2-swarm.shtml), but its sprite is a cloud of specks - read COLD by the Grok CLI 11-08: 'CANNOT TELL - only sparse pixel clouds on black ... no readable body' - so no sprite is wired, said, never guessed"
  },
  "areas": {
   "pit": {

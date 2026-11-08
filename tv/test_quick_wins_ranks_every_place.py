@@ -108,7 +108,7 @@ def _node(prog):
 
 
 SCENARIO = r"""
-var out = { eff: [], rank: {}, also: {} };
+var out = { eff: [], rank: {}, also: {}, lists: {} };
 CASES.forEach(function(c){ mf = c[3]; players = c[4]; out.eff.push(effChance(c[2], c[0], c[1])); });
 RANK.forEach(function(r){
   mf = r[1]; players = r[2];
@@ -116,6 +116,10 @@ RANK.forEach(function(r){
   var q = _qwPlaces({ n: r[0], sources: it.sources });
   out.rank[r.join('|')] = q.map(function(p){ return [p.label, p.runs, p.hours, p.s.bossId, p.est]; });
   out.also[r.join('|')] = _qwAlso({ n: r[0] }, _qwWorst(q)).map(function(a){ return [a.who, a.kind, a.chance]; });
+  // v3886 (#150) - the card's two lists, silospen's Monster Type Boss and Monster Type All
+  var L = _qwLists(q, _qwAlso({ n: r[0] }, null, 30));
+  out.lists[r.join('|')] = { boss: L.boss.map(function(x){ return [x.label, x.kind, x.runs]; }),
+                             all: L.all.map(function(x){ return [x.label, x.kind, x.runs]; }) };
 });
 process.stdout.write(JSON.stringify(out));
 """
@@ -166,7 +170,7 @@ class QuickWinsRanksEveryPlace(unittest.TestCase):
             cls.want.append(((nm, tid, d, mf, P, src_item), _round(1.0 / p), (p,)))
         cls.rank_keys = []
         for nm in sorted(cls.places):
-            for mf, P in ((0, 1), (300, 1), (300, 8), (699, 3), (1000, 1)):
+            for mf, P in ((0, 1), (300, 1), (300, 8), (500, 1), (699, 3), (1000, 1)):
                 cls.rank_keys.append([nm, mf, P])
         bl = next(ln for ln in cls.src.split("\n") if ln.startswith("const BOSSES = "))
         registry = _cut(cls.src, "const ITEM_REGISTRY = {};", "window.ITEM_REGISTRY = ITEM_REGISTRY;")
@@ -243,6 +247,39 @@ class QuickWinsRanksEveryPlace(unittest.TestCase):
         self.assertGreater(checked, 100, "premise: too few stored figures outside silospen's kept places (%d)" % checked)
         self.assertEqual(bad, [], "%d stored figure(s) silospen never gives:\n  %s" % (len(bad), "\n  ".join(bad[:20])))
 
+    def test_a_stored_terror_zone_figure_silospen_never_gives_is_refused(self):
+        """v3886 (#149, the top-5 audit 11-08: The Redeemer's best run read "NM TZ Pindleskin 1:2,591" - silospen gives The
+        Redeemer no Nightmare row at ANY Terror Zone level; the page's own Heaven's Light NM TZ Pindle cell, 1:21,372, is
+        silospen's to the unit). The case above holds the plain cells; this holds the TZ cells to silospen's Terror Zone pull
+        (Monster Type Boss + Super Unique, Terror Zone on, level tzLevel): a farm's TZ cell for an item that pull never lists
+        at that difficulty is a drop that cannot happen"""
+        pool = self.data.get("tzPool") or {}
+        self.assertGreater(len(pool), 300, "PREMISE: the evidence carries silospen's Terror Zone pool (%d items)" % len(pool))
+        # a cell the page's own level table carries is silospen's level-by-level answer (68-99, tv/silospen_tz_levels.py) and
+        # wins at his level - a Normal TZ Baal figure stored at level 50 reads 0 ("does not drop") from 68 up. Only a cell the
+        # page would SHOW as stored is held to the pool.
+        m = re.search(r'<script type="application/json" id="tz-level-odds">(.*?)</script>', self.src, re.S)
+        levels = json.loads(m.group(1)) if m else {}
+        self.assertTrue(levels, "PREMISE: the page carries its Terror Zone level table")
+        checked, bad = 0, []
+        for nm, by in sorted(pool.items()):
+            for tid, b in sorted(self.bosses.items()):
+                if tid in ("pit", "cows"):
+                    continue
+                row = next((r for r in b["dropTable"] if r["n"] == nm), None)
+                for col, d in (("normTz", "norm"), ("nmTz", "nm"), ("hellTz", "hell")):
+                    st = row.get(col) if row else None
+                    if st in (None, 0):
+                        continue
+                    if nm in ((levels.get(tid) or {}).get(col) or {}):
+                        continue
+                    checked += 1
+                    if tid not in (by.get(d) or []):
+                        bad.append("%s from %s %s: page 1:%s - silospen's Terror Zone pull lists no %s row for it"
+                                   % (nm, d, tid, st, tid))
+        self.assertGreater(checked, 1000, "premise: too few stored TZ figures were checked (%d)" % checked)
+        self.assertEqual(bad, [], "%d stored TZ figure(s) silospen never gives:\n  %s" % (len(bad), "\n  ".join(bad[:25])))
+
     def test_each_new_place_moves_with_mf_and_players_as_silospen_does(self):
         got = self.o["eff"]
         self.assertEqual(len(got), len(self.want), "premise: every case came back")
@@ -298,6 +335,37 @@ class QuickWinsRanksEveryPlace(unittest.TestCase):
         self.assertGreater(len(self.o["rank"]), 100, "premise: too few lists were ranked")
         self.assertEqual(bad, [], "\n  ".join(bad[:20]))
 
+    def test_bane_ash_reads_silospens_boss_and_all_lists(self):
+        """* v3886 (#150, his 11-08 with three silospen screenshots: "what the fack is fouldog doing in here ... i want ALL and
+        BOSSES.. and the top 5 when you filter in silopen") - Bane Ash at MF 500, /players 1: silospen's Monster Type Boss list
+        (Andariel 1:2,254, Blood Raven 1:3,656, Mephisto 1:6,866, Diablo 1:7,491, Baal 1:8,030) and its All list (Coldcrow
+        1:936, the Cow King 1:948, The Banished 1:1,833, Spike Fiend 1:1,866, Dark Ranger 1:1,871), read 11-08"""
+        L = self.o["lists"].get("Bane Ash|500|1")
+        self.assertTrue(L, "PREMISE: Bane Ash at MF 500 drew no lists")
+        self.assertEqual([x[0] for x in L["boss"]], ["Normal Andariel", "Normal Blood Raven", "Normal Mephisto", "Normal Diablo",
+                                                     "Normal Baal"], "the Bosses list is not silospen's Boss list")
+        self.assertEqual([x[0] for x in L["all"]], ["Normal Coldcrow", "Normal The Cow King", "Normal The Banished",
+                                                    "Normal Spike Fiend", "Normal Dark Ranger"], "the All list is not silospen's")
+        self.assertFalse([x for x in L["boss"] + L["all"] if "Fouldog" in x[0]], "Pitspawn Fouldog is back on Bane Ash's card")
+
+    def test_the_two_lists_are_silospens_filters_for_every_item(self):
+        """the rule, on every item at every setting: the Bosses list holds only silospen's Boss type, neither list holds an area
+        run (the Cow Level, the Pit - no silospen list carries a run of many kills), each is at most five, fewest first, and
+        the Bosses list is exactly the bosses of everything the All list ranks"""
+        bad = []
+        for k, L in sorted(self.o["lists"].items()):
+            kinds = set(x[1] for x in L["boss"])
+            if kinds - {"boss"}:
+                bad.append("%s: a %s in the Bosses list" % (k, sorted(kinds - {"boss"})))
+            if any(x[1] == "area" for x in L["all"] + L["boss"]):
+                bad.append("%s: an area run in a list" % k)
+            for nm in ("boss", "all"):
+                runs = [x[2] for x in L[nm]]
+                if len(runs) > 5 or any(b < a for a, b in zip(runs, runs[1:]) if b < a / (1 + QW_SAME)):
+                    bad.append("%s: %s list is over five or out of order: %r" % (k, nm, runs))
+        self.assertEqual(bad, [], "\n  ".join(bad[:12]))
+        self.assertGreater(len(self.o["lists"]), 1500, "premise: every item's lists, at six settings")
+
     def test_one_players_path(self):
         code = _code(self.src)
         pm = _cut(code, "function playerMult(bossId, diffKey, players){", "\n    }\n")
@@ -308,6 +376,21 @@ class QuickWinsRanksEveryPlace(unittest.TestCase):
 
 
 RED_PROOF = [
+    {'why': "v3886 (#149) - The Redeemer's NM TZ Pindleskin 1:2,920 comes back (silospen: no Nightmare row at any TZ level)",
+     'file': 'bible.html',
+     'find': '{"n":"The Redeemer","tc":78,"qlvl":80,"tier":"high","norm":null,"normTz":null,"nm":null,"nmTz":null,"hell":47589,"hellTz":45946}',
+     'replace': '{"n":"The Redeemer","tc":78,"qlvl":80,"tier":"high","norm":null,"normTz":null,"nm":null,"nmTz":2920,"hell":47589,"hellTz":45946}',
+     'matches': 1},
+    {'why': "v3886 (#150) - the Bosses list takes super-uniques again (Pitspawn Fouldog and Coldcrow on Bane Ash's Bosses list)",
+     'file': 'bible.html',
+     'find': "    return { boss: rows.filter(function(r){ return r.kind === 'boss'; }).slice(0, 5), all: rows.slice(0, 5) };\n",
+     'replace': "    return { boss: rows.filter(function(r){ return r.kind !== 'area'; }).slice(0, 5), all: rows.slice(0, 5) };\n",
+     'matches': 1},
+    {'why': "v3886 (#150) - an area run (the Cow Level, the Pit) ranks in silospen's lists again",
+     'file': 'bible.html',
+     'find': "    var rows = (qp || []).filter(function(p){ return p && p.kind !== 'area' && !(p.kpr > 1); }).map(function(p){\n",
+     'replace': "    var rows = (qp || []).filter(function(p){ return p; }).map(function(p){\n",
+     'matches': 1},
     {'why': "v3884 (REG-3439) - Tyrael's Might's Hell Diablo row comes back (silospen never gives it)",
      'file': 'bible.html',
      'find': '{"n":"Templar\'s Might","tc":87,"qlvl":82,"tier":"grail","norm":null,"normTz":null,"nm":null,"nmTz":null,"hell":null,"hellTz":2622},{"n":"Tyrael\'s Might","tc":87,"qlvl":87,"tier":"uber","norm":null,"normTz":null,"nm":null,"nmTz":null,"hell":null,"hellTz":20975}',
