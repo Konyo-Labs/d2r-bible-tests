@@ -7129,10 +7129,12 @@ def trust_pass(cache, say=print, gates=None, state=None, write=True):
     return sp
 
 
-def trust_now(say=print):
+def trust_now(say=print, only=None):
     """REG-3191 - THE TRUST PASS ON ITS OWN, with no slice and no law run: `heart2.py --trust` (the self-prove lane's light
     start, which waits for no idle machine) and `heart2.py --import-shards FILE... --trust` (right after an import lands,
     so the locks open at update, not when a slice next gets a quiet machine). -> 0 asked (written or not), 2 it raised
+    REG-3415 - `only` (gate names): ask the bank for those gates alone - the import's early pass over the shut locks'
+    guards, which must not re-key every owed law on a PC that keys under one a second.
 
     MEASURED on his Mac 2026-11-05 22:14: the lane sat 'busy' for 34 min with 6 of its 27 owed gates fully servable by
     the bank and unwritten - the trust pass ran only inside a slice, and a slice waits for idle. The census cache it opens
@@ -7142,7 +7144,11 @@ def trust_now(say=print):
         say("  REG-3191 TRUST PASS: not asked - the census cache is closed or would not open; the lane proves as before")
         return 0
     try:
-        trust_pass(cache, say=say)
+        if only is None:
+            trust_pass(cache, say=say)
+        else:
+            _only = set(only)
+            trust_pass(cache, say=say, gates=[(n, f) for n, f in gate_files() if n in _only])
     except Exception as _te:
         say("  ✗ REG-3191 TRUST PASS raised %s (%s) - nothing was written on the bank's word"
             % (type(_te).__name__, str(_te)[:160]))
@@ -9180,6 +9186,57 @@ def _shard_keyer(target):
 
 #: REG-3352 - at most this many keyer calls in one import batch (a law never splits: a larger law is a batch of its own)
 IMPORT_BATCH_PROOFS = 1500
+#: REG-3415 (v3882, his 11-08: "proofs being proven properly on all machines ... rivers flowing finally?"). MEASURED on
+#: the work ALT 11-08 (8 GB, i3, keying one at a time - "790 MB free: a worker needs 400 MB over a 1024 MB floor"): the
+#: v3880 import ran 5,425 s, was killed at proof_release's 5,400 s bound and banked NOTHING; the next run's to-do GREW
+#: (4,227 -> 4,350 keyer calls) and keyed at ~0.7 a second - its first fixed batch of 1,500 (the shut locks' guards,
+#: test_control first) never reached its write, so every run re-keyed the same batch: a livelock, and frame.release's
+#: guards were never banked. A batch is now sized by TIME: the first holds IMPORT_FIRST_BATCH calls, each later one what
+#: the measured rate keys in IMPORT_BATCH_TARGET_S (never under IMPORT_BATCH_MIN, never over IMPORT_BATCH_PROOFS), so
+#: a kill loses one batch's minutes, never the run.
+IMPORT_FIRST_BATCH = 150
+IMPORT_BATCH_TARGET_S = 300.0
+IMPORT_BATCH_MIN = 20
+
+
+def _import_clock():
+    """REG-3415 - the clock an import batch is timed by (a law's seam). -> seconds"""
+    return time.time()
+
+
+def _next_batch_size(calls, seconds, cap=None):
+    """REG-3415 - the next import batch's size, from the last one's measured rate. -> int. Pure.
+    `calls` keyer calls took `seconds`; a rate that cannot be measured keeps the first batch's size."""
+    cap = IMPORT_BATCH_PROOFS if cap is None else int(cap)
+    try:
+        rate = float(calls) / float(seconds)
+    except (TypeError, ValueError, ZeroDivisionError):
+        rate = None
+    if rate is None or rate != rate or rate <= 0:
+        return max(1, min(IMPORT_FIRST_BATCH, cap))
+    return max(1, min(cap, max(IMPORT_BATCH_MIN, int(rate * IMPORT_BATCH_TARGET_S))))
+
+
+def _import_first_batch(shards, rank=None, size=None):
+    """REG-3415 - the next import batch (REG-3352's rule: ranked laws first, a law never split) and what is left after
+    it. -> (batch | None when nothing is left, rest). Pure."""
+    for b in _import_batches(shards, rank, size):
+        gs = set(str(e.get("gate")) for _k, ent, _a in b for e in (ent or {}).values())
+        if gs:
+            rest = [(k, dict((key, e) for key, e in (ent or {}).items() if str(e.get("gate")) not in gs), a)
+                    for k, ent, a in shards]
+            return b, rest
+    return None, shards
+
+
+def _guards_done(batch, rest, rank):
+    """REG-3415 - did this batch bank the last of the ranked (shut-lock guard) laws? -> bool. Pure. True only when it
+    held a ranked law and none is left to key: the one moment an early trust pass can open a lock."""
+    if not rank:
+        return False
+    held = set(str(e.get("gate")) for _k, ent, _a in (batch or ()) for e in (ent or {}).values())
+    left = set(str(e.get("gate")) for _k, ent, _a in (rest or ()) for e in (ent or {}).values())
+    return bool(held & set(rank)) and not (left & set(rank))
 
 
 def _served_keys(target):
@@ -9313,10 +9370,12 @@ def _watch_import_parent(ppid, every=None, alive=None, quit=None):
     return t
 
 
-def import_shards(paths, say=print, target=None, progress=None):
+def import_shards(paths, say=print, target=None, progress=None, trust=False):
     """REG-2586 — `heart2.py --import-shards FILE...`: the shards' banked PROVENs into this machine's verdict cache, ALL OR
     NOTHING (tv/proof_shard.py says every rule). -> exit code: 0 imported, 2 refused (nothing written)
-    REG-3194 - `progress` (--import-progress FILE) names the file _ImportProgress keeps while the keys are computed."""
+    REG-3194 - `progress` (--import-progress FILE) names the file _ImportProgress keeps while the keys are computed.
+    REG-3415 - `trust` (--trust): the trust pass also runs the moment the batch holding the last of the shut locks'
+    guards is written, so a lock opens at its guards, not at the end of a run its bound may kill."""
     import proof_shard as _PS
     target = target or CACHE
     _prog = None
@@ -9346,17 +9405,30 @@ def import_shards(paths, say=print, target=None, progress=None):
         _left, _resumed, took = _unserved(shards, _served_keys(target))
         if progress:                                   # REG-3194 - how far the keying is, for the console
             _prog = _ImportProgress(progress, sum(_keyer_calls(_left).values()))
-        for shards in _import_batches(_left, _import_order(target)):   # the shut locks' guards first (#103-C)
+        _rank = _import_order(target)                  # the shut locks' guards first (#103-C)
+        _size = _next_batch_size(None, None)           # REG-3415 - the first batch is small; the rest, sized by time
+        _rest = _left
+        while True:
+            shards, _rest = _import_first_batch(_rest, _rank, _size)
+            if shards is None:
+                break
+            _t_b, _n_b = _import_clock(), sum(_keyer_calls(shards).values())
             with _keys_prewarmed(target, shards, say=say, progress=_prog):   # REG-3193 - on the spare cores first
                 ok, why, take, skipped = _PS.select(shards, keyer=_shard_keyer(target), dropped=_dropped, here=TREE_ID)
             if not ok:
                 break
+            _size = _next_batch_size(_n_b, _import_clock() - _t_b)
             w_ok, w_why = _import_write(target, take, say, out)          # the stores' one locked writer, per batch
             if not w_ok:
                 ok, why = False, "%s could not be written (%s)" % (os.path.basename(target), w_why)
                 break
             took.update(take)
             _wrote += 1
+            say("    REG-3415 batch %d written: %d keyer call(s) in %.0f s; the next holds up to %d"
+                % (_wrote, _n_b, _import_clock() - _t_b, _size))
+            if trust and _rank and _guards_done(shards, _rest, _rank):
+                say("    REG-3415 the shut locks' guards are banked - the trust pass runs now, not at the end")
+                trust_now(say=say, only=sorted(_rank))
         shards, take, skipped = _all, took, _skipped_all
         if _prog is not None:
             _prog.write("writing" if ok else "refused", force=True)
@@ -9918,7 +9990,7 @@ def main(argv):
     if a.import_shards is not None:
         if a.import_parent:
             _watch_import_parent(a.import_parent)    # #103 - an import never outlives the console that asked for it
-        _irc = import_shards(a.import_shards, progress=a.import_progress)
+        _irc = import_shards(a.import_shards, progress=a.import_progress, trust=a.trust)
         if _irc == 0 and a.trust:
             trust_now()                          # REG-3191 - the import's proofs open the locks now, not at idle
         return _irc

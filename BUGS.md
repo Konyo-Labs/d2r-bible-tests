@@ -112,6 +112,22 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3415 - THE WORK ALT RE-KEYED ONE IMPORT BATCH FOR EVER: ITS LOCKS NEVER SAW GITHUB'S PROOFS (v3882)
+His words 11-08 ~03:45: "the proofs being proven properly on all machines ... and rivers flowing finally?". MEASURED on the
+work ALT (8 GB, i3; read-only SSH, v3880): .proof_release.json - the import of GitHub's v3880 proofs ran 5,425 s, killed at
+proof_release's 5,400 s bound ("keying 236 law(s) here, one at a time (790 MB free: a worker needs 400 MB over a 1024 MB
+floor)"), imported nothing; the next run's to-do GREW (4,227 -> 4,350 keyer calls) and keyed ~0.7 a second (162 in ~4
+min). REG-3352 wrote a batch at a time, but a batch was a fixed 1,500 calls with the shut locks' guards first, so on that
+PC the first batch never reached its write inside the bound and every run re-keyed it: a livelock. Its census owed 56,
+frame.release's own guards among them (test_control, test_ledger_authority, test_a_pruned_frame_says_it_was_pruned,
+test_an_imported_proof_opens_the_locks + the node law each PC proves itself), so frame.release, vault.sweep_start and
+vault.apply stayed shut and ROUTED 37 waited on a tombstone the drain could not write. Now the first batch holds 150 calls
+and each later one what the last batch's measured rate keys in 300 s (20..1,500, a law never split), so a kill loses one
+batch's minutes; and with --trust the trust pass runs over the guard laws alone the moment the batch holding the last of
+them is written, so a lock opens at its guards, not at the end of a run its bound may kill. Simulated at the ALT's rate
+(291 laws x 15 proofs, ~104 min against 90): the killed run keeps 3,735 of the 3,780 keys it keyed (fixed later batches
+kept 3,150; the original fixed first batch at its real rate kept 0) and the next run finishes. Law:
+test_an_import_batch_fits_its_bound (10 cases, 7 red-proofs RED); test_an_import_keeps_what_it_has_keyed's 9 still RED.
 ### REG-3414 - THE IMPORT SAID "~5 MIN" FOR MOST OF AN HOUR, ON DEAN'S PC AND THE ALTS (v3882)
 His words 11-08 ~03:00: "this is not right we keep saying this but we know it gets stuck and takes so muh longer.. the 5 min
 thing isnt correlated correctly and synced properly to the numbers also on the alt pcs". MEASURED on Dean's PC 03:03: the

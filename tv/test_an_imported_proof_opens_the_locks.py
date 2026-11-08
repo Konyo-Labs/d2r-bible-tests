@@ -312,7 +312,7 @@ class TheTrustRunsWithoutASlice(_Census):
     def _main(self, argv, rc=0):
         calls = []
         with mock.patch.object(H, "_census_cache", lambda reuse, say=print: self.bank), \
-                mock.patch.object(H, "import_shards", lambda paths, say=print, target=None, progress=None: calls.append(paths) or rc):
+                mock.patch.object(H, "import_shards", lambda paths, say=print, target=None, progress=None, trust=False: calls.append(paths) or rc):
             got = H.main(argv)
         return got, calls
 

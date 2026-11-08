@@ -341,7 +341,7 @@ class TheCliHandsItOn(unittest.TestCase):
     def test_import_progress_reaches_the_import(self):
         got = {}
 
-        def imp(paths, say=print, target=None, progress=None):
+        def imp(paths, say=print, target=None, progress=None, trust=False):
             got.update(paths=paths, progress=progress)
             return 0
         with mock.patch.object(H, "import_shards", imp):
@@ -418,8 +418,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3865 REG-3194 - heart2's CLI drops --import-progress",
      "file": "tv/heart2.py",
-     "find": "        _irc = import_shards(a.import_shards, progress=a.import_progress)\n",
-     "replace": "        _irc = import_shards(a.import_shards)\n",
+     "find": "        _irc = import_shards(a.import_shards, progress=a.import_progress, trust=a.trust)\n",
+     "replace": "        _irc = import_shards(a.import_shards, trust=a.trust)\n",
      "matches": 1},
 ]
 
