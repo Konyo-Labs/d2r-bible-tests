@@ -193,9 +193,14 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         """#108 (his 11-07: "for banished and for pits and for spike freind ... either .gif or a HD extracted art thats related
         and properly matched") - The Banished's row draws the Vampire family's own sprite (The Arreat Summit), not a
         Catacombs tile"""
-        row = [r for r in self.o["grid"].split('<div class="qw-row') if "Normal The Banished" in r]
-        self.assertEqual(len(row), 1, "the Banished row is not in the grid")
-        self.assertIn('src="art/d2fam_vampire.gif"', row[0], "a random pack drew no family sprite")
+        # v3887 (#157) - a random pack is in Others and, by its odds, in Combined: one row in each, never in Bosses
+        _b, _o, _c = _secs(self.o["grid"])
+        self.assertNotIn("Normal The Banished", _b, "a random pack sat in the Bosses list")
+        row = [r for r in _o.split('<div class="qw-row') if "Normal The Banished" in r]
+        self.assertEqual(len(row), 1, "the Banished row is not in the Others list")
+        # v3887 (#158, his 11-08: "for the banished i want this .gif specifically rendering https://d2runewizard.com/monsters/
+        # The%20Banished") - its own idle loop (vampire5, the green Banished), not the Vampire family's
+        self.assertIn('src="art/d2rw_vampire5.webp"', row[0], "The Banished does not draw the sprite he picked")
         self.assertNotIn("background-image:url(art/tz_", row[0], "a random pack still wears a zone tile")
         self.assertIn("qw-mon-sprite", row[0])
 
@@ -254,8 +259,14 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
 
     def test_a_ranked_row_is_a_tile_a_place_and_four_captioned_numbers(self):
         g = self.o["gridNoAlso"]
-        rows = re.findall(r'<div class="qw-row(?: qw-best| qw-row-area)?">(.*?)</div>', g)
-        self.assertEqual(len(rows), 4, "four places did not make four rows: %s" % g[:300])
+        # v3887 (#157) - of the four places, the three that are one kill a run are the Combined list's rows (The Pit, an area
+        # run, is in no silospen list), and Bosses + Others hold the same three, each in its own kind
+        rx = r'<div class="qw-row(?: qw-best| qw-row-area)?">(.*?)</div>'
+        b, o, c = _secs(g)
+        rows = re.findall(rx, c)
+        self.assertEqual(len(rows), 3, "the three per-kill places did not make three Combined rows: %s" % g[:300])
+        self.assertEqual(len(re.findall(rx, b)) + len(re.findall(rx, o)), 3, "Bosses + Others do not hold the same three places")
+        rows = re.findall(rx, g)
         self.assertIn('<div class="qw-row qw-best">', g, "the best place is not marked")
         for row in rows:
             self.assertEqual(row.count('class="qw-tile'), 1, row[:200])
@@ -272,8 +283,7 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         and no area run in it. Section 2 is Monster Type All, ONE list 1st-5th by the first column (runs or kills for a 50%
         chance), fewest first, the five lowest of every per-kill place - bosses included"""
         g = self.o["grid"]
-        i = g.index('<div class="qw-also">')
-        sec1, sec2 = g[:i], g[i:]
+        sec1, secO, sec2 = _secs(g)   # v3887 (#157) - Bosses | Others | Combined (silospen's All, what section 2 was)
         self.assertIn("Normal Andariel", sec1, "PREMISE: the fixture's boss did not draw in the Bosses list")
         for nm in ("Normal Coldcrow", "Normal Pitspawn Fouldog", "Normal The Pit", "Normal The Cow King"):
             self.assertNotIn(nm, sec1, "%s is not a boss in silospen's list, and sat in the Bosses list" % nm)
@@ -285,7 +295,7 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
                          "the All list is out of order")
         self.assertNotIn("Normal The Pit", sec2, "an area run sat in the All list")
         six = self.o["gridSix"]
-        sec2six = six[six.index('<div class="qw-also">'):]
+        sec2six = _secs(six)[2]
         self.assertEqual(len(re.findall(r'<div class="qw-row qw-row-(?:area|also)"', sec2six)), 5,
                          "the All list holds more or fewer than five places")
         ranks = re.findall(r'<span class="qw-rank">(\d)(?:st|nd|rd|th) · per (run|kill)', sec2six)
@@ -295,11 +305,23 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         self.assertEqual(firsts, sorted(firsts), "the All list is not fewest-first: %r" % firsts)
         self.assertNotIn("Normal Pitspawn Fouldog", sec2six, "a place needing more kills took a faster one's slot")
         nob = self.o["gridNoBoss"]
-        self.assertIn("No boss drops it", nob[:nob.index('<div class="qw-also">')], "an empty Bosses list said nothing")
+        self.assertIn("No boss drops it", _secs(nob)[0], "an empty Bosses list said nothing")
+
+    def test_others_is_every_monster_that_is_not_a_boss(self):
+        """v3887 (#157, his 11-08: "for the others same thing like bosses top 5.. i dont want to mix things up.. we can have a
+        combined from both of them") - three lists, never mixed: Others holds no boss, the Combined list holds both, each 1st-5th"""
+        b, o, c = _secs(self.o["grid"])
+        for nm in ("Normal Coldcrow", "Normal The Cow King", "Normal The Banished", "Normal Pitspawn Fouldog"):
+            self.assertIn(nm, o, "%s is not a boss and is missing from Others" % nm)
+        self.assertNotIn("Normal Andariel", o, "a boss sat in the Others list")
+        self.assertIn("Normal Andariel", c, "the Combined list lost the boss that ranks in its five")
+        heads = re.findall(r'<div class="qw-(?:grid|also)-h">([^<]*)</div>', self.o["grid"])
+        self.assertEqual([h.split(" ")[0] for h in heads], ["Bosses", "Others", "Combined"], "the three lists are not named: %r" % heads)
+        self.assertEqual(len(re.findall(r'<div class="qw-row', _secs(self.o["gridSix"])[1])), 5, "Others is not five rows")
 
     def test_the_per_kill_places_are_their_own_section(self):
         g = self.o["grid"]
-        i = g.index('<div class="qw-also">')
+        i = g.index('<div class="qw-also">')   # v3887 (#157) - the Combined list (silospen's All); Others sits before it
         self.assertLess(g.index('<div class="qw-grid">'), i)
         # REG-3305 - the heading itself, both ends from the markup (a fixed 200-character window was a guess about its
         # length, and test_a_source_window_must_reach_its_subject counted it: 45 over its ceiling of 44)
@@ -313,7 +335,13 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         # #89 - the picture the page's own map names for him (a pinned file name broke when his sprite became the shared one)
         cow = re.search(r"su_thecowking:\s*'([^']+)'", _read()).group(1)
         self.assertIn("art/" + cow, g[i:], "the Cow King's row lost its picture")
-        self.assertNotIn("Normal The Cow King", g[:i], "a per-kill place sat among the ranked rows")
+        self.assertNotIn("Normal The Cow King", _secs(g)[0], "a per-kill place sat among the Bosses")
+
+
+def _secs(g):
+    """v3887 (#157) - the card's three lists, each cut by its own heading: Bosses | Others | Combined (silospen's All)."""
+    o, c = g.index('<div class="qw-also qw-others">'), g.index('<div class="qw-also"><div class="qw-also-h">Combined')
+    return g[:o], g[o:c], g[c:]
 
 
 class EveryMissingUniqueIsAQuickWin(unittest.TestCase):
@@ -610,6 +638,11 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3887 (#157) - the Others list mixes the bosses back in (his 'i dont want to mix things up')",
+     "file": "bible.html",
+     "find": "             others: rows.filter(function(r){ return r.kind !== 'boss'; }).slice(0, 5), all: rows.slice(0, 5) };",
+     "replace": "             others: rows.slice(0, 5), all: rows.slice(0, 5) };",
+     "matches": 1, "needs": "node"},
     {"why": "v3886 (#150) - an area run (the Cow Level, the Pit - the page's own per-run estimate) draws in silospen's lists again",
      "file": "bible.html",
      "find": "    var rows = (qp || []).filter(function(p){ return p && p.kind !== 'area' && !(p.kpr > 1); }).map(function(p){\n",

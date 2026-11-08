@@ -1152,6 +1152,19 @@
     ]
    },
    "added": "v3886 (#150): the All list's random packs named it"
+  },
+  "d2rw_vampire5.webp": {
+   "family": "Vampire",
+   "monster": "vampire5",
+   "page": "https://d2runewizard.com/monsters/The%20Banished",
+   "url": "https://d2runewizard.com/monsters/loops/vampire5.webp",
+   "sha1": "e441954d88df66512b01ae79f2461e0a12f3f602",
+   "bytes": 447078,
+   "grokCold": "A green-skinned, bald humanoid in a long black robe with green trim stands against a black background, mouth open, holding a tall wooden staff topped with a skull in its raised right hand while the left arm hangs at its side.",
+   "names": [
+    "The Banished"
+   ],
+   "why": "his 11-08 pick: the page's own 'The Banished idle animation' (24 frames, 480x480 animated WebP) - its own colours, not the family's"
   }
  },
  "packs": {
@@ -1216,7 +1229,7 @@
   "Rock Worm": "art/d2fam_sand_maggot.gif",
   "Snow Drifter": "art/d2fam_abominable.gif",
   "Spike Fiend": "art/d2fam_spike_fiend.gif",
-  "The Banished": "art/d2fam_vampire.gif",
+  "The Banished": "art/d2rw_vampire5.webp",
   "Urdar": "art/d2fam_blunderbore.gif",
   "Wretched Defiler": "art/d2fam_putrid_defiler.gif",
   "Thorn Beast": "art/d2fam_spike_fiend.gif",

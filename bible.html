@@ -23135,7 +23135,10 @@ const D2IO_ART = {
    whose variant list names the monster (The Banished -> Vampire, Spike Fiend -> Spike Fiend, Night Lord in the Halls of
    Anguish -> the Act 5 Blood Lord). Every file looked at on a contact sheet and read cold by the Grok CLI; sources, sha1 and
    its words in tv/data/monster_art_arreat.json. ONE map: Quick wins' tile and the floating card both read it. A name no
-   family page names (Blood Wing) has no entry and draws no stand-in. [[copy-drift]] */
+   family page names (Blood Wing) has no entry and draws no stand-in. [[copy-drift]]
+   v3887 (#158, his 11-08: "for the banished i want this .gif specifically rendering https://d2runewizard.com/monsters/
+   The%20Banished") - The Banished draws that page's own idle loop (d2rw_vampire5.webp: vampire5, the green Banished, 24
+   frames), not the Vampire family's sprite; its source, sha1 and cold look are in the same record. */
 const MONSTER_PACK_ART = {
   "Abominable": "d2fam_abominable.gif",
   "Abyss Knight": "d2fam_undead_horror.gif",
@@ -23206,7 +23209,7 @@ const MONSTER_PACK_ART = {
   "Rock Worm": "d2fam_sand_maggot.gif",
   "Snow Drifter": "d2fam_abominable.gif",
   "Spike Fiend": "d2fam_spike_fiend.gif",
-  "The Banished": "d2fam_vampire.gif",
+  "The Banished": "d2rw_vampire5.webp",
   "Thorn Beast": "d2fam_spike_fiend.gif",
   "Urdar": "d2fam_blunderbore.gif",
   "Wretched Defiler": "d2fam_putrid_defiler.gif"
@@ -24630,10 +24633,19 @@ BOSSES.forEach(boss => {
       const isVer = verifiedDiffs.includes(k);
       const kphMult = (k === "norm" || k === "normTz") ? 1.2 : (k === "nm" || k === "nmTz") ? 1.1 : 1.0;
       const effKph = Math.round(boss.kph * kphMult);
-      if (chance !== null && chance !== undefined) {
+      /* v3887 (#156, the Grok second eye on v3885: REG-3437 "a registry source row is created only when the terror-zone cell
+         has a number at page load") - A CELL WITH A LEVEL TABLE IS A SOURCE AT EVERY LEVEL. Tyrael's Might from Hell TZ
+         Mephisto is 0 at levels 68-87: loaded at 68 it made no source, and moving the slider to 94 (1:20,975) had nothing to
+         update - Quick wins, Best runs and the item card missed it until a reload. Its odds follow the level (the getter), and
+         while the level gives none it carries why, the same contract as every other null-odds source here. */
+      const _dsc = Object.getOwnPropertyDescriptor(d, k), _live = !!(_dsc && _dsc.get);
+      if ((chance !== null && chance !== undefined) || _live) {
         const _src = {boss:`${label} ${runName}`,chance,bossId:boss.id,verified:isVer,kph:effKph,diffKey:k};
-        const _dsc = Object.getOwnPropertyDescriptor(d, k);
-        if (_dsc && _dsc.get) Object.defineProperty(_src, "chance", { get(){ return d[k]; }, enumerable: true, configurable: true });   // v3884 (REG-3437) - his level
+        if (_live) {
+          Object.defineProperty(_src, "chance", { get(){ return d[k]; }, enumerable: true, configurable: true });   // v3884 (REG-3437) - his level
+          Object.defineProperty(_src, "blocked", { get(){ return (d[k] === null || d[k] === undefined || !(d[k] > 0))
+            ? `not at character level ${_TZ_CHAR_LVL || 99} - its terror-zone level table` : undefined; }, enumerable: true, configurable: true });
+        }
         item.sources.push(_src);
       } else {
         /* v1722 — A REASON MUST NOT CITE A RULE ITS OWN CELL DISPROVES.
@@ -70834,7 +70846,8 @@ function renderJournal(){
      (hoursFor at 1 run an hour - the same clock as the hours, v3526); the hours sit beside them. Two kinds are shown
      but never ranked as a run, because nobody can count runs for them: a RANDOM pack (a unique or champion that
      spawns by chance - silospen prices a kill), and the Cow King, whose kill bars that character from the cow level in
-     that difficulty (D2R; RotW unconfirmed). Quick wins only - Best runs and every other surface keep _pickSrc.
+     that difficulty (D2R; RotW unconfirmed). Quick wins, and since v3887 (#155) Best runs, rank by it; every other surface
+     keeps _pickSrc.
      [[unknown-stays-unknown]] [[the-unjoined-end]] */
   var _QW_DIFF = { norm: 'Normal', nm: 'NM', hell: 'Hell' };
   function _qwPlaces(x){
@@ -70936,7 +70949,11 @@ function renderJournal(){
       return { a: a, runs: _qwKillsN(a.chance), hours: null, label: a.who, kind: a.kind === 'once' ? 'superunique' : a.kind };
     })).filter(function(r){ return r.runs != null && isFinite(r.runs); });
     rows = _qwRank(rows);
-    return { boss: rows.filter(function(r){ return r.kind === 'boss'; }).slice(0, 5), all: rows.slice(0, 5) };
+    /* v3887 (#157, his 11-08: "for the others same thing like bosses top 5.. i dont want to mix things up.. we can have a combined
+       from both of them") - THREE LISTS, NEVER MIXED: Bosses (silospen's Monster Type Boss), Others (every row that is not a boss
+       - super-uniques, the Cow King, random packs), and the Combined top 5 (Monster Type All). One ranking feeds all three. */
+    return { boss: rows.filter(function(r){ return r.kind === 'boss'; }).slice(0, 5),
+             others: rows.filter(function(r){ return r.kind !== 'boss'; }).slice(0, 5), all: rows.slice(0, 5) };
   }
   window._qwLists = _qwLists;
   /* v3886 (#150) - WHICH OF SILOSPEN'S MONSTER TYPES A FARM IS. Its Boss list holds the act bosses, Nihlathak, Radament, the
@@ -71040,7 +71057,7 @@ function renderJournal(){
     var v = function(u){ return (typeof _artV === 'function') ? _artV(u) : u; };
     return '<span class="qw-tile' + (mon ? ' qw-tile-mon' : ' qw-tile-zone') + '"' + (zone ? ' style="background-image:url(' + v(zone) + ')"' : '')
       + _qwHover(bossId, monName) + ' aria-label="' + esc(label + (area ? ' · ' + area : '')) + '">'
-      + (mon ? '<img class="qw-mon' + (/d2mon_|d2fam_|d2arreat_/.test(mon) ? ' qw-mon-sprite' : '') + '" src="' + v(mon) + '" alt="" loading="lazy" onerror="this.remove()">' : '')
+      + (mon ? '<img class="qw-mon' + (/d2mon_|d2fam_|d2arreat_|d2rw_/.test(mon) ? ' qw-mon-sprite' : '') + '" src="' + v(mon) + '" alt="" loading="lazy" onerror="this.remove()">' : '')
       + '</span>';
   }
   /* REG-3321 (#102 - his 11-07 "image cursor floating enlarged of that boss ... just like the rest of the console"). The
@@ -71148,7 +71165,7 @@ function renderJournal(){
        wins (_qwRank's rule). The page's own AREA runs (the Cow Level, the Pit - ~350 / ~110 kills a run, an estimate) are in
        no silospen list, so neither list carries them. Was: section 1 bosses AND super-uniques (Pitspawn Fouldog 1:3,062 on
        Bane Ash, a Super Unique), section 2 the area runs and three stored random rows. */
-    var L = _qwLists(qp, also), bosses = L.boss, all = L.all;
+    var L = _qwLists(qp, also), bosses = L.boss, others = L.others || [], all = L.all;
     function draw(list, first){
       return list.map(function(r, i){
         return r.p ? (first ? _qwPlaceRow(r.p, i) : _qwPlaceRow(r.p, i, _QW_NTH[i] + ' \u00b7 per kill')) : _qwAlsoGrid([r.a], i);
@@ -71156,11 +71173,15 @@ function renderJournal(){
     }
     var sec1 = bosses.length ? draw(bosses, true)
       : '<div class="qw-none">No boss drops it - silospen\u2019s Boss list is empty for this item; its places are below.</div>';
+    var secO = others.length ? draw(others, false)
+      : '<div class="qw-none">Only bosses drop it - no other monster on record.</div>';
     var sec2 = all.length ? draw(all, false)
       : '<div class="qw-none">No place on record drops it.</div>';
     return '<div class="qw-grid-h">Bosses \u00b7 1st-5th \u00b7 silospen\u2019s Monster Type: Boss, Terror Zone on and off</div>'
       + '<div class="qw-grid">' + sec1 + '</div>'
-      + '<div class="qw-also"><div class="qw-also-h">All \u00b7 1st-5th \u00b7 silospen\u2019s Monster Type: All - every monster, Terror Zone on and off, fewest kills for a 50% chance first</div>'
+      + '<div class="qw-also qw-others"><div class="qw-also-h">Others \u00b7 1st-5th \u00b7 every monster that is not a boss - super-uniques, the Cow King, random packs - Terror Zone on and off</div>'
+      + secO + '</div>'
+      + '<div class="qw-also"><div class="qw-also-h">Combined \u00b7 1st-5th \u00b7 silospen\u2019s Monster Type: All - bosses and others together, Terror Zone on and off, fewest kills for a 50% chance first</div>'
       + sec2 + '</div>';
   }
   window._qwGridHtml = _qwGridHtml;
@@ -71213,8 +71234,27 @@ function renderJournal(){
     _colRowsT.forEach(function(x){ if(_ownedHas(own,x.n)) colFound++; });
     found+=colFound;
     var bySrc={};
+    /* v3887 (#155, his 11-08 with silospen's All list open: "the best runs should be giving from and out of the OTHERS ... Normal
+       cows gives for bane ash ... and lenymo ... as a best run it should show for sure as an option for number 1") - A MISSING
+       UNIQUE JOINS THE RUN QUICK WINS RANKS FIRST FOR IT, bosses AND super-uniques: Bane Ash's best repeatable run is Normal
+       Coldcrow (silospen's All #1, Cave Level 1), Lenymo's Normal Pitspawn Fouldog - neither could ever be a run here, because
+       _bestSrc reads the boss tables only. _qwLists' All list is the one ranking (fewest runs to an even chance, a 2% tie to the
+       quicker run); its AREA runs (the Cow Level, the Pit) are in no silospen list, and the Cow King and random packs are never a
+       repeatable run (a Cow King kill bars that character's cow level) - each run card names them as the one-kill option. */
+    var _bestRun=function(x){
+      try {
+        var L=_qwLists(_qwPlaces(x), []), top=L.all.filter(function(r){ return r.p; })[0];
+        if(top && top.p && top.p.s && top.p.s.bossId){
+          var p=top.p, k=srcKph(p.s);
+          return { s:p.s, chance:p.chance, rate:findRate(p.chance, p.s.bossId, k), diff:_diffRank(p.s.diffKey), hours:p.hours };
+        }
+      } catch(eR){}
+      return _bestSrc(x);
+    };
     missing.forEach(function(x){
-      var b=_bestSrc(x); var key=b?b.s.boss:'Anywhere — no verified source yet';
+      var b=_bestRun(x); var key=b?b.s.boss:'Anywhere — no verified source yet';
+      /* v3887 (#155) - the one-kill option (the Cow King, a random pack) that beats this item's run, named on its run card */
+      try { var _o=(_qwAlso(x, null, 1)||[])[0]; x._opt=(_o && b && b.chance!=null && _o.chance<b.chance) ? _o : null; } catch(eO){ x._opt=null; }
       var g=(bySrc[key]=bySrc[key]||{boss:key, bossId:b&&b.s.bossId, items:[], ev:0, diff:-1, rows:[]}); g.items.push(x);
       if(b){ g.ev+=b.rate; g.rows.push({chance:b.chance, bossId:b.s.bossId, kph:srcKph(b.s)}); x._bs=b; if(b.diff>g.diff){ g.diff=b.diff; g.diffLabel=_diffLabel(b.diff); } }   // expected missing-unique finds per HOUR (Σ runs/h × per-RUN chance, v3526) — the true farm metric; .rows feed the run's own clock
     });
@@ -71933,7 +71973,17 @@ function renderJournal(){
     var _all=r.items.map(function(x){ return _itemChip(x.n,x.qlvl); });
     var chips=_all.slice(0,10).join('');
     var more=_all.length>10?'<details class="gf-more gf-more-inline"><summary class="gf-more-sum">▾ all '+_all.length+' drops from this run <span class="gf-more-ct">+'+(_all.length-10)+' more</span></summary><div class="gf-more-body gf-chips">'+_all.slice(10).join('')+'</div></details>':'';
-    var bossBtn=r.bossId?'<div class="f-cta"><button class="f-btn" onclick="window.openBossDetail&&window.openBossDetail(\''+jsq(r.bossId)+'\')">📜 boss card</button></div>':'';
+    /* v3887 (#155) - a run can be a super-unique now (Normal Coldcrow): the boss card opens only for a place that has one */
+    var _hasBossCard=!!(r.bossId && (typeof BOSSES!=='undefined') && BOSSES.some(function(B){ return B && B.id===r.bossId; }));
+    var bossBtn=_hasBossCard?'<div class="f-cta"><button class="f-btn" onclick="window.openBossDetail&&window.openBossDetail(\''+jsq(r.bossId)+'\')">📜 boss card</button></div>':'';
+    /* v3887 (#155, his "as a best run it should show for sure as an option for number 1") - a one-kill option with better odds
+       than this run (the Cow King: once per character and difficulty; a random pack: spawns by chance) is named here, never
+       ranked as a repeatable run */
+    var _opts=r.items.filter(function(x){ return x._opt; }).slice(0,3).map(function(x){
+      var o=x._opt;
+      return '<b>'+esc(x.n)+'</b> - '+esc(o.who)+' '+fmtOdds(o.chance)+' a kill ('+(o.kind==='once'?'once per character and difficulty':'a random pack - spawns by chance')+')';
+    });
+    var optLine=_opts.length?'<div class="gf-note f-run-opt">⭐ better odds in one kill: '+_opts.join(' · ')+'</div>':'';
     /* v1644 ITEM2 — the run rank moved OFF the boss portrait (it was a .f-cardart-badge pinned on
        the sprite corner) into the title line as a .f-rankpill: same information, nothing covering
        the artwork. */
@@ -71979,7 +72029,7 @@ function renderJournal(){
     return '<div class="f-card f-pipe"><div class="f-cardart f-cardart-hd">'+_runArtThumb(r)+'</div><div class="f-cardbody">'
       +'<div class="f-cardtitle"><div class="f-atomact"><span class="f-rankpill">'+(i+1)+'</span>Run <b class="f-rwbig">'+_tzLabelHtml(r.boss)+'</b></div>'   /* v3884 (REG-3438) */
       +'<div class="f-atomsubrow">drops <b>'+r.items.length+'</b> of your missing uniques'+_runClock(r)+'</div>'
-      +'<div class="gf-chips">'+chips+'</div>'+more+'</div>'+bossBtn+'</div></div>';
+      +'<div class="gf-chips">'+chips+'</div>'+optLine+more+'</div>'+bossBtn+'</div></div>';
   }
   /* v1716 — "NO VERIFIED SOURCE" WAS BEING SAID ABOUT ITEMS WHOSE SOURCE IS NOT IN DOUBT.
      After the silospen sync the bucket holds 8 items, and for 7 of them the app already owns the

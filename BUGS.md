@@ -112,6 +112,37 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3468 - THE BANISHED DRAWS THE SPRITE HE PICKED (v3887, #158, his 11-08)
+"for the banished i want this .gif specifically rendering https://d2runewizard.com/monsters/The%20Banished". That page draws The
+Banished with its own idle loop (loops/vampire5.webp: monster vampire5, the green Banished, 24 frames, 480x480 animated WebP);
+#108 had given it the Vampire family's Arreat Summit sprite. art/d2rw_vampire5.webp is that file, its source, sha1 and the Grok
+CLI's cold look ("a green-skinned, bald humanoid in a long black robe with green trim ... holding a tall wooden staff") recorded
+in tv/data/monster_art_arreat.json; the d2rw_ prefix draws as a sprite. GUARD: test_quick_wins_shows_each_place_with_its_picture.
+
+### REG-3467 - QUICK WINS IS THREE LISTS, NEVER MIXED: BOSSES, OTHERS, COMBINED (v3887, #157, his 11-08)
+"for the others same thing like bosses top 5.. i dont want to mix things up.. we can have a combined from both of them whats
+the top 5 for each item in odds in general as a combined look". v3886 drew Bosses (silospen's Monster Type Boss) and All. The
+card now draws Bosses, Others (every place that is not a boss: super-uniques, the Cow King, random packs) and Combined (Monster
+Type All), each 1st-5th by the one ranking. GUARD: test_quick_wins_shows_each_place_with_its_picture
+test_others_is_every_monster_that_is_not_a_boss + a red-proof (RED); the law's two-section cuts re-pointed to three.
+
+### REG-3466 - BEST RUNS COULD NEVER NAME A SUPER-UNIQUE: COLDCROW FOR BANE ASH, FOULDOG FOR LENYMO (v3887, #155, his 11-08)
+silospen's All at MF 100: Bane Ash #1 Coldcrow 1:1455, Lenymo #1 the Cow King, #3 Pitspawn Fouldog. The F-Uniques Best runs
+view grouped each missing unique under _bestSrc - the boss drop tables only - so a repeatable super-unique that beats every boss
+was never a run there ("Quick wins only - Best runs and every other surface keep _pickSrc", the comment said). The scan groups
+by _bestRun: the first repeatable place of _qwLists' Combined list. The Cow King (a kill bars that character's cow level) and
+random packs are never a run; a run card names a better one-kill option beside its drops. A super-unique run opens no boss card.
+GUARD: tv/test_best_runs_count_the_others.py (the page's ranker in node; 2 red-proofs RED - the first draft's card check was
+BLIND, satisfied by the variable's definition, re-anchored on the card's return).
+
+### REG-3465 - A TERROR-ZONE SOURCE EMPTY AT LOAD NEVER JOINED WHEN THE LEVEL MOVED (v3887, #156, the Grok second eye on v3885)
+#231 SECOND-EYE REG-3437: "a registry source row is created only when the terror-zone cell has a number at page load". The
+registry made a source only for a cell with odds at build time; a level-table cell (a getter) that read null at the load level
+- Tyrael's Might from Hell TZ Mephisto, 0 at 68-87 - had no source, and sliding to 94 (1:20,975) had nothing to update. A
+level-table cell is now a source at every level: its odds follow the level, and while the level gives none it carries why
+(`blocked`, the contract of every null-odds source). GUARD: tv/test_a_terror_zone_source_joins_when_the_level_moves.py (loaded
+at 68 through the page's own LSR read, then 94; 2 red-proofs RED).
+
 ### REG-3464 - HIS PALADIN'S FASTER HIT RECOVERY READ UNKNOWN: ONE UNPICKED ROW OF A RENEWED SUNDER BLANKED THREE STATS (v3886, his 11-08)
 His screen: a Paladin 89 with nothing worn and one Renewed Bone Break in the inventory read Faster Hit Recovery UNKNOWN and its
 breakpoint "The total is not known, so the next step is not known" ("this is easily researched ... based on charater build").
