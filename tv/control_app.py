@@ -6182,7 +6182,7 @@ def _profile_api_answers(now_ms=None, reads=None):
     kept = _profile_json_load(_profile_api_path()) or {}
     answers, misses, changed = {}, {}, False
     for name, read in (reads or (("chars_learned", _profile_chars_learned), ("main_locks", main_locks_view), ("pictures", _profile_pictures),
-                                 ("saves", _profile_saves))):
+                                 ("saves", _profile_saves), ("d2jsp_login", _profile_d2jsp_login))):
         why = None
         try:
             got = read()
@@ -6212,6 +6212,15 @@ def _profile_api_answers(now_ms=None, reads=None):
     if changed:
         _profile_json_save(_profile_api_path(), kept)
     return answers, misses
+
+
+def _profile_d2jsp_login():
+    """#45 (REG-3461) - this PC's d2jsp sign-in for the upload: the lamp's own read (d2jsp_chrome.d2jsp_login_status, the
+    one the header lamp asks every 2 min - never a second derivation). The cookie is read and dropped there; only
+    console_snapshot.d2jsp_login_of's three closed words leave this PC. GrokBot in Dean's shadow: the lamp read this
+    Mac's sign-in, because the owner's never travelled."""
+    import d2jsp_chrome as _d2jsp
+    return _d2jsp.d2jsp_login_status()
 
 
 def _profile_book_path():
@@ -8859,7 +8868,7 @@ def window_mode_payload():
 
 
 def _mark_background(by, was_fullscreen=None):
-    _BACKGROUND.update(on=True, since=int(time.time() * 1000), by=str(by or "?")[:80],
+    _BACKGROUND.update(on=True, since=int(time.time() * 1000), by=_word_cut(str(by or "?"), 140),   # v3886 - at a word
                        wasFullscreen=was_fullscreen)
 
 
@@ -11748,7 +11757,9 @@ def _control_window_kwargs(url):
     if _hidden:
         kwargs.pop("minimized", None)
         kwargs.update(hidden=True, focus=False)
-        _mark_background(_STARTED_HIDDEN + str(_hidden)[:60], was_fullscreen=not _windowed)
+        # v3886 (his fleet, 11-08: the ALT's window eye read "the console was hidden (the vault lane cannot prove itself a")
+        # - the reason is cut at a WORD (REG-1839's _word_cut), with room for the longest one a console writes
+        _mark_background(_STARTED_HIDDEN + _word_cut(str(_hidden), 120), was_fullscreen=not _windowed)
         print("   started HIDDEN (%s) - the service runs; the Desktop icon brings the window" % _hidden, flush=True)
     if not _windowed and not _quiet and not _hidden:
         kwargs["fullscreen"] = True

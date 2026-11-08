@@ -701,7 +701,7 @@ export const DENY = [
   "d2r_inboxReader", "d2r_logger", "d2r_testGuest",
 ];
 export const DENY_PREFIX = ["d2r_quarantine", "d2r_d2jsp_", "d2r_api_"];
-export const API_NAMES = ["chars_learned", "main_locks", "world", "pictures", "saves"];
+export const API_NAMES = ["chars_learned", "main_locks", "world", "pictures", "saves", "d2jsp_login"];
 // the fields each console answer may carry (console_snapshot.API_FIELDS) and the world's closed values (world_of)
 export const API_FIELDS = {
   // REG-3080 - sessions/sessionsWhy (REG-2907) were added on the console side only, and apiOk refuses a field outside this
@@ -716,6 +716,8 @@ export const API_FIELDS = {
   pictures: ["ok", "pictures", "origin"],
   // #251 (REG-3079) - the owner's reason its saves name what they name; #104 - and their save NAMES (savesOk: names only)
   saves: ["ok", "state", "d2sWhy", "why", "chars"],
+  // #45 (REG-3461) - the owner's d2jsp sign-in, three closed words (console_snapshot.d2jsp_login_of; d2jspLoginOk below)
+  d2jsp_login: ["ok", "state", "kind"],
 };
 const WORLD = { machine: ["mac", "windows"], profile: ["main", "ladder"],
                 os: ["MAC", "WINDOWS", "LINUX", "ANDROID", "THIS MACHINE"] };
@@ -769,9 +771,20 @@ export function savesOk(text) {
     typeof r.name === "string" && D2R_NAME.test(r.name) && (r.name.match(/[-_]/g) || []).length <= 1);
 }
 
+// #45 (REG-3461) - the d2jsp sign-in answer is three closed words, nothing else: a sentence or a cookie never rides here
+export function d2jspLoginOk(text) {
+  let v;
+  try { v = JSON.parse(text); } catch (e) { return false; }
+  if (!v || typeof v !== "object" || Array.isArray(v)) return false;
+  if (Object.keys(v).some((k) => API_FIELDS.d2jsp_login.indexOf(k) === -1)) return false;
+  return v.ok === true && ["on", "off", "unknown"].indexOf(v.state) !== -1 &&
+    ["on", "own-window", "signed-out", "signing-in", "unread"].indexOf(v.kind) !== -1;
+}
+
 export function apiOk(name, text) {   // exported for its law (REG-3080): the field check a profile store must pass
   if (name === "world") return worldOk(text);
   if (name === "saves") return savesOk(text);
+  if (name === "d2jsp_login") return d2jspLoginOk(text);
   let v;
   try { v = JSON.parse(text); } catch (e) { return false; }
   if (!v || typeof v !== "object" || Array.isArray(v)) return false;

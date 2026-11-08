@@ -74,6 +74,10 @@ API_FIELDS = {
     # properly synced from his console") - and the save NAMES, names only (saves_of): a PC with a builds book never sent
     # them, because its roster characters section is its builds (REG-2929's NOT DONE).
     "saves": ("ok", "state", "d2sWhy", "why", "chars"),
+    # #45 (REG-3461, GrokBot in Dean's shadow: "the D2JSP lamp in a shadow shows this Mac's, not Dean's") - the owner's
+    # d2jsp sign-in as three closed words (d2jsp_login_of), never a sentence and never the cookie: the shadow's lamp says
+    # THEIR state in its own words, because the owner's sentences say "this machine" and "click the lamp".
+    "d2jsp_login": ("ok", "state", "kind"),
 }
 # The world the owner's board drew in: which machine and profile its stores belong to, the ledger it keeps and the
 # OS it reported. The shadow frame takes these instead of the viewer's own, so a Mac viewing a Windows owner draws
@@ -226,6 +230,24 @@ def saves_of(raw):
     return out
 
 
+#: #45 - the words d2jsp_chrome.d2jsp_login_status answers in; anything else is UNKNOWN, never passed on
+D2JSP_STATES = ("on", "off", "unknown")
+D2JSP_KINDS = ("on", "own-window", "signed-out", "signing-in", "unread")
+
+
+def d2jsp_login_of(raw):
+    """#45 - this PC's d2jsp sign-in as a shadow may hold it -> {ok: True, state, kind} | None.
+
+    Closed values only: a state outside on/off/unknown is "unknown", a kind outside D2JSP_KINDS is "unread". The `why`
+    sentence stays on the PC - it speaks to the person at that computer ("click the lamp"). An answer that is not ok is
+    None, so the upload leaves it out and the shadow says it was not sent (UNKNOWN), never a guessed "off"."""
+    if not isinstance(raw, dict) or raw.get("ok") is not True:
+        return None
+    st, kd = raw.get("state"), raw.get("kind")
+    return {"ok": True, "state": st if st in D2JSP_STATES else "unknown",
+            "kind": kd if kd in D2JSP_KINDS else "unread"}
+
+
 def pictures_of(raw):
     """The console's picture answer -> {ok, pictures, origin?} with closed shapes, or None.
 
@@ -261,6 +283,8 @@ def api_store(name, payload, left_out=None):
         payload = pictures_of(payload)
     if name == "saves":
         payload = saves_of(payload)
+    if name == "d2jsp_login":
+        payload = d2jsp_login_of(payload)
     if not fields or not isinstance(payload, dict):
         return None
     kept = {f: payload[f] for f in fields if f in payload}

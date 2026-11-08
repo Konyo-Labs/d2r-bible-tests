@@ -364,6 +364,7 @@ class DB(object):
         self.I = dict((r["Stat"], r) for r in _rows(blobs["itemstatcost"]) if r.get("Stat"))
         self.types = dict((r["Code"], r) for r in _rows(blobs["itemtypes"]) if r.get("Code"))
         self.skills_by_id, self.skills_by_name = {}, {}
+        self.class_skills = {}           # v3886 (#140) - class code -> [[skill id, name, reqlevel], ...] in skills.txt order
         sd = dict((r.get("skilldesc"), r) for r in _rows(blobs["skilldesc"]) if r.get("skilldesc"))
         for r in _rows(blobs["skills"]):
             if not r.get("skill"):
@@ -373,6 +374,9 @@ class DB(object):
             rec = (nm, r.get("charclass") or "")
             self.skills_by_id[_int(r.get("*Id"), -1)] = rec
             self.skills_by_name[r["skill"].lower()] = rec
+            # v3886 (#140) - a class skill a staff mod can name: one with a class, a description and a required level
+            if r.get("charclass") and d and _int(r.get("reqlevel")) > 0:
+                self.class_skills.setdefault(r["charclass"], []).append([_int(r.get("*Id"), -1), nm, _int(r.get("reqlevel"))])
         self.classes = []
         codes = [r.get("Code") for r in _rows(blobs["playerclass"])]
         for i, r in enumerate(_rows(blobs["charstats"])):
@@ -385,6 +389,9 @@ class DB(object):
                 "only": self.S.get(r.get("StrClassOnly") or "", ""),
                 "attr": [_int(r.get(a)) for a in ("str", "dex", "int", "vit")]})
         self.cls_by_code = dict((c["c"], i) for i, c in enumerate(self.classes))
+        # v3886 (#140) - the skills a staff mod of this class can name (skills.txt charclass), with their required level
+        for c in self.classes:
+            c["sk"] = self.class_skills.get(c["c"], [])
         # #174 v-B4: each class's animation token (plrtype.txt Token, by the class's own name: Sorceress SO, Warlock WK) -
         # the key its attack frames sit under in animdata.d2. A class plrtype does not name keeps "" (its speed UNKNOWN)
         tok = dict((r.get("Name"), r.get("Token") or "") for r in _rows(blobs.get("plrtype")) if r.get("Name"))
@@ -856,7 +863,11 @@ class DB(object):
                      sorted(self.ancestors(t)),
                      # [5] #174 v-B4: the "<Class> Class - %s" string key a weapon of this type prints (WCLASS_KEY,
                      # asked in order down its Equiv chain); "" = none names it (a wand, a scepter: UNKNOWN on the page)
-                     next((k for anc, k in WCLASS_KEY if anc in self.ancestors(t)), "")]
+                     next((k for anc, k in WCLASS_KEY if anc in self.ancestors(t)), ""),
+                     # [6] v3886 (#140) - APPENDED: itemtypes.txt `StaffMods` (down the Equiv chain) - the class whose skills
+                     # a normal or superior item of this type can carry as +1-3 single-skill lines (a wand: Necromancer;
+                     # a Barbarian helm, a pelt, an orb, a head, a claw ...); -1 = none
+                     self.cls_by_code.get(self.walk(t, "StaffMods"), -1)]
         self.TY = TY
         items = []
         names = {}

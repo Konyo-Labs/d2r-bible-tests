@@ -22,7 +22,7 @@ notice afterwards.
 Each stamp is verified after writing: a silent no-op replace would leave the tree half-bumped,
 which is the exact failure this tool exists to prevent.
 """
-import ast, datetime, io, json, os, re, subprocess, sys, tempfile
+import ast, datetime, io, json, os, re, subprocess, sys, tempfile, time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -489,6 +489,29 @@ def changelog_with(log, ver, note, items=None, date=None):
     return [{"ver": ver, "date": date, "items": changelog_items(note, items)}] + rest
 
 
+#: v3886 (#107) - how long a Windows replace waits out a reader that holds the target open (40 x 25 ms = 1 s)
+_HELD_TRIES, _HELD_WAIT_S = 40, 0.025
+
+
+def _replace_held(tmp, path, tries=None, wait_s=None, sleep=None):
+    """os.replace(tmp, path), waiting out a READER on Windows. -> None (or the last PermissionError, raised)
+
+    windows-latest, test_provenance's concurrent reader: "PermissionError: [WinError 5] Access is denied: store.json.tmp ->
+    store.json". Windows refuses to replace a file another handle holds open (Python opens without FILE_SHARE_DELETE), so
+    a store read while it is written refused the write - on his PCs, the console's own threads are that reader. The
+    replace is retried briefly there; a target still held after the bound raises as before, never a silent skip. Off
+    Windows a replace never meets this, and it runs once."""
+    tries = _HELD_TRIES if tries is None else tries
+    for i in range(max(1, int(tries))):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if os.name != "nt" or i >= int(tries) - 1:
+                raise
+            (sleep or time.sleep)(_HELD_WAIT_S if wait_s is None else wait_s)
+
+
 def atomic_write(path, text, nl=""):
     """Write `text` to `path` so a CONCURRENT READER never sees a partial file.
 
@@ -583,7 +606,7 @@ def atomic_write(path, text, nl=""):
                 os.chmod(tmp, 0o666 & ~_um)
         except OSError:
             pass
-        os.replace(tmp, path)
+        _replace_held(tmp, path)
     except BaseException:
         # a failed write must not leave a stray temp beside his files
         try:

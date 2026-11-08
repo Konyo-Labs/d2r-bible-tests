@@ -112,6 +112,72 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3463 - THE ALT'S WINDOW EYE SAID "(the vault lane cannot prove itself a": A HIDDEN REASON SLICED AT 60 (v3886, his fleet 11-08)
+Asked over SSH on 11-08 20:13, the work ALT's console said "background - hidden since 20:03 (started hidden: the console was
+hidden (the vault lane cannot prove itself a)". _control_window_kwargs recorded TV_START_HIDDEN as str(_hidden)[:60] and
+_mark_background cut again at 80: a sentence stopped mid-word. Both now cut at a WORD (REG-1839's _word_cut, 120 / 140), so
+"the vault lane cannot prove itself and memory is short" and "a proof is owed and memory is short" reach the fleet whole.
+GUARD: tv/test_a_hidden_relaunch_says_its_reason_once.py test_the_alts_memory_reason_survives_whole + a red-proof (RED).
+VERIFIED the same evening from three ends: the window eye's red on all three Windows PCs is TRUE - the ALT and the OLD ALT's
+TV DIABLO window is visible:false by Windows' own EnumWindows from session 1 (freed for an owed proof, REG-1957, and kept
+hidden through the update, his 09-29 ruling), and Dean closed his at 13:03 his time.
+
+### REG-3462 - QUE-HEGAN'S WISDOM'S CARD READ q55 WHILE THE CODEX SAID 59: A LATER BLOCK OVERWROTE IT (v3886, GrokBot #230)
+GrokBot's v3884 pass: 382 of 383 uniques match silospen; Que-Hegan's Wisdom's codex qlvl reads 55, silospen 59. ITEM_CODEX
+holds 59 (tc 72) - the v391 off-grail block (_NEWUNI) carries its own copy at q55 (tc null) and Object.assign()s it OVER the
+codex at load, so the card read 55. REG-3440's law read only the first literal and never saw it. The copy now reads 59 / tc 72
+(its tooltip lines, checked against his screenshot, stay); the law reads BOTH literals (the second for the names silospen
+lists - its other 12 are off-grail uniques silospen does not price). GUARD: tv/test_every_qlvl_is_silospens.py + a red-proof.
+
+### REG-3461 - A SHADOW'S D2JSP LAMP COULD ONLY SAY UNKNOWN: THE OWNER'S SIGN-IN NEVER TRAVELLED (v3886, #45, GrokBot #230)
+REG-3380 (v3883) stopped the lamp in Dean's shadow reading the viewer's own failure; GrokBot then: "STILL: the D2JSP lamp in a
+shadow shows this Mac's, not Dean's" - nothing carried the owner's sign-in off their PC, so the frame could only answer
+UNKNOWN. Their console now uploads it with its other answers (control_app._profile_api_answers -> _profile_d2jsp_login, the
+header lamp's own read) as three closed words (console_snapshot.d2jsp_login_of: ok, state on/off/unknown, kind) - never its
+sentence ("click the lamp" is for the person at that PC) and never the cookie; the worker takes exactly that shape
+(functions/api/roster.js d2jspLoginOk - a wrong one would refuse the whole profile, REG-3080); and the shadow frame answers
+GET /api/d2jsp_login from it in its own words ("D2JSP sign-in on their PC, as of its last upload: signed in"). Not sent (an
+older console) stays UNKNOWN, named. Two laws that run the real upload now stub the read: no law reads this PC's Chrome.
+GUARD: tv/test_a_shadow_lamp_reads_the_owners_d2jsp_sign_in.py (shadow frame in node, snapshot shaper, worker in node; 3
+red-proofs RED).
+
+### REG-3459 - A WHITE NECROMANCER HEAD COULD NOT CARRY ITS +1-3 SKILLS: THE BUILDER HAD NO STAFF MODS (v3886, #140)
+GrokBot's #28 pass (6720634931, adjudicated REAL 11-08): "a class-only base (helm / pelt / head / orb / Amazon weapon / claw)
+on a white, superior or runeword item can carry its +1-3 class-skill lines" - the builder offered none. The game calls them
+staff mods: an item type naming a StaffMods class (itemtypes.txt, down its Equiv chain - a wand and a Necromancer head:
+Necromancer; a scepter: Paladin; a staff and an orb: Sorceress; a Barbarian helm; a pelt; a claw; RotW's knife and grimoire:
+Warlock) can spawn as a normal or superior item with up to three single-skill lines, +1 to +3 each. tv/char_builder_db.py
+now carries each type's StaffMods class (ty [6], APPENDED) and each class's skills with their required level (cls sk); the
+Edit tab (and a runeword's) offers three rows, the tooltip prints "+N to <Skill> (<Class> Only)", and the character sheet
+sums each as the game's own single-skill line (item_singleskill) - refused for another class, a value outside 1..3 refused.
+Not checked, named: which skills the game may draw at a given item level (the rows offer every skill of the class, with its
+required level shown). Law: test_a_class_base_carries_its_staff_mods, red-proofs PROVEN (2).
+
+### REG-3460 - 41 LAWS RED ON WINDOWS, SORTED BY WHY (v3886, #107)
+The windows-laws workflow ran the 42 laws red on the Windows PCs on windows-latest, every word each printed kept; the Grok
+CLI read each log beside its law (read-only, seven batches) and sorted them: PRODUCT (the gate tracer took "/" as the only
+path separator, so a meter, printer, defaults or lsof handed C:\...\tv\x was never checked against the checkout - fixed,
+"\\" is a separator on Windows only; heart2's proposals line died on a path on another drive - fixed), TEST (a node import()
+given D:\... instead of a file URL; a #!/bin/sh stub where Windows runs a .cmd; relative paths compared with "/"; fixtures
+written in text mode, so CRLF; a sandbox record compared byte for byte where a Windows checkout is CRLF by design - each
+fixed in its law) and MAC-ONLY (the Linux apt step, the Mac's window finder - declared, never run, on Windows). Every
+verdict was checked against the law before acting; the re-run on windows-latest is the measurement of which turned green.
+BATCH 3 (same evening, Grok batches 4-6 read and each verdict checked): PRODUCT - (a) node reads a backslash inside a quoted
+NODE_OPTIONS value as an ESCAPE on every OS (MEASURED on the Mac: --require "D:\a\d2r\tv\gate_trace\node_trace.cjs" ->
+Cannot find module 'D:ad2rtvgate_tracenode_trace.cjs'), so on Windows every node child of a traced gate failed its own
+preload - the path is now written with "/" in one place (gate_ledger.node_require, which heart2 calls); Grok had called this
+"node.exe not recognised", which REG-3371 already fixed - the log said the preload never wrote its line. (b) heart2's sandbox
+journal opened without O_BINARY, so Windows wrote "\r\n" while the cap cut in bytes it read back translated - a torn line.
+(c) bump_version.atomic_write's os.replace is refused by Windows while any reader holds the target (WinError 5): a held store
+is now waited out for a bounded second there, and still raises after it. TEST - a POSIX probe that read os.name past a
+mocked platform; the Mac case of the window law left IS_WIN True; netstat -ano -p tcp counted as a Claude ping; the
+import probe called fcntl and unicodedata pip packages (sys.stdlib_module_names asked first); an execute bit asserted on
+Windows. WORKFLOW - two LAWS entries were gate NAMES, not files ("can't open file" read as red): named by file, and a missing
+file now says so. CARRIED OVER, named: heart2's Windows trace keys (test_a_named_file_the_law_never_opened_is_keyed_by_name,
+test_a_one_line_css_edit_reproves_only_its_readers), realpath tracing on Windows (test_a_gate_proven_on_these_bytes_is_carried),
+the builder-width law's premise under Windows fonts (no label wraps at 1280 - it must force one), the show-toggle animation,
+the bash law Grok could not tell, and batch 7.
+
 ### REG-3458 - 184 PRIVATE COPIES OF ONE COMMENT STRIPPER, AND TWO OF THEM COST v3885 A ROUND (v3886, #152)
 v3885's first GitHub round went red because two copies of a law's comment stripper in test_control read accept="image/*" as a
 comment opener and ate live markup once the Chronicle buttons left (REG-3446's round notes). The same routine sat in 119

@@ -93,6 +93,18 @@ class AHiddenRelaunchSaysItsReasonOnce(unittest.TestCase):
         self.assertEqual(got[1], got[2], "a cut reason kept changing: %r" % got)
         self.assertEqual(got[2][1].count("started hidden"), 1)
 
+    def test_the_alts_memory_reason_survives_whole(self):
+        """v3886 - his fleet on 11-08: the work ALT's window eye read "...(the vault lane cannot prove itself a" - a cut at
+        60 characters mid-word. The reasons a console writes for itself reach the fleet whole, and a cut lands on a word."""
+        for why in ("the vault lane cannot prove itself and memory is short", "a proof is owed and memory is short"):
+            got = _relaunches({"on": True, "by": why}, 2)
+            self.assertIn(why + ")", got[-1][1], "the hidden reason was cut: %r" % got)
+        long_by = "window-close from the Escape key on an empty stack while the game had focus and the vault was open"
+        by = _relaunches({"on": True, "by": long_by}, 1)[0][1]
+        self.assertTrue(by.endswith("\u2026"), "a long reason was cut without saying so: %r" % by)
+        full, head = "the console was hidden (%s)" % long_by, by[len("started hidden: "):-1]
+        self.assertTrue(full.startswith(head) and full[len(head)] == " ", "a long reason was cut inside a word: %r" % by)
+
     def test_an_empty_carried_reason_still_starts_hidden(self):
         env = {}
         self.assertTrue(ca.hidden_relaunch_env({"on": True, "by": "started hidden: "}, env, []))
@@ -119,8 +131,13 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3022 - the boot records its hidden reason in other words than the relaunch strips",
      "file": "tv/control_app.py",
-     "find": "        _mark_background(_STARTED_HIDDEN + str(_hidden)[:60], was_fullscreen=not _windowed)\n",
-     "replace": "        _mark_background(\"hidden at start: %s\" % str(_hidden)[:60], was_fullscreen=not _windowed)\n",
+     "find": "        _mark_background(_STARTED_HIDDEN + _word_cut(str(_hidden), 120), was_fullscreen=not _windowed)\n",
+     "replace": "        _mark_background(\"hidden at start: %s\" % _word_cut(str(_hidden), 120), was_fullscreen=not _windowed)\n",
+     "matches": 1},
+    {"why": "v3886 - the hidden reason is sliced at 60 again: the ALT reads \"(the vault lane cannot prove itself a\"",
+     "file": "tv/control_app.py",
+     "find": "        _mark_background(_STARTED_HIDDEN + _word_cut(str(_hidden), 120), was_fullscreen=not _windowed)\n",
+     "replace": "        _mark_background(_STARTED_HIDDEN + str(_hidden)[:60], was_fullscreen=not _windowed)\n",
      "matches": 1},
 ]
 

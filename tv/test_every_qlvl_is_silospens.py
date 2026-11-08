@@ -57,9 +57,16 @@ class EveryQlvlIsSilospens(unittest.TestCase):
             for d in b["dropTable"]:
                 if "qlvl" in d:
                     cls.cells.append(("BOSSES." + b["id"], d["n"], d["qlvl"]))
+        # v3886 (GrokBot's v3884 pass, #230): the v391 off-grail block Object.assign()s its _NEWUNI entries OVER ITEM_CODEX at
+        # load, so its copy of Que-Hegan's Wisdom (q55) replaced the codex's q59 on the card while this law read only the
+        # first literal. Both literals are the card's codex; the later one wins at run time.
+        # Its other 12 are off-grail uniques silospen does not price, so only the names silospen lists are read from it.
         for n, c in _literal(src, "const ITEM_CODEX = ").items():
             if isinstance(c, dict) and "qlvl" in c:
                 cls.cells.append(("ITEM_CODEX", n, c["qlvl"]))
+        for n, c in _literal(src, "var _NEWUNI = ").items():
+            if isinstance(c, dict) and "qlvl" in c and T.canon(n) in cls.lv:
+                cls.cells.append(("ITEM_CODEX (v391 _NEWUNI)", n, c["qlvl"]))
 
     def test_every_qlvl_is_the_level_silospen_gives(self):
         """* THE POINT - Heaven's Light 69, Bane Ash 7, Death's Web 74: zero cells differ"""
@@ -92,6 +99,11 @@ RED_PROOF = [
      "file": "bible.html",
      "find": '"Heaven\'s Light":{"rarity":"unique","base":"Mighty Scepter","reqLvl":61,"reqStr":125,"reqDex":65,"sockets":3,"qlvl":69,',
      "replace": '"Heaven\'s Light":{"rarity":"unique","base":"Mighty Scepter","reqLvl":61,"reqStr":125,"reqDex":65,"sockets":3,"qlvl":71,',
+     "matches": 1},
+    {"why": "v3886 (GrokBot #230) - the v391 block's Que-Hegan's Wisdom overwrites the codex's q59 with q55 again",
+     "file": "bible.html",
+     "find": '"Que-Hegan\'s Wisdom":{"rarity":"unique","base":"Mage Plate","reqLvl":51,"reqStr":55,"reqDex":null,"sockets":null,"qlvl":59,"tc":72,"tier":"high","props":["+1 ',
+     "replace": '"Que-Hegan\'s Wisdom":{"rarity":"unique","base":"Mage Plate","reqLvl":51,"reqStr":55,"reqDex":null,"sockets":null,"qlvl":55,"tc":72,"tier":"high","props":["+1 ',
      "matches": 1},
 ]
 

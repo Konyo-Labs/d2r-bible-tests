@@ -620,6 +620,10 @@ class TheConsoleDoors(unittest.TestCase):
         q = mock.patch.object(self.CA, "_beacon_suppressed_by", lambda: None)
         q.start()
         self.addCleanup(q.stop)
+        # v3886 (#45) - the upload now asks this PC's d2jsp sign-in: no law reads the real Chrome (or sweeps its scratch)
+        d = mock.patch.object(self.CA, "_profile_d2jsp_login", lambda: None)
+        d.start()
+        self.addCleanup(d.stop)
 
     def _fleet(self, rows_online=(), rows_offline=()):
         return mock.patch.object(self.CA, "fleet_presence_last_good",
