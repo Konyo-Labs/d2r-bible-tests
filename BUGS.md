@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3433 - THE WORK ALT NEVER PROVED BESIDE HIS BOOSTEROID STREAM: 85% BUSY, A 6-HOUR WAIT, ITS LOCKS SHUT (v3884)
+GrokBot's v3882 pass (#230 6718652xxx, 10:23-10:28): the work ALT's row read "proof waits for an idle PC - the machine is 81%
+busy". MEASURED 11-08 ~11:00 on that PC (SSH, read-only): twenty 0.5 s GetSystemTimes samples read 82-88% busy (mean 84.7) -
+the measure is right, the PC IS that busy: Boosteroid 60%, the console's own capture of that stream 44% + 38% (two pythonw),
+audiodg 33%. MAX_BUSY_TO_START is 75, and only past BUSY_STARVE_S (6 h) of unbroken busy does a proof start anyway (REG-1905) -
+so while he streams, its stale BLIND verdicts (laws v3882 fixed, RED 7/7 and 8/8 by hand there) held all four locks shut for
+hours. His ruling 11-05: "prove beside cloud". Now while a cloud client runs and the local game does not (cloud_streaming(),
+asked only during a busy run), a busy refusal starves its way in after BUSY_STARVE_BESIDE_CLOUD_S (30 min); the refusal says
+so meanwhile. Unchanged: the proof's BelowNormal / nice 15, every memory floor (REG-1502 - dwm died at 690 MB free beside a
+stream), every stand-aside, the local game. An unreadable process list keeps the 6 h. Law:
+test_a_proof_starts_beside_a_cloud_stream (5 cases), red-proofs PROVEN (3 of 3).
+
 ### REG-3432 - THE FLEET'S PLAIN WORDS STILL SAID "DIFFERS", "2 BLIND", "PROVING 102" - OF WHAT? (v3884, the Grok CLI on v3883)
 His 11-08 ruling (REG-3422): fleet data in plain words. The Grok CLI's cold look at v3883's Fleet crops (1512/1120/1024):
 "'differs' does not say what differs. '2 blind' and '1 blind' are not plain machine states. 'proving 102' does not say 102 of

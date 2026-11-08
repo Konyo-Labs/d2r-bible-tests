@@ -54,6 +54,14 @@ MAX_BUSY_TO_START = 75.0
 #: UNBROKEN busy refusals - he is not playing, memory is fine - it starts anyway and says why. Proving under load can only
 #: leave a gate unproved or red; it cannot open a lock a quiet proof would keep shut.
 BUSY_STARVE_S = 6 * 3600
+#: v3884 - BESIDE A CLOUD STREAM THE WAIT IS SHORT (his ruling 2026-11-05, "prove beside cloud"). MEASURED 11-08 ~11:00 on the
+#: work ALT (an i3, SSH, read-only): 20 GetSystemTimes samples of 0.5 s read 82-88% busy (mean 84.7) - Boosteroid 60%, the
+#: console's own capture of that stream 44% + 38%, its audio 33% - so MAX_BUSY_TO_START refused every proof for up to
+#: BUSY_STARVE_S, and two stale BLIND verdicts v3882 had already fixed held all four of its locks shut. The load IS the
+#: stream he asked proofs to run beside. While a cloud client runs (and no local game), a busy refusal starves its way in
+#: after this much - the proof still runs BelowNormal / nice 15, every memory floor (REG-1502: dwm died at 690 MB free beside
+#: a stream) and every stand-aside still apply, and a local game still stops it.
+BUSY_STARVE_BESIDE_CLOUD_S = 30 * 60
 #: A proof that ended without making the census current is not retried for this long - a failing prover
 #: must not become a machine that proves in a loop all day.
 RETRY_AFTER_FAIL_S = 3 * 3600
@@ -252,6 +260,28 @@ def playing_state(game_on_screen=None, cloud=True):
 #: and the proof stands aside, as REG-1624/1666 decided on the 8 GB ALT (which stays below it with the game open). The
 #: prover already runs at BelowNormal / nice 15 with no window.
 BESIDE_GAME_FREE_MB = 4096
+
+
+def cloud_streaming():
+    """v3884 - a cloud client (PLAY_EXES: Boosteroid, GeForce NOW) runs on this PC and the local game does not.
+    -> True | False | None (the process list could not be read - UNKNOWN, so the long wait stands)"""
+    try:
+        if IS_WIN:
+            import tv_diablo as _tvd
+            cl = _tvd._toolhelp_any(lambda name: (name or "").lower() in PLAY_EXES)
+            if cl is not True:
+                return cl
+            game = _tvd._toolhelp_any(lambda name: (name or "").lower() == "d2r.exe")
+            return None if game is None else (not game)
+        out = subprocess.run(["ps", "-Ao", "pid=,command="], capture_output=True, text=True, encoding="utf-8", errors="replace",
+                             timeout=3)
+        lines = [ln for ln in (out.stdout or "").splitlines() if ln.strip()]
+        if out.returncode != 0 or not lines:
+            return None
+        hits = [ln for ln in lines if posix_play_line(ln)]
+        return bool(hits) and not any(_POSIX_GAME.search(ln) for ln in hits)
+    except Exception:
+        return None
 
 
 def proof_playing_state(game_on_screen=None, free=None):
@@ -883,7 +913,7 @@ TRUST_DESPITE = ("busy", "aside-cooldown", "backoff", "low-memory", "takes-fleet
 
 
 def decide(census, tree, running_pid, busy_pct, mem, now_s, on=True, playing=None, free=None, sandbox=None,
-           takes_only=False):
+           takes_only=False, cloud=None):
     """THE ONE DECISION. Pure. -> {"start": bool, "key": str, "why": str}
     `playing` / `free` (REG-1502): None is UNKNOWN, and a proof is never started on a guess.
 
@@ -892,7 +922,7 @@ def decide(census, tree, running_pid, busy_pct, mem, now_s, on=True, playing=Non
     his Mac: 'busy' for 34 min with 6 of 27 owed gates fully servable and unwritten, because the trust pass ran only
     inside a slice and a slice waits for idle."""
     d = _decide(census, tree, running_pid, busy_pct, mem, now_s, on=on, playing=playing, free=free, sandbox=sandbox,
-                takes_only=takes_only)
+                takes_only=takes_only, cloud=cloud)
     if d.get("start") or d.get("key") not in TRUST_DESPITE:
         return d
     t = trust_start(census, tree, mem, playing, free)
@@ -925,7 +955,7 @@ def trust_start(census, tree, mem, playing, free):
 
 
 def _decide(census, tree, running_pid, busy_pct, mem, now_s, on=True, playing=None, free=None, sandbox=None,
-            takes_only=False):
+            takes_only=False, cloud=None):
     """decide()'s rules for a slice (and the safety net), as they always were. Pure."""
     if not on:
         return {"start": False, "key": "off", "why": "the self-prove lane is off (TV_SELF_PROVE=0)"}
@@ -1036,15 +1066,20 @@ def _decide(census, tree, running_pid, busy_pct, mem, now_s, on=True, playing=No
         _for = (now_s - _since) if _since is not None else None
         if _small or _net:                         # a small slice, or the safety net, never starves its way in
             _for = None
-        if _for is not None and _for >= BUSY_STARVE_S:
+        _starve = BUSY_STARVE_BESIDE_CLOUD_S if cloud is True else BUSY_STARVE_S   # v3884 - beside a cloud stream
+        if _for is not None and _for >= _starve:
             return {"start": True, "key": "start",
-                    "why": "the machine has been %.0f%% busy or more for %s without a break - a proof that waits for "
-                           "idle here would never start, so it proves now at the lowest priority (REG-1905)"
-                           % (MAX_BUSY_TO_START, _span(_for))}
+                    "why": ("the machine has been %.0f%% busy or more for %s - the load is a cloud stream (his ruling: prove "
+                            "beside cloud), so it proves now at the lowest priority" % (MAX_BUSY_TO_START, _span(_for)))
+                    if cloud is True else
+                    ("the machine has been %.0f%% busy or more for %s without a break - a proof that waits for "
+                     "idle here would never start, so it proves now at the lowest priority (REG-1905)"
+                     % (MAX_BUSY_TO_START, _span(_for)))}
         return {"start": False, "key": "busy",
                 "why": "the machine is %.0f%% busy - a proof starts only when it is idle%s" % (
-                    busy_pct, (" (busy for %s; past %s it proves anyway, at the lowest priority)"
-                               % (_span(_for), _span(BUSY_STARVE_S))) if _for is not None else "")}
+                    busy_pct, (" (busy for %s; past %s it proves anyway, at the lowest priority%s)"
+                               % (_span(_for), _span(_starve), " - a cloud stream is running" if cloud is True else ""))
+                    if _for is not None else "")}
     if _small:
         return {"start": True, "key": "start-small", "small": True,
                 "why": "census %s (%s) - only %d MB free, under the %d MB full start, so a small slice proves "
@@ -1746,7 +1781,8 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
         sandbox_ready() if spawn_fn is None and not running and census.get("state") != "current" else None)
     d = decide(census, tree if tree is not None else tree_state(), running,
                busy() if callable(busy) else busy, mem, now_s, on=on, playing=play_now, free=free_now,
-               sandbox=(_sb() if callable(_sb) else _sb), takes_only=takes_only)
+               sandbox=(_sb() if callable(_sb) else _sb), takes_only=takes_only,
+               cloud=(cloud_streaming() if mem.get("busySince") is not None else None))   # v3884 - asked only while busy
     if stall_gone is True:
         d = {"start": False, "key": "silent", "why": stall_why}
     elif stall_gone is False:
