@@ -21228,6 +21228,7 @@ def board_ownership(sample=0, dump_stores=False):
           "return (function(window,hopped){try{"
           "var raw=function(k){try{var v=(window.LSR?window.LSR.getItem(k):localStorage.getItem(k));"
           "return v?JSON.parse(v):null;}catch(e){return null;}};"
+          + _BOARD_STORE_JS +
           "var g=function(k){try{var p=raw(k);"
           "if(Array.isArray(p))return p.slice();"
           "if(p&&typeof p==='object')return Object.keys(p);return [];}catch(e){return [];}};"
@@ -21331,7 +21332,7 @@ def board_ownership(sample=0, dump_stores=False):
           # runewords could be COUNTED but never COPIED, and the automatic backup carried neither
           # them nor gameFound — measured across all 60 of his backup files.
           "var rwFull=null;"
-          "try{var _rmf=raw('d2r_rwMade');if(_rmf&&typeof _rmf==='object'&&!Array.isArray(_rmf))rwFull=_rmf;}catch(_r){}"
+          "try{rwFull=store('d2r_rwMade');}catch(_r){}"   # v3888 (REG-3482) - never written = {}, a measured zero
           "var stores=null,gameFound=null;"
           # ⚠⚠ v2737 — ASK THE BOARD FOR ITS OWN COMPLETE EXPORT INSTEAD OF HAND-PICKING FIVE.
           # CENSUS of bible.html's own setItem('d2r_*') writers: it writes 91 stores, the
@@ -21363,7 +21364,7 @@ def board_ownership(sample=0, dump_stores=False):
           "var fullStores=null;"
           "try{if(typeof window._collectProgress==='function')fullStores=window._collectProgress();}"
           "catch(_cp){}"
-          "try{var _gp=raw('d2r_gameFound');if(_gp&&typeof _gp==='object'&&!Array.isArray(_gp))gameFound=_gp;}catch(_g){}"
+          "try{gameFound=store('d2r_gameFound');}catch(_g){}"   # v3888 (REG-3482) - never written = {}, a measured zero
           + ("if(%s){stores={};try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);"
              "if(!k)continue;var v=localStorage.getItem(k);var nn=0;"
              "try{var pp=JSON.parse(v);nn=Array.isArray(pp)?pp.length:(pp&&typeof pp==='object'?Object.keys(pp).length:(v?1:0));}"
@@ -34048,6 +34049,17 @@ def _vault_json_save(path, rec):
 #
 # So: read the ledger through the same read-only channel the cross-reference already uses, and
 # write a timestamped copy OUTSIDE THE REPO. The repo is PUBLIC - his ledger must never land in it.
+#: v3888 (REG-3482, the hook on Dean's PC 11-08: "the newest backup carries 4 of 5 ledgers - MISSING gameFound"). v3882 made the
+#: backup write a store the board SENDS, empty included ("an empty store is a measured zero") - and MEASURED on Dean's PC the same
+#: night, none of his 50 backups (09-05 to 11-08) ever named gameFound: his board has never written d2r_gameFound, and raw() read a
+#: key that was never written as null, the same null as a store that will not parse. So the board sent None, the key stayed out,
+#: and v3882's rule (pinned by a law that fed the fold a {} the board never sends) never reached him. store(k) tells the two
+#: apart where they happen: a loaded board's key never written is {} - nothing recorded yet, a measured zero; a value that will not
+#: parse or is not an object is null - UNKNOWN, still left out; no LSR (the board not loaded) is null.
+_BOARD_STORE_JS = ("var store=function(k){try{if(!window.LSR)return null;var v=window.LSR.getItem(k);"
+                   "if(v==null||v==='')return {};var p=JSON.parse(v);"
+                   "return (p&&typeof p==='object'&&!Array.isArray(p))?p:null;}catch(e){return null;}};")
+
 _LEDGER_BACKUP_DIR = os.path.join(os.path.expanduser("~"), "d2r_ledger_backups")
 # v2050 — 600s, not 1800s. THE INTERVAL IS HOW MUCH HE CAN LOSE.
 # On 2026-08-24 his live ledger went from 404/5/120 to zero, and the only surviving copy was a

@@ -128,6 +128,15 @@ places) printed r50 - kills for an even chance - under "Runs (50%)", titled "sor
 on the Cow Level (~350 kills a run) ~350 times too many. The Drop Simulator took the same r50 as "runs" and rolled a kill's odds.
 Now the table and the simulator print s.runs, the title says its order, and the simulator rolls one run's odds (_gicRunOdds:
 1 - (1 - 1/c)^kills). GUARD: test_the_item_card_counts_runs_not_kills (3 red-proofs RED).
+### REG-3482 - DEAN'S BACKUPS NEVER CARRIED gameFound: v3882'S "EMPTY STORE IS A MEASURED ZERO" NEVER REACHED HIS BOARD (v3888)
+The hook on Dean's PC, 11-08: "the newest backup carries 4 of 5 ledgers - MISSING gameFound". MEASURED there read-only: none of his
+50 backups (09-05 to 11-08) names gameFound. v3882 made the console write a store the board SENDS, empty included - but his board has
+never written d2r_gameFound, and the board read (raw) returned the same null for a key never written as for one that will not parse,
+so the board sent None and the key stayed out. v3882's law fed the fold a {} the board never sends: two halves, both green, never met.
+store(k) (control_app._BOARD_STORE_JS) now tells them apart on the board: never written (or blank) = {}, a measured zero; will not
+parse or not an object = null, UNKNOWN, still left out; no LSR (board not loaded) = null. gameFound and rwMade both read through it.
+GUARD: test_ledger_backup_covers_every_store.TheBoardSendsANeverWrittenStoreAsEmpty (node, 2 red-proofs RED).
+
 ### REG-3481 - A SPEC'S LOAD COUNTER READ ZERO MID-WRITE AND FAILED A ROUND (v3888, v3886's GitHub round 2)
 v877_space_ci_load, Routine I, v3886 round 2: "the disk writer was not running - Expected: > 140, Received: 0". The spec's own disk
 load rewrote its count with open(count, "w"), which empties the file before writing, and the spec's readFileSync landed in that gap

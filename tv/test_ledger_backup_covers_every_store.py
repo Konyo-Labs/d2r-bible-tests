@@ -51,6 +51,16 @@ SRC = io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
 
 
 RED_PROOF = [
+    {"why": "v3888 (REG-3482) - a store the board never wrote is sent as null again (Dean's gameFound: MISSING in every backup)",
+     "file": "tv/control_app.py",
+     "find": "                   \"if(v==null||v==='')return {};var p=JSON.parse(v);\"\n",
+     "replace": "                   \"if(v==null||v==='')return null;var p=JSON.parse(v);\"\n",
+     "matches": 1, "needs": "node"},
+    {"why": "v3888 (REG-3482) - gameFound is read through raw() again (a never-written store and a torn one look alike)",
+     "file": "tv/control_app.py",
+     "find": "          \"try{gameFound=store('d2r_gameFound');}catch(_g){}\"",
+     "replace": "          \"try{var _gp=raw('d2r_gameFound');if(_gp&&typeof _gp==='object'&&!Array.isArray(_gp))gameFound=_gp;}catch(_g){}\"",
+     "matches": 1},
     {"why": "v3883 - his un-ticks ride into the backup's ledger block again, a key the restore has no answer for",
      "file": "control_app.py",
      "find": '    led.pop("grailUnfound", None)\n', "replace": "", "matches": 1},
@@ -80,6 +90,47 @@ def _between(src, start, end, whence=0):
         return None
     j = src.find(end, i + len(start))
     return None if j < 0 else src[i:j + len(end)]
+
+
+class TheBoardSendsANeverWrittenStoreAsEmpty(unittest.TestCase):
+    """v3888 (REG-3482) - the hook on Dean's PC, 11-08: "the newest backup carries 4 of 5 ledgers - MISSING gameFound". MEASURED
+    there: none of his 50 backups (09-05 to 11-08) ever named gameFound - his board never wrote d2r_gameFound, and the board read
+    (raw) returned the same null for a key never written as for one that will not parse, so the board sent None and v3882's
+    "an empty store is a measured zero" (the class below, fed a {} the board never sends) never reached him. Runs the shipped
+    store() in node over a stand-in LSR."""
+
+    def _run(self, cases, lsr=True):
+        import shutil, subprocess, json as _json
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node is required to run the board-side read - UNMEASURED here, not a pass")
+        import control_app as ca
+        js = ("var OUT = {}; var CASES = %s; var window = {};\n" % _json.dumps(cases)
+              + ca._BOARD_STORE_JS + "\n"
+              + ("window.LSR = { getItem: function(k){ return Object.prototype.hasOwnProperty.call(CASES, k) ? CASES[k] : null; } };\n" if lsr else "")
+              + "Object.keys(CASES).concat(['never_written']).forEach(function(k){ OUT[k] = store(k); });\n"
+              "process.stdout.write(JSON.stringify(OUT));")
+        r = subprocess.run([node, "-"], input=js, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr[-600:])
+        return _json.loads(r.stdout)
+
+    def test_a_store_never_written_is_a_measured_empty_one(self):
+        """* THE POINT - Dean's d2r_gameFound: never written, so {} - and an unreadable one stays UNKNOWN (null)"""
+        o = self._run({"full": '{"Shako": "05/27/2026"}', "blank": "", "torn": '{"Shako": ', "list": "[1, 2]"})
+        self.assertEqual(o["never_written"], {}, "a store the board never wrote is sent as null again (UNKNOWN, not zero)")
+        self.assertEqual(o["blank"], {})
+        self.assertEqual(o["full"], {"Shako": "05/27/2026"})
+        self.assertIsNone(o["torn"], "a store that will not parse was sent as empty - a guess, not a measurement")
+        self.assertIsNone(o["list"], "a store of the wrong shape was sent as empty")
+
+    def test_a_board_that_is_not_loaded_sends_nothing(self):
+        o = self._run({"x": "{}"}, lsr=False)
+        self.assertEqual((o["x"], o["never_written"]), (None, None), "an unloaded board's stores read as measured zeros")
+
+    def test_both_stores_are_read_through_it(self):
+        self.assertIn("try{gameFound=store('d2r_gameFound');}catch(_g){}", SRC)
+        self.assertIn("try{rwFull=store('d2r_rwMade');}catch(_r){}", SRC)
+        self.assertIn("+ _BOARD_STORE_JS +", SRC, "the board read never defines store()")
 
 
 class AnEmptyStoreIsWrittenAsMeasured(unittest.TestCase):
@@ -148,8 +199,8 @@ class LedgerBackupCoversEveryStore(unittest.TestCase):
     # ── the two stores are actually fetched ───────────────────────────────────────────────────
     def test_rwMade_CONTENTS_are_fetched_not_only_counted(self):
         """`rwMade` was a COUNT for its whole life — countable, never copyable."""
-        self.assertRegex(
-            SRC, r"raw\('d2r_rwMade'\)\s*;\s*if\s*\(_rmf",
+        self.assertRegex(   # v3888 (REG-3482) - through store(), which tells a never-written store from an unreadable one
+            SRC, r"rwFull=store\('d2r_rwMade'\)",
             "nothing fetches the CONTENTS of d2r_rwMade. The pre-existing `var rwMade=` is "
             "Object.keys(m).length — a count. His 99 runewords could be counted and never copied, "
             "which is exactly how they stayed out of 60 consecutive backups."
