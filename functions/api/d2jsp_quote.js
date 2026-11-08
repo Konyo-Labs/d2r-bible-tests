@@ -202,6 +202,38 @@ var D2JSP_NOTATION = {
   "barb": "barbarian", "dru": "druid", "nec": "necromancer", "pala": "paladin"
 };
 
+/* v3885 (#30, GrokBot's real-post pass) - EACH ITEM'S VARIABLE ROLLS, from the page's own data (tv/d2jsp_rolls.py --emit; a
+   law holds this block equal to bible.html's ITEM_CODEX / RUNEWORD_TIP / BASE_DB). Never typed here. */
+/* ⟦D2JSP ROLLS BEGIN⟧ */
+var D2JSP_ROLLS = {"alma negra":[[5,9],[40,75],[138,164],[180,210]],"andariels visage":[[8,10],[25,30],[100,150],[101,154]],"annihilus":[[5,10],[10,20]],"arachnid mesh":[[55,62],[90,120]],"ariocs needle":[[10,20],[180,230]],"arkaines valor":[[1,2],[10,15],[150,180],[410,517]],"arreats face":[[3,6],[93,120],[150,200]],"astreons iron ward":[[4,7],[150,200],[240,290]],"athenas wrath":[[150,180]],"atlantean":[[200,250]],"atmas wail":[[120,160],[282,303]],"authority":[[40,60]],"azurewrath":[[5,10],[230,270]],"bane ash":[[50,60]],"bartucs cut-throat":[[5,9],[150,200]],"battlebranch":[[50,70],[50,100]],"beast":[[25,40],[240,270]],"bing sz wang":[[130,160]],"black hades":[[30,60],[140,200],[200,250],[315,342]],"blackhorns face":[[54,86],[180,220]],"blackleach blade":[[100,140]],"blackoak shield":[[108,123],[160,200]],"blade of ali baba":[[5,15],[60,120]],"bladebuckle":[[8,11],[80,100]],"blastbark":[[70,130]],"blood ravens charge":[[180,230],[200,300]],"bloodfist":[[5,6],[10,20]],"bloodletter":[[1,3],[2,4]],"bloodmoon":[[7,13],[10,15],[210,260]],"bone":[[100,150]],"boneflame":[[20,30],[100,146],[120,150]],"boneflesh":[[100,120],[108,116]],"bonehew":[[270,320]],"boneshade":[[1,2],[2,3],[4,5]],"boneslayer blade":[[180,220]],"bonesnap":[[200,300]],"brainhew":[[10,13],[50,80]],"bramble":[[25,50]],"brand":[[260,340],[280,330]],"breath of the dying":[[12,15],[350,400]],"bul-kathos wedding band":[[3,5]],"bulwark":[[4,6],[10,15],[75,100]],"buriza-do kyanon":[[75,150],[150,200]],"butchers pupil":[[150,200]],"bverrit keep":[[22,25],[80,100],[80,120]],"call to arms":[[1,4],[1,6],[2,6],[250,290]],"carrion wind":[[6,9],[100,160]],"cerebus bite":[[1,2],[7,10],[60,120],[101,145],[130,140]],"chance guards":[[8,9],[20,30],[25,40]],"chaos":[[290,340]],"chieftain":[[10,20]],"cliffkiller":[[5,10],[20,30],[190,230]],"cloudcrack":[[150,200]],"coif of glory":[[15,18]],"coldkill":[[150,190]],"corpsemourn":[[150,180],[417,450]],"coven":[[1,5],[26,40],[30,50]],"crainte vomir":[[160,200]],"cranebeak":[[20,50],[240,300]],"cranium basher":[[200,240]],"crescent moon":[[3,6],[11,15]],"crow caw":[[150,180],[176,190]],"crown of ages":[[10,15],[20,30],[100,150],[111,165]],"crown of thieves":[[9,12],[78,113],[80,100],[160,200]],"crushflange":[[50,60]],"cure":[[40,60],[75,100]],"darkforce spawn":[[103,148],[140,180]],"darksight helm":[[20,40],[75,84]],"death":[[300,385]],"death cleaver":[[6,9],[230,280]],"deaths fathom":[[15,30],[25,40]],"deaths web":[[7,12],[40,50]],"demon limb":[[7,13],[15,20],[180,230]],"demonhorns edge":[[3,6],[55,77],[111,156],[120,160]],"demons arch":[[6,12],[160,210]],"djinn slayer":[[3,6],[3,7],[100,150],[190,240],[200,300]],"doom":[[40,60],[330,370]],"doombringer":[[5,7],[180,250]],"doomslinger":[[60,100]],"draculs grasp":[[5,10],[7,10],[10,15],[56,65],[90,120]],"dragon":[[3,5]],"dream":[[5,20],[12,25],[20,30],[150,220]],"duress":[[10,20],[150,200]],"duriels shell":[[160,200],[188,202]],"duskdeep":[[10,20],[23,26],[30,50]],"dwarf star":[[12,15]],"earth shifter":[[250,300]],"edge":[[5,10],[320,380]],"endlesshail":[[3,5],[180,220]],"enigma":[[750,775]],"eschutas temper":[[10,20],[20,30]],"eternity":[[260,310]],"ethereal edge":[[5,10],[10,12],[150,180],[150,200],[270,350]],"executioners justice":[[240,290]],"exile":[[220,260]],"eye of etlich":[[1,5],[3,7],[10,40]],"face of horror":[[9,27]],"faith":[[1,2]],"famine":[[320,370]],"felloak":[[70,80]],"firelizards talons":[[1,2],[40,70],[200,270]],"flamebellow":[[5,10],[10,20],[12,18],[20,30],[170,240]],"fleshripper":[[5,10],[200,300]],"flickering flame":[[10,15],[50,75]],"fortitude":[[25,30]],"frostburn":[[10,20],[12,15]],"frostwind":[[7,14],[7,15],[180,230]],"gavel of pain":[[130,160]],"generals tan do li ga":[[50,60]],"gheeds fortune":[[10,15],[20,40],[80,160]],"ghostflame":[[10,15],[190,240]],"ghoulhide":[[4,5],[37,44],[150,190]],"giant skull":[[25,35],[100,157],[250,320]],"gimmershred":[[160,210]],"ginthers rift":[[7,12],[100,150]],"gladiators bane":[[15,20],[150,200],[375,481]],"gloom":[[200,260]],"glooms trap":[[35,40],[120,150]],"gnasher":[[60,70]],"goblin toe":[[9,11],[50,60]],"goldskin":[[120,150],[150,161]],"goldstrike arch":[[100,150],[100,200],[200,250]],"goldwrap":[[40,60],[50,80]],"gore rider":[[43,53],[160,200]],"gorefoot":[[5,6],[20,30]],"grandfather":[[150,250]],"gravenspine":[[25,50]],"gravepalm":[[33,39],[100,200],[140,180]],"greyform":[[8,11]],"grief":[[10,15],[20,25],[30,40],[340,400]],"griffons eye":[[10,15],[15,20],[50,60],[100,200]],"ground":[[10,15],[40,60],[75,100]],"guardian angel":[[180,200],[252,274]],"halaberds reign":[[1,2],[15,23],[114,159],[140,170]],"hand of blessed light":[[130,160]],"hand of broc":[[2,3],[10,20]],"hand of justice":[[280,330]],"harlequin crest":[[98,141]],"harmony":[[2,6],[200,275]],"hawkmail":[[57,60],[80,100]],"head hunters glory":[[5,7],[20,30],[30,40],[158,173],[300,350],[320,420]],"heart carver":[[190,240]],"heart of the oak":[[30,40]],"hearth":[[10,15],[40,60],[75,100]],"heavenly garb":[[90,107]],"heavens light":[[15,20],[250,300]],"hellclap":[[50,75],[70,90]],"hellmouth":[[43,53],[150,200]],"hellrack":[[100,150],[180,230]],"hexfire":[[140,160]],"homunculus":[[58,70],[150,200]],"hone sundan":[[160,200]],"hotspur":[[2,3],[10,20]],"howltusk":[[30,35]],"ice":[[25,30],[140,210]],"iceblink":[[70,80],[90,95]],"impaler":[[140,170]],"infernostride":[[28,35],[40,70],[120,150]],"infinity":[[45,55],[255,325]],"insight":[[1,6],[180,250],[200,260]],"ironstone":[[100,150]],"islestrike":[[170,190]],"jade talon":[[10,15],[40,50],[190,240]],"jade tan do":[[100,150]],"jalals mane":[[73,98],[150,200]],"kingslayer":[[230,270]],"kiras guardian":[[40,50],[50,70],[50,120]],"kuko shakaku":[[150,180]],"lacerator":[[150,210]],"lance guard":[[58,78],[70,120]],"last wish":[[60,70],[330,375]],"lava gout":[[39,47],[150,200]],"lawbringer":[[200,250]],"leviathan":[[15,25],[40,50],[100,150],[170,200],[417,523]],"lidless wall":[[3,5],[50,150],[80,130]],"lightsabre":[[5,7],[150,200]],"lycanders aim":[[5,8],[150,200]],"lycanders flank":[[5,9],[150,200]],"maelstrom":[[1,3]],"magefist":[[9,11],[20,30]],"magewrath":[[9,13],[120,150],[200,250]],"manald heal":[[4,7],[5,8]],"mang songs lesson":[[7,15]],"mania":[[180,200]],"maras kaleidoscope":[[20,30]],"marrowwalk":[[1,2],[10,20],[59,67],[170,200]],"meat scraper":[[150,200]],"metalgrid":[[25,35],[300,350],[400,450]],"metamorphosis":[[50,80]],"minotaur":[[15,20],[140,200]],"mist":[[325,375]],"mosaic":[[8,15],[200,250]],"mosers blessed circle":[[47,55],[180,220]],"nagelring":[[15,30],[50,75]],"natures peace":[[7,11],[20,30]],"nightsmoke":[[30,50]],"nightwings veil":[[5,9],[8,15],[10,20],[90,120],[114,159]],"nords tenderizer":[[2,4],[5,15],[150,180],[270,330]],"nosferatus coil":[[5,7],[56,63]],"oath":[[10,15],[210,340]],"obedience":[[20,30],[200,300]],"obsession":[[15,25],[15,30],[60,70]],"ondals wisdom":[[2,4],[5,8],[40,50],[450,550]],"ormus robes":[[10,15],[10,20],[36,60],[361,467]],"passion":[[50,80],[160,210]],"patriarch":[[100,120]],"pattern":[[40,80]],"peasant crown":[[6,12],[45,53]],"pelta lunata":[[4,6],[8,12],[30,40]],"phoenix":[[15,21],[350,400]],"pierre tombale couant":[[100,200],[160,220]],"plague":[[1,2],[220,320]],"pompeiis wrath":[[140,170]],"pride":[[260,300]],"principle":[[100,150]],"prudence":[[25,35],[140,170]],"pus spitter":[[150,220]],"que-hegans wisdom":[[6,10],[140,160],[225,261]],"rain":[[100,150]],"rattlecage":[[128,135]],"raven claw":[[60,70]],"raven frost":[[15,20],[150,250]],"ravenlore":[[10,20],[15,25],[20,30],[103,155],[120,150]],"razors edge":[[175,225]],"razortail":[[31,36],[120,150]],"reapers toll":[[11,15],[190,240]],"redeemer":[[2,4],[200,250],[250,300]],"ribcracker":[[200,300]],"rift":[[5,10]],"riphook":[[7,10],[180,220]],"ritual":[[3,5],[150,250],[200,260],[250,320]],"rockfleece":[[100,130],[101,105]],"rockstopper":[[20,40],[20,50],[52,62],[160,220]],"rogues bow":[[40,60]],"sanctuary":[[50,70],[130,160]],"sandstorm trek":[[10,15],[40,70],[56,65],[140,170]],"saracens chance":[[15,25]],"schaefers hammer":[[100,130]],"seraphs hymn":[[25,50],[150,250]],"serpent lord":[[30,40]],"shadow dancer":[[15,25],[62,71],[70,100]],"shadow killer":[[10,15],[170,220]],"shaftstop":[[180,220],[198,213]],"silks of the victor":[[100,120],[218,233]],"silkweave":[[37,44],[150,190]],"skin of the flayed one":[[5,7],[15,25],[122,136],[150,190]],"skin of the vipermagi":[[9,13],[20,35],[111,126]],"skullders ire":[[160,200],[225,243]],"skystrike":[[150,200]],"snakecord":[[20,30]],"snowclash":[[37,42],[130,170]],"soul drainer":[[4,7],[59,67],[90,120]],"soulfeast tine":[[150,190],[150,250]],"sparking mail":[[10,14],[72,75],[75,85]],"spellsteel":[[12,15]],"spike thorn":[[15,20],[120,150],[147,163]],"spire of honor":[[150,200]],"spirit":[[3,8],[25,35],[89,112]],"spirit forge":[[120,160],[158,172]],"spirit keeper":[[9,14],[15,25],[30,40],[107,152],[170,190]],"spirit shroud":[[7,11],[102,117]],"spirit ward":[[6,11],[20,30],[30,40],[130,180],[153,170]],"splendor":[[60,100]],"stealskull":[[30,50],[63,72],[200,240]],"steel carapace":[[9,14],[10,15],[40,60],[190,220],[446,557]],"steel pillar":[[50,80],[210,260]],"steel shade":[[4,8],[5,11],[10,18],[100,130],[105,149]],"steelclash":[[15,20],[16,18],[60,100]],"steeldriver":[[150,250]],"steelrend":[[15,20],[30,60],[62,71],[170,210]],"stone":[[250,290]],"stoneraven":[[30,50],[230,280],[400,600]],"stormchaser":[[53,61],[160,220]],"stormguild":[[10,15],[12,14],[50,60]],"stormlash":[[3,9],[240,300]],"stormshield":[[133,148]],"stormspire":[[150,250]],"stormstrike":[[70,90]],"stoutnail":[[3,10]],"string of ears":[[6,8],[10,15],[29,34],[150,180]],"swordguard":[[10,20],[170,180]],"tarnhelm":[[8,11],[25,50]],"tearhaunch":[[12,15],[60,80]],"temper":[[10,15],[40,60],[75,100]],"templars might":[[10,15],[40,50],[170,220],[250,300],[487,600]],"thundergods vigor":[[41,52],[160,200]],"thunderstroke":[[150,200]],"tiamats rebuke":[[25,35],[59,67],[140,200]],"titans revenge":[[5,9],[150,200]],"todesfaelle flamme":[[120,160]],"tomb reaver":[[10,14],[30,50],[50,80],[150,230],[200,280],[250,350]],"toothrow":[[20,40],[40,60],[160,220],[242,258]],"treads of cthon":[[8,9],[30,40]],"twitchthroe":[[32,35]],"tyraels might":[[20,30],[50,100],[120,150],[487,600]],"umbral disk":[[8,10],[10,15],[40,50]],"unbending will":[[8,10],[20,30],[300,350]],"undead crown":[[25,45],[30,60],[50,100]],"valkyrie wing":[[2,4],[85,98],[150,200]],"vampire gaze":[[6,8],[10,15],[15,20],[60,125]],"veil of steel":[[114,159]],"venom grip":[[15,25],[28,35],[130,160]],"venom ward":[[60,100],[65,68]],"verdungos hearty cord":[[10,13],[10,15],[30,40],[58,65],[90,140],[100,120]],"vigilance":[[20,40],[25,35],[75,100]],"vile husk":[[150,200]],"visceratuant":[[41,49],[100,150]],"voice of reason":[[220,350],[355,375]],"void":[[1,3],[8,12],[10,15]],"wall of the eyeless":[[10,30],[30,40]],"war traveler":[[5,10],[30,50],[39,47],[150,190]],"ward":[[30,35],[30,50]],"waterwalk":[[33,39],[45,65],[180,210]],"widowmaker":[[3,5],[150,200]],"wilhelms pride":[[37,42]],"wind":[[120,160]],"windforce":[[6,8]],"windhammer":[[180,230]],"wisdom":[[4,8],[15,25]],"wisp projector":[[10,20]],"witchwild string":[[150,170]],"witherstring":[[40,50]],"wizendraw":[[20,35],[50,100],[70,80]],"wolfhowl":[[3,6],[8,15],[105,150],[120,150]],"wormskull":[[33,36]],"wraith flight":[[9,13],[150,190]],"wrath":[[250,300]]};
+/* ⟦D2JSP ROLLS END⟧ */
+
+/* the table's key: no trailing "(...)", no leading "The ", no apostrophes, lower case (tv/d2jsp_rolls.py canon) */
+function d2jspRollKey(itemName) {
+  return String(itemName || '').replace(/\s*\([^)]*\)\s*$/, '').trim().replace(/^the\s+/i, '')
+    .replace(/['\u2019`]/g, '').replace(/\s+/g, ' ').toLowerCase();
+}
+
+/* v3885 - IS THIS POST'S ROLL PERFECT? Every roll it STATES (a slash tuple's numbers, a number on a stat word: "141def",
+   "@20") that falls inside one of the item's variable ranges must sit at that range's maximum. -> true | false | null (the
+   line states no roll the table knows, or the item has no variable roll: the words may say it). GrokBot 11-08: "137 DEF"
+   is not a perfect Shako (141 is), "15/0/775" is a perfect Enigma, "20/-20" a perfect Griffon's Eye. */
+function d2jspRollPerfect(itemName, note) {
+  var R = D2JSP_ROLLS[d2jspRollKey(itemName)];
+  if (!R || !note) return null;
+  var nums = [];
+  (note.tuples || []).forEach(function (t) { t.forEach(function (v) { nums.push(Math.abs(v)); }); });
+  (note.statNums || []).forEach(function (v) { nums.push(Math.abs(v)); });
+  var hit = false, all = true;
+  nums.forEach(function (v) {
+    var inside = R.filter(function (r) { return v >= r[0] && v <= r[1]; });
+    if (!inside.length) return;                       /* not a roll of this item (a quantity, a +skills, a socket count) */
+    hit = true;
+    if (!inside.some(function (r) { return v === r[1]; })) all = false;
+  });
+  return hit ? all : null;
+}
+
 function d2jspSlangOf(itemName) {
   var f = d2jspFoldPrice(itemName);
   for (var k in D2JSP_SLANG) {
@@ -229,13 +261,18 @@ function d2jspSearchWords(itemName) {
    upgraded, random, and each known short word in plain words */
 function d2jspNotation(text) {
   var t = String(text || '');
-  var out = { tuples: [], sockets: null, eth: false, perfect: false, upgraded: false, random: false, allRes: null, words: [] };
-  var m, re = /(\d+(?:\/\d+)+)/g;
-  while ((m = re.exec(t))) out.tuples.push(m[1].split('/').map(Number));
+  var out = { tuples: [], statNums: [], sockets: null, eth: false, perfect: false, upgraded: false, random: false, allRes: null, words: [] };
+  /* v3885 - a tuple's numbers may be signed: "12/-20" is a Griffon's Eye's roll (the unsigned form read nothing) */
+  var m, re = /(-?\d+(?:\s*\/\s*-?\d+)+)/g;
+  while ((m = re.exec(t))) out.tuples.push(m[1].split('/').map(function (x) { return Number(String(x).trim()); }));
+  /* v3885 - a number on a stat word is a roll too ("141def", "141 def", "40ed", "@20") - never an fg price */
+  var sre = /(\d+)\s*(?:def|defense|ed|%\s*ed|res)\b/gi;
+  while ((m = sre.exec(t))) out.statNums.push(Number(m[1]));
   if ((m = /\b(\d)\s*os\b/i.exec(t))) out.sockets = Number(m[1]);
-  if ((m = /@\s*(\d+)|(\d+)\s*@/.exec(t))) out.allRes = Number(m[1] || m[2]);
+  if ((m = /@\s*(\d+)|(\d+)\s*@/.exec(t))) { out.allRes = Number(m[1] || m[2]); out.statNums.push(out.allRes); }
   out.eth = /\beth\b/i.test(t);
-  out.perfect = /\bperf(?:ect)?\b/i.test(t);
+  /* v3885 - "Perfect Topaz" / "PRuby" is a socketed GEM, not the item's roll (GrokBot: "Shako 137 DEF / Perfect Topaz" read perfect) */
+  out.perfect = /\bperf(?:ect)?\b(?!\s*(?:topaz|ruby|amethyst|sapphire|emerald|diamond|skull|gem)s?\b)/i.test(t);
   out.upgraded = /\bup'?d\b|\bupped\b/i.test(t);
   out.random = /\brand\b/i.test(t);
   String(t).toLowerCase().replace(/'/g, '').split(/[^a-z@]+/).forEach(function (w) {
@@ -342,11 +379,11 @@ function d2jspLineRows(line, forms) {
   clauses.forEach(function (c) {
     if (all.length > 1 && !d2jspNamed(c, forms)) return;
     var cols = d2jspClauseCols(c, forms);
-    d2jspFgAmounts(c).forEach(function (n) { out.push({ fg: n, cols: cols }); });
+    d2jspFgAmounts(c).forEach(function (n) { out.push({ fg: n, cols: cols, text: c }); });   /* v3885 - its own clause */
   });
   if (!out.length && d2jspNamed(line, forms) && !clauses.some(function (c) { return d2jspNamed(c, forms); })) {
     var cols = d2jspClauseCols(line, forms);
-    all.forEach(function (n) { out.push({ fg: n, cols: all.length === 1 ? cols : null }); });
+    all.forEach(function (n) { out.push({ fg: n, cols: all.length === 1 ? cols : null, text: String(line) }); });
   }
   return out;
 }
@@ -381,7 +418,7 @@ function d2jspPosts(text, itemName, nowMs) {
     .replace(/<\/?(?:b|i|u|em|strong|span|font|mark|small|big)(?:\s[^>]*)?>/gi, '')
     .replace(/<[^>]+>/g, ' ');
   plain = d2jspDecodeEntities(plain);   /* v3847 - &#39; / &rsquo; / &amp; arrive raw: Guardian&#39;s matched nothing */
-  var rows = [], when = null, link = '', explicit = false, used = false, pending = '';
+  var rows = [], when = null, link = '', explicit = false, used = false, pending = '', seen = {};
   function rememberUndated() {
     pending = '';
   }
@@ -421,20 +458,38 @@ function d2jspPosts(text, itemName, nowMs) {
       return;
     }
     if (!named) return;
-    var note = d2jspNotation(line);
     var lr = d2jspLineRows(line, forms);
     if (!lr.length) used = true;
     lr.forEach(function (x) {
+      /* v3885 (GrokBot 11-08) - each clause read on its own: "Wire Fleece 15/0/775 2000 ; Wyrmhide 1850" gave both rows the
+         first clause's roll */
+      var note = d2jspNotation(x.text || line);
+      /* v3885 - the same words at the same price in one post is a bump or a quote, never a second listing */
+      var dup = (link || '') + '\u0001' + d2jspFoldPrice(x.text || line) + '\u0001' + x.fg;
+      if (seen[dup]) { used = true; return; }
+      seen[dup] = 1;
       var row = { fg: x.fg, day: new Date(when).toISOString().slice(0, 10), link: link,
         roll: note.tuples, mods: note.words.slice(0, 12), w: 1 };
       if (x.cols) row.cols = x.cols;
-      if (note.perfect) row.perfect = true;   /* v3849 - the post says perf/perfect: the price DB keeps a perfect tier */
+      /* v3885 - PERFECT IS READ FROM THE ROLLS (d2jspRollPerfect); only a line stating no roll the item's table knows
+         falls back to its words (v3849's "perf"/"perfect", gem-safe now) */
+      var byRoll = d2jspRollPerfect(d2jspResolveItem(itemName).item || itemName, note);
+      if (byRoll === true || (byRoll === null && note.perfect)) row.perfect = true;
       rows.push(row);
       used = true;
     });
   });
   rememberUndated();
-  return d2jspTrim(rows);
+  return d2jspOneVotePerPost(d2jspTrim(rows));
+}
+
+/* v3885 (GrokBot 11-08: one shop post supplied 9 of the 10 Griffon's Eye prices) - ONE VOTE PER POST. The rows of one post
+   (one link) share a weight of 1 between them; a row with no link is its own post. An outlier's 0 stays 0. */
+function d2jspOneVotePerPost(rows) {
+  var n = {};
+  rows.forEach(function (r) { if (r.link && r.w > 0) n[r.link] = (n[r.link] || 0) + 1; });
+  rows.forEach(function (r) { if (r.link && r.w > 0 && n[r.link] > 1) r.w = Math.round((r.w / n[r.link]) * 1000) / 1000; });
+  return rows;
 }
 
 /* v3844 - A FAR PRICE IS SET ASIDE. With five or more prices, one more than three times off the middle (a 2000 fg

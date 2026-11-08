@@ -72,8 +72,10 @@ def _page(lines, topic):
 def _boot():
     desk, db = _desk_js()
     pages = {
+        # v3885 (#30) - five DIFFERENT no-roll lines: five identical "anni 50fg" lines in one post are one listing now (a repeat
+        # at the same price in one post is a bump, GrokBot's rule from real posts), which is not what this case is about
         "gap": _page(["anni 20/20/10 1000fg", "anni 20/19/10 1000fg", "anni 19/20/10 1000fg"]
-                     + ["anni 50fg"] * 5, "9101"),
+                     + ["anni 50fg", "annihilus 50fg", "anni cheap 50fg", "anni quick 50fg", "anni bin 50fg"], "9101"),
         "one": _page(["anni 20/20/10 1000fg", "anni 20/19/10 1000fg", "anni 19/20/10 1000fg",
                       "anni 50fg"], "9102"),
         "shako": _page(["shako %d fg" % n for n in (100, 110, 120, 130, 140, 150, 160, 170, 180, 9000)], "9103"),

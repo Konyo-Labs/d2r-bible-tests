@@ -99,7 +99,8 @@ class ThePriceDB(unittest.TestCase):
         with open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as f:
             self.assertIn('_out["db"] = _d2jsp_db_fold(_out)', f.read())
         with open(os.path.join(os.path.dirname(HERE), "functions", "api", "d2jsp_quote.js"), encoding="utf-8") as f:
-            self.assertIn("if (note.perfect) row.perfect = true;", f.read())
+            # v3885 (#30) - perfect is read from the rolls first; the words only speak for a line that states no roll
+            self.assertIn("if (byRoll === true || (byRoll === null && note.perfect)) row.perfect = true;", f.read())
         import d2jsp_chrome as C
         self.assertTrue(C._public_posts([{"fg": 5, "w": 1, "perfect": True}])[0].get("perfect"))
         self.assertNotIn("perfect", C._public_posts([{"fg": 5, "w": 1, "perfect": 1}])[0])

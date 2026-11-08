@@ -112,6 +112,21 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3441 - A d2jsp POST WAS "PERFECT" WHEN ITS WORDS SAID SO - A PERFECT TOPAZ MADE A PERFECT SHAKO, A 775 ENIGMA SET THE NORMAL PRICE (v3885, #30)
+GrokBot read 16 real d2jsp topics read-only (#230 6720536745, 11-08 12:43-12:55) against each PC's price check: Shako and SoJ
+matched; the normal Enigma (1,400) came from "15/12/775 mp nigma 1.4k" - a 775 (maximum) roll - while real non-775 Enigmas
+sell for 275-575; Griffon's Eye had no perfect price though perfect posts exist; one shop post supplied 9 of 10 Griffon
+prices; "Shako 137 DEF / Perfect Topaz" read perfect. MEASURED by running the shipped parser on those lines: perfect was
+`/\bperf(?:ect)?\b/` on the words (a socketed Perfect Topaz matched it); the slash reader took no signed number, so
+"12/-20" Griffon rolls were never read; a line's notation was read once and given to every clause; nothing capped one
+post's share. Now perfect is READ: every roll a line states (a slash tuple, a number on a stat word) that falls in one of
+the item's variable ranges must sit at that range's maximum - the ranges built from the page's own ITEM_CODEX,
+RUNEWORD_TIP and BASE_DB by tv/d2jsp_rolls.py into the worker (D2JSP_ROLLS, 327 items; level-scaled mods and fixed damage
+adds excluded), never typed; a line stating no roll falls back to its words, never a gem's; each clause keeps its own
+words; the same line at the same price in one post counts once; the rows of one post share ONE vote. Law:
+test_a_d2jsp_post_is_perfect_by_its_rolls (6 cases on GrokBot's real lines, 7 red-proofs PROVEN); two older d2jsp laws
+re-pointed. NOT in this item: the Mac and OLD PC ALT keep separate price books (#96), OLD ALT's empty Griffon read (#127).
+
 ### REG-3440 - 366 ITEMS SHOWED A QUALITY LEVEL THAT WAS NOT THEIRS - THE WEAR LEVEL, THE BASE'S, 0 OR NOTHING (v3884, his 11-08)
 His words 11-08 12:09-12:10, with silospen's Debug Information open: "the Q levels i think its 69 and not 71?" (Heaven's
 Light) and "bane ash ... the console reads q5 for this and it should be q1 or q7". MEASURED 11-08 against silospen's own
