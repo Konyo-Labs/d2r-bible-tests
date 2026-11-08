@@ -1884,7 +1884,9 @@ def surface_pairs():
                    "runewords": "d2r_rwMade",
                    # v3861 - the six colossal jewels: the board counts them inside the uniques tally (403 = 397 + 6),
                    # from the same found ledger their own mask reads
-                   "colossal": "d2r_foundLog"}
+                   "colossal": "d2r_foundLog",
+                   # v3887 (#160) - and the eight Rainbow Facets, counted inside the uniques tally from the same found ledger
+                   "facets": "d2r_foundLog"}
     out = []
     try:
         import fleet_mask as _fm

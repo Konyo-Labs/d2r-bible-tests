@@ -138,6 +138,14 @@ LEDGERS = {
     "colossal": {"roster": "colossal_roster.json", "key": "names", "store": "d2r_foundLog",
                  "stores": ["d2r_foundLog", "d2r_owned"],
                  "label": "colossal jewels"},
+    # ══ v3887 (#160) — THE EIGHT RAINBOW FACETS TRAVEL IN A MASK OF THEIR OWN ══════════════════════
+    # His 11-08: Dean's board said 384/403 (19 missing) and the cross-reference listed 18. The uniques roster carries ONE
+    # "Rainbow Facet" bit, set only by the BARE name - Dean's found log holds six of the eight chronicle variants and no bare
+    # name, so his bit read 0 while his board counted the two he lacks. Wire-additive like the jewels: a console that has
+    # not updated still compares its uniques and simply has not published the facets.
+    "facets": {"roster": "facet_roster.json", "key": "names", "store": "d2r_foundLog",
+               "stores": ["d2r_foundLog", "d2r_owned"],
+               "label": "rainbow facets"},
 }
 
 # ══ v3861 — ONE SUNDER, ONE NAME, IN THE CROSS-REFERENCE ═══════════════════════════════════════════

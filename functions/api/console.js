@@ -588,7 +588,7 @@ export async function onRequestPost(context) {
          The allow-list stays an allow-list — a client cannot invent ledgers — it is just no
          longer one entry long. [[the-unjoined-end]] [[copy-drift]] */
       /* v3861 - and the six colossal jewels, which travel in a mask of their own (tv/fleet_mask.py LEDGERS) */
-      const LEDGERS = ['sets', 'uniques', 'colossal'];
+      const LEDGERS = ['sets', 'uniques', 'colossal', 'facets'];   /* v3887 (#160) - and the eight Rainbow Facets */
       const out = {};
       for (const k of LEDGERS) {
         const v = one(m[k]);
@@ -604,7 +604,7 @@ export async function onRequestPost(context) {
     maskWhy: (function (w) {
       if (!w || typeof w !== 'object') return null;
       const out = {};
-      for (const k of ['sets', 'uniques', 'colossal']) {   /* v3861 - the same ledgers as `masks` */
+      for (const k of ['sets', 'uniques', 'colossal', 'facets']) {   /* v3861 - the same ledgers as `masks` (v3887: + facets) */
         const v = w[k];
         if (typeof v === 'string' && v) out[k] = cutAtWord(v, 160);
       }

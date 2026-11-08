@@ -3976,7 +3976,8 @@ def _tally_cached():
 
 
 _MASK_CACHE = {"sets": {"t": 0.0, "val": None}, "uniques": {"t": 0.0, "val": None},
-               "colossal": {"t": 0.0, "val": None}}      # v3861 - the six jewels get their own slot
+               "colossal": {"t": 0.0, "val": None},      # v3861 - the six jewels get their own slot
+               "facets": {"t": 0.0, "val": None}}        # v3887 (#160) - and the eight Rainbow Facets
 _MASK_TTL_S = 300.0
 # N-3 — every None from board_mask used to look the same on the wire. The next heartbeat
 # names WHICH link gave up. Never an item name. Cleared on a successful mask.
@@ -46847,6 +46848,32 @@ def _fleet_merge_colossal(out, them):
     return out
 
 
+def _fleet_merge_facets(out, them):
+    """v3887 (#160) - the eight Rainbow Facets, compared from their own mask and merged into the uniques lists. -> out
+
+    When both sides published them, each variant is its own line (Dean's "Rainbow Facet (Lightning, on Level-up)") and the
+    uniques roster's single "Rainbow Facet" bit - set only by the bare name, so blind to a log of variants - leaves every list.
+    A peer that has not updated publishes no facet mask: the single bit stays, named, as before. [[unknown-stays-unknown]]"""
+    try:
+        import fleet_mask as FMX     # not _fm: test_mask_encoders_agree counts the encoder bindings
+        froster, ffp = FMX.load_roster_for("facets")
+        if not froster:
+            out["facetsJudged"], out["facetsWhy"] = False, "this console cannot read its facet roster"
+            return out
+        theirs = ((them.get("masks") or {}) or {}).get("facets") if isinstance(them, dict) else None
+        fo = FMX.compare(_mask_cached("facets"), theirs, froster, ffp)
+        if not fo.get("ok"):
+            out["facetsJudged"], out["facetsWhy"] = False, fo.get("why")
+            return out
+        for k in ("theyHaveIDont", "iHaveTheyDont", "neitherHas"):
+            if isinstance(out.get(k), list):
+                out[k] = [n for n in out[k] if n != FMX.FACET_NAME] + list(fo.get(k) or [])
+        out["facetsJudged"], out["facetsWhy"] = True, None
+    except Exception as e:
+        out["facetsJudged"], out["facetsWhy"] = False, "the facet compare raised %s" % type(e).__name__
+    return out
+
+
 def _fleet_covered_universe(out, ledger):
     """v3861 - how many of the board's own names the compare can judge. -> (count | None, note dict)
 
@@ -46862,7 +46889,7 @@ def _fleet_covered_universe(out, ledger):
             return None, {}
         cov = folded - 1 + FMX.FACET_VARIANTS
         say = ("%s is judged as one name here - your board counts its %d variants, and the cross-reference carries "
-               "one bit for all of them" % (FMX.FACET_NAME, FMX.FACET_VARIANTS))
+               "one bit for all of them" % (FMX.FACET_NAME, FMX.FACET_VARIANTS)) if not out.get("facetsJudged") else ""
         jewels = list(out.get("colossalNames") or [])
         if out.get("colossalJudged"):
             return cov + len(jewels), {"say": say}
@@ -47127,6 +47154,7 @@ def fleet_compare(machine, ledger="sets"):
             except Exception:
                 pass
         out = _fleet_merge_colossal(out, _cthem)
+        out = _fleet_merge_facets(out, _cthem)   # v3887 (#160) - each Rainbow Facet its own line
     out["machine"] = machine
     out["ledger"] = ledger
     out["who"] = str(them.get("nickname") or them.get("machine") or "")[:40]

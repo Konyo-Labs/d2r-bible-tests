@@ -1,0 +1,15 @@
+{
+ "_comment": "v3887 (#160) - the eight Rainbow Facet chronicle variants, in bible.html _CHRON_FACETS order - the names his and Dean's found logs store. Hand-kept: a law pins this list to the page (test_the_cross_reference_counts_each_rainbow_facet). sourceHash is the sha256 of the NUL-joined names, so the fingerprint moves only when the list does.",
+ "sourceHash": "b99179cadfca8b0cc2ec4cce80b8e7e15c29c4fbfc09e9a832c5cb834d300724",
+ "count": 8,
+ "names": [
+  "Rainbow Facet (Lightning, on Death) — level 47 Chain Lightning",
+  "Rainbow Facet (Cold, on Death) — level 37 Blizzard",
+  "Rainbow Facet (Fire, on Death) — level 31 Meteor",
+  "Rainbow Facet (Poison, on Death) — level 51 Poison Nova",
+  "Rainbow Facet (Lightning, on Level-up) — level 41 Nova",
+  "Rainbow Facet (Cold, on Level-up) — level 43 Frost Nova",
+  "Rainbow Facet (Fire, on Level-up) — level 29 Blaze",
+  "Rainbow Facet (Poison, on Level-up) — level 23 Venom"
+ ]
+}

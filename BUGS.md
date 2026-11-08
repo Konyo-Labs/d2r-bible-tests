@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3471 - DEAN'S 19TH MISSING ITEM HAD NO LINE: ONE "RAINBOW FACET" BIT STOOD FOR EIGHT VARIANTS (v3887, #160, his 11-08)
+"DEANS PROFILE currently is showing 384/403 so hes missing 19 but the cross reference ... adds up to 18.. so which item here isnt
+rendering?". MEASURED from Dean's uploaded found log: six of the eight Rainbow Facet chronicle variants (not Lightning on
+Level-up / Nova, not Poison on Death / Poison Nova) and no bare "Rainbow Facet". The uniques roster carries one "Rainbow Facet"
+bit, set only by the bare name, so Dean's read 0 while his board counted the two he lacks - one line for two items. The eight
+variants now travel in their own mask (fleet_mask.LEDGERS["facets"], tv/facet_roster.json pinned to the page's _CHRON_FACETS;
+the site's two allow-lists take it; ledger_authority pairs it with d2r_foundLog). When both sides published it, each variant
+is its own line and the single bit leaves the lists; an older peer keeps the single bit and the note naming it. GUARD:
+tv/test_the_cross_reference_counts_each_rainbow_facet.py (Dean's real case; 2 red-proofs RED).
+
 ### REG-3470 - HIS CAT'S EYE READ "THEY HAVE - YOU DO NOT": THE MASK MATCHED A CURLY AND A STRAIGHT APOSTROPHE AS TWO NAMES (v3887, his 11-08)
 The Fleet's uniques cross-reference with Dean listed "The Cat’s Eye" under THEY HAVE - YOU DO NOT; he owns it ("tallied ... in my
 console definitely sure in mygame"). MEASURED on a copy of his board's store: his found log holds "The Cat's Eye" with a straight
