@@ -46,9 +46,14 @@ def _code(text):
     return "\n".join(l for l in text.split("\n") if not l.lstrip().startswith("#"))
 
 
-def _yaml(name):
-    import yaml
-    return yaml.safe_load(_wf(name))
+def _block(text, head, nxt):
+    """the text between a top-level `head` line and the next top-level `nxt` line - both anchors must be there, once.
+    NO yaml: TestNoSuiteImportsSomethingCIDoesNotHave bans it outright (GitHub's agent suite does not install PyYAML -
+    v3881's round went red on exactly this). The workflow is read as text, every anchor counted."""
+    assert text.count("\n" + head + "\n") == 1, "%r is not one top-level line" % head
+    i = text.index("\n" + head + "\n") + len(head) + 2
+    j = text.index("\n" + nxt, i)
+    return text[i:j]
 
 
 CUT5 = [["safety", i, T, "cut at its bound", 5] for i in range(21, 27)]
@@ -100,30 +105,38 @@ class TheFinishPlan(unittest.TestCase):
 class TheWorkflowIsJoined(unittest.TestCase):
 
     def setUp(self):
-        self.y = _yaml("proof-keys-finish.yml")
-        self.on = self.y.get("on") or self.y.get(True)          # PyYAML reads a bare `on:` as True
-        self.job = self.y["jobs"]["finish"]
+        self.text = _code(_wf("proof-keys-finish.yml"))
+        self.on = _block(self.text, "on:", "permissions:")
+        self.job = self.text[self.text.index("\n  finish:\n"):]
 
     def test_it_listens_to_the_shards_workflow_by_its_exact_name(self):
         """the joint: a name that is not the shards workflow's own `name:` never fires, and nothing says so"""
-        shards = _yaml("proof-keys-shards.yml")["name"]
-        self.assertEqual(self.on["workflow_run"]["workflows"], [shards])
-        self.assertEqual(self.on["workflow_run"]["types"], ["completed"])
-        self.assertNotIn("push", self.on, "the finisher must not run on a push (it would run ci/ code)")
+        shards = re.search(r"^name: (.+)$", _wf("proof-keys-shards.yml"), re.M).group(1).strip()
+        wf = re.findall(r"^    workflows: \[(.*)\]$", self.on, re.M)
+        self.assertEqual(len(wf), 1, self.on)
+        self.assertEqual([w.strip().strip('"') for w in wf[0].split(",")], [shards])
+        self.assertEqual(re.findall(r"^    types: \[(.*)\]$", self.on, re.M), ["completed"])
+        self.assertIsNone(re.search(r"^  push:", self.on, re.M), "the finisher must not run on a push (it would run ci/ code)")
 
     def test_it_runs_only_on_a_red_round_and_at_most_twice(self):
-        cond = self.job["if"]
+        m = re.search(r"^    if: \$\{\{ (.+) \}\}$", self.job, re.M)
+        self.assertTrue(m, "the finish job has no one-line if:")
+        cond = m.group(1)
         self.assertIn("github.event.workflow_run.conclusion == 'failure'", cond)
         m = re.search(r"run_attempt <= (\d+)", cond)
         self.assertTrue(m, cond)
         self.assertEqual(int(m.group(1)), PS.FINISH_MAX_ATTEMPT, "the workflow and finish_plan bound attempts apart")
 
     def test_no_ci_code_runs_with_the_write_token(self):
-        self.assertEqual(self.y.get("permissions"), {"contents": "read"})
-        self.assertEqual(self.job["permissions"], {"contents": "read", "actions": "write"})
-        co = [s for s in self.job["steps"] if str(s.get("uses", "")).startswith("actions/checkout")]
+        self.assertEqual(_block(self.text, "permissions:", "jobs:").strip(), "contents: read")
+        jp = self.job[self.job.index("\n    permissions:\n"):self.job.index("\n    env:\n")]
+        self.assertEqual(sorted(l.strip() for l in jp.strip().split("\n")[1:]), ["actions: write", "contents: read"])
+        steps = self.job[self.job.index("\n    steps:\n"):]
+        co = [m.start() for m in re.finditer(r"^      - uses: actions/checkout", steps, re.M)]
         self.assertEqual(len(co), 1)
-        self.assertNotIn("with", co[0], "the finisher checks out the triggering ci/ commit - its code would hold actions: write")
+        nxt = steps.find("\n      - ", co[0] + 1)
+        self.assertNotIn("with:", steps[co[0]:nxt if nxt > 0 else None],
+                         "the finisher checks out the triggering ci/ commit - its code would hold actions: write")
 
     def test_it_reads_the_census_the_fan_in_keeps_and_acts_on_the_plan(self):
         fan_in = _code(_wf("proof-keys-shards.yml"))

@@ -4318,11 +4318,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
     };
     /* /v3859 (c) frame hooks */
     document.documentElement.classList.add('tvd-shadow-snap');
-    /* v3881 (#56/#104 STILL on GrokBot's v3878 pass: Dean's shadow lamp read "This machine could not read the Chrome login"
-       and Characters "This PC's saves") - this frame marked itself tvd-shadow-snap, while all twelve "am I a shadow"
-       checks (the d2jsp lamp, Characters' saves, the learned-quiet and reels refusals) ask for tvd-shadow, which only the
-       roster shadow ever set: here they all read "not a shadow". The snapshot shadow is a shadow, so it says so. */
-    document.documentElement.classList.add('tvd-shadow');
   })();
 </script>
 <script>

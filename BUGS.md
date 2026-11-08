@@ -331,7 +331,13 @@ on the answer (q.db): when the item's normal or perfect price is drawn below, th
 before. The call site is untouched (a red-proof anchors on it). Law: the price-search law +1 case (+ its PREMISE that the
 no-price line is unchanged) and +1 red-proof seen RED; d2jspReadLine's skipped clause reworded after the anchor census caught
 it duplicating an older red-proof's anchor line.
-### REG-3380 - IN THE FLEET EYES' SHADOW EVERY "AM I A SHADOW" CHECK READ FALSE: #56 AND #104 STILL (v3881)
+### REG-3380 - IN THE FLEET EYES' SHADOW EVERY "AM I A SHADOW" CHECK READ FALSE: #56 AND #104 STILL (v3881 - REVERTED, redone in v3882)
+**REVERTED before v3881 reached main (11-08 ~02:05).** GitHub's agent suite on 326bbd292 went red on 5 cases of the two
+shadow laws (test_shadow_mode_reads_their_console, test_shadow_mode_draws_their_console): the snapshot frame taking the
+roster shadow's `tvd-shadow` class changed its class list (the law: that class hides their reels), its Characters text
+("Their PC's saves") and its vault text, where those laws pin that the snapshot draws exactly the owner's console. Browser
+laws - GitHub's, so the Mac pre-flight never ran them. The defect below stands; its fix must be narrower (the lamp and the
+saves line recognise the snapshot shadow themselves, and the draws-the-same law names the ownership words it allows).
 GrokBot's v3878 pass: in Dean's shadow the D2JSP lamp read "This machine could not read the Chrome login" (never UNKNOWN, never
 "lives on that PC") and Characters said "This PC's saves: no .d2s on this PC" - both #56 and #104 had shadow branches. The
 shadow the Fleet's eyes open is the SNAPSHOT frame (booted by the `?tvd-shadow=` block), which marked the page
