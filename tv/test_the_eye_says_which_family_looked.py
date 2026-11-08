@@ -297,7 +297,12 @@ class TheEyeSaysWhichFamilyLooked(unittest.TestCase):
         self.assertIn("not installed on this machine", got["absent"],
                       "the absence does not say WHY, so a correct machine looks broken")
         self.assertIn("toggled off", got["off"])
-        self.assertIn("second lane ON", got["on"])
+        self.assertIn("second model family grok ON", got["on"])
+        # v3887 (REG-3477) - three eyes on a row: this one's hover says it is the FRAME READER, and never calls the other family
+        # a "second lane" beside the window eye (GrokBot: "if the second eye means console window up ... if it means the grok lane")
+        for k, h in got.items():
+            self.assertIn('title="frame reader: claude', h, "%s: the capture eye's hover does not say which eye it is" % k)
+            self.assertNotIn("second lane", h, "%s: 'second lane' again, beside the window eye he calls the second" % k)
         self.assertIn("UNKNOWN", got["unknown"],
                       "a lane nobody could ask renders as a settled state")
         self.assertNotEqual(got["absent"], got["off"],
@@ -415,6 +420,11 @@ class TheEyeSaysWhichFamilyLooked(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3887 (REG-3477) - the capture eye's hover no longer says it is the frame reader (three eyes, one unnamed)",
+     "file": "tv/control_ui.html",
+     "find": "escC('frame reader: ' + prov + ' \\u00b7 ' + when + stail)",
+     "replace": "escC(prov + ' \\u00b7 ' + when + stail)",
+     "matches": 1, "needs": "node"},
     {
         'why': 'The only place _second_eye_lane_state() names the FAILING state is the intentBlocked branch in tv/control_app.py — a lane the far end is permanently refusing (402 Payment Required, intentBlocked true). Rewriting that single occurrence to state="on" restores the exact v2770 defect: an installed, signed-in, switched-on but refused second lane is republished to THE FLEET as an ordinary healthy second eye, so failure wears health. It is not a comment, not a message string, and not a constant both sides of an agreement read — the render laws use hardcoded _CASES, so only the wire law moves.  MEASURED: untampered perl -e \'alarm 200; exec @ARGV\' python3 tv/test_the_eye_says_which_family_looked.py -> Ran; tampered (all 1) Same command after replacing all 1 occurrence -> Ran 13 tests, FAILED (failures=1): test_a; reddened law test_the_eye_says_which_family_looked.TheEyeSaysWhichFamilyLooked.test; ALONE python3 -m unittest test_the_eye_says_which_family_looked.TheEyeSaysWhichFamilyLooked.test_a_lane_that_is_ON_A.',
         'file': 'control_app.py',

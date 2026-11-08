@@ -30480,16 +30480,21 @@ function escC(s) {
            \u26a0 AND `failing` MUST NOT BE MISTAKEN FOR A DEGRADED-BUT-WORKING LANE: the \u00b2 stays,
            because a second lane does exist here, and a \u26a0 rides beside it so the difference
            survives being read in greyscale or by someone who cannot see the colour. */
+        /* v3887 (REG-3477, GrokBot's v3885 look: OLD PC ALT's red WINDOW eye sat beside this chip's hover "grok second lane ON",
+           and it could not tell whether the two described one thing) - since v3885 a row wears THREE eyes: the shadow reader,
+           the console window, and this one. Its hover now says which it is (the FRAME READER) and calls the other family a
+           "second model family", never a "second lane". */
+        var fam = ' \u00b7 second model family ' + (sec.provider || '(unnamed)');
         var stail;
-        if (sec.state === 'on')          stail = ' \u00b7 ' + (sec.provider || 'a second lane') + ' second lane ON';
-        else if (sec.state === 'failing') stail = ' \u00b7 ' + (sec.provider || 'a second lane') + ' second lane ON but FAILING'
+        if (sec.state === 'on')          stail = fam + ' ON';
+        else if (sec.state === 'failing') stail = fam + ' ON but FAILING'
                                                + (sec.why ? ' (' + sec.why + ')' : '');
-        else if (sec.state === 'off')    stail = ' \u00b7 ' + (sec.provider || 'a second lane') + ' available, toggled off';
-        else if (sec.state === 'unauthorised') stail = ' \u00b7 ' + (sec.provider || 'a second lane') + ' is installed here but NOT SIGNED IN'
+        else if (sec.state === 'off')    stail = fam + ' available, toggled off';
+        else if (sec.state === 'unauthorised') stail = fam + ' is installed here but NOT SIGNED IN'
                                                + (sec.why ? ' (' + sec.why + ')' : '');
         else if (sec.state === 'absent') stail = ' \u00b7 no second model family on this machine'
                                                + (sec.why ? ' (' + sec.why + ')' : '');
-        else                             stail = ' \u00b7 second lane UNKNOWN'
+        else                             stail = ' \u00b7 second model family UNKNOWN'
                                                + (sec.why ? ' (' + sec.why + ')' : '');
         var cls = 'fleet-eye' + (e.live ? ' fleet-eye-live' : ' fleet-eye-dark')
                 + (sec.state === 'on' ? ' fleet-eye-two' : '')
@@ -30497,7 +30502,7 @@ function escC(s) {
                 + (sec.state === 'unauthorised' ? ' fleet-eye-noauth' : '')
                 + (sec.state === 'absent' ? ' fleet-eye-absent' : '')
                 + (sec.state === 'unknown' || !sec.state ? ' fleet-eye-noask' : '');
-        return '<span class="' + cls + '" title="' + escC(prov + ' \u00b7 ' + when + stail) + '">'
+        return '<span class="' + cls + '" title="' + escC('frame reader: ' + prov + ' \u00b7 ' + when + stail) + '">'
              + '\uD83D\uDC41'
              + (sec.state === 'on' || sec.state === 'failing' ? '\u00b2' : '')
              + (sec.state === 'failing' ? '\u26a0' : '')

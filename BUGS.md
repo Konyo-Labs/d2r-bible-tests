@@ -112,6 +112,13 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3477 - A FLEET ROW WEARS THREE EYES AND THE FRAME READER'S HOVER NEVER SAID WHICH IT WAS (v3887, GrokBot's v3885 look)
+GrokBot, v3885 (#230): "OLD PC ALT's red second eye sits beside the hover 'grok second lane ON'. If the second eye means console window
+up, that's consistent; if it means the grok lane, it contradicts." Since v3885 a row carries the shadow-reader eye, the console-window
+eye (the one called the second) and the frame-reader eye; the last one's hover read "claude · last read 5m ago · grok second lane ON" -
+no name, and a "second" beside the eye that IS the second. It now opens "frame reader:" and says "second model family grok ON" (every
+state, never "second lane"). GUARD: test_the_eye_says_which_family_looked.test_the_six_states_render_DIFFERENTLY (red-proof RED).
+
 ### REG-3476 - THE FLEET'S HEADER STRANDED A MIDDOT AT A WRAPPED LINE'S END: "6 PCs: 3 blocked · 2 offline ·" / "1 ready" (v3887)
 Seen on the 1512 render of his live Fleet payload. v3884 glued each count to its word with a no-break space; the separators were still
 glyphs in one joined string, so a wrap left one at a line's end - REG-1377's rule (a separator that wraps is orphaned at one end or the
