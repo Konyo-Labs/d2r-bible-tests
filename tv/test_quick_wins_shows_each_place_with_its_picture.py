@@ -157,7 +157,7 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         cannot measure marked so"""
         import math
         g = self.o["grid"]
-        also = g[g.index('<div class="qw-also">'):]
+        also = _secs(g)[1]   # v3887 (#157) - the per-kill places past the bosses are the Others list
         rows = re.findall(r'<div class="qw-row qw-row-also"[^>]*>(.*?)</div>', also)
         self.assertEqual(len(rows), 2, "PREMISE: the fixture's two per-kill places did not draw: %s" % also[:300])
         # #125 + v3886 (#150) - fewest for a 50% chance first, in silospen's All list: Coldcrow (213) 1st, the Cow King
@@ -197,8 +197,8 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         """#108 (his 11-07: "for banished and for pits and for spike freind ... either .gif or a HD extracted art thats related
         and properly matched") - The Banished's row draws the Vampire family's own sprite (The Arreat Summit), not a
         Catacombs tile"""
-        # v3887 (#157) - a random pack is in Others and, by its odds, in Combined: one row in each, never in Bosses
-        _b, _o, _c = _secs(self.o["grid"])
+        # v3887 (#157) - a random pack is in Others, never in Bosses
+        _b, _o = _secs(self.o["grid"])
         self.assertNotIn("Normal The Banished", _b, "a random pack sat in the Bosses list")
         row = [r for r in _o.split('<div class="qw-row') if "Normal The Banished" in r]
         self.assertEqual(len(row), 1, "the Banished row is not in the Others list")
@@ -265,8 +265,10 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
     def test_the_boss_runs_are_the_best_five(self):
         """v3884 (his 11-08: "bosses and other places top 5") - six boss runs on record draw the best five, in order"""
         g = self.o["gridSixBoss"]
-        sec1 = g[:g.index('<div class="qw-also">')]
+        sec1, oth = _secs(g)
         labels = re.findall(r"Hell Boss(\d)", sec1)
+        # v3887 (#157, his 11-09 "the first 5 that have not been used for bosses") - the sixth boss is not dropped: it heads Others
+        self.assertEqual(re.findall(r"Hell Boss(\d)", oth)[:1], ["6"], "the boss past the five is lost, or Others repeats one")
         self.assertEqual(sorted(set(labels), key=labels.index), ["1", "2", "3", "4", "5"],
                          "the boss runs are not the best five: %s" % labels)
         ranks = re.findall(r'<span class="qw-rank">([^<]*)</span>', sec1)
@@ -275,13 +277,11 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
 
     def test_a_ranked_row_is_a_tile_a_place_and_four_captioned_numbers(self):
         g = self.o["gridNoAlso"]
-        # v3887 (#157) - of the four places, the three that are one kill a run are the Combined list's rows (The Pit, an area
-        # run, is in no silospen list), and Bosses + Others hold the same three, each in its own kind
+        # v3887 (#157) - of the four places, the three that are one kill a run are drawn once each across Bosses + Others (The Pit,
+        # an area run, is in no silospen list)
         rx = r'<div class="qw-row(?: qw-best| qw-row-area)?">(.*?)</div>'
-        b, o, c = _secs(g)
-        rows = re.findall(rx, c)
-        self.assertEqual(len(rows), 3, "the three per-kill places did not make three Combined rows: %s" % g[:300])
-        self.assertEqual(len(re.findall(rx, b)) + len(re.findall(rx, o)), 3, "Bosses + Others do not hold the same three places")
+        b, o = _secs(g)
+        self.assertEqual(len(re.findall(rx, b)) + len(re.findall(rx, o)), 3, "Bosses + Others do not hold the three places once each")
         rows = re.findall(rx, g)
         self.assertIn('<div class="qw-row qw-best">', g, "the best place is not marked")
         for row in rows:
@@ -299,19 +299,19 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         and no area run in it. Section 2 is Monster Type All, ONE list 1st-5th by the first column (runs or kills for a 50%
         chance), fewest first, the five lowest of every per-kill place - bosses included"""
         g = self.o["grid"]
-        sec1, secO, sec2 = _secs(g)   # v3887 (#157) - Bosses | Others | Combined (silospen's All, what section 2 was)
+        sec1, sec2 = _secs(g)   # v3887 (#157) - Bosses | Others (silospen's All without the bosses above)
         self.assertIn("Normal Andariel", sec1, "PREMISE: the fixture's boss did not draw in the Bosses list")
         for nm in ("Normal Coldcrow", "Normal Pitspawn Fouldog", "Normal The Pit", "Normal The Cow King"):
             self.assertNotIn(nm, sec1, "%s is not a boss in silospen's list, and sat in the Bosses list" % nm)
-        order = [nm for nm in ("Normal Coldcrow", "Normal The Cow King", "Normal The Banished", "Normal Andariel",
+        order = [nm for nm in ("Normal Coldcrow", "Normal The Cow King", "Normal The Banished",
                                "Normal Pitspawn Fouldog") if nm in sec2]
-        self.assertEqual(order, ["Normal Coldcrow", "Normal The Cow King", "Normal The Banished", "Normal Andariel",
-                                 "Normal Pitspawn Fouldog"], "the All list is not every per-kill place, fewest first")
+        self.assertEqual(order, ["Normal Coldcrow", "Normal The Cow King", "Normal The Banished",
+                                 "Normal Pitspawn Fouldog"], "Others is not the All list's per-kill places past the bosses, fewest first")
         self.assertEqual([sec2.index(nm) for nm in order], sorted(sec2.index(nm) for nm in order),
                          "the All list is out of order")
         self.assertNotIn("Normal The Pit", sec2, "an area run sat in the All list")
         six = self.o["gridSix"]
-        sec2six = _secs(six)[2]
+        sec2six = _secs(six)[1]
         self.assertEqual(len(re.findall(r'<div class="qw-row qw-row-(?:area|also)"', sec2six)), 5,
                          "the All list holds more or fewer than five places")
         ranks = re.findall(r'<span class="qw-rank">(\d)(?:st|nd|rd|th) · per (run|kill)', sec2six)
@@ -323,26 +323,30 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         nob = self.o["gridNoBoss"]
         self.assertIn("No boss drops it", _secs(nob)[0], "an empty Bosses list said nothing")
 
-    def test_others_is_every_monster_that_is_not_a_boss(self):
-        """v3887 (#157, his 11-08: "for the others same thing like bosses top 5.. i dont want to mix things up.. we can have a
-        combined from both of them") - three lists, never mixed: Others holds no boss, the Combined list holds both, each 1st-5th"""
-        b, o, c = _secs(self.o["grid"])
+    def test_others_is_the_all_list_without_the_bosses_above(self):
+        """* v3887 (#157; his 11-09: "no reason to have duplicates.. the ALL should be the others", "just take the first 5 that have
+        not been used for bosses for that same item based on ODDS") - two lists, no place in both"""
+        b, o = _secs(self.o["grid"])
         for nm in ("Normal Coldcrow", "Normal The Cow King", "Normal The Banished", "Normal Pitspawn Fouldog"):
-            self.assertIn(nm, o, "%s is not a boss and is missing from Others" % nm)
-        self.assertNotIn("Normal Andariel", o, "a boss sat in the Others list")
-        self.assertIn("Normal Andariel", c, "the Combined list lost the boss that ranks in its five")
+            self.assertIn(nm, o, "%s is not in the Bosses list and is missing from Others" % nm)
+        self.assertIn("Normal Andariel", b)
+        self.assertNotIn("Normal Andariel", o, "a boss the Bosses list shows is drawn again in Others - a duplicate")
         heads = re.findall(r'<div class="qw-(?:grid|also)-h">([^<]*)</div>', self.o["grid"])
-        self.assertEqual([h.split(" ")[0] for h in heads], ["Bosses", "Others", "Combined"], "the three lists are not named: %r" % heads)
+        self.assertEqual([h.split(" ")[0] for h in heads], ["Bosses", "Others"], "the lists are not Bosses then Others: %r" % heads)
+        names = lambda sec: re.findall(r'<b class="qw-name"[^>]*>([^<]*)</b>', sec)
+        for g in (self.o["grid"], self.o["gridSix"], self.o["gridSixBoss"]):
+            bb, oo = _secs(g)
+            self.assertEqual(set(names(bb)) & set(names(oo)), set(), "a place is drawn in both lists")
         self.assertEqual(len(re.findall(r'<div class="qw-row', _secs(self.o["gridSix"])[1])), 5, "Others is not five rows")
 
     def test_the_per_kill_places_are_their_own_section(self):
         g = self.o["grid"]
-        i = g.index('<div class="qw-also">')   # v3887 (#157) - the Combined list (silospen's All); Others sits before it
+        i = g.index('<div class="qw-also qw-others">')   # v3887 (#157) - Others: silospen's All without the bosses above
         self.assertLess(g.index('<div class="qw-grid">'), i)
         # REG-3305 - the heading itself, both ends from the markup (a fixed 200-character window was a guess about its
         # length, and test_a_source_window_must_reach_its_subject counted it: 45 over its ceiling of 44)
         h = g.index('<div class="qw-also-h">', i)
-        self.assertIn("Monster Type: All", g[h:g.index("</div>", h)], "section 2 does not say it is silospen's All list")
+        self.assertIn("Monster Type: All without the bosses above", g[h:g.index("</div>", h)], "Others does not say what it is")
         self.assertIn("fewest kills for a 50% chance first", g[h:g.index("</div>", h)])
         h1 = g.index('<div class="qw-grid-h">')
         self.assertLess(h1, g.index('<div class="qw-grid">'))
@@ -355,9 +359,9 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
 
 
 def _secs(g):
-    """v3887 (#157) - the card's three lists, each cut by its own heading: Bosses | Others | Combined (silospen's All)."""
-    o, c = g.index('<div class="qw-also qw-others">'), g.index('<div class="qw-also"><div class="qw-also-h">Combined')
-    return g[:o], g[o:c], g[c:]
+    """v3887 (#157) - the card's two lists, cut at the Others heading: Bosses | Others (silospen's All without the bosses above)."""
+    o = g.index('<div class="qw-also qw-others">')
+    return g[:o], g[o:]
 
 
 class EveryMissingUniqueIsAQuickWin(unittest.TestCase):
@@ -656,7 +660,7 @@ class TheDoctorWatchesThePictures(unittest.TestCase):
 RED_PROOF = [
     {"why": "v3887 (#157) - the Others list mixes the bosses back in (his 'i dont want to mix things up')",
      "file": "bible.html",
-     "find": "             others: rows.filter(function(r){ return r.kind !== 'boss'; }).slice(0, 5), all: rows.slice(0, 5) };",
+     "find": "             others: rows.filter(function(r){ return _boss.indexOf(r) < 0; }).slice(0, 5), all: rows.slice(0, 5) };",
      "replace": "             others: rows.slice(0, 5), all: rows.slice(0, 5) };",
      "matches": 1, "needs": "node"},
     {"why": "v3886 (#150) - an area run (the Cow Level, the Pit - the page's own per-run estimate) draws in silospen's lists again",
@@ -724,10 +728,10 @@ RED_PROOF = [
      "find": "    return { boss: rows.filter(function(r){ return r.kind === 'boss'; }).slice(0, 5),\n",
      "replace": "    return { boss: rows.filter(function(r){ return r.kind !== 'area'; }).slice(0, 5),\n",
      "matches": 1, "needs": "node"},
-    {"why": "#101 - the All list is not capped at five again",
+    {"why": "#101 - the Others list (silospen's All past the bosses) is not capped at five again",
      "file": "bible.html",
-     "find": "             others: rows.filter(function(r){ return r.kind !== 'boss'; }).slice(0, 5), all: rows.slice(0, 5) };",
-     "replace": "             others: rows.filter(function(r){ return r.kind !== 'boss'; }).slice(0, 5), all: rows };",
+     "find": "             others: rows.filter(function(r){ return _boss.indexOf(r) < 0; }).slice(0, 5), all: rows.slice(0, 5) };",
+     "replace": "             others: rows.filter(function(r){ return _boss.indexOf(r) < 0; }).slice(0, 9), all: rows.slice(0, 5) };",
      "matches": 1, "needs": "node"},
     {"why": "#125 - the lists are not ranked fewest-first again (his 'top 1 ... lowest')",
      "file": "bible.html",

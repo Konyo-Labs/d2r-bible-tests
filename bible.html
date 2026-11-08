@@ -70981,11 +70981,14 @@ function renderJournal(){
       return { a: a, runs: _qwKillsN(a.chance), hours: null, label: a.who, kind: a.kind === 'once' ? 'superunique' : a.kind };
     })).filter(function(r){ return r.runs != null && isFinite(r.runs); });
     rows = _qwRank(rows);
-    /* v3887 (#157, his 11-08: "for the others same thing like bosses top 5.. i dont want to mix things up.. we can have a combined
-       from both of them") - THREE LISTS, NEVER MIXED: Bosses (silospen's Monster Type Boss), Others (every row that is not a boss
-       - super-uniques, the Cow King, random packs), and the Combined top 5 (Monster Type All). One ranking feeds all three. */
-    return { boss: rows.filter(function(r){ return r.kind === 'boss'; }).slice(0, 5),
-             others: rows.filter(function(r){ return r.kind !== 'boss'; }).slice(0, 5), all: rows.slice(0, 5) };
+    /* v3887 (#157; his 11-09 ~00:15 on Bane Ash: "no reason to have duplicates.. the ALL should be the others so the bosses on top
+       1 to 5 and the others should be from 1 to 5", then "just take the first 5 that have not been used for bosses for that same
+       item based on ODDS") - TWO LISTS, NO PLACE IN BOTH: Bosses (silospen's Monster Type Boss, 1st-5th) and Others - silospen's
+       Monster Type All with the five bosses above taken out, the next five by the same odds ranking (fewest kills / runs for a
+       50% chance first). `all` stays the ranking's own top five for Best runs (#155); it is never drawn. */
+    var _boss = rows.filter(function(r){ return r.kind === 'boss'; }).slice(0, 5);
+    return { boss: _boss,
+             others: rows.filter(function(r){ return _boss.indexOf(r) < 0; }).slice(0, 5), all: rows.slice(0, 5) };
   }
   window._qwLists = _qwLists;
   /* v3886 (#150) - WHICH OF SILOSPEN'S MONSTER TYPES A FARM IS. Its Boss list holds the act bosses, Nihlathak, Radament, the
@@ -71206,15 +71209,11 @@ function renderJournal(){
     var sec1 = bosses.length ? draw(bosses, true)
       : '<div class="qw-none">No boss drops it - silospen\u2019s Boss list is empty for this item; its places are below.</div>';
     var secO = others.length ? draw(others, false)
-      : '<div class="qw-none">Only bosses drop it - no other monster on record.</div>';
-    var sec2 = all.length ? draw(all, false)
-      : '<div class="qw-none">No place on record drops it.</div>';
+      : '<div class="qw-none">Nothing past the bosses above drops it - no other monster on record.</div>';
     return '<div class="qw-grid-h">Bosses \u00b7 1st-5th \u00b7 silospen\u2019s Monster Type: Boss, Terror Zone on and off</div>'
       + '<div class="qw-grid">' + sec1 + '</div>'
-      + '<div class="qw-also qw-others"><div class="qw-also-h">Others \u00b7 1st-5th \u00b7 every monster that is not a boss - super-uniques, the Cow King, random packs - Terror Zone on and off</div>'
-      + secO + '</div>'
-      + '<div class="qw-also"><div class="qw-also-h">Combined \u00b7 1st-5th \u00b7 silospen\u2019s Monster Type: All - bosses and others together, Terror Zone on and off, fewest kills for a 50% chance first</div>'
-      + sec2 + '</div>';
+      + '<div class="qw-also qw-others"><div class="qw-also-h">Others \u00b7 1st-5th \u00b7 silospen\u2019s Monster Type: All without the bosses above - super-uniques, the Cow King, random packs - Terror Zone on and off, fewest kills for a 50% chance first</div>'
+      + secO + '</div>';
   }
   window._qwGridHtml = _qwGridHtml;
   /* REG-3316 (#90, his 11-06 ask: "each of the 3 ancients can drop 2 jewels specifically ... i want to know how and which
