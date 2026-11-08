@@ -112,6 +112,20 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3418 - THE WORK ALT'S LOCKS STAYED SHUT ~83 MIN ON TWO BLIND VERDICTS v3882 HAD ALREADY FIXED: THE PROVER WAITED FOR THE IMPORT (v3883)
+MEASURED 11-08 ~09:40 IST on the work ALT (SSH, read-only), v3882 pulled at 09:03: all four locks shut by "2 instrument(s)
+are BLIND (test_a_deaf_console_relaunches_itself, test_a_price_refresh_pauses_while_checks_run)", filed by its v3881 census;
+GitHub's import of v3882's proofs keying at 0.55 a second (2,739 left = ~83 min, one core at 95%); and the prover standing
+aside for all of it (REG-3408: a running import makes the prover give way). Both laws, run by hand on that PC in a separate
+worktree at v3882's exact bytes (7b3590ef), went RED on 7 of 7 and 8 of 8 sabotages - the deaf console's [6], Windows'
+10053, BLIND on v3881, is RED on v3882 - so the BLIND was stale and only a proof could clear it. And the import could not:
+self_arming.owed_guard_rank returns {} while a BLIND is recorded, so the import kept its by-name order. An owed BLIND is
+proved first and ALONE (REG-1673: a slice of one law), so now the prover's judge (_sp_prove_yield_here) does not give way to
+an import while the census records a BLIND it still owes (_sp_blind_owed): the BLIND-alone slice runs beside the import, and
+the next slice yields as before. A BLIND already judged on these bytes owes nothing and waits; an unreadable census waits
+(the import keeps the cores, as before); his game, a sweep and a push still win. The card no longer says "gives way to the
+import" while it proves the BLIND. Law: test_a_proof_gives_way_to_githubs_import (+5 cases), red-proofs PROVEN (7 of 7).
+
 ### REG-3417 - A CLOSED FLEET ROW STILL RAN 3-5 LINES: ITS "ONE LINE" WRAPPED MID-PHRASE AND THE NAME WRAPPED AT 1024 (v3883, #116)
 GrokBot's v3881 look (#230 6717686258, card 1): STILL. MEASURED again on his live Fleet (guest Chrome, GETs only, Mac fonts):
 at 1512 the two ALT rows were 68px - "WOUNDED 2 gates blind +2 ·" / "importing proofs ~15 min"; at 1024 (a 207px column)

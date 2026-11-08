@@ -23970,10 +23970,34 @@ def _sp_prove_yield_here():
     heart2 --prove of 15:42 ran beside the 16:39 import at up to 237% CPU, and at 23:50 the import crawled at ~19 proofs a
     minute. With his game up (the proof paused) the same kind of import ran 00:28-00:39 at ~330 a minute. So a running
     proof yields to the import within one guard tick, and the after-import tick (REG-3195) resumes it on what is still
-    owed. The prover's own judge, not _sp_yield_here's: the d2jsp price refresh asks that one and has no reason to wait."""
-    if _PROOF_RELEASE.get("running") is True:
+    owed. The prover's own judge, not _sp_yield_here's: the d2jsp price refresh asks that one and has no reason to wait.
+
+    v3883 - EXCEPT A BLIND THIS PC STILL OWES. One BLIND record shuts every lock (self_arming), and the planner already makes
+    an owed BLIND a slice of its own, alone (REG-1673) - one law. MEASURED 11-08 ~09:40 on the work ALT, v3882 pulled at 09:03:
+    all four locks shut by 2 BLIND verdicts its v3881 census filed (the deaf-console law, the price-refresh law), the import of
+    v3882's proofs at 0.55 a second (~83 min left), and the prover standing aside the whole time - while both laws, run by hand
+    on that PC at v3882's bytes, went RED on all 7 + 8 of their sabotages (the BLIND was v3881's, fixed by v3882). So while the
+    census records a BLIND that is owed, an import does not make the prover give way: the BLIND-alone slice runs beside it, and
+    the next slice (no BLIND) yields as before. His game, a sweep and a push still win (_sp_yield_here). A census that cannot be
+    read is no BLIND here: the import keeps the cores, as before. [[heart-first]]"""
+    if _PROOF_RELEASE.get("running") is True and not _sp_blind_owed():
         return True
     return _sp_yield_here()
+
+
+def _sp_blind_owed():
+    """v3883 - this PC's census records a BLIND that it still owes a proof of (self_arming._owed_and_blind: the census
+    against the gate files on disk now, memoised). -> True | False. Anything unreadable is False (the import keeps the
+    cores - the behaviour before), and a BLIND this PC has already judged on these bytes owes nothing: re-running it would
+    only say BLIND again."""
+    try:
+        import self_arming as _sa
+        owed, blind, _files = _sa._owed_and_blind()
+        if not owed or not blind:
+            return False
+        return bool(set(str(b) for b in blind) & set(str(o) for o in owed))
+    except Exception:
+        return False
 
 
 def _self_prove_tick():
@@ -24000,7 +24024,8 @@ def _self_prove_tick():
             r = dict(r, standAside="a sweep is reading his reels - the proof waits for it (REG-2192)")
         if _a_push_is_grading() and not _sp_proof_playing_here():   # v3861 - and a push, by its name
             r = dict(r, standAside=PUSH_STAND_ASIDE)
-        if _PROOF_RELEASE.get("running") is True and not _sp_proof_playing_here():   # #123 - and an import, by its name
+        if (_PROOF_RELEASE.get("running") is True and not _sp_proof_playing_here()   # #123 - and an import, by its name
+                and not _sp_blind_owed()):                                         # v3883 - an owed BLIND does not wait
             r = dict(r, standAside=IMPORT_STAND_ASIDE)
     except Exception as e:
         r = {"on": None, "worked": None, "lastTs": None, "owed": None, "key": "raised",
@@ -24261,7 +24286,8 @@ def _self_prove_guard():
                 r = dict(r, standAside="a sweep is reading his reels - the proof waits for it (REG-2192)")
             if _a_push_is_grading() and not _sp_proof_playing_here():
                 r = dict(r, standAside=PUSH_STAND_ASIDE)
-            if _PROOF_RELEASE.get("running") is True and not _sp_proof_playing_here():   # #123
+            if (_PROOF_RELEASE.get("running") is True and not _sp_proof_playing_here()   # #123
+                    and not _sp_blind_owed()):                                         # v3883 - an owed BLIND does not wait
                 r = dict(r, standAside=IMPORT_STAND_ASIDE)
     except Exception as e:
         r = {"on": None, "worked": None, "lastTs": None, "owed": None, "key": "raised",
