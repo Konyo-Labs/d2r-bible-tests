@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3423 - BOTH ALTS' PROVERS RECORDED "HE STARTED PLAYING" WITH NO GAME RUNNING: IT WAS GITHUB'S IMPORT (v3883)
+MEASURED 11-08 ~09:47 IST (SSH, read-only): tasklist found no D2R.exe on either ALT, and self_prove.json said
+lastStoodAsideWhy "he started playing - a proof never runs beside his game" at 09:23:08 (OLD ALT) and 09:38:57 (work ALT),
+no tick since. The console's judge (_sp_prove_yield_here) says yes for his game, a sweep, a push and (REG-3408) GitHub's
+import, but hands the prover only the bool, and self_prove.stand_aside words every yes as the game. The card was right
+(the console overlays IMPORT_STAND_ASIDE) and the prover's own record - what a doctor, GrokBot or I read on the PC - was
+wrong. Now the judge carries its reason (.why: the import, the sweep, the push; None for the game), guard() and _tick()
+read it right after the call and stand_aside() writes it; the game keeps its words. Law:
+test_a_proof_gives_way_to_githubs_import (+3 cases), red-proofs PROVEN (4 new; the judge's anchor re-pointed).
+
 ### REG-3422 - THE FLEET SPOKE DIABLO FOR MACHINE STATE: "IN TOWN" FOR OFFLINE (v3883, his 11-08 ruling)
 His words 11-08 ~09:46, on his live Fleet (Dean's row "IN TOWN off since 06:38", the click box "IN TOWN -> offline since
 06:38"): "intown is not proper wording or the correct language for offline.. simply write OFFLINE and others like this

@@ -479,10 +479,13 @@ def _memory_stall(mem, census, playing):
     mem.update(stalledGates=list(dict.fromkeys(prior + gates)), stalledFor=fp, stalledWhy="memory")
 
 
-def stand_aside(playing, free):
-    """Must a RUNNING proof stop now? -> (bool, why). Pure. UNKNOWN never stops it: it already runs below him."""
+def stand_aside(playing, free, why=None):
+    """Must a RUNNING proof stop now? -> (bool, why). Pure. UNKNOWN never stops it: it already runs below him.
+    v3883 - `why` is the judge's own reason (_play_why): MEASURED 11-08 on both ALTs, no D2R.exe running and the record said
+    "he started playing" at 09:23 and 09:38 - the console's judge had said yes for GitHub's import. The game's words only
+    when the judge gave none."""
     if playing is True:
-        return True, "he started playing - a proof never runs beside his game"
+        return True, (why or "he started playing - a proof never runs beside his game")
     _floor = MIN_FREE_MB_WHILE_RUNNING_IDLE if playing is False else MIN_FREE_MB_WHILE_RUNNING   # REG-1715
     try:
         if free is not None and float(free) < _floor:
@@ -1474,7 +1477,7 @@ def _hold_awake(pid, real=True):
 
 
 def tick(now_s=None, busy=None, tree=None, census=None, path=None, spawn_fn=None, env=None,
-         playing=None, free=None, kill_fn=None, sandbox=None, takes_only=False, lock_rank=None):
+         playing=None, free=None, kill_fn=None, sandbox=None, takes_only=False, lock_rank=None, play_why=None):
     """One pass of the lane. NEVER raises - it runs inside the rescue loop that also watches whether the
     console can still answer its own port. -> the lane's status in the shared vocabulary.
     `playing` / `free` are callables or values (REG-1502); None asks this machine. #103-C - `lock_rank` (a callable,
@@ -1482,7 +1485,7 @@ def tick(now_s=None, busy=None, tree=None, census=None, path=None, spawn_fn=None
     itself, so a census handed in is never ranked against this PC's real one."""
     try:
         return _tick(now_s, busy, tree, census, path, spawn_fn, env, playing, free, kill_fn, sandbox, takes_only,
-                     lock_rank)
+                     lock_rank, play_why)
     except Exception as e:
         return {"on": enabled(env), "worked": None, "lastTs": None, "owed": None, "key": "raised",
                 "say": "the self-prove tick raised %s - nothing was started" % type(e).__name__}
@@ -1523,11 +1526,12 @@ def guard(now_s=None, path=None, playing=None, free=None, kill_fn=None, _tick=No
         if not alive:
             return (_tick or tick)(now_s=now_s, path=path, kill_fn=kill_fn, busy=busy, playing=playing, free=free)
         play_now = _ask(playing, proof_playing_state)
+        play_why = _play_why(playing)
         free_now = _ask(free, free_mb)
-        aside, _why = stand_aside(play_now, free_now)
+        aside, _why = stand_aside(play_now, free_now, why=play_why)
         if not aside:
             return None
-        return (_tick or tick)(now_s=now_s, path=path, playing=play_now, free=free_now, kill_fn=kill_fn)
+        return (_tick or tick)(now_s=now_s, path=path, playing=play_now, free=free_now, kill_fn=kill_fn, play_why=play_why)
     except Exception as e:
         return {"on": None, "worked": None, "lastTs": None, "owed": None, "key": "raised",
                 "say": "the self-prove guard raised %s - the tick will ask again" % type(e).__name__}
@@ -1581,6 +1585,13 @@ def _int(v):
         return 0
 
 
+def _play_why(v):
+    """v3883 - the reason a callable stand-aside judge gave for its last yes (its `.why`, set on each call) -> str | None.
+    None: no reason given, so the yes is the game's (the words before v3883)."""
+    w = getattr(v, "why", None) if callable(v) else None
+    return w if isinstance(w, str) and w.strip() else None
+
+
 def _ask(v, probe):
     try:
         return (v() if callable(v) else v) if v is not None else probe()
@@ -1597,11 +1608,12 @@ def _forget(mem):
 
 
 def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=None, kill_fn=None, sandbox=None,
-          takes_only=False, lock_rank=None):
+          takes_only=False, lock_rank=None, play_why=None):
     _rank_here = lock_rank is not None or census is None     # #103-C - the rank speaks only for the census it ranks
     now_s = time.time() if now_s is None else now_s
     now_ms = int(now_s * 1000)
     play_now = _ask(playing, proof_playing_state)
+    play_why = play_why or _play_why(playing)              # v3883 - the judge's own reason, read right after its call
     free_now = _ask(free, free_mb)
     mem = load(path)
     if mem.get("unreadable"):
@@ -1635,7 +1647,7 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
     if finishing and not mem.get("finishingSince"):
         mem.update(worked=_int(mem.get("worked")) + 1, lastTs=now_ms, lastOk=census.get("why"),
                    finishingSince=now_ms)
-    aside, aside_why = stand_aside(play_now, free_now) if running else (False, "")
+    aside, aside_why = stand_aside(play_now, free_now, why=play_why) if running else (False, "")
     if aside and finishing and now_ms - _int(mem.get("finishingSince")) < FINISH_GRACE_S * 1000:
         aside, aside_why = False, ""                       # finishing - still running a tick later is a hang
     # REG-1674 — A PROVER THAT HAS GONE SILENT IS ENDED THROUGH THE SAME DOOR, AND SAYS SO. His ask, 2026-10-01, after

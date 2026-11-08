@@ -23950,12 +23950,15 @@ def _sp_yield_here():
     2026-10-13: a 35-minute `heart2 --prove` pinned the cores a 0%-stuck sweep was waiting for. REG-1905's
     start-anyway under genuine (non-sweep) busy is untouched - a sweep only DELAYS the proof, between
     sweeps it still proves. A new proof does not start while either is true; a running one yields in 10 s."""
+    _sp_yield_here.why = None       # v3883 - its reason for a yes, read by the prover's record (None: the game)
     try:
         if _a_sweep_is_reading():
+            _sp_yield_here.why = "a sweep is reading his reels - the proof waits for it (REG-2192)"
             return True
     except Exception:
         pass
     if _a_push_is_grading():        # v3861 - a push grading on this PC goes first; the proof waits for it
+        _sp_yield_here.why = PUSH_STAND_ASIDE
         return True
     return _sp_proof_playing_here()     # v3862 - the local game only (his ruling: prove beside cloud)
 
@@ -23981,8 +23984,11 @@ def _sp_prove_yield_here():
     the next slice (no BLIND) yields as before. His game, a sweep and a push still win (_sp_yield_here). A census that cannot be
     read is no BLIND here: the import keeps the cores, as before. [[heart-first]]"""
     if _PROOF_RELEASE.get("running") is True and not _sp_blind_owed():
+        _sp_prove_yield_here.why = IMPORT_STAND_ASIDE     # v3883 - the prover's record says the import, never "playing"
         return True
-    return _sp_yield_here()
+    y = _sp_yield_here()
+    _sp_prove_yield_here.why = getattr(_sp_yield_here, "why", None)
+    return y
 
 
 def _sp_blind_owed():

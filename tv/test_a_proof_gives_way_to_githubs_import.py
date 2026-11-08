@@ -96,6 +96,58 @@ class AProofGivesWayToGithubsImport(unittest.TestCase):
         self.assertEqual(CA._self_prove_tick().get("standAside"), CA.IMPORT_STAND_ASIDE)
 
 
+class TheProversRecordSaysWhatItGaveWayTo(AProofGivesWayToGithubsImport):
+    """v3883 - MEASURED 11-08 on both ALTs: no D2R.exe running, and self_prove's record said "he started playing" at 09:23 and
+    09:38 - the console's judge had said yes for GitHub's import. The judge carries its reason (.why); the record writes it."""
+
+    def test_an_import_is_recorded_as_the_import_never_as_playing(self):
+        """* THE POINT"""
+        self._importing(True)
+        self.assertTrue(CA._sp_prove_yield_here())
+        self.assertEqual(SP.stand_aside(True, 99999, why=SP._play_why(CA._sp_prove_yield_here)),
+                         (True, CA.IMPORT_STAND_ASIDE), "an import was recorded as 'he started playing'")
+
+    def test_the_guard_hands_the_reason_to_the_tick_that_books_it(self):
+        self._importing(True)
+        seen = {}
+        keep = (SP.load, SP.identity)
+        try:
+            SP.load = lambda path=None: {"pid": 4242, "pidBirth": 1}
+            SP.identity = lambda pid, birth: True
+            SP.guard(playing=CA._sp_prove_yield_here, free=99999, _tick=lambda **kw: seen.update(kw) or {"key": "stood-aside"})
+        finally:
+            SP.load, SP.identity = keep
+        self.assertEqual(seen.get("play_why"), CA.IMPORT_STAND_ASIDE, "the tick that books the stand-aside never heard why")
+
+    def test_a_sweep_and_a_push_say_their_own_names_and_the_game_keeps_its_words(self):
+        self._importing(False)
+        CA._a_sweep_is_reading = lambda: True
+        self.assertTrue(CA._sp_prove_yield_here())
+        self.assertIn("a sweep is reading", SP._play_why(CA._sp_prove_yield_here) or "")
+        CA._a_sweep_is_reading = lambda: False
+        keep = CA._a_push_is_grading
+        try:
+            CA._a_push_is_grading = lambda: True
+            self.assertTrue(CA._sp_prove_yield_here())
+            self.assertEqual(SP._play_why(CA._sp_prove_yield_here), CA.PUSH_STAND_ASIDE)
+            CA._a_push_is_grading = lambda: False
+            _pp = CA._sp_proof_playing_here
+            CA._sp_proof_playing_here = lambda: True
+            try:
+                self.assertTrue(CA._sp_prove_yield_here())
+                self.assertIsNone(SP._play_why(CA._sp_prove_yield_here), "the game's yes carried another reason")
+                self.assertEqual(SP.stand_aside(True, 99999, why=None)[1], "he started playing - a proof never runs beside his game")
+            finally:
+                CA._sp_proof_playing_here = _pp
+        finally:
+            CA._a_push_is_grading = keep
+
+    test_a_running_proof_yields_to_the_import = None
+    test_the_guard_and_the_tick_name_the_import = None
+    test_the_price_refresh_does_not_wait_on_an_import = None
+    test_the_prover_asks_its_own_judge = None
+
+
 class AnOwedBlindDoesNotWaitForTheImport(AProofGivesWayToGithubsImport):
     """v3883 - the work ALT, 11-08: an owed BLIND shut every lock while the prover waited ~83 min for an import"""
 
@@ -157,10 +209,25 @@ class AnOwedBlindDoesNotWaitForTheImport(AProofGivesWayToGithubsImport):
 
 
 RED_PROOF = [
+    {"why": "v3883 - the prover's record says 'he started playing' for GitHub's import again (both ALTs, 11-08, no D2R.exe)",
+     "file": "tv/self_prove.py",
+     "find": "        return True, (why or \"he started playing - a proof never runs beside his game\")\n",
+     "replace": "        return True, \"he started playing - a proof never runs beside his game\"\n", "matches": 1},
+    {"why": "v3883 - the guard never hands the judge's reason to the tick that books the stand-aside",
+     "file": "tv/self_prove.py",
+     "find": "playing=play_now, free=free_now, kill_fn=kill_fn, play_why=play_why)",
+     "replace": "playing=play_now, free=free_now, kill_fn=kill_fn)", "matches": 1},
+    {"why": "v3883 - the import's yes carries no reason",
+     "file": "tv/control_app.py",
+     "find": "        _sp_prove_yield_here.why = IMPORT_STAND_ASIDE     # v3883",
+     "replace": "        _sp_prove_yield_here.why = None     # v3883", "matches": 1},
+    {"why": "v3883 - a push's yes is recorded as the game's",
+     "file": "tv/control_app.py",
+     "find": "        _sp_yield_here.why = PUSH_STAND_ASIDE\n", "replace": "", "matches": 1},
     {"why": "#123 - a running proof no longer gives way to GitHub's import (Dean: 19 proofs a minute instead of ~330)",
      "file": "tv/control_app.py",
-     "find": "    if _PROOF_RELEASE.get(\"running\") is True and not _sp_blind_owed():\n        return True\n    return _sp_yield_here()\n",
-     "replace": "    return _sp_yield_here()\n", "matches": 1},   # v3883 re-anchor
+     "find": "    if _PROOF_RELEASE.get(\"running\") is True and not _sp_blind_owed():\n        _sp_prove_yield_here.why = IMPORT_STAND_ASIDE",
+     "replace": "    if False:\n        _sp_prove_yield_here.why = IMPORT_STAND_ASIDE", "matches": 1},   # v3883 re-anchor (the reason rides the judge)
     {"why": "v3883 - an owed BLIND waits for the whole import again (the work ALT: every lock shut ~83 min)",
      "file": "tv/control_app.py",
      "find": "    if _PROOF_RELEASE.get(\"running\") is True and not _sp_blind_owed():\n",
