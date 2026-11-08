@@ -180,7 +180,7 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
         self.assertEqual(b["importquiet"]["line"], u"river stuck · importing · no progress for 3 min")   # v3882
         self.assertEqual(b["town"]["line"], "since 18:10")           # v3883: the word itself says OFFLINE (his 11-08 ruling)
         self.assertEqual(b["townold"]["line"], "since Oct 28")
-        self.assertEqual(b["lost"]["line"], "no report this console can read")
+        self.assertEqual(b["lost"]["line"], "no readable report")
 
     def test_a_blind_gate_leads_the_wounds(self):
         """a blind gate keeps every lock shut whatever the PC proves next - the one wound that will not heal by itself"""

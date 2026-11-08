@@ -29221,7 +29221,7 @@ function escC(s) {
       var since = String(s.offSince || '').replace(/^([A-Z][a-z]{2} \d{1,2}) \d{1,2}:\d{2}$/, '$1');
       return since ? ['since ' + since] : [];   /* v3883 - OFFLINE says it; the line says since when */
     }
-    if (s.key === 'lost') return ['no report this console can read'];
+    if (s.key === 'lost') return ['no readable report'];   /* v3883 fix - the long unit wrapped inside itself at 1120 and 901 */
     if (s.key === 'ready') return ['all proved'];   /* v3883 (#116) - 'every law proved' missed 1512's 303px by 5 */
     var _n = function (x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
     var _eta = function (e) { return (typeof e === 'number' && isFinite(e) && e >= 0)

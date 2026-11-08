@@ -116,7 +116,7 @@ class ABootingPcReadsStartingNeverLost(unittest.TestCase):
         """#193 - a 'starting' report 20 minutes old, or an undated one, is not a PC starting up: LOST, as before"""
         for k in ("bootgone", "undated"):
             self.assertEqual(self.o[k]["key"], "lost", k)
-            self.assertEqual(_line(self.o[k]["html"]), "no report this console can read", k)
+            self.assertEqual(_line(self.o[k]["html"]), "no readable report", k)
 
     def test_a_known_wound_is_never_hidden_by_the_boot(self):
         """a blind gate known at boot keeps its wound named; the boot never paints it 'healing - starting up'"""
