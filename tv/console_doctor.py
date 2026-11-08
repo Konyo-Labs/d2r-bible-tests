@@ -11217,12 +11217,36 @@ def _check_quick_wins_places_have_their_pictures():
     return OK, "all %d pictures the Quick wins grid names are in art/ (%d monsters, %d zones)" % (len(want), len(mon), len(slugs))
 
 
+def _win_own_d2jsp_window_keeps_its_session(root=None):
+    """v3882 - the Windows half of the check below: the console's own d2jsp profile (v3861) keeps a sign-in when its
+    window closes only while it continues where it left off. Read-only. -> (state, why)"""
+    try:
+        import d2jsp_chrome as dj
+    except Exception as e:
+        return UNKNOWN, "the d2jsp desk would not import (%s), so its own window is unknown" % type(e).__name__
+    root = root if root is not None else dj.login_profile_dir(platform="win32")
+    if not root or not os.path.isdir(root):
+        return OK, "the console's own d2jsp window has not been opened on this PC yet - the lamp says to click it"
+    v = dj.restore_value(root)
+    if v is None:
+        return UNKNOWN, "the console's own d2jsp profile settings would not read, so whether its sign-in survives is UNKNOWN"
+    if v != 1:
+        return MISSING, ("the console's own d2jsp window does not continue where it left off, so a sign-in's session cookie "
+                         "dies when that window closes - the repair book sets it through Chrome's own settings the next "
+                         "time that window is closed")
+    return OK, "the console's own d2jsp window keeps its sign-in when it closes"
+
+
 def _check_the_macs_own_d2jsp_window_keeps_its_session():
     """#87 (REG-3253) - the Mac signs in to d2jsp through a profile the console owns. That sign-in survives closing the
     window only while the profile continues where it left off (a session-only cookie is then written to disk), and the
     lamp's opener must start that profile, never his own Chrome. Read-only: nothing is opened, written or launched."""
+    if sys.platform == "win32":
+        # v3882 (Dean 11-08: he signed in, closed the window, and every search read "sign in first" - the session cookie
+        # died with the window). This answered "not a Mac - OK" on every Windows PC, so nothing ever said so.
+        return _win_own_d2jsp_window_keeps_its_session()
     if sys.platform != "darwin":
-        return OK, "not a Mac - this PC signs in to d2jsp through its own lane"
+        return OK, "not a Mac or Windows - this PC signs in to d2jsp through its own lane"
     try:
         import d2jsp_chrome as dj
     except Exception as e:

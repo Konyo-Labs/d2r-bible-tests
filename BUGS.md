@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3411 - DEAN SIGNED IN TO d2jsp AND HIS CONSOLE STILL SAID "SIGN IN FIRST": THE SESSION DIED WITH THE WINDOW (v3882)
+His words 11-08: "dean is trying to do d2jsp from his console and its not giving him prices for any searched item". After
+REG-3403's redirect, the second half. MEASURED on Dean's PC (read-only): the console's own d2jsp window went login.php ->
+r.php -> the forum index (he SIGNED IN, ~01:58), and once it closed its cookie file held 0 rows - a session-only sign-in,
+dropped by Chrome because the profile does not continue where it left off (restore_on_startup unset). The Mac keeps that
+session since REG-3349 (Chrome's own settings, while the window is closed); ensure_restore_on answered "not-here" on every
+Windows PC although Windows signs in through a window the console owns since v3861, and the doctor answered "not a Mac -
+OK" there, so nothing said so. MEASURED on the work ALT: the same Chrome-settings pass sets it there (restore 0 -> 1 in
+18 s, headless, profile released). Now ensure_restore_on acts on Windows (the repair book's d2jsp-restore door every 30 min;
+the Windows login opener before it opens the window), and the doctor reads the setting on Windows. Dean signs in once more
+after it is on. Law: test_a_windows_d2jsp_sign_in_survives_its_window (7 cases, 4 red-proofs RED); the 4 d2jsp laws green.
 ### REG-3410 - EVERY WINDOWS PC'S DOCTOR SAID ITS LEDGER BACKUP WAS "MISSING rwMade, gameFound" - THE STORES WERE EMPTY (v3882)
 The doctor on Dean's PC and both ALTs, 11-08: "the newest backup carries 3 of 5 ledgers - MISSING rwMade, gameFound".
 MEASURED on Dean's PC: 44 backups, the newest (11-07 17:03) carries rwMade and not gameFound - he has no in-game records

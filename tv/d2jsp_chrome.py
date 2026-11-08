@@ -223,10 +223,15 @@ def ensure_restore_on(root, launch=None, platform=None):
     own settings (_set_restore_headless) only while that window is closed - Chrome holds its profile while it runs.
     -> (state, why), the repair book's words: fine / fixed / failed / waiting / unknown / not-here. Never raises."""
     plat = sys.platform if platform is None else platform
-    if plat != "darwin":
-        return "not-here", "only the Mac signs in to d2jsp through a window the console owns"
+    # v3882 (Dean 11-08, MEASURED on his PC: the console's d2jsp window went login.php -> r.php -> the forum index - he
+    # SIGNED IN - and the cookie file held 0 rows once it closed: the sign-in was session-only and Chrome dropped it, so
+    # every price search read "sign in first"). Windows has signed in through a window the console owns since v3861 and
+    # this answered "not-here" there, so nothing ever kept that session. MEASURED on the work ALT the same hour: the same
+    # Chrome-settings pass turns it on there (restore 0 -> 1 in 18 s, headless, the profile released after).
+    if plat not in ("darwin", "win32"):
+        return "not-here", "only the Mac and Windows sign in to d2jsp through a window the console owns"
     if not root or not os.path.isdir(root):
-        return "not-here", "the console's own d2jsp window has not been opened on this Mac yet"
+        return "not-here", "the console's own d2jsp window has not been opened on this PC yet"
     v = restore_value(root)
     if v == 1:
         return "fine", "the console's own d2jsp window continues where it left off"
@@ -1414,6 +1419,7 @@ def _open_chrome_login(platform=None, run=None, which=None, popen=None, env=None
                 os.makedirs(own, exist_ok=True)        # the real launch only: a law hands its own popen and env
             except OSError:
                 pass
+            ensure_restore_on(own, platform=plat)   # v3882 - the sign-in made in this window survives closing it
         argv = [binary] + (["--user-data-dir=%s" % own, "--no-first-run", "--no-default-browser-check"] if own else []) \
             + [LOGIN_URL]
         kw = {"creationflags": 0x00000008 | 0x00000200}          # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
