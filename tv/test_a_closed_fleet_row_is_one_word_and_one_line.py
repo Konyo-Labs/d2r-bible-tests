@@ -82,6 +82,12 @@ def _with(*swap):
 CURRENT = {"census": "current", "blind": 0, "owed": 0}
 CASES = {
     "ready": {"parts": WELL, "heart": CURRENT},
+    # v3887 (REG-3475) - his Mac 11-08: READY, current, and one safety-net find RED here that shuts all nine routes, no lock
+    "readynet": {"parts": WELL, "heart": dict(CURRENT, netFinds=[{"gate": "test_a_parallel_proof_is_the_same_proof", "verdict": "RED",
+                 "seen": 3, "shuts": {"locks": [], "routes": ["chronicle.runeword", "chronicle.set", "chronicle.unique", "fleet.runewords",
+                 "fleet.sets", "fleet.uniques", "roster.runeword", "roster.set", "roster.unique"]}}])},
+    # an older console's find carries no `shuts`: the closed row still names it, in the words that never under-say the harm
+    "readynetold": {"parts": WELL, "heart": dict(CURRENT, netFinds=[{"gate": "test_x", "verdict": "BLIND"}])},
     "healing": {"parts": _with(_p("proved", ["proof out of date", "0 blind", "8 laws owed"], warn=True)),
                 "heart": {"census": "stale", "blind": 0, "owed": 8, "ratePerH": 40, "etaS": 720}},
     # his old ALT, 11-07 21:24: stuck, ONE blind gate, stale, importing v3879's proofs ~26 min
@@ -123,6 +129,7 @@ CASES = {
 def _drive(cases, status_throws=False):
     src = _ui()
     meter = _cut(src, "  var _proofMeterFacts = function (hs) {", "\n  };\n")
+    meter += "\n" + _cut(src, "  var _fleetNetShut = function (finds) {", "\n  };\n") + "\nwindow._fleetNetShut = _fleetNetShut;\n"
     block = _cut(src, "  var _PC_WORD = {", "  window._fleetBriefHtml = _fleetBriefHtml;\n")
     js = ("var CASES = " + json.dumps(cases) + ";\nvar window = {};\n"
           "function escC(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }\n"
@@ -219,6 +226,14 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
         self.assertEqual(self.b["town"]["key"], "town")
         self.assertNotIn("stuck", self.b["town"]["line"])
 
+    def test_a_ready_pc_with_a_safety_net_find_says_it_on_the_closed_row(self):
+        """* v3887 (REG-3475) - his Mac read "READY all proved" while a find was RED here and shut nine routes"""
+        self.assertEqual(self.b["readynet"]["key"], "ready", "PREMISE: the word is not READY - the case is not his Mac's")
+        self.assertEqual(self.b["readynet"]["units"], ["1 law red", "shuts 9 routes"])
+        self.assertNotIn("all proved", self.b["readynet"]["line"])
+        self.assertEqual(self.b["readynetold"]["units"], ["1 law blind", "its locks shut"], "an older find reads healthy or under-says")
+        self.assertEqual(self.b["ready"]["line"], "all proved", "a READY PC with no find lost its line")
+
     def test_an_unreadable_pc_is_lost_never_ready(self):
         self.assertEqual((self.b["throws"]["key"], self.b["lost"]["key"]), ("lost", "lost"))
 
@@ -272,6 +287,11 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3887 (REG-3475) - a READY row says 'all proved' over a safety-net find that shuts nine routes",
+     "file": "tv/control_ui.html",
+     "find": "      if (_nf.length) {\n        var _ns = (typeof window._fleetNetShut",
+     "replace": "      if (false) {\n        var _ns = (typeof window._fleetNetShut",
+     "matches": 1},
     {"why": "v3887 (REG-3473) - the brief starts under the name again and wraps at 1512 (303px for 338px)",
      "file": "tv/control_ui.html",
      "find": "  .fleet-row > .fleet-brief { grid-column: 1 / -1; min-width: 0;",

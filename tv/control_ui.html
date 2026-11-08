@@ -29279,7 +29279,21 @@ function escC(s) {
       return since ? ['since ' + since] : [];   /* v3883 - OFFLINE says it; the line says since when */
     }
     if (s.key === 'lost') return ['no readable report'];   /* v3883 fix - the long unit wrapped inside itself at 1120 and 901 */
-    if (s.key === 'ready') return ['all proved'];   /* v3883 (#116) - 'every law proved' missed 1512's 303px by 5 */
+    if (s.key === 'ready') {
+      /* v3887 (REG-3475, GrokBot's v3885 look: "Safety-net find names what it shuts: NOT SEEN" - twice) - a SAFETY-NET FIND
+         IS SAID ON THE CLOSED ROW. Measured on his live Fleet: the Mac's row read "READY all proved" while
+         test_a_parallel_proof_is_the_same_proof was RED here and shut all nine routes; the chip that says so is a river chip,
+         which REG-3395 draws only on an OPEN row - so the closed row read healthy over a shut route (the v2249 / v2283 / v2296
+         scar). The find's own words (how many laws, what they shut - _fleetNetShut, the rule may() applies) replace
+         "all proved"; the open row keeps the law's name. */
+      var _nf = (hs && Array.isArray(hs.netFinds)) ? hs.netFinds.filter(function (e) { return e && e.gate; }) : [];
+      if (_nf.length) {
+        var _ns = (typeof window._fleetNetShut === 'function') ? window._fleetNetShut(_nf) : { word: 'its locks shut' };
+        var _v = String(_nf[0].verdict || 'failing').toLowerCase();
+        return [_nf.length === 1 ? '1 law ' + _v : _nf.length + ' laws fail', _ns.word];
+      }
+      return ['all proved'];   /* v3883 (#116) - 'every law proved' missed 1512's 303px by 5 */
+    }
     var _n = function (x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
     var _eta = function (e) { return (typeof e === 'number' && isFinite(e) && e >= 0)
       ? ' ~' + (e < 60 ? '1 min' : e < 5400 ? Math.round(e / 60) + ' min' : (e / 3600).toFixed(1) + ' h') : ''; };

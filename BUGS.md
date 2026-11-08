@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3475 - HIS MAC'S CLOSED FLEET ROW READ "READY all proved" OVER A RED SAFETY-NET FIND THAT SHUT NINE ROUTES (v3887)
+GrokBot, v3884 and v3885 (#230): "Safety-net find names what it shuts: NOT SEEN - no 'shuts N routes' or 'shuts nothing' text on the
+Fleet or in any open fold". MEASURED on his live Fleet payload: the wire carries it (the Mac's find test_a_parallel_proof_is_the_same
+_proof, RED, shuts {locks: [], routes: all nine}), and an OPEN Mac row draws "safety net: ... RED · shuts 9 routes". But that chip is a
+river chip, and REG-3395 draws river chips only on an open row - so the CLOSED row, the one he reads, said "READY all proved" over a
+shut route: the dark-PC-reads-healthy scar (v2249 / v2283 / v2296) through the collapse. (/api/status's own selfProve.netFinds carries
+no `shuts`; the Fleet wire is where it travels.) A READY row with a find now says the find: "1 law red · shuts 9 routes" (an older
+console's find: "its locks shut", never a smaller harm); 48px at 1512. GUARD: test_a_closed_fleet_row_is_one_word_and_one_line
+.test_a_ready_pc_with_a_safety_net_find_says_it_on_the_closed_row (his Mac's real find; red-proof RED).
+
 ### REG-3474 - A BREAKPOINT RAIL HID THE TIERS IT COUNTED: PALADIN FHR DREW NO 7 OR 27 (v3887, GrokBot's v3885 look)
 GrokBot, v3885 (#230): "the FHR rail draws tick labels for 0/15/48/86/200 only; 7 (8f) and 27 (6f) are hidden, although the tier
 count says 7". His Design C brief: "Tick marks at every tier threshold, each labelled underneath with threshold and frames". The rail
