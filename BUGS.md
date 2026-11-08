@@ -150,7 +150,10 @@ gives_is_refused holds every TZ cell the page would SHOW to it (a cell its level
 answer and is left to it - Normal TZ Baal's level-50 cells read 0 from 68 up). It found 21, all NM / Normal TZ Pindleskin
 (Lightsabre, Doombringer, The Redeemer ...): nulled. Red-proof PROVEN. Not yet fixed, named: silospen_tz_levels.py asks
 silospen for "Pindleskind" in NM and Normal (REG-151's id), so Pindle's NM / Normal TZ columns carry no level table (703
-cells its --check could not read) - card for v3889.
+cells its --check could not read): FIXED in this version - silospen_tz_levels.FARM_IDS_BY_DIFF asks the plain "Pindleskin"
+in NM / Normal (silospen's own monsterList, desecrated: "Pindleskind" in Hell only; the Countess is "The Countessd" in all
+three), Pindle's level tables re-pulled (hellTz 434 rows, nmTz 2 that move across 68-99), and --check fell from 703 cells it
+could not read to 6 (four one-unit roundings at 1:40 and two Normal TZ set cells its level table already reads as 0 from 68).
 
 ### REG-3455 - NINE RANDOM-PACK MONSTERS QUICK WINS NOW LISTS HAD NO SPRITE (v3886, #108)
 silospen's All list brings monsters the three-rows-an-item table never named. Each matched to the Arreat Summit family page
