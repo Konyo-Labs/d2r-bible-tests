@@ -39,14 +39,18 @@ SILOSPEN = [
     ("mephisto", "hellTz", "Tyrael's Might", 93, 400, 19601),
     ("baal", "hellTz", "Tyrael's Might", 80, 400, 19644),
     ("baal", "hellTz", "Tyrael's Might", 99, 400, 19644),
-    # GrokBot's acceptance checks (#230 6720166936), silospen at its own default Terror Zone Level 0 (= level 1 here), MF 400
+    # GrokBot's acceptance checks (#230 6720166936), silospen at its own default Terror Zone Level 0, MF 400. Since v3885 a level
+    # under 68 reads as 68 (his 11-08 "no one is farming below level 68") - and these three do not change between 1 and 68
     ("diablo", "hellTz", "Tyrael's Might", 1, 400, 178085),
     ("andariel", "hellTz", "Heaven's Light", 1, 400, 2527),
     ("baal", "nmTz", "Heaven's Light", 1, 400, 1691),
+    # v3885 - NM TZ Mephisto cannot drop Heaven's Light below 64 (silospen), but nobody farms below 68: level 60 and level 1
+    # read as 68, where silospen's pull (MF 300) gives 1:1,823 - within 2% of the stored 1:1,819, which the page shows
+    ("mephisto", "nmTz", "Heaven's Light", 60, 300, 1823),
+    ("mephisto", "nmTz", "Heaven's Light", 1, 300, 1823),
 ]
 #: and where silospen gives NO row at that level (the page must say it does not drop, never the level-99 figure)
-SILOSPEN_NONE = [("mephisto", "nmTz", "Heaven's Light", 60), ("mephisto", "nmTz", "Heaven's Light", 1),
-                 ("mephisto", "hellTz", "Tyrael's Might", 1)]
+SILOSPEN_NONE = [("mephisto", "hellTz", "Tyrael's Might", 1)]
 
 
 def _cut(src, start, end):
@@ -101,6 +105,8 @@ out.atLevel = [tzOddsAtLevel([[60, 0], [64, 29470], [68, 1823]], 777, null), tzO
                tzOddsAtLevel([[60, 0], [64, 29470], [68, 1823]], 777, 66), tzOddsAtLevel([[60, 0], [64, 29470], [68, 1823]], 777, 99),
                tzOddsAtLevel([[60, 0], [64, 29470], [68, 1823]], 777, 40),
                tzOddsAtLevel([[1, 190886], [94, 20976]], 20975, null), tzOddsAtLevel([[1, 190886], [94, 20976]], 20975, 1)];
+out.same = [tzOddsAtLevel([[68, 1823]], 1819, 90), tzOddsAtLevel([[68, 2000]], 1819, 90), tzOddsAtLevel([[68, 1823], [80, 0]], 1819, 85),
+            tzOddsAtLevel([[68, 7137]], 6948, null)];
 process.stdout.write(JSON.stringify(out));
 """)
         cls.o = _node(prog)
@@ -126,15 +132,21 @@ process.stdout.write(JSON.stringify(out));
         self.assertFalse(self.o["getter"]["plainHell"], "a PLAIN (non-TZ) cell reads the level - the level is a terror zone's only")
 
     def test_the_breakpoint_reader(self):
-        self.assertEqual(self.o["atLevel"], [777, None, 29470, 1823, 777, 20975, 190886],
-                         "unset -> the stored figure (even where the table starts at level 1); 0 -> it does not drop (null); "
-                         "below the first point -> the stored")
+        self.assertEqual(self.o["atLevel"], [1823, 1823, 1823, 1823, 1823, 20975, 190886],
+                         "v3885: unset -> level 99; a level under 68 -> 68 (61, 66, 40 all read 68's 1:1,823); within 2% of the "
+                         "stored figure -> the stored (20,976 -> 20,975)")
+
+    def test_a_level_never_splits_what_silospen_calls_equal(self):
+        """* his 11-08 - "its basically the same ... 0.2% difference ... its irrelevant data": within 2% the stored figure stands"""
+        self.assertEqual(self.o["same"], [1819, 2000, None, 7137],
+                         "1:1,823 vs 1:1,819 is the stored figure; 1:2,000 is 10% off and stands; 0 still means it does not "
+                         "drop; a one-point 68+ row (a Normal TZ cell stored at level 50) is read even with no level set")
 
     def test_the_registry_row_reads_its_cell_and_the_slider_persists_per_account(self):
         code = _code(self.src)
         self.assertIn('if (_dsc && _dsc.get) Object.defineProperty(_src, "chance", { get(){ return d[k]; }, enumerable: true, configurable: true });',
                       code, "a source row keeps the level-99 figure it was built with - the cards and Quick wins never move")
-        self.assertIn('<input type="range" id="clvl" min="1" max="99" step="1" value="99"', self.src)
+        self.assertIn('<input type="range" id="clvl" min="68" max="99" step="1" value="99"', self.src)   # v3885: 68 and up
         self.assertIn("window.LSR.setItem('d2r_charLevel', String(_TZ_CHAR_LVL))", code)
         self.assertIn('"d2r_mf", "d2r_players", "d2r_charLevel",', code, "the level is not forked per account like MF and /players")
 
@@ -163,12 +175,20 @@ RED_PROOF = [
      "replace": "", "matches": 1, "needs": "node"},
     {"why": "v3884 (REG-3437) - a level where it does not drop reads the stored figure instead of 'does not drop'",
      "file": "bible.html",
-     "find": "  return n > 0 ? n : null;                                // 0 = it does not drop at this level\n",
-     "replace": "  return n > 0 ? n : base;\n", "matches": 1, "needs": "node"},
-    {"why": "v3884 (REG-3437) - unset reads level 1, not the stored level-99 figure",
+     "find": "  if (!(n > 0)) return null;                              // 0 = it does not drop at this level\n",
+     "replace": "  if (!(n > 0)) return base;\n", "matches": 1, "needs": "node"},
+    {"why": "v3884 (REG-3437) - unset reads level 1, not the level-99 figure",
      "file": "bible.html",
-     "find": "  if (lvl == null) return base;                           // unset: the stored (level-99) figure, unchanged\n",
-     "replace": "  if (lvl == null) lvl = 1;\n", "matches": 1, "needs": "node"},
+     "find": "  lvl = (lvl == null) ? 99 : Math.max(TZ_LVL_FLOOR, lvl);  // unset = 99, the level the Hell TZ figures were stored at\n",
+     "replace": "  lvl = (lvl == null) ? 1 : Math.max(TZ_LVL_FLOOR, lvl);\n", "matches": 1, "needs": "node"},
+    {"why": "v3885 (his 11-08 'no one is farming below level 68') - a level under 68 reads as itself again",
+     "file": "bible.html",
+     "find": "  lvl = (lvl == null) ? 99 : Math.max(TZ_LVL_FLOOR, lvl);  // unset = 99, the level the Hell TZ figures were stored at\n",
+     "replace": "  lvl = (lvl == null) ? 99 : lvl;\n", "matches": 1, "needs": "node"},
+    {"why": "v3885 (his 11-08 '0.2% difference ... irrelevant data') - a figure within 2% of the stored one splits two runs again",
+     "file": "bible.html",
+     "find": "  return (base > 0 && Math.abs(n - base) <= TZ_SAME * base) ? base : n;   // within 2%: the stored figure (his ruling)\n",
+     "replace": "  return n;\n", "matches": 1, "needs": "node"},
     {"why": "v3884 (REG-3437) - the registry's source row keeps its build-time figure (no surface follows the level)",
      "file": "bible.html",
      "find": '        if (_dsc && _dsc.get) Object.defineProperty(_src, "chance", { get(){ return d[k]; }, enumerable: true, configurable: true });   // v3884 (REG-3437) - his level\n',

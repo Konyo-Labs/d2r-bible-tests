@@ -112,6 +112,19 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3445 - A LEVEL SPLIT TWO RUNS SILOSPEN CALLS EQUAL - NM TZ BAAL RANKED OVER MEPHISTO ON 0.2% (v3885, #138, his 11-08)
+His words: "its basically the same so leel difference doesnt matter if its 0.2% deifference dont even include the level thing
+then.. its irrelevant daata", "make it no one is farming below level 68 its okay.. default is 68 and up in my case". MEASURED on
+the page (MF 500): at level 68+ Heaven's Light from NM TZ Mephisto and Diablo read 1:1,617 (the level table's 1:1,823 at MF 300)
+and NM TZ Baal 1:1,614 (the stored 1:1,819) - a 0.2% gap, inside silospen's own rounding, that put Baal (46.6 expected hours)
+over Mephisto (12.7). Now: a level under 68 reads as 68 (the LVL slider starts at 68; a stored lower level is lifted); unset
+reads as 99; a table figure within 2% of the stored one IS the stored one; the table holds levels 68-99 only
+(tv/silospen_tz_levels.py LEVEL_FLOOR, from_floor, page_bases) - 330 KB -> 163 KB, 3,991 rows - keeping a one-point row
+wherever silospen's 68-99 figure is more than 2% from the stored one (718 cells measured, nearly all Normal TZ stored at level
+50, e.g. Wilhelm's Pride from Normal TZ Baal 1:6,948 stored, 1:7,137 at 68+). Heaven's Light now ranks NM TZ Mephisto, Diablo,
+Baal at 1:1,614 each, time deciding (Mephisto first). Law: test_a_terror_zone_reads_his_level re-pointed (level 60 / level 1
+read as 68; a new case for the 2% rule; 8 red-proofs PROVEN).
+
 ### REG-3444 - THE "READ MY CHRONICLE" BUTTONS FILMED ON ONE PRESS - HE ASKED FOR THEM GONE (v3885, #137, his 11-08)
 He first asked for a confirm popup on "Read my Chronicle · UNIQUES" (one press started a 75-second MINI), then: "nvm its
 actually not so important", "you can remove it completely as a button. or hide it". The popup was written and taken back

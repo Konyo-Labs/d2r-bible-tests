@@ -37,6 +37,10 @@ _console_safe_enable()
 
 VERSION = "D2R_ROW_3_0"
 LEVEL_MIN, LEVEL_MAX = 1, 99     # silospen's own TZ default is 0; below a farm's first change its odds are level 1's
+#: v3885 (his 11-08: "make it no one is farming below level 68 its okay.. default is 68 and up in my case", "its basically the
+#: same ... dont even include the level thing then.. its irrelevant data") - the page's table starts at 68: the pull still
+#: covers 1-99 (the raw answer is silospen's), the build keeps only what a level 68-99 character sees.
+LEVEL_FLOOR = 68
 FARMS = {"andariel": ("andarield", "BOSS"), "duriel": ("durield", "BOSS"), "mephisto": ("mephistod", "BOSS"),
          "diablo": ("diablod", "BOSS"), "baal": ("baalcrabd", "BOSS"), "nihl": ("nihlathakbossd", "BOSS"),
          "countess": ("The Countessd", "SUPERUNIQUE"), "pindle": ("Pindleskind", "SUPERUNIQUE")}
@@ -128,6 +132,31 @@ def canon(name):
     return re.sub(r"\s+", " ", n.replace("'", "").replace("\u2019", "")).lower()
 
 
+def page_bases(bible_src):
+    """{(farm, column, page name): stored 1:N} for every TZ cell on the page (the level-independent figure a row falls back to)."""
+    i = bible_src.find("const BOSSES = [") + len("const BOSSES = ")
+    arr, _ = json.JSONDecoder().raw_decode(bible_src[i:])
+    out = {}
+    for b in arr:
+        for d in b.get("dropTable", []):
+            for k in ("normTz", "nmTz", "hellTz"):
+                if d.get(k):
+                    out[(b["id"], k, d["n"])] = d[k]
+    return out
+
+
+def from_floor(segs, floor=LEVEL_FLOOR):
+    """The segments a level floor..99 character meets: one whose next segment starts at or below the floor is never met; the
+    one the floor lands in is re-labelled to start AT the floor. Pure."""
+    out = []
+    for i, (lvl, t) in enumerate(segs):
+        nxt = segs[i + 1][0] if i + 1 < len(segs) else 10 ** 9
+        if nxt <= floor:
+            continue
+        out.append((max(lvl, floor), t))
+    return out
+
+
 def page_names(bible_src):
     """{canon: page name} for every item a boss farm on the page drops."""
     i = bible_src.find("const BOSSES = [") + len("const BOSSES = ")
@@ -139,10 +168,11 @@ def page_names(bible_src):
     return out
 
 
-def build(raw, names=None):
+def build(raw, names=None, bases=None):
     """The page's table: {farm: {diff: {item: [[level, n], ...]}}} - n = round(1/p) at MF 300 /players 1, 0 = it does not
-    drop from that level up. Only items whose odds MOVE past TOL across 1-99 are listed; every other TZ row keeps its stored
-    (level-99) figure. Pure."""
+    drop from that level up. From LEVEL_FLOOR (68) up only: an item is listed when its odds MOVE past TOL across 68-99, or -
+    given the page's stored figures (`bases`) - when its one 68-99 figure is more than TOL from the stored one (a Normal TZ
+    cell stored at level 50, a cell that does not drop at 68+). Every other TZ row keeps its stored figure. Pure."""
     out = {}
     for farm, by in sorted(raw["farms"].items()):
         for diff, qs in sorted(by.items()):
@@ -153,15 +183,18 @@ def build(raw, names=None):
                     page = names.get(canon(nm)) if names is not None else nm
                     if page is None:
                         continue                  # an item no farm on the page drops - not the page's to carry
-                    vals = [[lvl, int(round(1.0 / t[nm])) if t.get(nm) else 0] for lvl, t in segs]
+                    vals = [[lvl, int(round(1.0 / t[nm])) if t.get(nm) else 0] for lvl, t in from_floor(segs)]
                     pts = []
                     for lvl, n in vals:
                         last = pts[-1][1] if pts else None
                         if (last is None or (n == 0) != (last == 0)
                                 or (n and last and abs(n - last) / float(last) > TOL)):
                             pts.append([lvl, n])
+                    st = bases.get((farm, diff, page)) if bases is not None else None
                     if len(pts) > 1:
-                        rows[page] = pts          # it starts or stops dropping, or moves past TOL, across 1-99
+                        rows[page] = pts          # it starts or stops dropping, or moves past TOL, across 68-99
+                    elif pts and bases is not None and (pts[0][1] == 0 or not st or abs(pts[0][1] - st) / float(st) > TOL):
+                        rows[page] = pts          # one figure across 68-99, and the stored one is not it
             if rows:
                 out.setdefault(farm, {})[diff] = dict(sorted(rows.items()))
     return out
@@ -207,8 +240,8 @@ if __name__ == "__main__":
         with io.open(sys.argv[2], encoding="utf-8") as fh:
             raw = json.load(fh)
         with io.open(os.path.join(os.path.dirname(HERE), "bible.html"), encoding="utf-8") as fh:
-            names = page_names(fh.read())
-        print(json.dumps(build(raw, names), separators=(",", ":"), sort_keys=True))
+            src = fh.read()
+        print(json.dumps(build(raw, page_names(src), page_bases(src)), separators=(",", ":"), sort_keys=True))
     elif len(sys.argv) == 3 and sys.argv[1] == "--check":
         with io.open(sys.argv[2], encoding="utf-8") as fh:
             raw = json.load(fh)
