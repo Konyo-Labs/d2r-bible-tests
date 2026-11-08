@@ -39,9 +39,14 @@ SILOSPEN = [
     ("mephisto", "hellTz", "Tyrael's Might", 93, 400, 19601),
     ("baal", "hellTz", "Tyrael's Might", 80, 400, 19644),
     ("baal", "hellTz", "Tyrael's Might", 99, 400, 19644),
+    # GrokBot's acceptance checks (#230 6720166936), silospen at its own default Terror Zone Level 0 (= level 1 here), MF 400
+    ("diablo", "hellTz", "Tyrael's Might", 1, 400, 178085),
+    ("andariel", "hellTz", "Heaven's Light", 1, 400, 2527),
+    ("baal", "nmTz", "Heaven's Light", 1, 400, 1691),
 ]
 #: and where silospen gives NO row at that level (the page must say it does not drop, never the level-99 figure)
-SILOSPEN_NONE = [("mephisto", "nmTz", "Heaven's Light", 60)]
+SILOSPEN_NONE = [("mephisto", "nmTz", "Heaven's Light", 60), ("mephisto", "nmTz", "Heaven's Light", 1),
+                 ("mephisto", "hellTz", "Tyrael's Might", 1)]
 
 
 def _cut(src, start, end):
