@@ -214,23 +214,40 @@ def load_roster(path=None, key="pieces"):
     return [str(n) for n in names], roster_fingerprint(d.get("sourceHash"))
 
 
+#: v3887 (his 11-08: "cats eye i already have and tallied ... this one is bugged") - the apostrophes one name is written with
+_APOS = {"\u2018": "'", "\u2019": "'", "`": "'"}
+
+
+def _fold(name):
+    """A name with every apostrophe written straight - the ONE fold the mask allows. -> str"""
+    s = str(name)
+    for a, b in _APOS.items():
+        s = s.replace(a, b)
+    return s
+
+
 def encode(owned, roster, fingerprint):
     """Which of `roster` this machine holds, as base64url bits. -> dict, or None if it cannot say.
 
     Bit i (LSB-first inside each byte) is roster[i]. Comparison is by EXACT name, deliberately: the
     roster is generated from bible.html by roster_sync.py and the board stores the same strings, so
     a fuzzy match here would paper over a roster drift that the fingerprint is supposed to catch.
+    ⚠ v3887 - EXACT, BUT FOR THE APOSTROPHE. The roster spells four uniques with the game's curly one (Atma’s Scarab,
+    Saracen’s Chance, Seraph’s Hymn, The Cat’s Eye) and the board stores whichever the path that ticked it wrote: his found
+    log held "The Cat's Eye" straight ONLY (measured 11-08 on a copy of his board's store), so his bit was 0 and the
+    cross-reference with Dean said "they have - you do not" for an amulet he owns. A curly and a straight apostrophe are one
+    character to him; nothing else is folded.
     """
     if not roster or owned is None:
         return None
-    have = {str(n) for n in owned}
+    have = {_fold(n) for n in owned}
     n = len(roster)
     if n > MAX_BITS:
         return None
     buf = bytearray((n + 7) // 8)
     hits = 0
     for i, name in enumerate(roster):
-        if name in have:
+        if _fold(name) in have:
             buf[i // 8] |= (1 << (i % 8))
             hits += 1
     # ⚠ `r` IS ADDITIVE AND OLD MASKS HAVE NONE. decode() checks it only when present, so every

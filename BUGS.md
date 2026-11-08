@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3470 - HIS CAT'S EYE READ "THEY HAVE - YOU DO NOT": THE MASK MATCHED A CURLY AND A STRAIGHT APOSTROPHE AS TWO NAMES (v3887, his 11-08)
+The Fleet's uniques cross-reference with Dean listed "The Cat’s Eye" under THEY HAVE - YOU DO NOT; he owns it ("tallied ... in my
+console definitely sure in mygame"). MEASURED on a copy of his board's store: his found log holds "The Cat's Eye" with a straight
+apostrophe only; tv/unique_roster.json spells it - and Atma’s Scarab, Saracen’s Chance, Seraph’s Hymn - with the game's curly one;
+fleet_mask.encode compared exact strings, so his bit was 0 (the other three survived only because his log also holds their curly
+spelling). The encoder folds the apostrophe (‘ ’ ` -> ') on both sides; nothing else. GUARD:
+tv/test_one_apostrophe_is_one_name_in_the_mask.py + a red-proof (RED).
+
 ### REG-3469 - A CHARACTER CARD WAS A LETTER IN A CIRCLE; IT IS ITS CLASS'S OWN ANIMATED FIGURE NOW (v3887, #154, his 11-08)
 "the mules and the character equipped the main characters should render the visual character ingame like .gif like we have
 for bosses/monsters ... paladin is paladin ... render within each cell" (his reference: the classic animated Sorceress). Each
