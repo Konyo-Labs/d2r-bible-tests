@@ -112,6 +112,44 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3444 - THE UNIQUES TAB'S "READ MY CHRONICLE" BUTTON FILMED ON ONE PRESS - HE ASKED FOR IT GONE (v3885, #137, his 11-08)
+He first asked for a confirm popup on "Read my Chronicle · UNIQUES" (one press started a 75-second MINI), then: "nvm its
+actually not so important", "you can remove it completely as a button. or hide it". The popup was written and taken back
+out unshipped; the Uniques tab's button is removed. The door stays - window._chronShotPick('uniques') still films a
+chronicle-uniques MINI through the console's own /api/mini focus - so every reader of a Chronicle reel is untouched, and the
+Sets tab keeps its own "Read my Chronicle · SETS" button. Pinned in tests/v2141_the_chronicle_button_films_it_instead_of_asking
+(no such button on #tab-funi; the door and the Sets button remain).
+
+### REG-3443 - THE BUILD SCREEN LET A SORCERESS WEAR A SACRED TARGE - A CLASS'S OWN RAIL OR NODE LISTED ITS ITEMS TO ANY CLASS (v3885, #136, his 11-08)
+His words: "the sacred targe and any paladin based sheilds should not be allowed or even recommended to be equipped as an item
+based on the character itself if it cant be placed on him ingame", "druid helm for druids.. necromancer also has their style..
+amazons", "only to items being equipped.. mules with items can hold anything in inventory/stash", "the vault should not be
+related to this". MEASURED: the build screen's parent lists already left another class's items out (#174 v-B2), but a class
+rail (Pelts (Druid), Primal Helms (Barbarian)) and a class tree node (Auric Shields) listed that class's items to any build
+(`_cbForSlot` dropped the class rule for catIx >= 0; `_cbNodeSrc` passed noCls for a class's own node), and choosing one put
+it on the doll - shown red "(Paladin Only)", counted for nothing, but worn. Now, on the character build screen only and only
+for a worn slot: every list reads the build's class (another class's rail or node lists nothing, is greyed "(Paladin only)"
+and cannot be opened), and the one equip door (_cbEquip -> _cbWearWhy) refuses another class's item and says why ("Herald of
+Zakarum is Paladin only. A Sorceress cannot wear it in the game, so it is not placed."). A runeword answers by its chosen
+base (Spirit is fine, Spirit in a Sacred Targe is not). With a host open (the Vault's mule window, the D2JSP desk, the
+planner host), the inventory and the build's personal and shared stash, every list is exactly as before. Law:
+test_a_build_never_wears_another_classs_item (every class against all class-locked items the database holds, judged from
+its own type table; 6 red-proofs PROVEN, one of them the rule leaking into the Vault); the builder law's Pelts assertion
+re-pointed (a Sorceress's Pelts rail keeps only runewords any helm can hold). NOT in this item: the gear advisor (#29)
+recommends nothing yet - it inherits _cbWearWhy when it is built.
+
+### REG-3442 - THE BUILD SCREEN'S LEFT COLUMN WAS STASH / LOOT FILTER / STRENGTHS - NOT THE BREAKPOINTS HE ASKED FOR (v3885, #134, his DESIGN C 11-08)
+His Design C mockup (via GrokBot #230 6720814186 / 6720826884) and "15 frames. +9% more reaches the next step.", "Fast Cast is
+Faster Cast RATE (FCR)", "105 is the top? depending on the build ... sorceress can reach 200%". The left column is now a
+BREAKPOINTS panel of gauge-rail cards - Faster Cast Rate (FCR), Faster Hit Recovery (FHR), Increased Attack Speed (IAS),
+Faster Block Rate (FBR) and Attack Rating: the value, "N frames · tier k/T", a rail whose ticks are the engine's own tiers
+for THIS class (scanned from eng.bp.frames, never a table of the card's own - a Paladin's FCR rail ends at 125%, a
+Sorceress's at 200%), and the engine's line ("10 frames. +20% more reaches the next step.", "N frames. Top breakpoint.",
+UNKNOWN with what is missing); rail, tier and line are one answer. Stash, Loot Filter and Strengths and Weaknesses left the
+screen; Primary Skills and Mercenary sit under Stats. Laws: test_the_breakpoint_cards_read_the_engine (stub table + the REAL
+engine for a Sorceress and a Paladin, 6 red-proofs PROVEN), test_the_breakpoint_row_is_the_next_step ("Top breakpoint"),
+test_the_build_stash_is_the_mule_stash_view (the Stash card is gone), test_the_character_builder_fits_at_every_width (27 OK).
+
 ### REG-3441 - A d2jsp POST WAS "PERFECT" WHEN ITS WORDS SAID SO - A PERFECT TOPAZ MADE A PERFECT SHAKO, A 775 ENIGMA SET THE NORMAL PRICE (v3885, #30)
 GrokBot read 16 real d2jsp topics read-only (#230 6720536745, 11-08 12:43-12:55) against each PC's price check: Shako and SoJ
 matched; the normal Enigma (1,400) came from "15/12/775 mp nigma 1.4k" - a 775 (maximum) roll - while real non-775 Enigmas

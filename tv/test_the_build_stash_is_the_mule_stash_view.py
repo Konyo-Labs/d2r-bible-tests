@@ -127,7 +127,9 @@ class TheBuildStashIsTheMuleStashView(unittest.TestCase):
         self.assertTrue(out["dropped"], "removing the Personal item left it on the grid")
         self.assertEqual(out["stashDropped"], [])
         self.assertEqual(out["oldSharedCells"], 100, "a saved build with no shared list did not open an empty Shared grid")
-        self.assertTrue(out["card"], "the stash card no longer says what the three grids are")
+        # v3885 (#134, his DESIGN C rule 1, 11-08: "Remove Stash from the character build screen, button and panel") - the build
+        # screen draws NO stash card now; the stash view itself (opened above, three grids) still serves the mule window
+        self.assertFalse(out["card"], "the Stash card is back on the character build screen (his Design C rule 1)")
         self.assertEqual(sorted(out["reads"]), ["d2r_cbMain", "d2r_cbSel", "d2r_charBuilds"],
                          "the builder read a store that is not its own: %s" % out["reads"])
         self.assertEqual(out["calls"], [], "the builder called the vault or a mule: %s" % out["calls"])

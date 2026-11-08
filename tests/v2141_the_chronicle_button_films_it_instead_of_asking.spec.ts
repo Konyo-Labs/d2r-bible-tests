@@ -73,7 +73,13 @@ test('the upload capability itself is kept — v1540 drives it directly, just no
   const kinds = await page.evaluate(() => ({
     pick: typeof (window as any)._chronShotPick,
     intake: typeof (window as any).chronicleShotIntake,
+    // v3885 (his 11-08: "you can remove it completely as a button. or hide it") - the Uniques tab carries no
+    // "Read my Chronicle" button; the door itself (above) and the Sets tab's own button stay
+    uniBtn: document.querySelectorAll('#tab-funi button[onclick*="_chronShotPick"]').length,
+    setsBtn: document.querySelectorAll('#tab-fsets button[onclick*="_chronShotPick(\'sets\')"]').length,
   }));
   expect(kinds.pick).toBe('function');
   expect(kinds.intake, 'tests/v1540_chronicle_photo_intake.spec.ts calls this directly').toBe('function');
+  expect(kinds.uniBtn, 'the Uniques tab grew its Read my Chronicle button back').toBe(0);
+  expect(kinds.setsBtn, 'premise: the Sets tab keeps its own button').toBe(1);
 });

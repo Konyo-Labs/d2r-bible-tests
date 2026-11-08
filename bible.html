@@ -11414,12 +11414,10 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 <div class="rs-ai-note">🎞 Chronicle finds arrive from a <b>reel session</b> — the reader proposes, you approve in the Chronicle queue.</div></div></div></div>
   
   <div id="grail-intake-report" class="forge-note" style="display:none;margin:8px 0"></div>
-  <!-- CHRONICLE PHOTO INTAKE (board-side). Two buttons, never one: the caller STATES the ledger,
-       because a Sets page tallied as Uniques is worse than no tally at all. -->
-  <div style="margin-top:8px">
-    <button class="f-btn" style="border-color:rgba(181,140,255,.5);color:#c9a6ff" onclick="window._chronShotPick('uniques')" title="films your in-game Chronicle UNIQUES page as a short MINI — it stops itself, the reader sweeps it, and nothing registers until you approve it">📜 Read my Chronicle · UNIQUES</button>
-    
-  </div>
+  <!-- v3885 (his 11-08: "you can remove it completely as a button. or hide it") - the "Read my Chronicle · UNIQUES" button is
+       gone from this tab. Its door stays: window._chronShotPick('uniques') still films a chronicle-uniques MINI (the console's
+       own /api/mini focus), so nothing that reads a Chronicle reel changed, and the button can come back as one line.
+       (CHRONICLE PHOTO INTAKE board-side, v2141: the caller STATES the ledger.) -->
   <input type="file" id="chron-shot-file" accept="image/*" multiple style="display:none" onchange="window.chronicleShotIntake(this.files)">
   <div id="chron-shot-report" class="chron-shot-report forge-note" style="display:none;margin:8px 0"></div>
   <div id="funi-body"></div>
@@ -76795,7 +76793,7 @@ html.cb-lock,html.cb-lock body{overflow:hidden}
 .cb-inv-say{margin:calc(4*var(--u)) calc(10*var(--u)) 0;font-size:var(--fs-cb-meta);color:var(--text-dim);text-align:center;line-height:var(--lh-tight);min-height:1em}
 .cb-inv-say.cb-bad{color:var(--hell)}
 .cb-lp{display:flex;flex-direction:column}
-.cb-prim{min-height:calc(102*var(--u))}.cb-merc{min-height:calc(80*var(--u))}.cb-loot{min-height:calc(88*var(--u))}.cb-sw{min-height:calc(57*var(--u))}
+.cb-bpp{display:flex;flex-direction:column;gap:calc(8*var(--u))}.cb-bpc{position:relative;padding:calc(10*var(--u)) calc(12*var(--u));border:1px solid var(--gold-dim);border-radius:6px;background:linear-gradient(180deg,color-mix(in srgb,var(--surface-3) 70%,transparent),var(--surface));box-shadow:inset 0 1px 0 color-mix(in srgb,var(--gold) 25%,transparent)}.cb-bpc-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.cb-bpc-t{font-size:var(--fs-meta);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--gold-dim)}.cb-bpc-v{font-size:var(--fs-display);font-weight:var(--fw-bold);color:var(--gold-bright);text-shadow:0 0 10px color-mix(in srgb,var(--gold) 45%,transparent)}.cb-bpc-sub{font-size:var(--fs-meta);color:var(--text-muted);margin-top:2px}.cb-bpc-rail{position:relative;height:14px;margin:calc(10*var(--u)) 0 calc(26*var(--u));border-radius:7px;background:color-mix(in srgb,var(--surface-4) 80%,transparent);border:1px solid var(--border)}.cb-bpc-fill{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:linear-gradient(90deg,#5a3a10,var(--gold))}.cb-bpc-mark{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;transform:rotate(45deg);background:var(--gold-bright);box-shadow:0 0 6px var(--gold)}.cb-bpc-tick{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--border-light)}.cb-bpc-tick.cb-bpc-on{background:var(--gold)}.cb-bpc-tick i{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-style:normal;font-size:var(--fs-micro);line-height:var(--lh-tight);color:var(--text-dim);text-align:center;white-space:nowrap}.cb-bpc-tick.cb-bpc-cur i{color:var(--gold-bright);font-weight:var(--fw-bold)}.cb-bpc-line{font-size:var(--fs-body);color:var(--text);line-height:var(--lh-snug)}.cb-bpc-line.cb-bpc-unk{color:var(--text-muted)}.cb-stats .cb-prim,.cb-stats .cb-merc{margin-top:calc(10*var(--u))}.cb-prim{min-height:calc(102*var(--u))}.cb-merc{min-height:calc(80*var(--u))}.cb-loot{min-height:calc(88*var(--u))}.cb-sw{min-height:calc(57*var(--u))}
 .cb-lp>.cb-empty{margin:auto 0}
 .cb-sw ul{margin:calc(4*var(--u)) 0 calc(6*var(--u));padding:0 calc(14*var(--u)) 0 calc(28*var(--u));font-size:var(--fs-cb-meta);color:var(--text-muted);line-height:var(--lh-tight)}
 .cb-sw li.cb-w{color:var(--text-dim)}
@@ -76912,6 +76910,8 @@ html.cb-lock,html.cb-lock body{overflow:hidden}
 .cb-rail-b{display:block;width:100%;text-align:left;padding:calc(3*var(--u)) calc(4*var(--u));background:transparent;border:0;color:var(--text-muted);font-family:var(--sans);font-size:var(--fs-cb-title);cursor:pointer;line-height:var(--lh-snug)}
 .cb-rail-b.cb-on{color:var(--text);font-weight:var(--fw-medium)}
 .cb-rail-b.cb-sub{padding-left:calc(20*var(--u))}
+.cb-rail-b.cb-rail-off{opacity:.45;cursor:not-allowed}   /* v3885 (#136): another class's rail - greyed, cannot be opened */
+.cb-wear-err{color:var(--hell)}
 .cb-tree-r{display:flex;align-items:center}
 .cb-tree-r .cb-rail-b{flex:1;min-width:0}
 .cb-fold{flex:none;width:calc(24*var(--u));min-width:20px;height:calc(22*var(--u));min-height:18px;padding:0;background:transparent;border:0;color:var(--gold);font-size:var(--fs-cb-body);line-height:var(--lh-none);cursor:pointer}
@@ -77332,8 +77332,18 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
        34 Barbarian primal helms (theirs, 01_helm_clicked, lists none): with the parent (-1) chosen, an item whose EVERY
        base is locked to another class (itemtypes.txt Class, the ty table's class index) is left out. A class rail
        (Pelts (Druid) ...) still lists its own items; a build with no class keeps everything. */
-    var bci = (catIx == null || catIx < 0) ? _cbClsIx((_cbBuild() || {}).cls) : -1;
-    if (noCls) bci = -1;   // #174 v-B4: a class's own tree node (Amazon Spears) lists its class's items, as its flat rail row did
+    /* v3885 (#136, his 11-08: "the sacred targe and any paladin based shields should not be allowed or even recommended to be
+       equipped as an item based on the character itself if it cant be placed on him ingame" + "druid helm for druids..
+       necromancer also has their style.. amazons.. whatever items related") - A WORN SLOT NEVER OFFERS ANOTHER CLASS'S ITEM,
+       from the parent list, a class rail or a class tree node alike: another class's rail or node lists nothing and is
+       drawn greyed (_cbClassOff). ONLY THE CHARACTER BUILD SCREEN, ONLY WHAT IS WORN (his 11-08: "only to items being
+       equipped.. mules with items can hold anything in inventory/stash", "the vault should not be related to this.. vault
+       items and vault logic is the way it always was"): with a host open (the Vault's mule window, the D2JSP desk, the
+       planner host) and for an inventory, the rule is exactly what it was before. A build with no class keeps everything. */
+    var _worn = slot !== 'inv' && slot !== CB_MINV;
+    var bci = (_worn && !st.host) ? _cbClsIx((_cbBuild() || {}).cls)
+      : ((catIx == null || catIx < 0) ? _cbClsIx((_cbBuild() || {}).cls) : -1);
+    if (noCls) bci = -1;
     var wearable = function(codes){ return bci < 0 || codes.some(function(c){ var b = d.b[c], t = b && d.ty[b[1]]; return !t || t[2] < 0 || t[2] === bci; }); };
     var out = [];
     d.it.forEach(function(x){ var bs = _cbBasesOf(x); if (hit(bs) && wearable(bs)) out.push(x); });
@@ -77472,7 +77482,33 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
      the hand holds */
   function _cbNodeHas(x, cats, t){ return _cbBasesOf(x).some(function(c){ return _cbInNode(c, t) && (t === CB_OFF_NODE || cats.some(function(cat){ return _cbBaseInCat(c, cat); })); }); }
   /* the rows a node draws from: its type's (a class's own node lists its class's items), or the Second Weapons row's own */
-  function _cbNodeSrc(slot, t){ return t === CB_OFF_NODE ? _cbForSlot(slot, _cbOffIx(slot)) : _cbForSlot(slot, -1, _cbNodeOwn(t)); }
+  /* v3885 (#136) - on the build screen a class's own node is read through the build's class like every other list: its own
+     class lists its items, another class lists nothing (the node is greyed, _cbClassOff), no class named lists them all.
+     With a host open (the Vault) the node lists its class's items as it always did. */
+  function _cbNodeSrc(slot, t){ return t === CB_OFF_NODE ? _cbForSlot(slot, _cbOffIx(slot)) : _cbForSlot(slot, -1, st.host ? _cbNodeOwn(t) : false); }
+  /* v3885 (#136) - is a rail row / tree node another class's, for THIS build? -> that class's name, else ''. The build
+     screen only: with a host open (the Vault) nothing is greyed. */
+  function _cbClassOff(ci){
+    if (st.host) return '';
+    var d = _cbDb(), bci = _cbClsIx((_cbBuild() || {}).cls);
+    return (d && bci >= 0 && ci != null && ci >= 0 && ci !== bci && d.cls[ci]) ? d.cls[ci].n : '';
+  }
+  /* v3885 (#136) - may THIS build's class wear this pick? '' when it may (or no class is named - the sheet then says
+     UNKNOWN, as before); else the refusal in the game's terms. A runeword answers by the base chosen on its Base tab
+     (e.base); an item that can be on several bases is wearable when one of them is. The one door every worn pick goes
+     through (_cbEquip), so no list, tab or paste can put another class's item on the doll. */
+  function _cbWearWhy(it, e){
+    var d = _cbDb(), bci = _cbClsIx((_cbBuild() || {}).cls);
+    if (!d || bci < 0 || !it || !d.cls[bci]) return '';
+    var codes = (e && e.base) ? [e.base] : _cbBasesOf(it), lock = -1;
+    if (!codes.length) return '';
+    var ok = codes.some(function(c){ var bb = d.b[c], t = bb && d.ty[bb[1]]; if (t && t[2] >= 0 && t[2] !== bci){ lock = t[2]; return false; } return true; });
+    if (ok || lock < 0 || !d.cls[lock]) return '';
+    var bn = (codes.length === 1 && d.b[codes[0]]) ? d.b[codes[0]][0] : '';
+    return it[1] + ' is ' + d.cls[lock].n + ' only' + (bn && bn !== it[1] ? ' (its ' + bn + ' is a ' + d.cls[lock].n + ' item)' : '')
+      + '. A ' + d.cls[bci].n + ' cannot wear it in the game, so it is not placed.';
+  }
+  window._cbWearWhy = function(id, base){ return _cbWearWhy(_cbItem(id), base ? { base: base } : null); };
   window._cbNodeRows = function(slot, t){ var cats = _cbSlotCats(slot); return _cbNodeSrc(slot, t).filter(function(x){ return _cbNodeHas(x, cats, t); }).map(function(x){ return [x[0], x[1], x[2]]; }); };
 
   /* ── #174 v-B4 — THE BASE TAB (their 63_botd_base_tab and 80_*_base, measured with a real mouse) ─────────────────────
@@ -79457,7 +79493,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
           + (cp && r.value ? '<em class="cb-cap" aria-label="capped at ' + esc(span(cp.min, cp.max)) + '">cap ' + esc(span(cp.min, cp.max)) + '</em>' : '') + '</span>' + _cbBpHtml(eng, r.bp) + '</div>';
       });
     }
-    return h + '</div></div>';
+    return h + '</div>' + _cbPrimMercHtml() + '</div>';   /* v3885 (#134) - Primary Skills + Mercenary under Stats */
   }
 
   function _cbCalcHtml(b){
@@ -79508,22 +79544,68 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     return '<table class="cb-calc">' + rows + '</table>';
   }
 
+  /* v3885 (#134, his DESIGN C 11-08 13:17 - "looks cool this one"; #230 6720814186 / 6720826884) - THE LEFT COLUMN IS A
+     BREAKPOINTS PANEL. One gauge-rail card per breakpoint the engine reads (Faster Cast, Hit Recovery, Attack Speed, Faster
+     Block): the value, "N frames · tier k/T", a rail whose ticks are the class's (or the weapon's) own tiers read FROM THE
+     ENGINE (eng.bp.frames / _cbIasGap, scanned - never a typed table), and the engine's own line ("+20% more reaches the next
+     step." / "Top breakpoint."). The rail, the tier label and the line read one computed answer, so they cannot disagree. A
+     card the engine cannot answer says UNKNOWN and why. An Attack Rating card says what its chance to hit needs - the
+     character's dexterity (an imported save) and the monster's defence are not on a build, so no number is shown.
+     Stash, Loot Filter and Strengths and Weaknesses leave this screen (his rules 1-3); Primary Skills and Mercenary sit
+     under Stats (rule 4). */
+  function _cbBpTiers(kind, b, eng){
+    try {
+      var who = _cbBpWho(b), out = [], last = null, cap = kind === 'fcr' ? 300 : 600;
+      for (var p = 0; p <= cap; p++){
+        var f = kind === 'ias' ? ((_cbIasGap(b, { key: 'ias', source: 'tier', value: { min: p, max: p } }) || {}).frames)
+                               : eng.bp.frames(kind, who, p);
+        if (f == null || !isFinite(f)) { if (p === 0) return null; continue; }
+        if (last === null || f < last){ out.push([p, f]); last = f; }
+      }
+      return out.length > 1 ? out : null;
+    } catch (e) { return null; }
+  }
+  function _cbBpNum(n){ return (n == null || !isFinite(n)) ? '' : String(Math.round(n * 10) / 10); }
+  function _cbBpCard(title, kind, row, eng, b){
+    var g = row && row.bp, v = row && row.source !== 'UNKNOWN' && row.value && row.value.min != null ? row.value : null;
+    var val = v ? (v.min === v.max ? _cbBpNum(v.min) : _cbBpNum(v.min) + '–' + _cbBpNum(v.max)) + '%' : '—';
+    var line = g ? eng.bp.say(g) : 'UNKNOWN. The engine returned no breakpoint for this build.';
+    var tiers = (g && g.frames != null && v) ? _cbBpTiers(kind, b, eng) : null, sub = '', rail = '';
+    if (tiers){
+      var now = v.min, k = tiers.filter(function(t){ return t[0] <= now; }).length, T = tiers.length;
+      sub = _cbBpNum(g.frames) + ' frames · tier ' + k + '/' + T;
+      var max = Math.max(tiers[T - 1][0], now) || 1, pos = function(x){ return Math.max(0, Math.min(100, x / max * 100)).toFixed(2) + '%'; };
+      var lastShown = -100;
+      var ticks = tiers.map(function(t, ix){
+        var reached = t[0] <= now, cur = ix === k - 1, at = t[0] / max * 100;
+        var show = cur || ix === T - 1 || at - lastShown >= 7;
+        if (show) lastShown = at;
+        return '<span class="cb-bpc-tick' + (reached ? ' cb-bpc-on' : '') + (cur ? ' cb-bpc-cur' : '') + '" style="left:' + pos(t[0]) + '"'
+          + ' title="' + esc(t[0] + '% → ' + t[1] + ' frames') + '">' + (show ? '<i>' + t[0] + '<br>' + t[1] + 'f</i>' : '') + '</span>';
+      }).join('');
+      rail = '<div class="cb-bpc-rail" role="img" aria-label="' + esc(title + ' ' + val + ', ' + sub) + '">'
+        + '<span class="cb-bpc-fill" style="width:' + pos(now) + '"></span>' + ticks
+        + '<span class="cb-bpc-mark" style="left:' + pos(now) + '"></span></div>';
+    } else if (g && g.frames != null) sub = _cbBpNum(g.frames) + ' frames';
+    return '<div class="cb-bpc" data-bp="' + kind + '"><div class="cb-bpc-h"><span class="cb-bpc-t">' + esc(title) + '</span>'
+      + '<b class="cb-bpc-v">' + esc(val) + '</b></div>' + (sub ? '<div class="cb-bpc-sub">' + esc(sub) + '</div>' : '') + rail
+      + '<div class="cb-bpc-line' + (/^UNKNOWN/.test(line) ? ' cb-bpc-unk' : '') + '"' + (g && g.why ? ' title="' + esc(g.why) + '"' : '') + '>' + esc(line) + '</div></div>';
+  }
   function _cbLeftHtml(b, s, L){
-    var tpl = null; if (b.from) _cbTemplates().concat(_cbTypedTemplates()).forEach(function(t){ if (!tpl && t.key === b.from) tpl = t; });
-    var sw = '';
-    if (tpl && (tpl.strengths.length || tpl.weaknesses.length)){
-      sw = (tpl.strengths.length ? '<div class="cb-sw-k">Strengths</div><ul>' + tpl.strengths.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '')
-        + (tpl.weaknesses.length ? '<div class="cb-sw-k">Weaknesses</div><ul>' + tpl.weaknesses.map(function(x){ return '<li class="cb-w">' + esc(x) + '</li>'; }).join('') + '</ul>' : '');
-    } else sw = '<div class="cb-empty"><b>Nothing written for this build.</b> A build from one of your characters carries that character\'s notes.</div>';
-    return '<div class="cb-left">'
-      /* #174 R1 — the inventory went to the centre, under the doll; the left keeps their Stash button on its own card */
-      + '<div class="cb-p cb-stashp"><div class="cb-h"><span class="cb-h-t">Stash</span><span class="cb-h-r"><button type="button" class="cb-btn" id="cb-stash-btn" onclick="window._cbOpenStash()">▤ Stash</button></span></div>'
-      +   '<div class="cb-empty">Inventory, Personal and Shared. Grids that belong to this build, never the vault.</div></div>'
-      + '<div class="cb-p cb-lp cb-prim"><div class="cb-h"><span class="cb-h-t">Primary Skills</span></div><div class="cb-empty"><b>Nothing fills this yet.</b> The skill trees arrive with v-D (the game\'s own skill tables).</div></div>'
-      + '<div class="cb-p cb-lp cb-merc"><div class="cb-h"><span class="cb-h-t">Mercenary</span></div><div class="cb-empty"><b>No mercenary.</b> Hiring and his gear arrive later.</div></div>'
-      + '<div class="cb-p cb-lp cb-loot"><div class="cb-h"><span class="cb-h-t">Loot Filter</span></div><div class="cb-empty"><b>No loot filter</b> is linked to this build (not scheduled).</div></div>'
-      + '<div class="cb-p cb-lp cb-sw"><div class="cb-h"><span class="cb-h-t">Strengths and Weaknesses</span></div>' + sw + '</div>'
-      + '</div>';
+    var bp = _cbBpRead(b), byKey = {};
+    if (bp) bp.sh.rows.forEach(function(r){ byKey[r.key] = r; });
+    var cards = bp
+      ? [['Faster Cast Rate (FCR)', 'fcr'], ['Faster Hit Recovery (FHR)', 'fhr'], ['Increased Attack Speed (IAS)', 'ias'], ['Faster Block Rate (FBR)', 'fbr']].map(function(c){   /* his 11-08: the game's own names */
+          return _cbBpCard(c[0], c[1], byKey[c[1]], bp.eng, b); }).join('')
+      : '<div class="cb-empty"><b>UNKNOWN.</b> The stats engine did not answer for this build, so no breakpoint can be read.</div>';
+    var ar = '<div class="cb-bpc cb-bpc-ar" data-bp="ar"><div class="cb-bpc-h"><span class="cb-bpc-t">Attack Rating</span><b class="cb-bpc-v">—</b></div>'
+      + '<div class="cb-bpc-line cb-bpc-unk">UNKNOWN. The chance to hit needs the character’s dexterity (from an imported save) and the monster’s defence - neither is on this build.</div></div>';
+    return '<div class="cb-left"><div class="cb-p cb-bpp"><div class="cb-h"><span class="cb-h-t">✦ Breakpoints ✦</span></div>' + cards + ar + '</div></div>';
+  }
+  /* v3885 (#134, his rule 4) - Primary Skills and Mercenary, at the bottom of the right column under Stats */
+  function _cbPrimMercHtml(){
+    return '<div class="cb-prim"><div class="cb-h"><span class="cb-h-t">Primary Skills</span></div><div class="cb-empty"><b>Nothing fills this yet.</b> The skill trees arrive with v-D (the game\'s own skill tables).</div></div>'
+      + '<div class="cb-merc"><div class="cb-h"><span class="cb-h-t">Mercenary</span></div><div class="cb-empty"><b>No mercenary.</b> Hiring and his gear arrive later.</div></div>';
   }
 
   function _cbRender(){
@@ -79834,17 +79916,19 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       + (rwIt ? tab('base', 'Base') : '') + (pend ? tab('quality', 'Quality') : '') + tab('edit', 'Edit', !!(cur && !pend && !p.rw))
       + '<button type="button" class="cb-x" onclick="window._cbClosePick()" aria-label="close (Esc)">✕</button></div>';
     /* the mule host's refusal (a MAIN lock, a cell the item does not fit) is said on every tab it can happen on */
-    var err = (host && st.hostErr) ? '<div class="cb-note cb-host-err" role="alert">⚠ ' + esc(st.hostErr) + '</div>' : '';
+    var err = ((host && st.hostErr) ? '<div class="cb-note cb-host-err" role="alert">⚠ ' + esc(st.hostErr) + '</div>' : '')
+      + (st.wearErr ? '<div class="cb-note cb-wear-err" role="alert">⚠ ' + esc(st.wearErr) + '</div>' : '');   // v3885 (#136)
     /* the planner says where the pick went in the plate under the sheet, not in this line */
     if (p.tab === 'locker' && host) return head + '<div class="cb-mb cb-mb-locker">' + ((st.host && st.host.locker && st.host.locker.html) || '') + '</div>';
     if (p.tab === 'base' && rwIt) return head + err + _cbBaseTabHtml(rwIt, slot);
     if (p.tab === 'quality' && pend) return head + err + _cbQualityHtml(pend, slot);
     if (p.tab === 'edit' && cur && _cbIsBase(_cbItem(cur.id))) return head + err + _cbBaseEditHtml(cur, slot);
     if (p.tab === 'edit' && cur) return head + err + _cbEditHtml(cur, slot);
-    var d = _cbDb();
+    var d = _cbDb(), _worn = slot !== 'inv' && slot !== CB_MINV;   // v3885 (#136): only a WORN slot greys another class's rail
     var rail = CB_HANDS[slot] ? _cbTreeRailHtml(slot, p.node, '_cbRailNode')
       : '<div class="cb-rail" role="listbox" aria-label="base categories">' + _cbRailOf(slot).map(function(c){
-          var on = (p.rail == null ? -1 : p.rail) === c[1];
+          var on = (p.rail == null ? -1 : p.rail) === c[1], off = _worn ? _cbClassOff(c[2]) : '';   // v3885 (#136): another class's rail is greyed
+          if (off) return '<button type="button" class="cb-rail-b cb-rail-off" data-rail="' + c[1] + '" disabled aria-disabled="true" title="' + esc(off + ' only. A ' + (_cbBuild() || {}).cls + ' cannot wear these.') + '">' + esc(c[0]) + ' <small>(' + esc(off) + ' only)</small></button>';
           return '<button type="button" class="cb-rail-b' + (on ? ' cb-on' : '') + '" data-rail="' + c[1] + '" onclick="window._cbRail(' + c[1] + ')">' + esc(c[0]) + (c[2] >= 0 && d ? ' <small>(' + esc(d.cls[c[2]].n) + ')</small>' : '') + '</button>';
         }).join('') + '</div>';
     /* Existing Items is a BUILD's other items; the mule host's own list is its In this locker tab */
@@ -79884,7 +79968,13 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       if (hide >= 0){ if (r.depth > hide) return; hide = -1; }
       if (r.off && act !== '_cbRailNode') return;          // Second Weapons (Barbarian) is a Select row: a non-Barbarian's Base tab holds none
       var open = r.kids ? (fold[r.path] != null ? !!fold[r.path] : r.depth === 0) : false;
-      var only = (r.cls >= 0 && d && d.cls[r.cls]) ? d.cls[r.cls].n + ' only' : '';
+      var only = (r.cls >= 0 && d && d.cls[r.cls]) ? d.cls[r.cls].n + ' only' : '', off = _cbClassOff(r.cls);   // v3885 (#136)
+      if (off){
+        h += '<div class="cb-tree-r" style="--td:' + r.depth + '"><button type="button" class="cb-rail-b cb-rail-off" role="treeitem" aria-level="' + (r.depth + 2) + '" disabled aria-disabled="true"'
+          + ' title="' + esc(off + ' only. A ' + (_cbBuild() || {}).cls + ' cannot wear these.') + '" data-node="' + esc(r.t) + '">' + esc(r.label) + (r.label.indexOf('(') >= 0 ? '' : ' <small>(' + esc(off) + ' only)</small>') + '</button></div>';
+        if (r.kids) hide = r.depth;
+        return;
+      }
       h += '<div class="cb-tree-r" style="--td:' + r.depth + '"><button type="button" class="cb-rail-b' + (cur === r.t ? ' cb-on' : '') + '" role="treeitem" aria-level="' + (r.depth + 2) + '"'
         + (r.kids ? ' aria-expanded="' + open + '"' : '') + (only ? ' title="' + esc(only) + '"' : '') + ' data-node="' + esc(r.t) + '" onclick="window.' + act + '(\'' + esc(r.t) + '\')">' + esc(r.label) + '</button>'
         + (r.kids ? '<button type="button" class="cb-fold" aria-expanded="' + open + '" aria-label="' + (open ? 'fold ' : 'open ') + esc(r.label) + '" onclick="window._cbTreeFold(\'' + esc(r.path) + '\',' + (open ? 0 : 1) + ')"></button>' : '')
@@ -80233,7 +80323,8 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     if (src.jewels === 'cjwl') return _cbForSlot('inv').filter(function(x){ var b = _cbBase(x[3]); return !!(b && b[1] === 'cjwl'); });
     if (src.jewels) return _cbForSlot('inv').filter(_cbIsJewel);
     var seen = {}, out = [];
-    src.rails.forEach(function(i){ _cbForSlot(src.slot, i).forEach(function(x){ if (!seen[x[0]]){ seen[x[0]] = 1; out.push(x); } }); });
+    /* v3885 (#136): a STASH holds anything, whatever the class (his 11-08) - the worn slot's list without the class rule */
+    src.rails.forEach(function(i){ _cbForSlot(src.slot, i, true).forEach(function(x){ if (!seen[x[0]]){ seen[x[0]] = 1; out.push(x); } }); });
     return out.sort(function(a, b){ return a[1].toLowerCase() < b[1].toLowerCase() ? -1 : 1; });
   }
   function _cbStashRows(){
@@ -80457,7 +80548,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     st.stash = st.newb = null; st.filtOpen = false; st.modOpen = false; st.modQ = ''; st.modSay = ''; st.modBad = false;
     st.pick = { kind: kind, slot: slot, cell: cell || null, tab: has ? 'edit' : 'select', rail: -1, qt: 'all', q: '', filt: '', i: null, pending: null,
                 node: null, rw: null, bnode: null, bq: '', bfilt: '', fold: {} };   // #174 v-B4: the tree node, the Base tab's runeword and its own rail / search / filter
-    st.hostErr = '';
+    st.hostErr = ''; st.wearErr = '';
     window.d2Tip.hide();
     _cbRender();
     try { var f = document.querySelector('#cb-modal .cb-tab.cb-on'); if (f) f.focus(); } catch (e) {}
@@ -80715,6 +80806,9 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
   function _cbEquip(it, e){
     var p = st.pick;
     if (p.kind === 'slot'){
+      var _ww = (st.host || p.host) ? '' : _cbWearWhy(it, e);   // v3885 (#136): never on THIS build's doll; the Vault's doll as before
+      if (_ww){ st.wearErr = _ww; _cbRender(); return false; }
+      st.wearErr = '';
       /* #174 v-B4 x #246 (integration): a REFUSED write is not a pick. The mule host's writer can refuse (a MAIN-locked
          name, a higher-ranked placement); flipping to Edit on an item that was never placed showed him an Edit of
          nothing and returned true to every caller. Stay on the list, with the refusal on screen (st.hostErr). */
@@ -92734,12 +92828,12 @@ window.tvStashAutoIntake = async function(tab, opts){
     if (g.frames == null) return 'UNKNOWN. ' + (g.why || 'The next step is not known.');
     var isRange = g.now && g.now.min !== g.now.max;
     if (!isRange){
-      if (g.atCap) return _ceBpNum(g.frames) + ' frames. This is the last step.';
+      if (g.atCap) return _ceBpNum(g.frames) + ' frames. Top breakpoint.';   /* v3885 (#134, his words) */
       return _ceBpNum(g.frames) + ' frames. +' + _ceBpNum(g.need) + '% more reaches the next step.';
     }
     var a = g.frames, b = g.framesHi == null ? g.frames : g.framesHi;
     var head = a === b ? (_ceBpNum(a) + ' frames.') : (_ceBpNum(a) + ' or ' + _ceBpNum(b) + ' frames.');
-    var end = function(at, need, which){ return at ? ('The ' + which + ' end is at the last step.') : ('The ' + which + ' end needs +' + _ceBpNum(need) + '% more.'); };
+    var end = function(at, need, which){ return at ? ('The ' + which + ' end is at the top breakpoint.') : ('The ' + which + ' end needs +' + _ceBpNum(need) + '% more.'); };
     return head + ' ' + end(g.atCap, g.need, 'low') + ' ' + end(!!g.atCapHi, g.needHi, 'high');
   }
   function _ceBpSay(g){

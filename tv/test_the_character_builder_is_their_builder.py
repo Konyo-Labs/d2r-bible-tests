@@ -105,6 +105,9 @@ class TheBuilderIsTheirBuilder(unittest.TestCase):
           window._cbCommit(function(b){ b.cls = 'Sorceress'; });
           OUT.sorcHead = window._cbForSlot('head').map(function(x){ return x[1]; });
           OUT.sorcPelts = window._cbForSlot('head', 2).map(function(x){ return x[1]; });
+          window._cbCommit(function(b){ b.cls = 'Druid'; });
+          OUT.druidPelts = window._cbForSlot('head', 2).map(function(x){ return x[1]; });
+          window._cbCommit(function(b){ b.cls = 'Sorceress'; });
           OUT.sorcRarm = window._cbForSlot('rarm').map(function(x){ return x[1]; });
           OUT.sorcLarm = window._cbForSlot('larm').map(function(x){ return x[1]; });
           OUT.glovNames = window._cbForSlot('glov').map(function(x){ return x[1]; });
@@ -152,7 +155,13 @@ class TheBuilderIsTheirBuilder(unittest.TestCase):
         for n in ("Arreat's Face", "Jalal's Mane"):
             self.assertIn(n, out["headNames"], "%s left the class-less list" % n)
             self.assertNotIn(n, out["sorcHead"], "%s is offered to a Sorceress" % n)
-        self.assertIn("Jalal's Mane", out["sorcPelts"], "the Pelts (Druid) rail no longer lists its own pelts")
+        # v3885 (#136, his 11-08 "druid helm for druids.. necromancer also has their style.. amazons") - the Pelts (Druid)
+        # rail lists its pelts to a Druid and NOTHING to a Sorceress (it was #174 v-B2's "the class rails still list their own")
+        self.assertIn("Jalal's Mane", out["druidPelts"], "the Pelts (Druid) rail no longer lists a Druid's own pelts")
+        # a runeword a pelt OR any helm can hold (Lore, Delirium) stays - its Base tab lists only the helms she can wear;
+        # every pelt and every Druid-only unique leaves
+        self.assertEqual(sorted(other & set(out["sorcPelts"])), [], "the Pelts (Druid) rail offers a Sorceress what she cannot wear")
+        self.assertNotIn("Jalal's Mane", out["sorcPelts"])
         for n in ("Bartuc's Cut-Throat", "Herald of Zakarum"):
             self.assertNotIn(n, out["sorcRarm"] + out["sorcLarm"], "%s (another class's) is offered to a Sorceress" % n)
         self.assertIn("Crown of Ages", out["sorcHead"])
@@ -588,9 +597,9 @@ class TheDoctorWatchesThePickersBlock(unittest.TestCase):
 
 RED_PROOF = [
     {
-        "why": "#174 v-B2 fix round - the parent list offers another class's items again (34 pelts for a Sorceress)",
+        "why": "#174 v-B2 fix round (+ v3885 #136) - the parent list offers another class's items again (34 pelts for a Sorceress)",
         "file": "bible.html",
-        "find": "    var bci = (catIx == null || catIx < 0) ? _cbClsIx((_cbBuild() || {}).cls) : -1;\n",
+        "find": "    var bci = (_worn && !st.host) ? _cbClsIx((_cbBuild() || {}).cls)\n      : ((catIx == null || catIx < 0) ? _cbClsIx((_cbBuild() || {}).cls) : -1);\n",
         "replace": "    var bci = -1;\n",
         "matches": 1,
     },

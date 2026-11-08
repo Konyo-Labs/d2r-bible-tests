@@ -271,9 +271,9 @@ class TheFormulaMatchesThePublishedTables(unittest.TestCase):
                          "10 or 9 frames. The low end needs +3% more. The high end needs +35% more.")
         self.assertEqual(self.out["inside"]["say"].split(" Lightning")[0],
                          "10 frames. The low end needs +13% more. The high end needs +3% more.")
-        self.assertEqual(self.out["amaLast"]["say"], "11 frames. This is the last step.")
+        self.assertEqual(self.out["amaLast"]["say"], "11 frames. Top breakpoint.")
         self.assertTrue(self.out["amaLast"]["gap"]["atCap"])
-        self.assertEqual(self.out["sorLast"]["say"].split(" Lightning")[0], "7 frames. This is the last step.")
+        self.assertEqual(self.out["sorLast"]["say"].split(" Lightning")[0], "7 frames. Top breakpoint.")
 
     def test_unknown_stays_unknown_and_holy_shield_is_not_assumed(self):
         self.assertIn("125%", self.out["war0"]["say"])
