@@ -7483,6 +7483,40 @@ def _red_cases(tail):
     return sorted(out)
 
 
+#: v3883 (#129 item 5) - A RED IS RE-CHECKED ON A QUIET PC. MEASURED 2026-11-06 23:38Z on his Mac: under my load, the safety
+#: net judged test_control RED, its immediate re-check (REG-3324) ran under the same load and was RED again, and the find
+#: shut all nine locks; 25 min later, quiet, the same law ran 2,274 OK. So before the re-check the net waits - bounded - for
+#: the 1-minute load per core to fall under NET_QUIET_LOAD; a red that repeats on a PC that stayed loaded through the whole
+#: wait is judged UNDER LOAD: not a find (the gate stays trusted, closes nothing and is asked again), while a red that repeats
+#: on a quiet PC is the find it always was. Windows has no load average: UNKNOWN load waits for nothing and the find stands
+#: (fail closed), exactly as before.
+NET_QUIET_LOAD = 0.75
+NET_QUIET_WAIT_S = 600.0
+NET_QUIET_POLL_S = 15.0
+
+
+def _load_per_core(_getload=None, _cpus=None):
+    """v3883 - the 1-minute load average per core. -> float | None (no load average here, or unreadable: UNKNOWN)"""
+    try:
+        n = _cpus if _cpus is not None else (os.cpu_count() or 0)
+        if not n or n <= 0:
+            return None
+        return float((_getload or os.getloadavg)()[0]) / float(n)
+    except Exception:
+        return None
+
+
+def _wait_for_quiet(_load=None, _sleep=None, _now=None):
+    """v3883 - wait, at most NET_QUIET_WAIT_S, for the load per core to fall to NET_QUIET_LOAD. -> the load when it ended
+    (None: UNKNOWN - nothing to wait for)"""
+    load, sleep, now = (_load or _load_per_core), (_sleep or time.sleep), (_now or time.time)
+    t0, lv = now(), load()
+    while lv is not None and lv > NET_QUIET_LOAD and now() - t0 < NET_QUIET_WAIT_S:
+        sleep(NET_QUIET_POLL_S)
+        lv = load()
+    return lv
+
+
 def _net_red_holds(name, say, vanished=None):
     """REG-3324 (#103 - his 11-07 "if the river proves itself already why does every proof ... need to continue proofing it
     over and over again for it to unlock"). MEASURED 11-06 23:38Z on his Mac: the safety net judged test_control RED once,
@@ -7509,7 +7543,9 @@ def _net_red_holds(name, say, vanished=None):
     cases = _red_cases(r.get("tail"))
     again = r.get("again")
     ok, tail2 = None, ""
+    _lv = None
     if callable(again):
+        _lv = _wait_for_quiet()                       # v3883 - the re-check runs on a quiet PC when one comes in time
         try:
             ok, tail2 = again()
         except Exception as _ae:
@@ -7518,6 +7554,12 @@ def _net_red_holds(name, say, vanished=None):
         _CENSUS.setdefault("flakes", {})[name] = cases
         say("     %-52s   ↳ REG-3324: its clean run went RED here once and its re-check came back GREEN - a FLAKE (%s): "
             "recorded, never a find, no lock closes" % (name, ", ".join(cases[:3]) or "the red run named no case"))
+        return False
+    if ok is not True and isinstance(_lv, (int, float)) and _lv > NET_QUIET_LOAD:
+        # v3883 - the PC stayed loaded through the whole wait: the repeat says nothing the load did not
+        _CENSUS.setdefault("loadedRed", {})[name] = round(float(_lv), 2)
+        say("     %-52s   ↳ v3883: its red repeated, but this PC stayed loaded (%.2f per core, over %.2f) through %d s of "
+            "waiting - judged UNDER LOAD: never a find, asked again" % (name, _lv, NET_QUIET_LOAD, int(NET_QUIET_WAIT_S)))
         return False
     _CENSUS.setdefault("redCases", {})[name] = sorted(set(cases) | set(_red_cases(tail2)))
     return True

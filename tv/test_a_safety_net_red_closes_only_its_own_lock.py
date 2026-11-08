@@ -37,6 +37,20 @@ _console_safe_enable()
 import fixture_tmp as _fx_tmp  # noqa: E402
 _fx_tmp.contain()
 import heart2 as H  # noqa: E402
+
+# v3883 - the net's re-check now waits for a quiet PC (heart2._wait_for_quiet). These cases judge the re-check's
+# VERDICT, never this machine's load: the wait answers "quiet" for the whole module, and
+# test_a_net_red_under_load_is_judged_again drives the wait itself.
+_QUIET = mock.patch.object(H, "_wait_for_quiet", lambda *a, **k: 0.0)
+
+
+def setUpModule():
+    _QUIET.start()
+
+
+def tearDownModule():
+    _QUIET.stop()
+
 import self_arming as SA  # noqa: E402
 import self_prove as SP  # noqa: E402
 
