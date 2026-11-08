@@ -3240,6 +3240,15 @@ def _run_gate_once(sandbox_tv, filename, timeout=180, extra=(), script=None, wid
         _ids = _LAST_RED.get(threading.get_ident()) or []
         if _ids:
             _parts.append("red: " + ", ".join(_ids[:12]) + ((" (+%d more)" % (len(_ids) - 12)) if len(_ids) > 12 else ""))
+            # v3888 (REG-3479) - AND WHAT IT SAID. test_vault_l1_war_stash_overflow went red untampered on v3881's shard 12,
+            # v3882's shard 10 and twice on v3886's shard 13; since REG-1877 the log names the case
+            # (WarStashOverflow.test_all_five_pages_fill_then_war1_then_war2) and still never what failed, so three reds and
+            # a re-run later the cause was UNKNOWN. The first assertion line rides beside the names (words only).
+            for _l in _lines:
+                _c = _ANSI_RX.sub("", _l).strip()
+                if re.match(r"\w*(?:Error|Exception):", _c):
+                    _parts.append("why: " + _c[:240])
+                    break
         else:
             # v3882 - A RED THAT NAMES NO CASE STILL SAYS ITS FIRST FAILURE LINE. MEASURED: test_vault_l1_war_stash_overflow
             # went red untampered on v3881's shard 12 and v3882's shard 10 ("Ran 15 tests ... FAILED (failures=1)") and no

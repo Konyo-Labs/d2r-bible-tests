@@ -128,6 +128,14 @@ places) printed r50 - kills for an even chance - under "Runs (50%)", titled "sor
 on the Cow Level (~350 kills a run) ~350 times too many. The Drop Simulator took the same r50 as "runs" and rolled a kill's odds.
 Now the table and the simulator print s.runs, the title says its order, and the simulator rolls one run's odds (_gicRunOdds:
 1 - (1 - 1/c)^kills). GUARD: test_the_item_card_counts_runs_not_kills (3 red-proofs RED).
+### REG-3479 - A LAW RED UNTAMPERED IN A PROOF SHARD NAMED ITS CASE AND NEVER WHAT FAILED (v3888, v3886's GitHub round 3)
+test_vault_l1_war_stash_overflow went red untampered on v3881's shard 12, v3882's shard 10, and twice on v3886's shard 13 (11-08,
+0f31ea6ae). REG-1877 named the case (WarStashOverflow.test_all_five_pages_fill_then_war1_then_war2), but no log, artifact or census
+said WHICH assertion: the same case was green on those bytes in the agent suite, on shard 10's re-run and twice on his Mac (39-40 s,
+v3885 and v3886 alike), so the cause stayed UNKNOWN through a third attempt. A named red run's tail now carries the first
+assertion / exception line beside the names (" | why: ..."), so the next one is read, not re-run. GUARD: test_a_parallel_proof_is_the
+_same_proof.AnUntamperedRedRunNamesItsRedCases (red-proof RED).
+
 ### REG-3478 - OUR SCRATCH PILED UP IN DEAN'S %TEMP%: 189 CHILD-GUARD LEDGER DIRS, ONE PER SANDBOXED TREE, AND CROP DIRS WINDOWS WOULD NOT LET GO (v3888)
 The doctor's row on Dean's PC (hook, 11-08): "219 of 296 scratch director(ies) WE made are older than 3 days - oldest 105.0 days".
 MEASURED there, read-only over ssh: 189 tvd-child-guard-<hash> (153 old, newest that afternoon), 23 heartlane_ (none after 10-21),

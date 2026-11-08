@@ -832,6 +832,9 @@ class AnUntamperedRedRunNamesItsRedCases(unittest.TestCase):
         self.assertIn("Boxy.test_two_breaks", tail)
         self.assertIn("Boxy.test_three_errors", tail)
         self.assertNotIn("test_one_is_fine", tail)
+        # v3888 (REG-3479) - and what the first one SAID: three reds of test_vault_l1_war_stash_overflow named its case and never
+        # its assertion, so the cause stayed UNKNOWN through a re-run
+        self.assertRegex(tail, r"why: (AssertionError: 1 != 2|RuntimeError: x)", "a named red run never says what failed")
 
     def _run_script(self, body):
         root = tempfile.mkdtemp(prefix="redname_")
@@ -867,6 +870,11 @@ class AnUntamperedRedRunNamesItsRedCases(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3888 (REG-3479) - a named red run's tail drops what its first failure said",
+     "file": "tv/heart2.py",
+     "find": "                    _parts.append(\"why: \" + _c[:240])\n",
+     "replace": "                    pass\n",
+     "matches": 1},
     {"why": "v3882 - a red that names no case says nothing again (war_stash's red on two shards, no case on either log)",
      "file": "heart2.py",
      "find": "            if _first:\n                _parts.append(\"red: UNNAMED (%s)\" % _first[:200])\n",
