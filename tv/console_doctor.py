@@ -762,9 +762,15 @@ def _check_the_art_corpus():
     return OK, "%d sprite(s), and the four craft gems are all present" % n
 
 
-def _check_footage_belongs_to_a_reel():
+def _check_footage_belongs_to_a_reel(now_ms=None):
     """A session that dies before it SEALS leaves its frames loose in hist/, where no lane and no
-    deleter can see them — 3.15 GB of his footage was invisible that way."""
+    deleter can see them — 3.15 GB of his footage was invisible that way.
+
+    v3888 (REG-3480, the hook on OLD PC ALT 11-08: "48 frame(s) (0.00 GB) belong to NO reel - an unsealed recording no sweep
+    can reach") - MEASURED there the same minute: orphan_fold refused the one cluster because its newest frame was 1 s old
+    ("a recording STILL IN PROGRESS") - he was filming. Every recording's frames are loose until its seal folds them, so this
+    row read MISSING through every session. The rolling tail - newest frame within orphan_fold.GAP_MS of now, and the frames
+    chained to it by gaps no longer than that - is the session being filmed; only the rest is footage no reel holds."""
     try:
         sys.path.insert(0, HERE)
         import frame_authority as fa
@@ -779,11 +785,36 @@ def _check_footage_belongs_to_a_reel():
         return UNKNOWN, "could not read the loose frames (%s)" % str(e)[:70]
     if not lf.get("ok"):
         return UNKNOWN, lf.get("say") or "the loose-frame scan could not answer"
-    rec = len(lf.get("recording") or [])
-    if rec:
+    names = list(lf.get("recording") or [])
+    try:
+        import orphan_fold as _of
+        gap = int(_of.GAP_MS)
+    except Exception:
+        gap = None                      # the planner's rule unreadable: no frame is called rolling (fail closed)
+    now = int(time.time() * 1000) if now_ms is None else int(now_ms)
+    stamped = sorted((int(re.match(r"f_(\d+)\.jpg$", f).group(1)), f) for f in names if re.match(r"f_(\d+)\.jpg$", f))
+    rolling = set()
+    if gap is not None and stamped and 0 <= now - stamped[-1][0] <= gap:
+        i = len(stamped) - 1
+        rolling.add(stamped[i][1])
+        while i > 0 and stamped[i][0] - stamped[i - 1][0] <= gap:
+            i -= 1
+            rolling.add(stamped[i][1])
+    orphans = [f for f in names if f not in rolling]
+    if orphans:
+        ob = 0
+        for f in orphans[:20000]:
+            try:
+                ob += os.path.getsize(os.path.join(hist, f))
+            except OSError:
+                pass
         return MISSING, ("%d frame(s) (%.2f GB) belong to NO reel — an unsealed recording no sweep "
-                         "can reach. `python3 tv/orphan_fold.py` shows the plan."
-                         % (rec, (lf.get("recordingBytes") or 0) / 1e9))
+                         "can reach. `python3 tv/orphan_fold.py` shows the plan.%s"
+                         % (len(orphans), ob / 1e9,
+                            (" (%d more are the recording rolling now)" % len(rolling)) if rolling else ""))
+    if rolling:
+        return OK, ("a recording is rolling: %d frame(s) of the session being filmed now - its seal folds them into "
+                    "its reel" % len(rolling))
     return OK, "every recording frame belongs to a reel"
 
 

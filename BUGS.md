@@ -128,6 +128,15 @@ places) printed r50 - kills for an even chance - under "Runs (50%)", titled "sor
 on the Cow Level (~350 kills a run) ~350 times too many. The Drop Simulator took the same r50 as "runs" and rolled a kill's odds.
 Now the table and the simulator print s.runs, the title says its order, and the simulator rolls one run's odds (_gicRunOdds:
 1 - (1 - 1/c)^kills). GUARD: test_the_item_card_counts_runs_not_kills (3 red-proofs RED).
+### REG-3480 - THE DOCTOR READ A RECORDING BEING FILMED AS FOOTAGE NO REEL HOLDS (v3888, the hook on OLD PC ALT)
+The hook, 11-08 ~23:15: "OLD PC ALT: footage has a reel - 48 frame(s) (0.00 GB) belong to NO reel - an unsealed recording no sweep
+can reach". MEASURED there minutes later, read-only: orphan_fold refused its one cluster because "the newest frame here is 1s old,
+inside the 180s gap that defines a cluster ... a recording STILL IN PROGRESS" - he was filming. A session's frames stay loose until
+its seal folds them, so the row read MISSING through every recording on every PC. It now takes the rolling tail apart with the
+planner's own rule (orphan_fold.GAP_MS, imported, not copied): the newest frame within the gap of now and every frame chained to it
+by gaps no longer than that read "a recording is rolling"; only the rest is footage no reel holds, and a session that died before
+its seal still reads MISSING. GUARD: test_a_rolling_recording_is_not_orphaned_footage (2 red-proofs RED).
+
 ### REG-3479 - A LAW RED UNTAMPERED IN A PROOF SHARD NAMED ITS CASE AND NEVER WHAT FAILED (v3888, v3886's GitHub round 3)
 test_vault_l1_war_stash_overflow went red untampered on v3881's shard 12, v3882's shard 10, and twice on v3886's shard 13 (11-08,
 0f31ea6ae). REG-1877 named the case (WarStashOverflow.test_all_five_pages_fill_then_war1_then_war2), but no log, artifact or census
