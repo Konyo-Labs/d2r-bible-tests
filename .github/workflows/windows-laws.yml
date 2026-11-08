@@ -50,9 +50,10 @@ jobs:
           printf '| law | exit | seconds | result |\n|---|---|---|---|\n' > winlaws/SUMMARY.md
           for law in $LAWS; do
             t0=$(date +%s)
-            timeout 900 python "tv/$law.py" -v > "winlaws/$law.log" 2>&1; rc=$?
+            # GitHub's bash runs -e -o pipefail: a red law (non-zero) or a grep that matches nothing must not end the step
+            rc=0; timeout 900 python "tv/$law.py" -v > "winlaws/$law.log" 2>&1 || rc=$?
             t1=$(date +%s)
-            res=$(grep -E '^(OK|FAILED)' "winlaws/$law.log" | tail -1)
+            res=$(grep -E '^(OK|FAILED)' "winlaws/$law.log" | tail -1 || true)
             echo "| $law | $rc | $((t1 - t0)) | $res |" >> winlaws/SUMMARY.md
             echo "===== $law (exit $rc, $((t1 - t0)) s) $res"
             grep -E -A40 '^(FAIL|ERROR): ' "winlaws/$law.log" | head -120 || true
