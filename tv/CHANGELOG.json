@@ -27,7 +27,9 @@
       "A proof price once measured is never forgotten - v3880's shard 5 was cut by a gate priced 5.5x low (REG-3401)",
       "A gate a round cut at its deadline is split next round, whatever its price says (REG-3402, his rule)",
       "A Windows PC reads d2jsp prices - the forum's redirect to its results page is followed (REG-3403, Dean)",
-      "Quick wins' other places rank 1st-5th by fewest runs or kills, bosses apart; they read on a phone (REG-3404)"
+      "Quick wins' other places rank 1st-5th by fewest runs or kills, bosses apart; they read on a phone (REG-3404)",
+      "Taken back before it shipped: the shadow change that drew Dean's snapshot unlike his console (REG-3380, redone)",
+      "The round-finisher's law reads its workflow without yaml, which GitHub's suite does not install (REG-3387)"
     ]
   },
   {
