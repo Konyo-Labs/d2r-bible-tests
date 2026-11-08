@@ -112,25 +112,68 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
-### REG-3435 - HEAVEN'S LIGHT'S BEST RUN READ "NM TZ MEPHISTO" - A TERROR-ZONE RUN RANKED AS IF IT WERE TERRORIZED ALL DAY (v3884, his 11-08)
-His words 11-08 11:18-11:22, with silospen's dropcalc beside the console (RotW, MF 700, Terror Zone OFF): "why does the console
-read not correctly for the heavens light?", "Hell mode and not nightmare.. its a lvl 71 item", "same for quick wins its not
-correctly rendering the best possible drop ... bosses and other places top 5", "based on the odds for heavens light these are
-the top list". The console: Best runs "Run NM TZ Mephisto", Quick wins 1st NM TZ Mephisto, 2nd NM TZ Diablo, 3rd NM TZ Baal,
-1:1.6k each. MEASURED against silospen's own API (MF 0, /players 1): Terror Zone ON, NM Mephisto / Diablo / Baal 1:4,292 each
-(identical at desecratedLevel 76 and 99) - the console's figures ARE silospen's; Terror Zone OFF, Hell Andariel 1:7,615 ·
-Hell Mephisto 1:8,906 · Hell Diablo 1:9,155 · Hell Baal 1:9,246 · NM Baal 1:19,294 - his list. The defect: the one picker
-(pickFastest), Quick wins (_qwPlaces) and the item landing (d2rOpenItem) ranked a TZ row as a run he can do whenever he likes,
-while a zone is terrorized only for its own slot. Now tzRowLive(s): a TZ row competes only while the TZ tracker's /api/tz
-reading (window._tzPeek) is from this slot (_tzTurnBoundary on its ts), not stale, and names the row's zone (TZ_HUNT's own
-words; Nihlathak rides the Pindle / Nihlathak row). Otherwise the list is silospen's with Terror Zone off. Measured in headless
-Chrome on the page, Heaven's Light at MF 0: no reading -> Hell Andariel 1:7,618, Hell Mephisto 1:8,911, Hell Diablo 1:9,164,
-Hell Baal 1:9,251, NM Baal 1:19,300 (silospen's order and odds); Durance of Hate terrorized now -> NM TZ Mephisto 1:4,293
-first; a 3-hour-old reading -> no reading. Best runs on a fresh board: 12 runs (7 of them TZ) -> 9 always-runnable runs.
-Quick wins boss runs show the best FIVE (were four). Laws: test_a_terror_zone_run_ranks_only_in_its_slot (6 cases, red-proofs
-PROVEN 6 of 6), test_quick_wins_shows_each_place_with_its_picture (+1 case, red-proof PROVEN), test_one_hunt_clock (its
-harness reads the Cow Level as terrorized - its subject is one clock); tests/v1542_hardest_first.spec.ts re-pointed (GitHub).
-His /players 3 check at MF 700 against dropcalc is with GrokBot (#230, his 11-08 ask).
+### REG-3440 - 366 ITEMS SHOWED A QUALITY LEVEL THAT WAS NOT THEIRS - THE WEAR LEVEL, THE BASE'S, 0 OR NOTHING (v3884, his 11-08)
+His words 11-08 12:09-12:10, with silospen's Debug Information open: "the Q levels i think its 69 and not 71?" (Heaven's
+Light) and "bane ash ... the console reads q5 for this and it should be q1 or q7". MEASURED 11-08 against silospen's own
+`level` (the item's QUALITY level - the item level a monster needs to drop it) for every unique and set item (536): 366
+items wrong across 626 cells of the two stores - BOSSES' drop tables (the Quick wins title, the Best runs chips) and
+ITEM_CODEX (the item card). About a hundred were the WEAR level (Bane Ash 5 vs 7, Death's Web 66 vs 74), some the base item's
+level, seven 0, the rest nothing (Heaven's Light 71 vs 69, Stormlash 73 vs 86, The Cat's Eye 50 vs 58, Blinkbat's Form 0 vs
+16 in the drop table). GrokBot's independent pass (#230): 117 of 390 uniques right. Every qlvl that joins silospen's name
+(one spelling, silospen_tz_levels.canon) is silospen's now - 4,093 drop-table cells, 268 codex entries; the wear level stays
+reqLvl. 19 page names silospen does not price (whole sets, runes, keys) are declared non-items. Eleven set pieces his
+extracted game table lacks (they were 0 = UNKNOWN) now trace to silospen, spelled as the page spells them, and agree with
+their set-mates. Laws: test_every_qlvl_is_silospens (new, zero mismatches, vendored tv/data/silospen_qlvl_rotw30.json),
+test_the_set_pieces_carry_a_real_qlvl (re-pointed to silospen), red-proofs PROVEN.
+
+### REG-3438 - A TERROR-ZONE RUN READ LIKE ANY OTHER - HE COULD NOT SEE WHICH OF HIS OPTIONS WERE TZ (v3884, his 11-08)
+His words 11-08 11:55: "for anything TZ to farm within the quickwins or the best runs make sure to emphasize on it ... so i
+know TZ is better for each individually ... maybe color", "see how some are TZ and some arent which is good. but just i want
+to be able to see it clearer". Every TZ run's name (Quick wins rows, Best runs titles) now carries a TZ tag in the page's
+terror colour (--terror); plain runs carry none; the tag's hover names the level its odds are at. Seen on pixels at 1512
+(Hell TZ Mephisto / Normal TZ Cow Level / Hell Mephisto). The same look found the 5th boss row's rank reading "undefined"
+(REG-3435's five rows, a four-entry ordinal list) - fixed, and pinned. Law: test_a_terror_zone_reads_his_level.
+
+### REG-3437 - EVERY TERROR-ZONE FIGURE ASSUMED A LEVEL-99 CHARACTER (v3884, his 11-08 "Add a level setting")
+GrokBot (#230 6720166936), reading dropcalc at its default Terror Zone Level 0: "1:49,500 matches nothing". MEASURED against
+silospen's API: Tyrael's Might from Hell TZ Diablo 1:178,086 at character level 0-90, 1:19,551 at 94-99 (MF 400); Hell TZ
+Mephisto turns on at 91; Heaven's Light from NM TZ Mephisto does not drop below 64. The stored TZ columns are silospen's -
+at ONE level (Hell 99, NM 76, Normal 50; every farm and column matches silospen there but five cells and Pindleskin's
+Normal/NM TZ, which silospen does not price). Now an LVL slider (bottom dock, beside MF and P#, d2r_charLevel, forked per
+account) sets his level; tz-level-odds (tv/silospen_tz_levels.py - a read-only pull, bisected over 1-99) holds each farm /
+TZ column / item's odds from every level where they move past 2%; a varying TZ cell of BOSSES reads the level each time it
+is asked and the registry's source row reads its cell - one place, every surface. Unset = the stored level-99 figure.
+Law: test_a_terror_zone_reads_his_level (6 cases, silospen's printed figures at MF 400), red-proofs PROVEN (6).
+
+### REG-3439 - TYRAEL'S MIGHT STORED A HELL DIABLO DROP SILOSPEN NEVER GIVES - AND NO LAW COULD SEE A FIGURE THE SOURCE LACKS (v3884)
+GrokBot's pass (#230 6720166936) and a read-only sweep of every unique against silospen (BOSS rows, Terror Zone off, MF 300,
+/players 1 - the stored unit) on 11-08: of 6,080 stored Normal/NM/Hell figures on the six boss farms, ONE was not silospen's -
+Tyrael's Might from Hell Diablo 1:29,750 (1:70,210 at MF 0), a drop silospen has at no MF; its Hell sources are Baal 1:186,145
+(MF 300) and super-uniques. It sat first in Quick wins. Removed. The 90 rows the sweep first read as "the page lacks them"
+were the page's own spellings (Gull (dagger), Harlequin Crest (Shako), Iron Jang Bong...) - all 90 equal silospen's.
+test_quick_wins_ranks_every_place only compared figures silospen ALSO gives; it now refuses a stored boss figure better than
+the worst of the places silospen keeps for that item (KEEP_FIXED) that silospen does not list (areas excluded - they are
+per-kill tables, never a fixed place). Red-proof PROVEN (the Diablo row re-planted goes red).
+OPEN, stated not averaged: Opalvein and Sling from NM Nihlathak - silospen's 11-06 pull (vendored, REG-3302) says 1:20,055,
+silospen asked on 11-08 says 1:20,976 for the same query. The page keeps the vendored figure its law checks; a fresh
+vendored pull settles which (silospen's data moved, or the query differs).
+
+### REG-3436 - ONE RED UNDER LOAD HELD NINE ROUTES SHUT FOR SIX HOURS (v3884)
+His Mac 11-08: test_a_parallel_proof_is_the_same_proof went red at 09:09 under my local load; the safety net's immediate
+re-check (REG-3324) ran on the same loaded machine, red again, and the find then held all nine routes shut for NET_RETRY_S
+(6 h) - while the law was green alone minutes later (REG-3434 is the chip that now names them). A RED find seen ONCE is asked
+again after NET_RETRY_FIRST_S (1 h); a red seen twice, a BLIND or INVALID find, and a count that cannot be read keep 6 h.
+Law: test_a_safety_net_red_closes_only_its_own_lock (+1 case), red-proofs 3 new.
+
+### REG-3435 - QUICK WINS SHOWED FOUR BOSS RUNS; HE ASKED FOR THE TOP FIVE (v3884, his 11-08)
+His words 11-08 11:20: "same for quick wins its not correctly rendering the best possible drop based on the item.. and bosses
+and other places top 5". The boss and super-unique section stopped at four (#101's 1st-4th); it shows the best five now.
+Law: test_quick_wins_shows_each_place_with_its_picture (+1 case: six boss runs draw the best five), red-proof PROVEN.
+⚠ BUILT AND TAKEN BACK THE SAME DAY - recorded so it is not rebuilt: a rule that ranked a terror-zone run only while the
+live rotation (/api/tz) named its zone. His ruling 11-08 ~12:00: "NO ... this does not have anything to do with the terror
+zone times.. i can TZ and shard myself. i want to be able to see the difference between them sometimes i can TZ sometimes i
+wont". In Reign of the Warlock he terrorizes a zone himself, so a TZ run is a choice beside the plain one and is ranked
+with it, marked (REG-3438); its odds are his level's (REG-3437). The rotation is not an input.
 
 ### REG-3434 - THE MAC'S FLEET ROW SAID "READY" BESIDE "SAFETY NET ... RED · ITS LOCKS SHUT" - WHICH LOCKS? (v3884, GrokBot's v3882 pass)
 GrokBot's v3882 pass (#230, 10:28): the Mac's open row read "ready" and "safety net: test_a_parallel_proof_is_the_same_proof

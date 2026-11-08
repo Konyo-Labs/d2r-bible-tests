@@ -58,9 +58,7 @@ test.describe('v1542 — Hell before Nightmare before Normal', () => {
     await boot(page);
     const r = await page.evaluate(() => (window as any)._pickSrc([
       { boss: 'Hell Slow', diffKey: 'hell', chance: 90000, kph: 50, bossId: 'a' },
-      // v3884 (REG-3435) - 'hell', not 'hellTz': a TZ row competes only while its zone is terrorized, and this case is
-      // about speed on equal footing (the rotation rule is tv/test_a_terror_zone_run_ranks_only_in_its_slot.py)
-      { boss: 'Hell Fast', diffKey: 'hell', chance: 9000, kph: 300, bossId: 'b' },
+      { boss: 'Hell Fast', diffKey: 'hellTz', chance: 9000, kph: 300, bossId: 'b' },
     ]).s.boss);
     expect(r).toBe('Hell Fast');
   });
@@ -79,10 +77,7 @@ test.describe('v1542 — Hell before Nightmare before Normal', () => {
     // The Scourge - a run built of a fake unique and an alias (his rulings 2026-11-03: Polaris is not an item, Scourge is
     // Stormlash). Twelve real runs across three tiers is the resolution this law keeps; a run of non-items is refused below.
     expect(r.fake, 'a run was built from a name that is not a unique').toEqual([]);
-    // v3884 (REG-3435) - measured in headless Chrome on a fresh board: 12 runs, 7 of them TZ runs that can only be
-    // farmed in their zone's slot; with no rotation reading those fold into the always-runnable runs - 9 boss runs
-    // (+ the no-boss card). The law is unchanged: many runs across tiers, never a handful of blobs.
-    expect(r.n, 'many runs, not a handful of blobs').toBeGreaterThanOrEqual(8);
+    expect(r.n, 'twenty-ish runs, not a handful of blobs').toBeGreaterThanOrEqual(12);
     expect(r.tiers.length, 'lower-tier runs still exist — they just sort below').toBeGreaterThan(1);
   });
 

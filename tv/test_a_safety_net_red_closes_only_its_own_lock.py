@@ -179,6 +179,22 @@ class TheNetAsksAgain(_Fixture):
         self.assertIn("g_frame", later, "a find is never judged again - one flaky red shuts its lock until an edit")
         self.assertIn("g_idle", later, "a gate the net could not judge is never asked again")
 
+    def test_a_first_red_is_asked_again_within_the_hour(self):
+        """v3884 (REG-3436) - his Mac 11-08: one red under load held nine routes shut for 6 h; a red seen ONCE is asked
+        again after NET_RETRY_FIRST_S, a red seen twice (or a BLIND, or an unreadable count) keeps NET_RETRY_S"""
+        at = 10 ** 12
+        def find(verdict, seen):
+            return {"verdict": verdict, "sha": self.shas["g_frame"], "at": at, "seen": seen}
+        hour, almost = at + (H.NET_RETRY_FIRST_S + 60) * 1000, at + (H.NET_RETRY_FIRST_S - 60) * 1000
+        self.write(self.current(netFinds={"g_frame": find("RED", 1)}))
+        self.assertNotIn("g_frame", self.owed(almost), "a first red was re-asked before its hour")
+        self.assertIn("g_frame", self.owed(hour), "a first red waits the 6 h - one load flake shuts its locks for hours")
+        for f, why in ((find("RED", 2), "a red seen twice"), (find("BLIND", 1), "a BLIND find"),
+                       (find("RED", True), "a count that is a bool"), (find("RED", "1"), "a count that is text")):
+            self.write(self.current(netFinds={"g_frame": f}))
+            self.assertNotIn("g_frame", self.owed(hour), "%s was re-asked after an hour" % why)
+            self.assertIn("g_frame", self.owed(at + (H.NET_RETRY_S + 60) * 1000), "%s is never asked again" % why)
+
     def test_a_gate_whose_file_moved_is_the_censuss_not_the_nets(self):
         self.write(self.current(gateShas=dict(self.shas, g_ok="older")))
         self.assertNotIn("g_ok", self.owed(10 ** 12))
@@ -516,6 +532,18 @@ RED_PROOF = [
      "find": "        if n in finds and not _net_age_ok(finds[n], now_ms):\n            continue\n",
      "replace": "        if n in finds:\n            continue\n",
      "matches": 1},
+    {"why": "v3884 (REG-3436) - a first red waits the whole 6 h again (one load flake shuts its locks for hours)",
+     "file": "tv/heart2.py",
+     "find": "    if _net_seen_once_red(rec) and now_ms - at >= NET_RETRY_FIRST_S * 1000:     # v3884 (REG-3436) - a first red: 1 h\n        return True\n",
+     "replace": "", "matches": 1},
+    {"why": "v3884 (REG-3436) - a red seen twice is re-asked hourly too (the net loops on a law that is really red here)",
+     "file": "tv/heart2.py",
+     "find": "            and seen == 1)\n",
+     "replace": "            and seen >= 1)\n", "matches": 1},
+    {"why": "v3884 (REG-3436) - a BLIND find is re-asked hourly too",
+     "file": "tv/heart2.py",
+     "find": "    return (isinstance(rec, dict) and rec.get(\"verdict\") == \"RED\" and isinstance(seen, int)",
+     "replace": "    return (isinstance(rec, dict) and isinstance(seen, int)", "matches": 1},
     {"why": "REG-3192 - the net re-asks a find at once, looping on one flaky law",
      "file": "tv/heart2.py",
      "find": "    return now_ms - at >= NET_RETRY_S * 1000\n",

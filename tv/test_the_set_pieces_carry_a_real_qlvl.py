@@ -112,23 +112,29 @@ class TheSetPiecesCarryARealQlvl(unittest.TestCase):
 
     # ── ⛔ THE UNKNOWNS STAY UNKNOWN ─────────────────────────────────────────────────────────
     def test_the_pieces_with_no_game_row_were_NOT_guessed(self):
-        """⛔ ELEVEN pieces have no row in the game table under any spelling, and several are
-        probably naming errors in the bible rather than missing data — the table says `Tal Rasha's
-        Fire-Spun Cloth` where this file says `Fine-Spun Cloth`. A near-spelling is NOT a trace,
-        and mapping one would be exactly the fabrication his rule forbids. They must stay 0 until
-        somebody rules on the name. If this goes red, someone filled a value that traces to
-        nothing. [[unknown-stays-unknown]]"""
-        want_unknown = {"Aldur's Rhythm", "Dark Adherent", "Hwanin's Blessing", "Sander's Paragon",
-                        "Sander's Riprap", "Sander's Superstition", "Sander's Taboo",
-                        "Taebaek's Glory", "Tal Rasha's Fine-Spun Cloth",
-                        "Tal Rasha's Guardianship", "Whitstan's Guard"}
+        """⛔ ELEVEN pieces have no row in his extracted game table under any spelling, so they stayed 0 = UNKNOWN - a guess
+        would trace to nothing. v3884 (REG-3440, his 11-08 ruling that silospen's level is the quality level): silospen's
+        RotW 3.0 calculator DOES list all eleven, spelled as this file spells them, so each carries silospen's level now -
+        a value that traces (tv/data/silospen_qlvl_rotw30.json), and every piece of each set agrees with its set-mates (the
+        uniformity case above). A piece silospen also lacked would stay 0. If this goes red, a value was written that is
+        neither silospen's nor UNKNOWN. [[unknown-stays-unknown]]"""
+        import json as _json
+        import sys as _sys
+        _sys.path.insert(0, HERE)
+        import silospen_tz_levels as _T
+        with io.open(os.path.join(HERE, "data", "silospen_qlvl_rotw30.json"), encoding="utf-8") as fh:
+            lv = dict((_T.canon(n), v["level"]) for n, v in _json.load(fh)["levels"].items())
+        no_game_row = {"Aldur's Rhythm", "Dark Adherent", "Hwanin's Blessing", "Sander's Paragon",
+                       "Sander's Riprap", "Sander's Superstition", "Sander's Taboo",
+                       "Taebaek's Glory", "Tal Rasha's Fine-Spun Cloth",
+                       "Tal Rasha's Guardianship", "Whitstan's Guard"}
         by = {}
         for name, q in _records():
             by.setdefault(name, set()).add(q)
-        guessed = sorted(n for n in want_unknown if n in by and any(x > 0 for x in by[n]))
-        self.assertEqual(guessed, [],
-                         "a quality level was written for a piece that has NO row in the game "
-                         "table — it traces to nothing: %s" % guessed)
+        bad = sorted("%s: %s, silospen %s" % (n, sorted(by[n]), lv.get(_T.canon(n)))
+                     for n in no_game_row if n in by and by[n] != {lv.get(_T.canon(n)) or 0})
+        self.assertEqual(bad, [],
+                         "a piece with no game-table row carries a level that is neither silospen's nor UNKNOWN: %s" % bad)
 
     def test_the_provenance_is_written_down(self):
         """⚠ His rule is that a value must TRACE. The game data cannot live in a public repo, so
@@ -144,13 +150,7 @@ class TheSetPiecesCarryARealQlvl(unittest.TestCase):
 
 
 RED_PROOF = [
-    {
-        'why': 'ELEVEN set pieces have NO row in the game table under any spelling, so their qlvl stays 0 = UNKNOWN. A qlvl is one of the two filters deciding whether an item can drop at all (monster mlvl >= item qlvl), so a fabricated value sends him to the wrong zone with a number that traces to nothing. This tamper writes a plausible level onto every unknown set record — exactly the fabrication his no-guessing rule forbids — and the law must go red.  MEASURED: untampered Ran 7 tests — OK (green clean, so the proof is not measuring an already-red gate).; tampered (all 121) All 121 occurrences replaced (0 left of the find string). Ran 7 tests — FAILED (failures=1; reddened law test_the_set_pieces_carry_a_real_qlvl.TheSetPiecesCarryARealQlvl.test_; ALONE python3 -m unittest test_the_set_pieces_carry_a_real_qlvl.TheSetPiecesCarryARealQlvl.test_the_pieces_with_no_g.',
-        'file': 'bible.html',
-        'find': '"qlvl":0,"tier":"set"',
-        'replace': '"qlvl":50,"tier":"set"',
-        'matches': 121,
-    },
+    {'why': "v3884 (REG-3440) - a level that is neither silospen's nor UNKNOWN is written onto a piece with no game-table row (Aldur's Rhythm 29 -> 50, all 11 of its records): it traces to nothing, and the law must go red", 'file': 'bible.html', 'find': '{"n":"Aldur\'s Rhythm","tc":0,"qlvl":29,"tier":"set"', 'replace': '{"n":"Aldur\'s Rhythm","tc":0,"qlvl":50,"tier":"set"', 'matches': 11},
 ]
 
 

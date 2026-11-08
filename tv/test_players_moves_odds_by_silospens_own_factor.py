@@ -316,8 +316,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2954 - the Pit's Nightmare column is Pit Level 2's again (Venom Ward 1:104,359 where Pit Level 1 gives 1:104,635)",
      "file": "bible.html",
-     "find": "\"n\":\"Venom Ward\",\"tc\":15,\"qlvl\":20,\"tier\":\"common\",\"norm\":null,\"normTz\":109957,\"nm\":104635,",
-     "replace": "\"n\":\"Venom Ward\",\"tc\":15,\"qlvl\":20,\"tier\":\"common\",\"norm\":null,\"normTz\":109957,\"nm\":104359,",
+     "find": "\"n\":\"Venom Ward\",\"tc\":15,\"qlvl\":27,\"tier\":\"common\",\"norm\":null,\"normTz\":109957,\"nm\":104635,",
+     "replace": "\"n\":\"Venom Ward\",\"tc\":15,\"qlvl\":27,\"tier\":\"common\",\"norm\":null,\"normTz\":109957,\"nm\":104359,",
      "matches": 1, "needs": "node"},
 ]
 

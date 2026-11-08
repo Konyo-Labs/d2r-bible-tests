@@ -246,6 +246,9 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         labels = re.findall(r"Hell Boss(\d)", sec1)
         self.assertEqual(sorted(set(labels), key=labels.index), ["1", "2", "3", "4", "5"],
                          "the boss runs are not the best five: %s" % labels)
+        ranks = re.findall(r'<span class="qw-rank">([^<]*)</span>', sec1)
+        self.assertEqual(ranks, ["1st · best run", "2nd", "3rd", "4th", "5th"],
+                         "a boss row's rank is not its place (v3884: the 5th read 'undefined' on his pixels): %s" % ranks)
 
     def test_a_ranked_row_is_a_tile_a_place_and_four_captioned_numbers(self):
         g = self.o["gridNoAlso"]
@@ -639,6 +642,11 @@ RED_PROOF = [
      "find": "  \"The Banished\": \"d2fam_vampire.gif\",",
      "replace": "",
      "matches": 1},
+    {"why": "v3884 - the 5th boss row's rank reads 'undefined' (a four-entry ordinal list)",
+     "file": "bible.html",
+     "find": "(i === 0 ? '1st \u00b7 best run' : (_QW_NTH[i] || ((i + 1) + 'th')))",
+     "replace": "(i === 0 ? '1st \u00b7 best run' : ['1st', '2nd', '3rd', '4th'][i])",
+     "matches": 1, "needs": "node"},
     {"why": "v3884 - the boss runs stop at four again (his 'top 5')",
      "file": "bible.html",
      "find": "    var one = qp.filter(function(p){ return !(p.kpr > 1); }).slice(0, 5);   /* v3884 (his 11-08: \"top 5\") */\n",

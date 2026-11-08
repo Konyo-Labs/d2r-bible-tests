@@ -7206,12 +7206,27 @@ def trust_now(say=print, only=None):
 #: unattended PC does not shut a lock until someone edits the law (the shape of the old ALT's 28 days ROUTED); a gate it
 #: could not judge stays trusted and is asked again, never dropped from the net for good.
 NET_RETRY_S = 6 * 3600
+#: v3884 (REG-3436) - a RED find seen ONCE is asked again after an hour, not six. MEASURED on his Mac 11-08: one law
+#: (test_a_parallel_proof_is_the_same_proof) went red at 09:09 under my local load, its immediate re-check (REG-3324) ran on
+#: the same loaded machine and was red again, and the find then held all nine routes shut for NET_RETRY_S - while the law
+#: was green alone minutes later. A red seen twice (the hour's re-ask red too) waits NET_RETRY_S as before; BLIND and
+#: INVALID finds, and a record whose count cannot be read, keep NET_RETRY_S.
+NET_RETRY_FIRST_S = 3600
+
+
+def _net_seen_once_red(rec):
+    """v3884 (REG-3436) - is this a RED find the net has seen exactly once? -> bool (an unreadable count is not once)"""
+    seen = rec.get("seen") if isinstance(rec, dict) else None
+    return (isinstance(rec, dict) and rec.get("verdict") == "RED" and isinstance(seen, int) and not isinstance(seen, bool)
+            and seen == 1)
 
 
 def _net_age_ok(rec, now_ms):
     """REG-3192 - may the net ask this gate again? A record with no readable time is asked (never held on a guess)."""
     at = rec.get("at") if isinstance(rec, dict) else None
     if not isinstance(at, (int, float)) or isinstance(at, bool):
+        return True
+    if _net_seen_once_red(rec) and now_ms - at >= NET_RETRY_FIRST_S * 1000:     # v3884 (REG-3436) - a first red: 1 h
         return True
     return now_ms - at >= NET_RETRY_S * 1000
 

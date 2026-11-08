@@ -192,6 +192,34 @@ class QuickWinsRanksEveryPlace(unittest.TestCase):
         self.assertGreater(checked, 100, "premise: too few stored figures were compared to mean anything (%d)" % checked)
         self.assertEqual(bad, [], "%d of %d stored figures are not silospen's:\n  %s" % (len(bad), checked, "\n  ".join(bad[:20])))
 
+    def test_a_stored_figure_silospen_never_gives_is_refused(self):
+        """v3884 (REG-3439, GrokBot 6720166936 + the boss audit 11-08: Tyrael's Might stored Hell Diablo 1:29,750 - silospen has
+        no plain Hell Diablo row for it at any MF, its best boss is Hell Baal 1:186,145). The case above only checks stored
+        figures silospen ALSO gives. The pull keeps each item's best KEEP_FIXED fixed places, so a stored boss figure better
+        than the worst kept one would have been kept: absent, silospen never gives it."""
+        import silospen_places as SP
+        checked, bad = 0, []
+        for nm, v in sorted(self.places.items()):
+            kept = dict(((tid, d), n) for tid, d, n in v["f"])
+            if not kept:
+                continue
+            worst = max(kept.values())
+            complete = len(kept) < SP.KEEP_FIXED
+            for tid, b in sorted(self.bosses.items()):
+                if tid in NOT_THE_SAME_RUN or tid in ("pit", "cows"):    # areas: per-kill tables, never a fixed place
+                    continue
+                row = next((r for r in b["dropTable"] if r["n"] == nm), None)
+                for d in ("norm", "nm", "hell"):
+                    st = row.get(d) if row else None
+                    if st in (None, 0) or (tid, d) in kept:
+                        continue
+                    checked += 1
+                    if complete or st < worst:
+                        bad.append("%s from %s %s: page 1:%s - silospen keeps %d place(s), worst 1:%s, and not this one"
+                                   % (nm, d, tid, st, len(kept), worst))
+        self.assertGreater(checked, 100, "premise: too few stored figures outside silospen's kept places (%d)" % checked)
+        self.assertEqual(bad, [], "%d stored figure(s) silospen never gives:\n  %s" % (len(bad), "\n  ".join(bad[:20])))
+
     def test_each_new_place_moves_with_mf_and_players_as_silospen_does(self):
         got = self.o["eff"]
         self.assertEqual(len(got), len(self.want), "premise: every case came back")
@@ -253,10 +281,15 @@ class QuickWinsRanksEveryPlace(unittest.TestCase):
 
 
 RED_PROOF = [
+    {'why': "v3884 (REG-3439) - Tyrael's Might's Hell Diablo row comes back (silospen never gives it)",
+     'file': 'bible.html',
+     'find': '{"n":"Templar\'s Might","tc":87,"qlvl":82,"tier":"grail","norm":null,"normTz":null,"nm":null,"nmTz":null,"hell":null,"hellTz":2622},{"n":"Tyrael\'s Might","tc":87,"qlvl":87,"tier":"uber","norm":null,"normTz":null,"nm":null,"nmTz":null,"hell":null,"hellTz":20975}',
+     'replace': '{"n":"Templar\'s Might","tc":87,"qlvl":82,"tier":"grail","norm":null,"normTz":null,"nm":null,"nmTz":null,"hell":null,"hellTz":2622},{"n":"Tyrael\'s Might","tc":87,"qlvl":87,"tier":"uber","norm":null,"normTz":null,"nm":null,"nmTz":null,"hell":29750,"hellTz":20975}',
+     'matches': 1},
     {'why': "REG-3302 - Nihlathak's nightmare Opalvein figure goes back to the v41 number silospen does not give",
      'file': 'bible.html',
-     'find': '{"n":"Opalvein","tc":0,"qlvl":0,"tier":"grail","nc":1,"norm":18642,"normTz":19800,"nm":20055,',
-     'replace': '{"n":"Opalvein","tc":0,"qlvl":0,"tier":"grail","nc":1,"norm":18642,"normTz":19800,"nm":20976,',
+     'find': '{"n":"Opalvein","tc":0,"qlvl":58,"tier":"grail","nc":1,"norm":18642,"normTz":19800,"nm":20055,',
+     'replace': '{"n":"Opalvein","tc":0,"qlvl":58,"tier":"grail","nc":1,"norm":18642,"normTz":19800,"nm":20976,',
      'matches': 1},
     {"why": "REG-3244 - the quality roll keeps the fraction of effective MF the game truncates: 94 of 123 MF checks miss",
      "file": "bible.html",

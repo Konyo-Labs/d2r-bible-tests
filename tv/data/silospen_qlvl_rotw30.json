@@ -1,0 +1,2687 @@
+{
+"levels": {
+"Aldur's Advance": {
+"base": "Battle Boots",
+"level": 29,
+"q": "SET"
+},
+"Aldur's Deception": {
+"base": "Shadow Plate",
+"level": 29,
+"q": "SET"
+},
+"Aldur's Rhythm": {
+"base": "Jagged Star",
+"level": 29,
+"q": "SET"
+},
+"Aldur's Stony Gaze": {
+"base": "Hunter's Guise",
+"level": 29,
+"q": "SET"
+},
+"Alma Negra": {
+"base": "Sacred Rondache",
+"level": 85,
+"q": "UNIQUE"
+},
+"Andariel's Visage": {
+"base": "Demonhead",
+"level": 85,
+"q": "UNIQUE"
+},
+"Angelic Halo": {
+"base": "Ring",
+"level": 17,
+"q": "SET"
+},
+"Angelic Mantle": {
+"base": "Ring Mail",
+"level": 17,
+"q": "SET"
+},
+"Angelic Sickle": {
+"base": "Sabre",
+"level": 17,
+"q": "SET"
+},
+"Angelic Wings": {
+"base": "Amulet",
+"level": 17,
+"q": "SET"
+},
+"Annihilus": {
+"base": "Small Charm",
+"level": 110,
+"q": "UNIQUE"
+},
+"Arachnid Mesh": {
+"base": "Spiderweb Sash",
+"level": 87,
+"q": "UNIQUE"
+},
+"Arcanna's Deathwand": {
+"base": "War Staff",
+"level": 20,
+"q": "SET"
+},
+"Arcanna's Flesh": {
+"base": "Light Plate",
+"level": 20,
+"q": "SET"
+},
+"Arcanna's Head": {
+"base": "Skull Cap",
+"level": 20,
+"q": "SET"
+},
+"Arcanna's Sign": {
+"base": "Amulet",
+"level": 20,
+"q": "SET"
+},
+"Arctic Binding": {
+"base": "Light Belt",
+"level": 3,
+"q": "SET"
+},
+"Arctic Furs": {
+"base": "Quilted Armor",
+"level": 3,
+"q": "SET"
+},
+"Arctic Horn": {
+"base": "Short War Bow",
+"level": 3,
+"q": "SET"
+},
+"Arctic Mitts": {
+"base": "Light Gauntlets",
+"level": 3,
+"q": "SET"
+},
+"Arioc's Needle": {
+"base": "Hyperion Spear",
+"level": 85,
+"q": "UNIQUE"
+},
+"Arkaine's Valor": {
+"base": "Balrog Skin",
+"level": 85,
+"q": "UNIQUE"
+},
+"Arm of King Leoric": {
+"base": "Tomb Wand",
+"level": 44,
+"q": "UNIQUE"
+},
+"Arreat's Face": {
+"base": "Slayer Guard",
+"level": 50,
+"q": "UNIQUE"
+},
+"Ars Al'Diabolos": {
+"base": "Blasphemous Grimoire",
+"level": 85,
+"q": "UNIQUE"
+},
+"Ars Dul'Mephistos": {
+"base": "Occult Tome",
+"level": 85,
+"q": "UNIQUE"
+},
+"Ars Tor'Baalos": {
+"base": "Blasphemous Compendium",
+"level": 85,
+"q": "UNIQUE"
+},
+"Astreon's Iron Ward": {
+"base": "Caduceus",
+"level": 68,
+"q": "UNIQUE"
+},
+"Athena's Wrath": {
+"base": "Battle Scythe",
+"level": 50,
+"q": "UNIQUE"
+},
+"Atma's Scarab": {
+"base": "Amulet",
+"level": 60,
+"q": "UNIQUE"
+},
+"Atma's Wail": {
+"base": "Embossed Plate",
+"level": 59,
+"q": "UNIQUE"
+},
+"Axe of Fechmar": {
+"base": "Large Axe",
+"level": 11,
+"q": "UNIQUE"
+},
+"Azurewrath": {
+"base": "Phase Blade",
+"level": 87,
+"q": "UNIQUE"
+},
+"Baezil's Vortex": {
+"base": "Knout",
+"level": 53,
+"q": "UNIQUE"
+},
+"Bane Ash": {
+"base": "Short Staff",
+"level": 7,
+"q": "UNIQUE"
+},
+"Bane's Authority": {
+"base": "Light Belt",
+"level": 7,
+"q": "SET"
+},
+"Bane's Oathmaker": {
+"base": "Kris",
+"level": 7,
+"q": "SET"
+},
+"Bane's Wraithskin": {
+"base": "Hard Leather Armor",
+"level": 7,
+"q": "SET"
+},
+"Baranar's Star": {
+"base": "Devil Star",
+"level": 70,
+"q": "UNIQUE"
+},
+"Bartuc's Cut-Throat": {
+"base": "Greater Talons",
+"level": 50,
+"q": "UNIQUE"
+},
+"Berserker's Hatchet": {
+"base": "Double Axe",
+"level": 5,
+"q": "SET"
+},
+"Berserker's Hauberk": {
+"base": "Splint Mail",
+"level": 5,
+"q": "SET"
+},
+"Berserker's Headgear": {
+"base": "Helm",
+"level": 5,
+"q": "SET"
+},
+"Biggin's Bonnet": {
+"base": "Cap",
+"level": 4,
+"q": "UNIQUE"
+},
+"Bing Sz Wang": {
+"base": "Dacian Falx",
+"level": 51,
+"q": "UNIQUE"
+},
+"Black Hades": {
+"base": "Chaos Armor",
+"level": 61,
+"q": "UNIQUE"
+},
+"Blackbog's Sharp": {
+"base": "Cinquedeas",
+"level": 46,
+"q": "UNIQUE"
+},
+"Blackhand Key": {
+"base": "Grave Wand",
+"level": 49,
+"q": "UNIQUE"
+},
+"Blackhorn's Face": {
+"base": "Death Mask",
+"level": 49,
+"q": "UNIQUE"
+},
+"Blackleach Blade": {
+"base": "Bill",
+"level": 50,
+"q": "UNIQUE"
+},
+"Blackoak Shield": {
+"base": "Luna",
+"level": 67,
+"q": "UNIQUE"
+},
+"Blacktongue": {
+"base": "Bastard Sword",
+"level": 35,
+"q": "UNIQUE"
+},
+"Blade of Ali Baba": {
+"base": "Tulwar",
+"level": 43,
+"q": "UNIQUE"
+},
+"Bladebone": {
+"base": "Double Axe",
+"level": 20,
+"q": "UNIQUE"
+},
+"Bladebuckle": {
+"base": "Plated Belt",
+"level": 39,
+"q": "UNIQUE"
+},
+"Blastbark": {
+"base": "Long War Bow",
+"level": 38,
+"q": "UNIQUE"
+},
+"Blinkbat's Form": {
+"base": "Leather Armor",
+"level": 16,
+"q": "UNIQUE"
+},
+"Blood Crescent": {
+"base": "Scimitar",
+"level": 10,
+"q": "UNIQUE"
+},
+"Blood Raven's Charge": {
+"base": "Matriarchal Bow",
+"level": 79,
+"q": "UNIQUE"
+},
+"Bloodfist": {
+"base": "Heavy Gloves",
+"level": 12,
+"q": "UNIQUE"
+},
+"Bloodletter": {
+"base": "Gladius",
+"level": 38,
+"q": "UNIQUE"
+},
+"Bloodmoon": {
+"base": "Elegant Blade",
+"level": 69,
+"q": "UNIQUE"
+},
+"Bloodpact Shard": {
+"base": "Mithril Point",
+"level": 73,
+"q": "UNIQUE"
+},
+"Bloodrise": {
+"base": "Morning Star",
+"level": 20,
+"q": "UNIQUE"
+},
+"Bloodthief": {
+"base": "Brandistock",
+"level": 23,
+"q": "UNIQUE"
+},
+"Bloodtree Stump": {
+"base": "War Club",
+"level": 56,
+"q": "UNIQUE"
+},
+"Boneflame": {
+"base": "Succubus Skull",
+"level": 80,
+"q": "UNIQUE"
+},
+"Boneflesh": {
+"base": "Plate Mail",
+"level": 35,
+"q": "UNIQUE"
+},
+"Bonehew": {
+"base": "Ogre Axe",
+"level": 72,
+"q": "UNIQUE"
+},
+"Boneshade": {
+"base": "Lich Wand",
+"level": 84,
+"q": "UNIQUE"
+},
+"Boneslayer Blade": {
+"base": "Gothic Axe",
+"level": 50,
+"q": "UNIQUE"
+},
+"Bonesnap": {
+"base": "Maul",
+"level": 32,
+"q": "UNIQUE"
+},
+"Brainhew": {
+"base": "Great Axe",
+"level": 34,
+"q": "UNIQUE"
+},
+"Bul-Kathos' Sacred Charge": {
+"base": "Colossus Blade",
+"level": 50,
+"q": "SET"
+},
+"Bul-Kathos' Tribal Guardian": {
+"base": "Mythical Sword",
+"level": 50,
+"q": "SET"
+},
+"Bul-Kathos' Wedding Band": {
+"base": "Ring",
+"level": 66,
+"q": "UNIQUE"
+},
+"Buriza-Do Kyanon": {
+"base": "Ballista",
+"level": 59,
+"q": "UNIQUE"
+},
+"Butcher's Pupil": {
+"base": "Cleaver",
+"level": 47,
+"q": "UNIQUE"
+},
+"Bverrit Keep": {
+"base": "Tower Shield",
+"level": 26,
+"q": "UNIQUE"
+},
+"Carin Shard": {
+"base": "Petrified Wand",
+"level": 43,
+"q": "UNIQUE"
+},
+"Carrion Wind": {
+"base": "Ring",
+"level": 68,
+"q": "UNIQUE"
+},
+"Cathan's Mesh": {
+"base": "Chain Mail",
+"level": 15,
+"q": "SET"
+},
+"Cathan's Rule": {
+"base": "Battle Staff",
+"level": 15,
+"q": "SET"
+},
+"Cathan's Seal": {
+"base": "Ring",
+"level": 15,
+"q": "SET"
+},
+"Cathan's Sigil": {
+"base": "Amulet",
+"level": 15,
+"q": "SET"
+},
+"Cathan's Visage": {
+"base": "Mask",
+"level": 15,
+"q": "SET"
+},
+"Cerebus' Bite": {
+"base": "Blood Spirit",
+"level": 71,
+"q": "UNIQUE"
+},
+"Chance Guards": {
+"base": "Chain Gloves",
+"level": 20,
+"q": "UNIQUE"
+},
+"Chromatic Ire": {
+"base": "Cedar Staff",
+"level": 43,
+"q": "UNIQUE"
+},
+"Civerb's Cudgel": {
+"base": "Grand Scepter",
+"level": 13,
+"q": "SET"
+},
+"Civerb's Icon": {
+"base": "Amulet",
+"level": 13,
+"q": "SET"
+},
+"Civerb's Ward": {
+"base": "Large Shield",
+"level": 13,
+"q": "SET"
+},
+"Cleglaw's Claw": {
+"base": "Small Shield",
+"level": 6,
+"q": "SET"
+},
+"Cleglaw's Pincers": {
+"base": "Chain Gloves",
+"level": 6,
+"q": "SET"
+},
+"Cleglaw's Tooth": {
+"base": "Long Sword",
+"level": 6,
+"q": "SET"
+},
+"Cliffkiller": {
+"base": "Large Siege Bow",
+"level": 49,
+"q": "UNIQUE"
+},
+"Cloudcrack": {
+"base": "Gothic Sword",
+"level": 53,
+"q": "UNIQUE"
+},
+"Coif of Glory": {
+"base": "Helm",
+"level": 19,
+"q": "UNIQUE"
+},
+"Coldkill": {
+"base": "Hatchet",
+"level": 44,
+"q": "UNIQUE"
+},
+"Coldsteel Eye": {
+"base": "Cutlass",
+"level": 39,
+"q": "UNIQUE"
+},
+"Corpsemourn": {
+"base": "Ornate Plate",
+"level": 63,
+"q": "UNIQUE"
+},
+"Cow King's Hide": {
+"base": "Studded Leather",
+"level": 20,
+"q": "SET"
+},
+"Cow King's Hooves": {
+"base": "Heavy Boots",
+"level": 20,
+"q": "SET"
+},
+"Cow King's Horns": {
+"base": "War Hat",
+"level": 20,
+"q": "SET"
+},
+"Crainte Vomir": {
+"base": "Espandon",
+"level": 50,
+"q": "UNIQUE"
+},
+"Cranebeak": {
+"base": "War Spike",
+"level": 71,
+"q": "UNIQUE"
+},
+"Credendum": {
+"base": "Mithril Coil",
+"level": 39,
+"q": "SET"
+},
+"Crescent Moon": {
+"base": "Amulet",
+"level": 58,
+"q": "UNIQUE"
+},
+"Crow Caw": {
+"base": "Tigulated Mail",
+"level": 45,
+"q": "UNIQUE"
+},
+"Crown of Ages": {
+"base": "Corona",
+"level": 86,
+"q": "UNIQUE"
+},
+"Crown of Thieves": {
+"base": "Grand Crown",
+"level": 57,
+"q": "UNIQUE"
+},
+"Crushflange": {
+"base": "Mace",
+"level": 12,
+"q": "UNIQUE"
+},
+"Culwen's Point": {
+"base": "War Sword",
+"level": 39,
+"q": "UNIQUE"
+},
+"Dangoon's Teaching": {
+"base": "Reinforced Mace",
+"level": 55,
+"q": "SET"
+},
+"Dark Adherent": {
+"base": "Dusk Shroud",
+"level": 39,
+"q": "SET"
+},
+"Dark Clan Crusher": {
+"base": "Cudgel",
+"level": 42,
+"q": "UNIQUE"
+},
+"Darkforce Spawn": {
+"base": "Bloodlord Skull",
+"level": 72,
+"q": "UNIQUE"
+},
+"Darkglow": {
+"base": "Ring Mail",
+"level": 19,
+"q": "UNIQUE"
+},
+"Darksight Helm": {
+"base": "Basinet",
+"level": 46,
+"q": "UNIQUE"
+},
+"Death Cleaver": {
+"base": "Berserker Axe",
+"level": 78,
+"q": "UNIQUE"
+},
+"Death's Fathom": {
+"base": "Dimensional Shard",
+"level": 81,
+"q": "UNIQUE"
+},
+"Death's Guard": {
+"base": "Sash",
+"level": 8,
+"q": "SET"
+},
+"Death's Hand": {
+"base": "Leather Gloves",
+"level": 8,
+"q": "SET"
+},
+"Death's Touch": {
+"base": "War Sword",
+"level": 8,
+"q": "SET"
+},
+"Death's Web": {
+"base": "Unearthed Wand",
+"level": 74,
+"q": "UNIQUE"
+},
+"Deathbit": {
+"base": "Battle Dart",
+"level": 52,
+"q": "UNIQUE"
+},
+"Deathspade": {
+"base": "Axe",
+"level": 12,
+"q": "UNIQUE"
+},
+"Defender's Bile": {
+"base": "Jewel",
+"level": 110,
+"q": "UNIQUE"
+},
+"Defender's Fire": {
+"base": "Jewel",
+"level": 110,
+"q": "UNIQUE"
+},
+"Demon Limb": {
+"base": "Tyrant Club",
+"level": 71,
+"q": "UNIQUE"
+},
+"Demon Machine": {
+"base": "Chu-Ko-Nu",
+"level": 57,
+"q": "UNIQUE"
+},
+"Demon's Arch": {
+"base": "Balrog Spear",
+"level": 76,
+"q": "UNIQUE"
+},
+"Demonhorn's Edge": {
+"base": "Destroyer Helm",
+"level": 69,
+"q": "UNIQUE"
+},
+"Dimoak's Hew": {
+"base": "Bardiche",
+"level": 11,
+"q": "UNIQUE"
+},
+"Djinn Slayer": {
+"base": "Ataghan",
+"level": 73,
+"q": "UNIQUE"
+},
+"Doombringer": {
+"base": "Champion Sword",
+"level": 75,
+"q": "UNIQUE"
+},
+"Doomslinger": {
+"base": "Repeating Crossbow",
+"level": 38,
+"q": "UNIQUE"
+},
+"Dracul's Grasp": {
+"base": "Vampirebone Gloves",
+"level": 84,
+"q": "UNIQUE"
+},
+"Dragonscale": {
+"base": "Zakarum Shield",
+"level": 84,
+"q": "UNIQUE"
+},
+"Dreadfang": {
+"base": "Legend Sword",
+"level": 69,
+"q": "UNIQUE"
+},
+"Duriel's Shell": {
+"base": "Cuirass",
+"level": 49,
+"q": "UNIQUE"
+},
+"Duskdeep": {
+"base": "Full Helm",
+"level": 23,
+"q": "UNIQUE"
+},
+"Dwarf Star": {
+"base": "Ring",
+"level": 53,
+"q": "UNIQUE"
+},
+"Eaglehorn": {
+"base": "Crusader Bow",
+"level": 77,
+"q": "UNIQUE"
+},
+"Earth Shifter": {
+"base": "Thunder Maul",
+"level": 77,
+"q": "UNIQUE"
+},
+"Earthshaker": {
+"base": "Battle Hammer",
+"level": 51,
+"q": "UNIQUE"
+},
+"Endlesshail": {
+"base": "Double Bow",
+"level": 44,
+"q": "UNIQUE"
+},
+"Entropy Locket": {
+"base": "Amulet",
+"level": 60,
+"q": "UNIQUE"
+},
+"Eschuta's Temper": {
+"base": "Eldritch Orb",
+"level": 80,
+"q": "UNIQUE"
+},
+"Ethereal Edge": {
+"base": "Silver-edged Axe",
+"level": 82,
+"q": "UNIQUE"
+},
+"Executioner's Justice": {
+"base": "Glorious Axe",
+"level": 83,
+"q": "UNIQUE"
+},
+"Felloak": {
+"base": "Club",
+"level": 4,
+"q": "UNIQUE"
+},
+"Firelizard's Talons": {
+"base": "Feral Claws",
+"level": 75,
+"q": "UNIQUE"
+},
+"Flamebellow": {
+"base": "Balrog Blade",
+"level": 79,
+"q": "UNIQUE"
+},
+"Fleshrender": {
+"base": "Barbed Club",
+"level": 46,
+"q": "UNIQUE"
+},
+"Fleshripper": {
+"base": "Fanged Knife",
+"level": 76,
+"q": "UNIQUE"
+},
+"Frostburn": {
+"base": "Gauntlets",
+"level": 39,
+"q": "UNIQUE"
+},
+"Frostwind": {
+"base": "Cryptic Sword",
+"level": 78,
+"q": "UNIQUE"
+},
+"Gargoyle's Bite": {
+"base": "Winged Harpoon",
+"level": 78,
+"q": "UNIQUE"
+},
+"Gerke's Sanctuary": {
+"base": "Pavise",
+"level": 52,
+"q": "UNIQUE"
+},
+"Gheed's Fortune": {
+"base": "Grand Charm",
+"level": 70,
+"q": "UNIQUE"
+},
+"Gheed's Wager": {
+"base": "Troll Belt",
+"level": 79,
+"q": "UNIQUE"
+},
+"Ghostflame": {
+"base": "Legend Spike",
+"level": 70,
+"q": "UNIQUE"
+},
+"Ghoulhide": {
+"base": "Heavy Bracers",
+"level": 44,
+"q": "UNIQUE"
+},
+"Giant Skull": {
+"base": "Bone Visage",
+"level": 73,
+"q": "UNIQUE"
+},
+"Gimmershred": {
+"base": "Flying Axe",
+"level": 78,
+"q": "UNIQUE"
+},
+"Ginther's Rift": {
+"base": "Dimensional Blade",
+"level": 45,
+"q": "UNIQUE"
+},
+"Gleamscythe": {
+"base": "Falchion",
+"level": 18,
+"q": "UNIQUE"
+},
+"Gloom's Trap": {
+"base": "Mesh Belt",
+"level": 45,
+"q": "UNIQUE"
+},
+"Goblin Toe": {
+"base": "Light Plated Boots",
+"level": 30,
+"q": "UNIQUE"
+},
+"Goldskin": {
+"base": "Full Plate Mail",
+"level": 38,
+"q": "UNIQUE"
+},
+"Goldstrike Arch": {
+"base": "Gothic Bow",
+"level": 54,
+"q": "UNIQUE"
+},
+"Goldwrap": {
+"base": "Heavy Belt",
+"level": 36,
+"q": "UNIQUE"
+},
+"Gore Rider": {
+"base": "War Boots",
+"level": 55,
+"q": "UNIQUE"
+},
+"Gorefoot": {
+"base": "Heavy Boots",
+"level": 12,
+"q": "UNIQUE"
+},
+"Goreshovel": {
+"base": "Broad Axe",
+"level": 19,
+"q": "UNIQUE"
+},
+"Gravenspine": {
+"base": "Bone Wand",
+"level": 27,
+"q": "UNIQUE"
+},
+"Gravepalm": {
+"base": "Sharkskin Gloves",
+"level": 39,
+"q": "UNIQUE"
+},
+"Greyform": {
+"base": "Quilted Armor",
+"level": 10,
+"q": "UNIQUE"
+},
+"Griffon's Eye": {
+"base": "Diadem",
+"level": 84,
+"q": "UNIQUE"
+},
+"Grim's Burning Dead": {
+"base": "Grim Scythe",
+"level": 52,
+"q": "UNIQUE"
+},
+"Griswold's Edge": {
+"base": "Broad Sword",
+"level": 23,
+"q": "UNIQUE"
+},
+"Griswold's Heart": {
+"base": "Ornate Plate",
+"level": 44,
+"q": "SET"
+},
+"Griswold's Honor": {
+"base": "Vortex Shield",
+"level": 44,
+"q": "SET"
+},
+"Griswold's Redemption": {
+"base": "Caduceus",
+"level": 44,
+"q": "SET"
+},
+"Griswold's Valor": {
+"base": "Corona",
+"level": 44,
+"q": "SET"
+},
+"Guardian Angel": {
+"base": "Templar Coat",
+"level": 53,
+"q": "UNIQUE"
+},
+"Guardian Naga": {
+"base": "Naga",
+"level": 56,
+"q": "UNIQUE"
+},
+"Guardian's Light": {
+"base": "Jewel",
+"level": 110,
+"q": "UNIQUE"
+},
+"Guardian's Thunder": {
+"base": "Jewel",
+"level": 110,
+"q": "UNIQUE"
+},
+"Guillaume's Face": {
+"base": "Winged Helm",
+"level": 41,
+"q": "SET"
+},
+"Gull": {
+"base": "Dagger",
+"level": 6,
+"q": "UNIQUE"
+},
+"Gut Siphon": {
+"base": "Demon Crossbow",
+"level": 79,
+"q": "UNIQUE"
+},
+"Haemosu's Adamant": {
+"base": "Cuirass",
+"level": 55,
+"q": "SET"
+},
+"Halaberd's Reign": {
+"base": "Conqueror Crown",
+"level": 85,
+"q": "UNIQUE"
+},
+"Hand of Blessed Light": {
+"base": "Divine Scepter",
+"level": 50,
+"q": "UNIQUE"
+},
+"Harlequin Crest": {
+"base": "Shako",
+"level": 69,
+"q": "UNIQUE"
+},
+"Hawkmail": {
+"base": "Scale Mail",
+"level": 20,
+"q": "UNIQUE"
+},
+"Head Hunter's Glory": {
+"base": "Troll Nest",
+"level": 83,
+"q": "UNIQUE"
+},
+"Headstriker": {
+"base": "Battle Sword",
+"level": 47,
+"q": "UNIQUE"
+},
+"Heart Carver": {
+"base": "Rondel",
+"level": 44,
+"q": "UNIQUE"
+},
+"Heaven's Light": {
+"base": "Mighty Scepter",
+"level": 69,
+"q": "UNIQUE"
+},
+"Heavenly Garb": {
+"base": "Light Plate",
+"level": 39,
+"q": "UNIQUE"
+},
+"Hellcast": {
+"base": "Heavy Crossbow",
+"level": 36,
+"q": "UNIQUE"
+},
+"Hellclap": {
+"base": "Short War Bow",
+"level": 36,
+"q": "UNIQUE"
+},
+"Hellfire Torch": {
+"base": "Large Charm",
+"level": 110,
+"q": "UNIQUE"
+},
+"Hellmouth": {
+"base": "War Gauntlets",
+"level": 55,
+"q": "UNIQUE"
+},
+"Hellplague": {
+"base": "Long Sword",
+"level": 30,
+"q": "UNIQUE"
+},
+"Hellrack": {
+"base": "Colossus Crossbow",
+"level": 84,
+"q": "UNIQUE"
+},
+"Hellslayer": {
+"base": "Decapitator",
+"level": 71,
+"q": "UNIQUE"
+},
+"Hellwarden's Will": {
+"base": "Death Mask",
+"level": 55,
+"q": "UNIQUE"
+},
+"Herald of Zakarum": {
+"base": "Gilded Shield",
+"level": 50,
+"q": "UNIQUE"
+},
+"Hexfire": {
+"base": "Shamshir",
+"level": 41,
+"q": "UNIQUE"
+},
+"Highlord's Wrath": {
+"base": "Amulet",
+"level": 73,
+"q": "UNIQUE"
+},
+"Homunculus": {
+"base": "Hierophant Trophy",
+"level": 50,
+"q": "UNIQUE"
+},
+"Hone Sundan": {
+"base": "Yari",
+"level": 45,
+"q": "UNIQUE"
+},
+"Horazon's Countenance": {
+"base": "Demonhead",
+"level": 40,
+"q": "SET"
+},
+"Horazon's Dominion": {
+"base": "Russet Armor",
+"level": 40,
+"q": "SET"
+},
+"Horazon's Hold": {
+"base": "Demonhide Gloves",
+"level": 40,
+"q": "SET"
+},
+"Horazon's Legacy": {
+"base": "Mirrored Boots",
+"level": 40,
+"q": "SET"
+},
+"Horazon's Secrets": {
+"base": "Occult Codex",
+"level": 40,
+"q": "SET"
+},
+"Horizon's Tornado": {
+"base": "Scourge",
+"level": 72,
+"q": "UNIQUE"
+},
+"Hotspur": {
+"base": "Boots",
+"level": 7,
+"q": "UNIQUE"
+},
+"Howltusk": {
+"base": "Great Helm",
+"level": 34,
+"q": "UNIQUE"
+},
+"Hsarus' Iron Fist": {
+"base": "Buckler",
+"level": 4,
+"q": "SET"
+},
+"Hsarus' Iron Heel": {
+"base": "Chain Boots",
+"level": 4,
+"q": "SET"
+},
+"Hsarus' Iron Stay": {
+"base": "Belt",
+"level": 4,
+"q": "SET"
+},
+"Humongous": {
+"base": "Giant Axe",
+"level": 39,
+"q": "UNIQUE"
+},
+"Husoldal Evo": {
+"base": "Bec-de-Corbin",
+"level": 52,
+"q": "UNIQUE"
+},
+"Hwanin's Blessing": {
+"base": "Belt",
+"level": 28,
+"q": "SET"
+},
+"Hwanin's Justice": {
+"base": "Bill",
+"level": 28,
+"q": "SET"
+},
+"Hwanin's Refuge": {
+"base": "Tigulated Mail",
+"level": 28,
+"q": "SET"
+},
+"Hwanin's Splendor": {
+"base": "Grand Crown",
+"level": 28,
+"q": "SET"
+},
+"Iceblink": {
+"base": "Splint Mail",
+"level": 30,
+"q": "UNIQUE"
+},
+"Ichorsting": {
+"base": "Crossbow",
+"level": 24,
+"q": "UNIQUE"
+},
+"Immortal King's Detail": {
+"base": "War Belt",
+"level": 37,
+"q": "SET"
+},
+"Immortal King's Forge": {
+"base": "War Gauntlets",
+"level": 37,
+"q": "SET"
+},
+"Immortal King's Pillar": {
+"base": "War Boots",
+"level": 37,
+"q": "SET"
+},
+"Immortal King's Soul Cage": {
+"base": "Sacred Armor",
+"level": 37,
+"q": "SET"
+},
+"Immortal King's Stone Crusher": {
+"base": "Ogre Maul",
+"level": 37,
+"q": "SET"
+},
+"Immortal King's Will": {
+"base": "Avenger Guard",
+"level": 37,
+"q": "SET"
+},
+"Infernal Cranium": {
+"base": "Cap",
+"level": 7,
+"q": "SET"
+},
+"Infernal Sign": {
+"base": "Heavy Belt",
+"level": 7,
+"q": "SET"
+},
+"Infernal Torch": {
+"base": "Grim Wand",
+"level": 7,
+"q": "SET"
+},
+"Infernostride": {
+"base": "Demonhide Boots",
+"level": 37,
+"q": "UNIQUE"
+},
+"Iratha's Coil": {
+"base": "Crown",
+"level": 21,
+"q": "SET"
+},
+"Iratha's Collar": {
+"base": "Amulet",
+"level": 21,
+"q": "SET"
+},
+"Iratha's Cord": {
+"base": "Heavy Belt",
+"level": 21,
+"q": "SET"
+},
+"Iratha's Cuff": {
+"base": "Light Gauntlets",
+"level": 21,
+"q": "SET"
+},
+"Iron Pelt": {
+"base": "Trellised Armor",
+"level": 41,
+"q": "UNIQUE"
+},
+"Ironstone": {
+"base": "War Hammer",
+"level": 36,
+"q": "UNIQUE"
+},
+"Isenhart's Case": {
+"base": "Breast Plate",
+"level": 11,
+"q": "SET"
+},
+"Isenhart's Horns": {
+"base": "Full Helm",
+"level": 11,
+"q": "SET"
+},
+"Isenhart's Lightbrand": {
+"base": "Broad Sword",
+"level": 11,
+"q": "SET"
+},
+"Isenhart's Parry": {
+"base": "Gothic Shield",
+"level": 11,
+"q": "SET"
+},
+"Islestrike": {
+"base": "Twin Axe",
+"level": 51,
+"q": "UNIQUE"
+},
+"Jade Talon": {
+"base": "Wrist Sword",
+"level": 74,
+"q": "UNIQUE"
+},
+"Jalal's Mane": {
+"base": "Totemic Mask",
+"level": 50,
+"q": "UNIQUE"
+},
+"Kelpie Snare": {
+"base": "Fuscina",
+"level": 41,
+"q": "UNIQUE"
+},
+"Kinemil's Awl": {
+"base": "Giant Sword",
+"level": 31,
+"q": "UNIQUE"
+},
+"Kira's Guardian": {
+"base": "Tiara",
+"level": 85,
+"q": "UNIQUE"
+},
+"Knell Striker": {
+"base": "Scepter",
+"level": 7,
+"q": "UNIQUE"
+},
+"Kuko Shakaku": {
+"base": "Cedar Bow",
+"level": 41,
+"q": "UNIQUE"
+},
+"Lacerator": {
+"base": "Winged Axe",
+"level": 76,
+"q": "UNIQUE"
+},
+"Lance Guard": {
+"base": "Barbed Shield",
+"level": 43,
+"q": "UNIQUE"
+},
+"Lance of Yaggai": {
+"base": "Spetum",
+"level": 30,
+"q": "UNIQUE"
+},
+"Langer Briser": {
+"base": "Arbalest",
+"level": 40,
+"q": "UNIQUE"
+},
+"Latent Black Cleft": {
+"base": "Grand Charm",
+"level": 69,
+"q": "UNIQUE"
+},
+"Latent Bone Break": {
+"base": "Grand Charm",
+"level": 69,
+"q": "UNIQUE"
+},
+"Latent Cold Rupture": {
+"base": "Grand Charm",
+"level": 69,
+"q": "UNIQUE"
+},
+"Latent Crack of the Heavens": {
+"base": "Grand Charm",
+"level": 69,
+"q": "UNIQUE"
+},
+"Latent Flame Rift": {
+"base": "Grand Charm",
+"level": 69,
+"q": "UNIQUE"
+},
+"Latent Rotting Fissure": {
+"base": "Grand Charm",
+"level": 69,
+"q": "UNIQUE"
+},
+"Lava Gout": {
+"base": "Battle Gauntlets",
+"level": 50,
+"q": "UNIQUE"
+},
+"Laying of Hands": {
+"base": "Bramble Mitts",
+"level": 39,
+"q": "SET"
+},
+"Leadcrow": {
+"base": "Light Crossbow",
+"level": 12,
+"q": "UNIQUE"
+},
+"Lenymo": {
+"base": "Sash",
+"level": 10,
+"q": "UNIQUE"
+},
+"Leviathan": {
+"base": "Kraken Shell",
+"level": 73,
+"q": "UNIQUE"
+},
+"Lidless Wall": {
+"base": "Grim Shield",
+"level": 49,
+"q": "UNIQUE"
+},
+"Lightsabre": {
+"base": "Phase Blade",
+"level": 66,
+"q": "UNIQUE"
+},
+"Lycander's Aim": {
+"base": "Ceremonial Bow",
+"level": 50,
+"q": "UNIQUE"
+},
+"Lycander's Flank": {
+"base": "Ceremonial Pike",
+"level": 50,
+"q": "UNIQUE"
+},
+"M'avina's Caster": {
+"base": "Grand Matron Bow",
+"level": 21,
+"q": "SET"
+},
+"M'avina's Embrace": {
+"base": "Kraken Shell",
+"level": 21,
+"q": "SET"
+},
+"M'avina's Icy Clutch": {
+"base": "Battle Gauntlets",
+"level": 21,
+"q": "SET"
+},
+"M'avina's Tenet": {
+"base": "Sharkskin Belt",
+"level": 21,
+"q": "SET"
+},
+"M'avina's True Sight": {
+"base": "Diadem",
+"level": 21,
+"q": "SET"
+},
+"Maelstrom": {
+"base": "Yew Wand",
+"level": 19,
+"q": "UNIQUE"
+},
+"Magefist": {
+"base": "Light Gauntlets",
+"level": 31,
+"q": "UNIQUE"
+},
+"Magewrath": {
+"base": "Rune Bow",
+"level": 51,
+"q": "UNIQUE"
+},
+"Magnus' Skin": {
+"base": "Sharkskin Gloves",
+"level": 41,
+"q": "SET"
+},
+"Manald Heal": {
+"base": "Ring",
+"level": 20,
+"q": "UNIQUE"
+},
+"Mang Song's Lesson": {
+"base": "Archon Staff",
+"level": 86,
+"q": "UNIQUE"
+},
+"Mara's Kaleidoscope": {
+"base": "Amulet",
+"level": 80,
+"q": "UNIQUE"
+},
+"Marrowwalk": {
+"base": "Boneweave Boots",
+"level": 74,
+"q": "UNIQUE"
+},
+"Measured Wrath": {
+"base": "Burnt Text",
+"level": 58,
+"q": "UNIQUE"
+},
+"Medusa's Gaze": {
+"base": "Aegis",
+"level": 84,
+"q": "UNIQUE"
+},
+"Messerschmidt's Reaver": {
+"base": "Champion Axe",
+"level": 75,
+"q": "UNIQUE"
+},
+"Metalgrid": {
+"base": "Amulet",
+"level": 85,
+"q": "UNIQUE"
+},
+"Milabrega's Diadem": {
+"base": "Crown",
+"level": 23,
+"q": "SET"
+},
+"Milabrega's Orb": {
+"base": "Kite Shield",
+"level": 23,
+"q": "SET"
+},
+"Milabrega's Robe": {
+"base": "Ancient Armor",
+"level": 23,
+"q": "SET"
+},
+"Milabrega's Rod": {
+"base": "War Scepter",
+"level": 23,
+"q": "SET"
+},
+"Moonfall": {
+"base": "Jagged Star",
+"level": 50,
+"q": "UNIQUE"
+},
+"Moser's Blessed Circle": {
+"base": "Round Shield",
+"level": 39,
+"q": "UNIQUE"
+},
+"Nagelring": {
+"base": "Ring",
+"level": 10,
+"q": "UNIQUE"
+},
+"Naj's Circlet": {
+"base": "Circlet",
+"level": 43,
+"q": "SET"
+},
+"Naj's Light Plate": {
+"base": "Hellforge Plate",
+"level": 43,
+"q": "SET"
+},
+"Naj's Puzzler": {
+"base": "Elder Staff",
+"level": 43,
+"q": "SET"
+},
+"Natalya's Mark": {
+"base": "Scissors Suwayyah",
+"level": 22,
+"q": "SET"
+},
+"Natalya's Shadow": {
+"base": "Loricated Mail",
+"level": 22,
+"q": "SET"
+},
+"Natalya's Soul": {
+"base": "Mesh Boots",
+"level": 22,
+"q": "SET"
+},
+"Natalya's Totem": {
+"base": "Grim Helm",
+"level": 22,
+"q": "SET"
+},
+"Nature's Peace": {
+"base": "Ring",
+"level": 77,
+"q": "UNIQUE"
+},
+"Nightsmoke": {
+"base": "Belt",
+"level": 27,
+"q": "UNIQUE"
+},
+"Nightwing's Veil": {
+"base": "Spired Helm",
+"level": 75,
+"q": "UNIQUE"
+},
+"Nokozan Relic": {
+"base": "Amulet",
+"level": 14,
+"q": "UNIQUE"
+},
+"Nord's Tenderizer": {
+"base": "Truncheon",
+"level": 76,
+"q": "UNIQUE"
+},
+"Nosferatu's Coil": {
+"base": "Vampirefang Belt",
+"level": 68,
+"q": "UNIQUE"
+},
+"Ondal's Almighty": {
+"base": "Spired Helm",
+"level": 55,
+"q": "SET"
+},
+"Ondal's Wisdom": {
+"base": "Elder Staff",
+"level": 74,
+"q": "UNIQUE"
+},
+"Opalvein": {
+"base": "Ring",
+"level": 58,
+"q": "UNIQUE"
+},
+"Ormus' Robes": {
+"base": "Dusk Shroud",
+"level": 83,
+"q": "UNIQUE"
+},
+"Peasant Crown": {
+"base": "War Hat",
+"level": 36,
+"q": "UNIQUE"
+},
+"Pelta Lunata": {
+"base": "Buckler",
+"level": 3,
+"q": "UNIQUE"
+},
+"Pierre Tombale Couant": {
+"base": "Partizan",
+"level": 51,
+"q": "UNIQUE"
+},
+"Plague Bearer": {
+"base": "Rune Sword",
+"level": 49,
+"q": "UNIQUE"
+},
+"Pluckeye": {
+"base": "Short Bow",
+"level": 10,
+"q": "UNIQUE"
+},
+"Pompeii's Wrath": {
+"base": "Crowbill",
+"level": 53,
+"q": "UNIQUE"
+},
+"Protector's Frost": {
+"base": "Jewel",
+"level": 110,
+"q": "UNIQUE"
+},
+"Protector's Stone": {
+"base": "Jewel",
+"level": 110,
+"q": "UNIQUE"
+},
+"Pus Spitter": {
+"base": "Siege Crossbow",
+"level": 44,
+"q": "UNIQUE"
+},
+"Que-Hegan's Wisdom": {
+"base": "Mage Plate",
+"level": 59,
+"q": "UNIQUE"
+},
+"Radament's Sphere": {
+"base": "Ancient Shield",
+"level": 58,
+"q": "UNIQUE"
+},
+"Rainbow Facet": {
+"base": "Jewel",
+"level": 85,
+"q": "UNIQUE"
+},
+"Rakescar": {
+"base": "War Axe",
+"level": 36,
+"q": "UNIQUE"
+},
+"Rattlecage": {
+"base": "Gothic Plate",
+"level": 39,
+"q": "UNIQUE"
+},
+"Raven Claw": {
+"base": "Long Bow",
+"level": 20,
+"q": "UNIQUE"
+},
+"Raven Frost": {
+"base": "Ring",
+"level": 53,
+"q": "UNIQUE"
+},
+"Ravenlore": {
+"base": "Sky Spirit",
+"level": 82,
+"q": "UNIQUE"
+},
+"Razor's Edge": {
+"base": "Tomahawk",
+"level": 75,
+"q": "UNIQUE"
+},
+"Razorswitch": {
+"base": "Jo Staff",
+"level": 36,
+"q": "UNIQUE"
+},
+"Razortail": {
+"base": "Sharkskin Belt",
+"level": 39,
+"q": "UNIQUE"
+},
+"Razortine": {
+"base": "Trident",
+"level": 16,
+"q": "UNIQUE"
+},
+"Ribcracker": {
+"base": "Quarterstaff",
+"level": 39,
+"q": "UNIQUE"
+},
+"Riphook": {
+"base": "Razor Bow",
+"level": 39,
+"q": "UNIQUE"
+},
+"Ripsaw": {
+"base": "Flamberge",
+"level": 35,
+"q": "UNIQUE"
+},
+"Rite of Passage": {
+"base": "Demonhide Boots",
+"level": 39,
+"q": "SET"
+},
+"Rixot's Keen": {
+"base": "Short Sword",
+"level": 3,
+"q": "UNIQUE"
+},
+"Rockfleece": {
+"base": "Field Plate",
+"level": 38,
+"q": "UNIQUE"
+},
+"Rockstopper": {
+"base": "Sallet",
+"level": 39,
+"q": "UNIQUE"
+},
+"Rogue's Bow": {
+"base": "Composite Bow",
+"level": 27,
+"q": "UNIQUE"
+},
+"Rune Master": {
+"base": "Ettin Axe",
+"level": 80,
+"q": "UNIQUE"
+},
+"Rusthandle": {
+"base": "Grand Scepter",
+"level": 23,
+"q": "UNIQUE"
+},
+"Sander's Paragon": {
+"base": "Cap",
+"level": 20,
+"q": "SET"
+},
+"Sander's Riprap": {
+"base": "Heavy Boots",
+"level": 20,
+"q": "SET"
+},
+"Sander's Superstition": {
+"base": "Bone Wand",
+"level": 20,
+"q": "SET"
+},
+"Sander's Taboo": {
+"base": "Heavy Gloves",
+"level": 20,
+"q": "SET"
+},
+"Sandstorm Trek": {
+"base": "Scarabshell Boots",
+"level": 72,
+"q": "UNIQUE"
+},
+"Saracen's Chance": {
+"base": "Amulet",
+"level": 55,
+"q": "UNIQUE"
+},
+"Sazabi's Cobalt Redeemer": {
+"base": "Cryptic Sword",
+"level": 34,
+"q": "SET"
+},
+"Sazabi's Ghost Liberator": {
+"base": "Balrog Skin",
+"level": 34,
+"q": "SET"
+},
+"Sazabi's Mental Sheath": {
+"base": "Basinet",
+"level": 34,
+"q": "SET"
+},
+"Schaefer's Hammer": {
+"base": "Legendary Mallet",
+"level": 83,
+"q": "UNIQUE"
+},
+"Seraph's Hymn": {
+"base": "Amulet",
+"level": 73,
+"q": "UNIQUE"
+},
+"Serpent Lord": {
+"base": "Long Staff",
+"level": 12,
+"q": "UNIQUE"
+},
+"Shadow Dancer": {
+"base": "Myrmidon Greaves",
+"level": 79,
+"q": "UNIQUE"
+},
+"Shadow Killer": {
+"base": "Battle Cestus",
+"level": 85,
+"q": "UNIQUE"
+},
+"Shadowfang": {
+"base": "Two-Handed Sword",
+"level": 16,
+"q": "UNIQUE"
+},
+"Shaftstop": {
+"base": "Mesh Armor",
+"level": 46,
+"q": "UNIQUE"
+},
+"Sigon's Gage": {
+"base": "Gauntlets",
+"level": 9,
+"q": "SET"
+},
+"Sigon's Guard": {
+"base": "Tower Shield",
+"level": 9,
+"q": "SET"
+},
+"Sigon's Sabot": {
+"base": "Greaves",
+"level": 9,
+"q": "SET"
+},
+"Sigon's Shelter": {
+"base": "Gothic Plate",
+"level": 9,
+"q": "SET"
+},
+"Sigon's Visor": {
+"base": "Great Helm",
+"level": 9,
+"q": "SET"
+},
+"Sigon's Wrap": {
+"base": "Plated Belt",
+"level": 9,
+"q": "SET"
+},
+"Silks of the Victor": {
+"base": "Ancient Armor",
+"level": 38,
+"q": "UNIQUE"
+},
+"Silkweave": {
+"base": "Mesh Boots",
+"level": 44,
+"q": "UNIQUE"
+},
+"Skewer of Krintiz": {
+"base": "Sabre",
+"level": 14,
+"q": "UNIQUE"
+},
+"Skin of the Flayed One": {
+"base": "Demonhide Armor",
+"level": 39,
+"q": "UNIQUE"
+},
+"Skin of the Vipermagi": {
+"base": "Serpentskin Armor",
+"level": 37,
+"q": "UNIQUE"
+},
+"Skull Collector": {
+"base": "Rune Staff",
+"level": 49,
+"q": "UNIQUE"
+},
+"Skull Splitter": {
+"base": "Military Pick",
+"level": 28,
+"q": "UNIQUE"
+},
+"Skullder's Ire": {
+"base": "Russet Armor",
+"level": 50,
+"q": "UNIQUE"
+},
+"Skystrike": {
+"base": "Edge Bow",
+"level": 36,
+"q": "UNIQUE"
+},
+"Sling": {
+"base": "Ring",
+"level": 58,
+"q": "UNIQUE"
+},
+"Snakecord": {
+"base": "Light Belt",
+"level": 16,
+"q": "UNIQUE"
+},
+"Snowclash": {
+"base": "Battle Belt",
+"level": 49,
+"q": "UNIQUE"
+},
+"Soul Drainer": {
+"base": "Vambraces",
+"level": 82,
+"q": "UNIQUE"
+},
+"Soul Harvest": {
+"base": "Scythe",
+"level": 26,
+"q": "UNIQUE"
+},
+"Soulfeast Tine": {
+"base": "War Fork",
+"level": 43,
+"q": "UNIQUE"
+},
+"Soulflay": {
+"base": "Claymore",
+"level": 26,
+"q": "UNIQUE"
+},
+"Sparking Mail": {
+"base": "Chain Mail",
+"level": 23,
+"q": "UNIQUE"
+},
+"Spectral Shard": {
+"base": "Blade",
+"level": 34,
+"q": "UNIQUE"
+},
+"Spellsteel": {
+"base": "Bearded Axe",
+"level": 47,
+"q": "UNIQUE"
+},
+"Spike Thorn": {
+"base": "Blade Barrier",
+"level": 78,
+"q": "UNIQUE"
+},
+"Spineripper": {
+"base": "Poignard",
+"level": 40,
+"q": "UNIQUE"
+},
+"Spire of Honor": {
+"base": "Lance",
+"level": 47,
+"q": "UNIQUE"
+},
+"Spire of Lazarus": {
+"base": "Gnarled Staff",
+"level": 24,
+"q": "UNIQUE"
+},
+"Spirit Forge": {
+"base": "Linked Mail",
+"level": 43,
+"q": "UNIQUE"
+},
+"Spirit Keeper": {
+"base": "Earth Spirit",
+"level": 75,
+"q": "UNIQUE"
+},
+"Spirit Ward": {
+"base": "Ward",
+"level": 76,
+"q": "UNIQUE"
+},
+"Stealskull": {
+"base": "Casque",
+"level": 43,
+"q": "UNIQUE"
+},
+"Steel Carapace": {
+"base": "Shadow Plate",
+"level": 74,
+"q": "UNIQUE"
+},
+"Steel Pillar": {
+"base": "War Pike",
+"level": 77,
+"q": "UNIQUE"
+},
+"Steel Shade": {
+"base": "Armet",
+"level": 70,
+"q": "UNIQUE"
+},
+"Steelclash": {
+"base": "Kite Shield",
+"level": 23,
+"q": "UNIQUE"
+},
+"Steeldriver": {
+"base": "Great Maul",
+"level": 39,
+"q": "UNIQUE"
+},
+"Steelgoad": {
+"base": "Voulge",
+"level": 19,
+"q": "UNIQUE"
+},
+"Steelrend": {
+"base": "Ogre Gauntlets",
+"level": 78,
+"q": "UNIQUE"
+},
+"Stone Crusher": {
+"base": "Legendary Mallet",
+"level": 76,
+"q": "UNIQUE"
+},
+"Stoneraven": {
+"base": "Matriarchal Spear",
+"level": 72,
+"q": "UNIQUE"
+},
+"Stormchaser": {
+"base": "Scutum",
+"level": 43,
+"q": "UNIQUE"
+},
+"Stormeye": {
+"base": "War Scepter",
+"level": 31,
+"q": "UNIQUE"
+},
+"Stormguild": {
+"base": "Large Shield",
+"level": 18,
+"q": "UNIQUE"
+},
+"Stormlash": {
+"base": "Scourge",
+"level": 86,
+"q": "UNIQUE"
+},
+"Stormrider": {
+"base": "Tabar",
+"level": 49,
+"q": "UNIQUE"
+},
+"Stormshield": {
+"base": "Monarch",
+"level": 77,
+"q": "UNIQUE"
+},
+"Stormspike": {
+"base": "Stiletto",
+"level": 49,
+"q": "UNIQUE"
+},
+"Stormspire": {
+"base": "Giant Thresher",
+"level": 78,
+"q": "UNIQUE"
+},
+"Stormstrike": {
+"base": "Short Battle Bow",
+"level": 34,
+"q": "UNIQUE"
+},
+"Stoutnail": {
+"base": "Spiked Club",
+"level": 7,
+"q": "UNIQUE"
+},
+"String of Ears": {
+"base": "Demonhide Sash",
+"level": 37,
+"q": "UNIQUE"
+},
+"Suicide Branch": {
+"base": "Burnt Wand",
+"level": 41,
+"q": "UNIQUE"
+},
+"Sureshrill Frost": {
+"base": "Flanged Mace",
+"level": 47,
+"q": "UNIQUE"
+},
+"Swordback Hold": {
+"base": "Spiked Shield",
+"level": 20,
+"q": "UNIQUE"
+},
+"Swordguard": {
+"base": "Executioner Sword",
+"level": 55,
+"q": "UNIQUE"
+},
+"Taebaek's Glory": {
+"base": "Ward",
+"level": 55,
+"q": "SET"
+},
+"Tal Rasha's Adjudication": {
+"base": "Amulet",
+"level": 26,
+"q": "SET"
+},
+"Tal Rasha's Fine-Spun Cloth": {
+"base": "Mesh Belt",
+"level": 26,
+"q": "SET"
+},
+"Tal Rasha's Guardianship": {
+"base": "Lacquered Plate",
+"level": 26,
+"q": "SET"
+},
+"Tal Rasha's Horadric Crest": {
+"base": "Death Mask",
+"level": 26,
+"q": "SET"
+},
+"Tal Rasha's Lidless Eye": {
+"base": "Swirling Crystal",
+"level": 26,
+"q": "SET"
+},
+"Tancred's Crowbill": {
+"base": "Military Pick",
+"level": 27,
+"q": "SET"
+},
+"Tancred's Hobnails": {
+"base": "Boots",
+"level": 27,
+"q": "SET"
+},
+"Tancred's Skull": {
+"base": "Bone Helm",
+"level": 27,
+"q": "SET"
+},
+"Tancred's Spine": {
+"base": "Full Plate Mail",
+"level": 27,
+"q": "SET"
+},
+"Tancred's Weird": {
+"base": "Amulet",
+"level": 27,
+"q": "SET"
+},
+"Tarnhelm": {
+"base": "Skull Cap",
+"level": 20,
+"q": "UNIQUE"
+},
+"Tearhaunch": {
+"base": "Greaves",
+"level": 39,
+"q": "UNIQUE"
+},
+"Telling of Beads": {
+"base": "Amulet",
+"level": 39,
+"q": "SET"
+},
+"Templar's Might": {
+"base": "Sacred Armor",
+"level": 82,
+"q": "UNIQUE"
+},
+"The Atlantean": {
+"base": "Ancient Sword",
+"level": 50,
+"q": "UNIQUE"
+},
+"The Battlebranch": {
+"base": "Poleaxe",
+"level": 34,
+"q": "UNIQUE"
+},
+"The Cat's Eye": {
+"base": "Amulet",
+"level": 58,
+"q": "UNIQUE"
+},
+"The Centurion": {
+"base": "Hard Leather Armor",
+"level": 19,
+"q": "UNIQUE"
+},
+"The Chieftain": {
+"base": "Battle Axe",
+"level": 26,
+"q": "UNIQUE"
+},
+"The Cranium Basher": {
+"base": "Thunder Maul",
+"level": 85,
+"q": "UNIQUE"
+},
+"The Diggler": {
+"base": "Dirk",
+"level": 15,
+"q": "UNIQUE"
+},
+"The Dragon Chang": {
+"base": "Spear",
+"level": 11,
+"q": "UNIQUE"
+},
+"The Eye of Etlich": {
+"base": "Amulet",
+"level": 20,
+"q": "UNIQUE"
+},
+"The Face of Horror": {
+"base": "Mask",
+"level": 27,
+"q": "UNIQUE"
+},
+"The Fetid Sprinkler": {
+"base": "Holy Water Sprinkler",
+"level": 46,
+"q": "UNIQUE"
+},
+"The Gavel of Pain": {
+"base": "Martel de Fer",
+"level": 53,
+"q": "UNIQUE"
+},
+"The General's Tan Do Li Ga": {
+"base": "Flail",
+"level": 28,
+"q": "UNIQUE"
+},
+"The Gladiator's Bane": {
+"base": "Wire Fleece",
+"level": 85,
+"q": "UNIQUE"
+},
+"The Gnasher": {
+"base": "Hand Axe",
+"level": 7,
+"q": "UNIQUE"
+},
+"The Grandfather": {
+"base": "Colossus Blade",
+"level": 85,
+"q": "UNIQUE"
+},
+"The Grim Reaper": {
+"base": "War Scythe",
+"level": 39,
+"q": "UNIQUE"
+},
+"The Hand of Broc": {
+"base": "Leather Gloves",
+"level": 7,
+"q": "UNIQUE"
+},
+"The Impaler": {
+"base": "War Spear",
+"level": 39,
+"q": "UNIQUE"
+},
+"The Iron Jang Bong": {
+"base": "War Staff",
+"level": 38,
+"q": "UNIQUE"
+},
+"The Jade Tan Do": {
+"base": "Kris",
+"level": 26,
+"q": "UNIQUE"
+},
+"The Mahim-Oak Curio": {
+"base": "Amulet",
+"level": 34,
+"q": "UNIQUE"
+},
+"The Meat Scraper": {
+"base": "Lochaber Axe",
+"level": 49,
+"q": "UNIQUE"
+},
+"The Minotaur": {
+"base": "Ancient Axe",
+"level": 53,
+"q": "UNIQUE"
+},
+"The Oculus": {
+"base": "Swirling Crystal",
+"level": 50,
+"q": "UNIQUE"
+},
+"The Patriarch": {
+"base": "Great Sword",
+"level": 39,
+"q": "UNIQUE"
+},
+"The Reaper's Toll": {
+"base": "Thresher",
+"level": 83,
+"q": "UNIQUE"
+},
+"The Redeemer": {
+"base": "Mighty Scepter",
+"level": 80,
+"q": "UNIQUE"
+},
+"The Rising Sun": {
+"base": "Amulet",
+"level": 73,
+"q": "UNIQUE"
+},
+"The Salamander": {
+"base": "Battle Staff",
+"level": 28,
+"q": "UNIQUE"
+},
+"The Scalper": {
+"base": "Francisca",
+"level": 65,
+"q": "UNIQUE"
+},
+"The Spirit Shroud": {
+"base": "Ghost Armor",
+"level": 36,
+"q": "UNIQUE"
+},
+"The Stone of Jordan": {
+"base": "Ring",
+"level": 39,
+"q": "UNIQUE"
+},
+"The Tannr Gorerod": {
+"base": "Pike",
+"level": 36,
+"q": "UNIQUE"
+},
+"The Vile Husk": {
+"base": "Tusk Sword",
+"level": 52,
+"q": "UNIQUE"
+},
+"The Ward": {
+"base": "Gothic Shield",
+"level": 35,
+"q": "UNIQUE"
+},
+"Thundergod's Vigor": {
+"base": "War Belt",
+"level": 55,
+"q": "UNIQUE"
+},
+"Thunderstroke": {
+"base": "Matriarchal Javelin",
+"level": 77,
+"q": "UNIQUE"
+},
+"Tiamat's Rebuke": {
+"base": "Dragon Shield",
+"level": 46,
+"q": "UNIQUE"
+},
+"Titan's Revenge": {
+"base": "Ceremonial Javelin",
+"level": 50,
+"q": "UNIQUE"
+},
+"Todesfaelle Flamme": {
+"base": "Zweihander",
+"level": 54,
+"q": "UNIQUE"
+},
+"Tomb Reaver": {
+"base": "Cryptic Axe",
+"level": 86,
+"q": "UNIQUE"
+},
+"Toothrow": {
+"base": "Sharktooth Armor",
+"level": 56,
+"q": "UNIQUE"
+},
+"Torch of Iro": {
+"base": "Wand",
+"level": 7,
+"q": "UNIQUE"
+},
+"Trang-Oul's Claws": {
+"base": "Heavy Bracers",
+"level": 32,
+"q": "SET"
+},
+"Trang-Oul's Girth": {
+"base": "Troll Belt",
+"level": 32,
+"q": "SET"
+},
+"Trang-Oul's Guise": {
+"base": "Bone Visage",
+"level": 32,
+"q": "SET"
+},
+"Trang-Oul's Scales": {
+"base": "Chaos Armor",
+"level": 32,
+"q": "SET"
+},
+"Trang-Oul's Wing": {
+"base": "Cantor Trophy",
+"level": 32,
+"q": "SET"
+},
+"Treads of Cthon": {
+"base": "Chain Boots",
+"level": 20,
+"q": "UNIQUE"
+},
+"Twitchthroe": {
+"base": "Studded Leather",
+"level": 22,
+"q": "UNIQUE"
+},
+"Tyrael's Might": {
+"base": "Sacred Armor",
+"level": 87,
+"q": "UNIQUE"
+},
+"Umbral Disk": {
+"base": "Small Shield",
+"level": 12,
+"q": "UNIQUE"
+},
+"Ume's Lament": {
+"base": "Grim Wand",
+"level": 38,
+"q": "UNIQUE"
+},
+"Undead Crown": {
+"base": "Crown",
+"level": 39,
+"q": "UNIQUE"
+},
+"Valkyrie Wing": {
+"base": "Winged Helm",
+"level": 52,
+"q": "UNIQUE"
+},
+"Vampire Gaze": {
+"base": "Grim Helm",
+"level": 49,
+"q": "UNIQUE"
+},
+"Veil of Steel": {
+"base": "Spired Helm",
+"level": 77,
+"q": "UNIQUE"
+},
+"Venom Grip": {
+"base": "Demonhide Gloves",
+"level": 37,
+"q": "UNIQUE"
+},
+"Venom Ward": {
+"base": "Breast Plate",
+"level": 27,
+"q": "UNIQUE"
+},
+"Verdungo's Hearty Cord": {
+"base": "Mithril Coil",
+"level": 71,
+"q": "UNIQUE"
+},
+"Vidala's Ambush": {
+"base": "Leather Armor",
+"level": 19,
+"q": "SET"
+},
+"Vidala's Barb": {
+"base": "Long Battle Bow",
+"level": 19,
+"q": "SET"
+},
+"Vidala's Fetlock": {
+"base": "Light Plated Boots",
+"level": 19,
+"q": "SET"
+},
+"Vidala's Snare": {
+"base": "Amulet",
+"level": 19,
+"q": "SET"
+},
+"Viperfork": {
+"base": "Mancatcher",
+"level": 79,
+"q": "UNIQUE"
+},
+"Visceratuant": {
+"base": "Defender",
+"level": 36,
+"q": "UNIQUE"
+},
+"Wall of the Eyeless": {
+"base": "Bone Shield",
+"level": 27,
+"q": "UNIQUE"
+},
+"War Traveler": {
+"base": "Battle Boots",
+"level": 50,
+"q": "UNIQUE"
+},
+"Warlord's Authority": {
+"base": "Plated Belt",
+"level": 100,
+"q": "SET"
+},
+"Warlord's Conquest": {
+"base": "Gauntlets",
+"level": 100,
+"q": "SET"
+},
+"Warlord's Crushers": {
+"base": "Greaves",
+"level": 100,
+"q": "SET"
+},
+"Warlord's Lust": {
+"base": "Great Helm",
+"level": 100,
+"q": "SET"
+},
+"Warlord's Mantle": {
+"base": "Full Plate Mail",
+"level": 100,
+"q": "SET"
+},
+"Warlord's Trust": {
+"base": "Military Axe",
+"level": 43,
+"q": "UNIQUE"
+},
+"Warpspear": {
+"base": "Gothic Staff",
+"level": 47,
+"q": "UNIQUE"
+},
+"Warshrike": {
+"base": "Winged Knife",
+"level": 83,
+"q": "UNIQUE"
+},
+"Waterwalk": {
+"base": "Sharkskin Boots",
+"level": 40,
+"q": "UNIQUE"
+},
+"Whitstan's Guard": {
+"base": "Round Shield",
+"level": 41,
+"q": "SET"
+},
+"Widowmaker": {
+"base": "Ward Bow",
+"level": 73,
+"q": "UNIQUE"
+},
+"Wilhelm's Pride": {
+"base": "Battle Belt",
+"level": 41,
+"q": "SET"
+},
+"Windforce": {
+"base": "Hydra Bow",
+"level": 80,
+"q": "UNIQUE"
+},
+"Windhammer": {
+"base": "Ogre Maul",
+"level": 76,
+"q": "UNIQUE"
+},
+"Wisp Projector": {
+"base": "Ring",
+"level": 84,
+"q": "UNIQUE"
+},
+"Witchwild String": {
+"base": "Short Siege Bow",
+"level": 47,
+"q": "UNIQUE"
+},
+"Witherstring": {
+"base": "Hunter's Bow",
+"level": 18,
+"q": "UNIQUE"
+},
+"Wizardspike": {
+"base": "Bone Knife",
+"level": 69,
+"q": "UNIQUE"
+},
+"Wizendraw": {
+"base": "Long Battle Bow",
+"level": 35,
+"q": "UNIQUE"
+},
+"Woestave": {
+"base": "Halberd",
+"level": 38,
+"q": "UNIQUE"
+},
+"Wolfhowl": {
+"base": "Fury Visor",
+"level": 85,
+"q": "UNIQUE"
+},
+"Wormskull": {
+"base": "Bone Helm",
+"level": 28,
+"q": "UNIQUE"
+},
+"Wraith Flight": {
+"base": "Ghost Glaive",
+"level": 84,
+"q": "UNIQUE"
+},
+"Wraithstep": {
+"base": "Mirrored Boots",
+"level": 73,
+"q": "UNIQUE"
+},
+"Zakarum's Hand": {
+"base": "Rune Scepter",
+"level": 45,
+"q": "UNIQUE"
+}
+},
+"pulledAt": "2026-11-08",
+"query": "dropcalc.php?type=itemProbabilities&version=D2R_ROW_3_0&itemQuality={UNIQUE|SET}&itemId={ID}&monsterType=BOSS",
+"source": "silospen's drop calculator, version D2R_ROW_3_0 - itemProbabilities context.level (the item's QUALITY level)"
+}

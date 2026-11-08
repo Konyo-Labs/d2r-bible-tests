@@ -116,12 +116,7 @@ const SCEN = function(){
 };
 
 const ctx = {
-  // v3884 (REG-3435) - a terror-zone row competes only while the live rotation names its zone. This law's subject is ONE
-  // CLOCK, not the rotation, so the Cow Level is read as terrorized now and its TZ rows compete exactly as before; the
-  // rotation rule itself is test_a_terror_zone_run_ranks_only_in_its_slot.
-  window: { _tzPeek: () => ({ current: 'Secret Cow Level', ts: Date.now() }) },
-  TZ_HUNT: [{ id: 'cows', m: ['cow level', 'moo moo farm'] }], _tzTurnBoundary: (t) => t + 3600000,
-  console, Math, JSON, isFinite, Number, String, Object, Array, Infinity, Date,
+  window: {}, console, Math, JSON, isFinite, Number, String, Object, Array, Infinity,
   esc: (s) => String(s),
   // a fixed MF factor stands in for effChance, so an ADJUSTED figure is distinguishable from the raw row
   _adjC: (s) => (s && s.chance != null) ? Math.round(s.chance * 0.89) : null,
@@ -280,8 +275,8 @@ RED_PROOF = [
     {
         "why": "v3526 - the cow run is named for its monster again ('Hell Hell Bovines')",
         "file": "bible.html",
-        "find": "        item.sources.push({boss:`${label} ${runName}`,chance,bossId:boss.id,verified:isVer,kph:effKph,diffKey:k});\n",
-        "replace": "        item.sources.push({boss:`${label} ${boss.name}`,chance,bossId:boss.id,verified:isVer,kph:effKph,diffKey:k});\n",
+        "find": "        const _src = {boss:`${label} ${runName}`,chance,bossId:boss.id,verified:isVer,kph:effKph,diffKey:k};\n",   # v3884 - REG-3437 named the row
+        "replace": "        const _src = {boss:`${label} ${boss.name}`,chance,bossId:boss.id,verified:isVer,kph:effKph,diffKey:k};\n",
         "matches": 1,
     },
 ]
