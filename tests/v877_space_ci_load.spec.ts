@@ -90,6 +90,10 @@ function bootTail(): string {
 test.describe('v877 Space under the CI load that shut the theatre', () => {
   test.beforeAll(async () => {
     writeFileSync(LOAD_COUNT, '0');
+    // v3888 (REG-3481) - THE COUNT IS SWAPPED IN WHOLE, NEVER REWRITTEN IN PLACE. v3886's GitHub round 2 failed this file with
+    // "the disk writer was not running - Expected: > 140, Received: 0": open(count, "w") empties the file before it writes, and
+    // the read below landed in that gap ('' || '0' -> 0) - a count that cannot go DOWN read as zero. Written to a temp file
+    // and os.replace()d, a reader sees the old number or the new one, never nothing. [[open-for-write-truncates-first]]
     disk = spawn('python3', ['-c', `
 import os, time
 path = os.environ["LOAD_FILE"]
@@ -105,8 +109,9 @@ while time.time() < deadline:
         os.fsync(f.fileno())
     with open(path, "rb") as f:
         f.read()
-    with open(count, "w") as f:
+    with open(count + ".tmp", "w") as f:
         f.write(str(n))
+    os.replace(count + ".tmp", count)
     time.sleep(0.02)
 `], {
       env: { ...process.env, LOAD_FILE: join(LOAD_DIR, 'blob'), LOAD_COUNT },

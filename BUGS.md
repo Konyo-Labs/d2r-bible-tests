@@ -128,6 +128,14 @@ places) printed r50 - kills for an even chance - under "Runs (50%)", titled "sor
 on the Cow Level (~350 kills a run) ~350 times too many. The Drop Simulator took the same r50 as "runs" and rolled a kill's odds.
 Now the table and the simulator print s.runs, the title says its order, and the simulator rolls one run's odds (_gicRunOdds:
 1 - (1 - 1/c)^kills). GUARD: test_the_item_card_counts_runs_not_kills (3 red-proofs RED).
+### REG-3481 - A SPEC'S LOAD COUNTER READ ZERO MID-WRITE AND FAILED A ROUND (v3888, v3886's GitHub round 2)
+v877_space_ci_load, Routine I, v3886 round 2: "the disk writer was not running - Expected: > 140, Received: 0". The spec's own disk
+load rewrote its count with open(count, "w"), which empties the file before writing, and the spec's readFileSync landed in that gap
+('' || '0' -> 0): a count that only goes up read as zero. MEASURED with the writer cut out of the spec and hammered for 2 s: the old
+form gave 94 empty reads in 96,615; written to a temp file and os.replace()d, 0 in 88,516. The sweep found no other spec that reads
+a file a spawned writer rewrites in place (v877_rinse reads an append-only boot log). GUARD: the spec itself, on GitHub (a browser
+suite never runs on his Mac); the measurement above is the before/after.
+
 ### REG-3480 - THE DOCTOR READ A RECORDING BEING FILMED AS FOOTAGE NO REEL HOLDS (v3888, the hook on OLD PC ALT)
 The hook, 11-08 ~23:15: "OLD PC ALT: footage has a reel - 48 frame(s) (0.00 GB) belong to NO reel - an unsealed recording no sweep
 can reach". MEASURED there minutes later, read-only: orphan_fold refused its one cluster because "the newest frame here is 1s old,
