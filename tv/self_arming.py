@@ -1760,7 +1760,7 @@ def _class_guards(src, lock, aliases):
         return True
     marks = LOCK_MARKS.get(lock) or ()
     for stem in tuple(stems) + LOCK_MACHINERY:
-        if marks and stem in BROAD_DOORS:
+        if marks and stem in BROAD_DOORS:     # _guards_lock's own rule: a marked lock is not guarded by a broad door
             continue
         for al in (aliases or {}).get(stem, ()):
             if al == "*" or re.search(r"(?<![\w.])%s\b" % re.escape(al), src):
