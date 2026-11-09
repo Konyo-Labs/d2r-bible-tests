@@ -2722,6 +2722,13 @@
     padding: 9px 12px; font: var(--fw-medium) var(--fs-sm)/var(--lh-snug) var(--mono); letter-spacing: var(--ls-tight); }
   #th-more-pop .th-btn[hidden] { display: none !important; }
   #th-more-pop .th-btn:hover { background: rgba(240,192,96,.1); border-color: var(--gold-hi); }   /* v945 R18 — menu item hover */
+  /* v3890 (#186, GrokBot #230 11-09: "Delete session right next to Clip ... easy to hit by mistake") - the one destructive
+     item stands apart from the rest: a gap and a rule above it, and the danger colour, so it never reads as Clip's neighbour */
+  #th-more-pop .th-btn.th-danger { margin-top: 12px; position: relative; color: var(--acc-danger, #ff5555);
+    border-color: rgba(255,85,85,.45); }
+  #th-more-pop .th-btn.th-danger::before { content: ""; position: absolute; left: 6px; right: 6px; top: -7px;
+    border-top: 1px solid rgba(255,85,85,.35); }
+  #th-more-pop .th-btn.th-danger:hover { background: rgba(255,85,85,.10); border-color: rgba(255,85,85,.75); }
   /* v768 (item 8) — ONE lit/dim truth (Konyo: 'glowing for on, grey dim for off'). Every primary
      console button is DIM by default; the truly-active one is .lit (full opacity + glow, driven by
      paint()/thLit). Hover/focus lift the dim so it's never dead. */
@@ -8586,7 +8593,7 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
               <button class="th-btn" id="th-card" type="button" title="Every AI thought at this instant">🔬 Beat forensics — the AI's thoughts here</button>
               <button class="th-btn" id="th-replay" type="button" title="Rewind to the moments before this find" hidden>⏪ Instant replay — before this find</button>
               <button class="th-btn" id="th-export" type="button" title="Save this session's recap to your Desktop">✂ Clip — save this moment to Desktop</button>
-              <button class="th-btn" id="th-del" type="button" title="Delete this session — reads + frames, forever (two clicks)">🗑 Delete session</button>
+              <button class="th-btn th-danger" id="th-del" type="button" title="Delete this session — reads + frames, forever (two clicks)">🗑 Delete session</button>
             </div>
           </div>
         </div>

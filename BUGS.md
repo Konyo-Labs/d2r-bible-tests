@@ -112,6 +112,12 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3511 - "DELETE SESSION" SAT FLUSH UNDER "CLIP" IN THE THEATRE'S MORE-MENU (v3890, #186, GrokBot's trap hunt)
+GrokBot #230 11-09: "Delete session right next to Clip. I didn't touch it, but it's easy to hit by mistake." It asks twice, but
+it was the same gold as Clip directly beneath it. Now it carries .th-danger: 12px of gap and a red rule above it, red text and
+border, still last. Rendered on a private console at 1120: Clip ends at y=425, Delete starts at 441, rgb(255, 85, 85).
+GUARD: test_delete_session_stands_apart_from_clip (2 red-proofs RED).
+
 ### REG-3510 - THE SESSION CARD'S FOUND BOX RE-COUNTED THE UNIQUES AND SETS BESIDE IT; IT IS CHRONICLES NOW (v3890, #184, his call)
 His words 11-09: "FOUND should be chronicle found meaning the keyword in green for unidentified items before being identified
 those reels and frames are chronicles found" - "found change to chronicles rename it". GrokBot 6738919245 measured the box:
