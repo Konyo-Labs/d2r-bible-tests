@@ -73,8 +73,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3891 (#191, REG-3528) - the listener no longer stops the event, so a later handler peels another layer",
      "file": "bible.html",
-     "find": "    if (e.stopImmediatePropagation) e.stopImmediatePropagation();\n",
-     "replace": "",
+     "find": "  if (_tvEsc()) {\n    if (e.preventDefault) e.preventDefault();\n    if (e.stopImmediatePropagation) e.stopImmediatePropagation();\n",
+     "replace": "  if (_tvEsc()) {\n    if (e.preventDefault) e.preventDefault();\n",
      "matches": 1},
 ]
 
