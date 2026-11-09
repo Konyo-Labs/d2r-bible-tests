@@ -257,7 +257,8 @@ class TheRedMemoryTravels(unittest.TestCase):
         os.remove(os.path.join(out, SEED.RED_NAME))
         with io.open(os.path.join(restored, SEED.RED_NAME), "w", encoding="utf-8") as fh:
             json.dump({"not": "a memory"}, fh)
-        self.assertEqual(SEED.carry_red(restored, out, say=lambda *a, **k: None), 0)
+        self.assertIsNone(SEED.carry_red(restored, out, say=lambda *a, **k: None),
+                          "a file that would not read is unknown, not a measured zero")
         self.assertFalse(os.path.isfile(os.path.join(out, SEED.RED_NAME)))
 
     def test_the_seed_build_carries_it_and_every_shard_starts_from_it(self):

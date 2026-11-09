@@ -16669,7 +16669,8 @@ def _kai_closer_loop():
                         except Exception:
                             pass
                     except Exception:
-                        _eye = {}
+                        # v3893 swallow ratchet - None is "could not ask"; callers already use (_eye or {})
+                        _eye = None
                     _eye_cls = str((_eye or {}).get("cls") or "")
                     _eye_tab = str((_eye or {}).get("tab") or "")
                     _eye_src = list((_eye or {}).get("sources") or [])
