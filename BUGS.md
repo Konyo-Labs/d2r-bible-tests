@@ -112,6 +112,15 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3494 - THE THEATRE BLAMED "THE SHELF MOVED" FOR A REEL THAT CAME BACK UNDER ANOTHER ID - A CAUSE NOBODY MEASURED (v3889, GrokBot 6734314659)
+GrokBot on v3888's guest console: SHELF -> Play on sessions 4 and 5, twice: "the shelf moved while this opened - session 4/5
+is now a different reel, so nothing was played". MEASURED on his own console 11-09 ~09:45 (GET only): /api/session answers
+session 4 (s_1793705809306_17617) and 5 (s_1793667623393_35961) with exactly the reels asked for, by id and by place, so the
+product's lookup is right and the guest mirror answered by place (REG-1933's 'an older server ignores sid'). The refusal
+stays (REG-1933: another reel is never painted); its caption now says what is known - "session 4 came back as another reel
+(asked X, got Y), so nothing was played" - and no longer names a cause. GUARD: test_a_wrong_reel_says_which_came_back
+(the branch's code, its comment stripped; red-proof RED). For GrokBot: a clean SHELF play needs his console, not the mirror.
+
 ### REG-3493 - A BUILD WITH NO CLASS SAID ITS CLASS HAS NO PUBLISHED FCR TABLE (v3889, GrokBot 6734314659)
 GrokBot on v3888 (guest console, pixels): Characters -> + New character, Paladin and level 90 picked, Create not pressed - the
 breakpoint cards read "FCR UNKNOWN. This class has no published FCR table." (FHR the same) and it asked whether the card

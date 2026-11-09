@@ -18501,8 +18501,11 @@ window._lockMark = function(isOpen, px, label){
     if (j.error){ $('th-caption').textContent = '🎞 ' + j.error; TH.beats = []; return; }
     if (_wantSid && j.sessionId && String(j.sessionId) !== _wantSid){
       // REG-1933 — an older server ignores sid and answers by place: that is another reel.
-      $('th-caption').textContent = '🎞 the shelf moved while this opened - session ' + n
-        + ' is now a different reel, so nothing was played. Open it again from the shelf.';
+      /* v3889 (GrokBot 6734314659, two sessions on its guest console) - this said "the shelf moved while this opened", a
+         cause nobody measured: his console answers sessions 4 and 5 with the very reels asked for (by id and by place,
+         11-09 09:45), so the guest's mirror answered by place. Say what is KNOWN - which reel was asked, which came back. */
+      $('th-caption').textContent = '🎞 session ' + n + ' came back as another reel (asked ' + _wantSid + ', got '
+        + String(j.sessionId) + '), so nothing was played. Open it again from the shelf.';
       TH.beats = []; return;
     }
     var raw = j.beats || [];
