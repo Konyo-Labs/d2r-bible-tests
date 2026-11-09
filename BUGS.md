@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3497 - SEVEN TERROR-ZONE CARDS' HOVERS READ "OPEN THE THE ... RUN" (v3889, seen in #133's own render)
+The console's TZ card title for a zone with a run was ' — open the ' + why + ' run', and TZ_NOTABLE's reasons are phrases:
+Moo Moo Farm read "open the the Cow King run", Travincal "open the the Council run", Worldstone Keep "open the the Baal run run",
+The Pit "open the the best drop tier in the game run" (and the Countess's two towers, the Summoner). Seen in v3889's render of
+the card for #133; on main since the template was written. The reason now stands in brackets: "open the run (the Cow King)".
+GUARD: test_a_zone_card_title_reads_as_a_sentence (the template pinned; every notable reason through it reads clean; a
+baseline that the old template doubled a word; red-proof RED).
+
 ### REG-3496 - BOTH ALTS' DAILY d2jsp CHECK READ "UNREAD": THE PARSER LOOKED FOR NODE ON PATH ONLY (v3889, GrokBot 6733831813)
 GrokBot on v3888 (/api/fleet, GET): the Mac's d2jsp check ok=true reason=read; Konyo - ALT and OLD PC ALT ok=false
 reason=unread (the daily Shako search). MEASURED on the work ALT 11-09 (SSH, read-only): .d2jsp_check.json {item Shako,

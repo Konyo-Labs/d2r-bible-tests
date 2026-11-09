@@ -32612,7 +32612,9 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
         var _title = escC(x)
           + (_thin ? ' — thin: ' + (t.byItems ? escC(t.whyLong || t.why || 'none of your missing items drops sooner here') : 'low density')
                      + ', not worth the window. Not farmable, so not clickable'
-                   : (_boss ? ' — open the ' + escC((t.byItems ? t.densWhy : t.why) || _boss) + ' run' : ' — open the full tracker'))
+                   /* v3889 - "open the " + why + " run" read "open the the Cow King run", "open the the Baal run run" and "open the the
+                      best drop tier in the game run": a reason is a phrase, so it stands in brackets after the verb */
+                   : (_boss ? ' — open the run (' + escC((t.byItems ? t.densWhy : t.why) || _boss) + ')' : ' — open the full tracker'))
           + escC(_tzItemsTitle(t));
         /* ── v1915 — A THIN ZONE IS NOT CLICKABLE, AND THE CURSOR SAYS SO ────────────────────
            Konyo, 2026-08-21: "the mouse cursor for TZ ZONES that arent worth farming at all i want
