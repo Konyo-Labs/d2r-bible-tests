@@ -15095,10 +15095,58 @@ def _cost_table():
         return {}, "declared timeout — gate_costs would not import (%s)" % type(e).__name__
     if table is None:
         return None, "declared timeout — tv/gate_costs.json exists and is UNREADABLE"
+    # v3891 (#194) - THE ROUND'S OWN MEASUREMENT WINS. CI's plan job hands every shard ONE table (GATE_COSTS: the last
+    # round's per-gate seconds, measured from its shards' own logs), so all shards cut the same slices from fresher costs
+    _lp = os.environ.get(_ENV_GATE_COSTS) or ""
+    _last = _gc.load(_lp) if _lp and os.path.isfile(_lp) else None
+    if _last:
+        merged = dict(table or {})
+        merged.update(_last)
+        return merged, ("measured CI seconds: the last round's own (%d gates) over tv/gate_costs.json; the median for any "
+                        "neither has seen" % len(_last))
     if not table:
         return {}, "declared timeout — there is no measured cost table"
     return table, ("measured CI seconds from tv/gate_costs.json (%d gates measured; the median for "
                    "any it has not seen)" % len(table))
+
+
+#: v3891 (#194) - the round's measured gate costs (CI's plan job restores and hands them on)
+_ENV_GATE_COSTS = "GATE_COSTS"
+#: v3891 (#194) - a CI agent-suite shard's gate time may be at most this; its setup (checkout, Chromium) comes on top
+SHARD_TARGET_S = 4 * 60
+SHARD_MIN, SHARD_MAX = 3, 40
+
+
+def choose_shards(target_s=SHARD_TARGET_S, n_min=SHARD_MIN, n_max=SHARD_MAX, gates=None):
+    """v3891 (#194, his 11-09: "optimize the #194 all the way and make sure it keeps getting faster self improve it") - the
+    fewest agent-suite slices whose heaviest (shard_names' own longest-first deal, summed - a slice runs serially) fits
+    target_s, or, when one gate alone is over it, the fewest that reach that floor. -> (n, why). MEASURED on v3889's round:
+    5 fixed slices, the slowest job 20.1 min (~13.6 of gates + setup)."""
+    gates = list(GATES if gates is None else gates)
+    w = cost_weights(gates)
+    n_max = max(1, min(int(n_max), len(gates)))
+    n_min = max(1, min(int(n_min), n_max))
+
+    def slowest(n):
+        load = [0.0] * n
+        for g in sorted(gates, key=lambda x: (-w[x.name], x.name)):
+            i = min(range(n), key=lambda j: (load[j], j))
+            load[i] += w[g.name]
+        return max(load)
+    floor = max(w.values()) if w else 0.0
+    aim = max(float(target_s), floor * 1.05)
+    lo, hi = n_min, n_max
+    if slowest(lo) <= aim:
+        return lo, "%d slice(s) hold the gate set inside the %d-s target" % (lo, target_s)
+    if slowest(hi) > aim:
+        return hi, "even %d slices model %d s - the round runs at %d" % (hi, slowest(hi), hi)
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        if slowest(mid) <= aim:
+            hi = mid
+        else:
+            lo = mid
+    return hi, "%d slice(s) are the fewest whose heaviest models %d s (target %d s)" % (hi, slowest(hi), target_s)
 
 
 def cost_weights(gates=None):
@@ -15244,6 +15292,12 @@ def main(argv):
     ap = argparse.ArgumentParser(description="run the gate set and return one verdict")
     ap.add_argument("--only", nargs="*", help="run only these gate names")
     ap.add_argument("--shard", help="K/N — run the K-th of N deterministic cost-balanced slices (#184)")
+    ap.add_argument("--choose-shards", action="store_true",
+                    help="v3891 (#194) print the slice count this round needs (n=, list=, spaced=) from the measured costs "
+                         "and exit 0; runs no gate")
+    ap.add_argument("--target-s", type=float, default=None, help="v3891 (#194) with --choose-shards")
+    ap.add_argument("--fallback", type=int, default=5, help="v3891 (#194) with --choose-shards: the count when none can be chosen")
+    ap.add_argument("--output", default=None, help="v3891 (#194) with --choose-shards: append the lines to this file")
     ap.add_argument("--changed", action="store_true",
                     help="carry a gate whose inputs git has not changed since the proven commit")
     ap.add_argument("--full", action="store_true",
@@ -15260,6 +15314,21 @@ def main(argv):
                          "(tv/fast_gates.py); a shared file (bible.html, control_ui.html, control_app.py, the gate "
                          "machinery) runs every gate. Carries like --changed. CI and the nightly still run every gate")
     a = ap.parse_args(argv[1:])
+    if a.choose_shards:
+        import io
+        import json
+        try:
+            n, why = choose_shards(target_s=a.target_s or SHARD_TARGET_S)
+        except Exception as e:
+            n, why = max(1, int(a.fallback or 5)), "the count could not be chosen (%s) - the round runs at the fallback" % e
+        print("v3891 (#194) agent-suite slices: %d - %s" % (n, why), file=sys.stderr)
+        lines = "n=%d\nlist=%s\nspaced=%s\n" % (n, json.dumps(list(range(1, n + 1)), separators=(",", ":")),
+                                                  " ".join(str(k) for k in range(1, n + 1)))
+        sys.stdout.write(lines)
+        if a.output:
+            with io.open(a.output, "a", encoding="utf-8") as fh:
+                fh.write(lines)
+        return 0
     only = a.only
     if a.rerun_failed:  # RERUN-FAILED
         if a.shard or a.full or a.fast:

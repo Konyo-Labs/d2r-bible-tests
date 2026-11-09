@@ -186,15 +186,15 @@ RED_PROOF = [
     {
         "why": "v3472 — the verdict job expects fewer shards than the matrix runs",
         "file": ".github/workflows/tv-tests.yml",   # a LITERAL: heart2 reads RED_PROOF by ast.literal_eval
-        "find": "      GATE_SHARDS: \"1 2 3 4 5\"\n",
+        "find": "      GATE_SHARDS: ${{ needs.plan.outputs.spaced }}\n",
         "replace": "      GATE_SHARDS: \"1 2 3 4\"\n",
         "matches": 1,
     },
     {
         "why": "v3472 — every shard runs the WHOLE set again, so the ceiling is crossed twice over",
         "file": ".github/workflows/tv-tests.yml",   # a LITERAL: heart2 reads RED_PROOF by ast.literal_eval
-        "find": "          python3 tv/run_gates.py --shard ${{ matrix.shard }}/5\n",
-        "replace": "          python3 tv/run_gates.py\n",
+        "find": "          python3 tv/run_gates.py --shard ${{ matrix.shard }}/${{ needs.plan.outputs.n }} 2>&1 | tee \"gate-log/shard-${{ matrix.shard }}.log\"\n",
+        "replace": "          python3 tv/run_gates.py 2>&1 | tee \"gate-log/shard-${{ matrix.shard }}.log\"\n",
         "matches": 1,
     },
 ]
@@ -791,23 +791,34 @@ class TestAShardedGateSetIsStillOneVerdict(unittest.TestCase):
         # read_lines gives (indent, CODE, raw); CODE is already comment-stripped by this file's own
         # stripper, so prose explaining the matrix can never satisfy a case about it
         body = "\n".join(code for _i, code, _raw in lines[js["agent-suite"]:js["verdict"]])
-        m = re.search(r"^\s*shard:\s*\[([^\]]*)\]", body, re.M)
-        self.assertIsNotNone(m, "agent-suite has no shard matrix")
-        return [x.strip() for x in m.group(1).split(",") if x.strip()], body, lines, js
+        # v3891 (#194) - the matrix is the PLAN job's list (the round chooses its slice count from measured gate costs);
+        # what these cases count is that list's fallback, which the plan's n and spaced fallbacks must describe alike
+        m = re.search(r"^\s*shard:\s*\$\{\{ fromJSON\(needs\.plan\.outputs\.list\) \}\}", body, re.M)
+        self.assertIsNotNone(m, "agent-suite has no shard matrix (the plan job's list)")
+        plan = "\n".join(code for _i, code, _raw in lines[js["plan"]:js["agent-suite"]])
+        fb = re.search(r"list: \$\{\{ steps\.count\.outputs\.list \|\| '\[([\d,]+)\]' \}\}", plan)
+        self.assertIsNotNone(fb, "the plan job's list output (or its fallback) is gone")
+        return [x.strip() for x in fb.group(1).split(",") if x.strip()], body, lines, js
 
     def test_the_matrix_and_the_verdict_count_the_same_shards(self):
         shards, _b, lines, js = self._matrix()
         self.assertGreaterEqual(len(shards), 2, "a one-shard matrix is not a shard")
         env = job_env(lines, js["verdict"])
-        self.assertEqual(env.get("GATE_SHARDS", "").strip().strip("\"'").split(), shards,
-                         "the verdict expects shards %r but the matrix runs %r — a shard the verdict "
-                         "never asks about is a shard whose silence reads as nothing"
-                         % (env.get("GATE_SHARDS"), shards))
+        # v3891 (#194) - ONE count: the verdict reads the plan job's spaced list, the matrix its list
+        self.assertEqual(env.get("GATE_SHARDS", "").strip(), "${{ needs.plan.outputs.spaced }}",
+                         "the verdict expects another set of shards than the plan dealt - a shard the verdict never "
+                         "asks about is a shard whose silence reads as nothing")
+        plan = "\n".join(code for _i, code, _raw in lines[js["plan"]:js["agent-suite"]])
+        self.assertIn("spaced: ${{ steps.count.outputs.spaced || '%s' }}" % " ".join(shards), plan,
+                      "the plan's spaced fallback is not its list fallback %r" % shards)
+        self.assertIn("n: ${{ steps.count.outputs.n || '%d' }}" % len(shards), plan,
+                      "the plan's count fallback is not its list's length")
+        self.assertEqual(shards, [str(k) for k in range(1, len(shards) + 1)], "the fallback is not every slice 1..N")
 
     def test_every_shard_runs_its_own_slice_of_the_WHOLE_set(self):
         shards, body, _l, _j = self._matrix()
-        want = "python3 tv/run_gates.py --shard ${{ matrix.shard }}/%d" % len(shards)
-        self.assertIn(want, body, "the gate-set step does not run a %d-way slice: %r" % (len(shards), want))
+        want = "python3 tv/run_gates.py --shard ${{ matrix.shard }}/${{ needs.plan.outputs.n }}"   # v3891 (#194)
+        self.assertIn(want, body, "the gate-set step does not run its slice of the plan's count: %r" % want)
 
     def test_no_matrix_output_carries_a_verdict(self):
         _s, body, _l, _j = self._matrix()

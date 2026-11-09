@@ -188,17 +188,35 @@ def main(argv):
         n = fill_missing(argv[4:], argv[2], argv[3])
         print("added %d local estimate(s); CI-measured costs untouched" % n)
         return 0
-    costs = from_logs(argv[1:])
+    rest = argv[1:]
+    out = base = None
+    # v3891 (#194) - CI writes the round's table beside its cache (--out), over the table it dealt from (--base): a gate
+    # this round did not run keeps its last measured cost
+    if "--out" in rest:
+        i = rest.index("--out")
+        out, rest = rest[i + 1], rest[:i] + rest[i + 2:]
+    if "--base" in rest:
+        i = rest.index("--base")
+        base, rest = rest[i + 1], rest[:i] + rest[i + 2:]
+    costs = from_logs(rest)
     if not costs:
-        print("no per-gate rows found in %s — nothing written (a table of nothing is not a table)" % argv[1:])
+        print("no per-gate rows found in %s — nothing written (a table of nothing is not a table)" % rest)
         return 2
-    rec = {"source": "run_gates per-gate rows from %d CI job log(s)" % (len(argv) - 1),
+    kept = 0
+    if base:
+        prev = load(base) or {}
+        kept = len(set(prev) - set(costs))
+        costs = dict(prev, **costs)
+    target = out or TABLE
+    rec = {"source": "run_gates per-gate rows from %d CI job log(s)" % len(rest),
            "gates": len(costs), "totalSeconds": round(sum(costs.values()), 1),
            "costs": dict(sorted(costs.items()))}
-    with io.open(TABLE + ".tmp", "w", encoding="utf-8") as fh:
+    os.makedirs(os.path.dirname(os.path.abspath(target)) or ".", exist_ok=True)
+    with io.open(target + ".tmp", "w", encoding="utf-8") as fh:
         json.dump(rec, fh, ensure_ascii=False, indent=1)
-    os.replace(TABLE + ".tmp", TABLE)
-    print("wrote %s — %d gates, %.0f s" % (TABLE, len(costs), rec["totalSeconds"]))
+    os.replace(target + ".tmp", target)
+    print("wrote %s — %d gates, %.0f s%s" % (target, len(costs), rec["totalSeconds"],
+                                            (" (%d not run this round kept their last cost)" % kept) if kept else ""))
     return 0
 
 
