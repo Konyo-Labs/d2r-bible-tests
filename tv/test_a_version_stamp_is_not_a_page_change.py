@@ -300,15 +300,20 @@ class RoutineISaysWhenItSkips(unittest.TestCase):
         A matrix of 10 with a merge floor still set for 8 lets a dead shard
         through: 9 fast blobs plus 2 slow is 11, and 11 is not less than 8.
         """
+        # v3891 (#194) - the ONE number is the stamp check's chosen count (measured spec costs), not a hand-set 10: the
+        # dealer, the matrix and the merge floor all read needs.stamp-check.outputs, and its fallback list is 1..fallback
         import re
-        m = re.search(r'routine_i_shards.py --shard "\$SHARD" --of (\d+)', self.code)
-        self.assertIsNotNone(m, "the fast job no longer asks the dealer")
-        n = int(m.group(1))
-        self.assertGreaterEqual(n, 10)
-        self.assertIn("shard: [%s]" % ", ".join(str(i) for i in range(1, n + 1)), self.code)
+        self.assertIn('python3 tv/routine_i_shards.py --shard "$SHARD" --of "$N"', self.code, "the fast job no longer asks the dealer")
+        self.assertEqual(self.code.count("N: ${{ needs.stamp-check.outputs.n }}"), 2,
+                         "the dealer and the merge floor do not both read the stamp check's one count")
+        self.assertIn("shard: ${{ fromJSON(needs.stamp-check.outputs.list) }}", self.code)
+        fb = re.search(r"n: \$\{\{ steps\.count\.outputs\.n \|\| '(\d+)' \}\}", self.code)
+        lst = re.search(r"list: \$\{\{ steps\.count\.outputs\.list \|\| '\[([\d,]+)\]' \}\}", self.code)
+        self.assertTrue(fb and lst, "the stamp check's count outputs (or their fallbacks) are gone")
+        self.assertEqual([int(x) for x in lst.group(1).split(",")], list(range(1, int(fb.group(1)) + 1)))
         slow = 2
-        self.assertIn('[ "$n" -lt %d ]' % (n + slow), self.code)
-        self.assertIn("%d fast + %d slow" % (n, slow), self.code)
+        self.assertIn("want=$(( N + %d ))" % slow, self.code)
+        self.assertIn('[ "$n" -lt "$want" ]', self.code)
 
 
 class TheFastShardsFollowMeasuredDuration(unittest.TestCase):

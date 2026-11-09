@@ -34,6 +34,9 @@ _console_safe_enable()
 import proof_shard as PS  # noqa: E402
 import proof_seed as SEED  # noqa: E402
 import proof_keys_mac as PKM  # noqa: E402
+import routine_i_shards as RIS  # noqa: E402
+
+RI_WF = os.path.join(ROOT, ".github", "workflows", "routine-i-playwright.yml")
 
 WF = os.path.join(ROOT, ".github", "workflows", "proof-keys-shards.yml")
 PR = {"why": "x", "file": "tv/x.py", "find": "a", "replace": "b", "matches": 1}
@@ -232,6 +235,67 @@ class TheRedMemoryTravels(unittest.TestCase):
         self.assertLess(i, fan.index("name: Save the seed"), "the merged memory is written after the seed was saved")
 
 
+class TheBrowserSuiteDealsFromWhatItMeasured(unittest.TestCase):
+    """Routine I: v3889's fast shards ran 12.8-20.0 min on a table measured once (10-15). Now each round measures every
+    spec, saves the table, and the next round chooses its count from it and deals every shard from that one file."""
+
+    def test_the_fewest_fast_shards_that_fit_and_the_heaviest_file_is_the_floor(self):
+        names = ["tests/s%03d.spec.ts" % i for i in range(100)]
+        costs = dict((n, 60.0) for n in names)              # 6,000 s of tests at 2 workers
+        n, why = RIS.choose_n(names, costs, target_s=480, workers=2, n_min=1, n_max=60)
+        self.assertEqual(n, 7, why)                          # 6000 / 7 / 2 = 428.6 <= 480; 6 would be 500
+        costs["tests/s000.spec.ts"] = 900.0                  # one file alone runs 900 s in one worker
+        n2, why2 = RIS.choose_n(names, costs, target_s=480, workers=2, n_min=1, n_max=60)
+        self.assertLess(n2, 60, "past the heaviest file's floor every shard was asked for: %s" % why2)
+        self.assertIn("floor", why2)
+
+    def test_the_measured_table_wins_file_by_file(self):
+        tmp = tempfile.mkdtemp(prefix="ri_costs_")
+        try:
+            p = os.path.join(tmp, "routine_i_costs.json")
+            some = sorted(RIS.load_costs())[0]
+            with io.open(p, "w", encoding="utf-8") as fh:
+                json.dump({"costs": {some: 999.0}}, fh)
+            got = RIS.measured_costs(env={RIS.ENV_COSTS: p})
+            self.assertEqual(got[some], 999.0, "the round's measured cost lost to the committed snapshot")
+            self.assertEqual(len(got), len(RIS.load_costs()), "the committed files the round did not run were dropped")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_a_refresh_keeps_the_specs_the_round_did_not_run(self):
+        tmp = tempfile.mkdtemp(prefix="ri_blobs_")
+        try:
+            base = os.path.join(tmp, "base.json")
+            with io.open(base, "w", encoding="utf-8") as fh:
+                json.dump({"costs": {"tests/old.spec.ts": 50.0, "tests/a.spec.ts": 10.0}}, fh)
+            real = RIS.costs_from_blob_zips
+            RIS.costs_from_blob_zips = lambda paths: {"tests/a.spec.ts": 20.0}
+            try:
+                out = os.path.join(tmp, "out", "routine_i_costs.json")
+                self.assertEqual(RIS.main(["--from-blobs", "--base", base, "--out", out, "x.zip"]), 0)
+            finally:
+                RIS.costs_from_blob_zips = real
+            with io.open(out, encoding="utf-8") as fh:
+                c = json.load(fh)["costs"]
+            self.assertEqual(c, {"tests/old.spec.ts": 50.0, "tests/a.spec.ts": 20.0})
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_the_workflow_hands_one_measured_table_to_every_shard_and_saves_the_next(self):
+        with io.open(RI_WF, encoding="utf-8") as fh:
+            wf = fh.read()
+        code = "\n".join(l for l in wf.split("\n") if not l.lstrip().startswith("#"))
+        self.assertIn("python3 tv/routine_i_shards.py --choose --fallback 10 --output \"$GITHUB_OUTPUT\"", code)
+        self.assertIn("if: ${{ steps.count.outputs.measured == 'true' }}", code, "the table is never handed on")
+        self.assertIn('export ROUTINE_I_COSTS="$RUNNER_TEMP/ri-costs/routine_i_costs.json"', _job(code, "test"),
+                      "a shard deals from the committed snapshot, not the round's one table")
+        merge = _job(code, "merge-report")
+        self.assertIn("--from-blobs --base \"$B\" --out \"$RUNNER_TEMP/ri-costs/routine_i_costs.json\" all-blobs/*.zip", merge)
+        self.assertIn("if: ${{ !cancelled() && steps.measure.outputs.wrote == 'true' }}", merge)
+        self.assertIsNone(re.search(r"hashFiles\([^)]*runner\.temp", code),
+                          "hashFiles() reads only the workspace: a condition on a runner.temp file is never true")
+
+
 class TheMacReadsTheSetsOwnSize(unittest.TestCase):
 
     def test_the_size_is_the_one_n_the_manifests_carry(self):
@@ -253,6 +317,26 @@ class TheMacReadsTheSetsOwnSize(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3891 (#194) - Routine I asks for every shard past the heaviest file's floor",
+     "file": "tv/routine_i_shards.py",
+     "find": "    aim = max(float(target_s), floor * 1.05)\n",
+     "replace": "    aim = float(target_s)\n",
+     "matches": 1},
+    {"why": "v3891 (#194) - Routine I deals from the committed snapshot whatever the round measured",
+     "file": "tv/routine_i_shards.py",
+     "find": "    out.update(last)\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "v3891 (#194) - a refresh forgets every spec the round did not run",
+     "file": "tv/routine_i_shards.py",
+     "find": "            costs = dict(base, **costs)\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "v3891 (#194) - the hand-on waits on hashFiles over runner.temp, which is never true",
+     "file": ".github/workflows/routine-i-playwright.yml",
+     "find": "        if: ${{ steps.count.outputs.measured == 'true' }}\n",
+     "replace": "        if: ${{ hashFiles(format('{0}/ri-costs/routine_i_costs.json', runner.temp)) != '' }}\n",
+     "matches": 1},
     {"why": "v3891 (#194) - a fast round sinks the wall factor below the committed one (under-planning costs a round)",
      "file": "tv/proof_shard.py",
      "find": "    return round(max(SHARD_WALL_FACTOR, min(3.0, cur * med)), 3)\n",

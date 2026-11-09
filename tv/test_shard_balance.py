@@ -97,14 +97,12 @@ class TestSlowProjectExists(unittest.TestCase):
         wf = open(WF, encoding="utf-8").read()
         self.assertIn("--project=chromium", wf)
         self.assertIn("--project=slow", wf)
-        m = re.search(r'routine_i_shards.py --shard "\$SHARD" --of (\d+)', wf)
-        self.assertIsNotNone(m, "the fast job no longer asks the dealer")
-        n = int(m.group(1))
-        self.assertGreaterEqual(n, 10)
-        self.assertIn("shard ${{ matrix.shard }}/%d" % n, wf)
+        # v3891 (#194) - the fast count is the stamp check's, chosen from measured costs each round
+        self.assertIn('routine_i_shards.py --shard "$SHARD" --of "$N"', wf, "the fast job no longer asks the dealer")
+        self.assertIn("shard ${{ matrix.shard }}/${{ needs.stamp-check.outputs.n }}", wf)
         self.assertIn("slow ${{ matrix.shard }}/2", wf)
         self.assertIn("--shard=${{ matrix.shard }}/2", wf)
-        self.assertNotIn("slow ${{ matrix.shard }}/%d" % n, wf,
+        self.assertNotIn("slow ${{ matrix.shard }}/${{ needs.stamp-check.outputs.n }}", wf,
                          "the slow project was moved onto the fast shard count")
         # merge must wait for the slow job too, or a green merge hides it
         self.assertRegex(wf, r"needs:\s*\[[^\]]*(test|slow)")
