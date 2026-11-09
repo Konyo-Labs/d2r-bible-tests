@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3518 - NOTHING SAID WHETHER A ROUND GOT FASTER; EVERY ROUND IS NOW MEASURED AGAINST THE ONES BEFORE IT (v3890, #194)
+His words 11-09: "make sure it keeps getting faster self improve it". tv/ci_speed.py is the ledger that says whether the rounds
+get faster: when GitHub vouches, the ship measures every workflow on the commit from GitHub's own job records - the queue
+(created -> started), the slowest job (started -> completed), the wall (first created -> last completed), the jobs - appends one
+row per workflow to a machine-wide ledger (git's common dir) and says each against its earlier rounds. Run once on v3889's
+real round: Publish waited up to 15.0 min, Routine I's slowest job 19.8-20.0, the proof shards' 43.3, the Windows set's 54.0
+in a 99.6-min wall. And the measurement that sent the repo back: on Konyo-Labs (an Enterprise org on its trial) a round ran
+at most 10 jobs at once (counted three times over a minute: 10 running, 20 queued) against ~40 on KonyoDigital's Pro - his
+call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
+measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
+GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+
 ### REG-3517 - THE FLEET ROW'S LAMP SAID "ONLINE" FOR A RECORDER WHOSE CONSOLE WAS DOWN, AND SAID NOTHING ON HOVER (v3890, #189)
 His words 11-09: "i do want a lamp to to know that it is connected and alive behind the scenes regardless yes" - "a separate eye
 for it that knows when the consoles background process it up and running ... with out gameplay but with the console logic".

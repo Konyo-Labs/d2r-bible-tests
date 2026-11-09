@@ -3187,6 +3187,19 @@
     "purpose": "One extractor of a read's identity signals (game name and farming series, the login character, the character panel, the avatar class) that sessions, the River, the Vault evidence and the Fleet consume.",
     "territory": "ledger-profile"
   },
+  "ci_speed.py": {
+    "entryPoints": [
+      "measure",
+      "fetch",
+      "record",
+      "history",
+      "trend",
+      "observe"
+    ],
+    "gotcha": "GitHub's own job records only (created -> started is the queue, started -> completed the job, first created -> last completed the wall); a job never started or finished is counted unfinished, never timed. The ledger is machine-wide (git's common dir). observe() never raises: a round that cannot be measured is said, and the ship goes on.",
+    "purpose": "#194 - whether the rounds keep getting faster: every round's workflows measured when GitHub vouches and said against their earlier rounds; `python3 tv/ci_speed.py --show` prints the ledger.",
+    "territory": "gates-proofs"
+  },
   "ci_verdict.py": {
     "entryPoints": [
       "decide",

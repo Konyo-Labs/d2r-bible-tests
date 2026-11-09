@@ -328,7 +328,7 @@ def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN):
 
 
 def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_s=240 * 60, remote="origin", preflight=None,
-         watch=None, watch_publish_s=None, version_check=None):
+         watch=None, watch_publish_s=None, version_check=None, speed=None):
     """-> exit code: 0 main pushed (and, when watched, Publish green) · 1 GitHub said red / the main push refused /
     Publish red · 2 timed out or unknown · 3 refused. REG-3213: `watch` (ci_watch.watch) names the running jobs in the
     75-minute alert; `watch_publish_s` (main() sets it) follows Publish after the main push."""
@@ -433,6 +433,14 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
             return 2
         sleep(POLL_S)
     say("ship: GitHub vouches for %s - pushing main (the pre-push trusts this verdict)" % sha[:9])
+    # v3890 (#194, REG-3518) - how fast this round ran, against the rounds before it: the ledger that says whether the
+    # rounds keep getting faster (ci_speed.observe, handed in by main(); a law's fake run is never sent to GitHub).
+    # Never waits, never refuses: a round that cannot be measured is said.
+    if speed is not None:
+        try:
+            speed(sha, version, CV.REPO_SLUG, say=say)
+        except Exception as _e:
+            say("ship: v3890 (#194) SPEED - not measured (%s)" % type(_e).__name__)
     m = run(["git", "-c", "core.hooksPath=hooks", "push", remote, "HEAD:main"], cwd=REPO)
     if m.returncode != 0:
         say("ship: the main push was refused (exit %s) - read the pre-push lines above" % m.returncode)
@@ -453,8 +461,9 @@ def main(argv=None):
                     help="REG-3213 - how long to follow Publish after the main push (it alerts at %d min)" % CW.OVERRUN_MIN)
     ap.add_argument("--no-watch", action="store_true", help="REG-3213 - return at the main push without watching Publish")
     a = ap.parse_args(argv)
+    import ci_speed as _CS        # v3890 (#194) - the real round is measured; a law's ship() is never sent to GitHub
     return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None, watch=_watch_authed,
-                watch_publish_s=None if a.no_watch else a.publish_wait_min * 60)
+                watch_publish_s=None if a.no_watch else a.publish_wait_min * 60, speed=_CS.observe)
 
 
 def _watch_authed(sha):
