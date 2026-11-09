@@ -46,7 +46,7 @@ import proof_shard as PS  # noqa: E402
 
 #: real laws of this tree with small closures and several proofs each - keyed for real, never run (the second lists a
 #: directory itself, so its key is a pending-listing one: that path is held too)
-LAWS = ("test_the_proof_budget_never_passes_its_cap", "test_a_law_file_has_no_invalid_escape")
+LAWS = ("test_a_ci_run_past_75_minutes_alerts", "test_a_law_file_has_no_invalid_escape")   # v3890: the budget law left with the Ubicloud lane (REG-3505)
 
 
 def _shards(files, proofs):

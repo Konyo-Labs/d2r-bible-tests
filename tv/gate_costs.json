@@ -1415,7 +1415,6 @@
   "test_the_price_check_draws_normal_and_perfect_cards": 0.7,
   "test_the_price_database_refreshes_itself": 0.1,
   "test_the_printer_reach_is_watched": 0.0,
-  "test_the_proof_budget_never_passes_its_cap": 0.1,
   "test_the_proof_photo_is_found_under_either_spelling": 0.1,
   "test_the_proof_tick_runs_right_after_an_import": 0.2,
   "test_the_prover_census_is_named_apart_from_the_hearts": 2.6,

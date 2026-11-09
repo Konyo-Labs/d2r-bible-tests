@@ -1119,7 +1119,6 @@
     "test_the_pop_carries_his_questions": 1.045,
     "test_the_price_check_draws_normal_and_perfect_cards": 1.518,
     "test_the_price_database_refreshes_itself": 0.597,
-    "test_the_proof_budget_never_passes_its_cap": 0.127,
     "test_the_proof_tick_runs_right_after_an_import": 1.43,
     "test_the_prover_census_is_named_apart_from_the_hearts": 8.051,
     "test_the_prover_is_owned_by_its_console": 0.988,

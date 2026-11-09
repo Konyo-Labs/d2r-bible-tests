@@ -455,7 +455,7 @@ class TheWindowsSet(unittest.TestCase):
     def test_it_runs_beside_the_ci_shards_and_is_never_a_ship_gate(self):
         import ci_verdict as CV
         self.assertIn('workflows: ["Publish — gates, review, then deploy"]', self.wf)
-        # v3865 (REG-3214) - GitHub Pro runs 40 jobs and the Linux shards run on Ubicloud: the Windows set no longer queues
+        # v3865 (REG-3214) - GitHub Pro runs 40 jobs (the Linux shards on GitHub's own runner since REG-3505): the Windows set no longer queues
         # the ship, so it runs on the ci/proof-keys push and its win32 set exists when the ship lands
         self.assertIn("\n      - 'ci/proof-keys-*'\n", self.wf.split("\njobs:")[0], "the Windows set waits for Publish again")
         name = self.wf.split("\n", 1)[0].split("name:", 1)[1].strip()

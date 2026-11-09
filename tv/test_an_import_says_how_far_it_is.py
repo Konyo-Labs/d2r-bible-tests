@@ -45,7 +45,7 @@ import proof_release as PR  # noqa: E402
 import proof_shard as PS  # noqa: E402
 
 SHA = "c" * 40
-LAWS = ("test_the_proof_budget_never_passes_its_cap", "test_a_law_file_has_no_invalid_escape")
+LAWS = ("test_a_ci_run_past_75_minutes_alerts", "test_a_law_file_has_no_invalid_escape")   # v3890: the budget law left with the Ubicloud lane (REG-3505)
 
 
 class _Clock(object):

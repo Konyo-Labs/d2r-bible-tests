@@ -105,14 +105,24 @@ class OneRoundFitsAndTheNextProvesTheRest(unittest.TestCase):
         with io.open(WF, encoding="utf-8") as fh:
             cls.wf = _code(fh.read())
 
-    def test_sixteen_shards_every_one_in_the_matrix_all_at_once(self):
+    def test_thirty_two_shards_every_one_in_the_matrix_all_at_once(self):
+        """v3890 (REG-3504, his 11-09 "more workers and shards ... do it if recommended") - MEASURED on v3888 (run 42562966433):
+        16 shards x 2 lanes x 55 min banked 5,768 of 9,967 proofs (58%), and a cut set leaves every Windows PC's locks shut.
+        32 at the same bounds is ~116% of that room; they start after the required checks (the seed waits), so 32 fit."""
         n = int(re.search(r'\n  PROOF_SHARDS: "(\d+)"\n', self.wf).group(1))
-        self.assertGreaterEqual(n, 16, "8 Windows shards cannot fit v3863's 805 job-minutes inside a 55-minute deadline")
+        self.assertGreaterEqual(n, 32, "16 Windows shards banked 58% of v3888's set inside the 55-minute deadline")
         shard = _job(self.wf, "shard")
         got = [int(x) for x in re.search(r"\n        shard: \[([\d, ]+)\]\n", shard).group(1).split(",")]
         self.assertEqual(got, list(range(1, n + 1)), "the matrix runs another N than the plan cuts")
         self.assertEqual(int(re.search(r"\n      max-parallel: (\d+)\n", shard).group(1)), n,
                          "half the shards wait for the other half - the set lands past the bound")
+
+    def test_more_room_is_more_shards_never_more_lanes_and_each_shard_says_its_machine(self):
+        """v3890 (REG-3504) - 2 lanes per runner: 3 was measured flaky on 11-06 (two browser laws, v3866's round), so the room
+        comes from shards. The Machine step prints what each shard proved on (cores, free disk, lanes)."""
+        shard = _job(self.wf, "shard")
+        self.assertIn('      HEART2_PROVE_WORKERS: "2"', shard)
+        self.assertIn("- name: Machine (REG-3504 - what this shard proved on)", shard)
 
     def test_after_publish_it_first_waits_for_this_commits_ci_round(self):
         seed = _job(self.wf, "seed")
@@ -337,10 +347,15 @@ RED_PROOF = [
      "find": "    pat = re.compile(r\"^proofs-([0-9a-f]{40})%s\\.tgz$\" % (re.escape(\"-\" + flavor) if flavor else \"\"))\n",
      "replace": "    pat = re.compile(r\"^proofs-([0-9a-f]{40})(?:-win32)?\\.tgz$\")\n",
      "matches": 1},
-    {"why": "REG-3214 (second eye) - back to 8 Windows shards: half of v3863's set past the 55-minute deadline",
+    {"why": "v3890 (REG-3504) - back to 16 Windows shards: v3888's set banked 58% inside the 55-minute deadline",
      "file": ".github/workflows/proof-keys-windows.yml",
-     "find": "  PROOF_SHARDS: \"16\"\n",
-     "replace": "  PROOF_SHARDS: \"8\"\n",
+     "find": "  PROOF_SHARDS: \"32\"\n",
+     "replace": "  PROOF_SHARDS: \"16\"\n",
+     "matches": 1},
+    {"why": "v3890 (REG-3504) - the Windows shards prove on 3 lanes (measured flaky on 11-06)",
+     "file": ".github/workflows/proof-keys-windows.yml",
+     "find": "      HEART2_PROVE_WORKERS: \"2\"",
+     "replace": "      HEART2_PROVE_WORKERS: \"3\"",
      "matches": 1},
     {"why": "REG-3214 (second eye) - after Publish the round never waits: two rounds prove one set side by side",
      "file": ".github/workflows/proof-keys-windows.yml",

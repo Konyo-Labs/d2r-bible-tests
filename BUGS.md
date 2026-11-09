@@ -112,6 +112,36 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3505 - A PAID-RUNNER LANE NOBODY USED SAT IN THE PROOF WORKFLOW AND READ AS A SUBSCRIPTION HE DOES NOT HAVE (v3890, his call)
+His 11-09: "maybe delete the ubuntu thing so we dont get mixed up?" - "the ubicloud i meant". v3865 (his 11-05 ruling, a hard
+$25 a month) wired the Linux proof shards to Ubicloud's 8-core machines: a `budget` job in proof-keys-shards.yml ran
+tv/ci_budget.py, which priced this month's Ubicloud jobs and picked the runner from repo variables PROOF_RUNNER /
+PROOF_BUDGET_USD / PROOF_PROVERS_FAST. PROOF_RUNNER was deleted on 11-06, so every round since ran on GitHub's free runner - and
+the lane stayed: a job, a module, a law and two variables. It misled me first: on 11-09 I told him "you already budget $25 a
+month for the faster paid Linux proof runners"; he has no such subscription ("i dont have any linux paid subscription"). Gone:
+the budget job (the shards need only their seed and run ubuntu-latest with PROOF_PROVERS lanes, 2 when unset), tv/ci_budget.py,
+its law test_the_proof_budget_never_passes_its_cap (its engine-index entry and measured costs), and the stale "the Linux shards
+run on Ubicloud" in the Windows workflow (which also claimed the Windows set no longer queues - measured v3888: its boot waited
+16 min behind the required checks) and in the import law. The repo variables PROOF_BUDGET_USD and PROOF_PROVERS_FAST are deleted
+once this ships. GUARD: test_the_proof_shards_run_only_on_githubs_free_runners - every job of every workflow on a written-out
+GitHub-hosted label, no ${{ }} runner, the shards' job on ubuntu-latest needing only its seed, none of the three variables read,
+no tv/ci_budget.py (baseline: the reader finds a planted paid label and an expression; 4 red-proofs RED). The two import laws
+that keyed the budget law as a sample now key test_a_ci_run_past_75_minutes_alerts (small closure, 14 proofs).
+
+### REG-3504 - GITHUB'S WINDOWS PROOF SET BANKED 58%: 16 SHARDS x 2 LANES x 55 MINUTES COULD NOT HOLD IT (v3890, #103/#107, his call)
+His 11-09: "More Windows proof capacity ... okay what does this mean? do it if recommended", and on the org move: "rather have
+more workers and shards going". MEASURED on v3888's Windows proof run (42562966433, the after-Publish make-up - the second round
+of that commit): 5,768 of 9,967 proofs banked (58%), shards from 25% to 94%; its own planner warned "the slowest shard models
+3596 s, 115% of the 3120-s proving window ... more shards or provers would fit it". The cut is why the ALTs' river locks stay
+shut (REG-3498). Now 32 shards (was 16), every one in the matrix and all at once, at the SAME bounds - his 75-minute max
+(REG-3212: job 75, step 70, heart2's deadline at minute 55) - and the same 2 lanes: ~116% of the room that banked 58%. They
+start only after the required checks finish (the seed waits, v3867), so 32 fit GitHub Pro's 40 jobs; the org's more, more so.
+A step prints each shard's cores, free disk and lanes. NOT taken, said so it is not re-derived: 3 lanes (REG-3189 moved the
+Linux shards to 3 and 11-06 measured two browser laws flaky there, so they run 2) and a wider window (an 80/95/100 first cut of
+this fix broke his 75-minute max - caught before it shipped). Owed: v3890's Windows set's banked share (the measurement this
+predicts). GUARD: test_windows_proofs_run_before_main (32 shards, matrix and max-parallel = N, 2 lanes, the Machine step; 2 new
+red-proofs RED).
+
 ### REG-3503 - THE FLEET'S CLOSED ROWS STILL RAN 3-5 LINES AT 1120: THE TALLY TAG TOOK THE NAME'S LINE (v3889, GrokBot 6734314659, his call)
 GrokBot on v3888: "Closed rows wrap to 2-3 lines at normal width and at ~913 CSS px" (REG-3395 / REG-3473 STILL). MEASURED on his
 live /api/fleet (GET) in a scratch Chrome: at 1120 - the console's own width, a 227px rail - Konyo · ALT's name ran 3 lines and
