@@ -23783,8 +23783,9 @@ window._lockMark = function(isOpen, px, label){
       stashN = groupedTotal(sm.stashed);
     }
     var stashCell = (stashN === null) ? '?' : (stashN > 0 ? ('\uD83C\uDF92 ' + fmt(stashN)) : '\u2014');
-    var _chronSrc = (typeof sm.chroniclesFound === 'number') ? sm.chroniclesFound : ((sm.route && typeof sm.route === 'object') ? sm.route.chroniclesFound : null);
-    var _chronWhy = (sm.route && typeof sm.route === 'object' && sm.route.chroniclesWhy) || sm.chroniclesWhy || '';
+    var _route = (sm.route && typeof sm.route === 'object') ? sm.route : null;
+    var _chronSrc = (typeof sm.chroniclesFound === 'number') ? sm.chroniclesFound : (_route ? _route.chroniclesFound : null);
+    var _chronWhy = (_route && _route.chroniclesWhy) || sm.chroniclesWhy || '';
     var _chronN = (typeof _chronSrc === 'number' && isFinite(_chronSrc) && _chronSrc >= 0) ? _chronSrc : null;
     var chronCell = (_chronN === null) ? '?' : (_chronN > 0 ? ('\uD83D\uDCDC ' + fmt(_chronN)) : '\u2014');
     var chronTip = (_chronN === null)
