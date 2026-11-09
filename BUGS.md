@@ -123,6 +123,14 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3533 - UNIQUES AND SETS ONLY COUNTED THE CAPPED finds[:16] TEASER (v3891, #184)
+Elad's rule: every unique/set seen on the floor counts once (identified or not); charms and other
+non-unique non-set items count only in STASH, not in those two boxes. MEASURED: `_theatre_sessions`
+capped `finds` at 16 for the 12s poll (that cap stays) and then called `_chron_tally(_finds)`, so the
+UNIQUES and SETS boxes could never read above 16. The tally now walks `_finds_all` (every name seen);
+a charm or a bare base still folds to `other`.
+GUARD: test_every_unique_and_set_on_the_floor_is_counted (2 red-proofs).
+
 ### REG-3532 - THE SHELF OPENED AT 0x0 BECAUSE ITS OVERLAY LIVED INSIDE A HIDDEN THEATRE (v3891, #186)
 `#th-shelfov` was a child of `#theatre`. `#theatre` is `display:none` while shut, so an un-hidden
 SHELF inside it had a 0x0 box. v3890 #186 restored the theatre layer before refusing and still SAW
