@@ -123,6 +123,13 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3537 - A PRESS OUTSIDE THE PRICE-SEARCH RESULTS LEFT THEM UP (v3892, #191)
+REG-3531 painted `#d2jsp-price-x` on the results; only that button (or emptying the field) ran
+`priceSearchIdle`. A press elsewhere left the cards up. `_tvOutsidePrice` now treats the exit
+button as "results are showing" and, on a pointerdown outside the results, the search field and
+the search form, clears the field and runs the same idle the ✕ already runs.
+GUARD: test_a_press_outside_the_price_results_leaves_them (2 red-proofs).
+
 ### REG-3536 - A SHADOW SESSION ROW DID NOT USE THE OWNER CARD'S FOUR-BOX (v3892)
 His rule: shadow-mode session view uses the same four-box template as the regular profile console
 for STASH / CHRONICLES / UNIQUES / SETS. MEASURED: `_paintShelf` already paints `.shc-stats`;

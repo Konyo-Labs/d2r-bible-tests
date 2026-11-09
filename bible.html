@@ -30968,6 +30968,24 @@ function _tvOutsideCard(e){
 }
 window._tvOutsideCard = _tvOutsideCard;
 document.addEventListener('pointerdown', function(e){ _tvOutsideCard(e); }, true);
+function _tvOutsidePrice(e){
+  /* v3892 (#191, REG-3537) - a press outside the price-search results leaves them, same as #d2jsp-price-x */
+  if (e.button && e.button !== 0) return '';
+  var t = e.target;
+  if (!t || !t.closest) return '';
+  var out = document.getElementById('d2jsp-price-out');
+  if (!out || typeof out.querySelector !== 'function' || !out.querySelector('#d2jsp-price-x')) return '';
+  if (out.contains(t)) return '';
+  var q = document.getElementById('d2jsp-price-q');
+  if (q && (t === q || (q.contains && q.contains(t)))) return '';
+  var form = document.getElementById('d2jsp-price-form');
+  if (form && form.contains(t)) return '';
+  if (q) q.value = '';
+  if (typeof priceSearchIdle === 'function') priceSearchIdle();
+  return 'd2jsp';
+}
+window._tvOutsidePrice = _tvOutsidePrice;
+document.addEventListener('pointerdown', function(e){ _tvOutsidePrice(e); }, true);
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (_tvEsc()) {
