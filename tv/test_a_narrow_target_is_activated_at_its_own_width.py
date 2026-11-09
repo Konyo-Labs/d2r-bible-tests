@@ -11,9 +11,9 @@ desktop scrollbar (11px) that a fixed full-width bar never spans. With both fixe
 So, held here without a browser (the pixels are the render gate's, on GitHub):
   * every target whose widths never reach the harness's own window width declares `activate_at`, and it is one of its widths;
   * check() sets `activate_at` BEFORE it polls `activate`;
-  * phone-bar's activate measures the bar against the layout width (clientWidth), never innerWidth;
-  * phone-bar is a TARGET again, not parked.
-RED_PROOF below.
+v3889 (#132, his 11-08 "i dont need any mobile anything"): the phone tray bar and its target are gone
+(test_there_is_no_phone_page). The two phone-bar cases left with it; the two above hold the mechanism for any target that
+draws only narrower than the harness's window. RED_PROOF below.
 """
 import io
 import os
@@ -52,7 +52,6 @@ class ANarrowTargetIsActivatedAtItsOwnWidth(unittest.TestCase):
             self.assertIsNotNone(at, "%s draws only at %s and declares no activate_at - it is activated at the harness's "
                                      "%d wide, where its surface does not exist" % (name, ws, default_w))
             self.assertIn(tuple(at), ws, "%s activates at %s, which is not one of its own widths %s" % (name, at, ws))
-        self.assertIn("phone-bar", narrow, "PREMISE: phone-bar is the narrow-only target this law was written for")
 
     def test_check_sets_the_activation_viewport_before_it_polls(self):
         src = _src()
@@ -65,32 +64,13 @@ class ANarrowTargetIsActivatedAtItsOwnWidth(unittest.TestCase):
         self.assertLess(at, poll, "check() sets activate_at only after it has polled activate")
         self.assertIn("Emulation.setDeviceMetricsOverride", body[at:poll])
 
-    def test_the_bar_is_measured_against_the_layout_width(self):
-        act = R.TARGETS["phone-bar"]["activate"]
-        self.assertIn("var vw = document.documentElement.clientWidth;", act)
-        self.assertNotIn("innerWidth - 1", act, "the bar is compared to innerWidth, which counts the headless scrollbar")
-        self.assertNotIn("r.right > innerWidth", act)
-
-    def test_phone_bar_is_a_target_again(self):
-        self.assertIn("phone-bar", R.TARGETS)
-        self.assertNotIn("phone-bar", getattr(R, "PARKED_TARGETS", {}) or {})
 
 
 RED_PROOF = [
-    {"why": "REG-3301 - phone-bar is activated at the harness's 1440 again, where the bar does not exist",
-     "file": "tv/render_check.py",
-     "find": "        \"activate_at\": (375, 800),",
-     "replace": "        \"activate_at_note\": (375, 800),",
-     "matches": 1},
     {"why": "REG-3301 - check() ignores a target's activate_at",
      "file": "tv/render_check.py",
      "find": "        if spec.get(\"activate_at\"):\n",
      "replace": "        if spec.get(\"activate_at_ignored\"):\n",
-     "matches": 1},
-    {"why": "REG-3301 - the bar is measured against innerWidth again (the headless scrollbar makes it 11px short)",
-     "file": "tv/render_check.py",
-     "find": "            var vw = document.documentElement.clientWidth;\n",
-     "replace": "            var vw = innerWidth;\n",
      "matches": 1},
 ]
 

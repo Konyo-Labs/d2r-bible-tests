@@ -36,45 +36,8 @@ async function edge(page: any) {
 const fadesLeft  = (m: string) => /^linear-gradient\(90deg,\s*rgba\(0, 0, 0, 0\)/.test(m);
 const fadesRight = (m: string) => /rgba\(0, 0, 0, 0\)(\s*(100%|0px))?\)\s*$/.test(m);
 
-test('v1812 — a scrollable strip fades the side that has more tabs', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 700 });
-  await page.goto(FILE);
-  await page.waitForSelector('.tabs .tab', { state: 'attached' });
-  await page.waitForFunction(() => {
-    const s = document.querySelector('.tabs') as HTMLElement | null;
-    return !!s && !!s.getAttribute('data-edge');
-  }, null, { timeout: 15000 });
-
-  // scrolled to the very start: tabs exist to the RIGHT only
-  // a deferred load step scrolls the ACTIVE tab into view (left ~274) and can land after our reset,
-  // which made this test flaky (CI run 39807016744). Re-park at 0 until the strip stays there.
-  for (let i = 0; i < 10; i++) {
-    await page.evaluate(() => { (document.querySelector('.tabs') as HTMLElement).scrollLeft = 0; });
-    await page.waitForTimeout(300);
-    if ((await edge(page)).left === 0) break;
-  }
-  let e = await edge(page);
-  expect(e.max, 'the 375px row must actually be scrollable, or this test proves nothing').toBeGreaterThan(1);
-  expect(e.edge).toBe('start');
-  expect(fadesRight(e.mask), `start state fades right — ${e.mask}`).toBe(true);
-  expect(fadesLeft(e.mask), `start state must NOT fade left — ${e.mask}`).toBe(false);
-
-  // scrolled to the very end: tabs exist to the LEFT only
-  await page.evaluate(() => { const s = document.querySelector('.tabs') as HTMLElement; s.scrollLeft = s.scrollWidth; });
-  await page.waitForTimeout(300);
-  e = await edge(page);
-  expect(e.edge).toBe('end');
-  expect(fadesLeft(e.mask), `end state fades left — ${e.mask}`).toBe(true);
-  expect(fadesRight(e.mask), `end state must NOT fade right — ${e.mask}`).toBe(false);
-
-  // mid-row: tabs exist BOTH ways
-  await page.evaluate(() => { const s = document.querySelector('.tabs') as HTMLElement; s.scrollLeft = Math.round((s.scrollWidth - s.clientWidth) / 2); });
-  await page.waitForTimeout(300);
-  e = await edge(page);
-  expect(e.edge).toBe('both');
-  expect(fadesLeft(e.mask), `both state fades left — ${e.mask}`).toBe(true);
-  expect(fadesRight(e.mask), `both state fades right — ${e.mask}`).toBe(true);
-});
+// v3889 (#132, his 11-08 'i dont need any mobile anything') - the 375px scrolling-strip fade test left with the phone
+// page (the row only scrolls under 700px); tombstone in tv/test_there_is_no_phone_page.py
 
 test('v1812 — a row that fits is not faded at all', async ({ page }) => {
   // A mask on a row with nothing hidden is a lie about the content: it dims real tabs to hint at

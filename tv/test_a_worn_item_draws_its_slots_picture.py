@@ -187,7 +187,7 @@ class AnIdCardsNameBreaksOnlyBetweenWords(unittest.TestCase):
         # page-wide `h2{...display:flex...}` makes every card name a FLEX ROW, so the badge moves to the next line only if that
         # row WRAPS; the rule above said "the badge moves to the next line whole" and could not. And on a phone the header
         # wraps so the name takes the card's full width (one word of "Tal Rasha's Guardianship" is wider than the 130px column).
-        # The pixels are test_a_card_name_fits_its_box_on_a_phone's (GitHub's browser).
+        # The pixels are test_a_card_name_fits_its_box's (GitHub's browser).
         self.assertIn("flex-wrap:wrap", name[0], "the card name is a flex row that cannot wrap its badge again")
         # the Grok CLI's look at 390: the runeword card's subtitle broke "req" / "level 25" - the label stays with its number
         self.assertIn("' · req\\u00a0level\\u00a0'+o.r", page, "a wrap can tear 'req level' from its number again")

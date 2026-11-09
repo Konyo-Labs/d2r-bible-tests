@@ -131,14 +131,14 @@ import render_check as RC  # noqa: E402
 import law_widths as LW  # noqa: E402  #42 - the one reader of TV_LAW_WIDTHS
 
 NO_BROWSER = "no Chrome/Chromium on this machine, so the character builder was not rendered"
-WIDTHS = ((2000, 1300), (1280, 800), (1120, 628), (1024, 768), (901, 900), (800, 1000), (375, 812))
+WIDTHS = ((2000, 1300), (1280, 800), (1120, 628), (1024, 768), (901, 900), (800, 1000))   # v3889 #132: no 375
 #: #174 v-B4 - "invpick": an inventory cell's picker (Select) at every width - the grid moved into the template panel, so
 #: where that picker opens moved with it, and the round-7 fallback it can still reach is at 1024 and 901, not 1120-1280
 STATES = ("plain", "worn", "picker", "edit", "stash", "invpick")
 #: #174 v-B3 - the Edit tab of a base with its picked mods, and with ADD MOD open, at these widths
-MOD_WIDTHS = ((2000, 1300), (1280, 800), (375, 812))
-#: #174 v-B2 fix round - the picker's list under a real wheel, at a phone and at 2000
-WHEEL_WIDTHS = ((375, 812), (2000, 1300))
+MOD_WIDTHS = ((2000, 1300), (1280, 800))
+#: #174 v-B2 fix round - the picker's list under a real wheel, at 2000 (v3889 #132: the phone width left)
+WHEEL_WIDTHS = ((2000, 1300),)
 _DIADEM = ("window._cbOpenPick('slot','head'); window._cbChoose('b:ci3'); window._cbQuality('rare');"
            " ['p712','p374','s175','s316'].forEach(function(i){ window._cbAddMod(i); });")
 _GC = "window._cbOpenPick('inv', null, [0, 0]); window._cbChoose('b:cm3'); window._cbAddMod('p700');"
@@ -151,7 +151,7 @@ MOD_ROWS = {"mods": 4, "addmod": 4, "gcmods": 2, "gcaddmod": 1}
 THEIR_COLS = {"left": (0, 322), "main": (328, 716), "stats": (1050, 300)}
 TOL = 4.0
 #: #174 v-B4 - the widths the template is measured at with three charms placed (the builder's supported sizes)
-TPL_WIDTHS = ((2000, 1300), (1280, 800), (1120, 800), (900, 800), (375, 812))
+TPL_WIDTHS = ((2000, 1300), (1280, 800), (1120, 800), (900, 800))
 #: three charms by NAME (the ids are read from the database at run time) at their cells: 1x1, 1x3, 1x3
 TPL_CHARMS = (("Annihilus", 0, 0, None), ("Grand Charm", 2, 0, "b:"), ("Gheed's Fortune", 4, 1, None))
 #: their grid under their doll, measured (60/61, 15_crop): flush, ~9px of stone, no caption between
@@ -1465,7 +1465,8 @@ class TheBuilderFitsAtEveryWidth(unittest.TestCase):
                     bad.append("%s: it scrolls inside itself but is %.0fpx tall on a %.0fpx glass" % (key, b["win"][1] - b["win"][0], b["vh"]))
         # #42 - each premise names the viewport that carries it, so it binds wherever that viewport is measured
         self.assertGreaterEqual(fits, 2 if LW.at(AT_2000, _ONLY) else 0, "PREMISE: only %d states fit the glass (2000x1300 plain and worn must)" % fits)
-        self.assertGreaterEqual(scrolls, 2 if LW.at((375, 812), _ONLY) else 0, "PREMISE: only %d states scroll (375x812 plain and worn must)" % scrolls)
+        # v3889 (#132) - the scrolling half's premise was 375x812; measured 11-09 at 1120x628 plain and worn both scroll
+        self.assertGreaterEqual(scrolls, 2 if LW.at((1120, 628), _ONLY) else 0, "PREMISE: only %d states scroll (1120x628 plain and worn must)" % scrolls)
         self.assertEqual(bad, [], "the builder is not as tall as what it holds:\n  " + "\n  ".join(bad))
 
     def test_r2_no_builder_panel_is_stretched_past_what_it_holds(self):
@@ -1505,25 +1506,9 @@ def _over(top, under):
     return tuple(round(top[i] * a + under[i] * (1 - a)) for i in range(3))
 
 
+# v3889 (#132) - six proofs whose defect showed only at 375x812 (the phone's Edit sheet, its stacked panes, the phone
+# header's hint box) left with the phone width: measured at a desktop width they could only stay green
 RED_PROOF = [
-    {
-        "why": "#29(d) round 9 - a number box is one digit wide again and the helm's Sockets hint '1-2' reads '1-'",
-        "file": "bible.html",
-        "find": ".cb-ed-f input[type=number]{min-width:calc(3.6ch + 36px)}\n",
-        "replace": "",
-        "matches": 1,
-        # REG-2962 measured 2026-11-03 (v3854 fan-in BLIND at 1280x800): with the rule gone the box is 48px at 1280 (the
-        # hint needs 31) and 28px at 375 (it needs 28.4) - the defect shows only on the phone width now
-        "widths": ["375x812"],
-    },
-    {
-        "why": "#29(d) round 9 - the base Edit's Defense box is 44px again and its hint '50-60' reads '50-6' on a phone",
-        "file": "bible.html",
-        "find": ".cb-ctl input[type=number][placeholder]{min-width:calc(7ch + 22px)}\n",
-        "replace": "",
-        "matches": 1,
-        "widths": ["375x812"],   # #42 measured 2026-09-29: the tampered law is red at 375x812 alone
-    },
     {
         "why": "#29(d) round 9 - the Edit window keeps its fixed 750-unit frame again (an empty lower third under a charm)",
         "file": "bible.html",
@@ -1533,28 +1518,12 @@ RED_PROOF = [
         "widths": ["1280x800"],   # #42 measured 2026-09-29: the tampered law is red at 1280x800 alone
     },
     {
-        "why": "#29(d) round 9 - the phone's Edit sheet runs to the glass's bottom whatever it holds",
-        "file": "bible.html",
-        "find": "      if (fit){ m.style.height = 'auto'; m.style.maxHeight = Math.round(vh - top0 - 8) + 'px'; }\n",
-        "replace": "      if (false){}\n",
-        "matches": 1,
-        "widths": ["375x812"],   # #42 measured 2026-09-29: the tampered law is red at 375x812 alone
-    },
-    {
         "why": "#29(d) round 9 - the Edit window is pulled up over the builder's tabs again (EQUIPMENT hidden at 1280x800)",
         "file": "bible.html",
         "find": "    if (_tr && left < _tr.right && left + W > _tr.left && top < _tr.bottom + 6 && vh - (_tr.bottom + 6) - 8 >= 240){\n",
         "replace": "    if (false){\n",
         "matches": 1,
         "widths": ["1280x800"],   # #42 measured 2026-09-29: the tampered law is red at 1280x800 alone
-    },
-    {
-        "why": "#29(d) round 9 - the phone's sheet takes the whole glass again and covers the tabs",
-        "file": "bible.html",
-        "find": "top0 = (tr0 && vh - (tr0.bottom + 6) - 8 >= 280) ? tr0.bottom + 6 : 8;",
-        "replace": "top0 = 8;",
-        "matches": 1,
-        "widths": ["375x812"],   # #42 measured 2026-09-29: the tampered law is red at 375x812 alone
     },
     {
         "why": "REG-1379 round 2 - the builder is the glass's height again, with an empty band under its columns at 2000x1300",
@@ -1805,14 +1774,6 @@ RED_PROOF = [
         "widths": ["1280x800"],   # #42 measured 2026-09-29: the tampered law is red at 1280x800 alone
     },
     {
-        "why": "#174 v-B2 fix round - the stacked picker's pane is unbounded again: at 375 the list grows to its rows and never scrolls",
-        "file": "bible.html",
-        "find": ".cb-sheet .cb-pane{min-height:0}",
-        "replace": ".cb-sheet .cb-pane{min-height:auto}",
-        "matches": 1,
-        "widths": ["375x812"],   # #42 measured 2026-09-29: the tampered law is red at 375x812 alone
-    },
-    {
         "why": "#174 v-B2 fix round - an active gold button under the pointer paints its label gold on gold again",
         "file": "bible.html",
         "find": ".cb-btn.cb-on:hover:not([disabled]){color:#1a1208;border-color:var(--gold-bright)}",
@@ -1843,14 +1804,6 @@ RED_PROOF = [
         "replace": ".cb-lc{display:grid;grid-template-columns:calc(360*var(--u)) calc(678*var(--u));",
         "matches": 1,
         "widths": ["2000x1300"],   # #42 measured 2026-09-29: the tampered law is red at 2000x1300 alone
-    },
-    {
-        "why": "#174 v-B2 - a phone keeps the desktop width and the builder scrolls sideways",
-        "file": "bible.html",
-        "find": "grid-template-areas:\"top\" \"set\" \"main\" \"stats\" \"left\" \"notes\";width:100%}",
-        "replace": "grid-template-areas:\"top\" \"set\" \"main\" \"stats\" \"left\" \"notes\";width:calc(1350*var(--u))}",
-        "matches": 1,
-        "widths": ["375x812"],   # #42 measured 2026-09-29: the tampered law is red at 375x812 alone
     },
 ]
 

@@ -31,11 +31,6 @@ CHECKS = [
  ],
  [
   "tv/render_check.py",
-  "\"375x800\":   {\"clipped\": 1, \"broken\": None, \"zero\": 6}",
-  1
- ],
- [
-  "tv/render_check.py",
   "\"1440x1000\": {\"clipped\": 0, \"broken\": None, \"zero\": 6}",
   1
  ]

@@ -23,11 +23,9 @@ import * as path from 'path';
 const FILE = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 const SIZES = [
-  { w: 375, h: 700 },   // phone portrait — was fully off-strip
-  { w: 375, h: 400 },
-  { w: 640, h: 400 },   // was half-cut
+  // v3889 (#132, his 11-08 'i dont need any mobile anything') - 375x700, 375x400 and 640x400 (phone widths) left
   { w: 701, h: 700 },   // one pixel above the ≤700px scroll-row rule
-  { w: 844, h: 390 },   // phone landscape
+  { w: 844, h: 390 },   // a short window (Dean's console runs at 800x402)
   { w: 901, h: 700 },
   { w: 1440, h: 900 },
 ];
@@ -76,19 +74,4 @@ for (const s of SIZES) {
   });
 }
 
-test('v1811 — a programmatic switch reveals a tab at the far end of the row', async ({ page }) => {
-  // A CLICK cannot land on an invisible tab — you had to see it to click it. A programmatic
-  // switch can: jump links, the nav compass and the #tvd control-app aliases all call switchTab
-  // directly, and `tvd` is the LAST tab in the row.
-  await page.setViewportSize({ width: 375, height: 700 });
-  await page.goto(FILE);
-  await page.waitForSelector('.tabs .tab', { state: 'attached' });
-  await page.waitForTimeout(1200);
-
-  await page.evaluate(() => (window as any).switchTab && (window as any).switchTab('tvd'));
-  await page.waitForTimeout(600);
-
-  const st = await activeTabState(page);
-  expect(st.tab, 'switchTab landed on tvd').toBe('tvd');
-  expect(st.visible, 'tvd is inside the strip after a programmatic switch').toBe(true);
-});
+// v3889 (#132) - the 375px far-end reveal test left with the phone page (the row only scrolls under 700px)

@@ -167,7 +167,7 @@ for (const [w, h] of [[1440, 1000], [1120, 900], [901, 900]] as const) {
  * The Python render gate asserts this via elementFromPoint on the panel's own buttons; this
  * asserts the GEOMETRY that makes it true, so a regression is caught even if the hit test is
  * confused by something new sitting on top. 375px is the width where it actually broke. */
-for (const [w, h] of [[375, 800], [560, 800], [700, 900]] as const) {
+for (const [w, h] of [[700, 900], [901, 900]] as const) {   // v3889 (#132, his 11-08 'i dont need any mobile anything') - 375 / 560 left
   test(`the inbox panel stays above the dock — ${w}x${h}`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: h });
     await page.goto(URL);

@@ -362,23 +362,21 @@ class TheThreeColumns(unittest.TestCase):
             self.assertTrue(hd.startswith('<span class="mp-h-t">'), "a header title is not in its own column: %r" % hd)
 
     def test_a_resize_re_lays_the_window_only_when_a_layout_number_moves(self):
-        """A height-only resize (a phone keyboard opening) re-rendered the whole window and took the Stats search
-        box out from under his typing. The handler compares the layout signature the page wrote."""
-        out = _drive(w=390, h=844, resize=[(390, 464), (390, 844), (1280, 800), (1280, 820), (1280, 695), (460, 900),
-                                           (560, 900)])
+        """A height-only resize (first seen as a phone keyboard opening) re-rendered the whole window and took the Stats
+        search box out from under his typing. The handler compares the layout signature the page wrote.
+        v3889 (#132, no phone): driven at desktop sizes only - the 390 keyboard and the 460 / 560 stacked steps left with the
+        phone page. Measured 11-09: the deltas below are what the handler writes at these sizes."""
+        out = _drive(w=1280, h=800, resize=[(1280, 820), (1280, 800), (1120, 800), (1280, 800), (1280, 695), (880, 900)])
         w = out["writes"]
         self.assertEqual(w[0], 1, "opening the window should write it once")
-        self.assertEqual(w[1] - w[0], 0, "a height-only resize re-rendered the window (the keyboard case)")
+        self.assertEqual(w[1] - w[0], 0, "a height-only resize that leaves the unit alone re-rendered the window")
         self.assertEqual(w[2] - w[1], 0, "a resize back to the same size re-rendered the window")
         self.assertEqual(w[3] - w[2], 1, "a width that changes the unit did not re-lay the window")
-        self.assertEqual(w[4] - w[3], 0, "a height-only resize at 1280 that leaves the unit alone (the width still "
-                                        "decides) re-rendered the window")
+        self.assertEqual(w[4] - w[3], 1, "a width back to the first did not re-lay the window")
         # #174 v-B2 — 1280x695 is his console's board under its header: the height now decides the unit, so the
         # stash panel he packs from fits the window; that resize MUST re-lay it
         self.assertEqual(w[5] - w[4], 1, "a height-only resize that moves the unit (1280x695) did not re-lay the window")
-        self.assertEqual(w[6] - w[5], 1, "going stacked did not re-lay the window")
-        self.assertEqual(w[7] - w[6], 1, "under 900 k sits clamped at 1.25 but the stash cell follows the width; "
-                                        "a resize that moves only the cell did not re-lay the window")
+        self.assertEqual(w[6] - w[5], 1, "a width under 900 (Dean's ~800-wide window band) did not re-lay the window")
 
     def test_the_stash_keeps_our_five_tabs_wherever_it_sits(self):
         for view in (None, "stash"):

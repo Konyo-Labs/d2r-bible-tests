@@ -307,8 +307,11 @@ class TheThresholdIsNotZero(unittest.TestCase):
                       "the JS hardcodes its own threshold instead of taking MIN_OVERLAP_PX")
 
     def test_the_narrow_width_is_still_asked_about(self):
-        """[[workflow-topology]]'s render rule: layout dies at breakpoints, so 375 must stay."""
-        self.assertIn((375, 800), OR.WIDTHS)
+        """[[workflow-topology]]'s render rule: layout dies at breakpoints, so a narrow width must stay. v3889 (#132, his
+        11-08 "i dont need any mobile anything"): the narrow width is 901 - the breakpoint-adjacent width he can open at -
+        and no phone width comes back (INVERTED, not dropped: tv/test_there_is_no_phone_page.py)."""
+        self.assertIn((901, 900), OR.WIDTHS, "the breakpoint-adjacent width left the overlap ratchet")
+        self.assertEqual([w for w in OR.WIDTHS if w[0] < 700], [], "a phone width is back in the overlap ratchet")
 
 
 class ItGradesAFIRSTPaintAtEachWidth(unittest.TestCase):

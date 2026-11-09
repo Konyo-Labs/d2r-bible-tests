@@ -828,7 +828,6 @@
     "test_node_is_fetched_where_it_is_missing": 0.7,
     "test_not_in_game_is_one_chip": 0.764,
     "test_nothing_sits_under_the_shadow_bar": 0.194,
-    "test_on_a_phone_the_tray_is_one_bottom_bar": 1.646,
     "test_one_capture_per_console": 8.221,
     "test_one_clean_run_serves_a_gates_proofs": 1.052,
     "test_one_console_shows_one_free_figure": 0.282,

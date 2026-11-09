@@ -14,8 +14,7 @@ const FILE = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 
 const SIZES = [
   { w: 1440, h: 900 },
-  { w: 901, h: 700 },
-  { w: 375, h: 700 },
+  { w: 901, h: 700 },   // v3889 (#132, his 11-08 'i dont need any mobile anything') - 375 left
 ];
 
 for (const { w, h } of SIZES) {

@@ -80,17 +80,8 @@ test.describe('BUG-030..035 — aesthetics sweep', () => {
     expect(hasHover).toBe(true);
   });
 
-  test('BUG-034 mobile viewport (375px) — no horizontal page overflow', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 800 });
-    await page.goto(BIBLE);
-    await page.waitForTimeout(700);
-    const overflow = await page.evaluate(() => {
-      const w = document.documentElement;
-      return { scroll: w.scrollWidth, client: w.clientWidth };
-    });
-    // Allow up to 20px overflow as float-precision tolerance
-    expect(overflow.scroll - overflow.client).toBeLessThanOrEqual(20);
-  });
+  // v3889 (#132, his 11-08 'i dont need any mobile anything') - BUG-034 (no horizontal overflow at 375px) left with the
+  // phone page; tombstone in tv/test_there_is_no_phone_page.py
 
   test('BUG-035 difficulty-grid renders for each boss card', async ({ page }) => {
     await page.goto(BIBLE);
@@ -100,16 +91,5 @@ test.describe('BUG-030..035 — aesthetics sweep', () => {
     expect(grids).toBe(cards);
   });
 
-  test('BUG-035b boss-detail overlay also responsive on mobile', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 800 });
-    await page.goto(BIBLE);
-    await page.waitForTimeout(1200);
-    await page.evaluate(() => (window as any).openBossDetail('mephisto'));
-    await page.waitForTimeout(300);
-    await expect(page.locator('#boss-detail-overlay')).not.toHaveClass(/hidden/);
-    // Card should fit within viewport width
-    // v39: was .boss-detail-card, now .gbc-card inside #boss-detail-panel
-    const cardW = await page.locator('#boss-detail-panel .gbc-card').evaluate(el => el.getBoundingClientRect().width);
-    expect(cardW).toBeLessThanOrEqual(375);
-  });
+  // v3889 (#132) - BUG-035b (the boss-detail card fits a 375px phone) left with the phone page
 });

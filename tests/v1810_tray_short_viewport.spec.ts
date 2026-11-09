@@ -41,10 +41,9 @@ const VICTIMS = [
 // Short enough that the tray and the strip compete for the same band, plus two controls above the
 // threshold to prove the rule does not reach where it should not.
 const SIZES = [
-  { w: 844, h: 390, short: true },   // iPhone landscape
-  { w: 640, h: 400, short: true },   // the render gate's narrow width, at a short height
-  { w: 375, h: 400, short: true },
-  { w: 640, h: 481, short: false },  // one pixel above the threshold
+  { w: 844, h: 390, short: true },   // a short window (Dean's console runs at 800x402)
+  { w: 901, h: 400, short: true },   // v3889 (#132, his 11-08 'i dont need any mobile anything') - the short rule is height-only; 640 / 375 widths left
+  { w: 901, h: 481, short: false },  // one pixel above the threshold
   { w: 1440, h: 900, short: false },
 ];
 

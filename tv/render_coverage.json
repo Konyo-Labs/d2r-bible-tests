@@ -7,7 +7,6 @@
       "1120x900": 3,
       "1280x720": 3,
       "1440x1000": 3,
-      "375x800": 3,
       "901x900": 3
     },
     "advanced-fleet": {
@@ -15,7 +14,6 @@
       "1120x900": 19,
       "1280x720": 19,
       "1440x1000": 19,
-      "375x800": 19,
       "901x900": 19
     },
     "advanced-fleet-down": {
@@ -23,7 +21,6 @@
       "1120x900": 7,
       "1280x720": 7,
       "1440x1000": 7,
-      "375x800": 7,
       "901x900": 7
     },
     "advanced-shadow": {
@@ -31,7 +28,6 @@
       "1120x900": 1,
       "1280x720": 1,
       "1440x1000": 1,
-      "375x800": 1,
       "901x900": 1
     },
     "console": {
@@ -39,7 +35,6 @@
       "1120x900": 2,
       "1280x720": 2,
       "1440x1000": 2,
-      "375x800": 2,
       "901x900": 2
     },
     "console-tabs": {
@@ -47,7 +42,6 @@
       "1120x900": 8,
       "1280x720": 8,
       "1440x1000": 8,
-      "375x800": 8,
       "901x900": 8
     },
     "fleet-xref": {
@@ -55,7 +49,6 @@
       "1120x900": 10,
       "1280x720": 10,
       "1440x1000": 10,
-      "375x800": 10,
       "901x900": 10
     },
     "heart": {
@@ -63,7 +56,6 @@
       "1120x900": 94,
       "1280x720": 94,
       "1440x1000": 94,
-      "375x800": 94,
       "901x900": 94
     },
     "heart-fan": {
@@ -71,7 +63,6 @@
       "1120x900": 267,
       "1280x720": 267,
       "1440x1000": 267,
-      "375x800": 267,
       "901x900": 267
     },
     "heart-stored": {
@@ -79,7 +70,6 @@
       "1120x900": 18,
       "1280x720": 18,
       "1440x1000": 18,
-      "375x800": 18,
       "901x900": 18
     },
     "inbox": {
@@ -87,7 +77,6 @@
       "1120x900": 3,
       "1280x720": 3,
       "1440x1000": 3,
-      "375x800": 3,
       "901x900": 3
     },
     "locks": {
@@ -95,7 +84,6 @@
       "1120x900": 2,
       "1280x720": 2,
       "1440x1000": 2,
-      "375x800": 2,
       "901x900": 2
     },
     "page": {
@@ -103,7 +91,6 @@
       "1120x900": 9,
       "1280x720": 9,
       "1440x1000": 9,
-      "375x800": 9,
       "901x900": 9
     },
     "river-strip": {
@@ -111,7 +98,6 @@
       "1120x900": 20,
       "1280x720": 20,
       "1440x1000": 20,
-      "375x800": 20,
       "901x900": 20
     },
     "shelf-cards": {
@@ -119,7 +105,6 @@
       "1120x900": 34,
       "1280x720": 34,
       "1440x1000": 34,
-      "375x800": 34,
       "901x900": 34
     },
     "state-panel": {
@@ -127,7 +112,6 @@
       "1120x900": 13,
       "1280x720": 13,
       "1440x1000": 13,
-      "375x800": 13,
       "901x900": 13
     },
     "taskforce": {
@@ -135,7 +119,6 @@
       "1120x900": 3,
       "1280x720": 3,
       "1440x1000": 3,
-      "375x800": 3,
       "901x900": 3
     },
     "update-wait": {
@@ -143,7 +126,6 @@
       "1120x900": 3,
       "1280x720": 3,
       "1440x1000": 3,
-      "375x800": 3,
       "901x900": 3
     },
     "vault": {
@@ -151,7 +133,6 @@
       "1120x900": 11,
       "1280x720": 11,
       "1440x1000": 11,
-      "375x800": 11,
       "901x900": 11
     },
     "vault-full": {
@@ -159,7 +140,6 @@
       "1120x900": 22,
       "1280x720": 22,
       "1440x1000": 22,
-      "375x800": 22,
       "901x900": 22
     },
     "window-ctl": {
@@ -167,33 +147,27 @@
       "1120x900": 3,
       "1280x720": 3,
       "1440x1000": 3,
-      "375x800": 3,
       "901x900": 3
     },
     "inbox-asks": {
       "1440x1000": 4,
-      "375x800": 4,
       "901x900": 4
     },
     "state-asks": {
       "1440x1000": 2,
-      "375x800": 2,
       "901x900": 2
     },
     "chars-ingame": {
       "1120x900": 6,
       "1440x1000": 6,
-      "375x800": 6,
       "901x900": 6
     },
     "ch-inbox": {
       "1440x1000": 4,
-      "901x900": 4,
-      "375x800": 4
+      "901x900": 4
     },
     "pop-asks": {
       "1440x1000": 1,
-      "375x800": 1,
       "901x900": 1
     },
     "vault-organizer": {
@@ -201,18 +175,15 @@
       "1120x900": 1,
       "1280x720": 1,
       "1440x1000": 1,
-      "375x800": 1,
       "901x900": 1
     },
     "builder-crafted": {
       "1440x1000": 1,
-      "375x800": 1,
       "901x900": 1
     },
     "quick-wins": {
       "1120x900": 1,
       "1440x1000": 1,
-      "375x800": 1,
       "901x900": 1
     },
     "update-wait-say": {
@@ -226,15 +197,13 @@
     },
     "material-craft": {
       "1440x1000": 5,
-      "901x900": 5,
-      "375x800": 5
+      "901x900": 5
     },
     "vault-undo-chip": {
       "1120x628": 1,
       "1120x900": 1,
       "1280x720": 1,
       "1440x1000": 1,
-      "375x800": 1,
       "901x900": 1
     },
     "vault-share-settings": {
@@ -242,7 +211,6 @@
       "1120x900": 1,
       "1280x720": 1,
       "1440x1000": 1,
-      "375x800": 1,
       "901x900": 1
     },
     "vault-copies": {
@@ -250,7 +218,6 @@
       "1120x900": 1,
       "1280x720": 1,
       "1440x1000": 1,
-      "375x800": 1,
       "901x900": 1
     },
     "vault-find-copies": {
@@ -258,11 +225,9 @@
       "1120x900": 1,
       "1280x720": 1,
       "1440x1000": 1,
-      "375x800": 1,
       "901x900": 1
     },
     "phone-bar": {
-      "375x800": 3,
       "600x900": 3
     },
     "fleet-boot-river": {
@@ -270,7 +235,6 @@
       "1120x900": 8,
       "1280x720": 8,
       "1440x1000": 8,
-      "375x800": 8,
       "901x900": 8
     }
   },
@@ -296,11 +260,6 @@
         "button.g5-auth-btn|⚡ Linked",
         "div.g5-eyes-card|👁 EYES CLAUDE + GROK GROK ONLY ⚡ Linked "
       ],
-      "375x800": [
-        "div.g5-eyes-card|🧠 CLAUDE ⚡ Linked",
-        "button.g5-auth-btn|⚡ Linked",
-        "div.g5-eyes-card|👁 EYES CLAUDE + GROK GROK ONLY ⚡ Linked "
-      ],
       "901x900": [
         "div.g5-eyes-card|🧠 CLAUDE ⚡ Linked",
         "button.g5-auth-btn|⚡ Linked",
@@ -392,27 +351,6 @@
         "b|Wife PC",
         "span.fleet-meta|no report"
       ],
-      "375x800": [
-        "div.fleet-row|GrokBot · grok-bot-vm-346371813👁?differs",
-        "b|GrokBot · grok-bot-vm-346371813",
-        "span.fleet-meta|differs",
-        "div.fleet-row|konyo-3👁?this console· this console has ",
-        "b|konyo-3",
-        "span.fleet-meta|this console",
-        "span.fleet-meta|· this console has no native window (hea",
-        "div.fleet-row|Konyo ALT TEST👁?differsKonyo ALT TEST di",
-        "b|Konyo ALT TEST",
-        "span.fleet-meta|differs",
-        "div.fleet-row|Dean👁?differsDean differsSETS 132 / 135·",
-        "b|Dean",
-        "span.fleet-meta|differs",
-        "div.fleet-row|GrokBot · cursor👁?differsGrokBot · curso",
-        "b|GrokBot · cursor",
-        "span.fleet-meta|differs",
-        "div.fleet-row|Wife PCno reportWife PC no reportnothing",
-        "b|Wife PC",
-        "span.fleet-meta|no report"
-      ],
       "901x900": [
         "div.fleet-row|GrokBot · grok-bot-vm-346371813👁?differs",
         "b|GrokBot · grok-bot-vm-346371813",
@@ -472,15 +410,6 @@
         "span.fleet-stale-m|Wife PC v2101",
         "div.fleet-none|re-asking in 4s · attempt 1 of 6"
       ],
-      "375x800": [
-        "div|fleet unreachable — TLS handshake timed ",
-        "b.fleet-dead|fleet unreachable",
-        "div.fleet-none|last seen 7m ago — 2 on, 1 off, 3 known ",
-        "span.fleet-stale-m|Dean v2745",
-        "span.fleet-stale-m|Konyo v2745",
-        "span.fleet-stale-m|Wife PC v2101",
-        "div.fleet-none|re-asking in 4s · attempt 1 of 6"
-      ],
       "901x900": [
         "div|fleet unreachable — TLS handshake timed ",
         "b.fleet-dead|fleet unreachable",
@@ -504,9 +433,6 @@
       "1440x1000": [
         "div.shadow-adv|👁 Shadow readerON · waiting for a reel —"
       ],
-      "375x800": [
-        "div.shadow-adv|👁 Shadow readerON · waiting for a reel —"
-      ],
       "901x900": [
         "div.shadow-adv|👁 Shadow readerON · waiting for a reel —"
       ]
@@ -525,10 +451,6 @@
         "button.act|⏱Ministash · 120s, stops itself"
       ],
       "1440x1000": [
-        "button.act|▶On Aircapture · pause on stash",
-        "button.act|⏱Ministash · 120s, stops itself"
-      ],
-      "375x800": [
         "button.act|▶On Aircapture · pause on stash",
         "button.act|⏱Ministash · 120s, stops itself"
       ],
@@ -569,16 +491,6 @@
         "span.ht-lbl|TV·D"
       ],
       "1440x1000": [
-        "span.ht-lbl|Sessions",
-        "span.ht-lbl|Runewords",
-        "span.ht-lbl|Crafts",
-        "span.ht-lbl|Uniques",
-        "span.ht-lbl|Sets",
-        "span.ht-lbl|Tools",
-        "span.ht-lbl|Vault",
-        "span.ht-lbl|TV·D"
-      ],
-      "375x800": [
         "span.ht-lbl|Sessions",
         "span.ht-lbl|Runewords",
         "span.ht-lbl|Crafts",
@@ -637,18 +549,6 @@
         "div.fx-foot|292 / 403 yours · 281 / 403 theirs · 274"
       ],
       "1440x1000": [
-        "div.fx-cols|they have · you do not3Death's WebGriffo",
-        "div.fx-col-h|they have · you do not3",
-        "span.fx-name|Death's Web",
-        "span.fx-name|Griffon's Eye",
-        "span.fx-name|Mara's Kaleidoscope",
-        "div.fx-col-h|you have · they do not2",
-        "span.fx-name|Arachnid Mesh",
-        "span.fx-name|Herald of Zakarum",
-        "div.fx-col-h|you both need—",
-        "div.fx-foot|292 / 403 yours · 281 / 403 theirs · 274"
-      ],
-      "375x800": [
         "div.fx-cols|they have · you do not3Death's WebGriffo",
         "div.fx-col-h|they have · you do not3",
         "span.fx-name|Death's Web",
@@ -963,102 +863,6 @@
         "div.hrt-row|_warden_loopFLOWING · 0.206watched by tv"
       ],
       "1440x1000": [
-        "div.hrt-legend|● flowing 20● watched 0● dark 0 — nothin",
-        "span.lg-flowing|● flowing 20",
-        "span.lg-watched|● watched 0",
-        "span.lg-dark|● dark 0 — nothing watches these",
-        "span.lg-unknown|● unknown 0",
-        "div.hrt-h|The chronicle routes · 3 · source → gene",
-        "div.hrt-row|runeword · 99 in the chronicleFLOWINGsou",
-        "div.hrt-row|set · 135 pieces in the chronicleFLOWING",
-        "div.hrt-row|unique · 403 in the chronicleFLOWINGsour",
-        "div.hrt-row|⚑ runeword · countODD ONE OUTthis lane r",
-        "div.hrt-row|⚑ unique · countODD ONE OUTthis lane rea",
-        "div.hrt-h|The fleet lanes · 3 · getter → probe → t",
-        "div.hrt-row|sets · 135 pieces in the chronicleFLOWIN",
-        "div.hrt-row|uniques · 403 in the chronicleFLOWINGget",
-        "div.hrt-row|runewords · 99 in the chronicleFLOWINGge",
-        "div.hrt-h|The roster routes · 3 · declared → gette",
-        "div.hrt-row|runeword · 99 in the chronicleFLOWINGdec",
-        "div.hrt-row|set · 135 pieces in the chronicleFLOWING",
-        "div.hrt-row|unique · 403 in the chronicleFLOWINGdecl",
-        "div.hrt-h|Promises a lane can still break · 4 · ev",
-        "div.hrt-row|tvd-ledger-backup · deletePERMITTED · re",
-        "div.hrt-row|tvd-shadow-watch · deleteTOO BROAD · rea",
-        "div.hrt-row|tvd-stash-watch · deleteTOO BROAD · reac",
-        "div.hrt-row|tvd-version-drift · deleteTOO BROAD · re",
-        "div.hrt-h|Can my own instruments still go red?490 ",
-        "div.hrt-row|this readingSTOREDthe proof stampsoldest",
-        "div.hrt-row|the gatesWATCHED490 of 508 gate(s) can s",
-        "div.hrt-h|Engines joined to the river · 13 of 14 ·",
-        "div.hrt-row|declared_vs_contentNO DATAwhether its ro",
-        "div.hrt-row|extract_gapJOINEDwhether it can be extra",
-        "div.hrt-row|frame_authorityJOINEDwhether its seal co",
-        "div.hrt-row|main_characterNO DATAwhose character the",
-        "div.hrt-row|one_start_pointJOINEDwhich door this ree",
-        "div.hrt-row|per_reel_routesJOINEDwhat chose its rout",
-        "div.hrt-row|printer_reachJOINEDwhether the extractio",
-        "div.hrt-row|reel_riverJOINEDhow far down the ladder ",
-        "div.hrt-row|reel_segmentsJOINEDthe activities on its",
-        "div.hrt-row|reel_templatesJOINEDwhat the reel IS, an",
-        "div.hrt-row|retro_triageJOINEDwhether a paid reader ",
-        "div.hrt-row|slot_identityNO DATAwhich cell an item s",
-        "div.hrt-row|tooltip_findUNJOINEDWHERE in the frame t",
-        "div.hrt-row|write_witnessNO DATAwhat testimony exist",
-        "div.hrt-h|The printer · 25 reel(s) · in at one doo",
-        "div.hrt-row|IN · one_start_pointUNKNOWN 1 · repair 2",
-        "div.hrt-row|FUNNEL · reel_riverreleasable 8 · swept ",
-        "div.hrt-row|TEMPLATE · reel_templatesUNKNOWN — all 2",
-        "div.hrt-row|ROUTE · per_reel_routescontent 17 · poli",
-        "div.hrt-row|EXTRACT · extract_gapUNSEALED — all 25ca",
-        "div.hrt-row|OUT · reel_riverUNDECIDED — all 25is it ",
-        "div.hrt-row|TOMBSTONE · reel_retentionON DISK — all ",
-        "div.hrt-h|Fields recorded but never once filled · ",
-        "div.hrt-row|reel_tombstonesUNKNOWN7 row(s) is under ",
-        "div.hrt-row|disk_historyUNKNOWNdisk_history.jsonl is",
-        "div.hrt-h|The valves · 7 of 9 open",
-        "div.hrt-row|console.pixel_rescue · THE CONSOLE HARDE",
-        "div.hrt-row|frame.release · THE RIVER HARDENED85/85 ",
-        "div.hrt-row|miniauto.run · MINI AUTO INCOMPLETE55/55",
-        "div.hrt-row|printer.stream · THE RIVER OPEN135/135 r",
-        "div.hrt-row|prune.reports · THE RIVER HARDENED117/12",
-        "div.hrt-row|reel.route · THE RIVER HARDENED87/87 ref",
-        "div.hrt-row|vault.apply · VAULT HARDENED97/97 refuse",
-        "div.hrt-row|vault.forget · VAULT UNPROVENn=0 · needs",
-        "div.hrt-row|vault.sweep_start · VAULT HARDENED106/10",
-        "div.hrt-h|The routes · 9 of 9 proved themselves",
-        "div.hrt-row|chronicle.runewordHARDENED38/38 refused ",
-        "div.hrt-row|chronicle.setHARDENED38/38 refused · 0.9",
-        "div.hrt-row|chronicle.uniqueHARDENED38/38 refused · ",
-        "div.hrt-row|fleet.runewordsPROVEN36/36 refused · 0.9",
-        "div.hrt-row|fleet.setsPROVEN36/36 refused · 0.904 ≥ ",
-        "div.hrt-row|fleet.uniquesPROVEN36/36 refused · 0.904",
-        "div.hrt-row|roster.runewordPROVEN39/39 refused · 0.9",
-        "div.hrt-row|roster.setPROVEN39/39 refused · 0.910 ≥ ",
-        "div.hrt-row|roster.uniquePROVEN39/39 refused · 0.910",
-        "div.hrt-h|Every vessel · dark first",
-        "div.hrt-row|_bridge_proberFLOWING · 0.342watched by ",
-        "div.hrt-row|_chron_autoread_loopFLOWING · 0.206watch",
-        "div.hrt-row|_console_beacon_loopFLOWING · 0.342watch",
-        "div.hrt-row|_console_rescue_loopFLOWING · 0.342watch",
-        "div.hrt-row|_drift_loopFLOWING · 0.342watched by tvd",
-        "div.hrt-row|_eagle_watch_loopFLOWING · 0.206watched ",
-        "div.hrt-row|_engine_driverFLOWING · 0.342watched by ",
-        "div.hrt-row|_kai_closer_loopFLOWING · 0.342watched b",
-        "div.hrt-row|_ledger_backup_loopFLOWING · 0.206watche",
-        "div.hrt-row|_mini_watchdogFLOWING · 0.342watched by ",
-        "div.hrt-row|_orphan_exit_loopFLOWING · 0.610watched ",
-        "div.hrt-row|_orphan_watchFLOWING · 0.610watched by _",
-        "div.hrt-row|_prune_loopFLOWING · 0.206watched by tvd",
-        "div.hrt-row|_retention_loopFLOWING · 0.439watched by",
-        "div.hrt-row|_retro_triage_loopFLOWING · 0.510watched",
-        "div.hrt-row|_runaway_watch_loopFLOWING · 0.206watche",
-        "div.hrt-row|_shadow_watch_loopFLOWING · 0.206watched",
-        "div.hrt-row|_stash_watch_loopFLOWING · 0.439watched ",
-        "div.hrt-row|_vault_autoread_loopFLOWING · 0.439watch",
-        "div.hrt-row|_warden_loopFLOWING · 0.206watched by tv"
-      ],
-      "375x800": [
         "div.hrt-legend|● flowing 20● watched 0● dark 0 — nothin",
         "span.lg-flowing|● flowing 20",
         "span.lg-watched|● watched 0",
@@ -2328,275 +2132,6 @@
         "span.hrt-s|FLOWING · 0.206",
         "span.hrt-w|watched by tvd-space-warden"
       ],
-      "375x800": [
-        "div.fxr-win|♥ THE HEART✕the console’s own circulatio",
-        "div.fx-head|♥ THE HEART✕the console’s own circulatio",
-        "div.hrt-legend|● flowing 20● watched 0● dark 0 — nothin",
-        "div.hrt-svgwrap|miniauto.run — INCOMPLETE — 1 claim(s) t",
-        "div.hrt-note|Every vein is a thread this console actu",
-        "div.hrt-sec|The chronicle routes · 3 · source → gene",
-        "span.hrt-k|runeword · 99 in the chronicle",
-        "span.hrt-s|FLOWING",
-        "span.hrt-w|source→generator→roster→freshness→resolv",
-        "span.hrt-chain|source→generator→roster→freshness→resolv",
-        "span.hrt-k|set · 135 pieces in the chronicle",
-        "span.hrt-s|FLOWING",
-        "span.hrt-w|source→generator→roster→freshness→resolv",
-        "span.hrt-chain|source→generator→roster→freshness→resolv",
-        "span.hrt-k|unique · 403 in the chronicle",
-        "span.hrt-s|FLOWING",
-        "span.hrt-w|source→generator→roster→freshness→resolv",
-        "span.hrt-chain|source→generator→roster→freshness→resolv",
-        "span.hrt-k|⚑ runeword · count",
-        "span.hrt-s|ODD ONE OUT",
-        "span.hrt-w|this lane reads 105 and the chronicle co",
-        "span.hrt-k|⚑ unique · count",
-        "span.hrt-s|ODD ONE OUT",
-        "span.hrt-w|this lane reads 398 and the chronicle co",
-        "p.hrt-note|All 3 carry the same SHAPE — generated, ",
-        "p.hrt-note|All three sections now show the SAME num",
-        "div.hrt-sec|The fleet lanes · 3 · getter → probe → t",
-        "span.hrt-k|sets · 135 pieces in the chronicle",
-        "span.hrt-s|FLOWING",
-        "span.hrt-w|getter→probe→total→unit",
-        "span.hrt-chain|getter→probe→total→unit",
-        "span.hrt-k|uniques · 403 in the chronicle",
-        "span.hrt-s|FLOWING",
-        "span.hrt-w|getter→probe→total→unit",
-        "span.hrt-chain|getter→probe→total→unit",
-        "span.hrt-k|runewords · 99 in the chronicle",
-        "span.hrt-s|FLOWING",
-        "span.hrt-w|getter→probe→total→unit",
-        "span.hrt-chain|getter→probe→total→unit",
-        "p.hrt-note|All 3 carry the same SHAPE — defined, as",
-        "p.hrt-note|Every route carries the same five links,",
-        "div.hrt-sec|The roster routes · 3 · declared → gette",
-        "span.hrt-k|runeword · 99 in the chronicle",
-        "span.hrt-s|FLOWING",
-        "span.hrt-w|declared→getter→probe→total→unit",
-        "span.hrt-chain|declared→getter→probe→total→unit",
-        "span.hrt-k|set · 135 pieces in the chronicle",
-        "span.hrt-s|FLOWING",
-        "span.hrt-w|declared→getter→probe→total→unit",
-        "span.hrt-chain|declared→getter→probe→total→unit",
-        "span.hrt-k|unique · 403 in the chronicle",
-        "span.hrt-s|FLOWING",
-        "span.hrt-w|declared→getter→probe→total→unit",
-        "span.hrt-chain|declared→getter→probe→total→unit",
-        "p.hrt-note|All 3 carry the same SHAPE — declared, e",
-        "p.hrt-note|Every route carries the same five links,",
-        "div.hrt-sec|Promises a lane can still break · 4 · ev",
-        "span.hrt-k|tvd-ledger-backup · delete",
-        "span.hrt-s|PERMITTED · reach 8",
-        "span.hrt-w|it does this to its OWN artefacts, under",
-        "span.hrt-k|tvd-shadow-watch · delete",
-        "span.hrt-s|TOO BROAD · reach 27",
-        "span.hrt-w|reach 27 is the everything-reaches-every",
-        "span.hrt-k|tvd-stash-watch · delete",
-        "span.hrt-s|TOO BROAD · reach 35",
-        "span.hrt-w|reach 35 is the everything-reaches-every",
-        "span.hrt-k|tvd-version-drift · delete",
-        "span.hrt-s|TOO BROAD · reach 85",
-        "span.hrt-w|reach 85 is the everything-reaches-every",
-        "div.hrt-sec|Can my own instruments still go red?490 ",
-        "span.hrt-k|this reading",
-        "span.hrt-s|STORED",
-        "span.hrt-w|the proof stampsoldest gate proof 12h ag",
-        "span.hrt-k|the gates",
-        "span.hrt-s|WATCHED",
-        "span.hrt-w|490 of 508 gate(s) can still go red; 42 ",
-        "div.hrt-sec|Engines joined to the river · 13 of 14 ·",
-        "span.hrt-k|declared_vs_content",
-        "span.hrt-s|NO DATA",
-        "span.hrt-w|whether its routing came from content or",
-        "span.hrt-k|extract_gap",
-        "span.hrt-s|JOINED",
-        "span.hrt-w|whether it can be extracted, and if not ",
-        "span.hrt-k|frame_authority",
-        "span.hrt-s|JOINED",
-        "span.hrt-w|whether its seal covers extraction",
-        "span.hrt-k|main_character",
-        "span.hrt-s|NO DATA",
-        "span.hrt-w|whose character the reel belongs to",
-        "span.hrt-k|one_start_point",
-        "span.hrt-s|JOINED",
-        "span.hrt-w|which door this reel entered by",
-        "span.hrt-k|per_reel_routes",
-        "span.hrt-s|JOINED",
-        "span.hrt-w|what chose its route — its content, or p",
-        "span.hrt-k|printer_reach",
-        "span.hrt-s|JOINED",
-        "span.hrt-w|whether the extraction contract admits i",
-        "span.hrt-k|reel_river",
-        "span.hrt-s|JOINED",
-        "span.hrt-w|how far down the ladder it has come, and",
-        "span.hrt-k|reel_segments",
-        "span.hrt-s|JOINED",
-        "span.hrt-w|the activities on its timeline",
-        "span.hrt-k|reel_templates",
-        "span.hrt-s|JOINED",
-        "span.hrt-w|what the reel IS, and the extraction zon",
-        "span.hrt-k|retro_triage",
-        "span.hrt-s|JOINED",
-        "span.hrt-w|whether a paid reader should see it — th",
-        "span.hrt-k|slot_identity",
-        "span.hrt-s|NO DATA",
-        "span.hrt-w|which cell an item sat in — the slot a n",
-        "span.hrt-k|tooltip_find",
-        "span.hrt-s|UNJOINED",
-        "span.hrt-w|WHERE in the frame the tooltip sat (that",
-        "span.hrt-k|write_witness",
-        "span.hrt-s|NO DATA",
-        "span.hrt-w|what testimony exists for what it yielde",
-        "div.hrt-sec|The printer · 25 reel(s) · in at one doo",
-        "span.hrt-k|IN · one_start_point",
-        "span.hrt-s|UNKNOWN 1 · repair 24",
-        "span.hrt-w|which door did this reel enter by?",
-        "span.hrt-k|FUNNEL · reel_river",
-        "span.hrt-s|releasable 8 · swept 17",
-        "span.hrt-w|how far down the one ladder has it come,",
-        "span.hrt-k|TEMPLATE · reel_templates",
-        "span.hrt-s|UNKNOWN — all 25",
-        "span.hrt-w|what IS this reel, and which extraction ",
-        "span.hrt-k|ROUTE · per_reel_routes",
-        "span.hrt-s|content 17 · policy 8",
-        "span.hrt-w|what chose its route — its CONTENT, or p",
-        "span.hrt-k|EXTRACT · extract_gap",
-        "span.hrt-s|UNSEALED — all 25",
-        "span.hrt-w|can THIS reel be extracted, and is the g",
-        "span.hrt-k|OUT · reel_river",
-        "span.hrt-s|UNDECIDED — all 25",
-        "span.hrt-w|is it clean at the far end? (BOTH doors,",
-        "span.hrt-k|TOMBSTONE · reel_retention",
-        "span.hrt-s|ON DISK — all 25",
-        "span.hrt-w|if it is gone, what closed it out? (and ",
-        "div.hrt-sec|Fields recorded but never once filled · ",
-        "span.hrt-k|reel_tombstones",
-        "span.hrt-s|UNKNOWN",
-        "span.hrt-w|7 row(s) is under the 30-row floor — a c",
-        "span.hrt-k|disk_history",
-        "span.hrt-s|UNKNOWN",
-        "span.hrt-w|disk_history.jsonl is not on disk, so no",
-        "div.hrt-sec|The valves · 7 of 9 openconsole.pixel_re",
-        "span.hrt-k|console.pixel_rescue · THE CONSOLE",
-        "span.hrt-s|HARDENED",
-        "span.hrt-w|36/36 refused · Wilson 0.904 · needs 0.8",
-        "span.hrt-k|frame.release · THE RIVER",
-        "span.hrt-s|HARDENED",
-        "span.hrt-w|85/85 refused · Wilson 0.957 · needs 0.7",
-        "span.hrt-k|miniauto.run · MINI AUTO",
-        "span.hrt-s|INCOMPLETE",
-        "span.hrt-w|55/55 refused · Wilson 0.935 · needs 0.5",
-        "span.hrt-k|printer.stream · THE RIVER",
-        "span.hrt-s|OPEN",
-        "span.hrt-w|135/135 refused · Wilson 0.972 · needs 0",
-        "span.hrt-k|prune.reports · THE RIVER",
-        "span.hrt-s|HARDENED",
-        "span.hrt-w|117/125 refused · Wilson 0.879 · needs 0",
-        "span.hrt-k|reel.route · THE RIVER",
-        "span.hrt-s|HARDENED",
-        "span.hrt-w|87/87 refused · Wilson 0.958 · needs 0.5",
-        "span.hrt-k|vault.apply · VAULT",
-        "span.hrt-s|HARDENED",
-        "span.hrt-w|97/97 refused · Wilson 0.962 · needs 0.7",
-        "span.hrt-k|vault.forget · VAULT",
-        "span.hrt-s|UNPROVEN",
-        "span.hrt-w|n=0 · needs 0.722 — this cannot be prove",
-        "span.hrt-k|vault.sweep_start · VAULT",
-        "span.hrt-s|HARDENED",
-        "span.hrt-w|106/106 refused · Wilson 0.965 · needs 0",
-        "div.hrt-sec|The routes · 9 of 9 proved themselvesEac",
-        "p.hrt-note|Each attempt REMOVES what a lane claims ",
-        "span.hrt-k|chronicle.runeword",
-        "span.hrt-s|HARDENED",
-        "span.hrt-w|38/38 refused · 0.908 ≥ 0.510 — too few ",
-        "span.hrt-k|chronicle.set",
-        "span.hrt-s|HARDENED",
-        "span.hrt-w|38/38 refused · 0.908 ≥ 0.510 — too few ",
-        "span.hrt-k|chronicle.unique",
-        "span.hrt-s|HARDENED",
-        "span.hrt-w|38/38 refused · 0.908 ≥ 0.510 — too few ",
-        "span.hrt-k|fleet.runewords",
-        "span.hrt-s|PROVEN",
-        "span.hrt-w|36/36 refused · 0.904 ≥ 0.510",
-        "span.hrt-k|fleet.sets",
-        "span.hrt-s|PROVEN",
-        "span.hrt-w|36/36 refused · 0.904 ≥ 0.510",
-        "span.hrt-k|fleet.uniques",
-        "span.hrt-s|PROVEN",
-        "span.hrt-w|36/36 refused · 0.904 ≥ 0.510",
-        "span.hrt-k|roster.runeword",
-        "span.hrt-s|PROVEN",
-        "span.hrt-w|39/39 refused · 0.910 ≥ 0.510",
-        "span.hrt-k|roster.set",
-        "span.hrt-s|PROVEN",
-        "span.hrt-w|39/39 refused · 0.910 ≥ 0.510",
-        "span.hrt-k|roster.unique",
-        "span.hrt-s|PROVEN",
-        "span.hrt-w|39/39 refused · 0.910 ≥ 0.510",
-        "div.hrt-sec|Every vessel · dark firstFLOWING · 20 · ",
-        "div.hrt-grp|FLOWING · 20 · watched, and a sabotage h",
-        "span.hrt-k|_bridge_prober",
-        "span.hrt-s|FLOWING · 0.342",
-        "span.hrt-w|watched by _bridge_prober",
-        "span.hrt-k|_chron_autoread_loop",
-        "span.hrt-s|FLOWING · 0.206",
-        "span.hrt-w|watched by tvd-chron-autoread",
-        "span.hrt-k|_console_beacon_loop",
-        "span.hrt-s|FLOWING · 0.342",
-        "span.hrt-w|watched by _console_beacon_loop",
-        "span.hrt-k|_console_rescue_loop",
-        "span.hrt-s|FLOWING · 0.342",
-        "span.hrt-w|watched by _console_rescue_loop",
-        "span.hrt-k|_drift_loop",
-        "span.hrt-s|FLOWING · 0.342",
-        "span.hrt-w|watched by tvd-version-drift",
-        "span.hrt-k|_eagle_watch_loop",
-        "span.hrt-s|FLOWING · 0.206",
-        "span.hrt-w|watched by tvd-eagle-watch",
-        "span.hrt-k|_engine_driver",
-        "span.hrt-s|FLOWING · 0.342",
-        "span.hrt-w|watched by _engine_driver",
-        "span.hrt-k|_kai_closer_loop",
-        "span.hrt-s|FLOWING · 0.342",
-        "span.hrt-w|watched by _kai_closer_loop",
-        "span.hrt-k|_ledger_backup_loop",
-        "span.hrt-s|FLOWING · 0.206",
-        "span.hrt-w|watched by tvd-ledger-backup",
-        "span.hrt-k|_mini_watchdog",
-        "span.hrt-s|FLOWING · 0.342",
-        "span.hrt-w|watched by _mini_watchdog",
-        "span.hrt-k|_orphan_exit_loop",
-        "span.hrt-s|FLOWING · 0.610",
-        "span.hrt-w|watched by _orphan_exit_loop",
-        "span.hrt-k|_orphan_watch",
-        "span.hrt-s|FLOWING · 0.610",
-        "span.hrt-w|watched by _orphan_watch",
-        "span.hrt-k|_prune_loop",
-        "span.hrt-s|FLOWING · 0.206",
-        "span.hrt-w|watched by tvd-rolling-prune",
-        "span.hrt-k|_retention_loop",
-        "span.hrt-s|FLOWING · 0.439",
-        "span.hrt-w|watched by tvd-retention",
-        "span.hrt-k|_retro_triage_loop",
-        "span.hrt-s|FLOWING · 0.510",
-        "span.hrt-w|watched by tvd-retro-triage",
-        "span.hrt-k|_runaway_watch_loop",
-        "span.hrt-s|FLOWING · 0.206",
-        "span.hrt-w|watched by tvd-runaway-watch",
-        "span.hrt-k|_shadow_watch_loop",
-        "span.hrt-s|FLOWING · 0.206",
-        "span.hrt-w|watched by tvd-shadow-watch",
-        "span.hrt-k|_stash_watch_loop",
-        "span.hrt-s|FLOWING · 0.439",
-        "span.hrt-w|watched by tvd-stash-watch",
-        "span.hrt-k|_vault_autoread_loop",
-        "span.hrt-s|FLOWING · 0.439",
-        "span.hrt-w|watched by tvd-vault-autoread",
-        "span.hrt-k|_warden_loop",
-        "span.hrt-s|FLOWING · 0.206",
-        "span.hrt-w|watched by tvd-space-warden"
-      ],
       "901x900": [
         "div.fxr-win|♥ THE HEART✕the console’s own circulatio",
         "div.fx-head|♥ THE HEART✕the console’s own circulatio",
@@ -2948,26 +2483,6 @@
         "span.hrt-s|WATCHED",
         "span.hrt-w|490 of 508 gate(s) can still go red; 42 "
       ],
-      "375x800": [
-        "b.hrt-hn|490 proven · 42 carry no executable proo",
-        "span.hrt-nw|490 proven",
-        "span.hrt-nw|42 carry",
-        "span.hrt-nw|proof (UNKNOWN)",
-        "span.hrt-nw|478 of",
-        "span.hrt-nw|laws proven",
-        "span.hrt-nw|12 of",
-        "span.hrt-nw|laws proven",
-        "span.hrt-nw|this was",
-        "span.hrt-nw|PARTIAL run",
-        "span.hrt-k|this reading",
-        "span.hrt-s|STORED",
-        "span.hrt-w|the proof stampsoldest gate proof 12h ag",
-        "i|the proof stamps",
-        "i|where this row comes from",
-        "span.hrt-k|the gates",
-        "span.hrt-s|WATCHED",
-        "span.hrt-w|490 of 508 gate(s) can still go red; 42 "
-      ],
       "901x900": [
         "b.hrt-hn|490 proven · 42 carry no executable proo",
         "span.hrt-nw|490 proven",
@@ -3010,11 +2525,6 @@
         "div.ibp-row|only 1 independent witnessShadow Dancer📖",
         "div.ibp-row|only 1 independent witnessRazor's Edge📖 "
       ],
-      "375x800": [
-        "div.ibp-h|📥 Waiting on you",
-        "div.ibp-row|only 1 independent witnessShadow Dancer📖",
-        "div.ibp-row|only 1 independent witnessRazor's Edge📖 "
-      ],
       "901x900": [
         "div.ibp-h|📥 Waiting on you",
         "div.ibp-row|only 1 independent witnessShadow Dancer📖",
@@ -3035,10 +2545,6 @@
         "span.lockchip|LOCKED"
       ],
       "1440x1000": [
-        "span.lockchip|LOCKED",
-        "span.lockchip|LOCKED"
-      ],
-      "375x800": [
         "span.lockchip|LOCKED",
         "span.lockchip|LOCKED"
       ],
@@ -3092,17 +2598,6 @@
         "div|📜 Chronicle inbox ✕ ⏳ Pending 📚 Ledger (",
         "iframe"
       ],
-      "375x800": [
-        "div.shell|ᚨ name me 05:23:37Thu, Sep 24 Sessions R",
-        "div.toast",
-        "div",
-        "div",
-        "div",
-        "div",
-        "div|🔬READS FORENSICSthe scanner's X-ray · pi",
-        "div|📜 Chronicle inbox ✕ ⏳ Pending 📚 Ledger (",
-        "iframe"
-      ],
       "901x900": [
         "div.shell|ᚨ name me 05:23:37Thu, Sep 24 Sessions R",
         "div.toast",
@@ -3183,28 +2678,6 @@
         "div.shr-cl|deleted · the ledger7 closed out"
       ],
       "1440x1000": [
-        "span.shr-lbl|the river · 25 reel(s) on the shelf",
-        "span.shr-life|7 closed out",
-        "span.shr-life|32 lifetimes",
-        "div.shr-n|1 INTAKE",
-        "div.shr-stlab|stations",
-        "span.shr-st|FRESHINTAKE 0",
-        "span.shr-st|TRIAGE 25",
-        "span.shr-st|ANALYZESTATION 0",
-        "span.shr-st|ROUTEEMPTY 0",
-        "div.shr-n|2 PRINTER",
-        "div.shr-stlab|stations",
-        "span.shr-st|SEALPRINTER 0",
-        "div.shr-n|3 CAPTURE",
-        "div.shr-stlab|stations",
-        "span.shr-st|CAPTURE 0",
-        "span.shr-st|JOIN 0",
-        "div.shr-n|4 TOMBSTONE",
-        "div.shr-stlab|stations",
-        "span.shr-st|TOMBSTONEROUTED 0",
-        "div.shr-cl|deleted · the ledger7 closed out"
-      ],
-      "375x800": [
         "span.shr-lbl|the river · 25 reel(s) on the shelf",
         "span.shr-life|7 closed out",
         "span.shr-life|32 lifetimes",
@@ -3394,42 +2867,6 @@
         "div.shc-sess|Sep 28 · 6:44 PM",
         "div.shc-area|📍 Rogue Encampment"
       ],
-      "375x800": [
-        "div.shc-hero|Sep 29 · 11:30 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 11:30 AM",
-        "div.shc-hero|Sep 29 · 10:36 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 10:36 AM",
-        "div.shc-hero|Sep 29 · 9:36 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 9:36 AM",
-        "div.shc-hero|Sep 29 · 8:36 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 8:36 AM",
-        "div.shc-hero|Sep 29 · 7:35 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 7:35 AM",
-        "div.shc-hero|Sep 29 · 6:35 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 6:35 AM",
-        "div.shc-hero|Sep 29 · 5:35 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 5:35 AM",
-        "div.shc-hero|Sep 29 · 5:34 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 5:34 AM",
-        "div.shc-hero|Sep 29 · 5:14 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 5:14 AM",
-        "div.shc-hero|Sep 29 · 4:14 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 4:14 AM",
-        "div.shc-hero|Sep 29 · 3:14 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 3:14 AM",
-        "div.shc-hero|Sep 29 · 2:29 AM☆◌ open",
-        "div.shc-sess|Sep 29 · 2:29 AM",
-        "div.shc-hero|Sep 29 · 1:31 AM☆◌ openDream",
-        "div.shc-sess|Sep 29 · 1:31 AM",
-        "div.shc-area|📍 Rogue Encampment · Sewers Level 2",
-        "div.shc-hero|Sep 28 · 7:35 PM☆🛡 clean",
-        "div.shc-sess|Sep 28 · 7:35 PM",
-        "div.shc-hero|Sep 28 · 7:33 PM☆◌ open",
-        "div.shc-sess|Sep 28 · 7:33 PM",
-        "div.shc-hero|Sep 28 · 6:44 PM☆◌ openFury",
-        "div.shc-sess|Sep 28 · 6:44 PM",
-        "div.shc-area|📍 Rogue Encampment"
-      ],
       "901x900": [
         "div.shc-hero|Sep 29 · 11:30 AM☆◌ open",
         "div.shc-sess|Sep 29 · 11:30 AM",
@@ -3528,21 +2965,6 @@
         "h4.vx-h|OTHER",
         "div.vx-row|the watcherUNKNOWNno eagle figures on th"
       ],
-      "375x800": [
-        "h4.vx-h|VERSIONS",
-        "div.vx-row|consolev3480the python process serving t",
-        "div.vx-row|agentv3480the capture agent",
-        "div.vx-row|boardv3480bible.html, read fresh from di",
-        "div.vx-row|on diskUNKNOWNthe drift watcher has not ",
-        "div.vx-row|verdictUNKNOWNconsole, agent and board a",
-        "h4.vx-h|THE FLEET",
-        "div.vx-row|this machinecurrentchecked against origi",
-        "div.vx-row|re-check⟳ CHECK NOWasks GitHub now · Mac",
-        "h4.vx-h|DISK",
-        "div.vx-row|freeUNKNOWNthe retention pass has not re",
-        "h4.vx-h|OTHER",
-        "div.vx-row|the watcherUNKNOWNno eagle figures on th"
-      ],
       "901x900": [
         "h4.vx-h|VERSIONS",
         "div.vx-row|consolev3480the python process serving t",
@@ -3580,11 +3002,6 @@
         "div.sc-tf-row|✶📜 Runewords · 0/99 — 99 runewords still",
         "div.sc-tf-row|📼0 runs recorded today · reader idleTODA"
       ],
-      "375x800": [
-        "div.sc-card-h|🗓 Daily Task Force · Thursday, Sep 24",
-        "div.sc-tf-row|✶📜 Runewords · 0/99 — 99 runewords still",
-        "div.sc-tf-row|📼0 runs recorded today · reader idleTODA"
-      ],
       "901x900": [
         "div.sc-card-h|🗓 Daily Task Force · Thursday, Sep 24",
         "div.sc-tf-row|✶📜 Runewords · 0/99 — 99 runewords still",
@@ -3608,11 +3025,6 @@
         "button.fb-go|RELAUNCH NOW"
       ],
       "1440x1000": [
-        "div.fleet-bar|⟳ not now — only the shadow reader's ree",
-        "span.fb-txt|not now — only the shadow reader's reel ",
-        "button.fb-go|RELAUNCH NOW"
-      ],
-      "375x800": [
         "div.fleet-bar|⟳ not now — only the shadow reader's ree",
         "span.fb-txt|not now — only the shadow reader's reel ",
         "button.fb-go|RELAUNCH NOW"
@@ -3664,19 +3076,6 @@
         "div.vault-mule|🛠️WIP0⚖ 0✏️🗑next-build staging — the onl"
       ],
       "1440x1000": [
-        "div.vault-mule|🛡️SETS-TAL-IK0⚖ 0✏️🗑Tal Rasha · Immortal",
-        "div.vault-mule|🧩SETS-REST0⚖ 0✏️🗑every other set — parti",
-        "div.vault-mule|⚔️UNI-WEAPONS18⚖ 0✏️🗑unique melee + cast",
-        "div.vault-mule|🪖UNI-ARMOR0⚖ 0✏️🗑body armor · helms · sh",
-        "div.vault-mule|💍UNI-SMALL3⚖ 0✏️🗑rings · amulets · jewel",
-        "div.vault-mule|📜RUNEWORDS0⚖ 0✏️🗑forged runewords — Enig",
-        "div.vault-mule|🔩SOCKETED0⚖ 0✏️🗑socketed bases — white /",
-        "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
-        "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
-        "div.vault-mule|♻️GRAIL-DUPES0⚖ 0✏️🗑second copies — trad",
-        "div.vault-mule|🛠️WIP0⚖ 0✏️🗑next-build staging — the onl"
-      ],
-      "375x800": [
         "div.vault-mule|🛡️SETS-TAL-IK0⚖ 0✏️🗑Tal Rasha · Immortal",
         "div.vault-mule|🧩SETS-REST0⚖ 0✏️🗑every other set — parti",
         "div.vault-mule|⚔️UNI-WEAPONS18⚖ 0✏️🗑unique melee + cast",
@@ -3800,30 +3199,6 @@
         "div.vault-mule|🛠️WIP0⚖ 0✏️🗑next-build staging — the onl",
         "div.vm-gauge"
       ],
-      "375x800": [
-        "div.vault-mule|🛡️SETS-TAL-IK0⚖ 0✏️🗑Tal Rasha · Immortal",
-        "div.vm-gauge",
-        "div.vault-mule|🧩SETS-REST0⚖ 0✏️🗑every other set — parti",
-        "div.vm-gauge",
-        "div.vault-mule|⚔️UNI-WEAPONS29×2🧍⚖ 0✏️🗑unique melee + c",
-        "div.vm-gauge",
-        "div.vault-mule|🪖UNI-ARMOR0⚖ 0✏️🗑body armor · helms · sh",
-        "div.vm-gauge",
-        "div.vault-mule|💍UNI-SMALL3⚖ 0✏️🗑rings · amulets · jewel",
-        "div.vm-gauge",
-        "div.vault-mule|📜RUNEWORDS0⚖ 0✏️🗑forged runewords — Enig",
-        "div.vm-gauge",
-        "div.vault-mule|🔩SOCKETED0⚖ 0✏️🗑socketed bases — white /",
-        "div.vm-gauge",
-        "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
-        "div.vm-gauge",
-        "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
-        "div.vm-gauge",
-        "div.vault-mule|♻️GRAIL-DUPES0⚖ 0✏️🗑second copies — trad",
-        "div.vm-gauge",
-        "div.vault-mule|🛠️WIP0⚖ 0✏️🗑next-build staging — the onl",
-        "div.vm-gauge"
-      ],
       "901x900": [
         "div.vault-mule|🛡️SETS-TAL-IK0⚖ 0✏️🗑Tal Rasha · Immortal",
         "div.vm-gauge",
@@ -3870,11 +3245,6 @@
         "button|–",
         "button|⤢window"
       ],
-      "375x800": [
-        "span.win-ctl|–⤢window",
-        "button|–",
-        "button|⤢window"
-      ],
       "901x900": [
         "span.win-ctl|–⤢window",
         "button|–",
@@ -3900,9 +3270,6 @@
         "div.vault-share-settings|▾⚙ Shared / war stash — what lives here9"
       ],
       "1440x1000": [
-        "div.vault-share-settings|▾⚙ Shared / war stash — what lives here9"
-      ],
-      "375x800": [
         "div.vault-share-settings|▾⚙ Shared / war stash — what lives here9"
       ],
       "901x900": [

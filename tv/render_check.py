@@ -82,7 +82,7 @@ PORT = int(os.environ.get("TV_RENDER_PORT", "9224"))     # never 9222 (his Chrom
 # enumerates zero windows. Only a session-1 capture sees the real desktop.
 # ⚠ EXPECT THIS TARGET TO GO RED BEFORE IT GOES GREEN. If it blesses clean on the first run, the
 # widths are not reaching the overflowing surface and the addition is measuring nothing.
-WIDTHS = ((1440, 1000), (1280, 720), (1120, 900), (901, 900), (375, 800), (1120, 628))
+WIDTHS = ((1440, 1000), (1280, 720), (1120, 900), (901, 900), (1120, 628))   # v3889 (#132) - no phone width
 
 # ── v2406 — CAN HE FIND IT, not just does it render once you get there ──────────────────────────
 #
@@ -1342,7 +1342,6 @@ TARGETS = {
             # floor, so WHICH one is new cannot be recovered. That is a real limit of this
             # instrument, written down rather than guessed at. [[regression-guard]]
             "901x900":   {"clipped": 0, "broken": None, "zero": 6},
-            "375x800":   {"clipped": 1, "broken": None, "zero": 6},
         },
         "settles": True,
         # ⚠ THE SHAPE PREDICATE, not the byte-length one. This page carries a live clock and
@@ -1461,7 +1460,7 @@ TARGETS = {
         "sel": "#ch-modal .ch-card-item, #ch-modal .ch-head",
         "settles": False,
         "warmup": 6.0,      # the board frame (the inbox's data source) must be up; fixture-fed after that
-        "widths": ((1440, 1000), (901, 900), (375, 800)),
+        "widths": ((1440, 1000), (901, 900)),
     },
     "inbox-asks": {
         "serve": True,
@@ -1501,7 +1500,7 @@ TARGETS = {
         "sel": "#ibx-needsyou .ibx-ny-ask, #ibx-needsyou .ibx-ny-done, #ibx-needsyou .ibx-ny-head",
         "settles": False,
         "warmup": 4.0,
-        "widths": ((1440, 1000), (901, 900), (375, 800)),   # one breakpoint; see check()      # fixture-seeded; waits only for the page (the gate is 300s)
+        "widths": ((1440, 1000), (901, 900)),   # one breakpoint; see check()      # fixture-seeded; waits only for the page (the gate is 300s)
     },
     "builder-crafted": {
         "why": "#95 (REG-1823 / REG-1901) - THE CRAFTED EDITOR HE DEMOED. A crafted Caster Amulet is named once over its "
@@ -1525,7 +1524,7 @@ TARGETS = {
         # by its CLASS: the builder's dialog lives in bible.html, and test_render_gate_sees_the_page's census of the
         # console's closed modals reads every '#...-modal' here as a control_ui.html overlay
         "sel": ".cb-modal",
-        "widths": ((1440, 1000), (901, 900), (375, 800)),
+        "widths": ((1440, 1000), (901, 900)),
     },
     "quick-wins": {
         "why": "#85 - UNIQUES > QUICK WINS NAMES THE 1st-4th BEST PLACES. Each early unique's card keeps its best-run line "
@@ -1545,7 +1544,7 @@ TARGETS = {
             var r = card.getBoundingClientRect();
             return !!(r.width > 0 && r.height > 0 && getComputedStyle(card).display !== 'none'); })()""",
         "sel": "#funi-body .forge-sec-step",
-        "widths": ((1440, 1000), (1120, 900), (901, 900), (375, 800)),
+        "widths": ((1440, 1000), (1120, 900), (901, 900)),
         # v3887 (#158/#161) - a d2runewizard idle loop is a 480px frame with the figure in its middle ~40%, so it is scaled
         # 1.5-1.7x inside the 56px tile to read at all; the tile is the crop and the full loop is the art file. Only a tile
         # holding a d2rw_ loop carries this class (bible.html _qwTile) - every other monster tile is still measured.
@@ -1616,7 +1615,7 @@ TARGETS = {
             }
             return 'the Renewed row printed the need and another activation check still failed'; })()""",
         "sel": "#material-craftable .rw-row",
-        "widths": ((1440, 1000), (901, 900), (375, 800)),
+        "widths": ((1440, 1000), (901, 900)),
     },
     "chars-ingame": {
         "serve": True,
@@ -1659,7 +1658,7 @@ TARGETS = {
         "sel": "#chars-list .chx-gear, #chars-list .chx-ghost .chx-name, #chars-list .chx-ghost .chx-proof",
         "settles": False,
         "warmup": 4.0,
-        "widths": ((1440, 1000), (1120, 900), (901, 900), (375, 800)),
+        "widths": ((1440, 1000), (1120, 900), (901, 900)),
     },
     "pop-asks": {
         "serve": True,
@@ -1714,7 +1713,7 @@ TARGETS = {
         # REG-1752 - the activate now waits for the sandbox console's own first /api/status answer, which took
         # longer than the 12s default under the full render run's load; the refusal still fires if it never comes.
         "activate_budget": 30.0,
-        "widths": ((1440, 1000), (901, 900), (375, 800)),
+        "widths": ((1440, 1000), (901, 900)),
     },
     "state-asks": {
         "serve": True,
@@ -1736,7 +1735,7 @@ TARGETS = {
         "sel": "#ver-xref .vx-ask, #ver-xref .vx-ans",
         "settles": False,
         "warmup": 4.0,
-        "widths": ((1440, 1000), (901, 900), (375, 800)),   # one breakpoint; see check()      # fixture-seeded; waits only for the page (the gate is 300s)
+        "widths": ((1440, 1000), (901, 900)),   # one breakpoint; see check()      # fixture-seeded; waits only for the page (the gate is 300s)
     },
     "state-panel": {
         "serve": True,
@@ -1929,7 +1928,6 @@ TARGETS = {
             # miniauto.run — INCOMPLETE —` no longer overflows. Leaving the 2 would be exactly the
             # failure the same comment warns about — [[heart-v2]] sitting on his screen through
             # three fixes reading "baseline 2 now 2, held" forever.
-            "375x800":   {"zero": 0, "clipped": 0},
         },
     },
     "heart-stored": {
@@ -3346,63 +3344,6 @@ TARGETS = {
             window.__rcRiverRebuild = lanes2.length + ' of ' + lanes.length + ' lane(s) straight after a rebuild';
             return lanes2.length === lanes.length;
         })()""",
-    },
-    "phone-bar": {
-        "why": "#224 (REG-3090, his Q12 2026-10-29: bottom bar on phones) - at <=600px the tray orbs (help, compass, the "
-               "legend, the inbox, MOVE TASKS) ride ONE bar at the bottom of the screen, under the dock, and the RIGHT END "
-               "of a locker plate - where the old column sat over his vault at 375 - is hit-tested as the plate itself. "
-               "The middle-of-the-element sample this gate takes everywhere else reported that column covered 0/1",
-        # its own small world: lockers with plates, so a plate's right end is on screen to be hit-tested
-        "seed": """(function(){
-            localStorage.setItem('d2r_ownerClaim','*');
-            ['Windforce','Doombringer','The Grandfather','Lacerator','Bonehew','Stormlash'].forEach(function(n){
-                try{ var h = window.vaultHandAdd(n, undefined, { by: 'the render seed' }); window.vaultAssign((h && h.name) || n,'uni-weap'); }catch(e){} });
-            return 1; })()""",
-        "activate": """(function(){
-            var why = function(w){ window.__rcPhoneBar = w; return false; };
-            var t=[].slice.call(document.querySelectorAll('.tab,[data-tab]')).filter(function(x){
-              return /vault/i.test((x.getAttribute&&x.getAttribute('data-tab'))||x.textContent||'');})[0];
-            if (t && !document.documentElement.classList.contains('vault-open')) t.click();
-            try{ window.renderVault && window.renderVault(); }catch(e){}
-            /* the bar, from the RECT: full width, at the bottom edge, not 0x0 */
-            var bar = document.getElementById('tray-bar');
-            if (!bar) return why('the page has no #tray-bar');
-            var br = bar.getBoundingClientRect();
-            if (getComputedStyle(bar).display === 'none' || !(br.height >= 40))
-              return why('the bar is not drawn at ' + innerWidth + 'x' + innerHeight + ' (' + Math.round(br.width) + 'x' + Math.round(br.height) + ')');
-            /* REG-3301 - the layout width: innerWidth counts the headless desktop scrollbar (11px at 375), which a fixed
-               full-width bar never spans - a phone's overlay scrollbar takes none */
-            var vw = document.documentElement.clientWidth;
-            if (br.width < vw - 1 || Math.abs(br.bottom - innerHeight) > 1)
-              return why('the bar is not the bottom edge: ' + Math.round(br.left) + ',' + Math.round(br.top) + ' ' + Math.round(br.width) + 'x' + Math.round(br.height));
-            /* every orb on screen sits INSIDE the bar - none rides up the right edge */
-            var orbs = [].slice.call(document.querySelectorAll('.help-btn,.nav-fab,.forge-legend-fab,.tools-legend-fab,.vault-guide-fab,.inbox-fab,.vault-tasks-fab'))
-              .filter(function(o){ var cs = getComputedStyle(o), r = o.getBoundingClientRect(); return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 1; });
-            if (orbs.length < 2) return why('PREMISE: ' + orbs.length + ' orb(s) on screen - the help and the compass at least should be');
-            var out = orbs.filter(function(o){ var r = o.getBoundingClientRect();
-              return r.top < br.top - 1 || r.bottom > br.bottom + 1 || r.left < -1 || r.right > vw + 1; });
-            if (out.length) return why('orb(s) outside the bar: ' + out.map(function(o){ var r = o.getBoundingClientRect();
-              return String(o.className).split(' ')[0] + '@' + Math.round(r.left) + ',' + Math.round(r.top); }).join(' '));
-            /* the RIGHT END of a locker plate, centred where the old column sat, hit-tests as the plate */
-            var m = [].slice.call(document.querySelectorAll('[data-vault-mule]')).filter(function(x){
-              var r = x.getBoundingClientRect(); return r.width > 40 && r.height > 12; })[0];
-            if (!m) return why('no locker plate is drawn');
-            m.scrollIntoView({block: 'center'});
-            var r = m.getBoundingClientRect(), bad = [];
-            [8, 24, 40].forEach(function(dx){ [0.25, 0.5, 0.75].forEach(function(fy){
-              var x = Math.round(r.right - dx), y = Math.round(r.top + r.height * fy);
-              var h = document.elementFromPoint(x, y);
-              if (!(h && (h === m || m.contains(h))))
-                bad.push(x + ',' + y + ' -> ' + (h ? ((h.id ? '#' + h.id : String(h.className || h.tagName)).split(' ')[0]) : 'nothing'));
-            }); });
-            if (bad.length) return why('the plate\\'s right end is covered: ' + bad.slice(0, 4).join(' | '));
-            window.__rcPhoneBar = 'ok';
-            return true; })()""",
-        "activateWhy": """(function(){ return String(window.__rcPhoneBar || 'activate never reached a verdict'); })()""",
-        "sel": "#tray-bar, .help-btn, .nav-fab",
-        # only where the bar exists: at 601px and up there is no bar, and a 0x0 surface is a refusal, never a pass
-        "widths": ((375, 800), (600, 900)),
-        "activate_at": (375, 800),      # REG-3301 - activated where the bar exists, never at the harness's 1440x1213
     },
 }
 
@@ -6793,5 +6734,6 @@ if __name__ == "__main__":
 
 # v3864 (#233) parked the phone-bar target: it never ACTIVATED on CI. REG-3301 (#74) found why - it was activated at the
 # harness's default 1440x1213, where the bar does not exist, and measured against innerWidth, which counts the headless
-# scrollbar. It activates at its own width now and is back in TARGETS. A target parked again goes here, with its reason.
+# scrollbar. It activated at its own width from then until v3889 (#132, his 11-08 "i dont need any mobile anything"), which
+# removed the phone tray bar and this target with it - not parked, gone. A target parked again goes here, with its reason.
 PARKED_TARGETS = {}

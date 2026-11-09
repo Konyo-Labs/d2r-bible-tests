@@ -215,7 +215,7 @@ def _render():
         t.send("Runtime.enable")
         t.send("Page.addScriptToEvaluateOnNewDocument", source=(CLOCK % NOW_MS) + F.STUB % json.dumps(_fixture()))
         for which, path in (("base", base), ("ship", F.UI_PATH)):
-            for (w, h) in ((1440, 900), (375, 812)):
+            for (w, h) in ((1440, 900), (901, 900)):   # v3889 (#132) - the narrow desktop width, where 375 was
                 k = "%dx%d" % (w, h)
                 _open(t, path, w, h)
                 out = {"rows": json.loads(t.ev(SNAP)), "xref": {}, "clip": {}}

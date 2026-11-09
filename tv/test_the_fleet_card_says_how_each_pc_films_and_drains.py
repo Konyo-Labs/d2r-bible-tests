@@ -451,8 +451,9 @@ READ = r"""(function(){ var l = document.getElementById('fleet-list'); if (!l) r
   return JSON.stringify({ rows: rows, sw: [l.scrollWidth, l.clientWidth], w: lr.width }); })()"""
 
 WIDTHS = ((901, 900), (1280, 800))
-#: round 2 (REG-1377) - where the reviewer saw a stranded middot: 375 ("· CAPTURE 4 ·") and 1280 ("walking (53s ago) ·")
-WRAP_WIDTHS = ((375, 812), (1280, 800))
+#: round 2 (REG-1377) - where the reviewer saw a stranded middot: 375 ("· CAPTURE 4 ·") and 1280 ("walking (53s ago) ·").
+#: v3889 (#132, no phone): 375 left; measured 11-09, 22 of 28 fact rows wrap at 901 AND at 1280, so both carry the premise
+WRAP_WIDTHS = ((901, 900), (1280, 800))
 #: every rendered LINE of every fact row (films / river / triage / formerly), rebuilt from each character's own rect - the
 #: key hangs in the indent and is left out; a line is the characters whose tops agree within 3px
 LINES = r"""(function(){ var out = [];
@@ -686,16 +687,15 @@ class TheShippedCardDrawsIt(unittest.TestCase):
     def test_r2_no_line_of_a_fact_row_starts_or_ends_with_a_middot(self):
         """REG-1377 (round 2, reproduced on fe817ab7): the facts of a line were one middot-joined string, so a wrap left
         a middot alone at a line's start ("· CAPTURE 4 ·" at 375) or end ("walking (53s ago) ·" at 1280). Line by line
-        from the characters' own rects: none starts or ends with one. PREMISE: every row's lines were read, and at 375 a
-        row really wraps."""
+        from the characters' own rects: none starts or ends with one. PREMISE: every row's lines were read, and at each
+        width a row really wraps (v3889: 901 and 1280 - the phone width left)."""
         r, bad = _render(), []
         for (w, h) in WRAP_WIDTHS:
             rows = r["lines %dx%d" % (w, h)]
             self.assertGreaterEqual(len(rows), 7, "%dx%d: PRINT THE DENOMINATOR - only %d fact rows read in the boxes" % (w, h, len(rows)))
             self.assertTrue(all(rows), "%dx%d: a fact row has no rendered line: %s" % (w, h, rows))
-            if w < 500:
-                self.assertTrue(any(len(x) > 1 for x in rows), "%dx%d: PREMISE - no fact row wraps, so a stranded middot "
-                                                                "could not have been seen: %s" % (w, h, rows))
+            self.assertTrue(any(len(x) > 1 for x in rows), "%dx%d: PREMISE - no fact row wraps, so a stranded middot "
+                                                            "could not have been seen: %s" % (w, h, rows))
             for lines in rows:
                 for s in lines:
                     if s.startswith(u"\u00b7") or s.endswith(u"\u00b7"):

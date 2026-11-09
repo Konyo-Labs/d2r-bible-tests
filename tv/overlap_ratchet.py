@@ -53,9 +53,10 @@ if HERE not in sys.path:
 REPO = os.path.dirname(HERE)
 BASELINE = os.path.join(REPO, "baseline", "overlap_baseline.json")
 
-#: the widths this asks about. The narrow one is the point — layout dies at breakpoints, and
-#: [[workflow-topology]]'s render rule says include 375.
-WIDTHS = ((375, 800), (901, 900), (1120, 900), (1440, 1000))
+#: the widths this asks about. The narrow one is the point — layout dies at breakpoints. [[workflow-topology]]'s render
+#: rule said include 375; v3889 (#132, his 11-08 "i dont need any mobile anything") overrules it here - 901 is the
+#: narrowest width he uses a breakpoint near (tv/test_there_is_no_phone_page.py)
+WIDTHS = ((901, 900), (1120, 900), (1440, 1000))
 
 #: ⚠⚠ THE PANELS THIS WAS BLIND TO. Measured: the console has FIVE overlay panels and this gate
 #: opened NONE of them — it graded the page as loaded, so a 0/0/0/0 baseline was a clean bill over

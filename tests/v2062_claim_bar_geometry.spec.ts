@@ -89,7 +89,7 @@ const measure = (page: any) =>
                        .getPropertyValue('--claim-h').trim() || '0px' };
   });
 
-for (const vw of [1440, 901, 375]) {
+for (const vw of [1440, 901]) {   // v3889 (#132, his 11-08 'i dont need any mobile anything') - 375 left
   test(`★ v2062 — at ${vw}px nothing overlaps the claim bar or anything under it`, async ({ page }) => {
     await LADDER_UNCLAIMED(page);
     await page.setViewportSize({ width: vw, height: 1000 });

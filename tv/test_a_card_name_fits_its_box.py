@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""v3881 (#27 round 2, GrokBot's v3879 pass) - A CARD'S NAME FITS ITS OWN BOX ON A PHONE: THE BADGE WRAPS WHOLE, AND THE NAME
+"""v3881 (#27 round 2, GrokBot's v3879 pass) - A CARD'S NAME FITS ITS OWN BOX (measured at 720 since v3889 - no phone): THE BADGE WRAPS WHOLE, AND THE NAME
 HAS THE CARD'S WIDTH.
 
 GrokBot, his live console's board at 390x844 (#230, 21:24): "the Spirit card resized to 390: h2.gic-name = 'Spirit <span
@@ -55,9 +55,9 @@ import render_check as RC  # noqa: E402
 #: every kind of card that wears a name + badge in its header: runewords, set pieces, a set, a unique
 NAMES = ("Spirit", "Enigma", "Call to Arms", "Hand of Justice", "Tal Rasha's Guardianship", "Griswold's Redemption",
          "Bul-Kathos' Children", "Herald of Zakarum")
-#: a phone (his and GrokBot's 390), the first width ABOVE the phone header rule (481: the header is one row, the name a ~220px
-#: column, and only the wrapping name row keeps the badge inside it), and the card's narrow rule's edge (720)
-WIDTHS = (390, 481, 720)
+#: the card's narrow rule's edge (720). v3889 (#132, his 11-08 "i dont need any mobile anything"): 390 (a phone) and 481 (the
+#: first width above the phone header rule) are dropped with the phone page (test_there_is_no_phone_page carries the tombstone)
+WIDTHS = (720,)
 
 MEASURE = r"""(function(){ var n = [].filter.call(document.querySelectorAll('#item-detail .gic-name'), function(e){
     return e.getBoundingClientRect().width > 0; })[0];
@@ -144,11 +144,8 @@ class ACardNameFitsItsBoxOnAPhone(unittest.TestCase):
                 bad.append("%d %r: %s runs past the name's box" % (w, nm, ", ".join(m["spill"])))
         self.assertEqual(bad, [], "; ".join(bad))
 
-    def test_on_a_phone_the_name_has_the_cards_width(self):
-        """below 480 the picture and close sit above the name: the name's box is wider than any one word it holds"""
-        for nm in NAMES:
-            m = _render().get((390, nm)) or {}
-            self.assertGreaterEqual(m.get("w") or 0, 250, "390 %r: the name is a %r px column again" % (nm, m.get("w")))
+    # v3889 (#132) - test_on_a_phone_the_name_has_the_cards_width (below 480 the name has the card's width) left with the
+    # phone widths; its tombstone is in test_there_is_no_phone_page
 
 
 RED_PROOF = [
@@ -156,9 +153,8 @@ RED_PROOF = [
      "file": "bible.html",
      "find": "    .gic-name{font-size:20px;overflow-wrap:break-word;flex-wrap:wrap}",
      "replace": "    .gic-name{font-size:20px;overflow-wrap:break-word}", "matches": 1},
-    {"why": "#27 round 2 - on a phone the name is a 130px column again (a word of Tal Rasha's Guardianship cannot fit)",
-     "file": "bible.html",
-     "find": "    .gic-header > .gic-id-block{order:3;flex-basis:100%}\n", "replace": "\n", "matches": 1},
+    # v3889 (#132) - the phone header rule's proof (.gic-id-block under @media max-width:480px) left with the 390 / 481
+    # widths: measured at 720 it could only stay green, and a proof that cannot fail is not one
 ]
 
 

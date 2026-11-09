@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3489 - THERE IS NO PHONE PAGE: THE PHONE TRAY BAR AND EVERY PHONE-WIDTH GATE ARE GONE (v3889, #132, his 11-08 ruling)
+His words 11-08 ~12:30 IST: "forget the MOBILE PAGE COMPELTELY drop it", "i dont need any mobile anything". Stage 1 (this
+version): the REG-3090 phone tray bar (its element, stylesheet, --tray-bar-h fold and the dock's two phone-band listeners);
+render_check's 375 width (default WIDTHS, 8 targets, 2 floors), the phone-bar target, and the 58 375x800 coverage floors in
+render_coverage.json (proven identical to main apart from those keys); the overlap ratchet's 375 width and baseline; 2 phone-
+only laws deleted (the tray bar, Quick wins at 390) and their tombstones carried; the phone widths dropped from the builder,
+mule-window, Fleet-card, rails-fold, roster-eyes and card-name laws - each premise MEASURED again at a desktop width before it
+moved (mule and builder windows scroll at 1120x628 / 1280x695, Fleet rows wrap at 901 and 1280, the rails draw 9 folds at
+901); 9 phone-only red-proofs left with the width they bit at; 11 specs lost their phone sizes or tests (counts checked with
+--list against main). INVERTED, not deleted: test_there_is_no_phone_page fails if the bar or a phone width comes back, and
+the overlap law now asks for 901. Stage 2 (the remaining sub-700px layout CSS) is read block by block - not claimed here.
+GUARD: test_there_is_no_phone_page (3 red-proofs).
 ### REG-3488 - A VERSION LAW THAT TIMED OUT BESIDE A RED WAS LEFT OUT OF THE VERDICT (v3888, the second eye on v3887, reproduced)
 The grok-cli look at v3887 (11-09 03:30 IST, finding 2): preflight.version_check returned 1 on the first red and dropped every
 law that did not reach a verdict from both its message and its lines. The ship refused on the red either way, but the line

@@ -161,7 +161,7 @@ def _measure():
         t = RC._Tab("about:blank")
         t.send("Page.enable")
         t.send("Runtime.enable")
-        for (w, h) in ((2000, 1300), (375, 812)):
+        for (w, h) in ((2000, 1300), (901, 900)):   # v3889 (#132) - the narrowest desktop width, where 375 was
             _load(t, w, h)
             # THE BUILDER, BY REAL INPUT: the Tools tab, the Character Builder card, the right-hand slot
             res["input"].append(FT._press(t, '.tab[data-tab="tools"]'))
@@ -205,7 +205,7 @@ class TheFoldIsAChevron(unittest.TestCase):
         r = _measure()
         self.assertEqual([x for x in r["input"] if x], [], "a real press did not land: %s" % r["input"])
         self.assertIs(r["host"], True, "the mule's slot did not open the builder's picker in the mule host")
-        for where in ("builder 2000x1300", "builder 375x812", "mule 2000x1300"):
+        for where in ("builder 2000x1300", "builder 901x900", "mule 2000x1300"):
             n = [f for f in r["folds"] if f["where"] == where]
             self.assertGreaterEqual(len(n), 5, "%s: only %d folds were on screen to measure" % (where, len(n)))
             self.assertTrue(any(f["open"] for f in n) and any(not f["open"] for f in n),

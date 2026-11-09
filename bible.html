@@ -16163,7 +16163,6 @@ window._d2rUnseedRestore = function(){
 </script>
 <button id="tvd-return-pill" type="button" onclick="window.switchTab&&window.switchTab('session')">⚡ ← Sessions</button>
 <div class="shortcut-hint" id="shortcut-hint"><span class="kbd">/</span>&nbsp;search&nbsp;&nbsp;<span class="kbd">1-9·0</span>&nbsp;tabs&nbsp;&nbsp;<span class="kbd">?</span>&nbsp;help&nbsp;&nbsp;<span class="kbd">Esc</span>&nbsp;close</div>
-<div id="tray-bar" aria-hidden="true"></div>
 <button class="help-btn fab-tip" data-tip="Help &amp; guide" aria-label="help and guide" onclick="document.getElementById('help-modal').classList.add('show')">?</button>
 <div class="help-modal" id="help-modal" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="help-content">
@@ -44009,7 +44008,7 @@ body{ padding-bottom: calc(var(--dock-h, 84px) + 64px); }
    the three widget lifts above into it, which would have dropped their !important lift across
    601-700px without changing a single line of their own. [[d2r-css-last-rule-wins]] */
 @media (max-width: 600px){
-  :root{ --dock-h: calc(225px + var(--tray-bar-h, 0px)); }   /* REG-3090 - and the phone tray bar under the dock */
+  :root{ --dock-h: 225px; }   /* v3889 (#132, his 11-08 'no mobile anything') - the phone tray bar is gone; the dock alone */
 }
 @media print{ .control-dock{ display:none !important; } body{ padding-bottom:0 !important; } }
 
@@ -76770,50 +76769,6 @@ html{overflow-x:clip;overflow-y:auto}
   .tabs .tab{flex:0 0 auto!important;scroll-snap-align:start}
 }
 </style>
-<style id="reg3090-phone-tray-bar">
-/* REG-3090 (#224, his Q12 2026-10-29: "bottom bar on phones") - ON A PHONE THE TRAY IS ONE BOTTOM BAR, NEVER A COLUMN
-   OVER THE CONTENT. Measured on the vault-copies and vault-find-copies renders at 375: the v704 column (help, compass,
-   the S2 legend, the inbox, MOVE TASKS - 44px orbs at right:12px, stacked up from the dock) sat over the right ~40px of
-   the vault column. The locker plates and gauges ran under it and FIND's wrapped row lost the ends of words under the
-   compass. Nothing reserved that gutter at 375, and reserving it would take ~56px from every section of a 375px page.
-   So at <=600px the column turns on its side: the same slots, from the corner inwards (S0 help at right:12px, each next
-   slot 52px further in, the three tab-scoped S2 legends still sharing one), in a bar of its own under the dock. The
-   bar reserves its own height: the dock's own measurement folds --tray-bar-h into --dock-h (window._dockReserve), so the
-   body's bottom padding and everything parked above the dock (the TZ pill, the backup nudge, the inbox panel's cap)
-   clear it with no second number. The popovers open from the bar, full width less 8px a side. Desktop is unchanged:
-   --tray-bar-h is 0 above 600px and the bar is not drawn. On a short phone (<=480px tall) the tray already yields
-   (REG-2862), so the bar goes with it. Guards: tv/test_on_a_phone_the_tray_is_one_bottom_bar.py (the stylesheet and
-   the fold) and render_check target `phone-bar` (the pixels, on CI). [[visual-regression-detector]]
-   [[d2r-css-last-rule-wins]] */
-:root{--tray-bar-h:0px}
-#tray-bar{display:none}
-@media (max-width:600px){
-  :root{--tray-bar-h:56px}
-  #tray-bar{display:block;position:fixed;left:0;right:0;bottom:0;height:var(--tray-bar-h);z-index:225;pointer-events:auto;
-    background:linear-gradient(180deg,rgba(26,19,10,.96),rgba(13,10,6,.98));border-top:1px solid rgba(212,168,71,.40);
-    box-shadow:0 -6px 18px rgba(0,0,0,.45)}
-  .control-dock{bottom:var(--tray-bar-h)}
-  body:has(.control-dock.dock-collapsed){padding-bottom:calc(34px + var(--tray-bar-h))}
-  .help-btn,.nav-widget,.forge-legend-fab,.tools-legend-fab,.vault-guide-fab,.inbox-fab,.vault-tasks-fab{bottom:6px!important}
-  .help-btn{right:12px!important}
-  .nav-widget{right:64px!important}
-  .forge-legend-fab,.tools-legend-fab,.vault-guide-fab{right:116px!important}
-  .inbox-fab{right:168px!important}
-  .vault-tasks-fab{right:220px!important}
-  .forge-legend-pop,.tools-legend-pop,.vault-guide-pop,.inbox-pop,.vault-tasks-pop{right:8px!important;max-width:calc(100vw - 16px)!important}
-  .vault-tasks-pop{bottom:calc(var(--tray-bar-h) + 8px)!important;
-    max-height:max(180px, calc(100vh - var(--tray-bar-h) - var(--claim-h,0px) - 24px))!important}
-}
-/* the four popovers the short-viewport flip (max-height:620px) hangs from the top keep that flip */
-@media (max-width:600px) and (min-height:621px){
-  .forge-legend-pop,.tools-legend-pop,.vault-guide-pop,.inbox-pop{bottom:calc(var(--tray-bar-h) + 8px)!important;
-    max-height:max(180px, calc(100vh - var(--tray-bar-h) - var(--claim-h,0px) - 24px))!important}
-}
-@media (max-width:600px) and (max-height:480px){
-  :root{--tray-bar-h:0px}
-  #tray-bar{display:none}
-}
-</style>
 <style id="v644-grail-ledger">
 /* v644-646 — THE GRAIL LEDGER surfaces + THE GRAIL WALL drawer */
 .gf-wall{margin:10px 0;border:1px solid rgba(233,208,122,.35);border-radius:12px;background:linear-gradient(135deg,rgba(233,208,122,.06),rgba(255,255,255,.01) 65%);overflow:hidden}
@@ -83650,18 +83605,6 @@ try {
     };
   };
   try { window._roDefer = _roDefer; } catch (e) {}   /* REG-2081 - the boss-nav fit (a script far above) observes through it too */
-  /* REG-3090 (#224) - THE BOTTOM CHROME IS THE DOCK PLUS THE PHONE TRAY BAR UNDER IT. At <=600px the tray orbs ride a bar
-     of their own (--tray-bar-h, 0 everywhere else) and the dock sits on top of it, so the one number every reserve reads
-     (--dock-h: the body's bottom padding, the TZ pill, the backup nudge, the inbox panel's cap) must carry both - or each
-     of them would need a second number and one would be forgotten. A bar height that is not a positive number adds
-     nothing, so a page without the bar's stylesheet measures exactly as before. -> px */
-  window._dockReserve = function(dockH, barH){
-    var b = Number(barH);
-    return dockH + ((isFinite(b) && b > 0) ? Math.ceil(b) : 0);
-  };
-  window._trayBarH = function(){
-    try { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tray-bar-h')) || 0; } catch (e) { return 0; }
-  };
   var _dockEl = document.querySelector('#control-dock .dock-inner');
   var _dockHLast = 0;
   var _dockSync = function(){
@@ -83684,7 +83627,6 @@ try {
       var _dk = document.getElementById('control-dock');
       if (_dk && _dk.classList.contains('dock-collapsed')) h = 40;
       else if (h < 60) h = 84;                                                         // hidden dock → keep the floor sane
-      h = window._dockReserve(h, window._trayBarH());   /* REG-3090 - the phone tray bar sits under the dock: both are bottom chrome */
       // v1451 — ignore sub-4px thrash (TZ text / font reflow) so the whole bottom chrome
       // doesn't bounce; routines strip no longer reads --dock-h at all, but TZ pill etc. still do.
       if (_dockHLast && Math.abs(h - _dockHLast) < 4) return;
@@ -83694,15 +83636,6 @@ try {
     } catch(e){}
   };
   if (_dockEl && typeof ResizeObserver !== 'undefined'){ new ResizeObserver(_roDefer(_dockSync)).observe(_dockEl); }
-  /* REG-3090 - crossing the phone band (or the short-screen band that drops the bar) changes the bar and not the dock,
-     so the dock's observer never fires for it: listen for the two bands and measure again */
-  try {
-    ['(max-width: 600px)', '(max-height: 480px)'].forEach(function(q){
-      var mq = (typeof window.matchMedia === 'function') ? window.matchMedia(q) : null;   /* the browser's own, asked as the board asks it elsewhere */
-      if (mq && mq.addEventListener) mq.addEventListener('change', _dockSync);
-      else if (mq && mq.addListener) mq.addListener(_dockSync);
-    });
-  } catch (eMq) {}
   /* ══ v2227 (#52) — AND THE TOP CHROME NEEDS THE SAME NUMBER, for the same reason ═══════════
      MEASURED at 901px on a scrolled Sessions tab: `.header` is `position:sticky; top:0; z-index:100`
      and spans 0 -> 282. `#inbox-sticky` is `position:sticky; top:8px`, so it pins at 174 and its

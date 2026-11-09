@@ -43,7 +43,7 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 // BY CONSTRUCTION: each bounce is caught and reversed within one frame, so a defect that never
 // stops is measured in single-digit pixels. The signal is that the number CHANGES AT ALL.
 
-const WIDTHS = [1440, 1120, 901, 375];   // 1120 is his window — control_app.py:3417
+const WIDTHS = [1440, 1120, 901];   // v3889 (#132, his 11-08 'i dont need any mobile anything') - 375 left;   // 1120 is his window — control_app.py:3417
 
 async function translateYSeries(page: any, samples: number) {
   const out: number[] = [];

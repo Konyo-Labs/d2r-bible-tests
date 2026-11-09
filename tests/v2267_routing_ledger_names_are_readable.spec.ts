@@ -47,7 +47,7 @@ test.describe('v2267 — the routing ledger says WHICH item, not just where it w
      to 7 here would make the gate agree that seven unreachable buttons are fine, which is not a
      verdict anyone earned. A red that names a real defect is the point of the gate. */
   for (const [w, h, maxCutPct, maxLostButtons] of
-       [[1440, 1000, 0, 0], [901, 900, 0, 0], [375, 800, 25, 0]] as const) {
+       [[1440, 1000, 0, 0], [901, 900, 0, 0]] as const) {   // v3889 (#132, his 11-08 'i dont need any mobile anything') - 375 left
     test(`item names are readable at ${w}px`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: h });
       // ⚠⚠ SEEDED, AND THE DOCSTRING'S "no fixture, no seeding" WAS ABOUT DISCOVERY, NOT GRADING.

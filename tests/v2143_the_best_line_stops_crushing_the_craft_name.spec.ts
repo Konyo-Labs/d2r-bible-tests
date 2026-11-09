@@ -27,8 +27,7 @@ const URL = 'file://' + path.resolve(__dirname, '..', 'bible.html');
 const WIDTHS = [
   { w: 1440, minName: 900 },
   { w: 1120, minName: 600 },   // HIS WINDOW — control_app.py:3417
-  { w: 901, minName: 400 },
-  { w: 375, minName: 80 },
+  { w: 901, minName: 400 },   // v3889 (#132, his 11-08 'i dont need any mobile anything') - 375 left
 ];
 
 async function craftHeaders(page: any) {

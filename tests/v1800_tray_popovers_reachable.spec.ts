@@ -54,8 +54,7 @@ const SIZES = [
   { w: 1440, h: 900 },
   { w: 1440, h: 800 },   // where .tools-legend-pop measured top:-42
   { w: 901,  h: 700 },
-  { w: 640,  h: 400 },   // below the 620px flip, and where the honest remainder is 51px
-  { w: 375,  h: 700 },
+  { w: 901,  h: 400 },   // below the 620px flip - v3889 (#132, his 11-08 'i dont need any mobile anything') - 640x400 and 375x700 moved to a desktop width
 ];
 
 for (const P of POPOVERS) {

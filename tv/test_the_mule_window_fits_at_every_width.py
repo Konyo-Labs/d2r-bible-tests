@@ -137,16 +137,18 @@ import law_widths as LW  # noqa: E402  #42 - the one reader of TV_LAW_WIDTHS
 from test_the_mule_window_is_the_planner_shell import THEIR_SLOTS, DOLL_K, THEIR_EQ  # noqa: E402  ONE witness table
 
 NO_BROWSER = "no Chrome/Chromium on this machine, so the mule window was not rendered"
-WIDTHS = ((2000, 1300), (1280, 800), (1280, 695), (1120, 628), (1024, 768), (901, 900), (800, 1000), (375, 812))
+WIDTHS = ((2000, 1300), (1280, 800), (1280, 695), (1120, 628), (1024, 768), (901, 900), (800, 1000))   # v3889 #132: no 375
 CONSOLE = (1280, 695)   # #174 v-B2 — his console's board at 1280 wide, under the console's own header
-#: #42 - the one-viewport passes, by the viewports they set: the hover card, the phone's typing (a keyboard opening is a
-#: height-only resize), the real drag, and the phone pass (its keyboard ] runs at 2000)
+#: #42 - the one-viewport passes, by the viewports they set: the hover card, the typing under a re-render, the real drag,
+#: and the keyboard ] pass. v3889 (#132, his 11-08 "i dont need any mobile anything"): the phone's passes left - a 375 drag
+#: held at the top edge, a finger on a placed item's lock, a phone keyboard opening (a height-only resize) - and the typing
+#: pass that shared the phone's viewport now types at 1280 (a re-render underneath him is not a phone question)
 HOVER_WIDTHS = (WIDTHS[0], CONSOLE)
-TYPE_AT = ((390, 844), (390, 464))
+TYPE_AT = ((1280, 800),)
 DRAG_AT = ((2000, 1300), CONSOLE)
-PHONE_AT = ((375, 812), (2000, 1300))
+KEYS_AT = ((2000, 1300),)
 #: every viewport this law measures at - what TV_LAW_WIDTHS may name
-VIEWPORTS = tuple(sorted(set(WIDTHS) | set(HOVER_WIDTHS) | set(TYPE_AT) | set(DRAG_AT) | set(PHONE_AT)))
+VIEWPORTS = tuple(sorted(set(WIDTHS) | set(HOVER_WIDTHS) | set(TYPE_AT) | set(DRAG_AT) | set(KEYS_AT)))
 #: #42 - None = every width, exactly as before; run_gates and CI never set it
 _ONLY = LW.only()
 _W = lambda seq: LW.pick(seq, _ONLY)  # noqa: E731
@@ -569,47 +571,11 @@ SCROLL = "document.getElementById('vault-detail').scrollTop"
 PAGE_OF = r"""(function(mule, k){ try { var p = (JSON.parse(window.LSR.getItem('d2r_mulePos') || '{}')[mule] || {})[k]; return p ? p.page : null; } catch (e){ return null; } })(%s, %s)"""
 
 
-def _phone_pass(t):
-    """#174 v-B2 fix round - the pixel seat at 375: a stash item could reach another mule's tab only by turning the
-    wheel mid-drag (the tabs sit ~1500px above it and nothing scrolled), a keyboard had no key that changes mule, and
-    the lock that unlocks a placed item was a 10px target with no touch alternative. All REAL input."""
+def _keys_pass(t):
+    """#174 v-B2 fix round - a keyboard had no key that changes mule: ] carries a stash item to the next mule's tab and
+    Enter moves it there, by REAL keys at 2000. v3889 (#132): the two 375 passes that shared this one (a drag held at the
+    window's top edge, a finger on a placed item's lock) left with the phone page."""
     out = {"seed": t.ev(BIG_SEED % json.dumps(BIG))}
-    t.send("Emulation.setDeviceMetricsOverride", width=375, height=812, deviceScaleFactor=1, mobile=True)
-    time.sleep(0.3)
-    t.ev("(function(){ window.vaultCloseCard(); window.openMuleCard(%s); document.getElementById('vault-detail').scrollTop = 0; return 1; })()"
-         % json.dumps(BIG))
-    time.sleep(0.45)
-    out["mules"] = t.ev("document.querySelectorAll('#vault-detail .mp-settab[data-page]').length")
-    out["tabAtTop"] = json.loads(t.ev(RECT % json.dumps('#vault-detail .mp-settab[data-page="1"]')))
-    k = t.ev(FIRST_STASH_KEY)
-    out["key"] = k
-    fr = _tile(t, k) if k else None
-    out["from"] = fr
-    if fr and fr["hit"]:
-        out["startScroll"] = t.ev(SCROLL)
-        t.send("Input.dispatchMouseEvent", type="mouseMoved", x=fr["cx"], y=fr["cy"], button="none", buttons=0)
-        t.send("Input.dispatchMouseEvent", type="mousePressed", x=fr["cx"], y=fr["cy"], button="left", buttons=1, clickCount=1)
-        for i in range(1, 11):
-            t.send("Input.dispatchMouseEvent", type="mouseMoved", x=fr["cx"], y=fr["cy"] + (20 - fr["cy"]) * i / 10.0,
-                   button="left", buttons=1)
-            time.sleep(0.03)
-        for i in range(50):                      # held at the top edge: the window must scroll under the pointer
-            t.send("Input.dispatchMouseEvent", type="mouseMoved", x=fr["cx"], y=20 + (i % 2), button="left", buttons=1)
-            time.sleep(0.05)
-        out["heldScroll"] = t.ev(SCROLL)
-        tb = json.loads(t.ev(RECT % json.dumps('#vault-detail .mp-settab[data-page="1"]')))
-        out["tabAfter"] = tb
-        if tb:
-            for i in range(1, 7):
-                t.send("Input.dispatchMouseEvent", type="mouseMoved", x=fr["cx"] + (tb[0] - fr["cx"]) * i / 6.0,
-                       y=21 + (tb[1] - 21) * i / 6.0, button="left", buttons=1)
-                time.sleep(0.04)
-            out["over"] = t.ev("!!document.querySelector('#vault-detail .mp-settab[data-page=\"1\"].vd-over')")
-            t.send("Input.dispatchMouseEvent", type="mouseReleased", x=tb[0], y=tb[1], button="left", buttons=0, clickCount=1)
-        else:
-            t.send("Input.dispatchMouseEvent", type="mouseReleased", x=fr["cx"], y=20, button="left", buttons=0, clickCount=1)
-        time.sleep(0.5)
-        out["page"] = t.ev(PAGE_OF % (json.dumps(BIG), json.dumps(k)))
     # the keyboard: ] carries a stash item to the next mule, Enter moves it there
     t.send("Emulation.setDeviceMetricsOverride", width=2000, height=1300, deviceScaleFactor=1, mobile=False)
     time.sleep(0.3)
@@ -626,35 +592,6 @@ def _phone_pass(t):
     time.sleep(0.3)
     kb["page"] = t.ev(PAGE_OF % (json.dumps(BIG), json.dumps(k2)))
     out["keys"] = kb
-    # a finger on a placed ring's lock: 375, a coarse pointer, a real tap in the pad beside the 10px glyph
-    tp = {}
-    try:
-        t.send("Emulation.setTouchEmulationEnabled", enabled=True, maxTouchPoints=1)
-        t.send("Emulation.setDeviceMetricsOverride", width=375, height=812, deviceScaleFactor=1, mobile=True)
-        time.sleep(0.3)
-        tp["coarse"] = t.ev("matchMedia('(pointer: coarse)').matches")
-        tp["placed"] = json.loads(t.ev("JSON.stringify(window._mpPlace(%s, 'Raven Frost', { tab: 'personal', page: 0, x: 5, y: 5 }))" % json.dumps(MULE)))
-        _open(t)
-        tl = _tile(t, "Raven Frost")
-        tp["tile"] = tl
-        lk = json.loads(t.ev(r"""(function(){ var e = [].filter.call(document.querySelectorAll('#vault-detail .vd-item[data-key]'), function(e){ return e.getAttribute('data-key').indexOf('Raven Frost') >= 0; })[0];
-          var u = e && e.querySelector('.vd-unlock'); if (!u) return 'null'; u.scrollIntoView({ block: 'nearest' }); var r = u.getBoundingClientRect();
-          var at = document.elementFromPoint(r.right + 6, r.top - 6), c = e.getBoundingClientRect(), mid = document.elementFromPoint(c.left + c.width / 2, c.top + c.height / 2);
-          return JSON.stringify({ w: r.width, h: r.height, x: r.right + 6, y: r.top - 6, padHits: !!(at && at.closest && at.closest('.vd-unlock')),
-            midIsLock: !!(mid && mid.closest && mid.closest('.vd-unlock')) }); })()"""))
-        tp["lock"] = lk
-        if lk:
-            t.send("Input.dispatchTouchEvent", type="touchStart", touchPoints=[{"x": lk["x"], "y": lk["y"]}])
-            time.sleep(0.05)
-            t.send("Input.dispatchTouchEvent", type="touchEnd", touchPoints=[])
-            time.sleep(0.5)
-        tp["after"] = t.ev(PAGE_OF % (json.dumps(MULE), json.dumps("Raven Frost")))
-    finally:
-        try:
-            t.send("Emulation.setTouchEmulationEnabled", enabled=False)
-        except Exception:
-            pass
-    out["touch"] = tp
     return out
 
 
@@ -792,36 +729,32 @@ def _measure():
                     t.ev("(function(){ window._mpPick(null); return 1; })()")
         res["unhelm"] = t.ev(UNHELM)
         time.sleep(0.2)
-        # the phone: type in the Stats search, open a keyboard (height-only resize), then re-render underneath
+        # type in the Stats search, then re-render underneath him (v3889 #132: at 1280 - the phone keyboard step left)
         # ⚠ #42 - Lacerator is assigned WHATEVER the restriction: it stays in the locker through the reload below, so the
         # drag pass packs around it; skipping it would hand a restricted run a different stash from the full run's
         _typing = bool(_W(TYPE_AT))
         if _typing:
-            t.send("Emulation.setDeviceMetricsOverride", width=390, height=844, deviceScaleFactor=1, mobile=True)
+            t.send("Emulation.setDeviceMetricsOverride", width=TYPE_AT[0][0], height=TYPE_AT[0][1], deviceScaleFactor=1,
+                   mobile=False)
             time.sleep(0.25)
             t.ev("(function(){ window.vaultCloseCard(); window.openMuleCard(%s); return 1; })()" % json.dumps(MULE))
             time.sleep(0.35)
             res["typing"] = t.ev(FOCUS_TYPE)
-            t.send("Emulation.setDeviceMetricsOverride", width=390, height=464, deviceScaleFactor=1, mobile=True)
-            time.sleep(0.6)                      # past the handler's 160ms debounce
-            res["keyboard"] = json.loads(t.ev(FOCUS_READ))
         t.ev("(function(){ window.vaultHandAdd('Lacerator'); window.vaultAssign('Lacerator', %s); return 1; })()"
              % json.dumps(MULE))
         time.sleep(0.3)
         if _typing:
             res["refresh"] = json.loads(t.ev(FOCUS_READ))
-        # ⚠ #42 - the phone pass's touch step places a ring in THIS mule's stash, which the drag pass has rearranged, so
-        # the drag pass runs whenever the phone pass does
-        if _W(DRAG_AT) or _W(PHONE_AT):
+        if _W(DRAG_AT):
             try:
                 res["drag"] = _drag_pass(t, bible)
             except Exception as e:          # the instrument failed: said once, as UNKNOWN, never as a pass
                 res["drag"] = {"err": "the drag pass itself failed - UNKNOWN, not passing: %r" % (e,)}
-        if _W(PHONE_AT):
+        if _W(KEYS_AT):
             try:
-                res["phone"] = _phone_pass(t)
+                res["keys"] = _keys_pass(t)
             except Exception as e:
-                res["phone"] = {"err": "the phone pass itself failed - UNKNOWN, not passing: %r" % (e,)}
+                res["keys"] = {"err": "the keyboard pass itself failed - UNKNOWN, not passing: %r" % (e,)}
         res["errors"] = list(getattr(t, "page_errors", []) or [])
         try:
             t.close()
@@ -1089,7 +1022,7 @@ class TheWindowFitsAtEveryWidth(unittest.TestCase):
         self.assertEqual(seen, 6 * len(_W(HOVER_WIDTHS)), "PRINT THE DENOMINATOR: %d of %d hovers were measured" % (seen, 6 * len(_W(HOVER_WIDTHS))))
 
     def test_a_real_drag_locks_an_item_where_it_is_dropped_and_a_reload_keeps_it(self):
-        _need(self, DRAG_AT + PHONE_AT)
+        _need(self, DRAG_AT + KEYS_AT)
         dr = _measure()["drag"]
         self.assertNotIn("err", dr, dr.get("err"))
         for key in ("2000", "console"):
@@ -1110,7 +1043,7 @@ class TheWindowFitsAtEveryWidth(unittest.TestCase):
                              {"tab": want[0], "x": want[1], "y": want[2], "page": 0}, "%s: the store does not hold the drop" % key)
 
     def test_a_drop_that_does_not_fit_is_refused_on_screen(self):
-        _need(self, DRAG_AT + PHONE_AT)
+        _need(self, DRAG_AT + KEYS_AT)
         self.assertNotIn("err", _measure()["drag"], _measure()["drag"].get("err"))
         d = _measure()["drag"]["refuse"]
         self.assertTrue(d["from"] and d["from"]["hit"], d["from"])
@@ -1122,7 +1055,7 @@ class TheWindowFitsAtEveryWidth(unittest.TestCase):
         self.assertIn("stays where it was", (d["said"] or {}).get("t", ""))
 
     def test_the_keyboard_carries_an_item_right_click_unlocks_it_and_a_stash_tab_takes_a_drop(self):
-        _need(self, DRAG_AT + PHONE_AT)
+        _need(self, DRAG_AT + KEYS_AT)
         d = _measure()["drag"]
         self.assertNotIn("err", d, d.get("err"))
         k = d["keys"]
@@ -1140,46 +1073,22 @@ class TheWindowFitsAtEveryWidth(unittest.TestCase):
         self.assertEqual((g["after"]["area"], g["after"]["x"], g["after"]["y"], g["after"]["held"]), ("gems", 0, 0, True),
                          "a drop on the Gems tab did not land in the Gems tab's first cell: %s" % g["after"])
 
-    def test_at_375_a_drag_scrolls_the_window_to_another_mules_tab(self):
-        _need(self, PHONE_AT)
-        ph = _measure()["phone"]
-        self.assertNotIn("err", ph, ph.get("err"))
-        self.assertGreaterEqual(ph["mules"], 2, "PRINT THE DENOMINATOR: the big locker did not spill onto a second mule (%s)" % ph)
-        self.assertTrue(ph["from"] and ph["from"]["hit"], "the stash item could not be pressed: %s" % ph.get("from"))
-        self.assertGreater(ph["startScroll"], 400, "the fixture lost its point: the stash item was not far below the Mule tabs")
-        self.assertLess(ph["heldScroll"], ph["startScroll"] - 400, "held at the top edge, the window did not scroll (%s -> %s)"
-                        % (ph["startScroll"], ph["heldScroll"]))
-        self.assertIs(ph.get("over"), True, "the Mule 2 tab did not light up under the dragged item")
-        self.assertEqual(ph.get("page"), 1, "the drop on the Mule 2 tab did not move the item to Mule 2")
+    # v3889 (#132) - test_at_375_a_drag_scrolls_the_window_to_another_mules_tab left with the phone page (its tombstone
+    # is in test_there_is_no_phone_page); the desktop drag to another mule is test_a_real_drag_locks_... above
 
     def test_the_keyboard_carries_an_item_to_another_mule(self):
-        _need(self, PHONE_AT)
-        kb = _measure()["phone"]["keys"]
+        _need(self, KEYS_AT)
+        ks = _measure()["keys"]
+        self.assertNotIn("err", ks, ks.get("err"))
+        kb = ks["keys"]
         self.assertTrue(kb["focused"], "the stash item could not take focus")
         self.assertIs(kb["over"], True, "] did not point the carried item at the next mule's tab")
         self.assertIn("Mule 2", (kb["said"] or {}).get("t", ""))
         self.assertEqual(kb["page"], 1, "Enter after ] did not move the item to Mule 2")
 
-    def test_a_finger_can_unlock_a_placed_item(self):
-        _need(self, PHONE_AT)
-        tp = _measure()["phone"]["touch"]
-        self.assertIs(tp["coarse"], True, "the touch emulation did not make the pointer coarse - UNKNOWN, not passing")
-        self.assertTrue((tp["placed"] or {}).get("ok"), tp["placed"])
-        lk = tp["lock"]
-        self.assertTrue(lk, "the placed ring drew no lock")
-        self.assertLessEqual(max(lk["w"], lk["h"]), 13, "the lock's glyph grew (%s) - the pad was to be invisible" % lk)
-        self.assertTrue(lk["padHits"], "a finger 6px beside the 10px lock misses it: no touch-sized target")
-        self.assertFalse(lk["midIsLock"], "the pad covers the ring's own middle - a 1x1 could no longer be dragged by touch")
-        self.assertIsNone(tp["after"], "a real tap in the lock's pad did not unlock the ring")
-
-    def test_a_keyboard_opening_leaves_the_search_box_he_is_typing_in(self):
-        _need(self, TYPE_AT)
-        r = _measure()
-        self.assertEqual(r["typing"], "typing", "the Stats search box could not be focused at all")
-        kb = r["keyboard"]
-        self.assertTrue(kb["same"], "a HEIGHT-only resize (a phone keyboard opening) rebuilt the window and "
-                                    "replaced the search box he was typing in: %s" % kb)
-        self.assertTrue(kb["focused"] and kb["value"] == "fire" and kb["caret"] == [2, 3], kb)
+    # v3889 (#132) - test_a_finger_can_unlock_a_placed_item (a touch tap at 375) and
+    # test_a_keyboard_opening_leaves_the_search_box_he_is_typing_in (a phone keyboard, a height-only resize) left with
+    # the phone page; their tombstones are in test_there_is_no_phone_page
 
     def test_a_re_render_underneath_him_puts_the_caret_back(self):
         _need(self, TYPE_AT)
@@ -1214,7 +1123,9 @@ class TheWindowFitsAtEveryWidth(unittest.TestCase):
                     bad.append("%s: it scrolls inside itself but is %.0fpx tall on a %.0fpx glass" % (label, m["win"][1] - m["win"][0], m["vh"]))
         # #42 - each premise names the viewport that carries it, so it binds wherever that viewport is measured
         self.assertGreaterEqual(fits, 4 if LW.at((2000, 1300), _ONLY) else 0, "PREMISE: only %d states fit the glass - 2000x1300 alone is four" % fits)
-        self.assertGreaterEqual(scrolls, 4 if LW.at((375, 812), _ONLY) else 0, "PREMISE: only %d states scroll - 375x812 alone is four" % scrolls)
+        # v3889 (#132) - the scrolling half's premise was 375x812; measured 11-09 at his console's 1280x695 (and 1120x628,
+        # 800x1000) all four states scroll, so it binds there now
+        self.assertGreaterEqual(scrolls, 4 if LW.at(CONSOLE, _ONLY) else 0, "PREMISE: only %d states scroll - his console's 1280x695 alone is four" % scrolls)
         self.assertEqual(bad, [], "the mule window is not as tall as what it holds:\n  " + "\n  ".join(bad))
 
     def test_r2_no_panel_is_stretched_past_what_it_holds(self):
