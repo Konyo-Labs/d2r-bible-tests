@@ -30943,6 +30943,31 @@ function _tvEsc(){
   return '';
 }
 window._tvEsc = _tvEsc;
+function _tvOutsideCard(e){
+  /* v3892 (#191, REG-3535) - a press outside the visible unique card peels it.
+     The overlay contract cannot see #item-detail-panel: it is in-flow, not position fixed. */
+  if (e.button && e.button !== 0) return '';
+  var t = e.target;
+  if (!t || !t.closest) return '';
+  var idp = document.getElementById('item-detail-panel');
+  if (idp && !idp.classList.contains('hidden') && !idp.contains(t)) {
+    if (typeof window.closeItemDetail === 'function') {
+      window.closeItemDetail();
+      return 'item-detail-panel';
+    }
+  }
+  var drop = document.getElementById('item-detail');
+  if (drop && drop.classList.contains('show') && !drop.contains(t)) {
+    if (typeof window.closeDrop === 'function') {
+      window.closeDrop();
+      if (typeof clearActiveItem === 'function' && activeItem) clearActiveItem();
+      return 'item-detail';
+    }
+  }
+  return '';
+}
+window._tvOutsideCard = _tvOutsideCard;
+document.addEventListener('pointerdown', function(e){ _tvOutsideCard(e); }, true);
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (_tvEsc()) {

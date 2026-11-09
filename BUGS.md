@@ -123,6 +123,15 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3535 - A PRESS OUTSIDE THE VISIBLE UNIQUE CARD DID NOT CLOSE IT (v3892, #191)
+His rule: a click outside the top overlay closes it. MEASURED: `__tvTopOverlay` only sees
+position:fixed / absolute boxes, and `#item-detail-panel` is in-flow, so the overlay contract
+could never click its ✕. Escape already peels the visible unique card (REG-3530). A pointerdown
+outside `#item-detail-panel` (when it is not hidden) or outside `#item-detail` (when it has `.show`)
+now runs the same close those cards' own ✕ and Esc already run. A press on the card itself is left
+alone.
+GUARD: test_a_press_outside_the_unique_card_closes_it (2 red-proofs).
+
 ### REG-3534 - A CONSOLE HEADER TAB SWITCH LEFT THE BOARD'S BUILDER AND UNIQUE CARD OPEN (v3892, #191)
 His rule: switching top tabs closes everything and gives a fresh start. MEASURED: bible.html's
 `navClean` and `switchTab` already ask `closeCharBuilder` (REG-3524), but the console's header tabs
