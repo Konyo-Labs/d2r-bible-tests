@@ -121,6 +121,9 @@ LOBBY_SIZES_SEEN = {
     # 800x449 - Boosteroid's "WHERE HAVE YOU BEEN? Session has been terminated due to no activity" and its library page
     "1440x809": "Boosteroid's own window (its no-activity screen) - no game is drawn at this size",
     "800x449": "Boosteroid's own window (its no-activity screen and library) - no game is drawn at this size",
+    # v3890 (#185) - opened 11-09 by GrokBot on the OLD ALT's own reels (#230 6739835485): GeForce NOW in Chrome, its splash
+    # and "Your game session ended due to inactivity" (6,459 frames, 0 matched)
+    "1440x756": "GeForce NOW in Chrome (its session-ended-for-inactivity screen) - no game is drawn at this size",
 }
 LOBBY_SIZE_UNSEEN = ("nobody has looked at this size, so whether the bands see the lobby here is UNKNOWN")
 # The character panel stays a reader answer. This sentence is the lane, not a pixel band.

@@ -121,6 +121,7 @@ class TheLobbyBands(unittest.TestCase):
             self.assertFalse(ok, "%s passed as the lobby: %s" % (tag, why))
         self.assertIn("no game is drawn", C.LOBBY_SIZES_SEEN["1440x809"])
         self.assertIn("no game is drawn", C.LOBBY_SIZES_SEEN["800x449"])
+        self.assertIn("no game is drawn", C.LOBBY_SIZES_SEEN["1440x756"])   # the OLD ALT's, opened by GrokBot
 
     def test_a_count_that_has_not_started_is_not_a_zero(self):
         self.assertIsNone(C.lobby_by_size(None))
