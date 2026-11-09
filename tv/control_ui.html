@@ -7146,6 +7146,11 @@
   .fleet-brief.pcs-town > .fb-w, .fleet-brief.pcs-lost > .fb-w { color: var(--muted, #8b8071); font-style: italic; }
   .fleet-brief > .fb-t { color: #9fb0a4; }
   .fleet-row:not(.fleet-open) > .fleet-brief ~ .fleet-chips { display: none; }
+  /* v3889 (REG-3503, his 11-09 call on the question: "Tag moves to open row") - MEASURED on his live Fleet at 1120 (the console's
+     own width, a 227px rail): the tally tag (ledgers differ / no ledgers / this PC) shared the name line, so Konyo \u00b7 ALT ran
+     3 lines and OLD PC ALT 5. A CLOSED row with a brief is its name and that brief; the tag waits for the open row, with the
+     chips. A row with no brief (its status unread) keeps its tag, as it keeps its chips (the sibling rule). */
+  .fleet-row:not(.fleet-open):has(> .fleet-brief) > .fleet-word { display: none; }
   .fleet-riverstuck { color: #e0795f; font-weight: var(--fw-medium); }
   .fleet-riverheld { color: var(--muted, #9aa0a6); font-weight: var(--fw-regular, 400); }
   .fleet-riverowes { color: #e0795f; margin-left: .4em; }

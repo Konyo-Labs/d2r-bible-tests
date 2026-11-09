@@ -280,6 +280,19 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
         self.assertIn(".fleet-row > b > .fleet-shadow { margin-right: 2px; }", code)
         self.assertIn(".fleet-row > b > .fleet-winview { margin: 0 2px 0 0; }", code)
 
+    def test_a_closed_rows_tally_tag_waits_for_the_open_row(self):
+        """v3889 (REG-3503, his 11-09 call "Tag moves to open row") - MEASURED on his live Fleet at 1120: the tally tag shared the
+        name line and Konyo · ALT ran 3 lines, OLD PC ALT 5; after, every name is one line at 1512 / 1120 / 913. A closed row with
+        a brief hides the tag; a row with no brief keeps it (as it keeps its chips); the render gate measures the tag where it
+        is drawn, so a hidden one is never read as a collapse."""
+        code = js_strip.strip_js_comments(_ui())
+        self.assertIn(".fleet-row:not(.fleet-open):has(> .fleet-brief) > .fleet-word { display: none; }", code)
+        import render_check as _RC
+        sel = _RC.TARGETS["advanced-fleet"]["sel"]
+        self.assertIn("#fleet-list .fleet-row.fleet-open > .fleet-word", sel)
+        self.assertIn("#fleet-list .fleet-row:not(:has(> .fleet-brief)) > .fleet-word", sel)
+        self.assertNotIn("#fleet-list .fleet-word,", sel, "the gate measures a tag the closed row no longer draws")
+
     def test_the_open_rows_vault_line_takes_its_own_line(self):
         """the both-sides render: the vault line wrapped six lines of ~16 characters beside the eyes in the 227px rail"""
         code = js_strip.strip_js_comments(_ui())
@@ -288,6 +301,16 @@ class TheRowWearsItAndTheChipsOpenOnAClick(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3889 (REG-3503) - a closed row's tally tag takes the name's line again (3-5 lines at 1120)",
+     "file": "tv/control_ui.html",
+     "find": "  .fleet-row:not(.fleet-open):has(> .fleet-brief) > .fleet-word { display: none; }\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "v3889 (REG-3503) - the render gate measures every row's tag, hidden or not (a hidden tag reads as a collapse)",
+     "file": "tv/render_check.py",
+     "find": "\"#fleet-list .fleet-row.fleet-open > .fleet-word, #fleet-list .fleet-row:not(:has(> .fleet-brief)) > .fleet-word, \"",
+     "replace": "\"#fleet-list .fleet-word, \"",
+     "matches": 1},
     {"why": "v3887 (REG-3475) - a READY row says 'all proved' over a safety-net find that shuts nine routes",
      "file": "tv/control_ui.html",
      "find": "      if (_nf.length) {\n        var _ns = (typeof window._fleetNetShut",

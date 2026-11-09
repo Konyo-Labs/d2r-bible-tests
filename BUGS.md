@@ -112,6 +112,19 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3503 - THE FLEET'S CLOSED ROWS STILL RAN 3-5 LINES AT 1120: THE TALLY TAG TOOK THE NAME'S LINE (v3889, GrokBot 6734314659, his call)
+GrokBot on v3888: "Closed rows wrap to 2-3 lines at normal width and at ~913 CSS px" (REG-3395 / REG-3473 STILL). MEASURED on his
+live /api/fleet (GET) in a scratch Chrome: at 1120 - the console's own width, a 227px rail - Konyo · ALT's name ran 3 lines and
+OLD PC ALT's row 5 (95px), because the name line carried both eyes, the name, the capture eye AND the tally tag ("ledgers
+differ", 135px); at 1512 OLD PC ALT ran 3. Asked which to give up (his call 11-09): "Tag moves to open row". A closed row with a
+brief no longer draws its tally tag (ledgers differ / no ledgers / this PC) - it shows when the row is opened, with the chips; a
+row with no brief (its status unread) keeps it, as it keeps its chips. After, on the same payload: every name one line at 1512,
+1120 and 913; at 1120 the rail is 411px (was 482), Konyo · ALT 42px (was 77). The render gate's Fleet target measures the tag
+where it is drawn (an open row, a row with no brief), so a tag hidden by design is never read as a collapse (the reason v3884's
+attempt was refused); it ran green at all five widths. NOT this item, measured: a long brief still takes 2-3 lines at 1120
+(OLD PC ALT "BLOCKED river stuck · proving 157 checks · low memory" breaks inside its last unit) - the brief's own words.
+GUARD: test_a_closed_fleet_row_is_one_word_and_one_line test_a_closed_rows_tally_tag_waits_for_the_open_row (2 red-proofs RED).
+
 ### REG-3502 - ON WINDOWS EVERY d2jsp PARSE FAILED BEFORE NODE STARTED: THE PROGRAM RODE THE COMMAND LINE (v3889, #107/#30)
 Found chasing REG-3496 (both ALTs' daily Shako check "unread"). GitHub's Windows proof run on v3888 filed six d2jsp laws ALREADY RED
 untampered (test_a_forum_redirect_to_its_results_is_followed, test_a_price_check_shows_the_known_price_first, the desk, the

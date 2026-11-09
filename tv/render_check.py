@@ -2347,8 +2347,11 @@ TARGETS = {
         #
         # The selector now names the CELLS whose alignment is the whole point: the row, the
         # machine name, the verdict word and the reason clause.
+        # v3889 (REG-3503, his call) - a closed row with a brief draws no tally tag (it waits for the open row), so the
+        # word is measured where it is drawn: an open row, or a row with no brief
         "sel": "#fleet-list .fleet-row, #fleet-list .fleet-row > b, "
-               "#fleet-list .fleet-word, #fleet-list .fleet-why",
+               "#fleet-list .fleet-row.fleet-open > .fleet-word, #fleet-list .fleet-row:not(:has(> .fleet-brief)) > .fleet-word, "
+               "#fleet-list .fleet-why",
         "settles": False,
         "warmup": 10.0,
     },
