@@ -125,7 +125,36 @@ measuring fault is said and never refuses a ship; only the real ship (main()) is
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
 ### REG-3579 - A HUNG PROOF COULD RUN 30 MINUTES AND STARVE THE RUNNER SILENT (v3894)
 MEASURED on v3890 run 42712427277 attempt 1, shard 10 (sha d22085c7b): the hosted runner lost communication at 54 minutes while "Prove this shard" was still in_progress. No logs were kept and the cache was never uploaded. GitHub: the runner was starved for CPU/memory or its network was blocked. Attempt 2 of the same shard finished the same 475 proofs in 26.9 minutes (prove_seconds=1554) on another runner. Shard 10 held 79 gates including every one of test_v3765_records_arm_live's 43 proofs; 279 proofs ran fresh and 196 were served by key. It is not systematically the longest shard (recent slowest were 3, 12, 17, 20, 21; a healthy v3890 shard ran 56.9 minutes), so a shorter job-level cut would falsely TIMEOUT work that finishes. The hole is one proof: two lanes double every law's timeout (LANE_DEADLINE_SCALE=2), so test_control's registered 900 s becomes 1,800 s - long enough for a hang to starve the runner agent before HARD_STOP (deadline + 480 s = job minute 63). Now `_inflight_limit` of a CI run (one with a deadline) also caps one proof at PROOF_CAP_S (900 s, the longest registered law timeout). A cut proof is TIMEOUT, owed, named. His Mac and a PC's census (no deadline) are unchanged.
-GUARD: test_a_shard_cuts_before_the_runner_goes_silent (5 cases, 2 red-proofs).
+GUARD: test_a_shard_cuts_before_the_runner_goes_silent (5 cases, 2 red-proofs).### REG-3578 - A PLANNER COMPARE FILLED IN NUMBERS THE PLANNER DID NOT CITE (v3894, #28)
+A character-window row that disagrees with a cited planner value is a conflict; a planner key without frames, or a window row without frames, is unknown. Nothing is invented. Buff calibration stays later. Law: test_a_planner_compare_does_not_invent_missing_numbers.
+### REG-3577 - FILM SIZE WAS READ FROM THE WINDOW'S CLIENT SIZE (v3894, #155/#255)
+film_size_of returns (filmW, filmH) or None. A reel that only recorded the window client size does not pretend those pixels are the jpeg. Law: test_film_size_is_never_read_from_the_window_size.
+### REG-3576 - AN UNRESOLVED FAILING CLASS CLOSED EVERY LOCK (v3894, #103)
+_net_case_guards treated `src is None` as close-all, so a giant law whose failing class could not be resolved shut every lock the file guards. An unresolvable class is skipped; only a class that guards the lock closes it. Focused laws stay fail-closed. Law: test_an_unresolved_failing_class_does_not_close_every_lock.
+### REG-3575 - A NAMELESS RED OF A GIANT LAW CLOSED EVERY LOCK (v3894, #103)
+_net_case_guards returned True when a find named no case, so one red of test_control closed every lock. A giant law (NET_NARROW_MIN_LOCKS or more) now stays open on a nameless red; focused laws still close by the whole file. _net_heart does not let one cross-lock law's single red close every lock. Law: test_a_giant_laws_nameless_red_does_not_close_every_lock.
+### REG-3574 - THE CHARACTER WINDOW WAS NOT HELD TO CITED PLANNER BREAKPOINTS (v3894, #28)
+compare_window_to_planner reports agree when a sheet row's frames match a cited planner reference. The only numbers used are the published maxroll Patch 2.4 breakpoint tables (fetched 2026-10-04) already in test_the_breakpoint_row_is_the_next_step.py — the same tables d2planner uses. No itemized d2planner export was invented; buff calibration stays later. Law: test_the_character_window_agrees_with_cited_planner_breakpoints.
+### REG-3573 - ADD MOD SEARCH MISSED AN AFFIX'S OWN STAT KEY (v3894, #95)
+The searchable Add Mod list matched printed text and the affix name, but not the stat key the affix already carries (fcr on a Faster Cast Rate roll). _cbAfKeys reads those keys from the affix's own roll lines. No abbreviation table was invented. Law: test_add_mod_search_matches_an_affix_stat_key.
+### REG-3572 - STAT AND SKILL AREAS IN THE CHARACTER WINDOW DID NOT OPEN (v3894, #234/#146)
+Strength through IAS and the skill tree each have a data-cell (stat: / skill:) that opens a detail sentence. A number is shown only when the character already carries it. Law: test_the_character_window_stat_and_skill_areas_open.
+### REG-3571 - BELT CELLS IN THE CHARACTER WINDOW DID NOT OPEN (v3894, #234/#146)
+The window draws a 4x4 belt grid. A named item opens its card; an unseen cell only speaks its sentence. Law: test_the_character_window_belt_cells_open.
+### REG-3570 - STASH CELLS IN THE CHARACTER WINDOW DID NOT OPEN (v3894, #234/#146)
+The window draws a 10x10 stash grid. A named item opens its card; an unseen cell only speaks its sentence. Law: test_the_character_window_stash_cells_open.
+### REG-3569 - INVENTORY CELLS IN THE CHARACTER WINDOW DID NOT OPEN (v3894, #234/#146)
+The window draws a 10x4 inventory grid of chx-grid-cell buttons (not a third doll). A named item opens its card; an unseen cell only speaks its sentence. Law: test_the_character_window_inventory_cells_open.
+### REG-3568 - A RESISTANCE ROW HID THE PARTS THE ENGINE ALREADY SUMMED (v3894, #153)
+Hell's penalty and Anya's scrolls come from row.parts (difficultylevels.txt ResistPenalty and "Anya's resistance scrolls", +10 per completed difficulty). The visible line is those parts; -100 / +30 are not hardcoded. Law: test_a_resistance_row_names_its_hell_anya_and_gear_parts.
+### REG-3567 - A SPEED ROW DID NOT NAME ITS CURRENT TIER (v3894, #153)
+_cbBpHtml prepends "tier k/T · " from _cbBpTiers onto eng.bp.say, so the stats column shows the current tier and still says how much more reaches the next step. Law: test_the_stats_row_names_the_breakpoint_tier.
+### REG-3566 - A NEW REEL DID NOT STAMP THE FILMED JPEG'S PIXELS (v3894, #155/#255)
+The seal measures the first listed frame with film_size_from_jpeg and writes filmW/filmH onto capture. It does not copy the window client size into those keys. Law: test_a_new_reel_stamps_the_filmed_jpeg_size.
+### REG-3565 - FILM SIZE WAS NOT RECORDED APART FROM THE WINDOW (v3894, #155/#255)
+from_measured copies filmW/filmH only when both were measured under those names. Window w/h never become film size. from_index reads them back as None when absent. Law: test_the_capture_stamp_records_film_size_apart_from_the_window.
+### REG-3564 - THE CARD'S BEST PLACE WAS THE FIRST BOSS, NOT SILOSPEN'S ALL #1 (v3894, #85 / gh#254)
+Bane Ash's All #1 is Coldcrow / Cave Level 1, not Andariel. A qw-best-place banner names silospen's All #1 above the lists. The first boss row keeps "1st · best run" and qw-best only when it IS All #1; otherwise it reads "1st · best boss". Law: test_quick_wins_marks_silospens_all_first_as_the_best_place.
 ### REG-3563 - A SESSION HAD NO SOFT UNDERSTANDING OF GAMES, RUNS AND BOSSES (v3893)
 His ruling: also count games, runs and per-boss farm counts as a soft layer on top of existing session seals; unknown when unclear. digest now carries `understanding` (ordered game names, sequential focused runs, town/field from the already-read area, per-boss lair visits). say_games and session splitting are unchanged. Law: test_the_session_carries_a_soft_understanding.
 ### REG-3562 - BOSS FARM COUNTS WERE NOT READ FROM THE AREA TEXT (v3893)
