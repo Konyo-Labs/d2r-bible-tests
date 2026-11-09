@@ -38997,6 +38997,7 @@ function toggleStatue(name) {
 window.toggleStatue = toggleStatue;
 
 function switchTab(name) {
+  try { if (typeof window.closeCharBuilder === "function") window.closeCharBuilder(); } catch (_cbC) {}   /* v3891 (#191) - a tab change is a fresh start */
   // v917 (Grok P0 — 'chrome-only until the coerce dies') — TV·D is a REAL tab again
   // everywhere (Konyo: 'yes on the website too'). Only the legacy lamp aliases land on
   // SESSIONS with the cockpit scroll.
@@ -39710,6 +39711,7 @@ function navClean(name) {
   if (typeof window.closeDrop === "function") window.closeDrop();
   if (typeof window.closeItemDetail === "function") window.closeItemDetail();
   if (typeof window.clearActiveBoss === "function") window.clearActiveBoss({ noScroll: true });
+  if (typeof window.closeCharBuilder === "function") window.closeCharBuilder();   /* v3891 (#191) */
   const _hadItem = !!(name === "bosses" && typeof activeItem !== "undefined" && activeItem);
   /* REG-2125 (the v3631 second eye) - the route-back owns the scroll only when it will really run: an item set but no
      clearActiveItem to clear it would have skipped the top scroll with nobody owning it. */
