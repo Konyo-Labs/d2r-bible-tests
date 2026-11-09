@@ -183,8 +183,8 @@ RED_NAME = "heart2_red.json"
 
 def carry_red(restored, out_dir, say=print):
     """v3891 (#194) - copy the last round's merged red memory into the run's seed, so every shard starts knowing which
-    cases caught each sabotage. -> how many sabotages it remembers; 0 when none was restored. A file that is not a red
-    memory (no 'entries' map) is never carried - the shards would only ask it and fall back, but a broken file is said."""
+    cases caught each sabotage. -> how many sabotages it remembers; 0 when none was restored; None when the restored
+    memory would not read (could not ask). A file that is not a red memory (no 'entries' map) is never carried."""
     src = os.path.join(restored, RED_NAME) if restored else ""
     if not (src and os.path.isfile(src)):
         say("  v3891 (#194) RED MEMORY: none was restored - every sabotage runs its full suite this round")
@@ -197,7 +197,7 @@ def carry_red(restored, out_dir, say=print):
             raise ValueError("no entries map")
     except (OSError, ValueError) as e:
         say("  v3891 (#194) RED MEMORY: the restored memory would not read (%s) - not carried" % type(e).__name__)
-        return 0
+        return None  # could not ask — not the same fact as "none was restored" (0)
     with open(os.path.join(out_dir, RED_NAME), "w", encoding="utf-8") as fh:
         json.dump(body, fh)
     say("  v3891 (#194) RED MEMORY: %d sabotage(s) the last round learned ride with the seed" % len(ent))

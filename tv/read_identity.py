@@ -447,7 +447,7 @@ def farm_lairs(path=None):
     """boss display name -> frozenset of area names, from tv/data/silospen_set_mf_rotw30.json.
 
     The table already pairs 'Andariel - andariel (H)' with 'Catacombs Level 4'. Nothing here
-    types that map; a missing file or an unreadable row is skipped (unknown), never invented.
+    types that map; a missing or unreadable file returns None (unknown), never {}.
     """
     global _LAIR_CACHE
     if path is None and _LAIR_CACHE is not None:
@@ -459,7 +459,7 @@ def farm_lairs(path=None):
         with open(pth, encoding="utf-8") as fh:
             raw = json.load(fh)
     except (OSError, ValueError):
-        return {}
+        return None  # could not ask — callers already use (lairs or {})
     by = {}
     items = raw.get("items") if isinstance(raw, dict) else None
     if not isinstance(items, dict):
