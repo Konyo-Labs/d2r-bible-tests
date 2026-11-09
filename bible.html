@@ -30943,6 +30943,14 @@ function _tvEsc(){
   return '';
 }
 window._tvEsc = _tvEsc;
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (_tvEsc()) {
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    else if (e.stopPropagation) e.stopPropagation();
+  }
+});
 function _tvOutsideCard(e){
   /* v3892 (#191, REG-3535) - a press outside the visible unique card peels it.
      The overlay contract cannot see #item-detail-panel: it is in-flow, not position fixed. */
@@ -30986,14 +30994,6 @@ function _tvOutsidePrice(e){
 }
 window._tvOutsidePrice = _tvOutsidePrice;
 document.addEventListener('pointerdown', function(e){ _tvOutsidePrice(e); }, true);
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Escape') return;
-  if (_tvEsc()) {
-    if (e.preventDefault) e.preventDefault();
-    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-    else if (e.stopPropagation) e.stopPropagation();
-  }
-});
 
 
 
