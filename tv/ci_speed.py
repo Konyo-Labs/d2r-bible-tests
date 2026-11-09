@@ -109,6 +109,8 @@ def record(sha, version, rows, path, now=None):
 
 
 def history(path):
+    """The ledger's rows. -> [row] ([] when no round was recorded yet - the file is absent) | None when the ledger is
+    there and will not read: UNKNOWN, never an empty history (the swallow ratchet's rule - a failed read is not data)."""
     rows = []
     try:
         with io.open(path, encoding="utf-8") as fh:
@@ -119,8 +121,10 @@ def history(path):
                     continue
                 if isinstance(r, dict) and r.get("workflow"):
                     rows.append(r)
+    except FileNotFoundError:
+        return []
     except OSError:
-        pass
+        return None
     return rows
 
 
@@ -144,7 +148,8 @@ def trend(rows, past, n=TREND_ROUNDS):
 
 def observe(sha, version, slug, say=print, run=subprocess.run, path=None):
     """The ship's one call once GitHub vouches: fetch, record, say the trend. Never raises - a round that could not be
-    measured is said, and the ship goes on. -> rows recorded"""
+    measured is said, and the ship goes on. -> rows recorded (0: GitHub held no finished job) | None: the round could not
+    be measured - UNKNOWN, never a measured zero (the swallow ratchet's rule)"""
     try:
         rows = measure(fetch(sha, slug, run=run))
         if not rows:
@@ -153,12 +158,15 @@ def observe(sha, version, slug, say=print, run=subprocess.run, path=None):
         p = path or ledger_path(run=run)
         past = history(p)
         record(sha, version, rows, p)
+        if past is None:
+            say("ship: v3890 (#194) SPEED - the ledger at %s would not read: this round is recorded, its trend is UNKNOWN" % p)
+            past = []
         for line in trend(rows, past):
             say("ship: v3890 (#194) SPEED - " + line)
         return len(rows)
     except Exception as e:
         say("ship: v3890 (#194) SPEED - this round could not be measured (%s: %s)" % (type(e).__name__, str(e)[:120]))
-        return 0
+        return None
 
 
 def main(argv=None):
@@ -166,6 +174,9 @@ def main(argv=None):
     import ci_verdict as CV
     if argv and argv[0] == "--show":
         rows = history(ledger_path())
+        if rows is None:
+            print("the speed ledger at %s will not read - UNKNOWN, not empty" % ledger_path())
+            return 2
         for r in rows[-40:]:
             print("%s %-8s %-48s slowest %5.1f min · wall %5.1f · waited up to %4.1f · %d jobs"
                   % (r.get("sha"), r.get("version") or "", str(r.get("workflow"))[:48], r["slowestMin"], r["wallMin"],

@@ -65,12 +65,22 @@ class EveryRoundRecordsHowFastItRan(unittest.TestCase):
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
+    def test_an_unreadable_ledger_is_unknown_never_an_empty_history(self):
+        """the swallow ratchet's rule: absent = no round yet ([]); there and unreadable = None, never []"""
+        tmp = tempfile.mkdtemp(prefix="ci_speed_unread_")
+        try:
+            self.assertEqual(S.history(os.path.join(tmp, "absent.jsonl")), [])
+            self.assertIsNone(S.history(tmp), "a ledger that will not read (here: a directory) read as no history")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
     def test_a_round_that_cannot_be_measured_is_said_and_never_raises(self):
         said = []
 
         def broken(*a, **k):
             raise OSError("gh is not here")
-        self.assertEqual(S.observe("abc", "v1", "o/r", say=said.append, run=broken, path=os.devnull), 0)
+        self.assertIsNone(S.observe("abc", "v1", "o/r", say=said.append, run=broken, path=os.devnull),
+                          "a round that could not be measured read as a measured zero")
         self.assertTrue(any("could not be measured" in x for x in said), said)
 
     def test_the_ship_measures_its_real_round_only(self):
@@ -83,6 +93,16 @@ class EveryRoundRecordsHowFastItRan(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3890 (#194) - a round that could not be measured hands back 0, the same as a measured round with no job",
+     "file": "tv/ci_speed.py",
+     "find": "(type(e).__name__, str(e)[:120]))\n        return None\n",
+     "replace": "(type(e).__name__, str(e)[:120]))\n        return 0\n",
+     "matches": 1},
+    {"why": "v3890 (#194) - an unreadable ledger reads as an empty history (a failed read handed back as data)",
+     "file": "tv/ci_speed.py",
+     "find": "    except OSError:\n        return None\n    return rows\n",
+     "replace": "    except OSError:\n        return []\n    return rows\n",
+     "matches": 1},
     {"why": "v3890 (#194) - a job that never ran is timed as a 0-minute job",
      "file": "tv/ci_speed.py",
      "find": "            if c is None or s is None or e is None or e < s:\n                unfinished += 1\n                continue\n",
