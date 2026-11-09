@@ -248,7 +248,7 @@ class PlayersMovesOddsBySilospensOwnFactor(unittest.TestCase):
         self.assertEqual(code.count("PLAYER_F"), 2, "the factor table is read outside playerMult - a second /players path")
         pm = _cut(code, "function playerMult(bossId, diffKey, players){", "\n    }\n")
         self.assertIn("PLAYER_F[", pm, "premise: playerMult reads the factor table")
-        for start, name in (("function effChance(base, bossId, diffKey){", "effChance"),
+        for start, name in (("function effChance(base, bossId, diffKey, item){", "effChance"),
                             ("function _adjC(s, name){", "the MF-blind path (_adjC)")):
             body = _cut(code, start, "\n    }\n" if name == "effChance" else "\n  }\n")
             self.assertIn("playerMult(", body, "%s scales odds by /players without playerMult" % name)

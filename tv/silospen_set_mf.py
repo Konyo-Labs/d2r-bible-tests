@@ -31,6 +31,10 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+from console_safe import enable as _console_safe_enable  # noqa: E402  (its reports carry non-ASCII)
+_console_safe_enable()
 ROOT = os.path.dirname(HERE)
 DATA = os.path.join(HERE, "data", "silospen_set_mf_rotw30.json")
 QLVL = os.path.join(HERE, "data", "silospen_qlvl_rotw30.json")
@@ -231,7 +235,9 @@ def emit(say=print):
         anchor = "const effMF = (gMF, factor) => (gMF*factor)/(gMF+factor);\n"
         if src.count(anchor) != 1:
             raise SystemExit("the effMF line is not where the block goes (%d)" % src.count(anchor))
-        src = src.replace(anchor, new + "\n" + anchor)
+        # v3890 - AFTER the effMF line: every law that cuts the page's drop engine starts its cut at effMF, so the
+        # tables setMfChance reads must sit inside that cut (test_the_item_card_ranks_like_quick_wins found them outside)
+        src = src.replace(anchor, anchor + new + "\n")
     tmp = BIBLE + ".set_mf.tmp"
     with io.open(tmp, "w", encoding="utf-8") as fh:
         fh.write(src)

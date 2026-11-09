@@ -231,7 +231,8 @@ class TheLaneIsJoined(unittest.TestCase):
 
     def test_the_console_tick_rides_the_lane(self):
         i = self.app.index("_lane_tick('tvd-chronicle-lines', _VAULT_AUTOREAD_EVERY_S)")
-        self.assertIn("_clr = _chl.tick()", self.app[i:i + 400])
+        rider = self.app[i:self.app.index("except Exception as _cle:", i)]   # the rider's own try block, to its except
+        self.assertIn("_clr = _chl.tick()", rider)
         self.assertEqual(self.app.count("_lane_tick('tvd-chronicle-lines'"), 1)
 
     def test_both_session_call_sites_hand_this_consoles_count(self):

@@ -251,7 +251,9 @@ def _world():
         import char_select as _cs
         return _cs._world()
     except Exception:
-        return HERE
+        # a fixture's TV_HIST is honoured even here: a resolver that cannot load must never fall back to his live tree
+        _h = (os.environ.get("TV_HIST") or "").strip()
+        return _h if (_h and os.path.isabs(_h)) else HERE
 
 
 def ledger_path():
