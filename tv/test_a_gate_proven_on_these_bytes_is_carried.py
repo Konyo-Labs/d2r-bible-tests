@@ -1278,7 +1278,8 @@ class TheHookAndTheWorkflowStayHonest(unittest.TestCase):
     def test_ci_does_not_pass_the_changed_flag(self):
         with io.open(os.path.join(ROOT, ".github", "workflows", "tv-tests.yml"), encoding="utf-8") as fh:
             raw = fh.read()
-        self.assertIn("python3 tv/run_gates.py --shard ${{ matrix.shard }}/5", raw)
+        # v3891 (#194) - CI's slice is the plan job's count; still a full run of its slice, never --changed
+        self.assertIn("python3 tv/run_gates.py --shard ${{ matrix.shard }}/${{ needs.plan.outputs.n }}", raw)
         self.assertNotIn("run_gates.py --changed", raw)
 
     def test_the_carry_comment_does_not_say_input_bytes(self):
@@ -1599,8 +1600,8 @@ RED_PROOF = [
     {
         "why": "CI passes the changed flag and can carry a PASS it did not produce",
         "file": ".github/workflows/tv-tests.yml",
-        "find": "          python3 tv/run_gates.py --shard ${{ matrix.shard }}/5\n",
-        "replace": "          python3 tv/run_gates.py --changed --shard ${{ matrix.shard }}/5\n",
+        "find": "          python3 tv/run_gates.py --shard ${{ matrix.shard }}/${{ needs.plan.outputs.n }} 2>&1 | tee \"gate-log/shard-${{ matrix.shard }}.log\"\n",
+        "replace": "          python3 tv/run_gates.py --changed --shard ${{ matrix.shard }}/${{ needs.plan.outputs.n }} 2>&1 | tee \"gate-log/shard-${{ matrix.shard }}.log\"\n",
         "matches": 1,
     },
     {

@@ -30,7 +30,49 @@ env:
   PLAYWRIGHT_HOST_PLATFORM_OVERRIDE: "ubuntu24.04-x64"
 
 jobs:
+  plan:
+    # v3891 (#194, his 11-09: "optimize the #194 all the way and make sure it keeps getting faster self improve it") - THE
+    # ROUND CHOOSES ITS OWN SLICE COUNT from the per-gate seconds the last round measured (its shards' own logs, restored
+    # from actions/cache; the committed tv/gate_costs.json under them), and hands that ONE table to every shard so all cut
+    # the same slices. v3889: 5 fixed slices, the slowest job 20.1 min; 18 on today's table, the heaviest ~4 min of gates.
+    # Never fails the run: a count that cannot be chosen is the fallback 5.
+    name: plan - how many slices this round needs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      n: ${{ steps.count.outputs.n || '5' }}
+      list: ${{ steps.count.outputs.list || '[1,2,3,4,5]' }}
+      spaced: ${{ steps.count.outputs.spaced || '1 2 3 4 5' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tv
+      - name: Restore the gate costs the last round measured
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/gate-costs
+          key: gate-costs-${{ github.sha }}
+          restore-keys: gate-costs-
+      - name: Choose this round's slice count (never a hand-set number)
+        id: count
+        continue-on-error: true
+        run: |
+          export GATE_COSTS="$RUNNER_TEMP/gate-costs/gate_costs.json"
+          if [ -f "$GATE_COSTS" ]; then echo "measured=true" >> "$GITHUB_OUTPUT"; else unset GATE_COSTS; fi
+          python3 tv/run_gates.py --choose-shards --fallback 5 --output "$GITHUB_OUTPUT"
+      - name: Hand every shard the one table
+        # a step output, never hashFiles(): hashFiles reads only the workspace, and this table lives in runner.temp
+        if: ${{ steps.count.outputs.measured == 'true' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v5
+        with:
+          name: gate-costs
+          path: ${{ runner.temp }}/gate-costs/gate_costs.json
+          retention-days: 3
+
   agent-suite:
+    needs: [plan]
     runs-on: ubuntu-latest
     # ⚠⚠ v3472 (#184) — SHARDED, NOT RAISED. The whole gate set ran 25m18s against the 25-minute
     # ceiling on d9bdb682 and was CANCELLED: the shipped version got no verdict at all. This job's
@@ -40,8 +82,9 @@ jobs:
     # job — and test_a_cut_off_gate_set_is_not_a_verdict goes red if they ever disagree.
     strategy:
       fail-fast: false
+      # v3891 (#194) - the plan job's count: every slice at once (Konyo-Labs runs 500 jobs at a time)
       matrix:
-        shard: [1, 2, 3, 4, 5]
+        shard: ${{ fromJSON(needs.plan.outputs.list) }}
     # ⚠ 25, NOT 20 — RAISED WITH THE CHROMIUM STEPS BELOW, because the pair of them is what
     # reproduces v1810 otherwise. MEASURED: the agent-suite job runs 7m18s (08:53:32 -> 09:00:50 on
     # be704dc7). The two new steps are bounded at 6 + 5 = 11, so a double stall would reach ~18.3
@@ -66,6 +109,12 @@ jobs:
       # job, not just the part after the clone.
       - name: Mark the job start (the ceiling is measured from here, never assumed)
         run: echo "JOB_STARTED_AT=$(date -u +%s)" >> "$GITHUB_ENV"
+      - name: The gate costs this round's slices are cut from (v3891 #194 - one table for every shard)
+        continue-on-error: true
+        uses: actions/download-artifact@v5
+        with:
+          name: gate-costs
+          path: ${{ runner.temp }}/gate-costs
       - uses: actions/checkout@v4
         with:
           # v2679 — DEEP ENOUGH FOR THE SHIP-HISTORY GATE, AND NO DEEPER.
@@ -219,8 +268,12 @@ jobs:
           _t0=$(date -u +%s)
           set +e
           # v3768 — CI stays a full run. The local ledger is not a verdict here.
-          python3 tv/run_gates.py --shard ${{ matrix.shard }}/5
-          _rc=$?
+          export GATE_COSTS="$RUNNER_TEMP/gate-costs/gate_costs.json"
+          [ -f "$GATE_COSTS" ] || unset GATE_COSTS
+          mkdir -p gate-log
+          # v3891 (#194) - the slice of the plan job's count; its log feeds the next round's costs (the per-gate rows)
+          python3 tv/run_gates.py --shard ${{ matrix.shard }}/${{ needs.plan.outputs.n }} 2>&1 | tee "gate-log/shard-${{ matrix.shard }}.log"
+          _rc=${PIPESTATUS[0]}
           set -e
           echo "GATE_SET_SECONDS=$(( $(date -u +%s) - _t0 ))" >> "$GITHUB_ENV"
           # ⚠⚠ v3447 — THE VERDICT JOB MUST NOT INFER "THE GATES WERE RED" FROM `result == failure`.
@@ -264,6 +317,15 @@ jobs:
         with:
           name: gate-verdict-${{ matrix.shard }}
           path: gate-verdict/
+          if-no-files-found: ignore
+          retention-days: 3
+      - name: Keep this shard's per-gate times for the next round (v3891 #194)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v5
+        with:
+          name: gate-log-${{ matrix.shard }}
+          path: gate-log/
           if-no-files-found: ignore
           retention-days: 3
 
@@ -341,13 +403,14 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════════════════════
   verdict:
     name: VERDICT — a cut-off gate set is UNKNOWN, and UNKNOWN is not a pass
-    needs: [agent-suite]
+    needs: [plan, agent-suite]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      # ⚠ MUST EQUAL the agent-suite matrix list — test_a_cut_off_gate_set_is_not_a_verdict pins it.
-      GATE_SHARDS: "1 2 3 4 5"
+      # ⚠ MUST EQUAL the agent-suite matrix list — test_a_cut_off_gate_set_is_not_a_verdict pins it. v3891 (#194): both are
+      # the plan job's one count, so they cannot drift.
+      GATE_SHARDS: ${{ needs.plan.outputs.spaced }}
     steps:
       - name: Fetch every shard's gate-set fact
         continue-on-error: true
@@ -388,6 +451,46 @@ jobs:
             echo "reached=false" >> "$GITHUB_OUTPUT"
             if [ "$_anyred" = true ]; then echo "red=true" >> "$GITHUB_OUTPUT"; else echo "red=unknown" >> "$GITHUB_OUTPUT"; fi
           fi
+
+      - name: The cost table's own code (v3891 #194 - this job had no checkout)
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tv/gate_costs.py
+            tv/gate_costs.json
+            tv/console_safe.py
+          sparse-checkout-cone-mode: false
+      - name: Fetch every shard's per-gate times (v3891 #194)
+        continue-on-error: true
+        uses: actions/download-artifact@v5
+        with:
+          pattern: gate-log-*
+          merge-multiple: true
+          path: gate-log
+      - name: The table this round's slices were cut from (v3891 #194)
+        continue-on-error: true
+        uses: actions/download-artifact@v5
+        with:
+          name: gate-costs
+          path: ${{ runner.temp }}/gate-prev
+      - name: Measure every gate this round ran, for the next round's slices (v3891 #194)
+        # the per-gate rows run_gates prints; a gate this round did not run keeps its last measured cost (--base)
+        id: measure
+        continue-on-error: true
+        run: |
+          B="$RUNNER_TEMP/gate-prev/gate_costs.json"; [ -f "$B" ] || B=tv/gate_costs.json
+          ls gate-log/*.log >/dev/null 2>&1 || { echo "no shard left its log - the next round keeps the last table"; exit 0; }
+          python3 tv/gate_costs.py --base "$B" --out "$RUNNER_TEMP/gate-costs/gate_costs.json" gate-log/*.log \
+            && echo "wrote=true" >> "$GITHUB_OUTPUT"
+      - name: Save the measured gate costs (v3891 #194)
+        # a step output, never hashFiles(): hashFiles reads only the workspace, and this table lives in runner.temp
+        if: ${{ steps.measure.outputs.wrote == 'true' }}
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/gate-costs
+          key: gate-costs-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: A conclusion that is not a pass must not read like one
         env:
