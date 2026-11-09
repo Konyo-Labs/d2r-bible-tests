@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3486 - TWO LONG-OFFLINE PCS HELD EVERY PC'S PICKER-CENSUS ROW UNKNOWN FOR WEEKS (v3888, the doctor on his Mac)
+MEASURED on his Mac 11-09 (/api/eagle, read-only): "picker census - 3 PC(s) have not said what their character picker offers:
+GrokBot (no census reported - an older build); Wife PC (...)". GrokBot has been offline since 10-27 on v3815 and Wife PC since
+09-01 on v2101 - the verdict read every fleet row, online and offline alike, so the row could never say OK about the PCs he
+uses. Now the doctor marks the offline list and an OFFLINE PC with no census is named "offline since <day> on <ver> - not
+asked"; a PC on the roster now with no census still holds it UNKNOWN (the REG-1564 law, unchanged), an offline PC whose census
+MEASURED a disagreement still reads MISSING, and a fleet with nobody awake is UNKNOWN naming who sleeps. GUARD:
+test_the_picker_census_reaches_the_fleet (2 new cases, 2 red-proofs RED).
 ### REG-3485 - A SUPER-UNIQUE BEST RUN WORE "NO VERIFIED FARM SOURCE YET" AND COULD NEVER SEAL (v3887, GitHub's round on 66e4b94f1)
 #155 made a super-unique a Best run (Normal Coldcrow for Bane Ash, Normal Pitspawn Fouldog for Lenymo) and two halves never
 joined it: the run thumbnail resolves BOSSES only, so Coldcrow's run wore the question-mark glyph that means "we do not know

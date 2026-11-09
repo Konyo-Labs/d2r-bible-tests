@@ -80,6 +80,16 @@ BIBLE = os.path.join(ROOT, "bible.html")
 PROOF_NEEDS = ["../functions/api/console.js", "../functions/_middleware.js"]
 
 RED_PROOF = [
+    {"why": "v3888 (REG-3486) - an offline PC with no census holds every PC's picker row UNKNOWN again",
+     "file": "tv/console_doctor.py",
+     "find": "            if row.get(\"_offline\"):\n",
+     "replace": "            if False:\n",
+     "matches": 1},
+    {"why": "v3888 (REG-3486) - the doctor stops marking the offline list (the verdict's offline rule is never reached)",
+     "file": "tv/console_doctor.py",
+     "find": "    rows = list(last.get(\"online\") or []) + [dict(r, _offline=True) for r in (last.get(\"offline\") or [])\n",
+     "replace": "    rows = list(last.get(\"online\") or []) + [dict(r) for r in (last.get(\"offline\") or [])\n",
+     "matches": 1},
     {
         "why": "joint 1 - the census stops driving the picker's list and copies the database's count: the two sides can never part",
         "file": "bible.html",
@@ -765,6 +775,33 @@ class TheDoctorRowSaysWhichPcDisagrees(unittest.TestCase):
         # an `ok` census without its counts is UNKNOWN, not an agreement and not a disagreement
         st, why = CD.picker_census_verdict([self._row("Dean", {"ok": True, "slot": "tors", "offers": None, "holds": 45})])
         self.assertEqual(st, CD.UNKNOWN, why)
+
+    def test_an_offline_pc_with_no_census_is_named_not_asked(self):
+        """v3888 (REG-3486) - MEASURED on his Mac 11-09: GrokBot (offline since 10-27, v3815) and Wife PC (since 09-01, v2101)
+        held this row UNKNOWN on every PC for weeks. An OFFLINE PC with no census is named "not asked"; the PCs on the
+        roster decide the verdict"""
+        agree = {"ok": True, "slot": "tors", "label": "Body Armor", "offers": 45, "holds": 45}
+        wife = dict(self._row("Wife PC", "absent"), _offline=True, seenAt="2026-09-01T18:24:45Z", ver="v2101")
+        st, why = CD.picker_census_verdict([self._row("Konyo", agree), wife])
+        self.assertEqual(st, CD.OK, "an offline PC with no census held the row: %s" % why)
+        self.assertIn("Wife PC (offline since 2026-09-01 on v2101 - not asked)", why, "the offline PC is not named")
+        # BASELINE: the same PC on the roster now (no _offline mark) still holds it UNKNOWN - the existing law
+        st, why = CD.picker_census_verdict([self._row("Konyo", agree), self._row("Wife PC", "absent")])
+        self.assertEqual(st, CD.UNKNOWN, why)
+        # an offline PC whose census MEASURED a disagreement still says so - offline is not a pass
+        dean = dict(self._row("Dean", {"ok": True, "slot": "tors", "offers": 40, "holds": 45}), _offline=True)
+        st, why = CD.picker_census_verdict([self._row("Konyo", agree), dean])
+        self.assertEqual(st, CD.MISSING, why)
+        # nobody awake: UNKNOWN, naming who is asleep
+        st, why = CD.picker_census_verdict([wife])
+        self.assertEqual(st, CD.UNKNOWN, why)
+        self.assertIn("not asked", why)
+
+    def test_the_doctor_marks_the_offline_list(self):
+        """the doctor's caller is what marks a row offline - pinned, so the verdict above is reachable from the fleet"""
+        import inspect
+        src = inspect.getsource(CD._check_the_picker_census_agrees_on_every_pc)
+        self.assertIn('[dict(r, _offline=True) for r in (last.get("offline") or [])', src)
 
     def test_ok_when_every_pc_agrees_with_the_numbers(self):
         agree = {"ok": True, "slot": "tors", "label": "Body Armor", "offers": 45, "holds": 45}

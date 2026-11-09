@@ -5987,7 +5987,7 @@ def picker_census_verdict(rows, me=None, local=None):
       OK       every PC agrees, with the numbers
     A PC whose census is ok:false is UNKNOWN with that PC's own why, never a disagreement and never an agreement.
     [[heart-first]] [[unknown-stays-unknown]] [[feedback-contradiction-is-the-finding]]"""
-    agree, differ, unknown, broken = [], [], [], []
+    agree, differ, unknown, broken, asleep = [], [], [], [], []
     for row in (rows or []):
         if not isinstance(row, dict):
             continue
@@ -5999,6 +5999,13 @@ def picker_census_verdict(rows, me=None, local=None):
                 and str(row.get("machine") or "") == str(me):
             pk = local
         if not isinstance(pk, dict):
+            # v3888 (REG-3486) - a PC on the OFFLINE list with no census is not asked, and is named so: measured on his Mac
+            # 11-09, GrokBot (offline since 10-27, v3815) and Wife PC (since 09-01, v2101) held this row UNKNOWN on every PC
+            # for weeks, so it could never say OK about the PCs he uses. A PC on the roster now still holds it UNKNOWN.
+            if row.get("_offline"):
+                asleep.append("%s (offline since %s on %s - not asked)"
+                              % (name, str(row.get("seenAt") or "?")[:10], str(row.get("ver") or "an unknown build")))
+                continue
             unknown.append("%s (no census reported - an older build)" % name)
             continue
         offers, holds = pk.get("offers"), pk.get("holds")
@@ -6029,10 +6036,12 @@ def picker_census_verdict(rows, me=None, local=None):
                          % (len(unknown), "; ".join(unknown)[:240],
                             (" - the rest agree: " + ", ".join(agree)[:120]) if agree else ""))
     if not agree:
-        return UNKNOWN, "no PC is on the roster, so there is no picker to compare with its database"
+        return UNKNOWN, ("no PC is on the roster, so there is no picker to compare with its database%s"
+                         % ((" (offline, not asked: " + "; ".join(asleep)[:160] + ")") if asleep else ""))
     return OK, ("on every PC (%d) the character picker offers exactly what its own database holds for Body Armor: %s "
-                "(the list function answers for that slot; no slot was clicked, and the mule host is not counted)"
-                % (len(agree), ", ".join(agree)[:200]))
+                "(the list function answers for that slot; no slot was clicked, and the mule host is not counted)%s"
+                % (len(agree), ", ".join(agree)[:200],
+                   ("; offline, not asked: " + "; ".join(asleep)[:160]) if asleep else ""))
 
 
 def _check_the_picker_census_agrees_on_every_pc():
@@ -6068,7 +6077,9 @@ def _check_the_picker_census_agrees_on_every_pc():
             return UNKNOWN, ("the fleet is unreachable and no roster was ever received, so what any PC's "
                              "character picker offers is UNKNOWN")
         last = good
-    rows = list(last.get("online") or []) + list(last.get("offline") or [])
+    # v3888 (REG-3486) - an offline PC's row is marked, so one with no census is named "not asked", never held UNKNOWN
+    rows = list(last.get("online") or []) + [dict(r, _offline=True) for r in (last.get("offline") or [])
+                                             if isinstance(r, dict)]
     me, local = None, None
     try:
         import socket as _sk
