@@ -1507,6 +1507,19 @@ def keep_results_page(item, html, base=None, keep=None, now=None):
         return None
 
 
+def _node_bin():
+    """v3889 (GrokBot 6733831813: both ALTs' daily Shako check read "unread" while the Mac's read) - node through the ONE
+    resolver every other node caller here uses (cb_node_harness.node_path: TV_NODE, PATH, then the known install folders),
+    never a bare PATH lookup. MEASURED on the work ALT 11-09: node.exe sits in %LOCALAPPDATA%\\Programs\\nodejs (placed by
+    node_runtime, REG-2484) and is on no PATH, so `shutil.which("node")` answered None and every quote this file parsed
+    there was "unread" - and its searches asked "Harlequin Crest", not the traders' "shako". -> path | None"""
+    try:
+        from cb_node_harness import node_path as _np
+        return _np()
+    except Exception:
+        return shutil.which("node")
+
+
 def _quote_unknown(item, read_at, reason):
     return {
         "item": str(item or ""),
@@ -1618,7 +1631,7 @@ def _public_fields(parsed, item, read_at):
 def parse_public_quote(html, item, read_at, node_run=None):
     """Run the quote parser in functions/api/d2jsp_quote.js. No number is filled in here."""
     if node_run is None:
-        node = shutil.which("node")
+        node = _node_bin()
         if not node:
             return _quote_unknown(item, read_at, "unread")
 
@@ -1663,7 +1676,7 @@ def _search_keywords(item, node_run=None):
     traders write when there is one ("Harlequin Crest" -> "shako"), else the simplified name. With no node to run
     it, the name without its apostrophes, as before."""
     plain = re.sub(r"['’ʼ`]", "", str(item or ""))
-    node = shutil.which("node") if node_run is None else None
+    node = _node_bin() if node_run is None else None
     if node_run is None and not node:
         return plain
     try:
@@ -1683,7 +1696,7 @@ def _search_keywords(item, node_run=None):
 def _resolved_name(item, node_run=None):
     """#97 - the ITEM trader text names, by the quote block's own resolver (d2jspResolveItem: "shako" -> Harlequin Crest,
     "anni" -> Annihilus), so the page can draw that item's NORMAL and PERFECT cards. -> name | None (never a guess)"""
-    node = shutil.which("node") if node_run is None else None
+    node = _node_bin() if node_run is None else None
     if node_run is None and not node:
         return None
     try:

@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3496 - BOTH ALTS' DAILY d2jsp CHECK READ "UNREAD": THE PARSER LOOKED FOR NODE ON PATH ONLY (v3889, GrokBot 6733831813)
+GrokBot on v3888 (/api/fleet, GET): the Mac's d2jsp check ok=true reason=read; Konyo - ALT and OLD PC ALT ok=false
+reason=unread (the daily Shako search). MEASURED on the work ALT 11-09 (SSH, read-only): .d2jsp_check.json {item Shako,
+reason unread, ok false, 00:22}; node.exe sits in %LOCALAPPDATA%\Programs\nodejs - node_runtime put it there (REG-2484) - and on
+no PATH (`where node` finds nothing). d2jsp_chrome asked shutil.which("node") in three places - the quote parser, the search
+words, the item resolver - so with node off PATH each fetched page was "unread" and each search asked "Harlequin Crest", not the
+traders' "shako". Every other node caller in tv/ goes through cb_node_harness.node_path (TV_NODE, PATH, the known install
+folders); these three now do (_node_bin). Not measured: which PATH the ALT's console process ran its check under (its doctor
+does not report the boot node step) - the ALT's next daily check after the rollout is the live proof, owed. GUARD:
+test_a_d2jsp_read_finds_node_off_path (PATH emptied, node only via TV_NODE; a no-node baseline; red-proof RED).
+
 ### REG-3495 - THE TERROR ZONE CARD GRADED ON DENSITY AND NEVER READ HIS GRAIL - FAR OASIS WAS "GOOD" FOR NO ITEM HE NEEDS (v3889, #133)
 His words 11-08 12:45 with the console's TERROR ZONE card: "for terror zones far oasis is good? why? what reason? density here
 looks low for a good farm is it related to the items i have or need to farm?", "it should be greyed off should it not?", "when
