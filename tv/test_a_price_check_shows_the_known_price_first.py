@@ -283,8 +283,8 @@ class TheKnownPriceComesFirst(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3356 - the price search asks past the console's 'unread' answer and paints 'No price reader answered'",
      "file": "bible.html",
-     "find": "        if (j && typeof j.reason === 'string' && j.reason && j.reason !== 'unanswered') { show(j); return; }",
-     "replace": "        if (j && (j.reason === 'no prices' || j.reason === 'read' || j.reason === 'need-login' || j.reason === 'paused')) { show(j); return; }",
+     "find": "        if (j && typeof j.reason === 'string' && j.reason && j.reason !== 'unanswered') { done(j); return; }",
+     "replace": "        if (j && (j.reason === 'no prices' || j.reason === 'read' || j.reason === 'need-login' || j.reason === 'paused')) { done(j); return; }",
      "matches": 1, "needs": "node"},
     {"why": "REG-3331 - a search the forum held back hands its page on and reads 'no prices' (GrokBot's every 2nd search)",
      "file": "tv/d2jsp_chrome.py",
