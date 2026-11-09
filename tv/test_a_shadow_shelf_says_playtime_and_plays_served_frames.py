@@ -37,7 +37,7 @@ UI = io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8").read()
 PY = io.open(os.path.join(HERE, "shadow_sessions.py"), encoding="utf-8").read()
 
 FNS = ["  function esc(s){", "  function _lsWhenSay(t0){", "  function _runSpanSay(t0, t1){",
-       "  function _shadowSessionRow(s, ix){", "  function _shadowSessionsHead(owner){",
+       "  function _fourBoxHtml(sm){", "  function _shadowSessionRow(s, ix){", "  function _shadowSessionsHead(owner){",
        "  function _shadowSessionsHtml(d){", "  function _shadowSessionsClose(){",
        "  function _shadowSessionsSpeed(){", "  function _shadowSessionsPlayStop(){",
        "  function _shadowSessionsPlayTick(){", "  function _shadowSessionsPlay(ix){"]

@@ -40,7 +40,7 @@ NODE = shutil.which("node")
 UI = io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8").read()
 
 FNS = ["  function esc(s){", "  function _lsWhenSay(t0){", "  function _runSpanSay(t0, t1){",
-       "  function _consoleShadowUp(){", "  function _shadowSessionRow(s, ix){", "  function _shadowSessionsHead(owner){",
+       "  function _consoleShadowUp(){", "  function _fourBoxHtml(sm){", "  function _shadowSessionRow(s, ix){", "  function _shadowSessionsHead(owner){",
        "  function _shadowSessionsHtml(d){", "  function _shadowSessionsClose(){", "  function _shadowSessionsOpen(){"]
 LINES = ["  var _SSV_B64 = ", "  var _ssvGen = 0;"]
 

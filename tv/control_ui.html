@@ -23734,6 +23734,80 @@ window._lockMark = function(isOpen, px, label){
      never an empty list. Nothing here writes or posts: one GET. -> html */
   var _SSV_B64 = /^[A-Za-z0-9+\/]+={0,2}$/;
   window._shadowSessionRow = function(s, ix){ return _shadowSessionRow(s, ix); };   // v3859 - the owner dossier draws the same row
+  /* v3892 (REG-3536) - THE SAME FOUR-BOX THE OWNER'S SHELF CARD PAINTS.
+     His rule: a shadow session view uses the same STASH / CHRONICLES / UNIQUES / SETS template
+     as the regular profile console. The owner's card reads kaiClasses + chron + route.chroniclesFound;
+     a shadow digest row carries stashed + farmed + chroniclesFound at the top. A missing number is '?'
+     and a counted zero is an em dash — never a made-up tally. */
+  function _fourBoxHtml(sm){
+    sm = (sm && typeof sm === 'object') ? sm : {};
+    var _SC_TONE = { unique: 'var(--rar-unique)', set: 'var(--rar-set)' };
+    function cell(v, l, tone, tip){
+      return '<div class="shc-stat"'
+        + (tip ? ' title="' + esc(tip) + '"' : '') + '><div class="shc-sv"'
+        + (_SC_TONE[tone] ? ' style="color:' + _SC_TONE[tone] + '"' : '') + '>' + v + '</div>'
+        + '<div class="shc-sl">' + l + '</div></div>';
+    }
+    function groupedCount(obj, key){
+      if (!obj || typeof obj !== 'object') return null;
+      var arr = obj[key];
+      if (!Array.isArray(arr)) return 0;
+      var n = 0, i, r;
+      for (i = 0; i < arr.length; i++) {
+        r = arr[i];
+        n += (r && typeof r[1] === 'number' && r[1] > 1) ? r[1] : 1;
+      }
+      return n;
+    }
+    function groupedTotal(obj){
+      if (!obj || typeof obj !== 'object') return null;
+      var n = 0, g, i, r;
+      for (g in obj) {
+        if (!Object.prototype.hasOwnProperty.call(obj, g) || !Array.isArray(obj[g])) continue;
+        for (i = 0; i < obj[g].length; i++) {
+          r = obj[g][i];
+          n += (r && typeof r[1] === 'number' && r[1] > 1) ? r[1] : 1;
+        }
+      }
+      return n;
+    }
+    var fmt = (typeof _kpiFmt === 'function') ? _kpiFmt : function(n){ return String(n); };
+    var stashN = null;
+    var _kc = (sm.kaiClasses && typeof sm.kaiClasses === 'object') ? sm.kaiClasses : null;
+    if (_kc){
+      stashN = 0;
+      for (var _kk in _kc){
+        if (String(_kk).indexOf('stash') === 0) { stashN += (_kc[_kk] || 0); }
+      }
+    } else if (sm.stashed && typeof sm.stashed === 'object') {
+      stashN = groupedTotal(sm.stashed);
+    }
+    var stashCell = (stashN === null) ? '?' : (stashN > 0 ? ('\uD83C\uDF92 ' + fmt(stashN)) : '\u2014');
+    var _chronSrc = (typeof sm.chroniclesFound === 'number') ? sm.chroniclesFound : ((sm.route && typeof sm.route === 'object') ? sm.route.chroniclesFound : null);
+    var _chronWhy = (sm.route && typeof sm.route === 'object' && sm.route.chroniclesWhy) || sm.chroniclesWhy || '';
+    var _chronN = (typeof _chronSrc === 'number' && isFinite(_chronSrc) && _chronSrc >= 0) ? _chronSrc : null;
+    var chronCell = (_chronN === null) ? '?' : (_chronN > 0 ? ('\uD83D\uDCDC ' + fmt(_chronN)) : '\u2014');
+    var chronTip = (_chronN === null)
+      ? 'chronicle finds this run: unidentified items whose tooltip showed the green chronicle keyword. ? = not counted yet' + (_chronWhy ? (' - ' + _chronWhy) : '')
+      : 'chronicle finds this run: ' + _chronN + ' unidentified item' + (_chronN === 1 ? '' : 's') + ' whose tooltip showed the green chronicle keyword';
+    var uN = null, sN = null;
+    var _ch = sm.chron;
+    if (_ch && typeof _ch === 'object' && typeof _ch.uniques === 'number') {
+      uN = _ch.uniques;
+      sN = (typeof _ch.sets === 'number') ? _ch.sets : 0;
+    } else if (sm.farmed && typeof sm.farmed === 'object') {
+      uN = groupedCount(sm.farmed, 'uniques');
+      sN = groupedCount(sm.farmed, 'sets');
+    }
+    var uCell = (uN === null) ? '?' : (uN > 0 ? ('\uD83C\uDFC6 ' + uN) : '\u2014');
+    var sCell = (sN === null) ? '?' : (sN > 0 ? ('\uD83E\uDDE9 ' + sN) : '\u2014');
+    return '<div class="shc-stats">' + cell(stashCell, 'stash', '',
+      'items read in the stash this run (a shadow digest counts the stashed names; the owner card sums stash* frames in kaiClasses and can over-count \u2014 open defect #87)')
+      + cell(chronCell, 'chronicles', '', chronTip)
+      + cell(uCell, 'uniques', uN > 0 ? 'unique' : '')
+      + cell(sCell, 'sets', sN > 0 ? 'set' : '') + '</div>';
+  }
+  window._fourBoxHtml = _fourBoxHtml;
   function _shadowSessionRow(s, ix){
     s = (s && typeof s === 'object') ? s : {};
     var when = _lsWhenSay(s.t0) || 'date UNKNOWN';
@@ -23831,6 +23905,7 @@ window._lockMark = function(isOpen, px, label){
       + '<div class="ssv-facts">' + esc(facts) + '</div>'
       + '<div class="ssv-facts ssv-place">' + esc(place) + '</div>'
       + '<div class="ssv-facts ssv-who"' + (whoTitle ? ' title="' + esc(whoTitle) + '"' : '') + '>' + esc(who) + '</div>'
+      + _fourBoxHtml(s)
       + '<div class="ssv-facts ssv-chron">' + esc(chronNames) + '</div>'
       + '<div class="ssv-facts ssv-stashed">' + esc(stashed) + '</div>'
       /* v3859 - the route's trash: farmed, then dropped again and never stashed (older records carry none: no line) */
