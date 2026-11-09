@@ -269,7 +269,47 @@ def session_split(segs, t0, t1):
 
 # v3855 - who played and in which games: the console-wide shared extractor (read_identity)
 from read_identity import (game_name_of_row, character_signals, attribute_character, game_runs,  # noqa: E402,F401
-                           say_games, CLASSES, identity_ledger, who_at, summary as identity_summary, scenario_of)
+                           say_games, CLASSES, identity_ledger, who_at, summary as identity_summary, scenario_of,
+                           class_crosscheck, soft_understanding)
+
+
+def character_from_select(sid, t0=None, t1=None):
+    """v3893 (REG-3551) - the highlighted name from this reel's character-select login.
+
+    Recording starts before character select, so who_at(t0) only sees earlier characters (signals
+    with ts <= t0). char_select.selected_of already reads the highlighted row; logins and
+    session_characters already bind that name to the reel's sessionId. Reuse those — do not invent
+    a new pixel reader. None when this session has no login (the caller may then ask who_at);
+    a dict (name may be None) when a login exists, so an unconfirmed close is not replaced by
+    the previous character.
+    """
+    if not sid:
+        return None
+    try:
+        import char_select as CS
+        d = CS.load()
+        if d is None:
+            return None
+        # logins() already picks the latest confirmed highlighted row per visit
+        # (selected_of + the closing read). session_characters binds the same
+        # name to this reel; we ask logins so a login that happened after t0
+        # (the recorder started at the logo) still tags the session.
+        pick = None
+        for L in CS.logins(d) or []:
+            if str(L.get("sessionId") or "") == str(sid):
+                pick = L
+        if pick is None:
+            return None
+        name = pick.get("character")
+        if name:
+            return {"name": name, "cls": None, "level": None, "sources": ["select-screen"],
+                    "conflict": None,
+                    "seen": [{"source": "select-screen", "name": name, "cls": None, "level": None}],
+                    "seenN": 1}
+        return {"name": None, "cls": None, "level": None, "sources": ["select-screen"],
+                "conflict": None, "seen": [], "seenN": 0, "why": pick.get("why")}
+    except Exception:
+        return None
 
 
 def _key_frames(reads):
@@ -304,7 +344,9 @@ def characters_rollup(rows):
             continue
         t0, t1 = min(moments), max(moments)
         sig = character_signals(g)
-        ch = attribute_character(sig) if sig else who_at(ident, t0)
+        _sid = next((r.get("sessionId") for r in g if r.get("sessionId")), None)
+        _pick = None if sig else character_from_select(_sid, t0, t1)
+        ch = attribute_character(sig) if sig else (_pick if _pick is not None else who_at(ident, t0))
         name = (ch or {}).get("name")
         if not name:
             continue
@@ -434,13 +476,18 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None, 
         s["gameRunSessions"] = max([len(runs[k]["sessions"]) for k in runs
                                     if any(x in runs[k]["names"] for x in games)] or [0]) or None
         _sig = character_signals(g)
-        if not _sig and s["t0"]:
+        s["classCheck"] = class_crosscheck(_sig)
+        s["understanding"] = soft_understanding(g)
+        _from_select = None if _sig else character_from_select(sid, s.get("t0"), s.get("t1"))
+        if not _sig and _from_select is None and s["t0"]:
             # a session whose own reads named nobody takes who was playing when it began (the game-wide ledger)
             s["character"] = who_at(ident, s["t0"])
             if s["character"]:
                 s["character"]["sources"] = ["earlier read"] + [x for x in s["character"]["sources"] if x != "earlier read"]
-        else:
+        elif _sig:
             s["character"] = attribute_character(_sig)
+        else:
+            s["character"] = _from_select
         whys = []
         for fid in _key_frames(reads):
             data, why = thumb_bytes(hist_dir, fid, make)

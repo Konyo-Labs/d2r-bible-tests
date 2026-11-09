@@ -16592,6 +16592,7 @@ def _kai_closer_loop():
             # forever — and since the closer just sleeps and moves to the NEXT reel, each
             # such failure spawns ANOTHER orphaned worker on top of the last. try/finally
             # guarantees the worker is always reaped, however this pass ends.
+            _door_marks, _in_play = [], False
             try:
                 for it in frames:
                     fp = os.path.join(rd, it.get("f") or "")
@@ -16636,6 +16637,16 @@ def _kai_closer_loop():
                             except Exception:
                                 return {}
 
+                        # v3893 (#187/#185, REG-3550) - the stash reader is joined to the shared
+                        # screen templates and this reel's walk: it sees a frame only inside the
+                        # recording and only once the launch chain (or mid-session hud/lobby) has
+                        # put the film in play. Previous marks decide; this frame is then recorded.
+                        _skind = None
+                        try:
+                            import d2r_screens as _DS
+                            _skind = _DS.screen_of(fp)[0]
+                        except Exception:
+                            _skind = None
                         # v948.7 — allow_grid_solo: film stills rechecked without live deep sticky
                         _eye = _se_analyze(
                             fp,
@@ -16645,7 +16656,18 @@ def _kai_closer_loop():
                             ocr_worker_read=_wp_read,
                             work_dir=rd,
                             allow_grid_solo=True,
+                            chain={"entered": _in_play},
+                            recording=True,
+                            screen=_skind,
                         )
+                        try:
+                            import d2r_screens as _DS2
+                            _tsm = int(it.get("ts") or 0)
+                            if _skind and _tsm:
+                                _door_marks.append((_tsm, _skind))
+                            _in_play = _DS2.play_after(_skind, _DS2.chain(_door_marks), _in_play)
+                        except Exception:
+                            pass
                     except Exception:
                         _eye = {}
                     _eye_cls = str((_eye or {}).get("cls") or "")
@@ -43890,9 +43912,9 @@ def stash_screen_open(frame_path):
             # It returns the GENERIC "stash": the tab is genuinely unknown here and must not be
             # guessed (v1859). SURFACE_LANE maps every stash tab to one lane, so nothing misroutes.
             try:
-                from stash_eye import classify_stash_grid, inventory_title_visible
+                from stash_eye import classify_when_in_play, inventory_title_visible
                 if inventory_title_visible(str(frame_path)):
-                    _lab, _ = classify_stash_grid(str(frame_path))
+                    _lab, _ = classify_when_in_play(str(frame_path), recording=True)
                     if str(_lab or "").startswith("stash"):
                         return "stash"
             except Exception:

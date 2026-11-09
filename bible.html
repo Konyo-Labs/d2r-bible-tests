@@ -12959,6 +12959,12 @@ function d2jspAffixRead(mods, db, itemName) {
   String(mods || '').split('\n').forEach(function(raw){
     var t = d2jspPostLine(raw);
     if (!t) return;
+    /* v3893 (#135, REG-3558) - a filler-only line (Perfect Ruby, Rainbow Facet, Ber) is not the item's roll */
+    if (typeof peelSocketFillers === 'function') {
+      var _pf = peelSocketFillers(t);
+      var leftover = String(_pf.text || '').replace(/\b(?:socketed|with|and)\b|,/gi, '').trim();
+      if (_pf.fillers && _pf.fillers.length && !leftover) return;
+    }
     var lo = null, hi = null, best = null, any = false, v = null;
     groups.forEach(function(lines){
       (lines || []).forEach(function(l){
@@ -13306,6 +13312,8 @@ function d2jspSearchChunks(text) {
 }
 function d2jspParseSearch(text) {
   var t = String(text || '').replace(/\s+/g, ' ').trim(), tuples = [], m, re = /(\d+(?:\/\d+)+)/g;
+  /* v3893 (#135, REG-3558) - a filler (and a slash-roll written next to it) is not the item's roll */
+  if (typeof peelSocketFillers === 'function') t = String(peelSocketFillers(t).text || '').replace(/\s+/g, ' ').trim();
   while ((m = re.exec(t))) tuples.push(m[1].split('/').map(Number));
   var rest = t.replace(/\d+(?:\/\d+)+/g, ' ').replace(/@\s*\d+|\d+\s*@/g, ' ').replace(/\b\d+\s*os\b/gi, ' ');
   /* v3861 (#230 6644125606) - "shako 141": ONE bare number beside the item is the roll he holds (a Shako's defence).
@@ -30997,6 +31005,15 @@ function _tvOutsideCard(e){
       return 'boss-detail';
     }
   }
+  /* v3893 (#191, REG-3556) - #chx-win is a full-screen host; the card is .chx-win-box.
+     A press on the backdrop (inside the host, outside the box) peels it. */
+  var chx = document.getElementById('chx-win');
+  if (chx && !chx.hidden && !t.closest('.chx-win-box')) {
+    if (typeof window._chxClose === 'function') {
+      window._chxClose();
+      return 'chx-win';
+    }
+  }
   return '';
 }
 window._tvOutsideCard = _tvOutsideCard;
@@ -35411,6 +35428,22 @@ function readSocketFillers(text){
   return found;
 }
 window.readSocketFillers = readSocketFillers;
+/* v3893 (#135, REG-3558) - take the fillers out of a line so they are not the item's roll.
+   A filler name (and a slash-roll written next to it, or a trader's Ber'd) leaves; the leftover
+   text is the item's own. Vocabulary stays readSocketFillers / the page tables, never typed. */
+function peelSocketFillers(text) {
+  var t = String(text == null ? '' : text);
+  var fillers = (typeof readSocketFillers === 'function') ? readSocketFillers(t) : [];
+  var left = t;
+  fillers.slice().sort(function(a, b){ return b.length - a.length; }).forEach(function(n){
+    var esc = String(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var roll = '(?:-?\\d+(?:\\s*/\\s*-?\\d+)+)';
+    var re = new RegExp('(?:' + roll + '\\s+)?' + '\\b' + esc + '\\b' + "(?:'d|ed)?" + '(?:\\s+' + roll + ')?', 'ig');
+    left = left.replace(re, ' ');
+  });
+  return { text: left.replace(/\s+/g, ' ').trim(), fillers: fillers };
+}
+window.peelSocketFillers = peelSocketFillers;
 const GEM_CRAFT_ROLE = {Amethyst:'feeds the Caster craft (FCR + mana)', Ruby:'feeds the Blood craft (life leech + life)', Emerald:'feeds the Safety craft (DR + resist)', Sapphire:'feeds the Hit Power craft (CtC Frost Nova)'};
 function _gemCount(n){ var v = parseInt(gemStash[n], 10); return isFinite(v) && v > 0 ? v : 0; }
 function adjustGemStash(name, delta){ var next = _gemCount(name) + delta; if (next <= 0) delete gemStash[name]; else gemStash[name] = next; persist(); renderGemStash(); }
@@ -39186,6 +39219,7 @@ window.toggleStatue = toggleStatue;
 
 function switchTab(name) {
   try { if (typeof window.closeCharBuilder === "function") window.closeCharBuilder(); } catch (_cbC) {}   /* v3891 (#191) - a tab change is a fresh start */
+  try { if (typeof window._chxClose === "function") window._chxClose(); } catch (_chxC) {}   /* v3893 (#191, REG-3555) */
   // v917 (Grok P0 — 'chrome-only until the coerce dies') — TV·D is a REAL tab again
   // everywhere (Konyo: 'yes on the website too'). Only the legacy lamp aliases land on
   // SESSIONS with the cockpit scroll.
@@ -39900,6 +39934,7 @@ function navClean(name) {
   if (typeof window.closeItemDetail === "function") window.closeItemDetail();
   if (typeof window.clearActiveBoss === "function") window.clearActiveBoss({ noScroll: true });
   if (typeof window.closeCharBuilder === "function") window.closeCharBuilder();   /* v3891 (#191) */
+  if (typeof window._chxClose === "function") window._chxClose();   /* v3893 (#191, REG-3555) */
   const _hadItem = !!(name === "bosses" && typeof activeItem !== "undefined" && activeItem);
   /* REG-2125 (the v3631 second eye) - the route-back owns the scroll only when it will really run: an item set but no
      clearActiveItem to clear it would have skipped the top scroll with nobody owning it. */
@@ -71129,7 +71164,7 @@ function renderJournal(){
     try {
       ((P && P.f) || []).forEach(function(r){
         var T = (typeof QW_TARGETS !== 'undefined') ? QW_TARGETS[r[0]] : null;
-        if (T && T.once) out.push({ id: r[0], name: T.n, who: _QW_DIFF[r[1]] + ' ' + T.n, area: T.a, kind: 'once', chance: effChance(r[2], r[0], r[1]) });   // his own /players factor (PLACE_PF)
+        if (T && T.once) out.push({ id: r[0], name: T.n, who: _QW_DIFF[r[1]] + ' ' + T.n, area: T.a, kind: 'once', chance: effChance(r[2], r[0], r[1], x && x.n) });   // his own /players factor (PLACE_PF); #43 REG-3557 the item, so a set uses setMfChance
       });
       /* #108 - one monster at the same odds on several levels is ONE row naming them all (Heaven's Light read "Bone Archer"
          three times, Jail Level 1, 2 and 3, each 1:42,745) */
@@ -71139,8 +71174,9 @@ function renderJournal(){
            r[7] 1 = that count is a floor (the pull kept no more rows) */
         var tz = r[5] ? 1 : 0, k = [r[0], r[1], r[2], r[4], tz].join('|');
         if (_same[k]) { _same[k].area += ' · ' + r[3]; _same[k].areas++; return; }
+        var _alsoSet = (typeof setMfChance === 'function') ? setMfChance(r[4], x && x.n, r[0], r[1], mf) : undefined;
         _same[k] = { name: r[0], who: _QW_DIFF[r[1]] + (tz ? ' TZ ' : ' ') + r[0], area: r[3], areas: 1, kind: r[2],
-                     chance: adjustChance(r[4], mf), tz: tz, tie: r[6] || 0, floor: !!r[7] };
+                     chance: (_alsoSet !== undefined) ? _alsoSet : adjustChance(r[4], mf), tz: tz, tie: r[6] || 0, floor: !!r[7] };
         out.push(_same[k]);
       });
     } catch (e) { return []; }
@@ -84238,7 +84274,8 @@ body.engine-driven.cousin-shell .gsearch-wrap{margin-left:196px!important}
     var _fit = function(){
       try {
         if (el.scrollWidth > el.clientWidth + 1) {
-          el.textContent = window.D2R_BUILD.id + ' · ' + window.D2R_BUILD.date;
+          var _vid = el.getAttribute('data-live-ver') || window.D2R_BUILD.id;
+          el.textContent = _vid + ' · ' + window.D2R_BUILD.date;
         }
       } catch (e) {}
     };
@@ -84258,6 +84295,28 @@ body.engine-driven.cousin-shell .gsearch-wrap{margin-left:196px!important}
       var fv = document.getElementById('tvz-foot-ver'); if (fv) fv.textContent = (B.id || '').toUpperCase() + ' CONSOLE';
     } catch(e){}
   }
+  /* v3893 (#193, REG-3553) - THE GUEST BADGE READS THE LIVE CONSOLE VERSION.
+     D2R_BUILD is baked into a cached bible.html and can lag the running console (guest
+     showed v3888 while /api/status and the Fleet said v3889). When /api/status answers,
+     the badge takes st.ver. A failed fetch, a public page with no console, or a payload
+     with no ver never claims a live version — the baked stamp stays. */
+  window._badgeApplyLiveVer = function(el, st, baked){
+    if (!el) return false;
+    baked = baked || window.D2R_BUILD || {};
+    var v = st && typeof st.ver === 'string' ? st.ver : '';
+    if (!/^v\d/.test(v)) return false;
+    var name = String(baked.name || '').replace(/^\s*v\d+(\.\d+)?\s*[-—·:]\s*/i, '');
+    var date = baked.date || '';
+    el.setAttribute('data-live-ver', v);
+    el.textContent = v + (date ? ' · ' + date : '') + (name ? ' · ' + name : '');
+    return true;
+  };
+  window._badgePaintLive = function(st){
+    try {
+      var el = document.getElementById('v687-build-badge');
+      return window._badgeApplyLiveVer(el, st, window.D2R_BUILD);
+    } catch (e) { return false; }
+  };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', badge);
   else badge();
 })();
@@ -85558,6 +85617,7 @@ window._CH_PILL_MAP = {
         .then(function(d){
           _eagleNY = _eagleNYFromEagle((d && d.eagle) || {});
           _eagleNYPaint();
+          try { if (window._badgePaintLive) window._badgePaintLive(d); } catch (e) {}
         })
         .catch(function(err){
           _eagleNY = { st: 'unreachable', why: String(err && err.message || 'fetch failed'),

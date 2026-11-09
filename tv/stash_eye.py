@@ -1012,6 +1012,23 @@ def class_from_tab(tab: str) -> str:
     return ""
 
 
+def classify_when_in_play(src_path: str, kind=None, chain=None, recording=True):
+    """v3893 (#187/#185, REG-3550) - the stash-grid reader, joined to the shared screen
+    templates and the recorder's window. Pre-game frames (logo, title, character select)
+    and frames outside a recording never reach classify_stash_grid. An unlabelled frame
+    (a launcher, idle page, or CONNECTING...) reaches it only after the chain has entered,
+    or when the caller did not pass a chain (a standalone look at a known panel)."""
+    try:
+        import d2r_screens as _DS
+        if kind is None and src_path:
+            kind = _DS.screen_of(src_path)[0]
+        if not _DS.readers_may_run(kind, chain=chain, recording=recording):
+            return "gameplay", {"method": "screen-type", "screen": kind, "skipped": True}
+    except Exception:
+        pass
+    return classify_stash_grid(src_path)
+
+
 def analyze_frame(
     path: str,
     ocr_lines: Optional[Sequence[Any]] = None,
@@ -1020,6 +1037,9 @@ def analyze_frame(
     ocr_worker_read=None,
     work_dir: Optional[str] = None,
     allow_grid_solo: bool = False,
+    chain=None,
+    recording: bool = True,
+    screen=None,
 ) -> Dict[str, Any]:
     """Full eye analysis of one photo (for KAI / live resolve).
 
@@ -1064,7 +1084,7 @@ def analyze_frame(
             pass
     out["ocrTab"] = ocr_tab
 
-    gl, gd = classify_stash_grid(path)
+    gl, gd = classify_when_in_play(path, kind=screen, chain=chain, recording=recording)
     out["gridLabel"] = gl
     out["gridDetail"] = gd
 

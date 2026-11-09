@@ -7198,8 +7198,8 @@
      know if its working too". One eye per PC, INSIDE the name cell (no new grid child, so no row law moves), drawn only
      from that PC's own report. It LEADS the name (measured 2026-09-30: after the name, a long one like "Konyo ALT TEST"
      wrapped and left the eye alone on the next line):
-       lit   ON and its watcher alive - a slow ember glow; the game may be closed, it waits in the shadows
-       live  ON, alive and a reel rolling - the same eye, brighter and quicker
+       dark  ON and its watcher alive, but no reel is recording - unlit (v3893 REG-3549)
+       live  ON, alive and a reel recording - bright green
        idle  ON but NOT working (its watcher stopped, or no text reader on that PC) - open, amber rim, no glow
        off   switched OFF - a closed lid
        unk   offline / an older build / not stamped yet - a dashed outline: UNKNOWN is never drawn lit or shut
@@ -7211,16 +7211,16 @@
   .fleet-shadow .sh-iris { fill: #4a3526; }
   .fleet-shadow .sh-pupil { fill: #050303; }
   .fleet-shadow .sh-glint { fill: none; }
-  /* v3885 (his 11-08: "from red.. it should just turn green. so when off red. when on green. same for the shadow reader.
-     simple and clean logic") - ON IS GREEN, OFF IS RED, on BOTH eyes. lit (on, waiting) and live (on, watching now) are green -
-     live keeps its white glint and quicker breath, so the two still differ in SHAPE on a still frame (the Grok eye, 2026-09-30);
-     off (switched off) and idle (on, but its watcher STOPPED - not working) are red; UNKNOWN stays a grey dashed outline. */
-  .fleet-shadow.st-lit .sh-lid { stroke: #3fbf72; }
-  .fleet-shadow.st-lit .sh-iris { fill: #2fae62; }
+  /* v3885 (his 11-08: "when off red. when on green") - then v3893 (REG-3549, his 11-09): the middle eye is DARK
+     unless a reel is actually recording (sh.recording). live (recording) is bright green with a white glint;
+     dark (on, waiting, no reel) keeps the unlit brown lid and has no glow; off (switched off) and idle
+     (watcher STOPPED) are red; UNKNOWN stays a grey dashed outline. */
+  .fleet-shadow.st-dark .sh-lid { stroke: #6b5a48; }
+  .fleet-shadow.st-dark .sh-iris { fill: #4a3526; }
+  .fleet-shadow.st-dark svg { filter: none; animation: none; }
   .fleet-shadow.st-live .sh-lid { stroke: #6df0a0; }
   .fleet-shadow.st-live .sh-iris { fill: #4fe08a; }
   .fleet-shadow.st-live .sh-glint { fill: #f2fff7; }
-  .fleet-shadow.st-lit svg { filter: drop-shadow(0 0 3px rgba(70, 210, 120, .8)); animation: fleetShadowBreath 3.4s ease-in-out infinite; }
   .fleet-shadow.st-live svg { filter: drop-shadow(0 0 6px rgba(90, 240, 150, 1)); animation: fleetShadowBreath 1.7s ease-in-out infinite; }
   /* idle = ON but NOT working: a hollow RED outline, iris an empty ring, no pupil - never "lit but softer" */
   .fleet-shadow.st-idle .sh-lid { fill: none; stroke: #c9402e; stroke-dasharray: none; }
@@ -25044,6 +25044,7 @@ window._lockMark = function(isOpen, px, label){
           try { if (typeof w.closeItemDetail === 'function') w.closeItemDetail(); } catch (_e2) {}
           try { if (typeof w.closeDrop === 'function') w.closeDrop(); } catch (_e3) {}
           try { if (typeof w.clearActiveBoss === 'function') w.clearActiveBoss({ noScroll: true }); } catch (_e4) {}
+          try { if (typeof w._chxClose === 'function') w._chxClose(); } catch (_e5) {}
         });
       }
     } catch (_cl) {}
@@ -29951,14 +29952,14 @@ function escC(s) {
     } else if (sh.available === false) {
       st = 'idle'; tip = 'shadow reader switched ON, but this PC has no local text reader, so it cannot watch';
     } else if (sh.working === true) {
-      /* v3890 (#189, REG-3516) - LIVE IS THE GAME ON SCREEN, NOT A REEL ROLLING. `recording` only says a reel is rolling;
-         the OLD ALT's eye glowed live all morning over GeForce NOW's idle page. `game` is that reel's own film (a D2R
-         screen in its last five walked minutes). Not the game, or not known yet: the calm green of ON, saying which. */
-      st = (sh.recording && sh.game === true) ? 'live' : 'lit';
-      tip = (sh.recording && sh.game === true) ? 'shadow reader ON - watching the game right now'
-          : (sh.recording && sh.game === false) ? 'shadow reader ON - recording, but its film shows no Diablo II (no logo, title, character select or in-game screen in the last 5 minutes)'
-          : sh.recording ? 'shadow reader ON - recording; whether its film shows the game is not known yet'
-          : 'shadow reader ON - running in the background, waiting for the next game (it stays on with the game closed)';
+      /* v3893 (#189, REG-3549) - the middle eye is DARK unless a reel is actually recording (sh.recording).
+         The calm-green 'lit' of shadow-ON-while-waiting is gone. Bright LIVE whenever a reel is rolling;
+         `game` still names what the film shows on the hover, it no longer picks the colour. */
+      st = sh.recording ? 'live' : 'dark';
+      tip = !sh.recording ? 'shadow reader ON - waiting (no reel is recording)'
+          : (sh.game === true) ? 'shadow reader ON - recording the game right now'
+          : (sh.game === false) ? 'shadow reader ON - recording, but its film shows no Diablo II (no logo, title, character select or in-game screen in the last 5 minutes)'
+          : 'shadow reader ON - recording; whether its film shows the game is not known yet';
     } else if (sh.working === false) {
       st = 'idle';
       tip = 'shadow reader switched ON but its watcher has STOPPED'

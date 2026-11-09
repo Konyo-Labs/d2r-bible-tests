@@ -416,9 +416,16 @@ function d2jspPosts(text, itemName, nowMs) {
        (<b>guardian</b>'s); turning that tag into a space made "guardian 's", which no item form matches. An inline tag
        is unwrapped with NO space; every other tag still becomes one. */
     .replace(/<\/?(?:b|i|u|em|strong|span|font|mark|small|big)(?:\s[^>]*)?>/gi, '')
+    /* v3893 (#180, REG-3554) - a signed-out readable user.php name, when a post shows exactly one,
+       is the seller. Two names in one card stay unknown (do not invent which is the seller). */
+    .replace(/<a\s[^>]*href\s*=\s*["']([^"']*user\.php[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, function (_, href, name) {
+      var n = String(name || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+      if (!n || n.length > 32) return ' ';
+      return ' \u27e6A:' + n + '\u27e7 ';
+    })
     .replace(/<[^>]+>/g, ' ');
   plain = d2jspDecodeEntities(plain);   /* v3847 - &#39; / &rsquo; / &amp; arrive raw: Guardian&#39;s matched nothing */
-  var rows = [], when = null, link = '', explicit = false, used = false, pending = '', seen = {};
+  var rows = [], when = null, link = '', explicit = false, used = false, pending = '', seen = {}, authors = [];
   function rememberUndated() {
     pending = '';
   }
@@ -426,7 +433,10 @@ function d2jspPosts(text, itemName, nowMs) {
     var m, re = new RegExp(D2JSP_LINK_MARK.source, 'g');
     var here = '';
     while ((m = re.exec(raw))) { var a = d2jspAbsLink(m[1]); if (a) here = a; }
-    var line = raw.replace(new RegExp(D2JSP_LINK_MARK.source, 'g'), ' ');
+    var hereWho = [], wm, whoRe = /\u27e6A:([^\u27e7]*)\u27e7/g;
+    while ((wm = whoRe.exec(raw))) { if (wm[1]) hereWho.push(wm[1]); }
+    var line = raw.replace(new RegExp(D2JSP_LINK_MARK.source, 'g'), ' ')
+      .replace(/\u27e6A:[^\u27e7]*\u27e7/g, ' ');
     var d = d2jspLineDate(line, nowMs);
     /* v3845 (second eye on v3844) - a new post's date line starts a new post: the last post's link does not carry over */
     /* v3845 - a post's own written date beats a relative "Today" / "Yesterday" (the search page's last-activity
@@ -438,15 +448,17 @@ function d2jspPosts(text, itemName, nowMs) {
     var rel = d != null && !/\b20\d\d\b/.test(line) && /\b(?:today|yesterday)\b/i.test(line);
     if (d != null && !rel) {
       var kept = pending;
-      if (here && pending && here !== pending) { rememberUndated(); kept = ''; }
+      if (here && pending && here !== pending) { rememberUndated(); kept = ''; authors = []; }
       when = d; explicit = true; used = false;
       link = here || kept || '';
       pending = '';
+      authors = [];
     } else if (here && here !== link) {
       if (when != null && !used) { link = here; pending = ''; }
-      else { rememberUndated(); link = here; pending = here; when = rel ? d : null; explicit = false; used = false; }
+      else { rememberUndated(); link = here; pending = here; when = rel ? d : null; explicit = false; used = false; authors = []; }
     } else if (rel && !explicit) when = d;
     else if (here) link = here;
+    hereWho.forEach(function (n) { authors.push(n); });
     /* v3843 - a price counts only under a recently dated post; v3844 - and only a 2026 one */
     /* A line that names the item and has no fg is skipped. It is not a post and it keeps no link.
        The same for a line with no date, or a date outside the window. used only closes this card
@@ -470,6 +482,8 @@ function d2jspPosts(text, itemName, nowMs) {
       seen[dup] = 1;
       var row = { fg: x.fg, day: new Date(when).toISOString().slice(0, 10), link: link,
         roll: note.tuples, mods: note.words.slice(0, 12), w: 1 };
+      var who = d2jspAuthorOf(authors);
+      if (who) row.author = who;
       if (x.cols) row.cols = x.cols;
       /* v3885 - PERFECT IS READ FROM THE ROLLS (d2jspRollPerfect); only a line stating no roll the item's table knows
          falls back to its words (v3849's "perf"/"perfect", gem-safe now) */
@@ -485,10 +499,31 @@ function d2jspPosts(text, itemName, nowMs) {
 
 /* v3885 (GrokBot 11-08: one shop post supplied 9 of the 10 Griffon's Eye prices) - ONE VOTE PER POST. The rows of one post
    (one link) share a weight of 1 between them; a row with no link is its own post. An outlier's 0 stays 0. */
+/* v3893 (#180, REG-3554) - THE SAME SELLER IS ONE POST AND ONE PRICE. When a readable author is on
+   the row (signed-out user.php, or a stored author), every topic from that seller shares one vote.
+   An unknown author stays one vote per link. Topics are never hard-deleted or merged by id. */
+function d2jspAuthorOf(names) {
+  var seen = {}, uniq = [];
+  (names || []).forEach(function (n) {
+    var k = String(n || '').trim();
+    if (!k) return;
+    var fold = k.toLowerCase();
+    if (seen[fold]) return;
+    seen[fold] = 1;
+    uniq.push(k);
+  });
+  return uniq.length === 1 ? uniq[0] : '';
+}
+function d2jspVoteKey(r) {
+  var a = r && r.author && String(r.author).trim();
+  if (a) return 'seller:' + a.toLowerCase();
+  if (r && r.link) return 'link:' + r.link;
+  return '';
+}
 function d2jspOneVotePerPost(rows) {
   var n = {};
-  rows.forEach(function (r) { if (r.link && r.w > 0) n[r.link] = (n[r.link] || 0) + 1; });
-  rows.forEach(function (r) { if (r.link && r.w > 0 && n[r.link] > 1) r.w = Math.round((r.w / n[r.link]) * 1000) / 1000; });
+  rows.forEach(function (r) { var k = d2jspVoteKey(r); if (k && r.w > 0) n[k] = (n[k] || 0) + 1; });
+  rows.forEach(function (r) { var k = d2jspVoteKey(r); if (k && r.w > 0 && n[k] > 1) r.w = Math.round((r.w / n[k]) * 1000) / 1000; });
   return rows;
 }
 

@@ -309,3 +309,253 @@ def parse_identity(j, scene=""):
     if a:
         out["avatarClass"] = a
     return out
+
+
+
+def class_crosscheck(sigs):
+    """v3893 REG-3559 - the avatar class seen in game vs the class from character select.
+
+    Soft layer: it does not change attribute_character (disagreeing classes there still leave
+    the name UNKNOWN). -> {select, avatar, agree}. agree is True/False when both sides were
+    read, and None when either side is missing (unknown, never a guess).
+    """
+    select = None
+    avatar = None
+    for g in sigs or []:
+        if not isinstance(g, dict):
+            continue
+        if g.get("source") == "select-screen" and g.get("cls"):
+            select = g["cls"]
+        if g.get("source") == "avatar" and g.get("cls"):
+            avatar = g["cls"]
+    agree = None if not select or not avatar else (select == avatar)
+    return {"select": select, "avatar": avatar, "agree": agree}
+
+
+def ordered_game_names(rows):
+    """Game names in read order, via game_name_of_row. A name repeated in a row is one entry."""
+    names = []
+    for r in rows or []:
+        n = game_name_of_row(r) if isinstance(r, dict) else None
+        if n and (not names or names[-1] != n):
+            names.append(n)
+    return names
+
+
+def sequential_focused_runs(names):
+    """v3893 REG-3560 - consecutive numbered names that count up (Morph1 -> Morph2 -> Morph3)
+    are one focused run. A gap (Morph1 then Morph3), a name without a number, or a single
+    numbered name is unknown: we do not invent a run. Does not rewrite say_games or game_runs.
+    -> [{kind: 'focused', stem, start, end, names} | {kind: 'unknown', names}]
+    """
+    out = []
+    pending = None
+
+    def flush():
+        nonlocal pending
+        if not pending:
+            return
+        ns, nms = pending["nums"], pending["names"]
+        sequential = (
+            len(ns) >= 2
+            and all(ns[i] + 1 == ns[i + 1] for i in range(len(ns) - 1))
+        )
+        if sequential:
+            out.append({"kind": "focused", "stem": pending["stem"], "start": ns[0], "end": ns[-1],
+                        "names": list(nms)})
+        else:
+            out.append({"kind": "unknown", "names": list(nms)})
+        pending = None
+
+    for n in names or []:
+        if not isinstance(n, str) or not n:
+            continue
+        m = _SERIES.match(n)
+        stem, num = (m.group(1), int(m.group(2))) if m and m.group(1) else (None, None)
+        if stem and num is not None:
+            if pending and pending["stem"] == stem and pending["nums"] and pending["nums"][-1] + 1 == num:
+                pending["nums"].append(num)
+                pending["names"].append(n)
+            else:
+                flush()
+                pending = {"stem": stem, "nums": [num], "names": [n]}
+        else:
+            flush()
+            out.append({"kind": "unknown", "names": [n]})
+    flush()
+    return out
+
+
+#: the five act towns, as the overlay already writes them (and the 'The …' spelling some reads use)
+_TOWN_ACT = {
+    "rogue encampment": (1, "Rogue Encampment"),
+    "the rogue encampment": (1, "Rogue Encampment"),
+    "lut gholein": (2, "Lut Gholein"),
+    "kurast docks": (3, "Kurast Docks"),
+    "the pandemonium fortress": (4, "Pandemonium Fortress"),
+    "pandemonium fortress": (4, "Pandemonium Fortress"),
+    "harrogath": (5, "Harrogath"),
+}
+_DIFF = {"normal": "Normal", "nightmare": "Nightmare", "hell": "Hell"}
+_DIFF_LEAD = re.compile(r"^(normal|nightmare|hell)\s*[·.\-:]?\s*", re.I)
+
+
+def _norm_diff(v):
+    if not isinstance(v, str) or not v.strip():
+        return None
+    return _DIFF.get(v.strip().lower())
+
+
+def corner_vs_town(area, difficulty=None, act=None):
+    """v3893 REG-3561 - already-read corner text (area, optional difficulty/act) vs the five towns.
+
+    No pixel template: this tree has no act-1-5 town frames to invent from. A known town names
+    its act; any other written area is the field; empty is unknown. An act that disagrees with
+    the town is a conflict (agree False). Difficulty is recorded when the reader already named it
+    (or when it leads the area string); it is not guessed from pixels.
+    """
+    raw = area.strip() if isinstance(area, str) else ""
+    diff = _norm_diff(difficulty)
+    if not raw:
+        return {"kind": "unknown", "town": None, "act": None, "difficulty": diff, "agree": None}
+    key = raw.lower()
+    lead = _DIFF_LEAD.match(key)
+    if lead:
+        if not diff:
+            diff = _DIFF.get(lead.group(1).lower())
+        key = key[lead.end():].strip()
+        raw = raw[lead.end():].strip()
+    stated_act = None
+    if isinstance(act, int) and not isinstance(act, bool) and 1 <= act <= 5:
+        stated_act = act
+    elif isinstance(act, str) and act.strip().isdigit():
+        n = int(act.strip())
+        if 1 <= n <= 5:
+            stated_act = n
+    hit = _TOWN_ACT.get(key)
+    if hit:
+        town_act, town = hit
+        agree = True if stated_act is None else (stated_act == town_act)
+        return {"kind": "town", "town": town, "act": town_act, "difficulty": diff, "agree": agree}
+    return {"kind": "field", "town": None, "act": None, "area": raw, "difficulty": diff, "agree": None}
+
+
+_LAIR_CACHE = None
+
+
+def farm_lairs(path=None):
+    """boss display name -> frozenset of area names, from tv/data/silospen_set_mf_rotw30.json.
+
+    The table already pairs 'Andariel - andariel (H)' with 'Catacombs Level 4'. Nothing here
+    types that map; a missing file or an unreadable row is skipped (unknown), never invented.
+    """
+    global _LAIR_CACHE
+    if path is None and _LAIR_CACHE is not None:
+        return _LAIR_CACHE
+    import json
+    import os
+    pth = path or os.path.join(os.path.dirname(__file__), "data", "silospen_set_mf_rotw30.json")
+    try:
+        with open(pth, encoding="utf-8") as fh:
+            raw = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    by = {}
+    items = raw.get("items") if isinstance(raw, dict) else None
+    if not isinstance(items, dict):
+        return {}
+    for rec in items.values():
+        if not isinstance(rec, dict):
+            continue
+        for rows in rec.values():
+            if not isinstance(rows, list):
+                continue
+            for row in rows:
+                if not (isinstance(row, list) and len(row) >= 2):
+                    continue
+                label, area = row[0], row[1]
+                if not isinstance(label, str) or not isinstance(area, str):
+                    continue
+                boss = label.split(" - ")[0].strip()
+                area = area.strip()
+                if boss and area:
+                    by.setdefault(boss, set()).add(area)
+    out = {k: frozenset(v) for k, v in by.items()}
+    if path is None:
+        _LAIR_CACHE = out
+    return out
+
+
+def boss_farm_counts(rows, lairs=None):
+    """v3893 REG-3562 - how many times each farm boss's lair was entered, from already-read area text.
+
+    A visit is counted once per game name (via game_name_of_row). Frame-by-frame repeats of the
+    same lair in the same game are one visit. With no game name, a visit is counted when the
+    area transitions into that lair. A zone the silospen table does not name is unknown (skipped).
+    -> {boss: n} for bosses that were seen; {} when nothing matches.
+    """
+    lairs = farm_lairs() if lairs is None else lairs
+    area_to_bosses = {}
+    for boss, areas in (lairs or {}).items():
+        for a in areas:
+            area_to_bosses.setdefault(a.lower(), []).append(boss)
+    counts = {}
+    seen_this_game = set()
+    last_named_game = object()
+    last_area_key = None
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        g = game_name_of_row(r)
+        if g != last_named_game:
+            last_named_game = g
+            seen_this_game = set()
+            last_area_key = None
+        area = r.get("area") if isinstance(r.get("area"), str) else (r.get("map") if isinstance(r.get("map"), str) else "")
+        if not area.strip():
+            continue
+        ak = area.strip()
+        bosses = area_to_bosses.get(ak.lower()) or []
+        if not bosses:
+            last_area_key = ak.lower()
+            continue
+        for boss in bosses:
+            if g:
+                if boss not in seen_this_game:
+                    seen_this_game.add(boss)
+                    counts[boss] = counts.get(boss, 0) + 1
+            else:
+                prev = area_to_bosses.get(last_area_key or "") or []
+                if boss not in prev:
+                    counts[boss] = counts.get(boss, 0) + 1
+        last_area_key = ak.lower()
+    return counts
+
+
+def soft_understanding(rows):
+    """v3893 REG-3563 - games, focused runs, town/field from area text, and per-boss farm counts.
+
+    Context on top of existing session seals. It uses game_name_of_row (and does not rewrite
+    say_games or game_runs). Unknown when the pattern, the area, or the lair is unclear.
+    """
+    names = ordered_game_names(rows)
+    last_area = last_diff = last_act = None
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        a = r.get("area") if isinstance(r.get("area"), str) else None
+        if a and a.strip():
+            last_area = a.strip()
+        d = r.get("difficulty") if isinstance(r.get("difficulty"), str) else None
+        if d and d.strip():
+            last_diff = d.strip()
+        ac = r.get("act")
+        if ac not in (None, ""):
+            last_act = ac
+    return {
+        "games": names,
+        "gameCount": len(names),
+        "runs": sequential_focused_runs(names),
+        "town": corner_vs_town(last_area, last_diff, last_act),
+        "bosses": boss_farm_counts(rows),
+    }
