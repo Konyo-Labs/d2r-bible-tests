@@ -1859,7 +1859,7 @@
      filmOverlapsBrain = false — the film does not touch that panel, whose background is an
      opaque gradient. Two stacked regions, not translucency. A good reviewer earns a
      measurement, not obedience. [[grok-second-eye]] */
-  #th-shelfov { position: absolute; top: 0; left: 0; right: 0; bottom: clamp(54px, 9vh, 72px); z-index: 14; overflow-y: auto; background: rgba(4,6,5,.985); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+  #th-shelfov { position: fixed; top: 0; left: 0; right: 0; bottom: clamp(54px, 9vh, 72px); z-index: 978; /* v3891 (#186, REG-3532) - sibling of #theatre (like #th-dossier-ov); above cinema 900 and shadow-theatre 976 so SHELF keeps a viewport box when the theatre is hidden */ overflow-y: auto; background: rgba(4,6,5,.985); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
     padding: clamp(16px,3vh,30px); display: block; }
   #th-shelfov[hidden] { display: none !important; }
   /* ⚠⚠ v3061 — THE TRANSPORT MAY NOT OFFER PLAYBACK FOR A REEL HE HAS NOT OPENED.
@@ -8565,7 +8565,6 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
         <div id="th-pop" hidden></div>
         <div id="th-credits" hidden></div>
         <div id="th-slate" hidden></div>
-        <div id="th-shelfov" hidden></div>
         <!-- v940.5 — coach hint: shown once per page-load, dismissed on any interaction -->
         <div class="th-coach" id="th-coach" hidden>space = play/pause · ← → = step · esc = close</div>
         <!-- v940.5 (Konyo: 'incomprehensible button mess') — BUTTON DIET. Primary strip keeps
@@ -9476,6 +9475,7 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
   <div class="toast" id="toast"></div>
   <!-- v1406 — dossier / compare / heatmap OUTSIDE .shell and #theatre so overflow:hidden +
        fixed-header z-index cannot swallow Verdict & story. CSS z-index 970+. -->
+  <div id="th-shelfov" hidden></div>
   <div id="th-dossier-ov" hidden></div>
   <div id="th-compare-ov" hidden></div>
   <div id="th-heatmap-ov" hidden></div>
@@ -21572,17 +21572,11 @@ window._lockMark = function(isOpen, px, label){
      reach the opener. The harness was working; the surface was unreachable.
      window.thShelf exports: 0 · window._shLanesLoad exports: 2. [[console-ui-two-script-blocks]] */
   window.thShelf = thShelf;
-  /* ⚠ AND ITS PARENT, which is the same defect one function along. MEASURED over CDP against a
-     private console: thShelf(true) DID un-hide #th-shelfov, and the whole subtree still measured
-     0x0 at 1440, 901 and 375 — because the shelf lives INSIDE the theatre and the theatre is
-     closed on a fresh console:
-         #sh-lanes    0x0  display=block  hidden=false
-         #th-shelfov  0x0  display=block  hidden=false   <- opened correctly
-         #theatre     0x0  display=none   hidden=TRUE    <- the collapse
-         div.shell    1440x900
-     So the render harness could open the panel and photograph nothing, and "the panel could not
-     be ACTIVATED" was hiding a layout answer, not a scripting one. Exporting the opener alone
-     fixes half a chain. [[sweep-dont-ask]] */
+  /* ⚠ AND ITS PARENT (v3891 REG-3532). MEASURED: thShelf(true) DID un-hide #th-shelfov, and the
+     whole subtree still measured 0x0 at 1440, 901 and 375 — because the shelf lived INSIDE the
+     theatre and the theatre is display:none while shut. #th-shelfov is now a sibling of #theatre
+     (with #th-dossier-ov), position:fixed, so it keeps a viewport box when the theatre is hidden.
+     _shelfRestoreLayer still puts the theatre layer back (v3890 #186). [[sweep-dont-ask]] */
   window.thOpen = thOpen;
   window.thClose = thClose;   // #172 — the header tabs close it on a view switch
   // v940.5 — ⋯ MORE: the drawer for the rare controls (forensics / clip / delete)
@@ -22088,17 +22082,11 @@ window._lockMark = function(isOpen, px, label){
        handler would give a closed theatre the arrow keys. [[the-unjoined-end]] */
     if (!TH.open) {
       if (e.key !== 'Escape') return;
-      /* ⚠⚠ v3275 — `!hidden` IS NOT "HE CAN SEE IT", and this file already says so twice.
-         MEASURED by counting div nesting from `id="theatre"`:
-             #th-shelfov     12 <div vs 11 </div>  -> net +1, it IS a CHILD of #theatre
-             #th-dossier-ov  167 <div vs 168 </div> -> net -1, it is a SIBLING
-         #theatre is display:none while shut, so an un-hidden SHELF inside it can be a zero-height
-         box he cannot see — the exact trap `_shelfRefused`'s own comment records ("the overlay
-         reported height 0 with the full refusal text inside it"), and the reason the door path
-         proves itself from `getBoundingClientRect()`. Firing Escape on an invisible overlay would
-         tear down state he never opened. The DOSSIER is a sibling, which is why the off-air home
-         strip can show one with no theatre at all — that one is genuinely visible.
-         ⇒ one rule for both: a rect, never a flag. [[unknown-stays-unknown]] */
+      /* ⚠⚠ v3275 / v3891 REG-3532 — `!hidden` IS NOT "HE CAN SEE IT".
+         #th-shelfov is now a sibling of #theatre (like #th-dossier-ov), position:fixed, so an
+         open SHELF has a viewport box even when the theatre is display:none. The door still
+         proves itself from `getBoundingClientRect()`: a flag would fire Escape on an overlay
+         he cannot see. ⇒ one rule for both: a rect, never a flag. [[unknown-stays-unknown]] */
       var _seen = function(el){
         if (!el || el.hidden) return false;
         try { var r = el.getBoundingClientRect(); return !!r && r.height > 2 && r.width > 2; }

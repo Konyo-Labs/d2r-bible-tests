@@ -804,20 +804,11 @@ class TheShelfTabsAreTheRealSessions(unittest.TestCase):
     def test_escape_proves_the_RECT_not_the_hidden_FLAG(self):
         """★ v3275 — `!hidden` IS NOT "HE CAN SEE IT", and this file says so twice already.
 
-        MEASURED by counting div nesting from `id="theatre"` in control_ui.html:
-
-            #th-shelfov      12 <div vs 11 </div>   -> net +1, it IS A CHILD of #theatre
-            #th-dossier-ov  167 <div vs 168 </div>  -> net -1, it is a SIBLING
-
-        `#theatre` is `display:none` while shut, so an un-hidden SHELF inside it is a zero-height
-        box he cannot see — the exact trap `_shelfRefused`'s own comment records ("the overlay
-        reported height 0 with the full refusal text inside it"), and the reason the door path
-        proves itself from `getBoundingClientRect()`. Firing Escape on an invisible overlay would
-        tear down state he never opened.
-
-        The DOSSIER being a sibling is what makes the off-air home strip's dossier genuinely
-        visible with no theatre — which is why that trap was real. One rule covers both: a rect,
-        never a flag. Raised by the cross-family eye on v3274 and reproduced.
+        v3891 REG-3532 moved `#th-shelfov` out of `#theatre` so it is a sibling like
+        `#th-dossier-ov` (position:fixed). The door still proves itself from
+        `getBoundingClientRect()`: a flag would fire Escape on an overlay he cannot see.
+        One rule covers both: a rect, never a flag. Raised by the cross-family eye on v3274
+        and reproduced.
         """
         blk = self._theatre_keys()
         self.assertIn("getBoundingClientRect", blk,

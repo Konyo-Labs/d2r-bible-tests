@@ -123,6 +123,13 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3532 - THE SHELF OPENED AT 0x0 BECAUSE ITS OVERLAY LIVED INSIDE A HIDDEN THEATRE (v3891, #186)
+`#th-shelfov` was a child of `#theatre`. `#theatre` is `display:none` while shut, so an un-hidden
+SHELF inside it had a 0x0 box. v3890 #186 restored the theatre layer before refusing and still SAW
+a 0x0 after a chapter path. The overlay now sits next to `#th-dossier-ov` (a sibling of `#theatre`)
+and is `position:fixed` at z-index 978 (above cinema 900 and shadow-theatre 976). `_shelfRestoreLayer` stays.
+GUARD: test_the_shelf_opens_at_real_size (2 red-proofs).
+
 ### REG-3531 - A PRICE SEARCH'S RESULTS HAD NO EXIT OF THEIR OWN (v3891, #191)
 REG-3526 already empties the results when the field's native clear runs; the result cards themselves
 had no close. `priceSearchExit` now paints `#d2jsp-price-x` (the shared `gic-close-btn`) on the results;
