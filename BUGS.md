@@ -112,6 +112,27 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3495 - THE TERROR ZONE CARD GRADED ON DENSITY AND NEVER READ HIS GRAIL - FAR OASIS WAS "GOOD" FOR NO ITEM HE NEEDS (v3889, #133)
+His words 11-08 12:45 with the console's TERROR ZONE card: "for terror zones far oasis is good? why? what reason? density here
+looks low for a good farm is it related to the items i have or need to farm?", "it should be greyed off should it not?", "when
+a good terror zone is up it should glow". MEASURED: control_ui _tzTier graded density alone (s = den/2200*0.85, GOOD from ~725)
+and nothing on the card read his grail. Now the board answers (bible.html window.tzZoneGrade, beside the Quick wins ranking it
+reuses - _qwPlaces at his MF, /players and level, silospen's places): for each unique he has not found, a terror-zone kill IN
+that zone (a silospen place there, or the zone's own farm; an area run counted by its kills) that takes fewer runs to an even
+chance than the item's best plain run (beyond the 2% tie) is a reason - GOOD on any, PRIME at half the runs or fewer, THIN on
+none (grey, not clickable: his v1915 rule). The console's cards and slot chips read it through the board iframe (_tzGrade); a
+notable zone keeps PRIME on its own reason; a board that cannot be asked keeps the density grade and the hover says so
+(UNKNOWN about his items, never a guess); a LIVE zone graded GOOD/PRIME by his items glows (reduced motion: a still glow). The
+card carries one short line ("Crown of Ages · 1.1× fewer runs · +18" / "no missing item gains here"), the hover the
+items and their runs. Five board areas carry an alias to the console's zones (Tal Rasha's Tombs, Moo Moo Farm, the two Sewers
+by act, Lower Kurast = no zone). Measured on an empty world (397 uniques missing): Far Oasis THIN, Catacombs PRIME (Tyrael's
+Might 48,274 runs in Hell TZ Andariel vs 304,501 at Hell Baal), Moo Moo Farm GOOD; 11 zones graded in 18 ms. Pixels at 1512
+and 1120 with the real board in the iframe; my first cut ran the LIVE chip across the column at 1120 (the chip now names the item
+only, and cannot leave its slot); the Grok CLI's cold look: nothing overlaps or crosses a column. NOT this item, named: at 1512
+the four-across cards cut "Lut Gholei...", "density ·..." and "terroriz..." on main too (pre-existing); a zone's ordinary
+monsters are not priced (silospen ranks bosses and super-uniques); "open the the Cow King run" (pre-existing title).
+GUARD: test_a_terror_zone_is_graded_by_his_missing_items (5 node cases on the whole page + 3 source cases; 7 red-proofs RED).
+
 ### REG-3494 - THE THEATRE BLAMED "THE SHELF MOVED" FOR A REEL THAT CAME BACK UNDER ANOTHER ID - A CAUSE NOBODY MEASURED (v3889, GrokBot 6734314659)
 GrokBot on v3888's guest console: SHELF -> Play on sessions 4 and 5, twice: "the shelf moved while this opened - session 4/5
 is now a different reel, so nothing was played". MEASURED on his own console 11-09 ~09:45 (GET only): /api/session answers

@@ -70798,6 +70798,63 @@ function renderJournal(){
   var QW_SAME = 0.02;   // v3885 - his "basically the same" (the TZ level rule's 2%)
   function _qwH(p){ return (p.hours != null && isFinite(p.hours)) ? p.hours : 9e9; }
   window._qwPlaces = _qwPlaces;
+  /* v3889 (#133, his 11-08 12:45 with the console's TERROR ZONE card: "far oasis is good? why? what reason? density here looks
+     low ... is it related to the items i have or need to farm?", "it should be greyed off should it not?", "when a good terror
+     zone is up it should glow") - A TERROR ZONE IS GRADED BY THE ITEMS HE STILL NEEDS. The card graded on density alone
+     (s = den/2200*0.85) and never read his grail. This asks the one ranking Quick wins uses (_qwPlaces: his MF, /players and
+     level, silospen's places) for every unique he has not found, and a zone is GOOD when a terror-zone kill there - one of
+     silospen's places in that area, or the zone's own farm - takes FEWER runs to an even chance than that item's best plain
+     run (beyond the 2% tie, QW_SAME); PRIME when it takes half as many or fewer. Nothing else is GOOD: a zone no missing
+     item gains from is THIN. Its ordinary monsters are not priced (silospen ranks bosses and super-uniques), and the card
+     says so. -> { ok, tier: 'prime'|'good'|'thin', items: [{n, here, hereRuns, best, bestRuns, x}], count, missing, why }
+     A board that cannot read his ledger answers ok:false - UNKNOWN, never "nothing here". */
+  var _TZG_AREA = { "Tal Rasha's Tomb": "Tal Rasha's Tombs", 'The Secret Cow Level': 'Moo Moo Farm',
+                    'Sewers Level 3': 'Lut Gholein Sewers', 'Sewers Level 1': 'Sewers', 'Lower Kurast': '' };
+  var _tzgFlat = function(z){ return String(z || '').toLowerCase().replace(/[‘’']/g, '').replace(/[^a-z0-9]/g, '').replace(/^the/, ''); };
+  var _tzgZone = function(area){
+    var a = String(area || '');
+    if (Object.prototype.hasOwnProperty.call(_TZG_AREA, a)) return _tzgFlat(_TZG_AREA[a]);
+    return _tzgFlat(a.replace(/\s+Level\s+\d+$/i, ''));
+  };
+  window._tzgZoneOfArea = _tzgZone;
+  var _tzgMemo = { k: '', at: 0, by: null };
+  window.tzZoneGrade = function(zone, farm){
+    var want = _tzgFlat(zone), fid = String(farm || '');
+    if (!want) return { ok: false, why: 'no zone was named' };
+    var own;
+    try { own = _ownedNames(); } catch (e0) { return { ok: false, why: 'his grail could not be read here' }; }
+    var mk = [own.size, typeof _TZ_CHAR_LVL !== 'undefined' ? _TZ_CHAR_LVL : '', typeof mf !== 'undefined' ? mf : '',
+              typeof players !== 'undefined' ? players : ''].join('|');
+    if (_tzgMemo.k !== mk || !_tzgMemo.by || Date.now() - _tzgMemo.at > 60000){
+      var by = {}, missing = 0;
+      (_uniItems() || []).forEach(function(x){
+        if (!x || !x.n || _ownedHas(own, x.n)) return;
+        missing++;
+        var P; try { P = _qwPlaces(x) || []; } catch (e1) { return; }
+        var plain = null, hereBy = {};
+        P.forEach(function(p){
+          if (!p || !p.s || p.runs == null) return;   // an AREA run (the Cow Level, the Pit) is a run too - kills a run counted
+          var tz = !!p.s.tz || /Tz$/.test(String(p.s.diffKey || ''));
+          if (!tz){ if (!plain) plain = p; return; }
+          var zk = p.area ? _tzgZone(p.area) : ('farm:' + p.s.bossId);
+          if (zk && !hereBy[zk]) hereBy[zk] = p;
+        });
+        Object.keys(hereBy).forEach(function(zk){
+          var h = hereBy[zk];
+          if (plain && !(h.runs < plain.runs * (1 - QW_SAME))) return;
+          (by[zk] = by[zk] || []).push({ n: x.n, here: h.label, hereRuns: Math.round(h.runs), best: plain ? plain.label : null,
+                                         bestRuns: plain ? Math.round(plain.runs) : null, x: plain ? plain.runs / h.runs : null });
+        });
+      });
+      _tzgMemo = { k: mk, at: Date.now(), by: by, missing: missing };
+    }
+    var rows = (_tzgMemo.by[want] || []).concat(fid ? (_tzgMemo.by['farm:' + fid] || []) : []);
+    var seen = {}; rows = rows.filter(function(r){ if (seen[r.n]) return false; seen[r.n] = 1; return true; });
+    rows.sort(function(a, b){ return ((b.x == null ? 1e9 : b.x) - (a.x == null ? 1e9 : a.x)) || (a.hereRuns - b.hereRuns) || (a.n < b.n ? -1 : 1); });
+    var tier = !rows.length ? 'thin' : (rows.some(function(r){ return r.x == null || r.x >= 2; }) ? 'prime' : 'good');
+    return { ok: true, tier: tier, items: rows.slice(0, 5), count: rows.length, missing: _tzgMemo.missing,
+             why: rows.length ? '' : 'none of your ' + _tzgMemo.missing + ' missing uniques drops sooner here than on its best run' };
+  };
   /* the kinds shown beside the ranked rows, never as one: the Cow King and random packs, at his MF */
   function _qwAlso(x, worst, cap){
     var P = (typeof QW_PLACES !== 'undefined') ? QW_PLACES[x && x.n] : null, out = [];

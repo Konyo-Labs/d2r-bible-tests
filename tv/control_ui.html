@@ -3918,6 +3918,11 @@
   .tzz-prime .tzz-art { border-color: rgba(240,192,96,.42); }
   .tzz-good { opacity: .74; filter: saturate(.55); }
   .tzz-good:hover { opacity: .95; filter: saturate(.9); }
+  /* v3889 (#133, his "when a good terror zone is up it should glow") - a LIVE zone his missing items gain from glows, full colour */
+  .tzz.tzz-glow { opacity: 1; filter: none; animation: tzzGlow 2.6s ease-in-out infinite; }
+  @keyframes tzzGlow { 0%, 100% { box-shadow: 0 0 0 1px rgba(240,192,96,.22), 0 0 10px rgba(240,192,96,.14); }
+                       50% { box-shadow: 0 0 0 1px rgba(240,192,96,.55), 0 0 24px rgba(240,192,96,.36); } }
+  @media (prefers-reduced-motion: reduce) { .tzz.tzz-glow { animation: none; box-shadow: 0 0 0 1px rgba(240,192,96,.45), 0 0 18px rgba(240,192,96,.26); } }
   /* v1587 — THIN has to read as DEAD. Konyo: "i want it to be greyed out really.. so its known".
      At .46/grayscale(.85) beside a .74 middle tier the step was there but small on a dark panel,
      and the point of the treatment is that he never has to compare two cards to tell them apart.
@@ -4070,6 +4075,8 @@
   .tz-verdict { margin-left: 8px; padding: 2px 9px; border-radius: 999px; flex: none;
     font: var(--fw-bold) var(--fs-micro,var(--fs-2xs))/1.5 var(--mono); letter-spacing: .13em;
     text-transform: none; }
+  /* v3889 (#133) - a chip never leaves its slot: a long name is cut with an ellipsis, and the whole line is its hover */
+  .tz-verdict { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tz-verdict.prime { background: linear-gradient(180deg,#f0c060,#c99a34); color: #241a06; }
   .tz-verdict.good { background: rgba(143,230,160,.16); color: #9fe0b0;
     box-shadow: inset 0 0 0 1px rgba(143,230,160,.36); }
@@ -32402,6 +32409,46 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
                lvl: lvl, why: hint };
     };
     var _artFor = function (name) { var i = TZ_INFO[_tzKey(name)]; return i ? i[2] : null; };
+    /* v3889 (#133, his 11-08 12:45: "far oasis is good? why? what reason? density here looks low for a good farm is it related to
+       the items i have or need to farm?", "it should be greyed off should it not?", "when a good terror zone is up it should
+       glow") - THE GRADE IS HIS ITEMS, ASKED OF HIS BOARD. _tzTier grades density alone; the board's own Quick wins ranking
+       (#tvd-eng's tzZoneGrade - his grail, MF, /players and level) says which missing uniques drop sooner in this zone's
+       terror than on their best plain run: GOOD, PRIME at half the runs or fewer, THIN otherwise (grey and not clickable, his
+       v1915 rule). A notable zone stays PRIME on its own reason. A board that cannot be asked leaves the density grade and
+       says so in the hover - UNKNOWN about his items, never a guess. Density stays on the card as evidence. */
+    var _tzBoardW = function () {
+      try { var f = document.getElementById('tvd-eng'), w = f && f.contentWindow; return (w && typeof w.tzZoneGrade === 'function') ? w : null; }
+      catch (e) { return null; }
+    };
+    var _tzN = function (n) { return Number(n || 0).toLocaleString('en-US'); };
+    var _tzGrade = function (name) {
+      var t = _tzTier(name), k = _tzKey(name), o = {}, g = null, W = _tzBoardW();
+      for (var p in t) if (Object.prototype.hasOwnProperty.call(t, p)) o[p] = t[p];
+      try { g = W ? W.tzZoneGrade(k, TZ_BOSS[k] || '') : null; } catch (e) { g = null; }
+      if (!g || !g.ok) {
+        o.byItems = false;
+        o.itemsWhy = (g && g.why) ? String(g.why) : 'your grail could not be asked, so this grade is density only';
+        return o;
+      }
+      o.byItems = true; o.items = g.items || []; o.count = g.count || 0; o.densWhy = t.why || null;
+      if (t.tier === 'unknown' || TZ_NOTABLE[k]) return o;
+      o.tier = g.tier;
+      var h = o.items[0];
+      /* the card holds ONE short line (the item and how much sooner); the hover holds the sentence and the runs */
+      o.why = h ? (h.n + ' · ' + (h.x == null ? 'only here' : (h.x >= 10 ? Math.round(h.x) : (Math.round(h.x * 10) / 10)) + '× fewer runs')
+                   + (o.count > 1 ? ' · +' + (o.count - 1) : ''))
+               : 'no missing item gains here';
+      o.whyLong = h ? '' : String(g.why || '');
+      o.score = h ? (h.x == null ? 99 : h.x) : 0;
+      return o;
+    };
+    var _tzItemsTitle = function (t) {
+      if (!t || !t.byItems) return (t && t.itemsWhy) ? ' — ' + t.itemsWhy : '';
+      if (!t.items || !t.items.length) return '';
+      return ' — for your missing items: ' + t.items.map(function (h) {
+        return h.n + ' ' + _tzN(h.hereRuns) + ' runs (' + h.here + ')' + (h.best ? ' vs ' + _tzN(h.bestRuns) + ' (' + h.best + ')' : '');
+      }).join('; ') + (t.count > t.items.length ? '; +' + (t.count - t.items.length) + ' more' : '');
+    };
     /* ══ v2269 — NINE ZONES REPORTED A GARBAGE ACT, AND HE CAUGHT ONE ON HIS SCREEN ═══════════
        Konyo: "how can two terror zone at the same time from two different acts be terrorized?"
        The answer is that they CAN — D2R terrorizes a GROUP, and Dry Hills / Halls of the Dead is
@@ -32456,7 +32503,7 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
         + '<i></i><em class="tzz-why"></em>'
         + '<em>the tracker has not announced the next window</em></span></div>';
       return parts.map(function (x) {
-        var file = _artFor(x), act = _actOf(file, x), t = _tzTier(x);
+        var file = _artFor(x), act = _actOf(file, x), t = _tzGrade(x);   /* v3889 (#133) - his items first, density beside */
         var _mk = _tzKey(x);   /* #108 - the zone's own monster, by the SAME key its art resolves by ("The Secret Cow Level" = Moo Moo Farm) */
         var mon = Object.prototype.hasOwnProperty.call(TZ_MONSTER, _mk) ? TZ_MONSTER[_mk] : null;
         var face = mon
@@ -32563,8 +32610,10 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
            with a dead handler attached. */
         var _thin = (t.tier === 'thin');
         var _title = escC(x)
-          + (_thin ? ' — thin: low density, not worth the window. Not farmable, so not clickable'
-                   : (_boss ? ' — open the ' + escC(t.why || _boss) + ' run' : ' — open the full tracker'));
+          + (_thin ? ' — thin: ' + (t.byItems ? escC(t.whyLong || t.why || 'none of your missing items drops sooner here') : 'low density')
+                     + ', not worth the window. Not farmable, so not clickable'
+                   : (_boss ? ' — open the ' + escC((t.byItems ? t.densWhy : t.why) || _boss) + ' run' : ' — open the full tracker'))
+          + escC(_tzItemsTitle(t));
         /* ── v1915 — A THIN ZONE IS NOT CLICKABLE, AND THE CURSOR SAYS SO ────────────────────
            Konyo, 2026-08-21: "the mouse cursor for TZ ZONES that arent worth farming at all i want
            a CANCELLED sign on it so i know i cant click them. only the TZ ZONES worth farming
@@ -32588,7 +32637,9 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
           : ' role="button" tabindex="0" onclick="' + _go + '"'
             + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + _go + ';}"'
             + ' title="' + _title + '"';
+        /* v3889 (#133) - a zone worth his items GLOWS while it is up (the LIVE slot), his words */
         return '<div class="tzz tzz-' + t.tier + (hero ? ' tzz-hero' : '') + ' tzz-live'
+          + ((hero && t.byItems && (t.tier === 'good' || t.tier === 'prime')) ? ' tzz-glow' : '')
           + '"' + attrs + '>' + face
           + '<span class="tzz-txt"><span class="tzz-top"><b>' + escC(x) + '</b>'
           + tag + '</span>'
@@ -32653,7 +32704,7 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
       var rank = { prime: 3, good: 2, thin: 1, unknown: 0 };
       var best = null;
       parts.forEach(function (x) {
-        var t = _tzTier(x);
+        var t = _tzGrade(x);   /* v3889 (#133) - the chip says what the cards say */
         // tier first, then SCORE — so among two primes the boss zone (score 1, set by TZ_NOTABLE)
         // beats one that got there on density, and the chip names the actual prize.
         if (!best || (rank[t.tier] || 0) > (rank[best.tier] || 0)
@@ -32663,8 +32714,11 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
       });
       if (!best || best.tier === 'unknown') return '';
       var label = best.tier === 'prime' ? 'PRIME' : best.tier === 'good' ? 'GOOD' : 'THIN';
-      return '<span class="tz-verdict ' + best.tier + '">' + label
-        + (best.why ? ' · ' + escC(String(best.why)) : '') + '</span>';
+      /* v3889 (#133) - an items grade names its ITEM here, never the card's whole line (at 1120 that line ran the LIVE chip
+         across the column and over UP NEXT's), and a thin one says nothing more than THIN */
+      var _cw = best.byItems && !best.densWhy && best.items ? (best.items[0] ? best.items[0].n : '') : (best.tier === 'thin' && best.byItems ? '' : best.why);
+      return '<span class="tz-verdict ' + best.tier + '" title="' + escC(String(best.why || '')) + '">' + label
+        + (_cw ? ' · ' + escC(String(_cw)) : '') + '</span>';
     };
     /* v1587 — ONE GRID FOR BOTH ROWS. Konyo: "why are they not aligned? the next and live?"
        auto-fit sized each row to its OWN item count, so a 2-zone LIVE NOW made two 50% columns
