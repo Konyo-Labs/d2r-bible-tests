@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3887",
+  "ver": "v3888",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3887: Best runs count the others, Quick wins in three lists, every Fleet row two lines at 1512",
+  "note": "v3888: a version that touches nothing a lock reads keeps it open (#103)",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

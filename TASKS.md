@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3887** | `(this commit)` | v3887 — Best runs count the others, Quick wins in three lists, every Fleet row two lines at 1512 |
+| **v3888** | `(this commit)` | v3888 — a version that touches nothing a lock reads keeps it open (#103) |
+| **v3887** | `098767e4` | v3887 — Best runs count the others, Quick wins in three lists, every Fleet row two lines at 1512 |
 | **v3886** | `4993146e` | v3886 — Quick wins as silospen lists, staff mods, automod, shield block, Dean prices, shadow d2jsp lamp, Windows laws |
 | **v3885** | `67426c90` | v3885 — Design C build screen, class-only items, d2jsp rolls, TZ level 68, Fleet eyes, one-shard re-run |
 | **v3884** | `45d5126d` | v3884 — D2JSP price cards, TZ odds at your level, every qlvl from silospen, TZ runs tagged |
