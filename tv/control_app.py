@@ -13490,16 +13490,26 @@ def _chron_tally(finds):
     except Exception:
         return None
     uq = st = ot = 0
+    seen_u, seen_s = set(), set()
     for f in (finds or []):
         nm = (f or {}).get("name")
         if not nm:
             continue
-        if _res.canonical(nm, u):
-            uq += 1
-        elif _res.canonical(nm, sr):
-            st += 1
-        else:
-            ot += 1
+        cu = _res.canonical(nm, u)
+        if cu:
+            # v3892 (#184, REG-3542) - each unique/set seen on the floor counts once
+            # (aliases that fold to one roster name, and two sightings of the same name)
+            if cu not in seen_u:
+                seen_u.add(cu)
+                uq += 1
+            continue
+        cs = _res.canonical(nm, sr)
+        if cs:
+            if cs not in seen_s:
+                seen_s.add(cs)
+                st += 1
+            continue
+        ot += 1
     return {"uniques": uq, "sets": st, "other": ot}
 
 

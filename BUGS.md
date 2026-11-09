@@ -123,6 +123,56 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3548 - ESCAPE DID NOT CLOSE THE IN-GAME CHARACTER WINDOW (v3892, #191/#146)
+`_tvEsc` peeled keyboard help, the help sheet, the unique cards, the boss detail and the nav
+compass, but never `#chx-win`. Esc now runs `_chxClose` when that dialog is not hidden, after
+the unique and boss cards (a card opened from a worn item peels first) and before the compass.
+GUARD: test_the_character_window_closes_on_escape (1 red-proof).
+
+### REG-3547 - SOCKET FILLERS WERE NOT ONE VOCABULARY FROM THE PAGE'S OWN TABLES (v3892, #135)
+His ask: one shared socket-filler vocabulary (every rune, every gem x grade, every jewel by name)
+from the page's own tables, never typed, and one reader. `socketFillerVocab` walks RUNES,
+GEM_TYPES, COLOSSAL_JEWELS and ITEMS whose base is a Jewel (and keeps the trader spelling
+"Ber Rune"); `readSocketFillers` picks those names out of a line, longest first.
+GUARD: test_socket_fillers_come_from_the_page_tables (1 red-proof).
+
+### REG-3546 - CLICKING A WORN ITEM IN THE CHARACTER WINDOW ONLY REFRESHED A SENTENCE (v3892, #28/#146)
+The character window spoke the picked cell's sentence and did not open the item. `_chxPick` now
+opens `openItemDetail` for a worn named item; an unseen or UNKNOWN cell still only speaks.
+GUARD: test_a_worn_item_in_the_character_window_opens_its_card (1 red-proof).
+
+### REG-3545 - THE CALCULATOR'S MF COMPARISON SCALED SET PIECES BY THE UNIQUE CURVE (v3892, #43)
+REG-3506 taught `effChance` the unique-first set roll. The power-user MF comparison still called
+`adjustChance` on the raw 1:N, so a set piece looked better as MF rose. It now asks `setMfChance`
+with the selected item and compared farm first.
+GUARD: test_a_set_items_mf_comparison_uses_the_set_curve (1 red-proof).
+
+### REG-3544 - ZONE, BOSS AND CHARACTER-WINDOW DISMISSALS DID NOT WEAR THE SHARED CLOSE (v3892, #191)
+Unique cards already use `gic-close-btn`. Zone, super-unique, bind, aura, rune-source and boss
+detail dismissals were `gbc-close` only, and the character window's Close had no class. Those
+dismissals now also wear `gic-close-btn`. The boss card's scroll-to-table button stays a scroll
+control.
+GUARD: test_remaining_popups_use_the_same_close_control (2 red-proofs).
+
+### REG-3543 - THE STASH BOX STILL SUMMED kaiClasses STASH FRAMES (v3892, #184)
+His rule: STASH = items carried into the stash. The owner card and `_fourBoxHtml` summed every
+`stash*` bucket in `kaiClasses` (frames, and town frames that leak there — #87). They now count
+the grouped names on `sm.stashed` or `sm.route.stashed`. Missing stays '?'; a counted zero is an
+em dash.
+GUARD: test_the_stash_box_counts_items_carried_in (2 red-proofs).
+
+### REG-3542 - UNIQUES AND SETS COUNTED EVERY SIGHTING, NOT EACH NAME ONCE (v3892, #184)
+His rule: every unique/set seen on the floor counts once. `_chron_tally` walked every find
+(REG-3533) but incremented per row, so two frames of the same unique (or two spellings that
+`canonical` folds together) counted as two. It now remembers the canonical roster name.
+GUARD: test_each_unique_and_set_counts_once (1 red-proof).
+
+### REG-3541 - THREE NAMED BOSS LEVELS DISAGREED WITH SILOSPEN'S FITTED ILVL (v3892, #181)
+SET_MF_FARM (the unique-first roll fitted to silospen) already used Duriel Hell 88, Mephisto
+Nightmare 59 and Diablo Nightmare 62. The page's BOSSES diffs still showed 80, 58 and 66. Those
+three named cells now match the fitted ilvl. Other farms are not this slice.
+GUARD: test_the_named_boss_levels_match_the_silospen_fit (3 red-proofs).
+
 ### REG-3540 - A PRESS OUTSIDE THE VISIBLE BOSS CARD DID NOT CLOSE IT (v3892, #191)
 `#boss-detail-overlay` is in-flow (inserted under the clicked boss), so the overlay contract
 cannot see it. Escape already peels it (REG-3539). A pointerdown outside the overlay now runs
