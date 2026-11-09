@@ -13,7 +13,11 @@ Held here:
   * THE RED MEMORY TRAVELS: each shard starts from the last round's (which cases caught each sabotage - #42 lever 1, which
     only ever saves time), the fan-in merges every shard's with heart2's own rule (newest learning wins a key), and the
     seed carries it;
-  * the Mac's import reads the set's size from the shards' own manifests.
+  * the Mac's import reads the set's size from the shards' own manifests;
+  * the agent suite: run_gates.choose_shards takes the fewest slices whose heaviest fits the target, or the floor of
+    the heaviest single gate; GATE_COSTS (the last round's table) wins over the committed tv/gate_costs.json; gate_costs
+    --base keeps every gate the round did not run; the plan job chooses the count, hands one table, and the verdict
+    re-measures; hashFiles() never sees runner.temp.
 RED_PROOF below. [[heart-first]] [[the-unjoined-end]]
 """
 import io
@@ -37,6 +41,7 @@ import proof_keys_mac as PKM  # noqa: E402
 import routine_i_shards as RIS  # noqa: E402
 
 RI_WF = os.path.join(ROOT, ".github", "workflows", "routine-i-playwright.yml")
+TV_WF = os.path.join(ROOT, ".github", "workflows", "tv-tests.yml")
 
 WF = os.path.join(ROOT, ".github", "workflows", "proof-keys-shards.yml")
 PR = {"why": "x", "file": "tv/x.py", "find": "a", "replace": "b", "matches": 1}
@@ -328,6 +333,114 @@ class TheBrowserSuiteDealsFromWhatItMeasured(unittest.TestCase):
                           "hashFiles() reads only the workspace: a condition on a runner.temp file is never true")
 
 
+
+class TheAgentSuiteChoosesItsOwnSliceCount(unittest.TestCase):
+    """The agent suite: v3889 ran 5 fixed slices, the slowest job 20.1 min. Now each round chooses its count from
+    measured gate costs (GATE_COSTS over the committed table) and the verdict refreshes them (--base: a gate not run
+    keeps its last cost)."""
+
+    class _G(object):
+        def __init__(self, name):
+            self.name = name
+
+    def _with_costs(self, costs, fn):
+        tmp = tempfile.mkdtemp(prefix="ag_costs_")
+        try:
+            p = os.path.join(tmp, "gate_costs.json")
+            with io.open(p, "w", encoding="utf-8") as fh:
+                json.dump({"costs": costs}, fh)
+            old = os.environ.get("GATE_COSTS")
+            os.environ["GATE_COSTS"] = p
+            try:
+                return fn()
+            finally:
+                if old is None:
+                    os.environ.pop("GATE_COSTS", None)
+                else:
+                    os.environ["GATE_COSTS"] = old
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_the_fewest_slices_that_fit_and_the_heaviest_gate_is_the_floor(self):
+        """* THE POINT - 100 gates of 60 s against a 4-minute target: 25 slices fit, and 24 do not; one 500-s gate is the floor"""
+        import run_gates as RG
+        names = ["ag%03d" % i for i in range(100)]
+        costs = dict((n, 60.0) for n in names)
+        gates = [self._G(n) for n in names]
+
+        def choose():
+            return RG.choose_shards(target_s=240, n_min=1, n_max=60, gates=gates)
+
+        n, why = self._with_costs(costs, choose)
+        self.assertEqual(n, 25, why)                          # 6000 / 25 = 240; 24 would be 250
+        costs["ag000"] = 500.0                                # one gate alone runs 500 s
+        n2, why2 = self._with_costs(costs, choose)
+        self.assertLess(n2, 60, "past the heaviest gate's floor every shard was asked for: %s" % why2)
+
+    def test_GATE_COSTS_wins_over_the_committed_table(self):
+        import run_gates as RG
+        import gate_costs as GC
+        committed = GC.load()
+        self.assertTrue(committed, "PREMISE: the committed table is readable")
+        some = sorted(committed)[0]
+        p = tempfile.mkdtemp(prefix="ag_last_")
+        try:
+            path = os.path.join(p, "gate_costs.json")
+            with io.open(path, "w", encoding="utf-8") as fh:
+                json.dump({"costs": {some: 999.0}}, fh)
+            old = os.environ.get("GATE_COSTS")
+            os.environ["GATE_COSTS"] = path
+            try:
+                got, _why = RG._cost_table()
+            finally:
+                if old is None:
+                    os.environ.pop("GATE_COSTS", None)
+                else:
+                    os.environ["GATE_COSTS"] = old
+            self.assertEqual(got[some], 999.0, "the round's measured cost lost to the committed snapshot")
+            self.assertEqual(len(got), len(committed), "the committed gates the round did not run were dropped")
+            other = next(k for k in committed if k != some)
+            self.assertEqual(got[other], committed[other], "a committed gate GATE_COSTS did not name was rewritten")
+        finally:
+            shutil.rmtree(p, ignore_errors=True)
+
+    def test_a_refresh_keeps_the_gates_the_round_did_not_run(self):
+        import gate_costs as GC
+        tmp = tempfile.mkdtemp(prefix="ag_base_")
+        try:
+            base = os.path.join(tmp, "base.json")
+            with io.open(base, "w", encoding="utf-8") as fh:
+                json.dump({"costs": {"old": 50.0, "a": 10.0}}, fh)
+            log = os.path.join(tmp, "shard.log")
+            with io.open(log, "w", encoding="utf-8") as fh:
+                fh.write("\u2705 a 20.0s done\n")
+            out = os.path.join(tmp, "out", "gate_costs.json")
+            self.assertEqual(GC.main(["gate_costs.py", "--base", base, "--out", out, log]), 0)
+            with io.open(out, encoding="utf-8") as fh:
+                c = json.load(fh)["costs"]
+            self.assertEqual(c, {"a": 20.0, "old": 50.0})
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_the_workflow_plans_hands_one_table_and_the_verdict_remeasures(self):
+        with io.open(TV_WF, encoding="utf-8") as fh:
+            wf = fh.read()
+        code = "\n".join(l for l in wf.split("\n") if not l.lstrip().startswith("#"))
+        plan = _job(code, "plan")
+        self.assertIn("python3 tv/run_gates.py --choose-shards --fallback 5 --output \"$GITHUB_OUTPUT\"", plan)
+        self.assertIn("continue-on-error: true", plan, "a count that cannot be chosen would fail the round")
+        self.assertIn('export GATE_COSTS="$RUNNER_TEMP/gate-costs/gate_costs.json"', plan)
+        self.assertIn("if: ${{ steps.count.outputs.measured == 'true' }}", plan, "the table is never handed on")
+        suite = _job(code, "agent-suite")
+        self.assertIn('export GATE_COSTS="$RUNNER_TEMP/gate-costs/gate_costs.json"', suite,
+                      "a shard cuts from the committed snapshot, not the round's one table")
+        verdict = _job(code, "verdict")
+        self.assertIn("--base \"$B\" --out \"$RUNNER_TEMP/gate-costs/gate_costs.json\"", verdict)
+        self.assertIn("if: ${{ steps.measure.outputs.wrote == 'true' }}", verdict)
+        self.assertIsNone(re.search(r"hashFiles\([^)]*runner\.temp", code),
+                          "hashFiles() reads only the workspace: a condition on a runner.temp file is never true")
+
+
 class TheMacReadsTheSetsOwnSize(unittest.TestCase):
 
     def test_the_size_is_the_one_n_the_manifests_carry(self):
@@ -428,6 +541,31 @@ RED_PROOF = [
      "file": "tv/proof_keys_mac.py",
      "find": "    return ns.pop() if len(ns) == 1 else None\n",
      "replace": "    return max(ns) if ns else None\n",
+     "matches": 1},
+    {"why": "v3891 (#194, REG-3523) - past the floor the agent suite asks for every slice the bound allows",
+     "file": "tv/run_gates.py",
+     "find": "    aim = max(float(target_s), floor * 1.05)\n",
+     "replace": "    aim = float(target_s)\n",
+     "matches": 1},
+    {"why": "v3891 (#194, REG-3523) - GATE_COSTS loses to the committed table",
+     "file": "tv/run_gates.py",
+     "find": "        merged.update(_last)\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "v3891 (#194, REG-3523) - a refresh forgets every gate the round did not run",
+     "file": "tv/gate_costs.py",
+     "find": "        costs = dict(prev, **costs)\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "v3891 (#194, REG-3523) - the hand-on waits on hashFiles over runner.temp, which is never true",
+     "file": ".github/workflows/tv-tests.yml",
+     "find": "        if: ${{ steps.count.outputs.measured == 'true' }}\n",
+     "replace": "        if: ${{ hashFiles(format('{0}/gate-costs/gate_costs.json', runner.temp)) != '' }}\n",
+     "matches": 1},
+    {"why": "v3891 (#194, REG-3523) - the verdict save waits on hashFiles over runner.temp, which is never true",
+     "file": ".github/workflows/tv-tests.yml",
+     "find": "        if: ${{ steps.measure.outputs.wrote == 'true' }}\n",
+     "replace": "        if: ${{ hashFiles(format('{0}/gate-costs/gate_costs.json', runner.temp)) != '' }}\n",
      "matches": 1},
 ]
 
