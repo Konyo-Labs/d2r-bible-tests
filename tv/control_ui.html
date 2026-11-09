@@ -8258,6 +8258,17 @@
     box-shadow: 0 0 0 3px rgba(240, 192, 96, .35), 0 0 14px rgba(240, 192, 96, .45);
   }
   button:active { transform: translateY(1px); filter: brightness(.94); }
+
+/* v3889 (#23, his theme pass) - IN-GAME TEXT IN THE GAME'S OWN FACE, the console's half (the board's: bible.html
+   #v3889-game-face). His 11-08 scope: item names, zones and maps, terror zones, monsters and bosses; the console's own
+   words, numbers, status and buttons keep their monospace face, and no colour, size or weight is touched. The face is the
+   builder's "D2 Exocet", streamed by this console from HIS install (/api/d2r_font/exocet - never this repo, never the
+   site), then the console's own display serif. The terror-zone card's "not published yet" placeholder sits in the same
+   <b> as a zone name and is a console word: it keeps the face it inherits. Law: test_game_names_wear_the_game_face. */
+@font-face{font-family:"D2 Exocet";src:local("Exocet Blizzard OT"),local("ExocetBlizzardOT-Medium"),url('/api/d2r_font/exocet') format('opentype');font-display:swap}
+:root{--ff-game:"D2 Exocet",var(--serif)}
+.tzz-top b,.hh-name,.hh-grail,.hh-boss,.fx-name,.shc-area{font-family:var(--ff-game)!important}
+.tzz-pending .tzz-top b{font-family:inherit!important}
 </style>
 </head>
 <style>

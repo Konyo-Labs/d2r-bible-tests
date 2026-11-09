@@ -106,7 +106,49 @@ class GameNamesWearTheGameFace(unittest.TestCase):
                          "the game's font file is tracked in a PUBLIC repo")
 
 
+
+class TheConsolesGameNamesToo(unittest.TestCase):
+    """the console's half: its terror-zone names, hunt-history item and boss names, the cross-reference's item names and
+    a shelf card's areas - in a monospace console whose own words keep their face"""
+
+    CONSOLE_NAMES = (".tzz-top b", ".hh-name", ".hh-grail", ".hh-boss", ".fx-name", ".shc-area")
+
+    def setUp(self):
+        with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as fh:
+            self.ui = fh.read()
+        i = self.ui.index("/* v3889 (#23, his theme pass) - IN-GAME TEXT IN THE GAME'S OWN FACE, the console's half")
+        self.css = _code(self.ui[i:self.ui.index("</style>", i)])
+
+    def test_the_console_loads_the_face_from_its_own_route(self):
+        self.assertIn("@font-face{font-family:\"D2 Exocet\";src:local(\"Exocet Blizzard OT\"),local(\"ExocetBlizzardOT-Medium\"),"
+                      "url('/api/d2r_font/exocet') format('opentype')", self.css, "the console's game face has no source")
+        self.assertIn(':root{--ff-game:"D2 Exocet",var(--serif)}', self.css)
+
+    def test_its_game_names_wear_it_and_its_placeholder_does_not(self):
+        m = re.search(r"([^{}]+)\{font-family:var\(--ff-game\)!important\}", self.css)
+        self.assertTrue(m, "no console rule sets the game face")
+        sels = set(x.strip() for x in m.group(1).split(","))
+        self.assertEqual([c for c in self.CONSOLE_NAMES if c not in sels], [], "a console game name lost the face")
+        self.assertIn(".tzz-pending .tzz-top b{font-family:inherit!important}", self.css,
+                      "the zone card's 'not published yet' placeholder wears the game face")
+
+    def test_the_console_block_sets_the_font_and_nothing_else(self):
+        props = set(re.findall(r"[{;]\s*([a-z-]+)\s*:", self.css))
+        self.assertEqual(props - {"font-family", "--ff-game", "src", "font-display"}, set(),
+                         "the console's theme block sets more than the face: %s" % sorted(props))
+
+
 RED_PROOF = [
+    {"why": "v3889 (#23) - the console's terror-zone names lose the game face",
+     "file": "tv/control_ui.html",
+     "find": ".tzz-top b,.hh-name,.hh-grail,.hh-boss,.fx-name,.shc-area{font-family:var(--ff-game)!important}",
+     "replace": ".hh-name,.hh-grail,.hh-boss,.fx-name,.shc-area{font-family:var(--ff-game)!important}",
+     "matches": 1},
+    {"why": "v3889 (#23) - the console's 'not published yet' placeholder is set in the game face",
+     "file": "tv/control_ui.html",
+     "find": ".tzz-pending .tzz-top b{font-family:inherit!important}",
+     "replace": ".tzz-pending .tzz-top b{}",
+     "matches": 1},
     {"why": "v3889 (#23) - the Quick wins place names lose the game face",
      "file": "bible.html",
      "find": ".qw-name,.f-rwbig,.boss-name,.fh-boss,.gic-name,.item-name,.ct-name,.tz-zone-name,.tzt-z-name,\n",

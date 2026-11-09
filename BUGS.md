@@ -120,7 +120,11 @@ never this repo - then the display serif) on 17 game-name classes; Quick wins' a
 words. MEASURED 11-09 computed style: Quick wins places (3,806) and Best runs names were Inter, now the game face; every
 number, label, 'Run' and 'TZ' unchanged. The Grok CLI read before/after crops cold and caught the item card's badge going
 'UNIQUE' -> 'Unique' under a --sans exclusion: it keeps the display serif it had. Render gate on the 9 board targets: clean at
-1440/1120/901. The console's half (its zone and boss names) is the next step. GUARD: test_game_names_wear_the_game_face (4
+1440/1120/901. The CONSOLE's half followed in the same version: its terror-zone names, hunt-history item and boss
+names, the cross-reference's item names and a shelf card's areas, its own @font-face from /api/d2r_font/exocet (a private
+console streamed the real Exocet from his install), the 'not published yet' placeholder excluded; render gate clean on 5
+console targets. The Grok CLI called Exocet's crossed lowercase 'o' a wrong glyph and one 'o' ordinary - refuted at 5x zoom:
+every lowercase 'o' is the same crossed glyph, the font's own design. GUARD: test_game_names_wear_the_game_face (6
 red-proofs RED).
 ### REG-3489 - THERE IS NO PHONE PAGE: THE PHONE TRAY BAR AND EVERY PHONE-WIDTH GATE ARE GONE (v3889, #132, his 11-08 ruling)
 His words 11-08 ~12:30 IST: "forget the MOBILE PAGE COMPELTELY drop it", "i dont need any mobile anything". Stage 1 (this
