@@ -82,7 +82,7 @@ jobs:
     # job — and test_a_cut_off_gate_set_is_not_a_verdict goes red if they ever disagree.
     strategy:
       fail-fast: false
-      # v3891 (#194) - the plan job's count: every slice at once (Konyo-Labs runs 500 jobs at a time)
+      # v3891 (#194) - the plan job's count: every slice at once (capped at today's count: Pro shares ~40 workers across the round)
       matrix:
         shard: ${{ fromJSON(needs.plan.outputs.list) }}
     # ⚠ 25, NOT 20 — RAISED WITH THE CHROMIUM STEPS BELOW, because the pair of them is what

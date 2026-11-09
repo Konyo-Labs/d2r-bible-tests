@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """v3891 (#194) - A PROOF ROUND CHOOSES ITS OWN SHARD COUNT, AND EACH ROUND STARTS FROM WHAT THE LAST ONE LEARNED.
 
-His words, 11-09 (the repo moved to Konyo-Labs, 500 jobs at once): "optimize the #194 all the way and make sure it keeps
+His words, 11-09 (the repo went to Konyo-Labs and came back to Pro, ~40 shared workers, the counts capped at today's): "optimize the #194 all the way and make sure it keeps
 getting faster self improve it". MEASURED on v3889's round: workers were not the wait (Routine I waited <= 1 min, Publish
 up to 15); the slowest proof shard ran 43 min of a hand-set 22. And cold on v3891's tree, even 160 shards modelled a
 slowest prove of 1,064 s: one test_control proof (~270 s) and its two clean runs - the floor more shards cannot beat.

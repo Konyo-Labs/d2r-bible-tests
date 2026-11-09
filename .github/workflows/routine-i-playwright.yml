@@ -178,7 +178,7 @@ jobs:
     timeout-minutes: 65
     strategy:
       fail-fast: false
-      # v3891 (#194) - the stamp check's count, every shard at once (Konyo-Labs runs 500 jobs at a time)
+      # v3891 (#194) - the stamp check's count, every shard at once (capped at today's count: Pro shares ~40 workers across the round)
       matrix:
         shard: ${{ fromJSON(needs.stamp-check.outputs.list) }}
     steps:

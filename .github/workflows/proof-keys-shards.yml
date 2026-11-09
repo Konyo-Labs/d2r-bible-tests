@@ -130,7 +130,7 @@ jobs:
     timeout-minutes: 75
     strategy:
       fail-fast: false
-      # v3891 (#194) - the seed job's count: every shard of it starts at once (Konyo-Labs runs 500 jobs at a time)
+      # v3891 (#194) - the seed job's count: every shard of it starts at once (capped at today's count: Pro shares ~40 workers across the round)
       max-parallel: ${{ fromJSON(needs.seed.outputs.n) }}
       matrix:
         shard: ${{ fromJSON(needs.seed.outputs.list) }}
