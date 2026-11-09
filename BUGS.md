@@ -123,6 +123,16 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3523 - THE AGENT SUITE RAN A HAND-SET 5; IT NOW CHOOSES ITS SLICE COUNT FROM MEASURED GATE COSTS AND REFRESHES THEM EVERY ROUND (v3891, #194)
+MEASURED on v3889's agent tests: 5 fixed slices, the slowest job 20.1 min (~13.6 of gates + setup). Now the plan job
+restores the last round's per-gate seconds (actions/cache; the committed tv/gate_costs.json under them), chooses the
+fewest slices whose heaviest fits 4 min of gates (or the floor of the heaviest single gate) - capped at today's 5 - and
+hands that ONE table to every shard as GATE_COSTS, so all cut the same slices from fresher costs. The verdict measures
+every gate this round ran from the shards' own logs (--base: a gate not run keeps its last cost) and saves the table.
+Caught before it shipped: two conditions written as hashFiles() over runner.temp, which hashFiles never reads - the
+table would never have been handed on or saved, silently.
+GUARD: test_a_round_chooses_its_own_shard_count (5 red-proofs).
+
 ### REG-3522 - ROUTINE I DEALT FROM ONE OLD SNAPSHOT ON A HAND-SET 10; IT NOW MEASURES ITSELF AND CHOOSES ITS COUNT (v3891, #194)
 MEASURED on v3889's Routine I: the fast shards ran 12.8, 13.2, 14.0, 14.8, 18.8, 19.4 and 20.0 min (the slow two 3-5) -
 dealt by tv/routine_i_costs.json, one snapshot of run 37139166700 (10-15, edited 10-19), on a fixed 10. Now the merge job
