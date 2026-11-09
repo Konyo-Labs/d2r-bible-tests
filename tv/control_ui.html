@@ -24954,6 +24954,21 @@ window._lockMark = function(isOpen, px, label){
       if (window.TH && window.TH.open && b.dataset.tab !== _shellTab
           && typeof window.thClose === 'function') window.thClose();
     } catch (_tc) {}
+    /* v3892 (#191, REG-3534) - a console tab switch is a fresh start for the board too.
+       navClean/switchTab already close #cb-win inside bible.html; the header tabs live here
+       and never asked the iframe, so a builder or unique card rode along to the next room. */
+    try {
+      if (b.dataset.tab !== _shellTab) {
+        ['tvd-eng', 'shadow-eng'].forEach(function(id){
+          var el = document.getElementById(id);
+          var w = el && el.contentWindow;
+          if (!w) return;
+          try { if (typeof w.closeCharBuilder === 'function') w.closeCharBuilder(); } catch (_e1) {}
+          try { if (typeof w.closeItemDetail === 'function') w.closeItemDetail(); } catch (_e2) {}
+          try { if (typeof w.closeDrop === 'function') w.closeDrop(); } catch (_e3) {}
+        });
+      }
+    } catch (_cl) {}
     if (document.body.classList && document.body.classList.contains('shadow-on')) {
       /* Their board, except Sessions. On this console Sessions is the hunt hub,
          not the board cockpit, so the shadow shows that same hub from their frame.

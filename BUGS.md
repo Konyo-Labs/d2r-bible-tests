@@ -123,6 +123,15 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3534 - A CONSOLE HEADER TAB SWITCH LEFT THE BOARD'S BUILDER AND UNIQUE CARD OPEN (v3892, #191)
+His rule: switching top tabs closes everything and gives a fresh start. MEASURED: bible.html's
+`navClean` and `switchTab` already ask `closeCharBuilder` (REG-3524), but the console's header tabs
+run `_headTabGo` in control_ui.html and never talked to the board iframe. A character builder or a
+unique card left open in `#tvd-eng` (or a shadow's `#shadow-eng`) rode along to the next room.
+`_headTabGo` now asks each board iframe for the same three closes the board's own tab switch already
+runs, and only when the click leaves the tab that is showing.
+GUARD: test_a_console_tab_switch_closes_the_board_layers (2 red-proofs).
+
 ### REG-3533 - UNIQUES AND SETS ONLY COUNTED THE CAPPED finds[:16] TEASER (v3891, #184)
 Elad's rule: every unique/set seen on the floor counts once (identified or not); charms and other
 non-unique non-set items count only in STASH, not in those two boxes. MEASURED: `_theatre_sessions`
