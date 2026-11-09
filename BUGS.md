@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3490 - IN-GAME NAMES WEAR THE GAME'S OWN FACE ON THE BOARD (v3889, #23, his theme pass - fonts only, colours unchanged)
+His 11-07 spec ("the diablo ii fonts ... as they are within the d2r planner we extracted just like it already renders for ADD
+ITEM") narrowed 11-08 to in-game text only - item names, zones and maps, terror zones, monsters and bosses; titles and the
+console's own words keep their face. One token --ff-game ("D2 Exocet" - the builder's face, streamed from HIS install,
+never this repo - then the display serif) on 17 game-name classes; Quick wins' area line wraps its zone name apart from its
+words. MEASURED 11-09 computed style: Quick wins places (3,806) and Best runs names were Inter, now the game face; every
+number, label, 'Run' and 'TZ' unchanged. The Grok CLI read before/after crops cold and caught the item card's badge going
+'UNIQUE' -> 'Unique' under a --sans exclusion: it keeps the display serif it had. Render gate on the 9 board targets: clean at
+1440/1120/901. The console's half (its zone and boss names) is the next step. GUARD: test_game_names_wear_the_game_face (4
+red-proofs RED).
 ### REG-3489 - THERE IS NO PHONE PAGE: THE PHONE TRAY BAR AND EVERY PHONE-WIDTH GATE ARE GONE (v3889, #132, his 11-08 ruling)
 His words 11-08 ~12:30 IST: "forget the MOBILE PAGE COMPELTELY drop it", "i dont need any mobile anything". Stage 1 (this
 version): the REG-3090 phone tray bar (its element, stylesheet, --tray-bar-h fold and the dock's two phone-band listeners);
