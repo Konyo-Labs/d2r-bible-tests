@@ -14797,6 +14797,7 @@ function d2jspDbArrange(root) {
       htmls[idx] = '<section data-d2jsp-search-item="' + esc(parsed.item) + '">' + out.innerHTML + '</section>';
       if (--left) return;
       if (items.length > 1) out.innerHTML = htmls.join('');   /* v3891 (#192) - one card (one section) each */
+      if (typeof priceSearchExit === 'function') priceSearchExit(out);
     }
     function step(){
       if (i >= paths.length) { done({ fg: null, n: 0, readAt: null, reason: 'unanswered' }); return; }
@@ -14889,6 +14890,14 @@ function d2jspDbArrange(root) {
     var out = document.getElementById('d2jsp-price-out');
     if (out) out.textContent = (typeof d2jspReadSay === 'function') ? d2jspReadSay() : 'Reads d2jsp posts dated 2026 or later, board 268 only. Nothing is posted.';
   }
+  function priceSearchExit(out){
+    /* v3891 (#191, REG-3531) - a real exit on the results, not only the field's native clear */
+    if (!out) return;
+    if (typeof out.querySelector === 'function' && out.querySelector('#d2jsp-price-x')) return;
+    var btn = '<button type="button" class="gic-close-btn" id="d2jsp-price-x" title="leave these results">✕</button>';
+    if (typeof out.insertAdjacentHTML === 'function') out.insertAdjacentHTML('afterbegin', btn);
+    else out.innerHTML = btn + (out.innerHTML || '');
+  }
   window._d2jspPriceSearchIdle = priceSearchIdle;
   function priceSearchMaybeIdle(ev){
     var t = ev && ev.target;
@@ -14911,6 +14920,13 @@ function d2jspDbArrange(root) {
     if (t.id === 'd2jsp-price-db-show') {
       if (ev.preventDefault) ev.preventDefault();
       d2jspLoadDatabase();
+      return true;
+    }
+    if (t.id === 'd2jsp-price-x') {
+      if (ev.preventDefault) ev.preventDefault();
+      var q = document.getElementById('d2jsp-price-q');
+      if (q) q.value = '';
+      priceSearchIdle();
       return true;
     }
     if (t.id !== 'd2jsp-price-advanced') return false;
