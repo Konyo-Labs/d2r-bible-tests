@@ -67,7 +67,7 @@ class TheWitnessRides(unittest.TestCase):
 
     def test_the_app_sends_the_vaults_ids(self):
         app = open(os.path.join(HERE, "control_app.py"), encoding="utf-8").read()
-        self.assertEqual(1, app.count("_is_a_live_read, now_ms, witness_ids=_profile_picture_ids(stores))"))
+        self.assertEqual(1, app.count("_is_a_live_read, now_ms, witness_ids=_profile_picture_ids(stores),"))
 
     def test_the_shadow_opens_the_uploaded_picture_first(self):
         b = open(os.path.join(ROOT, "bible.html"), encoding="utf-8", errors="replace").read()
@@ -114,8 +114,8 @@ RED_PROOF = [
      "replace": "                and len(f[\"jpg\"]) <= 27400\n", "matches": 1},
     {"why": "the app stops sending the vault's ids",
      "file": "tv/control_app.py",
-     "find": "_is_a_live_read, now_ms, witness_ids=_profile_picture_ids(stores))",
-     "replace": "_is_a_live_read, now_ms)", "matches": 1},
+     "find": "_is_a_live_read, now_ms, witness_ids=_profile_picture_ids(stores),",
+     "replace": "_is_a_live_read, now_ms,", "matches": 1},
     {"why": "the worker stops checking a witness frame is a JPEG",
      "file": "functions/api/roster.js",
      "find": "        return \"a witness frame is not a small JPEG thumbnail\";\n",
