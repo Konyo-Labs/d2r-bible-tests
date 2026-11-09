@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3892",
+    "date": "2026-11-09",
+    "items": [
+      "A console tab switch closes the board layers (#191, REG-3534)",
+      "A press outside the unique card closes it (#191, REG-3535)",
+      "Shadow session rows use the same four-box (#184, REG-3536)",
+      "A press outside the price results leaves them (#191, REG-3537)",
+      "A console tab switch also closes the boss detail (#191, REG-3538)",
+      "The boss detail closes on Escape (#191, REG-3539)",
+      "A press outside the boss card closes it (#191, REG-3540)",
+      "Three named boss levels on the page match the silospen fit (#181, REG-3541)",
+      "UNIQUES and SETS count each canonical name once (#184, REG-3542)",
+      "The STASH box counts items carried into the stash, never frame sums (#184, REG-3543)",
+      "Remaining popup dismiss buttons wear the same close control (#191, REG-3544)",
+      "The calculator MF comparison uses the set curve for a set piece (#43, REG-3545)",
+      "Clicking a worn item in the character window opens its card (#28, #146, REG-3546)",
+      "Socket fillers come from the page rune, gem and jewel tables (#135, REG-3547)",
+      "Escape closes the in-game character window (#191, #146, REG-3548)"
+    ]
+  },
+  {
     "ver": "v3891",
     "date": "2026-11-09",
     "items": [

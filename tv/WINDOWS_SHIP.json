@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3891",
+  "ver": "v3892",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3891: Escape peels one layer, tabs close the builder, UNIQUES and SETS count every find",
+  "note": "v3892: shadow sessions share the four boxes, a press outside closes the card",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
