@@ -132,7 +132,7 @@ class TheD2jspTabKeepsOneHistory(unittest.TestCase):
 
     def test_premise_the_history_is_drawn_and_the_tab_has_its_box(self):
         self.assertIn('id="d2jsp-history"', self.markup, "the D2JSP tab has no History box")
-        self.assertIn("History (8)", self.o["full"], "premise: %r" % self.o["full"][:400])
+        self.assertIn("Your posts and trades (8)", self.o["full"], "premise: %r" % self.o["full"][:400])
         self.assertEqual(len(self.full), 8, "the rows did not read: %r" % self.o["full"][:600])
 
     def test_every_post_and_trade_newest_first_unread_times_last(self):
@@ -169,22 +169,22 @@ class TheD2jspTabKeepsOneHistory(unittest.TestCase):
         self.assertNotIn("Posts: UNKNOWN", nv)
         self.assertEqual(sorted(set(r[1] for r in _rows(nv))), ["log"])
         self.assertNotIn("traded", [r[0] for r in _rows(nv)], "with no vault a trade was still drawn: %r" % _rows(nv))
-        self.assertIn("History (5, some UNKNOWN)", nv)
+        self.assertIn("Your posts and trades (5, some UNKNOWN)", nv)
 
     def test_a_store_that_will_not_read_is_unknown_and_the_count_says_so(self):
         self.assertNotIn("UNKNOWN", self.o["full"].split("<ol>", 1)[0], "premise: the whole history read as partly UNKNOWN")
         bv = self.o["badVault"]
         self.assertIn("Trades: UNKNOWN", bv, "a vault store that would not read drew its trades as none")
-        self.assertIn("History (5, some UNKNOWN)", bv)
+        self.assertIn("Your posts and trades (5, some UNKNOWN)", bv)
         bl = self.o["badLog"]
         self.assertIn("Posts: UNKNOWN", bl, "a post log that would not read drew no post, as if none was made")
         self.assertEqual(sorted((r[3], r[1]) for r in _rows(bl)), [("Grief", "vault"), ("Tyrael", "vault")])
-        self.assertIn("History (2, some UNKNOWN)", bl)
+        self.assertIn("Your posts and trades (2, some UNKNOWN)", bl)
 
     def test_nothing_yet_says_so_only_when_both_stores_read(self):
-        self.assertIn("History (0)", self.o["empty"])
+        self.assertIn("Your posts and trades (0)", self.o["empty"])
         self.assertIn("No post or trade yet.", self.o["empty"])
-        self.assertIn("History (0, some UNKNOWN)", self.o["emptyBadVault"])
+        self.assertIn("Your posts and trades (0, some UNKNOWN)", self.o["emptyBadVault"])
         self.assertNotIn("No post or trade yet.", self.o["emptyBadVault"], "an unread vault was called no trade")
 
     def test_the_tab_paints_it_once_and_a_new_log_row_repaints_it(self):
@@ -315,7 +315,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3094 - the tab has no History box",
      "file": "bible.html",
-     "find": "      <details id=\"d2jsp-history\" class=\"d2jsp-history\"><summary>History</summary></details>   <!-- REG-3094 -->\n",
+     "find": "      <details id=\"d2jsp-history\" class=\"d2jsp-history\"><summary>Your posts and trades</summary></details>",
      "replace": "",
      "matches": 1},
     {"why": "REG-3094 - an unread vault store passes as no traded copy (the D2JSP side never asks)",
