@@ -31143,7 +31143,7 @@ function renderItemDetailCard(itemName) {
   const panel = document.getElementById('item-detail-panel');
   if (!panel) return;
   const item = ITEMS.find(i => i.n === itemName);
-  if (!item) { panel.innerHTML = '<div class="gic-card">item not found</div>'; return; }
+  if (!item) { panel.innerHTML = '<div class="gic-card"><div style="display:flex;justify-content:flex-end"><button class="gic-close-btn" onclick="closeItemDetail()" title="press ESC">✕ close</button></div>item not found</div>'; return; }
 
   const esc = itemName.replace(/'/g, "\\'");
   const isOwned = _gFound(itemName);
@@ -31156,7 +31156,7 @@ function renderItemDetailCard(itemName) {
   const sources = itemCardSources(item);
 
   if (sources.length === 0) {
-    panel.innerHTML = `<div class="gic-card"><h2 class="gic-name">${item.n}</h2><p style="color:var(--gold-dim)">No viable sources at current MF/level constraints.</p></div>`;
+    panel.innerHTML = `<div class="gic-card"><div style="display:flex;justify-content:flex-end"><button class="gic-close-btn" onclick="closeItemDetail()" title="press ESC">✕ close</button></div><h2 class="gic-name">${item.n}</h2><p style="color:var(--gold-dim)">No viable sources at current MF/level constraints.</p></div>`;
     return;
   }
 
@@ -33245,6 +33245,7 @@ function renderAidCard(name, opts){
         ${opts.context==='bosses'
           ? `<button class="aid-close-btn" onclick="navigateToItem('${escName}')">↗ open in calc</button>`
           : `<button class="aid-close-btn" onclick="setActiveItem('${escName}');switchTab('bosses');setTimeout(()=>{document.getElementById('${focus.bossId}').scrollIntoView();jumpToBossItem('${escName}')},100)">↗ jump to boss</button>`}
+        ${opts.context==='calc' ? `<button class="gic-close-btn" onclick="window.closeDrop&&window.closeDrop();if(typeof clearActiveItem==='function')clearActiveItem()" title="press ESC">✕ close</button>` : ''}
       </div>
     </header>
 
