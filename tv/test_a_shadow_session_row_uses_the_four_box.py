@@ -6,8 +6,8 @@ for STASH / CHRONICLES / UNIQUES / SETS. MEASURED: `_paintShelf` already paints 
 `_scell`; `_shadowSessionRow` (what SHELF opens under a shadow, and what the owner dossier draws)
 printed those facts only as sentences (`N chronicles found`, a stashed-names dump) and never the
 four boxes. `_fourBoxHtml` now paints the same `.shc-stats` cells. A shadow digest row fills them
-from `stashed` / `farmed` / `chroniclesFound`; an owner card still fills them from `kaiClasses` /
-`chron` / `route.chroniclesFound`. A missing number is '?' and a counted zero is an em dash.
+from `stashed` / `farmed` / `chroniclesFound`; an owner card fills STASH from `route.stashed` or `sm.stashed` (REG-3543),
+not kaiClasses frame sums, and the other boxes from `chron` / `route.chroniclesFound`. A missing number is '?' and a counted zero is an em dash.
 RED_PROOF below.
 """
 import io
@@ -70,8 +70,9 @@ class AShadowSessionRowUsesTheFourBox(unittest.TestCase):
             self.assertIn("'%s'" % label, body, "the four-box dropped the %s cell" % label)
         self.assertIn('class="shc-stats"', body)
         self.assertIn('class="shc-stat"', body)
-        self.assertIn("sm.kaiClasses", body)
+        self.assertNotIn("sm.kaiClasses", body)
         self.assertIn("sm.stashed", body)
+        self.assertIn("sm.route.stashed", body)
         self.assertIn("sm.farmed", body)
         self.assertIn("sm.chroniclesFound", body)
         self.assertIn("sm.chron", body)

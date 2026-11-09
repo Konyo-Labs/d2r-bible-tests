@@ -19748,12 +19748,20 @@ window._lockMark = function(isOpen, px, label){
          without saying so would be putting a confident figure over an open defect, so the cell's
          own title names the source and the caveat. When #87 lands the number tightens and this
          label stops needing the warning. [[unknown-stays-unknown]] [[label-outlived-referent]] */
-      var _kc = (sm.kaiClasses && typeof sm.kaiClasses === 'object') ? sm.kaiClasses : null;
+      /* v3892 (#184, REG-3543) - STASH counts items carried into the stash (route.stashed / sm.stashed),
+         never the sum of kaiClasses stash* frames (those over-count town as stash, open defect #87).
+         Missing stays '?' ([[unknown-stays-unknown]]); a counted zero is an em dash. */
+      var _stashSrc = (sm.stashed && typeof sm.stashed === 'object') ? sm.stashed
+        : ((sm.route && typeof sm.route === 'object') ? sm.route.stashed : null);
       var _stashN = null;
-      if (_kc){
+      if (_stashSrc && typeof _stashSrc === 'object') {
         _stashN = 0;
-        for (var _kk in _kc){
-          if (String(_kk).indexOf('stash') === 0) { _stashN += (_kc[_kk] || 0); }
+        for (var _sg in _stashSrc) {
+          if (!Object.prototype.hasOwnProperty.call(_stashSrc, _sg) || !Array.isArray(_stashSrc[_sg])) continue;
+          for (var _si = 0; _si < _stashSrc[_sg].length; _si++) {
+            var _sr = _stashSrc[_sg][_si];
+            _stashN += (_sr && typeof _sr[1] === 'number' && _sr[1] > 1) ? _sr[1] : 1;
+          }
         }
       }
       var _stashCell = (_stashN === null) ? '?' : (_stashN > 0 ? ('🎒 ' + _kpiFmt(_stashN)) : '—');
@@ -19775,7 +19783,7 @@ window._lockMark = function(isOpen, px, label){
         ? 'chronicle finds this run: unidentified items whose tooltip showed the green chronicle keyword. ? = not counted yet' + (_chronWhy ? (' - ' + _chronWhy) : '')
         : 'chronicle finds this run: ' + _chronN + ' unidentified item' + (_chronN === 1 ? '' : 's') + ' whose tooltip showed the green chronicle keyword';
       var statRow = '<div class="shc-stats">' + _scell(_stashCell, 'stash', '',
-                 'frames this run that the reader classified as a stash panel — the sum of every stash* bucket in kaiClasses, including the gem, rune and material tabs. \u26a0 it can over-count: kaiClasses carries no TOWN bucket, so a town frame lands here too (open defect #87). Reads for this run: ' + _kpiFmt(sm.reads || 0)) + _scell(_chronCell, 'chronicles', '', _chronTip)
+                 'items carried into the stash this run (the session route\'s stashed names). ? = not counted yet. Reads for this run: ' + _kpiFmt(sm.reads || 0)) + _scell(_chronCell, 'chronicles', '', _chronTip)
         + _scell(_ch ? (_ch.uniques > 0 ? ('🏆 ' + _ch.uniques) : '—') : '?', 'uniques',
                  _ch && _ch.uniques > 0 ? 'unique' : '')
         + _scell(_ch ? (_ch.sets > 0 ? ('🧩 ' + _ch.sets) : '—') : '?', 'sets',
@@ -23772,16 +23780,9 @@ window._lockMark = function(isOpen, px, label){
       return n;
     }
     var fmt = (typeof _kpiFmt === 'function') ? _kpiFmt : function(n){ return String(n); };
-    var stashN = null;
-    var _kc = (sm.kaiClasses && typeof sm.kaiClasses === 'object') ? sm.kaiClasses : null;
-    if (_kc){
-      stashN = 0;
-      for (var _kk in _kc){
-        if (String(_kk).indexOf('stash') === 0) { stashN += (_kc[_kk] || 0); }
-      }
-    } else if (sm.stashed && typeof sm.stashed === 'object') {
-      stashN = groupedTotal(sm.stashed);
-    }
+    var stashSrc = (sm.stashed && typeof sm.stashed === 'object') ? sm.stashed
+                 : ((sm.route && typeof sm.route === 'object' && sm.route.stashed && typeof sm.route.stashed === 'object') ? sm.route.stashed : null);
+    var stashN = groupedTotal(stashSrc);
     var stashCell = (stashN === null) ? '?' : (stashN > 0 ? ('\uD83C\uDF92 ' + fmt(stashN)) : '\u2014');
     var _route = (sm.route && typeof sm.route === 'object') ? sm.route : null;
     var _chronSrc = (typeof sm.chroniclesFound === 'number') ? sm.chroniclesFound : (_route ? _route.chroniclesFound : null);
@@ -23803,7 +23804,7 @@ window._lockMark = function(isOpen, px, label){
     var uCell = (uN === null) ? '?' : (uN > 0 ? ('\uD83C\uDFC6 ' + uN) : '\u2014');
     var sCell = (sN === null) ? '?' : (sN > 0 ? ('\uD83E\uDDE9 ' + sN) : '\u2014');
     return '<div class="shc-stats">' + cell(stashCell, 'stash', '',
-      'items read in the stash this run (a shadow digest counts the stashed names; the owner card sums stash* frames in kaiClasses and can over-count \u2014 open defect #87)')
+      'items carried into the stash this run (stashed names on the digest or the owner-card route). ? = not counted yet')
       + cell(chronCell, 'chronicles', '', chronTip)
       + cell(uCell, 'uniques', uN > 0 ? 'unique' : '')
       + cell(sCell, 'sets', sN > 0 ? 'set' : '') + '</div>';
