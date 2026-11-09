@@ -3919,7 +3919,7 @@
   .tzz-good { opacity: .74; filter: saturate(.55); }
   .tzz-good:hover { opacity: .95; filter: saturate(.9); }
   /* v3889 (#133, his "when a good terror zone is up it should glow") - a LIVE zone his missing items gain from glows, full colour */
-  .tzz.tzz-glow { opacity: 1; filter: none; animation: tzzGlow 2.6s ease-in-out infinite; }
+  .tzz.tzz-glow { opacity: 1; filter: none; }   /* its animation is set after tzAlive below - equal specificity lost to it */
   @keyframes tzzGlow { 0%, 100% { box-shadow: 0 0 0 1px rgba(240,192,96,.22), 0 0 10px rgba(240,192,96,.14); }
                        50% { box-shadow: 0 0 0 1px rgba(240,192,96,.55), 0 0 24px rgba(240,192,96,.36); } }
   @media (prefers-reduced-motion: reduce) { .tzz.tzz-glow { animation: none; box-shadow: 0 0 0 1px rgba(240,192,96,.45), 0 0 18px rgba(240,192,96,.26); } }
@@ -4278,6 +4278,10 @@
   @media (prefers-reduced-motion: no-preference) {
     .tz-zones-hero .tzz { animation: tzAlive 3.4s ease-in-out infinite; }
     .tz-zones-hero .tzz-art { animation: tzAliveArt 3.4s ease-in-out infinite; }
+    /* v3889 (#133) - MEASURED: with the glow at .tzz.tzz-glow (0,2,0) above this block, the card computed tzAlive - the green
+       breath every live card has, the greyed ones too - so "worth his items" looked like any live card. One more class, and
+       after it. */
+    .tz-zones-hero .tzz.tzz-glow { animation: tzzGlow 2.6s ease-in-out infinite; }
   }
   @keyframes tzAlive {
     0%, 100% { box-shadow: 0 0 0 1px rgba(120,230,160,.16), 0 0 16px rgba(120,230,160,.08); }

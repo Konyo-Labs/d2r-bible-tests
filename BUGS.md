@@ -141,7 +141,9 @@ that zone (a silospen place there, or the zone's own farm; an area run counted b
 chance than the item's best plain run (beyond the 2% tie) is a reason - GOOD on any, PRIME at half the runs or fewer, THIN on
 none (grey, not clickable: his v1915 rule). The console's cards and slot chips read it through the board iframe (_tzGrade); a
 notable zone keeps PRIME on its own reason; a board that cannot be asked keeps the density grade and the hover says so
-(UNKNOWN about his items, never a guess); a LIVE zone graded GOOD/PRIME by his items glows (reduced motion: a still glow). The
+(UNKNOWN about his items, never a guess); a LIVE zone graded GOOD/PRIME by his items glows gold (reduced motion: a still glow) -
+MEASURED by computed style: my first glow rule lost the cascade to the live cards' green tzAlive breath (equal specificity,
+declared later), so it ran tzAlive like every live card; the glow now outranks it and follows it. The
 card carries one short line ("Crown of Ages · 1.1× fewer runs · +18" / "no missing item gains here"), the hover the
 items and their runs. Five board areas carry an alias to the console's zones (Tal Rasha's Tombs, Moo Moo Farm, the two Sewers
 by act, Lower Kurast = no zone). Measured on an empty world (397 uniques missing): Far Oasis THIN, Catacombs PRIME (Tyrael's

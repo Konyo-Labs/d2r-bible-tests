@@ -134,7 +134,13 @@ class TheConsoleCardReadsThatGrade(unittest.TestCase):
 
     def test_a_live_zone_worth_his_items_glows(self):
         self.assertIn("((hero && t.byItems && (t.tier === 'good' || t.tier === 'prime')) ? ' tzz-glow' : '')", self.ui)
-        self.assertIn(".tzz.tzz-glow { opacity: 1; filter: none; animation: tzzGlow 2.6s ease-in-out infinite; }", self.ui)
+        self.assertIn(".tzz.tzz-glow { opacity: 1; filter: none; }", self.ui)
+        # MEASURED (computed style, 1512 and 1120): at (0,2,0) above the live cards' tzAlive breath the glow lost the cascade
+        # and the card ran tzAlive like every live card. The glow must outrank it AND come after it.
+        alive = self.ui.find(".tz-zones-hero .tzz { animation: tzAlive")
+        glow = self.ui.find(".tz-zones-hero .tzz.tzz-glow { animation: tzzGlow 2.6s ease-in-out infinite; }")
+        self.assertGreater(alive, 0, "PREMISE: the live cards' tzAlive breath moved - re-read the cascade")
+        self.assertGreater(glow, alive, "the glow rule is missing or sits before tzAlive, which then wins the cascade")
         self.assertIn("@media (prefers-reduced-motion: reduce) { .tzz.tzz-glow { animation: none;", self.ui)
 
 
@@ -168,6 +174,11 @@ RED_PROOF = [
      "file": "tv/control_ui.html",
      "find": "var file = _artFor(x), act = _actOf(file, x), t = _tzGrade(x);",
      "replace": "var file = _artFor(x), act = _actOf(file, x), t = _tzTier(x);",
+     "matches": 1},
+    {"why": "v3889 (#133) - the glow sits at tzAlive's specificity again and loses the cascade (measured: the card ran tzAlive)",
+     "file": "tv/control_ui.html",
+     "find": "    .tz-zones-hero .tzz.tzz-glow { animation: tzzGlow 2.6s ease-in-out infinite; }\n",
+     "replace": "",
      "matches": 1},
     {"why": "v3889 (#133) - every live card glows, worth his items or not",
      "file": "tv/control_ui.html",
