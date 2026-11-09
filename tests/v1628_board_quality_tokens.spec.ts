@@ -409,11 +409,14 @@ test.describe('v1628 · 6 — a thumbnail names something in its own group', () 
              so this fired the v1624 arbitrary-picture alarm at art that was never arbitrary.
              The identity check below still holds for either: a run card titled "Run Hell
              Mephisto" contains "mephisto", so an arbitrary picture would still be caught. */
-          logo: a?.getAttribute('data-art-logo') || a?.getAttribute('data-boss-tip') || null,
+          /* v3887 (#155, REG-3485) - a SUPER-UNIQUE run (Normal Coldcrow) names its subject by data-su-tip, its monster
+             by data-arttip: a subject all the same, so its picture is checked against its own card like a boss's */
+          logo: a?.getAttribute('data-art-logo') || a?.getAttribute('data-boss-tip') || a?.getAttribute('data-su-tip') || null,
           /* v1721 — the BOSSES roster's own display name for that id, so the identity check can
              accept "Uber Diablo (Diablo Clone)" for `dclone` and "Hell Bovines" for `cows`. */
           displayName: (() => {
             const id = a?.getAttribute('data-boss-tip') || '';
+            if (!id && a?.getAttribute('data-su-tip')) return a?.getAttribute('data-arttip') || '';   // v3887 - "Coldcrow"
             try {
               const w: any = window;
               const b = (w._allDropItems ? null : null);

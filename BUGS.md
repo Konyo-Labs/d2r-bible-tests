@@ -121,7 +121,7 @@ under a boss and the run never sealed (v619). Now the thumbnail wears the super-
 name's hover card and no boss card, and the pool groups by _bestRun (funiScan 57 -> 70 ms). Same round, laws that met v3887's
 truth: v71 accepts d2runewizard's .webp loops as images, v1840 counts the terror-zone level reason (REG-3466, 117 rows at
 99) as a fourth true reason, test_one_hunt_clock cuts from _bestRun, the Fleet-row law uses js_strip (ratchet 184 -> 181),
-art_names knows the run thumbnail's sprite door. GUARD: v1624_run_thumbnails + v619_grail_forges_sync (GitHub).
+art_names knows the run thumbnail's sprite door; v1628 check 6 reads data-su-tip as a subject. GUARD: v1624_run_thumbnails + v619_grail_forges_sync + v1628 (GitHub).
 ### REG-3483 - THE ITEM CARD'S FULL SOURCE TABLE PRINTED KILLS UNDER "RUNS (50%)" - ~350x ON THE COW LEVEL (v3887, the #231 eye)
 The second eye on v3886's REG-3451 (11-08 22:19): the card's top six and quick take count RUNS, but the full table (more than six
 places) printed r50 - kills for an even chance - under "Runs (50%)", titled "sorted by speed" while _qwRank orders by fewest runs;
