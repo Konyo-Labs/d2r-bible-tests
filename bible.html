@@ -71973,6 +71973,20 @@ function renderJournal(){
     var nm = esc(r && r.boss || '');
     if (!nm) return '';
     if (!r || !r.bossId) return '<span class="fh-boss" style="cursor:default">'+nm+'</span>';
+    /* v3888 (REG-3487, the sweep of REG-3485) - A RUN THAT IS NOT A BOSS OPENS NO BOSS CARD. #155 made a super-unique the best
+       run (Normal Coldcrow), and this hero drew it as a button "open the Normal Coldcrow boss card" whose click asked
+       openBossDetail for an id BOSSES does not have - a control that looks pressable and does nothing, with no picture. A
+       super-unique wears its own sprite (_QW_SU_ART, the run row's) and floats its monster's card by name; any other id
+       that is not a boss is its plain name. */
+    var _hB = (typeof BOSSES !== 'undefined') ? BOSSES : (window.BOSSES || []);
+    if (!_hB.some(function(B){ return B && B.id === r.bossId; })) {
+      var _hSu = (typeof _QW_SU_ART !== 'undefined' && _QW_SU_ART) ? _QW_SU_ART[r.bossId] : null;
+      if (!_hSu) return '<span class="fh-boss" style="cursor:default">'+nm+'</span>';
+      var _hS = ((r.items || []).map(function(x){ return x && x._bs && x._bs.s; }).filter(Boolean)[0]) || null;
+      var _hN = (_hS && _hS.name) || String(_hSu).replace(/^d2mon_|\.gif$/g, '').replace(/_/g, ' ');
+      return '<span class="fh-boss" data-arttip="'+esc(_hN)+'" style="cursor:default">'
+        +'<img class="fh-boss-i" src="'+esc(_artV('art/'+_hSu))+'" alt="" loading="lazy" onerror="this.remove()">'+nm+'</span>';
+    }
     /* v1656 — THE BOSS HERO GETS ITS FACE AND ITS CARD, not just its colour. Konyo: "hell mephisto
        needs to be upgrade here for the first row here the hd-art0r with image title also of the
        mephisto itself for bosses and also whichever it rotates too next ... also tooltip image

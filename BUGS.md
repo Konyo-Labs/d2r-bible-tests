@@ -112,6 +112,14 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3487 - THE BEST RUNS HERO DREW A SUPER-UNIQUE AS A DEAD "OPEN THE BOSS CARD" BUTTON (v3888, the sweep of REG-3485)
+REG-3485 fixed the run ROW (GitHub caught it); sweeping every caller of the boss-only resolver found the hero above the rows:
+_bossHeroName drew any run as role=button "open the Normal Coldcrow boss card" whose click asked openBossDetail('su_coldcrow')
+- an id BOSSES does not have, so it looked pressable and did nothing, with no picture. Now a super-unique hero wears its own
+sprite (_QW_SU_ART) and floats its monster's card by name with no boss card; an id that is no boss and no super-unique is its
+plain name. The other callers were honest already (the Sets source names bosses only; the hover card refuses an unknown id;
+the console bridge sends no picture when it has none). art_names knows the new door. GUARD:
+test_a_run_that_is_not_a_boss_opens_no_boss_card (node, 3 red-proofs RED - one holds REG-3485's row too).
 ### REG-3486 - TWO LONG-OFFLINE PCS HELD EVERY PC'S PICKER-CENSUS ROW UNKNOWN FOR WEEKS (v3888, the doctor on his Mac)
 MEASURED on his Mac 11-09 (/api/eagle, read-only): "picker census - 3 PC(s) have not said what their character picker offers:
 GrokBot (no census reported - an older build); Wife PC (...)". GrokBot has been offline since 10-27 on v3815 and Wife PC since
