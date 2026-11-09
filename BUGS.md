@@ -123,6 +123,12 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3531 - A PRICE SEARCH'S RESULTS HAD NO EXIT OF THEIR OWN (v3891, #191)
+REG-3526 already empties the results when the field's native clear runs; the result cards themselves
+had no close. `priceSearchExit` now paints `#d2jsp-price-x` (the shared `gic-close-btn`) on the results;
+clicking it clears the field and runs `priceSearchIdle`. The painted search line is unchanged.
+GUARD: test_a_price_search_has_a_real_exit (2 red-proofs).
+
 ### REG-3530 - THE UNIQUES DETAIL ONLY CLOSED ON A TAB SWITCH (v3891, #191)
 v3889: Esc / the card's own close did not dismiss the Uniques detail; only a tab switch did.
 MEASURED: Escape called `clearActiveItem` (the top bar) and never `closeItemDetail`; it closed
