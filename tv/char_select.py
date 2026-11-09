@@ -80,6 +80,24 @@ LOBBY_FULL_SAT_MAX = 0.22
 LOBBY_FULL_VAL = (0.16, 0.22)
 LOBBY_BOT_VAL_MIN = 0.10
 LOBBY_RIGHT_SAT_MAX = 0.10
+# v3890 (#183, his 11-09 "make sure its working and calliberated plaese") - A RICHER-COLOUR LOBBY, AND ONLY THE LOBBY.
+# MEASURED 11-09 over SSH on both ALTs' own frames. The bands above were set on Boosteroid's compressed 800x450 picture. The
+# work ALT's local D2R draws the same lobby at 1440x810 with right sat 0.111 (0.011 over the band) and full sat 0.216, so
+# 9,427 frames there matched 0 and it learned no character (Konyorian, Barbarian 87, on screen in every one); its own
+# 800x450 stream drew it at full sat 0.22-0.23. Simply widening the two bands is WRONG: on the OLD ALT it let in 355 more
+# frames, 11 of 12 opened were dark night-town gameplay. What only the lobby has is its PANELS: the create-game pane is a
+# flat grey (value 0.17-0.19, spread 0.085-0.10), the chat pane the same (0.165-0.18, spread 0.06-0.08), and the top
+# strip carries the lit Lobby / Create Game headers (value 0.224-0.226; dark scenery 0.167). So a frame the bands refuse
+# only on these two colour limits passes when its panels read as the lobby's. On the work ALT that admits every new
+# candidate sampled (800 of 800, all lobbies opened) and on the OLD ALT 34 of 355 (16 opened: 15 lobbies, and the 16th, a
+# dark street, is refused by the top strip). [[unknown-stays-unknown]]
+LOBBY_PANEL_FULL_SAT_MAX = 0.24
+LOBBY_PANEL_RIGHT_SAT_MAX = 0.13
+LOBBY_PANEL_RIGHT_VAL = (0.165, 0.20)
+LOBBY_PANEL_RIGHT_SD = (0.08, 0.105)
+LOBBY_PANEL_LEFT_VAL = (0.155, 0.195)
+LOBBY_PANEL_LEFT_SD = (0.055, 0.095)
+LOBBY_PANEL_TOP_VAL_MIN = 0.20
 # REG-1874 — WHAT EACH FILM SIZE IS, LOOKED AT (2026-10-07). The bands are fractions of the frame, so one set can
 # serve every size the game is filmed at, and where it has been seen the counts say it does: the ALT matched 10,101 of 118,097 at 800x450, his Mac
 # matched at 1440x904, 1440x936, 1440x841, 1440x857, 2940x1912 and three more. Seven ALT lobby frames of 2026-10-06
@@ -99,6 +117,10 @@ LOBBY_SIZES_SEEN = {
     "1440x1327": "GeForce NOW's own app (its library page) - no game is drawn at this size",
     "1440x813": "GeForce NOW in Chrome (its spinner, return to fullscreen) - no game is drawn at this size",
     "1440x861": "Boosteroid's own app (sign-in and library) - no game is drawn at this size",
+    # v3890 (#183) - opened 11-09 on the work ALT (LT-Issta): 12 frames across 41 reels at 1440x809 and 12 across 33 at
+    # 800x449 - Boosteroid's "WHERE HAVE YOU BEEN? Session has been terminated due to no activity" and its library page
+    "1440x809": "Boosteroid's own window (its no-activity screen) - no game is drawn at this size",
+    "800x449": "Boosteroid's own window (its no-activity screen and library) - no game is drawn at this size",
 }
 LOBBY_SIZE_UNSEEN = ("nobody has looked at this size, so whether the bands see the lobby here is UNKNOWN")
 # The character panel stays a reader answer. This sentence is the lane, not a pixel band.
@@ -241,7 +263,8 @@ def looks_like_char_select(stats):
 
 
 def lobby_stats(path):
-    """(full_sat, full_val, bot_val, right_sat), or None when the frame cannot be opened.
+    """(full_sat, full_val, bot_val, right_sat, right_val, right_sd, left_val, left_sd, top_val), or None when the frame
+    cannot be opened. The first four are the bands; the last five are the lobby's panels (v3890 #183).
 
     Draft decode at 1/4, then the whole frame, the bottom strip, and the create-game pane. A frame that
     is not an image is None, the same as an unreadable character-select frame, never a lobby."""
@@ -254,12 +277,14 @@ def lobby_stats(path):
 
             def sv(box):
                 st = ImageStat.Stat(im.crop(tuple(int(v) for v in box)).resize((20, 40)))
-                return st.mean[1] / 255.0, st.mean[2] / 255.0
+                return st.mean[1] / 255.0, st.mean[2] / 255.0, st.stddev[2] / 255.0
 
-            fs, fv = sv((0, 0, w, h))
-            _bs, bv = sv((0, 0.78 * h, w, 0.98 * h))
-            rs, _rv = sv((0.72 * w, 0.15 * h, 0.98 * w, 0.75 * h))
-            return fs, fv, bv, rs
+            fs, fv, _f = sv((0, 0, w, h))
+            _bs, bv, _b = sv((0, 0.78 * h, w, 0.98 * h))
+            rs, rv, rsd = sv((0.72 * w, 0.15 * h, 0.98 * w, 0.75 * h))
+            _ls, lv, lsd = sv((0.02 * w, 0.15 * h, 0.28 * w, 0.75 * h))
+            _ts, tv, _t = sv((0.02 * w, 0.02 * h, 0.98 * w, 0.10 * h))
+            return fs, fv, bv, rs, rv, rsd, lv, lsd, tv
     except Exception:
         return None
 
@@ -338,14 +363,23 @@ def lobby_by_size(d):
 
 def looks_like_lobby(stats):
     """(bool, why) from lobby_stats(). The create-game lobby, and not the loading card, the skill tree, or play."""
-    if not stats or len(stats) != 4:
+    if not stats or len(stats) not in (4, 9):
         return False, "frame unreadable"
-    fs, fv, bv, rs = stats
+    fs, fv, bv, rs = stats[:4]
     ok = (fs < LOBBY_FULL_SAT_MAX and LOBBY_FULL_VAL[0] < fv < LOBBY_FULL_VAL[1]
           and bv > LOBBY_BOT_VAL_MIN and rs < LOBBY_RIGHT_SAT_MAX)
     say = "full sat %.3f val %.3f, bot val %.3f, right sat %.3f" % (fs, fv, bv, rs)
     if ok:
         return True, "create-game lobby (%s)" % say
+    # v3890 (#183) - the same lobby in richer colour: the two colour limits relax ONLY when the panels read as the lobby's
+    if len(stats) == 9:
+        rv, rsd, lv, lsd, tv = stats[4:]
+        if (fs < LOBBY_PANEL_FULL_SAT_MAX and LOBBY_FULL_VAL[0] < fv < LOBBY_FULL_VAL[1] and bv > LOBBY_BOT_VAL_MIN
+                and rs < LOBBY_PANEL_RIGHT_SAT_MAX
+                and LOBBY_PANEL_RIGHT_VAL[0] < rv < LOBBY_PANEL_RIGHT_VAL[1] and LOBBY_PANEL_RIGHT_SD[0] < rsd < LOBBY_PANEL_RIGHT_SD[1]
+                and LOBBY_PANEL_LEFT_VAL[0] < lv < LOBBY_PANEL_LEFT_VAL[1] and LOBBY_PANEL_LEFT_SD[0] < lsd < LOBBY_PANEL_LEFT_SD[1]
+                and tv > LOBBY_PANEL_TOP_VAL_MIN):
+            return True, "create-game lobby, by its panels (%s; panels %.3f/%.3f %.3f/%.3f, top %.3f)" % (say, rv, rsd, lv, lsd, tv)
     return False, "not the lobby (%s)" % say
 
 

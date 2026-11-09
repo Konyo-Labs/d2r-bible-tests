@@ -46,6 +46,16 @@ PLAY = (0.596, 0.156, 0.170, 0.556)
 ALT_QUIET = (0.158, 0.189, 0.182, 0.089)
 ALT_CHAT = (0.196, 0.182, 0.153, 0.098)
 ALT_SKILL = (0.323, 0.208, 0.155, 0.085)
+# v3890 (#183) - MEASURED 11-09 over SSH on the two ALTs' own frames with lobby_stats (the four bands, then the lobby's panels:
+# create-game pane value / spread, chat pane value / spread, top strip value), each frame opened and named by eye
+WORK_ALT_LOBBY_810 = (0.216, 0.168, 0.120, 0.111, 0.180, 0.095, 0.169, 0.079, 0.224)    # LT-Issta 1440x810, Konyorian's lobby
+WORK_ALT_LOBBY_450 = (0.230, 0.166, 0.121, 0.111, 0.179, 0.093, 0.178, 0.079, 0.224)    # LT-Issta 800x450, the same lobby
+OLD_ALT_LOBBY_PANELS = (0.167, 0.185, 0.171, 0.101, 0.187, 0.089, 0.179, 0.062, 0.226)  # OLD ALT 800x450, right sat 0.101
+OLD_ALT_DARK_STREET = (0.170, 0.175, 0.164, 0.113, 0.171, 0.100, 0.169, 0.061, 0.167)   # OLD ALT gameplay: panels pass, top dark
+OLD_ALT_NIGHT_TOWN = (0.219, 0.209, 0.179, 0.101, 0.133, 0.059, 0.218, 0.106, 0.193)    # OLD ALT night town, a widened band's catch
+BOOST_IDLE = (0.814, 0.187, 0.124, 0.843, 0.186, 0.049, 0.210, 0.070, 0.196)           # LT-Issta 1440x809 Boosteroid no-activity
+BOOST_LIBRARY = (0.401, 0.234, 0.368, 0.320, 0.328, 0.204, 0.179, 0.207, 0.137)        # LT-Issta 800x449 Boosteroid library
+WORK_ALT_PLAY = (0.284, 0.131, 0.159, 0.265, 0.097, 0.036, 0.099, 0.058, 0.091)        # LT-Issta 1440x810 play
 PROOF = "f_1790978100063.jpg"
 # A reader of that plaque. The detector never sees this. _clean_name titles an all-caps name.
 PLAQUE = {"screen": "lobby", "name": "KONYOSSIN", "cls": "Assassin", "level": 90}
@@ -88,8 +98,29 @@ class TheLobbyBands(unittest.TestCase):
         self.assertTrue(ok, why)
         ok, why = C.looks_like_lobby(ALT_SKILL)
         self.assertFalse(ok, "the ALT skill tree passed: %s" % why)
-        self.assertLess(ALT_CHAT[0], 0.22)
-        self.assertGreater(ALT_SKILL[0], 0.22)
+        self.assertLess(ALT_CHAT[0], C.LOBBY_FULL_SAT_MAX)
+        self.assertGreater(ALT_SKILL[0], C.LOBBY_FULL_SAT_MAX)
+
+    def test_the_work_alts_own_lobby_passes_by_its_panels_and_nothing_else_does(self):
+        """v3890 (#183) - his 11-09 "make sure its working and calliberated plaese". BASELINE first: the four bands alone
+        refuse every lobby below (the work ALT learned no character from 9,427 frames at 1440x810); then the panels admit
+        the three lobbies and refuse the gameplay a widened band let in, Boosteroid's screens and play"""
+        for tag, st in (("work ALT 1440x810", WORK_ALT_LOBBY_810), ("work ALT 800x450", WORK_ALT_LOBBY_450),
+                        ("OLD ALT", OLD_ALT_LOBBY_PANELS)):
+            self.assertFalse(C.looks_like_lobby(st[:4])[0], "PREMISE: the bands alone already pass the %s lobby" % tag)
+            ok, why = C.looks_like_lobby(st)
+            self.assertTrue(ok, "the %s lobby is refused: %s" % (tag, why))
+            self.assertIn("by its panels", why)
+        for tag, st in (("a dark street (top strip)", OLD_ALT_DARK_STREET), ("night town", OLD_ALT_NIGHT_TOWN),
+                        ("Boosteroid no-activity", BOOST_IDLE), ("Boosteroid library", BOOST_LIBRARY),
+                        ("play at 1440x810", WORK_ALT_PLAY), ("the ALT skill tree", ALT_SKILL + (0.18, 0.09, 0.17, 0.07, 0.22)),
+                        # each panel test alone: the lobby with ONE panel swapped for night town's measured one
+                        ("a create-game pane that is not the lobby's grey", WORK_ALT_LOBBY_810[:4] + OLD_ALT_NIGHT_TOWN[4:6] + WORK_ALT_LOBBY_810[6:]),
+                        ("a chat pane that is not the lobby's", WORK_ALT_LOBBY_810[:6] + OLD_ALT_NIGHT_TOWN[6:8] + WORK_ALT_LOBBY_810[8:])):
+            ok, why = C.looks_like_lobby(st)
+            self.assertFalse(ok, "%s passed as the lobby: %s" % (tag, why))
+        self.assertIn("no game is drawn", C.LOBBY_SIZES_SEEN["1440x809"])
+        self.assertIn("no game is drawn", C.LOBBY_SIZES_SEEN["800x449"])
 
     def test_a_count_that_has_not_started_is_not_a_zero(self):
         self.assertIsNone(C.lobby_by_size(None))
@@ -536,6 +567,26 @@ def _paint(fn, learned):
 
 
 RED_PROOF = [
+    {"why": "v3890 (#183) - the panel path is gone: the work ALT's lobby is refused again and it learns no character",
+     "file": "tv/char_select.py",
+     "find": "    if len(stats) == 9:\n        rv, rsd, lv, lsd, tv = stats[4:]\n",
+     "replace": "    if False:\n        rv, rsd, lv, lsd, tv = stats[4:]\n",
+     "matches": 1},
+    {"why": "v3890 (#183) - the top strip is not asked: a dark street with lobby-grey panels passes as the lobby",
+     "file": "tv/char_select.py",
+     "find": "                and tv > LOBBY_PANEL_TOP_VAL_MIN):\n",
+     "replace": "                and True):\n",
+     "matches": 1},
+    {"why": "v3890 (#183) - the panels are not asked: the widened colour limits let night-town gameplay in",
+     "file": "tv/char_select.py",
+     "find": "                and LOBBY_PANEL_RIGHT_VAL[0] < rv < LOBBY_PANEL_RIGHT_VAL[1] and LOBBY_PANEL_RIGHT_SD[0] < rsd < LOBBY_PANEL_RIGHT_SD[1]\n",
+     "replace": "\n",
+     "matches": 1},
+    {"why": "v3890 (#183) - the Boosteroid sizes read as UNKNOWN again though they were opened",
+     "file": "tv/char_select.py",
+     "find": "    \"1440x809\": \"Boosteroid's own window (its no-activity screen) - no game is drawn at this size\",\n",
+     "replace": "",
+     "matches": 1},
     {
         "why": "REG-1874 - a size that never matched says nothing again, so matched 0 reads as no lobby",
         "file": "char_select.py",

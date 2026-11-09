@@ -112,6 +112,25 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3508 - THE WORK ALT LEARNED NO CHARACTER: ITS OWN LOBBY WAS 0.011 TOO COLOURFUL FOR THE BANDS (v3890, #183, his call)
+His words 11-09: "i thought we calliberated it to deans PC already.. so deans does work? and windows alts do not yet? make sure
+its working and calliberated plaese". MEASURED 11-09 (each PC's own /api/chars_learned): OLD ALT 26 characters (800x450,
+29,974 lobby matches); Dean 0 (800x402: 151 of 130,358 - v3856 taught the reader his window's borders, too few matches to
+learn a name); work ALT 0. On the work ALT's own frames over SSH: 1440x809 and 800x449 (24,006 frames) are Boosteroid's
+no-activity screen and library - no game drawn - and 1440x810 (9,427, 0 matched) DRAWS THE LOBBY (Konyorian, Barbarian 87)
+with right sat 0.111 against the band's 0.10 and full sat 0.216; its 800x450 lobby read full sat 0.22-0.23 (1,274 refused).
+The bands were set on Boosteroid's compressed picture. Widening them is wrong: on the OLD ALT it let in 355 more frames and 11
+of 12 opened were dark night-town gameplay. FIX: lobby_stats also reads the lobby's PANELS - the create-game pane's grey
+(value 0.165-0.20, spread 0.08-0.105), the chat pane (0.155-0.195, 0.055-0.095) and the lit top strip (> 0.20) - and a frame
+the four bands refuse only on its colour (right sat < 0.13, full sat < 0.24) passes when its panels are the lobby's. Opened:
+work ALT 800 of 800 new candidates lobbies; OLD ALT 34 of 355 pass, 15 of 16 opened lobbies, the 16th (a dark street) now
+refused by the top strip. On the work ALT's own reels the new code finds 1,332 lobby frames at 800x450 (was 59) and 780 at
+1440x810 (was 0). 1440x809 and 800x449 are recorded as seen (no game drawn). OWED: Dean's PC (off) - the same measurement on
+his 800x402 frames when he is online; the work ALT learning its characters once v3890 is on it.
+GUARD: test_the_lobby_names_the_character (measured 9-value stats: three lobbies pass only by their panels, after a premise
+that the bands alone refuse them; a dark street, night town, Boosteroid's two screens, play, the skill tree and each panel
+swapped alone are refused - 4 red-proofs RED, one first stayed GREEN until the single-panel cases were added).
+
 ### REG-3507 - TWO PCS WERE ONE PROFILE: HIS SHADOW OF THE WORK ALT SHOWED THE OLD ALT'S 26 CHARACTERS (v3890, #182, his call)
 His words 11-09: "thats not good that its mixed though.. why do they have a shared profile ... i thought they were separated. each
 console and whatever it itself is rendering should be showing the through the other side when looking through shadow mode at
