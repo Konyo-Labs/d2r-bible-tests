@@ -51,8 +51,16 @@ class AProofGivesWayToGithubsImport(unittest.TestCase):
         CA._proof_carrier_kick = lambda *a, **k: {}
         SP.process_rows = lambda run=None: list(QUIET)
         CA._PUSH_GRADING.update(at=0.0, v=(False, ""))
+        # v3889 round 3 - THE TREE'S OWN PROOF CENSUS IS NOT THIS FIXTURE'S. _sp_prove_yield_here asks _sp_blind_owed, which
+        # reads this tree's census (self_arming._owed_and_blind); a worktree whose census held an owed BLIND (a local prove run
+        # of another law) turned 4 cases red on a Mac pre-flight while GitHub's fresh tree passed. No BLIND here unless a case
+        # says so (AnOwedBlindDoesNotWaitForTheImport seeds its own).
+        import self_arming as _SA
+        self._SA, self._oab_base = _SA, _SA._owed_and_blind
+        _SA._owed_and_blind = lambda: ([], [], {})
 
     def tearDown(self):
+        self._SA._owed_and_blind = self._oab_base
         for k, v in self._saved.items():
             setattr(CA, k, v)
         for k, v in self._sp.items():
