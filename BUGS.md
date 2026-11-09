@@ -123,6 +123,25 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3540 - A PRESS OUTSIDE THE VISIBLE BOSS CARD DID NOT CLOSE IT (v3892, #191)
+`#boss-detail-overlay` is in-flow (inserted under the clicked boss), so the overlay contract
+cannot see it. Escape already peels it (REG-3539). A pointerdown outside the overlay now runs
+the same `clearActiveBoss` its own ✕ already runs.
+GUARD: test_a_press_outside_the_boss_card_closes_it (1 red-proof).
+
+### REG-3539 - THE BOSS DETAIL DID NOT CLOSE ON ESCAPE (v3892, #191)
+`_tvEsc` peeled keyboard help, the help sheet, the unique cards and the nav compass, but never
+`#boss-detail-overlay`. That overlay is in-flow, so `__tvTopOverlay` cannot see it either. Esc
+now peels it when it is not hidden (`clearActiveBoss({ noScroll: true })`) and returns so the
+nav compass stays.
+GUARD: test_the_boss_detail_closes_on_escape (1 red-proof).
+
+### REG-3538 - A CONSOLE TAB SWITCH LEFT THE BOSS DETAIL OPEN (v3892, #191)
+navClean already calls `clearActiveBoss({ noScroll: true })`. `_headTabGo` (REG-3534) asked the
+board iframe for closeCharBuilder / closeItemDetail / closeDrop only, so a boss card rode along
+to the next console room. It now asks `clearActiveBoss` too.
+GUARD: test_a_console_tab_switch_closes_the_boss_card (1 red-proof).
+
 ### REG-3537 - A PRESS OUTSIDE THE PRICE-SEARCH RESULTS LEFT THEM UP (v3892, #191)
 REG-3531 painted `#d2jsp-price-x` on the results; only that button (or emptying the field) ran
 `priceSearchIdle`. A press elsewhere left the cards up. `_tvOutsidePrice` now treats the exit
