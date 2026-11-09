@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3891",
+    "date": "2026-11-09",
+    "items": [
+      "The proof round chooses its own shard count and sends it outside the checkout (#194, REG-3519)",
+      "The fan-in writes only a red-memory file, never over the named output (#194, REG-3520)",
+      "The proof round re-fits its wall factor every round from what it measured (#194, REG-3521)",
+      "Routine I measures every spec each round and chooses its fast-shard count from that (#194, REG-3522)",
+      "The agent suite slice count, the committed cost table, base refresh and plan job sit in the #194 law (REG-3523)",
+      "A top-tab switch closes the character builder too (#191, REG-3524)",
+      "A price search splits a comma list into one card each (#192, REG-3525)",
+      "Clearing a price search empties the results (#192, REG-3526)",
+      "A terror-zone card waits for the board before settling on density (#133, REG-3527)",
+      "Escape peels one page layer at a time (#191, REG-3528)",
+      "Every item card uses the same close control (#191, REG-3529)",
+      "The Uniques detail closes on Escape (#191, REG-3530)",
+      "The price-search results have a real exit (#191, REG-3531)",
+      "The shelf opens at real size outside the hidden theatre (#186, REG-3532)",
+      "UNIQUES and SETS count every one seen on the floor (#184, REG-3533)"
+    ]
+  },
+  {
     "ver": "v3890",
     "date": "2026-11-09",
     "items": [

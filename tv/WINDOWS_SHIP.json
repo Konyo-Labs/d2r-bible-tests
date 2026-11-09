@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3890",
+  "ver": "v3891",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3890: sessions start at the game door - CHRONICLES read from the pixels",
+  "note": "v3891: Escape peels one layer, tabs close the builder, UNIQUES and SETS count every find",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
