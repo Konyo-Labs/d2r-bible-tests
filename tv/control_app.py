@@ -20145,8 +20145,19 @@ def _shadow_for_wire():
                 working = False
     except Exception:
         working, beat = None, None
+    # v3890 (#189, REG-3516) - `recording` is only "a reel is rolling": the OLD ALT's eye glowed LIVE all morning while
+    # it filmed GeForce NOW's idle page. `game` is whether that reel's own film shows D2R (chronicle_line.live_game).
+    game = None
+    if st.get("recording") is True:
+        try:
+            _sid = _mini_sid()
+            if _sid:
+                import chronicle_line as _chl
+                game = _chl.live_game("reel_" + str(_sid))
+        except Exception:
+            game = None
     return {"on": st.get("on") is True, "available": st.get("available"), "recording": st.get("recording") is True,
-            "working": working, "beatAgeS": beat, "why": _word_cut(str(st.get("say") or ""), 160)}
+            "game": game, "working": working, "beatAgeS": beat, "why": _word_cut(str(st.get("say") or ""), 160)}
 
 
 def _eye_for_wire():

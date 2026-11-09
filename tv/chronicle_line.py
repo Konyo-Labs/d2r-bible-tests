@@ -456,6 +456,8 @@ def _mark(rs, ts, kind):
     if isinstance(ts, int):
         if not isinstance(rs.get("firstD2rTs"), int) or ts < rs["firstD2rTs"]:
             rs["firstD2rTs"] = ts
+        if not isinstance(rs.get("lastD2rTs"), int) or ts > rs["lastD2rTs"]:
+            rs["lastD2rTs"] = ts
         if kind in ("logo", "title", "char-select"):
             m = rs.setdefault("marks", [])
             if len(m) < MARKS_KEEP:
@@ -481,6 +483,29 @@ def reel_shows_d2r(name, d=None):
         return True
     n = int(rs.get("frames") or 0)
     if rs.get("done") and n > 0 and int(rs.get("pos") or 0) >= n:
+        return False
+    return None
+
+
+LIVE_GAME_MS = 5 * 60 * 1000   # the live film shows the game when a D2R frame is among its last five walked minutes
+
+
+def live_game(name, d=None, fresh_ms=LIVE_GAME_MS):
+    """v3890 (#189) - does the reel rolling NOW show the game? -> True (a D2R screen - logo, title, character select,
+    lobby, the in-game orbs - within the last fresh_ms of the film the lane has walked), False (the lane walked at least
+    fresh_ms of this reel's film since the last D2R frame, or since its start), None (not walked that far yet)."""
+    d = d if d is not None else load_cached()
+    rs = ((d or {}).get("reels") or {}).get(name)
+    if not isinstance(rs, dict):
+        return None
+    walked = rs.get("scannedTs")
+    if not isinstance(walked, int):
+        return None
+    last = rs.get("lastD2rTs")
+    if isinstance(last, int) and walked - last <= fresh_ms:
+        return True
+    since = last if isinstance(last, int) else rs.get("firstTs")
+    if isinstance(since, int) and walked - since >= fresh_ms:
         return False
     return None
 

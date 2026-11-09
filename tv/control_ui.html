@@ -29841,9 +29841,14 @@ function escC(s) {
     } else if (sh.available === false) {
       st = 'idle'; tip = 'shadow reader switched ON, but this PC has no local text reader, so it cannot watch';
     } else if (sh.working === true) {
-      st = sh.recording ? 'live' : 'lit';
-      tip = sh.recording ? 'shadow reader ON - watching the game right now'
-                         : 'shadow reader ON - running in the background, waiting for the next game (it stays on with the game closed)';
+      /* v3890 (#189, REG-3516) - LIVE IS THE GAME ON SCREEN, NOT A REEL ROLLING. `recording` only says a reel is rolling;
+         the OLD ALT's eye glowed live all morning over GeForce NOW's idle page. `game` is that reel's own film (a D2R
+         screen in its last five walked minutes). Not the game, or not known yet: the calm green of ON, saying which. */
+      st = (sh.recording && sh.game === true) ? 'live' : 'lit';
+      tip = (sh.recording && sh.game === true) ? 'shadow reader ON - watching the game right now'
+          : (sh.recording && sh.game === false) ? 'shadow reader ON - recording, but its film shows no Diablo II (no logo, title, character select or in-game screen in the last 5 minutes)'
+          : sh.recording ? 'shadow reader ON - recording; whether its film shows the game is not known yet'
+          : 'shadow reader ON - running in the background, waiting for the next game (it stays on with the game closed)';
     } else if (sh.working === false) {
       st = 'idle';
       tip = 'shadow reader switched ON but its watcher has STOPPED'

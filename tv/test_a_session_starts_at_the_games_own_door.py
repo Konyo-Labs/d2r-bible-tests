@@ -170,6 +170,52 @@ class TheLaneTagsEveryFrame(unittest.TestCase):
         self.assertEqual(d["reels"][self.game]["d2r"].get("hud"), 1)
 
 
+class TheLiveFilmSaysWhetherItIsTheGame(unittest.TestCase):
+    """v3890 (#189, REG-3516) - the Fleet eye's LIVE glow: the rolling reel's own film, its last five walked minutes."""
+    T0 = 1795000000000
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix="live_film_")
+        self.hist = os.path.join(self.tmp, "frames", "hist")
+        self.old = os.environ.get("TV_CHRONICLE_LINES")
+        os.environ["TV_CHRONICLE_LINES"] = os.path.join(self.tmp, ".chronicle_lines.json")
+        m = 60 * 1000
+        self.left = self._reel(self.T0, [(0, in_game())] + [(k * m, idle_page()) for k in range(1, 8)])
+        self.playing = self._reel(self.T0 + 10 ** 7, [(k * m, idle_page()) for k in range(0, 6)] + [(6 * m, in_game())])
+        self.fresh = self._reel(self.T0 + 2 * 10 ** 7, [(0, idle_page()), (60 * 1000, idle_page())])
+
+    def _reel(self, t, shots):
+        name = "reel_s_%d_1" % t
+        d = os.path.join(self.hist, name)
+        os.makedirs(d)
+        for dt, im in shots:
+            im.save(os.path.join(d, "f_%d.jpg" % (t + dt)), "JPEG", quality=92)
+        return name
+
+    def tearDown(self):
+        if self.old is None:
+            os.environ.pop("TV_CHRONICLE_LINES", None)
+        else:
+            os.environ["TV_CHRONICLE_LINES"] = self.old
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_the_game_now_the_game_gone_and_too_soon_to_say(self):
+        """* THE POINT - in the game within the last five minutes is the game; seven minutes of a streaming page after
+        it is not; two minutes of film with nothing yet is not known"""
+        CL.tick(root=self.hist, budget_s=120)
+        d = CL.load()
+        self.assertEqual([CL.live_game(self.playing, d), CL.live_game(self.left, d), CL.live_game(self.fresh, d)],
+                         [True, False, None])
+
+    def test_the_console_posts_it_beside_recording(self):
+        with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
+            app = "\n".join(l.split("#", 1)[0] for l in fh.read().split("\n"))
+        i = app.index("def _shadow_for_wire(")
+        body = app[i:app.index("\ndef ", i + 10)]
+        self.assertIn('game = _chl.live_game("reel_" + str(_sid))', body)
+        self.assertIn('"game": game, "working": working,', body)
+
+
 class ASessionThatNeverShowedTheGameIsNone(unittest.TestCase):
     """control_app's one judge, driven with the film's answer stubbed."""
 
@@ -223,6 +269,16 @@ class ASessionThatNeverShowedTheGameIsNone(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3890 (#189) - a streaming page after the game still reads as the game on the live eye",
+     "file": "tv/chronicle_line.py",
+     "find": "    if isinstance(since, int) and walked - since >= fresh_ms:\n        return False\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "v3890 (#189) - the console never posts whether the rolling reel shows the game",
+     "file": "tv/control_app.py",
+     "find": "                game = _chl.live_game(\"reel_\" + str(_sid))\n",
+     "replace": "                game = None\n",
+     "matches": 1},
     {"why": "v3890 (#188) - any dark screen passes for the title",
      "file": "tv/d2r_screens.py",
      "find": "    if (st[\"centre\"] >= TITLE_CENTRE_MIN and st[\"rest\"] <= TITLE_REST_MAX and st[\"dark\"] >= TITLE_DARK_MIN):\n",

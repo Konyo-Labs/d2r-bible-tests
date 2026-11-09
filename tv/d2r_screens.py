@@ -131,7 +131,7 @@ def kind_of_stats(st):
 
 
 def screen_of(src, array=None):
-    """One frame -> ("logo" | "title" | "hud" | "char-select" | None, why). "frame unreadable" is UNKNOWN, never None-as-no.
+    """One frame -> ("logo" | "title" | "hud" | "char-select" | "lobby" | None, why). "frame unreadable" is UNKNOWN, never None-as-no.
     `array` (an RGB int array of the same frame) spares a second decode for the logo and title."""
     try:
         a = _small(Image_of(array) if array is not None else src)
@@ -146,6 +146,10 @@ def screen_of(src, array=None):
             ok, cwhy = _cs.looks_like_char_select(_cs.panel_stats(src))
             if ok:
                 return "char-select", "char_select: %s" % cwhy
+            # the create-game lobby is the game client between games (REG-1873's own band test, called)
+            ok, lwhy = _cs.looks_like_lobby(_cs.lobby_stats(src))
+            if ok:
+                return "lobby", "char_select: %s" % lwhy
         except Exception:
             pass
     return None, why

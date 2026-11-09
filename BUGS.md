@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3516 - THE FLEET'S SHADOW EYE GLOWED "LIVE" OVER GEFORCE NOW'S IDLE PAGE (v3890, #189, his call)
+His words 11-09: "it can be configured to shadow reader ON and recording when the green is eye glows instead of RED". The
+eye's LIVE state (bright green, white glint, "watching the game right now") came from `recording` alone - _agent_alive(), a
+reel rolling - so the OLD ALT glowed live all morning while it filmed the inactivity page. Now the console posts `game`:
+the rolling reel's own film shows a D2R screen (logo, title, character select, lobby, the in-game orbs) in its last five
+walked minutes (chronicle_line.live_game; False after five minutes of film without one; None until walked). The worker
+keeps it and a flip is news; LIVE needs game true, anything else is the calm green of ON and says which (no Diablo II on
+the film / not known yet). The lobby counts as D2R (char_select's band test, called).
+GUARD: test_the_fleet_shows_the_shadow_eye (+3 red-proofs) + test_a_session_starts_at_the_games_own_door (+2).
+
 ### REG-3515 - A RUN THAT NEVER SHOWED D2R WAS A SESSION ON THE SHELF (v3890, #188, his call)
 His words 11-09: "for a logical thing to have here is for it to be able to identify this and not register them as a session at
 all" - "regardless of the window being recorder wether it be boosteroid or nvideaplay or or locally". MEASURED: the OLD ALT

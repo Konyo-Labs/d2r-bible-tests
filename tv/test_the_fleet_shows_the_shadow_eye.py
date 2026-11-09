@@ -72,6 +72,27 @@ RED_PROOF = [
         "matches": 1,
     },
     {
+        "why": "v3890 (#189) - the eye glows live for any rolling reel again, the idle page included",
+        "file": "tv/control_ui.html",
+        "find": "      st = (sh.recording && sh.game === true) ? 'live' : 'lit';\n",
+        "replace": "      st = sh.recording ? 'live' : 'lit';\n",
+        "matches": 1,
+    },
+    {
+        "why": "v3890 (#189) - the worker drops whether the rolling reel shows the game",
+        "file": "functions/api/console.js",
+        "find": "        game: tri(s.game),   /* v3890 (#189) - the rolling reel's film shows D2R (null: not known / an older console) */\n",
+        "replace": "",
+        "matches": 1,
+    },
+    {
+        "why": "v3890 (#189) - the film leaving the game is not news, so the eye stays live for up to 15 min",
+        "file": "functions/api/console.js",
+        "find": "JSON.stringify([x.on, x.available, x.recording, x.working, x.game])",
+        "replace": "JSON.stringify([x.on, x.available, x.recording, x.working])",
+        "matches": 1,
+    },
+    {
         "why": "#93 - the worker's shaper drops whether the watcher works",
         "file": "functions/api/console.js",
         "find": "        on: s.on === true, available: tri(s.available), recording: s.recording === true, working: tri(s.working),\n",
@@ -251,6 +272,9 @@ class TheWorkerKeepsIt(unittest.TestCase):
         self.assertEqual((v["on"], v["available"], v["recording"], v["working"], v["beatAgeS"]),
                          (True, True, False, True, 7.5), v)
         self.assertEqual(v["why"], "armed - it starts watching")
+        # v3890 (#189) - the rolling reel's game verdict rides the wire: true / false / null, nothing guessed
+        self.assertEqual([_shape({"on": True, "game": g})["game"] for g in (True, False, None, "yes")],
+                         [True, False, None, None])
         odd = _shape({"on": "yes", "working": "maybe", "available": 1, "beatAgeS": -3})
         self.assertEqual((odd["on"], odd["working"], odd["available"], odd["beatAgeS"]), (False, None, None, None), odd)
         self.assertIsNone(_shape(None), "an older console grew a shadow reader it never sent")
@@ -271,6 +295,15 @@ class TheWorkerKeepsIt(unittest.TestCase):
         recs = [json.loads(p["value"]) for p in stopped["puts"] if p["name"] == "console:dean-pc"]
         self.assertEqual(len(recs), 1, "a stopped watcher was not written - the eye would glow for up to 15 min")
         self.assertIs(recs[0]["shadow"]["working"], False)
+        # v3890 (#189) - the film turning from the game to a streaming page is news too: the eye must not stay live
+        on_game = dict(body, shadow=dict(body["shadow"], recording=True, game=True))
+        first2 = CF.run_handler(API, method="POST", body=on_game)
+        seed2 = {"console:dean-pc": json.loads([p for p in first2["puts"] if p["name"] == "console:dean-pc"][0]["value"])}
+        same2 = CF.run_handler(API, method="POST", body=on_game, seed=seed2)
+        self.assertEqual([p for p in same2["puts"] if p["name"] == "console:dean-pc"], [], "premise: nothing moved")
+        gone = CF.run_handler(API, method="POST", body=dict(on_game, shadow=dict(on_game["shadow"], game=False)), seed=seed2)
+        self.assertEqual(len([p for p in gone["puts"] if p["name"] == "console:dean-pc"]), 1,
+                         "the film leaving the game (only `game` moved) was not written")
 
 
 # ══ JOINT 4 — THE CARD ════════════════════════════════════════════════════════════════════════════════════════════
@@ -297,7 +330,15 @@ class TheEyeOnEveryRow(unittest.TestCase):
         self.assertEqual(e["st"], "lit", e)
         self.assertIn("background", e["title"])
         self.assertEqual(e["text"], "", "the eye added words to the name cell: %r" % e["text"])
-        self.assertEqual(_eye(dict(LIVE, recording=True))["st"], "live")
+        # v3890 (#189, REG-3516) - LIVE is the game on screen, not a reel rolling: the OLD ALT glowed live over GeForce NOW's
+        # idle page. A rolling reel whose film shows D2R is live; one whose film shows no D2R, or is not known yet, is ON.
+        self.assertEqual(_eye(dict(LIVE, recording=True, game=True))["st"], "live")
+        idle = _eye(dict(LIVE, recording=True, game=False))
+        self.assertEqual(idle["st"], "lit", idle)
+        self.assertIn("shows no Diablo II", idle["title"])
+        unk = _eye(dict(LIVE, recording=True))
+        self.assertEqual(unk["st"], "lit", "a reel nobody has looked at drew the LIVE eye: %r" % unk)
+        self.assertIn("not known yet", unk["title"])
 
     def test_a_refused_beacon_is_not_called_offline(self):
         """#250 (REG-2048) - Wife PC: the name line said 'presence UNKNOWN, not offline' (the roster refused its last

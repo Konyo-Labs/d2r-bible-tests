@@ -651,6 +651,7 @@ export async function onRequestPost(context) {
       const tri = (v) => (v === true ? true : (v === false ? false : null));
       return {
         on: s.on === true, available: tri(s.available), recording: s.recording === true, working: tri(s.working),
+        game: tri(s.game),   /* v3890 (#189) - the rolling reel's film shows D2R (null: not known / an older console) */
         beatAgeS: (typeof s.beatAgeS === 'number' && Number.isFinite(s.beatAgeS) && s.beatAgeS >= 0)
           ? Math.min(s.beatAgeS, 400 * 86400) : null,
         why: (typeof s.why === 'string' && s.why.trim()) ? cutAtWord(s.why.replace(/\s+/g, ' ').trim(), 160) : null,
@@ -819,7 +820,7 @@ export async function onRequestPost(context) {
   // age is not (it moves every tick) - that PC decides `working` on its own clock before it posts.
   const shadowNews = (r) => {
     const x = r && r.shadow;
-    return (x && typeof x === 'object') ? JSON.stringify([x.on, x.available, x.recording, x.working]) : null;
+    return (x && typeof x === 'object') ? JSON.stringify([x.on, x.available, x.recording, x.working, x.game]) : null;
   };
   // #108 — a reader that stops (or starts) reading on a PC is what its row says, so a flip is news; the reason's words
   // are not (the ok counts inside it move every read).
