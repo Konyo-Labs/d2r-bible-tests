@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3890",
+    "date": "2026-11-09",
+    "items": [
+      "The Windows proof set on GitHub runs as 32 shards of 2 lanes inside 75 minutes (#103, REG-3504)",
+      "The paid-runner lane is gone - every proof job runs on the free GitHub runners (REG-3505)",
+      "A set item moves with MF by the unique-first roll, as silospen counts it (#43, REG-3506)",
+      "Each PC is its own profile - the OLD ALT is OLD PC ALT, no shadow folds two PCs (#182, REG-3507)",
+      "The lobby is read by its panels, so the work ALT lobby learns its characters (#183, REG-3508)",
+      "THE SHELF puts back the layer it lives in - an unseen refusal no longer holds the door (#186, REG-3509)",
+      "The session card FOUND box is CHRONICLES and counts only green-keyword finds (#184, REG-3510)",
+      "Delete session stands apart from Clip in the Theatre more-menu (#186, REG-3511)",
+      "The green Eligible for Chronicle line under the red Unidentified is read from pixels (#184, REG-3512)",
+      "Every reel frame is walked once for that line, proof kept, counted per session (#184, REG-3513)",
+      "The game door - logo, title, character select, in-game orbs - is read from the film (#188, REG-3514)",
+      "A run that never showed Diablo II is not a session - the GeForce NOW idle page drops off (#188, REG-3515)",
+      "The Fleet shadow eye glows live only when the rolling film shows the game (#189, REG-3516)",
+      "The Fleet row lamp says the console is alive behind the scenes - green, amber, red (#189, REG-3517)",
+      "Every round records how fast it ran against the rounds before it (#194, REG-3518)"
+    ]
+  },
+  {
     "ver": "v3889",
     "date": "2026-11-09",
     "items": [

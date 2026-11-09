@@ -48131,7 +48131,7 @@ def status_payload():
         "selfProbe": dict(_SELF_PROBE), "selfProve": dict(_SELF_PROVE), "auditChild": _audit_child_status(), "shelfPrewarm": dict(_SHELF_PREWARM), "historyRepair": dict(_HISTORY_REPAIR), "proofRelease": dict(_PROOF_RELEASE), "ciWatch": dict(_CI_WATCH), "riverWarm": dict(_RIVER_WARM), "riverLocks": dict(_RIVER_LOCKS_SEEN), "repairBook": dict(_REPAIR_BOOK), "captureSweep": dict(_CAP_SWEEP), "captureStop": dict(_CAP_STOP),
         # #83 — the child supervisor's receipts (door / watchdog / RAM); the census itself is the doctor's row
         "childGuard": _child_guard_status(),
-        "ver": "v3889",
+        "ver": "v3890",
         # v3288 — WHICH QUESTION THE NUMBER ABOVE ANSWERS. `ver` is a literal compiled into the
         # module that is running; `moduleFreshness` says whether that module is still the file on
         # disk, measured from this module's OWN import rather than from a PID or a string compare.
