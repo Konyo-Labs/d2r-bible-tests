@@ -112,6 +112,13 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3491 - THE BACKFILL HAD NO REAL SIGNED-IN RESULTS PAGE TO BUILD ITS PAGER FROM (v3889, #151 step 1)
+His 11-09 ruling: the 2-3 year d2jsp backfill runs on HIS Mac's signed-in console (forum 268), not GrokBot - whose
+signed-out pilot got "You do not have permission to use this feature". A pager for the forum's older results can only be
+built from a real signed-in page, and only the console may fetch one (his cookie never leaves it). Now the quote path the
+console already runs keeps the page it read - tv/.d2jsp_pages/, gitignored, newest 5, session-named query values and hidden
+form fields blanked before writing; a stub transport (every law) never writes one. The pager is built from the first kept
+page (v3890). GUARD: test_a_d2jsp_page_is_kept_for_the_backfill (3 red-proofs RED).
 ### REG-3490 - IN-GAME NAMES WEAR THE GAME'S OWN FACE ON THE BOARD (v3889, #23, his theme pass - fonts only, colours unchanged)
 His 11-07 spec ("the diablo ii fonts ... as they are within the d2r planner we extracted just like it already renders for ADD
 ITEM") narrowed 11-08 to in-game text only - item names, zones and maps, terror zones, monsters and bosses; titles and the

@@ -1466,6 +1466,47 @@ _QUOTE_JS = os.path.join(
 )
 
 
+#: #151 step 1 (REG-3491) - the signed-in results pages the console already reads, kept for the backfill to learn the forum's
+#: paging and dates from. His 11-09 ruling: the 2-3 year backfill runs on HIS Mac's signed-in console (forum 268), and the
+#: one page a pager can be built from is a real one - GrokBot's signed-out pilot got "You do not have permission". Local only:
+#: beside the price DB, gitignored, the newest D2JSP_PAGES_KEEP kept; session values scrubbed before a byte is written.
+D2JSP_PAGES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".d2jsp_pages")
+D2JSP_PAGES_KEEP = 5
+_SCRUB_QS = re.compile(r"([?&;](?:s|sid|sess|session|token|k|key|hash)=)[^&\"'\s<>]+", re.I)
+_SCRUB_HIDDEN = re.compile(r"(<input\b[^>]*\btype=[\"']?hidden[\"']?[^>]*\bvalue=[\"'])[^\"']*", re.I)
+_SCRUB_HIDDEN2 = re.compile(r"(<input\b[^>]*\bvalue=[\"'])[^\"']*([\"'][^>]*\btype=[\"']?hidden)", re.I)
+
+
+def scrub_page(html):
+    """A results page with every session value blanked: query values named like a session and hidden form values. -> str"""
+    out = _SCRUB_QS.sub(r"\1X", str(html or ""))
+    out = _SCRUB_HIDDEN.sub(r"\1X", out)
+    return _SCRUB_HIDDEN2.sub(r"\1X\2", out)
+
+
+def keep_results_page(item, html, base=None, keep=None, now=None):
+    """#151 step 1 - write one scrubbed results page for the backfill, keep the newest `keep`. -> path | None (not kept)"""
+    try:
+        d = os.environ.get("D2JSP_PAGES_DIR") or base or D2JSP_PAGES_DIR
+        os.makedirs(d, exist_ok=True)
+        ts = int((now if now is not None else time.time()) * 1000)
+        slug = re.sub(r"[^a-z0-9]+", "-", str(item or "").lower()).strip("-")[:40] or "item"
+        path = os.path.join(d, "%d-%s.html" % (ts, slug))
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(scrub_page(html))
+        os.replace(tmp, path)
+        pages = sorted(f for f in os.listdir(d) if f.endswith(".html"))
+        for f in pages[:-(keep or D2JSP_PAGES_KEEP)]:
+            try:
+                os.remove(os.path.join(d, f))
+            except OSError:
+                pass
+        return path
+    except Exception:
+        return None
+
+
 def _quote_unknown(item, read_at, reason):
     return {
         "item": str(item or ""),
@@ -2591,6 +2632,10 @@ def d2jsp_quote(item, origin, host, port, cookie_get=None, transport=None, node_
         if isinstance(opened, str) and opened and not _challenge_page(opened):
             page = opened
     out = parse_public_quote(page, item, read_at, node_run=node_run)
+    # #151 step 1 (REG-3491) - a page the real forum read answered is kept, scrubbed, for the backfill's pager. A law's stub
+    # transport never writes one: only the console's own network path does.
+    if transport is None and isinstance(out, dict) and out.get("reason") == "read":
+        out["pageKept"] = bool(keep_results_page(item, page))
     # #96 - the forum words this reading searched: the price DB keys the item by them, so two names one search reads
     # (Harlequin Crest / Shako) are one entry. Words only, the same the search URL carries - never the cookie or the page.
     if isinstance(out, dict) and out.get("reason") == "read":

@@ -526,3 +526,4 @@ tv/.d2jsp_check.json.tmp
 # REG-3209 - the disk growers lane salvages what is informational in a grower (unmerged commits as patches, a dirty
 # diff, untracked files, a scratch summary) here before it prunes it, with a manifest and its per-PC state. Never public.
 tv/.salvage/
+tv/.d2jsp_pages/
