@@ -50533,6 +50533,7 @@ class Handler(BaseHTTPRequestHandler):
                 _keeper_info = {}   # v1280 (D7 engine) — lowered-name → {name, frameId, ts} for regret chips
                 _registered = None   # v943 — 📖 how many items KAI witnessed this session
                 _finds = None        # v1254 R1 — 📖 the ACTUAL items KAI witnessed (card-facing, capped)
+                _finds_all = None    # v3891 (#184, REG-3533) — every unique/set seen, for UNIQUES/SETS; finds stays capped
                 _topFind = None      # v1254 R1 — the single best find (grail else newest) for the shelf teaser
                 for r2 in sess:
                     if r2.get("lane") == "kai" and isinstance(r2.get("kai"), dict) and "missedFrames" in r2["kai"]:
@@ -50552,10 +50553,11 @@ class Handler(BaseHTTPRequestHandler):
                                 _ritems,
                                 key=lambda it: (-_KAI_TIER_RANK.get((it.get("tier") or ""), 0),
                                                 -(it.get("firstSeenTs") or 0)))
-                            _finds = [{"name": it.get("name"), "tier": it.get("tier"),
-                                       "loc": it.get("loc"), "frameId": it.get("frameId"),
-                                       "ts": it.get("firstSeenTs")}
-                                      for it in _srt[:16]]
+                            _finds_all = [{"name": it.get("name"), "tier": it.get("tier"),
+                                           "loc": it.get("loc"), "frameId": it.get("frameId"),
+                                           "ts": it.get("firstSeenTs")}
+                                          for it in _srt]
+                            _finds = _finds_all[:16]
                             _tf = _srt[0]
                             _topFind = {"name": _tf.get("name"), "tier": _tf.get("tier")}
                     for nm2 in (r2.get("thrown_names") or []):
@@ -50731,8 +50733,8 @@ class Handler(BaseHTTPRequestHandler):
                 # v1408 — deep journal names not yet in finds (retro/register gap): surface as finds
                 # so dossier "What I found" + chapters stay honest to live deep + sealed register.
                 _have_nms = set()
-                if isinstance(_finds, list):
-                    for _fi in _finds:
+                if isinstance(_finds_all or _finds, list):
+                    for _fi in (_finds_all or _finds):
                         _n = str((_fi or {}).get("name") or "").strip().lower()
                         if _n:
                             _have_nms.add(_n)
@@ -50755,7 +50757,8 @@ class Handler(BaseHTTPRequestHandler):
                                        "frameId": r2.get("frameId"),
                                        "ts": r2.get("captureTs") or r2.get("ts")})
                 if _extra:
-                    _finds = (list(_finds or []) + _extra)[:16]
+                    _finds_all = list(_finds_all or _finds or []) + _extra
+                    _finds = _finds_all[:16]
                     if _registered is None:
                         _registered = len(_finds)
                     elif isinstance(_registered, int):
@@ -50772,7 +50775,7 @@ class Handler(BaseHTTPRequestHandler):
                             # grail tile should "read the chronicles". None (not zeros) when the
                             # rosters cannot load, so the card prints UNKNOWN rather than a
                             # confident 0. See _chron_tally for the measurement behind it.
-                            "chron": _chron_tally(_finds),
+                            "chron": _chron_tally(_finds_all if _finds_all is not None else _finds),
                             "coverage": _coverage, "classFrames": (_class_frames or None),   # v1276 (D5 engine) — decision-story meter + montage
                             "superRecovery": _super_recovery, "missedFrames": _missed_frames,   # v1278 (D6 engine) — recovery badge + missed-text drill
                             "sealMs": _seal_ms, "regretItems": _regret_items,   # v1280 (D7 engine) — seal-latency chip + regret spotlight
