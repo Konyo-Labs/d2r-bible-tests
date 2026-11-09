@@ -166,11 +166,42 @@ def carry_prices(restored, out_dir, say=print):
     if not got:
         say("  REG-3274 PRICES: no measured prices were restored - the shards plan on tv/proof_costs.json alone")
         return 0
+    body = {"v": 1, "measuredOn": "the last round's shards (restored with its seed)", "perProof": got}
+    _wf = PS.wall_factor(src)                  # v3891 (#194) - the wall factor the last round measured rides with them
+    if _wf > PS.SHARD_WALL_FACTOR:
+        body["wallFactor"] = _wf
     with open(os.path.join(out_dir, PRICES_NAME), "w", encoding="utf-8") as fh:
-        json.dump({"v": 1, "measuredOn": "the last round's shards (restored with its seed)", "perProof": got}, fh)
+        json.dump(body, fh)
     say("  REG-3274 PRICES: %d gate(s) priced by the last round ride with the seed - they win over the committed table"
         % len(got))
     return len(got)
+
+
+#: v3891 (#194) - the round's merged red memory, saved beside the seed by the fan-in (heart2 --merge-red --red-out)
+RED_NAME = "heart2_red.json"
+
+
+def carry_red(restored, out_dir, say=print):
+    """v3891 (#194) - copy the last round's merged red memory into the run's seed, so every shard starts knowing which
+    cases caught each sabotage. -> how many sabotages it remembers; 0 when none was restored. A file that is not a red
+    memory (no 'entries' map) is never carried - the shards would only ask it and fall back, but a broken file is said."""
+    src = os.path.join(restored, RED_NAME) if restored else ""
+    if not (src and os.path.isfile(src)):
+        say("  v3891 (#194) RED MEMORY: none was restored - every sabotage runs its full suite this round")
+        return 0
+    try:
+        with open(src, encoding="utf-8") as fh:
+            body = json.load(fh)
+        ent = body.get("entries") if isinstance(body, dict) else None
+        if not isinstance(ent, dict):
+            raise ValueError("no entries map")
+    except (OSError, ValueError) as e:
+        say("  v3891 (#194) RED MEMORY: the restored memory would not read (%s) - not carried" % type(e).__name__)
+        return 0
+    with open(os.path.join(out_dir, RED_NAME), "w", encoding="utf-8") as fh:
+        json.dump(body, fh)
+    say("  v3891 (#194) RED MEMORY: %d sabotage(s) the last round learned ride with the seed" % len(ent))
+    return len(ent)
 
 
 def build(sha, restored, work, out_dir, flavor="", prior=False, download=None, get=None, say=print):
@@ -227,6 +258,7 @@ def build(sha, restored, work, out_dir, flavor="", prior=False, download=None, g
             json.dump({"sha": sha, "flavor": flavor, "served": served}, fh)
         # REG-3274 - the prices the last round measured ride in the same artifact, so every shard plans on the same table
         rec["prices"] = carry_prices(restored, out_dir, say=say)
+        rec["red"] = carry_red(restored, out_dir, say=say)     # v3891 (#194) - and which cases caught each sabotage
         try:
             with open(out, encoding="utf-8") as fh:
                 rec["entries"] = len((json.load(fh) or {}).get("entries") or {})

@@ -4384,6 +4384,42 @@ def _red_merged(disk, learned, used):
     return out
 
 
+def merge_red_files(files, out, say=print):
+    """v3891 (#194, his 11-09: "make sure it keeps getting faster self improve it") - THE RED MEMORY TRAVELS WITH THE SEED.
+    Each CI shard starts on a fresh runner, so its red memory (beside its own cache) was always EMPTY: every round re-ran
+    every test_control sabotage over all 2,259 cases (~270 s a proof - the costliest single chunk, the round's floor),
+    though the last round had written down which cases caught each one. The fan-in merges every shard's memory with this
+    module's own rules (_red_merged: newest 'at' wins a key; _red_evict: the 20,000 cap) into the next seed, and every
+    shard starts from it. The memory only ever saves time (#42 lever 1: the narrowed pair must be green untampered and red
+    tampered, else the full proof runs), so carrying it can never grant a verdict the full proof would refuse.
+    files: the shards' .heart2_red.json; out: the seed's copy. -> 0 always (a memory that cannot travel costs time only)"""
+    ent, read = {}, 0
+    for f in files or []:
+        body, why = _read_store(f, _entries_shape)
+        if why is not None:
+            say("  v3891 (#194) RED MEMORY: %s would not read (%s) - left out" % (os.path.basename(os.path.dirname(f)), why))
+            continue
+        ent = _red_merged(ent, (body or {}).get("entries"), None)
+        read += 1
+    if not read:
+        say("  v3891 (#194) RED MEMORY: no shard left one - the next round starts empty")
+        return 0
+    gone = _red_evict(ent, RED_MEMORY_MAX)
+    body = {"_why": "#42 lever 1 / R2 / v3891 #194 - which cases caught each sabotage, merged from a round's shards for the "
+                    "next round's seed. Written only by tv/heart2.py.", "format": 2, "entries": ent}
+    try:
+        os.makedirs(os.path.dirname(os.path.abspath(out)) or ".", exist_ok=True)
+        with io.open(out + ".tmp", "w", encoding="utf-8") as fh:
+            json.dump(body, fh)
+        os.replace(out + ".tmp", out)
+        say("  v3891 (#194) RED MEMORY: %d shard memor(ies) merged - %d sabotage(s) remembered%s, carried to the next seed"
+            % (read, len(ent), (", %d evicted at the cap" % gone) if gone else ""))
+    except OSError as e:
+        say("  v3891 (#194) RED MEMORY: the merged memory could not be written (%s) - the next round starts empty"
+            % type(e).__name__)
+    return 0
+
+
 def _red_live_keys():
     """Every key a gate file still declares - its R2 key and its pre-R2 key. -> set | None (UNKNOWN: that tier is
     skipped, never guessed)"""
@@ -6708,6 +6744,45 @@ def _shard_cut(have, order, gates, say):
     # REG-3273 - the plan says whether its slowest shard fits the proving window with room, before the round finds out
     say("  REG-3273 HEADROOM: %s" % _PS.headroom(_w)[1] if _w else "  REG-3273 HEADROOM: UNKNOWN - the plan said no wall")
     return order2, gates2
+
+
+def plan_shards(target_s=None, n_min=None, n_max=None, fallback=22, output=None, say=print):
+    """v3891 (#194, his 11-09: "optimize the #194 all the way and make sure it keeps getting faster self improve it") - HOW
+    MANY SHARDS THIS COMMIT NEEDS. The seed job asks before any shard starts: every declaring gate (prove()'s own scope
+    with nothing named), the seed's served list and carried prices (the same HEART2_SHARD_SERVED / HEART2_SHARD_COSTS the
+    shards read), and proof_shard.choose_n over _shard_cut's own plan arguments - so the count is cut by the model every
+    shard plans from. A plan that cannot be cut is never a red round: it says why and answers `fallback`.
+    -> 0 always; prints and (output) appends `n=` and `list=` for the workflow's matrix."""
+    import proof_shard as _PS
+    kw = {}
+    if target_s:
+        kw["target_s"] = float(target_s)
+    if n_min:
+        kw["n_min"] = int(n_min)
+    if n_max:
+        kw["n_max"] = int(n_max)
+    try:
+        gates = gate_files(say=lambda *_a, **_k: None)
+        have = [(n, f, p) for n, f, p in ((n, f, red_proofs_in(f)) for n, f in gates_named(None, gates)) if p]
+        served = _served_now(have, say=say)
+        n, info = _PS.choose_n(have, costs=_PS.gate_costs(), browser=_push_browser(have), per_proof=_PS.proof_costs(),
+                               served=served, **kw)
+        why = info.get("why")
+        say("  v3891 (#194) SHARD COUNT: %d - %s (owed %s, served %s, %d gate(s) declare proofs)"
+            % (n, why, info.get("owed"), info.get("served"), len(have)))
+    except Exception as e:
+        n = max(1, int(fallback or 22))
+        say("  v3891 (#194) SHARD COUNT: %d - the plan could not be cut (%s: %s), so the round runs at the default"
+            % (n, type(e).__name__, str(e)[:160]))
+    lines = "n=%d\nlist=%s\n" % (n, json.dumps(list(range(1, n + 1)), separators=(",", ":")))
+    sys.stdout.write(lines)
+    if output:
+        try:
+            with io.open(output, "a", encoding="utf-8") as fh:
+                fh.write(lines)
+        except OSError as e:
+            say("  v3891 (#194): the count could not be written to %s (%s)" % (output, type(e).__name__))
+    return 0
 
 
 def _served_now(have, path=None, head=None, say=None):
@@ -10186,6 +10261,19 @@ def main(argv):
     ap.add_argument("--proof-shard", default=None, metavar="K/N",
                     help="REG-2585 with --push: prove only shard K of N of these gates' proofs (one plan every shard "
                          "computes alike), into the fresh cache file HEART2_CACHE_PATH names; no census is written")
+    ap.add_argument("--plan-shards", action="store_true",
+                    help="v3891 (#194) print how many proof shards THIS commit's owed proofs need (n=, list=) from the same "
+                         "inputs every shard plans from (HEART2_SHARD_SERVED, HEART2_SHARD_COSTS) and exit 0; proves nothing")
+    ap.add_argument("--target-s", type=float, default=None, help="v3891 (#194) with --plan-shards: the slowest prove a shard may model")
+    ap.add_argument("--min-shards", type=int, default=None, help="v3891 (#194) with --plan-shards: the fewest shards")
+    ap.add_argument("--max-shards", type=int, default=None, help="v3891 (#194) with --plan-shards: the most shards")
+    ap.add_argument("--fallback-shards", type=int, default=22,
+                    help="v3891 (#194) with --plan-shards: the count a round runs at when the plan cannot be cut")
+    ap.add_argument("--output", default=None, metavar="FILE",
+                    help="v3891 (#194) with --plan-shards: append n= and list= to this file (GitHub's GITHUB_OUTPUT)")
+    ap.add_argument("--merge-red", nargs="+", default=None, metavar="FILE",
+                    help="v3891 (#194) merge these shards' red memories into --red-out for the next round's seed; exits 0")
+    ap.add_argument("--red-out", default=None, metavar="FILE", help="v3891 (#194) with --merge-red: the merged memory")
     ap.add_argument("--import-shards", nargs="+", default=None, metavar="FILE",
                     help="REG-2586 merge every shard's banked PROVENs into this machine's verdict cache - all shards of "
                          "this HEAD or nothing; each entry keeps its tree; exits 2 on a refusal")
@@ -10224,6 +10312,12 @@ def main(argv):
         return _irc
     if a.trust and a.prove is None:
         return trust_now()                       # REG-3191 - the lane's light start: the trust pass alone
+    if a.plan_shards:
+        return plan_shards(a.target_s, a.min_shards, a.max_shards, a.fallback_shards, a.output)
+    if a.merge_red is not None:
+        if not a.red_out:
+            ap.error("--merge-red needs --red-out FILE")
+        return merge_red_files(a.merge_red, a.red_out)
     _SHARD["spec"] = None
     if a.proof_shard is not None:
         import proof_shard as _PS

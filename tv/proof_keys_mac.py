@@ -76,6 +76,23 @@ def shard_count(text):
     return int(m.group(1)) if m else None
 
 
+def shard_count_of(files):
+    """v3891 (#194) - the count the round's shards were CUT with, read from their own manifests (each carries its k and n):
+    since the seed job chooses N every round, the workflow's PROOF_SHARDS is only the fallback, not the set's size.
+    -> the one n every readable manifest names | None (none readable, or they disagree - never a guessed size)"""
+    ns = set()
+    for f in files or []:
+        try:
+            with io.open(f, encoding="utf-8") as fh:
+                m = (json.load(fh) or {}).get("shard") or {}
+            n = m.get("n")
+            if isinstance(n, int) and not isinstance(n, bool) and n > 0:
+                ns.add(n)
+        except (OSError, ValueError, AttributeError):
+            continue
+    return ns.pop() if len(ns) == 1 else None
+
+
 def whole_set(files, n):
     """The artifact must be exactly proof-shard-1 .. proof-shard-N, each with its cache - no short, extra or empty set.
     -> None when whole, else the reason"""
@@ -502,7 +519,9 @@ def main(argv=None):
         tmp = tempfile.mkdtemp(prefix="proof-shards.")
         try:
             files = download_artifact(slug, run["id"], "proof-shards-%s" % sha, token, tmp)
-            gap = whole_set(files, shard_count(io.open(WORKFLOW_FILE, encoding="utf-8").read()))
+            # v3891 (#194) - the set's size is the count its shards were cut with (their manifests), the workflow's only
+            # the fallback when no manifest says
+            gap = whole_set(files, shard_count_of(files) or shard_count(io.open(WORKFLOW_FILE, encoding="utf-8").read()))
             if gap:
                 raise RuntimeError(gap)
             r = subprocess.run([sys.executable, os.path.join(HERE, "heart2.py"), "--import-shards"] + files, cwd=HERE,

@@ -9,7 +9,11 @@ name: proof-keys shards (ci/proof-keys-* only)
 # (HEART2_SHARD_SEED). heart2 serves a seed entry only under the key it takes from THIS checkout's bytes (a sha256 over
 # every input's bytes, tv/heart2.py _VerdictCache._key), so a seed of any commit can never serve a proof for other bytes;
 # the shard's own file still starts empty and holds only proofs of its own plan. Main runs save the next seed.
-# ⚠ N LIVES IN TWO PLACES - PROOF_SHARDS and the matrix list - and
+# v3891 (#194, his 11-09 "optimize the #194 all the way and make sure it keeps getting faster self improve it"): N IS CHOSEN
+# EVERY ROUND by the seed job (heart2 --plan-shards: the fewest shards whose slowest modelled prove fits PROOF_TARGET_S, or
+# the floor its costliest chunk sets) and handed to the matrix, the shards and the fan-in as ONE output; PROOF_SHARDS below
+# is now only the count a round falls back to when the plan cannot be cut. The history of the hand-set N follows.
+# ⚠ N LIVED IN TWO PLACES - PROOF_SHARDS and the matrix list - and
 # tv/test_the_shard_workflow_proves_every_proof_once.py goes red if they disagree. v3864: 22 - GitHub Pro runs 40 jobs at once
 # (2026-11-05), and the version's other checks hold ~18 of them while the shards run (agent tests 5, Playwright 12, Windows 1).
 # v3865 - A VERSION PROVES IN MINUTES (his words that night: "2hr and 50 min are you kidding me?" - that figure was a
@@ -63,15 +67,15 @@ jobs:
       digest: ${{ steps.seed.outputs.digest }}
       bank: ${{ steps.seed.outputs.bank || 'unknown' }}
       served: ${{ steps.seed.outputs.served || '0' }}
+      # v3891 (#194) - the round's own shard count, chosen below; the fallback is PROOF_SHARDS (a plan that cannot be cut)
+      n: ${{ steps.count.outputs.n || '22' }}
+      list: ${{ steps.count.outputs.list || '[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22]' }}
     steps:
       - uses: actions/checkout@v4
         with:
+          # v3891 (#194) - the whole tv/ tree: the count is cut by heart2's own plan over every law's red-proofs
           sparse-checkout: |
-            tv/proof_seed.py
-            tv/proof_release.py
-            tv/proof_shard.py
-            tv/console_safe.py
-          sparse-checkout-cone-mode: false
+            tv
       - name: Restore the proofs the last main run banked (REG-2961)
         # a miss is a cold seed, never a failure: the bank's bundle for this commit may still seed the run
         uses: actions/cache/restore@v4
@@ -85,6 +89,22 @@ jobs:
         run: >-
           python3 tv/proof_seed.py --sha "$GITHUB_SHA" --restored "$RUNNER_TEMP/heart2-seed"
           --work "$RUNNER_TEMP/seed-work" --out "$RUNNER_TEMP/seed-out"
+      - name: Choose this round's shard count (v3891 #194 - the plan's own model, never a hand-set number)
+        # his 11-09: "optimize the #194 all the way and make sure it keeps getting faster self improve it". The fewest shards
+        # whose slowest MODELLED prove fits PROOF_TARGET_S (default 12 min), or the floor its costliest single chunk sets -
+        # over the same served list and carried prices every shard plans from. Never fails the run: a plan that cannot be
+        # cut answers PROOF_SHARDS. Bounds: PROOF_MIN_SHARDS / PROOF_MAX_SHARDS (repo vars) else 8 / 160.
+        id: count
+        continue-on-error: true
+        run: |
+          export HEART2_SHARD_SERVED="$RUNNER_TEMP/seed-out/served.json"
+          [ -f "$HEART2_SHARD_SERVED" ] || unset HEART2_SHARD_SERVED
+          export HEART2_SHARD_COSTS="$RUNNER_TEMP/seed-out/proof_costs.json"
+          [ -f "$HEART2_SHARD_COSTS" ] || unset HEART2_SHARD_COSTS
+          python3 tv/heart2.py --plan-shards --fallback-shards "$PROOF_SHARDS" --output "$GITHUB_OUTPUT" \
+            ${{ vars.PROOF_TARGET_S && format('--target-s {0}', vars.PROOF_TARGET_S) || '' }} \
+            ${{ vars.PROOF_MIN_SHARDS && format('--min-shards {0}', vars.PROOF_MIN_SHARDS) || '' }} \
+            ${{ vars.PROOF_MAX_SHARDS && format('--max-shards {0}', vars.PROOF_MAX_SHARDS) || '' }}
       - name: Hand every shard the one seed
         if: ${{ steps.seed.outputs.seeded == 'true' }}
         uses: actions/upload-artifact@v4
@@ -110,10 +130,13 @@ jobs:
     timeout-minutes: 75
     strategy:
       fail-fast: false
-      max-parallel: 22
+      # v3891 (#194) - the seed job's count: every shard of it starts at once (Konyo-Labs runs 500 jobs at a time)
+      max-parallel: ${{ fromJSON(needs.seed.outputs.n) }}
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+        shard: ${{ fromJSON(needs.seed.outputs.list) }}
     env:
+      # v3891 (#194) - the count every shard cuts its plan with: the seed job's, so plan and matrix are one number
+      PROOF_SHARDS: ${{ needs.seed.outputs.n }}
       D2R_NO_CLAUDE: "1"
       # v3865 tried 3 lanes on the 4-vCPU runner; 11-06 MEASURED two browser laws flaky at 3 (v3866's round), so the repo var
       # PROOF_PROVERS holds 2. More room comes from more shards, never more lanes on one runner. The machine step says what
@@ -215,6 +238,10 @@ jobs:
           # REG-3401 - the prices this shard is planned on travel beside its cache: the fan-in carries every one the round
           # does not re-measure into the next round's table, so a gate served from the bank keeps its measured price
           if [ -n "${HEART2_SHARD_COSTS:-}" ]; then cp "$HEART2_SHARD_COSTS" "$D/proof_costs.prev.json"; fi
+          # v3891 (#194) - the red memory the last round learned (which cases caught each sabotage) starts this shard's own:
+          # a re-run sabotage on an unchanged law asks only those cases, and falls back to the full suite unless the pair
+          # holds (green untampered, red tampered) - it can only save time
+          if [ -f "$RUNNER_TEMP/heart2-seed/heart2_red.json" ]; then cp "$RUNNER_TEMP/heart2-seed/heart2_red.json" "$D/.heart2_red.json"; fi
           # REG-3210 - a re-run shard also serves what this run's earlier attempt proved (the plan stays the seed job's)
           if [ -d "$RUNNER_TEMP/heart2-seed/rerun" ] && [ -n "$(python3 tv/proof_seed.py --widen "${HEART2_SHARD_SEED:-}" \
                 --with "$RUNNER_TEMP/heart2-seed/rerun" --out "$RUNNER_TEMP/heart2-seed/wide" | sed -n 's/^widened=//p')" ]; then
@@ -246,13 +273,17 @@ jobs:
 
   fan-in:
     name: fan-in - one whole set of this commit, or none
-    needs: [shard]
+    # v3891 (#194) - the seed too: the count the shards were cut with is its output
+    needs: [seed, shard]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
       actions: read
+    env:
+      # v3891 (#194) - the whole set is the count the shards were cut with: the seed job's, never the fallback's
+      PROOF_SHARDS: ${{ needs.seed.outputs.n }}
     outputs:
       whole: ${{ steps.whole.outputs.whole }}
     steps:
@@ -288,6 +319,9 @@ jobs:
         run: |
           python3 tv/proof_shard.py --merge-shards shards --out "$RUNNER_TEMP/heart2-seed/.heart2_cache.json"
           python3 tv/proof_shard.py --measure-costs shards --out "$RUNNER_TEMP/heart2-seed/proof_costs.json" || true
+          # v3891 (#194) - and which cases caught each sabotage, merged from every shard: the next round's shards start from it
+          _red=$(ls shards/*/.heart2_red.json 2>/dev/null || true)
+          if [ -n "$_red" ]; then python3 tv/heart2.py --merge-red $_red --red-out "$RUNNER_TEMP/heart2-seed/heart2_red.json" || true; fi
       - name: Save the seed (REG-2961 main; v3864 its own ci/proof-keys branch too)
         if: ${{ always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci/proof-keys-')) }}
         continue-on-error: true

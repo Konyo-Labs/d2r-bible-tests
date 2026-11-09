@@ -31,7 +31,7 @@ WF = os.path.join(ROOT, ".github", "workflows", "proof-keys-shards.yml")
 HEAD = "c" * 40
 # v3864 - GitHub Pro (his upgrade, 2026-11-05) runs 40 jobs at once; while the shards run, the version's other required
 # checks hold ~18 (agent tests 5, Playwright 10 + 2 slow, Windows boot 1), so the shards that can ALL run at once are 22
-PLAN_JOBS, OTHER_CHECK_JOBS = 40, 18
+PLAN_JOBS, OTHER_CHECK_JOBS = 40, 18   # v3864's GitHub Pro numbers - history; since v3891 (#194) the seed chooses N
 
 
 def _wf():
@@ -49,20 +49,30 @@ def _job(text, name):
 class TheWorkflowRunsEveryShardOnce(unittest.TestCase):
 
     def test_n_is_said_once_and_the_matrix_is_exactly_one_to_n(self):
+        """v3891 (#194) - N IS THE SEED JOB'S, ONE NUMBER EVERYWHERE. The seed chooses it (heart2 --plan-shards) and the
+        matrix, max-parallel, every shard's PROOF_SHARDS and the fan-in's all read that one output; PROOF_SHARDS at
+        workflow scope is only the fallback, said once, and the seed's fallback list is exactly 1..fallback."""
         text = _wf()
         n = re.findall(r'^  PROOF_SHARDS: "(\d+)"$', text, re.M)
-        self.assertEqual(len(n), 1, "PROOF_SHARDS is not set exactly once at workflow scope: %r" % n)
+        self.assertEqual(len(n), 1, "the fallback PROOF_SHARDS is not set exactly once at workflow scope: %r" % n)
         n = int(n[0])
-        m = re.search(r"^        shard: \[([\d, ]+)\]$", text, re.M)
-        self.assertIsNotNone(m, "the shard matrix list is gone - re-anchor this law")
-        got = [int(x) for x in m.group(1).split(",")]
-        self.assertEqual(got, list(range(1, n + 1)), "the matrix runs %s, not every shard 1..%d once" % (got, n))
-        self.assertLessEqual(n, PLAN_JOBS - OTHER_CHECK_JOBS,
-                             "N=%d shards cannot all run at once beside the other checks on GitHub Pro's %d jobs" % (n, PLAN_JOBS))
-        # v3864 - 22 on GitHub Pro; UNMEASURED until its first run (16 was measured: max ~41 min each on 21a78ff6)
-        self.assertEqual(n, 22, "the plan this build is set for is 22 shards (GitHub Pro, beside the other checks)")
-        mp = re.search(r"^      max-parallel: (\d+)$", text, re.M)
-        self.assertTrue(mp and int(mp.group(1)) >= n, "max-parallel holds shards back: the wall time is the sum, not the max")
+        self.assertEqual(n, 22, "the fallback a round runs at when its plan cannot be cut is the last hand-set count, 22")
+        seed = _job(text, "seed")
+        lst = re.search(r"list: \$\{\{ steps\.count\.outputs\.list \|\| '\[([\d,]+)\]' \}\}", seed)
+        self.assertIsNotNone(lst, "the seed job's list output (or its fallback) is gone - re-anchor this law")
+        self.assertEqual([int(x) for x in lst.group(1).split(",")], list(range(1, n + 1)),
+                         "the seed's fallback list is not every shard 1..%d once" % n)
+        self.assertIn("n: ${{ steps.count.outputs.n || '%d' }}" % n, seed, "the seed's fallback count is not PROOF_SHARDS")
+        self.assertIn('python3 tv/heart2.py --plan-shards --fallback-shards "$PROOF_SHARDS" --output "$GITHUB_OUTPUT"', seed,
+                      "the seed job no longer chooses the count from heart2's own plan")
+        shard = _job(text, "shard")
+        self.assertIn("        shard: ${{ fromJSON(needs.seed.outputs.list) }}\n", shard,
+                      "the matrix is not the seed's list - a shard number nobody plans is a slice never proved")
+        self.assertIn("      max-parallel: ${{ fromJSON(needs.seed.outputs.n) }}\n", shard,
+                      "max-parallel holds shards back: the wall time is the sum, not the max")
+        self.assertIn("      PROOF_SHARDS: ${{ needs.seed.outputs.n }}\n", shard, "a shard cuts its plan with another N")
+        self.assertIn("      PROOF_SHARDS: ${{ needs.seed.outputs.n }}\n", _job(text, "fan-in"),
+                      "the fan-in checks the set against another N than the shards were cut with")
 
     def test_each_shard_proves_its_own_slice_into_its_own_fresh_cache(self):
         job = _job(_wf(), "shard")
@@ -83,7 +93,7 @@ class TheWorkflowRunsEveryShardOnce(unittest.TestCase):
     def test_the_fan_in_needs_every_shard_and_checks_the_set_as_the_import_does(self):
         job = _job(_wf(), "fan-in")
         self.assertTrue(job, "the fan-in job is gone")
-        self.assertIn("needs: [shard]", job)
+        self.assertIn("needs: [seed, shard]", job)     # v3891 (#194) - the seed's count is the set's size
         head = job[:job.find("\n    steps:")]   # REG-2603 - the JOB's own if: the census steps carry always() too
         self.assertIn("\n    if: ${{ always() }}\n", head, "a failed shard skips the fan-in, and nothing says the set is broken")
         self.assertIn("pattern: proof-shard-*", job)
@@ -198,7 +208,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2588 - the matrix drops a shard: its slice is never proved and every import refuses the set",
      "file": ".github/workflows/proof-keys-shards.yml",
-     "find": "        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]\n",
+     "find": "        shard: ${{ fromJSON(needs.seed.outputs.list) }}\n",
      "replace": "        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]\n",
      "matches": 1},
     {"why": "REG-2588 - the cache upload drops dot-files, so .heart2_cache.json never leaves the runner",
@@ -208,8 +218,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2588 - the fan-in is skipped when a shard fails, so a broken set is never named",
      "file": ".github/workflows/proof-keys-shards.yml",
-     "find": "    needs: [shard]\n    if: ${{ always() }}\n",
-     "replace": "    needs: [shard]\n",
+     "find": "    needs: [seed, shard]\n    if: ${{ always() }}\n",
+     "replace": "    needs: [seed, shard]\n",
      "matches": 1},
     {"why": "REG-2588 - the fan-in passes a set whose files name another N than the workflow runs",
      "file": "proof_shard.py",
