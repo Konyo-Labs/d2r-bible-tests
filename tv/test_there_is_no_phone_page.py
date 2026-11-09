@@ -26,6 +26,11 @@ TOMBSTONES - what left with the phone page, and where it went:
     the 375 inbox, the 2 x 2 Quick wins numbers, the v42 "mobile polish" tap targets, ...), each with the phone-only
     comment that explained it. They never applied at 800 (Dean's window), 1120 or 1512, so no pixel he sees moved.
     test_a_worn_item_draws_its_slots_picture's phone-header proof left with its rule.
+  * v3889 round 2 (GitHub's round on 5fd22f6b5): test_control's TestV2369 dock law pinned the 600px band's --dock-h and
+    its ordering after the 700px band; it holds the 700px band alone now, and the ordering case left with the band. The
+    mule window law's four red-proofs that were red at a phone width alone (the host's phone sheet over the tabs, the
+    gold box and the tab row wrapping at 375, the 390 keyboard resize) left with the passes they proved; its caret
+    proof measures at 1280x800, where the typing pass moved.
 KEPT, named so it is not mistaken for a leftover: the search box's placeholder swap (`matchMedia('(max-width: 640px)')`
 in bible.html) - its own fit test picks the short hint at ANY width the full one cannot fit, and
 test_search_placeholder_fits holds it; the media query is only one of its two triggers.

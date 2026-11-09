@@ -41468,7 +41468,10 @@ class TestV2369TheDockStaticReservesWhatTheDockMeasures(unittest.TestCase):
     at 375/560/640, which is why this asserts a FLOOR rather than an exact number.
     [[visual-regression-detector]] [[stale-reading]]"""
 
-    BANDS = ((600, 225), (700, 178))     # (media max-width, worst dock MEASURED in that band)
+    # v3889 (#132, REG-3492, his 11-08 "i dont need any mobile anything") - the 600px band (375 213/219 ... 560 213/219)
+    # left with the phone page: no rule of the board applies under 700px (test_there_is_no_phone_page). The 700px band
+    # is the one static left, so it is the one this law holds; the ordering case (600 declared after 700) left with it.
+    BANDS = ((700, 178),)     # (media max-width, worst dock MEASURED in that band)
 
     def _css(self):
         p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bible.html")
@@ -41490,8 +41493,8 @@ class TestV2369TheDockStaticReservesWhatTheDockMeasures(unittest.TestCase):
             elif css[j] == "}": depth -= 1
             j += 1
         block = css[i:j]
-        # v3864 (REG-3090) - the 600px band adds the phone tray bar under the dock: calc(225px + var(--tray-bar-h, 0px)); the
-        # static it reserves is still its own px term
+        # v3864 (REG-3090) - a band may write its static as calc(<px> + ...) (the 600px band did, until it left with the
+        # phone page in v3889); the static it reserves is still its own px term
         m = re.search(r"--dock-h:\s*(?:calc\(\s*)?(\d+)px", block)
         self.assertTrue(m, "no --dock-h inside the %dpx band" % width)
         return int(m.group(1)), css.index(head)
@@ -41506,16 +41509,6 @@ class TestV2369TheDockStaticReservesWhatTheDockMeasures(unittest.TestCase):
                 "inbox panel will be %dpx too tall until the observer fires, and its last "
                 "rows land under the dock" % (width, got, measured, measured - got))
 
-    def test_the_narrow_band_is_declared_LAST_or_it_never_applies(self):
-        """Equal specificity: 600px is inside 700px, so source order is the whole mechanism.
-        Move the 600px block above the 700px one and its value is silently overruled at every
-        width it covers — with both numbers still correct in isolation."""
-        css = self._css()
-        _, at600 = self._dock_h_in(css, 600)
-        _, at700 = self._dock_h_in(css, 700)
-        self.assertGreater(at600, at700,
-                           "the 600px band is declared BEFORE the 700px band, so the 700px "
-                           "value wins below 600px and the tall-dock reserve never applies")
 
 
 class TestV2370AProvenEmptyReelStopsBeingUndeletable(unittest.TestCase):

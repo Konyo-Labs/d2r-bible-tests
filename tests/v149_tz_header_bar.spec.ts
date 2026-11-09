@@ -36,7 +36,9 @@ test.describe('v149 TZ titles match the Bosses/RoTW header bar', () => {
     expect(r.padded).toBe(true);
   });
 
-  test('the TZ title font matches a RoTW .sec-h-t (bold Cinzel, >=19px)', async ({ page }) => {
+  // v3889 (#23, his theme pass, REG-3490) - a terror zone's NAME wears the game's own face ("D2 Exocet", his 11-08 "just
+  // ingame related stuff"), falling back to the RoTW title's serif; the bar, the weight and the size stay the RoTW title's
+  test('the TZ title is the game face over the RoTW .sec-h-t serif (bold, >=19px)', async ({ page }) => {
     // RoTW reference
     await page.evaluate(() => (window as any).switchTab && (window as any).switchTab('rotw'));
     await page.waitForTimeout(250);
@@ -51,9 +53,11 @@ test.describe('v149 TZ titles match the Bosses/RoTW header bar', () => {
     const tz = await page.evaluate(() => {
       const t = document.querySelector('#tz-zones-container .tz-zone-card .tz-zone-name') as HTMLElement;
       const cs = getComputedStyle(t);
-      return { fam: cs.fontFamily.split(',')[0].replace(/["']/g, ''), weight: cs.fontWeight, size: parseFloat(cs.fontSize) };
+      const fams = cs.fontFamily.split(',').map((f) => f.trim().replace(/["']/g, ''));
+      return { fam: fams[0], fallback: fams[1], weight: cs.fontWeight, size: parseFloat(cs.fontSize) };
     });
-    expect(tz.fam).toBe(rotw.fam);            // same serif-display (Cinzel)
+    expect(tz.fam).toBe('D2 Exocet');         // the game's own face (--ff-game)
+    expect(tz.fallback).toBe(rotw.fam);       // then the same serif-display (Cinzel) the RoTW title wears
     expect(tz.weight).toBe(rotw.weight);      // same bold weight (700)
     expect(tz.weight).toBe('700');
     expect(tz.size).toBeGreaterThanOrEqual(19);

@@ -68,6 +68,37 @@ class GameNamesWearTheGameFace(unittest.TestCase):
     def test_the_token_is_the_builders_face_then_the_display_serif(self):
         self.assertIn(':root{--ff-game:"D2 Exocet",var(--serif-display)}', self.css,
                       "the game face no longer leads with the builder's own item face")
+
+    def test_only_a_board_the_console_serves_asks_for_the_font(self):
+        """v3889 round 2 (REG-3490): once every game name wears the face, its source is fetched on EVERY load. A url() in
+        the board's stylesheet asked file:///api/d2r_font/exocet in every CI spec - 45 "no console errors" reds on
+        5fd22f6b5 - and <the public site>/api/d2r_font/exocet on the live site, which has no such route. MEASURED 11-09
+        (headless Chrome, a game name rendered): the old board asked file:///api/... and logged ERR_FILE_NOT_FOUND; the
+        fixed one asks nothing as a file or from a static server's /bible.html, and asks /api/d2r_font/exocet at /board.
+        Held here: the stylesheet's face has no url(), and the one url() lives in the loader that runs only for http on
+        loopback at /board (the #223 condition - the console serves the board there and nowhere else)"""
+        static = ('@font-face{font-family:"D2 Exocet";src:local("Exocet Blizzard OT"),local("ExocetBlizzardOT-Medium");'
+                  'font-display:swap}')
+        self.assertEqual(self.src.count(static), 1, "the board's own D2 Exocet face is not the local()-only rule")
+        head = '<script id="v3889-game-font">'
+        self.assertEqual(self.src.count(head), 1, "PREMISE: the console-only font loader is gone or doubled")
+        i = self.src.index(head)
+        loader = self.src[i:self.src.index("</script>", i)]
+        code = js_strip.strip_js_comments(loader)
+        for cond in ("String(L.protocol || '') !== 'http:'", "/^(127\\.0\\.0\\.1|localhost)(:\\d+)?$/.test(String(L.host || ''))",
+                     "/^\\/+board\\/?$/.test(String(L.pathname || ''))"):
+            self.assertIn(cond, code, "the font loader no longer waits for a board the console serves: %s" % cond)
+        url = "url('/api/d2r_font/exocet')"
+        self.assertIn(url, code, "the loader adds no source, so a console-served board never gets the face")
+        at, outside = 0, []
+        while True:
+            at = self.src.find(url, at)
+            if at < 0:
+                break
+            if not (i <= at < i + len(loader)):
+                outside.append(self.src[max(0, at - 80):at + 40].replace("\n", " "))
+            at += len(url)
+        self.assertEqual(outside, [], "the font's url() is asked outside the console-only loader:\n  " + "\n  ".join(outside))
         self.assertIn('@font-face{font-family:"D2 Exocet";src:local("Exocet Blizzard OT")', self.src,
                       "PREMISE: the builder's D2 Exocet face is no longer declared - the token names a face nobody loads")
 
@@ -140,6 +171,16 @@ class TheConsolesGameNamesToo(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3889 round 2 (REG-3490) - the board's stylesheet asks for the font again on every page, file:// and the site",
+     "file": "bible.html",
+     "find": '@font-face{font-family:"D2 Exocet";src:local("Exocet Blizzard OT"),local("ExocetBlizzardOT-Medium");font-display:swap}',
+     "replace": '@font-face{font-family:"D2 Exocet";src:local("Exocet Blizzard OT"),local("ExocetBlizzardOT-Medium"),url(\'/api/d2r_font/exocet\') format(\'opentype\');font-display:swap}',
+     "matches": 1},
+    {"why": "v3889 round 2 (REG-3490) - the font loader runs for any loopback page, so CI's static server asks it too",
+     "file": "bible.html",
+     "find": "    if (!/^\\/+board\\/?$/.test(String(L.pathname || ''))) return;\n",
+     "replace": "",
+     "matches": 1},
     {"why": "v3889 (#23) - the console's terror-zone names lose the game face",
      "file": "tv/control_ui.html",
      "find": ".tzz-top b,.hh-name,.hh-grail,.hh-boss,.fx-name,.shc-area{font-family:var(--ff-game)!important}",

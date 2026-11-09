@@ -54,7 +54,11 @@ const SIZES = [
   { w: 1440, h: 900 },
   { w: 1440, h: 800 },   // where .tools-legend-pop measured top:-42
   { w: 901,  h: 700 },
-  { w: 901,  h: 400 },   // below the 620px flip - v3889 (#132, his 11-08 'i dont need any mobile anything') - 640x400 and 375x700 moved to a desktop width
+  // below the 620px flip, at a desktop width. v3889 (#132, his 11-08 'i dont need any mobile anything'): 640x400 and 375x700
+  // left with the phone page, and so did the 480px-tall layer (the orbs' in-flow doors - its own comment names iPhone
+  // landscape, 844x390); v3889's first stand-in, 901x400, sat in that layer and went red on GitHub (5fd22f6b5). 560 is under
+  // the 620 flip and over 480, so the popovers here are top-anchored and opened by their orbs.
+  { w: 901,  h: 560 },
 ];
 
 for (const P of POPOVERS) {

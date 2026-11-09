@@ -1215,14 +1215,6 @@ RED_PROOF = [
         "widths": ["1280x800"],   # #42 measured 2026-09-29: the tampered law is red at 1280x800 alone
     },
     {
-        "why": "REG-1375 round 2 - on a phone the mule host's sheet takes the glass from the top again, over all four tabs",
-        "file": "bible.html",
-        "find": "      var tr0 = _cbTabsBottom(vh, mh0), top0 = ",
-        "replace": "      var tr0 = mh0 ? null : _cbTabsBottom(vh, mh0), top0 = ",
-        "matches": 1,
-        "widths": ["375x812"],   # #42 measured 2026-09-29: the tampered law is red at 375x812 alone
-    },
-    {
         "why": "#174 v-B2 fix round - the window stops scrolling under a drag (at 375 another mule's tab is out of reach)",
         "file": "bible.html",
         "find": "    _mpTrack(d, e.clientX, e.clientY);\n    _mpAutoScroll(d, e.clientX, e.clientY);\n",
@@ -1374,40 +1366,19 @@ RED_PROOF = [
         "widths": ["1280x800"],   # #42 measured 2026-09-29: the tampered law is red at 1280x800 alone
     },
     {
-        "why": "#174 - the stash's gold box stops wrapping, so a phone scrolls the stash view sideways",
-        "file": "bible.html",
-        "find": ".mp-v-stash .vd-goldbox{margin-top:6px;width:auto;max-width:100%;padding:4px 14px;",
-        "replace": ".mp-v-stash .vd-goldbox{margin-top:6px;width:auto;max-width:100%;padding:4px 14px;white-space:nowrap;",
-        "matches": 1,
-        "widths": ["375x812"],   # #42 measured 2026-09-29: the tampered law is red at 375x812 alone
-    },
-    {
-        "why": "#174 - the mule tabs stop wrapping on a phone, so the ghost tab scrolls off the edge",
-        "file": "bible.html",
-        "find": ".mp.mp-stack .mp-settabs{flex-wrap:wrap;",
-        "replace": ".mp.mp-stack .mp-settabs{flex-wrap:nowrap;",
-        "matches": 1,
-        "widths": ["375x812"],   # #42 measured 2026-09-29: the tampered law is red at 375x812 alone
-    },
-    {
-        "why": "#174 - a height-only resize (a phone keyboard) rebuilds the window under his typing again",
-        "file": "bible.html",
-        "find": "      if (mp && mp.getAttribute('data-sig') === _mpLayout(window.innerWidth || 1440, window.innerHeight || 900).sig) return;\n",
-        "replace": "",
-        "matches": 1,
-        # #42 measured 2026-09-29: the tampered law is red at 390x844, 390x464 alone
-        "widths": ["390x844", "390x464"],
-    },
-    {
         "why": "#174 - a background re-render no longer puts the caret back in the Stats search box",
         "file": "bible.html",
         "find": "      if (_in){ try { _in.focus({ preventScroll: true }); _in.setSelectionRange(_keep.q[0], _keep.q[1]); } catch (e) {} }\n",
         "replace": "",
         "matches": 1,
-        # #42 measured 2026-09-29: the tampered law is red at 390x844, 390x464 alone
-        "widths": ["390x844", "390x464"],
+        # v3889 (#132): the typing pass left the phone's 390x844 for 1280x800 (TYPE_AT), so the proof measures there
+        "widths": ["1280x800"],
     },
 ]
+# v3889 (#132, his 11-08 "i dont need any mobile anything") - four red-proofs left with the phone page, each red at a phone
+# width alone (measured 2026-09-29) and so blind at every width this law still renders: the mule host's phone sheet over
+# the tabs (375), the stash gold box and the mule tab row wrapping (375), and a phone keyboard's height-only resize (390;
+# its case left too - tombstones in test_there_is_no_phone_page)
 
 
 if __name__ == "__main__":
