@@ -30906,10 +30906,17 @@ function _tvEsc(){
     help.classList.remove('show');
     return 'help';
   }
-  // CC 2026-06-01 unify: ESC also dismisses an open material / rune ID card
-  if ((window.__activeMaterial || window.__activeRune) && typeof window.closeDrop === 'function') {
+  // v3891 (#191, REG-3530) - the visible unique card is a layer: Esc peels it (a leftover latch must not)
+  var idp = document.getElementById('item-detail-panel');
+  if (idp && !idp.classList.contains('hidden') && typeof window.closeItemDetail === 'function') {
+    window.closeItemDetail();
+    return 'item-detail-panel';
+  }
+  var drop = document.getElementById('item-detail');
+  if (drop && drop.classList.contains('show') && typeof window.closeDrop === 'function') {
     window.closeDrop();
-    return 'drop';
+    if (typeof clearActiveItem === 'function' && activeItem) clearActiveItem();
+    return 'item-detail';
   }
   // v59: ESC also collapses an open nav compass panel
   var nav = document.getElementById('nav-widget');
