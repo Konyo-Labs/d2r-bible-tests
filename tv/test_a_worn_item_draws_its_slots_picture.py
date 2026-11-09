@@ -185,15 +185,13 @@ class AnIdCardsNameBreaksOnlyBetweenWords(unittest.TestCase):
         self.assertIn("white-space:nowrap", badge[0], "the badge can be broken mid-word again")
         # #27 round 2 (GrokBot's v3879 pass: at 390 the Spirit name + badge overflowed its box, scrollWidth 165 > 102) - the
         # page-wide `h2{...display:flex...}` makes every card name a FLEX ROW, so the badge moves to the next line only if that
-        # row WRAPS; the rule above said "the badge moves to the next line whole" and could not. And on a phone the header
-        # wraps so the name takes the card's full width (one word of "Tal Rasha's Guardianship" is wider than the 130px column).
+        # row WRAPS; the rule above said "the badge moves to the next line whole" and could not. (v3889, #132, his 11-08 "i dont
+        # need any mobile anything": the phone header rule - the name on its own line under 480px - left with every other
+        # sub-700px rule; test_there_is_no_phone_page holds that none comes back.)
         # The pixels are test_a_card_name_fits_its_box's (GitHub's browser).
         self.assertIn("flex-wrap:wrap", name[0], "the card name is a flex row that cannot wrap its badge again")
         # the Grok CLI's look at 390: the runeword card's subtitle broke "req" / "level 25" - the label stays with its number
         self.assertIn("' · req\\u00a0level\\u00a0'+o.r", page, "a wrap can tear 'req level' from its number again")
-        self.assertIn("    .gic-header{flex-wrap:wrap;justify-content:space-between;row-gap:8px}\n"
-                      "    .gic-header > .gic-id-block{order:3;flex-basis:100%}\n", page,
-                      "the phone header no longer gives the name the card's full width")
 
 
 RED_PROOF = [
@@ -204,9 +202,6 @@ RED_PROOF = [
      "file": "bible.html",
      "find": "    .gic-name{font-size:20px;overflow-wrap:break-word;flex-wrap:wrap}", "replace": "    .gic-name{font-size:20px;overflow-wrap:break-word}",
      "matches": 1},
-    {"why": "#27 round 2 - on a phone the name is a 130px column again (one word of Tal Rasha's Guardianship cannot fit)",
-     "file": "bible.html",
-     "find": "    .gic-header > .gic-id-block{order:3;flex-basis:100%}\n", "replace": "\n", "matches": 1},
     {"why": "REG-3070 - the character window draws a worn item by its own name again",
      "file": "bible.html",
      "find": "      var _an = (typeof window._cbSlotArtName === 'function') ? window._cbSlotArtName(s.item, worn, s.base) : s.item;",

@@ -64,7 +64,6 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;background:var(--gold
 .gsearch-sub{color:rgba(240,192,96,.55);font-size:var(--fs-meta);margin-left:6px}
 .gsearch-cat{font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:rgba(240,192,96,.6);font-weight:var(--fw-medium);white-space:nowrap}
 .gsearch-empty{padding:14px 18px;color:rgba(240,192,96,.5);font-family:var(--mono,monospace);font-size:12px;font-style:italic}
-@media(max-width:640px){.gsearch-input{font-size:12px}.gsearch-cat{display:none}.gsearch-wrap{margin:6px auto 2px}}
 
 .tab{background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:var(--fw-normal);font-family:inherit;transition:all .15s;white-space:nowrap}
 /* v551 — HD-art nav icons on tabs + compass chips */
@@ -470,7 +469,6 @@ tr.owned-row{background:rgba(102,255,136,.03)}
 .all-drops-summary{cursor:pointer;color:var(--gold);font-family:var(--sans);font-size:11.5px;font-weight:var(--fw-medium);letter-spacing:.4px;text-transform:uppercase;padding:7px 0;user-select:none;list-style:none;transition:color .12s}
 .all-drops-summary:hover{color:var(--gold-bright)}
 .all-drops-details[open] .all-drops-summary{color:var(--gold-bright);margin-bottom:8px}
-@media (max-width:520px){.top-drop-row{grid-template-columns:26px 1fr auto;gap:6px 10px;padding:8px 10px}.top-drop-hrs{grid-column:2 / -1;justify-self:start;font-size:var(--fs-micro);opacity:.9}}
 /* ═══ Most Wanted · community/forum trade-demand board (v60) — a SEPARATE layer from the
    Holy Grail rarity tables: grail = "how hard to find", this = "what's worth chasing/holding". ═══ */
 .mw{margin:18px 0;background:linear-gradient(180deg,rgba(255,125,60,.045),rgba(0,0,0,.14));border:1px solid var(--border-light);border-radius:12px;padding:16px 16px 18px}
@@ -509,7 +507,6 @@ tr.owned-row{background:rgba(102,255,136,.03)}
 .mw-want-chip{display:inline-flex;align-items:center;font-size:11.5px;font-weight:var(--fw-medium);color:var(--gold-bright);background:rgba(212,168,71,.08);border:1px solid var(--border-light);border-radius:5px;padding:3px 8px;cursor:pointer;transition:background .12s,border-color .12s}
 .mw-want-chip:hover,.mw-want-chip:focus-visible{background:rgba(212,168,71,.18);border-color:var(--gold);outline:none}
 .mw-want-chip.mw-want-1::before{content:"★";color:var(--rune);margin-right:4px;font-size:var(--fs-micro)}
-@media (max-width:520px){.mw-row{grid-template-columns:26px 1fr auto;gap:8px}.mw-sections{grid-template-columns:1fr}}
 @media print{.mw{display:none}}
 .sim-box{background:var(--surface-3);border-radius:8px;padding:14px;margin-top:14px;border-left:3px solid var(--terror)}
 .sim-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
@@ -1609,7 +1606,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
 .aicc-title{font-size:13px;font-weight:var(--fw-semibold);color:var(--text)}
 .aicc-title .aicc-sub{font-size:11px;color:var(--text-dim);font-weight:var(--fw-regular)}
 .aicc-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
-@media(max-width:560px){.aicc-cols{grid-template-columns:1fr}}
 .aicc-col{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
 .aicc-h{font-size:12px;font-weight:var(--fw-semibold);margin-bottom:6px;display:flex;align-items:center;gap:6px}
 .aicc-h .aicc-n{background:var(--surface-3);border-radius:5px;padding:0 6px;font-size:11px;color:var(--text-dim)}
@@ -1800,7 +1796,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
 .mat-r3{grid-template-columns:repeat(3,66px)}
 .mat-r5{grid-template-columns:repeat(5,66px)}
 .mat-r6{grid-template-columns:repeat(6,66px);justify-content:center}
-@media(max-width:620px){.mat-r3,.mat-r5,.mat-r6{grid-template-columns:repeat(3,54px)}}
 .mat-sunder-sec{margin-top:16px;border-top:1px solid rgba(150,120,70,.18);padding-top:11px}
 .mat-group-label{font-size:var(--fs-meta);font-weight:var(--fw-semibold);letter-spacing:var(--ls-normal);text-transform:uppercase;color:var(--gold);margin-bottom:8px}
 .mat-group-label .mat-sub{font-weight:var(--fw-regular);text-transform:none;letter-spacing:0;color:var(--text-dim);font-size:var(--fs-micro)}
@@ -1878,11 +1873,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
 .shop-bases .shop-name{display:flex;align-items:center;gap:7px;font-size:var(--fs-body);font-weight:var(--fw-medium);color:var(--text);line-height:var(--lh-tight);min-width:0}
 .shop-empty{padding:14px 12px;text-align:center;font-size:var(--fs-meta);color:var(--text-dim);line-height:var(--lh-normal)}
 .shop-note{font-size:var(--fs-micro);color:var(--text-dim);line-height:var(--lh-normal);padding:0 2px}
-@media(max-width:560px){
-  .shop-row{grid-template-columns:1fr 3.6em 3.6em 4em;gap:6px;padding:7px 9px}
-  .shop-name{font-size:var(--fs-meta)}
-  .shop-num{font-size:var(--fs-meta)}
-}
 /* ══ v288: Crafted Items Workshop — the 4 crafts, every per-slot recipe, live cubeable
    from your Gem+Rune Stash, and a tally of finished crafted items you own (📸 AI intake) ══ */
 .cw-wrap{margin:14px 0}
@@ -1990,7 +1980,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
 .rwb-rws{display:flex;flex-wrap:wrap;gap:5px}
 .rwb-rw{font-family:var(--mono,monospace);font-size:10.5px;font-weight:var(--fw-semibold);color:var(--q-orange);background:rgba(255,168,0,.08);border:1px solid rgba(255,168,0,.28);border-radius:6px;padding:1px 7px;cursor:pointer;transition:background .12s,border-color .12s}
 .rwb-rw:hover{background:rgba(255,168,0,.2);border-color:rgba(255,168,0,.55)}
-@media(max-width:560px){.rwb-row{grid-template-columns:1fr;gap:3px}}
 .cw-out-rare{font-size:8.5px;font-weight:var(--fw-bold);letter-spacing:var(--ls-normal);text-transform:uppercase;color:var(--q-orange);border:1px solid rgba(255,168,0,.4);border-radius:8px;padding:1px 6px}
 .cw-out-mods{color:var(--text)}
 .cw-out-extra{color:var(--cw-c,#f0c060);font-style:italic;opacity:.92}
@@ -2030,7 +2019,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
 .cw-rn-chip{display:inline-flex;align-items:center;gap:4px;margin:2px 3px 0 0;padding:2px 9px;border-radius:8px;cursor:pointer;font-size:11.5px;font-weight:var(--fw-medium);color:var(--cw-c,#f0c060);background:color-mix(in srgb,var(--cw-c,#f0c060) 12%,rgba(0,0,0,.25));border:1px solid color-mix(in srgb,var(--cw-c,#f0c060) 45%,transparent);transition:transform .12s ease,box-shadow .16s ease}
 .cw-rn-chip:hover{transform:translateY(-1px);box-shadow:0 3px 12px color-mix(in srgb,var(--cw-c,#f0c060) 30%,transparent)}
 .cw-rn-more{font-size:var(--fs-meta);color:var(--text-dim);font-style:italic;margin-left:2px}
-@media(max-width:560px){.cw-recipe{grid-template-columns:auto 1fr;grid-template-areas:"glyph head" "glyph ing" "glyph out" "glyph base" "stat own"}.cw-rec-stat,.cw-rec-own{justify-self:start;margin-top:5px}.cw-rec-out{border-top:none}}
 /* v293: Item Rarity & Colours explainer (Tools tab) — colour-coded rarity tiles */
 .ir-lead{font-size:12.5px;line-height:var(--lh-normal);color:var(--text);background:linear-gradient(135deg,rgba(240,192,96,.07),rgba(20,16,10,.25));border:1px solid rgba(240,192,96,.24);border-left:3px solid var(--gold-bright,#f0c060);border-radius:10px;padding:11px 14px;margin:4px 0 12px}
 .ir-lead strong{color:var(--gold-bright,#f0c060)}
@@ -2118,7 +2106,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
 .recipe-op{font-size:17px;font-weight:var(--fw-semibold);color:var(--text-dim,#9a8e78);padding:0 1px}
 .recipe-arrow{color:var(--gold-bright,#f0c060);font-size:22px;font-weight:var(--fw-bold);text-shadow:0 0 8px rgba(240,192,96,.4)}
 .recipe-flow .recipe-ing:last-child{background:linear-gradient(180deg,#1d2a18,#10180c);border-color:#3f6a3a;color:#bdf0b4}
-@media(max-width:560px){.recipe-flow{font-size:var(--fs-body)}.recipe-ing{padding:5px 8px}}
 /* Cube recipes */
 .cube-section{background:var(--surface-2);border-radius:8px;padding:12px 16px;margin:10px 0}
 .cube-row{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
@@ -2545,7 +2532,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
   .fab-tip:hover::before,.fab-tip:focus-visible::before{content:"";position:absolute;
     right:calc(100% + 4px);top:50%;transform:translateY(-50%);border:6px solid transparent;
     border-left-color:var(--gold-dim);z-index:9999;pointer-events:none}
-  @media (max-width:640px){ .fab-tip:hover::after,.fab-tip:hover::before{display:none} }
 
   /* Keyboard shortcut hint badges */
   .kbd-hint{display:inline-block;padding:1px 5px;background:rgba(255,212,128,.1);border:1px solid var(--gold-dim);color:var(--gold-bright);border-radius:3px;font-family:var(--mono);font-size:9px;font-weight:var(--fw-semibold);margin-left:6px;vertical-align:middle;opacity:.6;letter-spacing:.5px}
@@ -2674,13 +2660,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
     .gic-emoji{font-size:32px}
     .gic-source-grid{grid-template-columns:1fr 1fr}
     .hero-grid{grid-template-columns:1fr 1fr}
-  }
-  /* #27 round 2 (measured at 390, every card): the header is picture + name + close in one row, which leaves the name a 130px
-     column - narrower than one word of "Tal Rasha's Guardianship" or "Griswold's Redemption" at 20px, so no wrapping could fit
-     it. On a phone the header wraps: the picture and close on the first line, the name the card's full width under them. */
-  @media (max-width:480px){
-    .gic-header{flex-wrap:wrap;justify-content:space-between;row-gap:8px}
-    .gic-header > .gic-id-block{order:3;flex-basis:100%}
   }
 
 
@@ -3282,54 +3261,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 
-  /* === v42 mobile polish — touch-friendly tap targets without breaking desktop === */
-  @media (max-width: 600px) {
-    .tab {
-      padding: 10px 12px !important;
-      font-size: 13px !important;
-      min-height: 44px;
-    }
-    .boss-chip {
-      min-height: 62px !important; align-items:center !important;
-      padding: 6px 10px;
-    }
-    /* MF slider thumb tap-friendly */
-    input[type="range"]#mf {
-      height: 24px;
-    }
-    input[type="range"]#mf::-webkit-slider-thumb {
-      width: 24px;
-      height: 24px;
-    }
-    /* TZ countdown — smaller bottom margin so it doesn't cover content */
-    #v42-tz-countdown {
-      bottom: 8px;
-      left: 8px;
-      padding: 6px 10px;
-      font-size: 10.5px;
-    }
-    #v42-tz-countdown .v42-tz-time {
-      font-size:var(--fs-body);
-    }
-    /* Palette — full width on small screens, less top padding */
-    #v42-palette-overlay {
-      padding-top: 6vh;
-    }
-    #v42-palette {
-      width: 96vw;
-      max-width: none;
-    }
-    #v42-palette-input {
-      font-size: 16px !important; /* iOS doesn't auto-zoom on inputs >= 16px */
-    }
-    /* Header — tighter on mobile so it doesn't eat all vertical space */
-    .header {
-      padding: 8px 12px 6px;
-    }
-    .h-title {
-      font-size:var(--fs-title);
-    }
-  }
 
 
   /* === v42 theme polish — focus rings + improved warn state contrast === */
@@ -3459,7 +3390,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
   .tzt-sub{font-family:var(--serif-text,Georgia,serif);font-style:italic;font-size:var(--fs-body);color:var(--text-muted)}
   /* ── flagship LIVE | NEXT duo — two huge symmetric half-tab cards, lively ── */
   .tzt-panel{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:16px 0 4px;align-items:stretch}
-  @media(max-width:680px){.tzt-panel{grid-template-columns:1fr;gap:16px}.tzt-hero{gap:12px}.tzt-title{font-size:var(--fs-display)}}
   .tzt-loading,.tzt-offline{grid-column:1/-1;text-align:center;color:var(--text-muted);font-style:italic;padding:26px 14px;
     border:1px dashed var(--border);border-radius:12px;background:var(--surface-2)}
   .tzt-offline a{color:var(--gold-bright)}
@@ -3740,15 +3670,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
 #tab-tools .sm-lane-off{opacity:.55}
 #tab-tools .sm-lane-off .sm-lane-k{color:rgba(255,255,255,.45)}
 #tab-tools .sub-meter.sm-unknown .sm-bar i{background:rgba(255,255,255,.18)}
-@media (max-width:560px){
-  /* v2023.1 — MEASURED AT 375px: the full sentence wrapped to four lines and RAN PAST the row's
-     99.5px box. A meter that overflows its own container at phone width is not a meter. The long
-     form moves to the title attribute and the visible text becomes the number that matters. */
-  #tab-tools .sm-tracks{width:104px}
-  #tab-tools .sm-k{display:none}
-  #tab-tools .sub-meter{align-items:flex-start}
-  #tab-tools .sm-txt small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-}
 #tab-tools .tqu-say:empty{display:none}
 #tab-tools .tqu-btn{display:flex;align-items:center;gap:11px;min-width:152px;flex:1 1 152px;padding:9px 13px;cursor:pointer;text-align:left;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid var(--a,rgba(255,255,255,.2));border-color:color-mix(in srgb,var(--a) 45%,transparent);border-radius:12px;transition:transform .09s,box-shadow .15s,filter .12s,background .15s}
 #tab-tools .tqu-btn:hover{transform:translateY(-2px);box-shadow:0 7px 20px color-mix(in srgb,var(--a) 32%,transparent);filter:brightness(1.07);background:linear-gradient(180deg,color-mix(in srgb,var(--a) 15%,transparent),color-mix(in srgb,var(--a) 4%,transparent))}
@@ -3760,7 +3681,6 @@ select{color-scheme:dark}select option,select optgroup{background:var(--surface)
 #tab-tools .tqu-txt{display:flex;flex-direction:column;line-height:var(--lh-tight)}
 #tab-tools .tqu-txt b{font-size:13.5px;font-weight:var(--fw-bold);color:var(--a,#f2ead8)}
 #tab-tools .tqu-txt small{font-size:10.5px;color:#c8bfa8;opacity:.85}
-@media (max-width:600px){#tab-tools .tqu-head{border-right:none;width:100%;padding-right:0}}
 /* v543 — Smart Insights card */
 #tab-tools .si-body{display:flex;flex-direction:column;gap:14px}
 #tab-tools .si-panel{padding:0 0 12px;border-bottom:1px solid rgba(157,123,216,.18)}
@@ -7059,7 +6979,6 @@ try {
 .tvf-stat{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:66px;padding:6px 14px;border:1px solid rgba(240,192,96,.22);border-radius:11px;background:rgba(0,0,0,.28)}
 .tvf-stat b{font-family:var(--serif-display,'Cinzel',serif);font-size:18px;font-weight:var(--fw-semibold);line-height:var(--lh-none);color:var(--gold-bright,#f0c060)}
 .tvf-stat span{font-family:var(--mono);font-size:9px;letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-dim);white-space:nowrap}
-@media(max-width:640px){.tvf-spine{padding:11px 14px}.tvf-title{font-size:22px}.tvf-emblem{width:44px;height:44px;font-size:22px}.tvf-purpose{white-space:normal}}
 /* forge-head family variant — the three forge siblings borrow the emblem box + gold serif accent */
 :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .forge-head.tvf-head{display:flex;align-items:flex-start;gap:14px}
 :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .forge-head.tvf-head .tvf-emblem{margin-top:2px}
@@ -8864,7 +8783,6 @@ body.app-ctx .dock-mini-tab, body.app-ctx .lore-mini{display:none !important}
 #tab-endgame .road-branch .rb-art{width:38px;height:38px;flex:0 0 auto}
 #tab-endgame .road-branch .rb-art .d2art-img{max-width:38px;max-height:38px}
 #tab-endgame .road-branch p{margin:0;font-size:12.5px;color:var(--text-muted);line-height:var(--lh-normal)}
-@media (max-width:640px){#tab-endgame .road-nodes,#tab-endgame .road-branches{grid-template-columns:1fr}}
 </style>
 
 <style>
@@ -9954,18 +9872,6 @@ body.app-ctx .dock-mini-tab, body.app-ctx .lore-mini{display:none !important}
    where both are read. Dim on purpose — it is a footnote to the number, not a second number. */
 :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .fp-note{font-size:var(--fs-meta,11.5px);font-weight:var(--fw-regular);color:var(--text-dim,#8d8068);letter-spacing:var(--ls-normal);cursor:help}
 :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .fp-pct{margin-left:9px;font-family:var(--serif-display,'Cinzel',Georgia,serif);font-size:11.5px;font-weight:var(--fw-semibold);color:#0e1a10;background:linear-gradient(180deg,#b7ecc4,#6fd68a);border:1px solid rgba(210,255,222,.7);padding:1px 9px;border-radius:9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 3px rgba(20,70,35,.45),0 1px 3px rgba(0,0,0,.55)}   /* v620 — forged-coin percent */
-/* v1719 — THE FORGE TAB SCROLLED SIDEWAYS ON HIS PHONE, AND IT WAS THIS LINE.
-   `.fp-lbl` is `flex:0 0 auto` + `white-space:nowrap`, so the progress label can neither shrink
-   nor wrap. On his REAL profile it reads "📜 99 / 99 runewords forged · all 99 planned here
-   (8 ladder-only included)" + a 100% coin, which forces the document to 537px at EVERY phone
-   width — measured identical at 375, 390 and 414, so every phone, and he reads this tab mid-game.
-   Found while verifying the v1719 base fix at 375; it is older than that change and unrelated to
-   it (measured the same with and without an owned base).
-   Desktop is untouched: this only wraps below 520px, where the row has no space to be a row. */
-@media (max-width:520px){
-  :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .forge-progress{flex-wrap:wrap}
-  :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .fp-lbl{flex:1 1 100%;white-space:normal}
-}
 :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .forge-sub{font-size:13.5px;color:var(--text-dim,#9a8c72);margin-top:6px;max-width:860px;line-height:var(--lh-normal)}
 /* toggle sub-tab bar — equal-width, stretched symmetric across the row */
 :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .forge-tabs{display:flex;gap:8px;margin:14px 0 18px;width:100%;flex-wrap:wrap}
@@ -10186,45 +10092,6 @@ body:has(#tab-session.active) .inbox-fab.has{display:none}
 .inbox-sticky .ibp-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:4px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
 .inbox-sticky .ibp-acts{display:grid;grid-template-columns:repeat(2,minmax(0,260px));justify-content:start;gap:6px;margin-top:3px}/* v2349 - FOUR RULINGS NOW, SO 2x2 RATHER THAN FOUR CRAMPED COLUMNS. The render gate already reported `ibp-b ibp-ok :: Chronicle` clipping at 375x800 with THREE columns; a fourth would have shipped that defect to every width. Two columns give each button ~50% instead of ~25%, which is also the symmetry he asked for. */
 .inbox-sticky .ibp-acts .ibp-b{width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* ══ v2336 — THE PHONE-WIDTH INBOX, ARRIVED AT BY MEASUREMENT, NOT BY GUESS ═════════════════
-   The render gate refused the first cut at 375x800: "2 element(s) have text cut off — ibp-b
-   ibp-ok :: 📖 Chronicle". Three equal columns in a 375px panel leave ~105px each and the emoji
-   costs ~20px of it, so the button that writes his Chronicle read as "📖 Chron…".
-
-   The obvious fix — stack the three — was WORSE and the gate caught that too: taller rows pushed
-   four buttons past the panel's own fold (measured: scrollHeight 598 vs clientHeight 389), so
-   they were reachable only by scrolling and elementFromPoint reported the page behind them.
-   Hiding the emoji instead buys back the width and keeps every row short. Same three columns,
-   same symmetry, nothing clipped.
-
-   ⚠ AND A DEFECT OLDER THAN THIS CHANGE: `width:360px` with `right:88px` puts the panel's left
-   edge at -62px on a 375px screen. Measured, not guessed. It has been hanging off the side of
-   every phone-width view since the popup shipped. */
-@media (max-width: 560px){
-  .inbox-pop{ left:8px; right:8px; width:auto; }
-  /* ⚠ THE STICKY IS IN FLOW; THE POP-UP SCROLLS. Same rows, two different containers, and only
-     one of them can absorb a taller row. Measured at 375x800 with the render gate's own fixture:
-     #inbox-sticky spans y 242..573 and the second row's buttons landed at y=674 — OUTSIDE its own
-     box — where .dock-inner (587..792) paints over them. Three controls he could not click, and
-     the gate said so 3 runs out of 3.
-     The three-band stack (why / name / buttons) is right in the pop-up, which has max-height and
-     overflow:auto and simply scrolls. In the sticky it added ~100px per row with nothing to give.
-     So the sticky keeps the name and the actions on ONE line here. It stays symmetric because the
-     actions sit in their own auto track: identical content, identical width, every row.
-     v1798 recorded this same class — fixed furniture over an in-flow sticky. */
-  /* ⚠ THE STICKY IS ALREADY BOUNDED — DO NOT ADD A SECOND max-height HERE. Measured at
-     375x800: max-height 331px, overflow auto, scrollHeight 465, box 242..573. A rule restating
-     that was written here and REMOVED, because it was a no-op that made a sabotage look like a
-     passing guard: deleting it changed nothing, so it proved nothing. [[copy-drift]]
-     What the third button really did was push the panel's content past its own fold, so the
-     last row sits below the clip. It is one scroll away, not unreachable — and the render gate
-     used to call that "a control he cannot click" because getBoundingClientRect ignores an
-     ancestor's overflow clip. Fixed in tv/render_check.py, sabotage-proven by forcing the
-     sticky to overflow:visible, which puts the rows genuinely under the dock and turns the gate
-     red again. */
-  .inbox-pop .ibp-acts .ibp-b, .inbox-sticky .ibp-acts .ibp-b{ padding-left:4px; padding-right:4px; font-size:11px; }
-  .ibp-em{ display:none; }
-}
 .inbox-sticky .ibp-row:last-child{border-bottom:0}
 .inbox-sticky .ibp-nm{color:#e8dcc0;font-weight:var(--fw-semibold);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .inbox-sticky .ibp-why{color:#8a7d64;font-size:11px;margin:0}
@@ -10760,20 +10627,6 @@ img[src*="d2mon_"]{object-fit:contain!important;mix-blend-mode:normal!important;
 .qw-none{font-size:var(--fs-meta);color:var(--text-dim);padding:6px 12px;font-style:italic}
 .qw-also .qw-row{grid-template-columns:72px minmax(0,2fr) repeat(4,minmax(0,1fr));padding:6px 12px;background:rgba(255,255,255,.015)}
 .qw-also .qw-tile{width:52px;height:52px;justify-self:center}   /* REG-3325 - the ranked rows' columns, so every number lines up */
-@media (max-width: 640px){
-  /* a phone: four numbers in a row left ~50px each (measured at 375: "~1,392" ran into "~13h"), so they stand 2 x 2 */
-  .qw-row{grid-template-columns:56px repeat(2,minmax(0,1fr));row-gap:6px;column-gap:12px;padding:8px}
-  .qw-row > .qw-tile{grid-row:1 / span 3;width:56px;height:56px;align-self:start}
-  .qw-row > .qw-place{grid-column:2 / span 2}
-  /* #125 (MEASURED at 390 on v3880 and v3881) - '52px minmax(0,1fr) auto' set a number's auto column beside the place, and
-     an Other places name fell to one letter a line ("N o r m a l T Z ...") with its odds over its "runs an hour". Those
-     rows now stand like the ranked rows: the picture, the place across two columns, its four numbers 2 x 2. */
-  .qw-also .qw-row{grid-template-columns:52px repeat(2,minmax(0,1fr))}
-  .qw-also .qw-row > .qw-tile{width:52px;height:52px}
-  /* and the item's picture sits ABOVE the card body on a phone: beside it, every row had ~217px of a 370px card */
-  #tab-funi .qw-card{flex-wrap:wrap}
-  #tab-funi .qw-card > .f-cardbody{flex:1 1 100%;min-width:0}
-}
 /* v2285 — the area-run assumption, quieter than the odds it qualifies: it is a caveat, not
    a finding, and must not compete with the hour it is attached to. */
 .gf-kpr{opacity:.7;cursor:help}
@@ -10864,9 +10717,6 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 :is(#ibx-needsyou,.inbox-pop,.inbox-sticky) .ibx-ny-said:empty{display:none}
 #ibx-needsyou .ibx-ny-head-done{margin-top:6px;color:#a8d8a8}
 #ibx-needsyou .ibx-ny-done{padding:3px 0;border-top:1px dotted rgba(120,200,120,.22);color:#c9e2c0}
-/* #223 -- the board's floating compass / ? circles sit on the right edge at phone width; a cross-family
-   look found one lying on the end of an answer pill. Keep the pills out of that column. */
-@media (max-width:520px){ :is(#ibx-needsyou,.inbox-pop,.inbox-sticky) .ibx-ny-acts{padding-right:52px} }
 .ibx-badge{margin-left:auto;font-size:var(--fs-micro);font-weight:var(--fw-bold);letter-spacing:.04em;
   color:#1a1207;background:var(--gold-bright);border-radius:999px;padding:2px 10px;white-space:nowrap;
   box-shadow:0 0 10px rgba(240,192,96,.45)}
@@ -11108,10 +10958,6 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 @media (prefers-reduced-motion: no-preference){
   :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .forge-sealed-done .fs-stamp{animation:fsStampIn .5s cubic-bezier(.2,1.5,.4,1) both}
   @keyframes fsStampIn{from{opacity:0;transform:translate(-50%,-50%) rotate(-19deg) scale(1.5)}to{opacity:1;transform:translate(-50%,-50%) rotate(-19deg) scale(1)}}
-}
-@media (max-width:640px){
-  :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .forge-sealed-done{padding:24px 18px 0}
-  :is(#tab-forge,#tab-crafts,#tab-funi,#tab-fsets) .forge-sealed-done .fs-routes{margin:22px -18px 0;padding:16px 18px}
 }
 /* 2026-08-13 — "and related": the Forge SEALED hero (trophy figure, "Chronicle Sealed" title,
    wax stamp) is part of the room's own gold chrome, repainted in --rune same as the title/tvf-
@@ -43434,11 +43280,6 @@ html { scroll-behavior: smooth; }
 .boss-detail-header .gbc-loc { margin: 5px 0 0 !important; display: block; }
 .boss-detail-header .gbc-tier { position: absolute !important; top: 18px; left: 22px; text-align: center; }
 .boss-detail-header .gbc-close { position: absolute !important; top: 18px; right: 22px; }
-@media (max-width: 640px) {
-  .boss-detail-header { padding: 22px 14px 16px !important; }
-  .boss-detail-header .gbc-name, .boss-detail-header .bd-name { font-size: 30px !important; }
-  .boss-detail-header .gbc-tier { position: static !important; margin: 0 0 0 auto; }
-}
 
 /* ════════ BOSS LIST — collapse to clickable title rows (TZ-style accordion) ════════ */
 #boss-cards .boss-card .boss-body { display: none !important; }
@@ -44002,13 +43843,6 @@ body{ padding-bottom: calc(var(--dock-h, 84px) + 64px); }
   .nav-widget{ bottom: calc(var(--dock-h) + 62px) !important; }
   .help-btn{ bottom: calc(var(--dock-h) + 12px) !important; }
   #v42-tz-countdown{ bottom: calc(var(--dock-h) + 12px) !important; }
-}
-/* the tall band. MUST stay below the 700px rule — equal specificity, last declaration wins.
-   It carries ONLY the override: the first cut of this edit closed the block early and swept
-   the three widget lifts above into it, which would have dropped their !important lift across
-   601-700px without changing a single line of their own. [[d2r-css-last-rule-wins]] */
-@media (max-width: 600px){
-  :root{ --dock-h: 225px; }   /* v3889 (#132, his 11-08 'no mobile anything') - the phone tray bar is gone; the dock alone */
 }
 @media print{ .control-dock{ display:none !important; } body{ padding-bottom:0 !important; } }
 
@@ -44575,8 +44409,6 @@ body{
 .vfr-loc .vfr-cells{white-space:normal}
 .vfr-row .vfr-seen{margin-left:8px;color:var(--text-dim);font-size:var(--fs-micro)}   /* REG-2894 - when it was last seen, quiet beside where it sits */   /* #144.9 REG-2741 - every copy's cell wraps rather than running off the row */
 .vfr-loc .vfr-main{color:var(--gold-dim,#b89b5e)}
-/* #264 — on a phone the location gets its own line under the name, so a cell never runs past the screen's edge */
-@media (max-width: 640px){ .vfr-row{grid-template-columns:auto 1fr} .vfr-loc{grid-column:1 / -1;white-space:normal} }
 .vfr-loc .vfr-arrow{color:var(--gold-dim);margin:0 5px}
 .vfr-empty{padding:14px 13px;text-align:center;color:var(--text-muted);font-style:italic;font-size:12.5px}
 .vfr-empty b{color:var(--gold-bright,#f0c060);font-style:normal}
@@ -45071,46 +44903,6 @@ details[open] > summary .to-chev{transform:rotate(180deg)}
    25%% at 375. So the name holds its ground where the row can afford it and yields on a
    phone, which is the same trade he wrote into the test. 640px is an existing breakpoint in
    this file (4 uses), not one invented for this fix. */
-/* ⚠⚠ v2688 — REG-621: THE 88px FLOOR LEFT THE ROW WITH EXACTLY ZERO SLACK, so the remove
-   button was pushed outside .vrg-det, which carries overflow:hidden. MEASURED at 375x800 on a
-   served page, one row, every child:
-       art 26 + name 88 + copies 38.1 + val 31.7 + tag 29.2 + x 18   = 231.0 content
-       + margins 20 + gaps (8px x 5) 40 + row padding 14             = 305.0 row
-       against .vrg-det clientWidth                                  = 300
-   The row is 5px wider than the box that clips it, and the name was ALREADY at its floor, so
-   nothing in the row could yield. v2665 made the name shrinkable here (flex:1 1 auto) and that
-   was necessary and not sufficient: a shrinkable box with an 88px minimum stops shrinking at 88.
-   ⚠ AND THE BUTTONS ARE UNREACHABLE, NOT MERELY UGLY: scrollWidth 300 === clientWidth 300, so
-   the column cannot scroll to what it clipped. A control you cannot reach is a functional defect
-   that a text-clipping probe reads as 0%% cut. That is why v2267 asserts containment as well.
-   ⚠ THE FLOOR IS LOWERED, NOT REMOVED, AND ONLY ON A PHONE. 56px still holds roughly seven
-   characters plus the ellipsis, and v2267 already budgets 25%% cut at 375 while demanding 0%% at
-   901 and 1440 — so this is the trade HIS OWN SPEC wrote down, applied where the row cannot
-   afford the wider one. [[REG-621]] */
-@media (max-width:640px){
-  .vrg-name{flex:1 1 auto;min-width:56px}
-  /* ⚠ v2688 — THE NAME IS BOUGHT BACK FROM SPACING, NOT FROM INFORMATION. With the track
-     collapsed to 276 the row's fixed costs left the name 57px and EVERY name ellipsised (100%%
-     cut, against the 25%% v2267 budgets at this width). The alternative was hiding .vrg-copies or
-     .vrg-tag on a phone, which deletes a fact he reads rather than shortening it. Gaps and
-     margins carry no information, so they yield first: gap 8->4 (5 gaps, 20px), the three
-     margin-lefts 6/6/8 -> 3/3/4 (10px), row padding 7->5 (4px). 34px back into the name. */
-  .vrg-row{gap:4px;padding:5px 5px;align-items:flex-start}
-  /* ⚠ v2688 — ON A PHONE THE NAME WRAPS INSTEAD OF TRUNCATING, AND THAT IS THE WHOLE POINT OF
-     v2267. Even after the track collapsed and 34px came back from spacing, the worst name was 53%%
-     cut against a 25%% budget - and the remaining ways to buy width all DELETE something he reads
-     (.vrg-copies is how many he holds, .vrg-tag is where it sits). Truncation and hiding lose the
-     same information; wrapping loses none, and costs row height, which a phone has and a row does
-     not. scrollWidth then never exceeds clientWidth, so `cut` is 0 by construction rather than by
-     a budget nobody could meet. align-items:flex-start keeps the chips on the first line beside a
-     name that now occupies two. */
-  .vrg-name{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;overflow-wrap:anywhere}
-  /* ⚠ overflow-wrap:anywhere, because WRAPPING ALONE LEFT 27%% AND THE BUDGET IS 25%%. A
-     wrap can only break BETWEEN words, so a single long token ('Kaleidoscope') still
-     overflowed its box and one name carried the whole failure. Measured: 27 -> 0. */
-  .vrg-copies,.vrg-val{margin-left:3px}
-  .vrg-x{margin-left:4px}
-}
 /* v3859 - THE FAB GUTTER (48fbc054, 701-1620px: .container pads 62px on the right) TOOK 62px FROM THIS ROW TOO. At
    901 the routing column fell to 358px and "Harlequin Crest (Shako)" at nowrap pushed the row 8px past it (v2267 red).
    Inside the gutter's range the name buys its width back the way the phone does - by wrapping, which deletes nothing
@@ -45830,11 +45622,9 @@ html.vd-lock #arttip.tip-art .d2art-img,html.vd-lock #arttip.tip-art img{width:a
 .vd-list{margin-top:12px;columns:2;column-gap:22px;font-size:11.5px;color:var(--text-muted,#b5a48a)}
 .vd-list div{break-inside:avoid;padding:2px 0}
 .vd-list .vl-slot{font-family:var(--mono,monospace);color:var(--gold-bright,#f0c060)}
-@media(max-width:640px){.vd-list{columns:1}}
 /* the location badge on item detail cards */
 .vault-loc-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(212,168,71,.13);border:1px solid rgba(212,168,71,.45);color:var(--gold-bright,#f0c060);border-radius:999px;padding:2px 10px;font-size:var(--fs-meta);font-weight:var(--fw-semibold);letter-spacing:var(--ls-normal);cursor:pointer;margin-left:8px;vertical-align:middle;font-family:var(--mono,monospace)}
 .vault-loc-badge:hover{box-shadow:0 0 14px rgba(212,168,71,.3)}
-@media(max-width:560px){.vault-shelf{grid-template-columns:1fr}}
 </style>
 <style id="v199-aura-read-styles">
 /* v199 — per-boss AURA READ quick-decision boxes on the bind ID cards */
@@ -45853,7 +45643,6 @@ html.vd-lock #arttip.tip-art .d2art-img,html.vd-lock #arttip.tip-art img{width:a
 .ar-gate{padding:8px 12px;font-size:12.5px;border-left:3px solid;border-bottom:1px solid rgba(58,47,30,.5)}
 .ar-gate.ar-yes{border-left-color:var(--best,#66ff88);background:rgba(102,255,136,.05)}
 .ar-gate.ar-blind{border-left-color:var(--hell,#ff4040);background:rgba(255,64,64,.05)}
-@media(max-width:640px){.ar-row{grid-template-columns:1fr;gap:2px}.ar-eq{display:none}}
 </style>
 <style id="v193-lightbox-styles">
 /* ═══ v193 — fullscreen HD lightbox for bind-roll screenshots ═══ */
@@ -76249,18 +76038,6 @@ html{overflow-x:clip;overflow-y:auto}
   .tvn-portal-note{font-size:var(--fs-meta);text-align:center;justify-content:center;word-break:break-word;padding:0 10px}
   .tvn-boss,.tvn-tz{font-size:var(--fs-micro)}
 }
-/* v754 — PHONE PASS (stage747 handoff): at ≤640px squeeze the vertical band + serif floor so the
-   headline never dwarfs a small screen; the cast strip stays horizontally scrollable. */
-@media (max-width:640px){
-  .tvn-inner{padding:18px 0 20px;min-height:150px}
-  .tvn-content{padding:0 12px}
-  .tvn-area{font-size:clamp(17px,5.6vw,22px);gap:7px}
-  .tvn-scene-ic{font-size:17px}
-  .tvn-cast{gap:10px}
-  .tvn-cast-tile{min-width:60px;max-width:88px}
-  .tvn-cast-art,.tvn-cast-glyph{width:46px;height:46px;font-size:22px}
-  .tvn-cast-h{margin-top:14px}
-}
 .tvb-feedwrap{border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.012);overflow:hidden}
 .tvb-feed-h{display:flex;align-items:baseline;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:var(--fs-meta);font-weight:var(--fw-bold);letter-spacing:var(--ls-wider);color:var(--gold-dim)}
 .tvb-feed-sub{font-weight:var(--fw-regular);letter-spacing:var(--ls-tight);color:var(--text-dim);text-transform:none}
@@ -76650,13 +76427,6 @@ html{overflow-x:clip;overflow-y:auto}
    rather than removing it. */
 .inbox-pop{bottom:calc(var(--dock-h,84px) + 170px)!important;right:66px!important;
   max-height:max(180px, min(70vh, calc(100vh - var(--dock-h,84px) - var(--claim-h,0px) - 190px)))!important}
-/* #223 -- AND IT CLEARS THE CONSOLE PILL where the two can meet. The budget above subtracts the claim
-   banner but not the pill beneath it (fixed, z 10050, top = banner + 8px, 27px tall). At 375x800 the pop
-   ran 187-411 and the pill 175-202, across the question's first line (a grok-4.7 look). Horizontally they
-   can only meet below 546px (pop 360 + 66 from the right edge; pill to x=120), so only there does the pop
-   give up 42px more; above it the pill sits clear to its left. */
-@media (max-width:560px){ .inbox-pop{
-  max-height:max(160px, min(70vh, calc(100vh - var(--dock-h,84px) - var(--claim-h,0px) - 232px)))!important} }
 /* v1801 — THE MEDIA BLOCK HAD TO MOVE BELOW .inbox-pop, NOT JUST NAME IT.
    v1800 added .inbox-pop to the short-viewport flip and left the block ABOVE .inbox-pop's own
    rule. Same specificity (0,1,0), !important on both sides, so SOURCE ORDER decides and the
@@ -83928,10 +83698,6 @@ body.app-ctx.cousin-shell #v687-build-badge{top:calc(40px + var(--claim-h,0px))}
        of those widths, so 25px clears it with a 4px gap. The badge needs nothing here: it is
        display:none below 720px (~:44445). */
 #ladder-ribbon{max-width:92vw;overflow:hidden;text-overflow:ellipsis}
-@media (max-width:683px){
-  body.ladder-profile #tvf-console-return,
-  body.cousin-shell #tvf-console-return{top:calc(8px + 25px + var(--claim-h,0px))}
-}
 #v687-intake-modal{
   position:fixed;inset:0;z-index:10060;display:none;align-items:center;justify-content:center;
   background:rgba(0,0,0,.72);padding:16px;

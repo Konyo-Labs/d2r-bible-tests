@@ -112,6 +112,19 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3492 - THE PAGES STILL CARRIED A SECOND, PHONE-WIDTH LAYOUT NOBODY LOOKS AT (v3889, #132 stage 2)
+His ruling 11-08: "forget the MOBILE PAGE COMPELTELY drop it", "i dont need any mobile anything". Stage 1 (REG-3489) took the
+phone tray bar and every phone-width gate; it left the layout rules that apply only under 700px - 32 @media blocks on the
+board (the 600px dock band, the phone card header, the 375 inbox, the 2 x 2 Quick wins numbers, the v42 "mobile polish"
+tap targets, the TV.D hero squeeze, ...) and 4 on the console (comparison pickers, the hub hero, the version cross-ref, the
+character footer). Each was read and removed with the phone-only comment above it (ten of them); none applied at 800 (Dean's
+window), 1120 or 1512, so no pixel he sees moved - the diff is deletions only, braces balanced (117 / 12 pairs). The search
+box's placeholder swap is KEPT: its fit test picks the short hint at any width the full one cannot fit (its 640 media query is
+one of two triggers). The size ratchet was tightened (size_debt.json, 109 values). The short-screen MOVE TASKS spec moved from
+640x400 to 901x400 (the rule is height-only); test_a_worn_item_draws_its_slots_picture's phone-header proof left with its rule.
+GUARD: test_there_is_no_phone_page NoLayoutRuleAppliesUnder700px (reads every @media query whole, both pages; a baseline
+case proves the reader finds a planted phone block; 5 red-proofs RED).
+
 ### REG-3491 - THE BACKFILL HAD NO REAL SIGNED-IN RESULTS PAGE TO BUILD ITS PAGER FROM (v3889, #151 step 1)
 His 11-09 ruling: the 2-3 year d2jsp backfill runs on HIS Mac's signed-in console (forum 268), not GrokBot - whose
 signed-out pilot got "You do not have permission to use this feature". A pager for the forum's older results can only be

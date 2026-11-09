@@ -163,13 +163,15 @@ for (const tab of ['vault', 'tools']) {
 }
 
 test('REG-2862 — on a short screen MOVE TASKS opens from the vault toolbar, where its orb has yielded', async ({ page }) => {
-  await page.setViewportSize({ width: 640, height: 400 });
+  // v3889 (#132 stage 2, his 11-08 'i dont need any mobile anything') - 640 wide was a phone; the short rule is height-only
+  // (@media (max-height:480px)), so a short window at a width he uses is the same case
+  await page.setViewportSize({ width: 901, height: 400 });
   await page.goto(FILE);
   await page.waitForSelector('.tabs .tab', { state: 'attached' });
   await page.evaluate(() => { (window as any).switchTab('vault'); });
   await page.waitForTimeout(400);
   const fab = await page.evaluate(() => getComputedStyle(document.getElementById('vault-tasks-fab')!).display);
-  expect(fab, 'the 📦 orb is still drawn at 640x400 - this case is not testing the short screen').toBe('none');
+  expect(fab, 'the 📦 orb is still drawn at 901x400 - this case is not testing the short screen').toBe('none');
   const chip = page.locator('#vault-chip-tasks');
   await chip.scrollIntoViewIfNeeded({ timeout: 15000 });
   await expect(chip).toBeVisible();

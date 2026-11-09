@@ -3108,7 +3108,6 @@
   .cmp-scene-col.b .cmp-scene-h { color: var(--mint); }
   .cmp-scene-empty { font: var(--fw-normal) var(--fs-2xs)/var(--lh-normal) var(--mono); color: #7d7358; }
   .cmp-empty { text-align: center; color: #8a7e68; font: var(--fw-medium) var(--fs-sm)/var(--lh-normal) var(--mono); padding: 40px 20px; }
-  @media (max-width: 620px){ .cmp-pickers, .cmp-scenes { grid-template-columns: 1fr; } .cmp-vs { display: none; } }
   /* ══ D16 · AREA HEATMAP — where you farm most, ranked heat-bars off session areas[] (pure UI) ══ */
   #th-heatmap-ov { position: fixed; inset: 0; z-index: 972; overflow-y: auto; background: rgba(4,6,5,.985);
     padding: clamp(18px,3vh,46px) clamp(16px,2.4vw,34px) max(72px, env(safe-area-inset-bottom, 0px)); }
@@ -5315,10 +5314,6 @@
   .ch-btn.dim:hover, .ch-btn.danger:hover { filter: brightness(1.18); }
   /* the legend gets its own line, so the four actions sit in ONE row beneath it (the reference's shape) */
   .ch-foot .ch-grow { flex-basis: 100%; }
-  @media (max-width: 520px) {
-    .ch-foot .ch-grow { display: none; }        /* at phone width the cards need the room more */
-    .ch-head .ch-sub { display: block; margin: 2px 0 0; }
-  }
   .th-flags { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
   .th-flag { font: var(--fw-semibold) var(--fs-2xs)/1 var(--mono); letter-spacing: var(--ls-normal); padding: 3px 6px; border-radius: 5px;
     border: 1px solid rgba(200,180,120,.28); color: #d9c9a0; background: rgba(0,0,0,.35); }
@@ -5829,7 +5824,6 @@
   .hh-eta b { display: block; font: var(--fw-bold) clamp(17px,1.65vw,21px)/1 var(--serif); color: var(--acc-intel); letter-spacing: .02em; }
   .hh-eta span { display: block; font: var(--fw-medium) var(--fs-2xs)/1.2 var(--mono); letter-spacing: .10em; text-transform: uppercase; color: var(--muted); margin-top: 3px; max-width: 13ch; margin-left: auto; }
   @media (prefers-reduced-motion: reduce){ .hh-name { animation: none; } }
-  @media (max-width: 640px){ .hub-hero { flex-direction: column; align-items: flex-start; } .hh-eta { text-align: left; } }
   /* ══ v1370 (SESSIONS R6 · cohesion) — each zone OWNS a colour and its cards carry it: the card header
      text + its 2px accent bar (and each zone's lead card gets a matching 3px left accent) inherit the
      zone hue, so the three zones read as three coherent GROUPS instead of gold cards floating under
@@ -6655,10 +6649,6 @@
   #ver-xref .vx-row { display: grid; grid-template-columns: 9.5em minmax(0,10em) minmax(0,1fr);
     gap: 4px 14px; align-items: baseline; padding: 4px 0; font-size: var(--fs-xs);
     border-bottom: 1px solid rgba(255,255,255,.04); }
-  @media (max-width: 620px) {
-    #ver-xref .vx-row { grid-template-columns: minmax(0,1fr); gap: 1px; padding: 7px 0; }
-    #ver-xref .vx-note { grid-column: 1; }
-  }
   /* #223 — the panel's buttons had NO rule of their own (⟳ CHECK NOW rendered as a bare system
      button). Tokens only, per the visual lock; .vx-go is the ANSWER -> shortcut. */
   #ver-xref .vx-btn { font: var(--fw-medium) var(--fs-xs)/var(--lh-snug) var(--mono); letter-spacing: var(--ls-wide);

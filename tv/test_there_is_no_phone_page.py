@@ -7,7 +7,9 @@ pass, ~40 laws a phone case, and GitHub rounds on phone-only geometry nobody use
 
 INVERTED, NOT DELETED (GATE_MOVES_WITH_PRODUCT): this law fails if the phone page comes back -
   * the REG-3090 phone tray bar is gone: no #tray-bar element, no --tray-bar-h, no reg3090 stylesheet, no
-    _trayBarH / _dockReserve fold, and the 600px band's dock reserve is the dock alone;
+    _trayBarH / _dockReserve fold;
+  * no layout rule of either page (bible.html, tv/control_ui.html) applies under 700px: no @media whose max-width is
+    a phone's (stage 2, REG-3492 - 32 blocks on the board, 4 on the console, read one by one and removed);
   * render_check renders at no phone width: its default WIDTHS and every target's own widths stay >= 700px, no target
     is a phone-bar, and none is parked waiting to come back.
 
@@ -20,8 +22,13 @@ TOMBSTONES - what left with the phone page, and where it went:
     target (1440 / 1120 / 901).
   * the 375 / 390 widths inside the browser laws that measured a range (builder, mule window, Fleet card, rails fold,
     roster eyes, card names) - dropped from their lists; their wider widths still run.
-The sub-700px layout CSS that is not the bar (the narrow dock bands, the phone header rules) is the second half of #132:
-dead on every screen he uses, read and removed block by block - this law does not claim it yet.
+  * v3889 stage 2 (REG-3492) - every sub-700px @media block of both pages (the phone dock band, the phone card header,
+    the 375 inbox, the 2 x 2 Quick wins numbers, the v42 "mobile polish" tap targets, ...), each with the phone-only
+    comment that explained it. They never applied at 800 (Dean's window), 1120 or 1512, so no pixel he sees moved.
+    test_a_worn_item_draws_its_slots_picture's phone-header proof left with its rule.
+KEPT, named so it is not mistaken for a leftover: the search box's placeholder swap (`matchMedia('(max-width: 640px)')`
+in bible.html) - its own fit test picks the short hint at ANY width the full one cannot fit, and
+test_search_placeholder_fits holds it; the media query is only one of its two triggers.
 """
 import io
 import os
@@ -55,12 +62,40 @@ class ThereIsNoPhoneBar(unittest.TestCase):
         for gone in ('id="tray-bar"', "--tray-bar-h", 'id="reg3090-phone-tray-bar"', "_trayBarH", "_dockReserve"):
             self.assertNotIn(gone, src, "the phone tray bar is back in bible.html: %r" % gone)
 
-    def test_the_600px_band_reserves_the_dock_alone(self):
+
+
+def _phone_media(src):
+    """every @media query in `src` whose max-width is a phone's -> [(line, query)]. A query is read whole (a list of
+    conditions, any of which may be the max-width), never by a fixed character window."""
+    out = []
+    for m in re.finditer(r"@media([^{;]*)\{", src):
+        q = m.group(1)
+        for w in re.findall(r"max-width\s*:\s*(\d+(?:\.\d+)?)px", q):
+            if float(w) < PHONE_MAX:
+                out.append((src.count("\n", 0, m.start()) + 1, ("@media" + q).strip()))
+                break
+    return out
+
+
+class NoLayoutRuleAppliesUnder700px(unittest.TestCase):
+    """stage 2 (REG-3492): a rule that applies only under 700px is a phone layout - dead on every screen he uses, and a
+    second copy of the page's layout nobody looks at"""
+
+    def test_the_board_has_no_phone_rule(self):
         src = _bible()
-        head = "@media (max-width: 600px){\n  :root{ --dock-h: "
-        self.assertEqual(src.count(head), 1, "PREMISE: the 600px dock band moved - re-point this law")
-        line = src[src.index(head):src.index("\n", src.index(head) + len(head))]
-        self.assertIn("--dock-h: 225px;", line, "the 600px band folds something besides the dock again: %s" % line)
+        self.assertGreater(src.count("@media"), 50, "PREMISE: bible.html has almost no media queries - wrong file?")
+        self.assertEqual(_phone_media(src), [], "bible.html carries a phone-width layout rule again")
+
+    def test_the_console_has_no_phone_rule(self):
+        with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as fh:
+            ui = fh.read()
+        self.assertGreater(ui.count("@media"), 10, "PREMISE: control_ui.html has almost no media queries - wrong file?")
+        self.assertEqual(_phone_media(ui), [], "the console carries a phone-width layout rule again")
+
+    def test_the_reader_sees_a_phone_rule(self):
+        """BASELINE: the reader is not blind - a planted phone block is found, a 700+ one is not"""
+        self.assertEqual(len(_phone_media("a{} @media (min-width:300px) and (max-width: 639.5px){b{c:d}}")), 1)
+        self.assertEqual(_phone_media("@media (max-width:700px){b{c:d}} @media (max-width: 1120px){e{f:g}}"), [])
 
 
 class NoGateRendersAtAPhoneWidth(unittest.TestCase):
@@ -119,10 +154,15 @@ RED_PROOF = [
      "find": "<button id=\"tvd-return-pill\" type=\"button\" onclick=\"window.switchTab&&window.switchTab('session')\">",
      "replace": "<div id=\"tray-bar\" aria-hidden=\"true\"></div>\n<button id=\"tvd-return-pill\" type=\"button\" onclick=\"window.switchTab&&window.switchTab('session')\">",
      "matches": 1},
-    {"why": "v3889 (#132) - the 600px band folds the phone tray bar into the dock again",
+    {"why": "v3889 (#132 stage 2, REG-3492) - the board's Quick wins rows stand 2 x 2 on a phone again",
      "file": "bible.html",
-     "find": "  :root{ --dock-h: 225px; }   /* v3889 (#132, his 11-08 'no mobile anything') - the phone tray bar is gone; the dock alone */\n",
-     "replace": "  :root{ --dock-h: calc(225px + var(--tray-bar-h, 0px)); }\n",
+     "find": ".qw-also .qw-tile{width:52px;height:52px;justify-self:center}   /* REG-3325 - the ranked rows' columns, so every number lines up */\n",
+     "replace": ".qw-also .qw-tile{width:52px;height:52px;justify-self:center}   /* REG-3325 - the ranked rows' columns, so every number lines up */\n@media (max-width: 640px){ .qw-row{grid-template-columns:56px repeat(2,minmax(0,1fr))} }\n",
+     "matches": 1},
+    {"why": "v3889 (#132 stage 2, REG-3492) - the console's hub hero stacks on a phone again",
+     "file": "tv/control_ui.html",
+     "find": "  @media (prefers-reduced-motion: reduce){ .hh-name { animation: none; } }\n",
+     "replace": "  @media (prefers-reduced-motion: reduce){ .hh-name { animation: none; } }\n  @media (max-width: 640px){ .hub-hero { flex-direction: column; } }\n",
      "matches": 1},
 ]
 
