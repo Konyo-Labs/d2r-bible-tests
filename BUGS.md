@@ -119,7 +119,8 @@ its working and calliberated plaese". MEASURED 11-09 (each PC's own /api/chars_l
 learn a name); work ALT 0. On the work ALT's own frames over SSH: 1440x809 and 800x449 (24,006 frames) are Boosteroid's
 no-activity screen and library - no game drawn - and 1440x810 (9,427, 0 matched) DRAWS THE LOBBY (Konyorian, Barbarian 87)
 with right sat 0.111 against the band's 0.10 and full sat 0.216; its 800x450 lobby read full sat 0.22-0.23 (1,274 refused).
-The bands were set on Boosteroid's compressed picture. Widening them is wrong: on the OLD ALT it let in 355 more frames and 11
+Both sizes are Boosteroid's window (every work ALT reel is stamped boosteroid - GrokBot, #230 6740003186; I first wrote
+"local D2R", which its stamps refute). The bands were set on the OLD ALT's 800x450 stream; this one draws a little richer. Widening them is wrong: on the OLD ALT it let in 355 more frames and 11
 of 12 opened were dark night-town gameplay. FIX: lobby_stats also reads the lobby's PANELS - the create-game pane's grey
 (value 0.165-0.20, spread 0.08-0.105), the chat pane (0.155-0.195, 0.055-0.095) and the lit top strip (> 0.20) - and a frame
 the four bands refuse only on its colour (right sat < 0.13, full sat < 0.24) passes when its panels are the lobby's. Opened:

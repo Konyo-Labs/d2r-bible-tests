@@ -81,10 +81,11 @@ LOBBY_FULL_VAL = (0.16, 0.22)
 LOBBY_BOT_VAL_MIN = 0.10
 LOBBY_RIGHT_SAT_MAX = 0.10
 # v3890 (#183, his 11-09 "make sure its working and calliberated plaese") - A RICHER-COLOUR LOBBY, AND ONLY THE LOBBY.
-# MEASURED 11-09 over SSH on both ALTs' own frames. The bands above were set on Boosteroid's compressed 800x450 picture. The
-# work ALT's local D2R draws the same lobby at 1440x810 with right sat 0.111 (0.011 over the band) and full sat 0.216, so
-# 9,427 frames there matched 0 and it learned no character (Konyorian, Barbarian 87, on screen in every one); its own
-# 800x450 stream drew it at full sat 0.22-0.23. Simply widening the two bands is WRONG: on the OLD ALT it let in 355 more
+# MEASURED 11-09 over SSH on both ALTs' own frames. The bands above were set on the OLD ALT's 800x450 stream. The work ALT
+# streams through Boosteroid too (every reel stamped boosteroid - GrokBot, #230 6740003186) at two window sizes, and its
+# stream draws the same lobby a little more colourful: at 1440x810 right sat 0.111 (0.011 over the band) and full sat 0.216,
+# so its 9,427 frames there (Boosteroid's library and queue, and the game's lobby with Konyorian, Barbarian 87) matched 0
+# and it learned no character; at 800x450 full sat 0.22-0.23. Simply widening the two bands is WRONG: on the OLD ALT it let in 355 more
 # frames, 11 of 12 opened were dark night-town gameplay. What only the lobby has is its PANELS: the create-game pane is a
 # flat grey (value 0.17-0.19, spread 0.085-0.10), the chat pane the same (0.165-0.18, spread 0.06-0.08), and the top
 # strip carries the lit Lobby / Create Game headers (value 0.224-0.226; dark scenery 0.167). So a frame the bands refuse
