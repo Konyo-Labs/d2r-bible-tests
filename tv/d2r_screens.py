@@ -187,3 +187,92 @@ def chain(marks, gap_s=CHAIN_GAP_S):
         return {"startTs": logo if logo is not None else title, "logoTs": logo, "titleTs": title, "charTs": char,
                 "witnessed": logo is not None, "entered": char is not None}
     return None
+
+
+# v3893 (#187/#185, REG-3550 / REG-3552) - THE SHARED SCREEN GATE, ON HIS SCENARIO TEMPLATES.
+# Target order (his design): login → CONNECTING → character select (name + class) → lobby
+# (game name typed or seen, then chosen) → game-entry portal → in-game in a TOWN (act 1–5).
+# Only character names and game names vary across those screens. The D2R door in front of
+# CONNECTING is still the fire logo then the title ("Continue" / press any button) from REG-3514.
+# screen_of already names logo, title, char-select, lobby and hud (orbs = in a game). This tree
+# has no real Battle.net-login, CONNECTING... or game-entry-portal frames, and no act-1–5 town
+# templates, so those steps are not invented as pixel tests (see SCENARIO_EVIDENCE). Character
+# name+class reuse selected_of / logins; game names reuse game_name_of_row (run counting and
+# corner-text confluence are later slices).
+# Pre-game names — login, logo, title, connecting, char-select, lobby, portal — never reach the
+# stash or inventory readers. A frame is in play when it is hud/town (mid-session evidence if
+# the reel began in a game) or when the walk has already seen one, and this frame is not itself
+# a pre-game screen. Character select is the login door, not yet in a town: it does not open
+# the stash reader. Outside the shadow recorder's window the readers do not run.
+SCENARIO_ORDER = (
+    "login",        # Battle.net Diablo II login
+    "logo",         # first fire DIABLO II logo
+    "title",        # second logo / press any button
+    "connecting",   # CONNECTING...
+    "char-select",  # highlighted name + class
+    "lobby",        # game name typed or seen, then chosen
+    "portal",       # game-entry portal
+    "town",         # in a town, act 1–5 (hud orbs witness in-game)
+)
+
+# What this tree can actually name. "none" means do not invent a pixel test.
+SCENARIO_EVIDENCE = {
+    "login": "none — no Battle.net Diablo II login frame on this tree",
+    "logo": "measured fire-corner template (REG-3514)",
+    "title": "measured fire-centre template (REG-3514)",
+    "connecting": "none — no CONNECTING... frame on this tree",
+    "char-select": "char_select.looks_like_char_select (called); selected_of / logins read name + class",
+    "lobby": "char_select.looks_like_lobby (called); game name varies — game_name_of_row reads it",
+    "portal": "none — no game-entry portal frame measured on this tree",
+    "town": "hud orbs (in-game witness); no act-1–5 town templates; corner-text confluence is a later slice",
+}
+
+KIND_TO_SCENARIO = {
+    "login": "login", "logo": "logo", "title": "title", "connecting": "connecting",
+    "char-select": "char-select", "lobby": "lobby", "portal": "portal",
+    "hud": "town", "town": "town",
+}
+
+PRE_GAME = frozenset(("logo", "title", "char-select", "lobby", "portal", "connecting", "login"))
+IN_PLAY = frozenset(("hud", "town"))
+
+
+def scenario_of_kind(kind):
+    """Map a screen_of / mark kind onto his ordered scenario, or None when unlabelled."""
+    return KIND_TO_SCENARIO.get(kind)
+
+
+def readers_may_run(kind, chain=None, recording=True):
+    """May the stash / inventory readers see this frame? The shared gate, not a second filter.
+
+    recording False (outside the shadow recorder's window) → no.
+    login / logo / title / connecting / char-select / lobby / portal → no.
+    hud / town → yes (in a game, including a reel that began mid-session).
+    anything else (None: an unlabelled launcher, idle page, or a step we have no template for):
+    yes only when `chain` says the walk is in play (`entered` here is that walk flag, set by
+    play_after once a hud/town frame has been seen); when chain is omitted this does not invent a refuse.
+    """
+    if recording is False:
+        return False
+    if kind in PRE_GAME:
+        return False
+    if kind in IN_PLAY:
+        return True
+    if not isinstance(chain, dict):
+        return True
+    return chain.get("entered") is True
+
+
+def play_after(kind, chain=None, was_in_play=False):
+    """Whether later frames are in play, after seeing this one.
+
+    In play starts at a town / hud frame (in a game). Character select, the lobby and the
+    portal do not open it — those are still before the town. `chain` is accepted so the
+    walker can pass the shared mark state; the char-select `entered` flag from chain() is
+    the login door, not yet a town, so it does not flip this by itself.
+    """
+    if was_in_play:
+        return True
+    if kind in IN_PLAY:
+        return True
+    return False

@@ -123,6 +123,36 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3563 - A SESSION HAD NO SOFT UNDERSTANDING OF GAMES, RUNS AND BOSSES (v3893)
+His ruling: also count games, runs and per-boss farm counts as a soft layer on top of existing session seals; unknown when unclear. digest now carries `understanding` (ordered game names, sequential focused runs, town/field from the already-read area, per-boss lair visits). say_games and session splitting are unchanged. Law: test_the_session_carries_a_soft_understanding.
+### REG-3562 - BOSS FARM COUNTS WERE NOT READ FROM THE AREA TEXT (v3893)
+Per-boss farm counts (how many Andariel runs) come from the already-read area matched against the silospen set-mf lairs (Andariel -> Catacombs Level 4), once per game name via game_name_of_row. A zone the table does not name stays unknown. Law: test_boss_farm_counts_come_from_the_area_text.
+### REG-3561 - CORNER TEXT WAS NOT CHECKED AGAINST THE TOWN (v3893)
+The overlay already writes the zone name. That string is checked against the five act towns (and the 'The …' spelling). A known town names its act; any other written area is the field; empty is unknown. No pixel town template was invented (this tree still has no act-1–5 town frames). Law: test_corner_text_is_checked_against_the_town.
+### REG-3560 - SEQUENTIAL GAME NAMES WERE NOT LINKED AS ONE FOCUSED RUN (v3893)
+Consecutive numbered names that count up (Morph1 -> Morph2 -> Morph3), read via game_name_of_row, are one focused run. A gap, a name without a number, or a single numbered name is unknown. say_games and game_runs are not rewritten. Law: test_sequential_game_names_are_one_focused_run.
+### REG-3559 - AVATAR CLASS WAS NOT CHECKED AGAINST CHARACTER SELECT (v3893)
+The in-game avatar class vs the class from character select is a soft cross-check (agree / conflict / unknown). attribute_character is unchanged. The digest carries it as classCheck. Law: test_avatar_class_is_checked_against_character_select.
+### REG-3558 - A SOCKET FILLER WAS READ AS THE ITEM'S ROLL (v3893, #135)
+readSocketFillers names what is IN the sockets; d2jspParseSearch now peels those names (and a slash-roll written next to them) so "shako 15/15 Rainbow Facet" is not a 15/15 Shako and "shako 141 Ber'd" keeps the 141. A filler-only tooltip line is skipped by d2jspAffixRead. Vocabulary stays the page's tables. Law: test_socket_fillers_are_not_the_items_roll.
+### REG-3557 - QUICK-WINS 'ALSO' ROWS SKIPPED THE SET MF CURVE (v3893, #43)
+The leftover _qwAlso once-path called effChance without the item, so a set piece used the unique curve. It now passes x.n; regular rows ask setMfChance then fall back to adjustChance (no extra /players). Law: test_quick_wins_also_rows_use_the_set_curve.
+### REG-3556 - A PRESS ON THE CHARACTER-WINDOW BACKDROP LEFT IT OPEN (v3893, #191)
+#chx-win is a full-screen host; the card is .chx-win-box. A press on the backdrop now peels it via _chxClose. Law: test_a_press_outside_the_character_window_closes_it.
+### REG-3555 - A TAB SWITCH LEFT THE CHARACTER WINDOW OPEN (v3893, #191)
+navClean, switchTab and the console header already closed the builder and the unique/drop/boss cards, but not #chx-win. All three now ask _chxClose. Law: test_a_tab_switch_closes_the_character_window.
+### REG-3554 - THE SAME D2JSP SELLER COUNTED AS TWO POSTS (v3893, #180)
+The same seller is one post and one price: when a signed-out readable user.php name (or a stored author) proves two topics are the same seller, their votes share a weight of 1. An unknown author stays one vote per link. Topics are never hard-deleted or merged by id. Law: test_the_same_seller_is_one_d2jsp_vote.
+### REG-3553 - THE GUEST BOARD BADGE READ THE BAKED D2R_BUILD, NOT THE LIVE API (v3893, #193)
+The guest #v687-build-badge painted window.D2R_BUILD from a cached bible.html (v3888) while /api/status and the Fleet said v3889. It now takes st.ver when the live API answers. A failed fetch never claims a live version. Law: test_the_guest_badge_reads_the_live_version.
+### REG-3552 - THE SCENARIO WALK TREATED THE LOBBY AS IN-GAME (v3893, #187/#185)
+His ordered templates: login → CONNECTING → character select (name + class) → lobby (game name typed or seen, then chosen) → game-entry portal → town (act 1–5). Lobby and the portal are still before a town, so they never reach the stash reader; character select does not flip the walk into play. Battle.net login, CONNECTING... and the game-entry portal have no real frames on this tree (not invented). Law: test_the_scenario_templates_follow_his_order.
+### REG-3551 - A SESSION THAT STARTED AT THE LOGO WAS TAGGED AS THE PREVIOUS CHARACTER (v3893)
+Recording starts before character select, so who_at(session t0) only saw earlier characters and could name the reel as the previous player. The highlighted name was already read (char_select.selected_of, logins, session_characters). digest now consults that login for the reel's sessionId. A session with no login of its own still inherits who_at(t0). Law: test_the_session_is_tagged_from_the_character_select_name.
+### REG-3550 - THE STASH READER RAN ON LAUNCHER AND CHARACTER-SELECT FRAMES (v3893, #187/#185)
+His ruling: the stash reader is joined to the same launch-chain templates the recorder uses, and to the shadow recorder's window. It runs only while a reel is recording, and only once the chain (second logo → CONNECTING... → character select → in-game) or mid-session hud/lobby has put the film in play — not as a separate standalone filter. Pre-game screens (logo, title, character select) never reach classify_stash_grid; an unlabelled launcher/idle frame does not either until the chain has entered. This tree has no real Battle.net-login or CONNECTING... frames to invent templates from. Law: test_the_stash_reader_runs_only_in_play.
+### REG-3549 - THE FLEET'S MIDDLE EYE GLOWED CALM-GREEN WHILE WAITING FOR A REEL (v3893, #189)
+His ruling 2026-11-09: the Fleet's middle shadow-reader eye must be DARK unless a reel is actually recording (`sh.recording`). The waiting state had been the calm-green `lit` of shadow-ON-with-the-game-closed. That glow is gone: on + alive + no reel is `dark` (unlit brown lid, no breath); a rolling reel is bright LIVE (the hover still says whether the film shows Diablo II); dashed UNKNOWN and the red outline for a watcher that has STOPPED stay. Law: test_the_fleet_shadow_eye_is_dark_unless_recording (the older fleet-eye law no longer pins the waiting-green).
 ### REG-3548 - ESCAPE DID NOT CLOSE THE IN-GAME CHARACTER WINDOW (v3892, #191/#146)
 `_tvEsc` peeled keyboard help, the help sheet, the unique cards, the boss detail and the nav
 compass, but never `#chx-win`. Esc now runs `_chxClose` when that dialog is not hidden, after

@@ -128,6 +128,9 @@ def ingest(db, reading, src, now=None, key=None):
                "perfect": p.get("perfect") is True, "src": str(src or "?"), "seenAt": now}
         if p.get("out"):
             row["out"] = str(p["out"])[:80]
+        who = p.get("author")
+        if isinstance(who, str) and who.strip():
+            row["author"] = who.strip()[:32]
         if pk not in it["posts"]:
             new += 1
         it["posts"][pk] = row

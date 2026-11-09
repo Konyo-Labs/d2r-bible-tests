@@ -13,9 +13,9 @@ FOUR JOINTS, each DRIVEN here through the shipped code (never re-implemented):
   2. THE BEACON - `shadow` rides every beacon beside `eye`.
   3. THE WORKER - the shaper keeps it (absent stays null) and a flip of on / available / recording / working is news,
      so a PC whose watcher stops is not left glowing for up to 15 min.
-  4. THE CARD - _fleetShadowEye(row, online): lit (on + alive, the game may be closed) / live (reading now) / idle (on
-     but not working) / off (switched off) / unk (offline, an older build, not stamped). UNKNOWN is never drawn lit or
-     shut. The render gate photographs every state (render_check's fleet stub) and measures `.fleet-shadow` painted.
+  4. THE CARD - _fleetShadowEye(row, online): dark (on + alive, no reel recording; v3893 REG-3549) / live (a reel is
+     recording) / idle (on but not working) / off (switched off) / unk (offline, an older build, not stamped). UNKNOWN
+     is never drawn lit or shut. The render gate photographs every state (render_check's fleet stub) and measures `.fleet-shadow` painted.
 [[heart-first]] [[unknown-stays-unknown]] [[the-unjoined-end]] [[stale-reading]]
 RED_PROOF below.
 """
@@ -86,9 +86,9 @@ RED_PROOF = [
         "matches": 1,
     },
     {
-        "why": "v3890 (#189) - the eye glows live for any rolling reel again, the idle page included",
+        "why": "v3893 (#189, REG-3549) - waiting (no reel) glows the retired calm-green again",
         "file": "tv/control_ui.html",
-        "find": "      st = (sh.recording && sh.game === true) ? 'live' : 'lit';\n",
+        "find": "      st = sh.recording ? 'live' : 'dark';\n",
         "replace": "      st = sh.recording ? 'live' : 'lit';\n",
         "matches": 1,
     },
@@ -341,17 +341,18 @@ class TheEyeOnEveryRow(unittest.TestCase):
 
     def test_on_and_working_with_the_game_closed_glows_and_says_background(self):
         e = _eye(LIVE)
-        self.assertEqual(e["st"], "lit", e)
-        self.assertIn("background", e["title"])
+        self.assertEqual(e["st"], "dark", e)
+        self.assertIn("waiting", e["title"])
+        self.assertIn("no reel", e["title"])
         self.assertEqual(e["text"], "", "the eye added words to the name cell: %r" % e["text"])
-        # v3890 (#189, REG-3516) - LIVE is the game on screen, not a reel rolling: the OLD ALT glowed live over GeForce NOW's
-        # idle page. A rolling reel whose film shows D2R is live; one whose film shows no D2R, or is not known yet, is ON.
+        # v3893 (#189, REG-3549) - the middle eye is dark unless a reel is recording. Bright LIVE for any rolling reel;
+        # the hover still says whether the film shows D2R (the game gate no longer picks the colour).
         self.assertEqual(_eye(dict(LIVE, recording=True, game=True))["st"], "live")
         idle = _eye(dict(LIVE, recording=True, game=False))
-        self.assertEqual(idle["st"], "lit", idle)
+        self.assertEqual(idle["st"], "live", idle)
         self.assertIn("shows no Diablo II", idle["title"])
         unk = _eye(dict(LIVE, recording=True))
-        self.assertEqual(unk["st"], "lit", "a reel nobody has looked at drew the LIVE eye: %r" % unk)
+        self.assertEqual(unk["st"], "live", "a reel nobody has looked at lost the LIVE eye: %r" % unk)
         self.assertIn("not known yet", unk["title"])
 
     def test_a_refused_beacon_is_not_called_offline(self):
@@ -408,7 +409,7 @@ class TheEyeOnEveryRow(unittest.TestCase):
             self.assertEqual(e["st"], "unk", "%s drew %r: %r" % (label, e["st"], e["title"]))
             self.assertIn("UNKNOWN", e["title"], label)
             self.assertIn(says, e["title"], "%s: the eye does not say why presence is unknown" % label)
-        self.assertEqual(stale(40000)["st"], "lit", "a row heard 40 s ago lost its lit eye")
+        self.assertEqual(stale(40000)["st"], "dark", "a row heard 40 s ago lost its waiting eye")
         gone = _eye(LIVE, online=False)
         self.assertIn("this PC is offline", gone["title"], "a PC the roster no longer holds stopped saying offline")
 
@@ -470,7 +471,7 @@ class TheEyeOnEveryRow(unittest.TestCase):
         """* v3885 (his 11-08: "when off red. when on green. same for the shadow reader. simple and clean logic")"""
         with io.open(UI, encoding="utf-8") as f:
             src = f.read()
-        for rule in (".fleet-shadow.st-lit .sh-lid { stroke: #3fbf72; }", ".fleet-shadow.st-live .sh-lid { stroke: #6df0a0; }",
+        for rule in (".fleet-shadow.st-dark .sh-lid { stroke: #6b5a48; }", ".fleet-shadow.st-live .sh-lid { stroke: #6df0a0; }",
                      ".fleet-shadow.st-off .sh-shut { fill: none; stroke: #d0432f;", ".fleet-shadow.st-idle .sh-lid { fill: none; stroke: #c9402e;",
                      ".fleet-winview.wv-on .sh-lid { stroke: #3fbf72; }", ".fleet-winview.wv-off .sh-lid { stroke: #c9402e; }"):
             self.assertEqual(src.count(rule), 1, "the eye's colour rule is not on the page: %s" % rule)
