@@ -1648,23 +1648,25 @@ def _net_case_guards(name, text, find, lock, stems):
     MEASURED 11-06 23:38Z on his Mac: test_control (one 2,274-case file that names every lock) was found RED once and,
     guarding all nine, closed the whole river. A law that guards NET_NARROW_MIN_LOCKS or more locks is narrowed to the
     CLASSES of the cases that failed (the find's `cases`, REG-3324 heart2): the lock closes when one of those classes
-    guards it (_guards_lock on that class's source). Anything less certain stays broad, in the safe direction: a find
-    that names no case, a case whose class cannot be found, and every focused law (fewer locks) close by the whole file
-    exactly as before."""
+    guards it (_guards_lock on that class's source). A nameless red of a giant law does not close this lock (v3894 #103):
+    one flaky red of test_control must not shut every lock. A case whose class cannot be resolved is skipped, not treated
+    as close-all. Focused laws (fewer than NET_NARROW_MIN_LOCKS locks) still close by the whole file."""
     if not _guards_lock(text, lock, stems):
         return False
     cases = find.get("cases") if isinstance(find, dict) else None
-    if not cases:
-        return True
     try:
         n_locks = sum(1 for lk in LOCK_DOORS if _guards_lock(text, lk, LOCK_DOORS[lk]))
     except Exception:
         return True
+    if not cases:
+        return n_locks < NET_NARROW_MIN_LOCKS
     if n_locks < NET_NARROW_MIN_LOCKS:
         return True
     for c in cases:
         src = _case_class_source(text, c)
-        if src is None or _guards_lock(src, lock, stems):
+        if src is None:
+            continue
+        if _guards_lock(src, lock, stems):
             return True
     return False
 

@@ -10133,7 +10133,20 @@ def close_session(reason="stop", farewell=True):
                         continue      # unparseable stamp is not a frame — same as v894
                 _ixdoc = {"sessionId": SESSION_ID, "n": len(_meta),
                           "blank": 0, "frames": _meta, "blankPass": False}
-                _cap = _capture_for_seal()
+                _cap = _capture_for_seal() or {}
+                try:
+                    import capture_stamp as _cs
+                    _film = None
+                    for _fn in _idx:
+                        _film = _cs.film_size_from_jpeg(os.path.join(_reel, _fn))
+                        if _film:
+                            break
+                    if _film:
+                        _merged = dict(_cap)
+                        _merged["filmW"], _merged["filmH"] = _film
+                        _cap = _cs.from_measured(_merged)
+                except Exception:
+                    pass
                 if _cap:
                     _ixdoc["capture"] = _cap
                 # v1595 — STAMP THE MINI. Without this the flag changes nothing that
