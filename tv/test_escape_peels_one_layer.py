@@ -5,7 +5,7 @@ His rule: stacked popups close one layer at a time on Esc. MEASURED: the page's 
 the keyboard-help modal, closed a latched material/rune card, AND collapsed the nav compass in the
 same press, so two (or three) things went away together. `_cbEsc` already peels only the top
 builder layer and returns. Now `_tvEsc` does the same for the page: keyboard help, then the help
-sheet, then the latched drop card, then the nav compass — each branch returns after closing that
+sheet, then the unique panel, then the visible drop/unique card, then the nav compass — each branch returns after closing that
 one layer. The listener stops the event so a later Esc handler cannot peel a second layer in the
 same press. RED_PROOF below.
 """
@@ -43,8 +43,10 @@ class EscapePeelsOneLayer(unittest.TestCase):
             "return 'kbd-help'",
             "getElementById('help-modal')",
             "return 'help'",
-            "window.__activeMaterial || window.__activeRune",
-            "return 'drop'",
+            "getElementById('item-detail-panel')",
+            "return 'item-detail-panel'",
+            "getElementById('item-detail');",
+            "return 'item-detail'",
             "getElementById('nav-widget')",
             "return 'nav'",
         ]

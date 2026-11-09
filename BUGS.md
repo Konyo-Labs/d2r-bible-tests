@@ -123,6 +123,14 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3530 - THE UNIQUES DETAIL ONLY CLOSED ON A TAB SWITCH (v3891, #191)
+v3889: Esc / the card's own close did not dismiss the Uniques detail; only a tab switch did.
+MEASURED: Escape called `clearActiveItem` (the top bar) and never `closeItemDetail`; it closed
+`#item-detail` only when a material/rune latch was set, and `renderDetail` clears that latch, so a
+unique (or set-piece) card painted there could not close on Esc. `_tvEsc` now peels `#item-detail-panel`
+when it is not hidden and `#item-detail` when it has `.show`.
+GUARD: test_the_uniques_detail_closes_on_escape (2 red-proofs).
+
 ### REG-3529 - THE UNIQUE CARD'S EARLY PATHS AND THE CALC CARD HAD NO SHARED CLOSE (v3891, #191)
 His rule: every popup uses the same close control. A material/rune/set-piece card already carries
 `gic-close-btn` ("✕ close"). The bosses-tab unique card had that button on its full path only — "item not

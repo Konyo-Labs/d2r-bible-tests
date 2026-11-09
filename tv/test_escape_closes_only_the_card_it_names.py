@@ -24,7 +24,7 @@ PAGE = os.path.join(os.path.dirname(HERE), "bible.html")
 START = "function renderDetail() {\n"
 NO_ITEM = '  if (!item) { panel.classList.remove("show"); return; }\n'
 RESET = "  window.__activeMaterial = null; window.__activeRune = null;\n  const adjusted = item.sources.map("
-ESCAPE = "  if ((window.__activeMaterial || window.__activeRune) && typeof window.closeDrop === 'function') {"
+ESCAPE = "  if (drop && drop.classList.contains('show') && typeof window.closeDrop === 'function') {"
 
 
 def _src():
@@ -44,8 +44,15 @@ class EscapeClosesOnlyTheCardItNames(unittest.TestCase):
         self.assertLess(body.index(NO_ITEM), body.index(RESET),
                         "the latch is cleared before renderDetail knows it will paint an item card")
 
-    def test_escape_still_asks_the_latch(self):
-        self.assertEqual(_src().count(ESCAPE), 1, "Escape no longer closes by the latch - the baseline this law guards is gone")
+    def test_escape_closes_the_visible_card(self):
+        """v3891 (#191, REG-3530) - Uniques must close on Esc. The layer is the visible card
+        (`#item-detail.show`), not a leftover latch: a hidden card with a stale name is not closed,
+        and a visible unique card (whose latch renderDetail already cleared) is."""
+        self.assertEqual(_src().count(ESCAPE), 1, "Escape no longer closes the visible #item-detail card")
+        self.assertNotIn(
+            "if ((window.__activeMaterial || window.__activeRune) && typeof window.closeDrop === 'function') {",
+            _src(),
+            "Escape closed by a leftover latch again, so a unique card painted over a material would be wiped for the wrong reason - or a unique card with no latch would not close")
 
 
 RED_PROOF = [
