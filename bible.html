@@ -79400,6 +79400,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       return { stat: 'ias', now: now, frames: null, framesHi: null, nextPct: null, need: null, needHi: null, atCap: false, atCapHi: false, source: 'UNKNOWN', why: whyU };
     }
     var d = _cbDb(), ci = _cbClsIx(b && b.cls), c = ci >= 0 ? d.cls[ci] : null;
+    if (!(b && b.cls)) return { stat: 'ias', now: now, frames: null, framesHi: null, nextPct: null, need: null, needHi: null, atCap: false, atCapHi: false, source: 'UNKNOWN', why: 'No class is chosen yet, so the attack frames are not known.' };   // v3889 - a classless draft is not a class with no animation
     if (!c || !c.tok) return { stat: 'ias', now: now, frames: null, framesHi: null, nextPct: null, need: null, needHi: null, atCap: false, atCapHi: false, source: 'UNKNOWN', why: 'This class has no attack animation on record.' };
     var hands = w.base[14], wc = String((hands === 2 || hands === 12) ? w.base[27] : w.base[26]).toUpperCase();
     var an = d.tip && d.tip.an && d.tip.an[c.tok] && d.tip.an[c.tok][wc];
@@ -92906,6 +92907,10 @@ window.tvStashAutoIntake = async function(tab, opts){
       } else if (cls === 'Paladin'){ row = _CE_BP_FBR.Paladin; holy = !!who.holyShield; }
       else row = _CE_BP_FBR[cls] || null;
     }
+    /* v3889 (GrokBot 6734314659, the + New character dialog) - the planner's unsaved draft has NO class until one is
+       picked and Create is pressed, and its cards said "This class has no published FCR table" - a false reason: every
+       class but the Warlock has one. No class is its own UNKNOWN, named as such. */
+    if (!row && !cls) return { unknown: true, noClass: true, why: 'No class is chosen yet, so the ' + kind.toUpperCase() + ' steps are not known.' };
     if (!row) return { unknown: true, why: 'This class has no published ' + kind.toUpperCase() + ' table.' };
     return { base: row[0], anim: row[1], light: light, holyShield: holy, why: why.join(' ') };
   }

@@ -112,6 +112,17 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3493 - A BUILD WITH NO CLASS SAID ITS CLASS HAS NO PUBLISHED FCR TABLE (v3889, GrokBot 6734314659)
+GrokBot on v3888 (guest console, pixels): Characters -> + New character, Paladin and level 90 picked, Create not pressed - the
+breakpoint cards read "FCR UNKNOWN. This class has no published FCR table." (FHR the same) and it asked whether the card
+ignores the selected class. MEASURED in the code: the cards behind that dialog belong to the planner's unsaved DRAFT
+(openCharBuilder with no saved build makes one, class null); the dialog's pick (st.newb) has no sheet until Create makes
+the build. So the frames were rightly UNKNOWN and the reason was false - the engine's table holds the Paladin (0% = 15 cast
+frames), every class but the Warlock has one. A build with no class now says "No class is chosen yet, so the FCR steps are
+not known." (FHR, FBR the same; the attack-speed card likewise when a weapon is worn); a class the tables do not hold keeps
+the table sentence. GUARD: test_the_breakpoint_row_is_the_next_step test_a_build_with_no_class_says_no_class_is_chosen (two
+baselines: an unknown class name, a Paladin's 15 frames; red-proof RED). The attack-speed sentence is not pinned by a case.
+
 ### REG-3492 - THE PAGES STILL CARRIED A SECOND, PHONE-WIDTH LAYOUT NOBODY LOOKS AT (v3889, #132 stage 2)
 His ruling 11-08: "forget the MOBILE PAGE COMPELTELY drop it", "i dont need any mobile anything". Stage 1 (REG-3489) took the
 phone tray bar and every phone-width gate; it left the layout rules that apply only under 700px - 32 @media blocks on the

@@ -214,6 +214,11 @@ process.stdout.write(JSON.stringify({
   hsOn: say('fbr', { cls: 'Paladin', weapon: 'other', holyShield: true }, 50),
   barbNext: say('fbr', { cls: 'Barbarian', weapon: 'other' }, 86),
   amaFcrUnknownWeapon: E.bp.frames('fcr', { cls: 'Amazon' }, 0),
+  noClsFcr: say('fcr', { weapon: 'other' }, 0),
+  noClsFhr: say('fhr', { cls: '' }, 0),
+  noClsFbr: say('fbr', {}, 0),
+  oddClsFcr: say('fcr', { cls: 'Monk', weapon: 'other' }, 0),
+  palFcr0: say('fcr', { cls: 'Paladin', weapon: 'other' }, 0),
   bareFire: row(bare, 'res-fire').value,
   heldFire: row(held, 'res-fire').value,
   bareFcr: row(bare, 'fcr').bp,
@@ -301,6 +306,18 @@ class TheFormulaMatchesThePublishedTables(unittest.TestCase):
         self.assertEqual(self.out["barbNext"]["gap"]["frames"], 3)
         self.assertEqual(self.out["barbNext"]["gap"]["nextPct"], 280)
         self.assertNotIn(280, [s[0] for s in TABLES[25][2]])
+
+    def test_a_build_with_no_class_says_no_class_is_chosen(self):
+        """v3889 (GrokBot 6734314659): the + New character dialog's unsaved draft has no class, and its cards said "This
+        class has no published FCR table" - a false reason. No class is its own UNKNOWN; a class the tables do not know
+        keeps the table sentence; a Paladin reads its frames."""
+        for k in ("noClsFcr", "noClsFhr", "noClsFbr"):
+            self.assertIsNone(self.out[k]["gap"]["frames"], "%s quoted frames for a build with no class" % k)
+            self.assertIn("No class is chosen yet", self.out[k]["say"], "%s: %s" % (k, self.out[k]["say"]))
+            self.assertNotIn("This class has no published", self.out[k]["say"])
+        self.assertIn("This class has no published FCR table", self.out["oddClsFcr"]["say"],
+                      "BASELINE: a class the tables do not hold no longer says so")
+        self.assertEqual(self.out["palFcr0"]["gap"]["frames"], 15, "BASELINE: a Paladin at 0% is 15 cast frames")
 
     def test_the_charm_and_the_gear_are_one_total_and_a_blank_call_guesses_nothing(self):
         self.assertEqual(self.out["bareFcr"]["need"], 3)
@@ -566,6 +583,13 @@ class TheBuilderPaintsTheSameStep(unittest.TestCase):
 
 
 RED_PROOF = [
+    {
+        "why": "v3889 (GrokBot 6734314659) - a build with no class says its class has no published table again",
+        "file": "bible.html",
+        "find": "    if (!row && !cls) return { unknown: true, noClass: true, why: 'No class is chosen yet, so the ' + kind.toUpperCase() + ' steps are not known.' };\n",
+        "replace": "",
+        "matches": 1,
+    },
     {
         "why": "the Druid casting base is put back to the printed 16, so 0% is no longer the published 18 frames",
         "file": "bible.html",
