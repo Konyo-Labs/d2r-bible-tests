@@ -72,6 +72,20 @@ RED_PROOF = [
         "matches": 1,
     },
     {
+        "why": "v3890 (#189) - the lamp lights green for the recorder alone, the console process down",
+        "file": "tv/control_ui.html",
+        "find": "    } else if (pres.state === 'here' && p && p.via === 'recorder') {\n",
+        "replace": "    } else if (false) {\n",
+        "matches": 1,
+    },
+    {
+        "why": "v3890 (#189) - the lamp loses its hover: nobody can read which state it is in",
+        "file": "tv/control_ui.html",
+        "find": "    return '<span class=\"fleet-dot' + cls + '\" title=\"' + escC(tip) + '\" role=\"img\" aria-label=\"' + escC(tip) + '\"></span>';\n",
+        "replace": "    return '<span class=\"fleet-dot' + cls + '\"></span>';\n",
+        "matches": 1,
+    },
+    {
         "why": "v3890 (#189) - the eye glows live for any rolling reel again, the idle page included",
         "file": "tv/control_ui.html",
         "find": "      st = (sh.recording && sh.game === true) ? 'live' : 'lit';\n",
@@ -418,6 +432,39 @@ class TheEyeOnEveryRow(unittest.TestCase):
         self.assertEqual((w("headless")["st"], w("window-only")["st"]), ("off", "off"))
         self.assertEqual((w("fullscreen", heard=False)["st"], w(None)["st"]), ("unk", "unk"),
                          "a PC not heard, or one that does not report its window, was drawn as a verdict")
+
+    def test_the_lamp_says_the_console_is_alive_behind_the_scenes(self):
+        """* v3890 (#189, REG-3517 - his 11-09: "i do want a lamp to to know that it is connected and alive behind the scenes
+        regardless yes") - the row's lamp draws fleet_presence's ONE verdict: green = its console's own beacon is fresh, amber
+        = the console is down and only its recorder's lease lives, red = not heard, a grey ring = UNKNOWN - each with a hover"""
+        import fleet_presence as _fp
+
+        def lamp(console_ago_ms, recorder_ago_ms=None, listed=True):
+            row = {"nickname": "Box", "machine": "box-1", "ver": "v3890"}
+            if console_ago_ms is not None:
+                row["t"] = _iso(UI_NOW - console_ago_ms)
+            if recorder_ago_ms is not None:
+                row["recorder"] = {"alive": True, "t": _iso(UI_NOW - recorder_ago_ms)}
+            row["presence"] = _fp.presence_of(row, listed, UI_NOW)
+            return _ui_run("var p = _fleetPresence(%s, %s, NOW); var h = _fleetLamp(%s, p, %s); OUT.h = h;"
+                           " var m = /fleet-dot( [a-z]+)?\"/.exec(h); OUT.cls = m ? (m[1] || '').trim() : null;"
+                           " var t = /title=\"([^\"]*)\"/.exec(h); OUT.title = t ? t[1] : null;"
+                           % (json.dumps(row), "true" if listed else "false", json.dumps(row), "true" if listed else "false"))
+        up = lamp(40000)
+        self.assertEqual(up["cls"], "", up)
+        self.assertIn("CONNECTED", up["title"])
+        rec = lamp(40 * 60000, recorder_ago_ms=30000)
+        self.assertEqual(rec["cls"], "rec", "the recorder alone lit the console's lamp green: %r" % rec)
+        self.assertIn("console process DOWN", rec["title"])
+        gone = lamp(40 * 60000)
+        self.assertEqual(gone["cls"], "silent", gone)
+        self.assertIn("NOT HEARD", gone["title"])
+        unk = lamp(None)
+        self.assertEqual(unk["cls"], "unk", unk)
+        self.assertEqual(lamp(40000, listed=False)["cls"], "off")
+        with io.open(UI, encoding="utf-8") as f:
+            src = f.read()
+        self.assertIn(".fleet-dot.silent { background: #c9402e;", src, "not heard is red, his rule")
 
     def test_on_is_green_and_off_is_red(self):
         """* v3885 (his 11-08: "when off red. when on green. same for the shadow reader. simple and clean logic")"""

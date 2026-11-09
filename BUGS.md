@@ -112,6 +112,16 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3517 - THE FLEET ROW'S LAMP SAID "ONLINE" FOR A RECORDER WHOSE CONSOLE WAS DOWN, AND SAID NOTHING ON HOVER (v3890, #189)
+His words 11-09: "i do want a lamp to to know that it is connected and alive behind the scenes regardless yes" - "a separate eye
+for it that knows when the consoles background process it up and running ... with out gameplay but with the console logic".
+The row's dot WAS that lamp: green for any fleet_presence 'online', and online can be the recorder's lease alone with the
+console process down (via "recorder"); amber/grey otherwise; no hover. Now _fleetLamp draws the one presence verdict: green =
+its console's own beacon is fresh ("console CONNECTED - its background process is up and alive (heard 40 s ago)"), amber =
+only its recorder lives ("console process DOWN"), red = not heard or offline (his v3885 on-green/off-red rule), a dashed grey
+ring = UNKNOWN. Same 7 px element, so no row moves.
+GUARD: test_the_fleet_shows_the_shadow_eye (+2 red-proofs) + test_the_fleet_says_where_a_river_is_stuck.
+
 ### REG-3516 - THE FLEET'S SHADOW EYE GLOWED "LIVE" OVER GEFORCE NOW'S IDLE PAGE (v3890, #189, his call)
 His words 11-09: "it can be configured to shadow reader ON and recording when the green is eye glows instead of RED". The
 eye's LIVE state (bright green, white glint, "watching the game right now") came from `recording` alone - _agent_alive(), a

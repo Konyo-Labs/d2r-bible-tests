@@ -7180,10 +7180,14 @@
   .fleet-row.on b { color: var(--mint); }
   .fleet-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--st-good); flex: none;
     box-shadow: 0 0 7px var(--mint); }
-  .fleet-dot.off { background: var(--st-idle); box-shadow: none; }
-  /* #86 gap 12 — the key outlived its pulse. Amber, not the green of a machine just heard,
-     and not the grey of one the roster has already dropped. */
-  .fleet-dot.silent { background: var(--st-needs); box-shadow: none; }
+  /* v3890 (#189, REG-3517) - THE LAMP IS THE CONSOLE ALIVE BEHIND THE SCENES (his 11-09: "i do want a lamp to to know that
+     it is connected and alive behind the scenes regardless"). His v3885 rule, on the lamp too: green = its console's own
+     beacon is fresh; red = not heard (#86 gap 12's outlived key, or a PC the roster dropped); amber = the console process is
+     down and only its recorder's lease is alive (fleet_presence via "recorder" - it was drawn green); a grey ring = UNKNOWN. */
+  .fleet-dot.off { background: #c9402e; box-shadow: none; }
+  .fleet-dot.silent { background: #c9402e; box-shadow: none; }
+  .fleet-dot.rec { background: var(--st-needs); box-shadow: none; }
+  .fleet-dot.unk { background: transparent; box-shadow: none; border: 1px dashed #6d6a66; box-sizing: border-box; }
   /* 167 — the capture eye, only when it is live. Absent/dark is no chip, never a lying 👁. */
   /* v2454 — 11px was below the declared type floor and the ratchet caught it
      (TestV1504TypeFloor: `[11.0] != []`). The scale's smallest token is --fs-2xs at
@@ -29466,6 +29470,31 @@ function escC(s) {
              why: String(p.words || 'offline') + ' - past the ' + Math.round((p.staleAfterS || 0) / 60) + ' min refresh, so not online' };
   };
   window._fleetPresence = _fleetPresence;
+  /* v3890 (#189, REG-3517) - THE ROW'S LAMP: IS THIS PC'S CONSOLE CONNECTED AND ALIVE BEHIND THE SCENES, game or no game.
+     His words 11-09: "a separate eye for it that knows when the consoles background process it up and running meaning the PC
+     is up and online behind the scenes with out gameplay but with the console logic" - "i do want a lamp to to know that it is
+     connected and alive behind the scenes regardless yes". The dot WAS that lamp and said it wrong in one case and silently
+     in all: green for any 'online', and online can be the recorder's lease alone with the console process down; no hover.
+     It draws the ONE presence verdict (pres, from fleet_presence's m.presence stamp) and computes none of its own. */
+  var _fleetLamp = function (m, pres, online) {
+    var p = (m && m.presence && typeof m.presence === 'object') ? m.presence : null;
+    var a = (p && typeof p.ageS === 'number' && isFinite(p.ageS) && p.ageS >= 0) ? p.ageS : null;
+    var age = a === null ? '' : ' (heard ' + (a < 90 ? Math.round(a) + ' s' : Math.round(a / 60) + ' min') + ' ago)';
+    var cls, tip;
+    if (!pres) {
+      cls = ' off'; tip = 'console OFFLINE - this PC is not connected';
+    } else if (pres.state === 'here' && p && p.via === 'recorder') {
+      cls = ' rec'; tip = 'console process DOWN - only its recorder is still capturing' + age;
+    } else if (pres.state === 'here') {
+      cls = ''; tip = 'console CONNECTED - its background process is up and alive' + age;
+    } else if (pres.state === 'unknown') {
+      cls = ' unk'; tip = 'console UNKNOWN - ' + String(pres.why || pres.word || 'no presence stamp');
+    } else {
+      cls = ' silent'; tip = 'console NOT HEARD - ' + String(pres.word || 'offline') + age;
+    }
+    return '<span class="fleet-dot' + cls + '" title="' + escC(tip) + '" role="img" aria-label="' + escC(tip) + '"></span>';
+  };
+  window._fleetLamp = _fleetLamp;
   /* #86 gap 15 (REG-1773) — A RESTART NOBODY COULD ASK ABOUT IS NOT CLEAR TO GO.
      The pending badge's else said "clear to restart" for every may that was not false,
      including null: the console could not ask, and the card answered for it. may true is
@@ -30723,7 +30752,7 @@ function escC(s) {
           + ' onclick="window._fleetRowClick(this)"'
           + ' onkeydown="if(event.target!==this)return;if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'
           + 'window._fleetRowClick(this)}">'
-          + '<span class="fleet-dot' + (heard ? '' : (online ? ' silent' : ' off')) + '"></span>'
+          + _fleetLamp(m, pres, online)
           + '<b>' + _fleetShadowEye(m, heard, undefined, pres) + _fleetWindowEye(m, heard) + escC(nameFor) + '</b>'   // v3885 - the green eye: its window is up
           + _fleetEye(m.eye)
           /* ⚠⚠ v2875 — ONE WORD BESIDE THE NAME. Konyo, 2026-09-10: *"all the jibberish
