@@ -12500,7 +12500,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
       <button type="button" class="vault-btn" id="d2jsp-shop" data-d2jsp-shop="1">Post the list</button>
       <p class="d2jsp-say" id="d2jsp-status"></p>
       <div id="d2jsp-list" class="d2jsp-scroll"></div>
-      <details id="d2jsp-history" class="d2jsp-history"><summary>History</summary></details>   <!-- REG-3094 -->
+      <details id="d2jsp-history" class="d2jsp-history"><summary>Your posts and trades</summary></details>   <!-- REG-3094; v3889 (#178) his 11-09 "history is for the searches we do? or is it related to the trades that i post? if so rename the name" - it is his own -->
     </div>
   </div>
 </div>
@@ -13239,7 +13239,8 @@ function d2jspSimilarPrice(q, mine, itemName, reads) {
       if (best > 0) like++;
       w = w * (best > 0 ? 0.1 + 0.9 * best * best : 0.1);
     }
-    return { fg: Number(p.fg), day: p.day || '', link: p.link || '', roll: p.roll || [], cols: p.cols || null, w: w, sim: sim, out: p.out || '' };
+    return { fg: Number(p.fg), day: p.day || '', link: p.link || '', roll: p.roll || [], cols: p.cols || null, w: w, sim: sim, out: p.out || '',
+             perfect: p.perfect === true || p.tier === 'perfect' };   /* v3889 (#178) - which tier card the post sits under */
   });
   return { posts: rows, fg: mine && like ? d2jspWeightedMiddle(rows) : null, like: like };
 }
@@ -13248,11 +13249,18 @@ function d2jspEscText(s) {
 }
 /* v3844 - THE EVIDENCE DRAWER under every quote: each post the price came from - when, how much, the roll as read, its
    weight - with the link to open it on the forum, so a price can be checked by hand. Nothing here posts. */
-function d2jspEvidenceHtml(sim, q) {
-  var rows = (sim && sim.posts) || (q && q.posts) || [];
+/* v3889 (#178) - how many posts each tier card lists (his "like 4-5 posts") */
+var D2JSP_TIER_POSTS = 5;
+function d2jspEvidenceHtml(sim, q, opts) {
+  /* v3889 (#178, his 11-09: "the one under and related to the normal tier should be on the left side under it and the right
+     side under the perfect tier should be showing the posts related to it") - opts.rows / opts.tier: one tier's posts, drawn
+     under that tier's card; opts.headOnly: the roll-like-yours line alone, said once above both cards */
+  opts = opts || {};
+  var rows = opts.rows || (sim && sim.posts) || (q && q.posts) || [];
+  var _tier = opts.tier === 'normal' || opts.tier === 'perfect' ? opts.tier : '';
   /* A line with no fg is not a post, and an item with no price gets no post list. */
-  if (!rows.length) return '';
-  var body = rows.map(function (p) {
+  if (!rows.length && !opts.headOnly) return _tier ? '<p class="d2jsp-say" data-d2jsp-tier-posts="' + _tier + '">No ' + _tier + ' post is behind this price.</p>' : '';
+  var _evRow = function (p) {
     var roll = (p.cols && p.cols.length) ? p.cols.map(function (v, i) {
         var c = p.read && p.read[i]; return (i < 2 && v > 0 ? '+' : '') + v + (c && !c.ok ? '?' : '');
       }).join(' ')
@@ -13261,14 +13269,23 @@ function d2jspEvidenceHtml(sim, q) {
     var open = p.link ? ('<a href="' + d2jspEscText(p.link) + '" target="_blank" rel="noopener noreferrer">open post</a>') : 'no link';
     return '<tr><td>' + d2jspEscText(p.day) + '</td><td>' + d2jspEscText(p.fg) + ' fg</td><td>' + d2jspEscText(roll)
       + '</td><td>' + d2jspEscText(weight) + '</td><td>' + open + '</td></tr>';
-  }).join('');
-  var shown = rows.length;
+  };
+  var body = rows.map(_evRow).join('');
+  var shown = rows.length, _of = rows.length;
+  /* v3889 (#178, his 11-09: "it should each show like 4-5 posts individually connected. linked to each normal and each
+     perfect") - a tier's list shows its latest D2JSP_TIER_POSTS posts, open, each with its own link */
+  if (_tier && rows.length > D2JSP_TIER_POSTS) { body = rows.slice(0, D2JSP_TIER_POSTS).map(_evRow).join(''); shown = D2JSP_TIER_POSTS; }
   var head = (sim && sim.cols && sim.fg != null)
     ? ('<div class="d2jsp-say" data-d2jsp-rollprice>Posts with a roll like yours: about ' + d2jspEscText(sim.fg) + ' fg'
       + (sim.fit != null ? (', and the price-by-roll fit at your roll says ' + d2jspEscText(sim.fit) + ' fg') : '')
       + ' (' + sim.like + ' ' + (sim.like === 1 ? 'post' : 'posts') + ' with their rolls written).</div>')
     : '';
-  return head + '<details class="d2jsp-ev" data-d2jsp-ev><summary>show the ' + shown + ' ' + (shown === 1 ? 'post' : 'posts')
+  if (opts.headOnly) return head;
+  if (_tier) head = '';
+  return head + '<details class="d2jsp-ev" data-d2jsp-ev' + (_tier ? ' data-d2jsp-tier-posts="' + _tier + '" open' : '') + '><summary>'
+    + (_tier ? ('the ' + (shown === 1 ? '' : shown + ' ') + 'latest ' + _tier + ' ' + (shown === 1 ? 'post' : 'posts')
+                + (_of > shown ? ' (of ' + _of + ')' : ''))
+             : ('show the ' + shown + ' ' + (shown === 1 ? 'post' : 'posts')))
     + '</summary><table><thead><tr><th>date</th><th>price</th><th>roll as read</th><th>weight</th><th>post</th></tr></thead><tbody>'
     + body + '</tbody></table></details>';
 }
@@ -13805,7 +13822,7 @@ function d2jspDbArrange(root) {
   }
   function historyHtml(){
     var h = historyRows(), whole = h.log && h.vault;
-    var head = '<summary>History (' + h.rows.length + (whole ? '' : ', some UNKNOWN') + ')</summary>'
+    var head = '<summary>Your posts and trades (' + h.rows.length + (whole ? '' : ', some UNKNOWN') + ')</summary>'
       + (h.log ? '' : '<p class="d2jsp-say" data-d2jsp-history-posts="unknown">Posts: UNKNOWN. The post log would not read, so no post is shown.</p>')
       + (h.vault ? '' : '<p class="d2jsp-say" data-d2jsp-history-trades="unknown">Trades: UNKNOWN. The vault would not read on this page, so no traded copy is shown.</p>');
     if (!h.rows.length) return head + (whole ? '<p class="d2jsp-say" data-d2jsp-history="none">No post or trade yet.</p>' : '');
@@ -14746,9 +14763,17 @@ function d2jspDbArrange(root) {
       var _first = (_known && j && !(Number(j.fg) > 0))
         ? '<div class="d2jsp-known" data-d2jsp-known><div class="d2jsp-say">Known price for ' + esc(parsed.item) + ', from the price database on this console:</div>' + d2jspBackendHtml(_db, null, {}) + '</div>'
         : '';
+      /* v3889 (#178) - each tier's posts under its own card: the normal-tier posts under NORMAL (left), the perfect-tier
+         posts under PERFECT (right); the roll-like-yours line once above both. No card (an item the page cannot draw):
+         one drawer, as before. */
+      var _ev = !!(j && (j.reason === 'read' || j.reason === 'no prices')), _evSim = (j && j.reason === 'read') ? sim : null;
+      var _evRows = _ev ? (((_evSim && _evSim.posts) || (j && j.posts)) || []) : [];
+      var _cards = d2jspTierCardsHtml((j && typeof j.resolved === 'string' && j.resolved) || parsed.item, j && j.db,
+                                      _evRows.length ? _evRows : null);   /* #97 */
+      var _split = _cards.indexOf('data-d2jsp-tier-posts') >= 0;
       out.innerHTML = _first + '<div>' + esc(d2jspSearchLine(j, sim, parsed)) + '</div>'
-        + d2jspTierCardsHtml((j && typeof j.resolved === 'string' && j.resolved) || parsed.item, j && j.db)   /* #97 */
-        + (j && (j.reason === 'read' || j.reason === 'no prices') ? d2jspEvidenceHtml(j.reason === 'read' ? sim : null, j) : '');
+        + (_split ? d2jspEvidenceHtml(_evSim, j, { headOnly: true }) : '') + _cards
+        + (_ev && !_split ? d2jspEvidenceHtml(_evSim, j) : '');
       var backend = document.getElementById('d2jsp-price-backend');
       if (backend) backend.innerHTML = d2jspBackendHtml(j && j.db, j && j.fg, {sync:true, say:j && j.say}) + d2jspDatabaseButton();
     }
@@ -14776,7 +14801,7 @@ function d2jspDbArrange(root) {
      its top (_cbTopRolls). Each carries its tier's stored price. The item is the one the desk resolved the trader text to
      (the console's d2jspResolveItem - "shako" is Harlequin Crest), else the text itself; a name that is not one item says
      so in a line. -> html */
-  function d2jspTierCardsHtml(name, db){
+  function d2jspTierCardsHtml(name, db, posts){
     if (!name || typeof window._mtEntryFor !== 'function' || typeof window.d2Tip !== 'function') return '';
     var R = null;
     try { R = (typeof window.d2rResolveItem === 'function') ? window.d2rResolveItem(name) : null; } catch (e) { R = null; }
@@ -14797,6 +14822,17 @@ function d2jspDbArrange(root) {
     var art = null;
     try { art = (typeof window.artUrl === 'function') ? window.artUrl(nm) : null; } catch (e3) { art = null; }
     var ok = db && typeof db === 'object' && !db.unknown;
+    /* v3889 (#178) - the posts behind each tier, under that tier's card: a post read perfect by its rolls (REG-3441) is a PERFECT
+       post, every other one a NORMAL post */
+    var _seen = {}, _all = (Array.isArray(posts) ? posts : [])
+      .concat((db && db.proof && Array.isArray(db.proof.posts)) ? db.proof.posts : [])   /* the price database's own, each with its tier */
+      .filter(function(p){
+        if (!p || !(Number(p.fg) > 0)) return false;
+        var k = p.link ? String(p.link) : (String(p.day) + '|' + p.fg + '|' + (p.perfect === true || p.tier === 'perfect'));
+        if (_seen[k]) return false; _seen[k] = 1; return true; })
+      .sort(function(a, b){ return String(b.day || '') < String(a.day || '') ? -1 : String(b.day || '') > String(a.day || '') ? 1 : 0; });
+    var _isP = function(p){ return p.perfect === true || p.tier === 'perfect'; };
+    var _byTier = _all.length ? { normal: _all.filter(function(p){ return !_isP(p); }), perfect: _all.filter(_isP) } : null;
     function card(kind, label, entry, tier){
       return '<figure class="d2jsp-tier d2jsp-tier-' + kind + '" data-d2jsp-tier-card="' + kind + '">'
         + '<figcaption class="d2jsp-tier-h">' + label + '</figcaption>'
@@ -14804,7 +14840,7 @@ function d2jspDbArrange(root) {
         /* the builder's "strength / dexterity UNKNOWN until the character has attributes" note is a CHARACTER's - a price card
            has none, so the note stays in the builder and off this card */
         + '<div class="d2tip d2jsp-tier-box">' + String(window.d2Tip(entry)).replace(/<div class="d2t-note">strength \/ dexterity:[^<]*<\/div>/, '') + '</div>'
-        + tier + '</figure>';
+        + tier + (_byTier ? d2jspEvidenceHtml(null, null, { rows: _byTier[kind], tier: kind }) : '') + '</figure>';
     }
     /* v3884 (#130) - each tier's price is a titled block in its own colour (d2jspTierPriceHtml); the item's title rides above
        both cards in its rarity's colour with its HD art beside it - the board's hover card on the art */

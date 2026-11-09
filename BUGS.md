@@ -112,6 +112,25 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3501 - THE D2JSP TAB'S "HISTORY" READ LIKE A SEARCH HISTORY; IT IS HIS OWN POSTS AND TRADES (v3889, #178, his ask)
+His words 11-09 ~10:10 with the tab on screen ("History (0) - No post or trade yet."): "history is for the searches we do? or is it
+related to the trades that i post? if so rename the name". It is REG-3094's one list of what the desk posted and what left the
+vault (every name's post log rows and the vault's traded rows) - never a price search. Its title is now "Your posts and trades
+(N)" (the markup and the painted count); test_the_d2jsp_tab_keeps_one_history follows the words, its red-proofs all still RED.
+
+### REG-3500 - THE PRICE CHECK'S POSTS SAT IN ONE MIXED DRAWER UNDER BOTH TIER CARDS (v3889, #178, his ask)
+His words 11-09 ~10:05 with an Enigma price check on screen (NORMAL 400 fg, PERFECT 1,850 fg, one drawer "hide the 4 posts"
+under both): the normal-tier posts "should be on the left side under it and the right side under the perfect tier should be
+showing the posts related to it", then "it should each show like 4-5 posts individually connected. linked to each normal and
+each perfect". Now each tier card carries its own list, open, under its price: the latest five (D2JSP_TIER_POSTS), newest
+first, each with its "open post" link, "(of N)" when there are more - from the live search AND the price database's own kept
+posts (each already carries its tier; the same link is listed once). A post is PERFECT when its rolls read perfect
+(REG-3441); that flag was dropped by the roll-likeness step (d2jspSimilarPrice) and is kept now. The roll-like-yours line is
+said once above the cards; an item the page cannot draw a card for keeps the one drawer. Pixels at 1512 and 1120 (a stubbed
+Enigma answer): five normal rows under 400, four perfect rows with their rolls under 1,850, no cell overflowing; the Grok CLI's
+cold look: each list under its own price, every row linked, nothing cut or misaligned. GUARD: test_each_tier_card_lists_its_own_posts
+(whole page in node; 4 red-proofs RED); test_the_price_check_draws_normal_and_perfect_cards re-pointed at the new wiring.
+
 ### REG-3499 - THE CHARACTER WINDOW COULD NOT BE HELD AGAINST d2planner: ITS GEAR AND STATS LIVED ONLY IN THE BOARD (v3889, #28)
 His 11-08 ~12:40: do #28 now - GrokBot compares the character window with d2planner, round by round. GrokBot 6720536745:
 UNKNOWN - "the character window's gear and stats live only in the board's storage"; /api/chars_learned carries class + level

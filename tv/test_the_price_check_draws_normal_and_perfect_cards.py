@@ -128,8 +128,10 @@ class ThePriceCheckDrawsTwoCards(unittest.TestCase):
     def test_the_search_draws_them_for_the_item_the_console_resolved(self):
         with io.open(os.path.join(ROOT, "bible.html"), encoding="utf-8") as fh:
             src = fh.read()
-        self.assertIn("+ d2jspTierCardsHtml((j && typeof j.resolved === 'string' && j.resolved) || parsed.item, j && j.db)", src,
+        # v3889 (#178) - the cards now carry their tier's posts (a third argument) and are painted from _cards
+        self.assertIn("var _cards = d2jspTierCardsHtml((j && typeof j.resolved === 'string' && j.resolved) || parsed.item, j && j.db,", src,
                       "the price search never draws the two cards, or not for the item the console resolved")
+        self.assertIn("+ (_split ? d2jspEvidenceHtml(_evSim, j, { headOnly: true }) : '') + _cards", src, "the cards are drawn and never painted")
 
 
 class TheConsoleNamesTheItem(unittest.TestCase):
@@ -182,8 +184,8 @@ RED_PROOF = [
      "find": ",#d2jsp-card .d2art-wrap.d2jsp-iart[aria-label]';\n  window.D2TIP_SEL = SEL;", "replace": "';\n  window.D2TIP_SEL = SEL;", "matches": 1},
     {"why": "#97 - the price search never draws the NORMAL / PERFECT cards",
      "file": "bible.html",
-     "find": "        + d2jspTierCardsHtml((j && typeof j.resolved === 'string' && j.resolved) || parsed.item, j && j.db)   /* #97 */\n",
-     "replace": "",
+     "find": "        + (_split ? d2jspEvidenceHtml(_evSim, j, { headOnly: true }) : '') + _cards\n",
+     "replace": "        + (_split ? d2jspEvidenceHtml(_evSim, j, { headOnly: true }) : '')\n",
      "matches": 1, "needs": "node"},
     {"why": "#97 - PERFECT is drawn with the ranges (the top-rolls option is ignored)",
      "file": "bible.html",
