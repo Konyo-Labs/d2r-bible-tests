@@ -123,6 +123,18 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3526 - CLEARING THE PRICE SEARCH LEFT THE LAST RESULTS ON SCREEN (v3891, #192)
+The field is already `type=search` (the browser draws a native clear). Emptying it did not bump `searchGen` or restore
+the idle line, so the last cards stayed and an in-flight answer could paint over the empty field. `priceSearchIdle` now
+bumps `searchGen` and writes the idle line; `input` and `search` events on `#d2jsp-price-q` call it when the value is empty.
+GUARD: test_a_price_search_splits_items_and_clears_its_results (clear case + 1 red-proof).
+
+### REG-3525 - "SHAKO, JMOD" WAS ONE SEARCH; EACH ITEM NOW GETS ITS OWN CARD (v3891, #192)
+MEASURED: `d2jspParseSearch` is one item (it never splits on a comma); `priceSearch` handed the whole typed string to it,
+so "shako, jmod" asked the forum for that whole phrase. `d2jspSearchChunks` now splits on commas first; `priceSearch`
+asks once per chunk and paints one section each, in the order he typed.
+GUARD: test_a_price_search_splits_items_and_clears_its_results (split cases + 2 red-proofs).
+
 ### REG-3524 - A TOP-TAB SWITCH LEFT THE CHARACTER BUILDER OPEN (v3891, #191)
 His rule: one unified close; Esc peels only the top layer; switching top tabs closes everything and gives a fresh start.
 MEASURED: `_cbEsc` already peels one layer (held item, drag, filters, Add mod, picker, stash, New build, then the builder);
