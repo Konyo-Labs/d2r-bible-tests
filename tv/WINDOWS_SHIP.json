@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3888",
+  "ver": "v3889",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3888: a version that touches nothing a lock reads keeps it open (#103)",
+  "note": "v3889: Game names in the game face, no phone page, zones graded by your items, tier posts, river guards first",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3889",
+    "date": "2026-11-09",
+    "items": [
+      "There is no phone page - the phone tray bar and every phone-width gate are gone (#132, REG-3489)",
+      "In-game names wear the game's own face on the board and the console - colours unchanged (#23, REG-3490)",
+      "The console keeps the signed-in d2jsp pages it reads, scrubbed, for the backfill (#151, REG-3491)",
+      "No layout rule applies under 700px on either page - 36 phone blocks removed (#132, REG-3492)",
+      "A build with no class says no class is chosen, not that its class has no table (REG-3493)",
+      "A reel that comes back under another id names both reels instead of blaming the shelf (REG-3494)",
+      "A terror zone is graded by the uniques you still need, greyed when none gain, and glows while up (#133, REG-3495)",
+      "The d2jsp reads find node where the one resolver finds it, not only on PATH (REG-3496)",
+      "A terror-zone card's hover reads 'open the run (the Cow King)', never 'open the the' (REG-3497)",
+      "A proof shard proves the locks' guards first, so a cut Windows set still opens the river (#103, REG-3498)",
+      "One saved build's character window is served as data for GrokBot's d2planner rounds (#28, REG-3499)",
+      "Each price tier card lists its own latest posts, linked - normal left, perfect right (#178, REG-3500)",
+      "The D2JSP tab's History is named for what it holds - Your posts and trades (REG-3501)",
+      "On Windows the d2jsp programs ride stdin - every parse failed at 32,767 characters (REG-3502)",
+      "A closed Fleet row is its name and its brief - the tally tag waits for the open row (REG-3503)"
+    ]
+  },
+  {
     "ver": "v3888",
     "date": "2026-11-09",
     "items": [
