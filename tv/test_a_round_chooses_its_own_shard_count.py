@@ -191,6 +191,38 @@ class TheRedMemoryTravels(unittest.TestCase):
             json.dump({"format": 2, "entries": entries}, fh)
         return p
 
+    def test_the_count_never_lands_in_the_checkout(self):
+        """the seed's count is a step output (GITHUB_OUTPUT, outside the checkout) - a path inside the tree is refused"""
+        import heart2 as H
+        inside = os.path.join(H.REPO, "tv", ".plan_shards_probe_%d" % os.getpid())
+        said = []
+        try:
+            H.plan_shards(fallback=22, output=inside, say=said.append)
+            self.assertFalse(os.path.exists(inside), "the shard count was written into the checkout")
+            self.assertTrue(any("refused" in x for x in said), said)
+        finally:
+            if os.path.exists(inside):
+                os.remove(inside)
+
+    def test_the_fan_in_writes_only_a_red_memory_file(self):
+        """the fan-in writes the seed's red file and nothing else - a wrong --red-out never overwrites another file"""
+        import heart2 as H
+        import proof_seed as PS
+        self.assertEqual(H._SEED_RED_NAME, PS.RED_NAME, "heart2 and the seed name the travelling red memory differently")
+        a = self._mem("proof-shard-1", {"k1": {"gate": "g", "proof": 0, "ids": ["x"], "at": 1000, "usedAt": 1000}})
+        victim = os.path.join(self.tmp, "seed", "prices.json")
+        os.makedirs(os.path.dirname(victim))
+        with io.open(victim, "w", encoding="utf-8") as fh:
+            fh.write("{}")
+        said = []
+        self.assertEqual(H.merge_red_files([a], victim, say=said.append), 0)
+        with io.open(victim, encoding="utf-8") as fh:
+            self.assertEqual(fh.read(), "{}", "the fan-in overwrote a file that is not a red memory")
+        self.assertTrue(any("refused" in x for x in said), said)
+        ok = os.path.join(self.tmp, "seed", PS.RED_NAME)
+        H.merge_red_files([a], ok, say=lambda *x, **k: None)
+        self.assertTrue(os.path.isfile(ok), "the seed's own red file was refused")
+
     def test_the_fan_in_merges_every_shards_memory_newest_learning_first(self):
         """* THE POINT - two shards learned the same sabotage at different times: the newer cases win"""
         import heart2 as H
@@ -317,6 +349,16 @@ class TheMacReadsTheSetsOwnSize(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3891 (#194, REG-3519) - the seed's shard count is appended to any path, the checkout included",
+     "file": "tv/heart2.py",
+     "find": "    if output and _inside(REPO, output):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "v3891 (#194, REG-3520) - the fan-in writes its merged memory over whatever --red-out names",
+     "file": "tv/heart2.py",
+     "find": "    if os.path.basename(out) not in (_SEED_RED_NAME, _RED_NAME):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
     {"why": "v3891 (#194) - Routine I asks for every shard past the heaviest file's floor",
      "file": "tv/routine_i_shards.py",
      "find": "    aim = max(float(target_s), floor * 1.05)\n",
