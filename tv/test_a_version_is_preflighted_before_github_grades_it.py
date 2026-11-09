@@ -255,6 +255,20 @@ class NoPreflightStillRunsTheVersionLaws(unittest.TestCase):
             with self.subTest(**{k: str(v) for k, v in kw.items()}):
                 self.assertEqual(self._vc(**kw)[0], want, "a red or a timed-out version law did not stop the ship")
 
+    def test_a_law_with_no_verdict_is_named_beside_a_red(self):
+        """v3888 (REG-3488, the second eye on v3887, reproduced) - a red returned at once and the timed-out law beside it
+        was neither said nor listed: the ship still refused, and the message read as if that law had passed"""
+        said = []
+
+        def _laws(names):
+            return [(n, {"test_the_bump_carries_its_changelog_entry": "red", "test_every_ship_lists_all_its_items": "time"}
+                     .get(n, "ok"), "tail of %s" % n) for n in names]
+        code, reds = PF.version_check(say=said.append, _laws=_laws, _anchors=lambda: (True, ""))
+        self.assertEqual(code, 1, "a red version law did not stop the ship")
+        self.assertIn("UNKNOWN TIME test_every_ship_lists_all_its_items", " ".join(reds), "the timed-out law left the red lines")
+        self.assertIn("also UNKNOWN (no verdict): TIME test_every_ship_lists_all_its_items", " ".join(said),
+                      "the message hides the law that did not reach a verdict")
+
     def _ship(self, vcode, preflight=False):
         import ship_when_green as SW
         sha, calls, asked = "a" * 40, [], []
@@ -284,6 +298,11 @@ class NoPreflightStillRunsTheVersionLaws(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3888 (REG-3488) - a timed-out version law beside a red is dropped from the message again",
+     "file": "tv/preflight.py",
+     "find": "        _un = (\"; also UNKNOWN (no verdict): %s\" % \", \".join(unknown)) if unknown else \"\"\n",
+     "replace": "        _un = \"\"\n",
+     "matches": 1},
     {"why": "v3887 (REG-3472) - --no-preflight skips the version-wide laws again (v3886 lost a GitHub round to a 120-char line)",
      "file": "tv/ship_when_green.py",
      "find": "        vcode = (version_check or _version_check)(version, say)\n",

@@ -472,8 +472,11 @@ def version_check(here=HERE, say=print, _laws=None, _anchors=None):
         elif v != "ok":
             unknown.append("%s %s" % (v.upper(), n))
     if reds:
-        say("version laws: RED - %s" % "; ".join(reds)[:600])
-        return 1, reds
+        # v3888 (REG-3488, the second eye on v3887) - a law that did not reach a verdict is NAMED beside the reds: the ship
+        # refuses on the red either way, and a timed-out law left out of the message reads as one that passed
+        _un = ("; also UNKNOWN (no verdict): %s" % ", ".join(unknown)) if unknown else ""
+        say("version laws: RED - %s%s" % ("; ".join(reds)[:600], _un))
+        return 1, reds + (["UNKNOWN " + u for u in unknown] if unknown else [])
     if unknown:
         say("version laws: UNKNOWN - %s did not reach a verdict" % ", ".join(unknown))
         return 2, []

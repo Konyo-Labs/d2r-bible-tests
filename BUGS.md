@@ -112,6 +112,13 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3488 - A VERSION LAW THAT TIMED OUT BESIDE A RED WAS LEFT OUT OF THE VERDICT (v3888, the second eye on v3887, reproduced)
+The grok-cli look at v3887 (11-09 03:30 IST, finding 2): preflight.version_check returned 1 on the first red and dropped every
+law that did not reach a verdict from both its message and its lines. The ship refused on the red either way, but the line
+read as if the timed-out law had passed. Now a law with no verdict is named beside the reds ("also UNKNOWN (no verdict): ...")
+and carried in the returned lines. Of the look's 7 findings, 1 reproduced (this), 2 refuted by the code (the mask encoder folds
+both sides; the full pre-flight runs the version laws), 1 is a re-check after Publish (no facets mask on the Fleet yet), 3 were
+the eye's own cannot-tell. GUARD: test_a_version_is_preflighted_before_github_grades_it (1 case, red-proof RED).
 ### REG-3487 - THE BEST RUNS HERO DREW A SUPER-UNIQUE AS A DEAD "OPEN THE BOSS CARD" BUTTON (v3888, the sweep of REG-3485)
 REG-3485 fixed the run ROW (GitHub caught it); sweeping every caller of the boss-only resolver found the hero above the rows:
 _bossHeroName drew any run as role=button "open the Normal Coldcrow boss card" whose click asked openBossDetail('su_coldcrow')

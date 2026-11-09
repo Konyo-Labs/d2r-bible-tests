@@ -10,7 +10,8 @@
       "A spec's load counter is swapped in whole - it read zero mid-write (REG-3481)",
       "A store the board never wrote is sent as a measured empty one - Dean's backups carry gameFound (REG-3482)",
       "An offline PC with no picker census is named 'not asked', never holds every PC's row UNKNOWN (REG-3486)",
-      "A Best run that is not a boss opens no boss card - the hero wears a super-unique's sprite (REG-3487)"
+      "A Best run that is not a boss opens no boss card - the hero wears a super-unique's sprite (REG-3487)",
+      "A version law with no verdict is named beside a red, never dropped from the line (REG-3488)"
     ]
   },
   {
