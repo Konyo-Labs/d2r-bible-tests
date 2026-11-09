@@ -72,6 +72,16 @@ class TestACardTileReadsTheChronicles(unittest.TestCase):
                          "that will read as a live feature to the next person")
         print("cover tile: absent; _covPct: absent")
 
+    def test_the_chronicles_box_counts_only_the_green_keyword(self):
+        """v3890 (#184, his 11-09: "FOUND should be chronicle found meaning the keyword in green for unidentified items before
+        being identified" - "found change to chronicles rename it"). The box is CHRONICLES and reads chroniclesFound; where the
+        run carries none it is '?', never sm.registered (every registered find - the uniques and sets beside it, again)."""
+        ui = _ui()
+        self.assertIn(" + _scell(_chronCell, 'chronicles', '', _chronTip)", ui)
+        self.assertNotIn("_scell(_foundN, 'found')", ui, "the FOUND box is back")
+        self.assertIn("var _chronN = (typeof sm.chroniclesFound === 'number'", ui)
+        self.assertIn("var _chronCell = (_chronN === null) ? '?'", ui, "an uncounted run reads as a number")
+
     def test_the_last_two_tiles_are_uniques_and_sets(self):
         row = _statrow()
         for lab in ("'uniques'", "'sets'"):
@@ -196,6 +206,11 @@ class TestACardTileReadsTheChronicles(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3890 (#184) - the CHRONICLES box shows every registered find again (the old FOUND, under the new name)",
+     "file": "tv/control_ui.html",
+     "find": "      var _chronCell = (_chronN === null) ? '?' : ",
+     "replace": "      var _chronCell = (_chronN === null) ? _foundN : ",
+     "matches": 1},
     {
         "why": "the dead COVER tile comes back — a figure that was absent on 409 of 425 cards and "
                "read 0% on 12 of the 16 that had one",

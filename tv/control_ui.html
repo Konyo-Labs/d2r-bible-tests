@@ -19746,8 +19746,20 @@ window._lockMark = function(isOpen, px, label){
         }
       }
       var _stashCell = (_stashN === null) ? '?' : (_stashN > 0 ? ('🎒 ' + _kpiFmt(_stashN)) : '—');
+      /* v3890 (#184, his 11-09: "FOUND should be chronicle found meaning the keyword in green for unidentified items before
+         being identified those reels and frames are chronicles found" - "found change to chronicles rename it") - THE BOX IS
+         CHRONICLES, AND IT COUNTS ONLY WHAT HIS RULE COUNTS. It showed sm.registered: every registered find, the same uniques
+         and sets as the two boxes beside it (GrokBot 6738919245: S4 FOUND 3, UNIQUES 3). A chronicle find is an unidentified
+         item whose tooltip showed the green chronicle keyword; the session carries that count as chroniclesFound, and where it
+         does not (the green-keyword reader has not counted this run - null in production, #184) the box says '?', never the
+         old registered number under the new name. [[unknown-stays-unknown]] */
+      var _chronN = (typeof sm.chroniclesFound === 'number' && isFinite(sm.chroniclesFound) && sm.chroniclesFound >= 0) ? sm.chroniclesFound : null;
+      var _chronCell = (_chronN === null) ? '?' : (_chronN > 0 ? ('\ud83d\udcdc ' + _kpiFmt(_chronN)) : '\u2014');
+      var _chronTip = (_chronN === null)
+        ? 'chronicle finds this run: unidentified items whose tooltip showed the green chronicle keyword. ? = the green-keyword reader has not counted this run yet'
+        : 'chronicle finds this run: ' + _chronN + ' unidentified item' + (_chronN === 1 ? '' : 's') + ' whose tooltip showed the green chronicle keyword';
       var statRow = '<div class="shc-stats">' + _scell(_stashCell, 'stash', '',
-                 'frames this run that the reader classified as a stash panel — the sum of every stash* bucket in kaiClasses, including the gem, rune and material tabs. \u26a0 it can over-count: kaiClasses carries no TOWN bucket, so a town frame lands here too (open defect #87). Reads for this run: ' + _kpiFmt(sm.reads || 0)) + _scell(_foundN, 'found')
+                 'frames this run that the reader classified as a stash panel — the sum of every stash* bucket in kaiClasses, including the gem, rune and material tabs. \u26a0 it can over-count: kaiClasses carries no TOWN bucket, so a town frame lands here too (open defect #87). Reads for this run: ' + _kpiFmt(sm.reads || 0)) + _scell(_chronCell, 'chronicles', '', _chronTip)
         + _scell(_ch ? (_ch.uniques > 0 ? ('🏆 ' + _ch.uniques) : '—') : '?', 'uniques',
                  _ch && _ch.uniques > 0 ? 'unique' : '')
         + _scell(_ch ? (_ch.sets > 0 ? ('🧩 ' + _ch.sets) : '—') : '?', 'sets',

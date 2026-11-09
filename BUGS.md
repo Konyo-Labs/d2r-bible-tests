@@ -112,6 +112,18 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3510 - THE SESSION CARD'S FOUND BOX RE-COUNTED THE UNIQUES AND SETS BESIDE IT; IT IS CHRONICLES NOW (v3890, #184, his call)
+His words 11-09: "FOUND should be chronicle found meaning the keyword in green for unidentified items before being identified
+those reels and frames are chronicles found" - "found change to chronicles rename it". GrokBot 6738919245 measured the box:
+sm.registered, every registered find - the same items as UNIQUES and SETS (S4: FOUND 3, UNIQUES 3, SETS -). Now the box is
+CHRONICLES and counts what his rule counts: unidentified items whose tooltip showed the green chronicle keyword (the session's
+chroniclesFound). Where a run carries no such count - the green-keyword reader produces none in production yet (null on every
+digest, GrokBot), #184's next build - the box reads '?' with that sentence on hover, never the old registered number under the
+new name. Rendered on a private console at 1120 and 1512: "CHRONICLES" fits its cell (no overflow). OWED (#184): the
+green-keyword reader itself, the regular shelf carrying chroniclesFound, STASH as item moves, UNIQUES/SETS from every drop
+seen, and shadow mode drawing the same four boxes.
+GUARD: test_a_card_tile_reads_the_chronicles::test_the_chronicles_box_counts_only_the_green_keyword (1 red-proof RED).
+
 ### REG-3509 - THE SHELF OPENED AS A 0x0 PANEL WITH NO X, AND ONLY A RELOAD GOT HIM OUT (v3890, #186, his live console + GrokBot)
 His live console logged four "The Shelf did not open - 0x0 - nothing is visible" refusals on 11-09 between 13:30 and 14:31
 (ui_faults.jsonl, shelf-door-refused - the record named no layer); the live-panel gate caught one on screen during the v3889
