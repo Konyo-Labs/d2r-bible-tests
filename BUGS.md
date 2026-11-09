@@ -123,6 +123,18 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3522 - ROUTINE I DEALT FROM ONE OLD SNAPSHOT ON A HAND-SET 10; IT NOW MEASURES ITSELF AND CHOOSES ITS COUNT (v3891, #194)
+MEASURED on v3889's Routine I: the fast shards ran 12.8, 13.2, 14.0, 14.8, 18.8, 19.4 and 20.0 min (the slow two 3-5) -
+dealt by tv/routine_i_costs.json, one snapshot of run 37139166700 (10-15, edited 10-19), on a fixed 10. Now the merge job
+measures every spec this round ran from the blob reports (--from-blobs --base: a spec not run keeps its last cost) and
+saves the table (actions/cache); the next round's stamp check restores it, chooses the fewest fast shards whose heaviest
+fits 8 min of tests at 2 workers (or the floor of the heaviest single file) - 14 on today's table - and hands that ONE
+table to every shard as an artifact (ROUTINE_I_COSTS), so no two shards deal from different tables. The matrix, the dealer's
+--of and the merge's blob floor read that one count. Caught before it shipped: two conditions written as hashFiles() over
+runner.temp, which hashFiles never reads - the table would never have been handed on or saved, silently.
+GUARD: test_a_round_chooses_its_own_shard_count (4 red-proofs) + test_a_version_stamp_is_not_a_page_change and
+test_shard_balance (re-anchored to the chosen count).
+
 ### REG-3521 - THE PLANNER'S WALL FACTOR WAS FITTED ONCE BY HAND; EVERY ROUND NOW RE-FITS IT (v3891, #194, his call)
 The plan turns modelled work into a shard's real prove time with SHARD_WALL_FACTOR 1.30, fitted on v3872's round and never
 again. Each shard's prove.log already prints its modelled wall and its real prove_seconds; the fan-in's --measure-costs now

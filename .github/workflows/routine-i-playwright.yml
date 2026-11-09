@@ -77,10 +77,37 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       run: ${{ steps.decide.outputs.run }}
+      # v3891 (#194) - the round's fast-shard count, chosen from the last round's MEASURED spec costs (fallback 10)
+      n: ${{ steps.count.outputs.n || '10' }}
+      list: ${{ steps.count.outputs.list || '[1,2,3,4,5,6,7,8,9,10]' }}
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 1
+      - name: Restore the spec costs the last round measured (v3891 #194)
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/ri-costs
+          key: routine-i-costs-${{ github.sha }}
+          restore-keys: routine-i-costs-
+      - name: Choose this round's fast-shard count (v3891 #194 - from measured costs, never a hand-set number)
+        # his 11-09: "optimize the #194 all the way and make sure it keeps getting faster self improve it". v3889's fast
+        # shards ran 12.8-20.0 min on a table measured once (10-15); the fewest shards whose heaviest fits 8 min of tests.
+        id: count
+        continue-on-error: true
+        run: |
+          export ROUTINE_I_COSTS="$RUNNER_TEMP/ri-costs/routine_i_costs.json"
+          if [ -f "$ROUTINE_I_COSTS" ]; then echo "measured=true" >> "$GITHUB_OUTPUT"; else unset ROUTINE_I_COSTS; fi
+          python3 tv/routine_i_shards.py --choose --fallback 10 --output "$GITHUB_OUTPUT"
+      - name: Hand every shard the one table (v3891 #194)
+        # a step output, never hashFiles(): hashFiles reads only the workspace, and this table lives in runner.temp
+        if: ${{ steps.count.outputs.measured == 'true' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v5
+        with:
+          name: routine-i-costs
+          path: ${{ runner.temp }}/ri-costs/routine_i_costs.json
+          retention-days: 3
       - name: Decide whether the suite has something new to grade
         id: decide
         env:
@@ -124,7 +151,7 @@ jobs:
           echo "::notice title=skipped: stamp-only::bible.html changed only its build stamp — the suite has nothing new to grade; the daily 09:00 run covers these bytes"
 
   test:
-    name: shard ${{ matrix.shard }}/10
+    name: shard ${{ matrix.shard }}/${{ needs.stamp-check.outputs.n }}
     needs: stamp-check
     if: ${{ !cancelled() && needs.stamp-check.outputs.run != 'false' }}
     runs-on: ubuntu-latest
@@ -151,10 +178,17 @@ jobs:
     timeout-minutes: 65
     strategy:
       fail-fast: false
+      # v3891 (#194) - the stamp check's count, every shard at once (Konyo-Labs runs 500 jobs at a time)
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        shard: ${{ fromJSON(needs.stamp-check.outputs.list) }}
     steps:
       - uses: actions/checkout@v5
+      - name: The spec costs this round deals from (v3891 #194 - one table for every shard)
+        continue-on-error: true
+        uses: actions/download-artifact@v5
+        with:
+          name: routine-i-costs
+          path: ${{ runner.temp }}/ri-costs
       - uses: actions/setup-node@v5
         with:
           node-version: 20
@@ -199,8 +233,11 @@ jobs:
       - name: Run shard
         env:
           SHARD: ${{ matrix.shard }}
+          N: ${{ needs.stamp-check.outputs.n }}
         run: |
-          if ! python3 tv/routine_i_shards.py --shard "$SHARD" --of 10 > shard-files.txt; then
+          export ROUTINE_I_COSTS="$RUNNER_TEMP/ri-costs/routine_i_costs.json"
+          [ -f "$ROUTINE_I_COSTS" ] || unset ROUTINE_I_COSTS
+          if ! python3 tv/routine_i_shards.py --shard "$SHARD" --of "$N" > shard-files.txt; then
             echo "::error::could not deal shard $SHARD"
             exit 1
           fi
@@ -306,15 +343,42 @@ jobs:
       - name: All shards reported?
         # v684 — a killed shard uploads nothing; merging the survivors used to LOOK complete
         # while hiding exactly the shard that failed. Missing blob = red merge, loudly.
+        env:
+          N: ${{ needs.stamp-check.outputs.n }}
         run: |
+          want=$(( N + 2 ))
           n=$(ls all-blobs/*.zip 2>/dev/null | wc -l)
-          echo "shard blobs present: $n / 12 (10 fast + 2 slow)"
-          if [ "$n" -lt 12 ]; then
-            echo "::error::only $n of 12 shard blob reports present — a shard died without reporting (check its job log)"
+          echo "shard blobs present: $n / $want ($N fast + 2 slow)"
+          if [ "$n" -lt "$want" ]; then
+            echo "::error::only $n of $want shard blob reports present — a shard died without reporting (check its job log)"
             exit 1
           fi
       - name: Merge into HTML report
         run: npx playwright merge-reports --reporter html ./all-blobs
+      - name: The table this round dealt from (v3891 #194)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/download-artifact@v5
+        with:
+          name: routine-i-costs
+          path: ${{ runner.temp }}/ri-prev
+      - name: Measure every spec this round ran, for the next round's deal (v3891 #194)
+        # the blob reports carry each test's every attempt; a spec this round did not run keeps its last cost (--base)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        id: measure
+        run: |
+          B="$RUNNER_TEMP/ri-prev/routine_i_costs.json"; [ -f "$B" ] || B=tv/routine_i_costs.json
+          python3 tv/routine_i_shards.py --from-blobs --base "$B" --out "$RUNNER_TEMP/ri-costs/routine_i_costs.json" all-blobs/*.zip \
+            && echo "wrote=true" >> "$GITHUB_OUTPUT"
+      - name: Save the measured costs (v3891 #194)
+        # a step output, never hashFiles(): hashFiles reads only the workspace, and this table lives in runner.temp
+        if: ${{ !cancelled() && steps.measure.outputs.wrote == 'true' }}
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/ri-costs
+          key: routine-i-costs-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Upload merged report
         uses: actions/upload-artifact@v5
         with:

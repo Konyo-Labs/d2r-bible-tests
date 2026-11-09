@@ -94,6 +94,64 @@ def load_costs(path=None):
     return dict((k, float(v)) for k, v in costs.items())
 
 
+#: v3891 (#194, his 11-09: "optimize the #194 all the way and make sure it keeps getting faster self improve it") - THE TABLE
+#: REFRESHES ITSELF. tv/routine_i_costs.json was one hand snapshot (run 37139166700, edited 10-19) and the fast shards ran
+#: 12.8-20.0 min on v3889's round. Each round's merge job now measures every spec from the blob reports and saves the table
+#: (actions/cache); the next round's first job restores it, chooses the shard count from it and hands that ONE file to
+#: every shard (ROUTINE_I_COSTS), so no two shards deal from different tables.
+ENV_COSTS = "ROUTINE_I_COSTS"
+#: playwright.config.ts's CI workers per shard: a shard's test wall is about its dealt seconds over this
+WORKERS = 2
+#: a fast shard's test wall may be at most this (setup - npm ci, the browser - comes on top, ~3 min)
+TARGET_TEST_S = 8 * 60
+MIN_SHARDS, MAX_SHARDS = 4, 60
+
+
+def measured_costs(env=None):
+    """The table every shard deals from: the committed one, with what the last round MEASURED (ROUTINE_I_COSTS) written
+    over it file by file. -> {path: seconds} | None (the committed table will not read and nothing was measured)."""
+    base = load_costs()
+    p = (env if env is not None else os.environ).get(ENV_COSTS) or ""
+    last = load_costs(p) if p and os.path.isfile(p) else None
+    if not last:
+        return base
+    out = dict(base or {})
+    out.update(last)
+    return out
+
+
+def choose_n(names, costs, target_s=TARGET_TEST_S, workers=WORKERS, n_min=MIN_SHARDS, n_max=MAX_SHARDS):
+    """v3891 (#194) - the fewest fast shards whose heaviest dealt load, over the workers, fits target_s; when one file alone
+    is over it (a file's tests run in one worker), the fewest that reach that floor. -> (n, why). Pure."""
+    names = list(names)
+    n_min, n_max = max(1, int(n_min)), max(1, int(n_max))
+    if not names:
+        return n_min, "no fast spec to deal"
+    w = dict((n, file_weight(n, names, costs)) for n in names)
+
+    def slowest(k):
+        load = [0.0] * k
+        for nm in sorted(names, key=lambda x: (-w[x], x)):
+            i = min(range(k), key=lambda j: load[j])
+            load[i] += w[nm]
+        return max(max(load) / float(workers), max(w.values()))
+    floor = max(w.values())
+    aim = max(float(target_s), floor * 1.05)
+    lo, hi = n_min, n_max
+    if slowest(lo) <= aim:
+        return lo, "%d shard(s) hold every fast spec inside the %d-s target" % (lo, target_s)
+    if slowest(hi) > aim:
+        return hi, "even %d shards model %d s - the round runs at %d" % (hi, slowest(hi), hi)
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        if slowest(mid) <= aim:
+            hi = mid
+        else:
+            lo = mid
+    return hi, ("%d shard(s) are the fewest whose heaviest models %d s (target %d s%s)"
+                % (hi, slowest(hi), target_s, ", the heaviest file's own %d s is the floor" % floor if floor > target_s else ""))
+
+
 def median_cost(names, costs):
     """The median measured cost of the files being dealt. 1.0 when nothing has been measured."""
     if not costs:
@@ -167,27 +225,70 @@ def costs_from_blob_zips(paths):
     return dict((k, round(v / 1000.0, 1)) for k, v in sorted(totals.items()))
 
 
+def _opt(argv, name):
+    """--name VALUE out of argv. -> (value | None, the rest)"""
+    if name in argv:
+        i = argv.index(name)
+        if i + 1 < len(argv):
+            return argv[i + 1], argv[:i] + argv[i + 2:]
+    return None, argv
+
+
 def main(argv):
     if argv and argv[0] == "--from-blobs":
-        if len(argv) < 2:
-            print("usage: routine_i_shards.py --from-blobs <report.zip> [...]")
+        rest = argv[1:]
+        out, rest = _opt(rest, "--out")      # v3891 (#194) - CI writes the round's table beside the cache, not the tree
+        base_p, rest = _opt(rest, "--base")  # v3891 (#194) - the table this round dealt from: files it did not run keep it
+        if not rest:
+            print("usage: routine_i_shards.py --from-blobs [--out FILE] [--base FILE] <report.zip> [...]")
             return 2
-        costs = costs_from_blob_zips(argv[1:])
+        costs = costs_from_blob_zips(rest)
         if not costs:
-            print("no spec durations in %s — nothing written" % (argv[1:],))
+            print("no spec durations in %s — nothing written" % (rest,))
             return 2
+        kept = 0
+        if base_p:
+            base = load_costs(base_p) or {}
+            kept = len(set(base) - set(costs))
+            costs = dict(base, **costs)
         rec = {
             "source": "Playwright blob reports, chromium project, sum of every attempt duration",
             "files": len(costs),
             "totalSeconds": round(sum(costs.values()), 1),
             "costs": costs,
         }
-        tmp = TABLE + ".tmp"
+        target = out or TABLE
+        os.makedirs(os.path.dirname(os.path.abspath(target)) or ".", exist_ok=True)
+        tmp = target + ".tmp"
         with io.open(tmp, "w", encoding="utf-8") as fh:
             json.dump(rec, fh, ensure_ascii=False, indent=1)
             fh.write("\n")
-        os.replace(tmp, TABLE)
-        print("wrote %s — %d files, %.0f s" % (TABLE, len(costs), rec["totalSeconds"]))
+        os.replace(tmp, target)
+        print("wrote %s — %d files, %.0f s%s" % (target, len(costs), rec["totalSeconds"],
+                                                (" (%d not run this round kept their last cost)" % kept) if kept else ""))
+        return 0
+    if argv and argv[0] == "--choose":
+        # v3891 (#194) - the round's fast-shard count: n= and list= for the workflow's matrix; never fails the run
+        rest = argv[1:]
+        t, rest = _opt(rest, "--target-s")
+        lo, rest = _opt(rest, "--min")
+        hi, rest = _opt(rest, "--max")
+        fb, rest = _opt(rest, "--fallback")
+        outp, rest = _opt(rest, "--output")
+        try:
+            specs = fast_specs()
+            if specs is None:
+                raise ValueError("the chromium testIgnore could not be read")
+            n, why = choose_n(specs, measured_costs() or {}, target_s=float(t) if t else TARGET_TEST_S,
+                              n_min=int(lo) if lo else MIN_SHARDS, n_max=int(hi) if hi else MAX_SHARDS)
+        except Exception as e:
+            n, why = int(fb or 10), "the count could not be chosen (%s) - the round runs at the fallback" % e
+        print("v3891 (#194) Routine I fast shards: %d - %s" % (n, why), file=sys.stderr)
+        lines = "n=%d\nlist=%s\n" % (n, json.dumps(list(range(1, n + 1)), separators=(",", ":")))
+        sys.stdout.write(lines)
+        if outp:
+            with io.open(outp, "a", encoding="utf-8") as fh:
+                fh.write(lines)
         return 0
     shard = of = None
     i = 0
@@ -217,7 +318,7 @@ def main(argv):
     if specs is None:
         print("could not read the chromium testIgnore from playwright.config.ts — refusing to guess a file list")
         return 2
-    costs = load_costs()
+    costs = measured_costs()     # v3891 (#194) - the last round's measured table over the committed one
     chosen = deal(specs, n, costs)[k - 1]
     if not chosen:
         print("shard %s of %s dealt no files" % (shard, of))
