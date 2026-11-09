@@ -172,15 +172,15 @@ class TheCharacterReadersCropsDoNotStrand(unittest.TestCase):
     def test_a_crop_dir_that_will_not_go_is_said_never_pretended(self):
         p = self._mk("tvd-cs-stuck", NOW)
         with mock.patch.object(cs.shutil, "rmtree", lambda *a, **k: None):
-            self.assertFalse(cs._drop_scratch(p, attempts=3, sleep=lambda s: None), "a dir that stayed read as gone")
-        self.assertTrue(cs._drop_scratch(p, attempts=3, sleep=lambda s: None))
+            self.assertFalse(cs._clean_scratch_dir(p, attempts=3, sleep=lambda s: None), "a dir that stayed read as gone")
+        self.assertTrue(cs._clean_scratch_dir(p, attempts=3, sleep=lambda s: None))
         self.assertFalse(os.path.exists(p))
 
     def test_only_the_consoles_own_tick_sweeps(self):
         src = inspect.getsource(cs.tick)
         self.assertIn("_console_tick = root is None", src)
         self.assertIn("_cs_gone = _sweep_stale_scratch(now=now_s) if _console_tick else None", src)
-        self.assertIn("if not _drop_scratch(work):", src, "the tick's own crop dir is removed silently again")
+        self.assertIn("if not _clean_scratch_dir(work):", src, "the tick's own crop dir is removed silently again")
 
 
 RED_PROOF = [

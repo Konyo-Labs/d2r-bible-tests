@@ -8063,10 +8063,11 @@ def prove(only=None, say=print, detail=None, push=False, stopped=None, stamp=Tru
     return results
 
 
-@_under_census_lock
 def _lock_catchers(name, f, index):
     """#103 item 3 (REG-3484) - the classes this PC's red memory saw CATCH each lock's sabotages in this gate.
-    -> {lock: [class]}. Read through _red_peek (the one read that marks nothing used); {} when nothing is known."""
+    -> {lock: [class]} ({} = the memory was read and holds none) | None (it could not be read: UNKNOWN - the lock's part
+    then holds the classes that guard it by their own text, and lock_parts records no extra catcher). Read through
+    _red_peek (the one read that marks nothing used)."""
     out = {}
     try:
         import self_arming as _sa
@@ -8080,7 +8081,7 @@ def _lock_catchers(name, f, index):
             for lk in lks:
                 out.setdefault(lk, set()).update(cl)
     except Exception:
-        return {}
+        return None
     return dict((k, sorted(v)) for k, v in out.items())
 
 
@@ -8120,6 +8121,7 @@ def _lock_shas_merge(prior, results, unmeasured, gs, shas, files):
     return dict((k, v) for k, v in ls.items() if isinstance(v, dict) and v.get("sha") and gs.get(k) == v.get("sha"))
 
 
+@_under_census_lock
 def _write_state(results, measured=None, stamp=True, unmeasured=None, trusted=None):
     """⚠ THE JOIN. Without this the whole loop is plumbing with no tap: `--prove` would measure
     beautifully and `_heart2_census()` in control_app.py would read an absent file and report

@@ -139,8 +139,20 @@ def emitted_js(dump_stores):
            if isinstance(n, ast.Assign) and any(getattr(t, "id", "") == "js" for t in n.targets)]
     if not asg:
         return None
-    return eval(compile(ast.Expression(asg[-1].value), "<board-js>", "eval"),
-                {"dump_stores": dump_stores, "sample": 0, "int": int})
+    expr = asg[-1].value
+    env = {"dump_stores": dump_stores, "sample": 0, "int": int}
+    # v3888 (REG-3482 moved the board's store reader into the module constant _BOARD_STORE_JS) - a module-level STRING
+    # constant the expression names is read from the same source, literally, never re-typed here: the string graded is
+    # still the string sent. Anything that is not a literal stays unbound, so eval fails loudly rather than guessing.
+    wanted = set(n.id for n in ast.walk(expr) if isinstance(n, ast.Name)) - set(env)
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 \
+                and getattr(node.targets[0], "id", None) in wanted:
+            try:
+                env[node.targets[0].id] = ast.literal_eval(node.value)
+            except ValueError:
+                pass
+    return eval(compile(ast.Expression(expr), "<board-js>", "eval"), env)
 
 
 class BoardReadJsHasNoFreeVariables(unittest.TestCase):

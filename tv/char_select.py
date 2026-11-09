@@ -1025,7 +1025,7 @@ CS_SCRATCH_PREFIX = "tvd-cs-"
 CS_SCRATCH_STALE_S = 3600
 
 
-def _drop_scratch(path, attempts=4, pause_s=0.25, sleep=time.sleep):
+def _clean_scratch_dir(path, attempts=4, pause_s=0.25, sleep=time.sleep):
     """Remove one crop dir. -> True when it is gone (retried: Windows cannot delete an open file)."""
     for k in range(max(1, int(attempts))):
         shutil.rmtree(path, ignore_errors=True)
@@ -1041,7 +1041,7 @@ def _sweep_stale_scratch(root=None, now=None, drop=None):
     (UNKNOWN, never "0 swept")."""
     root = root or tempfile.gettempdir()
     now = time.time() if now is None else float(now)
-    drop = drop or (lambda p: _drop_scratch(p, attempts=1))
+    drop = drop or (lambda p: _clean_scratch_dir(p, attempts=1))
     try:
         names = [n for n in os.listdir(root) if n.startswith(CS_SCRATCH_PREFIX)]
     except OSError:
@@ -1739,7 +1739,7 @@ def tick(root=None, stats=None, reader=None, now=None, budget_s=TICK_BUDGET_S, c
     finally:
         # the crops are throwaway; a nested dir must not strand it. v3888 (REG-3478): retried, and one that will not go is
         # COUNTED - rmtree(ignore_errors=True) failed silently on Windows while a reader still held a crop open
-        if not _drop_scratch(work):
+        if not _clean_scratch_dir(work):
             st["scratchLeft"] = int(st.get("scratchLeft") or 0) + 1
     st["frames"] = int(st.get("frames") or 0) + scanned
     st["lastTs"] = int(now_s * 1000)
