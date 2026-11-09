@@ -24,7 +24,7 @@ PAGE = os.path.join(os.path.dirname(HERE), "bible.html")
 START = "function renderDetail() {\n"
 NO_ITEM = '  if (!item) { panel.classList.remove("show"); return; }\n'
 RESET = "  window.__activeMaterial = null; window.__activeRune = null;\n  const adjusted = item.sources.map("
-ESCAPE = "    if ((window.__activeMaterial || window.__activeRune) && typeof window.closeDrop === 'function') {"
+ESCAPE = "  if ((window.__activeMaterial || window.__activeRune) && typeof window.closeDrop === 'function') {"
 
 
 def _src():

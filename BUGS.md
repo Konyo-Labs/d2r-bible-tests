@@ -123,6 +123,14 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3528 - ESCAPE CLOSED EVERY OPEN PAGE LAYER IN ONE PRESS (v3891, #191)
+His rule: stacked popups close one layer at a time on Esc (the same shape as `_cbEsc`). MEASURED: the
+page's Esc listener hid the keyboard-help modal, closed a latched material/rune card, AND collapsed the
+nav compass in the same press. `_tvEsc` now peels one layer (keyboard help, then the help sheet, then
+the latched drop card, then the nav compass) and the listener stops the event so a later handler cannot
+peel a second layer in the same press.
+GUARD: test_escape_peels_one_layer (2 red-proofs).
+
 ### REG-3527 - THE TERROR-ZONE CARD SETTLED ON DENSITY BECAUSE THE FIRST PAINT BEAT THE BOARD IFRAME (v3891, #133)
 REG-3495 already grades a zone by his missing items and leaves density with "your grail could not be asked,
 so this grade is density only" when the board cannot be asked. MEASURED: `_tzFetch` paints as soon as `/api/tz`

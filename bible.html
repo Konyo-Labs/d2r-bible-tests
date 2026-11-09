@@ -30894,18 +30894,38 @@ window.toggleKbdHelp = function() {
 };
 
 // Close kbd-help on Esc
+function _tvEsc(){
+  /* v3891 (#191, REG-3528) - peel ONE layer, same shape as _cbEsc */
+  const modal = document.getElementById('kbd-help-modal');
+  if (modal && modal.classList.contains('show')) {
+    modal.classList.remove('show');
+    return 'kbd-help';
+  }
+  var help = document.getElementById('help-modal');
+  if (help && help.classList.contains('show')) {
+    help.classList.remove('show');
+    return 'help';
+  }
+  // CC 2026-06-01 unify: ESC also dismisses an open material / rune ID card
+  if ((window.__activeMaterial || window.__activeRune) && typeof window.closeDrop === 'function') {
+    window.closeDrop();
+    return 'drop';
+  }
+  // v59: ESC also collapses an open nav compass panel
+  var nav = document.getElementById('nav-widget');
+  if (nav && nav.classList.contains('open')) {
+    nav.classList.remove('open');
+    return 'nav';
+  }
+  return '';
+}
+window._tvEsc = _tvEsc;
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    const modal = document.getElementById('kbd-help-modal');
-    if (modal && modal.classList.contains('show')) {
-      modal.classList.remove('show');
-    }
-    // CC 2026-06-01 unify: ESC also dismisses an open material / rune ID card
-    if ((window.__activeMaterial || window.__activeRune) && typeof window.closeDrop === 'function') {
-      window.closeDrop();
-    }
-    // v59: ESC also collapses an open nav compass panel
-    document.getElementById('nav-widget')?.classList.remove('open');
+  if (e.key !== 'Escape') return;
+  if (_tvEsc()) {
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    else if (e.stopPropagation) e.stopPropagation();
   }
 });
 
