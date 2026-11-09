@@ -82,12 +82,33 @@ class NoGateRendersAtAPhoneWidth(unittest.TestCase):
         self.assertEqual(bad, [], "a render target measures a phone again: %s" % bad)
         self.assertGreater(len(R.TARGETS), 20, "PREMISE: render_check has almost no targets")
 
+    def test_the_coverage_floors_name_no_phone(self):
+        """v3889 - stage 1 removed the 375 floors and left phone-bar's own 600-wide floor: the render gate refused
+        'the floor names this target and TARGETS no longer defines it'. A floor is a promise to measure."""
+        import json
+        with io.open(os.path.join(HERE, "render_coverage.json"), encoding="utf-8") as fh:
+            cov = json.load(fh)
+        bad = []
+        for sect in ("floor", "nodes"):
+            for name, ws in (cov.get(sect) or {}).items():
+                if "phone" in name:
+                    bad.append("%s %s" % (sect, name))
+                for w in (ws or {}):
+                    if int(str(w).split("x")[0]) < PHONE_MAX:
+                        bad.append("%s %s %s" % (sect, name, w))
+        self.assertEqual(bad, [], "the coverage ratchet still expects a phone surface: %s" % bad[:6])
+
     def test_no_phone_target_waits_to_come_back(self):
         names = list(R.TARGETS) + list(getattr(R, "PARKED_TARGETS", {}) or {})
         self.assertEqual([n for n in names if "phone" in n], [], "a phone target is listed or parked")
 
 
 RED_PROOF = [
+    {"why": "v3889 (#132) - the coverage ratchet expects the phone-bar surface again",
+     "file": "tv/render_coverage.json",
+     "find": "  \"floor\": {\n",
+     "replace": "  \"floor\": {\n    \"phone-bar\": {\"600x900\": 1},\n",
+     "matches": 1},
     {"why": "v3889 (#132) - render_check renders at 375 again",
      "file": "tv/render_check.py",
      "find": "WIDTHS = ((1440, 1000), (1280, 720), (1120, 900), (901, 900), (1120, 628))   # v3889 (#132) - no phone width",
