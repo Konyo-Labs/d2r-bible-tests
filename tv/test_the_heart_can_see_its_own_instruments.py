@@ -396,7 +396,13 @@ class TestHeartSeesItsInstruments(unittest.TestCase):
                   or ("if os.path.basename(p) != ENV_NAME:" in ctx)
                   # v3865 (REG-3194) - an import's progress file: only IMPORT_PROGRESS_NAME, only OUTSIDE the checkout
                   # (proof_release's scratch dir), refused otherwise; test_an_import_says_how_far_it_is drives it
-                  or ("if os.path.basename(self.path) != IMPORT_PROGRESS_NAME or _inside(REPO, self.path):" in ctx))
+                  or ("if os.path.basename(self.path) != IMPORT_PROGRESS_NAME or _inside(REPO, self.path):" in ctx)
+                  # v3891 (REG-3520) - the fan-in's merged red memory: only the seed's red file or heart2's own, refused
+                  # by name likewise; test_the_fan_in_writes_only_a_red_memory_file drives the refusal
+                  or ("if os.path.basename(out) not in (_SEED_RED_NAME, _RED_NAME):" in ctx)
+                  # v3891 (REG-3519) - the seed's shard count goes to the step output (GITHUB_OUTPUT, outside the
+                  # checkout), never into the tree; test_the_count_never_lands_in_the_checkout drives the refusal
+                  or ("if output and _inside(REPO, output):" in ctx))
             self.assertTrue(ok,
                             "heart2.py writes at line %d to something that is neither its state "
                             "file, its proposals file, nor a sandbox target:\n%s" % (ln, ctx))

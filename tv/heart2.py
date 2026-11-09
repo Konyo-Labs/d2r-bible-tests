@@ -3884,6 +3884,8 @@ try:
 except ImportError:                 # every machine but Windows
     _msvcrt = None
 _RED_NAME = ".heart2_red.json"
+#: v3891 (#194) - the seed's copy of the merged red memory (proof_seed.RED_NAME; the #194 law pins that the two agree)
+_SEED_RED_NAME = "heart2_red.json"
 #: R4 - Windows' stand-in for the directory flock: ONE empty lock file per store directory, shared by the cache and the
 #: red memory as the flock is, its first byte held with msvcrt.locking. Named under the cache's own prefix, so no checkout
 #: lists it (.gitignore tv/.heart2_cache*), no sandbox copies it (safe_copy's store prefixes), and the sweep of dead
@@ -4407,6 +4409,9 @@ def merge_red_files(files, out, say=print):
     gone = _red_evict(ent, RED_MEMORY_MAX)
     body = {"_why": "#42 lever 1 / R2 / v3891 #194 - which cases caught each sabotage, merged from a round's shards for the "
                     "next round's seed. Written only by tv/heart2.py.", "format": 2, "entries": ent}
+    if os.path.basename(out) not in (_SEED_RED_NAME, _RED_NAME):
+        say("  v3891 (#194) RED MEMORY: refused to write %s - only a %s or %s is this module's" % (out, _SEED_RED_NAME, _RED_NAME))
+        return 0
     try:
         os.makedirs(os.path.dirname(os.path.abspath(out)) or ".", exist_ok=True)
         with io.open(out + ".tmp", "w", encoding="utf-8") as fh:
@@ -6776,7 +6781,9 @@ def plan_shards(target_s=None, n_min=None, n_max=None, fallback=22, output=None,
             % (n, type(e).__name__, str(e)[:160]))
     lines = "n=%d\nlist=%s\n" % (n, json.dumps(list(range(1, n + 1)), separators=(",", ":")))
     sys.stdout.write(lines)
-    if output:
+    if output and _inside(REPO, output):
+        say("  v3891 (#194): refused to write the count into the checkout (%s) - only a step output outside it" % output)
+    elif output:
         try:
             with io.open(output, "a", encoding="utf-8") as fh:
                 fh.write(lines)

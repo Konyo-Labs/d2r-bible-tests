@@ -107,8 +107,8 @@ RED_PROOF = [
      "find": "    out = dict((str(g), int(v)) for g, v in (prev or {}).items() if isinstance(v, int) and not isinstance(v, bool) and v > 1)\n    on, cut = {}, set()\n",
      "replace": "    out = {}\n    on, cut = {}, set()\n", "matches": 1},
     {"why": "REG-3402 - the fan-in stops writing what it learned",
-     "file": "tv/proof_shard.py", "find": '"perProof": dict(sorted(got.items())), "split": dict(sorted(split.items()))}',
-     "replace": '"perProof": dict(sorted(got.items()))}', "matches": 1},
+     "file": "tv/proof_shard.py", "find": '"perProof": dict(sorted(got.items())), "split": dict(sorted(split.items())),',
+     "replace": '"perProof": dict(sorted(got.items())),', "matches": 1},
 ]
 
 

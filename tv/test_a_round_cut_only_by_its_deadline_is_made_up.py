@@ -511,7 +511,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3272 - the modelled wall drops the measured factor",
      "file": "tv/proof_shard.py",
-     "find": "        report.update(wall=[round(SHARD_WALL_FACTOR * max(t / lanes, w), 1) for t, w in zip(tot, brw)],\n",
+     "find": "        report.update(wall=[round(_wf * max(t / lanes, w), 1) for t, w in zip(tot, brw)],\n",
      "replace": "        report.update(wall=[round(max(t / lanes, w), 1) for t, w in zip(tot, brw)],\n",
      "matches": 1},
     {"why": "REG-3273 - an over-full plan reads as fitting",
