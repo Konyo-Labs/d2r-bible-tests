@@ -17,7 +17,13 @@ export const BOSS_CHIPS_TOTAL = 13;
 // calculator DB — so this tripwire keeps doing its job and the number it guards did not move.
 // v3859 — 320 → 318: Konyo ruled "Polaris Spear" is not a unique (removed) and "The Scourge" is
 // Stormlash's BASE (an alias of Stormlash, not a card). Both rows left ITEMS and the drop tables.
-export const CALC_ITEMS_TOTAL = 318;
+// v3890 — 318 → 317: Wilhelm's Pride is an Orphan's Call SET belt (ITEM_CODEX rarity set, green tip,
+// same qlvl 41 as Guillaume's Face / Whitstan's Guard / Magnus' Skin). Its drop rows had been
+// tagged tier:common without nc:1, so it sat in the calculator unique grid. REG-3506's unique-first
+// roll then made those cells diverge from adjustChance (the unique curve the integrity test uses).
+// The rows now carry tier:set and nc:1 like the other Orphan's Call pieces: still in ITEM_REGISTRY
+// (DROP_INDEX_TOTAL unchanged) and on the Sets tab, out of the curated calculator grid.
+export const CALC_ITEMS_TOTAL = 317;
 
 // Distinct item names across every boss dropTable — the MASTER drop index that
 // ITEM_REGISTRY is built from, and what the farm routing reads. This is a different
