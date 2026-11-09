@@ -30935,6 +30935,11 @@ function _tvEsc(){
     return 'item-detail';
   }
   // v59: ESC also collapses an open nav compass panel
+  var bossOv = document.getElementById('boss-detail-overlay');
+  if (bossOv && !bossOv.classList.contains('hidden') && typeof window.clearActiveBoss === 'function') {
+    window.clearActiveBoss({ noScroll: true });
+    return 'boss-detail';
+  }
   var nav = document.getElementById('nav-widget');
   if (nav && nav.classList.contains('open')) {
     nav.classList.remove('open');
@@ -30970,6 +30975,13 @@ function _tvOutsideCard(e){
       window.closeDrop();
       if (typeof clearActiveItem === 'function' && activeItem) clearActiveItem();
       return 'item-detail';
+    }
+  }
+  var bossOv = document.getElementById('boss-detail-overlay');
+  if (bossOv && !bossOv.classList.contains('hidden') && !bossOv.contains(t)) {
+    if (typeof window.clearActiveBoss === 'function') {
+      window.clearActiveBoss({ noScroll: true });
+      return 'boss-detail';
     }
   }
   return '';
