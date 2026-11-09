@@ -104,7 +104,8 @@ ENV_COSTS = "ROUTINE_I_COSTS"
 WORKERS = 2
 #: a fast shard's test wall may be at most this (setup - npm ci, the browser - comes on top, ~3 min)
 TARGET_TEST_S = 8 * 60
-MIN_SHARDS, MAX_SHARDS = 4, 60
+#: never wider than today's 10 fast shards (Pro: ~40 workers shared by every workflow of a round); a light round chooses fewer
+MIN_SHARDS, MAX_SHARDS = 4, 10
 
 
 def measured_costs(env=None):

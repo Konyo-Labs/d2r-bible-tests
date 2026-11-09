@@ -847,11 +847,13 @@ def cut_splits(bodies, prev=None):
 #: CHOOSES ITS OWN SHARD COUNT. A shard's prove step should model at most this many seconds; the seed job asks choose_n()
 #: for the fewest shards whose slowest one fits, over the SAME inputs every shard plans from (the commit's proofs, the
 #: carried prices, the served list). MEASURED on v3889's round (the old account): the slowest proof shard ran 43 min of a
-#: 22-shard set while workers were never the wait; Konyo-Labs runs 500 jobs at once, so the lever is more, shorter shards.
+#: 22-shard set while workers were never the wait. The repo is on KonyoDigital's Pro plan (~40 jobs at once, shared by every
+#: workflow of a round - Konyo-Labs, tried 11-09, ran only 10), so the lever is a BALANCED count, never a wider one.
 TARGET_PROVE_S = 12 * 60
 #: the bounds a chosen count stays inside: never fewer than the old floor of a cold round's useful spread, never more than
-#: leaves room beside the round's other jobs (Windows set, Playwright, agent suites) under the org's 500 at once
-MIN_SHARDS, MAX_SHARDS = 8, 160
+#: today's 22 (his call 11-09: no workflow goes wider than it was - the Windows set, Playwright and the agent suites share
+#: the same ~40 workers); a light round chooses fewer
+MIN_SHARDS, MAX_SHARDS = 8, 22
 #: past the floor (the costliest single chunk) a count within 5% of it is as fast as the round can be
 FLOOR_SLACK = 1.05
 

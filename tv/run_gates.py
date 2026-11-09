@@ -13326,7 +13326,7 @@ GATES = [
     Gate("test_a_round_chooses_its_own_shard_count",
          [sys.executable, os.path.join(HERE, "test_a_round_chooses_its_own_shard_count.py")], 300,
          needs_app=False,
-         why="v3891 #194 (his 11-09: 'optimize the #194 all the way and make sure it keeps getting faster self improve it'; Konyo-Labs runs 500 jobs at once, v3889's slowest proof shard ran 43 min of a hand-set 22) - the seed job chooses the round's shard count with the plan's own model (the fewest whose slowest prove fits PROOF_TARGET_S, or the floor its costliest chunk sets - cold, 86 reach the 1,064-s floor where 160 would only spend workers); the red memory travels between rounds (each shard starts from the last round's, the fan-in merges every shard's newest-first, the seed carries it), so a re-run test_control sabotage asks only its cases; the Mac sizes the set from the shards' own manifests"),
+         why="v3891 #194 (his 11-09: 'optimize the #194 all the way and make sure it keeps getting faster self improve it'; on Pro's ~40 shared workers no workflow goes wider than today, v3889's slowest proof shard ran 43 min of a hand-set 22) - the seed job chooses the round's shard count with the plan's own model (the fewest whose slowest prove fits PROOF_TARGET_S, or the floor its costliest chunk sets - cold, 86 reach the 1,064-s floor where 160 would only spend workers); the red memory travels between rounds (each shard starts from the last round's, the fan-in merges every shard's newest-first, the seed carries it), so a re-run test_control sabotage asks only its cases; the Mac sizes the set from the shards' own manifests"),
     Gate("test_a_session_starts_at_the_games_own_door",
          [sys.executable, os.path.join(HERE, "test_a_session_starts_at_the_games_own_door.py")], 300,
          needs_app=False,
@@ -15114,7 +15114,8 @@ def _cost_table():
 _ENV_GATE_COSTS = "GATE_COSTS"
 #: v3891 (#194) - a CI agent-suite shard's gate time may be at most this; its setup (checkout, Chromium) comes on top
 SHARD_TARGET_S = 4 * 60
-SHARD_MIN, SHARD_MAX = 3, 40
+#: never wider than today's 5 slices (Pro: ~40 workers shared by every workflow of a round); a light round chooses fewer
+SHARD_MIN, SHARD_MAX = 3, 5
 
 
 def choose_shards(target_s=SHARD_TARGET_S, n_min=SHARD_MIN, n_max=SHARD_MAX, gates=None):

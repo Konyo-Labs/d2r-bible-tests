@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """v3890 (#194, REG-3518) - EVERY ROUND RECORDS HOW FAST IT RAN, SO "IS IT GETTING FASTER" IS A NUMBER.
 
-His words, 11-09 (the repo moved to Konyo-Labs, 500 jobs at once): "optimize the #194 all the way and make sure it keeps
+His words, 11-09 (the repo went to Konyo-Labs and came back to Pro the same evening): "optimize the #194 all the way and make sure it keeps
 getting faster self improve it". The rounds now choose their own shard counts and carry what they learned (REG-3519..3522);
 this is the ledger that says whether that WORKS. When GitHub vouches for a round, the ship measures every workflow that
 ran on the commit from GitHub's own job records - how long jobs waited for a worker, how many ran, the slowest job, and the

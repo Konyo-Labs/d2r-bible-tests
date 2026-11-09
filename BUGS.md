@@ -153,8 +153,9 @@ newest learning wins a key; _red_evict: the 20,000 cap) into the next seed, and 
 GUARD: test_a_round_chooses_its_own_shard_count (4 red-proofs).
 
 ### REG-3519 - THE PROOF ROUND'S SHARD COUNT WAS HAND-SET; THE SEED JOB NOW CHOOSES IT EVERY ROUND (v3891, #194, his call)
-His words 11-09: "optimize the #194 all the way and make sure it keeps getting faster self improve it" (the repo moved to
-Konyo-Labs: 500 jobs at once). MEASURED on v3889's round: workers were not the wait (Routine I <= 1 min, Publish up to 15);
+His words 11-09: "optimize the #194 all the way and make sure it keeps getting faster self improve it" (the repo went to
+Konyo-Labs and came back to Pro, ~40 workers shared by the round, so every count is capped at today's: proof 22, Routine I
+fast 10, agent slices 5 - a light round chooses fewer). MEASURED on v3889's round: workers were not the wait (Routine I <= 1 min, Publish up to 15);
 the slowest of a hand-set 22 proof shards ran 43 min. Now `heart2 --plan-shards` (the seed job) cuts the plan with the
 model every shard plans from - the commit's proofs, the seed's served list, the carried prices - and proof_shard.choose_n
 takes the fewest shards whose slowest modelled prove fits PROOF_TARGET_S (12 min), or, when one chunk alone is over it,
@@ -163,13 +164,6 @@ two clean runs) where 160 would only spend workers. The matrix, max-parallel, ev
 read that one output; PROOF_SHARDS "22" is only the fallback when the plan cannot be cut (never a red round). The Mac's
 import sizes the set from the shards' own manifests (proof_keys_mac.shard_count_of).
 GUARD: test_a_round_chooses_its_own_shard_count + test_the_shard_workflow_proves_every_proof_once (re-anchored).
-
-### REG-3518 - THE REPO MOVED TO Konyo-Labs: EVERY LIVE ADDRESS FOLLOWS IT (v3890, his call)
-His order: move KonyoDigital/d2r-bible-tests to the Konyo-Labs organization once v3889 is live (backup taken first). The
-live addresses move with it: tv/ci_verdict.py, ci_watch.py, handoff.py (the #230/#231 wire), proof_release.py (the
-proof-bank asset), task_truth.py, install-tvd.ps1 / .sh (a fresh PC's clone), two laws, the repo's human-eyes skill and
-GAME_RULES. History (old handoffs, TASKS.md's issue links, launch reports) keeps the old address: GitHub redirects it.
-GUARD: test_every_pc_imports_githubs_proofs (the asset URL) + the 7 laws that read the slug, all green.
 
 ### REG-3517 - THE FLEET ROW'S LAMP SAID "ONLINE" FOR A RECORDER WHOSE CONSOLE WAS DOWN, AND SAID NOTHING ON HOVER (v3890, #189)
 His words 11-09: "i do want a lamp to to know that it is connected and alive behind the scenes regardless yes" - "a separate eye
