@@ -112,6 +112,24 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3498 - THE WINDOWS PROOF SET WAS CUT AT ITS DEADLINE AND THE CUT FELL ON THE RIVER LOCKS' GUARDS: BOTH ALTS' RIVERS STUCK (v3889, #103/#44)
+His ask 11-08: "for fleet the river should be flowing for all pcs". v3888 (REG-3478-3482) narrowed each lock to its own
+guards' proofs; his Mac's locks all opened, and the live Fleet at 09:40 still read both ALTs "BLOCKED river stuck". MEASURED
+on the work ALT 11-09 (SSH, read-only): asked fresh, frame.release, vault.sweep_start and vault.apply are shut - "6 of its own
+guard law(s) changed or are unproven" - and a dry trust pass over its bank served 0 of the 11 owed guards ("proof 0 has no
+PROVEN banked over these bytes"). Its v3888 import was GitHub's Windows set, and that set was PARTIAL: cut {win32: 3496} -
+3,496 proofs cut at the 16 shards' 55-minute deadline, the make-up round too (shard 15: test_a_pruned_frame_says_it_was_pruned
+"26 proof(s) cut at their bound"). Its own prover could not fill the gap: beside the Boosteroid stream at 79% busy with 1.1 GB
+free it wants a small slice, and a small slice never starves its way in - it had not started for 14 hours (a first guess, a
+stale lock reading held while he plays, was refuted by asking the locks fresh). A deadline cuts what has not STARTED, so the
+order decides what a partial set holds: each shard now proves the gates that guard a lock first (315 of 1,713, by
+self_arming._lock_guard - the rule the PC's prover ranks by, #103-C), the rest after, each group in the run's own order; the
+order dict follows the same order. The plan - which proofs are a shard's - is unchanged, so the fan-in's one-plan check holds.
+Not measured here: that v3889's Windows set holds every lock guard (its round will say), and the ALTs' locks opening on the
+v3889 import - both owed at the rollout. NOT this item: the small slice that never starves in beside a stream (his memory
+floor, REG-1502) and more Windows shards (a cost). GUARD: test_a_shard_proves_the_locks_guards_first (real gate names, the
+real rule; 2 red-proofs RED).
+
 ### REG-3497 - SEVEN TERROR-ZONE CARDS' HOVERS READ "OPEN THE THE ... RUN" (v3889, seen in #133's own render)
 The console's TZ card title for a zone with a run was ' — open the ' + why + ' run', and TZ_NOTABLE's reasons are phrases:
 Moo Moo Farm read "open the the Cow King run", Travincal "open the the Council run", Worldstone Keep "open the the Baal run run",

@@ -6650,6 +6650,31 @@ def _push_browser(have, unk=None):
         n for n, _f, p in have if _declares_widths(p))
 
 
+def _guards_first(gates, have, say=None):
+    """v3889 (#103/#44, the river on every PC) - a shard proves the laws that guard a LOCK first, the rest after, each group
+    in the run's own order. -> gates, reordered (unchanged when the locks cannot be asked)
+
+    MEASURED 11-09 on the work ALT (SSH, read-only): its v3888 import was GitHub's Windows set, PARTIAL - 3,496 proofs cut
+    at the shards' 55-minute deadline, the make-up round too (shard 15: test_a_pruned_frame_says_it_was_pruned "26
+    proof(s) cut at their bound") - so frame.release, vault.sweep_start and vault.apply stayed shut on every Windows PC
+    ("6 of its own guard law(s) changed or are unproven"), and its own prover, starved beside the Boosteroid stream, could
+    not fill them. A deadline cuts what has not STARTED, so the order decides what a partial set holds: 315 of 1,713 gates
+    guard a lock (self_arming's own rule, _lock_guard - the one the PC's prover ranks by, #103-C), and they go first.
+    The plan (which proofs are this shard's) is unchanged, so the fan-in's one-plan check still holds."""
+    try:
+        import self_arming as _sa
+        files = dict((n, f) for n, f, _p in have)
+        guard = set(n for n in gates for lk in _sa.LOCK_DOORS if _sa._lock_guard(n, lk, files))
+    except Exception as _e:
+        if say:
+            say("  v3889 GUARDS FIRST: the locks could not be asked (%s) - this shard keeps the run's order" % type(_e).__name__)
+        return gates
+    out = [g for g in gates if g in guard] + [g for g in gates if g not in guard]
+    if say:
+        say("  v3889 GUARDS FIRST: %d of this shard's %d gate(s) guard a lock and are proved first" % (len(guard), len(gates)))
+    return out
+
+
 def _shard_cut(have, order, gates, say):
     """REG-2585 — a push run cut down to its proof shard. -> (order, gates); unchanged when no shard is set.
 
@@ -6666,6 +6691,8 @@ def _shard_cut(have, order, gates, say):
                           served=_SHARD.get("served"), report=_rep)     # REG-3211 - the owed work decides, not the names
     own = _PS.mine(assignment, k)
     order2, gates2 = _PS.restrict_order(order, gates, own)
+    gates2 = _guards_first(gates2, have, say)    # v3889 (#103/#44) - a deadline cut never lands on a lock's guard first
+    order2 = dict((g, order2[g]) for g in gates2)   # the tamper wave walks this dict: the same order as the clean wave
     _SHARD["plan"] = _PS.plan_digest(have, n, assignment)
     _SHARD["own"] = own
     say("  REG-2585 PROOF SHARD %d/%d: %d of %d proof(s) in %d gate(s) are this shard's (plan %s); the rest are the "
