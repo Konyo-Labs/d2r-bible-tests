@@ -222,7 +222,8 @@ notable zone keeps PRIME on its own reason; a board that cannot be asked keeps t
 (UNKNOWN about his items, never a guess); a LIVE zone graded GOOD/PRIME by his items glows gold (reduced motion: a still glow) -
 MEASURED by computed style: my first glow rule lost the cascade to the live cards' green tzAlive breath (equal specificity,
 declared later), so it ran tzAlive like every live card; the glow now outranks it and follows it. The
-card carries one short line ("Crown of Ages · 1.1× fewer runs · +18" / "no missing item gains here"), the hover the
+card carries one short line ("Crown of Ages · 1.1× fewer runs · +18"; a THIN card none - its reason rides the hover, so the
+console demo J9's why / no-why slots still differ), the hover the
 items and their runs. A place's area reaches the console's zone through _QW_ZONE_OF (the Quick wins art map - one source; my
 first cut kept a second copy and the anchor census caught it by a red-proof matching twice), Lower Kurast excepted (it wears
 the Kurast art and is no terror zone). Measured on an empty world (397 uniques missing): Far Oasis THIN, Catacombs PRIME (Tyrael's

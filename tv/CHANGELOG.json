@@ -4,7 +4,8 @@
     "date": "2026-11-09",
     "items": [
       "There is no phone page - the phone tray bar and every phone-width gate are gone (#132, REG-3489)",
-      "In-game names wear the game's own face on the board and the console - colours unchanged (#23, REG-3490)",
+      "In-game names on the board wear the game's own face - item, zone, monster and boss names (#23, REG-3490)",
+      "The console's zone, item and boss names wear the game's face too - colours unchanged (#23, REG-3490)",
       "The console keeps the signed-in d2jsp pages it reads, scrubbed, for the backfill (#151, REG-3491)",
       "No layout rule applies under 700px on either page - 36 phone blocks removed (#132, REG-3492)",
       "A build with no class says no class is chosen, not that its class has no table (REG-3493)",

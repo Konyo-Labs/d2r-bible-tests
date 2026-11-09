@@ -25,8 +25,9 @@ if HERE not in sys.path:
 import js_strip  # noqa: E402
 
 ROOT = os.path.dirname(HERE)
-#: the private copies: 184 on 11-08 (v3886), 181 on 11-09 (v3887 - the Fleet-row law moved to js_strip); MAY ONLY FALL - lower it when a law moves to js_strip
-CEILING = 181
+#: the private copies: 184 on 11-08 (v3886), 181 on 11-09 (v3887 - the Fleet-row law moved to js_strip), 179 (v3889 - three new laws
+#: written with their own, moved to js_strip by this law's refusal); MAY ONLY FALL - lower it when a law moves to js_strip
+CEILING = 179
 #: a block-comment regex a law writes for itself: "/\*" then a bounded or lazy body, or a lookahead
 COPY = re.compile(r"/\\\*(?:\.\{0,|\.\*\?|\[\\s\\S\]\*\?|\(\?:\.\|\\n\)\*\?|\(\?!)")
 ID = r"\bid\s*=\s*[\\]?['\"]([\w-]+)"

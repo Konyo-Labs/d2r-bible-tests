@@ -21,6 +21,7 @@ try:
     _enable()
 except Exception:
     pass
+import js_strip  # noqa: E402  (one comment stripper for the laws - test_one_comment_stripper_for_the_laws)
 
 TEMPLATE = "(_boss ? ' — open the run (' + escC((t.byItems ? t.densWhy : t.why) || _boss) + ')' : ' — open the full tracker')"
 
@@ -34,7 +35,7 @@ def _notable(ui):
     head = "    var TZ_NOTABLE = {"
     assert ui.count(head) == 1, "PREMISE: TZ_NOTABLE moved or doubled"
     i = ui.index(head)
-    blk = re.sub(r"/\*.{0,4000}?\*/", "", ui[i:ui.index("};", i)], flags=re.S)
+    blk = js_strip.strip_js_comments(ui[i:ui.index("};", i)])
     return dict(re.findall(r"""['"]([^'"]+)['"]\s*:\s*['"]([^'"]+)['"]""", blk))
 
 

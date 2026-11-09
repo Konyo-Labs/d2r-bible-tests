@@ -32446,8 +32446,9 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
       /* the card holds ONE short line (the item and how much sooner); the hover holds the sentence and the runs */
       o.why = h ? (h.n + ' · ' + (h.x == null ? 'only here' : (h.x >= 10 ? Math.round(h.x) : (Math.round(h.x * 10) / 10)) + '× fewer runs')
                    + (o.count > 1 ? ' · +' + (o.count - 1) : ''))
-               : 'no missing item gains here';
-      o.whyLong = h ? '' : String(g.why || '');
+               : '';   /* v3889 - a THIN card says THIN and goes grey; WHY it is thin rides its hover (whyLong). Only a card worth
+                          something carries a reason line, so LIVE NOW and UP NEXT still differ in height when he would see it */
+      o.whyLong = h ? '' : String(g.why || 'none of your missing items drops sooner here');
       o.score = h ? (h.x == null ? 99 : h.x) : 0;
       return o;
     };

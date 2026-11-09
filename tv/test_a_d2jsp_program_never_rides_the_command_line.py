@@ -69,7 +69,7 @@ class TheProgramNeverRidesTheCommandLine(unittest.TestCase):
     def test_the_cap_is_real_here(self):
         """BASELINE: the simulated cap refuses a program on argv - so the cases above can tell the two ways apart"""
         with self.assertRaises(FileNotFoundError):
-            D.subprocess.run(["node", "-e", D._read_quote_parser()], capture_output=True)
+            _windows_run(["prog", "x" * (CAP + 1)])   # an over-cap argument, no program handed to anything
 
 
 RED_PROOF = [

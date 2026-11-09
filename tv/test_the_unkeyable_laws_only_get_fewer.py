@@ -92,6 +92,8 @@ def _lists_itself(fn):
 # gitignored name, must be in EXPOSED with the reason it is safe - so a new law that counts every entry is named here
 # instead of slipping into the floor.
 EXPOSED = {
+    "test_a_d2jsp_page_is_kept_for_the_backfill.py": "lists only the mkdtemp it made for the case (D2JSP_PAGES_DIR points the "
+                                                      "page store there), to count the pages it kept (REG-3491)",
     "test_the_heart_floor_rises_with_the_map.py": "lists only the mkdtemp scratch it made for the case, to prove a failed "
                                                   "render leaves no .tmp- file behind (REG-3216)",
     "test_what_keeps_growing_is_salvaged_then_pruned.py": "lists the salvage folder its own fixture lane wrote, inside the "

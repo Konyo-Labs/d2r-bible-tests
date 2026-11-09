@@ -24,6 +24,7 @@ try:
     _enable()
 except Exception:
     pass
+import js_strip  # noqa: E402  (one comment stripper for the laws - test_one_comment_stripper_for_the_laws)
 
 HEAD = "    if (_wantSid && j.sessionId && String(j.sessionId) !== _wantSid){\n"
 
@@ -34,7 +35,7 @@ def _branch():
     assert ui.count(HEAD) == 1, "PREMISE: the theatre's wrong-reel branch moved or doubled (%d)" % ui.count(HEAD)
     i = ui.index(HEAD)
     blk = ui[i:ui.index("TH.beats = []; return;", i)]
-    blk = re.sub(r"/\*.{0,3000}?\*/", "", blk, flags=re.S)                     # code, not the comment that explains it
+    blk = js_strip.strip_js_comments(blk)                                      # code, not the comment that explains it
     return "\n".join(l for l in blk.split("\n") if not l.strip().startswith("//"))
 
 

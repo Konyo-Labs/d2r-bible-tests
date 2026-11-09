@@ -33,6 +33,7 @@ try:
     _enable()
 except Exception:
     pass
+import js_strip  # noqa: E402  (one comment stripper for the laws - test_one_comment_stripper_for_the_laws)
 
 #: the elements that hold a GAME NAME (item, zone, terror zone, monster, boss, runeword, set) - the theme's whole reach
 GAME_NAMES = (".qw-name", ".f-rwbig", ".boss-name", ".fh-boss", ".gic-name", ".item-name", ".ct-name", ".tz-zone-name",
@@ -55,7 +56,7 @@ def _block(src):
 
 
 def _code(css):
-    return re.sub(r"/\*.{0,4000}?\*/", "", css, flags=re.S)
+    return js_strip.strip_js_comments(css)
 
 
 class GameNamesWearTheGameFace(unittest.TestCase):

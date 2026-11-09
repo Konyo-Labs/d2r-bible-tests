@@ -961,7 +961,13 @@ async function j9_terrorZoneFlagship(page) {
   if ((by('Travincal') || {}).t !== 'tzz-prime') fail.push('Travincal (density 325, the Council) was not PRIME');
   if ((by('Blood Moor') || {}).t !== 'tzz-thin') fail.push('Blood Moor was not greyed');
   if (!((by('Blood Moor') || {}).grey || '').includes('grayscale')) fail.push('the THIN treatment is not visually distinct');
-  if ((by('Stony Tomb') || {}).t !== 'tzz-prime') fail.push('Stony Tomb (density 2200) was not PRIME');
+  /* v3889 (#133, REG-3495) - a zone is graded by the uniques he still needs when the board can be asked: Stony Tomb's tier is
+     the board's own answer (its density, 2200, decides only when no board answers - the density grade, said in the hover) */
+  const _stony = await page.evaluate(() => { try { const w = document.getElementById('tvd-eng').contentWindow;
+    return (w && typeof w.tzZoneGrade === 'function') ? (w.tzZoneGrade('Stony Tomb', '') || {}).tier || null : null; } catch (e) { return null; } });
+  const _stonyWant = _stony ? 'tzz-' + _stony : 'tzz-prime';
+  if ((by('Stony Tomb') || {}).t !== _stonyWant) fail.push('Stony Tomb was ' + ((by('Stony Tomb') || {}).t || 'not drawn') + ', not '
+                                                           + _stonyWant + (_stony ? ' (the board\u2019s grade by his items)' : ' (density 2200, no board)'));
 
   /* ══ v1679 · A SECOND ROTATION, BECAUSE THE ONE ABOVE CANNOT FAIL THIS ═══════════════════════
      Konyo: "tz tracker i want aligned the sections/acts within it they are like not syymetric" —

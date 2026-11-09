@@ -44,7 +44,7 @@ class _Dir(unittest.TestCase):
         self.addCleanup(p.stop)
 
     def kept(self):
-        return sorted(f for f in os.listdir(self.d) if f.endswith(".html"))
+        return sorted(os.listdir(self.d))   # the dir is this case's own temp dir: everything in it is a kept page
 
 
 class APageIsKeptScrubbed(_Dir):
