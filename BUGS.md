@@ -112,6 +112,20 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3502 - ON WINDOWS EVERY d2jsp PARSE FAILED BEFORE NODE STARTED: THE PROGRAM RODE THE COMMAND LINE (v3889, #107/#30)
+Found chasing REG-3496 (both ALTs' daily Shako check "unread"). GitHub's Windows proof run on v3888 filed six d2jsp laws ALREADY RED
+untampered (test_a_forum_redirect_to_its_results_is_followed, test_a_price_check_shows_the_known_price_first, the desk, the
+roll-column and entities readers, the tier cards). MEASURED on the work ALT 11-09 (SSH, read-only): `node -e <program>` with the
+quote block's 44,935-character program raised "[WinError 206] The filename or extension is too long" - Windows caps a command
+line at 32,767 characters - and the same program on stdin answered "shako". d2jsp_chrome ran the quote parser, the search words
+and the item resolver that way and caught the error as an OSError: on every Windows PC each fetched page read "unread", each
+search asked the item's plain name, the resolver answered None. Now all three go through _node_run: the program alone on stdin;
+with a page to read (the page is stdin) the program in a temp file, removed after - run on the ALT: stdin "shako", a 60 KB page
+parsed ("no prices" for a page with none, not "unread"), no temp file left. The rest of tv/ already keeps programs off argv
+(vault_page_node, #242); a sweep found no other node program on a command line. Owed at the rollout: the ALTs' next daily check
+reading, and the six laws proving on GitHub's Windows run. GUARD: test_a_d2jsp_program_never_rides_the_command_line (the
+Windows cap simulated on subprocess.run, real node; a baseline that the cap refuses argv; 2 red-proofs RED).
+
 ### REG-3501 - THE D2JSP TAB'S "HISTORY" READ LIKE A SEARCH HISTORY; IT IS HIS OWN POSTS AND TRADES (v3889, #178, his ask)
 His words 11-09 ~10:10 with the tab on screen ("History (0) - No post or trade yet."): "history is for the searches we do? or is it
 related to the trades that i post? if so rename the name". It is REG-3094's one list of what the desk posted and what left the

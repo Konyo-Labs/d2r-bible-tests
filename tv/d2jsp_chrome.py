@@ -1520,6 +1520,32 @@ def _node_bin():
         return shutil.which("node")
 
 
+def _node_run(node, prog, stdin_text=None, timeout=20):
+    """v3889 (REG-3502) - run a node program WITHOUT putting it on the command line. -> CompletedProcess (raises as run does)
+
+    MEASURED on the work ALT 11-09 (SSH, read-only): `node -e <program>` with the quote block's 44,935-character program
+    raised "[WinError 206] The filename or extension is too long" - Windows caps a command line at 32,767 characters - and
+    the same program on stdin answered "shako". Each of the three calls below caught that as an OSError, so on every Windows
+    PC each fetched page was "unread", each search asked the item's plain name and the item resolver answered None; GitHub's
+    Windows proof run filed six d2jsp laws red with it. A program alone travels on stdin; with a page to read (the page is
+    stdin), the program goes to a temp file that is removed after. [[copy-drift]] - vault_page_node says the same (#242)."""
+    if stdin_text is None:
+        return subprocess.run([node, "-"], input=prog, capture_output=True, timeout=timeout, text=True,
+                              encoding="utf-8", errors="replace")
+    import tempfile
+    fd, path = tempfile.mkstemp(prefix="tvd-d2jsp-", suffix=".js")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(prog)
+        return subprocess.run([node, path], input=stdin_text, capture_output=True, timeout=timeout, text=True,
+                              encoding="utf-8", errors="replace")
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
 def _quote_unknown(item, read_at, reason):
     return {
         "item": str(item or ""),
@@ -1636,15 +1662,7 @@ def parse_public_quote(html, item, read_at, node_run=None):
             return _quote_unknown(item, read_at, "unread")
 
         def node_run(prog, page):
-            return subprocess.run(
-                [node, "-e", prog],
-                input=page,
-                capture_output=True,
-                timeout=20,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-            )
+            return _node_run(node, prog, page)        # v3889 (REG-3502) - never on the command line (Windows: 32,767)
     try:
         parser = _read_quote_parser()
     except (OSError, ValueError):
@@ -1682,8 +1700,7 @@ def _search_keywords(item, node_run=None):
     try:
         prog = _read_quote_parser() + "\nprocess.stdout.write(String(d2jspSearchWords(" + json.dumps(str(item or "")) + ").query || ''));\n"
         if node_run is None:
-            proc = subprocess.run([node, "-e", prog], capture_output=True, timeout=20, text=True,
-                                  encoding="utf-8", errors="replace")
+            proc = _node_run(node, prog)                # v3889 (REG-3502) - on stdin, never the command line
         else:
             proc = node_run(prog, "")
         if getattr(proc, "returncode", 1) == 0 and (getattr(proc, "stdout", "") or "").strip():
@@ -1703,8 +1720,7 @@ def _resolved_name(item, node_run=None):
         prog = (_read_quote_parser() + "\nprocess.stdout.write(String((d2jspResolveItem(" + json.dumps(str(item or ""))
                 + ") || {}).item || ''));\n")
         if node_run is None:
-            proc = subprocess.run([node, "-e", prog], capture_output=True, timeout=20, text=True,
-                                  encoding="utf-8", errors="replace")
+            proc = _node_run(node, prog)                # v3889 (REG-3502) - on stdin, never the command line
         else:
             proc = node_run(prog, "")
         if getattr(proc, "returncode", 1) == 0:
