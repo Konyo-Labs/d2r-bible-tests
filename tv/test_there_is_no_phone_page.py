@@ -31,6 +31,8 @@ TOMBSTONES - what left with the phone page, and where it went:
     mule window law's four red-proofs that were red at a phone width alone (the host's phone sheet over the tabs, the
     gold box and the tab row wrapping at 375, the 390 keyboard resize) left with the passes they proved; its caret
     proof measures at 1280x800, where the typing pass moved.
+  * v3889 round 3 (GitHub's proof shards): the mule window's drag-scroll and finger-lock red-proofs (blind without their 375
+    passes, at 2000x1300 and 1280x695 too) left; the card-name law's proof now breaks its rule in a way 720 shows.
 KEPT, named so it is not mistaken for a leftover: the search box's placeholder swap (`matchMedia('(max-width: 640px)')`
 in bible.html) - its own fit test picks the short hint at ANY width the full one cannot fit, and
 test_search_placeholder_fits holds it; the media query is only one of its two triggers.

@@ -1215,26 +1215,10 @@ RED_PROOF = [
         "widths": ["1280x800"],   # #42 measured 2026-09-29: the tampered law is red at 1280x800 alone
     },
     {
-        "why": "#174 v-B2 fix round - the window stops scrolling under a drag (at 375 another mule's tab is out of reach)",
-        "file": "bible.html",
-        "find": "    _mpTrack(d, e.clientX, e.clientY);\n    _mpAutoScroll(d, e.clientX, e.clientY);\n",
-        "replace": "    _mpTrack(d, e.clientX, e.clientY);\n",
-        "matches": 1,
-        "widths": ["2000x1300"],   # #42 measured 2026-09-29: the tampered law is red at 2000x1300 alone
-    },
-    {
         "why": "#174 v-B2 fix round - the keyboard carry has no key that changes mule again",
         "file": "bible.html",
         "find": "      if (k === '[' || k === ']'){\n",
         "replace": "      if (false){\n",
-        "matches": 1,
-        "widths": ["2000x1300"],   # #42 measured 2026-09-29: the tampered law is red at 2000x1300 alone
-    },
-    {
-        "why": "#174 v-B2 fix round - the lock is a 10px target on a phone again",
-        "file": "bible.html",
-        "find": "  .mp .vd-unlock::after{content:\"\";position:absolute;inset:-10px}\n",
-        "replace": "",
         "matches": 1,
         "widths": ["2000x1300"],   # #42 measured 2026-09-29: the tampered law is red at 2000x1300 alone
     },
@@ -1375,6 +1359,9 @@ RED_PROOF = [
         "widths": ["1280x800"],
     },
 ]
+# v3889 round 3 (GitHub's proof shards, b6e17ca70) - two more left the same way, each BLIND once its phone pass was gone:
+# "the window stops scrolling under a drag" (its case dragged at 375; green at 2000x1300 and at his console's 1280x695) and
+# "the lock is a 10px target on a phone" (its case was a finger at 375; green at 2000x1300).
 # v3889 (#132, his 11-08 "i dont need any mobile anything") - four red-proofs left with the phone page, each red at a phone
 # width alone (measured 2026-09-29) and so blind at every width this law still renders: the mule host's phone sheet over
 # the tabs (375), the stash gold box and the mule tab row wrapping (375), and a phone keyboard's height-only resize (390;

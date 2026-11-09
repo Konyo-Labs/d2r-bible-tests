@@ -121,7 +121,7 @@ def _render():
 
 
 @unittest.skipUnless(os.path.exists(RC.CHROME or ""), "no Chrome on this machine - the cards were not rendered (declared skip 77)")
-class ACardNameFitsItsBoxOnAPhone(unittest.TestCase):
+class ACardNameFitsItsBox(unittest.TestCase):
 
     def test_every_card_opened_with_its_name_and_badge(self):
         """PREMISE - PRINT THE DENOMINATOR: each of the eight cards opened at each width, its name drawn, with a badge"""
@@ -149,10 +149,13 @@ class ACardNameFitsItsBoxOnAPhone(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "#27 round 2 - the card name is a flex row that cannot wrap again (its badge spills past the box)",
+    # v3889 round 3 (GitHub's proof shards, b6e17ca70: BLIND) - "cannot wrap again" spilled only at 390 / 481; at 720, the one
+    # width this law still measures, every name fits unwrapped, so that tamper could only stay green. This one breaks the same
+    # rule in a way 720 shows: the name no longer fits its box at all.
+    {"why": "#27 round 2 - the narrow card's name is set too large to fit its box and may not wrap",
      "file": "bible.html",
      "find": "    .gic-name{font-size:20px;overflow-wrap:break-word;flex-wrap:wrap}",
-     "replace": "    .gic-name{font-size:20px;overflow-wrap:break-word}", "matches": 1},
+     "replace": "    .gic-name{font-size:48px;white-space:nowrap}", "matches": 1},
     # v3889 (#132) - the phone header rule's proof (.gic-id-block under @media max-width:480px) left with the 390 / 481
     # widths: measured at 720 it could only stay green, and a proof that cannot fail is not one
 ]
