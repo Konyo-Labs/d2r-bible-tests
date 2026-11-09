@@ -123,6 +123,14 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3524 - A TOP-TAB SWITCH LEFT THE CHARACTER BUILDER OPEN (v3891, #191)
+His rule: one unified close; Esc peels only the top layer; switching top tabs closes everything and gives a fresh start.
+MEASURED: `_cbEsc` already peels one layer (held item, drag, filters, Add mod, picker, stash, New build, then the builder);
+the top tabs run `navClean`, which dismissed the drop, the item card and the boss card but never `#cb-win`; `switchTab`
+(the console's shell route) never asked `closeCharBuilder` either. Now both doors ask `closeCharBuilder` - the same
+function the builder's own close control runs. Esc is unchanged.
+GUARD: test_a_tab_switch_closes_every_layer (3 red-proofs).
+
 ### REG-3523 - THE AGENT SUITE RAN A HAND-SET 5; IT NOW CHOOSES ITS SLICE COUNT FROM MEASURED GATE COSTS AND REFRESHES THEM EVERY ROUND (v3891, #194)
 MEASURED on v3889's agent tests: 5 fixed slices, the slowest job 20.1 min (~13.6 of gates + setup). Now the plan job
 restores the last round's per-gate seconds (actions/cache; the committed tv/gate_costs.json under them), chooses the
