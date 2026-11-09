@@ -251,7 +251,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "a chronicle find is counted as nothing",
      "file": "tv/shadow_sessions.py",
-     "find": "         \"chroniclesFound\": len(rt[\"chronicle\"]) if rt[\"chronicle\"] is not None else None,\n",
+     "find": "         \"chroniclesFound\": chron,\n",
      "replace": "         \"chroniclesFound\": 0,\n",
      "matches": 1},
     {"why": "one captured moment is reported as zero play and zero AFK",

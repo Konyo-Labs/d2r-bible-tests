@@ -250,6 +250,20 @@
     "purpose": "The focused re-hunt: for a HELD grail name, brackets where its Chronicle row must lie in OTHER reels and re-reads only those frames to earn a cross-reel witness.",
     "territory": "capture-vision"
   },
+  "chronicle_line.py": {
+    "entryPoints": [
+      "read",
+      "find",
+      "masks",
+      "tick",
+      "session_count",
+      "finds",
+      "cache_key"
+    ],
+    "gotcha": "Pixels only - no OCR, no model. A frame that will not open is UNKNOWN (checked False), never a measured 'no line'. The lane walks newest reel first, every frame once, inside TICK_BUDGET_S; a reel the FIFO deleted keeps its record, because the record is what says its window was walked. A session count is None until every reel that filmed its window is walked through it. Only INVENTORY-side tooltips count (right of the frame's middle); the stash, cube, vendor and trade side does not.",
+    "purpose": "#184 - the CHRONICLES count: a frame whose item tooltip shows the red 'Unidentified' line with the green 'Eligible for Chronicle' line directly under it is a chronicle find; walked over every reel frame by the console's 45 s tick, banked to .chronicle_lines.json with a proof copy in frames/chronicle, and counted per session (distinct items) for the Sessions cards and the shadow digest.",
+    "territory": "capture-vision"
+  },
   "chronicle_rebuild.py": {
     "entryPoints": [
       "rebuild"
@@ -571,6 +585,17 @@
     "gotcha": "Builds from the page's own ITEM_CODEX / RUNEWORD_TIP / BASE_DB, never a hand table; a level-scaled mod and a fixed damage add are not rolls (_NOT_A_ROLL). --emit rewrites the worker's D2JSP ROLLS block between its markers; the law holds the two equal.",
     "purpose": "v3885 (#30, GrokBot's read of 16 real d2jsp topics) - each item's variable rolls, so a d2jsp post is PERFECT when every roll it states sits at that item's maximum (Shako 141, Enigma 775, Griffon -20), never because its words say perfect; writes D2JSP_ROLLS into functions/api/d2jsp_quote.js.",
     "territory": "d2jsp"
+  },
+  "d2r_screens.py": {
+    "entryPoints": [
+      "screen_of",
+      "kind_of_stats",
+      "stats_of_array",
+      "chain"
+    ],
+    "gotcha": "Pixels only, at 400 px wide, a browser's bright chrome cut off (black never is - the logo and the title ARE black screens). 'char-select' is char_select's own test, called. A frame that will not open is UNKNOWN. chain() needs the TITLE: a corner logo with no title after it is a loading screen, not a start.",
+    "purpose": "#188 - where the game starts, on every route: D2R's corner fire logo, its title ('Press Any Key'), character select and the in-game orbs, read from the film; chain() is his process (logo registers, title witnesses, character select enters). The chronicle lane tags every frame with it, and control_app._session_is_the_game leaves out a run that never showed D2R.",
+    "territory": "capture-vision"
   },
   "d2s_read.py": {
     "entryPoints": [

@@ -331,22 +331,36 @@ def characters_rollup(rows):
     return out
 
 
-def session_facts(g, reads, timeline):
+def session_facts(g, reads, timeline, chron_count=None):
     """v3859 (#230) - THE ONE ANSWER FOR A SESSION, for the owner's Sessions tab and every shadow alike: playtime and
     AFK, town / out of town / AFK split, and the route ledger (tv/session_route.py) - farmed, stashed, trashed and the
-    chronicle finds from the green 'Eligible for Chronicle' line. g: the session's rows; reads: its live reads."""
+    chronicle finds from the green 'Eligible for Chronicle' line. g: the session's rows; reads: its live reads.
+
+    v3890 (#184, REG-3513) - chron_count(t0, t1) -> (count or None, why): the pixel lane's answer for this window
+    (chronicle_line.session_count). The two console call sites hand it, because both build sessions from THIS
+    console's own journal and the lane walks THIS console's own reels; a caller that hands nothing keeps the route's
+    answer. The route's own (OCR line colours) wins when it has one."""
     import replay as _rp
     import session_route as _SR
     moments = _rp.session_moments(g) or []
     play_ms, afk_ms = _play_afk(moments)
     rt = _SR.route(reads)
+    chron = len(rt["chronicle"]) if rt["chronicle"] is not None else None
+    chron_why = None
+    if chron is None and chron_count is not None:
+        try:
+            chron, chron_why = chron_count(min(moments) if moments else None, max(moments) if moments else None)
+        except Exception as e:
+            chron, chron_why = None, "the chronicle lane raised %s" % type(e).__name__
     f = {"playMs": play_ms, "afkMs": afk_ms,
-         "chroniclesFound": len(rt["chronicle"]) if rt["chronicle"] is not None else None,
+         "chroniclesFound": chron,
          "itemsFarmed": rt["itemsFarmed"],
          "farmed": rt["farmed"],
          "chronicleNames": rt["chronicle"][:MAX_NAMES] if rt["chronicle"] is not None else None,
          "stashed": rt["stashed"],
          "trashed": rt["trashed"][:MAX_NAMES] if rt["trashed"] is not None else None}
+    if chron is None and chron_why:
+        f["chroniclesWhy"] = str(chron_why)[:160]
     f.update(session_split(timeline, min(moments) if moments else None, max(moments) if moments else None))
     return f
 
@@ -369,7 +383,7 @@ def witness_frames(ids, hist_dir, make=_make_thumb):
     return got, whys
 
 
-def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None):
+def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None, chron_count=None, is_game=None):
     """rows: the journal's rows. is_read: the Shelf's read rule. -> {v, sessions: [...], bytes, dropped, left}
 
     ⚠ REG-2772 - NO BUILD TIME IN IT. The first cut carried `at`, so its hash moved on every build and the publish lane's
@@ -392,6 +406,12 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None):
     # why it has no picture), so it keeps its slot; only a heartbeat/restart slice with nothing filmed is dropped.
     _kept = [g for g in groups if any(is_read(r) or r.get("captureTs") or r.get("frameId") for r in g)]
     out["ghosts"] = len(groups) - len(_kept)
+    # v3890 (#188) - is_game(g) -> True | False | None (control_app._session_is_the_game): a run whose film never showed
+    # D2R itself is not a session on any shadow either; None keeps it
+    if is_game is not None:
+        _game = [g for g in _kept if is_game(g) is not False]
+        out["notGame"] = len(_kept) - len(_game)
+        _kept = _game
     groups = _kept
     for g in groups[:MAX_SESSIONS]:
         reads = [r for r in g if is_read(r)]
@@ -402,7 +422,7 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None):
         s = {"sessionId": sid, "t0": min(moments) if moments else None, "t1": max(moments) if moments else None,
              "reads": len(reads), "names": names[:MAX_NAMES], "namesMore": max(0, len(names) - MAX_NAMES),
              "frames": [], "why": None}
-        s.update(session_facts(g, reads, timeline))
+        s.update(session_facts(g, reads, timeline, chron_count=chron_count))
         games = []
         for r in g:
             n = game_name_of_row(r)

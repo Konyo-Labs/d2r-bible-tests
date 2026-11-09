@@ -112,6 +112,46 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3515 - A RUN THAT NEVER SHOWED D2R WAS A SESSION ON THE SHELF (v3890, #188, his call)
+His words 11-09: "for a logical thing to have here is for it to be able to identify this and not register them as a session at
+all" - "regardless of the window being recorder wether it be boosteroid or nvideaplay or or locally". MEASURED: the OLD ALT
+filmed GeForce NOW's "session ended due to inactivity" page 07:41-12:30 as six sessions (the tab still titled Diablo II), the
+Mac four; their reads could not tell (two of the OLD ALT's six read as the game - the OCR lane filed the page's words as loot).
+Now control_app._session_is_the_game asks the FILM (REG-3514's lane): a run whose reel was walked to its end with no D2R
+screen and no deep read naming a zone or a game item is not a session - on the Shelf, the timeline (both number sessions
+through _game_sessions) and the shadow digest (notGame); a run not walked yet stays (UNKNOWN). The recorder still films a
+streaming page (that is how it sees the logo); not filming it at all is #188's next step.
+GUARD: test_a_session_starts_at_the_games_own_door (10 red-proofs).
+
+### REG-3514 - NOTHING KNEW WHERE THE GAME STARTS; THE LOGO, THE TITLE AND CHARACTER SELECT ARE READ FROM THE FILM (v3890, #188)
+His process, 11-09: "there diablo ii twice... the fire logo and the screen logo for diablo ii that asks me to click any button
+... and then im at the character selection" - "it can register it the first and the second is the witness to it" - "and the
+third is the character selection screen" - "its the process". MEASURED on the OLD ALT's real GeForce NOW starts (every frame,
+800x450) and his Mac's reels: the corner fire logo (corner fire 0.034-0.037, dark 0.996), the title (centre fire 0.22-0.26),
+the in-game orbs (red 0.038-0.040 left, blue 0.038-0.041 right of the bottom band); every other screen centre fire <= 0.007,
+corner 0, no orb pair. tv/d2r_screens.py names them (character select through char_select, called), chain() reads logo ->
+title -> character select, and the chronicle lane tags every frame it walks (one decode): per reel d2r counts, door marks,
+the chain. On his Mac's reels: the two idle-page reels 0 D2R frames; a real start logo x7 -> title x3 -> character select x4.
+GUARD: test_a_session_starts_at_the_games_own_door.
+
+### REG-3513 - THE CHRONICLES BOX HAD NO READER; EVERY REEL FRAME IS WALKED ONCE FOR THE GREEN LINE (v3890, #184)
+No reader in the tree ever wrote a line colour (0 "Unidentified" rows in ~33,000), so session_route's chronicle count was
+UNKNOWN on every session - and his own cards read sm.chroniclesFound where his console puts it under sm.route, so even a
+count could never have shown there. Now the console's 45 s tick rides tvd-chronicle-lines (tv/chronicle_line.tick): every
+frame once, newest reel first, a find banked with its witness and a proof copy in frames/chronicle (the newest 300), one item
+hovered across frames counted once, the stash side never counted; a session window is UNKNOWN until its footage is walked,
+then a number (0 included); both session call sites hand session_facts this console's count, the row cache moves with it,
+and the card reads sm.route. Measured over 36,017 of his Mac's frames (28 sizes): 0 false finds.
+GUARD: test_the_green_eligible_line_is_read_from_the_pixels (12 red-proofs) + 3 neighbour laws moved with it.
+
+### REG-3512 - "ELIGIBLE FOR CHRONICLE" IS READ FROM THE PIXELS: THE GREEN LINE UNDER THE RED "UNIDENTIFIED" (v3890, #184)
+His rule 11-09 and his screenshots (Greaves, Chaos Armor, a Halberd, a Jewel; a Ring without it): every unidentified set or
+unique item that is eligible shows the red "Unidentified" line with the green "Eligible for Chronicle" line directly under
+it, centred. tv/chronicle_line.find: red and green text lines (runs joined across rows, words joined into a line), each a
+word's shape on the tooltip's dark ground, the green directly under the red, same centre, ~1.8x as wide (1.76 measured).
+His screenshot finds the Greaves (down to 6 px text), the Chaos Armor and the Halberd and never the Ring.
+GUARD: test_the_green_eligible_line_is_read_from_the_pixels.
+
 ### REG-3511 - "DELETE SESSION" SAT FLUSH UNDER "CLIP" IN THE THEATRE'S MORE-MENU (v3890, #186, GrokBot's trap hunt)
 GrokBot #230 11-09: "Delete session right next to Clip. I didn't touch it, but it's easy to hit by mistake." It asks twice, but
 it was the same gold as Clip directly beneath it. Now it carries .th-danger: 12px of gap and a red rule above it, red text and

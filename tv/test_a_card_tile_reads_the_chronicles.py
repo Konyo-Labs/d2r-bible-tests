@@ -79,7 +79,9 @@ class TestACardTileReadsTheChronicles(unittest.TestCase):
         ui = _ui()
         self.assertIn(" + _scell(_chronCell, 'chronicles', '', _chronTip)", ui)
         self.assertNotIn("_scell(_foundN, 'found')", ui, "the FOUND box is back")
-        self.assertIn("var _chronN = (typeof sm.chroniclesFound === 'number'", ui)
+        self.assertIn("var _chronN = (typeof _chronSrc === 'number' && isFinite(_chronSrc) && _chronSrc >= 0) ? _chronSrc : null;", ui)
+        # v3890 (#184, REG-3513) - his own console's row carries it under sm.route; a shadow's digest row at the top
+        self.assertIn("? sm.chroniclesFound : ((sm.route && typeof sm.route === 'object') ? sm.route.chroniclesFound : null);", ui)
         self.assertIn("var _chronCell = (_chronN === null) ? '?'", ui, "an uncounted run reads as a number")
 
     def test_the_last_two_tiles_are_uniques_and_sets(self):

@@ -5635,7 +5635,9 @@ def _frames_publish_once(boot):
     book = _profile_json_load(_profile_book_path()) or {}
     stores = book.get("stores") if isinstance(book.get("stores"), dict) else {}
     # v3859 (b) item 18 - the frames the owner's vault witnessed ride this upload, so a shadow opens the picture itself
-    d = _ss.digest(_rpj.load_journal(), HIST_DIR, _is_a_live_read, now_ms, witness_ids=_profile_picture_ids(stores))
+    d = _ss.digest(_rpj.load_journal(), HIST_DIR, _is_a_live_read, now_ms, witness_ids=_profile_picture_ids(stores),
+                   chron_count=_chronicle_count,   # v3890 (#184) - this PC's own sessions, this PC's own reels
+                   is_game=_session_is_the_game)   # v3890 (#188) - and only the ones that were the game
     try:
         if isinstance(d, dict) and d.get("sessions"):
             _sy = sync_status(now_ms)
@@ -24990,6 +24992,58 @@ def _theatre_row_cache_put(key, row):
     return row
 
 
+_NOT_GAME = {"dropped": 0, "last": None}
+
+
+def _session_is_the_game(sess):
+    """v3890 (#188, REG-3515) - IS THIS SESSION THE GAME, OR A SCREEN THE RECORDER FILMED? -> True | False | None
+
+    His words 11-09: "it should be able to identify this and not register them as a session at all" - sessions start at
+    D2R's own door (logo, title, character select), on every route. MEASURED that morning: the OLD ALT opened six
+    sessions on GeForce NOW's "session ended due to inactivity" page (tab still titled Diablo II), and its READS cannot
+    tell: two of the six read as the game because the OCR lane filed words on that page as loot. The FILM can: the
+    chronicle lane walks every frame through d2r_screens. False only when the lane walked this session's reel to its end
+    and saw no D2R screen at all AND no deep read named a zone or a game item; None (kept) whenever that is not known."""
+    sid = next((r.get("sessionId") for r in sess if isinstance(r, dict) and r.get("sessionId")), None)
+    if not sid:
+        return None
+    try:
+        import chronicle_line as _chl
+        film = _chl.reel_shows_d2r("reel_" + str(sid))
+    except Exception:
+        return None
+    if film is not False:
+        return film
+    try:
+        import tv_diablo as _tv
+        words, items = set(_AREA_ACT), _game_items()
+        if any(_tv.read_shows_the_game(r, words, items) for r in sess
+               if isinstance(r, dict) and r.get("lane") == "deep" and _tv._is_content_read(r)):
+            return True
+    except Exception:
+        return None
+    return False
+
+
+def _game_sessions(sessions):
+    """v3890 (#188) - the journal's sessions with the ones that never showed the game left out, the SAME way at every
+    site that numbers them (the Shelf list and the timeline both index by position). -> (sessions, dropped)"""
+    kept = [s2 for s2 in (sessions or []) if _session_is_the_game(s2) is not False]
+    dropped = len(sessions or []) - len(kept)
+    _NOT_GAME["dropped"] = dropped
+    return kept, dropped
+
+
+def _chronicle_count(t0, t1):
+    """v3890 (#184, REG-3513) - a session window's chronicle finds from THIS console's own reels (chronicle_line's
+    ledger). -> (count or None, why); None is UNKNOWN - the window's footage is not walked yet, or nothing filmed it."""
+    try:
+        import chronicle_line as _chl
+        return _chl.session_count(t0, t1)
+    except Exception as e:
+        return None, "the chronicle lane could not be asked (%s)" % type(e).__name__
+
+
 def _theatre_row_fingerprint(sess, hist_dir):
     """Everything the row is derived from, in one hashable key.
 
@@ -25019,9 +25073,17 @@ def _theatre_row_fingerprint(sess, hist_dir):
         last_ts = sess[-1].get("ts") if sess else None
     except Exception:
         last_ts = None
+    # v3890 (#184, REG-3513) - the chronicle lane is an input too: a run whose footage the lane walks later must not keep
+    # its cached '?'. Keyed on what can flip a sealed run's answer (a banked sighting, a reel walked to its end), not on
+    # the ledger's mtime, which moves every tick while he records and would recompute every row every 45 s.
+    try:
+        import chronicle_line as _chl
+        chron_k = _chl.cache_key()
+    except Exception:
+        chron_k = None
     # REG (v3856 gate) - the folder is IN the key, not only its mtime: two shelves created in the same clock tick
     # (coarse filesystem timestamps) carry the same mtime_ns, so one shelf's row was served for the other's session.
-    return (str(sid), len(sess), last_ts, reel_mt, os.path.abspath(str(hist_dir)))
+    return (str(sid), len(sess), last_ts, reel_mt, os.path.abspath(str(hist_dir)), chron_k)
 
 
 
@@ -40816,6 +40878,22 @@ def _vault_autoread_loop():
                         print("   \u26a0 equipped ledger after the learner: %s" % str(_eqr.get("why"))[:140], flush=True)
             except Exception as _cse:
                 print("   \u26a0 character learner raised %s" % type(_cse).__name__, flush=True)
+            # v3890 (#184, REG-3513) - THE CHRONICLE LINE IS READ FROM THE REELS (tv/chronicle_line.py). His rule, 11-09: a
+            # chronicle find is an unidentified item whose tooltip shows the green "Eligible for Chronicle" line under the
+            # red "Unidentified". A RIDER with its own lane name, like the learner above: every frame this PC filmed is
+            # walked once in TICK_BUDGET_S of wall time, a frame with the line is banked AND copied to frames/chronicle as
+            # proof, and its lifetime counters live in its own ledger, so ON never reads as WORKING. [[heart-first]] §2-3
+            try:
+                _lane_tick('tvd-chronicle-lines', _VAULT_AUTOREAD_EVERY_S)
+                import chronicle_line as _chl
+                _clr = _chl.tick()
+                if not _clr.get("ok"):
+                    print("   \u26a0 chronicle line: %s" % str(_clr.get("why"))[:140], flush=True)
+                elif _clr.get("hits"):
+                    print("   \U0001F4DC chronicle line: %d frame(s) with the green Eligible line, proof kept"
+                          % int(_clr.get("hits") or 0), flush=True)
+            except Exception as _cle:
+                print("   \u26a0 chronicle line raised %s" % type(_cle).__name__, flush=True)
             # v2225 — say it out loud when the lane retires a reel or cannot tell. Silence here is
             # what made a permanently-idle watchdog look identical to a busy one.
             if isinstance(_r, dict) and (_r.get("retired") or _r.get("unknown")):
@@ -50347,6 +50425,8 @@ class Handler(BaseHTTPRequestHandler):
             import replay as _rp
             _jrows = self._load_journal_cached()
             sessions = _rp.split_sessions(_jrows)
+            # v3890 (#188) - a run that never showed D2R itself (a streaming page, an idle dialog) is not a session
+            sessions, _not_game = _game_sessions(sessions)
             # v3859 (#230) - the owner's Sessions tab reads the same per-session answer a shadow does
             # (shadow_sessions.session_facts): one route ledger, one town/field/AFK split over the whole game
             import shadow_sessions as _SSF
@@ -50669,7 +50749,8 @@ class Handler(BaseHTTPRequestHandler):
                         _registered = len(_finds)
                     elif isinstance(_registered, int):
                         _registered = max(int(_registered), len(_have_nms))
-                _route = _SSF.session_facts(sess, [r2 for r2 in sess if _is_a_live_read(r2)], _game_tl)
+                _route = _SSF.session_facts(sess, [r2 for r2 in sess if _is_a_live_read(r2)], _game_tl,
+                                            chron_count=_chronicle_count)   # v3890 (#184) - THIS console's reels
                 _row = {"watchdogViolations": _wd, "tallies": _tl, "kaiMissed": _km, "kaiClasses": _kc,
                             "sceneReads": _scene_reads or None, "tabReads": _tab_reads or None,
                             "route": _route,
@@ -50873,6 +50954,7 @@ class Handler(BaseHTTPRequestHandler):
                 sys.path.insert(0, HERE)
             import replay as _rp
             sessions = _rp.split_sessions(self._load_journal_cached())
+            sessions, _ng = _game_sessions(sessions)   # v3890 (#188) - numbered the same way the Shelf numbers them
             if sid:
                 _at = next((i for i, s2 in enumerate(sessions, 1)
                             if next((r.get("sessionId") for r in s2 if r.get("sessionId")), "") == sid), 0)

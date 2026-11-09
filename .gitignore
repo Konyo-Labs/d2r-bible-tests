@@ -257,6 +257,9 @@ tv/.heart2.json
 # #91 — each PC learns its OWN characters from its OWN reels (tv/char_select.py): per machine, never shared
 tv/.char_roster.json
 tv/.char_roster.json.tmp
+# v3890 (#184) - the chronicle line lane's per-PC ledger (tv/chronicle_line.py) and its atomic-write temp
+tv/.chronicle_lines.json
+tv/.chronicle_lines.json.tmp
 # #50 (REG-1447) — each PC's own self-prove lane memory + prover log; per-machine, never shared
 tv/.self_prove.json
 tv/.self_prove.json.log

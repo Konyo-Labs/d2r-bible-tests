@@ -80,10 +80,11 @@ class TestARiderIsWatchedWithoutClaimingAThread(unittest.TestCase):
         """The feeder must reach the census as its own row, not as a second name on someone else's."""
         # #91 (2026-09-30) — the loop now carries a SECOND rider, the character learner, with its own name and its
         # own counters for the same reason the feeder has them: one supervisor row must never answer for two jobs.
+        # v3890 (#184) - and a THIRD, the chronicle line lane (tv/chronicle_line.py): its own name and its own ledger.
         self.assertEqual(
-            sorted(r.get("lane") for r in self.riders), ["tvd-char-learner", "tvd-read-names-feeder"],
-            "expected exactly the two RIDER rows on this tree and got %d. Measured: precisely one def "
-            "(_vault_autoread_loop) stamps three lanes. %r"
+            sorted(r.get("lane") for r in self.riders), ["tvd-char-learner", "tvd-chronicle-lines", "tvd-read-names-feeder"],
+            "expected exactly the three RIDER rows on this tree and got %d. Measured: precisely one def "
+            "(_vault_autoread_loop) stamps four lanes. %r"
             % (len(self.riders), [r.get("lane") for r in self.riders]))
 
     def test_a_rider_names_the_vessel_it_rides(self):

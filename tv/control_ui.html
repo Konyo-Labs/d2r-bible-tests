@@ -19760,10 +19760,15 @@ window._lockMark = function(isOpen, px, label){
          item whose tooltip showed the green chronicle keyword; the session carries that count as chroniclesFound, and where it
          does not (the green-keyword reader has not counted this run - null in production, #184) the box says '?', never the
          old registered number under the new name. [[unknown-stays-unknown]] */
-      var _chronN = (typeof sm.chroniclesFound === 'number' && isFinite(sm.chroniclesFound) && sm.chroniclesFound >= 0) ? sm.chroniclesFound : null;
+      /* v3890 (#184, REG-3513) - THE OWNER'S OWN CARD READS THE ROUTE. His console's /api/sessions row carries the session's
+         route facts under sm.route (control_app: "route": _route); only a shadow's digest row has them at the top. Read
+         top-level alone, his own cards could only ever print '?'. */
+      var _chronSrc = (typeof sm.chroniclesFound === 'number') ? sm.chroniclesFound : ((sm.route && typeof sm.route === 'object') ? sm.route.chroniclesFound : null);
+      var _chronWhy = (sm.route && typeof sm.route === 'object' && sm.route.chroniclesWhy) || sm.chroniclesWhy || '';
+      var _chronN = (typeof _chronSrc === 'number' && isFinite(_chronSrc) && _chronSrc >= 0) ? _chronSrc : null;
       var _chronCell = (_chronN === null) ? '?' : (_chronN > 0 ? ('\ud83d\udcdc ' + _kpiFmt(_chronN)) : '\u2014');
       var _chronTip = (_chronN === null)
-        ? 'chronicle finds this run: unidentified items whose tooltip showed the green chronicle keyword. ? = the green-keyword reader has not counted this run yet'
+        ? 'chronicle finds this run: unidentified items whose tooltip showed the green chronicle keyword. ? = not counted yet' + (_chronWhy ? (' - ' + _chronWhy) : '')
         : 'chronicle finds this run: ' + _chronN + ' unidentified item' + (_chronN === 1 ? '' : 's') + ' whose tooltip showed the green chronicle keyword';
       var statRow = '<div class="shc-stats">' + _scell(_stashCell, 'stash', '',
                  'frames this run that the reader classified as a stash panel — the sum of every stash* bucket in kaiClasses, including the gem, rune and material tabs. \u26a0 it can over-count: kaiClasses carries no TOWN bucket, so a town frame lands here too (open defect #87). Reads for this run: ' + _kpiFmt(sm.reads || 0)) + _scell(_chronCell, 'chronicles', '', _chronTip)
