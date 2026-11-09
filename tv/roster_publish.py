@@ -31,6 +31,10 @@ OWNERS = (
     "Konyo · GrokBot",
     "Dean",
     "Wife PC",
+    # v3890 (#182, his 11-09 "they need to separate like they were") - the OLD ALT is its own profile, under the name its
+    # Fleet row already carries, so it no longer shares Konyo · ALT (its identity's sharesLabel is only read for a name
+    # that is no label)
+    "OLD PC ALT",
 )
 SECTIONS = ("characters", "vault", "stash", "owned", "chronicle", "reels")
 HOUR_MS = 3600 * 1000
@@ -54,7 +58,7 @@ def budget():
 def owner_of(name, platform=None):
     """The roster label for a name this PC already claims, or None.
 
-    A name that is already one of the five labels is that label on every
+    A name that is already one of the labels is that label on every
     platform. The short name Konyo on a mac is the label Konyo · Mac.
     Windows stays unlabeled, and so does a mac named Grok: those machines
     are not this one, and a guess would publish them under the wrong key.
@@ -715,7 +719,7 @@ def due(state, owner, sections, now_ms, boot):
     """
     state = state if isinstance(state, dict) else {}
     if not roster_key(owner):
-        return None, "the owner is not one of the five labels"
+        return None, "the owner is not one of the owner labels"
     if not sections:
         return None, "nothing on this PC was read"
     digest = hash_of(packed(for_hash(sections)))

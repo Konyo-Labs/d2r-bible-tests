@@ -1040,7 +1040,6 @@
   "test_one_install_is_one_machine": 0.6,
   "test_one_item_draws_one_picture_whatever_its_label": 0.9,
   "test_one_item_has_one_key": 0.1,
-  "test_one_label_holds_two_pcs": 0.7,
   "test_one_look_that_disagrees_is_not_a_second_item": 0.0,
   "test_one_name": 15.7,
   "test_one_partition": 1.5,

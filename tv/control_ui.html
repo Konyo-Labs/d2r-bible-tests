@@ -28774,12 +28774,11 @@ function escC(s) {
            + (q.replaces ? ' \u00b7 replaces key ' + esc(q.replaces) : '')
            + ' - compare the key with the one that PC shows'
            + ' <button class="util-btn" type="button" data-owner="' + esc(q.owner) + '" data-key="' + esc(q.keyId)
-           + '" data-decision="approve" onclick="window._fleetKeyDecide(this)" title="this PC REPLACES the one that held '
-           + esc(q.owner) + '">Approve (replace)</button>'
-           /* v3880 (#27) - his 11-05 ruling "share the profile, just split the rows": a second PC of the same label */
-           + '<button class="util-btn" type="button" data-owner="' + esc(q.owner) + '" data-key="' + esc(q.keyId)
-           + '" data-decision="add" onclick="window._fleetKeyDecide(this)" title="both PCs keep publishing as '
-           + esc(q.owner) + ', each into its own rows">Add as another PC</button>'
+           + '" data-decision="approve" onclick="window._fleetKeyDecide(this)" title="'
+           + (q.replaces ? 'this PC REPLACES the one that held ' + esc(q.owner) : 'this PC becomes ' + esc(q.owner))
+           + '">' + (q.replaces ? 'Approve (replace)' : 'Approve') + '</button>'
+           /* v3890 (#182, his 11-09 "they need to separate like they were") - no "Add as another PC": each PC is its own
+              profile, and the site refuses "add" (functions/api/roster.js) */
            + '<button class="util-btn" type="button" data-owner="' + esc(q.owner) + '" data-key="' + esc(q.keyId)
            + '" data-decision="deny" onclick="window._fleetKeyDecide(this)">Deny</button></div>';
     }).join('');
@@ -29811,7 +29810,8 @@ function escC(s) {
      anything else has no profile, and the eyes say so rather than guess another PC's key. [[unknown-stays-unknown]]
      REG-2924 - this is the page's ONE copy of the five labels; the shadow reader asks this rule too. The worker
      (functions/api/roster.js) and roster_publish.OWNERS hold the same list, and a law holds all three to it. */
-  var _FLEET_ROSTER_OWNERS = ['Konyo \u00b7 Mac', 'Konyo \u00b7 ALT', 'Konyo \u00b7 GrokBot', 'Dean', 'Wife PC'];
+  /* v3890 (#182, his 11-09 "they need to separate like they were") - the OLD ALT is its own profile, under its Fleet name */
+  var _FLEET_ROSTER_OWNERS = ['Konyo \u00b7 Mac', 'Konyo \u00b7 ALT', 'Konyo \u00b7 GrokBot', 'Dean', 'Wife PC', 'OLD PC ALT'];
   var _fleetRosterOwner = function (m) {
     var nick = String((m && m.nickname) || '').trim();
     if (_FLEET_ROSTER_OWNERS.indexOf(nick) >= 0) return nick;

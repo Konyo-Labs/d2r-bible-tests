@@ -506,7 +506,7 @@ def due(state, owner, d, now_ms, boot):
     import console_snapshot as _cs
     state = state if isinstance(state, dict) else {}
     if not _cs.profile_key(owner):
-        return None, "the owner is not one of the five labels"
+        return None, "the owner is not one of the owner labels"
     if not isinstance(d, dict) or not d.get("sessions"):
         return None, (d or {}).get("why") if isinstance(d, dict) and d.get("why") else "no session to summarize"
     h = digest_hash(d)

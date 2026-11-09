@@ -275,8 +275,9 @@ RED_PROOF = [
     {
         "why": "v3526 - the cow run is named for its monster again ('Hell Hell Bovines')",
         "file": "bible.html",
-        "find": "        const _src = {boss:`${label} ${runName}`,chance,bossId:boss.id,verified:isVer,kph:effKph,diffKey:k};\n",   # v3884 - REG-3437 named the row
-        "replace": "        const _src = {boss:`${label} ${boss.name}`,chance,bossId:boss.id,verified:isVer,kph:effKph,diffKey:k};\n",
+        # v3890 (#43) - the row now carries its item, so the anchor ends at it
+        "find": "        const _src = {boss:`${label} ${runName}`,chance,bossId:boss.id,verified:isVer,kph:effKph,diffKey:k,item:d.n};",   # v3884 - REG-3437 named the row
+        "replace": "        const _src = {boss:`${label} ${boss.name}`,chance,bossId:boss.id,verified:isVer,kph:effKph,diffKey:k,item:d.n};",
         "matches": 1,
     },
 ]

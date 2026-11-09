@@ -836,7 +836,6 @@
     "test_one_install_is_one_machine": 1.97,
     "test_one_item_draws_one_picture_whatever_its_label": 1.238,
     "test_one_item_has_one_key": 0.531,
-    "test_one_label_holds_two_pcs": 2.126,
     "test_one_look_that_disagrees_is_not_a_second_item": 0.449,
     "test_one_partition": 4.543,
     "test_one_reel_is_one_session_row": 0.195,

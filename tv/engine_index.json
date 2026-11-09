@@ -3323,6 +3323,19 @@
     "purpose": "#85 - every place an early unique drops, as silospen ranks it: the bosses and super-unique Quick wins ranks by runs (QW_TARGETS / QW_PLACES / PLACE_PF in bible.html) and the checkpoints its law reads (tv/data/silospen_places_rotw30.json).",
     "territory": "routing"
   },
+  "silospen_set_mf.py": {
+    "entryPoints": [
+      "pull",
+      "emit",
+      "fit",
+      "p_set",
+      "checkpoints",
+      "set_bases"
+    ],
+    "gotcha": "Read-only GETs to silospen's calculator (the SET rows of 8 sample items at MF 0/300/700/1000). --emit FITS each farm's monster level and quality bonus to those checkpoints and refuses a farm it cannot fit within FIT_TOL (named, never guessed); farms it does not model (the Cows, the Pit, Diablo Clone) are SKIPPED_FARMS and their sets keep the unique curve. Never hand-edit the page's SET_MF block: re-pull and --emit.",
+    "purpose": "#43 - a set item's odds follow the game's unique-first quality roll: writes SET_MF_FARM (farm -> [monster level, bonus]) and SET_MF_BASE (set item -> [base level, class row]) into bible.html's SET_MF block, and the checkpoints its law reads (tv/data/silospen_set_mf_rotw30.json).",
+    "territory": "routing"
+  },
   "silospen_tz_levels.py": {
     "entryPoints": [
       "pull",

@@ -21,7 +21,7 @@
  * held - planted unsigned, written before signing, another key's - is dropped, never
  * carried in under this key's "verified".
  * It is never stored as an empty list. Pictures and frame bytes are refused
- * and not stored. GET /api/roster reads the five owner keys and writes nothing.
+ * and not stored. GET /api/roster reads every owner label's key and writes nothing.
  * No Roster tab, no D1, no R2.
  *
  * #95 SIGNED PUBLISHING (his ruling 2026-10-22: deploy once the Python/JS signature
@@ -65,7 +65,9 @@ const KV_WRITES = 10000;
 const HOUR_MS = 3600 * 1000;
 const TTL_S = 60 * 60 * 24 * 400;
 
-export const OWNERS = ["Konyo · Mac", "Konyo · ALT", "Konyo · GrokBot", "Dean", "Wife PC"];
+// v3890 (#182, his 11-09 "they need to separate like they were") - the OLD ALT is its own profile, under the name its
+// Fleet row already carries; it no longer joins Konyo · ALT's ring (each PC is its own profile)
+export const OWNERS = ["Konyo · Mac", "Konyo · ALT", "Konyo · GrokBot", "Dean", "Wife PC", "OLD PC ALT"];
 const SECTIONS = ["characters", "vault", "stash", "owned", "chronicle", "reels"];
 
 const QUOTA_WHY = "roster would not take this publish: quota";
@@ -332,6 +334,23 @@ export async function noteKeyRequest(kv, owner, sig, registeredKeyId, now) {
   }
 }
 
+// v3890 (#182) - take keyId out of the ring of every label but `owner`. -> [the labels it left]
+export async function leaveOtherRings(kv, owner, keyId) {
+  const left = [];
+  for (const other of OWNERS) {
+    if (other === owner) continue;
+    let rec = null;
+    try { rec = await registeredOf(kv, other); } catch (e) { rec = null; }
+    if (!rec || !Array.isArray(rec.also) || !rec.also.some((e) => e && e.keyId === keyId)) continue;
+    const kept = rec.also.filter((e) => !(e && e.keyId === keyId));
+    const next = Object.assign({}, rec);
+    if (kept.length) next.also = kept; else delete next.also;
+    await kv.put(KEY_PREFIX + other, JSON.stringify(next));
+    left.push(other);
+  }
+  return left;
+}
+
 // v3862 (item 11) - {kind:"approve", approver, owner, keyId, decision:"approve"|"deny", signedAt}, signed by the
 // approver's REGISTERED key. -> the Response
 export async function approvePost(env, sig, body) {
@@ -339,9 +358,16 @@ export async function approvePost(env, sig, body) {
   if (!kv) return refuse("roster would not take this approval: storage unavailable");
   const approver = body.approver, owner = body.owner, decision = body.decision;
   if (APPROVERS.indexOf(approver) === -1) return refuse("roster would not take this approval: " + String(approver).slice(0, 40) + " may not approve a PC");
-  if (OWNERS.indexOf(owner) === -1) return refuse("roster would not take this approval: the owner is not one of the five labels");
+  if (OWNERS.indexOf(owner) === -1) return refuse("roster would not take this approval: the owner is not one of the owner labels");
   if (decision !== "approve" && decision !== "deny" && decision !== "add") {
     return refuse("roster would not take this approval: decision is approve, add or deny");
+  }
+  // v3890 (#182, his 11-09: "thats not good that its mixed ... each console and whatever it itself is rendering should be
+  // showing ... at that individual profile") - EACH PC IS ITS OWN PROFILE. "Add as another PC" joined the OLD ALT to Konyo ·
+  // ALT and his shadow of that profile showed the OLD ALT's 26 characters as the work ALT's. A PC now gets a profile of its
+  // own: approve it under its own label.
+  if (decision === "add") {
+    return refuse("roster would not take this approval: each PC is its own profile now - approve it under its own label");
   }
   const now = Date.now();
   if (typeof body.signedAt !== "number" || !Number.isFinite(body.signedAt) || Math.abs(now - body.signedAt) > APPROVE_SKEW_MS) {
@@ -371,6 +397,9 @@ export async function approvePost(env, sig, body) {
     const kept = ring.filter((e) => e.keyId !== req.keyId);
     if (kept.length) rec.also = kept;
     await kv.put(KEY_PREFIX + owner, JSON.stringify(rec));
+    // v3890 (#182) - ONE KEY, ONE PROFILE: a PC approved under its own label leaves every other label's ring, so the profile
+    // it used to share stops serving its characters and rows as that profile's
+    await leaveOtherRings(kv, owner, req.keyId);
   } else if (decision === "add") {
     // "ANOTHER PC OF THIS LABEL" - the first key stays; the new one joins the ring, its rows and profile kept apart
     if (!held || !held.pub) return refuse("roster would not take this approval: " + owner + " has no first key to add a PC beside");
@@ -591,6 +620,14 @@ export async function onRequestPost(context) {
       return refuse("roster would not take this publish: " + String((e && e.message) || e).slice(0, 140));
     }
     said.registered = true;
+    // v3890 (#182) - ONE KEY, ONE PROFILE: a PC registering its own label leaves every other label's ring (the OLD ALT,
+    // first publishing as OLD PC ALT, leaves Konyo · ALT) - so that profile stops serving its rows and characters
+    try {
+      const left = await leaveOtherRings(kv, owner, sig.keyId);
+      if (left.length) said.leftRings = left;
+    } catch (e) {
+      said.leftRingsWhy = "could not leave the other profiles' rings: " + String((e && e.message) || e).slice(0, 80);
+    }
   }
   const rec = { owner: owner, t: now, day: today, n: n + 1, hash: hash, sections: sections };
   rec.intentVerified = verified;
@@ -969,7 +1006,7 @@ async function othersOf(kv, owner, registered) {
 
 async function profileGet(kv, owner) {
   if (!kv) return pJson({ ok: false, why: "profile could not be read: storage unavailable" });
-  if (OWNERS.indexOf(owner) === -1) return pJson({ ok: false, why: "ask for one of the five owner labels" });
+  if (OWNERS.indexOf(owner) === -1) return pJson({ ok: false, why: "ask for one of the owner labels" });
   let prev = null;
   try {
     const raw = await kv.get(profileKeyOf(owner));
@@ -1119,7 +1156,7 @@ async function framesPost(env, bytes, sig, body) {
 
 async function framesGet(kv, owner) {
   if (!kv) return pJson({ ok: false, why: "frames could not be read: storage unavailable" });
-  if (OWNERS.indexOf(owner) === -1) return pJson({ ok: false, why: "ask for one of the five owner labels" });
+  if (OWNERS.indexOf(owner) === -1) return pJson({ ok: false, why: "ask for one of the owner labels" });
   let prev = null;
   try {
     const raw = await kv.get(framesKeyOf(owner));

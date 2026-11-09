@@ -112,6 +112,47 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3507 - TWO PCS WERE ONE PROFILE: HIS SHADOW OF THE WORK ALT SHOWED THE OLD ALT'S 26 CHARACTERS (v3890, #182, his call)
+His words 11-09: "thats not good that its mixed though.. why do they have a shared profile ... i thought they were separated. each
+console and whatever it itself is rendering should be showing the through the other side when looking through shadow mode at
+that individual profile" - "yea so they need to separate like they were". MEASURED 11-09 ~12:50 (SSH GET on both ALTs, and
+his Mac's /roster-cache?profile=Konyo · ALT): the work ALT's console had learned 0 characters; the OLD ALT's 26 (KonyoLock,
+Konyodin, Konyoress ... and the mules Armor, Base, Crafter, Rare, Runewords, RunewordSpare, Runewororder, Sets, War); the
+Mac's shadow of Konyo · ALT read "another PC of this label (key a8834dcd53c5) adds 26 character(s)" - the OLD ALT's, under
+the work ALT's name. CAUSE: REG-3362 (v3880) let a second PC join a label's ring ("Add as another PC", recorded as his 11-05
+"share the profile, just split the rows") and console_snapshot.with_others folded it into the label's shadow; on 11-08 the
+OLD ALT's identity got sharesLabel "Konyo · ALT" and its key joined the ring. FIX: the OLD ALT is its own profile under the
+name its Fleet row carries, "OLD PC ALT" (a sixth label in roster.js, roster_publish and the console page - one list, held
+by test_the_roster_labels_are_one_list); a name that is a label never shares, so its identity needs no edit. ONE KEY, ONE
+PROFILE: a key registering its own label (first publish - no approval to press) or approved for one leaves every other
+label's ring (roster.js leaveOtherRings), so Konyo · ALT stops serving its rows and characters. The site refuses "add"; the
+Mac's key request offers Approve ("Approve", not "(replace)", when nothing is replaced) and Deny. The shadow never folds
+another PC into a profile - one the site still serves is NAMED ("another PC still shares this profile on the site ... not
+shown here"); with_others and equipped_ledger.merge_pcs lost their only caller and are gone. The ring code stays so the
+ring that exists drains, with its guards (a slot not signed by its ring key, a malformed entry). ALSO MEASURED, NOT THIS
+FIX: the work ALT reads no character name from its own frames (0 learned; its one find has no name) - #183.
+GUARD: test_each_pc_is_its_own_profile (real worker in node, real Ed25519 keys: the OLD ALT's first publish as itself leaves
+Konyo · ALT's ring and that profile stops serving it; an approval does too; "add" refused; the ring's two guards; the shadow
+never folds; the OLD ALT publishes as itself; the Mac offers Approve and Deny only - 6 red-proofs RED). TOMBSTONE:
+test_one_label_holds_two_pcs (REG-3362) left with the sharing it held.
+
+### REG-3506 - A SET ITEM'S ODDS MOVED WITH MF BY THE UNIQUE CURVE: PAST MF 300 A SET AT A HIGH-LEVEL BOSS GETS RARER, AND THE PAGE SAID CHEAPER (v3890, #43)
+MEASURED 11-09 on silospen's calculator (D2R_ROW_3_0, the source of every stored 1:N): Sander's Paragon from Hell Mephisto
+is 1:9,382 at MF 300 and 1:10,007 at MF 1000; the page printed 1:7,381 - it moved every 1:N off its MF-300 base by the
+unique curve (adjustChance, effective MF x 250 / (MF + 250)). The game rolls UNIQUE first and set only on a failed unique
+roll: P(set) = P(set roll) x (1 - P(unique roll)), each in C integers - (ratio - (ilvl - qlvl)/divisor) x 128, x 100 / (100 +
+effective MF), floored at the row's min, less chance x bonus / 1024 - with ItemRatio's normal row (unique 400/1/6400, set
+160/2/5600; exceptional and elite bases the same) or a class base's row (240/3/6400, 120/3/5600), the set roll's effective
+MF x 500 / (MF + 500). At a high-level monster the set roll sits on its 5600 floor while the unique roll climbs, so the set
+gets rarer; at Normal it still gets cheaper (Normal Mephisto 1:5,160 -> 1:4,614). Hand-checked on 5 act bosses x 3
+difficulties x 4 MFs (bonus 983, base level 1): 0.02% worst. Now tv/silospen_set_mf.py pulls 8 sample set items (normal,
+exceptional, elite and class bases, base level 1-85) at MF 0/300/700/1000, fits each farm's monster level and quality bonus
+to them (FITS), and writes the page's SET_MF block; effChance takes the item (the registry's sources carry it, 22 call
+sites pass it) and a set at a fitted farm rolls setMfChance. NOT modelled yet, named: terror-zone columns (the monster
+level follows his character level), the Cows, the Pit, Diablo Clone, Quick wins' own places - they keep the unique curve.
+GUARD: test_a_set_items_odds_follow_the_unique_first_roll (Python and the page's own JS against silospen's checkpoints;
+every set on the boss tables has its base; every farm measured or named; the item reaches effChance; 5 red-proofs).
+
 ### REG-3505 - A PAID-RUNNER LANE NOBODY USED SAT IN THE PROOF WORKFLOW AND READ AS A SUBSCRIPTION HE DOES NOT HAVE (v3890, his call)
 His 11-09: "maybe delete the ubuntu thing so we dont get mixed up?" - "the ubicloud i meant". v3865 (his 11-05 ruling, a hard
 $25 a month) wired the Linux proof shards to Ubicloud's 8-core machines: a `budget` job in proof-keys-shards.yml ran

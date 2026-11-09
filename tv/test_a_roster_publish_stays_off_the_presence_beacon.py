@@ -192,7 +192,7 @@ class RosterPublishStaysOffTheBeacon(unittest.TestCase):
         self.assertIsNone(RP.roster_key("konyo-3"))
         self.assertIsNone(RP.roster_key("/tmp/host"))
         self.assertIsNone(RP.owner_of("23d0486747ce4c58"))
-        self.assertEqual(len(RP.OWNERS), 5)
+        self.assertEqual(len(RP.OWNERS), 6)   # v3890 (#182) - OLD PC ALT is its own profile
 
     def test_a_mac_named_konyo_is_the_mac_roster_label(self):
         self.assertEqual(RP.owner_of("Konyo", "mac"), OWNER)
@@ -428,7 +428,7 @@ class RosterPublishStaysOffTheBeacon(unittest.TestCase):
         self.assertIsNone(RP.cache_views({"ok": True}, rec["t"]))
         self.assertIsNone(RP.cache_views({"ok": False, "owners": []}, rec["t"]))
         empty = RP.cache_views({"ok": True, "owners": []}, rec["t"])
-        self.assertEqual(len(empty), 5)
+        self.assertEqual(len(empty), len(RP.OWNERS))   # v3890 (#182) - every label, however many
         self.assertTrue(all(row["published"] is False for row in empty))
         self.assertIsNone(RP.view_one("not-a-pc", {}, 1))
         lied = dict(mac, hash="dead")

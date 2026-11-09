@@ -236,7 +236,8 @@ class TheWorkflowSeedsEveryShardFromIt(unittest.TestCase):
 
     def test_every_shard_needs_it_downloads_it_and_checks_its_digest(self):
         shard = _job(self.wf, "shard")
-        self.assertIn("    needs: [budget, seed]\n", shard, "a shard starts before the seed is built")
+        # v3890 (REG-3505) - the budget job is gone: the shards wait on their seed alone
+        self.assertIn("    needs: [seed]\n", shard, "a shard starts before the seed is built")
         d = shard.index("actions/download-artifact")
         step = shard[shard.rfind("\n      - ", 0, d):shard.find("\n      - ", d)]
         self.assertIn("name: proof-seed\n", step)
@@ -324,8 +325,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3210 - the shards start before the seed exists",
      "file": ".github/workflows/proof-keys-shards.yml",
-     "find": "    needs: [budget, seed]\n",
-     "replace": "    needs: [budget]\n",
+     "find": "    needs: [seed]\n",
+     "replace": "    needs: []\n",
      "matches": 1},
     {"why": "REG-3210 (second eye) - a re-run shard never restores what its run's earlier attempt proved (v3864 shard 10)",
      "file": ".github/workflows/proof-keys-shards.yml",

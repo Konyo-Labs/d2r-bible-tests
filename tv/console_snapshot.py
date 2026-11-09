@@ -399,7 +399,7 @@ def due(state, owner, stores, now_ms, boot, unsent=None):
     stores so the shadow can name what it is missing; it is not in the hash."""
     state = state if isinstance(state, dict) else {}
     if not profile_key(owner):
-        return None, "the owner is not one of the five labels"
+        return None, "the owner is not one of the owner labels"
     if not stores:
         return None, "the board has not posted its stores"
     d = digest(stores)
@@ -655,64 +655,6 @@ def _ago_words(ms):
 CHARS_STORE = "d2r_api_chars_learned"
 
 
-def with_others(stores, others, now_ms=None):
-    """v3880 (#27) - ONE LABEL, MORE THAN ONE PC. His 11-05 ruling for the two ALTs: "share the profile, just split the
-    rows". The site serves each other PC's characters answer beside the label's own (roster.js othersOf); here they are
-    folded into the one d2r_api_chars_learned the shadow reads, so KonyoLock's card wears the Enigma the OLD ALT saw while
-    the label's first PC (the work ALT) has learned no character at all. -> (stores, [{keyId, ago}])
-
-    A character only another PC learned is added; one both learned keeps the first PC's row. Gear is joined by
-    equipped_ledger.merge_pcs (REG-3069's rule). Sessions are per-reel, so they are a union. An answer that does not
-    parse is left out and named, never guessed into the label's."""
-    import json as _json
-    import equipped_ledger as _el
-    out_stores = dict(stores or {})
-    said = []
-    try:
-        base = _json.loads(out_stores[CHARS_STORE]) if isinstance(out_stores.get(CHARS_STORE), str) else None
-    except ValueError:
-        base = None
-    if not isinstance(base, dict):
-        base = None
-    merged_any = False
-    for o in others or []:
-        if not isinstance(o, dict):
-            continue
-        kid = _rp.short_key_id(o.get("keyId")) or "?"
-        t = o.get("t")
-        ago = _ago_words(now_ms - t) if (isinstance(now_ms, int) and isinstance(t, int) and not isinstance(t, bool)) else None
-        raw = (o.get("stores") or {}).get(CHARS_STORE) if isinstance(o.get("stores"), dict) else None
-        try:
-            ans = _json.loads(raw) if isinstance(raw, str) else None
-        except ValueError:
-            ans = None
-        if not isinstance(ans, dict):
-            said.append({"keyId": kid, "ago": ago, "chars": None, "why": "its characters answer could not be read"})
-            continue
-        if base is None:
-            base = dict(ans)
-            said.append({"keyId": kid, "ago": ago, "chars": len(ans.get("chars") or [])})
-            merged_any = True
-            continue
-        rows = list(base.get("chars") or [])
-        have = set((r or {}).get("key") for r in rows if isinstance(r, dict))
-        added = [r for r in (ans.get("chars") or []) if isinstance(r, dict) and r.get("key") and r.get("key") not in have]
-        base["chars"] = rows + added
-        bars = base.get("tierBars") or ans.get("tierBars")
-        g = _el.merge_pcs([base.get("gear"), ans.get("gear")], bars)
-        if g is not None:
-            base["gear"] = g
-            if base.get("gearWhy") and isinstance(ans.get("gear"), dict):
-                base["gearWhy"] = None          # the other PC's gear IS known - the label's is no longer UNKNOWN
-        if isinstance(base.get("sessions"), dict) and isinstance(ans.get("sessions"), dict):
-            base["sessions"] = dict(ans["sessions"], **base["sessions"])
-        said.append({"keyId": kid, "ago": ago, "chars": len(added)})
-        merged_any = True
-    if merged_any and base is not None:
-        out_stores[CHARS_STORE] = _json.dumps(base, ensure_ascii=False, separators=(",", ":"))
-    return out_stores, said
-
-
 def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=None, via=None, live_at=None):
     """What /api/roster-cache?profile= serves. `live` is the owner's console being up right now; the stores are
     always the last upload, and `words` always says when that upload was made.
@@ -722,7 +664,7 @@ def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=
     snapshot, held by the 75 min gap above, and the sessions digest posted at the owner's 03:00 restart - each read as the
     owner's last upload. An age names the thing it dates: here the board."""
     if owner not in OWNERS:
-        return {"ok": False, "owner": owner, "why": "not one of the five owner labels"}
+        return {"ok": False, "owner": owner, "why": "not one of the owner labels"}
     if not record_ok(rec, owner):
         why = "%s has not uploaded a console snapshot yet" % owner
         if fetch_why and source == "cache":
@@ -773,19 +715,16 @@ def view(owner, rec, now_ms, online=None, source="worker", fetch_why=None, seen=
            # the reviewer on r3 - the check-in "online" stands on (the recorder's report when it is the recorder)
            "liveAt": _live_at,
            "liveUntil": (_live_at + live_bound_ms()) if (state == "live" and _live_at is not None) else None}
-    # v3880 (#27) - the other PCs of this label: their characters fold into the one answer the shadow reads, and the
-    # words name each (its key, how old its upload is) so a character only the OLD ALT saw is never presented as unsourced
+    # v3890 (#182, his 11-09: "each console and whatever it itself is rendering should be showing ... at that individual
+    # profile") - A PROFILE IS ONE PC. v3880 folded the other PCs of a label into the one answer the shadow reads, so his
+    # Mac's shadow of Konyo · ALT showed the OLD ALT's 26 characters as the work ALT's (MEASURED 11-09: the work ALT's own
+    # console had learned 0). Another PC the site still serves for this label is NAMED, never folded in; it leaves the
+    # label's ring when it is approved under its own (functions/api/roster.js leaveOtherRings).
     if isinstance(rec.get("others"), list) and rec["others"]:
-        try:
-            out["stores"], said = with_others(rec["stores"], rec["others"], now_ms)
-        except Exception as e:
-            said = [{"keyId": None, "ago": None, "chars": None, "why": "the other PCs could not be joined (%s)" % type(e).__name__}]
-        out["others"] = said
-        out["words"] += " · " + "; ".join(
-            ("another PC of this label (key %s%s) adds %s" % (x.get("keyId") or "?", ", uploaded " + x["ago"] if x.get("ago") else "",
-                                                              "%d character(s)" % x["chars"] if isinstance(x.get("chars"), int)
-                                                              else "nothing: " + str(x.get("why"))))
-            for x in said)
+        keys = [(_rp.short_key_id(o.get("keyId")) or "?") for o in rec["others"] if isinstance(o, dict)]
+        out["others"] = [{"keyId": k, "folded": False} for k in keys]
+        out["words"] += " · another PC still shares this profile on the site (key %s) - not shown here: each PC is its own " \
+                        "profile, and it leaves this one when its own is approved" % ", ".join(keys)
     iv = rec.get("intentVerified")
     out["intentVerified"] = iv if isinstance(iv, bool) else None
     kid = _rp.short_key_id(rec.get("keyId"))

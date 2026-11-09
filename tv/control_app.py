@@ -5200,6 +5200,8 @@ def _roster_claimed_name():
     # owner is not one of the five labels" - 17 characters and their gear stuck on it since 11-04). `sharesLabel` names
     # the label it publishes under; the site keeps its rows and profile in their own slot once he approves its key with
     # "add" (functions/api/roster.js RING). Only one of the five labels is taken - anything else is no label at all.
+    # v3890 (#182, his 11-09 "they need to separate like they were"): "OLD PC ALT" is now a label of its own, so the OLD
+    # ALT publishes as itself and this sharing is read only for a name that is still no label; "add" is refused by the site.
     try:
         import roster_publish as _rpl
         if name not in _rpl.OWNERS:
@@ -5773,9 +5775,10 @@ def roster_approve(owner, key_id, decision, _post=None, now_ms=None):
         label = None
     if label not in ROSTER_APPROVERS:
         return {"ok": False, "why": "this PC is not one that approves new PCs"}
-    # v3880 (#27) - "add": the new PC joins the label beside its first key (both keep publishing, each into its own slot)
-    if decision not in ("approve", "add", "deny") or not isinstance(owner, str) or not isinstance(key_id, str):
-        return {"ok": False, "why": "an approval names an owner, a key id and approve, add or deny"}
+    # v3890 (#182, his 11-09 "they need to separate like they were") - no "add": each PC is its own profile (the site refuses
+    # it too, functions/api/roster.js); a new PC is approved under its own label
+    if decision not in ("approve", "deny") or not isinstance(owner, str) or not isinstance(key_id, str):
+        return {"ok": False, "why": "an approval names an owner, a key id and approve or deny"}
     body = {"kind": "approve", "approver": label, "owner": owner, "keyId": key_id[:16], "decision": decision,
             "signedAt": int(now_ms if now_ms is not None else time.time() * 1000)}
     got = (_post or _roster_post)(_ROSTER_URL, body, os.path.join(_log_root(), ".roster_key.json"))
@@ -6381,7 +6384,7 @@ def _frames_view(owner):
     import shadow_sessions as _ss
     now_ms = int(time.time() * 1000)
     if owner not in _cs.OWNERS:
-        return _ss.view(owner, None, now_ms, fetch_why="ask for one of the five owner labels")
+        return _ss.view(owner, None, now_ms, fetch_why="ask for one of the owner labels")
     cdir = _frames_cache_dir()
     rec, source, why, unread = None, "worker", None, True
     held = _beacon_suppressed_by()

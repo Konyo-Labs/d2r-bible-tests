@@ -10,6 +10,7 @@ asks the one rule. Python and the page could not share a source without a new se
 three lists to one value and the two rules to one answer for every fleet row a reader can be handed. Measured on the way:
 Python read a nickname untrimmed and the page trimmed it, so " Dean " was Dean's row to the eyes and nobody's to the
 snapshot's online check; owner_of now trims as the page does.
+v3890 (#182, his 11-09 "they need to separate like they were"): SIX labels - the OLD ALT is its own profile, "OLD PC ALT".
 
 Python + node (the page's own rule and shadow reader, cut from control_ui.html and run). RED_PROOF below.
 """
@@ -80,7 +81,7 @@ class TheRosterLabelsAreOneList(unittest.TestCase):
         page = _node("var window = {};\n" + _cut(_read(UI), RULE) + "\nprocess.stdout.write(JSON.stringify(_FLEET_ROSTER_OWNERS));")
         m = re.search(r"^export const OWNERS = (\[[^\]\n]*\]);", _read(ROSTER_JS), re.M)
         self.assertIsNotNone(m, "PREMISE: the worker's OWNERS line moved")
-        self.assertEqual(len(RP.OWNERS), 5, "PREMISE: the roster is not five labels")
+        self.assertEqual(len(RP.OWNERS), 6, "PREMISE: the roster is not six labels (v3890 #182: OLD PC ALT is its own)")
         self.assertEqual(page, list(RP.OWNERS), "the console page's labels are not roster_publish's")
         self.assertEqual(json.loads(m.group(1)), list(RP.OWNERS), "the worker's labels are not roster_publish's")
 
@@ -124,13 +125,13 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2924 - the console page's list drifts from roster_publish's",
      "file": "tv/control_ui.html",
-     "find": "  var _FLEET_ROSTER_OWNERS = ['Konyo \\u00b7 Mac', 'Konyo \\u00b7 ALT', 'Konyo \\u00b7 GrokBot', 'Dean', 'Wife PC'];\n",
-     "replace": "  var _FLEET_ROSTER_OWNERS = ['Konyo \\u00b7 Mac', 'Konyo \\u00b7 ALT', 'Konyo \\u00b7 GrokBot', 'Dean'];\n",
+     "find": "  var _FLEET_ROSTER_OWNERS = ['Konyo \\u00b7 Mac', 'Konyo \\u00b7 ALT', 'Konyo \\u00b7 GrokBot', 'Dean', 'Wife PC', 'OLD PC ALT'];\n",
+     "replace": "  var _FLEET_ROSTER_OWNERS = ['Konyo \\u00b7 Mac', 'Konyo \\u00b7 ALT', 'Konyo \\u00b7 GrokBot', 'Dean', 'Wife PC'];\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-2924 - the worker's list drifts from roster_publish's",
      "file": "functions/api/roster.js",
-     "find": "export const OWNERS = [\"Konyo · Mac\", \"Konyo · ALT\", \"Konyo · GrokBot\", \"Dean\", \"Wife PC\"];",
-     "replace": "export const OWNERS = [\"Konyo · Mac\", \"Konyo · ALT\", \"Konyo · GrokBot\", \"Dean\", \"Wife PC\", \"Guest\"];",
+     "find": "export const OWNERS = [\"Konyo · Mac\", \"Konyo · ALT\", \"Konyo · GrokBot\", \"Dean\", \"Wife PC\", \"OLD PC ALT\"];",
+     "replace": "export const OWNERS = [\"Konyo · Mac\", \"Konyo · ALT\", \"Konyo · GrokBot\", \"Dean\", \"Wife PC\", \"OLD PC ALT\", \"Guest\"];",
      "matches": 1},
     {"why": "REG-2924 - the page names Konyo on any platform but Windows as his Mac",
      "file": "tv/control_ui.html",

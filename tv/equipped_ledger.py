@@ -925,35 +925,6 @@ def _merge_gear(recs, bars, who="two spellings of this character were seen"):
             "reels": sum(int(rec.get("reels") or 0) for rec in recs), "lastTs": max(lasts) if lasts else None}
 
 
-def merge_pcs(gears, bars):
-    """v3880 (#27) - ONE LABEL'S GEAR FROM EACH OF ITS PCS (his 11-05 ruling for the two ALTs: "share the profile, just
-    split the rows"). -> gear map | None. A character one PC saw keeps what it saw; one both saw is merged by REG-3069's
-    rule (_merge_gear): one item twice is one item, its sightings added; two items in one slot take the one seen LAST, the
-    other kept in alsoSeen; a look with no time makes the slot UNKNOWN. A PC whose gear is UNKNOWN (None) adds nothing,
-    and only when every PC's is UNKNOWN is the answer None - never an empty map read as nothing worn."""
-    known = [g for g in (gears or []) if isinstance(g, dict)]
-    if not known:
-        return None
-    out = {}
-    for g in known:
-        for k, rec in g.items():
-            if not isinstance(rec, dict):
-                continue
-            out.setdefault(k, []).append(rec)
-    merged = {}
-    for k, recs in out.items():
-        if len(recs) == 1:
-            merged[k] = recs[0]
-            continue
-        m = _merge_gear(recs, bars, who="two of this label's PCs saw this character")
-        for extra in ("aliases", "aliasWhy"):
-            v = next((r.get(extra) for r in recs if r.get(extra)), None)
-            if v:
-                m[extra] = v
-        merged[k] = m
-    return merged
-
-
 def fold_aliases(gear, chars, bars):
     """REG-3069 (GrokBot 04:03, #36) - GEAR SEEN UNDER AN ALIAS REACHES ITS CHARACTER. -> gear | None
 

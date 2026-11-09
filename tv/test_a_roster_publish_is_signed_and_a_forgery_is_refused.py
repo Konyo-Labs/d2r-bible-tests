@@ -1161,7 +1161,8 @@ class TheSignatureReachesHisScreen(unittest.TestCase):
                          {"Konyo · Mac": "signature verified (key 0123456789ab)",
                           "Dean": "NOT signature-verified: published without a signature its owner's key made",
                           "Wife PC": "signature UNKNOWN: published before signing",
-                          "Konyo · ALT": RP.CORRUPT_SIGNATURE, "Konyo · GrokBot": None},
+                          "Konyo · ALT": RP.CORRUPT_SIGNATURE, "Konyo · GrokBot": None,
+                          "OLD PC ALT": None},   # v3890 (#182) - a label nothing published to yet has no words
                          "the route no longer hands the panel each row's signature in words")
         _need_node(self)
         drawn = _panel(data, ["Konyo · Mac", "Dean", "Wife PC", "Konyo · ALT", "Konyo · GrokBot"])
