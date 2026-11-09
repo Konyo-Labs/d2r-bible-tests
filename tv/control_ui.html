@@ -24275,8 +24275,23 @@ window._lockMark = function(isOpen, px, label){
          yet") when TH.sessions is empty, and that is a legitimate answer. The failure is a shelf
          with NEITHER cards NOR that hero — content that never arrived at all. */
       var _r = _ov.getBoundingClientRect();
+      /* v3890 (#186, his 11-09 live console: four "0x0 - nothing is visible" refusals 13:30-14:31, and GrokBot's repro -
+         a session's chapter, then Esc or the small x, then THE SHELF; a stale reel, then tab switches, then THE SHELF) -
+         THE DOOR PUTS BACK THE LAYER IT LIVES IN BEFORE IT GIVES UP. #th-shelfov lives inside #theatre inside .stage, and
+         .stage is display:none on the Sessions view; a path that leaves the view or the theatre layer behind (the chapter
+         jump, the wrong-reel return, a tab switch) left a shelf that painted into a box with no size, a x nobody could see,
+         and only a reload out. So a 0x0 shelf is first given its layer back - off the Sessions view, the theatre shown - and
+         measured again; only a shelf still invisible after that is refused, and the refusal says which layer was hiding it. */
       if (!_r || _r.height < 2 || _r.width < 2) {
-        throw new Error(Math.round(_r ? _r.width : 0) + 'x' + Math.round(_r ? _r.height : 0) + ' — nothing is visible');
+        var _lay0 = _shelfLayerWords();
+        _shelfRestoreLayer();
+        try { thShelf(true); } catch (_e0) {}
+        _ov = $('th-shelfov');
+        _r = _ov ? _ov.getBoundingClientRect() : null;
+        if (!_r || _r.height < 2 || _r.width < 2) {
+          throw new Error(Math.round(_r ? _r.width : 0) + 'x' + Math.round(_r ? _r.height : 0) + ' — nothing is visible ('
+            + _lay0 + '; after putting the layer back: ' + _shelfLayerWords() + ')');
+        }
       }
       var _cards = _ov.querySelectorAll('.sh-card').length;
       var _empty = !!_ov.querySelector('.sh-empty-hero');
@@ -24312,6 +24327,30 @@ window._lockMark = function(isOpen, px, label){
   /* v2446 — SAY IT, AND TELL THE DOCTOR. Konyo: "hook that to the heart of the console so it
      doesnt regress in the future either." A refusal that only reaches the console log is a
      refusal he cannot see, and the heart can only supervise what reports in one vocabulary. */
+  /* v3890 (#186) - the layer the shelf lives in, in words: the view, the theatre's state, the stage's display, and the first
+     ancestor of the shelf that is not laid out. A refusal carries this, so the Doctor's record says WHICH layer hid it. */
+  function _shelfLayerWords(){
+    try {
+      var ov = $('th-shelfov'), th = $('theatre'), st = $('stage'), b = document.body, hid = '';
+      for (var e = ov; e && e !== b; e = e.parentElement) {
+        var cs = window.getComputedStyle ? getComputedStyle(e) : null;
+        if (e.hidden || (cs && cs.display === 'none')) { hid = e.id ? '#' + e.id : String(e.className || e.tagName).split(' ')[0]; break; }
+      }
+      return 'view ' + (b.getAttribute('data-view') || 'home') + ', theatre ' + (TH && TH.open ? 'open' : 'shut')
+        + (th && th.hidden ? ' (hidden)' : '') + ', stage ' + (st && window.getComputedStyle ? getComputedStyle(st).display : '?')
+        + (hid ? ', hidden at ' + hid : '');
+    } catch (e) { return 'layer unreadable'; }
+  }
+  window._shelfLayerWords = _shelfLayerWords;
+  /* v3890 (#186) - give the shelf its layer back: off the Sessions view (the one view the stage may not take - v1612), the
+     theatre layer shown and open. The same steps thOpen takes, without a reload of the reel. */
+  function _shelfRestoreLayer(){
+    try { if (document.body.getAttribute('data-view') === 'sessions' && typeof window._toTVD === 'function') window._toTVD(); } catch (e) {}
+    try { var th = $('theatre'); if (th) th.hidden = false; } catch (e) {}
+    try { document.body.classList.add('theatre-open'); } catch (e) {}
+    try { TH.open = true; } catch (e) {}
+  }
+  window._shelfRestoreLayer = _shelfRestoreLayer;
   function _shelfRefused(err, openErr){
     var ov = $('th-shelfov');
     var why = String((err && err.message) || err || 'unknown');
@@ -24361,6 +24400,14 @@ window._lockMark = function(isOpen, px, label){
       }
     } catch (e0) {}
     try { toast('The Shelf did not open — ' + why, 6000); } catch (e1) {}
+    /* v3890 (#186) - A REFUSAL NOBODY CAN SEE MUST NOT HOLD THE DOOR. Its message and its x render inside the same
+       #th-shelfov, so when that box is 0x0 he saw "no x, Esc dead, only a reload" (GrokBot, 11-09) - and the theatre stayed
+       open, so every next press measured the same invisible box. The toast above has told him; the stage is torn down so the
+       next THE SHELF opens from a clean state. */
+    try {
+      var _rr = ov ? ov.getBoundingClientRect() : null;
+      if (!_rr || _rr.width < 2 || _rr.height < 2) { if (ov) ov.hidden = true; thClose(); }
+    } catch (e2) {}
     try { console.error('[shelf] refused to open:', why); } catch (e2) {}
     /* one vocabulary, the one the console already collects faults in */
     try {

@@ -112,6 +112,26 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3509 - THE SHELF OPENED AS A 0x0 PANEL WITH NO X, AND ONLY A RELOAD GOT HIM OUT (v3890, #186, his live console + GrokBot)
+His live console logged four "The Shelf did not open - 0x0 - nothing is visible" refusals on 11-09 between 13:30 and 14:31
+(ui_faults.jsonl, shelf-door-refused - the record named no layer); the live-panel gate caught one on screen during the v3889
+pre-flight. GrokBot (#230 11-09 13:26, steps and shots): a session's chapter, then Esc or the small x, then THE SHELF -> 0x0, no
+x, Esc dead, only a reload; any stale reel ("came back as another reel"), then Vault -> Sessions -> TV-D, then THE SHELF -> 0x0
+every press; after x CLOSE the first press does nothing. CAUSE: #th-shelfov lives inside #theatre inside .stage, and .stage is
+display:none on the Sessions view (body[data-view="sessions"], v1612 - the stage may not take Sessions); a path that leaves
+the view or the theatre layer behind leaves THE SHELF painting into a box with no size, and the refusal's own message and x
+render into that same box, while TH stays open so every next press measures it again. MEASURED 11-09 on a private console
+(render_check's sandbox, 23 reels) with the state forced (theatre open, view back on Sessions; or the theatre layer hidden):
+old code refused "0x0" on the first press and needed three; new code opens the shelf (811x361) on the first. FIX: a 0x0
+shelf first gets its layer back (_shelfRestoreLayer: off the Sessions view through _toTVD, the theatre shown, theatre-open,
+TH.open) and is measured again; only a shelf still invisible is refused, and the refusal names the layer (_shelfLayerWords:
+view, theatre state, stage display, the first hidden ancestor) for the Doctor; a refusal whose own box is 0x0 tears the
+theatre down so the next press opens clean. NOT REPRODUCED here, named: the exact chapter path (the sandbox's reels have no
+chapters) and GrokBot's stale-reel + tab path (it opened at 811x361 here, with the wrong reel forced too) - the fix holds the
+state they leave, whichever path left it. ALSO NAMED, not fixed: "... more" puts Delete session beside Clip (#186).
+GUARD: test_the_shelf_door_puts_back_its_layer (the shipped helpers in node; the door's order; 4 red-proofs RED) and
+tests/v3890_shelf_door_puts_back_its_layer.spec.ts (both forced states, real layout, GitHub).
+
 ### REG-3508 - THE WORK ALT LEARNED NO CHARACTER: ITS OWN LOBBY WAS 0.011 TOO COLOURFUL FOR THE BANDS (v3890, #183, his call)
 His words 11-09: "i thought we calliberated it to deans PC already.. so deans does work? and windows alts do not yet? make sure
 its working and calliberated plaese". MEASURED 11-09 (each PC's own /api/chars_learned): OLD ALT 26 characters (800x450,
