@@ -13292,6 +13292,10 @@ function d2jspEvidenceHtml(sim, q, opts) {
 /* v3844 - THE PRICE SEARCH reads what a trader types ("anni 20/20/10", "40/15 shako", "jmod", "torch sorc 18/18"): the
    words left after the slash rolls, the bare numbers and the condition words are the item the forum is searched for,
    and the rolls are the roll you hold. */
+function d2jspSearchChunks(text) {
+  /* v3891 (#192) - "shako, jmod" is two searches: a comma splits what he typed, and each chunk is one item */
+  return String(text || '').split(',').map(function (s) { return s.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+}
 function d2jspParseSearch(text) {
   var t = String(text || '').replace(/\s+/g, ' ').trim(), tuples = [], m, re = /(\d+(?:\/\d+)+)/g;
   while ((m = re.exec(t))) tuples.push(m[1].split('/').map(Number));
@@ -14746,10 +14750,20 @@ function d2jspDbArrange(root) {
   function priceSearch(){
     var el = document.getElementById('d2jsp-price-q'), out = document.getElementById('d2jsp-price-out');
     if (!el || !out) return;
-    var parsed = d2jspParseSearch(el.value);
-    if (!parsed.item) { out.textContent = 'Type an item, for example anni 20/20/10.'; return; }
-    var gen = ++searchGen, paths = ['/api/d2jsp_quote?item=', '/d2r/api/d2jsp_quote?item='], i = 0;
-    out.textContent = 'Reading d2jsp posts dated 2026 or later for ' + parsed.item + '.';
+    var chunks = (typeof d2jspSearchChunks === 'function')
+      ? d2jspSearchChunks(el.value)
+      : String(el.value || '').split(',').map(function (s) { return s.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+    var items = [];
+    for (var ci = 0; ci < chunks.length; ci++) {
+      var one = d2jspParseSearch(chunks[ci]);
+      if (one && one.item) items.push(one);
+    }
+    if (!items.length) { out.textContent = 'Type an item, for example anni 20/20/10.'; return; }
+    var gen = ++searchGen, paths = ['/api/d2jsp_quote?item=', '/d2r/api/d2jsp_quote?item='];
+    out.textContent = 'Reading d2jsp posts dated 2026 or later for ' + items.map(function (p) { return p.item; }).join(', ') + '.';
+    var htmls = [], left = items.length;
+    items.forEach(function (parsed, idx) {
+    var i = 0;
     function show(j){
       if (gen !== searchGen) return;     /* only the newest search paints */
       var sim = d2jspSimilarPrice(j, parsed.roll, parsed.item);
@@ -14777,19 +14791,27 @@ function d2jspDbArrange(root) {
       var backend = document.getElementById('d2jsp-price-backend');
       if (backend) backend.innerHTML = d2jspBackendHtml(j && j.db, j && j.fg, {sync:true, say:j && j.say}) + d2jspDatabaseButton();
     }
+    function done(j){
+      if (gen !== searchGen) return;
+      show(j);
+      htmls[idx] = '<section data-d2jsp-search-item="' + esc(parsed.item) + '">' + out.innerHTML + '</section>';
+      if (--left) return;
+      if (items.length > 1) out.innerHTML = htmls.join('');   /* v3891 (#192) - one card (one section) each */
+    }
     function step(){
-      if (i >= paths.length) { show({ fg: null, n: 0, readAt: null, reason: 'unanswered' }); return; }
+      if (i >= paths.length) { done({ fg: null, n: 0, readAt: null, reason: 'unanswered' }); return; }
       fetch(paths[i++] + encodeURIComponent(parsed.item)).then(function(r){ return r.json(); }).then(function(j){
         /* v3861 (#230 6644125606) - 'paused' is an ANSWER: the console said why it did not read. It used to fall through to
            the site path (404 on the console) and print "No price reader answered" while the console had answered. */
         /* REG-3356 (the Grok CLI on v3877, #231 6704665595) - EVERY REASON THE CONSOLE GIVES IS ITS ANSWER: 'unread' (the forum
            request failed twice, or a search was held back - REG-3326/REG-3331) fell through to the site path, a 404 on the
            console, and painted "No price reader answered" with no database - so neither the stored price nor the why showed */
-        if (j && typeof j.reason === 'string' && j.reason && j.reason !== 'unanswered') { show(j); return; }
+        if (j && typeof j.reason === 'string' && j.reason && j.reason !== 'unanswered') { done(j); return; }
         step();
       }).catch(function(){ step(); });
     }
     step();
+    });
   }
   window._d2jspPriceSearch = priceSearch;
   window._d2jspLamp = function(signIn){ return d2jspLamp(signIn); };   /* #56 - for its law */
@@ -14861,6 +14883,19 @@ function d2jspDbArrange(root) {
   document.addEventListener('submit', function(ev){
     if (ev.target && ev.target.id === 'd2jsp-price-form') { ev.preventDefault(); priceSearch(); }
   });
+  function priceSearchIdle(){
+    /* v3891 (#192) - the search field's clear (the native x, or emptying it) empties the results too */
+    searchGen++;
+    var out = document.getElementById('d2jsp-price-out');
+    if (out) out.textContent = (typeof d2jspReadSay === 'function') ? d2jspReadSay() : 'Reads d2jsp posts dated 2026 or later, board 268 only. Nothing is posted.';
+  }
+  window._d2jspPriceSearchIdle = priceSearchIdle;
+  function priceSearchMaybeIdle(ev){
+    var t = ev && ev.target;
+    if (t && t.id === 'd2jsp-price-q' && !String(t.value || '').trim()) priceSearchIdle();
+  }
+  document.addEventListener('input', priceSearchMaybeIdle);
+  document.addEventListener('search', priceSearchMaybeIdle);
   /* REG-3390 - the database panel's Find and Sort */
   ['input', 'change'].forEach(function (kind) {
     document.addEventListener(kind, function (ev) {
