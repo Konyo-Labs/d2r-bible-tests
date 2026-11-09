@@ -105,6 +105,54 @@ MAX_PROOF_GAP_S = 75 * 60
 #: mean 154 s over 22 shards; the clean wave, the checkpoint writes and two lanes never perfectly busy are not in the
 #: per-proof gaps). The plan's balance is unchanged by a common factor; the wall it SAYS, and its headroom, are not
 SHARD_WALL_FACTOR = 1.30
+#: v3891 (#194) - the factor a round MEASURES (real prove seconds over the plan's modelled wall, per shard, median) rides
+#: the carried prices as "wallFactor" and the next plan uses it. It only ever RAISES the committed 1.30 (REG-3365's rule for
+#: prices, held for the factor: under-planning costs a whole round at minute 55, over-planning a few idle minutes), and a
+#: shard that modelled under this many seconds says nothing about the factor (setup noise outweighs its work)
+WALL_FIT_MIN_MODEL_S = 120
+
+
+def wall_factor(path=None, env=None):
+    """v3891 (#194) - the wall factor the plan multiplies by: the carried table's measured "wallFactor" (HEART2_SHARD_COSTS)
+    when it is higher than the committed SHARD_WALL_FACTOR, else that constant. -> float"""
+    if path is None:
+        path = (env if env is not None else os.environ).get("HEART2_SHARD_COSTS") or ""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            f = (json.load(fh) or {}).get("wallFactor")
+        if isinstance(f, (int, float)) and not isinstance(f, bool) and f > SHARD_WALL_FACTOR:
+            return float(min(f, 3.0))
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return SHARD_WALL_FACTOR
+
+
+def fit_wall_factor(shard_dirs, current=None):
+    """v3891 (#194) - what a round measured: each shard's real prove seconds (prove.log: "prove_seconds=") over the wall its
+    plan modelled ("this shard's modelled wall N s", which already carries the factor it was planned with), median over
+    the shards that modelled at least WALL_FIT_MIN_MODEL_S. -> the next factor (never below the committed one) | None
+    when no shard says. current: the factor this round was planned with (its log's walls are scaled by it)."""
+    cur = float(current or SHARD_WALL_FACTOR)
+    ratios = []
+    for d in shard_dirs or []:
+        try:
+            with open(os.path.join(d, "prove.log"), encoding="utf-8", errors="replace") as fh:
+                log = fh.read()
+        except OSError:
+            continue
+        m = re.search(r"this shard's modelled wall (\d+(?:\.\d+)?) s", log)
+        r = re.search(r"prove_seconds=(\d+)", log)
+        if not (m and r):
+            continue
+        model, real = float(m.group(1)), float(r.group(1))
+        if model >= WALL_FIT_MIN_MODEL_S and real > 0:
+            ratios.append(real / model)
+    if not ratios:
+        return None
+    ratios.sort()
+    k = len(ratios) // 2
+    med = ratios[k] if len(ratios) % 2 else (ratios[k - 1] + ratios[k]) / 2.0
+    return round(max(SHARD_WALL_FACTOR, min(3.0, cur * med)), 3)
 #: REG-3273 - the share of a shard's proving window (heart2 starts no proof past job minute 55) the plan's slowest shard
 #: may fill. v3872's slowest shard needed 1.9x its modelled wall and the deadline cut 27 proofs; past this share the plan
 #: says so in the shard's first lines, before a round is spent finding out
@@ -356,9 +404,11 @@ def plan(have, n, costs=None, browser=None, per_proof=None, lanes=RUNNER_LANES, 
         for i in idx:
             out[(name, i)] = k + 1
     if isinstance(report, dict):        # REG-3211 - what the plan expects of each shard, said by the run that cut it
-        # REG-3272 - the wall a shard will REALLY take: the work over its lanes times the measured SHARD_WALL_FACTOR
-        report.update(wall=[round(SHARD_WALL_FACTOR * max(t / lanes, w), 1) for t, w in zip(tot, brw)],
-                      work=[round(t, 1) for t in tot], factor=SHARD_WALL_FACTOR,
+        # REG-3272 - the wall a shard will REALLY take: the work over its lanes times the measured factor (v3891 #194: the
+        # last round's, carried, when higher than the committed SHARD_WALL_FACTOR)
+        _wf = wall_factor()
+        report.update(wall=[round(_wf * max(t / lanes, w), 1) for t, w in zip(tot, brw)],
+                      work=[round(t, 1) for t in tot], factor=_wf,
                       owed=sum(len(o) for _n, o, _d, _u, _f, _b in gates),
                       served=sum(len(d) for _n, _o, d, _u, _f, _b in gates), overCap=sorted(set(over)))
     return out
@@ -791,6 +841,63 @@ def cut_splits(bodies, prev=None):
     for g in cut:
         out[g] = max(out.get(g, 1), 2 * max(1, len(on.get(g) or ())))
     return out
+
+
+#: v3891 (#194, his 11-09: "optimize the #194 all the way and make sure it keeps getting faster self improve it") - THE ROUND
+#: CHOOSES ITS OWN SHARD COUNT. A shard's prove step should model at most this many seconds; the seed job asks choose_n()
+#: for the fewest shards whose slowest one fits, over the SAME inputs every shard plans from (the commit's proofs, the
+#: carried prices, the served list). MEASURED on v3889's round (the old account): the slowest proof shard ran 43 min of a
+#: 22-shard set while workers were never the wait; Konyo-Labs runs 500 jobs at once, so the lever is more, shorter shards.
+TARGET_PROVE_S = 12 * 60
+#: the bounds a chosen count stays inside: never fewer than the old floor of a cold round's useful spread, never more than
+#: leaves room beside the round's other jobs (Windows set, Playwright, agent suites) under the org's 500 at once
+MIN_SHARDS, MAX_SHARDS = 8, 160
+#: past the floor (the costliest single chunk) a count within 5% of it is as fast as the round can be
+FLOOR_SLACK = 1.05
+
+
+def choose_n(have, n_min=MIN_SHARDS, n_max=MAX_SHARDS, target_s=TARGET_PROVE_S, **plan_kw):
+    """v3891 (#194) - the fewest shards whose slowest MODELLED prove wall fits target_s. -> (n, info). Pure.
+
+    plan_kw are plan()'s own (costs, browser, per_proof, lanes, served, caps, splits): the count is chosen by the very model
+    every shard cuts its plan from, so the chooser and the shards cannot disagree about the work. info names the model's
+    slowest wall at n, the owed/served counts and why n was chosen - a target that even n_max cannot meet says so and
+    takes n_max (the round runs, wider, and the next round's measured prices correct the model)."""
+    n_min, n_max = max(1, int(n_min)), max(1, int(n_max))
+    if n_min > n_max:
+        n_min = n_max
+    cache = {}
+
+    def slowest(n):
+        if n not in cache:
+            rep = {}
+            plan(have, n, report=rep, **plan_kw)
+            w = rep.get("wall") or [0.0]
+            cache[n] = (float(max(w)), rep)
+        return cache[n][0]
+    # THE FLOOR. A chunk is never smaller than one proof plus its gate's two clean runs, so past some count more shards
+    # cannot shorten the slowest - MEASURED cold on v3891's tree: 160 shards still modelled 1,064 s, one test_control
+    # proof (~270 s) and its two clean runs x the wall factor. Past the floor a wider round only spends workers, so the
+    # count aims at whichever is larger: the target, or the floor (with FLOOR_SLACK).
+    floor = slowest(n_max)
+    aim = max(float(target_s), floor * FLOOR_SLACK)
+    lo, hi = n_min, n_max                  # slowest(hi) <= aim; find the smallest n that is
+    if slowest(lo) <= aim:
+        hi = lo
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        if slowest(mid) <= aim:
+            hi = mid
+        else:
+            lo = mid
+    rep = cache[hi][1]
+    if floor > target_s:
+        why = ("the slowest proof chunk alone models %d s, over the %d-s target, so %d shard(s) are the fewest that reach "
+               "that floor (%d s) - more would only spend workers" % (floor, target_s, hi, cache[hi][0]))
+    else:
+        why = "%d shard(s) are the fewest whose slowest models %d s, inside the %d-s target" % (hi, cache[hi][0], target_s)
+    return hi, {"n": hi, "slowestModelS": round(cache[hi][0], 1), "targetS": target_s, "floorS": round(floor, 1),
+                "owed": rep.get("owed"), "served": rep.get("served"), "why": why}
 
 
 def headroom(wall, window=PROVE_WINDOW_S, share=PLAN_HEADROOM):
@@ -1252,10 +1359,24 @@ def main(argv=None):
         out = a.out or os.path.join(os.path.dirname(os.path.abspath(__file__)), "proof_costs.json")
         heads = sorted(set(str(((b or {}).get("shard") or {}).get("head") or "")[:12] for b in bodies))
         os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+        # v3891 (#194) - and the wall factor this round MEASURED (real prove seconds over modelled, per shard), never below
+        # the one it was planned with: the next plan's walls - and the seed's chosen count - start from it
+        _dirs = [os.path.join(a.measure, d) for d in sorted(os.listdir(a.measure))
+                 if os.path.isdir(os.path.join(a.measure, d))]
+        _cur = SHARD_WALL_FACTOR
+        for d in _dirs:
+            pf = os.path.join(d, PREV_COSTS_NAME)
+            if os.path.isfile(pf):
+                _cur = wall_factor(pf)
+                break
+        _fit = fit_wall_factor(_dirs, current=_cur)
+        _wf_next = max(_cur, _fit) if _fit is not None else _cur
+        print("  v3891 (#194) WALL FACTOR: planned with %.3f, this round measured %s -> the next round plans with %.3f"
+              % (_cur, ("%.3f" % _fit) if _fit is not None else "nothing (no shard modelled enough to say)", _wf_next))
         with open(out + ".tmp", "w", encoding="utf-8") as fh:
             json.dump({"v": 1, "measuredOn": "a GitHub runner, %d shard(s) at %s" % (len(bodies), ",".join(heads)),
-                       "perProof": dict(sorted(got.items())), "split": dict(sorted(split.items()))}, fh, indent=2,
-                      ensure_ascii=False)
+                       "perProof": dict(sorted(got.items())), "split": dict(sorted(split.items())),
+                       "wallFactor": _wf_next}, fh, indent=2, ensure_ascii=False)
             fh.write("\n")
         os.replace(out + ".tmp", out)
         print("  REG-2593: %d gate(s) priced from %d shard cache(s) -> %s (REG-3401: %d carried from the prices this round "
