@@ -32292,6 +32292,33 @@ function escC(s) {
        down   · no rotation at all, and no pretending otherwise
      ─────────────────────────────────────────────────────────────────────────────────────────── */
   var _tzTimer = null;
+  var _tzLastD = null, _tzNeedBoard = false, _tzWaitTimer = null;
+  var _tzBoardW = function () {
+    try { var f = document.getElementById('tvd-eng'), w = f && f.contentWindow; return (w && typeof w.tzZoneGrade === 'function') ? w : null; }
+    catch (e) { return null; }
+  };
+  function _tzStopWait() {
+    if (_tzWaitTimer) { clearInterval(_tzWaitTimer); _tzWaitTimer = null; }
+  }
+  function _tzWaitForBoard() {
+    /* v3891 (#133) - the first paint often beats the board iframe (bible.html is large); wait for
+       tzZoneGrade, then grade the last rotation again. A board that never answers stays density-only
+       and says so (REG-3495) - we do not guess. */
+    var f = document.getElementById('tvd-eng');
+    if (f && !f._tzGradeArmed) {
+      f._tzGradeArmed = 1;
+      f.addEventListener('load', function () {
+        if (_tzNeedBoard && _tzLastD && _tzBoardW()) _tzPaint(_tzLastD);
+      });
+    }
+    if (_tzWaitTimer) return;
+    var tries = 0;
+    _tzWaitTimer = setInterval(function () {
+      tries++;
+      if (_tzBoardW() && _tzLastD) { _tzStopWait(); _tzPaint(_tzLastD); }
+      else if (tries >= 40) _tzStopWait();
+    }, 500);
+  }
 
   function _tzPaint(d) {
     var body = document.getElementById('tz-body');
@@ -32312,6 +32339,8 @@ function escC(s) {
         return;
       }
     }
+    _tzLastD = d;
+    _tzNeedBoard = !_tzBoardW();   /* v3891 (#133) - first paint often beats #tvd-eng */
     /* v1567 — a composition rather than two label:value rows. The zone he is deciding about gets
        hero weight; NEXT is plainly secondary; the multi-zone rotations that D2R actually serves
        ("Nihlathak's Temple, Halls of Anguish, Halls of Pain, and Halls of Vaught") break into
@@ -32530,10 +32559,6 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
        terror than on their best plain run: GOOD, PRIME at half the runs or fewer, THIN otherwise (grey and not clickable, his
        v1915 rule). A notable zone stays PRIME on its own reason. A board that cannot be asked leaves the density grade and
        says so in the hover - UNKNOWN about his items, never a guess. Density stays on the card as evidence. */
-    var _tzBoardW = function () {
-      try { var f = document.getElementById('tvd-eng'), w = f && f.contentWindow; return (w && typeof w.tzZoneGrade === 'function') ? w : null; }
-      catch (e) { return null; }
-    };
     var _tzN = function (n) { return Number(n || 0).toLocaleString('en-US'); };
     var _tzGrade = function (name) {
       var t = _tzTier(name), k = _tzKey(name), o = {}, g = null, W = _tzBoardW();
@@ -32864,6 +32889,8 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
       catch (e) { t = ''; }
       upd.textContent = d.stale ? ('stale · last good ' + t) : (t ? 'updated ' + t : '');
     }
+    if (_tzNeedBoard) _tzWaitForBoard();
+    else _tzStopWait();
   }
 
   /* v1581 — minutes to the next SLOT BOUNDARY (:00 or :30). v1567 said "terror zones turn hourly"

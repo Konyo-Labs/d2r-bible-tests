@@ -123,6 +123,15 @@ at most 10 jobs at once (counted three times over a minute: 10 running, 20 queue
 call, 11-09 18:50: "stop it.. and move it back to the pro one". `python3 tv/ci_speed.py --show` prints the ledger. A
 measuring fault is said and never refuses a ship; only the real ship (main()) is measured.
 GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
+### REG-3527 - THE TERROR-ZONE CARD SETTLED ON DENSITY BECAUSE THE FIRST PAINT BEAT THE BOARD IFRAME (v3891, #133)
+REG-3495 already grades a zone by his missing items and leaves density with "your grail could not be asked,
+so this grade is density only" when the board cannot be asked. MEASURED: `_tzFetch` paints as soon as `/api/tz`
+answers, and `#tvd-eng` loads the whole board; the first paint almost always beats that iframe, and the next
+automatic fetch is 60-120 s later (only while Sessions is on screen). `_tzPaint` now remembers the rotation,
+notices when `tzZoneGrade` is not there yet, and waits for it (the iframe's load, and a short poll) to grade
+that same rotation again. A board that never answers still keeps the density grade and says so.
+GUARD: test_a_terror_zone_waits_for_the_board_before_settling_on_density (2 red-proofs).
+
 ### REG-3526 - CLEARING THE PRICE SEARCH LEFT THE LAST RESULTS ON SCREEN (v3891, #192)
 The field is already `type=search` (the browser draws a native clear). Emptying it did not bump `searchGen` or restore
 the idle line, so the last cards stayed and an in-flight answer could paint over the empty field. `priceSearchIdle` now
