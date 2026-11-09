@@ -21182,6 +21182,40 @@ def board_build():
     return out
 
 
+def char_window(name, ejs=None, win=None):
+    """v3889 (#28, REG-3499) - ONE SAVED BUILD'S CHARACTER WINDOW, AS DATA, FOR GROKBOT'S d2planner ROUNDS. Read-only.
+
+    GrokBot 6720536745 (11-08): UNKNOWN - "the character window's gear and stats live only in the board's storage";
+    /api/chars_learned carries class + level and 3 of 10 slots. The board computes the window (bible.html
+    window.charWindowSheet: the same engine call the Stats column paints from); this asks it through the board window, the
+    same hop into #tvd-eng board_ownership makes, and writes nothing. A board that does not answer is UNKNOWN with its
+    reason, never an empty character. -> the board's answer | {ok: False, why}"""
+    nm = str(name or "").strip()[:80]
+    if not nm:
+        return {"ok": False, "why": "name a saved build: /api/char_window?name=<build name>"}
+    w = win if win is not None else (globals().get("_BOARD_WIN") or globals().get("_MAIN_WIN"))
+    if w is None or (win is None and not globals().get("_WINDOW_LIVE")):
+        return {"ok": False, "why": "the board window is not open - open TV DIABLO and try again"}
+    js = ("(function(){try{var _ctx=window;"
+          "if(typeof window.charWindowSheet!=='function'){try{var _fr=document.getElementById('tvd-eng');"
+          "var _cw=_fr&&_fr.contentWindow;if(_cw&&typeof _cw.charWindowSheet==='function')_ctx=_cw;}catch(_h){}}"
+          "if(typeof _ctx.charWindowSheet!=='function')return JSON.stringify({ok:false,"
+          "why:'this board build has no charWindowSheet - an older board, or the board is not loaded'});"
+          "return JSON.stringify(_ctx.charWindowSheet(%s));"
+          "}catch(e){return JSON.stringify({ok:false,why:String(e&&e.message||e)})}})()") % json.dumps(nm)
+    try:
+        raw = (ejs or _ejs)(w, js, timeout=8.0)
+    except Exception as e:
+        return {"ok": False, "why": "the board refused the read: %s" % str(e)[:160]}
+    if not raw:
+        return {"ok": False, "why": "the board did not answer in time - the window is UNREAD, not empty"}
+    try:
+        out = json.loads(raw)
+    except Exception:
+        return {"ok": False, "why": "the board answered something unreadable"}
+    return out if isinstance(out, dict) else {"ok": False, "why": "the board answered a %s, not a window" % type(out).__name__}
+
+
 def board_ownership(sample=0, dump_stores=False):
     """ASK THE BOARD WHAT HE OWNS. The read direction of the channel that already applies.
 
@@ -52644,6 +52678,12 @@ class Handler(BaseHTTPRequestHandler):
             # REG-1933 — the reel's id wins over its position; see _theatre_session.
             _sid_q = str((q.get("sid") or [""])[0]).strip()[:80] or None
             self._json(200, self._theatre_session(num, pack=pack, sid=_sid_q))
+            return
+        if path == "/api/char_window":
+            # v3889 (#28, REG-3499) - one saved build's character window as data, read-only (GrokBot's d2planner rounds)
+            from urllib.parse import parse_qs, urlparse
+            q = parse_qs(urlparse(self.path).query)
+            self._json(200, char_window((q.get("name") or [""])[0]))
             return
         if path == "/api/forensics":
             # 🔬 READS FORENSICS — the per-item forensic X-ray for one reel (sid) or the newest.

@@ -112,6 +112,20 @@ the pictures they ask for ship. Every name they ask for WAS in art/ (measured: 1
 doors: the zone art expands through the tz-info feed, the boss through boss-portraits, and the superunique sprites through a
 new feed, qw-su-sprites (the 10 values of _QW_SU_ART, floor 10), so a renamed or missing .gif fails the law instead of
 showing an empty tile. Law: test_every_picture_the_console_asks_for_is_shipped, red-proofs PROVEN (3 new).
+### REG-3499 - THE CHARACTER WINDOW COULD NOT BE HELD AGAINST d2planner: ITS GEAR AND STATS LIVED ONLY IN THE BOARD (v3889, #28)
+His 11-08 ~12:40: do #28 now - GrokBot compares the character window with d2planner, round by round. GrokBot 6720536745:
+UNKNOWN - "the character window's gear and stats live only in the board's storage"; /api/chars_learned carries class + level
+and 3 of 10 slots, so no round could start. Now the board computes one saved build's window as data (bible.html
+window.charWindowSheet: class, level, the gear _cbEngineBuild hands the engine, every Stats row - value, unit, source - with
+the breakpoint sentence the column paints, from the same eng.sheet call at the window's own difficulty and quests) and the
+console serves it read-only: GET /api/char_window?name=<build> (control_app.char_window, the board_ownership hop into
+#tvd-eng). A build is found by its id or its name (case and spaces folded); an unknown name is refused with the names the
+board holds; a board that does not answer is UNKNOWN ("UNREAD, not empty"); nothing is written (pinned: his builds' bytes
+are the same before and after). For GrokBot: GET /api/char_window?name=<a build> on his console after the v3889 rollout, then
+the same build in d2planner. GUARD: test_a_character_window_is_served_as_data (a Sorceress 90 in Crown of Ages, Skin of the
+Vipermagi, Mara's and the Oculus through the real builder and engine in node: its FCR step equals the painted one; the
+console half with a stubbed board; 3 red-proofs RED).
+
 ### REG-3498 - THE WINDOWS PROOF SET WAS CUT AT ITS DEADLINE AND THE CUT FELL ON THE RIVER LOCKS' GUARDS: BOTH ALTS' RIVERS STUCK (v3889, #103/#44)
 His ask 11-08: "for fleet the river should be flowing for all pcs". v3888 (REG-3478-3482) narrowed each lock to its own
 guards' proofs; his Mac's locks all opened, and the live Fleet at 09:40 still read both ALTs "BLOCKED river stuck". MEASURED

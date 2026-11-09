@@ -79485,6 +79485,34 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     return { eng: eng, sh: sh };
   }
 
+  /* v3889 (#28, his 11-08 ~12:40 "do it now"; GrokBot 6720536745: UNKNOWN - "the character window's gear and stats live only in the
+     board's storage", /api/chars_learned has class + level and 3 of 10 slots) - ONE SAVED BUILD'S WINDOW, AS DATA, READ-ONLY: the
+     class, level, the gear the engine reads (_cbEngineBuild) and every Stats row with its breakpoint sentence - the same
+     eng.sheet call _cbStatsHtml paints from, at the window's own difficulty and quests - so the console can serve it
+     (GET /api/char_window?name=) and GrokBot can hold it against d2planner. Nothing is written; a name it does not hold is
+     refused with the names it does. -> { ok, id, name, cls, level, difficulty, quests, gear, notApplied, rows } | { ok: false, why } */
+  window.charWindowSheet = function(name){
+    try {
+      var all = _cbAll(), key = String(name == null ? '' : name), want = key.trim().toLowerCase(), id = null;
+      if (Object.prototype.hasOwnProperty.call(all, key)) id = key;
+      else Object.keys(all).forEach(function(k){ if (!id && all[k] && String(all[k].name || '').trim().toLowerCase() === want && want) id = k; });
+      if (!id) return { ok: false, why: 'no saved build is named ' + JSON.stringify(key),
+                        names: Object.keys(all).map(function(k){ return String((all[k] || {}).name || ''); }).filter(Boolean).slice(0, 60) };
+      var b = all[id], eng = window.D2R_CHAR_ENGINE;
+      if (!eng || typeof eng.sheet !== 'function') return { ok: false, why: 'the stats engine is not loaded on this page' };
+      var lost = [], eb = _cbEngineBuild(b, eng, lost);
+      var sh = eng.sheet(eb, { difficulty: st.diff, quests: !!st.quests, bp: _cbBpWho(b) });
+      if (!sh || !sh.rows) return { ok: false, why: 'the stats engine returned no rows' };
+      _cbIasOnto(sh, b, eng);
+      var say = (eng.bp && typeof eng.bp.say === 'function') ? eng.bp.say : null;
+      return { ok: true, id: id, name: String(b.name || ''), cls: b.cls || null, level: b.level || null, difficulty: st.diff,
+               quests: !!st.quests, gear: { slots: eb.slots, inv: eb.inv, activeSet: eb.activeSet }, notApplied: lost,
+               rows: sh.rows.map(function(r){
+                 return { key: r.key, label: r.label, value: r.value == null ? null : r.value, unit: r.unit || '', source: r.source || null,
+                          step: (r.bp && say) ? say(r.bp) : null };
+               }) };
+    } catch (e) { return { ok: false, why: 'the window could not be computed (' + String(e && e.message || e) + ')' }; }
+  };
   function _cbStatsHtml(b, s){
     var eng = window.D2R_CHAR_ENGINE, rows = null, why = '', sh = null, lost = [];
     if (eng && typeof eng.sheet === 'function'){
