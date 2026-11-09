@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3892",
+  "ver": "v3893",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3892: shadow sessions share the four boxes, a press outside closes the card",
+  "note": "v3893: the Fleet middle eye stays dark unless a reel is recording",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

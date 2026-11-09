@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3893",
+    "date": "2026-11-09",
+    "items": [
+      "The Fleet middle eye is dark unless a reel is recording (#189, REG-3549)",
+      "The stash reader runs only in play, on the shared screen templates (#187, #185, REG-3550)",
+      "A session is tagged from the highlighted name on character select (REG-3551)",
+      "Scenario templates follow the agreed order, without invented pixels (REG-3552)",
+      "The guest board build badge reads the live API version (#193, REG-3553)",
+      "The same seller is one post and one price (#180, REG-3554)",
+      "A tab switch closes the character window too (#191, REG-3555)",
+      "A press outside the character window closes it (#191, REG-3556)",
+      "The quick-wins also-rows hand the item to the set MF curve (#43, REG-3557)",
+      "A socket filler is never read as the item roll (#135, REG-3558)",
+      "Avatar class is checked against the character-select class (REG-3559)",
+      "Consecutive numbered game names are one focused run (REG-3560)",
+      "Corner text is checked against the five towns (REG-3561)",
+      "Per-boss farm counts come from the already-read area text (REG-3562)",
+      "A session carries a soft understanding on top of its seals (REG-3563)"
+    ]
+  },
+  {
     "ver": "v3892",
     "date": "2026-11-09",
     "items": [
