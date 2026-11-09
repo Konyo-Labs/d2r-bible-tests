@@ -223,8 +223,9 @@ notable zone keeps PRIME on its own reason; a board that cannot be asked keeps t
 MEASURED by computed style: my first glow rule lost the cascade to the live cards' green tzAlive breath (equal specificity,
 declared later), so it ran tzAlive like every live card; the glow now outranks it and follows it. The
 card carries one short line ("Crown of Ages · 1.1× fewer runs · +18" / "no missing item gains here"), the hover the
-items and their runs. Five board areas carry an alias to the console's zones (Tal Rasha's Tombs, Moo Moo Farm, the two Sewers
-by act, Lower Kurast = no zone). Measured on an empty world (397 uniques missing): Far Oasis THIN, Catacombs PRIME (Tyrael's
+items and their runs. A place's area reaches the console's zone through _QW_ZONE_OF (the Quick wins art map - one source; my
+first cut kept a second copy and the anchor census caught it by a red-proof matching twice), Lower Kurast excepted (it wears
+the Kurast art and is no terror zone). Measured on an empty world (397 uniques missing): Far Oasis THIN, Catacombs PRIME (Tyrael's
 Might 48,274 runs in Hell TZ Andariel vs 304,501 at Hell Baal), Moo Moo Farm GOOD; 11 zones graded in 18 ms. Pixels at 1512
 and 1120 with the real board in the iframe; my first cut ran the LIVE chip across the column at 1120 (the chip now names the item
 only, and cannot leave its slot); the Grok CLI's cold look: nothing overlaps or crosses a column. NOT this item, named: at 1512

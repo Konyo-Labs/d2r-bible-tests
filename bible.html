@@ -70844,12 +70844,14 @@ function renderJournal(){
      item gains from is THIN. Its ordinary monsters are not priced (silospen ranks bosses and super-uniques), and the card
      says so. -> { ok, tier: 'prime'|'good'|'thin', items: [{n, here, hereRuns, best, bestRuns, x}], count, missing, why }
      A board that cannot read his ledger answers ok:false - UNKNOWN, never "nothing here". */
-  var _TZG_AREA = { "Tal Rasha's Tomb": "Tal Rasha's Tombs", 'The Secret Cow Level': 'Moo Moo Farm',
-                    'Sewers Level 3': 'Lut Gholein Sewers', 'Sewers Level 1': 'Sewers', 'Lower Kurast': '' };
+  /* a place's area -> its terror-zone name is _QW_ZONE_OF's (the Quick wins art map below - one source, never a second copy);
+     one difference, and it is the point of the difference: Lower Kurast wears the Kurast art but is no terror zone of its own */
+  var _TZG_NOT_A_ZONE = { 'Lower Kurast': 1 };
   var _tzgFlat = function(z){ return String(z || '').toLowerCase().replace(/[‘’']/g, '').replace(/[^a-z0-9]/g, '').replace(/^the/, ''); };
   var _tzgZone = function(area){
     var a = String(area || '');
-    if (Object.prototype.hasOwnProperty.call(_TZG_AREA, a)) return _tzgFlat(_TZG_AREA[a]);
+    if (Object.prototype.hasOwnProperty.call(_TZG_NOT_A_ZONE, a)) return '';
+    if (typeof _QW_ZONE_OF !== 'undefined' && Object.prototype.hasOwnProperty.call(_QW_ZONE_OF, a)) return _tzgFlat(_QW_ZONE_OF[a]);
     return _tzgFlat(a.replace(/\s+Level\s+\d+$/i, ''));
   };
   window._tzgZoneOfArea = _tzgZone;

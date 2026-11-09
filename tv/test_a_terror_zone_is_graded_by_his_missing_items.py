@@ -109,6 +109,7 @@ class TheBoardGradesAZoneByHisMissingItems(unittest.TestCase):
         bad = sorted(set("%s -> %r" % (a, z) for a, z in self.out["areas"] if z != "" and z not in keys))
         self.assertEqual(bad, [], "a place's area lands on no console zone: %s" % bad)
         self.assertGreater(len(self.out["areas"]), 30, "PREMISE: almost no places were read")
+        self.assertEqual(dict(self.out["areas"]).get("Lower Kurast"), "", "Lower Kurast (Stormtree) is graded as a terror zone")
         # two zones share a word: Radament's sewers are Act 2's (Lut Gholein), Icehawk Riftwing's are Act 3's (Kurast)
         got = dict(self.out["areas"])
         self.assertEqual(got.get("Sewers Level 3"), _flat("Lut Gholein Sewers"), "Radament's place lands in Act 3's sewers")
@@ -160,15 +161,15 @@ RED_PROOF = [
      "find": "          if (!p || !p.s || p.runs == null) return;   // an AREA run",
      "replace": "          if (!p || !p.s || p.kind === 'area' || p.kpr > 1 || p.runs == null) return;   // an AREA run",
      "matches": 1, "needs": "node"},
-    {"why": "v3889 (#133) - the Cow King's level lands on no console zone",
+    {"why": "v3889 (#133) - the Cow King's level lands on no console zone (the shared map loses its spelling)",
      "file": "bible.html",
-     "find": " 'The Secret Cow Level': 'Moo Moo Farm',\n",
-     "replace": "\n",
+     "find": "    'The Secret Cow Level': 'Moo Moo Farm', 'Monastery Gate': 'Outer Cloister',\n",
+     "replace": "    'Monastery Gate': 'Outer Cloister',\n",
      "matches": 1, "needs": "node"},
-    {"why": "v3889 (#133) - Radament's place lands in Act 3's sewers (a real zone, the wrong one)",
+    {"why": "v3889 (#133) - the grader keeps its own map again and Lower Kurast lands on a terror zone it is not",
      "file": "bible.html",
-     "find": "                    'Sewers Level 3': 'Lut Gholein Sewers', ",
-     "replace": "                    ",
+     "find": "    if (Object.prototype.hasOwnProperty.call(_TZG_NOT_A_ZONE, a)) return '';\n",
+     "replace": "",
      "matches": 1, "needs": "node"},
     {"why": "v3889 (#133) - the cards grade on density alone again",
      "file": "tv/control_ui.html",

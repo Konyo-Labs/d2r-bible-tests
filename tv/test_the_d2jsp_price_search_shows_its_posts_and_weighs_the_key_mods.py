@@ -228,15 +228,17 @@ RED_PROOF = [
      "matches": 1},
     {"why": "a line with no fg is drawn as a post again",
      "file": "bible.html",
-     "find": "  }).join('');\n  var shown = rows.length;\n",
-     "replace": "  }).join('') + ((q && q.aside) || []).map(function (a) {\n"
+     # v3889 (#178) - re-aimed: the drawer builds its rows with _evRow now (one tier's list, or every post)
+     "find": "  var body = rows.map(_evRow).join('');\n  var shown = rows.length, _of = rows.length;\n",
+     "replace": "  var body = rows.map(_evRow).join('') + ((q && q.aside) || []).map(function (a) {\n"
                 "    return '<tr><td>?</td><td>no price</td><td></td><td>' + a.why + '</td><td></td></tr>';\n"
-                "  }).join('');\n  var shown = rows.length + ((q && q.aside) || []).length;\n",
+                "  }).join('');\n  var shown = rows.length + ((q && q.aside) || []).length, _of = shown;\n",
      "matches": 1},
     {"why": "an item with no price draws a post list again",
      "file": "bible.html",
-     "find": "  /* A line with no fg is not a post, and an item with no price gets no post list. */\n  if (!rows.length) return '';\n",
-     "replace": "  /* A line with no fg is not a post, and an item with no price gets no post list. */\n  if (!rows.length) return '<details class=\"d2jsp-ev\"><summary>show the 0 posts</summary></details>';\n",
+     # v3889 (#178) - re-aimed: an empty drawer returns early unless it is a tier's own line or the head alone
+     "find": "  if (!rows.length && !opts.headOnly) return _tier ? ",
+     "replace": "  if (!rows.length && !opts.headOnly && !_tier) return '<details class=\"d2jsp-ev\"><summary>show the 0 posts</summary></details>';\n  if (!rows.length && !opts.headOnly) return _tier ? ",
      "matches": 1},
 ]
 
