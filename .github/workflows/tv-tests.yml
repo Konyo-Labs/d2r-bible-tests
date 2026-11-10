@@ -37,12 +37,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
+      # Full checkout: swallow_census walks every .py. A sparse tree (tv/hooks/baseline)
+      # dropped art/ and the rank-1 count fell 66 -> 65, which --check refuses until the
+      # baseline moves with it (measured CI run 42811659188, 2026-11-10).
       - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            tv
-            hooks
-            baseline
       - name: Fail-fast cheap deterministic gates
         run: python3 tv/preship.py --cheap
 
