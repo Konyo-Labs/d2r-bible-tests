@@ -23,6 +23,8 @@ blind". A proving PC whose blinds currently shut reel.route stays BLOCKED and le
 Drives the page's own _proofMeterFacts / _pcStatus / _fleetBriefHtml in node (parts reader stubbed, as
 REG-3395's law does). RED_PROOF below.
 """
+
+from console_safe import enable; enable()
 import io
 import json
 import os

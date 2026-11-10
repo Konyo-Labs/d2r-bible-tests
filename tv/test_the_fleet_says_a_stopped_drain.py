@@ -8,6 +8,8 @@ owedAtMouth 149, eligibleMb 2613.3, passesOwed 24, last refusal "frame.release i
 The row now leads with "drain stopped — 149 reels · 2.6 GB at stake". A drain that is not
 STOPPED stays quiet. RED_PROOF below.
 """
+
+from console_safe import enable; enable()
 import io
 import json
 import os

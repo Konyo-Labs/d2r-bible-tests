@@ -478,7 +478,7 @@ def post_land_status(version, run, say, url=STATUS_URL):
     except Exception as e:
         say("ship: post-land /api/status could not be asked (%s: %s) - the console may be down, not a refusal"
             % (type(e).__name__, str(e)[:120]))
-        return 0
+        return None  # could not ask; not the same as "the live console is on this version"
     have = None
     if isinstance(data, dict):
         have = data.get("version") or data.get("build") or (data.get("ship") or {}).get("version")

@@ -3386,5 +3386,74 @@
     "gotcha": "Read-only GETs to silospen's calculator, paced (monsterProbabilities, Terror Zone ON). The level search is a bisection over 1-99 - a change that reverts inside an interval would be missed (a terror zone's monster level only rises with the character's). Breakpoints are kept only when odds move past TOL (2%); the page table holds only items whose odds move.",
     "purpose": "v3884 (REG-3437, his 'Add a level setting') - silospen's terror-zone odds at every character level 1-99 for the eight boss / super-unique farms; --build writes the page's tz-level-odds table (the LVL slider reads it through the BOSSES getters), --check holds the stored TZ columns to silospen at their stored levels.",
     "territory": "routing"
+  },
+  "char_window_vs_planner.py": {
+    "entryPoints": [
+      "compare_window_to_planner"
+    ],
+    "gotcha": "No itemized d2planner export lives on this tree, so a key the cited planner dict does not name is unknown — never invented. Buff calibration stays later.",
+    "purpose": "Compare a character-window sheet against cited planner breakpoint tables (maxroll Patch 2.4 / the same tables d2planner uses).",
+    "territory": "console-ui"
+  },
+  "film_frame.py": {
+    "entryPoints": [
+      "film_dest_size",
+      "to_film_frame",
+      "to_film_jpeg"
+    ],
+    "gotcha": "A smaller windowed client is resampled and letterboxed onto 1920x1080; aspect is kept, never stretched. It does not invent a crop from the window size alone.",
+    "purpose": "Map a captured client / game rect onto the 1920x1080 film canvas so every stored frame has the same box.",
+    "territory": "capture-vision"
+  },
+  "flake_ledger.py": {
+    "entryPoints": [
+      "load",
+      "save",
+      "is_infra",
+      "is_flake",
+      "should_rerun",
+      "record",
+      "main"
+    ],
+    "gotcha": "A known flake or infra kill may be auto-rerun once; a flake that stays green for nClean=3 is pruned. should_rerun never invents a flake from a single red.",
+    "purpose": "REG-3644 - the ship pipeline's flake ledger: which failed CI jobs may be rerun alone, and which must stop the ship.",
+    "territory": "gates-proofs"
+  },
+  "preship.py": {
+    "entryPoints": [
+      "catalog",
+      "box_rehearse",
+      "mac_ready",
+      "mac_rehearse",
+      "run_checks",
+      "remember_refusal",
+      "main"
+    ],
+    "gotcha": "Box rehearsal reports an owed second-eye and does not refuse; Mac readiness refuses it. The only safe auto-fix is a symlink to ~/d2r_bible_tests/node_modules. A missing playwright is a readiness failure, not a skip.",
+    "purpose": "REG-3642/3646 - the ship pipeline's local gates: box rehearsal of every non-Mac gate plus agreement laws, Mac worktree readiness, and the Mac hook rehearsal that runs beside the CI wait.",
+    "territory": "push"
+  },
+  "shard_timings.py": {
+    "entryPoints": [
+      "build",
+      "write",
+      "coverage",
+      "per_proof",
+      "merge_measured",
+      "main"
+    ],
+    "gotcha": "Unpriced proofs are filled with the median; already-priced rows are never lowered. coverage() must stay complete or the shard-balance law fails.",
+    "purpose": "REG-3643 - per-proof seconds for shard balancing, filled from the last green proof-keys rounds.",
+    "territory": "gates-proofs"
+  },
+  "ship.py": {
+    "entryPoints": [
+      "report",
+      "lessons_for",
+      "main"
+    ],
+    "gotcha": "A thin orchestrator: ship() in ship_when_green.py defaults the new stages OFF so existing unit tests stay isolated; this entry point turns them ON. Never --no-verify, never a forced main, never prints a token.",
+    "purpose": "REG-3646 - the one entry point for shipping a version: python3 tv/ship.py vNNNN runs the box rehearsal, ci/ push, Mac readiness, CI wait beside the Mac hook, failed-job makeup, and post-land checks.",
+    "territory": "push"
   }
 }

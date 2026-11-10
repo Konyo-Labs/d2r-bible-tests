@@ -1318,6 +1318,11 @@ TARGETS = {
         # was already fixed. Raising the one value the measurement names keeps every OTHER floor
         # exactly where it is; a blanket bless would also have moved five coverage floors in the
         # same commit and buried this one-node change among them. [[regression-guard]]
+        # ⚠ v3894 / REG-3532 / attempts 6-8 — `zero` 6 -> 7: the shelf overlay that
+        # REG-3532 moved beside the other closed modals is a seventh zero-size child.
+        # MEASURED on this box 2026-11-10: "7 of 10 node(s) are ZERO-SIZE ... DECLARED
+        # FLOOR IS 6, this is 1 MORE". Raised by hand: --bless refuses while `page` is
+        # the red target (the same reason v3019 raised 5 -> 6 by hand).
         "known": {
             "1440x1000": {"clipped": 0, "broken": None, "zero": 7},
             "1120x900":  {"clipped": 0, "broken": None, "zero": 7},

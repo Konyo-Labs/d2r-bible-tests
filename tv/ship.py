@@ -68,7 +68,7 @@ def lessons_for(results):
                 fired.append(row.get("id") or row["check"])
         return fired
     except Exception:
-        return []
+        return None  # could not load the ledger; not the same as "no lessons fired"
 
 
 def main(argv=None):
