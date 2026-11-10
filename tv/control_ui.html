@@ -7232,8 +7232,9 @@
     0%, 100% { filter: drop-shadow(0 0 2px rgba(70, 210, 120, .55)); }
     50%      { filter: drop-shadow(0 0 7px rgba(70, 210, 120, 1)); }
   }
-  /* v3885 - the SECOND eye: that PC's console WINDOW. Green = up on its desktop (front / fullscreen); red = not up
-     (minimized, hidden, headless, a second view); a PC not heard draws the grey dashed UNKNOWN. Same eye, same rule. */
+  /* v3885 - the SECOND eye: that PC's console WINDOW. Green = up on its desktop (front / fullscreen).
+     v3894 (his 11-10: the third eye is dark until the console window is open, lit only while open) -
+     dark = not up (minimized, hidden, headless, a second view); a PC not heard draws the grey dashed UNKNOWN. */
   .fleet-winview { display: inline-block; margin: 0 6px 0 -2px; line-height: 0; vertical-align: -0.12em; cursor: help; }
   .fleet-winview svg { width: 1.3em; height: .8em; overflow: visible; display: block; }
   .fleet-winview .sh-lid { fill: #0d0907; stroke-width: 1.4; }
@@ -7250,8 +7251,8 @@
   .fleet-winview.wv-on .sh-lid { stroke: #3fbf72; }
   .fleet-winview.wv-on .sh-iris { fill: #2fae62; }
   .fleet-winview.wv-on svg { filter: drop-shadow(0 0 3px rgba(70, 210, 120, .8)); }
-  .fleet-winview.wv-off .sh-lid { stroke: #c9402e; }
-  .fleet-winview.wv-off .sh-iris { fill: #8f2a1f; }
+  .fleet-winview.wv-off .sh-lid { stroke: #6b5a48; }
+  .fleet-winview.wv-off .sh-iris { fill: #4a3526; }
   .fleet-winview.wv-unk .sh-lid { fill: none; stroke: #6d6a66; stroke-dasharray: 2.2 2; }
   .fleet-winview.wv-unk .sh-iris, .fleet-winview.wv-unk .sh-pupil { fill: none; }
   @media (prefers-reduced-motion: reduce) { .fleet-shadow svg { animation: none !important; } }
