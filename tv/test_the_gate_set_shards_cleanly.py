@@ -88,10 +88,60 @@ class TheGateSetShardsCleanly(unittest.TestCase):
         self.assertGreaterEqual(covered, 0.95, "the cost table covers only %.0f%% of the gate set — "
                                 "refresh it: python3 tv/gate_costs.py <ci-job-logs>" % (covered * 100))
         w = RG.cost_weights()
-        unseen = sorted(names - set(table))
+        # v3891 (#194) merges last-round CI seconds (GATE_COSTS) over the committed file. A gate
+        # that file has not seen is still MEASURED when last round timed it — that is not a median
+        # guess. Unseen means neither table has the name (the sentence _cost_table already prints).
+        used, _ = RG._cost_table()
+        unseen = sorted(names - set(used or table or {}))
         if unseen:
-            med = sorted(table.values())[len(table) // 2]
-            self.assertEqual(w[unseen[0]], med, "an unmeasured gate did not weigh the median")
+            src = used or table
+            med = sorted(src.values())[len(src) // 2]
+            self.assertEqual(w[unseen[0]], med,
+                             "an unmeasured gate did not weigh the median: %s" % unseen[0])
+
+    def test_last_rounds_own_seconds_are_not_an_unmeasured_guess(self):
+        """v3893 - CI's GATE_COSTS file is last round's own per-gate seconds, a measurement.
+
+        d08ee13e1 went red on the next ship after the first bundle run timed 57 new gates at their
+        real CI seconds (many 0.1). The coverage law treated anyone missing from tv/gate_costs.json
+        as unmeasured and demanded the committed median (0.3), while cost_weights() correctly used
+        last round's 0.1: AssertionError 0.1 != 0.3.
+        """
+        import json
+        import tempfile
+        table = __import__("gate_costs").load()
+        self.assertTrue(table)
+        names = [g.name for g in RG.GATES]
+        med = sorted(table.values())[len(table) // 2]
+        victim = names[0]
+        want = 0.1 if med != 0.1 else 0.2
+        rec = {"source": "test last-round overlay", "gates": 1, "totalSeconds": want,
+               "costs": {victim: want}}
+        fd, path = tempfile.mkstemp(suffix=".json")
+        os.close(fd)
+        try:
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(rec, fh)
+            old = os.environ.get(RG._ENV_GATE_COSTS)
+            os.environ[RG._ENV_GATE_COSTS] = path
+            try:
+                w = RG.cost_weights()
+                self.assertEqual(w[victim], want,
+                                 "last round's own seconds for %s were discarded for the median" % victim)
+                used, _ = RG._cost_table()
+                self.assertIn(victim, used)
+                unseen = sorted(set(names) - set(used))
+                if unseen:
+                    umed = sorted(used.values())[len(used) // 2]
+                    self.assertEqual(w[unseen[0]], umed,
+                                     "a gate neither table has seen did not weigh the median: %s" % unseen[0])
+            finally:
+                if old is None:
+                    os.environ.pop(RG._ENV_GATE_COSTS, None)
+                else:
+                    os.environ[RG._ENV_GATE_COSTS] = old
+        finally:
+            os.remove(path)
 
     def test_the_banner_names_the_basis_the_weights_actually_used(self):
         """#219 follow-up — the second eye on ea3f05da: every --shard run printed "balanced by
