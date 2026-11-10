@@ -85,6 +85,12 @@ class ALawIsKeyedOnTheFunctionsItRan(unittest.TestCase):
 
     def test_the_trace_site_records_the_functions_that_ran(self):
         """the real sitecustomize writes an F line for a function that started, and not for one that did not"""
+        # REG-3625 - function tracing uses sys.monitoring (Python 3.12+). The Mac preflight
+        # still runs the system 3.9, and a run without monitoring already falls back to the
+        # whole-file hash. GitHub's 3.12 proves this case. A skip is UNMEASURED, not a pass.
+        if getattr(sys, "monitoring", None) is None:
+            self.skipTest("sys.monitoring is not on this Python (needs 3.12+) - function tracing is "
+                          "UNMEASURED here, not passing; a run without it falls back to the whole-file hash")
         site = H._trace_site()
         self.assertIsNotNone(site, "no trace site could be written")
         root = tempfile.mkdtemp(prefix="h2fn.")
