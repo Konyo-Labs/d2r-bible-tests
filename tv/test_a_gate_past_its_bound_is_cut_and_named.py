@@ -276,7 +276,8 @@ class ARunAlreadyGoingIsCut(unittest.TestCase):
         self.assertEqual(heart2._inflight_limit(60, now=9000.0, run=run, gate_t0=9000.0), (60, None),
                          "a bound cut a run its own deadline already bounds tighter")
         t, why = heart2._inflight_limit(1800, now=9000.0, run=run, gate_t0=9000.0)
-        self.assertEqual((t, "cap" in why), (1500.0, True))
+        self.assertEqual(t, float(heart2.PROOF_CAP_S), "a doubled 900 s law outlasted the per-proof cap")
+        self.assertIn("proof", why)
         t, why = heart2._inflight_limit(1800, now=hs - 100, run=run, gate_t0=hs - 100)
         self.assertEqual((t, "hard stop" in why), (100.0, True))
         self.assertEqual(heart2._inflight_limit(None, now=hs + 5, run=run, gate_t0=None)[0], 0.0)

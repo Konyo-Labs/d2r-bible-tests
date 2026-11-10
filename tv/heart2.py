@@ -3555,6 +3555,15 @@ def _past_bound(run, gate_t0, now=None, cap=None):
 #: HARD_STOP_AFTER_S - in-flight runs get that long to finish, so the shard still writes its manifest and uploads inside
 #: its job) and, for a gate's proofs, the gate's cap from its first proof. A run the bound killed is TIMEOUT, owed by name.
 HARD_STOP_AFTER_S = 480
+#: REG-3579 - MEASURED on v3890 run 42712427277 attempt 1, shard 10: the hosted runner lost communication at 54 min
+#: (prove step still in_progress, no logs kept, no cache uploaded) after a prove that finished in 1,554 s (26 min) on
+#: attempt 2 of the same commit. GitHub: "starves it for CPU/Memory, or blocks its network access". With 2 lanes,
+#: DEADLINE_SCALE doubles every law's timeout (LANE_DEADLINE_SCALE = 2), so a 900 s law (test_control, test_agent) gets
+#: 1,800 s per run - a hung proof can run 30 minutes and starve the runner agent before HARD_STOP (deadline + 480 s =
+#: job minute 63). The longest registered law timeout is 900 s; a single proof may not outlast that, even when lanes
+#: stretch patience. A cut proof is TIMEOUT, owed, named - never a silent runner death. No deadline (his Mac, a PC's
+#: census): no cap.
+PROOF_CAP_S = 900
 _BOUND = threading.local()          # REG-3212 - this lane's gate clock (t0: None outside a gate's proofs) and its last cut
 
 
@@ -3565,9 +3574,11 @@ def _hard_stop(run):
 
 
 def _inflight_limit(timeout, now=None, run=None, gate_t0=None):
-    """REG-3212 - one law run's timeout under the push's bounds. -> (seconds, why | None). `why` is set only when a bound,
-    not the law's own deadline, is the tighter one: the run is then TIMEOUT when it is killed, and seconds <= 0 means it
-    may not start at all. No push, or no bound: (timeout, None) - his Mac's push and a PC's census are never cut."""
+    """REG-3212 / REG-3579 - one law run's timeout under the push's bounds. -> (seconds, why | None). `why` is set only
+    when a bound, not the law's own deadline, is the tighter one: the run is then TIMEOUT when it is killed, and seconds
+    <= 0 means it may not start at all. A CI run (a deadline is set) also caps one proof at PROOF_CAP_S, so a doubled
+    900 s law timeout cannot run 30 minutes and starve the runner. No push, or no bound: (timeout, None) - his Mac's
+    push and a PC's census are never cut."""
     run = _PUSH if run is None else run
     if run is None:
         return timeout, None
@@ -3580,6 +3591,9 @@ def _inflight_limit(timeout, now=None, run=None, gate_t0=None):
     cap = (getattr(_BOUND, "cap", None) if t0 is not None else None) or getattr(run, "gate_cap", None)   # REG-3317
     if cap is not None and t0 is not None and (best is None or t0 + cap - now < best):
         best, why = t0 + cap - now, "this gate's %d s cap" % int(cap)
+    # REG-3579 - a CI run (one with a deadline) also caps ONE proof: lanes may double a law's 900 s timeout to 1,800 s
+    if getattr(run, "deadline", None) is not None and (best is None or PROOF_CAP_S < best):
+        best, why = float(PROOF_CAP_S), "this proof's %d s cap" % PROOF_CAP_S
     if best is None or (timeout and timeout <= best):
         return timeout, None
     return max(0.0, best), why
