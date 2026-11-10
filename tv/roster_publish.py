@@ -55,6 +55,24 @@ def budget():
             "ceiling": 10000, "together": presence + pcs * per}
 
 
+
+def publish_owner(nickname, shares_label=None):
+    """#27 / #182 - the label this PC publishes under.
+
+    A nickname that is already a label (including "OLD PC ALT") is that label, even when a
+    leftover sharesLabel still names another one. sharesLabel is only read for a name that is
+    still no label. A missing nickname is None.
+    """
+    name = nickname.strip() if isinstance(nickname, str) else ""
+    if not name:
+        return None
+    if name in OWNERS:
+        return name
+    if isinstance(shares_label, str) and shares_label.strip() in OWNERS:
+        return shares_label.strip()
+    return name
+
+
 def owner_of(name, platform=None):
     """The roster label for a name this PC already claims, or None.
 
