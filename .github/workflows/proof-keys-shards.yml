@@ -81,8 +81,13 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/heart2-seed
-          key: heart2-proofs-${{ github.sha }}
-          restore-keys: heart2-proofs-
+          # card #200 guard 3 (REG-3665) - the cache key carries the proof-key FORMAT (heart2.P3_KEY_FORMAT), so a seed
+          # never restores entries written under another format (v3894 attempt 5: the branch's dead v4 cache shadowed
+          # main's). The bare legacy prefix is format-3's own older caches and may be listed ONLY while the format is 3.
+          key: heart2-proofs-k3-${{ github.sha }}
+          restore-keys: |
+            heart2-proofs-k3-
+            heart2-proofs-
       - name: Merge this commit's own proofs from the proof bank into one seed (REG-3210)
         id: seed
         continue-on-error: true
@@ -210,8 +215,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/heart2-seed/rerun
-          key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-rerun
-          restore-keys: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-
+          key: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-rerun
+          restore-keys: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-
       - name: A claude that refuses
         run: |
           mkdir -p "$RUNNER_TEMP/noclaude"
@@ -328,7 +333,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ runner.temp }}/heart2-seed
-          key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Keep this attempt's proofs where a "Re-run failed jobs" restores them (REG-3280)
         # actions/cache serves an entry only to a restore with the SAME path. The save above is heart2-seed; the shard's
         # re-run restore is heart2-seed/rerun - so since REG-3210 moved it there no re-run was ever served. MEASURED on
@@ -343,7 +348,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ runner.temp }}/heart2-seed/rerun
-          key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-rerun-${{ github.run_attempt }}
+          key: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-rerun-${{ github.run_attempt }}
       - name: Every shard finished, on this commit, on one plan
         run: python3 tv/proof_shard.py --fan-in shards --shards "$PROOF_SHARDS" --head "$GITHUB_SHA"
       - name: Hand the whole set on as one artifact

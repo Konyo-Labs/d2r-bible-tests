@@ -253,15 +253,15 @@ class TheWorkflowSeedsEveryShardFromIt(unittest.TestCase):
 
     def test_a_rerun_shard_restores_its_runs_earlier_attempt_and_widens_after_the_digest(self):
         shard = _job(self.wf, "shard")
-        r = shard.index("key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-rerun\n")
+        r = shard.index("key: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-rerun\n")
         step = shard[shard.rfind("\n      - ", 0, r):shard.find("\n      - ", r)]
         self.assertIn("uses: actions/cache/restore@v4", step)
-        self.assertRegex(step, r"\n          restore-keys: heart2-proofs-\$\{\{ github\.sha \}\}-\$\{\{ github\.run_id \}\}-(\n|$)",
+        self.assertRegex(step, r"\n          restore-keys: heart2-proofs-k3-\$\{\{ github\.sha \}\}-\$\{\{ github\.run_id \}\}-(\n|$)",
                          "a re-run restores another run's or another commit's cache, or none")
         self.assertIn("path: ${{ runner.temp }}/heart2-seed/rerun", step, "the re-run seed lands outside the seed dir")
         self.assertIn("continue-on-error: true", step)
         fan = _job(self.wf, "fan-in")
-        self.assertIn("key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}", fan,
+        self.assertIn("key: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}", fan,
                       "the fan-in no longer saves the attempt the re-run restores")
         # REG-3280 - THE JOINT, NOT THE HALVES. actions/cache serves an entry only to a restore with the SAME path, so the
         # fan-in must save one under the exact path the shard restores, and with a key the restore's prefix matches.
@@ -272,7 +272,7 @@ class TheWorkflowSeedsEveryShardFromIt(unittest.TestCase):
         self.assertEqual(len(joined), 1, "no fan-in save is under the re-run's restore path %r - the re-run serves nothing"
                          % rpath)
         key = re.search(r"\n          key: (.+)", joined[0]).group(1)
-        self.assertTrue(key.startswith("heart2-proofs-${{ github.sha }}-${{ github.run_id }}-"),
+        self.assertTrue(key.startswith("heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-"),
                         "the re-run's restore-keys prefix never matches the saved key %r" % key)
         cp = fan.index('--merge-shards shards --out "$RUNNER_TEMP/heart2-seed/rerun/.heart2_cache.json"')
         self.assertLess(fan.index('--merge-shards shards --out "$RUNNER_TEMP/heart2-seed/.heart2_cache.json"'), cp)
@@ -295,8 +295,8 @@ class TheWorkflowSeedsEveryShardFromIt(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3280 - the fan-in saves the re-run's proofs under another path than the re-run restores (v3872)",
      "file": ".github/workflows/proof-keys-shards.yml",
-     "find": "          path: ${{ runner.temp }}/heart2-seed/rerun\n          key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-rerun-${{ github.run_attempt }}\n",
-     "replace": "          path: ${{ runner.temp }}/heart2-seed\n          key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-rerun-${{ github.run_attempt }}\n",
+     "find": "          path: ${{ runner.temp }}/heart2-seed/rerun\n          key: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-rerun-${{ github.run_attempt }}\n",
+     "replace": "          path: ${{ runner.temp }}/heart2-seed\n          key: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-rerun-${{ github.run_attempt }}\n",
      "matches": 1},
     {"why": "REG-3210 - the bank is asked for another commit than the head sha (v3864: Publish never took 9d9485ea6's)",
      "file": "tv/proof_seed.py",
@@ -330,8 +330,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3210 (second eye) - a re-run shard never restores what its run's earlier attempt proved (v3864 shard 10)",
      "file": ".github/workflows/proof-keys-shards.yml",
-     "find": "          restore-keys: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-\n",
-     "replace": "          restore-keys: heart2-proofs-${{ github.sha }}-none-\n",
+     "find": "          restore-keys: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-\n",
+     "replace": "          restore-keys: heart2-proofs-k3-${{ github.sha }}-none-\n",
      "matches": 1},
     {"why": "REG-3210 (second eye) - the widened seed is built and never handed to heart2",
      "file": ".github/workflows/proof-keys-shards.yml",

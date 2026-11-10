@@ -334,7 +334,8 @@ class OnePushAtATimeOnThisMac(unittest.TestCase):
         self.assertIn('if [ "$_pp_beside_rc" -eq 3 ]; then', hook)
         sw = io.open(os.path.join(HERE, "ship_when_green.py"), encoding="utf-8").read()
         i = sw.index("\ndef main(argv=None):")
-        self.assertIn("    _beside = start_refusal()\n", sw[i:sw.index("\ndef ", i + 1)], "the ship no longer refuses to start beside a push")
+        self.assertIn("    _beside = start_refusal() or key_format_refusal()\n", sw[i:sw.index("\ndef ", i + 1)],
+                      "the ship no longer refuses to start beside a push (or on an unplanned key-format change)")
 
 
 RED_PROOF = [

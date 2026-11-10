@@ -473,7 +473,44 @@ class TheMacReadsTheSetsOwnSize(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
 
 
+
+class TheProofKeyFormatIsDeclaredAndCarried(unittest.TestCase):
+    """card #200 guards 1+3 (REG-3665) - v3894's #92 changed the key salt alone: 0 of 10,187 proofs reused, then the seed
+    restored the dead-format branch cache over main's. The format is one constant; the cache prefix and the salt follow it."""
+
+    def test_the_salt_and_the_cache_prefix_carry_the_declared_format(self):
+        import heart2 as H
+        src = io.open(os.path.join(HERE, "heart2.py"), encoding="utf-8").read()
+        self.assertIn('h = hashlib.sha256(b"heart2 P3 key v%d\\0")' % H.P3_KEY_FORMAT, src,
+                      "heart2's newest key salt is not the declared P3_KEY_FORMAT - a salt changed without the format")
+        yml = io.open(os.path.join(os.path.dirname(HERE), ".github", "workflows", "proof-keys-shards.yml"), encoding="utf-8").read()
+        keys = re.findall(r"^\s+key: (heart2-proofs-\S*)", yml, re.M)
+        self.assertGreaterEqual(len(keys), 4, keys)
+        for k in keys:
+            self.assertTrue(k.startswith("heart2-proofs-k%d-" % H.P3_KEY_FORMAT), "a cache key without the format: %s" % k)
+        legacy = re.search(r"^\s+heart2-proofs-\s*$", yml, re.M)
+        if H.P3_KEY_FORMAT != 3:
+            self.assertIsNone(legacy, "the bare legacy prefix (format 3's caches) is restored under another format")
+
+    def test_a_format_change_without_a_reseed_plan_refuses_the_ship(self):
+        import ship_when_green as SW
+        main3, tree4 = "x\nP3_KEY_FORMAT = 3\n", "x\nP3_KEY_FORMAT = 4\n"
+        self.assertIsNone(SW.key_format_refusal(tree_src=main3, main_src="no constant here", have_plan=False))
+        self.assertIn("format 4", SW.key_format_refusal(tree_src=tree4, main_src=main3, have_plan=False) or "")
+        self.assertIsNone(SW.key_format_refusal(tree_src=tree4, main_src=main3, have_plan=True))
+
+
 RED_PROOF = [
+    {"why": "card #200 guard 3 - a cache key loses its format and a seed can restore another format's entries",
+     "file": ".github/workflows/proof-keys-shards.yml",
+     "find": "          key: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}\n",
+     "replace": "          key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}\n",
+     "matches": 1},
+    {"why": "card #200 guard 1 - a proof-key format change ships without a re-seed plan",
+     "file": "tv/ship_when_green.py",
+     "find": "    if t != m and not have_plan:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
     {"why": "v3894 - the wall fit takes a deadline-cut shard's wall (the deadline) as a measurement of its work",
      "file": "tv/proof_shard.py",
      "find": "        if CUT_AT_BOUND in log:\n            continue\n",

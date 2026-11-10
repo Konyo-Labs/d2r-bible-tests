@@ -180,7 +180,7 @@ class TheWorkflowSeedsEachShardAndSavesFromMainOnly(unittest.TestCase):
         self.assertTrue(0 < r < p, "the seed is not restored before the shard proves")
         step = self.code[r:self.code.find("\n      - ", r)]
         self.assertIn("path: ${{ runner.temp }}/heart2-seed", step)
-        self.assertIn("restore-keys: heart2-proofs-", step)
+        self.assertRegex(step, r"restore-keys: \|\n\s+heart2-proofs-k\d+-\n")
         prove = self.code[self.code.rfind("\n      - ", 0, p):p]
         self.assertIn('export HEART2_SHARD_SEED="$RUNNER_TEMP/heart2-seed/.heart2_cache.json"', prove)
         self.assertIn('export HEART2_CACHE_PATH="$D/.heart2_cache.json"', prove, "the shard's own file is no longer fresh")
@@ -201,7 +201,7 @@ class TheWorkflowSeedsEachShardAndSavesFromMainOnly(unittest.TestCase):
                           "the seed is saved on a branch other than main and the version's own ci/proof-keys branch")
         save = self.code[s:self.code.find("\n      - ", s)]
         self.assertIn("path: ${{ runner.temp }}/heart2-seed", save)
-        self.assertIn("key: heart2-proofs-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}", save,
+        self.assertIn("key: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}", save,
                       "the save key is not under the prefix the shards restore, or is not unique per run")
 
 

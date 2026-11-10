@@ -29,6 +29,7 @@ before. The console's eagle row "this version's CI" watches the same thing for t
 """
 import argparse
 import os
+import io
 import subprocess
 import sys
 import time
@@ -815,7 +816,7 @@ def main(argv=None):
                     help="REG-3646 - do not run the Mac hook gates in parallel with the CI wait")
     a = ap.parse_args(argv)
     # card #200 guard 2 (REG-3664) - ONE PUSH AT A TIME ON THIS MAC: never start beside a grading push or another ship
-    _beside = start_refusal()
+    _beside = start_refusal() or key_format_refusal()
     if _beside:
         print("ship: REFUSED to start - %s" % _beside)
         return 2
@@ -824,6 +825,37 @@ def main(argv=None):
                 watch_publish_s=None if a.no_watch else a.publish_wait_min * 60,
                 box_rehearse=not a.no_box_rehearse, mac_ready=not a.no_mac_ready,
                 mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe)
+
+
+#: card #200 guard 1 (REG-3665) - the plan a proof-key FORMAT change must bring (how its first round is seeded)
+RESEED_PLAN = os.path.join("tv", "proof_key_reseed.json")
+
+
+def key_format_refusal(tree_src=None, main_src=None, have_plan=None):
+    """card #200 guard 1 (REG-3665) - why this ship may not start: the tree's heart2 P3_KEY_FORMAT differs from main's and no
+    re-seed plan (tv/proof_key_reseed.json) says how its first round reuses anything. -> sentence | None.
+    MEASURED v3894: #92 changed the key salt, reused 0 of 10,187 carried proofs, 21 shards were cut at their deadline and it
+    cost three attempts. A main with no P3_KEY_FORMAT is format 3 (the salt before the constant existed)."""
+    import re as _re
+    def fmt(src):
+        m = _re.search(r"^P3_KEY_FORMAT = (\d+)\s*$", src or "", _re.M)
+        return int(m.group(1)) if m else 3
+    if tree_src is None:
+        with io.open(os.path.join(HERE, "heart2.py"), encoding="utf-8") as fh:
+            tree_src = fh.read()
+    if main_src is None:
+        r = subprocess.run(["git", "show", "origin/main:tv/heart2.py"], capture_output=True, text=True, cwd=HERE)
+        if r.returncode != 0:
+            return "main's proof-key format could not be read (git show origin/main) - UNKNOWN, not safe (card #200 guard 1)"
+        main_src = r.stdout
+    if have_plan is None:
+        have_plan = os.path.isfile(os.path.join(os.path.dirname(HERE), RESEED_PLAN))
+    t, m = fmt(tree_src), fmt(main_src)
+    if t != m and not have_plan:
+        return ("this tree writes proof keys in format %d and main in format %d: every carried proof misses and the round "
+                "re-proves everything (v3894: 0 of 10,187 reused, 3 attempts). Bring %s - how its first round is seeded - "
+                "or keep the format (card #200 guard 1)" % (t, m, RESEED_PLAN))
+    return None
 
 
 def start_refusal(rows=None, prepush=None, self_pid=None):

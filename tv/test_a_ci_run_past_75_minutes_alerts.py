@@ -299,9 +299,11 @@ class ShipWhenGreenAlerts(unittest.TestCase):
         seen = {}
         saved = S.ship
         saved_refusal = S.start_refusal
+        saved_key_refusal = S.key_format_refusal
         try:
             S.ship = lambda version, **kw: seen.update(kw) or 0
             S.start_refusal = lambda *a, **k: None     # card #200 guard 2 - a stated precondition, never the host's process list
+            S.key_format_refusal = lambda *a, **k: None   # card #200 guard 1 - likewise, never this checkout's origin/main
             S.main(["v3864"])
             self.assertEqual(seen.get("watch_publish_s"), 100 * 60, "the CLI returns at the main push, unwatched")
             self.assertIs(seen.get("watch"), S._watch_authed)
@@ -309,6 +311,7 @@ class ShipWhenGreenAlerts(unittest.TestCase):
             self.assertIsNone(seen.get("watch_publish_s"))
         finally:
             S.start_refusal = saved_refusal
+            S.key_format_refusal = saved_key_refusal
             S.ship = saved
 
 

@@ -7,6 +7,14 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3665 - A PROOF-KEY FORMAT IS ONE DECLARED NUMBER: THE CACHE CARRIES IT AND A CHANGE BRINGS A RE-SEED PLAN (v3895, card #200 guards 1+3)
+v3894 attempts 3 and 5: #92 changed heart2's key salt alone (0 of 10,187 carried proofs reused, 21 shards cut at their
+deadline), then a seed restored the branch's dead-format cache over main's. Now heart2.P3_KEY_FORMAT is the declared format;
+a law holds the newest salt and every proof-keys cache key to it (heart2-proofs-k3-...; the bare legacy prefix, format 3's own
+older caches, may be restored only while the format is 3), and the ship refuses to start when the tree's format differs from
+main's without tv/proof_key_reseed.json saying how the first round is seeded. Laws: test_a_round_chooses_its_own_shard_count,
+test_a_proof_run_starts_from_its_exact_commits_proofs, test_ci_reuses_a_proof_only_for_identical_bytes. Seen RED.
+
 ### REG-3664 - ONE PUSH AT A TIME ON THIS MAC (v3895, card #200 guard 2)
 MEASURED 11-10: Claude's feature-branch push sat 85 min in its pre-push gate beside v3894's ship pre-flight; two laws there
 saw "a push grading" and went red, costing attempt 4. Now a ship refuses to START beside a grading push or another ship

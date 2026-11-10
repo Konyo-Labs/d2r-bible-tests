@@ -3903,6 +3903,10 @@ try:
 except ImportError:                 # every machine but Windows
     _msvcrt = None
 _RED_NAME = ".heart2_red.json"
+#: card #200 guards 1+3 (REG-3665) - the proof-key FORMAT this heart2 writes ("heart2 P3 key v<N>" in _key). A change to any
+#: key salt is a change of format: bump this, the cache prefix in proof-keys-shards.yml (heart2-proofs-k<N>-) and bring a
+#: re-seed plan (tv/proof_key_reseed.json) - v3894's #92 changed the salt alone, reused 0 of 10,187 proofs and cost 3 attempts.
+P3_KEY_FORMAT = 3
 #: v3891 (#194) - the seed's copy of the merged red memory (proof_seed.RED_NAME; the #194 law pins that the two agree)
 _SEED_RED_NAME = "heart2_red.json"
 #: R4 - Windows' stand-in for the directory flock: ONE empty lock file per store directory, shared by the cache and the
