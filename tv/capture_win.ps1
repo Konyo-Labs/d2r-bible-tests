@@ -14,7 +14,10 @@
 # v1422: Light capture under D2R - eye first, PNG rare, 350ms poll, unique tmp names.
 # v1423: Per-monitor DPI awareness - 150% displays were 1920x1080 physical but capture
 #         used 1280x720 logical coords = TOP-LEFT CROP only (Konyo screenshot proof).
-# v1434: Smooth — eye always (800px q72); live.bmp every 2nd; PNG every 8th; 400ms poll.
+# v1434: Smooth — eye always; live.bmp every 2nd; PNG every 8th; 400ms poll.
+# v3894: eye.jpg fits inside 1920x1080 (HighQualityBicubic, JPEG q82). The 800px q72
+#         bilinear cap made Windows film unreadable (readers called 800px "soft", 1440 "crisp")
+#         and shadow theatre then magnified a 160 px thumb of that eye.
 # Pure ASCII + BOM for Hebrew PowerShell 5.1.
 
 # v1423 - declare DPI awareness BEFORE any window measure / System.Drawing call.
@@ -397,19 +400,21 @@ public static class TvdCap {
     string livePng = Path.Combine(framesDir, "live.png");
     string eyeJpg = Path.Combine(framesDir, "eye.jpg");
 
-    // 1) EYE FIRST — console film. v1434: cap 800px + Encoder quality 72 (was full JPEG default).
-    // At 1920x1080 source this is the main UX surface; keep it cheap and always fresh.
-    int maxPx = 800;
+    // 1) EYE FIRST — console film. v3894: fit inside 1920x1080, never upscale a smaller source.
+    // v1434 capped this at 800px q72 bilinear to keep the preview cheap; readers then saw a soft
+    // 800 px eye and shadow theatre magnified a 160 px thumb of it. Quality 82 matches the hist
+    // read JPEG. HighQualityBicubic so a downscale from a larger window stays sharp.
+    int filmW = 1920, filmH = 1080;
     int nw = bmp.Width, nh = bmp.Height;
-    if (nw > maxPx || nh > maxPx) {
-      double scale = Math.Min(maxPx / (double)nw, maxPx / (double)nh);
+    if (nw > filmW || nh > filmH) {
+      double scale = Math.Min(filmW / (double)nw, filmH / (double)nh);
       nw = Math.Max(1, (int)(bmp.Width * scale));
       nh = Math.Max(1, (int)(bmp.Height * scale));
     }
     string tmpEye = TmpPath(framesDir, "eye", ".jpg");
     using (var eye = new Bitmap(nw, nh))
     using (var eg = Graphics.FromImage(eye)) {
-      eg.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+      eg.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
       eg.DrawImage(bmp, 0, 0, nw, nh);
       try {
         var codec = System.Array.Find(
@@ -417,7 +422,7 @@ public static class TvdCap {
           c => c.MimeType == "image/jpeg");
         if (codec != null) {
           var ep = new EncoderParameters(1);
-          ep.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 72L);
+          ep.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 82L);
           eye.Save(tmpEye, codec, ep);
         } else {
           eye.Save(tmpEye, ImageFormat.Jpeg);
