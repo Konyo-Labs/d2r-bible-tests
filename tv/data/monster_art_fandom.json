@@ -262,9 +262,9 @@
    ],
    "file": "art/d2mon_Hell_Bovine.gif",
    "site": "diablo.fandom.com",
-   "url": "https://static.wikia.nocookie.net/diablo/images/d/de/Cow.gif/revision/latest?cb=20080316063633&format=original",
-   "sha1": "a69e18a9bc3968684900dd5e423a045bc3568ebd",
-   "bytes": 19344
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/a/ad/Hell_Bovine_%28Diablo_II%29.gif/revision/latest?cb=20091107200830&format=original",
+   "sha1": "e46bcbb2cd79f49ab78394828fbddc4f2082488d",
+   "bytes": 24896
   },
   {
    "name": "Hephasto The Armorer",
@@ -446,6 +446,17 @@
    "url": "https://static.wikia.nocookie.net/diablo/images/Talic.gif",
    "sha1": "098600b1af8bf31d3386de7f5fbce983eceed233",
    "bytes": 36955
+  },
+  {
+   "name": "The Countess",
+   "ids": [
+    "countess"
+   ],
+   "file": "art/d2mon_The_Countess.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/7/73/The_Countess_%28Diablo_II%29.gif/revision/latest?cb=20091104210634&format=original",
+   "sha1": "8b7cdc3dec076eb4b2fde9a98620d2775d3d166d",
+   "bytes": 13522
   },
   {
    "name": "The Cow King",
@@ -641,12 +652,10 @@
   {
    "name": "Hell Bovine",
    "site": "diablo.fandom.com",
-   "file": "Hell Bovine (Diablo II).gif",
-   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/a/ad/Hell_Bovine_%28Diablo_II%29.gif/revision/latest?cb=20091107200830",
-   "why": "the gamepedia '<Name> (Diablo II).gif' alternate (93x111); Elad prefers File:Cow.gif as the source"
+   "file": "Cow.gif",
+   "url": "https://static.wikia.nocookie.net/diablo/images/d/de/Cow.gif/revision/latest?cb=20080316063633&format=original",
+   "why": "File:Cow.gif was the earlier pick; Elad then chose the gamepedia Hell Bovine (Diablo II).gif (93x111)"
   }
  ],
- "noSpriteFound": [
-  "The Countess"
- ]
+ "noSpriteFound": []
 }

@@ -68,11 +68,11 @@
     {
       "bossId": "cows",
       "file": "d2mon_Hell_Bovine.gif",
-      "bytes": 19344,
-      "sha256": "7e6a01a57295a17aba04f12559f6bfd7a0a843ab57e5e35b2ac160b8636392fa",
-      "depicts": "Animated sprite: upright bipedal brown cow with pale curved horns and a gold nose-ring, holding a two-handed polearm, on a transparent ground. Hell Bovine.",
+      "bytes": 24896,
+      "sha256": "c86340e1ad4c2607488a9813f43177729ba0f336cfcaba8d8de0b13950d1ab63",
+      "depicts": "Animated sprite: upright bipedal brown cow with pale curved horns and a gold nose-ring, holding a two-handed poleaxe, on a transparent ground. Hell Bovine.",
       "verdict": "correct",
-      "opened": "2026-11-10 opened before wiring; REG-3591 (#91); Elad preferred File:Cow.gif"
+      "opened": "2026-11-10 opened before wiring; REG-3591 (#91); Elad chose gamepedia Hell_Bovine_(Diablo_II).gif over File:Cow.gif"
     },
     {
       "bossId": "summoner",
@@ -84,11 +84,12 @@
     },
     {
       "bossId": "countess",
-      "file": "countess01_graphic.png",
-      "bytes": 29194,
-      "sha256": "a161468e4c5fe44e546acf42155090af01d74dff8f231162370166e10f836473",
-      "depicts": "Green-and-black hooded corrupted rogue in a fighting stance, raising a long sword overhead. The Countess.",
-      "verdict": "correct"
+      "file": "d2mon_The_Countess.gif",
+      "bytes": 13522,
+      "sha256": "6e078ede5f53ac3c41a8550f3706864d764e265278dabaacf8e1ec95ab8e3763",
+      "depicts": "Animated sprite: green-and-black hooded corrupted rogue in a fighting stance, holding a long sword in both hands, on a transparent ground. The Countess.",
+      "verdict": "correct",
+      "opened": "2026-11-10 opened before wiring; REG-3591 (#91); Elad's gamepedia The_Countess_(Diablo_II).gif"
     },
     {
       "bossId": "travincal",

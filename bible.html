@@ -6086,7 +6086,7 @@ try {
   <div class="header-top header-top-editorial">
     <div class="header-title-block">
       <div class="masthead">
-        <h1 class="h-title"><img class="masthead-art" src="art/countess01_graphic.png" alt="" loading="lazy" onerror="this.style.display='none'">Konyo's D2R Farming Bible</h1>
+        <h1 class="h-title"><img class="masthead-art" src="art/d2mon_The_Countess.gif" alt="" loading="lazy" onerror="this.style.display='none'">Konyo's D2R Farming Bible</h1>
         <!-- v635 — ACCOUNT PILL: two parallel accounts (main = his non-ladder truth, ladder = the fresh
              ladder-economy account). Switching is a full reload through window.profileSwitch — no bleed. -->
         <!-- v663 — MASTER MACHINE PILL: 🖥 MAC = Konyo's world (with its Main/Ladder below), 🪟 WINDOWS = the cousin's own isolated world -->
@@ -6685,7 +6685,7 @@ try {
 
   <div class="boss-card" id="runes-countess">
     <div class="boss-header collapsed" onclick="toggleSec(this)" style="cursor:pointer">
-      <span class="d2art-wrap lg"><img class="d2art-img" src="art/countess01_graphic.png" alt="The Countess" onerror="this.parentNode.classList.add('d2art-failed')"><span class="d2art-fallback"><span class="boss-emoji">🗿</span></span></span>
+      <span class="d2art-wrap lg"><img class="d2art-img" src="art/d2mon_The_Countess.gif" alt="The Countess" onerror="this.parentNode.classList.add('d2art-failed')"><span class="d2art-fallback"><span class="boss-emoji">🗿</span></span></span>
       <div class="boss-title-block">
         <p class="boss-name">The Countess</p>
         <p class="boss-subtitle">Mistress of Runes</p>
@@ -23001,7 +23001,7 @@ const D2IO_ART = {
   "The Battlebranch": "art/poleaxe_graphic.png",
   "The Cat's Eye": "art/amu2_graphic.png",
   "The Chieftain": "art/thechieftan_graphic.png",
-  "The Countess": "art/countess01_graphic.png",
+  "The Countess": "art/d2mon_The_Countess.gif",
   "The Diggler": "art/thediggler_graphic.png",
   "The Eye of Etlich": "art/amu2_graphic.png",
   "The Face of Horror": "art/mask_graphic.png",
@@ -72039,15 +72039,16 @@ function renderJournal(){
   /* REG-3321 (#102/#91 - his 11-07 "it should render just the monster not the area behind it"). The act bosses now draw
      their own animated Diablo II sprites (art/d2mon_*.gif, tv/data/monster_art_fandom.json - fandom first, rankedboost
      otherwise), each OPENED on a contact sheet first and recorded in art/boss_portraits.manifest.json with what it shows.
-     The diablo2.io renders they replace had the boss painted onto a stone backdrop. No sprite for the Countess or the
-     Council (fandom's sits on a solid black box - rejected): they keep their portraits. Hell Bovine now wears
-     Elad's File:Cow.gif (art/d2mon_Hell_Bovine.gif); the gamepedia Hell Bovine (Diablo II).gif is the unused alternate. */
+     The diablo2.io renders they replace had the boss painted onto a stone backdrop. No sprite for the
+     Council (fandom's sits on a solid black box - rejected): it keeps its portrait. Hell Bovine now wears
+     Elad's gamepedia Hell Bovine (Diablo II).gif (art/d2mon_Hell_Bovine.gif); File:Cow.gif is the unused
+     alternate. The Countess wears gamepedia's The Countess (Diablo II).gif (art/d2mon_The_Countess.gif). */
   var BOSS_PORTRAIT = {
     andariel:  'd2mon_Andariel.gif',        mephisto:  'd2mon_Mephisto.gif',
     duriel:    'd2mon_Duriel.gif',          diablo:    'd2mon_Diablo.gif',
     baal:      'd2mon_Baal.gif',            nihl:      'd2mon_Nihlathak.gif',
     cows:      'd2mon_Hell_Bovine.gif',    summoner:  'summoner_graphic.png',
-    countess:  'countess01_graphic.png',    travincal: 'councilmember_graphic.png',
+    countess:  'd2mon_The_Countess.gif',    travincal: 'councilmember_graphic.png',
     /* v1642 — Konyo: the Pindle thumb is "still showing here like maps plainly instead of the HD
        art". Three ids had no entry. Each was decided on its own evidence, not swept in together:
 

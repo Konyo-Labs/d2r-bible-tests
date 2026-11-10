@@ -6,7 +6,8 @@ Summoner). In JavaScript the later assignment silently wins, so a first edit
 changed a key that did not count (REG-3315 left this for #91). Every key now
 appears once. Bloodwitch the Wild, Lord De Seis and Treehead WoodFist each
 have one sourced animated GIF (the leftover visual pass of #91). Hell Bovine
-now wears Elad's File:Cow.gif; The Countess remains noSpriteFound.
+wears Elad's gamepedia Hell Bovine (Diablo II).gif; The Countess wears
+gamepedia's The Countess (Diablo II).gif. File:Cow.gif is recorded as unused.
 RED_PROOF below.
 """
 import json
@@ -30,6 +31,7 @@ LEFTOVER = (
     ("Lord De Seis", "art/d2mon_Lord_De_Seis.gif"),
     ("Treehead WoodFist", "art/d2mon_Treehead_WoodFist.gif"),
     ("Hell Bovine", "art/d2mon_Hell_Bovine.gif"),
+    ("The Countess", "art/d2mon_The_Countess.gif"),
 )
 
 
@@ -103,11 +105,18 @@ class TheArtMapNamesEachItemOnce(unittest.TestCase):
         portraits = dict(re.findall(r"([a-z]+):\s*'([^']+)'", block))
         self.assertEqual(portraits.get("cows"), "d2mon_Hell_Bovine.gif",
                          "the cow tile must render the animated GIF, not the old portrait")
+        self.assertEqual(d2.get("The Countess"), "art/d2mon_The_Countess.gif")
+        self.assertEqual(portraits.get("countess"), "d2mon_The_Countess.gif",
+                         "the Countess tile must render the animated GIF, not the old portrait")
         rec_by_name = dict((r["name"], r) for r in rec["sprites"])
-        self.assertIn("Cow.gif", rec_by_name["Hell Bovine"]["url"])
+        self.assertIn("Hell_Bovine", rec_by_name["Hell Bovine"]["url"])
+        self.assertIn("diablo_gamepedia", rec_by_name["Hell Bovine"]["url"])
+        self.assertIn("The_Countess", rec_by_name["The Countess"]["url"])
         unused = [r for r in rec.get("rejected") or []
-                  if r.get("name") == "Hell Bovine" and "Hell Bovine (Diablo II).gif" in (r.get("file") or "")]
-        self.assertTrue(unused, "the gamepedia Hell Bovine (Diablo II).gif must stay recorded as unused")
+                  if r.get("name") == "Hell Bovine" and (r.get("file") or "") == "Cow.gif"]
+        self.assertTrue(unused, "File:Cow.gif must stay recorded as unused")
+        self.assertEqual(list(rec.get("noSpriteFound") or []), [],
+                         "the leftover #91 names must not remain noSpriteFound")
 
 
 RED_PROOF = [
@@ -125,6 +134,11 @@ RED_PROOF = [
     {"why": "v3895 (#91, REG-3591) - Hell Bovine lost its sourced sprite",
      "file": "bible.html",
      "find": '  "Hell Bovine": "art/d2mon_Hell_Bovine.gif",\n',
+     "replace": "",
+     "matches": 1},
+    {"why": "v3895 (#91, REG-3591) - The Countess lost its sourced sprite",
+     "file": "bible.html",
+     "find": '  "The Countess": "art/d2mon_The_Countess.gif",\n',
      "replace": "",
      "matches": 1},
 ]
