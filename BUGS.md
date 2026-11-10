@@ -16,6 +16,9 @@ v3889 phase 1 put --ff-game on the game-name classes. Item mods/keywords (the se
 ### REG-3586 - OLD PC ALT PUBLISHES AS OLD PC ALT, NEVER UNDER Konyo · ALT (#27)
 REG-3507 made OLD PC ALT its own label, but a leftover identity sharesLabel of "Konyo · ALT" could still override a nickname that is already a label if the console branched itself. publish_owner keeps a label as itself; sharesLabel is only read for a name that is still no label. Law test_old_pc_alt_publishes_under_its_own_label.
 
+### REG-3587 - A BUILDS BOOK NEVER HIDES CREST AND MORPH (#104)
+Dean's /api/saves named Crest, Morph, Morphad, ... but _roster_reads set used_book from his builds and skipped with_save_names, so the upload's characters section was only "Barbarian build" / "Sorceress build". Save names now always join and ride beside the builds as inGame. Law test_a_builds_book_does_not_hide_save_names.
+
 ### REG-3223 - GITHUB'S FIRST v3865 ROUND: SIX REDS THE PRE-FLIGHT COULD NOT SEE, AND ONE THAT COULD HAVE PRUNED A MAIN TREE (v3865)
 The pre-flight passed (1,382 laws <= 20 s) and GitHub's agent suite went red on 656833dfa. Each fixed at its cause:
 - test_an_imported_proof_opens_the_locks (8 failures + 1 error, green on the Mac): its "another tree" was GitHub's own checkout path, so on a runner every trusted proof read as this tree's and was served here. The fixture's other tree is now a path no checkout holds, with a premise assert.
