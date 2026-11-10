@@ -98,13 +98,35 @@ def _git(run, *args, **kw):
 
 
 def red_runs(runs, sha):
-    """The REQUIRED workflows whose NEWEST run on this sha COMPLETED and did not succeed. -> [name]. Pure."""
+    """The REQUIRED workflows whose NEWEST run on this sha is red. -> [name]. Pure.
+
+    REG-3652 - a required job that already failed counts even while the run is
+    still in_progress because of non-required windows jobs. Windows-job failures
+    never make a required check red.
+    """
     out = []
     for wf in CV.REQUIRED:
         rs = sorted((r for r in runs or [] if isinstance(r, dict) and CV._name(r) == wf
                      and str(r.get("headSha") or "").startswith(sha)), key=lambda r: str(r.get("createdAt") or ""))
-        if rs and rs[-1].get("status") == "completed" and rs[-1].get("conclusion") != "success":
-            out.append("%s (%s)" % (wf, rs[-1].get("conclusion")))
+        if not rs:
+            continue
+        newest = rs[-1]
+        if newest.get("status") == "completed" and newest.get("conclusion") != "success":
+            if CV._required_jobs_green(newest, wf):
+                continue
+            out.append("%s (%s)" % (wf, newest.get("conclusion")))
+            continue
+        if CV._required_jobs_green(newest, wf):
+            continue
+        jobs = newest.get("jobs")
+        if isinstance(jobs, list) and jobs:
+            try:
+                import shard_watch as SHW
+                v, why = SHW.required_jobs_verdict(jobs, wf)
+            except Exception:
+                v, why = "pending", ""
+            if v == "not":
+                out.append("%s (%s)" % (wf, why))
     return out
 
 
@@ -292,6 +314,12 @@ def overrun_alert(sha, minutes, runs, watch=None, limit=CW.OVERRUN_MIN):
         if not named:
             named = sorted(set(CV._name(r) for r in runs or [] if isinstance(r, dict)
                                and str(r.get("headSha") or "").startswith(sha) and r.get("status") != "completed"))
+        # REG-3652 - the 75-minute alert names only required work; windows proofs never hold the ship
+        try:
+            import shard_watch as SHW
+            named = [n for n in named if not SHW.is_proof_windows_name(n)]
+        except Exception:
+            named = [n for n in named if "proof-keys windows" not in str(n).lower()]
     except Exception as e:
         named = ["the running jobs could not be read (%s)" % type(e).__name__]
     return ("ship: \u26a0\u26a0 ALERT - %s has been on GitHub %d min, past the %d-minute max. Still running: %s"
@@ -575,6 +603,13 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
                 % ("RED" if vcode == 1 else "UNKNOWN"))
             return 1 if vcode == 1 else 2
     say("ship: %s at %s -> ci/claude-%s + ci/proof-keys-%s" % (version, sha[:9], version, version))
+    # REG-3653 - cancel our own dry/ and grok/ CI runs first so the ship's jobs
+    # do not sit behind them (attempt 10: fan-in queued 21 min behind those runners).
+    try:
+        import ship_yield as SY
+        SY.yield_to_ship(run=run, say=say)
+    except Exception as _e:
+        say("ship: REG-3653 yield could not run (%s) - the ship continues" % type(_e).__name__)
     # v3866 - A RESUMED SHIP DOES NOT PUSH WHAT IS ALREADY THERE. Measured 2026-11-06 (v3865, resuming after a flaky
     # Playwright re-run): both ci branches already pointed at HEAD, git ran the pre-push hook with NO ref lines (an
     # up-to-date push sends none), tv/push_lane.py rightly reads "no ref ships" as the FULL gate, and a flaky test_control

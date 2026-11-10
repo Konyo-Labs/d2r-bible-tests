@@ -63,6 +63,8 @@ CHEAP = (
     "test_the_bump_carries_its_changelog_entry",
     "test_the_shard_balance_file_covers_every_proof_test",
     "test_a_failed_shard_is_rehearsed_before_the_ci_push",
+    "test_required_checks_ignore_windows_jobs",
+    "test_a_dry_or_grok_push_yields_to_a_live_ship",
 )
 # The box rehearsal's full set, in fail-fast order: cheap first, then medium, then the long ones.
 # Historically long / flaky expensive gates (render_check, console-demos) run before changed
@@ -78,6 +80,8 @@ BOX_ORDER = (
     "test_the_shard_balance_file_covers_every_proof_test",
     "test_a_failed_shard_is_rehearsed_before_the_ci_push",
     "test_a_test_run_leaves_no_scratch_dirs",
+    "test_required_checks_ignore_windows_jobs",
+    "test_a_dry_or_grok_push_yields_to_a_live_ship",
     "blueprint", "heart", "second_eye",
     "render_check", "console_demos", "changed_tests",
 )
@@ -168,6 +172,12 @@ def catalog():
         ("test_a_test_run_leaves_no_scratch_dirs",
                            {"run": check_scratch_dirs, "cheap": False, "timeout": 60,
                             "why": "new test files with mkdtemp also clean up or call fixture_tmp.contain()"}),
+        ("test_required_checks_ignore_windows_jobs",
+                           {"run": check_required_jobs_ignore_windows, "cheap": True, "timeout": 30,
+                            "why": "required-check judgement ignores proof-keys windows jobs (attempt 10)"}),
+        ("test_a_dry_or_grok_push_yields_to_a_live_ship",
+                           {"run": check_dry_yields_to_ship, "cheap": True, "timeout": 30,
+                            "why": "dry/ and grok/ CI pushes yield to a live ci/ ship (attempt 10)"}),
         ("mac_ready",      {"run": check_mac_ready, "cheap": True,  "timeout": 30,
                             "why": "worktree can resolve playwright, python deps, and is not owed a second eye"}),
         # Alias so a lesson can name the specific agreement law that caught attempt 7.
@@ -640,6 +650,16 @@ def check_failed_shard_rehearse_law(root, timeout=30, **_):
 def check_scratch_dirs(root, timeout=60, **_):
     return _run_tv_test(root, "test_a_test_run_leaves_no_scratch_dirs.py", timeout,
                         "test mkdtemp sites are cleaned up")
+
+
+def check_required_jobs_ignore_windows(root, timeout=30, **_):
+    return _run_tv_test(root, "test_required_checks_ignore_windows_jobs.py", timeout,
+                        "required-check judgement ignores proof-keys windows jobs")
+
+
+def check_dry_yields_to_ship(root, timeout=30, **_):
+    return _run_tv_test(root, "test_a_dry_or_grok_push_yields_to_a_live_ship.py", timeout,
+                        "dry/ and grok/ CI pushes yield to a live ship")
 
 
 def check_integrity(root, timeout=90, **_):

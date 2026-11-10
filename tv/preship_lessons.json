@@ -125,6 +125,22 @@
       "check": "test_a_test_run_leaves_no_scratch_dirs",
       "class": "scratch-dirs",
       "shard": "agent-suite (4)"
+    },
+    {
+      "id": "bundle-attempt-10-windows-jobs",
+      "when": "2026-11-10",
+      "reason": "attempt 10 (run 42816227617, sha 518744bfd): the ship waited past the 75-minute alert on a proof-keys run whose required Linux seed and shard jobs were already green, because the non-required proof-keys windows jobs in the same wait were still running or queued. Required-check judgement looks only at the seed, the Linux ci shard jobs, and the fan-in that bags them.",
+      "check": "test_required_checks_ignore_windows_jobs",
+      "class": "ship-verdict",
+      "shard": "proof-keys shards"
+    },
+    {
+      "id": "bundle-attempt-10-yield-runners",
+      "when": "2026-11-10",
+      "reason": "attempt 10 (sha 518744bfd): the proof-keys fan-in sat queued on ubuntu-latest for about 21 minutes (15:47-16:08 IST) behind our own dry-v3894, grok/v3894-merge and grok/ship-system CI jobs. While a real ship (ci/claude-* or ci/proof-keys-*) is live, dry/ and grok/ CI pushes must yield the runners.",
+      "check": "test_a_dry_or_grok_push_yields_to_a_live_ship",
+      "class": "ship-yield",
+      "shard": "fan-in"
     }
   ]
 }

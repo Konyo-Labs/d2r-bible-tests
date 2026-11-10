@@ -35,7 +35,7 @@ token in the output. Main moves only through `hooks/pre-push`.
    still running; a flake, runner cut-off, timeout, or infra kill is auto-rerun
    with `gh run rerun --failed` (or queued until the run completes, because
    GitHub refuses a mid-run rerun). Proof-keys shards still use REG-3270. A
-   healed flake drops out after 3 clean runs. A shard that fails twice in three
+   healed flake drops out after 3 clean runs. Required-check judgement looks only at required jobs (the Linux seed, the ci shard jobs, and the fan-in that bags them). Non-required proof-keys windows jobs never hold the wait, and they do not trip the 75-minute alert on their own (attempt 10, REG-3652). While a real ship (ci/claude-* or ci/proof-keys-*) is live, dry/ and grok/ CI pushes yield: they are not launched, and already-running ones are cancelled so the ship's required jobs never wait on our own test runners (attempt 10, REG-3653). A shard that fails twice in three
    rounds, or that runs near the 25-minute ceiling (under 300s left), is flagged
    to split; `choose_shards` then asks for one extra slice (capped at SHARD_MAX)
    and the flag lists the slow or failing tests to move.

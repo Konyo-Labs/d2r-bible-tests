@@ -70,8 +70,8 @@ class TheProofsNameOnePlace(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3650 - attempt 9 no longer names the shard that failed",
      "file": "tv/preship_lessons.json",
-     "find": '"shard": "agent-suite (2)"',
-     "replace": '"shard": ""',
+     "find": '"check": "failed_shards",\n      "class": "shard-failure",\n      "shard": "agent-suite (2)"',
+     "replace": '"check": "failed_shards",\n      "class": "shard-failure",\n      "shard": ""',
      "matches": 1},
 ]
 

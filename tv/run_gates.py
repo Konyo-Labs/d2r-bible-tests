@@ -14327,6 +14327,14 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_preship_lesson_names_the_shard_that_failed.py")], 30,
          needs_app=False,
          why='v3894 REG-3650 - a lesson from a shard failure records the shard identity so a repeat is caught before push'),
+    Gate("test_required_checks_ignore_windows_jobs",
+         [sys.executable, os.path.join(HERE, "test_required_checks_ignore_windows_jobs.py")], 30,
+         needs_app=False,
+         why='v3894 REG-3652 - required-check judgement looks only at the Linux seed, ci shard jobs and fan-in; proof-keys windows jobs never hold the ship (attempt 10)'),
+    Gate("test_a_dry_or_grok_push_yields_to_a_live_ship",
+         [sys.executable, os.path.join(HERE, "test_a_dry_or_grok_push_yields_to_a_live_ship.py")], 30,
+         needs_app=False,
+         why='v3894 REG-3653 - while a ci/claude or ci/proof-keys ship is live, dry/ and grok/ CI pushes yield the runners (attempt 10)'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)

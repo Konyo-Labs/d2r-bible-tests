@@ -1,29 +1,23 @@
 [
   {
-<<<<<<< HEAD
     "ver": "v3893",
-=======
-    "ver": "v3890",
->>>>>>> f7484a78c (fix: v3894 - box rehearsal catches the a01b71706 fallout (blueprint, changelog, shard timings, scratch dirs))
     "date": "2026-11-09",
     "items": [
+      "A live ci/claude or ci/proof-keys ship makes dry/ and grok/ CI pushes yield the runners (REG-3653)",
+      "Required-check judgement ignores proof-keys windows jobs; seed + Linux shards + fan-in decide green (REG-3652)",
       "The page zero floor and the closed-modal census agree at 7 (`#th-shelfov` is in the census; REG-3651)",
       "ship_when_green.STATUS_URL is console_port.url(/api/status), never a literal :17772 (REG-3651)",
       "The ship still passes speed=_CS.observe as the last argument of main(), so the pin matches (REG-3651)",
       "test_a_windowed_client_is_letterboxed_onto_1920x1080 is a registered gate (REG-3651)",
       "Integrity baseline items_count 318 -> 317: Wilhelm's Pride left the calculator uniques (REG-3506, REG-3651)",
       "Box rehearsal lessons catch these deterministic reds before a ci/ push (REG-3651)",
-<<<<<<< HEAD
-=======
       "Box rehearsal also catches a stale blueprint, a long changelog bullet, and missing shard timings (REG-3651)",
->>>>>>> f7484a78c (fix: v3894 - box rehearsal catches the a01b71706 fallout (blueprint, changelog, shard timings, scratch dirs))
       "A shard that failed in the last N rounds is rehearsed locally before the ci/ push (REG-3647)",
       "A red shard is classified as it finishes; a real red is reported at once, a flake or cut-off is re-run (REG-3648)",
       "A shard that fails twice in three rounds, or runs near the 25-minute ceiling, is flagged to split (REG-3649)",
       "A lesson from a shard failure records the shard identity so a repeat is caught before push (REG-3650)",
       "python3 tv/ship.py vNNNN is the one ship entry: box rehearsal, Mac readiness, CI wait, then main (REG-3646)",
       "A worktree without playwright fails in seconds; the only auto-fix is a node_modules symlink (attempt 8, REG-3646)",
-<<<<<<< HEAD
       "Agreement laws that pin a gate's numbers run before a ship; chronicle-title matches the page floor (attempt 7, REG-3642)",
       "A flaky or runner-killed agent-tests or Playwright job is re-run alone, not the whole workflow (REG-3645)",
       "The flake ledger drops a healed flake after three clean runs (REG-3644)",
@@ -91,12 +85,6 @@
     "ver": "v3890",
     "date": "2026-11-09",
     "items": [
-=======
-      "Agreement laws run before a ship; the chronicle-title law matches render_check's page floor (attempt 7, REG-3642)",
-      "A flaky or runner-killed agent-tests or Playwright job is re-run alone, not the whole workflow (REG-3645)",
-      "The flake ledger drops a healed flake after three clean runs (REG-3644)",
-      "Every proof test has a timing row used to fill the shard plan; the file updates after a green round (REG-3643)",
->>>>>>> f7484a78c (fix: v3894 - box rehearsal catches the a01b71706 fallout (blueprint, changelog, shard timings, scratch dirs))
       "The Windows proof set on GitHub runs as 32 shards of 2 lanes inside 75 minutes (#103, REG-3504)",
       "The paid-runner lane is gone - every proof job runs on the free GitHub runners (REG-3505)",
       "A set item moves with MF by the unique-first roll, as silospen counts it (#43, REG-3506)",

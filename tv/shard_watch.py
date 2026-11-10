@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""REG-3647..3650 - watch agent / Playwright shards live, rehearse a recently-failed
+"""REG-3647..3652 - watch agent / Playwright shards live, rehearse a recently-failed
 set before the ci/ push, and flag a shard that fails repeatedly (or runs near the
 25-minute ceiling) so it can be split.
 
@@ -9,6 +9,12 @@ UNKNOWN/cut-off. The wait used to sit until the whole round ended. Now a red
 shard is classified the moment its job finishes, a flake/cut-off is queued for
 a single-job rerun, and a real red is reported immediately so the fix can start
 while the other shards are still running.
+
+REG-3652 (attempt 10, run 42816227617): required-check judgement looks only at
+the required jobs of a run (the Linux seed, the ci shard jobs, and the fan-in
+that bags them). Non-required proof-keys windows jobs never hold the verdict,
+even when they share the wait or are still queued in the same CI cycle, and they
+do not trip the 75-minute alert on their own.
 """
 from __future__ import print_function
 
@@ -370,6 +376,124 @@ def maybe_flag(name, info=None, k=None, n=None, root=None, data=None, save_file=
                       failed=(info or {}).get("failed"), root=root, data=data, save_file=save_file)
 
 
+
+#: REG-3652 - job names of the non-required Windows proof set (proof-keys-windows.yml).
+#: Never matches the required "Windows boot" workflow.
+PROOF_WINDOWS_WF = re.compile(r"proof-keys windows", re.I)
+PROOF_WINDOWS_JOB = re.compile(
+    r"^(windows\s+shard\b|windows\s+fan-in\b|seed\s*-\s*the Windows proofs\b|"
+    r"proof bank\s*-\s*publish this commit's Windows\b)",
+    re.I,
+)
+#: Required jobs of the Linux proof-keys shards workflow: seed, shard N, fan-in.
+#: The proof-bank job is packaging for the bank and does not hold the ship.
+REQUIRED_PROOF_JOB = re.compile(
+    r"^(seed\s*-\s*the proofs this exact commit already has|shard\s+\d+(?:\s*/\s*\d+)?|"
+    r"fan-in\s*-)",
+    re.I,
+)
+
+
+def is_proof_windows_name(name, workflow=""):
+    """True for a proof-keys windows workflow or job, including an alert label
+    like 'proof-keys windows ... / windows shard 1 (27 min)'. Never the Windows boot check."""
+    blob = " / ".join(x for x in (workflow, name) if x)
+    if PROOF_WINDOWS_WF.search(str(blob)):
+        return True
+    n = str(name or "").strip()
+    if " / " in n:
+        n = n.split(" / ", 1)[-1]
+    n = re.sub(r"\s*\(\d+(?:\.\d+)?\s*min\)\s*$", "", n).strip()
+    return bool(PROOF_WINDOWS_JOB.match(n))
+
+
+def is_proof_windows_job(job, workflow=None):
+    job = job or {}
+    wf = workflow or job.get("workflowName") or job.get("workflow") or ""
+    return is_proof_windows_name(job.get("name") or "", wf)
+
+
+def is_required_job(job, workflow=None):
+    """True if this job counts toward the ship's required-check verdict."""
+    if is_proof_windows_job(job, workflow):
+        return False
+    name = str((job or {}).get("name") or "").strip()
+    wf = str(workflow or (job or {}).get("workflowName") or (job or {}).get("workflow") or "")
+    if "proof-keys shards" in wf:
+        return bool(REQUIRED_PROOF_JOB.match(name))
+    # Other required workflows (agent tests, Playwright, Windows boot): every
+    # non-windows job counts. The proof-bank job of the Linux shards is not
+    # a required job (handled above by REQUIRED_PROOF_JOB).
+    if name.lower().startswith("proof bank"):
+        return False
+    return True
+
+
+def required_jobs(jobs, workflow=None):
+    """The jobs that decide a required check, newest attempt of each name."""
+    by = {}
+    for job in jobs or []:
+        if not isinstance(job, dict) or not is_required_job(job, workflow):
+            continue
+        name = str(job.get("name") or "").strip()
+        if not name:
+            continue
+        prev = by.get(name)
+        if prev is None:
+            by[name] = job
+            continue
+        # Prefer the later attempt / later completion when a re-run left both.
+        def _key(j):
+            return (str(j.get("completedAt") or j.get("completed_at") or ""),
+                    str(j.get("startedAt") or j.get("started_at") or ""),
+                    int(j.get("databaseId") or j.get("id") or 0))
+        if _key(job) >= _key(prev):
+            by[name] = job
+    return list(by.values())
+
+
+def required_jobs_verdict(jobs, workflow=None):
+    """Judge one run from its required jobs only, ignoring proof-keys windows jobs.
+
+    -> ('green' | 'not' | 'pending', why)
+    green   every required job that belongs on this workflow has succeeded
+    not     a required job failed, cancelled, or timed out
+    pending a required job is still running or the required set is not complete yet
+    """
+    req = required_jobs(jobs, workflow)
+    if not req:
+        return "pending", "no required jobs have been reported yet"
+    failed, pending = [], []
+    for job in req:
+        conclusion = str(job.get("conclusion") or "").lower()
+        status = str(job.get("status") or "").lower()
+        name = str(job.get("name") or "?")
+        if conclusion in ("failure", "cancelled", "canceled", "timed_out", "startup_failure"):
+            failed.append("%s %s" % (name, conclusion))
+        elif status not in ("completed",) or conclusion not in ("success", "skipped", "neutral"):
+            pending.append("%s %s" % (name, conclusion or status or "queued"))
+    if failed:
+        return "not", "required job red: " + ", ".join(failed)
+    wf = str(workflow or "")
+    if "proof-keys shards" in wf:
+        names = " ".join(str(j.get("name") or "") for j in req)
+        has_seed = "seed - the proofs this exact commit already has" in names
+        has_shard = bool(re.search(r"\bshard\s+\d+", names))
+        has_fanin = bool(re.search(r"\bfan-in\s*-", names))
+        if not (has_seed and has_shard and has_fanin):
+            missing = []
+            if not has_seed:
+                missing.append("seed")
+            if not has_shard:
+                missing.append("ci shard")
+            if not has_fanin:
+                missing.append("fan-in")
+            return "pending", "required jobs not all present yet: " + ", ".join(missing)
+    if pending:
+        return "pending", "required jobs still running: " + ", ".join(pending)
+    return "green", "required jobs succeeded (%d), windows proofs ignored" % len(req)
+
+
 def list_jobs(rid, run, already=None):
     if already is not None:
         return list(already)
@@ -498,11 +622,25 @@ def watch_jobs_live(sha, runs, run, say, seen, made, clock, root=None):
 
 
 def suites_in_progress(runs, sha):
+    """True only while a REQUIRED workflow still has unfinished required jobs.
+
+    REG-3652 - a proof-keys run whose Linux seed, shards and fan-in are already
+    green is not 'in progress' for the ship, even if windows jobs are still
+    running or queued.
+    """
     import ci_verdict as CV
     import ship_when_green as SW
     for wf in (CV.REQUIRED[0], CV.REQUIRED[1], CV.REQUIRED[2], CV.REQUIRED[3]):
         r = SW.suite_run(runs, sha, wf)
-        if r and str(r.get("status") or "") in ("in_progress", "queued", "waiting", "pending"):
+        if not r:
+            continue
+        jobs = r.get("jobs") if isinstance(r.get("jobs"), list) else None
+        if jobs is not None:
+            v, _why = required_jobs_verdict(jobs, wf)
+            if v == "pending":
+                return True
+            continue
+        if str(r.get("status") or "") in ("in_progress", "queued", "waiting", "pending"):
             return True
     return False
 
