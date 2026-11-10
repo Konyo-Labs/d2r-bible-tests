@@ -105,7 +105,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "#251 (REG-2929) - the console publishes the reels' section without this PC's save names",
      "file": "tv/control_app.py",
-     "find": "        got = _rp.with_save_names(got, saves_answer(), now_ms)\n",
+     "find": "    got = _rp.with_save_names(got, saves_answer(), now_ms)\n",
      "replace": "",
      "matches": 1},
 ]

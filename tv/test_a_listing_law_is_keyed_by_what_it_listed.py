@@ -335,7 +335,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-2981 - a banked listing entry no longer counts the gitignored names its listed dirs held",
      "file": "heart2.py",
-     "find": "                entry.update(ident=cache.ident(name, filename, pr), listed=list(ls), unread=list(un), ignoredSeen=seen)\n",
-     "replace": "                entry.update(ident=cache.ident(name, filename, pr), listed=list(ls), unread=list(un))\n",
+     "find": "                entry.update(ident=cache.ident(name, filename, pr), listed=list(ls), unread=list(un), ignoredSeen=seen,\n                             **({\"funcs\": fn, \"quoted\": sorted(qd)} if fn is not None else {}))\n",
+     "replace": "                entry.update(ident=cache.ident(name, filename, pr), listed=list(ls), unread=list(un),\n                             **({\"funcs\": fn, \"quoted\": sorted(qd)} if fn is not None else {}))\n",
      "matches": 1},
 ]

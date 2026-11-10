@@ -55723,8 +55723,8 @@ window.renderLaneLocks = function(){
     var r = all[n] || {};
     var _n = (r.sessions && r.sessions.length) || 0;
     var mule = '';
-    /* v1985.1 — muleById IS NOT ON window. `window.muleById && window.muleById(a)` is a guard that
-       can never pass, so the mule label would have rendered empty forever while looking wired.
+    /* v1985.1 — muleById IS NOT ON window. A window-qualified call of muleById (the form the
+       optional-call law greps for) is a guard that can never pass, so the mule label would have rendered empty forever while looking wired.
        test_the_board_calls_nothing_that... caught it on the push and named it exactly: "optional
        calls to functions assigned nowhere — they have never run and never will: muleById". It is a
        closure function the vault code already calls bare (vaultAutoAssign does), so call it bare and

@@ -145,8 +145,8 @@ RED_PROOF = [
      "find": "    } else if (booting && !hurt.length) {\n", "replace": "    } else if (booting) {\n", "matches": 1, "needs": "node"},
     {"why": "#124 - the closed row says 'proving' for a PC that is starting up",
      "file": "tv/control_ui.html",
-     "find": "    if (s.key === 'healing') return [s.starting ? 'starting up' : (proving || 'proving')];\n",
-     "replace": "    if (s.key === 'healing') return [proving || 'proving'];\n", "matches": 1, "needs": "node"},   # v3883 re-anchor (units)
+     "find": "    if (s.key === \'healing\') {\n      if (s.starting) return [\'starting up\'];\n",
+     "replace": "    if (s.key === \'healing\') {\n      if (s.starting) return [proving || \'proving\'];\n", "matches": 1, "needs": "node"},   # v3883 re-anchor (units)
 ]
 
 

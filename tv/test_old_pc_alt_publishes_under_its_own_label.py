@@ -56,8 +56,8 @@ class OldPcAltPublishesUnderItsOwnLabel(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3622 - a leftover sharesLabel overrides OLD PC ALT back onto Konyo · ALT",
      "file": "tv/roster_publish.py",
-     "find": "    if name in OWNERS:\n        return name\n",
-     "replace": "    if False and name in OWNERS:\n        return name\n",
+     "find": "    if name in OWNERS:\n        return name\n    if isinstance(shares_label, str) and shares_label.strip() in OWNERS:\n",
+     "replace": "    if False and name in OWNERS:\n        return name\n    if isinstance(shares_label, str) and shares_label.strip() in OWNERS:\n",
      "matches": 1},
     {"why": "REG-3622 - the console no longer asks publish_owner",
      "file": "tv/control_app.py",

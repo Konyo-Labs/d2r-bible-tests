@@ -463,8 +463,10 @@
         "span.ht-lbl|Crafts",
         "span.ht-lbl|Uniques",
         "span.ht-lbl|Sets",
-        "span.ht-lbl|Tools",
+        "button.ht|Tools",
+        "button.ht|👤Characters",
         "span.ht-lbl|Vault",
+        "span.ht-lbl|D2JSP",
         "span.ht-lbl|TV·D"
       ],
       "1120x900": [
@@ -473,8 +475,10 @@
         "span.ht-lbl|Crafts",
         "span.ht-lbl|Uniques",
         "span.ht-lbl|Sets",
-        "span.ht-lbl|Tools",
+        "button.ht|Tools",
+        "button.ht|👤Characters",
         "span.ht-lbl|Vault",
+        "span.ht-lbl|D2JSP",
         "span.ht-lbl|TV·D"
       ],
       "1280x720": [
@@ -483,8 +487,10 @@
         "span.ht-lbl|Crafts",
         "span.ht-lbl|Uniques",
         "span.ht-lbl|Sets",
-        "span.ht-lbl|Tools",
+        "button.ht|Tools",
+        "button.ht|👤Characters",
         "span.ht-lbl|Vault",
+        "span.ht-lbl|D2JSP",
         "span.ht-lbl|TV·D"
       ],
       "1440x1000": [
@@ -493,8 +499,10 @@
         "span.ht-lbl|Crafts",
         "span.ht-lbl|Uniques",
         "span.ht-lbl|Sets",
-        "span.ht-lbl|Tools",
+        "button.ht|Tools",
+        "button.ht|👤Characters",
         "span.ht-lbl|Vault",
+        "span.ht-lbl|D2JSP",
         "span.ht-lbl|TV·D"
       ],
       "901x900": [
@@ -503,8 +511,10 @@
         "span.ht-lbl|Crafts",
         "span.ht-lbl|Uniques",
         "span.ht-lbl|Sets",
-        "span.ht-lbl|Tools",
+        "button.ht|Tools",
+        "button.ht|👤Characters",
         "span.ht-lbl|Vault",
+        "span.ht-lbl|D2JSP",
         "span.ht-lbl|TV·D"
       ]
     },
@@ -2558,6 +2568,7 @@
         "div",
         "div",
         "div",
+        "div",
         "div|🔬READS FORENSICSthe scanner's X-ray · pi",
         "div|📜 Chronicle inbox ✕ ⏳ Pending 📚 Ledger (",
         "iframe"
@@ -2565,6 +2576,7 @@
       "1120x900": [
         "div.shell|ᚨ name me 05:23:36Thu, Sep 24 Sessions R",
         "div.toast",
+        "div",
         "div",
         "div",
         "div",
@@ -2580,6 +2592,7 @@
         "div",
         "div",
         "div",
+        "div",
         "div|🔬READS FORENSICSthe scanner's X-ray · pi",
         "div|📜 Chronicle inbox ✕ ⏳ Pending 📚 Ledger (",
         "iframe"
@@ -2591,6 +2604,7 @@
         "div",
         "div",
         "div",
+        "div",
         "div|🔬READS FORENSICSthe scanner's X-ray · pi",
         "div|📜 Chronicle inbox ✕ ⏳ Pending 📚 Ledger (",
         "iframe"
@@ -2598,6 +2612,7 @@
       "901x900": [
         "div.shell|ᚨ name me 05:23:37Thu, Sep 24 Sessions R",
         "div.toast",
+        "div",
         "div",
         "div",
         "div",
@@ -3042,6 +3057,7 @@
         "div.vault-mule|📜RUNEWORDS0⚖ 0✏️🗑forged runewords — Enig",
         "div.vault-mule|🔩SOCKETED0⚖ 0✏️🗑socketed bases — white /",
         "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
+        "div.vault-mule|CHARMSnot in game yet0✏️Gheed’s, magic-f",
         "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
         "div.vault-mule|♻️GRAIL-DUPES0⚖ 0✏️🗑second copies — trad",
         "div.vault-mule|🛠️WIP0⚖ 0✏️🗑next-build staging — the onl"
@@ -3055,6 +3071,7 @@
         "div.vault-mule|📜RUNEWORDS0⚖ 0✏️🗑forged runewords — Enig",
         "div.vault-mule|🔩SOCKETED0⚖ 0✏️🗑socketed bases — white /",
         "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
+        "div.vault-mule|CHARMSnot in game yet0✏️Gheed’s, magic-f",
         "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
         "div.vault-mule|♻️GRAIL-DUPES0⚖ 0✏️🗑second copies — trad",
         "div.vault-mule|🛠️WIP0⚖ 0✏️🗑next-build staging — the onl"
@@ -3068,6 +3085,7 @@
         "div.vault-mule|📜RUNEWORDS0⚖ 0✏️🗑forged runewords — Enig",
         "div.vault-mule|🔩SOCKETED0⚖ 0✏️🗑socketed bases — white /",
         "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
+        "div.vault-mule|CHARMSnot in game yet0✏️Gheed’s, magic-f",
         "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
         "div.vault-mule|♻️GRAIL-DUPES0⚖ 0✏️🗑second copies — trad",
         "div.vault-mule|🛠️WIP0⚖ 0✏️🗑next-build staging — the onl"
@@ -3081,6 +3099,7 @@
         "div.vault-mule|📜RUNEWORDS0⚖ 0✏️🗑forged runewords — Enig",
         "div.vault-mule|🔩SOCKETED0⚖ 0✏️🗑socketed bases — white /",
         "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
+        "div.vault-mule|CHARMSnot in game yet0✏️Gheed’s, magic-f",
         "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
         "div.vault-mule|♻️GRAIL-DUPES0⚖ 0✏️🗑second copies — trad",
         "div.vault-mule|🛠️WIP0⚖ 0✏️🗑next-build staging — the onl"
@@ -3094,6 +3113,7 @@
         "div.vault-mule|📜RUNEWORDS0⚖ 0✏️🗑forged runewords — Enig",
         "div.vault-mule|🔩SOCKETED0⚖ 0✏️🗑socketed bases — white /",
         "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
+        "div.vault-mule|CHARMSnot in game yet0✏️Gheed’s, magic-f",
         "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
         "div.vault-mule|♻️GRAIL-DUPES0⚖ 0✏️🗑second copies — trad",
         "div.vault-mule|🛠️WIP0⚖ 0✏️🗑next-build staging — the onl"
@@ -3117,6 +3137,8 @@
         "div.vm-gauge",
         "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
         "div.vm-gauge",
+        "div.vault-mule|CHARMSnot in game yet0✏️Gheed’s, magic-f",
+        "div.vm-gauge",
         "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
         "div.vm-gauge",
         "div.vault-mule|♻️GRAIL-DUPES0⚖ 0✏️🗑second copies — trad",
@@ -3140,6 +3162,8 @@
         "div.vault-mule|🔩SOCKETED0⚖ 0✏️🗑socketed bases — white /",
         "div.vm-gauge",
         "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
+        "div.vm-gauge",
+        "div.vault-mule|CHARMSnot in game yet0✏️Gheed’s, magic-f",
         "div.vm-gauge",
         "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
         "div.vm-gauge",
@@ -3165,6 +3189,8 @@
         "div.vm-gauge",
         "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
         "div.vm-gauge",
+        "div.vault-mule|CHARMSnot in game yet0✏️Gheed’s, magic-f",
+        "div.vm-gauge",
         "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
         "div.vm-gauge",
         "div.vault-mule|♻️GRAIL-DUPES0⚖ 0✏️🗑second copies — trad",
@@ -3189,6 +3215,8 @@
         "div.vm-gauge",
         "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
         "div.vm-gauge",
+        "div.vault-mule|CHARMSnot in game yet0✏️Gheed’s, magic-f",
+        "div.vm-gauge",
         "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
         "div.vm-gauge",
         "div.vault-mule|♻️GRAIL-DUPES0⚖ 0✏️🗑second copies — trad",
@@ -3212,6 +3240,8 @@
         "div.vault-mule|🔩SOCKETED0⚖ 0✏️🗑socketed bases — white /",
         "div.vm-gauge",
         "div.vault-mule|🔮MAGIC & RARE0⚖ 0✏️🗑skillers · magic / r",
+        "div.vm-gauge",
+        "div.vault-mule|CHARMSnot in game yet0✏️Gheed’s, magic-f",
         "div.vm-gauge",
         "div.vault-mule|📦SHARED STASH0⚖ 0✏️🗑worth-keeping-close ",
         "div.vm-gauge",

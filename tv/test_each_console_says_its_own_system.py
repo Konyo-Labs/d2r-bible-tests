@@ -158,8 +158,8 @@ RED_PROOF = [
     {
         "why": "#229 - an unreadable shelf reaches the fleet as 0 reels - an empty machine instead of an unread one",
         "file": "control_app.py",
-        "find": "    except Exception:\n        out[\"reels\"] = None\n    out[\"repair\"] = _repair_for_wire()\n",
-        "replace": "    except Exception:\n        out[\"reels\"] = 0\n    out[\"repair\"] = _repair_for_wire()\n",
+        "find": "    except Exception:\n        out[\"reels\"] = None\n    try:\n        _dw = _drain_for_wire()\n",
+        "replace": "    except Exception:\n        out[\"reels\"] = 0\n    try:\n        _dw = _drain_for_wire()\n",
         "matches": 1,
     },
     {

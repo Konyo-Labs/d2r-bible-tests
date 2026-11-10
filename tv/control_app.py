@@ -40541,7 +40541,7 @@ def _seal_frozen_idle(now, held_s=None):
                        rollingDoor=None, rollingSince=None, launcherSince=None, launcherFor=None,
                        frozenIdleSince=None, frozenIdleFor=None,
                        launcherUntil=now + _BARE_HUD_RELOOK_S * 1000, why=why)
-    return {"ok": True, "cut": True, "why": why}
+    return {"ok": True, "cut": True, "idle": True, "launcher": True, "why": why}
 
 
 def shadow_watch_tick():
@@ -40634,20 +40634,25 @@ def shadow_watch_tick():
                 # v3894 (#188) - a frozen non-D2R screen (GeForce NOW / Boosteroid idle page, launcher):
                 # the recorder stops filming, so "recording" means a real session.
                 _frozen = reel_film_is_frozen_non_d2r(now)
-                if _frozen is True:
+                # v3894 (#188) - frozen-idle is for a reel the launcher clock would not already
+                # seal: hud is False (reads show no game, film is not the lobby) already has the
+                # 3-minute launcher grace, which does not depend on a 60 s fresh-frame window.
+                # A frozen GeForce NOW / Boosteroid idle page under stale or uncertain reads
+                # (hud is True or None) is the new door.
+                if _frozen is True and hud is not False:
                     _lc = _shadow_watch_stored() or {}
                     _fs = _lc.get("frozenIdleSince")
                     if not isinstance(_fs, (int, float)) or _lc.get("frozenIdleFor") != _since:
                         why = ("the film is a frozen non-D2R screen (an idle page or launcher) - "
                                "this shadow reel seals if that holds for %d s" % _SHADOW_AWAY_GRACE_S)
                         _shadow_watch_note(lookedAt=now, frozenIdleSince=now, frozenIdleFor=_since, why=why)
-                        return {"ok": True, "away": True, "idle": True, "why": why}
+                        return {"ok": True, "away": True, "idle": True, "launcher": True, "why": why}
                     _held = (now - float(_fs)) / 1000.0
                     if _held < _SHADOW_AWAY_GRACE_S:
                         why = ("the film is still a frozen non-D2R screen (%d s of %d)"
                                % (int(_held), _SHADOW_AWAY_GRACE_S))
                         _shadow_watch_note(lookedAt=now, why=why)
-                        return {"ok": True, "away": True, "idle": True, "why": why}
+                        return {"ok": True, "away": True, "idle": True, "launcher": True, "why": why}
                     return _seal_frozen_idle(now, held_s=_held)
                 if _frozen is False:
                     _cur_fr = _shadow_watch_stored() or {}

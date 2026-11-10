@@ -61,13 +61,13 @@ class ABuildsBookDoesNotHideSaveNames(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3623 - a builds book hides Crest and Morph again",
      "file": "tv/roster_publish.py",
-     "find": "        out[\"inGame\"] = {\"rows\": list(chars[\"rows\"]),\n",
-     "replace": "        out[\"inGame\"] = {\"rows\": [],\n",
+     "find": "        out[\"inGame\"] = {\"rows\": list(chars[\"rows\"]), \"counts\": counts, \"allow\": allow}\n",
+     "replace": "        out[\"inGame\"] = {\"rows\": [], \"counts\": counts, \"allow\": allow}\n",
      "matches": 1},
     {"why": "REG-3623 - the console skips save names when a builds book is used",
      "file": "tv/control_app.py",
-     "find": "                reads[\"characters\"] = _rp.with_ingame_beside_builds(reads[\"characters\"], got)\n",
-     "replace": "                reads[\"characters\"] = reads[\"characters\"]\n",
+     "find": "            reads[\"characters\"] = _rp.with_ingame_beside_builds(reads[\"characters\"], got)\n",
+     "replace": "            reads[\"characters\"] = reads[\"characters\"]\n",
      "matches": 1},
 ]
 

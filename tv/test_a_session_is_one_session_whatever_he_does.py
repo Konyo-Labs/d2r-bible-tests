@@ -570,8 +570,8 @@ RED_PROOF = [
     {
         "why": "#148 - the launcher seals on the second look again instead of after three minutes",
         "file": "control_app.py",
-        "find": "                    if _held < _SHADOW_AWAY_GRACE_S:\n",
-        "replace": "                    if False:\n",
+        "find": "                    _held = (now - float(_ls)) / 1000.0\n                    if _held < _SHADOW_AWAY_GRACE_S:\n",
+        "replace": "                    _held = (now - float(_ls)) / 1000.0\n                    if False:\n",
         "matches": 1,
     },
     {

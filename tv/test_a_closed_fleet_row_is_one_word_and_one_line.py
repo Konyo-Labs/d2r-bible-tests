@@ -368,8 +368,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3395 - a blind gate no longer leads a wounded PC's line",
      "file": "tv/control_ui.html",
-     "find": "    var hurt = s.hurt.slice().sort(function (a, b) { return (/ blind$/.test(b) ? 1 : 0) - (/ blind$/.test(a) ? 1 : 0); });",
-     "replace": "    var hurt = s.hurt.slice();", "matches": 1},
+     "find": "    var hurt = s.hurt.slice().filter(function (x) { return x !== s.drainAlert; }).sort(function (a, b) { return (/ blind$/.test(b) ? 1 : 0) - (/ blind$/.test(a) ? 1 : 0); });",
+     "replace": "    var hurt = s.hurt.slice().filter(function (x) { return x !== s.drainAlert; });", "matches": 1},
     {"why": "REG-3395 - the line no longer says what is healing the PC (the import)",
      "file": "tv/control_ui.html",
      "find": "    var heal = imp ? 'import' + (_quiet || _eta(imp.etaS)) : proving;", "replace": "    var heal = proving;",   # v3883 re-anchor
