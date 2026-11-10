@@ -454,16 +454,21 @@ function d2jspPosts(text, itemName, nowMs) {
       pending = '';
       authors = [];
     } else if (here && here !== link) {
-      if (when != null && !used) { link = here; pending = ''; }
+      /* v3894 - reset authors whenever the topic link changes: a new undated topic must not inherit the last seller */
+      if (when != null && !used) { link = here; pending = ''; authors = []; }
       else { rememberUndated(); link = here; pending = here; when = rel ? d : null; explicit = false; used = false; authors = []; }
     } else if (rel && !explicit) when = d;
     else if (here) link = here;
-    hereWho.forEach(function (n) { authors.push(n); });
     /* v3843 - a price counts only under a recently dated post; v3844 - and only a 2026 one */
     /* A line that names the item and has no fg is skipped. It is not a post and it keeps no link.
        The same for a line with no date, or a date outside the window. used only closes this card
        so the next topic does not inherit the link. */
     var named = d2jspNamed(line, forms) && !d2jspOtherReading(line, d2jspResolveItem(itemName).item || itemName);
+    /* v3894 - a user.php mention in a post body is not the seller (the seller's name may be plain text).
+       Collect authors from header-ish lines only: not a line that names the item or carries a price. */
+    if (!named && !/\bfg\b/i.test(line)) {
+      hereWho.forEach(function (n) { authors.push(n); });
+    }
     if (!d2jspRecent(when, nowMs) || when < D2JSP_QUOTE_SINCE_MS) {
       if (when == null && pending && named) return;
       if (named) used = true;

@@ -81,6 +81,30 @@ class TheSameSellerIsOneVote(unittest.TestCase):
         self.assertIn("function d2jspVoteKey(r)", src)
         self.assertIn("seller:", src)
 
+    def test_a_new_undated_topic_does_not_inherit_the_last_seller(self):
+        """v3894 - authors reset whenever the topic link changes (the `here !== link` / `when && !used` branch)"""
+        html = (_card("Oct 7 2026 11:04pm", "111111111", "", "SellerA")
+                + '<div><a href="topic.php?t=222222222&amp;f=268">#1</a></div>shako 410 fg<br>')
+        q = D.parse_public_quote(html, ITEM, READ_AT)
+        posts = q["posts"]
+        self.assertTrue(posts, posts)
+        self.assertTrue(all(p.get("author") in (None, "") for p in posts),
+                        "a new undated topic inherited the last seller: %s" % posts)
+
+    def test_a_user_php_mention_in_the_body_is_not_the_seller(self):
+        """v3894 - a user.php mention in a post body must not become the seller when the seller's name is plain text"""
+        html = ('<div>Oct 7 2026 11:04pm <a href="topic.php?t=111111111&amp;f=268">#1</a> SellerA</div>'
+                'I agree with <a href="user.php?i=9">Mentioned</a> — shako 400 fg<br>'
+                '<div>Oct 8 2026 12:04pm <a href="topic.php?t=222222222&amp;f=268">#1</a> SellerB</div>'
+                'see <a href="user.php?i=9">Mentioned</a> shako 410 fg<br>')
+        q = D.parse_public_quote(html, ITEM, READ_AT)
+        posts = q["posts"]
+        self.assertEqual(len(posts), 2, posts)
+        self.assertTrue(all(p.get("author") in (None, "") for p in posts),
+                        "a body mention became the seller: %s" % posts)
+        self.assertTrue(all(p["w"] == 1 for p in posts),
+                        "two topics collapsed into one vote via the mentioned name: %s" % posts)
+
     def test_a_stored_author_is_kept_and_the_topic_key_stays_its_link(self):
         html = (_card("Oct 7 2026 11:04pm", "111111111", "shako 400 fg<br>", "SellerA")
                 + _card("Oct 8 2026 12:04pm", "222222222", "shako 410 fg<br>", "SellerA"))
@@ -99,6 +123,16 @@ RED_PROOF = [
      "file": "functions/api/d2jsp_quote.js",
      "find": "  if (a) return 'seller:' + a.toLowerCase();\n",
      "replace": "  if (false && a) return 'seller:' + a.toLowerCase();\n",
+     "matches": 1},
+    {"why": "v3894 - a new undated topic inherits the last seller (authors not reset when the link changes)",
+     "file": "functions/api/d2jsp_quote.js",
+     "find": "      if (when != null && !used) { link = here; pending = ''; authors = []; }\n",
+     "replace": "      if (when != null && !used) { link = here; pending = ''; }\n",
+     "matches": 1},
+    {"why": "v3894 - a user.php mention in a post body becomes the seller again",
+     "file": "functions/api/d2jsp_quote.js",
+     "find": "    if (!named && !/\\bfg\\b/i.test(line)) {\n      hereWho.forEach(function (n) { authors.push(n); });\n    }\n",
+     "replace": "    hereWho.forEach(function (n) { authors.push(n); });\n",
      "matches": 1},
 ]
 
