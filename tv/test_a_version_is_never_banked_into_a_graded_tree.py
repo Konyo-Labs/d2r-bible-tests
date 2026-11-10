@@ -297,7 +297,62 @@ class AContinuationLineIsNotAProcess(unittest.TestCase):
         self.assertIn("fcntl", who)
 
 
+
+class OnePushAtATimeOnThisMac(unittest.TestCase):
+    """card #200 guard 2 (REG-3664) - MEASURED 11-10: a feature push graded 85 min beside v3894's ship pre-flight and turned
+    two of its laws red. A ship never starts beside a grading push or another ship; a push waits while a ship runs, unless
+    it IS that ship's own push (a descendant)."""
+
+    SHIP = "/usr/bin/Python -u tv/ship_when_green.py v3895"
+
+    def test_a_push_beside_a_running_ship_is_refused_and_its_own_push_is_not(self):
+        rows = [("100", "1", 60, self.SHIP),               # the ship
+                ("200", "100", 5, "git push origin HEAD:main"),   # the ship's own main push
+                ("210", "200", 4, "bash hooks/pre-push origin x"),  # that push's hook  -> allowed
+                ("300", "1", 3, "git push origin feature"),       # a feature push
+                ("310", "300", 2, "bash hooks/pre-push origin y")]  # its hook -> refused
+        self.assertEqual(TB.ship_beside(rows, "210")[0], False, "the ship's own main push was refused by its own ship")
+        busy, why = TB.ship_beside(rows, "310")
+        self.assertIs(busy, True, "a push started beside a running ship")
+        self.assertIn("pid 100", why)
+        self.assertIs(TB.ship_beside(None, "310")[0], None, "an unreadable process list read as free")
+        self.assertEqual(TB.ship_beside([("5", "1", 1, "ugrep ship_when_green.py tv")], "9")[0], False,
+                         "a grep naming the ship read as a running ship")
+
+    def test_a_ship_never_starts_beside_a_push_or_another_ship(self):
+        import ship_when_green as SW
+        free = [("1", "0", 9, "launchd")]
+        self.assertIsNone(SW.start_refusal(rows=free, prepush=(False, ""), self_pid="77"))
+        self.assertIn("a pre-push hook is grading", SW.start_refusal(rows=free, prepush=(True, "pid 42"), self_pid="77") or "")
+        other = free + [("88", "1", 30, self.SHIP)]
+        self.assertIn("a ship is running", SW.start_refusal(rows=other, prepush=(False, ""), self_pid="77") or "")
+        self.assertIn("UNKNOWN", SW.start_refusal(rows=free, prepush=(None, "x"), self_pid="77") or "")
+
+    def test_the_hook_and_the_ship_ask_it(self):
+        hook = io.open(os.path.join(os.path.dirname(HERE), "hooks", "pre-push"), encoding="utf-8").read()
+        self.assertEqual(hook.count('python3 "$REPO/tv/tree_busy.py" --ship-beside $$'), 1, "the hook no longer asks")
+        self.assertIn('if [ "$_pp_beside_rc" -eq 3 ]; then', hook)
+        sw = io.open(os.path.join(HERE, "ship_when_green.py"), encoding="utf-8").read()
+        i = sw.index("\ndef main(argv=None):")
+        self.assertIn("    _beside = start_refusal()\n", sw[i:sw.index("\ndef ", i + 1)], "the ship no longer refuses to start beside a push")
+
+
 RED_PROOF = [
+    {"why": "card #200 guard 2 - a push starts beside a running ship (the ancestor test is gone)",
+     "file": "tv/tree_busy.py",
+     "find": "    hits = [str(p) for p, _pp, _a, cmd in rows if _is_ship_command(cmd) and str(p) not in anc]\n",
+     "replace": "    hits = []\n",
+     "matches": 1},
+    {"why": "card #200 guard 2 - a ship starts beside a grading pre-push hook",
+     "file": "tv/ship_when_green.py",
+     "find": "    if running:\n        return (\"a pre-push hook is grading on this Mac",
+     "replace": "    if False:\n        return (\"a pre-push hook is grading on this Mac",
+     "matches": 1},
+    {"why": "card #200 guard 2 - the hook no longer refuses a push beside a ship",
+     "file": "hooks/pre-push",
+     "find": "if [ \"$_pp_beside_rc\" -eq 3 ]; then\n",
+     "replace": "if [ \"$_pp_beside_rc\" -eq 99 ]; then\n",
+     "matches": 1},
     {
         "why": "REG-1846 - a continuation line of another program's argv is read as a process again",
         "file": "tv/tree_busy.py",

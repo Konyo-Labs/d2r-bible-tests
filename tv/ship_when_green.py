@@ -814,11 +814,38 @@ def main(argv=None):
     ap.add_argument("--no-mac-rehearse", action="store_true",
                     help="REG-3646 - do not run the Mac hook gates in parallel with the CI wait")
     a = ap.parse_args(argv)
+    # card #200 guard 2 (REG-3664) - ONE PUSH AT A TIME ON THIS MAC: never start beside a grading push or another ship
+    _beside = start_refusal()
+    if _beside:
+        print("ship: REFUSED to start - %s" % _beside)
+        return 2
     import ci_speed as _CS        # v3890 (#194) - the real round is measured; a law's ship() is never sent to GitHub
     return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None, watch=_watch_authed,
                 watch_publish_s=None if a.no_watch else a.publish_wait_min * 60,
                 box_rehearse=not a.no_box_rehearse, mac_ready=not a.no_mac_ready,
                 mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe)
+
+
+def start_refusal(rows=None, prepush=None, self_pid=None):
+    """card #200 guard 2 (REG-3664) - why this ship may not start now, or None. A pre-push hook grading on this Mac (any
+    tree) or another ship running here refuses it; a list that cannot be read is said, never taken as free."""
+    import tree_busy as _TB
+    import self_prove as _SP
+    _pid = self_pid if self_pid is not None else os.getpid()
+    if rows is None:
+        rows = _SP.process_rows()
+    # push_grading, not tree_busy._prepush_running: a hook that is an ANCESTOR of this process is the push running it
+    # (a law inside the pre-push gate), never one to refuse for - the asking-from-inside case tree_busy cannot tell apart
+    running, detail = prepush if prepush is not None else _SP.push_grading(rows, self_pid=_pid)
+    if running:
+        return ("a pre-push hook is grading on this Mac (%s) - a ship never starts beside one: its pre-flight would grade "
+                "under that load and its laws would see a push grading (card #200 guard 2)" % detail)
+    busy, said = _TB.ship_beside(rows, _pid)
+    if busy:
+        return said
+    if running is None or busy is None:
+        return "whether another push or ship runs on this Mac could not be read - UNKNOWN, not free (card #200 guard 2)"
+    return None
 
 
 def _watch_authed(sha):

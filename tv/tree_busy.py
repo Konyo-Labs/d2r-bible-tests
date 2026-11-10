@@ -301,7 +301,43 @@ def why(repo=None):
     return None
 
 
+def _is_ship_command(cmd):
+    """card #200 guard 2 - a running ship: python running tv/ship_when_green.py (never a grep or an editor naming it)"""
+    c = str(cmd or "")
+    return "ship_when_green.py" in c and "python" in c.lower() and not c.lstrip().startswith(("grep", "ugrep", "rg "))
+
+
+def ship_beside(rows, self_pid):
+    """card #200 guard 2 (REG-3664) - ONE PUSH AT A TIME ON THIS MAC. Is a ship running here that is NOT an ancestor of
+    self_pid (the ship's own main push runs this hook as its descendant, and that one is allowed)? rows:
+    self_prove.process_rows() [(pid, ppid, age, cmd)]. -> (True | False | None, why). None = the list could not be read.
+    MEASURED 11-10: Claude's feature-branch push sat 85 min in its pre-push gate beside v3894's ship pre-flight and turned
+    two laws red there (a push grading), costing a whole attempt. Pure."""
+    if rows is None:
+        return None, "the process list could not be read - UNKNOWN, not free"
+    parent = dict((str(p), str(pp)) for p, pp, _a, _c in rows)
+    anc, cur = set(), str(self_pid)
+    while cur and cur not in anc:
+        anc.add(cur)
+        cur = parent.get(cur)
+    hits = [str(p) for p, _pp, _a, cmd in rows if _is_ship_command(cmd) and str(p) not in anc]
+    if hits:
+        return True, ("a ship is running on this Mac (pid %s) - its pre-flight and gates grade a tree this push would load; "
+                      "push after it lands (card #200 guard 2)" % ", ".join(hits[:3]))
+    return False, ""
+
+
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ["--ship-beside"]:
+        # card #200 guard 2 - the pre-push hook asks: exit 3 = a ship runs beside this push, 0 = none, 2 = UNKNOWN
+        try:
+            import self_prove as _sp
+            busy, said = ship_beside(_sp.process_rows(), argv[1] if len(argv) > 1 else os.getppid())
+        except Exception as e:
+            busy, said = None, "the ship check failed (%s)" % type(e).__name__
+        sys.stdout.write((said or "no ship runs beside this push") + "\n")
+        return 3 if busy is True else (0 if busy is False else 2)
     w = why()
     if w:
         sys.stderr.write("tree is BUSY: %s\n" % w)

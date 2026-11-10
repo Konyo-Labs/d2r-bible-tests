@@ -7,6 +7,19 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3664 - ONE PUSH AT A TIME ON THIS MAC (v3895, card #200 guard 2)
+MEASURED 11-10: Claude's feature-branch push sat 85 min in its pre-push gate beside v3894's ship pre-flight; two laws there
+saw "a push grading" and went red, costing attempt 4. Now a ship refuses to START beside a grading push or another ship
+(ship_when_green.start_refusal - self_prove.push_grading, which never counts the asker's own hook), and the pre-push hook
+refuses a push while a ship runs that is not its own ancestor (tree_busy.ship_beside; the ship's own main push is allowed;
+an unreadable process list warns, never blocks). Law: test_a_version_is_never_banked_into_a_graded_tree. Seen RED x3.
+
+### REG-3663 - ONCE GITHUB VOUCHES, THE SHIP CANCELS ITS OWN OPTIONAL RUNS (v3895, card #200 guard 7)
+MEASURED 11-11 00:00: v3894's optional Windows proof set (not required) held the runners after the vouch; main's Publish,
+Routine I and agent tests sat queued until it was cancelled by hand. ship_when_green.cancel_beside cancels this commit's live
+BESIDE runs the moment the verdict is in - never a REQUIRED workflow, never another commit's. Law:
+test_required_checks_ignore_windows_jobs. Seen RED x2.
+
 ### REG-3662 - FOOTAGE WAS DELETED BEHIND A SHUT LOCK WHATEVER WAS BLIND; NOW ONLY ON THE LOCK'S OWN PROVEN GUARDS (v3895, his 11-11 ruling)
 v3894's REG-3584 (GrokBot, no ruling cited) let apply_plan release any "sealed eligible" reel while frame.release was shut -
 against his recorded rules (a destructive act keeps the full guarantee, v3042; BLIND never softens, 09-12). MEASURED 11-11
