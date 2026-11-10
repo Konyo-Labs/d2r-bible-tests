@@ -11361,14 +11361,15 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 /* v3887 (#154) - a class's animated figure in its card: a framed portrait, the figure filling it; a MAIN's frame is gold and lit */
 /* REG-3641 - the class figure is shared: character cards and vault locker plates both draw through .chx-crest.
    --chx-gold lives on #tab-chars, so the unscoped rules fall back to the same gold. A MAIN's gold frame is unchanged.
-   Vault plates use a compact 40px portrait so the shelf still fits at 1512 and 901x900. */
+   Vault plates use a 64-72px portrait, scaled with the tile (--vm-crest is 20% of the locker, clamped), so four
+   lockers fit a row at 1512 and two or three fit at 901x900. */
 .chx-crest{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif-display);font-size:var(--fs-title);font-weight:var(--fw-bold);color:var(--chx-gold,#f0c060);border:1px solid rgba(240,192,96,.45);background:radial-gradient(circle at 50% 30%,rgba(240,192,96,.16),rgba(10,8,5,.9) 70%)}
 .chx-crest.chx-crest-sprite{width:76px;height:76px;border-radius:12px;overflow:hidden;padding:0;border-color:rgba(240,192,96,.28);background:radial-gradient(circle at 50% 35%,rgba(240,192,96,.10),rgba(8,6,4,.95) 72%)}
 .chx-crest-sprite img{width:100%;height:100%;object-fit:contain;transform:scale(1.32);transform-origin:50% 42%;display:block}
 .chx-crest.chx-crest-main{border:2px solid var(--chx-gold,#f0c060);box-shadow:0 0 12px rgba(240,192,96,.45),inset 0 0 10px rgba(240,192,96,.18)}
 #tab-chars .chx-crest.chx-crest-sprite{width:76px;height:76px}
-.vault-mule .chx-crest.chx-crest-sprite{width:40px;height:40px;border-radius:8px}
-.vault-mule .vm-crest{flex:0 0 auto;display:flex;align-items:center}
+.vault-mule .chx-crest.chx-crest-sprite{width:var(--vm-crest);height:var(--vm-crest);min-width:64px;min-height:64px;max-width:72px;max-height:72px;border-radius:10px}
+.vault-mule .vm-crest{flex:0 0 auto;display:flex;align-items:center;min-width:0;width:var(--vm-crest);height:var(--vm-crest)}
 #tab-chars .chx-id{flex:1 1 auto;min-width:0}
 #tab-chars .chx-name{font-family:var(--serif-display);font-size:var(--fs-chx-name);font-weight:var(--fw-semibold);color:var(--text);line-height:var(--lh-tight);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #tab-chars .chx-cls{font-size:var(--fs-meta);color:var(--text-muted);margin-top:2px;letter-spacing:var(--ls-snug)}
@@ -45477,14 +45478,14 @@ details[open] > summary .to-chev{transform:rotate(180deg)}
 .vrg-x:hover{background:rgba(255,60,60,.25);border-color:rgba(255,80,80,.7)}
 .vault-chip:active{cursor:grabbing}
 /* shelf: symmetric locker grid */
-.vault-shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:12px}
-.vault-mule{border:1px solid var(--border-light,#4a3f2a);border-radius:11px;background:linear-gradient(180deg,rgba(36,28,18,.92),rgba(22,16,9,.95));overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.55),inset 0 1px 0 rgba(240,192,96,.06),0 4px 14px rgba(0,0,0,.4);transition:all .2s var(--ease-out,ease);display:flex;flex-direction:column}
+.vault-shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px} /* REG-3641 - four across at 1512 (shelf 1382px: 5x300+48 does not fit, 4x300+36 does); two or three at 901x900; min(100%,…) so a narrow pane cannot overflow */
+.vault-mule{container-type:inline-size;--vm-crest:clamp(64px,20cqi,72px);border:1px solid var(--border-light,#4a3f2a);border-radius:11px;background:linear-gradient(180deg,rgba(36,28,18,.92),rgba(22,16,9,.95));overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.55),inset 0 1px 0 rgba(240,192,96,.06),0 4px 14px rgba(0,0,0,.4);transition:all .2s var(--ease-out,ease);display:flex;flex-direction:column}
 .vault-mule.vm-over{border-color:var(--best,#66ff88);box-shadow:inset 0 0 0 1px rgba(102,255,136,.35),0 0 26px rgba(102,255,136,.2);transform:translateY(-2px)}
 .vault-mule.vm-flash{animation:vmFlash 1.2s ease}
 @keyframes vmFlash{0%,100%{box-shadow:inset 0 0 0 1px rgba(0,0,0,.55)}30%{box-shadow:inset 0 0 0 2px rgba(240,192,96,.8),0 0 34px rgba(212,168,71,.45)}}
 .vm-plate{display:flex;align-items:center;gap:8px;padding:9px 11px;background:linear-gradient(180deg,rgba(212,168,71,.16),rgba(212,168,71,.05));border-bottom:1px solid rgba(212,168,71,.3);cursor:pointer}
 .vm-icon{font-size:17px;line-height:var(--lh-none)}
-.vm-name{font-family:var(--mono,monospace);font-weight:var(--fw-semibold);font-size:12.5px;letter-spacing:var(--ls-normal);color:var(--gold-bright,#f0c060);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.7)}  /* REG-3641 - the 40px crest must not push the locker name out of a 248px tile at 901x900 or 1512 */
+.vm-name{font-family:var(--mono,monospace);font-weight:var(--fw-semibold);font-size:12.5px;letter-spacing:var(--ls-normal);color:var(--gold-bright,#f0c060);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.7)}  /* REG-3641 - the 64-72px crest must not push the locker name out of a four-across tile at 1512, or a two/three-across tile at 901x900 */
 .vm-count{font-family:var(--mono,monospace);font-size:var(--fs-meta);color:var(--text-muted,#b5a48a)}
 /* v3247 — THE PROOF CHIP. A class nobody styles is a flag nobody can see, and this repo has paid
    for that twice: sh-chip-st / sh-chip-stunk were both set by a builder with no rule to render

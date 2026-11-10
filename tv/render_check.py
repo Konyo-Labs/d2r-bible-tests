@@ -846,9 +846,9 @@ TARGETS = {
                             "the item is read from its art and its tooltip, and the full name is "
                             "in the title attribute",
             # REG-3641 - the locker plate now wears the character-card class figure, scaled inside
-            # a 40px frame (overflow hidden, same crop as the 76px character card). The locker is
+            # a 64-72px frame (overflow hidden, same crop as the 76px character card). The locker is
             # identified by its name; the figure is a portrait, not a label.
-            "chx-crest-sprite": "the class figure is scaled inside its 40px frame on purpose — the "
+            "chx-crest-sprite": "the class figure is scaled inside its 64-72px frame on purpose — the "
                                 "same crop the character cards use; there is no text in the crest",
         },
     },
@@ -880,7 +880,7 @@ TARGETS = {
         "truncation_ok": {
             "vm-cell-name": "the name label inside a 10x10-grid tile - the cell is 28px by design, the item is read from "
                             "its art and its tooltip, and the full name is in the title attribute (as the vault target)",
-            "chx-crest-sprite": "the class figure is scaled inside its 40px frame on purpose — the "
+            "chx-crest-sprite": "the class figure is scaled inside its 64-72px frame on purpose — the "
                                 "same crop the character cards use; there is no text in the crest (REG-3641)",
         },
     },
@@ -1162,7 +1162,7 @@ TARGETS = {
             "vm-cell-name": "the name label inside a 10x10-grid tile — the cell is 28px by design, "
                             "the item is read from its art and its tooltip, and the full name is "
                             "in the title attribute",
-            "chx-crest-sprite": "the class figure is scaled inside its 40px frame on purpose — the "
+            "chx-crest-sprite": "the class figure is scaled inside its 64-72px frame on purpose — the "
                                 "same crop the character cards use; there is no text in the crest (REG-3641)",
         },
     },
