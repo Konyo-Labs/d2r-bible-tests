@@ -110,6 +110,28 @@ class TheDoorIsReadFromThePixels(unittest.TestCase):
         self.assertIsNone(k)
         self.assertIn("unreadable", why)
 
+    def test_screen_of_decodes_each_frame_once(self):
+        """v3894 - logo/title/hud and the char-select/lobby look share one file open"""
+        from PIL import Image as PILImage
+        d = tempfile.mkdtemp(prefix="screen_once_")
+        try:
+            path = os.path.join(d, "idle.jpg")
+            idle_page().save(path, "JPEG", quality=92)
+            opens = []
+            real = PILImage.open
+            def spy(*a, **k):
+                opens.append(a[0] if a else k.get("fp"))
+                return real(*a, **k)
+            PILImage.open = spy
+            try:
+                DS.screen_of(path)
+            finally:
+                PILImage.open = real
+            self.assertEqual(opens.count(path), 1,
+                             "screen_of opened the frame %d times: %r" % (opens.count(path), opens))
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
 
 class TheChainIsHisProcess(unittest.TestCase):
     T = 1793208591025
@@ -328,6 +350,16 @@ RED_PROOF = [
      "file": "tv/shadow_sessions.py",
      "find": "        _game = [g for g in _kept if is_game(g) is not False]\n",
      "replace": "        _game = list(_kept)\n",
+     "matches": 1},
+    {"why": "v3894 - screen_of decodes the frame again for char-select",
+     "file": "tv/d2r_screens.py",
+     "find": "            ok, cwhy = _cs.looks_like_char_select(_cs.panel_stats(src if isinstance(src, str) else None, image=raw))\n",
+     "replace": "            ok, cwhy = _cs.looks_like_char_select(_cs.panel_stats(src))\n",
+     "matches": 1},
+    {"why": "v3894 - screen_of decodes the frame again for the lobby look",
+     "file": "tv/d2r_screens.py",
+     "find": "            ok, lwhy = _cs.looks_like_lobby(_cs.lobby_stats(src if isinstance(src, str) else None, image=raw))\n",
+     "replace": "            ok, lwhy = _cs.looks_like_lobby(_cs.lobby_stats(src))\n",
      "matches": 1},
 ]
 
