@@ -41,6 +41,7 @@ from console_safe import enable as _console_safe_enable  # noqa: E402 - a cp1255
 _console_safe_enable()
 import ci_verdict as CV  # noqa: E402
 import ci_watch as CW  # noqa: E402
+import console_port as _cport  # noqa: E402
 
 #: each REQUIRED workflow's file, for `gh workflow run` when its path filter did not fire on the ci push
 WORKFLOW_FILES = {
@@ -333,7 +334,7 @@ def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN):
 
 #: REG-3646 - a local rehearsal or readiness check that is red must stop the ship before (or during) the CI wait,
 #: not after it. Measured: attempts 6, 7 and 8 each paid a full GitHub round (~60 min) before the Mac hook refused.
-STATUS_URL = "http://127.0.0.1:17772/api/status"
+STATUS_URL = _cport.url("/api/status")
 
 
 def _call_gate(fn, *args, **kw):
@@ -730,9 +731,9 @@ def main(argv=None):
     a = ap.parse_args(argv)
     import ci_speed as _CS        # v3890 (#194) - the real round is measured; a law's ship() is never sent to GitHub
     return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None, watch=_watch_authed,
-                watch_publish_s=None if a.no_watch else a.publish_wait_min * 60, speed=_CS.observe,
+                watch_publish_s=None if a.no_watch else a.publish_wait_min * 60,
                 box_rehearse=not a.no_box_rehearse, mac_ready=not a.no_mac_ready,
-                mac_rehearse=not a.no_mac_rehearse)
+                mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe)
 
 
 def _watch_authed(sha):

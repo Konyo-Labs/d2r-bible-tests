@@ -60,6 +60,7 @@ token in the output. Main moves only through `hooks/pre-push`.
   proof-keys round has measured it, otherwise the median. The plan uses these rows
   to fill unpriced proofs. Updated after a green round. Law:
   `test_the_shard_balance_file_covers_every_proof_test`.
+- `baseline/integrity_baseline.json` — Routine L's ITEMS/BOSSES counts. The box rehearsal's `integrity` check runs the same probe so a drift is caught before CI (REG-3651).
 - `tv/flake_ledger.json` — known flakes, pruned after `nClean` (3) consecutive
   green runs.
 

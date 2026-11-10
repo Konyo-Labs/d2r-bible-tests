@@ -33,6 +33,58 @@
       "check": "failed_shards",
       "class": "shard-failure",
       "shard": "agent-suite (2)"
+    },
+    {
+      "id": "ship-ci-floor-census",
+      "when": "2026-11-10",
+      "reason": "agent-suite (4) on run 42813591511 (e763540e9): test_render_gate_sees_the_page failed because the page zero floor was 7 but the closed-modal census still named 6. The measured truth is 7: #th-shelfov sits beside the other closed modals (REG-3532). Floor and census must stay one number.",
+      "check": "test_render_gate_sees_the_page",
+      "class": "agreement-law",
+      "shard": "agent-suite (4)"
+    },
+    {
+      "id": "ship-ci-status-url",
+      "when": "2026-11-10",
+      "reason": "agent-suite (4) on run 42813591511: test_a_scratch_console_never_addresses_his failed because ship_when_green.STATUS_URL was a literal http://127.0.0.1:17772/api/status. The URL must come from console_port (TV_CONTROL_PORT, default his port only when nothing names another) so a scratch console never bakes his port in.",
+      "check": "test_a_scratch_console_never_addresses_his",
+      "class": "his-port-literal",
+      "shard": "agent-suite (4)"
+    },
+    {
+      "id": "ship-ci-observe-pin",
+      "when": "2026-11-10",
+      "reason": "agent-suite (4) on run 42813591511: test_every_round_records_how_fast_it_ran failed because the pin looked for speed=_CS.observe) but main() had speed=_CS.observe, mid-call after later kwargs were added. The observe argument is still last so the pin and the call agree; behavior is unchanged.",
+      "check": "test_every_round_records_how_fast_it_ran",
+      "class": "agreement-law",
+      "shard": "agent-suite (4)"
+    },
+    {
+      "id": "ship-ci-letterbox-gate",
+      "when": "2026-11-10",
+      "reason": "Full box rehearsal refused changed_tests: test_a_windowed_client_is_letterboxed_onto_1920x1080 was changed vs origin/main but was not in GATES, so --only ran nothing. Every changed tv/test_*.py must be a registered gate.",
+      "check": "changed_tests",
+      "class": "unregistered-gate"
+    },
+    {
+      "id": "ship-ci-items-count",
+      "when": "2026-11-10",
+      "reason": "Routine L on 1a81ce15a (run 42811659234): items_count baseline 318 vs current 317. The missing item is Wilhelm's Pride, removed from the calculator uniques in v3890 (REG-3506, c9778558c) so it sits with Orphan's Call. Legitimate; baseline is 317.",
+      "check": "integrity",
+      "class": "baseline-drift"
+    },
+    {
+      "id": "ship-ci-sparse-checkout",
+      "when": "2026-11-10",
+      "reason": "CI preship on 1a81ce15a (run 42811659188) used a sparse checkout (tv/hooks/baseline), so art/ was missing and swallow census fell 66 -> 65. The preship job must check out the whole tree.",
+      "check": "preship_checkout",
+      "class": "ci-checkout"
+    },
+    {
+      "id": "ship-ci-agreement-budget",
+      "when": "2026-11-10",
+      "reason": "CI preship on f5fa71fe2 (run 42812894594): 35 agreement laws took 85.5s under a 90s budget and the last pin law was not run. CHEAP_TIMEOUT_S must stay at least 180s.",
+      "check": "agreement_budget",
+      "class": "budget"
     }
   ]
 }

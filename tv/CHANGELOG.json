@@ -3,6 +3,12 @@
     "ver": "v3893",
     "date": "2026-11-09",
     "items": [
+      "The page zero floor and the closed-modal census agree at 7 (`#th-shelfov` is in the census; REG-3651)",
+      "ship_when_green.STATUS_URL is console_port.url(/api/status), never a literal :17772 (REG-3651)",
+      "The ship still passes speed=_CS.observe as the last argument of main(), so the pin matches (REG-3651)",
+      "test_a_windowed_client_is_letterboxed_onto_1920x1080 is a registered gate (REG-3651)",
+      "Integrity baseline items_count 318 -> 317: Wilhelm's Pride left the calculator uniques (REG-3506, REG-3651)",
+      "Box rehearsal lessons catch these deterministic reds before a ci/ push (REG-3651)",
       "A shard that failed in the last N rounds is rehearsed locally before the ci/ push (REG-3647)",
       "A red shard is classified as it finishes; a real red is reported at once, a flake or cut-off is re-run (REG-3648)",
       "A shard that fails twice in three rounds, or runs near the 25-minute ceiling, is flagged to split (REG-3649)",

@@ -7,6 +7,9 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3651 - DETERMINISTIC CI REDS THE BOX REHEARSAL DID NOT RUN (v3894, the ship system)
+agent-suite (4) on run 42813591511 failed three laws the cheap box rehearsal had not run: the page zero floor was 7 against a 6-name closed-modal census (the seventh is `#th-shelfov`), `ship_when_green.STATUS_URL` was a literal `:17772`, and the `speed=_CS.observe)` pin no longer matched `main()`. Routine L was 318 vs 317 because Wilhelm's Pride left the calculator uniques (REG-3506). The letterbox law was not in GATES, so changed_tests refused. Each is now a lesson with a preship check (cheap where the check is cheap), so the box rehearsal is the first to see a repeat. Laws already in the catalog: test_render_gate_sees_the_page, test_a_scratch_console_never_addresses_his, test_every_round_records_how_fast_it_ran.
+
 ### REG-3650 - A SHARD FAILURE WAS RECORDED WITHOUT THE SHARD'S IDENTITY (v3894, the ship system)
 Attempt 9's red was `agent-suite (2)`. A lesson that only named a check could not catch a repeat of that shard before the next ci/ push. `preship_lessons.json` now stores `shard`, seeded with bundle-attempt-9, and `remember_refusal` writes it. Law: test_a_preship_lesson_names_the_shard_that_failed.
 ### REG-3649 - A SHARD THAT FAILED REPEATEDLY WAS LEFT AT THE SAME CUT (v3894, the ship system)

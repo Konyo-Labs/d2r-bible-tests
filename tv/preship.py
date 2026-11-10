@@ -54,13 +54,23 @@ FAILED_SHARDS_TIMEOUT_S = 300  # owed failed tests first; a cutoff shard uses th
 CHEAP_TIMEOUT_S = 180
 
 # Checks that are cheap and deterministic: run first so a doomed rehearsal dies in minutes.
-CHEAP = ("lessons", "encoding", "swallow_census", "agreement")
+CHEAP = (
+    "lessons", "encoding", "swallow_census", "agreement",
+    "agreement_budget", "preship_checkout",
+    "test_render_gate_sees_the_page",
+    "test_a_scratch_console_never_addresses_his",
+    "test_every_round_records_how_fast_it_ran",
+)
 # The box rehearsal's full set, in fail-fast order: cheap first, then medium, then the long ones.
 # Historically long / flaky expensive gates (render_check, console-demos) run before changed
 # agent tests so a likely-red expensive gate fails before a long likely-green suite.
 BOX_ORDER = (
     "lessons", "encoding", "swallow_census", "agreement",
-    "failed_shards",
+    "agreement_budget", "preship_checkout",
+    "test_render_gate_sees_the_page",
+    "test_a_scratch_console_never_addresses_his",
+    "test_every_round_records_how_fast_it_ran",
+    "failed_shards", "integrity",
     "blueprint", "heart", "second_eye",
     "render_check", "console_demos", "changed_tests",
 )
@@ -124,6 +134,21 @@ def catalog():
                             "why": "agent tests whose files this push touches"}),
         ("failed_shards",  {"run": check_failed_shards, "cheap": False, "timeout": FAILED_SHARDS_TIMEOUT_S,
                             "why": "exact tests of a shard that failed in the last N rounds (attempt 9)"}),
+        ("test_render_gate_sees_the_page",
+                           {"run": check_page_zero_census, "cheap": True, "timeout": 60,
+                            "why": "page zero floor and the closed-modal census agree (one number)"}),
+        ("test_a_scratch_console_never_addresses_his",
+                           {"run": check_scratch_console_port, "cheap": True, "timeout": 60,
+                            "why": "no his-port literal outside console_port; STATUS_URL reads the env"}),
+        ("test_every_round_records_how_fast_it_ran",
+                           {"run": check_observe_pin, "cheap": True, "timeout": 30,
+                            "why": "the ship still hands ci_speed.observe to the real round"}),
+        ("preship_checkout", {"run": check_preship_checkout, "cheap": True, "timeout": 15,
+                            "why": "the CI preship job checks out the whole tree, not a sparse slice"}),
+        ("agreement_budget", {"run": check_agreement_budget, "cheap": True, "timeout": 15,
+                            "why": "CHEAP_TIMEOUT_S is long enough that the last pin law actually runs"}),
+        ("integrity",      {"run": check_integrity, "cheap": False, "timeout": 90,
+                            "why": "bible.html ITEMS/BOSSES counts match the committed integrity baseline"}),
         ("mac_ready",      {"run": check_mac_ready, "cheap": True,  "timeout": 30,
                             "why": "worktree can resolve playwright, python deps, and is not owed a second eye"}),
         # Alias so a lesson can name the specific agreement law that caught attempt 7.
@@ -518,6 +543,95 @@ def check_chronicle_agreement(root, timeout=30, **_):
     if p.returncode == 0:
         return 0, "chronicle-title law agrees with render_check's page floor"
     return 1, _tail(p) or "chronicle-title law red (the attempt-7 mismatch)"
+
+
+
+def _run_tv_test(root, name, timeout, ok_say):
+    """Run one tv/test_*.py file. -> (code, say)."""
+    fn = os.path.join(root, "tv", name if name.endswith(".py") else name + ".py")
+    if not os.path.isfile(fn):
+        return 2, "%s is not in this tree" % name
+    p = _run([_py(root), fn], root, timeout)
+    if p.returncode == 0:
+        return 0, ok_say
+    if p.returncode in (124, 127):
+        return 2, _tail(p) or ("%s UNKNOWN" % name)
+    return 1, _tail(p) or ("%s red" % name)
+
+
+def check_page_zero_census(root, timeout=60, **_):
+    return _run_tv_test(root, "test_render_gate_sees_the_page.py", timeout,
+                        "page zero floor agrees with the closed-modal census")
+
+
+def check_scratch_console_port(root, timeout=60, **_):
+    return _run_tv_test(root, "test_a_scratch_console_never_addresses_his.py", timeout,
+                        "no new his-port literal; STATUS_URL reads console_port")
+
+
+def check_observe_pin(root, timeout=30, **_):
+    return _run_tv_test(root, "test_every_round_records_how_fast_it_ran.py", timeout,
+                        "the ship still measures its real round")
+
+
+def check_preship_checkout(root, timeout=15, **_):
+    """The CI preship job must see every swallow site (run 42811659188: sparse checkout dropped art/, 66->65)."""
+    wf = os.path.join(root, ".github", "workflows", "tv-tests.yml")
+    if not os.path.isfile(wf):
+        return 2, "tv-tests.yml is missing"
+    try:
+        src = open(wf, encoding="utf-8").read()
+    except OSError as e:
+        return 2, "tv-tests.yml would not read (%s)" % e
+    # The preship job only: plan/VERDICT may still sparse-checkout on purpose.
+    start = src.find("name: preship")
+    end = src.find("\n  plan:", start) if start >= 0 else -1
+    if start < 0 or end < 0:
+        return 2, "the preship job could not be located in tv-tests.yml"
+    block = src[start:end]
+    if "sparse-checkout" in block:
+        return 1, "the CI preship job still uses sparse-checkout — swallow census will miss sites"
+    if "actions/checkout" not in block:
+        return 1, "the CI preship job has no checkout"
+    return 0, "preship checks out the whole tree"
+
+
+def check_agreement_budget(root, timeout=15, **_):
+    # run 42812894594: 35 laws took 85.5s under a 90s budget and the last pin law was not run.
+    if CHEAP_TIMEOUT_S < 180:
+        return 1, "CHEAP_TIMEOUT_S is %ss; CI needed 180s so the last pin law actually runs (run 42812894594)" % CHEAP_TIMEOUT_S
+    return 0, "agreement budget is %ss" % CHEAP_TIMEOUT_S
+
+
+def check_integrity(root, timeout=90, **_):
+    """Routine L: ITEMS/BOSSES counts and the four drop probes match baseline/integrity_baseline.json."""
+    import json as _json
+    script = os.path.join(root, "L_integrity.js")
+    baseline = os.path.join(root, "baseline", "integrity_baseline.json")
+    bible = os.path.join(root, "bible.html")
+    if not os.path.isfile(script) or not os.path.isfile(baseline):
+        return 2, "integrity baseline or probe is missing"
+    if not os.path.isfile(bible):
+        return 2, "bible.html is missing - UNKNOWN, not a match"
+    p = _run(["node", script, bible], root, timeout)
+    if p.returncode in (124, 127):
+        return 2, _tail(p) or "integrity probe UNKNOWN (node/playwright missing?)"
+    if p.returncode != 0:
+        return 1, _tail(p) or "integrity probe red"
+    result = "/tmp/L_result.json"
+    try:
+        base = _json.loads(open(baseline, encoding="utf-8").read())
+        cur = _json.loads(open(result, encoding="utf-8").read())
+    except (OSError, ValueError) as e:
+        return 2, "integrity result would not read (%s) - UNKNOWN, not a match" % e
+    if not isinstance(base, dict) or not isinstance(cur, dict):
+        return 2, "integrity baseline or result is not an object"
+    drift = sorted(k for k in set(base) | set(cur)
+                   if not str(k).startswith("_") and base.get(k) != cur.get(k))
+    if drift:
+        bits = ["%s: baseline %r vs current %r" % (k, base.get(k), cur.get(k)) for k in drift]
+        return 1, "integrity drift: " + "; ".join(bits)
+    return 0, "integrity baseline matches (items_count=%s)" % cur.get("items_count")
 
 
 def check_lessons(root, timeout=30, **_):
