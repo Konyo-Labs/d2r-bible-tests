@@ -467,8 +467,9 @@ FILM_INTERVAL_S = 1.0 / float(_FILM_FPS)
 _FOOTAGE_FPS = max(1, min(5, int(float(os.environ.get("TV_FOOTAGE_FPS", "1") or 1))))
 FOOTAGE_INTERVAL_S = 1.0 / float(_FOOTAGE_FPS)
 # v3894 — every PC's film is 1920x1080 (Elad, 2026-11-10: Dean's shadow theatre was a magnified
-# 160 px thumb of an 800 px Windows eye). A smaller source is never enlarged; a larger one is
-# fitted inside this box. TV_FILM_MAX_PX still caps the longest side when set.
+# 160 px thumb of an 800 px Windows eye). A windowed client (Dean-shaped 1507x755, #255) is
+# resampled and letterboxed onto this box so readers share the Mac's reference coordinates.
+# TV_FILM_MAX_PX still caps the longest side when set.
 FILM_W, FILM_H = 1920, 1080
 FILM_MAX_PX = max(1280, min(3840, int(os.environ.get("TV_FILM_MAX_PX", "1920") or 1920)))
 FILM_JPEG_Q = max(55, min(95, int(os.environ.get("TV_FILM_Q", "82" if not ROBOT_MODE else "82") or 82)))
@@ -3379,17 +3380,16 @@ def _film_shrink(src, dest, max_px, quality):
     problem and this does not touch it. [[feedback-verify-not-proxy]]
     """
     try:
-        from PIL import Image
-        im = Image.open(src)
-        # v3894 — when the caller asked for the film size, fit the 1920x1080 box (not a square).
+        from film_frame import to_film_jpeg, FILM_W as _FW, FILM_H as _FH
         try:
-            box = (FILM_W, FILM_H) if int(max_px) >= FILM_W else (int(max_px), int(max_px))
+            mp = int(max_px)
         except Exception:
-            box = (int(max_px), int(max_px))
-        im.draft("RGB", box)
-        im.thumbnail(box)
-        im.save(dest, "JPEG", quality=int(quality))
-        return os.path.isfile(dest) and os.path.getsize(dest) > 4000
+            mp = _FW
+        if mp < _FW:
+            fw, fh = mp, max(1, int(mp * _FH / float(_FW)))
+        else:
+            fw, fh = _FW, _FH
+        return bool(to_film_jpeg(src, dest, quality=quality, film_w=fw, film_h=fh))
     except Exception:
         pass
     try:
