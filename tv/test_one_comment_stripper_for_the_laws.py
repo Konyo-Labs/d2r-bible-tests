@@ -66,6 +66,19 @@ class OneCommentStripperForTheLaws(unittest.TestCase):
         unbounded = "/* " + "x" * (js_strip.CAP + 10) + " */ var keep = 1;"
         self.assertIn("var keep = 1;", js_strip.strip_js_comments(unbounded))
 
+    def test_a_block_marker_inside_a_string_is_not_a_comment(self):
+        """v3894 - a `/*` inside a string literal is left alone (the MIME wildcard is one case; this is the general one)"""
+        src = 'var hint = "use /* inside the pattern */ here"; var keep = 1; /* gone */'
+        out = js_strip.strip_js_comments(src)
+        self.assertIn('use /* inside the pattern */ here', out,
+                      "the stripper ate a /* that lived inside a string literal")
+        self.assertIn("var keep = 1;", out)
+        self.assertNotIn("gone", out)
+        src2 = "var hint = 'also /* stays */ here'; /* gone2 */"
+        out2 = js_strip.strip_js_comments(src2)
+        self.assertIn("also /* stays */ here", out2)
+        self.assertNotIn("gone2", out2)
+
     def test_the_page_keeps_every_id_through_the_stripper(self):
         """the instrument on the real subject: no id= declaration in bible.html is lost to the strip"""
         with io.open(os.path.join(ROOT, "bible.html"), encoding="utf-8") as fh:
@@ -83,9 +96,9 @@ class OneCommentStripperForTheLaws(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "v3886 (#152) - the shared stripper reads accept=\"image/*\" as a comment again (v3885 round 1's red)",
+    {"why": "v3886 (#152) / v3894 - the shared stripper reads accept=\"image/*\" or a /* inside a string as a comment again",
      "file": "tv/js_strip.py",
-     "find": "    src = re.sub(r\"/\\*(?![\\\"']).{0,%d}?\\*/\" % int(cap), \" \", str(src), flags=re.S)\n",
+     "find": "    src = _strip_block_comments(str(src), int(cap))\n",
      "replace": "    src = re.sub(r\"/\\*.{0,%d}?\\*/\" % int(cap), \" \", str(src), flags=re.S)\n",
      "matches": 1},
     {"why": "v3886 (#152) - test_control keeps its own stripper copy again (the ceiling must catch a new copy)",
