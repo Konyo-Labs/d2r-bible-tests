@@ -28,6 +28,12 @@ His 11-06 ask: a one-law fix must not re-prove half of 9,446 proofs. REG-3393 tr
 ### REG-3626 - A LAW'S OWN TEMP REPO KEEPS THE CASE'S LINE ENDINGS, NOT THE PC'S AUTOCRLF (#107)
 REG-3364 gave every checkout LF and left this batch: a law that git-inits its own temp repo still inherited the runner's global core.autocrlf. Git for Windows (and GitHub's windows-latest) installs with that set to true, so a fixture written as LF was rewritten as CR LF the next time Git touched it, and a byte assertion went red only on Windows. tv/git_quiet.pin_lf and init_repo pin core.autocrlf=false on the throwaway repo after init, and win over a Windows-default global. A census holds every test function that git-inits a throwaway repo to a pin. Law test_a_temp_repo_keeps_the_cases_line_endings.
 
+### REG-3627 - A d2jsp ROLL WRITTEN BEFORE THE ITEM NAME COUNTS, A TOTAL-DEFENSE AFTER IT DOES NOT (#30)
+A live board-268 post wrote "1os 141 Shako *5 ea=100fg" and "141 Shako *5 ea=80fg". The parser already read a perfect 141 off "141Def"/"141def" after the name, but a number standing immediately before Shako was not a roll. A number in the item's roll range adjacent before the name now counts. A total-defense after the name ("eth perf shako 211", "mage plate 995 def") is not that roll. Law test_a_d2jsp_roll_before_the_name_counts.
+
+### REG-3628 - A RUNE IS SEARCHED ON d2jsp BY ITS BARE NAME, AND 'ber' IS A WHOLE WORD (#30)
+Rune searches went out as the phrase "ber rune", so a listing written "x50 Ber 195fg ea" was missed at the search box and when the line was read. The query is now the bare rune name (Ber, Jah, Shael, ...). Matching stays a whole word, so "ber" does not hit "berry" or "number", and bare "eth" is not the ethereal flag on another item. Law test_a_rune_is_searched_by_its_bare_name.
+
 ### REG-3223 - GITHUB'S FIRST v3865 ROUND: SIX REDS THE PRE-FLIGHT COULD NOT SEE, AND ONE THAT COULD HAVE PRUNED A MAIN TREE (v3865)
 The pre-flight passed (1,382 laws <= 20 s) and GitHub's agent suite went red on 656833dfa. Each fixed at its cause:
 - test_an_imported_proof_opens_the_locks (8 failures + 1 error, green on the Mac): its "another tree" was GitHub's own checkout path, so on a runner every trusted proof read as this tree's and was served here. The fixture's other tree is now a path no checkout holds, with a premise assert.
