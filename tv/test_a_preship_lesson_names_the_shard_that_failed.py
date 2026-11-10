@@ -10,6 +10,7 @@ history, is a hole this law refuses.
 import json
 import os
 import sys
+import shutil
 import tempfile
 import unittest
 
@@ -38,6 +39,7 @@ class TheLawHolds(unittest.TestCase):
 
     def test_remember_refusal_stores_the_shard(self):
         root = tempfile.mkdtemp(prefix="lesson-shard-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
         os.makedirs(os.path.join(root, "tv"), exist_ok=True)
         with open(os.path.join(root, "tv", P.LESSONS_NAME), "w", encoding="utf-8") as fh:
             json.dump({"lessons": []}, fh)

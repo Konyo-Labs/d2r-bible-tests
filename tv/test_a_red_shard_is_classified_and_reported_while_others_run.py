@@ -13,6 +13,7 @@ import json
 import os
 import subprocess
 import sys
+import shutil
 import tempfile
 import unittest
 from unittest import mock
@@ -86,6 +87,7 @@ class TheLawHolds(unittest.TestCase):
 
     def test_a_real_red_is_reported_while_sibling_shards_still_run(self):
         root = tempfile.mkdtemp(prefix="shard-live-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
         os.makedirs(os.path.join(root, "tv"), exist_ok=True)
         SHW.save({"rounds": [], "flags": []}, root)
         jobs = [
@@ -107,6 +109,7 @@ class TheLawHolds(unittest.TestCase):
 
     def test_a_cutoff_is_queued_when_github_refuses_a_mid_run_rerun(self):
         root = tempfile.mkdtemp(prefix="shard-cut-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
         os.makedirs(os.path.join(root, "tv"), exist_ok=True)
         SHW.save({"rounds": [], "flags": []}, root)
         jobs = [

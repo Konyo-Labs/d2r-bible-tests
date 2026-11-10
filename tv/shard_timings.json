@@ -1,7 +1,7 @@
 {
   "_why": "Per-proof seconds for shard balancing. Measured rows come from a green proof-keys run; every other proof test is present at the median so the coverage law holds and the plan does not guess from a Mac gate_costs row.",
   "median": 1.437,
-  "measuredOn": "v3875 0d4e24537",
+  "measuredOn": "v3862 aaaaaaaaa",
   "proofs": {
     "test_equipped_items_are_pixel_exact_per_character": {
       "s": 1.785,
@@ -6399,6 +6399,18 @@
       "s": 1.437,
       "src": "measured"
     },
+    "test_the_fleet_says_a_stopped_drain": {
+      "s": 1.437,
+      "src": "measured"
+    },
+    "test_every_pc_films_at_1920x1080": {
+      "s": 1.437,
+      "src": "measured"
+    },
+    "test_a_windowed_client_is_letterboxed_onto_1920x1080": {
+      "s": 1.437,
+      "src": "measured"
+    },
     "test_one_comment_stripper_for_the_laws": {
       "s": 1.437,
       "src": "measured"
@@ -7068,6 +7080,22 @@
       "src": "measured"
     },
     "test_every_preship_lesson_names_a_check_that_runs": {
+      "s": 1.437,
+      "src": "measured"
+    },
+    "test_a_failed_shard_is_rehearsed_before_the_ci_push": {
+      "s": 1.437,
+      "src": "measured"
+    },
+    "test_a_red_shard_is_classified_and_reported_while_others_run": {
+      "s": 1.437,
+      "src": "measured"
+    },
+    "test_a_shard_that_fails_twice_in_three_rounds_is_flagged_to_split": {
+      "s": 1.437,
+      "src": "measured"
+    },
+    "test_a_preship_lesson_names_the_shard_that_failed": {
       "s": 1.437,
       "src": "measured"
     }

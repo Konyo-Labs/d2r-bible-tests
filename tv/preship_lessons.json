@@ -85,6 +85,46 @@
       "reason": "CI preship on f5fa71fe2 (run 42812894594): 35 agreement laws took 85.5s under a 90s budget and the last pin law was not run. CHEAP_TIMEOUT_S must stay at least 180s.",
       "check": "agreement_budget",
       "class": "budget"
+    },
+    {
+      "id": "ship-ci-blueprint",
+      "when": "2026-11-10",
+      "reason": "agent-suite (2) on a01b71706 (run 42817773159): test_the_blueprint_cannot_go_stale failed because test_a_windowed_client_is_letterboxed_onto_1920x1080 was added to GATES but BLUEPRINT.md was not regenerated. A new gate must be named in the official map (python3 tv/blueprint.py).",
+      "check": "blueprint",
+      "class": "stale-map",
+      "shard": "agent-suite (2)"
+    },
+    {
+      "id": "ship-ci-changelog",
+      "when": "2026-11-10",
+      "reason": "agent-suite (3) on a01b71706 (run 42817773159): test_the_bump_carries_its_changelog_entry failed because a v3894 changelog entry sat on top of VERSION v3890, and some ship-system bullets were longer than 120 characters. The top entry must match VERSION; a bullet is one change, at most 120 characters.",
+      "check": "test_the_bump_carries_its_changelog_entry",
+      "class": "changelog",
+      "shard": "agent-suite (3)"
+    },
+    {
+      "id": "ship-ci-shard-timings",
+      "when": "2026-11-10",
+      "reason": "agent-suite (5) on a01b71706 (run 42817773159): shard_timings.json was missing 7 new proof tests (the REG-3647..3650 laws, the letterbox gate, and two other proofs added on this branch). Every new proof test gets a timing row (official shard_timings.build; never lower a measured row).",
+      "check": "test_the_shard_balance_file_covers_every_proof_test",
+      "class": "shard-timings",
+      "shard": "agent-suite (5)"
+    },
+    {
+      "id": "ship-ci-failed-shard-proof",
+      "when": "2026-11-10",
+      "reason": "agent-suite (2) on a01b71706 (run 42817773159): test_a_failed_shard_is_rehearsed_before_the_ci_push went red because its unique find still expected failed_shards next to blueprint after BOX_ORDER grew an integrity check. The proof find must name the current unique line.",
+      "check": "test_a_failed_shard_is_rehearsed_before_the_ci_push",
+      "class": "agreement-law",
+      "shard": "agent-suite (2)"
+    },
+    {
+      "id": "ship-ci-scratch-dirs",
+      "when": "2026-11-10",
+      "reason": "agent-suite (4) on a01b71706 (run 42817773159): test_a_test_run_leaves_no_scratch_dirs failed because the new shard-rehearse laws called tempfile.mkdtemp without addCleanup or fixture_tmp.contain(). New test mkdtemp sites must clean up in the same function or class fixture.",
+      "check": "test_a_test_run_leaves_no_scratch_dirs",
+      "class": "scratch-dirs",
+      "shard": "agent-suite (4)"
     }
   ]
 }

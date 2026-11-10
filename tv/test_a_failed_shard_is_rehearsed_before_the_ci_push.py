@@ -10,6 +10,7 @@ locally first.
 """
 import os
 import sys
+import shutil
 import tempfile
 import unittest
 from unittest import mock
@@ -41,6 +42,7 @@ class TheLawHolds(unittest.TestCase):
 
     def test_the_box_rehearsal_runs_the_failed_tests_first(self):
         root = tempfile.mkdtemp(prefix="shard-rehearse-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
         os.makedirs(os.path.join(root, "tv"), exist_ok=True)
         data = {"rounds": [{"run": 1, "sha": "abc", "when": "2026-11-10", "jobs": [
             {"name": "agent-suite (2)", "k": 2, "n": 5, "class": "real",
@@ -70,6 +72,7 @@ class TheLawHolds(unittest.TestCase):
 
     def test_a_cutoff_shard_is_rehearsed_as_the_same_slice(self):
         root = tempfile.mkdtemp(prefix="shard-cutoff-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
         os.makedirs(os.path.join(root, "tv"), exist_ok=True)
         SHW.save({"rounds": [{"run": 2, "sha": "def", "when": "2026-11-10", "jobs": [
             {"name": "agent-suite (2)", "k": 2, "n": 5, "class": "cutoff",
@@ -113,8 +116,8 @@ class TheProofsNameOnePlace(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3647 - failed_shards drops out of the box rehearsal order",
      "file": "tv/preship.py",
-     "find": "    \"failed_shards\",\n    \"blueprint\"",
-     "replace": "    \"blueprint\"",
+     "find": "    \"failed_shards\", \"integrity\",\n",
+     "replace": "    \"integrity\",\n",
      "matches": 1},
 ]
 

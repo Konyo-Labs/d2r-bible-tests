@@ -9,6 +9,7 @@ the ceiling. choose_shards then asks for one extra slice when a flag is up
 """
 import os
 import sys
+import shutil
 import tempfile
 import unittest
 
@@ -31,6 +32,7 @@ def _round(n, klass, name="agent-suite (2)", used=1117, left=383):
 class TheLawHolds(unittest.TestCase):
     def test_one_fail_in_three_is_not_flagged(self):
         root = tempfile.mkdtemp(prefix="shard-1of3-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
         os.makedirs(os.path.join(root, "tv"), exist_ok=True)
         data = {"rounds": [_round(1, "success"), _round(2, "success"), _round(3, "real")],
                 "flags": []}
@@ -44,6 +46,7 @@ class TheLawHolds(unittest.TestCase):
 
     def test_two_fails_in_three_rounds_are_flagged(self):
         root = tempfile.mkdtemp(prefix="shard-2of3-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
         os.makedirs(os.path.join(root, "tv"), exist_ok=True)
         data = {"rounds": [_round(1, "success"), _round(2, "real"), _round(3, "cutoff")],
                 "flags": []}
@@ -59,6 +62,7 @@ class TheLawHolds(unittest.TestCase):
 
     def test_a_shard_near_the_ceiling_is_flagged_even_on_one_round(self):
         root = tempfile.mkdtemp(prefix="shard-near-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
         os.makedirs(os.path.join(root, "tv"), exist_ok=True)
         data = {"rounds": [_round(1, "success", used=1290, left=210)], "flags": []}
         SHW.save(data, root)
@@ -71,6 +75,7 @@ class TheLawHolds(unittest.TestCase):
 
     def test_choose_shards_asks_for_an_extra_slice_when_flagged(self):
         root = tempfile.mkdtemp(prefix="shard-choose-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
         os.makedirs(os.path.join(root, "tv"), exist_ok=True)
         data = {"rounds": [_round(1, "real"), _round(2, "real"), _round(3, "success")],
                 "flags": []}

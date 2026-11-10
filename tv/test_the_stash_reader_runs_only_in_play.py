@@ -71,6 +71,7 @@ class TheStashReaderIsJoinedToTheGate(unittest.TestCase):
 
         SE.classify_stash_grid = spy
         self.tmp = tempfile.mkdtemp(prefix="stash_in_play_")
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
 
     def tearDown(self):
         SE.classify_stash_grid = self._real

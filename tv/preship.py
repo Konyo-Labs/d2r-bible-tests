@@ -60,6 +60,9 @@ CHEAP = (
     "test_render_gate_sees_the_page",
     "test_a_scratch_console_never_addresses_his",
     "test_every_round_records_how_fast_it_ran",
+    "test_the_bump_carries_its_changelog_entry",
+    "test_the_shard_balance_file_covers_every_proof_test",
+    "test_a_failed_shard_is_rehearsed_before_the_ci_push",
 )
 # The box rehearsal's full set, in fail-fast order: cheap first, then medium, then the long ones.
 # Historically long / flaky expensive gates (render_check, console-demos) run before changed
@@ -71,6 +74,10 @@ BOX_ORDER = (
     "test_a_scratch_console_never_addresses_his",
     "test_every_round_records_how_fast_it_ran",
     "failed_shards", "integrity",
+    "test_the_bump_carries_its_changelog_entry",
+    "test_the_shard_balance_file_covers_every_proof_test",
+    "test_a_failed_shard_is_rehearsed_before_the_ci_push",
+    "test_a_test_run_leaves_no_scratch_dirs",
     "blueprint", "heart", "second_eye",
     "render_check", "console_demos", "changed_tests",
 )
@@ -149,6 +156,18 @@ def catalog():
                             "why": "CHEAP_TIMEOUT_S is long enough that the last pin law actually runs"}),
         ("integrity",      {"run": check_integrity, "cheap": False, "timeout": 90,
                             "why": "bible.html ITEMS/BOSSES counts match the committed integrity baseline"}),
+        ("test_the_bump_carries_its_changelog_entry",
+                           {"run": check_changelog_entry, "cheap": True, "timeout": 30,
+                            "why": "VERSION matches the changelog top entry; every bullet is <= 120"}),
+        ("test_the_shard_balance_file_covers_every_proof_test",
+                           {"run": check_shard_timings, "cheap": True, "timeout": 60,
+                            "why": "every proof test has a shard_timings.json row"}),
+        ("test_a_failed_shard_is_rehearsed_before_the_ci_push",
+                           {"run": check_failed_shard_rehearse_law, "cheap": True, "timeout": 30,
+                            "why": "failed_shards stays in BOX_ORDER (unique find still matches once)"}),
+        ("test_a_test_run_leaves_no_scratch_dirs",
+                           {"run": check_scratch_dirs, "cheap": False, "timeout": 60,
+                            "why": "new test files with mkdtemp also clean up or call fixture_tmp.contain()"}),
         ("mac_ready",      {"run": check_mac_ready, "cheap": True,  "timeout": 30,
                             "why": "worktree can resolve playwright, python deps, and is not owed a second eye"}),
         # Alias so a lesson can name the specific agreement law that caught attempt 7.
@@ -601,6 +620,26 @@ def check_agreement_budget(root, timeout=15, **_):
     if CHEAP_TIMEOUT_S < 180:
         return 1, "CHEAP_TIMEOUT_S is %ss; CI needed 180s so the last pin law actually runs (run 42812894594)" % CHEAP_TIMEOUT_S
     return 0, "agreement budget is %ss" % CHEAP_TIMEOUT_S
+
+
+def check_changelog_entry(root, timeout=30, **_):
+    return _run_tv_test(root, "test_the_bump_carries_its_changelog_entry.py", timeout,
+                        "VERSION matches the changelog top entry; bullets are short")
+
+
+def check_shard_timings(root, timeout=60, **_):
+    return _run_tv_test(root, "test_the_shard_balance_file_covers_every_proof_test.py", timeout,
+                        "every proof test has a shard_timings.json row")
+
+
+def check_failed_shard_rehearse_law(root, timeout=30, **_):
+    return _run_tv_test(root, "test_a_failed_shard_is_rehearsed_before_the_ci_push.py", timeout,
+                        "failed_shards is still rehearsed in BOX_ORDER")
+
+
+def check_scratch_dirs(root, timeout=60, **_):
+    return _run_tv_test(root, "test_a_test_run_leaves_no_scratch_dirs.py", timeout,
+                        "test mkdtemp sites are cleaned up")
 
 
 def check_integrity(root, timeout=90, **_):
