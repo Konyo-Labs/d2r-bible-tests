@@ -126,6 +126,16 @@ GUARD: test_every_round_records_how_fast_it_ran (4 red-proofs).
 ### REG-3579 - A HUNG PROOF COULD RUN 30 MINUTES AND STARVE THE RUNNER SILENT (v3894)
 MEASURED on v3890 run 42712427277 attempt 1, shard 10 (sha d22085c7b): the hosted runner lost communication at 54 minutes while "Prove this shard" was still in_progress. No logs were kept and the cache was never uploaded. GitHub: the runner was starved for CPU/memory or its network was blocked. Attempt 2 of the same shard finished the same 475 proofs in 26.9 minutes (prove_seconds=1554) on another runner. Shard 10 held 79 gates including every one of test_v3765_records_arm_live's 43 proofs; 279 proofs ran fresh and 196 were served by key. It is not systematically the longest shard (recent slowest were 3, 12, 17, 20, 21; a healthy v3890 shard ran 56.9 minutes), so a shorter job-level cut would falsely TIMEOUT work that finishes. The hole is one proof: two lanes double every law's timeout (LANE_DEADLINE_SCALE=2), so test_control's registered 900 s becomes 1,800 s - long enough for a hang to starve the runner agent before HARD_STOP (deadline + 480 s = job minute 63). Now `_inflight_limit` of a CI run (one with a deadline) also caps one proof at PROOF_CAP_S (900 s, the longest registered law timeout). A cut proof is TIMEOUT, owed, named. His Mac and a PC's census (no deadline) are unchanged.
 GUARD: test_a_shard_cuts_before_the_runner_goes_silent (5 cases, 2 red-proofs).
+### REG-3584 - A BUSY SHADOW LOOK MADE THE FLEET SAY THE WATCHER STOPPED (v3895, #153)
+The Fleet's middle eye goes red and says "shadow reader switched ON but its watcher has STOPPED" when
+shadow.working is false. working is lane_liveness's verdict for tvd-shadow-watch (FLOWING = working,
+LATE = stopped). The loop sleeps 20s, then looks (window find, HUD first-reads, maybe start_agent).
+Cycle time is the sleep PLUS the look. The old stamp passed every_s=_SHADOW_WATCH_EVERY_S, so the
+bound was 60s (20 x 3). Any look longer than 40s made the lane LATE during the following sleep, and
+the eye said the watcher STOPPED - a false red, especially on a slower Windows PC (the ALTs, Dean).
+The stamp now declares no fixed period (the cycle is computed) and a silence bound of sleep-slack +
+one look's budget (180s). A 90s busy look stays FLOWING; a silence past the bound is still LATE.
+GUARD: test_a_busy_shadow_look_is_not_a_stopped_watcher (4 cases, 2 red-proofs).
 ### REG-3578 - A PLANNER COMPARE FILLED IN NUMBERS THE PLANNER DID NOT CITE (v3894, #28)
 A character-window row that disagrees with a cited planner value is a conflict; a planner key without frames, or a window row without frames, is unknown. Nothing is invented. Buff calibration stays later. Law: test_a_planner_compare_does_not_invent_missing_numbers.
 ### REG-3577 - FILM SIZE WAS READ FROM THE WINDOW'S CLIENT SIZE (v3894, #155/#255)

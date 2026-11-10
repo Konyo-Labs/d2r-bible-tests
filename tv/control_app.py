@@ -39412,6 +39412,18 @@ def vault_autoreel_tick():
 # read it from other processes; in-memory state is invisible across the board-window boundary and
 # that has already cost a whole feature here. [[d2r-board-window-kill-loses-writes]]
 _SHADOW_WATCH_EVERY_S = 20
+# v3895 (#153, REG-3584) - A LOOK MAY OUTLAST THE SLEEP. The loop sleeps this long, THEN looks
+# (window find, HUD first-reads, maybe start_agent). Cycle time is the sleep PLUS the look. The old
+# stamp passed every_s=_SHADOW_WATCH_EVERY_S, so lane_liveness's bound was 60s (20 x 3). Any look
+# longer than 40s made the lane LATE during the following sleep, and the Fleet eye said the watcher
+# STOPPED. One look is allowed this budget; past sleep-slack + budget the thread really is silent.
+_SHADOW_LOOK_BUDGET_S = 180
+
+
+def _shadow_watch_dead_after_s():
+    """How long the shadow-watch thread may be silent before it is dead. -> float"""
+    return _SHADOW_WATCH_EVERY_S * 3.0 + _SHADOW_LOOK_BUDGET_S
+
 # REG-1675 — his number, 2026-10-01: "if the game isnt open for like 3 minutes". And only for a game that has truly GONE
 # (its process exited): a window that is minimized, covered or painting black while the game runs is a pause, and the
 # hour stays open (see _game_running). MEASURED on his ALT: 13 reels in 80 minutes, every one cut by the old 60 s seal
@@ -40700,7 +40712,7 @@ def _shadow_watch_loop():
         try:
             time.sleep(_SHADOW_WATCH_EVERY_S)
             for _look in (0, 1):
-                _lane_tick('tvd-shadow-watch', _SHADOW_WATCH_EVERY_S)
+                _lane_tick('tvd-shadow-watch', every_s=None, dead_after_s=_shadow_watch_dead_after_s())
                 r = shadow_watch_tick()
                 import lane_trace as _lt          # v3076 — see _drift_loop
                 _lt.note('tvd-shadow-watch',

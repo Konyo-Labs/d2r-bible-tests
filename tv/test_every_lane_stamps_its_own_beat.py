@@ -175,7 +175,7 @@ RED_PROOF = [
         "why": "deletes tvd-shadow-watch's beat, so the lane keeps running and keeps failing where no reader "
                "can see it — UNKNOWN to liveness forever, which reads as fine",
         "file": "control_app.py",
-        "find": "_lane_tick('tvd-shadow-watch', _SHADOW_WATCH_EVERY_S)",
+        "find": "_lane_tick('tvd-shadow-watch', every_s=None, dead_after_s=_shadow_watch_dead_after_s())",
         "replace": "pass",
         "matches": 1,
     },
