@@ -1,7 +1,7 @@
 {
   "_why": "Per-proof seconds for shard balancing. Measured rows come from a green proof-keys run; every other proof test is present at the median so the coverage law holds and the plan does not guess from a Mac gate_costs row.",
   "median": 1.437,
-  "measuredOn": "v3875 0d4e24537",
+  "measuredOn": "v3862 aaaaaaaaa",
   "proofs": {
     "test_equipped_items_are_pixel_exact_per_character": {
       "s": 1.785,
