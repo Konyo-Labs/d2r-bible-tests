@@ -20072,6 +20072,41 @@ def _repair_for_wire(book=None):
                        for m in (b.get("misses") or []) if isinstance(m, dict)][:8]}
 
 
+def _drain_for_wire():
+    """REG-3585 — the retention drain, for the Fleet row: stopped or not, and how many GB sit there.
+
+    Counts and a short scrubbed why only. None when this console has no drain reading yet
+    (an older build, or a boot that has not planned). A STOPPED drain is what the Fleet
+    row shouts, with the megabytes those releasable reels still hold.
+    """
+    def _whole(v):
+        return v if isinstance(v, int) and not isinstance(v, bool) and v >= 0 else None
+
+    def _mb(v):
+        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and v >= 0 else None
+
+    try:
+        with _PRUNE_LOCK:
+            rt = dict(_RETENTION)
+    except Exception:
+        return None
+    dr = rt.get("drain") if isinstance(rt.get("drain"), dict) else None
+    if not dr:
+        return None
+    states = ("CLEAR", "OWED", "STOPPED", "DORMANT", "DEFERRED", "UNKNOWN", "BLOCKED")
+    st = str(dr.get("state") or "")
+    why = dr.get("why")
+    return {
+        "state": st if st in states else None,
+        "owed": _whole(dr.get("owed")),
+        "owedAtMouth": _whole(dr.get("owedAtMouth")),
+        "eligible": _whole(rt.get("eligible")),
+        "eligibleMb": _mb(rt.get("eligibleMb")),
+        "passesOwed": _whole(dr.get("passesOwed")),
+        "why": _wire_text(why, 200) if why else None,
+    }
+
+
 def _system_for_wire():
     """#229 — THIS MACHINE'S OWN SYSTEM, COUNTS ONLY, SO THE FLEET CAN SEE EACH CONSOLE STANDS ON ITS OWN.
     -> {"tree": "ok"|"missing"|"unmeasured"|"unknown"|None, "reels": int|None,
@@ -20117,6 +20152,12 @@ def _system_for_wire():
                            if n.startswith("reel_") and os.path.isdir(os.path.join(hist, n)))
     except Exception:
         out["reels"] = None
+    try:
+        _dw = _drain_for_wire()
+    except Exception:
+        _dw = None
+    if isinstance(_dw, dict):
+        out["drain"] = _dw
     out["repair"] = _repair_for_wire()
     return out
 

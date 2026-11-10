@@ -540,6 +540,20 @@ export async function onRequestPost(context) {
       /* v3862 - THE REPAIR BOOK, SO AN ERROR NO PC KNOWS HOW TO FIX IS SEEN FROM HERE (his ask 2026-11-05: "unknown errors
          ... fetched and can be seen by you? so we can overwatch properly"). Counts and short scrubbed lines only - the same
          txt() scrub as every why above runs again here, whatever the console sent - inside the row this PC already writes. */
+      /* REG-3585 — a stopped drain, and the GB it holds, ride the fleet beacon so the row can shout. */
+      if (s.drain && typeof s.drain === 'object') {
+        const d = s.drain;
+        const dst = String(d.state || '');
+        out.drain = {
+          state: ['CLEAR', 'OWED', 'STOPPED', 'DORMANT', 'DEFERRED', 'UNKNOWN', 'BLOCKED'].indexOf(dst) >= 0 ? dst : null,
+          owed: whole(d.owed, 100000),
+          owedAtMouth: whole(d.owedAtMouth, 100000),
+          eligible: whole(d.eligible, 100000),
+          eligibleMb: num(d.eligibleMb, 1e9),
+          passesOwed: whole(d.passesOwed, 100000),
+          why: txt(d.why, 200),
+        };
+      }
       if (s.repair && typeof s.repair === 'object') {
         const rp = s.repair;
         const items = function (a, n) {
