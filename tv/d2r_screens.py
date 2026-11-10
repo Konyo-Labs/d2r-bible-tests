@@ -132,28 +132,48 @@ def kind_of_stats(st):
 
 def screen_of(src, array=None):
     """One frame -> ("logo" | "title" | "hud" | "char-select" | "lobby" | None, why). "frame unreadable" is UNKNOWN, never None-as-no.
-    `array` (an RGB int array of the same frame) spares a second decode for the logo and title."""
+    Decodes the frame once (v3894): logo/title/hud and the char-select/lobby look share that image.
+    `array` (an RGB int array of the same frame) skips the file open entirely."""
+    raw = None
+    opened = None
     try:
-        a = _small(Image_of(array) if array is not None else src)
+        if array is not None:
+            raw = Image_of(array)
+        elif hasattr(src, "convert"):
+            raw = src.convert("RGB")
+        else:
+            from PIL import Image
+            opened = Image.open(src)
+            raw = opened.convert("RGB")
+        a = _small(raw)
     except Exception as e:
+        if opened is not None:
+            try:
+                opened.close()
+            except Exception:
+                pass
         return None, "frame unreadable (%s)" % type(e).__name__
+    if opened is not None:
+        try:
+            opened.close()
+        except Exception:
+            pass
     k, why = kind_of_stats(stats_of_array(a))
     if k:
         return k, why
-    if isinstance(src, str):
+    if raw is not None:
         try:
             import char_select as _cs
-            ok, cwhy = _cs.looks_like_char_select(_cs.panel_stats(src))
+            ok, cwhy = _cs.looks_like_char_select(_cs.panel_stats(src if isinstance(src, str) else None, image=raw))
             if ok:
                 return "char-select", "char_select: %s" % cwhy
             # the create-game lobby is the game client between games (REG-1873's own band test, called)
-            ok, lwhy = _cs.looks_like_lobby(_cs.lobby_stats(src))
+            ok, lwhy = _cs.looks_like_lobby(_cs.lobby_stats(src if isinstance(src, str) else None, image=raw))
             if ok:
                 return "lobby", "char_select: %s" % lwhy
         except Exception:
             pass
     return None, why
-
 
 def Image_of(a):
     from PIL import Image
