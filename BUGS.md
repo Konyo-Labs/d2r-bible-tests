@@ -7,6 +7,18 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3654 - OUR OWN CI NEVER MAKES A SHIP OR PUBLISH QUEUE (v3895, the ship system)
+MEASURED on v3893: Publish sat ~21 min queued behind our own dry runs. tv/ship_yield.py cancels our dry/ and grok/ runs that
+hold runners while a ship or Publish waits, after ~2 minutes, and names the lesson. Law: test_own_ci_never_queues_a_ship_or_publish.
+
+### REG-3653 - DRY AND GROK CI YIELD TO A LIVE SHIP (v3895, the ship system)
+A dry/ or grok/ run never starts or keeps runners while a real ship's fan-in waits; ci/*dry* names are swept (the convention is
+dry/). Law: test_a_dry_or_grok_push_yields_to_a_live_ship.
+
+### REG-3652 - REQUIRED-CHECK JUDGEMENT IGNORES THE OPTIONAL WINDOWS PROOF JOBS (v3895, the ship system)
+ci_verdict judged the proof-keys workflow red on its optional Windows jobs; now its required jobs (seed, Linux shards, fan-in)
+decide. Law: test_required_checks_ignore_windows_jobs.
+
 ### REG-3665 - A PROOF-KEY FORMAT IS ONE DECLARED NUMBER: THE CACHE CARRIES IT AND A CHANGE BRINGS A RE-SEED PLAN (v3895, card #200 guards 1+3)
 v3894 attempts 3 and 5: #92 changed heart2's key salt alone (0 of 10,187 carried proofs reused, 21 shards cut at their
 deadline), then a seed restored the branch's dead-format cache over main's. Now heart2.P3_KEY_FORMAT is the declared format;
