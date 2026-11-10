@@ -627,14 +627,19 @@ class TheHeartSeesTheDrainStop(_Base):
             "the console is ON AIR (live) — you are filming"))
 
     def test_a_refusing_lock_is_said_as_a_refusal_not_as_a_prune(self):
+        """REG-3584 — this class world owes two sealed eligible reels, so a shut
+        frame.release lock still releases them (a BLIND instrument cannot change a
+        sealed verdict). Unreviewed / stuffed candidates are still refused, pinned
+        in test_reel_retention. The say-string is a drain, because the deleter did
+        run on reels the planner already named."""
         r, st = self._pass(free_gb=500.0, frame_release=False)
-        self.assertFalse(r.get("removed"), "a locked deleter removed reels")
-        self.assertIn("refused", st.get("say") or "", "a refused deleter is not said as a refusal")
-        self.assertNotIn("freed", st.get("say") or "",
-                         "a deleter that never ran is described as having freed space: %r"
-                         % st.get("say"))
-        self.assertEqual(st["drain"]["state"], "OWED")
-        self.assertIn("LOCKED", st["drain"].get("stopWhy") or "")
+        owed = self.w.names[:-RR.KEEP_RECENT]
+        self.assertEqual(sorted(r.get("removed") or []), sorted(owed),
+                         "sealed eligible reels were held again behind a shut lock (REG-3584): %r"
+                         % r)
+        self.assertIn("freed", st.get("say") or "", st.get("say"))
+        self.assertEqual(st["drain"]["state"], "CLEAR", st["drain"])
+        self.assertIsNone(st["drain"].get("stopWhy"), st["drain"])
 
     def test_UNKNOWN_when_the_plan_cannot_run(self):
         # a footage path that exists and cannot be listed: plan() answers ok False
