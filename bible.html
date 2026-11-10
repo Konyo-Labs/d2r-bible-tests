@@ -11359,10 +11359,16 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 #tab-chars .chx-card.chx-main{border-color:rgba(240,192,96,.75);box-shadow:0 0 18px -6px rgba(240,192,96,.55),inset 0 1px 0 rgba(255,255,255,.05)}
 #tab-chars .chx-top{display:flex;align-items:center;gap:10px;min-width:0}
 /* v3887 (#154) - a class's animated figure in its card: a framed portrait, the figure filling it; a MAIN's frame is gold and lit */
-#tab-chars .chx-crest.chx-crest-sprite{width:76px;height:76px;border-radius:12px;overflow:hidden;padding:0;border-color:rgba(240,192,96,.28);background:radial-gradient(circle at 50% 35%,rgba(240,192,96,.10),rgba(8,6,4,.95) 72%)}
-#tab-chars .chx-crest-sprite img{width:100%;height:100%;object-fit:contain;transform:scale(1.32);transform-origin:50% 42%;display:block}
-#tab-chars .chx-crest.chx-crest-main{border:2px solid var(--chx-gold);box-shadow:0 0 12px rgba(240,192,96,.45),inset 0 0 10px rgba(240,192,96,.18)}
-#tab-chars .chx-crest{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif-display);font-size:var(--fs-title);font-weight:var(--fw-bold);color:var(--chx-gold);border:1px solid rgba(240,192,96,.45);background:radial-gradient(circle at 50% 30%,rgba(240,192,96,.16),rgba(10,8,5,.9) 70%)}
+/* REG-3641 - the class figure is shared: character cards and vault locker plates both draw through .chx-crest.
+   --chx-gold lives on #tab-chars, so the unscoped rules fall back to the same gold. A MAIN's gold frame is unchanged.
+   Vault plates use a compact 40px portrait so the shelf still fits at 1512 and 901x900. */
+.chx-crest{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif-display);font-size:var(--fs-title);font-weight:var(--fw-bold);color:var(--chx-gold,#f0c060);border:1px solid rgba(240,192,96,.45);background:radial-gradient(circle at 50% 30%,rgba(240,192,96,.16),rgba(10,8,5,.9) 70%)}
+.chx-crest.chx-crest-sprite{width:76px;height:76px;border-radius:12px;overflow:hidden;padding:0;border-color:rgba(240,192,96,.28);background:radial-gradient(circle at 50% 35%,rgba(240,192,96,.10),rgba(8,6,4,.95) 72%)}
+.chx-crest-sprite img{width:100%;height:100%;object-fit:contain;transform:scale(1.32);transform-origin:50% 42%;display:block}
+.chx-crest.chx-crest-main{border:2px solid var(--chx-gold,#f0c060);box-shadow:0 0 12px rgba(240,192,96,.45),inset 0 0 10px rgba(240,192,96,.18)}
+#tab-chars .chx-crest.chx-crest-sprite{width:76px;height:76px}
+.vault-mule .chx-crest.chx-crest-sprite{width:40px;height:40px;border-radius:8px}
+.vault-mule .vm-crest{flex:0 0 auto;display:flex;align-items:center}
 #tab-chars .chx-id{flex:1 1 auto;min-width:0}
 #tab-chars .chx-name{font-family:var(--serif-display);font-size:var(--fs-chx-name);font-weight:var(--fw-semibold);color:var(--text);line-height:var(--lh-tight);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #tab-chars .chx-cls{font-size:var(--fs-meta);color:var(--text-muted);margin-top:2px;letter-spacing:var(--ls-snug)}
@@ -11607,6 +11613,7 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
 #vault-hand-win .vault-hand-opt{display:block;width:100%;text-align:left;font-size:var(--fs-meta);color:var(--text);background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:6px 8px}
 #vault-hand-win .vault-hand-opt small{color:var(--text-dim)}
 .vm-plate:has(.nig-chip){flex-wrap:wrap} /* v3848 render: a narrow plate drops the chip to its own line, never clips it */
+.vm-plate:has(.nig-chip) .vm-name{min-width:max-content;flex:0 1 auto;overflow:visible;text-overflow:clip} /* REG-3641 - min-width:0 on the name would shrink CHARMS to 'CH…' beside the chip instead of wrapping the chip */
 .nig-chip{display:inline-block;white-space:nowrap;margin-left:4px;font-size:var(--fs-micro);line-height:1.4;padding:0 4px;border:1px dashed rgba(240,192,96,.6);border-radius:3px;color:#f0c060;vertical-align:middle;flex:0 0 auto}
 #vault-hand-win .vault-hand-say{margin:0;font-size:var(--fs-meta);color:var(--text-dim)}
 #vault-hand-win .vault-hand-say:empty{display:none}
@@ -11678,6 +11685,52 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     return '<span class="chx-crest chx-crest-sprite' + (isMain ? ' chx-crest-main' : '') + '" aria-hidden="true">'
       + '<img src="' + esc(src) + '" alt="" loading="lazy" onerror="var p=this.parentNode;p.className=\'chx-crest\';p.textContent=\'' + letter + '\'"></span>';
   }   // a JS string literal, safe inside an onclick="" attribute
+  /* REG-3641 - a vault locker's plate wears a class figure from this same map, not from the mule's
+     real class. The pick is seeded by the locker name so a reload does not reshuffle it; a neighbor's
+     class is skipped and a class already used more often is deferred, so the shelf does not clump. */
+  function _chxClassNames(){ return Object.keys(_CHX_CLASS_SPRITE); }
+  function _chxSeedHash(s){
+    var h = 2166136261, i, t = String(s || '');
+    for (i = 0; i < t.length; i++){ h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function _chxClassForSeed(seed, avoid, used){
+    var names = _chxClassNames(), n = names.length, cand = [], i, cls, best, bestUse, bestHash, u, h2;
+    if (!n) return '';
+    for (i = 0; i < n; i++){
+      cls = names[i];
+      if (avoid && cls === avoid && n > 1) continue;
+      cand.push(cls);
+    }
+    if (!cand.length) cand = names.slice();
+    best = cand[0]; bestUse = 1e9; bestHash = 0xffffffff;
+    for (i = 0; i < cand.length; i++){
+      cls = cand[i];
+      u = (used && used[cls]) ? used[cls] : 0;
+      h2 = _chxSeedHash(String(seed || '') + '\0' + cls);
+      if (u < bestUse || (u === bestUse && h2 < bestHash)){
+        best = cls; bestUse = u; bestHash = h2;
+      }
+    }
+    if (used) used[best] = (used[best] || 0) + 1;
+    return best;
+  }
+  function _chxClassesForLockers(seeds){
+    var used = {}, prev = '', out = [], i, cls;
+    seeds = seeds || [];
+    for (i = 0; i < seeds.length; i++){
+      cls = _chxClassForSeed(seeds[i], prev, used);
+      out.push(cls);
+      prev = cls;
+    }
+    return out;
+  }
+  window._CHX_CLASS_SPRITE = _CHX_CLASS_SPRITE;
+  window._chxCrest = _chxCrest;
+  window._chxClassNames = _chxClassNames;
+  window._chxSeedHash = _chxSeedHash;
+  window._chxClassForSeed = _chxClassForSeed;
+  window._chxClassesForLockers = _chxClassesForLockers;
   function $id(id){ return document.getElementById(id); }
 
   /* -> {ok: true, all, raw} | {ok: false, why}. Nothing saved yet is an EMPTY store (measured); a store that cannot be
@@ -45431,7 +45484,7 @@ details[open] > summary .to-chev{transform:rotate(180deg)}
 @keyframes vmFlash{0%,100%{box-shadow:inset 0 0 0 1px rgba(0,0,0,.55)}30%{box-shadow:inset 0 0 0 2px rgba(240,192,96,.8),0 0 34px rgba(212,168,71,.45)}}
 .vm-plate{display:flex;align-items:center;gap:8px;padding:9px 11px;background:linear-gradient(180deg,rgba(212,168,71,.16),rgba(212,168,71,.05));border-bottom:1px solid rgba(212,168,71,.3);cursor:pointer}
 .vm-icon{font-size:17px;line-height:var(--lh-none)}
-.vm-name{font-family:var(--mono,monospace);font-weight:var(--fw-semibold);font-size:12.5px;letter-spacing:var(--ls-normal);color:var(--gold-bright,#f0c060);flex:1;text-shadow:0 1px 0 rgba(0,0,0,.7)}
+.vm-name{font-family:var(--mono,monospace);font-weight:var(--fw-semibold);font-size:12.5px;letter-spacing:var(--ls-normal);color:var(--gold-bright,#f0c060);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.7)}  /* REG-3641 - the 40px crest must not push the locker name out of a 248px tile at 901x900 or 1512 */
 .vm-count{font-family:var(--mono,monospace);font-size:var(--fs-meta);color:var(--text-muted,#b5a48a)}
 /* v3247 — THE PROOF CHIP. A class nobody styles is a flag nobody can see, and this repo has paid
    for that twice: sh-chip-st / sh-chip-stunk were both set by a builder with no rule to render
@@ -49558,7 +49611,18 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     if (window._vaultMemoOff !== true) window._vrFindPass = _vrShelfOuter || {};
     try {
     var byMule = _vaultByMule();
-    shelf.innerHTML = roster.map(function(m){
+    function _vaultLockerCrest(cls){
+      /* REG-3641 - the shared character-card crest, never a second art map. A missing helper
+         leaves the plate without a figure rather than inventing a class. */
+      var c = String(cls || '');
+      var html = (typeof window._chxCrest === 'function' && c) ? window._chxCrest(c, false) : '';
+      if (!html) return '';
+      return '<span class="vm-crest" data-chx-class="' + esc(c) + '">' + html + '</span>';
+    }
+    var _lockerCrests = (typeof window._chxClassesForLockers === 'function')
+      ? window._chxClassesForLockers(roster.map(function(m){ return String((m && (m.name || m.id)) || ''); }))
+      : [];
+    shelf.innerHTML = roster.map(function(m, _mi){
       var items=(byMule[m.id]||[]).slice();
       /* REG-2853 - a keeper homed on MAGIC & RARE is drawn once, as its keeper cell below (its X throws it out of Magic &
          Rare), never also as a record cell */
@@ -49781,7 +49845,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
         /* #154.19 (REG-2735, GrokBot's vault sweep) - the plate opened a locker on a click only; it takes the keyboard now:
            focusable, a button to a reader, and Enter or Space on the PLATE itself clicks it (the click handler does the rest). */
         + '<div class="vm-plate" tabindex="0" role="button" onkeydown="if((event.key===\'Enter\'||event.key===\' \')&&event.target===this){event.preventDefault();this.click();}" title="'+(m.id==='shared'?'SHARED STASH — accessible by ALL characters · click to open the fullscreen 5-page view':gridActSay('click: open the in-game ID card of this mule', ' · with a chip selected: assign it here'))+'">'   /* REG-3117 */
-        + '<span class="vm-icon">'+esc(m.icon||'📦')+'</span><span class="vm-name">'+esc(m.name)+'</span>'+((window._vaultWarRole&&window._vaultWarRole(m))?'<span class="vm-warbadge" title="part of your Shared Stash (war stash) - overflow pages" style="margin-left:4px;font-size:var(--fs-micro);padding:0 4px;border:1px solid rgba(240,192,96,.6);border-radius:3px;color:#f0c060">SHARED STASH · overflow</span>':'')
+        + (_vaultLockerCrest(_lockerCrests[_mi]) || '<span class="vm-icon">'+esc(m.icon||'📦')+'</span>')+'<span class="vm-name">'+esc(m.name)+'</span>'+  /* REG-3641 */ ((window._vaultWarRole&&window._vaultWarRole(m))?'<span class="vm-warbadge" title="part of your Shared Stash (war stash) - overflow pages" style="margin-left:4px;font-size:var(--fs-micro);padding:0 4px;border:1px solid rgba(240,192,96,.6);border-radius:3px;color:#f0c060">SHARED STASH · overflow</span>':'')
         + ((typeof window._notInGameChip === 'function') ? window._notInGameChip(m) : '')   /* v3848 - one chip, one helper *//* REG-2803 *//* L1 WAR mule is the war stash */
         + '<span class="vm-count"'
           + ' title="'+_itemN+' item'+(_itemN===1?'':'s')

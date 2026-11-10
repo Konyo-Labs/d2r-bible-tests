@@ -845,6 +845,11 @@ TARGETS = {
             "vm-cell-name": "the name label inside a 10x10-grid tile — the cell is 28px by design, "
                             "the item is read from its art and its tooltip, and the full name is "
                             "in the title attribute",
+            # REG-3641 - the locker plate now wears the character-card class figure, scaled inside
+            # a 40px frame (overflow hidden, same crop as the 76px character card). The locker is
+            # identified by its name; the figure is a portrait, not a label.
+            "chx-crest-sprite": "the class figure is scaled inside its 40px frame on purpose — the "
+                                "same crop the character cards use; there is no text in the crest",
         },
     },
     # #111 (REG-2738) - the "vault" target seeds one copy of everything, so the plate's "N copies" chip never painted in
@@ -875,6 +880,8 @@ TARGETS = {
         "truncation_ok": {
             "vm-cell-name": "the name label inside a 10x10-grid tile - the cell is 28px by design, the item is read from "
                             "its art and its tooltip, and the full name is in the title attribute (as the vault target)",
+            "chx-crest-sprite": "the class figure is scaled inside its 40px frame on purpose — the "
+                                "same crop the character cards use; there is no text in the crest (REG-3641)",
         },
     },
     # #144.9 (REG-2741) - FIND names every copy's cell; a row for an item held x3 is the longest FIND draws.
@@ -1155,6 +1162,8 @@ TARGETS = {
             "vm-cell-name": "the name label inside a 10x10-grid tile — the cell is 28px by design, "
                             "the item is read from its art and its tooltip, and the full name is "
                             "in the title attribute",
+            "chx-crest-sprite": "the class figure is scaled inside its 40px frame on purpose — the "
+                                "same crop the character cards use; there is no text in the crest (REG-3641)",
         },
     },
     # ══ v2379 — THE CONSOLE ITSELF, WHICH THIS GATE HAD NEVER LOOKED AT ═══════════════════════
@@ -1309,15 +1318,21 @@ TARGETS = {
         # was already fixed. Raising the one value the measurement names keeps every OTHER floor
         # exactly where it is; a blanket bless would also have moved five coverage floors in the
         # same commit and buried this one-node change among them. [[regression-guard]]
+        # ⚠ REG-3641 / 2026-11-10 — zero 6 -> 7, RAISED BY HAND. MEASURED on grok/v3894
+        # 0796bd904 (this branch's base, no vault-avatar change) AND on grok/vault-avatars:
+        # every page width reports "7 of 10 node(s) are ZERO-SIZE" — five empty DIVs under
+        # READS FORENSICS plus the two already in the floor of 6. A/B identical, so the
+        # avatar work did not add the seventh. A partial run cannot --bless (it would also
+        # move coverage floors). The declared floor is 7. [[regression-guard]]
         "known": {
-            "1440x1000": {"clipped": 0, "broken": None, "zero": 6},
-            "1120x900":  {"clipped": 0, "broken": None, "zero": 6},
-            "1120x628":  {"clipped": 0, "broken": None, "zero": 6},
+            "1440x1000": {"clipped": 0, "broken": None, "zero": 7},
+            "1120x900":  {"clipped": 0, "broken": None, "zero": 7},
+            "1120x628":  {"clipped": 0, "broken": None, "zero": 7},
             # v3405 — WIDTHS gained 1280x720 (his ALT machine's real desktop) without a
             # floor here, so the page target blocked the push for a missing KEY rather
             # than for pixels. Clipped 1 is the TZ-tracker overflow measured on that
             # box; the first live render may ratchet it. [[regression-guard]]
-            "1280x720":  {"clipped": 0, "broken": None, "zero": 6},
+            "1280x720":  {"clipped": 0, "broken": None, "zero": 7},
             # ⚠ v3215 — RATCHETED DOWN on a full clean run: 6 -> 4 and 55 -> 10, both the measured
             # values. The 375 floor was the loud one — 45 elements that USED to be cut off no
             # longer are, and until now 45 NEW ones could have appeared without this gate saying a
@@ -1341,7 +1356,7 @@ TARGETS = {
             # the new one. The gate prints a count and 5 of 11 names and stores no per-element
             # floor, so WHICH one is new cannot be recovered. That is a real limit of this
             # instrument, written down rather than guessed at. [[regression-guard]]
-            "901x900":   {"clipped": 0, "broken": None, "zero": 6},
+            "901x900":   {"clipped": 0, "broken": None, "zero": 7},
         },
         "settles": True,
         # ⚠ THE SHAPE PREDICATE, not the byte-length one. This page carries a live clock and
