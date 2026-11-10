@@ -4,7 +4,9 @@
 His rule: a click outside the top overlay closes it. MEASURED: `#boss-detail-overlay` is
 in-flow (inserted under the clicked boss), so `__tvTopOverlay` cannot see it. Escape now
 peels it (REG-3539). A pointerdown outside the overlay now runs the same `clearActiveBoss`
-its own ✕ already runs. A press on the card itself is left alone.
+its own ✕ already runs. A press on the card itself is left alone. A press on a .boss-chip is also
+left alone (REG-3631): the capturing outside-clear would otherwise close the
+card and the chip's setActiveBoss onclick would open it again (Bug H).
 RED_PROOF below.
 """
 import io
@@ -39,6 +41,7 @@ class APressOutsideTheBossCardClosesIt(unittest.TestCase):
         self.assertIn("getElementById('boss-detail-overlay')", body)
         self.assertIn("!bossOv.classList.contains('hidden')", body)
         self.assertIn("!bossOv.contains(t)", body)
+        self.assertIn("!t.closest('.boss-chip')", body)
         self.assertIn("window.clearActiveBoss({ noScroll: true })", body)
         self.assertIn("return 'boss-detail'", body)
 
@@ -46,7 +49,7 @@ class APressOutsideTheBossCardClosesIt(unittest.TestCase):
 RED_PROOF = [
     {"why": "v3892 (#191, REG-3540) - a press outside the boss detail no longer closes it",
      "file": "bible.html",
-     "find": "  var bossOv = document.getElementById('boss-detail-overlay');\n  if (bossOv && !bossOv.classList.contains('hidden') && !bossOv.contains(t)) {\n    if (typeof window.clearActiveBoss === 'function') {\n      window.clearActiveBoss({ noScroll: true });\n      return 'boss-detail';\n    }\n  }\n",
+     "find": "  var bossOv = document.getElementById('boss-detail-overlay');\n  if (bossOv && !bossOv.classList.contains('hidden') && !bossOv.contains(t) && !t.closest('.boss-chip')) {\n    if (typeof window.clearActiveBoss === 'function') {\n      window.clearActiveBoss({ noScroll: true });\n      return 'boss-detail';\n    }\n  }\n",
      "replace": "",
      "matches": 1},
 ]

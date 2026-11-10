@@ -31141,7 +31141,11 @@ function _tvOutsideCard(e){
     }
   }
   var bossOv = document.getElementById('boss-detail-overlay');
-  if (bossOv && !bossOv.classList.contains('hidden') && !bossOv.contains(t)) {
+  /* v3894 REG-3631 - a capturing pointerdown on a .boss-chip is NOT 'outside'.
+     REG-3540's clear would run first, then the chip's onclick setActiveBoss would
+     open the same boss again, so Bug H's second click left activeBossId at 'diablo'.
+     The chip keeps its own toggle. A press truly outside the overlay still peels. */
+  if (bossOv && !bossOv.classList.contains('hidden') && !bossOv.contains(t) && !t.closest('.boss-chip')) {
     if (typeof window.clearActiveBoss === 'function') {
       window.clearActiveBoss({ noScroll: true });
       return 'boss-detail';
