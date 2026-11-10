@@ -47,7 +47,8 @@ class AConsoleTabSwitchClosesTheBoardLayers(unittest.TestCase):
 
     def test_a_click_on_the_tab_already_showing_still_leaves_the_theatre_alone(self):
         body = _head(_page())
-        self.assertIn("window.TH && window.TH.open && b.dataset.tab !== _shellTab", body)
+        self.assertIn("var _stay = (b.dataset.tab === _shellTab) || (b.dataset.tab === 'tvd')", body)
+        self.assertIn("window.TH && window.TH.open && !_stay", body)
         self.assertIn("window.thClose()", body)
 
 
