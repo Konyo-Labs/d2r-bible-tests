@@ -3,6 +3,12 @@
     "ver": "v3893",
     "date": "2026-11-09",
     "items": [
+      "python3 tv/ship.py vNNNN is the one ship entry: box rehearsal, Mac readiness, CI wait, then main (REG-3646)",
+      "A worktree without playwright fails in seconds; the only auto-fix is a node_modules symlink (attempt 8, REG-3646)",
+      "Agreement laws that pin a gate's numbers run before a ship; chronicle-title matches the page floor (attempt 7, REG-3642)",
+      "A flaky or runner-killed agent-tests or Playwright job is re-run alone, not the whole workflow (REG-3645)",
+      "The flake ledger drops a healed flake after three clean runs (REG-3644)",
+      "Every proof test has a timing row used to fill the shard plan; the file updates after a green round (REG-3643)",
       "The Fleet middle eye is dark unless a reel is recording (#189, REG-3549)",
       "The stash reader runs only in play, on the shared screen templates (#187, #185, REG-3550)",
       "A session is tagged from the highlighted name on character select (REG-3551)",

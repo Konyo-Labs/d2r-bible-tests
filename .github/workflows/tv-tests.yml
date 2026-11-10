@@ -30,7 +30,24 @@ env:
   PLAYWRIGHT_HOST_PLATFORM_OVERRIDE: "ubuntu24.04-x64"
 
 jobs:
+  # REG-3646 — cheap deterministic gates first so a doomed run dies in minutes, not after the suite.
+  # ⚠ THIS WORKFLOW FILE CANNOT BE PUSHED FROM THE BOX TOKEN. Stage the change; the Mac pushes it.
+  preship:
+    name: preship (cheap gates first)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tv
+            hooks
+            baseline
+      - name: Fail-fast cheap deterministic gates
+        run: python3 tv/preship.py --cheap
+
   plan:
+    needs: [preship]
     # v3891 (#194, his 11-09: "optimize the #194 all the way and make sure it keeps getting faster self improve it") - THE
     # ROUND CHOOSES ITS OWN SLICE COUNT from the per-gate seconds the last round measured (its shards' own logs, restored
     # from actions/cache; the committed tv/gate_costs.json under them), and hands that ONE table to every shard so all cut
