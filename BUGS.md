@@ -7,6 +7,14 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3631 — a second click on a boss chip left the card open (Bug H)
+v3894 dry-run. Routine I slow `setActiveBoss intent disambiguation (Bug H)` failed
+twice: after the second click on `.boss-chip[data-boss-id="diablo"]`, `activeBossId`
+stayed `"diablo"`. REG-3540's capturing `pointerdown` treated the chip as outside
+`#boss-detail-overlay`, ran `clearActiveBoss`, then the chip's `onclick="setActiveBoss(...)"`
+opened the same boss again. A press on `.boss-chip` is no longer "outside"; the chip
+keeps its toggle. A press truly outside the overlay still peels.
+
 ### REG-3630 - THE FLEET LAMP '?' FITS THE 901 RAIL, IT IS NOT CUT OFF BY overflow-x:hidden
 v3895 (REG-3640) added a ? key to the Fleet head, a third button on a nowrap row that already
 filled a 238px rail at 901 (clamp floor, plus scrollbar-gutter: stable). .rail overflow-x:hidden

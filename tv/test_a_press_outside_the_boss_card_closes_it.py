@@ -4,7 +4,9 @@
 His rule: a click outside the top overlay closes it. MEASURED: `#boss-detail-overlay` is
 in-flow (inserted under the clicked boss), so `__tvTopOverlay` cannot see it. Escape now
 peels it (REG-3539). A pointerdown outside the overlay now runs the same `clearActiveBoss`
-its own ✕ already runs. A press on the card itself is left alone.
+its own ✕ already runs. A press on the card itself is left alone. A press on a .boss-chip is also
+left alone (REG-3631): the capturing outside-clear would otherwise close the
+card and the chip's setActiveBoss onclick would open it again (Bug H).
 RED_PROOF below.
 """
 import io
@@ -39,6 +41,7 @@ class APressOutsideTheBossCardClosesIt(unittest.TestCase):
         self.assertIn("getElementById('boss-detail-overlay')", body)
         self.assertIn("!bossOv.classList.contains('hidden')", body)
         self.assertIn("!bossOv.contains(t)", body)
+        self.assertIn("t.closest && t.closest('.boss-chip')", body)
         self.assertIn("window.clearActiveBoss({ noScroll: true })", body)
         self.assertIn("return 'boss-detail'", body)
 
