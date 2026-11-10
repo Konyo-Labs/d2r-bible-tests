@@ -1625,7 +1625,7 @@ def plan(hist_dir=None, free_mb=None, keep_recent=KEEP_RECENT, *, _fresh=False):
                 _c = {"reel": reel, "mb": round(size, 1), "pages": pages,
                       "why": _rule("eligible",
                                    "read (%d pages); %s - it has given up its information" % (pages, _seals)),
-                      "tag": "eligible"}
+                      "tag": "eligible", "sealed": True}
                 _r = _released.get(reel)
                 if _r and _r[0]:            # REG-3275 (#44) - released by his ruling: its panel frames stay
                     _c["keepPanels"] = list(_r[1] or [])
@@ -1924,7 +1924,8 @@ def _sealed_eligible(cand):
     pages = cand.get("pages")
     if isinstance(pages, int) and not isinstance(pages, bool) and pages >= MIN_PAGES:
         return True
-    return "given up its information" in str(cand.get("why") or "")
+    # REG-3662 - a FIELD plan() sets, never a match on its prose: a sentence is not a seal
+    return cand.get("sealed") is True
 
 
 def apply_plan(p, yes=False):
@@ -1954,9 +1955,18 @@ def apply_plan(p, yes=False):
         _fr_ok, _fr_why = False, ("the lock could not be read (%s), which is UNKNOWN and fails "
                                   "closed" % type(_fr_e).__name__)
     if not _fr_ok:
+        # REG-3662 (his 11-11 ruling) - REG-3584 released sealed reels whatever was blind; now only on the lock's OWN
+        # proven guards (self_arming.own_guards_proven), so an unproven or blind planner can never delete his footage
         _asked = [c for c in ((p or {}).get("candidates") or []) if _sealed_eligible(c)]
-        if not _asked or not (isinstance(p, dict) and p.get("ok")):
-            return {"ok": False, "why": "frame.release is LOCKED — %s" % _fr_why,
+        _own_ok, _own_why = False, ""
+        if _asked:
+            try:
+                _own_ok, _own_why = _sa_fr.own_guards_proven("frame.release")
+            except Exception as _own_e:
+                _own_ok, _own_why = False, "its own guards could not be read (%s) - fails closed" % type(_own_e).__name__
+        if not (_asked and isinstance(p, dict) and p.get("ok") and _own_ok):
+            return {"ok": False, "why": "frame.release is LOCKED — %s%s" % (
+                        _fr_why, (" · its own guards: %s" % _own_why) if _own_why else ""),
                     "removed": [], "failed": [], "tombstone": None}
         p = dict(p, candidates=_asked)
     # v2069 — THE RECORD GOES DOWN FIRST. Written before a single rmtree, so a crash halfway leaves

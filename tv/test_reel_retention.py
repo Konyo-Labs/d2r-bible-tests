@@ -33,6 +33,26 @@ import reel_retention as rr  # noqa: E402
 
 
 RED_PROOF = [
+    {"why": "REG-3662 - a sealed reel goes through the shut lock whatever its own guards say (REG-3584's blanket bypass)",
+     "file": "tv/reel_retention.py",
+     "find": "        if not (_asked and isinstance(p, dict) and p.get(\"ok\") and _own_ok):\n",
+     "replace": "        if not (_asked and isinstance(p, dict) and p.get(\"ok\")):\n",
+     "matches": 1},
+    {"why": "REG-3662 - a sentence in a why is taken as a seal again",
+     "file": "tv/reel_retention.py",
+     "find": "    return cand.get(\"sealed\") is True\n",
+     "replace": "    return \"given up its information\" in str(cand.get(\"why\") or \"\")\n",
+     "matches": 1},
+    {"why": "REG-3662 - a BLIND guard of frame.release's own no longer holds its door",
+     "file": "tv/self_arming.py",
+     "find": "    if own_blind:\n        return False, (",
+     "replace": "    if False:\n        return False, (",
+     "matches": 1},
+    {"why": "REG-3662 - every lock answers on its own guards, not frame.release alone",
+     "file": "tv/self_arming.py",
+     "find": "    if lock not in OWN_GUARD_LOCKS or lock not in LOCK_DOORS:\n",
+     "replace": "    if lock not in LOCK_DOORS:\n",
+     "matches": 1},
     {
         "why": 'the law requires this text in reel_retention.py, where it occurs exactly once and in no other file the gate names; deleting it must turn the gate red',
         "file": 'reel_retention.py',
@@ -50,8 +70,8 @@ RED_PROOF = [
     {
         "why": "REG-3584 - a stuffed eligible tag bypasses the shut lock without plan() saying ok",
         "file": "reel_retention.py",
-        "find": "        if not _asked or not (isinstance(p, dict) and p.get(\"ok\")):\n",
-        "replace": "        if not _asked:\n",
+        "find": "        if not (_asked and isinstance(p, dict) and p.get(\"ok\") and _own_ok):\n",
+        "replace": "        if not (_asked and _own_ok):\n",
         "matches": 1,
     },
 ]
@@ -126,6 +146,10 @@ class TestRetentionSelectsAndRefuses(unittest.TestCase):
         _real = _sa.may
         _sa.may = lambda name, *a, **k: (False, "5 instrument(s) are BLIND (test_example)")
         self.addCleanup(setattr, _sa, "may", _real)
+        # REG-3662 (his 11-11 ruling) - it goes only because the lock's OWN guards are proven (none of the blind is its own)
+        _real_own = _sa.own_guards_proven
+        _sa.own_guards_proven = lambda lock: (True, "fixture: frame.release's own guards are proven")
+        self.addCleanup(setattr, _sa, "own_guards_proven", _real_own)
         gone = self._reel(1_400_000_000_000)
         stay = self._reel(1_400_000_000_001)
         self._ledgers(chron={gone: {"pages": 5}}, vault={gone: {"ts": 1}})
@@ -140,12 +164,71 @@ class TestRetentionSelectsAndRefuses(unittest.TestCase):
         self.assertTrue(os.path.isdir(os.path.join(self.hist, stay)),
                         "an unreviewed reel went through the shut lock")
 
+    def test_a_sealed_reel_stays_when_the_locks_own_guards_are_not_proven(self):
+        """REG-3662 (his 11-11 'Restore your rule') - a blind or unproven guard OF frame.release itself holds even a sealed reel"""
+        import self_arming as _sa
+        _real, _real_own = _sa.may, _sa.own_guards_proven
+        _sa.may = lambda name, *a, **k: (False, "1 instrument(s) are BLIND (test_the_planner)")
+        _sa.own_guards_proven = lambda lock: (False, "1 of frame.release's OWN guard law(s) are BLIND (test_the_planner)")
+        self.addCleanup(setattr, _sa, "may", _real)
+        self.addCleanup(setattr, _sa, "own_guards_proven", _real_own)
+        gone = self._reel(1_400_000_000_020)
+        self._reel(1_400_000_000_021)
+        self._ledgers(chron={gone: {"pages": 5}}, vault={gone: {"ts": 1}})
+        plan = rr.plan(self.hist, keep_recent=0)
+        self.assertEqual([c.get("sealed") for c in plan["candidates"]], [True], "plan() no longer marks its sealed reel")
+        out = rr.apply_plan(plan, yes=True)
+        self.assertFalse(out.get("ok"), out)
+        self.assertEqual(out.get("removed"), [], out)
+        self.assertTrue(os.path.isdir(os.path.join(self.hist, gone)),
+                        "a sealed reel was deleted while the lock's OWN guard was blind (REG-3662)")
+        self.assertIn("its own guards: 1 of frame.release's OWN guard", str(out.get("why") or ""), out)
+
+    def test_prose_is_never_a_seal(self):
+        """REG-3662 - 'it has given up its information' in a why is a sentence, not a seal: only plan()'s field is"""
+        import self_arming as _sa
+        _real, _real_own = _sa.may, _sa.own_guards_proven
+        _sa.may = lambda name, *a, **k: (False, "5 instrument(s) are BLIND (test_example)")
+        _sa.own_guards_proven = lambda lock: (True, "fixture")
+        self.addCleanup(setattr, _sa, "may", _real)
+        self.addCleanup(setattr, _sa, "own_guards_proven", _real_own)
+        name = self._reel(1_400_000_000_030)
+        out = rr.apply_plan({"hist": self.hist, "ok": True, "candidates": [
+            {"reel": name, "mb": 1.0, "tag": "eligible", "pages": 0,
+             "why": "read (0 pages); seals held: none - it has given up its information"}]}, yes=True)
+        self.assertEqual(out.get("removed"), [], out)
+        self.assertTrue(os.path.isdir(os.path.join(self.hist, name)), "a reel whose only seal was prose was deleted")
+
+    def test_only_frame_release_answers_on_its_own_guards(self):
+        """REG-3662 - the narrowing is his, for ONE lock: every other lock keeps 'BLIND closes every lock' (09-12)"""
+        import self_arming as _sa
+        from unittest import mock
+        census = (["test_other_owed"], ["test_unrelated_blind"], {"fixture": "files"})
+        own = {"test_its_own_guard"}
+        with mock.patch.object(_sa, "_owed_and_blind", lambda: census), \
+                mock.patch.object(_sa, "_lock_guard", lambda n, lock, files: n in own), \
+                mock.patch.object(_sa, "_rows", lambda: ({}, None)), \
+                mock.patch.object(_sa, "_verdict", lambda lock, spec, rows, hok, hwhy: (True, "fixture: the route is proven")):
+            self.assertEqual(_sa.own_guards_proven("frame.release")[0], True,
+                             "an unrelated blind instrument still shut frame.release's own-guards door")
+            self.assertEqual(_sa.own_guards_proven("vault.apply")[0], False, "a second lock answered on its own guards")
+            own.add("test_unrelated_blind")
+            self.assertEqual(_sa.own_guards_proven("frame.release")[0], False, "a BLIND guard of its own opened the door")
+            own.discard("test_unrelated_blind"); own.add("test_other_owed")
+            self.assertEqual(_sa.own_guards_proven("frame.release")[0], False, "an unproven guard of its own opened the door")
+        with mock.patch.object(_sa, "_owed_and_blind", lambda: (None, None, "fixture: unreadable")):
+            self.assertEqual(_sa.own_guards_proven("frame.release")[0], False, "an unreadable census opened the door")
+
     def test_a_stuffed_eligible_tag_does_not_bypass_a_shut_lock(self):
         """REG-3584 — tagging an unsigned reel 'eligible' without plan() saying ok is not a seal."""
         import self_arming as _sa
         _real = _sa.may
         _sa.may = lambda name, *a, **k: (False, "5 instrument(s) are BLIND (test_example)")
         self.addCleanup(setattr, _sa, "may", _real)
+        # REG-3662 - even with the lock's own guards proven, a plan that did not say ok deletes nothing
+        _real_own = _sa.own_guards_proven
+        _sa.own_guards_proven = lambda lock: (True, "fixture: frame.release's own guards are proven")
+        self.addCleanup(setattr, _sa, "own_guards_proven", _real_own)
         name = self._reel(1_400_000_000_009)
         out = rr.apply_plan({
             "hist": self.hist, "ok": False,

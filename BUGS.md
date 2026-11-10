@@ -7,6 +7,17 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3662 - FOOTAGE WAS DELETED BEHIND A SHUT LOCK WHATEVER WAS BLIND; NOW ONLY ON THE LOCK'S OWN PROVEN GUARDS (v3895, his 11-11 ruling)
+v3894's REG-3584 (GrokBot, no ruling cited) let apply_plan release any "sealed eligible" reel while frame.release was shut -
+against his recorded rules (a destructive act keeps the full guarantee, v3042; BLIND never softens, 09-12). MEASURED 11-11
+~00:50 over SSH: the work ALT on v3894 drained from 150 releasable reels to 2 owed behind its shut lock. His answer
+("Restore your rule"): behind a shut lock a sealed reel goes ONLY when self_arming.own_guards_proven("frame.release") says
+so - none of the blind instruments is one of the lock's own guard laws, its own guards are proven for these bytes, its
+route chain passes on merit; frame.release alone may answer this way (OWN_GUARD_LOCKS); everything unreadable fails closed.
+And "sealed" is plan()'s own field (`sealed: true`), never a match on its prose ("it has given up its information").
+Laws: test_reel_retention (4 new cases + REG-3584's re-anchored), test_the_river_drains_every_pass (the own guards are a
+stated precondition of every pass). All seen RED.
+
 ### REG-3658 - A DEADLINE-CUT SHARD WAS TAKEN AS A WALL SAMPLE, AND A LAW READ THE RUNNER'S CARRIED FACTOR (v3894, #194)
 MEASURED 11-10 on v3894's round 42884325588: test_a_round_cut_only_by_its_deadline_is_made_up was RED untampered on GitHub
 (UNPROVABLE, `3.0 != 1.3`). The #92 rounds owed every proof, every shard was cut at ~57 min, and fit_wall_factor took each cut

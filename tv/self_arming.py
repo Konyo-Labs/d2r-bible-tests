@@ -2054,6 +2054,36 @@ def owed_guard_rank():
     return out
 
 
+#: REG-3662 (his 11-11 ruling) - the ONE lock whose shut door may still let a SEALED reel go while instruments it does not
+#: stand on are BLIND. Every other lock keeps his 09-12 rule: BLIND closes every lock.
+OWN_GUARD_LOCKS = ("frame.release",)
+
+
+def own_guards_proven(lock):
+    """REG-3662 - his 11-11 ruling ("Restore your rule"), which undoes v3894's REG-3584 blanket bypass: a sealed eligible reel
+    may be released while the global instrument rule is BLIND only when (1) none of the blind instruments is one of THIS
+    lock's own guard laws, (2) its own guards are proven for these bytes, and (3) its route chain passes on merit.
+    -> (bool, why). Fails CLOSED on anything it cannot read; a lock not in OWN_GUARD_LOCKS never answers yes."""
+    if lock not in OWN_GUARD_LOCKS or lock not in LOCK_DOORS:
+        return False, "%s may not act on its own guards alone (only %s may)" % (lock, ", ".join(OWN_GUARD_LOCKS))
+    owed, blind, files = _owed_and_blind()
+    if owed is None:
+        return False, "UNKNOWN: this PC's proof census could not be read (%s) - fails closed" % (files,)
+    own_blind = sorted(n for n in (blind or []) if _lock_guard(n, lock, files))
+    if own_blind:
+        return False, ("%d of %s's OWN guard law(s) are BLIND (%s) - a gate that cannot fail guards this deletion"
+                       % (len(own_blind), lock, ", ".join(own_blind[:3])))
+    own_owed = sorted(n for n in (owed or []) if _lock_guard(n, lock, files))
+    if own_owed:
+        return False, ("%d of %s's own guard law(s) are unproven for these bytes (%s)"
+                       % (len(own_owed), lock, ", ".join(own_owed[:3])))
+    spec = LOCKS.get(lock) or ROUTES.get(lock)
+    rows, why = _rows()
+    if not spec or rows is None:
+        return False, "UNKNOWN: %s - fails closed" % (why or "the lock is not declared")
+    return _verdict(lock, spec, rows, True, None)
+
+
 def _lock_heart(lock, gwhy=None):
     """#156 - the heart's answer for ONE lock, from its own guard laws, when the global rule called the census STALE.
     -> (ok, why) | None (no per-lock answer: the global rule stands). Asked by may() and report() only when the global

@@ -212,7 +212,7 @@ class _Base(unittest.TestCase):
             setattr(mod, attr, val)
         RR._TRIAGE_CACHE["at"] = None
 
-    def _pass(self, free_gb, world_ok=True, frame_release=True, in_flight=None):
+    def _pass(self, free_gb, world_ok=True, frame_release=True, in_flight=None, own_guards=True):
         """ONE retention pass, driven through the shipped code with every precondition STATED."""
         def _flight(*_a, **_k):
             if in_flight:
@@ -230,7 +230,10 @@ class _Base(unittest.TestCase):
                 mock.patch("shutil.disk_usage", return_value=_usage(free_gb)), \
                 mock.patch.object(CA, "board_identity_drift", lambda: world), \
                 mock.patch.object(CA, "nothing_in_flight", _flight), \
-                mock.patch.object(SA, "may", _may):
+                mock.patch.object(SA, "may", _may), \
+                mock.patch.object(SA, "own_guards_proven",
+                                  lambda lock: ((True, "fixture: frame.release's own guards are proven") if own_guards
+                                                else (False, "fixture: one of frame.release's own guards is BLIND"))):
             r = CA._retention_once()
             st = CA.retention_state()
         return r, st
