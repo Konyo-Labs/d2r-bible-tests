@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3893",
+  "ver": "v3894",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3893: the Fleet middle eye stays dark unless a reel is recording",
+  "note": "v3894: every PC films at 1920x1080, and every character-window cell opens",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

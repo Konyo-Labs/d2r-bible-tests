@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3894",
+    "date": "2026-11-10",
+    "items": [
+      "The best place on the card is silospen All #1 (#85, #254, REG-3564)",
+      "Film size is copied only when measured as filmW and filmH (#155, #255, REG-3565)",
+      "A new reel stamps the filmed JPEG pixels, not the window size (#155, #255, REG-3566)",
+      "A speed row names its current breakpoint tier (#153, REG-3567)",
+      "A resistance row names the Hell, Anya and gear parts already summed (#153, REG-3568)",
+      "Every inventory cell in the character window is a clickable 10x4 grid (#234, #146, REG-3569)",
+      "Every stash cell in the character window is a clickable 10x10 grid (#234, #146, REG-3570)",
+      "Every belt cell in the character window is a clickable 4x4 grid (#234, #146, REG-3571)",
+      "Stat and skill areas in the character window open a detail (#234, #146, REG-3572)",
+      "Add Mod search matches an affix by its own stat key (#95, REG-3573)",
+      "The character window agrees with cited planner breakpoint tables (#28, REG-3574)",
+      "A nameless red of a giant law does not close every lock (#103, REG-3575)",
+      "An unresolved failing class does not close every lock (#103, REG-3576)",
+      "Film size is never read from the window client size (#155, #255, REG-3577)",
+      "A planner compare reports conflict or unknown, and never invents missing numbers (#28, REG-3578)"
+    ]
+  },
+  {
     "ver": "v3893",
     "date": "2026-11-09",
     "items": [

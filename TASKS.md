@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3893** | `(this commit)` | v3893 — the Fleet middle eye stays dark unless a reel is recording |
+| **v3894** | `(this commit)` | v3894 — every PC films at 1920x1080, and every character-window cell opens |
+| **v3893** | `bc8facc4` | v3893 — the Fleet middle eye stays dark unless a reel is recording |
 | **v3892** | `c8c8ae3b` | v3892 — shadow sessions share the four boxes, a press outside closes the card |
 | **v3891** | `245d3234` | v3891 — Escape peels one layer, tabs close the builder, UNIQUES and SETS count every find |
 | **v3890** | `6b9c8ae1` | v3890 — sessions start at the game door - CHRONICLES read from the pixels |
