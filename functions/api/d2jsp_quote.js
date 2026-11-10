@@ -218,12 +218,31 @@ function d2jspRollKey(itemName) {
    "@20") that falls inside one of the item's variable ranges must sit at that range's maximum. -> true | false | null (the
    line states no roll the table knows, or the item has no variable roll: the words may say it). GrokBot 11-08: "137 DEF"
    is not a perfect Shako (141 is), "15/0/775" is a perfect Enigma, "20/-20" a perfect Griffon's Eye. */
-function d2jspRollPerfect(itemName, note) {
+/* REG-3627 - a number in a roll range standing immediately before the item's name counts ("141 Shako");
+   a total-defense number after the name ("eth perf shako 211", "mage plate 995 def") is not that roll. */
+function d2jspNumsBeforeName(text, itemName, ranges) {
+  if (!text || !ranges) return [];
+  var forms = d2jspSearchWords(itemName).forms, low = ' ' + d2jspFoldPrice(text) + ' ', nums = [], seen = {};
+  forms.forEach(function (f) {
+    if (!f) return;
+    var pat = '(?:^|[^a-z0-9])(\\d{1,4})\\s+' + f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s+') + '(?=$|[^a-z0-9])';
+    var re = new RegExp(pat, 'gi'), m;
+    while ((m = re.exec(low))) {
+      var v = Number(m[1]);
+      if (seen[v]) continue;
+      if (ranges.some(function (r) { return v >= r[0] && v <= r[1]; })) { seen[v] = 1; nums.push(v); }
+    }
+  });
+  return nums;
+}
+
+function d2jspRollPerfect(itemName, note, line) {
   var R = D2JSP_ROLLS[d2jspRollKey(itemName)];
   if (!R || !note) return null;
   var nums = [];
   (note.tuples || []).forEach(function (t) { t.forEach(function (v) { nums.push(Math.abs(v)); }); });
   (note.statNums || []).forEach(function (v) { nums.push(Math.abs(v)); });
+  d2jspNumsBeforeName(line || (note && note.text) || '', itemName, R).forEach(function (v) { nums.push(v); });
   var hit = false, all = true;
   nums.forEach(function (v) {
     var inside = R.filter(function (r) { return v >= r[0] && v <= r[1]; });
@@ -249,11 +268,52 @@ function d2jspSimpleName(itemName) {
 
 /* the search words like a search box takes them: the slang form when traders have one, else the simplified name;
    every form a price line may name it by rides along in `forms` */
+/* REG-3628 - official rune names, so a search for Ber is the bare name and 'ber' is a whole word, never a syllable */
+var D2JSP_RUNE_NAMES = 'el eld tir nef eth ith tal ral ort thul amn sol shael dol hel io lum ko fal lem pul um mal ist gul vex ohm lo sur ber jah cham zod';
+function d2jspRuneWord(itemName) {
+  var m = /^([a-z]+)\s+rune$/.exec(d2jspSimpleName(itemName));
+  if (!m) return '';
+  return (' ' + D2JSP_RUNE_NAMES + ' ').indexOf(' ' + m[1] + ' ') >= 0 ? m[1] : '';
+}
+var D2JSP_ITEM_TOKENS = null;
+function d2jspItemTokens() {
+  if (D2JSP_ITEM_TOKENS) return D2JSP_ITEM_TOKENS;
+  var seen = {}, out = [];
+  function add(w) {
+    w = d2jspFoldPrice(w).replace(/[^a-z0-9]+/g, ' ').trim();
+    if (!w || seen[w] || (' ' + D2JSP_RUNE_NAMES + ' ').indexOf(' ' + w + ' ') >= 0) return;
+    seen[w] = 1;
+    out.push(w);
+  }
+  for (var k in D2JSP_SLANG) {
+    if (!Object.prototype.hasOwnProperty.call(D2JSP_SLANG, k)) continue;
+    add(k);
+    add(d2jspSimpleName(k));
+    (D2JSP_SLANG[k] || []).forEach(add);
+  }
+  D2JSP_ITEM_TOKENS = out;
+  return out;
+}
+function d2jspRuneFormOk(folded, rune) {
+  if (folded.indexOf(' ' + rune + ' rune ') >= 0) return true;
+  if (rune === 'eth') {
+    if (/\beth (?:\d+\s*os|\d+os|os)\b/.test(folded)) return false;
+    if (d2jspItemTokens().some(function (w) { return w && folded.indexOf(' ' + w + ' ') >= 0; })) return false;
+  }
+  return true;
+}
+
 function d2jspSearchWords(itemName) {
   itemName = d2jspResolveItem(itemName).item || itemName;   /* v3847 - "gt", "anni", "jmod" search as their item */
   var slang = d2jspSlangOf(itemName), simple = d2jspSimpleName(itemName), full = d2jspFoldPrice(itemName);
   var forms = [];
   [full, simple].concat(slang).forEach(function (w) { if (w && forms.indexOf(w) < 0) forms.push(w); });
+  var rune = d2jspRuneWord(itemName);
+  if (rune) {
+    if (forms.indexOf(rune) < 0) forms.push(rune);
+    /* REG-3628 query: the bare rune name (Ber, Jah, ...), never the phrase "ber rune" */
+    return { query: rune.charAt(0).toUpperCase() + rune.slice(1), slang: slang, simple: simple, forms: forms };
+  }
   return { query: slang.length ? slang[0] : simple, slang: slang, simple: simple, forms: forms };
 }
 
@@ -261,7 +321,7 @@ function d2jspSearchWords(itemName) {
    upgraded, random, and each known short word in plain words */
 function d2jspNotation(text) {
   var t = String(text || '');
-  var out = { tuples: [], statNums: [], sockets: null, eth: false, perfect: false, upgraded: false, random: false, allRes: null, words: [] };
+  var out = { tuples: [], statNums: [], sockets: null, eth: false, perfect: false, upgraded: false, random: false, allRes: null, words: [], text: t };
   /* v3885 - a tuple's numbers may be signed: "12/-20" is a Griffon's Eye's roll (the unsigned form read nothing) */
   var m, re = /(-?\d+(?:\s*\/\s*-?\d+)+)/g;
   while ((m = re.exec(t))) out.tuples.push(m[1].split('/').map(function (x) { return Number(String(x).trim()); }));
@@ -345,7 +405,15 @@ function d2jspAbsLink(href) {
    line's amounts are not dropped - the line names the item, so they are its. */
 function d2jspNamed(text, forms) {
   var folded = ' ' + d2jspFoldPrice(text).replace(/[^a-z0-9]+/g, ' ') + ' ';
-  return forms.some(function (f) { return folded.indexOf(' ' + f.replace(/[^a-z0-9]+/g, ' ').trim() + ' ') >= 0; });
+  return forms.some(function (f) {
+    var key = ' ' + f.replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+    if (key === '  ' || folded.indexOf(key) < 0) return false;
+    var word = key.trim();
+    /* REG-3628 match: a bare rune name is a whole word; 'ber' never matches berry/number, and bare 'eth' is not ethereal */
+    if ((' ' + D2JSP_RUNE_NAMES + ' ').indexOf(' ' + word + ' ') >= 0 && word.indexOf(' ') < 0)
+      return d2jspRuneFormOk(folded, word);
+    return true;
+  });
 }
 
 /* v3845 - COMPACT ROLL COLUMNS (Elad, 2026-10-30 09:29): "guardian's thunder +8 -9 4 40 28 140fg" is the item, then
@@ -492,7 +560,7 @@ function d2jspPosts(text, itemName, nowMs) {
       if (x.cols) row.cols = x.cols;
       /* v3885 - PERFECT IS READ FROM THE ROLLS (d2jspRollPerfect); only a line stating no roll the item's table knows
          falls back to its words (v3849's "perf"/"perfect", gem-safe now) */
-      var byRoll = d2jspRollPerfect(d2jspResolveItem(itemName).item || itemName, note);
+      var byRoll = d2jspRollPerfect(d2jspResolveItem(itemName).item || itemName, note, x.text || line);
       if (byRoll === true || (byRoll === null && note.perfect)) row.perfect = true;
       rows.push(row);
       used = true;
