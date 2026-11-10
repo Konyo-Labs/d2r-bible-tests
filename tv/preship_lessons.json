@@ -1,0 +1,29 @@
+{
+  "_why": "Every ship refusal that a cheap local check could have caught is recorded here, with the check that now catches it. preship.py runs every named check. Adding a lesson is one entry; the law test_every_preship_lesson_names_a_check_that_runs refuses a lesson whose check does not exist or is not run.",
+  "lessons": [
+    {
+      "id": "bundle-attempt-6",
+      "attempt": 6,
+      "when": "2026-11-10",
+      "reason": "Mac pre-push render_check refused after a full CI round: the page floor was 6, the page had 7 zero-size boxes (the shelf overlay REG-3532 moved beside the other closed modals).",
+      "check": "render_check",
+      "class": "gate-number-mismatch"
+    },
+    {
+      "id": "bundle-attempt-7",
+      "attempt": 7,
+      "when": "2026-11-10",
+      "reason": "The render_check page floor was raised to 7, but test_a_chronicle_title_never_shaves_its_count still pinned 6, so the agent tests went red after another full CI round.",
+      "check": "test_a_chronicle_title_never_shaves_its_count",
+      "class": "agreement-law"
+    },
+    {
+      "id": "bundle-attempt-8",
+      "attempt": 8,
+      "when": "2026-11-10",
+      "reason": "CI went green, then the Mac pre-push console-demos gate refused because node tv/demo_console.mjs could not find playwright in the ship worktree (~/Desktop/verify-evidence/wt-bundle had no node_modules; the main checkout had it).",
+      "check": "mac_ready",
+      "class": "worktree-not-ready"
+    }
+  ]
+}
