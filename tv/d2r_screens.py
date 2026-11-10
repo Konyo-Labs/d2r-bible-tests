@@ -175,6 +175,29 @@ def screen_of(src, array=None):
             pass
     return None, why
 
+
+def frozen_non_d2r(paths):
+    """v3894 (#188) - True when every readable frame is not a D2R screen and they are the same picture
+    (a frozen GeForce NOW / Boosteroid idle page or launcher). False if any frame is D2R, or the pictures
+    differ (a loading animation still changing). None if fewer than two frames can be read."""
+    kinds, prints = [], []
+    for p in paths or []:
+        try:
+            a = _small(p)
+        except Exception:
+            continue
+        k, why = screen_of(p, array=a)
+        if str(why).startswith("frame unreadable"):
+            continue
+        kinds.append(k)
+        prints.append(bytes(a.tobytes()))
+    if len(kinds) < 2:
+        return None
+    if any(k in ("logo", "title", "hud", "char-select", "lobby", "town") for k in kinds):
+        return False
+    return len(set(prints)) == 1
+
+
 def Image_of(a):
     from PIL import Image
     return Image.fromarray(a.astype("uint8"))
