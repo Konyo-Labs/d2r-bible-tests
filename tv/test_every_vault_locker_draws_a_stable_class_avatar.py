@@ -10,7 +10,7 @@ so neighboring lockers do not all repeat.
 The plate draws through the character-card helper (_chxCrest / _CHX_CLASS_SPRITE). A second art
 map is a drift waiting to happen. The pick is _chxClassesForLockers on the locker names: a name
 seed, the previous locker's class skipped, a class already used more often deferred. The inside
-of the locker is unchanged. RED_PROOF below.
+of the locker is unchanged. The exterior shelf is four lockers across at a 1512 desktop width, with a 64-72px crest scaled to the tile, and two or three across at 901x900. RED_PROOF below.
 """
 import io
 import json
@@ -86,11 +86,41 @@ class EveryVaultLockerDrawsAStableClassAvatar(unittest.TestCase):
         self.assertNotIn("_chxClassForSeed(m.cls", vault)
         self.assertNotIn("_chxCrest(m.cls", vault)
 
-    def test_the_compact_crest_and_the_name_cannot_blow_the_tile(self):
-        self.assertIn(".vault-mule .chx-crest.chx-crest-sprite{width:40px;height:40px;", self.src,
-                      "the vault crest is not the compact size the 248px tile was laid out for")
+    def test_the_shelf_is_four_across_at_desktop_and_the_crest_is_bigger(self):
+        """Four lockers in a row at the 1512 desktop shelf, a 64px crest floor, no blown tile."""
+        # Measured 2026-11-10 on the box guest: at a 1512x982 viewport the shelf is 1382px
+        # wide; at 901x900 it is 773px. gap is 12px. SHARED STASH still spans the first row.
+        DESKTOP_SHELF = 1382
+        NARROW_SHELF = 773
+        GAP = 12
+        m = re.search(
+            r"\.vault-shelf\{display:grid;grid-template-columns:repeat\(auto-fill,minmax\(min\(100%,(\d+)px\),1fr\)\);gap:(\d+)px\}",
+            self.src)
+        self.assertIsNotNone(m, "PREMISE: the vault shelf is no longer an auto-fill grid with min(100%, Npx) (needed so a narrow pane cannot overflow)")
+        min_px, gap = int(m.group(1)), int(m.group(2))
+        self.assertEqual(gap, GAP, "the shelf gap changed, so the four-across arithmetic is unmeasured")
+        four = 4 * min_px + 3 * gap
+        five = 5 * min_px + 4 * gap
+        two = 2 * min_px + 1 * gap
+        self.assertLessEqual(four, DESKTOP_SHELF,
+                             "four %spx lockers + gaps (%s) do not fit the 1512 shelf (%s)" % (min_px, four, DESKTOP_SHELF))
+        self.assertGreater(five, DESKTOP_SHELF,
+                           "five %spx lockers + gaps (%s) still fit the 1512 shelf (%s) — not four across" % (min_px, five, DESKTOP_SHELF))
+        self.assertLessEqual(two, NARROW_SHELF,
+                             "two %spx lockers + gaps (%s) do not fit the 901x900 shelf (%s)" % (min_px, two, NARROW_SHELF))
+        # 2 or 3 per row at 901x900 is the fallback; 4 must not sneak back in.
+        self.assertGreater(four, NARROW_SHELF,
+                           "four lockers still fit the 901x900 shelf — the narrow fallback is gone")
+        # 3-across is welcome at 901x900 if 3 * min + 2 * gap still fits; otherwise two-across is the fallback.
+
+        self.assertIn(".vault-mule{container-type:inline-size;--vm-crest:clamp(64px,20cqi,72px);", self.src,
+                      "the locker crest is no longer 20cqi of the tile, clamped 64-72px (20% was cyclic and blew the plate)")
+        self.assertIn(".vault-mule .chx-crest.chx-crest-sprite{width:var(--vm-crest);height:var(--vm-crest);min-width:64px;min-height:64px;max-width:72px;max-height:72px;", self.src,
+                      "the vault crest does not use the shared --vm-crest size, or lost its 64px floor")
+        self.assertIn(".vault-mule .vm-crest{flex:0 0 auto;display:flex;align-items:center;min-width:0;width:var(--vm-crest);height:var(--vm-crest)}", self.src,
+                      "the crest wrapper can still grow to the figure's intrinsic width and push the locker name off the plate")
         self.assertRegex(self.src, r"(?m)^\.vm-name\{[^}]*min-width:0;[^}]*text-overflow:ellipsis;[^}]*white-space:nowrap",
-                         "the locker name can force the 40px crest out of the tile")
+                         "the locker name can force the larger crest out of the tile")
         self.assertIn(".vm-plate:has(.nig-chip) .vm-name{min-width:max-content;", self.src,
                       "CHARMS would shrink to CH… beside its not-in-game chip instead of wrapping the chip")
 
