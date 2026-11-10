@@ -17,6 +17,8 @@ import subprocess
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+from console_safe import enable; enable()
 UI = os.path.join(HERE, "control_ui.html")
 NODE = shutil.which("node") or shutil.which("nodejs")
 
