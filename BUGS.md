@@ -19,6 +19,9 @@ REG-3507 made OLD PC ALT its own label, but a leftover identity sharesLabel of "
 ### REG-3587 - A BUILDS BOOK NEVER HIDES CREST AND MORPH (#104)
 Dean's /api/saves named Crest, Morph, Morphad, ... but _roster_reads set used_book from his builds and skipped with_save_names, so the upload's characters section was only "Barbarian build" / "Sorceress build". Save names now always join and ride beside the builds as inGame. Law test_a_builds_book_does_not_hide_save_names.
 
+### REG-3588 - A WINDOWED CLIENT IS LETTERBOXED ONTO 1920x1080 AND SKIPS ARE COUNTED BY REASON (#115)
+v3894 already letterboxes in capture_win.ps1 (Dean-shaped 1507x755 -> 1920x961 with bars). tv/film_letterbox.py holds the same geometry so panel-relative reader bands map through that place (never onto a bar, never stretched) and skip events are counted by their named reason. Law test_a_windowed_film_is_letterboxed_and_skips_are_counted.
+
 ### REG-3223 - GITHUB'S FIRST v3865 ROUND: SIX REDS THE PRE-FLIGHT COULD NOT SEE, AND ONE THAT COULD HAVE PRUNED A MAIN TREE (v3865)
 The pre-flight passed (1,382 laws <= 20 s) and GitHub's agent suite went red on 656833dfa. Each fixed at its cause:
 - test_an_imported_proof_opens_the_locks (8 failures + 1 error, green on the Mac): its "another tree" was GitHub's own checkout path, so on a runner every trusted proof read as this tree's and was served here. The fixture's other tree is now a path no checkout holds, with a premise assert.
