@@ -7,6 +7,14 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3630 - THE FLEET LAMP '?' FITS THE 901 RAIL, IT IS NOT CUT OFF BY overflow-x:hidden
+v3895 (REG-3640) added a ? key to the Fleet head, a third button on a nowrap row that already
+filled a 238px rail at 901 (clamp floor, plus scrollbar-gutter: stable). .rail overflow-x:hidden
+destroyed the button; render_check page went red on clipped 1 at 901x900 only (`rail :: Console–⤢window`),
+while zero=7 still matched its declared floor — the clip alone was the refusal. ↻ and ? now wrap
+as a unit; the title nowrap that keeps THE FLEET on one line at 1024 is unchanged. Law
+test_the_fleet_help_fits_the_rail.
+
 ### REG-3629 - #107 LEFTOVER BASH / CHMOD / SIGTERM LAWS SKIP OR ADAPT ON WINDOWS, AND STAY STRICT ON POSIX
 A later #107 batch after REG-3626: three laws still staged "unreadable" with chmod(0), which on Windows
 only toggles read-only, so the case either skipped under a wrong "root" reason or measured nothing.

@@ -188,6 +188,14 @@
     "purpose": "#91 (REG-1581) - learns his characters from the reels' own CHARACTER-SELECT screen. A two-panel pixel test finds the screen (right list panel near-grey, left panel a dim warm grey; the crop is 0.385 x the frame HEIGHT because D2R scales its UI with height), the list crop is read by tv_diablo.charselect_read, and every read is folded into a per-PC ledger (tv/.char_roster.json, gitignored). Rides the vault autoread loop as rider lane tvd-char-learner; GET /api/chars_learned feeds the character builder, which groups level-1 characters as mules.",
     "territory": "ledger-profile"
   },
+  "char_window_vs_planner.py": {
+    "entryPoints": [
+      "compare_window_to_planner"
+    ],
+    "gotcha": "No itemized d2planner export lives on this tree, so the only numbers used are published breakpoint tables already cited by the breakpoint-row law. A key the planner dict does not name is unknown — never invented.",
+    "purpose": "Compare a character-window sheet against cited planner reference values (FCR/FHR/FBR/IAS frames from the maxroll Patch 2.4 tables d2planner uses).",
+    "territory": "console"
+  },
   "child_guard.py": {
     "entryPoints": [
       "spawn",
@@ -558,6 +566,18 @@
     "purpose": "CLI lookup over bible.html's top-level <style> rules: for a selector (and optionally one property) it lists every declaring block and says which last declaration actually wins.",
     "territory": "console-ui"
   },
+  "d2jsp_backfill.py": {
+    "entryPoints": [
+      "pager_offset",
+      "empty_progress",
+      "progress_load",
+      "progress_save",
+      "run_once"
+    ],
+    "gotcha": "It does not fetch the forum unless a fetch callback is handed in. Importing it, constructing progress, or running its tests never opens a network socket to d2jsp. The live 1-search/min lane is started only by the console after he says so.",
+    "purpose": "#151 — a resumable, read-only d2jsp price backfill: walks &o= from scrubbed results pages, folds priced posts through the price DB, and a killed run picks up at the saved offset.",
+    "territory": "d2jsp"
+  },
   "d2jsp_refresh.py": {
     "entryPoints": [
       "stale_items",
@@ -566,6 +586,26 @@
     "gotcha": "One item a pass, never a burst: it waits while checks run (checks_running) and while he plays, a sweep reads or a push grades (the prover's stand-aside judge). A read time that will not parse is UNKNOWN and asked first; one bad row never stops the lane.",
     "purpose": "#96/#88 (REG-3348): the price DB refreshes itself - every EVERY_S it asks the d2jsp desk's own quote for the stalest due item and folds it through the console's one DB writer, so prices move without a click.",
     "territory": "d2jsp"
+  },
+  "film_frame.py": {
+    "entryPoints": [
+      "film_dest_size",
+      "to_film_frame",
+      "to_film_jpeg"
+    ],
+    "gotcha": "Aspect is kept: a 1507x755 Dean-shaped client becomes 1920x961 centered on a 1920x1080 canvas (black bars top and bottom), never stretched. A source that will not fit is still letterboxed, never cropped to a different aspect.",
+    "purpose": "Map a captured client / game rect onto the 1920x1080 film canvas: trim window chrome, LANCZOS-resample the game, and letterbox so every stored frame has the same box.",
+    "territory": "capture-vision"
+  },
+  "film_letterbox.py": {
+    "entryPoints": [
+      "letterbox_place",
+      "map_panel_band",
+      "count_skips"
+    ],
+    "gotcha": "Panel-relative bands (inventory, stash, character select) are mapped through the same place so a reader crop stays on the game, not on the black bar or a pre-letterbox coordinate. Skip events are counted by reason, so a desktop-refused frame is not the same number as a missing game window.",
+    "purpose": "#115 — letterbox a windowed client onto the 1920x1080 film (same scale rule as capture_win.ps1) and count recorder skips by reason.",
+    "territory": "capture-vision"
   },
   "js_strip.py": {
     "entryPoints": [
