@@ -10,6 +10,9 @@
 ### REG-3584 - THE d2jsp BACKFILL RESUMES OFFLINE AND NEVER STARTS A LIVE SCRAPE (#151)
 His rulings: signed-in on the Mac console, 1 search/min, a ~2-year backfill then a monthly refresh; only priced posts with links; the same seller is one post and one price; never post or trade. Step 1 (REG-3491) kept scrubbed results pages. Step 2: tv/d2jsp_backfill.py walks &o= from those pages, folds through the price DB, and a killed run picks up at the saved offset. Importing it or running its tests never opens a network socket - a pass with no fetch handed in asks nothing. The live 1-search/min lane is not started here. Law test_the_d2jsp_backfill_resumes_offline.
 
+### REG-3585 - ITEM MODS AND KEYWORDS WEAR THE GAME FACE (#23)
+v3889 phase 1 put --ff-game on the game-name classes. Item mods/keywords (the set-tile affix list `.ct-affixes`) still rendered in ui-monospace. They now wear the same --ff-game token; no colour, size or weight is touched. Law test_game_mods_wear_the_game_face.
+
 ### REG-3223 - GITHUB'S FIRST v3865 ROUND: SIX REDS THE PRE-FLIGHT COULD NOT SEE, AND ONE THAT COULD HAVE PRUNED A MAIN TREE (v3865)
 The pre-flight passed (1,382 laws <= 20 s) and GitHub's agent suite went red on 656833dfa. Each fixed at its cause:
 - test_an_imported_proof_opens_the_locks (8 failures + 1 error, green on the Mac): its "another tree" was GitHub's own checkout path, so on a runner every trusted proof read as this tree's and was served here. The fixture's other tree is now a path no checkout holds, with a premise assert.
