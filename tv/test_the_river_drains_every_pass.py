@@ -641,6 +641,22 @@ class TheHeartSeesTheDrainStop(_Base):
         self.assertEqual(st["drain"]["state"], "CLEAR", st["drain"])
         self.assertIsNone(st["drain"].get("stopWhy"), st["drain"])
 
+    def test_a_deleter_that_refuses_is_said_as_a_refusal_never_as_a_prune(self):
+        """v3894 - REG-3584 made a sealed reel drain behind a shut lock, so the case above no longer reaches the deleter's
+        refusal, and proof [21] filed BLIND on GitHub (run 42884325588). The deleter still refuses what it may not take
+        (unreviewed / stuffed candidates, pinned in test_reel_retention); this hands the shipped cycle that exact refusal
+        shape - ok False, no removed, no freedMb - and asks that it is said as a refusal and becomes the drain's stop."""
+        before = self.w.on_disk()
+        refusal = {"ok": False, "why": "frame.release is LOCKED - fixture refusal", "removed": []}
+        with mock.patch.object(RR, "apply_plan", lambda plan, yes=False, **k: dict(refusal)):
+            r, st = self._pass(free_gb=500.0)
+        self.assertEqual(self.w.on_disk(), before, "a refused deleter removed footage")
+        say = st.get("say") or ""
+        self.assertIn("the deleter refused: frame.release is LOCKED", say,
+                      "a refusal was not said as a refusal: %r" % say)
+        self.assertNotIn("freed 0", say, "a refusal was described as a completed prune: %r" % say)
+        self.assertIn("frame.release is LOCKED", str(st["drain"].get("stopWhy") or ""), st["drain"])
+
     def test_UNKNOWN_when_the_plan_cannot_run(self):
         # a footage path that exists and cannot be listed: plan() answers ok False
         bad = os.path.join(self.w.root, "not_a_dir")

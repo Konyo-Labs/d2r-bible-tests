@@ -110,6 +110,8 @@ SHARD_WALL_FACTOR = 1.30
 #: prices, held for the factor: under-planning costs a whole round at minute 55, over-planning a few idle minutes), and a
 #: shard that modelled under this many seconds says nothing about the factor (setup noise outweighs its work)
 WALL_FIT_MIN_MODEL_S = 120
+#: v3894 - the words heart2 prints for a proof the run's deadline cut (REG-3212); a shard that says them is no wall sample
+CUT_AT_BOUND = "cut at its bound"
 
 
 def wall_factor(path=None, env=None):
@@ -143,6 +145,11 @@ def fit_wall_factor(shard_dirs, current=None):
         m = re.search(r"this shard's modelled wall (\d+(?:\.\d+)?) s", log)
         r = re.search(r"prove_seconds=(\d+)", log)
         if not (m and r):
+            continue
+        # v3894 - a shard the deadline CUT measured the deadline, not its work. MEASURED 11-10: v3894's #92 rounds owed
+        # every proof, every shard was cut at ~57 min, and their real/model ratios drove the carried factor to its 3.0 cap -
+        # so the next plan over-modelled every shard 2.3x and a law reading the factor went red on GitHub
+        if CUT_AT_BOUND in log:
             continue
         model, real = float(m.group(1)), float(r.group(1))
         if model >= WALL_FIT_MIN_MODEL_S and real > 0:

@@ -152,6 +152,17 @@ class TheWallFactorIsMeasuredEveryRound(unittest.TestCase):
         dirs = [self._shard(1, 600, 900), self._shard(2, 800, 1200), self._shard(3, 1000, 1500), self._shard(4, 60, 600)]
         self.assertEqual(PS.fit_wall_factor(dirs, current=1.30), 1.95, "the tiny shard (60 s modelled) is noise, not data")
 
+    def test_a_shard_the_deadline_cut_is_no_wall_sample(self):
+        """v3894 - MEASURED: the #92 rounds' shards were all cut at ~57 min; their 'real' was the deadline, and the factor
+        climbed to its 3.0 cap. A cut shard is left out; the honest shards decide."""
+        dirs = [self._shard(1, 600, 900), self._shard(2, 800, 1200), self._shard(3, 1000, 1500)]
+        cut = self._shard(9, 600, 3300)
+        with io.open(os.path.join(cut, "prove.log"), "a", encoding="utf-8") as fh:
+            fh.write("     OWED x[3] TIMEOUT - %s - the run's deadline passed 30 s ago\n" % PS.CUT_AT_BOUND)
+        self.assertEqual(PS.fit_wall_factor(dirs + [cut], current=1.30), 1.95,
+                         "a deadline-cut shard's wall (the deadline) moved the factor")
+        self.assertIsNone(PS.fit_wall_factor([cut], current=1.30), "a round of cut shards alone measured a factor")
+
     def test_a_round_that_ran_faster_never_sinks_it_below_the_committed_factor(self):
         dirs = [self._shard(1, 1000, 300), self._shard(2, 1000, 400)]
         self.assertEqual(PS.fit_wall_factor(dirs, current=1.30), PS.SHARD_WALL_FACTOR)
@@ -463,6 +474,11 @@ class TheMacReadsTheSetsOwnSize(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3894 - the wall fit takes a deadline-cut shard's wall (the deadline) as a measurement of its work",
+     "file": "tv/proof_shard.py",
+     "find": "        if CUT_AT_BOUND in log:\n            continue\n",
+     "replace": "",
+     "matches": 1},
     {"why": "v3891 (#194, REG-3519) - the seed's shard count is appended to any path, the checkout included",
      "file": "tv/heart2.py",
      "find": "    if output and _inside(REPO, output):\n",

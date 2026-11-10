@@ -26,6 +26,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -347,7 +348,12 @@ class ThePlanSaysItsRealWall(unittest.TestCase):
     def test_the_modelled_wall_carries_the_measured_factor(self):
         have = [("g%d" % i, "f", [{"i": j} for j in range(4)]) for i in range(6)]
         rep = {}
-        PS.plan(have, 2, {"g%d" % i: 10.0 for i in range(6)}, browser=set(), per_proof={}, report=rep)
+        # v3894 - a runner's carried factor (HEART2_SHARD_COSTS "wallFactor") is the plan's input there; this case is about
+        # the COMMITTED factor, so it pins the environment (GitHub's sandbox carried 3.0 and read this case red, 3.0 != 1.3)
+        _env = dict(os.environ)
+        _env.pop("HEART2_SHARD_COSTS", None)
+        with mock.patch.dict(os.environ, _env, clear=True):
+            PS.plan(have, 2, {"g%d" % i: 10.0 for i in range(6)}, browser=set(), per_proof={}, report=rep)
         self.assertEqual(rep["factor"], PS.SHARD_WALL_FACTOR)
         raw = [w / PS.SHARD_WALL_FACTOR for w in rep["wall"]]
         for w, t in zip(raw, rep["work"]):

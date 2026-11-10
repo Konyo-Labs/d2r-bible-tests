@@ -7,6 +7,20 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3658 - A DEADLINE-CUT SHARD WAS TAKEN AS A WALL SAMPLE, AND A LAW READ THE RUNNER'S CARRIED FACTOR (v3894, #194)
+MEASURED 11-10 on v3894's round 42884325588: test_a_round_cut_only_by_its_deadline_is_made_up was RED untampered on GitHub
+(UNPROVABLE, `3.0 != 1.3`). The #92 rounds owed every proof, every shard was cut at ~57 min, and fit_wall_factor took each cut
+shard's prove time (the deadline) over its model - the carried factor climbed to its 3.0 cap and rode the seed. Now a shard
+whose log says a proof was "cut at its bound" is no wall sample (the honest shards decide; a round of cut shards measures
+none), and the law's committed-factor case pins its own environment. Laws: test_a_round_chooses_its_own_shard_count,
+test_a_round_cut_only_by_its_deadline_is_made_up.
+
+### REG-3657 - THE RIVER LAW'S REFUSED-DELETER PROOF WENT BLIND WHEN A SEALED REEL BEGAN DRAINING BEHIND A SHUT LOCK (v3894)
+GitHub's round 42884325588: test_the_river_drains_every_pass[21] BLIND - REG-3584 (this version) made sealed eligible reels drain
+behind a shut frame.release, so the only case that reached the deleter's refusal no longer did. A new case hands the shipped
+_retention_once the deleter's exact refusal shape (ok False, no removed, no freedMb) and requires it said as a refusal and made
+the drain's stop - never "freed 0 MB". Seen RED under proof [21].
+
 ### REG-3631 — a second click on a boss chip left the card open (Bug H)
 v3894 dry-run. Routine I slow `setActiveBoss intent disambiguation (Bug H)` failed
 twice: after the second click on `.boss-chip[data-boss-id="diablo"]`, `activeBossId`
