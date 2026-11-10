@@ -120,8 +120,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3890 (#194) - the real ship stops measuring its rounds",
      "file": "tv/ship_when_green.py",
-     "find": "watch_publish_s=None if a.no_watch else a.publish_wait_min * 60, speed=_CS.observe)",
-     "replace": "watch_publish_s=None if a.no_watch else a.publish_wait_min * 60)",
+     "find": "mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe)",
+     "replace": "mac_rehearse=not a.no_mac_rehearse)",
      "matches": 1},
 ]
 

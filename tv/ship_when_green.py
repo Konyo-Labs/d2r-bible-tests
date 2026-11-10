@@ -21,7 +21,9 @@ it WATCHES Publish on the same commit (tv/ci_watch.py, GitHub's public Actions A
 minutes and which jobs are still running, and its exit says how Publish ended. --no-watch returns at the main push, as
 before. The console's eagle row "this version's CI" watches the same thing for the commit his console runs.
 
+    python3 tv/ship.py v3862          # the system entry (rehearsal + readiness + CI-parallel hook + report)
     python3 tv/ship_when_green.py v3862 [--wait-min 240] [--publish-wait-min 100] [--no-watch]
+                                      # same engine; box rehearsal, Mac readiness and Mac rehearsal default ON
     exit 0 main pushed and Publish green · 1 GitHub said red, the main push refused, or Publish red · 2 timed out or
     unknown (main IS pushed when it says so) · 3 refused
 """
@@ -39,6 +41,7 @@ from console_safe import enable as _console_safe_enable  # noqa: E402 - a cp1255
 _console_safe_enable()
 import ci_verdict as CV  # noqa: E402
 import ci_watch as CW  # noqa: E402
+import console_port as _cport  # noqa: E402
 
 #: each REQUIRED workflow's file, for `gh workflow run` when its path filter did not fire on the ci push
 WORKFLOW_FILES = {
@@ -48,6 +51,7 @@ WORKFLOW_FILES = {
     CV.REQUIRED[3]: "proof-keys-shards.yml",
 }
 POLL_S = 60
+LIVE_POLL_S = 20          # REG-3648 - poll faster while a required suite is in progress so a red shard is seen at once
 #: REG-3213 - the workflow that publishes main, watched after the main push
 PUBLISH = "Publish — gates, review, then deploy"
 #: REG-3213 (the second eye on v3865) - how often Publish is asked after the main push. MEASURED: GitHub allows 60
@@ -94,13 +98,35 @@ def _git(run, *args, **kw):
 
 
 def red_runs(runs, sha):
-    """The REQUIRED workflows whose NEWEST run on this sha COMPLETED and did not succeed. -> [name]. Pure."""
+    """The REQUIRED workflows whose NEWEST run on this sha is red. -> [name]. Pure.
+
+    REG-3652 - a required job that already failed counts even while the run is
+    still in_progress because of non-required windows jobs. Windows-job failures
+    never make a required check red.
+    """
     out = []
     for wf in CV.REQUIRED:
         rs = sorted((r for r in runs or [] if isinstance(r, dict) and CV._name(r) == wf
                      and str(r.get("headSha") or "").startswith(sha)), key=lambda r: str(r.get("createdAt") or ""))
-        if rs and rs[-1].get("status") == "completed" and rs[-1].get("conclusion") != "success":
-            out.append("%s (%s)" % (wf, rs[-1].get("conclusion")))
+        if not rs:
+            continue
+        newest = rs[-1]
+        if newest.get("status") == "completed" and newest.get("conclusion") != "success":
+            if CV._required_jobs_green(newest, wf):
+                continue
+            out.append("%s (%s)" % (wf, newest.get("conclusion")))
+            continue
+        if CV._required_jobs_green(newest, wf):
+            continue
+        jobs = newest.get("jobs")
+        if isinstance(jobs, list) and jobs:
+            try:
+                import shard_watch as SHW
+                v, why = SHW.required_jobs_verdict(jobs, wf)
+            except Exception:
+                v, why = "pending", ""
+            if v == "not":
+                out.append("%s (%s)" % (wf, why))
     return out
 
 
@@ -288,18 +314,34 @@ def overrun_alert(sha, minutes, runs, watch=None, limit=CW.OVERRUN_MIN):
         if not named:
             named = sorted(set(CV._name(r) for r in runs or [] if isinstance(r, dict)
                                and str(r.get("headSha") or "").startswith(sha) and r.get("status") != "completed"))
+        # REG-3652 - the 75-minute alert names only required work; windows proofs never hold the ship
+        try:
+            import shard_watch as SHW
+            named = [n for n in named if not SHW.is_proof_windows_name(n)]
+        except Exception:
+            named = [n for n in named if "proof-keys windows" not in str(n).lower()]
     except Exception as e:
         named = ["the running jobs could not be read (%s)" % type(e).__name__]
     return ("ship: \u26a0\u26a0 ALERT - %s has been on GitHub %d min, past the %d-minute max. Still running: %s"
             % (sha[:9], int(minutes), limit, "; ".join(named[:10]) or "nothing GitHub would name"))
 
 
-def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN):
+def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN, run=None):
     """REG-3213 - after the main push: follow Publish on `sha` until it ends or `wait_s` passes, alerting once past
     `limit` minutes. -> 0 Publish green · 1 Publish red · 2 not finished / unknown (main IS pushed either way)."""
     t0, said, alerted = clock(), None, False
     say("ship: REG-3213 watching Publish on %s - an alert at %d min, the console's eagle watches it too" % (sha[:9], limit))
     while True:
+        # REG-3654 - our own dry/grok CI must not hold runners from a live Publish,
+        # including the window after the main push before Publish has started.
+        # `run` is the ship's gh/git hook; tests of this watch pass none, and must
+        # never fall through to a real `gh run cancel`.
+        if run is not None:
+            try:
+                import ship_yield as SY
+                SY.protect_priority(run=run, say=say, main=sha, now=clock())
+            except Exception as _e:
+                say("ship: REG-3654 yield could not run (%s)" % type(_e).__name__)
         got = watch(sha)
         row = next((x for x in (got.get("runs") or []) if isinstance(x, dict) and x.get("name") == PUBLISH), None)
         mins = row.get("minutes") if row else None
@@ -327,11 +369,195 @@ def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN):
         sleep(PUBLISH_POLL_S)
 
 
+
+#: REG-3646 - a local rehearsal or readiness check that is red must stop the ship before (or during) the CI wait,
+#: not after it. Measured: attempts 6, 7 and 8 each paid a full GitHub round (~60 min) before the Mac hook refused.
+STATUS_URL = _cport.url("/api/status")
+
+
+def _call_gate(fn, *args, **kw):
+    """A True/False/callable gate hook. True -> call the default; False/None -> skip (0, []); callable is used.
+    The callable may return an int or (code, rows)."""
+    if fn is False or fn is None:
+        return 0, []
+    out = fn(*args, **kw)
+    if isinstance(out, tuple):
+        return int(out[0]), list(out[1] if len(out) > 1 else [])
+    return int(out), []
+
+
+def default_box_rehearse(say=print):
+    import preship as P
+    code, rows = P.box_rehearse()
+    say(P.format_table(rows, sum(r.get("ms") or 0 for r in rows), title="ship: box rehearsal"))
+    return code, rows
+
+
+def default_mac_ready(say=print):
+    import preship as P
+    code, rows = P.mac_ready(auto_fix=True)
+    say(P.format_table(rows, sum(r.get("ms") or 0 for r in rows), title="ship: Mac readiness"))
+    return code, rows
+
+
+def default_mac_rehearse(say=print):
+    import preship as P
+    code, rows = P.mac_rehearse(auto_fix=False)
+    say(P.format_table(rows, sum(r.get("ms") or 0 for r in rows), title="ship: Mac rehearsal"))
+    return code, rows
+
+
+def start_mac_rehearse(say, run_rehearse):
+    """Start the Mac hook rehearsal in a daemon thread. -> (thread, result_dict)."""
+    import threading
+    result = {"code": None, "rows": [], "done": False}
+
+    def go():
+        try:
+            code, rows = _call_gate(run_rehearse, say)
+        except Exception as e:
+            code, rows = 1, [{"name": "mac-rehearse", "code": 1, "ms": 0, "say": "%s: %s" % (type(e).__name__, e)}]
+            say("ship: Mac rehearsal raised (%s)" % e)
+        result["code"], result["rows"], result["done"] = code, rows, True
+        if code == 1:
+            say("ship: Mac rehearsal RED - the main hook would refuse; CI may still be running")
+        elif code == 2:
+            say("ship: Mac rehearsal UNKNOWN - a skip is not a pass")
+        elif code == 0:
+            say("ship: Mac rehearsal green - the hook's verdict is already known")
+
+    t = threading.Thread(target=go, name="mac-rehearse", daemon=True)
+    t.start()
+    return t, result
+
+
+def suite_run(runs, sha, workflow):
+    """The newest run of this workflow name on sha. -> dict | None. Pure."""
+    rs = sorted((r for r in runs or [] if isinstance(r, dict) and CV._name(r) == workflow
+                 and str(r.get("headSha") or "").startswith(sha)), key=lambda r: str(r.get("createdAt") or ""))
+    return rs[-1] if rs else None
+
+
+def suite_makeup(sha, runs, run, say, made, clock, root=None):
+    """REG-3645 - a red agent-tests or Playwright run is re-run with `gh run rerun --failed` once when
+    the flake ledger says the failed job is a known flake, or when the runner ended it (the same
+    class REG-3270 already handles for proof-keys). A genuine new red is left for a human.
+    -> True when a re-run was asked."""
+    import flake_ledger as FL
+    ledger = FL.load(root)
+    asked = False
+    for wf in (CV.REQUIRED[0], CV.REQUIRED[1]):   # agent tests, Playwright
+        r = suite_run(runs, sha, wf)
+        rid = (r or {}).get("databaseId")
+        if not rid or rid in made:
+            continue
+        if str(r.get("status") or "") != "completed" or str(r.get("conclusion") or "") == "success":
+            continue
+        # list failed jobs; rerun only when every failed job is a flake or infra
+        j = run(["gh", "run", "view", str(rid), "--repo", CV.REPO_SLUG, "--json", "jobs"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace")
+        try:
+            import json as _json
+            jobs = (_json.loads(j.stdout or "{}") or {}).get("jobs") or [] if getattr(j, "returncode", 1) == 0 else None
+        except ValueError:
+            jobs = None
+        if jobs is None:
+            say("ship: REG-3645 %s run %s - job list could not be read (UNKNOWN, not made up)" % (wf, rid))
+            made[rid] = None
+            continue
+        failed = [x for x in jobs if isinstance(x, dict)
+                  and str(x.get("conclusion") or "") not in ("success", "skipped", "neutral", "")]
+        if not failed:
+            made[rid] = None
+            continue
+        reasons = []
+        for job in failed:
+            name = str(job.get("name") or "")
+            log = ""
+            if job.get("databaseId"):
+                g = run(["gh", "api", "repos/%s/actions/jobs/%s/logs" % (CV.REPO_SLUG, job["databaseId"])],
+                        capture_output=True, text=True, encoding="utf-8", errors="replace")
+                if getattr(g, "returncode", 1) == 0:
+                    log = g.stdout or ""
+            ok, why = FL.should_rerun(name, log_text=log, data=ledger, root=root)
+            if not ok:
+                say("ship: REG-3645 not made up - job %r on %s is a real red (%s)" % (name, wf, why))
+                made[rid] = None
+                reasons = None
+                break
+            reasons.append("%s (%s)" % (name, why))
+        if reasons is None:
+            continue
+        q = run(["gh", "run", "rerun", str(rid), "--failed", "--repo", CV.REPO_SLUG],
+                capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if getattr(q, "returncode", 1) != 0:
+            if running_again(rid, run):
+                made[rid] = clock()
+                say("ship: REG-3645 run %s is already re-running - waiting on it" % rid)
+                asked = True
+                continue
+            say("ship: REG-3645 the make-up re-run was REFUSED: %s" % ((q.stderr or q.stdout or "").strip()[-160:]))
+            made[rid] = None
+            continue
+        made[rid] = clock()
+        say("ship: REG-3645 MAKE-UP - re-running the failed jobs of %s run %s once (%s) and waiting on"
+            % (wf, rid, "; ".join(reasons)))
+        asked = True
+    return asked
+
+
+def post_land_status(version, run, say, url=STATUS_URL):
+    """After main is pushed: the live console's /api/status should name this version (when a console is up).
+    A silent console is said, never a refused ship - the console may not be running on this machine."""
+    import json as _json
+    import urllib.request
+    try:
+        with urllib.request.urlopen(url, timeout=5) as fh:
+            raw = fh.read().decode("utf-8", "replace")
+        data = _json.loads(raw)
+    except Exception as e:
+        say("ship: post-land /api/status could not be asked (%s: %s) - the console may be down, not a refusal"
+            % (type(e).__name__, str(e)[:120]))
+        return None  # could not ask; not the same as "the live console is on this version"
+    have = None
+    if isinstance(data, dict):
+        have = data.get("version") or data.get("build") or (data.get("ship") or {}).get("version")
+    if have == version or (isinstance(have, str) and have.rstrip() == version):
+        say("ship: post-land /api/status is %s" % version)
+        return 0
+    say("ship: post-land /api/status says %r, expected %s - the live console has not moved onto this version yet"
+        % (have, version))
+    return 0
+
+
+def merge_timings_after_green(sha, version, say, root=None):
+    """Best-effort: fold this round's measured proof costs into shard_timings.json. Never refuses the ship."""
+    try:
+        import shard_timings as ST
+        import proof_shard as PS
+        measured = PS.proof_costs()
+        if measured:
+            ST.merge_measured(measured, root=root, measured_on="%s %s" % (version, str(sha)[:9]))
+            say("ship: shard timings updated from this green round (%d measured)" % len(measured))
+    except Exception as e:
+        say("ship: shard timings not updated (%s)" % type(e).__name__)
+
+
 def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_s=240 * 60, remote="origin", preflight=None,
-         watch=None, watch_publish_s=None, version_check=None, speed=None):
+         watch=None, watch_publish_s=None, version_check=None, speed=None,
+         box_rehearse=False, mac_ready=False, mac_rehearse=False, report_steps=None):
     """-> exit code: 0 main pushed (and, when watched, Publish green) · 1 GitHub said red / the main push refused /
-    Publish red · 2 timed out or unknown · 3 refused. REG-3213: `watch` (ci_watch.watch) names the running jobs in the
-    75-minute alert; `watch_publish_s` (main() sets it) follows Publish after the main push."""
+    Publish red / a local rehearsal or readiness check was red · 2 timed out or unknown · 3 refused.
+
+    REG-3213: `watch` (ci_watch.watch) names the running jobs in the 75-minute alert; `watch_publish_s`
+    (main() sets it) follows Publish after the main push.
+
+    REG-3646: `box_rehearse`, `mac_ready` and `mac_rehearse` are off when ship() is called from a unit
+    test (so existing tests stay isolated) and on from main()/tv/ship.py. box_rehearse runs before the
+    ci/ push; mac_ready runs at launch before the CI wait (auto-fix: the node_modules symlink only);
+    mac_rehearse runs in parallel with the CI wait and reports a red immediately. Each may be a
+    callable (returns a code, or (code, rows)) so a law can drive the stage.
+    """
     run = run or subprocess.run
     fetch = fetch or CV.fetch
     sleep = sleep or time.sleep
@@ -354,6 +580,23 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
     if ff.returncode != 0:
         say("ship: refused - HEAD %s does not fast-forward %s/main" % (sha[:9], remote))
         return 3
+    steps = report_steps if report_steps is not None else []
+
+    def _step(name, code, t_start):
+        steps.append({"name": name, "code": int(code), "s": (clock() - t_start)})
+
+    # REG-3646 - BOX REHEARSAL first: a red never reaches the ci/ push (attempts 6/7 would have died here
+    # in minutes). Off unless the caller (main / tv/ship.py) turned it on.
+    if box_rehearse:
+        _t = clock()
+        fn = default_box_rehearse if box_rehearse is True else box_rehearse
+        bcode, _brows = _call_gate(fn, say)
+        _step("box-rehearse", bcode, _t)
+        if bcode != 0:
+            say("ship: the box rehearsal is %s - the ci branches are NOT pushed; this used to cost a full GitHub round"
+                % ("RED" if bcode == 1 else "UNKNOWN"))
+            return 1 if bcode == 1 else 2
+
     # v3865 (his ask 2026-11-05: "not to re-run another 40 minutes everytime") - what GitHub would find in its first hour is
     # looked for here first; a red pre-flight never reaches GitHub. preflight=False is the explicit skip (--no-preflight).
     if preflight is not False:
@@ -370,6 +613,13 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
                 % ("RED" if vcode == 1 else "UNKNOWN"))
             return 1 if vcode == 1 else 2
     say("ship: %s at %s -> ci/claude-%s + ci/proof-keys-%s" % (version, sha[:9], version, version))
+    # REG-3653 - cancel our own dry/ and grok/ CI runs first so the ship's jobs
+    # do not sit behind them (attempt 10: fan-in queued 21 min behind those runners).
+    try:
+        import ship_yield as SY
+        SY.yield_to_ship(run=run, say=say)
+    except Exception as _e:
+        say("ship: REG-3653 yield could not run (%s) - the ship continues" % type(_e).__name__)
     # v3866 - A RESUMED SHIP DOES NOT PUSH WHAT IS ALREADY THERE. Measured 2026-11-06 (v3865, resuming after a flaky
     # Playwright re-run): both ci branches already pointed at HEAD, git ran the pre-push hook with NO ref lines (an
     # up-to-date push sends none), tv/push_lane.py rightly reads "no ref ships" as the FULL gate, and a flaky test_control
@@ -389,16 +639,54 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
         _why = [l for l in _all if "\u274c" in l or "\u2717" in l or "refused" in l.lower()] or _all[-8:]
         say("ship: the ci push was refused (the hook's own words):\n%s" % "\n".join(_why[:12]))
         return 1
+    # REG-3646 - MAC READINESS, a few seconds, before we sit on CI. Auto-fix only the node_modules
+    # symlink (attempt 8: wt-bundle had none, the main checkout had playwright). An owed second eye
+    # or a tree that cannot require('playwright') fails now, not after an hour.
+    if mac_ready:
+        _t = clock()
+        fn = default_mac_ready if mac_ready is True else mac_ready
+        rcode, _rrows = _call_gate(fn, say)
+        _step("mac-ready", rcode, _t)
+        if rcode != 0:
+            say("ship: Mac readiness is %s - not waiting on CI; fix the worktree (symlink node_modules, install "
+                "playwright browsers, or take the owed second-eye look)" % ("RED" if rcode == 1 else "UNKNOWN"))
+            return 1 if rcode == 1 else 2
+
     t0 = clock()
     tries, last = {}, None          # v3865 - per workflow: dispatches asked; a refused one is asked again next poll
     made = {}                       # REG-3270 - run id -> when its make-up re-run was asked (None: judged, not made up)
     alerted = False                 # REG-3213 - the 75-minute alert is said once, loudly
+    rehearsed = {"code": None, "rows": [], "done": not bool(mac_rehearse)}
+    rehearse_thread = None
+    if mac_rehearse:
+        fn = default_mac_rehearse if mac_rehearse is True else mac_rehearse
+        rehearse_thread, rehearsed = start_mac_rehearse(say, fn)
+        say("ship: Mac hook rehearsal started in parallel with the CI wait")
+    seen_jobs = set()                 # REG-3648 - a finished shard is classified once
     while True:
+        if rehearse_thread is not None and not rehearsed.get("done"):
+            rehearse_thread.join(0.05)   # pick up a finished rehearsal without delaying a still-running one
         runs = fetch(sha)
+        # REG-3648 - classify a shard the moment it goes red, do not wait for the round.
+        try:
+            import shard_watch as SHW
+            kind, info = SHW.watch_jobs_live(sha, runs, run, say, seen_jobs, made, clock, root=REPO)
+        except Exception as e:
+            kind, info = None, None
+            say("ship: REG-3648 live shard watch raised (%s)" % type(e).__name__)
+        if kind == "real":
+            say("ship: REG-3648 REAL RED on %s while other shards may still be running - main is NOT pushed: %s"
+                % ((info or {}).get("name") or "a shard", (info or {}).get("why") or "see log"))
+            return 1
         verdict, why = CV.decide(runs, sha)
         if why != last:
             say("ship: [%dm] %s" % (int((clock() - t0) // 60), why))
             last = why
+        if rehearsed.get("done") and rehearsed.get("code") not in (None, 0) and mac_rehearse:
+            say("ship: Mac rehearsal ended %s while CI was still running - main is NOT pushed"
+                % ("RED" if rehearsed["code"] == 1 else "UNKNOWN"))
+            _step("mac-rehearse", rehearsed["code"], t0)
+            return 1 if rehearsed["code"] == 1 else 2
         if verdict == "green":
             break
         if not alerted and clock() - t0 >= CW.OVERRUN_MIN * 60:
@@ -413,6 +701,8 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
                 red = []                # the re-run was asked a moment ago and GitHub has not started it yet
             elif only_proofs and makeup(sha, runs, run, say, made, clock):
                 red = []
+            elif (not only_proofs) and suite_makeup(sha, runs, run, say, made, clock):
+                red = []                # REG-3645 - a flaky / runner-killed agent or Playwright job is made up once
         if red:
             say("ship: GitHub graded %s RED - main is NOT pushed: %s" % (sha[:9], ", ".join(red)))
             return 1
@@ -431,7 +721,21 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
         if clock() - t0 >= wait_s:
             say("ship: no GitHub verdict on %s after %d min - main is NOT pushed" % (sha[:9], wait_s // 60))
             return 2
-        sleep(POLL_S)
+        try:
+            import shard_watch as SHW
+            _live = SHW.suites_in_progress(runs, sha)
+        except Exception:
+            _live = False
+        sleep(LIVE_POLL_S if _live else POLL_S)
+    if mac_rehearse and not rehearsed.get("done") and rehearse_thread is not None:
+        say("ship: GitHub is green - waiting for the Mac rehearsal to finish")
+        rehearse_thread.join()
+    if mac_rehearse:
+        _step("mac-rehearse", 0 if rehearsed.get("code") in (None, 0) else rehearsed["code"], t0)
+        if rehearsed.get("code") not in (None, 0):
+            say("ship: Mac rehearsal is %s after CI went green - main is NOT pushed"
+                % ("RED" if rehearsed["code"] == 1 else "UNKNOWN"))
+            return 1 if rehearsed["code"] == 1 else 2
     say("ship: GitHub vouches for %s - pushing main (the pre-push trusts this verdict)" % sha[:9])
     # v3890 (#194, REG-3518) - how fast this round ran, against the rounds before it: the ledger that says whether the
     # rounds keep getting faster (ci_speed.observe, handed in by main(); a law's fake run is never sent to GitHub).
@@ -441,13 +745,16 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
             speed(sha, version, CV.REPO_SLUG, say=say)
         except Exception as _e:
             say("ship: v3890 (#194) SPEED - not measured (%s)" % type(_e).__name__)
+    merge_timings_after_green(sha, version, say)
+    # The main push always goes through hooks/pre-push: never --no-verify, never a force push to main.
     m = run(["git", "-c", "core.hooksPath=hooks", "push", remote, "HEAD:main"], cwd=REPO)
     if m.returncode != 0:
         say("ship: the main push was refused (exit %s) - read the pre-push lines above" % m.returncode)
         return 1
     say("ship: %s is on main" % version)
+    post_land_status(version, run, say)
     if watch_publish_s:
-        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s)
+        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s, run=run)
     return 0
 
 
@@ -460,10 +767,18 @@ def main(argv=None):
     ap.add_argument("--publish-wait-min", type=int, default=100,
                     help="REG-3213 - how long to follow Publish after the main push (it alerts at %d min)" % CW.OVERRUN_MIN)
     ap.add_argument("--no-watch", action="store_true", help="REG-3213 - return at the main push without watching Publish")
+    ap.add_argument("--no-box-rehearse", action="store_true",
+                    help="REG-3646 - skip the local rehearsal that otherwise blocks the ci/ push")
+    ap.add_argument("--no-mac-ready", action="store_true",
+                    help="REG-3646 - skip the worktree readiness precheck (attempt 8)")
+    ap.add_argument("--no-mac-rehearse", action="store_true",
+                    help="REG-3646 - do not run the Mac hook gates in parallel with the CI wait")
     a = ap.parse_args(argv)
     import ci_speed as _CS        # v3890 (#194) - the real round is measured; a law's ship() is never sent to GitHub
     return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None, watch=_watch_authed,
-                watch_publish_s=None if a.no_watch else a.publish_wait_min * 60, speed=_CS.observe)
+                watch_publish_s=None if a.no_watch else a.publish_wait_min * 60,
+                box_rehearse=not a.no_box_rehearse, mac_ready=not a.no_mac_ready,
+                mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe)
 
 
 def _watch_authed(sha):

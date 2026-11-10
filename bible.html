@@ -31191,7 +31191,8 @@ function _tvOutsidePrice(e){
   var form = document.getElementById('d2jsp-price-form');
   if (form && form.contains(t)) return '';
   if (q) q.value = '';
-  if (typeof priceSearchIdle === 'function') priceSearchIdle();
+  /* REG-3537 - priceSearchIdle is local to the search IIFE; the published hook is on window. */
+  if (typeof window._d2jspPriceSearchIdle === 'function') window._d2jspPriceSearchIdle();
   return 'd2jsp';
 }
 window._tvOutsidePrice = _tvOutsidePrice;

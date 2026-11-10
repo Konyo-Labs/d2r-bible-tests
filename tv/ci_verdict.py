@@ -9,7 +9,9 @@ exact sha being pushed, the Mac skips what GitHub already did (the tv suites, th
 only what GitHub cannot (the macOS render, console demos, smoke, the cheap anchor checks).
 
 The answer is one of three, and only one of them skips anything:
-    GREEN    every REQUIRED workflow has a completed, successful run on THIS sha (its newest run for the sha)
+    GREEN    every REQUIRED workflow has a completed, successful run on THIS sha (its newest run for the sha),
+             or - REG-3652 - its required jobs (Linux seed, ci shards, fan-in) have all succeeded even if
+             non-required proof-keys windows jobs in the same wait are still running or queued
     NOT      one is missing, still running, failed, cancelled - or green only on another sha
     UNKNOWN  GitHub could not be asked (no gh, no network, a parse failure) - never "green" [[unknown-stays-unknown]]
 
@@ -42,6 +44,22 @@ def _name(run):
     return str(run.get("workflowName") or run.get("name") or "")
 
 
+
+def _required_jobs_green(run, workflow=None):
+    """REG-3652 - True when this run's required jobs (seed, Linux ci shards, fan-in) have
+    all succeeded. Non-required proof-keys windows jobs are ignored. False when jobs
+    were not attached or the required set is not yet green. Never raises."""
+    jobs = (run or {}).get("jobs")
+    if not isinstance(jobs, list) or not jobs:
+        return False
+    try:
+        import shard_watch as SHW
+        v, _why = SHW.required_jobs_verdict(jobs, workflow)
+        return v == "green"
+    except Exception:
+        return False
+
+
 def decide(runs, sha, required=REQUIRED):
     """-> ("green" | "not" | "unknown", why). Pure.
 
@@ -62,6 +80,8 @@ def decide(runs, sha, required=REQUIRED):
             continue
         last = rs[-1]
         if last.get("status") != "completed" or last.get("conclusion") != "success":
+            if _required_jobs_green(last, wf):  # REG-3652 - windows proofs never hold a required check
+                continue
             bad.append("%s %s" % (wf, last.get("conclusion") or last.get("status") or "?"))
     if missing or bad:
         parts = []
@@ -88,13 +108,52 @@ def fetch(sha, run=None, repo=REPO_SLUG):
         out = json.loads(r.stdout or "null")
     except ValueError:
         return None
-    return out if isinstance(out, list) else None
+    if not isinstance(out, list):
+        return None
+    attach_required_jobs(out, sha, run)
+    return out
+
+
+
+def attach_required_jobs(runs, sha, run=None):
+    """REG-3652 - attach the job list to each newest required run that is not already
+    a completed success, so decide() can ignore non-required windows jobs. Mutates
+    `runs` in place. Never raises."""
+    run = run or subprocess.run
+    sha = str(sha or "")
+    if not sha or not isinstance(runs, list):
+        return runs
+    for wf in REQUIRED:
+        rs = sorted((r for r in runs if isinstance(r, dict) and _name(r) == wf
+                     and str(r.get("headSha") or "").startswith(sha)),
+                    key=lambda r: str(r.get("createdAt") or ""))
+        if not rs:
+            continue
+        newest = rs[-1]
+        if newest.get("status") == "completed" and newest.get("conclusion") == "success":
+            continue
+        if isinstance(newest.get("jobs"), list):
+            continue
+        rid = newest.get("databaseId")
+        if not rid:
+            continue
+        try:
+            j = run(["gh", "run", "view", str(rid), "--repo", REPO_SLUG, "--json", "jobs"],
+                    capture_output=True, text=True, encoding="utf-8", errors="replace")
+            if getattr(j, "returncode", 1) != 0:
+                continue
+            jobs = (json.loads(j.stdout or "{}") or {}).get("jobs") or []
+            if isinstance(jobs, list):
+                newest["jobs"] = jobs
+        except Exception:
+            continue
+    return runs
 
 
 def proof_run_id(runs, sha):
     """The successful proof-keys run on this sha, whose fan-in artifact the Mac imports. -> int | None. Pure."""
     rs = sorted((r for r in (runs or []) if isinstance(r, dict) and str(r.get("headSha") or "").startswith(str(sha))
-                 and _name(r) == REQUIRED[3] and r.get("conclusion") == "success"),
+                 and _name(r) == REQUIRED[3] and (r.get("conclusion") == "success" or _required_jobs_green(r, REQUIRED[3]))),
                 key=lambda r: str(r.get("createdAt") or ""))
     try:
         return int(rs[-1]["databaseId"]) if rs else None

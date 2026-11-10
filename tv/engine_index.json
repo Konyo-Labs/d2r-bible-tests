@@ -3246,10 +3246,11 @@
       "fetch",
       "mac_only",
       "import_proofs",
-      "main"
+      "main",
+      "attach_required_jobs"
     ],
     "gotcha": "UNKNOWN (gh unreachable) is never green, and a dirty tree is never asked about - the pre-push grades the working tree. The shard caches are HIDDEN files (.heart2_cache.json): `*.json` never matches them (REG-3154).",
-    "purpose": "Does GitHub vouch for this exact commit? GREEN only when every REQUIRED workflow's newest run on the sha succeeded; the pre-push's ci-trust asks it, and --mac-only names the changed laws only this Mac can prove.",
+    "purpose": "Does GitHub vouch for this exact commit? GREEN when every REQUIRED workflow's newest run on the sha succeeded, or (REG-3652) when that run's required jobs (Linux seed, ci shards, fan-in) have all succeeded even if non-required proof-keys windows jobs are still running. The pre-push's ci-trust asks it, and --mac-only names the changed laws only this Mac can prove.",
     "territory": "push"
   },
   "proof_release.py": {
@@ -3273,7 +3274,7 @@
       "main"
     ],
     "gotcha": "Refuses a dirty tree and a non-fast-forward; stops on the first red run and names it; never --no-verify, never a forced main.",
-    "purpose": "The ship: the exact commit to ci/claude-vNNNN + ci/proof-keys-vNNNN, any path-filtered REQUIRED workflow dispatched, GitHub's verdict polled, main pushed through the hook only on GREEN.",
+    "purpose": "The ship: the exact commit to ci/claude-vNNNN + ci/proof-keys-vNNNN, any path-filtered REQUIRED workflow dispatched, GitHub's verdict polled, main pushed through the hook only on GREEN REG-3653 yields dry/ and grok/ runners before the ci/ push.",
     "territory": "push"
   },
   "repair_book.py": {
@@ -3426,5 +3427,91 @@
     "gotcha": "Read-only GETs to silospen's calculator, paced (monsterProbabilities, Terror Zone ON). The level search is a bisection over 1-99 - a change that reverts inside an interval would be missed (a terror zone's monster level only rises with the character's). Breakpoints are kept only when odds move past TOL (2%); the page table holds only items whose odds move.",
     "purpose": "v3884 (REG-3437, his 'Add a level setting') - silospen's terror-zone odds at every character level 1-99 for the eight boss / super-unique farms; --build writes the page's tz-level-odds table (the LVL slider reads it through the BOSSES getters), --check holds the stored TZ columns to silospen at their stored levels.",
     "territory": "routing"
+  },
+  "flake_ledger.py": {
+    "entryPoints": [
+      "load",
+      "save",
+      "is_infra",
+      "is_flake",
+      "should_rerun",
+      "record",
+      "main"
+    ],
+    "gotcha": "A known flake or infra kill may be auto-rerun once; a flake that stays green for nClean=3 is pruned. should_rerun never invents a flake from a single red.",
+    "purpose": "REG-3644 - the ship pipeline's flake ledger: which failed CI jobs may be rerun alone, and which must stop the ship.",
+    "territory": "gates-proofs"
+  },
+  "preship.py": {
+    "entryPoints": [
+      "catalog",
+      "box_rehearse",
+      "mac_ready",
+      "mac_rehearse",
+      "run_checks",
+      "remember_refusal",
+      "main"
+    ],
+    "gotcha": "Box rehearsal reports an owed second-eye and does not refuse; Mac readiness refuses it. The only safe auto-fix is a symlink to ~/d2r_bible_tests/node_modules. A missing playwright is a readiness failure, not a skip.",
+    "purpose": "REG-3642/3646 - the ship pipeline's local gates: box rehearsal of every non-Mac gate plus agreement laws, Mac worktree readiness, and the Mac hook rehearsal that runs beside the CI wait.",
+    "territory": "push"
+  },
+  "shard_timings.py": {
+    "entryPoints": [
+      "build",
+      "write",
+      "coverage",
+      "per_proof",
+      "merge_measured",
+      "main"
+    ],
+    "gotcha": "Unpriced proofs are filled with the median; already-priced rows are never lowered. coverage() must stay complete or the shard-balance law fails.",
+    "purpose": "REG-3643 - per-proof seconds for shard balancing, filled from the last green proof-keys rounds.",
+    "territory": "gates-proofs"
+  },
+  "ship.py": {
+    "entryPoints": [
+      "report",
+      "lessons_for",
+      "main"
+    ],
+    "gotcha": "A thin orchestrator: ship() in ship_when_green.py defaults the new stages OFF so existing unit tests stay isolated; this entry point turns them ON. Never --no-verify, never a forced main, never prints a token.",
+    "purpose": "REG-3646 - the one entry point for shipping a version: python3 tv/ship.py vNNNN runs the box rehearsal, ci/ push, Mac readiness, CI wait beside the Mac hook, failed-job makeup, and post-land checks.",
+    "territory": "push"
+  },
+  "shard_watch.py": {
+    "entryPoints": [
+      "classify",
+      "watch_jobs_live",
+      "owed_shards",
+      "owed_tests",
+      "rehearsal_cmd",
+      "needs_rebalance",
+      "maybe_flag",
+      "extra_shards",
+      "record_round",
+      "main",
+      "required_jobs_verdict",
+      "is_proof_windows_job"
+    ],
+    "gotcha": "A real test failure is never auto-rerun; a cut-off, timeout, or infra kill is. GitHub refuses a mid-run rerun, so that case is queued for suite_makeup. choose_shards only bumps n_min when a split flag is up.",
+    "purpose": "REG-3647..3652 - live per-job watch of agent / Playwright shards, pre-push rehearsal of a recently-failed shard set, 2-of-3 / near-ceiling split flags, and required-check judgement that ignores proof-keys windows jobs.",
+    "territory": "gates-proofs"
+  },
+  "ship_yield.py": {
+    "entryPoints": [
+      "may_push",
+      "yield_to_ship",
+      "protect_priority",
+      "cancel_competing",
+      "sweep_stale",
+      "live_ship_runs",
+      "live_publish_runs",
+      "awaiting_publish",
+      "main"
+    ],
+    "gotcha": "UNKNOWN (GitHub unread) refuses a dry/ or grok/ push and never cancels a run. ci/ ship refs, main, and Publish itself are never cancelled or held. ci/*dry* names are always refused. Leftover proof-keys windows on a real ship branch do not keep the ship live (REG-3652).",
+    "purpose": "REG-3653/3654 - while a real ship (ci/claude-* or ci/proof-keys-*) or a Publish run on main is live, or in the window after a main push until Publish finishes, dry/ and grok/ CI pushes yield the runners so a ship's or Publish's jobs never wait on our own test jobs. A sweeper cancels stale dry runs and any ci/*dry* name (never used again).",
+    "territory": "push"
   }
 }

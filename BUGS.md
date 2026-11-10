@@ -96,6 +96,28 @@ A live board-268 post wrote "1os 141 Shako *5 ea=100fg" and "141 Shako *5 ea=80f
 
 ### REG-3628 - A RUNE IS SEARCHED ON d2jsp BY ITS BARE NAME, AND 'ber' IS A WHOLE WORD (#30)
 Rune searches went out as the phrase "ber rune", so a listing written "x50 Ber 195fg ea" was missed at the search box and when the line was read. The query is now the bare rune name (Ber, Jah, Shael, ...). Matching stays a whole word, so "ber" does not hit "berry" or "number", and bare "eth" is not the ethereal flag on another item. Law test_a_rune_is_searched_by_its_bare_name.
+### REG-3651 - DETERMINISTIC CI REDS THE BOX REHEARSAL DID NOT RUN (v3894, the ship system)
+agent-suite (4) on run 42813591511 failed three laws the cheap box rehearsal had not run: the page zero floor was 7 against a 6-name closed-modal census (the seventh is `#th-shelfov`), `ship_when_green.STATUS_URL` was a literal `:17772`, and the `speed=_CS.observe)` pin no longer matched `main()`. Routine L was 318 vs 317 because Wilhelm's Pride left the calculator uniques (REG-3506). The letterbox law was not in GATES, so changed_tests refused. Each is now a lesson with a preship check (cheap where the check is cheap), so the box rehearsal is the first to see a repeat. Laws already in the catalog: test_render_gate_sees_the_page, test_a_scratch_console_never_addresses_his, test_every_round_records_how_fast_it_ran.
+
+### REG-3650 - A SHARD FAILURE WAS RECORDED WITHOUT THE SHARD'S IDENTITY (v3894, the ship system)
+Attempt 9's red was `agent-suite (2)`. A lesson that only named a check could not catch a repeat of that shard before the next ci/ push. `preship_lessons.json` now stores `shard`, seeded with bundle-attempt-9, and `remember_refusal` writes it. Law: test_a_preship_lesson_names_the_shard_that_failed.
+### REG-3649 - A SHARD THAT FAILED REPEATEDLY WAS LEFT AT THE SAME CUT (v3894, the ship system)
+A shard that fails twice in three rounds, or that runs near the 25-minute ceiling (under 300s left), is auto-flagged in `tv/shard_history.json`. The flag lists the slow or failing tests to move; `choose_shards` asks for one extra slice, still capped at SHARD_MAX. Law: test_a_shard_that_fails_twice_in_three_rounds_is_flagged_to_split.
+### REG-3648 - A RED SHARD WAS ONLY NOTICED AFTER THE WHOLE ROUND, AND A REAL FAILURE LOOKED LIKE A CUT-OFF (v3894, the ship system)
+Attempt 9's agent-suite (2) failed a real law (`test_the_planner_spinner_stays_under_the_cursor`, 383s left of the 1500s ceiling) after 18m41s; VERDICT then failed as UNKNOWN/cut-off once the round ended. During the CI wait the engine now watches per-job status: the moment one shard goes red it pulls the log, classifies (real / cut-off / timeout / infra), auto-reruns only that shard when it is a flake or cut-off (or queues the rerun until GitHub will accept it), and reports a real failure immediately so the fix can start while other shards are still running. Law: test_a_red_shard_is_classified_and_reported_while_others_run.
+### REG-3647 - A KNOWN-BAD SHARD WAS NOT REHEARSED BEFORE THE CI PUSH (v3894, the ship system)
+Attempt 9 paid a full GitHub round because the box rehearsal had not run the tests of agent-suite (2), which had just failed. Before the ci/ push, the box rehearsal now runs the exact failed tests of any shard that failed in the last N rounds (from `tv/shard_history.json` plus the flake ledger); a cut-off shard is rehearsed as the same `k/n` slice. Law: test_a_failed_shard_is_rehearsed_before_the_ci_push.
+
+### REG-3646 - A LOCAL GATE THAT WOULD REFUSE THE MAC HOOK WAS FOUND AFTER A FULL CI ROUND (v3894, the ship system)
+Bundle attempts 6, 7 and 8 each paid a full GitHub round (~60 min; v3864's proof shards alone ran 43-87 min) before the Mac pre-push hook, or the agreement law, refused: the page floor was 6 against 7 zero-size boxes (attempt 6), the chronicle-title law still pinned 6 after the floor moved to 7 (attempt 7), and `node tv/demo_console.mjs` could not find playwright in the ship worktree (attempt 8). `python3 tv/ship.py vNNNN` is the one entry: a box rehearsal of every non-Mac gate (including agreement laws and console-demos) blocks the ci/ push; a Mac readiness precheck (auto-fix only a node_modules symlink to ~/d2r_bible_tests/node_modules) runs in seconds before the CI wait; the Mac hook rehearsal runs in parallel with that wait and reports a red immediately. Main still moves only through hooks/pre-push: never --no-verify, never a force push. Ledger: tv/preship_lessons.json (seeded with those three attempts). Laws: test_every_preship_lesson_names_a_check_that_runs, test_a_worktree_without_playwright_is_not_ready, test_the_ship_runs_mac_gates_beside_the_ci_wait. Doc: tv/SHIP.md.
+### REG-3645 - A FLAKY AGENT OR PLAYWRIGHT JOB RE-RAN THE WHOLE WORKFLOW (v3894, the ship system)
+REG-3270 already re-runs only the failed proof-keys shards (`gh run rerun --failed`) when the debt is cut proofs. A red agent-tests or Playwright run still waited on a person, or re-ran every green shard too. ship_when_green.suite_makeup now re-runs only the failed jobs of those workflows, and only when the flake ledger says the job is a known flake or the runner ended it (REG-3292's shutdown words, or a cancellation). A genuine new red is left for a human. Law: test_a_failed_agent_or_playwright_job_is_rerun_alone.
+### REG-3644 - A HEALED FLAKE STAYED IN THE AUTO-RERUN LIST FOREVER (v3894, the ship system)
+tv/flake_ledger.json tracks known flakes. An entry is dropped after nClean (3) consecutive green runs, so a healed test does not buy a silent retry forever. A name that was never a flake is not added on a clean run. Law: test_the_flake_ledger_prunes_after_clean_runs.
+### REG-3643 - AN UNPRICED PROOF COULD UNBALANCE A SHARD (v3894, the ship system)
+proof_costs.json priced 1,309 of 1,766 proof tests; the rest rode a default (the v3878 scar: test_control priced at 19 s, ran 226-263 s, packed one shard). tv/shard_timings.json names every proof test, measured when a green round has measured it, otherwise the median of the measured set. The plan fills unpriced proofs from that file and never lowers a priced row. Updated after a green round. Law: test_the_shard_balance_file_covers_every_proof_test.
+### REG-3642 - A LESSON THAT NAMES NO CHECK, OR A CHECK THAT NEVER RUNS, LOOKS LIKE COVERAGE (v3894, the ship system)
+The ship lessons ledger is only as honest as the check each entry names. Every lesson in tv/preship_lessons.json must name a check in preship.catalog(), and a preship run must actually invoke it. Law: test_every_preship_lesson_names_a_check_that_runs.
 
 ### REG-3223 - GITHUB'S FIRST v3865 ROUND: SIX REDS THE PRE-FLIGHT COULD NOT SEE, AND ONE THAT COULD HAVE PRUNED A MAIN TREE (v3865)
 The pre-flight passed (1,382 laws <= 20 s) and GitHub's agent suite went red on 656833dfa. Each fixed at its cause:
@@ -4388,14 +4410,12 @@ law's frame() helper to say so, but not this inline frame. So on the chain the r
 (CI on slice 1). The frame now says complete: true, as frame() does. Measured in node on the slice's page: without it,
 "not counted - the frame does not say it read its container whole"; with it, gone 1. Chrome law: CI proves it.
 
-
 ### REG-3013 - THE HAND-ADD LAW LOOKED FOR THE RAW "stash:c0r0" IN FIND, WHICH REG-2884 NOW SAYS IN ITS OWN WORDS (CI on ci/claude-chain-1)
 test_vault_l1_a_hand_add_routes_by_type's FIND case asserted the move target's raw cell ("stash:c0r0") in FIND's text. Since
 REG-2884 (#137) FIND names a hand add's target as "Mule 1 · Personal stash · col 1 · row 1 · target", and the case went red on
 the first CI grade of the replayed chain (the chain's own steps never ran this Chrome law). The case now resolves the target
 through the page's own _vaultCellAt and requires FIND to name that col and row. Measured in node on the slice's page: target
 stash:c0r0 -> "col 1 · row 1", present in FIND's row. Chrome law: CI proves it.
-
 
 ### REG-2866 - THE SHADOW CALLED ITS COPY'S AGE THE OWNER'S "LAST UPLOAD" (GrokBot #230) - SUPERSEDED BEFORE SHIPPING BY REG-3034/3037
 SUPERSEDED before shipping by REG-3034/3037 (v3839/v3840): both answered GrokBot's "last upload N ago". REG-3034/3037 name each
@@ -4405,7 +4425,6 @@ copy - is kept as REG-3037's roster-row wording. Its own fix (agent-212's "this 
 _shadowCopySay, and its 6 re-aimed red-proofs) was built on the integration chain (int-6) and dropped from the ship-chain
 replay by the lead's ruling of 2026-10-29: the two fixes print contradictory words for one field and cannot be merged. No code
 of REG-2866 ships.
-
 
 ### REG-3084 - REG-3056 ALSO STOOD THE SEALED CHRONICLE'S LANDING ASIDE, SO v1630'S SEALED-CARD SPECS WENT RED (v3839's CI)
 REG-3056 made his chip outrank BOTH auto-landings. GrokBot's report was only about the Crafts room (ALL snapping back to MAKE
@@ -5266,7 +5285,6 @@ exited 3, not 77. The case now has no binary either (rc.CHROME absent -> 77, the
 installed-and-silent branch for real (rc.CHROME exists, _chrome_up refuses -> exit 3 with VENUE_MARK, gate_status VENUE).
 Both stubs measured on the Mac with the browser path stubbed out: exit 77 and exit 3.
 
-
 ### REG-3061 - A LAW WHOSE BROWSER WOULD NOT START READ AS A RED GATE SET (#161, CI on v3837 and v3838)
 Both times test_found_ever_never_files_to_a_mule was the only red, and both times what failed was its browser's start,
 not the vault it guards: the gate set published red=true, a red verdict nobody reached. Now the nine browser laws that
@@ -5283,7 +5301,6 @@ the exception itself counts: an assertEqual whose text holds the words is still 
 cut). Laws: tv/test_a_law_that_cannot_measure_is_unknown_never_red.py (real unittest output for each shape, the exit
 rule, the CI step's own block run in bash for 0-3, exit 3 through the verdict job, ship_audit's receipt), 7 red-proofs
 RED; and the CI-only law below.
-
 
 Follow-up (v3840 CI): test_control TestV2049's case-skip slice ended at main()'s old 'return 0'; it now ends at
 'return gate_set_exit(failed, _venue)', and the 3,373-char slice still holds every needle its 3 cases assert (agent-86, d226a7445).
@@ -5305,7 +5322,6 @@ Follow-up (agent tests on ci/claude-v3841): the scratch-dir ratchet named render
 entry moved the profile's mkdtemp out of _chrome_up. Its teardown did not move (_chrome_down after every failed start, the
 answering start's profile with the browser), so EXPLAINED now names _chrome_start_once, and the law also asserts _chrome_up
 calls _chrome_down before its retry (+1 red-proof: a retry without the take-down).
-
 
 ### REG-3076 - 90 SPEC PINS ON A STORE THE BOARD WRITES BACK WERE WRITTEN BETWEEN TWO LOADS (#161, after REG-3059)
 REG-3059's shape on v527: a spec writes a store with page.evaluate, then reloads, over a first page that holds its
@@ -5413,7 +5429,6 @@ nobody, a PC nobody takes from posts nothing (_proof_carrier_due's can_take / ca
 `takesFrom`. His own PC's gates do not stand on a friend's machine without his word; whether the ALT may take Dean's is a
 question put to him. Law: tv/test_a_carried_proof_stands_only_where_it_was_earned.py; red-proofs RED.
 
-
 ### REG-3046 - DEAN'S STATUS SAYS HOW MANY OF HIS SERVED PROOFS THE ALT CARRIED, AND WHEN CARRIED PROOFS NEVER SERVE (#186)
 Nothing on Dean's PC could say whether the ruling worked: the census line said "N reused" with no split. The verdict cache
 now counts a served hit whose entry was carried, by who carried it ("· K of them carried from another PC (Konyo · ALT K)"),
@@ -5421,7 +5436,6 @@ the self-prove lane reads K back into selfProve.reuse.carried (a line that does 
 carrier's status carries a doctor line: carried proofs banked and a later census that proved proofs itself served none of
 them reads UNJOINED with both numbers; a census not yet ended since reads "not known yet". The carrier's take reads how
 many the import banked from heart2's own line (None when it did not say). Law: as REG-3047; red-proofs RED.
-
 
 Follow-up (v3840 CI): test_the_census_reuses_byte_identical_proofs still expected {served, of, banked}; the prover's census
 line now always names the carried count, so the lane's expected dict gains carried 0 (agent-86, ac5d5aff2).
@@ -5437,7 +5451,6 @@ carry nothing, and the ALT's node proofs banked on Dean follow REG-2715's serve 
 D2 below measured that this shuts no lock). The box/shard path into the Mac's push records the runtime and does not
 enforce it, so CI's Linux shards stay importable. Each entry a carried import banks carries {by, key, head, platform, at,
 importedAt}; a proof this PC already serves keeps its own. Law: as REG-3047; red-proofs RED.
-
 
 ### REG-3044 - A PROOF OF ANOTHER PC'S VENUE, OR OF AN OS THIS ONE IS NOT, IS NEVER BANKED FROM ANOTHER PC (#186)
 A proof's key digests tracked bytes, so an imported PROVEN re-keyed on this PC's bytes is a proof of those bytes - except
@@ -5489,7 +5502,6 @@ mule CHARMS" make line, which has no tabindex and no expand. Rendered in node fr
 then two move rows, each with tabindex=0, role=button, the _vaultTaskExpand handler and a tick box. The shadow's code was
 right. The case now drives li.vtk-line.vmv-row. Chrome law: CI proves it.
 
-
 ### REG-2993 - THE HAND-ADD LAW STILL SENT GHEED'S FORTUNE TO UNI-SMALL, AGAINST HIS 10-28 RULING (CI on ci/claude-v3837)
 test_vault_l1_a_hand_add_routes_by_type read 'CHARMS' != 'UNI-SMALL'. The CODE is right. His words, 2026-10-28 ~20:02: "no
 gheeds no... MF no... those go to charms mmule dedicated". REG-2895 homes Gheed's Fortune on the CHARMS mule, superseding
@@ -5497,7 +5509,6 @@ REG-2859's UNI-SMALL (his 10-15 ruling). Annihilus and Hellfire Torch stay on th
 law's Annihilus case already expects that. The row now expects CHARMS. A new red-proof sends Gheed's back to 'uni-small' in
 _charmHome; replayed in node on v3837's page, that routes the hand add to UNI-SMALL, which the row's holder check refuses.
 Chrome law: CI proves it.
-
 
 ### REG-2992 - THE FINDER LAW STILL WANTED HIS MAGIC-FIND CHARM ON MAGIC & RARE, WHICH HOLDS NO CHARMS SINCE HIS 10-28 RULING (CI on ci/claude-v3837)
 test_the_vault_finder_names_the_mule_and_the_cell read 'charms' != 'magic-rare' for Harpoonist's Grand Charm. The FINDER is
@@ -5507,13 +5518,11 @@ right: Harpoonist's is a skiller grand charm (the page's _charmKind: grand, skil
 "charms" and flips only the kind to "would" (measured on a sabotaged copy), so a mule-only check would have been blind to it.
 Chrome law: CI proves it.
 
-
 ### REG-2991 - REG-2912'S LAW LISTED ITS OWN SYNTHETIC REEL WITH os.listdir, SO HEART2 COULD NEVER KEY IT (CI on ci/claude-v3837)
 test_the_unkeyable_laws_only_get_fewer named a new unkeyable law: test_a_simulation_leaves_no_worker_behind took "the first .jpg"
 of a reel it had just built in its own scratch (cls.root, made after fixture_tmp.contain() at import). That is the REG-2362 case:
 the listing is fixture_tmp.list_own, the same names, and it refuses any path outside this run's scratch. The census passes
 on v3837 (5 cases, nothing new unkeyable); the law passes (4) and its two red-proofs are RED against a green baseline.
-
 
 ### REG-2990 - THE TASKS PANEL LAW RAISED ON THE CHARMS MULE'S "CREATE MULE" LINE, WHICH CARRIES A MULE, NOT A NAME (CI on ci/claude-v3837)
 test_vault_l1_tasks_panel ERRORED in test_one_numbered_line_per_task_moves_then_throw_outs with no trace in the log. Since
@@ -5522,7 +5531,6 @@ law's own world: one make line, two moves, one throw-out). That line is a task, 
 the law read a None name and None.startswith raised. The make line is keyed "make <id>" now; every per-line check (one line
 per task, one tick box, numbered) holds it too. Chrome law: CI proves it.
 
-
 ### REG-2989 - REG-2842'S LAW READ A KEEPER TARGET AS A NUMBER AFTER REG-2900 MADE IT {want, dest} (CI on ci/claude-v3837)
 test_a_cleared_pick_puts_back_its_keeper_target compared multiKeep[name] with 2 and CI read (2, {'want': 2, 'dest': 'auto'})
 != (2, 2). REG-2900 stores a multi-copy keeper as {want, dest}, and every reader asks _mkWant; the law's mk() now does too, so
@@ -5530,13 +5538,11 @@ it pins the want the pick raised and the clear put back, whatever the shape. Its
 and read RED then, but the law was already red on its own, so that proof proved nothing: the sabotage runner had no baseline.
 It now runs each law clean first and refuses on a red baseline. Re-proven on v3837's bytes: baseline green, 1 of 1 RED.
 
-
 ### REG-2988 - THE GATE COST TABLE COVERED 94.5% OF THE GATE SET, UNDER ITS 95% FLOOR (CI on ci/claude-v3837)
 test_the_gate_set_shards_cleanly refused v3837: tv/gate_costs.json was measured on 1,207 gates and the registry had grown to
 1,277, so 5.5% of the set would have been sharded on the median guess. Refreshed with tv/gate_costs.py from that run's own job
 logs (run 40786675962, all five agent-suite shards, read with gh run view --log): 1,277 gates, 4,153 s, every registered gate
 measured. The law passes against the new table (15 cases). No gate code changed.
-
 
 ### REG-3029 - A BASE SPELLED THE GAME'S WAY LOST ITS VAULT PICTURE: artUrl MATCHED CASE EXACTLY (v3837's render gate)
 v3837's push gate BLOCKED at the render gate: a missing-art mark (d2art-fallback) cut inside the UNI-WEAPONS card at every
@@ -5785,7 +5791,6 @@ constants with their minutes, and a case in tv/test_console_fleet.py reads its t
 to either without the header goes red. The same law's "10-minute presence TTL" failure message is corrected too. 2
 red-proofs RED (the old words; the constant moved without the header).
 
-
 ### REG-3022 - A HIDDEN CONSOLE'S WINDOW REASON NESTED ONE LAYER DEEPER ON EVERY HIDDEN RELAUNCH (GrokBot #230, the ALT on v3836)
 GrokBot read the ALT's reason as "started hidden: the console was hidden (started hidden: the console was hidd...", and saw it
 again at 03:31. A hidden window relaunches hidden (REG-1430): hidden_relaunch_env set TV_START_HIDDEN to "the console was
@@ -5795,7 +5800,6 @@ A window born hidden and never shown now carries its root reason across the exec
 _STARTED_HIDDEN, that the relaunch strips), and an empty carried reason still starts hidden. Law:
 tv/test_a_hidden_relaunch_says_its_reason_once.py - three relaunches through the real hidden_relaunch_env and the real boot
 (_control_window_kwargs) say one reason; 3 red-proofs RED. test_closing_the_window_keeps_the_console_running's proof re-aimed.
-
 
 ### REG-2970 - THE WAR STASH LAW'S NAME-REGEX PROOF WENT BLIND ONCE ITS WAR MULES WERE SEEDED BY ROLE (the v3836 push gate)
 The push gate refused v3836: test_vault_l1_war_stash_overflow[7] ("WAR mules are matched case-sensitively") stayed GREEN with
@@ -5813,7 +5817,6 @@ next load asks again) and the card says "Today's pick: not read - <the refusal r
 (window._createNowAiBanner, the one line renderCreateNow draws; window._intakeNotReadSay(null, why) is the count-less form).
 The console's task-force card, which reads the stored pick on its own, is not changed. Law:
 tv/test_a_refusal_is_never_a_read_at_any_door.py (TheDailyPickSaysARefusalAndWritesNoPick, every refusal shape); red-proofs RED.
-
 
 ### REG-3021 - ONE CAP RULE: A CAP ENDS THE BATCH AT EVERY DOOR, AND THE VAULT INTAKE STOPS FOR THE SUBSCRIPTION CAP (#158, his ruling)
 Measured in node on c70a8187b, a five-shot batch where every answer was the subscription cap: the set tracker, the craft
@@ -5834,7 +5837,6 @@ checker's judge (one frame a call, not a batch). Law: tv/test_a_refusal_is_never
 all-capped, capped mid-batch, a usage limit, a 502 that must not stop the batch, counting the asks; the vault's _aiIsLimit and
 _aiLimitMsg run in node, its first read's stop pinned at the line); red-proofs RED.
 
-
 ### REG-2979 - THE SET TRACKER AND THE CRAFT WORKSHOP CALLED A REFUSED SHOT "NOTHING RECOGNISED" (#158, v3834 second eye)
 Reproduced in node on int-9 before the fix, every refusal shape (429 cap, 502 with an empty body, 200 + {error}, 200 HTML, a
 thrown fetch): the set tracker reported "No set pieces recognised (1 image error)" and the craft workshop "No crafted items
@@ -5844,7 +5846,6 @@ first one's reason (_craftRead fills a `why` like _tallyRead does, REG-2730), an
 - the reader is at its cap (...) - HTTP 429" for a batch nobody read, "· 1 shot not read - <why>" beside what a part batch
 did read. A read that honestly found nothing still says "No set pieces recognised". Law:
 tv/test_a_refusal_is_never_a_read_at_any_door.py (both doors, six shapes, a part batch); red-proofs RED.
-
 
 ### REG-2978 - A 429 OR A 502 WITH NO JSON BODY THREW BEFORE THE REFUSAL RULE SAW ITS STATUS, AND A CAP LOST ITS SENTENCE (#158, v3834 second eye)
 Reproduced in node on int-9: the Chronicle and grail screenshot readers and the Ask box called resp.json() before
@@ -5863,7 +5864,6 @@ the vault intake's v407 retry of a 200 + {error}, its locate and retry reads, an
 writes nothing). Law: tv/test_a_refusal_is_never_a_read_at_any_door.py; the vault intake is pinned at its line (read, not
 run); red-proofs RED.
 
-
 ### REG-2977 - THE CHRONICLE SCREENSHOT READER FILED A REFUSAL AS A PAGE (#158, v3834 second eye)
 Reproduced in node on int-9: a refused page went into the proposal's `pages` as {note:<why>, witness:'none', printed:{},
 read:{}} beside the pages that were read, and a read that never happened went in as {note:'unreadable'}, so anything counting
@@ -5871,7 +5871,6 @@ pages counted a read. Refusals now live in the proposal's own `refused` list ({n
 paints them first ("page 2 - not read: the reader is at its cap (...)"); a batch in which no page was read says "Nothing was
 read" rather than "Nothing to register". The reader's own refusals (wrong-ledger, no-found-state) stay page notes, as before.
 Law: tv/test_a_refusal_is_never_a_read_at_any_door.py; REG-2815's site and proof re-aimed; red-proofs RED.
-
 
 ### REG-2976 - THE ITEM CHECKER'S JUDGE ANSWERED A THROWN OR NON-JSON READ WITHOUT SAYING IT REFUSED (#158, v3834 second eye)
 The eye's claim was that the poster sending /kai_verdict was never changed. Measured by running the engine's one poster
@@ -5883,7 +5882,6 @@ refused:true with its reason; "no magic/rare item readable in this frame" is sti
 tv/test_a_refusal_is_never_a_read_at_any_door.py runs the poster over every refusal shape and hands its body to
 control_app's _kai_refused_row and _judge_already_near; red-proofs RED.
 
-
 ### REG-2969 - THREE LAWS STILL CARRIED THE WORLD FROM BEFORE THE CHARMS LOCKER AND THE CAPTURE-TIME MAP (integration, v3837)
 Measured on the v3837 tree (integration steps 1-4 on v3836), each red for a reason in the LAW, not the product:
 test_a_refused_map_write_never_drops_a_filing typed its 11 core lockers by hand, so after REG-2895 made CHARMS a core locker
@@ -5894,7 +5892,6 @@ REG-2890's per-file capture-time map (_capAt / _capOf / window._vaultShotTime) t
 defined"); it now stubs it the shipped way (no clock is no time). REG-2803's law was the third, re-aimed by agent-144 as
 REG-2888 and picked here. All pass (6, 6, 2, 10); sab bad 0 on each.
 
-
 ### REG-2968 - THE WAR STASH LAW SEEDED NAME-ONLY WAR MULES INTO A ROSTER REG-2804 HAD ALREADY STAMPED (CI on ci/claude-v3836, 4 cases)
 test_vault_l1_war_stash_overflow failed 4 cases on CI: overflow landed on WAR2/WAR3 instead of WAR1. The product was right.
 The law's roster_with copied the board's saved roster (its shared entry carrying REG-2804's one-time legacy stamp,
@@ -5902,7 +5899,6 @@ warRoleV, saved by an earlier case), stripped the WAR mules and appended new one
 already run, so those name-only mules were - correctly, by REG-2804's rule - ordinary mules, and the board made its own
 next WAR mule. The law now seeds its war mules as the board stores them (role war, warN in order); names are only labels.
 Chrome law: CI proves it.
-
 
 ### REG-2967 - REG-2804'S ONE-TIME WAR-ROLE STAMP MADE ANOTHER TAB'S FIRST ROSTER SAVE A CONFLICT (found by agent-guide's sweep)
 test_another_tabs_write_is_merged_not_clobbered's "a roster first saved in the other tab is taken, not held" went red on the
@@ -30018,7 +30014,6 @@ is active at the width you are looking at, MEASURE the computed `grid-template-c
 "157.75px 157.75px 157.75px 157.75px" while the source said auto-fit. And a card that is full width
 is not a card that uses its width: measure the CHILDREN, not the panel.
 
-
 ---
 
 ## REG-108 — "the Forgotten Tower" lost its art because English kept the article (2026-08-04, v1639)
@@ -30348,7 +30343,6 @@ does not chase it. So `art/make_zone_graphic.py` still has nothing to eat, and t
 for the reason it already records: it needs one capture from inside a LevelType 32 interior, and
 that is a walk in the game, not work in this repo.
 
-
 ## REG-115 — Routine I: the 27 failures are ONE deterministic set, not flake, and not CI-only
 
 **Symptom.** `Routine I — Playwright suite` has been red since ~v1634 and, per the project record,
@@ -30415,7 +30409,6 @@ both lost names — so the function everyone had been reading was innocent.
 ⚠ **AND A PERMANENTLY RED GATE COSTS MORE THAN THE FAILURES IN IT.** These six were not app defects.
 They were three stale specs generating timeouts inside a suite nobody reads, which is exactly the
 cover a real regression needs.
-
 
 ## REG-116 — the ~v1634 ONSET: three new specs spoof `navigator.webdriver` and never claim the owner world
 
@@ -31751,7 +31744,6 @@ is now named `f2trap_…` on purpose** — revert to substring-matching the path
 every time, on the first run, on any machine, instead of 1.2% of the time. A trap the fixture springs
 beats a comment asking people not to. [[feedback_suspect_the_instrument]]
 
-
 `test_chronicle_retro` failed **twice** inside the full 30-gate run tonight with
 `AssertionError: 2 != 1 : six identical frames of one page = ONE read`, and passes **3 of 3 alone
 in 0.3s**. It is order-dependent: something earlier in the run leaves frames or journal rows that
@@ -32776,8 +32768,6 @@ statement about the fixture, not about the feature.** A fixture rich enough to m
 assertion non-vacuous can be exactly the thing that starves one of them, and it will never announce
 that — it just keeps passing. When one branch of a gate refuses to light up under a generous
 fixture, suspect the generosity. [[gate-blind-to-unexercised-input]]
-
-
 
 ---
 
@@ -34168,7 +34158,6 @@ future, and uses a **two-sided** window — *"not older than a day"* and *"not i
 conditions and the one-sided test only ever checked one. Normalised on write as well as read, or the
 next recorded call copies the poison straight back in.
 
-
 ## REG-218 — one gate run rewrote five of his live files, and spent a real vision call (FIXED v1869)
 
 With the journal leak closed, the same question was asked of the WHOLE tree rather than a watchlist:
@@ -34188,7 +34177,6 @@ Measured: `test_roundtrip_sim` spent **1 → 0** real vision calls.
 ⚠ **The log pollution had already cost a wrong diagnosis** — see the correction on REG-214. That is
 why this is filed as a defect and not as tidiness: a diagnostic file a test can write is a
 diagnostic that will eventually be believed about the wrong actor.
-
 
 ## REG-219 — "is this console reading for real?" had no answer (FIXED v1870)
 
@@ -34668,7 +34656,6 @@ permanent row"* — instead of silently reverting to the old behaviour.
 `Cracked Sash`, `Chipped Skull`, `Tome of Town Portal`, `Small Charm`, `Jewel`, `Key of Terror`,
 `Wirt's Leg`) must come out **exactly as read**.
 
-
 ## REG-236 — my own test was a time bomb, and his pre-push gate caught it going off (FIXED v1886)
 
 `test_a_millisecond_entry_is_rescaled_not_trusted` (v1868) pinned the real value from his budget
@@ -34903,7 +34890,6 @@ sabotage inside the slice the guard actually reads.
 | `board_ownership` | 2600 bytes → bounded by the next `def ` |
 | the vault `_reader` | 900 bytes → bounded by `prop = _vr.sweep(` |
 | the chronicle `_classify_one` | 3600 bytes → bounded by `_classify = _cr.classifier(` |
-
 
 ## REG-244 — I read the result while the sweep that owns it was still running (CORRECTED v1894)
 
@@ -40293,7 +40279,6 @@ Registered, added to the isolation MUST_MOVE list (so a fixture that sets only `
 cannot reach his real `vault_seen.json`), and the file-layer join is now tested
 (`TestV2052TheSeenFileIsTheJoin`) — TestV2051 only ever proved the in-memory fold.
 
-
 ## REG-396 — v2223's vault watchdog was INERT: a basename where a path was needed
 
 **Found by** the v2225 five-lens adversarial audit, not by any gate. 24 findings raised, 20 confirmed.
@@ -41011,7 +40996,6 @@ that matter more than the action: never during a capture, never before any conso
 in (that is a headless run, not a fault), and never twice without a 5-minute cool-off, or a page
 that dies on load becomes an infinite reload loop. All four refusal paths proven RED by sabotage.
 
-
 ## REG-397 — the shadow ledger counted repeat scorings as distinct names
 
 `shadow_ledger.observe()` did `names += scored` with no distinct tracking, and the chronicle sweep
@@ -41584,7 +41568,6 @@ console wrote into the record `console_doctor.py` and `console_healer.py` read t
 HIS console is sick - CF-11's shape exactly. Wiring the drawer's failures to POST `/api/ui_fault`
 would have turned rare pollution into routine pollution. Now scratch-scoped, both call sites, with
 the gitignore covering the SHAPE (`tv/*.scratch-*`) rather than a third named file.
-
 
 ## REG-441 - HE WAS ASKED TO FILE A GREY BASE IN HIS GRAIL
 
@@ -46148,7 +46131,6 @@ measured and all declined:
 
 **Six versions of cold looks on this helper, and the seventh found nothing to take.** That is the
 signal the arc is finished, and it is a better reason to stop than running out of patience.
-
 
 ## REG-614 — the decision was honest and every number on screen was the inflated one (v2660)
 
@@ -51425,7 +51407,6 @@ control_app.py            INSIDE    (tv file, still allowed)
 
 A proof may still only tamper inside the throwaway copy.
 
-
 ## REG-765 — a reel's whole life was 8.7% visible, and the far station could not be assigned
 **#36 · v2822 · 2026-09-09 · reel_router.py · river_lanes.py · control_app.py · control_ui.html**
 
@@ -52468,7 +52449,6 @@ fold, and the two lines read as one italic paragraph. Tightened to one-line caus
 exception kept on the `title` attribute, and separated with a hairline. Re-measured: **9 elements
 at each of 260/300/340/420px, 0 clipped or overflowing.**
 
-
 ## REG-807 — the new render target went green photographing the state it was named against
 
 **v2844.** Closing REG-806 left a hole the harness could not see: `advanced-fleet` serves the real
@@ -52508,7 +52488,6 @@ Tightened `activate` to require the three remembered chips. All five widths now 
 ⚠ **AND IT MEANS BRANCH B IS FREE.** The unreachable-with-nothing state is the harness's NATURAL
 condition and needs no stub at all — worth a second target, not yet written.
 [[feedback-contradiction-is-the-finding]] [[feedback-blind-fixture-green-gate]]
-
 
 ## REG-808 — five gates were red on CI for versions, and I only found them by finally reading CI
 
@@ -52574,7 +52553,6 @@ disk`. Those are gates whose fixture is the HOST: they pass on a machine holding
 on a bare runner, which makes them un-actionable signal on CI rather than proof of anything.
 Un-diagnosed and still red — counted, not fixed. [[feedback-blind-fixture-green-gate]]
 
-
 ## REG-809 — the push was REFUSED, and the cold eye's clean bill still left one thing
 
 **v2846.** The v2843-v2845 push came back **exit 0 and the ref had not moved.** The second-eye gate
@@ -52599,7 +52577,6 @@ testing a number that no longer means anything. [[label-outlived-referent]] [[co
 
 The eye was right about what it was asked; it was asked about behaviour, and this is a defect of
 naming that only shows up against the file's history. Both passes were needed.
-
 
 ## REG-810 — I nearly killed his console, and the guard written to stop me would have agreed
 
@@ -52691,7 +52668,6 @@ fallback on exactly those two slots.** Now parsed from the AST.
 `assertIn` where a STRUCTURE was needed — the sixth law in this repo caught in that shape.
 [[source-reading-guard]] [[feedback-blind-fixture-green-gate]]
 
-
 ## REG-812 — a 20-agent fleet on the 16 red CI gates: 8 fixed, 8 diagnosed, 0 laws weakened
 
 **v2848.** His instruction: *"spawn an army of agents to optimze all the others"*. Recon first, and
@@ -52738,7 +52714,6 @@ law** — and 1 is `yes-workflow-config` (CI should install numpy). None recomme
 gate checks. Diagnosed, not yet fixed.
 
 Cost: 20 agents, 0 errors, 28 minutes, 1.78M subagent tokens.
-
 
 ## REG-813 — the push was refused twice over, and the better catch was a 4-second sleep
 
@@ -52790,7 +52765,6 @@ river` 971 ms, four route checks ~2,100 ms together.
 Re-tiering someone's supervision cadence to buy margin is a real decision about how often things
 get watched, and I am not making it silently. Reported, not fixed. [[feedback-blind-fixture-green-gate]]
 
-
 ## REG-814 — the fleet card said three numbers where he wanted one word
 
 **v2850.** Konyo: *"for the fleet hide the information. just keep next to uniques and sets and
@@ -52821,7 +52795,6 @@ sandbox cannot reach the site, so a rendered check could only ever exercise the 
 
 ⚠ The first render did confirm the wiring end to end on real pixels before the self-comparison fix:
 `konyo-3 sets synced uniques synced runewords synced`, painted 1/1 at all five widths.
-
 
 ## REG-815 — the fleet card was stale, the harness judged a page it never prepared, and I put a RANK-1 swallow in the sweep
 
@@ -52887,7 +52860,6 @@ UNMEASURED rather than clean, and `health_engine` no longer prints a length for 
 ⚠ **UNPROVEN, and named as such:** the #56 guard has NOT been exercised against a real navigation —
 three verification runs were all green, so the re-prepare path never fired. It is a guard for a
 condition I measured once and cannot reproduce on demand.
-
 
 ## REG-816 — a comment that named the words it may not say, and a fix that disarmed its own proof
 
@@ -53452,7 +53424,6 @@ gate RED, where the string check stayed green.
 by a reviewer, never by reading. When a law is about a mechanism, assert the mechanism ACTS: change
 what it consumes and require the output to change. Asserting that the machinery is PRESENT is the
 cheap version and it is always green.
-
 
 ### REG-848 — the router dropped the outlet verdict on an UNKNOWN walk
 **v2881.** `reel_router.route()` returns early when the shelf walk is UNKNOWN. v2817 had already
@@ -55617,7 +55588,6 @@ v2917's join never reached a surface he can see either. That is a real gap and i
 (HEART 2.0 visual pass)**, which is where the driver and the design pass live; it is recorded here
 so it is not rediscovered a third time.
 
-
 ## REG-928 — the answer was measured at a viewport nobody photographs, and the law could not see it
 
 **v2924.** #53. The cross-family eye on v2923, one version after that ship.
@@ -57567,14 +57537,6 @@ is falsy and reads as unreadable; `live_probe` rejects stub bytes. Separately, `
 SURFACE names (`stash`) while `stash_screen_open` returns TAB names (`shared`) — two vocabularies,
 both correct, and confusing them made the reader look broken when it was not.
 
-
-
-
-
-
-
-
-
 ## REG-1007 — TWELVE OF THE 26 "LOOSE WIRES" ARE DEAD ON PURPOSE, AND THE MEASUREMENTS THAT PROVE IT LIVED NOWHERE (task #100 — v3205)
 
 `tv/loose_wires_audit.py` reports 26 module-level functions that RETURN A VERDICT and are called
@@ -58060,7 +58022,6 @@ The row-seam case grades a real frame and passes. The paper-doll case skips with
 *"no frame the paper-doll case can be made RED on — UNMEASURED, not passed"*, which is the truth
 about his current footage rather than a green that means nothing.
 
-
 ## REG-998 — THE VAULT KNEW WHICH CELLS WERE FULL AND THREW THE ANSWER AWAY AT ONE LINE
 
 **v3087.** His ask, 2026-09-13: *"all on ledger for the slot identity and for the tallied and for the
@@ -58280,8 +58241,6 @@ The MEASUREMENTS quoted in the original entry remain true and are worth keeping:
 analytics above the list and the first card sat at y=2491 with 530 cards and none on screen; v2985
 reversed it on 549px of furniture inside a ~449px stage. What was false was my claim that nothing
 guarded it.
-
-
 
 Not a new defect — a **missing guard** for one that has landed on his console **twice**, both times
 caught only by measuring pixels after the fact.

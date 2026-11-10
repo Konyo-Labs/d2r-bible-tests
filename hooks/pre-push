@@ -382,6 +382,16 @@ if [ "$_lane" = "ci-only" ]; then
   exit 0
 fi
 # <<< ci-only lane
+# REG-3646 / attempt 8 — THE WORKTREE MUST BE ABLE TO RUN THE HOOK'S NODE GATES.
+# The ship entry already ran this at launch (and auto-linked node_modules when it could). This
+# is the backstop on a main push that skipped that entry: a tree with no playwright fails in
+# seconds, not after the demos start. Never --no-verify. ci-only pushes already exited above.
+if ! python3 "$REPO/tv/preship.py" --mac-ready; then
+  echo "pre-push: [$(_pp_el)] ❌ this worktree is not ready (playwright, browsers, python deps, or an owed second eye)."
+  echo "          Reproduce: python3 tv/preship.py --mac-ready"
+  echo "          Safe auto-fix: symlink node_modules to ~/d2r_bible_tests/node_modules when that install exists."
+  exit 1
+fi
 # Derive the refs being PUSHED, not the branch I happen to be standing on.
 _se_local=""; _se_remote=""
 while read -r _lr _ls _rr _rs; do

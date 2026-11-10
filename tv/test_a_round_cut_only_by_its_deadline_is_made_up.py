@@ -507,7 +507,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3270 - a made-up run is made up again and again",
      "file": "tv/ship_when_green.py",
-     "find": "    if not rid or rid in made:\n",
+     "find": "    if not rid or rid in made:\n        return False\n",
      "replace": "    if not rid:\n",
      "matches": 1},
     {"why": "REG-3271 - a gap that spans two rounds prices one proof",

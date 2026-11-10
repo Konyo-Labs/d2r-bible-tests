@@ -1,0 +1,25 @@
+{
+  "_why": "Last N CI rounds of agent-suite / Playwright shard outcomes, so a known-bad shard is rehearsed locally before the next ci/ push, and a shard that fails repeatedly (2 of 3) or runs near the 25-minute ceiling is flagged to split. Attempt 9 is the seed: run 42810705250, agent-suite (2), a real failure of test_the_planner_spinner_stays_under_the_cursor (not a runner cut-off; 383s left of 1500s).",
+  "rounds": [
+    {
+      "run": 42810705250,
+      "sha": "8a2f21fe9",
+      "when": "2026-11-10",
+      "jobs": [
+        {
+          "name": "agent-suite (2)",
+          "k": 2,
+          "n": 5,
+          "class": "real",
+          "failed": ["test_the_planner_spinner_stays_under_the_cursor"],
+          "why": "named test failure: test_the_planner_spinner_stays_under_the_cursor",
+          "used_s": 1117,
+          "left_s": 383,
+          "ceiling_s": 1500,
+          "gateSetS": 1071
+        }
+      ]
+    }
+  ],
+  "flags": []
+}
