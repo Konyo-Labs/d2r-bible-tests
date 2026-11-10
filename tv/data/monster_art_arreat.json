@@ -1059,7 +1059,7 @@
      150
     ]
    },
-   "grokCold": "Unclear — the figure is tiny in the cell; only a small upright green-and-brown shape shows, and the face, limbs, and any weapon are too small to read. | looked at by Claude enlarged: a small green-and-brown Fetish",
+   "grokCold": "Unclear \u2014 the figure is tiny in the cell; only a small upright green-and-brown shape shows, and the face, limbs, and any weapon are too small to read. | looked at by Claude enlarged: a small green-and-brown Fetish",
    "names": []
   },
   "d2fam_scarab_demon.gif": {
@@ -1204,11 +1204,99 @@
     "Dark Spearwoman"
    ],
    "why": "v3887 #161 sweep: the family sprite (38x120) is the thinnest pack sprite and read as a dark sliver; the page's own 'Dark Spearwoman idle animation' (20 frames, 480x480 animated WebP)"
+  },
+  "d2mon_Abyss_Knight.gif": {
+   "family": "Undead Horror",
+   "page": "https://diablo-archive.fandom.com/wiki/Abyss_Knight_(Diablo_II)",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/8/8a/Abyss_Knight_%28Diablo_II%29.gif/revision/latest?cb=20101011163624&format=original",
+   "sha1": "22e11d62969d6aa71a588ba2bba320c64595b855",
+   "bytes": 17539,
+   "grokCold": "Gold-armored horned knight with a red cloth, a glowing blue sphere in one hand, and a spiked weapon in the other. Abyss Knight.",
+   "names": [
+    "Abyss Knight"
+   ]
+  },
+  "d2mon_Oblivion_Knight.gif": {
+   "family": "Undead Horror",
+   "page": "https://diablo-archive.fandom.com/wiki/Oblivion_Knight_(Diablo_II)",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/7/74/Oblivion_Knight_%28Diablo_II%29.gif/revision/latest?cb=20101011163637&format=original",
+   "sha1": "baaa06f5d8b7ac4a008d3217b4528c681a38e49d",
+   "bytes": 17800,
+   "grokCold": "Gold-armored horned knight with a red cloth, purple magic in both hands. Oblivion Knight.",
+   "names": [
+    "Oblivion Knight"
+   ]
+  },
+  "d2mon_Doom_Knight.gif": {
+   "family": "Undead Horror",
+   "page": "https://diablo-archive.fandom.com/wiki/Doom_Knight_(Diablo_II)",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/4/46/Doom_Knight_%28Diablo_II%29.gif/revision/latest?cb=20090408172259&format=original",
+   "sha1": "2179850e0f91dc2a3852b7cecac7912dde39dc28",
+   "bytes": 16995,
+   "grokCold": "Gold-armored horned knight with a red cloth and a spiked weapon, no off-hand magic. Doom Knight.",
+   "names": [
+    "Doom Knight"
+   ]
+  },
+  "d2mon_Venom_Lord.gif": {
+   "family": "Megademon",
+   "page": "https://diablo-archive.fandom.com/wiki/Venom_Lord_(Diablo_II)",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/c/c3/Venom_Lord_%28Diablo_II%29.gif/revision/latest?cb=20090322162319&format=original",
+   "sha1": "e0c2e53f18dd678d3878ba3c009ee1409f6d1af5",
+   "bytes": 22512,
+   "grokCold": "Winged green-gold muscular demon with a short axe in its right hand. Venom Lord.",
+   "names": [
+    "Venom Lord"
+   ]
+  },
+  "d2mon_Pit_Lord.gif": {
+   "family": "Megademon",
+   "page": "https://diablo-archive.fandom.com/wiki/Pit_Lord_(Diablo_II)",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/3/3d/Pit_Lord_%28Diablo_II%29.gif/revision/latest?cb=20090322162257&format=original",
+   "sha1": "dd568f753830548fc926cab63e6e132e278f001c",
+   "bytes": 16767,
+   "grokCold": "Winged very dark blue-black muscular demon with a short axe. Pit Lord, a distinct recolor from the Venom Lord.",
+   "names": [
+    "Pit Lord"
+   ]
+  },
+  "d2mon_Storm_Caster.gif": {
+   "family": "Finger Mage",
+   "page": "https://diablo-archive.fandom.com/wiki/Storm_Caster_(Diablo_II)",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/3/3b/Storm_Caster_%28Diablo_II%29.gif/revision/latest?cb=20100903164251&format=original",
+   "sha1": "65aac81a97f40193f551ac38e0cc554bbbb4634f",
+   "bytes": 21661,
+   "grokCold": "Grey-white flying finger mage: a horned skull-like body with many clawed arms inside a pale cloud. Storm Caster.",
+   "names": [
+    "Storm Caster"
+   ]
+  },
+  "d2mon_Doom_Caster.gif": {
+   "family": "Finger Mage",
+   "page": "https://diablo-archive.fandom.com/wiki/Finger_Mage_(Diablo_II)",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/8/84/Doom_Caster_%28Diablo_II%29.gif/revision/latest?cb=20100903164332&format=original",
+   "sha1": "6161e26e7ca0985c7f042e41d6c8ba07ed9dc646",
+   "bytes": 41060,
+   "grokCold": "Red-orange flying finger mage inside a fiery cloud. Doom Caster.",
+   "names": [
+    "Doom Caster"
+   ]
+  },
+  "d2mon_Strangler.gif": {
+   "family": "Finger Mage",
+   "page": "https://diablo-archive.fandom.com/wiki/Finger_Mage_(Diablo_II)",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/6/6e/Strangler_%28Diablo_II%29.gif/revision/latest?cb=20100507235621&format=original",
+   "sha1": "bb71b8eb5b575cd4bed7fb9f88552846eb53666a",
+   "bytes": 23305,
+   "grokCold": "Gold-brown flying finger mage inside a dusty cloud. Strangler.",
+   "names": [
+    "Strangler"
+   ]
   }
  },
  "packs": {
   "Abominable": "art/d2fam_abominable.gif",
-  "Abyss Knight": "art/d2fam_undead_horror.gif",
+  "Abyss Knight": "art/d2mon_Abyss_Knight.gif",
   "Afflicted": "art/d2fam_tainted.gif",
   "Apparition": "art/d2fam_wraith.gif",
   "Arach": "art/d2fam_giant_spider.gif",
@@ -1279,7 +1367,14 @@
   "Dark Spearwoman": "art/d2rw_cr_lancer1.webp",
   "Returned Mage": "art/d2fam_skeleton_mage.gif",
   "Gargantuan Beast": "art/d2fam_wendigo.gif",
-  "Balrog": "art/d2fam_mega_demon.gif"
+  "Balrog": "art/d2fam_mega_demon.gif",
+  "Doom Caster": "art/d2mon_Doom_Caster.gif",
+  "Doom Knight": "art/d2mon_Doom_Knight.gif",
+  "Oblivion Knight": "art/d2mon_Oblivion_Knight.gif",
+  "Pit Lord": "art/d2mon_Pit_Lord.gif",
+  "Storm Caster": "art/d2mon_Storm_Caster.gif",
+  "Strangler": "art/d2mon_Strangler.gif",
+  "Venom Lord": "art/d2mon_Venom_Lord.gif"
  },
  "arreatBosses": {
   "Andariel": "art/d2arreat_andariel.gif",

@@ -185,6 +185,16 @@ _STEM_TO_MONSTER = (
     ("Lord De Seis", ("deseis", "de_seis", "lord_de_seis")),
     ("Treehead WoodFist", ("treehead",)),
     ("Hell Bovine", ("hell_bovine", "hellbovine")),
+    ("Grand Vizier of Chaos", ("grand_vizier", "grandvizier")),
+    ("Infector of Souls", ("infector",)),
+    ("Oblivion Knight", ("oblivion_knight",)),
+    ("Doom Knight", ("doom_knight",)),
+    ("Venom Lord", ("venom_lord",)),
+    ("Storm Caster", ("storm_caster",)),
+    ("Abyss Knight", ("abyss_knight",)),
+    ("Pit Lord", ("pit_lord",)),
+    ("Doom Caster", ("doom_caster",)),
+    ("Strangler", ("strangler",)),
 )
 _FILE_IN_QUOTES = re.compile(
     r"""['\"](?:/?art/)?([A-Za-z0-9_.-]+\.(?:png|gif|jpe?g|webp))['\"]""", re.I
@@ -264,6 +274,8 @@ class NoMonsterHasTwoPicturePaths(unittest.TestCase):
     def test_no_monster_has_two_different_picture_paths(self):
         pics = _monster_picture()
         by = {n: [] for n in self.REQUIRED}
+        for name in pics:
+            by.setdefault(name, [])
         # the map itself
         for name, path in pics.items():
             if name in by:

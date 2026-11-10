@@ -239,10 +239,10 @@
     "su_grandvizierofchaos"
    ],
    "file": "art/d2mon_Grand_Vizier_of_Chaos.gif",
-   "site": "rankedboost.com",
-   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Grand%20Vizier%20of%20Chaos.gif",
-   "sha1": "099fbc7364047ec23e87fed2b2a2679d8038d442",
-   "bytes": 30141
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/5/5a/Grand_Vizier_of_Chaos_%28Diablo_II%29.gif/revision/latest?cb=20101011002046&format=original",
+   "sha1": "cfe921c0dd75cb24f1c47ea2720ece699c22f262",
+   "bytes": 31553
   },
   {
    "name": "Griswold",
@@ -294,10 +294,10 @@
     "su_infectorofsouls"
    ],
    "file": "art/d2mon_Infector_of_Souls.gif",
-   "site": "rankedboost.com",
-   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Infector%20of%20Souls.gif",
-   "sha1": "2ac8c70c980686f6537ff5213a1121857aa1ab23",
-   "bytes": 27336
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/c/cb/Infector_of_Souls_%28Diablo_II%29.gif/revision/latest?cb=20091108110042&format=original",
+   "sha1": "90469536f9751762fd6bdaebe403a37f232ca7a7",
+   "bytes": 28748
   },
   {
    "name": "Izual",
@@ -508,10 +508,11 @@
     "su_treeheadwoodfist"
    ],
    "file": "art/d2mon_Treehead_WoodFist.gif",
-   "site": "rankedboost.com",
-   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Treehead%20Woodfist.gif",
-   "sha1": "0e057543cc67fb51465f21871662e787cf8118b8",
-   "bytes": 24576
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/d/d8/Crusher_%28Diablo_II%29.gif/revision/latest?cb=20090330202002&format=original",
+   "sha1": "819702aec00504ddeefb35d89132c057d03ebcdc",
+   "bytes": 25992,
+   "_note": "File:Treehead Woodfist (Diablo II).gif redirects to File:Crusher (Diablo II).gif. Frames are pixel-identical to the previous rankedboost Treehead Woodfist GIF (a re-encode). Thorned-hulk sprite, not the Wendigo unique Crusher."
   },
   {
    "name": "Ventar the Unholy",
@@ -623,6 +624,94 @@
    "sha1": "3f5a3040948b336e436a2dc63ff907cff2aee057",
    "bytes": 42087,
    "_note": "The Andariel (Diablo II) page's Hell/Lilith variant (imageH on the Lilith row). Not Andariel's own sprite."
+  },
+  {
+   "name": "Oblivion Knight",
+   "ids": [
+    "oblivionknight"
+   ],
+   "file": "art/d2mon_Oblivion_Knight.gif",
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/7/74/Oblivion_Knight_%28Diablo_II%29.gif/revision/latest?cb=20101011163637&format=original",
+   "sha1": "baaa06f5d8b7ac4a008d3217b4528c681a38e49d",
+   "bytes": 17800
+  },
+  {
+   "name": "Doom Knight",
+   "ids": [
+    "doomknight"
+   ],
+   "file": "art/d2mon_Doom_Knight.gif",
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/4/46/Doom_Knight_%28Diablo_II%29.gif/revision/latest?cb=20090408172259&format=original",
+   "sha1": "2179850e0f91dc2a3852b7cecac7912dde39dc28",
+   "bytes": 16995
+  },
+  {
+   "name": "Venom Lord",
+   "ids": [
+    "venomlord"
+   ],
+   "file": "art/d2mon_Venom_Lord.gif",
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/c/c3/Venom_Lord_%28Diablo_II%29.gif/revision/latest?cb=20090322162319&format=original",
+   "sha1": "e0c2e53f18dd678d3878ba3c009ee1409f6d1af5",
+   "bytes": 22512
+  },
+  {
+   "name": "Storm Caster",
+   "ids": [
+    "stormcaster"
+   ],
+   "file": "art/d2mon_Storm_Caster.gif",
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/3/3b/Storm_Caster_%28Diablo_II%29.gif/revision/latest?cb=20100903164251&format=original",
+   "sha1": "65aac81a97f40193f551ac38e0cc554bbbb4634f",
+   "bytes": 21661
+  },
+  {
+   "name": "Abyss Knight",
+   "ids": [
+    "abyssknight"
+   ],
+   "file": "art/d2mon_Abyss_Knight.gif",
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/8/8a/Abyss_Knight_%28Diablo_II%29.gif/revision/latest?cb=20101011163624&format=original",
+   "sha1": "22e11d62969d6aa71a588ba2bba320c64595b855",
+   "bytes": 17539
+  },
+  {
+   "name": "Pit Lord",
+   "ids": [
+    "pitlord"
+   ],
+   "file": "art/d2mon_Pit_Lord.gif",
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/3/3d/Pit_Lord_%28Diablo_II%29.gif/revision/latest?cb=20090322162257&format=original",
+   "sha1": "dd568f753830548fc926cab63e6e132e278f001c",
+   "bytes": 16767
+  },
+  {
+   "name": "Doom Caster",
+   "ids": [
+    "doomcaster"
+   ],
+   "file": "art/d2mon_Doom_Caster.gif",
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/8/84/Doom_Caster_%28Diablo_II%29.gif/revision/latest?cb=20100903164332&format=original",
+   "sha1": "6161e26e7ca0985c7f042e41d6c8ba07ed9dc646",
+   "bytes": 41060
+  },
+  {
+   "name": "Strangler",
+   "ids": [
+    "strangler"
+   ],
+   "file": "art/d2mon_Strangler.gif",
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/6/6e/Strangler_%28Diablo_II%29.gif/revision/latest?cb=20100507235621&format=original",
+   "sha1": "bb71b8eb5b575cd4bed7fb9f88552846eb53666a",
+   "bytes": 23305
   }
  ],
  "rejected": [
