@@ -318,6 +318,12 @@ class OnePushAtATimeOnThisMac(unittest.TestCase):
         self.assertIs(TB.ship_beside(None, "310")[0], None, "an unreadable process list read as free")
         self.assertEqual(TB.ship_beside([("5", "1", 1, "ugrep ship_when_green.py tv")], "9")[0], False,
                          "a grep naming the ship read as a running ship")
+        # MEASURED 11-11 01:47 - the shell that LAUNCHED the ship holds its command text; it is not a ship
+        launcher = '/bin/zsh -c cd /tmp/w && (nohup env X=1 python3 -u tv/ship_when_green.py v3895 > log 2>&1 &)'
+        self.assertEqual(TB.ship_beside([("6", "1", 1, launcher)], "9")[0], False,
+                         "the shell that launched a ship read as a running ship (it refused the ship it had started)")
+        self.assertIs(TB.ship_beside([("7", "1", 1, "/Library/Frameworks/Python.framework/Python -u tv/ship_when_green.py v3895")],
+                                     "9")[0], True, "a real ship process was not seen")
 
     def test_a_ship_never_starts_beside_a_push_or_another_ship(self):
         import ship_when_green as SW
@@ -339,6 +345,11 @@ class OnePushAtATimeOnThisMac(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "card #200 guard 2 - a shell whose command line holds the ship's text is taken for a ship (it refused its own ship)",
+     "file": "tv/tree_busy.py",
+     "find": "    if not (exe.startswith(\"python\") or exe == \"python.exe\"):\n        return False\n",
+     "replace": "",
+     "matches": 1},
     {"why": "card #200 guard 2 - a push starts beside a running ship (the ancestor test is gone)",
      "file": "tv/tree_busy.py",
      "find": "    hits = [str(p) for p, _pp, _a, cmd in rows if _is_ship_command(cmd) and str(p) not in anc]\n",

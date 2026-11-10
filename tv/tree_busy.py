@@ -302,9 +302,17 @@ def why(repo=None):
 
 
 def _is_ship_command(cmd):
-    """card #200 guard 2 - a running ship: python running tv/ship_when_green.py (never a grep or an editor naming it)"""
-    c = str(cmd or "")
-    return "ship_when_green.py" in c and "python" in c.lower() and not c.lstrip().startswith(("grep", "ugrep", "rg "))
+    """card #200 guard 2 - a running ship: the PROCESS is a python interpreter (argv[0]) running tv/ship_when_green.py as a
+    token. A shell, a grep or an editor whose own command line merely holds that text is not one - MEASURED 11-11 01:47: the
+    first cut matched the `zsh -c "... python3 -u tv/ship_when_green.py v3895"` that launched the ship, and refused the ship
+    it had just started (a wait loop that matches itself, process-port-discipline 5e)."""
+    toks = str(cmd or "").split()
+    if not toks:
+        return False
+    exe = os.path.basename(toks[0]).lower()
+    if not (exe.startswith("python") or exe == "python.exe"):
+        return False
+    return any(os.path.basename(t) == "ship_when_green.py" for t in toks[1:4])
 
 
 def ship_beside(rows, self_pid):
