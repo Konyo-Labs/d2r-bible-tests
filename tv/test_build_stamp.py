@@ -124,7 +124,9 @@ def _cut(start, end):
 HARNESS = r"""
 var LAID = %(laid)s, CH = %(ch)d, PAD = %(pad)d, CAP = %(cap)d;
 var BADGE = null, OBS = [], RAF = [], LOG = [];
-function Box(){ this._t = ''; this.id = ''; this.title = ''; }
+function Box(){ this._t = ''; this.id = ''; this.title = ''; this._attrs = {}; }
+Box.prototype.getAttribute = function(n){ return Object.prototype.hasOwnProperty.call(this._attrs, n) ? this._attrs[n] : null; };
+Box.prototype.setAttribute = function(n, v){ this._attrs[n] = String(v); };
 Object.defineProperty(Box.prototype, 'textContent', {
   get: function(){ return this._t; }, set: function(v){ this._t = String(v); } });
 Object.defineProperty(Box.prototype, 'scrollWidth', {
