@@ -487,7 +487,7 @@ def fetch_state(run=None, repo=None):
 
 
 def yield_to_ship(run=None, say=print, runs=None, main=None, now=None, sweep=True, tips=None):
-    """If a real ship or Publish is live, cancel competing dry/ and grok/ runs. -> [ids]. Never raises.
+    """If a real ship or Publish is live, cancel competing dry/ and grok/ runs. -> [ids] | None. Never raises.
 
     When sweep=True (protect_priority, --sweep, or --yield), also cancels stale
     dry runs on superseded shas and anything on a ci/*dry* name. A ship or
@@ -520,7 +520,7 @@ def yield_to_ship(run=None, say=print, runs=None, main=None, now=None, sweep=Tru
         return done
     except Exception as e:
         say("ship: REG-3654 yield could not run (%s)" % type(e).__name__)
-        return []
+        return None
 
 
 def protect_priority(run=None, say=print, runs=None, main=None, now=None, tips=None):
@@ -541,6 +541,9 @@ def main(argv=None):
         return 0 if ok else 1
     if argv[:1] == ["--yield"]:
         ids = yield_to_ship(run=subprocess.run, sweep=True)
+        if ids is None:
+            print("yield could not run (UNKNOWN)")
+            return 2
         print("cancelled %d competing run(s)" % len(ids))
         return 0
     if argv[:1] == ["--sweep"]:
