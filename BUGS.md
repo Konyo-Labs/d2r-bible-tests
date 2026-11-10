@@ -54,6 +54,11 @@ Dean's /api/saves named Crest, Morph, Morphad, ... but _roster_reads set used_bo
 v3894 already letterboxes in capture_win.ps1 (Dean-shaped 1507x755 -> 1920x961 with bars). tv/film_letterbox.py holds the same geometry so panel-relative reader bands map through that place (never onto a bar, never stretched) and skip events are counted by their named reason. Law test_a_windowed_film_is_letterboxed_and_skips_are_counted.
 
 ### REG-3625 - A LAW IS KEYED ON THE FUNCTIONS IT RAN, NEVER ON ONES IT NEVER CALLED (#92)
+**PULLED FROM v3894 (his call, 2026-11-10 ~20:25 IST) - NOT SHIPPED.** Its new key format ("heart2 P3 key v4") missed every
+one of the 9,804 carried proofs, so v3894's round owed all 10,187 and its 21 shards were cut at their deadline with ~9,000
+still owed (one chunk alone modelled 6,755 s, over a shard's ~57 min). The two commits (5389bc3d4, 632899cfc) are reverted;
+#92 returns as its own version with a planned full re-prove (seed the v4 keys first, or migrate v3 entries whose inputs
+did not change). The text below describes the change as written, not what is live.
 His 11-06 ask: a one-law fix must not re-prove half of 9,446 proofs. REG-3393 traced past children that cannot read the tree, so a complete trace can drop files the run never opened. A file the run DID open (heart2, the law itself) still put every byte in the key, so a wording change in an uncalled helper discarded every proof (v3875 round 3 reused 0 of 9,446). Step 2 (the card's REG-3394, landed here): when sys.monitoring said hello, a traced .py that was not opened as data is hashed on its module-level lines plus the functions that started (PY_START). An uncalled function is not in the key. A source/data read keeps every byte, so a narrow key cannot serve a stale proof over bytes the law read. CRLF and LF of the same source are one function key. A run without monitoring, or a file that will not parse, falls back to the whole-file hash. Law test_a_law_is_keyed_on_the_functions_it_ran.
 
 ### REG-3626 - A LAW'S OWN TEMP REPO KEEPS THE CASE'S LINE ENDINGS, NOT THE PC'S AUTOCRLF (#107)

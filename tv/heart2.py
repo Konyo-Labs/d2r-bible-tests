@@ -2227,7 +2227,6 @@ import os as _o, sys as _s
 def _h2_install():
     log = _o.environ.get("HEART2_TRACE_LOG")
     site = _o.environ.get("HEART2_TRACE_SITE")
-    root = _o.environ.get("HEART2_TRACE_ROOT") or ""
     if site:      # leave sys.path as the law would see it, then hand over to any sitecustomize this one shadows
         _s.path[:] = [p for p in _s.path if _o.path.normpath(p or ".") != _o.path.normpath(site)]
     if not log:
@@ -2471,8 +2470,6 @@ def _h2_install():
                     emit("U", "native " + _base(str(args[1])))
         elif ev == "open":
             names("R", args[0] if args else None)
-            if not by_importer():          # v389x (REG-3625) - a source/data read keeps every byte
-                names("Q", args[0] if args else None)
         elif ev == "sqlite3.connect":
             names("R", args[0] if args else None)
         elif ev == "subprocess.Popen":
@@ -2618,44 +2615,6 @@ def _h2_install():
     for _m in list(_s.modules.values()):        # an extension loaded before this file ran
         if native(getattr(_m, "__file__", None) or ""):
             emit("A" if native_ok(_m.__file__) else "U", "native " + _base(_m.__file__))
-    # REG-3625 - record every Python function this run actually starts, so the key can hold those
-    # spans only. Tool 3 is the first free slot (0/1/2/5 are debugger/coverage/profiler/optimizer).
-    try:
-        _mon = getattr(_s, "monitoring", None)
-        if _mon is not None:
-            _tid = None
-            for _cand in (3, 4):
-                try:
-                    _mon.use_tool_id(_cand, "heart2-fn")
-                    _tid = _cand
-                    break
-                except ValueError:
-                    continue
-            if _tid is not None:
-                _rroot = _real(root) if root else ""
-                def _fn_hook(code, _off, _rroot=_rroot, _root=root):
-                    if getattr(busy, "on", False):
-                        return
-                    try:
-                        fn = code.co_filename
-                        if not fn or fn[:1] == "<":
-                            return
-                        if _root and _root not in fn:
-                            try:
-                                rf = _real(fn)
-                                if rf != _rroot and not rf.startswith(_rroot.rstrip(_o.sep) + _o.sep):
-                                    return
-                            except Exception:
-                                return
-                        q = getattr(code, "co_qualname", None) or code.co_name
-                        emit("F", "%d%s%s%s%s" % (code.co_firstlineno, chr(9), q, chr(9), fn))
-                    except Exception:
-                        pass
-                _mon.register_callback(_tid, _mon.events.PY_START, _fn_hook)
-                _mon.set_events(_tid, _mon.events.PY_START)
-                emit("M", "fn")
-    except Exception:
-        pass
     emit("H", "%d %d" % (_o.getpid(), _o.getppid()))
     _s.addaudithook(hook)
     _s._h2_trace_on = True                   # H2-INSTALL-ONCE - only once the hook is really in
@@ -2742,12 +2701,10 @@ def _trace_wanted(filename, env=None):
         return False
 
 
-def _trace_read(log, root_ppid, listed=None, why=None, sandbox=None, funcs=None, quoted=None, fn=None):
+def _trace_read(log, root_ppid, listed=None, why=None, sandbox=None):
     """REG-2640 - one traced run's log. -> (basenames read or stat'd, complete: bool). REG-2944 - the full real path of
     every directory the run listed is added to `listed` when a set is handed in. REG-3319 - and WHY a run was not
-    complete is added to `why` (the untraced child, a missing hello), so a round can say what keeps keys wide.
-    REG-3625 - `funcs` collects (path, firstlineno, qualname) from F lines, `quoted` the basenames of source/data
-    opens (Q), `fn` receives "on" when function monitoring said hello (M fn)."""
+    complete is added to `why` (the untraced child, a missing hello), so a round can say what keeps keys wide."""
     seen, hellos, root, py, untraced = set(), set(), False, 0, False
     try:
         with io.open(log, encoding="utf-8", errors="replace") as fh:
@@ -2778,20 +2735,6 @@ def _trace_read(log, root_ppid, listed=None, why=None, sandbox=None, funcs=None,
                 elif tag == "L":                 # REG-2944 - a listing, by full path
                     if listed is not None:
                         listed.add(rest)
-                elif tag == "F":                 # REG-3625 - a Python function that started
-                    parts = rest.split("	")
-                    if funcs is not None and len(parts) == 3:
-                        try:
-                            lineno = int(parts[0])
-                        except ValueError:
-                            lineno = 0
-                        funcs.add((parts[2], lineno, parts[1]))
-                elif tag == "Q":                 # REG-3625 - opened as data, not as an import
-                    if quoted is not None:
-                        quoted.add(rest)
-                elif tag == "M":
-                    if fn is not None and rest.strip() == "fn":
-                        fn.add("on")
                 elif tag:
                     untraced = True
                     _TRACE_WHY.append(rest[:60])
@@ -2831,7 +2774,7 @@ def _git_child_why(gdir, sandbox):
     return None
 
 
-def _trace_record(filename, seen, ok, listed=None, why=None, funcs=None, quoted=None, fn_ok=None):
+def _trace_record(filename, seen, ok, listed=None, why=None):
     with _TRACE_LOCK:
         t = _TRACES.setdefault(filename, {"names": set(), "ok": True, "runs": 0})
         t["names"] |= seen
@@ -2840,12 +2783,6 @@ def _trace_record(filename, seen, ok, listed=None, why=None, funcs=None, quoted=
         if not ok:      # REG-3319 - why this law keeps its byte-for-byte key, for the round's RECORD line
             t.setdefault("why", set()).update(why or ("UNKNOWN - no cause was read",))
         t.setdefault("listed", set()).update(listed or ())     # REG-2944 - every dir any traced run of it listed
-        if funcs:
-            t.setdefault("funcs", set()).update(funcs)
-        if quoted:
-            t.setdefault("quoted", set()).update(quoted)
-        if fn_ok is not None:
-            t["fn_ok"] = bool(t.get("fn_ok", True) and fn_ok)
 
 
 def _trace_why_census():
@@ -2884,152 +2821,6 @@ def _trace_unread(filename, rels, keep):
     return sorted(r for r in rels if r not in keep
                   and r.rsplit("/", 1)[-1] not in names
                   and not (node_ran and r.lower().endswith(_NODE_KEEP_EXT)))
-
-
-
-# ══ REG-3625 — A LAW IS KEYED ON THE FUNCTIONS IT RAN (sys.monitoring PY_START) ══════════════════════════════════════
-# A complete file trace still hashed every byte of a .py the run imported (heart2, the law itself). A wording change
-# in an uncalled helper then discarded every proof. When function monitoring said hello, a .py that was not opened as
-# data is hashed on its module-level lines plus the functions that started; an uncalled function is not in the key.
-# A file the law opened as data (Q) keeps every byte. A run without monitoring, or a file that will not parse, falls
-# back to the whole-file hash - never a narrower key than we can stand behind.
-def _fn_spans(src):
-    """-> (module line numbers, {(qualname, firstlineno): (start, end)}). 1-based inclusive; def line through body."""
-    import ast as _ast
-    if isinstance(src, bytes):
-        src = src.decode("utf-8", "replace")
-    tree = _ast.parse(src)
-    n = len(src.splitlines())
-    funcs = {}
-
-    class V(_ast.NodeVisitor):
-        def __init__(self):
-            self.scopes = []
-
-        def _qual(self, name):
-            parts = []
-            for nm, kind in self.scopes:
-                parts.append(nm)
-                if kind == "fn":
-                    parts.append("<locals>")
-            parts.append(name)
-            return ".".join(parts)
-
-        def visit_ClassDef(self, node):
-            self.scopes.append((node.name, "class"))
-            self.generic_visit(node)
-            self.scopes.pop()
-
-        def visit_FunctionDef(self, node):
-            self._add(node, node.name)
-            self.scopes.append((node.name, "fn"))
-            self.generic_visit(node)
-            self.scopes.pop()
-
-        visit_AsyncFunctionDef = visit_FunctionDef
-
-        def visit_Lambda(self, node):
-            self._add(node, "<lambda>")
-            self.generic_visit(node)
-
-        def _add(self, node, name):
-            start = node.lineno
-            end = node.end_lineno or start
-            funcs[(self._qual(name), start)] = (start, end)
-
-    V().visit(tree)
-    occupied = set()
-    for start, end in funcs.values():
-        occupied.update(range(start, end + 1))
-    return set(range(1, n + 1)) - occupied, funcs
-
-
-def _fn_digest(src, ran, rel=""):
-    """sha256 hex of module-level lines plus the bodies of functions in `ran`. None if the source will not parse.
-    CRLF and LF of the same source are one digest (universal newlines). `ran` is [(qualname, firstlineno), ...]."""
-    import hashlib as _hashlib
-    if isinstance(src, bytes):
-        src = src.decode("utf-8", "replace")
-    src = src.replace("\r\n", "\n").replace("\r", "\n")
-    try:
-        mod, funcs = _fn_spans(src)
-    except SyntaxError:
-        return None
-    # REG-3625 - only the functions in `ran` (and module-level lines) enter the digest
-    lines = src.splitlines()
-    h = _hashlib.sha256(b"REG-3625 fn v1\0")
-    h.update(rel.encode("utf-8", "replace") + b"\0")
-    for i in sorted(mod):
-        h.update(b"m %d " % i)
-        if 1 <= i <= len(lines):
-            h.update(lines[i - 1].encode("utf-8", "replace") + b"\n")
-    by_q = {}
-    for (q, ln), span in funcs.items():
-        by_q.setdefault(q, []).append((ln, span))
-    used = []
-    for q, ln in ran or ():
-        hit = None
-        if (q, ln) in funcs:
-            hit = (q, funcs[(q, ln)])
-        else:
-            opts = by_q.get(q) or []
-            if len(opts) == 1:
-                hit = (q, opts[0][1])
-            elif opts:
-                opts = sorted(opts, key=lambda o: abs(o[0] - int(ln or 0)))
-                hit = (q, opts[0][1])
-        if hit is None:
-            used.append((q, int(ln or 0), "missing"))
-        else:
-            used.append((hit[0], hit[1][0], hit[1]))
-    for q, ln, span in sorted(used, key=lambda x: (x[0], x[1])):
-        if span == "missing":
-            h.update(("gone %s %d\n" % (q, ln)).encode("utf-8", "replace"))
-            continue
-        start, end = span
-        h.update(("f %s %d\n" % (q, start)).encode("utf-8", "replace"))
-        for i in range(start, end + 1):
-            if 1 <= i <= len(lines):
-                h.update(lines[i - 1].encode("utf-8", "replace") + b"\n")
-    return h.hexdigest()
-
-
-def _fn_digest_file(path, ran, rel="", memo=None):
-    try:
-        with io.open(path, encoding="utf-8", errors="replace") as fh:
-            src = fh.read()
-    except OSError:
-        return None
-    return _fn_digest(src, ran, rel)
-
-
-def _fn_narrows(rel, quoted=None):
-    """REG-3625 - may this input be hashed by the functions that ran? A source/data read may not."""
-    return bool(rel.endswith(".py") and os.path.basename(rel) not in (quoted or ()))
-
-
-def _trace_funcs(filename, repo):
-    """REG-3625 - repo-relative functions this law's traced runs started, when monitoring was on and the file
-    trace was complete. -> ( {rel: [(qual, lineno)]}, quoted basenames ) | (None, set())."""
-    with _TRACE_LOCK:
-        t = _TRACES.get(filename)
-        if not t or not t.get("ok") or t.get("runs", 0) < 1 or not t.get("fn_ok"):
-            return None, set(t.get("quoted") or () if t else ())
-        raw = set(t.get("funcs") or ())
-        quoted = set(t.get("quoted") or ())
-    out = {}
-    root = os.path.realpath(repo)
-    for path, lineno, qual in raw:
-        try:
-            rp = os.path.realpath(path)
-        except OSError:
-            continue
-        if rp == root or rp.startswith(root.rstrip(os.sep) + os.sep):
-            rel = os.path.relpath(rp, root).replace(os.sep, "/")
-            out.setdefault(rel, []).append((qual, lineno))
-    for rel in out:
-        out[rel] = sorted(set(out[rel]))
-    return out, quoted
 
 
 # ══ REG-2944 (REG-2296 for the PROOF cache) — A LAW THAT LISTS A DIRECTORY IS KEYED BY WHAT ITS TRACED RUN LISTED ═════
@@ -3320,13 +3111,12 @@ def _run_gate_once(sandbox_tv, filename, timeout=180, extra=(), script=None, wid
         if _tsite is None:
             _trace_record(filename, set(), False)
         else:
-            _tenv = {k: env.get(k) for k in ("PYTHONPATH", "HEART2_TRACE_LOG", "HEART2_TRACE_SITE", "HEART2_TRACE_ROOT")}
+            _tenv = {k: env.get(k) for k in ("PYTHONPATH", "HEART2_TRACE_LOG", "HEART2_TRACE_SITE")}
             try:
                 _tfd, _tlog = tempfile.mkstemp(prefix="h2trace-", suffix=".log", dir=_tsite)
                 os.close(_tfd)
                 env["PYTHONPATH"] = _tsite + ((os.pathsep + env["PYTHONPATH"]) if env.get("PYTHONPATH") else "")
                 env["HEART2_TRACE_LOG"], env["HEART2_TRACE_SITE"] = _tlog, _tsite
-                env["HEART2_TRACE_ROOT"] = _root
                 # REG-3319 - and a node child of the run loads node_trace.cjs, which writes this same log (one hook per
                 # process: an outer gate trace that already named it keeps its copy, and that copy sees this log too)
                 _ntr = os.path.join(sandbox_tv, "gate_trace", "node_trace.cjs")
@@ -3371,17 +3161,15 @@ def _run_gate_once(sandbox_tv, filename, timeout=180, extra=(), script=None, wid
                 except OSError:
                     pass
             if _tlog is not None:             # REG-2640 - recorded on every exit; complete only if it ran out, unkilled
-                _tseen, _tok, _tls, _twhy, _tfn, _tqd, _tm = set(), False, set(), set(), set(), set(), set()
+                _tseen, _tok, _tls, _twhy = set(), False, set(), set()
                 try:
-                    _tseen, _tok = _trace_read(_tlog, os.getpid(), listed=_tls, why=_twhy, sandbox=_root,
-                                               funcs=_tfn, quoted=_tqd, fn=_tm)
+                    _tseen, _tok = _trace_read(_tlog, os.getpid(), listed=_tls, why=_twhy, sandbox=_root)
                 finally:
                     if not _tdone:
                         _twhy.add("the run did not end on its own (timeout or a signal)")
                     if _killed:
                         _twhy.add("a child of the run was killed")
-                    _trace_record(filename, _tseen, bool(_tok and _tdone and _killed == []), listed=_tls, why=_twhy,
-                                  funcs=_tfn, quoted=_tqd, fn_ok=("on" in _tm))
+                    _trace_record(filename, _tseen, bool(_tok and _tdone and _killed == []), listed=_tls, why=_twhy)
                     try:
                         os.unlink(_tlog)
                     except OSError:
@@ -5293,32 +5081,29 @@ class _VerdictCache(object):
                 h.update(n.encode("utf-8", "replace") + b"\0" + kind.encode("utf-8", "replace") + b"\0")
         return h.hexdigest().encode("ascii"), None
 
-    def key_for(self, sandbox, name, filename, pr, unread=None, listed=None, pre=None, funcs=None, quoted=None):
+    def key_for(self, sandbox, name, filename, pr, unread=None, listed=None, pre=None):
         """-> (key | None, [repo-relative inputs], why-unkeyable | None), from the SANDBOX's bytes now.
 
         REG-2640: `unread` None asks for the key a reader should look up - the byte-for-byte v1 key, or, when no PROVEN
         is servable under it, the first v2 key (a recorded unread-set of this same proof) that is. A list keys exactly
         those inputs by name only (v2; [] is v1): the key a traced PROVEN is banked under.
         REG-3193 - `pre` {(unread, listed): _key's answer} holds what an import worker computed from these same bytes
-        (_key_job); a call it does not hold is computed here. Only _shard_keyer passes it.
-        REG-3625 - `funcs` / `quoted` take the v4 key (functions that ran); lookup also tries banked v4 variants."""
-        def _k(un, ls, fn=None, qd=None):
-            got = pre.get((tuple(un), ls)) if pre and fn is None else None
-            return got if got is not None else self._key(sandbox, name, filename, pr, un, ls, fn, qd)
+        (_key_job); a call it does not hold is computed here. Only _shard_keyer passes it."""
+        def _k(un, ls):
+            got = pre.get((tuple(un), ls)) if pre else None
+            return got if got is not None else self._key(sandbox, name, filename, pr, un, ls)
         if unread is None:
             k1, rels, why = _k((), None)
             if k1 is None or self.peek(k1) is not None:
                 return k1, rels, why
-            for item in self._variants(self.ident(name, filename, pr)):
-                un, ls = item[0], item[1]
-                fn, qd = (item[2], item[3]) if len(item) > 2 else (None, None)
+            for un, ls in self._variants(self.ident(name, filename, pr)):
                 if not set(un) <= set(rels):
                     continue
-                k2, rels2, why2 = _k(un, ls, fn, qd)
+                k2, rels2, why2 = _k(un, ls)
                 if k2 is not None and self.peek(k2) is not None:
                     return k2, rels2, why2
             return k1, rels, why
-        return self._key(sandbox, name, filename, pr, tuple(unread), listed, funcs, quoted)
+        return self._key(sandbox, name, filename, pr, tuple(unread), listed)
 
     def ident(self, name, filename, pr):
         """REG-2640 - which proof an entry is, across trees: its law file, its declaration, its gate's spec."""
@@ -5336,11 +5121,8 @@ class _VerdictCache(object):
                         continue
                     un = e.get("unread") if isinstance(e.get("unread"), list) else []
                     ls = tuple(str(x) for x in e["listed"]) if isinstance(e.get("listed"), list) else None   # REG-2944
-                    fn = e.get("funcs") if isinstance(e.get("funcs"), dict) else None  # REG-3625
-                    qd = tuple(sorted(str(x) for x in e["quoted"])) if isinstance(e.get("quoted"), (list, tuple, set)) else None
-                    if un or ls is not None or fn is not None:
-                        payload = (tuple(str(x) for x in un), ls, fn, qd) if fn is not None else (tuple(str(x) for x in un), ls)
-                        idx.setdefault(e["ident"], []).append((_proven_at(e), payload))
+                    if un or ls is not None:
+                        idx.setdefault(e["ident"], []).append((_proven_at(e), (tuple(str(x) for x in un), ls)))
                 self._vidx, self._vgen = idx, id(self.entries)
             got = sorted(self._vidx.get(ident, ()), reverse=True)
         out = []
@@ -5349,7 +5131,7 @@ class _VerdictCache(object):
                 out.append(un)
         return out[:8]
 
-    def _key(self, sandbox, name, filename, pr, unread, listed=None, funcs=None, quoted=None):
+    def _key(self, sandbox, name, filename, pr, unread, listed=None):
         repo = os.path.dirname(os.path.abspath(sandbox))
         with self.lock:
             ck = (sandbox, filename)
@@ -5417,8 +5199,6 @@ class _VerdictCache(object):
                 h = hashlib.sha256(b"heart2 P3 key v3\0")
         else:
             h = hashlib.sha256(b"heart2 P3 key v2\0" if unread else b"heart2 P3 key v1\0")
-        if funcs is not None and not (lists and listed is None):
-            h = hashlib.sha256(b"heart2 P3 key v4\0")
         h.update(str(filename).encode("utf-8", "replace") + b"\0")
         h.update(_proof_key(pr).encode("utf-8", "replace") + b"\0")
         h.update(json.dumps(gate_spec(name), sort_keys=True, default=str).encode("utf-8", "replace") + b"\0")
@@ -5430,10 +5210,6 @@ class _VerdictCache(object):
             elif mask and rel in GL.STAMP_SURFACES:
                 d, gone = self._masked_sha(p, rel)
                 away.append((rel, gone or ""))
-            elif funcs is not None and _fn_narrows(rel, quoted):
-                ran = (funcs or {}).get(rel) or ()
-                d = _fn_digest_file(p, ran, rel, self.memo)
-                d = ("f:" + d) if d else _sha_quiet(p, self.memo)
             else:
                 d = _sha_quiet(p, self.memo)          # REG-2631 - outside the lock, served within a quiet stretch
             if d is None:
@@ -6150,16 +5926,6 @@ def _final_key(cache, sandbox, name, filename, pr, key, entry):
             return _listing_key(cache, sandbox, name, filename, pr, entry)     # REG-2944 - v3 or nothing, never v1
         try:
             un = _trace_unread(filename, entry.get("inputs") or [], _keep_for(sandbox, filename, pr))
-            repo = os.path.dirname(os.path.abspath(sandbox))
-            fn, qd = _trace_funcs(filename, repo)
-            if fn is not None:
-                k4 = cache.key_for(sandbox, name, filename, pr, unread=list(un), funcs=fn, quoted=qd)[0]
-                if k4 is not None:
-                    upd = dict(ident=cache.ident(name, filename, pr), funcs=fn, quoted=sorted(qd))
-                    if un:
-                        upd["unread"] = list(un)
-                    entry.update(upd)
-                    return k4
             if un:
                 k2 = cache.key_for(sandbox, name, filename, pr, unread=un)[0]
                 if k2 is not None:
@@ -6182,14 +5948,11 @@ def _listing_key(cache, sandbox, name, filename, pr, entry):
         ls, why = _trace_listed(filename, repo, lambda rel: cache.ignored_in(repo, rel))
         if ls is not None:
             un = _trace_unread(filename, entry.get("inputs") or [], _keep_for(sandbox, filename, pr))
-            fn, qd = _trace_funcs(filename, repo)
-            k3, _r, why = cache.key_for(sandbox, name, filename, pr, unread=un, listed=ls,
-                                        funcs=fn, quoted=qd)
+            k3, _r, why = cache.key_for(sandbox, name, filename, pr, unread=un, listed=ls)
             if k3 is not None and not str(k3).startswith("pending-listing:"):
                 # REG-2981 - the #242 floor as a NUMBER: how many gitignored names its listed dirs held when it banked
                 seen = sum(len(cache.ignored_in(repo, rel) or ()) for rel in ls)
-                entry.update(ident=cache.ident(name, filename, pr), listed=list(ls), unread=list(un), ignoredSeen=seen,
-                             **({"funcs": fn, "quoted": sorted(qd)} if fn is not None else {}))
+                entry.update(ident=cache.ident(name, filename, pr), listed=list(ls), unread=list(un), ignoredSeen=seen)
                 with cache.lock:
                     cache.traced["banked"] += 1
                 return k3
