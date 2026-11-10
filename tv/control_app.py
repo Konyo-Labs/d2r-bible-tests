@@ -5306,25 +5306,29 @@ def _roster_reads(now_ms):
             got = _rp.stash_read(stash_rows, now_ms)
             if got is not None:
                 reads["stash"] = got
-    if not used_book:
+    # #104 (REG-3587) - ALWAYS join save names / learned characters. A builds book used to set
+    # used_book and skip this path, so Dean's Crest / Morph never left the PC while his builds did.
+    present = False
+    ledger = None
+    learned = None
+    try:
+        import char_select as _cs
+        if os.path.exists(_cs.store_path()):
+            present = True
+            ledger = _cs.load()
+            learned = _cs.learned(ledger) if ledger is not None else None
+    except Exception as e:
+        _ROSTER_FAIL["characters"] = type(e).__name__
         present = False
         ledger = None
         learned = None
-        try:
-            import char_select as _cs
-            if os.path.exists(_cs.store_path()):
-                present = True
-                ledger = _cs.load()
-                learned = _cs.learned(ledger) if ledger is not None else None
-        except Exception as e:
-            _ROSTER_FAIL["characters"] = type(e).__name__
-            present = False
-            ledger = None
-            learned = None
-        got = _rp.characters_read(present, ledger, learned, now_ms)
-        # #251 (REG-2929) - this PC's save names join the section, spelled as its save folder spells them, never an id
-        got = _rp.with_save_names(got, saves_answer(), now_ms)
-        if got is not None:
+    got = _rp.characters_read(present, ledger, learned, now_ms)
+    # #251 (REG-2929) - this PC's save names join the section, spelled as its save folder spells them, never an id
+    got = _rp.with_save_names(got, saves_answer(), now_ms)
+    if got is not None:
+        if used_book and isinstance(reads.get("characters"), dict):
+            reads["characters"] = _rp.with_ingame_beside_builds(reads["characters"], got)
+        else:
             reads["characters"] = got
 
     # intake design P1 (REG-2817, his ruling Q1-Q4, #230 6473846977) - THE VAULT SECTION IS THE BOARD'S RECORDS, as the

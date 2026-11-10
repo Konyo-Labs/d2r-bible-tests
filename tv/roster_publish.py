@@ -312,6 +312,25 @@ def with_save_names(section, saves, now_ms):
     return out
 
 
+
+def with_ingame_beside_builds(builds, chars):
+    """#104 - a builds book never hides this PC's save names (Crest, Morph, ...).
+
+    The builds section keeps its rows and allow=("build",). The in-game names ride beside it
+    as `inGame` (rows / counts / allow). A section that is not a builds book is left as it is.
+    """
+    if not (isinstance(builds, dict) and builds.get("allow") == ("build",)):
+        return builds
+    out = dict(builds)
+    if isinstance(chars, dict) and isinstance(chars.get("rows"), list) and chars["rows"]:
+        allow = chars.get("allow") or ("name", "cls", "level", "title")
+        counts = chars.get("counts")
+        if not isinstance(counts, int) or isinstance(counts, bool):
+            counts = len(chars["rows"])
+        out["inGame"] = {"rows": list(chars["rows"]), "counts": counts, "allow": allow}
+    return out
+
+
 def vault_read(state, rows, as_of, sweep=None):
     if state != "ok" or rows is None or not isinstance(rows, list):
         return None
