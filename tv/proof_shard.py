@@ -192,6 +192,24 @@ def gate_costs(path=None):
         return None                     # REG-2597 - there and unreadable is UNKNOWN, never "no costs"
 
 
+
+def _fill_timings(costs):
+    """REG-3643 - unpriced proofs take their row from shard_timings.json (measured, or the median).
+    A priced row is never lowered. An unreadable timings file is ignored (the plan already has a default)."""
+    if not costs:
+        return costs
+    try:
+        import shard_timings as ST
+        extra = ST.per_proof()
+    except Exception:
+        return costs
+    out = dict(costs)
+    for g, v in extra.items():
+        if g not in out and isinstance(v, (int, float)) and v > 0:
+            out[g] = float(v)
+    return out
+
+
 def proof_costs(path=None, env=None):
     """REG-2593 - {gate: seconds per proof ON A RUNNER} from proof_costs.json (measure_costs' rows). -> dict ({} when
     absent: the plan then prices every gate from gate_costs, as it did), None when there and unreadable (REG-2597)
@@ -206,7 +224,7 @@ def proof_costs(path=None, env=None):
         lp = (env if env is not None else os.environ).get("HEART2_SHARD_COSTS") or ""
         last = proof_costs(lp) if lp and os.path.isfile(lp) else None
         if base is None or not last:
-            return base
+            return _fill_timings(base)
         out = dict(base)
         # v3880 (REG-3365) - A ROUND'S PRICE MAY RAISE A GATE, NEVER SINK IT BELOW THE COMMITTED TABLE. MEASURED on v3878's
         # round: the last round had priced test_control at 19.1 s a proof (its proofs there were cheap - served, or
@@ -215,7 +233,7 @@ def proof_costs(path=None, env=None):
         # the round needed four attempts. Pricing too high costs a few clean runs; pricing too low costs a whole round.
         for g, v in last.items():
             out[g] = max(v, base.get(g, 0.0))
-        return out
+        return _fill_timings(out)
     try:
         with open(path, encoding="utf-8") as fh:
             c = json.load(fh).get("perProof") or {}
