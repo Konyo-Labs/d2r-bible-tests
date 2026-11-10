@@ -123,17 +123,40 @@ class OnlyHisMacPublishesIt(unittest.TestCase):
 
     def test_a_board_dir_that_will_not_list_is_unknown_never_empty(self):
         # Routine M (RANK 1): a failed listing read as "no sessions" - an empty board nobody measured
+        # REG-3629 (#107 leftover): chmod(0) cannot unlist a directory on Windows, so the same
+        # door is driven there through a listdir PermissionError. POSIX still uses a real mode-0 dir.
         self.assertEqual(TB.session_dirs(os.path.join(self.d, "never-made")), [], "a missing board dir is not 'no board'")
         locked = os.path.join(self.d, "locked")
         os.makedirs(locked)
-        os.chmod(locked, 0)
-        try:
-            if os.access(locked, os.R_OK):
-                self.skipTest("this account reads a mode-0 dir (root) - the refusal cannot be staged here")
+
+        def _assert_unlistable():
             self.assertIsNone(TB.session_dirs(locked), "a board dir that would not list read as an empty board")
             r = self._run_dir(locked)
             self.assertFalse(r["posted"], r)
             self.assertIn("UNKNOWN", r["why"])
+
+        if os.name == "nt":
+            real_listdir = os.listdir
+            locked_key = os.path.normcase(os.path.realpath(locked))
+
+            def listdir(path, *a, **k):
+                try:
+                    if os.path.normcase(os.path.realpath(path)) == locked_key:
+                        raise PermissionError("REG-3629: chmod cannot unlist a Windows directory")
+                except PermissionError:
+                    raise
+                except OSError:
+                    pass
+                return real_listdir(path, *a, **k)
+
+            with mock.patch("os.listdir", listdir):
+                _assert_unlistable()
+            return
+        os.chmod(locked, 0)
+        try:
+            if os.access(locked, os.R_OK):
+                self.skipTest("this account reads a mode-0 dir (root) - the refusal cannot be staged here")
+            _assert_unlistable()
         finally:
             os.chmod(locked, 0o755)
 

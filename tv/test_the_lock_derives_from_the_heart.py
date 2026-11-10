@@ -354,23 +354,43 @@ class TheLockDerivesFromTheHeart(unittest.TestCase):
         d = tempfile.mkdtemp(prefix="fp.")
         a = os.path.join(d, "a.py"); b = os.path.join(d, "b.py")
         io.open(a, "w").write(""); io.open(b, "w").write("")
+        held = {}
         try:
             empty = H.gates_fingerprint([("g", a), ("h", b)])
-            os.chmod(a, 0); os.chmod(b, 0)
             # ⚠⚠ chmod 0 DOES NOT MAKE A FILE UNREADABLE FOR ROOT, for a uid with
             # CAP_DAC_OVERRIDE, or on a filesystem that ignores mode bits — a cross-family review
             # raised it and it is right: the UNREADABLE branch would never be taken, src would be
             # "" not None, and this law would FAIL on such a machine while proving nothing on any
             # other. Measure whether the premise actually holds before asserting on it.
             # [[zero-needs-a-denominator]]
+            # REG-3629 (#107 leftover): on Windows chmod only toggles read-only, so the same
+            # premise is staged by holding each file open with no sharing (REG-1452's shape).
+            if os.name == "nt":
+                import ctypes
+                k32 = ctypes.windll.kernel32
+                k32.CreateFileW.restype = ctypes.c_void_p
+                invalid = ctypes.c_void_p(-1).value
+                for p in (a, b):
+                    h = k32.CreateFileW(p, 0x80000000, 0, None, 3, 0x80, None)
+                    if h in (None, invalid):
+                        self.skipTest("could not hold %s open without sharing — UNMEASURED, not passing" % p)
+                    held[p] = h
+            else:
+                os.chmod(a, 0); os.chmod(b, 0)
             if H._read_text(a) is not None:
-                self.skipTest("chmod 0 did not make the file unreadable here (root, or a "
-                              "filesystem that ignores mode bits) — the case this law is about "
-                              "cannot be produced on this machine. UNMEASURED, not passing.")
+                self.skipTest("the file stayed readable here (root, or a filesystem that ignores "
+                              "mode bits) — the case this law is about cannot be produced on this "
+                              "machine. UNMEASURED, not passing.")
             unread = H.gates_fingerprint([("g", a), ("h", b)])
             swapped = H.gates_fingerprint([("g", b), ("h", a)])
         finally:
-            os.chmod(a, 0o644); os.chmod(b, 0o644); shutil.rmtree(d, ignore_errors=True)
+            if held:
+                import ctypes
+                for h in held.values():
+                    ctypes.windll.kernel32.CloseHandle(ctypes.c_void_p(h))
+            else:
+                os.chmod(a, 0o644); os.chmod(b, 0o644)
+            shutil.rmtree(d, ignore_errors=True)
         self.assertNotEqual(empty, unread,
                             "two UNREADABLE gate files hash the same as two EMPTY ones — the "
                             "fingerprint cannot tell 'I could not read it' from 'there was nothing "
