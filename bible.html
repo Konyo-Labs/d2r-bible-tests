@@ -8529,7 +8529,7 @@ body.app-ctx .dock-mini-tab, body.app-ctx .lore-mini{display:none !important}
        ════════════════════════════════════════════════════════════════ -->
   <div class="event-card" id="event-cow-level">
     <div class="event-card-head" onclick="toggleEventCard('event-cow-level')" role="button" tabindex="0" aria-expanded="false">
-      <span class="d2art-wrap ec-logo"><img class="d2art-img" src="art/hellbovine_graphic.png" alt="Secret Cow Level" onerror="this.parentNode.classList.add('d2art-failed')"><span class="d2art-fallback"><span class="ec-emoji">🐄</span></span></span>
+      <span class="d2art-wrap ec-logo"><img class="d2art-img" src="art/d2mon_Hell_Bovine.gif" alt="Secret Cow Level" onerror="this.parentNode.classList.add('d2art-failed')"><span class="d2art-fallback"><span class="ec-emoji">🐄</span></span></span>
       <div class="ec-titles"><div class="ec-title">Secret Cow Level</div><div class="ec-sub">Moo Moo Farm · ~400 Hell Bovines · rune density + MF</div></div>
       <div class="ec-tier"><div class="ec-tier-label">bovines</div><div class="ec-tier-val">~400</div></div>
       <div class="ec-chevron">▾</div>
@@ -22849,8 +22849,9 @@ const D2IO_ART = {
   "Heaven's Light": "art/scepter_graphic.png",
   "Heavenly Garb": "art/heavenlygarb_graphic.png",
   "Hel": "art/runeHel_icon.png",
-  "Hell Bovines": "art/hellbovine_graphic.png",
-  "Hell Bovines (Cow Level)": "art/hellbovine_graphic.png",
+  "Hell Bovine": "art/d2mon_Hell_Bovine.gif",
+  "Hell Bovines": "art/d2mon_Hell_Bovine.gif",
+  "Hell Bovines (Cow Level)": "art/d2mon_Hell_Bovine.gif",
   "Hellclap": "art/hellclap_graphic.png",
   "Hellfire Torch": "art/hellfiretorch_graphic.png",
   "Token of Absolution": "art/tokenofabsolution_graphic.png",
@@ -72038,13 +72039,14 @@ function renderJournal(){
   /* REG-3321 (#102/#91 - his 11-07 "it should render just the monster not the area behind it"). The act bosses now draw
      their own animated Diablo II sprites (art/d2mon_*.gif, tv/data/monster_art_fandom.json - fandom first, rankedboost
      otherwise), each OPENED on a contact sheet first and recorded in art/boss_portraits.manifest.json with what it shows.
-     The diablo2.io renders they replace had the boss painted onto a stone backdrop. No sprite for the Countess, the
-     Council (fandom's sits on a solid black box - rejected) or the Hell Bovine: they keep their portraits. */
+     The diablo2.io renders they replace had the boss painted onto a stone backdrop. No sprite for the Countess or the
+     Council (fandom's sits on a solid black box - rejected): they keep their portraits. Hell Bovine now wears
+     Elad's File:Cow.gif (art/d2mon_Hell_Bovine.gif); the gamepedia Hell Bovine (Diablo II).gif is the unused alternate. */
   var BOSS_PORTRAIT = {
     andariel:  'd2mon_Andariel.gif',        mephisto:  'd2mon_Mephisto.gif',
     duriel:    'd2mon_Duriel.gif',          diablo:    'd2mon_Diablo.gif',
     baal:      'd2mon_Baal.gif',            nihl:      'd2mon_Nihlathak.gif',
-    cows:      'hellbovine_graphic.png',    summoner:  'summoner_graphic.png',
+    cows:      'd2mon_Hell_Bovine.gif',    summoner:  'summoner_graphic.png',
     countess:  'countess01_graphic.png',    travincal: 'councilmember_graphic.png',
     /* v1642 — Konyo: the Pindle thumb is "still showing here like maps plainly instead of the HD
        art". Three ids had no entry. Each was decided on its own evidence, not swept in together:

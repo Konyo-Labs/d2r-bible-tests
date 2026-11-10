@@ -5,8 +5,8 @@ D2IO_ART held 21 duplicate keys (set pieces mostly, plus Nihlathak and The
 Summoner). In JavaScript the later assignment silently wins, so a first edit
 changed a key that did not count (REG-3315 left this for #91). Every key now
 appears once. Bloodwitch the Wild, Lord De Seis and Treehead WoodFist each
-have one sourced animated GIF (the leftover visual pass of #91); The Countess
-and Hell Bovine remain noSpriteFound.
+have one sourced animated GIF (the leftover visual pass of #91). Hell Bovine
+now wears Elad's File:Cow.gif; The Countess remains noSpriteFound.
 RED_PROOF below.
 """
 import json
@@ -29,6 +29,7 @@ LEFTOVER = (
     ("Bloodwitch the Wild", "art/d2mon_Bloodwitch_the_Wild.gif"),
     ("Lord De Seis", "art/d2mon_Lord_De_Seis.gif"),
     ("Treehead WoodFist", "art/d2mon_Treehead_WoodFist.gif"),
+    ("Hell Bovine", "art/d2mon_Hell_Bovine.gif"),
 )
 
 
@@ -91,9 +92,22 @@ class TheArtMapNamesEachItemOnce(unittest.TestCase):
             self.assertEqual(rec_by[name]["file"], path)
             self.assertTrue(rec_by[name].get("url", "").startswith("https://"),
                             "%s's sprite has no source URL" % name)
-            sid = qw_id[name]
-            self.assertEqual(su.get(sid), path.split("/")[-1],
-                             "Quick wins %s must name the same file as the board" % sid)
+            sid = qw_id.get(name)
+            if sid:
+                self.assertEqual(su.get(sid), path.split("/")[-1],
+                                 "Quick wins %s must name the same file as the board" % sid)
+        d2 = dict(_pairs())
+        self.assertEqual(d2.get("Hell Bovines"), "art/d2mon_Hell_Bovine.gif")
+        self.assertEqual(d2.get("Hell Bovines (Cow Level)"), "art/d2mon_Hell_Bovine.gif")
+        block = re.search(r"var BOSS_PORTRAIT = \{(.*?)\n  \}", src, re.S).group(1)
+        portraits = dict(re.findall(r"([a-z]+):\s*'([^']+)'", block))
+        self.assertEqual(portraits.get("cows"), "d2mon_Hell_Bovine.gif",
+                         "the cow tile must render the animated GIF, not the old portrait")
+        rec_by_name = dict((r["name"], r) for r in rec["sprites"])
+        self.assertIn("Cow.gif", rec_by_name["Hell Bovine"]["url"])
+        unused = [r for r in rec.get("rejected") or []
+                  if r.get("name") == "Hell Bovine" and "Hell Bovine (Diablo II).gif" in (r.get("file") or "")]
+        self.assertTrue(unused, "the gamepedia Hell Bovine (Diablo II).gif must stay recorded as unused")
 
 
 RED_PROOF = [
@@ -106,6 +120,11 @@ RED_PROOF = [
     {"why": "v3895 (#91, REG-3591) - Bloodwitch the Wild lost its sourced sprite",
      "file": "bible.html",
      "find": '  "Bloodwitch the Wild": "art/d2mon_Bloodwitch_the_Wild.gif",\n',
+     "replace": "",
+     "matches": 1},
+    {"why": "v3895 (#91, REG-3591) - Hell Bovine lost its sourced sprite",
+     "file": "bible.html",
+     "find": '  "Hell Bovine": "art/d2mon_Hell_Bovine.gif",\n',
      "replace": "",
      "matches": 1},
 ]

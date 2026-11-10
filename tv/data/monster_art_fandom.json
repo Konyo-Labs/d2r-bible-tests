@@ -256,6 +256,17 @@
    "bytes": 8085
   },
   {
+   "name": "Hell Bovine",
+   "ids": [
+    "cows"
+   ],
+   "file": "art/d2mon_Hell_Bovine.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/d/de/Cow.gif/revision/latest?cb=20080316063633&format=original",
+   "sha1": "a69e18a9bc3968684900dd5e423a045bc3568ebd",
+   "bytes": 19344
+  },
+  {
    "name": "Hephasto The Armorer",
    "ids": [
     "su_hephastothearmorer"
@@ -626,10 +637,16 @@
    "site": "diablo.fandom.com",
    "file": "Blood_Witch.png",
    "why": "a winged pale-blue succubus (generic / later-game Blood Witch), not Diablo II's Halls of the Dead Huntress Bloodwitch the Wild (gamepedia's Bloodwitch_the_Wild_(Diablo_II).gif used)"
+  },
+  {
+   "name": "Hell Bovine",
+   "site": "diablo.fandom.com",
+   "file": "Hell Bovine (Diablo II).gif",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/a/ad/Hell_Bovine_%28Diablo_II%29.gif/revision/latest?cb=20091107200830",
+   "why": "the gamepedia '<Name> (Diablo II).gif' alternate (93x111); Elad prefers File:Cow.gif as the source"
   }
  ],
  "noSpriteFound": [
-  "The Countess",
-  "Hell Bovine"
+  "The Countess"
  ]
 }

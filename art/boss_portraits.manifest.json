@@ -67,11 +67,12 @@
     },
     {
       "bossId": "cows",
-      "file": "hellbovine_graphic.png",
-      "bytes": 56684,
-      "sha256": "5ea3e014c2e22de96fa247e2c08f80fd92ba470d441c3f8c93ec72a1ca56da97",
-      "depicts": "Upright bipedal bull with pale curved horns and a gold nose-ring, shouldering a two-handed poleaxe. Hell Bovine.",
-      "verdict": "correct"
+      "file": "d2mon_Hell_Bovine.gif",
+      "bytes": 19344,
+      "sha256": "7e6a01a57295a17aba04f12559f6bfd7a0a843ab57e5e35b2ac160b8636392fa",
+      "depicts": "Animated sprite: upright bipedal brown cow with pale curved horns and a gold nose-ring, holding a two-handed polearm, on a transparent ground. Hell Bovine.",
+      "verdict": "correct",
+      "opened": "2026-11-10 opened before wiring; REG-3591 (#91); Elad preferred File:Cow.gif"
     },
     {
       "bossId": "summoner",
