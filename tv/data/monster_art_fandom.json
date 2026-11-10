@@ -486,10 +486,10 @@
     "su_thesummoner"
    ],
    "file": "art/d2mon_The_Summoner.gif",
-   "site": "rankedboost.com",
-   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/The%20Summoner.gif",
-   "sha1": "7a8ac285d37ef38e7870d7601261e0147dbf9281",
-   "bytes": 11006
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo/images/6/69/Summoner.gif/revision/latest?cb=20080710200736&format=original",
+   "sha1": "3805c6b21a88f93d75c2f3319a9feeb429de2f13",
+   "bytes": 22887
   },
   {
    "name": "Thresh Socket",
@@ -541,10 +541,10 @@
     "andariel"
    ],
    "file": "art/d2mon_Andariel.gif",
-   "site": "diablo.fandom.com",
-   "url": "https://static.wikia.nocookie.net/diablo/images/3/34/Andariel_%28Diablo_II%29.gif/revision/latest",
-   "sha1": "f1f194705a4b3584576e6399b0af4dfcb16993d8",
-   "bytes": 70748
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/3/34/Andariel_%28Diablo_II%29.gif/revision/latest?cb=20090409134131&format=original",
+   "sha1": "f611f0dfb10d9bff4b757d6d17f98a45bc76bc1b",
+   "bytes": 86290
   },
   {
    "name": "Baal",
@@ -553,9 +553,9 @@
    ],
    "file": "art/d2mon_Baal.gif",
    "site": "diablo.fandom.com",
-   "url": "https://static.wikia.nocookie.net/diablo/images/f/f9/Baal_%28Diablo_II%29.gif/revision/latest",
-   "sha1": "63fdbc70c623cc51892802018a99a6dd4efa233f",
-   "bytes": 59416
+   "url": "https://static.wikia.nocookie.net/diablo/images/4/4e/Baal_D2.gif/revision/latest?cb=20250418122229&format=original",
+   "sha1": "9bf428745fef8eb871da39bebcf8e8133d0ac755",
+   "bytes": 4514793
   },
   {
    "name": "Mephisto",
@@ -564,9 +564,9 @@
    ],
    "file": "art/d2mon_Mephisto.gif",
    "site": "diablo.fandom.com",
-   "url": "https://static.wikia.nocookie.net/diablo/images/8/88/Mephisto_%28Diablo_II%29.gif/revision/latest",
-   "sha1": "c0e8132f37d90cb3a212c2586ddcefc3b9531c4b",
-   "bytes": 61200
+   "url": "https://static.wikia.nocookie.net/diablo/images/8/85/Mephisto.gif/revision/latest?cb=20060901185937&format=original",
+   "sha1": "f9d9579b848c5f6b7ddf98ba06fedb99ac520d4e",
+   "bytes": 96570
   },
   {
    "name": "Diablo",
@@ -574,10 +574,10 @@
     "diablo"
    ],
    "file": "art/d2mon_Diablo.gif",
-   "site": "rankedboost.com",
-   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Diablo.gif",
-   "sha1": "5dec31c516a97ac3febef28ba012a84b32b0563c",
-   "bytes": 60839
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/9/92/Diablo_%28Diablo_II%29.gif/revision/latest?cb=20090517132643&format=original",
+   "sha1": "4d8581fcf334c63e65f117b5c0d5cb1a0347af9c",
+   "bytes": 61994
   },
   {
    "name": "Duriel",
@@ -585,10 +585,10 @@
     "duriel"
    ],
    "file": "art/d2mon_Duriel.gif",
-   "site": "rankedboost.com",
-   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Duriel.gif",
-   "sha1": "f9b64f11b6a2f2e8ea650a5f01adc9233673030f",
-   "bytes": 104950
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/e/ee/Duriel_%28Diablo_II%29.gif/revision/latest?cb=20090408141720&format=original",
+   "sha1": "2cdf520164f9bb45402e3de416ce3b5d3e7c429d",
+   "bytes": 104926
   },
   {
    "name": "Nihlathak",
@@ -596,10 +596,10 @@
     "nihl"
    ],
    "file": "art/d2mon_Nihlathak.gif",
-   "site": "rankedboost.com",
-   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Nihlathak.gif",
-   "sha1": "7a2f951cb1069f826e6f177266744a68b07276cd",
-   "bytes": 12309
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/4/4b/Nihlathak_%28Diablo_II%29.gif/revision/latest?cb=20091212154612&format=original",
+   "sha1": "c5746d80979891358b1bac01e36ac5475d7ba78b",
+   "bytes": 13797
   },
   {
    "name": "Pindleskin",
@@ -611,6 +611,18 @@
    "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Pindleskin.gif",
    "sha1": "b4c5bd8b266c265e325c00474cc72564b85938b1",
    "bytes": 11618
+  },
+  {
+   "name": "Lilith",
+   "ids": [
+    "lilith"
+   ],
+   "file": "art/d2mon_Lilith.gif",
+   "site": "diablo-archive.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/2/26/Andariel_Hell_%28Diablo_II%29.gif/revision/latest?cb=20090517083702&format=original",
+   "sha1": "3f5a3040948b336e436a2dc63ff907cff2aee057",
+   "bytes": 42087,
+   "_note": "The Andariel (Diablo II) page's Hell/Lilith variant (imageH on the Lilith row). Not Andariel's own sprite."
   }
  ],
  "rejected": [
@@ -655,6 +667,20 @@
    "file": "Cow.gif",
    "url": "https://static.wikia.nocookie.net/diablo/images/d/de/Cow.gif/revision/latest?cb=20080316063633&format=original",
    "why": "File:Cow.gif was the earlier pick; Elad then chose the gamepedia Hell Bovine (Diablo II).gif (93x111)"
+  },
+  {
+   "name": "Mephisto",
+   "site": "diablo.fandom.com",
+   "file": "Mephisto_(Diablo_II).gif",
+   "url": "https://static.wikia.nocookie.net/diablo/images/8/88/Mephisto_%28Diablo_II%29.gif/revision/latest",
+   "why": "Wikia served a 61200-byte WebP under a .gif name (no format=original). Elad then supplied File:Mephisto.gif with format=original, a real 9-frame GIF89a."
+  },
+  {
+   "name": "Baal",
+   "site": "diablo.fandom.com",
+   "file": "Baal_(Diablo_II).gif",
+   "url": "https://static.wikia.nocookie.net/diablo/images/f/f9/Baal_%28Diablo_II%29.gif/revision/latest",
+   "why": "Wikia served a 59416-byte WebP under a .gif name (no format=original). Elad then supplied File:Baal_D2.gif with format=original, a real 87-frame GIF89a."
   }
  ],
  "noSpriteFound": []

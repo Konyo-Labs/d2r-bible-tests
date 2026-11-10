@@ -551,10 +551,10 @@ class EveryPackAndUberWearsItsOwnSprite(unittest.TestCase):
                  ("Diablo", "Uber Diablo"), ("Baal", "Uber Baal")]
         same = [(a, b, d2.get(a)) for a, b in pairs if d2.get(a) == d2.get(b)]
         self.assertEqual(same, [], "a boss and its uber share one picture: %s" % same)
-        self.assertEqual(d2.get("Lilith"), "d2arreat_andariel.gif", "his ruling: Uber Lilith wears the Arreat Summit's Andariel")
+        self.assertEqual(d2.get("Lilith"), "d2mon_Lilith.gif", "Elad: Lilith wears the archive Andariel Hell / Lilith sprite, not Andariel's")
         self.assertEqual(d2.get("Andariel"), "d2mon_Andariel.gif", "his ruling: Andariel keeps the gif she had")
         ub = dict(re.findall(r"\{ id:'([a-z\-]+)', name:'[^']+', emoji:'[^']*', art:'([^']+)'", self.src))
-        for uid, f in (("lilith", "d2arreat_andariel.gif"), ("uber-duriel", "d2arreat_duriel.gif"), ("izual", "d2arreat_izual.gif")):
+        for uid, f in (("lilith", "d2mon_Lilith.gif"), ("uber-duriel", "d2arreat_duriel.gif"), ("izual", "d2arreat_izual.gif")):
             self.assertEqual(ub.get(uid), f, "the uber card %s wears %r" % (uid, ub.get(uid)))
 
 

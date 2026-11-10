@@ -22612,6 +22612,63 @@ const ITEMS = [];
 // 184 entries auto-verified (HTTP 200 + image content-type) on 2026-06-04: ~181 unique/base
 // item icons, 32 runes, 3 super-uniques. Names absent here keep their emoji. Zero fabrication
 // — every URL was probed live and only kept if it resolved to a real image.
+/* REG-3591 (#91, his 11-10 "it should be unified for them everywhere they render") — ONE picture
+   per monster. Every renderer (D2IO_ART, BOSS_PORTRAIT, the NOW ON AIR stage, baked <img>s) reads
+   this map. To swap a picture (Elad sending a new GIF): drop the original bytes in art/ and change
+   the one path here. Aliases resolve through the canonical name so they cannot drift. */
+const MONSTER_PICTURE = {
+  "Andariel": "art/d2mon_Andariel.gif",
+  "Baal": "art/d2mon_Baal.gif",
+  "Diablo": "art/d2mon_Diablo.gif",
+  "Duriel": "art/d2mon_Duriel.gif",
+  "Mephisto": "art/d2mon_Mephisto.gif",
+  "Nihlathak": "art/d2mon_Nihlathak.gif",
+  "The Summoner": "art/d2mon_The_Summoner.gif",
+  "The Countess": "art/d2mon_The_Countess.gif",
+  "Bloodwitch the Wild": "art/d2mon_Bloodwitch_the_Wild.gif",
+  "Lord De Seis": "art/d2mon_Lord_De_Seis.gif",
+  "Treehead WoodFist": "art/d2mon_Treehead_WoodFist.gif",
+  "Hell Bovine": "art/d2mon_Hell_Bovine.gif",
+  "Lilith": "art/d2mon_Lilith.gif",
+  "Uber Duriel": "art/d2arreat_duriel.gif"
+};
+const MONSTER_PICTURE_ALIAS = {
+  "Hell Bovines": "Hell Bovine",
+  "Hell Bovines (Cow Level)": "Hell Bovine",
+  "Countess": "The Countess",
+  "Summoner": "The Summoner"
+};
+const MONSTER_PORTRAIT_ID = {
+  andariel: "Andariel", mephisto: "Mephisto", duriel: "Duriel", diablo: "Diablo",
+  baal: "Baal", nihl: "Nihlathak", cows: "Hell Bovine", summoner: "The Summoner",
+  countess: "The Countess"
+};
+function monsterPicture(name){
+  if (!name) return null;
+  var n = String(name);
+  if (Object.prototype.hasOwnProperty.call(MONSTER_PICTURE, n)) return MONSTER_PICTURE[n];
+  var a = MONSTER_PICTURE_ALIAS[n];
+  return a ? (MONSTER_PICTURE[a] || null) : null;
+}
+function applyMonsterPictures(into){
+  var t = into || (typeof D2IO_ART !== "undefined" ? D2IO_ART : null);
+  if (!t) return;
+  Object.keys(MONSTER_PICTURE).forEach(function(n){ t[n] = MONSTER_PICTURE[n]; });
+  Object.keys(MONSTER_PICTURE_ALIAS).forEach(function(n){
+    var c = MONSTER_PICTURE_ALIAS[n];
+    if (MONSTER_PICTURE[c]) t[n] = MONSTER_PICTURE[c];
+  });
+}
+function applyMonsterPortraits(into){
+  var t = into || (typeof BOSS_PORTRAIT !== "undefined" ? BOSS_PORTRAIT : null);
+  if (!t) return;
+  Object.keys(MONSTER_PORTRAIT_ID).forEach(function(id){
+    var u = monsterPicture(MONSTER_PORTRAIT_ID[id]);
+    if (u) t[id] = String(u).replace(/^art\//, "");
+  });
+}
+try { window.MONSTER_PICTURE = MONSTER_PICTURE; window.monsterPicture = monsterPicture; } catch(e){}
+
 const D2IO_ART = {
   // set/runeword representative art + sunder chips (auto-verified HTTP 200 + image/png on 2026-06-10; sets use an iconic piece)
   "Worldstone Shards": "art/northern_graphic.png",
@@ -22678,7 +22735,7 @@ const D2IO_ART = {
   // Pandemonium mini-ubers + Tristram trio (verified 200/image/png 2026-06-09; same art UBER_BOSSES renders)
   /* #108 (his 11-07: "for uber lilith use this [the Arreat Summit's Andariel]" ... "make sure they are diffrent for uber
      duriel") - a boss and its uber never share a picture: the regular keeps its sprite, the uber wears the Arreat Summit's */
-  "Lilith": "art/d2arreat_andariel.gif",
+  "Lilith": "art/d2mon_Lilith.gif",
   "Uber Izual": "art/d2arreat_izual.gif",
   "Uber Duriel": "art/d2arreat_duriel.gif",
   "Uber Mephisto": "art/d2arreat_mephisto.gif",
@@ -23292,6 +23349,7 @@ Object.assign(D2IO_ART, {"Deathspade":"art/mr_deathspade.png","Bladebone":"art/m
 /* v352 — Reign of the Warlock new items: HD art (maxroll). */
 Object.assign(D2IO_ART, {"Bane's Oathmaker":"art/mr_banesoathmaker.png","Bane's Wraithskin":"art/mr_baneswraithskin.png","Bane's Authority":"art/mr_banesauthority.png","Horazon's Countenance":"art/mr_horazonscountenance.png","Horazon's Dominion":"art/mr_horazonsdominion.png","Horazon's Hold":"art/mr_horazonshold.png","Horazon's Legacy":"art/mr_horazonslegacy.png","Horazon's Secrets":"art/mr_horazonssecrets.png"});
 window.D2IO_ART = D2IO_ART;
+applyMonsterPictures(D2IO_ART);
 /* #111 (REG-3006, his ruling 2026-10-29 Q10) - A RENEWED SUNDER DRAWS ITS PLAIN CHARM'S OWN CARVING, IN THAT CHARM'S COLOURS.
    The six "Renewed <charm>" names had no key in this table, so _fillExtraUniqueArt gave each its base's art: Grand Charm ->
    art/logo_charm.png, which is ONE charm's picture (the Latent Black Cleft totem). Measured on the whole page: those six
@@ -24614,7 +24672,7 @@ function renderEndgameRoad(){
     + '<div><div class="rf-name" style="color:var(--gold-bright) !important">🔥 Hellfire Torch</div><div class="rf-sub">+3 random class skills · +10–20 all resist · +10 all stats — the Uber Tristram trio is the <strong>only</strong> source · 1 per character</div></div></div>'
     + '<div class="road-section-h">Pinnacle side-paths off the same road</div>'
     + '<div class="road-branches">'
-    + '<div class="road-branch endgame-relic" role="button" tabindex="0" onclick="window.openDrop(\'Annihilus\')"><h3>' + branchEmblem('diablo_graphic.png','🌑') + '<span style="color:var(--q-unique)">Diablo Clone → Annihilus</span></h3><p>A world event triggered by mass Stone of Jordan sales. Über Diablo spawns; killing him drops the <strong>Annihilus</strong> — the only small charm with +1 all skills, +10-20 all attributes, +10-20 all resist and +5-10% experience. Every kill drops one.</p></div>'
+    + '<div class="road-branch endgame-relic" role="button" tabindex="0" onclick="window.openDrop(\'Annihilus\')"><h3>' + branchEmblem('diablo_hell_graphic.png','🌑') + '<span style="color:var(--q-unique)">Diablo Clone → Annihilus</span></h3><p>A world event triggered by mass Stone of Jordan sales. Über Diablo spawns; killing him drops the <strong>Annihilus</strong> — the only small charm with +1 all skills, +10-20 all attributes, +10-20 all resist and +5-10% experience. Every kill drops one.</p></div>'
     + '<div class="road-branch endgame-relic" role="button" tabindex="0" onclick="window.openDrop(\'Colossal Ancient Jewels\')"><h3>' + branchEmblem('talic-opt_graphic.png','👑') + '<span style="color:var(--q-unique)">Colossal Ancients → Colossal Jewels</span></h3><p>The RotW pinnacle. Collect 5 Colossal Statues, cube the <strong>Colossal Summit</strong>, and beat Talic / Korlic / Madawc to claim the <strong>Colossal Jewels</strong> (lvl-75).</p></div>'
     + '</div>'
     + '<div class="road-section-h">The other endgame relics</div>'
@@ -38983,7 +39041,7 @@ window.openHeraldCard = openHeraldCard;
 const UBER_BOSSES = [
   /* REG-3321 (#102/#91, his one picture per monster) - each uber boss wears its own Diablo II sprite (Lilith is Andariel's
      model), the same file BOSS_PORTRAIT and D2IO_ART name - the old renders stayed here and the v78 spec caught it on CI */
-  { id:'lilith', name:'Lilith', emoji:'🕷️', art:'d2arreat_andariel.gif',
+  { id:'lilith', name:'Lilith', emoji:'🕷️', art:'d2mon_Lilith.gif',
     group:'Mini-Uber · Pandemonium portal', role:'drops Diablo\'s Horn',
     loc:'Matron\'s Den · opened from Harrogath · Hell only',
     type:'Act 1 Demon Superunique — a.k.a. Uber Andariel (shared model)',
@@ -40471,6 +40529,7 @@ try {
       if (_lk){ D2IO_ART[_lb] = _lk.url; D2IO_ART[_ll] = _lk.url; }                              /* REG-2847 both names, one picture */
     });
   window._artTableReady = true;   /* REG-2847 - every pass above has run: a copy of D2IO_ART taken now is the table's answer */
+  applyMonsterPictures(D2IO_ART);  /* REG-3591 - the monster map wins last, so a later pass cannot paint a second picture */
 } catch(e){}
 // v408 — runeword tile art: every forged runeword (Enigma, Spirit, Insight…) gets a representative HD
 // sprite of its base type (from RUNEWORD_TIP base category) so the RUNEWORDS-locker chip shows real art
@@ -72042,12 +72101,15 @@ function renderJournal(){
      The diablo2.io renders they replace had the boss painted onto a stone backdrop. No sprite for the
      Council (fandom's sits on a solid black box - rejected): it keeps its portrait. Hell Bovine now wears
      Elad's gamepedia Hell Bovine (Diablo II).gif (art/d2mon_Hell_Bovine.gif); File:Cow.gif is the unused
-     alternate. The Countess wears gamepedia's The Countess (Diablo II).gif (art/d2mon_The_Countess.gif). */
+     alternate. The Countess wears gamepedia's The Countess (Diablo II).gif (art/d2mon_The_Countess.gif).
+     REG-3591: these paths, and every other monster's, live in MONSTER_PICTURE — the one map every renderer reads.
+     The Summoner now wears the same animated sprite D2IO_ART already drew (art/d2mon_The_Summoner.gif).
+     Mephisto wears Elad's File:Mephisto.gif (original GIF bytes; the previous d2mon_Mephisto.gif was a WebP). */
   var BOSS_PORTRAIT = {
     andariel:  'd2mon_Andariel.gif',        mephisto:  'd2mon_Mephisto.gif',
     duriel:    'd2mon_Duriel.gif',          diablo:    'd2mon_Diablo.gif',
     baal:      'd2mon_Baal.gif',            nihl:      'd2mon_Nihlathak.gif',
-    cows:      'd2mon_Hell_Bovine.gif',    summoner:  'summoner_graphic.png',
+    cows:      'd2mon_Hell_Bovine.gif',    summoner:  'd2mon_The_Summoner.gif',
     countess:  'd2mon_The_Countess.gif',    travincal: 'councilmember_graphic.png',
     /* v1642 — Konyo: the Pindle thumb is "still showing here like maps plainly instead of the HD
        art". Three ids had no entry. Each was decided on its own evidence, not swept in together:
@@ -72095,6 +72157,7 @@ function renderJournal(){
      made its "the row wears BOSS_PORTRAIT[id]" assertion skip every single row and pass over
      anything. Measured before publishing: Object.keys read 0. A check that never fires is not a
      check, and that is the same class of hole this whole arc has been closing. */
+  applyMonsterPortraits(BOSS_PORTRAIT);
   try { window.BOSS_PORTRAIT = BOSS_PORTRAIT; } catch(e){}
   function _runBossArt(bossId, bossLabel){
     try {
@@ -87925,14 +87988,16 @@ window.tvStashAutoIntake = async function(tab, opts){
   // blast), honesty-gated (note/db:false never gets a tile), click-contained (hover cards yes,
   // routing never). Hidden entirely when off — the CRT static owns that story.
   var TVN_BOSS=[
-    { re:/durance of hate/i,                     name:'Mephisto',     art:'art/mephisto_graphic.png' },
-    { re:/(throne of destruction|worldstone)/i,  name:'Baal',         art:'art/baal-opt_graphic.png' },
-    { re:/chaos sanctuary/i,                      name:'Diablo',       art:'art/diablo_graphic.png' },
-    { re:/catacombs\s*(level\s*4|lvl\s*4|4)\b/i,  name:'Andariel',     art:'art/Andariel_graphic.png' },
-    { re:/(tal rasha|duriel)/i,                   name:'Duriel',       art:'art/duriel_graphic.png' },
-    { re:/halls of (vaught|anguish|pain)/i,       name:'Nihlathak',    art:'art/nihlathak-opt_graphic.png' },
-    { re:/arcane sanctuary/i,                     name:'The Summoner', art:'art/summoner_graphic.png' },
-    { re:/(forgotten tower|tower cellar)/i,       name:'The Countess', art:'art/countess01_graphic.png' }
+    /* REG-3591 — no art: of its own. The stage reads MONSTER_PICTURE by name, so it cannot
+       drift from the board, the boss tiles, or a baked portrait. */
+    { re:/durance of hate/i,                     name:'Mephisto' },
+    { re:/(throne of destruction|worldstone)/i,  name:'Baal' },
+    { re:/chaos sanctuary/i,                      name:'Diablo' },
+    { re:/catacombs\s*(level\s*4|lvl\s*4|4)\b/i,  name:'Andariel' },
+    { re:/(tal rasha|duriel)/i,                   name:'Duriel' },
+    { re:/halls of (vaught|anguish|pain)/i,       name:'Nihlathak' },
+    { re:/arcane sanctuary/i,                     name:'The Summoner' },
+    { re:/(forgotten tower|tower cellar)/i,       name:'The Countess' }
   ];
   function tvnBoss(area){ if(!area) return null; for(var i=0;i<TVN_BOSS.length;i++){ if(TVN_BOSS[i].re.test(area)) return TVN_BOSS[i]; } return null; }
   var TVN_SCENE_IC={town:'🏘',loot:'⚔️',inventory:'🎒',stash:'🏦',gameplay:'🌫',transition:'⏳'};
@@ -88034,7 +88099,8 @@ window.tvStashAutoIntake = async function(tab, opts){
     var readN = last ? ('read #'+(last.n||'?')) : 'standing by';
     var ctxArea = area || (scene==='transition' ? ((last&&last.transition_from)||_chapArea) : '');
     var boss = tvnBoss(ctxArea);
-    var bossChip = boss ? ('<span class="tvn-boss"><img src="'+escAttr(boss.art)+'" alt="" onerror="this.remove()">'+escAttr(boss.name)+'</span>') : '';
+    var bossPic = (typeof monsterPicture==='function' && monsterPicture(boss && boss.name)) || (boss && boss.art) || '';
+    var bossChip = boss ? ('<span class="tvn-boss"><img src="'+escAttr(bossPic)+'" alt="" onerror="this.remove()">'+escAttr(boss.name)+'</span>') : '';
     var tzName = (last && last.tz && last.tz.length) ? last.tz[0] : (scene==='transition' ? _chapTz : '');
     var tzChip = tzName ? ('<span class="tvn-tz">🔥 '+escAttr(tzName)+' terror</span>') : '';
     var topline='<div class="tvn-topline"><span class="tvn-live-dot"><span class="tvn-air-dot"></span>NOW ON AIR</span><span class="tvn-read-n">'+escAttr(readN)+'</span>'+bossChip+tzChip+'</div>';
