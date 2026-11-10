@@ -393,6 +393,11 @@ def panel_crop(path, out_dir):
     try:
         from PIL import Image
         with Image.open(path) as im:
+            # v3895 (#106, REG-3586) - the character list lives in the game panel, not the
+            # letterboxed canvas. Dean's filmed frame is 1920x1080 with the 1507x755 client
+            # as 1920x961; cropping against the full canvas included the black bars and
+            # placed the list as if the game filled 1080 px of height, so no name was learned.
+            im = _in_game(im.convert("RGB"))
             w, h = im.size
             box = (max(0, int(w - (PANEL_W_H + 0.02) * h)), 0, w, h)
             dst = os.path.join(out_dir, "cs_" + os.path.basename(path))

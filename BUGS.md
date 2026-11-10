@@ -136,6 +136,19 @@ the eye said the watcher STOPPED - a false red, especially on a slower Windows P
 The stamp now declares no fixed period (the cycle is computed) and a silence bound of sleep-slack +
 one look's budget (180s). A 90s busy look stays FLOWING; a silence past the bound is still LATE.
 GUARD: test_a_busy_shadow_look_is_not_a_stopped_watcher (4 cases, 2 red-proofs).
+### REG-3585 - 2:1 STASH BAND LAWS WERE MEASURED AGAINST THE LETTERBOXED CANVAS, NOT THE PANEL (v3895, #106)
+Dean's windowed client is 1507x755 (~2:1). After v3894 it is filmed as 1920x961 centered on a 1920x1080
+canvas. stash_eye used the canvas aspect (1.778) and applied the derived band as if the game filled the
+frame, so the crop included the black bars and missed the panel. Now prep_stash_grid and prep_tab_chrome
+trim to the game box first; the band is derived from that panel's own aspect (~2.00) and cropped from
+the panel. A fullscreen frame with no bars is unchanged (his Mac stays on the locked 1.45-1.62 band).
+GUARD: test_stash_bands_are_measured_against_the_panel (2 cases, 1 red-proof).
+### REG-3586 - THE CHARACTER LIST WAS CROPPED FROM THE LETTERBOXED CANVAS, SO DEAN'S NAMES WERE NEVER LEARNED (v3895, #106)
+panel_crop is the door the name reader uses. It placed the right-hand list as a fraction of the FULL
+frame height. On Dean's letterboxed film that included the black bars and shifted the list, so the
+reader was handed bars and floor instead of the names. Now the frame is trimmed to its game box first
+(the same trim lobby_stats already uses) and the list width is a fraction of the panel height.
+GUARD: test_the_character_list_is_cropped_from_the_panel (1 case, 1 red-proof).
 ### REG-3578 - A PLANNER COMPARE FILLED IN NUMBERS THE PLANNER DID NOT CITE (v3894, #28)
 A character-window row that disagrees with a cited planner value is a conflict; a planner key without frames, or a window row without frames, is unknown. Nothing is invented. Buff calibration stays later. Law: test_a_planner_compare_does_not_invent_missing_numbers.
 ### REG-3577 - FILM SIZE WAS READ FROM THE WINDOW'S CLIENT SIZE (v3894, #155/#255)

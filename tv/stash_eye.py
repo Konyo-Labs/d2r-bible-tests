@@ -232,6 +232,16 @@ def prep_tab_chrome(src_path: str, dest_path: str, scale: int = 3) -> Optional[s
     try:
         from PIL import ImageEnhance, ImageOps  # type: ignore
         im = _open_rgb(src_path)
+        # v3895 (#106, REG-3585) - measure the tab chrome against the game panel, not a
+        # letterboxed canvas. Dean's 1507x755 client is filmed as 1920x961 on a 1920x1080
+        # frame; the black bars are not the panel.
+        try:
+            from char_select import game_box as _game_box
+            _box = _game_box(im)
+            if _box != (0, 0) + im.size and _box[2] > _box[0] and _box[3] > _box[1]:
+                im = im.crop(_box)
+        except Exception:
+            pass
         crop = _crop_frac(im, _TAB_CHROME)
         if crop is None:
             return None
@@ -334,6 +344,17 @@ def prep_stash_grid(src_path: str, dest_path: str, layout: str = "runes",
     try:
         from PIL import Image  # type: ignore
         im = _open_rgb(src_path)
+        # v3895 (#106, REG-3585) - 2:1 stash band laws are measured against the panel.
+        # A letterboxed 1920x1080 film of Dean's 1507x755 client has content 1920x961
+        # (aspect ~2.00). Using the canvas aspect (1.778) derives the wrong band and
+        # applies it as if the game filled the frame, including the black bars.
+        try:
+            from char_select import game_box as _game_box
+            _box = _game_box(im)
+            if _box != (0, 0) + im.size and _box[2] > _box[0] and _box[3] > _box[1]:
+                im = im.crop(_box)
+        except Exception:
+            pass
         w, h = im.size
         aspect = (w / float(h)) if h else 0
         frac = _TALLY_CROPS.get(layout) or _TALLY_CROPS["runes"]
