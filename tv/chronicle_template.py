@@ -115,8 +115,10 @@ from typing import Any, Dict, Optional, Tuple
 FracBox = Tuple[float, float, float, float]
 
 # ── CALIBRATION FILM — same film stash_eye locked _TALLY_CROPS on ─────────────────────────────────
-_CAL_FILM = (2940, 1912)
-_CAL_ASPECT = _CAL_FILM[0] / float(_CAL_FILM[1])
+# v3895 (#22, REG-3587) - ONE film, shared with stash_eye via reader_calibration.
+import reader_calibration as _RC
+_CAL_FILM = _RC.FILM
+_CAL_ASPECT = _RC.aspect()
 _CAL_LO, _CAL_HI = 1.45, 1.62  # Konyo's Mac range; stash_eye uses the same window
 
 # ── MEASURED ON (evidence trail — the exact frames read with vision to lock the bands below) ──────

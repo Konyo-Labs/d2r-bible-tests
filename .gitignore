@@ -530,3 +530,6 @@ tv/.d2jsp_check.json.tmp
 # diff, untracked files, a scratch summary) here before it prunes it, with a manifest and its per-PC state. Never public.
 tv/.salvage/
 tv/.d2jsp_pages/
+
+# v3895 (#26 P2) - append-only seal route receipts, per PC
+tv/reel_routes.jsonl

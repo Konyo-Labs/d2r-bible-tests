@@ -149,6 +149,26 @@ frame height. On Dean's letterboxed film that included the black bars and shifte
 reader was handed bars and floor instead of the names. Now the frame is trimmed to its game box first
 (the same trim lobby_stats already uses) and the list width is a fraction of the panel height.
 GUARD: test_the_character_list_is_cropped_from_the_panel (1 case, 1 red-proof).
+### REG-3587 - STASH AND CHRONICLE EACH KEPT THEIR OWN COPY OF THE CALIBRATION FILM (v3895, #22)
+Both readers carried (2940, 1912). A re-measure that updated one would leave the other reading a
+screen shape that no longer exists (surfaces.py already named this). They now import
+reader_calibration.FILM. Re-measuring live and buff calibration are the rest of the phase.
+GUARD: test_readers_share_one_calibration_film (2 cases, 1 red-proof).
+### REG-3588 - A SEALED REEL LEFT NO ROUTE RECEIPT (v3895, #26 P2)
+LEDGER3 §8 P2: reel_routes.jsonl is the append-only store written at seal. This slice is the store
+and its write/read doors (a missing reel is refused; absent is []; unreadable is UNKNOWN). Wiring
+the sealer, the funnel click and the shelf card, and P3-P5, are later slices.
+GUARD: test_a_sealed_reel_leaves_a_route_receipt (3 cases, 1 red-proof).
+### REG-3589 - NOTHING TURNED A BREAKPOINT GAP INTO ITEM SUGGESTIONS (v3895, #29)
+The stats engine already computes {stat, now, next, need}. The gear advisor searches a catalogue of
+items and charms for what closes the need; shortfall is skipped; closest overshoot wins; an
+unreadable gap is UNKNOWN. Scoring by build and UBER vs regular run is the rest of the advisor.
+GUARD: test_the_gear_advisor_closes_a_breakpoint_gap (4 cases, 1 red-proof).
+### REG-3590 - NOTHING NAMED WHICH SEALED FRAMES A RETRO AI CHECKER SHOULD RE-READ (v3895, #190)
+A retro checker runs after a reel seals. It picks IMPORTANT frames (grail, keep, unique, set,
+runeword) and UNCERTAIN ones (KAI and OCR disagreed). Ordinary agreeing frames are not picked.
+Calling a second model and showing a GROK verdict is the rest of the checker.
+GUARD: test_the_retro_checker_picks_important_and_uncertain_frames (3 cases, 1 red-proof).
 ### REG-3578 - A PLANNER COMPARE FILLED IN NUMBERS THE PLANNER DID NOT CITE (v3894, #28)
 A character-window row that disagrees with a cited planner value is a conflict; a planner key without frames, or a window row without frames, is unknown. Nothing is invented. Buff calibration stays later. Law: test_a_planner_compare_does_not_invent_missing_numbers.
 ### REG-3577 - FILM SIZE WAS READ FROM THE WINDOW'S CLIENT SIZE (v3894, #155/#255)

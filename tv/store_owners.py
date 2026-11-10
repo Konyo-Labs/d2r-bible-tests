@@ -257,6 +257,13 @@ STORES = {
                                "ATTRIBUTE writes, so it names this path only to report who wrote it",
         },
     },
+    "reel_routes.jsonl": {
+        "owner": "reel_routes",
+        "holds": "P2 (#26): append-only seal receipts {reel, name, frameKey, routedTo, why, gate}",
+        "readers": {
+            "run_gates": "a gate description names this store while explaining what the gate is for",
+        },
+    },
 }
 
 

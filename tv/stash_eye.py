@@ -47,11 +47,13 @@ _TAB_CHROME = (0.08, 0.12, 0.40, 0.205)
 # this cannot regress Konyo; it replaces a KNOWN-bad fallback with a principled band for everyone
 # else. Confirm against one real Windows stash frame and, if it needs nudging, record the measured
 # numbers here the way the Mac ones are recorded above.
-_CROP_CAL_FILM = (2940, 1912)     # the film every band above was measured on
+# v3895 (#22, REG-3587) - ONE film, shared with chronicle_template via reader_calibration.
+import reader_calibration as _RC
+_CROP_CAL_FILM = _RC.FILM     # the film every band above was measured on
 # the EXACT ratio, not 1.538: a rounded constant put a 0.0001 skew into every derived band,
 # which the derivation's own test caught. The bands are measurements; the conversion between
 # them should not add error of its own.
-_CROP_CAL_ASPECT = _CROP_CAL_FILM[0] / float(_CROP_CAL_FILM[1])
+_CROP_CAL_ASPECT = _RC.aspect()
 _CROP_CAL_LO, _CROP_CAL_HI = 1.45, 1.62
 
 
