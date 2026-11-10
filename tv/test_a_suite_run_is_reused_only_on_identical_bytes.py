@@ -39,6 +39,7 @@ def _git(cwd, *args):
 def _repo():
     d = tempfile.mkdtemp(prefix="suite_verdict_")
     _git(d, "init", "-q")
+    _git(d, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
     _git(d, "config", "user.email", "t@t")
     _git(d, "config", "user.name", "t")
     os.makedirs(os.path.join(d, "tv"))

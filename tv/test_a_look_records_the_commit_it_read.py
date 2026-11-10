@@ -230,6 +230,7 @@ class TestALookRecordsTheCommitItRead(unittest.TestCase):
             return git("rev-parse", "HEAD").strip()
         try:
             git("init", "-q")
+            git("config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
             first = commit("v9104", "v9104 - an earlier ship", ["| **v9104** | `(this commit)` | v9104 - note |"])
             ship = commit("v9105", "Stamp the auto intake move",
                           ["| **v9105** | `(this commit)` | v9105 - note |", "| **v9104** | `%s` | v9104 - note |" % first[:8]])

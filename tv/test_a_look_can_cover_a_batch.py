@@ -48,6 +48,7 @@ class ALookCanCoverABatch(unittest.TestCase):
         cls.repo = tempfile.mkdtemp(prefix="eye_batch_")
         r = cls.repo
         _git(r, "init", "-q")
+        _git(r, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         os.makedirs(os.path.join(r, "tv"))
         with open(os.path.join(r, "tv", "feature.py"), "w") as fh:
             fh.write("def base():\n    return 1\n")

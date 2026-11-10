@@ -46,6 +46,7 @@ class TestTheAuthorIsReadFromTheStamp(unittest.TestCase):
         self.repo = tempfile.mkdtemp(prefix="authorrepo_")
         os.makedirs(os.path.join(self.repo, "tv"))
         subprocess.check_call(["git", "init", "-q"], cwd=self.repo)
+        subprocess.check_call(["git", "config", "core.autocrlf", "false"], cwd=self.repo)  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         self._repo0 = L._REPO
         L._REPO = self.repo
         L._AUTHOR_LOADED.pop(os.path.abspath(self.repo), None)

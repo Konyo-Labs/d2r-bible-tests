@@ -360,6 +360,7 @@ class TheTreeIsToldApart(unittest.TestCase):
         up, wk = os.path.join(root, "up.git"), os.path.join(root, "wk")
         run = lambda *a, cwd=root: subprocess.run(["git"] + list(a), cwd=cwd, capture_output=True, text=True)
         run("init", "-q", "--bare", up)
+        run("config", "core.autocrlf", "false", cwd=up)  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         run("clone", "-q", up, wk)
         for k, v in (("user.email", "law@x"), ("user.name", "law")):
             run("config", k, v, cwd=wk)

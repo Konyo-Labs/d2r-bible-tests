@@ -52,6 +52,7 @@ class TheSettingsFileNeverTravels(unittest.TestCase):
         self.addCleanup(shutil.rmtree, d, True)
         env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
         subprocess.run([GIT, "init", "-q", d], check=True, env=env)
+        subprocess.run([GIT, "-C", d, "config", "core.autocrlf", "false"], check=True, env=env)  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         shutil.copyfile(os.path.join(ROOT, ".gitignore"), os.path.join(d, ".gitignore"))
         os.makedirs(os.path.join(d, "tv"))
         if os.path.isfile(os.path.join(HERE, ".gitignore")):

@@ -132,6 +132,7 @@ class _Fixture(object):
         self.remotes = {}
         os.makedirs(os.path.join(self.main, "tv"))
         _git("init", "-q", self.main)
+        _git("-C", self.main, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         with io.open(os.path.join(self.main, "tv", "control_app.py"), "w", encoding="utf-8") as fh:
             fh.write(u"# fixture\n")
         _git("-C", self.main, "add", "-A")
@@ -150,6 +151,7 @@ class _Fixture(object):
         for name in (("origin", "mirror") if remotes else ()):
             self.remotes[name] = os.path.join(root, name + ".git")
             _git("init", "-q", "--bare", self.remotes[name])
+            _git("-C", self.remotes[name], "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
             _git("-C", self.main, "remote", "add", name, self.remotes[name])
             _git("-C", self.main, "push", "-q", name, "main")
 

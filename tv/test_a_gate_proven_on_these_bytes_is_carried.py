@@ -92,6 +92,7 @@ def _tree(files):
         with io.open(os.path.join(tv, name), "w", encoding="utf-8") as fh:
             fh.write(text)
     _git(root, "init", "-q", "-b", "main")
+    _git(root, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
     _git(root, "config", "user.email", "ledger@example.com")
     _git(root, "config", "user.name", "ledger")
     _git(root, "config", "commit.gpgsign", "false")

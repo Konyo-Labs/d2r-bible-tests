@@ -157,6 +157,7 @@ class TheEyeSeesTheBlocksAroundABigFilesHunks(unittest.TestCase):
         self.addCleanup(shutil.rmtree, repo, True)
         self.addCleanup(_rm_readonly, cwd)
         _git(repo, "init", "-q")
+        _git(repo, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         os.makedirs(os.path.join(repo, "tv"))
         big = PY + "\n" + "\n".join("# filler %d" % i for i in range(400))
         with io.open(os.path.join(repo, "tv", "big.py"), "w", encoding="utf-8") as fh:

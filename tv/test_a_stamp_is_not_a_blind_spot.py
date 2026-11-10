@@ -95,6 +95,7 @@ def _fixture_repo():
                                "-c", "user.name=t"] + list(a),
                               check=True, capture_output=True, text=True).stdout.strip()
     g("init", "-q")
+    g("config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
     page = os.path.join(d, "bible.html")
 
     def put(txt):

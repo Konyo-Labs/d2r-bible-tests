@@ -71,7 +71,7 @@ class TheParallelFullRunsEveryGateOnce(unittest.TestCase):
         g = lambda *a: subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t"] + list(a), cwd=tmp,
                                       env=env, capture_output=True, check=True)
         open(os.path.join(tmp, "f"), "w").write("a")
-        g("init", "-q"); g("add", "f"); g("commit", "-qm", "x")
+        g("init", "-q"); g("config", "core.autocrlf", "false"); g("add", "f"); g("commit", "-qm", "x")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         self.assertIsNone(GP.why_serial(repo=tmp, mem=GP.FLOOR_GB + 10))
         open(os.path.join(tmp, "f"), "w").write("b")
         self.assertIn("uncommitted", GP.why_serial(repo=tmp, mem=GP.FLOOR_GB + 10) or "")

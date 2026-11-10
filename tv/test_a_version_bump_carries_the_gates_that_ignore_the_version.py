@@ -143,6 +143,7 @@ class ACoherentBumpCarries(unittest.TestCase):
                           ("tv/hub_gl.py", "import version_stamp_gate\n")):
             _write(root, rel, text)
         _git(root, "init", "-q", "-b", "main")
+        _git(root, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         _git(root, "config", "user.email", "b@example.com")
         _git(root, "config", "user.name", "b")
         _git(root, "config", "commit.gpgsign", "false")

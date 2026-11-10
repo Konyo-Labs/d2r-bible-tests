@@ -82,7 +82,9 @@ def _fixture():
     seed = os.path.join(root, "seed")
     clone = os.path.join(root, "clone")
     _git(root, "-c", "init.defaultBranch=main", "init", "-q", "--bare", origin)
+    _git(origin, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
     _git(root, "-c", "init.defaultBranch=main", "init", "-q", seed)
+    _git(seed, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
     with open(os.path.join(seed, "f.txt"), "w") as fh:
         fh.write("one\n")
     _git(seed, "add", "f.txt")
@@ -387,6 +389,7 @@ class TestNoConsoleGitTakesAnOptionalLock(_Base):
     def _many_file_repo(self, n=600):
         repo = os.path.join(self.root, "optlock")
         _git(self.root, "-c", "init.defaultBranch=main", "init", "-q", repo)
+        _git(repo, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         for i in range(n):
             with open(os.path.join(repo, "f%04d.txt" % i), "w") as fh:
                 fh.write("x\n")

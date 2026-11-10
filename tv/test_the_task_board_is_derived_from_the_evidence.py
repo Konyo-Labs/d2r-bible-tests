@@ -91,6 +91,7 @@ def _build_repo():
     claude/merged at the v3801 stamp. origin/main = the v3802 commit."""
     repo = tempfile.mkdtemp(prefix="task-truth-repo-")
     _g(repo, "init", "-q", "-b", "main")
+    _g(repo, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
     c1 = _commit(repo, "v3800: the first fix (REG-100)", T0 - 10 * DAY, ship="v3800")
     c2 = _commit(repo, "fix: the second fix (REG-101)\n\nand it closes REG-108 too", T0 - 9 * DAY)
     c3 = _commit(repo, "v3801 stamp: the changelog names three (REG-105..107)", T0 - 8 * DAY, ship="v3801")
