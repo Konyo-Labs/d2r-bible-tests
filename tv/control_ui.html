@@ -29020,9 +29020,15 @@ function escC(s) {
      mostly waited. While the lane's key says it is waiting, the row names the wait instead of a time. */
   /* asked with waitOnly: the wait's few words, or '' - one table, inside the function every Fleet surface already reads */
   var _proofMeterFacts = function (hs) {
-    var waitOnly = arguments[1] === true, W = { busy: 'PC busy', playing: 'you are playing', 'stood-aside': 'import first', 'aside-cooldown': 'import first',
-              backoff: 'retries soon', 'low-memory': 'low memory' };
+    var waitOnly = arguments[1] === true, W = { busy: 'PC busy', playing: 'you are playing', backoff: 'retries soon', 'low-memory': 'low memory' };
     var wait = (hs && typeof hs === 'object' && typeof hs.key === 'string' && Object.prototype.hasOwnProperty.call(W, hs.key)) ? W[hs.key] : '';
+    /* v3894 (REG-3580, his 11-10 Fleet: the work ALT read "import first" while a proof had stood aside for 691 MB free,
+       and GitHub's import had already landed). stood-aside / aside-cooldown mean a proof paused; the why says whether
+       that was memory or an import. A why-less payload keeps the old word, so a row that really did stand aside for
+       GitHub's import still reads "import first". */
+    if (!wait && hs && typeof hs === 'object' && (hs.key === 'stood-aside' || hs.key === 'aside-cooldown')) {
+      wait = /memory|MB of memory/i.test(String(hs.why || '')) ? 'low memory' : 'import first';
+    }
     if (waitOnly) return wait;
     if (!hs || typeof hs !== 'object' || hs.census === 'current' || typeof hs.owed !== 'number') return [];
     var f = [hs.owed + (hs.owed === 1 ? ' law owed' : ' laws owed')];
@@ -29372,12 +29378,23 @@ function escC(s) {
     var rv = (m && m.system && typeof m.system === 'object') ? m.system.river : null;
     var hs = (rv && typeof rv === 'object' && rv.heart && typeof rv.heart === 'object') ? rv.heart : null;
     var proving = !!(hs && hs.census !== 'current' && typeof hs.owed === 'number' && hs.owed > 0);
+    var _shutList = (hs && Array.isArray(hs.locksShut)) ? hs.locksShut : null;
+    var _routeOpen = !!(_shutList && _shutList.indexOf('reel.route') < 0);
+    var _blindsLock = !!(hs && typeof hs.lockWhy === 'string' && /are BLIND/.test(hs.lockWhy));
     var eta = proving ? _proofMeterFacts(hs).join(' · ') : '';
     var hurt = [];
     var st = by.stuck, pv = by.proved;
     if (st && st.warn) hurt.push('river stuck: ' + st.t);
     else if (st && /locks are shut/.test(st.t)) hurt.push('river locks shut until it proves');
-    if (hs && typeof hs.blind === 'number' && hs.blind > 0) hurt.push(hs.blind + (hs.blind === 1 ? ' gate blind' : ' gates blind'));
+    if (hs && typeof hs.blind === 'number' && hs.blind > 0) {
+      /* v3894 (REG-3580, his 11-10 Fleet: OLD PC ALT read BLOCKED / 4 checks blind while reel.route was open and a
+         proof was running). A blind count that currently shuts routing, or that we cannot place on the doors, stays a
+         wound. A proving PC whose routing door is open is updating, not blocked - the blinds ride the line as leftover
+         work. */
+      if (!_routeOpen || _blindsLock || !proving) {
+        hurt.push(hs.blind + (hs.blind === 1 ? ' gate blind' : ' gates blind'));
+      }
+    }
     if (hs && !proving && hs.census && hs.census !== 'current' && hs.census !== 'unknown') hurt.push('proof: ' + (pv ? pv.f[0] : hs.census));
     /* its repair book's leftovers are CODE's to fix, not a wound and not his (GrokBot's "owed by code"): a dim line, never
        the word - else his own console reads WOUNDED for as long as any eagle fault lacks a known repair */
@@ -29398,7 +29415,7 @@ function escC(s) {
       key = 'healing'; next = 'starting up - its first proof check lands about 5 minutes after a start';
     } else if (!parts || !known) {
       key = 'lost'; next = 'open the console on that PC once, so it can report';
-    } else if (hurt.length) {
+    } else if (hurt.length && !(proving && _routeOpen && !_blindsLock)) {
       key = 'wounded';
       next = proving ? ('it heals itself: proving ' + eta + ' - nothing for you to do') : '';
     } else if (proving) {
@@ -29495,7 +29512,12 @@ function escC(s) {
       ? ' ~' + (e < 60 ? '1 min' : e < 5400 ? Math.round(e / 60) + ' min' : (e / 3600).toFixed(1) + ' h') : ''; };
     var proving = (hs && typeof hs.owed === 'number' && hs.owed > 0) ? 'proving ' + _n(hs.owed) + (hs.owed === 1 ? ' check' : ' checks')
       + (_proofMeterFacts(hs, true) ? ' \u00b7 ' + _proofMeterFacts(hs, true) : _eta(hs.etaS)) : '';   // v3885 - a waiting prover says why, not "~175 h"
-    if (s.key === 'healing') return [s.starting ? 'starting up' : (proving || 'proving')];
+    if (s.key === 'healing') {
+      if (s.starting) return ['starting up'];
+      var _left = (hs && typeof hs.blind === 'number' && hs.blind > 0)
+        ? (hs.blind + (hs.blind === 1 ? ' check still blind' : ' checks still blind')) : '';
+      return [proving || 'proving', _left].filter(Boolean);
+    }
     /* ONE wound, the one that needs a hand first: a blind gate keeps every lock shut whatever this PC proves next, so it
        leads; the rest are "+N" (the open row and the State panel name them). Then what is healing it, if anything. */
     var _short = function (x) {
