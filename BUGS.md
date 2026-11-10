@@ -7,19 +7,19 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
-### REG-3584 - THE d2jsp BACKFILL RESUMES OFFLINE AND NEVER STARTS A LIVE SCRAPE (#151)
+### REG-3620 - THE d2jsp BACKFILL RESUMES OFFLINE AND NEVER STARTS A LIVE SCRAPE (#151)
 His rulings: signed-in on the Mac console, 1 search/min, a ~2-year backfill then a monthly refresh; only priced posts with links; the same seller is one post and one price; never post or trade. Step 1 (REG-3491) kept scrubbed results pages. Step 2: tv/d2jsp_backfill.py walks &o= from those pages, folds through the price DB, and a killed run picks up at the saved offset. Importing it or running its tests never opens a network socket - a pass with no fetch handed in asks nothing. The live 1-search/min lane is not started here. Law test_the_d2jsp_backfill_resumes_offline.
 
-### REG-3585 - ITEM MODS AND KEYWORDS WEAR THE GAME FACE (#23)
+### REG-3621 - ITEM MODS AND KEYWORDS WEAR THE GAME FACE (#23)
 v3889 phase 1 put --ff-game on the game-name classes. Item mods/keywords (the set-tile affix list `.ct-affixes`) still rendered in ui-monospace. They now wear the same --ff-game token; no colour, size or weight is touched. Law test_game_mods_wear_the_game_face.
 
-### REG-3586 - OLD PC ALT PUBLISHES AS OLD PC ALT, NEVER UNDER Konyo · ALT (#27)
+### REG-3622 - OLD PC ALT PUBLISHES AS OLD PC ALT, NEVER UNDER Konyo · ALT (#27)
 REG-3507 made OLD PC ALT its own label, but a leftover identity sharesLabel of "Konyo · ALT" could still override a nickname that is already a label if the console branched itself. publish_owner keeps a label as itself; sharesLabel is only read for a name that is still no label. Law test_old_pc_alt_publishes_under_its_own_label.
 
-### REG-3587 - A BUILDS BOOK NEVER HIDES CREST AND MORPH (#104)
+### REG-3623 - A BUILDS BOOK NEVER HIDES CREST AND MORPH (#104)
 Dean's /api/saves named Crest, Morph, Morphad, ... but _roster_reads set used_book from his builds and skipped with_save_names, so the upload's characters section was only "Barbarian build" / "Sorceress build". Save names now always join and ride beside the builds as inGame. Law test_a_builds_book_does_not_hide_save_names.
 
-### REG-3588 - A WINDOWED CLIENT IS LETTERBOXED ONTO 1920x1080 AND SKIPS ARE COUNTED BY REASON (#115)
+### REG-3624 - A WINDOWED CLIENT IS LETTERBOXED ONTO 1920x1080 AND SKIPS ARE COUNTED BY REASON (#115)
 v3894 already letterboxes in capture_win.ps1 (Dean-shaped 1507x755 -> 1920x961 with bars). tv/film_letterbox.py holds the same geometry so panel-relative reader bands map through that place (never onto a bar, never stretched) and skip events are counted by their named reason. Law test_a_windowed_film_is_letterboxed_and_skips_are_counted.
 
 ### REG-3223 - GITHUB'S FIRST v3865 ROUND: SIX REDS THE PRE-FLIGHT COULD NOT SEE, AND ONE THAT COULD HAVE PRUNED A MAIN TREE (v3865)

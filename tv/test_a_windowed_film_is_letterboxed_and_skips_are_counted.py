@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""#115 (REG-3588) - A WINDOWED CLIENT IS LETTERBOXED ONTO 1920x1080 AND FILM SKIPS ARE COUNTED BY REASON.
+"""#115 (REG-3624) - A WINDOWED CLIENT IS LETTERBOXED ONTO 1920x1080 AND FILM SKIPS ARE COUNTED BY REASON.
 
 His ask: even when Dean plays windowed (measured 1507x755, #255 / Claude 2026-11-07), record at full
 resolution, find the game in the frame, cut it out and scale it onto 1920x1080 without stretching
@@ -72,12 +72,12 @@ class AWindowedFilmIsLetterboxed(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "REG-3588 - a 1507x755 client is stretched to fill 1080 tall (squashed aspect)",
+    {"why": "REG-3624 - a 1507x755 client is stretched to fill 1080 tall (squashed aspect)",
      "file": "tv/film_letterbox.py",
      "find": "    scale = min(film_w / float(src_w), film_h / float(src_h))\n",
      "replace": "    scale = film_h / float(src_h)\n",
      "matches": 1},
-    {"why": "REG-3588 - skip reasons are flattened into one number",
+    {"why": "REG-3624 - skip reasons are flattened into one number",
      "file": "tv/film_letterbox.py",
      "find": '        if r in SKIP_REASONS:\n            out[r] += 1\n        else:\n            out["other"] += 1\n',
      "replace": '        out["other"] += 1\n',

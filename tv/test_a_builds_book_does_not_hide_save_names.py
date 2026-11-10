@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""#104 (REG-3587) - A BUILDS BOOK NEVER HIDES THIS PC'S SAVE NAMES (Crest, Morph, ...).
+"""#104 (REG-3623) - A BUILDS BOOK NEVER HIDES THIS PC'S SAVE NAMES (Crest, Morph, ...).
 
 MEASURED 11-07 on Dean: /api/saves named Crest, Morph, Morphad, ... but the roster upload's
 characters section was his builds book ("Barbarian build", "Sorceress build") because
@@ -59,12 +59,12 @@ class ABuildsBookDoesNotHideSaveNames(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "REG-3587 - a builds book hides Crest and Morph again",
+    {"why": "REG-3623 - a builds book hides Crest and Morph again",
      "file": "tv/roster_publish.py",
      "find": "        out[\"inGame\"] = {\"rows\": list(chars[\"rows\"]),\n",
      "replace": "        out[\"inGame\"] = {\"rows\": [],\n",
      "matches": 1},
-    {"why": "REG-3587 - the console skips save names when a builds book is used",
+    {"why": "REG-3623 - the console skips save names when a builds book is used",
      "file": "tv/control_app.py",
      "find": "                reads[\"characters\"] = _rp.with_ingame_beside_builds(reads[\"characters\"], got)\n",
      "replace": "                reads[\"characters\"] = reads[\"characters\"]\n",

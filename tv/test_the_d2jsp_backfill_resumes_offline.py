@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""#151 (REG-3584) - THE d2jsp BACKFILL RESUMES OFFLINE AND NEVER STARTS A LIVE SCRAPE.
+"""#151 (REG-3620) - THE d2jsp BACKFILL RESUMES OFFLINE AND NEVER STARTS A LIVE SCRAPE.
 
 His rulings: signed-in, 1 search/min, a ~2-year backfill then a monthly refresh; only priced posts
 with links; the same seller is one post and one price; never post or trade. Step 1 (REG-3491) keeps
@@ -131,17 +131,17 @@ class TheBackfillResumesOffline(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "REG-3584 - a pass with no fetch is marked as if the forum was asked",
+    {"why": "REG-3620 - a pass with no fetch is marked as if the forum was asked",
      "file": "tv/d2jsp_backfill.py",
      "find": '            out["why"] = "no fetch handed in - nothing is asked (the live scrape is not started from here)"\n            return out\n',
      "replace": '            out["why"] = "fetch skipped"\n            out["worked"] = True\n            return out\n',
      "matches": 1},
-    {"why": "REG-3584 - a killed run forgets its offset and starts the item again at o=0",
+    {"why": "REG-3620 - a killed run forgets its offset and starts the item again at o=0",
      "file": "tv/d2jsp_backfill.py",
      "find": '            st["offset"] = int(nxt)\n',
      "replace": "            st[\"offset\"] = 0\n",
      "matches": 1},
-    {"why": "REG-3584 - the 1 search/min pace is not honoured",
+    {"why": "REG-3620 - the 1 search/min pace is not honoured",
      "file": "tv/d2jsp_backfill.py",
      "find": "        if last and now - last < gap:\n",
      "replace": "        if False and last and now - last < gap:\n",
