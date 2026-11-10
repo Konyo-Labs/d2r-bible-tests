@@ -6292,8 +6292,10 @@
   .fleet-box { margin-top: 8px; border: 1px solid var(--edge); border-radius: 8px; padding: 7px 9px;
     box-sizing: border-box; }
   .fleet-head { font: var(--fw-bold) var(--fs-2xs)/1 var(--mono); letter-spacing: var(--ls-label);
-    text-transform: uppercase; color: var(--gold-dim); display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .fleet-refresh { margin-left: auto; padding: 2px 7px; }
+    text-transform: uppercase; color: var(--gold-dim); display: flex; align-items: center; gap: 8px; margin-bottom: 6px; min-width: 0; }
+  /* REG-3630 — auto margin lives on .fleet-head-tools so ↻ and the lamp ? wrap together. */
+  .fleet-head-tools { display: inline-flex; align-items: center; gap: inherit; margin-left: auto; flex: none; }
+  .fleet-refresh { padding: 2px 7px; }
   /* v3857 #247 - util-btn's flex 1 1 84px squeezed 'Roster' under its own word at 1024 and stretched the refresh glyph wide */
   .fleet-head .util-btn { flex: none; }
   .mini-foc .mf .mf-t { min-width: 0; text-align: center; }
@@ -6306,6 +6308,12 @@
   #btn-shelf .glab-sub { display: block; font-size: var(--fs-2xs); letter-spacing: .02em; opacity: .78; margin-top: 3px; }
   /* v3857 #247 - at 1024-1279 the rail is ~210px and the label letter-spacing broke 'THE FLEET' and 'SWEEP · this PC' onto two lines */
   @media (max-width: 1279px) { .fleet-head { white-space: nowrap; letter-spacing: .04em; gap: 6px; } }
+  /* REG-3630 — v3895's lamp ? is a third button on this nowrap row. At 901 the rail is
+     clamp(238px, 23vw, 430px) = 238px and scrollbar-gutter: stable takes ~15px more, so the
+     row's min-content overflowed .rail's overflow-x:hidden and render_check page reported
+     clipped 1 at 901x900 (`rail :: Console–⤢window`). flex-wrap drops the tools as a unit:
+     THE FLEET stays one line (the nowrap above still holds) and the ? stays on screen. */
+  @media (max-width: 1279px) { .fleet-head { flex-wrap: wrap; row-gap: 3px; min-width: 0; } }
   .fleet-head:has(> .swm-state) { white-space: nowrap; flex-wrap: wrap; row-gap: 3px; }
   /* The panel scrolls inside itself. A full vault list used to grow the rail
      under the sticky shelf, so a click on Roster looked like nothing. */
@@ -9325,7 +9333,7 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
                          rule names `.signal` and `#sig-adv`, so anything still inside that drawer is hidden
                          with it. Out here it needs no rule of its own to stay visible in every view. -->
 <div class="fleet-box">
-            <div class="fleet-head">🖥 THE FLEET <button class="util-btn" type="button" id="roster-open" title="other consoles, read only" onclick="window._rosterOpen()">Roster</button><button class="util-btn fleet-refresh" type="button" title="re-check who is online" onclick="window._fleetRefresh(true)">↻</button><button class="util-btn fleet-help-btn" type="button" id="fleet-help-btn" title="what the lamp and the eyes mean" aria-expanded="false" aria-controls="fleet-help" onclick="window._fleetHelpToggle()">?</button></div>
+            <div class="fleet-head">🖥 THE FLEET <button class="util-btn" type="button" id="roster-open" title="other consoles, read only" onclick="window._rosterOpen()">Roster</button><span class="fleet-head-tools"><button class="util-btn fleet-refresh" type="button" title="re-check who is online" onclick="window._fleetRefresh(true)">↻</button><button class="util-btn fleet-help-btn" type="button" id="fleet-help-btn" title="what the lamp and the eyes mean" aria-expanded="false" aria-controls="fleet-help" onclick="window._fleetHelpToggle()">?</button></span></div>
             <div id="fleet-help" class="fleet-help" hidden></div>
             <div class="roster-box" id="roster-box" hidden>
               <div class="fleet-head">ROSTER <span class="roster-note">read only</span></div>
