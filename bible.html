@@ -11442,15 +11442,6 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 #chx-win .chx-doll .mp-p{flex:none;max-width:100%}
 #chx-win .chx-win-say{margin:0;font-size:var(--fs-body);color:var(--text)}
 #chx-win .chx-win-grid{margin:0;font-size:var(--fs-meta);color:var(--text-dim)}
-.chx-grid-wrap{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
-.chx-win-grid[data-state="open"]{display:grid;gap:2px;padding:6px;border:1px solid var(--border-light);border-radius:6px}
-.chx-win-grid[data-grid="inventory"]{grid-template-columns:repeat(10,minmax(14px,1fr))}
-.chx-win-grid[data-grid="stash"]{grid-template-columns:repeat(10,minmax(12px,1fr))}
-.chx-win-grid[data-grid="belt"]{grid-template-columns:repeat(4,minmax(16px,1fr))}
-.chx-win-grid[data-grid="stats"]{grid-template-columns:repeat(2,minmax(80px,1fr))}
-.chx-grid-h{grid-column:1/-1}
-.chx-grid-cell,.chx-stat-cell{min-height:22px;padding:2px;border:1px solid var(--border-light);background:rgba(0,0,0,.25);color:var(--text);font-size:10px;cursor:pointer}
-.qw-best-place{margin:0 0 8px;color:var(--gold);font-size:var(--fs-meta)}
 .vault-propose{display:block;margin-top:2px;font-size:var(--fs-meta);color:var(--text-dim)}
 .vault-propose[data-state="unknown"]{color:var(--text)}
 .vault-organize{max-height:min(28vh,220px);overflow:auto;margin:0 0 8px;padding:8px 10px;border:1px solid var(--border-light);border-radius:10px;background:var(--surface)}
@@ -11996,92 +11987,11 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     for (var i = 0; i < groups.length; i++){ if (groups[i].t && groups[i].t.key === key) return groups[i].t; }
     return { key: key, name: key.indexOf('seen:') === 0 ? key.slice(5) : (key || 'this character') };
   }
-  function _chxCellRow(G, cell){
-    if (!G || G.state !== 'seen' || !cell) return null;
-    if (cell.indexOf('equipped:') === 0){
-      var slot = cell.slice('equipped:'.length), row = null;
-      (G.g.slots || []).forEach(function(s){ if (s.slot === slot) row = s; });
-      return row;
-    }
-    var kinds = ['inventory', 'stash', 'belt'];
-    for (var i = 0; i < kinds.length; i++){
-      var pref = kinds[i] + ':';
-      if (cell.indexOf(pref) !== 0) continue;
-      var key = cell.slice(pref.length), hit = null;
-      ((G.g && G.g[kinds[i]]) || []).forEach(function(s){
-        var id = (s && s.r != null && s.c != null) ? (String(s.r) + ',' + String(s.c)) : String((s && s.cell) || '');
-        if (id === key || (s && s.cell === cell)) hit = s;
-      });
-      return hit;
-    }
-    return null;
-  }
-  function _chxBagHtml(kind, cols, rows, items){
-    var by = {};
-    (items || []).forEach(function(s){
-      var id = (s && s.r != null && s.c != null) ? (String(s.r) + ',' + String(s.c)) : '';
-      if (id) by[id] = s;
-    });
-    var cells = ['<div class="chx-grid-h">' + esc(kind) + '</div>'];
-    for (var r = 0; r < rows; r++){
-      for (var c = 0; c < cols; c++){
-        var id = r + ',' + c, cell = kind + ':' + id, s = by[id];
-        var stt = (s && s.item) ? '' : ((s && s.why) ? ' data-state="unknown"' : ' data-state="unseen"');
-        var label = (s && s.item) ? esc(s.item) : ((r + 1) + '\u00d7' + (c + 1));
-        cells.push('<button type="button" class="chx-grid-cell" data-cell="' + esc(cell) + '"' + stt
-          + ' onclick="window._chxPick(\'' + _chxJs(cell) + '\')">' + label + '</button>');
-      }
-    }
-    return '<div class="chx-win-grid" data-grid="' + esc(kind) + '" data-state="open" data-cols="' + cols + '">'
-      + cells.join('') + '</div>';
-  }
-  function _chxStatHtml(t){
-    var keys = [
-      ['stat:str', 'Strength'], ['stat:dex', 'Dexterity'], ['stat:vit', 'Vitality'], ['stat:ene', 'Energy'],
-      ['stat:life', 'Life'], ['stat:mana', 'Mana'],
-      ['stat:fcr', 'Faster Cast Rate'], ['stat:fhr', 'Faster Hit Recovery'],
-      ['stat:fbr', 'Faster Block Rate'], ['stat:ias', 'Increased Attack Speed'],
-      ['skill:tree', 'Skill tree']
-    ];
-    var cells = ['<div class="chx-grid-h">stats and skills</div>'];
-    keys.forEach(function(pair){
-      var cell = pair[0], word = pair[1], leaf = cell.slice(cell.indexOf(':') + 1);
-      var val = t && t.stats && t.stats[leaf];
-      cells.push('<button type="button" class="chx-stat-cell" data-cell="' + esc(cell) + '"'
-        + ' onclick="window._chxPick(\'' + _chxJs(cell) + '\')">' + esc(word)
-        + (val != null ? ' \u00b7 ' + esc(val) : '') + '</button>');
-    });
-    return '<div class="chx-win-grid" data-grid="stats" data-state="open">' + cells.join('') + '</div>';
-  }
-  function _chxBagsHtml(G, t){
-    var inv = (G.g && G.g.inventory) || [];
-    var stsh = (G.g && G.g.stash) || [];
-    var belt = (G.g && G.g.belt) || [];
-    return '<div class="chx-grid-wrap">'
-      + _chxBagHtml('inventory', 10, 4, inv)
-      + _chxBagHtml('stash', 10, 10, stsh)
-      + _chxBagHtml('belt', 4, 4, belt)
-      + _chxStatHtml(t)
-      + '</div>';
-  }
   function _chxSay(t, cell){
     var G = _gearOf(t);
     if (G.state === 'unknown') return 'Gear UNKNOWN — ' + esc(G.why) + '.';
     if (G.state === 'none') return 'No gear seen yet';
     if (!cell) return 'Choose a cell.';
-    if (cell.indexOf('inventory:') === 0 || cell.indexOf('stash:') === 0 || cell.indexOf('belt:') === 0){
-      var bagRow = _chxCellRow(G, cell);
-      var kind = cell.split(':')[0], where = cell.slice(kind.length + 1);
-      if (bagRow && bagRow.item) return esc(kind) + ' ' + esc(where) + ' \u00b7 ' + esc(bagRow.item)
-        + ' \u00b7 ' + esc(_CHX_WORD[bagRow.tier] || 'tier UNKNOWN') + ' \u00b7 ' + _looks(bagRow.sightings);
-      return esc(kind) + ' ' + esc(where) + ' \u00b7 not seen yet';
-    }
-    if (cell.indexOf('stat:') === 0 || cell.indexOf('skill:') === 0){
-      var leaf = cell.slice(cell.indexOf(':') + 1);
-      var val = t && t.stats && t.stats[leaf];
-      if (val != null) return esc(leaf) + ' \u00b7 ' + esc(val);
-      return esc(leaf) + ' \u00b7 choose this ' + (cell.indexOf('skill:') === 0 ? 'skill' : 'stat') + ' for its detail.';
-    }
     var slot = cell.indexOf('equipped:') === 0 ? cell.slice('equipped:'.length) : '';
     var row = null;
     (G.g.slots || []).forEach(function(s){ if (s.slot === slot) row = s; });
@@ -12150,7 +12060,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     return head + '<div class="chx-doll" data-state="seen">' + doll + '</div>'
       + '<p class="chx-win-say" data-picked="' + esc(_chxCell) + '">' + _chxSay(t, _chxCell) + '</p>'
       + unTxt
-      + _chxBagsHtml(G, t);
+      + '<p class="chx-win-grid" data-grid="inventory" data-state="unjoined">No inventory or stash cell is joined to '
+      + nm + ', so none is drawn.</p>';
   }
   function _chxHost(){
     var host = document.getElementById('chx-win');
@@ -12180,8 +12091,9 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     var t = _charOfKey(_chxKey);
     host.innerHTML = '<div class="chx-win-box">' + _chxWinHtml(t) + '</div>';
     /* v3892 (#28/#146, REG-3546) - a worn named item opens its card; an unseen or UNKNOWN cell only speaks its sentence */
-    /* v3894 (#234/#146) - a named inventory, stash or belt cell opens the same card */
-    var G = _gearOf(t), row = _chxCellRow(G, _chxCell);
+    var slot = _chxCell.indexOf('equipped:') === 0 ? _chxCell.slice('equipped:'.length) : '';
+    var G = _gearOf(t), row = null;
+    if (G && G.state === 'seen') (G.g.slots || []).forEach(function(s){ if (s.slot === slot) row = s; });
     if (row && row.item && typeof window.openItemDetail === 'function') {
       try { window.openItemDetail(row.item); } catch (e) {}
     }
@@ -31133,7 +31045,8 @@ function _tvOutsidePrice(e){
   var form = document.getElementById('d2jsp-price-form');
   if (form && form.contains(t)) return '';
   if (q) q.value = '';
-  if (typeof priceSearchIdle === 'function') priceSearchIdle();
+  /* REG-3537 - priceSearchIdle is local to the search IIFE; the published hook is on window. */
+  if (typeof window._d2jspPriceSearchIdle === 'function') window._d2jspPriceSearchIdle();
   return 'd2jsp';
 }
 window._tvOutsidePrice = _tvOutsidePrice;
@@ -71384,8 +71297,7 @@ function renderJournal(){
     return t.replace(/(^|\s)TZ(\s|$)/, '$1<span class="tz-tag" title="' + esc(tip) + '">TZ</span>$2');
   }
   window._tzLabelHtml = _tzLabelHtml;
-  function _qwPlaceRow(p, i, rankSay, isBest){
-    if (isBest === undefined) isBest = !rankSay && i === 0;
+  function _qwPlaceRow(p, i, rankSay){
     var area = _qwAreaOf(p.s.bossId, p.area), multi = p.kpr > 1;
     var pr = multi ? perRunChance(p.chance, p.s.bossId) : null;
     /* ONE UNIT DOWN THE COLUMN (the Grok CLI's look at this grid, 2026-11-06: "odds a kill" beside The Pit's "odds a run"
@@ -71395,9 +71307,9 @@ function renderJournal(){
       ? _qwStat(fmtOdds(Math.max(1, Math.round(1 / pr))), 'odds a run', 'qw-odds',
                 fmtOdds(p.chance) + ' a kill; one run of this place is ~' + p.kpr + ' kills (an estimate - the run odds move with it)')
       : _qwStat(fmtOdds(p.chance), 'odds a run', 'qw-odds', 'one run of this place is one kill');
-    return '<div class="qw-row' + (rankSay ? ' qw-row-area' : '') + (isBest ? ' qw-best' : '') + '">'
+    return '<div class="qw-row' + (rankSay ? ' qw-row-area' : (i === 0 ? ' qw-best' : '')) + '">'
       + _qwTile(p.s.bossId, area, p.label, p.s.name)
-      + '<span class="qw-place"><span class="qw-rank">' + (rankSay ? esc(rankSay) : (i === 0 ? (isBest ? '1st · best run' : '1st · best boss') : (_QW_NTH[i] || ((i + 1) + 'th')))   /* v3884 - the 5th row read 'undefined' (seen on the pixels) */) + '</span>'
+      + '<span class="qw-place"><span class="qw-rank">' + (rankSay ? esc(rankSay) : (i === 0 ? '1st · best run' : (_QW_NTH[i] || ((i + 1) + 'th')))   /* v3884 - the 5th row read 'undefined' (seen on the pixels) */) + '</span>'
       + '<b class="qw-name"' + _qwHover(p.s.bossId, p.s.name) + '>' + _tzLabelHtml(p.label) + '</b>'   /* v3884 (REG-3438) */
       + '<span class="qw-sub qw-area"><span class="qw-zone">' + esc(area) + '</span>' + (multi ? ' · ~' + p.kpr + ' kills a run' : '')
       + (p.tz99 ? ' · its Terror Zone figure at level 99 (no level table)' : '') + '</span></span>'
@@ -71466,21 +71378,16 @@ function renderJournal(){
        no silospen list, so neither list carries them. Was: section 1 bosses AND super-uniques (Pitspawn Fouldog 1:3,062 on
        Bane Ash, a Super Unique), section 2 the area runs and three stored random rows. */
     var L = _qwLists(qp, also), bosses = L.boss, others = L.others || [], all = L.all;
-    var bestP = (all && all[0] && all[0].p) ? all[0].p : null, bestLabel = bestP ? bestP.label : '';
     function draw(list, first){
       return list.map(function(r, i){
-        var isBest = !!(bestLabel && r.p && r.p.label === bestLabel);
-        return r.p ? (first ? _qwPlaceRow(r.p, i, undefined, isBest) : _qwPlaceRow(r.p, i, _QW_NTH[i] + ' \u00b7 per kill', isBest)) : _qwAlsoGrid([r.a], i);
+        return r.p ? (first ? _qwPlaceRow(r.p, i) : _qwPlaceRow(r.p, i, _QW_NTH[i] + ' \u00b7 per kill')) : _qwAlsoGrid([r.a], i);
       }).join('');
     }
     var sec1 = bosses.length ? draw(bosses, true)
       : '<div class="qw-none">No boss drops it - silospen\u2019s Boss list is empty for this item; its places are below.</div>';
     var secO = others.length ? draw(others, false)
       : '<div class="qw-none">Nothing past the bosses above drops it - no other monster on record.</div>';
-    var banner = bestP
-      ? '<div class="qw-best-place">Best place \u00b7 silospen\u2019s All: ' + esc(bestP.label) + (bestP.area ? ' \u00b7 ' + esc(bestP.area) : '') + '</div>'
-      : '';
-    return banner + '<div class="qw-grid-h">Bosses \u00b7 1st-5th \u00b7 silospen\u2019s Monster Type: Boss, Terror Zone on and off</div>'
+    return '<div class="qw-grid-h">Bosses \u00b7 1st-5th \u00b7 silospen\u2019s Monster Type: Boss, Terror Zone on and off</div>'
       + '<div class="qw-grid">' + sec1 + '</div>'
       + '<div class="qw-also qw-others"><div class="qw-also-h">Others \u00b7 1st-5th \u00b7 silospen\u2019s Monster Type: All without the bosses above - super-uniques, the Cow King, random packs - Terror Zone on and off, fewest kills for a 50% chance first</div>'
       + secO + '</div>';
@@ -79905,28 +79812,9 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     if (!sh || !eng || !eng.bp || !sh.rows) return;
     sh.rows.forEach(function(r){ if (r.key === 'ias') r.bp = _cbIasGap(b, r); });
   }
-  function _cbBpHtml(eng, g, kind, row, b){
+  function _cbBpHtml(eng, g){
     if (!g || !eng || !eng.bp || typeof eng.bp.say !== 'function') return '';
-    var say = eng.bp.say(g);
-    var v = row && row.source !== 'UNKNOWN' && row.value && row.value.min != null ? row.value : null;
-    var tiers = (kind && g.frames != null && v && b) ? _cbBpTiers(kind, b, eng) : null;
-    if (tiers){
-      var nowPct = v.min, k = tiers.filter(function(t){ return t[0] <= nowPct; }).length, T = tiers.length;
-      say = 'tier ' + k + '/' + T + ' \u00b7 ' + say;
-    }
-    return '<span class="cb-bp"' + (g.why ? ' title="' + esc(g.why) + '"' : '') + '>' + esc(say) + '</span>';
-  }
-  function _cbResParts(r){
-    if (!r || !/^res-(fire|cold|ltng|pois|all)$/.test(String(r.key || '')) || !r.parts || !r.parts.length) return '';
-    var bits = r.parts.map(function(p){
-      if (!p) return '';
-      var lo = p.lo, hi = p.hi, n;
-      if (lo == null && hi == null) return '';
-      n = (hi == null || lo === hi) ? lo : (lo + '\u2013' + hi);
-      var signed = (typeof n === 'number' && n > 0) ? ('+' + n) : String(n);
-      return signed + ' ' + String(p.src || p.via || 'gear');
-    }).filter(Boolean);
-    return bits.length ? '<span class="cb-res-parts">' + esc(bits.join(' \u00b7 ')) + '</span>' : '';
+    return '<span class="cb-bp"' + (g.why ? ' title="' + esc(g.why) + '"' : '') + '>' + esc(eng.bp.say(g)) + '</span>';
   }
   function _cbBpRead(b){
     var eng = window.D2R_CHAR_ENGINE;
@@ -80024,7 +79912,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
            "capped at 75 (75 + max ..., never above 95)" in full */
         h += '<div class="cb-st-r" data-k="' + esc(String(r.label || r.key || '').toLowerCase()) + '"><span class="cb-sl">' + esc(r.label || r.key) + '</span>'
           + '<span class="cb-sv cb-sv-' + esc(src) + '" title="' + esc(r.why || src) + '">' + (v ? '<b>' + esc(v) + '</b>' : '') + '<i>' + esc(src) + '</i>'
-          + (cp && r.value ? '<em class="cb-cap" aria-label="capped at ' + esc(span(cp.min, cp.max)) + '">cap ' + esc(span(cp.min, cp.max)) + '</em>' : '') + '</span>' + _cbBpHtml(eng, r.bp, r.key, r, b) + _cbResParts(r) + '</div>';
+          + (cp && r.value ? '<em class="cb-cap" aria-label="capped at ' + esc(span(cp.min, cp.max)) + '">cap ' + esc(span(cp.min, cp.max)) + '</em>' : '') + '</span>' + _cbBpHtml(eng, r.bp) + '</div>';
       });
     }
     return h + '</div>' + _cbPrimMercHtml() + '</div>';   /* v3885 (#134) - Primary Skills + Mercenary under Stats */
@@ -80709,26 +80597,13 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
   }
   /* ADD MOD's options, in the order the list draws them: [[group key, affix, its text]] - the one list the drawing, the
      keyboard and Enter all read (#174 v-B3 fix round: Enter picked "the first row" while no row was marked) */
-  function _cbAfKeys(a){
-    var keys = [];
-    ((a && a[11]) || []).forEach(function(ln){
-      (ln[1] || []).forEach(function(r){
-        if (!r) return;
-        var k = r[2];
-        if (typeof k === 'string' && k) keys.push(k.toLowerCase());
-      });
-    });
-    return keys;
-  }
   function _cbAddRows(e){
     var P = _cbAffixPool(e), b = _cbBuild(), clvl = _cbClvl(b), qq = String(st.modQ || '').toLowerCase().trim(), out = [];
     CB_AX_GROUPS.forEach(function(g){
       var k = g[0]; if (!P.lim || !P.lim[k] || P.full[k]) return;
       P.rows[k].forEach(function(a){
         var t = _cbAfText(a, {}, clvl, 'paren');
-        var keys = _cbAfKeys(a);
-        if (qq && t.toLowerCase().indexOf(qq) < 0 && String(a[2]).toLowerCase().indexOf(qq) < 0
-            && keys.indexOf(qq) < 0 && !keys.some(function(k){ return k.indexOf(qq) >= 0; })) return;
+        if (qq && t.toLowerCase().indexOf(qq) < 0 && String(a[2]).toLowerCase().indexOf(qq) < 0) return;
         out.push([k, a, t]);
       });
     });

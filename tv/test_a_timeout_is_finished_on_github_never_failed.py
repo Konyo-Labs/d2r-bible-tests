@@ -203,7 +203,7 @@ RED_PROOF = [
      "file": "tv/proof_shard.py", "find": "    due, why = makeup_due(tot)\n    if due:\n        sh = sorted(",
      "replace": "    due, why = makeup_due(tot)\n    if due or tot.get('fix'):\n        sh = sorted(", "matches": 1},
     {"why": "REG-3387 - the ship stops on a round GitHub's finisher is already re-running",
-     "file": "tv/ship_when_green.py", "find": "            if running_again(rid, run):",
+     "file": "tv/ship_when_green.py", "find": "            if running_again(rid, run):      # v3881 (REG-3387)",
      "replace": "            if False:", "matches": 1},
 ]
 

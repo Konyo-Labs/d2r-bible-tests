@@ -3388,24 +3388,6 @@
     "purpose": "v3884 (REG-3437, his 'Add a level setting') - silospen's terror-zone odds at every character level 1-99 for the eight boss / super-unique farms; --build writes the page's tz-level-odds table (the LVL slider reads it through the BOSSES getters), --check holds the stored TZ columns to silospen at their stored levels.",
     "territory": "routing"
   },
-  "char_window_vs_planner.py": {
-    "entryPoints": [
-      "compare_window_to_planner"
-    ],
-    "gotcha": "No itemized d2planner export lives on this tree, so a key the cited planner dict does not name is unknown — never invented. Buff calibration stays later.",
-    "purpose": "Compare a character-window sheet against cited planner breakpoint tables (maxroll Patch 2.4 / the same tables d2planner uses).",
-    "territory": "console-ui"
-  },
-  "film_frame.py": {
-    "entryPoints": [
-      "film_dest_size",
-      "to_film_frame",
-      "to_film_jpeg"
-    ],
-    "gotcha": "A smaller windowed client is resampled and letterboxed onto 1920x1080; aspect is kept, never stretched. It does not invent a crop from the window size alone.",
-    "purpose": "Map a captured client / game rect onto the 1920x1080 film canvas so every stored frame has the same box.",
-    "territory": "capture-vision"
-  },
   "flake_ledger.py": {
     "entryPoints": [
       "load",

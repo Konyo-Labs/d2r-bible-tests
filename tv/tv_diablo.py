@@ -466,13 +466,8 @@ _FILM_FPS = max(4, min(30, int(float(os.environ.get("TV_FILM_FPS", "5" if not RO
 FILM_INTERVAL_S = 1.0 / float(_FILM_FPS)
 _FOOTAGE_FPS = max(1, min(5, int(float(os.environ.get("TV_FOOTAGE_FPS", "1") or 1))))
 FOOTAGE_INTERVAL_S = 1.0 / float(_FOOTAGE_FPS)
-# v3894 — every PC's film is 1920x1080 (Elad, 2026-11-10: Dean's shadow theatre was a magnified
-# 160 px thumb of an 800 px Windows eye). A windowed client (Dean-shaped 1507x755, #255) is
-# resampled and letterboxed onto this box so readers share the Mac's reference coordinates.
-# TV_FILM_MAX_PX still caps the longest side when set.
-FILM_W, FILM_H = 1920, 1080
-FILM_MAX_PX = max(1280, min(3840, int(os.environ.get("TV_FILM_MAX_PX", "1920") or 1920)))
-FILM_JPEG_Q = max(55, min(95, int(os.environ.get("TV_FILM_Q", "82" if not ROBOT_MODE else "82") or 82)))
+FILM_MAX_PX = max(1280, min(3840, int(os.environ.get("TV_FILM_MAX_PX", "1440" if not ROBOT_MODE else "1600") or 1440)))
+FILM_JPEG_Q = max(55, min(95, int(os.environ.get("TV_FILM_Q", "72" if not ROBOT_MODE else "75") or 72)))
 _FILM_TIMES = deque(maxlen=64)
 
 # v710.1 — SCENARIO ENGINE (Konyo: "once those moments are captured it can automatically be
@@ -3380,16 +3375,12 @@ def _film_shrink(src, dest, max_px, quality):
     problem and this does not touch it. [[feedback-verify-not-proxy]]
     """
     try:
-        from film_frame import to_film_jpeg, FILM_W as _FW, FILM_H as _FH
-        try:
-            mp = int(max_px)
-        except Exception:
-            mp = _FW
-        if mp < _FW:
-            fw, fh = mp, max(1, int(mp * _FH / float(_FW)))
-        else:
-            fw, fh = _FW, _FH
-        return bool(to_film_jpeg(src, dest, quality=quality, film_w=fw, film_h=fh))
+        from PIL import Image
+        im = Image.open(src)
+        im.draft("RGB", (max_px, max_px))
+        im.thumbnail((max_px, max_px))
+        im.save(dest, "JPEG", quality=int(quality))
+        return os.path.isfile(dest) and os.path.getsize(dest) > 4000
     except Exception:
         pass
     try:
@@ -10142,20 +10133,7 @@ def close_session(reason="stop", farewell=True):
                         continue      # unparseable stamp is not a frame — same as v894
                 _ixdoc = {"sessionId": SESSION_ID, "n": len(_meta),
                           "blank": 0, "frames": _meta, "blankPass": False}
-                _cap = _capture_for_seal() or {}
-                try:
-                    import capture_stamp as _cs
-                    _film = None
-                    for _fn in _idx:
-                        _film = _cs.film_size_from_jpeg(os.path.join(_reel, _fn))
-                        if _film:
-                            break
-                    if _film:
-                        _merged = dict(_cap)
-                        _merged["filmW"], _merged["filmH"] = _film
-                        _cap = _cs.from_measured(_merged)
-                except Exception:
-                    pass
+                _cap = _capture_for_seal()
                 if _cap:
                     _ixdoc["capture"] = _cap
                 # v1595 — STAMP THE MINI. Without this the flag changes nothing that

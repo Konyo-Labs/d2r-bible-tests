@@ -73,8 +73,8 @@ class TheConsolePublishesIt(unittest.TestCase):
         self.ca = ca
         self.d = tempfile.mkdtemp(prefix="frames_publish_")
         self.hist = os.path.join(self.d, "hist")
-        os.makedirs(os.path.join(self.hist, SS.SHADOW_CACHE))
-        open(os.path.join(self.hist, SS.SHADOW_CACHE, "1_%d.jpg" % (T0 - 60000)), "wb").write(b"\xff\xd8thumb")
+        os.makedirs(os.path.join(self.hist, "cache160"))
+        open(os.path.join(self.hist, "cache160", "1_%d.jpg" % (T0 - 60000)), "wb").write(b"\xff\xd8thumb")
         self.posts = []
 
     def tearDown(self):

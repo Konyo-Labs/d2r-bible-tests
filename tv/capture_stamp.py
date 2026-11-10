@@ -10,7 +10,7 @@ import sys
 
 ROUTES = ("native", "geforce-now", "boosteroid", "unknown")
 OSES = ("mac", "windows", "linux")
-KEYS = ("route", "windowLabel", "w", "h", "os", "dpi", "filmW", "filmH")
+KEYS = ("route", "windowLabel", "w", "h", "os", "dpi")
 
 
 def os_of_this_process():
@@ -52,10 +52,6 @@ def from_measured(measured):
     if w and h:
         out["w"] = w
         out["h"] = h
-    fw, fh = _whole(measured.get("filmW")), _whole(measured.get("filmH"))
-    if fw and fh:
-        out["filmW"] = fw
-        out["filmH"] = fh
     os_name = measured.get("os")
     if os_name in OSES:
         out["os"] = os_name
@@ -81,9 +77,6 @@ def from_index(index):
     w, h = _whole(src.get("w")), _whole(src.get("h"))
     if not (w and h):
         w = h = None
-    fw, fh = _whole(src.get("filmW")), _whole(src.get("filmH"))
-    if not (fw and fh):
-        fw = fh = None
     dpi = _whole(src.get("dpi"), 72)
     return {
         "route": src.get("route") if src.get("route") in ROUTES else None,
@@ -92,8 +85,6 @@ def from_index(index):
         "h": h,
         "os": src.get("os") if src.get("os") in OSES else None,
         "dpi": dpi,
-        "filmW": fw,
-        "filmH": fh,
     }
 
 
@@ -117,44 +108,3 @@ def beside_frame(path):
         return None
     present = {k: v for k, v in from_index(idx).items() if v is not None}
     return present or None
-
-
-def film_size_of(index):
-    """The filmed jpeg's pixels. Never the window's w/h. -> (w, h) | None"""
-    src = index.get("capture") if isinstance(index, dict) else None
-    if not isinstance(src, dict):
-        return None
-    w, h = _whole(src.get("filmW")), _whole(src.get("filmH"))
-    if w and h:
-        return (w, h)
-    return None
-
-
-def film_size_from_jpeg(path):
-    """Measured pixel size of this jpeg or png. -> (w, h) | None"""
-    import struct
-    try:
-        with open(path, "rb") as fh:
-            head = fh.read(24)
-            if head[:8] == b"\x89PNG\r\n\x1a\n" and len(head) >= 24:
-                return struct.unpack(">II", head[16:24])
-            fh.seek(0)
-            if fh.read(2) != b"\xff\xd8":
-                return None
-            while True:
-                marker = fh.read(2)
-                if len(marker) < 2 or marker[0] != 0xFF:
-                    return None
-                code = marker[1]
-                if code in (0xD8, 0xD9):
-                    continue
-                seglen = struct.unpack(">H", fh.read(2))[0]
-                if seglen < 2:
-                    return None
-                if code in (0xC0, 0xC1, 0xC2):
-                    fh.read(1)
-                    h, w = struct.unpack(">HH", fh.read(4))
-                    return (w, h) if w > 0 and h > 0 else None
-                fh.seek(seglen - 2, 1)
-    except Exception:
-        return None

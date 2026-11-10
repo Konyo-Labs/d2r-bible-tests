@@ -290,11 +290,11 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         g = self.o["gridNoAlso"]
         # v3887 (#157) - of the four places, the three that are one kill a run are drawn once each across Bosses + Others (The Pit,
         # an area run, is in no silospen list)
-        rx = r'<div class="qw-row(?: qw-best| qw-row-area){0,2}">(.*?)</div>'
+        rx = r'<div class="qw-row(?: qw-best| qw-row-area)?">(.*?)</div>'
         b, o = _secs(g)
         self.assertEqual(len(re.findall(rx, b)) + len(re.findall(rx, o)), 3, "Bosses + Others do not hold the three places once each")
         rows = re.findall(rx, g)
-        self.assertRegex(g, r'<div class="qw-row(?: qw-row-area)? qw-best">', "the best place is not marked")
+        self.assertIn('<div class="qw-row qw-best">', g, "the best place is not marked")
         for row in rows:
             self.assertEqual(row.count('class="qw-tile'), 1, row[:200])
             stats = re.findall(r'<span class="qw-stat ([a-z-]+)"[^>]*><b>([^<]*)</b><span class="qw-sub">([^<]*)</span>', row)
@@ -311,9 +311,6 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         chance), fewest first, the five lowest of every per-kill place - bosses included"""
         g = self.o["grid"]
         sec1, sec2 = _secs(g)   # v3887 (#157) - Bosses | Others (silospen's All without the bosses above)
-        # v3894 REG-3564 - the All #1 banner sits above both lists and may name a non-boss (Coldcrow)
-        if '<div class="qw-grid-h">' in sec1:
-            sec1 = sec1[sec1.index('<div class="qw-grid-h">'):]
         self.assertIn("Normal Andariel", sec1, "PREMISE: the fixture's boss did not draw in the Bosses list")
         for nm in ("Normal Coldcrow", "Normal Pitspawn Fouldog", "Normal The Pit", "Normal The Cow King"):
             self.assertNotIn(nm, sec1, "%s is not a boss in silospen's list, and sat in the Bosses list" % nm)
@@ -326,7 +323,7 @@ class QuickWinsShowsEachPlaceWithItsPicture(unittest.TestCase):
         self.assertNotIn("Normal The Pit", sec2, "an area run sat in the All list")
         six = self.o["gridSix"]
         sec2six = _secs(six)[1]
-        self.assertEqual(len(re.findall(r'<div class="qw-row qw-row-(?:area|also)(?: qw-best)?"', sec2six)), 5,
+        self.assertEqual(len(re.findall(r'<div class="qw-row qw-row-(?:area|also)"', sec2six)), 5,
                          "the All list holds more or fewer than five places")
         ranks = re.findall(r'<span class="qw-rank">(\d)(?:st|nd|rd|th) · per (run|kill)', sec2six)
         self.assertEqual([r[0] for r in ranks], ["1", "2", "3", "4", "5"], "the All list is not numbered 1st-5th: %r" % ranks)
@@ -729,8 +726,8 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "v3884 - the 5th boss row's rank reads 'undefined' (a four-entry ordinal list)",
      "file": "bible.html",
-     "find": "(i === 0 ? (isBest ? '1st \u00b7 best run' : '1st \u00b7 best boss') : (_QW_NTH[i] || ((i + 1) + 'th')))",
-     "replace": "(i === 0 ? (isBest ? '1st \u00b7 best run' : '1st \u00b7 best boss') : ['1st', '2nd', '3rd', '4th'][i])",
+     "find": "(i === 0 ? '1st \u00b7 best run' : (_QW_NTH[i] || ((i + 1) + 'th')))",
+     "replace": "(i === 0 ? '1st \u00b7 best run' : ['1st', '2nd', '3rd', '4th'][i])",
      "matches": 1, "needs": "node"},
     {"why": "v3884 - the boss runs stop at four again (his 'top 5')",
      "file": "bible.html",

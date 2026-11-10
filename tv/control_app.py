@@ -16667,12 +16667,8 @@ def _kai_closer_loop():
                             if _skind and _tsm:
                                 _door_marks.append((_tsm, _skind))
                             _in_play = _DS2.play_after(_skind, _DS2.chain(_door_marks), _in_play)
-                        except Exception as _play_err:
-                            # v3894 - a bare `except Exception: pass` left `_in_play` False and the
-                            # stash eye silently blind for the rest of the reel. Fail open and say so.
-                            print("stash walk: play_after failed (%s) — failing open so the stash eye is not silently blind"
-                                  % type(_play_err).__name__, flush=True)
-                            _in_play = True
+                        except Exception:
+                            pass
                     except Exception:
                         # v3893 swallow ratchet - None is "could not ask"; callers already use (_eye or {})
                         _eye = None
@@ -20076,41 +20072,6 @@ def _repair_for_wire(book=None):
                        for m in (b.get("misses") or []) if isinstance(m, dict)][:8]}
 
 
-def _drain_for_wire():
-    """REG-3585 — the retention drain, for the Fleet row: stopped or not, and how many GB sit there.
-
-    Counts and a short scrubbed why only. None when this console has no drain reading yet
-    (an older build, or a boot that has not planned). A STOPPED drain is what the Fleet
-    row shouts, with the megabytes those releasable reels still hold.
-    """
-    def _whole(v):
-        return v if isinstance(v, int) and not isinstance(v, bool) and v >= 0 else None
-
-    def _mb(v):
-        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and v >= 0 else None
-
-    try:
-        with _PRUNE_LOCK:
-            rt = dict(_RETENTION)
-    except Exception:
-        return None
-    dr = rt.get("drain") if isinstance(rt.get("drain"), dict) else None
-    if not dr:
-        return None
-    states = ("CLEAR", "OWED", "STOPPED", "DORMANT", "DEFERRED", "UNKNOWN", "BLOCKED")
-    st = str(dr.get("state") or "")
-    why = dr.get("why")
-    return {
-        "state": st if st in states else None,
-        "owed": _whole(dr.get("owed")),
-        "owedAtMouth": _whole(dr.get("owedAtMouth")),
-        "eligible": _whole(rt.get("eligible")),
-        "eligibleMb": _mb(rt.get("eligibleMb")),
-        "passesOwed": _whole(dr.get("passesOwed")),
-        "why": _wire_text(why, 200) if why else None,
-    }
-
-
 def _system_for_wire():
     """#229 — THIS MACHINE'S OWN SYSTEM, COUNTS ONLY, SO THE FLEET CAN SEE EACH CONSOLE STANDS ON ITS OWN.
     -> {"tree": "ok"|"missing"|"unmeasured"|"unknown"|None, "reels": int|None,
@@ -20156,12 +20117,6 @@ def _system_for_wire():
                            if n.startswith("reel_") and os.path.isdir(os.path.join(hist, n)))
     except Exception:
         out["reels"] = None
-    try:
-        _dw = _drain_for_wire()
-    except Exception:
-        _dw = None
-    if isinstance(_dw, dict):
-        out["drain"] = _dw
     out["repair"] = _repair_for_wire()
     return out
 
@@ -40291,39 +40246,6 @@ def reel_film_shows_the_lobby(now_ms=None):
     return sum(seen) * 2 > len(seen)
 
 
-_FROZEN_IDLE_FRAMES = 3
-_FROZEN_IDLE_FRESH_S = 60
-
-
-def reel_film_is_frozen_non_d2r(now_ms=None):
-    """v3894 (#188) - is the reel rolling now a frozen non-D2R screen? True | False | None.
-
-    Uses the unified scenario classifier (d2r_screens.frozen_non_d2r / screen_of) on the newest
-    film frames of this reel. A frozen GeForce NOW / Boosteroid idle page or launcher is True;
-    any recent D2R screen, or a changing (not frozen) picture, is False; too few frames is UNKNOWN."""
-    try:
-        sid = _mini_sid()
-    except Exception:
-        return None
-    if not sid:
-        return None
-    d = os.path.join(os.environ.get("TV_HIST") or HIST_DIR, "reel_" + str(sid))
-    try:
-        names = [n for n in os.listdir(d) if _film_ts(n) is not None and n.lower().endswith(".jpg")]
-    except OSError:
-        return None
-    now = _shadow_now_ms() if now_ms is None else int(now_ms)
-    picks = [n for n in sorted(names, key=_film_ts, reverse=True)[:_FROZEN_IDLE_FRAMES]
-             if 0 <= now - _film_ts(n) <= _FROZEN_IDLE_FRESH_S * 1000]
-    if len(picks) < 2:
-        return None
-    try:
-        import d2r_screens as _DS
-        return _DS.frozen_non_d2r([os.path.join(d, n) for n in picks])
-    except Exception:
-        return None
-
-
 def tv_label_is_bare(pre):
     import tv_diablo as _tv
     return bool(isinstance(pre, dict) and _tv.label_is_bare_cloud(pre.get("windowLabel") or ""))
@@ -40523,29 +40445,6 @@ def _seal_bare_launcher(now, held_s=None):
     return {"ok": True, "cut": True, "why": why}
 
 
-def _seal_frozen_idle(now, held_s=None):
-    """v3894 (#188) - close a shadow reel whose recent film was a frozen non-D2R screen."""
-    _sid = None
-    try:
-        _sid = _mini_sid()
-    except Exception:
-        pass
-    try:
-        stop_agent(farewell=False)
-    except Exception as _e:
-        return {"ok": False, "why": "the frozen non-D2R screen would not seal: %s" % str(_e)[:80]}
-    why = ("sealed the shadow hour — for %d s the film was a frozen non-D2R screen "
-           "(an idle page or launcher), so this is not a real session"
-           % int(held_s if held_s is not None else _SHADOW_AWAY_GRACE_S))
-    _shadow_seal_log("close", reason="frozen-idle", reel=("reel_" + _sid) if _sid else None,
-                     heldS=(int(held_s) if held_s is not None else None), why=why)
-    _shadow_watch_note(lookedAt=now, gameGoneSince=None, rollingAt=None,
-                       rollingDoor=None, rollingSince=None, launcherSince=None, launcherFor=None,
-                       frozenIdleSince=None, frozenIdleFor=None,
-                       launcherUntil=now + _BARE_HUD_RELOOK_S * 1000, why=why)
-    return {"ok": True, "cut": True, "why": why}
-
-
 def shadow_watch_tick():
     """One look for the game window. -> dict, and EVERY refusal names itself.
 
@@ -40633,28 +40532,6 @@ def shadow_watch_tick():
                                        why=("the reads name no D2R zone, panel or item, but the film shows D2R's own "
                                             "lobby - the game between games, so this shadow reel is not the launcher"))
                     hud = None
-                # v3894 (#188) - a frozen non-D2R screen (GeForce NOW / Boosteroid idle page, launcher):
-                # the recorder stops filming, so "recording" means a real session.
-                _frozen = reel_film_is_frozen_non_d2r(now)
-                if _frozen is True:
-                    _lc = _shadow_watch_stored() or {}
-                    _fs = _lc.get("frozenIdleSince")
-                    if not isinstance(_fs, (int, float)) or _lc.get("frozenIdleFor") != _since:
-                        why = ("the film is a frozen non-D2R screen (an idle page or launcher) - "
-                               "this shadow reel seals if that holds for %d s" % _SHADOW_AWAY_GRACE_S)
-                        _shadow_watch_note(lookedAt=now, frozenIdleSince=now, frozenIdleFor=_since, why=why)
-                        return {"ok": True, "away": True, "idle": True, "why": why}
-                    _held = (now - float(_fs)) / 1000.0
-                    if _held < _SHADOW_AWAY_GRACE_S:
-                        why = ("the film is still a frozen non-D2R screen (%d s of %d)"
-                               % (int(_held), _SHADOW_AWAY_GRACE_S))
-                        _shadow_watch_note(lookedAt=now, why=why)
-                        return {"ok": True, "away": True, "idle": True, "why": why}
-                    return _seal_frozen_idle(now, held_s=_held)
-                if _frozen is False:
-                    _cur_fr = _shadow_watch_stored() or {}
-                    if _cur_fr.get("frozenIdleSince") is not None:
-                        _shadow_watch_note(frozenIdleSince=None, frozenIdleFor=None)
                 if hud is False:   # a rolling shadow reel on the launcher
                     # #148 HIS RULE: a session ends only after 3 minutes of no game, however that is seen - the launcher
                     # verdict waits the same _SHADOW_AWAY_GRACE_S as a gone game. The clock is pinned to THIS reel

@@ -236,22 +236,12 @@ def _sv(im, box):
     return st.mean[1] / 255.0, st.mean[2] / 255.0
 
 
-def panel_stats(path, image=None):
+def panel_stats(path):
     """(right_sat, right_val, left_sat, left_val), 0..1: the list panel on the right and the menu column on the
     left, or None when the frame cannot be opened. JPEG draft mode decodes at 1/4 size — both panels are flat
-    stone, so a quarter of the pixels says the same thing (measured ~7 ms a frame over his 45,555).
-    `image` (an already-decoded RGB image or array) spares a second file decode."""
+    stone, so a quarter of the pixels says the same thing (measured ~7 ms a frame over his 45,555)."""
     try:
         from PIL import Image
-        if image is not None:
-            im = image.convert("RGB") if hasattr(image, "convert") else Image.fromarray(
-                __import__("numpy").asarray(image).astype("uint8"))
-            im = im.resize((max(1, im.size[0] // 4), max(1, im.size[1] // 4)))
-            im = _in_game(im)
-            w, h = im.size
-            rs, rv = _sv(im, (max(0, w - PANEL_W_H * h), 0.07 * h, w, 0.93 * h))
-            ls, lv = _sv(im, (0.02 * h, 0.40 * h, 0.30 * h, 0.95 * h))
-            return rs, rv, ls, lv
         with Image.open(path) as im:
             im.draft("RGB", (max(1, im.size[0] // 4), max(1, im.size[1] // 4)))
             im = _in_game(im.convert("RGB"))
@@ -276,32 +266,14 @@ def looks_like_char_select(stats):
     return False, ("no list panel" if not right else "no menu column") + " (%s)" % say
 
 
-def lobby_stats(path, image=None):
+def lobby_stats(path):
     """(full_sat, full_val, bot_val, right_sat, right_val, right_sd, left_val, left_sd, top_val), or None when the frame
     cannot be opened. The first four are the bands; the last five are the lobby's panels (v3890 #183).
 
     Draft decode at 1/4, then the whole frame, the bottom strip, and the create-game pane. A frame that
-    is not an image is None, the same as an unreadable character-select frame, never a lobby.
-    `image` (an already-decoded RGB image or array) spares a second file decode."""
+    is not an image is None, the same as an unreadable character-select frame, never a lobby."""
     try:
         from PIL import Image, ImageStat
-        if image is not None:
-            im = image.convert("RGB") if hasattr(image, "convert") else Image.fromarray(
-                __import__("numpy").asarray(image).astype("uint8"))
-            im = im.resize((max(1, im.size[0] // 4), max(1, im.size[1] // 4)))
-            im = _in_game(im).convert("HSV")
-            w, h = im.size
-
-            def sv(box):
-                st = ImageStat.Stat(im.crop(tuple(int(v) for v in box)).resize((20, 40)))
-                return st.mean[1] / 255.0, st.mean[2] / 255.0, st.stddev[2] / 255.0
-
-            fs, fv, _f = sv((0, 0, w, h))
-            _bs, bv, _b = sv((0, 0.78 * h, w, 0.98 * h))
-            rs, rv, rsd = sv((0.72 * w, 0.15 * h, 0.98 * w, 0.75 * h))
-            _ls, lv, lsd = sv((0.02 * w, 0.15 * h, 0.28 * w, 0.75 * h))
-            _ts, tv, _t = sv((0.02 * w, 0.02 * h, 0.98 * w, 0.10 * h))
-            return fs, fv, bv, rs, rv, rsd, lv, lsd, tv
         with Image.open(path) as im:
             im.draft("RGB", (max(1, im.size[0] // 4), max(1, im.size[1] // 4)))
             im = _in_game(im.convert("RGB")).convert("HSV")

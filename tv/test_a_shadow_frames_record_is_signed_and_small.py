@@ -4,7 +4,7 @@
 A shadow renders the owner's data one to one, with SUMMARIZED frames: "a few small key frames per session". The profile
 still refuses every picture (his 10-07 ruling - pictures stay on that PC); the frames digest (shadow_sessions.digest) is
 the ONE record a picture rides, and the worker checks it, never trusts it: at most 16 sessions, 3 frames each, every
-frame a read frame's id and a film-size JPEG under 800 KB, no path or token anywhere, the hash the owner signed. It answers
+frame a read frame's id and a 160 px JPEG under 20 KB, no path or token anywhere, the hash the owner signed. It answers
 to the same registered key, intent and replay rule as the profile through ONE shared gate (signedOwnerIntent,
 signedAtRefusal, signedByRegisteredNow - moved verbatim from the profile door, so a second kind added a caller, never a
 second copy of a safety routine). Stored as roster:<owner>:frames, change-only, at most every 3 h unless the console
@@ -133,7 +133,7 @@ class TheFramesRecord(unittest.TestCase):
         self.assertGreater(len(base64.b64decode(post["raw"])), 200000, "PREMISE: the digest is not past the profile cap")
         out = _node({"seed": self.seed, "steps": [post]})
         st = out["steps"][0]
-        self.assertTrue(st["reply"].get("ok"), "a digest within its own film-size cap was refused: %r" % st["reply"])
+        self.assertTrue(st["reply"].get("ok"), "a digest within its own 900 KB cap was refused: %r" % st["reply"])
         self.assertEqual(st["puts"], ["roster:%s:frames" % OWNER])
 
     def test_an_unsigned_or_foreign_upload_stores_nothing(self):
@@ -144,7 +144,7 @@ class TheFramesRecord(unittest.TestCase):
 
     def test_only_small_jpeg_thumbnails_of_read_frames_ride(self):
         bad = {
-            "big": _digest(jpg="/9j/" + "A" * 1100100),
+            "big": _digest(jpg="/9j/" + "A" * 27500),
             "png": _digest(jpg="iVBORw0KGgoAAAANSUhEUg" + "A" * 40),
             "four": _digest(frames=4),
             "seventeen": _digest(n=17, frames=1),

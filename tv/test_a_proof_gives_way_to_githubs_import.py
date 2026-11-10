@@ -24,7 +24,6 @@ BLIND already judged on these bytes owes nothing and waits; an unreadable census
 import os
 import sys
 import unittest
-from contextlib import contextmanager
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -35,18 +34,6 @@ import self_prove as SP  # noqa: E402
 import control_app as CA  # noqa: E402
 
 QUIET = [("1", "0", 999999, "/sbin/launchd"), ("700", "1", 40000, "/usr/bin/python3 tv/control_app.py --open")]
-
-
-@contextmanager
-def _owed_and_blind_is(fn):
-    """v3894 - scope the process-wide census patch to this `with` (try/finally), never leave it swapped."""
-    import self_arming as SA
-    keep = SA._owed_and_blind
-    SA._owed_and_blind = fn
-    try:
-        yield SA
-    finally:
-        SA._owed_and_blind = keep
 
 
 class AProofGivesWayToGithubsImport(unittest.TestCase):
@@ -68,13 +55,12 @@ class AProofGivesWayToGithubsImport(unittest.TestCase):
         # reads this tree's census (self_arming._owed_and_blind); a worktree whose census held an owed BLIND (a local prove run
         # of another law) turned 4 cases red on a Mac pre-flight while GitHub's fresh tree passed. No BLIND here unless a case
         # says so (AnOwedBlindDoesNotWaitForTheImport seeds its own).
-        # v3894 - scope the patch with the context manager (try/finally) and addCleanup, so a failing
-        # case cannot leave the process-wide reader swapped for the next law.
-        self._oab_cm = _owed_and_blind_is(lambda: ([], [], {}))
-        self._SA = self._oab_cm.__enter__()
-        self.addCleanup(self._oab_cm.__exit__, None, None, None)
+        import self_arming as _SA
+        self._SA, self._oab_base = _SA, _SA._owed_and_blind
+        _SA._owed_and_blind = lambda: ([], [], {})
 
     def tearDown(self):
+        self._SA._owed_and_blind = self._oab_base
         for k, v in self._saved.items():
             setattr(CA, k, v)
         for k, v in self._sp.items():
@@ -175,12 +161,14 @@ class AnOwedBlindDoesNotWaitForTheImport(AProofGivesWayToGithubsImport):
 
     def setUp(self):
         super(AnOwedBlindDoesNotWaitForTheImport, self).setUp()
+        import self_arming as SA
+        self.SA = SA
+        self._oab = SA._owed_and_blind
         self.census = {"owed": ["test_a", "test_blind"], "blind": ["test_blind"]}
-        self._census_cm = _owed_and_blind_is(lambda: (self.census["owed"], self.census["blind"], {}))
-        self.SA = self._census_cm.__enter__()
-        self.addCleanup(self._census_cm.__exit__, None, None, None)
+        SA._owed_and_blind = lambda: (self.census["owed"], self.census["blind"], {})
 
     def tearDown(self):
+        self.SA._owed_and_blind = self._oab
         super(AnOwedBlindDoesNotWaitForTheImport, self).tearDown()
 
     def test_an_owed_blind_is_proved_beside_the_import(self):
@@ -203,17 +191,17 @@ class AnOwedBlindDoesNotWaitForTheImport(AProofGivesWayToGithubsImport):
 
     def test_an_unreadable_census_waits_and_his_game_still_wins(self):
         self._importing(True)
-        with _owed_and_blind_is(lambda: (None, None, "no proof census on this PC")):
-            self.assertTrue(CA._sp_prove_yield_here(), "an unreadable census let the prover fight the import")
-        with _owed_and_blind_is(lambda: 1 / 0):
-            self.assertTrue(CA._sp_prove_yield_here(), "a census reader that raised let the prover fight the import")
-        with _owed_and_blind_is(lambda: (self.census["owed"], self.census["blind"], {})):
-            _keep = CA._sp_proof_playing_here
-            CA._sp_proof_playing_here = lambda: True
-            try:
-                self.assertTrue(CA._sp_prove_yield_here(), "an owed BLIND outranked his game")
-            finally:
-                CA._sp_proof_playing_here = _keep
+        self.SA._owed_and_blind = lambda: (None, None, "no proof census on this PC")
+        self.assertTrue(CA._sp_prove_yield_here(), "an unreadable census let the prover fight the import")
+        self.SA._owed_and_blind = lambda: 1 / 0
+        self.assertTrue(CA._sp_prove_yield_here(), "a census reader that raised let the prover fight the import")
+        self.SA._owed_and_blind = lambda: (self.census["owed"], self.census["blind"], {})
+        _keep = CA._sp_proof_playing_here
+        CA._sp_proof_playing_here = lambda: True
+        try:
+            self.assertTrue(CA._sp_prove_yield_here(), "an owed BLIND outranked his game")
+        finally:
+            CA._sp_proof_playing_here = _keep
 
     def test_the_card_does_not_say_it_waits_for_the_import(self):
         self._importing(True)

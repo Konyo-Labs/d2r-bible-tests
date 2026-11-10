@@ -49,13 +49,13 @@ class TheOwnersSessionsSummarized(unittest.TestCase):
         import control_app as ca
         self.is_read = ca._is_a_live_read
         self.d = tempfile.mkdtemp(prefix="shadow_sessions_")
-        os.makedirs(os.path.join(self.d, SS.SHADOW_CACHE))
+        os.makedirs(os.path.join(self.d, "cache160"))
         for r in _rows():
             if r.get("lane") == "deep":
                 # every read frame has its full picture; only some have a thumbnail already
                 open(os.path.join(self.d, r["frameId"] + ".jpg"), "wb").write(b"\xff\xd8full")
                 if r["frameId"].startswith(("1_", "3_", "4_", "5_")):
-                    open(os.path.join(self.d, SS.SHADOW_CACHE, r["frameId"] + ".jpg"), "wb").write(b"\xff\xd8thumb")
+                    open(os.path.join(self.d, "cache160", r["frameId"] + ".jpg"), "wb").write(b"\xff\xd8thumb")
 
     def tearDown(self):
         shutil.rmtree(self.d, True)
@@ -88,13 +88,13 @@ class TheOwnersSessionsSummarized(unittest.TestCase):
         o = SS.digest(rows, self.d, self.is_read, 1795000000000, make=make)
         self.assertEqual(made, ["2_1792000061000.jpg"], "the theatre's resizer was not asked for the missing thumbnail")
         self.assertEqual(len(o["sessions"][0]["frames"]), 1)
-        os.remove(os.path.join(self.d, SS.SHADOW_CACHE, "2_1792000061000.jpg"))
+        os.remove(os.path.join(self.d, "cache160", "2_1792000061000.jpg"))
         o2 = SS.digest(rows, self.d, self.is_read, 1795000000000, make=None)
         self.assertEqual(o2["sessions"][0]["frames"], [])
         self.assertIn("no thumbnail resizer", o2["sessions"][0]["why"] or "", "a session without pictures said nothing")
 
     def test_an_oversized_thumbnail_is_left_out_and_named(self):
-        big = os.path.join(self.d, SS.SHADOW_CACHE, "4_1794000063000.jpg")
+        big = os.path.join(self.d, "cache160", "4_1794000063000.jpg")
         open(big, "wb").write(b"\xff" * (SS.MAX_THUMB + 1))
         o = SS.digest(_rows(), self.d, self.is_read, 1795000000000, make=None)
         self.assertNotIn("4_1794000063000", [f["id"] for f in o["sessions"][0]["frames"]])

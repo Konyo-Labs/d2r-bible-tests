@@ -1,7 +1,7 @@
 {
   "_why": "Per-proof seconds for shard balancing. Measured rows come from a green proof-keys run; every other proof test is present at the median so the coverage law holds and the plan does not guess from a Mac gate_costs row.",
   "median": 1.437,
-  "measuredOn": "v3862 aaaaaaaaa",
+  "measuredOn": "v3875 0d4e24537",
   "proofs": {
     "test_equipped_items_are_pixel_exact_per_character": {
       "s": 1.785,
@@ -6115,66 +6115,6 @@
       "s": 1.437,
       "src": "measured"
     },
-    "test_quick_wins_marks_silospens_all_first_as_the_best_place": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_the_capture_stamp_records_film_size_apart_from_the_window": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_a_new_reel_stamps_the_filmed_jpeg_size": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_the_stats_row_names_the_breakpoint_tier": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_a_resistance_row_names_its_hell_anya_and_gear_parts": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_the_character_window_inventory_cells_open": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_the_character_window_stash_cells_open": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_the_character_window_belt_cells_open": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_the_character_window_stat_and_skill_areas_open": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_add_mod_search_matches_an_affix_stat_key": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_the_character_window_agrees_with_cited_planner_breakpoints": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_a_giant_laws_nameless_red_does_not_close_every_lock": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_an_unresolved_failing_class_does_not_close_every_lock": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_film_size_is_never_read_from_the_window_size": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_a_planner_compare_does_not_invent_missing_numbers": {
-      "s": 1.437,
-      "src": "measured"
-    },
     "test_the_session_carries_a_soft_understanding": {
       "s": 1.437,
       "src": "measured"
@@ -6339,10 +6279,6 @@
       "s": 1.437,
       "src": "measured"
     },
-    "test_the_recorder_stops_on_a_frozen_non_d2r_screen": {
-      "s": 1.437,
-      "src": "measured"
-    },
     "test_a_set_items_odds_follow_the_unique_first_roll": {
       "s": 1.437,
       "src": "measured"
@@ -6392,22 +6328,6 @@
       "src": "measured"
     },
     "test_a_waiting_prover_has_no_finish_time": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_the_fleet_says_why_the_alt_waits": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_the_fleet_says_a_stopped_drain": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_every_pc_films_at_1920x1080": {
-      "s": 1.437,
-      "src": "measured"
-    },
-    "test_a_windowed_client_is_letterboxed_onto_1920x1080": {
       "s": 1.437,
       "src": "measured"
     },

@@ -38,7 +38,7 @@ class AWornItemInTheCharacterWindowOpensItsCard(unittest.TestCase):
         body = _pick(_src())
         self.assertIn("window.openItemDetail(row.item)", body)
         self.assertIn("row && row.item && typeof window.openItemDetail === 'function'", body)
-        self.assertIn("_chxCellRow(G, _chxCell)", body)
+        self.assertIn("_chxCell.slice('equipped:'.length)", body)
 
 
 RED_PROOF = [

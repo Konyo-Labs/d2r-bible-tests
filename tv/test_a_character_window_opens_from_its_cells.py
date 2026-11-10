@@ -9,7 +9,7 @@ table (only the art lookup is a stub). No Vault doll on the page is UNKNOWN, nev
 The card's Open door calls that window. The window's cells are equipped:helm and the other nine,
 the same identity a vault look records. It does not open the planner and it does not write a build.
 A character the ledger has not spoken about stays UNKNOWN, with no cell drawn as if it had been
-looked at. Inventory, stash and belt cells are drawn as clickable surfaces (unseen until a look names them).
+looked at. An inventory or stash cell that is not joined to the character is not drawn empty.
 """
 import json
 import os
@@ -102,9 +102,9 @@ class ACharacterWindowOpensFromItsCells(unittest.TestCase):
         self.assertIn('data-slot="head" style="left:calc(131*var(--du));top:calc(50*var(--du));width:calc(60*var(--du));'
                       'height:calc(60*var(--du))" data-cell="equipped:helm"', out["html"], "the helm cell is not the head slot")
         self.assertIn('data-art="Harlequin Crest"', out["html"], "a seen item is not drawn with its art")
-        self.assertIn('data-cell="inventory:', out["html"])
-        self.assertIn('data-cell="stash:', out["html"])
-        self.assertIn('data-grid="inventory" data-state="open"', out["html"])
+        self.assertNotIn('data-cell="inventory:', out["html"])
+        self.assertNotIn('data-cell="stash:', out["html"])
+        self.assertIn('data-grid="inventory" data-state="unjoined"', out["html"])
         self.assertIn("String of Ears", out["html"])
         self.assertEqual(out["opened"], [], "opening the window opened the planner")
         self.assertFalse(out["wrote"], "opening the window wrote a build")

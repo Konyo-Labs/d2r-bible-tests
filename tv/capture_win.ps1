@@ -14,10 +14,7 @@
 # v1422: Light capture under D2R - eye first, PNG rare, 350ms poll, unique tmp names.
 # v1423: Per-monitor DPI awareness - 150% displays were 1920x1080 physical but capture
 #         used 1280x720 logical coords = TOP-LEFT CROP only (Konyo screenshot proof).
-# v1434: Smooth — eye always; live.bmp every 2nd; PNG every 8th; 400ms poll.
-# v3894: eye.jpg is letterboxed onto 1920x1080 (HighQualityBicubic, JPEG q82), including
-#         a smaller windowed client (Dean-shaped 1507x755). The 800px q72 bilinear cap made
-#         Windows film unreadable, and shadow theatre then magnified a 160 px thumb of it.
+# v1434: Smooth — eye always (800px q72); live.bmp every 2nd; PNG every 8th; 400ms poll.
 # Pure ASCII + BOM for Hebrew PowerShell 5.1.
 
 # v1423 - declare DPI awareness BEFORE any window measure / System.Drawing call.
@@ -400,30 +397,27 @@ public static class TvdCap {
     string livePng = Path.Combine(framesDir, "live.png");
     string eyeJpg = Path.Combine(framesDir, "eye.jpg");
 
-    // 1) EYE FIRST — console film. v3894: letterbox the client onto 1920x1080, including a
-    // smaller windowed one (MEASURED 2026-11-07: Dean-shaped client 1507x755). Quality 82
-    // matches the hist read JPEG. HighQualityBicubic so the resample stays sharp.
-    int filmW = 1920, filmH = 1080;
-    double scale = Math.Min(filmW / (double)bmp.Width, filmH / (double)bmp.Height);
-    int nw = Math.Max(1, (int)(bmp.Width * scale));
-    int nh = Math.Max(1, (int)(bmp.Height * scale));
-    if (nw > filmW) nw = filmW;
-    if (nh > filmH) nh = filmH;
-    int ox = (filmW - nw) / 2;
-    int oy = (filmH - nh) / 2;
+    // 1) EYE FIRST — console film. v1434: cap 800px + Encoder quality 72 (was full JPEG default).
+    // At 1920x1080 source this is the main UX surface; keep it cheap and always fresh.
+    int maxPx = 800;
+    int nw = bmp.Width, nh = bmp.Height;
+    if (nw > maxPx || nh > maxPx) {
+      double scale = Math.Min(maxPx / (double)nw, maxPx / (double)nh);
+      nw = Math.Max(1, (int)(bmp.Width * scale));
+      nh = Math.Max(1, (int)(bmp.Height * scale));
+    }
     string tmpEye = TmpPath(framesDir, "eye", ".jpg");
-    using (var eye = new Bitmap(filmW, filmH))
+    using (var eye = new Bitmap(nw, nh))
     using (var eg = Graphics.FromImage(eye)) {
-      eg.Clear(Color.Black);
-      eg.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-      eg.DrawImage(bmp, ox, oy, nw, nh);
+      eg.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+      eg.DrawImage(bmp, 0, 0, nw, nh);
       try {
         var codec = System.Array.Find(
           ImageCodecInfo.GetImageEncoders(),
           c => c.MimeType == "image/jpeg");
         if (codec != null) {
           var ep = new EncoderParameters(1);
-          ep.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 82L);
+          ep.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 72L);
           eye.Save(tmpEye, codec, ep);
         } else {
           eye.Save(tmpEye, ImageFormat.Jpeg);

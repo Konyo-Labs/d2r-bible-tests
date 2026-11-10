@@ -665,8 +665,8 @@ RED_PROOF = [
     {
         "why": "#29(b) 2026-09-28 - the cap chip reads as a comparison again ('≤75%'), not the cap he asked for ('cap 75%')",
         "file": "bible.html",
-        "find": "'\">cap ' + esc(span(cp.min, cp.max)) + '</em>' : '') + '</span>' + _cbBpHtml(eng, r.bp, r.key, r, b) + _cbResParts(r) + '</div>';",
-        "replace": "'\">≤' + esc(span(cp.min, cp.max)) + '</em>' : '') + '</span>' + _cbBpHtml(eng, r.bp, r.key, r, b) + _cbResParts(r) + '</div>';",
+        "find": "'\">cap ' + esc(span(cp.min, cp.max)) + '</em>' : '') + '</span>' + _cbBpHtml(eng, r.bp) + '</div>';",
+        "replace": "'\">≤' + esc(span(cp.min, cp.max)) + '</em>' : '') + '</span>' + _cbBpHtml(eng, r.bp) + '</div>';",
         "matches": 1,
     },
     {
@@ -784,8 +784,8 @@ RED_PROOF = [
     {
         "why": "#174 v-B2 integration - STATS drops the cap the game holds a stat to",
         "file": "bible.html",
-        "find": "          + (cp && r.value ? '<em class=\"cb-cap\" aria-label=\"capped at ' + esc(span(cp.min, cp.max)) + '\">cap ' + esc(span(cp.min, cp.max)) + '</em>' : '') + '</span>' + _cbBpHtml(eng, r.bp, r.key, r, b) + _cbResParts(r) + '</div>';",
-        "replace": "          + '</span>' + _cbBpHtml(eng, r.bp, r.key, r, b) + _cbResParts(r) + '</div>';",
+        "find": "          + (cp && r.value ? '<em class=\"cb-cap\" aria-label=\"capped at ' + esc(span(cp.min, cp.max)) + '\">cap ' + esc(span(cp.min, cp.max)) + '</em>' : '') + '</span>' + _cbBpHtml(eng, r.bp) + '</div>';",
+        "replace": "          + '</span>' + _cbBpHtml(eng, r.bp) + '</div>';",
         "matches": 1,
     },
     {

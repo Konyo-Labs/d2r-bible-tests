@@ -373,9 +373,8 @@ class AFindClosesOnlyTheLockItsLawGuards(unittest.TestCase):
         SA._NET_MEMO.update(key=None, finds=None, files=None)
 
     def test_a_giant_law_closes_only_the_locks_its_failing_classes_guard(self):
-        """REG-3324 / v3894 REG-3575 (#103) - test_control names every lock, so one red of it closed the whole river.
-        A law guarding NET_NARROW_MIN_LOCKS or more locks closes only what its FAILING CLASSES guard; a nameless red
-        of that giant law does not close every lock."""
+        """REG-3324 (#103) - test_control names every lock, so one red of it closed the whole river. A law guarding
+        NET_NARROW_MIN_LOCKS or more locks closes only what its FAILING CLASSES guard; with no case named it stays broad."""
         import re as _re
         if "test_control" not in FILES:
             self.skipTest("PREMISE: test_control is not a registered gate here")
@@ -392,7 +391,7 @@ class AFindClosesOnlyTheLockItsLawGuards(unittest.TestCase):
         self._census_cases("test_control", [river[0] + ".test_x"])
         self.assertIn(SA._NET_PHRASE, SA.may(FRAME)[1], "a red in a class that guards the river left it open")
         self._census_cases("test_control", None)
-        self.assertNotIn(SA._NET_PHRASE, SA.may(FRAME)[1], "a nameless red of a giant law closed every lock")
+        self.assertIn(SA._NET_PHRASE, SA.may(FRAME)[1], "a find naming no case was narrowed - it must stay broad")
 
     def test_a_find_whose_file_changed_since_is_moot(self):
         self.census(ONLY_FRAME[0], sha="an-older-sha")

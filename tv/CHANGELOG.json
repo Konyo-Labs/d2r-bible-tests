@@ -3,6 +3,7 @@
     "ver": "v3893",
     "date": "2026-11-09",
     "items": [
+      "A press outside the price results calls window._d2jspPriceSearchIdle, not a bare undefined global (REG-3537)",
       "A live Publish on main, or the wait after a main push, makes dry/ and grok/ CI yield the runners (REG-3654)",
       "A ship or Publish queued over 2 min cancels our dry/grok/ci-dry runs, never main or the ship's required jobs (REG-3654)",
       "A stale-run sweeper cancels leftover dry runs on superseded shas and any ci/*dry* name (REG-3654)",
@@ -11,7 +12,6 @@
       "The page zero floor and the closed-modal census agree at 7 (`#th-shelfov` is in the census; REG-3651)",
       "ship_when_green.STATUS_URL is console_port.url(/api/status), never a literal :17772 (REG-3651)",
       "The ship still passes speed=_CS.observe as the last argument of main(), so the pin matches (REG-3651)",
-      "test_a_windowed_client_is_letterboxed_onto_1920x1080 is a registered gate (REG-3651)",
       "Integrity baseline items_count 318 -> 317: Wilhelm's Pride left the calculator uniques (REG-3506, REG-3651)",
       "Box rehearsal lessons catch these deterministic reds before a ci/ push (REG-3651)",
       "Box rehearsal also catches a stale blueprint, a long changelog bullet, and missing shard timings (REG-3651)",

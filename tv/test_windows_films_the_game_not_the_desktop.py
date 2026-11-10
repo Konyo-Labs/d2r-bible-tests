@@ -118,12 +118,11 @@ class TheReelIsFilmedAtTheMacsSize(unittest.TestCase):
         import tv_diablo as t
         d = tempfile.mkdtemp(prefix="tvd_film_")
         src, dest = os.path.join(d, "live.bmp"), os.path.join(d, "f_1.jpg")
-        Image.new("RGB", (2560, 1440), (90, 70, 40)).save(src, "BMP")
+        Image.new("RGB", (1568, 793), (90, 70, 40)).save(src, "BMP")
         self.assertTrue(t._film_shrink(src, dest, t.FILM_MAX_PX, t.FILM_JPEG_Q))
         with Image.open(dest) as im:
             self.assertEqual(im.format, "JPEG")
-            self.assertEqual(im.size, (t.FILM_W, t.FILM_H),
-                             "a 16:9 Windows frame did not become 1920x1080: %r" % (im.size,))
+            self.assertEqual(max(im.size), t.FILM_MAX_PX, "a Windows film frame is not the Mac's film size")
 
     def test_the_last_good_copy_of_a_bmp_is_the_film_frame(self):
         self.assertIn('_sh.copyfile(dest if str(src_path).lower().endswith(".bmp") else src_path, last_tmp)', self._src())

@@ -132,70 +132,27 @@ def kind_of_stats(st):
 
 def screen_of(src, array=None):
     """One frame -> ("logo" | "title" | "hud" | "char-select" | "lobby" | None, why). "frame unreadable" is UNKNOWN, never None-as-no.
-    Decodes the frame once (v3894): logo/title/hud and the char-select/lobby look share that image.
-    `array` (an RGB int array of the same frame) skips the file open entirely."""
-    raw = None
-    opened = None
+    `array` (an RGB int array of the same frame) spares a second decode for the logo and title."""
     try:
-        if array is not None:
-            raw = Image_of(array)
-        elif hasattr(src, "convert"):
-            raw = src.convert("RGB")
-        else:
-            from PIL import Image
-            opened = Image.open(src)
-            raw = opened.convert("RGB")
-        a = _small(raw)
+        a = _small(Image_of(array) if array is not None else src)
     except Exception as e:
-        if opened is not None:
-            try:
-                opened.close()
-            except Exception:
-                pass
         return None, "frame unreadable (%s)" % type(e).__name__
-    if opened is not None:
-        try:
-            opened.close()
-        except Exception:
-            pass
     k, why = kind_of_stats(stats_of_array(a))
     if k:
         return k, why
-    if raw is not None:
+    if isinstance(src, str):
         try:
             import char_select as _cs
-            ok, cwhy = _cs.looks_like_char_select(_cs.panel_stats(src if isinstance(src, str) else None, image=raw))
+            ok, cwhy = _cs.looks_like_char_select(_cs.panel_stats(src))
             if ok:
                 return "char-select", "char_select: %s" % cwhy
             # the create-game lobby is the game client between games (REG-1873's own band test, called)
-            ok, lwhy = _cs.looks_like_lobby(_cs.lobby_stats(src if isinstance(src, str) else None, image=raw))
+            ok, lwhy = _cs.looks_like_lobby(_cs.lobby_stats(src))
             if ok:
                 return "lobby", "char_select: %s" % lwhy
         except Exception:
             pass
     return None, why
-
-
-def frozen_non_d2r(paths):
-    """v3894 (#188) - True when every readable frame is not a D2R screen and they are the same picture
-    (a frozen GeForce NOW / Boosteroid idle page or launcher). False if any frame is D2R, or the pictures
-    differ (a loading animation still changing). None if fewer than two frames can be read."""
-    kinds, prints = [], []
-    for p in paths or []:
-        try:
-            a = _small(p)
-        except Exception:
-            continue
-        k, why = screen_of(p, array=a)
-        if str(why).startswith("frame unreadable"):
-            continue
-        kinds.append(k)
-        prints.append(bytes(a.tobytes()))
-    if len(kinds) < 2:
-        return None
-    if any(k in ("logo", "title", "hud", "char-select", "lobby", "town") for k in kinds):
-        return False
-    return len(set(prints)) == 1
 
 
 def Image_of(a):

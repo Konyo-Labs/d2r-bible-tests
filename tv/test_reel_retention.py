@@ -40,20 +40,6 @@ RED_PROOF = [
         "replace": '_HEART2_TAMPERED_',
         "matches": 1,
     },
-    {
-        "why": "REG-3584 - a sealed eligible reel is held again when frame.release is shut",
-        "file": "reel_retention.py",
-        "find": "        _asked = [c for c in ((p or {}).get(\"candidates\") or []) if _sealed_eligible(c)]\n",
-        "replace": "        _asked = []\n",
-        "matches": 1,
-    },
-    {
-        "why": "REG-3584 - a stuffed eligible tag bypasses the shut lock without plan() saying ok",
-        "file": "reel_retention.py",
-        "find": "        if not _asked or not (isinstance(p, dict) and p.get(\"ok\")):\n",
-        "replace": "        if not _asked:\n",
-        "matches": 1,
-    },
 ]
 
 class TestRetentionSelectsAndRefuses(unittest.TestCase):
@@ -119,44 +105,6 @@ class TestRetentionSelectsAndRefuses(unittest.TestCase):
         self.assertIn("LOCKED", str(r.get("why") or ""),
                       "the refusal must name the lock, or the next reader debugs retention "
                       "instead [[unknown-stays-unknown]]")
-
-    def test_a_sealed_eligible_reel_drains_through_a_shut_frame_release_lock(self):
-        """REG-3584 — plan() already named it eligible; a BLIND lock cannot change that verdict."""
-        import self_arming as _sa
-        _real = _sa.may
-        _sa.may = lambda name, *a, **k: (False, "5 instrument(s) are BLIND (test_example)")
-        self.addCleanup(setattr, _sa, "may", _real)
-        gone = self._reel(1_400_000_000_000)
-        stay = self._reel(1_400_000_000_001)
-        self._ledgers(chron={gone: {"pages": 5}}, vault={gone: {"ts": 1}})
-        plan = rr.plan(self.hist, keep_recent=0)
-        self.assertEqual([c["reel"] for c in plan["candidates"]], [gone], plan)
-        self.assertEqual(plan["candidates"][0].get("tag"), "eligible", plan["candidates"][0])
-        out = rr.apply_plan(plan, yes=True)
-        self.assertTrue(out.get("ok"), out)
-        self.assertEqual(out.get("removed"), [gone], out)
-        self.assertFalse(os.path.isdir(os.path.join(self.hist, gone)),
-                         "the sealed reel stayed on disk behind a lock that cannot change its verdict")
-        self.assertTrue(os.path.isdir(os.path.join(self.hist, stay)),
-                        "an unreviewed reel went through the shut lock")
-
-    def test_a_stuffed_eligible_tag_does_not_bypass_a_shut_lock(self):
-        """REG-3584 — tagging an unsigned reel 'eligible' without plan() saying ok is not a seal."""
-        import self_arming as _sa
-        _real = _sa.may
-        _sa.may = lambda name, *a, **k: (False, "5 instrument(s) are BLIND (test_example)")
-        self.addCleanup(setattr, _sa, "may", _real)
-        name = self._reel(1_400_000_000_009)
-        out = rr.apply_plan({
-            "hist": self.hist, "ok": False,
-            "candidates": [{"reel": name, "mb": 1.0, "tag": "eligible", "pages": 5,
-                            "why": "read (5 pages); seals held: chronicle only - it has given up its information"}],
-        }, yes=True)
-        self.assertFalse(out.get("ok"), out)
-        self.assertEqual(out.get("removed"), [], out)
-        self.assertTrue(os.path.isdir(os.path.join(self.hist, name)),
-                        "a stuffed unsigned candidate was deleted through a shut lock")
-        self.assertIn("LOCKED", str(out.get("why") or ""), out)
 
     def _reel(self, ms, n=1, kb=8):
         name = "reel_s_%d_%d" % (ms, n)

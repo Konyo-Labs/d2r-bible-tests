@@ -40,14 +40,13 @@ all, so its surfaces could be neither watched nor unwatched — only unsaid.
 
 | | |
 |---|---|
-| surfaces the board paints | **608** |
-| of those, watched | **5** |
-| coverage | **0.8%** |
+| surfaces the board paints | **605** |
+| of those, watched | **4** |
+| coverage | **0.7%** |
 
 ### Watched on the board
 
 - `d2jsp-price-advanced`
 - `d2jsp-price-backend`
 - `inventory`
-- `stash`
 - `vault-moved-note`

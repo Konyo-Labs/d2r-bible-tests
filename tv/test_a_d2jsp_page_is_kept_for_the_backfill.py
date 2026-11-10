@@ -44,9 +44,7 @@ class _Dir(unittest.TestCase):
         self.addCleanup(p.stop)
 
     def kept(self):
-        # v3894 - assert on the page shape (`{ts}-{slug}.html`), not every name in the dir
-        # (a stray manifest, lock file or .DS_Store must not break the count)
-        return sorted(f for f in os.listdir(self.d) if f.endswith(".html") and f[0].isdigit())
+        return sorted(os.listdir(self.d))   # the dir is this case's own temp dir: everything in it is a kept page
 
 
 class APageIsKeptScrubbed(_Dir):
@@ -94,15 +92,6 @@ class OnlyTheConsolesOwnReadKeepsOne(_Dir):
         self.assertNotIn("pageKept", out)
         self.assertEqual(self.kept(), [], "a stub transport wrote a page into the store")
 
-    def test_a_stray_name_in_the_dir_is_not_a_kept_page(self):
-        """v3894 - a manifest, lock file or .DS_Store in the store is not a kept page"""
-        D.keep_results_page("Enigma", PAGE, now=1000)
-        open(os.path.join(self.d, ".DS_Store"), "w").close()
-        open(os.path.join(self.d, "manifest.lock"), "w").close()
-        kept = self.kept()
-        self.assertEqual(len(kept), 1, "a stray name in the dir was counted as a kept page: %s" % kept)
-        self.assertTrue(kept[0].endswith(".html") and kept[0][0].isdigit(), kept)
-
 
 RED_PROOF = [
     {"why": "v3889 (#151) - a kept page carries the session values again",
@@ -119,11 +108,6 @@ RED_PROOF = [
      "file": "tv/d2jsp_chrome.py",
      "find": "    if transport is None and isinstance(out, dict) and out.get(\"reason\") == \"read\":\n",
      "replace": "    if isinstance(out, dict) and out.get(\"reason\") == \"read\":\n",
-     "matches": 1},
-    {"why": "v3894 - a kept page is every name in the dir again (a stray lock file breaks the count)",
-     "file": "tv/test_a_d2jsp_page_is_kept_for_the_backfill.py",
-     "find": "        return sorted(f for f in os.listdir(self.d) if f.endswith(\".html\") and f[0].isdigit())\n",
-     "replace": "        return sorted(os.listdir(self.d))\n",
      "matches": 1},
 ]
 

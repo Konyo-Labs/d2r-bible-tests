@@ -3,19 +3,18 @@
 
 His words: a shadow must render the owner's exact data one to one - and his ruling on the size: summarized frames, "a
 few small key frames per session", because a full reel is 8-12 GB and never leaves its PC (his 10-07 ruling stands).
-v3894 (Elad, 2026-11-10): those key frames and the vault's evidence must be the film itself - 1920x1080, the size
-every PC now records - not the theatre's 160 px scrub thumb magnified onto the stage. A full REEL still never
-leaves its PC; only the same few key frames ride, at film size.
+In a shadow today THE SHELF answers with a refusal toast and TV·D shows the viewer's own pane: the owner's sessions are
+not in the upload (console_snapshot DENY keeps tvdHist and the session log home, on purpose - they are large).
 
 This builds the digest a shadow can carry: the owner's newest sessions (replay.split_sessions, newest first), each
 dated by what it captured (replay.session_moments, REG-2736), its read count by the Shelf's own rule (control_app's
-_is_a_live_read, passed in - one predicate, never a copy), the names its reads saw, and up to 3 key frames as
-1920x1080 (or smaller, never enlarged) JPEGs in tv/frames/hist/cache1920/<frameId>.jpg - frames whose read named
-something first, else first / middle / last. A frame with no derivative is made by `sips` on a Mac, else by Pillow
-(REG-3033: a Windows owner had sips alone to ask and sent no picture); a PC with no resizer carries the session
-without pictures and says why. A source smaller than 1920x1080 is never upscaled (sips on current macOS would).
+_is_a_live_read, passed in - one predicate, never a copy), the names its reads saw, and up to 3 key frames as the
+theatre's own 160 px thumbnails (tv/frames/hist/cache160/<frameId>.jpg, ~11 KB) - frames whose read named something
+first, else first / middle / last. A frame with no thumbnail is made by `sips` on a Mac (the theatre's own resizer, into
+the theatre's own cache), else by Pillow (REG-3033: a Windows owner had sips alone to ask and sent no picture); a PC
+with no resizer carries the session without pictures and says why, never a full frame.
 
-Caps (the record is KV-bound): a frame over 800 KB is left out and named, and the total stays under 12 MB by
+Caps (the record is KV-bound): a thumbnail over 20 KB is left out and named, and the total stays under 600 KB by
 dropping the OLDEST sessions' pictures first, each drop counted. Phase 2 signs and publishes it as the owner's own
 roster record; phase 3 draws it in the shadow's Shelf and TV·D. Never raises; writes only the theatre's cache.
 """
@@ -34,9 +33,8 @@ if HERE not in sys.path:
 
 MAX_SESSIONS = 16
 MAX_FRAMES = 3
-# v3894 - film-size key frames, not 160 px / 20 KB thumbs (those magnified into an unreadable theatre)
-MAX_THUMB = 800 * 1024
-MAX_TOTAL = 12 * 1024 * 1024
+MAX_THUMB = 20 * 1024
+MAX_TOTAL = 600 * 1024
 #: v3859 (b) item 18 - the vault's witnessed frames ride the upload too, at most this many (their bytes count in MAX_TOTAL)
 WITNESS_MAX = 8
 _FID_SHAPE = re.compile(r"^\d{1,6}_\d{13}$")
@@ -48,42 +46,17 @@ AFK_GAP_MS = 90 * 1000
 
 
 THUMB_PX = 160
-# v3894 - what a shadow's theatre and evidence play: the film frame, never a 160 px scrub thumb
-SHADOW_FRAME_PX = 1920
-SHADOW_FRAME_H = 1080
-SHADOW_JPEG_Q = 82
-SHADOW_CACHE = "cache1920"
-
-
-def _image_size(src):
-    """-> (w, h) | None. Pillow if it imports; never raises."""
-    try:
-        from PIL import Image
-        with Image.open(src) as im:
-            return im.size
-    except Exception:
-        return None
 
 
 def _sips_thumb(src, dst, max_px=THUMB_PX, quality=68, timeout=8):
-    """The theatre's own derivative, by the theatre's own sips call (160 px by default). -> bool
-
-    v3894 - never pass --resampleHeightWidthMax when the source already fits: on current macOS
-    sips *upsamples* a small image to that max (the same trap _sips_hd_jpeg documented at v1450).
-    """
+    """The theatre's own derivative, by the theatre's own sips call (160 px by default). -> bool"""
     if sys.platform != "darwin":
         return False
     try:
         os.makedirs(os.path.dirname(dst), exist_ok=True)
-        cmd = ["sips", "-s", "format", "jpeg", "-s", "formatOptions", str(int(quality))]
-        size = _image_size(src)
-        if size and max(size) > int(max_px):
-            cmd += ["--resampleHeightWidthMax", str(int(max_px))]
-        elif size is None and int(max_px) <= THUMB_PX:
-            # unknown size, small shelf thumb: keep the old resample (may shrink)
-            cmd += ["--resampleHeightWidthMax", str(int(max_px))]
-        cmd += [src, "--out", dst]
-        r = subprocess.run(cmd, capture_output=True, timeout=timeout)
+        r = subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", str(int(quality)),
+                            "--resampleHeightWidthMax", str(int(max_px)), src, "--out", dst], capture_output=True,
+                           timeout=timeout)
     except (OSError, subprocess.SubprocessError):
         return False
     # REG-3039 - _serve_hist judged sips by its exit code before REG-3038 shared this call; a failed sips is no derivative
@@ -136,9 +109,8 @@ def resizers():
 
 
 def _make_thumb(src, dst):
-    """sips first on a Mac (the theatre's own resizer), else Pillow. -> bool
-    v3894 - the shadow theatre's frame is the film size (1920), never a 160 px thumbnail."""
-    return _sips_thumb(src, dst, SHADOW_FRAME_PX, SHADOW_JPEG_Q) or _pil_thumb(src, dst, SHADOW_FRAME_PX, SHADOW_JPEG_Q)
+    """sips first on a Mac (the theatre's own resizer), else Pillow. -> bool"""
+    return _sips_thumb(src, dst) or _pil_thumb(src, dst)
 
 
 def make_derivative(src, dst, max_px, quality, timeout=10):
@@ -151,9 +123,9 @@ def make_derivative(src, dst, max_px, quality, timeout=10):
 
 
 def thumb_bytes(hist_dir, frame_id, make=_make_thumb):
-    """The film-size JPEG of one read frame (1920 px, never enlarged). -> (bytes | None, why | None)"""
+    """The 160 px thumbnail of one read frame. -> (bytes | None, why | None)"""
     base = "%s.jpg" % frame_id
-    cached = os.path.join(hist_dir, SHADOW_CACHE, base)
+    cached = os.path.join(hist_dir, "cache160", base)
     if not os.path.isfile(cached):
         src = os.path.join(hist_dir, base)
         if not os.path.isfile(src):
@@ -436,7 +408,7 @@ def session_facts(g, reads, timeline, chron_count=None):
 
 
 def witness_frames(ids, hist_dir, make=_make_thumb):
-    """v3859 (b) - the vault's witnessed frame ids as film-size JPEGs. -> (list of {id, jpg}, {id: why left out})"""
+    """v3859 (b) - the vault's witnessed frame ids as 160 px thumbnails. -> (list of {id, jpg}, {id: why left out})"""
     got, whys = [], {}
     for fid in list(ids or []):
         fid = str(fid or "")
