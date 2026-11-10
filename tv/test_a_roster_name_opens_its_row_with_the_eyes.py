@@ -341,10 +341,19 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                 winview = re.compile(r'<span class="fleet-winview wv-(?:on|off|unk)" title="[^"]*" role="img" '
                                      r'aria-label="[^"]*">(?:(?!</span>).)*</span>', re.S)
                 self.assertEqual(len(winview.findall(s[m]["row"])), 1, "%s %s: the row does not carry its window eye once" % (k, m))
+                # REG-3640 (the Fleet lamp is a mood ring) ADDED a color class, title, role and
+                # aria-label on the existing .fleet-dot in the row (and retired silent/off). Cut
+                # from both sides here; colors and wording are test_the_lamp_is_a_mood_ring's to prove.
+                lamp = re.compile(
+                    r'<span class="fleet-dot(?: [^"]*)?"(?: title="[^"]*")?(?: role="img")?(?: aria-label="[^"]*")?></span>'
+                )
+                self.assertEqual(len(lamp.findall(s[m]["row"])), 1, "%s %s: the row does not carry its lamp once" % (k, m))
+                self.assertTrue(re.search(r'<span class="fleet-dot \w+" title="[^"]+" role="img" aria-label="[^"]+"></span>', s[m]["row"]),
+                                "%s %s: the lamp is not a titled mood-ring on the row" % (k, m))
                 if me_word.search(b[m]["ftt"]):
                     self.assertIn(">this PC</span>", s[m]["ftt"], "%s %s: the reading PC's own word is not 'this PC'" % (k, m))
-                self.assertEqual(me_word.sub(">ME</span>", river.sub("", owes.sub("", waited.sub("", cut.sub("", pcs.sub("", winview.sub("", s[m]["ftt"]))))))),
-                                 me_word.sub(">ME</span>", river.sub("", cut.sub("", b[m]["ftt"]))),
+                self.assertEqual(me_word.sub(">ME</span>", river.sub("", owes.sub("", waited.sub("", cut.sub("", pcs.sub("", winview.sub("", lamp.sub("", s[m]["ftt"])))))))),
+                                 me_word.sub(">ME</span>", river.sub("", cut.sub("", lamp.sub("", b[m]["ftt"])))),
                                  "%s %s: the hover card changed" % (k, m))
                 if "river stuck" in b[m]["ftt"] and "river stuck" in s[m]["ftt"]:
                     self.assertIn(u" \u00b7 oldest reel waiting: ", s[m]["ftt"],
@@ -360,8 +369,8 @@ class ARosterNameOpensItsRowWithTheEyes(unittest.TestCase):
                 brief = re.compile(r'<span class="fleet-brief [^"]*" data-pc="\w+"><span class="fb-w">[^<]*</span>'
                                    r'(?:<span class="fb-t">[^<]*</span>)?</span>')
                 self.assertEqual(len(brief.findall(s[m]["row"])), 1, "%s %s: the row does not carry its PC's word once" % (k, m))
-                self.assertEqual(me_word.sub(">ME</span>", river.sub("", owes.sub("", waited.sub("", cut.sub("", word.sub(r"\1", pcs.sub("", brief.sub("", winview.sub("", s[m]["row"]))))))))),
-                                 me_word.sub(">ME</span>", river.sub("", cut.sub("", word.sub(r"\1", b[m]["row"])))),
+                self.assertEqual(me_word.sub(">ME</span>", river.sub("", owes.sub("", waited.sub("", cut.sub("", word.sub(r"\1", pcs.sub("", brief.sub("", winview.sub("", lamp.sub("", s[m]["row"])))))))))),
+                                 me_word.sub(">ME</span>", river.sub("", cut.sub("", word.sub(r"\1", lamp.sub("", b[m]["row"]))))),
                                  "%s %s: the row changed beyond its eyes" % (k, m))
                 # v3865 (the r3 review, his ALT row: a red "vault lane owes 0") - a lane that owes NOTHING has no debt to
                 # name, so the chip is asked for only when a lane owes one or more reels, and never drawn for owes 0

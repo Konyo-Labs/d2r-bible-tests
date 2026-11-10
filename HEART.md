@@ -16,9 +16,9 @@ may not fall without a human saying why in `heart_floor.json`.
 
 | | |
 |---|---|
-| surfaces the console paints | **409** |
+| surfaces the console paints | **411** |
 | of those, watched | **8** |
-| coverage | **2.0%** |
+| coverage | **1.9%** |
 
 ## Watched
 
@@ -40,13 +40,14 @@ all, so its surfaces could be neither watched nor unwatched — only unsaid.
 
 | | |
 |---|---|
-| surfaces the board paints | **604** |
-| of those, watched | **4** |
-| coverage | **0.7%** |
+| surfaces the board paints | **608** |
+| of those, watched | **5** |
+| coverage | **0.8%** |
 
 ### Watched on the board
 
 - `d2jsp-price-advanced`
 - `d2jsp-price-backend`
 - `inventory`
+- `stash`
 - `vault-moved-note`

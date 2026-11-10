@@ -33,7 +33,8 @@ class ASetItemsMfComparisonUsesTheSetCurve(unittest.TestCase):
     def test_the_comparison_asks_setMfChance_before_adjustChance(self):
         src = _src()
         i = src.index("id=\"puv-mf-compare\"")
-        chunk = src[i:i + 2500]
+        end = "(_setCh !== undefined) ? _setCh : adjustChance(rawChance, mfVal)"
+        chunk = src[i:src.index(end, i) + len(end)]
         self.assertIn("setMfChance(rawChance, selectedItem, best.bossId, best.diffKey, mfVal)", chunk)
         self.assertIn("(_setCh !== undefined) ? _setCh : adjustChance(rawChance, mfVal)", chunk)
         self.assertLess(chunk.index("setMfChance("), chunk.index("adjustChance(rawChance, mfVal)"))

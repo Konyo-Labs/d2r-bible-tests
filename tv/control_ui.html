@@ -133,6 +133,7 @@
     --surface-read: #14100c;
     --serif: "Cinzel", "Palatino Linotype", Palatino, "Times New Roman", serif;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, system-ui, sans-serif;
   --text-dim: #8c7a68;
   --gold-bright: #f0c060;
     /* state accent — retinted by [data-state] */
@@ -7202,7 +7203,7 @@
   .fleet-dot.unk    { background: #7a7672; box-shadow: 0 0 7px rgba(122, 118, 114, .7); border: none; }
   @media (prefers-reduced-motion: reduce) { .fleet-dot { transition: none; } }
   /* v3895 (REG-3640) - THE FLEET KEY: what the lamp and the two eyes mean, under the head, in the rail. */
-  .fleet-help { font: var(--fw-regular) var(--fs-2xs)/var(--lh-snug) var(--sans, inherit); color: var(--muted, #9aa0a6);
+  .fleet-help { font: var(--fw-regular) var(--fs-2xs)/var(--lh-snug) var(--sans, sans-serif); color: var(--muted, #9aa0a6);
     padding: 8px 2px 10px; border-top: 1px solid rgba(109, 106, 102, .35); margin: 0 0 8px; }
   .fleet-help .fh-sec { margin: 0 0 8px; color: var(--text, #e8e0d4); }
   .fleet-help .fh-sec b { font-weight: var(--fw-semibold); color: var(--text, #e8e0d4); }

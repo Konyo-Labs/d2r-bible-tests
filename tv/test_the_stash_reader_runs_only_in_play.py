@@ -18,6 +18,7 @@ frame, and an unlabelled frame after the walk is in a town, do. Outside a record
 RED_PROOF below.
 """
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -71,6 +72,9 @@ class TheStashReaderIsJoinedToTheGate(unittest.TestCase):
 
     def tearDown(self):
         SE.classify_stash_grid = self._real
+        tmp = getattr(self, "tmp", None)
+        if tmp:
+            shutil.rmtree(tmp, ignore_errors=True)
 
     def _save(self, im, name):
         path = os.path.join(self.tmp, name)

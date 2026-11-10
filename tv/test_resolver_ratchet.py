@@ -50,6 +50,7 @@ BASELINE = {
     ("chronicle_template.py", "TAB_ALIASES"),
     ("chronicle_template.py", "canonical_tab"),
     ("control_app.py", "_AUTOROUTE_ESSENCE_ALIAS"),
+    ("d2r_screens.py", "KIND_TO_SCENARIO"),
     ("lane_lock.py", "_TAB_TO_SURFACE"),
     ("lane_lock.py", "_canon_tab"),
     ("route_totals.py", "canonical"),

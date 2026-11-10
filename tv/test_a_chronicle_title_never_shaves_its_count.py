@@ -26,12 +26,12 @@ CHECKS = [
  ],
  [
   "tv/render_check.py",
-  "\"901x900\":   {\"clipped\": 0, \"broken\": None, \"zero\": 6}",
+  "\"901x900\":   {\"clipped\": 0, \"broken\": None, \"zero\": 7}",
   1
  ],
  [
   "tv/render_check.py",
-  "\"1440x1000\": {\"clipped\": 0, \"broken\": None, \"zero\": 6}",
+  "\"1440x1000\": {\"clipped\": 0, \"broken\": None, \"zero\": 7}",
   1
  ]
 ]

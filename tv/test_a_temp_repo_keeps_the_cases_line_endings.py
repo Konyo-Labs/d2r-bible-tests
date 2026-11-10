@@ -195,6 +195,8 @@ def _checkout_bytes(repo, env, pin):
 def _reg3626_fixture_repo():
     """Source for the census only: heart2's sandbox does not carry the other laws, so this file
     holds one throwaway init the census can see. Never called."""
+    def _git(*args):
+        raise RuntimeError("census fixture only")
     _git("init", "-q")
     _git("config", "core.autocrlf", "false")  # REG-3626 fixture pin
 

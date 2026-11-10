@@ -586,19 +586,19 @@ class TheClaimsOnHisScreenDrivenThroughTheEngine(unittest.TestCase):
         self.assertEqual(out["tip"], [["d2t-p", "+5% Faster Hit Recovery"], ["d2t-p", "All Resistances +5"]])
         for L in ("l1", "l28"):
             self.assertEqual(out[L]["fire"][:2], [{"min": -70, "max": -70}, "EXACT"])
-            self.assertIn("Faster Hit Recovery0%EXACT9 frames. +7% more reaches the next step.", out[L]["fhr"])
+            self.assertIn("Faster Hit Recovery0%EXACTtier 1/7 · 9 frames. +7% more reaches the next step.", out[L]["fhr"])
             self.assertTrue(any("needs level 29" in n for n in out[L]["note"]), out[L]["note"])
         self.assertEqual(out["l29"]["fire"][:2], [{"min": -65, "max": -65}, "EXACT"])
         self.assertEqual(out["l29"]["cold"][:2], [{"min": -65, "max": -65}, "EXACT"])
-        self.assertIn("Faster Hit Recovery5%EXACT9 frames. +2% more reaches the next step.", out["l29"]["fhr"])
+        self.assertIn("Faster Hit Recovery5%EXACTtier 1/7 · 9 frames. +2% more reaches the next step.", out["l29"]["fhr"])
         self.assertEqual(out["l29"]["note"], [])
-        self.assertEqual(out["b1"][0], "Fire Resistance−70%EXACTcap 75%")
-        self.assertEqual(out["b4"][0], "Fire Resistance−65%EXACTcap 75%")
+        self.assertEqual(out["b1"][0], "Fire Resistance−70%EXACTcap 75%-100 Hell · +30 Anya's resistance scrolls")
+        self.assertEqual(out["b4"][0], "Fire Resistance−65%EXACTcap 75%-100 Hell · +30 Anya's resistance scrolls · +5 Shimmering Buckler")
         self.assertIn("Faster Hit Recovery0%EXACT", out["b4"][1])
         self.assertTrue(out["qa"])
         self.assertIn("Faster Hit Recovery0%EXACT", out["q1"][0])
-        self.assertIn("Faster Hit Recovery10%EXACT8 frames. +5% more reaches the next step.", out["q3"][0])
-        self.assertEqual(out["q3"][1], "Fire Resistance−70%EXACTcap 75%")
+        self.assertIn("Faster Hit Recovery10%EXACTtier 2/7 · 8 frames. +5% more reaches the next step.", out["q3"][0])
+        self.assertEqual(out["q3"][1], "Fire Resistance−70%EXACTcap 75%-100 Hell · +30 Anya's resistance scrolls")
 
     def test_the_warlocks_charms_both_reach_the_item_list(self):
         out = _run(GROUP + r"""

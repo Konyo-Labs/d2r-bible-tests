@@ -107,7 +107,7 @@ class TheConsoleServesIt(unittest.TestCase):
 RED_PROOF = [
     {"why": "v3889 (REG-3499) - the window is served without its breakpoint sentences",
      "file": "bible.html",
-     "find": "                          step: (r.bp && say) ? say(r.bp) : null };",
+     "find": "                          step: r.bp ? (_cbBpSay(eng, r.bp, r.key, r, b) || null) : null };",
      "replace": "                          step: null };",
      "matches": 1},
     {"why": "v3889 (REG-3499) - a build's own name no longer finds it",

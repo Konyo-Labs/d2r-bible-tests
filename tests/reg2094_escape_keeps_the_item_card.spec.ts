@@ -1,7 +1,8 @@
-// REG-2094 (#231 eye on v43 0133be32 / 113be899) — Escape closes the card the latch names, never an item card opened
-// after it. A material card sets window.__activeMaterial so Escape can close it; navigateToItem (a grail chip, a search
-// pick) painted an item card over it and left the latch set, so the next Escape wiped the item card he had just opened.
-// The baseline asserts Escape still closes a material card, so this spec cannot pass by Escape doing nothing.
+// REG-2094 (#231 eye on v43 0133be32 / 113be899) plus REG-3530 (Esc peels one layer).
+// A material card sets window.__activeMaterial so Escape can close it; navigateToItem (a grail
+// chip, a search pick) must clear that latch so Escape is not still aimed at the material card.
+// REG-3530 then peels the remaining item card on Escape (one layer). The baseline still asserts
+// Escape closes a material card, so this spec cannot pass by Escape doing nothing.
 import { test, expect } from './_net_stub';
 import * as path from 'path';
 
@@ -20,7 +21,7 @@ test.describe('REG-2094 Escape and the card latch', () => {
     await expect(page.locator('#item-detail')).not.toHaveClass(/\bshow\b/);
   });
 
-  test('an item card opened after a material card survives Escape', async ({ page }) => {
+  test('Escape peels the item card opened after a material card', async ({ page }) => {
     const name = await page.evaluate(() => {
       const w = window as any;
       w.openDrop('Key of Terror');
@@ -29,8 +30,9 @@ test.describe('REG-2094 Escape and the card latch', () => {
       return nm;
     });
     expect(await page.evaluate(() => (window as any).__activeMaterial)).toBeNull();
-    await page.keyboard.press('Escape');
     await expect(page.locator('#item-detail')).toHaveClass(/\bshow\b/);
     await expect(page.locator('#item-detail')).toContainText(name);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#item-detail')).not.toHaveClass(/\bshow\b/);
   });
 });

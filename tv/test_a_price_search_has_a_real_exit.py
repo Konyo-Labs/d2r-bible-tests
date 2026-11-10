@@ -63,10 +63,10 @@ class APriceSearchHasARealExit(unittest.TestCase):
     def test_the_exit_clears_the_field_and_restores_the_idle_line(self):
         src = _page()
         i = src.index("window._d2jspPriceClick = function(ev){")
-        click = src[i:i + 1800]
+        click = src[i:src.index("function d2jspRevealAboveDock(el){", i)]
         self.assertIn("t.id === 'd2jsp-price-x'", click)
         i = click.index("t.id === 'd2jsp-price-x'")
-        bit = click[i:i + 280]
+        bit = click[i:click.index("if (t.id !== 'd2jsp-price-advanced')", i)]
         self.assertIn("q.value = ''", bit)
         self.assertIn("priceSearchIdle()", bit)
         if not NODE:
