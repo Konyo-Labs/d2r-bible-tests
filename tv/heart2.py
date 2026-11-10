@@ -137,6 +137,11 @@ PROOF_NEEDS_HOST = {
     # Dean's PC refuse the symlink, the case skipped in both runs and the proof read BLIND there. The probe makes a link
     # exactly as the law does (fixture_tmp.link_dir) and asks realpath to resolve it; a PC that can do neither reads
     # that proof ELSEWHERE.
+    # v3895 (#103/#107, MEASURED 11-10 on GitHub's Windows run 42841470222 and the work ALT's census) - the Claude CLI. A
+    # proof whose tamper un-hides the CLI (the law then runs the real `claude -p`) can only go red where a CLI exists: on a
+    # PC with none the real call fails exactly as the hidden one does, the law stays green, and the proof filed BLIND -
+    # one BLIND shuts every lock on that PC. The probe is the console's own finder, so "has a CLI" means what the code means.
+    "claude-cli": ("control_app", "_find_claude_bin", "the Claude CLI (the law's tamper runs the real claude -p)"),
     "dir-link": ("fixture_tmp", "can_link_a_directory",
                  "a directory link in its temp dir (a symlink, or a junction on Windows) that realpath resolves"),
     # REG-1688 — the ALT filed test_a_stub_agent_never_films_his_screen BLIND on [2] and [3]: the film loop it guards

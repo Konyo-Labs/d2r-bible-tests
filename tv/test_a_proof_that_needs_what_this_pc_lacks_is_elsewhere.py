@@ -570,7 +570,49 @@ class TheBuilderDeclaresItsInstall(unittest.TestCase):
         self.assertEqual(H.PROOF_NEEDS_HOST["d2r-install"][:2], ("affix_lexicon", "install_present"))
 
 
+class TheClaudeCliIsACapability(unittest.TestCase):
+    """v3895 (#103/#107, REG-3660) - MEASURED 11-10: two proofs filed BLIND on Windows (GitHub's Windows run 42841470222 and
+    the work ALT's census, which listed them among the 5 instruments keeping all 9 locks shut). One un-hides the Claude CLI,
+    so it can only go red where a CLI exists; the other deletes a branch Windows never takes. Each now declares its need."""
+
+    def test_no_cli_is_elsewhere_and_a_cli_is_judged(self):
+        import importlib
+        ca = importlib.import_module("control_app")
+        with mock.patch.object(ca, "_find_claude_bin", lambda *a, **k: None):
+            self.assertIs(H.host_lacks("claude-cli")[0], True, "a PC with no Claude CLI still judges the CLI proof (BLIND)")
+        with mock.patch.object(ca, "_find_claude_bin", lambda *a, **k: "/opt/fixture/claude"):
+            self.assertIs(H.host_lacks("claude-cli")[0], False, "a PC with a Claude CLI no longer judges the CLI proof")
+
+    def test_the_two_windows_blind_proofs_declare_their_needs(self):
+        import importlib.util
+        def proofs(name):
+            spec = importlib.util.spec_from_file_location(name, os.path.join(HERE, name + ".py"))
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+            return m.RED_PROOF
+        tri = [r for r in proofs("test_triage_runs_beside_a_shadow_reel") if r.get("find") == "_NO_CLAUDE.start()\n"]
+        self.assertEqual([r.get("needs") for r in tri], ["claude-cli"], "the CLI-un-hiding proof does not need a CLI")
+        cg = [r for r in proofs("test_child_guard_one_tree_per_role") if "start_new_session" in str(r.get("find"))
+              and "if not IS_WIN" in str(r.get("find"))]
+        self.assertEqual([r.get("needs") for r in cg], ["posix"], "the POSIX-branch proof is judged on Windows again")
+
+
 RED_PROOF = [
+    {"why": "v3895 (REG-3660) - the Claude CLI is no capability, so a PC with none judges the CLI proof and files it BLIND",
+     "file": "tv/heart2.py",
+     "find": "    \"claude-cli\": (\"control_app\", \"_find_claude_bin\",",
+     "replace": "    \"claude-cli-gone\": (\"control_app\", \"_find_claude_bin\",",
+     "matches": 1},
+    {"why": "v3895 (REG-3661) - the CLI-un-hiding proof stops declaring it needs a CLI (BLIND on every PC with none)",
+     "file": "tv/test_triage_runs_beside_a_shadow_reel.py",
+     "find": "        \"needs\": \"claude-cli\",\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "v3895 (REG-3661) - the POSIX-branch proof stops declaring posix (BLIND on Windows, every lock shut)",
+     "file": "tv/test_child_guard_one_tree_per_role.py",
+     "find": "        \"needs\": \"posix\",\n        \"find\": \"    if not IS_WIN:",
+     "replace": "        \"find\": \"    if not IS_WIN:",
+     "matches": 1},
     {"why": "REG-1686 - a proof this PC cannot judge is run anyway and files BLIND (the ALT's shut river)",
      "file": "heart2.py",
      "find": "        if _lacks:\n            say(\"     %-52s %s — it needs %s, which this PC does not have; it is proven on a PC that does\"\n",

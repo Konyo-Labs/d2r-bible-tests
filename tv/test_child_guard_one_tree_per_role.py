@@ -1227,6 +1227,9 @@ RED_PROOF = [
     {
         "why": "#83 - POSIX: the child no longer leads its own session, so a restart kills the head and the grandchild survives",
         "file": "tv/child_guard.py",
+        # v3895 (#103) - this tamper deletes a branch Windows never takes, so on Windows nothing changes and the proof filed
+        # BLIND there (GitHub's Windows run 42841470222 and the work ALT), shutting every lock. It is judged where POSIX is.
+        "needs": "posix",
         "find": "    if not IS_WIN:\n        kw.setdefault(\"start_new_session\", True)\n",
         "replace": "",
         "matches": 1,

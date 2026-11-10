@@ -20,6 +20,19 @@ GitHub's round 42884325588: test_the_river_drains_every_pass[21] BLIND - REG-358
 behind a shut frame.release, so the only case that reached the deleter's refusal no longer did. A new case hands the shipped
 _retention_once the deleter's exact refusal shape (ok False, no removed, no freedMb) and requires it said as a refusal and made
 the drain's stop - never "freed 0 MB". Seen RED under proof [21].
+### REG-3661 - TWO PROOFS THAT CAN ONLY GO RED OFF WINDOWS / BESIDE A CLAUDE CLI WERE JUDGED EVERYWHERE, AND SHUT EVERY WINDOWS LOCK (v3895, #103/#44, his "fix these locks finally")
+MEASURED 11-10 ~21:15 IST over SSH (read-only - he was playing): the work ALT had all 9 routes PROVEN and 0 of 9 permitted,
+"5 instrument(s) are BLIND". GitHub's Windows run on 518744bfd (42841470222) split them: 3 PROVEN there (only the ALT's
+census was stale), 2 BLIND on Windows itself - test_child_guard_one_tree_per_role[1] deletes an `if not IS_WIN:` branch
+(Windows never takes it, the tamper changes nothing) and test_triage_runs_beside_a_shadow_reel[0] un-hides the Claude CLI
+(with no CLI the real call fails as the hidden one did). One BLIND shuts every lock (REG-1677), so the river stayed stuck
+(26 reels). Now the first declares `"needs": "posix"`, the second `"needs": "claude-cli"`: ELSEWHERE where the PC lacks it,
+judged as before where it has it (both seen RED on the Mac). Law: test_a_proof_that_needs_what_this_pc_lacks_is_elsewhere.
+
+### REG-3660 - THE CLAUDE CLI IS A HOST CAPABILITY A PROOF CAN NEED (v3895, #103)
+heart2.PROOF_NEEDS_HOST gains "claude-cli", probed by the console's own finder (control_app._find_claude_bin), so "this PC has a
+CLI" means exactly what the code that launches it means - one lookup, no second copy. A probe that throws is judged as usual
+(REG-1686's rule), never served.
 
 ### REG-3631 — a second click on a boss chip left the card open (Bug H)
 v3894 dry-run. Routine I slow `setActiveBoss intent disambiguation (Bug H)` failed

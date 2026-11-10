@@ -1527,6 +1527,9 @@ RED_PROOF = [
     {
         "why": "#189 REG-2559 - the file stops hiding the Claude CLI: the cloud-route law runs the real `claude -p` again",
         "file": "tv/test_triage_runs_beside_a_shadow_reel.py",
+        # v3895 (#103) - un-hiding the CLI changes nothing on a PC with no CLI (the real call fails as the hidden one did), so
+        # there the proof filed BLIND and shut every lock. It is judged where a Claude CLI is (heart2's "claude-cli" need).
+        "needs": "claude-cli",
         "find": "_NO_CLAUDE.start()\n",
         "replace": "pass\n",
         "matches": 1,
