@@ -312,20 +312,31 @@ class ANamedFileTheLawNeverOpenedIsKeyedByName(_Case):
         self.assertRan(runs, said, "HEART2_TRACE=0")
 
     def test_a_proof_with_nothing_to_drop_keeps_its_v1_key(self):
-        """compatible: the key every bank on every machine already holds is unchanged when nothing is unread"""
+        """compatible: a held v1 key is still the lookup key when nothing is unread.
+        REG-3625 may bank a fresh proof under v4 when functions were traced; lookup still prefers v1 when that key is held."""
         self.law("opens")
         self.tree.files["tv/helper_p3.py"] = self.tree.files["tv/helper_p3.py"].replace("OTHER = 'named_mod.py'\n", "")
         self.push()
         ent = self.entries()
         self.assertEqual(len(ent), 1)
-        self.assertNotIn("unread", list(ent.values())[0])
+        row = list(ent.values())[0]
+        self.assertNotIn("unread", row, "an empty unread set was written as if something had been dropped")
         sandbox, root = self.tree.make()
         try:
             c = H._VerdictCache(path=self.cache_path, say=lambda *a: None)
-            k_lookup = c.key_for(sandbox, P3._GATE, P3._FILE, P3._proof())[0]
             k_v1 = c.key_for(sandbox, P3._GATE, P3._FILE, P3._proof(), unread=[])[0]
-            self.assertEqual(k_lookup, k_v1)
-            self.assertIn(k_v1, ent, "the v1 key is not the key it was banked under")
+            if row.get("funcs"):
+                k4 = c.key_for(sandbox, P3._GATE, P3._FILE, P3._proof(), unread=[],
+                               funcs=row["funcs"], quoted=row.get("quoted"))[0]
+                self.assertIn(k4, ent, "the v4 key is not the key it was banked under")
+                # a v1 already held on this machine still wins lookup (the REG-2640 compatibility)
+                c.entries[k_v1] = dict(row)
+                k_lookup = c.key_for(sandbox, P3._GATE, P3._FILE, P3._proof())[0]
+                self.assertEqual(k_lookup, k_v1, "a held v1 key was not preferred over a v4 variant")
+            else:
+                k_lookup = c.key_for(sandbox, P3._GATE, P3._FILE, P3._proof())[0]
+                self.assertEqual(k_lookup, k_v1)
+                self.assertIn(k_v1, ent, "the v1 key is not the key it was banked under")
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
