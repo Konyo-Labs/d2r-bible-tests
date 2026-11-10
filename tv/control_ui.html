@@ -29349,6 +29349,12 @@ function escC(s) {
                    : ('for the ' + pkLab + ' slot that PC\u2019s picker lists ' + pk.offers + ' base(s) while its own database holds '
                       + pk.holds + ' - the picker on that PC is hiding rows, or its rail names a type its tree does not; update and restart that console') }));
     }
+    /* REG-3585 — a stopped drain is a loud, plain alert: how many reels, and the GB at stake. */
+    var _daOpen = (typeof _fleetDrainAlert === 'function') ? _fleetDrainAlert(m) : null;
+    if (_daOpen) {
+      out.push(_fleetPart('drain', [_daOpen], { warn: true,
+                 why: String((sy && sy.drain && sy.drain.why) || 'the retention drain released nothing for several passes') }));
+    }
     /* #108 — its two readers, last in the box: can CLAUDE and GROK read on that PC */
     out.push(_fleetReadersPart(m));
     /* #56 - and whether d2jsp answers a real price search there */
@@ -29383,6 +29389,24 @@ function escC(s) {
     x = String(x == null ? '' : x);
     return x.length > n ? x.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : x;
   };
+  var _fleetDrainAlert = function (m) {
+    /* REG-3585 - THE STOPPED DRAIN IS SAID IN PLAIN WORDS, WITH THE GB AT STAKE.
+       Measured 2026-11-10 on Konyo · ALT: 149 releasable reels (2613.3 MB) carried through 24
+       passes, refused because frame.release was locked on 5 BLIND instruments. The closed row
+       never named the drain or the disk. */
+    var d = (m && m.system && typeof m.system === 'object') ? m.system.drain : null;
+    if (!d || typeof d !== 'object' || d.state !== 'STOPPED') return null;
+    var n = (typeof d.owedAtMouth === 'number' && isFinite(d.owedAtMouth) && d.owedAtMouth >= 0)
+      ? d.owedAtMouth
+      : ((typeof d.eligible === 'number' && isFinite(d.eligible) && d.eligible >= 0) ? d.eligible : null);
+    var mb = (typeof d.eligibleMb === 'number' && isFinite(d.eligibleMb) && d.eligibleMb >= 0) ? d.eligibleMb : null;
+    var gb = (mb == null) ? null : (mb / 1024);
+    var gbSay = (gb == null) ? 'GB at stake UNKNOWN'
+      : ((gb >= 10 ? gb.toFixed(0) : gb.toFixed(1)) + ' GB at stake');
+    var nSay = (n == null) ? '' : ((n === 1 ? '1 reel' : (String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' reels')) + ' · ');
+    return 'drain stopped — ' + nSay + gbSay;
+  };
+  window._fleetDrainAlert = _fleetDrainAlert;
   var _pcStatus = function (m, nowMs) {
     var now = (typeof nowMs === 'number') ? nowMs : Date.now();
     var parts = null, off = null;
@@ -29398,8 +29422,11 @@ function escC(s) {
     var _routeOpen = !!(_shutList && _shutList.indexOf('reel.route') < 0);
     var _blindsLock = !!(hs && typeof hs.lockWhy === 'string' && /are BLIND/.test(hs.lockWhy));
     var eta = proving ? _proofMeterFacts(hs).join(' · ') : '';
+    var drainAlert = null;
+    try { drainAlert = _fleetDrainAlert(m); } catch (e) { drainAlert = null; }
     var hurt = [];
     var st = by.stuck, pv = by.proved;
+    if (drainAlert) hurt.push(drainAlert);
     if (st && st.warn) hurt.push('river stuck: ' + st.t);
     else if (st && /locks are shut/.test(st.t)) hurt.push('river locks shut until it proves');
     if (hs && typeof hs.blind === 'number' && hs.blind > 0) {
@@ -29425,15 +29452,16 @@ function escC(s) {
     var booting = !!(hs && hs.key === 'starting' && (hs.census === null || hs.census === undefined)
                      && typeof _fleetBooting === 'function' && _fleetBooting(m, now));
     if (off) {
-      key = 'town'; hurt = [];
+      key = 'town'; hurt = []; drainAlert = null;
       next = 'since ' + off.since + ' - start its console to hear from it';   /* v3883 - the word says offline */
     } else if (booting && !hurt.length) {
       key = 'healing'; next = 'starting up - its first proof check lands about 5 minutes after a start';
     } else if (!parts || !known) {
       key = 'lost'; next = 'open the console on that PC once, so it can report';
-    } else if (hurt.length && !(proving && _routeOpen && !_blindsLock)) {
+    } else if (drainAlert || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {
       key = 'wounded';
-      next = proving ? ('it heals itself: proving ' + eta + ' - nothing for you to do') : '';
+      next = proving ? ('it heals itself: proving ' + eta + ' - nothing for you to do')
+                     : (drainAlert ? 'the drain released nothing — disk is at stake' : '');
     } else if (proving) {
       key = 'healing'; next = 'proving ' + eta + ' - nothing for you to do';
     } else if (!hs || !hs.census || hs.census === 'unknown') {
@@ -29444,7 +29472,8 @@ function escC(s) {
     var W = _PC_WORD[key];
     if (off) owed = [];
     return { key: key, word: W.w, cls: W.c, en: W.en, hurt: hurt, owed: owed, next: next, eta: eta, offSince: off ? off.since : null,
-             look: key === 'wounded' && !proving, starting: key === 'healing' && booting && !proving };
+             look: key === 'wounded' && !proving, starting: key === 'healing' && booting && !proving,
+             drainAlert: drainAlert };
   };
   /* ONE element, spans inside: the card, the State panel and a law can each cut it out whole by its class */
   var _pcStatusHtml = function (m, nowMs, opts) {
@@ -29519,9 +29548,9 @@ function escC(s) {
       if (_nf.length) {
         var _ns = (typeof window._fleetNetShut === 'function') ? window._fleetNetShut(_nf) : { word: 'its locks shut' };
         var _v = String(_nf[0].verdict || 'failing').toLowerCase();
-        return [_nf.length === 1 ? '1 law ' + _v : _nf.length + ' laws fail', _ns.word];
+        return (s.drainAlert ? [s.drainAlert] : []).concat([_nf.length === 1 ? '1 law ' + _v : _nf.length + ' laws fail', _ns.word]);
       }
-      return ['all proved'];   /* v3883 (#116) - 'every law proved' missed 1512's 303px by 5 */
+      return (s.drainAlert ? [s.drainAlert] : []).concat(['all proved']);   /* v3883 (#116) - 'every law proved' missed 1512's 303px by 5 */
     }
     var _n = function (x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
     var _eta = function (e) { return (typeof e === 'number' && isFinite(e) && e >= 0)
@@ -29532,7 +29561,7 @@ function escC(s) {
       if (s.starting) return ['starting up'];
       var _left = (hs && typeof hs.blind === 'number' && hs.blind > 0)
         ? (hs.blind + (hs.blind === 1 ? ' check still blind' : ' checks still blind')) : '';
-      return [proving || 'proving', _left].filter(Boolean);
+      return (s.drainAlert ? [s.drainAlert] : []).concat([proving || 'proving', _left].filter(Boolean));
     }
     /* ONE wound, the one that needs a hand first: a blind gate keeps every lock shut whatever this PC proves next, so it
        leads; the rest are "+N" (the open row and the State panel name them). Then what is healing it, if anything. */
@@ -29541,7 +29570,7 @@ function escC(s) {
       if (/^proof: /.test(x)) { x = x.slice(7); if (!/proof/.test(x)) x = 'proof ' + x; }
       return x.length <= 28 ? x : x.split(':')[0].trim();
     };
-    var hurt = s.hurt.slice().sort(function (a, b) { return (/ blind$/.test(b) ? 1 : 0) - (/ blind$/.test(a) ? 1 : 0); });
+    var hurt = s.hurt.slice().filter(function (x) { return x !== s.drainAlert; }).sort(function (a, b) { return (/ blind$/.test(b) ? 1 : 0) - (/ blind$/.test(a) ? 1 : 0); });
     /* v3883 (#116) - the ONE wound, in its shortest words ("2 blind", no "+N": the open row and the State panel list the
        rest) - one line is 25-37 characters at the rail's widths, so every word on it has to earn its place */
     /* v3884 - plain: WHAT is blind and what is being proved (the Grok CLI: "2 blind" / "proving 102 - 102 of what") */
@@ -29551,7 +29580,7 @@ function escC(s) {
     var _quiet = (imp && typeof imp.quietS === 'number' && isFinite(imp.quietS) && imp.quietS > 0)
       ? ' \u00b7 no progress for ' + (imp.quietS < 5400 ? Math.max(1, Math.round(imp.quietS / 60)) + ' min' : (imp.quietS / 3600).toFixed(1) + ' h') : '';
     var heal = imp ? 'import' + (_quiet || _eta(imp.etaS)) : proving;   /* v3887 (REG-3473) - 'importing' cost 1512 its one line */
-    return [first, heal].filter(Boolean);
+    return (s.drainAlert ? [s.drainAlert] : []).concat([first, heal].filter(Boolean));
   };
   /* v3883 (#116) - the line is its units joined (the hover, the laws); the row draws each unit whole */
   var _fleetBriefLine = function (s, hs) { return _fleetBriefParts(s, hs).join(' \u00b7 '); };
