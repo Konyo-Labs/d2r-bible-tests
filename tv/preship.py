@@ -46,7 +46,11 @@ BLUEPRINT_TIMEOUT_S = 120
 HEART_TIMEOUT_S = 120
 CENSUS_TIMEOUT_S = 180
 CHANGED_TIMEOUT_S = 600
-CHEAP_TIMEOUT_S = 90
+# MEASURED 2026-11-10 CI run 42812894594: 35 agreement laws took 85.5s on the
+# runner and the last one (test_a_render_console_does_not_read_the_branch_distance)
+# was refused as "not run (budget)" at 90s. Locally the same set is ~66s. 180s
+# leaves headroom; the preship job itself is timeout-minutes: 8.
+CHEAP_TIMEOUT_S = 180
 
 # Checks that are cheap and deterministic: run first so a doomed rehearsal dies in minutes.
 CHEAP = ("lessons", "encoding", "swallow_census", "agreement")
