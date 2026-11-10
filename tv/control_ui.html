@@ -7178,16 +7178,28 @@
   .fleet-row > .fleet-sys.fleet-former { font-style: italic; opacity: .72; }
   .fleet-row b { color: var(--text); font-weight: var(--fw-semibold); }
   .fleet-row.on b { color: var(--mint); }
-  .fleet-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--st-good); flex: none;
-    box-shadow: 0 0 7px var(--mint); }
-  /* v3890 (#189, REG-3517) - THE LAMP IS THE CONSOLE ALIVE BEHIND THE SCENES (his 11-09: "i do want a lamp to to know that
-     it is connected and alive behind the scenes regardless"). His v3885 rule, on the lamp too: green = its console's own
-     beacon is fresh; red = not heard (#86 gap 12's outlived key, or a PC the roster dropped); amber = the console process is
-     down and only its recorder's lease is alive (fleet_presence via "recorder" - it was drawn green); a grey ring = UNKNOWN. */
-  .fleet-dot.off { background: #c9402e; box-shadow: none; }
-  .fleet-dot.silent { background: #c9402e; box-shadow: none; }
-  .fleet-dot.rec { background: var(--st-needs); box-shadow: none; }
-  .fleet-dot.unk { background: transparent; box-shadow: none; border: 1px dashed #6d6a66; box-sizing: border-box; }
+  .fleet-dot { width: 7px; height: 7px; border-radius: 50%; background: #8fe6a0; flex: none;
+    box-shadow: 0 0 8px rgba(143, 230, 160, .9);
+    transition: background-color .5s ease, box-shadow .5s ease, border-color .5s ease; }
+  /* v3895 (REG-3640) - THE LAMP IS A MOOD RING. One color per connection-health state, each from a real field,
+     the worst one wins (red, then pink, orange, yellow, teal, green). Soft glow, smooth shift. The middle eye
+     (a real session recording) and the third eye (the console window) are separate: recorder-only and "recording"
+     never color this lamp. Grey is a PC that has never sent a first report, not a stand-in for every unknown. */
+  .fleet-dot.ok     { background: #8fe6a0; box-shadow: 0 0 8px rgba(143, 230, 160, .9); }
+  .fleet-dot.teal   { background: #3ecfc9; box-shadow: 0 0 8px rgba(62, 207, 201, .9); }
+  .fleet-dot.yellow { background: #f0d35a; box-shadow: 0 0 8px rgba(240, 211, 90, .9); }
+  .fleet-dot.orange { background: #f08a3a; box-shadow: 0 0 8px rgba(240, 138, 58, .9); }
+  .fleet-dot.pink   { background: #f07aa8; box-shadow: 0 0 8px rgba(240, 122, 168, .9); }
+  .fleet-dot.red    { background: #c9402e; box-shadow: 0 0 8px rgba(201, 64, 46, .85); }
+  .fleet-dot.unk    { background: #7a7672; box-shadow: 0 0 7px rgba(122, 118, 114, .7); border: none; }
+  @media (prefers-reduced-motion: reduce) { .fleet-dot { transition: none; } }
+  /* v3895 (REG-3640) - THE FLEET KEY: what the lamp and the two eyes mean, under the head, in the rail. */
+  .fleet-help { font: var(--fw-regular) var(--fs-2xs)/var(--lh-snug) var(--sans, inherit); color: var(--muted, #9aa0a6);
+    padding: 8px 2px 10px; border-top: 1px solid rgba(109, 106, 102, .35); margin: 0 0 8px; }
+  .fleet-help .fh-sec { margin: 0 0 8px; color: var(--text, #e8e0d4); }
+  .fleet-help .fh-sec b { font-weight: var(--fw-semibold); color: var(--text, #e8e0d4); }
+  .fleet-help .fh-row { display: flex; align-items: flex-start; gap: 8px; margin: 4px 0 0; color: var(--muted, #9aa0a6); }
+  .fleet-help .fh-row .fleet-dot { margin-top: 4px; }
   /* 167 — the capture eye, only when it is live. Absent/dark is no chip, never a lying 👁. */
   /* v2454 — 11px was below the declared type floor and the ratchet caught it
      (TestV1504TypeFloor: `[11.0] != []`). The scale's smallest token is --fs-2xs at
@@ -9313,7 +9325,8 @@ body[data-shadow="armed"] .live-bug .dot { background: transparent; box-shadow: 
                          rule names `.signal` and `#sig-adv`, so anything still inside that drawer is hidden
                          with it. Out here it needs no rule of its own to stay visible in every view. -->
 <div class="fleet-box">
-            <div class="fleet-head">🖥 THE FLEET <button class="util-btn" type="button" id="roster-open" title="other consoles, read only" onclick="window._rosterOpen()">Roster</button><button class="util-btn fleet-refresh" type="button" title="re-check who is online" onclick="window._fleetRefresh(true)">↻</button></div>
+            <div class="fleet-head">🖥 THE FLEET <button class="util-btn" type="button" id="roster-open" title="other consoles, read only" onclick="window._rosterOpen()">Roster</button><button class="util-btn fleet-refresh" type="button" title="re-check who is online" onclick="window._fleetRefresh(true)">↻</button><button class="util-btn fleet-help-btn" type="button" id="fleet-help-btn" title="what the lamp and the eyes mean" aria-expanded="false" aria-controls="fleet-help" onclick="window._fleetHelpToggle()">?</button></div>
+            <div id="fleet-help" class="fleet-help" hidden></div>
             <div class="roster-box" id="roster-box" hidden>
               <div class="fleet-head">ROSTER <span class="roster-note">read only</span></div>
               <div id="roster-body"><div class="roster-none">this PC has not fetched a roster yet</div></div>
@@ -29608,31 +29621,157 @@ function escC(s) {
              why: String(p.words || 'offline') + ' - past the ' + Math.round((p.staleAfterS || 0) / 60) + ' min refresh, so not online' };
   };
   window._fleetPresence = _fleetPresence;
-  /* v3890 (#189, REG-3517) - THE ROW'S LAMP: IS THIS PC'S CONSOLE CONNECTED AND ALIVE BEHIND THE SCENES, game or no game.
-     His words 11-09: "a separate eye for it that knows when the consoles background process it up and running meaning the PC
-     is up and online behind the scenes with out gameplay but with the console logic" - "i do want a lamp to to know that it is
-     connected and alive behind the scenes regardless yes". The dot WAS that lamp and said it wrong in one case and silently
-     in all: green for any 'online', and online can be the recorder's lease alone with the console process down; no hover.
-     It draws the ONE presence verdict (pres, from fleet_presence's m.presence stamp) and computes none of its own. */
-  var _fleetLamp = function (m, pres, online) {
-    var p = (m && m.presence && typeof m.presence === 'object') ? m.presence : null;
-    var a = (p && typeof p.ageS === 'number' && isFinite(p.ageS) && p.ageS >= 0) ? p.ageS : null;
-    var age = a === null ? '' : ' (heard ' + (a < 90 ? Math.round(a) + ' s' : Math.round(a / 60) + ' min') + ' ago)';
-    var cls, tip;
-    if (!pres) {
-      cls = ' off'; tip = 'console OFFLINE - this PC is not connected';
-    } else if (pres.state === 'here' && p && p.via === 'recorder') {
-      cls = ' rec'; tip = 'console process DOWN - only its recorder is still capturing' + age;
-    } else if (pres.state === 'here') {
-      cls = ''; tip = 'console CONNECTED - its background process is up and alive' + age;
-    } else if (pres.state === 'unknown') {
-      cls = ' unk'; tip = 'console UNKNOWN - ' + String(pres.why || pres.word || 'no presence stamp');
-    } else {
-      cls = ' silent'; tip = 'console NOT HEARD - ' + String(pres.word || 'offline') + age;
+  /* v3895 (REG-3640) - THE ROW'S LAMP IS A MOOD RING: one color per connection-health state, each from a
+     real field, the worst one wins, the hover lists every condition that is true. The middle eye (a real
+     session recording) and the third eye (the console window) stay separate: a recorder-only lease and any
+     "recording" meaning never color this lamp. A field this state needs, if absent, is said UNKNOWN in the
+     hover and the lamp falls back to the next known state — never guessed.
+       green  online, the background console is alive, checking in on time, nothing below is true
+       teal   online, but check-ins are late (older than freshUntilS, not yet past staleAfterS)
+       yellow waiting on an update (this PC's running ver is older than live st.ver)
+       orange waiting on an import (import-first / a running, not-yet-landed import)
+       pink   low on memory (low-memory / a stand-aside whose why is memory)
+       red    offline — nothing heard past staleAfterS
+       grey   a just-added PC that has never sent a first report
+     Priority: red > pink > orange > yellow > teal > green. */
+  var _fleetVerNum = function (v) {
+    var m = /^v(\d+)$/.exec(String(v || ''));
+    return m ? parseInt(m[1], 10) : null;
+  };
+  var _fleetLampHeard = function (ageS) {
+    if (!(typeof ageS === 'number' && isFinite(ageS) && ageS >= 0)) return '';
+    return ' (heard ' + (ageS < 90 ? Math.round(ageS) + ' s' : Math.round(ageS / 60) + ' min') + ' ago)';
+  };
+  var _fleetConsoleAgeS = function (m, p, now) {
+    /* The console's own check-in only. The recorder's lease is the middle eye's business. */
+    var t = m && m.t, ms = null;
+    if (typeof t === 'number' && isFinite(t)) ms = t;
+    else if (typeof t === 'string' && t) {
+      ms = Date.parse(t);
+      if (!isFinite(ms)) ms = null;
     }
-    return '<span class="fleet-dot' + cls + '" title="' + escC(tip) + '" role="img" aria-label="' + escC(tip) + '"></span>';
+    if (ms !== null && ms < now + 60000) return Math.max(0, (now - ms) / 1000);
+    if (p && p.via === 'console' && typeof p.ageS === 'number' && isFinite(p.ageS) && p.ageS >= 0) return p.ageS;
+    return null;
+  };
+  var _fleetHelpHtml = function () {
+    var dot = function (cls) { return '<i class="fleet-dot ' + cls + '" aria-hidden="true"></i>'; };
+    return '<div class="fh-sec"><b>The lamp</b> is this PC\'s connection. One color at a time; the worst one wins (red, then pink, orange, yellow, teal, green). Hover the lamp to see every condition that is true.</div>'
+      + '<div class="fh-row">' + dot('ok') + '<span>Green: online, the background console is alive, and it is checking in on time.</span></div>'
+      + '<div class="fh-row">' + dot('teal') + '<span>Teal: online, but its check-ins are late.</span></div>'
+      + '<div class="fh-row">' + dot('yellow') + '<span>Yellow: waiting on an update (this PC\'s version is older than live).</span></div>'
+      + '<div class="fh-row">' + dot('orange') + '<span>Orange: waiting on an import.</span></div>'
+      + '<div class="fh-row">' + dot('pink') + '<span>Pink: low on memory.</span></div>'
+      + '<div class="fh-row">' + dot('red') + '<span>Red: offline — nothing heard for a long time.</span></div>'
+      + '<div class="fh-row">' + dot('unk') + '<span>Grey: a PC that was just added and has not sent its first report yet.</span></div>'
+      + '<div class="fh-sec"><b>The middle eye</b> is the shadow reader. It stays dark unless a real session is recording, and is lit only while a real session records.</div>'
+      + '<div class="fh-sec"><b>The third eye</b> is the console window. It stays dark until the console window is open, and is lit only while the window is open.</div>';
+  };
+  window._fleetHelpToggle = function () {
+    var el = document.getElementById('fleet-help');
+    var btn = document.getElementById('fleet-help-btn');
+    if (!el) return;
+    if (!el.getAttribute('data-ready')) { el.innerHTML = _fleetHelpHtml(); el.setAttribute('data-ready', '1'); }
+    var open = !!el.hidden;
+    el.hidden = !open;
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+  var _fleetLamp = function (m, pres, online, liveVer) {
+    var p = (m && m.presence && typeof m.presence === 'object') ? m.presence : null;
+    var now = (typeof NOW === 'number' && isFinite(NOW)) ? NOW : Date.now();
+    var live = (typeof liveVer === 'string' && liveVer)
+      ? liveVer
+      : ((typeof window !== 'undefined' && window && typeof window._fleetLiveVer === 'string' && window._fleetLiveVer)
+          ? window._fleetLiveVer : null);
+    var ageS = _fleetConsoleAgeS(m, p, now);
+    var freshUntil = (p && typeof p.freshUntilS === 'number' && isFinite(p.freshUntilS) && p.freshUntilS > 0) ? p.freshUntilS : null;
+    var staleAfter = (p && typeof p.staleAfterS === 'number' && isFinite(p.staleAfterS) && p.staleAfterS > 0) ? p.staleAfterS : null;
+    var notes = [];
+    var conds = [];
+    var never = (ageS === null && !(p && p.via === 'console'));
+    /* a timestamp the card cannot read (a clock in the future, an unparseable t) is not "never reported" */
+    var tRaw = m && m.t;
+    var unreadable = false;
+    if (never && tRaw) {
+      unreadable = true;
+      never = false;
+    }
+    if (never) {
+      conds.push({ cls: 'unk', say: 'this PC has never sent a first report' });
+    } else {
+      if (ageS === null || staleAfter === null) {
+        notes.push('check-in timing UNKNOWN');
+      } else if (ageS > staleAfter) {
+        conds.push({ cls: 'red', say: 'offline — nothing heard for a long time' + _fleetLampHeard(ageS) });
+      } else if (freshUntil === null) {
+        notes.push('check-in timing UNKNOWN');
+      } else if (ageS > freshUntil) {
+        conds.push({ cls: 'teal', say: 'check-ins are late' + _fleetLampHeard(ageS) });
+      }
+    }
+    var hs = null, heartKnown = false;
+    if (m && m.system && typeof m.system === 'object' && m.system.river && typeof m.system.river === 'object'
+        && m.system.river.heart && typeof m.system.river.heart === 'object') {
+      hs = m.system.river.heart;
+      heartKnown = true;
+    } else if (m && m.system && typeof m.system === 'object' && Object.prototype.hasOwnProperty.call(m.system, 'river')) {
+      heartKnown = false;
+    } else if (m && Object.prototype.hasOwnProperty.call(m, 'system')) {
+      heartKnown = false;
+    } else {
+      heartKnown = false;
+    }
+    if (!m || (m.system == null && !Object.prototype.hasOwnProperty.call(m, 'system'))) {
+      /* no system field at all: an older console, or a fixture that never carried one — do not invent import/memory */
+      notes.push('import UNKNOWN');
+      notes.push('memory UNKNOWN');
+    } else if (!heartKnown) {
+      notes.push('import UNKNOWN');
+      notes.push('memory UNKNOWN');
+    } else {
+      var wait = (typeof _proofMeterFacts === 'function') ? _proofMeterFacts(hs, true) : '';
+      var importing = !!(hs && hs.importing && typeof hs.importing === 'object' && hs.importing.landed !== true);
+      if (wait === 'low memory' || (hs && hs.key === 'low-memory')) {
+        conds.push({ cls: 'pink', say: 'low on memory' });
+      }
+      if (wait === 'import first' || importing) {
+        conds.push({ cls: 'orange', say: 'waiting on an import' });
+      }
+    }
+    var runN = _fleetVerNum(m && m.ver), liveN = _fleetVerNum(live);
+    if (runN === null || liveN === null) {
+      notes.push('version UNKNOWN');
+    } else if (runN < liveN) {
+      conds.push({ cls: 'yellow', say: 'waiting on an update (runs ' + String(m.ver) + ', live is ' + String(live) + ')' });
+    }
+    var rank = { red: 0, pink: 1, orange: 2, yellow: 3, teal: 4, ok: 5, unk: 6 };
+    conds.sort(function (a, b) { return (rank[a.cls] - rank[b.cls]); });
+    var cls, tip;
+    if (never) {
+      cls = 'unk';
+      tip = 'this PC has never sent a first report';
+    } else {
+      var problems = conds.filter(function (c) { return c.cls !== 'unk'; });
+      if (problems.length) {
+        cls = problems[0].cls;
+        tip = problems.map(function (c) { return c.say; }).join('; ');
+      } else if (!unreadable && ageS !== null && (staleAfter === null || ageS <= staleAfter)
+                 && (freshUntil === null || ageS <= freshUntil)
+                 && staleAfter !== null && freshUntil !== null) {
+        cls = 'ok';
+        tip = 'online, the background console is alive, and it is checking in on time' + _fleetLampHeard(ageS);
+      } else {
+        /* no known color we can honestly claim */
+        cls = 'unk';
+        tip = unreadable ? 'check-in timing UNKNOWN' : (notes.length ? notes.join('; ') : 'connection UNKNOWN');
+        notes = notes.filter(function (n) { return tip.indexOf(n) === -1; });
+      }
+      if (notes.length) tip = (tip ? tip + '; ' : '') + notes.join('; ');
+    }
+    return '<span class="fleet-dot ' + cls + '" title="' + escC(tip) + '" role="img" aria-label="' + escC(tip) + '"></span>';
   };
   window._fleetLamp = _fleetLamp;
+  window._fleetHelpHtml = _fleetHelpHtml;
   /* #86 gap 15 (REG-1773) — A RESTART NOBODY COULD ASK ABOUT IS NOT CLEAR TO GO.
      The pending badge's else said "clear to restart" for every may that was not false,
      including null: the console could not ask, and the card answered for it. may true is
@@ -30665,6 +30804,8 @@ function escC(s) {
          never by matching version strings, because two machines can share a version and one of
          them would then be mislabelled. [[label-outlived-referent]] [[unknown-stays-unknown]] */
       var _pub = j.publishedVer, _me = j.me;
+      window._fleetLiveVer = (typeof st !== 'undefined' && st && typeof st.ver === 'string' && st.ver)
+        ? st.ver : (_pub || null);
       /* v2296 — HOW FAR BEHIND, SAID OUT LOUD. `_pub` was read here in v2249 and then compared
          against exactly ONE machine: his own. So his row stopped looking one ahead by
          construction, and every OTHER row went on reporting whatever that machine last said about

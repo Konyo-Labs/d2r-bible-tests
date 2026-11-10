@@ -72,17 +72,10 @@ RED_PROOF = [
         "matches": 1,
     },
     {
-        "why": "v3890 (#189) - the lamp lights green for the recorder alone, the console process down",
+        "why": "v3895 (REG-3640) - the lamp loses its hover: nobody can read which state it is in",
         "file": "tv/control_ui.html",
-        "find": "    } else if (pres.state === 'here' && p && p.via === 'recorder') {\n",
-        "replace": "    } else if (false) {\n",
-        "matches": 1,
-    },
-    {
-        "why": "v3890 (#189) - the lamp loses its hover: nobody can read which state it is in",
-        "file": "tv/control_ui.html",
-        "find": "    return '<span class=\"fleet-dot' + cls + '\" title=\"' + escC(tip) + '\" role=\"img\" aria-label=\"' + escC(tip) + '\"></span>';\n",
-        "replace": "    return '<span class=\"fleet-dot' + cls + '\"></span>';\n",
+        "find": "    return '<span class=\"fleet-dot ' + cls + '\" title=\"' + escC(tip) + '\" role=\"img\" aria-label=\"' + escC(tip) + '\"></span>';\n",
+        "replace": "    return '<span class=\"fleet-dot ' + cls + '\"></span>';\n",
         "matches": 1,
     },
     {
@@ -184,20 +177,6 @@ RED_PROOF = [
         "find": "    if (!heard || !wm) {\n      st = 'unk';",
         "replace": "    if (!wm) {\n      st = 'unk';",
         "matches": 1, "needs": "node",
-    },
-    {
-        "why": "v3894 (REG-3517) - not heard is not red",
-        "file": "control_ui.html",
-        "find": "  .fleet-dot.silent { background: #c9402e; box-shadow: none; }\n",
-        "replace": "  .fleet-dot.silent { background: var(--st-good); box-shadow: none; }\n",
-        "matches": 1,
-    },
-    {
-        "why": "v3894 (REG-3517) - recorder-only is not amber",
-        "file": "control_ui.html",
-        "find": "  .fleet-dot.rec { background: var(--st-needs); box-shadow: none; }\n",
-        "replace": "  .fleet-dot.rec { background: var(--st-good); box-shadow: none; }\n",
-        "matches": 1,
     },
     {
         "why": "v3894 (his 11-10) - a closed console window paints red again, not dark",
@@ -463,45 +442,39 @@ class TheEyeOnEveryRow(unittest.TestCase):
                          "a closed window painted red again")
 
     def test_the_lamp_says_the_console_is_alive_behind_the_scenes(self):
-        """* v3890 (#189, REG-3517 - his 11-09: "i do want a lamp to to know that it is connected and alive behind the scenes
-        regardless yes") - the row's lamp draws fleet_presence's ONE verdict: green = its console's own beacon is fresh, amber
-        = the console is down and only its recorder's lease lives, red = not heard, a grey ring = UNKNOWN - each with a hover"""
+        """* v3890 (#189, REG-3517) / v3895 (REG-3640) - the lamp is this PC's connection, not the
+        recorder and not either eye. Mood-ring colors, priority and the Fleet help are the law in
+        test_the_lamp_is_a_mood_ring.py. This pin only keeps the join: the row still draws the lamp
+        with a hover, and a recorder-only lease does not light it green."""
         import fleet_presence as _fp
 
-        def lamp(console_ago_ms, recorder_ago_ms=None, listed=True):
-            row = {"nickname": "Box", "machine": "box-1", "ver": "v3890"}
+        def lamp(console_ago_ms, recorder_ago_ms=None, listed=True, live="v3890"):
+            row = {"nickname": "Box", "machine": "box-1", "ver": "v3890",
+                   "system": {"tree": "ok", "reels": 1, "river": {"heart": {"census": "current"}}}}
             if console_ago_ms is not None:
                 row["t"] = _iso(UI_NOW - console_ago_ms)
             if recorder_ago_ms is not None:
                 row["recorder"] = {"alive": True, "t": _iso(UI_NOW - recorder_ago_ms)}
             row["presence"] = _fp.presence_of(row, listed, UI_NOW)
-            return _ui_run("var p = _fleetPresence(%s, %s, NOW); var h = _fleetLamp(%s, p, %s); OUT.h = h;"
-                           " var m = /fleet-dot( [a-z]+)?\"/.exec(h); OUT.cls = m ? (m[1] || '').trim() : null;"
+            return _ui_run("var p = _fleetPresence(%s, %s, NOW); var h = _fleetLamp(%s, p, %s, %s); OUT.h = h;"
+                           " var m = /fleet-dot ([a-z]+)/.exec(h); OUT.cls = m ? m[1] : null;"
                            " var t = /title=\"([^\"]*)\"/.exec(h); OUT.title = t ? t[1] : null;"
-                           % (json.dumps(row), "true" if listed else "false", json.dumps(row), "true" if listed else "false"))
+                           % (json.dumps(row), "true" if listed else "false", json.dumps(row),
+                              "true" if listed else "false", json.dumps(live)))
         up = lamp(40000)
-        self.assertEqual(up["cls"], "", up)
-        self.assertIn("CONNECTED", up["title"])
+        self.assertEqual(up["cls"], "ok", up)
+        self.assertIn("checking in on time", up["title"])
         rec = lamp(40 * 60000, recorder_ago_ms=30000)
-        self.assertEqual(rec["cls"], "rec", "the recorder alone lit the console's lamp green: %r" % rec)
-        self.assertIn("console process DOWN", rec["title"])
+        self.assertEqual(rec["cls"], "red", "the recorder alone lit the lamp: %r" % rec)
+        self.assertIn("offline", rec["title"])
+        self.assertNotIn("recorder", rec["title"] or "")
         gone = lamp(40 * 60000)
-        self.assertEqual(gone["cls"], "silent", gone)
-        self.assertIn("NOT HEARD", gone["title"])
+        self.assertEqual(gone["cls"], "red", gone)
         unk = lamp(None)
         self.assertEqual(unk["cls"], "unk", unk)
-        self.assertEqual(lamp(40000, listed=False)["cls"], "off")
-        with io.open(UI, encoding="utf-8") as f:
-            src = f.read()
-        # v3894 (REG-3517, the v3890 look): pin the four lamp colours, not only the class names
-        self.assertIn(".fleet-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--st-good);", src,
-                      "connected (empty class) is not green")
-        self.assertIn("--st-good:    var(--mint);", src, "connected green is mint")
-        self.assertIn(".fleet-dot.rec { background: var(--st-needs);", src, "recorder-only is not amber")
-        self.assertIn("--st-needs:   #ffb27a;", src, "recorder-only amber is #ffb27a")
-        self.assertIn(".fleet-dot.silent { background: #c9402e;", src, "not heard is red, his rule")
-        self.assertIn(".fleet-dot.unk { background: transparent; box-shadow: none; border: 1px dashed #6d6a66;", src,
-                      "UNKNOWN is not a grey ring")
+        self.assertIn("never sent a first report", unk["title"])
+        # a PC that used to check in, now dropped from the online list, is red, not grey
+        self.assertEqual(lamp(40 * 60000, listed=False)["cls"], "red")
 
     def test_on_is_green_and_off_is_red(self):
         """* v3885 (his 11-08: "when off red. when on green. same for the shadow reader. simple and clean logic")"""
