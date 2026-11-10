@@ -60,11 +60,19 @@ class TheProgramNeverRidesTheCommandLine(unittest.TestCase):
 
     def test_a_page_is_parsed_not_unread(self):
         page = "<html><body>Search Results " + "x" * 60000 + "</body></html>"
-        before = set(glob.glob(os.path.join(tempfile.gettempdir(), "tvd-d2jsp-*.js")))
-        q = D.parse_public_quote(page, "Harlequin Crest", "2026-11-09")
+        # The pre-flight runs laws in parallel, and they share the machine temp dir. A sibling
+        # `_node_run` can create another tvd-d2jsp-*.js between the two globs and this law
+        # then reads as red for a file it did not leave. Isolate the leftover check.
+        with tempfile.TemporaryDirectory(prefix="tvd-d2jsp-law-") as td:
+            old = tempfile.tempdir
+            tempfile.tempdir = td
+            try:
+                q = D.parse_public_quote(page, "Harlequin Crest", "2026-11-09")
+                leftover = glob.glob(os.path.join(td, "tvd-d2jsp-*.js"))
+            finally:
+                tempfile.tempdir = old
         self.assertNotEqual(q.get("reason"), "unread", "the parser never ran under the Windows cap")
-        after = set(glob.glob(os.path.join(tempfile.gettempdir(), "tvd-d2jsp-*.js")))
-        self.assertEqual(after - before, set(), "a program file was left in the temp folder")
+        self.assertEqual(leftover, [], "a program file was left in the temp folder")
 
     def test_the_cap_is_real_here(self):
         """BASELINE: the simulated cap refuses a program on argv - so the cases above can tell the two ways apart"""
