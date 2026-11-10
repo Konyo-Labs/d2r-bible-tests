@@ -25,7 +25,7 @@ class TheLawHolds(unittest.TestCase):
     def test_every_lesson_names_a_catalog_check(self):
         rows = P.load_lessons()
         cat = P.catalog()
-        self.assertGreaterEqual(len(rows), 3, "the starting set is attempts 6, 7 and 8")
+        self.assertGreaterEqual(len(rows), 4, "the starting set is attempts 6, 7, 8 and 9")
         for row in rows:
             self.assertIn("check", row, row)
             self.assertIn(row["check"], cat,
@@ -36,6 +36,7 @@ class TheLawHolds(unittest.TestCase):
         self.assertEqual(by["bundle-attempt-6"], "render_check")
         self.assertEqual(by["bundle-attempt-7"], "test_a_chronicle_title_never_shaves_its_count")
         self.assertEqual(by["bundle-attempt-8"], "mac_ready")
+        self.assertEqual(by["bundle-attempt-9"], "failed_shards")
 
     def test_preship_invokes_every_lesson_check(self):
         called = []

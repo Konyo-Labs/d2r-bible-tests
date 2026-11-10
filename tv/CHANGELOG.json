@@ -3,6 +3,10 @@
     "ver": "v3893",
     "date": "2026-11-09",
     "items": [
+      "A shard that failed in the last N rounds is rehearsed locally before the ci/ push (REG-3647)",
+      "A red shard is classified as it finishes; a real red is reported at once, a flake or cut-off is re-run (REG-3648)",
+      "A shard that fails twice in three rounds, or runs near the 25-minute ceiling, is flagged to split (REG-3649)",
+      "A lesson from a shard failure records the shard identity so a repeat is caught before push (REG-3650)",
       "python3 tv/ship.py vNNNN is the one ship entry: box rehearsal, Mac readiness, CI wait, then main (REG-3646)",
       "A worktree without playwright fails in seconds; the only auto-fix is a node_modules symlink (attempt 8, REG-3646)",
       "Agreement laws that pin a gate's numbers run before a ship; chronicle-title matches the page floor (attempt 7, REG-3642)",

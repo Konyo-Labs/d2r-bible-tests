@@ -14307,6 +14307,22 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_ship_runs_mac_gates_beside_the_ci_wait.py")], 30,
          needs_app=False,
          why='v3894 REG-3646 - a red box rehearsal, readiness check or Mac rehearsal stops the ship at once, never after CI; main is still hooked'),
+    Gate("test_a_failed_shard_is_rehearsed_before_the_ci_push",
+         [sys.executable, os.path.join(HERE, "test_a_failed_shard_is_rehearsed_before_the_ci_push.py")], 30,
+         needs_app=False,
+         why='v3894 REG-3647 - a shard that failed in the last N rounds is rehearsed locally before the ci/ push (attempt 9)'),
+    Gate("test_a_red_shard_is_classified_and_reported_while_others_run",
+         [sys.executable, os.path.join(HERE, "test_a_red_shard_is_classified_and_reported_while_others_run.py")], 30,
+         needs_app=False,
+         why='v3894 REG-3648 - a red shard is classified and reported the moment it finishes, not after the round'),
+    Gate("test_a_shard_that_fails_twice_in_three_rounds_is_flagged_to_split",
+         [sys.executable, os.path.join(HERE, "test_a_shard_that_fails_twice_in_three_rounds_is_flagged_to_split.py")], 30,
+         needs_app=False,
+         why='v3894 REG-3649 - a shard that fails twice in three rounds, or runs near the ceiling, is flagged to split'),
+    Gate("test_a_preship_lesson_names_the_shard_that_failed",
+         [sys.executable, os.path.join(HERE, "test_a_preship_lesson_names_the_shard_that_failed.py")], 30,
+         needs_app=False,
+         why='v3894 REG-3650 - a lesson from a shard failure records the shard identity so a repeat is caught before push'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
@@ -15378,12 +15394,23 @@ SHARD_TARGET_S = 4 * 60
 SHARD_MIN, SHARD_MAX = 3, 5
 
 
-def choose_shards(target_s=SHARD_TARGET_S, n_min=SHARD_MIN, n_max=SHARD_MAX, gates=None):
+def choose_shards(target_s=SHARD_TARGET_S, n_min=SHARD_MIN, n_max=SHARD_MAX, gates=None, root=None):
     """v3891 (#194, his 11-09: "optimize the #194 all the way and make sure it keeps getting faster self improve it") - the
     fewest agent-suite slices whose heaviest (shard_names' own longest-first deal, summed - a slice runs serially) fits
     target_s, or, when one gate alone is over it, the fewest that reach that floor. -> (n, why). MEASURED on v3889's round:
-    5 fixed slices, the slowest job 20.1 min (~13.6 of gates + setup)."""
+    5 fixed slices, the slowest job 20.1 min (~13.6 of gates + setup).
+
+    REG-3649 - a shard flagged to split (failed 2 of 3 rounds, or near the 25-minute ceiling) raises
+    n_min by one, still capped at n_max. A tree with no flag is unchanged.
+    """
     gates = list(GATES if gates is None else gates)
+    try:
+        import shard_watch as SHW
+        bump = int(SHW.extra_shards(root))
+        if bump:
+            n_min = min(int(n_max), int(n_min) + bump)
+    except Exception:
+        pass
     w = cost_weights(gates)
     n_max = max(1, min(int(n_max), len(gates)))
     n_min = max(1, min(int(n_min), n_max))

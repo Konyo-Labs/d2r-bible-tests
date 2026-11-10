@@ -46,6 +46,7 @@ BLUEPRINT_TIMEOUT_S = 120
 HEART_TIMEOUT_S = 120
 CENSUS_TIMEOUT_S = 180
 CHANGED_TIMEOUT_S = 600
+FAILED_SHARDS_TIMEOUT_S = 300  # owed failed tests first; a cutoff shard uses this budget too
 # MEASURED 2026-11-10 CI run 42812894594: 35 agreement laws took 85.5s on the
 # runner and the last one (test_a_render_console_does_not_read_the_branch_distance)
 # was refused as "not run (budget)" at 90s. Locally the same set is ~66s. 180s
@@ -59,6 +60,7 @@ CHEAP = ("lessons", "encoding", "swallow_census", "agreement")
 # agent tests so a likely-red expensive gate fails before a long likely-green suite.
 BOX_ORDER = (
     "lessons", "encoding", "swallow_census", "agreement",
+    "failed_shards",
     "blueprint", "heart", "second_eye",
     "render_check", "console_demos", "changed_tests",
 )
@@ -120,6 +122,8 @@ def catalog():
                             "why": "node tv/demo_console.mjs (needs playwright in this tree)"}),
         ("changed_tests",  {"run": check_changed, "cheap": False, "timeout": CHANGED_TIMEOUT_S,
                             "why": "agent tests whose files this push touches"}),
+        ("failed_shards",  {"run": check_failed_shards, "cheap": False, "timeout": FAILED_SHARDS_TIMEOUT_S,
+                            "why": "exact tests of a shard that failed in the last N rounds (attempt 9)"}),
         ("mac_ready",      {"run": check_mac_ready, "cheap": True,  "timeout": 30,
                             "why": "worktree can resolve playwright, python deps, and is not owed a second eye"}),
         # Alias so a lesson can name the specific agreement law that caught attempt 7.
@@ -260,6 +264,43 @@ def check_changed(root, timeout=CHANGED_TIMEOUT_S, **_):
     if p.returncode in (124, 127):
         return 2, _tail(p) or "changed tests UNKNOWN"
     return 1, _tail(p) or "changed agent tests red"
+
+
+
+def check_failed_shards(root, timeout=FAILED_SHARDS_TIMEOUT_S, **_):
+    """REG-3647 - rehearse the exact tests of any shard that failed in the last N rounds."""
+    import shard_watch as SHW
+    data = SHW.load(root)
+    if data is None:
+        return 2, "shard history will not read - UNKNOWN, not empty"
+    script = os.path.join(root, "tv", "run_gates.py")
+    if not os.path.isfile(script):
+        script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "run_gates.py")
+    if not os.path.isfile(script):
+        return 2, "run_gates.py is missing"
+    plan = SHW.rehearsal_cmd(root=root, data=data)
+    if not plan["tests"] and not plan["shards"]:
+        return 0, "no recently-failed shards"
+    # Failed tests first (fail-fast on the known-bad case, e.g. attempt 9's spinner law).
+    if plan["tests"]:
+        p = _run([_py(root), script, "--only"] + list(plan["tests"]), root, timeout)
+        if p.returncode != 0:
+            names = ", ".join(plan["names"] or ["?"])
+            if p.returncode in (124, 127):
+                return 2, _tail(p) or ("failed-shard tests UNKNOWN (%s)" % names)
+            return 1, _tail(p) or ("failed-shard tests red (%s)" % names)
+    for k, n in plan["shards"]:
+        p = _run([_py(root), script, "--shard", "%d/%d" % (k, n)], root, timeout)
+        if p.returncode != 0:
+            if p.returncode in (124, 127):
+                return 2, _tail(p) or ("shard %d/%d UNKNOWN" % (k, n))
+            return 1, _tail(p) or ("shard %d/%d red" % (k, n))
+    bits = []
+    if plan["tests"]:
+        bits.append("%d failed test(s)" % len(plan["tests"]))
+    if plan["shards"]:
+        bits.append("%d cutoff shard(s)" % len(plan["shards"]))
+    return 0, "rehearsed %s from %s" % (" and ".join(bits), ", ".join(plan["names"]))
 
 
 def _prev_version(root):
@@ -597,8 +638,11 @@ def format_table(results, elapsed_ms, title="preship"):
     return "\n".join(lines)
 
 
-def remember_refusal(reason, check, root=None, attempt=None, cls="refusal"):
-    """Append a lesson so the same class of failure cannot recur. -> the new row or None if already present."""
+def remember_refusal(reason, check, root=None, attempt=None, cls="refusal", shard=None, **extra):
+    """Append a lesson so the same class of failure cannot recur. -> the new row or None if already present.
+
+    REG-3650 - a shard failure records the shard's identity so a repeat is caught before push.
+    """
     p = lessons_path(root)
     with open(p, encoding="utf-8") as fh:
         data = json.load(fh)
@@ -609,6 +653,11 @@ def remember_refusal(reason, check, root=None, attempt=None, cls="refusal"):
     ident = "lesson-%s" % (attempt if attempt is not None else ("%d" % (len(rows) + 1)))
     row = {"id": ident, "attempt": attempt, "when": time.strftime("%Y-%m-%d"),
            "reason": reason, "check": check, "class": cls}
+    if shard:
+        row["shard"] = shard
+    for k, v in extra.items():
+        if v is not None:
+            row[k] = v
     rows.append(row)
     with open(p, "w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=2, ensure_ascii=False)

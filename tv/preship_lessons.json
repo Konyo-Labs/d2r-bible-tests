@@ -1,5 +1,5 @@
 {
-  "_why": "Every ship refusal that a cheap local check could have caught is recorded here, with the check that now catches it. preship.py runs every named check. Adding a lesson is one entry; the law test_every_preship_lesson_names_a_check_that_runs refuses a lesson whose check does not exist or is not run.",
+  "_why": "Every ship refusal that a cheap local check could have caught is recorded here, with the check that now catches it. preship.py runs every named check. Adding a lesson is one entry; the law test_every_preship_lesson_names_a_check_that_runs refuses a lesson whose check does not exist or is not run Seeded with bundle attempts 6, 7, 8 and 9.",
   "lessons": [
     {
       "id": "bundle-attempt-6",
@@ -24,6 +24,15 @@
       "reason": "CI went green, then the Mac pre-push console-demos gate refused because node tv/demo_console.mjs could not find playwright in the ship worktree (~/Desktop/verify-evidence/wt-bundle had no node_modules; the main checkout had it).",
       "check": "mac_ready",
       "class": "worktree-not-ready"
+    },
+    {
+      "id": "bundle-attempt-9",
+      "attempt": 9,
+      "when": "2026-11-10",
+      "reason": "Attempt 9 agent tests run 42810705250: shard agent-suite (2) went red after 18m41s on test_the_planner_spinner_stays_under_the_cursor (sockets field moved sideways 22px). VERDICT then failed as UNKNOWN/cut-off. The failure was a real law, not a runner cut-off (383s left of the 1500s ceiling).",
+      "check": "failed_shards",
+      "class": "shard-failure",
+      "shard": "agent-suite (2)"
     }
   ]
 }

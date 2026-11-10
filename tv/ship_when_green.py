@@ -50,6 +50,7 @@ WORKFLOW_FILES = {
     CV.REQUIRED[3]: "proof-keys-shards.yml",
 }
 POLL_S = 60
+LIVE_POLL_S = 20          # REG-3648 - poll faster while a required suite is in progress so a red shard is seen at once
 #: REG-3213 - the workflow that publishes main, watched after the main push
 PUBLISH = "Publish — gates, review, then deploy"
 #: REG-3213 (the second eye on v3865) - how often Publish is asked after the main push. MEASURED: GitHub allows 60
@@ -615,10 +616,22 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
         fn = default_mac_rehearse if mac_rehearse is True else mac_rehearse
         rehearse_thread, rehearsed = start_mac_rehearse(say, fn)
         say("ship: Mac hook rehearsal started in parallel with the CI wait")
+    seen_jobs = set()                 # REG-3648 - a finished shard is classified once
     while True:
         if rehearse_thread is not None and not rehearsed.get("done"):
             rehearse_thread.join(0.05)   # pick up a finished rehearsal without delaying a still-running one
         runs = fetch(sha)
+        # REG-3648 - classify a shard the moment it goes red, do not wait for the round.
+        try:
+            import shard_watch as SHW
+            kind, info = SHW.watch_jobs_live(sha, runs, run, say, seen_jobs, made, clock, root=REPO)
+        except Exception as e:
+            kind, info = None, None
+            say("ship: REG-3648 live shard watch raised (%s)" % type(e).__name__)
+        if kind == "real":
+            say("ship: REG-3648 REAL RED on %s while other shards may still be running - main is NOT pushed: %s"
+                % ((info or {}).get("name") or "a shard", (info or {}).get("why") or "see log"))
+            return 1
         verdict, why = CV.decide(runs, sha)
         if why != last:
             say("ship: [%dm] %s" % (int((clock() - t0) // 60), why))
@@ -662,7 +675,12 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
         if clock() - t0 >= wait_s:
             say("ship: no GitHub verdict on %s after %d min - main is NOT pushed" % (sha[:9], wait_s // 60))
             return 2
-        sleep(POLL_S)
+        try:
+            import shard_watch as SHW
+            _live = SHW.suites_in_progress(runs, sha)
+        except Exception:
+            _live = False
+        sleep(LIVE_POLL_S if _live else POLL_S)
     if mac_rehearse and not rehearsed.get("done") and rehearse_thread is not None:
         say("ship: GitHub is green - waiting for the Mac rehearsal to finish")
         rehearse_thread.join()

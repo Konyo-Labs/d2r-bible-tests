@@ -3455,5 +3455,22 @@
     "gotcha": "A thin orchestrator: ship() in ship_when_green.py defaults the new stages OFF so existing unit tests stay isolated; this entry point turns them ON. Never --no-verify, never a forced main, never prints a token.",
     "purpose": "REG-3646 - the one entry point for shipping a version: python3 tv/ship.py vNNNN runs the box rehearsal, ci/ push, Mac readiness, CI wait beside the Mac hook, failed-job makeup, and post-land checks.",
     "territory": "push"
+  },
+  "shard_watch.py": {
+    "entryPoints": [
+      "classify",
+      "watch_jobs_live",
+      "owed_shards",
+      "owed_tests",
+      "rehearsal_cmd",
+      "needs_rebalance",
+      "maybe_flag",
+      "extra_shards",
+      "record_round",
+      "main"
+    ],
+    "gotcha": "A real test failure is never auto-rerun; a cut-off, timeout, or infra kill is. GitHub refuses a mid-run rerun, so that case is queued for suite_makeup. choose_shards only bumps n_min when a split flag is up.",
+    "purpose": "REG-3647..3650 - live per-job watch of agent / Playwright shards, pre-push rehearsal of a recently-failed shard set, and 2-of-3 / near-ceiling split flags.",
+    "territory": "gates-proofs"
   }
 }
