@@ -1,5 +1,31 @@
 [
   {
+    "ver": "v3895",
+    "date": "2026-11-11",
+    "items": [
+      "A press outside the D2JSP price results closes them (REG-3537)",
+      "A ship lesson always names a check that really runs (REG-3642)",
+      "An unpriced proof no longer unbalances a shard (REG-3643)",
+      "A healed flake leaves the auto-rerun list after clean rounds (REG-3644)",
+      "A flaky agent or Playwright job reruns alone, never the whole workflow (REG-3645)",
+      "The Mac hook gates run beside the GitHub wait, not after it (REG-3646)",
+      "A known-bad shard is rehearsed before the CI push (REG-3647)",
+      "A red shard is classified the moment it finishes (REG-3648)",
+      "A shard that fails twice in three rounds is flagged to split (REG-3649)",
+      "A shard failure is recorded with its shard (REG-3650)",
+      "The box rehearsal runs the reds GitHub used to find first (REG-3651)",
+      "Required checks ignore the optional Windows proof jobs (REG-3652)",
+      "Our dry and grok CI yields to a live ship (REG-3653)",
+      "Our own CI never makes a ship or Publish queue (REG-3654)",
+      "The Claude CLI is a capability a proof can need (REG-3660)",
+      "Two Windows-blind proofs stop shutting every lock on the PCs (#103, REG-3661)",
+      "Footage behind a shut lock goes only on its own proven guards (REG-3662)",
+      "Once GitHub vouches, the ship cancels its own optional runs (#200, REG-3663)",
+      "One push at a time on this Mac (#200, REG-3664)",
+      "The proof key format is declared and carried by the cache (#200, REG-3665)"
+    ]
+  },
+  {
     "ver": "v3894",
     "date": "2026-11-10",
     "items": [
