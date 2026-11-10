@@ -16666,8 +16666,12 @@ def _kai_closer_loop():
                             if _skind and _tsm:
                                 _door_marks.append((_tsm, _skind))
                             _in_play = _DS2.play_after(_skind, _DS2.chain(_door_marks), _in_play)
-                        except Exception:
-                            pass
+                        except Exception as _play_err:
+                            # v3894 - a bare `except Exception: pass` left `_in_play` False and the
+                            # stash eye silently blind for the rest of the reel. Fail open and say so.
+                            print("stash walk: play_after failed (%s) — failing open so the stash eye is not silently blind"
+                                  % type(_play_err).__name__, flush=True)
+                            _in_play = True
                     except Exception:
                         # v3893 swallow ratchet - None is "could not ask"; callers already use (_eye or {})
                         _eye = None

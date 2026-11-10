@@ -124,6 +124,12 @@ class TheWalkPassesTheSharedGate(unittest.TestCase):
         self.assertIn("screen=_skind", src)
         self.assertIn("_in_play = _DS2.play_after(_skind, _DS2.chain(_door_marks), _in_play)", src)
         self.assertIn("classify_when_in_play", src)
+        # v3894 - play_after failure is said and fails open; a silent pass would blind the stash eye
+        self.assertIn("except Exception as _play_err:", src)
+        self.assertIn("failing open so the stash eye is not silently blind", src)
+        walk = src[src.index("_in_play = _DS2.play_after"):src.index("_in_play = _DS2.play_after") + 700]
+        self.assertIn("_in_play = True", walk)
+        self.assertNotIn("except Exception:\n                            pass", walk)
 
 
 RED_PROOF = [
@@ -142,6 +148,13 @@ RED_PROOF = [
      "find": "        if not _DS.readers_may_run(kind, chain=chain, recording=recording):\n"
              "            return \"gameplay\", {\"method\": \"screen-type\", \"screen\": kind, \"skipped\": True}\n",
      "replace": "",
+     "matches": 1},
+    {"why": "v3894 - play_after fails silently and leaves the stash eye blind",
+     "file": "tv/control_app.py",
+     "find": "                            print(\"stash walk: play_after failed (%s) — failing open so the stash eye is not silently blind\"\n"
+             "                                  % type(_play_err).__name__, flush=True)\n"
+             "                            _in_play = True\n",
+     "replace": "                            pass\n",
      "matches": 1},
 ]
 
