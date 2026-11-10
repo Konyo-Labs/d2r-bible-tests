@@ -3,6 +3,9 @@
     "ver": "v3893",
     "date": "2026-11-09",
     "items": [
+      "A live Publish on main, or the wait after a main push, makes dry/ and grok/ CI yield the runners (REG-3654)",
+      "A ship or Publish queued over 2 min cancels our dry/grok/ci-dry runs, never main or the ship's required jobs (REG-3654)",
+      "A stale-run sweeper cancels leftover dry runs on superseded shas and any ci/*dry* name (REG-3654)",
       "A live ci/claude or ci/proof-keys ship makes dry/ and grok/ CI pushes yield the runners (REG-3653)",
       "Required-check judgement ignores proof-keys windows jobs; seed + Linux shards + fan-in decide green (REG-3652)",
       "The page zero floor and the closed-modal census agree at 7 (`#th-shelfov` is in the census; REG-3651)",

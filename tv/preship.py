@@ -65,6 +65,7 @@ CHEAP = (
     "test_a_failed_shard_is_rehearsed_before_the_ci_push",
     "test_required_checks_ignore_windows_jobs",
     "test_a_dry_or_grok_push_yields_to_a_live_ship",
+    "test_own_ci_never_queues_a_ship_or_publish",
 )
 # The box rehearsal's full set, in fail-fast order: cheap first, then medium, then the long ones.
 # Historically long / flaky expensive gates (render_check, console-demos) run before changed
@@ -82,6 +83,7 @@ BOX_ORDER = (
     "test_a_test_run_leaves_no_scratch_dirs",
     "test_required_checks_ignore_windows_jobs",
     "test_a_dry_or_grok_push_yields_to_a_live_ship",
+    "test_own_ci_never_queues_a_ship_or_publish",
     "blueprint", "heart", "second_eye",
     "render_check", "console_demos", "changed_tests",
 )
@@ -178,6 +180,9 @@ def catalog():
         ("test_a_dry_or_grok_push_yields_to_a_live_ship",
                            {"run": check_dry_yields_to_ship, "cheap": True, "timeout": 30,
                             "why": "dry/ and grok/ CI pushes yield to a live ci/ ship (attempt 10)"}),
+        ("test_own_ci_never_queues_a_ship_or_publish",
+                           {"run": check_own_ci_never_queues_ship_or_publish, "cheap": True, "timeout": 30,
+                            "why": "a live Publish or a ship queued over 2 min makes dry/grok CI yield (v3893)"}),
         ("mac_ready",      {"run": check_mac_ready, "cheap": True,  "timeout": 30,
                             "why": "worktree can resolve playwright, python deps, and is not owed a second eye"}),
         # Alias so a lesson can name the specific agreement law that caught attempt 7.
@@ -660,6 +665,11 @@ def check_required_jobs_ignore_windows(root, timeout=30, **_):
 def check_dry_yields_to_ship(root, timeout=30, **_):
     return _run_tv_test(root, "test_a_dry_or_grok_push_yields_to_a_live_ship.py", timeout,
                         "dry/ and grok/ CI pushes yield to a live ship")
+
+
+def check_own_ci_never_queues_ship_or_publish(root, timeout=30, **_):
+    return _run_tv_test(root, "test_own_ci_never_queues_a_ship_or_publish.py", timeout,
+                        "our own CI never makes a ship or Publish queue")
 
 
 def check_integrity(root, timeout=90, **_):

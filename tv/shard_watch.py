@@ -545,6 +545,17 @@ def watch_jobs_live(sha, runs, run, say, seen, made, clock, root=None):
     import ci_verdict as CV
     import flake_ledger as FL
     import ship_when_green as SW
+    # REG-3654 - if a ship or Publish has been queued behind our own runners,
+    # cancel those dry/grok/ci-dry runs (never main, never the ship's required jobs).
+    try:
+        import ship_yield as SY
+        now = clock()
+        last = getattr(watch_jobs_live, "_yield_at", None)
+        if last is None or now - last >= 60:
+            watch_jobs_live._yield_at = now
+            SY.protect_priority(run=run, say=say, now=clock())
+    except Exception as _e:
+        say("ship: REG-3654 yield could not run (%s)" % type(_e).__name__)
     last = None
     for wf in (CV.REQUIRED[0], CV.REQUIRED[1]):
         r = SW.suite_run(runs, sha, wf)

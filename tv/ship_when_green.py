@@ -326,12 +326,22 @@ def overrun_alert(sha, minutes, runs, watch=None, limit=CW.OVERRUN_MIN):
             % (sha[:9], int(minutes), limit, "; ".join(named[:10]) or "nothing GitHub would name"))
 
 
-def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN):
+def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN, run=None):
     """REG-3213 - after the main push: follow Publish on `sha` until it ends or `wait_s` passes, alerting once past
     `limit` minutes. -> 0 Publish green · 1 Publish red · 2 not finished / unknown (main IS pushed either way)."""
     t0, said, alerted = clock(), None, False
     say("ship: REG-3213 watching Publish on %s - an alert at %d min, the console's eagle watches it too" % (sha[:9], limit))
     while True:
+        # REG-3654 - our own dry/grok CI must not hold runners from a live Publish,
+        # including the window after the main push before Publish has started.
+        # `run` is the ship's gh/git hook; tests of this watch pass none, and must
+        # never fall through to a real `gh run cancel`.
+        if run is not None:
+            try:
+                import ship_yield as SY
+                SY.protect_priority(run=run, say=say, main=sha, now=clock())
+            except Exception as _e:
+                say("ship: REG-3654 yield could not run (%s)" % type(_e).__name__)
         got = watch(sha)
         row = next((x for x in (got.get("runs") or []) if isinstance(x, dict) and x.get("name") == PUBLISH), None)
         mins = row.get("minutes") if row else None
@@ -744,7 +754,7 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
     say("ship: %s is on main" % version)
     post_land_status(version, run, say)
     if watch_publish_s:
-        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s)
+        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s, run=run)
     return 0
 
 

@@ -3480,12 +3480,16 @@
     "entryPoints": [
       "may_push",
       "yield_to_ship",
+      "protect_priority",
       "cancel_competing",
+      "sweep_stale",
       "live_ship_runs",
+      "live_publish_runs",
+      "awaiting_publish",
       "main"
     ],
-    "gotcha": "UNKNOWN (GitHub unread) refuses a dry/ or grok/ push and never cancels a run. ci/ and main are never cancelled or held.",
-    "purpose": "REG-3653 - while a real ship (ci/claude-* or ci/proof-keys-*) is live, dry/ and grok/ CI pushes yield the runners so the ship's required jobs never wait on our own test jobs (attempt 10).",
+    "gotcha": "UNKNOWN (GitHub unread) refuses a dry/ or grok/ push and never cancels a run. ci/ ship refs, main, and Publish itself are never cancelled or held. ci/*dry* names are always refused. Leftover proof-keys windows on a real ship branch do not keep the ship live (REG-3652).",
+    "purpose": "REG-3653/3654 - while a real ship (ci/claude-* or ci/proof-keys-*) or a Publish run on main is live, or in the window after a main push until Publish finishes, dry/ and grok/ CI pushes yield the runners so a ship's or Publish's jobs never wait on our own test jobs. A sweeper cancels stale dry runs and any ci/*dry* name (never used again).",
     "territory": "push"
   }
 }

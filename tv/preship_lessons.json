@@ -141,6 +141,14 @@
       "check": "test_a_dry_or_grok_push_yields_to_a_live_ship",
       "class": "ship-yield",
       "shard": "fan-in"
+    },
+    {
+      "id": "bundle-v3893-publish-queued",
+      "when": "2026-11-10",
+      "reason": "v3893 Publish run 42833420352 (main, created 16:22 IST) sat queued 22+ minutes behind grok/ship-system runs, a superseded grok/v3894-merge agent-tests run, and stale ci/proof-keys-dry-v3894 runs (from 15:34 IST). Our own CI must never make a ship or Publish queue again: while Publish on main is live, or in the window after a main push until Publish finishes, dry/ and grok/ pushes yield; a ship or Publish queued over ~2 minutes cancels our holders (never main, never the ship's required runs); a sweeper cancels leftover dry runs on superseded shas and any ci/*dry* name, which must never be used again.",
+      "check": "test_own_ci_never_queues_a_ship_or_publish",
+      "class": "ship-yield",
+      "shard": "Publish"
     }
   ]
 }

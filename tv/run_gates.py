@@ -14335,6 +14335,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_dry_or_grok_push_yields_to_a_live_ship.py")], 30,
          needs_app=False,
          why='v3894 REG-3653 - while a ci/claude or ci/proof-keys ship is live, dry/ and grok/ CI pushes yield the runners (attempt 10)'),
+    Gate("test_own_ci_never_queues_a_ship_or_publish",
+         [sys.executable, os.path.join(HERE, "test_own_ci_never_queues_a_ship_or_publish.py")], 30,
+         needs_app=False,
+         why='v3894 REG-3654 - a live Publish or a ship/Publish queued over 2 min makes our dry/grok CI yield the runners'),
 ]
 
 SKIP_EXIT = 77          # a gate that could not run (must match tv/js_syntax_gate.py)
