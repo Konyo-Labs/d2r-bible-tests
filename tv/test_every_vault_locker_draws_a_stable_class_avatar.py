@@ -132,6 +132,10 @@ class EveryVaultLockerDrawsAStableClassAvatar(unittest.TestCase):
         js = (_helpers(self.src)
               + "var names = " + json.dumps(names) + ";\n"
               + "var a = _chxClassesForLockers(names);\n"
+              # v3894 - a RELOAD is a later paint: a day on, a different random. The two paints ran in one millisecond,
+              # so a time-salted pick agreed with itself and proof [1] filed BLIND on GitHub (run 42884325588)
+              + "Date.now = (function(n){ return function(){ return n() + 86400000; }; })(Date.now);\n"
+              + "Math.random = function(){ return 0.7311; };\n"
               + "var b = _chxClassesForLockers(names);\n"
               + "var crests = a.map(function(c){ return _chxCrest(c, false); });\n"
               + "process.stdout.write(JSON.stringify({a:a, b:b, crests:crests, classes:_chxClassNames()}));\n")

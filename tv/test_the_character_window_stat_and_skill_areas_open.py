@@ -33,7 +33,9 @@ class TheCharacterWindowStatAndSkillAreasOpen(unittest.TestCase):
         self.assertIn("['stat:str', 'Strength']", src)
         self.assertIn("['skill:tree', 'Skill tree']", src)
         self.assertIn('data-grid="stats"', src)
-        self.assertIn("_chxStatHtml(t)", src)
+        # v3894 - the CALL, not the name: "_chxStatHtml(t)" alone is satisfied by the function's own definition, so a page
+        # that stopped drawing the stat areas stayed green and proof [0] filed BLIND on GitHub (run 42884325588)
+        self.assertEqual(src.count("+ _chxStatHtml(t)"), 1, "the character window no longer draws its stat and skill areas")
 
 
 RED_PROOF = [
