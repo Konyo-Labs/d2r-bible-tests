@@ -365,6 +365,26 @@ def save(path, db):
     os.replace(tmp, path)
 
 
+def accept_peer(path, peer):
+    """v3895 (#96) - fold a peer PC's book into the book at path. -> merged db.
+
+    The Mac and the OLD PC ALT each kept their own file; merge() already unions
+    two books in memory. This door writes that union onto this PC's book.
+    An unreadable local book is UNKNOWN (None) and is not overwritten.
+    An unreadable or foreign-schema peer is refused (None); the local file stays.
+    A missing local file starts as empty and then joins the peer.
+    Wiring the fleet gossip that calls this is the rest of one price system.
+    """
+    local = load(path)
+    if local is None:
+        return None
+    if not isinstance(peer, dict) or peer.get("schema") != SCHEMA:
+        return None
+    out = merge(local, peer)
+    save(path, out)
+    return out
+
+
 PAUSE = "paused while checks run"
 
 

@@ -169,6 +169,29 @@ A retro checker runs after a reel seals. It picks IMPORTANT frames (grail, keep,
 runeword) and UNCERTAIN ones (KAI and OCR disagreed). Ordinary agreeing frames are not picked.
 Calling a second model and showing a GROK verdict is the rest of the checker.
 GUARD: test_the_retro_checker_picks_important_and_uncertain_frames (3 cases, 1 red-proof).
+### REG-3591 - D2IO_ART NAMED THE SAME ITEM TWICE, AND THE LATER PICTURE SILENTLY WON (v3895, #91)
+The art map held 21 duplicate keys (set pieces, plus Nihlathak and The Summoner). In JS the
+later assignment wins, so an edit to the first key changed nothing the board drew (REG-3315
+left this for #91). Each name now appears once. Bloodwitch the Wild, Lord De Seis and
+Treehead WoodFist still have no sourced sprite (noSpriteFound); that visual pass is next.
+GUARD: test_the_art_map_names_each_item_once (2 cases, 1 red-proof).
+### REG-3592 - THE MAC AND THE OLD PC ALT KEPT SEPARATE PRICE BOOKS (v3895, #96)
+merge() already unions two books in memory (every post once). Nothing wrote that union onto
+this PC's file, so each console priced only what it had read. accept_peer folds a peer book
+into the local file. An unreadable local book is UNKNOWN and is not overwritten; a bad peer
+is refused and the local file stays. Fleet gossip that calls this door is the rest.
+GUARD: test_a_peers_price_book_joins_this_pcs_book (3 cases, 1 red-proof).
+### REG-3593 - A BARE SPIRIT STAYED A 1x2 GUESS EVEN WHEN ITS TYPE WAS NAMED (v3895, #38)
+Spirit's preferred bases are a Crystal Sword and a Monarch - two item types - so a bare
+"Spirit" correctly stays the 1x2 guess. "Spirit (sword)" and "Spirit (shield)" name one
+type and now take that type's preferred size (both 2x3). A paladin-shield Spirit (Sacred
+Targe, 2x2) still needs its own qualifier.
+GUARD: test_a_runeword_named_with_its_type_has_that_types_footprint (2 cases, 1 red-proof).
+### REG-3594 - A ROLLED CHARM OR JEWEL WAS REFUSED AT THE HAND DOOR (v3895, #38)
+"Shimmering Small Charm of Vita" and "Ruby Jewel of Fervor" have no catalogue name, so the
+hand door said they were not items the vault draws. They are real stash items. The door now
+asks _vaultHandRolled before that refusal. Bare "Jewel" and "Grand Charm" stay ghost bases.
+GUARD: test_a_rolled_charm_or_jewel_is_hand_addable (2 cases, 1 red-proof).
 ### REG-3578 - A PLANNER COMPARE FILLED IN NUMBERS THE PLANNER DID NOT CITE (v3894, #28)
 A character-window row that disagrees with a cited planner value is a conflict; a planner key without frames, or a window row without frames, is unknown. Nothing is invented. Buff calibration stays later. Law: test_a_planner_compare_does_not_invent_missing_numbers.
 ### REG-3577 - FILM SIZE WAS READ FROM THE WINDOW'S CLIENT SIZE (v3894, #155/#255)

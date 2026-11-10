@@ -22914,7 +22914,6 @@ const D2IO_ART = {
   "Nef": "art/runeNef_icon.png",
   "Nightsmoke": "art/nightsmoke_graphic.png",
   "Nightwing's Veil": "art/nightwingsveil_graphic.png",
-  "Nihlathak": "art/d2mon_Nihlathak.gif",
   "Nokozan Relic": "art/amu2_graphic.png",
   "Nosferatu's Coil": "art/nosferatuscoil_graphic.png",
   "Ohm": "art/runeOhm_icon.png",
@@ -23025,7 +23024,6 @@ const D2IO_ART = {
   "The Salamander": "art/thesalamander_graphic.png",
   "The Spirit Shroud": "art/quilted_graphic.png",
   "The Stone of Jordan": "art/ring3_graphic.png",
-  "The Summoner": "art/d2mon_The_Summoner.gif",
   "The Vile Husk": "art/kinemilsawl_graphic.png",
   "The Ward": "art/theward_graphic.png",
   "Thul": "art/runeThul_icon.png",
@@ -23082,33 +23080,21 @@ const D2IO_ART = {
   // the rest fall back to base-type and stay un-registered until individually sourced — no guessing).
   // Registering the canonical name here auto-fills artOr(name) in the set codex card + anywhere else.
   "Sigon's Guard": "art/sigonsguard_graphic.png",
-  "Sigon's Shelter": "art/sigonsshelter_graphic.png",
-  "Sigon's Visor": "art/sigonsvisor_graphic.png",
   "Sigon's Wrap": "art/sigonswrap_graphic.png",
   "Sazabi's Cobalt Redeemer": "art/sazabiscobaltredeemer_graphic.png",
-  "Sazabi's Ghost Liberator": "art/sazabisghostliberator_graphic.png",
   "Sazabi's Mental Sheath": "art/sazabismentalsheath_graphic.png",
   "Hwanin's Splendor": "art/hwaninssplendor_graphic.png",
-  "Naj's Circlet": "art/najscirclet_graphic.png",
-  "Guillaume's Face": "art/guillaumesface_graphic.png",
   "Magnus' Skin": "art/magnusskin_graphic.png",
-  "Wilhelm's Pride": "art/wilhelmspride_graphic.png",
-  "Tal Rasha's Guardianship": "art/talrashasguardianship_graphic.png",
   "Tal Rasha's Lidless Eye": "art/talrashaslidlesseye_graphic.png",
-  "Griswold's Heart": "art/griswoldsheart_graphic.png",
   "Griswold's Honor": "art/griswoldshonor_graphic.png",
-  "Griswold's Valor": "art/griswoldsvalor_graphic.png",
-  "Aldur's Advance": "art/aldursadvance_graphic.png",
   "Aldur's Deception": "art/aldursdeception_graphic.png",
   "M'avina's Caster": "art/mavinascaster_graphic.png",
   "M'avina's Embrace": "art/mavinasembrace_graphic.png",
   "M'avina's Icy Clutch": "art/mavinasicyclutch_graphic.png",
   "M'avina's Tenet": "art/mavinastenet_graphic.png",
-  "M'avina's True Sight": "art/mavinastruesight_graphic.png",
   "Natalya's Mark": "art/natalyasmark_graphic.png",
   "Natalya's Shadow": "art/natalyasshadow_graphic.png",
   "Natalya's Soul": "art/natalyassoul_graphic.png",
-  "Natalya's Totem": "art/natalyastotem_graphic.png",
   "Zod": "art/runeZod_icon.png",
   // RotW Colossal Ancient Statues — verified diablo2.io item graphics (apostrophe-stripped slugs).
   // Registering the canonical name here auto-fills every artOr(name) call site site-wide.
@@ -23141,9 +23127,7 @@ const D2IO_ART = {
   "Immortal King's Detail": "art/girdle_graphic.png",
   "Immortal King's Forge": "art/gauntlets_graphic.png",
   "Immortal King's Pillar": "art/plateboots_graphic.png",
-  "Immortal King's Soul Cage": "art/immortalsoulcage_graphic.png",
   "Immortal King's Stone Crusher": "art/maul_graphic.png",
-  "Immortal King's Will": "art/immortalwill_graphic.png",
   "Naj's Light Plate": "art/platemail_graphic.png",
   "Naj's Puzzler": "art/lazarusspire_graphic.png",
   "Sigon's Gage": "art/sigonsgauntlets_graphic.png",
@@ -23151,11 +23135,6 @@ const D2IO_ART = {
   "Tal Rasha's Adjudication": "art/amu2_graphic.png",
   "Tal Rasha's Fine-Spun Cloth": "art/talrashasfine-spuncloth_graphic.png",
   "Tal Rasha's Horadric Crest": "art/mask_graphic.png",
-  "Trang-Oul's Claws": "art/trang-oulsclaws_graphic.png",
-  "Trang-Oul's Girth": "art/trang-oulsgirth_graphic.png",
-  "Trang-Oul's Guise": "art/trang-oulsguise_graphic.png",
-  "Trang-Oul's Scales": "art/trang-oulsscales_graphic.png",
-  "Trang-Oul's Wing": "art/trang-oulswing_graphic.png",
   "Wihtstan's Guard": "art/whitstansguard_graphic.png",
   // canonical set pieces (formerly mislabeled "Aldur's Gauntlet" / "Hwanin's Seal" — corrected
   // to the real members). Verified HTTP 200 image/png on 2026-06-08.
@@ -23656,6 +23635,24 @@ function _runewordCells(name){
     if (_type == null) _type = _pm.t;
     else if (_type !== _pm.t) _typed = false;
     _pref.push(_pm);
+  }
+  var _wq = String(name || '').match(/\(\s*([^)]+?)\s*\)\s*$/);
+  var _want = '';
+  if (_wq) {
+    var _ql = _wq[1].toLowerCase();
+    if (_ql === 'sword' || _ql === 'swords') _want = 'swor';
+    else if (_ql === 'shield' || _ql === 'shields') _want = 'shie';
+  }
+  if (_want) {
+    var _pf = [];
+    for (var _qi = 0; _qi < _pref.length; _qi++){
+      var _pt = String(_pref[_qi].t || '');
+      if (_want === 'swor' && _pt === 'swor') _pf.push(_pref[_qi]);
+      else if (_want === 'shie' && (_pt === 'shie' || _pt === 'ashd')) _pf.push(_pref[_qi]);
+    }
+    var _pfs = _oneSize(_pf);
+    if (_pfs) return { w: _pfs.w, h: _pfs.h };
+    return cells;
   }
   if (!_typed) return cells;
   var _ps = _oneSize(_pref);
@@ -50677,6 +50674,21 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
     return db._handBaseByName[n] || null;
   }
   try { window._vaultHandBase = _vaultHandBase; } catch (eHb) {}
+  /* v3895 (#38) - a rolled magic charm or jewel has no catalogue name and was refused.
+     "Shimmering Small Charm of Vita" is a real stash item; bare "Jewel" or "Grand Charm"
+     stay ghost bases (they are not rolled). -> the name, or null */
+  function _vaultHandRolled(name){
+    var n = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
+    if (!n) return null;
+    var bases = ['Small Charm', 'Large Charm', 'Grand Charm', 'Jewel'];
+    for (var i = 0; i < bases.length; i++){
+      var b = bases[i];
+      var re = new RegExp('(?:^|\\s)' + b.replace(/ /g, '\\s+') + '(?:\\s|$)', 'i');
+      if (re.test(n) && n.toLowerCase() !== b.toLowerCase()) return n;
+    }
+    return null;
+  }
+  try { window._vaultHandRolled = _vaultHandRolled; } catch (eHr) {}
   /* REG-2858 (router probe, GrokBot's v3829 Vault pass) - A BASE NAME THE BOARD ALSO FILES A UNIQUE UNDER IS A QUESTION. "Shako"
      is a white base, and it is also the name the board files Harlequin Crest under ("Harlequin Crest (Shako)"); a bare
      "Shako" through this door was owned as a white base on SOCKETED, never asked, when he may mean his Harlequin Crest.
@@ -50795,7 +50807,7 @@ html.glb-lock, html.glb-lock body{ overflow:hidden; }
       try { _cnt = _vhStashCount(r.name); } catch (eCnt) { _cnt = null; }
       if (_cnt) return { ok: false, refused: 'not-drawn', stash: _cnt.kind, name: r.name, why: _cnt.why + ' \u2014 nothing was added' };
     }
-    if (!_vaultKeeps(r.name) && !_vaultHandBase(r.name)) /* L1 a catalogue base passes the hand door */
+    if (!_vaultKeeps(r.name) && !_vaultHandBase(r.name) && !_vaultHandRolled(r.name)) /* L1 a catalogue base passes the hand door */
       return { ok: false, refused: 'not-drawn', name: r.name,
                why: r.name + ' is not an item the vault draws (a unique, a set piece, a runeword or a socketed base it carries) — nothing was added' };
     return { ok: true, name: r.name, ts: ts };

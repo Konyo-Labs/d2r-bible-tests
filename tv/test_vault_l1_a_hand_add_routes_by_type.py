@@ -449,7 +449,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "The hand door refuses a catalogue base again.",
      "file": "bible.html",
-     "find": "if (!_vaultKeeps(r.name) && !_vaultHandBase(r.name)) /* L1 a catalogue base passes the hand door */",
+     "find": "if (!_vaultKeeps(r.name) && !_vaultHandBase(r.name) && !_vaultHandRolled(r.name)) /* L1 a catalogue base passes the hand door */",
      "replace": "if (!_vaultKeeps(r.name)) /* L1 a catalogue base passes the hand door */",
      "matches": 1},
     {"why": "An ethereal base is not recognised as its catalogue base.",
