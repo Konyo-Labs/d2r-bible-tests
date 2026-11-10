@@ -8,13 +8,19 @@ scenario (an UBER run vs a regular run) is the rest of the advisor.
 """
 
 
-def suggest(gap, catalogue):
+def suggest(gap, catalogue, scenario=None):
     """Items/charms whose stats can close gap['need'] for gap['stat'].
 
+    scenario None = every catalogue row (the first slice). 'uber' or
+    'regular' keeps a row with no scenarios tag, and a row that lists
+    that scenario; the other scenario is skipped. An unreadable
+    scenario is UNKNOWN.
     -> list of {name, gives, overshoot, kind}, smallest overshoot first.
     None when the gap cannot be read (UNKNOWN). [] when nothing in the
     catalogue closes it (a measured none, not a failure).
     """
+    if scenario is not None and scenario not in ("uber", "regular"):
+        return None
     if not isinstance(gap, dict):
         return None
     stat = gap.get("stat")
@@ -39,6 +45,12 @@ def suggest(gap, catalogue):
             continue
         if gives < need_n:
             continue
+        sc = item.get("scenarios")
+        if sc:
+            if not isinstance(sc, (list, tuple, set, frozenset)):
+                continue
+            if scenario is not None and scenario not in sc:
+                continue
         name = item.get("name")
         if not name:
             continue

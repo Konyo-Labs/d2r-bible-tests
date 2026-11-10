@@ -264,6 +264,27 @@ STORES = {
             "run_gates": "a gate description names this store while explaining what the gate is for",
         },
     },
+    "tier_log.jsonl": {
+        "owner": "tier_log",
+        "holds": "P3 (#26): append-only tier crossings {name, fromTier, toTier, reel, session, by}",
+        "readers": {
+            "run_gates": "a gate description names this store while explaining what the gate is for",
+        },
+    },
+    "test_runs.jsonl": {
+        "owner": "ledger_test_runs",
+        "holds": "P4 (#26): append-only pinpointed test runs {id, session, verdict}",
+        "readers": {
+            "run_gates": "a gate description names this store while explaining what the gate is for",
+        },
+    },
+    "ledger_fixes.jsonl": {
+        "owner": "ledger_fixes",
+        "holds": "P5 (#26): append-only surgical retro-fix receipts {id, frame, plan, applied}",
+        "readers": {
+            "run_gates": "a gate description names this store while explaining what the gate is for",
+        },
+    },
 }
 
 

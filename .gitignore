@@ -533,3 +533,7 @@ tv/.d2jsp_pages/
 
 # v3895 (#26 P2) - append-only seal route receipts, per PC
 tv/reel_routes.jsonl
+# v3895 (#26 P3-P5) - per-PC custody journals
+tv/tier_log.jsonl
+tv/test_runs.jsonl
+tv/ledger_fixes.jsonl

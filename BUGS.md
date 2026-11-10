@@ -192,6 +192,25 @@ GUARD: test_a_runeword_named_with_its_type_has_that_types_footprint (2 cases, 1 
 hand door said they were not items the vault draws. They are real stash items. The door now
 asks _vaultHandRolled before that refusal. Bare "Jewel" and "Grand Charm" stay ghost bases.
 GUARD: test_a_rolled_charm_or_jewel_is_hand_addable (2 cases, 1 red-proof).
+### REG-3595 - THE GEAR ADVISOR TREATED AN UBER RUN LIKE A REGULAR RUN (v3895, #29)
+The first slice listed every catalogue row that closed the gap. An UBER run and a
+regular run want different items. A row tagged only for the other scenario is skipped;
+a row with no tag still applies to both. An unreadable scenario is UNKNOWN.
+GUARD: test_the_gear_advisor_scores_uber_apart_from_a_regular_run (4 cases, 1 red-proof).
+### REG-3596 - A TIER CROSSING LEFT NO LOG ROW (v3895, #26 P3)
+LEDGER3 §8 P3: tier_log.jsonl is appended when a merge changes an item's tier. This
+slice is the store and its write/read doors (a crossing needs a name and the new
+tier; unreadable is UNKNOWN). Wiring vault_retro is later.
+GUARD: test_a_tier_crossing_leaves_a_log_row (3 cases, 1 red-proof).
+### REG-3597 - A PINPOINTED TEST RUN LEFT NO ROW (v3895, #26 P4)
+LEDGER3 §8 P4: test_runs.jsonl holds START baselines and verdicts. This slice is the
+store (a run needs an id; a run with no verdict is open; unreadable is UNKNOWN).
+Wiring START buttons is later.
+GUARD: test_a_pinpointed_test_run_leaves_a_row (3 cases, 1 red-proof).
+### REG-3598 - A SURGICAL RETRO FIX LEFT NO RECEIPT (v3895, #26 P5)
+LEDGER3 §8 P5: ledger_fixes.jsonl journals plan/apply. A fix without a proof frame
+is refused (no receipt = STOPPED). Unreadable is UNKNOWN. Wiring apply/undo is later.
+GUARD: test_a_ledger_fix_leaves_a_receipt (3 cases, 1 red-proof).
 ### REG-3578 - A PLANNER COMPARE FILLED IN NUMBERS THE PLANNER DID NOT CITE (v3894, #28)
 A character-window row that disagrees with a cited planner value is a conflict; a planner key without frames, or a window row without frames, is unknown. Nothing is invented. Buff calibration stays later. Law: test_a_planner_compare_does_not_invent_missing_numbers.
 ### REG-3577 - FILM SIZE WAS READ FROM THE WINDOW'S CLIENT SIZE (v3894, #155/#255)
