@@ -1227,8 +1227,8 @@ TARGETS = {
             }
             return painted >= 2; })()""",
         # ⚠ TAGS THAT NEVER RENDER ARE EXCLUDED, HIDDEN OVERLAYS ARE NOT. `script` and `style` are
-        # zero-size by definition and counting them as a collapse is noise; the SIX `display:none`
-        # modals (`#th-dossier-ov`, `#th-compare-ov`, `#th-heatmap-ov`, `#th-tomb-ov`,
+        # zero-size by definition and counting them as a collapse is noise; the SEVEN `display:none`
+        # modals (`#th-shelfov`, `#th-dossier-ov`, `#th-compare-ov`, `#th-heatmap-ov`, `#th-tomb-ov`,
         # `#forensics-ov`, `#ch-modal`) are LEFT IN on purpose, because "this overlay is closed"
         # and "this overlay collapsed" are the same measurement from outside and the probe should
         # say so rather than have me decide for it.
@@ -1239,6 +1239,15 @@ TARGETS = {
         # that was entirely correct. A stale census is worse than no census, because it is
         # confidently arithmetic. `test_the_modal_census_matches_the_page` now pins this list
         # against the real markup, so it cannot drift again in silence.
+        # ⚠⚠ v3893 — `zero` 6 -> 7: THE SEVENTH CLOSED MODAL IS `#th-shelfov`. v3891 REG-3532
+        # (#186) moved it out of the hidden theatre and next to `#th-dossier-ov` so SHELF opens
+        # with a real viewport box. It is the same empty `hidden` div as the tomb and dossier
+        # overlays: it cannot live inside `#theatre` (it opens 0x0 while the theatre is shut) and
+        # it cannot live inside `.shell` (overflow and the fixed-header stacking context swallow
+        # it). Giving it content would not give it a box while `display:none`. The page target
+        # then reported "7 of 10 node(s) are ZERO-SIZE ... DECLARED FLOOR IS 6, this is 1 MORE"
+        # at every width. One node, one modal, accounted for. Raised by hand rather than by
+        # `--bless`, same reason as v3019: a partial red run must never write the other floors.
         # [[label-outlived-referent]] [[sweep-dont-ask]]
         "sel": "body > *:not(script):not(style):not(template):not(noscript)",
         # ⚠⚠ IT MUST SETTLE, AND MY FIRST CUT SET THIS TO False BY COPYING `console`. That target
@@ -1310,14 +1319,14 @@ TARGETS = {
         # exactly where it is; a blanket bless would also have moved five coverage floors in the
         # same commit and buried this one-node change among them. [[regression-guard]]
         "known": {
-            "1440x1000": {"clipped": 0, "broken": None, "zero": 6},
-            "1120x900":  {"clipped": 0, "broken": None, "zero": 6},
-            "1120x628":  {"clipped": 0, "broken": None, "zero": 6},
+            "1440x1000": {"clipped": 0, "broken": None, "zero": 7},
+            "1120x900":  {"clipped": 0, "broken": None, "zero": 7},
+            "1120x628":  {"clipped": 0, "broken": None, "zero": 7},
             # v3405 — WIDTHS gained 1280x720 (his ALT machine's real desktop) without a
             # floor here, so the page target blocked the push for a missing KEY rather
             # than for pixels. Clipped 1 is the TZ-tracker overflow measured on that
             # box; the first live render may ratchet it. [[regression-guard]]
-            "1280x720":  {"clipped": 0, "broken": None, "zero": 6},
+            "1280x720":  {"clipped": 0, "broken": None, "zero": 7},
             # ⚠ v3215 — RATCHETED DOWN on a full clean run: 6 -> 4 and 55 -> 10, both the measured
             # values. The 375 floor was the loud one — 45 elements that USED to be cut off no
             # longer are, and until now 45 NEW ones could have appeared without this gate saying a
@@ -1341,7 +1350,7 @@ TARGETS = {
             # the new one. The gate prints a count and 5 of 11 names and stores no per-element
             # floor, so WHICH one is new cannot be recovered. That is a real limit of this
             # instrument, written down rather than guessed at. [[regression-guard]]
-            "901x900":   {"clipped": 0, "broken": None, "zero": 6},
+            "901x900":   {"clipped": 0, "broken": None, "zero": 7},
         },
         "settles": True,
         # ⚠ THE SHAPE PREDICATE, not the byte-length one. This page carries a live clock and
@@ -4496,17 +4505,18 @@ def verdict(key, m, sel, known=None):
     # also invalidates every number below it.
     _zero = int(m.get("zero") or 0)
     # ⚠⚠ A DECLARED ZERO FLOOR, for the one target where zero-size is DESIGN rather than collapse.
-    # The `page` target selects `body > *`, and SIX of the console's nine top-level children are
-    # CLOSED MODALS carrying `display:none` — measured: #th-dossier-ov, #th-compare-ov,
+    # The `page` target selects `body > *`, and SEVEN of the console's ten top-level children are
+    # CLOSED MODALS carrying `display:none` — measured: #th-shelfov, #th-dossier-ov, #th-compare-ov,
     # #th-heatmap-ov, #th-tomb-ov, #forensics-ov, #ch-modal. They are deliberately left IN the
     # selector, because
     # "this overlay is closed" and "this overlay collapsed" are the same measurement from outside
     # and the probe should say so rather than have me decide for it. But refusing on them makes the
     # target permanently red, and the refusal above is right for every OTHER target — 17 of 18
     # lockers collapsing is exactly the defect it was written for.
-    # So the count is declared per width, printed in full, and refuses when a SEVENTH node
-    # collapses. ⚠ v3025 — that ordinal was SIXTH and the floor moved under it in v3019; the word
-    # is the contract a reader acts on, so it moves with the number or it lies. The floor is 6.
+    # So the count is declared per width, printed in full, and refuses when an EIGHTH node
+    # collapses. ⚠ v3025 — that ordinal was SIXTH and the floor moved under it in v3019; v3893
+    # moved it again (SEVENTH, floor 7) when #th-shelfov joined the body-level overlays. The word
+    # is the contract a reader acts on, so it moves with the number or it lies. The floor is 7.
     # ⚠ It never excuses a WHOLE collapse: that branch is above this one and returns first.
     _zfloor = int(((known or {}).get("zero") or 0))
     if _zero > _zfloor:
