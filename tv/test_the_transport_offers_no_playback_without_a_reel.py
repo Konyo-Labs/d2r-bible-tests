@@ -8,8 +8,15 @@ confusing"*.
 
 MEASURED — deliberate geometry, not a render fault:
 
-    #th-shelfov { position:absolute; top:0; bottom: clamp(54px,9vh,72px); z-index:14 }
-    .th-strip   { position:absolute; bottom:0;                            z-index:6  }
+    #th-shelfov { position:fixed;    top:0; bottom: clamp(54px,9vh,72px); z-index:978 }
+    .th-strip   { position:fixed;    bottom:0;                            z-index:979 }
+                  (only while the overlay is open — otherwise it stays absolute in the theatre)
+
+v3891 REG-3532 moved the overlay out of the theatre and made it position:fixed against the
+viewport so SHELF keeps a real box when the theatre is hidden. The reserved band is then the
+console footer, not the transport, and #th-shelf sits under the overlay. The pin below puts
+the strip back in that band, above the overlay, which is what "the shelf toggle stays" means
+after the move.
 
 The overlay stops 54-72px short of the bottom so the strip stays reachable, and its own
 padding-bottom exists so "tall cards scroll fully clear of the transport" (v1275). The
@@ -90,8 +97,40 @@ class TestTheTransportOffersNoPlaybackWithoutAReel(unittest.TestCase):
         print("th-strip elements in the document: %d" % n)
         self.assertEqual(1, n, "the transport itself must still be in the page")
 
+    def test_the_shelf_toggle_stays_above_the_viewport_overlay(self):
+        """v3893 — REG-3532's position:fixed overlay covers the theatre strip unless the
+        strip is pinned into the reserved bottom band at a higher z-index. A source law:
+        demo_console J7 clicking #th-shelf is the pixel proof. [[the-unjoined-end]]"""
+        css = _css(UI)
+        m = re.search(
+            r"body:has\(#th-shelfov:not\(\[hidden\]\)\)\s*\.th-strip\s*\{([^}]*)\}",
+            css,
+        )
+        self.assertIsNotNone(m, "the transport is not pinned into the reserved band while the shelf is open")
+        rule = m.group(1)
+        self.assertRegex(rule, r"position:\s*fixed",
+                         "the strip is not position:fixed, so it stays in the theatre and under the overlay")
+        self.assertRegex(rule, r"bottom:\s*0",
+                         "the strip is not in the reserved bottom band the overlay leaves")
+        zm = re.search(r"z-index:\s*(\d+)", rule)
+        self.assertIsNotNone(zm, "the pinned strip has no z-index")
+        z = int(zm.group(1))
+        print("pinned transport z-index: %d" % z)
+        self.assertGreaterEqual(z, 979,
+                                "the strip sits under #th-shelfov (z-index 978), so #th-shelf is not clickable")
+
 
 RED_PROOF = [
+    {
+        "why": "v3893 — the transport is no longer pinned above the viewport shelf overlay, so "
+               "the 📚 door sits under it and demo_console J7 times out clicking #th-shelf",
+        "file": "control_ui.html",
+        "find": "  body:has(#th-shelfov:not([hidden])) .th-strip {\n"
+                "    position: fixed; left: 0; right: 0; bottom: 0; width: auto;\n",
+        "replace": "  body:has(#th-shelfov:not([hidden])) .th-strip {\n"
+                   "    position: absolute; left: 0; right: 0; bottom: 0; width: auto;\n",
+        "matches": 1,
+    },
     {
         "why": "play/pause goes back to being offered over a reel he never opened — the exact "
                "confusion he reported while scrolling the shelf",

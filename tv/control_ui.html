@@ -1898,6 +1898,22 @@
      d2jsp picker's old bug. While the shelf is open its ✕ is the exit; the theatre's comes back when it closes. */
   body:has(#th-shelfov:not([hidden])) #th-close { display: none !important; }
 
+  /* v3893 — REG-3532 moved #th-shelfov to position:fixed against the VIEWPORT. Its
+     bottom: clamp(54px, 9vh, 72px) used to be the theatre's own box, so the reserved
+     band WAS the transport strip and the 📚 door (#th-shelf) stayed clickable. Now
+     that inset is the console footer, and #th-shelf sits under a z-index 978 overlay
+     that covers the header too. demo_console J7 then times out on #th-shelf and leaves
+     the overlay up, so J8/J9 time out on the Sessions tab.
+     Pin the transport into that reserved band, above the overlay, so the door the
+     reservation exists to keep is still the door. Opaque back, same reason as the
+     sticky #btn-shelf: a control you can see through is not a control.
+     Keyed off the overlay, same as the playback-hide rules above.
+     [[the-unjoined-end]] [[d2r-css-last-rule-wins]] */
+  body:has(#th-shelfov:not([hidden])) .th-strip {
+    position: fixed; left: 0; right: 0; bottom: 0; width: auto;
+    height: clamp(54px, 9vh, 72px); box-sizing: border-box;
+    z-index: 979; background: #0a0908; }
+
   #th-shelfov .sh-head { font: var(--fw-bold) var(--fs-xl)/var(--lh-snug) var(--serif); color: #e8cf96; letter-spacing: var(--ls-wider); margin-bottom: 14px; padding-right: 48px; }
   #th-shelfov .sh-x { position: sticky; float: right; top: 0; margin: -4px 0 0 0; z-index: 4; }
   /* ══ v2383 — THE PIPELINE BOARD ═══════════════════════════════════════════════════════════
