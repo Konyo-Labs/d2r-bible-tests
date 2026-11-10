@@ -214,6 +214,7 @@ class TheHeartGateGradesTheTreeBeingBumped(unittest.TestCase):
         io.open(os.path.join(d, "bible.html"), "w").write("<html>fixture</html>\n")
         g = ["git", "-C", d, "-c", "user.email=t@t", "-c", "user.name=t"]
         subprocess.run(g + ["init", "-q"], check=True)
+        subprocess.run(g + ["config", "core.autocrlf", "false"], check=True)  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         subprocess.run(g + ["add", "-A"], check=True)
         subprocess.run(g + ["commit", "-q", "-m", "fixture"], check=True)
         if dirty:

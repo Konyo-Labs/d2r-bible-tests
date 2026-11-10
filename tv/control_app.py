@@ -5195,19 +5195,13 @@ def _roster_claimed_name():
     name = name.strip()
     if not name:
         return None
-    # v3880 (#27) - A PC WHOSE OWN NAME IS NOT ONE OF THE LABELS MAY SHARE ONE. His 11-05 ruling for the two ALTs: "share
-    # the profile, just split the rows". The OLD ALT's nickname is "OLD PC ALT", so its profile never left the PC ("the
-    # owner is not one of the five labels" - 17 characters and their gear stuck on it since 11-04). `sharesLabel` names
-    # the label it publishes under; the site keeps its rows and profile in their own slot once he approves its key with
-    # "add" (functions/api/roster.js RING). Only one of the five labels is taken - anything else is no label at all.
-    # v3890 (#182, his 11-09 "they need to separate like they were"): "OLD PC ALT" is now a label of its own, so the OLD
-    # ALT publishes as itself and this sharing is read only for a name that is still no label; "add" is refused by the site.
+    # v3880 (#27) / v3890 (#182, REG-3507) / REG-3622: a leftover sharesLabel must not override a
+    # nickname that is already a label. OLD PC ALT publishes as itself even when identity still
+    # carries sharesLabel "Konyo · ALT". sharesLabel is only read for a name that is still no label.
     try:
         import roster_publish as _rpl
-        if name not in _rpl.OWNERS:
-            shares = data.get("sharesLabel")
-            if isinstance(shares, str) and shares.strip() in _rpl.OWNERS:
-                return shares.strip()
+        shares = data.get("sharesLabel")
+        return _rpl.publish_owner(name, shares)
     except Exception:
         pass
     return name
@@ -5312,25 +5306,29 @@ def _roster_reads(now_ms):
             got = _rp.stash_read(stash_rows, now_ms)
             if got is not None:
                 reads["stash"] = got
-    if not used_book:
+    # #104 (REG-3623) - ALWAYS join save names / learned characters. A builds book used to set
+    # used_book and skip this path, so Dean's Crest / Morph never left the PC while his builds did.
+    present = False
+    ledger = None
+    learned = None
+    try:
+        import char_select as _cs
+        if os.path.exists(_cs.store_path()):
+            present = True
+            ledger = _cs.load()
+            learned = _cs.learned(ledger) if ledger is not None else None
+    except Exception as e:
+        _ROSTER_FAIL["characters"] = type(e).__name__
         present = False
         ledger = None
         learned = None
-        try:
-            import char_select as _cs
-            if os.path.exists(_cs.store_path()):
-                present = True
-                ledger = _cs.load()
-                learned = _cs.learned(ledger) if ledger is not None else None
-        except Exception as e:
-            _ROSTER_FAIL["characters"] = type(e).__name__
-            present = False
-            ledger = None
-            learned = None
-        got = _rp.characters_read(present, ledger, learned, now_ms)
-        # #251 (REG-2929) - this PC's save names join the section, spelled as its save folder spells them, never an id
-        got = _rp.with_save_names(got, saves_answer(), now_ms)
-        if got is not None:
+    got = _rp.characters_read(present, ledger, learned, now_ms)
+    # #251 (REG-2929) - this PC's save names join the section, spelled as its save folder spells them, never an id
+    got = _rp.with_save_names(got, saves_answer(), now_ms)
+    if got is not None:
+        if used_book and isinstance(reads.get("characters"), dict):
+            reads["characters"] = _rp.with_ingame_beside_builds(reads["characters"], got)
+        else:
             reads["characters"] = got
 
     # intake design P1 (REG-2817, his ruling Q1-Q4, #230 6473846977) - THE VAULT SECTION IS THE BOARD'S RECORDS, as the

@@ -248,6 +248,7 @@ class TheRecordsNeverTravel(unittest.TestCase):
         self.addCleanup(shutil.rmtree, d, True)
         env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}   # REG-2392: a hook's GIT_DIR outranks cwd=
         subprocess.run([GIT, "init", "-q", d], check=True, env=env)
+        subprocess.run([GIT, "-C", d, "config", "core.autocrlf", "false"], check=True, env=env)  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         os.makedirs(os.path.join(d, "tv"))
         for rel in (".gitignore", os.path.join("tv", ".gitignore")):
             if os.path.isfile(os.path.join(ROOT, rel)):

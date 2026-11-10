@@ -110,3 +110,39 @@ def run(argv, **kw):
         si.wShowWindow = 0
         kw["startupinfo"] = si
     return subprocess.run(argv, **kw)
+
+#: #107 REG-3626 - keys that would make `git -C <repo> config` rewrite the REAL repo a hook named
+_PIN_DIR_KEYS = ("GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY")
+
+
+def _env_without_repo_dir(kw):
+    """A throwaway repo is the -C target; a hook's GIT_DIR must not outrank it."""
+    env = dict(os.environ if kw.get("env") is None else kw["env"])
+    for k in _PIN_DIR_KEYS:
+        env.pop(k, None)
+    out = dict(kw)
+    out["env"] = env
+    return out
+
+
+def pin_lf(repo, **kw):
+    """#107 REG-3626 - a throwaway repo keeps the case's line endings, not the PC's global autocrlf.
+
+    Git for Windows (and GitHub's windows-latest) installs with core.autocrlf=true. A law that `git init`s
+    its own temp repo inherits that global unless the repo pins false, so a file it wrote as LF is rewritten
+    as CR LF the next time Git touches it, and a `\\n` byte assertion goes red only on Windows. Call this
+    immediately after init, or use init_repo.
+    """
+    kw = _env_without_repo_dir(kw)
+    # REG-3626 pin value: the local repo, never the runner's default
+    return run(["git", "-C", os.fspath(repo), "config", "core.autocrlf", "false"], **kw)
+
+
+def init_repo(repo, *init_args, **kw):
+    """git init a throwaway repo and pin LF. *init_args are extra init flags (--bare, -b main, ...)."""
+    repo = os.fspath(repo)
+    r = run(["git", "init", "-q"] + list(init_args) + [repo], **_env_without_repo_dir(kw))
+    if r.returncode != 0:
+        return r
+    pin = pin_lf(repo, **kw)
+    return pin if pin.returncode != 0 else r

@@ -44,6 +44,7 @@ class EveryWorktreeBanksIntoOneLedger(unittest.TestCase):
         g = lambda *a, cwd=None: subprocess.run(["git"] + list(a), cwd=cwd or cls.main, env=_env(),
                                                 capture_output=True, text=True, check=True)
         g("init", "-q")
+        g("config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         g("-c", "user.email=t@t", "-c", "user.name=t", "add", "-A")
         g("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "fixture")
         g("worktree", "add", "-q", "--detach", cls.wt)

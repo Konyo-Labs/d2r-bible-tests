@@ -55,6 +55,24 @@ def budget():
             "ceiling": 10000, "together": presence + pcs * per}
 
 
+
+def publish_owner(nickname, shares_label=None):
+    """#27 / #182 - the label this PC publishes under.
+
+    A nickname that is already a label (including "OLD PC ALT") is that label, even when a
+    leftover sharesLabel still names another one. sharesLabel is only read for a name that is
+    still no label. A missing nickname is None.
+    """
+    name = nickname.strip() if isinstance(nickname, str) else ""
+    if not name:
+        return None
+    if name in OWNERS:
+        return name
+    if isinstance(shares_label, str) and shares_label.strip() in OWNERS:
+        return shares_label.strip()
+    return name
+
+
 def owner_of(name, platform=None):
     """The roster label for a name this PC already claims, or None.
 
@@ -291,6 +309,25 @@ def with_save_names(section, saves, now_ms):
     c = out.get("counts")
     if isinstance(c, int) and not isinstance(c, bool):
         out["counts"] = c + added
+    return out
+
+
+
+def with_ingame_beside_builds(builds, chars):
+    """#104 - a builds book never hides this PC's save names (Crest, Morph, ...).
+
+    The builds section keeps its rows and allow=("build",). The in-game names ride beside it
+    as `inGame` (rows / counts / allow). A section that is not a builds book is left as it is.
+    """
+    if not (isinstance(builds, dict) and builds.get("allow") == ("build",)):
+        return builds
+    out = dict(builds)
+    if isinstance(chars, dict) and isinstance(chars.get("rows"), list) and chars["rows"]:
+        allow = chars.get("allow") or ("name", "cls", "level", "title")
+        counts = chars.get("counts")
+        if not isinstance(counts, int) or isinstance(counts, bool):
+            counts = len(chars["rows"])
+        out["inGame"] = {"rows": list(chars["rows"]), "counts": counts, "allow": allow}
     return out
 
 

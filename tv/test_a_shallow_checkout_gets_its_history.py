@@ -59,6 +59,7 @@ class AShallowCheckoutGetsItsHistory(unittest.TestCase):
         src = os.path.join(self.d, "src")
         os.makedirs(src)
         _git(src, "init", "-q")
+        _git(src, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         _git(src, "config", "user.email", "law@example.invalid")
         _git(src, "config", "user.name", "law")
         _git(src, "config", "commit.gpgsign", "false")

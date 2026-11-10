@@ -7,6 +7,33 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3620 - THE d2jsp BACKFILL RESUMES OFFLINE AND NEVER STARTS A LIVE SCRAPE (#151)
+His rulings: signed-in on the Mac console, 1 search/min, a ~2-year backfill then a monthly refresh; only priced posts with links; the same seller is one post and one price; never post or trade. Step 1 (REG-3491) kept scrubbed results pages. Step 2: tv/d2jsp_backfill.py walks &o= from those pages, folds through the price DB, and a killed run picks up at the saved offset. Importing it or running its tests never opens a network socket - a pass with no fetch handed in asks nothing. The live 1-search/min lane is not started here. Law test_the_d2jsp_backfill_resumes_offline.
+
+### REG-3621 - ITEM MODS AND KEYWORDS WEAR THE GAME FACE (#23)
+v3889 phase 1 put --ff-game on the game-name classes. Item mods/keywords (the set-tile affix list `.ct-affixes`) still rendered in ui-monospace. They now wear the same --ff-game token; no colour, size or weight is touched. Law test_game_mods_wear_the_game_face.
+
+### REG-3622 - OLD PC ALT PUBLISHES AS OLD PC ALT, NEVER UNDER Konyo · ALT (#27)
+REG-3507 made OLD PC ALT its own label, but a leftover identity sharesLabel of "Konyo · ALT" could still override a nickname that is already a label if the console branched itself. publish_owner keeps a label as itself; sharesLabel is only read for a name that is still no label. Law test_old_pc_alt_publishes_under_its_own_label.
+
+### REG-3623 - A BUILDS BOOK NEVER HIDES CREST AND MORPH (#104)
+Dean's /api/saves named Crest, Morph, Morphad, ... but _roster_reads set used_book from his builds and skipped with_save_names, so the upload's characters section was only "Barbarian build" / "Sorceress build". Save names now always join and ride beside the builds as inGame. Law test_a_builds_book_does_not_hide_save_names.
+
+### REG-3624 - A WINDOWED CLIENT IS LETTERBOXED ONTO 1920x1080 AND SKIPS ARE COUNTED BY REASON (#115)
+v3894 already letterboxes in capture_win.ps1 (Dean-shaped 1507x755 -> 1920x961 with bars). tv/film_letterbox.py holds the same geometry so panel-relative reader bands map through that place (never onto a bar, never stretched) and skip events are counted by their named reason. Law test_a_windowed_film_is_letterboxed_and_skips_are_counted.
+
+### REG-3625 - A LAW IS KEYED ON THE FUNCTIONS IT RAN, NEVER ON ONES IT NEVER CALLED (#92)
+His 11-06 ask: a one-law fix must not re-prove half of 9,446 proofs. REG-3393 traced past children that cannot read the tree, so a complete trace can drop files the run never opened. A file the run DID open (heart2, the law itself) still put every byte in the key, so a wording change in an uncalled helper discarded every proof (v3875 round 3 reused 0 of 9,446). Step 2 (the card's REG-3394, landed here): when sys.monitoring said hello, a traced .py that was not opened as data is hashed on its module-level lines plus the functions that started (PY_START). An uncalled function is not in the key. A source/data read keeps every byte, so a narrow key cannot serve a stale proof over bytes the law read. CRLF and LF of the same source are one function key. A run without monitoring, or a file that will not parse, falls back to the whole-file hash. Law test_a_law_is_keyed_on_the_functions_it_ran.
+
+### REG-3626 - A LAW'S OWN TEMP REPO KEEPS THE CASE'S LINE ENDINGS, NOT THE PC'S AUTOCRLF (#107)
+REG-3364 gave every checkout LF and left this batch: a law that git-inits its own temp repo still inherited the runner's global core.autocrlf. Git for Windows (and GitHub's windows-latest) installs with that set to true, so a fixture written as LF was rewritten as CR LF the next time Git touched it, and a byte assertion went red only on Windows. tv/git_quiet.pin_lf and init_repo pin core.autocrlf=false on the throwaway repo after init, and win over a Windows-default global. A census holds every test function that git-inits a throwaway repo to a pin. Law test_a_temp_repo_keeps_the_cases_line_endings.
+
+### REG-3627 - A d2jsp ROLL WRITTEN BEFORE THE ITEM NAME COUNTS, A TOTAL-DEFENSE AFTER IT DOES NOT (#30)
+A live board-268 post wrote "1os 141 Shako *5 ea=100fg" and "141 Shako *5 ea=80fg". The parser already read a perfect 141 off "141Def"/"141def" after the name, but a number standing immediately before Shako was not a roll. A number in the item's roll range adjacent before the name now counts. A total-defense after the name ("eth perf shako 211", "mage plate 995 def") is not that roll. Law test_a_d2jsp_roll_before_the_name_counts.
+
+### REG-3628 - A RUNE IS SEARCHED ON d2jsp BY ITS BARE NAME, AND 'ber' IS A WHOLE WORD (#30)
+Rune searches went out as the phrase "ber rune", so a listing written "x50 Ber 195fg ea" was missed at the search box and when the line was read. The query is now the bare rune name (Ber, Jah, Shael, ...). Matching stays a whole word, so "ber" does not hit "berry" or "number", and bare "eth" is not the ethereal flag on another item. Law test_a_rune_is_searched_by_its_bare_name.
+
 ### REG-3223 - GITHUB'S FIRST v3865 ROUND: SIX REDS THE PRE-FLIGHT COULD NOT SEE, AND ONE THAT COULD HAVE PRUNED A MAIN TREE (v3865)
 The pre-flight passed (1,382 laws <= 20 s) and GitHub's agent suite went red on 656833dfa. Each fixed at its cause:
 - test_an_imported_proof_opens_the_locks (8 failures + 1 error, green on the Mac): its "another tree" was GitHub's own checkout path, so on a runner every trusted proof read as this tree's and was served here. The fixture's other tree is now a path no checkout holds, with a premise assert.

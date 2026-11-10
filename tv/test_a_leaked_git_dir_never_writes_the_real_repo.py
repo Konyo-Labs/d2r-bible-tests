@@ -132,6 +132,7 @@ class _Fixture(object):
         self.wt = os.path.join(root, "wt")
         os.makedirs(self.real)
         _git("init", "-q", self.real)
+        _git("-C", self.real, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         with io.open(os.path.join(self.real, "f.txt"), "w", encoding="utf-8") as fh:
             fh.write(u"one\n")
         _git("-C", self.real, "add", "f.txt")
@@ -163,12 +164,14 @@ class _PushFixture(object):
         self.remote = os.path.join(root, "remote.git") if remote else None
         os.makedirs(self.real)
         _git("init", "-q", self.real)
+        _git("-C", self.real, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         with io.open(os.path.join(self.real, "f.txt"), "w", encoding="utf-8") as fh:
             fh.write(u"one\n")
         _git("-C", self.real, "add", "f.txt")
         _git("-C", self.real, "commit", "-q", "-m", "one")
         if remote:
             _git("init", "-q", "--bare", self.remote)
+            _git("-C", self.remote, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
             _git("-C", self.real, "remote", "add", "origin", self.remote)
             _git("-C", self.real, "push", "-q", "origin", "main")
             _git("-C", self.real, "fetch", "-q", "origin")
@@ -859,6 +862,7 @@ class TheCommitStampsLawReadsTheNamedCommit(_Case):
         repo = os.path.join(self.root, "stamps")
         os.makedirs(repo)
         _git("init", "-q", repo)
+        _git("-C", repo, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         ok = self._commit(repo, ("v0042",) * 4, "coherent")
         half = self._commit(repo, ("v0042", "v0042", "v0042", "v0043"), "half-bumped")
         gd = os.path.join(repo, ".git")
