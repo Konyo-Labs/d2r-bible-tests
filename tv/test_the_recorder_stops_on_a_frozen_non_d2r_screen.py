@@ -83,8 +83,12 @@ class TheWatcherSealsAFrozenIdleReel(unittest.TestCase):
         self.assertIn("_frozen = reel_film_is_frozen_non_d2r(now)", src)
         self.assertIn("return _seal_frozen_idle(now, held_s=_held)", src)
         self.assertIn('reason="frozen-idle"', src)
-        self.assertIn("stop_agent(farewell=False)", src)
-        self.assertIn("the frozen non-D2R screen would not seal:", src)
+        # v3894 - INSIDE the sealer, not anywhere: control_app makes this call in other places too, so a sealer that stopped
+        # stopping the recorder stayed green and proof [2] filed BLIND on GitHub (run 42884325588). Bounded by the next def.
+        i = src.index("\ndef _seal_frozen_idle(")
+        body = src[i:src.index("\ndef ", i + 1)]
+        self.assertIn("stop_agent(farewell=False)", body, "the frozen-screen sealer no longer stops the recorder")
+        self.assertIn("the frozen non-D2R screen would not seal:", body)
         self.assertIn("this is not a real session", src)
 
 
