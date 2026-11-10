@@ -159,7 +159,46 @@ class TheProofsNameOnePlace(unittest.TestCase):
             self.assertEqual(blob.count(p["find"]), p["matches"], p["why"])
 
 
+
+class TheShipCancelsItsOptionalRunsOnceVouched(unittest.TestCase):
+    """card #200 guard 7 - MEASURED 11-11: v3894's optional Windows set held Publish's runners after the vouch"""
+
+    def _runs(self):
+        W = "🪟 proof-keys windows (beside the ci shards, not required)"
+        return [
+            {"name": W, "status": "in_progress", "databaseId": 11, "headSha": "abc123"},          # cancel
+            {"name": W, "status": "completed", "databaseId": 12, "headSha": "abc123"},            # finished: leave
+            {"name": W, "status": "queued", "databaseId": 13, "headSha": "fff999"},               # another commit
+            {"name": CV.REQUIRED[3], "status": "in_progress", "databaseId": 14, "headSha": "abc123"},  # required
+        ]
+
+    def test_only_this_commits_live_beside_runs_are_cancelled(self):
+        asked = []
+        class R(object):
+            returncode = 0
+            stderr = ""
+        got = SW.cancel_beside(self._runs(), "abc123", run=lambda cmd, **k: asked.append(cmd) or R(), say=lambda *a: None)
+        self.assertEqual(got, [11], "the ship cancelled the wrong runs: %r" % asked)
+        self.assertEqual(asked, [["gh", "run", "cancel", "11", "--repo", CV.REPO_SLUG]])
+
+    def test_the_ship_cancels_them_right_after_the_vouch(self):
+        src = open(os.path.join(HERE, "ship_when_green.py"), encoding="utf-8").read()
+        i = src.index('    say("ship: GitHub vouches for %s - pushing main (the pre-push trusts this verdict)" % sha[:9])\n')
+        self.assertIn("        cancel_beside(runs, sha, run=run, say=say)\n", src[i:i + 600],
+                      "the ship no longer cancels its optional runs once GitHub vouches")
+
+
 RED_PROOF = [
+    {"why": "card #200 guard 7 - the ship stops cancelling its optional runs once GitHub vouches",
+     "file": "tv/ship_when_green.py",
+     "find": "        cancel_beside(runs, sha, run=run, say=say)\n",
+     "replace": "        pass\n",
+     "matches": 1},
+    {"why": "card #200 guard 7 - a REQUIRED workflow can be cancelled as if it were optional",
+     "file": "tv/ship_when_green.py",
+     "find": "CV._name(r) not in BESIDE or CV._name(r) in CV.REQUIRED:",
+     "replace": "False:",
+     "matches": 1},
     {"why": "REG-3652 - decide() no longer skips a required check whose required jobs are already green",
      "file": "tv/ci_verdict.py",
      "find": "            if _required_jobs_green(last, wf):  # REG-3652 - windows proofs never hold a required check\n",

@@ -66,6 +66,40 @@ PUBLISH_POLL_S = 120
 BESIDE = {
     "🪟 proof-keys windows (beside the ci shards, not required)": "proof-keys-windows.yml",
 }
+#: card #200 guard 7 - MEASURED 11-11 00:00: v3894's optional Windows proof set (not required, running since 22:39) held the
+#: runners after GitHub vouched, so main's Publish, Routine I and agent tests sat queued behind it; cancelling it started
+#: Publish at once. Once the verdict is in, the ship cancels its own BESIDE runs - never a required one.
+LIVE_RUN_STATES = ("in_progress", "queued", "waiting", "requested", "pending")
+
+
+def cancel_beside(runs, sha, run=None, say=print):
+    """card #200 guard 7 - cancel this commit's BESIDE runs still holding runners, the moment GitHub has vouched.
+    -> [databaseId, ...] cancelled. A REQUIRED workflow is never touched; a run on another commit is never touched."""
+    import subprocess as _sp
+    run = run or _sp.run
+    out = []
+    for r in runs or []:
+        if not isinstance(r, dict) or CV._name(r) not in BESIDE or CV._name(r) in CV.REQUIRED:
+            continue
+        if str(r.get("status") or "") not in LIVE_RUN_STATES:
+            continue
+        head = str(r.get("headSha") or "")
+        if head and not (head.startswith(str(sha)) or str(sha).startswith(head)):
+            continue
+        rid = r.get("databaseId")
+        if not rid:
+            continue
+        q = run(["gh", "run", "cancel", str(rid), "--repo", CV.REPO_SLUG], capture_output=True, text=True)
+        if getattr(q, "returncode", 1) == 0:
+            out.append(rid)
+            say("ship: card #200 - cancelled %s (run %s): it is not required and would hold Publish's runners"
+                % (CV._name(r), rid))
+        else:
+            say("ship: card #200 - %s (run %s) would not cancel: %s"
+                % (CV._name(r), rid, str(getattr(q, "stderr", "") or "")[-120:]))
+    return out
+
+
 DISPATCH_AFTER_S = 120          # GitHub starts a push's runs within seconds; after two minutes a missing one never will
 DISPATCH_TRIES = 5              # v3865 - a refused dispatch (GitHub answered 500/502 on 2026-11-05) is asked again next poll
 
@@ -737,6 +771,12 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
                 % ("RED" if rehearsed["code"] == 1 else "UNKNOWN"))
             return 1 if rehearsed["code"] == 1 else 2
     say("ship: GitHub vouches for %s - pushing main (the pre-push trusts this verdict)" % sha[:9])
+    # card #200 guard 7 - the verdict is in: our own optional runs on this commit stop holding runners Publish needs
+    try:
+        cancel_beside(runs, sha, run=run, say=say)
+    except Exception as _cb_e:
+        say("ship: card #200 - the optional runs could not be cancelled (%s) - they may hold Publish's runners"
+            % type(_cb_e).__name__)
     # v3890 (#194, REG-3518) - how fast this round ran, against the rounds before it: the ledger that says whether the
     # rounds keep getting faster (ci_speed.observe, handed in by main(); a law's fake run is never sent to GitHub).
     # Never waits, never refuses: a round that cannot be measured is said.
