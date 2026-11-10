@@ -47,6 +47,27 @@ MEASURE = ("function m(){ var i = document.getElementById('cb-sockets'), ed = do
            "  return { focus: document.activeElement ? document.activeElement.id : null, x: r ? r.left : null, y: r ? r.top : null,"
            "           value: i ? i.value : null, draft: c ? (c.sockets | 0) : null, top: ed ? ed.scrollTop : null,"
            "           gutter: ed ? (ed.offsetWidth - ed.clientWidth) : null }; }")
+# Request every face the page lists (Inter / Cinzel / Playfair, every weight, including italics)
+# after the delayed #gfont-css sheet has landed. fonts.load on an unregistered family is a no-op,
+# so the sheet wait comes first. A missing or blocked sheet leaves facesLoaded false; the settle
+# loop and the fonts-status premise still have to hold on whatever did load.
+PRELOAD = (
+    "var _faces = ['400 16px Inter','500 16px Inter','600 16px Inter','700 16px Inter',"
+    "'500 16px Cinzel','600 16px Cinzel','700 16px Cinzel',"
+    "'400 16px \"Playfair Display\"','500 16px \"Playfair Display\"',"
+    "'600 16px \"Playfair Display\"','700 16px \"Playfair Display\"',"
+    "'italic 400 16px \"Playfair Display\"','italic 500 16px \"Playfair Display\"'];"
+    "var _sheetOk = false, _facesOk = 0;"
+    "await (function waitSheet(){ return new Promise(function(res){"
+    "  var n = 0; (function tick(){ var l = document.getElementById('gfont-css');"
+    "    if (l && l.sheet){ _sheetOk = true; return res(); }"
+    "    if (l && !l._lawWait){ l._lawWait = 1; l.addEventListener('load', function(){ _sheetOk = true; res(); });"
+    "      l.addEventListener('error', function(){ res(); }); }"
+    "    if (++n >= 60) return res(); setTimeout(tick, 50); })(); }); })();"
+    "if (_sheetOk){ var _got = await Promise.all(_faces.map(function(f){ return document.fonts.load(f); }));"
+    "  _facesOk = _got.filter(function(x){ return x && x.length; }).length; }"
+    "await document.fonts.ready;"
+)
 
 
 def board():
@@ -112,12 +133,18 @@ class ThePlannerSpinnerStaysUnderTheCursor(unittest.TestCase):
         # v3848 CI (twice on ci/claude-v3848, 'loading' != 'loaded'): a second face (another weight) can START loading
         # while the row settles, after fonts.ready resolved. So wait-and-settle repeats until a settled reading finds
         # nothing loading (at most 5 rounds); the PREMISE below still refuses a baseline read mid-font.
-        o0 = board().run(MEASURE + "var a, b, k = 0, round = 0;"
+        # REG-2936 again (attempt 9, ci/claude-v3893 on 8a2f21fe9: the same 22.0625 px at step 1; the same SHA was
+        # already green on grok/bundle-3891-3893 minutes earlier). fonts.status can be 'loaded' while a listed
+        # weight has never been requested; the first sockets repaint then starts that face (display=swap) and
+        # re-measures every control left of Sockets. The baseline now waits for the sheet and preloads every
+        # listed Inter / Cinzel / Playfair face, so a step cannot start a new download.
+        o0 = board().run(MEASURE + PRELOAD + "var a, b, k = 0, round = 0;"
                          "for (round = 0; round < 5; round++){ await document.fonts.ready; a = m(); b = a;"
                          "for (k = 0; k < 20; k++){ await new Promise(function(r){ setTimeout(r, 150); }); b = m();"
                          "  if (b.x === a.x && b.y === a.y && b.top === a.top) break; a = b; }"
                          "if (document.fonts.status === 'loaded') break; }"
-                         "b.settledAfterMs = (k + 1) * 150; b.fontRounds = round + 1; b.fonts = document.fonts.status; OUT.m = b;")["m"]
+                         "b.settledAfterMs = (k + 1) * 150; b.fontRounds = round + 1; b.fonts = document.fonts.status;"
+                         "b.facesLoaded = _facesOk; b.sheetReady = _sheetOk; OUT.m = b;")["m"]
         self.assertEqual(o0["focus"], "cb-sockets", "PREMISE: the Sockets field did not take focus: %r" % o0)
         # REG-2937 (the v3832/v3833 push gate: RED_PROOF[2] BLIND) - at 420 px the hook's Chrome did not scroll the edit pane,
         # so its scrollTop was 0 before any key and putting it back after a repaint changed nothing this case can see.

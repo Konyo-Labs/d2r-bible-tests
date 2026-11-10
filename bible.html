@@ -5867,6 +5867,20 @@ try {
     var l = document.createElement('link');
     l.id = 'gfont-css'; l.rel = 'stylesheet';
     l.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap';
+    /* REG-2936 (attempt 9, ci/claude-v3893 8a2f21fe9): a weight first used on a planner
+       repaint can still be in flight (display=swap) and shift the Sockets flex row ~22 px
+       under the cursor. Request every listed face as soon as the sheet lands, so a later
+       widget cannot start a new download. The same SHA was already green on the feature branch. */
+    l.onload = function(){
+      var faces = [
+        '400 16px Inter','500 16px Inter','600 16px Inter','700 16px Inter',
+        '500 16px Cinzel','600 16px Cinzel','700 16px Cinzel',
+        '400 16px "Playfair Display"','500 16px "Playfair Display"',
+        '600 16px "Playfair Display"','700 16px "Playfair Display"',
+        'italic 400 16px "Playfair Display"','italic 500 16px "Playfair Display"'
+      ];
+      faces.forEach(function(f){ try { document.fonts.load(f); } catch (eF) {} });
+    };
     document.head.appendChild(l);
   }
   if (document.readyState === 'complete') loadFonts();
