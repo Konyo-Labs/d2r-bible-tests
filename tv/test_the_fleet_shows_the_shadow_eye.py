@@ -184,7 +184,28 @@ RED_PROOF = [
         "find": "    if (!heard || !wm) {\n      st = 'unk';",
         "replace": "    if (!wm) {\n      st = 'unk';",
         "matches": 1, "needs": "node",
-    }
+    },
+    {
+        "why": "v3894 (REG-3517) - not heard is not red",
+        "file": "control_ui.html",
+        "find": "  .fleet-dot.silent { background: #c9402e; box-shadow: none; }\n",
+        "replace": "  .fleet-dot.silent { background: var(--st-good); box-shadow: none; }\n",
+        "matches": 1,
+    },
+    {
+        "why": "v3894 (REG-3517) - recorder-only is not amber",
+        "file": "control_ui.html",
+        "find": "  .fleet-dot.rec { background: var(--st-needs); box-shadow: none; }\n",
+        "replace": "  .fleet-dot.rec { background: var(--st-good); box-shadow: none; }\n",
+        "matches": 1,
+    },
+    {
+        "why": "v3894 (his 11-10) - a closed console window paints red again, not dark",
+        "file": "control_ui.html",
+        "find": "  .fleet-winview.wv-off .sh-lid { stroke: #6b5a48; }\n",
+        "replace": "  .fleet-winview.wv-off .sh-lid { stroke: #c9402e; }\n",
+        "matches": 1,
+    },
 ]
 
 
@@ -414,8 +435,9 @@ class TheEyeOnEveryRow(unittest.TestCase):
         self.assertIn("this PC is offline", gone["title"], "a PC the roster no longer holds stopped saying offline")
 
     def test_the_second_eye_is_the_console_window(self):
-        """* v3885 (his 11-08) - a second eye beside the reader's: GREEN while that PC's console window is up on its desktop,
-        RED while it is not (minimized / hidden / headless / a second view), grey UNKNOWN when the PC is not heard"""
+        """* v3885 (his 11-08) / v3894 (his 11-10: the third eye is dark until the window is open, lit only while open) -
+        GREEN/lit while that PC's console window is up on its desktop (front / fullscreen), DARK while it is not
+        (minimized / hidden / headless / a second view), grey UNKNOWN when the PC is not heard"""
         def w(mode, heard=True):
             row = {"nickname": "Box", "machine": "box-1", "ver": "v3527", "t": _iso(UI_NOW - 40000)}
             if mode is not None:
@@ -433,6 +455,12 @@ class TheEyeOnEveryRow(unittest.TestCase):
         self.assertEqual((w("headless")["st"], w("window-only")["st"]), ("off", "off"))
         self.assertEqual((w("fullscreen", heard=False)["st"], w(None)["st"]), ("unk", "unk"),
                          "a PC not heard, or one that does not report its window, was drawn as a verdict")
+        with io.open(UI, encoding="utf-8") as f:
+            src = f.read()
+        self.assertIn(".fleet-winview.wv-on .sh-lid { stroke: #3fbf72; }", src, "an open window is not lit")
+        self.assertIn(".fleet-winview.wv-off .sh-lid { stroke: #6b5a48; }", src, "a closed window is not dark")
+        self.assertNotIn(".fleet-winview.wv-off .sh-lid { stroke: #c9402e; }", src,
+                         "a closed window painted red again")
 
     def test_the_lamp_says_the_console_is_alive_behind_the_scenes(self):
         """* v3890 (#189, REG-3517 - his 11-09: "i do want a lamp to to know that it is connected and alive behind the scenes
@@ -465,7 +493,15 @@ class TheEyeOnEveryRow(unittest.TestCase):
         self.assertEqual(lamp(40000, listed=False)["cls"], "off")
         with io.open(UI, encoding="utf-8") as f:
             src = f.read()
+        # v3894 (REG-3517, the v3890 look): pin the four lamp colours, not only the class names
+        self.assertIn(".fleet-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--st-good);", src,
+                      "connected (empty class) is not green")
+        self.assertIn("--st-good:    var(--mint);", src, "connected green is mint")
+        self.assertIn(".fleet-dot.rec { background: var(--st-needs);", src, "recorder-only is not amber")
+        self.assertIn("--st-needs:   #ffb27a;", src, "recorder-only amber is #ffb27a")
         self.assertIn(".fleet-dot.silent { background: #c9402e;", src, "not heard is red, his rule")
+        self.assertIn(".fleet-dot.unk { background: transparent; box-shadow: none; border: 1px dashed #6d6a66;", src,
+                      "UNKNOWN is not a grey ring")
 
     def test_on_is_green_and_off_is_red(self):
         """* v3885 (his 11-08: "when off red. when on green. same for the shadow reader. simple and clean logic")"""
@@ -473,7 +509,7 @@ class TheEyeOnEveryRow(unittest.TestCase):
             src = f.read()
         for rule in (".fleet-shadow.st-dark .sh-lid { stroke: #6b5a48; }", ".fleet-shadow.st-live .sh-lid { stroke: #6df0a0; }",
                      ".fleet-shadow.st-off .sh-shut { fill: none; stroke: #d0432f;", ".fleet-shadow.st-idle .sh-lid { fill: none; stroke: #c9402e;",
-                     ".fleet-winview.wv-on .sh-lid { stroke: #3fbf72; }", ".fleet-winview.wv-off .sh-lid { stroke: #c9402e; }"):
+                     ".fleet-winview.wv-on .sh-lid { stroke: #3fbf72; }", ".fleet-winview.wv-off .sh-lid { stroke: #6b5a48; }"):
             self.assertEqual(src.count(rule), 1, "the eye's colour rule is not on the page: %s" % rule)
 
     def test_the_row_draws_the_eye_inside_the_name_cell(self):
