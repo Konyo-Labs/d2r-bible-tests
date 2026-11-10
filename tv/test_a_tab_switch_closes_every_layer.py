@@ -49,10 +49,13 @@ class ATabSwitchClosesEveryLayer(unittest.TestCase):
         self.assertIn('if (typeof window.closeDrop === "function") window.closeDrop();', nav)
 
     def test_switchtab_closes_the_builder_too(self):
-        """the console's shell route calls switchTab, not navClean - that path must also give a fresh start"""
-        src = _page()
-        i = src.index("function switchTab(name) {")
-        sw = src[i:i + 500]
+        """the console's shell route calls switchTab, not navClean - that path must also give a fresh start.
+
+        The call has to live inside switchTab itself. Searching from the function to
+        the next closeCharBuilder on the page is blind: navClean's copy (later on
+        the page) would keep the law green after this function's own line is removed.
+        """
+        sw = _fn(_page(), "switchTab(name) {")
         self.assertIn('if (typeof window.closeCharBuilder === "function") window.closeCharBuilder();', sw,
                       "switchTab leaves #cb-win on screen")
 

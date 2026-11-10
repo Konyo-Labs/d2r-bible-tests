@@ -34,6 +34,13 @@ def _tv_esc(src):
     return src[i:src.index("window._tvEsc = _tvEsc;", i)]
 
 
+def _tv_esc_listener(src):
+    """the keydown listener that calls _tvEsc — not a later handler that also stops an event"""
+    i = src.index("window._tvEsc = _tvEsc;")
+    start = src.index("document.addEventListener('keydown'", i)
+    return src[start:src.index("});", start) + 3]
+
+
 class EscapePeelsOneLayer(unittest.TestCase):
 
     def test_each_layer_returns_so_the_next_stays(self):
@@ -57,9 +64,7 @@ class EscapePeelsOneLayer(unittest.TestCase):
                         "keyboard help no longer returns, so the next layer closes with it")
 
     def test_the_listener_stops_after_one_peel(self):
-        src = _page()
-        i = src.index("window._tvEsc = _tvEsc;")
-        tail = src[i:i + 450]
+        tail = _tv_esc_listener(_page())
         self.assertIn("if (_tvEsc())", tail)
         self.assertIn("stopImmediatePropagation", tail,
                       "a later Esc handler can still peel a second layer in the same press")
