@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""#27 (REG-3586) - OLD PC ALT PUBLISHES AS OLD PC ALT, NEVER UNDER Konyo · ALT'S LABEL.
+"""#27 (REG-3622) - OLD PC ALT PUBLISHES AS OLD PC ALT, NEVER UNDER Konyo · ALT'S LABEL.
 
 His later ruling (#182 / v3890 REG-3507): the ALTs get separate names. The work ALT is
 "Konyo · ALT" and the old ALT is "OLD PC ALT". A leftover sharesLabel of "Konyo · ALT" on the
@@ -54,12 +54,12 @@ class OldPcAltPublishesUnderItsOwnLabel(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "REG-3586 - a leftover sharesLabel overrides OLD PC ALT back onto Konyo · ALT",
+    {"why": "REG-3622 - a leftover sharesLabel overrides OLD PC ALT back onto Konyo · ALT",
      "file": "tv/roster_publish.py",
      "find": "    if name in OWNERS:\n        return name\n",
      "replace": "    if False and name in OWNERS:\n        return name\n",
      "matches": 1},
-    {"why": "REG-3586 - the console no longer asks publish_owner",
+    {"why": "REG-3622 - the console no longer asks publish_owner",
      "file": "tv/control_app.py",
      "find": "        return _rpl.publish_owner(name, shares)\n",
      "replace": "        return name\n",

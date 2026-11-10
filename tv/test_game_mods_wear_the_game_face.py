@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""#23 (REG-3585) - ITEM MODS AND KEYWORDS WEAR THE GAME FACE THE NAMES ALREADY WEAR.
+"""#23 (REG-3621) - ITEM MODS AND KEYWORDS WEAR THE GAME FACE THE NAMES ALREADY WEAR.
 
 v3889 phase 1 put --ff-game on the game-NAME classes (item, zone, monster, boss). His 11-08 scope:
 "anything game related.. like keywords for items and even maps and terror zones" and "just ingame
@@ -55,7 +55,7 @@ class GameModsWearTheGameFace(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "REG-3585 - item affix lines lose the game face",
+    {"why": "REG-3621 - item affix lines lose the game face",
      "file": "bible.html",
      "find": ".ct-affixes,.ct-affixes li{font-family:var(--ff-game)!important}\n",
      "replace": "",

@@ -5195,7 +5195,7 @@ def _roster_claimed_name():
     name = name.strip()
     if not name:
         return None
-    # v3880 (#27) / v3890 (#182, REG-3507) / REG-3586: a leftover sharesLabel must not override a
+    # v3880 (#27) / v3890 (#182, REG-3507) / REG-3622: a leftover sharesLabel must not override a
     # nickname that is already a label. OLD PC ALT publishes as itself even when identity still
     # carries sharesLabel "Konyo · ALT". sharesLabel is only read for a name that is still no label.
     try:
@@ -5306,7 +5306,7 @@ def _roster_reads(now_ms):
             got = _rp.stash_read(stash_rows, now_ms)
             if got is not None:
                 reads["stash"] = got
-    # #104 (REG-3587) - ALWAYS join save names / learned characters. A builds book used to set
+    # #104 (REG-3623) - ALWAYS join save names / learned characters. A builds book used to set
     # used_book and skip this path, so Dean's Crest / Morph never left the PC while his builds did.
     present = False
     ledger = None
