@@ -31,7 +31,7 @@ except Exception:
     pass
 
 NODE = shutil.which("node")
-START = "    try {\n      if (window.TH && window.TH.open && b.dataset.tab !== _shellTab"
+START = "    try {\n      /* #172 / v3893 - SWITCHING views closes the theatre."
 END = "    } catch (_tc) {}\n"
 
 
@@ -63,6 +63,10 @@ class SwitchingViewsClosesTheTheatre(unittest.TestCase):
 
     def test_the_view_already_showing_leaves_it_open(self):
         self.assertEqual(self._run(True, "tvd", "tvd"), 0)
+
+    def test_a_click_on_tvd_stays_on_the_theatres_home(self):
+        # v3893 - the theatre belongs to TV·D; _shellTab can lag after the Sessions homepage boot
+        self.assertEqual(self._run(True, "tvd", "session"), 0, "clicking TV·D closed its own theatre")
 
     def test_a_closed_theatre_is_not_closed_again(self):
         self.assertEqual(self._run(False, "vault", "tvd"), 0)
