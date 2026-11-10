@@ -80,6 +80,17 @@
    "bytes": 17167
   },
   {
+   "name": "Bloodwitch the Wild",
+   "ids": [
+    "su_bloodwitchthewild"
+   ],
+   "file": "art/d2mon_Bloodwitch_the_Wild.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/3/35/Bloodwitch_the_Wild_%28Diablo_II%29.gif/revision/latest?cb=20101009232624&format=original",
+   "sha1": "0602337152c03ee5964834ac3578ad4878cbeda8",
+   "bytes": 14061
+  },
+  {
    "name": "Bone Ash",
    "ids": [
     "su_boneash"
@@ -309,6 +320,17 @@
    "bytes": 41229
   },
   {
+   "name": "Lord De Seis",
+   "ids": [
+    "su_lorddeseis"
+   ],
+   "file": "art/d2mon_Lord_De_Seis.gif",
+   "site": "diablo.fandom.com",
+   "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/7/7a/Lord_de_Seis_%28Diablo_II%29.gif/revision/latest?cb=20101010202841&format=original",
+   "sha1": "1fcd64c54c93fdc1fd78b72ce51a26258eb878a1",
+   "bytes": 20770
+  },
+  {
    "name": "Madawc",
    "ids": [],
    "file": "art/d2mon_Madawc.gif",
@@ -459,6 +481,17 @@
    "bytes": 63866
   },
   {
+   "name": "Treehead WoodFist",
+   "ids": [
+    "su_treeheadwoodfist"
+   ],
+   "file": "art/d2mon_Treehead_WoodFist.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Treehead%20Woodfist.gif",
+   "sha1": "0e057543cc67fb51465f21871662e787cf8118b8",
+   "bytes": 24576
+  },
+  {
    "name": "Ventar the Unholy",
    "ids": [
     "su_ventartheunholy"
@@ -587,12 +620,15 @@
    "site": "diablo.fandom.com",
    "file": "Councilmember.gif",
    "why": "a 125x150 sprite on a SOLID BLACK box (no transparency) - the box is the mess he asked to remove (v3877 #102)"
+  },
+  {
+   "name": "Bloodwitch the Wild",
+   "site": "diablo.fandom.com",
+   "file": "Blood_Witch.png",
+   "why": "a winged pale-blue succubus (generic / later-game Blood Witch), not Diablo II's Halls of the Dead Huntress Bloodwitch the Wild (gamepedia's Bloodwitch_the_Wild_(Diablo_II).gif used)"
   }
  ],
  "noSpriteFound": [
-  "Bloodwitch the Wild",
-  "Lord De Seis",
-  "Treehead WoodFist",
   "The Countess",
   "Hell Bovine"
  ]
