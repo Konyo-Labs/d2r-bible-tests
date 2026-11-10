@@ -25028,7 +25028,11 @@ window._lockMark = function(isOpen, px, label){
        film stage over the vault (the seat's "dark glass", confirmed on #230: what covered the vault was
        THEATRE_FILM_STAGE). A click on the tab already showing leaves it alone. */
     try {
-      if (window.TH && window.TH.open && b.dataset.tab !== _shellTab
+      /* #172 / v3893 - SWITCHING views closes the theatre. The theatre belongs to TV·D
+         (thOpen routes there), so a click on TV·D is staying on its home — even when
+         _shellTab has not caught up after the Sessions homepage boot. */
+      var _stay = (b.dataset.tab === _shellTab) || (b.dataset.tab === 'tvd');
+      if (window.TH && window.TH.open && !_stay
           && typeof window.thClose === 'function') window.thClose();
     } catch (_tc) {}
     /* v3892 (#191, REG-3534) - a console tab switch is a fresh start for the board too.

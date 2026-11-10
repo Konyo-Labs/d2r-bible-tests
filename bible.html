@@ -84386,6 +84386,7 @@ body.engine-driven.cousin-shell .gsearch-wrap{margin-left:196px!important}
 // Specs never poll (navigator.webdriver guard — the v617 cost lesson).
 (function(){
   var URL0='http://127.0.0.1:17771/state', FRAME0='http://127.0.0.1:17771/frame', T=null, SEEN=0, STATE='off', FEED=[];
+  var _pollFails=0;   /* v3893 - consecutive dead-bridge strikes; a single abort is a slow frame */
   // v930.2 (Grok r2: ONE intake owner) — the app's engine tile is DRIVEN by the control
   // process (evaluate_js fires tvStashAutoIntake directly). Its own read-poll trigger
   // stays quiet so driver+page never double-arm. User-opened boards keep self-arming.
@@ -88445,6 +88446,7 @@ window.tvStashAutoIntake = async function(tab, opts){
     fetch(URL0 + (SEEN ? ('?since=' + SEEN) : ''), { signal: ac && ac.signal, cache:'no-store' }).then(function(r){ return r.json(); }).then(function(st){
       if(to) clearTimeout(to);
       if(!T) return;   // v758.1 — toggled OFF while this fetch was in flight: a late response must never un-toggle the switch (the CI-flake race, and the class behind 'the switch was already on')
+      _pollFails=0;
       // v778 — the agent stamps st.stopping the instant shutdown begins, even while its bridge keeps
       // answering online:true through the ≤90s farewell. Drop the board the moment the farewell starts
       // so the website never glows after the app shows stopped; keep polling — the dead-bridge catch
@@ -88661,11 +88663,19 @@ window.tvStashAutoIntake = async function(tab, opts){
       });
       refreshFrameEye();   // v744 — the CRT face breathes on the poll (throttled inside)
       if(grew) render();   // v736 — paints only on change; meters/beat update separately (targeted nodes)
-    }).catch(function(){
+      try { renderNowStage(); } catch(e){}   /* v3893 - the read that just landed is the stage's NOW, not the next beat */
+    }).catch(function(err){
       // v773 — HARD CUT when the app stops the agent: clear the poll loop so we don't
       // stay stuck ON AIR / WATCHING with a dead bridge (the "feed never dies" bug).
       if(to) clearTimeout(to);
       if(!T) return;
+      /* v3893 - one aborted tick is a slow frame (the board just painted the tab), not a
+         dead agent. Connection-refused still hard-cuts at once; three aborts in a row too. */
+      if (err && err.name === 'AbortError') {
+        _pollFails = (_pollFails || 0) + 1;
+        if (_pollFails < 3) return;
+      }
+      _pollFails = 0;
       try { clearInterval(T); } catch(e){}
       T = null;
       if(STATE==='live'){ try { digestFlush('agent closed'); } catch(e){} }
