@@ -52,7 +52,9 @@ class ATabSwitchClosesEveryLayer(unittest.TestCase):
         """the console's shell route calls switchTab, not navClean - that path must also give a fresh start"""
         src = _page()
         i = src.index("function switchTab(name) {")
-        sw = src[i:i + 500]
+        needle = 'if (typeof window.closeCharBuilder === "function") window.closeCharBuilder();'
+        j = src.index(needle, i)
+        sw = src[i:j + len(needle)]
         self.assertIn('if (typeof window.closeCharBuilder === "function") window.closeCharBuilder();', sw,
                       "switchTab leaves #cb-win on screen")
 

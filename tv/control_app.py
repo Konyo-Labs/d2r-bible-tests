@@ -16638,7 +16638,8 @@ def _kai_closer_loop():
                                 return {}
 
                         # v3893 (#187/#185, REG-3550) - the stash reader is joined to the shared
-                        # screen templates and this reel's walk: it sees a frame only inside the
+                        # screen templates and this reel's walk: analyze_frame calls
+                        # classify_when_in_play so the eye sees a frame only inside the
                         # recording and only once the launch chain (or mid-session hud/lobby) has
                         # put the film in play. Previous marks decide; this frame is then recorded.
                         _skind = None
@@ -43913,9 +43914,9 @@ def stash_screen_open(frame_path):
             # It returns the GENERIC "stash": the tab is genuinely unknown here and must not be
             # guessed (v1859). SURFACE_LANE maps every stash tab to one lane, so nothing misroutes.
             try:
-                from stash_eye import classify_when_in_play, inventory_title_visible
+                from stash_eye import classify_stash_grid, inventory_title_visible
                 if inventory_title_visible(str(frame_path)):
-                    _lab, _ = classify_when_in_play(str(frame_path), recording=True)
+                    _lab, _ = classify_stash_grid(str(frame_path))
                     if str(_lab or "").startswith("stash"):
                         return "stash"
             except Exception:

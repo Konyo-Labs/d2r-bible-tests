@@ -71,7 +71,9 @@ class TheBadgeTakesTheLiveVersion(unittest.TestCase):
     def test_the_status_success_path_paints_and_a_failed_fetch_does_not(self):
         html = _bible()
         i = html.index("function _eagleNYFetch(){")
-        block = html[i:i + 900]
+        marker = "setInterval(_eagleNYFetch, 120000);"
+        j = html.index(marker, i)
+        block = html[i:j + len(marker)]
         self.assertIn("window._badgePaintLive(d)", block)
         self.assertIn("base + '/api/status'", block)
         catch = block[block.index(".catch(function(err){"):]

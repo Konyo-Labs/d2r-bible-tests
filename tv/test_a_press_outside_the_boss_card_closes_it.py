@@ -46,7 +46,7 @@ class APressOutsideTheBossCardClosesIt(unittest.TestCase):
 RED_PROOF = [
     {"why": "v3892 (#191, REG-3540) - a press outside the boss detail no longer closes it",
      "file": "bible.html",
-     "find": "  var bossOv = document.getElementById('boss-detail-overlay');\n  if (bossOv && !bossOv.classList.contains('hidden') && !bossOv.contains(t)) {\n    if (typeof window.clearActiveBoss === 'function') {\n      window.clearActiveBoss({ noScroll: true });\n      return 'boss-detail';\n    }\n  }\n",
+     "find": "  var bossOv = document.getElementById('boss-detail-overlay');\n  if (bossOv && !bossOv.classList.contains('hidden') && !bossOv.contains(t) && !(t.closest && t.closest('.boss-chip'))) {\n    if (typeof window.clearActiveBoss === 'function') {\n      window.clearActiveBoss({ noScroll: true });\n      return 'boss-detail';\n    }\n  }\n",
      "replace": "",
      "matches": 1},
 ]

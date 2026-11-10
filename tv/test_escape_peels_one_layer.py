@@ -59,7 +59,8 @@ class EscapePeelsOneLayer(unittest.TestCase):
     def test_the_listener_stops_after_one_peel(self):
         src = _page()
         i = src.index("window._tvEsc = _tvEsc;")
-        tail = src[i:i + 450]
+        end = src.find("stopImmediatePropagation", i)
+        tail = src[i:(end + len("stopImmediatePropagation")) if end > i else len(src)]
         self.assertIn("if (_tvEsc())", tail)
         self.assertIn("stopImmediatePropagation", tail,
                       "a later Esc handler can still peel a second layer in the same press")

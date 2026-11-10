@@ -18,6 +18,7 @@ frame, and an unlabelled frame after the walk is in a town, do. Outside a record
 RED_PROOF below.
 """
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -31,6 +32,8 @@ _console_safe_enable()
 import d2r_screens as DS  # noqa: E402
 import stash_eye as SE  # noqa: E402
 from test_a_session_starts_at_the_games_own_door import idle_page, in_game, title  # noqa: E402
+import fixture_tmp  # noqa: E402  #171 — this run's scratch dirs leave with it
+fixture_tmp.contain()
 
 
 class TheSharedGateKeepsPreGameOut(unittest.TestCase):
@@ -71,6 +74,7 @@ class TheStashReaderIsJoinedToTheGate(unittest.TestCase):
 
     def tearDown(self):
         SE.classify_stash_grid = self._real
+        shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _save(self, im, name):
         path = os.path.join(self.tmp, name)

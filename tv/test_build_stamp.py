@@ -223,7 +223,7 @@ RED_PROOF = [
         'file': 'bible.html',
         'find': 'if (el.scrollWidth > el.clientWidth + 1) {',
         'replace': 'if (false) {',
-        'matches': 1,
+        'matches': 2,
     },
     {
         "why": "REG-1829 - the badge is measured once at boot, so a badge shown later clips its name mid-word",

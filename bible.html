@@ -30999,7 +30999,7 @@ function _tvOutsideCard(e){
     }
   }
   var bossOv = document.getElementById('boss-detail-overlay');
-  if (bossOv && !bossOv.classList.contains('hidden') && !bossOv.contains(t)) {
+  if (bossOv && !bossOv.classList.contains('hidden') && !bossOv.contains(t) && !(t.closest && t.closest('.boss-chip'))) {
     if (typeof window.clearActiveBoss === 'function') {
       window.clearActiveBoss({ noScroll: true });
       return 'boss-detail';
@@ -84274,7 +84274,10 @@ body.engine-driven.cousin-shell .gsearch-wrap{margin-left:196px!important}
     var _fit = function(){
       try {
         if (el.scrollWidth > el.clientWidth + 1) {
-          var _vid = el.getAttribute('data-live-ver') || window.D2R_BUILD.id;
+          var _vid = window.D2R_BUILD.id;
+          if (typeof el.getAttribute === 'function') {
+            _vid = el.getAttribute('data-live-ver') || _vid;
+          }
           el.textContent = _vid + ' · ' + window.D2R_BUILD.date;
         }
       } catch (e) {}
@@ -84309,6 +84312,11 @@ body.engine-driven.cousin-shell .gsearch-wrap{margin-left:196px!important}
     var date = baked.date || '';
     el.setAttribute('data-live-ver', v);
     el.textContent = v + (date ? ' · ' + date : '') + (name ? ' · ' + name : '');
+    try {
+      if (el.scrollWidth > el.clientWidth + 1) {
+        el.textContent = v + (date ? ' · ' + date : '');
+      }
+    } catch (e) {}
     return true;
   };
   window._badgePaintLive = function(st){
