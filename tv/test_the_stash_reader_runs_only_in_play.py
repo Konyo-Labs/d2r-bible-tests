@@ -74,7 +74,9 @@ class TheStashReaderIsJoinedToTheGate(unittest.TestCase):
 
     def tearDown(self):
         SE.classify_stash_grid = self._real
-        shutil.rmtree(self.tmp, ignore_errors=True)
+        tmp = getattr(self, "tmp", None)
+        if tmp:
+            shutil.rmtree(tmp, ignore_errors=True)
 
     def _save(self, im, name):
         path = os.path.join(self.tmp, name)

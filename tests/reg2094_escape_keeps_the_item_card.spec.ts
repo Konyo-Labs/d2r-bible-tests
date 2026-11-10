@@ -1,9 +1,8 @@
-// REG-2094 (#231 eye on v43 0133be32 / 113be899) — navigateToItem must clear the material latch.
-// A material card sets window.__activeMaterial so Escape can close it; navigateToItem (a grail chip, a search
-// pick) used to paint an item card over it and leave the latch set, so Escape "closed the material" and wiped
-// the item he had just opened. The latch must still clear. v3891 (#191, REG-3530) then made Escape peel the
-// visible #item-detail.show card itself, so after the latch is cleared one Esc closes that item card on purpose.
-// The baseline asserts Escape still closes a material card, so this spec cannot pass by Escape doing nothing.
+// REG-2094 (#231 eye on v43 0133be32 / 113be899) plus REG-3530 (Esc peels one layer).
+// A material card sets window.__activeMaterial so Escape can close it; navigateToItem (a grail
+// chip, a search pick) must clear that latch so Escape is not still aimed at the material card.
+// REG-3530 then peels the remaining item card on Escape (one layer). The baseline still asserts
+// Escape closes a material card, so this spec cannot pass by Escape doing nothing.
 import { test, expect } from './_net_stub';
 import * as path from 'path';
 

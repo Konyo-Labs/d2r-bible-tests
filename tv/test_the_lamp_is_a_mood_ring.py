@@ -132,7 +132,7 @@ class TheLampIsAMoodRing(unittest.TestCase):
             needle = ".fleet-dot.%s" % cls
             self.assertIn(needle, src, "the %s lamp rule is gone" % cls)
             start = src.find(needle)
-            chunk = src[start:start + 120]
+            chunk = src[start:src.find("}", start) + 1]
             self.assertIn(hx, chunk, "%s is not %s: %r" % (cls, hx, chunk))
             self.assertIn("box-shadow:", chunk, "%s has no glow" % cls)
         self.assertIn("transition: background-color .5s ease, box-shadow .5s ease, border-color .5s ease;", src,

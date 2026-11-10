@@ -11456,7 +11456,7 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
 .chx-win-grid[data-grid="belt"]{grid-template-columns:repeat(4,minmax(16px,1fr))}
 .chx-win-grid[data-grid="stats"]{grid-template-columns:repeat(2,minmax(80px,1fr))}
 .chx-grid-h{grid-column:1/-1}
-.chx-grid-cell,.chx-stat-cell{min-height:22px;padding:2px;border:1px solid var(--border-light);background:rgba(0,0,0,.25);color:var(--text);font-size:10px;cursor:pointer}
+.chx-grid-cell,.chx-stat-cell{min-height:22px;padding:2px;border:1px solid var(--border-light);background:rgba(0,0,0,.25);color:var(--text);font-size:var(--fs-micro);cursor:pointer}
 .qw-best-place{margin:0 0 8px;color:var(--gold);font-size:var(--fs-meta)}
 .vault-propose{display:block;margin-top:2px;font-size:var(--fs-meta);color:var(--text-dim)}
 .vault-propose[data-state="unknown"]{color:var(--text)}
@@ -79975,7 +79975,7 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
     if (!sh || !eng || !eng.bp || !sh.rows) return;
     sh.rows.forEach(function(r){ if (r.key === 'ias') r.bp = _cbIasGap(b, r); });
   }
-  function _cbBpHtml(eng, g, kind, row, b){
+  function _cbBpSay(eng, g, kind, row, b){
     if (!g || !eng || !eng.bp || typeof eng.bp.say !== 'function') return '';
     var say = eng.bp.say(g);
     var v = row && row.source !== 'UNKNOWN' && row.value && row.value.min != null ? row.value : null;
@@ -79984,6 +79984,11 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       var nowPct = v.min, k = tiers.filter(function(t){ return t[0] <= nowPct; }).length, T = tiers.length;
       say = 'tier ' + k + '/' + T + ' \u00b7 ' + say;
     }
+    return say;
+  }
+  function _cbBpHtml(eng, g, kind, row, b){
+    var say = _cbBpSay(eng, g, kind, row, b);
+    if (!say) return '';
     return '<span class="cb-bp"' + (g.why ? ' title="' + esc(g.why) + '"' : '') + '>' + esc(say) + '</span>';
   }
   function _cbResParts(r){
@@ -80028,12 +80033,11 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
       var sh = eng.sheet(eb, { difficulty: st.diff, quests: !!st.quests, bp: _cbBpWho(b) });
       if (!sh || !sh.rows) return { ok: false, why: 'the stats engine returned no rows' };
       _cbIasOnto(sh, b, eng);
-      var say = (eng.bp && typeof eng.bp.say === 'function') ? eng.bp.say : null;
       return { ok: true, id: id, name: String(b.name || ''), cls: b.cls || null, level: b.level || null, difficulty: st.diff,
                quests: !!st.quests, gear: { slots: eb.slots, inv: eb.inv, activeSet: eb.activeSet }, notApplied: lost,
                rows: sh.rows.map(function(r){
                  return { key: r.key, label: r.label, value: r.value == null ? null : r.value, unit: r.unit || '', source: r.source || null,
-                          step: (r.bp && say) ? say(r.bp) : null };
+                          step: r.bp ? (_cbBpSay(eng, r.bp, r.key, r, b) || null) : null };
                }) };
     } catch (e) { return { ok: false, why: 'the window could not be computed (' + String(e && e.message || e) + ')' }; }
   };
