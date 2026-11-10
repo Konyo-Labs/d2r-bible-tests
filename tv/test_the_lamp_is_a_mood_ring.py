@@ -27,6 +27,8 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
+from console_safe import enable; enable()
+
 import fleet_presence as FP
 from test_the_fleet_card_says_how_each_pc_films_and_drains import (  # noqa: E402
     NOW as UI_NOW, UI, _iso, _run as _ui_run,
