@@ -5195,19 +5195,13 @@ def _roster_claimed_name():
     name = name.strip()
     if not name:
         return None
-    # v3880 (#27) - A PC WHOSE OWN NAME IS NOT ONE OF THE LABELS MAY SHARE ONE. His 11-05 ruling for the two ALTs: "share
-    # the profile, just split the rows". The OLD ALT's nickname is "OLD PC ALT", so its profile never left the PC ("the
-    # owner is not one of the five labels" - 17 characters and their gear stuck on it since 11-04). `sharesLabel` names
-    # the label it publishes under; the site keeps its rows and profile in their own slot once he approves its key with
-    # "add" (functions/api/roster.js RING). Only one of the five labels is taken - anything else is no label at all.
-    # v3890 (#182, his 11-09 "they need to separate like they were"): "OLD PC ALT" is now a label of its own, so the OLD
-    # ALT publishes as itself and this sharing is read only for a name that is still no label; "add" is refused by the site.
+    # v3880 (#27) / v3890 (#182, REG-3507) / REG-3586: a leftover sharesLabel must not override a
+    # nickname that is already a label. OLD PC ALT publishes as itself even when identity still
+    # carries sharesLabel "Konyo · ALT". sharesLabel is only read for a name that is still no label.
     try:
         import roster_publish as _rpl
-        if name not in _rpl.OWNERS:
-            shares = data.get("sharesLabel")
-            if isinstance(shares, str) and shares.strip() in _rpl.OWNERS:
-                return shares.strip()
+        shares = data.get("sharesLabel")
+        return _rpl.publish_owner(name, shares)
     except Exception:
         pass
     return name
