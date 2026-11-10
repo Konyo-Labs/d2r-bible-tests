@@ -486,7 +486,7 @@ export async function onRequestPost(context) {
   let bytes = new Uint8Array(0);
   try { bytes = new Uint8Array(await request.arrayBuffer()); } catch (e) { bytes = new Uint8Array(0); }
   // REG-2794 (the v3829 second eye) - the door's first cap is the LARGEST any kind may send. It was the profile's 200 KB, so
-  // a frames digest (its own cap 900 KB, built up to 600 KB of thumbnails) past 200 KB was refused as "too large to be
+  // a frames digest (its own cap, built up of film-size frames) past 200 KB was refused as "too large to be
   // rows" before it reached its own door. Each kind still enforces its own cap: rows MAX_BODY, profile PROFILE_MAX_BODY,
   // frames FRAMES_MAX_BODY.
   if (bytes.byteLength > FRAMES_MAX_BODY) {
@@ -1041,16 +1041,17 @@ async function profileGet(kv, owner) {
 
 // ── FRAMES: the owner's sessions, summarized, for shadow mode's Shelf and TV·D (#218 phase 2) ──────────────────
 // His ruling 2026-10-28: a shadow renders the owner's data one to one, with SUMMARIZED frames - "a few small key frames
-// per session" (a full reel is 8-12 GB and never leaves its PC; the profile still refuses every picture). This record
-// is the ONE place a picture rides: the theatre's own 160 px JPEG thumbnails, at most 3 per session, 16 sessions,
-// each under 20 KB - checked here, never trusted from the sender. Same key, intent and replay rule as the profile.
-const FRAMES_MAX_BODY = 900000;
+// per session" (a full reel is 8-12 GB and never leaves its PC; the profile still refuses every picture). v3894
+// (Elad, 2026-11-10): those key frames and evidence are the 1920x1080 film itself, not 160 px thumbs the theatre
+// then magnifies. This record is the ONE place a picture rides: at most 3 film-size JPEGs per session, 16 sessions,
+// each under 800 KB - checked here, never trusted from the sender. Same key, intent and replay rule as the profile.
+const FRAMES_MAX_BODY = 18874368;           // v3894: 18 MB — 16 sessions x 3 film-size JPEGs + witnesses
 const FRAMES_DAY_CAP = 24;                      // v3862 paid: the console posts at most hourly (was 8 a day)
 const FRAMES_MIN_GAP_MS = 50 * 60 * 1000;       // the worker refuses only inside 50 min (the console waits 60)
 const FRAMES_MAX_SESSIONS = 16;
 const FRAMES_MAX_PER = 3;
 const FRAMES_MAX_WITNESS = 8;   // v3859 (b) - shadow_sessions.WITNESS_MAX
-const FRAMES_MAX_JPG_B64 = 27400;          // 20 KB of JPEG, base64
+const FRAMES_MAX_JPG_B64 = 1100000;        // v3894: 800 KB of JPEG, base64 (was 20 KB / 160 px)
 const SID_RX = /^s_\d{13}_\d{1,6}$/;
 const FID_RX = /^\d{1,6}_\d{13}$/;
 
