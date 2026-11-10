@@ -952,6 +952,17 @@ class TheProofRemembersWhatTheGateRead(unittest.TestCase):
 
     def test_the_pre_push_hook_traces_the_suites_it_records(self):
         """r6: the hook's --record had no trace, so it could never store; now it arms one and hands it over."""
+        # REG-3629 (#107 leftover): this drives the hook's bash exports. On Windows `bash` is the
+        # WSL launcher or Git Bash with backslash paths; the hook never runs there.
+        if os.name == "nt":
+            self.skipTest("hooks/pre-push's trace exports run only where pushes happen - never on Windows")
+        try:
+            import posix_shell as _PS
+            bash = _PS.bash()
+        except Exception:
+            bash = shutil.which("bash")
+        if not bash:
+            self.skipTest("no real POSIX bash on this PC - the hook trace is UNMEASURED, not passing")
         out = tempfile.mkdtemp(prefix="gl-hook.")
         self.addCleanup(shutil.rmtree, out, True)
         trace = os.path.join(out, "t.tsv")
@@ -959,7 +970,7 @@ class TheProofRemembersWhatTheGateRead(unittest.TestCase):
         import contextlib
         with contextlib.redirect_stdout(buf):
             self.assertEqual(GL.main(["gate_ledger.py", "--trace-env", trace]), 0)
-        proc = subprocess.run(["bash", "-c", buf.getvalue() + "\n" + shlex.quote(sys.executable) + " -c 'print(1)'"],
+        proc = subprocess.run([bash, "-c", buf.getvalue() + "\n" + shlex.quote(sys.executable) + " -c 'print(1)'"],
                               capture_output=True, text=True)
         self.assertEqual(proc.returncode, 0, proc.stderr)
         facts, why = GL.read_trace(trace)

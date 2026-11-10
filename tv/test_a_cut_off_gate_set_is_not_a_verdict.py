@@ -389,6 +389,10 @@ def push_paths(text):
 
 def a_shell():
     """The shell this venue can drive, matching GitHub's default flags. -> ([argv prefix], name)"""
+    # REG-3629 (#107 leftover): the verdict job runs on ubuntu. On Windows `bash` is the WSL
+    # launcher or Git Bash with backslash paths; neither is the job's shell, so we do not drive it.
+    if os.name == "nt":
+        return None, None
     bash = shutil.which("bash")
     if bash:
         return [bash, "--noprofile", "--norc", "-e", "-o", "pipefail", "-c"], "bash"
@@ -401,6 +405,8 @@ def a_shell():
 def run_script(body, env):
     """-> (returncode, stdout+stderr)"""
     argv, _ = a_shell()
+    if argv is None:
+        raise unittest.SkipTest("the verdict job's bash never runs on Windows - UNMEASURED, not passing")
     full = dict(os.environ)
     full.pop("GATE_SET_SECONDS", None)
     full.pop("JOB_STARTED_AT", None)

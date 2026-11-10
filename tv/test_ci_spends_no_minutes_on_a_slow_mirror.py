@@ -53,8 +53,8 @@ def _code(text):
 class TheBoundedStep(unittest.TestCase):
 
     def setUp(self):
-        if shutil.which("bash") is None:
-            self.skipTest("UNMEASURED - no bash here")
+        if os.name == "nt" or shutil.which("bash") is None:
+            self.skipTest("UNMEASURED - the Linux apt step is never run on Windows")
         self.d = tempfile.mkdtemp(prefix="osdeps_")
         self.addCleanup(shutil.rmtree, self.d, True)
         self.log = os.path.join(self.d, "calls")

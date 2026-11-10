@@ -172,11 +172,19 @@ class _Agent(object):
         return False
 
     def stop(self, farewell_secs=25):
-        """SIGTERM first (the farewell path runs), then kill; always wait on OUR pid."""
+        """SIGTERM first (the farewell path runs), then kill; always wait on OUR pid.
+
+        REG-3629 (#107 leftover): on Windows SIGTERM is TerminateProcess and runs no handler, so
+        we kill directly and do not wait out a farewell that cannot happen.
+        """
         if self.proc.poll() is None:
             try:
-                self.proc.send_signal(signal.SIGTERM)
-                self.proc.wait(timeout=farewell_secs)
+                if os.name == "nt":
+                    self.proc.kill()
+                    self.proc.wait(timeout=10)
+                else:
+                    self.proc.send_signal(signal.SIGTERM)
+                    self.proc.wait(timeout=farewell_secs)
             except Exception:
                 try:
                     self.proc.kill()

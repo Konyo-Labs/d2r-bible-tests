@@ -28662,19 +28662,50 @@ class TestV2155FilmingIsAFACTNotAProcess(unittest.TestCase):
         d = tempfile.mkdtemp()
         blocked = os.path.join(d, "hist")
         os.makedirs(blocked, exist_ok=True)
-        os.chmod(blocked, 0)
-        try:
-            if os.access(blocked, os.R_OK):      # running as root, or a filesystem without modes
-                self.skipTest("this filesystem cannot make a directory unreadable")
+        # REG-3629 (#107 leftover): chmod(0) cannot make a Windows directory unreadable, so the
+        # same door is driven there through a listing/stat PermissionError. POSIX still uses a
+        # real mode-0 directory.
+        def _run_blocked(extra_patches=()):
             with contextlib.ExitStack() as st:
                 for p_ in self._quiet(ca):
                     st.enter_context(p_)
                 st.enter_context(mock.patch.object(ca, "_agent_mode", "off"))
                 st.enter_context(mock.patch.object(ca, "_agent_alive", lambda: True))
                 st.enter_context(mock.patch.object(ca, "HIST_DIR", blocked))
-                ok, why = ca.nothing_in_flight()
+                for p_ in extra_patches:
+                    st.enter_context(p_)
+                return ca.nothing_in_flight()
+        try:
+            if os.name == "nt":
+                blocked_key = os.path.normcase(os.path.realpath(blocked))
+                real_listdir, real_getmtime = os.listdir, os.path.getmtime
+
+                def _hits(path):
+                    try:
+                        return os.path.normcase(os.path.realpath(path)) == blocked_key
+                    except OSError:
+                        return False
+
+                def listdir(path, *a, **k):
+                    if _hits(path):
+                        raise PermissionError("REG-3629: chmod cannot unlist a Windows directory")
+                    return real_listdir(path, *a, **k)
+
+                def getmtime(path, *a, **k):
+                    if _hits(path):
+                        raise PermissionError("REG-3629: chmod cannot hide a Windows directory")
+                    return real_getmtime(path, *a, **k)
+
+                ok, why = _run_blocked((mock.patch("os.listdir", listdir),
+                                        mock.patch("os.path.getmtime", getmtime)))
+            else:
+                os.chmod(blocked, 0)
+                if os.access(blocked, os.R_OK):      # running as root, or a filesystem without modes
+                    self.skipTest("this filesystem cannot make a directory unreadable")
+                ok, why = _run_blocked()
         finally:
-            os.chmod(blocked, stat.S_IRWXU)
+            if os.name != "nt":
+                os.chmod(blocked, stat.S_IRWXU)
             shutil.rmtree(d, ignore_errors=True)
         self.assertFalse(ok, "it acted while the footage directory was unreadable")
         self.assertIn("UNKNOWN", why,

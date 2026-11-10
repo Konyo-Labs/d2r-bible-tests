@@ -21,7 +21,8 @@ PLIST = os.path.join(HERE, "launchd", "com.konyo.tv-nightly-gates.plist")
 BASH = shutil.which("bash") or ("/bin/bash" if os.path.exists("/bin/bash") else None)
 
 
-@unittest.skipIf(BASH is None, "v3849 - no bash on this machine (Windows): the nightly is a launchd job on the Mac")
+@unittest.skipIf(os.name == "nt" or BASH is None,
+                 "REG-3629 - the nightly is a launchd job on the Mac; UNMEASURED on Windows even when Git Bash is on PATH")
 class TheNightlySkipsWhenTheMachineIsBusy(unittest.TestCase):
     def _run_with_busy(self, pattern, df_avail_kb=None):
         d = tempfile.mkdtemp(prefix="tvd-nightly-")
@@ -73,19 +74,19 @@ class TheNightlySkipsWhenTheMachineIsBusy(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"needs": "bash",   # REG-3400 - every case skips with no bash (a Mac launchd job); Dean's PC filed it BLIND
+    {"needs": "posix",  # REG-3629 - a Mac launchd job; skip on Windows even when Git Bash is present (REG-3400 was needs bash)
      "why": "v3849 - the nightly runs below 15 GB free", "file": "nightly_full_gates.sh",
      "find": 'if [ "$_free_gb" -lt 15 ]; then', "replace": 'if [ "$_free_gb" -lt 0 ]; then', "matches": 1},
-    {"needs": "bash",   # REG-3400 - every case skips with no bash (a Mac launchd job); Dean's PC filed it BLIND
+    {"needs": "posix",  # REG-3629 - a Mac launchd job; skip on Windows even when Git Bash is present (REG-3400 was needs bash)
      "why": "v3849 - an unread free space reads as a number", "file": "nightly_full_gates.sh",
      "find": "if [ -z \"$_free_gb\" ]; then", "replace": "if false; then", "matches": 1},
-    {"needs": "bash",   # REG-3400 - every case skips with no bash (a Mac launchd job); Dean's PC filed it BLIND
+    {"needs": "posix",  # REG-3629 - a Mac launchd job; skip on Windows even when Git Bash is present (REG-3400 was needs bash)
      "why": "v3848 - the nightly runs beside a prove/census",
      "file": "nightly_full_gates.sh",
      "find": 'for _busy in "tv/run_gates.py" "tv/heart2.py" "hooks/pre-push"; do\n',
      "replace": 'for _busy in "tv/run_gates.py" "hooks/pre-push"; do\n',
      "matches": 1},
-    {"needs": "bash",   # REG-3400 - every case skips with no bash (a Mac launchd job); Dean's PC filed it BLIND
+    {"needs": "posix",  # REG-3629 - a Mac launchd job; skip on Windows even when Git Bash is present (REG-3400 was needs bash)
      "why": "v3848 - the nightly runs beside a push hook",
      "file": "nightly_full_gates.sh",
      "find": 'for _busy in "tv/run_gates.py" "tv/heart2.py" "hooks/pre-push"; do\n',

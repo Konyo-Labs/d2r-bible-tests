@@ -406,8 +406,8 @@ class TheAptStepRunsOnlyWhenNeeded(unittest.TestCase):
         return "\n".join(l[10:] for l in body.split("\n"))
 
     def _run(self, ldd_says_missing, browsers=2):
-        if not shutil.which("bash"):
-            self.skipTest("no bash - this case runs the step's own script")
+        if os.name == "nt" or not shutil.which("bash"):
+            self.skipTest("no POSIX bash - this case runs the Linux step's own script, never on Windows")
         t = tempfile.mkdtemp()
         try:
             home, binp = os.path.join(t, "home"), os.path.join(t, "bin")

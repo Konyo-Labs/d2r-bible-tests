@@ -7,6 +7,21 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3629 - #107 LEFTOVER BASH / CHMOD / SIGTERM LAWS SKIP OR ADAPT ON WINDOWS, AND STAY STRICT ON POSIX
+A later #107 batch after REG-3626: three laws still staged "unreadable" with chmod(0), which on Windows
+only toggles read-only, so the case either skipped under a wrong "root" reason or measured nothing.
+They now adapt: an unlistable board dir and an unreadable footage dir are driven through a
+PermissionError on Windows (POSIX still uses a real mode-0 path); the lock's unreadable-vs-empty
+fingerprint holds the file open with no sharing, the REG-1452 shape. Hook and Linux-job bash cases
+that ran whatever `bash` named (the WSL launcher, or Git Bash with backslash paths) now skip on
+Windows (_RUNS_POSIX_HOOKS / a_shell returns none / the nightly launchd job), without loosening
+the POSIX run. A stub agent's teardown kills directly on Windows, because SIGTERM is
+TerminateProcess and runs no farewell handler. Laws: test_the_task_board_goes_online_scrubbed,
+test_the_lock_derives_from_the_heart, test_control (the unreadable footage dir),
+test_a_gate_proven_on_these_bytes_is_carried, test_a_cut_off_gate_set_is_not_a_verdict,
+test_a_round_cut_only_by_its_deadline_is_made_up, test_the_nightly_skips_when_the_machine_is_busy,
+test_ci_spends_no_minutes_on_a_slow_mirror, test_a_stub_agent_never_films_his_screen.
+
 ### REG-3620 - THE d2jsp BACKFILL RESUMES OFFLINE AND NEVER STARTS A LIVE SCRAPE (#151)
 His rulings: signed-in on the Mac console, 1 search/min, a ~2-year backfill then a monthly refresh; only priced posts with links; the same seller is one post and one price; never post or trade. Step 1 (REG-3491) kept scrubbed results pages. Step 2: tv/d2jsp_backfill.py walks &o= from those pages, folds through the price DB, and a killed run picks up at the saved offset. Importing it or running its tests never opens a network socket - a pass with no fetch handed in asks nothing. The live 1-search/min lane is not started here. Law test_the_d2jsp_backfill_resumes_offline.
 
