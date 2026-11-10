@@ -1905,6 +1905,28 @@ def _is_child_dir(hist, name):
         return False
 
 
+def _sealed_eligible(cand):
+    """REG-3584 — did plan() itself name this reel eligible (reads sealed, every bar cleared)? -> bool
+
+    tag 'eligible' plus either a whole page count, a later ruling, or plan()'s own
+    "given up its information" sentence is what plan() writes. An unsigned stuffed
+    name is not sealed, so a shut frame.release lock still holds it.
+    """
+    if not isinstance(cand, dict):
+        return False
+    if cand.get("tag") != "eligible":
+        return False
+    name = cand.get("reel")
+    if not _is_reel_dir_name(name):
+        return False
+    if cand.get("ruling"):
+        return True
+    pages = cand.get("pages")
+    if isinstance(pages, int) and not isinstance(pages, bool) and pages >= MIN_PAGES:
+        return True
+    return "given up its information" in str(cand.get("why") or "")
+
+
 def apply_plan(p, yes=False):
     """Delete what plan() selected. Refuses without an explicit yes — this is not undoable."""
     if not yes:
@@ -1921,8 +1943,10 @@ def apply_plan(p, yes=False):
     # for footage that was never touched, and the ledger would claim deletions that never happened.
     #
     # ⚠ DESTRUCTIVE — "deletes footage — there is no undo" in its sibling's words — so under
-    # v3042's split this fails closed on ANY refusal, a stale census included. A prover that has
-    # not caught up is reason enough not to delete.
+    # v3042's split this fails closed on ANY refusal of UNREVIEWED footage, a stale census included.
+    # REG-3584 — a sealed reel the planner already named eligible may go even while frame.release is shut:
+    # its reads are sealed, so a blind instrument cannot change its verdict. New frames and
+    # unreviewed reels still cannot pass; an unsigned stuffed candidate is not sealed.
     try:
         import self_arming as _sa_fr
         _fr_ok, _fr_why = _sa_fr.may("frame.release")
@@ -1930,8 +1954,11 @@ def apply_plan(p, yes=False):
         _fr_ok, _fr_why = False, ("the lock could not be read (%s), which is UNKNOWN and fails "
                                   "closed" % type(_fr_e).__name__)
     if not _fr_ok:
-        return {"ok": False, "why": "frame.release is LOCKED — %s" % _fr_why,
-                "removed": [], "failed": [], "tombstone": None}
+        _asked = [c for c in ((p or {}).get("candidates") or []) if _sealed_eligible(c)]
+        if not _asked or not (isinstance(p, dict) and p.get("ok")):
+            return {"ok": False, "why": "frame.release is LOCKED — %s" % _fr_why,
+                    "removed": [], "failed": [], "tombstone": None}
+        p = dict(p, candidates=_asked)
     # v2069 — THE RECORD GOES DOWN FIRST. Written before a single rmtree, so a crash halfway leaves
     # a tombstone for more reels than were actually removed rather than for fewer.
     # ⚠⚠ 2026-09-28 — HIS §26 AND HIS v2056, BOTH. v2056: a reel whose sightings are banked may go - the record
