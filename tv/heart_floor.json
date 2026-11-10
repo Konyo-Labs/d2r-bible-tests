@@ -5,10 +5,11 @@
       "d2jsp-price-advanced",
       "d2jsp-price-backend",
       "inventory",
+      "stash",
       "vault-moved-note"
     ],
-    "surfaces": 602,
-    "watched": 4
+    "surfaces": 608,
+    "watched": 5
   },
   "names": [
     "bug",

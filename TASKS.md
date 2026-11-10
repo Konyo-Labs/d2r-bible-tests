@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3890** | `(this commit)` | v3890 — sessions start at the game door - CHRONICLES read from the pixels |
+| **v3895** | `(this commit)` | v3895 — 15 first slices - Fleet eye, Dean panel, calibration, custody P2-P5, advisor, checker, art, prices, vault |
+| **v3890** | `6b9c8ae1` | v3890 — sessions start at the game door - CHRONICLES read from the pixels |
 | **v3889** | `4f786fd1` | v3889 — Game names in the game face, no phone page, zones graded by your items, tier posts, river guards first |
 | **v3888** | `f485a6e4` | v3888 — a version that touches nothing a lock reads keeps it open (#103) |
 | **v3887** | `098767e4` | v3887 — Best runs count the others, Quick wins in three lists, every Fleet row two lines at 1512 |

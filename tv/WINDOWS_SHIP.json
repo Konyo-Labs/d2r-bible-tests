@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3890",
+  "ver": "v3895",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3890: sessions start at the game door - CHRONICLES read from the pixels",
+  "note": "v3895: 15 first slices - Fleet eye, Dean panel, calibration, custody P2-P5, advisor, checker, art, prices, vault",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
