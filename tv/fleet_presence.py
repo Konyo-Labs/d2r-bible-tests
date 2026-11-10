@@ -21,6 +21,9 @@ import time
 REFRESH_S = 220
 BEACON_S = 240
 STALE_AFTER_S = REFRESH_S + BEACON_S + 60   # 520 s
+#: worst age of a live heartbeat (one beacon + the fleet's 60 s cache). Older than this, and not
+#: yet past STALE_AFTER_S, is late (the lamp's teal): check-ins are late, the PC is not yet offline.
+FRESH_UNTIL_S = BEACON_S + 60   # 300 s
 
 
 def _parse_iso_ms(s):
@@ -58,7 +61,7 @@ def presence_of(row, listed_online, now_ms=None):
         ages["console"] = max(0.0, (now - con) / 1000.0)
     if rec_t is not None and rec_t < now + 60000:
         ages["recorder"] = max(0.0, (now - rec_t) / 1000.0)
-    base = {"staleAfterS": STALE_AFTER_S}
+    base = {"staleAfterS": STALE_AFTER_S, "freshUntilS": FRESH_UNTIL_S}
     if not ages:
         return dict(base, state="unknown", online=None, via=None, ageS=None,
                     words="presence UNKNOWN (no readable last check-in)")
