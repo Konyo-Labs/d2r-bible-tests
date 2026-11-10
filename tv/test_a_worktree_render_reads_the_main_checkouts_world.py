@@ -37,6 +37,7 @@ class AWorktreeRenderReadsTheMainCheckoutsWorld(unittest.TestCase):
         with open(os.path.join(self.main, "tv", "keep.txt"), "w") as f:
             f.write("x\n")
         _git("init", "-q", self.main)
+        _git("-C", self.main, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         _git("-C", self.main, "add", "tv/keep.txt")
         _git("-C", self.main, "commit", "-q", "-m", "seed")
         self.wt = os.path.join(self.root, "wt")

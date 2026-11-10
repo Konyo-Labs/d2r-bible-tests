@@ -76,6 +76,7 @@ def _repo(root, files):
         with io.open(os.path.join(root, rel), "w", encoding="utf-8") as fh:
             fh.write(text)
     _git(root, "init", "-q", "-b", "main")
+    _git(root, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
     _git(root, "config", "user.email", "law@example.com")
     _git(root, "config", "user.name", "law")
     _git(root, "config", "commit.gpgsign", "false")

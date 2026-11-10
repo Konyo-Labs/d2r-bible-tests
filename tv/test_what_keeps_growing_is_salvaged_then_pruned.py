@@ -106,6 +106,7 @@ class Fixture(object):
     def repo(self, path, upstream=True):
         os.makedirs(path)
         self.g(path, "init", "-q")
+        self.g(path, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         self.g(path, "checkout", "-q", "-b", "main")
         _w(os.path.join(path, "a.txt"), "one\n")
         self.g(path, "add", "a.txt")

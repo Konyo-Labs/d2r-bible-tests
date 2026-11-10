@@ -27750,6 +27750,7 @@ class TestV2143TheSecondEyeCannotBeSkippedQuietly(unittest.TestCase):
         self.addCleanup(shutil.rmtree, td, True)
         os.makedirs(os.path.join(td, "tv"))
         subprocess.check_call(["git", "init", "-q"], cwd=td)
+        subprocess.check_call(["git", "config", "core.autocrlf", "false"], cwd=td)  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         ship = os.path.join(td, "tv", "WINDOWS_SHIP.json")
 
         def _commit(ver, message):

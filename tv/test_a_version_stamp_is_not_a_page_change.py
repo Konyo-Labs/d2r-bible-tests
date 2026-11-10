@@ -54,6 +54,7 @@ class _Repo(unittest.TestCase):
         self.repo = tempfile.mkdtemp(prefix="page_delta_law_")
         self.addCleanup(shutil.rmtree, self.repo, True)
         _git(self.repo, "init", "-q")
+        _git(self.repo, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         _git(self.repo, "config", "user.email", "law@example.invalid")
         _git(self.repo, "config", "user.name", "law")
         _git(self.repo, "config", "commit.gpgsign", "false")

@@ -127,6 +127,7 @@ class TheChangedSetIsRead(unittest.TestCase):
         def git(*a):
             subprocess.run(["git", "-C", root] + list(a), check=True, capture_output=True, env=env)
         git("init", "-q")
+        git("config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         with open(os.path.join(root, *rel.split("/")), "w", encoding="utf-8") as fh:
             fh.write("A = 1\n")
         git("add", "-A")

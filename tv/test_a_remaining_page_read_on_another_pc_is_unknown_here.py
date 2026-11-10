@@ -504,6 +504,7 @@ class GitIgnoresThePerPcPages(unittest.TestCase):
         d = tempfile.mkdtemp(prefix="remaining-ignore-")
         self.addCleanup(shutil.rmtree, d, True)
         subprocess.run([GIT, "init", "-q", d], check=True, env=env)
+        subprocess.run([GIT, "-C", d, "config", "core.autocrlf", "false"], check=True, env=env)  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         os.makedirs(os.path.join(d, "tv"))
         for rel in (".gitignore", os.path.join("tv", ".gitignore")):
             if os.path.isfile(os.path.join(ROOT, rel)):

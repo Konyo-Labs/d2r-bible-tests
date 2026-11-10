@@ -154,6 +154,7 @@ class TheSandboxGetsItsNeedsWithoutCp(unittest.TestCase):
         self.repo = os.path.join(self.root, "repo")
         os.makedirs(self.repo)
         self._git(self.repo, "init", "-q")
+        self._git(self.repo, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         for k, v in (("user.email", "law@x"), ("user.name", "law")):
             self._git(self.repo, "config", k, v)
         io.open(os.path.join(self.repo, "a.txt"), "w").write("a\n")

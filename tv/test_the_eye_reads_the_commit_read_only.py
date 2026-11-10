@@ -48,6 +48,7 @@ class TheEyeReadsTheCommitReadOnly(unittest.TestCase):
         self.repo = tempfile.mkdtemp(prefix="eye-repo-")
         self.addCleanup(shutil.rmtree, self.repo, True)
         _git(self.repo, "init", "-q")
+        _git(self.repo, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         _git(self.repo, "config", "user.email", "law@example.invalid")
         _git(self.repo, "config", "user.name", "law")
         with open(os.path.join(self.repo, "untouched.py"), "w") as fh:

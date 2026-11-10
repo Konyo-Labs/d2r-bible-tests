@@ -97,6 +97,7 @@ def _ignored(rels):
     d = tempfile.mkdtemp(prefix="decision-ignore-")
     try:
         _git(["init", "-q", d], check=True)
+        _git(["-C", d, "config", "core.autocrlf", "false"], check=True)  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         os.makedirs(os.path.join(d, "tv"))
         for rel in (".gitignore", os.path.join("tv", ".gitignore")):
             if os.path.isfile(os.path.join(ROOT, rel)):
@@ -133,6 +134,7 @@ class EveryDecisionFileIsIgnored(unittest.TestCase):
         fixture = ["-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid", "-c", "commit.gpgsign=false",
                    "-c", "init.defaultBranch=main", "-c", "core.hooksPath=" + os.path.join(d, "no-hooks")]
         _git(fixture + ["init", "-q", main], check=True)
+        _git(fixture + ["-C", main, "config", "core.autocrlf", "false"], check=True)  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         with open(os.path.join(main, "f.txt"), "w", encoding="utf-8") as fh:
             fh.write("one\n")
         _git(fixture + ["-C", main, "add", "f.txt"], check=True)

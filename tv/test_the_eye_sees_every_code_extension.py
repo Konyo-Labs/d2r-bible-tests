@@ -101,6 +101,7 @@ class TheEyeSeesEveryCodeExtension(unittest.TestCase):
         cls.tmp = tempfile.mkdtemp(prefix="tvd_eye_ext_")
         d = cls.tmp
         _git(d, "init", "-q")
+        _git(d, "config", "core.autocrlf", "false")  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         _git(d, "config", "user.email", "gate@example.invalid")
         _git(d, "config", "user.name", "gate")
         os.makedirs(os.path.join(d, "functions", "api"))

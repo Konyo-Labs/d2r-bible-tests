@@ -707,6 +707,7 @@ class TheKeyNamesEveryInput(unittest.TestCase):
                 fh.write("{}")
             for cmd in (["git", "init", "-q"], ["git", "add", "kept.txt"]):
                 subprocess.run(cmd, cwd=e, capture_output=True, check=True)
+            subprocess.run(["git", "config", "core.autocrlf", "false"], cwd=e, capture_output=True, check=True)  # #107 REG-3626 - the fixture's bytes, not the PC's git default
             got = H._tracked_files(e)
             self.assertEqual(got, frozenset(["kept.txt"]), "git's tracked set was not read: %r" % (got,))
             self.assertIsNone(H._tracked_files(os.path.join(e, "no_such_dir")), "a tree git cannot answer for was not UNKNOWN")

@@ -83,6 +83,7 @@ def _fixture_repo():
     try:
         subprocess.check_call(git + ["init", "-q", root], stdout=subprocess.DEVNULL,
                               stderr=subprocess.DEVNULL)
+        subprocess.check_call(git + ["-C", root, "config", "core.autocrlf", "false"])  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         for rel in _FIXTURE_CHANGED + ("README.md",):
             _w(rel, "one = 1\n")
         subprocess.check_call(git + ["-C", root, "add", "-A"])
@@ -111,6 +112,7 @@ def _merge_repo():
             fh.write(text)
     try:
         subprocess.check_call(git + ["init", "-q", root], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.check_call(git + ["-C", root, "config", "core.autocrlf", "false"])  # #107 REG-3626 - the fixture's bytes, not the PC's git default
         _w("a.py", "one = 1\n")
         subprocess.check_call(git + ["-C", root, "add", "-A"])
         subprocess.check_call(git + ["-C", root, "commit", "-q", "-m", "base"])
