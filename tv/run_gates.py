@@ -13522,7 +13522,7 @@ GATES = [
     Gate("test_the_same_seller_is_one_d2jsp_vote",
          [sys.executable, os.path.join(HERE, "test_the_same_seller_is_one_d2jsp_vote.py")], 60,
          needs_app=False,
-         why="v3893 #180 REG-3554 (his ruling: the same seller is one post and one price) - a readable author shares one vote across that seller's topics; unknown authors stay per-link; topics are never hard-deleted or merged by id"),
+         why="v3893 #180 REG-3554 (his ruling: the same seller is one post and one price) - a readable author shares one vote across that seller's topics; unknown authors stay per-link; topics are never hard-deleted or merged by id; v3898 REG-3711 - his signed-in page puts the seller on the header line above the date (0 of 42 rows carried one) and the DB shares one vote per seller across reads"),
     Gate("test_the_guest_badge_reads_the_live_version",
          [sys.executable, os.path.join(HERE, "test_the_guest_badge_reads_the_live_version.py")], 60,
          needs_app=False,
@@ -13901,6 +13901,17 @@ GATES = [
              "console's stand-aside judge says yes for a push grading, a sweep reading and GitHub's import too; a proof not "
              "yet started was filed as 'he is playing on this PC' and the Fleet read 'you are playing'. The judge now carries "
              "a key with its reason and the tick files the wait under it; his game alone is 'playing'."),
+    Gate("test_the_rehearsal_render_bound_moves_with_the_load",
+         [sys.executable, os.path.join(HERE, "test_the_rehearsal_render_bound_moves_with_the_load.py")], 60,
+         needs_app=False,
+         why="v3898 (card #200, REG-3712) - the ship's Mac rehearsal killed render_check at a fixed 360 s while the push hook "
+             "scales the same render by load (REG-1993); v3897's ship lost a whole relaunch to it. preship.check_render now "
+             "scales its kill by render_bound and hands TV_RENDER_SCALE / GATE_SCALE down; a quiet Mac keeps 360 s"),
+    Gate("test_one_game_in_hourly_parts",
+         [sys.executable, os.path.join(HERE, "test_one_game_in_hourly_parts.py")], 120,
+         why="v3898 (#188, REG-3713, his 11-11 ruling) - the hourly parts stay and the parts of one game are linked: a part "
+             "that never showed the game ends the equipped ledger's chain (the work ALT chained 15 parts through a "
+             "Boosteroid-page part and glued his 12:40 new game on), and the Shelf card says 'part k of m · one game'"),
     Gate("test_a_shelf_closed_while_opening_takes_the_stage_with_it",
          [sys.executable, os.path.join(HERE, "test_a_shelf_closed_while_opening_takes_the_stage_with_it.py")], 60,
          needs_app=False,
