@@ -72,6 +72,7 @@ class TestHeartSeesItsInstruments(unittest.TestCase):
         bad = []
         checked = 0
         _srcs = {}
+        _spans = {}
         for name, fn in heart2.gate_files():
             # v3473 — an UNREADABLE declaration used to fall through `if not proofs` as if the gate
             # declared nothing; eleven proofs sat unrun that way. It is a malformed declaration.
@@ -146,8 +147,50 @@ class TestHeartSeesItsInstruments(unittest.TestCase):
                 if str(pr.get("find")) == str(pr.get("replace")):
                     bad.append("%s: find and replace are identical — it tampers with nothing"
                                % label)
+                # v3896 (REG-3668) - AND THE TAMPER MUST LEAVE CODE THAT PARSES. v3895 round 1 lost 55 minutes to two
+                # proofs whose anchors matched once (correct here) and whose tampers did not parse (INVALID on GitHub).
+                if got >= 1 and tgt.endswith(".py"):
+                    try:
+                        _sp = _spans.get(tgt)
+                        if _sp is None:
+                            _sp = _spans[tgt] = heart2.tamper_top_spans(src)
+                        _syn = heart2.tamper_breaks_syntax(src, str(pr.get("find") or ""),
+                                                           str(pr.get("replace") or ""), want, _sp)
+                    except SyntaxError as _e:
+                        _syn = "its target does not parse untampered (%s)" % _e.msg
+                    if _syn:
+                        bad.append("%s: the tamper leaves code that does not parse - %s. A law reddened by a "
+                                   "SyntaxError proves nothing (the prover files it INVALID)" % (label, _syn))
         self.assertEqual(bad, [], "malformed red-proofs:\n  " + "\n  ".join(bad))
         print("   %d red-proof(s) declared, all well formed" % checked)
+
+    def test_a_tamper_that_leaves_broken_code_is_refused(self):
+        """v3896 (REG-3668) - v3895 round 1's two INVALID proofs, as shapes: each must be refused, each fixed form must
+        not be, and the fast per-statement answer must equal a whole-file parse"""
+        import ast as _ast
+        a = ("import os\n\n\ndef makeup(rid, made):\n    x = 1\n    if not rid or rid in made:\n        return False\n"
+             "    return True\n\n\ndef other():\n    return 2\n")
+        a_find = "    if not rid or rid in made:\n        return False\n"
+        b = ("@decorated\ndef wait(rid, run):\n    if running_again(rid, run):      # v3881 - GitHub's finisher re-ran it\n"
+             "        return True\n    return False\n")
+        cases = [
+            (a, a_find, "    if not rid:\n", True),                                    # an `if` lost its body
+            (a, a_find, "    if not rid:\n        return False\n", False),             # the fixed form
+            (b, "    if running_again(rid, run):      # v3881", "    if False:", True),  # a cut comment opens a string
+            (b, "    if running_again(rid, run):      # v3881 - GitHub's finisher re-ran it", "    if False:", False),
+            (a, "    x = 1\n", "    x = (\n", True),                                     # an unclosed bracket
+            (a, "def other():\n", '"' * 3 + "\ndef other():\n", True),                   # an opened triple quote
+        ]
+        for src, find, repl, broken in cases:
+            with self.subTest(repl=repl[:30], broken=broken):
+                fast = heart2.tamper_breaks_syntax(src, find, repl, 1)
+                try:
+                    _ast.parse(src.replace(find, repl, 1))
+                    whole = False
+                except SyntaxError:
+                    whole = True
+                self.assertEqual(whole, broken, "the planted case is itself wrong - fix the case, not the law")
+                self.assertEqual(fast is not None, broken, "the census read %r as %s" % (repl, fast or "parsing"))
 
     def test_an_unreadable_declaration_is_not_an_absent_one(self):
         """v3473 — DRIVEN over the four states red_proofs_in() collapsed into one None."""
@@ -715,6 +758,24 @@ RED_PROOF = [
     "file": "test_the_heart_can_see_its_own_instruments.py",
     "find": "            _n = heart2.red_proof_binding_count(fn)\n            if _n and _n > 1:",
     "replace": "            _n = heart2.red_proof_binding_count(fn)\n            if False:",
+    "matches": 1
+}, {
+    "why": "REG-3668 - the census stops parsing a tamper's result (it counts the anchor and never asks if the code parses)",
+    "file": "tv/heart2.py",
+    "find": "        tampered = original[a:b].replace(find, repl, n_in)\n        try:\n            _ast.parse(tampered)\n",
+    "replace": "        tampered = original[a:b].replace(find, repl, n_in)\n        try:\n            _ast.parse(\"pass\")\n",
+    "matches": 1
+}, {
+    "why": "REG-3668 - the census re-parses the matched lines alone, not their whole statement (a fixed tamper reads broken)",
+    "file": "tv/heart2.py",
+    "find": "            if s0 < b and s1 > a:\n                a, b = min(a, s0), max(b, s1)\n",
+    "replace": "            if False:\n                a, b = min(a, s0), max(b, s1)\n",
+    "matches": 1
+}, {
+    "why": "REG-3668 - the census's well-formedness loop stops asking whether each python tamper parses",
+    "file": "test_the_heart_can_see_its_own_instruments.py",
+    "find": "                if got >= 1 and tgt.endswith(\".py\"):\n",
+    "replace": "                if False:\n",
     "matches": 1
 }]
 

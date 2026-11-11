@@ -27,6 +27,15 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3668 - THE CENSUS COUNTED A TAMPER'S ANCHOR AND NEVER ASKED WHETHER THE RESULT PARSES (v3896, card #200 guard 4)
+v3895 round 1 (11-11) lost a 55-minute GitHub round to two red-proofs whose anchors had been lengthened to match once while
+their replacements were left as they were: one cut a line mid-comment so "GitHub's" opened a string, one took the
+`return False` its `if` needed. The census found each anchor exactly once - correct - and the prover filed both INVALID on
+GitHub. Now the census asks heart2.tamper_breaks_syntax of every python tamper: each target is parsed once and only the
+top-level statement(s) a match touches are re-parsed (5,597 tampers in ~9 s; the census went 23 s -> 28 s). It agreed
+with a whole-file parse on 10,924 of 10,924 tampers, planted breakers included, and refuses both round-1 proofs as
+beaddcd35 held them. Law: test_the_heart_can_see_its_own_instruments (test_a_tamper_that_leaves_broken_code_is_refused
++ the well-formedness loop). Seen RED x3.
 
 ### REG-3667 - A READINESS CASE READ HIS MAC'S node_modules INSTEAD OF ITS OWN SANDBOX (v3896, card #200 guard 9)
 test_a_tree_with_no_node_modules_is_red promised "auto-fix cannot find the Mac install in this sandbox" and on his Mac it

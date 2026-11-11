@@ -8474,6 +8474,71 @@ def _write_state(results, measured=None, stamp=True, unmeasured=None, trusted=No
         raise
 
 
+def tamper_top_spans(original):
+    """[(start, end)] character offsets of each top-level statement of a python source, its decorators included, in order
+    (tamper_breaks_syntax's index; parse the target ONCE and hand this to every proof of it)."""
+    import ast as _ast
+    tree = _ast.parse(original)
+    starts = [0]
+    _at = original.find("\n")
+    while _at >= 0:
+        starts.append(_at + 1)
+        _at = original.find("\n", _at + 1)
+    spans = []
+    for node in tree.body:
+        first = min([node.lineno] + [d.lineno for d in getattr(node, "decorator_list", [])])
+        last = node.end_lineno
+        spans.append((starts[first - 1], starts[last] if last < len(starts) else len(original)))
+    return spans
+
+
+def tamper_breaks_syntax(original, find, repl, want=None, spans=None):
+    """v3896 (card #200 guard 4, REG-3668) - DOES THIS TAMPER LEAVE CODE THAT PARSES? -> None, or the SyntaxError's words.
+
+    MEASURED 11-11, v3895 round 1: two red-proofs whose anchors had been lengthened (to match once) kept their old
+    replacement - one cut a line mid-comment so "GitHub's" opened a string, one took the `return False` an `if` needed -
+    and both filed INVALID on GitHub after a 55-minute round. The census counted their anchors (1 each, correct) and
+    never parsed the result. _prove_one parses the WHOLE tampered file and stays the authority; this is the census's
+    fast form of the same question: a top-level statement parses on its own, so only the statement(s) each match touches
+    are re-parsed (all 5,597 python tampers in ~9 s; a whole-file parse per tamper took 6.6 min for 2,652 of them).
+    Agreement with a whole-file parse: 10,924 of 10,924 tampers, planted breakers included."""
+    import ast as _ast
+    if not find:
+        return None
+    if spans is None:
+        spans = tamper_top_spans(original)
+    hits, i = [], original.find(find)
+    while i >= 0 and (want is None or len(hits) < int(want)):
+        hits.append((i, i + len(find)))
+        i = original.find(find, i + len(find))
+    if not hits:
+        return None
+    segs = []
+    for (m0, m1) in hits:
+        a = original.rfind("\n", 0, m0) + 1
+        b = original.find("\n", m1)
+        b = len(original) if b < 0 else b + 1
+        for (s0, s1) in spans:
+            if s0 < b and s1 > a:
+                a, b = min(a, s0), max(b, s1)
+        segs.append([a, b])
+    segs.sort()
+    merged = []
+    for seg in segs:
+        if merged and seg[0] <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], seg[1])
+        else:
+            merged.append(seg)
+    for (a, b) in merged:
+        n_in = sum(1 for (m0, m1) in hits if m0 >= a and m1 <= b)
+        tampered = original[a:b].replace(find, repl, n_in)
+        try:
+            _ast.parse(tampered)
+        except SyntaxError as e:
+            return "%s (line %s of the tampered statement)" % (e.msg, e.lineno)
+    return None
+
+
 def resolve_proof_target(base, rel):
     """Where a RED_PROOF's `file` actually lives. -> str
 
