@@ -13941,6 +13941,11 @@ GATES = [
          needs_app=False,
          why="v3899 (#91, GrokBot #230 6803962990) - the Summoner wore his sprite on his Boss card and his old render in "
              "BOSS_PORTRAIT; the TV·D area art still gave the act bosses their stone-backed renders. One file per boss"),
+    Gate("test_a_not_found_page_is_testimony",
+         [sys.executable, os.path.join(HERE, "test_a_not_found_page_is_testimony.py")], 60,
+         needs_app=False,
+         why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
+             "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
     Gate("test_the_likely_reds_run_first",
          [sys.executable, os.path.join(HERE, "test_the_likely_reds_run_first.py")], 60,
          needs_app=False,

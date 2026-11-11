@@ -850,12 +850,19 @@ def _check_the_evidence_ledger_is_readable():
     n_u = len(ev.get("uniques") or {})
     n_s = len(ev.get("sets") or {})
     pages = ev.get("pagesRead")
-    if (n_u + n_s) == 0 and isinstance(pages, int) and pages > 0:
+    # REG-3729 (v3899) - A PAGE OF "NOT FOUND" READINGS IS TESTIMONY TOO. MEASURED 11-11 on the work ALT: its first ledger
+    # (1 page read today) held 0 found names and 6 uniques read NOT FOUND, and this row called it the v1779 shape - an
+    # emptied ledger - on every look. A not-found name is a reading the page gave; only a ledger with no name of EITHER
+    # kind after pages were banked is the emptied shape.
+    _nf = ev.get("notFound") if isinstance(ev.get("notFound"), dict) else {}
+    n_nf = sum(len(v) for v in _nf.values() if isinstance(v, (list, dict)))
+    if (n_u + n_s + n_nf) == 0 and isinstance(pages, int) and pages > 0:
         return MISSING, ("%d page(s) were read and banked, and the ledger now holds ZERO names — "
                          "that is the v1779 shape: a ledger emptied after the reading happened"
                          % pages)
-    return OK, ("%d unique(s) and %d set(s) carry testimony across %s page(s) read"
-                % (n_u, n_s, pages if pages is not None else "an unrecorded number of"))
+    return OK, ("%d unique(s) and %d set(s) carry testimony across %s page(s) read%s"
+                % (n_u, n_s, pages if pages is not None else "an unrecorded number of",
+                   (" - and %d name(s) read NOT FOUND" % n_nf) if n_nf else ""))
 
 
 def _check_the_ledger_backup_covers_every_store():
