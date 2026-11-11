@@ -27,6 +27,13 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3669 - THE GAME-START YIELD LAW ASKED THIS PC WHETHER A PUSH WAS GRADING (v3896, card #199)
+MEASURED 11-10 ~21:00 IST: v3894 attempt 4's pre-flight went red on 6 cases of TheNextSliceStartsTheMomentOneEnds (key
+'playing'/'busy', not the fixture's) because a real push had sat 85 min in its pre-push hook beside it - green 23/23 the
+second that push was killed. The tick asks control_app's push, sweep, import and owed-BLIND judges; the law stubbed only the
+game judge. All four are the fixture's now, and a case plants a grading push and a reading sweep where the real judges look
+and still starts its slice. Law: test_a_proof_yields_the_moment_the_game_starts. Seen RED x2.
+
 ### REG-3668 - THE CENSUS COUNTED A TAMPER'S ANCHOR AND NEVER ASKED WHETHER THE RESULT PARSES (v3896, card #200 guard 4)
 v3895 round 1 (11-11) lost a 55-minute GitHub round to two red-proofs whose anchors had been lengthened to match once while
 their replacements were left as they were: one cut a line mid-comment so "GitHub's" opened a string, one took the

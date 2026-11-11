@@ -104,6 +104,16 @@ RED_PROOF = [
      "file": "self_prove.py",
      "find": "        pid = mem.get(\"pid\") or _STARTED.get(\"pid\")\n        if not pid:\n            return None\n",
      "replace": "        pid = mem.get(\"pid\") or _STARTED.get(\"pid\")\n        if False:\n            return None\n", "matches": 1},
+    {"why": "#199 (REG-3669) - the law asks the PC whether a push is grading again (its v3894 pre-flight went red on a real push)",
+     "file": "test_a_proof_yields_the_moment_the_game_starts.py",
+     "find": "        for name, fake in ((\"_a_push_is_grading\", lambda: False),\n",
+     "replace": "        for name, fake in ((\"_a_push_is_grading\", ca._a_push_is_grading),\n",
+     "matches": 1},
+    {"why": "#199 (REG-3669) - the law asks the PC whether a sweep is reading again",
+     "file": "test_a_proof_yields_the_moment_the_game_starts.py",
+     "find": "                           (\"_a_sweep_is_reading\", lambda: False),\n",
+     "replace": "                           (\"_a_sweep_is_reading\", ca._a_sweep_is_reading),\n",
+     "matches": 1},
 ]
 
 
@@ -266,10 +276,31 @@ class TheNextSliceStartsTheMomentOneEnds(unittest.TestCase):
             p = mock.patch.object(SP, name, fake)
             p.start()
             self.addCleanup(p.stop)
+        # #199 (REG-3669) - EVERY HOST JUDGE THE TICK ASKS IS THE FIXTURE'S. MEASURED 11-10 ~21:00: v3894's pre-flight went red
+        # here (6 cases read 'playing'/'busy') because a real push had sat in its pre-push hook 85 min on this PC: the guard
+        # asks control_app's push, sweep, import and owed-BLIND judges, and only the game judge was stubbed.
+        for name, fake in (("_a_push_is_grading", lambda: False),
+                           ("_a_sweep_is_reading", lambda: False),
+                           ("_sp_blind_owed", lambda: False)):
+            p = mock.patch.object(ca, name, fake)
+            p.start()
+            self.addCleanup(p.stop)
+        p = mock.patch.dict(ca._PROOF_RELEASE, {"running": False})
+        p.start()
+        self.addCleanup(p.stop)
 
     def _guard(self, busy):
         with mock.patch.object(ca, "_cpu_busy_pct", lambda *a, **k: busy):
             return ca._self_prove_guard()
+
+    def test_a_push_and_a_sweep_on_this_pc_never_reach_the_case(self):
+        """#199 (REG-3669) - the PC's own state is planted where the real judges read it - a push grading, a sweep
+        reading - and the idle-PC case must still start its slice: the fixture decides, never the PC"""
+        import time as _t
+        with mock.patch.dict(ca._PUSH_GRADING, {"at": _t.time() + 10 ** 6, "v": (True, "planted: a push grading here")}), \
+                mock.patch.object(ca, "chronicle_sweep_state", lambda *a, **k: {"running": True}):
+            r = self._guard(5.0)
+        self.assertEqual(len(self.spawned), 1, "the PC's own push or sweep reached the fixture's tick: %r" % (r,))
 
     def test_an_idle_pc_starts_the_next_slice_at_once(self):
         r = self._guard(5.0)
