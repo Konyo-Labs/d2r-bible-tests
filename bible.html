@@ -11769,10 +11769,14 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
      idle loop per class (the site whose Banished loop he picked), its source, sha1 and cold look in tv/data/class_art.json. A
      MAIN wears it in a gold frame; a class the map does not name, or a file that will not load, keeps the letter. */
   var _CHX_CLASS_SPRITE = {"Amazon": "art/d2rw_cls_amazon.webp", "Assassin": "art/d2rw_cls_assassin.webp", "Barbarian": "art/d2rw_cls_barbarian.webp", "Druid": "art/d2rw_cls_druid.webp", "Necromancer": "art/d2rw_cls_necromancer.webp", "Paladin": "art/d2rw_cls_paladin.webp", "Sorceress": "art/d2rw_cls_sorceress.webp", "Warlock": "art/d2rw_cls_warlock.webp"};
+  /* v3899 (#154, his 11-11: "the licence is fine") - A MAIN WEARS ITS CLASS IN ARMOUR: the in-game GIF of the class geared,
+     opened and pinned in art/class_geared.manifest.json; a class with none (the Warlock) keeps its bare figure above. */
+  var _CHX_CLASS_GEARED = {"Amazon": "art/d2cls_geared_amazon.gif", "Assassin": "art/d2cls_geared_assassin.gif", "Barbarian": "art/d2cls_geared_barbarian.gif", "Druid": "art/d2cls_geared_druid.gif", "Necromancer": "art/d2cls_geared_necromancer.gif", "Paladin": "art/d2cls_geared_paladin.gif", "Sorceress": "art/d2cls_geared_sorceress.gif"};
   function _chxCrest(cls, isMain){
     var c = String(cls || ''), k = c.charAt(0).toUpperCase() + c.slice(1).toLowerCase(), src = own.call(_CHX_CLASS_SPRITE, k) ? _CHX_CLASS_SPRITE[k] : null;
     var letter = esc(c.charAt(0) || '?');
     if (!src) return '<span class="chx-crest" aria-hidden="true">' + letter + '</span>';
+    if (isMain && own.call(_CHX_CLASS_GEARED, k)) src = _CHX_CLASS_GEARED[k];   /* v3899 (#154) - a MAIN, geared */
     return '<span class="chx-crest chx-crest-sprite' + (isMain ? ' chx-crest-main' : '') + '" aria-hidden="true">'
       + '<img src="' + esc(src) + '" alt="" loading="lazy" onerror="var p=this.parentNode;p.className=\'chx-crest\';p.textContent=\'' + letter + '\'"></span>';
   }   // a JS string literal, safe inside an onclick="" attribute

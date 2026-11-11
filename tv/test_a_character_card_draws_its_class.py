@@ -61,6 +61,15 @@ class ACharacterCardDrawsItsClass(unittest.TestCase):
         self.assertIsNotNone(m, "PREMISE: the page carries no class-figure map")
         self.assertEqual(json.loads(m.group(1)), self.rec["classes"], "the page's map drifted from tv/data/class_art.json")
 
+    def test_the_geared_map_is_the_manifest(self):
+        """v3899 (#154) - the MAIN's geared figure per class is exactly art/class_geared.manifest.json's opened files"""
+        m = re.search(r"  var _CHX_CLASS_GEARED = (\{[^\n]*\});", self.src)
+        self.assertIsNotNone(m, "PREMISE: the page carries no geared-figure map")
+        with io.open(os.path.join(os.path.dirname(HERE), "art", "class_geared.manifest.json"), encoding="utf-8") as fh:
+            man = json.load(fh)
+        self.assertEqual(json.loads(m.group(1)), dict((r["class"], "art/" + r["file"]) for r in man["classes"]),
+                         "the page's geared map drifted from art/class_geared.manifest.json")
+
     def test_both_cards_draw_through_the_one_helper(self):
         """a build card says whether it is the MAIN; an in-game card with no build never is"""
         self.assertEqual(self.src.count("'<div class=\"chx-top\">' + _chxCrest(b.cls, isMain)"), 1, "the build card draws its own crest")
@@ -75,13 +84,17 @@ class ACharacterCardDrawsItsClass(unittest.TestCase):
         js = ("var own = Object.prototype.hasOwnProperty;\n"
               "function esc(s){ return String(s == null ? '' : s).replace(/[&<>\"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]; }); }\n"
               + self.src[i:j] + "\nprocess.stdout.write(JSON.stringify([_chxCrest('Sorceress', false), _chxCrest('paladin', true), "
-              "_chxCrest('Monk', false), _chxCrest('', false)]));")
+              "_chxCrest('Monk', false), _chxCrest('', false), _chxCrest('Warlock', true), _chxCrest('Paladin', false)]));")
         r = subprocess.run([NODE, "-"], input=js, capture_output=True, text=True, timeout=60)
         self.assertEqual(r.returncode, 0, r.stderr[-800:])
-        sorc, pal, monk, none = json.loads(r.stdout)
+        sorc, pal, monk, none, wl_main, pal_card = json.loads(r.stdout)
+        # v3899 (#154) - only a MAIN wears the geared figure, and a class with none (the Warlock) keeps its bare one
+        self.assertIn('src="art/d2rw_cls_paladin.webp"', pal_card, "a card that is not the MAIN wears the geared figure")
+        self.assertIn('src="art/d2rw_cls_warlock.webp"', wl_main, "a Warlock MAIN lost its figure (it has no geared one)")
         self.assertIn('src="art/d2rw_cls_sorceress.webp"', sorc)
         self.assertNotIn("chx-crest-main", sorc, "a card that is not the MAIN wears the gold frame")
-        self.assertIn('src="art/d2rw_cls_paladin.webp"', pal, "a class spelled in lower case found no figure")
+        self.assertIn('src="art/d2cls_geared_paladin.gif"', pal, "a class spelled in lower case found no figure, or a MAIN "
+                      "lost its geared figure (v3899 #154)")
         self.assertIn("chx-crest-main", pal, "the MAIN's figure has no gold frame")
         self.assertNotIn("<img", monk, "a class the map does not name drew another class's figure")
         self.assertIn(">M</span>", monk)
@@ -89,6 +102,11 @@ class ACharacterCardDrawsItsClass(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3899 (#154) - a MAIN draws its bare starting figure again, never its geared one",
+     "file": "bible.html",
+     "find": "    if (isMain && own.call(_CHX_CLASS_GEARED, k)) src = _CHX_CLASS_GEARED[k];   /* v3899 (#154) - a MAIN, geared */\n",
+     "replace": "",
+     "matches": 1, "needs": "node"},
     {"why": "v3887 (#154) - the in-game card draws its bare letter again",
      "file": "bible.html",
      "find": "      + '<div class=\"chx-top\">' + _chxCrest(t.cls, false)\n",
