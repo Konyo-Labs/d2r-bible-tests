@@ -51,5 +51,30 @@ class TheLawHolds(unittest.TestCase):
         self.assertIn("require('playwright')", src)
 
 
+
+class TheRehearsalRunsAChangedLawByItsGate(unittest.TestCase):
+    """v3895 - MEASURED 11-11 01:52: the box rehearsal passed changed law FILE stems to run_gates --only, and the registry
+    refused 'test_a_version_is_never_banked_into_a_graded_tree' (its gate is test_version_not_banked_into_graded_tree) - the
+    whole rehearsal stopped on a name, not a red"""
+
+    def test_a_changed_file_maps_to_the_gate_that_runs_it(self):
+        import preship as PS
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        gates, unmapped = PS.gates_for_files(root, ["test_a_version_is_never_banked_into_a_graded_tree"])
+        self.assertEqual(gates, ["test_version_not_banked_into_graded_tree"], "a changed law was asked by its file name")
+        self.assertEqual(unmapped, [])
+        self.assertEqual(PS.gates_for_files(root, ["test_no_such_law_file_exists"])[1], ["test_no_such_law_file_exists"],
+                         "a law no gate runs was not named")
+
+
+
+RED_PROOF = [
+    {"why": "v3895 - the rehearsal asks a changed law by its FILE name again (the registry refuses every renamed gate)",
+     "file": "tv/preship.py",
+     "find": "        hit = [g.name for g in rg.GATES if any(os.path.basename(str(a)) == st + \".py\" for a in (getattr(g, \"argv\", None) or []))]\n",
+     "replace": "        hit = [g.name for g in rg.GATES if g.name == st]\n",
+     "matches": 1},
+]
+
 if __name__ == "__main__":
     unittest.main()

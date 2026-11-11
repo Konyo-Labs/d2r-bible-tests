@@ -309,6 +309,25 @@ def _changed_test_stems(root):
     return names, base
 
 
+def gates_for_files(root, stems):
+    """v3895 - the GATE names that run these changed law files. -> (gates, unmapped stems). A gate's name is not always its
+    file's (test_a_version_is_never_banked_into_a_graded_tree.py runs as test_version_not_banked_into_graded_tree), and
+    passing file stems to `run_gates --only` refused the whole rehearsal on the first such law (v3895, 11-11 01:52)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("run_gates_for_preship", os.path.join(root, "tv", "run_gates.py"))
+    rg = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rg)
+    gates, unmapped = [], []
+    for st in stems:
+        hit = [g.name for g in rg.GATES if any(os.path.basename(str(a)) == st + ".py" for a in (getattr(g, "argv", None) or []))]
+        if not hit:
+            unmapped.append(st)
+        for n in hit:
+            if n not in gates:
+                gates.append(n)
+    return gates, unmapped
+
+
 def check_changed(root, timeout=CHANGED_TIMEOUT_S, **_):
     script = os.path.join(root, "tv", "run_gates.py")
     if not os.path.isfile(script):
@@ -316,6 +335,14 @@ def check_changed(root, timeout=CHANGED_TIMEOUT_S, **_):
     stems, base = _changed_test_stems(root)
     if not stems:
         return 0, "no changed agent tests vs %s" % (base or "the branch point")
+    try:
+        gates, unmapped = gates_for_files(root, stems)
+    except Exception as e:
+        return 2, "the changed laws could not be mapped to their gates (%s) - UNKNOWN" % type(e).__name__
+    if unmapped:
+        return 1, ("%d changed law file(s) are run by NO registered gate (%s) - register them in tv/run_gates.py"
+                   % (len(unmapped), ", ".join(unmapped[:4])))
+    stems = gates
     cmd = [_py(root), script, "--only"] + stems
     p = _run(cmd, root, timeout)
     if p.returncode == 0:

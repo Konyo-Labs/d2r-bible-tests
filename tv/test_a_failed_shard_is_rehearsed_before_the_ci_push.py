@@ -113,6 +113,7 @@ class TheProofsNameOnePlace(unittest.TestCase):
             self.assertNotIn('"failed_shards"', after[start:end], p["why"])
 
 
+
 RED_PROOF = [
     {"why": "REG-3647 - failed_shards drops out of the box rehearsal order",
      "file": "tv/preship.py",
