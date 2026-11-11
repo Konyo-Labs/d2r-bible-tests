@@ -1,5 +1,5 @@
 {
- "_why": "#89/#91 (his 11-06 asks: 'a .GIF for coldcrow just like it is here', 'unified across the platform and rendering the same'). One sprite per monster, the same file in D2IO_ART (every artUrl/artOr surface) and in Quick wins' _QW_SU_ART. Source order: diablo.fandom.com's '<Name> (Diablo II).gif' (his example), else rankedboost.com's assets/boss/<Name>.gif (the same classic sprites: Coldcrow is byte-for-byte the same 57x73, 13 frames on both). Every one was looked at, enlarged where small, before it was used. | v3877 #102 (his 11-07 'render just the monster not the area behind it'): the act bosses' sprites joined - fandom first (Andariel, Baal, Mephisto), rankedboost otherwise (Diablo, Duriel, Nihlathak, Pindleskin); each looked at on a contact sheet before it entered the page. | v3899 #91 (REG-3961, GrokBot): 'no sprite on either source' was a CASE miss on rankedboost - 'Lord de Seis.gif', 'Treehead Woodfist.gif' and 'Blood Witch the Wild.gif' are there, and 'The Countess.gif' (13 frames, 38x87) too; all four were opened and added. Hell Bovine stays sprite-less (no file on either source). Two monsters still share bytes: see sharedSprite.",
+ "_why": "#89/#91 (his 11-06 asks: 'a .GIF for coldcrow just like it is here', 'unified across the platform and rendering the same'). One sprite per monster, the same file in D2IO_ART (every artUrl/artOr surface) and in Quick wins' _QW_SU_ART. Source order: diablo.fandom.com's '<Name> (Diablo II).gif' (his example), else rankedboost.com's assets/boss/<Name>.gif (the same classic sprites: Coldcrow is byte-for-byte the same 57x73, 13 frames on both). Every one was looked at, enlarged where small, before it was used. | v3877 #102 (his 11-07 'render just the monster not the area behind it'): the act bosses' sprites joined - fandom first (Andariel, Baal, Mephisto), rankedboost otherwise (Diablo, Duriel, Nihlathak, Pindleskin); each looked at on a contact sheet before it entered the page. | v3899 #91 (REG-3961, GrokBot): 'no sprite on either source' was a CASE miss on rankedboost - 'Lord de Seis.gif', 'Treehead Woodfist.gif' and 'Blood Witch the Wild.gif' are there, and 'The Countess.gif' (13 frames, 38x87) too; all four were opened and added. Hell Bovine stays sprite-less (no file on either source). Two monsters still share bytes: see sharedSprite. | v3899 #91b (REG-3963, GrokBot, his 11-11 ruling 'give each priest its own picture'): the six Travincal Council priests each wear THEIR OWN in-game capture from The Arreat Summit's Act III super-unique page (each named there; the full capture carries its in-game name plate), six different byte sets, none Bartuc's and none the shared councilmember_graphic.png. rankedboost's six council GIFs are Bartuc's bytes; see rejected.",
  "pulledAt": "2026-11-06",
  "sprites": [
   {
@@ -608,6 +608,138 @@
    "bytes": 24576,
    "depicts": "Animated sprite (83x96, 8 frames): a huge hunched shaggy brown Brute with mossy green flecks, a pale bare chest and long clawed orange hands, transparent ground. Treehead WoodFist.",
    "opened": "2026-11-11 by GrokBot: every 2nd-3rd frame enlarged 4x on grey before it entered art/ (v3899 #91)"
+  },
+  {
+   "name": "Ismail Vilehand",
+   "ids": [],
+   "file": "art/d2mon_Ismail_Vilehand.gif",
+   "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/ismail.gif",
+   "sha1": "67361710499dd4ef27ceaae5c476e787f1795ce4",
+   "bytes": 29429,
+   "depicts": "In-game capture (200x150, static, framed close-up): a tight knot of grey-skinned Council Members in red loincloths and spiked dark shoulder-armour - Ismail among his three minions - on Travincal's stone floor. The Arreat Summit's Act III super-unique page names it 'Ismail Vilehand (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Ismail Vilehand' and the mod line 'Extra Fast Cursed'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
+   "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
+   "fetchedFrom": "https://web.archive.org/web/20120626215659id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/ismail.gif",
+   "capture": {
+    "file": "art/d2cap_Ismail_Vilehand.jpg",
+    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/ismail.jpg",
+    "fetchedFrom": "https://web.archive.org/web/20140811084756id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/ismail.jpg",
+    "sha1": "8abaa2472220b707e8a624c4deee15b836255a64",
+    "bytes": 67113,
+    "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Ismail Vilehand' with 'Extra Fast Cursed' under it, the priest on screen."
+   },
+   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
+  },
+  {
+   "name": "Toorc Icefist",
+   "ids": [],
+   "file": "art/d2mon_Toorc_Icefist.gif",
+   "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/toorc.gif",
+   "sha1": "509d5cdd1a201544bb2daef487681b880a8cf0da",
+   "bytes": 29363,
+   "depicts": "In-game capture (200x150, static, framed close-up): a gaunt orange-tinted Council Member lunging, claw raised, at a dark-armoured hero wreathed in red-white lightning, on grey flagstones. The Arreat Summit's Act III super-unique page names it 'Toorc Icefist (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Toorc Icefist' and the mod line 'Cold Enchanted Stone Skin'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
+   "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
+   "fetchedFrom": "https://web.archive.org/web/20120626215658id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/toorc.gif",
+   "capture": {
+    "file": "art/d2cap_Toorc_Icefist.jpg",
+    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/toorc.jpg",
+    "fetchedFrom": "https://web.archive.org/web/20210221003147id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/toorc.jpg",
+    "sha1": "7839122460330c7d5e59f97154753cea5adfed22",
+    "bytes": 80617,
+    "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Toorc Icefist' with 'Cold Enchanted Stone Skin' under it, the priest on screen."
+   },
+   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
+  },
+  {
+   "name": "Geleb Flamefinger",
+   "ids": [],
+   "file": "art/d2mon_Geleb_Flamefinger.gif",
+   "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/geleb.gif",
+   "sha1": "4f0b53c44056e832953243d6e2128139ea99984a",
+   "bytes": 29475,
+   "depicts": "In-game capture (200x150, static, framed close-up): a Council Member in a red loincloth and spiked dark shoulder-armour hunched over a pool of blood, a dark hero standing at his side. The Arreat Summit's Act III super-unique page names it 'Geleb Flamefinger (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Geleb Flamefinger' and the mod line 'Extra Strong Fire Enchanted'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
+   "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
+   "fetchedFrom": "https://web.archive.org/web/20120626215659id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/geleb.gif",
+   "capture": {
+    "file": "art/d2cap_Geleb_Flamefinger.jpg",
+    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/geleb.jpg",
+    "fetchedFrom": "https://web.archive.org/web/20140811084637id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/geleb.jpg",
+    "sha1": "27b65f2743cde031915eaac7d37578b838abe42a",
+    "bytes": 62984,
+    "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Geleb Flamefinger' with 'Extra Strong Fire Enchanted' under it, the priest on screen."
+   },
+   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
+  },
+  {
+   "name": "Bremm Sparkfist",
+   "ids": [],
+   "file": "art/d2mon_Bremm_Sparkfist.gif",
+   "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/bremm.gif",
+   "sha1": "fb8e300227ac6665c86d139e48855eb9d386bc9e",
+   "bytes": 26644,
+   "depicts": "In-game capture (200x150, static, framed close-up): a Council Member in a red loincloth striding forward on a blood-red floor with dark figures behind him. The Arreat Summit's Act III super-unique page names it 'Bremm Sparkfist (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Bremm Sparkfist' and the mod line 'Aura Enchanted Lightning Enchanted'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
+   "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
+   "fetchedFrom": "https://web.archive.org/web/20120626215658id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/bremm.gif",
+   "capture": {
+    "file": "art/d2cap_Bremm_Sparkfist.jpg",
+    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/bremm.jpg",
+    "fetchedFrom": "https://web.archive.org/web/20140811084640id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/bremm.jpg",
+    "sha1": "d87780ed258be51231ca1871bc232a8cbef80d53",
+    "bytes": 55299,
+    "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Bremm Sparkfist' with 'Aura Enchanted Lightning Enchanted' under it, the priest on screen."
+   },
+   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
+  },
+  {
+   "name": "Wyand Voidbringer",
+   "ids": [],
+   "file": "art/d2mon_Wyand_Voidbringer.gif",
+   "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/wyand.gif",
+   "sha1": "f6977f916e37ce3843eb65e60ac15702c3eeae30",
+   "bytes": 31354,
+   "depicts": "In-game capture (200x150, static, framed close-up): a lone gaunt Council Member standing upright with one arm raised, a brazier burning at the top left. The Arreat Summit's Act III super-unique page names it 'Wyand Voidbringer (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Wyand Voidbringer' and the mod line 'Mana Burn Teleportation'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
+   "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
+   "fetchedFrom": "https://web.archive.org/web/20120626215659id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/wyand.gif",
+   "capture": {
+    "file": "art/d2cap_Wyand_Voidbringer.jpg",
+    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/wyand.jpg",
+    "fetchedFrom": "https://web.archive.org/web/20210221003143id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/wyand.jpg",
+    "sha1": "5b9e56e8479712b89becc15dff286a07c403248e",
+    "bytes": 56455,
+    "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Wyand Voidbringer' with 'Mana Burn Teleportation' under it, the priest on screen."
+   },
+   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
+  },
+  {
+   "name": "Maffer Dragonhand",
+   "ids": [],
+   "file": "art/d2mon_Maffer_Dragonhand.gif",
+   "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
+   "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/mafferdragonhand.gif",
+   "sha1": "0e66d64924604cb561ac777b853b8ab437682111",
+   "bytes": 31188,
+   "depicts": "In-game capture (200x150, static, framed close-up): a pale Council Member in a red loincloth crouched and swinging at a dark-armoured hero, blood splashed on the dark floor. The Arreat Summit's Act III super-unique page names it 'Maffer Dragonhand (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Maffer Dragonhand' and the mod line 'Extra Strong Extra Fast'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
+   "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
+   "fetchedFrom": "https://web.archive.org/web/20120626215659id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/mafferdragonhand.gif",
+   "capture": {
+    "file": "art/d2cap_Maffer_Dragonhand.jpg",
+    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/mafferdragonhand.jpg",
+    "fetchedFrom": "https://web.archive.org/web/20210221003148id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/mafferdragonhand.jpg",
+    "sha1": "c038dacfa915ac0c693cd08d528210033aea5582",
+    "bytes": 48459,
+    "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Maffer Dragonhand' with 'Extra Strong Extra Fast' under it, the priest on screen."
+   },
+   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
   }
  ],
  "rejected": [
@@ -639,6 +771,30 @@
    "site": "diablo.fandom.com",
    "file": "Councilmember.gif",
    "why": "a 125x150 sprite on a SOLID BLACK box (no transparency) - the box is the mess he asked to remove (v3877 #102)"
+  },
+  {
+   "name": "Ismail Vilehand / Toorc Icefist / Geleb Flamefinger / Bremm Sparkfist / Wyand Voidbringer / Maffer Dragonhand",
+   "site": "rankedboost.com",
+   "file": "<Name>.gif (all six)",
+   "why": "v3899 #91b: all six names return the SAME 11055-byte GIF, sha1 1bb82681809b55c9959778cba0df947e3a3abd94 - Bartuc the Bloody's exact bytes. Never used for a priest."
+  },
+  {
+   "name": "Ismail Vilehand / Bremm Sparkfist / Toorc Icefist+Maffer Dragonhand / Geleb Flamefinger+Wyand Voidbringer",
+   "site": "diablo.fandom.com",
+   "file": "'<Name> Unused.png' (4 files)",
+   "why": "v3899 #91b: 'unused colour' stills from the game files (the wiki's own caption), solid black box, and two of the four are ONE file for two priests (Toorc+Maffer, Geleb+Wyand) - not what the game draws and not six pictures."
+  },
+  {
+   "name": "Ismail / Geleb / Bremm / Wyand / Maffer",
+   "site": "diablo.fandom.com",
+   "file": "'Ismail the Accursed.png', 'Geleb the Flame.png', 'Bremm the Maelstrom.png', 'Wyand the Shadow.png', 'Maffer the Cruel.png'",
+   "why": "v3899 #91b: large renders of the later games' versions of these characters (the infobox image on the priests' redirected pages), not Diablo II; no Toorc at all."
+  },
+  {
+   "name": "all six priests",
+   "site": "diablo2.io / diablo-archive.fandom.com / diablo.fandom.com",
+   "file": "councilmember_graphic.png / 'Council Member (Diablo II).gif' / Councilmember.gif",
+   "why": "v3899 #91b: every priest page on these three shows the one shared Council Member picture."
   }
  ],
  "noSpriteFound": [
