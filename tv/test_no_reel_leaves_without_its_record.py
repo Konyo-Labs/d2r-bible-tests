@@ -34,7 +34,7 @@ console_safe.enable()
 
 import reel_retention as RR  # noqa: E402
 
-REELS = ("reel_s_1700000000000_00001", "reel_s_1700000100000_00002")
+REELS = ("reel_s_1500000000000_00001", "reel_s_1500000100000_00002")
 
 
 class _Shelf(object):
@@ -48,7 +48,7 @@ class _Shelf(object):
         self.hist = os.path.join(self.tmp, "hist")
         for r in REELS:
             os.makedirs(os.path.join(self.hist, r))
-            for f in ("f_1700000000.jpg", "f_1700000001.jpg", "index.json"):
+            for f in ("f_1500000000.jpg", "f_1500000001.jpg", "index.json"):
                 with io.open(os.path.join(self.hist, r, f), "w") as fh:
                     fh.write("x")
         self._env = os.environ.get("TV_HIST")
@@ -125,7 +125,7 @@ class TheDiskFloorSaysWhenItsRecordFails(unittest.TestCase):
         TVD._reap_log_path = lambda *a, **k: path
         try:
             with contextlib.redirect_stdout(buf):
-                ok = TVD._reap_record("reel_s_1700000000000_00009", 3, True, 5)
+                ok = TVD._reap_record("reel_s_1500000000000_00009", 3, True, 5)
         finally:
             TVD._reap_log_path = real
         return ok, buf.getvalue()
@@ -138,7 +138,7 @@ class TheDiskFloorSaysWhenItsRecordFails(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
         self.assertIs(ok, False)
         self.assertIn("REAP RECORD NOT WRITTEN", said, "a reap-log line that failed to write was swallowed again")
-        self.assertIn("reel_s_1700000000000_00009", said, "the loud line does not name the reel that went")
+        self.assertIn("reel_s_1500000000000_00009", said, "the loud line does not name the reel that went")
 
     def test_baseline_a_writable_reap_log_gets_its_line(self):
         tmp = tempfile.mkdtemp(prefix="reaplog_")
@@ -151,7 +151,7 @@ class TheDiskFloorSaysWhenItsRecordFails(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
         self.assertIs(ok, True)
         self.assertNotIn("REAP RECORD NOT WRITTEN", said)
-        self.assertEqual((row.get("reel"), row.get("removed")), ("reel_s_1700000000000_00009", True))
+        self.assertEqual((row.get("reel"), row.get("removed")), ("reel_s_1500000000000_00009", True))
 
 
 RED_PROOF = [
