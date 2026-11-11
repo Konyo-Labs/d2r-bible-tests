@@ -70,6 +70,15 @@ row carries "author" - None when the page named no seller, never invented; a lat
 clears a known seller (ingest too). A post without a price or link is skipped whole and counted (190 linkless rows).
 Law: test_the_d2jsp_backfill_imports_once_with_its_sellers. Seen RED x3.
 
+### REG-3971 - A MAIN COULD ONLY WEAR ITS CLASS'S BARE STARTING LOOK: "NO SITE SERVES A GEARED VARIANT" WAS NOT SO (v3899 #154, GrokBot)
+tv/data/class_art.json (v3887) gave each class d2runewizard's idle loop in its starting outfit and recorded that no site serves
+a geared variant per class. diablo-archive.fandom.com's Diablo II build pages carry in-game animated GIFs of geared characters:
+Javazon (Amazon), Tiger Claw Sin (Assassin), Frenzy Barbarian, Werewolf Druid, Poison & Bone Necromancer, Avenger (Paladin),
+ChainHydra Sorceress. Each was downloaded as the ORIGINAL GIF (?format=original - the bare CDN URL answers WebP under a .gif
+name, which a frame count caught), its sha1 equal to the wiki's own, opened, and shipped as art/d2cls_geared_<class>.gif with
+art/class_geared.manifest.json (depicts, sha256, page, URL, stated licence). The Warlock (a D2R-only class) has none: the
+manifest says NONE and what was searched. Not wired (bible.html and the console untouched); Claude wires the card. Law:
+test_a_main_has_a_geared_figure_per_class. Seen RED.
 ### REG-3700 - THE BOARD'S TV-D LINK KEPT :17771 AFTER IT LEARNED THE AGENT'S REAL PORT (v3896 round 2, the Mac rehearsal)
 MEASURED 11-11 10:10: v3896's Mac rehearsal went RED on changed_tests - test_button_matrix (changed by REG-3670) failed on his
 Mac first for a missing browser (Python Playwright 1.55 wants Chromium 1187, which a Node Playwright install had removed -

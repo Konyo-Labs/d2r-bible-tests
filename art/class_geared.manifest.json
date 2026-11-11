@@ -1,0 +1,139 @@
+{
+  "_what": "v3899 #154 (REG-3971, GrokBot on a grok/ branch) - a GEARED figure per class for a MAIN's card: each class's animated in-game sprite wearing armour, not the bare starting outfit tv/data/class_art.json's d2rw_cls_* loops show. Each file was downloaded, opened and read before it entered art/; sha256 pins the bytes that were read. NOT WIRED: bible.html and the console are untouched, Claude wires the card. tv/test_a_main_has_a_geared_figure_per_class.py guards this file.",
+  "_why": "His 11-08 card #154 (a MAIN should look geared); class_art.json said 'no site serves a geared variant per class (measured 11-08)'. diablo-archive.fandom.com's Diablo II build pages carry in-game GIFs of geared characters for seven of the eight classes.",
+  "pulledAt": "2026-11-11",
+  "classes": [
+    {
+      "class": "Amazon",
+      "file": "d2cls_geared_amazon.gif",
+      "bytes": 10510,
+      "sha256": "1b6c37ba8b3b5e512c677f5f711105ac8d52295129d10bda3b869417c23507e6",
+      "frames": 8,
+      "size": "31x90",
+      "depicts": "Animated in-game sprite: an Amazon in full bronze-gold plate - a crested helm, plated pauldrons, greaves - a large round dark shield on her left arm and a javelin raised in her right hand, transparent ground. Geared, not the starting red tunic.",
+      "site": "diablo-archive.fandom.com",
+      "page": "https://diablo-archive.fandom.com/wiki/Javazon_by_lMarcusl",
+      "fileTitle": "File:Javazon.gif",
+      "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/9/92/Javazon.gif/revision/latest?format=original",
+      "licence": "No licence on the file page (it carries only [[Category:Diablo II Character Images]] or nothing); the wiki's stated site licence is CC BY-NC-SA (fandom.com/licensing, read 2026-11-11 from the wiki's siteinfo). The pixels are Blizzard's Diablo II game art (copyright Blizzard Entertainment), captured in game by the uploader LMarcusl.",
+      "opened": "2026-11-11 by GrokBot: every frame-step enlarged 3x on grey and read before it entered art/ (v3899 #154); the ORIGINAL GIF (?format=original - the bare URL is re-encoded to WebP by the CDN), its sha1 equal to the wiki's own imageinfo sha1",
+      "sourceSha1": "1446f13d65b107d7ea813047c64a582985a30e9a"
+    },
+    {
+      "class": "Assassin",
+      "file": "d2cls_geared_assassin.gif",
+      "bytes": 9748,
+      "sha256": "093083e6558adef11bfc98d121c53a7cfd1b542fa62c1940bca0776a6f060b9d",
+      "frames": 8,
+      "size": "32x83",
+      "depicts": "Animated in-game sprite: an Assassin in black full plate with a horned helm, a katar claw on each hand, transparent ground. Geared, not the starting silver breastplate and empty hands.",
+      "site": "diablo-archive.fandom.com",
+      "page": "https://diablo-archive.fandom.com/wiki/Tiger_Claw_Sin_by_lMarcusl",
+      "fileTitle": "File:Tiger Claw.gif",
+      "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/1/1b/Tiger_Claw.gif/revision/latest?format=original",
+      "licence": "No licence on the file page (it carries only [[Category:Diablo II Character Images]] or nothing); the wiki's stated site licence is CC BY-NC-SA (fandom.com/licensing, read 2026-11-11 from the wiki's siteinfo). The pixels are Blizzard's Diablo II game art (copyright Blizzard Entertainment), captured in game by the uploader LMarcusl.",
+      "opened": "2026-11-11 by GrokBot: every frame-step enlarged 3x on grey and read before it entered art/ (v3899 #154); the ORIGINAL GIF (?format=original - the bare URL is re-encoded to WebP by the CDN), its sha1 equal to the wiki's own imageinfo sha1",
+      "sourceSha1": "6199033aeb54ba1ed246ddb474c3676fab8e34e9"
+    },
+    {
+      "class": "Barbarian",
+      "file": "d2cls_geared_barbarian.gif",
+      "bytes": 17355,
+      "sha256": "b67aec632c0033f5d7cfdb9528249aa80a2b75411193eea1b3963116aff69989",
+      "frames": 8,
+      "size": "58x94",
+      "depicts": "Animated in-game sprite: a Barbarian in dark gold-trimmed plate with a red cap-helm and a long sword held up in his right hand, transparent ground. Geared, not the bare-chested starting look.",
+      "site": "diablo-archive.fandom.com",
+      "page": "https://diablo-archive.fandom.com/wiki/Frenzy_Barbarian_by_lMarcusl",
+      "fileTitle": "File:Frenzy Barb.gif",
+      "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/3/3c/Frenzy_Barb.gif/revision/latest?format=original",
+      "licence": "No licence on the file page (it carries only [[Category:Diablo II Character Images]] or nothing); the wiki's stated site licence is CC BY-NC-SA (fandom.com/licensing, read 2026-11-11 from the wiki's siteinfo). The pixels are Blizzard's Diablo II game art (copyright Blizzard Entertainment), captured in game by the uploader LMarcusl.",
+      "opened": "2026-11-11 by GrokBot: every frame-step enlarged 3x on grey and read before it entered art/ (v3899 #154); the ORIGINAL GIF (?format=original - the bare URL is re-encoded to WebP by the CDN), its sha1 equal to the wiki's own imageinfo sha1",
+      "sourceSha1": "d2292d32756d9a1cde012cb389224995edb32e66"
+    },
+    {
+      "class": "Druid",
+      "file": "d2cls_geared_druid.gif",
+      "bytes": 9554,
+      "sha256": "08b7d43806fccb036538aef510680c1503edc561921e52e9d777e529dd6fc37d",
+      "frames": 6,
+      "size": "43x84",
+      "depicts": "Animated in-game sprite: a Druid in human form wearing dark grey plate with gold-mesh legs and a wolf-pelt helm, a long hooked polearm across his body, transparent ground. Geared, not the starting fur mantle and empty hands.",
+      "site": "diablo-archive.fandom.com",
+      "page": "https://diablo-archive.fandom.com/wiki/Werewolf_Druid_by_lMarcusl",
+      "fileTitle": "File:Weredruid.gif",
+      "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/3/37/Weredruid.gif/revision/latest?format=original",
+      "licence": "No licence on the file page (it carries only [[Category:Diablo II Character Images]] or nothing); the wiki's stated site licence is CC BY-NC-SA (fandom.com/licensing, read 2026-11-11 from the wiki's siteinfo). The pixels are Blizzard's Diablo II game art (copyright Blizzard Entertainment), captured in game by the uploader LMarcusl.",
+      "opened": "2026-11-11 by GrokBot: every frame-step enlarged 3x on grey and read before it entered art/ (v3899 #154); the ORIGINAL GIF (?format=original - the bare URL is re-encoded to WebP by the CDN), its sha1 equal to the wiki's own imageinfo sha1",
+      "sourceSha1": "2bb90295427d3c01d5e2346c4ebcd26ec4a0cb83"
+    },
+    {
+      "class": "Necromancer",
+      "file": "d2cls_geared_necromancer.gif",
+      "bytes": 12081,
+      "sha256": "740d853e7da89f078ba4f1107116cc37ba2424345437b5b6d6f228fd8eba0922",
+      "frames": 8,
+      "size": "47x76",
+      "depicts": "Animated in-game sprite: a pale Necromancer in grey plate and spiked pauldrons over red legs, a curved wand in his right hand and a dark kite shield on his left, transparent ground. Geared, not the starting robe.",
+      "site": "diablo-archive.fandom.com",
+      "page": "https://diablo-archive.fandom.com/wiki/Poison_%26_Bone_Necromancer_by_lMarcusl",
+      "fileTitle": "File:Bone Necro.gif",
+      "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/5/5c/Bone_Necro.gif/revision/latest?format=original",
+      "licence": "No licence on the file page (it carries only [[Category:Diablo II Character Images]] or nothing); the wiki's stated site licence is CC BY-NC-SA (fandom.com/licensing, read 2026-11-11 from the wiki's siteinfo). The pixels are Blizzard's Diablo II game art (copyright Blizzard Entertainment), captured in game by the uploader LMarcusl.",
+      "opened": "2026-11-11 by GrokBot: every frame-step enlarged 3x on grey and read before it entered art/ (v3899 #154); the ORIGINAL GIF (?format=original - the bare URL is re-encoded to WebP by the CDN), its sha1 equal to the wiki's own imageinfo sha1",
+      "sourceSha1": "707d708d388bbbfd68d7079baf31886126c66cb0"
+    },
+    {
+      "class": "Paladin",
+      "file": "d2cls_geared_paladin.gif",
+      "bytes": 12982,
+      "sha256": "2ea6bbb05c518d9b641b63677da6a77b8273ceb656f8ccb075a37233943e7d2a",
+      "frames": 8,
+      "size": "38x89",
+      "depicts": "Animated in-game sprite: a Paladin in black-and-gold full plate with a tall horned helm, a white-rimmed heraldic shield on his left arm and a short weapon in his right hand, transparent ground. Geared, not the starting look.",
+      "site": "diablo-archive.fandom.com",
+      "page": "https://diablo-archive.fandom.com/wiki/Avenger_by_lMarcusl",
+      "fileTitle": "File:Avenger.gif",
+      "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/0/0f/Avenger.gif/revision/latest?format=original",
+      "licence": "No licence on the file page (it carries only [[Category:Diablo II Character Images]] or nothing); the wiki's stated site licence is CC BY-NC-SA (fandom.com/licensing, read 2026-11-11 from the wiki's siteinfo). The pixels are Blizzard's Diablo II game art (copyright Blizzard Entertainment), captured in game by the uploader LMarcusl.",
+      "opened": "2026-11-11 by GrokBot: every frame-step enlarged 3x on grey and read before it entered art/ (v3899 #154); the ORIGINAL GIF (?format=original - the bare URL is re-encoded to WebP by the CDN), its sha1 equal to the wiki's own imageinfo sha1",
+      "sourceSha1": "800f3cf92592929d479b23465257fc13520b6cee"
+    },
+    {
+      "class": "Sorceress",
+      "file": "d2cls_geared_sorceress.gif",
+      "bytes": 11693,
+      "sha256": "f1ec4a347ce1775249ddce30f2426c14eb6b671a09ec643d8fd945915a27c70b",
+      "frames": 8,
+      "size": "58x76",
+      "depicts": "Animated in-game sprite: a Sorceress in olive-green and bronze plate with a horned helm, a long orange-tipped staff held diagonally, transparent ground. Geared, not the starting green dress.",
+      "site": "diablo-archive.fandom.com",
+      "page": "https://diablo-archive.fandom.com/wiki/ChainHydra_Sorceress_by_lMarcusl",
+      "fileTitle": "File:Lightning Hydra Sorc.gif",
+      "url": "https://static.wikia.nocookie.net/diablo_gamepedia/images/a/a3/Lightning_Hydra_Sorc.gif/revision/latest?format=original",
+      "licence": "No licence on the file page (it carries only [[Category:Diablo II Character Images]] or nothing); the wiki's stated site licence is CC BY-NC-SA (fandom.com/licensing, read 2026-11-11 from the wiki's siteinfo). The pixels are Blizzard's Diablo II game art (copyright Blizzard Entertainment), captured in game by the uploader LMarcusl.",
+      "opened": "2026-11-11 by GrokBot: every frame-step enlarged 3x on grey and read before it entered art/ (v3899 #154); the ORIGINAL GIF (?format=original - the bare URL is re-encoded to WebP by the CDN), its sha1 equal to the wiki's own imageinfo sha1",
+      "sourceSha1": "889b6bd83088533a91ebede1301413f5a11941e0"
+    }
+  ],
+  "none": {
+    "Warlock": "NONE FOUND (searched 2026-11-11): the Warlock is a D2R class (Reign of the Warlock, Feb 2026) with no legacy 2D sprite; the sources that show him in armour are screenshots and armour-comparison galleries (Blizzard press kit, reddit/imgur), not an animated in-game sprite, and diablo-archive.fandom.com has none. Nothing added; a Warlock MAIN keeps d2rw_cls_warlock.webp."
+  },
+  "rejected": [
+    {
+      "file": "Elementalist_Duid.gif",
+      "site": "diablo-archive.fandom.com",
+      "why": "a geared Druid, but on a SOLID BLACK box (no transparency) - Werewolf Druid used"
+    },
+    {
+      "file": "Sorceress_Sprite_(Diablo_II).gif",
+      "site": "diablo-archive.fandom.com",
+      "why": "the bare starting green-dress Sorceress, not geared"
+    },
+    {
+      "file": "Paladin (Heavy, Tower Shield) etc.",
+      "site": "spriters-resource.com",
+      "why": "static 2700x11437 sprite SHEETS, not an animated sprite; no licence stated"
+    }
+  ]
+}
