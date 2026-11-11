@@ -87,6 +87,21 @@ cat > "$DIST/_headers" <<'HDRS'
   Access-Control-Allow-Origin: *
 HDRS
 
+# v3900 (REG-3735, 11-11: v3898 published by hand while GitHub started none of the repo's runs) - this Mac's token cannot list
+# Cloudflare accounts (403 on memberships), so wrangler's own lookup failed and the first hand deploy refused. When
+# CLOUDFLARE_ACCOUNT_ID is not set, ask wrangler's OAuth login (the token unset) for the account it can see: exactly one is
+# used, none or several is a refusal with the reason - never a guess. CI sets the id as a repo secret and never reaches this.
+if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+  _ids="$(env -u CLOUDFLARE_API_TOKEN npx wrangler whoami 2>/dev/null | grep -oE '\b[0-9a-f]{32}\b' | sort -u)"
+  _n="$(printf '%s\n' "$_ids" | grep -c .)"
+  if [ "$_n" = "1" ]; then
+    export CLOUDFLARE_ACCOUNT_ID="$_ids"
+    echo "deploy: CLOUDFLARE_ACCOUNT_ID was not set - using the one account wrangler's own login names"
+  else
+    echo "deploy: CLOUDFLARE_ACCOUNT_ID is not set and wrangler's login names $_n account(s) - set it and re-run. Nothing deployed."
+    exit 2
+  fi
+fi
 echo "deploy: publishing to Cloudflare Pages (d2r-bible → bull-4-u.com)…"
 if npx wrangler pages deploy "$DIST" --project-name=d2r-bible --branch=main; then
   echo "deploy: ✨ live."

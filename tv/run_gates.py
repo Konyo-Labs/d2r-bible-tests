@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_hand_deploy_finds_its_one_account",
+         [sys.executable, os.path.join(HERE, "test_a_hand_deploy_finds_its_one_account.py")], 60,
+         needs_app=False,
+         why="v3900 (REG-3735) - v3898's hand deploy (GitHub started none of the repo's runs) failed: this Mac's token cannot "
+             "list Cloudflare accounts; deploy.sh asks wrangler's login for the one account, refuses on none or several"),
     Gate("test_a_reach_is_every_function_within_its_depth",
          [sys.executable, os.path.join(HERE, "test_a_reach_is_every_function_within_its_depth.py")], 60,
          needs_app=False,
