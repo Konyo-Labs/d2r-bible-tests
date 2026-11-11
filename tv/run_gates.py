@@ -13901,6 +13901,13 @@ GATES = [
              "console's stand-aside judge says yes for a push grading, a sweep reading and GitHub's import too; a proof not "
              "yet started was filed as 'he is playing on this PC' and the Fleet read 'you are playing'. The judge now carries "
              "a key with its reason and the tick files the wait under it; his game alone is 'playing'."),
+    Gate("test_a_shelf_closed_while_opening_takes_the_stage_with_it",
+         [sys.executable, os.path.join(HERE, "test_a_shelf_closed_while_opening_takes_the_stage_with_it.py")], 60,
+         needs_app=False,
+         why="v3898 (card #204, REG-3708, GrokBot's v3896 look) - the Shelf's ✕, Escape or a backdrop click during 'opening the "
+             "shelf…' hid the shelf and left the theatre's empty stage open (on his Mac it held v3897's pre-flight red): the "
+             "door's flag was set only after thOpen returned. _thShelfWasTheDoor now counts the in-flight open. Runs the "
+             "shipped rule in node."),
     Gate("test_game_names_wear_the_game_face",
          [sys.executable, os.path.join(HERE, "test_game_names_wear_the_game_face.py")], 60,
          needs_app=False,

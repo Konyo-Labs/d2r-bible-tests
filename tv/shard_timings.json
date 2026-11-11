@@ -6623,6 +6623,10 @@
       "s": 1.437,
       "src": "median"
     },
+    "test_a_shelf_closed_while_opening_takes_the_stage_with_it": {
+      "s": 1.437,
+      "src": "median"
+    },
     "test_game_names_wear_the_game_face": {
       "s": 1.437,
       "src": "measured"

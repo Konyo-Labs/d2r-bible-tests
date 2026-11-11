@@ -22060,7 +22060,12 @@ window._lockMark = function(isOpen, px, label){
     } catch (_e) { return false; }
   }
   function _thShelfWasTheDoor(){
-    try { return !!TH.shelfIsDoor; } catch (e) { return false; }
+    /* v3898 (card #204, GrokBot's v3896 look 11-11) - WHILE THE DOOR'S OPEN IS STILL IN FLIGHT, THE SHELF IS THE DOOR TOO.
+       shelfIsDoor is set only after `await thOpen()` returns, so during "opening the shelf…" it was false and the shelf's ✕,
+       Escape or a click outside hid the shelf and left the theatre's empty stage ("THEATRE · SESSION 1 · PAST REPLAY") open
+       - on his Mac the live-panel gate read it red at 13:4x and held v3897's pre-flight. TH.shelfOpening covers exactly that
+       wait: set before thOpen, cleared in the door handler's finally. Every exit asks this one rule. */
+    try { return !!(TH.shelfIsDoor || TH.shelfOpening); } catch (e) { return false; }
   }
   function thShelfToggle(){
     /* REG-1944 (the #231 eye on v3570) - THE THIRD AND FOURTH WAY OUT OF THE SHELF. ✕, Esc and a click

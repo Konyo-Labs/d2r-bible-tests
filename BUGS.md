@@ -50,6 +50,11 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3708 - A SHELF CLOSED WHILE "OPENING THE SHELF…" LEFT THE THEATRE'S EMPTY STAGE OPEN (v3898, card #204, GrokBot 11-11)
+GrokBot's v3896 look: ✕ during "opening the shelf…" left "THEATRE · SESSION 1 · PAST REPLAY" on his Mac; the live-panel
+gate read it red at 13:4x and held v3897's pre-flight until it was closed. The door handler set TH.shelfIsDoor only after
+`await thOpen()`, so every exit (✕, Escape, backdrop, toggle) read "not the door" during the wait. _thShelfWasTheDoor now
+counts TH.shelfOpening. Law: test_a_shelf_closed_while_opening_takes_the_stage_with_it.
 ### REG-3707 - THE FLEET SAID "YOU ARE PLAYING" ON HIS MACBOOK WHILE A PUSH WAS GRADING (v3898, card #207, his 11-11 report)
 His words 13:19: "for konyo me on my macbook it says in fleet im playing.. thats not true my alt windows pc work issta is
 though". MEASURED on his Mac 13:20: no D2R.exe (proof_playing_state False), the prover's key "playing", its stand-aside
