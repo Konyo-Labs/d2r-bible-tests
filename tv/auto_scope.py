@@ -499,19 +499,29 @@ def reachable_source(mod, name, depth=3):
     [[source-reading-guard]] [[feedback-suspect-the-instrument]]
     """
     import inspect
-    seen, out, unresolved = set(), [], []
+    # REG-3733 (v3899's pre-flight) - THE REACH WAS DECIDED BY CALL ORDER. A depth-first walk with a plain visited set never
+    # re-walks a function it first met at the bottom of a long path, so a SHORTER path met later was dropped with everything
+    # behind it: v3899 added one call to shadow_watch_tick, stop_agent was met deeper first, and _stop_capture fell out of
+    # the shadow watch's 3-hop reach (80 names -> 68) with no code removed. Each function now keeps the most depth it was
+    # reached with and is walked again when a shorter path arrives - the reach is every function within `depth` calls.
+    seen, best, out, unresolved = set(), {}, [], []
 
     def walk(fname, d):
-        if d < 0 or fname in seen:
+        if d < 0 or best.get(fname, -1) >= d:
             return
+        first = fname not in seen
         seen.add(fname)
+        best[fname] = d
         fn = getattr(mod, fname, None)
         if fn is None or not callable(fn):
             return
-        try:
-            out.append(inspect.getsource(fn))
-        except Exception:
-            unresolved.append(fname)
+        if first:
+            try:
+                out.append(inspect.getsource(fn))
+            except Exception:
+                unresolved.append(fname)
+                return
+        elif fname in unresolved:
             return
         code = getattr(fn, "__code__", None)
         if code is None:

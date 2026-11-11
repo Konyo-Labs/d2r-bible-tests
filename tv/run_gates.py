@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_reach_is_every_function_within_its_depth",
+         [sys.executable, os.path.join(HERE, "test_a_reach_is_every_function_within_its_depth.py")], 60,
+         needs_app=False,
+         why="v3899 (REG-3733) - auto_scope walked a lane's reach depth-first with a plain seen set, so a shorter path met "
+             "after a longer one was dropped: one new call in shadow_watch_tick hid _stop_capture (80 -> 68 functions)"),
     Gate("test_the_likely_reds_run_first",
          [sys.executable, os.path.join(HERE, "test_the_likely_reds_run_first.py")], 60,
          needs_app=False,
