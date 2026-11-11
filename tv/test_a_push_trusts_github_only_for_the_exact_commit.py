@@ -76,6 +76,25 @@ class TheVerdict(unittest.TestCase):
             return subprocess.CompletedProcess(argv, 1, "", "no network")
         self.assertIsNone(CV.fetch(SHA, run=fake), "a failed gh read became a list")
 
+    def test_the_jobs_come_from_the_repo_the_runs_were_listed_from(self):
+        """v3897 (REG-3703, the Grok CLI's look on v3895) - fetch(repo=...) listed one repo's runs and asked REPO_SLUG for
+        their jobs, so a database id there could attach a stranger's jobs to this commit's verdict"""
+        import json as _json
+        asked = []
+
+        def fake(argv, *a, **k):
+            asked.append(list(argv))
+            if argv[:3] == ["gh", "run", "list"]:
+                return subprocess.CompletedProcess(argv, 0, _json.dumps([
+                    {"workflowName": CV.REQUIRED[0], "name": CV.REQUIRED[0], "headSha": SHA, "status": "in_progress",
+                     "conclusion": "", "createdAt": "2026-11-11T08:00:00Z", "databaseId": 7}]), "")
+            return subprocess.CompletedProcess(argv, 0, _json.dumps({"jobs": []}), "")
+        CV.fetch(SHA, run=fake, repo="someone/else")
+        views = [c for c in asked if c[:3] == ["gh", "run", "view"]]
+        self.assertTrue(views, "PREMISE: no job list was asked for the in-progress required run")
+        self.assertTrue(all(c[c.index("--repo") + 1] == "someone/else" for c in views),
+                        "the jobs were asked from another repo than the runs: %r" % views)
+
 
 class TheProofImport(unittest.TestCase):
 
@@ -310,6 +329,11 @@ class TheShipWaitsForGitHubOnTheExactCommit(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3897 (REG-3703) - the jobs are asked from REPO_SLUG whatever repo the runs were listed from",
+     "file": "tv/ci_verdict.py",
+     "find": "    attach_required_jobs(out, sha, run, repo=repo)   # v3897 (REG-3703) - the jobs of the runs it listed\n",
+     "replace": "    attach_required_jobs(out, sha, run)\n",
+     "matches": 1},
     {"why": "v3866 - a resumed ship pushes ci branches already at HEAD, and the empty ref list runs the full Mac gate",
      "file": "tv/ship_when_green.py",
      "find": "    if have.returncode == 0 and all(at.get(r) == sha for r in ci_refs):\n",

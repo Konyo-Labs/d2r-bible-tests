@@ -50,6 +50,11 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3703 - THE VERDICT LISTED ONE REPO'S RUNS AND ASKED ANOTHER'S FOR THEIR JOBS (v3897, the Grok CLI's look on v3895)
+ci_verdict.fetch(sha, repo=...) listed the runs of `repo`, then attach_required_jobs asked REPO_SLUG for each run's jobs, so a
+database id that happened to exist there could attach a stranger's jobs to this commit's verdict. The jobs now come from the
+repo the runs were listed from. Every caller passes the one repo today, so this is the joint made honest, not an incident.
+Law: test_a_push_trusts_github_only_for_the_exact_commit (TheVerdict). Seen RED.
 ### REG-3702 - A REHEARSAL THAT FOUND NO BRANCH POINT REHEARSED NOTHING AND READ GREEN (v3897, the Grok CLI's look on v3895)
 preship._changed_test_stems diffs the changed tv/test_*.py from the merge-base with origin/main (or main). When neither resolves
 (a box or worktree checkout without those refs) it fell back to `git diff HEAD`, which sees only uncommitted edits: every test

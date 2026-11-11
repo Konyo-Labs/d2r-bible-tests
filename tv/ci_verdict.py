@@ -110,15 +110,18 @@ def fetch(sha, run=None, repo=REPO_SLUG):
         return None
     if not isinstance(out, list):
         return None
-    attach_required_jobs(out, sha, run)
+    attach_required_jobs(out, sha, run, repo=repo)   # v3897 (REG-3703) - the jobs of the runs it listed
     return out
 
 
 
-def attach_required_jobs(runs, sha, run=None):
+def attach_required_jobs(runs, sha, run=None, repo=REPO_SLUG):
     """REG-3652 - attach the job list to each newest required run that is not already
     a completed success, so decide() can ignore non-required windows jobs. Mutates
-    `runs` in place. Never raises."""
+    `runs` in place. Never raises.
+
+    v3897 (REG-3703, the Grok CLI's look on v3895) - from the repo the runs were LISTED from: fetch(repo=...) listed one
+    repo's runs and asked another's for their jobs (REPO_SLUG), so a database id there could attach a stranger's jobs."""
     run = run or subprocess.run
     sha = str(sha or "")
     if not sha or not isinstance(runs, list):
@@ -138,7 +141,7 @@ def attach_required_jobs(runs, sha, run=None):
         if not rid:
             continue
         try:
-            j = run(["gh", "run", "view", str(rid), "--repo", REPO_SLUG, "--json", "jobs"],
+            j = run(["gh", "run", "view", str(rid), "--repo", repo, "--json", "jobs"],
                     capture_output=True, text=True, encoding="utf-8", errors="replace")
             if getattr(j, "returncode", 1) != 0:
                 continue
