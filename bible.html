@@ -10625,6 +10625,70 @@ img[src*="d2mon_"]{object-fit:contain!important;mix-blend-mode:normal!important;
 #tab-funi .qw-card .f-atomact .f-rwbig{font-family:var(--serif-display,serif);font-size:var(--fs-qw-title);letter-spacing:.02em;
   text-transform:none;line-height:1.08}
 #tab-funi .qw-card .f-atomact .f-need{letter-spacing:.04em;text-transform:none}
+/* v3896 (#198, his 11-10 "for the uniques section i want best wins/quick wins alot bigger like this for example", with his
+   reference) - THE UNIQUES TAB'S QUICK WINS READS AT A GLANCE. Measured on the render at 1440: each row's four numbers sat
+   at 13px over 10px labels beside a 72px tile, so "~228 runs" read like its caption. The reference sets each number large
+   and bold over its label, the place name in the display caps, and a bigger portrait. Scoped to #tab-funi's cards: the item
+   card's own copy of the grid keeps its sizes. Sizes are the card's own tokens (the visual lock). */
+#tab-funi .qw-card{--fs-qw-num:calc(var(--fs-display)*1.3);--fs-qw-name:calc(var(--fs-title)*1.3);
+  --fs-qw-sub:calc(var(--fs-meta)*1.25);--fs-qw-rank:calc(var(--fs-meta)*1.15)}
+#tab-funi .qw-card .qw-grid{gap:10px;margin-top:14px}
+#tab-funi .qw-card .qw-row, #tab-funi .qw-card .qw-also .qw-row{grid-template-columns:88px minmax(0,2fr) repeat(4,minmax(0,1fr));
+  column-gap:20px;padding:12px 18px;border-radius:12px;min-height:108px}
+#tab-funi .qw-card .qw-tile{width:84px;height:84px;border-radius:12px}
+#tab-funi .qw-card .qw-also .qw-tile{width:72px;height:72px}
+#tab-funi .qw-card .qw-rank{font-size:var(--fs-qw-rank);letter-spacing:.1em}
+#tab-funi .qw-card .qw-name{font-size:var(--fs-qw-name);line-height:1.2}
+#tab-funi .qw-card .qw-place .qw-sub{font-size:var(--fs-qw-sub);letter-spacing:.02em}
+#tab-funi .qw-card .qw-stat{gap:4px}
+#tab-funi .qw-card .qw-stat b{font-size:var(--fs-qw-num);line-height:1.05;letter-spacing:-.01em}
+#tab-funi .qw-card .qw-stat .qw-sub{font-size:var(--fs-qw-sub);letter-spacing:.03em}
+@media (max-width:1180px){
+  #tab-funi .qw-card{--fs-qw-num:var(--fs-display);--fs-qw-name:calc(var(--fs-title)*1.15)}
+  #tab-funi .qw-card .qw-row, #tab-funi .qw-card .qw-also .qw-row{grid-template-columns:72px minmax(0,2fr) repeat(4,minmax(0,1fr));
+    column-gap:14px;padding:10px 14px;min-height:92px}
+  #tab-funi .qw-card .qw-tile{width:68px;height:68px}
+  #tab-funi .qw-card .qw-also .qw-tile{width:60px;height:60px}
+}
+/* v3896 (#198, his 11-10 reference for "the other section for best runs") - UNIQUES > BEST RUNS AT THE REFERENCE'S SCALE.
+   Measured on the render at 1440: a 48px portrait, an 18px rank dot, the run's name at ~18px and "drops 49 ... ~18m to find
+   one" at 12px. His reference sets the portrait large, the rank in a round badge, the run's name in the display caps, and
+   its two numbers (the uniques it drops, the hours to find one) large. CSS only: the card's markup and its ONE clock stay
+   (v1740 one number per farm). Scoped to the Best runs section; the hero and the Sets forge keep their sizes. */
+#tab-funi .forge-sec-pipe{--fs-br-title:calc(var(--fs-display)*1.25);--fs-br-sub:calc(var(--fs-title)*1.15);
+  --fs-br-num:var(--fs-display);--fs-br-chip:var(--fs-title);--fs-br-rank:var(--fs-title)}
+#tab-funi .forge-sec-pipe .f-pipe{padding:18px 20px;gap:20px;align-items:flex-start}
+#tab-funi .forge-sec-pipe .f-pipe .f-cardart-hd{flex:0 0 112px;width:112px;height:112px;border-radius:14px}
+#tab-funi .forge-sec-pipe .f-pipe .f-cardart-hd .f-art, #tab-funi .forge-sec-pipe .f-pipe .f-cardart-hd img{max-width:104px!important;max-height:104px!important}
+#tab-funi .forge-sec-pipe .f-pipe .f-atomact{font-size:var(--fs-br-title);line-height:1.15;display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px}
+#tab-funi .forge-sec-pipe .f-pipe .f-atomact .f-rwbig{font-size:var(--fs-br-title);font-family:var(--serif-display,serif);letter-spacing:.02em}
+#tab-funi .forge-sec-pipe .f-pipe .f-rankpill{min-width:40px;height:40px;border-radius:20px;font-size:var(--fs-br-rank);margin-right:4px}
+#tab-funi .forge-sec-pipe .f-pipe .f-atomsubrow{font-size:var(--fs-br-sub);margin-top:10px;padding-left:12px}
+#tab-funi .forge-sec-pipe .f-pipe .f-atomsubrow b{font-size:var(--fs-br-num);color:#efe3c6}
+#tab-funi .forge-sec-pipe .f-pipe .gf-chips{gap:8px;margin-top:12px}
+#tab-funi .forge-sec-pipe .f-pipe .gf-chip{font-size:var(--fs-br-chip);padding:6px 12px;border-radius:10px}
+#tab-funi .forge-sec-pipe .f-pipe .gf-chip img{width:20px;height:20px}
+@media (max-width:1180px){
+  #tab-funi .forge-sec-pipe{--fs-br-title:var(--fs-display);--fs-br-sub:var(--fs-title);--fs-br-num:calc(var(--fs-title)*1.4);
+    --fs-br-chip:var(--fs-body)}
+  #tab-funi .forge-sec-pipe .f-pipe .f-cardart-hd{flex-basis:88px;width:88px;height:88px}
+  #tab-funi .forge-sec-pipe .f-pipe .f-cardart-hd .f-art, #tab-funi .forge-sec-pipe .f-pipe .f-cardart-hd img{max-width:80px!important;max-height:80px!important}
+  #tab-funi .forge-sec-pipe .f-pipe .f-rankpill{min-width:32px;height:32px;border-radius:16px}
+}
+@media (max-width:1000px){
+  #tab-funi .forge-sec-pipe{--fs-br-title:calc(var(--fs-title)*1.3);--fs-br-sub:var(--fs-body);--fs-br-num:calc(var(--fs-title)*1.2);
+    --fs-br-chip:var(--fs-meta);--fs-br-rank:var(--fs-body)}
+  #tab-funi .forge-sec-pipe .f-pipe{padding:12px 14px;gap:12px}
+  #tab-funi .forge-sec-pipe .f-pipe .f-cardart-hd{flex-basis:64px;width:64px;height:64px}
+  #tab-funi .forge-sec-pipe .f-pipe .f-cardart-hd .f-art, #tab-funi .forge-sec-pipe .f-pipe .f-cardart-hd img{max-width:58px!important;max-height:58px!important}
+  #tab-funi .forge-sec-pipe .f-pipe .f-rankpill{min-width:26px;height:26px;border-radius:13px}
+}
+@media (max-width:1000px){   /* 901: four labels at 14px wrapped onto three lines - the numbers stay big, the labels quiet */
+  #tab-funi .qw-card{--fs-qw-num:calc(var(--fs-title)*1.4);--fs-qw-name:var(--fs-title);--fs-qw-sub:var(--fs-meta);--fs-qw-rank:var(--fs-micro)}
+  #tab-funi .qw-card .qw-row, #tab-funi .qw-card .qw-also .qw-row{grid-template-columns:60px minmax(0,2fr) repeat(4,minmax(0,1fr));
+    column-gap:10px;padding:8px 10px;min-height:80px}
+  #tab-funi .qw-card .qw-tile, #tab-funi .qw-card .qw-also .qw-tile{width:56px;height:56px}
+}
 .qw-place{display:flex;flex-direction:column;min-width:0;gap:1px}
 .qw-rank{font-size:var(--fs-micro);font-weight:var(--fw-bold);letter-spacing:.08em;text-transform:uppercase;color:#c9a65a}
 .qw-best .qw-rank{color:var(--gold-bright,#f0c060)}

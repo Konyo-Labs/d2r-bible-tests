@@ -27,6 +27,16 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3673 - THE UNIQUES TAB'S QUICK WINS AND BEST RUNS AT HIS REFERENCE'S SCALE (v3896, card #198)
+His words 11-10: "for the uniques section i want best wins/quick wins alot bigger like this for example" and, for Best runs,
+"this is nicer". MEASURED on the render at 1440: Quick wins' four numbers at 13px over 10px labels beside a 72px tile; Best
+runs' portrait 48px, rank 18px, name ~18px, its counts 12px. Now, scoped to #tab-funi with the card's own tokens: Quick wins
+numbers ~31px over ~14px labels, 84px portraits, the place name ~20px (24/21px numbers below 1180/1000px); Best runs a 112px
+portrait, a 40px round rank, the name ~30px in the display caps, its count and clock ~24px, 15px chips. CSS only - the
+markup and its one clock stay (v1740). Rendered at 1440/1120/901 (render_check quick-wins + the new best-runs target), looked
+at, and a Grok CLI cold look on three crops found nothing the change made. Law: test_the_uniques_cards_read_at_a_glance.
+Seen RED x4.
+
 ### REG-3671 - A PC WHOSE PULL IS REFUSED READ "UPDATING" FOR DAYS (v3896)
 MEASURED 11-11 on Dean's PC: 181 commits behind, every pull refused by 65 tracked local edits (1,209 lines), while its Fleet
 row read UPDATING ("proving 67 checks") - proving bytes no ship would ever replace (cleared by backup + reset, his call).

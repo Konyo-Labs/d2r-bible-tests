@@ -1575,6 +1575,13 @@ GATES = [
              "the exclusion rule caught it. Pins the THIRD state — OURS -> WARN, UNATTRIBUTED -> "
              "UNKNOWN (not the rail's failure state), still REPORTED, never dismissed."),
 
+    Gate("test_the_uniques_cards_read_at_a_glance",
+         [sys.executable, os.path.join(HERE, "test_the_uniques_cards_read_at_a_glance.py")], 60,
+         why="#198 (REG-3673, his 11-10 'for the uniques section i want best wins/quick wins alot bigger like this') - "
+             "Quick wins' numbers sat at 13px over 10px labels and a Best runs card had a 48px portrait. The tab's own "
+             "size tokens are resolved at every width step: a Quick wins number reads >= 2x its label at full width "
+             "and >= 1.6x narrower; a run's name is in the display caps and its portrait >= 100px; each element is drawn "
+             "from its token. The pixels are render_check's quick-wins and best-runs targets."),
     Gate("test_a_private_console_takes_its_agent_with_it",
          [sys.executable, os.path.join(HERE, "test_a_private_console_takes_its_agent_with_it.py")], 60,
          why="REG-3670 (2026-11-11) - three tv_diablo agents ran on as orphans on his Mac (9 h and 2.7 days, each on "

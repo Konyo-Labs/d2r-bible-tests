@@ -1575,6 +1575,25 @@ TARGETS = {
         "truncation_ok": {"qw-tile-loop": "a d2runewizard loop scaled up inside its 56px tile on purpose - the figure is "
                                           "cropped by design, there is no text in the tile (#158/#161)"},
     },
+    "best-runs": {
+        "why": "#198 (his 11-10 \"for the uniques section i want best wins/quick wins alot bigger like this\", with his "
+               "reference) - UNIQUES > BEST RUNS at the reference's scale: each run's portrait, its rank, its name in the "
+               "display caps and its two numbers (the uniques it drops, the hours to find one) read at a glance. The card's "
+               "markup and its one clock are unchanged (v1740 one number per farm); this is the card on pixels",
+        "seed": """(function(){ return 1; })()""",
+        "activate": """(function(){
+            /* IDEMPOTENT: funiSetFilter TOGGLES (the same filter twice goes back to All), so it is set once */
+            if (!window.__rcBrOpened) {
+              window.__rcBrOpened = 1;
+              try { window.switchTab('funi'); window.funiSetFilter('runs'); } catch (e) { window.__rcBrErr = String(e); }
+            }
+            var card = document.querySelector('#funi-body .forge-sec-pipe .f-pipe');
+            if (!card) return false;
+            var r = card.getBoundingClientRect();
+            return !!(r.width > 0 && r.height > 0 && getComputedStyle(card).display !== 'none'); })()""",
+        "sel": "#funi-body .forge-sec-pipe",
+        "widths": ((1440, 1000), (1120, 900), (901, 900)),
+    },
     "material-craft": {
         "why": "REG-2138 - WHAT I CAN MAKE. The Renewed Sunder row names what its closest held charm still lacks (that charm's "
                "Perfect Gem, its Rune, each of its own shards) instead of reading ready on any charm and any shard, so the "
