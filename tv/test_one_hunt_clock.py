@@ -268,8 +268,8 @@ RED_PROOF = [
     {
         "why": "v3526 - the run row loses the assumptions its hour rests on",
         "file": "bible.html",
-        "find": "    return ' · <b' + (why ? ' title=\"assumes ' + why + '\"' : '') + '>~' + t + '</b> to find ' + ((r.items && r.items.length === 1) ? 'it' : 'one');\n",
-        "replace": "    return ' · <b>~' + t + '</b> to find ' + ((r.items && r.items.length === 1) ? 'it' : 'one');\n",
+        "find": "    return ' · <b' + (c.why ? ' title=\"assumes ' + c.why + '\"' : '') + '>~' + c.t + '</b> to find ' + c.word;\n",
+        "replace": "    return ' · <b>~' + c.t + '</b> to find ' + c.word;\n",
         "matches": 1,
     },
     {

@@ -49,6 +49,8 @@ class TheTheatreModeButtonStaysShort(unittest.TestCase):
               "var document = { getElementById: function(){ return null; } };\n"
               + _fn("  function _filmPhotoSay(film, photos){") + "\n" + _fn("  function _filmShortSay(film){") + "\n"
               + _fn("  function thModeLabel(m){") + "\n" + _fn("  function _thModeSay(m){") + "\n" + _fn("  function thModePill(m){") + "\n"
+              # v3898 (#209) - the hover now ends with what the count left out; the pill calls it, so the harness carries it
+              + _fn("  function thLeftOutSay(st){") + "\n"
               "var out = {};\n"
               "STATS = { allFoot: 354, allPhoto: 397, curFoot: 354, curPhoto: 397 }; thModePill('real'); out.big = EL.textContent;\n"
               "STATS = { allFoot: 12, allPhoto: 20, curFoot: 12, curPhoto: 20 };\n"
@@ -82,7 +84,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "#92 - the whole sentence is dropped instead of moved to the hover",
      "file": "tv/control_ui.html",
-     "find": "          el.title = _thModeSay(m) + ((st.allFoot !== st.allPhoto) ? (' · film and photos differ' + _filmPhotoSay(st.allFoot, st.allPhoto)) : ''); } catch (eTt) {}",
+     "find": "          el.title = _thModeSay(m) + ((st.allFoot !== st.allPhoto) ? (' · film and photos differ' + _filmPhotoSay(st.allFoot, st.allPhoto)) : '')\n                     + thLeftOutSay(st); } catch (eTt) {}",
      "replace": "          void st; } catch (eTt) {}",
      "matches": 1, "needs": "node"},
     {"why": "#92 (GrokBot v3817) - the mode button carries what the mode does again, and wraps on a loaded reel",
