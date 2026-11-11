@@ -551,7 +551,7 @@ def version_check(here=HERE, say=print, _laws=None, _anchors=None):
 
 def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, version=None, _laws=None, _prove=None,
               _anchors=None, _registry=None, _demos=None, _demos_due=None, _render=None, _render_due=None,
-              _second_eye=None, _recent=None, _changed=None):
+              _second_eye=None, recent=None, changed=None, stop_early=True):
     """-> (exit code 0 green / 1 red / 2 unknown, [red lines])"""
     costs = read_costs(os.path.join(here, "gate_costs.json"))
     if not costs:
@@ -571,13 +571,15 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
     # about 7 minutes longer against a ~55-minute round. They run after the fast laws; only a browser stays GitHub's.
     n_fast, n_slow = len(s["run"]), len(s["slow"])
     s["run"] = s["run"] + list(s["slow"])
-    # REG-3727 (#200) - the likely reds first (see first_order); a hint that will not read only leaves the order as it was
+    # REG-3727 (#200) - the likely reds first (see first_order). The hints are passed by the real doors (main, the ship) -
+    # a caller that passes none keeps the old order, so no law ever reads this PC's own logs; one that will not read only
+    # leaves the order as it was
     try:
-        _rec = (_recent or recent_reds)()
+        _rec = recent() if recent else set()
     except Exception:
         _rec = set()
     try:
-        _chg = (_changed or (lambda: changed_laws(version)))()
+        _chg = changed() if changed else []
     except Exception:
         _chg = []
     s["run"], _lead = first_order(s["run"], recent=_rec, new=un_run, changed=_chg)
@@ -592,11 +594,26 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
     if not a_ok:
         reds.append("red-proof anchors: " + a_tail.replace("\n", " | ")[:300])
     skipped = []
-    for n, v, tail in (_laws or (lambda names: run_laws(names, workers, here, say=say, argvs=s["argv"])))(s["run"]):
-        if v == "skip":
-            skipped.append(n)
-        elif v != "ok":
-            reds.append("%s %s: %s" % (v.upper(), n, tail.replace("\n", " | ")[:300]))
+    _runner = _laws or (lambda names: run_laws(names, workers, here, say=say, argvs=s["argv"]))
+    # REG-3727 - a red among the laws that went first already voids this run, and its fix changes the bytes the next run
+    # grades: the rest is not spent here (stop_early=False / --full runs it anyway)
+    _parts, _stopped = ([s["run"][:_lead], s["run"][_lead:]] if _lead else [s["run"]]), 0
+    for _pi, _part in enumerate(_parts):
+        if _pi and reds and stop_early:
+            _stopped = len(_part)
+            break
+        for n, v, tail in _runner(_part):
+            if v == "skip":
+                skipped.append(n)
+            elif v != "ok":
+                reds.append("%s %s: %s" % (v.upper(), n, tail.replace("\n", " | ")[:300]))
+    if _stopped:
+        say("preflight: stopped after the %d law(s) that went first - %d more not run here; the fix changes the bytes, and "
+            "the next run grades them all (--full runs them now)" % (_lead, _stopped))
+        say("preflight: RED - %d finding(s); GitHub would have spent a round on them:" % len(reds))
+        for l in reds:
+            say("   " + l)
+        return 1, reds
     if skipped:
         say("preflight: %d gate(s) SKIPPED for a reason they declare (not a pass, GitHub runs them): %s"
             % (len(skipped), ", ".join(skipped[:8])))
@@ -713,8 +730,10 @@ def main(argv=None):
     ap.add_argument("--workers", type=int, default=WORKERS)
     ap.add_argument("--no-prove", action="store_true", help="skip proving the changed laws")
     ap.add_argument("--version", default=None, help="vNNNN - prove only what changed since GitHub last graded it")
+    ap.add_argument("--full", action="store_true", help="run every law even after one that went first failed (REG-3727)")
     a = ap.parse_args(argv)
-    code, _reds = preflight(a.cap, a.workers, not a.no_prove, version=a.version)
+    code, _reds = preflight(a.cap, a.workers, not a.no_prove, version=a.version, stop_early=not a.full,
+                            recent=recent_reds, changed=lambda: changed_laws(a.version))
     if code == 0 and not a.no_prove:
         sha = record_green(version=a.version)
         print("preflight: GREEN recorded for %s" % sha[:9] if sha else

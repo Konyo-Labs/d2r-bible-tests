@@ -118,7 +118,8 @@ def dispatch_ref(wf, version):
 def _preflight(version, say):
     """v3865 (his ask 2026-11-05) - tv/preflight.py before the ci branches go up. -> its exit code (0 green, 1 red, 2 unknown)"""
     import preflight as _pf
-    code, _reds = _pf.preflight(say=say, version=version)
+    code, _reds = _pf.preflight(say=say, version=version, recent=_pf.recent_reds,   # REG-3727 - likely reds first
+                                changed=lambda: _pf.changed_laws(version))
     if code == 0:
         _sha = _pf.record_green(version=version)       # v3896 (REG-3681) - a later --no-preflight on these bytes may skip it
         say("ship: pre-flight GREEN recorded for %s" % _sha[:9] if _sha else

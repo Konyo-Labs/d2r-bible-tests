@@ -76,27 +76,77 @@ class TheOrderMovesTheSetDoesNot(unittest.TestCase):
         self.assertEqual(PF.first_order(names), (names, 0))
 
 
+LAWS = ["test_a", "test_b", "test_c", "test_d"]
+
+
 class ThePreflightHandsTheRunnerTheLikelyRedsFirst(unittest.TestCase):
 
-    def test_the_runner_sees_the_failed_and_changed_laws_first(self):
+    def _run(self, fail=(), **kw):
         tmp = tempfile.mkdtemp(prefix="pforder_")
         self.addCleanup(shutil.rmtree, tmp, True)
-        laws = ["test_a", "test_b", "test_c", "test_d"]
         with io.open(os.path.join(tmp, "gate_costs.json"), "w", encoding="utf-8") as fh:
-            json.dump({"costs": dict((n, 1.0) for n in laws)}, fh)
-        for n in laws:
+            json.dump({"costs": dict((n, 1.0) for n in LAWS)}, fh)
+        for n in LAWS:
             with io.open(os.path.join(tmp, n + ".py"), "w", encoding="utf-8") as fh:
                 fh.write("print('ok')\n")
         seen, said = [], []
 
         def runner(names):
             seen.extend(names)
-            return [(n, "ok", "") for n in names]
+            return [(n, ("red" if n in fail else "ok"), "fixture") for n in names]
 
         code, reds = PF.preflight(prove=False, here=tmp, say=said.append, _laws=runner, _registry={},
                                   _anchors=lambda: (True, ""), _demos_due=lambda: (False, ""),
                                   _second_eye=lambda: (True, ""), _render_due=lambda: (False, ""),
-                                  _recent=lambda: {"test_d"}, _changed=lambda: ["test_c"])
+                                  recent=lambda: {"test_d"}, changed=lambda: ["test_c"], **kw)
+        return code, reds, seen, said
+
+    def test_a_red_among_the_first_stops_the_run_there(self):
+        """the run is already void; the fix changes the bytes the next run grades - the other laws are not spent here"""
+        code, reds, seen, said = self._run(fail=("test_d",))
+        self.assertEqual(code, 1)
+        self.assertEqual(seen, ["test_d", "test_c"], "the pre-flight kept running the rest after a likely red failed")
+        self.assertTrue(any("stopped after the 2 law(s)" in l for l in said), said)
+        self.assertTrue(any(r.startswith("RED test_d") for r in reds), reds)
+
+    def test_baseline_full_runs_every_law_after_a_red(self):
+        code, reds, seen, said = self._run(fail=("test_d",), stop_early=False)
+        self.assertEqual(code, 1)
+        self.assertEqual(sorted(seen), LAWS, "--full no longer runs the whole set")
+
+    def test_a_caller_that_passes_no_hint_keeps_the_old_order(self):
+        """BASELINE - and the guard against REG-3709's class: no hint passed, no log of this PC read, the order unchanged"""
+        tmp = tempfile.mkdtemp(prefix="pfnohint_")
+        self.addCleanup(shutil.rmtree, tmp, True)
+        with io.open(os.path.join(tmp, "gate_costs.json"), "w", encoding="utf-8") as fh:
+            json.dump({"costs": dict((n, 1.0) for n in LAWS)}, fh)
+        for n in LAWS:
+            with io.open(os.path.join(tmp, n + ".py"), "w", encoding="utf-8") as fh:
+                fh.write("print('ok')\n")
+        seen = []
+        real = PF.recent_reds
+        PF.recent_reds = lambda *a, **k: self.fail("a pre-flight called with no hint read this PC's own logs")
+        try:
+            PF.preflight(prove=False, here=tmp, say=lambda *_: None, _registry={},
+                         _laws=lambda names: (seen.extend(names) or [(n, "ok", "") for n in names]),
+                         _anchors=lambda: (True, ""), _demos_due=lambda: (False, ""),
+                         _second_eye=lambda: (True, ""), _render_due=lambda: (False, ""))
+        finally:
+            PF.recent_reds = real
+        self.assertEqual(seen, LAWS)
+
+    def test_the_real_doors_pass_the_real_hints(self):
+        import inspect
+        src = inspect.getsource(PF.main)
+        self.assertIn("recent=recent_reds, changed=lambda: changed_laws(a.version)", src)
+        with io.open(os.path.join(HERE, "ship_when_green.py"), encoding="utf-8") as fh:
+            ship = fh.read()
+        self.assertEqual(ship.count("_pf.preflight(say=say, version=version, recent=_pf.recent_reds,"), 1,
+                         "the ship's pre-flight no longer runs the likely reds first")
+
+    def test_the_runner_sees_the_failed_and_changed_laws_first(self):
+        code, reds, seen, said = self._run()
+        laws = LAWS
         self.assertEqual(code, 0, "\n".join(said))
         self.assertEqual(seen[:2], ["test_d", "test_c"], "the law runner was not handed the likely reds first: %r" % seen)
         self.assertEqual(sorted(seen), laws)
@@ -114,6 +164,12 @@ RED_PROOF = [
      "file": "tv/preflight.py",
      "find": "                    if m:\n                        out.add(m.group(1))\n",
      "replace": "                    if m and False:\n                        out.add(m.group(1))\n",
+     "matches": 1},
+    {"why": "REG-3727 (#200) - a red among the laws that went first no longer stops the run: 30 more minutes spent on a run "
+            "that is already void",
+     "file": "tv/preflight.py",
+     "find": "        if _pi and reds and stop_early:\n",
+     "replace": "        if False:\n",
      "matches": 1},
 ]
 
