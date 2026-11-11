@@ -88,8 +88,8 @@ gates) owes exactly three BLINDs, and each tampers a line only POSIX reaches: te
 test_a_vanished_sandbox_names_its_remover[7] (a file mode, a POSIX permission - its catcher checks it only off Windows), and
 test_triage_runs_beside_a_shadow_reel[0], whose v3895 "claude-cli" need was satisfied by the runner's refusing claude.cmd
 while its catcher's own tripwire is a #!/bin/sh script Windows never runs. Each now declares "needs": "posix", so a Windows
-PC reads it ELSEWHERE (judged on POSIX) instead of BLIND. Not changed: test_the_gate_set_shards_cleanly reads BLIND on both
-ALTs but was cut at the deadline (TIMEOUT) on the Windows runner, so which proof is blind there is UNMEASURED.
+PC reads it ELSEWHERE (judged on POSIX) instead of BLIND. And test_the_gate_set_shards_cleanly[10] (cut at the deadline on the Windows runner, so read from the work ALT's own
+prove log: BLIND twice) - its one catcher imports fcntl and skips where there is none - needs posix too.
 ### REG-3693 - THE SHIP STOPPED RED ON THE AGENT-TESTS RE-RUN IT HAD JUST ASKED FOR (v3897, card #200)
 MEASURED 11-11 09:13, v3896 try 2 (and again on try 3): the live shard watch (REG-3648) re-ran agent-suite (4) for a runner
 cut-off and recorded the ask; the next poll still read the run's old "completed, failure" because GitHub had not started the

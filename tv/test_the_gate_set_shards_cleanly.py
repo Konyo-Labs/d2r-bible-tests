@@ -424,6 +424,9 @@ RED_PROOF = [
         "find": "            fcntl.flock(self.fh, fcntl.LOCK_EX)\n",
         "replace": "            try:\n                fcntl.flock(self.fh, fcntl.LOCK_EX)\n            except OSError:\n                pass\n",
         "matches": 1,
+        # v3897 (REG-3695) - BLIND on the work ALT (its own prove log, twice): its one catcher imports fcntl and skips where
+        # there is none, so on Windows the tamper is never judged
+        "needs": "posix",
     },
     {
         "why": "REG-2027 - fill_missing appends before the old-shape {source, date} is migrated: the earlier fill is lost from fills",
