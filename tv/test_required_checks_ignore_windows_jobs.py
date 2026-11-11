@@ -184,11 +184,30 @@ class TheShipCancelsItsOptionalRunsOnceVouched(unittest.TestCase):
     def test_the_ship_cancels_them_right_after_the_vouch(self):
         src = open(os.path.join(HERE, "ship_when_green.py"), encoding="utf-8").read()
         i = src.index('    say("ship: GitHub vouches for %s - pushing main (the pre-push trusts this verdict)" % sha[:9])\n')
-        self.assertIn("        cancel_beside(runs, sha, run=run, say=say)\n", src[i:i + 600],
+        # bounded by the next statement, never a byte count (test_a_source_window_must_reach_its_subject)
+        self.assertIn("        cancel_beside(runs, sha, run=run, say=say)\n", src[i:src.index("    if speed is not None:", i)],
                       "the ship no longer cancels its optional runs once GitHub vouches")
 
 
+
+class AFakeShipNeverWritesTheRealTimings(unittest.TestCase):
+    """v3895 - MEASURED 11-11: every pre-flight left tv/shard_timings.json dirty with a law's fixture version and sha
+    ("v3862 aaaaaaaaa", "v3875 0d4e24537"), because a fake ship() folded timings into the REAL file"""
+
+    def test_only_the_cli_hands_the_ship_its_timings_writer(self):
+        src = open(os.path.join(HERE, "ship_when_green.py"), encoding="utf-8").read()
+        self.assertEqual(src.count("merge_timings_after_green(sha, version, say)"), 0,
+                         "ship() calls the real timings writer itself - a law's fake ship writes the tracked file")
+        self.assertIn("timings=merge_timings_after_green)", src, "the real CLI no longer hands the ship its timings writer")
+        self.assertIn("    if timings is not None:\n        timings(sha, version, say)\n", src)
+
+
 RED_PROOF = [
+    {"why": "v3895 - a law's fake ship folds its fixture timings into the real tracked file again",
+     "file": "tv/ship_when_green.py",
+     "find": "    if timings is not None:\n        timings(sha, version, say)\n",
+     "replace": "    merge_timings_after_green(sha, version, say)\n",
+     "matches": 1},
     {"why": "card #200 guard 7 - the ship stops cancelling its optional runs once GitHub vouches",
      "file": "tv/ship_when_green.py",
      "find": "        cancel_beside(runs, sha, run=run, say=say)\n",

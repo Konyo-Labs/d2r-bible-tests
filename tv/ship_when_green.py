@@ -90,7 +90,8 @@ def cancel_beside(runs, sha, run=None, say=print):
         rid = r.get("databaseId")
         if not rid:
             continue
-        q = run(["gh", "run", "cancel", str(rid), "--repo", CV.REPO_SLUG], capture_output=True, text=True)
+        q = run(["gh", "run", "cancel", str(rid), "--repo", CV.REPO_SLUG], capture_output=True, text=True,
+                encoding="utf-8", errors="replace")
         if getattr(q, "returncode", 1) == 0:
             out.append(rid)
             say("ship: card #200 - cancelled %s (run %s): it is not required and would hold Publish's runners"
@@ -580,7 +581,7 @@ def merge_timings_after_green(sha, version, say, root=None):
 
 def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_s=240 * 60, remote="origin", preflight=None,
          watch=None, watch_publish_s=None, version_check=None, speed=None,
-         box_rehearse=False, mac_ready=False, mac_rehearse=False, report_steps=None):
+         box_rehearse=False, mac_ready=False, mac_rehearse=False, report_steps=None, timings=None):
     """-> exit code: 0 main pushed (and, when watched, Publish green) · 1 GitHub said red / the main push refused /
     Publish red / a local rehearsal or readiness check was red · 2 timed out or unknown · 3 refused.
 
@@ -786,13 +787,17 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
             speed(sha, version, CV.REPO_SLUG, say=say)
         except Exception as _e:
             say("ship: v3890 (#194) SPEED - not measured (%s)" % type(_e).__name__)
-    merge_timings_after_green(sha, version, say)
     # The main push always goes through hooks/pre-push: never --no-verify, never a force push to main.
     m = run(["git", "-c", "core.hooksPath=hooks", "push", remote, "HEAD:main"], cwd=REPO)
     if m.returncode != 0:
         say("ship: the main push was refused (exit %s) - read the pre-push lines above" % m.returncode)
         return 1
     say("ship: %s is on main" % version)
+    # v3895 - only the REAL ship folds this round's timings into the tracked file (main() hands it in, like speed): a law's
+    # fake ship() wrote its fixture version and sha ("v3862 aaaaaaaaa") into tv/shard_timings.json on every pre-flight,
+    # and the next launch refused a dirty tree. AFTER the main push, so the hook never grades a file the push does not send.
+    if timings is not None:
+        timings(sha, version, say)
     post_land_status(version, run, say)
     if watch_publish_s:
         return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s, run=run)
@@ -824,7 +829,7 @@ def main(argv=None):
     return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None, watch=_watch_authed,
                 watch_publish_s=None if a.no_watch else a.publish_wait_min * 60,
                 box_rehearse=not a.no_box_rehearse, mac_ready=not a.no_mac_ready,
-                mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe)
+                mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe, timings=merge_timings_after_green)
 
 
 #: card #200 guard 1 (REG-3665) - the plan a proof-key FORMAT change must bring (how its first round is seeded)
@@ -844,7 +849,8 @@ def key_format_refusal(tree_src=None, main_src=None, have_plan=None):
         with io.open(os.path.join(HERE, "heart2.py"), encoding="utf-8") as fh:
             tree_src = fh.read()
     if main_src is None:
-        r = subprocess.run(["git", "show", "origin/main:tv/heart2.py"], capture_output=True, text=True, cwd=HERE)
+        r = subprocess.run(["git", "show", "origin/main:tv/heart2.py"], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", cwd=HERE)
         if r.returncode != 0:
             return "main's proof-key format could not be read (git show origin/main) - UNKNOWN, not safe (card #200 guard 1)"
         main_src = r.stdout

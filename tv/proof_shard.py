@@ -583,7 +583,8 @@ CARRY_OS = {
     "posix": lambda p: bool(p) and not p.startswith("win"),
     "posix-signals": lambda p: bool(p) and not p.startswith("win"),
 }
-CARRY_TOOL = frozenset(("node", "bash", "numpy", "dir-link"))
+#: v3895 (REG-3660) - the Claude CLI is a TOOL a PC has or lacks, like node: carried as a tool is
+CARRY_TOOL = frozenset(("node", "bash", "numpy", "dir-link", "claude-cli"))
 
 
 def carry_refusal(need, src_platform, here_platform):

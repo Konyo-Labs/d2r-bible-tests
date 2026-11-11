@@ -86,7 +86,7 @@ class EveryRoundRecordsHowFastItRan(unittest.TestCase):
     def test_the_ship_measures_its_real_round_only(self):
         with io.open(os.path.join(HERE, "ship_when_green.py"), encoding="utf-8") as fh:
             src = "\n".join(l.split("#", 1)[0] for l in fh.read().split("\n"))
-        self.assertIn("speed=_CS.observe)", src, "the real ship no longer measures its round")
+        self.assertIn("speed=_CS.observe, timings=merge_timings_after_green)", src, "the real ship no longer measures its round")
         self.assertIn("    if speed is not None:\n        try:\n            speed(sha, version, CV.REPO_SLUG, say=say)", src)
         i = src.index('say("ship: GitHub vouches for %s - pushing main')
         self.assertLess(i, src.index("if speed is not None:"), "the round is measured before GitHub vouched for it")
@@ -120,8 +120,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3890 (#194) - the real ship stops measuring its rounds",
      "file": "tv/ship_when_green.py",
-     "find": "mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe)",
-     "replace": "mac_rehearse=not a.no_mac_rehearse)",
+     "find": "mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe, timings=merge_timings_after_green)",
+     "replace": "mac_rehearse=not a.no_mac_rehearse, timings=merge_timings_after_green)",
      "matches": 1},
 ]
 
