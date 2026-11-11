@@ -27,6 +27,14 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3677 - A RENDER WHOSE BROWSER WAS LOST STOPPED THE SHIP (v3896, card #200 guard 9e)
+MEASURED 11-11 on v3895's first box rehearsal: render_check answered UNKNOWN - "the browser connection was lost mid-render"
+- and the rehearsal stopped the ship. render_check itself says such a run established nothing and asks for a re-run.
+preship.check_render now asks that re-run once (keyed on render_check's own two lost-browser sentences); a second UNKNOWN
+stays UNKNOWN, a red is never asked again, and a missing Chrome is not retried. Law:
+test_a_lost_render_browser_is_asked_again_once. Seen RED x2. (Guard 9d - changed_tests flagging .render_shots - did not
+reproduce: the folder is gitignored and changed_tests lists tv/test_*.py only; a full readiness run passed both 11-11 05:39.)
+
 ### REG-3676 - THE REHEARSAL RACED ITS OWN TREE LOCK (v3896, card #200 guard 9c)
 MEASURED 11-11 01:47-02:30, the box rehearsal's first real use on v3895: failed_shards and changed_tests both run
 tv/run_gates.py, which takes the tree's flock; started together the second was refused by the first's lock and the

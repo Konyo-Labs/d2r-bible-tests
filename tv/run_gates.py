@@ -1575,6 +1575,12 @@ GATES = [
              "the exclusion rule caught it. Pins the THIRD state — OURS -> WARN, UNATTRIBUTED -> "
              "UNKNOWN (not the rail's failure state), still REPORTED, never dismissed."),
 
+    Gate("test_a_lost_render_browser_is_asked_again_once",
+         [sys.executable, os.path.join(HERE, "test_a_lost_render_browser_is_asked_again_once.py")], 60,
+         why="REG-3677 (card #200 guard 9e, 2026-11-11) - the box rehearsal stopped v3895 on render_check's UNKNOWN 'the "
+             "browser connection was lost mid-render', which render_check itself says established nothing and asks to "
+             "re-run. check_render asks once more; a second UNKNOWN stays UNKNOWN, a red and a missing Chrome are never "
+             "asked again. Driven with render_check's own words through a stubbed _run."),
     Gate("test_a_rehearsal_never_races_its_own_tree_lock",
          [sys.executable, os.path.join(HERE, "test_a_rehearsal_never_races_its_own_tree_lock.py")], 60,
          why="REG-3676 (card #200 guard 9c, 2026-11-11) - the box rehearsal ran failed_shards and changed_tests together; "

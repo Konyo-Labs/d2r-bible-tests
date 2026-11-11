@@ -282,11 +282,26 @@ def check_heart(root, timeout=HEART_TIMEOUT_S, **_):
     return (2 if p.returncode in (124, 127) else 1), _tail(p) or "heart map red"
 
 
+#: v3896 (card #200 guard 9e, REG-3677) - render_check's own words for "the browser went away", never "the page is wrong"
+RENDER_LOST_BROWSER = ("the browser connection was lost mid-render", "Re-run on a quiet machine before reading this as a dead tab")
+
+
 def check_render(root, timeout=RENDER_TIMEOUT_S, **_):
-    """All TARGETS, all five viewports (render_check.WIDTHS). Exit 2 is UNKNOWN (no Chrome) - not a pass."""
-    p = _run([_py(root), os.path.join(root, "tv", "render_check.py")], root, timeout)
+    """All TARGETS, all five viewports (render_check.WIDTHS). Exit 2 is UNKNOWN (no Chrome) - not a pass.
+
+    v3896 (REG-3677) - MEASURED 11-11 on v3895's first box rehearsal: render_check answered UNKNOWN because the browser
+    connection was lost mid-render, and the rehearsal stopped the ship on it. render_check itself says such a run
+    established NOTHING about the page and asks for a re-run; that re-run is asked here, ONCE. A second UNKNOWN stays
+    UNKNOWN, and a red (exit 1) is never asked again."""
+    cmd = [_py(root), os.path.join(root, "tv", "render_check.py")]
+    p = _run(cmd, root, timeout)
+    again = False
+    if p.returncode == 2 and any(w in ((p.stdout or "") + (p.stderr or "")) for w in RENDER_LOST_BROWSER):
+        again = True
+        p = _run(cmd, root, timeout)
     if p.returncode == 0:
-        return 0, "render_check green (all targets, 5 viewports)"
+        return 0, "render_check green (all targets, 5 viewports)" + (
+            " - asked again once after the browser was lost mid-render" if again else "")
     if p.returncode == 2 or p.returncode in (124, 127):
         return 2, _tail(p) or "render_check UNKNOWN (no browser, or timed out) - a skip is not a pass"
     return 1, _tail(p) or "render_check red"
