@@ -6716,6 +6716,12 @@ GATES = [
              "bible.html (payload_for adds *.html only when the code diff is under the cap), and the doctor says v3895's look "
              "never saw it either. --files PATH... makes a follow-up look at only the named paths, html included; the eye "
              "is told it is a follow-up and the row names the files. Driven on a throwaway repo."),
+    Gate("test_a_rehearsal_that_finds_no_branch_point_is_unknown",
+         [sys.executable, os.path.join(HERE, "test_a_rehearsal_that_finds_no_branch_point_is_unknown.py")], 60,
+         why="v3897 (REG-3702, the Grok CLI's follow-up look on v3895) - preship's changed-tests check fell back to diffing "
+             "against HEAD when no merge-base with origin/main or main resolved, so every committed change was left out and "
+             "it answered 'no changed agent tests' - a rehearsal of nothing read as a pass. No branch point is UNKNOWN now. "
+             "Driven on a throwaway repo with no main."),
     Gate("test_a_look_can_cover_a_batch",
          [sys.executable, os.path.join(HERE, "test_a_look_can_cover_a_batch.py")], 60,
          why="2026-09-27 - v3515-v3517 shipped as bump-only commits over code built on an integration "

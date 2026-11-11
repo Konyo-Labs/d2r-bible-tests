@@ -50,6 +50,15 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3702 - A REHEARSAL THAT FOUND NO BRANCH POINT REHEARSED NOTHING AND READ GREEN (v3897, the Grok CLI's look on v3895)
+preship._changed_test_stems diffs the changed tv/test_*.py from the merge-base with origin/main (or main). When neither resolves
+(a box or worktree checkout without those refs) it fell back to `git diff HEAD`, which sees only uncommitted edits: every test
+the branch had committed was left out, and check_changed answered "no changed agent tests" - exit 0. No branch point is now
+UNKNOWN (exit 2, "the changed agent tests are UNKNOWN, not none"); TV_PRESHIP_BASE still names a base by hand. Law:
+test_a_rehearsal_that_finds_no_branch_point_is_unknown (a throwaway repo with no main). The look's other findings, checked:
+shard_watch reads only what a job printed now (REG-3701); tree_busy already requires the process to BE python, so a grep or
+pgrep is never a ship (fixed since v3895); a refused mid-run re-run is still judged at the run's end; the flake ledger has NO
+production writer (record() is never called), so no real red can become a "known flake" - an unjoined end, left as found.
 ### REG-3701 - A FAILED SLICE READ AS A CUT-OFF BECAUSE OF ITS OWN WORKFLOW'S COMMENT (v3897, the Grok CLI's look on v3895)
 The follow-up look on v3895's unseen ship code (REG-3699) said shard_watch.classify reads cut-off marks before a failure is
 named. MEASURED on v3896's agent-suite (4) log: its only "NO VERDICT" - a CUTOFF_MARK - was a COMMENT inside the gate-set step's

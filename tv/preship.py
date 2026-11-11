@@ -338,7 +338,12 @@ def _changed_test_stems(root):
             base = (mb.stdout or "").strip()
         else:
             mb = _run(["git", "-C", root, "merge-base", "HEAD", "main"], root, 20)
-            base = ((mb.stdout or "").strip() if mb.returncode == 0 else "HEAD")
+            # v3897 (REG-3702, the Grok CLI's look on v3895) - NO BRANCH POINT IS UNKNOWN, NEVER "NOTHING CHANGED". The old
+            # fallback diffed against HEAD, which sees only uncommitted edits: every committed change of the branch was left
+            # out, and the rehearsal said "no changed agent tests" - a check that rehearsed nothing, read as a pass.
+            base = ((mb.stdout or "").strip() if mb.returncode == 0 and (mb.stdout or "").strip() else None)
+            if base is None:
+                return [], None
     names = []
     for args in (
         ["git", "-C", root, "diff", "--name-only", base, "--", "tv/test_*.py"],
@@ -382,6 +387,9 @@ def check_changed(root, timeout=CHANGED_TIMEOUT_S, **_):
     if not os.path.isfile(script):
         return 2, "run_gates.py is missing"
     stems, base = _changed_test_stems(root)
+    if base is None:                    # v3897 (REG-3702) - no branch point: the changed tests are UNKNOWN, never none
+        return 2, ("the branch point (a merge-base with origin/main or main) could not be found - the changed agent tests "
+                   "are UNKNOWN, not none")
     if not stems:
         return 0, "no changed agent tests vs %s" % (base or "the branch point")
     try:

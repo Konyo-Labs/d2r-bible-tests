@@ -2243,6 +2243,10 @@
       "s": 1.437,
       "src": "median"
     },
+    "test_a_rehearsal_that_finds_no_branch_point_is_unknown": {
+      "s": 1.437,
+      "src": "median"
+    },
     "test_a_look_can_cover_a_batch": {
       "s": 0.906,
       "src": "measured"
