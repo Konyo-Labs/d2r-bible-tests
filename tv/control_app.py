@@ -40956,12 +40956,17 @@ def shadow_watch_tick():
     # 80 minutes reached nobody), and every open is journalled with why it opened
     _hk = _shadow_hour_key(now)
     _opens = (int(cur.get("opensThisHour") or 0) if cur.get("opensHour") == _hk else 0) + (1 if ok else 0)
+    # REG-3737 (v3900, the work ALT 11-11 23:00-00:00) - a RELOOK after a launcher seal opens a probe reel on a PC that films
+    # only inside a reel (#167: waiting for one frame there held the door for ever). Those probes are counted apart, so the
+    # fragment watchdog below judges the game's own opens, and still names the probes.
+    _relooks = (int(cur.get("relookOpensThisHour") or 0) if cur.get("opensHour") == _hk else 0) \
+        + (1 if ok and _relook_opens else 0)
     _shadow_watch_note(lookedAt=now, sawAt=now,
                        startedAt=(now if ok else cur.get("startedAt")),
                        starts=(int(cur.get("starts") or 0) + (1 if ok else 0)),
                        launcherUntil=(None if hud is True or (_relook_opens and ok) else cur.get("launcherUntil")),
                        **({"launcherFrame": None} if hud is True or (_relook_opens and ok) else {}),
-                       opensHour=_hk, opensThisHour=_opens,
+                       opensHour=_hk, opensThisHour=_opens, relookOpensThisHour=_relooks,
                        why=_why_ok)
     if ok:
         _shadow_seal_log("open", hour=_hk, opensThisHour=_opens, hud=hud, windowWhy=str(pre.get("windowWhy") or "")[:160],
@@ -40981,13 +40986,18 @@ def _shadow_fragment_reading(w=None, now_ms=None):
         return {"state": "unknown", "opens": None,
                 "line": "the shadow watcher's record could not be read, so whether this hour came in parts is UNKNOWN"}
     now = _shadow_now_ms() if now_ms is None else int(now_ms)
-    n = int(w.get("opensThisHour") or 0) if w.get("opensHour") == _shadow_hour_key(now) else 0
-    if n >= _SHADOW_FRAGMENT_OPENS:
-        return {"state": "warn", "opens": n,
-                "line": ("this clock hour has opened %d shadow reels - one session per hour is the rule, so something "
+    same = w.get("opensHour") == _shadow_hour_key(now)
+    n = int(w.get("opensThisHour") or 0) if same else 0
+    # REG-3737 - relook probes after a launcher seal are by design (#167), not a session cut in parts
+    probes = min(n, int(w.get("relookOpensThisHour") or 0)) if same else 0
+    if n - probes >= _SHADOW_FRAGMENT_OPENS:
+        return {"state": "warn", "opens": n, "probes": probes,
+                "line": ("this clock hour has opened %d shadow reels%s - one session per hour is the rule, so something "
                          "is closing and reopening them; every open and close is in shadow_seals.jsonl with its reason"
-                         % n)}
-    return {"state": None, "opens": n, "line": ""}
+                         % (n - probes, (" (+%d relook probe(s) after a launcher seal)" % probes) if probes else ""))}
+    return {"state": None, "opens": n, "probes": probes,
+            "line": ("%d relook probe(s) after a launcher seal this hour - a PC that films only inside a reel looks that "
+                     "way (#167); not a session in parts" % probes) if probes else ""}
 
 
 def _shadow_watch_loop():

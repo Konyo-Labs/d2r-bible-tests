@@ -13946,6 +13946,10 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_relook_probe_is_not_a_session_in_parts",
+         [sys.executable, os.path.join(HERE, "test_a_relook_probe_is_not_a_session_in_parts.py")], 120,
+         why="v3900 (REG-3737) - the work ALT's relook probes after a launcher seal (by design on a PC that films only "
+             "inside a reel, #167) read as 'this clock hour has opened 3 shadow reels'; probes are counted apart and named"),
     Gate("test_a_live_page_ends_a_stuck_publish_watch",
          [sys.executable, os.path.join(HERE, "test_a_live_page_ends_a_stuck_publish_watch.py")], 60,
          needs_app=False,
