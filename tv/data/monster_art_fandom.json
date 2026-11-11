@@ -556,6 +556,17 @@
    "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Pindleskin.gif",
    "sha1": "b4c5bd8b266c265e325c00474cc72564b85938b1",
    "bytes": 11618
+  },
+  {
+   "name": "The Countess",
+   "ids": [
+    "countess"
+   ],
+   "file": "art/d2mon_The_Countess.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/The%20Countess.gif",
+   "sha1": "5329480a384029cb9a0db637978f173379918928",
+   "bytes": 12186
   }
  ],
  "rejected": [
@@ -593,7 +604,6 @@
   "Bloodwitch the Wild",
   "Lord De Seis",
   "Treehead WoodFist",
-  "The Countess",
   "Hell Bovine"
  ]
 }

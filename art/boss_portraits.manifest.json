@@ -83,11 +83,12 @@
     },
     {
       "bossId": "countess",
-      "file": "countess01_graphic.png",
-      "bytes": 29194,
-      "sha256": "a161468e4c5fe44e546acf42155090af01d74dff8f231162370166e10f836473",
-      "depicts": "Green-and-black hooded corrupted rogue in a fighting stance, raising a long sword overhead. The Countess.",
-      "verdict": "correct"
+      "file": "d2mon_The_Countess.gif",
+      "bytes": 12186,
+      "sha256": "75f1a1cf6a59b0251719ae9423af5bad22aa84b73f4d92ae4c8da934376deaab",
+      "depicts": "Animated sprite, 13 frames: the green-and-black hooded corrupted rogue in a fighting stance, raising a long curved sword, on a transparent ground. The Countess.",
+      "verdict": "correct",
+      "opened": "2026-11-11 by Claude on a contact sheet (scratchpad countess/sheet.png) before wiring; source found by GrokBot #230 6797908757 (rankedboost, the same assets/boss path as Duriel, Diablo, Nihlathak, Pindleskin, The Smith)"
     },
     {
       "bossId": "travincal",

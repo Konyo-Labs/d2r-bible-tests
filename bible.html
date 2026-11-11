@@ -6100,7 +6100,7 @@ try {
   <div class="header-top header-top-editorial">
     <div class="header-title-block">
       <div class="masthead">
-        <h1 class="h-title"><img class="masthead-art" src="art/countess01_graphic.png" alt="" loading="lazy" onerror="this.style.display='none'">Konyo's D2R Farming Bible</h1>
+        <h1 class="h-title"><img class="masthead-art" src="art/d2mon_The_Countess.gif" alt="" loading="lazy" onerror="this.style.display='none'">Konyo's D2R Farming Bible</h1>
         <!-- v635 — ACCOUNT PILL: two parallel accounts (main = his non-ladder truth, ladder = the fresh
              ladder-economy account). Switching is a full reload through window.profileSwitch — no bleed. -->
         <!-- v663 — MASTER MACHINE PILL: 🖥 MAC = Konyo's world (with its Main/Ladder below), 🪟 WINDOWS = the cousin's own isolated world -->
@@ -6699,7 +6699,7 @@ try {
 
   <div class="boss-card" id="runes-countess">
     <div class="boss-header collapsed" onclick="toggleSec(this)" style="cursor:pointer">
-      <span class="d2art-wrap lg"><img class="d2art-img" src="art/countess01_graphic.png" alt="The Countess" onerror="this.parentNode.classList.add('d2art-failed')"><span class="d2art-fallback"><span class="boss-emoji">🗿</span></span></span>
+      <span class="d2art-wrap lg"><img class="d2art-img" src="art/d2mon_The_Countess.gif" alt="The Countess" onerror="this.parentNode.classList.add('d2art-failed')"><span class="d2art-fallback"><span class="boss-emoji">🗿</span></span></span>
       <div class="boss-title-block">
         <p class="boss-name">The Countess</p>
         <p class="boss-subtitle">Mistress of Runes</p>
@@ -23145,7 +23145,7 @@ const D2IO_ART = {
   "The Battlebranch": "art/poleaxe_graphic.png",
   "The Cat's Eye": "art/amu2_graphic.png",
   "The Chieftain": "art/thechieftan_graphic.png",
-  "The Countess": "art/countess01_graphic.png",
+  "The Countess": "art/d2mon_The_Countess.gif",   /* v3898 (#203) - one picture per monster */
   "The Diggler": "art/thediggler_graphic.png",
   "The Eye of Etlich": "art/amu2_graphic.png",
   "The Face of Horror": "art/mask_graphic.png",
@@ -72192,13 +72192,16 @@ function renderJournal(){
      their own animated Diablo II sprites (art/d2mon_*.gif, tv/data/monster_art_fandom.json - fandom first, rankedboost
      otherwise), each OPENED on a contact sheet first and recorded in art/boss_portraits.manifest.json with what it shows.
      The diablo2.io renders they replace had the boss painted onto a stone backdrop. No sprite for the Countess, the
-     Council (fandom's sits on a solid black box - rejected) or the Hell Bovine: they keep their portraits. */
+     Council (fandom's sits on a solid black box - rejected) or the Hell Bovine: they keep their portraits.
+     v3898 (#203, GrokBot #230 6797908757) - the Countess HAS one: rankedboost's assets/boss path (the source the map already
+     names) holds her 13-frame sprite, opened on a contact sheet and recorded in the manifest. The Council and the Hell
+     Bovine still keep their portraits. */
   var BOSS_PORTRAIT = {
     andariel:  'd2mon_Andariel.gif',        mephisto:  'd2mon_Mephisto.gif',
     duriel:    'd2mon_Duriel.gif',          diablo:    'd2mon_Diablo.gif',
     baal:      'd2mon_Baal.gif',            nihl:      'd2mon_Nihlathak.gif',
     cows:      'hellbovine_graphic.png',    summoner:  'summoner_graphic.png',
-    countess:  'countess01_graphic.png',    travincal: 'councilmember_graphic.png',
+    countess:  'd2mon_The_Countess.gif',    travincal: 'councilmember_graphic.png',   /* v3898 (#203) - her sprite, found by GrokBot */
     /* v1642 — Konyo: the Pindle thumb is "still showing here like maps plainly instead of the HD
        art". Three ids had no entry. Each was decided on its own evidence, not swept in together:
 
@@ -88125,7 +88128,7 @@ window.tvStashAutoIntake = async function(tab, opts){
     { re:/(tal rasha|duriel)/i,                   name:'Duriel',       art:'art/duriel_graphic.png' },
     { re:/halls of (vaught|anguish|pain)/i,       name:'Nihlathak',    art:'art/nihlathak-opt_graphic.png' },
     { re:/arcane sanctuary/i,                     name:'The Summoner', art:'art/summoner_graphic.png' },
-    { re:/(forgotten tower|tower cellar)/i,       name:'The Countess', art:'art/countess01_graphic.png' }
+    { re:/(forgotten tower|tower cellar)/i,       name:'The Countess', art:'art/d2mon_The_Countess.gif' }
   ];
   function tvnBoss(area){ if(!area) return null; for(var i=0;i<TVN_BOSS.length;i++){ if(TVN_BOSS[i].re.test(area)) return TVN_BOSS[i]; } return null; }
   var TVN_SCENE_IC={town:'🏘',loot:'⚔️',inventory:'🎒',stash:'🏦',gameplay:'🌫',transition:'⏳'};
