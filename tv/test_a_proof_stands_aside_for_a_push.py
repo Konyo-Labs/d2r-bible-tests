@@ -66,6 +66,10 @@ class PushGrading(unittest.TestCase):
         self.assertIn("a ship is running on this PC (pid 900)", why)
         self.assertIs(SP.push_grading(_table(launcher))[0], False, "the shell that launched a ship was read as the ship")
         self.assertIs(SP.push_grading(_table(ship), self_pid="900")[0], False, "a ship read itself as one to stand aside for")
+        # v3897 (REG-3705) - a ship 10 s old counts at once: the 60 s floor is for a hook that may exit in seconds
+        young = ("901", "500", 10, ship[3])
+        self.assertIs(SP.push_grading(_table(young))[0], True, "a ship in its first minute was invisible to the proof")
+        self.assertIs(SP.push_grading(_table(("802", "500", 10, HOOK)))[0], False, "PREMISE: a 10 s hook is still not grading")
 
     def test_a_ci_push_over_in_seconds_is_not_grading_yet(self):
         rows = _table(("800", "500", 5, "git push origin HEAD:ci/claude-v3861"), ("801", "800", 4, HOOK))
@@ -168,6 +172,11 @@ class TheConsoleYieldsAndSaysWhy(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3897 (REG-3705) - a ship in its first minute is invisible to the proof again (the hook's 60 s floor)",
+     "file": "tv/self_prove.py",
+     "find": "            if not ship and age is not None and age < after_s:\n",
+     "replace": "            if age is not None and age < after_s:\n",
+     "matches": 1},
     {"why": "v3861 - a law inside the pre-push yields to the push that is running it (an idle fixture reads busy)",
      "file": "tv/self_prove.py",
      "find": "            if pid in mine:\n                continue                       # the push that is running THIS process (a law inside the gate)\n",
@@ -187,7 +196,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3861 - a ci/ push over in seconds costs the proof its half-hour cooldown",
      "file": "tv/self_prove.py",
-     "find": "            if age is not None and age < after_s:\n                continue\n",
+     "find": "            if not ship and age is not None and age < after_s:\n                continue\n",   # v3897 re-anchored (REG-3705)
      "replace": "",
      "matches": 1},
     {"why": "v3861 - a process list nobody read is called a push",

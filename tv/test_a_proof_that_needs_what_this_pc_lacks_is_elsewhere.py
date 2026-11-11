@@ -591,7 +591,10 @@ class TheClaudeCliIsACapability(unittest.TestCase):
             spec.loader.exec_module(m)
             return m.RED_PROOF
         tri = [r for r in proofs("test_triage_runs_beside_a_shadow_reel") if r.get("find") == "_NO_CLAUDE.start()\n"]
-        self.assertEqual([r.get("needs") for r in tri], ["claude-cli"], "the CLI-un-hiding proof does not need a CLI")
+        # v3897 (REG-3695) - MEASURED on GitHub's windows-latest set for f1245cf6a: "claude-cli" was satisfied by the runner's
+        # refusing claude.cmd and the proof still filed BLIND - its one catcher's tripwire is a #!/bin/sh script, so the real
+        # need is POSIX (a POSIX PC with no CLI still goes red on the tripwire)
+        self.assertEqual([r.get("needs") for r in tri], ["posix"], "the CLI-un-hiding proof is judged on Windows again")
         cg = [r for r in proofs("test_child_guard_one_tree_per_role") if "start_new_session" in str(r.get("find"))
               and "if not IS_WIN" in str(r.get("find"))]
         self.assertEqual([r.get("needs") for r in cg], ["posix"], "the POSIX-branch proof is judged on Windows again")
@@ -605,7 +608,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3895 (REG-3661) - the CLI-un-hiding proof stops declaring it needs a CLI (BLIND on every PC with none)",
      "file": "tv/test_triage_runs_beside_a_shadow_reel.py",
-     "find": "        \"needs\": \"claude-cli\",\n",
+     "find": "        \"needs\": \"posix\",\n",
      "replace": "",
      "matches": 1},
     {"why": "v3895 (REG-3661) - the POSIX-branch proof stops declaring posix (BLIND on Windows, every lock shut)",

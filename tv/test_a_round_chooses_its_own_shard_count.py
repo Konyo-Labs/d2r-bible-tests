@@ -455,7 +455,7 @@ class TheAgentSuiteChoosesItsOwnSliceCount(unittest.TestCase):
                              ["gate_costs.py", log, "--base"]):
                     with self.subTest(argv=argv[1:]):
                         self.assertEqual(GC.main(argv), 2, "a flag with no path after it was read")
-            self.assertEqual(sorted(os.listdir(tmp)), ["base.json", "shard.log"], "a refused call still wrote a table")
+            self.assertFalse(os.path.exists(os.path.join(tmp, "--base")), "a refused call still wrote a table named --base")
         finally:
             os.chdir(here)
             shutil.rmtree(tmp, ignore_errors=True)

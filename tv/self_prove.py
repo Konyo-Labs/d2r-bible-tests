@@ -1362,7 +1362,11 @@ def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_p
             if pid in mine:
                 continue                       # the push that is running THIS process (a law inside the gate)
             age = age_of.get(pid)
-            if age is not None and age < after_s:
+            # v3897 (REG-3705, the Grok CLI's look on v3896) - THE FLOOR IS FOR A HOOK, NEVER A SHIP. A ci/ push's hook exits in
+            # seconds, so a proof does not give up half an hour for one younger than after_s; a ship runs for an hour, and its
+            # first minute was a window in which the console's proof could start a slice and then grade beside the whole ship
+            # (a proof already running is not stopped) - while guard 2 (tree_busy.ship_beside) has no floor at all.
+            if not ship and age is not None and age < after_s:
                 continue
             seen, p, ours = set(), parent.get(pid), False
             while p and p not in seen and p != "0":

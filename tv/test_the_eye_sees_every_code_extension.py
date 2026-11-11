@@ -214,18 +214,19 @@ RED_PROOF = [
                "reviewed without either of the two files it exists to change",
         "file": "tv/second_eye_run.py",
         # re-anchored 2026-09-27: the fetch goes through _changes() now (--base), same pathspec
-        "find": '                   ["--", "*.py", "*.js", "*.mjs", "*.sh",\n'
-                '                    ":(exclude)_archive/*"], timeout=90)',
-        "replace": '                   ["--", "*.py", "*.mjs", "*.sh"], timeout=90)',
+        # v3897 re-anchored: REG-3699 wraps the pathspec in _pathspec([...])
+        "find": '                   _pathspec(["--", "*.py", "*.js", "*.mjs", "*.sh",\n'
+                '                              ":(exclude)_archive/*"]), timeout=90)',
+        "replace": '                   _pathspec(["--", "*.py", "*.mjs", "*.sh"]), timeout=90)',
         "matches": 1,
     },
     {
         "why": "removing .js from the ROSTER is the subtler half: the file stops being a "
                "candidate, so the omitted-file report says 0 truthfully and nobody is told",
         "file": "tv/second_eye_run.py",
-        "find": '                     ["--", "*.py", "*.js", "*.mjs", "*.sh", "*.html",\n'
-                '                      ":(exclude)_archive/*"], timeout=90)',
-        "replace": '                     ["--", "*.py", "*.mjs", "*.sh", "*.html"], timeout=90)',
+        "find": '                     _pathspec(["--", "*.py", "*.js", "*.mjs", "*.sh", "*.html",\n'
+                '                                ":(exclude)_archive/*"]), timeout=90)',
+        "replace": '                     _pathspec(["--", "*.py", "*.mjs", "*.sh", "*.html"]), timeout=90)',
         "matches": 1,
     },
     {
@@ -237,8 +238,8 @@ RED_PROOF = [
         # preceded by `"--", ` on the same line. The SABOTAGE was wrong, not the law. Anchored on
         # the exclusion's own line instead, which removes ONLY the exclusion and leaves *.js in
         # place - so this proof tests the archive case and nothing else. [[regression-guard]] 5a
-        "find": '"*.sh",\n                    ":(exclude)_archive/*"], timeout=90)',
-        "replace": '"*.sh"], timeout=90)',
+        "find": '"*.sh",\n                              ":(exclude)_archive/*"]), timeout=90)',   # v3897 re-anchored (_pathspec)
+        "replace": '"*.sh"]), timeout=90)',
         "matches": 1,
     },
 ]

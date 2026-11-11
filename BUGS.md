@@ -50,6 +50,19 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3705 - A SHIP IN ITS FIRST MINUTE WAS INVISIBLE TO THE CONSOLE'S PROOF (v3897, the Grok CLI's look on v3896)
+self_prove.push_grading skipped every push or ship younger than PUSH_GRADING_AFTER_S (60 s) - a floor written for a ci/
+push's hook, which exits in seconds. A ship runs for an hour, and a proof that started in its first minute was never stopped
+(a running proof is not stood aside), while guard 2 (tree_busy.ship_beside) has no floor. The floor now applies to a hook
+only. Law: test_a_proof_stands_aside_for_a_push. Seen RED.
+### REG-3704 - A PRE-FLIGHT BESIDE A RUNNING SHIP READ THE REAL HOOK'S GUARD-2 REFUSAL AS A RED LANE LAW (v3897)
+MEASURED 11-11 11:4x: v3897's pre-flight ran while v3896's ship waited on GitHub - his pipeline rule (N+1 is pre-flighted
+during N's round) - and test_a_ci_push_skips_the_mac_and_never_main, which runs the REAL hook, read guard 2's "a ship is
+running on this Mac" as both its cases failing. The refusal is the guard working; the lane cannot be measured beside a ship,
+so the case now says UNMEASURED here and skips (GitHub measures it). The same pre-flight's other reds were Claude's own
+v3897 edits, fixed: the triage proof's need law pinned v3895's "claude-cli" (REG-3695 measured "posix"), five red-proof
+anchors moved under REG-3699/3705's edits (re-anchored, each matching once and parsing), the engine index still named the
+deleted merge_measured (REG-3690), and REG-3691's case listed a temp dir with no filter (unkeyable) - it checks the one name.
 ### REG-3703 - THE VERDICT LISTED ONE REPO'S RUNS AND ASKED ANOTHER'S FOR THEIR JOBS (v3897, the Grok CLI's look on v3895)
 ci_verdict.fetch(sha, repo=...) listed the runs of `repo`, then attach_required_jobs asked REPO_SLUG for each run's jobs, so a
 database id that happened to exist there could attach a stranger's jobs to this commit's verdict. The jobs now come from the

@@ -86,6 +86,14 @@ class TheRealHookStopsOnlyForCi(unittest.TestCase):
                                env=env)
         finally:
             os.unlink(p)
+        # v3897 (REG-3704) - THE REAL HOOK ASKS THE REAL PROCESS TABLE. MEASURED 11-11 11:4x: v3897's pre-flight ran while
+        # v3896's ship waited on GitHub (his pipeline rule: N+1 is pre-flighted during N's round), the hook's guard 2 refused
+        # "a ship is running on this Mac" before the lane block, and both cases read red. That refusal is the guard working;
+        # what this law measures - the ci-only lane - cannot be measured beside a ship, so it is UNMEASURED here (GitHub,
+        # where no ship runs beside it, measures it). A skip is not a pass, and it says why.
+        if "REFUSED - a ship is running on this Mac" in (r.stdout or "") + (r.stderr or ""):
+            self.skipTest("UNMEASURED here: a ship is running on this Mac, and card #200 guard 2 refuses every other push "
+                          "before the lane block - GitHub runs this case")
         return r.returncode, r.stdout + r.stderr
 
     def test_a_ci_only_push_stops_before_any_gate_and_says_so(self):

@@ -3462,7 +3462,6 @@
       "write",
       "coverage",
       "per_proof",
-      "merge_measured",
       "main"
     ],
     "gotcha": "Unpriced proofs are filled with the median; already-priced rows are never lowered. coverage() must stay complete or the shard-balance law fails.",
