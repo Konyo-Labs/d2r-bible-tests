@@ -109,10 +109,16 @@ def main(argv):
     rows = man["portraits"]
     quarantine = man.get("_quarantine", [])
     declined = [k for k in man.get("_declined", {}) if not k.startswith("_")]
+    # v3899 #91 (REG-3962) - rows OPENED and pinned before bible.html serves them. Hashed exactly like portraits[],
+    # and BOSS_PORTRAIT[bossId] may serve either the portraits[] file or this one, so wiring is one edit in bible.html.
+    ready = list((man.get("_ready_to_wire") or {}).get("rows") or [])
+    ready_by = dict((r["bossId"], r["file"]) for r in ready)
 
     if "--list" in argv:
         for r in rows:
             print("%-10s %-28s %s" % (r["bossId"], r["file"], r["depicts"]))
+        for r in ready:
+            print("%-10s %-28s %s" % ("READY:" + r["bossId"], r["file"], r["depicts"]))
         for q in quarantine:
             print("%-10s %-28s %s" % ("QUARANTINE", q["file"], q["depicts"]))
         for d in declined:
@@ -120,7 +126,7 @@ def main(argv):
         return 0
 
     bad = []
-    for r in rows:
+    for r in rows + ready:
         path = os.path.join(HERE, r["file"])
         if not os.path.exists(path):
             bad.append((r, "MISSING", "no file at art/%s — that thumbnail would 404" % r["file"]))
@@ -133,10 +139,10 @@ def main(argv):
         print("%-8s %-10s %s" % (kind, r["bossId"], detail))
         print("         last human-verified content: %s" % r["depicts"])
     if bad:
-        print("\n%d of %d portraits no longer match what a human verified." % (len(bad), len(rows)))
+        print("\n%d of %d portraits no longer match what a human verified." % (len(bad), len(rows) + len(ready)))
         print("OPEN each one and look at it. Do not re-bless a hash you have not seen the picture for.")
         return 1
-    print("all %d boss portraits match the human-verified manifest" % len(rows))
+    print("all %d boss portraits match the human-verified manifest (+%d opened and ready to wire)" % (len(rows), len(ready)))
 
     # ── v1642: the manifest and the APP must agree, and the refusals must stay refused ───────────
     served = read_boss_portrait_map()
@@ -147,10 +153,16 @@ def main(argv):
     else:
         for r in rows:
             got = served.get(r["bossId"])
-            if got != r["file"]:
+            if got != r["file"] and got != ready_by.get(r["bossId"]):
                 wrong.append("BOSS_PORTRAIT[%s] serves %r but the verified manifest row is %r"
                              % (r["bossId"], got, r["file"]))
         quarantined = {q["file"] for q in quarantine}
+        for r in ready:
+            if r["file"] in quarantined:
+                wrong.append("_ready_to_wire[%s] names QUARANTINED art %s" % (r["bossId"], r["file"]))
+            if r["bossId"] not in {x["bossId"] for x in rows}:
+                wrong.append("_ready_to_wire[%s] replaces no portraits[] row - a new boss id is pinned in portraits[] "
+                             "with its wiring, not here" % r["bossId"])
         for bid, f in served.items():
             if f in quarantined:
                 wrong.append("BOSS_PORTRAIT[%s] serves QUARANTINED art %s — that file was opened "

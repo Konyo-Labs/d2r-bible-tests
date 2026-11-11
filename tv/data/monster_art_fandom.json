@@ -1,5 +1,5 @@
 {
- "_why": "#89/#91 (his 11-06 asks: 'a .GIF for coldcrow just like it is here', 'unified across the platform and rendering the same'). One sprite per monster, the same file in D2IO_ART (every artUrl/artOr surface) and in Quick wins' _QW_SU_ART. Source order: diablo.fandom.com's '<Name> (Diablo II).gif' (his example), else rankedboost.com's assets/boss/<Name>.gif (the same classic sprites: Coldcrow is byte-for-byte the same 57x73, 13 frames on both). Every one was looked at, enlarged where small, before it was used. | v3877 #102 (his 11-07 'render just the monster not the area behind it'): the act bosses' sprites joined - fandom first (Andariel, Baal, Mephisto), rankedboost otherwise (Diablo, Duriel, Nihlathak, Pindleskin); each looked at on a contact sheet before it entered the page.",
+ "_why": "#89/#91 (his 11-06 asks: 'a .GIF for coldcrow just like it is here', 'unified across the platform and rendering the same'). One sprite per monster, the same file in D2IO_ART (every artUrl/artOr surface) and in Quick wins' _QW_SU_ART. Source order: diablo.fandom.com's '<Name> (Diablo II).gif' (his example), else rankedboost.com's assets/boss/<Name>.gif (the same classic sprites: Coldcrow is byte-for-byte the same 57x73, 13 frames on both). Every one was looked at, enlarged where small, before it was used. | v3877 #102 (his 11-07 'render just the monster not the area behind it'): the act bosses' sprites joined - fandom first (Andariel, Baal, Mephisto), rankedboost otherwise (Diablo, Duriel, Nihlathak, Pindleskin); each looked at on a contact sheet before it entered the page. | v3899 #91 (REG-3961, GrokBot): 'no sprite on either source' was a CASE miss on rankedboost - 'Lord de Seis.gif', 'Treehead Woodfist.gif' and 'Blood Witch the Wild.gif' are there, and 'The Countess.gif' (13 frames, 38x87) too; all four were opened and added. Hell Bovine stays sprite-less (no file on either source). Two monsters still share bytes: see sharedSprite.",
  "pulledAt": "2026-11-06",
  "sprites": [
   {
@@ -566,7 +566,48 @@
    "site": "rankedboost.com",
    "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/The%20Countess.gif",
    "sha1": "5329480a384029cb9a0db637978f173379918928",
-   "bytes": 12186
+   "bytes": 12186,
+   "depicts": "Animated sprite (38x87, 13 frames): a corrupted rogue woman in green-tinted skin and dark leather armour, long dark hair, a curved sword raised in her right hand, transparent ground. The Countess.",
+   "opened": "2026-11-11 by GrokBot: every 2nd-3rd frame enlarged 4x on grey before it entered art/ (v3899 #91)"
+  },
+  {
+   "name": "Bloodwitch the Wild",
+   "ids": [
+    "su_bloodwitchthewild"
+   ],
+   "file": "art/d2mon_Bloodwitch_the_Wild.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Blood%20Witch%20the%20Wild.gif",
+   "sha1": "74f9814b63ab2c4364e0ca9a44029b413054014f",
+   "bytes": 12676,
+   "depicts": "Animated sprite (40x76, 10 frames): a horned cat-woman Huntress in her unique deep-blue tint, crouched on clawed feet, transparent ground. The same blue Huntress as diablo.fandom.com's 'Bloodwitch The Wild.png' still. Bloodwitch the Wild.",
+   "opened": "2026-11-11 by GrokBot: every 2nd-3rd frame enlarged 4x on grey before it entered art/ (v3899 #91)"
+  },
+  {
+   "name": "Lord De Seis",
+   "ids": [
+    "su_lorddeseis"
+   ],
+   "file": "art/d2mon_Lord_De_Seis.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Lord%20de%20Seis.gif",
+   "sha1": "347b61224f008788f85e2121162924464bf9e552",
+   "bytes": 19917,
+   "depicts": "Animated sprite (76x79, 8 frames): an Oblivion Knight in bronze-brown spiked plate with a horned crest, a ball of orange fire burning in each hand, transparent ground. Lord De Seis.",
+   "opened": "2026-11-11 by GrokBot: every 2nd-3rd frame enlarged 4x on grey before it entered art/ (v3899 #91)"
+  },
+  {
+   "name": "Treehead WoodFist",
+   "ids": [
+    "su_treeheadwoodfist"
+   ],
+   "file": "art/d2mon_Treehead_WoodFist.gif",
+   "site": "rankedboost.com",
+   "url": "https://img.rankedboost.com/wp-content/plugins/diablo-2/assets/boss/Treehead%20Woodfist.gif",
+   "sha1": "0e057543cc67fb51465f21871662e787cf8118b8",
+   "bytes": 24576,
+   "depicts": "Animated sprite (83x96, 8 frames): a huge hunched shaggy brown Brute with mossy green flecks, a pale bare chest and long clawed orange hands, transparent ground. Treehead WoodFist.",
+   "opened": "2026-11-11 by GrokBot: every 2nd-3rd frame enlarged 4x on grey before it entered art/ (v3899 #91)"
   }
  ],
  "rejected": [
@@ -601,9 +642,16 @@
   }
  ],
  "noSpriteFound": [
-  "Bloodwitch the Wild",
-  "Lord De Seis",
-  "Treehead WoodFist",
   "Hell Bovine"
+ ],
+ "sharedSprite": [
+  {
+   "names": [
+    "Pindleskin",
+    "Bonesaw Breaker"
+   ],
+   "file_sha1": "b4c5bd8b266c265e325c00474cc72564b85938b1",
+   "why": "v3899 #91 (REG-3961): rankedboost serves BYTE-IDENTICAL GIFs for both (11618 bytes, 46x74, 11 frames) - both are Reanimated Horde (diablo.fandom.com's Bonesaw Breaker infobox: image=Reanimated Horde.png), and the classic sprites differ only by an in-game colour tint the source does not carry. diablo.fandom.com has no '(Diablo II).gif' for either; its 'Pindleskin Unused.png' / 'Bonesaw Breaker Unused.png' are two-figure stills on solid black (the box he asked to remove), so neither was used. STILL ONE PICTURE FOR TWO MONSTERS, declared rather than hidden."
+  }
  ]
 }

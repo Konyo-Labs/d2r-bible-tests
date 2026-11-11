@@ -137,5 +137,10 @@
     "pit": "NOT A BOSS — closed, not pending. The row is { id:'pit', label:'The Pit', why:'mlvl 85 · TC85 — best non-boss item ceiling' } (bible.html:23894). The Pit is an AREA farm with no boss in it, so the LEVEL art is the correct picture and a portrait here would invent a monster that does not exist. Do not re-open this one."
   },
   "_casc_note": "MOOT as of v1643, and instructive. v1642 spent this field explaining why extracting a Pindleskin from the local 28GB D2R install was hard (HD monsters are 3D models, SD monster art is DCC animation, and this repo's extractors — tv/casc_extract.c, tv/extract_ui_icons.py — read SpA1 sprite atlases only). All true, and all irrelevant: the render was already in art/ and already mapped by the app, so the expensive route was being costed before the cheap one had been checked. CHECK THE REPO'S OWN MAPS BEFORE COSTING AN EXTRACTION. Still genuinely NOT ESTABLISHED, recorded so nobody claims otherwise: whether any usable 2D Pindleskin asset exists in CASC. Nothing needs it now.",
-  "_also_consumed_here": "art/diablo_graphic.png is served by a SECOND surface, the 'Diablo Clone -> Annihilus' branch emblem (bible.html ~15225). It was showing the book too. Both surfaces now show the same, correct Diablo — if this file is ever swapped again, both break together."
+  "_also_consumed_here": "art/diablo_graphic.png is served by a SECOND surface, the 'Diablo Clone -> Annihilus' branch emblem (bible.html ~15225). It was showing the book too. Both surfaces now show the same, correct Diablo — if this file is ever swapped again, both break together.",
+  "_ready_to_wire": {
+    "_what": "v3899 #91 (REG-3962) - portraits OPENED and hash-pinned here BEFORE bible.html serves them, so the wiring is a one-line BOSS_PORTRAIT edit and nothing else. verify_boss_portraits.py hashes every row below exactly like a portraits[] row, and accepts BOSS_PORTRAIT[bossId] serving EITHER the portraits[] file OR this file. Once BOSS_PORTRAIT serves the file below, move the row into portraits[] (replacing the old one) and delete it here.",
+    "rows": [],
+    "_wired": "v3899 merge - both rows GrokBot pinned here were already served: countess by v3898 (#203) and summoner by v3899 (REG-3724), the same files and sha256 in portraits[]. Rows left empty; the section stays for the next portrait opened before it is wired."
+  }
 }
