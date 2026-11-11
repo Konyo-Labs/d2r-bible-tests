@@ -66,6 +66,37 @@ class ARehearsalNeverRacesItsOwnTreeLock(unittest.TestCase):
                                 "%s runs tv/run_gates.py or writes the tree, and is not marked locks_tree" % name)
 
 
+
+class ARedTheHookCannotProduceNeverStopsAShip(unittest.TestCase):
+    """REG-3682 - the rehearsal runs side by side, the hook one at a time: a red check is asked again ALONE before it stops a
+    ship (v3895 attempt 3's rehearsal stopped it on two reds the same checks did not have run one at a time)"""
+
+    def _rehearse(self, first, alone):
+        asked = []
+
+        def fake_run_one(name, root, **kw):
+            asked.append(name)
+            return {"name": name, "code": alone, "ms": 1, "say": "alone"}
+
+        with mock.patch.object(P, "run_checks", lambda *a, **k: first), mock.patch.object(P, "run_one", fake_run_one):
+            code, rows = P.mac_rehearse("/nonexistent-root")
+        return code, rows, asked
+
+    def test_a_red_only_beside_the_others_is_green_and_says_so(self):
+        code, rows, asked = self._rehearse((1, [{"name": "x", "code": 1, "ms": 1, "say": "a tree lock held"},
+                                                {"name": "y", "code": 0, "ms": 1, "say": "ok"}]), alone=0)
+        self.assertEqual((code, asked), (0, ["x"]), rows)
+        self.assertIn("green alone (red beside the others: a tree lock held)", rows[0]["say"])
+
+    def test_a_red_that_holds_alone_stays_red(self):
+        code, rows, asked = self._rehearse((1, [{"name": "x", "code": 1, "ms": 1, "say": "really red"}]), alone=1)
+        self.assertEqual((code, asked), (1, ["x"]), "a real red was re-asked into a pass")
+
+    def test_an_unknown_is_never_re_asked(self):
+        code, rows, asked = self._rehearse((2, [{"name": "x", "code": 2, "ms": 1, "say": "no Chrome"}]), alone=0)
+        self.assertEqual((code, asked), (2, []), "an UNKNOWN was re-asked into a pass")
+
+
 RED_PROOF = [
     {"why": "REG-3676 - the run_gates checks share the pool again and race each other's tree lock",
      "file": "tv/preship.py",
@@ -81,6 +112,11 @@ RED_PROOF = [
      "file": "tv/preship.py",
      "find": "        (\"render_check\",   {\"run\": check_render, \"cheap\": False, \"timeout\": RENDER_TIMEOUT_S, \"locks_tree\": True,\n",
      "replace": "        (\"render_check\",   {\"run\": check_render, \"cheap\": False, \"timeout\": RENDER_TIMEOUT_S,\n",
+     "matches": 1},
+    {"why": "REG-3682 - a red the parallel rehearsal produced stops the ship again, though the hook runs it alone and green",
+     "file": "tv/preship.py",
+     "find": "    if code != 1:\n        return code, rows\n    out, worst = [], 0\n",
+     "replace": "    if True:\n        return code, rows\n    out, worst = [], 0\n",
      "matches": 1}
 ]
 

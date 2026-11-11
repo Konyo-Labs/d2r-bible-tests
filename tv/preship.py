@@ -1025,7 +1025,29 @@ def mac_rehearse(root=None, **kw):
     kw.setdefault("auto_fix", False)  # already fixed at launch; do not silently relink mid-wait
     # second_eye during rehearsal uses refuse_owed via mac_ready; the second_eye check in
     # REHEARSE_ORDER is the reporting one. mac_ready already refuses owed.
-    return run_checks(list(REHEARSE_ORDER), root_of(root), parallel=True, **kw)
+    code, rows = run_checks(list(REHEARSE_ORDER), root_of(root), parallel=True, **kw)
+    return reask_reds_alone(code, rows, root_of(root), **kw)
+
+
+def reask_reds_alone(code, rows, root, **kw):
+    """v3896 (card #200 guard 9, REG-3682) - A RED THE HOOK CANNOT PRODUCE NEVER STOPS A SHIP. The rehearsal runs its checks
+    side by side beside the CI wait; the main hook runs them one at a time. MEASURED 11-11 05:51: v3895 attempt 3's rehearsal
+    stopped the ship on two reds that were the rehearsal racing itself (a tree lock, render shots rewritten mid-law) - the same
+    checks passed 19/19 run one at a time. So each red check is asked again ALONE before the rehearsal is red: red again stays
+    red; green alone is green, and the row says it was red beside the others. An UNKNOWN is never re-asked into a pass."""
+    if code != 1:
+        return code, rows
+    out, worst = [], 0
+    for r in rows:
+        if r.get("code") == 1:
+            again = run_one(r["name"], root, **kw)
+            if again.get("code") == 0:
+                r = dict(again, say="green alone (red beside the others: %s)" % str(r.get("say") or "")[:120])
+            else:
+                r = again
+        out.append(r)
+        worst = max(worst, max(0, min(2, r.get("code", 0))))
+    return worst, out
 
 
 def main(argv=None):

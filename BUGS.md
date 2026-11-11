@@ -27,6 +27,14 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3682 - A RED THE MAIN HOOK CANNOT PRODUCE STOPPED A SHIP (v3896, card #200 guard 9)
+MEASURED 11-11 05:51: v3895 attempt 3's Mac rehearsal (beside the CI wait) went red on failed_shards (a tree lock) and
+changed_tests (render shots rewritten mid-law) and the ship stopped with main unpushed - the same checks had passed 19/19
+run one at a time, which is how the main hook runs them. REG-3676 removes those two races; this closes the class: before a
+red rehearsal stops a ship, each red check is asked again ALONE - red again stays red, green alone is green and its row says
+it was red beside the others; an UNKNOWN is never re-asked into a pass. Law: test_a_rehearsal_never_races_its_own_tree_lock
+(ARedTheHookCannotProduceNeverStopsAShip). Seen RED.
+
 ### REG-3681 - A SHIP SKIPPED THE PRE-FLIGHT ON BYTES NO PRE-FLIGHT HAD GRADED (v3896, card #200 guard 4)
 MEASURED 11-11, v3895 round 1: the pre-flight found four faults, they were fixed in a new commit (beaddcd35), and the ship was
 launched with --no-preflight on it. GitHub spent a 55-minute round finding a law already red untampered (the hook's new
