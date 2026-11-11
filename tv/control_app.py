@@ -883,9 +883,17 @@ def _reader_health(now_ms=None, rows=None, g5=None, use_cache=True, auth=None):
             g.get("blockedWhy") or "the lane did not start"))
     else:
         _n_ok, _n_err = st.get("ok"), st.get("errors")
+        # v3897 (REG-3697) - THE LAST ERROR SAYS HOW OLD IT IS. MEASURED 11-11 on his Mac: the lamp read "last error: grok -p
+        # timeout 140s" beside a lane whose last call was 11-03 and whose last error was stamped 10-11 - so the doctor's row
+        # read as a lane failing NOW, and it was a lane nobody had asked for eight days (he plays on the Windows PCs).
+        _le_ts = st.get("last_error_ts")
+        try:
+            _le_age = ", %s ago" % _fmt_age_ms(now - float(_le_ts)) if _le_ts else ", when it happened was not recorded"
+        except (TypeError, ValueError):
+            _le_age = ", when it happened was not recorded"
         glamp.update(state="on", kind="on", why="Grok is on (%s) - %s ok, %s errors%s" % (
             g.get("mode") or "?", _n_ok if _n_ok is not None else "?", _n_err if _n_err is not None else "?",
-            (" - last error: %s" % st.get("last_error")) if st.get("last_error") else ""))
+            (" - last error: %s%s" % (st.get("last_error"), _le_age)) if st.get("last_error") else ""))
     out["grok"] = glamp
     # BOTH: how often Grok had to read a frame Claude did not. None when the lane did not answer —
     # a missing count is not zero. The card and the engine organ paint this; the fleet wire does not.

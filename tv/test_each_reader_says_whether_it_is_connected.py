@@ -222,6 +222,15 @@ class GrokSaysItsLanesState(unittest.TestCase):
         self.assertIn("3004 ok", g["why"])
         self.assertIn("timeout", g["why"], "the lane's last error is hidden behind a green lamp")
 
+    def test_the_last_error_says_how_old_it_is(self):
+        """* v3897 (REG-3697) - MEASURED 11-11 on his Mac: "last error: grok -p timeout 140s" beside a lane last asked 8 days
+        earlier, the error itself a month old - it read as a lane failing now. The error carries its age, or says the age
+        was never recorded."""
+        old = dict(G5_ON, stats=dict(G5_ON["stats"], last_error_ts=NOW - 31 * 86400 * 1000))
+        self.assertIn("last error: grok -p timeout 140s, 31.0 days ago", _health([], g5=old)["grok"]["why"])
+        self.assertIn("when it happened was not recorded", _health([])["grok"]["why"],
+                      "an error with no time reads as if it were current")
+
 
 class TheDoctorAsksTheSameMeasure(unittest.TestCase):
 
@@ -291,6 +300,16 @@ process.stdout.write(JSON.stringify(out));
 
 
 RED_PROOF = [
+    {"why": "v3897 (REG-3697) - the lane's last error is shown with no age again (a month-old timeout reads as current)",
+     "file": "tv/control_app.py",
+     "find": "            (\" - last error: %s%s\" % (st.get(\"last_error\"), _le_age)) if st.get(\"last_error\") else \"\"))",
+     "replace": "            (\" - last error: %s\" % st.get(\"last_error\")) if st.get(\"last_error\") else \"\"))",
+     "matches": 1},
+    {"why": "v3897 (REG-3697) - an error with no recorded time is given an age anyway",
+     "file": "tv/control_app.py",
+     "find": "            _le_age = \", %s ago\" % _fmt_age_ms(now - float(_le_ts)) if _le_ts else \", when it happened was not recorded\"\n",
+     "replace": "            _le_age = \", %s ago\" % _fmt_age_ms(now - float(_le_ts or 0))\n",
+     "matches": 1},
     {"why": "REG-3323 - the Claude lamp's sign-in sentence never says when the CLI last answered (GrokBot on his window)",
      "file": "control_app.py",
      "find": "    return \"checked just now\" if m < 1 else (\"checked %d min ago\" % m if m < 120 else \"checked %d h ago\" % (m // 60))\n",
