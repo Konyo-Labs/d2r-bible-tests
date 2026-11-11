@@ -28,6 +28,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -450,12 +451,19 @@ class TheAgentSuiteChoosesItsOwnSliceCount(unittest.TestCase):
             with io.open(base, "w", encoding="utf-8") as fh:
                 json.dump({"costs": {"old": 50.0}}, fh)
             os.chdir(tmp)
-            with contextlib.redirect_stdout(io.StringIO()):
+            # v3897 - THE COMMITTED TABLE IS NEVER THIS CASE'S. MEASURED 11-11 on heart2's proving of this law: under proof [0]
+            # (a flag read without its path) "--out" with no path fell through to the default, gate_costs.TABLE - the tree's
+            # own tv/gate_costs.json - and wrote a 2-gate fixture table over it. Restoring the code did not restore the table,
+            # so the closing clean run errored in test_GATE_COSTS_wins_over_the_committed_table and the gate read UNPROVABLE
+            # twice. The default points into this case's temp dir while it runs, and a refused call writes nothing there.
+            fake_table = os.path.join(tmp, "committed_gate_costs.json")
+            with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(GC, "TABLE", fake_table):
                 for argv in (["gate_costs.py", log, "--out"], ["gate_costs.py", "--out", "--base", base, log],
                              ["gate_costs.py", log, "--base"]):
                     with self.subTest(argv=argv[1:]):
                         self.assertEqual(GC.main(argv), 2, "a flag with no path after it was read")
             self.assertFalse(os.path.exists(os.path.join(tmp, "--base")), "a refused call still wrote a table named --base")
+            self.assertFalse(os.path.exists(fake_table), "a refused call still wrote the committed table")
         finally:
             os.chdir(here)
             shutil.rmtree(tmp, ignore_errors=True)
