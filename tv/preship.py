@@ -436,24 +436,58 @@ def playwright_resolves(root, timeout=15):
     return False, _tail(p) or "playwright does not resolve in this tree"
 
 
+#: the hook's own browser finder lives between these markers (test_the_render_hook_finds_a_browser_on_linux reads them too)
+HOOK_BROWSER_BEGIN = "# \u27e6RENDER BROWSER BEGIN\u27e7\n"
+HOOK_BROWSER_END = "# \u27e6RENDER BROWSER END\u27e7\n"
+
+
+def _sh_quote(s):
+    return "'" + str(s).replace("'", "'\\''") + "'"
+
+
+def hook_browser(root, timeout=15):
+    """The browser the main hook's render gate would start, found by the hook's OWN function (hooks/pre-push between
+    its RENDER BROWSER markers) run in bash - never a second copy of its rule. -> (path | None, why)"""
+    try:
+        with open(os.path.join(root, "hooks", "pre-push"), encoding="utf-8") as fh:
+            src = fh.read()
+    except OSError as e:
+        return None, "the hook's browser finder could not be read (%s)" % e
+    if src.count(HOOK_BROWSER_BEGIN) != 1 or src.count(HOOK_BROWSER_END) != 1:
+        return None, "the hook's browser finder markers moved - UNKNOWN"
+    fn = src[src.index(HOOK_BROWSER_BEGIN) + len(HOOK_BROWSER_BEGIN):src.index(HOOK_BROWSER_END)]
+    script = "set -u\nREPO=%s\nHOME=%s\n%s\n_d2r_find_render_browser\n" % (
+        _sh_quote(os.path.abspath(root)), _sh_quote(os.path.expanduser("~")), fn)
+    p = _run(["bash", "-c", script], root, timeout)
+    lines = (p.stdout or "").strip().splitlines()
+    path = lines[-1].strip() if lines else ""
+    if p.returncode == 0 and path and os.path.isfile(path) and os.access(path, os.X_OK):
+        return path, "the hook's own finder: %s" % path
+    return None, "the hook's own finder found none (exit %s)" % p.returncode
+
+
 def browsers_installed(root, timeout=15):
-    """Playwright's chromium is installed (npx, or the cache the hook also searches)."""
+    """Playwright's chromium is installed (the smoke specs launch it), else the browser the hook's render gate starts.
+
+    v3896 (card #200 guard 9, REG-3666) - MEASURED 11-11 04:10: this asked `chromium.executablePath().then(...)`. In the
+    installed Playwright executablePath() returns a STRING, so `.then` threw before `.catch` could see it and node exited
+    1; the fallback then asked `which google-chrome`, a Linux name no Mac has. So the Mac rehearsal refused v3895's ship
+    with Playwright's chromium AND Chrome.app both installed - a red about the instrument, never about the tree. The path
+    is taken as a value or a promise alike, and the fallback is the hook's own finder (hook_browser)."""
     env = os.environ.copy()
     nm = os.path.join(root, "node_modules")
     if os.path.isdir(nm) or os.path.islink(nm):
         env["NODE_PATH"] = nm + (os.pathsep + env["NODE_PATH"] if env.get("NODE_PATH") else "")
     p = _run(["node", "-e",
-              "const p=require('playwright'); p.chromium.executablePath().then(x=>{if(!x)process.exit(2);"
+              "const p=require('playwright'); Promise.resolve(p.chromium.executablePath()).then(x=>{if(!x)process.exit(2);"
               "require('fs').accessSync(x); process.stdout.write(x)}).catch(()=>process.exit(3))"],
              root, timeout, env=env)
     if p.returncode == 0 and (p.stdout or "").strip():
         return True, "chromium at %s" % (p.stdout or "").strip()
-    # the hook also accepts a system Chrome
-    for name in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser"):
-        q = _run(["which", name], root, 5)
-        if q.returncode == 0 and (q.stdout or "").strip():
-            return True, "system browser %s" % (q.stdout or "").strip()
-    return False, "no Playwright chromium and no system Chrome"
+    path, why = hook_browser(root, timeout=timeout)
+    if path:
+        return True, "system browser - %s" % why
+    return False, "no Playwright chromium (node exit %s) and %s" % (p.returncode, why)
 
 
 def python_deps_ok():

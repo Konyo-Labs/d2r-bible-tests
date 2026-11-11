@@ -25,8 +25,12 @@ class TheLawHolds(unittest.TestCase):
     def test_a_tree_with_no_node_modules_is_red(self):
         d = tempfile.mkdtemp(prefix="preship-ready-")
         self.addCleanup(shutil.rmtree, d, ignore_errors=True)
-        # no node_modules, and auto-fix cannot find the Mac install in this sandbox
-        code, rows = P.mac_ready(root=d, auto_fix=True)
+        # no node_modules, and auto-fix cannot find the Mac install in this sandbox. v3896 (REG-3667) - MEASURED on his Mac:
+        # the real ~/d2r_bible_tests/node_modules WAS found and linked in, so the case read the PC, not the tree, and went
+        # red on whatever check came next (the second eye). The install it may link is pointed at nothing here.
+        from unittest import mock
+        with mock.patch.object(P, "MAC_NODE_MODULES", os.path.join(d, "no-install-here")):
+            code, rows = P.mac_ready(root=d, auto_fix=True)
         self.assertEqual(code, 1, rows)
         say = " ".join(r.get("say") or "" for r in rows)
         self.assertIn("node_modules", say)
@@ -68,11 +72,90 @@ class TheRehearsalRunsAChangedLawByItsGate(unittest.TestCase):
 
 
 
+class TheBrowserCheckReadsAPathAndTheHooksOwnFinder(unittest.TestCase):
+    """v3896 (card #200 guard 9, REG-3666) - MEASURED 11-11 04:10: `chromium.executablePath().then(...)` threw (the path is
+    a STRING), and the fallback asked Linux names - the Mac rehearsal refused v3895 with chromium AND Chrome.app installed"""
+
+    def _root(self, finder=None):
+        d = tempfile.mkdtemp(prefix="preship-browser-")
+        self.addCleanup(shutil.rmtree, d, True)
+        if finder is not None:
+            os.makedirs(os.path.join(d, "hooks"))
+            with open(os.path.join(d, "hooks", "pre-push"), "w", encoding="utf-8") as fh:
+                fh.write("#!/usr/bin/env bash\n" + finder)
+        return d
+
+    def _exe(self, d, name):
+        x = os.path.join(d, name)
+        with open(x, "w") as fh:
+            fh.write("#!/bin/sh\nexit 0\n")
+        os.chmod(x, 0o755)
+        return x
+
+    def _finder(self, path):
+        return (P.HOOK_BROWSER_BEGIN + "_d2r_find_render_browser() {\n  printf '%s\\n' '" + path + "'\n  return 0\n}\n"
+                + P.HOOK_BROWSER_END)
+
+    def test_the_hooks_own_finder_is_what_is_asked(self):
+        d = self._root()
+        exe = self._exe(d, "fake-chrome")
+        os.makedirs(os.path.join(d, "hooks"))
+        with open(os.path.join(d, "hooks", "pre-push"), "w", encoding="utf-8") as fh:
+            fh.write("#!/usr/bin/env bash\n" + self._finder(exe))
+        path, why = P.hook_browser(d)
+        self.assertEqual(path, exe, why)
+
+    def test_moved_markers_are_unknown_never_a_browser(self):
+        d = self._root("#!/usr/bin/env bash\n_d2r_find_render_browser() { echo /bin/sh; }\n")
+        path, why = P.hook_browser(d)
+        self.assertIsNone(path, "a finder with no markers was trusted: %s" % why)
+        self.assertIn("markers moved", why)
+
+    def test_no_playwright_falls_back_to_the_hooks_finder(self):
+        d = self._root()
+        exe = self._exe(d, "fake-chrome")
+        os.makedirs(os.path.join(d, "hooks"))
+        with open(os.path.join(d, "hooks", "pre-push"), "w", encoding="utf-8") as fh:
+            fh.write("#!/usr/bin/env bash\n" + self._finder(exe))
+        ok, why = P.browsers_installed(d)            # no node_modules here: node cannot require playwright
+        self.assertTrue(ok, why)
+        self.assertIn(exe, why)
+
+    def test_a_path_returned_as_a_string_is_read(self):
+        if not shutil.which("node"):
+            self.skipTest("no node on this PC - proven where node is")
+        d = self._root()
+        exe = self._exe(d, "fake-chromium")
+        pw = os.path.join(d, "node_modules", "playwright")
+        os.makedirs(pw)
+        with open(os.path.join(pw, "index.js"), "w", encoding="utf-8") as fh:
+            fh.write("module.exports = {chromium: {executablePath: () => %r}};\n" % exe)
+        ok, why = P.browsers_installed(d)            # no hooks/ here: only Playwright's answer can make this ready
+        self.assertTrue(ok, "a string from executablePath() was not read: %s" % why)
+        self.assertIn("chromium at " + exe, why)
+
+
+
 RED_PROOF = [
     {"why": "v3895 - the rehearsal asks a changed law by its FILE name again (the registry refuses every renamed gate)",
      "file": "tv/preship.py",
      "find": "        hit = [g.name for g in rg.GATES if any(os.path.basename(str(a)) == st + \".py\" for a in (getattr(g, \"argv\", None) or []))]\n",
      "replace": "        hit = [g.name for g in rg.GATES if g.name == st]\n",
+     "matches": 1},
+    {"why": "REG-3666 - executablePath() is chained as a promise again, so the string it returns throws and is never read",
+     "file": "tv/preship.py",
+     "find": "Promise.resolve(p.chromium.executablePath()).then(",
+     "replace": "p.chromium.executablePath().then(",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3666 - no Playwright chromium means not ready, even with the browser the hook's render gate would start",
+     "file": "tv/preship.py",
+     "find": "    path, why = hook_browser(root, timeout=timeout)\n",
+     "replace": "    path, why = None, \"no finder asked\"\n",
+     "matches": 1},
+    {"why": "REG-3666 - a finder whose markers moved is run anyway",
+     "file": "tv/preship.py",
+     "find": "    if src.count(HOOK_BROWSER_BEGIN) != 1 or src.count(HOOK_BROWSER_END) != 1:\n        return None, \"the hook's browser finder markers moved - UNKNOWN\"\n",
+     "replace": "    if HOOK_BROWSER_BEGIN not in src:\n        src = HOOK_BROWSER_BEGIN + src + HOOK_BROWSER_END\n",
      "matches": 1},
 ]
 

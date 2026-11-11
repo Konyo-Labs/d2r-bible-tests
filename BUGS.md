@@ -19,6 +19,21 @@ dry/). Law: test_a_dry_or_grok_push_yields_to_a_live_ship.
 ci_verdict judged the proof-keys workflow red on its optional Windows jobs; now its required jobs (seed, Linux shards, fan-in)
 decide. Law: test_required_checks_ignore_windows_jobs.
 
+### REG-3667 - A READINESS CASE READ HIS MAC'S node_modules INSTEAD OF ITS OWN SANDBOX (v3896, card #200 guard 9)
+test_a_tree_with_no_node_modules_is_red promised "auto-fix cannot find the Mac install in this sandbox" and on his Mac it
+could: mac_ready linked the real ~/d2r_bible_tests/node_modules into the temp tree, passed node_modules, and went red on the
+next check it reached (the second eye owed in a new worktree). Green on CI only because CI has no such install. The case now
+points the install it may link at nothing. Law: test_a_worktree_without_playwright_is_not_ready.
+
+### REG-3666 - THE MAC REHEARSAL SAID "NO BROWSER" WITH TWO INSTALLED (v3896, card #200 guard 9)
+MEASURED 11-11 04:10: v3895's ship stopped on "Playwright browsers are not installed: no Playwright chromium and no system
+Chrome" - with Playwright's chromium and Chrome.app both on this Mac. preship.browsers_installed chained
+chromium.executablePath().then(...), but the installed Playwright returns the path as a STRING, so .then threw before .catch
+and node exited 1; the fallback asked `which google-chrome`, a Linux name. Readiness and the parallel Mac rehearsal both ran
+it. Now the path is read as a value or a promise alike, and the fallback runs the hook's OWN finder (hooks/pre-push between
+its RENDER BROWSER markers - one rule, never a copy). Law: test_a_worktree_without_playwright_is_not_ready
+(TheBrowserCheckReadsAPathAndTheHooksOwnFinder). Seen RED x3.
+
 ### REG-3665 - A PROOF-KEY FORMAT IS ONE DECLARED NUMBER: THE CACHE CARRIES IT AND A CHANGE BRINGS A RE-SEED PLAN (v3895, card #200 guards 1+3)
 v3894 attempts 3 and 5: #92 changed heart2's key salt alone (0 of 10,187 carried proofs reused, 21 shards cut at their
 deadline), then a seed restored the branch's dead-format cache over main's. Now heart2.P3_KEY_FORMAT is the declared format;
