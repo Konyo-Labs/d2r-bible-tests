@@ -121,6 +121,76 @@ class EveryRoundRecordsHowFastItRan(unittest.TestCase):
         self.assertLess(i, src.index("if speed is not None:"), "the round is measured before GitHub vouched for it")
 
 
+def _gh(branches, fail=False, commit_runs=None):
+    """A fake `gh` for observe()/attempts(): per ci branch, its runs; one finished job on the commit."""
+    import subprocess as _sp
+
+    def run(cmd, **k):
+        if cmd[:3] == ["gh", "run", "list"] and "--branch" in cmd:
+            if fail:
+                return _sp.CompletedProcess(cmd, 1, "", "HTTP 502")
+            return _sp.CompletedProcess(cmd, 0, json.dumps(branches.get(cmd[cmd.index("--branch") + 1], [])), "")
+        if cmd[:3] == ["gh", "run", "list"]:
+            return _sp.CompletedProcess(cmd, 0, json.dumps(commit_runs or [{"databaseId": 1, "name": "Routine I"}]), "")
+        return _sp.CompletedProcess(cmd, 0, json.dumps(dict(_job("shard 1/14", 0, 2, 12), conclusion="success")) + "\n", "")
+    return run
+
+
+def _r(sha, wf, attempt, minute):
+    return {"headSha": sha * 40, "workflowName": wf, "attempt": attempt, "createdAt": "2026-11-11T0%d:00:00Z" % minute}
+
+
+AGENT, PLAYWRIGHT, PROOFS = "📺 TV DIABLO — agent tests", "Routine I — Playwright suite", "proof-keys shards (ci/proof-keys-* only)"
+WINDOWS_BESIDE = "🪟 proof-keys windows (beside the ci shards, not required)"
+BRANCHES = {"ci/claude-v1": [_r("b", AGENT, 3, 5), _r("a", PLAYWRIGHT, 1, 2), _r("c", WINDOWS_BESIDE, 1, 7)],
+            "ci/proof-keys-v1": [_r("a", PROOFS, 2, 1), _r("b", PROOFS, 1, 4)]}
+
+
+class EveryVersionCountsItsRounds(unittest.TestCase):
+    """v3897 (card #200) - his 11-10 words: "this is ridiculous to do 7-12 attempts to ship". MEASURED by hand until now
+    (v3894: 7 attempts; v3895: 3 GitHub rounds, 4 re-runs). The ship now counts, at the vouch, the commits its two ci branches
+    carried a REQUIRED run on and the re-runs inside them, records them, and says them against the target of 2."""
+
+    def test_a_round_is_a_commit_with_a_required_run_and_a_re_run_is_an_attempt_past_the_first(self):
+        """* THE POINT"""
+        a = S.attempts("v1", "o/r", run=_gh(BRANCHES))
+        self.assertEqual((a["rounds"], a["reruns"]), (2, 3), a)
+        self.assertEqual(a["shas"], ["a" * 12, "b" * 12], "the rounds are not in the order GitHub ran them")
+        self.assertNotIn("c" * 12, a["shas"], "the optional Windows run beside the ship counted as a round")
+
+    def test_a_count_github_would_not_give_is_unknown_never_zero(self):
+        self.assertIsNone(S.attempts("v1", "o/r", run=_gh(BRANCHES, fail=True)))
+        self.assertIsNone(S.attempts("v1", "o/r", run=_gh({})), "no round on either branch read as a measured zero")
+        self.assertIsNone(S.attempts(None, "o/r", run=_gh(BRANCHES)))
+
+    def test_the_sentence_says_the_target_and_the_last_versions(self):
+        past = [{"workflow": S.ATTEMPTS_ROW, "version": "v0", "rounds": 7}, {"workflow": S.ATTEMPTS_ROW, "version": "v1", "rounds": 9}]
+        line = S.attempts_line({"version": "v1", "rounds": 2, "reruns": 1}, past)
+        self.assertIn("v1 took 2 GitHub round(s) and 1 re-run(s) of failed jobs - within the target of 2", line)
+        self.assertIn("the last 1 versions took v0 7", line, "the trend left out an earlier version or read its own")
+        self.assertIn("OVER the target of 2", S.attempts_line({"version": "v2", "rounds": 3, "reruns": 0}, []))
+
+    def test_the_vouch_records_the_count_and_the_ledger_still_shows(self):
+        tmp = tempfile.mkdtemp(prefix="ci_speed_attempts_")
+        try:
+            p, said = os.path.join(tmp, "ci_speed.jsonl"), []
+            self.assertEqual(S.observe("b" * 40, "v1", "o/r", say=said.append, run=_gh(BRANCHES), path=p), 1)
+            rows = S.history(p)
+            self.assertEqual([r["workflow"] for r in rows], ["Routine I", S.ATTEMPTS_ROW], rows)
+            self.assertTrue(any("#200 ATTEMPTS - v1 took 2 GitHub round(s)" in x for x in said), said)
+            said = []
+            S.observe("b" * 40, "v1", "o/r", say=said.append, run=_gh(BRANCHES, fail=True), path=p)
+            self.assertTrue(any("#200 ATTEMPTS" in x and "UNKNOWN" in x for x in said), said)
+            import contextlib
+            from unittest import mock
+            out = io.StringIO()
+            with mock.patch.object(S, "ledger_path", lambda *a, **k: p), contextlib.redirect_stdout(out):
+                self.assertEqual(S.main(["--show"]), 0)
+            self.assertIn("2 round(s) · 3 re-run(s) · target 2", out.getvalue())
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 RED_PROOF = [
     {"why": "v3890 (#194) - a round that could not be measured hands back 0, the same as a measured round with no job",
      "file": "tv/ci_speed.py",
@@ -156,6 +226,36 @@ RED_PROOF = [
      "file": "tv/ci_speed.py",
      "find": "        cmp = (\"the same as\" if word == \"the same\" else \"%s %.1f min than\" % (word, abs(delta)))\n",
      "replace": "        cmp = (\"the same than\" if word == \"the same\" else \"%s %.1f min than\" % (word, abs(delta)))\n",
+     "matches": 1},
+    {"why": "v3897 (card #200) - the optional Windows run beside the ship counts as a round",
+     "file": "tv/ci_speed.py",
+     "find": "            if not isinstance(w, dict) or w.get(\"workflowName\") not in CV.REQUIRED or not w.get(\"headSha\"):\n",
+     "replace": "            if not isinstance(w, dict) or not w.get(\"headSha\"):\n",
+     "matches": 1},
+    {"why": "v3897 (card #200) - a round count GitHub would not give reads as zero rounds",
+     "file": "tv/ci_speed.py",
+     "find": "    if not seen:\n        return None\n",
+     "replace": "    if False:\n        return None\n",
+     "matches": 1},
+    {"why": "v3897 (card #200) - a re-run of failed jobs is never counted",
+     "file": "tv/ci_speed.py",
+     "find": "                reruns += max(0, int(w.get(\"attempt\") or 1) - 1)\n",
+     "replace": "                reruns += 0\n",
+     "matches": 1},
+    {"why": "v3897 (card #200) - a version over the target reads as within it",
+     "file": "tv/ci_speed.py",
+     "find": "    word = \"within\" if row[\"rounds\"] <= ATTEMPTS_TARGET else \"OVER\"\n",
+     "replace": "    word = \"within\"\n",
+     "matches": 1},
+    {"why": "v3897 (card #200) - the vouch never records how many rounds the version took",
+     "file": "tv/ci_speed.py",
+     "find": "            record(sha, version, [a], p)\n",
+     "replace": "            pass\n",
+     "matches": 1},
+    {"why": "v3897 (card #200) - the ledger's --show crashes on a version's round count",
+     "file": "tv/ci_speed.py",
+     "find": "            if r.get(\"workflow\") == ATTEMPTS_ROW:    # v3897 (card #200) - a version's rounds, never a speed\n",
+     "replace": "            if False:\n",
      "matches": 1},
     {"why": "v3896 (REG-3683) - a job our own cancel cut short is timed as a speed again",
      "file": "tv/ci_speed.py",

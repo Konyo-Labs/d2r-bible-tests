@@ -50,6 +50,14 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3689 - NOTHING COUNTED HOW MANY ROUNDS A VERSION TOOK TO SHIP (v3897, card #200 "measure it")
+His 11-10 words: "this is ridiculous to do 7-12 attempts to ship". Card #200's target is at most 2 GitHub rounds a version,
+and the count was kept by hand in prose. At the vouch the ship now counts the commits its two ci branches carried a REQUIRED
+run on (the optional Windows run beside it is not a round) and the re-runs of failed jobs inside them, records the count in
+the machine's speed ledger, and says it against the target and the last 5 versions. A count GitHub would not give is said
+UNKNOWN, never zero; ci_speed --show prints the row. MEASURED with it: v3894 3 rounds + 3 re-runs (its other attempts were
+refused on the Mac before GitHub, which this count cannot see), v3895 3 rounds + 4 re-runs. Law:
+test_every_round_records_how_fast_it_ran (EveryVersionCountsItsRounds). Seen RED x6.
 ### REG-3688 - A SHARD RED WHILE ITS ROUND STILL RAN STOPPED THE SHIP ON A CENSUS NOT YET WRITTEN (v3897, card #200)
 MEASURED 11-11 08:16, v3896 round 1 (4110dfc86): shard 5 lost its runner 7 minutes in ("The runner has received a shutdown
 signal", exit 143) while 20 shards still proved. The ship saw the required job red, asked the make-up at once, and the make-up

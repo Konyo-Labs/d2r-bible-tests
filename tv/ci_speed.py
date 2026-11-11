@@ -32,6 +32,10 @@ except ImportError:
 LEDGER_NAME = "ci_speed.jsonl"
 #: the rounds a trend line compares against
 TREND_ROUNDS = 5
+#: v3897 (card #200) - his 11-10 words, "this is ridiculous to do 7-12 attempts to ship": GitHub rounds per version, at most
+ATTEMPTS_TARGET = 2
+#: v3897 (card #200) - the ledger row that counts them (one per vouched version; never a speed row)
+ATTEMPTS_ROW = "ship attempts (GitHub rounds per version)"
 
 
 def _t(s):
@@ -106,6 +110,51 @@ def fetch(sha, slug, run=subprocess.run):
     return out
 
 
+def attempts(version, slug, run=subprocess.run):
+    """v3897 (card #200) - HOW MANY GITHUB ROUNDS THIS VERSION TOOK. MEASURED by hand until now: v3894 took 7, v3895 3 (beaddcd35,
+    6332d8005, f1245cf6a) plus 2 re-runs of one flaky slice. A round is a commit a ci branch of this version carried a
+    REQUIRED run on (ci_verdict.REQUIRED - the optional Windows run is not a round); a re-run is an attempt past the first
+    inside one run. -> {"workflow": ATTEMPTS_ROW, "rounds", "reruns", "shas"} | None when GitHub could not say (UNKNOWN,
+    never a measured zero)"""
+    import ci_verdict as CV
+    if not version:
+        return None
+    seen, reruns = {}, 0
+    for br in ("ci/claude-%s" % version, "ci/proof-keys-%s" % version):
+        r = run(["gh", "run", "list", "--repo", slug, "--branch", br, "--limit", "100",
+                 "--json", "headSha,attempt,workflowName,createdAt"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if r.returncode != 0:
+            return None
+        try:
+            got = json.loads(r.stdout or "[]")
+        except ValueError:
+            return None
+        for w in got if isinstance(got, list) else []:
+            if not isinstance(w, dict) or w.get("workflowName") not in CV.REQUIRED or not w.get("headSha"):
+                continue
+            sha = str(w["headSha"])[:12]
+            seen[sha] = min(seen.get(sha, "~"), str(w.get("createdAt") or ""))
+            try:
+                reruns += max(0, int(w.get("attempt") or 1) - 1)
+            except (TypeError, ValueError):
+                pass
+    if not seen:
+        return None
+    return {"workflow": ATTEMPTS_ROW, "rounds": len(seen), "reruns": reruns,
+            "shas": [k for k, _v in sorted(seen.items(), key=lambda kv: kv[1])]}
+
+
+def attempts_line(row, past, n=TREND_ROUNDS):
+    """The ship's one sentence for card #200: this version's rounds against the target and the last n versions. Pure."""
+    prev = [p for p in past or [] if p.get("workflow") == ATTEMPTS_ROW and p.get("version") != row.get("version")][-n:]
+    word = "within" if row["rounds"] <= ATTEMPTS_TARGET else "OVER"
+    tail = ("; the last %d versions took %s" % (len(prev), ", ".join("%s %d" % (p.get("version"), p.get("rounds", 0))
+                                                                      for p in prev))) if prev else ""
+    return ("%s took %d GitHub round(s) and %d re-run(s) of failed jobs - %s the target of %d%s"
+            % (row.get("version"), row["rounds"], row["reruns"], word, ATTEMPTS_TARGET, tail))
+
+
 def record(sha, version, rows, path, now=None):
     """Append one row per workflow measured on this round. -> how many written"""
     at = int(now if now is not None else datetime.now(timezone.utc).timestamp())
@@ -172,6 +221,12 @@ def observe(sha, version, slug, say=print, run=subprocess.run, path=None):
             past = []
         for line in trend(rows, past):
             say("ship: v3890 (#194) SPEED - " + line)
+        a = attempts(version, slug, run=run)     # v3897 (card #200) - how many rounds this version took
+        if a is None:
+            say("ship: #200 ATTEMPTS - how many GitHub rounds %s took could not be read (UNKNOWN)" % (version or "this version"))
+        else:
+            record(sha, version, [a], p)
+            say("ship: #200 ATTEMPTS - " + attempts_line(dict(a, version=version), past))
         return len(rows)
     except Exception as e:
         say("ship: v3890 (#194) SPEED - this round could not be measured (%s: %s)" % (type(e).__name__, str(e)[:120]))
@@ -187,6 +242,11 @@ def main(argv=None):
             print("the speed ledger at %s will not read - UNKNOWN, not empty" % ledger_path())
             return 2
         for r in rows[-40:]:
+            if r.get("workflow") == ATTEMPTS_ROW:    # v3897 (card #200) - a version's rounds, never a speed
+                print("%s %-8s %-48s %d round(s) · %d re-run(s) · target %d"
+                      % (r.get("sha"), r.get("version") or "", ATTEMPTS_ROW[:48], r.get("rounds", 0), r.get("reruns", 0),
+                         ATTEMPTS_TARGET))
+                continue
             print("%s %-8s %-48s slowest %5.1f min · wall %5.1f · waited up to %4.1f · %d jobs"
                   % (r.get("sha"), r.get("version") or "", str(r.get("workflow"))[:48], r["slowestMin"], r["wallMin"],
                      r["queueMaxMin"], r["jobs"]))
