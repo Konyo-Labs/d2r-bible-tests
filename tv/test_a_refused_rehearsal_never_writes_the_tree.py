@@ -89,8 +89,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3674 - a lesson remembered on this machine no longer runs in the next rehearsal",
      "file": "tv/preship.py",
-     "find": "    rows += load_auto_lessons(root)",
-     "replace": "    rows += []",
+     "find": "    rows += auto if auto is not None else []\n",
+     "replace": "    rows += []\n",
      "matches": 1},
 ]
 
