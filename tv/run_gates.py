@@ -13917,6 +13917,11 @@ GATES = [
          needs_app=False,
          why="v3899 (#91, GrokBot #230 6803962990) - the Summoner wore his sprite on his Boss card and his old render in "
              "BOSS_PORTRAIT; the TV·D area art still gave the act bosses their stone-backed renders. One file per boss"),
+    Gate("test_the_likely_reds_run_first",
+         [sys.executable, os.path.join(HERE, "test_the_likely_reds_run_first.py")], 60,
+         needs_app=False,
+         why="v3899 (card #200, REG-3727) - the pre-flight ran a version's new laws after all 1,686 cheap ones (v3898 run d's "
+             "only red at minute 22); the laws a recent run said failed, the new ones and the changed ones go first now"),
     Gate("test_no_reel_leaves_without_its_record",
          [sys.executable, os.path.join(HERE, "test_no_reel_leaves_without_its_record.py")], 60,
          needs_app=False,

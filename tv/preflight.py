@@ -320,6 +320,71 @@ def prove_changed(version=None, here=HERE, prove_max=PROVE_MAX, _run=None, _git_
     return owed, names, None
 
 
+#: v3899 (card #200, REG-3727) - THE LIKELY REDS RUN FIRST. MEASURED on v3898's runs (11-11): the pre-flight ran its laws in
+#: cost order and a version's NEW laws (no CI cost yet) after all 1,686 cheap ones, so run d's only red came at minute 22 and
+#: run b's five at minutes 6-21 - and the same laws-about-laws had gone red on v3896, v3897 and v3898 (no-scratch-dirs, the
+#: shard balance file, the ci push). Every red voids the run, so each one found late cost the minutes before it. Now the laws a
+#: recent pre-flight named failing, the version's new laws and the laws whose own file it changed go first; the set is the
+#: same, only the order moves. Learned from the logs, never a hand list.
+RECENT_RUNS = 8
+_FAIL_LINE = re.compile(r"^preflight: (?:RED|FAIL|ERROR|TIMEOUT|BLIND|INVALID) (test_[A-Za-z0-9_]+|[a-z][a-z0-9_-]+)\s*$")
+
+
+def recent_reds(logs_dir=None, last=RECENT_RUNS):
+    """-> set of law names the newest `last` pre-flight logs said failed (preflight_*.log in git's ship_logs). Empty when no
+    log reads - an order hint, never a verdict."""
+    if logs_dir is None:
+        ok, out = _git("rev-parse", "--git-common-dir")
+        if not ok or not out.strip():
+            return set()
+        common = out.strip()
+        if not os.path.isabs(common):
+            common = os.path.join(os.path.dirname(HERE), common)
+        logs_dir = os.path.join(common, "ship_logs")
+    try:
+        logs = [os.path.join(logs_dir, f) for f in os.listdir(logs_dir) if f.startswith("preflight_") and f.endswith(".log")]
+    except OSError:
+        return set()
+    logs.sort(key=lambda f: os.path.getmtime(f), reverse=True)
+    out = set()
+    for f in logs[:max(0, int(last))]:
+        try:
+            with io.open(f, encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    m = _FAIL_LINE.match(line.rstrip("\n"))
+                    if m:
+                        out.add(m.group(1))
+        except OSError:
+            continue
+    return out
+
+
+def changed_laws(version=None, _git_=None):
+    """-> the laws whose OWN file this version changed (tv/test_*.py in git diff since prove_base), [] when unknown"""
+    base = prove_base(version, _git_)
+    if base is None:
+        return []
+    ok, out = (_git_ or _git)("diff", "--name-only", "%s..HEAD" % base)
+    if not ok:
+        return []
+    return [os.path.splitext(os.path.basename(l.strip()))[0] for l in out.splitlines()
+            if re.match(r"^tv/test_[A-Za-z0-9_]+\.py$", l.strip())]
+
+
+def first_order(names, recent=(), new=(), changed=()):
+    """-> (the same laws, the likely reds first, count moved): recent failures, then new laws, then changed ones, each in
+    the order given; the rest keep theirs. Nothing is added or dropped."""
+    names = list(names)
+    have = set(names)
+    lead, seen = [], set()
+    for group in (sorted(set(recent or ())), list(new or ()), list(changed or ())):
+        for n in group:
+            if n in have and n not in seen:
+                lead.append(n)
+                seen.add(n)
+    return lead + [n for n in names if n not in seen], len(lead)
+
+
 #: v3881 - THE CONSOLE DEMOS RUN HERE WHEN THE MAIN PUSH WOULD RUN THEM. MEASURED on v3879 (2026-11-07): GitHub vouched for
 #: 9c5815c6f after a re-run, and the main push's hook then ran tv/demo_console.mjs (it runs ONLY there - GitHub never does)
 #: and J9 refused it: v3879's own #108 had moved the Terror Zone cards to monster sprites. The fix changed the sha and cost
@@ -486,7 +551,7 @@ def version_check(here=HERE, say=print, _laws=None, _anchors=None):
 
 def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, version=None, _laws=None, _prove=None,
               _anchors=None, _registry=None, _demos=None, _demos_due=None, _render=None, _render_due=None,
-              _second_eye=None):
+              _second_eye=None, _recent=None, _changed=None):
     """-> (exit code 0 green / 1 red / 2 unknown, [red lines])"""
     costs = read_costs(os.path.join(here, "gate_costs.json"))
     if not costs:
@@ -506,6 +571,19 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
     # about 7 minutes longer against a ~55-minute round. They run after the fast laws; only a browser stays GitHub's.
     n_fast, n_slow = len(s["run"]), len(s["slow"])
     s["run"] = s["run"] + list(s["slow"])
+    # REG-3727 (#200) - the likely reds first (see first_order); a hint that will not read only leaves the order as it was
+    try:
+        _rec = (_recent or recent_reds)()
+    except Exception:
+        _rec = set()
+    try:
+        _chg = (_changed or (lambda: changed_laws(version)))()
+    except Exception:
+        _chg = []
+    s["run"], _lead = first_order(s["run"], recent=_rec, new=un_run, changed=_chg)
+    if _lead:
+        say("preflight: %d law(s) go first - failed in one of the last %d runs, new in this version, or their own file "
+            "changed" % (_lead, RECENT_RUNS))
     say("preflight: %d law(s) here (%d at <= %gs on CI, %d slower - run here too, after them; %d by their registered "
         "command) · %d browser-driving and %d that are not one python law (node, shell, the app) are GitHub's, not passed "
         "here" % (len(s["run"]), n_fast, cap_s, n_slow, len(s["argv"]), len(s["browser"]), len(s["other"])))
