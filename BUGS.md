@@ -27,6 +27,14 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3674 - A REFUSED REHEARSAL WROTE THE TRACKED LESSONS FILE OF THE TREE IT GRADED (v3896, card #200 guard 9)
+MEASURED 11-11 05:25: v3895's main hook refused on its readiness step (tv/preship.py --mac-ready, REG-3666/3672) and the
+CLI's "remember the first red" appended two lessons to the TRACKED tv/preship_lessons.json of that worktree - the hook's
+working tree went dirty under its own gate, and every later readiness run would carry a false lesson. The CLI's automatic
+lesson is now written to the machine ledger (git's common dir, preship_lessons_auto.json, beside the speed and second-eye
+ledgers) and _lesson_checks reads both, so the lesson still runs. The shard watcher's deliberate lessons (REG-3650) are
+unchanged. Law: test_a_refused_rehearsal_never_writes_the_tree. Seen RED x2.
+
 ### REG-3673 - THE UNIQUES TAB'S QUICK WINS AND BEST RUNS AT HIS REFERENCE'S SCALE (v3896, card #198)
 His words 11-10: "for the uniques section i want best wins/quick wins alot bigger like this for example" and, for Best runs,
 "this is nicer". MEASURED on the render at 1440: Quick wins' four numbers at 13px over 10px labels beside a 72px tile; Best

@@ -1575,6 +1575,12 @@ GATES = [
              "the exclusion rule caught it. Pins the THIRD state — OURS -> WARN, UNATTRIBUTED -> "
              "UNKNOWN (not the rail's failure state), still REPORTED, never dismissed."),
 
+    Gate("test_a_refused_rehearsal_never_writes_the_tree",
+         [sys.executable, os.path.join(HERE, "test_a_refused_rehearsal_never_writes_the_tree.py")], 60,
+         why="REG-3674 (2026-11-11) - v3895's main hook refused on readiness and tv/preship.py appended two lessons to the "
+             "TRACKED tv/preship_lessons.json of the tree it was grading. A refusal is remembered in the machine ledger "
+             "(git's common dir) and its check still runs; the tracked file stays as committed. Driven on a throwaway repo "
+             "through the CLI's own main() with a planted red."),
     Gate("test_the_uniques_cards_read_at_a_glance",
          [sys.executable, os.path.join(HERE, "test_the_uniques_cards_read_at_a_glance.py")], 60,
          why="#198 (REG-3673, his 11-10 'for the uniques section i want best wins/quick wins alot bigger like this') - "

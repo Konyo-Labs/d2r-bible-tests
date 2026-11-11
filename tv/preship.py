@@ -106,6 +106,39 @@ def lessons_path(root=None):
     return os.path.join(root_of(root), "tv", LESSONS_NAME)
 
 
+#: v3896 (REG-3674) - an AUTOMATIC lesson (a refused run of this CLI) lives beside the speed and second-eye ledgers in git's
+#: common dir: every checkout and worktree of this machine reads it, and it is never a tracked byte of the tree being graded
+AUTO_LESSONS_NAME = "preship_lessons_auto.json"
+
+
+def auto_lessons_path(root=None):
+    """-> the machine ledger's path, or None when git will not name its common dir (then nothing is remembered, and said)"""
+    try:
+        p = subprocess.run(["git", "rev-parse", "--git-common-dir"], cwd=root_of(root), capture_output=True, text=True,
+                           timeout=15)
+    except Exception:
+        return None
+    d = (p.stdout or "").strip()
+    if p.returncode != 0 or not d:
+        return None
+    if not os.path.isabs(d):
+        d = os.path.join(root_of(root), d)
+    return os.path.join(d, AUTO_LESSONS_NAME)
+
+
+def load_auto_lessons(root=None):
+    """-> the machine's automatic lessons ([] when none were ever written; an unreadable ledger is [] and never a red)"""
+    p = auto_lessons_path(root)
+    if not p:
+        return []
+    try:
+        with open(p, encoding="utf-8") as fh:
+            rows = (json.load(fh) or {}).get("lessons")
+    except (OSError, ValueError, AttributeError):
+        return []
+    return rows if isinstance(rows, list) else []
+
+
 def load_lessons(root=None):
     """-> list of lesson dicts. An unreadable file is a hard error (never an empty list)."""
     p = lessons_path(root)
@@ -823,12 +856,14 @@ def _lesson_checks(root, names, exclude=()):
     have = list(names)
     skip = set(exclude or ())
     try:
-        for row in load_lessons(root):
-            c = (row or {}).get("check")
-            if c and c not in have and c not in skip and c in catalog():
-                have.append(c)
+        rows = list(load_lessons(root))
     except RuntimeError:
-        pass
+        rows = []
+    rows += load_auto_lessons(root)          # v3896 (REG-3674) - this machine's automatic lessons run here too
+    for row in rows:
+        c = (row or {}).get("check") if isinstance(row, dict) else None
+        if c and c not in have and c not in skip and c in catalog():
+            have.append(c)
     return have
 
 
@@ -895,14 +930,29 @@ def format_table(results, elapsed_ms, title="preship"):
     return "\n".join(lines)
 
 
-def remember_refusal(reason, check, root=None, attempt=None, cls="refusal", shard=None, **extra):
+def remember_refusal(reason, check, root=None, attempt=None, cls="refusal", shard=None, local=False, **extra):
     """Append a lesson so the same class of failure cannot recur. -> the new row or None if already present.
 
     REG-3650 - a shard failure records the shard's identity so a repeat is caught before push.
+    v3896 (REG-3674) - local=True writes the machine ledger (auto_lessons_path), never the tracked tv/preship_lessons.json:
+    MEASURED 11-11 05:25, v3895's main hook refused on readiness and this CLI appended two lessons to the TRACKED file of the
+    tree the hook was grading - a red rehearsal dirtied the bytes it judged, and every later run carried a false lesson.
     """
-    p = lessons_path(root)
-    with open(p, encoding="utf-8") as fh:
-        data = json.load(fh)
+    if local:
+        p = auto_lessons_path(root)
+        if not p:
+            return None
+        try:
+            with open(p, encoding="utf-8") as fh:
+                data = json.load(fh)
+            if not isinstance(data, dict):
+                data = {"lessons": []}
+        except (OSError, ValueError):
+            data = {"lessons": []}
+    else:
+        p = lessons_path(root)
+        with open(p, encoding="utf-8") as fh:
+            data = json.load(fh)
     rows = data.setdefault("lessons", [])
     for row in rows:
         if row.get("check") == check and row.get("reason") == reason:
@@ -1006,7 +1056,7 @@ def main(argv=None):
         reds = [r for r in rows if r["code"] == 1]
         if reds:
             try:
-                remember_refusal(reds[0]["say"], reds[0]["name"], root=root, cls="auto")
+                remember_refusal(reds[0]["say"], reds[0]["name"], root=root, cls="auto", local=True)
             except Exception:
                 pass
     return code
