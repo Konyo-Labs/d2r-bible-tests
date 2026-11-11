@@ -6623,6 +6623,22 @@
       "s": 1.437,
       "src": "median"
     },
+    "test_the_rehearsal_render_bound_moves_with_the_load": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_the_shelf_card_boxes_fit_the_card": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_the_connecting_screen_is_a_door": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_one_game_in_hourly_parts": {
+      "s": 1.437,
+      "src": "median"
+    },
     "test_a_shelf_closed_while_opening_takes_the_stage_with_it": {
       "s": 1.437,
       "src": "median"

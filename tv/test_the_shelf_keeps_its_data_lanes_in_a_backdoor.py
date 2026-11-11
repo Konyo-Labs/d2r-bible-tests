@@ -42,7 +42,9 @@ class TheShelfKeepsItsDataLanesInABackdoor(unittest.TestCase):
 
     def test_the_drawer_holds_the_lanes_and_the_pipeline(self):
         """* THE POINT - both data blocks are inside the drawer, nothing else is"""
-        j = self.code.index(CLOSE, self.i)
+        # the drawer's OWN close - the first </details> after it opens (heart2 found CLOSE matched a later drawer's end,
+        # so a sabotage that moved this drawer's end stayed green)
+        j = self.code.index("'</details>'", self.i)
         inside = self.code[self.i:j]
         self.assertIn(LANES, inside, "the river strip is back on the shelf's main view")
         self.assertIn(STORY, inside, "the pipeline board is back on the shelf's main view")
@@ -52,7 +54,7 @@ class TheShelfKeepsItsDataLanesInABackdoor(unittest.TestCase):
         self.assertEqual(self.code.count(STORY), 1, "a second pipeline board sits outside the drawer")
 
     def test_it_starts_closed_and_remembers_only_this_page(self):
-        tail = self.code[self.i:self.i + 400]
+        tail = self.code[self.i:self.code.index(LANES, self.i)]   # the opening tag and its summary, bounded by the lanes
         self.assertIn("' ontoggle=\"window._shBackdoorOpen=this.open\">'", tail,
                       "an opened backdoor snaps shut on the shelf's next repaint")
         self.assertNotIn("localStorage", tail, "the backdoor's open state outlives the page - his default is collapsed")
@@ -66,7 +68,7 @@ class TheShelfKeepsItsDataLanesInABackdoor(unittest.TestCase):
 
     def test_its_look_is_the_vault_backdoors(self):
         self.assertIn("\\u2699 Advanced \\u00b7 Shelf backdoor", self.code, "the drawer is not named like the Vault backdoor")
-        self.assertIn("#th-shelfov .sh-backdoor > summary { cursor: pointer; list-style: none;", self.code,
+        self.assertIn("#th-shelfov .sh-backdoor > summary { list-style: none;", self.code,
                       "the drawer lost the Vault backdoor's summary row")
 
 

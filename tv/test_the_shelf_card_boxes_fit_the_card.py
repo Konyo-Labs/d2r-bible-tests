@@ -20,12 +20,13 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 from console_safe import enable as _console_safe_enable  # noqa: E402
 _console_safe_enable()
+import js_strip  # noqa: E402
 
 
 def _css():
     with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as fh:
         src = fh.read()
-    return re.sub(r"/\*.{0,4000}?\*/", "", src, flags=re.S)   # bounded: a stray /* never eats the file
+    return js_strip.strip_js_comments(src)   # the ONE comment stripper the laws share (test_one_comment_stripper_for_the_laws)
 
 
 def _rule(css, sel):

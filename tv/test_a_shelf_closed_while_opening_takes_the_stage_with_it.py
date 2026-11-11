@@ -92,9 +92,14 @@ class AShelfClosedWhileOpeningTakesTheStageWithIt(unittest.TestCase):
         self.assertEqual(code.count("try { TH.shelfOpening = true; } catch (e) {}"), 1,
                          "PREMISE: the door no longer marks its in-flight open")
         i = code.index("try { TH.shelfOpening = true; } catch (e) {}")
-        rest = code[i:i + 12000]
-        self.assertIn("} finally {\n      try { TH.shelfOpening = false; } catch (e) {}", rest,
-                      "the in-flight mark is not cleared in a finally - a later shelf over a reel would close the reel's stage")
+        # bounded by the subject itself (test_a_source_window_must_reach_its_subject): from the mark to its clearing
+        clear = "} finally {\n      try { TH.shelfOpening = false; } catch (e) {}"
+        j = code.find(clear, i)
+        self.assertGreater(j, i, "the in-flight mark is not cleared in a finally after it is set - a later shelf over a "
+                                 "reel would close the reel's stage")
+        mark = "try { TH.shelfOpening = true; } catch (e) {}"
+        self.assertNotIn("TH.shelfOpening = true", code[i + len(mark):j],
+                         "PREMISE: a second mark sits between this one and its clearing")
 
     def test_a_closed_theatre_claims_no_ink(self):
         """GrokBot #230 6795804579: after a close his status still said painted:false / 'naturalWidth 0' about a gone image"""

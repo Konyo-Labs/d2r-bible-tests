@@ -14,6 +14,7 @@ GeForce NOW's own loading / queue pages pass the plaque half and fail the flanks
 DRIVEN on drawn fixtures (this law runs where his footage does not), the shipped screen_of / chain. RED_PROOF below.
 """
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -57,11 +58,7 @@ def _kind(im):
         im.save(p)
         return DS.screen_of(p)[0]
     finally:
-        try:
-            os.remove(p)
-            os.rmdir(d)
-        except OSError:
-            pass
+        shutil.rmtree(d, ignore_errors=True)   # the scratch-dir law pairs a mkdtemp with an rmtree
 
 
 class TheConnectingScreenIsADoor(unittest.TestCase):
