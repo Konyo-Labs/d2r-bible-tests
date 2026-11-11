@@ -1527,9 +1527,11 @@ RED_PROOF = [
     {
         "why": "#189 REG-2559 - the file stops hiding the Claude CLI: the cloud-route law runs the real `claude -p` again",
         "file": "tv/test_triage_runs_beside_a_shadow_reel.py",
-        # v3895 (#103) - un-hiding the CLI changes nothing on a PC with no CLI (the real call fails as the hidden one did), so
-        # there the proof filed BLIND and shut every lock. It is judged where a Claude CLI is (heart2's "claude-cli" need).
-        "needs": "claude-cli",
+        # v3897 (REG-3695) - IT NEEDS POSIX, NOT A CLI. Its one catcher (TheClaudeCliIsNeverLaunched) puts its OWN tripwire
+        # first on PATH - a `#!/bin/sh` script named `claude` - so a POSIX PC with no CLI still goes red, and Windows, which
+        # cannot run that script, never calls it: BLIND on GitHub's windows-latest set for f1245cf6a and on both ALTs even
+        # with v3895's "claude-cli" need, because the runner's refusing claude.cmd satisfied the probe.
+        "needs": "posix",
         "find": "_NO_CLAUDE.start()\n",
         "replace": "pass\n",
         "matches": 1,

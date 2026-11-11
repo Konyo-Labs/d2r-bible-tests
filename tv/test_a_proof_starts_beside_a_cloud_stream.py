@@ -87,7 +87,10 @@ RED_PROOF = [
     {"why": "v3884 - the local game running beside the client reads as a stream",
      "file": "tv/self_prove.py",
      "find": "        return bool(hits) and not any(_POSIX_GAME.search(ln) for ln in hits)\n",
-     "replace": "        return bool(hits)\n", "matches": 1},
+     "replace": "        return bool(hits)\n", "matches": 1,
+     # v3897 (REG-3695) - BLIND on GitHub's windows-latest set for f1245cf6a and on both ALTs: the line is the POSIX listing's,
+     # after cloud_streaming's IS_WIN return, and its one catcher skips on Windows ("UNMEASURED here")
+     "needs": "posix"},
 ]
 
 

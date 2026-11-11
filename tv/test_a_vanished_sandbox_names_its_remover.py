@@ -332,7 +332,10 @@ RED_PROOF = [
      "file": "heart2.py",
      "find": "os.O_RDWR | os.O_CREAT | getattr(os, \"O_BINARY\", 0), 0o600)",   # v3886 (#107) O_BINARY
      "replace": "os.O_RDWR | os.O_CREAT | getattr(os, \"O_BINARY\", 0), 0o666)",
-     "matches": 1},
+     "matches": 1,
+     # v3897 (REG-3695) - BLIND on GitHub's windows-latest set for f1245cf6a and on both ALTs: a file mode is a POSIX
+     # permission, and its one catcher (test_the_journal_is_private) checks it only off Windows
+     "needs": "posix"},
     {"why": "REG-2612 - review r1: a new sandbox writes no birth line",
      "file": "heart2.py",
      "find": "    _sweep_journal(os.path.dirname(root), \"created\", root,",
