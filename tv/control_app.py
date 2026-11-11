@@ -5644,7 +5644,7 @@ def _frames_publish_once(boot):
     d = _ss.digest(_rpj.load_journal(), HIST_DIR, _is_a_live_read, now_ms, witness_ids=_profile_picture_ids(stores),
                    chron_count=_chronicle_count,   # v3890 (#184) - this PC's own sessions, this PC's own reels
                    is_game=_session_is_the_game,   # v3890 (#188) - and only the ones that were the game
-                   game_of=_shelf_games().get)     # v3898 (#188, REG-3713) - and which part of one game each is
+                   game_of=(_shelf_games() or {}).get)   # v3898 (#188, REG-3713) - which part of one game; unreadable: none
     try:
         if isinstance(d, dict) and d.get("sessions"):
             _sy = sync_status(now_ms)
@@ -25143,14 +25143,15 @@ def _shelf_games():
     """v3898 (#188, REG-3713) - his 11-11 ruling: the hourly parts stay (the retro readers and the FIFO river need them),
     and parts of ONE game are linked. -> {sid: {id, part, parts, character}} for reels whose game has 2+ parts, from the
     equipped ledger's chain (the ONE rule: a character select starts a game, a part with no login continues it across the
-    hourly hand-off, a part that never showed the game ends it). {} when the ledger cannot be read - no link is guessed."""
+    hourly hand-off, a part that never showed the game ends it). None when the ledger cannot be read - UNKNOWN, never an
+    empty answer a caller could take for 'no game has two parts' (the swallow ratchet's rank 1); no link is guessed."""
     try:
         import equipped_ledger as _el
         d, _why = _el.load()
     except Exception:
-        return {}
+        return None
     if not isinstance(d, dict):
-        return {}
+        return None
     gs, out = d.get("gameSessions") or {}, {}
     for sid, gid in (d.get("reelGame") or {}).items():
         g = gs.get(gid) if isinstance(gs, dict) else None
@@ -51092,7 +51093,7 @@ class Handler(BaseHTTPRequestHandler):
                     if _sid and ("reel_" + _sid) in _fixtures or _sid in _fixtures:
                         _r["fixture"] = True
             # v3898 (#188, REG-3713) - AFTER the row cache: a game grows a part every hour, a cached row must not freeze it
-            _games = _shelf_games()
+            _games = _shelf_games() or {}      # None (the ledger unreadable) draws no link: nothing is guessed either way
             for _r in out:
                 _g = _games.get(str((_r or {}).get("sessionId") or ""))
                 if _g:

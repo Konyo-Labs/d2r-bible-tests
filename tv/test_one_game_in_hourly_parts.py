@@ -83,7 +83,7 @@ class OneGameInHourlyParts(unittest.TestCase):
         self.assertEqual(got.get("s_1"), {"id": "g_a", "part": 2, "parts": 3, "character": "Konyomancer"}, got)
         self.assertNotIn("s_9", got, "a one-part game is not a linked game - the card says nothing")
         with mock.patch.object(EL, "load", lambda *a, **k: (None, "unreadable")):
-            self.assertEqual(CA._shelf_games(), {}, "an unreadable ledger must link nothing, never guess")
+            self.assertIsNone(CA._shelf_games(), "an unreadable ledger is UNKNOWN (None) - never an empty answer, never a guess")
 
     def test_the_ledger_records_each_reels_game_and_the_console_passes_the_film(self):
         with io.open(os.path.join(HERE, "equipped_ledger.py"), encoding="utf-8") as fh:
@@ -149,7 +149,7 @@ class OneGameInHourlyParts(unittest.TestCase):
         self.assertEqual(ui.count("  function shGamePart(g, after){"), 1, "the helper the shadow row asks for is gone")
         with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
             ca = "\n".join(l.split("#", 1)[0] for l in fh.read().split("\n"))
-        self.assertEqual(ca.count("game_of=_shelf_games().get)"), 1, "the published digest no longer carries the game link")
+        self.assertEqual(ca.count("game_of=(_shelf_games() or {}).get)"), 1, "the published digest no longer carries the game link")
 
 RED_PROOF = [
     {"why": "v3898 (#188, REG-3713) - a part that filmed no D2R chains the game before it to the game after it again",
