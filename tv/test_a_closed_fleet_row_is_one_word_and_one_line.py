@@ -124,6 +124,10 @@ CASES = {
     # the proof wound alone: said once, in the words the parts gave ("proof out of date"), or the census word ("proof stale")
     "proofonly": {"parts": _with(_p("proved", ["proof out of date", "0 blind"], warn=True)), "heart": {"census": "stale", "blind": 0}},
     "proofword": {"parts": [x for x in WELL if x["k"] != "proved"], "heart": {"census": "stale", "blind": 0}},
+    # v3896 (REG-3671) - Dean 11-11: proving 67 checks while every pull was refused by local edits, 181 behind
+    "pullstuck": {"parts": _with(_p("proved", ["proof out of date", "0 blind", "67 laws owed"], warn=True)),
+                  "heart": {"census": "stale", "blind": 0, "owed": 67, "ratePerH": 5, "etaS": 48240, "locksShut": []},
+                  "pull": {"can": False, "behind": 181, "why": "local tracked edits - a fast-forward would not be safe here"}},
 }
 
 
@@ -141,7 +145,7 @@ def _drive(cases, status_throws=False):
           + ("_pcStatus = function () { throw new Error('status'); };\n" if status_throws else "") +
           "var OUT = {};\n"
           "Object.keys(CASES).forEach(function (k) {\n"
-          "  var m = { machine: k, nickname: 'PC ' + k, system: { river: { heart: CASES[k].heart } } };\n"
+          "  var m = { machine: k, nickname: 'PC ' + k, system: { river: { heart: CASES[k].heart } }, pull: CASES[k].pull };\n"
           "  var s = null; try { s = _pcStatus(m, 1000); } catch (e) { s = null; }\n"
           "  OUT[k] = { word: s && s.word, key: s && s.key, html: _fleetBriefHtml(m, 1000) };\n"
           "});\n"
@@ -168,6 +172,12 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
     def setUpClass(cls):
         cls.o = _drive(CASES)
         cls.b = dict((k, _brief(v["html"])) for k, v in cls.o.items())
+
+    def test_a_pc_whose_pull_is_refused_says_so_and_no_proof_meter_follows(self):
+        """v3896 (REG-3671) - the Grok CLI read "BLOCKED not updating" over "proving 67 checks ~13.4 h" as a contradiction"""
+        b = self.b["pullstuck"]
+        self.assertEqual(b["word"], "blocked", b)
+        self.assertEqual(b["units"], ["181 behind, pull refused"], "the closed row of a PC that cannot pull: %r" % (b,))
 
     def test_every_brief_is_one_element_with_the_pcs_own_word(self):
         """PREMISE - every case but the throwing one drew a brief, and its word IS _pcStatus's (one source, never a copy)"""
@@ -381,6 +391,11 @@ RED_PROOF = [
     {"why": "REG-3395 - the open row's vault line is squeezed beside the eyes again",
      "file": "tv/control_ui.html",
      "find": "  .fleet-open-eyes > .fleet-vault { flex-basis: 100%; }\n", "replace": "\n", "matches": 1},
+    {"why": "v3896 (REG-3671) - a PC whose pull is refused shows its proof meter on its one line again, under BLOCKED",
+     "file": "tv/control_ui.html",
+     "find": "    if (typeof s.pullBehind === 'number' && s.pullBehind > 0) {\n",
+     "replace": "    if (false) {\n",
+     "matches": 1}
 ]
 
 

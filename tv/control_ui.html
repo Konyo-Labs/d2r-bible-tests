@@ -29507,7 +29507,7 @@ function escC(s) {
     if (off) owed = [];
     return { key: key, word: W.w, cls: W.c, en: W.en, hurt: hurt, owed: owed, next: next, eta: eta, offSince: off ? off.since : null,
              look: key === 'wounded' && !proving, starting: key === 'healing' && booting && !proving,
-             drainAlert: drainAlert };
+             drainAlert: drainAlert, pullBehind: pullStuck ? _pl.behind : null };
   };
   /* ONE element, spans inside: the card, the State panel and a law can each cut it out whole by its class */
   var _pcStatusHtml = function (m, nowMs, opts) {
@@ -29599,6 +29599,12 @@ function escC(s) {
     }
     /* ONE wound, the one that needs a hand first: a blind gate keeps every lock shut whatever this PC proves next, so it
        leads; the rest are "+N" (the open row and the State panel name them). Then what is healing it, if anything. */
+    /* v3896 (REG-3671, the Grok CLI's cold look at the blocked row: "BLOCKED not updating" over "proving 67 checks ~13.4 h"
+       contradicts itself) - a PC whose pull is refused says THAT on its one line; proving bytes no ship will replace is not
+       healing it, so no proof meter follows (the open row and the State panel keep the full reason) */
+    if (typeof s.pullBehind === 'number' && s.pullBehind > 0) {
+      return (s.drainAlert ? [s.drainAlert] : []).concat([s.pullBehind + ' behind, pull refused']);
+    }
     var _short = function (x) {
       x = String(x || '');
       if (/^proof: /.test(x)) { x = x.slice(7); if (!/proof/.test(x)) x = 'proof ' + x; }

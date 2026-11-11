@@ -145,7 +145,10 @@ The open card had a dim "not pulling"; the word, the header and the State panel 
 report: refused (can false) with a behind count is BLOCKED, says "not updating: N behind and its pull is refused - <why>",
 and that it will not catch up on its own; a pinned PC (no behind count) and a clear pull still read updating. Law:
 test_each_pc_reads_in_a_few_words (APcThatCannotPullIsBlocked). Seen RED x2. Re-anchored: test_each_pc_reads_in_a_few_words[9],
-test_the_fleet_says_why_the_alt_waits[2]. Owed before ship: the render gate on the Fleet + a Grok look at the row.
+test_the_fleet_says_why_the_alt_waits[2]. Rendered (render_check fleet-pull-refused, stubbed like fleet-boot-river) and a
+Grok CLI cold look read "BLOCKED not updating" over "proving 67 checks ~13.4 h" as a contradiction - so the closed row now
+says "181 behind, pull refused" and no proof meter follows (the second look: "agrees with that"). Law:
+test_a_closed_fleet_row_is_one_word_and_one_line (pullstuck). Seen RED.
 
 ### REG-3670 - A LAW'S PRIVATE CONSOLE LEFT ITS AGENT RUNNING FOR DAYS (v3896)
 MEASURED 11-11 on his Mac: three tv_diablo agents ran on as orphans (ppid 1) - 9 h and 2.7 days old, each listening on an

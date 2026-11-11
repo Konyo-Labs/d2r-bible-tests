@@ -2504,6 +2504,47 @@ TARGETS = {
         "settles": False,
         "warmup": 10.0,
     },
+    # v3896 (REG-3671) - A PC WHOSE PULL IS REFUSED READS BLOCKED. Dean's PC sat 181 behind for days, every pull refused by
+    # local edits, while its row read UPDATING. STUBBED like fleet-boot-river: this proves the RENDER, never the wire; the word
+    # is pinned by test_each_pc_reads_in_a_few_words (APcThatCannotPullIsBlocked). The activation refuses until the blocked
+    # row and its reason are on screen.
+    "fleet-pull-refused": {
+        "serve": True,
+        "why": "v3896 (REG-3671) - a PC whose pull is refused reads blocked and says it will not catch up, never updating",
+        "seed": """(function(){
+            try { localStorage.setItem('d2r_advOpen','1'); } catch(e){}
+            var now = new Date().toISOString();
+            var rows = [
+              {machine:'dean', nickname:'Dean', ver:'v3713', t: now,
+               pull:{can:false, behind:181, why:'local tracked edits — a fast-forward would not be safe here'},
+               system:{river:{stuck: [], heart:{census:'stale', key:'stale', blind:0, owed:67, ratePerH:5, etaS:48240,
+                                                locksShut:[], locksAgeS:4}}}},
+              {machine:'mac', nickname:'Konyo', ver:'v3896', t: now,
+               system:{river:{stuck: [], heart:{census:'current', key:'current', blind:0, locksShut:[], locksAgeS:4}}}}];
+            var _f = window.fetch;
+            window.fetch = function(u, o){
+              if (String(u).indexOf('/api/fleet') === 0) {
+                return Promise.resolve(new Response(JSON.stringify({ ok: true, online: rows, offline: [] }),
+                                                    { status: 200, headers: { 'Content-Type': 'application/json' } }));
+              }
+              return _f.apply(this, arguments);
+            };
+            var _b = document.getElementById('fleet-list');
+            if (_b) _b.innerHTML = '';
+            if (window._fleetRefresh) { try { window._fleetRefresh(); } catch(e){} }
+            return 1;
+          })()""",
+        "activate": ("(function(){ var _b = (%s); if (!_b) return false; "
+                     "var rows = [].slice.call(document.querySelectorAll('#fleet-list .fleet-row')); "
+                     "var dean = rows.filter(function(r){ return /Dean/.test(r.textContent); })[0]; "
+                     "if (dean && !dean.classList.contains('fleet-open') && window._fleetRowOpen) window._fleetRowOpen(dean); "
+                     "var t = (document.getElementById('fleet-list') || {}).textContent || ''; "
+                     "return /blocked/.test(t) && /not updating: 181 behind/.test(t); })()"
+                     % _adv_activate("fleet-list")),
+        "sel": "#fleet-list .fleet-row, #fleet-list .fleet-brief",
+        "settles": False,
+        "warmup": 10.0,
+    },
 
     # ── v3033 (#82) — THE CROSS-REFERENCE DIALOG, WHICH NOTHING HAS EVER PHOTOGRAPHED ─────────
     # He reported this panel's layout THREE times in one session — "symetric", "+ typography",
